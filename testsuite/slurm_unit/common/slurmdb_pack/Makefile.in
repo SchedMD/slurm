@@ -185,8 +185,7 @@ pack_account_rec_test_SOURCES = pack_account_rec-test.c
 pack_account_rec_test_OBJECTS =  \
 	pack_account_rec_test-pack_account_rec-test.$(OBJEXT)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 @HAVE_CHECK_TRUE@pack_account_rec_test_DEPENDENCIES =  \
 @HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -862,7 +861,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
-LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
+LDADD = $(LIB_SLURM) $(DL_LIBS)
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99
 @HAVE_CHECK_TRUE@pack_user_rec_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@pack_user_rec_test_LDADD = $(LDADD) @CHECK_LIBS@

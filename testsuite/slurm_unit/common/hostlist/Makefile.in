@@ -158,8 +158,7 @@ hostlist_nth_test_SOURCES = hostlist_nth-test.c
 hostlist_nth_test_OBJECTS =  \
 	hostlist_nth_test-hostlist_nth-test.$(OBJEXT)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 @HAVE_CHECK_TRUE@hostlist_nth_test_DEPENDENCIES =  \
 @HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -700,7 +699,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
-LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
+LDADD = $(LIB_SLURM) $(DL_LIBS)
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99
 @HAVE_CHECK_TRUE@hostlist_nth_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@hostlist_nth_test_LDADD = $(LDADD) @CHECK_LIBS@

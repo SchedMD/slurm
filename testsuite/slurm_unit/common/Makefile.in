@@ -167,8 +167,7 @@ am__EXEEXT_2 = job-resources-test$(EXEEXT) log-test$(EXEEXT) \
 data_test_SOURCES = data-test.c
 data_test_OBJECTS = data_test-data-test.$(OBJEXT)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 @HAVE_CHECK_TRUE@data_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -180,18 +179,16 @@ data_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 job_resources_test_SOURCES = job-resources-test.c
 job_resources_test_OBJECTS = job-resources-test.$(OBJEXT)
 job_resources_test_LDADD = $(LDADD)
-job_resources_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
+job_resources_test_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 log_test_SOURCES = log-test.c
 log_test_OBJECTS = log-test.$(OBJEXT)
 log_test_LDADD = $(LDADD)
-log_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+log_test_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 pack_test_SOURCES = pack-test.c
 pack_test_OBJECTS = pack-test.$(OBJEXT)
 pack_test_LDADD = $(LDADD)
-pack_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+pack_test_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 parse_time_test_SOURCES = parse_time-test.c
 parse_time_test_OBJECTS = parse_time_test-parse_time-test.$(OBJEXT)
 @HAVE_CHECK_TRUE@parse_time_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
@@ -788,7 +785,7 @@ SUBDIRS = bitstring \
 	  slurmdb_pack
 
 AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
-LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
+LDADD = $(LIB_SLURM) $(DL_LIBS)
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -D_ISO99_SOURCE \
 @HAVE_CHECK_TRUE@	-Wunused-but-set-variable
 @HAVE_CHECK_TRUE@xhash_test_CFLAGS = $(MYCFLAGS)

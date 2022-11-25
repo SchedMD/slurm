@@ -158,8 +158,7 @@ bit_unfmt_hexmask_test_SOURCES = bit_unfmt_hexmask-test.c
 bit_unfmt_hexmask_test_OBJECTS =  \
 	bit_unfmt_hexmask_test-bit_unfmt_hexmask-test.$(OBJEXT)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 @HAVE_CHECK_TRUE@bit_unfmt_hexmask_test_DEPENDENCIES =  \
 @HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -173,7 +172,7 @@ bit_unfmt_hexmask_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 bitstring_test_SOURCES = bitstring-test.c
 bitstring_test_OBJECTS = bitstring-test.$(OBJEXT)
 bitstring_test_LDADD = $(LDADD)
-bitstring_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
+bitstring_test_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -706,7 +705,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
-LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
+LDADD = $(LIB_SLURM) $(DL_LIBS)
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99
 @HAVE_CHECK_TRUE@bit_unfmt_hexmask_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@bit_unfmt_hexmask_test_LDADD = $(LDADD) @CHECK_LIBS@

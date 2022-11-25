@@ -166,8 +166,7 @@ am__EXEEXT_2 = $(am__EXEEXT_1)
 slurm_addto_char_list_test_SOURCES = slurm_addto_char_list-test.c
 slurm_addto_char_list_test_OBJECTS = slurm_addto_char_list_test-slurm_addto_char_list-test.$(OBJEXT)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 @HAVE_CHECK_TRUE@slurm_addto_char_list_test_DEPENDENCIES =  \
 @HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -748,7 +747,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
-LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
+LDADD = $(LIB_SLURM) $(DL_LIBS)
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99
 @HAVE_CHECK_TRUE@slurm_addto_char_list_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@slurm_addto_char_list_test_LDADD = $(LDADD) @CHECK_LIBS@
