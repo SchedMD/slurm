@@ -685,6 +685,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *step)
 		xassert(c->magic == STEP_CONTAINER_MAGIC);
 		xfree(c->bundle);
 		FREE_NULL_DATA(c->config);
+		xfree(c->mount_spool_dir);
 		xfree(c->rootfs);
 		xfree(c->spool_dir);
 		xfree(step->container);

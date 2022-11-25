@@ -54,6 +54,7 @@ typedef struct {
 	char **disable_hooks; /* OCI hooks to disable (null terminated) */
 	regex_t env_exclude; /* REGEX to filter step environment */
 	bool env_exclude_set; /* true if env_exclude populated */
+	char *mount_spool_dir; /* OCI runtime pattern to execute create */
 	char *runtime_create; /* OCI runtime pattern to execute create */
 	char *runtime_delete; /* OCI runtime pattern to execute delete */
 	char *runtime_kill; /* OCI runtime pattern to execute kill */

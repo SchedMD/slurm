@@ -54,6 +54,7 @@ static s_p_options_t options[] = {
 	{"CreateEnvFile", S_P_STRING},
 	{"DisableHooks", S_P_STRING},
 	{"EnvExclude", S_P_STRING},
+	{"MountSpoolDir", S_P_STRING},
 	{"RunTimeCreate", S_P_STRING},
 	{"RunTimeDelete", S_P_STRING},
 	{"RunTimeKill", S_P_STRING},
@@ -105,6 +106,7 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	(void) s_p_get_string(&disable_hooks, "DisableHooks", tbl);
 	(void) s_p_get_boolean(&oci->ignore_config_json, "IgnoreFileConfigJson", tbl);
 	(void) s_p_get_string(&env_exclude, "EnvExclude", tbl);
+	(void) s_p_get_string(&oci->mount_spool_dir, "MountSpoolDir", tbl);
 	(void) s_p_get_string(&oci->runtime_create, "RunTimeCreate", tbl);
 	(void) s_p_get_string(&oci->runtime_delete, "RunTimeDelete", tbl);
 	(void) s_p_get_string(&oci->runtime_kill, "RunTimeKill", tbl);
@@ -272,6 +274,7 @@ extern void free_oci_conf(oci_conf_t *oci)
 
 	xfree(oci->container_path);
 	regfree(&oci->runtime_env_exclude);
+	xfree(oci->mount_spool_dir);
 	xfree(oci->runtime_create);
 	xfree(oci->runtime_delete);
 	xfree(oci->runtime_kill);

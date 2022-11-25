@@ -147,6 +147,10 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 				xstrfmtcatat(buffer, &offset, "%u",
 					     step->step_id.job_id);
 				break;
+			case 'm':
+				xstrfmtcatat(buffer, &offset, "%s",
+					     c->spool_dir);
+				break;
 			case 'n':
 				xstrfmtcatat(buffer, &offset, "%s",
 					     step->node_name);
@@ -316,6 +320,16 @@ static int _modify_config(stepd_step_rec_t *step)
 	if (data_get_type(mnts) != DATA_TYPE_LIST)
 		data_set_list(mnts);
 
+	if (c->mount_spool_dir) {
+		data_t *mnt = data_set_dict(data_list_append(mnts));
+		data_t *opt = data_set_list(data_key_set(mnt, "options"));
+		data_set_string(data_key_set(mnt, "destination"),
+				c->mount_spool_dir);
+		data_set_string(data_key_set(mnt, "type"), "none");
+		data_set_string(data_key_set(mnt, "source"), c->spool_dir);
+		data_set_string(data_list_append(opt), "bind");
+	}
+
 	if (step->batch) {
 		data_t *mnt, *opt;
 
@@ -473,6 +487,14 @@ static int _generate_bundle_path(stepd_step_rec_t *step)
 	} else {
 		xstrfmtcat(path, "%s/oci-job%05u-%05u/", conf->spooldir,
 			   step->step_id.job_id, step->step_id.step_id);
+	}
+
+	if (oci_conf->mount_spool_dir) {
+		c->mount_spool_dir =
+			_generate_pattern(oci_conf->mount_spool_dir, step,
+					  step->task[0]->id, NULL);
+	} else {
+		c->mount_spool_dir = xstrdup("/var/run/slurm/");
 	}
 
 	xassert(!c->spool_dir);

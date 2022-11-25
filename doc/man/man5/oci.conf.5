@@ -76,6 +76,14 @@ Default is not exclude any environment variables.
 .IP
 
 .TP
+\fBMountSpoolDir\fR
+Override pattern for path inside of container to mount \fBContainerPath\fR. See
+the section \fBOCI Pattern\fR for details on pattern replacement.
+.sp
+Default: /var/run/slurm/
+.IP
+
+.TP
 \fBRunTimeEnvExclude\fR
 Exteneded regular expression to filter environment before calling any
 \fBRunTime*\fR commands. This allows for excluding variables to avoid unwanted
@@ -221,6 +229,11 @@ Replace as path to file containing environment if
 .TP
 \fB%j\fR
 Replace as numeric job id.
+.IP
+
+.TP
+\fB%m\fR
+Replace as spool directory of container as patterned by \fBContainerPath\fR.
 .IP
 
 .TP

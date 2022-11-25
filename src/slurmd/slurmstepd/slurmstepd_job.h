@@ -134,6 +134,7 @@ typedef struct {
 	int magic;
 	char *bundle; /* OCI Container Bundle path	*/
 	data_t *config; /* OCI Container config.json contents */
+	char *mount_spool_dir; /* target path to mount container spool dir */
 	char *rootfs; /* path to container rootfs */
 	char *spool_dir; /* path to container spool dir */
 } step_container_t;

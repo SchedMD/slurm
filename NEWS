@@ -182,6 +182,7 @@ documents those changes that are of interest to users and administrators.
  -- oci.conf - add RunTimeEnvExclude and EnvExclude.
  -- slurmstepd - fix container pattern bundle path replacement (%b) with
     bundle path instead of spool dir path.
+ -- oci.conf - add MountSpoolDir.
 
 * Changes in Slurm 22.05.7
 ==========================
