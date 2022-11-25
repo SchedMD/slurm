@@ -686,6 +686,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *step)
 		xfree(c->bundle);
 		FREE_NULL_DATA(c->config);
 		xfree(c->rootfs);
+		xfree(c->spool_dir);
 		xfree(step->container);
 	}
 

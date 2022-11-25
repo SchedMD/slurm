@@ -140,7 +140,7 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 				break;
 			case 'e':
 				xstrfmtcatat(buffer, &offset, "%s/%s",
-					     step->cwd,
+					     c->spool_dir,
 					     SLURM_CONTAINER_ENV_FILE);
 				break;
 			case 'j':
@@ -475,9 +475,8 @@ static int _generate_bundle_path(stepd_step_rec_t *step)
 			   step->step_id.job_id, step->step_id.step_id);
 	}
 
-	debug4("%s: swapping cwd from %s to %s", __func__, step->cwd, path);
-	xfree(step->cwd);
-	step->cwd = path;
+	xassert(!c->spool_dir);
+	c->spool_dir = path;
 
 	return rc;
 }
@@ -579,7 +578,7 @@ extern int setup_container(stepd_step_rec_t *step)
 	if ((rc = _generate_bundle_path(step)))
 		goto error;
 
-	if ((rc = _mkpath(step->cwd, step->uid, step->gid)))
+	if ((rc = _mkpath(c->spool_dir, step->uid, step->gid)))
 		goto error;
 
 error:
@@ -938,7 +937,7 @@ extern void container_run(stepd_step_rec_t *step,
 			   NEWLINE_TERMINATED_ENV_FILE);
 
 		/* keep _generate_pattern() in sync with this path */
-		xstrfmtcat(envfile, "%s/%s", step->cwd,
+		xstrfmtcat(envfile, "%s/%s", c->spool_dir,
 			   SLURM_CONTAINER_ENV_FILE);
 
 		if ((rc = env_array_to_file(envfile, (const char **) step->env,
@@ -967,6 +966,11 @@ extern void container_run(stepd_step_rec_t *step,
 #endif
 		environ = env;
 	}
+
+	debug4("%s: swapping cwd from %s to %s",
+	       __func__, step->cwd, c->spool_dir);
+	xfree(step->cwd);
+	step->cwd = xstrdup(c->spool_dir);
 
 	if (oci_conf->runtime_run)
 		_run(step, task);

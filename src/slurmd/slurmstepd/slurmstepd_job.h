@@ -135,6 +135,7 @@ typedef struct {
 	char *bundle; /* OCI Container Bundle path	*/
 	data_t *config; /* OCI Container config.json contents */
 	char *rootfs; /* path to container rootfs */
+	char *spool_dir; /* path to container spool dir */
 } step_container_t;
 
 typedef struct {
