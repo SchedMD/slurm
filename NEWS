@@ -180,6 +180,8 @@ documents those changes that are of interest to users and administrators.
     plugin based modifications to the job environment are complete.
  -- oci.conf - modify configuration option "CreateEnvFile=" to support creating
  -- oci.conf - add RunTimeEnvExclude and EnvExclude.
+ -- slurmstepd - fix container pattern bundle path replacement (%b) with
+    bundle path instead of spool dir path.
 
 * Changes in Slurm 22.05.7
 ==========================

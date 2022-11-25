@@ -136,7 +136,7 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 				_pattern_argv(&buffer, &offset, cmd_args);
 				break;
 			case 'b':
-				xstrfmtcatat(buffer, &offset, "%s", step->cwd);
+				xstrfmtcatat(buffer, &offset, "%s", c->bundle);
 				break;
 			case 'e':
 				xstrfmtcatat(buffer, &offset, "%s/%s",
