@@ -388,6 +388,24 @@ extern void read_conf_recv_stepd(int fd);
 extern void slurm_conf_init_stepd(void);
 
 /*
+ * slurm_conf_init_load - load the slurm configuration from the a file.
+ * IN file_name - name of the slurm configuration file to be read
+ *	If file_name is NULL, then this routine tries to use
+ *	the value in the SLURM_CONF env variable.  Failing that,
+ *	it uses the compiled-in default file name.
+ *	If the conf structures have already been initialized by a call to
+ *	slurm_conf_init, any subsequent calls will do nothing until
+ *	slurm_conf_destroy is called.
+ * IN load_auth - If true, load the auth and hash plugins.
+ *      NOTE: false should only be passed to this if doing unit testing where we
+ *            know we are suppose to load any plugins.
+ * RET SLURM_SUCCESS if conf file is initialized.  If the slurm conf
+ *       was already initialied, return SLURM_ERROR.
+ *
+ */
+extern int slurm_conf_init_load(const char *file_name, bool load_auth);
+
+/*
  * slurm_conf_init - load the slurm configuration from the a file.
  * IN file_name - name of the slurm configuration file to be read
  *	If file_name is NULL, then this routine tries to use

@@ -3562,20 +3562,7 @@ extern void slurm_conf_init_stepd(void)
 	conf_initialized = true;
 }
 
-/*
- * slurm_conf_init - load the slurm configuration from the a file.
- * IN file_name - name of the slurm configuration file to be read
- *	If file_name is NULL, then this routine tries to use
- *	the value in the SLURM_CONF env variable.  Failing that,
- *	it uses the compiled-in default file name.
- *	If the conf structures have already been initialized by a call to
- *	slurm_conf_init, any subsequent calls will do nothing until
- *	slurm_conf_destroy is called.
- * RET SLURM_SUCCESS if conf file is initialized.  If the slurm conf
- *       was already initialied, return SLURM_ERROR.
- */
-extern int
-slurm_conf_init(const char *file_name)
+extern int slurm_conf_init_load(const char *file_name, bool load_auth)
 {
 	char *config_file;
 	int memfd = -1;
@@ -3631,13 +3618,20 @@ slurm_conf_init(const char *file_name)
 	slurm_mutex_unlock(&conf_lock);
 	xfree(config_file);
 
-	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
-		fatal("failed to initialize auth plugin");
+	if (load_auth) {
+		if (slurm_auth_init(NULL) != SLURM_SUCCESS)
+			fatal("failed to initialize auth plugin");
 
-	if (hash_g_init() != SLURM_SUCCESS)
-		fatal("failed to initialize hash plugin");
+		if (hash_g_init() != SLURM_SUCCESS)
+			fatal("failed to initialize hash plugin");
+	}
 
 	return SLURM_SUCCESS;
+}
+
+extern int slurm_conf_init(const char *file_name)
+{
+	return slurm_conf_init_load(file_name, true);
 }
 
 static int _internal_reinit(const char *file_name)
