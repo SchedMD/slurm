@@ -474,10 +474,15 @@ static int _generate_bundle_path(stepd_step_rec_t *step)
 		c->rootfs = xstrdup(c->bundle);
 	}
 
-	/* write new config.json in spool dir or requested pattern */
+	/* generate step's spool_dir */
 	if (oci_conf->container_path) {
+		/*
+		 * Path generated will just be in the INFINITE task for the
+		 * job to avoid having to have 2 potentially conflicting paths
+		 * for step and tasks.
+		 */
 		path = _generate_pattern(oci_conf->container_path, step,
-					 step->task[0]->id, NULL);
+					 INFINITE, NULL);
 	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		xstrfmtcat(path, "%s/oci-job%05u-batch/", conf->spooldir,
 			   step->step_id.job_id);
@@ -501,6 +506,38 @@ static int _generate_bundle_path(stepd_step_rec_t *step)
 	c->spool_dir = path;
 
 	return rc;
+}
+
+extern void container_task_init(stepd_step_rec_t *step,
+				stepd_step_task_info_t *task)
+{
+	int rc;
+	char *path = NULL;
+	step_container_t *c = step->container;
+
+	/* re-generate out the spool_dir now we know the task */
+	if (oci_conf->container_path) {
+		path = _generate_pattern(oci_conf->container_path, step,
+					 task->id, task->argv);
+	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
+		xstrfmtcat(path, "%s/oci-job%05u-batch/task-%05u/",
+			   conf->spooldir, step->step_id.job_id, task->id);
+	} else if (step->step_id.step_id == SLURM_INTERACTIVE_STEP) {
+		xstrfmtcat(path, "%s/oci-job%05u-interactive/task-%05u/",
+			   conf->spooldir, step->step_id.job_id, task->id);
+	} else {
+		xstrfmtcat(path, "%s/oci-job%05u-%05u/task-%05u/",
+			   conf->spooldir, step->step_id.job_id,
+			   step->step_id.step_id, task->id);
+	}
+
+	xassert(c->spool_dir);
+	xfree(c->spool_dir);
+	c->spool_dir = path;
+
+	if ((rc = _mkpath(c->spool_dir, step->uid, step->gid)))
+		fatal("%s: unable to create spool directory %s: %s",
+		      __func__, c->spool_dir, slurm_strerror(rc));
 }
 
 static char *_get_config_path(stepd_step_rec_t *step)

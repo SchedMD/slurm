@@ -183,6 +183,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmstepd - fix container pattern bundle path replacement (%b) with
     bundle path instead of spool dir path.
  -- oci.conf - add MountSpoolDir.
+ -- slurmstepd - create per task spool directory per container to avoid
+    conflicts when there are more than 1 container tasks on any given node.
 
 * Changes in Slurm 22.05.7
 ==========================

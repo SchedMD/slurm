@@ -330,6 +330,9 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	int saved_errno, status;
 	uint32_t node_offset = 0, task_offset = 0;
 
+	if (step->container)
+		container_task_init(step, task);
+
 	if (step->het_job_node_offset != NO_VAL)
 		node_offset = step->het_job_node_offset;
 	if (step->het_job_task_offset != NO_VAL)
