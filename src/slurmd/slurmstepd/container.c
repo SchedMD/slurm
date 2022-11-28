@@ -627,12 +627,13 @@ static char *_get_container_status()
 static void _kill_container()
 {
 	int stime = 2500;
-	char *status = _get_container_status();
+	char *status = NULL;
 	run_command_args_t run_command_args = {
 		.max_wait = -1,
 	};
 
-	if (!status) {
+	if (!oci_conf->ignore_config_json &&
+	    !(status = _get_container_status())) {
 		debug("container already dead");
 	} else if (!xstrcasecmp(status, "running")) {
 		run_command_args.script_argv = kill_argv;
@@ -647,13 +648,17 @@ static void _kill_container()
 			xfree(status);
 			status = _get_container_status();
 
-			if (!status || !xstrcasecmp(status, "stopped"))
+			if (!oci_conf->ignore_config_json &&
+			    (!status || !xstrcasecmp(status, "stopped")))
 				break;
 
 			out = run_command(&run_command_args);
 			debug("%s: RunTimeKill rc:%u output:%s",
 			      __func__, kill_status, out);
 			xfree(out);
+
+			if (oci_conf->ignore_config_json)
+				break;
 
 			/*
 			 * use exp backoff up to 1s to wait for the container to
