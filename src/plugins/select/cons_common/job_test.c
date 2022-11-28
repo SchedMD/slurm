@@ -1462,7 +1462,7 @@ alloc_job:
 			     job_ptr,
 			     node_record_table_ptr[i]->name,
 			     gres_min_cores, vpus, i,
-			     job_res->cpus[i], i, gres_min_cpus[n]);
+			     job_res->cpus[n], i, gres_min_cpus[n]);
 		}
 		total_cpus += job_res->cpus[n];
 		n++;
