@@ -777,7 +777,12 @@ int main(void)
 		return EXIT_FAILURE;
 	}
 
-	slurm_init(slurm_unit_conf_filename);
+	/* Do not load any plugins, we are only testing slurm_opt */
+	if (slurm_conf_init_load(slurm_unit_conf_filename, false) !=
+	    SLURM_SUCCESS) {
+		error("slurm_conf_init_load() failed");
+		return EXIT_FAILURE;
+	}
 
 	unlink(slurm_unit_conf_filename);
 	xfree(slurm_unit_conf_filename);
