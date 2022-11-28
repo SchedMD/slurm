@@ -3142,7 +3142,8 @@ static slurm_cli_opt_t slurm_opt_nodelist = {
 static int arg_set_nodes(slurm_opt_t *opt, const char *arg)
 {
 	if (!(opt->nodes_set = verify_node_count(arg, &opt->min_nodes,
-					   &opt->max_nodes)))
+						 &opt->max_nodes,
+						 &opt->job_size_str)))
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
@@ -3195,7 +3196,8 @@ static int arg_set_data_nodes(slurm_opt_t *opt, const data_t *arg,
 	} else if ((rc = data_get_string_converted(arg, &str))) {
 		ADD_DATA_ERROR("Unable to read string", rc);
 	} else if (!(opt->nodes_set = verify_node_count(str, &opt->min_nodes,
-						      &opt->max_nodes))) {
+						&opt->max_nodes,
+						&opt->job_size_str))) {
 		rc = SLURM_ERROR;
 		ADD_DATA_ERROR("Invalid node count string", rc);
 	}

@@ -313,6 +313,7 @@ typedef struct {
 	bool cpus_set;			/* cpus_per_task explicitly set	*/
 	int min_nodes;			/* --nodes=n			*/
 	int max_nodes;			/* --nodes=x-n			*/
+	char *job_size_str;		/* --nodes			*/
 	bool nodes_set;			/* nodes explicitly set		*/
 	int sockets_per_node;		/* --sockets-per-node=n		*/
 	int cores_per_socket;		/* --cores-per-socket=n		*/

@@ -79,8 +79,9 @@ uint64_t str_to_mbytes(const char *arg);
  */
 extern char *mbytes_to_str(uint64_t mbytes);
 
-/* verify that a node count in arg is of a known form (count or min-max) */
-bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes);
+/* verify that a node count in arg is of a known form (count or min-max[:step]) */
+bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes,
+		       char **job_size_str);
 
 /* verify a node list is valid based on the dist and task count given */
 bool verify_node_list(char **node_list_pptr, enum task_dist_states dist,

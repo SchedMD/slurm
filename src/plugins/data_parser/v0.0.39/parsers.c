@@ -4179,7 +4179,7 @@ static int PARSE_FUNC(JOB_DESC_MSG_NODES)(const parser_t *const parser, void *ob
 					"Expected string instead of %s for node counts",
 					data_type_to_string(data_get_type(src)));
 
-		if (!verify_node_count(data_get_string(src), &min, &max))
+		if (!verify_node_count(data_get_string(src), &min, &max, NULL))
 			return on_error(PARSING, parser->type, args,
 					ESLURM_DATA_CONV_FAILED,
 					"verify_node_count()",

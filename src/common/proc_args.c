@@ -495,11 +495,13 @@ _str_to_nodes(const char *num_str, char **leftover)
 }
 
 /*
- * verify that a node count in arg is of a known form (count or min-max)
+ * verify that a node count in arg is of a known form (count or min-max or list)
  * OUT min, max specified minimum and maximum node counts
+ * OUT job_size_str
  * RET true if valid
  */
-bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
+bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes,
+		       char **job_size_str)
 {
 	char *ptr, *min_str, *max_str;
 	char *leftover;
@@ -508,7 +510,48 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 	 * Does the string contain a "-" character?  If so, treat as a range.
 	 * otherwise treat as an absolute node count.
 	 */
-	if ((ptr = xstrchr(arg, '-')) != NULL) {
+	if (job_size_str)
+		xfree(*job_size_str);
+
+	if ((ptr = xstrchr(arg, ',')) || (ptr = xstrchr(arg, ':'))) {
+		bitstr_t *job_size_bitmap;
+		char *tok, *tmp_str, *save_ptr = NULL;
+		long int max = 0;
+
+		tmp_str = xstrdup(arg);
+
+		tok = strtok_r(tmp_str, ",-:", &save_ptr);
+		while (tok) {
+			char *endptr;
+			long int num = strtol(tok, &endptr, 10);
+			if ((endptr == tok) || ((*endptr != '\0') &&
+						(*endptr != ',') &&
+						(*endptr != '-') &&
+						(*endptr != ':'))) {
+				error("\"%s\" is not a valid node count", tok);
+				xfree(tmp_str);
+				return false;
+			}
+			if (num > max)
+				max = num;
+			tok = strtok_r(NULL, ",-:", &save_ptr);
+		}
+		xfree(tmp_str);
+		tmp_str = xstrdup(arg);
+		job_size_bitmap = bit_alloc(max + 1);
+		if (bit_unfmt(job_size_bitmap, tmp_str)) {
+			error("\"%s\" is not a valid node count", arg);
+			FREE_NULL_BITMAP(job_size_bitmap);
+			xfree(tmp_str);
+			return false;
+		}
+		*min_nodes = bit_ffs(job_size_bitmap);
+		*max_nodes = bit_fls(job_size_bitmap);
+		if (job_size_str)
+			*job_size_str = bit_fmt_full(job_size_bitmap);
+		FREE_NULL_BITMAP(job_size_bitmap);
+		xfree(tmp_str);
+	} else if ((ptr = xstrchr(arg, '-')) != NULL) {
 		min_str = xstrndup(arg, ptr-arg);
 		*min_nodes = _str_to_nodes(min_str, &leftover);
 		if (!xstring_is_whitespace(leftover)) {
