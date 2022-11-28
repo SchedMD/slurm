@@ -1102,7 +1102,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			/*
 			 * Only sleep a short time on the first miss.
 			 */
-			usleep(500); /* Not adding sub-sec to cur_delay */
+			usleep(100000); /* Not adding sub-sec to cur_delay */
 		} else if (i) {
 			if (i == 2)
 				info("Waiting for resource configuration");
