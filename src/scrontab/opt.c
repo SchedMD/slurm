@@ -58,10 +58,17 @@ extern void fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	if (opt.nodes_set) {
 		desc->min_nodes = opt.min_nodes;
-		if (opt.max_nodes)
+		if (opt.max_nodes) {
 			desc->max_nodes = opt.max_nodes;
-	} else if (opt.ntasks_set && (opt.ntasks == 0))
+			if (opt.job_size_str)
+				desc->job_size_str = xstrdup(opt.job_size_str);
+			else
+				desc->job_size_str = NULL;
+		}
+	} else if (opt.ntasks_set && (opt.ntasks == 0)) {
 		desc->min_nodes = 0;
+		desc->job_size_str = NULL;
+	}
 	if (opt.ntasks_per_node)
 		desc->ntasks_per_node = opt.ntasks_per_node;
 	desc->user_id = opt.uid;

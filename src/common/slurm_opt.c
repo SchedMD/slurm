@@ -6411,10 +6411,18 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	if (opt_local->nodes_set) {
 		job_desc->min_nodes = opt_local->min_nodes;
-		if (opt_local->max_nodes)
+		if (opt_local->max_nodes) {
 			job_desc->max_nodes = opt_local->max_nodes;
-	} else if (opt_local->ntasks_set && (opt_local->ntasks == 0))
+			if (opt_local->job_size_str) {
+				job_desc->job_size_str =
+					xstrdup(opt_local->job_size_str);
+			} else
+				job_desc->job_size_str = NULL;
+		}
+	} else if (opt_local->ntasks_set && (opt_local->ntasks == 0)) {
 		job_desc->min_nodes = 0;
+		job_desc->job_size_str = NULL;
+	}
 
 	/* boards_per_node not filled in here */
 	/* sockets_per_board not filled in here */
