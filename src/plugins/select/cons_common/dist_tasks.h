@@ -73,14 +73,23 @@
  *		the job, only used to identify specialized cores
  * IN gres_task_limit - array of task limits based upon job GRES specification,
  *		offset based upon bits set in job_ptr->job_resrcs->node_bitmap
+ * IN gres_min_cpus - array of minimum required CPUs based upon job's GRES
+ * 		      specification, offset based upon bits set in
+ * 		      job_ptr->job_resrcs->node_bitmap
  */
 extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 		      bool preempt_mode, bitstr_t **core_array,
-		      uint32_t *gres_task_limit);
+		      uint32_t *gres_task_limit,
+		      uint32_t *gres_min_cpus);
 
 /* Return true if more tasks can be allocated for this job on this node */
 extern bool dist_tasks_tres_tasks_avail(uint32_t *gres_task_limit,
 					job_resources_t *job_res,
 					uint32_t node_offset);
+
+/* Add CPUs back to job_ptr->job_res->cpus to satisfy gres_min_cpus */
+extern void dist_tasks_gres_min_cpus(job_record_t *job_ptr,
+				     uint16_t *avail_cpus,
+				     uint32_t *gres_min_cpus);
 
 #endif /* !_CONS_TRES_DIST_TASKS_H */

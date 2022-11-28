@@ -55,8 +55,12 @@
  * IN gres_task_limit - array of task limits based upon job's GRES specification
  *			offset based upon bits set in
  *			job_ptr->job_resrcs->node_bitmap
+ * IN gres_min_cpus - array of minimum required CPUs based upon job's GRES
+ * 		      specification, offset based upon bits set in
+ * 		      job_ptr->job_resrcs->node_bitmap
  */
 extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
-				  uint32_t *gres_task_limit);
+				  uint32_t *gres_task_limit,
+				  uint32_t *gres_min_cpus);
 
 #endif /* !_CONS_TRES_DIST_TASKS_H */

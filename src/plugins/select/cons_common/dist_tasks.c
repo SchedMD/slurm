@@ -365,9 +365,11 @@ static int _set_task_dist(job_record_t *job_ptr, const uint16_t cr_type)
 
 /* distribute blocks (planes) of tasks cyclically */
 static int _compute_plane_dist(job_record_t *job_ptr,
-			       uint32_t *gres_task_limit)
+			       uint32_t *gres_task_limit,
+			       uint32_t *gres_min_cpus)
 {
 	bool over_subscribe = false;
+	bool do_gres_min_cpus = false;
 	uint32_t n, i, p, tid, maxtasks, l;
 	uint16_t *avail_cpus, plane_size = 1;
 	job_resources_t *job_res = job_ptr->job_resrcs;
@@ -423,6 +425,8 @@ static int _compute_plane_dist(job_record_t *job_ptr,
 				more_tres_tasks = true;
 				if ((job_res->cpus[n] < avail_cpus[n]) ||
 				    over_subscribe) {
+					if (gres_min_cpus[n])
+						do_gres_min_cpus = true;
 					tid++;
 					job_res->tasks_per_node[n]++;
 					for (l = 0;
@@ -442,6 +446,8 @@ static int _compute_plane_dist(job_record_t *job_ptr,
 		if (!space_remaining)
 			over_subscribe = true;
 	}
+	if (is_cons_tres && do_gres_min_cpus)
+		dist_tasks_gres_min_cpus(job_ptr, avail_cpus, gres_min_cpus);
 	xfree(avail_cpus);
 	return SLURM_SUCCESS;
 }
@@ -1177,10 +1183,14 @@ fini:	xfree(sock_avoid);
  *		the job, only used to identify specialized cores
  * IN gres_task_limit - array of task limits based upon job GRES specification,
  *		offset based upon bits set in job_ptr->job_resrcs->node_bitmap
+ * IN gres_min_cpus - array of minimum required CPUs based upon job's GRES
+ * 		      specification, offset based upon bits set in
+ * 		      job_ptr->job_resrcs->node_bitmap
  */
 extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 		      bool preempt_mode, bitstr_t **core_array,
-		      uint32_t *gres_task_limit)
+		      uint32_t *gres_task_limit,
+		      uint32_t *gres_min_cpus)
 {
 	int error_code;
 	bool one_task_per_node = false;
@@ -1227,13 +1237,14 @@ extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 	if (((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
 	     SLURM_DIST_PLANE) && !one_task_per_node) {
 		/* Perform plane distribution on the job_resources_t struct */
-		error_code = _compute_plane_dist(job_ptr, gres_task_limit);
+		error_code = _compute_plane_dist(job_ptr, gres_task_limit,
+						 gres_min_cpus);
 		if (error_code != SLURM_SUCCESS)
 			return error_code;
 	} else {
 		/* Perform cyclic distribution on the job_resources_t struct */
 		error_code = (*cons_common_callbacks.dist_tasks_compute_c_b)(
-			job_ptr, gres_task_limit);
+			job_ptr, gres_task_limit, gres_min_cpus);
 		if (error_code != SLURM_SUCCESS)
 			return error_code;
 	}
@@ -1308,3 +1319,36 @@ extern bool dist_tasks_tres_tasks_avail(uint32_t *gres_task_limit,
 		return true;
 	return false;
 }
+
+extern void dist_tasks_gres_min_cpus(job_record_t *job_ptr,
+				     uint16_t *avail_cpus,
+				     uint32_t *gres_min_cpus)
+{
+	job_resources_t *job_res = job_ptr->job_resrcs;
+
+	for (int n = 0; n < job_res->nhosts; n++) {
+		/*
+		 * Make sure that enough cpus are available to meet the minimum
+		 * number of required cores to satisfy a gres request. This
+		 * can increase the number of cpus per task on a given node.
+		 */
+		if (job_res->cpus[n] < gres_min_cpus[n]) {
+			/*
+			 * If avail_cpus is less then gres_min_cpus,
+			 * something went wrong. Get as many cpus
+			 * as we can.
+			 */
+			if (avail_cpus[n] < gres_min_cpus[n]) {
+				error("%pJ: gres_min_cpus=%u is greater than avail_cpus=%u for node %u",
+				      job_ptr, gres_min_cpus[n],
+				      avail_cpus[n], n);
+				job_res->cpus[n] = avail_cpus[n];
+			} else {
+				log_flag(SELECT_TYPE, "%pJ: Setting job_res->cpus to gres_min_cpus (%u) for node %u",
+					 job_ptr, gres_min_cpus[n], n);
+				job_res->cpus[n] = gres_min_cpus[n];
+			}
+		}
+	}
+}
+
