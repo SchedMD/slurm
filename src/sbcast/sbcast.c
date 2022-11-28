@@ -59,13 +59,10 @@
 #include "src/interfaces/cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
-#include "src/interfaces/route.h"
 #include "src/common/slurm_time.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#include "src/interfaces/topology.h"
 
 /* global variables */
 struct bcast_parameters params;	/* program parameters */
@@ -77,8 +74,6 @@ int main(int argc, char **argv)
 	log_init("sbcast", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	slurm_init(NULL);
-	route_init();
-	slurm_topo_init();
 
 	parse_command_line(argc, argv);
 	if (params.verbose) {
