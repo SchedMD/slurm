@@ -57,6 +57,7 @@ HIGHLIGHTS
  -- Extend support for Include files to all "configless" client commands.
  -- Make node weight usable for powered down and rebooting nodes.
  -- Removed 'launch' plugin.
+ -- Add "Extra" field to job to store extra information other than a comment.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

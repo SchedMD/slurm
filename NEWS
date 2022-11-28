@@ -155,6 +155,7 @@ documents those changes that are of interest to users and administrators.
  -- Make node weight usable for powered down and rebooting nodes.
  -- node_features plugins - node_features_p_reboot_weight() function removed.
  -- Removed 'launch' plugin.
+ -- Add "Extra" field to job to store extra information other than a comment.
 
 * Changes in Slurm 22.05.7
 ==========================
