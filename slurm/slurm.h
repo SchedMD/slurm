@@ -1611,6 +1611,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * 0 if to be queued awaiting resources */
 	uint32_t job_id;	/* job ID, default set by Slurm */
 	char * job_id_str;      /* string representation of the jobid */
+	char *job_size_str;
 	uint16_t kill_on_node_fail; /* 1 if node failure to kill job,
 				     * 0 otherwise,default=1 */
 	char *licenses;		/* licenses required by the job */

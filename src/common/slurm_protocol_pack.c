@@ -6622,6 +6622,7 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		pack32(job_desc_ptr->max_cpus, buffer);
 		pack32(job_desc_ptr->min_nodes, buffer);
 		pack32(job_desc_ptr->max_nodes, buffer);
+		packstr(job_desc_ptr->job_size_str, buffer);
 		pack16(job_desc_ptr->boards_per_node, buffer);
 		pack16(job_desc_ptr->sockets_per_board, buffer);
 		pack16(job_desc_ptr->sockets_per_node, buffer);
@@ -7103,6 +7104,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpack32(&job_desc_ptr->max_cpus, buffer);
 		safe_unpack32(&job_desc_ptr->min_nodes, buffer);
 		safe_unpack32(&job_desc_ptr->max_nodes, buffer);
+		safe_unpackstr(&job_desc_ptr->job_size_str, buffer);
 		safe_unpack16(&job_desc_ptr->boards_per_node, buffer);
 		safe_unpack16(&job_desc_ptr->sockets_per_board, buffer);
 		safe_unpack16(&job_desc_ptr->sockets_per_node, buffer);
