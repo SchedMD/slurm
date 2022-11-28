@@ -164,14 +164,6 @@ int sattach(int argc, char **argv)
 		exit(error_exit);
 	}
 
-	if (route_init() != SLURM_SUCCESS) {
-		error("failure loading cred plugin");
-		exit(error_exit);
-	}
-	if (slurm_cred_init() != SLURM_SUCCESS) {
-		error("failure loading cred plugin");
-		exit(error_exit);
-	}
 	/* FIXME: this does not work with hetsteps */
 
 	layout = slurm_job_step_layout_get(&opt.selected_step->step_id);
