@@ -169,6 +169,7 @@ documents those changes that are of interest to users and administrators.
     completes instead of deferring cleanup to OCI runtime.
  -- oci.conf - add configuration option "IgnoreFileConfigJson=" to allow a site
     to choose to ignore config.json.
+ -- oci.conf - Add PID (%p) pattern replacement.
 
 * Changes in Slurm 22.05.7
 ==========================

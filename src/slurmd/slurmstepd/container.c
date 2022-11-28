@@ -145,6 +145,10 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 				xstrfmtcatat(buffer, &offset, "%s",
 					     step->node_name);
 				break;
+			case 'p':
+				xstrfmtcatat(buffer, &offset, "%u",
+					     step->task[task_id]->pid);
+				break;
 			case 'r':
 				xstrfmtcatat(buffer, &offset, "%s",
 					     rootfs_path);
