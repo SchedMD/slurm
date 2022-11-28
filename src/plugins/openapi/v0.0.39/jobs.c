@@ -673,6 +673,8 @@ static void _dump_nodes_res(data_t *dnodes, job_resources_t *j)
 
 static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 {
+	char tmp_path[PATH_MAX];
+
 	xassert(data_get_type(jd) == DATA_TYPE_NULL);
 	data_set_dict(jd);
 	data_set_string(data_key_set(jd, "account"), job->account);
@@ -1004,9 +1006,16 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 	data_set_string(data_key_set(jd, "state_description"), job->state_desc);
 	data_set_string(data_key_set(jd, "state_reason"),
 			job_reason_string(job->state_reason));
-	data_set_string(data_key_set(jd, "standard_error"), job->std_err);
-	data_set_string(data_key_set(jd, "standard_input"), job->std_in);
-	data_set_string(data_key_set(jd, "standard_output"), job->std_out);
+
+	slurm_get_job_stderr(tmp_path, sizeof(tmp_path), job);
+	data_set_string(data_key_set(jd, "standard_error"), tmp_path);
+
+	slurm_get_job_stdin(tmp_path, sizeof(tmp_path), job);
+	data_set_string(data_key_set(jd, "standard_input"), tmp_path);
+
+	slurm_get_job_stdout(tmp_path, sizeof(tmp_path), job);
+	data_set_string(data_key_set(jd, "standard_output"), tmp_path);
+
 	data_set_int(data_key_set(jd, "submit_time"), job->submit_time);
 	data_set_int(data_key_set(jd, "suspend_time"), job->suspend_time);
 	data_set_string(data_key_set(jd, "system_comment"),
