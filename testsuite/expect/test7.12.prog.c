@@ -49,6 +49,7 @@ int main(int argc, char **argv)
 	step_id.step_het_comp = NO_VAL;
 	printf("job_id:%u step_id:%u\n", step_id.job_id, step_id.step_id);
 
+	slurm_init(NULL);
 
 	rc = slurm_job_step_stat(&step_id, NULL, NO_VAL16, &resp);
 	if (rc != SLURM_SUCCESS) {
