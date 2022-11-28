@@ -60,6 +60,9 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
+#include "src/interfaces/route.h"
+#include "src/interfaces/topology.h"
+
 #include "src/sattach/attach.h"
 #include "src/sattach/opt.h"
 
@@ -143,6 +146,30 @@ int sattach(int argc, char **argv)
 	if (xstrcmp(slurm_conf.launch_type, "launch/slurm")) {
 		error("sattach does not support LaunchType=%s",
 		      slurm_conf.launch_type);
+		exit(error_exit);
+	}
+
+	if (slurm_cred_init() != SLURM_SUCCESS) {
+		error("failed to initialize cred plugin");
+		exit(error_exit);
+	}
+
+	if (route_init() != SLURM_SUCCESS) {
+		slurm_perror("failed to initialize route plugin");
+		exit(error_exit);
+	}
+
+	if (slurm_topo_init() != SLURM_SUCCESS) {
+		slurm_perror("failed to initialize topology plugin");
+		exit(error_exit);
+	}
+
+	if (route_init() != SLURM_SUCCESS) {
+		error("failure loading cred plugin");
+		exit(error_exit);
+	}
+	if (slurm_cred_init() != SLURM_SUCCESS) {
+		error("failure loading cred plugin");
 		exit(error_exit);
 	}
 	/* FIXME: this does not work with hetsteps */
