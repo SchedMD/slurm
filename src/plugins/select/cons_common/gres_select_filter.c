@@ -806,9 +806,9 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		}
 		/*
 		 * Ensure that the number required cores is at least equal to
-		 * the number of required sockets.
+		 * the number of required sockets if enforce-binding.
 		 */
-		if (req_cpus < sock_cnt) {
+		if (enforce_binding && (req_cpus < sock_cnt)) {
 			req_cpus = sock_cnt;
 		}
 
