@@ -767,7 +767,14 @@ int main(void)
 	} else
 		debug("fake slurm.conf created: %s", slurm_unit_conf_filename);
 
+	/*
+	 * PluginDir=. is needed as loading the slurm.conf will check for the
+	 * existance of the dir. As 'make check' doesn't install anything the
+	 * normal PluginDir might not exist. As we don't load any plugins for
+	 * these test this should be ok.
+	 */
 	char slurm_unit_conf_content[] = "ClusterName=slurm_unit\n"
+		                         "PluginDir=.\n"
 					 "SlurmctldHost=slurm_unit\n";
 	size_t csize = sizeof(slurm_unit_conf_content);
 	ssize_t rc = write(fd, slurm_unit_conf_content, csize);
