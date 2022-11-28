@@ -81,10 +81,12 @@
 extern node_record_t **node_record_table_ptr __attribute__((weak_import));
 extern List job_list __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
+extern int active_node_record_count __attribute__((weak_import));
 #else
 node_record_t **node_record_table_ptr = NULL;
 List job_list = NULL;
 int node_record_count = 0;
+int active_node_record_count;
 #endif
 
 typedef struct power_config_nodes {

@@ -61,12 +61,14 @@ extern int node_record_count __attribute__((weak_import));
 extern switch_record_t *switch_record_table __attribute__((weak_import));
 extern int switch_record_cnt __attribute__((weak_import));
 extern int switch_levels __attribute__((weak_import));
+extern int active_node_record_count __attribute__((weak_import));
 #else
 node_record_t **node_record_table_ptr;
 int node_record_count;
 switch_record_t *switch_record_table;
 int switch_record_cnt;
 int switch_levels;
+int active_node_record_count;
 #endif
 
 /*
