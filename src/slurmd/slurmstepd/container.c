@@ -1013,7 +1013,7 @@ extern void cleanup_container(stepd_step_rec_t *step)
 		return;
 	}
 
-	if (!oci_conf->disable_cleanup) {
+	if (!oci_conf->ignore_config_json && !oci_conf->disable_cleanup) {
 		char *jconfig = NULL;
 
 		xstrfmtcat(jconfig, "%s/config.json", step->cwd);
@@ -1025,19 +1025,20 @@ extern void cleanup_container(stepd_step_rec_t *step)
 
 		if (rmdir(step->cwd))
 			error("rmdir(%s): %m", jconfig);
+	}
 
-		if (oci_conf->create_env_file) {
-			char *envfile = NULL;
 
-			/* keep _generate_pattern() in sync with this path */
-			xstrfmtcat(envfile, "%s/%s",
-				   step->cwd, SLURM_CONTAINER_ENV_FILE);
+	if (!oci_conf->disable_cleanup && oci_conf->create_env_file) {
+		char *envfile = NULL;
 
-			if (unlink(envfile))
-				error("unlink(%s): %m", envfile);
+		/* keep _generate_pattern() in sync with this path */
+		xstrfmtcat(envfile, "%s/%s",
+			   step->cwd, SLURM_CONTAINER_ENV_FILE);
 
-			xfree(envfile);
-		}
+		if (unlink(envfile))
+			error("unlink(%s): %m", envfile);
+
+		xfree(envfile);
 	}
 
 	_kill_container();
