@@ -2733,18 +2733,20 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout)
 	List ret_list = NULL;
 	hostlist_t hl = NULL;
 
-	/*
-	 * Load route and topo plugins here to make it so the api can do it
-	 * easily
-	 */
-	if (route_init() != SLURM_SUCCESS) {
-		error("failed to initialize route plugins");
-		return NULL;
-	}
+	if (!running_in_daemon()) {
+		/*
+		 * Load route and topo plugins here to make it so the api can do
+		 * it easily
+		 */
+		if (route_init() != SLURM_SUCCESS) {
+			error("failed to initialize route plugins");
+			return NULL;
+		}
 
-	if (slurm_topo_init() != SLURM_SUCCESS) {
-		error("failed to initialize route plugins");
-		return NULL;
+		if (slurm_topo_init() != SLURM_SUCCESS) {
+			error("failed to initialize route plugins");
+			return NULL;
+		}
 	}
 
 	if (!nodelist || !strlen(nodelist)) {
