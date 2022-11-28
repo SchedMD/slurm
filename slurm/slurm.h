@@ -1587,9 +1587,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 *  name=value pairs, one per line */
 	slurm_hash_t env_hash;  /* hash value of environment NO NOT PACK */
 	uint32_t env_size;	/* element count in environment */
-	char *extra;		/* unused */
 	char *exc_nodes;	/* comma separated list of nodes excluded
 				 * from job's allocation, default NONE */
+	char *extra;		/* unused */
 	char *features;		/* required feature specification,
 				 * default NONE */
 	uint64_t fed_siblings_active; /* Bitmap of active fed sibling ids */
