@@ -3325,7 +3325,7 @@ extern slurm_conf_node_t *slurm_conf_parse_nodeline(const char *nodeline,
 static int _init_slurm_conf(const char *file_name)
 {
 	char *name = (char *)file_name;
-	int rc = SLURM_SUCCESS, cnt = 0;
+	int rc = SLURM_SUCCESS;
 
 	if (name == NULL) {
 		name = getenv("SLURM_CONF");
@@ -3335,7 +3335,7 @@ static int _init_slurm_conf(const char *file_name)
 	if (conf_initialized)
 		error("the conf_hashtbl is already inited");
 	debug("Reading slurm.conf file: %s", name);
-	conf_hashtbl = s_p_hashtbl_create_cnt(slurm_conf_options, &cnt);
+	conf_hashtbl = s_p_hashtbl_create(slurm_conf_options);
 	conf_ptr->last_update = time(NULL);
 
 	/* init hash to 0 */
