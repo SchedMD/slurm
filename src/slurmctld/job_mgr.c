@@ -696,7 +696,6 @@ static void _delete_job_details(job_record_t *job_entry)
 	xfree(job_entry->details->std_err);
 	FREE_NULL_BITMAP(job_entry->details->exc_node_bitmap);
 	xfree(job_entry->details->exc_nodes);
-	xfree(job_entry->details->extra);
 	FREE_NULL_LIST(job_entry->details->feature_list);
 	xfree(job_entry->details->features);
 	xfree(job_entry->details->cluster_features);
@@ -1515,6 +1514,7 @@ static int _dump_job_state(void *object, void *arg)
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->admin_comment, buffer);
 	packstr(dump_job_ptr->comment, buffer);
+	packstr(dump_job_ptr->extra, buffer);
 	packstr(dump_job_ptr->gres_used, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->licenses, buffer);
@@ -1788,6 +1788,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&account, &name_len, buffer);
 		safe_unpackstr_xmalloc(&admin_comment, &name_len, buffer);
 		safe_unpackstr_xmalloc(&comment, &name_len, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->extra, &name_len, buffer);
 		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
@@ -4712,6 +4713,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	job_ptr_pend->comment = xstrdup(job_ptr->comment);
 	job_ptr_pend->container = xstrdup(job_ptr->container);
 	job_ptr_pend->container_id = xstrdup(job_ptr->container_id);
+	job_ptr_pend->extra = xstrdup(job_ptr->extra);
 
 	job_ptr_pend->fed_details = _dup_job_fed_details(job_ptr->fed_details);
 
@@ -7852,6 +7854,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->cpu_bind, "cpu-bind", 1024 * 128)	||
 	    _test_strlen(job_desc->cpus_per_tres, "cpus_per_tres", 1024)||
 	    _test_strlen(job_desc->dependency, "dependency", 1024*128)	||
+	    _test_strlen(job_desc->extra, "extra", 1024)		||
 	    _test_strlen(job_desc->features, "features", 1024)		||
 	    _test_strlen(
 		    job_desc->cluster_features, "cluster_features", 1024)   ||
@@ -8535,6 +8538,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->resv_name  = xstrdup(job_desc->reservation);
 	job_ptr->restart_cnt = job_desc->restart_cnt;
 	job_ptr->comment    = xstrdup(job_desc->comment);
+	job_ptr->extra = xstrdup(job_desc->extra);
 	job_ptr->container = xstrdup(job_desc->container);
 	job_ptr->container_id = xstrdup(job_desc->container_id);
 	job_ptr->admin_comment = xstrdup(job_desc->admin_comment);
@@ -8596,7 +8600,6 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->cpu_freq_gov = job_desc->cpu_freq_gov;
 	detail_ptr->cpu_freq_max = job_desc->cpu_freq_max;
 	detail_ptr->cpu_freq_min = job_desc->cpu_freq_min;
-	detail_ptr->extra      = job_desc->extra;
 	detail_ptr->nice       = job_desc->nice;
 	detail_ptr->open_mode  = job_desc->open_mode;
 	detail_ptr->min_cpus   = job_desc->min_cpus;
@@ -9899,6 +9902,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->container);
 	xfree(job_ptr->clusters);
 	xfree(job_ptr->cpus_per_tres);
+	xfree(job_ptr->extra);
 	free_job_fed_details(&job_ptr->fed_details);
 	free_job_resources(&job_ptr->job_resrcs);
 	_clear_job_gres_details(job_ptr);
@@ -10595,6 +10599,7 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		pack32(dump_job_ptr->site_factor, buffer);
 		packstr(dump_job_ptr->network, buffer);
 		packstr(dump_job_ptr->comment, buffer);
+		packstr(dump_job_ptr->extra, buffer);
 		packstr(dump_job_ptr->container, buffer);
 		packstr(dump_job_ptr->batch_features, buffer);
 		packstr(dump_job_ptr->batch_host, buffer);
@@ -12921,6 +12926,13 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		job_ptr->comment = xstrdup(job_specs->comment);
 		info("%s: setting comment to %s for %pJ",
 		     __func__, job_ptr->comment, job_ptr);
+	}
+
+	if (job_specs->extra) {
+		xfree(job_ptr->extra);
+		job_ptr->extra = xstrdup(job_specs->extra);
+		info("%s: setting extra to %s for %pJ",
+		     __func__, job_ptr->extra, job_ptr);
 	}
 
 	if (error_code != SLURM_SUCCESS)
@@ -18119,6 +18131,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->environment       = get_job_env(job_ptr,
 						  &job_desc->env_size);
 	job_desc->exc_nodes         = xstrdup(details->exc_nodes);
+	job_desc->extra = xstrdup(job_ptr->extra);
 	job_desc->features          = xstrdup(details->features);
 	job_desc->cluster_features  = xstrdup(details->cluster_features);
 	job_desc->group_id          = job_ptr->group_id;
@@ -19070,6 +19083,9 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 
 	if (job_ptr->comment)
 		setenvf(&my_env, "SLURM_JOB_COMMENT", "%s", job_ptr->comment);
+
+	if (job_ptr->extra)
+		setenvf(&my_env, "SLURM_JOB_EXTRA", "%s", job_ptr->extra);
 
 	if (job_ptr->het_job_id) {
 		/* Continue support for old hetjob terminology. */

@@ -1589,7 +1589,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t env_size;	/* element count in environment */
 	char *exc_nodes;	/* comma separated list of nodes excluded
 				 * from job's allocation, default NONE */
-	char *extra;		/* unused */
+	char *extra;		/* Arbitrary string */
 	char *features;		/* required feature specification,
 				 * default NONE */
 	uint64_t fed_siblings_active; /* Bitmap of active fed sibling ids */
@@ -1773,6 +1773,7 @@ typedef struct job_info {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint32_t exit_code;	/* exit code for job (status from wait call) */
+	char *extra;		/* Arbitrary string */
 	char *features;		/* comma separated list of required features */
 	char *fed_origin_str;	/* Origin cluster's name */
 	uint64_t fed_siblings_active;  /* bitmap of active fed sibling ids */

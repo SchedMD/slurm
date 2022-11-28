@@ -3710,6 +3710,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->site_factor, buffer);
 		safe_unpackstr(&job->network, buffer);
 		safe_unpackstr(&job->comment, buffer);
+		safe_unpackstr(&job->extra, buffer);
 		safe_unpackstr(&job->container, buffer);
 		safe_unpackstr(&job->batch_features, buffer);
 		safe_unpackstr(&job->batch_host, buffer);

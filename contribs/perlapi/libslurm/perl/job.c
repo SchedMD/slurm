@@ -218,6 +218,8 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 	hv_store_sv(hv, "exc_node_inx", newRV_noinc((SV*)av));
 
 	STORE_FIELD(hv, job_info, exit_code, uint32_t);
+	if (job_info->extra)
+		STORE_FIELD(hv, job_info, extra, charp);
 	if (job_info->features)
 		STORE_FIELD(hv, job_info, features, charp);
 	if (job_info->tres_per_node)
@@ -354,6 +356,7 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 		/* nothing to do */
 	}
 	FETCH_FIELD(hv, job_info, exit_code, uint32_t, TRUE);
+	FETCH_FIELD(hv, job_info, extra, charp, FALSE);
 	FETCH_FIELD(hv, job_info, features, charp, FALSE);
 	FETCH_FIELD(hv, job_info, tres_per_node, charp, FALSE);
 	FETCH_FIELD(hv, job_info, group_id, uint32_t, TRUE);

@@ -1734,6 +1734,17 @@ static slurm_cli_opt_t slurm_opt_export_file = {
 	.reset_func = arg_reset_export_file,
 };
 
+COMMON_STRING_OPTION(extra);
+static slurm_cli_opt_t slurm_opt_extra = {
+	.name = "extra",
+	.has_arg = required_argument,
+	.val = LONG_OPT_EXTRA,
+	.set_func = arg_set_extra,
+	.set_func_data = arg_set_data_extra,
+	.get_func = arg_get_extra,
+	.reset_func = arg_reset_extra,
+};
+
 static int arg_set_extra_node_info(slurm_opt_t *opt, const char *arg)
 {
 	cpu_bind_type_t *cpu_bind_type = NULL;
@@ -5147,6 +5158,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_exclusive,
 	&slurm_opt_export,
 	&slurm_opt_export_file,
+	&slurm_opt_extra,
 	&slurm_opt_extra_node_info,
 	&slurm_opt_get_user_env,
 	&slurm_opt_gid,

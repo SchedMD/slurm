@@ -65,6 +65,7 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 	FETCH_FIELD(hv, job_desc, cpu_bind_type, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, dependency, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, end_time, time_t, FALSE);
+	FETCH_FIELD(hv, job_desc, extra, charp, FALSE);
 
 	/* environment, env_size */
 	if ((svp = hv_fetch(hv, "environment", 11, FALSE))) {
