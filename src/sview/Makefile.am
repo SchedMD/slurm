@@ -20,7 +20,7 @@ force:
 $(sview_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-sview_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BG_LDFLAGS) $(GTK_LIBS)
+sview_LDFLAGS = $(CMD_LDFLAGS) $(BG_LDFLAGS) $(GTK_LIBS)
 sview_CFLAGS = $(GTK_CFLAGS) -DGTK_DISABLE_DEPRECATED
 
 else

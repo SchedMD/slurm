@@ -18,10 +18,10 @@ convenience_libs = $(LIB_SLURM) $(DL_LIBS)
 sbin_PROGRAMS = capmc_suspend capmc_resume
 capmc_suspend_SOURCES  = capmc_suspend.c
 capmc_suspend_LDADD    = $(convenience_libs)
-capmc_suspend_LDFLAGS  = -export-dynamic $(JSON_LDFLAGS)
+capmc_suspend_LDFLAGS  = $(JSON_LDFLAGS)
 capmc_resume_SOURCES   = capmc_resume.c
 capmc_resume_LDADD     = $(convenience_libs)
-capmc_resume_LDFLAGS   = -export-dynamic $(JSON_LDFLAGS)
+capmc_resume_LDFLAGS   = $(JSON_LDFLAGS)
 endif
 
 # Don't rely on autoconf to replace variables outside of makefiles

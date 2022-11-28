@@ -14,7 +14,7 @@ bin_PROGRAMS = scrontab
 
 scrontab_SOURCES = $(SRCS)
 scrontab_DEPENDENCIES = $(LIB_SLURM_BUILD)
-scrontab_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+scrontab_LDFLAGS = $(CMD_LDFLAGS)
 
 scrontab_LDADD = $(LIB_SLURM) $(DL_LIBS)
 

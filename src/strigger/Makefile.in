@@ -495,7 +495,7 @@ strigger_LDADD = $(LIB_SLURM) $(DL_LIBS)
 strigger_DEPENDENCIES = $(LIB_SLURM_BUILD)
 noinst_HEADERS = strigger.h
 strigger_SOURCES = strigger.c opts.c
-strigger_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+strigger_LDFLAGS = $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:

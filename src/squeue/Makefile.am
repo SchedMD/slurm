@@ -17,5 +17,5 @@ force:
 $(squeue_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-squeue_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+squeue_LDFLAGS = $(CMD_LDFLAGS)
 

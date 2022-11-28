@@ -21,7 +21,7 @@ srun_LDADD = $(depend_libs) $(DL_LIBS) $(LIB_SLURM)
 
 srun_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 
-srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+srun_LDFLAGS = $(CMD_LDFLAGS)
 
 force:
 $(srun_DEPENDENCIES) : force

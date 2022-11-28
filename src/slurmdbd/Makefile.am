@@ -22,7 +22,7 @@ slurmdbd_SOURCES = 		\
 	slurmdbd.c  		\
 	slurmdbd.h
 
-slurmdbd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+slurmdbd_LDFLAGS = $(CMD_LDFLAGS)
 
 slurmdbd_DEPENDENCIES = $(LIB_SLURM_BUILD)
 

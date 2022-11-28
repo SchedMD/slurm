@@ -506,7 +506,7 @@ AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 slurmd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(NUMA_LIBS) \
 	$(depend_ldadd) $(SLURMD_INTERFACES)
 
-slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(depend_ldflags)
+slurmd_LDFLAGS = $(CMD_LDFLAGS) $(depend_ldflags)
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
 	req.c req.h \

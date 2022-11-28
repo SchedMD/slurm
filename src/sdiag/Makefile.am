@@ -15,5 +15,5 @@ force:
 $(sdiag_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-sdiag_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sdiag_LDFLAGS = $(CMD_LDFLAGS)
 

@@ -33,7 +33,7 @@ sacctmgr_SOURCES =	\
 	problem_functions.c     \
 	tres_function.c
 
-sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sacctmgr_LDFLAGS = $(CMD_LDFLAGS)
 
 force:
 $(sacctmgr_LDADD) : force

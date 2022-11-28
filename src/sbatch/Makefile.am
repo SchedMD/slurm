@@ -14,7 +14,7 @@ sbatch_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 sbatch_LDADD = $(convenience_libs)
 
-sbatch_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sbatch_LDFLAGS = $(CMD_LDFLAGS)
 
 force:
 $(convenience_libs) : force

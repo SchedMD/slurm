@@ -522,7 +522,7 @@ SRCS = \
 AM_CPPFLAGS = -I$(top_srcdir)
 scrontab_SOURCES = $(SRCS)
 scrontab_DEPENDENCIES = $(LIB_SLURM_BUILD)
-scrontab_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+scrontab_LDFLAGS = $(CMD_LDFLAGS)
 scrontab_LDADD = $(LIB_SLURM) $(DL_LIBS) $(LIB_REF)
 REF = default_crontab.txt usage.txt
 BIN_REF = $(REF:.txt=.bino)

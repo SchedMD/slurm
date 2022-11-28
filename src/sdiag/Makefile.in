@@ -493,7 +493,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
 sdiag_LDADD = $(LIB_SLURM) $(DL_LIBS)
 sdiag_DEPENDENCIES = $(LIB_SLURM_BUILD)
 sdiag_SOURCES = data.c sdiag.c opts.c
-sdiag_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sdiag_LDFLAGS = $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:

@@ -497,7 +497,7 @@ squeue_LDADD = $(LIB_SLURM) $(DL_LIBS)
 squeue_DEPENDENCIES = $(LIB_SLURM_BUILD)
 noinst_HEADERS = squeue.h print.h
 squeue_SOURCES = data.c squeue.c print.c opts.c sort.c
-squeue_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+squeue_LDFLAGS = $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:

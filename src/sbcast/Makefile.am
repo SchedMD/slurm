@@ -18,5 +18,5 @@ force:
 $(sbcast_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-sbcast_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sbcast_LDFLAGS = $(CMD_LDFLAGS)
 

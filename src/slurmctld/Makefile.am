@@ -75,7 +75,7 @@ slurmctld_SOURCES =     \
 sbin_PROGRAMS = slurmctld
 
 slurmctld_LDADD = $(LIB_SLURM) $(DL_LIBS) $(SLURMCTLD_INTERFACES)
-slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+slurmctld_LDFLAGS = $(CMD_LDFLAGS)
 
 slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(SLURMCTLD_INTERFACES)
 

@@ -18,7 +18,7 @@ sh5util_LDADD = $(LIB_SLURM) $(DL_LIBS) \
 	../libhdf5_api.la
 sh5util_DEPENDENCIES = $(LIB_SLURM_BUILD) ../libhdf5_api.la
 
-sh5util_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+sh5util_LDFLAGS = $(CMD_LDFLAGS) \
 	$(HDF5_LDFLAGS) $(HDF5_LIBS)
 
 force:

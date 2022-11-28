@@ -558,10 +558,10 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
 @WITH_JSON_PARSER_TRUE@convenience_libs = $(LIB_SLURM) $(DL_LIBS)
 @WITH_JSON_PARSER_TRUE@capmc_suspend_SOURCES = capmc_suspend.c
 @WITH_JSON_PARSER_TRUE@capmc_suspend_LDADD = $(convenience_libs)
-@WITH_JSON_PARSER_TRUE@capmc_suspend_LDFLAGS = -export-dynamic $(JSON_LDFLAGS)
+@WITH_JSON_PARSER_TRUE@capmc_suspend_LDFLAGS = $(JSON_LDFLAGS)
 @WITH_JSON_PARSER_TRUE@capmc_resume_SOURCES = capmc_resume.c
 @WITH_JSON_PARSER_TRUE@capmc_resume_LDADD = $(convenience_libs)
-@WITH_JSON_PARSER_TRUE@capmc_resume_LDFLAGS = -export-dynamic $(JSON_LDFLAGS)
+@WITH_JSON_PARSER_TRUE@capmc_resume_LDFLAGS = $(JSON_LDFLAGS)
 all: all-recursive
 
 .SUFFIXES:

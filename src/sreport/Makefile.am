@@ -18,7 +18,7 @@ sreport_SOURCES =	\
 sreport_LDADD =  $(LIB_SLURM) $(DL_LIBS) $(READLINE_LIBS)
 sreport_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
-sreport_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sreport_LDFLAGS = $(CMD_LDFLAGS)
 
 force:
 $(sreport_LDADD) : force

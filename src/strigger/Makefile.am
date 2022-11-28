@@ -16,5 +16,5 @@ force:
 $(strigger_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-strigger_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+strigger_LDFLAGS = $(CMD_LDFLAGS)
 

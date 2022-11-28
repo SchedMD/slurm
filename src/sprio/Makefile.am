@@ -17,5 +17,5 @@ force:
 $(sprio_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-sprio_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sprio_LDFLAGS = $(CMD_LDFLAGS)
 

@@ -27,7 +27,7 @@ scontrol_SOURCES =	\
 scontrol_LDADD = $(LIB_SLURM) $(DL_LIBS) $(READLINE_LIBS)
 scontrol_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
-scontrol_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+scontrol_LDFLAGS = $(CMD_LDFLAGS)
 
 force:
 $(scontrol_DEPENDENCIES) : force

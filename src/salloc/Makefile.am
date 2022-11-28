@@ -15,7 +15,7 @@ salloc_DEPENDENCIES = $(LIB_SLURM_BUILD)
 salloc_LDADD = \
 	$(convenience_libs)
 
-salloc_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+salloc_LDFLAGS = $(CMD_LDFLAGS)
 
 force:
 $(convenience_libs) : force

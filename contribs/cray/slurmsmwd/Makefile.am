@@ -9,7 +9,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
 sbin_PROGRAMS = slurmsmwd
 slurmsmwd_SOURCES	= main.c read_config.c
 slurmsmwd_LDADD = $(LIB_SLURM) $(DL_LIBS)
-slurmsmwd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+slurmsmwd_LDFLAGS = $(CMD_LDFLAGS)
 
 
 ETC_FILES = slurmsmwd.service

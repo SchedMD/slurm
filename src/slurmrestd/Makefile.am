@@ -18,7 +18,7 @@ sbin_PROGRAMS = slurmrestd
 
 slurmrestd_SOURCES = $(SRCS)
 slurmrestd_DEPENDENCIES = $(LIB_SLURM_BUILD)
-slurmrestd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+slurmrestd_LDFLAGS = $(CMD_LDFLAGS)
 
 slurmrestd_LDADD = $(LIB_SLURM) $(DL_LIBS) $(HTTP_PARSER_LDFLAGS)
 

@@ -110,7 +110,7 @@ AC_DEFUN([X_AC_LIBSLURM], [
     LIB_SLURM_BUILD='$(top_builddir)/src/api/libslurm.o'
     SLURMCTLD_INTERFACES='$(top_builddir)/src/interfaces/libslurmctld_interfaces.o'
     SLURMD_INTERFACES='$(top_builddir)/src/interfaces/libslurmd_interfaces.o'
-    LIB_SLURM="$LIB_SLURM_BUILD -export-dynamic"
+    LIB_SLURM="$LIB_SLURM_BUILD"
     AC_MSG_RESULT([static]);
   else
     # The *_BUILD variables are here to make sure these are made before
@@ -125,6 +125,8 @@ AC_DEFUN([X_AC_LIBSLURM], [
     LIB_SLURM=$LIB_SLURM' -L$(top_builddir)/src/api/.libs -lslurmfull'
     AC_MSG_RESULT([shared]);
   fi
+
+  LIB_SLURM+=" -export-dynamic"
 
   AC_SUBST(LIB_SLURM)
   AC_SUBST(LIB_SLURM_BUILD)
