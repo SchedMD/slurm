@@ -3578,6 +3578,7 @@ function __scontrol_update_jobid() {
 		"eligibletime="
 		"endtime="
 		"excnodelist="
+		"extra="
 		"features="
 		"gres="
 		"jobid=" # meta
