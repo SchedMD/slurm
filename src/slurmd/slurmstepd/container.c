@@ -712,6 +712,9 @@ static void _create_start(stepd_step_rec_t *step,
 		.status = &rc,
 	};
 
+	if (oci_conf->ignore_config_json)
+		fatal("IgnoreFileConfigJson=true and RunTimeStart are mutually exclusive");
+
 	run_command_args.script_argv = create_argv;
 	run_command_args.script_path = create_argv[0];
 	run_command_args.script_type = "RunTimeCreate";
