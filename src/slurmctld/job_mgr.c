@@ -8801,6 +8801,13 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->orig_max_cpus   = job_desc->max_cpus;
 	detail_ptr->min_nodes  = job_desc->min_nodes;
 	detail_ptr->max_nodes  = job_desc->max_nodes;
+	if (job_desc->job_size_str && detail_ptr->max_nodes) {
+		detail_ptr->job_size_bitmap =
+			bit_alloc(detail_ptr->max_nodes + 1);
+		if (bit_unfmt(detail_ptr->job_size_bitmap,
+			      job_desc->job_size_str))
+			FREE_NULL_BITMAP(detail_ptr->job_size_bitmap);
+	}
 	detail_ptr->req_context = xstrdup(job_desc->req_context);
 	detail_ptr->x11        = job_desc->x11;
 	detail_ptr->x11_magic_cookie = xstrdup(job_desc->x11_magic_cookie);
