@@ -49,6 +49,7 @@ extern void slurm_init(const char *conf)
 
 extern void slurm_fini(void)
 {
+	slurm_client_fini_plugins();
 	slurm_conf_destroy();
 }
 
@@ -65,4 +66,12 @@ extern void slurm_client_init_plugins(void)
 
 	if (gres_init() != SLURM_SUCCESS)
 		fatal("failed to initialize gres plugin");
+}
+
+extern void slurm_client_fini_plugins(void)
+{
+	gres_init();
+	cli_filter_fini();
+	select_g_fini();
+	slurm_acct_storage_fini();
 }

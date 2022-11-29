@@ -1182,6 +1182,11 @@ extern void slurm_fini(void);
  */
 extern void slurm_client_init_plugins(void);
 
+/*
+ * Call in a client to unload general plugins.
+ */
+extern void slurm_client_fini_plugins(void);
+
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
 \*****************************************************************************/
