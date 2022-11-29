@@ -501,9 +501,13 @@ int main(int argc, char **argv)
 		/* fail on first error if this is piped process */
 		conmgr->exit_on_error = true;
 	} else if (run_mode.listen) {
+		mode_t mask = umask(0);
+
 		if (con_mgr_create_sockets(conmgr, socket_listen,
 					   conmgr_events))
 			fatal("Unable to create sockets");
+
+		umask(mask);
 
 		FREE_NULL_LIST(socket_listen);
 		debug("%s: server listen mode activated", __func__);

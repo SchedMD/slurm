@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
     normal info log.
  -- slurmrestd - switch users earlier on startup to avoid sockets being made as
     root.
+ -- slurmrestd - disable umask during socket creation as the authentication is
+    handled by Slurm instead of file ACLs.
 
 * Changes in Slurm 22.05.6
 ==========================
