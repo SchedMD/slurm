@@ -1920,15 +1920,15 @@ static bool _handle_core_select(step_record_t *step_ptr,
 				bitstr_t *avail_core_bitmap,
 				int job_node_inx, uint16_t sockets,
 				uint16_t cores, bool use_all_cores,
-				bool oversubscribing_cpus, int *cpu_cnt,
+				bool oversubscribing_cpus, int *core_cnt,
 				uint16_t cpus_per_task)
 {
 	int core_inx, i, sock_inx;
 	static int last_core_inx;
 
-	xassert(cpu_cnt);
+	xassert(core_cnt);
 
-	if (*cpu_cnt <= 0)
+	if (*core_cnt <= 0)
 		return true;
 
 	/*
@@ -1960,7 +1960,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 						     oversubscribing_cpus))
 					continue;
 
-				if (--(*cpu_cnt) == 0)
+				if (--(*core_cnt) == 0)
 					return true;
 			}
 		}
@@ -1982,7 +1982,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 							sock_inx = 0;
 						continue;
 				}
-				if (--(*cpu_cnt) == 0)
+				if (--(*core_cnt) == 0)
 					return true;
 			}
 		}
@@ -2013,7 +2013,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 						oversubscribing_cpus))
 						continue;
 					nothing_allocated = false;
-					if (--(*cpu_cnt) == 0) {
+					if (--(*core_cnt) == 0) {
 						xfree(next_core);
 						return true;
 					}
@@ -2038,8 +2038,8 @@ static int _pick_step_cores(step_record_t *step_ptr,
 			    uint16_t task_cnt, uint16_t cpus_per_core,
 			    int node_inx, int ntasks_per_core)
 {
-	uint16_t sockets, cores, cpus_per_task, tasks_per_node;
-	int cpu_cnt = (int) task_cnt;
+	uint16_t sockets, cores, cores_per_task, tasks_per_node;
+	int core_cnt = (int) task_cnt;
 	bool use_all_cores;
 	bitstr_t *all_gres_core_bitmap = NULL, *any_gres_core_bitmap = NULL;
 
@@ -2060,7 +2060,7 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	    (task_cnt <= tasks_per_node || (step_ptr->flags & SSF_OVERCOMMIT)))
 	{
 		use_all_cores = true;
-		cpu_cnt = job_resrcs_ptr->cpus[job_node_inx];
+		core_cnt = job_resrcs_ptr->cpus[job_node_inx] / cpus_per_core;
 	} else {
 		use_all_cores = false;
 
@@ -2071,19 +2071,19 @@ static int _pick_step_cores(step_record_t *step_ptr,
 				int cores_per_task = step_ptr->cpus_per_task;
 				cores_per_task += (cpus_per_core - 1);
 				cores_per_task /= cpus_per_core;
-				cpu_cnt *= cores_per_task;
+				core_cnt *= cores_per_task;
 			} else {
-				cpu_cnt *= step_ptr->cpus_per_task;
-				cpu_cnt += (cpus_per_core - 1);
-				cpu_cnt /= cpus_per_core;
+				core_cnt *= step_ptr->cpus_per_task;
+				core_cnt += (cpus_per_core - 1);
+				core_cnt /= cpus_per_core;
 			}
 		}
 
 		log_flag(STEPS, "%s: For step %pS required cores:%u on node: %d available cores: %u",
-			 __func__, step_ptr, cpu_cnt, job_node_inx,
+			 __func__, step_ptr, core_cnt, job_node_inx,
 			 job_resrcs_ptr->cpus[job_node_inx]);
 
-		if (cpu_cnt * cpus_per_core >
+		if (core_cnt * cpus_per_core >
 		    job_resrcs_ptr->cpus[job_node_inx] &&
 		    !(step_ptr->flags & SSF_OVERCOMMIT)) {
 			/* Node can never fullfill step request */
@@ -2122,22 +2122,22 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		}
 	}
 	if (task_cnt)
-		cpus_per_task = cpu_cnt / task_cnt;
+		cores_per_task = core_cnt / task_cnt;
 	else
-		cpus_per_task = cpu_cnt;
+		cores_per_task = core_cnt;
 	/* select idle cores that fit all gres binding first */
 	if (_handle_core_select(step_ptr, job_resrcs_ptr,
 				all_gres_core_bitmap, job_node_inx,
-				sockets, cores, use_all_cores, false, &cpu_cnt,
-				cpus_per_task))
+				sockets, cores, use_all_cores, false, &core_cnt,
+				cores_per_task))
 		goto cleanup;
 
 	/* select idle cores that fit any gres binding second */
 	if (!bit_equal(all_gres_core_bitmap, any_gres_core_bitmap) &&
 	    _handle_core_select(step_ptr, job_resrcs_ptr,
 				any_gres_core_bitmap, job_node_inx,
-				sockets, cores, use_all_cores, false, &cpu_cnt,
-				cpus_per_task))
+				sockets, cores, use_all_cores, false, &core_cnt,
+				cores_per_task))
 		goto cleanup;
 
 	/* select any idle cores */
@@ -2148,8 +2148,8 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		if (_handle_core_select(step_ptr, job_resrcs_ptr,
 					job_resrcs_ptr->core_bitmap,
 					job_node_inx, sockets, cores,
-					use_all_cores, false, &cpu_cnt,
-					cpus_per_task))
+					use_all_cores, false, &core_cnt,
+					cores_per_task))
 			goto cleanup;
 	}
 
@@ -2176,16 +2176,16 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	/* oversubscribe cores that fit all gres binding first */
 	if (_handle_core_select(step_ptr, job_resrcs_ptr,
 				all_gres_core_bitmap, job_node_inx,
-				sockets, cores, use_all_cores, true, &cpu_cnt,
-				cpus_per_task))
+				sockets, cores, use_all_cores, true, &core_cnt,
+				cores_per_task))
 		goto cleanup;
 
 	/* oversubscribe cores that fit any gres binding second */
 	if (!bit_equal(all_gres_core_bitmap, any_gres_core_bitmap) &&
 	    _handle_core_select(step_ptr, job_resrcs_ptr,
 				any_gres_core_bitmap, job_node_inx,
-				sockets, cores, use_all_cores, true, &cpu_cnt,
-				cpus_per_task))
+				sockets, cores, use_all_cores, true, &core_cnt,
+				cores_per_task))
 		goto cleanup;
 
 	/* oversubscribe any cores */
@@ -2193,8 +2193,8 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	    !bit_equal(any_gres_core_bitmap, job_resrcs_ptr->core_bitmap) &&
 	    _handle_core_select(step_ptr, job_resrcs_ptr,
 				job_resrcs_ptr->core_bitmap, job_node_inx,
-				sockets, cores, use_all_cores, true, &cpu_cnt,
-				cpus_per_task))
+				sockets, cores, use_all_cores, true, &core_cnt,
+				cores_per_task))
 		goto cleanup;
 
 
