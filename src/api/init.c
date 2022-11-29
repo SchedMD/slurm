@@ -70,7 +70,7 @@ extern void slurm_client_init_plugins(void)
 
 extern void slurm_client_fini_plugins(void)
 {
-	gres_init();
+	gres_fini();
 	cli_filter_fini();
 	select_g_fini();
 	slurm_acct_storage_fini();
