@@ -239,9 +239,6 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	char *usr_str = NULL, *grp_str = NULL, lim_str[32], *jname = NULL;
-	char *connect_type = NULL, *reboot = NULL, *rotate = NULL,
-		*geometry = NULL, *start = NULL,
-		*blockid = NULL;
 	uint32_t job_state;
 	char *query = NULL, *on_dup = NULL;
 	uint32_t time_limit, start_time, end_time;
@@ -293,18 +290,6 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 	else
 		jname = xstrdup("allocation");
 
-	connect_type = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-						       SELECT_PRINT_CONNECTION);
-	reboot = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-						 SELECT_PRINT_REBOOT);
-	rotate = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-						 SELECT_PRINT_ROTATE);
-	geometry = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-						   SELECT_PRINT_GEOMETRY);
-	start = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-						SELECT_PRINT_START);
-	blockid = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-						  SELECT_PRINT_RESV_ID);
 	query = xstrdup_printf(
 		"insert into %s (jobid, uid, user_name, gid, group_name, "
 		"name, state, proc_cnt, `partition`, timelimit, "
@@ -313,20 +298,8 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 
 	if (job_ptr->nodes)
 		xstrcat(query, ", nodelist");
-	if (connect_type)
-		xstrcat(query, ", connect_type");
-	if (reboot)
-		xstrcat(query, ", reboot");
-	if (rotate)
-		xstrcat(query, ", rotate");
 	if (job_ptr->details && (job_ptr->details->max_cpus != NO_VAL))
 		xstrcat(query, ", maxprocs");
-	if (geometry)
-		xstrcat(query, ", geometry");
-	if (start)
-		xstrcat(query, ", start");
-	if (blockid)
-		xstrcat(query, ", blockid");
 	xstrfmtcat(query, ") values (%u, %u, '%s', %u, '%s', '%s', %u, %u, "
 		   "'%s', '%s', %u, %u, %u",
 		   job_ptr->job_id, job_ptr->user_id, usr_str,
@@ -346,42 +319,12 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		xstrfmtcat(on_dup, ", nodelist='%s'", job_ptr->nodes);
 	}
 
-	if (connect_type) {
-		xstrfmtcat(query, ", '%s'", connect_type);
-		xstrfmtcat(on_dup, ", connect_type='%s'", connect_type);
-		xfree(connect_type);
-	}
-	if (reboot) {
-		xstrfmtcat(query, ", '%s'", reboot);
-		xstrfmtcat(on_dup, ", reboot='%s'", reboot);
-		xfree(reboot);
-	}
-	if (rotate) {
-		xstrfmtcat(query, ", '%s'", rotate);
-		xstrfmtcat(on_dup, ", rotate='%s'", rotate);
-		xfree(rotate);
-	}
 	if (job_ptr->details && (job_ptr->details->max_cpus != NO_VAL)) {
 		xstrfmtcat(query, ", '%u'", job_ptr->details->max_cpus);
 		xstrfmtcat(on_dup, ", maxprocs='%u'",
 			   job_ptr->details->max_cpus);
 	}
 
-	if (geometry) {
-		xstrfmtcat(query, ", '%s'", geometry);
-		xstrfmtcat(on_dup, ", geometry='%s'", geometry);
-		xfree(geometry);
-	}
-	if (start) {
-		xstrfmtcat(query, ", '%s'", start);
-		xstrfmtcat(on_dup, ", start='%s'", start);
-		xfree(start);
-	}
-	if (blockid) {
-		xstrfmtcat(query, ", '%s'", blockid);
-		xstrfmtcat(on_dup, ", blockid='%s'", blockid);
-		xfree(blockid);
-	}
 	xstrfmtcat(query, ") ON DUPLICATE KEY UPDATE %s;", on_dup);
 
 	debug3("(%s:%d) query\n%s",
