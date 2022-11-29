@@ -1540,6 +1540,5 @@ static void *_timeslicer_thread(void *arg)
 	}
 
 	timeslicer_thread_id = (pthread_t) 0;
-	pthread_exit((void *) 0);
 	return NULL;
 }

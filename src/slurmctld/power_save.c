@@ -984,7 +984,6 @@ fini:	_clear_power_config();
 	power_save_started = false;
 	slurm_cond_signal(&power_cond);
 	slurm_mutex_unlock(&power_mutex);
-	pthread_exit(NULL);
 	return NULL;
 }
 

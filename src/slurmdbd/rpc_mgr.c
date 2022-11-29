@@ -120,7 +120,6 @@ extern void *rpc_mgr(void *no_data)
 
 	debug("rpc_mgr shutting down");
 	close(sockfd);
-	pthread_exit((void *) 0);
 	return NULL;
 }
 

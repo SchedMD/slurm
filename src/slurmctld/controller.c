@@ -1433,7 +1433,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	rpc_queue_shutdown();
 
 	server_thread_decr();
-	pthread_exit((void *) 0);
 	return NULL;
 }
 

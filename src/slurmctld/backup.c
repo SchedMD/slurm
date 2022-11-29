@@ -405,7 +405,6 @@ static void *_background_rpc_mgr(void *no_data)
 
 	debug3("_background_rpc_mgr shutting down");
 	close(sockfd);	/* close the main socket */
-	pthread_exit((void *) 0);
 	return NULL;
 }
 
