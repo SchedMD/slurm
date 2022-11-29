@@ -92,7 +92,6 @@ const char *node_select_syms[] = {
 	"select_p_select_jobinfo_copy",
 	"select_p_select_jobinfo_pack",
 	"select_p_select_jobinfo_unpack",
-	"select_p_select_jobinfo_xstrdup",
 	"select_p_get_info_from_plugin",
 	"select_p_update_node_config",
 	"select_p_reconfigure",
@@ -566,20 +565,6 @@ extern int other_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
 		return SLURM_ERROR;
 
 	return (*(ops.jobinfo_unpack))(jobinfo, buffer, protocol_version);
-}
-
-/* write select job info to a string
- * IN jobinfo - a select job credential
- * IN mode    - print mode, see enum select_print_mode
- * RET        - char * containing string of request
- */
-extern char *other_select_jobinfo_xstrdup(
-	select_jobinfo_t *jobinfo, int mode)
-{
-	if (other_select_init() < 0)
-		return NULL;
-
-	return (*(ops.jobinfo_xstrdup))(jobinfo, mode);
 }
 
 /*

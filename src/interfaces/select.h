@@ -131,8 +131,6 @@ typedef struct {
 	int		(*jobinfo_unpack)	(select_jobinfo_t **jobinfo_pptr,
 						 buf_t *buffer,
 						 uint16_t protocol_version);
-	char *		(*jobinfo_xstrdup)	(select_jobinfo_t *jobinfo,
-						 int mode);
 	int		(*get_info_from_plugin)	(enum
 						 select_plugindata_info dinfo,
 						 job_record_t *job_ptr,
@@ -405,15 +403,6 @@ extern int select_g_select_jobinfo_set(dynamic_plugin_data_t *jobinfo,
 extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
 				       enum select_jobdata_type data_type,
 				       void *data);
-
-/* write select job info to a string
- * IN jobinfo - a select job credential
- * OUT buf    - location to write job info contents
- * IN mode    - print mode, see enum select_print_mode
- * RET        - the string, same as buf
- */
-extern char *select_g_select_jobinfo_xstrdup(dynamic_plugin_data_t *jobinfo,
-					     int mode);
 
 /*
  * Select the "best" nodes for given job from those available

@@ -277,15 +277,6 @@ extern int other_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
 				       buf_t *buffer,
 				       uint16_t protocol_version);
 
-/* write select job info to a string
- * IN jobinfo - a select job credential
- * OUT buf    - location to write job info contents
- * IN mode    - print mode, see enum select_print_mode
- * RET        - the string, same as buf
- */
-extern char *other_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
-					  int mode);
-
 /*******************************************************\
  * NODE-SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
 \*******************************************************/

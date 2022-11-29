@@ -1963,13 +1963,6 @@ extern int select_p_select_jobinfo_unpack(select_jobinfo_t *jobinfo,
 	return SLURM_SUCCESS;
 }
 
-/* Unused for this plugin */
-extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
-					     int mode)
-{
-	return NULL;
-}
-
 extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 					 job_record_t *job_ptr,
 					 void *data)

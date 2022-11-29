@@ -86,7 +86,6 @@ const char *node_select_syms[] = {
 	"select_p_select_jobinfo_copy",
 	"select_p_select_jobinfo_pack",
 	"select_p_select_jobinfo_unpack",
-	"select_p_select_jobinfo_xstrdup",
 	"select_p_get_info_from_plugin",
 	"select_p_update_node_config",
 	"select_p_reconfigure",
@@ -1049,29 +1048,6 @@ unpack_error:
 	*jobinfo = NULL;
 	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
-}
-
-/* write select job info to a string
- * IN jobinfo - a select job credential
- * IN mode    - print mode, see enum select_print_mode
- * RET        - char * containing string of request
- */
-extern char *select_g_select_jobinfo_xstrdup(
-	dynamic_plugin_data_t *jobinfo, int mode)
-{
-	void *data = NULL;
-	uint32_t plugin_id;
-
-	xassert(select_context_cnt >= 0);
-
-	if (jobinfo) {
-		data = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = select_context_default;
-
-	return (*(ops[plugin_id].
-		  jobinfo_xstrdup))(data, mode);
 }
 
 /*

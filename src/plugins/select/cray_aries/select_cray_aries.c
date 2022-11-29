@@ -2068,39 +2068,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
-					     int mode)
-{
-	char *buf = NULL;
-
-	if ((mode != SELECT_PRINT_DATA)
-	    && jobinfo && (jobinfo->magic != JOBINFO_MAGIC)) {
-		error("select/cray jobinfo_xstrdup: jobinfo magic bad");
-		return NULL;
-	}
-
-	if (jobinfo == NULL) {
-		if (mode != SELECT_PRINT_HEAD) {
-			error("select/cray jobinfo_xstrdup: jobinfo bad");
-			return NULL;
-		}
-		/* FIXME: in the future copy the header here (if needed) */
-		/* xstrcat(buf, header); */
-
-		return buf;
-	}
-
-	switch (mode) {
-		/* See comment in select_p_select_jobinfo_sprint() regarding format. */
-	default:
-		xstrcat(buf, other_select_jobinfo_xstrdup(
-				jobinfo->other_jobinfo, mode));
-		break;
-	}
-
-	return buf;
-}
-
 extern int select_p_get_info_from_plugin(enum select_plugindata_info dinfo,
 					 job_record_t *job_ptr,
 					 void *data)
