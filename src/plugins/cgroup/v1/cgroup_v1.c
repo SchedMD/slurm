@@ -1213,7 +1213,7 @@ static void *_oom_event_monitor(void *x)
 
 	debug("stopping.");
 
-	pthread_exit((void *) 0);
+	return NULL;
 }
 
 extern int cgroup_p_step_start_oom_mgr(void)
