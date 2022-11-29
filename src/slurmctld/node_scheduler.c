@@ -3902,12 +3902,13 @@ static void _log_node_set(job_record_t *job_ptr,
 			  struct node_set *node_set_ptr,
 			  int node_set_size)
 {
-/* Used for debugging purposes only */
-#if _DEBUG
 	char *node_list, feature_bits[64];
 	int i;
 
-	info("NodeSet for %pJ", job_ptr);
+	if (get_log_level() < LOG_LEVEL_DEBUG2)
+		return;
+
+	debug2("NodeSet for %pJ", job_ptr);
 	for (i = 0; i < node_set_size; i++) {
 		node_list = bitmap2node_name(node_set_ptr[i].my_bitmap);
 		if (node_set_ptr[i].feature_bits) {
@@ -3915,13 +3916,12 @@ static void _log_node_set(job_record_t *job_ptr,
 				node_set_ptr[i].feature_bits);
 		} else
 			feature_bits[0] = '\0';
-		info("NodeSet[%d] Nodes:%s NodeWeight:%u Flags:%u FeatureBits:%s SchedWeight:%"PRIu64,
-		     i, node_list, node_set_ptr[i].node_weight,
-		     node_set_ptr[i].flags, feature_bits,
-		     node_set_ptr[i].sched_weight);
+		debug2("NodeSet[%d] Nodes:%s NodeWeight:%u Flags:%u FeatureBits:%s SchedWeight:%"PRIu64,
+		       i, node_list, node_set_ptr[i].node_weight,
+		       node_set_ptr[i].flags, feature_bits,
+		       node_set_ptr[i].sched_weight);
 		xfree(node_list);
 	}
-#endif
 }
 
 static void _set_err_msg(bool cpus_ok, bool mem_ok, bool disk_ok,
