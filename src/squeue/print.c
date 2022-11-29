@@ -1525,24 +1525,6 @@ int _print_job_qos(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_select_jobinfo(job_info_t * job, int width, bool right_justify,
-			char* suffix)
-{
-	char select_buf[100];
-
-	if (job == NULL)	/* Print the Header instead */
-		select_g_select_jobinfo_sprint(NULL,
-			select_buf, sizeof(select_buf), SELECT_PRINT_HEAD);
-	else
-		select_g_select_jobinfo_sprint(job->select_jobinfo,
-			select_buf, sizeof(select_buf), SELECT_PRINT_DATA);
-	_print_str(select_buf, width, right_justify, true);
-
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
 int _print_job_reservation(job_info_t * job, int width, bool right_justify,
 			char* suffix)
 {

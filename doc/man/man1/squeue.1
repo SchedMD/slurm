@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "October 2022" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "November 2022" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -393,16 +393,6 @@ For terminated jobs with failure: an explanation as to why the
 job failed is printed within parenthesis.
 For all other job states: the list of allocate nodes.
 See the \fBJOB REASON CODES\fR section below for more information.
-(Valid for jobs only)
-.IP
-
-.TP
-\fB%s\fR
-Node selection plugin specific data for a job. Possible data includes:
-Geometry requirement of resource allocation (X,Y,Z dimensions),
-Connection type (TORUS, MESH, or NAV == torus else mesh),
-Permit rotation of geometry (yes or no),
-Node use (VIRTUAL or COPROCESSOR), etc.
 (Valid for jobs only)
 .IP
 
@@ -1077,16 +1067,6 @@ started.
 \fBSCT\fR
 Number of requested sockets, cores, and threads (S:C:T) per node for the job.
 When (S:C:T) has not been set, "*" is displayed.
-(Valid for jobs only)
-.IP
-
-.TP
-\fBSelectJobInfo\fR
-Node selection plugin specific data for a job. Possible data includes:
-Geometry requirement of resource allocation (X,Y,Z dimensions),
-Connection type (TORUS, MESH, or NAV == torus else mesh),
-Permit rotation of geometry (yes or no),
-Node use (VIRTUAL or COPROCESSOR), etc.
 (Valid for jobs only)
 .IP
 

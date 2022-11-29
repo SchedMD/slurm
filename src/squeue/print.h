@@ -219,8 +219,6 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_dependency)
 #define job_format_add_qos(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_qos)
-#define job_format_add_select_jobinfo(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_select_jobinfo)
 #define job_format_add_admin_comment(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_admin_comment)
 #define job_format_add_system_comment(list,wid,right,suffix) \
@@ -466,8 +464,6 @@ int _print_job_dependency(job_info_t * job, int width, bool right_justify,
 			  char* suffix);
 int _print_job_qos(job_info_t * job, int width, bool right_justify,
 		   char* suffix);
-int _print_job_select_jobinfo(job_info_t * job, int width, bool right_justify,
-			      char* suffix);
 int _print_job_admin_comment(job_info_t * job, int width, bool right_justify,
 			     char* suffix);
 int _print_job_system_comment(job_info_t * job, int width, bool right_justify,

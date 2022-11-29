@@ -841,12 +841,6 @@ extern int parse_format( char* format )
 							    field_size,
 							    right_justify,
 							    suffix );
-			else if (field[0] == 's')
-				job_format_add_select_jobinfo(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
 			else if (field[0] == 'S')
 				job_format_add_time_start( params.format_list,
 							   field_size,
@@ -1370,12 +1364,6 @@ extern int parse_long_format( char* format_long )
 							    field_size,
 							    right_justify,
 							    suffix );
-			else if (!xstrcasecmp(token, "selectjobinfo"))
-				job_format_add_select_jobinfo(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
 			else if (!xstrcasecmp(token, "starttime"))
 				job_format_add_time_start( params.format_list,
 							   field_size,

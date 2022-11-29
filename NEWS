@@ -142,6 +142,7 @@ documents those changes that are of interest to users and administrators.
  -- Accept only one reoccurring flag when creating/updating any reservation.
  -- Remove ability to update a reservation to have a reoccurring flag if it
     is a floating reservation.
+ -- squeue - removed unused '%s' and 'SelectJobInfo' formats.
 
 * Changes in Slurm 22.05.7
 ==========================

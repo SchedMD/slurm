@@ -103,6 +103,7 @@ COMMAND CHANGES (see man pages for details)
     being created or updated.
  -- scontrol - A reservation cannot be updated to be reoccurring if it is
     already a floating reservation.
+ -- squeue - removed unused '%s' and 'SelectJobInfo' formats.
 
 API CHANGES
 ===========
