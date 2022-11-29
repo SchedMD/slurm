@@ -154,6 +154,18 @@ OCIRunTimeDelete="sudo singularity oci delete %n.%u.%j.%s.%t
 which is a security risk since the user is able to modify these calls.
 This example is only provided for testing purposes.
 </li>
+
+<li><a href="https://github.com/hpc/charliecloud">Charliecloud</a> (v0.30)
+<pre>
+IgnoreFileConfigJson=true
+CreateEnvFile=newline
+EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
+RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
+RunTimeRun="env -i PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin/:/sbin/ USER=$(whoami) HOME=/home/$(whoami)/ ch-run -w --bind /etc/group:/etc/group --bind /etc/passwd:/etc/passwd --bind /etc/slurm:/etc/slurm --bind %m:/var/run/slurm/ --bind /var/run/munge/:/var/run/munge/ --set-env=%e --no-passwd %r -- %@"
+RunTimeKill="kill -s SIGTERM %p"
+RunTimeDelete="kill -s SIGKILL %p"
+</pre>
+</li>
 </ul>
 
 <h2 id="testing">Testing OCI runtime outside of Slurm
