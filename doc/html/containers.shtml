@@ -93,6 +93,8 @@ be created and managed by systemd independently of Slurm.
 <ul>
 <li>runc using create/start:
 <pre>
+EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
+RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeQuery="runc --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
 RunTimeCreate="runc --rootless=true --root=/run/user/%U/ create %n.%u.%j.%s.%t -b %b"
 RunTimeStart="runc --rootless=true --root=/run/user/%U/ start %n.%u.%j.%s.%t"
@@ -102,6 +104,8 @@ RunTimeDelete="runc --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j
 
 <li>runc using run (suggested):
 <pre>
+EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
+RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeQuery="runc --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
 RunTimeKill="runc --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
 RunTimeDelete="runc --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
@@ -110,6 +114,8 @@ RunTimeRun="runc --rootless=true --root=/run/user/%U/ run %n.%u.%j.%s.%t -b %b"
 
 <li>crun using create/start:
 <pre>
+EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
+RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeQuery="crun --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
 RunTimeKill="crun --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
 RunTimeDelete="crun --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
@@ -119,6 +125,8 @@ RunTimeStart="crun --rootless=true --root=/run/user/%U/ start %n.%u.%j.%s.%t"
 
 <li>crun using run (suggested):
 <pre>
+EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
+RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeQuery="crun --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
 RunTimeKill="crun --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
 RunTimeDelete="crun --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
@@ -127,6 +135,8 @@ RunTimeRun="crun --rootless=true --root=/run/user/%U/ run --bundle %b %n.%u.%j.%
 
 <li>nvidia-container-runtime using create/start:
 <pre>
+EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
+RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeQuery="nvidia-container-runtime --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
 RunTimeCreate="nvidia-container-runtime --rootless=true --root=/run/user/%U/ create %n.%u.%j.%s.%t -b %b"
 RunTimeStart="nvidia-container-runtime --rootless=true --root=/run/user/%U/ start %n.%u.%j.%s.%t"
@@ -136,6 +146,8 @@ RunTimeDelete="nvidia-container-runtime --rootless=true --root=/run/user/%U/ del
 
 <li>nvidia-container-runtime using run (suggested):
 <pre>
+EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
+RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeQuery="nvidia-container-runtime --rootless=true --root=/run/user/%U/ state %n.%u.%j.%s.%t"
 RunTimeKill="nvidia-container-runtime --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
 RunTimeDelete="nvidia-container-runtime --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
@@ -144,6 +156,8 @@ RunTimeRun="nvidia-container-runtime --rootless=true --root=/run/user/%U/ run %n
 
 <li>hpcng singularity v3.8.0:
 <pre>
+EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
+RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 OCIRunTimeQuery="sudo singularity oci state %n.%u.%j.%s.%t"
 OCIRunTimeCreate="sudo singularity oci create --bundle %b %n.%u.%j.%s.%t"
 OCIRunTimeStart="sudo singularity oci start %n.%u.%j.%s.%t"
