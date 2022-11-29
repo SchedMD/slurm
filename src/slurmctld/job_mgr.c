@@ -4579,11 +4579,6 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	if (job_specs->container || job_specs->container_id)
 		debug3("   container=%s container-id=%s",
 		       job_specs->container, job_specs->container_id);
-
-	select_g_select_jobinfo_sprint(job_specs->select_jobinfo,
-				       buf, sizeof(buf), SELECT_PRINT_MIXED);
-	if (buf[0] != '\0')
-		debug3("   %s", buf);
 }
 
 /*
