@@ -86,7 +86,6 @@ const char *node_select_syms[] = {
 	"select_p_select_jobinfo_copy",
 	"select_p_select_jobinfo_pack",
 	"select_p_select_jobinfo_unpack",
-	"select_p_select_jobinfo_sprint",
 	"select_p_select_jobinfo_xstrdup",
 	"select_p_get_info_from_plugin",
 	"select_p_update_node_config",
@@ -1052,30 +1051,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/* write select job credential to a string
- * IN jobinfo - a select job credential
- * OUT buf    - location to write job credential contents
- * IN size    - byte size of buf
- * IN mode    - print mode, see enum select_print_mode
- * RET        - the string, same as buf
- */
-extern char *select_g_select_jobinfo_sprint(dynamic_plugin_data_t *jobinfo,
-					    char *buf, size_t size, int mode)
-{
-	void *data = NULL;
-	uint32_t plugin_id;
-
-	xassert(select_context_cnt >= 0);
-	if (jobinfo) {
-		data = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = select_context_default;
-
-	return (*(ops[plugin_id].
-		  jobinfo_sprint))
-		(data, buf, size, mode);
-}
 /* write select job info to a string
  * IN jobinfo - a select job credential
  * IN mode    - print mode, see enum select_print_mode

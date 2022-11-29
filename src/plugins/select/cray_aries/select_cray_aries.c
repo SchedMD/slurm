@@ -2068,20 +2068,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
-					    char *buf, size_t size, int mode)
-{
-	/*
-	 * Skip call to other_select_jobinfo_sprint, all of the other select
-	 * plugins we can layer on top of do this same thing anyways:
-	 */
-	if (buf && size) {
-		buf[0] = '\0';
-		return buf;
-	} else
-		return NULL;
-}
-
 extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 					     int mode)
 {

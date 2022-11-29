@@ -1964,17 +1964,6 @@ extern int select_p_select_jobinfo_unpack(select_jobinfo_t *jobinfo,
 }
 
 /* Unused for this plugin */
-extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
-					    char *buf, size_t size, int mode)
-{
-	if (buf && size) {
-		buf[0] = '\0';
-		return buf;
-	}
-	return NULL;
-}
-
-/* Unused for this plugin */
 extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 					     int mode)
 {

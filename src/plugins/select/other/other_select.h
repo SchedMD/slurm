@@ -280,16 +280,6 @@ extern int other_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
 /* write select job info to a string
  * IN jobinfo - a select job credential
  * OUT buf    - location to write job info contents
- * IN size    - byte size of buf
- * IN mode    - print mode, see enum select_print_mode
- * RET        - the string, same as buf
- */
-extern char *other_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
-					 char *buf, size_t size, int mode);
-
-/* write select job info to a string
- * IN jobinfo - a select job credential
- * OUT buf    - location to write job info contents
  * IN mode    - print mode, see enum select_print_mode
  * RET        - the string, same as buf
  */
