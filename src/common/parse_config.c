@@ -62,6 +62,7 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xregex.h"
 #include "src/common/xstring.h"
 
 #include "slurm/slurm.h"
@@ -312,6 +313,7 @@ static int _keyvalue_regex(s_p_hashtbl_t *tbl, const char *line,
 	size_t nmatch = 8;
 	regmatch_t pmatch[8];
 	char op;
+	int rc;
 
 	*key = NULL;
 	*value = NULL;
@@ -319,8 +321,12 @@ static int _keyvalue_regex(s_p_hashtbl_t *tbl, const char *line,
 	*operator = S_P_OPERATOR_SET;
 	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
 
-	if (regexec(&tbl->keyvalue_re, line, nmatch, pmatch, 0) == REG_NOMATCH)
+	if ((rc = regexec(&tbl->keyvalue_re, line, nmatch, pmatch, 0))) {
+		if (rc != REG_NOMATCH)
+			dump_regex_error(rc, &tbl->keyvalue_re, "regexec(%s)",
+					 line);
 		return -1;
+	}
 
 	*key = (char *)(xstrndup(line + pmatch[1].rm_so,
 				 pmatch[1].rm_eo - pmatch[1].rm_so));
