@@ -1186,11 +1186,10 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 
 	msg->conn_fd = fd;
 
-	if (timeout <= 0)
+	if (timeout <= 0) {
 		/* convert secs to msec */
 		timeout = slurm_conf.msg_timeout * MSEC_IN_SEC;
-
-	else if (timeout > (slurm_conf.msg_timeout * MSEC_IN_SEC * 10)) {
+	} else if (timeout > (slurm_conf.msg_timeout * MSEC_IN_SEC * 10)) {
 		/* consider 10x the timeout to be very long */
 		log_flag(NET, "%s: You are receiving a message with very long timeout of %d seconds",
 			 __func__, (timeout / MSEC_IN_SEC));
