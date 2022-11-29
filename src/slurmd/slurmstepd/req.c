@@ -75,6 +75,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
+#include "src/slurmd/slurmstepd/ulimits.h"
 
 #include "src/interfaces/task.h"
 #include "src/interfaces/job_container.h"
@@ -1224,6 +1225,9 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *step, pid_t pid)
 		      __func__, step->step_id.job_id, pid);
 		return SLURM_ERROR;
 	}
+
+	if (xstrcasestr(slurm_conf.launch_params, "ulimit_pam_adopt"))
+		set_user_limits(step, pid);
 
 	/* spawn a thread that will wait on the pid given */
 	slurm_thread_create_detached(NULL, _wait_extern_pid, extern_pid);

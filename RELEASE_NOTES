@@ -131,6 +131,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Moved the "preempt_" options from SchedulerParameters to PreemptParameters,
     and dropped the prefix from the option names. (The old options will still
     be parsed for backwards compatibility, but are now undocumented.)
+ -- Add LaunchParameters=ulimit_pam_adopt, which enables setting RLIMIT_RSS in
+    adopted processes.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

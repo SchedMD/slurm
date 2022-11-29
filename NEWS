@@ -268,6 +268,8 @@ documents those changes that are of interest to users and administrators.
  -- Add jobcomp/kafka plugin.
  -- Automatically filter out E-Cores on Intel processors to avoid issues from
     differing threads-per-core values within a single socket.
+ -- Add LaunchParameters=ulimit_pam_adopt, which enables setting RLIMIT_RSS in
+    adopted processes.
 
 * Changes in Slurm 22.05.9
 ==========================
