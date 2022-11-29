@@ -1254,6 +1254,8 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					prev_node_set_ptr->flags |=
 						NODE_SET_REBOOT;
 					_set_reboot_weight(prev_node_set_ptr);
+					_set_sched_weight(tmp_node_set_ptr +
+							  tmp_node_set_size);
 					FREE_NULL_BITMAP(inactive_bitmap);
 					continue;
 				}
