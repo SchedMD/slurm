@@ -46,7 +46,7 @@
  * Set user resource limits as defined by SLURM_RLIMIT* environment
  * variables contained in job->env
  */
-extern void set_user_limits(stepd_step_rec_t *step);
+extern void set_user_limits(stepd_step_rec_t *step, pid_t pid);
 
 /*
  * Set user ulimit based upon SLURM_ULIMIT environment variable
