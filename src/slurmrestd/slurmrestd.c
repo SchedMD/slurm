@@ -395,8 +395,7 @@ int main(int argc, char **argv)
 
 	run_mode.listen = !list_is_empty(socket_listen);
 
-	if (slurm_conf_init(slurm_conf_filename))
-		fatal("Unable to load Slurm configuration");
+	slurm_init(slurm_conf_filename);
 
 	if (thread_count < 2)
 		fatal("Request at least 2 threads for processing");
@@ -540,10 +539,7 @@ int main(int argc, char **argv)
 	auth_rack = NULL;
 
 	xfree(auth_plugin_handles);
-	select_g_fini();
-	slurm_acct_storage_fini();
-	slurm_auth_fini();
-	slurm_conf_destroy();
+	slurm_fini();
 	log_fini();
 
 	/* send parsing RC if there were no higher level errors */
