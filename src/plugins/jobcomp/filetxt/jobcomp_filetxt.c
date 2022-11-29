@@ -84,7 +84,7 @@ const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u ProcCnt=%u "\
 		"WorkDir=%s ReservationName=%s Tres=%s Account=%s QOS=%s "\
 		"WcKey=%s Cluster=%s SubmitTime=%s EligibleTime=%s%s%s "\
-		"DerivedExitCode=%s ExitCode=%s %s\n"
+		"DerivedExitCode=%s ExitCode=%s \n"
 
 /* File descriptor used for logging */
 static pthread_mutex_t  file_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -191,7 +191,7 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 	char *resv_name, *tres, *account, *qos, *wckey, *cluster;
 	char *exit_code_str = NULL, *derived_ec_str = NULL;
 	char submit_time[32], eligible_time[32], array_id[64], het_id[64];
-	char select_buf[128], *state_string, *work_dir;
+	char *state_string, *work_dir;
 	size_t offset = 0, tot_size, wrote;
 	uint32_t job_state;
 	uint32_t time_limit;
@@ -330,9 +330,6 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		tmp_int = WEXITSTATUS(job_ptr->exit_code);
 	xstrfmtcat(exit_code_str, "%d:%d", tmp_int, tmp_int2);
 
-	select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
-
 	snprintf(job_rec, sizeof(job_rec), JOB_FORMAT,
 		 (unsigned long) job_ptr->job_id, usr_str,
 		 (unsigned long) job_ptr->user_id, grp_str,
@@ -341,7 +338,7 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		 end_str, job_ptr->nodes, job_ptr->node_cnt,
 		 job_ptr->total_cpus, work_dir, resv_name, tres, account, qos,
 		 wckey, cluster, submit_time, eligible_time, array_id, het_id,
-		 derived_ec_str, exit_code_str, select_buf);
+		 derived_ec_str, exit_code_str);
 	tot_size = strlen(job_rec);
 
 	while (offset < tot_size) {
