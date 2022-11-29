@@ -41,6 +41,8 @@
 #include <signal.h>
 #include <sys/types.h>
 
+#include "src/common/slurm_xlator.h"
+
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
 #include "src/common/node_conf.h"
