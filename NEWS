@@ -151,6 +151,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issues when running in FrontEnd mode.
  -- Fix srun and salloc I/O code to set keepaliveinterval/keepalivetime on
     connections.
+ -- Fix overwrite race of cont_id in cgroup/v2 when using task/cgroup with
+    proctrack/cray_aries.
 
 * Changes in Slurm 22.05.6
 ==========================

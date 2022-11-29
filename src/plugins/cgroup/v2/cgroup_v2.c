@@ -1210,8 +1210,6 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *step)
 		rc = SLURM_ERROR;
 	}
 
-	/* Use slurmstepd pid as the identifier of the container. */
-	step->cont_id = (uint64_t)step->jmgr_pid;
 endit:
 	xfree(new_path);
 	if (rc != SLURM_SUCCESS)
