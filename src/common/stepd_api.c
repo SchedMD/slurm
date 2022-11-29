@@ -68,6 +68,7 @@
 #include "src/common/stepd_api.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xregex.h"
 #include "src/common/xstring.h"
 
 strong_alias(stepd_available, slurm_stepd_available);
@@ -462,14 +463,17 @@ static int
 _sockname_regex_init(regex_t *re, const char *nodename)
 {
 	char *pattern = NULL;
+	int rc;
 
 	xstrcat(pattern, "^");
 	xstrcat(pattern, nodename);
 	xstrcat(pattern,
 		"_([[:digit:]]*)\\.([[:digit:]]*)\\.{0,1}([[:digit:]]*)$");
 
-	if (regcomp(re, pattern, REG_EXTENDED) != 0) {
-		error("sockname regex compilation failed");
+	if ((rc = regcomp(re, pattern, REG_EXTENDED))) {
+		dump_regex_error(rc, re,
+				 "sockname regex \"%s\" compilation failed",
+				 pattern);
 		return -1;
 	}
 
@@ -485,11 +489,14 @@ _sockname_regex(regex_t *re, const char *filename, slurm_step_id_t *step_id)
 	regmatch_t pmatch[5];
 	char *match;
 	size_t my_size;
+	int rc;
 
 	xassert(step_id);
 
 	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
-	if (regexec(re, filename, nmatch, pmatch, 0) == REG_NOMATCH) {
+	if ((rc = regexec(re, filename, nmatch, pmatch, 0))) {
+		if (rc != REG_NOMATCH)
+			dump_regex_error(rc, re, "regexc(%s)", filename);
 		return -1;
 	}
 

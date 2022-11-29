@@ -48,6 +48,7 @@
 
 #include "src/plugins/gpu/common/gpu_common.h"
 #include "src/common/strlcpy.h"
+#include "src/common/xregex.h"
 
 #define MAX_GPU_NUM 256
 #define MAX_NUM_FREQUENCIES 256
@@ -850,6 +851,7 @@ static bool _oneapi_get_device_name(uint32_t domain, uint32_t bus,
 				    uint32_t device, uint32_t function,
 				    char *name, uint32_t len)
 {
+	static const *card_reg_string = "card[0-9]+$";
 	const char *search_path = "/sys/class/drm";
 	char device_pattern[PATH_MAX] = {'\0'};
 	char path[PATH_MAX] = {'\0'};
@@ -861,6 +863,7 @@ static bool _oneapi_get_device_name(uint32_t domain, uint32_t bus,
 	regmatch_t reg_match;
 	char *matched = NULL;
 	bool ret = false;
+	int rc;
 
 	/*
 	 * Build search pattern to search strings like
@@ -870,14 +873,17 @@ static bool _oneapi_get_device_name(uint32_t domain, uint32_t bus,
 	snprintf(device_pattern, sizeof(device_pattern),
 		 "/%04x:%02x:%02x.%0x/drm/card[0-9]+$", domain, bus,
 		 device, function);
-	if (regcomp(&search_reg, device_pattern, REG_EXTENDED)) {
-		error("Device file regex compilation failed: %s",
-		      device_pattern);
+	if ((rc = regcomp(&search_reg, device_pattern, REG_EXTENDED))) {
+		dump_regex_error(rc, &search_reg,
+				 "Device file regex \"%s\" compilation failed",
+				 device_pattern);
 		return false;
 	}
 
-	if (regcomp(&card_reg, "card[0-9]+$", REG_EXTENDED)) {
-		error("Card regex compilation failed");
+	if ((rc = regcomp(&card_reg, card_reg_string, REG_EXTENDED))) {
+		dump_regex_error(rc, &card_reg,
+				 "Card regex \"%s\" compilation failed",
+				 card_reg_string);
 		regfree(&search_reg);
 		return false;
 	}
