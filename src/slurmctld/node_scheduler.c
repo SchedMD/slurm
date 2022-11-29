@@ -140,7 +140,6 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    bitstr_t *exc_node_bitmap, bool resv_overlap);
 static void _set_err_msg(bool cpus_ok, bool mem_ok, bool disk_ok,
 			 bool job_mc_ok, char **err_msg);
-static void _set_reboot_weight(struct node_set *node_set_ptr);
 static void _set_sched_weight(struct node_set *node_set_ptr);
 static int _sort_node_set(const void *x, const void *y);
 static bitstr_t *_valid_features(job_record_t *job_ptr,
@@ -1210,10 +1209,10 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					node_set_ptr[i].real_memory;
 				tmp_node_set_ptr[tmp_node_set_size].node_weight =
 					node_set_ptr[i].node_weight;
+				tmp_node_set_ptr[tmp_node_set_size].sched_weight =
+					node_set_ptr[i].sched_weight;
 				tmp_node_set_ptr[tmp_node_set_size].flags =
 					node_set_ptr[i].flags;
-				_set_sched_weight(tmp_node_set_ptr +
-						  tmp_node_set_size);
 				tmp_node_set_ptr[tmp_node_set_size].features =
 					xstrdup(node_set_ptr[i].features);
 				tmp_node_set_ptr[tmp_node_set_size].
@@ -1253,9 +1252,6 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					      inactive_bitmap)) {
 					prev_node_set_ptr->flags |=
 						NODE_SET_REBOOT;
-					_set_reboot_weight(prev_node_set_ptr);
-					_set_sched_weight(tmp_node_set_ptr +
-							  tmp_node_set_size);
 					FREE_NULL_BITMAP(inactive_bitmap);
 					continue;
 				}
@@ -1267,10 +1263,6 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					node_set_ptr[i].real_memory;
 				tmp_node_set_ptr[tmp_node_set_size].flags |=
 					NODE_SET_REBOOT;
-				_set_reboot_weight(
-					&tmp_node_set_ptr[tmp_node_set_size]);
-				_set_sched_weight(tmp_node_set_ptr +
-						  tmp_node_set_size);
 				tmp_node_set_ptr[tmp_node_set_size].features =
 					xstrdup(node_set_ptr[i].features);
 				tmp_node_set_ptr[tmp_node_set_size].
@@ -1309,6 +1301,8 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			FREE_NULL_LIST(*preemptee_job_list);
 			job_ptr->details->pn_min_memory = orig_req_mem;
 			if (sort_again) {
+				for (i = 0; i < tmp_node_set_size; i++)
+					_set_sched_weight(tmp_node_set_ptr + i);
 				qsort(tmp_node_set_ptr, tmp_node_set_size,
 				      sizeof(struct node_set), _sort_node_set);
 			}
@@ -3328,7 +3322,6 @@ static void _split_node_set(struct node_set *node_set_ptr,
 	node_set_ptr[nset_inx].real_memory = config_ptr->real_memory;
 	node_set_ptr[nset_inx].node_weight =
 		node_set_ptr[nset_inx_base].node_weight;
-	_set_reboot_weight(&node_set_ptr[nset_inx]);
 
 	/*
 	 * The bitmap of this new nodeset will contain only the nodes that
@@ -3596,7 +3589,6 @@ static int _build_node_list(job_record_t *job_ptr,
 					  node_maps[REBOOT])) {
 				/* All nodes in set require reboot */
 				prev_node_set_ptr->flags = NODE_SET_REBOOT;
-				_set_reboot_weight(prev_node_set_ptr);
 				goto end_node_set;
 			}
 			node_set_inx_base = node_set_inx - 1;
@@ -3645,7 +3637,6 @@ static int _build_node_list(job_record_t *job_ptr,
 		if (bit_super_set(prev_node_set_ptr->my_bitmap,
 				  node_maps[IN_FL_RE])) {
 			prev_node_set_ptr->flags = NODE_SET_REBOOT;
-			_set_reboot_weight(prev_node_set_ptr);
 			goto end_node_set;
 		}
 		if (bit_super_set(prev_node_set_ptr->my_bitmap,
@@ -3657,7 +3648,6 @@ static int _build_node_list(job_record_t *job_ptr,
 				  node_maps[OUT_FL_RE])) {
 			prev_node_set_ptr->flags = (NODE_SET_OUTSIDE_FLEX |
 						    NODE_SET_REBOOT);
-			_set_reboot_weight(prev_node_set_ptr);
 			goto end_node_set;
 		}
 
@@ -3767,7 +3757,6 @@ end_node_set:
 			continue;	/* no nodes powered down */
 		if (power_cnt == node_set_ptr[i].node_cnt) {
 			node_set_ptr[i].flags = NODE_SET_POWER_DN;
-			_set_reboot_weight(&node_set_ptr[i]);
 			continue;	/* all nodes powered down */
 		}
 
@@ -3779,7 +3768,6 @@ end_node_set:
 		node_set_ptr[node_set_inx].node_cnt = power_cnt;
 		node_set_ptr[i].node_cnt -= power_cnt;
 		node_set_ptr[node_set_inx].flags = NODE_SET_POWER_DN;
-		_set_reboot_weight(&node_set_ptr[node_set_inx]);
 		node_set_ptr[node_set_inx].features =
 			xstrdup(node_set_ptr[i].features);
 		node_set_ptr[node_set_inx].feature_bits =
@@ -3883,6 +3871,8 @@ static void _set_reboot_weight(struct node_set *node_set_ptr)
 static void _set_sched_weight(struct node_set *node_set_ptr)
 {
 	xassert(node_set_ptr);
+
+	_set_reboot_weight(node_set_ptr);
 
 	node_set_ptr->sched_weight = node_set_ptr->node_weight << 8;
 	node_set_ptr->sched_weight |= 0xff;
