@@ -91,7 +91,7 @@ extern int task_cgroup_memory_init(void)
 	allowed_kmem_space = slurm_cgroup_conf.allowed_kmem_space;
 	allowed_swap_space = slurm_cgroup_conf.allowed_swap_space;
 
-	if ((totalram = (uint64_t) conf->real_memory_size) == 0)
+	if ((totalram = (uint64_t) conf->conf_memory_size) == 0)
 		error ("Unable to get RealMemory size");
 
 	max_kmem = percent_in_bytes(totalram,

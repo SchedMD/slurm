@@ -105,7 +105,7 @@ extern int init_system_memory_cgroup(void)
 
 	allowed_swap_space = slurm_cgroup_conf.allowed_swap_space;
 
-	if ((totalram = (uint64_t) conf->real_memory_size) == 0)
+	if ((totalram = (uint64_t) conf->conf_memory_size) == 0)
 		error ("system cgroup: Unable to get RealMemory size");
 
 	max_kmem = _percent_in_bytes(totalram,
