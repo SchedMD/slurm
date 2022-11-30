@@ -2074,6 +2074,18 @@ static slurm_cli_opt_t slurm_opt_gpus_per_task = {
 	.reset_each_pass = true,
 };
 
+COMMON_STRING_OPTION(tres_per_task);
+static slurm_cli_opt_t slurm_opt_tres_per_task = {
+	.name = "tres-per-task",
+	.has_arg = required_argument,
+	.val = LONG_OPT_TRES_PER_TASK,
+	.set_func = arg_set_tres_per_task,
+	.set_func_data = arg_set_data_tres_per_task,
+	.get_func = arg_get_tres_per_task,
+	.reset_func = arg_reset_tres_per_task,
+	.reset_each_pass = true,
+};
+
 static int arg_set_gres(slurm_opt_t *opt, const char *arg)
 {
 	if (!xstrcasecmp(arg, "help") || !xstrcasecmp(arg, "list")) {
@@ -5265,6 +5277,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_time_limit,
 	&slurm_opt_time_min,
 	&slurm_opt_tmp,
+	&slurm_opt_tres_per_task,
 	&slurm_opt_uid,
 	&slurm_opt_unbuffered,
 	&slurm_opt_use_min_nodes,
@@ -5943,6 +5956,12 @@ static void _validate_ntasks_per_gpu(slurm_opt_t *opt)
 			      opt->ntasks_per_tres);
 	}
 
+	if (slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK))
+		fatal("--tres-per-task is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
+
+	if (slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK))
+		fatal("SLURM_TRES_PER_TASK is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
+
 	if (slurm_option_set_by_cli(opt, LONG_OPT_GPUS_PER_TASK))
 		fatal("--gpus-per-task is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
 
@@ -6239,6 +6258,9 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	}
 	xfmt_tres(&job_desc->tres_per_socket, "gres:gpu",
 		  opt_local->gpus_per_socket);
+
+	job_desc->tres_per_task = xstrdup(opt_local->tres_per_task);
+
 	xfmt_tres(&job_desc->tres_per_task, "gres:gpu",
 		  opt_local->gpus_per_task);
 

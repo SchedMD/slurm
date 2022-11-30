@@ -202,6 +202,7 @@ documents those changes that are of interest to users and administrators.
  -- Add job's features to SLURM_RESUME_FILE output for power saving.
  -- Automatically create directories for stdout/stderr output files. Paths may
     use %j and related substitution characters as well.
+ -- Add --tres-per-task to salloc/sbatch/srun.
 
 * Changes in Slurm 22.05.8
 ==========================

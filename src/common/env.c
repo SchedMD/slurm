@@ -2321,6 +2321,11 @@ extern void set_env_from_opts(slurm_opt_t *opt, char ***dest,
 					    het_job_offset, "%"PRIu64,
 					    opt->mem_per_gpu);
 	}
+	if (opt->tres_per_task) {
+		env_array_overwrite_het_fmt(dest, "SLURM_TRES_PER_TASK",
+					    het_job_offset, "%s",
+					    opt->tres_per_task);
+	}
 }
 
 extern char *find_quote_token(char *tmp, char *sep, char **last)

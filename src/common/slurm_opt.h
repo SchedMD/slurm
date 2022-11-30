@@ -181,6 +181,7 @@ enum {
 	LONG_OPT_TIME_MIN,
 	LONG_OPT_TMP,
 	LONG_OPT_TRES_PER_JOB,
+	LONG_OPT_TRES_PER_TASK,
 	LONG_OPT_UID,
 	LONG_OPT_UMASK,
 	LONG_OPT_USAGE,
@@ -413,6 +414,8 @@ typedef struct {
 	char *submit_line;		/* submit line of the caller	*/
 	char *tres_bind;		/* derived from gpu_bind	*/
 	char *tres_freq;		/* derived from gpu_freq	*/
+	char *tres_per_task;		/* --tres_per_task		*/
+
 	uint16_t x11;			/* --x11			*/
 	char *x11_magic_cookie;		/* cookie retrieved from xauth	*/
 	char *x11_target;		/* target host, or unix socket	*/

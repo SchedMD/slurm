@@ -232,6 +232,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
   { "SBATCH_THREADS_PER_CORE", LONG_OPT_THREADSPERCORE },
   { "SBATCH_TIMELIMIT", 't' },
+  { "SBATCH_TRES_PER_TASK", LONG_OPT_TRES_PER_TASK },
   { "SBATCH_USE_MIN_NODES", LONG_OPT_USE_MIN_NODES },
   { "SBATCH_WAIT", 'W' },
   { "SBATCH_WAIT_ALL_NODES", LONG_OPT_WAIT_ALL_NODES },
@@ -1160,7 +1161,7 @@ static void _usage(void)
 "              [--use-min-nodes]\n"
 "              [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "              [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
-"              [--mem-per-gpu=MB]\n"
+"              [--mem-per-gpu=MB] [--tres-per-task=list]\n"
 "              executable [args...]\n");
 }
 
@@ -1241,6 +1242,7 @@ static void _help(void)
 "      --thread-spec=threads   count of reserved threads\n"
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"
+"      --tres-per-task=list    list of tres required per task\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "      --use-min-nodes         if a range of node counts is given, prefer the\n"
 "                              smaller count\n"

@@ -5327,10 +5327,13 @@ static int _test_gres_cnt(gres_state_t *gres_state_job,
 		} else if (*num_tasks != NO_VAL) {
 			gres_js->gres_per_job = *num_tasks *
 				gres_js->gres_per_task;
-		} else {
-			error("Failed to validate job spec. --%ss-per-task used without either --%ss or -n/--ntasks is not allowed.",
+		} else if (!xstrcmp(gres_state_job->gres_name, "gpu")) {
+			error("Failed to validate job spec. --%ss-per-task or --tres-per-task used without either --%ss or -n/--ntasks is not allowed.",
 			      gres_state_job->gres_name,
 			      gres_state_job->gres_name);
+			return -1;
+		} else {
+			error("Failed to validate job spec. --tres-per-task used without -n/--ntasks is not allowed.");
 			return -1;
 		}
 	}
