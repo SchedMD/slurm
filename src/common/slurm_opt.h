@@ -265,7 +265,7 @@ typedef struct {
 	bool preserve_env;		/* --preserve-env		*/
 	char *prolog;			/* --prolog			*/
 	char *propagate;		/* --propagate[=RLIMIT_CORE,...]*/
-	bool pty;			/* --pty			*/
+	char *pty;			/* --pty[=fd]			*/
 	bool quit_on_intr;		/* --quit-on-interrupt		*/
 	int relative;			/* --relative			*/
 	int resv_port_cnt;		/* --resv_ports			*/

@@ -670,13 +670,28 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	env->gid = job->gid;
 	env->group_name = xstrdup(job->group_name);
 
-	if (srun_opt->pty && (set_winsize(job) < 0)) {
+	if (srun_opt->pty && !srun_opt->pty[0] && (set_winsize(job) < 0)) {
 		error("Not using a pseudo-terminal, disregarding --pty option");
-		srun_opt->pty = false;
+		xfree(srun_opt->pty);
 	}
 	if (srun_opt->pty) {
 		struct termios term;
 		int fd = STDIN_FILENO;
+
+		if (srun_opt->pty[0]) {
+			/* srun passed FD to use for pty */
+			if (!isdigit(srun_opt->pty[0])) {
+				fatal("--pty=%s must be numeric file descriptor",
+				      srun_opt->pty);
+			}
+
+			fd = atoi(srun_opt->pty);
+
+			if (!isatty(fd)) {
+				fatal("--pty=%s is not a valid PTY",
+				      srun_opt->pty);
+			}
+		}
 
 		/* Save terminal settings for restore */
 		tcgetattr(fd, &termdefaults);

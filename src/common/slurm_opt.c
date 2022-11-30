@@ -3815,10 +3815,10 @@ static slurm_cli_opt_t slurm_opt_propagate = {
 	.reset_func = arg_reset_propagate,
 };
 
-COMMON_SRUN_BOOL_OPTION(pty);
+COMMON_SRUN_STRING_OPTION(pty);
 static slurm_cli_opt_t slurm_opt_pty = {
 	.name = "pty",
-	.has_arg = no_argument,
+	.has_arg = optional_argument,
 	.val = LONG_OPT_PTY,
 	.set_func_srun = arg_set_pty,
 	.get_func = arg_get_pty,

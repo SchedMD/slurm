@@ -1366,6 +1366,14 @@ static bool _opt_verify(void)
 		opt.x11_magic_cookie = x11_get_xauth();
 	}
 
+	if (sropt.pty) {
+		if (opt.efname || opt.ifname || opt.ofname) {
+			error("--error/--input/--output are incompatible with --pty%s%s",
+			      (sropt.pty[0] ? "=" : ""), sropt.pty);
+			exit(error_exit);
+		}
+	}
+
 	return verified;
 }
 
@@ -1630,7 +1638,7 @@ static void _help(void)
 "                              energy, lustre, network or task\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 #ifdef HAVE_PTY_H
-"      --pty                   run task zero in pseudo terminal\n"
+"      --pty[=fd]              run task zero in pseudo terminal [or in requested terminal given by fd]\n"
 #endif
 "      --quit-on-interrupt     quit on single Ctrl-C\n"
 "  -q, --qos=qos               quality of service\n"

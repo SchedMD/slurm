@@ -2562,8 +2562,9 @@ This option applies to job allocations.
 .IP
 
 .TP
-\fB\-\-pty\fR
-Execute task zero in pseudo terminal mode.
+\fB\-\-pty\fR, \fB\-\-pty\fR=<\fIFile Descriptor\fR>
+Execute task zero with pseudo terminal mode or using psuedo terminal
+specified by <\fIFile Descriptor\fR>.
 Implicitly sets \fB\-\-unbuffered\fR.
 Implicitly sets \fB\-\-error\fR and \fB\-\-output\fR to /dev/null
 for all tasks except task zero, which may cause those tasks to
