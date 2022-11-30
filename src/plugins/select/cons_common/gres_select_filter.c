@@ -435,6 +435,7 @@ static int _sort_sockets_by_avail_cores(const void *x, const void *y,
  * IN first_pass - set if first scheduling attempt for this job, use
  *		   co-located GRES and cores if possible
  * IN avail_core - cores available on this node, UPDATED
+ * IN node_name - name of the node
  */
 extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					 List sock_gres_list,
@@ -448,7 +449,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					 int rem_nodes,
 					 bool enforce_binding,
 					 bool first_pass,
-					 bitstr_t *avail_core)
+					 bitstr_t *avail_core,
+					 char *node_name)
 {
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
@@ -722,12 +724,14 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				sock_gres->total_cnt =
 					MIN(i, sock_gres->total_cnt);
 			}
-			log_flag(SELECT_TYPE, "max_tasks_this_node is set to NO_VAL, won't clear non-needed cores");
+			log_flag(SELECT_TYPE, "Node %s: max_tasks_this_node is set to NO_VAL, won't clear non-needed cores",
+				 node_name);
 			continue;
 		}
 		if (*max_tasks_this_node < *min_tasks_this_node) {
-			error("%s: min_tasks_this_node:%u > max_tasks_this_node:%u",
+			error("%s: Node %s: min_tasks_this_node:%u > max_tasks_this_node:%u",
 			      __func__,
+			      node_name,
 			      *min_tasks_this_node,
 			      *max_tasks_this_node);
 		}
@@ -757,7 +761,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				req_cores /= threads_per_core;
 				if (req_cores <= avail_cores_tot) {
 					if (removed_tasks)
-						log_flag(SELECT_TYPE, "settings required_cores=%d by max_tasks_this_node=%u(reduced=%d) cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",
+						log_flag(SELECT_TYPE, "Node %s: settings required_cores=%d by max_tasks_this_node=%u(reduced=%d) cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",
+							 node_name,
 							 req_cores,
 							 *max_tasks_this_node,
 							 removed_tasks,
@@ -777,30 +782,36 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 			int i;
 			if (gres_js->gres_per_node) {
 				i = gres_js->gres_per_node;
-				log_flag(SELECT_TYPE, "estimating req_cores gres_per_node=%"PRIu64,
+				log_flag(SELECT_TYPE, "Node %s: estimating req_cores gres_per_node=%"PRIu64,
+					 node_name,
 					 gres_js->gres_per_node);
 			} else if (gres_js->gres_per_socket) {
 				i = gres_js->gres_per_socket * sock_cnt;
-				log_flag(SELECT_TYPE, "estimating req_cores gres_per_socket=%"PRIu64,
+				log_flag(SELECT_TYPE, "Node %s: estimating req_cores gres_per_socket=%"PRIu64,
+					 node_name,
 					 gres_js->gres_per_socket);
 			} else if (gres_js->gres_per_task) {
 				i = gres_js->gres_per_task *
 					*max_tasks_this_node;
-				log_flag(SELECT_TYPE, "estimating req_cores max_tasks_this_node=%u gres_per_task=%"PRIu64,
+				log_flag(SELECT_TYPE, "Node %s: estimating req_cores max_tasks_this_node=%u gres_per_task=%"PRIu64,
+					 node_name,
 					 *max_tasks_this_node,
 					 gres_js->gres_per_task);
 			} else if (cnt_avail_total) {
 				i = cnt_avail_total;
-				log_flag(SELECT_TYPE, "estimating req_cores cnt_avail_total=%"PRIu64,
+				log_flag(SELECT_TYPE, "Node %s: estimating req_cores cnt_avail_total=%"PRIu64,
+					 node_name,
 					 cnt_avail_total);
 			} else {
 				i = 1;
-				log_flag(SELECT_TYPE, "estimating req_cores default to 1 task");
+				log_flag(SELECT_TYPE, "Node %s: estimating req_cores default to 1 task",
+					 node_name);
 			}
 			i *= cpus_per_gres;
 			i = (i + cpus_per_core - 1) / cpus_per_core;
 			if (req_cores < i)
-				log_flag(SELECT_TYPE, "Increasing req_cores=%d from cpus_per_gres=%d cpus_per_core=%u",
+				log_flag(SELECT_TYPE, "Node %s: Increasing req_cores=%d from cpus_per_gres=%d cpus_per_core=%u",
+					 node_name,
 					 i, cpus_per_gres, cpus_per_core);
 			req_cores = MAX(req_cores, i);
 		}
@@ -828,7 +839,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * *avail_cpus is 2
 		 */
 		if (req_cores > avail_cores_tot) {
-			log_flag(SELECT_TYPE, "Job cannot run on node req_cores:%d > aval_cores_tot:%d",
+			log_flag(SELECT_TYPE, "Job cannot run on node %s: req_cores:%d > aval_cores_tot:%d",
+				 node_name,
 				 req_cores, avail_cores_tot);
 			*max_tasks_this_node = 0;
 			break;
@@ -841,7 +853,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 */
 		if (enforce_binding &&
 		    ((req_cores * threads_per_core) > *avail_cpus)) {
-			log_flag(SELECT_TYPE, "Job cannot run on node, avail_cpus=%u < %u (required cores %u * threads_per_core %u",
+			log_flag(SELECT_TYPE, "Job cannot run on node %s: avail_cpus=%u < %u (required cores %u * threads_per_core %u",
+				 node_name,
 				 *avail_cpus, req_cores * threads_per_core,
 				 req_cores, threads_per_core);
 			*max_tasks_this_node = 0;

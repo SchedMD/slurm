@@ -371,7 +371,8 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			&min_tasks_this_node, &max_tasks_this_node,
 			&min_cores_this_node,
 			rem_nodes, enforce_binding, first_pass,
-			avail_core[node_inx]);
+			avail_core[node_inx],
+			node_record_table_ptr[node_inx]->name);
 	}
 	if (max_tasks_this_node == 0) {
 		*avail_cpus = 0;
