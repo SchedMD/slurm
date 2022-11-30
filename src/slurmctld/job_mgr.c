@@ -14840,15 +14840,13 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 					continue;
 				job_ptr->array_task_id = i;
 				new_job_ptr = job_array_split(job_ptr);
-				if (!new_job_ptr) {
-					error("%s: Unable to copy record for %pJ",
-					      __func__, job_ptr);
-				} else {
-					/* The array_recs structure is moved
-					 * to the new job record copy */
-					bb_g_job_validate2(job_ptr, NULL);
-					job_ptr = new_job_ptr;
-				}
+
+				/*
+				 * The array_recs structure is moved to the
+				 * new job record copy.
+				 */
+				bb_g_job_validate2(job_ptr, NULL);
+				job_ptr = new_job_ptr;
 			}
 			FREE_NULL_BITMAP(tmp_bitmap);
 		}
@@ -18594,15 +18592,12 @@ extern job_record_t *job_array_post_sched(job_record_t *job_ptr)
 		new_job_ptr = job_ptr;
 	} else {
 		new_job_ptr = job_array_split(job_ptr);
-		if (new_job_ptr) {
-			new_job_ptr->job_state = JOB_PENDING;
-			new_job_ptr->start_time = (time_t) 0;
-			/* Do NOT set the JOB_UPDATE_DB flag here, it
-			 * is handled when task_id_str is created elsewhere */
-		} else {
-			error("%s: Unable to copy record for %pJ",
-			      __func__, job_ptr);
-		}
+		new_job_ptr->job_state = JOB_PENDING;
+		new_job_ptr->start_time = (time_t) 0;
+		/*
+		 * Do NOT set the JOB_UPDATE_DB flag here, it is handled when
+		 * task_id_str is created elsewhere.
+		 */
 	}
 
 	return new_job_ptr;

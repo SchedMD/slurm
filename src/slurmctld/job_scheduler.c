@@ -504,18 +504,15 @@ extern List build_job_queue(bool clear_start, bool backfill)
 		}
 		job_ptr->array_task_id = i;
 		new_job_ptr = job_array_split(job_ptr);
-		if (new_job_ptr) {
-			debug("%s: Split out %pJ for burst buffer use",
-			      __func__, job_ptr);
-			new_job_ptr->job_state = JOB_PENDING;
-			new_job_ptr->start_time = (time_t) 0;
-			/* Do NOT clear db_index here, it is handled when
-			 * task_id_str is created elsewhere */
-			(void) bb_g_job_validate2(job_ptr, NULL);
-		} else {
-			error("%s: Unable to copy record for %pJ",
-			      __func__, job_ptr);
-		}
+		debug("%s: Split out %pJ for burst buffer use",
+		      __func__, job_ptr);
+		new_job_ptr->job_state = JOB_PENDING;
+		new_job_ptr->start_time = (time_t) 0;
+		/*
+		 * Do NOT clear db_index here, it is handled when task_id_str
+		 * is created elsewhere.
+		 */
+		(void) bb_g_job_validate2(job_ptr, NULL);
 	}
 
 	/* Create individual job records for job arrays with
@@ -562,17 +559,14 @@ extern List build_job_queue(bool clear_start, bool backfill)
 		}
 		job_ptr->array_task_id = i;
 		new_job_ptr = job_array_split(job_ptr);
-		if (new_job_ptr) {
-			info("%s: Split out %pJ for SLURM_DEPEND_AFTER_CORRESPOND use",
-			     __func__, job_ptr);
-			new_job_ptr->job_state = JOB_PENDING;
-			new_job_ptr->start_time = (time_t) 0;
-			/* Do NOT clear db_index here, it is handled when
-			 * task_id_str is created elsewhere */
-		} else {
-			error("%s: Unable to copy record for %pJ",
-			      __func__, job_ptr);
-		}
+		info("%s: Split out %pJ for SLURM_DEPEND_AFTER_CORRESPOND use",
+		     __func__, job_ptr);
+		new_job_ptr->job_state = JOB_PENDING;
+		new_job_ptr->start_time = (time_t) 0;
+		/*
+		 * Do NOT clear db_index here, it is handled when task_id_str
+		 * is created elsewhere.
+		 */
 	}
 
 	list_iterator_reset(job_iterator);
