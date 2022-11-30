@@ -50,7 +50,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
-#include "src/sacctmgr/sacctmgr.h"
 #include "src/slurmctld/slurmctld.h"
 
 uid_t db_api_uid = -1;
