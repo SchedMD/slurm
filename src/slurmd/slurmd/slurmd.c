@@ -920,6 +920,7 @@ _read_config(void)
 	slurm_conf_t *cf = NULL;
 	int cc;
 	bool cgroup_mem_confinement = false;
+	node_record_t *node_ptr;
 #ifndef HAVE_FRONT_END
 	bool cr_flag = false, gang_flag = false;
 	bool config_overrides = false;
@@ -1117,6 +1118,19 @@ _read_config(void)
 			conf->threads, conf->actual_threads);
 	}
 #endif
+
+	/*
+	 * Set the node's configured 'RealMemory' as conf_memory_size as
+	 * slurmd_conf_t->real_memory is set to the actual physical memory. We
+	 * need to distinguish from configured memory and actual physical
+	 * memory. Actual physical memory is reported to the controller to
+	 * validate that the slurmd's memory isn't less than the configured
+	 * memory and the configured memory is needed to setup the slurmd's
+	 * memory cgroup.
+	 */
+	node_ptr = find_node_record(conf->node_name);
+	xassert(node_ptr);
+	conf->conf_memory_size = node_ptr->real_memory;
 
 	get_memory(&conf->real_memory_size);
 	get_up_time(&conf->up_time);
