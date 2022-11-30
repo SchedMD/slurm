@@ -3640,7 +3640,7 @@ function __scontrol_update_jobid() {
 	esac
 }
 
-# completion handler for: scontrol update nodename=* *
+# completion handler for: scontrol update nodename=* [key=val]...
 function __scontrol_update_nodename() {
 	local parameters=(
 		"activefeatures="
