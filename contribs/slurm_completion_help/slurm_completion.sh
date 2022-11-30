@@ -252,7 +252,9 @@ function __slurm_compreply_list() {
 	local curlist_hostlist=""
 
 	# append $reserved_words to $options
-	options="${options} ${reserved_words}"
+	if [[ $cur == "$curitem" ]]; then
+		options="${options} ${reserved_words}"
+	fi
 
 	if [[ $curitem == "$curlist" ]]; then
 		curlist=""
@@ -317,7 +319,8 @@ function __slurm_compreply_list() {
 	__slurm_log_debug "$(__func__): #compreply[@]='${#compreply[@]}'"
 	__slurm_log_debug "$(__func__): compreply[*]='${compreply[*]}'"
 
-	if [[ $cur != "" ]] && [[ " ${reserved_words} " =~ [[:space:]]+"${cur//$suffix/}"[[:space:]]+ ]]; then
+	if [[ $cur != "" ]] &&
+		[[ " ${reserved_words} " =~ [[:space:]]+"${cur//$suffix/}"[[:space:]]+ ]]; then
 		cur="${cur//$suffix/}"
 		__slurm_log_info "$(__func__): reserved word '$cur' detected."
 		__slurm_compreply "$reserved_words"
@@ -333,7 +336,8 @@ function __slurm_compreply() {
 	local options="$1"
 
 	__slurm_log_debug "$(__func__): cur='$cur'"
-	__slurm_log_debug "$(__func__): options='$options'"
+	__slurm_log_debug "$(__func__): #options[@]='${#options[@]}'"
+	__slurm_log_debug "$(__func__): options[*]='${options[*]}'"
 
 	__slurm_comp "$(compgen -W "${options[*]}" -- "$cur")"
 }
@@ -1632,7 +1636,8 @@ function __slurm_comp_mode_select() {
 	__slurm_log_trace "$(__func__): parameters_set[*]='${parameters_set[*]}'"
 	__slurm_log_trace "$(__func__): #conditions[@]='${#conditions[@]}'"
 	__slurm_log_trace "$(__func__): conditions[*]='${conditions[*]}'"
-	__slurm_log_trace "$(__func__): options[*]='$options'"
+	__slurm_log_trace "$(__func__): #options[@]='${#options[@]}'"
+	__slurm_log_trace "$(__func__): options[*]='${options[*]}'"
 
 	case "${mode}" in
 	0) # delete/remove
