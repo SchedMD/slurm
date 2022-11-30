@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
     connections.
  -- Fix overwrite race of cont_id in cgroup/v2 when using task/cgroup with
     proctrack/cray_aries.
+ -- Fix node remaining allocated after a reconfig with a completing job that
+    has an EpilogSlurmctld instance still running.
 
 * Changes in Slurm 22.05.6
 ==========================
