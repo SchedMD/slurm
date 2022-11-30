@@ -853,7 +853,9 @@ static void _fetch_token(int argc, char **argv)
 	}
 
 	if (!(token = slurm_fetch_token(username, lifespan))) {
-		fprintf(stderr, "Error fetching token\n");
+		if (!errno)
+			errno = SLURM_ERROR;
+		fprintf(stderr, "Error fetching token: %m\n");
 		exit_code = 1;
 		return;
 	}
