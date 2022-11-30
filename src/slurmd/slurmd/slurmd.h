@@ -105,6 +105,8 @@ typedef struct slurmd_config {
 	uint16_t     actual_sockets;    /* actual sockets count            */
 	uint16_t     actual_cores;      /* actual core count               */
 	uint16_t     actual_threads;    /* actual thread per core count    */
+	uint64_t     conf_memory_size;  /* amount of configured memory from
+					 * slurm.conf */
 	uint64_t     real_memory_size;  /* amount of real memory	   */
 	uint32_t     tmp_disk_space;    /* size of temporary disk	   */
 	uint32_t     up_time;		/* seconds since last boot time    */
