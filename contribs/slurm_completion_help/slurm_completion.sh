@@ -3653,6 +3653,7 @@ function __scontrol_update_nodename() {
 		"nodehostname="
 		"nodename=" # meta
 		"reason="
+		"resumeafter="
 		"state="
 		"weight="
 	)
