@@ -4830,7 +4830,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	memcpy(&step_ptr->step_id, &step_id, sizeof(step_ptr->step_id));
 
 	step_ptr->container = container;
-	step_ptr->container_id = container;
+	step_ptr->container_id = container_id;
 	step_ptr->cpu_count    = cpu_count;
 	step_ptr->cpus_per_task= cpus_per_task;
 	step_ptr->cyclic_alloc = cyclic_alloc;
