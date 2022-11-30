@@ -1540,14 +1540,6 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_signal(job_record_t *job_ptr, int signal)
-{
-	xassert(job_ptr);
-	xassert(job_ptr->magic == JOB_MAGIC);
-
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_job_fini(job_record_t *job_ptr)
 {
 	xassert(job_ptr);

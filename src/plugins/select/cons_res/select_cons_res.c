@@ -508,8 +508,6 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 
 /* select_p_job_expand() in cons_common */
 
-/* select_p_job_signal() in cons_common */
-
 /* select_p_job_fini() in cons_common */
 
 /* select_p_job_suspend() in cons_common */

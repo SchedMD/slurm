@@ -1560,13 +1560,6 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	return other_job_expand(from_job_ptr, to_job_ptr);
 }
 
-extern int select_p_job_signal(job_record_t *job_ptr, int signal)
-{
-	xassert(job_ptr);
-
-	return other_job_signal(job_ptr, signal);
-}
-
 extern int select_p_job_fini(job_record_t *job_ptr)
 {
 #if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)

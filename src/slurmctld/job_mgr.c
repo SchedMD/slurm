@@ -5670,8 +5670,6 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 		}
 	}
 
-	/* let node select plugin do any state-dependent signaling actions */
-	select_g_job_signal(job_ptr, signal);
 	last_job_update = now;
 
 	/*

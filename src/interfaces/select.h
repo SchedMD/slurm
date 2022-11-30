@@ -85,8 +85,6 @@ typedef struct {
 						 job_record_t *to_job_ptr);
 	int		(*job_resized)		(job_record_t *job_ptr,
 						 node_record_t *node_ptr);
-	int		(*job_signal)		(job_record_t *job_ptr,
-						 int signal);
 	int		(*job_fini)		(job_record_t *job_ptr);
 	int		(*job_suspend)		(job_record_t *job_ptr,
 						 bool indf_susp);
@@ -450,14 +448,6 @@ extern int select_g_job_ready(job_record_t *job_ptr);
  * IN job_ptr - pointer to job being terminated
  */
 extern int select_g_job_fini(job_record_t *job_ptr);
-
-/*
- * Pass job-step signal to plugin before signaling any job steps, so that
- * any signal-dependent actions can be taken.
- * IN job_ptr - job to be signaled
- * IN signal  - signal(7) number
- */
-extern int select_g_job_signal(job_record_t *job_ptr, int signal);
 
 /*
  * Suspend a job. Executed from slurmctld.

@@ -65,7 +65,6 @@ const char *node_select_syms[] = {
 	"select_p_job_ready",
 	"select_p_job_expand",
 	"select_p_job_resized",
-	"select_p_job_signal",
 	"select_p_job_fini",
 	"select_p_job_suspend",
 	"select_p_job_resume",
@@ -603,20 +602,6 @@ extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 
 	return (*(ops[select_context_default].job_resized))
 		(job_ptr, node_ptr);
-}
-
-/*
- * Pass job-step signal to plugin before signaling any job steps, so that
- * any signal-dependent actions can be taken.
- * IN job_ptr - job to be signaled
- * IN signal  - signal(7) number
- */
-extern int select_g_job_signal(job_record_t *job_ptr, int signal)
-{
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].job_signal))
-		(job_ptr, signal);
 }
 
 /*

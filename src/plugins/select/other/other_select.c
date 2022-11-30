@@ -71,7 +71,6 @@ const char *node_select_syms[] = {
 	"select_p_job_ready",
 	"select_p_job_expand",
 	"select_p_job_resized",
-	"select_p_job_signal",
 	"select_p_job_fini",
 	"select_p_job_suspend",
 	"select_p_job_resume",
@@ -309,19 +308,6 @@ extern int other_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 		return -1;
 
 	return (*(ops.job_resized))(job_ptr, node_ptr);
-}
-
-/*
- * Pass job-step signal to other plugin.
- * IN job_ptr - job to be signaled
- * IN signal  - signal(7) number
- */
-extern int other_job_signal(job_record_t *job_ptr, int signal)
-{
-	if (other_select_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(ops.job_signal))(job_ptr, signal);
 }
 
 /*
