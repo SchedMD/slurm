@@ -28,37 +28,14 @@
 ############################################################################
 source ./globals
 
+set task_num 2
+
 if {[get_config_param "FrontendName"] ne "MISSING"} {
         skip "This test is incompatible with front-end systems"
-} else {
-	set task_num 2
 }
 
 #
-# Spawn srun with $task_cnt tasks each of which runs a $mult way /bin/id
+# Spawn srun with $task_num tasks
 #
-set task_output 0
-set timeout $max_job_delay
-spawn $srun -N1 --ntasks-per-node=$task_num -O -l -t1 $bin_id
-expect {
-	-re "($number): uid=" {
-		incr task_output
-		exp_continue
-	}
-	-re "($number)-($number):uid=" {
-		#needed for poe launch
-		incr task_output
-		incr task_output
-		exp_continue
-	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$task_output != $task_num} {
-	fail "Failed to get output from all tasks"
-}
+set output [run_command_output -fail "$srun -N1 --ntasks-per-node=$task_num -O -l -t1 $bin_id"]
+subtest {[regexp -all "uid=" $output] == $task_num} "Verify that $task_num tasks were launched"
