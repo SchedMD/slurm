@@ -3052,9 +3052,24 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 
 		node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 
-		node_ptr->run_job_cnt++; /* NOTE:
-				* This counter moved to comp_job_cnt
-				* by _sync_nodes_to_comp_job() */
+		if (IS_JOB_COMPLETING(job_ptr) && job_ptr->epilog_running) {
+			/*
+			 * _sync_nodes_to_comp_job() won't call
+			 * deallocate_nodes()/make_node_comp() if the
+			 * EpilogSlurmctld is still running to decrement
+			 * run_job_cnt and increment comp_job_cnt, so just
+			 * increment comp_job_cnt now.
+			 */
+			node_ptr->comp_job_cnt++;
+		} else {
+			/*
+			 * run_job_cnt will be decremented by
+			 * deallocate_nodes()/make_node_comp() in
+			 * _sync_nodes_to_comp_job().
+			 */
+			node_ptr->run_job_cnt++;
+		}
+
 		if ((job_ptr->details) && (job_ptr->details->share_res == 0))
 			node_ptr->no_share_job_cnt++;
 
