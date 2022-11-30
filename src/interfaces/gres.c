@@ -6115,25 +6115,6 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 			have_gres_sharing = true;
 		if (gres_id_shared(gres_state_job->config_flags)) {
 			have_gres_shared = true;
-			/*
-			 * Shared gres (e.g. gres/'shared') only supports a
-			 * per-node count,
-			 * set either explicitly or implicitly.
-			 */
-			if (gres_js->gres_per_job &&
-			    (*max_nodes != 1)) {
-				rc = ESLURM_INVALID_GRES;
-				break;
-			}
-			if (gres_js->gres_per_socket &&
-			    (*sockets_per_node != 1)) {
-				rc = ESLURM_INVALID_GRES;
-				break;
-			}
-			if (gres_js->gres_per_task && (*num_tasks != 1)) {
-				rc = ESLURM_INVALID_GRES;
-				break;
-			}
 		}
 		if (have_gres_sharing && have_gres_shared) {
 			rc = ESLURM_INVALID_GRES;
