@@ -1318,6 +1318,7 @@ _print_conf(void)
 	debug3("Inverse Map = %s", str);
 	xfree(str);
 
+	debug3("ConfMemory  = %"PRIu64"", conf->conf_memory_size);
 	debug3("RealMemory  = %"PRIu64"",conf->real_memory_size);
 	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
 	debug3("Epilog      = `%s'",     cf->epilog);
