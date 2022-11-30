@@ -276,7 +276,6 @@ function __slurm_compreply_list() {
 	for item in $options; do
 		__slurm_log_trace "$(__func__): for loop: item='$item'"
 		[[ $item =~ ^[[:space:]]*$ ]] && continue
-		((SLURM_COMP_LIST == 0)) && [[ $curitem =~ ^"${item}"$ ]] && continue
 		[[ $curlist =~ "${item}${suffix}"? ]] && continue
 		[[ $curlist_hostnames =~ "${item}${suffix}"? ]] && continue
 		compreply+=("$item")
@@ -285,11 +284,25 @@ function __slurm_compreply_list() {
 	# compress to hostlist
 	if ((SLURM_COMP_HOSTLIST == 1)) && [[ $hostlist_compression == "true" ]]; then
 		curlist_hostlist="$(__slurm_hostlist "$curlist_hostnames")"
-		__slurm_log_trace "$(__func__): curlist_hostlist='$curlist_hostlist'"
 
 		if [[ -n $curlist_hostlist ]]; then
 			prefix="${curlist_hostlist}${suffix}"
 		fi
+
+		local found=0
+		local filter=()
+		filter=($(compgen -W "${compreply[*]}" -- "${curitem}"))
+		((${#filter[@]} == 1)) && [[ ${filter[0]} == "$curitem" ]] && found=1
+		__slurm_log_trace "$(__func__): found='$found' #filter[@]='${#filter[@]}' filter[*]='${filter[*]}'"
+
+		if ((found == 1)); then
+			curlist_hostlist="$(__slurm_hostlist "${curlist_hostnames},${curitem}")"
+			prefix=""
+			curitem="$curlist_hostlist"
+			compreply=("$curlist_hostlist")
+		fi
+
+		__slurm_log_trace "$(__func__): curlist_hostlist='$curlist_hostlist'"
 	fi
 
 	# simulate old completion script's list behavior
