@@ -4285,9 +4285,9 @@ Enable the use of scrontab to submit and manage periodic repeating jobs.
 .TP
 \fBSelectType\fR
 Identifies the type of resource selection algorithm to be used.
-A restart of slurmctld is required for changes to this parameter to take effect.
-When changed, all job information (running and pending) will be lost,
-since the job state save format used by each plugin is different.
+A restart of slurmctld and slurmd is required for changes to this parameter to
+take effect. When changed, all job information (running and pending) will be
+lost, since the job state save format used by each plugin is different.
 The only exception to this is when changing from cons_res to cons_tres or from
 cons_tres to cons_res. However, if a job contains cons_tres\-specific features
 and then SelectType is changed to cons_res, the job will be canceled, since
