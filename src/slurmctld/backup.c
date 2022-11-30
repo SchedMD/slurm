@@ -53,12 +53,13 @@
 #include "src/common/daemonize.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/interfaces/select.h"
-#include "src/interfaces/auth.h"
-#include "src/interfaces/accounting_storage.h"
-#include "src/interfaces/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/select.h"
+#include "src/interfaces/switch.h"
 
 #include "src/slurmctld/heartbeat.h"
 #include "src/slurmctld/locks.h"

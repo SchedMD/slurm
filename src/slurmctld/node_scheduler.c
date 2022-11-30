@@ -56,7 +56,6 @@
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
-#include "src/interfaces/switch.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -65,12 +64,13 @@
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/burst_buffer.h"
 #include "src/interfaces/gres.h"
-#include "src/interfaces/node_features.h"
 #include "src/interfaces/mcs.h"
+#include "src/interfaces/node_features.h"
 #include "src/interfaces/power.h"
 #include "src/interfaces/preempt.h"
 #include "src/interfaces/priority.h"
 #include "src/interfaces/select.h"
+#include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
 
 #include "src/slurmctld/acct_policy.h"
@@ -81,10 +81,10 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/power_save.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/power_save.h"
 
 #define _DEBUG	0
 #define MAX_FEATURES  64	/* max exclusive features "[fs1|fs2]"=2 */

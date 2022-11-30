@@ -61,6 +61,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
@@ -84,7 +85,6 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
-#include "src/common/timers.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 /* No need to change we always pack SLURM_PROTOCOL_VERSION */

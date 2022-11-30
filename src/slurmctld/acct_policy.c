@@ -39,9 +39,10 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
-#include "src/interfaces/select.h"
+
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/priority.h"
+#include "src/interfaces/select.h"
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/acct_policy.h"

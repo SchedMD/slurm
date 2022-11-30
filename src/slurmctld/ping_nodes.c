@@ -45,7 +45,9 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/read_config.h"
+
 #include "src/interfaces/select.h"
+
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/ping_nodes.h"

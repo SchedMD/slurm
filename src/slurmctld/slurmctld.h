@@ -54,18 +54,19 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/cron.h"
+#include "src/common/job_resources.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_conf.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h" /* location of slurm_conf */
-#include "src/common/job_resources.h"
-#include "src/interfaces/cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
+
+#include "src/interfaces/cred.h"
 
 /*****************************************************************************\
  *  GENERAL CONFIGURATION parameters and data structures

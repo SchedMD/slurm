@@ -50,10 +50,12 @@
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/accounting_storage.h"
+
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/interfaces/accounting_storage.h"
 
 List license_list = (List) NULL;
 time_t last_license_update = 0;
