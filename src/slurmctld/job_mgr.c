@@ -1684,11 +1684,6 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		job_ptr = find_job_record(job_id);
 		if (job_ptr == NULL) {
 			job_ptr = _create_job_record(1);
-			if (!job_ptr) {
-				error("Create job entry failed for JobId=%u",
-				      job_id);
-				goto unpack_error;
-			}
 			job_ptr->job_id = job_id;
 			job_ptr->array_job_id = array_job_id;
 			job_ptr->array_task_id = array_task_id;
@@ -1919,11 +1914,6 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		job_ptr = find_job_record(job_id);
 		if (job_ptr == NULL) {
 			job_ptr = _create_job_record(1);
-			if (!job_ptr) {
-				error("Create job entry failed for JobId=%u",
-				      job_id);
-				goto unpack_error;
-			}
 			job_ptr->job_id = job_id;
 			job_ptr->array_job_id = array_job_id;
 			job_ptr->array_task_id = array_task_id;
@@ -2154,11 +2144,6 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		job_ptr = find_job_record(job_id);
 		if (job_ptr == NULL) {
 			job_ptr = _create_job_record(1);
-			if (!job_ptr) {
-				error("Create job entry failed for JobId=%u",
-				      job_id);
-				goto unpack_error;
-			}
 			job_ptr->job_id = job_id;
 			job_ptr->array_job_id = array_job_id;
 			job_ptr->array_task_id = array_task_id;
@@ -4645,8 +4630,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	int i;
 
 	job_ptr_pend = _create_job_record(0);
-	if (!job_ptr_pend)
-		return NULL;
 
 	_remove_job_hash(job_ptr, JOB_HASH_JOB);
 	job_ptr_pend->job_id = job_ptr->job_id;
@@ -8509,8 +8492,6 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	}
 
 	job_ptr = _create_job_record(1);
-	if (!job_ptr)
-		return SLURM_ERROR;
 
 	*job_rec_ptr = job_ptr;
 	job_ptr->partition = xstrdup(job_desc->partition);
