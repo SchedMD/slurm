@@ -3284,6 +3284,9 @@ function __scontrol_schedloglevel() {
 
 # completion handler for: scontrol setdebug *
 function __scontrol_setdebug() {
+	local parameters=(
+		"nodes="
+	)
 	local debug_levels=(
 		"quiet"
 		"fatal"
@@ -3297,7 +3300,18 @@ function __scontrol_setdebug() {
 		"debug5"
 	)
 
-	__slurm_compreply "${debug_levels[*]}"
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev}" in
+	setdebug) __slurm_compreply "${debug_levels[*]}" ;;
+	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	*)
+		[[ $split == "true" ]] && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
 }
 
 # completion handler for: scontrol setdebugflags *
