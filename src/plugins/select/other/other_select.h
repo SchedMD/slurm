@@ -97,14 +97,6 @@ extern int other_get_info_from_plugin(enum select_plugindata_info dinfo,
 				      job_record_t *job_ptr, void *data);
 
 /*
- * Updated a node configuration. This happens when a node registers with
- *	more resources than originally configured(e.g. memory).
- * IN index  - index into the node record list
- * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
- */
-extern int other_update_node_config(int index);
-
-/*
  * Select the "best" nodes for given job from those available
  * IN/OUT job_ptr - pointer to job being considered for initiation,
  *                  set's start_time when job expected to start

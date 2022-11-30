@@ -1982,16 +1982,6 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 	return rc;
 }
 
-extern int select_p_update_node_config(int index)
-{
-	if (index >= node_record_count) {
-		error("index too large (%d > %d)", index, node_record_count);
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_reconfigure(void)
 {
 	ListIterator job_iterator;

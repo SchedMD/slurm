@@ -2068,11 +2068,6 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info dinfo,
 	return other_get_info_from_plugin(dinfo, job_ptr, data);
 }
 
-extern int select_p_update_node_config(int index)
-{
-	return other_update_node_config(index);
-}
-
 extern int select_p_reconfigure(void)
 {
 	return other_reconfigure();

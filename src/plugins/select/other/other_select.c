@@ -92,7 +92,6 @@ const char *node_select_syms[] = {
 	"select_p_select_jobinfo_pack",
 	"select_p_select_jobinfo_unpack",
 	"select_p_get_info_from_plugin",
-	"select_p_update_node_config",
 	"select_p_reconfigure",
 	"select_p_resv_test",
 };
@@ -566,21 +565,6 @@ extern int other_get_info_from_plugin(enum select_plugindata_info dinfo,
 		return SLURM_ERROR;
 
 	return (*(ops.get_info_from_plugin))(dinfo, job_ptr, data);
-}
-
-/*
- * Updated a node configuration. This happens when a node registers with
- *     more resources than originally configured (e.g. memory).
- * IN index  - index into the node record list
- * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
- */
-extern int other_update_node_config (int index)
-{
-	if (other_select_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(ops.
-		  update_node_config))(index);
 }
 
 /*

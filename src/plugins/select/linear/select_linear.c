@@ -4055,11 +4055,6 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info dinfo,
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_update_node_config (int index)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_reconfigure(void)
 {
 	slurm_mutex_lock(&cr_mutex);

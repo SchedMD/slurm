@@ -133,7 +133,6 @@ typedef struct {
 						 select_plugindata_info dinfo,
 						 job_record_t *job_ptr,
 						 void *data);
-	int		(*update_node_config)	(int index);
 	int		(*reconfigure)		(void);
 	bitstr_t *      (*resv_test)            (resv_desc_msg_t *resv_desc_ptr,
 						 uint32_t node_cnt,
@@ -285,14 +284,6 @@ extern int select_g_select_nodeinfo_get(dynamic_plugin_data_t *nodeinfo,
 					enum select_nodedata_type dinfo,
 					enum node_states state,
 					void *data);
-
-/*
- * Updated a node configuration. This happens when a node registers with
- *	more resources than originally configured (e.g. memory).
- * IN index  - index into the node record list
- * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
- */
-extern int select_g_update_node_config (int index);
 
 /******************************************************\
  * JOB SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *

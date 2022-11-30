@@ -3189,7 +3189,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			xfree(node_ptr->mcs_label);
 		}
 
-		select_g_update_node_config(node_ptr->index);
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
 	}
 
@@ -3559,7 +3558,6 @@ extern int validate_nodes_via_front_end(
 				xfree(node_ptr->mcs_label);
 			}
 
-			select_g_update_node_config(i);
 			_sync_bitmaps(node_ptr,
 				      (node_ptr->run_job_cnt +
 				       node_ptr->comp_job_cnt));
