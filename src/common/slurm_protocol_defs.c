@@ -866,6 +866,15 @@ extern void slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg)
 	}
 }
 
+extern void slurm_free_return_code2_msg(return_code2_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->err_msg);
+	xfree(msg);
+}
+
 extern void slurm_free_return_code_msg(return_code_msg_t * msg)
 {
 	xfree(msg);
@@ -5285,6 +5294,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_FILE_BCAST:
 		slurm_free_file_bcast_msg(data);
+		break;
+	case RESPONSE_SLURM_RC_MSG:
+		slurm_free_return_code2_msg(data);
 		break;
 	case RESPONSE_SLURM_RC:
 		slurm_free_return_code_msg(data);

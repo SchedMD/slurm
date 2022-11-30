@@ -1470,6 +1470,7 @@ extern void slurm_free_dep_msg(dep_msg_t *msg);
 extern void slurm_free_dep_update_origin_msg(dep_update_origin_msg_t *msg);
 extern void slurm_free_last_update_msg(last_update_msg_t * msg);
 extern void slurm_free_return_code_msg(return_code_msg_t * msg);
+extern void slurm_free_return_code2_msg(return_code2_msg_t *msg);
 extern void slurm_free_reroute_msg(reroute_msg_t *msg);
 extern void slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg);
 extern void slurm_free_job_info_request_msg(job_info_request_msg_t *msg);
