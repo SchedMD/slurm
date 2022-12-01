@@ -440,6 +440,7 @@ static int _set_share_node_bitmap(void *x, void *arg)
 	return 0;
 }
 
+#ifndef HAVE_FRONT_END
 static void *_set_node_addrs(void *arg)
 {
 	list_t *nodes = arg;
@@ -462,6 +463,7 @@ static void *_set_node_addrs(void *arg)
 
 	return NULL;
 }
+#endif
 
 /*
  * Validate that nodes are addressable.
