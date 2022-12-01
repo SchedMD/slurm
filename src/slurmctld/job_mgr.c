@@ -12297,7 +12297,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	/* Save before submit plugin potentially modifies it. */
 	user_site_factor = job_specs->site_factor;
 
-	if (job_specs->user_id == NO_VAL) {
+	if (job_specs->user_id == SLURM_AUTH_NOBODY) {
 		/*
 		 * Used by job_submit/lua to find default partition and
 		 * access control logic below to validate partition change
