@@ -160,8 +160,8 @@ static void _opt_default()
 	opt.quiet = 0;
 	opt.verbose = 0;
 
-	opt.euid = (uid_t) -1;
-	opt.egid = (gid_t) -1;
+	opt.euid = SLURM_AUTH_NOBODY;
+	opt.egid = SLURM_AUTH_NOBODY;
 
 	opt.labelio = false;
 	opt.ctrl_comm_ifhn  = xshort_hostname();
