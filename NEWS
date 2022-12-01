@@ -148,6 +148,8 @@ documents those changes that are of interest to users and administrators.
  -- srun - return an error if step suffers a node failure.
  -- squeue - align print format for exit and derived codes with that of other
     components (<exit_status>:<signal_number>).
+ -- Add new SlurmctldParameters=validate_nodeaddr_threads=<number> option to
+    allow concurrent hostname resolution at slurmctld startup.
 
 * Changes in Slurm 22.05.7
 ==========================
@@ -173,8 +175,6 @@ documents those changes that are of interest to users and administrators.
     unset.
  -- openapi/dbv0.0.38 - correct issue where 16 & 32 bit integers were not able
     to be unset.
- -- Add new SlurmctldParameters=validate_nodeaddr_threads=<number> option to
-    allow concurrent hostname resolution at slurmctld startup.
 
 * Changes in Slurm 22.05.6
 ==========================
