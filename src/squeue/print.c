@@ -1674,7 +1674,7 @@ int _print_job_cpus_per_task(job_info_t * job, int width, bool right_justify,
 }
 
 int _print_job_derived_ec(job_info_t * job, int width, bool right_justify,
-		    char* suffix)
+			  char* suffix)
 {
 	if (job == NULL)
 		_print_str("DERIVED_EC", width, right_justify, true);
@@ -1702,7 +1702,7 @@ int _print_job_eligible_time(job_info_t * job, int width, bool right_justify,
 }
 
 int _print_job_exit_code(job_info_t * job, int width, bool right_justify,
-		    char* suffix)
+			 char* suffix)
 {
 	if (job == NULL)
 		_print_str("EXIT_CODE", width, right_justify, true);
