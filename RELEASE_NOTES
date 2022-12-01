@@ -69,6 +69,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Add InfluxDBTimeout parameter to acct_gather.conf.
  -- job_container/tmpfs - add support for expanding %h and %n in BasePath.
  -- slurm.conf - Removed SlurmctldPlugstack option.
+ -- Add new SlurmctldParameters=validate_nodeaddr_threads=<number> option to
+    allow concurrent hostname resolution at slurmctld startup.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

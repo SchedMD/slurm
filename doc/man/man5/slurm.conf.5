@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "November 2022" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "December 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4714,6 +4714,15 @@ second argument.
 .TP
 \fBuser_resv_delete\fR
 Allow any user able to run in a reservation to delete it.
+.IP
+
+.TP
+\fBvalidate_nodeaddr_threads=\fR
+During startup, slurmctld looks up the address for each compute node in the
+system. On large systems this can cause considerable delay, this option permits
+the slurmctld to concurrently handle the lookup calls and can reduce system
+startup time considerably.  The default value is 1. Maximum permitted value is
+64.
 .RE
 .IP
 

@@ -440,31 +440,13 @@ static int _set_share_node_bitmap(void *x, void *arg)
 	return 0;
 }
 
-/*
- * Validate that nodes are addressable.
- */
-static void _validate_slurmd_addr(void)
+static void *_set_node_addrs(void *arg)
 {
-#ifndef HAVE_FRONT_END
-	node_record_t *node_ptr;
+	list_t *nodes = arg;
 	slurm_addr_t slurm_addr;
-	DEF_TIMERS;
+	node_record_t *node_ptr;
 
-	xassert(verify_lock(CONF_LOCK, READ_LOCK));
-
-	START_TIMER;
-	for (int i = 0; (node_ptr = next_node(&i)); i++) {
-		if ((node_ptr->name == NULL) ||
-		    (node_ptr->name[0] == '\0'))
-			continue;
-		if (IS_NODE_FUTURE(node_ptr))
-			continue;
-		if (IS_NODE_CLOUD(node_ptr) &&
-		    (IS_NODE_POWERING_DOWN(node_ptr) ||
-		     IS_NODE_POWERED_DOWN(node_ptr)))
-				continue;
-		if (node_ptr->port == 0)
-			node_ptr->port = slurm_conf.slurmd_port;
+	while ((node_ptr = list_pop(nodes))) {
 		slurm_set_addr(&slurm_addr, node_ptr->port,
 			       node_ptr->comm_name);
 		if (slurm_get_port(&slurm_addr))
@@ -477,6 +459,60 @@ static void _validate_slurmd_addr(void)
 		node_ptr->reason_time = time(NULL);
 		node_ptr->reason_uid = slurm_conf.slurm_user_id;
 	}
+
+	return NULL;
+}
+
+/*
+ * Validate that nodes are addressable.
+ */
+static void _validate_slurmd_addr(void)
+{
+#ifndef HAVE_FRONT_END
+	node_record_t *node_ptr;
+	DEF_TIMERS;
+	pthread_t *work_threads;
+	int threads_num = 1;
+	char *temp_str;
+	list_t *nodes = list_create(NULL);
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+
+	START_TIMER;
+
+	if ((temp_str = xstrcasestr(slurm_conf.slurmctld_params,
+				    "validate_nodeaddr_threads="))) {
+		int tmp_val = strtol(temp_str + 26, NULL, 10);
+		if ((tmp_val >= 1) && (tmp_val <= 64))
+			threads_num = tmp_val;
+		else
+			error("SlurmctldParameters option validate_nodeaddr_threads=%d out of range, ignored",
+			      tmp_val);
+	}
+
+
+	for (int i = 0; (node_ptr = next_node(&i)); i++) {
+		if ((node_ptr->name == NULL) ||
+		    (node_ptr->name[0] == '\0'))
+			continue;
+		if (IS_NODE_FUTURE(node_ptr))
+			continue;
+		if (IS_NODE_CLOUD(node_ptr) &&
+		    (IS_NODE_POWERING_DOWN(node_ptr) ||
+		     IS_NODE_POWERED_DOWN(node_ptr)))
+				continue;
+		if (node_ptr->port == 0)
+			node_ptr->port = slurm_conf.slurmd_port;
+		list_append(nodes, node_ptr);
+	}
+
+	work_threads = xcalloc(threads_num, sizeof(pthread_t));
+	for (int i = 0; i < threads_num; i++)
+		slurm_thread_create(&work_threads[i], _set_node_addrs, nodes);
+	for (int i = 0; i < threads_num; i++)
+		pthread_join(work_threads[i], NULL);
+	xfree(work_threads);
+	xassert(list_is_empty(nodes));
+	FREE_NULL_LIST(nodes);
 
 	END_TIMER2("_validate_slurmd_addr");
 #endif
