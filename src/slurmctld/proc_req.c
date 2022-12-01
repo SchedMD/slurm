@@ -4120,10 +4120,21 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 	unlock_slurmctld(fed_read_lock);
 
 	START_TIMER;
+	if ((job_desc_msg->user_id == NO_VAL) &&
+	    (msg->protocol_version < SLURM_23_02_PROTOCOL_VERSION)) {
+		/* older scontrol used NO_VAL instead of SLURM_AUTH_NOBODY */
+		job_desc_msg->user_id = SLURM_AUTH_NOBODY;
+	}
+	if ((job_desc_msg->group_id == NO_VAL) &&
+	    (msg->protocol_version < SLURM_23_02_PROTOCOL_VERSION)) {
+		/* older scontrol used NO_VAL instead of SLURM_AUTH_NOBODY */
+		job_desc_msg->group_id = SLURM_AUTH_NOBODY;
+	}
+
 	/* job_desc_msg->user_id is set when the uid has been overriden with
 	 * -u <uid> or --uid=<uid>. NO_VAL is default. Verify the request has
 	 * come from an admin */
-	if (job_desc_msg->user_id != NO_VAL) {
+	if (job_desc_msg->user_id != SLURM_AUTH_NOBODY) {
 		if (!validate_super_user(uid)) {
 			error_code = ESLURM_USER_ID_MISSING;
 			error("Security violation, REQUEST_UPDATE_JOB RPC from uid=%u",
