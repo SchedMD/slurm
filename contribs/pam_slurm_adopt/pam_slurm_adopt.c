@@ -861,6 +861,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 	user_jobs = _user_job_count(steps, pwd.pw_uid, &stepd);
 	if (user_jobs == 0) {
 		if (opts.action_no_jobs == CALLERID_ACTION_DENY) {
+			debug("uid %u owns no jobs => deny", pwd.pw_uid);
 			send_user_msg(pamh, "Access denied by " PAM_MODULE_NAME
 				      ": you have no active jobs on this node");
 			rc = PAM_PERM_DENIED;
