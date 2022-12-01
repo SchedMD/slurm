@@ -106,6 +106,8 @@ COMMAND CHANGES (see man pages for details)
  -- scontrol - A reservation cannot be updated to be reoccurring if it is
     already a floating reservation.
  -- squeue - removed unused '%s' and 'SelectJobInfo' formats.
+ -- squeue - align print format for exit and derived codes with that of other
+    components (<exit_status>:<signal_number>).
 
 API CHANGES
 ===========

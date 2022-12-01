@@ -146,6 +146,8 @@ documents those changes that are of interest to users and administrators.
  -- Add purge and archive functionality for job environment and job batch script
     records.
  -- srun - return an error if step suffers a node failure.
+ -- squeue - align print format for exit and derived codes with that of other
+    components (<exit_status>:<signal_number>).
 
 * Changes in Slurm 22.05.7
 ==========================
