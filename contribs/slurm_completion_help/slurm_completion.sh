@@ -590,7 +590,7 @@ function __slurm_func_wrapper() {
 
 	__slurm_log_debug "$(__func__): $cmd"
 
-	output="$(eval "$cmd")"
+	output="$(eval "$cmd" 2>/dev/null)"
 	exit_code=$?
 
 	if ((exit_code == 0)); then
