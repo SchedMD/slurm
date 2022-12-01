@@ -68,8 +68,7 @@ int quiet_flag = 0;	/* quiet=1, verbose=-1, normal=0 */
 int sibling_flag = 0;   /* show sibling jobs (if any fed job). */
 int verbosity = 0;	/* count of "-v" options */
 uint32_t cluster_flags; /* what type of cluster are we talking to */
-uint32_t euid = NO_VAL;	 /* send request to the slurmctld in behave of
-			    this user */
+uint32_t euid = SLURM_AUTH_NOBODY; /* proxy request as user */
 
 front_end_info_msg_t *old_front_end_info_ptr = NULL;
 job_info_msg_t *old_job_info_ptr = NULL;
