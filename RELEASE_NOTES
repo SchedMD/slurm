@@ -141,3 +141,4 @@ API CHANGES
     slurm_bb_get_status(), then they will be included in the variadic arguments.
     Backwards compatibility is maintained for all other hooks because the new
     arguments are passed after the existing arguments.
+ -- node_features plugins - node_features_p_reboot_weight() function removed.

@@ -60,7 +60,6 @@ static List helper_features = NULL;
 static List helper_exclusives = NULL;
 static uint32_t boot_time = (5 * 60);
 static uint32_t exec_time = 10;
-static uint32_t node_reboot_weight = NO_VAL;
 
 typedef struct {
 	const char *name;
@@ -300,7 +299,6 @@ static s_p_options_t conf_options[] = {
 	{"BootTime", S_P_UINT32},
 	{"ExecTime", S_P_UINT32},
 	{"MutuallyExclusive", S_P_ARRAY, _parse_exclusives, xfree_ptr},
-	{"NodeRebootWeight", S_P_UINT32},
 	{"AllowUserBoot", S_P_STRING},
 	{NULL},
 };
@@ -364,10 +362,6 @@ static int _read_config_file(void)
 	if (!s_p_get_uint32(&exec_time, "ExecTime", tbl))
 		info("ExecTime not specified, using default value: %u",
 		     exec_time);
-
-	if (!s_p_get_uint32(&node_reboot_weight, "NodeRebootWeight", tbl))
-		info("NodeRebootWeight not specified, using default value: %u",
-		     node_reboot_weight);
 
 	rc = SLURM_SUCCESS;
 
@@ -777,11 +771,6 @@ extern void node_features_p_get_config(config_plugin_params_t *p)
 	list_append(data, key_pair);
 
 	key_pair = xmalloc(sizeof(*key_pair));
-	key_pair->name = xstrdup("NodeRebootWeight");
-	key_pair->value = xstrdup_printf("%u", node_reboot_weight);
-	list_append(data, key_pair);
-
-	key_pair = xmalloc(sizeof(*key_pair));
 	key_pair->name = xstrdup("BootTime");
 	key_pair->value = xstrdup_printf("%u", boot_time);
 	list_append(data, key_pair);
@@ -805,11 +794,6 @@ extern char *node_features_p_node_xlate2(char *new_features)
 extern uint32_t node_features_p_boot_time(void)
 {
 	return boot_time;
-}
-
-extern uint32_t node_features_p_reboot_weight(void)
-{
-	return node_reboot_weight;
 }
 
 extern int node_features_p_reconfig(void)

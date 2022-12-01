@@ -3840,29 +3840,8 @@ end_node_set:
 }
 
 /*
- * For a given node_set, set node weight based on their flags.
- */
-static void _set_reboot_weight(struct node_set *node_set_ptr)
-{
-	static uint32_t reboot_weight = NO_VAL;
-	static time_t sched_update = 0;
-
-	xassert(node_set_ptr);
-
-	if (sched_update != slurm_conf.last_update) {
-		reboot_weight = node_features_g_reboot_weight();
-		sched_update = slurm_conf.last_update;
-	}
-
-	if ((reboot_weight != NO_VAL) &&
-	    ((node_set_ptr->flags & NODE_SET_REBOOT) ||
-	     (node_set_ptr->flags & NODE_SET_POWER_DN)))
-		node_set_ptr->node_weight = reboot_weight;
-}
-
-/*
  * For a given node_set, set a scheduling weight based upon a combination of
- * node_weight (or reboot_weight) and flags (e.g. try to avoid reboot).
+ * node_weight and flags (e.g. try to avoid reboot).
  * 0x20000000000 - Requires boot
  * 0x10000000000 - Outside of flex reservation
  * 0x0########00 - Node weight
@@ -3871,8 +3850,6 @@ static void _set_reboot_weight(struct node_set *node_set_ptr)
 static void _set_sched_weight(struct node_set *node_set_ptr)
 {
 	xassert(node_set_ptr);
-
-	_set_reboot_weight(node_set_ptr);
 
 	node_set_ptr->sched_weight = node_set_ptr->node_weight << 8;
 	node_set_ptr->sched_weight |= 0xff;
