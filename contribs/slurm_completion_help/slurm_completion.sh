@@ -3402,7 +3402,13 @@ function __scontrol_show_assoc_mgr() {
 
 # completion handler for: scontrol show hostlist *
 function __scontrol_show_hostlist() {
-	__slurm_compreply_list "$(__slurm_nodes)" "" "true"
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+
+	if [[ $cur =~ ^/ ]]; then
+		_filedir
+	else
+		__slurm_compreply_list "$(__slurm_nodes)" "" "true"
+	fi
 }
 
 # completion handler for: scontrol show hostlistsorted *
