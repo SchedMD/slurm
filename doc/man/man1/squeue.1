@@ -695,7 +695,9 @@ dependencies.
 
 .TP
 \fBDerivedEC\fR
-Derived exit code for the job, which is the highest exit code of any job step.
+The highest exit code returned by the job's job steps (srun invocations).
+Following the colon is the signal that caused the process to terminate if
+it was terminated by a signal.
 (Valid for jobs only)
 .IP
 
@@ -713,7 +715,9 @@ The time of job termination, actual or expected.
 
 .TP
 \fBexit_code\fR
-The exit code for the job.
+The exit code returned by the job, typically as set by the exit() function.
+Following the colon is the signal that caused the process to terminate if it was
+terminated by a signal.
 (Valid for jobs only)
 .IP
 
