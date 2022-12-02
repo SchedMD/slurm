@@ -176,6 +176,8 @@ int srun(int ac, char **av)
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 	_set_exit_code();
 
+	if (slurm_cred_init() != SLURM_SUCCESS)
+		fatal("failed to initialize cred plugin");
 	if (switch_init(0) != SLURM_SUCCESS )
 		fatal("failed to initialize switch plugins");
 
