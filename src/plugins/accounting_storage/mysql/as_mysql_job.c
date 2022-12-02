@@ -909,6 +909,9 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (job->system_comment)
 		xstrfmtcat(vals, ", system_comment='%s'", job->system_comment);
 
+	if (job->extra)
+		xstrfmtcat(vals, ", extra='%s'", job->extra);
+
 	if (job->wckey)
 		xstrfmtcat(vals, ", wckey='%s'", job->wckey);
 
@@ -1228,6 +1231,9 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	if (job_ptr->system_comment)
 		xstrfmtcat(query, ", system_comment='%s'",
 			   job_ptr->system_comment);
+
+	if (job_ptr->extra)
+		xstrfmtcat(query, ", extra='%s'", job_ptr->extra);
 
 	exit_code = job_ptr->exit_code;
 	if (exit_code == 1) {

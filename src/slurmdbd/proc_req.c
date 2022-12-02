@@ -1427,6 +1427,7 @@ static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	job.derived_ec = job_comp_msg->derived_ec;
 	job.end_time = job_comp_msg->end_time;
 	job.exit_code = job_comp_msg->exit_code;
+	job.extra = job_comp_msg->extra;
 	job.job_id = job_comp_msg->job_id;
 	job.job_state = job_comp_msg->job_state;
 	job.requid = job_comp_msg->req_uid;

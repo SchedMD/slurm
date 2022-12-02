@@ -585,6 +585,9 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	if (slurm_ctl_conf_ptr->conf_flags & CTL_CONF_SJE)
 		xstrfmtcat(key_pair->value, "%sjob_env",
 			   key_pair->value ? "," : "");
+	if (slurm_ctl_conf_ptr->conf_flags & CTL_CONF_SJX)
+		xstrfmtcat(key_pair->value, "%sjob_extra",
+			   key_pair->value ? "," : "");
 	if (slurm_ctl_conf_ptr->conf_flags & CTL_CONF_SJS)
 		xstrfmtcat(key_pair->value, "%sjob_script",
 			   key_pair->value ? "," : "");

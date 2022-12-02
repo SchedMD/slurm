@@ -2770,7 +2770,7 @@ typedef struct reservation_name_msg {
 #define CTL_CONF_WCKEY          SLURM_BIT(5) /* TrackWCKey */
 #define CTL_CONF_IPV4_ENABLED   SLURM_BIT(6) /* IPv4 is enabled */
 #define CTL_CONF_IPV6_ENABLED   SLURM_BIT(7) /* IPv6 is enabled */
-/*                              SLURM_BIT(8) UNUSED */
+#define CTL_CONF_SJX            SLURM_BIT(8) /* AccountingStoreFlags=job_extra */
 #define CTL_CONF_SJS            SLURM_BIT(9) /* AccountingStoreFlags=job_script */
 #define CTL_CONF_SJE            SLURM_BIT(10) /* AccountingStoreFlags=job_env */
 

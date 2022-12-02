@@ -233,6 +233,7 @@ typedef struct dbd_job_comp_msg {
 	uint32_t derived_ec;	/* derived job exit code or signal */
 	time_t   end_time;	/* job termintation time */
 	uint32_t exit_code;	/* job exit code or signal */
+	char *extra;		/* job extra field */
 	uint32_t job_id;	/* job ID */
 	uint32_t job_state;	/* job state */
 	char *   nodes;		/* hosts allocated to the job */

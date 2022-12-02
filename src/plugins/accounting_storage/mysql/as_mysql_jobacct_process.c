@@ -63,6 +63,7 @@ char *job_req_inx[] = {
 	"t1.derived_ec",
 	"t1.derived_es",
 	"t1.exit_code",
+	"t1.extra",
 	"t1.flags",
 	"t1.id_array_job",
 	"t1.id_array_task",
@@ -121,6 +122,7 @@ enum {
 	JOB_REQ_DERIVED_EC,
 	JOB_REQ_DERIVED_ES,
 	JOB_REQ_EXIT_CODE,
+	JOB_REQ_EXTRA,
 	JOB_REQ_FLAGS,
 	JOB_REQ_ARRAYJOBID,
 	JOB_REQ_ARRAYTASKID,
@@ -850,6 +852,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->system_comment = xstrdup(row[JOB_REQ_SYSTEM_COMMENT]);
 		job->constraints = xstrdup(row[JOB_REQ_CONSTRAINTS]);
 		job->container = xstrdup(row[JOB_REQ_CONTAINER]);
+		job->extra = xstrdup(row[JOB_REQ_EXTRA]);
 		job->licenses = xstrdup(row[JOB_REQ_LICENSES]);
 		job->flags = slurm_atoul(row[JOB_REQ_FLAGS]);
 
