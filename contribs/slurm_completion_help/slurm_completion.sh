@@ -3062,7 +3062,7 @@ function __scontrol_create() {
 	local parameters=(
 		"nodename="
 		"partitionname="
-		"reservation\ "
+		"reservation "
 		"reservationname="
 	)
 	local param
