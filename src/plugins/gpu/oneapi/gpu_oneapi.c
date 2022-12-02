@@ -851,7 +851,7 @@ static bool _oneapi_get_device_name(uint32_t domain, uint32_t bus,
 				    uint32_t device, uint32_t function,
 				    char *name, uint32_t len)
 {
-	static const *card_reg_string = "card[0-9]+$";
+	static const char *card_reg_string = "card[0-9]+$";
 	const char *search_path = "/sys/class/drm";
 	char device_pattern[PATH_MAX] = {'\0'};
 	char path[PATH_MAX] = {'\0'};
