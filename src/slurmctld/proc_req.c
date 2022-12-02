@@ -711,19 +711,6 @@ extern void configless_setup(void)
 
 	load_config_response_list(config_for_slurmd, slurmd_config_files);
 	load_config_response_list(config_for_clients, client_config_files);
-
-	/* just reuse what we already have */
-	config_for_clients->config = config_for_slurmd->config;
-	config_for_clients->plugstack_config =
-		config_for_slurmd->plugstack_config;
-
-	/*
-	 * route/topology will cause srun to load topology.conf, so we'll
-	 * need to send that along with the rest.
-	 */
-	if (!xstrcmp(slurm_conf.route_plugin, "route/topology"))
-		config_for_clients->topology_config =
-			config_for_slurmd->topology_config;
 }
 
 /*
@@ -761,21 +748,10 @@ extern void configless_update(void)
 
 	/* Now reuse what we already have */
 	config_for_clients->config_files = new_client->config_files;
-	config_for_clients->config = config_for_slurmd->config;
-	config_for_clients->plugstack_config =
-		config_for_slurmd->plugstack_config;
 
 	/* free new_client and the old list */
 	FREE_NULL_LIST(config_files);
 	xfree(new_client);
-
-	/*
-	 * route/topology will cause srun to load topology.conf, so we'll
-	 * need to send that along with the rest.
-	 */
-	if (!xstrcmp(slurm_conf.route_plugin, "route/topology"))
-		config_for_clients->topology_config =
-			config_for_slurmd->topology_config;
 
 	/* now free the old config */
 	slurm_free_config_response_msg(old);

@@ -401,50 +401,15 @@ extern int write_configs_to_conf_cache(config_response_msg_t *msg,
 	return SLURM_SUCCESS;
 }
 
-static void _load_conf(const char *dir, const char *name, char **target)
-{
-	char *file = NULL;
-	buf_t *config;
-
-	xstrfmtcat(file, "%s/%s", dir, name);
-	config = create_mmap_buf(file);
-	xfree(file);
-
-	/*
-	 * If we can't load a given config, then assume that one isn't required
-	 * on this system.
-	 */
-	if (config)
-		*target = xstrndup(config->head, config->size);
-
-	FREE_NULL_BUFFER(config);
-}
-
 extern void load_config_response_msg(config_response_msg_t *msg, int flags)
 {
 	xassert(msg);
-	char *dir = get_extra_conf_path("");
-
-	_load_conf(dir, "slurm.conf", &msg->config);
 
 	if (!(flags & CONFIG_REQUEST_SLURMD)) {
-		xfree(dir);
 		return;
 	}
 
-	_load_conf(dir, "acct_gather.conf", &msg->acct_gather_config);
-	_load_conf(dir, "cgroup.conf", &msg->cgroup_config);
-	_load_conf(dir, "ext_sensors.conf", &msg->ext_sensors_config);
-	_load_conf(dir, "gres.conf", &msg->gres_config);
-	_load_conf(dir, "job_container.conf", &msg->job_container_config);
-	_load_conf(dir, "knl_cray.conf", &msg->knl_cray_config);
-	_load_conf(dir, "knl_generic.conf", &msg->knl_generic_config);
-	_load_conf(dir, "plugstack.conf", &msg->plugstack_config);
-	_load_conf(dir, "topology.conf", &msg->topology_config);
-
 	msg->slurmd_spooldir = xstrdup(slurm_conf.slurmd_spooldir);
-
-	xfree(dir);
 }
 
 static void _load_conf2list(config_response_msg_t *msg, char *file_name)
