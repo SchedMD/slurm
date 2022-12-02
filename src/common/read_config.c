@@ -6353,6 +6353,12 @@ extern char *get_extra_conf_path(char *conf_name)
 		val = default_slurm_config_file;
 
 	/*
+	 * Absolute paths are preserved as-is.
+	 */
+	if (conf_name && conf_name[0] == '/')
+		return xstrdup(conf_name);
+
+	/*
 	 * Both plugstack.conf and topology.conf need special handling in
 	 * "configless" operation as client commands will need to load them.
 	 */

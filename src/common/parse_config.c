@@ -1063,25 +1063,6 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
 	return 1;
 }
 
-static char * _add_full_path(char *file_name, char *slurm_conf_path)
-{
-	char *path_name = NULL, *slash;
-
-	if ((file_name == NULL) || (file_name[0] == '/')) {
-		path_name = xstrdup(file_name);
-		return path_name;
-	}
-
-	path_name = xstrdup(slurm_conf_path);
-	slash = strrchr(path_name, '/');
-	if (slash)
-		slash[0] = '\0';
-	xstrcat(path_name, "/");
-	xstrcat(path_name, file_name);
-
-	return path_name;
-}
-
 static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
 {
 	char *filename = xstrdup(path);
@@ -1203,7 +1184,7 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 		xfree(file_with_mod);
 		if (!file_name)	/* Error printed by _parse_for_format() */
 			return -1;
-		path_name = _add_full_path(file_name, slurm_conf_path);
+		path_name = get_extra_conf_path(file_name);
 		if (!last_ancestor)
 			last_ancestor = xbasename(slurm_conf_path);
 		rc = s_p_parse_file(hashtbl, hash_val, path_name, ignore_new,
