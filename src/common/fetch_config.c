@@ -379,6 +379,18 @@ extern int write_one_config(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+extern int write_config_to_memfd(void *x, void *arg)
+{
+	config_file_t *config = x;
+
+	if (config->exists)
+		config->memfd_fd = dump_to_memfd(config->file_name,
+						 config->file_content,
+						 &config->memfd_path);
+
+	return SLURM_SUCCESS;
+}
+
 extern int write_configs_to_conf_cache(config_response_msg_t *msg,
 				       char *dir)
 {

@@ -54,6 +54,8 @@ extern int dump_to_memfd(char *type, char *config, char **filename);
 
 extern int find_conf_by_name(void *x, void *key);
 
+extern int write_config_to_memfd(void *x, void *arg);
+
 extern int find_map_conf_file(void *x, void *key);
 
 extern int write_configs_to_conf_cache(config_response_msg_t *msg,
