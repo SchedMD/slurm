@@ -717,7 +717,9 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	} else if (opt_local->cpus_set) {
 		step_req->cpu_count =
 			opt_local->ntasks * opt_local->cpus_per_task;
-		if (!srun_opt->exact)
+		if (srun_opt->whole)
+			info("Ignoring --whole since -c/--cpus-per-task used");
+		else if (!srun_opt->exact)
 			verbose("Implicitly setting --exact, because -c/--cpus-per-task given.");
 		srun_opt->exact = true;
 	} else if (opt_local->gpus_per_task && opt_local->cpus_per_gpu) {
