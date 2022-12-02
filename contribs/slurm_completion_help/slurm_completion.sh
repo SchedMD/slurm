@@ -2012,6 +2012,7 @@ function __slurm_comp_sacctmgr_spec_jobs() {
 		"comment="
 		"derivedexitcode="
 		"endtime="
+		"extra="
 		"newwckey="
 		"starttime="
 		"systemcomment="
