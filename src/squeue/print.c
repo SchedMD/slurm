@@ -1677,7 +1677,7 @@ int _print_job_derived_ec(job_info_t * job, int width, bool right_justify,
 			  char* suffix)
 {
 	uint16_t exit_status = 0, term_sig = 0;
-	char *out;
+	char *out = NULL;
 
 	if (!job)
 		_print_str("DERIVED_EC", width, right_justify, true);
@@ -1716,7 +1716,7 @@ int _print_job_exit_code(job_info_t * job, int width, bool right_justify,
 			 char* suffix)
 {
 	uint16_t exit_status = 0, term_sig = 0;
-	char *out;
+	char *out = NULL;
 
 	if (!job)
 		_print_str("EXIT_CODE", width, right_justify, true);
