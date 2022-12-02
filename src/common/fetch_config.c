@@ -539,6 +539,10 @@ extern void destroy_config_file(void *object)
 	if (!conf_file)
 		return;
 
+	if (conf_file->memfd_path)
+		close(conf_file->memfd_fd);
+	xfree(conf_file->memfd_path);
+
 	xfree(conf_file->file_name);
 	xfree(conf_file->file_content);
 	xfree(conf_file);

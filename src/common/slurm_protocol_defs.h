@@ -1171,6 +1171,10 @@ typedef struct {
 	bool exists;
 	char *file_name;
 	char *file_content;
+
+	/* Do not pack - used for local caching for configless clients */
+	int memfd_fd;
+	char *memfd_path;
 } config_file_t;
 
 typedef struct {
