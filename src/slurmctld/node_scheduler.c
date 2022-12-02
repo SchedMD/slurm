@@ -146,8 +146,6 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 				 config_record_t *config_ptr,
 				 bool can_reboot, bitstr_t *reboot_bitmap);
 
-static uint32_t reboot_weight = 0;
-
 /*
  * _get_ntasks_per_core - Retrieve the value of ntasks_per_core from
  *	the given job_details record.  If it wasn't set, return INFINITE16.
@@ -1211,10 +1209,10 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					node_set_ptr[i].real_memory;
 				tmp_node_set_ptr[tmp_node_set_size].node_weight =
 					node_set_ptr[i].node_weight;
+				tmp_node_set_ptr[tmp_node_set_size].sched_weight =
+					node_set_ptr[i].sched_weight;
 				tmp_node_set_ptr[tmp_node_set_size].flags =
 					node_set_ptr[i].flags;
-				_set_sched_weight(tmp_node_set_ptr +
-						  tmp_node_set_size);
 				tmp_node_set_ptr[tmp_node_set_size].features =
 					xstrdup(node_set_ptr[i].features);
 				tmp_node_set_ptr[tmp_node_set_size].
@@ -1252,8 +1250,6 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				sort_again = true;
 				if (bit_equal(prev_node_set_ptr->my_bitmap,
 					      inactive_bitmap)) {
-					prev_node_set_ptr->node_weight =
-						reboot_weight;
 					prev_node_set_ptr->flags |=
 						NODE_SET_REBOOT;
 					FREE_NULL_BITMAP(inactive_bitmap);
@@ -1265,12 +1261,8 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				tmp_node_set_ptr[tmp_node_set_size].
 					real_memory =
 					node_set_ptr[i].real_memory;
-				tmp_node_set_ptr[tmp_node_set_size].node_weight=
-					reboot_weight;
 				tmp_node_set_ptr[tmp_node_set_size].flags |=
 					NODE_SET_REBOOT;
-				_set_sched_weight(tmp_node_set_ptr +
-						  tmp_node_set_size);
 				tmp_node_set_ptr[tmp_node_set_size].features =
 					xstrdup(node_set_ptr[i].features);
 				tmp_node_set_ptr[tmp_node_set_size].
@@ -1309,6 +1301,8 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			FREE_NULL_LIST(*preemptee_job_list);
 			job_ptr->details->pn_min_memory = orig_req_mem;
 			if (sort_again) {
+				for (i = 0; i < tmp_node_set_size; i++)
+					_set_sched_weight(tmp_node_set_ptr + i);
 				qsort(tmp_node_set_ptr, tmp_node_set_size,
 				      sizeof(struct node_set), _sort_node_set);
 			}
@@ -2314,9 +2308,6 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	if (!acct_policy_job_runnable_pre_select(job_ptr, false))
 		return ESLURM_ACCOUNTING_POLICY;
 
-	if (reboot_weight == 0)
-		reboot_weight = node_features_g_reboot_weight();
-
 	part_ptr = job_ptr->part_ptr;
 
 	/* identify partition */
@@ -3317,26 +3308,20 @@ extern int job_req_node_filter(job_record_t *job_ptr,
  * IN nset_feature_bits - feature bitmap for the new node_set record
  * IN nset_node_bitmap - bitmap of nodes for the new node_set record
  * IN nset_flags - flags of nodes for the new node_set record
- * IN nset_weight - new node_weight of nodes for the new node_set record,
- *		    if NO_VAL then use original node_weight
  */
 static void _split_node_set(struct node_set *node_set_ptr,
 			    config_record_t *config_ptr,
 			    int nset_inx_base, int nset_inx,
 			    bitstr_t *nset_feature_bits,
-			    bitstr_t *nset_node_bitmap, uint32_t nset_flags,
-			    uint32_t nset_weight)
+			    bitstr_t *nset_node_bitmap, uint32_t nset_flags)
 {
 	node_set_ptr[nset_inx].cpus_per_node = config_ptr->cpus;
 	node_set_ptr[nset_inx].features = xstrdup(config_ptr->feature);
 	node_set_ptr[nset_inx].feature_bits = bit_copy(nset_feature_bits);
 	node_set_ptr[nset_inx].flags = nset_flags;
 	node_set_ptr[nset_inx].real_memory = config_ptr->real_memory;
-	if (nset_weight == NO_VAL) {
-		node_set_ptr[nset_inx].node_weight =
-			node_set_ptr[nset_inx_base].node_weight;
-	} else
-		node_set_ptr[nset_inx].node_weight = nset_weight;
+	node_set_ptr[nset_inx].node_weight =
+		node_set_ptr[nset_inx_base].node_weight;
 
 	/*
 	 * The bitmap of this new nodeset will contain only the nodes that
@@ -3604,14 +3589,13 @@ static int _build_node_list(job_record_t *job_ptr,
 					  node_maps[REBOOT])) {
 				/* All nodes in set require reboot */
 				prev_node_set_ptr->flags = NODE_SET_REBOOT;
-				prev_node_set_ptr->node_weight = reboot_weight;
 				goto end_node_set;
 			}
 			node_set_inx_base = node_set_inx - 1;
 			_split_node_set(node_set_ptr, config_ptr,
 					node_set_inx_base, node_set_inx,
 					tmp_feature, node_maps[REBOOT],
-					NODE_SET_REBOOT, reboot_weight);
+					NODE_SET_REBOOT);
 			node_set_inx++;
 			goto end_node_set;
 		}
@@ -3628,7 +3612,7 @@ static int _build_node_list(job_record_t *job_ptr,
 			_split_node_set(node_set_ptr, config_ptr,
 					node_set_inx_base, node_set_inx,
 					tmp_feature, node_maps[OUT_FL],
-					NODE_SET_OUTSIDE_FLEX, NO_VAL);
+					NODE_SET_OUTSIDE_FLEX);
 			node_set_inx++;
 			goto end_node_set;
 		}
@@ -3653,7 +3637,6 @@ static int _build_node_list(job_record_t *job_ptr,
 		if (bit_super_set(prev_node_set_ptr->my_bitmap,
 				  node_maps[IN_FL_RE])) {
 			prev_node_set_ptr->flags = NODE_SET_REBOOT;
-			prev_node_set_ptr->node_weight = reboot_weight;
 			goto end_node_set;
 		}
 		if (bit_super_set(prev_node_set_ptr->my_bitmap,
@@ -3665,7 +3648,6 @@ static int _build_node_list(job_record_t *job_ptr,
 				  node_maps[OUT_FL_RE])) {
 			prev_node_set_ptr->flags = (NODE_SET_OUTSIDE_FLEX |
 						    NODE_SET_REBOOT);
-			prev_node_set_ptr->node_weight = reboot_weight;
 			goto end_node_set;
 		}
 
@@ -3689,7 +3671,7 @@ static int _build_node_list(job_record_t *job_ptr,
 			_split_node_set(node_set_ptr, config_ptr,
 					node_set_inx_base, node_set_inx,
 					tmp_feature, node_maps[IN_FL_RE],
-					NODE_SET_REBOOT, reboot_weight);
+					NODE_SET_REBOOT);
 			FREE_NULL_BITMAP(node_maps[IN_FL_RE]);
 			node_set_inx++;
 			if (node_set_inx >= node_set_len) {
@@ -3702,7 +3684,7 @@ static int _build_node_list(job_record_t *job_ptr,
 			_split_node_set(node_set_ptr, config_ptr,
 					node_set_inx_base, node_set_inx,
 					tmp_feature, node_maps[OUT_FL_NO_RE],
-					(NODE_SET_OUTSIDE_FLEX), NO_VAL);
+					(NODE_SET_OUTSIDE_FLEX));
 			FREE_NULL_BITMAP(node_maps[OUT_FL_NO_RE]);
 			node_set_inx++;
 			if (node_set_inx >= node_set_len) {
@@ -3715,8 +3697,8 @@ static int _build_node_list(job_record_t *job_ptr,
 			_split_node_set(node_set_ptr, config_ptr,
 					node_set_inx_base, node_set_inx,
 					tmp_feature, node_maps[OUT_FL_RE],
-					(NODE_SET_OUTSIDE_FLEX|NODE_SET_REBOOT),
-					NO_VAL);
+					(NODE_SET_OUTSIDE_FLEX |
+					 NODE_SET_REBOOT));
 			FREE_NULL_BITMAP(node_maps[OUT_FL_RE]);
 			node_set_inx++;
 			if (node_set_inx >= node_set_len) {
@@ -3774,8 +3756,7 @@ end_node_set:
 		if (power_cnt == 0)
 			continue;	/* no nodes powered down */
 		if (power_cnt == node_set_ptr[i].node_cnt) {
-			if (node_set_ptr[i].node_weight != reboot_weight)
-				node_set_ptr[i].node_weight = reboot_weight;
+			node_set_ptr[i].flags = NODE_SET_POWER_DN;
 			continue;	/* all nodes powered down */
 		}
 
@@ -3786,7 +3767,6 @@ end_node_set:
 			node_set_ptr[i].real_memory;
 		node_set_ptr[node_set_inx].node_cnt = power_cnt;
 		node_set_ptr[i].node_cnt -= power_cnt;
-		node_set_ptr[node_set_inx].node_weight = reboot_weight;
 		node_set_ptr[node_set_inx].flags = NODE_SET_POWER_DN;
 		node_set_ptr[node_set_inx].features =
 			xstrdup(node_set_ptr[i].features);
@@ -3859,10 +3839,9 @@ end_node_set:
 	return SLURM_SUCCESS;
 }
 
-
 /*
  * For a given node_set, set a scheduling weight based upon a combination of
- * node_weight (or reboot_weight) and flags (e.g. try to avoid reboot).
+ * node_weight and flags (e.g. try to avoid reboot).
  * 0x20000000000 - Requires boot
  * 0x10000000000 - Outside of flex reservation
  * 0x0########00 - Node weight
@@ -3870,6 +3849,8 @@ end_node_set:
  */
 static void _set_sched_weight(struct node_set *node_set_ptr)
 {
+	xassert(node_set_ptr);
+
 	node_set_ptr->sched_weight = node_set_ptr->node_weight << 8;
 	node_set_ptr->sched_weight |= 0xff;
 	if ((node_set_ptr->flags & NODE_SET_REBOOT) ||
@@ -3884,6 +3865,9 @@ static int _sort_node_set(const void *x, const void *y)
 	struct node_set *node_set_ptr1 = (struct node_set *) x;
 	struct node_set *node_set_ptr2 = (struct node_set *) y;
 
+	xassert(node_set_ptr1);
+	xassert(node_set_ptr2);
+
 	if (node_set_ptr1->sched_weight < node_set_ptr2->sched_weight)
 		return -1;
 	if (node_set_ptr1->sched_weight > node_set_ptr2->sched_weight)
@@ -3895,12 +3879,13 @@ static void _log_node_set(job_record_t *job_ptr,
 			  struct node_set *node_set_ptr,
 			  int node_set_size)
 {
-/* Used for debugging purposes only */
-#if _DEBUG
 	char *node_list, feature_bits[64];
 	int i;
 
-	info("NodeSet for %pJ", job_ptr);
+	if (get_log_level() < LOG_LEVEL_DEBUG2)
+		return;
+
+	debug2("NodeSet for %pJ", job_ptr);
 	for (i = 0; i < node_set_size; i++) {
 		node_list = bitmap2node_name(node_set_ptr[i].my_bitmap);
 		if (node_set_ptr[i].feature_bits) {
@@ -3908,13 +3893,12 @@ static void _log_node_set(job_record_t *job_ptr,
 				node_set_ptr[i].feature_bits);
 		} else
 			feature_bits[0] = '\0';
-		info("NodeSet[%d] Nodes:%s NodeWeight:%u Flags:%u FeatureBits:%s SchedWeight:%"PRIu64,
-		     i, node_list, node_set_ptr[i].node_weight,
-		     node_set_ptr[i].flags, feature_bits,
-		     node_set_ptr[i].sched_weight);
+		debug2("NodeSet[%d] Nodes:%s NodeWeight:%u Flags:%u FeatureBits:%s SchedWeight:%"PRIu64,
+		       i, node_list, node_set_ptr[i].node_weight,
+		       node_set_ptr[i].flags, feature_bits,
+		       node_set_ptr[i].sched_weight);
 		xfree(node_list);
 	}
-#endif
 }
 
 static void _set_err_msg(bool cpus_ok, bool mem_ok, bool disk_ok,

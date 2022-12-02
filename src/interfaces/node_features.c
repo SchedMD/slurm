@@ -68,7 +68,6 @@ typedef struct node_features_ops {
 				 char *avail_features, int node_inx);
 	char *	(*node_xlate2)	(char *new_features);
 	void	(*step_config)	(bool mem_sort, bitstr_t *numa_bitmap);
-	uint32_t(*reboot_weight)(void);
 	int	(*reconfig)	(void);
 	bool	(*user_update)	(uid_t uid);
 	void	(*get_config)	(config_plugin_params_t *p);
@@ -94,7 +93,6 @@ static const char *syms[] = {
 	"node_features_p_node_xlate",
 	"node_features_p_node_xlate2",
 	"node_features_p_step_config",
-	"node_features_p_reboot_weight",
 	"node_features_p_reconfig",
 	"node_features_p_user_update",
 	"node_features_p_get_config"
@@ -610,23 +608,4 @@ extern List node_features_g_get_config(void)
 	END_TIMER2(__func__);
 
 	return conf_list;
-}
-
-/*
- * Return node "weight" field if reboot required to change mode
- */
-extern uint32_t node_features_g_reboot_weight(void)
-{
-	DEF_TIMERS;
-	uint32_t weight = INFINITE - 1;
-
-	START_TIMER;
-	xassert(g_context_cnt >= 0);
-	slurm_mutex_lock(&g_context_lock);
-	if (g_context_cnt > 0)
-		weight = (*(ops[0].reboot_weight))();
-	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2(__func__);
-
-	return weight;
 }

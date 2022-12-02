@@ -1,4 +1,4 @@
-.TH "knl.conf" "5" "Slurm Configuration File" "January 2022" "Slurm Configuration File"
+.TH "knl.conf" "5" "Slurm Configuration File" "December 2022" "Slurm Configuration File"
 
 .SH "NAME"
 knl.conf \- Slurm configuration file for Intel Knights Landing processor.
@@ -182,14 +182,6 @@ If such errors are detected, the node will be set to a DOWN state and the
 slurmd daemon will shutdown.
 The default value is "/sys/devices/system/edac/mc".
 See also \fBUmeCheckInterval\fR.
-.IP
-
-.TP
-\fBNodeRebootWeight\fR
-If a compute node requires a reboot to be usable for a pending job, then reset
-the node's weight to the specified value.
-The default value is 4,294,967,294 (0xfffffffe).
-See also "Weight" in the node configuration specification of slurm.conf.
 .IP
 
 .TP

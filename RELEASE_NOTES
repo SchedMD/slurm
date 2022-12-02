@@ -55,6 +55,7 @@ HIGHLIGHTS
  -- Add purge and archive functionality for job environment and job batch script
     records.
  -- Extend support for Include files to all "configless" client commands.
+ -- Make node weight usable for powered down and rebooting nodes.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -140,3 +141,4 @@ API CHANGES
     slurm_bb_get_status(), then they will be included in the variadic arguments.
     Backwards compatibility is maintained for all other hooks because the new
     arguments are passed after the existing arguments.
+ -- node_features plugins - node_features_p_reboot_weight() function removed.
