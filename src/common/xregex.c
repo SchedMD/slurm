@@ -71,7 +71,7 @@ extern void dump_regex_error(int rc, const regex_t *regex_ptr, char *fmt, ...)
 extern bool regex_quick_match(const char *str, const regex_t *regex_ptr)
 {
 	int rc;
-	regmatch_t pmatch[1] = {0};
+	regmatch_t pmatch[1];
 
 	/* not possible to match a NULL string */
 	if (!str)
