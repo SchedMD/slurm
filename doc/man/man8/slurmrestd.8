@@ -1,4 +1,4 @@
-.TH slurmrestd "8" "Slurm REST Daemon" "August 2022" "Slurm REST Daemon"
+.TH slurmrestd "8" "Slurm REST Daemon" "November 2022" "Slurm REST Daemon"
 
 .SH "NAME"
 slurmrestd \- Interface to Slurm via REST API.
@@ -34,8 +34,35 @@ filesystem.
 .TP
 \fB\-a <authentication plugins>\fR
 Comma\-delimited list of authentication plugins to load.
-Set to "list" to dump a list of the possible plugins to load.
-Defaults: all builtin supported REST authentication plugins.
+Default behavior is to load all REST authentication plugins found at load time.
+.RS
+.TP
+\fBlist\fR
+Display a list of the possible plugins to load.
+.IP
+
+.TP
+\fBrest_auth/local\fR
+Allows authentication via UNIX sockets when \fBauth/munge\fR is active.
+.br
+\fBNOTE\fR: slurmrestd and client processes must run under the same UID or the
+client requests will be rejected.
+.IP
+
+.TP
+\fBrest_auth/jwt\fR
+Allows authentication via TCP and UNIX sockets when \fBAuthAltTypes=auth/jwt\fR
+is active. User must specify the following HTTP cookies with each request:
+.RS
+.TP
+\fBX-SLURM-USER-NAME\fR:<user name>
+.IP
+.TP
+\fBX-SLURM-USER-TOKEN\fR:<JSON Web Token>
+.RE
+.IP
+\fBNOTE\fR: Tokens are usually generated via calling "\fBscontrol token\fR".
+.RE
 .IP
 
 .TP
