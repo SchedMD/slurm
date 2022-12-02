@@ -150,6 +150,7 @@ documents those changes that are of interest to users and administrators.
     components (<exit_status>:<signal_number>).
  -- Add new SlurmctldParameters=validate_nodeaddr_threads=<number> option to
     allow concurrent hostname resolution at slurmctld startup.
+ -- Have 'scontrol show hostlist -' read from stdin.
 
 * Changes in Slurm 22.05.7
 ==========================

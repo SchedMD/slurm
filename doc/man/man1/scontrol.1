@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "November 2022" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "December 2022" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -473,7 +473,8 @@ Shows configured frontend nodes.
 \fBhostlist\fR
 Takes a list of host names and prints the hostlist expression for them (the
 inverse of \fBhostnames\fR). \fBhostlist\fR can also take the absolute pathname
-of a file (beginning with the character '/') containing a list of hostnames.
+of a file (beginning with the character '/') containing a list of hostnames,
+or a single '-' to have it read from stdin directly.
 Multiple node names may be specified using simple node range expressions (e.g.
 "lx[10\-20]"). By default \fBhostlist\fR does not sort the node list or make it
 unique (e.g. tux2,tux1,tux2 = tux[2,1\-2]). If you wanted a sorted list use

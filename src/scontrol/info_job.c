@@ -893,18 +893,22 @@ _reformat_hostlist(char *hostlist)
  *	of a file containing hostnames, translate them into a hostlist
  *	expression
  */
-extern int
-scontrol_encode_hostlist(char *hostlist, bool sorted)
+extern int scontrol_encode_hostlist(char *arg_hostlist, bool sorted)
 {
-	char *io_buf = NULL, *tmp_list, *ranged_string;
+	char *io_buf = NULL, *tmp_list, *ranged_string, *hostlist;
 	int buf_size = 1024 * 1024;
 	int data_read = 0;
 	hostlist_t hl;
 
-	if (!hostlist) {
+	if (!arg_hostlist) {
 		fprintf(stderr, "Hostlist is NULL\n");
 		return SLURM_ERROR;
 	}
+
+	if (!xstrcmp(arg_hostlist, "-"))
+		hostlist = "/dev/stdin";
+	else
+		hostlist = arg_hostlist;
 
 	if (hostlist[0] == '/') {
 		ssize_t buf_read;
