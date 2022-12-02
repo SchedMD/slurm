@@ -151,6 +151,7 @@ documents those changes that are of interest to users and administrators.
  -- Add new SlurmctldParameters=validate_nodeaddr_threads=<number> option to
     allow concurrent hostname resolution at slurmctld startup.
  -- Have 'scontrol show hostlist -' read from stdin.
+ -- Extend support for Include files to all "configless" client commands.
 
 * Changes in Slurm 22.05.7
 ==========================

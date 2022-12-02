@@ -122,10 +122,7 @@ static s_p_hashtbl_t *default_partition_tbl;
 static log_level_t lvl = LOG_LEVEL_FATAL;
 static int	local_test_config_rc = SLURM_SUCCESS;
 static bool     no_addr_cache = false;
-static int plugstack_fd = -1;
-static char *plugstack_conf = NULL;
-static int topology_fd = -1;
-static char *topology_conf = NULL;
+static list_t *config_files = NULL;
 
 inline static void _normalize_debug_level(uint16_t *level);
 static int _init_slurm_conf(const char *file_name);
@@ -3365,15 +3362,7 @@ static int _init_slurm_conf(const char *file_name)
 static void
 _destroy_slurm_conf(void)
 {
-	if (plugstack_conf) {
-		xfree(plugstack_conf);
-		close(plugstack_fd);
-	}
-
-	if (topology_conf) {
-		xfree(topology_conf);
-		close(topology_fd);
-	}
+	FREE_NULL_LIST(config_files);
 
 	s_p_hashtbl_destroy(conf_hashtbl);
 	FREE_NULL_BUFFER(conf_buf);
@@ -3464,40 +3453,22 @@ static int _establish_config_source(char **config_file, int *memfd)
 		return SLURM_ERROR;
 	}
 
+	config_files = config->config_files;
+	config->config_files = NULL;
+	list_for_each(config_files, write_config_to_memfd, NULL);
+
 	/*
 	 * memfd is always created successfully as any failure causes the
 	 * process to die with a fatal() error.
 	 */
-	if (!(config_tmp = list_find_first(config->config_files,
-					   find_conf_by_name,
+	if (!(config_tmp = list_find_first(config_files, find_conf_by_name,
 					   "slurm.conf"))) {
 		error("%s: No slurm.conf found in configuration files received.",
 		      __func__);
 		return SLURM_ERROR;
 	}
-	*memfd = dump_to_memfd("slurm.conf", config_tmp->file_content,
-			       config_file);
-	/*
-	 * If we've been handed a plugstack.conf or topology.conf file then
-	 * slurmctld thinks we'll need it. Stash it in case of an eventual
-	 * spank_stack_init() / slurm_topo_init().
-	 */
-	if ((config_tmp = list_find_first(config->config_files,
-					  find_conf_by_name,
-					  "plugstack.conf"))) {
-		if (config_tmp->exists)
-			plugstack_fd = dump_to_memfd("plugstack.conf",
-						     config_tmp->file_content,
-						     &plugstack_conf);
-	}
-	if ((config_tmp = list_find_first(config->config_files,
-					  find_conf_by_name,
-					  "topology.conf"))) {
-		if (config_tmp->exists)
-			topology_fd = dump_to_memfd("topology.conf",
-						    config_tmp->file_content,
-						    &topology_conf);
-	}
+	*config_file = xstrdup(config_tmp->memfd_path);
+
 	slurm_free_config_response_msg(config);
 	debug2("%s: using config_file=%s (fetched)", __func__, *config_file);
 
@@ -6347,6 +6318,7 @@ extern int sort_key_pairs(void *v1, void *v2)
 extern char *get_extra_conf_path(char *conf_name)
 {
 	char *val = getenv("SLURM_CONF");
+	config_file_t *cached_config;
 	char *rc = NULL, *slash;
 
 	if (!val)
@@ -6359,15 +6331,15 @@ extern char *get_extra_conf_path(char *conf_name)
 		return xstrdup(conf_name);
 
 	/*
-	 * Both plugstack.conf and topology.conf need special handling in
-	 * "configless" operation as client commands will need to load them.
+	 * Config files such as plugstack.conf, topology.conf, and any
+	 * non-absolute include files need special handling in "configless"
+	 * operation as client commands.
 	 */
-
-	if (plugstack_conf && !xstrcmp(conf_name, "plugstack.conf"))
-		return xstrdup(plugstack_conf);
-
-	if (topology_conf && !xstrcmp(conf_name, "topology.conf"))
-		return xstrdup(topology_conf);
+	if (config_files &&
+	    (cached_config = list_find_first(config_files, find_conf_by_name,
+					     conf_name)) &&
+	    cached_config->exists)
+		return xstrdup(cached_config->memfd_path);
 
 	/* Replace file name on end of path */
 	rc = xstrdup(val);

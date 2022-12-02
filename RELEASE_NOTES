@@ -54,6 +54,7 @@ HIGHLIGHTS
     to a file.
  -- Add purge and archive functionality for job environment and job batch script
     records.
+ -- Extend support for Include files to all "configless" client commands.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
