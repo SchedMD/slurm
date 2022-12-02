@@ -75,6 +75,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- slurm.conf - Removed SlurmctldPlugstack option.
  -- Add new SlurmctldParameters=validate_nodeaddr_threads=<number> option to
     allow concurrent hostname resolution at slurmctld startup.
+ -- Add new AccountingStoreFlags=job_extra option to store a job's extra field
+    in the database.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
