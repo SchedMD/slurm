@@ -105,6 +105,7 @@
  *   right - right value for rightmost app process in subtree
  */
 
+#include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
 

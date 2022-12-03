@@ -37,6 +37,8 @@
 #ifndef _LAUNCH_H
 #define _LAUNCH_H
 
+#include <signal.h>
+
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
