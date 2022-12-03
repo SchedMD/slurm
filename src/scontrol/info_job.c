@@ -924,12 +924,13 @@ extern int scontrol_encode_hostlist(char *arg_hostlist, bool sorted)
 		}
 
 		if (buf_read < 0) {
+			xfree(io_buf);
 			fprintf(stderr, "Error reading %s\n", hostlist);
 			return SLURM_ERROR;
 		}
 
 		close(fd);
-		if (buf_read >= buf_size) {
+		if (data_read >= buf_size) {
 			/* If over 1MB, the file is almost certainly invalid */
 			fprintf(stderr, "File %s is too large\n", hostlist);
 			xfree(io_buf);
