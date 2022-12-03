@@ -986,6 +986,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	time_t *last_poll = (time_t *)data;
 	uint16_t *sensor_cnt = (uint16_t *)data;
 
+	xassert(data);
 	xassert(running_in_slurmd_stepd());
 
 	switch (data_type) {
