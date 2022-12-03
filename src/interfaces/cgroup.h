@@ -38,8 +38,14 @@
 #define _COMMON_CGROUP_H_
 
 /* Check filesystem type */
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#include <magic.h>
+#include <sys/mount.h>
+#include <sys/param.h>
+#else
 #include <linux/magic.h>
 #include <sys/vfs.h>
+#endif
 
 #include <pwd.h>
 #include <stdlib.h>
