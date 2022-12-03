@@ -933,7 +933,7 @@ uninstall-am: uninstall-sbinPROGRAMS
 
 
 @WITH_SLURMRESTD_TRUE@%.bino: %.txt
-@WITH_SLURMRESTD_TRUE@	$(AM_V_GEN)pushd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; popd
+@WITH_SLURMRESTD_TRUE@	$(AM_V_GEN)curr_dir=$(shell pwd); cd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; cd $$curr_dir
 @WITH_SLURMRESTD_TRUE@	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
 
 @WITH_SLURMRESTD_TRUE@lib_ref.lo: $(BIN_REF)
