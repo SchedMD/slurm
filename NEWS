@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
     sacctmgr failures.
  -- Fix several minor memory leaks in the cgroup/v2 plugin.
  -- Fix possible issue when enabling controllers with long names in cgroup/v2.
+ -- Fix potential segfault in slurmd when using acct_gather_energy/ipmi.
 
 * Changes in Slurm 22.05.6
 ==========================
