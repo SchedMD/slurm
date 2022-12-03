@@ -165,7 +165,7 @@ struct con_mgr_fd_s {
 	 * list of non-IO work pending
 	 * type: wrap_work_arg_t
 	 */
-	List work;
+	list_t *work;
 	/* owning connection manager */
 	con_mgr_t *mgr;
 };
@@ -179,12 +179,12 @@ struct con_mgr_s {
 	 * list of all connections to process
 	 * type: con_mgr_fd_t
 	 */
-	List connections;
+	list_t *connections;
 	/*
 	 * list of connections that only listen
 	 * type: con_mgr_fd_t
 	 * */
-	List listen;
+	list_t *listen;
 	/*
 	 * True if there is a thread for listen queued or running
 	 */
@@ -296,12 +296,12 @@ extern void con_mgr_queue_close_fd(con_mgr_fd_t *con);
  * create sockets based on requested SOCKET_LISTEN
  * IN  mgr assigned connection manager
  * to accepted connections.
- * IN  hostports List of cstrings to listen on.
+ * IN  hostports list_t* of cstrings to listen on.
  *	format: host:port
  * IN events function callback on events
  * RET SLURM_SUCCESS or error
  */
-extern int con_mgr_create_sockets(con_mgr_t *mgr, List hostports,
+extern int con_mgr_create_sockets(con_mgr_t *mgr, list_t *hostports,
 				  con_mgr_events_t events);
 
 /*

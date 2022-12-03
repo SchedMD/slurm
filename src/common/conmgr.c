@@ -1269,7 +1269,7 @@ static void _handle_event_pipe(con_mgr_t *mgr, const struct pollfd *fds_ptr,
  *
  * NOTE: mgr mutex must not be locked but will be locked upon return
  */
-static inline void _poll(con_mgr_t *mgr, poll_args_t *args, List fds,
+static inline void _poll(con_mgr_t *mgr, poll_args_t *args, list_t *fds,
 			 on_poll_event_t on_poll, const char *tag)
 {
 	int rc = SLURM_SUCCESS;
@@ -1345,7 +1345,7 @@ static void _poll_connections(void *x)
 	struct pollfd *fds_ptr = NULL;
 	con_mgr_fd_t *con;
 	int count;
-	ListIterator itr;
+	list_itr_t *itr;
 
 	_check_magic_mgr(mgr);
 
@@ -1450,7 +1450,7 @@ static void _listen(void *x)
 	struct pollfd *fds_ptr = NULL;
 	con_mgr_fd_t *con;
 	int count;
-	ListIterator itr;
+	list_itr_t *itr;
 
 	_check_magic_mgr(mgr);
 
@@ -1910,7 +1910,7 @@ static int _create_socket(void *x, void *arg)
 	return rc;
 }
 
-extern int con_mgr_create_sockets(con_mgr_t *mgr, List hostports,
+extern int con_mgr_create_sockets(con_mgr_t *mgr, list_t *hostports,
 				  con_mgr_events_t events)
 {
 	int rc;
