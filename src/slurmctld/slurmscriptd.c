@@ -72,6 +72,10 @@
 #define MAX_POLL_WAIT 500 /* in milliseconds */
 #define MAX_SHUTDOWN_DELAY 10
 
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#define POLLRDHUP POLLHUP
+#endif
+
 /*
  *****************************************************************************
  * The following are meant to be used by both slurmscriptd and slurmctld

@@ -62,6 +62,10 @@
 
 #define MAX_POLL_WAIT 500
 
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#define POLLRDHUP POLLHUP
+#endif
+
 /* Local variables */
 static int foreground = 0;
 static log_options_t log_opts =		/* Log to stderr & syslog */
