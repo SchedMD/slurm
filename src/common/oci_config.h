@@ -38,6 +38,8 @@
 #ifndef OCI_CONFIG_H
 #define OCI_CONFIG_H
 
+#include "src/common/log.h"
+
 typedef struct {
 	char *container_path; /* path pattern to use for holding OCI config */
 	bool create_env_file; /* create file with environment */
@@ -51,6 +53,10 @@ typedef struct {
 	char *srun_path; /* path to srun */
 	char **srun_args; /* arguments for srun (last entry is NULL) */
 	bool disable_cleanup; /* disable removing any generated files */
+	log_level_t stdio_log_level; /* container logging to STDIO */
+	log_level_t syslog_log_level; /* container logging to syslog */
+	log_level_t file_log_level; /* container logging to file */
+	uint64_t debug_flags; /* container logging flags */
 } oci_conf_t;
 
 extern int get_oci_conf(oci_conf_t **oci);

@@ -62,6 +62,10 @@ static s_p_options_t options[] = {
 	{"SrunPath", S_P_STRING},
 	{"SrunArgs", S_P_ARRAY},
 	{"DisableCleanup", S_P_BOOLEAN},
+	{"StdIODebug", S_P_STRING},
+	{"SyslogDebug", S_P_STRING},
+	{"FileDebug", S_P_STRING},
+	{"DebugFlags", S_P_STRING},
 	{NULL}
 };
 
@@ -75,6 +79,8 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	char *disable_hooks = NULL;
 	char **srun_args = NULL;
 	int srun_args_count = 0;
+	char *debug_stdio = NULL, *debug_syslog = NULL;
+	char *debug_flags = NULL, *debug_file = NULL;
 
 	if ((stat(conf_path, &buf) == -1)) {
 		error("No %s file", OCI_CONF);
@@ -102,6 +108,32 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	(void) s_p_get_array((void ***) &srun_args, &srun_args_count,
 			     "SrunArgs", tbl);
 	(void) s_p_get_boolean(&oci->disable_cleanup, "DisableCleanup", tbl);
+	(void) s_p_get_string(&debug_stdio, "StdIODebug", tbl);
+	(void) s_p_get_string(&debug_syslog, "SyslogDebug", tbl);
+	(void) s_p_get_string(&debug_file, "FileDebug", tbl);
+	(void) s_p_get_string(&debug_flags, "DebugFlags", tbl);
+
+	if (debug_stdio) {
+		oci->stdio_log_level = log_string2num(debug_stdio);
+		xfree(debug_stdio);
+	}
+	if (debug_syslog) {
+		oci->syslog_log_level = log_string2num(debug_syslog);
+		xfree(debug_syslog);
+	}
+	if (debug_file) {
+		oci->file_log_level = log_string2num(debug_file);
+		xfree(debug_file);
+	}
+	if (debug_flags) {
+		int rc;
+
+		if ((rc = debug_str2flags(debug_flags, &oci->debug_flags)))
+			fatal("%s: unable to parse oci.conf debugflags=%s: %m",
+			      __func__, debug_flags);
+
+		xfree(debug_flags);
+	}
 
 	if (srun_args_count) {
 		oci->srun_args = xcalloc((srun_args_count + 1),

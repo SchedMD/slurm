@@ -162,6 +162,8 @@ documents those changes that are of interest to users and administrators.
     user connection.
  -- oci.conf - add DisableHooks option.
  -- oci.conf - add SrunPath and SrunArgs options.
+ -- oci.conf - add StdIODebug, SyslogDebug, FileDebug and DebugFlags options to
+    allow controlling container specific logging.
 
 * Changes in Slurm 22.05.7
 ==========================
