@@ -311,6 +311,9 @@ static void _parse_commandline(int argc, char **argv)
  */
 static void _lock_down(void)
 {
+	if ((getuid() == SLURM_AUTH_NOBODY) || (getgid() == SLURM_AUTH_NOBODY))
+		fatal("slurmrestd must not be run as nobody");
+
 	if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1)
 		fatal("Unable to disable new privileges: %m");
 	if (unshare_sysv && unshare(CLONE_SYSVSEM))
