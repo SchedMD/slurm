@@ -2246,6 +2246,56 @@ grab_includes:
 		gres_parse_config_dummy();
 	}
 }
+
+/*
+ * Append changeable features in old_features and not in features to features.
+ */
+static void _merge_changeable_features(char *old_features, char **features)
+{
+	char *save_ptr_old = NULL;
+	char *tok_old, *tmp_old, *tok_new;
+	char *sep;
+
+	if (*features)
+		sep = ",";
+	else
+		sep = "";
+
+	/* Merge features strings, skipping duplicates */
+	tmp_old = xstrdup(old_features);
+	for (tok_old = strtok_r(tmp_old, ",", &save_ptr_old);
+	     tok_old;
+	     tok_old = strtok_r(NULL, ",", &save_ptr_old)) {
+		bool match = false;
+
+		if (!node_features_g_changeable_feature(tok_old))
+			continue;
+
+		if (*features) {
+			char *tmp_new, *save_ptr_new = NULL;
+
+			/* Check if old feature already exists in features string */
+			tmp_new = xstrdup(*features);
+			for (tok_new = strtok_r(tmp_new, ",", &save_ptr_new);
+			     tok_new;
+			     tok_new = strtok_r(NULL, ",", &save_ptr_new)) {
+				if (!xstrcmp(tok_old, tok_new)) {
+					match = true;
+					break;
+				}
+			}
+			xfree(tmp_new);
+		}
+
+		if (match)
+			continue;
+
+		xstrfmtcat(*features, "%s%s", sep, tok_old);
+		sep = ",";
+	}
+	xfree(tmp_old);
+}
+
 /*
  * Configure node features.
  * IN old_node_table_ptr IN - Previous nodes information
@@ -2258,7 +2308,6 @@ static void _set_features(node_record_t **old_node_table_ptr,
 			  int old_node_record_count, int recover)
 {
 	node_record_t *node_ptr, *old_node_ptr;
-	char *tmp, *tok, *sep;
 	int i, node_features_cnt = node_features_g_count();
 
 	for (i = 0; i < old_node_record_count; i++) {
@@ -2314,41 +2363,13 @@ static void _set_features(node_record_t **old_node_table_ptr,
 		 * registered to get KNL available and active features.
 		 */
 		if (old_node_ptr->features != NULL) {
-			char *save_ptr = NULL;
-			if (node_ptr->features)
-				sep = ",";
-			else
-				sep = "";
-			tmp = xstrdup(old_node_ptr->features);
-			tok = strtok_r(tmp, ",", &save_ptr);
-			while (tok) {
-				if (node_features_g_changeable_feature(tok)) {
-					xstrfmtcat(node_ptr->features,
-						   "%s%s", sep, tok);
-					sep = ",";
-				}
-				tok = strtok_r(NULL, ",", &save_ptr);
-			}
-			xfree(tmp);
+			_merge_changeable_features(old_node_ptr->features,
+						   &node_ptr->features);
 		}
 
 		if (old_node_ptr->features_act != NULL) {
-			char *save_ptr = NULL;
-			if (node_ptr->features_act)
-				sep = ",";
-			else
-				sep = "";
-			tmp = xstrdup(old_node_ptr->features_act);
-			tok = strtok_r(tmp, ",", &save_ptr);
-			while (tok) {
-				if (node_features_g_changeable_feature(tok)) {
-					xstrfmtcat(node_ptr->features_act,
-						   "%s%s", sep, tok);
-					sep = ",";
-				}
-				tok = strtok_r(NULL, ",", &save_ptr);
-			}
-			xfree(tmp);
+			_merge_changeable_features(old_node_ptr->features_act,
+						   &node_ptr->features_act);
 		}
 	}
 }
