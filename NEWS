@@ -158,6 +158,8 @@ documents those changes that are of interest to users and administrators.
  -- Add "Extra" field to job to store extra information other than a comment.
  -- Add new AccountingStoreFlags=job_extra option to store a job's extra field
     in the database.
+ -- slurmrestd - add option to allow rest_auth/local to switch user id on first
+    user connection.
 
 * Changes in Slurm 22.05.7
 ==========================

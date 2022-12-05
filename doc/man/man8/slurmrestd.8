@@ -1,4 +1,4 @@
-.TH slurmrestd "8" "Slurm REST Daemon" "November 2022" "Slurm REST Daemon"
+.TH slurmrestd "8" "Slurm REST Daemon" "December 2022" "Slurm REST Daemon"
 
 .SH "NAME"
 slurmrestd \- Interface to Slurm via REST API.
@@ -161,6 +161,17 @@ Control slurmrestd security functionality using the following comma\-delimited
 values:
 .IP
 .RS
+.TP
+\fBbecome_user\fR
+Allows \fBslurmrestd\fR to be run as root in order to become the requesting
+user for all requests. When combined with \fBrest_auth/local\fB, when a user
+connects via a named UNIX socket, \fBslurmrestd\fR will setuid()/setgid() into
+that user/group and then complete all requests as the given user. This mode is
+only intended for inet mode as the user change is permanent for the life of the
+process. This mode is incompatible with \fBrest_auth/jwt\fR and it is suggested
+to start \fBslurmrestd\fR with "-a \fBrest_auth/local\fR" arguments.
+.IP
+
 .TP
 \fBdisable_unshare_files\fR
 Disables unsharing file descriptors with parent process.

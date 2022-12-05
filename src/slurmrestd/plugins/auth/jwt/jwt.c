@@ -180,9 +180,13 @@ extern void *slurm_rest_auth_p_get_db_conn(rest_auth_context_t *context)
 	return NULL;
 }
 
-extern void slurm_rest_auth_p_init(void)
+extern void slurm_rest_auth_p_init(bool become_user)
 {
 	debug5("%s: REST JWT auth activated", __func__);
+
+	if (become_user)
+		fatal("%s: rest_auth/jwt must not be loaded in become_user mode",
+		      __func__);
 }
 
 extern void slurm_rest_auth_p_fini(void)

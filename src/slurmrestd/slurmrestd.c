@@ -106,6 +106,7 @@ static char *oas_specs = NULL;
 bool unshare_sysv = true;
 bool unshare_files = true;
 bool check_user = true;
+bool become_user = false;
 
 extern parsed_host_port_t *parse_host_port(const char *str);
 extern void free_parse_host_port(parsed_host_port_t *parsed);
@@ -163,6 +164,8 @@ static void _parse_env(void)
 				unshare_files = false;
 			} else if (!xstrcasecmp(token, "disable_user_check")) {
 				check_user = false;
+			} else if (!xstrcasecmp(token, "become_user")) {
+				become_user = true;
 			} else {
 				fatal("Unexpected value in SLURMRESTD_SECURITY=%s",
 				      token);
@@ -322,13 +325,20 @@ static void _lock_down(void)
 		fatal("Unable to setgid: %m");
 	if (uid != 0 && setuid(uid))
 		fatal("Unable to setuid: %m");
-	if (check_user && (getuid() == 0))
+	if (check_user && !become_user && (getuid() == 0))
 		fatal("slurmrestd should not be run as the root user.");
-	if (check_user && (getgid() == 0))
+	if (check_user && !become_user && (getgid() == 0))
 		fatal("slurmrestd should not be run with the root goup.");
-	if (check_user && (slurm_conf.slurm_user_id == getuid()))
+
+	if (become_user && getuid())
+		fatal("slurmrestd must run as root in become_user mode");
+	else if (check_user && (slurm_conf.slurm_user_id == getuid()))
 		fatal("slurmrestd should not be run as SlurmUser");
-	if (check_user && (gid_from_uid(slurm_conf.slurm_user_id) == getgid()))
+
+	if (become_user && getgid())
+		fatal("slurmrestd must run as root in become_user mode");
+	else if (check_user &&
+		 (gid_from_uid(slurm_conf.slurm_user_id) == getgid()))
 		fatal("slurmrestd should not be run with SlurmUser's group.");
 }
 
@@ -460,7 +470,7 @@ int main(int argc, char **argv)
 				      auth_plugin_types[i]);
 	}
 
-	if (init_rest_auth(auth_plugin_handles, auth_plugin_count))
+	if (init_rest_auth(become_user, auth_plugin_handles, auth_plugin_count))
 		fatal("Unable to initialize rest authentication");
 
 	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
