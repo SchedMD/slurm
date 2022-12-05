@@ -14,6 +14,8 @@ Shawn Hoopes, SchedMD</li>
 Tim Wickberg, SchedMD</li>
 <li><a href="SC22/Slurm-and-or-vs-Kubernetes.pdf">Slurm and/or/versus Kubernetes</a>,
 Tim Wickberg, SchedMD</li>
+<li><a href="SC22/Accelerating-with-Slurm.pdf">Accelerating HPC and AI with Slurm and SchedMD</a>,
+Nick Ihli, SchedMD</li>
 </ul>
 
 <h2>Presentations from the HPC Containers Advisory Working Group, November 2022</h2>
@@ -1168,6 +1170,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 15 November 2022</p>
+<p style="text-align:center;">Last modified 5 December 2022</p>
 
 <!--#include virtual="footer.txt"-->
