@@ -191,9 +191,6 @@ This signal is explicitly ignored.
 .IP
 
 .SH "NOTES"
-slurmrestd is designed to run with AuthAltTypes outside of the Munge cluster
-when configured AuthAltTypes supports this.
-
 \fBSPANK\fR and \fBclifilter\fR plugins are not supported in \fBslurmrestd\fR
 due to their lack of thread safety. Active \fBSPANK\fR plugins and
 \fBJobSubmitPlugins\fR in \fBslurmctld\fR are independent of slurmrestd and can
