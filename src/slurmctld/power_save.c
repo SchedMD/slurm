@@ -395,6 +395,8 @@ static void _do_power_work(time_t now)
 		job_node_data = data_set_dict(data_list_append(jobs_data));
 		data_set_int(data_key_set(job_node_data, "job_id"),
 			     job_ptr->job_id);
+		data_set_string(data_key_set(job_node_data, "features"),
+				job_ptr->details->features_use);
 		nodes = bitmap2node_name(to_resume_bitmap);
 		data_set_string_own(data_key_set(job_node_data, "nodes"),
 				    nodes);

@@ -59,6 +59,7 @@ HIGHLIGHTS
  -- Removed 'launch' plugin.
  -- Add "Extra" field to job to store extra information other than a comment.
  -- Add usage gathering for AMD (requires ROCM 5.5+) and NVIDIA gpus.
+ -- Add job's features to SLURM_RESUME_FILE output for power saving.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
