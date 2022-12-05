@@ -1,4 +1,4 @@
-.TH slurmrestd "8" "Slurm REST Daemon" "November 2022" "Slurm REST Daemon"
+.TH slurmrestd "8" "Slurm REST Daemon" "December 2022" "Slurm REST Daemon"
 
 .SH "NAME"
 slurmrestd \- Interface to Slurm via REST API.
@@ -8,8 +8,11 @@ slurmrestd \- Interface to Slurm via REST API.
 \fBslurmrestd\fR is REST API interface for Slurm. It can be used in two modes:
 
 .PP
-Inetd Mode: slurmrestd will read and write to STDIN and STDOUT. It can detect if
-it is connected to a socket or a local TTY (interactive mode).
+\fBInetd Mode\fR: slurmrestd will read and write to STDIO. If STDIN is a socket
+file descriptor, then slurmrestd will detect this and use relevant
+functionatlity. If a controlling TTY is detected, interactive mode will
+automatically activate to provide additional logging information. This mode is
+designed to work with piped input, inetd, xinetd or systemd socket activation.
 
 .PP
 Listen Mode: slurmrestd will open a listening socket on each requested
