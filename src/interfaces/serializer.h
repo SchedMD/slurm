@@ -78,11 +78,12 @@ extern int serialize_g_data_to_string(char **dest, size_t *length,
  * IN/OUT dest - ptr to NULL data ptr to set with output data.
  * 	caller must FREE_NULL_DATA(dest) if set.
  * IN src - string to deserialize
+ * IN length - number of bytes in src
  * IN mime_type - deserialize data using given mime_type
  * RET SLURM_SUCCESS or error
  */
 extern int serialize_g_string_to_data(data_t **dest, const char *src,
-				      const char *mime_type);
+				      size_t length, const char *mime_type);
 
 /*
  * Check if there is a plugin loaded that can handle the requested mime type

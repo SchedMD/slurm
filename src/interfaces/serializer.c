@@ -51,7 +51,7 @@
 typedef struct {
 	int (*data_to_string)(char **dest, size_t *length, const data_t *src,
 			      serializer_flags_t flags);
-	int (*string_to_data)(data_t **dest, const char *src);
+	int (*string_to_data)(data_t **dest, const char *src, size_t length);
 } funcs_t;
 
 /* Must be synchronized with funcs_t above */
@@ -148,7 +148,7 @@ extern int serialize_g_data_to_string(char **dest, size_t *length,
 }
 
 extern int serialize_g_string_to_data(data_t **dest, const char *src,
-				      const char *mime_type)
+				      size_t length, const char *mime_type)
 {
 	DEF_TIMERS;
 	int rc;
@@ -165,7 +165,7 @@ extern int serialize_g_string_to_data(data_t **dest, const char *src,
 	func_ptr = plugins->functions[pmt->index];
 
 	START_TIMER;
-	rc = (*func_ptr->string_to_data)(dest, src);
+	rc = (*func_ptr->string_to_data)(dest, src, length);
 	END_TIMER2(__func__);
 
 	return rc;
