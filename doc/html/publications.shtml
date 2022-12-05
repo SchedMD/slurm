@@ -4,6 +4,18 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<h2>Presentations from SC22, November 2022</h2>
+<ul>
+<li><a href="SC22/Slurm-Hearts-Containers.pdf">Slurm ♥ Containers</a>,
+Nate Rini &amp; Tim Wickberg, SchedMD</li>
+<li><a href="SC22/Slurm-Intro.pdf">Doing More with Slurm Advanced Capabilities</a>,
+Shawn Hoopes, SchedMD</li>
+<li><a href="SC22/Roadmap.pdf">Slurm 22.05, 23.02, and Beyond</a>,
+Tim Wickberg, SchedMD</li>
+<li><a href="SC22/Slurm-and-or-vs-Kubernetes.pdf">Slurm and/or/versus Kubernetes</a>,
+Tim Wickberg, SchedMD</li>
+</ul>
+
 <h2>Presentations from the HPC Containers Advisory Working Group, November 2022</h2>
 <ul>
 <li><a href="MISC22/Slurm_and_Containers_20221103.pdf">Slurm ♥ Containers</a>, Nathan Rini, SchedMD</li>
