@@ -37,4 +37,73 @@
 #ifndef _SERIALIZER_H
 #define _SERIALIZER_H
 
+#include "src/common/data.h"
+
+typedef enum {
+	SER_FLAGS_NONE = 0, /* defaults to compact currently */
+	SER_FLAGS_COMPACT = 1 << 1,
+	SER_FLAGS_PRETTY = 1 << 2,
+} serializer_flags_t;
+
+/*
+ * Define common MIME types to make it easier for serializer callers.
+ *
+ * WARNING: There is no guarantee that plugins for these types
+ * will be loaded at any given time.
+ */
+#define MIME_TYPE_YAML "application/x-yaml"
+#define MIME_TYPE_YAML_PLUGIN "serializer/yaml"
+#define MIME_TYPE_JSON "application/json"
+#define MIME_TYPE_JSON_PLUGIN "serializer/json"
+#define MIME_TYPE_URL_ENCODED "application/x-www-form-urlencoded"
+#define MIME_TYPE_URL_ENCODED_PLUGIN "serializer/url-encoded"
+
+/*
+ * Serialize data in src into string dest
+ * IN/OUT dest - ptr to NULL string ptr to set with output data.
+ * 	caller must xfree(dest) if set. Pointer is not changed on failure.
+ * IN/OUT length - set with number of bytes written to *dest (including '\0')
+ * IN src - populated data ptr to serialize
+ * IN mime_type - serialize data into the given mime_type
+ * IN flags - optional flags to specify to serilzier to change presentation of
+ * 	data
+ * RET SLURM_SUCCESS or error
+ */
+extern int serialize_g_data_to_string(char **dest, size_t *length,
+				      const data_t *src, const char *mime_type,
+				      serializer_flags_t flags);
+
+/*
+ * serialize string in src into data dest
+ * IN/OUT dest - ptr to NULL data ptr to set with output data.
+ * 	caller must FREE_NULL_DATA(dest) if set.
+ * IN src - string to deserialize
+ * IN mime_type - deserialize data using given mime_type
+ * RET SLURM_SUCCESS or error
+ */
+extern int serialize_g_string_to_data(data_t **dest, const char *src,
+				      const char *mime_type);
+
+/*
+ * Check if there is a plugin loaded that can handle the requested mime type
+ * RET ptr to best matching mime type or NULL if none can match
+ */
+extern const char *resolve_mime_type(const char *mime_type);
+
+/*
+ * Load and initialize serializer plugins
+ *
+ * IN plugins - comma delimited list of plugins or "list"
+ * 	pass NULL to load all found or "" to load none of them
+ *
+ * IN listf - function to call if plugins="list" (may be NULL)
+ * RET SLURM_SUCCESS or error
+ */
+extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf);
+
+/*
+ * Unload all serializer plugins
+ */
+extern void serializer_g_fini(void);
+
 #endif
