@@ -1794,6 +1794,20 @@ extern void slurm_array64_to_value_reps(uint64_t *array, uint32_t array_cnt,
 extern int slurm_get_rep_count_inx(
 	uint32_t *rep_count, uint32_t rep_count_size, int inx);
 
+/*
+ * Reentrant TRES specification parse logic
+ * tres_type IN - type of tres we are looking for
+ * in_val IN - initial input string
+ * name OUT -  must be xfreed by caller
+ * type OUT -  must be xfreed by caller
+ * cnt OUT - count of values
+ * save_ptr IN/OUT - NULL on initial call, otherwise value from previous call
+ * RET rc - error code
+ */
+extern int slurm_get_next_tres(
+	char *tres_type, char *in_val, char **name_ptr, char **type_ptr,
+	uint64_t *cnt, char **save_ptr);
+
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\
