@@ -147,6 +147,11 @@ static int _auth_socket(on_http_request_args_t *args,
 		error("%s: [%s] rejecting socket connection with invalid SO_PEERCRED response",
 		      __func__, name);
 		return ESLURM_AUTH_CRED_INVALID;
+	} else if ((cred.uid == SLURM_AUTH_NOBODY) ||
+		   (cred.gid == SLURM_AUTH_NOBODY)) {
+		error("%s: [%s] rejecting connection from nobody",
+		      __func__, name);
+		return ESLURM_AUTH_CRED_INVALID;
 	} else if (cred.uid == 0) {
 		/* requesting socket is root */
 		info("%s: [%s] accepted root socket connection with uid:%u gid:%u pid:%ld",
