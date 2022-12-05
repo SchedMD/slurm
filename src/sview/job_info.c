@@ -383,7 +383,7 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_COMMAND, "Command",
 	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_COMMENT, "Comment",
-	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_EXTRA, "Extra",
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_WORKDIR, "Work Dir",
@@ -727,6 +727,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			got_edit_signal = NULL;
 		else
 			got_edit_signal = xstrdup(new_text);
+		break;
+	case SORTID_COMMENT:
+		job_msg->comment = xstrdup(new_text);
+		type = "comment";
 		break;
 	case SORTID_TIMELIMIT:
 		if (!xstrcasecmp(new_text, "infinite"))
