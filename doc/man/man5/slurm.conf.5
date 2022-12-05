@@ -1696,6 +1696,27 @@ a file.
 .IP
 
 .TP
+If \fBjobcomp/kafka\fR:
+When this plugin is configured, finished job records information is sent to a
+Kafka server. The plugin makes use of \fBlibrdkafka\fR. This string represents
+an absolute path to a file containing 'key=value' pairs configuring the library
+behavior. For the plugin to work properly, this file needs to exist and least
+the \fIbrokers.list\fR \fBlibrdkafka\fR property needs to be configured in it.
+
+\fBNOTE\fR: for a full list of \fBlibrdkafka\fR properties, please refer to
+the library documentation.
+
+\fBNOTE\fR: the target Kafka topic and other plugin parameters can be configured
+via \fBJobCompParams\fR.
+
+\fBNOTE\fR: there is no default value for JobCompLoc when this plugin is
+configured, and thus it needs to be explicitly set.
+
+\fBNOTE\fR: the \fBlibrdkafka\fR parameters configured in the file referenced by
+this option take effect upon slurmctld restart.
+.IP
+
+.TP
 If \fBjobcomp/lua\fR:
 This option is ignored in this plugin. The finished job record is processed
 by a hardcoded \fIjobcomp.lua\fR script expected to be located in the same
@@ -1729,6 +1750,53 @@ will fail to initialize.
 \fBJobCompParams\fR
 Pass arbitrary text string to job completion plugin.
 Also see \fBJobCompType\fR.
+.IP
+.RS
+
+.TP
+Optional comma-separated list for \fBjobcomp/kafka\fR:
+.IP
+.RS
+
+.TP
+\fBflush_timeout\fR=<milliseconds>
+Maximum time (in milliseconds) to wait for all outstanding produce requests,
+et.al, to be completed. This is passed as a timeout argument to the
+\fBlibrdkafka\fR flush API function, called on plugin termination. This is done
+prior to destroying the producer instance to make sure all queued and in-flight
+produce requests are completed before terminating.
+For non-blocking calls, set to 0.
+To wait indefinitely for an event, set to -1 (not recommended, since this is
+called on plugin fini and could block slurmctld graceful termination).
+Accepted values are [-1,2147483647].
+Defaults to 500 (milliseconds).
+.IP
+
+.TP
+\fBpoll_interval\fR=<seconds>
+Seconds between calls to \fBlibrdkafka\fR API poll function, which polls the
+provided Kafka handle for events. The plugin spawns a separate thread to perform
+this call at the configured interval.
+Accepted values are [0,4294967295].
+Defaults to 2 (seconds).
+.IP
+
+.TP
+\fBrequeue_on_msg_timeout\fR
+Instruct the delivery report callback to requeue messages that failed delivery
+because their time waiting for successful delivery reached the \fBlibrdkafka\fR
+property \fBmessage.timeout.ms\fR.
+Defaults to not set (don't requeue and thus discard these messages).
+.IP
+
+.TP
+\fBtopic\fR=<string>
+Target Kafka topic to send messages to.
+Defaults to \fBClusterName\fR.
+.IP
+.RE
+
+.RE
 .IP
 
 .TP
@@ -1770,6 +1838,13 @@ Elasticsearch server, specified by the \fBJobCompLoc\fR parameter.
 \fBjobcomp/filetxt\fR
 Upon job completion, a record of the job should be written to a text file,
 specified by the \fBJobCompLoc\fR parameter.
+.IP
+
+.TP
+\fBjobcomp/kafka\fR
+Upon job completion, a record of the job should be sent to a Kafka server,
+specified by the file path referenced in \fBJobCompLoc\fR and/or using other
+\fBJobCompParams\fR.
 .IP
 
 .TP
