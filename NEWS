@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - correct issue where 16 & 32 bit integers were not able
     to be unset.
  -- Fix 'scontrol show hostlist' to read off a pipe correctly.
+ -- Fix 'scontrol reconfigure' with configless enabled to send updated configs
+    to 21.08 nodes correctly. (22.05 nodes are unaffected.)
 
 * Changes in Slurm 22.05.6
 ==========================

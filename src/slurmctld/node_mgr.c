@@ -3985,7 +3985,7 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 	prev_args->hostlist = hostlist_create(NULL);
 	prev_args->protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
 	prev_config = xmalloc(sizeof(*prev_config));
-	load_config_response_msg(prev_config, CONFIG_REQUEST_SLURMD);
+	load_config_response_list(prev_config, slurmd_config_files);
 	prev_args->msg_args = prev_config;
 
 	old_args = xmalloc(sizeof(*old_args));
