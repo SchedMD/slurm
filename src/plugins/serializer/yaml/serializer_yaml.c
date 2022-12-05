@@ -48,6 +48,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/serializer.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -909,13 +910,14 @@ yaml_fail:
 
 #undef _yaml_emitter_error
 
-extern int serializer_p_serialize(char **dest, const data_t *data,
-				  data_serializer_flags_t flags)
+extern int serialize_p_data_to_string(char **dest, size_t *length,
+				      const data_t *src,
+				      serializer_flags_t flags)
 {
 	yaml_emitter_t emitter;
 	buf_t *buf = init_buf(0);
 
-	if (_dump_yaml(data, &emitter, buf)) {
+	if (_dump_yaml(src, &emitter, buf)) {
 		error("%s: dump yaml failed", __func__);
 
 		FREE_NULL_BUFFER(buf);
@@ -924,6 +926,8 @@ extern int serializer_p_serialize(char **dest, const data_t *data,
 
 	yaml_emitter_delete(&emitter);
 
+	if (length)
+		*length = get_buf_offset(buf);
 	*dest = xfer_buf_data(buf);
 	buf = NULL;
 
@@ -933,13 +937,13 @@ extern int serializer_p_serialize(char **dest, const data_t *data,
 		return SLURM_ERROR;
 }
 
-extern int serializer_p_deserialize(data_t **dest, const char *src,
-				    size_t len)
+extern int serialize_p_string_to_data(data_t **dest, const char *src,
+				      size_t length)
 {
 	data_t *data = data_new();
 	yaml_parser_t parser;
 
-	xassert(len < strlen(src));
+	xassert(length < strlen(src));
 
 	if (_parse_yaml(src, &parser, data)) {
 		FREE_NULL_DATA(data);
