@@ -51,8 +51,8 @@
 #include "src/interfaces/mpi.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/srun/libsrun/debugger.h"
-#include "src/srun/libsrun/opt.h"
+#include "src/srun/debugger.h"
+#include "src/srun/opt.h"
 
 #include "tree.h"
 

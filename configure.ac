@@ -623,7 +623,6 @@ AC_CONFIG_FILES([Makefile
 		 src/squeue/Makefile
 		 src/sreport/Makefile
 		 src/srun/Makefile
-		 src/srun/libsrun/Makefile
 		 src/sshare/Makefile
 		 src/sstat/Makefile
 		 src/strigger/Makefile

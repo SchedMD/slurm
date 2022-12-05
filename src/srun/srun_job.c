@@ -74,13 +74,13 @@
 
 #include "src/api/step_launch.h"
 
-#include "src/srun/libsrun/allocate.h"
-#include "src/srun/libsrun/debugger.h"
-#include "src/srun/libsrun/fname.h"
-#include "src/srun/libsrun/launch.h"
-#include "src/srun/libsrun/opt.h"
-#include "src/srun/libsrun/multi_prog.h"
-#include "src/srun/libsrun/srun_job.h"
+#include "src/srun/allocate.h"
+#include "src/srun/debugger.h"
+#include "src/srun/fname.h"
+#include "src/srun/launch.h"
+#include "src/srun/opt.h"
+#include "src/srun/multi_prog.h"
+#include "src/srun/srun_job.h"
 
 /*
  * allocation information structure used to store general information

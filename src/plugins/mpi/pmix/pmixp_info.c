@@ -245,7 +245,7 @@ eio_handle_t *pmixp_info_io(void)
  */
 
 /*
- * Derived from src/srun/libsrun/opt.c
+ * Derived from src/srun/opt.c
  * _get_task_count()
  *
  * FIXME: original _get_task_count has some additinal ckeck

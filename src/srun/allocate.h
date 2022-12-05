@@ -41,8 +41,8 @@
 
 #include "slurm/slurm.h"
 
-#include "src/srun/libsrun/opt.h"
-#include "src/srun/libsrun/srun_job.h"
+#include "src/srun/opt.h"
+#include "src/srun/srun_job.h"
 
 extern uint16_t slurmctld_comm_port;
 

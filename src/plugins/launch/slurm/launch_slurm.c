@@ -47,10 +47,10 @@
 #include "src/common/slurm_opt.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/api/pmi_server.h"
-#include "src/srun/libsrun/allocate.h"
-#include "src/srun/libsrun/fname.h"
-#include "src/srun/libsrun/launch.h"
-#include "src/srun/libsrun/multi_prog.h"
+#include "src/srun/allocate.h"
+#include "src/srun/fname.h"
+#include "src/srun/launch.h"
+#include "src/srun/multi_prog.h"
 
 #include "src/plugins/launch/slurm/task_state.h"
 

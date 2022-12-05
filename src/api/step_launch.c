@@ -83,7 +83,7 @@
 #include "src/api/step_launch.h"
 #include "src/api/pmi_server.h"
 
-#include "src/srun/libsrun/step_ctx.h"
+#include "src/srun/step_ctx.h"
 
 #define STEP_ABORT_TIME 2
 

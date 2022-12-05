@@ -44,9 +44,9 @@
 
 #include "src/common/xstring.h"
 
-#include "src/srun/libsrun/srun_job.h"
-#include "src/srun/libsrun/opt.h"
-#include "src/srun/libsrun/debugger.h"
+#include "src/srun/srun_job.h"
+#include "src/srun/opt.h"
+#include "src/srun/debugger.h"
 
 /*
  * launch_common_get_slurm_step_layout() gets the slurm job step layout.

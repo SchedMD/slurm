@@ -39,7 +39,7 @@
 #include <fcntl.h>
 #include <signal.h>
 
-#include "src/srun/libsrun/launch.h"
+#include "src/srun/launch.h"
 
 #include "src/common/env.h"
 #include "src/common/net.h"

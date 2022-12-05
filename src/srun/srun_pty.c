@@ -85,7 +85,7 @@ int set_winsize(srun_job_t *job)
 	return 0;
 }
 
-/* SIGWINCH should already be blocked by srun/libsrun/srun_job.c */
+/* SIGWINCH should already be blocked by srun/srun_job.c */
 void block_sigwinch(void)
 {
 	xsignal_block(pty_sigarray);
