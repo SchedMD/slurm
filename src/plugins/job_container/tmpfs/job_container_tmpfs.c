@@ -244,7 +244,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 			return SLURM_ERROR;
 		}
 
-		if ((fstatus = mkdirpath(jc_conf->basepath, 0755))) {
+		if ((fstatus = mkdirpath(jc_conf->basepath, 0755, true))) {
 			debug("%s: unable to create ns directory '%s' : %s",
 			      __func__, jc_conf->basepath,
 			      slurm_strerror(fstatus));

@@ -475,7 +475,7 @@ static int _mkdir(const char *pathname, mode_t mode)
 	return rc;
 }
 
-extern int mkdirpath(const char *pathname, mode_t mode)
+extern int mkdirpath(const char *pathname, mode_t mode, bool is_dir)
 {
 	int rc;
 	char *p, *dst;
@@ -492,7 +492,8 @@ extern int mkdirpath(const char *pathname, mode_t mode)
 	}
 
 	/* final directory */
-	rc = _mkdir(dst, mode);
+	if (is_dir)
+		rc = _mkdir(dst, mode);
 
 cleanup:
 	xfree(dst);

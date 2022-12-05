@@ -60,6 +60,8 @@ HIGHLIGHTS
  -- Add "Extra" field to job to store extra information other than a comment.
  -- Add usage gathering for AMD (requires ROCM 5.5+) and NVIDIA gpus.
  -- Add job's features to SLURM_RESUME_FILE output for power saving.
+ -- Automatically create directories for stdout/stderr output files. Paths may
+    use %j and related substitution characters as well.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

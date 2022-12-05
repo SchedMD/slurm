@@ -164,8 +164,12 @@ extern int receive_fd_over_pipe(int socket);
  * This function iteratively builds the path until complete, or an error
  * occurs.
  *
+ * IN is_dir:
+ *   true: last path component is a directory, and should be created
+ *   false: last path component is a filename, do not create
+ *
  * RET SLURM_SUCCESS or error.
  */
-extern int mkdirpath(const char *pathname, mode_t mode);
+extern int mkdirpath(const char *pathname, mode_t mode, bool is_dir);
 
 #endif /* !_FD_H */

@@ -49,6 +49,7 @@
 #include "src/api/pmi_server.h"
 
 #include "src/common/env.h"
+#include "src/common/fd.h"
 #include "src/common/net.h"
 #include "src/common/xstring.h"
 #include "src/common/plugin.h"
@@ -989,6 +990,11 @@ extern void launch_common_set_stdio_fds(srun_job_t *job,
 		} else {
 			cio_fds->out.fd = open(job->ofname->name,
 					       file_flags, 0644);
+			if (errno == ENOENT) {
+				mkdirpath(job->ofname->name, 0755, false);
+				cio_fds->out.fd = open(job->ofname->name,
+						       file_flags, 0644);
+			}
 			if (cio_fds->out.fd == -1) {
 				error("Could not open stdout file: %m");
 				exit(error_exit);
@@ -1016,6 +1022,11 @@ extern void launch_common_set_stdio_fds(srun_job_t *job,
 		} else {
 			cio_fds->err.fd = open(job->efname->name,
 					       file_flags, 0644);
+			if (errno == ENOENT) {
+				mkdirpath(job->efname->name, 0755, false);
+				cio_fds->err.fd = open(job->efname->name,
+						       file_flags, 0644);
+			}
 			if (cio_fds->err.fd == -1) {
 				error("Could not open stderr file: %m");
 				exit(error_exit);
