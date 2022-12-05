@@ -68,6 +68,8 @@ libcommon_interfaces_la_SOURCES =    \
 	route.h					\
 	select.c				\
 	select.h				\
+	serializer.c				\
+	serializer.h				\
 	site_factor.c				\
 	site_factor.h				\
 	switch.c				\
