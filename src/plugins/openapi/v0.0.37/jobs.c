@@ -1092,8 +1092,8 @@ static int _handle_job_post(const char *context_id,
 	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
 		char *buffer = NULL;
 
-		data_g_serialize(&buffer, query, MIME_TYPE_JSON,
-				 DATA_SER_FLAGS_COMPACT);
+		serialize_g_data_to_string(&buffer, NULL, query, MIME_TYPE_JSON,
+					   SER_FLAGS_COMPACT);
 		debug5("%s: job update from %s: %s",
 		       __func__, context_id, buffer);
 		xfree(buffer);
@@ -1236,14 +1236,14 @@ static int _op_handler_submit_job_post(const char *context_id,
 	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
 		char *buffer = NULL;
 
-		data_g_serialize(&buffer, query, MIME_TYPE_JSON,
-				 DATA_SER_FLAGS_COMPACT);
+		serialize_g_data_to_string(&buffer, NULL, query, MIME_TYPE_JSON,
+					   SER_FLAGS_COMPACT);
 		debug5("%s: job submit query from %s: %s",
 		       __func__, context_id, buffer);
 		xfree(buffer);
 
-		data_g_serialize(&buffer, parameters, MIME_TYPE_JSON,
-				 DATA_SER_FLAGS_COMPACT);
+		serialize_g_data_to_string(&buffer, NULL, parameters,
+					   MIME_TYPE_JSON, SER_FLAGS_COMPACT);
 		debug5("%s: job submit parameters from %s: %s",
 		       __func__, context_id, buffer);
 		xfree(buffer);

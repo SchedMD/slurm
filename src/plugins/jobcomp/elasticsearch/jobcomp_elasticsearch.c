@@ -60,6 +60,7 @@
 #include "src/common/slurmdb_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/serializer.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
@@ -741,8 +742,9 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 
 	jnode = xmalloc(sizeof(struct job_node));
 
-	if ((rc = data_g_serialize(&jnode->serialized_job, record,
-				   MIME_TYPE_JSON, DATA_SER_FLAGS_COMPACT))) {
+	if ((rc = serialize_g_data_to_string(&jnode->serialized_job, NULL,
+					     record, MIME_TYPE_JSON,
+					     SER_FLAGS_COMPACT))) {
 		xfree(jnode);
 		log_flag(ESEARCH, "unable to serialize %pJ to JSON: %s",
 			 job_ptr, slurm_strerror(rc));
@@ -812,9 +814,15 @@ extern int init(void)
 {
 	int rc;
 
-	if ((rc = data_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
-		error("%s: unable to load JSON serializer: %s", __func__,
-		      slurm_strerror(rc));
+	if ((rc = data_init())) {
+		error("%s: unable to init data structures: %s",
+		      __func__, slurm_strerror(rc));
+		return rc;
+	}
+
+	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
+		error("%s: unable to load JSON serializer: %s",
+		      __func__, slurm_strerror(rc));
 		return rc;
 	}
 

@@ -97,6 +97,7 @@
 #include "src/interfaces/route.h"
 #include "src/interfaces/sched_plugin.h"
 #include "src/interfaces/select.h"
+#include "src/interfaces/serializer.h"
 #include "src/interfaces/site_factor.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/topology.h"
@@ -605,12 +606,12 @@ int main(int argc, char **argv)
 		} else
 			fatal("Failed to initialize MPI plugins.");
 	}
-	if (data_init(NULL, NULL)) {
+	if (data_init()) {
 		if (test_config) {
-			error("Failed to initialize serialization plugins.");
+			error("Failed to initialize data plugins.");
 			test_config_rc = 1;
 		} else
-			fatal("Failed to initialize serialization plugins.");
+			fatal("Failed to initialize data plugins.");
 	}
 	if (route_init() != SLURM_SUCCESS) {
 		if (test_config) {
@@ -618,6 +619,13 @@ int main(int argc, char **argv)
 			test_config_rc = 1;
 		} else
 			fatal("Failed to initialize route plugins.");
+	}
+	if (serializer_g_init(NULL, NULL)) {
+		if (test_config) {
+			error("Failed to initialize serialization plugins.");
+			test_config_rc = 1;
+		} else
+			fatal("Failed to initialize serialization plugins.");
 	}
 	if (site_factor_g_init() != SLURM_SUCCESS) {
 		if (test_config) {

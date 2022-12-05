@@ -43,6 +43,7 @@
 #include "src/common/data.h"
 #include "src/common/xstring.h"
 #include "src/common/proc_args.h"
+#include "src/interfaces/serializer.h"
 
 #include "sdiag.h"
 
@@ -142,11 +143,15 @@ extern void parse_command_line(int argc, char **argv)
 				break;
 			case OPT_LONG_JSON:
 				params.mimetype = MIME_TYPE_JSON;
-				(void) data_init(MIME_TYPE_JSON_PLUGIN, NULL);
+				(void) data_init();
+				(void) serializer_g_init(MIME_TYPE_JSON_PLUGIN,
+							 NULL);
 				break;
 			case OPT_LONG_YAML:
 				params.mimetype = MIME_TYPE_YAML;
-				(void) data_init(MIME_TYPE_YAML_PLUGIN, NULL);
+				(void) data_init();
+				(void) serializer_g_init(MIME_TYPE_YAML_PLUGIN,
+							 NULL);
 				break;
 			case OPT_LONG_AUTOCOMP:
 				suggest_completion(long_options, optarg);

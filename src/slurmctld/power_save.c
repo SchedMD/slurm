@@ -72,6 +72,7 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/node_features.h"
+#include "src/interfaces/serializer.h"
 
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
@@ -592,8 +593,9 @@ static void _do_power_work(time_t now)
 
 		data_set_string(data_key_set(resume_json_data, "all_nodes"),
 				nodes);
-		if (data_g_serialize(&json, resume_json_data, MIME_TYPE_JSON,
-				     DATA_SER_FLAGS_COMPACT))
+		if (serialize_g_data_to_string(&json, NULL, resume_json_data,
+					       MIME_TYPE_JSON,
+					       SER_FLAGS_COMPACT))
 			error("failed to generate json for resume job/node list");
 
 		if (nodes)

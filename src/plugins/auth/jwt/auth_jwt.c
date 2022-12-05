@@ -52,6 +52,7 @@
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/serializer.h"
 
 #include "auth_jwt.h"
 
@@ -173,8 +174,11 @@ static void _init_jwks(void)
 	if (!(begin = xstrstr(slurm_conf.authalt_params, jwks_key_field)))
 		return;
 
-	if (data_init(MIME_TYPE_JSON_PLUGIN, NULL))
+	if (data_init())
 		fatal("%s: data_init() failed", __func__);
+
+	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
+		fatal("%s: serializer_g_init() failed", __func__);
 
 	start = begin + strlen(jwks_key_field);
 	if ((end = xstrstr(start, ",")))
@@ -188,7 +192,8 @@ static void _init_jwks(void)
 		      plugin_type, key_file);
 	}
 
-	if (data_g_deserialize(&jwks, buf->head, buf->size, MIME_TYPE_JSON))
+	if (serialize_g_string_to_data(&jwks, buf->head, buf->size,
+				       MIME_TYPE_JSON))
 		fatal("%s: failed to deserialize jwks file `%s`",
 		      __func__, key_file);
 	FREE_NULL_BUFFER(buf);

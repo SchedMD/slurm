@@ -39,11 +39,14 @@
 #include "slurm/slurm.h"
 
 #include "src/interfaces/openapi.h"
+#include "src/common/data.h"
 #include "src/common/plugin.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/serializer.h"
 
 #define MAGIC_PATH 0x1121baef
 #define MAGIC_OAS 0x1211be0f
@@ -395,10 +398,10 @@ static bool _match_server_path(const data_t *server_path, const data_t *path,
 	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
 		char *joined_path_str = NULL, *mpath_str = NULL;
 
-		data_g_serialize(&joined_path_str, joined_path, MIME_TYPE_JSON,
-				 DATA_SER_FLAGS_COMPACT);
-		data_g_serialize(&mpath_str, match_path, MIME_TYPE_JSON,
-				 DATA_SER_FLAGS_COMPACT);
+		serialize_g_data_to_string(&joined_path_str, NULL, joined_path,
+					   MIME_TYPE_JSON, SER_FLAGS_COMPACT);
+		serialize_g_data_to_string(&mpath_str, NULL, match_path,
+					   MIME_TYPE_JSON, SER_FLAGS_COMPACT);
 
 		debug5("%s: match:%s server_path:%s match_path:%s",
 		       __func__, (found ? "T" : "F"),
@@ -426,8 +429,8 @@ static data_for_each_cmd_t _match_server_override(const data_t *data,
 	if (!surl) {
 		char *d = NULL;
 
-		data_g_serialize(&d, data, MIME_TYPE_JSON,
-				 DATA_SER_FLAGS_COMPACT);
+		serialize_g_data_to_string(&d, NULL, data, MIME_TYPE_JSON,
+					   SER_FLAGS_COMPACT);
 
 		fatal("%s: server %s lacks url field required per OASv3.0.3 section 4.7.5",
 		      __func__, d);
@@ -496,8 +499,8 @@ static data_for_each_cmd_t _match_server_path_string(const data_t *data,
 	if (!surl) {
 		char *d = NULL;
 
-		data_g_serialize(&d, data, MIME_TYPE_JSON,
-				 DATA_SER_FLAGS_COMPACT);
+		serialize_g_data_to_string(&d, NULL, data, MIME_TYPE_JSON,
+					   SER_FLAGS_COMPACT);
 
 		fatal("%s: server %s lacks url field required per OASv3.0.3 section 4.7.5",
 		      __func__, d);
@@ -827,8 +830,8 @@ static int _match_path_from_data(void *x, void *key)
 	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
 		char *str_path = NULL;
 
-		data_g_serialize(&str_path, args->dpath, MIME_TYPE_JSON,
-				 DATA_SER_FLAGS_COMPACT);
+		serialize_g_data_to_string(&str_path, NULL, args->dpath,
+					   MIME_TYPE_JSON, SER_FLAGS_COMPACT);
 
 		if (args->matched)
 			debug5("%s: match successful for tag %d to %s(0x%"PRIXPTR")",
@@ -898,8 +901,11 @@ extern int init_openapi(openapi_t **oas, const char *plugins,
 	xassert(!*oas);
 	destroy_openapi(*oas);
 
+	if ((rc = data_init()))
+		return rc;
+
 	/* must have JSON plugin to parse the openapi.json */
-	if ((rc = data_init(MIME_TYPE_JSON_PLUGIN, NULL)))
+	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL)))
 		return rc;
 
 	*oas = t = xmalloc(sizeof(*t));

@@ -45,6 +45,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/serializer.h"
 
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
@@ -262,13 +263,12 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 
 	/* post will have query in the body otherwise it is in the URL */
 	if (args->method == HTTP_REQUEST_POST)
-		rc = data_g_deserialize(query, args->body,
-				      args->body_length,
-				      read_mime);
+		rc = serialize_g_string_to_data(query, args->body,
+						args->body_length, read_mime);
 	else
-		rc = data_g_deserialize(query, args->query,
-				      (args->query ? strlen(args->query) : 0),
-				      read_mime);
+		rc = serialize_g_string_to_data(
+			query, args->query,
+			(args->query ? strlen(args->query) : 0), read_mime);
 
 	if (rc || !*query)
 		return _operations_router_reject(
@@ -375,7 +375,7 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 			       __func__, args->context->con->name, ptr->type,
 			       ptr->q);
 
-			if ((*write_mime = data_resolve_mime_type(ptr->type))) {
+			if ((*write_mime = resolve_mime_type(ptr->type))) {
 				debug4("%s: [%s] found accepts %s=%s with q=%f",
 				       __func__, args->context->con->name,
 				       ptr->type, *write_mime, ptr->q);
@@ -454,8 +454,8 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	FREE_NULL_REST_AUTH(args->context->auth);
 
 	if (data_get_type(resp) != DATA_TYPE_NULL) {
-		int rc2 = data_g_serialize(&body, resp, write_mime,
-					   DATA_SER_FLAGS_PRETTY);
+		int rc2 = serialize_g_data_to_string(
+			&body, NULL, resp, write_mime, SER_FLAGS_PRETTY);
 
 		if (!rc)
 			rc = rc2;

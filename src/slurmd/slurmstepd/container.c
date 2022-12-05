@@ -46,6 +46,7 @@
 #include "src/common/run_command.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/serializer.h"
 
 #include "src/slurmd/slurmstepd/container.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
@@ -198,8 +199,9 @@ static int _read_config(const char *jconfig, data_t **config)
 		goto cleanup;
 	}
 
-	if ((rc = data_g_deserialize(config, get_buf_data(buffer),
-				     remaining_buf(buffer), MIME_TYPE_JSON))) {
+	if ((rc = serialize_g_string_to_data(config, get_buf_data(buffer),
+					     remaining_buf(buffer),
+					     MIME_TYPE_JSON))) {
 		error("%s: unable to parse config.json: %s",
 		      __func__, slurm_strerror(rc));
 	}
@@ -514,7 +516,13 @@ extern int setup_container(stepd_step_rec_t *step)
 		return ESLURM_CONTAINER_NOT_CONFIGURED;
 	}
 
-	if ((rc = data_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
+	if ((rc = data_init())) {
+		error("Unable to init data structures: %s",
+		      slurm_strerror(rc));
+		goto error;
+	}
+
+	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
 		error("Unable to load JSON plugin: %s",
 		      slurm_strerror(rc));
 		goto error;
@@ -555,8 +563,8 @@ extern int setup_container(stepd_step_rec_t *step)
 	if ((rc = _modify_config(step, config, rootfs_path)))
 		goto error;
 
-	if ((rc = data_g_serialize(&out, config, MIME_TYPE_JSON,
-				   DATA_SER_FLAGS_PRETTY))) {
+	if ((rc = serialize_g_data_to_string(&out, NULL, config, MIME_TYPE_JSON,
+					     SER_FLAGS_PRETTY))) {
 		error("%s: serialization of config failed: %s",
 		      __func__, slurm_strerror(rc));
 		goto error;
@@ -602,7 +610,8 @@ static data_t *_get_container_state()
 		return NULL;
 	}
 
-	if (data_g_deserialize(&state, out, strlen(out), MIME_TYPE_JSON)) {
+	if (serialize_g_string_to_data(&state, out, strlen(out),
+				       MIME_TYPE_JSON)) {
 		error("%s: unable to parse JSON: %s",
 		      __func__, out);
 	}

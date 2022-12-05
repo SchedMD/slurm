@@ -796,7 +796,7 @@ int main(void)
 	close(fd);
 
 	/* data_init() is necessary on this test */
-	if (data_init(NULL, NULL)) {
+	if (data_init()) {
 		error("data_init_static() failed");
 		return EXIT_FAILURE;
 	}

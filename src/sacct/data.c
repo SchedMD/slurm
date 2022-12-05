@@ -45,6 +45,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/interfaces/serializer.h"
 
 #define TARGET "/slurmdb/v0.0.39/jobs/"
 #define PLUGIN "openapi/dbv0.0.39"
@@ -226,8 +227,8 @@ extern void dump_data(int argc, char **argv)
 	if (get_log_level() >= LOG_LEVEL_DEBUG) {
 		char *sq = NULL;
 
-		data_g_serialize(&sq, query, MIME_TYPE_JSON,
-				 DATA_SER_FLAGS_COMPACT);
+		serialize_g_data_to_string(&sq, NULL, query, MIME_TYPE_JSON,
+					   SER_FLAGS_COMPACT);
 		debug("%s: query: %s", __func__, sq);
 
 		xfree(sq);
@@ -235,7 +236,8 @@ extern void dump_data(int argc, char **argv)
 
 	dump_job(ctxt, HTTP_REQUEST_GET, NULL, query, 0, resp, MAGIC_AUTH);
 
-	data_g_serialize(&out, resp, params.mimetype, DATA_SER_FLAGS_PRETTY);
+	serialize_g_data_to_string(&out, NULL, resp, params.mimetype,
+				   SER_FLAGS_PRETTY);
 
 	printf("%s", out);
 

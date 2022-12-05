@@ -45,6 +45,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/serializer.h"
 
 #include "src/sinfo/sinfo.h"
 
@@ -93,7 +94,8 @@ extern int dump_data(int argc, char **argv)
 
 	dump_nodes(ctxt, HTTP_REQUEST_GET, NULL, NULL, dump_tag, resp, NULL);
 
-	data_g_serialize(&out, resp, params.mimetype, DATA_SER_FLAGS_PRETTY);
+	serialize_g_data_to_string(&out, NULL, resp, params.mimetype,
+				   SER_FLAGS_PRETTY);
 
 	printf("%s", out);
 

@@ -52,6 +52,7 @@
 #include "src/common/slurm_opt.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/serializer.h"
 #include "src/plugins/cli_filter/common/cli_filter_common.h"
 
 static char **stored_data = NULL;
@@ -118,7 +119,13 @@ extern int init(void)
 	stored_data = xmalloc(sizeof(char *) * 24);
 	stored_sz = 24;
 
-	if ((rc = data_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
+	if ((rc = data_init())) {
+		error("%s: unable to data structures: %s", __func__,
+		      slurm_strerror(rc));
+		return rc;
+	}
+
+	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
 		error("%s: unable to load JSON serializer: %s", __func__,
 		      slurm_strerror(rc));
 		return rc;

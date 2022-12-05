@@ -54,6 +54,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/serializer.h"
 #include "src/lua/slurm_lua.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -1364,8 +1365,8 @@ static bb_pools_t *_bb_get_pools(int *num_pools, uint32_t timeout, int *out_rc)
 		return NULL;
 	}
 
-	rc = data_g_deserialize(&data, resp_msg, strlen(resp_msg),
-				MIME_TYPE_JSON);
+	rc = serialize_g_string_to_data(&data, resp_msg, strlen(resp_msg),
+					MIME_TYPE_JSON);
 	if ((rc != SLURM_SUCCESS) || !data) {
 		error("%s: Problem parsing \"%s\": %s",
 		      __func__, resp_msg, slurm_strerror(rc));
@@ -2162,7 +2163,13 @@ extern int init(void)
                 return rc;
 	lua_script_path = get_extra_conf_path("burst_buffer.lua");
 
-	if ((rc = data_init(MIME_TYPE_JSON_PLUGIN, NULL)) != SLURM_SUCCESS) {
+	if ((rc = data_init())) {
+		error("%s: unable to init data structures: %s",
+		      __func__, slurm_strerror(rc));
+		return rc;
+	}
+
+	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
 		error("%s: unable to load JSON serializer: %s",
 		      __func__, slurm_strerror(rc));
 		return rc;
