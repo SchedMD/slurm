@@ -4380,7 +4380,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack16(build_ptr->kill_wait, buffer);
 
 		packstr(build_ptr->launch_params, buffer);
-		packstr(build_ptr->launch_type, buffer);
 		packstr(build_ptr->licenses, buffer);
 		pack16(build_ptr->log_fmt, buffer);
 
@@ -4674,7 +4673,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack16(build_ptr->kill_wait, buffer);
 
 		packstr(build_ptr->launch_params, buffer);
-		packstr(build_ptr->launch_type, buffer);
+		packstr("launch/slurm", buffer);
 		packstr(build_ptr->licenses, buffer);
 		pack16(build_ptr->log_fmt, buffer);
 
@@ -4974,7 +4973,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack16(build_ptr->kill_wait, buffer);
 
 		packstr(build_ptr->launch_params, buffer);
-		packstr(build_ptr->launch_type, buffer);
+		packstr("launch/slurm", buffer);
 		packstr(build_ptr->licenses, buffer);
 		pack16(build_ptr->log_fmt, buffer);
 
@@ -5267,7 +5266,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->kill_wait, buffer);
 
 		safe_unpackstr(&build_ptr->launch_params, buffer);
-		safe_unpackstr(&build_ptr->launch_type, buffer);
 		safe_unpackstr(&build_ptr->licenses, buffer);
 		safe_unpack16(&build_ptr->log_fmt, buffer);
 
@@ -5602,8 +5600,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpackstr_xmalloc(&build_ptr->launch_params,
 		                       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->launch_type,
+		safe_unpackstr_xmalloc(&tmp_char,
 		                       &uint32_tmp, buffer);
+		xfree(tmp_char);
 		safe_unpackstr_xmalloc(&build_ptr->licenses,
 		                       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->log_fmt, buffer);
@@ -6010,8 +6009,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpackstr_xmalloc(&build_ptr->launch_params,
 		                       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->launch_type,
+		safe_unpackstr_xmalloc(&tmp_char,
 		                       &uint32_tmp, buffer);
+		xfree(tmp_char);
 		safe_unpackstr_xmalloc(&build_ptr->licenses,
 		                       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->log_fmt, buffer);

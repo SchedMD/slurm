@@ -2999,7 +2999,6 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	FREE_NULL_LIST(ctl_conf_ptr->job_defaults_list);
 	xfree (ctl_conf_ptr->job_submit_plugins);
 	xfree (ctl_conf_ptr->launch_params);
-	xfree (ctl_conf_ptr->launch_type);
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_domain);
 	xfree (ctl_conf_ptr->mail_prog);
@@ -3164,7 +3163,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->kill_on_bad_exit		= 0;
 	ctl_conf_ptr->kill_wait			= NO_VAL16;
 	xfree (ctl_conf_ptr->launch_params);
-	xfree (ctl_conf_ptr->launch_type);
 	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_domain);
 	xfree (ctl_conf_ptr->mail_prog);
@@ -4438,9 +4436,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (xstrcasestr(conf->launch_params, "enable_nss_slurm") &&
 	    xstrcasestr(conf->launch_params, "disable_send_gids"))
 		fatal("LaunchParameters options enable_nss_slurm and disable_send_gids are mutually exclusive.");
-
-	if (!s_p_get_string(&conf->launch_type, "LaunchType", hashtbl))
-		conf->launch_type = xstrdup(DEFAULT_LAUNCH_TYPE);
 
 	(void) s_p_get_string(&conf->licenses, "Licenses", hashtbl);
 

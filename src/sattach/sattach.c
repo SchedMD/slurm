@@ -139,13 +139,6 @@ int sattach(int argc, char **argv)
 		log_alter(logopt, 0, NULL);
 	}
 
-
-	if (xstrcmp(slurm_conf.launch_type, "launch/slurm")) {
-		error("sattach does not support LaunchType=%s",
-		      slurm_conf.launch_type);
-		exit(error_exit);
-	}
-
 	if (slurm_cred_init() != SLURM_SUCCESS) {
 		error("failed to initialize cred plugin");
 		exit(error_exit);

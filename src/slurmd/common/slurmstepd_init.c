@@ -219,7 +219,6 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* kill_on_bad_exit */
 	pack16(slurm_conf.kill_wait, buffer);
 	packstr(slurm_conf.launch_params, buffer);
-	packstr(slurm_conf.launch_type, buffer);
 	/* licenses */
 	pack16(slurm_conf.log_fmt, buffer);
 	/* mail_domain */
@@ -449,7 +448,6 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* kill_on_bad_exit */
 	safe_unpack16(&slurm_conf.kill_wait, buffer);
 	safe_unpackstr(&slurm_conf.launch_params, buffer);
-	safe_unpackstr(&slurm_conf.launch_type, buffer);
 	/* licenses */
 	safe_unpack16(&slurm_conf.log_fmt, buffer);
 	/* mail_domain */

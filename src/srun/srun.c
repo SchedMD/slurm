@@ -394,13 +394,9 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 	pthread_cond_t step_cond   = PTHREAD_COND_INITIALIZER;
 	srun_job_t *first_job = NULL;
 	char *het_job_node_list = NULL;
-	bool need_mpir = false;
 	uint16_t *tmp_task_cnt = NULL, *het_job_task_cnts = NULL;
 	uint32_t **tmp_tids = NULL, **het_job_tids = NULL;
 	uint32_t *het_job_tid_offsets = NULL;
-
-	if (xstrstr(slurm_conf.launch_type, "slurm"))
-		need_mpir = true;
 
 	if (srun_job_list) {
 		int het_job_step_cnt = list_count(srun_job_list);
@@ -475,8 +471,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		_reorder_het_job_recs(&het_job_node_list, &het_job_task_cnts,
 				   &het_job_tids, total_nnodes);
 
-		if (need_mpir)
-			mpir_init(total_ntasks);
+		mpir_init(total_ntasks);
 
 		opt_iter = list_iterator_create(opt_list);
 
@@ -552,8 +547,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			fini_srun(first_job, got_alloc, &global_rc, 0);
 	} else {
 		int i;
-		if (need_mpir)
-			mpir_init(job->ntasks);
+		mpir_init(job->ntasks);
 		if (job->het_job_id && (job->het_job_id != NO_VAL)) {
 			job->het_job_task_cnts = xcalloc(job->het_job_nnodes,
 							 sizeof(uint16_t));

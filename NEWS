@@ -154,6 +154,7 @@ documents those changes that are of interest to users and administrators.
  -- Extend support for Include files to all "configless" client commands.
  -- Make node weight usable for powered down and rebooting nodes.
  -- node_features plugins - node_features_p_reboot_weight() function removed.
+ -- Removed 'launch' plugin.
 
 * Changes in Slurm 22.05.7
 ==========================

@@ -20,7 +20,8 @@ srun_SOURCES = \
 	srun_job.c srun_job.h \
 	srun_pty.c srun_pty.h \
 	srun.wrapper.c \
-	step_ctx.c step_ctx.h
+	step_ctx.c step_ctx.h \
+	task_state.c task_state.h
 
 srun_LDADD = $(depend_libs) $(DL_LIBS) $(LIB_SLURM)
 

@@ -182,15 +182,7 @@ static void _opt_default(void)
 	opt.account	= NULL;
 	opt.batch	= false;
 	opt.clusters    = NULL;
-#ifdef HAVE_FRONT_END
 	opt.ctld	= true;
-#else
-	/* do this for all but slurm (poe, aprun, etc...) */
-	if (xstrcmp(slurm_conf.launch_type, "launch/slurm"))
-		opt.ctld	= true;
-	else
-		opt.ctld	= false;
-#endif
 	opt.full	= false;
 	opt.hurry	= false;
 	opt.interactive	= false;

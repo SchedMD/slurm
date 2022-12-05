@@ -121,7 +121,6 @@ typedef struct node_record node_record_t;
 #define DEFAULT_KILL_ON_BAD_EXIT    0
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
-#define DEFAULT_LAUNCH_TYPE         "launch/slurm"
 #define DEFAULT_MAIL_PROG           "/bin/mail"
 #define DEFAULT_MAIL_PROG_ALT       "/usr/bin/mail"
 #define DEFAULT_MAX_ARRAY_SIZE      1001

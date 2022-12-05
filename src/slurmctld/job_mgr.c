@@ -16452,26 +16452,16 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 #endif
 	agent_arg_t *agent_args = NULL;
 	signal_tasks_msg_t *signal_job_msg = NULL;
-	static int notify_srun_static = -1;
 	int notify_srun = 0;
-
-	if (notify_srun_static == -1) {
-		/* do this for all but slurm (poe, aprun, etc...) */
-		if (xstrcmp(slurm_conf.launch_type, "launch/slurm"))
-			notify_srun_static = 1;
-		else
-			notify_srun_static = 0;
-	}
 
 #ifdef HAVE_FRONT_END
 	/* On a front end system always notify_srun instead of slurmd */
-	if (notify_srun_static)
-		notify_srun = 1;
+	notify_srun = 1;
 #else
 	/* For launch/poe all signals are forwarded by srun to poe to tasks
 	 * except SIGSTOP/SIGCONT, which are used for job preemption. In that
 	 * case the slurmd must directly suspend tasks and switch resources. */
-	if (notify_srun_static && (signal != SIGSTOP) && (signal != SIGCONT))
+	if ((signal != SIGSTOP) && (signal != SIGCONT))
 		notify_srun = 1;
 #endif
 

@@ -157,7 +157,8 @@ PROGRAMS = $(bin_PROGRAMS)
 am_srun_OBJECTS = allocate.$(OBJEXT) debugger.$(OBJEXT) \
 	fname.$(OBJEXT) launch.$(OBJEXT) multi_prog.$(OBJEXT) \
 	opt.$(OBJEXT) srun.$(OBJEXT) srun_job.$(OBJEXT) \
-	srun_pty.$(OBJEXT) srun.wrapper.$(OBJEXT) step_ctx.$(OBJEXT)
+	srun_pty.$(OBJEXT) srun.wrapper.$(OBJEXT) step_ctx.$(OBJEXT) \
+	task_state.$(OBJEXT)
 srun_OBJECTS = $(am_srun_OBJECTS)
 am__DEPENDENCIES_1 =
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -187,7 +188,7 @@ am__depfiles_remade = ./$(DEPDIR)/allocate.Po ./$(DEPDIR)/debugger.Po \
 	./$(DEPDIR)/multi_prog.Po ./$(DEPDIR)/opt.Po \
 	./$(DEPDIR)/srun.Po ./$(DEPDIR)/srun.wrapper.Po \
 	./$(DEPDIR)/srun_job.Po ./$(DEPDIR)/srun_pty.Po \
-	./$(DEPDIR)/step_ctx.Po
+	./$(DEPDIR)/step_ctx.Po ./$(DEPDIR)/task_state.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -509,7 +510,8 @@ srun_SOURCES = \
 	srun_job.c srun_job.h \
 	srun_pty.c srun_pty.h \
 	srun.wrapper.c \
-	step_ctx.c step_ctx.h
+	step_ctx.c step_ctx.h \
+	task_state.c task_state.h
 
 srun_LDADD = $(depend_libs) $(DL_LIBS) $(LIB_SLURM)
 srun_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
@@ -618,6 +620,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_job.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_pty.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_ctx.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_state.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -757,6 +760,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/srun_job.Po
 	-rm -f ./$(DEPDIR)/srun_pty.Po
 	-rm -f ./$(DEPDIR)/step_ctx.Po
+	-rm -f ./$(DEPDIR)/task_state.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -813,6 +817,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/srun_job.Po
 	-rm -f ./$(DEPDIR)/srun_pty.Po
 	-rm -f ./$(DEPDIR)/step_ctx.Po
+	-rm -f ./$(DEPDIR)/task_state.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

@@ -523,8 +523,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/mysql/Makefile
 		 src/plugins/jobcomp/none/Makefile
 		 src/plugins/jobcomp/script/Makefile
-		 src/plugins/launch/Makefile
-		 src/plugins/launch/slurm/Makefile
 		 src/plugins/mcs/Makefile
 		 src/plugins/mcs/account/Makefile
 		 src/plugins/mcs/group/Makefile
