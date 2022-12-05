@@ -2287,7 +2287,9 @@ static void _set_features(node_record_t **old_node_table_ptr,
 		}
 
 		xfree(node_ptr->features_act);
-		node_ptr->features_act = xstrdup(node_ptr->features);
+		if (!IS_NODE_POWERED_DOWN(node_ptr)) {
+			node_ptr->features_act = xstrdup(node_ptr->features);
+		}
 
 		if (node_features_cnt == 0)
 			continue;
