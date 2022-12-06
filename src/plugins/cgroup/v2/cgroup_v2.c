@@ -768,8 +768,12 @@ static int _migrate_to_stepd_scope()
 
 	xstrfmtcat(new_home, "%s/slurmd", stepd_scope_path);
 	int_cg_ns.mnt_point = new_home;
-	common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_ROOT], "",
-			     (uid_t) 0, (gid_t) 0);
+
+	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_ROOT], "",
+				 (uid_t) 0, (gid_t) 0) != SLURM_SUCCESS) {
+		error("unable to create root cgroup");
+		return SLURM_ERROR;
+	}
 
 	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_ROOT]) !=
 	    SLURM_SUCCESS) {
