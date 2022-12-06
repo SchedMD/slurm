@@ -46,6 +46,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/serializer.h"
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -86,8 +88,9 @@ static bool _is_char_hex(char buffer)
 	       (buffer >= 'A' && buffer <= 'F');
 }
 
-extern int serializer_p_serialize(char **dest, const data_t *data,
-				  data_serializer_flags_t flags)
+extern int serialize_p_data_to_string(char **dest, size_t *length,
+				      const data_t *src,
+				      serializer_flags_t flags)
 {
 	return ESLURM_NOT_SUPPORTED;
 }
@@ -191,11 +194,10 @@ static unsigned char _decode_seq(const char *ptr)
  * 	breaks key=value&key2=value2&...
  * 	into a data_t dictionary
  * 	dup keys will override existing keys
- * IN len - not used
  * RET SLURM_SUCCESS or error
  */
-extern int serializer_p_deserialize(data_t **dest, const char *src,
-				    size_t len)
+extern int serialize_p_string_to_data(data_t **dest, const char *src,
+				      size_t length)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *d = data_set_dict(data_new());
