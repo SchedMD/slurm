@@ -365,6 +365,122 @@ extern char *run_command(run_command_args_t *args)
 	return resp;
 }
 
+extern char *run_command_poll_child(int cpid,
+				    int max_wait,
+				    bool orphan_on_shutdown,
+				    int read_fd,
+				    const char *script_path,
+				    const char *script_type,
+				    int tid,
+				    int *status,
+				    bool *timed_out)
+{
+	bool send_terminate = true;
+	struct pollfd fds;
+	struct timeval tstart;
+	int resp_size = 1024, resp_offset = 0;
+	int new_wait;
+	int i;
+	char *resp;
+
+	resp = xmalloc(resp_size);
+	gettimeofday(&tstart, NULL);
+
+	while (1) {
+		if (command_shutdown) {
+			error("%s: %s %s operation on shutdown",
+			      __func__,
+			      orphan_on_shutdown ?
+			      "orphaning" : "killing",
+			      script_type);
+			break;
+		}
+
+		/*
+		 * Pass zero as the status to just see if this script
+		 * exists in track_script - if not, then we need to bail
+		 * since this script was killed.
+		 */
+		if (tid &&
+		    track_script_killed(tid, 0, false))
+			break;
+
+		fds.fd = read_fd;
+		fds.events = POLLIN | POLLHUP | POLLRDHUP;
+		fds.revents = 0;
+		if (max_wait <= 0) {
+			new_wait = MAX_POLL_WAIT;
+		} else {
+			new_wait = max_wait - _tot_wait(&tstart);
+			if (new_wait <= 0) {
+				error("%s: %s poll timeout @ %d msec",
+				      __func__, script_type,
+				      max_wait);
+				if (timed_out)
+					*(timed_out) = true;
+				break;
+			}
+			new_wait = MIN(new_wait, MAX_POLL_WAIT);
+		}
+		i = poll(&fds, 1, new_wait);
+		if (i == 0) {
+			continue;
+		} else if (i < 0) {
+			error("%s: %s poll:%m",
+			      __func__, script_type);
+			break;
+		}
+		if ((fds.revents & POLLIN) == 0) {
+			send_terminate = false;
+			break;
+		}
+		i = read(read_fd, resp + resp_offset,
+			 resp_size - resp_offset);
+		if (i == 0) {
+			send_terminate = false;
+			break;
+		} else if (i < 0) {
+			if (errno == EAGAIN)
+				continue;
+			send_terminate = false;
+			error("%s: read(%s): %m",
+			      __func__,
+			      script_path);
+			break;
+		} else {
+			resp_offset += i;
+			if (resp_offset + 1024 >= resp_size) {
+				resp_size *= 2;
+				resp = xrealloc(resp, resp_size);
+			}
+		}
+	}
+	if (command_shutdown && orphan_on_shutdown) {
+		/* Don't kill the script on shutdown */
+		*status = 0;
+	} else if (send_terminate) {
+		/*
+		 * Kill immediately if the script isn't exiting
+		 * normally.
+		 */
+		_kill_pg(cpid);
+		waitpid(cpid, status, 0);
+	} else {
+		/*
+		 * If the STDOUT is closed from the script we may reach
+		 * this point without any input in read_fd, so just wait
+		 * for the process here until max_wait.
+		 */
+		run_command_waitpid_timeout(script_type,
+					    cpid, status,
+					    max_wait,
+					    _tot_wait(&tstart),
+					    tid, timed_out);
+	}
+
+	return resp;
+}
+
 /*
  * run_command_waitpid_timeout()
  *
