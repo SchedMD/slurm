@@ -469,7 +469,7 @@ static bool _oneapi_set_freqs(ze_device_handle_t device,
 	zes_freq_properties_t freq_prop;
 	zes_freq_range_t freq_range;
 	ze_result_t oneapi_rc;
-	unsigned int freq;
+	unsigned int freq = 0;
 
 	/* Get all of frequency handles */
 	oneapi_rc = zesDeviceEnumFrequencyDomains((zes_device_handle_t)device,
