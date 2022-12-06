@@ -292,6 +292,16 @@ int main(int argc, char *argv[])
 		goto ouch;
 
 	slurm_init(NULL);
+	if (route_init() != SLURM_SUCCESS) {
+		error("failed to initialize route plugins");
+		exit(1);
+	}
+
+	if (slurm_topo_init() != SLURM_SUCCESS) {
+		error("failed to initialize route plugins");
+		exit(1);
+	}
+
 	opts.stderr_level = LOG_LEVEL_DEBUG;
 	log_init(argv[0], opts, SYSLOG_FACILITY_USER, NULL);
 
