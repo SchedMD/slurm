@@ -2273,7 +2273,7 @@
             "description": "Specify a name for the job allocation."
           },
           "nice": {
-            "type": "string",
+            "type": "integer",
             "description": "Run the job with an adjusted scheduling priority within Slurm."
           },
           "no_kill": {
