@@ -182,7 +182,11 @@ static void _opt_default(void)
 	opt.account	= NULL;
 	opt.batch	= false;
 	opt.clusters    = NULL;
+#ifdef HAVE_FRONT_END
 	opt.ctld	= true;
+#else
+	opt.ctld	= false;
+#endif
 	opt.full	= false;
 	opt.hurry	= false;
 	opt.interactive	= false;

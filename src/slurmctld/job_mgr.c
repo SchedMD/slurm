@@ -16452,32 +16452,6 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 #endif
 	agent_arg_t *agent_args = NULL;
 	signal_tasks_msg_t *signal_job_msg = NULL;
-	int notify_srun = 0;
-
-#ifdef HAVE_FRONT_END
-	/* On a front end system always notify_srun instead of slurmd */
-	notify_srun = 1;
-#else
-	/* For launch/poe all signals are forwarded by srun to poe to tasks
-	 * except SIGSTOP/SIGCONT, which are used for job preemption. In that
-	 * case the slurmd must directly suspend tasks and switch resources. */
-	if ((signal != SIGSTOP) && (signal != SIGCONT))
-		notify_srun = 1;
-#endif
-
-	if (notify_srun) {
-		ListIterator step_iterator;
-		step_record_t *step_ptr;
-		step_iterator = list_iterator_create(job_ptr->step_list);
-		while ((step_ptr = list_next(step_iterator))) {
-			/* Since we have already checked the uid,
-			 * we can send this signal as uid 0. */
-			job_step_signal(&step_ptr->step_id, signal, 0, 0);
-		}
-		list_iterator_destroy (step_iterator);
-
-		return;
-	}
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_SIGNAL_TASKS;
