@@ -214,7 +214,7 @@ static int _enable_subtree_control(char *path, bitstr_t *ctl_bitmap)
 
 		xstrfmtcat(content, "+%s", ctl_names[i]);
 		rc = common_file_write_content(file_path, content,
-					       sizeof(content));
+					       strlen(content));
 		xfree(content);
 		if (rc != SLURM_SUCCESS) {
 			error("Cannot enable %s in %s",
