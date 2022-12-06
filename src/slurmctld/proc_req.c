@@ -706,7 +706,8 @@ extern void configless_setup(void)
 	config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
 	config_for_clients = xmalloc(sizeof(*config_for_clients));
 
-	load_config_response_msg(config_for_slurmd, CONFIG_REQUEST_SLURMD);
+	config_for_slurmd->slurmd_spooldir =
+		xstrdup(slurm_conf.slurmd_spooldir);
 
 	load_config_response_list(config_for_slurmd, slurmd_config_files);
 	load_config_response_list(config_for_clients, client_config_files);
@@ -730,7 +731,7 @@ extern void configless_update(void)
 	config_response_msg_t *new = xmalloc(sizeof(*new));
 	config_response_msg_t *old = xmalloc(sizeof(*old));
 
-	load_config_response_msg(new, CONFIG_REQUEST_SLURMD);
+	new->slurmd_spooldir = xstrdup(slurm_conf.slurmd_spooldir);
 	load_config_response_list(new, slurmd_config_files);
 
 	memcpy(old, config_for_slurmd, sizeof(*old));
