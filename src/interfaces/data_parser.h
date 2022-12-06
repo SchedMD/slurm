@@ -39,4 +39,373 @@
 
 #include "src/common/data.h"
 
+typedef enum {
+	/* there is an implied * on every type */
+	DATA_PARSER_TYPE_INVALID = 0,
+	DATA_PARSER_BITSTR, /* bitstr_t */
+	DATA_PARSER_STRING, /* char* */
+	DATA_PARSER_UINT16, /* uint16_t */
+	DATA_PARSER_UINT16_NO_VAL, /* uint16_t - NO_VAL if unset */
+	DATA_PARSER_UINT32, /* uint32_t */
+	DATA_PARSER_UINT32_NO_VAL, /* uint32_t - NO_VAL if unset */
+	DATA_PARSER_UINT64, /* uint64_t */
+	DATA_PARSER_INT64, /* int64_t */
+	DATA_PARSER_FLOAT128, /* long double */
+	DATA_PARSER_FLOAT64, /* double */
+	DATA_PARSER_FLOAT64_NO_VAL, /* double  - NO_VAL if unset*/
+	DATA_PARSER_BOOL, /* uint8_t */
+	DATA_PARSER_BOOL16, /* uint16_t */
+	DATA_PARSER_BOOL16_NO_VAL, /* uint16_t - false if NO_VAL16 */
+	DATA_PARSER_CSV_LIST, /* char * - comma delimited list */
+	DATA_PARSER_ACCOUNT_LIST, /* list of slurmdb_account_rec_t* */
+	DATA_PARSER_ACCOUNT, /* slurmdb_account_rec_t */
+	DATA_PARSER_ACCOUNT_FLAG_DELETED, /* slurmdb_account_rec_t->flags&SLURMDB_ACCT_FLAG_DELETED */
+	DATA_PARSER_ACCOUNTING_LIST, /* list of slurmdb_accounting_rec_t* */
+	DATA_PARSER_ACCOUNTING, /* slurmdb_accounting_rec_t */
+	DATA_PARSER_ADMIN_LVL, /* uint16_t (placeholder for slurmdb_admin_level_t) */
+	DATA_PARSER_ASSOC_ID, /* slurmdb_assoc_usage_t */
+	DATA_PARSER_ASSOC_LIST, /* list of slurmdb_assoc_rec_t* */
+	DATA_PARSER_ASSOC_SHORT_LIST, /* list of slurmdb_assoc_rec_t* only for id */
+	DATA_PARSER_ASSOC_SHORT, /* slurmdb_assoc_rec_t (for id only) */
+	DATA_PARSER_ASSOC_SHORT_PTR, /* slurmdb_assoc_rec_t* (for id only) */
+	DATA_PARSER_ASSOC, /* slurmdb_assoc_rec_t */
+	DATA_PARSER_ASSOC_FLAG_DELETED, /* slurmdb_assoc_rec_t->flags & ASSOC_FLAG_DELETED */
+	DATA_PARSER_ASSOC_FLAG_DEFAULT, /* slurmdb_assoc_rec_t->is_def */
+	DATA_PARSER_ASSOC_USAGE, /* slurmdb_assoc_usage_t */
+	DATA_PARSER_ASSOC_USAGE_PTR, /* slurmdb_assoc_usage_t* */
+	DATA_PARSER_CLASSIFICATION_TYPE, /* slurmdb_classification_type_t */
+	DATA_PARSER_CLUSTER_ACCT_REC_LIST, /* list of slurmdb_cluster_accounting_rec_t* */
+	DATA_PARSER_CLUSTER_ACCT_REC, /* slurmdb_cluster_accounting_rec_t */
+	DATA_PARSER_CLUSTER_CLASSIFICATION, /* uint16_t joined with slurmdb_classification_type_t */
+	DATA_PARSER_CLUSTER_REC_LIST, /* list of slurmdb_cluster_rec_t */
+	DATA_PARSER_CLUSTER_REC, /* slurmdb_cluster_rec_t */
+	DATA_PARSER_CLUSTER_REC_FLAG_MULTSD, /* slurmdb_cluster_rec_t->flags & CLUSTER_FLAG_MULTSD */
+	DATA_PARSER_CLUSTER_REC_FLAG_FE, /* slurmdb_cluster_rec_t->flags & CLUSTER_FLAG_FE */
+	DATA_PARSER_CLUSTER_REC_FLAG_CRAY, /* slurmdb_cluster_rec_t->flags & CLUSTER_FLAG_CRAY */
+	DATA_PARSER_CLUSTER_REC_FLAG_FED, /* slurmdb_cluster_rec_t->flags & CLUSTER_FLAG_FED */
+	DATA_PARSER_CLUSTER_REC_FLAG_EXT, /* slurmdb_cluster_rec_t->flags & CLUSTER_FLAG_EXT */
+	DATA_PARSER_COORD_LIST, /* List of slurmdb_coord_rec_t* */
+	DATA_PARSER_COORD, /* slurmdb_coord_rec_t */
+	DATA_PARSER_GROUP_ID, /* Group from numeric GID <-> gid_t */
+	DATA_PARSER_GROUP_NAME, /* Group from string group name <-> gid_t */
+	DATA_PARSER_JOB_EXIT_CODE, /* int32_t */
+	DATA_PARSER_JOB_REASON, /* uint32_t <-> enum job_state_reason */
+	DATA_PARSER_JOB_LIST, /* list of slurmdb_job_rec_t* */
+	DATA_PARSER_JOB, /* slurmdb_job_rec_t */
+	DATA_PARSER_JOB_FLAG_CLEAR_SCHED, /* slurmdb_job_rec_t->flags & SLURMDB_JOB_CLEAR_SCHED */
+	DATA_PARSER_JOB_FLAG_NOTSET, /* slurmdb_job_rec_t->flags & SLURMDB_JOB_NOTSET */
+	DATA_PARSER_JOB_FLAG_SUBMIT, /* slurmdb_job_rec_t->flags & SLURMDB_JOB_SUBMIT */
+	DATA_PARSER_JOB_FLAG_SCHED, /* slurmdb_job_rec_t->flags & SLURMDB_JOB_SCHED */
+	DATA_PARSER_JOB_FLAG_BACKFILL, /* slurmdb_job_rec_t->flags & SLURMDB_JOB_BACKFILL */
+	DATA_PARSER_JOB_STATE, /* uint32_t <-> JOB_STATE_FLAGS */
+	DATA_PARSER_STEP, /* slurmdb_step_rec_t */
+	DATA_PARSER_STEP_LIST, /* List of slurmdb_step_rec_t* */
+	DATA_PARSER_STEP_NODES, /* slurmdb_step_rec_t->nodes */
+	DATA_PARSER_STEP_TRES_REQ_MAX, /* slurmdb_step_rec_t->tres_usage_in_max(|_nodeid|taskid) */
+	DATA_PARSER_STEP_TRES_REQ_MIN, /* slurmdb_step_rec_t->tres_usage_in_min(|_nodeid|taskid) */
+	DATA_PARSER_STEP_TRES_USAGE_MAX, /* slurmdb_step_rec_t->tres_usage_out_in_max(|_nodeid|taskid) */
+	DATA_PARSER_STEP_TRES_USAGE_MIN, /* slurmdb_step_rec_t->tres_usage_out_in_min(|_nodeid|taskid) */
+	DATA_PARSER_JOB_USER, /* user/uid from slurmdb_job_rec_t* */
+	DATA_PARSER_QOS_ID, /* uint32_t of QOS id */
+	DATA_PARSER_QOS_ID_LIST, /* List of char* of QOS ids */
+	DATA_PARSER_QOS_STRING_ID, /* char * of QOS id */
+	DATA_PARSER_QOS_STRING_ID_LIST, /* List of char* of QOS ids */
+	DATA_PARSER_QOS_NAME, /* char * of QOS name */
+	DATA_PARSER_QOS_NAME_LIST, /* List of char* of QOS names */
+	DATA_PARSER_QOS_PREEMPT_LIST, /* slurmdb_qos_rec_t->preempt_bitstr & preempt_list */
+	DATA_PARSER_QOS, /* slurmdb_qos_rec_t */
+	DATA_PARSER_QOS_LIST, /* list of slurmdb_qos_rec_t* */
+	DATA_PARSER_QOS_FLAG_PART_MIN_NODE, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_PART_MIN_NODE */
+	DATA_PARSER_QOS_FLAG_PART_MAX_NODE, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_PART_MAX_NODE */
+	DATA_PARSER_QOS_FLAG_PART_TIME_LIMIT, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_PART_TIME_LIMIT */
+	DATA_PARSER_QOS_FLAG_ENFORCE_USAGE_THRES, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_ENFORCE_USAGE_THRES */
+	DATA_PARSER_QOS_FLAG_NO_RESERVE, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_NO_RESERVE */
+	DATA_PARSER_QOS_FLAG_REQ_RESV, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_REQ_RESV */
+	DATA_PARSER_QOS_FLAG_DENY_LIMIT, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_DENY_LIMIT */
+	DATA_PARSER_QOS_FLAG_OVER_PART_QOS, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_OVER_PART_QOS */
+	DATA_PARSER_QOS_FLAG_NO_DECAY, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_NO_DECAY */
+	DATA_PARSER_QOS_FLAG_USAGE_FACTOR_SAFE, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_USAGE_FACTOR_SAFE */
+	DATA_PARSER_QOS_FLAG_PREEMPT_MODE_SUSPEND, /* slurmdb_qos_rec_t->preempt_mode & PREEMPT_MODE_SUSPEND */
+	DATA_PARSER_QOS_FLAG_PREEMPT_MODE_REQUEUE, /* slurmdb_qos_rec_t->preempt_mode & PREEMPT_MODE_REQUEUE */
+	DATA_PARSER_QOS_FLAG_PREEMPT_MODE_CANCEL, /* slurmdb_qos_rec_t->preempt_mode & PREEMPT_MODE_CANCEL */
+	DATA_PARSER_QOS_FLAG_PREEMPT_MODE_GANG, /* slurmdb_qos_rec_t->preempt_mode & PREEMPT_MODE_GANG */
+	DATA_PARSER_RPC_ID, /* slurmdbd_msg_type_t */
+	DATA_PARSER_SELECT_PLUGIN_ID, /* int (SELECT_PLUGIN_*) -> string */
+	DATA_PARSER_STATS_REC_ARRAY, /* array of slurmdb_stats_rec_t* */
+	DATA_PARSER_STATS_REC, /* slurmdb_stats_rec_t */
+	DATA_PARSER_STATS_RPC_LIST, /* list of slurmdb_rpc_obj_t* */
+	DATA_PARSER_STATS_RPC, /* slurmdb_rpc_obj_t */
+	DATA_PARSER_STATS_USER_LIST, /* list of slurmdb_rpc_obj_t* */
+	DATA_PARSER_STATS_USER, /* slurmdb_rpc_obj_t */
+	DATA_PARSER_STEP_CPUFREQ_GOV, /* slurmdb_step_rec_t.req_cpufreq_gov (uint32_t) of CPU_FREQ_* flags */
+	DATA_PARSER_STEP_FLAG_CPU_FREQ_CONSERVATIVE, /* slurmdb_step_rec_t->req_cpufreq_gov & CPU_FREQ_CONSERVATIVE */
+	DATA_PARSER_STEP_FLAG_CPU_FREQ_PERFORMANCE, /* slurmdb_step_rec_t->req_cpufreq_gov & CPU_FREQ_PERFORMANCE */
+	DATA_PARSER_STEP_FLAG_CPU_FREQ_POWERSAVE, /* slurmdb_step_rec_t->req_cpufreq_gov & CPU_FREQ_POWERSAVE */
+	DATA_PARSER_STEP_FLAG_CPU_FREQ_ONDEMAND, /* slurmdb_step_rec_t->req_cpufreq_gov & FLAG_CPU_FREQ_ONDEMAND */
+	DATA_PARSER_STEP_FLAG_CPU_FREQ_USERSPACE, /* slurmdb_step_rec_t->req_cpufreq_gov & CPU_FREQ_USERSPACE */
+	DATA_PARSER_STEP_ID, /* uint32_t of job step id */
+	DATA_PARSER_TASK_DISTRIBUTION, /* uint32_t <-> task_dist_states_t */
+	DATA_PARSER_TRES_STR, /* List of slurmdb_tres_rec_t* combined into a TRES string with TRES type/name instead of ID */
+	DATA_PARSER_TRES_ID_STR, /* List of slurmdb_tres_rec_t* combined into a TRES string with TRES id# instead of type/name */
+	DATA_PARSER_TRES_LIST, /* List of slurmdb_tres_rec_t* */
+	DATA_PARSER_TRES, /* slurmdb_tres_rec_t */
+	DATA_PARSER_TRES_NCT, /* slurmdb_tres_nct_rec_t */
+	DATA_PARSER_USER_ID, /* User from numeric UID */
+	DATA_PARSER_USER, /* slurmdb_user_rec_t */
+	DATA_PARSER_USER_LIST, /* List of slurmdb_user_rec_t*  */
+	DATA_PARSER_USER_FLAG_DELETED, /* slurmdb_user_rec_t->parser_user_flags & SLURMDB_USER_FLAG_DELETED */
+	DATA_PARSER_WCKEY, /* slurmdb_wckey_rec_t */
+	DATA_PARSER_WCKEY_LIST, /* List of slurmdb_wckey_rec_t* */
+	DATA_PARSER_WCKEY_FLAG_DELETED, /* slurmdb_wckey_rec_t->flags & SLURMDB_WCKEY_FLAG_DELETED */
+	DATA_PARSER_WCKEY_TAG, /* uint32_t - * prefix denotes default */
+	DATA_PARSER_STATS_MSG, /* stats_info_response_msg_t */
+	DATA_PARSER_STATS_MSG_CYCLE_MEAN, /* stats_info_response_msg_t-> computed value */
+	DATA_PARSER_STATS_MSG_CYCLE_MEAN_DEPTH, /* stats_info_response_msg_t-> computed value */
+	DATA_PARSER_STATS_MSG_CYCLE_PER_MIN, /* stats_info_response_msg_t-> computed value */
+	DATA_PARSER_STATS_MSG_BF_CYCLE_MEAN, /* stats_info_response_msg_t-> computed value */
+	DATA_PARSER_STATS_MSG_BF_DEPTH_MEAN, /* stats_info_response_msg_t-> computed value */
+	DATA_PARSER_STATS_MSG_BF_DEPTH_MEAN_TRY, /* stats_info_response_msg_t-> computed value */
+	DATA_PARSER_STATS_MSG_BF_QUEUE_LEN_MEAN, /* stats_info_response_msg_t-> computed value */
+	DATA_PARSER_STATS_MSG_BF_TABLE_SIZE_MEAN, /* stats_info_response_msg_t-> computed value */
+	DATA_PARSER_STATS_MSG_BF_ACTIVE, /* stats_info_response_msg_t-> computed bool */
+	DATA_PARSER_STATS_MSG_RPCS_BY_TYPE, /* stats_info_response_msg_t-> computed bool */
+	DATA_PARSER_STATS_MSG_RPCS_BY_USER, /* stats_info_response_msg_t-> computed bool */
+	DATA_PARSER_CONTROLLER_PING, /* controller_ping_t */
+	DATA_PARSER_CONTROLLER_PING_ARRAY, /* controller_ping_t (NULL terminated array) */
+	DATA_PARSER_CONTROLLER_PING_MODE, /* char * - verbose controller mode */
+	DATA_PARSER_CONTROLLER_PING_RESULT, /* char * - "UP" or "DOWN" */
+	DATA_PARSER_NODE, /* node_info_t */
+	DATA_PARSER_NODES, /* node_info_msg_t */
+	DATA_PARSER_NODE_BASE_STATE, /* uint32_t & NODE_STATE_BASE */
+	DATA_PARSER_NODE_STATE_CLOUD, /* uint32_t & NODE_STATE_CLOUD */
+	DATA_PARSER_NODE_STATE_COMPLETING, /* uint32_t & NODE_STATE_COMPLETING */
+	DATA_PARSER_NODE_STATE_DRAIN, /* uint32_t & NODE_STATE_DRAIN */
+	DATA_PARSER_NODE_STATE_DYNAMIC_FUTURE, /* uint32_t & NODE_STATE_DYNAMIC_FUTURE */
+	DATA_PARSER_NODE_STATE_DYNAMIC_NORM, /* uint32_t & NODE_STATE_DYNAMIC_NORM */
+	DATA_PARSER_NODE_STATE_INVALID_REG, /* uint32_t & NODE_STATE_INVALID_REG */
+	DATA_PARSER_NODE_STATE_FAIL, /* uint32_t & NODE_STATE_FAIL */
+	DATA_PARSER_NODE_STATE_MAINT, /* uint32_t & NODE_STATE_MAINT */
+	DATA_PARSER_NODE_STATE_POWER_DOWN, /* uint32_t & NODE_STATE_POWER_DOWN */
+	DATA_PARSER_NODE_STATE_POWER_UP, /* uint32_t & NODE_STATE_POWER_UP */
+	DATA_PARSER_NODE_STATE_POWERED_DOWN, /* uint32_t & NODE_STATE_POWERED_DOWN */
+	DATA_PARSER_NODE_STATE_POWERING_UP, /* uint32_t & NODE_STATE_POWERING_UP */
+	DATA_PARSER_NODE_STATE_POWERING_DOWN, /* uint32_t & NODE_STATE_POWERING_DOWN */
+	DATA_PARSER_NODE_STATE_NET, /* uint32_t & NODE_STATE_NET */
+	DATA_PARSER_NODE_STATE_REBOOT_REQUESTED, /* uint32_t & NODE_STATE_REBOOT_REQUESTED */
+	DATA_PARSER_NODE_STATE_REBOOT_ISSUED, /* uint32_t & NODE_STATE_REBOOT_ISSUED */
+	DATA_PARSER_NODE_STATE_RES, /* uint32_t & NODE_STATE_RES */
+	DATA_PARSER_NODE_STATE_RESUME, /* uint32_t & NODE_STATE_RESUME */
+	DATA_PARSER_NODE_STATE_NO_RESPOND, /* uint32_t & NODE_STATE_NO_RESPOND */
+	DATA_PARSER_NODE_STATE_PLANNED, /* uint32_t & NODE_STATE_PLANNED */
+	DATA_PARSER_NODE_SELECT_ALLOC_MEMORY, /* node_info_t->select_nodeinfo  */
+	DATA_PARSER_NODE_SELECT_ALLOC_CPUS, /* node_info_t->select_nodeinfo  */
+	DATA_PARSER_NODE_SELECT_ALLOC_IDLE_CPUS, /* node_info_t->select_nodeinfo  */
+	DATA_PARSER_NODE_SELECT_TRES_USED, /* node_info_t->select_nodeinfo  */
+	DATA_PARSER_NODE_SELECT_TRES_WEIGHTED, /* node_info_t->select_nodeinfo  */
+	DATA_PARSER_LICENSES, /* license_info_msg_t */
+	DATA_PARSER_LICENSE, /* slurm_license_info_t */
+	DATA_PARSER_LICENSE_FLAG_REMOTE, /* slurm_license_info_t->remote */
+	DATA_PARSER_JOB_INFO_MSG, /* job_info_msg_t */
+	DATA_PARSER_JOB_INFO, /* slurm_job_info_t */
+	DATA_PARSER_JOB_INFO_FLAG_KILL_INV_DEP, /* uint64_t & KILL_INV_DEP */
+	DATA_PARSER_JOB_INFO_FLAG_NO_KILL_INV_DEP, /* uint64_t & NO_KILL_INV_DEP */
+	DATA_PARSER_JOB_INFO_FLAG_HAS_STATE_DIR, /* uint64_t & HAS_STATE_DIR */
+	DATA_PARSER_JOB_INFO_FLAG_BACKFILL_TEST, /* uint64_t & BACKFILL_TEST */
+	DATA_PARSER_JOB_INFO_FLAG_GRES_ENFORCE_BIND, /* uint64_t & GRES_ENFORCE_BIND */
+	DATA_PARSER_JOB_INFO_FLAG_TEST_NOW_ONLY, /* uint64_t & TEST_NOW_ONLY */
+	DATA_PARSER_JOB_INFO_FLAG_SPREAD_JOB, /* uint64_t & SPREAD_JOB */
+	DATA_PARSER_JOB_INFO_FLAG_USE_MIN_NODES, /* uint64_t & USE_MIN_NODES */
+	DATA_PARSER_JOB_INFO_FLAG_JOB_KILL_HURRY, /* uint64_t & JOB_KILL_HURRY */
+	DATA_PARSER_JOB_INFO_FLAG_TRES_STR_CALC, /* uint64_t & TRES_STR_CALC */
+	DATA_PARSER_JOB_INFO_FLAG_SIB_JOB_FLUSH, /* uint64_t & SIB_JOB_FLUSH */
+	DATA_PARSER_JOB_INFO_FLAG_HET_JOB_FLAG, /* uint64_t & HET_JOB_FLAG */
+	DATA_PARSER_JOB_INFO_FLAG_JOB_CPUS_SET, /* uint64_t & JOB_CPUS_SET */
+	DATA_PARSER_JOB_INFO_FLAG_TOP_PRIO_TMP, /* uint64_t & TOP_PRIO_TMP */
+	DATA_PARSER_JOB_INFO_FLAG_JOB_ACCRUE_OVER, /* uint64_t & JOB_ACCRUE_OVER */
+	DATA_PARSER_JOB_INFO_FLAG_GRES_DISABLE_BIND, /* uint64_t & GRES_DISABLE_BIND */
+	DATA_PARSER_JOB_INFO_FLAG_JOB_WAS_RUNNING, /* uint64_t & JOB_WAS_RUNNING */
+	DATA_PARSER_JOB_INFO_FLAG_JOB_MEM_SET, /* uint64_t & JOB_MEM_SET */
+	DATA_PARSER_JOB_INFO_FLAG_JOB_RESIZED, /* uint64_t & JOB_RESIZED */
+	DATA_PARSER_JOB_INFO_FLAG_SHOW_ALL, /* uint16_t & SHOW_ALL */
+	DATA_PARSER_JOB_INFO_FLAG_SHOW_DETAIL, /* uint16_t & SHOW_DETAIL */
+	DATA_PARSER_JOB_INFO_FLAG_SHOW_MIXED, /* uint16_t & SHOW_MIXED */
+	DATA_PARSER_JOB_INFO_FLAG_SHOW_LOCAL, /* uint16_t & SHOW_LOCAL */
+	DATA_PARSER_JOB_INFO_FLAG_SHOW_SIBLING, /* uint16_t & SHOW_SIBLING */
+	DATA_PARSER_JOB_INFO_FLAG_SHOW_FEDERATION, /* uint16_t & SHOW_FEDERATION */
+	DATA_PARSER_JOB_INFO_FLAG_SHOW_FUTURE, /* uint16_t & SHOW_FUTURE */
+	DATA_PARSER_CORE_SPEC, /* uint16_t & ~CORE_SPEC_THREAD */
+	DATA_PARSER_THREAD_SPEC, /* uint16_t & CORE_SPEC_THREAD */
+	DATA_PARSER_JOB_INFO_GRES_DETAIL, /* slurm_job_info_t->core_spec & CORE_SPEC_THREAD */
+	DATA_PARSER_JOB_RES, /* job_resources_t */
+	DATA_PARSER_JOB_RES_PTR, /* job_resources_t* */
+	DATA_PARSER_JOB_RES_NODES, /* job_resources_t->nodes,core_bitmap,nhosts */
+	DATA_PARSER_NICE, /* uint32_t - nice value - NICE_OFFSET */
+	DATA_PARSER_JOB_MEM_PER_CPU, /* uint64_t & MEM_PER_CPU */
+	DATA_PARSER_JOB_MEM_PER_NODE, /* uint64_t & ~MEM_PER_CPU */
+	DATA_PARSER_ACCT_GATHER_PROFILE, /* uint32_t - ACCT_GATHER_PROFILE_* */
+	DATA_PARSER_JOB_SHARED, /* uint16_t - JOB_SHARED_* */
+	DATA_PARSER_ALLOCATED_CORES, /* uint32_t if slurm_conf.select_type_param & (CR_CORE|CR_SOCKET) */
+	DATA_PARSER_ALLOCATED_CPUS, /* uint32_t if slurm_conf.select_type_param & CR_CPU */
+	DATA_PARSER_TYPE_MAX
+} data_parser_type_t;
+
+/*
+ * Function prototype for callback when there is a parsing error
+ * Return: true to continue parsing, false to stop parsing
+ */
+typedef bool (*data_parser_on_error_t)(void *arg, data_parser_type_t type,
+				       int error_code, const char *source,
+				       const char *why, ...)
+	__attribute__((format(printf, 5, 6)));
+/*
+ * Function prototype for callback when there is a parsing warning
+ */
+typedef void (*data_parser_on_warn_t)(void *arg, data_parser_type_t type,
+				      const char *source, const char *why, ...)
+	__attribute__((format(printf, 4, 5)));
+
+typedef struct data_parser_s data_parser_t;
+
+/* data_parser plugin for current Slurm version */
+#define SLURM_DATA_PARSER_VERSION \
+	("data_parser/v" XSTRINGIFY(SLURM_API_AGE) "." \
+	 XSTRINGIFY(SLURM_API_REVISION) "." \
+	 XSTRINGIFY(SLURM_API_CURRENT))
+
+/*
+ * Initalize new data parser against given plugin
+ * IN on_parse_error - callback when an parsing error is encountered
+ * 	ptr must remain valid until free called.
+ * IN on_dump_error - callback when an parsing error is encountered
+ * 	ptr must remain valid until free called.
+ * IN on_error_arg - ptr to pass to on_error function (not modified)
+ * 	ptr must remain valid until free called.
+ * IN on_parse_warn - callback when an parsing warning is encountered
+ * 	ptr must remain valid until free called.
+ * IN on_dump_warn - callback when an parsing warning is encountered
+ * 	ptr must remain valid until free called.
+ * IN on_warn_arg - ptr to pass to on_warn function (not modified)
+ * 	ptr must remain valid until free called.
+ * IN plugin_type - plugin_type of data_parser plugin to load/use
+ * IN listf - list function if plugin_type = "list"
+ * IN skip_loading - skip any calls related to loading the plugins
+ * RET parser ptr
+ * 	Must be freed by call to data_parser_free()
+ */
+extern data_parser_t *data_parser_g_new(data_parser_on_error_t on_parse_error,
+					data_parser_on_error_t on_dump_error,
+					data_parser_on_error_t on_query_error,
+					void *error_arg,
+					data_parser_on_warn_t on_parse_warn,
+					data_parser_on_warn_t on_dump_warn,
+					data_parser_on_warn_t on_query_warn,
+					void *warn_arg, const char *plugin_type,
+					plugrack_foreach_t listf,
+					bool skip_loading);
+
+typedef enum {
+	DATA_PARSER_ATTR_INVALID = 0,
+	DATA_PARSER_ATTR_DBCONN_PTR, /* return of slurmdb_connection_get() - will not xfree */
+	DATA_PARSER_ATTR_QOS_LIST, /* List<slurmdb_qos_rec_t *> - will xfree() */
+	DATA_PARSER_ATTR_TRES_LIST, /* List<slurmdb_tres_rec_t *> - will xfree() */
+	DATA_PARSER_ATTR_MAX /* place holder - do not use */
+} data_parser_attr_type_t;
+
+/*
+ * Assign additional resource to parser
+ * IN parser - parser to add resource
+ * IN type - type of resource to assign
+ * IN obj - ptr of resource to assign
+ *   make sure to match the type given in data_parser_attr_type_t
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_parser_g_assign(data_parser_t *parser,
+				data_parser_attr_type_t type, void *obj);
+
+/*
+ * Get Plugin type as string.
+ * String is valid for the life of the parser.
+ */
+extern const char *data_parser_get_plugin(data_parser_t *parser);
+
+/*
+ * Free data parser instance
+ * IN parser - parser to free
+ * IN skip_unloading - skip unloading plugins
+ * RET SLURM_SUCCESS or error
+ */
+extern void data_parser_g_free(data_parser_t *parser, bool skip_unloading);
+
+#define FREE_NULL_DATA_PARSER(_X)                     \
+	do {                                          \
+		if (_X)                               \
+			data_parser_g_free(_X, true); \
+		_X = NULL;                            \
+	} while (0)
+
+/*
+ * Parse given data_t source into target struct dst
+ * use DATA_PARSE() macro instead of calling directly!
+ *
+ * IN parser - return from data_parser_g_new()
+ * IN type - expected type of data (there is no guessing here)
+ * IN dst - ptr to struct/scalar to populate
+ * 	This *must* be a pointer to the object and not just a value of the object.
+ * IN dst_bytes - size of object pointed to by dst
+ * IN src - data to parse into obj
+ * IN/OUT parent_path - array of parent dictionary keys.
+ *    Parse path from entire source to this specific src data_t.
+ *    Assist any callers with knowing where parsing failed in tree.
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_parser_g_parse(data_parser_t *parser, data_parser_type_t type,
+			       void *dst, ssize_t dst_bytes, data_t *src,
+			       data_t *parent_path);
+
+#define DATA_PARSE(parser, type, dst, src, parent_path)                    \
+	data_parser_g_parse(parser, DATA_PARSER_##type, &dst, sizeof(dst), \
+			    src, parent_path)
+
+/*
+ * Parse given target struct src into data_t dst
+ * use DATA_DUMP() macro instead of calling directly!
+ *
+ * IN parser - return from data_parser_g_new()
+ * IN type - type of obj
+ * IN src - ptr to struct/scalar to dump to data_t
+ * 	This *must* be a pointer to the object and not just a value of the object.
+ * IN src_bytes - size of object pointed to by src
+ * IN src - data to parse into obj
+ * IN dst - ptr to data to populate with obj dump
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_parser_g_dump(data_parser_t *parser, data_parser_type_t type,
+			      void *src, ssize_t src_bytes, data_t *dst);
+
+#define DATA_DUMP(parser, type, src, dst) \
+	data_parser_g_dump(parser, DATA_PARSER_##type, &src, sizeof(src), dst)
+
+/*
+ * Dump object of given type to STDOUT
+ * Uses the current release version of the data_parser plugin.
+ * This function is only intended for the simple dump of the data and then
+ * exiting of the CLI command.
+ * IN type - data parser type for *obj
+ * IN obj_bytes - sizeof(*obj)
+ * IN key - dictionary key of entry to place object
+ * IN argc - argc arg of main()
+ * IN argv - argv arg of main()
+ * IN acct_db_conn - slurmdb connection or NULL
+ * IN mime_type - dump object as given mime type
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
+				       int obj_bytes, const char *key, int argc,
+				       char **argv, void *acct_db_conn,
+				       const char *mime_type);
+
+#define DATA_DUMP_CLI(type, src, key, argc, argv, db_conn, mime_type)      \
+	data_parser_dump_cli_stdout(DATA_PARSER_##type, &src, sizeof(src), \
+				    key, argc, argv, db_conn, mime_type)
+
 #endif
