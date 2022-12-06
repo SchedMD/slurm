@@ -298,7 +298,7 @@ void reset_cpuset(cpu_set_t *new_mask)
 	if (slurm_getaffinity(1, sizeof(full_mask), &full_mask)) {
 		/* Try to get full CPU mask from process init */
 		CPU_ZERO(&full_mask);
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) && (__FreeBSD_version < 1300524)
 		CPU_OR(&full_mask, &cur_mask);
 #else
 		CPU_OR(&full_mask, &full_mask, &cur_mask);
