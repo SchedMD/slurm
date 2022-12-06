@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
  -- sacctmgr - Allow removal of user's default account when AllowNoDefAcct=yes.
  -- Fix segfault caused by race condition when a reconfiguration is requested
     while slurmd initializes.
+ -- openapi/v0.0.38 - avoid divison by zero causing slurmrestd to crash during
+    diag queries.
 
 * Changes in Slurm 22.05.6
 ==========================
