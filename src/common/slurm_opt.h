@@ -104,6 +104,7 @@ enum {
 	LONG_OPT_EXCLUSIVE,
 	LONG_OPT_EXPORT,
 	LONG_OPT_EXPORT_FILE,
+	LONG_OPT_EXTRA,
 	LONG_OPT_GET_USER_ENV,
 	LONG_OPT_GID,
 	LONG_OPT_GPU_BIND,
@@ -386,7 +387,7 @@ typedef struct {
 	bool reboot;			/* --reboot			*/
 
 	time_t begin;			/* --begin			*/
-	char *extra;			/* unused			*/
+	char *extra;			/* --extra			*/
 	uint16_t mail_type;		/* --mail-type			*/
 	char *mail_user;		/* --mail-user			*/
 	int get_user_env_time;		/* --get-user-env[=timeout]	*/

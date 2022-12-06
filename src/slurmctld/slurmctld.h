@@ -582,7 +582,6 @@ struct job_details {
 	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
 	char *exc_nodes;		/* excluded nodes */
 	uint32_t expanding_jobid;	/* ID of job to be expanded */
-	char *extra;			/* extra field, unused */
 	List feature_list;		/* required features with node counts */
 	List feature_list_use;		/* Use these features for scheduling,
 					 * DO NOT FREE or PACK */
@@ -770,6 +769,7 @@ struct job_record {
 	bool epilog_running;		/* true of EpilogSlurmctld is running */
 	uint32_t exit_code;		/* exit code for job (status from
 					 * wait call) */
+	char *extra;			/* Arbitrary string */
 	job_fed_details_t *fed_details;	/* details for federated jobs. */
 	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
 					 * this job */

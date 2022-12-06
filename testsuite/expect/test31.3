@@ -80,7 +80,7 @@ reconfigure -fail
 
 # Test whether env vars exist in Prolog and Epilog
 log_info "Checking for regular env vars"
-set job_id [submit_job -fail "-t1 -N1 -w$test_node -o/dev/null --comment=foo --wrap='hostname'"]
+set job_id [submit_job -fail "-t1 -N1 -w$test_node -o/dev/null --comment=foo --extra=bar --wrap='hostname'"]
 
 wait_for_job $job_id "DONE"
 
@@ -88,11 +88,16 @@ check_prolog "SLURM_CLUSTER_NAME="
 check_epilog "SLURM_CLUSTER_NAME="
 
 check_prolog "SLURM_JOB_COMMENT="
+check_epilog "SLURM_JOB_COMMENT="
+
+check_prolog "SLURM_JOB_EXTRA="
+check_epilog "SLURM_JOB_EXTRA="
 
 check_prolog "SLURM_JOB_ID="
 check_epilog "SLURM_JOB_ID="
 
 check_prolog "SLURM_JOB_PARTITION="
+check_epilog "SLURM_JOB_PARTITION="
 
 check_prolog "SLURM_JOB_UID="
 check_epilog "SLURM_JOB_UID="

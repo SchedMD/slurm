@@ -815,6 +815,7 @@ typedef struct {
 	time_t end;
 	char *env;
 	uint32_t exitcode;
+	char *extra; /* Extra - arbitrary string */
 	uint32_t flags;
 	void *first_step_ptr;
 	uint32_t gid;

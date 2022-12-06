@@ -1587,9 +1587,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 *  name=value pairs, one per line */
 	slurm_hash_t env_hash;  /* hash value of environment NO NOT PACK */
 	uint32_t env_size;	/* element count in environment */
-	char *extra;		/* unused */
 	char *exc_nodes;	/* comma separated list of nodes excluded
 				 * from job's allocation, default NONE */
+	char *extra;		/* Arbitrary string */
 	char *features;		/* required feature specification,
 				 * default NONE */
 	uint64_t fed_siblings_active; /* Bitmap of active fed sibling ids */
@@ -1773,6 +1773,7 @@ typedef struct job_info {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint32_t exit_code;	/* exit code for job (status from wait call) */
+	char *extra;		/* Arbitrary string */
 	char *features;		/* comma separated list of required features */
 	char *fed_origin_str;	/* Origin cluster's name */
 	uint64_t fed_siblings_active;  /* bitmap of active fed sibling ids */
@@ -2769,7 +2770,7 @@ typedef struct reservation_name_msg {
 #define CTL_CONF_WCKEY          SLURM_BIT(5) /* TrackWCKey */
 #define CTL_CONF_IPV4_ENABLED   SLURM_BIT(6) /* IPv4 is enabled */
 #define CTL_CONF_IPV6_ENABLED   SLURM_BIT(7) /* IPv6 is enabled */
-/*                              SLURM_BIT(8) UNUSED */
+#define CTL_CONF_SJX            SLURM_BIT(8) /* AccountingStoreFlags=job_extra */
 #define CTL_CONF_SJS            SLURM_BIT(9) /* AccountingStoreFlags=job_script */
 #define CTL_CONF_SJE            SLURM_BIT(10) /* AccountingStoreFlags=job_env */
 

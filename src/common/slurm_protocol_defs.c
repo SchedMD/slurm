@@ -1206,6 +1206,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->dependency);
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
+		xfree(job->extra);
 		xfree(job->features);
 		xfree(job->fed_origin_str);
 		xfree(job->fed_siblings_active_str);

@@ -558,10 +558,10 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushnumber(L, job_desc->end_time);
 	} else if (!xstrcmp(name, "environment")) {
 		_push_job_env((job_desc_msg_t *) job_desc); // No const
-	} else if (!xstrcmp(name, "extra")) {
-		lua_pushstring(L, job_desc->extra);
 	} else if (!xstrcmp(name, "exc_nodes")) {
 		lua_pushstring(L, job_desc->exc_nodes);
+	} else if (!xstrcmp(name, "extra")) {
+		lua_pushstring(L, job_desc->extra);
 	} else if (!xstrcmp(name, "features")) {
 		lua_pushstring(L, job_desc->features);
 	} else if (!xstrcmp(name, "gres")) {

@@ -118,6 +118,7 @@ typedef struct {
 	char *derived_es;
 	char *env_hash_inx;
 	char *exit_code;
+	char *extra;
 	char *eligible;
 	char *end;
 	char *flags;
@@ -191,6 +192,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->derived_es);
 		xfree(object->env_hash_inx);
 		xfree(object->exit_code);
+		xfree(object->extra);
 		xfree(object->eligible);
 		xfree(object->end);
 		xfree(object->flags);
@@ -535,6 +537,7 @@ static char *job_req_inx[] = {
 	"derived_es",
 	"env_hash_inx",
 	"exit_code",
+	"extra",
 	"flags",
 	"timelimit",
 	"time_eligible",
@@ -592,6 +595,7 @@ enum {
 	JOB_REQ_DERIVED_ES,
 	JOB_REQ_ENV_HASH_INX,
 	JOB_REQ_EXIT_CODE,
+	JOB_REQ_EXTRA,
 	JOB_REQ_FLAGS,
 	JOB_REQ_TIMELIMIT,
 	JOB_REQ_ELIGIBLE,
@@ -976,6 +980,7 @@ static void _pack_local_job(local_job_t *object, uint16_t rpc_version,
 	packstr(object->derived_es, buffer);
 	packstr(object->env_hash_inx, buffer);
 	packstr(object->exit_code, buffer);
+	packstr(object->extra, buffer);
 	packstr(object->flags, buffer);
 	packstr(object->timelimit, buffer);
 	packstr(object->eligible, buffer);
@@ -1065,6 +1070,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->env_hash_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->extra, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
@@ -3487,6 +3493,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.derived_es = row[JOB_REQ_DERIVED_ES];
 		job.env_hash_inx = row[JOB_REQ_ENV_HASH_INX];
 		job.exit_code = row[JOB_REQ_EXIT_CODE];
+		job.extra = row[JOB_REQ_EXTRA];
 		job.flags = row[JOB_REQ_FLAGS];
 		job.timelimit = row[JOB_REQ_TIMELIMIT];
 		job.eligible = row[JOB_REQ_ELIGIBLE];
@@ -3588,6 +3595,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_CONSTRAINTS,
 		JOB_REQ_CONTAINER,
 		JOB_REQ_DERIVED_ES,
+		JOB_REQ_EXTRA,
 		JOB_REQ_KILL_REQUID,
 		JOB_REQ_LICENSES,
 		JOB_REQ_MCS_LABEL,
@@ -3654,6 +3662,10 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.derived_es == NULL)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
+		if (object.extra == NULL)
 			xstrcatat(format, &format_pos, ", %s");
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
@@ -3743,6 +3755,8 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 				"NULL" : object.container,
 			     (object.derived_es == NULL) ?
 				"NULL" : object.derived_es,
+			     (object.extra == NULL) ?
+				"NULL" : object.extra,
 			     (object.kill_requid == NULL) ?
 				"NULL" : object.kill_requid,
 			     (object.licenses == NULL) ?

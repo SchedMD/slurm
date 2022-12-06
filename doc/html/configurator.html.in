@@ -626,9 +626,11 @@ In the case of SlurmDBD, this will be an alternate socket name for use with a Mu
 daemon providing enterprise-wide authentication (while the default Munge socket
 would provide cluster-wide authentication only).<br>
 <input type="text" name="acctng_store_flags" value=""> <B>AccountingStoreFlags</B>:
-Comma separated list.  Options are 'job_comment' - store the job comment field
-in the database, 'job_script' - store the job batch script in the database,
-'job_env' - store a batch job's env in the database.<br>
+Comma separated list. Options are:<br>
+'job_comment' - store the job comment field in the database;<br>
+'job_env' - store a batch job's env in the database;<br>
+'job_extra' - store a batch job's extra field in the database;<br>
+'job_script' - store the job batch script in the database.<br>
 <P>
 
 <H2>Process ID Logging</H2>

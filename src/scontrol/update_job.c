@@ -685,6 +685,9 @@ extern int scontrol_update_job(int argc, char **argv)
 			}
 			job_msg.delay_boot = time_sec;
 			update_cnt++;
+		} else if (!xstrncasecmp(tag, "Extra", MAX(taglen, 3))) {
+			job_msg.extra = val;
+			update_cnt++;
 		}
 		else if (xstrncasecmp(tag, "TimeLimit", MAX(taglen, 5)) == 0) {
 			uint32_t job_current_time, time_limit;

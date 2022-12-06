@@ -242,6 +242,12 @@ start message sent to the Accounting Storage database.
 .IP
 
 .TP
+\fBjob_extra\fR
+Include the job's extra field in the job complete message sent to the Accounting
+Storage database.
+.IP
+
+.TP
 \fBjob_script\fR
 Include the job's batch script in the job start message sent to the Accounting Storage database.
 .RE
@@ -7236,6 +7242,13 @@ The exit code of the job script (or salloc). The value has the format
 exit() function. The second number of the signal that caused the process to
 terminate if it was terminated by a signal.
 Available in \fBEpilog\fR and \fBEpilogSlurmctld\fR.
+.IP
+
+.TP
+\fBSLURM_JOB_EXTRA\fR
+Extra field added to the job.
+Available in \fBProlog\fR, \fBPrologSlurmctld\fR, \fBEpilog\fR and
+\fBEpilogSlurmctld\fR.
 .IP
 
 .TP

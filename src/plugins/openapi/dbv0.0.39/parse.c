@@ -324,6 +324,7 @@ static const parser_t parse_job[] = {
 	_add_parse(UINT32, eligible, "time/eligible"),
 	_add_parse(UINT32, end, "time/end"),
 	_add_parse(JOB_EXIT_CODE, exitcode, "exit_code"),
+	_add_parse(STRING, extra, "comment/extra"),
 	add_parser_flags(parser_job_flags, false, "flags"),
 	/* skipping first_step_ptr (already added in steps) */
 	_add_parse(GROUP_ID, gid, "group"),

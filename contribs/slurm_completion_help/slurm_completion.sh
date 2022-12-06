@@ -2012,6 +2012,7 @@ function __slurm_comp_sacctmgr_spec_jobs() {
 		"comment="
 		"derivedexitcode="
 		"endtime="
+		"extra="
 		"newwckey="
 		"starttime="
 		"systemcomment="
@@ -3578,6 +3579,7 @@ function __scontrol_update_jobid() {
 		"eligibletime="
 		"endtime="
 		"excnodelist="
+		"extra="
 		"features="
 		"gres="
 		"jobid=" # meta

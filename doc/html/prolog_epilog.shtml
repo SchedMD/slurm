@@ -479,6 +479,11 @@ The second number is the signal that caused the process to
 terminate if it was terminated by a signal.
 Available in Epilog and EpilogSlurmctld.</li>
 
+<li><b>SLURM_JOB_EXTRA</b>
+Extra field added to the job.
+Available in Prolog, PrologSlurmctld, Epilog, EpilogSlurmctld, and
+ResumeProgram (via SLURM_RESUME_FILE).</li>
+
 <li><b>SLURM_JOB_GID</b>
 Group ID of the job's owner.</li>
 

@@ -131,6 +131,7 @@ enum {
 	SORTID_DEPENDENCY,
 	SORTID_DERIVED_EC,
 	SORTID_EXIT_CODE,
+	SORTID_EXTRA,
 	SORTID_FEATURES,
 	SORTID_FED_ACTIVE_SIBS,
 	SORTID_FED_ORIGIN,
@@ -382,7 +383,9 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_COMMAND, "Command",
 	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_COMMENT, "Comment",
-	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_EXTRA, "Extra",
+	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_WORKDIR, "Work Dir",
 	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_INT, SORTID_COLOR_INX, NULL, false, EDIT_NONE,
@@ -725,6 +728,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		else
 			got_edit_signal = xstrdup(new_text);
 		break;
+	case SORTID_COMMENT:
+		job_msg->comment = xstrdup(new_text);
+		type = "comment";
+		break;
 	case SORTID_TIMELIMIT:
 		if (!xstrcasecmp(new_text, "infinite"))
 			temp_int = INFINITE;
@@ -1035,6 +1042,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			goto return_error;
 		if (job_msg->deadline < time(NULL))
 			goto return_error;
+		break;
+	case SORTID_EXTRA:
+		job_msg->extra = xstrdup(new_text);
+		type = "extra";
 		break;
 	case SORTID_STD_OUT:
 		type = "StdOut";
@@ -1409,6 +1420,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_EXIT_CODE),
 				   tmp_char);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_EXTRA),
+				   job_ptr->extra);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
@@ -2237,6 +2253,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_COMMAND,      job_ptr->command,
 				   SORTID_COMMENT,      job_ptr->comment,
 				   SORTID_CONTIGUOUS,   tmp_cont,
+				   SORTID_EXTRA, job_ptr->extra,
 				   SORTID_JOBID,        tmp_job_id,
 				   SORTID_JOBID_FORMATTED, tmp_job_id,
 				   SORTID_HET_JOB_ID,     tmp_het_job_id,
@@ -2281,6 +2298,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_DEPENDENCY,   job_ptr->dependency,
 				   SORTID_DERIVED_EC,   tmp_derived_ec,
 				   SORTID_EXIT_CODE,    tmp_exit,
+				   SORTID_EXTRA, job_ptr->extra,
 				   SORTID_FEATURES,     job_ptr->features,
 				   SORTID_PREFER, job_ptr->prefer,
 				   SORTID_FED_ACTIVE_SIBS,

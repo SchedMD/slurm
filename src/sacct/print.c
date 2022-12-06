@@ -826,6 +826,18 @@ extern void print_fields(type_t type, void *object)
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_EXTRA:
+			switch(type) {
+			case JOB:
+				tmp_char = job->extra;
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_FLAGS:
 			switch(type) {
 			case JOB:

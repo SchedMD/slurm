@@ -2946,6 +2946,8 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 
 	if (slurm_conf.conf_flags & CTL_CONF_SJC)
 		req.comment = job_ptr->comment;
+	if (slurm_conf.conf_flags & CTL_CONF_SJX)
+		req.extra = job_ptr->extra;
 
 	req.db_index    = job_ptr->db_index;
 	req.derived_ec  = job_ptr->derived_ec;

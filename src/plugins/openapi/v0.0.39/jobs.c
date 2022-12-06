@@ -132,6 +132,7 @@ const params_t job_params[] = {
 	{ "exclusive", LONG_OPT_EXCLUSIVE },
 	{ "export_file", LONG_OPT_EXPORT_FILE, true },
 	{ "export", LONG_OPT_EXPORT, true },
+	{ "extra", LONG_OPT_EXTRA },
 	{ "extra_node_info", 'B', true },
 	{ "get_user_environment", LONG_OPT_GET_USER_ENV },
 	{ "gpu_binding", LONG_OPT_GPU_BIND },
@@ -806,6 +807,7 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 	data_set_string(data_key_set(jd, "excluded_nodes"), job->exc_nodes);
 	/* exc_node_inx intentionally omitted */
 	data_set_int(data_key_set(jd, "exit_code"), job->exit_code);
+	data_set_string(data_key_set(jd, "extra"), job->extra);
 	data_set_string(data_key_set(jd, "features"), job->features);
 	data_set_string(data_key_set(jd, "federation_origin"),
 			job->fed_origin_str);

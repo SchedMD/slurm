@@ -57,6 +57,7 @@ HIGHLIGHTS
  -- Extend support for Include files to all "configless" client commands.
  -- Make node weight usable for powered down and rebooting nodes.
  -- Removed 'launch' plugin.
+ -- Add "Extra" field to job to store extra information other than a comment.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -74,6 +75,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- slurm.conf - Removed SlurmctldPlugstack option.
  -- Add new SlurmctldParameters=validate_nodeaddr_threads=<number> option to
     allow concurrent hostname resolution at slurmctld startup.
+ -- Add new AccountingStoreFlags=job_extra option to store a job's extra field
+    in the database.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
