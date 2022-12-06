@@ -7089,7 +7089,7 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			rc = ESLURM_INVALID_TIME_MIN_LIMIT;
 			goto fini;
 		}
-		if ((job_desc->time_min == 0) && (job_desc->time_limit) &&
+		if ((!job_desc->time_min) && (job_desc->time_limit) &&
 		    (job_desc->time_limit != NO_VAL) &&
 		    (job_desc->deadline <
 		     (earliest_start + job_desc->time_limit * 60))) {
