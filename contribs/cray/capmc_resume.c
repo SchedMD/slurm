@@ -70,6 +70,10 @@
 /* Maximum poll wait time for child processes, in milliseconds */
 #define MAX_POLL_WAIT 500
 
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#define POLLRDHUP POLLHUP
+#endif
+
 /* Default and minimum timeout parameters for the capmc command */
 #define DEFAULT_CAPMC_RETRIES 4
 #define DEFAULT_CAPMC_TIMEOUT 60000	/* 60 seconds */
