@@ -666,7 +666,8 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	env->gid = job->gid;
 	env->group_name = xstrdup(job->group_name);
 
-	if (srun_opt->pty && !srun_opt->pty[0] && (set_winsize(job) < 0)) {
+	if (srun_opt->pty && !srun_opt->pty[0] &&
+	    (set_winsize(STDOUT_FILENO, job) < 0)) {
 		error("Not using a pseudo-terminal, disregarding --pty option");
 		xfree(srun_opt->pty);
 	}

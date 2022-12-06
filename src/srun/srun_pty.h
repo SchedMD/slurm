@@ -46,6 +46,6 @@ typedef struct srun_job signal_job_t;
 
 void block_sigwinch(void);
 void pty_thread_create(srun_job_t *job);
-int set_winsize(srun_job_t *job);
+int set_winsize(int fd, srun_job_t *job);
 
 #endif /* !_SIGNALS_H */
