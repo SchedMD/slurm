@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
  -- Update default values for text/blob columns in the database if upgrading
     to MariaDB >= 10.2.1 from a pre-10.2.1 version or from MySQL to avoid
     sacctmgr failures.
+ -- Fix several minor memory leaks in the cgroup/v2 plugin.
+ -- Fix possible issue when enabling controllers with long names in cgroup/v2.
 
 * Changes in Slurm 22.05.6
 ==========================
