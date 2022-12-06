@@ -1351,7 +1351,7 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 	int rc = SLURM_SUCCESS;
 	bpf_program_t *program = NULL;
 	task_cg_info_t *task_cg_info;
-	char *dev_id_str = gres_device_id2str(&limits->device);
+	char *dev_id_str = NULL;
 	uint32_t bpf_dev_type = NO_VAL;
 
 	/*
@@ -1456,12 +1456,14 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 			return SLURM_ERROR;
 		}
 
+		dev_id_str = gres_device_id2str(&limits->device);
 		if (limits->allow_device)
 			log_flag(CGROUP, "Allowing access to device (%s)",
 				 dev_id_str);
 		else
 			log_flag(CGROUP, "Denying access to device (%s)",
 				 dev_id_str);
+		xfree(dev_id_str);
 
 		/* Determine the correct BPF device type. */
 		if (limits->device.type == DEV_TYPE_BLOCK)
@@ -1480,7 +1482,6 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 		break;
 	}
 
-	xfree(dev_id_str);
 	return rc;
 }
 
