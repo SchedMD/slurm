@@ -184,11 +184,11 @@ extern int proctrack_p_create(stepd_step_rec_t *step)
 		 */
 		slurm_mutex_lock(&thread_mutex);
 		if (threadid) {
-			debug("Had a thread already 0x%08lx", threadid);
+			debug("Had a thread already %p", (void *) threadid);
 			slurm_mutex_lock(&notify_mutex);
 			slurm_cond_wait(&notify, &notify_mutex);
 			slurm_mutex_unlock(&notify_mutex);
-			debug("Last thread done 0x%08lx", threadid);
+			debug("Last thread done %p", (void *) threadid);
 		}
 
 		/*
@@ -202,8 +202,8 @@ extern int proctrack_p_create(stepd_step_rec_t *step)
 		slurm_mutex_unlock(&notify_mutex);
 		slurm_mutex_unlock(&thread_mutex);
 		if (step->cont_id != (jid_t) -1)
-			debug("proctrack_p_create: created jid 0x%08"PRIx64" thread 0x%08lx",
-			      step->cont_id, threadid);
+			debug("%s: created jid 0x%08"PRIx64" thread %p",
+			      __func__, step->cont_id, (void *) threadid);
 	} else
 		error("proctrack_p_create: already have a cont_id");
 endit:
@@ -248,7 +248,7 @@ try_again:
 			}
 
 			if ((jid = job_detachpid(pid)) != (jid_t) -1) {
-				error("%s: Pid %d was attached to container %"PRIu64" incorrectly.  Moving to correct (%"PRIu64").",
+				error("%s: Pid %d was attached to container %d incorrectly.  Moving to correct (%"PRIu64").",
 				      __func__, pid, jid, step->cont_id);
 				count++;
 				goto try_again;
@@ -310,7 +310,7 @@ int proctrack_p_signal(uint64_t id, int sig)
 		/* job ended before it started */
 		_end_container_thread();
 	} else
-		error("Trying to send signal %d a container 0x%08lx "
+		error("Trying to send signal %d a container 0x%08"PRIx64" "
 		      "that hasn't had anything added to it yet", sig, id);
 	END_TIMER;
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
@@ -326,7 +326,7 @@ int proctrack_p_destroy(uint64_t id)
 	DEF_TIMERS;
 	START_TIMER;
 
-	debug("destroying 0x%08lx 0x%08lx", id, threadid);
+	debug("destroying 0x%08"PRIx64" %p", id, (void *) threadid);
 
 	if (!threadid)
 		job_waitjid((jid_t) id, &status, 0);
