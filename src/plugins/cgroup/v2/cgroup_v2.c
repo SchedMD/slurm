@@ -549,8 +549,13 @@ static int _init_stepd_system_scope(pid_t pid)
 {
 	char *system_dir = "/" SYSTEM_CGDIR;
 	char *self_cg_path;
-	common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_SYSTEM],
-			     system_dir, (uid_t) 0, (gid_t) 0);
+
+	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_SYSTEM],
+				 system_dir, (uid_t) 0, (gid_t) 0) !=
+	    SLURM_SUCCESS) {
+		error("unable to create system cgroup %s", system_dir);
+		return SLURM_ERROR;
+	}
 
 	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_SYSTEM]) !=
 	    SLURM_SUCCESS) {
