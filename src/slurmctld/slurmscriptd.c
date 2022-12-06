@@ -62,6 +62,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/burst_buffer.h"
+#include "src/interfaces/select.h"
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
@@ -1480,6 +1481,16 @@ extern int slurmscriptd_init(int argc, char **argv)
 			      __func__);
 		}
 
+		/* Get slurmscriptd initialization status */
+		i = read(slurmctld_readfd, &rc, sizeof(int));
+		if (i < 0)
+			fatal("%s: Cannot read slurmscriptd initialization code",
+			      __func__);
+		if (rc != SLURM_SUCCESS)
+			fatal("%s: slurmscriptd initialization failed",
+			      __func__);
+
+
 		slurm_mutex_init(&script_count_mutex);
 		slurm_mutex_init(&write_mutex);
 		slurm_mutex_init(&script_resp_map_mutex);
@@ -1493,6 +1504,7 @@ extern int slurmscriptd_init(int argc, char **argv)
 		int rc = SLURM_ERROR, ack;
 		char *proc_name = "slurmscriptd";
 		char *log_prefix;
+		char *failed_plugin = NULL;
 
 		/*
 		 * Since running_in_slurmctld() is called before we fork()'d,
@@ -1554,7 +1566,34 @@ extern int slurmscriptd_init(int argc, char **argv)
 			_exit(1);
 		}
 
-		debug("slurmscriptd: Got ack from slurmctld, initialization successful");
+		debug("slurmscriptd: Got ack from slurmctld");
+
+		/*
+		 * Initialize required plugins to avoid lazy linking.
+		 * If plugins fail to initialize, send an error to slurmctld.
+		 */
+		if (bb_g_init() != SLURM_SUCCESS) {
+			failed_plugin = "burst_buffer";
+			ack = SLURM_ERROR;
+		}
+		/*
+		 * Required by burst buffer plugin - specifically for
+		 * unpacking job_info in _run_bb_script()
+		 */
+		if (select_g_init(0) != SLURM_SUCCESS) {
+			failed_plugin = "select";
+			ack = SLURM_ERROR;
+		}
+		i = write(slurmscriptd_writefd, &ack, sizeof(int));
+		if (i != sizeof(int))
+			fatal("%s: Failed to send initialization code to slurmctld",
+			      __func__);
+		if (ack != SLURM_SUCCESS)
+			fatal("%s: Failed to initialize %s plugin",
+			      __func__, failed_plugin);
+
+		debug("Initialization successful");
+
 		slurm_mutex_init(&powersave_script_count_mutex);
 		slurm_mutex_init(&write_mutex);
 		_slurmscriptd_mainloop();
