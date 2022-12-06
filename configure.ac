@@ -480,6 +480,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/cred/Makefile
 		 src/plugins/cred/munge/Makefile
 		 src/plugins/cred/none/Makefile
+		 src/plugins/data_parser/Makefile
+		 src/plugins/data_parser/v0.0.39/Makefile
 		 src/plugins/ext_sensors/Makefile
 		 src/plugins/ext_sensors/none/Makefile
 		 src/plugins/ext_sensors/rrd/Makefile

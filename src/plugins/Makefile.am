@@ -10,6 +10,7 @@ SUBDIRS = \
 	cli_filter		\
 	core_spec		\
 	cred			\
+	data_parser		\
 	ext_sensors		\
 	gpu			\
 	gres			\
