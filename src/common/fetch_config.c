@@ -401,17 +401,6 @@ extern int write_configs_to_conf_cache(config_response_msg_t *msg,
 	return SLURM_SUCCESS;
 }
 
-extern void load_config_response_msg(config_response_msg_t *msg, int flags)
-{
-	xassert(msg);
-
-	if (!(flags & CONFIG_REQUEST_SLURMD)) {
-		return;
-	}
-
-	msg->slurmd_spooldir = xstrdup(slurm_conf.slurmd_spooldir);
-}
-
 static void _load_conf2list(config_response_msg_t *msg, char *file_name)
 {
 	config_file_t *conf_file = NULL;
