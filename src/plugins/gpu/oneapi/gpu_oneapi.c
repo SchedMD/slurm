@@ -810,7 +810,7 @@ static bool _oneapi_read_cpu_affinity_list(const char *file,
 			if (pos > 0 && pos < strlen(tok)) {
 				strlcpy(buf, tok, pos);
 				min_cpu = atoi(buf);
-				strcpy(buf, tok + pos + 1);
+				strlcpy(buf, tok + pos + 1, sizeof(buf));
 				max_cpu = atoi(buf);
 			} else if (pos > 0 && pos == strlen(tok)) {
 				max_cpu = min_cpu = atoi(tok);
