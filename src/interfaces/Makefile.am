@@ -38,6 +38,8 @@ libcommon_interfaces_la_SOURCES =    \
 	cli_filter.h				\
 	cred.h					\
 	cred.c					\
+	data_parser.c				\
+	data_parser.h				\
 	ext_sensors.c				\
 	ext_sensors.h				\
 	gpu.c					\
