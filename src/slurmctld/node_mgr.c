@@ -4059,7 +4059,7 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 	prev_args->hostlist = hostlist_create(NULL);
 	prev_args->protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
 	prev_config = xmalloc(sizeof(*prev_config));
-	load_config_response_msg(prev_config, CONFIG_REQUEST_SLURMD);
+	load_config_response_list(prev_config, slurmd_config_files);
 	prev_args->msg_args = prev_config;
 
 	old_args = xmalloc(sizeof(*old_args));
@@ -4068,7 +4068,7 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 	old_args->hostlist = hostlist_create(NULL);
 	old_args->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 	old_config = xmalloc(sizeof(*old_config));
-	load_config_response_msg(old_config, CONFIG_REQUEST_SLURMD);
+	load_config_response_list(old_config, slurmd_config_files);
 	old_args->msg_args = old_config;
 
 	for (int i = 0; (node_ptr = next_node(&i)); i++) {
