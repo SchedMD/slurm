@@ -163,7 +163,6 @@ static void _kill_pg(pid_t pid)
 
 extern char *run_command(run_command_args_t *args)
 {
-	int i, new_wait, resp_size = 0, resp_offset = 0;
 	pid_t cpid;
 	char *resp = NULL;
 	int pfd[2] = { -1, -1 };
@@ -253,105 +252,18 @@ extern char *run_command(run_command_args_t *args)
 		child_proc_count--;
 		slurm_mutex_unlock(&proc_count_mutex);
 	} else if (!args->turnoff_output) {
-		bool send_terminate = true;
-		struct pollfd fds;
-		struct timeval tstart;
-		resp_size = 1024;
-		resp = xmalloc(resp_size);
 		close(pfd[1]);
-		gettimeofday(&tstart, NULL);
 		if (args->tid)
 			track_script_reset_cpid(args->tid, cpid);
-		while (1) {
-			if (command_shutdown) {
-				error("%s: %s %s operation on shutdown",
-				      __func__,
-				      args->orphan_on_shutdown ?
-				      "orphaning" : "killing",
-				      args->script_type);
-				break;
-			}
-
-			/*
-			 * Pass zero as the status to just see if this script
-			 * exists in track_script - if not, then we need to bail
-			 * since this script was killed.
-			 */
-			if (args->tid &&
-			    track_script_killed(args->tid, 0, false))
-				break;
-
-			fds.fd = pfd[0];
-			fds.events = POLLIN | POLLHUP | POLLRDHUP;
-			fds.revents = 0;
-			if (args->max_wait <= 0) {
-				new_wait = MAX_POLL_WAIT;
-			} else {
-				new_wait = args->max_wait - _tot_wait(&tstart);
-				if (new_wait <= 0) {
-					error("%s: %s poll timeout @ %d msec",
-					      __func__, args->script_type,
-					      args->max_wait);
-					if (args->timed_out)
-						*(args->timed_out) = true;
-					break;
-				}
-				new_wait = MIN(new_wait, MAX_POLL_WAIT);
-			}
-			i = poll(&fds, 1, new_wait);
-			if (i == 0) {
-				continue;
-			} else if (i < 0) {
-				error("%s: %s poll:%m",
-				      __func__, args->script_type);
-				break;
-			}
-			if ((fds.revents & POLLIN) == 0) {
-				send_terminate = false;
-				break;
-			}
-			i = read(pfd[0], resp + resp_offset,
-				 resp_size - resp_offset);
-			if (i == 0) {
-				send_terminate = false;
-				break;
-			} else if (i < 0) {
-				if (errno == EAGAIN)
-					continue;
-				send_terminate = false;
-				error("%s: read(%s): %m", __func__,
-				      args->script_path);
-				break;
-			} else {
-				resp_offset += i;
-				if (resp_offset + 1024 >= resp_size) {
-					resp_size *= 2;
-					resp = xrealloc(resp, resp_size);
-				}
-			}
-		}
-		if (command_shutdown && args->orphan_on_shutdown) {
-			/* Don't kill the script on shutdown */
-			*args->status = 0;
-		} else if (send_terminate) {
-			/*
-			 * Kill immediately if the script isn't exiting
-			 * normally.
-			 */
-			_kill_pg(cpid);
-			waitpid(cpid, args->status, 0);
-		} else {
-			/*
-			 * If the STDOUT is closed from the script we may reach
-			 * this point without any input in pfd[0], so just wait
-			 * for the process here until args->max_wait.
-			 */
-			run_command_waitpid_timeout(args->script_type,
-						    cpid, args->status,
-						    args->max_wait,
-						    _tot_wait(&tstart),
-						    args->tid, args->timed_out);
-		}
+		resp = run_command_poll_child(cpid,
+					      args->max_wait,
+					      args->orphan_on_shutdown,
+					      pfd[0],
+					      args->script_path,
+					      args->script_type,
+					      args->tid,
+					      args->status,
+					      args->timed_out);
 		close(pfd[0]);
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
