@@ -1338,10 +1338,13 @@ extern bool cgroup_p_has_pid(pid_t pid)
 		return false;
 
 	for (i = 0; i < npids_slurm; i++) {
-		if (pids_slurm[i] == pid)
+		if (pids_slurm[i] == pid) {
+			xfree(pids_slurm);
 			return true;
+		}
 	}
 
+	xfree(pids_slurm);
 	return false;
 }
 
