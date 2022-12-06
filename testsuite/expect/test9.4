@@ -65,11 +65,7 @@ proc cleanup {} {
 }
 
 
-if {[get_config_param "LaunchType"] ne "launch/slurm"} {
-	skip "This test is only compatible with systems using launch/slurm"
-} else {
-	set node_cnt 1-4
-}
+set node_cnt 1-4
 set other_opts    "-O"
 
 

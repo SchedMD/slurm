@@ -28,10 +28,6 @@
 ############################################################################
 source ./globals
 
-if {[get_config_param "LaunchType"] ne "launch/slurm"} {
-	skip "This test is only compatible with systems using launch/slurm"
-}
-
 set timeout $max_job_delay
 set matches 0
 spawn $srun -t1 -N1 $scontrol show slurmd

@@ -33,10 +33,6 @@ set file_prog   "$test_name.prog"
 set job_id      0
 set matches     0
 
-if {[get_config_param "LaunchType"] ne "launch/slurm"} {
-	skip "This test is only compatible with systems using launch/slurm"
-}
-
 proc cleanup {} {
 	global job_id file_prog
 

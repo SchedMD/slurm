@@ -34,12 +34,7 @@ set file_out      "$test_dir/output"
 set job_name      $test_name
 set cycle_count   [get_cycle_count]
 set task_cnt      $max_stress_tasks
-
-if {[get_config_param "LaunchType"] ne "launch/slurm"} {
-	skip "This test is only compatible with systems using launch/slurm"
-} else {
-	set node_cnt 1-4
-}
+set node_cnt 1-4
 set other_opts    "-O"
 
 proc cleanup {} {
