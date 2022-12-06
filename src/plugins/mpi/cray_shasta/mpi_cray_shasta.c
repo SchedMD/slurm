@@ -35,8 +35,10 @@
 \*****************************************************************************/
 
 #include <fcntl.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <signal.h>
+#include <sys/random.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -99,6 +101,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 #define PMI_RANK_ENV "PMI_RANK"
 #define PMI_SIZE_ENV "PMI_SIZE"
 #define PMI_UNIVERSE_SIZE_ENV "PMI_UNIVERSE_SIZE"
+#define PMI_SHARED_SECRET_ENV "PMI_SHARED_SECRET"
 
 /* GLOBAL vars */
 char *appdir = NULL; // Application-specific spool directory
@@ -292,6 +295,25 @@ extern int mpi_p_slurmstepd_task(const mpi_task_info_t *mpi_task, char ***env)
 extern mpi_plugin_client_state_t *
 mpi_p_client_prelaunch(const mpi_step_info_t *mpi_step, char ***env)
 {
+#ifdef HAVE_GETRANDOM
+	uint64_t shared_secret = 0;
+
+	/*
+	 * Get a non-zero pseudo-random value. getrandom() is guaranteed to
+	 * return up to 256 bytes uninturrupted. The only error we might expect
+	 * here is ENOSYS, indicating that the kernel does not implement the
+	 * getrandom() system call. getrandom() should be present on all
+	 * supported cray systems.
+	 */
+	if (getrandom(&shared_secret, sizeof(shared_secret), 0) < 0) {
+		error("%s: getrandom() failed: %m", __func__);
+		return NULL;
+	}
+
+	/* Set PMI_SHARED_SECRET for PMI authentication */
+	env_array_overwrite_fmt(env, PMI_SHARED_SECRET_ENV, "%"PRIu64,
+				shared_secret);
+#endif
 	/* only return NULL on error */
 	return (void *)0xdeadbeef;
 }

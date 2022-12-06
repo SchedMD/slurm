@@ -191,6 +191,7 @@ AC_CHECK_FUNCS( \
    statvfs \
    statfs \
    memfd_create \
+   getrandom \
 )
 
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
