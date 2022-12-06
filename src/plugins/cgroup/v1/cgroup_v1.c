@@ -1485,11 +1485,6 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 		return NULL;
 	}
 
-	common_cgroup_get_param(task_cpuacct_cg, "cpuacct.stat", &cpu_time,
-				&cpu_time_sz);
-	common_cgroup_get_param(task_memory_cg, "memory.stat", &memory_stat,
-				&memory_stat_sz);
-
 	/*
 	 * Initialize values, a NO_VAL64 will indicate to the caller that
 	 * something happened here.
@@ -1501,13 +1496,20 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 	stats->total_pgmajfault = NO_VAL64;
 	stats->total_vmem = NO_VAL64;
 
-	if (cpu_time != NULL)
-		sscanf(cpu_time, "%*s %"PRIu64" %*s %"PRIu64, &stats->usec, &stats->ssec);
+	if (common_cgroup_get_param(task_cpuacct_cg, "cpuacct.stat", &cpu_time,
+				    &cpu_time_sz) == SLURM_SUCCESS) {
+		sscanf(cpu_time, "%*s %"PRIu64" %*s %"PRIu64,
+		       &stats->usec, &stats->ssec);
+	}
 
-	if ((ptr = xstrstr(memory_stat, "total_rss")))
-		sscanf(ptr, "total_rss %"PRIu64, &stats->total_rss);
-	if ((ptr = xstrstr(memory_stat, "total_pgmajfault")))
-		sscanf(ptr, "total_pgmajfault %"PRIu64, &stats->total_pgmajfault);
+	if (common_cgroup_get_param(task_memory_cg, "memory.stat", &memory_stat,
+				    &memory_stat_sz) == SLURM_SUCCESS) {
+		if ((ptr = xstrstr(memory_stat, "total_rss")))
+			sscanf(ptr, "total_rss %"PRIu64, &stats->total_rss);
+		if ((ptr = xstrstr(memory_stat, "total_pgmajfault")))
+			sscanf(ptr, "total_pgmajfault %"PRIu64,
+			       &stats->total_pgmajfault);
+	}
 
 	if (stats->total_rss != NO_VAL64) {
 		uint64_t total_cache = NO_VAL64, total_swap = NO_VAL64;
