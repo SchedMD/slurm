@@ -677,11 +677,6 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 			}
 
 			fd = atoi(srun_opt->pty);
-
-			if (!isatty(fd)) {
-				fatal("--pty=%s is not a valid PTY",
-				      srun_opt->pty);
-			}
 		}
 
 		if (set_winsize(fd, job)) {
