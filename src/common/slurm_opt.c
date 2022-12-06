@@ -4639,14 +4639,14 @@ static int arg_set_data_time_min(slurm_opt_t *opt, const data_t *arg,
 	if ((rc = data_get_string_converted(arg, &str)))
 		ADD_DATA_ERROR("Unable to read string", rc);
 	else {
-		int time_limit = time_str2mins(str);
-		if (time_limit == NO_VAL) {
+		int time_min = time_str2mins(str);
+		if (time_min == NO_VAL) {
 			rc = SLURM_ERROR;
 			ADD_DATA_ERROR("Invalid time specification", rc);
-		} else if (time_limit == 0) {
+		} else if (time_min == 0) {
 			opt->time_min = INFINITE;
 		} else
-			opt->time_min = time_limit;
+			opt->time_min = time_min;
 	}
 
 	xfree(str);
