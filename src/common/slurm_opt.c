@@ -3815,7 +3815,18 @@ static slurm_cli_opt_t slurm_opt_propagate = {
 	.reset_func = arg_reset_propagate,
 };
 
-COMMON_SRUN_STRING_OPTION(pty);
+static int arg_set_pty(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	xfree(opt->srun_opt->pty);
+	opt->srun_opt->pty = xstrdup(arg ? arg : "");
+
+	return SLURM_SUCCESS;
+}
+COMMON_SRUN_STRING_OPTION_GET(pty)
+COMMON_SRUN_STRING_OPTION_RESET(pty)
 static slurm_cli_opt_t slurm_opt_pty = {
 	.name = "pty",
 	.has_arg = optional_argument,
