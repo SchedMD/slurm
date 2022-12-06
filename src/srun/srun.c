@@ -666,13 +666,7 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	env->gid = job->gid;
 	env->group_name = xstrdup(job->group_name);
 
-	if (srun_opt->pty && !srun_opt->pty[0] &&
-	    (set_winsize(STDOUT_FILENO, job) < 0)) {
-		error("Not using a pseudo-terminal, disregarding --pty option");
-		xfree(srun_opt->pty);
-	}
 	if (srun_opt->pty) {
-		struct termios term;
 		int fd = STDIN_FILENO;
 
 		if (srun_opt->pty[0]) {
@@ -690,19 +684,28 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 			}
 		}
 
-		/* Save terminal settings for restore */
-		tcgetattr(fd, &termdefaults);
-		tcgetattr(fd, &term);
-		/* Set raw mode on local tty */
-		cfmakeraw(&term);
-		tcsetattr(fd, TCSANOW, &term);
-		atexit(&_pty_restore);
+		if (set_winsize(fd, job)) {
+			error("Not using a pseudo-terminal, disregarding --pty%s%s option",
+			      (srun_opt->pty[0] ? "=" : ""),
+			      (srun_opt->pty[0] ? srun_opt->pty : ""));
+			xfree(srun_opt->pty);
+		} else {
+			struct termios term;
 
-		block_sigwinch();
-		pty_thread_create(job);
-		env->pty_port = job->pty_port;
-		env->ws_col   = job->ws_col;
-		env->ws_row   = job->ws_row;
+			/* Save terminal settings for restore */
+			tcgetattr(fd, &termdefaults);
+			tcgetattr(fd, &term);
+			/* Set raw mode on local tty */
+			cfmakeraw(&term);
+			tcsetattr(fd, TCSANOW, &term);
+			atexit(&_pty_restore);
+
+			block_sigwinch();
+			pty_thread_create(job);
+			env->pty_port = job->pty_port;
+			env->ws_col = job->ws_col;
+			env->ws_row = job->ws_row;
+		}
 	}
 
 	setup_env(env, srun_opt->preserve_env);
