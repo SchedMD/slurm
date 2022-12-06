@@ -455,6 +455,7 @@ static int _find_pid_task(void *x, void *key)
 		}
 	}
 
+	xfree(pids);
 	return found;
 }
 
