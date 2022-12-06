@@ -7064,20 +7064,26 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 		goto fini;
 	}
 	if ((job_desc->deadline) && (job_desc->deadline != NO_VAL)) {
-		char time_str_now[256];
+		char time_str_earliest[256];
 		char time_str_deadline[256];
 		time_t now = time(NULL);
+		time_t begin_time = job_desc->begin_time;
+		time_t earliest_start = MAX(begin_time, now);
+
 		slurm_make_time_str(&job_desc->deadline, time_str_deadline,
 				    sizeof(time_str_deadline));
-		slurm_make_time_str(&now, time_str_now, sizeof(time_str_now));
-		if (job_desc->deadline < now) {
+		slurm_make_time_str(&earliest_start, time_str_earliest,
+				    sizeof(time_str_earliest));
+
+		if (job_desc->deadline < earliest_start) {
 			info("%s: job's deadline smaller than now (%s < %s)",
-			     __func__, time_str_deadline, time_str_now);
+			     __func__, time_str_deadline, time_str_earliest);
 			rc = ESLURM_INVALID_TIME_LIMIT;
 			goto fini;
 		}
 		if ((job_desc->time_min) && (job_desc->time_min != NO_VAL) &&
-		    (job_desc->deadline < (now + job_desc->time_min * 60))) {
+		    (job_desc->deadline <
+		     (earliest_start + job_desc->time_min * 60))) {
 			info("%s: job's min_time greater than deadline (%u > %s)",
 			     __func__, job_desc->time_min, time_str_deadline);
 			rc = ESLURM_INVALID_TIME_MIN_LIMIT;
@@ -7085,7 +7091,8 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 		}
 		if ((job_desc->time_min == 0) && (job_desc->time_limit) &&
 		    (job_desc->time_limit != NO_VAL) &&
-		    (job_desc->deadline < (now + job_desc->time_limit * 60))) {
+		    (job_desc->deadline <
+		     (earliest_start + job_desc->time_limit * 60))) {
 			info("%s: job's time_limit greater than deadline (%u > %s)",
 			     __func__, job_desc->time_limit, time_str_deadline);
 			rc = ESLURM_INVALID_TIME_LIMIT;
