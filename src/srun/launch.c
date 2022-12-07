@@ -812,6 +812,11 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	} else
 		step_req->threads_per_core = NO_VAL16;
 
+	/*
+	 * FIXME: tres_bind is really gres_bind. This should be fixed in the
+	 * future.
+	 */
+
 	if (!opt_local->tres_bind &&
 	    ((opt_local->ntasks_per_tres != NO_VAL) ||
 	     (opt_local->ntasks_per_gpu != NO_VAL))) {
@@ -824,11 +829,17 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 				   opt_local->ntasks_per_gpu);
 	}
 
+	/*
+	 * FIXME: tres_per_task Should be handled in src/common/slurm_opt.c
+	 * _validate_tres_per_task(). But we should probably revisit this to get
+	 * rid of gpus_per_task completely.
+	 */
 	if (!opt_local->tres_bind && opt_local->gpus_per_task) {
 		/* Implicit GPU binding with gpus_per_task */
 		xstrfmtcat(opt_local->tres_bind, "gpu:per_task:%s",
 			   opt_local->gpus_per_task);
 	}
+
 	step_req->tres_bind = xstrdup(opt_local->tres_bind);
 	step_req->tres_freq = xstrdup(opt_local->tres_freq);
 
