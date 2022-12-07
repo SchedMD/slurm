@@ -725,35 +725,31 @@ extern void configless_setup(void)
  */
 extern void configless_update(void)
 {
+	config_response_msg_t new, *old;
+
 	if (!config_for_slurmd)
 		return;
 
-	config_response_msg_t *new = xmalloc(sizeof(*new));
-	config_response_msg_t *old = xmalloc(sizeof(*old));
+	/* handle slurmd first */
+	memset(&new, 0, sizeof(new));
+	old = xmalloc(sizeof(*old));
 
-	new->slurmd_spooldir = xstrdup(slurm_conf.slurmd_spooldir);
-	load_config_response_list(new, slurmd_config_files);
+	new.slurmd_spooldir = xstrdup(slurm_conf.slurmd_spooldir);
+	load_config_response_list(&new, slurmd_config_files);
 
 	memcpy(old, config_for_slurmd, sizeof(*old));
 	/* pseudo-atomic update of the pointers */
-	memcpy(config_for_slurmd, new, sizeof(*config_for_slurmd));
-	/* only free "new", not the contents */
-	xfree(new);
+	memcpy(config_for_slurmd, &new, sizeof(*config_for_slurmd));
+	slurm_free_config_response_msg(old);
 
-	/* we can't reuse the config_response_list, so generate it again */
-	config_response_msg_t *new_client = xmalloc(sizeof(*new_client));
-	load_config_response_list(new_client, client_config_files);
-	/* save old config_files list */
-	List config_files = config_for_clients->config_files;
+	/* then the clients */
+	memset(&new, 0, sizeof(new));
+	old = xmalloc(sizeof(*old));
+	load_config_response_list(&new, slurmd_config_files);
 
-	/* Now reuse what we already have */
-	config_for_clients->config_files = new_client->config_files;
-
-	/* free new_client and the old list */
-	FREE_NULL_LIST(config_files);
-	xfree(new_client);
-
-	/* now free the old config */
+	memcpy(old, config_for_slurmd, sizeof(*old));
+	/* pseudo-atomic update of the pointers */
+	memcpy(config_for_slurmd, &new, sizeof(*config_for_slurmd));
 	slurm_free_config_response_msg(old);
 }
 
