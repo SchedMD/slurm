@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix 'scontrol show hostlist' to read off a pipe correctly.
  -- Fix 'scontrol reconfigure' with configless enabled to send updated configs
     to 21.08 nodes correctly. (22.05 nodes are unaffected.)
+ -- Fix assertion and locks for dynamic node registrations with rpc queueing.
 
 * Changes in Slurm 22.05.6
 ==========================
