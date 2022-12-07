@@ -563,6 +563,7 @@ static char *_get_config_path(stepd_step_rec_t *step)
 
 static data_for_each_cmd_t _foreach_config_env(const data_t *data, void *arg)
 {
+	int rc;
 	stepd_step_rec_t *step = arg;
 	char *name = NULL, *value;
 
@@ -576,10 +577,11 @@ static data_for_each_cmd_t _foreach_config_env(const data_t *data, void *arg)
 		value++;
 	}
 
-	if (setenvf(&step->env, name, "%s", value))
-		return DATA_FOR_EACH_FAIL;
+	rc = setenvf(&step->env, name, "%s", value);
 
-	return DATA_FOR_EACH_CONT;
+	xfree(name);
+
+	return (rc ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT);
 }
 
 static int _merge_step_config_env(stepd_step_rec_t *step)
