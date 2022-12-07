@@ -119,6 +119,12 @@ static plugin_context_t **g_context = NULL;
 static int g_context_num = -1;
 static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
 
+static bool at_forked = false;
+static void _atfork_child()
+{
+	slurm_rwlock_init(&context_lock);
+}
+
 extern const char *auth_get_plugin_name(int plugin_id)
 {
 	for (int i = 0; i < ARRAY_SIZE(auth_plugin_types); i++)
@@ -200,6 +206,11 @@ extern int slurm_auth_init(char *auth_type)
 		}
 	}
 done:
+	if (!at_forked) {
+		pthread_atfork(NULL, NULL, _atfork_child);
+		at_forked = true;
+	}
+
 	xfree(auth_alt_types);
 	slurm_rwlock_unlock(&context_lock);
 	return retval;
