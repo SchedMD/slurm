@@ -155,18 +155,17 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 
 	if (disable_hooks) {
 		char *ptr1 = NULL, *ptr2 = NULL;
-		int i = 0, size = 1;
+		int i = 0;
 
-		oci->disable_hooks = xcalloc(size + 1,
-					     sizeof(*oci->disable_hooks));
+		/* NULL terminated array of char* */
+		oci->disable_hooks = xmalloc(sizeof(*oci->disable_hooks));
 
 		ptr1 = strtok_r(disable_hooks, ",", &ptr2);
 		while (ptr1) {
-			if (i > size) {
-				size++;
-				xrecalloc(oci->disable_hooks, size + 1,
-					  sizeof(*oci->disable_hooks));
-			}
+			i++;
+
+			xrecalloc(oci->disable_hooks, (i + 1),
+				  sizeof(*oci->disable_hooks));
 
 			oci->disable_hooks[i] = xstrdup(ptr1);
 			debug("%s: disable hook type %s",
