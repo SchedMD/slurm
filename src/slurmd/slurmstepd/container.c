@@ -286,6 +286,7 @@ rwfail:
 
 static bool _match_env(const data_t *data, void *needle)
 {
+	bool match;
 	const char *needle_name = needle;
 	char *name = NULL, *value;
 
@@ -297,7 +298,11 @@ static bool _match_env(const data_t *data, void *needle)
 	if (value)
 		*value = '\0';
 
-	return !xstrcmp(name, needle_name);
+	match = !xstrcmp(name, needle_name);
+
+	xfree(name);
+
+	return match;
 }
 
 static int _modify_config(stepd_step_rec_t *step)
