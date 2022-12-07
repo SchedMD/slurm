@@ -292,7 +292,7 @@ static void _rsmi_get_nearest_freqs(uint32_t dv_ind,
 	gpu_common_get_nearest_freq(mem_freq, mem_freqs_size, mem_freqs_sort);
 
 	// convert the frequency to bit mask
-	for (int i = 0; i < mem_freqs_size; i++)
+	for (uint64_t i = 0; i < mem_freqs_size; i++)
 		if (*mem_freq == mem_freqs[i]) {
 			*mem_bitmask = (1 << i);
 			break;
@@ -316,7 +316,7 @@ static void _rsmi_get_nearest_freqs(uint32_t dv_ind,
 	gpu_common_get_nearest_freq(gfx_freq, gfx_freqs_size, gfx_freqs_sort);
 
 	// convert the frequency to bit mask
-	for (int i = 0; i < gfx_freqs_size; i++)
+	for (uint64_t i = 0; i < gfx_freqs_size; i++)
 		if (*gfx_freq == gfx_freqs[i]) {
 			*gfx_bitmask = (1 << i);
 			break;
