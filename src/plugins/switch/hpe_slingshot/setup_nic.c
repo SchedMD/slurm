@@ -255,7 +255,7 @@ static bool _create_cxi_devs(slingshot_jobinfo_t *job)
  * Return a cxi_limits struct with res/max fields set according to
  * job max/res/def limits, device max limits, and number of CPUs on node
  */
-static struct cxi_limits _set_desc_limits(const char *name,
+static struct cxi_limits _set_desc_limits(int rsrc,
 					  const slingshot_limits_t *joblimits,
 					  uint16_t dev_max, int ncpus)
 {
@@ -267,6 +267,12 @@ static struct cxi_limits _set_desc_limits(const char *name,
 	ret.res = joblimits->res ? joblimits->res : (joblimits->def * ncpus);
 	/* Reserved can't be higher than max */
 	ret.res = MIN(ret.res, ret.max);
+	/*
+	 * SPECIAL CASE: limit TLE max value to reserved value
+	 */
+	if (rsrc == CXI_RSRC_TYPE_TLE)
+		ret.max = ret.res;
+	const char *name = cxi_rsrc_type_strs[rsrc];
 	log_flag(SWITCH, "job %s.max/res/def/cpus %hu %hu %hu %d"
 		 " CXI desc %s.max/res %hu %hu",
 		 name, joblimits->max, joblimits->res, joblimits->def, ncpus,
@@ -332,22 +338,22 @@ static void _create_cxi_descriptor(struct cxi_svc_desc *desc,
 	 * otherwise use the number of CPUs for this step
 	 */
 	cpus = job->depth ? job->depth : step_cpus;
-	desc->limits.txqs = _set_desc_limits("TXQs", &job->limits.txqs,
-					     devinfo->num_txqs, cpus);
-	desc->limits.tgqs = _set_desc_limits("TGQs", &job->limits.tgqs,
-					     devinfo->num_tgqs, cpus);
-	desc->limits.eqs = _set_desc_limits("EQs", &job->limits.eqs,
-					     devinfo->num_eqs, cpus);
-	desc->limits.cts = _set_desc_limits("CTs", &job->limits.cts,
-					     devinfo->num_cts, cpus);
-	desc->limits.tles = _set_desc_limits("TLEs", &job->limits.tles,
-					     devinfo->num_tles, cpus);
-	desc->limits.ptes = _set_desc_limits("PTEs", &job->limits.ptes,
-					     devinfo->num_ptes, cpus);
-	desc->limits.les = _set_desc_limits("LEs", &job->limits.les,
-					     devinfo->num_les, cpus);
-	desc->limits.acs = _set_desc_limits("ACs", &job->limits.acs,
-					     devinfo->num_acs, cpus);
+	desc->limits.txqs = _set_desc_limits(CXI_RSRC_TYPE_TXQ,
+				&job->limits.txqs, devinfo->num_txqs, cpus);
+	desc->limits.tgqs = _set_desc_limits(CXI_RSRC_TYPE_TGQ,
+				&job->limits.tgqs, devinfo->num_tgqs, cpus);
+	desc->limits.eqs = _set_desc_limits(CXI_RSRC_TYPE_EQ,
+				&job->limits.eqs, devinfo->num_eqs, cpus);
+	desc->limits.cts = _set_desc_limits(CXI_RSRC_TYPE_CT,
+				&job->limits.cts, devinfo->num_cts, cpus);
+	desc->limits.tles = _set_desc_limits(CXI_RSRC_TYPE_TLE,
+				&job->limits.tles, devinfo->num_tles, cpus);
+	desc->limits.ptes = _set_desc_limits(CXI_RSRC_TYPE_PTE,
+				&job->limits.ptes, devinfo->num_ptes, cpus);
+	desc->limits.les = _set_desc_limits(CXI_RSRC_TYPE_LE,
+				&job->limits.les, devinfo->num_les, cpus);
+	desc->limits.acs = _set_desc_limits(CXI_RSRC_TYPE_AC,
+				&job->limits.acs, devinfo->num_acs, cpus);
 
 	/* Differentiates system and user services */
 	desc->is_system_svc = false;
