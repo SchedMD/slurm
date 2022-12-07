@@ -747,11 +747,11 @@ extern void configless_update(void)
 	/* then the clients */
 	memset(&new, 0, sizeof(new));
 	old = xmalloc(sizeof(*old));
-	load_config_response_list(&new, slurmd_config_files);
+	load_config_response_list(&new, client_config_files);
 
-	memcpy(old, config_for_slurmd, sizeof(*old));
+	memcpy(old, config_for_clients, sizeof(*old));
 	/* pseudo-atomic update of the pointers */
-	memcpy(config_for_slurmd, &new, sizeof(*config_for_slurmd));
+	memcpy(config_for_clients, &new, sizeof(*config_for_clients));
 	slurm_free_config_response_msg(old);
 }
 
