@@ -506,7 +506,6 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			continue;  /* node lost by job resize */
 
 		if (action != JOB_RES_ACTION_RESUME) {
-			List job_gres_list;
 			List node_gres_list;
 
 			if (node_usage[i].gres_list)
@@ -514,13 +513,8 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			else
 				node_gres_list = node_ptr->gres_list;
 
-			/* Dealloc from allocated GRES if not testing */
-			if (job_fini)
-				job_gres_list = job_ptr->gres_list_alloc;
-			else
-				job_gres_list = job_ptr->gres_list_req;
-
-			gres_ctld_job_dealloc(job_gres_list, node_gres_list,
+			gres_ctld_job_dealloc(job_ptr->gres_list_alloc,
+					      node_gres_list,
 					      n, job_ptr->job_id,
 					      node_ptr->name, old_job, false);
 			gres_node_state_log(node_gres_list, node_ptr->name);
