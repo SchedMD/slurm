@@ -117,7 +117,7 @@ auth_plugin_types_t auth_plugin_types[] = {
 static slurm_auth_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static int g_context_num = -1;
-static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 extern const char *auth_get_plugin_name(int plugin_id)
 {
@@ -144,7 +144,7 @@ extern int slurm_auth_init(char *auth_type)
 	char *plugin_type = "auth";
 	static bool daemon_run = false, daemon_set = false;
 
-	slurm_mutex_lock(&context_lock);
+	slurm_rwlock_wrlock(&context_lock);
 
 	if (g_context_num > 0)
 		goto done;
@@ -201,7 +201,7 @@ extern int slurm_auth_init(char *auth_type)
 	}
 done:
 	xfree(auth_alt_types);
-	slurm_mutex_unlock(&context_lock);
+	slurm_rwlock_unlock(&context_lock);
 	return retval;
 }
 
@@ -210,7 +210,7 @@ extern int slurm_auth_fini(void)
 {
 	int i, rc = SLURM_SUCCESS, rc2;
 
-	slurm_mutex_lock(&context_lock);
+	slurm_rwlock_wrlock(&context_lock);
 	if (!g_context)
 		goto done;
 
@@ -229,7 +229,7 @@ extern int slurm_auth_fini(void)
 	g_context_num = -1;
 
 done:
-	slurm_mutex_unlock(&context_lock);
+	slurm_rwlock_unlock(&context_lock);
 	return rc;
 }
 
