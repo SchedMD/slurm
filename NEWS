@@ -193,6 +193,7 @@ documents those changes that are of interest to users and administrators.
     root.
  -- slurmrestd - disable umask during socket creation as the authentication is
     handled by Slurm instead of file ACLs.
+ -- Fix sbcast, srun --bcast, sstat not working with cloud/dynamic nodes.
 
 * Changes in Slurm 22.05.6
 ==========================

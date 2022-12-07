@@ -202,6 +202,7 @@ int srun(int ac, char **av)
 		debug3("%s: %ps GID %u and srun process GID %u mismatch",
 		       __func__, &job->step_id, job->gid, getgid());
 
+	_set_node_alias(job, srun_job_list);
 	_setup_job_env(job, srun_job_list, got_alloc);
 
 	/*
@@ -219,7 +220,6 @@ int srun(int ac, char **av)
 		log_alter(logopt, 0, NULL);
 	}
 
-	_set_node_alias(job, srun_job_list);
 	_launch_app(job, srun_job_list, got_alloc);
 
 	if ((global_rc & 0xff) == SIG_OOM)
