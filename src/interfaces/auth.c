@@ -120,9 +120,30 @@ static int g_context_num = -1;
 static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 static bool at_forked = false;
+static bool externally_locked = false;
 static void _atfork_child()
 {
 	slurm_rwlock_init(&context_lock);
+
+	/*
+	 * If we're in _drop_privileges() when we fork we need to hold the lock
+	 * in the child process to prevent any other auth plugin calls until
+	 * _reclaim_privileges(). However, for rwlocks, you cannot simply call
+	 * slurm_rwlock_unlock() in the pthread_atfork() child handler -
+	 * testing demonstrated that this won't unlock and you'll be deadlocked
+	 * on the next lock acquisition.
+	 *
+	 * (This does work for slurm_mutex_unlock() - as is used in other
+	 * pthread_atfork() child handlers within Slurm. This appears to be
+	 * something specific to pthread_rwlock_t's construction.)
+	 *
+	 * Instead, reacquire the lock immediately after the
+	 * slurm_rwlock_init() call. Since we're in the child process here, the
+	 * eventual _reclaim_privileges() call to auth_setuid_unlock() will
+	 * behave as expected.
+	 */
+	if (externally_locked)
+		slurm_rwlock_wrlock(&context_lock);
 }
 
 extern const char *auth_get_plugin_name(int plugin_id)
@@ -263,6 +284,23 @@ int slurm_auth_index(void *cred)
 		return wrapper->index;
 
 	return 0;
+}
+
+extern void auth_setuid_lock(void)
+{
+	slurm_rwlock_wrlock(&context_lock);
+	/*
+	 * If running under _drop_privileges(), we want the locked state
+	 * to persist after fork() as it is still not safe to use the
+	 * rest of the auth API until after _reclaim_privileges().
+	 */
+	externally_locked = true;
+}
+
+extern void auth_setuid_unlock(void)
+{
+	externally_locked = false;
+	slurm_rwlock_unlock(&context_lock);
 }
 
 /*
