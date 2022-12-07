@@ -760,14 +760,8 @@ extern void configless_update(void)
 extern void configless_clear(void)
 {
 	slurm_free_config_response_msg(config_for_slurmd);
-	if (config_for_clients) {
-		/*
-		 * config_for_clients uses a pointer into config_for_slurmd,
-		 * so DO NOT use slurm_free_config_response_msg()
-		 */
-		FREE_NULL_LIST(config_for_clients->config_files);
-		xfree(config_for_clients);
-	}
+	slurm_free_config_response_msg(config_for_clients);
+
 	FREE_NULL_LIST(conf_includes_list);
 }
 
