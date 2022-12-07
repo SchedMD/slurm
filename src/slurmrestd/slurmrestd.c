@@ -388,6 +388,10 @@ int main(int argc, char **argv)
 
 	_parse_env();
 	_parse_commandline(argc, argv);
+
+	/* attempt to release all unneeded permissions */
+	_lock_down();
+
 	_examine_stdin();
 	_examine_stderr();
 	_examine_stdout();
@@ -497,16 +501,17 @@ int main(int argc, char **argv)
 		/* fail on first error if this is piped process */
 		conmgr->exit_on_error = true;
 	} else if (run_mode.listen) {
+		mode_t mask = umask(0);
+
 		if (con_mgr_create_sockets(conmgr, socket_listen,
 					   conmgr_events))
 			fatal("Unable to create sockets");
 
+		umask(mask);
+
 		FREE_NULL_LIST(socket_listen);
 		debug("%s: server listen mode activated", __func__);
 	}
-
-	/* attempt to release all unneeded permissions before talking to clients */
-	_lock_down();
 
 	rc = con_mgr_run(conmgr);
 

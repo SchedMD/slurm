@@ -144,9 +144,8 @@ static int _auth_socket(on_http_request_args_t *args,
 		return ESLURM_AUTH_CRED_INVALID;
 	} else if (cred.uid == 0) {
 		/* requesting socket is root */
-		error("%s: [%s] accepted root socket connection with uid:%u gid:%u pid:%ld",
-		      __func__, name, cred.uid, cred.gid,
-		      (long) cred.pid);
+		info("%s: [%s] accepted root socket connection with uid:%u gid:%u pid:%ld",
+		     __func__, name, cred.uid, cred.gid, (long) cred.pid);
 
 		/*
 		 * root can be any user if they want - default to
