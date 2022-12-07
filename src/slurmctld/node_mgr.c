@@ -4039,11 +4039,6 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 	node_record_t *node_ptr;
 	config_response_msg_t *curr_config, *prev_config, *old_config;
 
-	/*
-	 * The 'curr_args' is when we pivoted to a List holding configs.
-	 * As long as that same pack code is maintained, this is fine
-	 * going forward.
-	 */
 	curr_args = xmalloc(sizeof(*curr_args));
 	curr_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
 	curr_args->retry = 0;
