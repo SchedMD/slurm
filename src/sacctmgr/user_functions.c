@@ -1760,7 +1760,7 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 			db_conn, user_cond, user);
 		if (ret_list && list_count(ret_list)) {
 			set = 1;
-			if (user->default_acct
+			if (user->default_acct && user->default_acct[0]
 			    && _check_default_assocs(
 				    user->default_acct, ret_list,
 				    user_cond->assoc_cond->cluster_list)
