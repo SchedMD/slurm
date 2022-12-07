@@ -117,8 +117,8 @@ typedef struct slingshot_state {
 /* Max NIC resources per application */
 #define SLINGSHOT_TXQ_MAX     1024    /* Max transmit command queues */
 #define SLINGSHOT_TGQ_MAX     512     /* Max target command queues */
-#define SLINGSHOT_EQ_MAX      2047    /* Max event queues */
-#define SLINGSHOT_CT_MAX      2047    /* Max counters */
+#define SLINGSHOT_EQ_MAX      1023    /* Max event queues */
+#define SLINGSHOT_CT_MAX      1023    /* Max counters */
 #define SLINGSHOT_TLE_MAX     2048    /* Max trigger list entries */
 #define SLINGSHOT_PTE_MAX     2048    /* Max portal table entries */
 #define SLINGSHOT_LE_MAX      16384   /* Max list entries */
@@ -127,10 +127,10 @@ typedef struct slingshot_state {
 /* Default per-thread NIC resources per application */
 #define SLINGSHOT_TXQ_DEF     2       /* Per-thread transmit command queues */
 #define SLINGSHOT_TGQ_DEF     1       /* Per-thread target command queues */
-#define SLINGSHOT_EQ_DEF      4       /* Per-thread event queues */
+#define SLINGSHOT_EQ_DEF      2       /* Per-thread event queues */
 #define SLINGSHOT_CT_DEF      1       /* Per-thread counters */
 #define SLINGSHOT_TLE_DEF     1       /* Per-thread trigger list entries */
-#define SLINGSHOT_PTE_DEF     8       /* Per-thread portal table entries */
+#define SLINGSHOT_PTE_DEF     6       /* Per-thread portal table entries */
 #define SLINGSHOT_LE_DEF      16      /* Per-thread list entries */
 #define SLINGSHOT_AC_DEF      4       /* Per-thread addressing contexts */
 
