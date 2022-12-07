@@ -30,50 +30,16 @@ source ./globals
 set timeout		$max_job_delay
 set job_id		0
 set mem_spec		"100M"
-set job_min_memory_cpu 	0
 
 #
 # submit srun job with a specific mem-per-cpu request
 #
-spawn $srun --mem-per-cpu=$mem_spec $bin_bash -c "echo SLURM_JOB_ID=\$SLURM_JOB_ID"
-expect {
-	-re {SLURM_JOB_ID=([0-9]+)} {
-		set job_id $expect_out(1,string)
-	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# check to make sure a job id was set
-#
-if {$job_id == 0} {
+set output [run_command_output -fail "$srun --mem-per-cpu=$mem_spec $bin_bash -c 'echo SLURM_JOB_ID=\$SLURM_JOB_ID'"]
+if {![regexp "SLURM_JOB_ID=(\[0-9]+)" $output {} job_id]} {
 	fail "Did not get job id"
-}
-
-#
-# get job memory info
-#
-spawn $scontrol show job $job_id
-expect {
-	-re {MinMemoryCPU=([0-9]+.?)} {
-		set job_min_memory_cpu $expect_out(1,string)
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
 }
 
 #
 # check that the memory reported matches the requested value
 #
-if {$job_min_memory_cpu ne $mem_spec} {
-	fail "Job MinMemoryCPU $job_min_memory_cpu != $mem_spec"
-}
+subtest {[get_job_param $job_id MinMemoryCPU] == $mem_spec} "Verify job's MinMemoryCPU is $mem_spec"
