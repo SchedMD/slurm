@@ -113,6 +113,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
  * IN first_pass - set if first scheduling attempt for this job, use
  *		   co-located GRES and cores if possible
  * IN avail_core - cores available on this node, UPDATED
+ * IN node_name - name of the node
  */
 extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					 List sock_gres_list,
@@ -126,7 +127,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					 int rem_nodes,
 					 bool enforce_binding,
 					 bool first_pass,
-					 bitstr_t *avail_core);
+					 bitstr_t *avail_core,
+					 char *node_name);
 
 /*
  * Make final GRES selection for the job
