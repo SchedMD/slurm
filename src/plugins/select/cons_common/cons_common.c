@@ -1250,9 +1250,9 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	}
 
 	(void) job_res_rm_job(select_part_record, select_node_usage,
-			      from_job_ptr, JOB_RES_ACTION_NORMAL, true, NULL);
+			      from_job_ptr, JOB_RES_ACTION_NORMAL, NULL);
 	(void) job_res_rm_job(select_part_record, select_node_usage,
-			      to_job_ptr, JOB_RES_ACTION_NORMAL, true, NULL);
+			      to_job_ptr, JOB_RES_ACTION_NORMAL, NULL);
 
 	if (to_job_resrcs_ptr->core_bitmap_used)
 		bit_clear_all(to_job_resrcs_ptr->core_bitmap_used);
@@ -1548,7 +1548,7 @@ extern int select_p_job_fini(job_record_t *job_ptr)
 	log_flag(SELECT_TYPE, "%pJ", job_ptr);
 
 	job_res_rm_job(select_part_record, select_node_usage,
-		       job_ptr, JOB_RES_ACTION_NORMAL, true, NULL);
+		       job_ptr, JOB_RES_ACTION_NORMAL, NULL);
 
 	return SLURM_SUCCESS;
 }
@@ -1572,7 +1572,7 @@ extern int select_p_job_suspend(job_record_t *job_ptr, bool indf_susp)
 		return SLURM_SUCCESS;
 
 	return job_res_rm_job(select_part_record, select_node_usage,
-			      job_ptr, JOB_RES_ACTION_RESUME, false, NULL);
+			      job_ptr, JOB_RES_ACTION_RESUME, NULL);
 }
 
 /* See NOTE with select_p_job_suspend() above */

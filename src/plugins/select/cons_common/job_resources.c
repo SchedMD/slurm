@@ -452,7 +452,6 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
  *             (suspended job was terminated)
  * if action = JOB_RES_ACTION_RESUME then only subtract cores
  *             (job is suspended)
- * IN: job_fini - job fully terminating on this node (not just a test)
  *
  * RET SLURM_SUCCESS or error code
  *
@@ -461,7 +460,6 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			  node_use_record_t *node_usage,
 			  job_record_t *job_ptr, job_res_job_action_t action,
-			  bool job_fini,
 			  bitstr_t *node_map)
 {
 	struct job_resources *job = job_ptr->job_resrcs;
