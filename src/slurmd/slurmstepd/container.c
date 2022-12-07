@@ -934,8 +934,8 @@ static void _generate_args(stepd_step_rec_t *step, stepd_step_task_info_t *task)
 	 * to catch any code paths that avoid the container code
 	 */
 	xassert(step->argv == task->argv);
-	step->argv = task->argv = xcalloc(4, sizeof(*task->argv));
 	env_array_free(task->argv);
+	step->argv = task->argv = xcalloc(4, sizeof(*task->argv));
 	task->argv[0] = xstrdup("/bin/sh");
 	task->argv[1] = xstrdup("-c");
 	task->argv[2] = xstrdup("echo 'this should never execute with a container'; exit 1");
