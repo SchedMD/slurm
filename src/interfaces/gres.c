@@ -928,8 +928,8 @@ static int _find_fileless_gres(void *x, void *arg)
 
 	if ((gres_slurmd_conf->plugin_id == plugin_id) &&
 	    !gres_slurmd_conf->file) {
-		debug("Removing file-less GPU %s:%s from final GRES list",
-		      gres_slurmd_conf->name, gres_slurmd_conf->type_name);
+		info("WARNING: Ignoring file-less GPU %s:%s from final GRES list",
+		     gres_slurmd_conf->name, gres_slurmd_conf->type_name);
 		return 1;
 	}
 	return 0;
