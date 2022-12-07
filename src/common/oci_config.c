@@ -221,6 +221,7 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 		rc = SLURM_ERROR;
 	}
 
+	xfree(create_env_file);
 	s_p_hashtbl_destroy(tbl);
 	xfree(conf_path);
 
