@@ -202,6 +202,78 @@ end_it:
 	return rc;
 }
 
+/*
+ * Determine if a database server upgrade has taken place and if so, check to
+ * see if the candidate table alteration query should be used to alter the table
+ * to its expected settings. Returns true if so.
+ *
+ * Background:
+ *
+ * From the MariaDB docs:
+ *  Before MariaDB 10.2.1, BLOB and TEXT columns could not be assigned a DEFAULT
+ *  value. This restriction was lifted in MariaDB 10.2.1.
+ *
+ * If a site begins using MariaDB >= 10.2.1 and is either using an existing
+ * Slurm database from an earlier version or has restored one from a dump from
+ * an earlier version or from any version of MySQL, some text/blob default
+ * values will need to be altered to avoid failures from subsequent queries from
+ * slurmdbd that set affected fields to DEFAULT (see bug#13606).
+ *
+ * Note that only one column from one table ('preempt' from qos_table) is
+ * checked to determine if an upgrade has taken place with the assumption that
+ * if its default value is not correct then the same is true for similar
+ * text/blob columns from other tables and they will also need to be altered.
+ *
+ * The qos_table has been chosen for this check because it is the last table
+ * with condition to be created. If that condition changes this should be
+ * re-evaluated.
+ */
+static bool _alter_table_after_upgrade(mysql_conn_t *mysql_conn,
+				       char *table_alter_query)
+{
+	static bool have_value = false, upgraded = false;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+
+	/* check to see if upgrade has happened */
+	if (!have_value) {
+		char *info, *query;
+		/*
+		 * confirm MariaDB is being used to avoid any ambiguity with
+		 * MySQL versions
+		 */
+		info = mysql_get_server_info(mysql_conn->db_conn);
+		if (xstrcasestr(info, "mariadb") &&
+		    (mysql_get_server_version(mysql_conn->db_conn) >= 100201)) {
+			query = "show columns from `qos_table` like 'preempt'";
+			result = mysql_db_query_ret(mysql_conn, query, 0);
+			if (result) {
+				/*
+				 * row[4] holds the column's default value and
+				 * if it's NULL then it will need to be altered
+				 * and an upgrade is assumed
+				 */
+				if ((row = mysql_fetch_row(result)) &&
+				    !xstrcasecmp(row[1], "text") &&
+				    !row[4])
+					upgraded = true;
+				mysql_free_result(result);
+			}
+		}
+		have_value = true;
+	}
+
+	/*
+	 * If upgrade detected and the table alter query string contains an
+	 * emtpy string default then the query should be executed. The latter
+	 * check avoids unnecessary table alterations.
+	 */
+	if (upgraded && xstrcasestr(table_alter_query, "default ''"))
+		return true;
+
+	return false;
+}
+
 /* NOTE: Ensure that mysql_conn->lock is NOT set on function entry */
 static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 				     storage_field_t *fields, char *ending)
@@ -514,8 +586,11 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	correct_query[strlen(correct_query)-1] = ';';
 	//info("%d query\n%s", __LINE__, query);
 
-	/* see if we have already done this definition */
-	if (!adding) {
+	/* see if table needs to be altered after db server upgrade */
+	if (!adding && _alter_table_after_upgrade(mysql_conn, query)) {
+		run_update = 3;
+	} else if (!adding && !run_update) {
+		/* see if we have already done this definition */
 		char *quoted = slurm_add_slash_to_quotes(query);
 		char *query2 = xstrdup_printf("select table_name from "
 					      "%s where definition='%s'",
@@ -554,8 +629,13 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 
 		if (run_update == 2)
 			debug4("Table %s doesn't exist, adding", table_name);
+		else if (run_update == 3)
+			info("MariaDB >= 10.2.1 in use with a table from an earlier version or from MySQL. Updating table %s...",
+			      table_name);
 		else
 			debug("Table %s has changed.  Updating...", table_name);
+
+		debug2("query\n%s", query);
 		if (mysql_db_query(mysql_conn, query)) {
 			xfree(query);
 			return SLURM_ERROR;
@@ -570,6 +650,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 					table_name, quoted,
 					quoted, now);
 		xfree(quoted);
+		debug3("query\n%s", query2);
 		if (mysql_db_query(mysql_conn, query2)) {
 			xfree(query2);
 			return SLURM_ERROR;
