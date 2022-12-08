@@ -212,7 +212,23 @@
             }
           }
         },
-        "summary": "Set TRES info"
+        "summary": "Set TRES info",
+        "requestBody": {
+          "description": "Add or Update TRES",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.39_tres_update"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.39_tres_update"
+              }
+            }
+          },
+          "required": true
+        }
       },
       "get": {
         "tags": [
@@ -4043,6 +4059,14 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "dbv0.0.39_tres_update": {
+        "type": "object",
+        "properties": {
+          "tres": {
+            "$ref": "#/components/schemas/dbv0.0.39_tres_list"
           }
         }
       }
