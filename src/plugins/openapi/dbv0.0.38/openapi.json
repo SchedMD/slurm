@@ -2480,14 +2480,6 @@
       "dbv0.0.38_wckey": {
         "type": "object",
         "properties": {
-          "accounts": {
-            "type": "array",
-            "description": "List of assigned accounts",
-            "items": {
-              "type": "string",
-              "description": "Account name"
-            }
-          },
           "cluster": {
             "type": "string",
             "description": "Cluster name"
@@ -2510,6 +2502,13 @@
             "items": {
               "type": "string",
               "description": "String of property name"
+            }
+          },
+          "accounting": {
+            "type": "array",
+            "description": "List of accounting records",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_accounting"
             }
           }
         }
@@ -4162,6 +4161,26 @@
             "items": {
               "$ref": "#/components/schemas/dbv0.0.38_association"
             }
+          }
+        }
+      },
+      "dbv0.0.38_accounting": {
+        "type": "object",
+        "properties": {
+          "allocated": {
+            "type": "integer",
+            "description": "total seconds allocated"
+          },
+          "id": {
+            "type": "integer",
+            "description": "association/wckey ID"
+          },
+          "start": {
+            "type": "integer",
+            "description": "UNIX timestamp when accounting period started"
+          },
+          "TRES": {
+            "$ref": "#/components/schemas/dbv0.0.38_tres_list"
           }
         }
       }
