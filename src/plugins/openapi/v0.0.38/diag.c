@@ -158,8 +158,11 @@ static int _op_handler_diag(const char *context_id,
 			resp->rpc_type_size, sizeof(*rpc_type_ave_time));
 
 		for (int i = 0; i < resp->rpc_type_size; i++) {
-			rpc_type_ave_time[i] = resp->rpc_type_time[i] /
-					       resp->rpc_type_cnt[i];
+			if (resp->rpc_type_cnt[i] > 0)
+				rpc_type_ave_time[i] = resp->rpc_type_time[i] /
+						       resp->rpc_type_cnt[i];
+			else
+				rpc_type_ave_time[i] = 0;
 		}
 
 		for (int i = 0; i < resp->rpc_type_size; i++) {
@@ -184,8 +187,11 @@ static int _op_handler_diag(const char *context_id,
 			resp->rpc_user_size, sizeof(*rpc_user_ave_time));
 
 		for (int i = 0; i < resp->rpc_user_size; i++) {
-			rpc_user_ave_time[i] = resp->rpc_user_time[i] /
-					       resp->rpc_user_cnt[i];
+			if (resp->rpc_user_cnt[i] > 0)
+				rpc_user_ave_time[i] = resp->rpc_user_time[i] /
+						       resp->rpc_user_cnt[i];
+			else
+				rpc_user_ave_time[i] = 0;
 		}
 
 		for (int i = 0; i < resp->rpc_user_size; i++) {
