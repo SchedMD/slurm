@@ -2848,14 +2848,6 @@
             "type": "integer",
             "description": "Assigned priority"
           },
-          "qos": {
-            "type": "array",
-            "description": "Assigned QOS",
-            "items": {
-              "type": "string",
-              "description": "Assigned single QOS name"
-            }
-          },
           "shares_raw": {
             "type": "integer",
             "description": "Raw fairshare shares"
@@ -2909,6 +2901,14 @@
           "user": {
             "type": "string",
             "description": "Assigned user"
+          },
+          "QOS": {
+            "type": "array",
+            "description": "Assigned QOS",
+            "items": {
+              "type": "string",
+              "description": "Assigned single QOS name"
+            }
           }
         }
       },
