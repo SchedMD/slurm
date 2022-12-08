@@ -171,6 +171,22 @@
               }
             }
           }
+        },
+        "requestBody": {
+          "description": "Add or update config",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.39_set_config"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.39_set_config"
+              }
+            }
+          },
+          "required": false
         }
       }
     },
@@ -4085,6 +4101,53 @@
         "properties": {
           "tres": {
             "$ref": "#/components/schemas/dbv0.0.39_tres_list"
+          }
+        }
+      },
+      "dbv0.0.39_set_config": {
+        "type": "object",
+        "properties": {
+          "clusters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.39_clusters_properties"
+            }
+          },
+          "TRES": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.39_tres_list"
+            }
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.39_update_account"
+            }
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.39_user"
+            }
+          },
+          "qos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.39_qos"
+            }
+          },
+          "wckeys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.39_wckey"
+            }
+          },
+          "associations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.39_association"
+            }
           }
         }
       }
