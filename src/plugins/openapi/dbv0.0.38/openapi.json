@@ -1510,7 +1510,23 @@
             }
           }
         },
-        "summary": "Add wckeys"
+        "summary": "Add wckeys",
+        "requestBody": {
+          "description": "add wckeys",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_wckey_info"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_wckey_info"
+              }
+            }
+          },
+          "required": false
+        }
       }
     },
     "/account/{account_name}": {
