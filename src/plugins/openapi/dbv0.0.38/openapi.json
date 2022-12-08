@@ -522,7 +522,23 @@
             }
           }
         },
-        "summary": "Set associations info"
+        "summary": "Set associations info",
+        "requestBody": {
+          "description": "Add or update associations",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_associations_info"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_associations_info"
+              }
+            }
+          },
+          "required": true
+        }
       },
       "get": {
         "tags": [
