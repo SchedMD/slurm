@@ -4020,7 +4020,8 @@
               "$ref": "#/components/schemas/dbv0.0.39_qos"
             }
           }
-        }
+        },
+        "type": "object"
       },
       "dbv0.0.39_update_account": {
         "properties": {
