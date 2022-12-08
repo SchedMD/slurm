@@ -252,8 +252,10 @@ static int _get_controllers(char *path, bitstr_t *ctl_bitmap)
 		for (int i = 0; i < CG_CTL_CNT; i++) {
 			if (!xstrcmp(ctl_names[i], ""))
 				continue;
-			if (!xstrcasecmp(ctl_names[i], ptr))
+			if (!xstrcasecmp(ctl_names[i], ptr)) {
 				bit_set(ctl_bitmap, i);
+				break;
+			}
 		}
 		ptr = strtok_r(NULL, " ", &save_ptr);
 	}
