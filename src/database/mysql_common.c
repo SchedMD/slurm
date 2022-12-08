@@ -237,7 +237,8 @@ static bool _alter_table_after_upgrade(mysql_conn_t *mysql_conn,
 
 	/* check to see if upgrade has happened */
 	if (!have_value) {
-		char *info, *query;
+		const char *info;
+		char *query;
 		/*
 		 * confirm MariaDB is being used to avoid any ambiguity with
 		 * MySQL versions
