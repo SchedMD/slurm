@@ -4010,7 +4010,8 @@
               "$ref": "#/components/schemas/dbv0.0.39_user"
             }
           }
-        }
+        },
+        "type": "object"
       },
       "dbv0.0.39_update_qos": {
         "properties": {
