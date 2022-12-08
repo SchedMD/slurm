@@ -957,8 +957,13 @@ extern int init(void)
 		 * If we are not started by systemd we need to move out to not
 		 * mess with the pids that may be in our actual cgroup.
 		 */
-		if (!invoc_id && (_migrate_to_stepd_scope() != SLURM_SUCCESS))
-			return SLURM_ERROR;
+		if (!invoc_id) {
+			log_flag(CGROUP, "assuming slurmd has been started manually.");
+			if (_migrate_to_stepd_scope() != SLURM_SUCCESS)
+				return SLURM_ERROR;
+		} else {
+			log_flag(CGROUP, "INVOCATION_ID env var found. Assuming slurmd has been started by systemd.");
+		}
 	}
 
 	if (running_in_slurmstepd()) {
