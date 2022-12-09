@@ -67,7 +67,7 @@
 #define MAX_ALLOC_WAIT	60	/* seconds */
 #define MIN_ALLOC_WAIT	5	/* seconds */
 #define MAX_RETRIES	10
-#define POLL_SLEEP	0.1	/* retry interval in seconds  */
+#define POLL_SLEEP	0.5	/* retry interval in seconds  */
 
 pthread_mutex_t msg_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t msg_cond = PTHREAD_COND_INITIALIZER;
@@ -232,30 +232,32 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 {
 	double cur_delay = 0;
 	double cur_sleep = 0;
-	int is_ready = 0, i, rc;
+	int is_ready = 0, i = 0, rc;
 	bool job_killed = false;
-	int max_delay;
-
-	if (!slurm_conf.suspend_timeout || !slurm_conf.resume_timeout)
-		return 1;	/* Power save mode disabled */
-	max_delay = slurm_conf.suspend_timeout + slurm_conf.resume_timeout;
-	max_delay *= 5;		/* Allow for ResumeRate support */
 
 	pending_job_id = alloc->job_id;
 
-	for (i = 0; cur_delay < max_delay; i++) {
+	while (true) {
 		if (i) {
-			cur_sleep = POLL_SLEEP * i;
-			if (i == 1) {
-				verbose("Waiting for nodes to boot (delay looping %d times @ %f secs x index)",
-					max_delay, POLL_SLEEP);
-			} else {
+			/*
+			 * First sleep should be very quick to improve
+			 * responsiveness.
+			 *
+			 * Otherwise, increment by POLL_SLEEP for every loop.
+			 */
+			if (cur_delay == 0)
+				cur_sleep = 0.1;
+			else if (cur_sleep < 300)
+				cur_sleep = POLL_SLEEP * i;
+			if (i == 1)
+				verbose("Waiting for resource configuration");
+			else
 				debug("Waited %f sec and still waiting: next sleep for %f sec",
 				      cur_delay, cur_sleep);
-			}
 			usleep(USEC_IN_SEC * cur_sleep);
 			cur_delay += cur_sleep;
 		}
+		i += 1;
 
 		rc = slurm_job_node_ready(alloc->job_id);
 		if (rc == READY_JOB_FATAL)
