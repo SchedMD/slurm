@@ -81,7 +81,7 @@ extern pid_t getpgid(pid_t pid);
 #endif
 
 #define MAX_RETRIES	10
-#define POLL_SLEEP	3	/* retry interval in seconds  */
+#define POLL_SLEEP	0.5	/* retry interval in seconds  */
 
 char *argvzero = NULL;
 pid_t command_pid = -1;
@@ -1078,39 +1078,37 @@ static void _set_rlimits(char **env)
 /* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 {
-	int is_ready = 0, i, rc;
-	int cur_delay = 0;
-	int max_delay;
+	double cur_delay = 0;
+	double cur_sleep = 0;
+	int is_ready = 0, i = 0, rc;
 	bool job_killed = false;
-
-	if (slurm_conf.suspend_timeout || slurm_conf.resume_timeout) {
-		max_delay = slurm_conf.suspend_timeout +
-			    slurm_conf.resume_timeout;
-		max_delay *= 5;		/* Allow for ResumeRate support */
-	} else {
-		max_delay = 300;	/* Wait to 5 min for PrologSlurmctld */
-	}
 
 	if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD"))
 		saopt.wait_all_nodes = 1;	/* Wait for boot & addresses */
 	if (saopt.wait_all_nodes == NO_VAL16)
 		saopt.wait_all_nodes = 0;
 
-	for (i = 0; (cur_delay < max_delay); i++) {
-
-		if (i == 1) {
+	while (true) {
+		if (i) {
 			/*
-			 * Only sleep a short time on the first miss.
+			 * First sleep should be very quick to improve
+			 * responsiveness.
+			 *
+			 * Otherwise, increment by POLL_SLEEP for every loop.
 			 */
-			usleep(100000); /* Not adding sub-sec to cur_delay */
-		} else if (i) {
+			if (cur_delay == 0)
+				cur_sleep = 0.1;
+			else if (cur_sleep < 300)
+				cur_sleep = POLL_SLEEP * i;
 			if (i == 2)
 				info("Waiting for resource configuration");
-			else
-				debug("still waiting");
-			sleep(POLL_SLEEP);
-			cur_delay += POLL_SLEEP;
+			else if (i > 2)
+				debug("Waited %f sec and still waiting: next sleep for %f sec",
+				      cur_delay, cur_sleep);
+			usleep(USEC_IN_SEC * cur_sleep);
+			cur_delay += cur_sleep;
 		}
+		i += 1;
 
 		rc = slurm_job_node_ready(alloc->job_id);
 		if (rc == READY_JOB_FATAL)
