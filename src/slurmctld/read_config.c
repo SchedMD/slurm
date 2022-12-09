@@ -2148,11 +2148,6 @@ extern void build_feature_list_ne(void)
 			while (token) {
 				_add_config_feature_inx(avail_feature_list,
 							token, node_ptr->index);
-				if (!node_ptr->features_act) {
-					_add_config_feature_inx(
-							active_feature_list,
-							token, node_ptr->index);
-				}
 				token = strtok_r(NULL, ",", &last);
 			}
 			xfree(tmp_str);
