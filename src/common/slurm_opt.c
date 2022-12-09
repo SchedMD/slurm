@@ -4860,6 +4860,7 @@ static slurm_cli_opt_t slurm_opt_usage = {
 static int arg_set_verbose(slurm_opt_t *opt, const char *arg)
 {
 	static bool set_by_env = false;
+	static bool set_by_cli = false;
 	/*
 	 * Note that verbose is handled a bit differently. As a cli argument,
 	 * it has no_argument set so repeated 'v' characters can be used.
@@ -4873,10 +4874,13 @@ static int arg_set_verbose(slurm_opt_t *opt, const char *arg)
 			opt->verbose = 0;
 			set_by_env = false;
 		}
+		set_by_cli = true;
 		opt->verbose++;
 	} else {
-		set_by_env = true;
-		opt->verbose = parse_int("--verbose", arg, false);
+		if (!set_by_cli) {
+			set_by_env = true;
+			opt->verbose = parse_int("--verbose", arg, false);
+		}
 	}
 
 	return SLURM_SUCCESS;
