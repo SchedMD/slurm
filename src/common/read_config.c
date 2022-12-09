@@ -327,6 +327,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MailDomain", S_P_STRING},
 	{"MailProg", S_P_STRING},
 	{"MaxArraySize", S_P_UINT32},
+	{"MaxBatchRequeue", S_P_UINT32},
 	{"MaxDBDMsgs", S_P_UINT32},
 	{"MaxJobCount", S_P_UINT32},
 	{"MaxNodeCount", S_P_UINT32},
@@ -3167,6 +3168,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->mail_domain);
 	xfree (ctl_conf_ptr->mail_prog);
 	ctl_conf_ptr->max_array_sz		= NO_VAL;
+	ctl_conf_ptr->max_batch_requeue = NO_VAL;
 	ctl_conf_ptr->max_dbd_msgs		= 0;
 	ctl_conf_ptr->max_job_cnt		= NO_VAL;
 	ctl_conf_ptr->max_job_id		= NO_VAL;
@@ -4479,6 +4481,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		error("MaxArraySize value (%u) is greater than 4000001",
 		      conf->max_array_sz);
 	}
+
+	if (!s_p_get_uint32(&conf->max_batch_requeue, "MaxBatchRequeue",
+			    hashtbl))
+		conf->max_batch_requeue = DEFAULT_MAX_BATCH_REQUEUE;
 
 	if (!s_p_get_uint32(&conf->max_dbd_msgs, "MaxDBDMsgs", hashtbl))
 		conf->max_dbd_msgs = 0;

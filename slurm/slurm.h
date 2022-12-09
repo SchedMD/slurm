@@ -2898,6 +2898,7 @@ typedef struct {
 	char *mail_domain;	/* default domain to append to usernames */
 	char *mail_prog;	/* pathname of mail program */
 	uint32_t max_array_sz;	/* Maximum job array size */
+	uint32_t max_batch_requeue; /* maximum number of requeues */
 	uint32_t max_dbd_msgs;	/* maximum number of messages queued while DBD
 				 * is not connected */
 	uint32_t max_job_cnt;	/* maximum number of active jobs */

@@ -224,6 +224,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* mail_domain */
 	/* mail_prog */
 	/* max_array_sz */
+	/* max_batch_requeue */
 	/* max_dbd_msgs */
 	/* max_job_cnt */
 	/* max_job_id */
@@ -453,6 +454,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* mail_domain */
 	/* mail_prog */
 	/* max_array_sz */
+	/* max_batch_requeue */
 	/* max_dbd_msgs */
 	/* max_job_cnt */
 	/* max_job_id */
