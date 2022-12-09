@@ -98,6 +98,8 @@ HIGHLIGHTS
  -- Add ability to update SuspendExc* parameters with scontrol.
  -- Add ability to restore SuspendExc* parameters on restart with slurmctld -R
     option.
+ -- Add ability to clear a GRES specification by setting it to "0" via
+    'scontrol update job'.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

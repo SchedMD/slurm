@@ -289,6 +289,15 @@ documents those changes that are of interest to users and administrators.
     option.
  -- Fix leaving allocated gres on a non-cloud node after being allocated
     from a powered down state after a slurmctld restart.
+ -- 'scontrol update job' can now set a GRES specification to "0" to effectively
+    clear a GRES speficiation from a job.
+ -- Jobs with old GRES that are no longer configured in any configuration files
+    can now be succesfully updated to use currently configured GRES.
+ -- Add tres_per_node to resource_allocation_response_msg to fix srun jobs
+    running with outdated GRES. This is necessary for srun jobs whose GRES are
+    updated while they are pending. By having tres_per_node in the
+    resourece_allocation_response_msg, slurmctld can send back the correct and
+    updated GRES, whereas without it, the srun job would use the old GRES.
 
 * Changes in Slurm 22.05.9
 ==========================
