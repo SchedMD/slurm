@@ -431,17 +431,6 @@ static void _incr_script_cnt(void)
 	slurm_mutex_unlock(&script_count_mutex);
 }
 
-static int _tot_wait (struct timeval *start_time)
-{
-	struct timeval end_time;
-	int msec_delay;
-
-	gettimeofday(&end_time, NULL);
-	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
-	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
-	return msec_delay;
-}
-
 /*
  * Run a script with a given timeout (in seconds).
  * Return the status or SLURM_ERROR if fork() fails.
@@ -612,12 +601,10 @@ static int _run_bb_script(run_script_msg_t *script_msg,
 			  bool *track_script_signalled)
 {
 	int pfd[2] = {-1, -1};
-	bool got_resp = false;
 	int status = 0;
 	uint32_t job_id = script_msg->job_id, timeout = script_msg->timeout;
 	uint32_t argc = script_msg->argc;
 	char **argv = script_msg->argv;
-	char *resp = NULL;
 	char *script_func = script_msg->script_name;
 	pid_t cpid;
 	job_info_msg_t *job_info = NULL;
@@ -670,84 +657,17 @@ static int _run_bb_script(run_script_msg_t *script_msg,
 		_run_bb_script_child(pfd[1], script_func, job_id, argc, argv,
 				     job_info);
 	} else { /* parent */
-		int new_wait, max_wait;
-		int resp_offset = 0, resp_size = 0;
-		struct pollfd fds;
-		struct timeval tstart;
-
-		max_wait = timeout * 1000; /* convert to milliseconds */
-		resp_size = 1024;
-		resp = xmalloc(resp_size);
 		close(pfd[1]); /* Close the write fd, we're only reading */
-		gettimeofday(&tstart, NULL);
 		track_script_rec_add(job_id, cpid, pthread_self());
-
-		while (1) {
-			int i;
-			/*
-			 * Pass zero as the status to just see if this script
-			 * exists in track_script - if not, then we need to bail
-			 * since this script was killed.
-			 */
-			if (track_script_killed(pthread_self(), 0, false))
-				break;
-
-			fds.fd = pfd[0];
-			fds.events = POLLIN | POLLHUP | POLLRDHUP;
-			fds.revents = 0;
-			if (!max_wait) {
-				new_wait = MAX_POLL_WAIT;
-			} else {
-				new_wait = max_wait - _tot_wait(&tstart);
-				if (new_wait <= 0) {
-					*resp_msg =
-						xstrdup_printf("Timeout @ %d msec",
-							       max_wait);
-					error("%s: Error running %s for JobId=%u: %s",
-					      __func__, script_func, job_id,
-					      *resp_msg);
-					got_resp = false;
-					break;
-				}
-				new_wait = MIN(new_wait, MAX_POLL_WAIT);
-			}
-			i = poll(&fds, 1, new_wait);
-			if (i == 0) {
-				continue;
-			} else if (i < 0) {
-				*resp_msg = xstrdup_printf("poll():%m");
-				error("%s: Error running %s for JobId=%u: %s",
-				      __func__, script_func, job_id, *resp_msg);
-				got_resp = false;
-				break;
-			}
-			if ((fds.revents & POLLIN) == 0)
-				break;
-			i = read(pfd[0], resp + resp_offset,
-				 resp_size - resp_offset);
-			if (i == 0) {
-				break;
-			} else if (i < 0) {
-				if (errno == EAGAIN)
-					continue;
-				*resp_msg = xstrdup_printf("read(): %m");
-				error("%s: Error running %s for JobId=%u: %s",
-				      __func__, script_func, job_id, *resp_msg);
-				got_resp = false;
-				break;
-			} else {
-				got_resp = true;
-				resp_offset += i;
-				if (resp_offset + 1024 >= resp_size) {
-					resp_size *= 2;
-					resp = xrealloc(resp, resp_size);
-				}
-			}
-		}
-		killpg(cpid, SIGTERM);
-		usleep(10000);
-		killpg(cpid, SIGKILL);
-		waitpid(cpid, &status, 0);
+		*resp_msg = run_command_poll_child(cpid,
+						   timeout * 1000,
+						   false,
+						   pfd[0],
+						   script_msg->script_path,
+						   script_msg->script_name,
+						   pthread_self(),
+						   &status,
+						   NULL);
 		close(pfd[0]);
 
 		/* If we were killed by track_script, let the caller know. */
@@ -757,10 +677,6 @@ static int _run_bb_script(run_script_msg_t *script_msg,
 		track_script_remove(pthread_self());
 	}
 
-	if (got_resp)
-		*resp_msg = resp;
-	else
-		xfree(resp);
 	slurm_free_job_info_msg(job_info);
 
 	return status;
@@ -884,8 +800,7 @@ static int _notify_script_done(char *key, script_complete_t *script_complete)
 		      script_complete->script_name, key);
 		rc = SLURM_ERROR;
 	} else {
-		script_resp->resp_msg = script_complete->resp_msg;
-		script_complete->resp_msg = NULL;
+		script_resp->resp_msg = xstrdup(script_complete->resp_msg);
 		script_resp->rc = script_complete->status;
 		script_resp->track_script_signalled =
 			script_complete->signalled;
