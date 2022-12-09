@@ -4363,14 +4363,10 @@ static void _set_reboot_features_active(bitstr_t *node_bitmap,
 	node_record_t *node_ptr;
 
 	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
-		char *tmp_feature, *orig_features_act;
+		char *tmp_feature;
 
-		/* Point to node features, don't copy */
-		orig_features_act =
-			node_ptr->features_act ?
-			node_ptr->features_act : node_ptr->features;
 		tmp_feature = node_features_g_node_xlate(reboot_features,
-							 orig_features_act,
+							 node_ptr->features_act,
 							 node_ptr->features, i);
 		xfree(node_ptr->features_act);
 		node_ptr->features_act = tmp_feature;
