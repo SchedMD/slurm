@@ -230,11 +230,11 @@ static bool _retry(void)
 /* returns 1 if job and nodes are ready for job to begin, 0 otherwise */
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 {
-	int is_ready = 0, i, rc;
 	double cur_delay = 0;
 	double cur_sleep = 0;
-	int max_delay;
+	int is_ready = 0, i, rc;
 	bool job_killed = false;
+	int max_delay;
 
 	if (!slurm_conf.suspend_timeout || !slurm_conf.resume_timeout)
 		return 1;	/* Power save mode disabled */
