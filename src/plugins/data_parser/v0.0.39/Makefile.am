@@ -10,7 +10,12 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common \
 pkglib_LTLIBRARIES = data_parser_v0_0_39.la
 
 data_parser_v0_0_39_la_SOURCES = \
-	api.h api.c
+	api.h api.c \
+	slurmdb_helpers.h slurmdb_helpers.c \
+	events.h events.c \
+	alloc.h alloc.c \
+	parsing.h parsing.c \
+	parsers.h parsers.c
 data_parser_v0_0_39_la_DEPENDENCIES =
 data_parser_v0_0_39_la_LDFLAGS = $(PLUGIN_FLAGS)
 data_parser_v0_0_39_la_LIBADD =

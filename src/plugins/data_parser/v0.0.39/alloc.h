@@ -34,53 +34,22 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef DATA_PARSER_API
-#define DATA_PARSER_API
+#ifndef DATA_PARSER_ALLOC
+#define DATA_PARSER_ALLOC
 
-#include "src/interfaces/data_parser.h"
+#include "api.h"
+#include "parsers.h"
 
-/*
- * These macros are defined by the Makefile.am:
- * DATA_VERSION
- * PLUGIN_ID
- */
-
-#define MAGIC_ARGS 0x2ea1bebb
-
-typedef struct {
-	int magic; /* MAGIC_ARGS */
-	data_parser_on_error_t on_parse_error;
-	data_parser_on_error_t on_dump_error;
-	data_parser_on_error_t on_query_error;
-	void *error_arg;
-	data_parser_on_warn_t on_parse_warn;
-	data_parser_on_warn_t on_dump_warn;
-	data_parser_on_warn_t on_query_warn;
-	void *warn_arg;
-	void *db_conn;
-	bool close_db_conn;
-	List tres_list;
-	List qos_list;
-	List assoc_list;
-} args_t;
-
-extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
-				 data_parser_on_error_t on_dump_error,
-				 data_parser_on_error_t on_query_error,
-				 void *error_arg,
-				 data_parser_on_warn_t on_parse_warn,
-				 data_parser_on_warn_t on_dump_warn,
-				 data_parser_on_warn_t on_query_warn,
-				 void *warn_arg);
-extern void data_parser_p_free(args_t *args);
-
-extern int data_parser_p_assign(args_t *args, data_parser_attr_type_t type,
-				void *obj);
-
-extern int data_parser_p_dump(args_t *args, data_parser_type_t type, void *src,
-			      ssize_t src_bytes, data_t *dst);
-extern int data_parser_p_parse(args_t *args, data_parser_type_t type, void *dst,
-			       ssize_t dst_bytes, data_t *src,
-			       data_t *parent_path);
+/* alloc generic zeroed obj the size of the list_type's size */
+extern void *create_parser_list_obj(const parser_t *const parser,
+				    ssize_t *size);
+extern void *create_assoc_rec_obj(const parser_t *const parser, ssize_t *size);
+extern void *create_job_rec_obj(const parser_t *const parser, ssize_t *size);
+extern void *create_step_rec_obj(const parser_t *const parser, ssize_t *size);
+extern void *create_cluster_rec_obj(const parser_t *const parser,
+				    ssize_t *size);
+extern void *create_qos_rec_obj(const parser_t *const parser, ssize_t *size);
+extern void *create_user_rec_obj(const parser_t *const parser, ssize_t *size);
+extern void *create_wckey_rec_obj(const parser_t *const parser, ssize_t *size);
 
 #endif

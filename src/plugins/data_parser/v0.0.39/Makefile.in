@@ -180,7 +180,12 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-am_data_parser_v0_0_39_la_OBJECTS = data_parser_v0_0_39_la-api.lo
+am_data_parser_v0_0_39_la_OBJECTS = data_parser_v0_0_39_la-api.lo \
+	data_parser_v0_0_39_la-slurmdb_helpers.lo \
+	data_parser_v0_0_39_la-events.lo \
+	data_parser_v0_0_39_la-alloc.lo \
+	data_parser_v0_0_39_la-parsing.lo \
+	data_parser_v0_0_39_la-parsers.lo
 data_parser_v0_0_39_la_OBJECTS = $(am_data_parser_v0_0_39_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -205,7 +210,12 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/data_parser_v0_0_39_la-api.Plo
+am__depfiles_remade = ./$(DEPDIR)/data_parser_v0_0_39_la-alloc.Plo \
+	./$(DEPDIR)/data_parser_v0_0_39_la-api.Plo \
+	./$(DEPDIR)/data_parser_v0_0_39_la-events.Plo \
+	./$(DEPDIR)/data_parser_v0_0_39_la-parsers.Plo \
+	./$(DEPDIR)/data_parser_v0_0_39_la-parsing.Plo \
+	./$(DEPDIR)/data_parser_v0_0_39_la-slurmdb_helpers.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -519,7 +529,12 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common \
 
 pkglib_LTLIBRARIES = data_parser_v0_0_39.la
 data_parser_v0_0_39_la_SOURCES = \
-	api.h api.c
+	api.h api.c \
+	slurmdb_helpers.h slurmdb_helpers.c \
+	events.h events.c \
+	alloc.h alloc.c \
+	parsing.h parsing.c \
+	parsers.h parsers.c
 
 data_parser_v0_0_39_la_DEPENDENCIES = 
 data_parser_v0_0_39_la_LDFLAGS = $(PLUGIN_FLAGS)
@@ -603,7 +618,12 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_39_la-alloc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_39_la-api.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_39_la-events.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_39_la-parsers.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_39_la-parsing.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_39_la-slurmdb_helpers.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -638,6 +658,41 @@ data_parser_v0_0_39_la-api.lo: api.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='api.c' object='data_parser_v0_0_39_la-api.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_39_la-api.lo `test -f 'api.c' || echo '$(srcdir)/'`api.c
+
+data_parser_v0_0_39_la-slurmdb_helpers.lo: slurmdb_helpers.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_39_la-slurmdb_helpers.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_39_la-slurmdb_helpers.Tpo -c -o data_parser_v0_0_39_la-slurmdb_helpers.lo `test -f 'slurmdb_helpers.c' || echo '$(srcdir)/'`slurmdb_helpers.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_parser_v0_0_39_la-slurmdb_helpers.Tpo $(DEPDIR)/data_parser_v0_0_39_la-slurmdb_helpers.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurmdb_helpers.c' object='data_parser_v0_0_39_la-slurmdb_helpers.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_39_la-slurmdb_helpers.lo `test -f 'slurmdb_helpers.c' || echo '$(srcdir)/'`slurmdb_helpers.c
+
+data_parser_v0_0_39_la-events.lo: events.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_39_la-events.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_39_la-events.Tpo -c -o data_parser_v0_0_39_la-events.lo `test -f 'events.c' || echo '$(srcdir)/'`events.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_parser_v0_0_39_la-events.Tpo $(DEPDIR)/data_parser_v0_0_39_la-events.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='events.c' object='data_parser_v0_0_39_la-events.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_39_la-events.lo `test -f 'events.c' || echo '$(srcdir)/'`events.c
+
+data_parser_v0_0_39_la-alloc.lo: alloc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_39_la-alloc.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_39_la-alloc.Tpo -c -o data_parser_v0_0_39_la-alloc.lo `test -f 'alloc.c' || echo '$(srcdir)/'`alloc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_parser_v0_0_39_la-alloc.Tpo $(DEPDIR)/data_parser_v0_0_39_la-alloc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='alloc.c' object='data_parser_v0_0_39_la-alloc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_39_la-alloc.lo `test -f 'alloc.c' || echo '$(srcdir)/'`alloc.c
+
+data_parser_v0_0_39_la-parsing.lo: parsing.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_39_la-parsing.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_39_la-parsing.Tpo -c -o data_parser_v0_0_39_la-parsing.lo `test -f 'parsing.c' || echo '$(srcdir)/'`parsing.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_parser_v0_0_39_la-parsing.Tpo $(DEPDIR)/data_parser_v0_0_39_la-parsing.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='parsing.c' object='data_parser_v0_0_39_la-parsing.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_39_la-parsing.lo `test -f 'parsing.c' || echo '$(srcdir)/'`parsing.c
+
+data_parser_v0_0_39_la-parsers.lo: parsers.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_39_la-parsers.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_39_la-parsers.Tpo -c -o data_parser_v0_0_39_la-parsers.lo `test -f 'parsers.c' || echo '$(srcdir)/'`parsers.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_parser_v0_0_39_la-parsers.Tpo $(DEPDIR)/data_parser_v0_0_39_la-parsers.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='parsers.c' object='data_parser_v0_0_39_la-parsers.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_39_la-parsers.lo `test -f 'parsers.c' || echo '$(srcdir)/'`parsers.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -739,7 +794,12 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-api.Plo
+		-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-alloc.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-api.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-events.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-parsers.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-parsing.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-slurmdb_helpers.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -785,7 +845,12 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-api.Plo
+		-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-alloc.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-api.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-events.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-parsers.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-parsing.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-slurmdb_helpers.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  api.h - Slurm data parsing handlers
+ *  parsing.h - Slurm data parsing handlers
  *****************************************************************************
  *  Copyright (C) 2022 SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>
@@ -34,53 +34,30 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef DATA_PARSER_API
-#define DATA_PARSER_API
+#ifndef DATA_PARSER_PARSING
+#define DATA_PARSER_PARSING
 
 #include "src/interfaces/data_parser.h"
+#include "api.h"
+#include "parsers.h"
 
 /*
- * These macros are defined by the Makefile.am:
- * DATA_VERSION
- * PLUGIN_ID
+ * Remove macros to avoid calling them after this point since all calls should
+ * be done against PARSE() or DUMP() instead.
  */
+#undef DATA_DUMP
+#undef DATA_PARSE
 
-#define MAGIC_ARGS 0x2ea1bebb
+extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
+		data_t *dst, args_t *args);
+#define DUMP(type, src, dst, args)                                            \
+	dump(&src, sizeof(src), find_parser_by_type(DATA_PARSER_##type), dst, \
+	     args)
 
-typedef struct {
-	int magic; /* MAGIC_ARGS */
-	data_parser_on_error_t on_parse_error;
-	data_parser_on_error_t on_dump_error;
-	data_parser_on_error_t on_query_error;
-	void *error_arg;
-	data_parser_on_warn_t on_parse_warn;
-	data_parser_on_warn_t on_dump_warn;
-	data_parser_on_warn_t on_query_warn;
-	void *warn_arg;
-	void *db_conn;
-	bool close_db_conn;
-	List tres_list;
-	List qos_list;
-	List assoc_list;
-} args_t;
-
-extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
-				 data_parser_on_error_t on_dump_error,
-				 data_parser_on_error_t on_query_error,
-				 void *error_arg,
-				 data_parser_on_warn_t on_parse_warn,
-				 data_parser_on_warn_t on_dump_warn,
-				 data_parser_on_warn_t on_query_warn,
-				 void *warn_arg);
-extern void data_parser_p_free(args_t *args);
-
-extern int data_parser_p_assign(args_t *args, data_parser_attr_type_t type,
-				void *obj);
-
-extern int data_parser_p_dump(args_t *args, data_parser_type_t type, void *src,
-			      ssize_t src_bytes, data_t *dst);
-extern int data_parser_p_parse(args_t *args, data_parser_type_t type, void *dst,
-			       ssize_t dst_bytes, data_t *src,
-			       data_t *parent_path);
+extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
+		 data_t *src, args_t *args, data_t *parent_path);
+#define PARSE(type, dst, src, parent_path, args)                               \
+	parse(&dst, sizeof(dst), find_parser_by_type(DATA_PARSER_##type), src, \
+	      args, parent_path)
 
 #endif

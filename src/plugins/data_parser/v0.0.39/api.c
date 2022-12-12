@@ -42,6 +42,8 @@
 #include "src/common/xstring.h"
 
 #include "api.h"
+#include "parsers.h"
+#include "parsing.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -72,3 +74,121 @@ const char plugin_name[] = "Slurm Data Parser " XSTRINGIFY(DATA_VERSION);
 const char plugin_type[] = "data_parser/" XSTRINGIFY(DATA_VERSION);
 const uint32_t plugin_id = PLUGIN_ID;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+extern int data_parser_p_dump(args_t *args, data_parser_type_t type, void *src,
+			      ssize_t src_bytes, data_t *dst)
+{
+	const parser_t *const parser = find_parser_by_type(type);
+
+	xassert(type > DATA_PARSER_TYPE_INVALID);
+	xassert(type < DATA_PARSER_TYPE_MAX);
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(src);
+	xassert(src_bytes > 0);
+	xassert(dst && (data_get_type(dst) == DATA_TYPE_NULL));
+
+	if (!parser)
+		fatal("%s: invalid data parser type:0x%x", __func__, type);
+
+	return dump(src, src_bytes, parser, dst, args);
+}
+
+extern int data_parser_p_parse(args_t *args, data_parser_type_t type, void *dst,
+			       ssize_t dst_bytes, data_t *src,
+			       data_t *parent_path)
+{
+	const parser_t *const parser = find_parser_by_type(type);
+
+	xassert(type > DATA_PARSER_TYPE_INVALID);
+	xassert(type < DATA_PARSER_TYPE_MAX);
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(dst);
+	xassert(src && (data_get_type(src) != DATA_TYPE_NONE));
+	xassert(dst_bytes > 0);
+
+	if (!parser)
+		fatal("%s: invalid data parser type:0x%x", __func__, type);
+
+	return parse(dst, dst_bytes, parser, src, args, parent_path);
+}
+
+extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
+				 data_parser_on_error_t on_dump_error,
+				 data_parser_on_error_t on_query_error,
+				 void *error_arg,
+				 data_parser_on_warn_t on_parse_warn,
+				 data_parser_on_warn_t on_dump_warn,
+				 data_parser_on_warn_t on_query_warn,
+				 void *warn_arg)
+{
+	args_t *args = xmalloc(sizeof(*args));
+	args->magic = MAGIC_ARGS;
+	args->on_parse_error = on_parse_error;
+	args->on_dump_error = on_dump_error;
+	args->on_query_error = on_query_error;
+	args->error_arg = error_arg;
+	args->on_parse_warn = on_parse_warn;
+	args->on_dump_warn = on_dump_warn;
+	args->on_query_warn = on_query_warn;
+	args->warn_arg = warn_arg;
+
+	log_flag(DATA, "init parser 0x%" PRIxPTR, (uintptr_t) args);
+
+	parsers_init();
+
+	return args;
+}
+
+extern void data_parser_p_free(args_t *args)
+{
+	xassert(args->magic == MAGIC_ARGS);
+	args->magic = ~MAGIC_ARGS;
+
+	log_flag(DATA, "BEGIN: cleanup of parser 0x%" PRIxPTR,
+		 (uintptr_t) args);
+
+	FREE_NULL_LIST(args->tres_list);
+	FREE_NULL_LIST(args->qos_list);
+	FREE_NULL_LIST(args->assoc_list);
+	if (args->close_db_conn)
+		slurmdb_connection_close(&args->db_conn);
+
+	log_flag(DATA, "END: cleanup of parser 0x%" PRIxPTR, (uintptr_t) args);
+
+	xfree(args);
+}
+
+extern int data_parser_p_assign(args_t *args, data_parser_attr_type_t type,
+				void *obj)
+{
+	xassert(args->magic == MAGIC_ARGS);
+
+	switch (type) {
+	case DATA_PARSER_ATTR_TRES_LIST :
+		xassert(!args->tres_list || (args->tres_list == obj) || !obj);
+		FREE_NULL_LIST(args->tres_list);
+		args->tres_list = obj;
+
+		log_flag(DATA, "assigned TRES list 0x%"PRIxPTR" to parser 0x%"PRIxPTR,
+			 (uintptr_t) obj, (uintptr_t) args);
+		return SLURM_SUCCESS;
+	case DATA_PARSER_ATTR_DBCONN_PTR :
+		xassert(!args->db_conn || (args->db_conn == obj));
+		args->db_conn = obj;
+		args->close_db_conn = false;
+
+		log_flag(DATA, "assigned db_conn 0x%"PRIxPTR" to parser 0x%"PRIxPTR,
+			 (uintptr_t) obj, (uintptr_t) args);
+		return SLURM_SUCCESS;
+	case DATA_PARSER_ATTR_QOS_LIST :
+		xassert(!args->qos_list || (args->qos_list == obj) || !obj);
+		FREE_NULL_LIST(args->qos_list);
+		args->qos_list = obj;
+
+		log_flag(DATA, "assigned QOS List at 0x%" PRIxPTR" to parser 0x%"PRIxPTR,
+			 (uintptr_t) obj, (uintptr_t) args);
+		return SLURM_SUCCESS;
+	default :
+		return EINVAL;
+	}
+}

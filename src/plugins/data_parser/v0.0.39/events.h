@@ -34,53 +34,43 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef DATA_PARSER_API
-#define DATA_PARSER_API
+#ifndef DATA_PARSER_EVENTS
+#define DATA_PARSER_EVENTS
 
-#include "src/interfaces/data_parser.h"
+#include "parsers.h"
+
+typedef enum {
+	PARSE_INVALID = 0,
+	PARSING = 0xeaea,
+	DUMPING = 0xaeae,
+	QUERYING = 0xdaab, /* only used for prereqs currently */
+} parse_op_t;
 
 /*
- * These macros are defined by the Makefile.am:
- * DATA_VERSION
- * PLUGIN_ID
+ * helper to call the correct error hook
+ * IN op - operation type
+ * IN type - parsing type
+ * IN args - ptr to args
+ * IN error_code - numeric code of this error
+ * IN source - which slurmdb function triggered error or sent it
+ * IN caller - function calling source()
+ * IN why - long form explanation of error
+ * RET SLURM_SUCCESS to ignore error or error code to fail on
  */
+extern int on_error(parse_op_t op, data_parser_type_t type, args_t *args,
+		    int error_code, const char *source, const char *caller,
+		    const char *why, ...) __attribute__((format(printf, 7, 8)));
 
-#define MAGIC_ARGS 0x2ea1bebb
-
-typedef struct {
-	int magic; /* MAGIC_ARGS */
-	data_parser_on_error_t on_parse_error;
-	data_parser_on_error_t on_dump_error;
-	data_parser_on_error_t on_query_error;
-	void *error_arg;
-	data_parser_on_warn_t on_parse_warn;
-	data_parser_on_warn_t on_dump_warn;
-	data_parser_on_warn_t on_query_warn;
-	void *warn_arg;
-	void *db_conn;
-	bool close_db_conn;
-	List tres_list;
-	List qos_list;
-	List assoc_list;
-} args_t;
-
-extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
-				 data_parser_on_error_t on_dump_error,
-				 data_parser_on_error_t on_query_error,
-				 void *error_arg,
-				 data_parser_on_warn_t on_parse_warn,
-				 data_parser_on_warn_t on_dump_warn,
-				 data_parser_on_warn_t on_query_warn,
-				 void *warn_arg);
-extern void data_parser_p_free(args_t *args);
-
-extern int data_parser_p_assign(args_t *args, data_parser_attr_type_t type,
-				void *obj);
-
-extern int data_parser_p_dump(args_t *args, data_parser_type_t type, void *src,
-			      ssize_t src_bytes, data_t *dst);
-extern int data_parser_p_parse(args_t *args, data_parser_type_t type, void *dst,
-			       ssize_t dst_bytes, data_t *src,
-			       data_t *parent_path);
-
+/*
+ * helper to call the correct warning hook
+ * IN op - operation type
+ * IN type - parsing type
+ * IN args - ptr to args
+ * IN source - which slurmdb function triggered warning or sent it
+ * IN caller - function calling source()
+ * IN why - long form explanation of warning
+ */
+extern void on_warn(parse_op_t op, data_parser_type_t type, args_t *args,
+		    const char *source, const char *caller, const char *why,
+		    ...) __attribute__((format(printf, 6, 7)));
 #endif
