@@ -3394,6 +3394,11 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 					      ENERGY_DATA_SENSOR_CNT,
 					      &sensor_cnt);
 
+		if (!sensor_cnt) {
+			error("Can't get energy data. No power sensors are available. Try later.");
+			return;
+		}
+
 		/* If we polled later than delta seconds then force a
 		   new poll.
 		*/

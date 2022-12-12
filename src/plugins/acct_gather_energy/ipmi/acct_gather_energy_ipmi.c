@@ -986,6 +986,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	time_t *last_poll = (time_t *)data;
 	uint16_t *sensor_cnt = (uint16_t *)data;
 
+	xassert(data);
 	xassert(running_in_slurmd_stepd());
 
 	switch (data_type) {
@@ -1011,7 +1012,9 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 		slurm_mutex_unlock(&ipmi_mutex);
 		break;
 	case ENERGY_DATA_SENSOR_CNT:
+		slurm_mutex_lock(&ipmi_mutex);
 		*sensor_cnt = sensors_len;
+		slurm_mutex_lock(&ipmi_mutex);
 		break;
 	case ENERGY_DATA_STRUCT:
 		slurm_mutex_lock(&ipmi_mutex);
