@@ -194,6 +194,8 @@ documents those changes that are of interest to users and administrators.
  -- Add new DebugFlags option 'JobComp' to replace 'Elasticsearch'.
  -- sacct - Add --array option to expand job arrays and display array tasks on
     separate lines.
+ -- Fix jobs submitted with a deadline never being cleared after the
+    reservation is done.
 
 * Changes in Slurm 22.05.7
 ==========================
