@@ -942,8 +942,11 @@ extern int init(void)
 	}
 
 	/* Setup the root cgroup object. */
-	common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_ROOT], "",
-			     (uid_t) 0, (gid_t) 0);
+	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_ROOT], "",
+				 (uid_t) 0, (gid_t) 0) != SLURM_SUCCESS) {
+		error("unable to create root cgroup");
+		return SLURM_ERROR;
+	}
 
 	/*
 	 * Check available controllers in cgroup.controller, record them in our
