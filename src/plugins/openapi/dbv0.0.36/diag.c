@@ -64,10 +64,14 @@ static int _op_handler_diag(const char *context_id,
 	parser_env_t penv = { 0 };
 	slurmdb_stats_rec_t *stats_rec = NULL;
 	int rc;
+	void *db_conn;
 
 	debug4("%s:[%s] diag handler called", __func__, context_id);
 
-	if ((rc = slurmdb_get_stats(openapi_get_db_conn(auth), &stats_rec)))
+	if (!(db_conn = openapi_get_db_conn(auth)))
+		resp_error(errors, ESLURM_DB_CONNECTION_INVALID, NULL,
+			   "openapi_get_db_conn");
+	else if ((rc = slurmdb_get_stats(db_conn, &stats_rec)))
 		resp_error(errors, rc, NULL, "slurmdb_get_stats");
 	else
 		rc = dump(PARSE_STATS_REC, stats_rec,
