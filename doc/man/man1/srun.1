@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "November 2022" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "December 2022" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -2323,6 +2323,8 @@ Otherwise the default value is specified by the system configuration parameter
 \fIJobFileAppend\fR. This option applies to job and step allocations.
 .IP
 
+See \fBEXAMPLE\fR below.
+
 .TP
 \fB\-o\fR, \fB\-\-output\fR=<\fIfilename_pattern\fR>
 Specify the "\fIfilename pattern\fR" for stdout redirection. By default in
@@ -4319,6 +4321,80 @@ task.
 .nf
 $ srun \-n1 \-c16 \-\-mem\-per\-cpu=1gb server : \-n16 \-\-mem\-per\-cpu=1gb client
 .fi
+
+.PP
+This example highlights the difference in behavior with srun's
+\fB\-\-exclusive\fR and \fB\-\-overlap\fR flags when run from inside a job
+allocation. The \fB\-\-overlap\fR flag allows both steps to start at the same
+time. The \fB\-\-exclusive\fR flag makes the second step wait until the first
+has finished.
+
+.nf
+$ salloc  -n1
+salloc: Granted job allocation 9553
+salloc: Waiting for resource configuration
+salloc: Nodes node01 are ready for job
+
+$ date +%T; srun -n1 --overlap -l sleep 3 &
+$ srun -n1 --overlap -l date +%T &
+14:36:04
+[1] 144341
+[2] 144342
+0: 14:36:04
+[2]+  Done                    srun -n1 --overlap -l date +%T
+[1]+  Done                    srun -n1 --overlap -l sleep 3
+
+$ date +%T; srun -n1 --exclusive -l sleep 3 &
+$ srun -n1 --exclusive -l date +%T &
+14:36:17
+[1] 144429
+[2] 144430
+srun: Job 9553 step creation temporarily disabled, retrying (Requested nodes are busy)
+srun: Step created for job 9553
+0: 14:36:20
+[1]-  Done                    srun -n1 --exclusive -l sleep 3
+[2]+  Done                    srun -n1 --exclusive -l date +%T
+.fi
+
+.PP
+This example demonstrates how jobs that are not evenly split among multiple
+nodes can run into problems of tasks not being able to start when there are
+enough CPUs free to run that task on a single node. This example shows a job
+that was allocated 2 CPUs on one node and 24 CPUs on the other node.
+
+.nf
+$ echo $SLURM_NODELIST; echo $SLURM_JOB_CPUS_PER_NODE
+node[01-02]
+2,24
+.fi
+
+If a task is started that occupies the CPUs on the node with fewer CPUs,
+then a subsequent task that should be able to start on the other node will
+not start because it inherits the requirement for the number of nodes from
+the job allocation. The job step will stay pending until the first job step
+completes or until it is cancelled.
+
+.nf
+$ srun -n4 --exact sleep 1800 &
+[1] 151837
+
+$ srun -n2 --exact hostname
+^Csrun: Cancelled pending job step with signal 2
+srun: error: Unable to create step for job 2677: Job/step already completing or completed
+.fi
+
+If the job step is started, explicitly requesting a single node, then the
+step is able to run.
+
+.nf
+$ srun -n2 -N1 --exact hostname
+node02
+node02
+.fi
+
+This behavior can be changed by adding \fBSelectTypeParameters=CR_Pack_Nodes\fR
+to your slurm.conf. The logic to pack nodes will allow job steps to start on
+a single node without having to explicitly request a single node.
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.
