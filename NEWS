@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid unnecessary call to clusteracct_storage_g_cluster_tres() when pinging
     dynamic nodes. This avoids significant slowdowns for slurmctld when
     ping_nodes() calls all nodes to re-register.
+ -- openapi/dbv0.0.3[6-8] - fix segfault that could arrise from Slurm database
+    connnection failing.
 
 * Changes in Slurm 22.05.7
 ==========================
