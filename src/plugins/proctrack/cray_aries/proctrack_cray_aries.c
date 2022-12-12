@@ -248,7 +248,7 @@ try_again:
 			}
 
 			if ((jid = job_detachpid(pid)) != (jid_t) -1) {
-				error("%s: Pid %d was attached to container %d incorrectly.  Moving to correct (%"PRIu64").",
+				error("%s: Pid %d was attached to container %"PRIu64" incorrectly.  Moving to correct (%"PRIu64").",
 				      __func__, pid, jid, step->cont_id);
 				count++;
 				goto try_again;
