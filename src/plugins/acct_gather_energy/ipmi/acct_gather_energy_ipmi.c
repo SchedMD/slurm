@@ -1014,7 +1014,7 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	case ENERGY_DATA_SENSOR_CNT:
 		slurm_mutex_lock(&ipmi_mutex);
 		*sensor_cnt = sensors_len;
-		slurm_mutex_lock(&ipmi_mutex);
+		slurm_mutex_unlock(&ipmi_mutex);
 		break;
 	case ENERGY_DATA_STRUCT:
 		slurm_mutex_lock(&ipmi_mutex);
