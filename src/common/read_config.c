@@ -5348,11 +5348,18 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (s_p_get_string(&temp_str, "SuspendTime", hashtbl)) {
 		if (!xstrcasecmp(temp_str, "NONE") ||
 		    !xstrcasecmp(temp_str, "INFINITE") ||
-		    !xstrcasecmp(temp_str, "-1"))
+		    !xstrcasecmp(temp_str, "-1")) {
 			conf->suspend_time = INFINITE;
-		else
-			 /* -1 converts to INFINITE */
-			conf->suspend_time = atoi(temp_str);
+		} else {
+			uint64_tmp = slurm_atoul(temp_str);
+			if (uint64_tmp > UINT32_MAX) {
+				error("Bad value \"%s\" for SuspendTime",
+				      temp_str);
+				xfree(temp_str);
+				return SLURM_ERROR;
+			}
+			conf->suspend_time = (uint32_t) uint64_tmp;
+		}
 		xfree(temp_str);
 	} else {
 		conf->suspend_time = INFINITE;
