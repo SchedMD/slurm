@@ -4178,12 +4178,14 @@ $ srun \-n8 \-l \-\-multi\-prog silly.conf
 .fi
 
 .SH "EXAMPLES"
+.TP
+\fBExample 1:\fR
 This simple example demonstrates the execution of the command \fBhostname\fR
 in eight tasks. At least eight processors will be allocated to the job
 (the same as the task count) on however many nodes are required to satisfy
 the request. The output of each task will be proceeded with its task number.
 (The machine "dev" in the example below has a total of two CPUs per node)
-
+.IP
 .nf
 $ srun \-n8 \-l hostname
 0: dev0
@@ -4196,12 +4198,13 @@ $ srun \-n8 \-l hostname
 7: dev3
 .fi
 
-.PP
+.TP
+\fBExample 2:\fR
 The srun \fB\-r\fR option is used within a job script
 to run two job steps on disjoint nodes in the following
 example. The script is run using allocate mode instead
 of as a batch job in this case.
-
+.IP
 .nf
 $ cat test.sh
 #!/bin/sh
@@ -4217,10 +4220,11 @@ dev[7\-10]
 1: dev8
 .fi
 
-.PP
+.TP
+\fBExample 3:\fR
 The following script runs two job steps in parallel
 within an allocated set of nodes.
-
+.IP
 .nf
 $ cat test.sh
 #!/bin/bash
@@ -4240,12 +4244,13 @@ STEPID     PARTITION     USER      TIME NODELIST
 65641.1        batch   grondo      0:01 dev[9\-10]
 .fi
 
-.PP
+.TP
+\fBExample 4:\fR
 This example demonstrates how one executes a simple MPI job.
 We use \fBsrun\fR to build a list of machines (nodes) to be used by
 \fBmpirun\fR in its required format. A sample command line and
 the script to be executed follow.
-
+.IP
 .nf
 $ cat test.sh
 #!/bin/sh
@@ -4264,13 +4269,14 @@ rm $MACHINEFILE
 $ salloc \-N2 \-n4 test.sh
 .fi
 
-.PP
+.TP
+\fBExample 5:\fR
 This simple example demonstrates the execution of different jobs on different
 nodes in the same srun.  You can do this for any number of nodes or any
 number of jobs.  The executables are placed on the nodes sited by the
 SLURM_NODEID env var.  Starting at 0 and going to the number specified on
 the srun command line.
-
+.IP
 .nf
 $ cat test.sh
 case $SLURM_NODEID in
@@ -4287,21 +4293,23 @@ I am running on
 dev1
 .fi
 
-.PP
+.TP
+\fBExample 6:\fR
 This example demonstrates use of multi\-core options to control layout
 of tasks.
 We request that four sockets per node and two cores per socket be
 dedicated to the job.
-
+.IP
 .nf
 $ srun \-N2 \-B 4\-4:2\-2 a.out
 .fi
 
-.PP
+.TP
+\fBExample 7:\fR
 This example shows a script in which Slurm is used to provide resource
 management for a job by executing the various job steps as processors
 become available for their dedicated use.
-
+.IP
 .nf
 $ cat my.script
 #!/bin/bash
@@ -4312,23 +4320,25 @@ srun \-n1 prog4 &
 wait
 .fi
 
-.PP
+.TP
+\fBExample 8:\fR
 This example shows how to launch an application called "server" with one task,
 8 CPUs and 16 GB of memory (2 GB per CPU) plus another application called
 "client" with 16 tasks, 1 CPU per task (the default) and 1 GB of memory per
 task.
-
+.IP
 .nf
 $ srun \-n1 \-c16 \-\-mem\-per\-cpu=1gb server : \-n16 \-\-mem\-per\-cpu=1gb client
 .fi
 
-.PP
+.TP
+\fBExample 9:\fR
 This example highlights the difference in behavior with srun's
 \fB\-\-exclusive\fR and \fB\-\-overlap\fR flags when run from inside a job
 allocation. The \fB\-\-overlap\fR flag allows both steps to start at the same
 time. The \fB\-\-exclusive\fR flag makes the second step wait until the first
 has finished.
-
+.IP
 .nf
 $ salloc  -n1
 salloc: Granted job allocation 9553
@@ -4356,12 +4366,13 @@ srun: Step created for job 9553
 [2]+  Done                    srun -n1 --exclusive -l date +%T
 .fi
 
-.PP
+.TP
+\fBExample 10:\fR
 This example demonstrates how jobs that are not evenly split among multiple
 nodes can run into problems of tasks not being able to start when there are
 enough CPUs free to run that task on a single node. This example shows a job
 that was allocated 2 CPUs on one node and 24 CPUs on the other node.
-
+.IP
 .nf
 $ echo $SLURM_NODELIST; echo $SLURM_JOB_CPUS_PER_NODE
 node[01-02]
