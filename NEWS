@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix possible issue when enabling controllers with long names in cgroup/v2.
  -- Fix potential segfault in slurmd when using acct_gather_energy/ipmi.
  -- Fix controller being able to contact non-addressable step hosts.
+ -- Allow setting SuspendTime to -1 when used on a partition.
 
 * Changes in Slurm 22.05.6
 ==========================
