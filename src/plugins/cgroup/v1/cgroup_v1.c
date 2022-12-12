@@ -166,6 +166,7 @@ static int _cpuset_create(stepd_step_rec_t *step)
 		/* initialize the cpusets as it was non-existent */
 		if (xcgroup_cpuset_init(&int_cg[CG_CPUS][CG_LEVEL_SLURM]) !=
 		    SLURM_SUCCESS) {
+			xfree(value);
 			return SLURM_ERROR;
 		}
 	}
