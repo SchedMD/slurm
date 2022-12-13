@@ -1502,7 +1502,6 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 	for (i = 0; i < device_count; ++i)
 		xfree(device_lut[i]);
 	xfree(device_lut);
-	_nvml_shutdown();
 
 	info("%u GPU system device(s) detected", device_count);
 	return gres_list_system;
@@ -1521,6 +1520,8 @@ extern int init(void)
 
 extern int fini(void)
 {
+	_nvml_shutdown();
+
 	debug("%s: unloading %s", __func__, plugin_name);
 
 	return SLURM_SUCCESS;
