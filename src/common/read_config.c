@@ -1324,7 +1324,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"SelectTypeParameters", S_P_STRING},
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
 		{"State", S_P_STRING}, /* UP, DOWN, INACTIVE or DRAIN */
-		{"SuspendTime", S_P_UINT32},
+		{"SuspendTime", S_P_STRING},
 		{"SuspendTimeout", S_P_UINT16},
 		{"TRESBillingWeights", S_P_STRING},
 		{NULL}
@@ -1653,8 +1653,22 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			xfree(tmp);
 		}
 
-		if (!s_p_get_uint32(&p->suspend_time, "SuspendTime", tbl))
-			s_p_get_uint32(&p->suspend_time, "SuspendTime", dflt);
+		if (s_p_get_string(&tmp, "SuspendTime", tbl)) {
+			if (!xstrcasecmp(tmp, "INFINITE") ||
+			    !xstrcasecmp(tmp, "-1")) {
+				p->suspend_time = INFINITE;
+			} else {
+				tmp_64 = slurm_atoul(tmp);
+				if (tmp_64 > UINT32_MAX) {
+					error("Bad value \"%s\" for SuspendTime",
+					      tmp);
+					xfree(tmp);
+					return -1;
+				}
+				p->suspend_time = (uint32_t) tmp_64;
+			}
+			xfree(tmp);
+		}
 
 		if (!s_p_get_uint16(&p->suspend_timeout, "SuspendTimeout", tbl))
 			s_p_get_uint16(&p->suspend_timeout, "SuspendTimeout",
