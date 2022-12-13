@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "November 2022" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "December 2022" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -2149,7 +2149,7 @@ allocations.
 Do not automatically terminate a job if one of the nodes it has been
 allocated fails. This option applies to job and step allocations.
 The job will assume all responsibilities for fault\-tolerance.
-Tasks launch using this option will not be considered terminated
+Tasks launched using this option will not be considered terminated
 (e.g. \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR and
 \fB\-W\fR, \fB\-\-wait\fR options will have no effect upon the job step).
 The active job step (MPI job) will likely suffer a fatal error,
