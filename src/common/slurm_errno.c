@@ -856,6 +856,9 @@ slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_DATA_AMBIGUOUS_MODIFY,
 	  "ESLURM_DATA_AMBIGUOUS_MODIFY",
 	  "Request matched more than one object to modify. Modifications must only apply to a single object. Try adding more properties to make update match a unique object."},
+	{ ESLURM_DATA_AMBIGUOUS_QUERY,
+	  "ESLURM_DATA_AMBIGUOUS_QUERY",
+	  "Request matched more than one object to query. Request is limited to query of a single matching object."},
 
 	/* container  errors */
 	{ ESLURM_CONTAINER_NOT_CONFIGURED,
