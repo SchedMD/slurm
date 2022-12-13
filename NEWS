@@ -189,6 +189,8 @@ documents those changes that are of interest to users and administrators.
     slurmd spool directory which caused PMIx to fail to load in containers.
  -- Add new "defer_batch" option to SchedulerParameters to only defer
     scheduling for batch jobs.
+ -- Reject jobs submitted with impossible --time, --deadline, and --begin
+    combinations at submission time
 
 * Changes in Slurm 22.05.7
 ==========================
