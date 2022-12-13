@@ -5251,6 +5251,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	job_record_t *job_ptr;
 	time_t now = time(NULL);
 	bool held_user = false;
+	bool defer_this = false;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
@@ -5292,6 +5293,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		else
 			ignore_prefer_val = false;
 	}
+
+	defer_this = defer_sched;
 
 	if (job_specs->array_bitmap)
 		i = bit_set_count(job_specs->array_bitmap);
@@ -5358,14 +5361,14 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	else
 		too_fragmented = false;
 
-	if (independent && (!too_fragmented) && !defer_sched)
+	if (independent && (!too_fragmented) && !defer_this)
 		top_prio = _top_priority(job_ptr, job_specs->het_job_offset);
 	else
 		top_prio = true;	/* don't bother testing,
 					 * it is not runable anyway */
 
 	if (immediate &&
-	    (too_fragmented || (!top_prio) || (!independent) || defer_sched)) {
+	    (too_fragmented || (!top_prio) || (!independent) || defer_this)) {
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
@@ -5427,7 +5430,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
 		(!top_prio) || (!independent) || !avail_front_end(job_ptr) ||
-		(job_specs->het_job_offset != NO_VAL) || defer_sched;
+		(job_specs->het_job_offset != NO_VAL) || defer_this;
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
 
