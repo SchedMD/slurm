@@ -3932,6 +3932,13 @@ initiation time of individual jobs. Also see \fBdefault_queue_depth\fR above.
 .IP
 
 .TP
+\fBdefer_batch\fR
+Like \fBdefer\fR, but only will defer scheduling for batch jobs. Interactive
+allocations from salloc/srun will still attempt to schedule immediately upon
+submission.
+.IP
+
+.TP
 \fBdelay_boot=#\fR
 Do not reboot nodes in order to satisfied this job's feature specification if
 the job has been eligible to run for less than this time period.

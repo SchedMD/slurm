@@ -77,6 +77,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     allow concurrent hostname resolution at slurmctld startup.
  -- Add new AccountingStoreFlags=job_extra option to store a job's extra field
     in the database.
+ -- Add new "defer_batch" option to SchedulerParameters to only defer
+    scheduling for batch jobs.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

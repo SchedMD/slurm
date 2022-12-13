@@ -5244,7 +5244,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			uint16_t protocol_version)
 {
 	static time_t sched_update = 0;
-	static int defer_sched = 0;
+	static bool defer_batch = false, defer_sched = false;
 	static bool ignore_prefer_val = false;
 	int error_code, i;
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
@@ -5261,10 +5261,11 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	if (sched_update != slurm_conf.last_update) {
 		char *tmp_ptr;
 		sched_update = slurm_conf.last_update;
-		if (xstrcasestr(slurm_conf.sched_params, "defer"))
-			defer_sched = 1;
-		else
-			defer_sched = 0;
+		defer_batch = defer_sched = false;
+		if (xstrcasestr(slurm_conf.sched_params, "defer_batch"))
+			defer_batch = true;
+		else if (xstrcasestr(slurm_conf.sched_params, "defer"))
+			defer_sched = true;
 		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 		                           "delay_boot="))) {
 			char *tmp_comma;
@@ -5293,8 +5294,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		else
 			ignore_prefer_val = false;
 	}
-
-	defer_this = defer_sched;
 
 	if (job_specs->array_bitmap)
 		i = bit_set_count(job_specs->array_bitmap);
@@ -5360,6 +5359,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	 */
 	else
 		too_fragmented = false;
+
+	defer_this = defer_sched || (defer_batch && job_ptr->batch_flag);
 
 	if (independent && (!too_fragmented) && !defer_this)
 		top_prio = _top_priority(job_ptr, job_specs->het_job_offset);
