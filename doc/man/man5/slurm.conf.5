@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "November 2022" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "December 2022" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -6993,6 +6993,8 @@ power save mode by \fBSuspendProgram\fR.
 For nodes that are in multiple partitions with this option set,
 the highest time will take effect. If not set on any partition, the node will
 use the \fBSuspendTime\fR value set for the entire cluster.
+Setting \fBSuspendTime\fR to INFINITE will disable suspending of nodes in this
+partition.
 Setting \fBSuspendTime\fR to anything but INFINITE (or \-1) will enable power
 save mode.
 .IP
