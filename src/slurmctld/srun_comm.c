@@ -349,7 +349,6 @@ static int _srun_step_timeout(void *x, void *arg)
 	addr = xmalloc(sizeof(*addr));
 	msg_arg = xmalloc(sizeof(*msg_arg));
 
-	addr = xmalloc(sizeof(slurm_addr_t));
 	nodeaddr = slurm_conf_get_nodeaddr(step_ptr->host);
 	slurm_set_addr(addr, step_ptr->port, nodeaddr);
 	xfree(nodeaddr);
