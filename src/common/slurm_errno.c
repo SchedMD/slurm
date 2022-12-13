@@ -850,6 +850,9 @@ slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_DATA_EXPECTED_LIST,
 	  "ESLURM_DATA_EXPECTED_LIST",
 	  "Data parser expected a list"},
+	{ ESLURM_DATA_EXPECTED_DICT,
+	  "ESLURM_DATA_EXPECTED_DICT",
+	  "Data parser expected a dictionary or object"},
 
 	/* container  errors */
 	{ ESLURM_CONTAINER_NOT_CONFIGURED,
