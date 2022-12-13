@@ -853,6 +853,9 @@ slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_DATA_EXPECTED_DICT,
 	  "ESLURM_DATA_EXPECTED_DICT",
 	  "Data parser expected a dictionary or object"},
+	{ ESLURM_DATA_AMBIGUOUS_MODIFY,
+	  "ESLURM_DATA_AMBIGUOUS_MODIFY",
+	  "Request matched more than one object to modify. Modifications must only apply to a single object. Try adding more properties to make update match a unique object."},
 
 	/* container  errors */
 	{ ESLURM_CONTAINER_NOT_CONFIGURED,
