@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "October 2022" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "December 2022" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -171,6 +171,8 @@ simultaneously share that GPU.
 
 If using a card with Multi-Instance GPU functionality, use \fBMultipleFiles\fR
 instead. \fBFile\fR and \fBMultipleFiles\fR are mutually exclusive.
+
+NOTE: \fBFile\fR is required for all \fIgpu\fR typed GRES.
 
 NOTE: If you specify the \fBFile\fR parameter for a resource on some node,
 the option must be specified on all nodes and Slurm will track the assignment
