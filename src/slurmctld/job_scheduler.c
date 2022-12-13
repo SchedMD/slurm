@@ -3426,8 +3426,7 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 		     (job_ptr->part_ptr     == NULL)		||
 		     (dep_job_ptr->part_ptr != job_ptr->part_ptr))) {
 			/*
-			 * Expand only jobs in the same QOS and
-			 * and partition
+			 * Expand only jobs in the same QOS and partition
 			 */
 			*rc = ESLURM_DEPENDENCY;
 			break;
