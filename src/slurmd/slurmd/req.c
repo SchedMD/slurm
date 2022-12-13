@@ -1446,11 +1446,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if (_set_node_alias(req)) {
-		errnum = ESLURM_INVALID_NODE_NAME;
-		goto done;
-	}
-
 	slurm_get_ip_str(cli, host, sizeof(host));
 	port = slurm_get_port(cli);
 	if (req->het_job_id && (req->het_job_id != NO_VAL)) {
@@ -1488,6 +1483,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #ifndef HAVE_FRONT_END
 		slurm_mutex_unlock(&prolog_mutex);
 #endif
+		goto done;
+	}
+
+	if (_set_node_alias(req)) {
+		errnum = ESLURM_INVALID_NODE_NAME;
 		goto done;
 	}
 
