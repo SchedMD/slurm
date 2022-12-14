@@ -231,7 +231,6 @@ function __slurm_compreply_param() {
 }
 
 # Value completion function for (comma) delimeted items
-# WARNING: options that contain '=' must be escaped as '\\\='
 #
 # $1: word list for completions
 # $2: reserved words, complete not in list (optional)
