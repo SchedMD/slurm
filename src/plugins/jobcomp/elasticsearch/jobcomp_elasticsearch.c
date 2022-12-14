@@ -136,36 +136,6 @@ static pthread_t job_handler_thread;
 static List jobslist = NULL;
 static bool thread_shutdown = false;
 
-/* Get the user name for the give user_id */
-static void _get_user_name(uint32_t user_id, char *user_name, int buf_size)
-{
-	static uint32_t cache_uid = 0;
-	static char cache_name[32] = "root", *uname;
-
-	if (user_id != cache_uid) {
-		uname = uid_to_string((uid_t) user_id);
-		snprintf(cache_name, sizeof(cache_name), "%s", uname);
-		xfree(uname);
-		cache_uid = user_id;
-	}
-	snprintf(user_name, buf_size, "%s", cache_name);
-}
-
-/* Get the group name for the give group_id */
-static void _get_group_name(uint32_t group_id, char *group_name, int buf_size)
-{
-	static uint32_t cache_gid = 0;
-	static char cache_name[32] = "root", *gname;
-
-	if (group_id != cache_gid) {
-		gname = gid_to_string((gid_t) group_id);
-		snprintf(cache_name, sizeof(cache_name), "%s", gname);
-		xfree(gname);
-		cache_gid = group_id;
-	}
-	snprintf(group_name, buf_size, "%s", cache_name);
-}
-
 /* Read file to data variable */
 static uint32_t _read_file(const char *file, char **data)
 {
@@ -479,8 +449,8 @@ static void _make_time_str(time_t * time, char *string, int size)
 
 extern int jobcomp_p_log_record(job_record_t *job_ptr)
 {
-	char usr_str[32], grp_str[32], start_str[32], end_str[32], time_str[32];
-	char *state_string = NULL;
+	char start_str[32], end_str[32], time_str[32];
+	char *usr_str = NULL, *grp_str = NULL, *state_string = NULL;
 	char *exit_code_str = NULL, *derived_ec_str = NULL;
 	buf_t *script = NULL;
 	enum job_states job_state;
@@ -497,8 +467,8 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		return SLURM_ERROR;
 	}
 
-	_get_user_name(job_ptr->user_id, usr_str, sizeof(usr_str));
-	_get_group_name(job_ptr->group_id, grp_str, sizeof(grp_str));
+	usr_str = uid_to_string_or_null(job_ptr->user_id);
+	grp_str = gid_to_string_or_null(job_ptr->group_id);
 
 	if ((job_ptr->time_limit == NO_VAL) && job_ptr->part_ptr)
 		time_limit = job_ptr->part_ptr->max_time;
@@ -754,6 +724,8 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		list_enqueue(jobslist, jnode);
 	}
 
+	xfree(usr_str);
+	xfree(grp_str);
 	FREE_NULL_DATA(record);
 	return rc;
 }
