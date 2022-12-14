@@ -6013,6 +6013,27 @@ static void _validate_share_options(slurm_opt_t *opt)
 	}
 }
 
+static void _validate_tres_per_task(slurm_opt_t *opt)
+{
+	char *cpu_per_task_ptr = NULL;
+
+	/* See if cpus-per-task was set with tres-per-task */
+	cpu_per_task_ptr = xstrcasestr(opt->tres_per_task, "cpu:");
+
+	if (cpu_per_task_ptr && opt->cpus_set) {
+		fatal("You can not have --tres-per-task=cpu: and -c please use one or the other");
+	} else if (cpu_per_task_ptr) {
+		int tmp_int = atoi(cpu_per_task_ptr + 4);
+		if (tmp_int <= 0) {
+			fatal("Invalid --tres-per-task=cpu:%d",
+			      tmp_int);
+		}
+		opt->cpus_per_task = tmp_int;
+		opt->cpus_set = true;
+	}
+
+}
+
 /* Validate shared options between srun, salloc, and sbatch */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 {
@@ -6021,6 +6042,7 @@ extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 	_validate_threads_per_core_option(opt);
 	_validate_memory_options(opt);
 	_validate_share_options(opt);
+	_validate_tres_per_task(opt);
 }
 
 extern char *slurm_option_get_argv_str(const int argc, char **argv)
