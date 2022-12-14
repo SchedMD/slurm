@@ -260,7 +260,7 @@ static void _print_expanded_array_job(slurmdb_job_rec_t *job)
 	bitstr_t *bitmap;
 
 	bitmap = bit_alloc(slurm_conf.max_array_sz);
-	bit_unfmt_hexmask(bitmap, job->array_task_str);
+	(void) bit_unfmt_hexmask(bitmap, job->array_task_str);
 	xfree(job->array_task_str);
 
 	i_first = bit_ffs(bitmap);
