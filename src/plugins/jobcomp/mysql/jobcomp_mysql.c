@@ -101,10 +101,6 @@ storage_field_t jobcomp_table_fields[] = {
 	{ NULL, NULL}
 };
 
-/* File descriptor used for logging */
-static pthread_mutex_t  jobcomp_lock = PTHREAD_MUTEX_INITIALIZER;
-
-
 static int _mysql_jobcomp_check_tables()
 {
 	if (mysql_db_create_table(jobcomp_mysql_conn, jobcomp_table,
@@ -114,47 +110,6 @@ static int _mysql_jobcomp_check_tables()
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
-}
-
-
-/* get the user name for the give user_id */
-static char *_get_user_name(uint32_t user_id)
-{
-	static uint32_t cache_uid      = 0;
-	static char     cache_name[32] = "root", *uname;
-	char *ret_name = NULL;
-
-	slurm_mutex_lock(&jobcomp_lock);
-	if (user_id != cache_uid) {
-		uname = uid_to_string((uid_t) user_id);
-		snprintf(cache_name, sizeof(cache_name), "%s", uname);
-		xfree(uname);
-		cache_uid = user_id;
-	}
-	ret_name = xstrdup(cache_name);
-	slurm_mutex_unlock(&jobcomp_lock);
-
-	return ret_name;
-}
-
-/* get the group name for the give group_id */
-static char *_get_group_name(uint32_t group_id)
-{
-	static uint32_t cache_gid      = 0;
-	static char     cache_name[32] = "root", *gname;
-	char *ret_name = NULL;
-
-	slurm_mutex_lock(&jobcomp_lock);
-	if (group_id != cache_gid) {
-		gname = gid_to_string((gid_t) group_id);
-		snprintf(cache_name, sizeof(cache_name), "%s", gname);
-		xfree(gname);
-		cache_gid = group_id;
-	}
-	ret_name = xstrdup(cache_name);
-	slurm_mutex_unlock(&jobcomp_lock);
-
-	return ret_name;
 }
 
 /*
@@ -248,8 +203,8 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 			return SLURM_ERROR;
 	}
 
-	usr_str = _get_user_name(job_ptr->user_id);
-	grp_str = _get_group_name(job_ptr->group_id);
+	usr_str = uid_to_string_or_null(job_ptr->user_id);
+	grp_str = gid_to_string_or_null(job_ptr->group_id);
 
 	if ((job_ptr->time_limit == NO_VAL) && job_ptr->part_ptr)
 		time_limit = job_ptr->part_ptr->max_time;
