@@ -145,13 +145,11 @@ static uint32_t _read_file(const char *file, char **data)
 
 	fd = open(file, O_RDONLY);
 	if (fd < 0) {
-		log_flag(ESEARCH, "%s: Could not open state file %s",
-			 plugin_type, file);
+		log_flag(JOBCOMP, "Could not open state file %s", file);
 		return data_size;
 	}
 	if (fstat(fd, &f_stat)) {
-		log_flag(ESEARCH, "%s: Could not stat state file %s",
-			 plugin_type, file);
+		log_flag(JOBCOMP, "Could not stat state file %s", file);
 		close(fd);
 		return data_size;
 	}
@@ -214,8 +212,7 @@ static int _load_pending_jobs(void)
 		list_enqueue(jobslist, jnode);
 	}
 	if (job_cnt > 0) {
-		log_flag(ESEARCH, "%s: Loaded %u jobs from state file",
-			 plugin_type, job_cnt);
+		log_flag(JOBCOMP, "Loaded %u jobs from state file", job_cnt);
 	}
 	FREE_NULL_BUFFER(buffer);
 	xfree(state_file);
@@ -299,8 +296,8 @@ static int _index_job(const char *jobcomp)
 	}
 
 	if ((res = curl_easy_perform(curl_handle)) != CURLE_OK) {
-		log_flag(ESEARCH, "%s: Could not connect to: %s , reason: %s",
-			 plugin_type, log_url, curl_easy_strerror(res));
+		log_flag(JOBCOMP, "Could not connect to: %s , reason: %s",
+			 log_url, curl_easy_strerror(res));
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
@@ -325,17 +322,16 @@ static int _index_job(const char *jobcomp)
 	 * HTTP 201 (Created)	- request succeed and resource created.
 	 */
 	if ((xstrcmp(token, "200") != 0) && (xstrcmp(token, "201") != 0)) {
-		log_flag(ESEARCH, "%s: HTTP status code %s received from %s",
-			 plugin_type, token, log_url);
-		log_flag(ESEARCH, "%s: HTTP response:\n%s",
-			 plugin_type, chunk.message);
+		log_flag(JOBCOMP, "HTTP status code %s received from %s",
+			 token, log_url);
+		log_flag(JOBCOMP, "HTTP response:\n%s", chunk.message);
 		rc = SLURM_ERROR;
 	} else {
 		token = strtok((char *)jobcomp, ",");
 		(void)  strtok(token, ":");
 		token = strtok(NULL, ":");
-		log_flag(ESEARCH, "%s: Job with jobid %s indexed into elasticsearch",
-			 plugin_type, token);
+		log_flag(JOBCOMP, "Job with jobid %s indexed into elasticsearch",
+			 token);
 	}
 
 cleanup:
@@ -718,7 +714,7 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 					     record, MIME_TYPE_JSON,
 					     SER_FLAGS_COMPACT))) {
 		xfree(jnode);
-		log_flag(ESEARCH, "unable to serialize %pJ to JSON: %s",
+		log_flag(JOBCOMP, "unable to serialize %pJ to JSON: %s",
 			 job_ptr, slurm_strerror(rc));
 	} else {
 		list_enqueue(jobslist, jnode);
@@ -766,8 +762,8 @@ extern void *_process_jobs(void *x)
 		}
 		list_iterator_destroy(iter);
 		if ((success_cnt || fail_cnt))
-			log_flag(ESEARCH, "%s: index success:%d fail:%d wait_retry:%d",
-				 plugin_type, success_cnt, fail_cnt,
+			log_flag(JOBCOMP, "index success:%d fail:%d wait_retry:%d",
+				 success_cnt, fail_cnt,
 				 wait_retry_cnt);
 	}
 	return NULL;

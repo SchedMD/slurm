@@ -79,6 +79,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     in the database.
  -- Add new "defer_batch" option to SchedulerParameters to only defer
     scheduling for batch jobs.
+ -- Add new DebugFlags option 'JobComp' to replace 'Elasticsearch'.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

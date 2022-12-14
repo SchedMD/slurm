@@ -2723,7 +2723,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_TIME_CRAY    SLURM_BIT(43) /* Time Cray components */
 #define DEBUG_FLAG_DB_ARCHIVE	SLURM_BIT(44) /* DBD Archiving/Purging */
 #define DEBUG_FLAG_DB_TRES      SLURM_BIT(45) /* Database TRES debug */
-#define DEBUG_FLAG_ESEARCH      SLURM_BIT(46) /* Elasticsearch debug */
+#define DEBUG_FLAG_JOBCOMP      SLURM_BIT(46) /* JobComp debug */
 #define DEBUG_FLAG_NODE_FEATURES SLURM_BIT(47) /* Node Features debug */
 #define DEBUG_FLAG_FEDR         SLURM_BIT(48) /* Federation debug */
 #define DEBUG_FLAG_HETJOB	SLURM_BIT(49) /* Heterogeneous job debug */

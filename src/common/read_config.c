@@ -5789,11 +5789,6 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Dependency");
 	}
-	if (debug_flags & DEBUG_FLAG_ESEARCH) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "Elasticsearch");
-	}
 	if (debug_flags & DEBUG_FLAG_ENERGY) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5833,6 +5828,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 		if (rc)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Interconnect");
+	}
+	if (debug_flags & DEBUG_FLAG_JOBCOMP) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "JobComp");
 	}
 	if (debug_flags & DEBUG_FLAG_JOB_CONT) {
 		if (rc)
@@ -6005,8 +6005,6 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_DB_WCKEY;
 		else if (xstrcasecmp(tok, "Dependency") == 0)
 			(*flags_out) |= DEBUG_FLAG_DEPENDENCY;
-		else if (xstrcasecmp(tok, "Elasticsearch") == 0)
-			(*flags_out) |= DEBUG_FLAG_ESEARCH;
 		else if (xstrcasecmp(tok, "Energy") == 0)
 			(*flags_out) |= DEBUG_FLAG_ENERGY;
 		else if (xstrcasecmp(tok, "ExtSensors") == 0)
@@ -6028,6 +6026,9 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 		else if (!xstrcasecmp(tok, "JobAccountGather") ||
 			 !xstrcasecmp(tok, "JAG"))
 			(*flags_out) |= DEBUG_FLAG_JAG;
+		else if (!xstrcasecmp(tok, "JobComp") ||
+			 !xstrcasecmp(tok, "Elasticsearch"))
+			(*flags_out) |= DEBUG_FLAG_JOBCOMP;
 		else if (xstrcasecmp(tok, "JobContainer") == 0)
 			(*flags_out) |= DEBUG_FLAG_JOB_CONT;
 		else if (xstrcasecmp(tok, "License") == 0)

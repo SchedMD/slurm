@@ -191,6 +191,7 @@ documents those changes that are of interest to users and administrators.
     scheduling for batch jobs.
  -- Reject jobs submitted with impossible --time, --deadline, and --begin
     combinations at submission time
+ -- Add new DebugFlags option 'JobComp' to replace 'Elasticsearch'.
 
 * Changes in Slurm 22.05.7
 ==========================
