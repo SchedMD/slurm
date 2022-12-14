@@ -770,6 +770,9 @@ struct job_record {
 	uint32_t exit_code;		/* exit code for job (status from
 					 * wait call) */
 	char *extra;			/* Arbitrary string */
+	char *failed_node;		/* Name of node that failed which caused
+					 * this job to be killed.
+					 * NULL in all other situations */
 	job_fed_details_t *fed_details;	/* details for federated jobs. */
 	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
 					 * this job */

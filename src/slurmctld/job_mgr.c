@@ -1432,6 +1432,7 @@ static int _dump_job_state(void *object, void *arg)
 	packstr(dump_job_ptr->container, buffer);
 	packstr(dump_job_ptr->container_id, buffer);
 	pack32(dump_job_ptr->delay_boot, buffer);
+	packstr(dump_job_ptr->failed_node, buffer);
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
 	pack32(dump_job_ptr->group_id, buffer);
@@ -1614,7 +1615,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
-	char *nodes_pr = NULL;
+	char *nodes_pr = NULL, *failed_node = NULL;
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	char *resv_name = NULL, *batch_host = NULL;
 	char *gres_used = NULL;
@@ -1673,6 +1674,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&container, &name_len, buffer);
 		safe_unpackstr_xmalloc(&container_id, &name_len, buffer);
 		safe_unpack32(&delay_boot, buffer);
+		safe_unpackstr_xmalloc(&failed_node, &name_len, buffer);
 		safe_unpack32(&job_id, buffer);
 
 		/* validity test as possible */
@@ -4260,6 +4262,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				 * job looks like a new job.
 				 */
 				job_ptr->job_state = JOB_NODE_FAIL;
+				job_ptr->failed_node = xstrdup(node_name);
 				build_cg_bitmap(job_ptr);
 				job_completion_logger(job_ptr, true);
 				deallocate_nodes(job_ptr, false, suspended,
@@ -4288,6 +4291,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				srun_node_fail(job_ptr, node_name);
 				job_ptr->job_state =
 					JOB_NODE_FAIL | JOB_COMPLETING;
+				job_ptr->failed_node = xstrdup(node_name);
 				build_cg_bitmap(job_ptr);
 				job_ptr->state_reason = FAIL_DOWN_NODE;
 				xfree(job_ptr->state_desc);
@@ -9917,6 +9921,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->clusters);
 	xfree(job_ptr->cpus_per_tres);
 	xfree(job_ptr->extra);
+	xfree(job_ptr->failed_node);
 	free_job_fed_details(&job_ptr->fed_details);
 	free_job_resources(&job_ptr->job_resrcs);
 	_clear_job_gres_details(job_ptr);
@@ -10513,6 +10518,7 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		packstr(dump_job_ptr->container, buffer);
 		packstr(dump_job_ptr->container_id, buffer);
 		pack32(dump_job_ptr->delay_boot, buffer);
+		packstr(dump_job_ptr->failed_node, buffer);
 		pack32(dump_job_ptr->job_id, buffer);
 		pack32(dump_job_ptr->user_id, buffer);
 		pack32(dump_job_ptr->group_id, buffer);
@@ -16049,6 +16055,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	free_job_resources(&job_ptr->job_resrcs);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
+	xfree(job_ptr->failed_node);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);

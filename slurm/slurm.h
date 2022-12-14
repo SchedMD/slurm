@@ -1774,6 +1774,7 @@ typedef struct job_info {
 				 * start_range_2, .., -1  */
 	uint32_t exit_code;	/* exit code for job (status from wait call) */
 	char *extra;		/* Arbitrary string */
+	char *failed_node;	/* if set, node that caused job to fail */
 	char *features;		/* comma separated list of required features */
 	char *fed_origin_str;	/* Origin cluster's name */
 	uint64_t fed_siblings_active;  /* bitmap of active fed sibling ids */
