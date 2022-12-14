@@ -211,14 +211,17 @@ function __slurm_compreply_param() {
 	local options="$1"
 	local compreply=()
 	local IFS=$' \t\n'
+	local p=""
 
 	__slurm_log_debug "$(__func__): cur='$cur'"
 	__slurm_log_debug "$(__func__): options='$options'"
 
 	# build array without seen items
 	for param in $options; do
-		__slurm_log_trace "$(__func__): for loop: param='$param' param*='${param%%(\\)=*}'"
-		[[ ${words[*]} =~ ${param%%?(\\)=*}= ]] && continue
+		p="${param%%?(\\)=*}"
+		__slurm_log_trace "$(__func__): for loop: param='$param' p*='$p'"
+		[[ ${words[*]} =~ "${p}=" ]] && continue
+		[[ ${words[*]} =~ [[:space:]]+${p}[[:space:]]+ ]] && continue
 		compreply+=("$param")
 	done
 
