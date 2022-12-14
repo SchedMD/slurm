@@ -420,7 +420,7 @@ int main(int argc, char **argv)
 	if (thread_count > 1024)
 		fatal("Excessive thread count");
 
-	if (data_init(NULL, NULL))
+	if (data_init())
 		fatal("Unable to initialize data static structures");
 
 	if (!(conmgr = init_con_mgr((run_mode.listen ? thread_count : 1),

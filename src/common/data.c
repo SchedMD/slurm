@@ -116,7 +116,7 @@ extern void data_fini(void)
 	slurm_mutex_unlock(&init_mutex);
 }
 
-extern int data_init()
+extern int data_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	int reg_rc; /* regex rc */

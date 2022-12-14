@@ -207,7 +207,7 @@ typedef data_for_each_cmd_t (*DataDictForFConst) (const char *key, const data_t 
  *
  * RET SLURM_SUCCESS or error
  */
-extern int data_init();
+extern int data_init(void);
 /*
  * Cleanup global memory used by data_t helpers
  *
