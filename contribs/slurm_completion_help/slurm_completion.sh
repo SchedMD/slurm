@@ -1269,7 +1269,7 @@ function __slurm_comp_common() {
 	--network) __slurm_compreply "${network_types[*]}" ;;
 	-F | --nodefile) _filedir ;;
 	-w | --nodelist) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
-	--open-mode?(s)) __slurm_compreply_list "${open_modes[*]}" ;;
+	--open-mode?(s)) __slurm_compreply "${open_modes[*]}" ;;
 	-o | --output) _filedir ;;
 	-p | --partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
 	--power) __slurm_compreply_list "${power_flags[*]}" ;;
