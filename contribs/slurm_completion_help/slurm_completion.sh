@@ -1038,7 +1038,7 @@ function __slurm_comp_flags() {
 	__slurm_log_debug "$(__func__): cmd='$cmd'"
 
 	case "${cur}" in
-	-*) __slurm_compreply "$(__slurm_autocompletion "$cmd")" ;;
+	-*) __slurm_compreply_param "$(__slurm_autocompletion "$cmd")" ;;
 	*) return 1 ;;
 	esac
 
