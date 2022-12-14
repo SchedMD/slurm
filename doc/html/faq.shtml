@@ -5,6 +5,7 @@
 <h2>For Management</h2>
 <ul>
 <li><a href="#foss">Why should I use Slurm or other Free Open Source Software (FOSS)?</a></li>
+<li><a href="#acronym">What does "Slurm" stand for?</a></li>
 </ul>
 
 <h2>For Users</h2>
@@ -222,6 +223,15 @@ SchedMD works with various organizations to provide a range of support
 options ranging from remote level-3 support to 24x7 on-site personnel.
 Customers switching from commercial workload mangers to Slurm typically
 report higher scalability, better performance and lower costs.</p>
+
+<p><a id="acronym"><b>What does "Slurm" stand for?</b></a><br>
+Nothing.
+<p>Originally, "SLURM" (completely capitalized) was an acryonym for
+"Simple Linux Utility for Resource Management". In 2012 the preferred
+capitalization was changed to Slurm, and the acroynm was dropped &mdash; the
+developers preferred to think of Slurm as "sophisticated" rather than "Simple"
+by this point. And, as Slurm continued to expand it's scheduling capabilities,
+the "Resource Management" label was also viewed as outdated.</p>
 
 <h2>For Users</h2>
 <p><a id="comp"><b>Why is my job/node in a COMPLETING state?</b></a><br>
@@ -2306,6 +2316,6 @@ to exclude all Slurm packages from automatic updates.</p>
 exclude=slurm*
 </pre>
 
-<p style="text-align:center;">Last modified 02 November 2022</p>
+<p style="text-align:center;">Last modified 14 December 2022</p>
 
 <!--#include virtual="footer.txt"-->
