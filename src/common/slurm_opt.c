@@ -6032,6 +6032,11 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 		opt->cpus_set = true;
 	}
 
+	if (opt->cpus_set && !cpu_per_task_ptr) {
+		xstrfmtcat(opt->tres_per_task, "%scpu:%d",
+			   opt->tres_per_task ? "," : "",
+			   opt->cpus_per_task);
+	}
 }
 
 /* Validate shared options between srun, salloc, and sbatch */
