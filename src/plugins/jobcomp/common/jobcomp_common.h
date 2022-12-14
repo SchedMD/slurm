@@ -37,4 +37,8 @@
 #ifndef _HAVE_JOBCOMP_COMMON_H
 #define _HAVE_JOBCOMP_COMMON_H
 
+#include "src/slurmctld/slurmctld.h"
+
+extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr);
+
 #endif
