@@ -1601,7 +1601,6 @@ function _sacct() {
 	--units) __slurm_compreply "${units[*]}" ;;
 	-W | --wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	--whole-hetjob) __slurm_compreply "$(__slurm_boolean)" ;;
-	*) __slurm_compreply "$(__slurm_autocompletion "$1")" ;;
 	esac
 
 	[[ $split == "true" ]] && return
