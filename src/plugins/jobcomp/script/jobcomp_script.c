@@ -196,9 +196,9 @@ static struct jobcomp_info *_jobcomp_info_create(job_record_t *job)
 	j->state_reason_prev = job->state_reason_prev_db;
 	j->derived_ec = job->derived_ec;
 	j->uid = job->user_id;
-	j->user_name = xstrdup(uid_to_string_cached((uid_t)job->user_id));
+	j->user_name = uid_to_string_or_null(job->user_id);
 	j->gid = job->group_id;
-	j->group_name = gid_to_string((gid_t)job->group_id);
+	j->group_name = gid_to_string_or_null(job->group_id);
 	j->name = xstrdup (job->name);
 	if (job->assoc_ptr && job->assoc_ptr->cluster &&
 	    job->assoc_ptr->cluster[0])
