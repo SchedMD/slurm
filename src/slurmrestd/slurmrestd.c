@@ -68,6 +68,7 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/openapi.h"
 #include "src/interfaces/select.h"
+#include "src/interfaces/serializer.h"
 
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/operations.h"
@@ -423,6 +424,9 @@ int main(int argc, char **argv)
 	if (data_init())
 		fatal("Unable to initialize data static structures");
 
+	if (serializer_g_init(NULL, NULL))
+		fatal("Unable to initialize serializers");
+
 	if (!(conmgr = init_con_mgr((run_mode.listen ? thread_count : 1),
 				    callbacks)))
 		fatal("Unable to initialize connection manager");
@@ -546,6 +550,7 @@ int main(int argc, char **argv)
 	openapi_state = NULL;
 	free_con_mgr(conmgr);
 
+	serializer_g_fini();
 	data_fini();
 	for (size_t i = 0; i < auth_plugin_count; i++) {
 		plugrack_release_by_type(auth_rack, auth_plugin_types[i]);
