@@ -3069,7 +3069,7 @@ function __scontrol_create_nodename() {
 	cpubind) __slurm_compreply "$(__slurm_cpubind_types)" ;;
 	feature?(s)) __slurm_compreply "$(__slurm_features)" ;;
 	gres) __slurm_compreply "$(__slurm_gres)" ;;
-	nodename?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	nodename?(s)) __slurm_compreply_list "$(__slurm_nodes)" "" "true" ;;
 	state) __slurm_compreply "${states[*]}" ;;
 	*)
 		[[ $split == "true" ]] && return
