@@ -866,6 +866,18 @@ extern void print_fields(type_t type, void *object)
 					     tmp_char,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_FAILED_NODE:
+			switch (type) {
+			case JOB:
+				tmp_char = job->failed_node;
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_FLAGS:
 			switch(type) {
 			case JOB:

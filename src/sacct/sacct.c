@@ -75,6 +75,7 @@ print_field_t fields[] = {
 	{19, "End", print_fields_date, PRINT_END},
 	{8,  "ExitCode", print_fields_str, PRINT_EXITCODE},
 	{14, "Extra", print_fields_str, PRINT_EXTRA},
+	{8,  "FailedNode", print_fields_str, PRINT_FAILED_NODE},
 	{19, "Flags", print_fields_str, PRINT_FLAGS},
 	{6,  "GID", print_fields_uint, PRINT_GID},
 	{9,  "Group", print_fields_str, PRINT_GROUP},
