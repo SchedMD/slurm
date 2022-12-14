@@ -163,6 +163,7 @@ struct env_vars {
 
 env_vars_t early_env_vars[] = {
   { "SBATCH_IGNORE_PBS", LONG_OPT_IGNORE_PBS },
+  { "SBATCH_DEBUG", 'v' },
   { NULL }
 };
 
@@ -194,7 +195,6 @@ env_vars_t env_vars[] = {
   { "SBATCH_CORE_SPEC", 'S' },
   { "SBATCH_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
   { "SBATCH_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
-  { "SBATCH_DEBUG", 'v' },
   { "SBATCH_DELAY_BOOT", LONG_OPT_DELAY_BOOT },
   { "SBATCH_DISTRIBUTION", 'm' },
   { "SBATCH_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
