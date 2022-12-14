@@ -3189,7 +3189,7 @@
             }
           },
           "tres": {
-            "$ref": "#/components/schemas/dbv0.0.36_tres_list"
+            "$ref": "#/components/schemas/dbv0.0.39_tres_list"
           }
         }
       },
