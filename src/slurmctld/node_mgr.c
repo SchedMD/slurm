@@ -1668,6 +1668,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 				_make_node_down(node_ptr, now);
 				kill_running_job_by_node_name (this_node_name);
 				if (state_val == NODE_STATE_FUTURE) {
+					bool dyn_norm_node = false;
 					if (IS_NODE_DYNAMIC_FUTURE(node_ptr)) {
 						/* Reset comm and hostname */
 						set_node_comm_name(
@@ -1675,8 +1676,17 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 							node_ptr->name,
 							node_ptr->name);
 					}
+					/*
+					 * Preserve dynamic norm state until
+					 * node is deleted.
+					 */
+					if (IS_NODE_DYNAMIC_NORM(node_ptr))
+						dyn_norm_node = true;
 					node_ptr->node_state =
 						NODE_STATE_FUTURE;
+					if (dyn_norm_node)
+						node_ptr->node_state |=
+							NODE_STATE_DYNAMIC_NORM;
 					bit_set(future_node_bitmap,
 						node_ptr->index);
 					clusteracct_storage_g_node_down(
