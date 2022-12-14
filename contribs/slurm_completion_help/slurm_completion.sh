@@ -360,7 +360,11 @@ function __slurm_autocompletion() {
 	fi
 
 	local cmd="$context --autocomplete=\"$query\""
-	__slurm_func_wrapper "$cmd"
+	output="$(__slurm_func_wrapper "$cmd")"
+
+	__slurm_log_trace "$(__func__): output='$output'"
+
+	echo "${output}"
 }
 
 # Generic slurm command completion function
