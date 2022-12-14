@@ -577,6 +577,8 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 	derived_ec_str = NULL;
 	data_set_string_own(data_key_set(record, "exit_code"), exit_code_str);
 	exit_code_str = NULL;
+	data_set_string(data_key_set(record, "failed_node"),
+			job_ptr->failed_node);
 	data_set_string(data_key_set(record, "state"), state_string);
 	data_set_float(data_key_set(record, "cpu_hours"),
 		       ((elapsed_time * job_ptr->total_cpus) / 3600.0f));
