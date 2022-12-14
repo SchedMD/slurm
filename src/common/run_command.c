@@ -283,7 +283,7 @@ extern char *run_command_poll_child(int cpid,
 				    int read_fd,
 				    const char *script_path,
 				    const char *script_type,
-				    int tid,
+				    pthread_t tid,
 				    int *status,
 				    bool *timed_out)
 {
