@@ -91,38 +91,6 @@ static pthread_mutex_t  file_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *           log_name  = NULL;
 static int              job_comp_fd = -1;
 
-/* get the user name for the give user_id */
-static void
-_get_user_name(uint32_t user_id, char *user_name, int buf_size)
-{
-	static uint32_t cache_uid      = 0;
-	static char     cache_name[32] = "root", *uname;
-
-	if (user_id != cache_uid) {
-		uname = uid_to_string((uid_t) user_id);
-		snprintf(cache_name, sizeof(cache_name), "%s", uname);
-		xfree(uname);
-		cache_uid = user_id;
-	}
-	snprintf(user_name, buf_size, "%s", cache_name);
-}
-
-/* get the group name for the give group_id */
-static void
-_get_group_name(uint32_t group_id, char *group_name, int buf_size)
-{
-	static uint32_t cache_gid      = 0;
-	static char     cache_name[32] = "root", *gname;
-
-	if (group_id != cache_gid) {
-		gname = gid_to_string((gid_t) group_id);
-		snprintf(cache_name, sizeof(cache_name), "%s", gname);
-		xfree(gname);
-		cache_gid = group_id;
-	}
-	snprintf(group_name, buf_size, "%s", cache_name);
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -187,7 +155,8 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS, tmp_int, tmp_int2;
 	char job_rec[1024];
-	char usr_str[32], grp_str[32], start_str[32], end_str[32], lim_str[32];
+	char start_str[32], end_str[32], lim_str[32];
+	char *usr_str = NULL, *grp_str = NULL;
 	char *resv_name, *tres, *account, *qos, *wckey, *cluster;
 	char *exit_code_str = NULL, *derived_ec_str = NULL;
 	char submit_time[32], eligible_time[32], array_id[64], het_id[64];
@@ -202,8 +171,8 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 	}
 
 	slurm_mutex_lock( &file_lock );
-	_get_user_name(job_ptr->user_id, usr_str, sizeof(usr_str));
-	_get_group_name(job_ptr->group_id, grp_str, sizeof(grp_str));
+	usr_str = uid_to_string_or_null(job_ptr->user_id);
+	grp_str = gid_to_string_or_null(job_ptr->group_id);
 
 	if ((job_ptr->time_limit == NO_VAL) && job_ptr->part_ptr)
 		time_limit = job_ptr->part_ptr->max_time;
@@ -354,6 +323,8 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		}
 		offset += wrote;
 	}
+	xfree(usr_str);
+	xfree(grp_str);
 	xfree(derived_ec_str);
 	xfree(exit_code_str);
 	slurm_mutex_unlock( &file_lock );
