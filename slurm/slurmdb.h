@@ -816,6 +816,7 @@ typedef struct {
 	char *env;
 	uint32_t exitcode;
 	char *extra; /* Extra - arbitrary string */
+	char *failed_node;
 	uint32_t flags;
 	void *first_step_ptr;
 	uint32_t gid;

@@ -232,6 +232,9 @@ typedef struct dbd_job_comp_msg {
 	uint64_t db_index;	/* index into the db for this job */
 	uint32_t derived_ec;	/* derived job exit code or signal */
 	time_t   end_time;	/* job termintation time */
+	char *failed_node;	/* Name of node that failed which caused
+				 * this job to be killed.
+				 * NULL in all other situations */
 	uint32_t exit_code;	/* job exit code or signal */
 	char *extra;		/* job extra field */
 	uint32_t job_id;	/* job ID */

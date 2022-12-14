@@ -1235,6 +1235,9 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	if (job_ptr->extra)
 		xstrfmtcat(query, ", extra='%s'", job_ptr->extra);
 
+	if (job_ptr->failed_node)
+		xstrfmtcat(query, ", failed_node='%s'", job_ptr->failed_node);
+
 	exit_code = job_ptr->exit_code;
 	if (exit_code == 1) {
 		/* This wasn't signaled, it was set by Slurm so don't

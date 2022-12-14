@@ -380,6 +380,7 @@ static void _pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 		pack_time(msg->end_time, buffer);
 		pack32(msg->exit_code, buffer);
 		packstr(msg->extra, buffer);
+		packstr(msg->failed_node, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_state, buffer);
 		packstr(msg->nodes, buffer);
@@ -422,6 +423,7 @@ static int _unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 		safe_unpack_time(&msg_ptr->end_time, buffer);
 		safe_unpack32(&msg_ptr->exit_code, buffer);
 		safe_unpackstr(&msg_ptr->extra, buffer);
+		safe_unpackstr(&msg_ptr->failed_node, buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);
 		safe_unpack32(&msg_ptr->job_state, buffer);
 		safe_unpackstr(&msg_ptr->nodes, buffer);

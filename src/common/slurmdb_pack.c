@@ -3845,6 +3845,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		packstr(job->env, buffer);
 		pack32((uint32_t)job->exitcode, buffer);
 		packstr(job->extra, buffer);
+		packstr(job->failed_node, buffer);
 		pack32(job->flags, buffer);
 		/* the first_step_ptr
 		   is set up on the client side so does
@@ -4122,6 +4123,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		job_ptr->exitcode = (int32_t)uint32_tmp;
 		safe_unpackstr_xmalloc(&job_ptr->extra,
 				       &uint32_tmp, buffer);
+		safe_unpackstr(&job_ptr->failed_node, buffer);
 		safe_unpack32(&job_ptr->flags, buffer);
 
 		safe_unpack32(&job_ptr->gid, buffer);
