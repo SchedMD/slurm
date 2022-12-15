@@ -1,10 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of Slurm functionality
-#          Test --deadline to be used as the timelimit.
-#
-#          At the moment this test only really works if the DefaultTime is
-#          longer than 1 hour to verify the timelimit is set accordingly.
+# Purpose: Test of --deadline option too short
 ############################################################################
 # Copyright (C) 2015 CEA/DAM/DIF
 # Written by Aline Roy <aline.roy@cea.fr>
@@ -29,7 +25,6 @@
 ############################################################################
 source ./globals
 
-set file_in     "$test_dir/input"
 set job_id      0
 set default_part [default_partition]
 
@@ -66,21 +61,8 @@ if { $timelimit != -1 } {
 }
 
 #
-# Build input script file
-#
-exec $bin_rm -f $file_in
-make_bash_script $file_in "$bin_sleep 1"
-
-#
 # Spawn a batch job that deadline is too late
 #
-set job_id [submit_job -fail "--output=/dev/null --error=/dev/null --deadline now+1hour $file_in"]
-
-wait_for_job -fail $job_id DONE
-
-#
-# verify time limit
-#
-set timelimit [get_job_param $job_id "TimeLimit"]
-subtest {[regexp "00:59:" $timelimit] ||
-         [regexp "01:00:00" $timelimit]} "Verify that TimeLimit of the job ($job_id) is 1h"
+set output [run_command -xfail "$sbatch -N1 --deadline now+1hour -t120 --output=/dev/null --error=/dev/null --wrap '$bin_sleep 1'"]
+subtest {[regexp "Requested time limit is invalid" $output]} "Rejection message about invalid time limit should appear"
+subtest {![regexp "Submitted batch job ($number)" $output - job_id]} "Job should be rejected"
