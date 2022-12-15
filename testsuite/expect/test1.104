@@ -133,7 +133,7 @@ log_debug "EnforcePartLimits=$enforcepartlimits"
 #
 make_bash_script $test_srun "
 set -m
-$srun -N1 --deadline now+1hour -p $part_name -t100  -v $bin_sleep 1 &
+$srun -N1 --deadline now+1hour -p $part_name -t45  -v $bin_sleep 1 &
 "
 
 make_bash_script $file_in "

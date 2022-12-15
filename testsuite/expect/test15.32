@@ -138,7 +138,7 @@ log_debug "EnforcePartLimits=$enforcepartlimits"
 #
 make_bash_script $test_salloc "
 set -m
-$salloc --no-shell -N1 --deadline now+1hour -p $part_name -t100 $bin_sleep 1 &
+$salloc --no-shell -N1 --deadline now+1hour -p $part_name -t45 $bin_sleep 1 &
 "
 
 make_bash_script $file_in "
