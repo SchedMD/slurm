@@ -524,7 +524,7 @@ set matches [sacct_vargs -user $user_name $job_id]
 subtest {$matches == 3} "Verify sacct --user option" "sacct --group failed ($matches != 3)"
 
 set matches [sacct_job v $job_id]
-subtest {$matches == 4} "Verify sacct -v option" "sacct -v failed ($matches != 4)"
+subtest {$matches == 3} "Verify sacct -v option" "sacct -v failed ($matches != 4)"
 
 set matches [sacct_job -verbose $job_id]
-subtest {$matches == 4} "Verify sacct --verbose option" "sacct --verbose failed ($matches != 4)"
+subtest {$matches == 3} "Verify sacct --verbose option" "sacct --verbose failed ($matches != 4)"
