@@ -1049,9 +1049,9 @@ _read_config(void)
 	 * for scheduling before these nodes check in.
 	 */
 	config_overrides = cf->conf_flags & CTL_CONF_OR;
-	if (conf->dynamic_type & DYN_NODE_FUTURE) {
+	if (conf->dynamic_type == DYN_NODE_FUTURE) {
 		/* Already set to actual config earlier in _dynamic_init() */
-	} else if (conf->dynamic_type & DYN_NODE_NORM) {
+	} else if (conf->dynamic_type == DYN_NODE_NORM) {
 		conf->cpus = conf->conf_cpus;
 		conf->boards = conf->conf_boards;
 		conf->sockets = conf->conf_sockets;
