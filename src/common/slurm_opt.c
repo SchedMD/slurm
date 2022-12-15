@@ -4118,7 +4118,8 @@ static int arg_set_slurmd_debug(slurm_opt_t *opt, const char *arg)
 	if (!opt->srun_opt)
 		return SLURM_ERROR;
 
-	if ((uid != 0) && (uid != slurm_conf.slurm_user_id)) {
+	if ((uid != 0) && (uid != slurm_conf.slurm_user_id) &&
+	    (LOG_LEVEL_ERROR != log_string2num(arg))) {
 		error("Use of --slurmd-debug is allowed only for root and SlurmUser(%s)",
 		      slurm_conf.slurm_user_name);
 		return SLURM_ERROR;
