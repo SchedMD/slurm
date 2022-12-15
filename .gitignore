@@ -20,6 +20,8 @@ autom4te.cache
 /contribs/cray/slurmconfgen.py
 /contribs/perlapi/libslurm/perl/Makefile.PL
 /contribs/perlapi/libslurmdb/perl/Makefile.PL
+/cscope.files
+/cscope.out
 /doc/html/*.html
 !/doc/html/review_release.html
 /etc/cgroup.release_common.example
