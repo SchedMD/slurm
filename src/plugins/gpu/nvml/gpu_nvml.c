@@ -1098,7 +1098,7 @@ static int _nvml_get_mig_minor_numbers(unsigned int gpu_minor,
 		int count = 0;
 
 		i++;
-		count = fscanf(fp, "%128s%u", tmp_str, &tmp_val);
+		count = fscanf(fp, "%127s%u", tmp_str, &tmp_val);
 		if (count == EOF) {
 			error("mig-minors: %d: Reached end of file. Could not find GPU=%u|GI=%u|CI=%u",
 			      i, gpu_minor, gi_id, ci_id);
