@@ -71,11 +71,6 @@ static void _dump_tres(ctxt_t *ctxt)
 
 static void _update_tres(ctxt_t *ctxt, bool commit)
 {
-	data_t *dtres = NULL;
-	int rc = SLURM_SUCCESS;
-	List tres_list = NULL;
-	data_t *parent_path = NULL;
-
 #ifdef NDEBUG
 	/*
 	 * Updating TRES is not currently supported and is disabled
@@ -86,6 +81,11 @@ static void _update_tres(ctxt_t *ctxt, bool commit)
 		resp_error(ctxt, ESLURM_NOT_SUPPORTED, __func__,
 			   "Updating TRES is not currently supported");
 #else
+	data_t *dtres = NULL;
+	int rc = SLURM_SUCCESS;
+	List tres_list = NULL;
+	data_t *parent_path = NULL;
+
 	tres_list = list_create(slurmdb_destroy_tres_rec);
 
 	if (!(dtres = get_query_key_list("TRES", ctxt, &parent_path))) {
@@ -101,10 +101,9 @@ static void _update_tres(ctxt_t *ctxt, bool commit)
 	if (!(rc = db_query_rc(ctxt, tres_list, slurmdb_tres_add)) && commit)
 		db_query_commit(ctxt);
 
-#endif /*!NDEBUG*/
-
 cleanup:
 	FREE_NULL_LIST(tres_list);
+#endif /*!NDEBUG*/
 }
 
 extern int op_handler_tres(const char *context_id, http_request_method_t method,
