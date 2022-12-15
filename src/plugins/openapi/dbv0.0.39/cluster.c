@@ -177,6 +177,7 @@ static void _update_clusters(ctxt_t *ctxt, bool commit)
 	}
 
 	FREE_NULL_LIST(cluster_list);
+	FREE_NULL_DATA(parent_path);
 }
 
 extern int op_handler_cluster(const char *context_id,
