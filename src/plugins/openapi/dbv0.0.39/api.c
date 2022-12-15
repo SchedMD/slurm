@@ -117,6 +117,8 @@ static void _on_warn(void *arg, data_parser_type_t type, const char *source,
 	va_end(ap);
 
 	resp_warn(ctxt, str, "%s", source);
+
+	xfree(str);
 }
 
 extern ctxt_t *init_connection(const char *context_id,
