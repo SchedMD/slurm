@@ -166,7 +166,6 @@ int main(int argc, char **argv)
 {
 	enum {
 		SACCT_LIST,
-		SACCT_LIST_DATA,
 		SACCT_HELP,
 		SACCT_USAGE
 	} op;
@@ -182,15 +181,14 @@ int main(int argc, char **argv)
 
 	if (params.opt_help)
 		op = SACCT_HELP;
-	else if (params.mimetype)
-		op = SACCT_LIST_DATA;
 	else
 		op = SACCT_LIST;
 
 
 	switch (op) {
 	case SACCT_LIST:
-		if (!(params.job_cond->flags & JOBCOND_FLAG_SCRIPT) &&
+		if (!params.mimetype &&
+		    !(params.job_cond->flags & JOBCOND_FLAG_SCRIPT) &&
 		    !(params.job_cond->flags & JOBCOND_FLAG_ENV))
 			print_fields_header(print_fields_list);
 		if (get_data() == SLURM_ERROR)
@@ -198,10 +196,7 @@ int main(int argc, char **argv)
 		if (params.opt_completion)
 			do_list_completion();
 		else
-			do_list();
-		break;
-	case SACCT_LIST_DATA:
-		dump_data(argc, argv);
+			do_list(argc, argv);
 		break;
 	case SACCT_HELP:
 		do_help();

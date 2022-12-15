@@ -44,6 +44,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/data_parser.h"
 #include "src/interfaces/serializer.h"
 #include "sacct.h"
 #include <time.h>
@@ -1399,13 +1400,19 @@ static void _print_env(slurmdb_job_rec_t *job)
  * At this point, we have already selected the desired data,
  * so we just need to print it for the user.
  */
-extern void do_list(void)
+extern void do_list(int argc, char **argv)
 {
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
 	slurmdb_job_rec_t *job = NULL;
 	slurmdb_step_rec_t *step = NULL;
 	slurmdb_job_cond_t *job_cond = params.job_cond;
+
+	if (params.mimetype) {
+		errno = DATA_DUMP_CLI(JOB_LIST, jobs, "jobs", argc, argv,
+				      acct_db_conn, params.mimetype);
+		return;
+	}
 
 	if (!jobs)
 		return;

@@ -14,7 +14,6 @@ sacct_LDFLAGS = $(CMD_LDFLAGS)
 
 noinst_HEADERS = sacct.h
 sacct_SOURCES =		\
-	data.c	\
 	options.c	\
 	print.c		\
 	process.c	\
