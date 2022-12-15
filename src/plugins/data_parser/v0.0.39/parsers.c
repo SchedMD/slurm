@@ -580,9 +580,9 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 
 			if (rc)
 				return rc;
+		} else {
+			data_set_string(data_list_append(dst), ptr_qos->name);
 		}
-
-		data_set_string(data_list_append(dst), ptr_qos->name);
 	}
 
 	return SLURM_SUCCESS;
