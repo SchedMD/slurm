@@ -14,6 +14,7 @@ autom4te.cache
 /config.h.in~
 /config.log
 /config.status
+/configure~
 /contribs/compile_commands.json
 /contribs/cray/opt_modulefiles_slurm
 /contribs/cray/slurmconfgen.py
