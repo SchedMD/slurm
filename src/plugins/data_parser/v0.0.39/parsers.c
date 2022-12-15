@@ -2799,6 +2799,70 @@ static int DUMP_FUNC(JOB_INFO_MSG)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+PARSE_DISABLED(CONTROLLER_PING_ARRAY)
+
+static int DUMP_FUNC(CONTROLLER_PING_ARRAY)(const parser_t *const parser,
+					    void *obj, data_t *dst,
+					    args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	controller_ping_t **ping_ptr = obj;
+	controller_ping_t *ping = *ping_ptr;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	data_set_list(dst);
+
+	for (; !rc && ping && ping->hostname; ping++) {
+		rc = DUMP(CONTROLLER_PING, *ping,
+			  data_set_dict(data_list_append(dst)), args);
+	}
+
+	return rc;
+}
+
+PARSE_DISABLED(CONTROLLER_PING_MODE)
+
+static int DUMP_FUNC(CONTROLLER_PING_MODE)(const parser_t *const parser,
+					   void *obj, data_t *dst, args_t *args)
+{
+	int *mode_ptr = obj;
+	int mode = *mode_ptr;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	if (mode == 0)
+		data_set_string(dst, "primary");
+	else if ((mode == 1) && (slurm_conf.control_cnt == 2))
+		data_set_string(dst, "backup");
+	else
+		data_set_string_fmt(dst, "backup%u", mode);
+
+	return SLURM_SUCCESS;
+}
+
+PARSE_DISABLED(CONTROLLER_PING_RESULT)
+
+static int DUMP_FUNC(CONTROLLER_PING_RESULT)(const parser_t *const parser,
+					     void *obj, data_t *dst,
+					     args_t *args)
+{
+	bool *ping_ptr = obj;
+	int ping = *ping_ptr;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	if (ping)
+		data_set_string(dst, "UP");
+	else
+		data_set_string(dst, "DOWN");
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -3789,6 +3853,17 @@ static const parser_t PARSER_ARRAY(JOB_RES)[] = {
 };
 #undef add_parse
 #undef add_cparse
+
+#define add_parse(mtype, field, path) \
+	add_parser(controller_ping_t, mtype, false, field, path, NEED_NONE)
+static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
+	add_parse(STRING, hostname, "hostname"),
+	add_parse(CONTROLLER_PING_RESULT, pinged, "pinged"),
+	add_parse(UINT32, latency, "latency"),
+	add_parse(CONTROLLER_PING_MODE, offset, "mode"),
+};
+#undef add_parse
+
 #undef add_complex_parser
 #undef add_parser_enum_flag
 #undef add_parse_enum_bool
@@ -3893,6 +3968,9 @@ static const parser_t parsers[] = {
 	addps(ALLOCATED_CORES, uint32_t, NEED_NONE),
 	addps(ALLOCATED_CPUS, uint32_t, NEED_NONE),
 	addps(JOB_RES_PTR, job_resources_t *, NEED_NONE),
+	addps(CONTROLLER_PING_MODE, char *, NEED_NONE),
+	addps(CONTROLLER_PING_RESULT, char *, NEED_NONE),
+	addps(CONTROLLER_PING_ARRAY, controller_ping_t *, NEED_NONE),
 
 	/* Complex type parsers */
 	addpc(QOS_PREEMPT_LIST, slurmdb_qos_rec_t, NEED_QOS),
@@ -3946,6 +4024,7 @@ static const parser_t parsers[] = {
 	addpa(LICENSE, slurm_license_info_t),
 	addpa(JOB_INFO, slurm_job_info_t),
 	addpa(JOB_RES, job_resources_t),
+	addpa(CONTROLLER_PING, controller_ping_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, slurmdb_destroy_qos_rec, create_qos_rec_obj, NEED_QOS),
