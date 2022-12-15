@@ -620,6 +620,7 @@ extern data_t *data_list_append(data_t *data)
 	data_t *ndata = NULL;
 	_check_magic(data);
 
+	xassert(data && (data->type == DATA_TYPE_LIST));
 	if (!data || data->type != DATA_TYPE_LIST)
 		return NULL;
 
