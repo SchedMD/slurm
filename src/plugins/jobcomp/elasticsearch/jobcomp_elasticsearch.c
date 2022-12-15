@@ -429,21 +429,6 @@ static int _save_state(void)
 	return rc;
 }
 
-/* This is a variation of slurm_make_time_str() in src/common/parse_time.h
- * This version uses ISO8601 format by default. */
-static void _make_time_str(time_t * time, char *string, int size)
-{
-	struct tm time_tm;
-
-	if (*time == (time_t) 0) {
-		snprintf(string, size, "Unknown");
-	} else {
-		/* Format YYYY-MM-DDTHH:MM:SS, ISO8601 standard format */
-		gmtime_r(time, &time_tm);
-		strftime(string, size, "%FT%T", &time_tm);
-	}
-}
-
 extern int jobcomp_p_log_record(job_record_t *job_ptr)
 {
 	char start_str[32], end_str[32], time_str[32];
@@ -476,13 +461,13 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		time_t now = time(NULL);
 		state_string = job_state_string(job_ptr->job_state);
 		if (job_ptr->resize_time) {
-			_make_time_str(&job_ptr->resize_time, start_str,
-				       sizeof(start_str));
+			parse_time_make_str_utc(&job_ptr->resize_time,
+						start_str, sizeof(start_str));
 		} else {
-			_make_time_str(&job_ptr->start_time, start_str,
-				       sizeof(start_str));
+			parse_time_make_str_utc(&job_ptr->start_time, start_str,
+						sizeof(start_str));
 		}
-		_make_time_str(&now, end_str, sizeof(end_str));
+		parse_time_make_str_utc(&now, end_str, sizeof(end_str));
 	} else {
 		/* Job state will typically have JOB_COMPLETING or JOB_RESIZING
 		 * flag set when called. We remove the flags to get the eventual
@@ -490,17 +475,18 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		job_state = job_ptr->job_state & JOB_STATE_BASE;
 		state_string = job_state_string(job_state);
 		if (job_ptr->resize_time) {
-			_make_time_str(&job_ptr->resize_time, start_str,
-				       sizeof(start_str));
+			parse_time_make_str_utc(&job_ptr->resize_time,
+						start_str, sizeof(start_str));
 		} else if (job_ptr->start_time > job_ptr->end_time) {
 			/* Job cancelled while pending and
 			 * expected start time is in the future. */
 			snprintf(start_str, sizeof(start_str), "Unknown");
 		} else {
-			_make_time_str(&job_ptr->start_time, start_str,
-				       sizeof(start_str));
+			parse_time_make_str_utc(&job_ptr->start_time, start_str,
+						sizeof(start_str));
 		}
-		_make_time_str(&job_ptr->end_time, end_str, sizeof(end_str));
+		parse_time_make_str_utc(&job_ptr->end_time, end_str,
+					sizeof(end_str));
 	}
 
 	elapsed_time = job_ptr->end_time - job_ptr->start_time;
@@ -570,14 +556,14 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 	}
 
 	if (job_ptr->details && job_ptr->details->submit_time) {
-		_make_time_str(&job_ptr->details->submit_time,
-			       time_str, sizeof(time_str));
+		parse_time_make_str_utc(&job_ptr->details->submit_time,
+					time_str, sizeof(time_str));
 		data_set_string(data_key_set(record, "@submit"), time_str);
 	}
 
 	if (job_ptr->details && job_ptr->details->begin_time) {
-		_make_time_str(&job_ptr->details->begin_time,
-			       time_str, sizeof(time_str));
+		parse_time_make_str_utc(&job_ptr->details->begin_time,
+					time_str, sizeof(time_str));
 		data_set_string(data_key_set(record, "@eligible"), time_str);
 		if (job_ptr->start_time) {
 			int64_t queue_wait = (int64_t)difftime(
