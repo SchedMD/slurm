@@ -469,12 +469,12 @@ static data_for_each_cmd_t _foreach_parse_qos_string_id(data_t *src, void *arg)
 	data_set_string_fmt(ppath_last, "%s[%zu]", data_get_string(ppath_last),
 			    argstruct->index);
 
-	if ((rc = resolve_qos(PARSING, parser, &qos, src, args, parent_path,
-			      caller, false)))
-		return DATA_FOR_EACH_FAIL;
+	if (!(rc = resolve_qos(PARSING, parser, &qos, src, args, parent_path,
+			       caller, false)))
+		list_append(qos_list, xstrdup_printf("%u", qos->id));
 
-	(void) list_append(qos_list, xstrdup_printf("%u", qos->id));
-	return DATA_FOR_EACH_CONT;
+	FREE_NULL_DATA(ppath);
+	return (rc ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT);
 }
 
 static int PARSE_FUNC(QOS_STRING_ID_LIST)(const parser_t *const parser,
