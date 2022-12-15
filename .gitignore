@@ -1,6 +1,8 @@
 *.o
 *.la
 *.lo
+*.orig
+*.rej
 .*.swp
 .*.swo
 .deps
