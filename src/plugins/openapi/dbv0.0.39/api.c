@@ -189,12 +189,18 @@ extern ctxt_t *init_connection(const char *context_id,
 
 extern int fini_connection(ctxt_t *ctxt)
 {
+	int rc;
+
 	xassert(ctxt);
 	xassert(ctxt->magic == MAGIC_CTXT);
+
+	rc = ctxt->rc;
+
 	FREE_NULL_DATA_PARSER(ctxt->parser);
 	ctxt->magic = ~MAGIC_CTXT;
+	xfree(ctxt);
 
-	return ctxt->rc;
+	return rc;
 }
 
 __attribute__((format(printf, 4, 5)))
