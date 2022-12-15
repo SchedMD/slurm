@@ -1006,6 +1006,7 @@ PARSE_DISABLED(JOB_USER)
 static int DUMP_FUNC(JOB_USER)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
 {
+	char *user;
 	slurmdb_job_rec_t *job = obj;
 
 	xassert(args->magic == MAGIC_ARGS);
@@ -1016,15 +1017,13 @@ static int DUMP_FUNC(JOB_USER)(const parser_t *const parser, void *obj,
 	if (job->user && job->user[0]) {
 		data_set_string(dst, job->user);
 		return SLURM_SUCCESS;
-	} else if (job->uid >= 0) {
-		char *u = uid_to_string_or_null(job->uid);
+	}
 
-		if (u && u[0]) {
-			data_set_string_own(dst, u);
-			return SLURM_SUCCESS;
-		}
+	user = uid_to_string_or_null(job->uid);
 
-		xfree(u);
+	if (user && user[0]) {
+		data_set_string_own(dst, user);
+		return SLURM_SUCCESS;
 	}
 
 	data_set_null(dst);
