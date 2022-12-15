@@ -1123,8 +1123,6 @@ total_return:
 
 		error("%s: [%s] %s", __func__, peer, slurm_strerror(rc));
 		usleep(10000);	/* Discourage brute force attack */
-	} else {
-		rc = 0;
 	}
 	xfree(peer);
 	return rc;
