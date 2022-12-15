@@ -51,6 +51,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/data_parser.h"
 #include "src/interfaces/select.h"
 
 #include "src/squeue/squeue.h"
@@ -64,12 +65,13 @@ int max_line_size;
 /*************
  * Functions *
  *************/
-extern int dump_data(int argc, char **argv);
-static int  _get_info(bool clear_old, bool log_cluster_name);
+static int _get_info(bool clear_old, bool log_cluster_name, int argc,
+		     char **argv);
 static int  _get_window_width( void );
-static int  _multi_cluster(List clusters);
-static int  _print_job(bool clear_old, bool log_cluster_name);
-static int  _print_job_steps( bool clear_old );
+static int _multi_cluster(List clusters, int argc, char **argv);
+static int _print_job(bool clear_old, bool log_cluster_name, int argc,
+		      char **argv);
+static int _print_job_steps(bool clear_old, int argc, char **argv);
 
 int
 main (int argc, char **argv)
@@ -89,18 +91,15 @@ main (int argc, char **argv)
 	if (params.clusters)
 		working_cluster_rec = list_peek(params.clusters);
 
-	if (params.mimetype)
-		exit(dump_data(argc, argv));
-
 	while (1) {
 		if ((!params.no_header) &&
 		    (params.iterate || params.verbose || params.long_list))
 			print_date();
 
 		if (!params.clusters) {
-			if (_get_info(false, false))
+			if (_get_info(false, false, argc, argv))
 				error_code = 1;
-		} else if (_multi_cluster(params.clusters) != 0)
+		} else if (_multi_cluster(params.clusters, argc, argv))
 			error_code = 1;
 
 		if ( params.iterate ) {
@@ -116,7 +115,7 @@ main (int argc, char **argv)
 		exit (0);
 }
 
-static int _multi_cluster(List clusters)
+static int _multi_cluster(List clusters, int argc, char **argv)
 {
 	ListIterator itr;
 	bool log_cluster_name = false, first = true;
@@ -133,7 +132,7 @@ static int _multi_cluster(List clusters)
 				printf("\n");
 			printf("CLUSTER: %s\n", working_cluster_rec->name);
 		}
-		rc2 = _get_info(true, log_cluster_name);
+		rc2 = _get_info(true, log_cluster_name, argc, argv);
 		if (rc2)
 			rc = 1;
 	}
@@ -142,12 +141,13 @@ static int _multi_cluster(List clusters)
 	return rc;
 }
 
-static int _get_info(bool clear_old, bool log_cluster_name )
+static int _get_info(bool clear_old, bool log_cluster_name, int argc,
+		     char **argv)
 {
 	if ( params.step_flag )
-		return _print_job_steps( clear_old );
+		return _print_job_steps(clear_old, argc, argv);
 	else
-		return _print_job(clear_old, log_cluster_name);
+		return _print_job(clear_old, log_cluster_name, argc, argv);
 }
 
 /* get_window_width - return the size of the window STDOUT goes to */
@@ -175,7 +175,8 @@ _get_window_width( void )
 
 
 /* _print_job - print the specified job's information */
-static int _print_job(bool clear_old, bool log_cluster_name)
+static int _print_job(bool clear_old, bool log_cluster_name, int argc,
+		      char **argv)
 {
 	static job_info_msg_t *old_job_ptr;
 	job_info_msg_t *new_job_ptr = NULL;
@@ -235,6 +236,16 @@ static int _print_job(bool clear_old, bool log_cluster_name)
 		return SLURM_ERROR;
 	}
 	old_job_ptr = new_job_ptr;
+
+	if (params.mimetype) {
+		int rc = DATA_DUMP_CLI(JOB_INFO_MSG, new_job_ptr, "jobs", argc,
+				       argv, NULL, params.mimetype);
+#ifdef MEMORY_LEAK_DEBUG
+		slurm_free_job_info_msg(new_job_ptr);
+#endif
+		return rc;
+	}
+
 	if (params.job_id || params.user_id)
 		old_job_ptr->last_update = (time_t) 0;
 
@@ -274,8 +285,7 @@ static int _print_job(bool clear_old, bool log_cluster_name)
 
 
 /* _print_job_step - print the specified job step's information */
-static int
-_print_job_steps( bool clear_old )
+static int _print_job_steps(bool clear_old, int argc, char **argv)
 {
 	int error_code;
 	static job_step_info_response_msg_t * old_step_ptr = NULL;
@@ -309,6 +319,15 @@ _print_job_steps( bool clear_old )
 		return SLURM_ERROR;
 	}
 	old_step_ptr = new_step_ptr;
+
+	if (params.mimetype) {
+		int rc = DATA_DUMP_CLI(STEP_INFO_MSG, new_step_ptr, "steps",
+				       argc, argv, NULL, params.mimetype);
+#ifdef MEMORY_LEAK_DEBUG
+		slurm_free_job_step_info_response_msg(new_step_ptr);
+#endif
+		return rc;
+	}
 
 	if (params.verbose) {
 		printf ("last_update_time=%ld records=%u\n",

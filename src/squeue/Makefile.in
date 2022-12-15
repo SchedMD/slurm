@@ -156,8 +156,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_squeue_OBJECTS = data.$(OBJEXT) squeue.$(OBJEXT) print.$(OBJEXT) \
-	opts.$(OBJEXT) sort.$(OBJEXT)
+am_squeue_OBJECTS = squeue.$(OBJEXT) print.$(OBJEXT) opts.$(OBJEXT) \
+	sort.$(OBJEXT)
 squeue_OBJECTS = $(am_squeue_OBJECTS)
 am__DEPENDENCIES_1 =
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -182,8 +182,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/data.Po ./$(DEPDIR)/opts.Po \
-	./$(DEPDIR)/print.Po ./$(DEPDIR)/sort.Po ./$(DEPDIR)/squeue.Po
+am__depfiles_remade = ./$(DEPDIR)/opts.Po ./$(DEPDIR)/print.Po \
+	./$(DEPDIR)/sort.Po ./$(DEPDIR)/squeue.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -496,7 +496,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
 squeue_LDADD = $(LIB_SLURM) $(DL_LIBS)
 squeue_DEPENDENCIES = $(LIB_SLURM_BUILD)
 noinst_HEADERS = squeue.h print.h
-squeue_SOURCES = data.c squeue.c print.c opts.c sort.c
+squeue_SOURCES = squeue.c print.c opts.c sort.c
 squeue_LDFLAGS = $(CMD_LDFLAGS)
 all: all-am
 
@@ -591,7 +591,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opts.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sort.Po@am__quote@ # am--include-marker
@@ -723,8 +722,7 @@ clean: clean-am
 clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/data.Po
-	-rm -f ./$(DEPDIR)/opts.Po
+		-rm -f ./$(DEPDIR)/opts.Po
 	-rm -f ./$(DEPDIR)/print.Po
 	-rm -f ./$(DEPDIR)/sort.Po
 	-rm -f ./$(DEPDIR)/squeue.Po
@@ -773,8 +771,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/data.Po
-	-rm -f ./$(DEPDIR)/opts.Po
+		-rm -f ./$(DEPDIR)/opts.Po
 	-rm -f ./$(DEPDIR)/print.Po
 	-rm -f ./$(DEPDIR)/sort.Po
 	-rm -f ./$(DEPDIR)/squeue.Po
