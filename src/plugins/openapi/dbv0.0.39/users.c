@@ -326,7 +326,8 @@ extern int op_handler_users(const char *context_id,
 				.user_cond = &user_cond,
 			};
 
-			data_dict_for_each(query, _foreach_query_search, &args);
+			(void) data_dict_for_each(query, _foreach_query_search,
+						  &args);
 		}
 
 		if (!ctxt->rc)
