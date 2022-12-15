@@ -268,7 +268,7 @@ static int _check_cg_version()
 
 /*
  * Pick a random job belonging to this user.
- * Unlike when using cgroup/v1, we will pick here the job with the lowest JobID
+ * Unlike when using cgroup/v1, we will pick here the job with the highest JobID
  * instead of getting the job which has the earliest cgroup creation time.
  */
 static int _indeterminate_multiple_v2(pam_handle_t *pamh, List steps, uid_t uid,
@@ -277,14 +277,13 @@ static int _indeterminate_multiple_v2(pam_handle_t *pamh, List steps, uid_t uid,
 	int rc = PAM_PERM_DENIED;
 	ListIterator itr = NULL;
 	step_loc_t *stepd = NULL;
-	uint32_t most_recent = NO_VAL;
+	uint32_t most_recent = 0;
 
 	itr = list_iterator_create(steps);
 	while ((stepd = list_next(itr))) {
 		if ((stepd->step_id.step_id == SLURM_EXTERN_CONT) &&
 		    (uid == _get_job_uid(stepd))) {
-			if (stepd->step_id.job_id == NO_VAL ||
-			    stepd->step_id.job_id > most_recent) {
+			if (stepd->step_id.job_id > most_recent) {
 				most_recent = stepd->step_id.job_id;
 				*out_stepd = stepd;
 				rc = PAM_SUCCESS;
