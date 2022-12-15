@@ -893,7 +893,8 @@ static int _dump_tres_nct(const parser_t *const parser, data_t *dst,
 	    (list_for_each(tres_task_list, _foreach_list_per_tres_type_nct,
 			   &fargs) < 0))
 		goto cleanup;
-	xassert(!(fargs.type = 0));
+	/* clear type to catch unintended reuse */
+	fargs.type = 0;
 
 	for (int i = 0; !rc && (i < tres_nct_count); i++)
 		if (tres_nct[i].count || tres_nct[i].node || tres_nct[i].task)
