@@ -184,10 +184,10 @@ static bool _create_cxi_devs(void)
 			continue;
 		}
 		/* Only done in debug mode */
-		if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH)
+		if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
 			_print_devinfo(dev, &cxi_devs[dev]->info);
-		if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH)
 			_get_reserved_limits(dev, &reslimits);
+		}
 	}
 
 	return true;
