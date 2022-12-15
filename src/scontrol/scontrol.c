@@ -1821,7 +1821,7 @@ static void _show_it(int argc, char **argv)
 			exit_code = 1;
 	} else if (xstrncasecmp(tag, "jobs", MAX(tag_len, 1)) == 0 ||
 		   xstrncasecmp(tag, "jobid", MAX(tag_len, 1)) == 0 ) {
-		scontrol_print_job (val);
+		scontrol_print_job(val, argc, argv);
 	} else if (xstrncasecmp(tag, "licenses", MAX(tag_len, 2)) == 0) {
 		scontrol_print_licenses(val, argc, argv);
 	} else if (xstrncasecmp(tag, "nodes", MAX(tag_len, 1)) == 0) {

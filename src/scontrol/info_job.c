@@ -49,6 +49,8 @@
 #include "src/common/slurm_time.h"
 #include "src/common/stepd_api.h"
 
+#include "src/interfaces/data_parser.h"
+
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 
 /* Load current job table information into *job_buffer_pptr */
@@ -280,7 +282,7 @@ static bool _task_id_in_job(job_info_t *job_ptr, uint32_t array_id)
  * scontrol_print_job - print the specified job's information
  * IN job_id - job's id or NULL to print information about all jobs
  */
-extern void scontrol_print_job(char * job_id_str)
+extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS, i, print_cnt = 0;
 	uint32_t job_id = 0;
@@ -319,6 +321,15 @@ extern void scontrol_print_job(char * job_id_str)
 			slurm_perror ("slurm_load_jobs error");
 		return;
 	}
+
+	if (mime_type) {
+		if ((error_code = DATA_DUMP_CLI(JOB_INFO_MSG, job_buffer_ptr,
+						"jobs", argc, argv, NULL,
+						mime_type)))
+			exit_code =1;
+		return;
+	}
+
 	if (quiet_flag == -1) {
 		char time_str[256];
 		slurm_make_time_str ((time_t *)&job_buffer_ptr->last_update,
