@@ -635,8 +635,8 @@ static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 		return on_error(DUMPING, parser->type, args,
 				ESLURM_DATA_CONV_FAILED,
 				"list_find_first()->slurmdb_find_assoc_in_list()",
-				__func__, "dumping association id#%d failed",
-				assoc->id);
+				__func__, "dumping association id#%u failed",
+				*associd);
 	}
 
 	return DUMP(ASSOC_SHORT_PTR, assoc, dst, args);
