@@ -1107,7 +1107,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		goto total_return;
 	}
 
-	msg->auth_cred = (void *)auth_cred;
+	msg->auth_cred = auth_cred;
 
 	rc = SLURM_SUCCESS;
 
@@ -1116,7 +1116,7 @@ total_return:
 
 	slurm_seterrno(rc);
 	if (rc != SLURM_SUCCESS) {
-		msg->auth_cred = (void *) NULL;
+		msg->auth_cred = NULL;
 		/* peer may have not been resolved already */
 		if (!peer)
 			peer = fd_resolve_peer(fd);
@@ -1816,7 +1816,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	msg->auth_cred = (void *) auth_cred;
+	msg->auth_cred = auth_cred;
 
 	FREE_NULL_BUFFER(buffer);
 	rc = SLURM_SUCCESS;
@@ -1827,7 +1827,7 @@ total_return:
 	slurm_seterrno(rc);
 	if (rc != SLURM_SUCCESS) {
 		msg->msg_type = RESPONSE_FORWARD_FAILED;
-		msg->auth_cred = (void *) NULL;
+		msg->auth_cred = NULL;
 		msg->data = NULL;
 		/* peer may have not been resolved already */
 		if (!peer)
