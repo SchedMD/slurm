@@ -992,6 +992,8 @@ int main(int argc, char **argv)
 	track_script_fini();
 	cgroup_conf_destroy();
 	usleep(500000);
+	serializer_g_fini();
+	data_fini();
 }
 #else
 	/*
