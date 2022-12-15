@@ -9,10 +9,12 @@ __pycache__
 Makefile
 autom4te.cache
 /api/full_version.map
+/compile_commands.json
 /config.h
 /config.h.in~
 /config.log
 /config.status
+/contribs/compile_commands.json
 /contribs/cray/opt_modulefiles_slurm
 /contribs/cray/slurmconfgen.py
 /contribs/perlapi/libslurm/perl/Makefile.PL
