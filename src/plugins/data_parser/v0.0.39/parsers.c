@@ -2865,6 +2865,26 @@ static int DUMP_FUNC(CONTROLLER_PING_RESULT)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(STEP_INFO_MSG)
+
+static int DUMP_FUNC(STEP_INFO_MSG)(const parser_t *const parser, void *obj,
+				    data_t *dst, args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	job_step_info_response_msg_t **msg = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	data_set_list(dst);
+
+	for (size_t i = 0; !rc && (i < (*msg)->job_step_count); ++i)
+		rc = DUMP(STEP_INFO, (*msg)->job_steps[i],
+			  data_list_append(dst), args);
+
+	return rc;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -3867,6 +3887,52 @@ static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path) \
+	add_parser(job_step_info_t, mtype, false, field, path, NEED_NONE)
+#define add_skip(field) \
+	add_parser_skip(job_step_info_t, field)
+static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
+	add_parse(UINT32, array_job_id, "array/job_id"),
+	add_parse(UINT32, array_task_id, "array/task_id"),
+	add_parse(STRING, cluster, "cluster"),
+	add_parse(STRING, container, "container"),
+	add_parse(STRING, container_id, "container_id"),
+	add_parse(UINT32_NO_VAL, cpu_freq_min, "cpu/frequency/min"),
+	add_parse(UINT32_NO_VAL, cpu_freq_max, "cpu/frequency/max"),
+	add_parse(UINT32_NO_VAL, cpu_freq_gov, "cpu/frequency/governor"),
+	add_parse(STRING, cpus_per_tres, "tres/per/cpu"),
+	add_parse(STRING, mem_per_tres, "tres/per/memory"),
+	add_parse(STRING, name, "name"),
+	add_parse(STRING, network, "network"),
+	add_parse(STRING, nodes, "nodes"),
+	add_skip(node_inx),
+	add_parse(UINT32, num_cpus, "number_cpus"),
+	add_parse(UINT32, num_tasks, "number_tasks"),
+	add_parse(STRING, partition, "partition"),
+	add_parse(STRING, resv_ports, "reserved_ports"),
+	add_parse(UINT32_NO_VAL, run_time, "time/running"),
+	add_skip(select_jobinfo),
+	add_parse(STRING, resv_ports, "srun/host"),
+	add_parse(UINT32, srun_pid, "srun/pid"),
+	add_parse(UINT32_NO_VAL, start_time, "time/start"),
+	add_skip(start_protocol_ver),
+	add_parse(JOB_STATE, state, "state"),
+	add_parse(STEP_ID, step_id, "id"),
+	add_parse(STRING, submit_line, "submit_line"),
+	add_parse(TASK_DISTRIBUTION, task_dist, "task/distribution"),
+	add_parse(UINT32_NO_VAL, time_limit, "time/limit"),
+	add_parse(STRING, tres_alloc_str, "tres/allocation"),
+	add_parse(STRING, tres_bind, "tres/binding"),
+	add_parse(STRING, tres_freq, "tres/frequency"),
+	add_parse(STRING, tres_per_step, "tres/per/step"),
+	add_parse(STRING, tres_per_node, "tres/per/node"),
+	add_parse(STRING, tres_per_socket, "tres/per/socket"),
+	add_parse(STRING, tres_per_task, "tres/per/task"),
+	add_parse(USER_ID, user_id, "user"),
+};
+#undef add_parse
+#undef add_skip
+
 #undef add_complex_parser
 #undef add_parser_enum_flag
 #undef add_parse_enum_bool
@@ -4002,6 +4068,7 @@ static const parser_t parsers[] = {
 	addpc(JOB_INFO_GRES_DETAIL, slurm_job_info_t, NEED_NONE),
 	addpc(JOB_RES_NODES, job_resources_t, NEED_NONE),
 	addpc(JOB_INFO_MSG, job_info_msg_t *, NEED_NONE),
+	addpc(STEP_INFO_MSG, job_step_info_response_msg_t *, NEED_TRES),
 
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t),
@@ -4028,6 +4095,7 @@ static const parser_t parsers[] = {
 	addpa(JOB_INFO, slurm_job_info_t),
 	addpa(JOB_RES, job_resources_t),
 	addpa(CONTROLLER_PING, controller_ping_t),
+	addpa(STEP_INFO, job_step_info_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, slurmdb_destroy_qos_rec, create_qos_rec_obj, NEED_QOS),

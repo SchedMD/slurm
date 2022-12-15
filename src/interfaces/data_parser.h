@@ -98,6 +98,8 @@ typedef enum {
 	DATA_PARSER_JOB_FLAG_SCHED, /* slurmdb_job_rec_t->flags & SLURMDB_JOB_SCHED */
 	DATA_PARSER_JOB_FLAG_BACKFILL, /* slurmdb_job_rec_t->flags & SLURMDB_JOB_BACKFILL */
 	DATA_PARSER_JOB_STATE, /* uint32_t <-> JOB_STATE_FLAGS */
+	DATA_PARSER_STEP_INFO_MSG, /* job_step_info_response_msg_t */
+	DATA_PARSER_STEP_INFO, /* job_step_info_t */
 	DATA_PARSER_STEP, /* slurmdb_step_rec_t */
 	DATA_PARSER_STEP_LIST, /* List of slurmdb_step_rec_t* */
 	DATA_PARSER_STEP_NODES, /* slurmdb_step_rec_t->nodes */
