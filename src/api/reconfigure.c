@@ -45,9 +45,9 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/forward.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/forward.h"
 #include "src/common/xmalloc.h"
 
 static int _send_message_controller(int dest, slurm_msg_t *req);
