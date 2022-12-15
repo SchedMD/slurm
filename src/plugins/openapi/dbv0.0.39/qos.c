@@ -237,6 +237,7 @@ static void _update_qos(ctxt_t *ctxt, bool commit)
 		resp_warn(
 			ctxt, __func__,
 			"ignoring empty or non-existant QOS array for update");
+		xfree(parent_path);
 		return;
 	}
 
@@ -251,6 +252,7 @@ static void _update_qos(ctxt_t *ctxt, bool commit)
 	}
 
 	FREE_NULL_LIST(qos_list);
+	xfree(parent_path);
 }
 
 extern int op_handler_qos(const char *context_id, http_request_method_t method,
