@@ -42,6 +42,7 @@ but are also used to generate JSON or YAML output for multiple CLI commands.</p>
 paths in a single quote string to avoid shell replacements.</p>
 
 <!--#include virtual="openapi_release_notes/slurm-23.02.0.html"-->
+<!--#include virtual="openapi_release_notes/slurm-22.05.7.html"-->
 <!--#include virtual="openapi_release_notes/slurm-22.05.6.html"-->
 <!--#include virtual="openapi_release_notes/slurm-22.05.4.html"-->
 <!--#include virtual="openapi_release_notes/slurm-22.05.0.html"-->
