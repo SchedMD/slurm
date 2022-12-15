@@ -192,6 +192,8 @@ documents those changes that are of interest to users and administrators.
  -- Reject jobs submitted with impossible --time, --deadline, and --begin
     combinations at submission time
  -- Add new DebugFlags option 'JobComp' to replace 'Elasticsearch'.
+ -- sacct - Add --array option to expand job arrays and display array tasks on
+    separate lines.
 
 * Changes in Slurm 22.05.7
 ==========================
@@ -241,8 +243,6 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential segfault in slurmd when using acct_gather_energy/ipmi.
  -- Fix controller being able to contact non-addressable step hosts.
  -- Allow setting SuspendTime to -1 when used on a partition.
- -- sacct - Add --array option to expand job arrays and display array tasks on
-    separate lines.
 
 * Changes in Slurm 22.05.6
 ==========================
