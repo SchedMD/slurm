@@ -169,6 +169,7 @@ static void _update_wckeys(ctxt_t *ctxt, bool commit)
 
 cleanup:
 	FREE_NULL_LIST(wckey_list);
+	FREE_NULL_DATA(parent_path);
 }
 
 extern int op_handler_wckey(const char *context_id,
