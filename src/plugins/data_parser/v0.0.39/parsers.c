@@ -1023,6 +1023,8 @@ static int DUMP_FUNC(JOB_USER)(const parser_t *const parser, void *obj,
 			data_set_string_own(dst, u);
 			return SLURM_SUCCESS;
 		}
+
+		xfree(u);
 	}
 
 	data_set_null(dst);
