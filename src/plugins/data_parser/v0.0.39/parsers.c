@@ -2960,6 +2960,20 @@ static int DUMP_FUNC(CPU_FREQ_FLAGS)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(PARTITION_INFO_PTR)
+
+static int DUMP_FUNC(PARTITION_INFO_PTR)(const parser_t *const parser,
+					 void *obj, data_t *dst, args_t *args)
+{
+	partition_info_t **ptr = obj;
+	partition_info_t *part = *ptr;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	return DUMP(PARTITION_INFO, *part, dst, args);
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -4073,6 +4087,55 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 #undef add_parse
 #undef add_skip
 
+#define add_parse(mtype, field, path) \
+	add_parser(partition_info_t, mtype, false, field, path, NEED_NONE)
+#define add_skip(field) \
+	add_parser_skip(partition_info_t, field)
+static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
+	add_parse(STRING, allow_alloc_nodes, "nodes/allowed_allocation"),
+	add_parse(STRING, allow_accounts, "accounts/allowed"),
+	add_parse(STRING, allow_groups, "groups/allowed"),
+	add_parse(STRING, allow_qos, "qos/allowed"),
+	add_parse(STRING, alternate, "alternate"),
+	add_parse(STRING, billing_weights_str, "tres/billing_weights"),
+	add_parse(STRING, cluster_name, "cluster"),
+	add_skip(cr_type), //FIXME:wtf is this
+	add_parse(UINT32, cpu_bind, "cpus/task_binding"),
+	add_parse(UINT64, def_mem_per_cpu, "defaults/memory_per_cpu"),
+	add_parse(UINT32_NO_VAL, default_time, "defaults/time"),
+	add_parse(STRING, deny_accounts, "accounts/deny"),
+	add_parse(STRING, deny_qos, "qos/deny"),
+	add_skip(flags), //FIXME
+	add_parse(UINT32, grace_time, "grace_time"),
+	add_skip(job_defaults_list), //FIXME - is this even packed?
+	add_parse(STRING, job_defaults_str, "defaults/job"),
+	add_parse(UINT32_NO_VAL, max_cpus_per_node, "maximums/cpus_per_node"),
+	add_parse(UINT32_NO_VAL, max_cpus_per_socket, "maximums/cpus_per_socket"),
+	add_parse(UINT64, max_mem_per_cpu, "maximums/memory_per_cpu"),
+	add_parse(UINT32_NO_VAL, max_nodes, "maximums/nodes"),
+	add_parse(UINT32, max_share, "maximums/shares"),
+	add_parse(UINT32_NO_VAL, max_time, "maximums/time"),
+	add_parse(UINT32, min_nodes, "minimums/nodes"),
+	add_parse(STRING, name, "name"),
+	add_skip(node_inx),
+	add_parse(STRING, nodes, "nodes/configured"),
+	add_parse(STRING, nodesets, "node_sets"),
+	add_parse(UINT16_NO_VAL, over_time_limit, "maximums/over_time_limit"),
+	add_skip(preempt_mode), // FIXME
+	add_parse(UINT16, priority_job_factor, "priority/job_factor"),
+	add_parse(UINT16, priority_tier, "priority/tier"),
+	add_parse(STRING, qos_char, "qos/assigned"),
+	add_parse(UINT16_NO_VAL, resume_timeout, "timeouts/resume"),
+	add_skip(state_up), //FIXME
+	add_parse(UINT16_NO_VAL, suspend_time, "suspend_time"),
+	add_parse(UINT16_NO_VAL, suspend_timeout, "timeouts/suspend"),
+	add_parse(UINT32, total_cpus, "cpus/total"),
+	add_parse(UINT32, total_nodes, "nodes/total"),
+	add_parse(STRING, tres_fmt_str, "tres/configured"),
+};
+#undef add_parse
+#undef add_skip
+
 #undef add_complex_parser
 #undef add_parse_enum_bool
 
@@ -4184,6 +4247,7 @@ static const parser_t parsers[] = {
 	addps(CONTROLLER_PING_ARRAY, controller_ping_t *, NEED_NONE),
 	addps(HOSTLIST, hostlist_t, NEED_NONE),
 	addps(CPU_FREQ_FLAGS, uint32_t, NEED_NONE),
+	addps(PARTITION_INFO_PTR, partition_info_t *, NEED_NONE),
 
 	/* Complex type parsers */
 	addpc(QOS_PREEMPT_LIST, slurmdb_qos_rec_t, NEED_QOS),
@@ -4240,6 +4304,7 @@ static const parser_t parsers[] = {
 	addpa(JOB_RES, job_resources_t),
 	addpa(CONTROLLER_PING, controller_ping_t),
 	addpa(STEP_INFO, job_step_info_t),
+	addpa(PARTITION_INFO, partition_info_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, slurmdb_destroy_qos_rec, create_qos_rec_obj, NEED_QOS),
