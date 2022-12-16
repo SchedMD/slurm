@@ -196,6 +196,7 @@ documents those changes that are of interest to users and administrators.
     separate lines.
  -- Fix jobs submitted with a deadline never being cleared after the
     reservation is done.
+ -- Change srun/salloc to wait indefinitely for their allocations to be ready.
 
 * Changes in Slurm 22.05.7
 ==========================
