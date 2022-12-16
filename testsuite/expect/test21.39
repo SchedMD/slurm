@@ -73,6 +73,10 @@ if {![param_contains [get_config_param "AccountingStorageEnforce"] "qos"]} {
 	skip "This test can't be run without AccountingStorageEnforce=qos"
 }
 
+if {[param_contains [get_config_param "JobContainerType"] "*tmpfs"]} {
+	skip "This test can't be run with JobContainerType=job_container/tmpfs"
+}
+
 if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
@@ -275,9 +279,6 @@ save_conf $config_file
 
 # Comment out PrologFlags in the slurm.conf
 exec $bin_sed -i {s/^\(PrologFlags=\)/#\1/gI} $config_file
-# Comment out JobContainerType as well since if they have tmpfs
-# commenting out PrologFlags will break things
-exec $bin_sed -i {s/^\(JobContainerType=\)/#\1/gI} $config_file
 
 # TODO: Temporarily increase logging to debug bug 10604 (remove once fixed)
 run_command -none "$bin_echo SlurmctldDebug=debug3 >> $config_file"
