@@ -1049,9 +1049,9 @@ _read_config(void)
 	 * for scheduling before these nodes check in.
 	 */
 	config_overrides = cf->conf_flags & CTL_CONF_OR;
-	if (conf->dynamic_type & DYN_NODE_FUTURE) {
+	if (conf->dynamic_type == DYN_NODE_FUTURE) {
 		/* Already set to actual config earlier in _dynamic_init() */
-	} else if (conf->dynamic_type & DYN_NODE_NORM) {
+	} else if (conf->dynamic_type == DYN_NODE_NORM) {
 		conf->cpus = conf->conf_cpus;
 		conf->boards = conf->conf_boards;
 		conf->sockets = conf->conf_sockets;
@@ -1489,6 +1489,10 @@ _process_cmdline(int ac, char **av)
 			conf->conffile = xstrdup(optarg);
 			break;
 		case 'F':
+			if (conf->dynamic_type == DYN_NODE_NORM) {
+				error("-F and -Z options are mutually exclusive");
+				exit(1);
+			}
 			conf->dynamic_type = DYN_NODE_FUTURE;
 			conf->dynamic_feature = xstrdup(optarg);
 			break;
@@ -1529,6 +1533,10 @@ _process_cmdline(int ac, char **av)
 			exit(0);
 			break;
 		case 'Z':
+			if (conf->dynamic_type == DYN_NODE_FUTURE) {
+				error("-F and -Z options are mutually exclusive");
+				exit(1);
+			}
 			conf->dynamic_type = DYN_NODE_NORM;
 			break;
 		case LONG_OPT_CONF:
