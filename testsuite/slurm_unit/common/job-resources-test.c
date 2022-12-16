@@ -1,25 +1,11 @@
 /*
  * Test of src/job_resources.c
- *
- * Avoid duplicate wait() symbol definition (in both testsuite/dejagnu.h
- * and sys/wait.h
  */
-#define _SYS_WAIT_H 1
 #include <stdlib.h>
 #include <src/common/bitstring.h>
 #include <src/common/job_resources.h>
 #include <sys/time.h>
-#include <testsuite/dejagnu.h>
-
-/*
- * Test for failure:
- */
-#define TEST(_tst, _msg) do {		\
-	if (! (_tst))			\
-		fail( _msg );		\
-	else				\
-		pass( _msg );		\
-} while (0)
+#include <check.h>
 
 #define CORE_CNT 80
 #define NODE_CNT 8
@@ -48,12 +34,10 @@ static job_resources_t *_alloc_job_res(void)
 	return job;
 }
 
-int
-main(int argc, char *argv[])
+START_TEST(test_job_resources_or)
 {
 	job_resources_t *job1, *job2;
 
-	note("Testing job_resources_or");
 	job1 = _alloc_job_res();
 	job1->cores_per_socket[0] = 4;
 	job1->sockets_per_node[0] = 2;
@@ -81,35 +65,40 @@ main(int argc, char *argv[])
 	bit_set(job2->core_bitmap, 22);
 
 	if (job_resources_or(job1, job2) != 0) {
-		fail("job_resources_or function fail");
+		ck_abort_msg("job_resources_or function fail");
 	} else {
-		TEST(bit_set_count(job1->node_bitmap) == 3, "node_bitmap count good");
-		TEST(bit_test(job1->node_bitmap,1), "node 1 set");
-		TEST(bit_test(job1->node_bitmap,4), "node 4 set");
-		TEST(bit_test(job1->node_bitmap,6), "node 6 set");
-		TEST(job1->cores_per_socket[0] == 4, "cores_per_socket[0] value");
-		TEST(job1->sockets_per_node[0] == 2, "sockets_per_node[0] value");
-		TEST(job1->sock_core_rep_count[0] == 1, "sock_core_rep_count[0] value");
-		TEST(job1->cores_per_socket[1] == 5, "cores_per_socket[0] value");
-		TEST(job1->sockets_per_node[1] == 3, "sockets_per_node[0] value");
-		TEST(job1->sock_core_rep_count[1] == 1, "sock_core_rep_count[0] value");
-		TEST(job1->cores_per_socket[2] == 4, "cores_per_socket[0] value");
-		TEST(job1->sockets_per_node[2] == 2, "sockets_per_node[0] value");
-		TEST(job1->sock_core_rep_count[2] == 1, "sock_core_rep_count[0] value");
-		TEST(bit_set_count(job1->core_bitmap) == 8, "core_bitmap count good");
-		TEST(bit_test(job1->core_bitmap,1), "core 1 set");
-		TEST(bit_test(job1->core_bitmap,6), "core 6 set");
-		TEST(bit_test(job1->core_bitmap,7), "core 7 set");
-		TEST(bit_test(job1->core_bitmap,8), "core 8 set");
-		TEST(bit_test(job1->core_bitmap,12), "core 12 set");
-		TEST(bit_test(job1->core_bitmap,22), "core 22 set");
-		TEST(bit_test(job1->core_bitmap,25), "core 25 set");
-		TEST(bit_test(job1->core_bitmap,25), "core 27 set");
+		ck_assert_msg(bit_set_count(job1->node_bitmap) == 3, "node_bitmap count good");
+		ck_assert_msg(bit_test(job1->node_bitmap,1), "node 1 set");
+		ck_assert_msg(bit_test(job1->node_bitmap,4), "node 4 set");
+		ck_assert_msg(bit_test(job1->node_bitmap,6), "node 6 set");
+		ck_assert_msg(job1->cores_per_socket[0] == 4, "cores_per_socket[0] value");
+		ck_assert_msg(job1->sockets_per_node[0] == 2, "sockets_per_node[0] value");
+		ck_assert_msg(job1->sock_core_rep_count[0] == 1, "sock_core_rep_count[0] value");
+		ck_assert_msg(job1->cores_per_socket[1] == 5, "cores_per_socket[0] value");
+		ck_assert_msg(job1->sockets_per_node[1] == 3, "sockets_per_node[0] value");
+		ck_assert_msg(job1->sock_core_rep_count[1] == 1, "sock_core_rep_count[0] value");
+		ck_assert_msg(job1->cores_per_socket[2] == 4, "cores_per_socket[0] value");
+		ck_assert_msg(job1->sockets_per_node[2] == 2, "sockets_per_node[0] value");
+		ck_assert_msg(job1->sock_core_rep_count[2] == 1, "sock_core_rep_count[0] value");
+		ck_assert_msg(bit_set_count(job1->core_bitmap) == 8, "core_bitmap count good");
+		ck_assert_msg(bit_test(job1->core_bitmap,1), "core 1 set");
+		ck_assert_msg(bit_test(job1->core_bitmap,6), "core 6 set");
+		ck_assert_msg(bit_test(job1->core_bitmap,7), "core 7 set");
+		ck_assert_msg(bit_test(job1->core_bitmap,8), "core 8 set");
+		ck_assert_msg(bit_test(job1->core_bitmap,12), "core 12 set");
+		ck_assert_msg(bit_test(job1->core_bitmap,22), "core 22 set");
+		ck_assert_msg(bit_test(job1->core_bitmap,25), "core 25 set");
+		ck_assert_msg(bit_test(job1->core_bitmap,25), "core 27 set");
 	}
 	_free_job_res(job1);
 	_free_job_res(job2);
+}
+END_TEST
 
-	note("Testing job_resources_and");
+START_TEST(test_job_resources_and)
+{
+	job_resources_t *job1, *job2;
+
 	job1 = _alloc_job_res();
 	job1->cores_per_socket[0] = 4;
 	job1->sockets_per_node[0] = 2;
@@ -141,22 +130,45 @@ main(int argc, char *argv[])
 	bit_set(job2->core_bitmap, 22);
 
 	if (job_resources_and(job1, job2) != 0) {
-		fail("job_resources_and function fail");
+		ck_abort_msg("job_resources_and function fail");
 	} else {
-		TEST(bit_set_count(job1->node_bitmap) == 2, "node_bitmap count good");
-		TEST(bit_test(job1->node_bitmap,0), "node 0 set");
-		TEST(bit_test(job1->node_bitmap,2), "node 2 set");
-		TEST(!bit_test(job1->node_bitmap,4), "node 4 unset");
-		TEST(job1->cores_per_socket[0] == 4, "cores_per_socket[0] value");
-		TEST(job1->sockets_per_node[0] == 2, "sockets_per_node[0] value");
-		TEST(bit_set_count(job1->core_bitmap) == 2, "core_bitmap count good");
-		TEST(bit_test(job1->core_bitmap,8), "core 8 set");
-		TEST(bit_test(job1->core_bitmap,15), "core 15 set");
+		ck_assert_msg(bit_set_count(job1->node_bitmap) == 2, "node_bitmap count good");
+		ck_assert_msg(bit_test(job1->node_bitmap,0), "node 0 set");
+		ck_assert_msg(bit_test(job1->node_bitmap,2), "node 2 set");
+		ck_assert_msg(!bit_test(job1->node_bitmap,4), "node 4 unset");
+		ck_assert_msg(job1->cores_per_socket[0] == 4, "cores_per_socket[0] value");
+		ck_assert_msg(job1->sockets_per_node[0] == 2, "sockets_per_node[0] value");
+		ck_assert_msg(bit_set_count(job1->core_bitmap) == 2, "core_bitmap count good");
+		ck_assert_msg(bit_test(job1->core_bitmap,8), "core 8 set");
+		ck_assert_msg(bit_test(job1->core_bitmap,15), "core 15 set");
 	}
 
 	_free_job_res(job1);
 	_free_job_res(job2);
+}
+END_TEST
 
-	totals();
-	return failed;
+Suite *job_resources_suite(void)
+{
+	Suite *s = suite_create("job_resources");
+	TCase *tc_core = tcase_create("job_resources");
+
+	tcase_add_test(tc_core, test_job_resources_or);
+	tcase_add_test(tc_core, test_job_resources_and);
+
+	suite_add_tcase(s, tc_core);
+	return s;
+}
+
+int main(void)
+{
+	/* Start the actual libcheck code */
+	int number_failed;
+	SRunner *sr = srunner_create(job_resources_suite());
+
+	srunner_run_all(sr, CK_ENV);
+	number_failed = srunner_ntests_failed(sr);
+	srunner_free(sr);
+
+	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

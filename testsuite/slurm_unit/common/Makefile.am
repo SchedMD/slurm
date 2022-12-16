@@ -14,9 +14,7 @@ check_PROGRAMS = \
 	$(TESTS)
 
 TESTS = \
-	job-resources-test \
-	log-test \
-	pack-test
+	log-test
 
 if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@ -Wall
@@ -26,6 +24,8 @@ TESTS += xhash-test \
 	 slurm_opt-test \
 	 xstring-test \
 	 parse_time-test \
+	 job-resources-test \
+	 pack-test \
 	 reverse_tree-test
 
 xhash_test_CFLAGS = $(MYCFLAGS)
@@ -38,6 +38,10 @@ xstring_test_CFLAGS   = $(MYCFLAGS)
 xstring_test_LDADD    = $(LDADD) @CHECK_LIBS@
 parse_time_test_CFLAGS= $(MYCFLAGS)
 parse_time_test_LDADD = $(LDADD) @CHECK_LIBS@
+job_resources_test_CFLAGS = $(MYCFLAGS)
+job_resources_test_LDADD = $(LDADD) @CHECK_LIBS@
+pack_test_CFLAGS = $(MYCFLAGS)
+pack_test_LDADD = $(LDADD) @CHECK_LIBS@
 reverse_tree_test_CFLAGS = $(MYCFLAGS)
 reverse_tree_test_LDADD = $(LDADD) @CHECK_LIBS@
 endif

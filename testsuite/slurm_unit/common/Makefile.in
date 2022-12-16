@@ -89,13 +89,14 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 check_PROGRAMS = $(am__EXEEXT_2)
-TESTS = job-resources-test$(EXEEXT) log-test$(EXEEXT) \
-	pack-test$(EXEEXT) $(am__EXEEXT_1)
+TESTS = log-test$(EXEEXT) $(am__EXEEXT_1)
 @HAVE_CHECK_TRUE@am__append_1 = xhash-test \
 @HAVE_CHECK_TRUE@	 data-test \
 @HAVE_CHECK_TRUE@	 slurm_opt-test \
 @HAVE_CHECK_TRUE@	 xstring-test \
 @HAVE_CHECK_TRUE@	 parse_time-test \
+@HAVE_CHECK_TRUE@	 job-resources-test \
+@HAVE_CHECK_TRUE@	 pack-test \
 @HAVE_CHECK_TRUE@	 reverse_tree-test
 
 subdir = testsuite/slurm_unit/common
@@ -161,9 +162,9 @@ CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = xhash-test$(EXEEXT) data-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	slurm_opt-test$(EXEEXT) xstring-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	parse_time-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	reverse_tree-test$(EXEEXT)
-am__EXEEXT_2 = job-resources-test$(EXEEXT) log-test$(EXEEXT) \
-	pack-test$(EXEEXT) $(am__EXEEXT_1)
+@HAVE_CHECK_TRUE@	job-resources-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	pack-test$(EXEEXT) reverse_tree-test$(EXEEXT)
+am__EXEEXT_2 = log-test$(EXEEXT) $(am__EXEEXT_1)
 data_test_SOURCES = data-test.c
 data_test_OBJECTS = data_test-data-test.$(OBJEXT)
 am__DEPENDENCIES_1 =
@@ -177,18 +178,24 @@ data_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(data_test_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 job_resources_test_SOURCES = job-resources-test.c
-job_resources_test_OBJECTS = job-resources-test.$(OBJEXT)
-job_resources_test_LDADD = $(LDADD)
-job_resources_test_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+job_resources_test_OBJECTS =  \
+	job_resources_test-job-resources-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@job_resources_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
+job_resources_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(job_resources_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 log_test_SOURCES = log-test.c
 log_test_OBJECTS = log-test.$(OBJEXT)
 log_test_LDADD = $(LDADD)
 log_test_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 pack_test_SOURCES = pack-test.c
-pack_test_OBJECTS = pack-test.$(OBJEXT)
-pack_test_LDADD = $(LDADD)
-pack_test_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+pack_test_OBJECTS = pack_test-pack-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@pack_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
+pack_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(pack_test_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 parse_time_test_SOURCES = parse_time-test.c
 parse_time_test_OBJECTS = parse_time_test-parse_time-test.$(OBJEXT)
 @HAVE_CHECK_TRUE@parse_time_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
@@ -240,8 +247,8 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/data_test-data-test.Po \
-	./$(DEPDIR)/job-resources-test.Po ./$(DEPDIR)/log-test.Po \
-	./$(DEPDIR)/pack-test.Po \
+	./$(DEPDIR)/job_resources_test-job-resources-test.Po \
+	./$(DEPDIR)/log-test.Po ./$(DEPDIR)/pack_test-pack-test.Po \
 	./$(DEPDIR)/parse_time_test-parse_time-test.Po \
 	./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po \
 	./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po \
@@ -798,6 +805,10 @@ LDADD = $(LIB_SLURM) $(DL_LIBS)
 @HAVE_CHECK_TRUE@xstring_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@parse_time_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@parse_time_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@job_resources_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@job_resources_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@pack_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@pack_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@reverse_tree_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@reverse_tree_test_LDADD = $(LDADD) @CHECK_LIBS@
 all: all-recursive
@@ -849,7 +860,7 @@ data-test$(EXEEXT): $(data_test_OBJECTS) $(data_test_DEPENDENCIES) $(EXTRA_data_
 
 job-resources-test$(EXEEXT): $(job_resources_test_OBJECTS) $(job_resources_test_DEPENDENCIES) $(EXTRA_job_resources_test_DEPENDENCIES) 
 	@rm -f job-resources-test$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(job_resources_test_OBJECTS) $(job_resources_test_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(job_resources_test_LINK) $(job_resources_test_OBJECTS) $(job_resources_test_LDADD) $(LIBS)
 
 log-test$(EXEEXT): $(log_test_OBJECTS) $(log_test_DEPENDENCIES) $(EXTRA_log_test_DEPENDENCIES) 
 	@rm -f log-test$(EXEEXT)
@@ -857,7 +868,7 @@ log-test$(EXEEXT): $(log_test_OBJECTS) $(log_test_DEPENDENCIES) $(EXTRA_log_test
 
 pack-test$(EXEEXT): $(pack_test_OBJECTS) $(pack_test_DEPENDENCIES) $(EXTRA_pack_test_DEPENDENCIES) 
 	@rm -f pack-test$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(pack_test_OBJECTS) $(pack_test_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(pack_test_LINK) $(pack_test_OBJECTS) $(pack_test_LDADD) $(LIBS)
 
 parse_time-test$(EXEEXT): $(parse_time_test_OBJECTS) $(parse_time_test_DEPENDENCIES) $(EXTRA_parse_time_test_DEPENDENCIES) 
 	@rm -f parse_time-test$(EXEEXT)
@@ -886,9 +897,9 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_test-data-test.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job-resources-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_resources_test-job-resources-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log-test.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_test-pack-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_time_test-parse_time-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po@am__quote@ # am--include-marker
@@ -935,6 +946,34 @@ data_test-data-test.obj: data-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='data-test.c' object='data_test-data-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_test_CFLAGS) $(CFLAGS) -c -o data_test-data-test.obj `if test -f 'data-test.c'; then $(CYGPATH_W) 'data-test.c'; else $(CYGPATH_W) '$(srcdir)/data-test.c'; fi`
+
+job_resources_test-job-resources-test.o: job-resources-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(job_resources_test_CFLAGS) $(CFLAGS) -MT job_resources_test-job-resources-test.o -MD -MP -MF $(DEPDIR)/job_resources_test-job-resources-test.Tpo -c -o job_resources_test-job-resources-test.o `test -f 'job-resources-test.c' || echo '$(srcdir)/'`job-resources-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/job_resources_test-job-resources-test.Tpo $(DEPDIR)/job_resources_test-job-resources-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='job-resources-test.c' object='job_resources_test-job-resources-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(job_resources_test_CFLAGS) $(CFLAGS) -c -o job_resources_test-job-resources-test.o `test -f 'job-resources-test.c' || echo '$(srcdir)/'`job-resources-test.c
+
+job_resources_test-job-resources-test.obj: job-resources-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(job_resources_test_CFLAGS) $(CFLAGS) -MT job_resources_test-job-resources-test.obj -MD -MP -MF $(DEPDIR)/job_resources_test-job-resources-test.Tpo -c -o job_resources_test-job-resources-test.obj `if test -f 'job-resources-test.c'; then $(CYGPATH_W) 'job-resources-test.c'; else $(CYGPATH_W) '$(srcdir)/job-resources-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/job_resources_test-job-resources-test.Tpo $(DEPDIR)/job_resources_test-job-resources-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='job-resources-test.c' object='job_resources_test-job-resources-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(job_resources_test_CFLAGS) $(CFLAGS) -c -o job_resources_test-job-resources-test.obj `if test -f 'job-resources-test.c'; then $(CYGPATH_W) 'job-resources-test.c'; else $(CYGPATH_W) '$(srcdir)/job-resources-test.c'; fi`
+
+pack_test-pack-test.o: pack-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_test_CFLAGS) $(CFLAGS) -MT pack_test-pack-test.o -MD -MP -MF $(DEPDIR)/pack_test-pack-test.Tpo -c -o pack_test-pack-test.o `test -f 'pack-test.c' || echo '$(srcdir)/'`pack-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_test-pack-test.Tpo $(DEPDIR)/pack_test-pack-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack-test.c' object='pack_test-pack-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_test_CFLAGS) $(CFLAGS) -c -o pack_test-pack-test.o `test -f 'pack-test.c' || echo '$(srcdir)/'`pack-test.c
+
+pack_test-pack-test.obj: pack-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_test_CFLAGS) $(CFLAGS) -MT pack_test-pack-test.obj -MD -MP -MF $(DEPDIR)/pack_test-pack-test.Tpo -c -o pack_test-pack-test.obj `if test -f 'pack-test.c'; then $(CYGPATH_W) 'pack-test.c'; else $(CYGPATH_W) '$(srcdir)/pack-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_test-pack-test.Tpo $(DEPDIR)/pack_test-pack-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack-test.c' object='pack_test-pack-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_test_CFLAGS) $(CFLAGS) -c -o pack_test-pack-test.obj `if test -f 'pack-test.c'; then $(CYGPATH_W) 'pack-test.c'; else $(CYGPATH_W) '$(srcdir)/pack-test.c'; fi`
 
 parse_time_test-parse_time-test.o: parse_time-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(parse_time_test_CFLAGS) $(CFLAGS) -MT parse_time_test-parse_time-test.o -MD -MP -MF $(DEPDIR)/parse_time_test-parse_time-test.Tpo -c -o parse_time_test-parse_time-test.o `test -f 'parse_time-test.c' || echo '$(srcdir)/'`parse_time-test.c
@@ -1252,23 +1291,9 @@ recheck: all $(check_PROGRAMS)
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
-job-resources-test.log: job-resources-test$(EXEEXT)
-	@p='job-resources-test$(EXEEXT)'; \
-	b='job-resources-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 log-test.log: log-test$(EXEEXT)
 	@p='log-test$(EXEEXT)'; \
 	b='log-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-pack-test.log: pack-test$(EXEEXT)
-	@p='pack-test$(EXEEXT)'; \
-	b='pack-test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1304,6 +1329,20 @@ xstring-test.log: xstring-test$(EXEEXT)
 parse_time-test.log: parse_time-test$(EXEEXT)
 	@p='parse_time-test$(EXEEXT)'; \
 	b='parse_time-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+job-resources-test.log: job-resources-test$(EXEEXT)
+	@p='job-resources-test$(EXEEXT)'; \
+	b='job-resources-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+pack-test.log: pack-test$(EXEEXT)
+	@p='pack-test$(EXEEXT)'; \
+	b='pack-test'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1376,9 +1415,9 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 
 distclean: distclean-recursive
 		-rm -f ./$(DEPDIR)/data_test-data-test.Po
-	-rm -f ./$(DEPDIR)/job-resources-test.Po
+	-rm -f ./$(DEPDIR)/job_resources_test-job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
-	-rm -f ./$(DEPDIR)/pack-test.Po
+	-rm -f ./$(DEPDIR)/pack_test-pack-test.Po
 	-rm -f ./$(DEPDIR)/parse_time_test-parse_time-test.Po
 	-rm -f ./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po
 	-rm -f ./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
@@ -1430,9 +1469,9 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
 		-rm -f ./$(DEPDIR)/data_test-data-test.Po
-	-rm -f ./$(DEPDIR)/job-resources-test.Po
+	-rm -f ./$(DEPDIR)/job_resources_test-job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
-	-rm -f ./$(DEPDIR)/pack-test.Po
+	-rm -f ./$(DEPDIR)/pack_test-pack-test.Po
 	-rm -f ./$(DEPDIR)/parse_time_test-parse_time-test.Po
 	-rm -f ./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po
 	-rm -f ./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
