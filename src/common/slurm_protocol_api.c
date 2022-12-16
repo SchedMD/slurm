@@ -2194,16 +2194,6 @@ static void _resp_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
 		slurm_msg_set_r_uid(resp_msg, SLURM_AUTH_UID_ANY);
 }
 
-static void _rc_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
-			  return_code_msg_t *rc_msg, int rc)
-{
-	memset(rc_msg, 0, sizeof(return_code_msg_t));
-	rc_msg->return_code = rc;
-
-	_resp_msg_setup(msg, resp_msg, RESPONSE_SLURM_RC, rc_msg);
-}
-
-
 /**********************************************************************\
  * simplified communication routines
  * They open a connection do work then close the connection all within
@@ -2246,7 +2236,9 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 		slurm_seterrno(ENOTCONN);
 		return SLURM_ERROR;
 	}
-	_rc_msg_setup(msg, &resp_msg, &rc_msg, rc);
+	rc_msg.return_code = rc;
+
+	_resp_msg_setup(msg, &resp_msg, RESPONSE_SLURM_RC, &rc_msg);
 
 	/* send message */
 	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
