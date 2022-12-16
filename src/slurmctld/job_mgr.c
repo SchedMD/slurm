@@ -14684,8 +14684,6 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
  */
 extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 {
-
-	slurm_msg_t resp_msg;
 	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
 	job_record_t *job_ptr, *new_job_ptr, *het_job;
 	char *hostname = auth_g_get_host(msg->auth_cred);
@@ -14701,7 +14699,6 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	char *err_msg = NULL;
 	resp_array_struct_t *resp_array = NULL;
 	job_array_resp_msg_t *resp_array_msg = NULL;
-	return_code2_msg_t rc_msg;
 
 	job_id_str = job_specs->job_id_str;
 
@@ -14911,22 +14908,16 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 
 reply:
 	if ((rc != ESLURM_JOB_SETTING_DB_INX) && (msg->conn_fd >= 0)) {
-		response_init(&resp_msg, msg);
 		if (resp_array) {
+			slurm_msg_t resp_msg;
+			response_init(&resp_msg, msg);
 			resp_array_msg = _resp_array_xlate(resp_array, job_id);
 			resp_msg.msg_type  = RESPONSE_JOB_ARRAY_ERRORS;
 			resp_msg.data      = resp_array_msg;
-		} else {
-			resp_msg.msg_type  = RESPONSE_SLURM_RC_MSG;
-			rc_msg.return_code = rc;
-			rc_msg.err_msg = err_msg;
-			resp_msg.data      = &rc_msg;
-		}
-		slurm_send_node_msg(msg->conn_fd, &resp_msg);
-
-		if (resp_array_msg) {
+			slurm_send_node_msg(msg->conn_fd, &resp_msg);
 			slurm_free_job_array_resp(resp_array_msg);
-			resp_msg.data = NULL;
+		} else {
+			slurm_send_rc_err_msg(msg, rc, err_msg);
 		}
 	}
 	_resp_array_free(resp_array);
