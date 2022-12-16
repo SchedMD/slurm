@@ -3232,7 +3232,7 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_skip_flag(preempt_mode, QOS_FLAG_BASE),
 	add_skip_flag(preempt_mode, QOS_FLAG_NOTSET),
 	add_skip_flag(preempt_mode, QOS_FLAG_ADD),
-	add_skip_flag(preempt_mode, QOS_FLAG_REMOVE ),
+	add_skip_flag(preempt_mode, QOS_FLAG_REMOVE),
 	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_PART_MIN_NODE, false, flags, "flags", QOS_FLAG_PART_MIN_NODE, "PARTITION_MINIMUM_NODE", NEED_NONE),
 	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_PART_MAX_NODE, false, flags, "flags", QOS_FLAG_PART_MAX_NODE, "PARTITION_MAXIMUM_NODE", NEED_NONE),
 	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_PART_TIME_LIMIT, false, flags, "flags", QOS_FLAG_PART_TIME_LIMIT, "PARTITION_TIME_LIMIT", NEED_NONE),
