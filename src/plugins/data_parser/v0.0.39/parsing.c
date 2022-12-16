@@ -745,10 +745,17 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 		goto done;
 
 	/* only look for child via key if there was one defined */
-	if (parser->key)
+	if (parser->key) {
+		/*
+		 * Detect duplicate keys - unless parser is for an enum flag
+		 * where repeats are expected.
+		 */
+		xassert((parser->flag == FLAG_TYPE_BIT) ||
+			!data_resolve_dict_path(dst, parser->key));
 		pd = data_define_dict_path(dst, parser->key);
-	else
+	} else {
 		pd = dst;
+	}
 
 	xassert(pd && (data_get_type(pd) != DATA_TYPE_NONE));
 
