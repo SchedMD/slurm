@@ -211,14 +211,17 @@ function __slurm_compreply_param() {
 	local options="$1"
 	local compreply=()
 	local IFS=$' \t\n'
+	local p=""
 
 	__slurm_log_debug "$(__func__): cur='$cur'"
 	__slurm_log_debug "$(__func__): options='$options'"
 
 	# build array without seen items
 	for param in $options; do
-		__slurm_log_trace "$(__func__): for loop: param='$param' param*='${param%%(\\)=*}'"
-		[[ ${words[*]} =~ ${param%%?(\\)=*}= ]] && continue
+		p="${param%%?(\\)=*}"
+		__slurm_log_trace "$(__func__): for loop: param='$param' p*='$p'"
+		[[ ${words[*]} =~ "${p}=" ]] && continue
+		[[ ${words[*]} =~ [[:space:]]+${p}[[:space:]]+ ]] && continue
 		compreply+=("$param")
 	done
 
@@ -231,7 +234,6 @@ function __slurm_compreply_param() {
 }
 
 # Value completion function for (comma) delimeted items
-# WARNING: options that contain '=' must be escaped as '\\\='
 #
 # $1: word list for completions
 # $2: reserved words, complete not in list (optional)
@@ -358,7 +360,11 @@ function __slurm_autocompletion() {
 	fi
 
 	local cmd="$context --autocomplete=\"$query\""
-	__slurm_func_wrapper "$cmd"
+	output="$(__slurm_func_wrapper "$cmd")"
+
+	__slurm_log_trace "$(__func__): output='$output'"
+
+	echo "${output}"
 }
 
 # Generic slurm command completion function
@@ -1032,7 +1038,7 @@ function __slurm_comp_flags() {
 	__slurm_log_debug "$(__func__): cmd='$cmd'"
 
 	case "${cur}" in
-	-*) __slurm_compreply "$(__slurm_autocompletion "$cmd")" ;;
+	-*) __slurm_compreply_param "$(__slurm_autocompletion "$cmd")" ;;
 	*) return 1 ;;
 	esac
 
@@ -1263,7 +1269,7 @@ function __slurm_comp_common() {
 	--network) __slurm_compreply "${network_types[*]}" ;;
 	-F | --nodefile) _filedir ;;
 	-w | --nodelist) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
-	--open-mode?(s)) __slurm_compreply_list "${open_modes[*]}" ;;
+	--open-mode?(s)) __slurm_compreply "${open_modes[*]}" ;;
 	-o | --output) _filedir ;;
 	-p | --partition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
 	--power) __slurm_compreply_list "${power_flags[*]}" ;;
@@ -1595,7 +1601,6 @@ function _sacct() {
 	--units) __slurm_compreply "${units[*]}" ;;
 	-W | --wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	--whole-hetjob) __slurm_compreply "$(__slurm_boolean)" ;;
-	*) __slurm_compreply "$(__slurm_autocompletion "$1")" ;;
 	esac
 
 	[[ $split == "true" ]] && return
@@ -3064,7 +3069,7 @@ function __scontrol_create_nodename() {
 	cpubind) __slurm_compreply "$(__slurm_cpubind_types)" ;;
 	feature?(s)) __slurm_compreply "$(__slurm_features)" ;;
 	gres) __slurm_compreply "$(__slurm_gres)" ;;
-	nodename?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	nodename?(s)) __slurm_compreply_list "$(__slurm_nodes)" "" "true" ;;
 	state) __slurm_compreply "${states[*]}" ;;
 	*)
 		[[ $split == "true" ]] && return
