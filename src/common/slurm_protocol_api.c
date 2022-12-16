@@ -2473,8 +2473,6 @@ tryagain:
 		rc = _send_and_recv_msg(fd, request_msg, response_msg, 0);
 		if (response_msg->auth_cred)
 			auth_g_destroy(response_msg->auth_cred);
-		else
-			rc = -1;
 
 		if ((rc == 0) && (!comm_cluster_rec)
 		    && (response_msg->msg_type == RESPONSE_SLURM_RC)
