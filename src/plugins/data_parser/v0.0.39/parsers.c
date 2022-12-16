@@ -2885,6 +2885,35 @@ static int DUMP_FUNC(STEP_INFO_MSG)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+PARSE_DISABLED(HOSTLIST)
+
+static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
+			       data_t *dst, args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	hostlist_t *host_list_ptr = obj;
+	hostlist_t host_list = *host_list_ptr;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	data_set_list(dst);
+
+	if (hostlist_count(host_list)) {
+		char *host;
+		hostlist_iterator_t itr = hostlist_iterator_create(host_list);
+
+		while ((host = hostlist_next(itr))) {
+			data_set_string(data_list_append(dst), host);
+			free(host);
+		}
+
+		hostlist_iterator_destroy(itr);
+	}
+
+	return rc;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -4040,6 +4069,7 @@ static const parser_t parsers[] = {
 	addps(CONTROLLER_PING_MODE, char *, NEED_NONE),
 	addps(CONTROLLER_PING_RESULT, char *, NEED_NONE),
 	addps(CONTROLLER_PING_ARRAY, controller_ping_t *, NEED_NONE),
+	addps(HOSTLIST, hostlist_t, NEED_NONE),
 
 	/* Complex type parsers */
 	addpc(QOS_PREEMPT_LIST, slurmdb_qos_rec_t, NEED_QOS),

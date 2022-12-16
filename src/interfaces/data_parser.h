@@ -248,6 +248,7 @@ typedef enum {
 	DATA_PARSER_JOB_SHARED, /* uint16_t - JOB_SHARED_* */
 	DATA_PARSER_ALLOCATED_CORES, /* uint32_t if slurm_conf.select_type_param & (CR_CORE|CR_SOCKET) */
 	DATA_PARSER_ALLOCATED_CPUS, /* uint32_t if slurm_conf.select_type_param & CR_CPU */
+	DATA_PARSER_HOSTLIST, /* hostlist_t */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
