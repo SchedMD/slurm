@@ -187,6 +187,10 @@ static int _check_hash(buf_t *buffer, header_t *header, slurm_msg_t *msg,
 	static bool block_null_hash = true;
 	static bool block_zero_hash = true;
 
+	/* No auth also means no hash to verify */
+	if (header->flags & SLURM_NO_AUTH_CRED)
+		return SLURM_SUCCESS;
+
 	if (config_update != slurm_conf.last_update) {
 		block_null_hash = (xstrcasestr(slurm_conf.comm_params,
 					       "block_null_hash"));
@@ -1056,6 +1060,9 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		xfree(header.forward.nodelist);
 	}
 
+	if (header.flags & SLURM_NO_AUTH_CRED)
+		goto skip_auth;
+
 	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
 		int rc2 = errno;
 
@@ -1092,6 +1099,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 	msg->auth_uid = auth_g_get_uid(auth_cred);
 	msg->auth_uid_set = true;
 
+skip_auth:
 	/*
 	 * Unpack message body
 	 */
@@ -1346,6 +1354,9 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		      __func__, peer);
 	}
 
+	if (header.flags & SLURM_NO_AUTH_CRED)
+		goto skip_auth;
+
 	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
 		/* peer may have not been resolved already */
 		if (!peer)
@@ -1378,6 +1389,8 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 
 	msg.auth_uid = auth_g_get_uid(auth_cred);
 	msg.auth_uid_set = true;
+
+skip_auth:
 
 	/*
 	 * Unpack message body
@@ -1543,6 +1556,8 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 		      __func__, peer);
 	}
 
+	if (header.flags & SLURM_NO_AUTH_CRED)
+		goto skip_auth;
 	/*
 	 * Skip credential verification here. This is on the reply path, so the
 	 * connections have been previously verified in the opposite direction.
@@ -1559,6 +1574,7 @@ extern List slurm_receive_resp_msgs(int fd, int steps, int timeout)
 	}
 	auth_g_destroy(auth_cred);
 
+skip_auth:
 	/*
 	 * Unpack message body
 	 */
@@ -1855,10 +1871,10 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 {
 	header_t header;
 	int rc;
-	void *auth_cred;
+	void *auth_cred = NULL;
 	time_t start_time = time(NULL);
 	slurm_hash_t hash = { 0 };
-	int h_len;
+	int h_len = 0;
 
 	if (!msg->restrict_uid_set)
 		fatal("%s: restrict_uid is not set", __func__);
@@ -1870,6 +1886,9 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 	log_flag_hex(NET_RAW, get_buf_data(buffers->body),
 		     get_buf_offset(buffers->body),
 		     "%s: packed body", __func__);
+
+	if (msg->flags & SLURM_NO_AUTH_CRED)
+		goto skip_auth1;
 
 	/*
 	 * Initialize header with Auth credential and message type.
@@ -1895,6 +1914,8 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 					  msg->restrict_uid, &hash, h_len);
 	}
 
+skip_auth1:
+
 	if (msg->forward.init != FORWARD_INIT) {
 		forward_init(&msg->forward);
 		msg->ret_list = NULL;
@@ -1907,6 +1928,9 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 		forward_wait(msg);
 
 	init_header(&header, msg, msg->flags);
+
+	if (msg->flags & SLURM_NO_AUTH_CRED)
+		goto skip_auth2;
 
 	if (difftime(time(NULL), start_time) >= 60) {
 		(void) auth_g_destroy(auth_cred);
@@ -1947,6 +1971,8 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 	log_flag_hex(NET_RAW, get_buf_data(buffers->auth),
 		     get_buf_offset(buffers->auth),
 		     "%s: packed auth_cred", __func__);
+
+skip_auth2:
 
 	/*
 	 * Pack and send message
