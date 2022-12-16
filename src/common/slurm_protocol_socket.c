@@ -339,8 +339,10 @@ extern size_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers)
 	 */
 	ohandler = xsignal(SIGPIPE, SIG_IGN);
 
+	/* auth portion is optional. header and body are mandatory. */
 	size += get_buf_offset(buffers->header);
-	size += get_buf_offset(buffers->auth);
+	if (buffers->auth)
+		size += get_buf_offset(buffers->auth);
 	size += get_buf_offset(buffers->body);
 
 	usize = htonl(size);
@@ -355,11 +357,13 @@ extern size_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers)
 			goto done;
 	len += part_len;
 
-	if ((part_len = _send_timeout(fd, get_buf_data(buffers->auth),
-				      get_buf_offset(buffers->auth), 0,
-				      &timeout)) < 0)
-			goto done;
-	len += part_len;
+	if (buffers->auth) {
+		if ((part_len = _send_timeout(fd, get_buf_data(buffers->auth),
+					      get_buf_offset(buffers->auth), 0,
+					      &timeout)) < 0)
+				goto done;
+		len += part_len;
+	}
 
 	if ((part_len = _send_timeout(fd, get_buf_data(buffers->body),
 				      get_buf_offset(buffers->body), 0,
