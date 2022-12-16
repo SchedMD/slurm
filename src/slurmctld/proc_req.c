@@ -2949,6 +2949,7 @@ send_resp:
 		       node_reg_stat_msg->node_name, TIME_STR);
 		/* If the slurmd is requesting a response send it */
 		if (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RESP) {
+			slurm_msg_t response_msg;
 			slurm_node_reg_resp_msg_t tmp_resp;
 			memset(&tmp_resp, 0, sizeof(tmp_resp));
 
@@ -2963,8 +2964,11 @@ send_resp:
 				tmp_resp.node_name =
 					node_reg_stat_msg->node_name;
 
-			slurm_send_msg(msg, RESPONSE_NODE_REGISTRATION,
-				       &tmp_resp);
+			response_init(&response_msg, msg);
+			response_msg.msg_type = RESPONSE_NODE_REGISTRATION;
+			response_msg.data = &tmp_resp;
+
+			slurm_send_node_msg(msg->conn_fd, &response_msg);
 		} else
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
