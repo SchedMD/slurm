@@ -1904,6 +1904,8 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 	if (block_for_forwarding)
 		forward_wait(msg);
 
+	init_header(&header, msg, msg->flags);
+
 	if (difftime(time(NULL), start_time) >= 60) {
 		(void) auth_g_destroy(auth_cred);
 		if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
@@ -1924,8 +1926,6 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 		FREE_NULL_BUFFER(buffers->body);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
-
-	init_header(&header, msg, msg->flags);
 
 	/*
 	 * Pack auth credential
