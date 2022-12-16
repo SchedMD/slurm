@@ -250,6 +250,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.38 - add maximum_memory_per_cpu to GET /partitions
  -- openapi/v0.0.38 - add default_memory_per_node to GET /partitions
  -- Fix dynamic node losing dynamic node status when changing state to FUTURE.
+ -- Fix adoption into most recent job in pam_slurm_adopt and cgroup/v2.
 
 * Changes in Slurm 22.05.6
 ==========================
