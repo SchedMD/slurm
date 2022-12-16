@@ -2200,27 +2200,6 @@ static void _resp_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
  * the function
 \**********************************************************************/
 
-/* slurm_send_msg
- * given the original request message this function sends a
- *	arbitrary message back to the client that made the request
- * IN request_msg	- slurm_msg the request msg
- * IN msg_type          - message type being returned
- * IN resp_msg		- the message being returned to the client
- */
-int slurm_send_msg(slurm_msg_t *msg, uint16_t msg_type, void *resp)
-{
-	slurm_msg_t resp_msg;
-
-	if (msg->conn_fd < 0) {
-		slurm_seterrno(ENOTCONN);
-		return SLURM_ERROR;
-	}
-	_resp_msg_setup(msg, &resp_msg, msg_type, resp);
-
-	/* send message */
-	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
-}
-
 /* slurm_send_rc_msg
  * given the original request message this function sends a
  *	slurm_return_code message back to the client that made the request
