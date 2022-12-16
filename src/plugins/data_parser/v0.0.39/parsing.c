@@ -655,9 +655,9 @@ static int dump_flag(void *src, const parser_t *const parser, data_t *dst,
 	}
 
 	switch (parser->flag) {
-	case FLAG_TYPE_BIT :
+	case FLAG_TYPE_BIT:
 		return _dump_flag_bit(args, obj, dst, parser);
-	case FLAG_TYPE_BOOL :
+	case FLAG_TYPE_BOOL:
 		return _dump_flag_bool(args, obj, dst, parser);
 	default :
 		fatal("%s: invalid flag type: 0x%d", __func__, parser->flag);
