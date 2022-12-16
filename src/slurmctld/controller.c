@@ -3816,7 +3816,6 @@ extern void slurm_rpc_control_status(slurm_msg_t *msg)
 	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_CONTROL_STATUS;
 	response_msg.data = &data;
-	response_msg.data_size = sizeof(control_status_msg_t);
 	memset(&data, 0, sizeof(data));
 	data.backup_inx = backup_inx;
 	data.control_time = control_time;
