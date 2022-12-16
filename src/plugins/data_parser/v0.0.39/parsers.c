@@ -1682,14 +1682,13 @@ PARSE_DISABLED(STEP_NODES)
 static int DUMP_FUNC(STEP_NODES)(const parser_t *const parser, void *src,
 				 data_t *dst, args_t *args)
 {
+	int rc;
 	slurmdb_step_rec_t *step = src;
 	hostlist_t host_list;
 
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->magic == MAGIC_ARGS);
 	check_parser(parser);
-
-	(void) data_set_list(dst);
 
 	/* ignore empty node list */
 	if (!step->nodes)
@@ -1699,20 +1698,11 @@ static int DUMP_FUNC(STEP_NODES)(const parser_t *const parser, void *src,
 		return errno;
 
 	xassert(hostlist_count(host_list) == step->nnodes);
-	if (hostlist_count(host_list)) {
-		char *host;
-		hostlist_iterator_t itr = hostlist_iterator_create(host_list);
 
-		while ((host = hostlist_next(itr))) {
-			data_set_string(data_list_append(dst), host);
-			free(host);
-		}
-
-		hostlist_iterator_destroy(itr);
-	}
+	rc = DUMP(HOSTLIST, host_list, dst, args);
 
 	FREE_NULL_HOSTLIST(host_list);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 PARSE_DISABLED(STEP_TRES_REQ_MAX)
