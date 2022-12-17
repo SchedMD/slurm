@@ -30,7 +30,7 @@ SOURCE DISTRIBUTION HIERARCHY
 The top-level distribution directory contains this README as well as
 other high-level documentation files, and the scripts used to configure
 and build Slurm (see INSTALL). Subdirectories contain the source-code
-for Slurm as well as a DejaGNU test suite and further documentation. A
+for Slurm as well as a test suite and further documentation. A
 quick description of the subdirectories of the Slurm distribution follows:
 
   src/        [ Slurm source ]
@@ -51,9 +51,8 @@ quick description of the subdirectories of the Slurm distribution follows:
      and slurm_errno.h, needed for compiling against the Slurm API.
 
   testsuite/  [ Slurm test suite ]
-     The testsuite directory contains the framework for a set of
-     DejaGNU and "make check" type tests for Slurm components.
-     There is also an extensive collection of Expect scripts.
+     The testsuite directory contains an extensive collection of tests written
+     for Check, Expect and Pytest.
 
   auxdir/     [ autotools directory ]
      Directory for autotools scripts and files used to configure and

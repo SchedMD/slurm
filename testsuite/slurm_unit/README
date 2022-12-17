@@ -1,10 +1,5 @@
-Deja Gnu Unit Tests
+Unit Tests
 
-1. These tests execute only when Slurm is built directly in the source
-   directory, not when a separate build directory is used.
-2. Ensure the "expect", "dejagnu" and "check" packages are installed.
-3. From the top level source directory, execute "make check", which builds
-   the executable files including various src/common/*.o files that will be
-   unit tested.
-3. Change working directory to "testsuite/slurm_unit".
-4. Execute "make check" to execute the unit tests.
+1. Ensure that "check" package is installed.
+2. From the top level build directory, execute "make check", which builds
+   and executes unit tests with Check.

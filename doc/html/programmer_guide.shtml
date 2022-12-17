@@ -72,8 +72,7 @@ All of the top-level subdirectories are described below.</p>
 these header files in this location makes for better code portability.<br>
 <b>src</b> &mdash; Contains all source code and header files not in the "slurm" subdirectory
 described above.<br>
-<b>testsuite</b> &mdash; DejaGnu and Expect are used for testing all of its files
-are here.</p>
+<b>testsuite</b> &mdash; Check, Expect and Pytest tests are here.</p>
 
 
 <h2 id="Documentation">Documentation
@@ -195,14 +194,18 @@ Slurm daemon(s) should execute on any node based upon the configuration file con
 It will also manage these daemons: starting, signaling, restarting, and stopping them.</p>
 
 <h2 id="Test-Suite">Test Suite<a class="slurm_link" href="#Test-Suite"></a></h2>
-<p>The <b>testsuite</b> files use a DejaGnu framework for testing. These tests
-are very limited in scope.</p>
+<p>The <b>testsuite</b> files use Check, Expect and Pytest for testing Slurm in
+differents ways.</p>
+
+<p>The Check tests are designed to unit test C code. Only with
+<i>make check</i>, without Slurm installed, they will validate that key C
+functions work correctly.</p>
 
 <p>We also have a set of Expect Slurm tests available under the <b>testsuite/expect</b>
 directory.  These tests are executed after Slurm has been installed
-and the daemons initiated. About 400 test scripts exercise all Slurm commands
+and the daemons initiated. These tests exercise all Slurm commands
 and options including stress tests.  The file <b>testsuite/expect/globals</b>
-contains default paths and procedures for all of the individual tests.  At
+contains the Expect test framewrok for all of the individual tests.  At
 the very least, you will need to set the <i>slurm_dir</i> variable to the correct
 value.  To avoid conflicts with other developers, you can override variable settings
 in a separate file named <b>testsuite/expect/globals.local</b>.</p>
@@ -213,6 +216,10 @@ starting these tests.  Tests may be executed individually by name
 or the full test suite may be executed with the single command
 <i>regression.py</i>.
 See <b>testsuite/expect/README</b> for more information.</p>
+
+<p>Slurm also has a Pytest environment that can work like the Expect one, but it
+also works together with an external QA framework to improve the overall QA
+of Slurm.</p>
 
 <h2 id="Adding-Files-and-Directories">Adding Files and Directories
 <a class="slurm_link" href="#Adding-Files-and-Directories"></a>
