@@ -1789,7 +1789,7 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 	struct _range *ranges = NULL;
 	int capacity = 0;
 	int nr, err;
-	char *cur_tok = NULL, *p, *tok, *str, *orig;
+	char *p, *tok, *str, *orig;
 
 	if (hostlist == NULL)
 		return new;
@@ -1818,22 +1818,9 @@ _hostlist_create_bracketed(const char *hostlist, char *sep,
 					    new, prefix, ranges, nr, dims))
 					goto error;
 			} else {
-				/* The hostname itself contains a '['
-				 * (no ']' found).
-				 * Not likely what the user
-				 * wanted. We will just tack one on
-				 * the end. */
-				if (prefix && prefix[0]) {
-					xstrfmtcat(cur_tok, "%s]", tok);
-					hostlist_push_host_dims(
-						new, cur_tok, dims);
-					xfree(cur_tok);
-				} else {
-					hostlist_push_host_dims(new, p, dims);
-				}
-
+				/* Found '[' but ']' is missing. */
+				goto error;
 			}
-
 		} else {
 			hostlist_push_host_dims(new, tok, dims);
 		}

@@ -197,6 +197,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix jobs submitted with a deadline never being cleared after the
     reservation is done.
  -- Change srun/salloc to wait indefinitely for their allocations to be ready.
+ -- Do not attempt to "fix" malformed input to 'scontrol show hostlist'.
 
 * Changes in Slurm 22.05.7
 ==========================
