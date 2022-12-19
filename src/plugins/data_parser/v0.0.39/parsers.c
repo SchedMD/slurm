@@ -2265,25 +2265,6 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(NODE_BASE_STATE)
-
-static int DUMP_FUNC(NODE_BASE_STATE)(const parser_t *const parser, void *obj,
-				      data_t *dst, args_t *args)
-{
-	uint32_t *state_ptr = obj;
-	uint32_t state = *state_ptr;
-	char *str_state;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
-	str_state = xstrdup(node_state_base_string(state));
-	xstrtolower(str_state);
-	data_set_string_own(dst, str_state);
-
-	return SLURM_SUCCESS;
-}
-
 PARSE_DISABLED(CSV_LIST)
 
 static int DUMP_FUNC(CSV_LIST)(const parser_t *const parser, void *obj,
@@ -3170,6 +3151,10 @@ static const parser_t PARSER_ARRAY(ASSOC_SHORT)[] = {
 #undef add_parse
 #undef add_parse_req
 
+static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_FLAGS)[] = {
+	add_flag_bit(ASSOC_FLAG_DELETED, "DELETED"),
+};
+
 #define add_skip(field) \
 	add_parser_skip(slurmdb_assoc_rec_t, field)
 #define add_parse(mtype, field, path, needs) \
@@ -3185,7 +3170,7 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_skip(bf_usage),
 	add_parse(STRING, cluster, "cluster", NEED_NONE),
 	add_parse(QOS_ID, def_qos_id, "default/qos", NEED_QOS),
-	add_parser_enum_flag(slurmdb_assoc_rec_t, ASSOC_FLAG_DELETED, false, flags, "flags", ASSOC_FLAG_DELETED, "DELETED", NEED_NONE),
+	add_parse_bit_flag_array(slurmdb_assoc_rec_t, ASSOC_FLAGS, false, flags, "flags"),
 	add_skip(lft),
 	add_parse(UINT32, grp_jobs, "max/jobs/per/count", NEED_NONE),
 	add_parse(UINT32, grp_jobs_accrue, "max/jobs/per/accruing", NEED_NONE),
@@ -3230,6 +3215,11 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 #undef add_parse_req
 #undef add_skip
 
+static const flag_bit_t PARSER_FLAG_ARRAY(USER_FLAGS)[] = {
+	add_flag_equal(SLURMDB_USER_FLAG_NONE, INFINITE64, "NONE"),
+	add_flag_bit(SLURMDB_USER_FLAG_DELETED, "DELETED"),
+};
+
 #define add_skip(field) \
 	add_parser_skip(slurmdb_user_rec_t, field)
 #define add_parse(mtype, field, path, needs) \
@@ -3243,7 +3233,7 @@ static const parser_t PARSER_ARRAY(USER)[] = {
 	add_parse(COORD_LIST, coord_accts, "coordinators", NEED_NONE),
 	add_parse(STRING, default_acct, "default/account", NEED_NONE),
 	add_parse(STRING, default_wckey, "default/wckey", NEED_NONE),
-	add_parser_enum_flag(slurmdb_user_rec_t, USER_FLAG_DELETED, false, flags, "flags", SLURMDB_USER_FLAG_DELETED, "DELETED", NEED_NONE),
+	add_parse_bit_flag_array(slurmdb_user_rec_t, USER_FLAGS, false, flags, "flags"),
 	add_parse_req(STRING, name, "name", NEED_NONE),
 	add_skip(old_name),
 	/* uid should always be 0 */
@@ -3252,6 +3242,15 @@ static const parser_t PARSER_ARRAY(USER)[] = {
 #undef add_parse
 #undef add_parse_req
 #undef add_skip
+
+static const flag_bit_t PARSER_FLAG_ARRAY(SLURMDB_JOB_FLAGS)[] = {
+	add_flag_equal(SLURMDB_JOB_FLAG_NONE, INFINITE64, "NONE"),
+	add_flag_bit(SLURMDB_JOB_CLEAR_SCHED, "CLEAR_SCHEDULING"),
+	add_flag_bit(SLURMDB_JOB_FLAG_NOTSET, "NOT_SET"),
+	add_flag_bit(SLURMDB_JOB_FLAG_SUBMIT, "STARTED_ON_SUBMIT"),
+	add_flag_bit(SLURMDB_JOB_FLAG_SCHED, "STARTED_ON_SCHEDULE"),
+	add_flag_bit(SLURMDB_JOB_FLAG_BACKFILL, "STARTED_ON_BACKFILL"),
+};
 
 #define add_skip(field) \
 	add_parser_skip(slurmdb_user_rec_t, field)
@@ -3276,11 +3275,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(UINT32, eligible, "time/eligible", NEED_NONE),
 	add_parse(UINT32, end, "time/end", NEED_NONE),
 	add_parse(JOB_EXIT_CODE, exitcode, "exit_code", NEED_NONE),
-	add_parser_enum_flag(slurmdb_job_rec_t, JOB_FLAG_CLEAR_SCHED, false, flags, "flags", SLURMDB_JOB_CLEAR_SCHED, "CLEAR_SCHEDULING", NEED_NONE),
-	add_parser_enum_flag(slurmdb_job_rec_t, JOB_FLAG_NOTSET, false, flags, "flags", SLURMDB_JOB_FLAG_NOTSET, "NOT_SET", NEED_NONE),
-	add_parser_enum_flag(slurmdb_job_rec_t, JOB_FLAG_SUBMIT, false, flags, "flags", SLURMDB_JOB_FLAG_SUBMIT, "STARTED_ON_SUBMIT", NEED_NONE),
-	add_parser_enum_flag(slurmdb_job_rec_t, JOB_FLAG_SCHED, false, flags, "flags", SLURMDB_JOB_FLAG_SCHED, "STARTED_ON_SCHEDULE", NEED_NONE),
-	add_parser_enum_flag(slurmdb_job_rec_t, JOB_FLAG_BACKFILL, false, flags, "flags", SLURMDB_JOB_FLAG_BACKFILL, "STARTED_ON_BACKFILL", NEED_NONE),
+	add_parse_bit_flag_array(slurmdb_job_rec_t, SLURMDB_JOB_FLAGS, false, flags, "flags"),
 	add_parse(GROUP_ID, gid, "group", NEED_NONE),
 	add_parse(UINT32, het_job_id, "het/job_id", NEED_NONE),
 	add_parse(UINT32, het_job_offset, "het/job_offset", NEED_NONE),
@@ -3321,6 +3316,10 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 #undef add_parse
 #undef add_skip
 
+static const flag_bit_t PARSER_FLAG_ARRAY(ACCOUNT_FLAGS)[] = {
+	add_flag_bit(SLURMDB_ACCT_FLAG_DELETED, "DELETED"),
+};
+
 #define add_parse(mtype, field, path, needs) \
 	add_parser(slurmdb_account_rec_t, mtype, false, field, path, needs)
 /* should mirror the structure of slurmdb_account_rec_t */
@@ -3330,7 +3329,7 @@ static const parser_t PARSER_ARRAY(ACCOUNT)[] = {
 	add_parse(STRING, description, "description", NEED_NONE),
 	add_parse(STRING, name, "name", NEED_NONE),
 	add_parse(STRING, organization, "organization", NEED_NONE),
-	add_parser_enum_flag(slurmdb_account_rec_t, ACCOUNT_FLAG_DELETED, false, flags, "flags", SLURMDB_ACCT_FLAG_DELETED, "DELETED", NEED_NONE),
+	add_parse_bit_flag_array(slurmdb_account_rec_t, ACCOUNT_FLAGS, false, flags, "flags"),
 };
 #undef add_parse
 
@@ -3357,6 +3356,10 @@ static const parser_t PARSER_ARRAY(COORD)[] = {
 #undef add_parse
 #undef add_parse_req
 
+static const flag_bit_t PARSER_FLAG_ARRAY(WCKEY_FLAGS)[] = {
+	add_flag_bit(SLURMDB_WCKEY_FLAG_DELETED, "DELETED"),
+};
+
 #define add_skip(field) \
 	add_parser_skip(slurmdb_wckey_rec_t, field)
 #define add_parse(mtype, field, path) \
@@ -3371,7 +3374,7 @@ static const parser_t PARSER_ARRAY(WCKEY)[] = {
 	add_parse_req(STRING, name, "name"),
 	add_parse_req(STRING, user, "user"),
 	add_skip(uid),
-	add_parser_enum_flag(slurmdb_wckey_rec_t, WCKEY_FLAG_DELETED, false, flags, "flags", SLURMDB_WCKEY_FLAG_DELETED, "DELETED", NEED_NONE),
+	add_parse_bit_flag_array(slurmdb_wckey_rec_t, WCKEY_FLAGS, false, flags, "flags"),
 };
 #undef add_parse
 #undef add_parse_req
@@ -3396,10 +3399,32 @@ static const parser_t PARSER_ARRAY(TRES)[] = {
 #undef add_parse_req
 #undef add_skip
 
+static const flag_bit_t PARSER_FLAG_ARRAY(QOS_FLAGS)[] = {
+	add_flag_masked_bit(QOS_FLAG_NOTSET, ~QOS_FLAG_BASE, "NOT_SET"),
+	add_flag_masked_bit(QOS_FLAG_ADD, ~QOS_FLAG_BASE, "ADD"),
+	add_flag_masked_bit(QOS_FLAG_REMOVE, ~QOS_FLAG_BASE, "REMOVE"),
+	add_flag_masked_bit(QOS_FLAG_PART_MIN_NODE, QOS_FLAG_BASE, "PARTITION_MINIMUM_NODE"),
+	add_flag_masked_bit(QOS_FLAG_PART_MAX_NODE, QOS_FLAG_BASE, "PARTITION_MAXIMUM_NODE"),
+	add_flag_masked_bit(QOS_FLAG_PART_TIME_LIMIT, QOS_FLAG_BASE, "PARTITION_TIME_LIMIT"),
+	add_flag_masked_bit(QOS_FLAG_ENFORCE_USAGE_THRES, QOS_FLAG_BASE, "ENFORCE_USAGE_THRESHOLD"),
+	add_flag_masked_bit(QOS_FLAG_NO_RESERVE, QOS_FLAG_BASE, "NO_RESERVE"),
+	add_flag_masked_bit(QOS_FLAG_REQ_RESV, QOS_FLAG_BASE, "REQUIRED_RESERVATION"),
+	add_flag_masked_bit(QOS_FLAG_DENY_LIMIT, QOS_FLAG_BASE, "DENY_LIMIT"),
+	add_flag_masked_bit(QOS_FLAG_OVER_PART_QOS, QOS_FLAG_BASE, "OVERRIDE_PARTITION_QOS"),
+	add_flag_masked_bit(QOS_FLAG_NO_DECAY, QOS_FLAG_BASE, "NO_DECAY"),
+	add_flag_masked_bit(QOS_FLAG_USAGE_FACTOR_SAFE, QOS_FLAG_BASE, "USAGE_FACTOR_SAFE"),
+};
+
+static const flag_bit_t PARSER_FLAG_ARRAY(QOS_PREEMPT_MODES)[] = {
+	add_flag_equal(PREEMPT_MODE_OFF, INFINITE64, "DISABLED"),
+	add_flag_bit(PREEMPT_MODE_SUSPEND, "SUSPEND"),
+	add_flag_bit(PREEMPT_MODE_REQUEUE, "REQUEUE"),
+	add_flag_bit(PREEMPT_MODE_CANCEL, "CANCEL"),
+	add_flag_bit(PREEMPT_MODE_GANG, "GANG"),
+};
+
 #define add_skip(field) \
 	add_parser_skip(slurmdb_qos_rec_t, field)
-#define add_skip_flag(field, flag) \
-	add_parser_skip_enum_flag(slurmdb_qos_rec_t, field, flag)
 #define add_parse(mtype, field, path, needs) \
 	add_parser(slurmdb_qos_rec_t, mtype, false, field, path, needs)
 #define add_parse_req(mtype, field, path, needs) \
@@ -3407,20 +3432,7 @@ static const parser_t PARSER_ARRAY(TRES)[] = {
 /* should mirror the structure of slurmdb_qos_rec_t */
 static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_parse(STRING, description, "description", NEED_NONE),
-	add_skip_flag(preempt_mode, QOS_FLAG_BASE),
-	add_skip_flag(preempt_mode, QOS_FLAG_NOTSET),
-	add_skip_flag(preempt_mode, QOS_FLAG_ADD),
-	add_skip_flag(preempt_mode, QOS_FLAG_REMOVE),
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_PART_MIN_NODE, false, flags, "flags", QOS_FLAG_PART_MIN_NODE, "PARTITION_MINIMUM_NODE", NEED_NONE),
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_PART_MAX_NODE, false, flags, "flags", QOS_FLAG_PART_MAX_NODE, "PARTITION_MAXIMUM_NODE", NEED_NONE),
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_PART_TIME_LIMIT, false, flags, "flags", QOS_FLAG_PART_TIME_LIMIT, "PARTITION_TIME_LIMIT", NEED_NONE),
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_ENFORCE_USAGE_THRES, false, flags, "flags", QOS_FLAG_ENFORCE_USAGE_THRES, "ENFORCE_USAGE_THRESHOLD", NEED_NONE),
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_NO_RESERVE, false, flags, "flags", QOS_FLAG_NO_RESERVE, "NO_RESERVE", NEED_NONE),
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_REQ_RESV, false, flags, "flags", QOS_FLAG_REQ_RESV, "REQUIRED_RESERVATION", NEED_NONE),
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_DENY_LIMIT, false, flags, "flags", QOS_FLAG_DENY_LIMIT, "DENY_LIMIT", NEED_NONE),
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_OVER_PART_QOS, false, flags, "flags", QOS_FLAG_OVER_PART_QOS, "OVERRIDE_PARTITION_QOS", NEED_NONE),
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_NO_DECAY, false, flags, "flags", QOS_FLAG_NO_DECAY, "NO_DECAY", NEED_NONE),
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_USAGE_FACTOR_SAFE, false, flags, "flags", QOS_FLAG_USAGE_FACTOR_SAFE, "USAGE_FACTOR_SAFE", NEED_NONE),
+	add_parse_bit_flag_array(slurmdb_qos_rec_t, QOS_FLAGS, false, flags, "flags"),
 	add_parse(UINT32, id, "id", NEED_NONE),
 	add_parse(UINT32, grace_time, "limits/grace_time", NEED_NONE),
 	add_parse(UINT32, grp_jobs_accrue, "limits/max/active_jobs/accruing", NEED_NONE),
@@ -3457,11 +3469,7 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_parse(TRES_STR, min_tres_pj, "limits/min/tres/per/job", NEED_NONE),
 	add_skip(min_tres_pj_ctld), /* not packed */
 	add_complex_parser(slurmdb_qos_rec_t, QOS_PREEMPT_LIST, false, "preempt/list", NEED_QOS),
-	add_skip_flag(preempt_mode, PREEMPT_MODE_OFF), /* implied by empty list */
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_PREEMPT_MODE_SUSPEND, false, preempt_mode, "preempt/mode", PREEMPT_MODE_SUSPEND, "SUSPEND", NEED_NONE),
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_PREEMPT_MODE_REQUEUE, false, preempt_mode, "preempt/mode", PREEMPT_MODE_REQUEUE, "REQUEUE", NEED_NONE),
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_PREEMPT_MODE_CANCEL, false, preempt_mode, "preempt/mode", PREEMPT_MODE_CANCEL, "CANCEL", NEED_NONE),
-	add_parser_enum_flag(slurmdb_qos_rec_t, QOS_FLAG_PREEMPT_MODE_GANG, false, preempt_mode, "preempt/mode", PREEMPT_MODE_GANG, "GANG", NEED_NONE),
+	add_parse_bit_flag_array(slurmdb_qos_rec_t, QOS_PREEMPT_MODES, false, preempt_mode, "preempt/mode"),
 	add_parse(UINT32, preempt_exempt_time, "preempt/exempt_time", NEED_NONE),
 	add_parse(UINT32, priority, "priority", NEED_NONE),
 	add_skip(usage), /* not packed */
@@ -3490,11 +3498,7 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(STRING, pid_str, "pid", NEED_NONE),
 	add_parse(UINT32, req_cpufreq_min, "CPU/requested_frequency/min", NEED_NONE),
 	add_parse(UINT32, req_cpufreq_max, "CPU/requested_frequency/max", NEED_NONE),
-	add_parser_enum_flag(slurmdb_step_rec_t, STEP_FLAG_CPU_FREQ_CONSERVATIVE, false, req_cpufreq_gov, "CPU/governor", CPU_FREQ_CONSERVATIVE, "Conservative", NEED_NONE),
-	add_parser_enum_flag(slurmdb_step_rec_t, STEP_FLAG_CPU_FREQ_PERFORMANCE, false, req_cpufreq_gov, "CPU/governor", CPU_FREQ_PERFORMANCE, "Performance", NEED_NONE),
-	add_parser_enum_flag(slurmdb_step_rec_t, STEP_FLAG_CPU_FREQ_POWERSAVE, false, req_cpufreq_gov, "CPU/governor", CPU_FREQ_POWERSAVE, "PowerSave", NEED_NONE),
-	add_parser_enum_flag(slurmdb_step_rec_t, STEP_FLAG_CPU_FREQ_ONDEMAND, false, req_cpufreq_gov, "CPU/governor", CPU_FREQ_ONDEMAND, "OnDemand", NEED_NONE),
-	add_parser_enum_flag(slurmdb_step_rec_t, STEP_FLAG_CPU_FREQ_USERSPACE, false, req_cpufreq_gov, "CPU/governor", CPU_FREQ_USERSPACE, "UserSpace", NEED_NONE),
+	add_parse(CPU_FREQ_FLAGS, req_cpufreq_gov, "CPU/governor", NEED_NONE),
 	add_parse(USER_ID, requid, "kill_request_user", NEED_NONE),
 	add_parse(UINT32, start, "time/start", NEED_NONE),
 	add_parse(JOB_STATE, state, "state", NEED_NONE),
@@ -3559,6 +3563,15 @@ static const parser_t PARSER_ARRAY(STATS_RPC)[] = {
 };
 #undef add_parse
 
+static const flag_bit_t PARSER_FLAG_ARRAY(CLUSTER_REC_FLAGS)[] = {
+	add_flag_bit(CLUSTER_FLAG_REGISTER, "REGISTERING"),
+	add_flag_bit(CLUSTER_FLAG_MULTSD, "MULTIPLE_SLURMD"),
+	add_flag_bit(CLUSTER_FLAG_FE, "FRONT_END"),
+	add_flag_bit(CLUSTER_FLAG_CRAY, "CRAY_NATIVE"),
+	add_flag_bit(CLUSTER_FLAG_FED, "FEDERATION"),
+	add_flag_bit(CLUSTER_FLAG_EXT, "EXTERNAL"),
+};
+
 #define add_skip(field) \
 	add_parser_skip(slurmdb_cluster_rec_t, field)
 #define add_parse(mtype, field, path, needs) \
@@ -3572,11 +3585,7 @@ static const parser_t PARSER_ARRAY(CLUSTER_REC)[] = {
 	add_parse(UINT32, control_port, "controller/port", NEED_NONE),
 	add_skip(dim_size), /* BG deprecated */
 	add_skip(fed), /* federation not supportted */
-	add_parser_enum_flag(slurmdb_cluster_rec_t, CLUSTER_REC_FLAG_MULTSD, false, flags, "flags", CLUSTER_FLAG_MULTSD, "MULTIPLE_SLURMD", NEED_NONE),
-	add_parser_enum_flag(slurmdb_cluster_rec_t, CLUSTER_REC_FLAG_FE, false, flags, "flags", CLUSTER_FLAG_FE, "FRONT_END", NEED_NONE),
-	add_parser_enum_flag(slurmdb_cluster_rec_t, CLUSTER_REC_FLAG_CRAY, false, flags, "flags", CLUSTER_FLAG_CRAY, "CRAY_NATIVE", NEED_NONE),
-	add_parser_enum_flag(slurmdb_cluster_rec_t, CLUSTER_REC_FLAG_FED, false, flags, "flags", CLUSTER_FLAG_FED, "FEDERATION", NEED_NONE),
-	add_parser_enum_flag(slurmdb_cluster_rec_t, CLUSTER_REC_FLAG_EXT, false, flags, "flags", CLUSTER_FLAG_EXT, "EXTERNAL", NEED_NONE),
+	add_parse_bit_flag_array(slurmdb_cluster_rec_t, CLUSTER_REC_FLAGS, false, flags, "flags"),
 	add_skip(lock), /* not packed */
 	add_parse(STRING, name, "name", NEED_NONE),
 	add_parse(STRING, nodes, "nodes", NEED_NONE),
@@ -3730,6 +3739,39 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 #undef add_cparse
 #undef add_skip
 
+static const flag_bit_t PARSER_FLAG_ARRAY(NODE_STATES)[] = {
+	add_flag_equal(NODE_STATE_UNKNOWN, NODE_STATE_BASE, "UNKNOWN"),
+	add_flag_masked_bit(NODE_STATE_DOWN, NODE_STATE_BASE, "DOWN"),
+	add_flag_masked_bit(NODE_STATE_IDLE, NODE_STATE_BASE, "IDLE"),
+	add_flag_masked_bit(NODE_STATE_ALLOCATED, NODE_STATE_BASE, "ALLOCATED"),
+	add_flag_masked_bit(NODE_STATE_ERROR, NODE_STATE_BASE, "ERROR"),
+	add_flag_masked_bit(NODE_STATE_MIXED, NODE_STATE_BASE, "MIXED"),
+	add_flag_masked_bit(NODE_STATE_FUTURE, NODE_STATE_BASE, "FUTURE"),
+	add_flag_masked_bit(NODE_STATE_NET, NODE_STATE_FLAGS, "PERFCTRS"),
+	add_flag_masked_bit(NODE_STATE_RES, NODE_STATE_FLAGS, "RESERVED"),
+	add_flag_masked_bit(NODE_STATE_UNDRAIN, NODE_STATE_FLAGS, "UNDRAIN"),
+	add_flag_masked_bit(NODE_STATE_CLOUD, NODE_STATE_FLAGS, "CLOUD"),
+	add_flag_masked_bit(NODE_RESUME, NODE_STATE_FLAGS, "RESUME"),
+	add_flag_masked_bit(NODE_STATE_DRAIN, NODE_STATE_FLAGS, "DRAIN"),
+	add_flag_masked_bit(NODE_STATE_COMPLETING, NODE_STATE_FLAGS, "COMPLETING"),
+	add_flag_masked_bit(NODE_STATE_NO_RESPOND, NODE_STATE_FLAGS, "NOT_RESPONDING"),
+	add_flag_masked_bit(NODE_STATE_POWERED_DOWN, NODE_STATE_FLAGS, "POWERED_DOWN"),
+	add_flag_masked_bit(NODE_STATE_FAIL, NODE_STATE_FLAGS, "FAIL"),
+	add_flag_masked_bit(NODE_STATE_POWERING_UP, NODE_STATE_FLAGS, "POWERING_UP"),
+	add_flag_masked_bit(NODE_STATE_MAINT, NODE_STATE_FLAGS, "MAINTENANCE"),
+	add_flag_masked_bit(NODE_STATE_REBOOT_REQUESTED, NODE_STATE_FLAGS, "REBOOT_REQUESTED"),
+	add_flag_masked_bit(NODE_STATE_REBOOT_CANCEL, NODE_STATE_FLAGS, "REBOOT_CANCELED"),
+	add_flag_masked_bit(NODE_STATE_POWERING_DOWN, NODE_STATE_FLAGS, "POWERING_DOWN"),
+	add_flag_masked_bit(NODE_STATE_DYNAMIC_FUTURE, NODE_STATE_FLAGS, "DYNAMIC_FUTURE"),
+	add_flag_masked_bit(NODE_STATE_REBOOT_ISSUED, NODE_STATE_FLAGS, "REBOOT_ISSUED"),
+	add_flag_masked_bit(NODE_STATE_PLANNED, NODE_STATE_FLAGS, "PLANNED"),
+	add_flag_masked_bit(NODE_STATE_INVALID_REG, NODE_STATE_FLAGS, "INVALID_REG"),
+	add_flag_masked_bit(NODE_STATE_POWER_DOWN, NODE_STATE_FLAGS, "POWER_DOWN"),
+	add_flag_masked_bit(NODE_STATE_POWER_UP, NODE_STATE_FLAGS, "POWER_UP"),
+	add_flag_masked_bit(NODE_STATE_POWER_DRAIN, NODE_STATE_FLAGS, "POWER_DRAIN"),
+	add_flag_masked_bit(NODE_STATE_DYNAMIC_NORM, NODE_STATE_FLAGS, "DYNAMIC_NORM"),
+};
+
 #define add_skip(field) \
 	add_parser_skip(node_info_t, field)
 #define add_parse(mtype, field, path) \
@@ -3763,52 +3805,10 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, mcs_label, "mcs_label"),
 	add_skip(mem_spec_limit), /* intentionally omitted */
 	add_parse(STRING, name, "name"),
-	add_parse(NODE_BASE_STATE, next_state, "next_state_after_reboot"),
-	add_parser_enum_flag(node_info_t, NODE_STATE_CLOUD, false, node_state, "next_state_after_reboot_flags", NODE_STATE_CLOUD, "CLOUD", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_COMPLETING, false, node_state, "next_state_after_reboot_flags", NODE_STATE_COMPLETING, "COMPLETING", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_DRAIN, false, node_state, "next_state_after_reboot_flags", NODE_STATE_DRAIN, "DRAIN", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_DYNAMIC_FUTURE, false, node_state, "next_state_after_reboot_flags", NODE_STATE_DYNAMIC_FUTURE, "DYNAMIC_FUTURE", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_DYNAMIC_NORM, false, node_state, "next_state_after_reboot_flags", NODE_STATE_DYNAMIC_NORM, "DYNAMIC_NORM", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_INVALID_REG, false, node_state, "next_state_after_reboot_flags", NODE_STATE_INVALID_REG, "INVALID_REG", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_FAIL, false, node_state, "next_state_after_reboot_flags", NODE_STATE_FAIL, "FAIL", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_MAINT, false, node_state, "snext_state_after_reboot_flagstate_flags", NODE_STATE_MAINT, "MAINTENANCE", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_POWER_DOWN, false, node_state, "next_state_after_reboot_flags", NODE_STATE_POWER_DOWN, "POWER_DOWN", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_POWER_UP, false, node_state, "next_state_after_reboot_flags", NODE_STATE_POWER_UP, "POWER_UP", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_NET, false, node_state, "next_state_after_reboot_flags", NODE_STATE_NET, "PERFCTRS", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_POWERED_DOWN, false, node_state, "next_state_after_reboot_flags", NODE_STATE_POWERED_DOWN, "POWERED_DOWN", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_REBOOT_REQUESTED, false, node_state, "next_state_after_reboot_flags", NODE_STATE_REBOOT_REQUESTED, "REBOOT_REQUESTED", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_REBOOT_ISSUED, false, node_state, "next_state_after_reboot_flags", NODE_STATE_REBOOT_ISSUED, "REBOOT_ISSUED", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_REBOOT_ISSUED, false, node_state, "next_state_after_reboot_flags", NODE_STATE_REBOOT_ISSUED, "REBOOT_ISSUED", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_RES, false, node_state, "next_state_after_reboot_flags", NODE_STATE_RES, "RESERVED", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_RESUME, false, node_state, "next_state_after_reboot_flags", NODE_RESUME, "RESUME", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_NO_RESPOND, false, node_state, "next_state_after_reboot_flags", NODE_STATE_NO_RESPOND, "NOT_RESPONDING", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_PLANNED, false, node_state, "next_state_after_reboot_flags", NODE_STATE_PLANNED, "PLANNED", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_POWERING_UP, false, node_state, "next_state_after_reboot_flags", NODE_STATE_POWERING_UP, "POWERING_UP", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_POWERING_DOWN, false, node_state, "next_state_after_reboot_flags", NODE_STATE_POWERING_DOWN, "POWERING_DOWN", NEED_NONE),
+	add_parse_bit_flag_array(node_info_t, NODE_STATES, false, next_state, "next_state_after_reboot"),
 	add_parse(STRING, node_addr, "address"),
 	add_parse(STRING, node_hostname, "hostname"),
-	add_parse(NODE_BASE_STATE, node_state, "state"),
-	add_parser_enum_flag(node_info_t, NODE_STATE_CLOUD, false, node_state, "state_flags", NODE_STATE_CLOUD, "CLOUD", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_COMPLETING, false, node_state, "state_flags", NODE_STATE_COMPLETING, "COMPLETING", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_DRAIN, false, node_state, "state_flags", NODE_STATE_DRAIN, "DRAIN", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_DYNAMIC_FUTURE, false, node_state, "state_flags", NODE_STATE_DYNAMIC_FUTURE, "DYNAMIC_FUTURE", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_DYNAMIC_NORM, false, node_state, "state_flags", NODE_STATE_DYNAMIC_NORM, "DYNAMIC_NORM", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_INVALID_REG, false, node_state, "state_flags", NODE_STATE_INVALID_REG, "INVALID_REG", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_FAIL, false, node_state, "state_flags", NODE_STATE_FAIL, "FAIL", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_MAINT, false, node_state, "state_flags", NODE_STATE_MAINT, "MAINTENANCE", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_POWER_DOWN, false, node_state, "state_flags", NODE_STATE_POWER_DOWN, "POWER_DOWN", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_POWER_UP, false, node_state, "state_flags", NODE_STATE_POWER_UP, "POWER_UP", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_NET, false, node_state, "state_flags", NODE_STATE_NET, "PERFCTRS", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_POWERED_DOWN, false, node_state, "state_flags", NODE_STATE_POWERED_DOWN, "POWERED_DOWN", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_REBOOT_REQUESTED, false, node_state, "state_flags", NODE_STATE_REBOOT_REQUESTED, "REBOOT_REQUESTED", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_REBOOT_ISSUED, false, node_state, "state_flags", NODE_STATE_REBOOT_ISSUED, "REBOOT_ISSUED", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_REBOOT_ISSUED, false, node_state, "state_flags", NODE_STATE_REBOOT_ISSUED, "REBOOT_ISSUED", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_RES, false, node_state, "state_flags", NODE_STATE_RES, "RESERVED", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_RESUME, false, node_state, "state_flags", NODE_RESUME, "RESUME", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_NO_RESPOND, false, node_state, "state_flags", NODE_STATE_NO_RESPOND, "NOT_RESPONDING", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_PLANNED, false, node_state, "state_flags", NODE_STATE_PLANNED, "PLANNED", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_POWERING_UP, false, node_state, "state_flags", NODE_STATE_POWERING_UP, "POWERING_UP", NEED_NONE),
-	add_parser_enum_flag(node_info_t, NODE_STATE_POWERING_DOWN, false, node_state, "state_flags", NODE_STATE_POWERING_DOWN, "POWERING_DOWN", NEED_NONE),
+	add_parse_bit_flag_array(node_info_t, NODE_STATES, false, node_state, "state"),
 	add_parse(STRING, os, "operating_system"),
 	add_parse(USER_ID, owner, "owner"),
 	add_parse(CSV_LIST, partitions, "partitions"),
@@ -3847,14 +3847,61 @@ static const parser_t PARSER_ARRAY(LICENSE)[] = {
 };
 #undef add_parse
 
+static const flag_bit_t PARSER_FLAG_ARRAY(JOB_FLAGS)[] = {
+	add_flag_bit(KILL_INV_DEP, "KILL_INVALID_DEPENDENCY"),
+	add_flag_bit(NO_KILL_INV_DEP, "NO_KILL_INVALID_DEPENDENCY"),
+	add_flag_bit(HAS_STATE_DIR, "HAS_STATE_DIRECTORY"),
+	add_flag_bit(BACKFILL_TEST, "TESTING_BACKFILL"),
+	add_flag_bit(GRES_ENFORCE_BIND, "GRES_BINDING_ENFORCED"),
+	add_flag_bit(TEST_NOW_ONLY, "TEST_NOW_ONLY"),
+	add_flag_bit(JOB_SEND_ENV, "SEND_JOB_ENVIRONMENT"),
+	add_flag_bit(SPREAD_JOB, "SPREAD_JOB"),
+	add_flag_bit(USE_MIN_NODES, "PREFER_MINIMUM_NODE_COUNT"),
+	add_flag_bit(JOB_KILL_HURRY, "JOB_KILL_HURRY"),
+	add_flag_bit(TRES_STR_CALC, "SKIP_TRES_STRING_ACCOUNTING"),
+	add_flag_bit(SIB_JOB_FLUSH, "SIBLING_CLUSTER_UPDATE_ONLY"),
+	add_flag_bit(HET_JOB_FLAG, "HETEROGENEOUS_JOB"),
+	add_flag_bit(JOB_NTASKS_SET, "EXACT_TASK_COUNT_REQUESTED"),
+	add_flag_bit(JOB_CPUS_SET, "EXACT_CPU_COUNT_REQUESTED"),
+	add_flag_bit(BF_WHOLE_NODE_TEST, "TESTING_WHOLE_NODE_BACKFILL"),
+	add_flag_bit(TOP_PRIO_TMP, "TOP_PRIORITY_JOB"),
+	add_flag_bit(JOB_ACCRUE_OVER, "ACCRUE_COUNT_CLEARED"),
+	add_flag_bit(GRES_DISABLE_BIND, "GRED_BINDING_DISABLED"),
+	add_flag_bit(JOB_WAS_RUNNING, "JOB_WAS_RUNNING"),
+	add_flag_bit(RESET_ACCRUE_TIME, "JOB_ACCRUE_TIME_RESET"),
+	add_flag_bit(CRON_JOB, "CRON_JOB"),
+	add_flag_bit(JOB_MEM_SET, "EXACT_MEMORY_REQUESTED"),
+	add_flag_bit(JOB_RESIZED, "JOB_RESIZED"),
+	add_flag_bit(USE_DEFAULT_ACCT, "USING_DEFAULT_ACCOUNT"),
+	add_flag_bit(USE_DEFAULT_PART, "USING_DEFAULT_PARTITION"),
+	add_flag_bit(USE_DEFAULT_QOS, "USING_DEFAULT_QOS"),
+	add_flag_bit(USE_DEFAULT_WCKEY, "USING_DEFAULT_WCKEY"),
+	add_flag_bit(JOB_DEPENDENT, "DEPENDENT"),
+	add_flag_bit(JOB_MAGNETIC, "MAGNETIC"),
+	add_flag_bit(JOB_PART_ASSIGNED, "PARTITION_ASSIGNED"),
+	add_flag_bit(BACKFILL_SCHED, "BACKFILL_ATTEMPTED"),
+	add_flag_bit(BACKFILL_LAST, "SCHEDULING_ATTEMPTED"),
+	add_flag_bit(JOB_SEND_SCRIPT, "SAVE_BATCH_SCRIPT"),
+};
+
+static const flag_bit_t PARSER_FLAG_ARRAY(JOB_SHOW_FLAGS)[] = {
+	add_flag_bit(SHOW_ALL, "ALL"),
+	add_flag_bit(SHOW_DETAIL, "DETAIL"),
+	add_flag_bit(SHOW_MIXED, "MIXED"),
+	add_flag_bit(SHOW_LOCAL, "LOCAL"),
+	add_flag_bit(SHOW_SIBLING, "SIBLING"),
+	add_flag_bit(SHOW_FEDERATION, "FEDERATION"),
+	add_flag_bit(SHOW_FUTURE, "FUTURE"),
+};
+
+static const flag_bit_t PARSER_FLAG_ARRAY(POWER_FLAGS)[] = {
+	add_flag_bit(SLURM_POWER_FLAGS_LEVEL, "EQUAL_POWER"),
+};
+
 #define add_skip(field) \
 	add_parser_skip(slurm_job_info_t, field)
 #define add_parse(mtype, field, path) \
 	add_parser(slurm_job_info_t, mtype, false, field, path, NEED_NONE)
-#define add_bit_flag(flag) \
-	add_parser_enum_flag(slurm_job_info_t, JOB_INFO_FLAG_ ## flag, false, bitflags, "flags", flag, XSTRINGIFY(flag), NEED_NONE)
-#define add_show_flag(flag) \
-	add_parser_enum_flag(slurm_job_info_t, JOB_INFO_FLAG_ ## flag, false, show_flags, "show_flags", flag, XSTRINGIFY(flag), NEED_NONE)
 #define add_cparse(mtype, path) \
 	add_complex_parser(slurm_job_info_t, mtype, false, path, NEED_NONE)
 static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
@@ -3871,25 +3918,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, batch_features, "batch_features"),
 	add_parse(BOOL, batch_flag, "batch_flag"),
 	add_parse(STRING, batch_host, "batch_host"),
-	add_bit_flag(KILL_INV_DEP),
-	add_bit_flag(NO_KILL_INV_DEP),
-	add_bit_flag(HAS_STATE_DIR),
-	add_bit_flag(BACKFILL_TEST),
-	add_bit_flag(GRES_ENFORCE_BIND),
-	add_bit_flag(TEST_NOW_ONLY),
-	add_bit_flag(SPREAD_JOB),
-	add_bit_flag(USE_MIN_NODES),
-	add_bit_flag(JOB_KILL_HURRY),
-	add_bit_flag(TRES_STR_CALC),
-	add_bit_flag(SIB_JOB_FLUSH),
-	add_bit_flag(HET_JOB_FLAG),
-	add_bit_flag(JOB_CPUS_SET),
-	add_bit_flag(TOP_PRIO_TMP),
-	add_bit_flag(JOB_ACCRUE_OVER),
-	add_bit_flag(GRES_DISABLE_BIND),
-	add_bit_flag(JOB_WAS_RUNNING),
-	add_bit_flag(JOB_MEM_SET),
-	add_bit_flag(JOB_RESIZED),
+	add_parse_bit_flag_array(slurm_job_info_t, JOB_FLAGS, false, bitflags, "flags"),
 	add_skip(boards_per_node),
 	add_parse(STRING, burst_buffer, "burst_buffer"),
 	add_parse(STRING, burst_buffer_state, "burst_buffer_state"),
@@ -3958,7 +3987,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(JOB_MEM_PER_NODE, pn_min_memory, "memory_per_node"),
 	add_parse(UINT16_NO_VAL, pn_min_cpus, "minimum_cpus_per_node"),
 	add_parse(UINT32_NO_VAL, pn_min_tmp_disk, "minimum_tmp_disk_per_node"),
-	add_skip(power_flags),
+	add_parse_bit_flag_array(slurm_job_info_t, POWER_FLAGS, false, power_flags, "power/flags"),
 	add_parse(UINT64, preempt_time, "preempt_time"),
 	add_parse(UINT64, preemptable_time, "preemptable_time"),
 	add_parse(UINT64, pre_sus_time, "pre_sus_time"),
@@ -3977,13 +4006,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_skip(select_jobinfo),
 	add_parse(STRING, selinux_context, "selinux_context"),
 	add_parse(JOB_SHARED, shared, "shared"),
-	add_show_flag(SHOW_ALL),
-	add_show_flag(SHOW_DETAIL),
-	add_show_flag(SHOW_MIXED),
-	add_show_flag(SHOW_LOCAL),
-	add_show_flag(SHOW_SIBLING),
-	add_show_flag(SHOW_FEDERATION),
-	add_show_flag(SHOW_FUTURE),
+	add_parse_bit_flag_array(slurm_job_info_t, JOB_SHOW_FLAGS, false, bitflags, "flags"),
 	add_parse(UINT16, sockets_per_board, "sockets_per_board"),
 	add_parse(UINT16_NO_VAL, sockets_per_node, "sockets_per_node"),
 	add_parse(UINT64, start_time, "start_time"),
@@ -4016,8 +4039,6 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 };
 #undef add_parse
 #undef add_cparse
-#undef add_bit_flag
-#undef add_show_flag
 #undef add_skip
 
 #define add_parse(mtype, field, path) \
@@ -4185,7 +4206,6 @@ static const parser_t parsers[] = {
 	addps(TRES_STR, char *, NEED_TRES),
 	addps(ASSOC_SHORT_PTR, slurmdb_assoc_rec_t *, NEED_NONE),
 	addps(ASSOC_USAGE_PTR, slurmdb_assoc_usage_t *, NEED_NONE),
-	addps(NODE_BASE_STATE, uint32_t, NEED_NONE),
 	addps(CSV_LIST, char *, NEED_NONE),
 	addps(LICENSES, license_info_msg_t *, NEED_NONE),
 	addps(CORE_SPEC, uint16_t, NEED_NONE),
