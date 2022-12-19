@@ -5604,22 +5604,19 @@ static void _slurm_rpc_dump_stats(slurm_msg_t *msg)
 	debug3("Processing RPC details: REQUEST_STATS_INFO command=%u",
 	       request_msg->command_id);
 
-	response_init(&response_msg, msg);
-	response_msg.msg_type = RESPONSE_STATS_INFO;
-
 	if (request_msg->command_id == STAT_COMMAND_RESET) {
 		reset_stats(1);
 		_clear_rpc_stats();
-		pack_all_stat(0, &dump, &dump_size, msg->protocol_version);
-		_pack_rpc_stats(&dump, &dump_size, msg->protocol_version);
-		response_msg.data = dump;
-		response_msg.data_size = dump_size;
-	} else {
-		pack_all_stat(1, &dump, &dump_size, msg->protocol_version);
-		_pack_rpc_stats(&dump, &dump_size, msg->protocol_version);
-		response_msg.data = dump;
-		response_msg.data_size = dump_size;
 	}
+
+	pack_all_stat((request_msg->command_id != STAT_COMMAND_RESET),
+		      &dump, &dump_size, msg->protocol_version);
+	_pack_rpc_stats(&dump, &dump_size, msg->protocol_version);
+
+	response_init(&response_msg, msg);
+	response_msg.msg_type = RESPONSE_STATS_INFO;
+	response_msg.data = dump;
+	response_msg.data_size = dump_size;
 
 	/* send message */
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
