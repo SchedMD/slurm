@@ -75,7 +75,6 @@ typedef struct {
 typedef enum {
 	FLAG_TYPE_INVALID = 0, /* aka not a flag */
 	FLAG_TYPE_NONE, /* not applicable aka not a flag */
-	FLAG_TYPE_BIT, /* set a single bit */
 	FLAG_TYPE_BIT_ARRAY, /* array of bit flags */
 	FLAG_TYPE_BOOL, /* set a bool using offset */
 	FLAG_TYPE_MAX /* place holder */
@@ -101,7 +100,6 @@ typedef struct parser_s {
 
 	/* flag specific properties */
 	flag_type_t flag;
-	uint64_t flag_mask;
 	char *flag_name;
 	const flag_bit_t *flag_bit_array;
 	uint8_t flag_bit_array_count; /* number of entries in flag_bit_array */

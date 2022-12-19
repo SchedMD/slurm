@@ -226,8 +226,6 @@ extern void check_parser_funcname(const parser_t *const parser,
 		/* parser of a specific flag */
 		xassert(parser->flag > FLAG_TYPE_INVALID);
 		xassert(parser->flag < FLAG_TYPE_MAX);
-		/* atleast 1 bit must be set */
-		xassert(parser->flag_mask);
 
 		if (parser->flag == FLAG_TYPE_BIT_ARRAY) {
 			xassert(!parser->flag_name);
@@ -3014,39 +3012,6 @@ static int DUMP_FUNC(CPU_FREQ_FLAGS)(const parser_t *const parser, void *obj,
 	.size = NO_VAL,                                               \
 	.needs = need                                                 \
 }
-#define add_parser_enum_flag(stype, mtype, req, field, path,          \
-			     bit, name, need)                         \
-{                                                                     \
-	.magic = MAGIC_PARSER,                                        \
-	.ptr_offset = offsetof(stype, field),                         \
-	.field_name = XSTRINGIFY(field),                              \
-	.key = path,                                                  \
-	.required = req,                                              \
-	.type = DATA_PARSER_ ## mtype,                                \
-	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
-	.obj_type_string = XSTRINGIFY(stype),                         \
-	.flag = FLAG_TYPE_BIT,                                        \
-	.flag_mask = bit,                                             \
-	.flag_name = name,                                            \
-	.flag_bit_array_count = NO_VAL8,                              \
-	.size = sizeof(((stype *) NULL)->field),                      \
-	.needs = need,                                                \
-}
-#define add_parser_skip_enum_flag(stype, field, bit)                  \
-{                                                                     \
-	.magic = MAGIC_PARSER,                                        \
-	.skip = true,                                                 \
-	.ptr_offset = offsetof(stype, field),                         \
-	.field_name = XSTRINGIFY(field),                              \
-	.type = DATA_PARSER_TYPE_INVALID,                             \
-	.type_string = "skipped",                                     \
-	.obj_type_string = XSTRINGIFY(stype),                         \
-	.flag = FLAG_TYPE_BIT,                                        \
-	.flag_mask = bit,                                             \
-	.flag_bit_array_count = NO_VAL8,                              \
-	.size = sizeof(((stype *) NULL)->field),                      \
-	.needs = NEED_NONE,                                           \
-}
 /* will never set to FALSE, only will set to TRUE if matched  */
 #define add_parse_enum_bool(stype, mtype, req, field, path,           \
 			    name, need)                               \
@@ -3060,7 +3025,6 @@ static int DUMP_FUNC(CPU_FREQ_FLAGS)(const parser_t *const parser, void *obj,
 	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
 	.obj_type_string = XSTRINGIFY(stype),                         \
 	.flag = FLAG_TYPE_BOOL,                                       \
-	.flag_mask = UINT64_MAX,                                      \
 	.flag_name = name,                                            \
 	.flag_bit_array_count = NO_VAL8,                              \
 	.size = sizeof(((stype *) NULL)->field),                      \
@@ -3077,7 +3041,6 @@ static int DUMP_FUNC(CPU_FREQ_FLAGS)(const parser_t *const parser, void *obj,
 	.type_string = "skipped",                                     \
 	.obj_type_string = XSTRINGIFY(stype),                         \
 	.flag = FLAG_TYPE_BOOL,                                       \
-	.flag_mask = UINT64_MAX,                                      \
 	.flag_bit_array_count = NO_VAL8,                              \
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = NEED_NONE,                                           \
@@ -3093,7 +3056,6 @@ static int DUMP_FUNC(CPU_FREQ_FLAGS)(const parser_t *const parser, void *obj,
 	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
 	.obj_type_string = XSTRINGIFY(stype),                         \
 	.flag = FLAG_TYPE_BIT_ARRAY,                                  \
-	.flag_mask = UINT64_MAX,                                      \
 	.flag_name = NULL,                                            \
 	.flag_bit_array = PARSER_FLAG_ARRAY(mtype),                   \
 	.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(mtype)), \
@@ -4112,7 +4074,6 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 #undef add_skip
 
 #undef add_complex_parser
-#undef add_parser_enum_flag
 #undef add_parse_enum_bool
 
 /* add parser array (for struct) */

@@ -193,46 +193,6 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 			else
 				fatal_abort("%s: invalid bit_flag_t", __func__);
 		}
-	} else if (parser->flag == FLAG_TYPE_BIT) {
-		/* C allows complier to choose a size for the enum */
-		if (parser->size == sizeof(uint64_t)) {
-			uint64_t *flags = dst;
-			if (matched)
-				*flags |= parser->flag_mask;
-			else
-				*flags &= ~parser->flag_mask;
-		} else if (parser->size == sizeof(uint32_t)) {
-			uint32_t *flags = dst;
-			if (matched)
-				*flags |= parser->flag_mask;
-			else
-				*flags &= ~parser->flag_mask;
-		} else if (parser->size == sizeof(uint16_t)) {
-			uint16_t *flags = dst;
-			if (matched)
-				*flags |= parser->flag_mask;
-			else
-				*flags &= ~parser->flag_mask;
-		} else if (parser->size == sizeof(uint8_t)) {
-			uint8_t *flags = dst;
-			if (matched)
-				*flags |= parser->flag_mask;
-			else
-				*flags &= ~parser->flag_mask;
-		} else {
-			fatal_abort("%s: unexpected enum size: %zu", __func__,
-				    parser->size);
-		}
-
-		log_flag(DATA, "%s: %s{%s(0x%" PRIxPTR ")} %s %s %s %s(0x%" PRIxPTR "+%zd)%s%s & %s(0x%zx) via bitmask flag parser %s(0x%" PRIxPTR ")",
-			__func__, path, data_type_to_string(data_get_type(src)),
-			(uintptr_t) src, (matched ? "==" : "!="),
-			parser->flag_name, (matched ? "setting" : "clearing"),
-			parser->obj_type_string, (uintptr_t) dst,
-			parser->ptr_offset, (parser->field_name ? "->" : ""),
-			(parser->field_name ? parser->field_name : ""),
-			parser->flag_name, (uint64_t) parser->flag_mask,
-			parser->obj_type_string, (uintptr_t) parser);
 	} else if (parser->flag == FLAG_TYPE_BOOL) {
 		/*
 		 * match size exactly of source to avoid any high bits
@@ -293,7 +253,7 @@ static int parse_flag(void *dst, const parser_t *const parser, data_t *src,
 	xassert(parser->key[0]);
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(parser->magic == MAGIC_PARSER);
-	xassert((parser->flag == FLAG_TYPE_BIT) ||
+	xassert((parser->flag == FLAG_TYPE_BIT_ARRAY) ||
 		(parser->flag == FLAG_TYPE_BOOL));
 
 	if (parser->ptr_offset > 0)
@@ -658,42 +618,6 @@ cleanup:
 	return rc;
 }
 
-static int _dump_flag_bit(args_t *args, void *src, data_t *dst,
-			  const parser_t *const parser)
-{
-	bool found = false;
-
-	xassert(args->magic == MAGIC_ARGS);
-	check_parser(parser);
-
-	if (data_get_type(dst) == DATA_TYPE_NULL)
-		data_set_list(dst);
-	if (data_get_type(dst) != DATA_TYPE_LIST)
-		return ESLURM_DATA_CONV_FAILED;
-
-	/* C allows complier to choose a size for the enum */
-	if (parser->size == sizeof(uint64_t)) {
-		uint64_t *flags = src;
-		found = ((*flags & parser->flag_mask) == parser->flag_mask);
-	} else if (parser->size == sizeof(uint32_t)) {
-		uint32_t *flags = src;
-		found = ((*flags & parser->flag_mask) == parser->flag_mask);
-	} else if (parser->size == sizeof(uint16_t)) {
-		uint16_t *flags = src;
-		found = ((*flags & parser->flag_mask) == parser->flag_mask);
-	} else if (parser->size == sizeof(uint8_t)) {
-		uint8_t *flags = src;
-		found = ((*flags & parser->flag_mask) == parser->flag_mask);
-	} else {
-		fatal("%s: unexpected enum size: %zu", __func__, parser->size);
-	}
-
-	if (found)
-		data_set_string(data_list_append(dst), parser->flag_name);
-
-	return SLURM_SUCCESS;
-}
-
 static int _dump_flag_bool(args_t *args, void *src, data_t *dst,
 			   const parser_t *const parser)
 {
@@ -814,8 +738,7 @@ static int dump_flag(void *src, const parser_t *const parser, data_t *dst,
 	xassert((parser->ptr_offset == NO_VAL) || (parser->ptr_offset >= 0));
 	check_parser(parser);
 	xassert(args->magic == MAGIC_ARGS);
-	xassert((parser->flag == FLAG_TYPE_BIT) ||
-		(parser->flag == FLAG_TYPE_BIT_ARRAY) ||
+	xassert((parser->flag == FLAG_TYPE_BIT_ARRAY) ||
 		(parser->flag == FLAG_TYPE_BOOL));
 
 	if (data_get_type(dst) != DATA_TYPE_LIST) {
@@ -824,8 +747,6 @@ static int dump_flag(void *src, const parser_t *const parser, data_t *dst,
 	}
 
 	switch (parser->flag) {
-	case FLAG_TYPE_BIT:
-		return _dump_flag_bit(args, obj, dst, parser);
 	case FLAG_TYPE_BOOL:
 		return _dump_flag_bool(args, obj, dst, parser);
 	case FLAG_TYPE_BIT_ARRAY:
