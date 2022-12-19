@@ -45,6 +45,7 @@
 #include "src/common/slurm_time.h"
 #include "src/sinfo/sinfo.h"
 #include "src/sinfo/print.h"
+#include "src/interfaces/data_parser.h"
 
 /********************
  * Global Variables *
@@ -75,8 +76,6 @@ static pthread_mutex_t sinfo_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 /*************
  * Functions *
  *************/
-extern int dump_data(int argc, char **argv);
-
 static void _free_sinfo_format(void *object);
 static void _free_params(void);
 void *      _build_part_info(void *args);
@@ -87,8 +86,8 @@ static sinfo_data_t *_create_sinfo(partition_info_t* part_ptr,
 				   uint16_t part_inx, node_info_t *node_ptr);
 static int  _find_part_list(void *x, void *key);
 static bool _filter_out(node_info_t *node_ptr);
-static int  _get_info(bool clear_old, slurmdb_federation_rec_t *fed,
-		      char *cluster_name);
+static int _get_info(bool clear_old, slurmdb_federation_rec_t *fed,
+		     char *cluster_name, int argc, char **argv);
 static int  _insert_node_ptr(List sinfo_list, uint16_t part_num,
 			     partition_info_t *part_ptr,
 			     node_info_t *node_ptr);
@@ -96,7 +95,7 @@ static int  _load_resv(reserve_info_msg_t ** reserv_pptr, bool clear_old);
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
 static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 			     partition_info_t* part_ptr);
-static int  _multi_cluster(List clusters);
+static int _multi_cluster(List clusters, int argc, char **argv);
 static void _node_list_delete(void *data);
 static void _part_list_delete(void *data);
 static List _query_fed_servers(slurmdb_federation_rec_t *fed,
@@ -124,18 +123,15 @@ int main(int argc, char **argv)
 		log_alter(opts, SYSLOG_FACILITY_USER, NULL);
 	}
 
-	if (params.mimetype)
-		exit(dump_data(argc, argv));
-
 	while (1) {
-		if ((!params.no_header) &&
+		if (!params.no_header && !params.mimetype &&
 		    (params.iterate || params.verbose || params.long_output))
 			print_date();
 
 		if (!params.clusters) {
-			if (_get_info(false, params.fed, NULL))
+			if (_get_info(false, params.fed, NULL, argc, argv))
 				rc = 1;
-		} else if (_multi_cluster(params.clusters) != 0)
+		} else if (!_multi_cluster(params.clusters, argc, argv))
 			rc = 1;
 		if (params.iterate) {
 			printf("\n");
@@ -189,7 +185,7 @@ static void prepend_cluster_name(void)
 	format_prepend_cluster_name(params.format_list, 8, false, "");
 }
 
-static int _multi_cluster(List clusters)
+static int _multi_cluster(List clusters, int argc, char **argv)
 {
 	ListIterator itr;
 	bool first = true;
@@ -207,7 +203,8 @@ static int _multi_cluster(List clusters)
 				printf("\n");
 			printf("CLUSTER: %s\n", working_cluster_rec->name);
 		}
-		rc2 = _get_info(true, NULL, working_cluster_rec->name);
+		rc2 = _get_info(true, NULL, working_cluster_rec->name, argc,
+				argv);
 		if (rc2)
 			rc = 1;
 	}
@@ -229,7 +226,7 @@ static int _set_cluster_name(void *x, void *arg)
  * fed IN - information about other clusters in this federation
  */
 static int _get_info(bool clear_old, slurmdb_federation_rec_t *fed,
-		     char *cluster_name)
+		     char *cluster_name, int argc, char **argv)
 {
 	List node_info_msg_list = NULL, part_info_msg_list = NULL;
 	reserve_info_msg_t *reserv_msg = NULL;
@@ -261,12 +258,16 @@ static int _get_info(bool clear_old, slurmdb_federation_rec_t *fed,
 	}
 
 	sort_sinfo_list(sinfo_list);
-	print_sinfo_list(sinfo_list);
+	if (params.mimetype)
+		rc = DATA_DUMP_CLI(SINFO_DATA_LIST, sinfo_list, "sinfo", argc,
+				   argv, NULL, params.mimetype);
+	else
+		rc = print_sinfo_list(sinfo_list);
 
 	FREE_NULL_LIST(node_info_msg_list);
 	FREE_NULL_LIST(part_info_msg_list);
 	FREE_NULL_LIST(sinfo_list);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
