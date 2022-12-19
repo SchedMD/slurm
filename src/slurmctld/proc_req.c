@@ -5520,7 +5520,7 @@ static void _clear_rpc_stats(void)
 	slurm_mutex_unlock(&rpc_mutex);
 }
 
-static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
+static void _pack_rpc_stats(char **buffer_ptr, int *buffer_size,
 			    uint16_t protocol_version)
 {
 	uint32_t i;
@@ -5611,12 +5611,12 @@ static void _slurm_rpc_dump_stats(slurm_msg_t *msg)
 		reset_stats(1);
 		_clear_rpc_stats();
 		pack_all_stat(0, &dump, &dump_size, msg->protocol_version);
-		_pack_rpc_stats(0, &dump, &dump_size, msg->protocol_version);
+		_pack_rpc_stats(&dump, &dump_size, msg->protocol_version);
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
 	} else {
 		pack_all_stat(1, &dump, &dump_size, msg->protocol_version);
-		_pack_rpc_stats(1, &dump, &dump_size, msg->protocol_version);
+		_pack_rpc_stats(&dump, &dump_size, msg->protocol_version);
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
 	}
