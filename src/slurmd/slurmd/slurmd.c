@@ -182,6 +182,7 @@ static time_t sent_reg_time = (time_t) 0;
  */
 static char *cached_features_avail = NULL;
 static char *cached_features_active = NULL;
+static bool plugins_registered = false;
 static bool refresh_cached_features = true;
 static pthread_mutex_t cached_features_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -382,6 +383,7 @@ main (int argc, char **argv)
 		fatal("Failed to initialize MPI plugins.");
 	file_bcast_init();
 	run_command_init();
+	plugins_registered = true;
 
 	_create_msg_socket();
 
@@ -813,7 +815,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	msg->slurmd_start_time = slurmd_start_time;
 
 	slurm_mutex_lock(&cached_features_mutex);
-	if (refresh_cached_features) {
+	if (refresh_cached_features && plugins_registered) {
 		xfree(cached_features_avail);
 		xfree(cached_features_active);
 		node_features_g_node_state(&cached_features_avail,
@@ -894,9 +896,12 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	list_iterator_destroy(i);
 	FREE_NULL_LIST(steps);
 
-	if (!msg->energy)
-		msg->energy = acct_gather_energy_alloc(1);
-	acct_gather_energy_g_get_sum(ENERGY_DATA_NODE_ENERGY, msg->energy);
+	if (plugins_registered) {
+		if (!msg->energy)
+			msg->energy = acct_gather_energy_alloc(1);
+		acct_gather_energy_g_get_sum(ENERGY_DATA_NODE_ENERGY,
+					     msg->energy);
+	}
 
 	msg->timestamp = time(NULL);
 
