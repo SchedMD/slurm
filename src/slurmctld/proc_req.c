@@ -55,10 +55,8 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/cron.h"
-#include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
-#include "src/common/forward.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
