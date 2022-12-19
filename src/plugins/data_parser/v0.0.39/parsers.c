@@ -41,6 +41,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/data.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
@@ -2963,6 +2964,23 @@ static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+PARSE_DISABLED(CPU_FREQ_FLAGS)
+
+static int DUMP_FUNC(CPU_FREQ_FLAGS)(const parser_t *const parser, void *obj,
+				     data_t *dst, args_t *args)
+{
+	uint32_t *freq_ptr = obj;
+	char *buf = xmalloc(BUF_SIZE);
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	cpu_freq_to_string(buf, (BUF_SIZE - 1), *freq_ptr);
+	data_set_string_own(dst, buf);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -4184,6 +4202,7 @@ static const parser_t parsers[] = {
 	addps(CONTROLLER_PING_RESULT, char *, NEED_NONE),
 	addps(CONTROLLER_PING_ARRAY, controller_ping_t *, NEED_NONE),
 	addps(HOSTLIST, hostlist_t, NEED_NONE),
+	addps(CPU_FREQ_FLAGS, uint32_t, NEED_NONE),
 
 	/* Complex type parsers */
 	addpc(QOS_PREEMPT_LIST, slurmdb_qos_rec_t, NEED_QOS),

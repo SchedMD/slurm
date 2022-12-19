@@ -86,6 +86,7 @@ typedef enum {
 	DATA_PARSER_CLUSTER_REC_FLAG_EXT, /* slurmdb_cluster_rec_t->flags & CLUSTER_FLAG_EXT */
 	DATA_PARSER_COORD_LIST, /* List of slurmdb_coord_rec_t* */
 	DATA_PARSER_COORD, /* slurmdb_coord_rec_t */
+	DATA_PARSER_CPU_FREQ_FLAGS, /* uint32_t & CPU_FREQ_* */
 	DATA_PARSER_GROUP_ID, /* Group from numeric GID <-> gid_t */
 	DATA_PARSER_GROUP_NAME, /* Group from string group name <-> gid_t */
 	DATA_PARSER_JOB_EXIT_CODE, /* int32_t */
