@@ -2220,6 +2220,13 @@ extern void response_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
 		slurm_msg_set_r_uid(resp_msg, msg->auth_uid);
 	else
 		slurm_msg_set_r_uid(resp_msg, SLURM_AUTH_UID_ANY);
+
+	/*
+	 * Skip sending an auth credential on the reply. Clients don't need
+	 * it, and already implicitly trust the connection.
+	 */
+	if (resp_msg->protocol_version >= SLURM_23_02_PROTOCOL_VERSION)
+		resp_msg->flags |= SLURM_NO_AUTH_CRED;
 }
 
 /**********************************************************************\
