@@ -64,6 +64,8 @@
 #include "parsing.h"
 #include "slurmdb_helpers.h"
 
+#include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
+
 #define MAGIC_FOREACH_LIST 0xaefa2af3
 #define MAGIC_FOREACH_LIST_FLAG 0xa1d4acd2
 #define MAGIC_FOREACH_POPULATE_GLOBAL_TRES_LIST 0x31b8aad2
@@ -4136,6 +4138,61 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 #undef add_parse
 #undef add_skip
 
+#define add_parse(mtype, field, path) \
+	add_parser(sinfo_data_t, mtype, false, field, path, NEED_NONE)
+#define add_skip(field) \
+	add_parser_skip(sinfo_data_t, field)
+static const parser_t PARSER_ARRAY(SINFO_DATA)[] = {
+	add_parse(UINT16, port, "port"),
+	add_parse_bit_flag_array(sinfo_data_t, NODE_STATES, false, node_state, "node/state"),
+	add_parse(UINT32, nodes_alloc, "nodes/allocated"),
+	add_parse(UINT32, nodes_idle, "nodes/idle"),
+	add_parse(UINT32, nodes_other, "nodes/other"),
+	add_parse(UINT32, nodes_other, "nodes/total"),
+	add_parse(UINT32, cpus_alloc, "cpus/allocated"),
+	add_parse(UINT32, cpus_idle, "cpus/idle"),
+	add_parse(UINT32, cpus_other, "cpus/other"),
+	add_parse(UINT32, cpus_other, "cpus/total"),
+	add_parse(UINT32, min_cpus, "cpus/mininum"),
+	add_parse(UINT32, max_cpus, "cpus/maximum"),
+	add_parse(UINT32, min_sockets, "sockets/mininum"),
+	add_parse(UINT32, max_sockets, "sockets/maximum"),
+	add_parse(UINT32, min_cores, "cores/mininum"),
+	add_parse(UINT32, max_cores, "cores/maximum"),
+	add_parse(UINT32, min_threads, "threads/mininum"),
+	add_parse(UINT32, max_threads, "threads/maximum"),
+	add_parse(UINT32, min_disk, "disk/mininum"),
+	add_parse(UINT32, max_disk, "disk/maximum"),
+	add_parse(UINT64, min_mem, "memory/mininum"),
+	add_parse(UINT64, max_mem, "memory/maximum"),
+	add_parse(UINT32, min_weight, "weight/mininum"),
+	add_parse(UINT32, max_weight, "weight/maximum"),
+	add_parse(UINT32, min_cpu_load, "cpus/load/mininum"),
+	add_parse(UINT32, max_cpu_load, "cpus/load/maximum"),
+	add_parse(UINT64, min_free_mem, "memory/free/mininum"),
+	add_parse(UINT64, max_free_mem, "memory/free/maximum"),
+	add_parse(UINT32_NO_VAL, max_cpus_per_node, "cpus/per_node/max"),
+	add_parse(UINT64, alloc_memory, "memory/allocated"),
+	add_parse(STRING, features, "features/total"),
+	add_parse(STRING, features_act, "features/active"),
+	add_parse(STRING, gres, "gres/total"),
+	add_parse(STRING, gres_used, "gres/used"),
+	add_parse(STRING, cluster_name, "cluster"),
+	add_parse(STRING, comment, "comment"),
+	add_parse(STRING, extra, "extra"),
+	add_parse(STRING, reason, "reason/description"),
+	add_parse(UINT64, reason_time, "reason/time"),
+	add_parse(USER_ID, reason_uid, "reason/user"),
+	add_skip(version), /* already in meta */
+	add_parse(HOSTLIST, hostnames, "nodes/hostnames"),
+	add_parse(HOSTLIST, node_addr, "nodes/addresses"),
+	add_parse(HOSTLIST, nodes, "nodes/nodes"),
+	add_parse(PARTITION_INFO_PTR, part_info, "partition"),
+	add_skip(part_inx),
+};
+#undef add_parse
+#undef add_skip
+
 #undef add_complex_parser
 #undef add_parse_enum_bool
 
@@ -4305,6 +4362,7 @@ static const parser_t parsers[] = {
 	addpa(CONTROLLER_PING, controller_ping_t),
 	addpa(STEP_INFO, job_step_info_t),
 	addpa(PARTITION_INFO, partition_info_t),
+	addpa(SINFO_DATA, sinfo_data_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, slurmdb_destroy_qos_rec, create_qos_rec_obj, NEED_QOS),
@@ -4325,6 +4383,7 @@ static const parser_t parsers[] = {
 	addpl(STATS_RPC_LIST, STATS_RPC, NULL, NULL, NEED_NONE),
 	addpl(STATS_USER_LIST, STATS_USER, NULL, NULL, NEED_NONE),
 	addpl(TRES_LIST, TRES, slurmdb_destroy_tres_rec, create_parser_list_obj, NEED_NONE),
+	addpl(SINFO_DATA_LIST, SINFO_DATA, NULL, NULL, NEED_NONE),
 };
 #undef addpl
 #undef addps

@@ -136,6 +136,8 @@ typedef enum {
 	DATA_PARSER_WCKEY_LIST, /* List of slurmdb_wckey_rec_t* */
 	DATA_PARSER_WCKEY_FLAGS, /* slurmdb_wckey_rec_t->flags & SLURMDB_WCKEY_FLAG_* */
 	DATA_PARSER_WCKEY_TAG, /* uint32_t - * prefix denotes default */
+	DATA_PARSER_SINFO_DATA, /* sinfo_data_t */
+	DATA_PARSER_SINFO_DATA_LIST, /* list of sinfo_data_t* */
 	DATA_PARSER_STATS_MSG, /* stats_info_response_msg_t */
 	DATA_PARSER_STATS_MSG_CYCLE_MEAN, /* stats_info_response_msg_t-> computed value */
 	DATA_PARSER_STATS_MSG_CYCLE_MEAN_DEPTH, /* stats_info_response_msg_t-> computed value */
