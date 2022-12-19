@@ -71,6 +71,7 @@
 #define MAGIC_LIST_PER_TRES_TYPE_NCT 0xb1d8acd2
 
 #define PARSER_ARRAY(type) _parser_array_##type
+#define PARSER_FLAG_ARRAY(type) _parser_flag_array_##type
 #define PARSE_FUNC(type) _parse_##type
 #define DUMP_FUNC(type) _dump_##type
 #define PARSE_DISABLED(type)                                                 \
@@ -161,6 +162,45 @@ typedef struct {
 } foreach_qos_string_id_t;
 
 #ifndef NDEBUG
+static void _check_flag_bit(int8_t i, const flag_bit_t *bit)
+{
+	xassert(bit->magic == MAGIC_FLAG_BIT);
+	xassert(bit->type > FLAG_BIT_TYPE_INVALID);
+	xassert(bit->type < FLAG_BIT_TYPE_MAX);
+	xassert(bit->name && bit->name[0]);
+	/* mask must be set */
+	xassert(bit->mask);
+	xassert(bit->flag_size <= sizeof(bit->value));
+	xassert(bit->flag_size > 0);
+	xassert(bit->flag_name && bit->flag_name[0]);
+	xassert(bit->mask_size <= sizeof(bit->value));
+	xassert(bit->mask_size > 0);
+	xassert(bit->mask_name && bit->mask_name[0]);
+
+	if (bit->type == FLAG_BIT_TYPE_BIT) {
+		/* atleast one bit must be set */
+		xassert(bit->value);
+		/* mask must include all value bits */
+		xassert((bit->mask & bit->value) == bit->value);
+	} else if (bit->type == FLAG_BIT_TYPE_EQUAL) {
+		/* Only the first flag can be an equal
+		 * type if all bits are being set:
+		 * There can only be one EQUAL bit since
+		 * they set all the bits or clear all of
+		 * them.
+		 */
+		if (bit->mask == INFINITE64)
+			xassert(i == 0);
+
+		/*
+		 * bit->mask must include all value bits
+		 * (if there are any)
+		 */
+		xassert(!bit->value ||
+			((bit->mask & bit->value) == bit->value));
+	}
+}
+
 extern void check_parser_funcname(const parser_t *const parser,
 				  const char *func_name)
 {
@@ -187,7 +227,22 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->flag < FLAG_TYPE_MAX);
 		/* atleast 1 bit must be set */
 		xassert(parser->flag_mask);
-		xassert(parser->flag_name && parser->flag_name[0]);
+
+		if (parser->flag == FLAG_TYPE_BIT_ARRAY) {
+			xassert(!parser->flag_name);
+			xassert(parser->flag_bit_array);
+			xassert(parser->flag_bit_array_count >= 0);
+			xassert(parser->flag_bit_array_count < NO_VAL8);
+
+			for (int8_t i = 0; i < parser->flag_bit_array_count;
+			     i++) {
+				_check_flag_bit(i, &parser->flag_bit_array[i]);
+			}
+		} else {
+			xassert(parser->flag_name && parser->flag_name[0]);
+			xassert(!parser->flag_bit_array);
+			xassert(parser->flag_bit_array_count == NO_VAL8);
+		}
 
 		/* make sure this is not a list or array type */
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
@@ -203,6 +258,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->list_type > DATA_PARSER_TYPE_INVALID);
 		xassert(parser->list_type < DATA_PARSER_TYPE_MAX);
 		xassert(parser->flag == FLAG_TYPE_NONE);
+		xassert(parser->flag_bit_array_count == NO_VAL8);
 		xassert(!parser->fields);
 		xassert(!parser->field_count);
 		xassert(!parser->parse);
@@ -213,6 +269,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->field_count > 0);
 
 		xassert(parser->flag == FLAG_TYPE_NONE);
+		xassert(parser->flag_bit_array_count == NO_VAL8);
 		xassert(!parser->parse);
 		xassert(!parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
@@ -231,6 +288,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(find_parser_by_type(parser->type));
 
 		xassert(parser->flag == FLAG_TYPE_NONE);
+		xassert(parser->flag_bit_array_count == NO_VAL8);
 		xassert(!parser->fields);
 		xassert(!parser->field_count);
 		xassert(!parser->parse);
@@ -262,6 +320,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		}
 
 		xassert(parser->flag == FLAG_TYPE_NONE);
+		xassert(parser->flag_bit_array_count == NO_VAL8);
 		xassert(!parser->fields);
 		xassert(!parser->field_count);
 		xassert(parser->parse);
@@ -2920,6 +2979,7 @@ static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
 	.obj_type_string = XSTRINGIFY(stype),                         \
 	.flag = FLAG_TYPE_NONE,                                       \
+	.flag_bit_array_count = NO_VAL8,                              \
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = need,                                                \
 }
@@ -2933,6 +2993,7 @@ static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 	.type_string = "skipped",                                     \
 	.obj_type_string = XSTRINGIFY(stype),                         \
 	.flag = FLAG_TYPE_NONE,                                       \
+	.flag_bit_array_count = NO_VAL8,                              \
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = NEED_NONE,                                           \
 }
@@ -2950,6 +3011,7 @@ static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
 	.obj_type_string = XSTRINGIFY(stype),                         \
 	.flag = FLAG_TYPE_NONE,                                       \
+	.flag_bit_array_count = NO_VAL8,                              \
 	.size = NO_VAL,                                               \
 	.needs = need                                                 \
 }
@@ -2967,6 +3029,7 @@ static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 	.flag = FLAG_TYPE_BIT,                                        \
 	.flag_mask = bit,                                             \
 	.flag_name = name,                                            \
+	.flag_bit_array_count = NO_VAL8,                              \
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = need,                                                \
 }
@@ -2981,6 +3044,7 @@ static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 	.obj_type_string = XSTRINGIFY(stype),                         \
 	.flag = FLAG_TYPE_BIT,                                        \
 	.flag_mask = bit,                                             \
+	.flag_bit_array_count = NO_VAL8,                              \
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = NEED_NONE,                                           \
 }
@@ -2999,6 +3063,7 @@ static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 	.flag = FLAG_TYPE_BOOL,                                       \
 	.flag_mask = UINT64_MAX,                                      \
 	.flag_name = name,                                            \
+	.flag_bit_array_count = NO_VAL8,                              \
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = need,                                                \
 }
@@ -3014,8 +3079,63 @@ static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 	.obj_type_string = XSTRINGIFY(stype),                         \
 	.flag = FLAG_TYPE_BOOL,                                       \
 	.flag_mask = UINT64_MAX,                                      \
+	.flag_bit_array_count = NO_VAL8,                              \
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = NEED_NONE,                                           \
+}
+#define add_parse_bit_flag_array(stype, mtype, req, field, path)      \
+{                                                                     \
+	.magic = MAGIC_PARSER,                                        \
+	.ptr_offset = offsetof(stype, field),                         \
+	.field_name = XSTRINGIFY(field),                              \
+	.key = path,                                                  \
+	.required = req,                                              \
+	.type = DATA_PARSER_ ## mtype,                                \
+	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
+	.obj_type_string = XSTRINGIFY(stype),                         \
+	.flag = FLAG_TYPE_BIT_ARRAY,                                  \
+	.flag_mask = UINT64_MAX,                                      \
+	.flag_name = NULL,                                            \
+	.flag_bit_array = PARSER_FLAG_ARRAY(mtype),                   \
+	.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(mtype)), \
+	.size = sizeof(((stype *) NULL)->field),                      \
+	.needs = NEED_NONE,                                           \
+}
+#define add_flag_bit(flag_value, flag_string)                         \
+{                                                                     \
+	.magic = MAGIC_FLAG_BIT,                                      \
+	.type = FLAG_BIT_TYPE_BIT,                                    \
+	.value = flag_value,                                          \
+	.mask = INFINITE64,                                           \
+	.mask_size = sizeof(INFINITE64),                              \
+	.mask_name = XSTRINGIFY(INFINITE64),                          \
+	.name = flag_string,                                          \
+	.flag_name = XSTRINGIFY(flag_value),                          \
+	.flag_size = sizeof(flag_value),                              \
+}
+#define add_flag_masked_bit(flag_value, flag_mask, flag_string)       \
+{                                                                     \
+	.magic = MAGIC_FLAG_BIT,                                      \
+	.type = FLAG_BIT_TYPE_BIT,                                    \
+	.value = flag_value,                                          \
+	.mask = flag_mask,                                            \
+	.mask_size = sizeof(flag_mask),                               \
+	.mask_name = XSTRINGIFY(flag_mask),                           \
+	.name = flag_string,                                          \
+	.flag_name = XSTRINGIFY(flag_value),                          \
+	.flag_size = sizeof(flag_value),                              \
+}
+#define add_flag_equal(flag_value, flag_mask, flag_string)            \
+{                                                                     \
+	.magic = MAGIC_FLAG_BIT,                                      \
+	.type = FLAG_BIT_TYPE_EQUAL,                                  \
+	.value = flag_value,                                          \
+	.mask = flag_mask,                                            \
+	.mask_size = sizeof(flag_mask),                               \
+	.mask_name = XSTRINGIFY(flag_mask),                           \
+	.name = flag_string,                                          \
+	.flag_name = XSTRINGIFY(flag_value),                          \
+	.flag_size = sizeof(flag_value),                              \
 }
 
 #define add_parse(mtype, field, path) \
@@ -3968,6 +4088,7 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 		.fields = PARSER_ARRAY(typev),                                 \
 		.field_count = ARRAY_SIZE(PARSER_ARRAY(typev)),                \
 		.flag = FLAG_TYPE_NONE,                                        \
+		.flag_bit_array_count = NO_VAL8,                               \
 	}
 /* add parser for List */
 #define addpl(typev, typel, delf, addf, need)                                  \
@@ -3982,6 +4103,7 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 		.size = sizeof(List),                                          \
 		.needs = need,                                                 \
 		.flag = FLAG_TYPE_NONE,                                        \
+		.flag_bit_array_count = NO_VAL8,                               \
 	}
 /* add parser for simple type */
 #define addps(typev, stype, need)                                              \
@@ -3994,6 +4116,7 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.flag = FLAG_TYPE_NONE,                                        \
+		.flag_bit_array_count = NO_VAL8,                               \
 	}
 /* add parser for complex type */
 #define addpc(typev, typet, need)                                              \
@@ -4006,6 +4129,7 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
 		.flag = FLAG_TYPE_NONE,                                        \
+		.flag_bit_array_count = NO_VAL8,                               \
 	}
 static const parser_t parsers[] = {
 	/* Simple type parsers */

@@ -52,9 +52,31 @@ typedef enum {
 } need_t;
 
 typedef enum {
+	FLAG_BIT_TYPE_INVALID = 0, /* aka not initialized */
+	FLAG_BIT_TYPE_EQUAL, /* entire masked value must match for flag */
+	FLAG_BIT_TYPE_BIT, /* only need bit(s) to match */
+	FLAG_BIT_TYPE_MAX /* place holder */
+} flag_bit_type_t;
+
+#define MAGIC_FLAG_BIT 0xa11a3a05
+
+typedef struct {
+	int magic; /* MAGIC_FLAG_BIT */
+	char *name;
+	flag_bit_type_t type;
+	uint64_t mask; /* avoid changing any bits not in mask */
+	size_t mask_size;
+	char *mask_name;
+	uint64_t value; /* bits set by flag */
+	char *flag_name;
+	size_t flag_size;
+} flag_bit_t;
+
+typedef enum {
 	FLAG_TYPE_INVALID = 0, /* aka not a flag */
 	FLAG_TYPE_NONE, /* not applicable aka not a flag */
 	FLAG_TYPE_BIT, /* set a single bit */
+	FLAG_TYPE_BIT_ARRAY, /* array of bit flags */
 	FLAG_TYPE_BOOL, /* set a bool using offset */
 	FLAG_TYPE_MAX /* place holder */
 } flag_type_t;
@@ -81,6 +103,8 @@ typedef struct parser_s {
 	flag_type_t flag;
 	uint64_t flag_mask;
 	char *flag_name;
+	const flag_bit_t *flag_bit_array;
+	uint8_t flag_bit_array_count; /* number of entries in flag_bit_array */
 
 	/* set if is a List of given type */
 	type_t list_type;

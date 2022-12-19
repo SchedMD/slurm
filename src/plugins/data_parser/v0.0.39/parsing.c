@@ -70,6 +70,84 @@ typedef struct {
 	ssize_t index;
 } foreach_flag_parser_args_t;
 
+static void _set_flag_bit(const parser_t *const parser, void *dst,
+			  const flag_bit_t *bit, bool matched, const char *path,
+			  data_t *src)
+{
+	/* C allows complier to choose a size for the enum */
+	if (parser->size == sizeof(uint64_t)) {
+		uint64_t *flags = dst;
+		if (matched)
+			*flags |= bit->mask & bit->value;
+		else
+			*flags &= ~bit->mask | (bit->mask & ~bit->value);
+	} else if (parser->size == sizeof(uint32_t)) {
+		uint32_t *flags = dst;
+		if (matched)
+			*flags |= bit->mask & bit->value;
+		else
+			*flags &= ~bit->mask | (bit->mask & ~bit->value);
+	} else if (parser->size == sizeof(uint16_t)) {
+		uint16_t *flags = dst;
+		if (matched)
+			*flags |= bit->mask & bit->value;
+		else
+			*flags &= ~bit->mask | (bit->mask & ~bit->value);
+	} else if (parser->size == sizeof(uint8_t)) {
+		uint8_t *flags = dst;
+		if (matched)
+			*flags |= bit->mask & bit->value;
+		else
+			*flags &= ~bit->mask | (bit->mask & ~bit->value);
+	} else {
+		fatal_abort("%s: unexpected enum size: %zu",
+			    __func__, parser->size);
+	}
+}
+
+static void _set_flag_bit_equal(const parser_t *const parser, void *dst,
+				const flag_bit_t *bit, bool matched,
+				const char *path, data_t *src)
+{
+	/* C allows complier to choose a size for the enum
+	 *
+	 * If the comparsion is all or nothing, then clear all the masked bits
+	 * if it doesnt match which means parser order matters with these.
+	 */
+	if (parser->size == sizeof(uint64_t)) {
+		uint64_t *flags = dst;
+		if (matched)
+			*flags = (*flags & ~bit->mask) |
+				 (bit->mask & bit->value);
+		else
+			*flags &= ~bit->mask;
+	} else if (parser->size == sizeof(uint32_t)) {
+		uint32_t *flags = dst;
+		if (matched)
+			*flags = (*flags & ~bit->mask) |
+				 (bit->mask & bit->value);
+		else
+			*flags &= ~bit->mask;
+	} else if (parser->size == sizeof(uint16_t)) {
+		uint16_t *flags = dst;
+		if (matched)
+			*flags = (*flags & ~bit->mask) |
+				 (bit->mask & bit->value);
+		else
+			*flags &= ~bit->mask;
+	} else if (parser->size == sizeof(uint8_t)) {
+		uint8_t *flags = dst;
+		if (matched)
+			*flags = (*flags & ~bit->mask) |
+				 (bit->mask & bit->value);
+		else
+			*flags &= ~bit->mask;
+	} else {
+		fatal_abort("%s: unexpected enum size: %zu",
+			    __func__, parser->size);
+	}
+}
+
 static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 {
 	foreach_flag_parser_args_t *args = arg;
@@ -102,7 +180,20 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 		FREE_NULL_DATA(ppath);
 	}
 
-	if (parser->flag == FLAG_TYPE_BIT) {
+	if (parser->flag == FLAG_TYPE_BIT_ARRAY) {
+		for (int8_t i = 0; (i < parser->flag_bit_array_count); i++) {
+			const flag_bit_t *bit = &parser->flag_bit_array[i];
+
+			if (bit->type == FLAG_BIT_TYPE_EQUAL)
+				_set_flag_bit(parser, dst, bit, matched, path,
+					      src);
+			else if (bit->type == FLAG_BIT_TYPE_BIT)
+				_set_flag_bit_equal(parser, dst, bit, matched,
+						    path, src);
+			else
+				fatal_abort("%s: invalid bit_flag_t", __func__);
+		}
+	} else if (parser->flag == FLAG_TYPE_BIT) {
 		/* C allows complier to choose a size for the enum */
 		if (parser->size == sizeof(uint64_t)) {
 			uint64_t *flags = dst;
@@ -638,6 +729,83 @@ static int _dump_flag_bool(args_t *args, void *src, data_t *dst,
 	return SLURM_SUCCESS;
 }
 
+static bool _match_flag_bit(const parser_t *const parser, void *src,
+			    const flag_bit_t *bit)
+{
+	const uint64_t v = bit->mask & bit->value;
+
+	/* C allows complier to choose a size for the enum */
+	if (parser->size == sizeof(uint64_t)) {
+		uint64_t *flags = src;
+		return ((*flags & v) == v);
+	} else if (parser->size == sizeof(uint32_t)) {
+		uint32_t *flags = src;
+		return ((*flags & v) == v);
+	} else if (parser->size == sizeof(uint16_t)) {
+		uint16_t *flags = src;
+		return ((*flags & v) == v);
+	} else if (parser->size == sizeof(uint8_t)) {
+		uint8_t *flags = src;
+		return ((*flags & v) == v);
+	}
+
+	fatal("%s: unexpected enum size: %zu", __func__, parser->size);
+}
+
+static bool _match_flag_equal(const parser_t *const parser, void *src,
+			      const flag_bit_t *bit)
+{
+	const uint64_t v = bit->mask & bit->value;
+
+	/* C allows complier to choose a size for the enum */
+	if (parser->size == sizeof(uint64_t)) {
+		uint64_t *flags = src;
+		return ((*flags & bit->mask) == v);
+	} else if (parser->size == sizeof(uint32_t)) {
+		uint32_t *flags = src;
+		return ((*flags & bit->mask) == v);
+	} else if (parser->size == sizeof(uint16_t)) {
+		uint16_t *flags = src;
+		return ((*flags & bit->mask) == v);
+	} else if (parser->size == sizeof(uint8_t)) {
+		uint8_t *flags = src;
+		return ((*flags & bit->mask) == v);
+	}
+
+	fatal("%s: unexpected enum size: %zu", __func__, parser->size);
+}
+
+static int _dump_flag_bit_array(args_t *args, void *src, data_t *dst,
+				const parser_t *const parser)
+{
+	int rc = SLURM_SUCCESS;
+
+	xassert(args->magic == MAGIC_ARGS);
+	check_parser(parser);
+
+	if (data_get_type(dst) == DATA_TYPE_NULL)
+		data_set_list(dst);
+	if (data_get_type(dst) != DATA_TYPE_LIST)
+		return ESLURM_DATA_CONV_FAILED;
+
+	for (int8_t i = 0; !rc && (i < parser->flag_bit_array_count); i++) {
+		bool found;
+		const flag_bit_t *bit = &parser->flag_bit_array[i];
+
+		if (bit->type == FLAG_BIT_TYPE_BIT)
+			found = _match_flag_bit(parser, src, bit);
+		else if (bit->type == FLAG_BIT_TYPE_EQUAL)
+			found = _match_flag_equal(parser, src, bit);
+		else
+			fatal_abort("%s: invalid bit_flag_t", __func__);
+
+		if (found)
+			data_set_string(data_list_append(dst), bit->name);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int dump_flag(void *src, const parser_t *const parser, data_t *dst,
 		     args_t *args)
 {
@@ -647,6 +815,7 @@ static int dump_flag(void *src, const parser_t *const parser, data_t *dst,
 	check_parser(parser);
 	xassert(args->magic == MAGIC_ARGS);
 	xassert((parser->flag == FLAG_TYPE_BIT) ||
+		(parser->flag == FLAG_TYPE_BIT_ARRAY) ||
 		(parser->flag == FLAG_TYPE_BOOL));
 
 	if (data_get_type(dst) != DATA_TYPE_LIST) {
@@ -659,6 +828,8 @@ static int dump_flag(void *src, const parser_t *const parser, data_t *dst,
 		return _dump_flag_bit(args, obj, dst, parser);
 	case FLAG_TYPE_BOOL:
 		return _dump_flag_bool(args, obj, dst, parser);
+	case FLAG_TYPE_BIT_ARRAY:
+		return _dump_flag_bit_array(args, obj, dst, parser);
 	default :
 		fatal("%s: invalid flag type: 0x%d", __func__, parser->flag);
 	}
@@ -750,7 +921,7 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 		 * Detect duplicate keys - unless parser is for an enum flag
 		 * where repeats are expected.
 		 */
-		xassert((parser->flag == FLAG_TYPE_BIT) ||
+		xassert(parser->flag ||
 			!data_resolve_dict_path(dst, parser->key));
 		pd = data_define_dict_path(dst, parser->key);
 	} else {
