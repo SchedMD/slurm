@@ -1851,6 +1851,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (xstrcmp(old_auth_type, slurm_conf.authtype)) {
 		xfree(slurm_conf.authtype);
 		slurm_conf.authtype = old_auth_type;
+		old_auth_type = NULL;
 		rc =  ESLURM_INVALID_AUTHTYPE_CHANGE;
 	}
 
