@@ -12296,6 +12296,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	slurmctld_resv_t *new_resv_ptr = NULL;
 	List new_resv_list = NULL;
 	uint32_t user_site_factor;
+	uint64_t mem_req;
 
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
@@ -12891,7 +12892,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_desc->num_tasks;
 	}
 
-	job_desc->tres_req_cnt[TRES_ARRAY_MEM] =
+	mem_req =
 		job_get_tres_mem(NULL,
 				 job_desc->pn_min_memory,
 				 job_desc->tres_req_cnt[TRES_ARRAY_CPU] ?
@@ -12905,6 +12906,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				 (job_desc->pn_min_memory != NO_VAL64),
 				 job_desc->sockets_per_node,
 				 job_desc->num_tasks);
+	if (mem_req)
+		job_desc->tres_req_cnt[TRES_ARRAY_MEM] = mem_req;
 
 	if (job_desc->licenses && !xstrcmp(job_desc->licenses,
 					    job_ptr->licenses)) {
