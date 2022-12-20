@@ -479,7 +479,8 @@ typedef struct {
 	uint32_t job_pend_cnt;	/* number of pending jobs		*/
 	uint32_t job_run_cnt;	/* number of running jobs		*/
 	List license_list;	/* structure with license info		*/
-	char *licenses;		/* required system licenses		*/
+	char *licenses;		/* required system licenses (including those
+				 * from TRES requests */
 	uint32_t max_start_delay;/* Maximum delay in which jobs outside of the
 				  * reservation will be permitted to overlap
 				  * once any jobs are queued for the
@@ -809,6 +810,7 @@ struct job_record {
 	time_t last_sched_eval;		/* last time job was evaluated for scheduling */
 	char *licenses;			/* licenses required by the job */
 	List license_list;		/* structure with license info */
+	char *lic_req;		/* required system licenses directly requested*/
 	acct_policy_limit_set_t limit_set; /* flags if indicate an
 					    * associated limit was set from
 					    * a limit instead of from

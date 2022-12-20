@@ -1133,6 +1133,8 @@ enum node_states {
 					  * schedule attempt */
 #define TASKS_CHANGED      SLURM_BIT(34) /* Reset licenses per job */
 #define JOB_SEND_SCRIPT    SLURM_BIT(35) /* Send script to the dbd */
+#define RESET_LIC_TASK     SLURM_BIT(36) /* Reset licenses per task */
+#define RESET_LIC_JOB      SLURM_BIT(37) /* Reset licenses per job */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
@@ -1603,6 +1605,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t kill_on_node_fail; /* 1 if node failure to kill job,
 				     * 0 otherwise,default=1 */
 	char *licenses;		/* licenses required by the job */
+	char *licenses_tot;	/* total licenses required by the job included
+				 * from tres requests as well, NOT PACKED */
 	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
 	char *mail_user;	/* user to receive notification */
 	char *mcs_label;	/* mcs_label if mcs plugin in use */

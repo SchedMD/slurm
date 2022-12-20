@@ -519,6 +519,27 @@ extern List license_validate(char *licenses, bool validate_configured,
 	static slurmdb_tres_rec_t tres_req;
 	int tres_pos;
 
+	/* Init all the license TRES to 0 */
+	if (tres_req_cnt) {
+		assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+		assoc_mgr_lock(&locks);
+
+		/*
+		 * We can start at TRES_ARRAY_TOTAL_CNT as we know licenses are
+		 * after the static TRES.
+		 */
+		for (tres_pos = TRES_ARRAY_TOTAL_CNT;
+		     tres_pos < slurmctld_tres_cnt;
+		     tres_pos++) {
+			if (tres_req_cnt[tres_pos] &&
+			    !xstrcasecmp(assoc_mgr_tres_array[tres_pos]->type,
+					 "license")) {
+				tres_req_cnt[tres_pos] = 0;
+			}
+		}
+		assoc_mgr_unlock(&locks);
+	}
+
 	job_license_list = _build_license_list(licenses, valid);
 	if (!job_license_list)
 		return job_license_list;
