@@ -13955,8 +13955,11 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_ptr->mem_per_tres = job_desc->mem_per_tres;
 			job_desc->mem_per_tres = NULL;
 		}
-		sched_info("%s: setting %sfor %pJ", __func__, tmp, job_ptr);
-		xfree(tmp);
+		if (tmp) {
+			sched_info("%s: setting %sfor %pJ",
+				   __func__, tmp, job_ptr);
+			xfree(tmp);
+		}
 		FREE_NULL_LIST(job_ptr->gres_list_req);
 		job_ptr->gres_list_req = gres_list;
 
