@@ -14698,7 +14698,6 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	char *job_id_str;
 	char *err_msg = NULL;
 	resp_array_struct_t *resp_array = NULL;
-	job_array_resp_msg_t *resp_array_msg = NULL;
 
 	job_id_str = job_specs->job_id_str;
 
@@ -14910,8 +14909,9 @@ reply:
 	if ((rc != ESLURM_JOB_SETTING_DB_INX) && (msg->conn_fd >= 0)) {
 		if (resp_array) {
 			slurm_msg_t resp_msg;
+			job_array_resp_msg_t *resp_array_msg =
+				_resp_array_xlate(resp_array, job_id);
 			response_init(&resp_msg, msg);
-			resp_array_msg = _resp_array_xlate(resp_array, job_id);
 			resp_msg.msg_type  = RESPONSE_JOB_ARRAY_ERRORS;
 			resp_msg.data      = resp_array_msg;
 			slurm_send_node_msg(msg->conn_fd, &resp_msg);
@@ -17473,8 +17473,6 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 	char *end_ptr = NULL, *tok, *tmp;
 	bitstr_t *array_bitmap = NULL;
 	bool valid = true;
-	slurm_msg_t resp_msg;
-	return_code_msg_t rc_msg;
 	uint32_t flags = req_ptr->flags;
 	char *job_id_str = req_ptr->job_id_str;
 	resp_array_struct_t *resp_array = NULL;
@@ -17567,21 +17565,16 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 
 reply:
 	if (msg) {
-		response_init(&resp_msg, msg);
 		if (resp_array) {
+			slurm_msg_t resp_msg;
 			resp_array_msg = _resp_array_xlate(resp_array, job_id);
+			response_init(&resp_msg, msg);
 			resp_msg.msg_type  = RESPONSE_JOB_ARRAY_ERRORS;
 			resp_msg.data      = resp_array_msg;
-		} else {
-			resp_msg.msg_type  = RESPONSE_SLURM_RC;
-			rc_msg.return_code = rc;
-			resp_msg.data      = &rc_msg;
-		}
-		slurm_send_node_msg(msg->conn_fd, &resp_msg);
-
-		if (resp_array_msg) {
+			slurm_send_node_msg(msg->conn_fd, &resp_msg);
 			slurm_free_job_array_resp(resp_array_msg);
-			resp_msg.data = NULL;
+		} else {
+			slurm_send_rc_msg(msg, rc);
 		}
 	}
 	_resp_array_free(resp_array);
