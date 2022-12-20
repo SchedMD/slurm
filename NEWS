@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 22.05.8
+==========================
+
 * Changes in Slurm 22.05.7
 ==========================
  -- Fix slurmctlds in a federation not recovering a lost connection until a
