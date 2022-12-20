@@ -14911,9 +14911,9 @@ reply:
 			slurm_msg_t resp_msg;
 			job_array_resp_msg_t *resp_array_msg =
 				_resp_array_xlate(resp_array, job_id);
-			response_init(&resp_msg, msg);
-			resp_msg.msg_type  = RESPONSE_JOB_ARRAY_ERRORS;
-			resp_msg.data      = resp_array_msg;
+			response_init(&resp_msg, msg,
+				      RESPONSE_JOB_ARRAY_ERRORS,
+				      resp_array_msg);
 			slurm_send_node_msg(msg->conn_fd, &resp_msg);
 			slurm_free_job_array_resp(resp_array_msg);
 		} else {
@@ -17568,9 +17568,8 @@ reply:
 		if (resp_array) {
 			slurm_msg_t resp_msg;
 			resp_array_msg = _resp_array_xlate(resp_array, job_id);
-			response_init(&resp_msg, msg);
-			resp_msg.msg_type  = RESPONSE_JOB_ARRAY_ERRORS;
-			resp_msg.data      = resp_array_msg;
+			response_init(&resp_msg, msg, RESPONSE_JOB_ARRAY_ERRORS,
+				      resp_array_msg);
 			slurm_send_node_msg(msg->conn_fd, &resp_msg);
 			slurm_free_job_array_resp(resp_array_msg);
 		} else {

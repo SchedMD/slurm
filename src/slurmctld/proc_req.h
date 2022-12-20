@@ -82,7 +82,8 @@ extern void record_rpc_stats(slurm_msg_t *msg, long delta);
  * first by calling slurm_msg_t_init(), then by copying
  * fields needed to communicate with the remote correctly.
  */
-extern void response_init(slurm_msg_t *resp, slurm_msg_t *msg);
+extern void response_init(slurm_msg_t *resp, slurm_msg_t *msg,
+			  uint16_t msg_type, void *data);
 
 /* Copy an array of type char **, xmalloc() the array and xstrdup() the
  * strings in the array */

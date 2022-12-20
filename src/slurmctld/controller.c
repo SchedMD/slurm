@@ -3813,11 +3813,9 @@ extern void slurm_rpc_control_status(slurm_msg_t *msg)
 	slurm_msg_t response_msg;
 	control_status_msg_t data;
 
-	response_init(&response_msg, msg);
-	response_msg.msg_type = RESPONSE_CONTROL_STATUS;
-	response_msg.data = &data;
 	memset(&data, 0, sizeof(data));
 	data.backup_inx = backup_inx;
 	data.control_time = control_time;
+	response_init(&response_msg, msg, RESPONSE_CONTROL_STATUS, &data);
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 }
