@@ -376,7 +376,7 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 	serialize_g_data_to_string(&out, NULL, resp, mime_type,
 				   SER_FLAGS_PRETTY);
 
-	printf("%s", out);
+	printf("%s\n", out);
 
 #ifdef MEMORY_LEAK_DEBUG
 	xfree(out);
