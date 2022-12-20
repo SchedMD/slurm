@@ -5319,10 +5319,9 @@ static int _test_gres_cnt(gres_state_t *gres_state_job,
 			if (*num_tasks == NO_VAL)
 				*num_tasks = req_tasks;
 			else if (*num_tasks != req_tasks) {
-				error("Failed to validate job spec. Based on --%ss and --%ss-per-task number of requested tasks differ from -n/--ntasks.",
-				      gres_state_job->gres_name,
-				      gres_state_job->gres_name);
-				return -1;
+				/* requesting new task count */
+				gres_js->total_gres = gres_js->gres_per_job =
+					*num_tasks * gres_js->gres_per_task;
 			}
 		} else if (*num_tasks != NO_VAL) {
 			gres_js->gres_per_job = *num_tasks *
