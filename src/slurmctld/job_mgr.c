@@ -7905,6 +7905,60 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	return SLURM_SUCCESS;
 }
 
+static void _figure_out_num_tasks(
+	job_desc_msg_t *job_desc, job_record_t *job_ptr)
+{
+	uint32_t num_tasks = job_desc->num_tasks;
+	uint32_t min_nodes = job_desc->min_nodes;
+	uint32_t max_nodes = job_desc->max_nodes;
+	uint16_t ntasks_per_node = job_desc->ntasks_per_node;
+	uint16_t ntasks_per_tres = job_desc->ntasks_per_tres;
+	uint16_t cpus_per_task = job_desc->cpus_per_task;
+
+	if (job_ptr) {
+		if (min_nodes == NO_VAL)
+			min_nodes = job_ptr->details->min_nodes;
+		if (max_nodes == NO_VAL)
+			max_nodes = job_ptr->details->max_nodes;
+		if (max_nodes == 0)
+			max_nodes = min_nodes;
+
+		if (ntasks_per_node == NO_VAL16)
+			ntasks_per_node = job_ptr->details->ntasks_per_node;
+		else if (ntasks_per_tres == NO_VAL16)
+			ntasks_per_tres = job_ptr->details->ntasks_per_tres;
+
+		if (cpus_per_task == NO_VAL16)
+			cpus_per_task = job_ptr->details->cpus_per_task;
+	}
+
+	/* If we are creating the job we want the tasks to be set every time. */
+	if ((ntasks_per_tres != NO_VAL16) &&
+	    (num_tasks == NO_VAL) &&
+	    (min_nodes != NO_VAL) &&
+	    (!job_ptr || (job_ptr && (min_nodes == max_nodes)))) {
+		/* Implicitly set task count */
+		if (job_desc->ntasks_per_tres != NO_VAL16)
+			num_tasks = min_nodes * ntasks_per_tres;
+		else if (ntasks_per_node != NO_VAL16)
+			num_tasks = min_nodes * ntasks_per_node;
+		else if (cpus_per_task == NO_VAL16)
+			num_tasks = min_nodes;
+	}
+
+	if (job_ptr) {
+		if (num_tasks == NO_VAL)
+			num_tasks = job_ptr->details->num_tasks;
+		if (num_tasks != job_ptr->details->num_tasks) {
+			job_desc->num_tasks = num_tasks;
+			job_desc->bitflags |= TASKS_CHANGED;
+		}
+	} else if (num_tasks != NO_VAL) {
+		job_desc->num_tasks = num_tasks;
+		job_desc->bitflags |= TASKS_CHANGED;
+	}
+}
+
 /* Perform some size checks on strings we store to prevent
  * malicious user filling slurmctld's memory
  * IN job_desc   - user job submit request
@@ -7985,12 +8039,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 			job_desc->min_nodes = host_cnt;
 	}
 
-	if ((job_desc->ntasks_per_node != NO_VAL16) &&
-	    (job_desc->min_nodes       != NO_VAL) &&
-	    (job_desc->num_tasks       == NO_VAL)) {
-		job_desc->num_tasks =
-			job_desc->ntasks_per_node * job_desc->min_nodes;
-	}
+	_figure_out_num_tasks(job_desc, NULL);
 
 	/* Only set min and max cpus if overcommit isn't set */
 	if ((job_desc->overcommit == NO_VAL8) &&
@@ -12403,6 +12452,11 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	 */
 	orig_time_limit = job_desc->time_limit;
 
+	/*
+	 * We need to figure out if we changed task cnt.
+	 */
+	_figure_out_num_tasks(job_desc, job_ptr);
+
 	memcpy(tres_req_cnt, job_ptr->tres_req_cnt, sizeof(tres_req_cnt));
 	job_desc->tres_req_cnt = tres_req_cnt;
 	tres_req_cnt_set = true;
@@ -12703,7 +12757,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 	if (job_desc->cpus_per_tres   || job_desc->tres_per_job    ||
 	    job_desc->tres_per_node   || job_desc->tres_per_socket ||
-	    job_desc->tres_per_task   || job_desc->mem_per_tres)
+	    job_desc->tres_per_task   || job_desc->mem_per_tres ||
+	    (job_desc->bitflags & TASKS_CHANGED))
 		gres_update = true;
 	if (gres_update) {
 		uint16_t orig_ntasks_per_socket = NO_VAL16;
@@ -13300,7 +13355,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		update_accounting = true;
 	}
 
-	if (job_desc->num_tasks != NO_VAL) {
+	if ((job_desc->num_tasks != NO_VAL) &&
+	    (job_desc->bitflags & TASKS_CHANGED)) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_desc->num_tasks < 1)

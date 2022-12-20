@@ -1131,7 +1131,7 @@ enum node_states {
 					  * last_eval_time */
 #define BACKFILL_LAST      SLURM_BIT(33) /* Job was considered in last
 					  * schedule attempt */
-/*                         SLURM_BIT(34)    Available 2 versions after 21.08 */
+#define TASKS_CHANGED      SLURM_BIT(34) /* Reset licenses per job */
 #define JOB_SEND_SCRIPT    SLURM_BIT(35) /* Send script to the dbd */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
