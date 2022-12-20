@@ -12822,10 +12822,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		if (job_desc->cpus_per_task == detail_ptr->cpus_per_task)
 			job_desc->cpus_per_task = NO_VAL16;	/* Unchanged */
 	}
-	if (gres_update) {
-		gres_ctld_set_job_tres_cnt(gres_list, detail_ptr->min_nodes,
-					   job_desc->tres_req_cnt, false);
-	}
 
 	if ((job_desc->min_nodes != NO_VAL) &&
 	    (job_desc->min_nodes != INFINITE)) {
@@ -12908,6 +12904,13 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				 job_desc->num_tasks);
 	if (mem_req)
 		job_desc->tres_req_cnt[TRES_ARRAY_MEM] = mem_req;
+
+	if (gres_update) {
+		gres_ctld_set_job_tres_cnt(
+			gres_list,
+			job_desc->tres_req_cnt[TRES_ARRAY_NODE],
+			job_desc->tres_req_cnt, false);
+	}
 
 	if (job_desc->licenses && !xstrcmp(job_desc->licenses,
 					    job_ptr->licenses)) {
