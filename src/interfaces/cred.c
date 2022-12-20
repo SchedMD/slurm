@@ -2199,14 +2199,9 @@ _job_state_destroy(job_state_t *j)
 static void
 _clear_expired_job_states(slurm_cred_ctx_t ctx)
 {
-	static time_t last_scan = 0;
 	time_t        now = time(NULL);
 	ListIterator  i   = NULL;
 	job_state_t  *j   = NULL;
-
-	if ((now - last_scan) < 2)	/* Reduces slurmd overhead */
-		return;
-	last_scan = now;
 
 	i = list_iterator_create(ctx->job_list);
 	while ((j = list_next(i))) {
@@ -2233,12 +2228,7 @@ static int _list_find_expired(void *x, void *key)
 static void
 _clear_expired_credential_states(slurm_cred_ctx_t ctx)
 {
-	static time_t last_scan = 0;
 	time_t        now = time(NULL);
-
-	if ((now - last_scan) < 2)	/* Reduces slurmd overhead */
-		return;
-	last_scan = now;
 
 	list_delete_all(ctx->state_list, _list_find_expired, &now);
 }
