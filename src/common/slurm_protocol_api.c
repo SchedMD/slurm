@@ -1870,7 +1870,7 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
 				  bool block_for_forwarding)
 {
 	header_t header;
-	int rc;
+	int rc = SLURM_SUCCESS;
 	void *auth_cred = NULL;
 	time_t start_time = time(NULL);
 	slurm_hash_t hash = { 0 };
