@@ -1501,6 +1501,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	char *old_auth_type = xstrdup(slurm_conf.authtype);
 	char *old_bb_type = xstrdup(slurm_conf.bb_type);
 	char *old_cred_type = xstrdup(slurm_conf.cred_type);
+	char *old_job_container_type = xstrdup(slurm_conf.job_container_plugin);
 	uint16_t old_preempt_mode = slurm_conf.preempt_mode;
 	char *old_preempt_type = xstrdup(slurm_conf.preempt_type);
 	char *old_sched_type = xstrdup(slurm_conf.schedtype);
@@ -1851,6 +1852,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (xstrcmp(old_auth_type, slurm_conf.authtype)) {
 		xfree(slurm_conf.authtype);
 		slurm_conf.authtype = old_auth_type;
+		old_auth_type = NULL;
 		rc =  ESLURM_INVALID_AUTHTYPE_CHANGE;
 	}
 
@@ -1866,6 +1868,13 @@ int read_slurm_conf(int recover, bool reconfig)
 		slurm_conf.cred_type = old_cred_type;
 		old_cred_type = NULL;
 		rc = ESLURM_INVALID_CRED_TYPE_CHANGE;
+	}
+
+	if (xstrcmp(old_job_container_type, slurm_conf.job_container_plugin)) {
+		xfree(slurm_conf.job_container_plugin);
+		slurm_conf.job_container_plugin = old_job_container_type;
+		old_job_container_type = NULL;
+		rc =  ESLURM_INVALID_JOB_CONTAINER_CHANGE;
 	}
 
 	if (xstrcmp(old_sched_type, slurm_conf.schedtype)) {
@@ -1946,6 +1955,7 @@ end_it:
 	xfree(old_auth_type);
 	xfree(old_bb_type);
 	xfree(old_cred_type);
+	xfree(old_job_container_type);
 	xfree(old_preempt_type);
 	xfree(old_sched_type);
 	xfree(old_select_type);
