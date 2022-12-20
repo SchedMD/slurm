@@ -232,7 +232,6 @@ extern void check_parser_funcname(const parser_t *const parser,
 		if (parser->flag == FLAG_TYPE_BIT_ARRAY) {
 			xassert(!parser->flag_name);
 			xassert(parser->flag_bit_array);
-			xassert(parser->flag_bit_array_count >= 0);
 			xassert(parser->flag_bit_array_count < NO_VAL8);
 
 			for (int8_t i = 0; i < parser->flag_bit_array_count;
