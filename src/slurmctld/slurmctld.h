@@ -1223,7 +1223,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time);
 
 /*
  * delete_partition - delete the specified partition
- * IN job_specs - job specification from RPC
+ * IN delete_part_msg_t - partition specification from RPC
  * RET 0 on success, errno otherwise
  */
 extern int delete_partition(delete_part_msg_t *part_desc_ptr);
@@ -2526,7 +2526,6 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg);
 
 /*
  * IN msg - RPC to update job, including change specification
- * IN job_specs - a job's specification
  * IN uid - uid of user issuing RPC
  * RET returns an error code from slurm_errno.h
  * global: job_list - global list of job entries

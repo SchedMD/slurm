@@ -2159,10 +2159,6 @@ void part_fini (void)
 	default_part_loc = NULL;
 }
 
-/*
- * delete_partition - delete the specified partition
- * IN job_specs - job specification from RPC
- */
 extern int delete_partition(delete_part_msg_t *part_desc_ptr)
 {
 	part_record_t *part_ptr;

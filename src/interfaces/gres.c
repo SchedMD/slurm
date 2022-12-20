@@ -7446,7 +7446,6 @@ extern void gres_sock_delete(void *x)
 			xfree(sock_gres->bits_by_sock);
 		}
 		xfree(sock_gres->cnt_by_sock);
-		/* NOTE: sock_gres->job_specs is just a pointer, do not free */
 		xfree(sock_gres);
 	}
 }
