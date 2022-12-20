@@ -2215,7 +2215,7 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 	list_iterator_destroy(i);
 }
 
-static int _list_find_expired(void *x, void *key)
+static int _list_find_expired_cred_state(void *x, void *key)
 {
 	cred_state_t *s = (cred_state_t *)x;
 	time_t curr_time = *(time_t *)key;
@@ -2230,7 +2230,7 @@ _clear_expired_credential_states(slurm_cred_ctx_t ctx)
 {
 	time_t        now = time(NULL);
 
-	list_delete_all(ctx->state_list, _list_find_expired, &now);
+	list_delete_all(ctx->state_list, _list_find_expired_cred_state, &now);
 }
 
 
