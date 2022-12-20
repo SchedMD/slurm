@@ -2195,24 +2195,22 @@ _job_state_destroy(job_state_t *j)
 	xfree(j);
 }
 
+static int _list_find_expired_job_state(void *x, void *key)
+{
+	job_state_t *j = x;
+	time_t curr_time = *(time_t *)key;
+
+	if (j->revoked && (curr_time > j->expiration))
+		return 1;
+	return 0;
+}
 
 static void
 _clear_expired_job_states(slurm_cred_ctx_t ctx)
 {
 	time_t        now = time(NULL);
-	ListIterator  i   = NULL;
-	job_state_t  *j   = NULL;
 
-	i = list_iterator_create(ctx->job_list);
-	while ((j = list_next(i))) {
-		debug3("state for jobid %u: ctime:%ld revoked:%ld expires:%ld",
-		       j->jobid, j->ctime, j->revoked, j->expiration);
-		if (j->revoked && (now > j->expiration)) {
-			list_delete_item(i);
-		}
-	}
-
-	list_iterator_destroy(i);
+	list_delete_all(ctx->job_list, _list_find_expired_job_state, &now);
 }
 
 static int _list_find_expired_cred_state(void *x, void *key)
