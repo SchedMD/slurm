@@ -3661,11 +3661,11 @@ end_it:
 /* Update remote sibling job's viable_siblings bitmaps.
  *
  * IN job_id      - job_id of job to update.
- * IN job_specs   - job_specs to update job_id with.
+ * IN job_desc   - job_desc to update job_id with.
  * IN viable_sibs - viable siblings bitmap to send to sibling jobs.
  * IN update_sibs - bitmap of siblings to update.
  */
-extern int fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
+extern int fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_desc,
 			      uint64_t update_sibs, uid_t uid)
 {
 	ListIterator sib_itr;
@@ -3688,7 +3688,7 @@ extern int fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
 		if (!(update_sibs & FED_SIBLING_BIT(sibling->fed.id)))
 			continue;
 
-		if (_persist_update_job(sibling, job_id, job_specs, uid)) {
+		if (_persist_update_job(sibling, job_id, job_desc, uid)) {
 			error("failed to update sibling job on sibling %s",
 			      sibling->name);
 			continue;

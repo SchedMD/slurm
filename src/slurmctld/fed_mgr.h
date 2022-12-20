@@ -100,7 +100,7 @@ extern int       fed_mgr_state_save(char *state_save_location);
 extern int       fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
 						    bool send_all_sibs,
 						    bool clear_dependencies);
-extern int       fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
+extern int       fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_desc,
 				    uint64_t update_sibs, uid_t uid);
 extern int       fed_mgr_update_job_clusters(job_record_t *job_ptr,
 					     char *spec_clusters);

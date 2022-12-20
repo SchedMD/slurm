@@ -1275,9 +1275,9 @@ extern int dump_all_part_state ( void );
 
 /*
  * dump_job_desc - dump the incoming job submit request message
- * IN job_specs - job specification from RPC
+ * IN job_desc - job specification from RPC
  */
-extern void dump_job_desc(job_desc_msg_t * job_specs);
+extern void dump_job_desc(job_desc_msg_t *job_desc);
 
 /*
  * dump_job_step_state - dump the state of a specific job step to a buffer,
@@ -1498,7 +1498,7 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr);
 /*
  * job_allocate - create job_records for the supplied job specification and
  *	allocate nodes for it.
- * IN job_specs - job specifications
+ * IN job_desc - job specifications
  * IN immediate - if set then either initiate the job immediately or fail
  * IN will_run - don't initiate the job if set, just test if it could run
  *	now or later
@@ -1520,7 +1520,7 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr);
  *	default_part_loc - pointer to default partition
  * NOTE: lock_slurmctld on entry: Read config Write job, Write node, Read part
  */
-extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
+extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 			int will_run, will_run_response_msg_t **resp,
 			int allocate, uid_t submit_uid, bool cron,
 			job_record_t **job_pptr,
@@ -2661,7 +2661,7 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid);
  * IN submit_uid - UID making job submit request
  * OUT err_msg   - custom error message to return
  * RET 0 or error code */
-extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
+extern int validate_job_create_req(job_desc_msg_t *job_desc, uid_t submit_uid,
 				   char **err_msg);
 
 /*
