@@ -200,6 +200,9 @@ documents those changes that are of interest to users and administrators.
  -- Do not attempt to "fix" malformed input to 'scontrol show hostlist'.
  -- RSMI - Add usage gathering for AMD gpus (requires ROCM 5.5+).
 
+* Changes in Slurm 22.05.8
+==========================
+
 * Changes in Slurm 22.05.7
 ==========================
  -- Fix slurmctlds in a federation not recovering a lost connection until a
