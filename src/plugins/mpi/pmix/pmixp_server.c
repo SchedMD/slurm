@@ -739,7 +739,7 @@ static int _process_extended_hdr(pmixp_base_hdr_t *hdr, buf_t *buf)
 		goto unlock;
 	}
 
-	switch (pmixp_dconn_progress_type(dconn)) {
+	switch (pmixp_dconn_progress_type()) {
 	case PMIXP_DCONN_PROGRESS_SW:{
 		/* this direct connection has fd that needs to be
 		 * polled to progress, use connection interface for that
@@ -769,7 +769,7 @@ static int _process_extended_hdr(pmixp_base_hdr_t *hdr, buf_t *buf)
 	}
 	default:
 		/* Should not happen */
-		xassert(0 && pmixp_dconn_progress_type(dconn));
+		xassert(0 && pmixp_dconn_progress_type());
 		/* TODO: handle this error */
 	}
 unlock:

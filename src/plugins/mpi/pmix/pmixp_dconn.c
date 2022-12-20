@@ -118,7 +118,7 @@ int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, void *ep_data,
 	return _pmixp_dconn_h.connect(dconn->priv, ep_data, ep_len, init_msg);
 }
 
-pmixp_dconn_progress_type_t pmixp_dconn_progress_type()
+pmixp_dconn_progress_type_t pmixp_dconn_progress_type(void)
 {
 	return _progress_type;
 }
