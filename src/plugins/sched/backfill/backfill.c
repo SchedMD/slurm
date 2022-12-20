@@ -1997,7 +1997,7 @@ static void _attempt_backfill(void)
 				debug("%pJ has invalid QOS",
 				      job_ptr);
 				assoc_mgr_unlock(&locks);
-				job_fail_qos(job_ptr, __func__);
+				job_fail_qos(job_ptr, __func__, false);
 				last_job_update = now;
 				continue;
 			} else if (job_ptr->state_reason == FAIL_QOS) {

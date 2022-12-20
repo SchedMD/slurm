@@ -1673,7 +1673,7 @@ next_task:
 			    && !job_ptr->limit_set.qos) {
 				assoc_mgr_unlock(&locks);
 				sched_debug("%pJ has invalid QOS", job_ptr);
-				job_fail_qos(job_ptr, __func__);
+				job_fail_qos(job_ptr, __func__, false);
 				last_job_update = now;
 				continue;
 			} else if (job_ptr->state_reason == FAIL_QOS) {

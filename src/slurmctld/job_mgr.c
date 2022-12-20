@@ -363,7 +363,8 @@ static int _job_fail_account(job_record_t *job_ptr, const char *func_name)
 	return rc;
 }
 
-extern int job_fail_qos(job_record_t *job_ptr, const char *func_name)
+extern int job_fail_qos(job_record_t *job_ptr, const char *func_name,
+			bool assoc_locked)
 {
 	int rc = 0; // Return number of pending jobs held
 
@@ -386,7 +387,7 @@ extern int job_fail_qos(job_record_t *job_ptr, const char *func_name)
 
 		if (job_ptr->details) {
 			/* reset the job */
-			acct_policy_remove_accrue_time(job_ptr, false);
+			acct_policy_remove_accrue_time(job_ptr, assoc_locked);
 			job_ptr->details->begin_time = 0;
 			/* Update job with new begin_time. */
 			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
@@ -1627,8 +1628,8 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	char **pelog_env = (char **) NULL;
 	job_fed_details_t *job_fed_details = NULL;
 	assoc_mgr_lock_t locks = {
-		.assoc = READ_LOCK,
-		.qos = READ_LOCK,
+		.assoc = WRITE_LOCK,
+		.qos = WRITE_LOCK,
 		.tres = READ_LOCK,
 		.user = READ_LOCK
 	};
@@ -2650,7 +2651,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 			job_ptr->limit_set.qos, &qos_rec,
 			&qos_error, true, LOG_LEVEL_ERROR);
 		if ((qos_error != SLURM_SUCCESS) && !job_ptr->limit_set.qos) {
-			job_fail_qos(job_ptr, __func__);
+			job_fail_qos(job_ptr, __func__, true);
 		} else {
 			job_ptr->qos_id = qos_rec.id;
 			if (job_ptr->state_reason == FAIL_QOS) {
@@ -18080,7 +18081,7 @@ extern int job_hold_by_qos_id(uint32_t qos_id)
 		if (job_ptr->qos_id != qos_id)
 			continue;
 
-		cnt += job_fail_qos(job_ptr, __func__);
+		cnt += job_fail_qos(job_ptr, __func__, false);
 	}
 	list_iterator_destroy(job_iterator);
 	unlock_slurmctld(job_write_lock);
