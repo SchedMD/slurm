@@ -180,6 +180,61 @@ RunTimeKill="kill -s SIGTERM %p"
 RunTimeDelete="kill -s SIGKILL %p"
 </pre>
 </li>
+
+<li><a href="https://github.com/NVIDIA/enroot">Enroot</a> (3.3.0)
+<br>
+oci.conf:
+<pre>
+IgnoreFileConfigJson=true
+CreateEnvFile=newline
+EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
+RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
+RunTimeRun="/usr/local/bin/enroot-start-wrapper %b %m %e -- %@"
+RunTimeKill="kill -s SIGINT %p"
+RunTimeDelete="kill -s SIGTERM %p"
+</pre>
+/usr/local/bin/enroot-start-wrapper:
+<pre>
+#!/bin/bash -xv
+BUNDLE="$1"
+SPOOLDIR="$2"
+ENVFILE="$3"
+shift 4
+IMAGE=
+
+export USER=$(whoami)
+export HOME="$BUNDLE/"
+export TERM
+export ENROOT_SQUASH_OPTIONS='-comp gzip -noD'
+export ENROOT_ALLOW_SUPERUSER=n
+export ENROOT_MOUNT_HOME=y
+export ENROOT_REMAP_ROOT=y
+export ENROOT_ROOTFS_WRITABLE=y
+export ENROOT_LOGIN_SHELL=n
+export ENROOT_TRANSFER_RETRIES=2
+export ENROOT_CACHE_PATH="$SPOOLDIR/"
+export ENROOT_DATA_PATH="$SPOOLDIR/"
+export ENROOT_TEMP_PATH="$SPOOLDIR/"
+export ENROOT_ENVIRON="$ENVFILE"
+
+if [ ! -f "$BUNDLE" ]
+then
+        IMAGE="$SPOOLDIR/container.sqsh"
+        enroot import -o "$IMAGE" -- "$BUNDLE" && \
+        enroot create "$IMAGE"
+        CONTAINER="container"
+else
+        CONTAINER="$BUNDLE"
+fi
+
+enroot start -- "$CONTAINER" "$@"
+rc=$?
+
+[ $IMAGE ] && unlink $IMAGE
+
+exit $rc
+</pre>
+</li>
 </ul>
 
 <h2 id="testing">Testing OCI runtime outside of Slurm
@@ -547,6 +602,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 6 December 2022</p>
+<p style="text-align:center;">Last modified 21 December 2022</p>
 
 <!--#include virtual="footer.txt"-->
