@@ -12886,6 +12886,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			 job_desc->min_nodes :
 			 detail_ptr ? detail_ptr->min_nodes : 1);
 		job_desc->min_cpus = job_desc->tres_req_cnt[TRES_ARRAY_CPU];
+	} else if (job_desc->bitflags & TASKS_CHANGED) {
+		job_desc->tres_req_cnt[TRES_ARRAY_CPU] = job_desc->min_cpus =
+			job_desc->num_tasks;
 	}
 
 	job_desc->tres_req_cnt[TRES_ARRAY_MEM] =
