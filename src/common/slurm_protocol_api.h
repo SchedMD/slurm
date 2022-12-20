@@ -439,6 +439,9 @@ extern int slurm_buffers_pack_msg(slurm_msg_t *msg, msg_bufs_t *buffers,
  * the function
 \**********************************************************************/
 
+extern void response_init(slurm_msg_t *msg, slurm_msg_t *resp_msg,
+			  uint16_t msg_type, void *data);
+
 /* slurm_send_rc_msg
  * given the original request message this function sends a
  *	slurm_return_code message back to the client that made the request

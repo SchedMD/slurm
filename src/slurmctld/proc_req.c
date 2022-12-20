@@ -229,27 +229,6 @@ static void _throttle_fini(int *active_rpc_cnt)
 }
 
 /*
- * Initialize a response slurm_msg_t to an inbound msg,
- * first by calling slurm_msg_t_init(), then by copying
- * fields needed to communicate with the remote correctly.
- */
-extern void response_init(slurm_msg_t *resp, slurm_msg_t *msg,
-			  uint16_t msg_type, void *data)
-{
-	slurm_msg_t_init(resp);
-	resp->address = msg->address;
-	resp->auth_index = msg->auth_index;
-	resp->conn = msg->conn;
-	resp->data = data;
-	resp->flags = msg->flags;
-	resp->hash_index = msg->hash_index;
-	resp->msg_type = msg_type;
-	resp->protocol_version = msg->protocol_version;
-	if (msg->auth_uid_set)
-		slurm_msg_set_r_uid(resp, msg->auth_uid);
-}
-
-/*
  * _fill_ctld_conf - make a copy of current slurm configuration
  *	this is done with locks set so the data can change at other times
  * OUT conf_ptr - place to copy configuration to
