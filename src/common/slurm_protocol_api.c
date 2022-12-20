@@ -2160,7 +2160,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void response_init(slurm_msg_t *msg, slurm_msg_t *resp_msg,
+extern void response_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
 			  uint16_t msg_type, void *data)
 {
 	slurm_msg_t_init(resp_msg);
