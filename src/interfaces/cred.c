@@ -253,8 +253,6 @@ static void _job_state_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
 static void _job_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer);
 static void _cred_state_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
 static void _cred_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer);
-static void _job_state_pack_one(job_state_t *j, buf_t *buffer);
-static void _cred_state_pack_one(cred_state_t *s, buf_t *buffer);
 
 static void _sbast_cache_add(sbcast_cred_t *sbcast_cred);
 
@@ -2195,32 +2193,25 @@ _job_state_destroy(job_state_t *j)
 	xfree(j);
 }
 
+static int _list_find_expired_job_state(void *x, void *key)
+{
+	job_state_t *j = x;
+	time_t curr_time = *(time_t *)key;
+
+	if (j->revoked && (curr_time > j->expiration))
+		return 1;
+	return 0;
+}
 
 static void
 _clear_expired_job_states(slurm_cred_ctx_t ctx)
 {
-	static time_t last_scan = 0;
 	time_t        now = time(NULL);
-	ListIterator  i   = NULL;
-	job_state_t  *j   = NULL;
 
-	if ((now - last_scan) < 2)	/* Reduces slurmd overhead */
-		return;
-	last_scan = now;
-
-	i = list_iterator_create(ctx->job_list);
-	while ((j = list_next(i))) {
-		debug3("state for jobid %u: ctime:%ld revoked:%ld expires:%ld",
-		       j->jobid, j->ctime, j->revoked, j->expiration);
-		if (j->revoked && (now > j->expiration)) {
-			list_delete_item(i);
-		}
-	}
-
-	list_iterator_destroy(i);
+	list_delete_all(ctx->job_list, _list_find_expired_job_state, &now);
 }
 
-static int _list_find_expired(void *x, void *key)
+static int _list_find_expired_cred_state(void *x, void *key)
 {
 	cred_state_t *s = (cred_state_t *)x;
 	time_t curr_time = *(time_t *)key;
@@ -2233,14 +2224,9 @@ static int _list_find_expired(void *x, void *key)
 static void
 _clear_expired_credential_states(slurm_cred_ctx_t ctx)
 {
-	static time_t last_scan = 0;
 	time_t        now = time(NULL);
 
-	if ((now - last_scan) < 2)	/* Reduces slurmd overhead */
-		return;
-	last_scan = now;
-
-	list_delete_all(ctx->state_list, _list_find_expired, &now);
+	list_delete_all(ctx->state_list, _list_find_expired_cred_state, &now);
 }
 
 
@@ -2264,11 +2250,16 @@ _cred_state_create(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 	return s;
 }
 
-static void _cred_state_pack_one(cred_state_t *s, buf_t *buffer)
+static int _cred_state_pack_one(void *x, void *key)
 {
+	cred_state_t *s = x;
+	buf_t *buffer = key;
+
 	pack_step_id(&s->step_id, buffer, SLURM_PROTOCOL_VERSION);
 	pack_time(s->ctime, buffer);
 	pack_time(s->expiration, buffer);
+
+	return SLURM_SUCCESS;
 }
 
 
@@ -2288,13 +2279,17 @@ unpack_error:
 	return NULL;
 }
 
-
-static void _job_state_pack_one(job_state_t *j, buf_t *buffer)
+static int _job_state_pack_one(void *x, void *key)
 {
+	job_state_t *j = x;
+	buf_t *buffer = key;
+
 	pack32(j->jobid, buffer);
 	pack_time(j->revoked, buffer);
 	pack_time(j->ctime, buffer);
 	pack_time(j->expiration, buffer);
+
+	return SLURM_SUCCESS;
 }
 
 
@@ -2326,15 +2321,9 @@ unpack_error:
 
 static void _cred_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer)
 {
-	ListIterator  i = NULL;
-	cred_state_t *s = NULL;
-
 	pack32(list_count(ctx->state_list), buffer);
 
-	i = list_iterator_create(ctx->state_list);
-	while ((s = list_next(i)))
-		_cred_state_pack_one(s, buffer);
-	list_iterator_destroy(i);
+	list_for_each(ctx->state_list, _cred_state_pack_one, buffer);
 }
 
 
@@ -2368,16 +2357,9 @@ unpack_error:
 
 static void _job_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer)
 {
-	ListIterator  i = NULL;
-	job_state_t  *j = NULL;
-
 	pack32((uint32_t) list_count(ctx->job_list), buffer);
 
-
-	i = list_iterator_create(ctx->job_list);
-	while ((j = list_next(i)))
-		_job_state_pack_one(j, buffer);
-	list_iterator_destroy(i);
+	list_for_each(ctx->job_list, _job_state_pack_one, buffer);
 }
 
 
