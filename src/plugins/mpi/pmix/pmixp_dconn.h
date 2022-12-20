@@ -112,14 +112,14 @@ extern pmixp_dconn_t *_pmixp_dconn_conns;
 extern pmixp_dconn_handlers_t _pmixp_dconn_h;
 
 int pmixp_dconn_init(int node_cnt, pmixp_p2p_data_t direct_hdr);
-void pmixp_dconn_fini();
+void pmixp_dconn_fini(void);
 int pmixp_dconn_connect_do(pmixp_dconn_t *dconn, void *ep_data,
 			   size_t ep_len, void *init_msg);
 pmixp_dconn_progress_type_t pmixp_dconn_progress_type();
-pmixp_dconn_conn_type_t pmixp_dconn_connect_type();
-int pmixp_dconn_poll_fd();
-size_t pmixp_dconn_ep_len();
-char *pmixp_dconn_ep_data();
+pmixp_dconn_conn_type_t pmixp_dconn_connect_type(void);
+int pmixp_dconn_poll_fd(void);
+size_t pmixp_dconn_ep_len(void);
+char *pmixp_dconn_ep_data(void);
 
 #ifndef NDEBUG
 static void pmixp_dconn_verify(pmixp_dconn_t *dconn)
