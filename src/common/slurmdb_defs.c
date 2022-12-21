@@ -3023,7 +3023,7 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 		    (errno != SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
 			break;
 	}
-	if ((rc != SLURM_SUCCESS) || !resp.auth_cred) {
+	if (rc != SLURM_SUCCESS) {
 		error("update cluster: %m to %s at %s(%hu)",
 		      cluster, host, port);
 		rc = SLURM_ERROR;

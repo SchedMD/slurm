@@ -1959,7 +1959,7 @@ slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr)
 
 	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 
-	if ((rc != 0) || !resp_msg.auth_cred) {
+	if (rc != SLURM_SUCCESS) {
 		error("slurm_slurmd_info: %m");
 		if (resp_msg.auth_cred)
 			auth_g_destroy(resp_msg.auth_cred);

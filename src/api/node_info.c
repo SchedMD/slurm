@@ -871,7 +871,7 @@ extern int slurm_get_node_energy(char *host, uint16_t context_id,
 
 	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 
-	if (rc != 0 || !resp_msg.auth_cred) {
+	if (rc != SLURM_SUCCESS) {
 		error("slurm_get_node_energy: %m");
 		if (resp_msg.auth_cred)
 			auth_g_destroy(resp_msg.auth_cred);

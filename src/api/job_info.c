@@ -1606,7 +1606,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 
 	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
 
-	if ((rc != 0) || !resp_msg.auth_cred) {
+	if (rc != SLURM_SUCCESS) {
 		if (resp_msg.auth_cred)
 			auth_g_destroy(resp_msg.auth_cred);
 		return SLURM_ERROR;
