@@ -2272,9 +2272,20 @@ A brief description of the resource.
 .IP
 
 .TP
-\fBFlags\fR=<\fIOPT\fR>
-Flags that identify specific attributes of the system resource.  At this time
-no flags have been defined.
+\fBFlags\fR[-|+]=<\fIOPT\fR>
+Flags that identify specific attributes of the system resource.
+.br
+Valid options are
+.RS
+.TP
+\fBAbsolute\fR
+If set the resource will treat the counts for \fBAllowed\fR and \fBAllocated\fR
+as absolute counts instead of percentages.
+
+NOTE: If removing this with flags-=absolute there is no effort to convert the
+numbers in the database back to percentages. This is required by the user.
+.IP
+.RE
 .IP
 
 .TP

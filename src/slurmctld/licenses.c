@@ -221,8 +221,12 @@ static void _add_res_rec_2_lic_list(slurmdb_res_rec_t *rec, bool sync)
 	licenses_t *license_entry = xmalloc(sizeof(licenses_t));
 
 	license_entry->name = xstrdup_printf("%s@%s", rec->name, rec->server);
-	license_entry->total = ((rec->count *
-				 rec->clus_res_rec->allowed) / 100);
+	if (rec->flags & SLURMDB_RES_FLAG_ABSOLUTE) {
+		license_entry->total = rec->clus_res_rec->allowed;
+	} else {
+		license_entry->total = ((rec->count *
+					 rec->clus_res_rec->allowed) / 100);
+	}
 	license_entry->remote = sync ? 2 : 1;
 	license_entry->last_update = rec->last_update;
 

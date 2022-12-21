@@ -445,6 +445,10 @@ static uint32_t _str_2_qos_flags(char *flags)
 
 static uint32_t _str_2_res_flags(char *flags)
 {
+
+	if (xstrcasestr(flags, "Absolute"))
+		return SLURMDB_RES_FLAG_ABSOLUTE;
+
 	return 0;
 }
 
@@ -1992,6 +1996,8 @@ extern char *slurmdb_res_flags_str(uint32_t flags)
 		xstrcat(res_flags, "Add,");
 	if (flags & SLURMDB_RES_FLAG_REMOVE)
 		xstrcat(res_flags, "Remove,");
+	if (flags & SLURMDB_RES_FLAG_ABSOLUTE)
+		xstrcat(res_flags, "Absolute,");
 
 	if (res_flags)
 		res_flags[strlen(res_flags)-1] = '\0';

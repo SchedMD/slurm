@@ -425,10 +425,13 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 				(curr_inx == field_count));
 			break;
 		case PRINT_CALLOWED:
-			if (clus_res)
-				tmp_uint32 = (res->count *
-					      clus_res->allowed) / 100;
-			else
+			if (clus_res) {
+				if (res->flags & SLURMDB_RES_FLAG_ABSOLUTE)
+					tmp_uint32 = res->count;
+				else
+					tmp_uint32 = (res->count *
+						clus_res->allowed) / 100;
+			} else
 				tmp_uint32 = 0;
 			field->print_routine(field, &tmp_uint32,
 					     (curr_inx == field_count));
@@ -610,6 +613,8 @@ extern int sacctmgr_add_res(int argc, char **argv)
 			slurmdb_clus_res_rec_t *clus_res;
 			char *cluster;
 			uint16_t start_used = 0;
+			uint32_t total_pos = 100;
+			char *percent_str = "%";
 
 			if (found_res) {
 				if (found_res->clus_res_list)
@@ -617,13 +622,22 @@ extern int sacctmgr_add_res(int argc, char **argv)
 						found_res->clus_res_list);
 				res = xmalloc(sizeof(slurmdb_res_rec_t));
 				slurmdb_init_res_rec(res, 0);
+				res->count = found_res->count;
 				res->id = found_res->id;
+				xfree(res->name);
+				res->name = xstrdup(found_res->name);
 				res->type = found_res->type;
+				xfree(res->server);
 				res->server = xstrdup(found_res->server);
+				res->flags = found_res->flags;
 				start_used = res->allocated =
 					found_res->allocated;
 			}
 
+			if (res->flags & SLURMDB_RES_FLAG_ABSOLUTE) {
+				total_pos = res->count;
+				percent_str = "";
+			}
 			res->clus_res_list = list_create(
 				slurmdb_destroy_clus_res_rec);
 
@@ -649,22 +663,16 @@ extern int sacctmgr_add_res(int argc, char **argv)
 					}
 					/* make sure we don't overcommit */
 					res->allocated += start_res->allocated;
-					if (res->allocated > 100) {
+					if (res->allocated > total_pos) {
 						exit_code = 1;
 						fprintf(stderr,
-							" Adding this %d "
-							"clusters to resource "
-							"%s@%s at %u%% each "
-							", with %u%% already "
-							"used,  would go over "
-							"100%%.  Please redo "
-							"your math and "
-							"resubmit.\n",
-							list_count(
-								cluster_list),
+							" Adding these clusters to resource %s@%s at %u%s each (%u total possible), with %u%s already used, would be more tha possible. Please redo your math and resubmit.\n",
 							res->name, res->server,
 							start_res->allocated,
-							start_used);
+							percent_str,
+							res->count,
+							start_used,
+							percent_str);
 						break;
 					}
 					clus_res = xmalloc(
@@ -675,9 +683,10 @@ extern int sacctmgr_add_res(int argc, char **argv)
 					clus_res->allowed =
 						start_res->allocated;
 					xstrfmtcat(res_str,
-						   "   Cluster - %s\t%u%%\n",
+						   "   Cluster - %s\t%u%s\n",
 						   cluster,
-						   clus_res->allowed);
+						   clus_res->allowed,
+						   percent_str);
 					/* FIXME: make sure we don't
 					   overcommit */
 				}
@@ -689,7 +698,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 			if (found_itr)
 				list_iterator_destroy(found_itr);
 
-			if (added && (res->allocated > 100))
+			if (added && (res->allocated > total_pos))
 				break;
 
 			list_iterator_reset(clus_itr);
@@ -736,6 +745,11 @@ extern int sacctmgr_add_res(int argc, char **argv)
 			printf("  ServerType     = %s\n", res->manager);
 		if (res->count != NO_VAL)
 			printf("  Count          = %u\n", res->count);
+		if (!(res->flags & SLURMDB_RES_FLAG_NOTSET)) {
+			char *res_tmp_str = slurmdb_res_flags_str(res->flags);
+			printf("  Flags          = %s\n", res_tmp_str);
+			xfree(res_tmp_str);
+		}
 		printf("  Type           = %s\n", tmp_str);
 
 		xfree(res_str);
