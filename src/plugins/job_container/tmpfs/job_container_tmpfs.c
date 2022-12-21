@@ -641,7 +641,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		exit(rc);
 	} else {
 		int wstatus;
-		char proc_path[PATH_MAX];
+		char *proc_path = NULL;
 
 		if (sem_wait(sem1) < 0) {
 			error("%s: sem_Wait failed: %m", __func__);
@@ -649,13 +649,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 			goto exit1;
 		}
 
-		if (snprintf(proc_path, PATH_MAX, "/proc/%u/ns/mnt", cpid)
-		    >= PATH_MAX) {
-			error("%s: Unable to build job %u /proc path: %m",
-			      __func__, job_id);
-			rc = -1;
-			goto exit1;
-		}
+		xstrfmtcat(proc_path, "/proc/%u/ns/mnt", cpid);
 
 		/*
 		 * Bind mount /proc/pid/ns/mnt to hold namespace active
@@ -663,6 +657,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		 */
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 		rc = mount(proc_path, ns_holder, NULL, MS_BIND, NULL);
+		xfree(proc_path);
 		if (rc) {
 			error("%s: ns base mount failed: %m", __func__);
 			if (sem_post(sem2) < 0)
