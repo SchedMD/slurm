@@ -1122,6 +1122,7 @@ typedef struct {
 } slurmdb_res_cond_t;
 
 typedef struct {
+	uint16_t allocated;
 	List clus_res_list; /* list of slurmdb_clus_res_rec_t *'s */
 	slurmdb_clus_res_rec_t *clus_res_rec; /* if only one cluster
 						 being represented */
@@ -1131,7 +1132,6 @@ typedef struct {
 	uint32_t id;
 	char *manager;  /* resource manager name */
 	char *name;
-	uint16_t percent_used;
 	char *server;  /* resource server name */
 	uint32_t type; /* resource type */
 } slurmdb_res_rec_t;

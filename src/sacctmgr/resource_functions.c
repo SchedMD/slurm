@@ -48,7 +48,7 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 	slurmdb_clus_res_rec_t *clus_res = NULL;
 	char *cluster;
 
-	if (res->percent_used == NO_VAL16)
+	if (res->allocated == NO_VAL16)
 		return;
 
 	/* Don't use the global g_res_list since we are going to
@@ -98,7 +98,7 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 					 */
 					cluster = "nothing";
 				}
-				allowed = cluster ? res->percent_used :
+				allowed = cluster ? res->allocated :
 					clus_res->allowed;
 				total += allowed;
 
@@ -109,11 +109,10 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 			}
 		} else if (clus_itr) {
 			while ((cluster = list_next(clus_itr))) {
-				total += res->percent_used;
+				total += res->allocated;
 				fprintf(stderr,
 					"   Cluster - %s\t %u%%\n",
-					cluster,
-					res->percent_used);
+					cluster, res->allocated);
 			}
 		}
 		if (clus_itr)
@@ -362,8 +361,8 @@ static int _set_res_rec(int *start, int argc, char **argv,
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "PercentAllowed",
 					 MAX(command_len, 1))) {
-			/* overload percent_used here */
-			if (get_uint16(argv[i]+end, &res->percent_used,
+			/* overload allocated here */
+			if (get_uint16(argv[i]+end, &res->allocated,
 				       "PercentAllowed") == SLURM_SUCCESS) {
 				set = 1;
 			}
@@ -475,7 +474,7 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 			break;
 		case PRINT_ALLOCATED:
 			field->print_routine(
-				field, res->percent_used,
+				field, res->allocated,
 				(curr_inx == field_count));
 			break;
 		default:
@@ -592,7 +591,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 			res->count = start_res->count;
 			res->flags = start_res->flags;
 			res->type = start_res->type;
-			res->percent_used = 0;
+			res->allocated = 0;
 
 			xstrfmtcat(res_str, "  %s@%s\n",
 				   res->name, res->server);
@@ -615,8 +614,8 @@ extern int sacctmgr_add_res(int argc, char **argv)
 				res->id = found_res->id;
 				res->type = found_res->type;
 				res->server = xstrdup(found_res->server);
-				start_used = res->percent_used =
-					found_res->percent_used;
+				start_used = res->allocated =
+					found_res->allocated;
 			}
 
 			res->clus_res_list = list_create(
@@ -643,9 +642,8 @@ extern int sacctmgr_add_res(int argc, char **argv)
 						added = true;
 					}
 					/* make sure we don't overcommit */
-					res->percent_used +=
-						start_res->percent_used;
-					if (res->percent_used > 100) {
+					res->allocated += start_res->allocated;
+					if (res->allocated > 100) {
 						exit_code = 1;
 						fprintf(stderr,
 							" Adding this %d "
@@ -659,7 +657,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 							list_count(
 								cluster_list),
 							res->name, res->server,
-							start_res->percent_used,
+							start_res->allocated,
 							start_used);
 						break;
 					}
@@ -669,7 +667,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 						    clus_res);
 					clus_res->cluster = xstrdup(cluster);
 					clus_res->allowed =
-						start_res->percent_used;
+						start_res->allocated;
 					xstrfmtcat(res_str,
 						   "   Cluster - %s\t%u%%\n",
 						   cluster,
@@ -685,7 +683,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 			if (found_itr)
 				list_iterator_destroy(found_itr);
 
-			if (added && (res->percent_used > 100))
+			if (added && (res->allocated > 100))
 				break;
 
 			list_iterator_reset(clus_itr);
@@ -902,8 +900,7 @@ extern int sacctmgr_modify_res(int argc, char **argv)
 		fprintf(stderr, "Can't change \"count\" on a cluster-based "
 			"resource. Remove cluster selection.\n");
 		return SLURM_ERROR;
-	} else if (res->percent_used != NO_VAL16 &&
-			!res_cond->cluster_list) {
+	} else if ((res->allocated != NO_VAL16) && !res_cond->cluster_list) {
 		fprintf(stderr, "Can't change \"percentallowed\" without "
 			"specifying a cluster.\n");
 		return SLURM_ERROR;

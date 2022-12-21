@@ -289,7 +289,7 @@ static uint32_t _get_res_used(mysql_conn_t *mysql_conn, uint32_t res_id,
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	uint32_t percent_used = NO_VAL;
+	uint32_t allocated = NO_VAL;
 
 	xassert(res_id != NO_VAL);
 
@@ -306,25 +306,25 @@ static uint32_t _get_res_used(mysql_conn_t *mysql_conn, uint32_t res_id,
 	DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
-		return percent_used;
+		return allocated;
 	}
 	xfree(query);
 
 	if (!(row = mysql_fetch_row(result))) {
 		error("Resource id %u is not known on the system", res_id);
 		mysql_free_result(result);
-		return percent_used;
+		return allocated;
 	}
 
 	/* Overwrite everything just to make sure the client side
 	   didn't try anything tricky.
 	*/
 	if (row[0] && row[0][0])
-		percent_used = slurm_atoul(row[0]);
+		allocated = slurm_atoul(row[0]);
 
 	mysql_free_result(result);
 
-	return percent_used;
+	return allocated;
 }
 
 static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
@@ -405,9 +405,9 @@ static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
 	if (row[RES_REQ_TYPE] && row[RES_REQ_TYPE][0])
 		res->type = slurm_atoul(row[RES_REQ_TYPE]);
 	if (row[RES_REQ_PU] && row[RES_REQ_PU][0])
-		res->percent_used = slurm_atoul(row[RES_REQ_PU]);
+		res->allocated = slurm_atoul(row[RES_REQ_PU]);
 	else
-		res->percent_used = 0;
+		res->allocated = 0;
 
 	mysql_free_result(result);
 
@@ -519,13 +519,13 @@ static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
 
 	itr = list_iterator_create(res->clus_res_list);
 	while ((object = list_next(itr))) {
-		res->percent_used += object->allowed;
-		if (res->percent_used > 100) {
+		res->allocated += object->allowed;
+		if (res->allocated > 100) {
 			rc = ESLURM_OVER_ALLOCATE;
 			DB_DEBUG(DB_RES, mysql_conn->conn,
 			         "Adding a new cluster with %u%% allowed to resource %s@%s would put the usage at %u%%, (which is over 100%%). Please redo your math and resubmit.",
 			         object->allowed, res->name,
-			         res->server, res->percent_used);
+			         res->server, res->allocated);
 			break;
 		}
 		xfree(extra);
@@ -690,7 +690,7 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			/* Since we are adding it make sure we don't
 			 * over commit it on the clusters we add.
 			 */
-			object->percent_used = 0;
+			object->allocated = 0;
 		} else {
 			if (_fill_in_res_rec(mysql_conn, object) !=
 			    SLURM_SUCCESS) {
@@ -834,9 +834,9 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 			res->type = slurm_atoul(row[RES_REQ_TYPE]);
 
 		if (row[RES_REQ_PU] && row[RES_REQ_PU][0])
-			res->percent_used = slurm_atoul(row[RES_REQ_PU]);
+			res->allocated = slurm_atoul(row[RES_REQ_PU]);
 		else
-			res->percent_used = 0;
+			res->allocated = 0;
 	}
 	mysql_free_result(result);
 	xfree(clus_extra);
@@ -1014,7 +1014,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	bool res_added = 0;
 	bool have_clusters = 0;
 	int last_res = -1;
-	uint32_t percent_used = 0;
+	uint32_t allocated = 0;
 
 	if (!res_cond || !res) {
 		error("we need something to change");
@@ -1035,9 +1035,8 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(tmp);
 
 	/* overloaded for easibility */
-	if (res->percent_used != NO_VAL16) {
-		xstrfmtcat(clus_vals, ", allowed=%u",
-			   res->percent_used);
+	if (res->allocated != NO_VAL16) {
+		xstrfmtcat(clus_vals, ", allowed=%u", res->allocated);
 		send_update = 1;
 		query_clusters++;
 	}
@@ -1123,13 +1122,12 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			res_added = 0;
 			last_res = curr_res;
 
-			if (have_clusters &&
-			    (res->percent_used != NO_VAL16)) {
-				percent_used = _get_res_used(
+			if (have_clusters && (res->allocated != NO_VAL16)) {
+				allocated = _get_res_used(
 					mysql_conn, curr_res, clus_extra);
 
-				if (percent_used == NO_VAL)
-					percent_used = 0;
+				if (allocated == NO_VAL)
+					allocated = 0;
 			}
 		}
 
@@ -1152,13 +1150,13 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (have_clusters && row[3] && row[3][0]) {
 			slurmdb_res_rec_t *res_rec;
 
-			if (res->percent_used != NO_VAL16)
-				percent_used += res->percent_used;
-			if (percent_used > 100) {
+			if (res->allocated != NO_VAL16)
+				allocated += res->allocated;
+			if (allocated > 100) {
 				DB_DEBUG(DB_RES, mysql_conn->conn,
 				         "Modifying resource %s@%s with %u%% allowed to each cluster would put the usage at %u%%, (which is over 100%%). Please redo your math and resubmit.",
-				         row[1], row[2], res->percent_used,
-				         percent_used);
+				         row[1], row[2], res->allocated,
+				         allocated);
 
 				mysql_free_result(result);
 				xfree(clus_extra);
@@ -1182,7 +1180,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			res_rec->clus_res_rec =
 				xmalloc(sizeof(slurmdb_clus_res_rec_t));
 			res_rec->clus_res_rec->cluster = xstrdup(row[3]);
-			res_rec->clus_res_rec->allowed = res->percent_used;
+			res_rec->clus_res_rec->allowed = res->allocated;
 			if (addto_update_list(mysql_conn->update_list,
 					      SLURMDB_MODIFY_RES, res_rec)
 			    != SLURM_SUCCESS)

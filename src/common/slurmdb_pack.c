@@ -2224,7 +2224,7 @@ extern void slurmdb_pack_res_rec(void *in, uint16_t protocol_version,
 		pack32(NO_VAL, buffer); // id
 		packnull(buffer); // manager
 		packnull(buffer); // name
-		pack16(0, buffer); // percent_used
+		pack16(0, buffer); // allocated
 		packnull(buffer); // server
 		pack32(SLURMDB_RESOURCE_NOTSET, buffer); // type
 
@@ -2247,7 +2247,7 @@ extern void slurmdb_pack_res_rec(void *in, uint16_t protocol_version,
 	pack32(object->id, buffer);
 	packstr(object->manager, buffer);
 	packstr(object->name, buffer);
-	pack16(object->percent_used, buffer);
+	pack16(object->allocated, buffer);
 	packstr(object->server, buffer);
 	pack32(object->type, buffer);
 }
@@ -2293,7 +2293,7 @@ extern int slurmdb_unpack_res_rec(void **object, uint16_t protocol_version,
 	safe_unpack32(&object_ptr->id, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->manager, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
-	safe_unpack16(&object_ptr->percent_used, buffer);
+	safe_unpack16(&object_ptr->allocated, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->server, &uint32_tmp, buffer);
 	safe_unpack32(&object_ptr->type, buffer);
 
