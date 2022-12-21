@@ -85,6 +85,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Add new "defer_batch" option to SchedulerParameters to only defer
     scheduling for batch jobs.
  -- Add new DebugFlags option 'JobComp' to replace 'Elasticsearch'.
+ -- Add configurable job requeue limit parameter - MaxBatchRequeue - in
+    slurm.conf to permit changes from the old hard-coded value of 5.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

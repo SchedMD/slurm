@@ -124,13 +124,6 @@
 #define CONTROL_TIMEOUT 30	/* seconds */
 #endif
 
-/* Maximum number of requeue attempts before the job is put JOB_REQUEUE_HOLD
- * with reason JobHeldUser.
- */
-#ifndef MAX_BATCH_REQUEUE
-#define MAX_BATCH_REQUEUE 5
-#endif
-
 /*****************************************************************************\
  *  General configuration parameters and data structures
 \*****************************************************************************/

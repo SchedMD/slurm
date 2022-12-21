@@ -203,6 +203,8 @@ documents those changes that are of interest to users and administrators.
  -- Automatically create directories for stdout/stderr output files. Paths may
     use %j and related substitution characters as well.
  -- Add --tres-per-task to salloc/sbatch/srun.
+ -- Add configurable job requeue limit parameter - MaxBatchRequeue - in
+    slurm.conf to permit changes from the old hard-coded value of 5.
 
 * Changes in Slurm 22.05.8
 ==========================

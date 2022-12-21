@@ -2357,7 +2357,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	}
 
 	if (((job_state & JOB_STATE_BASE) >= JOB_END) ||
-	    (batch_flag > MAX_BATCH_REQUEUE)) {
+	    (batch_flag > slurm_conf.max_batch_requeue)) {
 		error("Invalid data for JobId=%u: job_state=%u batch_flag=%u",
 		      job_id, job_state, batch_flag);
 		goto unpack_error;
@@ -6441,7 +6441,7 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 		 * We have reached the maximum number of requeue
 		 * attempts hold the job with HoldMaxRequeue reason.
 		 */
-		if (job_ptr->batch_flag > MAX_BATCH_REQUEUE) {
+		if (job_ptr->batch_flag > slurm_conf.max_batch_requeue) {
 			job_ptr->job_state |= JOB_REQUEUE_HOLD;
 			job_ptr->state_reason = WAIT_MAX_REQUEUE;
 			job_ptr->batch_flag = 1;
