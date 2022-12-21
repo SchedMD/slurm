@@ -85,38 +85,21 @@ static int step_ns_fd = -1;
 static bool force_rm = true;
 
 static int _create_paths(uint32_t job_id,
-			 char *job_mount,
-			 char *ns_holder,
-			 char *src_bind)
+			 char **job_mount,
+			 char **ns_holder,
+			 char **src_bind)
 {
 	jc_conf = get_slurm_jc_conf();
 	xassert(jc_conf);
 	xassert(job_mount);
 
-	if (snprintf(job_mount, PATH_MAX, "%s/%u", jc_conf->basepath, job_id)
-	    >= PATH_MAX) {
-		error("%s: Unable to build job %u mount path: %m",
-			__func__, job_id);
-		return SLURM_ERROR;
-	}
+	xstrfmtcat(*job_mount, "%s/%u", jc_conf->basepath, job_id);
 
-	if (ns_holder) {
-		if (snprintf(ns_holder, PATH_MAX, "%s/.ns", job_mount)
-		    >= PATH_MAX) {
-			error("%s: Unable to build job %u ns_holder path: %m",
-			      __func__, job_id);
-			return SLURM_ERROR;
-		}
-	}
+	if (ns_holder)
+		xstrfmtcat(*ns_holder, "%s/.ns", *job_mount);
 
-	if (src_bind) {
-		if (snprintf(src_bind, PATH_MAX, "%s/.%u", job_mount, job_id)
-		    >= PATH_MAX) {
-			error("%s: Unable to build job %u src_bind path: %m",
-			__func__, job_id);
-			return SLURM_ERROR;
-		}
-	}
+	if (src_bind)
+		xstrfmtcat(*src_bind, "%s/.%u", *job_mount, job_id);
 
 	return SLURM_SUCCESS;
 }
@@ -424,9 +407,7 @@ static int _clean_job_basepath(uint32_t job_id)
 
 static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 {
-	char job_mount[PATH_MAX];
-	char ns_holder[PATH_MAX];
-	char src_bind[PATH_MAX];
+	char *job_mount = NULL, *ns_holder = NULL, *src_bind = NULL;
 	char *result = NULL;
 	int fd;
 	int rc = 0;
@@ -439,15 +420,17 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 	return 0;
 #endif
 
-	if (_create_paths(job_id, job_mount, ns_holder, src_bind)
+	if (_create_paths(job_id, &job_mount, &ns_holder, &src_bind)
 	    != SLURM_SUCCESS) {
-		return -1;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 
 	rc = mkdir(job_mount, 0700);
 	if (rc && errno != EEXIST) {
 		error("%s: mkdir %s failed: %m", __func__, job_mount);
-		return -1;
+		rc = SLURM_ERROR;
+		goto end_it;
 	} else if (rc && errno == EEXIST) {
 		/*
 		 * This is coming from sbcast likely,
@@ -467,11 +450,13 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 	 */
 	if (mount(job_mount, job_mount, NULL, MS_BIND, NULL)) {
 		error("%s: Initial base mount failed: %m", __func__);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 	if (mount(job_mount, job_mount, NULL, MS_PRIVATE | MS_REC, NULL)) {
 		error("%s: Initial base mount failed: %m", __func__);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 #endif
 
@@ -721,10 +706,16 @@ exit2:
 		if (nftw(job_mount, _rm_data, 64, FTW_DEPTH|FTW_PHYS) < 0) {
 			error("%s: Directory traversal failed: %s: %m",
 			      __func__, job_mount);
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto end_it;
 		}
 		umount2(job_mount, MNT_DETACH);
 	}
+
+end_it:
+	xfree(job_mount);
+	xfree(src_bind);
+	xfree(ns_holder);
 
 	return rc;
 }
@@ -736,10 +727,9 @@ extern int container_p_create(uint32_t job_id, uid_t uid)
 
 extern int container_p_join_external(uint32_t job_id)
 {
-	char job_mount[PATH_MAX];
-	char ns_holder[PATH_MAX];
+	char *job_mount = NULL, *ns_holder = NULL;
 
-	if (_create_paths(job_id, job_mount, ns_holder, NULL)
+	if (_create_paths(job_id, &job_mount, &ns_holder, NULL)
 	    != SLURM_SUCCESS) {
 		return -1;
 	}
@@ -749,6 +739,9 @@ extern int container_p_join_external(uint32_t job_id)
 		if (step_ns_fd == -1)
 			error("%s: %m", __func__);
 	}
+
+	xfree(job_mount);
+	xfree(ns_holder);
 
 	return step_ns_fd;
 }
@@ -760,10 +753,9 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 
 extern int container_p_join(uint32_t job_id, uid_t uid)
 {
-	char job_mount[PATH_MAX];
-	char ns_holder[PATH_MAX];
+	char *job_mount = NULL, *ns_holder = NULL;
 	int fd;
-	int rc = 0;
+	int rc = SLURM_SUCCESS;
 
 #ifdef HAVE_NATIVE_CRAY
 	return SLURM_SUCCESS;
@@ -776,7 +768,7 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	if (job_id == 0)
 		return SLURM_SUCCESS;
 
-	if (_create_paths(job_id, job_mount, ns_holder, NULL)
+	if (_create_paths(job_id, &job_mount, &ns_holder, NULL)
 	    != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
@@ -785,6 +777,8 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	fd = open(ns_holder, O_RDONLY);
 	if (fd == -1) {
 		error("%s: open failed for %s: %m", __func__, ns_holder);
+		xfree(job_mount);
+		xfree(ns_holder);
 		return SLURM_ERROR;
 	}
 
@@ -793,27 +787,30 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 		error("%s: setns failed for %s: %m", __func__, ns_holder);
 		/* closed after error() */
 		close(fd);
+		xfree(job_mount);
+		xfree(ns_holder);
 		return SLURM_ERROR;
 	} else {
 		debug3("job entered namespace");
 	}
 
 	close(fd);
+	xfree(job_mount);
+	xfree(ns_holder);
 
 	return SLURM_SUCCESS;
 }
 
 static int _delete_ns(uint32_t job_id)
 {
-	char job_mount[PATH_MAX];
-	char ns_holder[PATH_MAX];
+	char *job_mount = NULL, *ns_holder = NULL;
 	int rc = 0;
 
 #ifdef HAVE_NATIVE_CRAY
 	return SLURM_SUCCESS;
 #endif
 
-	if (_create_paths(job_id, job_mount, ns_holder, NULL)
+	if (_create_paths(job_id, &job_mount, &ns_holder, NULL)
 	    != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
@@ -833,6 +830,8 @@ static int _delete_ns(uint32_t job_id)
 		} else {
 			error("%s: umount2 %s failed: %m",
 			      __func__, ns_holder);
+			xfree(job_mount);
+			xfree(ns_holder);
 			return SLURM_ERROR;
 		}
 	}
@@ -851,12 +850,17 @@ static int _delete_ns(uint32_t job_id)
 	if (nftw(job_mount, _rm_data, 64, FTW_DEPTH|FTW_PHYS) < 0) {
 		error("%s: Directory traversal failed: %s: %m",
 		      __func__, job_mount);
+		xfree(job_mount);
+		xfree(ns_holder);
 		return SLURM_ERROR;
 	}
 
 	if (umount2(job_mount, MNT_DETACH))
 		debug2("umount2: %s failed: %m", job_mount);
 	rmdir(job_mount);
+
+	xfree(job_mount);
+	xfree(ns_holder);
 
 	return SLURM_SUCCESS;
 }
