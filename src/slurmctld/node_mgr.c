@@ -1742,7 +1742,10 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					node_ptr->power_save_req_time = 0;
 
 					xfree(node_ptr->features_act);
-					// node_ptr->features_act = xstrdup(node_ptr->features);
+					update_node_active_features(
+						node_ptr->name,
+						node_ptr->features_act,
+						FEATURE_MODE_IND);
 
 					clusteracct_storage_g_node_down(
 						acct_db_conn,

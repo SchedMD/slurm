@@ -523,7 +523,9 @@ static void _do_power_work(time_t now)
 			node_ptr->power_save_req_time = 0;
 
 			xfree(node_ptr->features_act);
-			// node_ptr->features_act = xstrdup(node_ptr->features);
+			update_node_active_features(node_ptr->name,
+						    node_ptr->features_act,
+						    FEATURE_MODE_IND);
 
 			clusteracct_storage_g_node_down(
 				acct_db_conn, node_ptr, now,
