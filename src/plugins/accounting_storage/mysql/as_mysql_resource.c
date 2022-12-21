@@ -450,6 +450,15 @@ static int _add_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *object,
 		   object->name, object->server);
 	xstrfmtcat(extra, ", mod_time=%ld", now);
 
+	/*
+	 * Add the Absolute flag if we are adding the resource,
+	 * and we are configured for Absolute resources.
+	 */
+	if (slurmdbd_conf->flags & DBD_CONF_FLAG_ALL_RES_ABS) {
+		object->flags &= ~SLURMDB_RES_FLAG_NOTSET;
+		object->flags |= SLURMDB_RES_FLAG_ABSOLUTE;
+	}
+
 	_setup_res_limits(object, &cols, &vals, &extra, 1, NULL);
 
 	xstrfmtcat(query,

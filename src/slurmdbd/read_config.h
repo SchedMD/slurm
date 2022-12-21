@@ -57,6 +57,7 @@
 
 /* Define slurmdbd_conf_t flags */
 #define DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT SLURM_BIT(0)
+#define DBD_CONF_FLAG_ALL_RES_ABS SLURM_BIT(1)
 
 /* SlurmDBD configuration parameters */
 typedef struct {

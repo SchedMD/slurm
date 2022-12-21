@@ -125,6 +125,7 @@ extern int read_slurmdbd_conf(void)
 {
 	s_p_options_t options[] = {
 		{"AllowNoDefAcct", S_P_BOOLEAN},
+		{"AllResourcesAbsolute", S_P_BOOLEAN},
 		{"ArchiveDir", S_P_STRING},
 		{"ArchiveEvents", S_P_BOOLEAN},
 		{"ArchiveJobs", S_P_BOOLEAN},
@@ -239,6 +240,9 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_boolean(&tmp_bool, "AllowNoDefAcct", tbl);
 		if (tmp_bool)
 			slurmdbd_conf->flags |= DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT;
+		s_p_get_boolean(&tmp_bool, "AllResourcesAbsolute", tbl);
+		if (tmp_bool)
+			slurmdbd_conf->flags |= DBD_CONF_FLAG_ALL_RES_ABS;
 
 		s_p_get_boolean(&a_events, "ArchiveEvents", tbl);
 		s_p_get_boolean(&a_jobs, "ArchiveJobs", tbl);

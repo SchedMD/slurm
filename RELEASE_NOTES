@@ -152,6 +152,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     node vnis for all jobs, or when a user requests them.
  -- Add ability to preserve SuspendExc* parameters on reconfig with
     ReconfigFlags=KeepPowerSaveSettings.
+ -- slurmdbd.conf - Add new AllResourcesAbsolute to force all new resources
+    to be created with the Absolute flag.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
