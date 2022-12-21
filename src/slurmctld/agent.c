@@ -1215,7 +1215,6 @@ static void *_thread_per_group_rpc(void *args)
 	list_iterator_destroy(itr);
 
 cleanup:
-	xfree(args);
 	if (!ret_list && (msg_type == REQUEST_SIGNAL_TASKS)) {
 		job_record_t *job_ptr;
 		signal_tasks_msg_t *msg_ptr =
@@ -1230,6 +1229,7 @@ cleanup:
 			unlock_slurmctld(job_write_lock);
 		}
 	}
+	xfree(args);
 	/* handled at end of thread just in case resend is needed */
 	destroy_forward(&msg.forward);
 	slurm_mutex_lock(thread_mutex_ptr);
