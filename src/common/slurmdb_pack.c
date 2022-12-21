@@ -4743,7 +4743,7 @@ extern void slurmdb_pack_res_cond(void *in, uint16_t protocol_version,
 		_pack_list_of_str(object->id_list, buffer);
 		_pack_list_of_str(object->manager_list, buffer);
 		_pack_list_of_str(object->name_list, buffer);
-		_pack_list_of_str(object->percent_list, buffer);
+		_pack_list_of_str(object->allowed_list, buffer);
 		_pack_list_of_str(object->server_list, buffer);
 		_pack_list_of_str(object->type_list, buffer);
 
@@ -4846,11 +4846,11 @@ extern int slurmdb_unpack_res_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->percent_list = list_create(xfree_ptr);
+			object_ptr->allowed_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
-				list_append(object_ptr->percent_list, tmp_info);
+				list_append(object_ptr->allowed_list, tmp_info);
 			}
 		}
 

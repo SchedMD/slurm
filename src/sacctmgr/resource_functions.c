@@ -230,10 +230,9 @@ static int _set_res_cond(int *start, int argc, char **argv,
 			list_iterator_destroy(itr);
 		} else if (!xstrncasecmp(argv[i], "PercentAllowed",
 					 MAX(command_len, 1))) {
-			if (!res_cond->percent_list) {
-				res_cond->percent_list = list_create(xfree_ptr);
-			}
-			if (slurm_addto_char_list(res_cond->percent_list,
+			if (!res_cond->allowed_list)
+				res_cond->allowed_list = list_create(xfree_ptr);
+			if (slurm_addto_char_list(res_cond->allowed_list,
 						  argv[i]+end))
 				set = 1;
 		} else if (!xstrncasecmp(argv[i], "ServerType",

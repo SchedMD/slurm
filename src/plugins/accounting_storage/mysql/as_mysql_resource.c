@@ -189,10 +189,10 @@ static int _setup_clus_res_cond(slurmdb_res_cond_t *res_cond, char **extra)
 		query_clusters += set;
 	}
 
-	if (res_cond->percent_list && list_count(res_cond->percent_list)) {
+	if (res_cond->allowed_list && list_count(res_cond->allowed_list)) {
 		set = 0;
 		xstrcat(*extra, " && (");
-		itr = list_iterator_create(res_cond->percent_list);
+		itr = list_iterator_create(res_cond->allowed_list);
 		while ((tmp = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");

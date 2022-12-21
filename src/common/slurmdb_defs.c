@@ -135,12 +135,12 @@ static void _free_tres_cond_members(slurmdb_tres_cond_t *tres_cond)
 static void _free_res_cond_members(slurmdb_res_cond_t *res_cond)
 {
 	if (res_cond) {
+		FREE_NULL_LIST(res_cond->allowed_list);
 		FREE_NULL_LIST(res_cond->cluster_list);
 		FREE_NULL_LIST(res_cond->description_list);
 		FREE_NULL_LIST(res_cond->id_list);
 		FREE_NULL_LIST(res_cond->manager_list);
 		FREE_NULL_LIST(res_cond->name_list);
-		FREE_NULL_LIST(res_cond->percent_list);
 		FREE_NULL_LIST(res_cond->server_list);
 		FREE_NULL_LIST(res_cond->type_list);
 	}

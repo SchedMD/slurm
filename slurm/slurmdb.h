@@ -1107,6 +1107,7 @@ typedef struct {
 /* slurmdb_stats_t defined above alphabetical */
 
 typedef struct {
+	list_t *allowed_list; /* list of char * */
 	List cluster_list; /* list of char * */
 	List description_list; /* list of char * */
 	uint32_t flags;
@@ -1114,7 +1115,6 @@ typedef struct {
 	List id_list; /* list of char * */
 	List manager_list; /* list of char * */
 	List name_list; /* list of char * */
-	List percent_list; /* list of char * */
 	List server_list; /* list of char * */
 	List type_list; /* list of char * */
 	uint16_t with_deleted;
