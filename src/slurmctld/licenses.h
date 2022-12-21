@@ -61,7 +61,7 @@ typedef struct {
 	slurmctld_resv_t *resv_ptr;
 } bf_license_t;
 
-extern List license_list;
+extern list_t *cluster_license_list;
 extern time_t last_license_update;
 
 /* Initialize licenses on this system based upon slurm.conf */
