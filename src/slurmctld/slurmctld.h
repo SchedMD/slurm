@@ -273,6 +273,7 @@ extern List conf_includes_list; /* list of conf_includes_map_t */
  *                          FAILING or NO_RESPOND (i.e. available to run a job)
  *  booting_node_bitmap     Set if node in process of booting
  *  cg_node_bitmap          Set if node in completing state
+ *  cloud_node_bitmap       Set if node in CLOUD state
  *  future_node_bitmap      Set if node in FUTURE state
  *  idle_node_bitmap        Set if node has no jobs allocated to it
  *  power_node_bitmap       Set for nodes which are powered down
@@ -288,6 +289,7 @@ extern bitstr_t *bf_ignore_node_bitmap;	/* bitmap of nodes made available during
 					 * backfill cycle */
 extern bitstr_t *booting_node_bitmap;	/* bitmap of booting nodes */
 extern bitstr_t *cg_node_bitmap;	/* bitmap of completing nodes */
+extern bitstr_t *cloud_node_bitmap;	/* bitmap of cloud nodes */
 extern bitstr_t *future_node_bitmap;	/* bitmap of FUTURE nodes */
 extern bitstr_t *idle_node_bitmap;	/* bitmap of idle nodes */
 extern bitstr_t *power_node_bitmap;	/* Powered down nodes */

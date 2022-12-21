@@ -107,6 +107,7 @@ bitstr_t *bf_ignore_node_bitmap = NULL; /* bitmap of nodes to ignore during a
 					 * backfill cycle */
 bitstr_t *booting_node_bitmap = NULL;	/* bitmap of booting nodes */
 bitstr_t *cg_node_bitmap    = NULL;	/* bitmap of completing nodes */
+bitstr_t *cloud_node_bitmap = NULL;	/* bitmap of cloud nodes */
 bitstr_t *future_node_bitmap = NULL;	/* bitmap of FUTURE nodes */
 bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
 bitstr_t *power_node_bitmap = NULL;	/* bitmap of powered down nodes */
@@ -4509,6 +4510,7 @@ extern void node_fini (void)
 	FREE_NULL_BITMAP(bf_ignore_node_bitmap);
 	FREE_NULL_BITMAP(booting_node_bitmap);
 	FREE_NULL_BITMAP(cg_node_bitmap);
+	FREE_NULL_BITMAP(cloud_node_bitmap);
 	FREE_NULL_BITMAP(future_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(power_node_bitmap);
@@ -4726,6 +4728,7 @@ static void _build_node_callback(char *alias, char *hostname, char *address,
 		bit_set(future_node_bitmap, node_ptr->index);
 	} else if (IS_NODE_CLOUD(node_ptr)) {
 		make_node_idle(node_ptr, NULL);
+		bit_set(cloud_node_bitmap, node_ptr->index);
 		bit_set(power_node_bitmap, node_ptr->index);
 
 		gres_g_node_config_load(
@@ -4974,6 +4977,7 @@ static int _delete_node(char *name)
 
 	bit_clear(idle_node_bitmap, node_ptr->index);
 	bit_clear(avail_node_bitmap, node_ptr->index);
+	bit_clear(cloud_node_bitmap, node_ptr->index);
 
 	_remove_node_from_features(node_ptr);
 	gres_node_remove(node_ptr);
