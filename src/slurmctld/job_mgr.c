@@ -14739,8 +14739,8 @@ fini:
 
 	if ((error_code == SLURM_SUCCESS) && tres_req_cnt_set) {
 		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
-			if ((tres_req_cnt[tres_pos] ==
-			     job_ptr->tres_req_cnt[tres_pos]))
+			if (tres_req_cnt[tres_pos] ==
+			    job_ptr->tres_req_cnt[tres_pos])
 				continue;
 
 			job_ptr->tres_req_cnt[tres_pos] =
