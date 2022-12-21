@@ -1727,6 +1727,13 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					/* Node reboot required */
 					bit_and(node_set_map,
 						idle_node_bitmap);
+					/*
+					 * Powered up cloud nodes can't be
+					 * rebooted to get new features. Must be
+					 * powered down first.
+					 */
+					bit_and_not(node_set_map,
+						    cloud_node_bitmap);
 				}
 
 				if (avail_bitmap) {
@@ -1774,6 +1781,12 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						       my_bitmap);
 				bit_and(node_set_ptr[i].my_bitmap,
 					idle_node_bitmap);
+				/*
+				 * Powered up cloud nodes can't be rebooted to
+				 * get new features. Must be powered down first.
+				 */
+				bit_and_not(node_set_ptr[i].my_bitmap,
+					    cloud_node_bitmap);
 				count2 = bit_set_count(node_set_ptr[i].
 						       my_bitmap);
 				if (count1 != count2)
