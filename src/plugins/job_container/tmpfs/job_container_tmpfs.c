@@ -396,8 +396,7 @@ static int _clean_job_basepath(uint32_t job_id)
 {
 	DIR *dp;
 	struct dirent *ep;
-	char path[PATH_MAX];
-	int rc;
+	char *path = NULL;
 
 	if (!(dp = opendir(jc_conf->basepath))) {
 		error("%s: Unable to open %s", __func__, jc_conf->basepath);
@@ -409,17 +408,13 @@ static int _clean_job_basepath(uint32_t job_id)
 			continue;
 		/* If possible, only attempt with directories */
 		if ((ep->d_type == DT_DIR) || (ep->d_type == DT_UNKNOWN)) {
-			rc = snprintf(path, PATH_MAX, "%s/%s",
-				      jc_conf->basepath, ep->d_name);
-			if (rc >= PATH_MAX) {
-				error("%s: Unable to build path: %m",
-				      __func__);
-				continue;
-			}
+			xstrfmtcat(path, "%s/%s",
+				   jc_conf->basepath, ep->d_name);
 			/* it is not important if this fails */
 			if (umount2(path, MNT_DETACH))
 				debug2("failed to unmount %s for job %u",
 				       path, job_id);
+			xfree(path);
 		}
 	}
 	closedir(dp);
