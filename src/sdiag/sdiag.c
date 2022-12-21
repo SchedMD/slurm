@@ -83,8 +83,7 @@ int main(int argc, char **argv)
 			slurm_perror("slurm_reset_statistics");
 	} else {
 		req.command_id = STAT_COMMAND_GET;
-		rc = slurm_get_statistics(&buf,
-					  (stats_info_request_msg_t *)&req);
+		rc = slurm_get_statistics(&buf, &req);
 		if (rc == SLURM_SUCCESS) {
 			_sort_rpc();
 
