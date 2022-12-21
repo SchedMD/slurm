@@ -199,7 +199,8 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 
 	if (gres_id_shared(config_flags)) {
 		shared_gres = true;
-		gres_per_bit = gres_js->gres_per_node;
+		gres_per_bit = gres_js->gres_per_node ?
+			gres_js->gres_per_node : gres_js->gres_per_task;
 	}
 
 	if (gres_js->type_name && !gres_js->type_name[0])
@@ -1103,7 +1104,8 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 	}
 
 	if (gres_id_shared(config_flags)) {
-		gres_per_bit = gres_js->gres_per_node;
+		gres_per_bit = gres_js->gres_per_node ?
+			gres_js->gres_per_node : gres_js->gres_per_task;
 		xassert(gres_per_bit);
 	}
 

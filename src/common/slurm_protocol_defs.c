@@ -41,6 +41,7 @@
 \*****************************************************************************/
 
 #include <ctype.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -159,6 +160,28 @@ static char *_convert_to_id(char *name, bool gid)
 		tmp_name = xstrdup_printf("%u", uid);
 	}
 	return tmp_name;
+}
+
+/*
+ * Translate a string, with optional suffix, into its equivalent numeric value
+ * tok IN - the string to translate
+ * value IN - numeric value
+ * RET true if "tok" is a valid number
+ */
+static bool _is_valid_number(char *tok, unsigned long long int *value)
+{
+	unsigned long long int tmp_val;
+	uint64_t mult;
+	char *end_ptr = NULL;
+
+	tmp_val = strtoull(tok, &end_ptr, 10);
+	if (tmp_val == ULLONG_MAX)
+		return false;
+	if ((mult = suffix_mult(end_ptr)) == NO_VAL64)
+		return false;
+	tmp_val *= mult;
+	*value = tmp_val;
+	return true;
 }
 
 /*
@@ -1027,6 +1050,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->cluster_features);
 		xfree(msg->job_id_str);
 		xfree(msg->licenses);
+		xfree(msg->licenses_tot);
 		xfree(msg->mail_user);
 		xfree(msg->mcs_label);
 		xfree(msg->mem_bind);
@@ -6424,3 +6448,127 @@ extern int slurm_get_rep_count_inx(
 
 	return -1;
 }
+
+extern int slurm_get_next_tres(
+	char *tres_type, char *in_val, char **name_ptr, char **type_ptr,
+	uint64_t *cnt, char **save_ptr)
+{
+	char *comma, *sep, *sep2, *name = NULL, *type = NULL;
+	int rc = SLURM_SUCCESS, tres_type_len;
+	unsigned long long int value = 0;
+
+	xassert(tres_type);
+	xassert(cnt);
+	xassert(save_ptr);
+
+	if (!in_val && (*save_ptr == NULL)) {
+		return rc;
+	}
+
+	if (*save_ptr == NULL) {
+		*save_ptr = in_val;
+	}
+
+	tres_type_len = strlen(tres_type);
+
+next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
+		*save_ptr = NULL;
+		goto fini;
+	}
+
+	if (!(sep = xstrstr(*save_ptr, tres_type))) {
+		debug2("%s is not a %s", *save_ptr, tres_type);
+		xfree(name);
+		*save_ptr = NULL;
+		*name_ptr = NULL;
+		goto fini;
+	} else {
+		sep += tres_type_len; /* strlen "gres:" */
+		*save_ptr = sep;
+	}
+
+	name = xstrdup(*save_ptr);
+	comma = strchr(name, ',');
+	if (comma) {
+		*save_ptr += (comma - name + 1);
+		comma[0] = '\0';
+	} else {
+		*save_ptr += strlen(name);
+	}
+
+	if (name[0] == '\0') {
+		/* Nothing but a comma */
+		xfree(name);
+		goto next;
+	}
+
+	sep = strchr(name, ':');
+	if (sep) {
+		sep[0] = '\0';
+		sep++;
+		sep2 = strchr(sep, ':');
+		if (sep2) {
+			sep2[0] = '\0';
+			sep2++;
+		}
+	} else {
+		sep2 = NULL;
+	}
+
+	if (sep2) {		/* Two colons */
+		/* We have both type and count */
+		if ((sep[0] == '\0') || (sep2[0] == '\0')) {
+			/* Bad format (e.g. "gpu:tesla:" or "gpu::1") */
+			rc = ESLURM_INVALID_GRES;
+			goto fini;
+		}
+		type = xstrdup(sep);
+		if (!_is_valid_number(sep2, &value)) {
+			debug("%s: Invalid count value TRES %s%s:%s:%s", __func__,
+			      tres_type, name, type, sep2);
+			rc = ESLURM_INVALID_TRES;
+			goto fini;
+		}
+	} else if (sep) {	/* One colon */
+		if (sep[0] == '\0') {
+			/* Bad format (e.g. "gpu:") */
+			rc = ESLURM_INVALID_TRES;
+			goto fini;
+		} else if (_is_valid_number(sep, &value)) {
+			/* We have count, but no type */
+			type = NULL;
+		} else {
+			/* We have type with implicit count of 1 */
+			type = xstrdup(sep);
+			value = 1;
+		}
+	} else {		/* No colon */
+		/* We have no type and implicit count of 1 */
+		type = NULL;
+		value = 1;
+	}
+	if (value == 0) {
+		xfree(name);
+		xfree(type);
+		goto next;
+	}
+
+fini:	if (rc != SLURM_SUCCESS) {
+		*save_ptr = NULL;
+		if ((rc == ESLURM_INVALID_TRES) && running_in_slurmctld()) {
+			info("%s: Invalid TRES job specification %s", __func__,
+			     in_val);
+		}
+		xfree(type);
+		xfree(name);
+		*type_ptr = NULL;
+		*name_ptr = NULL;
+	} else {
+		*cnt = value;
+		*type_ptr = type;
+		*name_ptr = name;
+	}
+
+	return rc;
+}
+

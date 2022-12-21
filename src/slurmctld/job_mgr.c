@@ -1519,6 +1519,7 @@ static int _dump_job_state(void *object, void *arg)
 	packstr(dump_job_ptr->gres_used, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->licenses, buffer);
+	packstr(dump_job_ptr->lic_req, buffer);
 	packstr(dump_job_ptr->mail_user, buffer);
 	packstr(dump_job_ptr->mcs_label, buffer);
 	packstr(dump_job_ptr->resv_name, buffer);
@@ -1618,7 +1619,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	char *nodes_pr = NULL, *failed_node = NULL;
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	char *resv_name = NULL, *batch_host = NULL;
-	char *gres_used = NULL;
+	char *gres_used = NULL, *lic_req = NULL;
 	char *burst_buffer = NULL, *burst_buffer_state = NULL;
 	char *admin_comment = NULL, *task_id_str = NULL, *mcs_label = NULL;
 	char *clusters = NULL, *het_job_id_set = NULL, *user_name = NULL;
@@ -1794,6 +1795,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&gres_used, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 		safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
+		safe_unpackstr_xmalloc(&lic_req, &name_len, buffer);
 		safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
 		safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
 		safe_unpackstr_xmalloc(&resv_name, &name_len, buffer);
@@ -2457,6 +2459,9 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	xfree(job_ptr->licenses);
 	job_ptr->licenses     = licenses;
 	licenses              = NULL;	/* reused, nothing left to free */
+	xfree(job_ptr->lic_req);
+	job_ptr->lic_req = lic_req;
+	lic_req = NULL;	/* reused, nothing left to free */
 	job_ptr->mail_type    = mail_type;
 	xfree(job_ptr->mail_user);
 	if (mail_user)
@@ -2718,6 +2723,7 @@ free_it:
 	free_job_resources(&job_resources);
 	xfree(resp_host);
 	xfree(licenses);
+	xfree(lic_req);
 	xfree(limit_set.tres);
 	xfree(mail_user);
 	xfree(mcs_label);
@@ -4736,6 +4742,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 
 	job_ptr_pend->licenses = xstrdup(job_ptr->licenses);
 	job_ptr_pend->license_list = license_copy(job_ptr->license_list);
+	job_ptr_pend->lic_req = xstrdup(job_ptr->lic_req);
 	job_ptr_pend->mail_user = xstrdup(job_ptr->mail_user);
 	job_ptr_pend->mcs_label = xstrdup(job_ptr->mcs_label);
 	job_ptr_pend->name = xstrdup(job_ptr->name);
@@ -7272,6 +7279,74 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 	return (fail_reason);
 }
 
+static void _set_tot_license_req(job_desc_msg_t *job_desc,
+				 job_record_t *job_ptr)
+{
+	char *lic_req = NULL, *lic_req_pos = NULL;
+	char *sep = "";
+	char *tres_type = "license:";
+	uint32_t num_tasks = job_desc->num_tasks;
+	char *tres_per_task = job_desc->tres_per_task;
+
+	/*
+	 * If !tres_per_task we check to see if num_tasks has changed.
+	 * If it has then use the current tres.
+	 */
+	if (job_ptr && !tres_per_task && (job_desc->bitflags & TASKS_CHANGED)) {
+		tres_per_task = job_ptr->tres_per_task;
+	}
+
+	/*
+	 * Here we are seeing we we are setting something explicit. If we are
+	 * set it. If we are changing tasks we need what was already on the job.
+	 */
+	if (job_desc->licenses && job_desc->licenses[0])
+		xstrfmtcatat(lic_req, &lic_req_pos, "%s", job_desc->licenses);
+	else if (tres_per_task &&
+		 !(job_desc->bitflags & RESET_LIC_JOB) &&
+		 job_ptr &&
+		 job_ptr->lic_req)
+		xstrfmtcatat(lic_req, &lic_req_pos, "%s", job_ptr->lic_req);
+
+	if (job_desc->bitflags & RESET_LIC_TASK) {
+		/* removed tres */
+		if (!lic_req)
+			lic_req = xstrdup("");
+	} else if (tres_per_task) {
+		char *name, *type, *save_ptr = NULL;
+		uint64_t cnt = 0;
+
+		while ((slurm_get_next_tres(tres_type,
+					    tres_per_task,
+					    &name, &type,
+					    &cnt, &save_ptr) != SLURM_ERROR) &&
+		       save_ptr) {
+			if (type) {
+				error("licenses don't have types (%s:%s), throwing away",
+				      name, type);
+				xfree(type);
+			}
+			if (!name) {
+				error("license doesn't have a name! %s",
+				      tres_per_task);
+				break;
+			}
+			if (lic_req)
+				sep = ",";
+			if (num_tasks != NO_VAL)
+				cnt *= num_tasks;
+			xstrfmtcatat(lic_req, &lic_req_pos, "%s%s:%"PRIu64,
+				     sep, name, cnt);
+		}
+	}
+
+	xfree(job_desc->licenses_tot);
+	job_desc->licenses_tot = lic_req;
+	lic_req = NULL;
+
+	return;
+}
+
 /*
  * _job_create - create a job table record for the supplied specifications.
  *	This performs only basic tests for request validity (access to
@@ -7437,12 +7512,15 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_desc->tres_req_cnt[TRES_ARRAY_NODE] = job_desc->min_nodes;
 	job_desc->tres_req_cnt[TRES_ARRAY_CPU]  = job_desc->min_cpus;
 
-	license_list = license_validate(job_desc->licenses,
+	_set_tot_license_req(job_desc, NULL);
+
+	license_list = license_validate(job_desc->licenses_tot,
 					validate_cfgd_licenses, true,
 					job_desc->tres_req_cnt, &valid);
+
 	if (!valid) {
 		info("Job's requested licenses are invalid: %s",
-		     job_desc->licenses);
+		     job_desc->licenses_tot);
 		error_code = ESLURM_INVALID_LICENSES;
 		goto cleanup_fail;
 	}
@@ -7876,7 +7954,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->features, "features", 1024)		||
 	    _test_strlen(
 		    job_desc->cluster_features, "cluster_features", 1024)   ||
-	    _test_strlen(job_desc->licenses, "licenses", 1024)		||
+	    _test_strlen(job_desc->licenses_tot, "licenses", 1024)	||
 	    _test_strlen(job_desc->mail_user, "mail_user", 1024)	||
 	    _test_strlen(job_desc->mcs_label, "mcs_label", 1024)	||
 	    _test_strlen(job_desc->mem_bind, "mem-bind", 1024 * 128)	||
@@ -7903,6 +7981,60 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 		return ESLURM_PATHNAME_TOO_LONG;
 
 	return SLURM_SUCCESS;
+}
+
+static void _figure_out_num_tasks(
+	job_desc_msg_t *job_desc, job_record_t *job_ptr)
+{
+	uint32_t num_tasks = job_desc->num_tasks;
+	uint32_t min_nodes = job_desc->min_nodes;
+	uint32_t max_nodes = job_desc->max_nodes;
+	uint16_t ntasks_per_node = job_desc->ntasks_per_node;
+	uint16_t ntasks_per_tres = job_desc->ntasks_per_tres;
+	uint16_t cpus_per_task = job_desc->cpus_per_task;
+
+	if (job_ptr) {
+		if (min_nodes == NO_VAL)
+			min_nodes = job_ptr->details->min_nodes;
+		if (max_nodes == NO_VAL)
+			max_nodes = job_ptr->details->max_nodes;
+		if (max_nodes == 0)
+			max_nodes = min_nodes;
+
+		if (ntasks_per_node == NO_VAL16)
+			ntasks_per_node = job_ptr->details->ntasks_per_node;
+		else if (ntasks_per_tres == NO_VAL16)
+			ntasks_per_tres = job_ptr->details->ntasks_per_tres;
+
+		if (cpus_per_task == NO_VAL16)
+			cpus_per_task = job_ptr->details->cpus_per_task;
+	}
+
+	/* If we are creating the job we want the tasks to be set every time. */
+	if ((ntasks_per_tres != NO_VAL16) &&
+	    (num_tasks == NO_VAL) &&
+	    (min_nodes != NO_VAL) &&
+	    (!job_ptr || (job_ptr && (min_nodes == max_nodes)))) {
+		/* Implicitly set task count */
+		if (job_desc->ntasks_per_tres != NO_VAL16)
+			num_tasks = min_nodes * ntasks_per_tres;
+		else if (ntasks_per_node != NO_VAL16)
+			num_tasks = min_nodes * ntasks_per_node;
+		else if (cpus_per_task == NO_VAL16)
+			num_tasks = min_nodes;
+	}
+
+	if (job_ptr) {
+		if (num_tasks == NO_VAL)
+			num_tasks = job_ptr->details->num_tasks;
+		if (num_tasks != job_ptr->details->num_tasks) {
+			job_desc->num_tasks = num_tasks;
+			job_desc->bitflags |= TASKS_CHANGED;
+		}
+	} else if (num_tasks != NO_VAL) {
+		job_desc->num_tasks = num_tasks;
+		job_desc->bitflags |= TASKS_CHANGED;
+	}
 }
 
 /* Perform some size checks on strings we store to prevent
@@ -7985,12 +8117,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 			job_desc->min_nodes = host_cnt;
 	}
 
-	if ((job_desc->ntasks_per_node != NO_VAL16) &&
-	    (job_desc->min_nodes       != NO_VAL) &&
-	    (job_desc->num_tasks       == NO_VAL)) {
-		job_desc->num_tasks =
-			job_desc->ntasks_per_node * job_desc->min_nodes;
-	}
+	_figure_out_num_tasks(job_desc, NULL);
 
 	/* Only set min and max cpus if overcommit isn't set */
 	if ((job_desc->overcommit == NO_VAL8) &&
@@ -8572,7 +8699,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->cr_enabled = 0;
 	job_ptr->derived_ec = 0;
 
-	job_ptr->licenses  = xstrdup(job_desc->licenses);
+	job_ptr->licenses  = xstrdup(job_desc->licenses_tot);
+	job_ptr->lic_req  = xstrdup(job_desc->licenses);
 	job_ptr->mail_user = _get_mail_user(job_desc->mail_user,
 					    job_ptr->user_id);
 	if (job_desc->mail_type &&
@@ -9930,6 +10058,7 @@ static void _list_delete_job(void *job_entry)
 	FREE_NULL_LIST(job_ptr->gres_list_req_accum);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	xfree(job_ptr->licenses);
+	xfree(job_ptr->lic_req);
 	FREE_NULL_LIST(job_ptr->license_list);
 	xfree(job_ptr->limit_set.tres);
 	xfree(job_ptr->mail_user);
@@ -12247,6 +12376,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	slurmctld_resv_t *new_resv_ptr = NULL;
 	List new_resv_list = NULL;
 	uint32_t user_site_factor;
+	uint64_t mem_req;
 
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
@@ -12402,6 +12532,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	 * will not be constrained to accounting enforce limits.
 	 */
 	orig_time_limit = job_desc->time_limit;
+
+
+	/*
+	 * We need to figure out if we changed task cnt.
+	 */
+	_figure_out_num_tasks(job_desc, job_ptr);
 
 	memcpy(tres_req_cnt, job_ptr->tres_req_cnt, sizeof(tres_req_cnt));
 	job_desc->tres_req_cnt = tres_req_cnt;
@@ -12703,7 +12839,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 	if (job_desc->cpus_per_tres   || job_desc->tres_per_job    ||
 	    job_desc->tres_per_node   || job_desc->tres_per_socket ||
-	    job_desc->tres_per_task   || job_desc->mem_per_tres)
+	    job_desc->tres_per_task   || job_desc->mem_per_tres ||
+	    (job_desc->bitflags & TASKS_CHANGED))
 		gres_update = true;
 	if (gres_update) {
 		uint16_t orig_ntasks_per_socket = NO_VAL16;
@@ -12766,10 +12903,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		if (job_desc->cpus_per_task == detail_ptr->cpus_per_task)
 			job_desc->cpus_per_task = NO_VAL16;	/* Unchanged */
 	}
-	if (gres_update) {
-		gres_ctld_set_job_tres_cnt(gres_list, detail_ptr->min_nodes,
-					   job_desc->tres_req_cnt, false);
-	}
 
 	if ((job_desc->min_nodes != NO_VAL) &&
 	    (job_desc->min_nodes != INFINITE)) {
@@ -12831,9 +12964,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			 job_desc->min_nodes :
 			 detail_ptr ? detail_ptr->min_nodes : 1);
 		job_desc->min_cpus = job_desc->tres_req_cnt[TRES_ARRAY_CPU];
+	} else if (job_desc->bitflags & TASKS_CHANGED) {
+		job_desc->tres_req_cnt[TRES_ARRAY_CPU] = job_desc->min_cpus =
+			job_desc->num_tasks;
 	}
 
-	job_desc->tres_req_cnt[TRES_ARRAY_MEM] =
+	mem_req =
 		job_get_tres_mem(NULL,
 				 job_desc->pn_min_memory,
 				 job_desc->tres_req_cnt[TRES_ARRAY_CPU] ?
@@ -12847,23 +12983,43 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				 (job_desc->pn_min_memory != NO_VAL64),
 				 job_desc->sockets_per_node,
 				 job_desc->num_tasks);
+	if (mem_req)
+		job_desc->tres_req_cnt[TRES_ARRAY_MEM] = mem_req;
 
-	if (job_desc->licenses && !xstrcmp(job_desc->licenses,
-					    job_ptr->licenses)) {
+	if (gres_update) {
+		gres_ctld_set_job_tres_cnt(
+			gres_list,
+			job_desc->tres_req_cnt[TRES_ARRAY_NODE],
+			job_desc->tres_req_cnt, false);
+	}
+
+	/* Check if we are clearing licenses */
+	if (job_desc->licenses && !job_desc->licenses[0])
+		job_desc->bitflags |= RESET_LIC_JOB;
+	if (job_desc->tres_per_task &&
+	    !xstrcasestr(job_desc->tres_per_task, "license:"))
+		job_desc->bitflags |= RESET_LIC_TASK;
+
+	_set_tot_license_req(job_desc, job_ptr);
+
+	if (job_desc->licenses_tot && !xstrcmp(job_desc->licenses_tot,
+						job_ptr->licenses)) {
 		sched_debug("%s: new licenses identical to old licenses \"%s\"",
 			    __func__, job_ptr->licenses);
-	} else if (job_desc->licenses) {
+	} else if (job_desc->licenses_tot) {
 		bool pending = IS_JOB_PENDING(job_ptr);
-		license_list = license_validate(job_desc->licenses, true, true,
+		license_list = license_validate(job_desc->licenses_tot,
+						true, true,
 						pending ?
 						job_desc->tres_req_cnt : NULL,
 						&valid_licenses);
 
 		if (!valid_licenses) {
 			sched_info("%s: invalid licenses: %s",
-				   __func__, job_desc->licenses);
+				   __func__, job_desc->licenses_tot);
 			error_code = ESLURM_INVALID_LICENSES;
-		}
+		} else if (!license_list)
+			xfree(job_desc->licenses_tot);
 	}
 
 	if (error_code != SLURM_SUCCESS)
@@ -13300,7 +13456,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		update_accounting = true;
 	}
 
-	if (job_desc->num_tasks != NO_VAL) {
+	if ((job_desc->num_tasks != NO_VAL) &&
+	    (job_desc->bitflags & TASKS_CHANGED)) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_desc->num_tasks < 1)
@@ -13896,8 +14053,11 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_ptr->mem_per_tres = job_desc->mem_per_tres;
 			job_desc->mem_per_tres = NULL;
 		}
-		sched_info("%s: setting %sfor %pJ", __func__, tmp, job_ptr);
-		xfree(tmp);
+		if (tmp) {
+			sched_info("%s: setting %sfor %pJ",
+				   __func__, tmp, job_ptr);
+			xfree(tmp);
+		}
 		FREE_NULL_LIST(job_ptr->gres_list_req);
 		job_ptr->gres_list_req = gres_list;
 
@@ -14259,9 +14419,15 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			license_list = NULL;
 			sched_info("%s: changing licenses from '%s' to '%s' for pending %pJ",
 				   __func__, job_ptr->licenses,
-				   job_desc->licenses, job_ptr);
+				   job_desc->licenses_tot, job_ptr);
 			xfree(job_ptr->licenses);
-			job_ptr->licenses = xstrdup(job_desc->licenses);
+			job_ptr->licenses = xstrdup(job_desc->licenses_tot);
+			if (job_desc->bitflags & RESET_LIC_JOB)
+				xfree(job_ptr->lic_req);
+			else if (job_desc->licenses) {
+				xfree(job_ptr->lic_req);
+				job_ptr->lic_req = xstrdup(job_desc->licenses);
+			}
 		} else if (IS_JOB_RUNNING(job_ptr)) {
 			/*
 			 * Operators can modify license counts on running jobs,
@@ -14573,8 +14739,7 @@ fini:
 
 	if ((error_code == SLURM_SUCCESS) && tres_req_cnt_set) {
 		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
-			if (!tres_req_cnt[tres_pos] ||
-			    (tres_req_cnt[tres_pos] ==
+			if ((tres_req_cnt[tres_pos] ==
 			     job_ptr->tres_req_cnt[tres_pos]))
 				continue;
 
@@ -18142,7 +18307,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->immediate         = 0; /* nowhere to get this value */
 	job_desc->job_id            = job_ptr->job_id;
 	job_desc->kill_on_node_fail = job_ptr->kill_on_node_fail;
-	job_desc->licenses          = xstrdup(job_ptr->licenses);
+	job_desc->licenses          = xstrdup(job_ptr->lic_req);
 	job_desc->mail_type         = job_ptr->mail_type;
 	job_desc->mail_user         = xstrdup(job_ptr->mail_user);
 	job_desc->mcs_label	    = xstrdup(job_ptr->mcs_label);

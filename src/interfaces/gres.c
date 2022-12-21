@@ -5319,18 +5319,20 @@ static int _test_gres_cnt(gres_state_t *gres_state_job,
 			if (*num_tasks == NO_VAL)
 				*num_tasks = req_tasks;
 			else if (*num_tasks != req_tasks) {
-				error("Failed to validate job spec. Based on --%ss and --%ss-per-task number of requested tasks differ from -n/--ntasks.",
-				      gres_state_job->gres_name,
-				      gres_state_job->gres_name);
-				return -1;
+				/* requesting new task count */
+				gres_js->total_gres = gres_js->gres_per_job =
+					*num_tasks * gres_js->gres_per_task;
 			}
 		} else if (*num_tasks != NO_VAL) {
 			gres_js->gres_per_job = *num_tasks *
 				gres_js->gres_per_task;
-		} else {
-			error("Failed to validate job spec. --%ss-per-task used without either --%ss or -n/--ntasks is not allowed.",
+		} else if (!xstrcmp(gres_state_job->gres_name, "gpu")) {
+			error("Failed to validate job spec. --%ss-per-task or --tres-per-task used without either --%ss or -n/--ntasks is not allowed.",
 			      gres_state_job->gres_name,
 			      gres_state_job->gres_name);
+			return -1;
+		} else {
+			error("Failed to validate job spec. --tres-per-task used without -n/--ntasks is not allowed.");
 			return -1;
 		}
 	}
@@ -5425,28 +5427,6 @@ static int _test_gres_cnt(gres_state_t *gres_state_job,
 }
 
 /*
- * Translate a string, with optional suffix, into its equivalent numeric value
- * tok IN - the string to translate
- * value IN - numeric value
- * RET true if "tok" is a valid number
- */
-static bool _is_valid_number(char *tok, unsigned long long int *value)
-{
-	unsigned long long int tmp_val;
-	uint64_t mult;
-	char *end_ptr = NULL;
-
-	tmp_val = strtoull(tok, &end_ptr, 10);
-	if (tmp_val == ULLONG_MAX)
-		return false;
-	if ((mult = suffix_mult(end_ptr)) == NO_VAL64)
-		return false;
-	tmp_val *= mult;
-	*value = tmp_val;
-	return true;
-}
-
-/*
  * Reentrant TRES specification parse logic
  * in_val IN - initial input string
  * type OUT -  must be xfreed by caller
@@ -5458,120 +5438,35 @@ static bool _is_valid_number(char *tok, unsigned long long int *value)
 static int _get_next_gres(char *in_val, char **type_ptr, int *context_inx_ptr,
 			  uint64_t *cnt, uint16_t *flags, char **save_ptr)
 {
-	char *comma, *sep, *sep2, *name = NULL, *type = NULL;
+	char *name = NULL, *type = NULL;
 	int i, rc = SLURM_SUCCESS;
-	unsigned long long int value = 0;
+	uint64_t value = 0;
 
 	xassert(cnt);
 	xassert(flags);
 	xassert(save_ptr);
 	*flags = 0;
 
-	if (!in_val && (*save_ptr == NULL)) {
-		return rc;
-	}
-
-	if (*save_ptr == NULL) {
-		*save_ptr = in_val;
-	}
-
-next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
-		*save_ptr = NULL;
-		goto fini;
-	}
-
-	if (!(sep = xstrstr(*save_ptr, "gres:"))) {
-		debug2("%s is not a gres", *save_ptr);
-		xfree(name);
-		*save_ptr = NULL;
-		goto fini;
-	} else {
-		sep += 5; /* strlen "gres:" */
-		*save_ptr = sep;
-	}
-
-	name = xstrdup(*save_ptr);
-	comma = strchr(name, ',');
-	if (comma) {
-		*save_ptr += (comma - name + 1);
-		comma[0] = '\0';
-	} else {
-		*save_ptr += strlen(name);
-	}
-
-	if (name[0] == '\0') {
-		/* Nothing but a comma */
-		xfree(name);
-		goto next;
-	}
-
-	sep = strchr(name, ':');
-	if (sep) {
-		sep[0] = '\0';
-		sep++;
-		sep2 = strchr(sep, ':');
-		if (sep2) {
-			sep2[0] = '\0';
-			sep2++;
+	rc = slurm_get_next_tres("gres:", in_val, &name, &type,
+				 &value, save_ptr);
+	if (name) {
+		for (i = 0; i < gres_context_cnt; i++) {
+			if (!xstrcmp(name, gres_context[i].gres_name) ||
+			    !xstrncmp(name, gres_context[i].gres_name_colon,
+				      gres_context[i].gres_name_colon_len))
+				break;	/* GRES name match found */
 		}
-	} else {
-		sep2 = NULL;
-	}
-
-	if (sep2) {		/* Two colons */
-		/* We have both type and count */
-		if ((sep[0] == '\0') || (sep2[0] == '\0')) {
-			/* Bad format (e.g. "gpu:tesla:" or "gpu::1") */
+		if (i >= gres_context_cnt) {
+			debug("%s: Failed to locate GRES %s", __func__, name);
 			rc = ESLURM_INVALID_GRES;
-			goto fini;
-		}
-		type = xstrdup(sep);
-		if (!_is_valid_number(sep2, &value)) {
-			debug("%s: Invalid count value GRES %s:%s:%s", __func__,
-			      name, type, sep2);
-			rc = ESLURM_INVALID_GRES;
-			goto fini;
-		}
-	} else if (sep) {	/* One colon */
-		if (sep[0] == '\0') {
-			/* Bad format (e.g. "gpu:") */
-			rc = ESLURM_INVALID_GRES;
-			goto fini;
-		} else if (_is_valid_number(sep, &value)) {
-			/* We have count, but no type */
-			type = NULL;
-		} else {
-			/* We have type with implicit count of 1 */
-			type = xstrdup(sep);
-			value = 1;
-		}
-	} else {		/* No colon */
-		/* We have no type and implicit count of 1 */
-		type = NULL;
-		value = 1;
-	}
-	if (value == 0) {
+		} else
+			*context_inx_ptr = i;
 		xfree(name);
-		xfree(type);
-		goto next;
 	}
 
-	for (i = 0; i < gres_context_cnt; i++) {
-		if (!xstrcmp(name, gres_context[i].gres_name) ||
-		    !xstrncmp(name, gres_context[i].gres_name_colon,
-			      gres_context[i].gres_name_colon_len))
-			break;	/* GRES name match found */
-	}
-	if (i >= gres_context_cnt) {
-		debug("%s: Failed to locate GRES %s", __func__, name);
-		rc = ESLURM_INVALID_GRES;
-		goto fini;
-	}
-	*context_inx_ptr = i;
-
-fini:	if (rc != SLURM_SUCCESS) {
+	if (rc != SLURM_SUCCESS) {
 		*save_ptr = NULL;
-		if ((rc == ESLURM_INVALID_GRES) && running_in_slurmctld()) {
+		if ((rc == ESLURM_INVALID_TRES) && running_in_slurmctld()) {
 			info("%s: Invalid GRES job specification %s", __func__,
 			     in_val);
 		}
@@ -6112,25 +6007,6 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 			have_gres_sharing = true;
 		if (gres_id_shared(gres_state_job->config_flags)) {
 			have_gres_shared = true;
-			/*
-			 * Shared gres (e.g. gres/'shared') only supports a
-			 * per-node count,
-			 * set either explicitly or implicitly.
-			 */
-			if (gres_js->gres_per_job &&
-			    (*max_nodes != 1)) {
-				rc = ESLURM_INVALID_GRES;
-				break;
-			}
-			if (gres_js->gres_per_socket &&
-			    (*sockets_per_node != 1)) {
-				rc = ESLURM_INVALID_GRES;
-				break;
-			}
-			if (gres_js->gres_per_task && (*num_tasks != 1)) {
-				rc = ESLURM_INVALID_GRES;
-				break;
-			}
 		}
 		if (have_gres_sharing && have_gres_shared) {
 			rc = ESLURM_INVALID_GRES;

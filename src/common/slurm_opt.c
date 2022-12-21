@@ -2074,6 +2074,18 @@ static slurm_cli_opt_t slurm_opt_gpus_per_task = {
 	.reset_each_pass = true,
 };
 
+COMMON_STRING_OPTION(tres_per_task);
+static slurm_cli_opt_t slurm_opt_tres_per_task = {
+	.name = "tres-per-task",
+	.has_arg = required_argument,
+	.val = LONG_OPT_TRES_PER_TASK,
+	.set_func = arg_set_tres_per_task,
+	.set_func_data = arg_set_data_tres_per_task,
+	.get_func = arg_get_tres_per_task,
+	.reset_func = arg_reset_tres_per_task,
+	.reset_each_pass = true,
+};
+
 static int arg_set_gres(slurm_opt_t *opt, const char *arg)
 {
 	if (!xstrcasecmp(arg, "help") || !xstrcasecmp(arg, "list")) {
@@ -5265,6 +5277,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_time_limit,
 	&slurm_opt_time_min,
 	&slurm_opt_tmp,
+	&slurm_opt_tres_per_task,
 	&slurm_opt_uid,
 	&slurm_opt_unbuffered,
 	&slurm_opt_use_min_nodes,
@@ -5943,6 +5956,12 @@ static void _validate_ntasks_per_gpu(slurm_opt_t *opt)
 			      opt->ntasks_per_tres);
 	}
 
+	if (slurm_option_set_by_cli(opt, LONG_OPT_TRES_PER_TASK))
+		fatal("--tres-per-task is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
+
+	if (slurm_option_set_by_env(opt, LONG_OPT_TRES_PER_TASK))
+		fatal("SLURM_TRES_PER_TASK is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
+
 	if (slurm_option_set_by_cli(opt, LONG_OPT_GPUS_PER_TASK))
 		fatal("--gpus-per-task is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
 
@@ -5994,6 +6013,99 @@ static void _validate_share_options(slurm_opt_t *opt)
 	}
 }
 
+static bool _get_gpus_per_task(char *in_val, uint64_t *cnt,
+			       char **save_ptr, int *rc)
+{
+	char *name = NULL, *type = NULL;
+	uint64_t value = 0;
+
+	xassert(save_ptr);
+	*rc = slurm_get_next_tres("gres:", in_val, &name, &type,
+				  &value, save_ptr);
+	xfree(type);
+
+	if (*rc != SLURM_SUCCESS) {
+		*save_ptr = NULL;
+		xfree(name);
+		return false;
+	}
+
+	if (!xstrcasecmp(name, "gpu"))
+		*cnt += value;
+	xfree(name);
+
+	if (!*save_ptr)
+		return false;
+	else
+		return true;
+}
+
+static void _validate_tres_per_task(slurm_opt_t *opt)
+{
+	char *cpu_per_task_ptr = NULL, *save_ptr = NULL;
+	int rc = SLURM_SUCCESS;
+	uint64_t cnt = 0;
+
+	if (xstrcasestr(opt->tres_per_task, "=mem:") ||
+	    xstrcasestr(opt->tres_per_task, ",mem:")) {
+		fatal("Invalid TRES for --tres-per-task: mem");
+	} else if (xstrcasestr(opt->tres_per_task, "=energy:") ||
+		   xstrcasestr(opt->tres_per_task, ",energy:")) {
+		fatal("Invalid TRES for --tres-per-task: energy");
+	} else if (xstrcasestr(opt->tres_per_task, "=node:") ||
+		   xstrcasestr(opt->tres_per_task, ",node:")) {
+		fatal("Invalid TRES for --tres-per-task: node");
+	} else if (xstrcasestr(opt->tres_per_task, "=billing:") ||
+		   xstrcasestr(opt->tres_per_task, ",billing:")) {
+		fatal("Invalid TRES for --tres-per-task: billing");
+	} else if (xstrcasestr(opt->tres_per_task, "=fs:") ||
+		   xstrcasestr(opt->tres_per_task, ",fs:")) {
+		fatal("Invalid TRES for --tres-per-task: fs");
+	} else if (xstrcasestr(opt->tres_per_task, "=vmem:") ||
+		   xstrcasestr(opt->tres_per_task, ",vmem:")) {
+		fatal("Invalid TRES for --tres-per-task: vmem");
+	} else if (xstrcasestr(opt->tres_per_task, "=pages:") ||
+		   xstrcasestr(opt->tres_per_task, ",pages:")) {
+		fatal("Invalid TRES for --tres-per-task: pages");
+	} else if (xstrcasestr(opt->tres_per_task, "=bb:") ||
+		   xstrcasestr(opt->tres_per_task, ",bb:")) {
+		fatal("Invalid TRES for --tres-per-task: bb");
+	}
+
+	cnt = 0;
+	while (_get_gpus_per_task(opt->tres_per_task, &cnt, &save_ptr, &rc)) {
+	}
+
+	if (rc != SLURM_SUCCESS)
+		fatal("Invalid --tres-per-task counts %s", opt->tres_per_task);
+
+	if (cnt) {
+		xfree(opt->gpus_per_task);
+		opt->gpus_per_task = xstrdup_printf("%"PRIu64, cnt);
+	}
+
+	/* See if cpus-per-task was set with tres-per-task */
+	cpu_per_task_ptr = xstrcasestr(opt->tres_per_task, "cpu:");
+
+	if (cpu_per_task_ptr && opt->cpus_set) {
+		fatal("You can not have --tres-per-task=cpu: and -c please use one or the other");
+	} else if (cpu_per_task_ptr) {
+		int tmp_int = atoi(cpu_per_task_ptr + 4);
+		if (tmp_int <= 0) {
+			fatal("Invalid --tres-per-task=cpu:%d",
+			      tmp_int);
+		}
+		opt->cpus_per_task = tmp_int;
+		opt->cpus_set = true;
+	}
+
+	if (opt->cpus_set && !cpu_per_task_ptr) {
+		xstrfmtcat(opt->tres_per_task, "%scpu:%d",
+			   opt->tres_per_task ? "," : "",
+			   opt->cpus_per_task);
+	}
+}
+
 /* Validate shared options between srun, salloc, and sbatch */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 {
@@ -6002,6 +6114,7 @@ extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 	_validate_threads_per_core_option(opt);
 	_validate_memory_options(opt);
 	_validate_share_options(opt);
+	_validate_tres_per_task(opt);
 }
 
 extern char *slurm_option_get_argv_str(const int argc, char **argv)
@@ -6239,8 +6352,13 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	}
 	xfmt_tres(&job_desc->tres_per_socket, "gres:gpu",
 		  opt_local->gpus_per_socket);
-	xfmt_tres(&job_desc->tres_per_task, "gres:gpu",
-		  opt_local->gpus_per_task);
+
+	job_desc->tres_per_task = xstrdup(opt_local->tres_per_task);
+
+	if (opt_local->gpus_per_task &&
+	    !xstrcasestr(job_desc->tres_per_task, "gres:gpu"))
+		xfmt_tres(&job_desc->tres_per_task, "gres:gpu",
+			  opt_local->gpus_per_task);
 
 	job_desc->user_id = opt_local->uid;
 

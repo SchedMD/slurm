@@ -2198,6 +2198,35 @@ Different units can be specified using the suffix [K|M|G|T].
 .IP
 
 .TP
+\fB\-\-tres\-per\-task\fR=<\fIlist\fR>
+Specifies a comma\-delimited list of trackable resources required for the job on
+each task to be spawned in the job's resource allocation.
+The format of each entry on the list is "name[[:type]:count]".
+The name is that of the trackable resource.
+The count is the number of those resources with a default value of 1.
+.br
+The count can have a suffix of
+.br
+"k" or "K" (multiple of 1024),
+.br
+"m" or "M" (multiple of 1024 x 1024),
+.br
+"g" or "G" (multiple of 1024 x 1024 x 1024),
+.br
+"t" or "T" (multiple of 1024 x 1024 x 1024 x 1024),
+.br
+"p" or "P" (multiple of 1024 x 1024 x 1024 x 1024 x 1024).
+.br
+The specified resources will be allocated to the job on each node.
+The available trackable resources are configurable by the system
+administrator.
+.br
+\fBNOTE\fR: Invalid TRES for \-\-tres\-per\-task include
+bb,billing,energy,fs,mem,node,pages,vmem.
+.br
+.IP
+
+.TP
 \fB\-\-uid\fR=<\fIuser\fR>
 Attempt to submit and/or run a job as \fIuser\fR instead of the
 invoking user id. The invoking user's credentials will be used

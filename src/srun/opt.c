@@ -317,6 +317,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->srun_opt->task_prolog = xstrdup(sropt.task_prolog);
 	opt_dup->tres_bind = xstrdup(opt.tres_bind);
 	opt_dup->tres_freq = xstrdup(opt.tres_freq);
+	opt.tres_per_task = NULL;	/* Moved by memcpy */
 	opt_dup->wckey = xstrdup(opt.wckey);
 
 	return opt_dup;
@@ -613,6 +614,7 @@ env_vars_t env_vars[] = {
   { "SLURM_THREADS", 'T' },
   { "SLURM_THREADS_PER_CORE", LONG_OPT_THREADSPERCORE },
   { "SLURM_TIMELIMIT", 't' },
+  { "SLURM_TRES_PER_TASK", LONG_OPT_TRES_PER_TASK },
   { "SLURM_UNBUFFEREDIO", 'u' },
   { "SLURM_USE_MIN_NODES", LONG_OPT_USE_MIN_NODES },
   { "SLURM_WAIT", 'W' },
@@ -1555,7 +1557,7 @@ static void _usage(void)
 "            [--mpi-combine=yes|no] [--het-group=value]\n"
 "            [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "            [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
-"            [--mem-per-gpu=MB]\n"
+"            [--mem-per-gpu=MB] [--tres-per-task=list]\n"
 "            executable [args...]\n");
 
 }
@@ -1659,6 +1661,7 @@ static void _help(void)
 "  -T, --threads=threads       set srun launch fanout\n"
 "  -t, --time=minutes          time limit\n"
 "      --time-min=minutes      minimum time limit (if distinct)\n"
+"      --tres-per-task=list    list of tres required per task\n"
 "  -u, --unbuffered            do not line-buffer stdout/err\n"
 "      --use-min-nodes         if a range of node counts is given, prefer the\n"
 "                              smaller count\n"

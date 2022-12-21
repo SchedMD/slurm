@@ -236,6 +236,7 @@ const params_t job_params[] = {
 	/* Handler for LONG_OPT_TRES_PER_JOB never defined
 	 * { "TRES per job", LONG_OPT_TRES_PER_JOB, true },
 	 */
+	{ "tres_per_task", LONG_OPT_TRES_PER_TASK },
 	{ "umask", LONG_OPT_UMASK },
 	{ "unbuffered", 'u', true },
 	{ "unknown", '?', true },
