@@ -733,8 +733,8 @@ typedef struct {
 
 typedef struct {
 	char *cluster; /* name of cluster */
-	uint16_t percent_allowed; /* percentage of total resources
-				   * allowed for this cluster */
+	uint16_t allowed; /* percentage/count of total resources
+			   * allowed for this cluster */
 } slurmdb_clus_res_rec_t;
 
 typedef struct {

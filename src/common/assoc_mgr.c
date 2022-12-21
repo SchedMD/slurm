@@ -5018,9 +5018,9 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 			if (object->type != SLURMDB_RESOURCE_NOTSET)
 				rec->type = object->type;
 
-			if (object->clus_res_rec->percent_allowed != NO_VAL16)
-				rec->clus_res_rec->percent_allowed =
-					object->clus_res_rec->percent_allowed;
+			if (object->clus_res_rec->allowed != NO_VAL16)
+				rec->clus_res_rec->allowed =
+					object->clus_res_rec->allowed;
 
 			switch (rec->type) {
 			case SLURMDB_RESOURCE_LICENSE:

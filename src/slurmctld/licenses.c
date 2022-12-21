@@ -222,7 +222,7 @@ static void _add_res_rec_2_lic_list(slurmdb_res_rec_t *rec, bool sync)
 
 	license_entry->name = xstrdup_printf("%s@%s", rec->name, rec->server);
 	license_entry->total = ((rec->count *
-				 rec->clus_res_rec->percent_allowed) / 100);
+				 rec->clus_res_rec->allowed) / 100);
 	license_entry->remote = sync ? 2 : 1;
 
 	list_push(cluster_license_list, license_entry);
@@ -371,7 +371,7 @@ extern void license_update_remote(slurmdb_res_rec_t *rec)
 	} else {
 		license_entry->total =
 			((rec->count *
-			  rec->clus_res_rec->percent_allowed) / 100);
+			  rec->clus_res_rec->allowed) / 100);
 		if (license_entry->used > license_entry->total) {
 			info("license %s count decreased",
 			     license_entry->name);
@@ -451,7 +451,7 @@ extern void license_sync_remote(list_t *res_list)
 					license_entry->total =
 						((rec->count *
 						  rec->clus_res_rec->
-						  percent_allowed) / 100);
+						  allowed) / 100);
 					if (license_entry->used >
 					    license_entry->total) {
 						info("license %s count "

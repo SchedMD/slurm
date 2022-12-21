@@ -44,8 +44,9 @@
  * NOTE: 10 was the first version of 21.08.
  * NOTE: 11 was the first version of 22.05.
  * NOTE: 12 was the second version of 22.05.
+ * NOTE: 13 was the first version of 23.02.
  */
-#define CONVERT_VERSION 12
+#define CONVERT_VERSION 13
 
 #define MIN_CONVERT_VERSION 10
 
@@ -62,6 +63,46 @@ typedef struct {
 } local_tres_t;
 
 static uint32_t db_curr_ver = NO_VAL;
+
+static int _rename_res_columns(mysql_conn_t *mysql_conn, char *table)
+{
+	char *query = NULL;
+	int rc = SLURM_SUCCESS;
+
+	/*
+	 * Change the name 'percent_allowed' to be 'allowed'
+	 */
+	query = xstrdup_printf(
+		"alter table %s change percent_allowed allowed "
+		"int unsigned default 0;",
+		table);
+
+	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+	if ((rc = as_mysql_convert_alter_query(mysql_conn, query)) !=
+	    SLURM_SUCCESS)
+		error("Can't update %s %m", table);
+	xfree(query);
+
+	return rc;
+}
+
+static int _convert_res_table_pre(mysql_conn_t *mysql_conn,
+				  char *cluster_name)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (db_curr_ver < 13) {
+		char table[200];
+
+		snprintf(table, sizeof(table), "\"%s_%s\"",
+			 cluster_name, clus_res_table);
+		if ((rc = _rename_res_columns(mysql_conn, table)) !=
+		    SLURM_SUCCESS)
+			return rc;
+	}
+
+	return rc;
+}
 
 static int _rename_usage_columns(mysql_conn_t *mysql_conn, char *table)
 {
@@ -505,6 +546,10 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 		 * as_mysql_convert_alter_query instead of mysql_db_query to be
 		 * able to detect a previous failed conversion.
 		 */
+		info("pre-converting resource table for %s", cluster_name);
+		if ((rc = _convert_res_table_pre(mysql_conn, cluster_name) !=
+		     SLURM_SUCCESS))
+			break;
 		info("pre-converting usage table for %s", cluster_name);
 		if ((rc = _convert_usage_table_pre(mysql_conn, cluster_name)
 		     != SLURM_SUCCESS))

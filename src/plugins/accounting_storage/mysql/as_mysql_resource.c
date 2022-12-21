@@ -196,7 +196,7 @@ static int _setup_clus_res_cond(slurmdb_res_cond_t *res_cond, char **extra)
 		while ((tmp = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "t2.percent_allowed='%s'", tmp);
+			xstrfmtcat(*extra, "t2.allowed='%s'", tmp);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -297,7 +297,7 @@ static uint32_t _get_res_used(mysql_conn_t *mysql_conn, uint32_t res_id,
 	 * it appears mysql only uses the first one here and gives us
 	 * what we want.
 	 */
-	query = xstrdup_printf("select distinct SUM(percent_allowed) "
+	query = xstrdup_printf("select distinct SUM(allowed) "
 			       "from %s as t2 where deleted=0 && res_id=%u",
 			       clus_res_table, res_id);
 	if (extra)
@@ -343,7 +343,7 @@ static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
 		"name",
 		"server",
 		"type",
-		"SUM(percent_allowed)",
+		"SUM(allowed)",
 	};
 	enum {
 		RES_REQ_COUNT,
@@ -514,28 +514,28 @@ static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
 	}
 
 	xstrcat(cols, "creation_time, mod_time, "
-		"res_id, cluster, percent_allowed");
+		"res_id, cluster, allowed");
 	xstrfmtcat(vals, "%ld, %ld, '%u'", now, now, res->id);
 
 	itr = list_iterator_create(res->clus_res_list);
 	while ((object = list_next(itr))) {
-		res->percent_used += object->percent_allowed;
+		res->percent_used += object->allowed;
 		if (res->percent_used > 100) {
 			rc = ESLURM_OVER_ALLOCATE;
 			DB_DEBUG(DB_RES, mysql_conn->conn,
 			         "Adding a new cluster with %u%% allowed to resource %s@%s would put the usage at %u%%, (which is over 100%%). Please redo your math and resubmit.",
-			         object->percent_allowed, res->name,
+			         object->allowed, res->name,
 			         res->server, res->percent_used);
 			break;
 		}
 		xfree(extra);
-		xstrfmtcat(extra, ", mod_time=%ld, percent_allowed=%u",
-			   now, object->percent_allowed);
+		xstrfmtcat(extra, ", mod_time=%ld, allowed=%u",
+			   now, object->allowed);
 		xstrfmtcat(query,
 			   "insert into %s (%s) values (%s, '%s', %u) "
 			   "on duplicate key update deleted=0%s;",
 			   clus_res_table, cols, vals,
-			   object->cluster, object->percent_allowed, extra);
+			   object->cluster, object->allowed, extra);
 
 		DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
@@ -581,8 +581,8 @@ static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
 				xmalloc(sizeof(slurmdb_clus_res_rec_t));
 			res_rec->clus_res_rec->cluster =
 				xstrdup(object->cluster);
-			res_rec->clus_res_rec->percent_allowed =
-				object->percent_allowed;
+			res_rec->clus_res_rec->allowed =
+				object->allowed;
 
 			if (addto_update_list(mysql_conn->update_list,
 					      SLURMDB_ADD_RES,
@@ -610,7 +610,7 @@ static List _get_clus_res(mysql_conn_t *mysql_conn, uint32_t res_id,
 	/* if this changes you will need to edit the corresponding enum */
 	char *res_req_inx[] = {
 		"cluster",
-		"percent_allowed",
+		"allowed",
 	};
 	enum {
 		RES_REQ_CLUSTER,
@@ -651,7 +651,7 @@ static List _get_clus_res(mysql_conn_t *mysql_conn, uint32_t res_id,
 		if (row[0] && row[0][0])
 			clus_res_rec->cluster = xstrdup(row[0]);
 		if (row[1] && row[1][0])
-			clus_res_rec->percent_allowed = slurm_atoul(row[1]);
+			clus_res_rec->allowed = slurm_atoul(row[1]);
 	}
 	mysql_free_result(result);
 
@@ -739,7 +739,7 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 		"name",
 		"server",
 		"type",
-		"SUM(percent_allowed)",
+		"SUM(allowed)",
 	};
 	enum {
 		RES_REQ_COUNT,
@@ -1036,7 +1036,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	/* overloaded for easibility */
 	if (res->percent_used != NO_VAL16) {
-		xstrfmtcat(clus_vals, ", percent_allowed=%u",
+		xstrfmtcat(clus_vals, ", allowed=%u",
 			   res->percent_used);
 		send_update = 1;
 		query_clusters++;
@@ -1182,8 +1182,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			res_rec->clus_res_rec =
 				xmalloc(sizeof(slurmdb_clus_res_rec_t));
 			res_rec->clus_res_rec->cluster = xstrdup(row[3]);
-			res_rec->clus_res_rec->percent_allowed =
-				res->percent_used;
+			res_rec->clus_res_rec->allowed = res->percent_used;
 			if (addto_update_list(mysql_conn->update_list,
 					      SLURMDB_MODIFY_RES, res_rec)
 			    != SLURM_SUCCESS)

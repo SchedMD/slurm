@@ -71,7 +71,7 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 
 	itr = list_iterator_create(res_list);
 	while ((found_res = list_next(itr))) {
-		int total = 0, percent_allowed;
+		int total = 0, allowed;
 		fprintf(stderr, "  %s@%s\n",
 			found_res->name, found_res->server);
 		if (cluster_list)
@@ -94,18 +94,18 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 					 * overwritten with the requested
 					 * percentage) so just put something
 					 * there to get the correct
-					 * percent_allowed.
+					 * allowed.
 					 */
 					cluster = "nothing";
 				}
-				percent_allowed = cluster ? res->percent_used :
-					clus_res->percent_allowed;
-				total += percent_allowed;
+				allowed = cluster ? res->percent_used :
+					clus_res->allowed;
+				total += allowed;
 
 				fprintf(stderr,
 					"   Cluster - %s\t %u%%\n",
 					clus_res->cluster,
-					percent_allowed);
+					allowed);
 			}
 		} else if (clus_itr) {
 			while ((cluster = list_next(clus_itr))) {
@@ -412,7 +412,7 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 		switch(field->type) {
 		case PRINT_ALLOWED:
 			field->print_routine(
-				field, clus_res ? clus_res->percent_allowed : 0,
+				field, clus_res ? clus_res->allowed : 0,
 				(curr_inx == field_count));
 			break;
 		case PRINT_CLUSTER:
@@ -423,7 +423,7 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 		case PRINT_CALLOWED:
 			if (clus_res)
 				count = (res->count *
-					 clus_res->percent_allowed) / 100;
+					 clus_res->allowed) / 100;
 			else
 				count = 0;
 			field->print_routine(field, count,
@@ -668,12 +668,12 @@ extern int sacctmgr_add_res(int argc, char **argv)
 					list_append(res->clus_res_list,
 						    clus_res);
 					clus_res->cluster = xstrdup(cluster);
-					clus_res->percent_allowed =
+					clus_res->allowed =
 						start_res->percent_used;
 					xstrfmtcat(res_str,
 						   "   Cluster - %s\t%u%%\n",
 						   cluster,
-						   clus_res->percent_allowed);
+						   clus_res->allowed);
 					/* FIXME: make sure we don't
 					   overcommit */
 				}

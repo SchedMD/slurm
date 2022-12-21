@@ -621,7 +621,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "deleted", "tinyint default 0" },
 		{ "cluster", "tinytext not null" },
 		{ "res_id", "int not null" },
-		{ "percent_allowed", "int unsigned default 0" },
+		{ "allowed", "int unsigned default 0" },
 		{ NULL, NULL}
 	};
 

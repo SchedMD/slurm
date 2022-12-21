@@ -98,7 +98,7 @@ static void _dump_slurmdb_assoc_records(List assoc_list)
 static void _dump_slurmdb_clus_res_record(slurmdb_clus_res_rec_t *clus_res)
 {
 	debug("\t\t\tname=%s", clus_res->cluster);
-	debug("\t\t\tpercent_allowed=%u", clus_res->percent_allowed);
+	debug("\t\t\tallowed=%u", clus_res->allowed);
 }
 
 static void _dump_slurmdb_clus_res_records(List clus_res_list)
