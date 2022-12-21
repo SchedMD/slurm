@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "scontrol.h"
+#include "src/interfaces/data_parser.h"
 
 /* Load current node table information into *node_buffer_pptr */
 extern int
@@ -128,15 +129,13 @@ scontrol_print_node(char *node_name, node_info_msg_t *node_buffer_ptr)
  * IN node_list - print information about the supplied node list
  *	(or regular expression)
  */
-extern void
-scontrol_print_node_list (char *node_list)
+extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 {
 	node_info_msg_t *node_info_ptr = NULL;
 	partition_info_msg_t *part_info_ptr = NULL;
-	hostlist_t host_list;
+	hostlist_t host_list = NULL;
 	int error_code;
 	uint16_t show_flags = 0;
-	char *this_node_name;
 
 	if (all_flag)
 		show_flags |= SHOW_ALL;
@@ -171,17 +170,14 @@ scontrol_print_node_list (char *node_list)
 	slurm_populate_node_partitions(node_info_ptr, part_info_ptr);
 
 	if (node_list == NULL) {
-		scontrol_print_node (NULL, node_info_ptr);
+		if (mime_type)
+			error_code =
+				DATA_DUMP_CLI(NODES, *node_info_ptr, "nodes",
+					      argc, argv, NULL, mime_type);
+		else
+			scontrol_print_node(NULL, node_info_ptr);
 	} else {
-		if ((host_list = hostlist_create (node_list))) {
-			while ((this_node_name = hostlist_shift (host_list))) {
-				scontrol_print_node(this_node_name,
-						    node_info_ptr);
-				free(this_node_name);
-			}
-
-			hostlist_destroy(host_list);
-		} else {
+		if (!(host_list = hostlist_create(node_list))) {
 			exit_code = 1;
 			if (quiet_flag != 1) {
 				if (errno == EINVAL) {
@@ -196,6 +192,46 @@ scontrol_print_node_list (char *node_list)
 					perror("error parsing node list");
 			}
 		}
+
+		if (mime_type) {
+			char *node_name;
+			int i = 0, host_count = hostlist_count(host_list);
+			node_info_t **nodes =
+				xcalloc(host_count + 1, sizeof(*nodes));
+
+			while ((node_name = hostlist_shift(host_list))) {
+				for (int j = 0;
+				     (i < host_count) &&
+				     (j < node_info_ptr->record_count);
+				     j++) {
+					node_info_t *n =
+						&node_info_ptr->node_array[j];
+
+					if (!n->name ||
+					    xstrcmp(node_name, n->name))
+						continue;
+
+					nodes[i] = n;
+					i++;
+				}
+
+				free(node_name);
+			}
+
+			error_code = DATA_DUMP_CLI(NODE_ARRAY, nodes, "nodes",
+						   argc, argv, NULL, mime_type);
+
+			xfree(nodes);
+		} else {
+			char *node_name;
+
+			while ((node_name = hostlist_shift(host_list))) {
+				scontrol_print_node(node_name, node_info_ptr);
+				free(node_name);
+			}
+		}
+
+		hostlist_destroy(host_list);
 	}
 	return;
 }
