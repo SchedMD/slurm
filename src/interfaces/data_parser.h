@@ -155,6 +155,7 @@ typedef enum {
 	DATA_PARSER_CONTROLLER_PING_MODE, /* char * - verbose controller mode */
 	DATA_PARSER_CONTROLLER_PING_RESULT, /* char * - "UP" or "DOWN" */
 	DATA_PARSER_NODE, /* node_info_t */
+	DATA_PARSER_NODE_ARRAY, /* node_info_t** (NULL terminated) */
 	DATA_PARSER_NODES, /* node_info_msg_t */
 	DATA_PARSER_NODE_STATES, /* uint32_t & NODE_STATE_* */
 	DATA_PARSER_NODE_SELECT_ALLOC_MEMORY, /* node_info_t->select_nodeinfo  */
