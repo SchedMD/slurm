@@ -84,10 +84,8 @@ static slurm_jc_conf_t *jc_conf = NULL;
 static int step_ns_fd = -1;
 static bool force_rm = true;
 
-static int _create_paths(uint32_t job_id,
-			 char **job_mount,
-			 char **ns_holder,
-			 char **src_bind)
+static void _create_paths(uint32_t job_id, char **job_mount, char **ns_holder,
+			  char **src_bind)
 {
 	jc_conf = get_slurm_jc_conf();
 	xassert(jc_conf);
@@ -100,8 +98,6 @@ static int _create_paths(uint32_t job_id,
 
 	if (src_bind)
 		xstrfmtcat(*src_bind, "%s/.%u", *job_mount, job_id);
-
-	return SLURM_SUCCESS;
 }
 
 static int _find_step_in_list(step_loc_t *stepd, uint32_t *job_id)
@@ -420,11 +416,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 	return 0;
 #endif
 
-	if (_create_paths(job_id, &job_mount, &ns_holder, &src_bind)
-	    != SLURM_SUCCESS) {
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
+	_create_paths(job_id, &job_mount, &ns_holder, &src_bind);
 
 	rc = mkdir(job_mount, 0700);
 	if (rc && errno != EEXIST) {
@@ -729,10 +721,7 @@ extern int container_p_join_external(uint32_t job_id)
 {
 	char *job_mount = NULL, *ns_holder = NULL;
 
-	if (_create_paths(job_id, &job_mount, &ns_holder, NULL)
-	    != SLURM_SUCCESS) {
-		return -1;
-	}
+	_create_paths(job_id, &job_mount, &ns_holder, NULL);
 
 	if (step_ns_fd == -1) {
 		step_ns_fd = open(ns_holder, O_RDONLY);
@@ -768,10 +757,7 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	if (job_id == 0)
 		return SLURM_SUCCESS;
 
-	if (_create_paths(job_id, &job_mount, &ns_holder, NULL)
-	    != SLURM_SUCCESS) {
-		return SLURM_ERROR;
-	}
+	_create_paths(job_id, &job_mount, &ns_holder, NULL);
 
 	/* This is called on the slurmd so we can't use ns_fd. */
 	fd = open(ns_holder, O_RDONLY);
@@ -810,10 +796,7 @@ static int _delete_ns(uint32_t job_id)
 	return SLURM_SUCCESS;
 #endif
 
-	if (_create_paths(job_id, &job_mount, &ns_holder, NULL)
-	    != SLURM_SUCCESS) {
-		return SLURM_ERROR;
-	}
+	_create_paths(job_id, &job_mount, &ns_holder, NULL);
 
 	errno = 0;
 
