@@ -2215,41 +2215,44 @@ extern void slurmdb_pack_res_rec(void *in, uint16_t protocol_version,
 {
 	slurmdb_res_rec_t *object = (slurmdb_res_rec_t *)in;
 
-	if (!object) {
-		pack32(NO_VAL, buffer); // clus_res_list
-		pack32(NO_VAL, buffer); // clus_res_rec
-		pack32(NO_VAL, buffer); // count
-		packnull(buffer); // description
-		pack32(SLURMDB_RES_FLAG_NOTSET, buffer); // flags
-		pack32(NO_VAL, buffer); // id
-		packnull(buffer); // manager
-		packnull(buffer); // name
-		pack16(0, buffer); // allocated
-		packnull(buffer); // server
-		pack32(SLURMDB_RESOURCE_NOTSET, buffer); // type
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (!object) {
+			pack32(NO_VAL, buffer); // clus_res_list
+			pack32(NO_VAL, buffer); // clus_res_rec
+			pack32(NO_VAL, buffer); // count
+			packnull(buffer); // description
+			pack32(SLURMDB_RES_FLAG_NOTSET, buffer); // flags
+			pack32(NO_VAL, buffer); // id
+			packnull(buffer); // manager
+			packnull(buffer); // name
+			pack16(0, buffer); // allocated
+			packnull(buffer); // server
+			pack32(SLURMDB_RESOURCE_NOTSET, buffer); // type
 
-		return;
+			return;
+		}
+
+		slurm_pack_list(object->clus_res_list,
+				slurmdb_pack_clus_res_rec,
+				buffer, protocol_version);
+
+		if (object->clus_res_rec) {
+			pack32(0, buffer); /* anything not NO_VAL */
+			slurmdb_pack_clus_res_rec(
+				object->clus_res_rec, protocol_version, buffer);
+		} else
+			pack32(NO_VAL, buffer);
+
+		pack32(object->count, buffer);
+		packstr(object->description, buffer);
+		pack32(object->flags, buffer);
+		pack32(object->id, buffer);
+		packstr(object->manager, buffer);
+		packstr(object->name, buffer);
+		pack16(object->allocated, buffer);
+		packstr(object->server, buffer);
+		pack32(object->type, buffer);
 	}
-
-	slurm_pack_list(object->clus_res_list, slurmdb_pack_clus_res_rec,
-			buffer, protocol_version);
-
-	if (object->clus_res_rec) {
-		pack32(0, buffer); /* anything not NO_VAL */
-		slurmdb_pack_clus_res_rec(
-			object->clus_res_rec, protocol_version, buffer);
-	} else
-		pack32(NO_VAL, buffer);
-
-	pack32(object->count, buffer);
-	packstr(object->description, buffer);
-	pack32(object->flags, buffer);
-	pack32(object->id, buffer);
-	packstr(object->manager, buffer);
-	packstr(object->name, buffer);
-	pack16(object->allocated, buffer);
-	packstr(object->server, buffer);
-	pack32(object->type, buffer);
 }
 
 extern int slurmdb_unpack_res_rec(void **object, uint16_t protocol_version,
@@ -2266,37 +2269,47 @@ extern int slurmdb_unpack_res_rec(void **object, uint16_t protocol_version,
 
 	slurmdb_init_res_rec(object_ptr, 0);
 
-	safe_unpack32(&count, buffer);
-	if (count != NO_VAL) {
-		object_ptr->clus_res_list =
-			list_create(slurmdb_destroy_clus_res_rec);
-		for (i=0; i<count; i++) {
-			if (slurmdb_unpack_clus_res_rec(
-				    (void **)&clus_res, protocol_version, buffer)
-			    != SLURM_SUCCESS)
-				goto unpack_error;
-			list_append(object_ptr->clus_res_list, clus_res);
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			object_ptr->clus_res_list =
+				list_create(slurmdb_destroy_clus_res_rec);
+			for (i=0; i<count; i++) {
+				if (slurmdb_unpack_clus_res_rec(
+					    (void **)&clus_res,
+					    protocol_version, buffer)
+				    != SLURM_SUCCESS)
+					goto unpack_error;
+				list_append(object_ptr->clus_res_list,
+					    clus_res);
+			}
 		}
+
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			if (slurmdb_unpack_clus_res_rec(
+				    (void **)&object_ptr->clus_res_rec,
+				    protocol_version, buffer) != SLURM_SUCCESS)
+				goto unpack_error;
+		}
+
+		safe_unpack32(&object_ptr->count, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->description,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->flags, buffer);
+		safe_unpack32(&object_ptr->id, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->manager,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+		safe_unpack16(&object_ptr->allocated, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->server,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->type, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
 	}
-
-	safe_unpack32(&count, buffer);
-	if (count != NO_VAL) {
-		if (slurmdb_unpack_clus_res_rec(
-			    (void **)&object_ptr->clus_res_rec,
-			    protocol_version, buffer) != SLURM_SUCCESS)
-			goto unpack_error;
-	}
-
-	safe_unpack32(&object_ptr->count, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->description, &uint32_tmp, buffer);
-	safe_unpack32(&object_ptr->flags, buffer);
-	safe_unpack32(&object_ptr->id, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->manager, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
-	safe_unpack16(&object_ptr->allocated, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->server, &uint32_tmp, buffer);
-	safe_unpack32(&object_ptr->type, buffer);
-
 	return SLURM_SUCCESS;
 
 unpack_error:
