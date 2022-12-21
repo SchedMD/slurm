@@ -5018,7 +5018,7 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 			if (object->type != SLURMDB_RESOURCE_NOTSET)
 				rec->type = object->type;
 
-			if (object->clus_res_rec->allowed != NO_VAL16)
+			if (object->clus_res_rec->allowed != NO_VAL)
 				rec->clus_res_rec->allowed =
 					object->clus_res_rec->allowed;
 

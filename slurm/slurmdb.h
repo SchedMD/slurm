@@ -733,7 +733,7 @@ typedef struct {
 
 typedef struct {
 	char *cluster; /* name of cluster */
-	uint16_t allowed; /* percentage/count of total resources
+	uint32_t allowed; /* percentage/count of total resources
 			   * allowed for this cluster */
 } slurmdb_clus_res_rec_t;
 
@@ -1122,7 +1122,7 @@ typedef struct {
 } slurmdb_res_cond_t;
 
 typedef struct {
-	uint16_t allocated;
+	uint32_t allocated;
 	List clus_res_list; /* list of slurmdb_clus_res_rec_t *'s */
 	slurmdb_clus_res_rec_t *clus_res_rec; /* if only one cluster
 						 being represented */

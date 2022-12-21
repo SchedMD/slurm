@@ -50,8 +50,8 @@ START_TEST(pack_1702_null_clus_res_rec)
 	ck_assert(pack_crr.cluster == unpack_crr->cluster);
 
 	/* when given a NULL pointer, the pack function sets allowed to
-	 * NO_VAL16, not 0. */
-	ck_assert(NO_VAL16 == unpack_crr->allowed);
+	 * NO_VAL, not 0. */
+	ck_assert(NO_VAL == unpack_crr->allowed);
 
 	free_buf(buf);
 	slurmdb_destroy_clus_res_rec(unpack_crr);

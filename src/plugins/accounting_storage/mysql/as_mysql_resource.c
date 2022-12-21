@@ -1035,7 +1035,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	xfree(tmp);
 
 	/* overloaded for easibility */
-	if (res->allocated != NO_VAL16) {
+	if (res->allocated != NO_VAL) {
 		xstrfmtcat(clus_vals, ", allowed=%u", res->allocated);
 		send_update = 1;
 		query_clusters++;
@@ -1122,7 +1122,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			res_added = 0;
 			last_res = curr_res;
 
-			if (have_clusters && (res->allocated != NO_VAL16)) {
+			if (have_clusters && (res->allocated != NO_VAL)) {
 				allocated = _get_res_used(
 					mysql_conn, curr_res, clus_extra);
 
@@ -1150,7 +1150,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (have_clusters && row[3] && row[3][0]) {
 			slurmdb_res_rec_t *res_rec;
 
-			if (res->allocated != NO_VAL16)
+			if (res->allocated != NO_VAL)
 				allocated += res->allocated;
 			if (allocated > 100) {
 				DB_DEBUG(DB_RES, mysql_conn->conn,
