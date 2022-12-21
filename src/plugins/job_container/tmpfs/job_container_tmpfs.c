@@ -286,9 +286,8 @@ extern int container_p_restore(char *dir_name, bool recover)
 
 static int _mount_private_dirs(char *path, uid_t uid)
 {
-	char mount_path[PATH_MAX];
-	char *buffer = NULL, *save_ptr = NULL, *token;
-	int rc = 0, len;
+	char *buffer = NULL, *mount_path = NULL, *save_ptr = NULL, *token;
+	int rc = 0;
 
 	if (!path) {
 		error("%s: no path to private directories specified.",
@@ -304,12 +303,7 @@ static int _mount_private_dirs(char *path, uid_t uid)
 			token = strtok_r(NULL, ",", &save_ptr);
 			continue;
 		}
-		len = snprintf(mount_path, PATH_MAX, "%s/%s", path, token);
-		if (len > PATH_MAX || len < 0) {
-			error("%s: Unable to build mount path for %m",
-			      __func__);
-			goto private_mounts_exit;
-		}
+		xstrfmtcat(mount_path, "%s/%s", path, token);
 		for (char *t = mount_path + strlen(path) + 1; *t; t++) {
 			if (*t == '/')
 				*t = '_';
@@ -332,11 +326,13 @@ static int _mount_private_dirs(char *path, uid_t uid)
 			goto private_mounts_exit;
 		}
 		token = strtok_r(NULL, ",", &save_ptr);
+		xfree(mount_path);
 	}
 #endif
 
 private_mounts_exit:
 	xfree(buffer);
+	xfree(mount_path);
 	return rc;
 }
 
