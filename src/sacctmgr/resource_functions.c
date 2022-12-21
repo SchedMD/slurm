@@ -92,8 +92,8 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 					 * This means we didn't specify any
 					 * clusters (All clusters are
 					 * overwritten with the requested
-					 * percentage) so just put something
-					 * there to get the correct
+					 * percentage/count) so just put
+					 * something there to get the correct
 					 * allowed.
 					 */
 					cluster = "nothing";
@@ -228,7 +228,9 @@ static int _set_res_cond(int *start, int argc, char **argv,
 				}
 			}
 			list_iterator_destroy(itr);
-		} else if (!xstrncasecmp(argv[i], "PercentAllowed",
+		} else if (!xstrncasecmp(argv[i], "Allowed",
+					 MAX(command_len, 1)) ||
+			   !xstrncasecmp(argv[i], "PercentAllowed",
 					 MAX(command_len, 1))) {
 			if (!res_cond->allowed_list)
 				res_cond->allowed_list = list_create(xfree_ptr);
@@ -358,11 +360,13 @@ static int _set_res_rec(int *start, int argc, char **argv,
 				res->manager =
 					strip_quotes(argv[i]+end, NULL, 1);
 			set = 1;
-		} else if (!xstrncasecmp(argv[i], "PercentAllowed",
+		} else if (!xstrncasecmp(argv[i], "Allowed",
+					 MAX(command_len, 1)) ||
+			   !xstrncasecmp(argv[i], "PercentAllowed",
 					 MAX(command_len, 1))) {
 			/* overload allocated here */
 			if (get_uint(argv[i]+end, &res->allocated,
-				     "PercentAllowed") == SLURM_SUCCESS) {
+				     "Allowed") == SLURM_SUCCESS) {
 				set = 1;
 			}
 		} else if (!xstrncasecmp(argv[i], "Type",
@@ -903,7 +907,7 @@ extern int sacctmgr_modify_res(int argc, char **argv)
 			"resource. Remove cluster selection.\n");
 		return SLURM_ERROR;
 	} else if ((res->allocated != NO_VAL) && !res_cond->cluster_list) {
-		fprintf(stderr, "Can't change \"percentallowed\" without "
+		fprintf(stderr, "Can't change \"allowed\" without "
 			"specifying a cluster.\n");
 		return SLURM_ERROR;
 	}

@@ -149,14 +149,12 @@ sacctmgr [<OPTION>] [<COMMAND>]
                             and PreemptMode=
        delete qos         - Descriptions=, ID=, Names=, and PreemptMode=
 
-       list resource      - Clusters=, Descriptions=, Flags=, Format=, Ids=,
-                            Names=, PercentAllowed=, ServerType=, Servers=,
+       list resource      - Allowed=, Clusters=, Descriptions=, Flags=, Format=,
+                            Ids=, Names=, ServerType=, Servers=,
                             and WithClusters
-       add resource       - Clusters=, Count=, Descriptions=, Flags=,
-                            ServerType=, Names=, PercentAllowed=, Server=,
-                            and Type=
-       modify resource    - (set options) Count=, Flags=, Manager=,
-                            PercentAllowed=,
+       add resource       - Allowed=, Clusters=, Count=, Descriptions=, Flags=,
+                            ServerType=, Names=, Server=, and Type=
+       modify resource    - (set options) Allowed=, Count=, Flags=, Manager=,
                             (where options) Clusters=, Names=, Servers=,
        delete resource    - Clusters=, Names=
 
@@ -236,9 +234,9 @@ sacctmgr [<OPTION>] [<COMMAND>]
                             MaxWall, Name, Preempt, PreemptMode,
                             Priority, UsageFactor, UsageThreshold
 
-       Resource           - Cluster, Count, CountAllowed, CountUsed,
-                            Description, Flags, Manager, Name,
-                            PercentAllowed, PercentUsed, Server, Type
+       Resource           - Allowed, Cluster, Count, CountAllowed, CountUsed,
+                            Description, Flags, Manager, Name, Server, Type,
+                            Used
 
        Reservation        - Assoc, Cluster, Comment, End, Flags, ID, Name,
                             NodeNames, Start, TRES, UnusedWall

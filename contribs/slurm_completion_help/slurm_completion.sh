@@ -2289,11 +2289,11 @@ function __slurm_comp_sacctmgr_spec_resources() {
 		"server="
 	)
 	local parameters_set=(
+		"allowed="
 		"cluster="
 		"count="
 		"description="
 		"flags="
-		"percentallowed="
 		"servertype="
 		"type="
 	)
