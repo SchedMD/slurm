@@ -77,62 +77,19 @@ log_debug "EnforcePartLimits=$enforcepartlimits"
 #
 # Run a job in this new partition and validate the time limit
 #
-make_bash_script $test_srun "
-set -m
-$srun -N1 --deadline now+1hour -p $part_name -t45  -v $bin_sleep 1 &
-"
+set job_id [submit_job -none "-N1 --deadline now+1hour -p $part_name -t45  --wrap '$bin_sleep 1'"]
 
-make_bash_script $file_in "
-bash -i $test_srun
-"
-
-set timeout $max_job_delay
-spawn bash -i $file_in
 if {$enforcepartlimits eq "NO"} {
 
 	#
 	# Job is not rejected at submit time
-	#
-
-	expect {
-		-re "job ($number) queued and waiting for resources" {
-			set job_id $expect_out(1,string)
-		}
-		timeout {
-			fail "srun not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	#
 	# verify time limit. Add a temporization to wait for update reason
 	#
-	if {$job_id == 0} {
-		fail "Job_id = 0 : salloc not OK"
-	}
-	if {[wait_job_reason $job_id "PENDING" "PartitionTimeLimit"]} {
-		fail "Reason should be PartitionTimeLimit"
-	}
-	cancel_job $job_id
-
+	subtest {$job_id != 0} "Job should be submited"
+	subtest {![wait_job_reason $job_id "PENDING" "PartitionTimeLimit"]} "Reason should be PartitionTimeLimit"
 } else {
 	#
 	# Job should be rejected at submit time
 	#
-	expect {
-	        -re "Requested time limit is invalid (missing or exceeds some limit)" {
-	                exp_continue
-	        }
-	        -re "unrecognized option '--deadline'" {
-	                fail "Unrecognized option --deadline"
-	        }
-	        timeout {
-	                fail "srun not responding"
-	        }
-	        eof {
-	                wait
-	        }
-	}
-
+	subtest {$job_id == 0} "Job should be rejected"
 }
