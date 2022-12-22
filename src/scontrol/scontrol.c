@@ -956,7 +956,7 @@ static int _process_command (int argc, char **argv)
 		return 0;
 	}
 
-	if (xstrncasecmp(tag, "abort", MAX(tag_len, 5)) == 0) {
+	if (!xstrncasecmp(tag, "abort", MAX(tag_len, 5))) {
 		/* require full command name */
 		if (argc > 2) {
 			exit_code = 1;
@@ -970,10 +970,9 @@ static int _process_command (int argc, char **argv)
 			if (quiet_flag != 1)
 				slurm_perror ("slurm_shutdown error");
 		}
-	}
-	else if (xstrncasecmp(tag, "all", MAX(tag_len, 2)) == 0)
+	} else if (!xstrncasecmp(tag, "all", MAX(tag_len, 2))) {
 		all_flag = 1;
-	else if (xstrncasecmp(tag, "cancel_reboot", MAX(tag_len, 3)) == 0) {
+	} else if (!xstrncasecmp(tag, "cancel_reboot", MAX(tag_len, 3))) {
 		if (argc > 2) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -986,8 +985,7 @@ static int _process_command (int argc, char **argv)
 				 tag);
 		} else
 			scontrol_cancel_reboot(argv[1]);
-	}
-	else if (xstrncasecmp(tag, "completing", MAX(tag_len, 2)) == 0) {
+	} else if (!xstrncasecmp(tag, "completing", MAX(tag_len, 2))) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -995,8 +993,7 @@ static int _process_command (int argc, char **argv)
 				 tag);
 		} else
 			scontrol_print_completing();
-	}
-	else if (xstrncasecmp(tag, "cluster", MAX(tag_len, 2)) == 0) {
+	} else if (!xstrncasecmp(tag, "cluster", MAX(tag_len, 2))) {
 		if (clusters) {
 			FREE_NULL_LIST(clusters);
 			working_cluster_rec = NULL;
@@ -1035,8 +1032,7 @@ static int _process_command (int argc, char **argv)
 		/* 	old_res_info_ptr->last_update = 0; */
 		/* if (old_slurm_ctl_conf_ptr) */
 		/* 	old_slurm_ctl_conf_ptr->last_update = 0; */
-	}
-	else if (xstrncasecmp(tag, "create", MAX(tag_len, 2)) == 0) {
+	} else if (!xstrncasecmp(tag, "create", MAX(tag_len, 2))) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
@@ -1044,8 +1040,7 @@ static int _process_command (int argc, char **argv)
 			return 0;
 		}
 		_create_it ((argc - 1), &argv[1]);
-	}
-	else if (xstrncasecmp(tag, "details", MAX(tag_len, 1)) == 0) {
+	} else if (!xstrncasecmp(tag, "details", MAX(tag_len, 1))) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1054,9 +1049,8 @@ static int _process_command (int argc, char **argv)
 			return 0;
 		}
 		detail_flag = 1;
-	}
-	else if ((xstrncasecmp(tag, "errnumstr", MAX(tag_len, 2)) == 0) ||
-		 (xstrncasecmp(tag, "errnostr", MAX(tag_len, 2)) == 0)) {
+	} else if (!xstrncasecmp(tag, "errnumstr", MAX(tag_len, 2)) ||
+		   !xstrncasecmp(tag, "errnostr", MAX(tag_len, 2))) {
 		if (argc != 2) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1074,8 +1068,7 @@ static int _process_command (int argc, char **argv)
 					 tag);
 			}
 		}
-	}
-	else if (xstrncasecmp(tag, "exit", MAX(tag_len, 2)) == 0) {
+	} else if (!xstrncasecmp(tag, "exit", MAX(tag_len, 2))) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1144,8 +1137,7 @@ static int _process_command (int argc, char **argv)
 				printf("%02x", (int)hash.hash[i]);
 			printf("\n");
 		}
-	}
-	else if (xstrncasecmp(tag, "help", MAX(tag_len, 2)) == 0) {
+	} else if (!xstrncasecmp(tag, "help", MAX(tag_len, 2))) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1153,12 +1145,10 @@ static int _process_command (int argc, char **argv)
 				 tag);
 		}
 		_usage ();
-	}
-	else if (xstrncasecmp(tag, "hide", MAX(tag_len, 2)) == 0) {
+	} else if (!xstrncasecmp(tag, "hide", MAX(tag_len, 2))) {
 		all_flag = 0;
 		detail_flag = 0;
-	}
-	else if (xstrncasecmp(tag, "oneliner", MAX(tag_len, 1)) == 0) {
+	} else if (!xstrncasecmp(tag, "oneliner", MAX(tag_len, 1))) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1166,8 +1156,7 @@ static int _process_command (int argc, char **argv)
 				 tag);
 		}
 		one_liner = 1;
-	}
-	else if (xstrncasecmp(tag, "pidinfo", MAX(tag_len, 3)) == 0) {
+	} else if (!xstrncasecmp(tag, "pidinfo", MAX(tag_len, 3))) {
 		if (argc > 2) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1180,8 +1169,7 @@ static int _process_command (int argc, char **argv)
 				 tag);
 		} else
 			scontrol_pid_info ((pid_t) atol (argv[1]) );
-	}
-	else if (xstrncasecmp(tag, "ping", MAX(tag_len, 3)) == 0) {
+	} else if (!xstrncasecmp(tag, "ping", MAX(tag_len, 3))) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1189,17 +1177,15 @@ static int _process_command (int argc, char **argv)
 				 tag);
 		} else
 			_print_ping(argc, argv);
-	}
-	else if ((xstrncasecmp(tag, "\\q", 2) == 0) ||
-		 (xstrncasecmp(tag, "quiet", MAX(tag_len, 4)) == 0)) {
+	} else if (!xstrncasecmp(tag, "\\q", 2) ||
+		   !xstrncasecmp(tag, "quiet", MAX(tag_len, 4))) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, "too many arguments for keyword:%s\n",
 				 tag);
 		}
 		quiet_flag = 1;
-	}
-	else if (xstrncasecmp(tag, "quit", MAX(tag_len, 4)) == 0) {
+	} else if (!xstrncasecmp(tag, "quit", MAX(tag_len, 4))) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1207,11 +1193,9 @@ static int _process_command (int argc, char **argv)
 				 tag);
 		}
 		exit_flag = 1;
-	}
-	else if (xstrncasecmp(tag, "reboot_nodes", MAX(tag_len, 3)) == 0) {
+	} else if (!xstrncasecmp(tag, "reboot_nodes", MAX(tag_len, 3))) {
 		_process_reboot_command(tag, argc, argv);
-	}
-	else if (xstrncasecmp(tag, "reconfigure", MAX(tag_len, 3)) == 0) {
+	} else if (!xstrncasecmp(tag, "reconfigure", MAX(tag_len, 3))) {
 		if (argc > 2) {
 			exit_code = 1;
 			fprintf (stderr, "too many arguments for keyword:%s\n",
@@ -1223,8 +1207,7 @@ static int _process_command (int argc, char **argv)
 			if (quiet_flag != 1)
 				slurm_perror ("slurm_reconfigure error");
 		}
-	}
-	else if (xstrncasecmp(tag, "requeue", MAX(tag_len, 3)) == 0) {
+	} else if (!xstrncasecmp(tag, "requeue", MAX(tag_len, 3))) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -1242,8 +1225,7 @@ static int _process_command (int argc, char **argv)
 				scontrol_requeue(flags, argv[i]);
 			}
 		}
-	}
-	else if (xstrncasecmp(tag, "requeuehold", 11) == 0) {
+	} else if (!xstrncasecmp(tag, "requeuehold", 11)) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -1262,11 +1244,10 @@ static int _process_command (int argc, char **argv)
 			}
 		}
 
-	}
-	else if ((xstrncasecmp(tag, "hold",  4) == 0) ||
-		 (xstrncasecmp(tag, "holdu", 5) == 0) ||
-		 (xstrncasecmp(tag, "uhold", 5) == 0) ||
-	         (xstrncasecmp(tag, "release", MAX(tag_len, 3)) == 0)) {
+	} else if (!xstrncasecmp(tag, "hold",  4) ||
+		   !xstrncasecmp(tag, "holdu", 5) ||
+		   !xstrncasecmp(tag, "uhold", 5) ||
+	           !xstrncasecmp(tag, "release", MAX(tag_len, 3))) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -1284,9 +1265,8 @@ static int _process_command (int argc, char **argv)
 			}
 			(void) scontrol_hold(argv[0], NULL);   /* Clear cache */
 		}
-	}
-	else if ((xstrncasecmp(tag, "suspend", MAX(tag_len, 2)) == 0) ||
-	         (xstrncasecmp(tag, "resume", MAX(tag_len, 3)) == 0)) {
+	} else if (!xstrncasecmp(tag, "suspend", MAX(tag_len, 2)) ||
+		   !xstrncasecmp(tag, "resume", MAX(tag_len, 3))) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -1298,8 +1278,7 @@ static int _process_command (int argc, char **argv)
 				scontrol_suspend(argv[0], argv[i]);
 			}
 		}
-	}
-	else if (xstrncasecmp(tag, "top", MAX(tag_len, 3)) == 0) {
+	} else if (!xstrncasecmp(tag, "top", MAX(tag_len, 3))) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -1317,8 +1296,7 @@ static int _process_command (int argc, char **argv)
 		}
 	} else if (!xstrncasecmp(tag, "token", MAX(tag_len, 3))) {
 		_fetch_token(argc, argv);
-	}
-	else if (xstrncasecmp(tag, "wait_job", MAX(tag_len, 2)) == 0) {
+	} else if (!xstrncasecmp(tag, "wait_job", MAX(tag_len, 2))) {
 		if (argc > 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -1336,11 +1314,9 @@ static int _process_command (int argc, char **argv)
 			if (error_code)
 				exit_code = 1;
 		}
-	}
-	else if (xstrncasecmp(tag, "setdebugflags", MAX(tag_len, 9)) == 0) {
+	} else if (!xstrncasecmp(tag, "setdebugflags", MAX(tag_len, 9))) {
 		_setdebugflags(argc, argv);
-	}
-	else if (!xstrncasecmp(tag, "fsdampeningfactor", MAX(tag_len, 3)) ||
+	} else if (!xstrncasecmp(tag, "fsdampeningfactor", MAX(tag_len, 3)) ||
 		 !xstrncasecmp(tag, "fairsharedampeningfactor",
 			      MAX(tag_len, 3))) {
 		if (argc > 2) {
@@ -1374,11 +1350,9 @@ static int _process_command (int argc, char **argv)
 				}
 			}
 		}
-	}
-	else if (xstrncasecmp(tag, "setdebug", MAX(tag_len, 2)) == 0) {
+	} else if (!xstrncasecmp(tag, "setdebug", MAX(tag_len, 2))) {
 		_setdebug(argc, argv);
-	}
-	else if (xstrncasecmp(tag, "schedloglevel", MAX(tag_len, 3)) == 0) {
+	} else if (!xstrncasecmp(tag, "schedloglevel", MAX(tag_len, 3))) {
 		if (argc > 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -1427,11 +1401,9 @@ static int _process_command (int argc, char **argv)
 				}
 			}
 		}
-	}
-	else if (xstrncasecmp(tag, "show", MAX(tag_len, 3)) == 0) {
+	} else if (!xstrncasecmp(tag, "show", MAX(tag_len, 3))) {
 		_show_it (argc, argv);
-	}
-	else if (xstrncasecmp(tag, "write", MAX(tag_len, 5)) == 0) {
+	} else if (!xstrncasecmp(tag, "write", MAX(tag_len, 5))) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf(stderr,
@@ -1465,8 +1437,7 @@ static int _process_command (int argc, char **argv)
 				"invalid write argument:%s\n",
 				argv[1]);
 		}
-	}
-	else if (xstrncasecmp(tag, "takeover", MAX(tag_len, 8)) == 0) {
+	} else if (!xstrncasecmp(tag, "takeover", MAX(tag_len, 8))) {
 		int backup_inx = 1, control_cnt;
 		slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
 
@@ -1502,8 +1473,7 @@ static int _process_command (int argc, char **argv)
 					slurm_perror("slurm_takeover error");
 			}
 		}
-	}
-	else if (xstrncasecmp(tag, "shutdown", MAX(tag_len, 8)) == 0) {
+	} else if (!xstrncasecmp(tag, "shutdown", MAX(tag_len, 8))) {
 		/* require full command name */
 		uint16_t options = SLURMCTLD_SHUTDOWN_ALL;
 		if (argc == 2) {
@@ -1531,8 +1501,7 @@ static int _process_command (int argc, char **argv)
 					slurm_perror ("slurm_shutdown error");
 			}
 		}
-	}
-	else if (xstrncasecmp(tag, "update", MAX(tag_len, 1)) == 0) {
+	} else if (!xstrncasecmp(tag, "update", MAX(tag_len, 1))) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
@@ -1540,8 +1509,7 @@ static int _process_command (int argc, char **argv)
 			return 0;
 		}
 		_update_it ((argc - 1), &argv[1]);
-	}
-	else if (xstrncasecmp(tag, "delete", MAX(tag_len, 1)) == 0) {
+	} else if (!xstrncasecmp(tag, "delete", MAX(tag_len, 1))) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
@@ -1549,8 +1517,7 @@ static int _process_command (int argc, char **argv)
 			return 0;
 		}
 		_delete_it ((argc - 1), &argv[1]);
-	}
-	else if (xstrncasecmp(tag, "verbose", MAX(tag_len, 4)) == 0) {
+	} else if (!xstrncasecmp(tag, "verbose", MAX(tag_len, 4))) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1558,8 +1525,7 @@ static int _process_command (int argc, char **argv)
 				 tag);
 		}
 		quiet_flag = -1;
-	}
-	else if (xstrncasecmp(tag, "version", MAX(tag_len, 4)) == 0) {
+	} else if (!xstrncasecmp(tag, "version", MAX(tag_len, 4))) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1567,8 +1533,7 @@ static int _process_command (int argc, char **argv)
 				 tag);
 		}
 		_print_version();
-	}
-	else if (xstrncasecmp(tag, "listpids", MAX(tag_len, 1)) == 0) {
+	} else if (!xstrncasecmp(tag, "listpids", MAX(tag_len, 1))) {
 		if (argc > 3) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1580,8 +1545,7 @@ static int _process_command (int argc, char **argv)
 		}
 	} else if (!xstrncasecmp(tag, "getent", MAX(tag_len, 6))) {
 		scontrol_getent(argc == 1 ? NULL : argv[1]);
-	}
-	else if (xstrncasecmp(tag, "notify", MAX(tag_len, 1)) == 0) {
+	} else if (!xstrncasecmp(tag, "notify", MAX(tag_len, 1))) {
 		if (argc < 3) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1591,8 +1555,7 @@ static int _process_command (int argc, char **argv)
 			exit_code = 1;
 			slurm_perror("job notify failure");
 		}
-	}
-	else if (xstrncasecmp(tag, "callerid", MAX(tag_len, 3)) == 0) {
+	} else if (!xstrncasecmp(tag, "callerid", MAX(tag_len, 3))) {
 		if (argc < 5) {
 			exit_code = 1;
 			fprintf (stderr,
