@@ -290,11 +290,6 @@ static int _parse_feature(void **data, slurm_parser_enum_t type,
 			goto fail;
 	}
 
-	if (!_is_feature_valid(tmp_name)) {
-		slurm_seterrno(ESLURM_INVALID_FEATURE);
-		goto fail;
-	}
-
 	s_p_get_string(&path, "Helper", tbl);
 
 	/* In slurmctld context, we can have path == NULL */
@@ -357,8 +352,26 @@ static int _handle_config_features(plugin_feature_t **features, int count)
 {
 	for (int i = 0; i < count; ++i) {
 		const plugin_feature_t *feature = features[i];
-		if (_feature_register(feature->name, feature->helper))
-			return SLURM_ERROR;
+		char *tmp_name, *tok, *saveptr;
+
+		tmp_name = xstrdup(feature->name);
+		for (tok = strtok_r(tmp_name, ",", &saveptr); tok;
+		     tok = strtok_r(NULL, ",", &saveptr)) {
+
+			if (!_is_feature_valid(tok)) {
+				slurm_seterrno(ESLURM_INVALID_FEATURE);
+				xfree(tmp_name);
+				return SLURM_ERROR;
+			}
+
+			/* In slurmctld context, we can have path == NULL */
+			if (_feature_register(tok, feature->helper)) {
+				xfree(tmp_name);
+				return SLURM_ERROR;
+			}
+		}
+
+		xfree(tmp_name);
 	}
 
 	return SLURM_SUCCESS;
