@@ -178,6 +178,7 @@ typedef enum {
 	DATA_PARSER_JOB_RES, /* job_resources_t */
 	DATA_PARSER_JOB_RES_PTR, /* job_resources_t* */
 	DATA_PARSER_JOB_RES_NODES, /* job_resources_t->nodes,core_bitmap,nhosts */
+	DATA_PARSER_JOB_MAIL_FLAGS, /* uint16_t & MAIL_JOB_* */
 	DATA_PARSER_NICE, /* uint32_t - nice value - NICE_OFFSET */
 	DATA_PARSER_JOB_MEM_PER_CPU, /* uint64_t & MEM_PER_CPU */
 	DATA_PARSER_JOB_MEM_PER_NODE, /* uint64_t & ~MEM_PER_CPU */
