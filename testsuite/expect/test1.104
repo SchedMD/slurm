@@ -59,48 +59,16 @@ if {$def_node eq ""} {
 }
 
 #
-# Create a new partition
+# Create a new partition with a MaxTime
 #
-spawn $scontrol create PartitionName=$part_name Nodes=$def_node MaxTime=30
-expect {
-	-re "error" {
-		fail "Something bad happened on partition create"
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol create PartitionName=$part_name Nodes=$def_node MaxTime=30"
 
 #
 # Confirm the partition now exists
 #
-set allow  0
-set found -1
-spawn $scontrol show part $part_name
-expect {
-	-re "not found" {
-		set found 0
-		exp_continue
-	}
-	-re "PartitionName" {
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
+if {![dict exists [get_partitions] $part_name]} {
+	fail "Partition ($part_name) was not created"
 }
-if {$found != 1} {
-	fail "Partition not created"
-}
-
-set found 0
 
 # Check EnforcePartLimits value
 set enforcepartlimits [get_config_param "EnforcePartLimits"]
