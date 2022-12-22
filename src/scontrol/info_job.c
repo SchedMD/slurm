@@ -384,10 +384,9 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
  * IN job_step_id_str - job step's id or NULL to print information
  *	about all job steps
  */
-extern void
-scontrol_print_step (char *job_step_id_str)
+extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 {
-	int error_code, i, print_cnt = 0;
+	int error_code, print_cnt = 0;
 	slurm_step_id_t step_id = {
 		.job_id = 0,
 		.step_het_comp = NO_VAL,
@@ -396,11 +395,11 @@ scontrol_print_step (char *job_step_id_str)
 	uint32_t array_id = NO_VAL;
 	char *next_str;
 	job_step_info_response_msg_t *job_step_info_ptr;
-	job_step_info_t * job_step_ptr;
 	static uint32_t last_job_id = 0, last_array_id, last_step_id = 0;
 	static job_step_info_response_msg_t *old_job_step_info_ptr = NULL;
 	static uint16_t last_show_flags = 0xffff;
 	uint16_t show_flags = 0;
+	job_step_info_t **steps = NULL;
 
 	if (job_step_id_str) {
 		step_id.job_id = (uint32_t)strtol(job_step_id_str, &next_str,
@@ -458,7 +457,7 @@ scontrol_print_step (char *job_step_id_str)
 	last_job_id = step_id.job_id;
 	last_step_id = step_id.step_id;
 
-	if (quiet_flag == -1) {
+	if (!mime_type && (quiet_flag == -1)) {
 		char time_str[256];
 		slurm_make_time_str ((time_t *)&job_step_info_ptr->last_update,
 			             time_str, sizeof(time_str));
@@ -466,16 +465,38 @@ scontrol_print_step (char *job_step_id_str)
 			time_str, job_step_info_ptr->job_step_count);
 	}
 
-	for (i = 0, job_step_ptr = job_step_info_ptr->job_steps;
-	     i < job_step_info_ptr->job_step_count; i++, job_step_ptr++) {
-		if ((array_id != NO_VAL) &&
-		    (array_id != job_step_ptr->array_task_id))
-			continue;
-		slurm_print_job_step_info(stdout, job_step_ptr, one_liner);
-		print_cnt++;
+	if (job_step_info_ptr->job_step_count) {
+		int s = 0;
+		steps = xcalloc(job_step_info_ptr->job_step_count + 1,
+				sizeof(steps));
+
+		for (int i = 0; i < job_step_info_ptr->job_step_count; i++) {
+			job_step_info_t *step =
+				&job_step_info_ptr->job_steps[i];
+
+			if ((array_id != NO_VAL) &&
+			    (array_id != step->array_task_id))
+				continue;
+
+			steps[s] = step;
+			s++;
+		}
 	}
 
-	if (print_cnt == 0) {
+	if (mime_type && steps) {
+		if (DATA_DUMP_CLI(STEP_INFO_ARRAY, steps, "steps", argc, argv,
+				  NULL, mime_type))
+			exit_code = SLURM_ERROR;
+	} else if (steps) {
+		int i = 0;
+
+		for (; steps[i]; i++)
+			slurm_print_job_step_info(stdout, steps[i], one_liner);
+
+		print_cnt = i;
+	}
+
+	if (!mime_type && !print_cnt) {
 		if (job_step_id_str) {
 			exit_code = 1;
 			if (quiet_flag != 1) {
@@ -496,6 +517,8 @@ scontrol_print_step (char *job_step_id_str)
 		} else if (quiet_flag != 1)
 			printf ("No job steps in the system\n");
 	}
+
+	xfree(steps);
 }
 
 /* Return 1 on success, 0 on failure to find a jobid in the string */

@@ -1801,7 +1801,7 @@ static void _show_it(int argc, char **argv)
 	} else if (xstrncasecmp(tag, "slurmd", MAX(tag_len, 2)) == 0) {
 		_print_slurmd (val);
 	} else if (xstrncasecmp(tag, "steps", MAX(tag_len, 2)) == 0) {
-		scontrol_print_step (val);
+		scontrol_print_step(val, argc, argv);
 	} else if (xstrncasecmp(tag, "topology", MAX(tag_len, 1)) == 0) {
 		scontrol_print_topo (val);
 	} else {
