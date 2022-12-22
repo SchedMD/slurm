@@ -263,7 +263,7 @@ static int _compute_hash(buf_t *buffer, slurm_msg_t *msg, slurm_hash_t *hash)
 	if (slurm_get_plugin_hash_enable(msg->auth_index)) {
 		uint16_t msg_type = htons(msg->msg_type);
 
-		/* 2 versions after 21.08 this if can be removed */
+		/* 2 versions after 22.05 this if can be removed */
 		if (msg->protocol_version <= SLURM_MIN_PROTOCOL_VERSION) {
 			/*
 			 * Unfortuantely 21.08.8 and 20.11.9 did not normalize
