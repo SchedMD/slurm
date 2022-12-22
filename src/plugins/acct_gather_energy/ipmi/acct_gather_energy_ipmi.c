@@ -421,11 +421,45 @@ static int _read_ipmi_dcmi_values(void)
 	return SLURM_SUCCESS;
 }
 
+static int _ipmi_check_unit_watts()
+{
+	int sensor_units = ipmi_monitoring_sensor_read_sensor_units(ipmi_ctx);
+
+	if (sensor_units < 0) {
+		error("ipmi_monitoring_sensor_read_sensor_units: %s",
+		      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
+		return SLURM_ERROR;
+	}
+
+	if (sensor_units != slurm_ipmi_conf.variable) {
+		error("Configured sensor is not in Watt, please check ipmi.conf");
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _ipmi_read_sensor_readings(int id)
+{
+	void *sensor_reading;
+
+	sensor_reading = ipmi_monitoring_sensor_read_sensor_reading(ipmi_ctx);
+
+	if (sensor_reading) {
+		sensors[id].last_update_watt = (uint32_t) (*((double *)
+							    sensor_reading));
+	} else {
+		error("%s: ipmi read an empty value for power consumption",
+		      __func__);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int _read_ipmi_non_dcmi_values(bool check_sensor_units_watts)
 {
 	int i, j, rc;
-	void *sensor_reading;
-	int sensor_units;
 	uint32_t non_dcmi_cnt = sensors_len - dcmi_cnt;
 	unsigned int ids[non_dcmi_cnt];
 	static uint8_t read_err_cnt = 0;
@@ -466,39 +500,21 @@ static int _read_ipmi_non_dcmi_values(bool check_sensor_units_watts)
 		if ((sensors[i].id != DCMI_MODE) &&
 		    (sensors[i].id != DCMI_ENH_MODE)) {
 			/* Check sensor units are in watts if required. */
-			if (check_sensor_units_watts) {
-				sensor_units =
-					ipmi_monitoring_sensor_read_sensor_units(
-						ipmi_ctx);
-				if (sensor_units < 0) {
-					error("ipmi_monitoring_sensor_read_sensor_units: %s",
-					      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
-					return SLURM_ERROR;
-				}
-				if (sensor_units != slurm_ipmi_conf.variable) {
-					error("Configured sensor is not in Watt, "
-					      "please check ipmi.conf");
-					return SLURM_ERROR;
-				}
-			}
-			/* Read sensor readings. */
-			sensor_reading =
-				ipmi_monitoring_sensor_read_sensor_reading(
-					ipmi_ctx);
-			if (sensor_reading) {
-				sensors[i].last_update_watt =
-					(uint32_t) (*((double *)
-						      sensor_reading));
-			} else {
-				error("ipmi read an empty value for power consumption");
+			if (check_sensor_units_watts &&
+			    (_ipmi_check_unit_watts() != SLURM_SUCCESS))
 				return SLURM_ERROR;
-			}
-			if (ipmi_monitoring_sensor_iterator_next(ipmi_ctx) < 0)
-				error("Cannot parse next sensor in ipmi ctx");
-			else if (!ipmi_monitoring_sensor_iterator_next(ipmi_ctx))
-				break;
 		}
+
+		/* Read sensor readings. */
+		if (_ipmi_read_sensor_readings(i) != SLURM_SUCCESS)
+			return SLURM_ERROR;
+
+		if (ipmi_monitoring_sensor_iterator_next(ipmi_ctx) < 0) {
+			error("Cannot parse next sensor in ipmi ctx");
+		} else if (!ipmi_monitoring_sensor_iterator_next(ipmi_ctx))
+			break;
 	}
+
 	return SLURM_SUCCESS;
 }
 
