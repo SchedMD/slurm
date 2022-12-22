@@ -712,13 +712,25 @@ static int _thread_update_node_energy(void)
 	readings++;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_ENERGY) {
-		for (i = 0; i < sensors_len; ++i)
-			info("ipmi-thread: sensor %u current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
-			     sensors[i].id,
+		for (i = 0; i < sensors_len; ++i) {
+			char *log_str = NULL;
+
+			if (sensors[i].id == DCMI_MODE)
+				xstrcat(log_str, "DCMI");
+			else if (sensors[i].id == DCMI_ENH_MODE)
+				xstrcat(log_str, "DCMI Enhanced");
+			else
+				xstrfmtcat(log_str, "%u", sensors[i].id);
+
+			info("ipmi-thread: sensor %s current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
+			     log_str,
 			     sensors[i].energy.current_watts,
 			     sensors[i].energy.consumed_energy,
 			     sensors[i].energy.base_consumed_energy,
 			     sensors[i].energy.ave_watts);
+
+			xfree(log_str);
+		}
 	}
 
 	return rc;
