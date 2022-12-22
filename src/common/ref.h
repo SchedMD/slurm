@@ -47,7 +47,7 @@
  * See also https://csl.name/post/embedding-binary-data/
  *
  * Warning: Do *NOT* use the symbol names directly.
- * Warning: size when complied is mangled during runtime.
+ * Warning: size when compiled is mangled during runtime.
  *
  * ld will replace any '.' with '_'.
  */
