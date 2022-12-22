@@ -63,6 +63,8 @@
 
 #include "src/common/slurm_opt.h"
 
+#include "src/interfaces/select.h"
+
 /*
  * This is ugly. But... less ugly than dozens of identical functions handling
  * variables that are just strings pushed and pulled out of the associated
@@ -6046,6 +6048,21 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 	char *cpu_per_task_ptr = NULL, *save_ptr = NULL;
 	int rc = SLURM_SUCCESS;
 	uint64_t cnt = 0;
+	static uint32_t select_plugin_type = NO_VAL;
+
+	if ((select_plugin_type == NO_VAL) &&
+	    (select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
+					   &select_plugin_type) !=
+	     SLURM_SUCCESS)) {
+		select_plugin_type = NO_VAL;	/* error */
+	}
+
+	if ((select_plugin_type != SELECT_TYPE_CONS_TRES)) {
+		if (opt->tres_per_task)
+			fatal("--tres-per-task option unsupported by configured SelectType plugin");
+		else
+			return;
+	}
 
 	if (xstrcasestr(opt->tres_per_task, "=mem:") ||
 	    xstrcasestr(opt->tres_per_task, ",mem:")) {
