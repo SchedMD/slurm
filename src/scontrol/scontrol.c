@@ -871,7 +871,18 @@ static void _setdebugflags(int argc, char **argv)
 			debug_flags_minus |= flags;
 	}
 
-	if (i < argc) {
+	if ((i == (argc - 1)) && (!xstrncasecmp(argv[i], "node=", 5) ||
+				  !xstrncasecmp(argv[i], "nodes=", 6))) {
+		char *nodes = strchr(argv[i], '=') + 1;
+
+		if (slurm_set_slurmd_debug_flags(nodes, debug_flags_plus,
+						 debug_flags_minus)) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr,
+					"Failed to set DebugFlags on one or more nodes.\n");
+		}
+	} else if (i < argc) {
 		exit_code = 1;
 		if (quiet_flag != 1) {
 			fprintf(stderr, "invalid debug flag: %s\n", argv[i]);
