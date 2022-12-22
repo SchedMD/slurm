@@ -845,13 +845,7 @@ static void _setdebugflags(int argc, char **argv)
 	uint64_t debug_flags_plus = 0;
 	uint64_t debug_flags_minus = 0, flags;
 
-	if (argc > 2) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			fprintf(stderr,	"too many arguments for keyword:%s\n",
-				tag);
-		return;
-	} else if (argc < 2) {
+	if (argc < 2) {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			fprintf(stderr, "too few arguments for keyword:%s\n",
