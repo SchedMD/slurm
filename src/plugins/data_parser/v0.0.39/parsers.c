@@ -3362,7 +3362,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(SLURMDB_JOB_FLAGS)[] = {
 };
 
 #define add_skip(field) \
-	add_parser_skip(slurmdb_user_rec_t, field)
+	add_parser_skip(slurmdb_job_rec_t, field)
 #define add_parse(mtype, field, path, needs) \
 	add_parser(slurmdb_job_rec_t, mtype, false, field, path, needs)
 /* should mirror the structure of slurmdb_job_rec_t  */
