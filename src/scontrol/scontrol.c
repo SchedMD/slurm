@@ -1794,7 +1794,7 @@ static void _show_it(int argc, char **argv)
 		scontrol_print_node_list(val, argc, argv);
 	} else if (xstrncasecmp(tag, "partitions", MAX(tag_len, 2)) == 0 ||
 		   xstrncasecmp(tag, "partitionname", MAX(tag_len, 2)) == 0) {
-		scontrol_print_part (val);
+		scontrol_print_part(val, argc, argv);
 	} else if (xstrncasecmp(tag, "reservations", MAX(tag_len, 1)) == 0 ||
 		   xstrncasecmp(tag, "reservationname", MAX(tag_len, 1)) == 0) {
 		scontrol_print_res (val);

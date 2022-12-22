@@ -137,7 +137,7 @@ extern void scontrol_print_licenses(const char *name, int argc, char **argv);
 extern void	scontrol_print_node (char *node_name,
 				     node_info_msg_t *node_info_ptr);
 extern void scontrol_print_node_list(char *node_list, int argc, char **argv);
-extern void	scontrol_print_part (char *partition_name);
+extern void scontrol_print_part(char *partition_name, int argc, char **argv);
 extern void	scontrol_print_res (char *reservation_name);
 extern void	scontrol_print_step (char *job_step_id_str);
 extern void	scontrol_print_topo (char *node_list);

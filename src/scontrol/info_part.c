@@ -36,6 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/interfaces/data_parser.h"
+
 #include "scontrol.h"
 
 /* Load current partiton table information into *part_buffer_pptr */
@@ -82,12 +84,11 @@ scontrol_load_partitions (partition_info_msg_t **part_buffer_pptr)
  * scontrol_print_part - print the specified partition's information
  * IN partition_name - NULL to print information about all partition
  */
-extern void
-scontrol_print_part (char *partition_name)
+extern void scontrol_print_part(char *partition_name, int argc, char **argv)
 {
-	int error_code, i, print_cnt = 0;
+	int error_code, print_cnt = 0;
 	partition_info_msg_t *part_info_ptr = NULL;
-	partition_info_t *part_ptr = NULL;
+	partition_info_t **parts = NULL;
 
 	error_code = scontrol_load_partitions(&part_info_ptr);
 	if (error_code) {
@@ -97,7 +98,25 @@ scontrol_print_part (char *partition_name)
 		return;
 	}
 
-	if (quiet_flag == -1) {
+	if (part_info_ptr->record_count) {
+		partition_info_t *part_ptr = part_info_ptr->partition_array;
+		parts = xcalloc(part_info_ptr->record_count + 1,
+				sizeof(*parts));
+
+		for (int i = 0; i < part_info_ptr->record_count; i++) {
+			if (partition_name &&
+			    xstrcmp(partition_name, part_ptr[i].name))
+				continue;
+
+			parts[print_cnt] = &part_ptr[i];
+			print_cnt++;
+
+			if (partition_name)
+				break;
+		}
+	}
+
+	if (!mime_type && (quiet_flag == -1)) {
 		char time_str[256];
 		slurm_make_time_str ((time_t *)&part_info_ptr->last_update,
 			       time_str, sizeof(time_str));
@@ -105,19 +124,17 @@ scontrol_print_part (char *partition_name)
 			time_str, part_info_ptr->record_count);
 	}
 
-	part_ptr = part_info_ptr->partition_array;
-	for (i = 0; i < part_info_ptr->record_count; i++) {
-		if (partition_name &&
-		    xstrcmp (partition_name, part_ptr[i].name) != 0)
-			continue;
-		print_cnt++;
-		slurm_print_partition_info (stdout, & part_ptr[i],
-		                            one_liner ) ;
-		if (partition_name)
-			break;
+	if (mime_type) {
+		if (parts &&
+		    DATA_DUMP_CLI(PARTITION_INFO_ARRAY, parts, "partitions",
+				  argc, argv, NULL, mime_type))
+			exit_code = SLURM_ERROR;
+	} else {
+		for (int i = 0; i < print_cnt; i++)
+			slurm_print_partition_info(stdout, parts[i], one_liner);
 	}
 
-	if (print_cnt == 0) {
+	if (!mime_type && !print_cnt) {
 		if (partition_name) {
 			exit_code = 1;
 			if (quiet_flag != 1)
