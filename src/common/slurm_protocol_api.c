@@ -266,7 +266,7 @@ static int _compute_hash(buf_t *buffer, slurm_msg_t *msg, slurm_hash_t *hash)
 		/* 2 versions after 22.05 this if can be removed */
 		if (msg->protocol_version <= SLURM_MIN_PROTOCOL_VERSION) {
 			/*
-			 * Unfortuantely 21.08.8 and 20.11.9 did not normalize
+			 * Unfortunately 21.08.8 and 20.11.9 did not normalize
 			 * this to network order, and require host-byte order.
 			 */
 			msg_type = msg->msg_type;
