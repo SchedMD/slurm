@@ -86,6 +86,10 @@ slurmd_conf_t *conf = NULL;
 #define IPMI_VERSION 2		/* Data structure version number */
 #define MAX_LOG_ERRORS 5	/* Max sensor reading errors log messages */
 
+/* IPMI extended DCMI power modes will be identified by these invented ids. */
+#define DCMI_MODE 0xBEEF
+#define DCMI_ENH_MODE 0xBEAF
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -168,6 +172,8 @@ static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t launch_cond = PTHREAD_COND_INITIALIZER;
 pthread_t thread_ipmi_id_launcher = 0;
 pthread_t thread_ipmi_id_run = 0;
+
+static int dcmi_cnt = 0;
 
 static int _running_profile(void)
 {
@@ -1125,9 +1131,22 @@ static int _parse_sensor_descriptions(void)
 		str_id = strtok_r(mid, sep2, &saveptr2);
 		/* parse sensor ids of the current description */
 		while (str_id) {
-			id = strtol(str_id, &endptr, 10);
-			if (*endptr != '\0')
-				goto error;
+			/*
+			 * DCMI and DCMI_ENHANCED are special cases for
+			 * the IPMI extension commands. Actually we support
+			 * these ones and we convert them to numerical ids.
+			 */
+			if (!xstrcmp(str_id, "DCMI")) {
+				dcmi_cnt++;
+				id = DCMI_MODE;
+			} else if (!xstrcmp(str_id, "DCMI_ENHANCED")) {
+				dcmi_cnt++;
+				id = DCMI_ENH_MODE;
+			} else {
+				id = strtol(str_id, &endptr, 10);
+				if (*endptr != '\0')
+					goto error;
+			}
 			d->sensor_cnt++;
 			xrealloc(d->sensor_idxs,
 				 sizeof(uint16_t) * d->sensor_cnt);
