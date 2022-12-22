@@ -3036,6 +3036,26 @@ static int DUMP_FUNC(PARTITION_INFO_MSG)(const parser_t *const parser,
 	return rc;
 }
 
+PARSE_DISABLED(STEP_INFO_ARRAY)
+
+static int DUMP_FUNC(STEP_INFO_ARRAY)(const parser_t *const parser, void *obj,
+				      data_t *dst, args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	job_step_info_t ***ptr = obj;
+	job_step_info_t **steps = *ptr;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	data_set_list(dst);
+
+	for (int i = 0; !rc && steps[i]; i++)
+		rc = DUMP(STEP_INFO, *steps[i], data_list_append(dst), args);
+
+	return rc;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -4367,6 +4387,7 @@ static const parser_t parsers[] = {
 	addps(PARTITION_INFO_PTR, partition_info_t *, NEED_NONE),
 	addps(NODE_ARRAY, node_info_t **, NEED_NONE),
 	addps(PARTITION_INFO_ARRAY, partition_info_t **, NEED_NONE),
+	addps(STEP_INFO_ARRAY, job_step_info_t **, NEED_NONE),
 
 	/* Complex type parsers */
 	addpc(QOS_PREEMPT_LIST, slurmdb_qos_rec_t, NEED_QOS),
