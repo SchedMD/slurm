@@ -3208,39 +3208,25 @@ static int DUMP_FUNC(POWER_MGMT_DATA_PTR)(const parser_t *const parser,
 	.needs = NEED_NONE,                                           \
 }
 #define add_flag_bit(flag_value, flag_string)                         \
-{                                                                     \
-	.magic = MAGIC_FLAG_BIT,                                      \
-	.type = FLAG_BIT_TYPE_BIT,                                    \
-	.value = flag_value,                                          \
-	.mask = INFINITE64,                                           \
-	.mask_size = sizeof(INFINITE64),                              \
-	.mask_name = XSTRINGIFY(INFINITE64),                          \
-	.name = flag_string,                                          \
-	.flag_name = XSTRINGIFY(flag_value),                          \
-	.flag_size = sizeof(flag_value),                              \
-}
+	add_flag_masked_bit(flag_value, INFINITE64, flag_string)
 #define add_flag_masked_bit(flag_value, flag_mask, flag_string)       \
-{                                                                     \
-	.magic = MAGIC_FLAG_BIT,                                      \
-	.type = FLAG_BIT_TYPE_BIT,                                    \
-	.value = flag_value,                                          \
-	.mask = flag_mask,                                            \
-	.mask_size = sizeof(flag_mask),                               \
-	.mask_name = XSTRINGIFY(flag_mask),                           \
-	.name = flag_string,                                          \
-	.flag_name = XSTRINGIFY(flag_value),                          \
-	.flag_size = sizeof(flag_value),                              \
-}
+	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, #flag_value, flag_value,\
+			   flag_mask, #flag_mask, flag_string)
 #define add_flag_equal(flag_value, flag_mask, flag_string)            \
+	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL, #flag_value,          \
+			   flag_value, flag_mask, #flag_mask,         \
+			   flag_string)
+#define add_flag_bit_entry(flag_type, flag_value_string, flag_value,  \
+			   flag_mask, flag_mask_string, flag_string)  \
 {                                                                     \
 	.magic = MAGIC_FLAG_BIT,                                      \
-	.type = FLAG_BIT_TYPE_EQUAL,                                  \
+	.type = flag_type,                                            \
 	.value = flag_value,                                          \
 	.mask = flag_mask,                                            \
 	.mask_size = sizeof(flag_mask),                               \
-	.mask_name = XSTRINGIFY(flag_mask),                           \
+	.mask_name = flag_mask_string,                                \
 	.name = flag_string,                                          \
-	.flag_name = XSTRINGIFY(flag_value),                          \
+	.flag_name = flag_value_string,                               \
 	.flag_size = sizeof(flag_value),                              \
 }
 
