@@ -3225,7 +3225,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			slurm_get_ip_str(&addr, comm_name, INET6_ADDRSTRLEN);
 		}
 
-		/* 2 versions after 21.08 this if can be removed */
+		/* 2 versions after 22.05 this if can be removed */
 		if (slurm_msg->protocol_version <= SLURM_MIN_PROTOCOL_VERSION)
 			hostname = auth_g_get_host(slurm_msg->auth_cred);
 		else
