@@ -232,10 +232,19 @@ static int _feature_register(const char *name, const char *helper)
 
 	existing = list_find_first(helper_features, _cmp_features,
 				   (char *) name);
-	if (existing != NULL) {
-		error("feature \"%s\" previously registered with helper \"%s\"",
-		      name, existing->helper);
-		return SLURM_ERROR;
+	if (existing) {
+		if (running_in_slurmctld()) {
+			/* The controller just needs the feature names */
+			return SLURM_SUCCESS;
+		} else if (xstrcmp(existing->helper, helper)) {
+			error("feature \"%s\" previously registered with different helper \"%s\"",
+			      name, existing->helper);
+			return SLURM_ERROR;
+		} else {
+			debug("feature \"%s\" previously registered same helper \"%s\"",
+			      name, existing->helper);
+			return SLURM_SUCCESS;
+		}
 	}
 
 	feature = _feature_create(name, helper);
