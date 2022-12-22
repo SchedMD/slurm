@@ -725,6 +725,47 @@ static int _dump_flag_bit_array(args_t *args, void *src, data_t *dst,
 
 		if (found)
 			data_set_string(data_list_append(dst), bit->name);
+
+		if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
+			const char *type;
+			uint64_t value;
+
+			if (parser->size == sizeof(uint64_t)) {
+				uint64_t *flags = src;
+				value = *flags;
+			} else if (parser->size == sizeof(uint32_t)) {
+				uint32_t *flags = src;
+				value = *flags;
+			} else if (parser->size == sizeof(uint16_t)) {
+				uint16_t *flags = src;
+				value = *flags;
+			} else if (parser->size == sizeof(uint8_t)) {
+				uint8_t *flags = src;
+				value = *flags;
+			} else {
+				fatal_abort("invalid parser flag size: %zu",
+					    parser->size);
+			}
+
+			if (bit->type == FLAG_BIT_TYPE_BIT)
+				type = "bit";
+			else if (bit->type == FLAG_BIT_TYPE_EQUAL)
+				type = "bit-equals";
+			else
+				type = "INVALID";
+
+			log_flag(DATA, "%s: %s \"%s\" flag %s %s(%s[0x%"PRIx64"] & %s[0x%"PRIx64"]) & 0x%"PRIx64" = 0x%"PRIx64" for %zd byte %s(0x%" PRIxPTR "+%zd)->%s with parser %s(0x%" PRIxPTR ") to data %s[0x%" PRIxPTR "]",
+				 __func__, (found ? "appending matched" : "skipping"),
+				 bit->name, type, bit->name, bit->mask_name,
+				 bit->mask, bit->flag_name, bit->value, value,
+				 (bit->mask & value & bit->value),
+				 parser->size, parser->obj_type_string,
+				 (uintptr_t) src, parser->ptr_offset,
+				 parser->field_name, parser->type_string,
+				 (uintptr_t) parser,
+				 data_type_to_string(data_get_type(dst)),
+				 (uintptr_t) dst);
+		}
 	}
 
 	return SLURM_SUCCESS;
