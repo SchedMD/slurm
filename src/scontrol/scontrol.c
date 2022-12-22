@@ -840,6 +840,65 @@ static void _setdebug(int argc, char **argv)
 	}
 }
 
+static void _setdebugflags(int argc, char **argv)
+{
+	int error_code;
+	char *tag = argv[0];
+	int i, mode = 0;
+	uint64_t debug_flags_plus = 0;
+	uint64_t debug_flags_minus = 0, flags;
+
+	if (argc > 2) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			fprintf(stderr,	"too many arguments for keyword:%s\n",
+				tag);
+		return;
+	} else if (argc < 2) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			fprintf(stderr, "too few arguments for keyword:%s\n",
+				tag);
+		return;
+	}
+
+	for (i = 1; i < argc; i++) {
+		if (argv[i][0] == '+')
+			mode = 1;
+		else if (argv[i][0] == '-')
+			mode = -1;
+		else {
+			mode = 0;
+			break;
+		}
+
+		if (debug_str2flags(&argv[i][1], &flags) != SLURM_SUCCESS)
+			break;
+		if (mode == 1)
+			debug_flags_plus |= flags;
+		else
+			debug_flags_minus |= flags;
+	}
+
+	if (i < argc) {
+		exit_code = 1;
+		if (quiet_flag != 1) {
+			fprintf(stderr, "invalid debug flag: %s\n", argv[i]);
+		}
+		if ((quiet_flag != 1) && (mode == 0)) {
+			fprintf(stderr, "Usage: setdebugflags [+|-]NAME\n");
+		}
+	} else {
+		error_code = slurm_set_debugflags(debug_flags_plus,
+						  debug_flags_minus);
+		if (error_code) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				slurm_perror("slurm_set_debug_flags error");
+		}
+	}
+}
+
 static void _fetch_token(int argc, char **argv)
 {
 	char *username = NULL, *token;
@@ -1279,63 +1338,7 @@ static int _process_command (int argc, char **argv)
 		}
 	}
 	else if (xstrncasecmp(tag, "setdebugflags", MAX(tag_len, 9)) == 0) {
-		if (argc > 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					tag);
-		} else if (argc < 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					tag);
-		} else {
-			int i, mode = 0;
-			uint64_t debug_flags_plus  = 0;
-			uint64_t debug_flags_minus = 0, flags;
-
-			for (i = 1; i < argc; i++) {
-				if (argv[i][0] == '+')
-					mode = 1;
-				else if (argv[i][0] == '-')
-					mode = -1;
-				else {
-					mode = 0;
-					break;
-				}
-
-				if (debug_str2flags(&argv[i][1], &flags)
-				    != SLURM_SUCCESS)
-					break;
-				if (mode == 1)
-					debug_flags_plus  |= flags;
-				else
-					debug_flags_minus |= flags;
-			}
-			if (i < argc) {
-				exit_code = 1;
-				if (quiet_flag != 1) {
-					fprintf(stderr, "invalid debug "
-						"flag: %s\n", argv[i]);
-				}
-				if ((quiet_flag != 1) && (mode == 0)) {
-					fprintf(stderr, "Usage: setdebugflags"
-						" [+|-]NAME\n");
-				}
-			} else {
-				error_code = slurm_set_debugflags(
-					debug_flags_plus, debug_flags_minus);
-				if (error_code) {
-					exit_code = 1;
-					if (quiet_flag != 1)
-						slurm_perror(
-							"slurm_set_debug_flags"
-							" error");
-				}
-			}
-		}
+		_setdebugflags(argc, argv);
 	}
 	else if (!xstrncasecmp(tag, "fsdampeningfactor", MAX(tag_len, 3)) ||
 		 !xstrncasecmp(tag, "fairsharedampeningfactor",
