@@ -2995,6 +2995,27 @@ static int DUMP_FUNC(NODE_ARRAY)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+PARSE_DISABLED(PARTITION_INFO_ARRAY)
+
+static int DUMP_FUNC(PARTITION_INFO_ARRAY)(const parser_t *const parser,
+					   void *obj, data_t *dst, args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	partition_info_t ***ptr = obj;
+	partition_info_t **parts = *ptr;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	data_set_list(dst);
+
+	for (int i = 0; !rc && parts[i]; i++)
+		rc = DUMP(PARTITION_INFO, *parts[i], data_list_append(dst),
+			  args);
+
+	return rc;
+}
+
 PARSE_DISABLED(PARTITION_INFO_MSG)
 
 static int DUMP_FUNC(PARTITION_INFO_MSG)(const parser_t *const parser,
@@ -4345,6 +4366,7 @@ static const parser_t parsers[] = {
 	addps(CPU_FREQ_FLAGS, uint32_t, NEED_NONE),
 	addps(PARTITION_INFO_PTR, partition_info_t *, NEED_NONE),
 	addps(NODE_ARRAY, node_info_t **, NEED_NONE),
+	addps(PARTITION_INFO_ARRAY, partition_info_t **, NEED_NONE),
 
 	/* Complex type parsers */
 	addpc(QOS_PREEMPT_LIST, slurmdb_qos_rec_t, NEED_QOS),
