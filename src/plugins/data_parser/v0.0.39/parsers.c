@@ -2908,9 +2908,10 @@ static int DUMP_FUNC(STEP_INFO_MSG)(const parser_t *const parser, void *obj,
 
 	data_set_list(dst);
 
-	for (size_t i = 0; !rc && (i < (*msg)->job_step_count); ++i)
-		rc = DUMP(STEP_INFO, (*msg)->job_steps[i],
-			  data_list_append(dst), args);
+	if (*msg)
+		for (size_t i = 0; !rc && (i < (*msg)->job_step_count); ++i)
+			rc = DUMP(STEP_INFO, (*msg)->job_steps[i],
+				  data_list_append(dst), args);
 
 	return rc;
 }
