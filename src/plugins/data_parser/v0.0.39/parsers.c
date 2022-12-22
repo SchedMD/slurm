@@ -3912,7 +3912,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, mcs_label, "mcs_label"),
 	add_parse(UINT64, mem_spec_limit, "specialized_memory"),
 	add_parse(STRING, name, "name"),
-	add_parse_bit_flag_array(node_info_t, NODE_STATES, false, next_state, "next_state_after_reboot"),
+	add_parse(NODE_STATES_NO_VAL, next_state, "next_state_after_reboot"),
 	add_parse(STRING, node_addr, "address"),
 	add_parse(STRING, node_hostname, "hostname"),
 	add_parse_bit_flag_array(node_info_t, NODE_STATES, false, node_state, "state"),
