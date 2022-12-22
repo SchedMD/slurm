@@ -175,6 +175,9 @@ pthread_t thread_ipmi_id_run = 0;
 
 static int dcmi_cnt = 0;
 
+static int _read_ipmi_dcmi_values(void);
+static int _read_ipmi_non_dcmi_values(bool check_sensor_units_watts);
+
 static int _running_profile(void)
 {
 	static bool run = false;
@@ -300,72 +303,19 @@ static int _init_ipmi_config (void)
  */
 static int _check_power_sensor(void)
 {
-	/* check the sensors list */
-	void *sensor_reading;
-	int rc;
-	int sensor_units;
-	uint16_t i;
-	unsigned int ids[sensors_len];
-	static uint8_t check_err_cnt = 0;
+	uint32_t non_dcmi_cnt = sensors_len - dcmi_cnt;
 
-	for (i = 0; i < sensors_len; ++i)
-		ids[i] = sensors[i].id;
-	rc = ipmi_monitoring_sensor_readings_by_record_id(ipmi_ctx,
-							  hostname,
-							  &ipmi_config,
-							  sensor_reading_flags,
-							  ids,
-							  sensors_len,
-							  NULL,
-							  NULL);
-	if (rc != sensors_len) {
-		if (check_err_cnt < MAX_LOG_ERRORS) {
-			error("ipmi_monitoring_sensor_readings_by_record_id: "
-			      "%s", ipmi_monitoring_ctx_errormsg(ipmi_ctx));
-			check_err_cnt++;
-		} else if (check_err_cnt == MAX_LOG_ERRORS) {
-			error("ipmi_monitoring_sensor_readings_by_record_id: "
-			      "%s. Stop logging these errors after %d attempts",
-			      ipmi_monitoring_ctx_errormsg(ipmi_ctx),
-			      MAX_LOG_ERRORS);
-			check_err_cnt++;
-		}
-		return SLURM_ERROR;
+	/*
+	 * Only check for non-DCMI sensors since DCMI ones are always in watts
+	 * in this plugin. Note that we do a sensor reading too so we update the
+	 * last_update_time.
+	 */
+	if (non_dcmi_cnt) {
+		if (_read_ipmi_non_dcmi_values(true) != SLURM_SUCCESS)
+			return SLURM_ERROR;
+		previous_update_time = last_update_time;
+		last_update_time = time(NULL);
 	}
-
-	check_err_cnt = 0;
-
-	i = 0;
-	do {
-		/* check if the sensor unit is watts */
-		sensor_units =
-		    ipmi_monitoring_sensor_read_sensor_units(ipmi_ctx);
-		if (sensor_units < 0) {
-			error("ipmi_monitoring_sensor_read_sensor_units: %s",
-			      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
-			return SLURM_ERROR;
-		}
-		if (sensor_units != slurm_ipmi_conf.variable) {
-			error("Configured sensor is not in Watt, "
-			      "please check ipmi.conf");
-			return SLURM_ERROR;
-		}
-
-		/* update current value of the sensor */
-		sensor_reading =
-		    ipmi_monitoring_sensor_read_sensor_reading(ipmi_ctx);
-		if (sensor_reading) {
-			sensors[i].last_update_watt =
-			    (uint32_t) (*((double *)sensor_reading));
-		} else {
-			error("ipmi read an empty value for power consumption");
-			return SLURM_ERROR;
-		}
-		++i;
-	} while (ipmi_monitoring_sensor_iterator_next(ipmi_ctx));
-
-	previous_update_time = last_update_time;
-	last_update_time = time(NULL);
 
 	return SLURM_SUCCESS;
 }
@@ -466,30 +416,38 @@ static int _find_power_sensor(void)
 	return rc;
 }
 
-/*
- * _read_ipmi_values read the Power sensor and update last_update_watt and times
- */
-static int _read_ipmi_values(void)
+static int _read_ipmi_dcmi_values(void)
 {
-	/* read sensors list */
+	return SLURM_SUCCESS;
+}
+
+static int _read_ipmi_non_dcmi_values(bool check_sensor_units_watts)
+{
+	int i, j, rc;
 	void *sensor_reading;
-	int rc;
-	uint16_t i;
-	unsigned int ids[sensors_len];
+	int sensor_units;
+	uint32_t non_dcmi_cnt = sensors_len - dcmi_cnt;
+	unsigned int ids[non_dcmi_cnt];
 	static uint8_t read_err_cnt = 0;
 
-	for (i = 0; i < sensors_len; ++i)
-		ids[i] = sensors[i].id;
+	/* Next code is only for non-DCMI sensors. */
+	for (i = 0, j = 0; i < sensors_len; i++) {
+		if ((sensors[i].id != DCMI_MODE) &&
+		    (sensors[i].id != DCMI_ENH_MODE)) {
+			ids[j] = sensors[i].id;
+			j++;
+		}
+	}
+
 	rc = ipmi_monitoring_sensor_readings_by_record_id(ipmi_ctx,
 							  hostname,
 							  &ipmi_config,
 							  sensor_reading_flags,
 							  ids,
-							  sensors_len,
+							  non_dcmi_cnt,
 							  NULL,
 							  NULL);
-
-	if (rc != sensors_len) {
+	if (rc != non_dcmi_cnt) {
 		if (read_err_cnt < MAX_LOG_ERRORS) {
 			error("ipmi_monitoring_sensor_readings_by_record_id: "
 			      "%s", ipmi_monitoring_ctx_errormsg(ipmi_ctx));
@@ -504,21 +462,63 @@ static int _read_ipmi_values(void)
 		return SLURM_ERROR;
 	}
 
-	read_err_cnt = 0;
-
-	i = 0;
-	do {
-		sensor_reading =
-		    ipmi_monitoring_sensor_read_sensor_reading(ipmi_ctx);
-		if (sensor_reading) {
-			sensors[i].last_update_watt =
-			    (uint32_t) (*((double *)sensor_reading));
-		} else {
-			error("ipmi read an empty value for power consumption");
-			return SLURM_ERROR;
+	for (i = 0; i < sensors_len; i++) {
+		if ((sensors[i].id != DCMI_MODE) &&
+		    (sensors[i].id != DCMI_ENH_MODE)) {
+			/* Check sensor units are in watts if required. */
+			if (check_sensor_units_watts) {
+				sensor_units =
+					ipmi_monitoring_sensor_read_sensor_units(
+						ipmi_ctx);
+				if (sensor_units < 0) {
+					error("ipmi_monitoring_sensor_read_sensor_units: %s",
+					      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
+					return SLURM_ERROR;
+				}
+				if (sensor_units != slurm_ipmi_conf.variable) {
+					error("Configured sensor is not in Watt, "
+					      "please check ipmi.conf");
+					return SLURM_ERROR;
+				}
+			}
+			/* Read sensor readings. */
+			sensor_reading =
+				ipmi_monitoring_sensor_read_sensor_reading(
+					ipmi_ctx);
+			if (sensor_reading) {
+				sensors[i].last_update_watt =
+					(uint32_t) (*((double *)
+						      sensor_reading));
+			} else {
+				error("ipmi read an empty value for power consumption");
+				return SLURM_ERROR;
+			}
+			if (ipmi_monitoring_sensor_iterator_next(ipmi_ctx) < 0)
+				error("Cannot parse next sensor in ipmi ctx");
+			else if (!ipmi_monitoring_sensor_iterator_next(ipmi_ctx))
+				break;
 		}
-		++i;
-	} while (ipmi_monitoring_sensor_iterator_next(ipmi_ctx));
+	}
+	return SLURM_SUCCESS;
+}
+
+/*
+ * _read_ipmi_values read the Power sensor and update last_update_watt and times
+ */
+static int _read_ipmi_values(void)
+{
+	uint32_t non_dcmi_cnt = sensors_len - dcmi_cnt;
+	int rc1 = 0, rc2 = 0;
+
+	/* Start by reading DCMI sensors */
+	if (dcmi_cnt)
+		rc1 = _read_ipmi_dcmi_values();
+
+	if (non_dcmi_cnt)
+		rc2 = _read_ipmi_non_dcmi_values(false);
+
+	if ((rc1 == SLURM_ERROR) && (rc2 == SLURM_ERROR))
+		return SLURM_ERROR;
 
 	previous_update_time = last_update_time;
 	last_update_time = time(NULL);
