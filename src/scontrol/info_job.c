@@ -386,7 +386,7 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
  */
 extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 {
-	int error_code, print_cnt = 0;
+	int error_code = 0, print_cnt = 0;
 	slurm_step_id_t step_id = {
 		.job_id = NO_VAL,
 		.step_het_comp = NO_VAL,
@@ -446,6 +446,15 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 	}
 
 	if (error_code) {
+		if (mime_type) {
+			DATA_DUMP_CLI(STEP_INFO_MSG, job_step_info_ptr, "steps",
+				      argc, argv, NULL, mime_type);
+			exit_code = SLURM_ERROR;
+			slurm_free_job_step_info_response_msg(
+				job_step_info_ptr);
+			return;
+		}
+
 		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_get_job_steps error");
