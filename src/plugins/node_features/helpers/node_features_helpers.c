@@ -251,9 +251,9 @@ static int _exclusive_register(const char *listp)
 	return SLURM_SUCCESS;
 }
 
-static int parse_feature(void **data, slurm_parser_enum_t type,
-			 const char *key, const char *name,
-			 const char *line, char **leftover)
+static int _parse_feature(void **data, slurm_parser_enum_t type,
+			  const char *key, const char *name,
+			  const char *line, char **leftover)
 {
 	static s_p_options_t feature_options[] = {
 		 {"Helper", S_P_STRING},
@@ -295,7 +295,7 @@ static int _parse_exclusives(void **data, slurm_parser_enum_t type,
 }
 
 static s_p_options_t conf_options[] = {
-	{"Feature", S_P_ARRAY, parse_feature, (ListDelF) _feature_destroy},
+	{"Feature", S_P_ARRAY, _parse_feature, (ListDelF) _feature_destroy},
 	{"BootTime", S_P_UINT32},
 	{"ExecTime", S_P_UINT32},
 	{"MutuallyExclusive", S_P_ARRAY, _parse_exclusives, xfree_ptr},
