@@ -3121,6 +3121,69 @@ static int DUMP_FUNC(NODE_STATES_NO_VAL)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(RESERVATION_INFO_MSG)
+
+static int DUMP_FUNC(RESERVATION_INFO_MSG)(const parser_t *const parser,
+					   void *obj, data_t *dst, args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	reserve_info_msg_t *res = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	data_set_list(dst);
+
+	for (int i = 0; !rc && (i < res->record_count); i++)
+		rc = DUMP(RESERVATION_INFO, res->reservation_array[i],
+			  data_list_append(dst), args);
+
+	return SLURM_SUCCESS;
+}
+
+PARSE_DISABLED(RESERVATION_INFO_CORE_SPEC)
+
+static int DUMP_FUNC(RESERVATION_INFO_CORE_SPEC)(const parser_t *const parser,
+						 void *obj, data_t *dst,
+						 args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	reserve_info_t *res = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	data_set_list(dst);
+
+	for (int i = 0; !rc && (i < res->core_spec_cnt); i++)
+		rc = DUMP(RESERVATION_CORE_SPEC, res->core_spec[i],
+			  data_list_append(dst), args);
+
+	return SLURM_SUCCESS;
+}
+
+PARSE_DISABLED(RESERVATION_INFO_ARRAY)
+
+static int DUMP_FUNC(RESERVATION_INFO_ARRAY)(const parser_t *const parser,
+					     void *obj, data_t *dst,
+					     args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	reserve_info_t ***ptr = obj;
+	reserve_info_t **res = *ptr;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	data_set_list(dst);
+
+	for (int i = 0; !rc && res[i]; i++)
+		rc = DUMP(RESERVATION_INFO, *res[i], data_list_append(dst),
+			  args);
+
+	return rc;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -4395,6 +4458,87 @@ static const parser_t PARSER_ARRAY(POWER_MGMT_DATA)[] = {
 };
 #undef add_parse
 
+static const flag_bit_t PARSER_FLAG_ARRAY(RESERVATION_FLAGS)[] = {
+	add_flag_bit(RESERVE_FLAG_MAINT, "MAINT"),
+	add_flag_bit(RESERVE_FLAG_NO_MAINT, "NO_MAINT"),
+	add_flag_bit(RESERVE_FLAG_DAILY, "DAILY"),
+	add_flag_bit(RESERVE_FLAG_NO_DAILY, "NO_DAILY"),
+	add_flag_bit(RESERVE_FLAG_WEEKLY, "WEEKLY"),
+	add_flag_bit(RESERVE_FLAG_NO_WEEKLY, "NO_WEEKLY"),
+	add_flag_bit(RESERVE_FLAG_IGN_JOBS, "IGNORE_JOBS"),
+	add_flag_bit(RESERVE_FLAG_NO_IGN_JOB, "NO_IGNORE_JOBS"),
+	add_flag_bit(RESERVE_FLAG_ANY_NODES, "ANY_NODES"),
+	add_flag_bit(RESERVE_FLAG_STATIC, "STATIC"),
+	add_flag_bit(RESERVE_FLAG_NO_STATIC, "NO_STATIC"),
+	add_flag_bit(RESERVE_FLAG_PART_NODES, "PART_NODES"),
+	add_flag_bit(RESERVE_FLAG_NO_PART_NODES, "NO_PART_NODES"),
+	add_flag_bit(RESERVE_FLAG_OVERLAP, "OVERLAP"),
+	add_flag_bit(RESERVE_FLAG_SPEC_NODES, "SPEC_NODES"),
+	add_flag_bit(RESERVE_FLAG_FIRST_CORES, "FIRST_CORES"),
+	add_flag_bit(RESERVE_FLAG_TIME_FLOAT, "TIME_FLOAT"),
+	add_flag_bit(RESERVE_FLAG_REPLACE, "REPLACE"),
+	add_flag_bit(RESERVE_FLAG_ALL_NODES, "ALL_NODES"),
+	add_flag_bit(RESERVE_FLAG_PURGE_COMP, "PURGE_COMP"),
+	add_flag_bit(RESERVE_FLAG_WEEKDAY, "WEEKDAY"),
+	add_flag_bit(RESERVE_FLAG_NO_WEEKDAY, "NO_WEEKDAY"),
+	add_flag_bit(RESERVE_FLAG_WEEKEND, "WEEKEND"),
+	add_flag_bit(RESERVE_FLAG_NO_WEEKEND, "NO_WEEKEND"),
+	add_flag_bit(RESERVE_FLAG_FLEX, "FLEX"),
+	add_flag_bit(RESERVE_FLAG_NO_FLEX, "NO_FLEX"),
+	add_flag_bit(RESERVE_FLAG_DUR_PLUS, "DURATION_PLUS"),
+	add_flag_bit(RESERVE_FLAG_DUR_MINUS, "DURATION_MINUS"),
+	add_flag_bit(RESERVE_FLAG_NO_HOLD_JOBS, "NO_HOLD_JOBS_AFTER_END"),
+	add_flag_bit(RESERVE_FLAG_PURGE_COMP, "PURGE_COMP"),
+	add_flag_bit(RESERVE_FLAG_NO_PURGE_COMP, "NO_PURGE_COMP"),
+	add_flag_bit(RESERVE_FLAG_MAGNETIC, "MAGNETIC"),
+	add_flag_bit(RESERVE_FLAG_SKIP, "SKIP"),
+	add_flag_bit(RESERVE_FLAG_HOURLY, "HOURLY"),
+	add_flag_bit(RESERVE_FLAG_NO_HOURLY, "NO_HOURLY"),
+	add_flag_bit(RESERVE_REOCCURRING, "REOCCURRING"),
+};
+
+#define add_parse(mtype, field, path) \
+	add_parser(resv_core_spec_t, mtype, false, field, path, NEED_NONE)
+static const parser_t PARSER_ARRAY(RESERVATION_CORE_SPEC)[] = {
+	add_parse(STRING, node_name, "node"),
+	add_parse(STRING, core_id, "core"),
+};
+#undef add_parse
+
+#define add_cparse(mtype, path) \
+	add_complex_parser(reserve_info_t, mtype, false, path, NEED_NONE)
+#define add_parse(mtype, field, path) \
+	add_parser(reserve_info_t, mtype, false, field, path, NEED_NONE)
+#define add_skip(field) \
+	add_parser_skip(reserve_info_t, field)
+static const parser_t PARSER_ARRAY(RESERVATION_INFO)[] = {
+	add_parse(STRING, accounts, "accounts"),
+	add_parse(STRING, burst_buffer, "burst_buffer"),
+	add_parse(UINT32, core_cnt, "core_count"),
+	add_skip(core_spec_cnt), /* parsed by INFO_CORE_SPEC */
+	add_skip(core_spec), /* parsed by INFO_CORE_SPEC */
+	add_cparse(RESERVATION_INFO_CORE_SPEC, "core_specializations"),
+	add_parse(UINT64, end_time, "end_time"),
+	add_parse(STRING, features, "features"),
+	add_parse_bit_flag_array(reserve_info_t, RESERVATION_FLAGS, false, flags, "flags"),
+	add_parse(STRING, groups, "groups"),
+	add_parse(STRING, licenses, "licenses"),
+	add_parse(UINT32, max_start_delay, "max_start_delay"),
+	add_parse(STRING, name, "name"),
+	add_parse(UINT32, node_cnt, "node_count"),
+	add_skip(node_inx),
+	add_parse(STRING, node_list, "node_list"),
+	add_parse(STRING, partition, "partition"),
+	add_parse(UINT32_NO_VAL, purge_comp_time, "purge_completed/time"),
+	add_parse(UINT64, start_time, "start_time"),
+	add_parse(UINT32, resv_watts, "watts"),
+	add_parse(STRING, tres_str, "tres"),
+	add_parse(STRING, users, "users"),
+};
+#undef add_parse
+#undef add_cparse
+#undef add_skip
+
 #undef add_complex_parser
 #undef add_parse_enum_bool
 
@@ -4514,6 +4658,7 @@ static const parser_t parsers[] = {
 	addps(EXT_SENSORS_DATA_PTR, ext_sensors_data_t *, NEED_NONE),
 	addps(POWER_MGMT_DATA_PTR, power_mgmt_data_t *, NEED_NONE),
 	addps(NODE_STATES_NO_VAL, uint32_t, NEED_NONE),
+	addps(RESERVATION_INFO_ARRAY, reserve_info_t **, NEED_NONE),
 
 	/* Complex type parsers */
 	addpc(QOS_PREEMPT_LIST, slurmdb_qos_rec_t, NEED_QOS),
@@ -4544,6 +4689,8 @@ static const parser_t parsers[] = {
 	addpc(JOB_INFO_MSG, job_info_msg_t *, NEED_NONE),
 	addpc(STEP_INFO_MSG, job_step_info_response_msg_t *, NEED_TRES),
 	addpc(PARTITION_INFO_MSG, partition_info_msg_t, NEED_TRES),
+	addpc(RESERVATION_INFO_MSG, reserve_info_msg_t, NEED_NONE),
+	addpc(RESERVATION_INFO_CORE_SPEC, reserve_info_t, NEED_NONE),
 
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t),
@@ -4576,6 +4723,8 @@ static const parser_t parsers[] = {
 	addpa(ACCT_GATHER_ENERGY, acct_gather_energy_t),
 	addpa(EXT_SENSORS_DATA, ext_sensors_data_t),
 	addpa(POWER_MGMT_DATA, power_mgmt_data_t),
+	addpa(RESERVATION_INFO, reserve_info_t),
+	addpa(RESERVATION_CORE_SPEC, resv_core_spec_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, slurmdb_destroy_qos_rec, create_qos_rec_obj, NEED_QOS),
