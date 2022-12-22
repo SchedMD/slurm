@@ -3850,12 +3850,12 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 
 static const flag_bit_t PARSER_FLAG_ARRAY(NODE_STATES)[] = {
 	add_flag_equal(NODE_STATE_UNKNOWN, NODE_STATE_BASE, "UNKNOWN"),
-	add_flag_masked_bit(NODE_STATE_DOWN, NODE_STATE_BASE, "DOWN"),
-	add_flag_masked_bit(NODE_STATE_IDLE, NODE_STATE_BASE, "IDLE"),
-	add_flag_masked_bit(NODE_STATE_ALLOCATED, NODE_STATE_BASE, "ALLOCATED"),
-	add_flag_masked_bit(NODE_STATE_ERROR, NODE_STATE_BASE, "ERROR"),
-	add_flag_masked_bit(NODE_STATE_MIXED, NODE_STATE_BASE, "MIXED"),
-	add_flag_masked_bit(NODE_STATE_FUTURE, NODE_STATE_BASE, "FUTURE"),
+	add_flag_equal(NODE_STATE_DOWN, NODE_STATE_BASE, "DOWN"),
+	add_flag_equal(NODE_STATE_IDLE, NODE_STATE_BASE, "IDLE"),
+	add_flag_equal(NODE_STATE_ALLOCATED, NODE_STATE_BASE, "ALLOCATED"),
+	add_flag_equal(NODE_STATE_ERROR, NODE_STATE_BASE, "ERROR"),
+	add_flag_equal(NODE_STATE_MIXED, NODE_STATE_BASE, "MIXED"),
+	add_flag_equal(NODE_STATE_FUTURE, NODE_STATE_BASE, "FUTURE"),
 	add_flag_masked_bit(NODE_STATE_NET, NODE_STATE_FLAGS, "PERFCTRS"),
 	add_flag_masked_bit(NODE_STATE_RES, NODE_STATE_FLAGS, "RESERVED"),
 	add_flag_masked_bit(NODE_STATE_UNDRAIN, NODE_STATE_FLAGS, "UNDRAIN"),
