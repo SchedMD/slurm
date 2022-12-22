@@ -465,8 +465,70 @@ static int _find_power_sensor(void)
 	return rc;
 }
 
+/*
+ * _get_dcmi_power_reading reads current power in Watt from the ipmi context
+ * returns power in watts on success, a negative value on failure
+ */
+static int _get_dcmi_power_reading(uint16_t dcmi_mode)
+{
+	uint8_t mode;
+	uint8_t mode_attributes = 0;
+
+	uint64_t current_power;
+	fiid_obj_t dcmi_rs;
+	int ret;
+
+	if (!ipmi_dcmi_ctx) {
+		error("%s: IPMI DCMI context not initialized", __func__);
+		return SLURM_ERROR;
+	}
+
+	dcmi_rs = fiid_obj_create(tmpl_cmd_dcmi_get_power_reading_rs);
+	if (!dcmi_rs) {
+		error("%s: Failed creating DCMI fiid obj", __func__);
+		return SLURM_ERROR;
+	}
+
+	if (dcmi_mode == DCMI_MODE)
+		mode = IPMI_DCMI_POWER_READING_MODE_SYSTEM_POWER_STATISTICS;
+	else if (dcmi_mode == DCMI_ENH_MODE)
+		mode = IPMI_DCMI_POWER_READING_MODE_ENHANCED_SYSTEM_POWER_STATISTICS;
+	else {
+		error("%s: DCMI mode %d not supported: ", __func__, dcmi_mode);
+		return SLURM_ERROR;
+	}
+	ret = ipmi_cmd_dcmi_get_power_reading(ipmi_dcmi_ctx, mode,
+	                                      mode_attributes, dcmi_rs);
+	if (ret < 0) {
+		error("%s: get DCMI power reading failed", __func__);
+		fiid_obj_destroy(dcmi_rs);
+		return SLURM_ERROR;
+	}
+
+	ret = FIID_OBJ_GET(dcmi_rs, "current_power", &current_power);
+	fiid_obj_destroy(dcmi_rs);
+	if (ret < 0) {
+		error("%s: DCMI FIID_OBJ_GET failed", __func__);
+		return SLURM_ERROR;
+	}
+
+	return current_power;
+}
+
 static int _read_ipmi_dcmi_values(void)
 {
+	int i, dcmi_res;
+
+	for (i = 0; i < sensors_len; i++) {
+		if ((sensors[i].id != DCMI_MODE) &&
+		    (sensors[i].id != DCMI_ENH_MODE))
+			continue;
+		dcmi_res = _get_dcmi_power_reading(sensors[i].id);
+		if (dcmi_res < 0)
+			return SLURM_ERROR;
+		sensors[i].last_update_watt = dcmi_res;
+	}
+
 	return SLURM_SUCCESS;
 }
 
