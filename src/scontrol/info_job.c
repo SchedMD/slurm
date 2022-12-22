@@ -468,7 +468,7 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 	if (job_step_info_ptr->job_step_count) {
 		int s = 0;
 		steps = xcalloc(job_step_info_ptr->job_step_count + 1,
-				sizeof(steps));
+				sizeof(*steps));
 
 		for (int i = 0; i < job_step_info_ptr->job_step_count; i++) {
 			job_step_info_t *step =
