@@ -1658,10 +1658,7 @@ _send_io_init_msg(int sock, srun_info_t *srun, stepd_step_rec_t *step, bool init
 	msg.io_key_len = srun->key->len;
 	memcpy(msg.io_key, srun->key->data, srun->key->len);
 	msg.nodeid = step->nodeid;
-
-	/* 2 versions after 21.08 this if can be removed */
-	if (srun->protocol_version >= SLURM_MIN_PROTOCOL_VERSION)
-		msg.version = SLURM_PROTOCOL_VERSION;
+	msg.version = srun->protocol_version;
 
 	/*
 	 * The initial message does not need the node_offset it is needed for

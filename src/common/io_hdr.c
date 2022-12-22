@@ -157,7 +157,7 @@ extern int io_init_msg_validate(io_init_msg_t *msg, const char *sig,
 
 static int io_init_msg_pack(io_init_msg_t *hdr, buf_t *buffer)
 {
-	if (hdr->version == SLURM_PROTOCOL_VERSION) {
+	if (hdr->version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint32_t top_offset, tail_offset;
 		uint32_t len = 0;
 
