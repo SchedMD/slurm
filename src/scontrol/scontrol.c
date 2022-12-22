@@ -766,7 +766,7 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 
 static void _setdebug(int argc, char **argv)
 {
-	int level = -1, index = 0, error_code;
+	int level = -1, index = 0;
 	char *endptr;
 	char *levels[] = {
 		"quiet", "fatal", "error", "info", "verbose", "debug",
@@ -808,8 +808,7 @@ static void _setdebug(int argc, char **argv)
 	}
 
 	if (argc == 2) {
-		error_code = slurm_set_debug_level(level);
-		if (error_code) {
+		if (slurm_set_debug_level(level)) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				slurm_perror("slurm_set_debug_level error");
@@ -831,8 +830,7 @@ static void _setdebug(int argc, char **argv)
 		if ((nodes = strchr(argv[2], '=')))
 			nodes++;
 
-		error_code = slurm_set_slurmd_debug_level(nodes, level);
-		if (error_code) {
+		if (slurm_set_slurmd_debug_level(nodes, level)) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr, "Failed to change debug level on one or more nodes.\n");
@@ -842,7 +840,6 @@ static void _setdebug(int argc, char **argv)
 
 static void _setdebugflags(int argc, char **argv)
 {
-	int error_code;
 	char *tag = argv[0];
 	int i, mode = 0;
 	uint64_t debug_flags_plus = 0;
@@ -889,9 +886,7 @@ static void _setdebugflags(int argc, char **argv)
 			fprintf(stderr, "Usage: setdebugflags [+|-]NAME\n");
 		}
 	} else {
-		error_code = slurm_set_debugflags(debug_flags_plus,
-						  debug_flags_minus);
-		if (error_code) {
+		if (slurm_set_debugflags(debug_flags_plus, debug_flags_minus)) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				slurm_perror("slurm_set_debug_flags error");
