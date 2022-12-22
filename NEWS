@@ -239,6 +239,7 @@ documents those changes that are of interest to users and administrators.
     This allows autofs to work with the job_container/tmpfs plugin when enabled.
  -- Fix incorrect min node estimation for pending jobs as displayed by client
     commands (e.g. squeue, scontrol show job).
+ -- Add support for DCMI power readings in IPMI plugin.
 
 * Changes in Slurm 22.05.8
 ==========================

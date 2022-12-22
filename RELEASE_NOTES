@@ -83,6 +83,7 @@ HIGHLIGHTS
  -- Add SLURM_JOB_START_TIME and SLURM_JOB_END_TIME environment variables.
  -- Add SuspendExcStates option to slurm.conf to avoid suspending/powering down
     specific node states.
+ -- Add support for DCMI power readings in IPMI plugin.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -111,6 +112,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- helpers.conf - Allow many features to one helper script.
  -- job_container/tmpfs - Add "Shared" option to support shared namespaces.
     This allows autofs to work with the job_container/tmpfs plugin when enabled.
+ -- acct_gather.conf - Added EnergyIPMIPowerSensors=Node=DCMI and
+    Node=DCMI_ENHANCED.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
