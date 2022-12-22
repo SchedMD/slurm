@@ -159,6 +159,7 @@ typedef enum {
 	DATA_PARSER_NODE_ARRAY, /* node_info_t** (NULL terminated) */
 	DATA_PARSER_NODES, /* node_info_msg_t */
 	DATA_PARSER_NODE_STATES, /* uint32_t & NODE_STATE_* */
+	DATA_PARSER_NODE_STATES_NO_VAL, /* uint32_t & NODE_STATE_* or NO_VAL */
 	DATA_PARSER_NODE_SELECT_ALLOC_MEMORY, /* node_info_t->select_nodeinfo  */
 	DATA_PARSER_NODE_SELECT_ALLOC_CPUS, /* node_info_t->select_nodeinfo  */
 	DATA_PARSER_NODE_SELECT_ALLOC_IDLE_CPUS, /* node_info_t->select_nodeinfo  */
