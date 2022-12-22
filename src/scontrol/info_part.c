@@ -143,4 +143,6 @@ extern void scontrol_print_part(char *partition_name, int argc, char **argv)
 		} else if (quiet_flag != 1)
 			printf ("No partitions in the system\n");
 	}
+
+	xfree(parts);
 }
