@@ -205,6 +205,7 @@ documents those changes that are of interest to users and administrators.
  -- Add --tres-per-task to salloc/sbatch/srun.
  -- Add configurable job requeue limit parameter - MaxBatchRequeue - in
     slurm.conf to permit changes from the old hard-coded value of 5.
+ -- Add a new "nodes=" argument to "scontrol setdebugflags" as well.
 
 * Changes in Slurm 22.05.8
 ==========================

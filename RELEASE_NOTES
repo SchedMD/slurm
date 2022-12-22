@@ -115,6 +115,7 @@ COMMAND CHANGES (see man pages for details)
  -- scontrol - Add ResumeAfter=<secs> option to "scontrol update nodename=".
  -- Add a new "nodes=" argument to scontrol setdebug to allow the debug level
     on the slurmd processes to be temporarily altered.
+ -- Add a new "nodes=" argument to "scontrol setdebugflags" as well.
  -- Make it so scrontab prints client-side the job_submit() err_msg (which can
     be set i.e. by using the log_user() function for the lua plugin).
  -- scontrol - Reservations will not be allowed to have STATIC_ALLOC or MAINT

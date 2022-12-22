@@ -383,6 +383,14 @@ contents of the slurm.conf configuration file or the \fBSLURM_DEBUG_FLAGS\fR
 environment variable. The environment variable takes precedence over the
 setting in the slurm.conf.
 .IP
+.RS
+.TP
+\fBnodes\fR=<\fINodeName\fR>
+The argument is optional and if used the request to change debug level
+is sent to slurmd instead of slurmctld. A node range expression may be
+used for NodeName.
+.RE
+.IP
 
 .TP
 \fBshow\fR <\fIENTITY\fR>[=<\fIID\fR>] or <\fIENTITY\fR> [<\fIID\fR>]
