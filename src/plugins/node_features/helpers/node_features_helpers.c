@@ -413,12 +413,6 @@ static int _read_config_file(void)
 	if (_handle_config_features((plugin_feature_t **)features, count))
 		goto fail;
 
-	if (!list_count(helper_features)) {
-		error("no \"Feature\" entry in configuration file %s",
-		      confpath);
-		goto fail;
-	}
-
 	if (s_p_get_string(&tmp_str, "AllowUserBoot", tbl)) {
 		_make_uid_array(tmp_str);
 		xfree(tmp_str);
