@@ -32,6 +32,15 @@ source ./globals
 set timeout     60
 set jobid1      0
 set jobid2      0
+set user_name     [get_my_user_name]
+set username_clip [string range $user_name 0 7]
+
+#
+# Remove the sprio format variable if found
+#
+if {[info exists env(SPRIO_FORMAT)]} {
+	unset env(SPRIO_FORMAT)
+}
 
 #
 # Check accounting config and bail if not found.
@@ -42,13 +51,9 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 if {[get_config_param "PriorityType"] ne "priority/multifactor"} {
 	skip "This test can't be run without a usable PriorityType"
 }
-
-#
-# This test needs to be modified to use the core counts rather than CPU counts
-#
-set select_type_params [get_select_type_params ""]
-if { [string first "CR_ONE_TASK_PER_CORE" $select_type_params] != -1 } {
-	skip "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
+set node [get_nodes_by_request "-n1 -N1 --exclusive"]
+if {[llength node] != 1} {
+	skip "This test needs to submit jobs to 1 exclusive node"
 }
 
 proc cleanup {} {
@@ -60,22 +65,11 @@ proc cleanup {} {
 #
 # Start a group of jobs
 #
-set cpu_cnt [get_total_cpus]
-set jobid1 [submit_job "--output=/dev/null --error=/dev/null -n $cpu_cnt --exclusive --wrap '$bin_sleep 600'"]
-set jobid2 [submit_job "--output=/dev/null --error=/dev/null -n $cpu_cnt --exclusive --wrap '$bin_sleep 600'"]
+set jobid1 [submit_job "--output=/dev/null --error=/dev/null -w$node --exclusive --wrap '$bin_sleep 600'"]
+wait_for_job -fail $jobid1 "RUNNING"
 
-#
-# Collect uid
-#
-set user_name [get_my_user_name]
-set username_clip [string range $user_name 0 7]
-
-#
-# Remove the sprio format variable if found
-#
-if {[info exists env(SPRIO_FORMAT)]} {
-    unset env(SPRIO_FORMAT)
-}
+set jobid2 [submit_job "--output=/dev/null --error=/dev/null -w$node --exclusive --wrap '$bin_sleep 600'"]
+wait_for_job -fail $jobid2 "PENDING"
 
 #
 # Start testing sprio options and arguments
