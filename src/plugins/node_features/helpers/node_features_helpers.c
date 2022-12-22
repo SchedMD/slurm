@@ -295,11 +295,11 @@ static int _parse_exclusives(void **data, slurm_parser_enum_t type,
 }
 
 static s_p_options_t conf_options[] = {
-	{"Feature", S_P_ARRAY, _parse_feature, (ListDelF) _feature_destroy},
+	{"AllowUserBoot", S_P_STRING},
 	{"BootTime", S_P_UINT32},
 	{"ExecTime", S_P_UINT32},
+	{"Feature", S_P_ARRAY, _parse_feature, (ListDelF) _feature_destroy},
 	{"MutuallyExclusive", S_P_ARRAY, _parse_exclusives, xfree_ptr},
-	{"AllowUserBoot", S_P_STRING},
 	{NULL},
 };
 
