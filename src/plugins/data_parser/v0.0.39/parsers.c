@@ -2995,6 +2995,26 @@ static int DUMP_FUNC(NODE_ARRAY)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+PARSE_DISABLED(PARTITION_INFO_MSG)
+
+static int DUMP_FUNC(PARTITION_INFO_MSG)(const parser_t *const parser,
+					 void *obj, data_t *dst, args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	partition_info_msg_t *msg = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	data_set_list(dst);
+
+	for (uint32_t i = 0; !rc && (i < msg->record_count); ++i)
+		rc = DUMP(PARTITION_INFO, msg->partition_array[i],
+			  data_list_append(dst), args);
+
+	return rc;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -4354,6 +4374,7 @@ static const parser_t parsers[] = {
 	addpc(JOB_RES_NODES, job_resources_t, NEED_NONE),
 	addpc(JOB_INFO_MSG, job_info_msg_t *, NEED_NONE),
 	addpc(STEP_INFO_MSG, job_step_info_response_msg_t *, NEED_TRES),
+	addpc(PARTITION_INFO_MSG, partition_info_msg_t, NEED_TRES),
 
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t),

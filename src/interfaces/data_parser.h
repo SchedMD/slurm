@@ -187,6 +187,7 @@ typedef enum {
 	DATA_PARSER_POWER_FLAGS, /* uint8_t & SLURM_POWER_FLAGS_* */
 	DATA_PARSER_PARTITION_INFO, /* partition_info_t */
 	DATA_PARSER_PARTITION_INFO_PTR, /* partition_info_t* */
+	DATA_PARSER_PARTITION_INFO_MSG, /* partition_info_msg_t */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
