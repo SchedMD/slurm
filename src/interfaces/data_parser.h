@@ -181,6 +181,8 @@ typedef enum {
 	DATA_PARSER_JOB_MEM_PER_CPU, /* uint64_t & MEM_PER_CPU */
 	DATA_PARSER_JOB_MEM_PER_NODE, /* uint64_t & ~MEM_PER_CPU */
 	DATA_PARSER_ACCT_GATHER_PROFILE, /* uint32_t - ACCT_GATHER_PROFILE_* */
+	DATA_PARSER_ACCT_GATHER_ENERGY, /* acct_gather_energy_t */
+	DATA_PARSER_ACCT_GATHER_ENERGY_PTR, /* acct_gather_energy_t* */
 	DATA_PARSER_JOB_SHARED, /* uint16_t - JOB_SHARED_* */
 	DATA_PARSER_ALLOCATED_CORES, /* uint32_t if slurm_conf.select_type_param & (CR_CORE|CR_SOCKET) */
 	DATA_PARSER_ALLOCATED_CPUS, /* uint32_t if slurm_conf.select_type_param & CR_CPU */
@@ -190,6 +192,10 @@ typedef enum {
 	DATA_PARSER_PARTITION_INFO_PTR, /* partition_info_t* */
 	DATA_PARSER_PARTITION_INFO_MSG, /* partition_info_msg_t */
 	DATA_PARSER_PARTITION_INFO_ARRAY, /* partition_info_t** */
+	DATA_PARSER_EXT_SENSORS_DATA, /* ext_sensors_data_t */
+	DATA_PARSER_EXT_SENSORS_DATA_PTR, /* ext_sensors_data_t* */
+	DATA_PARSER_POWER_MGMT_DATA, /* power_mgmt_data_t */
+	DATA_PARSER_POWER_MGMT_DATA_PTR, /* power_mgmt_data_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

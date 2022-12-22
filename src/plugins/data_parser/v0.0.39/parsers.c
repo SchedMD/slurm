@@ -3056,6 +3056,55 @@ static int DUMP_FUNC(STEP_INFO_ARRAY)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+PARSE_DISABLED(ACCT_GATHER_ENERGY_PTR)
+
+static int DUMP_FUNC(ACCT_GATHER_ENERGY_PTR)(const parser_t *const parser,
+					     void *obj, data_t *dst,
+					     args_t *args)
+{
+	acct_gather_energy_t **ptr = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	if (*ptr)
+		return DUMP(ACCT_GATHER_ENERGY, **ptr, dst, args);
+
+	return SLURM_SUCCESS;
+}
+
+PARSE_DISABLED(EXT_SENSORS_DATA_PTR)
+
+static int DUMP_FUNC(EXT_SENSORS_DATA_PTR)(const parser_t *const parser,
+					   void *obj, data_t *dst, args_t *args)
+{
+	ext_sensors_data_t **ptr = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	if (*ptr)
+		return DUMP(EXT_SENSORS_DATA, **ptr, dst, args);
+
+	return SLURM_SUCCESS;
+}
+
+PARSE_DISABLED(POWER_MGMT_DATA_PTR)
+
+static int DUMP_FUNC(POWER_MGMT_DATA_PTR)(const parser_t *const parser,
+					  void *obj, data_t *dst, args_t *args)
+{
+	power_mgmt_data_t **ptr = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	if (*ptr)
+		return DUMP(POWER_MGMT_DATA, **ptr, dst, args);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -3830,8 +3879,6 @@ static const flag_bit_t PARSER_FLAG_ARRAY(NODE_STATES)[] = {
 	add_flag_masked_bit(NODE_STATE_DYNAMIC_NORM, NODE_STATE_FLAGS, "DYNAMIC_NORM"),
 };
 
-#define add_skip(field) \
-	add_parser_skip(node_info_t, field)
 #define add_parse(mtype, field, path) \
 	add_parser(node_info_t, mtype, false, field, path, NEED_NONE)
 #define add_cparse(mtype, path) \
@@ -3841,27 +3888,27 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, bcast_address, "burstbuffer_network_address"),
 	add_parse(UINT16, boards, "boards"),
 	add_parse(UINT64, boot_time, "boot_time"),
-	add_skip(cluster_name), /* intentionally omitted */
+	add_parse(STRING, cluster_name, "cluster_name"),
 	add_parse(UINT16, cores, "cores"),
-	add_skip(core_spec_cnt), /* intentionally omitted */
+	add_parse(UINT16, core_spec_cnt, "specialized_cores"),
 	add_parse(UINT32, cpu_bind, "cpu_binding"),
 	add_parse(UINT32, cpu_load, "cpu_load"),
 	add_parse(UINT64, free_mem, "free_mem"),
 	add_parse(UINT16, cpus, "cpus"),
-	add_skip(cpus_efctv),
-	add_skip(cpu_spec_list), /* intentionally omitted */
-	add_skip(energy), /* intentionally omitted */
-	add_skip(ext_sensors), /* intentionally omitted */
-	add_skip(power), /* intentionally omitted */
+	add_parse(UINT16, cpus_efctv, "effective_cpus"),
+	add_parse(STRING, cpu_spec_list, "specialized_cpus"),
+	add_parse(ACCT_GATHER_ENERGY_PTR, energy, "energy"),
+	add_parse(EXT_SENSORS_DATA_PTR, ext_sensors, "external_sensors"),
 	add_parse(STRING, extra, "extra"),
+	add_parse(POWER_MGMT_DATA_PTR, power, "power"),
 	add_parse(STRING, features, "features"),
 	add_parse(STRING, features_act, "active_features"),
 	add_parse(STRING, gres, "gres"),
 	add_parse(STRING, gres_drain, "gres_drained"),
 	add_parse(STRING, gres_used, "gres_used"),
-	add_skip(last_busy),
+	add_parse(UINT64, last_busy, "last_busy"),
 	add_parse(STRING, mcs_label, "mcs_label"),
-	add_skip(mem_spec_limit), /* intentionally omitted */
+	add_parse(UINT64, mem_spec_limit, "specialized_memory"),
 	add_parse(STRING, name, "name"),
 	add_parse_bit_flag_array(node_info_t, NODE_STATES, false, next_state, "next_state_after_reboot"),
 	add_parse(STRING, node_addr, "address"),
@@ -3876,6 +3923,8 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, reason, "reason"),
 	add_parse(UINT64, reason_time, "reason_changed_at"),
 	add_parse(USER_ID, reason_uid, "reason_set_by_user"),
+	add_parse(UINT64, resume_after, "resume_after"),
+	add_parse(STRING, resv_name, "reservation"),
 	add_cparse(NODE_SELECT_ALLOC_MEMORY, "alloc_memory"),
 	add_cparse(NODE_SELECT_ALLOC_CPUS, "alloc_cpus"),
 	add_cparse(NODE_SELECT_ALLOC_IDLE_CPUS, "alloc_idle_cpus"),
@@ -3891,7 +3940,6 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 };
 #undef add_parse
 #undef add_cparse
-#undef add_skip
 
 #define add_parse(mtype, field, path) \
 	add_parser(slurm_license_info_t, mtype, false, field, path, NEED_NONE)
@@ -4273,6 +4321,43 @@ static const parser_t PARSER_ARRAY(SINFO_DATA)[] = {
 #undef add_parse
 #undef add_skip
 
+#define add_parse(mtype, field, path) \
+	add_parser(acct_gather_energy_t, mtype, false, field, path, NEED_NONE)
+static const parser_t PARSER_ARRAY(ACCT_GATHER_ENERGY)[] = {
+	add_parse(UINT32, ave_watts, "average_watts"),
+	add_parse(UINT64, base_consumed_energy, "base_consumed_energy"),
+	add_parse(UINT64, consumed_energy, "consumed_energy"),
+	add_parse(UINT32, current_watts, "current_watts"),
+	add_parse(UINT64, previous_consumed_energy, "previous_consumed_energy"),
+	add_parse(UINT64, poll_time, "last_collected"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path) \
+	add_parser(ext_sensors_data_t, mtype, false, field, path, NEED_NONE)
+static const parser_t PARSER_ARRAY(EXT_SENSORS_DATA)[] = {
+	add_parse(UINT64, consumed_energy, "consumed_energy"),
+	add_parse(UINT32, temperature, "temperature"),
+	add_parse(UINT64, energy_update_time, "energy_update_time"),
+	add_parse(UINT32, current_watts, "current_watts"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path) \
+	add_parser(power_mgmt_data_t, mtype, false, field, path, NEED_NONE)
+static const parser_t PARSER_ARRAY(POWER_MGMT_DATA)[] = {
+	add_parse(UINT32, cap_watts, "maximum_watts"),
+	add_parse(UINT32, current_watts, "current_watts"),
+	add_parse(UINT64, joule_counter, "total_energy"),
+	add_parse(UINT32, new_cap_watts, "new_maximum_watts"),
+	add_parse(UINT32, max_watts, "peak_watts"),
+	add_parse(UINT32, min_watts, "lowest_watts"),
+	add_parse(UINT64, new_job_time, "new_job_time"),
+	add_parse(UINT16, state, "state"),
+	add_parse(UINT64, time_usec, "time_start_day"),
+};
+#undef add_parse
+
 #undef add_complex_parser
 #undef add_parse_enum_bool
 
@@ -4388,6 +4473,9 @@ static const parser_t parsers[] = {
 	addps(NODE_ARRAY, node_info_t **, NEED_NONE),
 	addps(PARTITION_INFO_ARRAY, partition_info_t **, NEED_NONE),
 	addps(STEP_INFO_ARRAY, job_step_info_t **, NEED_NONE),
+	addps(ACCT_GATHER_ENERGY_PTR, acct_gather_energy_t *, NEED_NONE),
+	addps(EXT_SENSORS_DATA_PTR, ext_sensors_data_t *, NEED_NONE),
+	addps(POWER_MGMT_DATA_PTR, power_mgmt_data_t *, NEED_NONE),
 
 	/* Complex type parsers */
 	addpc(QOS_PREEMPT_LIST, slurmdb_qos_rec_t, NEED_QOS),
@@ -4447,6 +4535,9 @@ static const parser_t parsers[] = {
 	addpa(STEP_INFO, job_step_info_t),
 	addpa(PARTITION_INFO, partition_info_t),
 	addpa(SINFO_DATA, sinfo_data_t),
+	addpa(ACCT_GATHER_ENERGY, acct_gather_energy_t),
+	addpa(EXT_SENSORS_DATA, ext_sensors_data_t),
+	addpa(POWER_MGMT_DATA, power_mgmt_data_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, slurmdb_destroy_qos_rec, create_qos_rec_obj, NEED_QOS),
