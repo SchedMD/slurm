@@ -50,6 +50,19 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmd/slurmd/slurmd.h"
+
+/*
+ * These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+extern slurmd_conf_t *conf __attribute__((weak_import));
+#else
+slurmd_conf_t *conf = NULL;
+#endif
+
 const char plugin_name[] = "node_features helpers plugin";
 const char plugin_type[] = "node_features/helpers";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
@@ -65,6 +78,12 @@ typedef struct {
 	const char *name;
 	const char *helper;
 } plugin_feature_t;
+
+static s_p_options_t feature_options[] = {
+	 {"Feature", S_P_STRING},
+	 {"Helper", S_P_STRING},
+	 {NULL},
+};
 
 static int _cmp_str(void *x, void *key)
 {
@@ -255,34 +274,63 @@ static int _parse_feature(void **data, slurm_parser_enum_t type,
 			  const char *key, const char *name,
 			  const char *line, char **leftover)
 {
-	static s_p_options_t feature_options[] = {
-		 {"Helper", S_P_STRING},
-		 {NULL},
-	};
 	s_p_hashtbl_t *tbl = NULL;
 	char *path = NULL;
 	int rc = -1;
-
-	if (!_is_feature_valid(name)) {
-		slurm_seterrno(ESLURM_INVALID_FEATURE);
-		goto fail;
-	}
+	char *tmp_name;
 
 	tbl = s_p_hashtbl_create(feature_options);
 	if (!s_p_parse_line(tbl, *leftover, leftover))
 		goto fail;
 
+	if (name) {
+		tmp_name = xstrdup(name);
+	} else if (!s_p_get_string(&tmp_name, "Feature", tbl)) {
+			error("Invalid FEATURE data, no type Feature (%s)", line);
+			goto fail;
+	}
+
+	if (!_is_feature_valid(tmp_name)) {
+		slurm_seterrno(ESLURM_INVALID_FEATURE);
+		goto fail;
+	}
+
 	s_p_get_string(&path, "Helper", tbl);
 
 	/* In slurmctld context, we can have path == NULL */
-	*data = _feature_create(name, path);
+	*data = _feature_create(tmp_name, path);
 	xfree(path);
 
 	rc = 1;
 
 fail:
+	xfree(tmp_name);
 	s_p_hashtbl_destroy(tbl);
 	return rc;
+}
+
+static int _parse_feature_node(void **data, slurm_parser_enum_t type, const char *key,
+			       const char *name, const char *line, char **leftover)
+{
+	s_p_hashtbl_t *tbl = NULL;
+
+	if (!running_in_slurmctld() && conf->node_name && name) {
+		bool match = false;
+		hostlist_t hl;
+		hl = hostlist_create(name);
+		if (hl) {
+			match = (hostlist_find(hl, conf->node_name) >= 0);
+			hostlist_destroy(hl);
+		}
+		if (!match) {
+			debug("skipping Feature for NodeName=%s %s", name, line);
+			tbl = s_p_hashtbl_create(feature_options);
+			s_p_parse_line(tbl, *leftover, leftover);
+			s_p_hashtbl_destroy(tbl);
+			return 0;
+		}
+	}
+	return _parse_feature(data, type, key, NULL, line, leftover);
 }
 
 static int _parse_exclusives(void **data, slurm_parser_enum_t type,
@@ -300,8 +348,21 @@ static s_p_options_t conf_options[] = {
 	{"ExecTime", S_P_UINT32},
 	{"Feature", S_P_ARRAY, _parse_feature, (ListDelF) _feature_destroy},
 	{"MutuallyExclusive", S_P_ARRAY, _parse_exclusives, xfree_ptr},
+	{"NodeName", S_P_ARRAY, _parse_feature_node,
+		(ListDelF) _feature_destroy},
 	{NULL},
 };
+
+static int _handle_config_features(plugin_feature_t **features, int count)
+{
+	for (int i = 0; i < count; ++i) {
+		const plugin_feature_t *feature = features[i];
+		if (_feature_register(feature->name, feature->helper))
+			return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
 
 static int _read_config_file(void)
 {
@@ -331,7 +392,15 @@ static int _read_config_file(void)
 	}
 	xfree(confpath);
 
-	if (!s_p_get_array(&features, &count, "Feature", tbl)) {
+	s_p_get_array(&features, &count, "Feature", tbl);
+	if (_handle_config_features((plugin_feature_t **)features, count))
+		goto fail;
+
+	s_p_get_array(&features, &count, "NodeName", tbl);
+	if (_handle_config_features((plugin_feature_t **)features, count))
+		goto fail;
+
+	if (!list_count(helper_features)) {
 		error("no \"Feature\" entry in configuration file %s",
 		      confpath);
 		goto fail;
@@ -340,12 +409,6 @@ static int _read_config_file(void)
 	if (s_p_get_string(&tmp_str, "AllowUserBoot", tbl)) {
 		_make_uid_array(tmp_str);
 		xfree(tmp_str);
-	}
-
-	for (int i = 0; i < count; ++i) {
-		const plugin_feature_t *feature = features[i];
-		if (_feature_register(feature->name, feature->helper))
-			goto fail;
 	}
 
 	if (s_p_get_array(&exclusives, &count, "MutuallyExclusive", tbl) != 0) {
