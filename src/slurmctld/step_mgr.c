@@ -4770,64 +4770,6 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	if (step_ptr == NULL)
 		goto unpack_error;
 
-	/*
-	 * This is only needed for versions older than 21.08 since
-	 * memory_allocated didn't exist before then.
-	 * This can be removed 2 versions after 21.08.
-	 */
-	if (!memory_allocated &&
-	    step_layout && step_layout->node_list &&
-	    job_ptr->job_resrcs && job_ptr->job_resrcs->nodes &&
-	    pn_min_memory && _is_mem_resv() &&
-	    (node_name2bitmap(
-		    step_layout->node_list, false,
-		    &step_ptr->step_node_bitmap) == SLURM_SUCCESS) &&
-	    step_ptr->step_node_bitmap  &&
-	    (node_name2bitmap(
-		    job_ptr->job_resrcs->nodes, false,
-		    &job_ptr->job_resrcs->node_bitmap) == SLURM_SUCCESS) &&
-	    job_ptr->job_resrcs->node_bitmap) {
-		int job_node_inx = -1, step_node_inx = -1;
-		job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
-		uint64_t mem_use;
-		if (!bit_set_count(job_resrcs_ptr->node_bitmap))
-			goto unpack_error;
-
-		memory_allocated = xcalloc(step_layout->node_cnt,
-					   sizeof(uint64_t));
-		for (int i = 0;
-		     next_node_bitmap(job_resrcs_ptr->node_bitmap, &i); i++) {
-			job_node_inx++;
-			if (!bit_test(step_ptr->step_node_bitmap, i))
-				continue;
-			step_node_inx++;
-			if (job_node_inx >= job_resrcs_ptr->nhosts)
-				fatal("%s: node index bad", __func__);
-
-			/*
-			 * If whole allocate all cpus here instead of just the
-			 * ones requested
-			 */
-			mem_use = pn_min_memory;
-			if (mem_use & MEM_PER_CPU) {
-				int cpus_alloc;
-				mem_use &= (~MEM_PER_CPU);
-
-				if (flags & SSF_WHOLE)
-					cpus_alloc = job_resrcs_ptr->cpus
-						[job_node_inx];
-				else
-					cpus_alloc = step_layout->tasks
-						[step_node_inx] *
-						cpus_per_task;
-
-				mem_use *= cpus_alloc;
-			} else
-				mem_use = pn_min_memory;
-
-			memory_allocated[step_node_inx] = mem_use;
-		}
-	}
 	/* set new values */
 	memcpy(&step_ptr->step_id, &step_id, sizeof(step_ptr->step_id));
 
