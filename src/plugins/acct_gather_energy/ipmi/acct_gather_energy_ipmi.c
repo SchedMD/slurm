@@ -68,6 +68,7 @@
 /*
  * freeipmi includes for the lib
  */
+#include <freeipmi/freeipmi.h>
 #include <ipmi_monitoring.h>
 #include <ipmi_monitoring_bitmasks.h>
 
@@ -173,6 +174,11 @@ static pthread_cond_t launch_cond = PTHREAD_COND_INITIALIZER;
 pthread_t thread_ipmi_id_launcher = 0;
 pthread_t thread_ipmi_id_run = 0;
 
+/*
+ * DCMI context cannot be reused between threads and this plugin can be called
+ * from different slurmd threads, so we need the __thread specifier.
+ */
+__thread ipmi_ctx_t ipmi_dcmi_ctx = NULL;
 static int dcmi_cnt = 0;
 
 static int _read_ipmi_dcmi_values(void);
@@ -201,6 +207,46 @@ static uint64_t _get_additional_consumption(time_t time0, time_t time1,
 					    uint32_t watt0, uint32_t watt1)
 {
 	return (uint64_t) ((time1 - time0)*(watt1 + watt0)/2);
+}
+
+/*
+ * _open_dcmi_context opens the inband ipmi device for DCMI power reading
+ */
+static int _open_dcmi_context(void)
+{
+	int ret;
+
+	if (!dcmi_cnt)
+		return SLURM_SUCCESS;
+
+	ipmi_dcmi_ctx = ipmi_ctx_create();
+	if (!ipmi_dcmi_ctx) {
+		error("Failed creating dcmi ipmi context");
+		return SLURM_ERROR;
+	}
+
+	ret = ipmi_ctx_find_inband(ipmi_dcmi_ctx,
+	                           NULL,
+	                           ipmi_config.disable_auto_probe,
+	                           ipmi_config.driver_address,
+	                           ipmi_config.register_spacing,
+	                           ipmi_config.driver_device,
+	                           ipmi_config.workaround_flags,
+	                           IPMI_FLAGS_DEFAULT);
+	if (ret < 0) {
+		error("Error finding inband dcmi ipmi device: %s",
+		      ipmi_ctx_errormsg(ipmi_dcmi_ctx));
+		ipmi_ctx_destroy(ipmi_dcmi_ctx);
+		ipmi_dcmi_ctx = NULL;
+		return SLURM_ERROR;
+	} else if (!ret) {
+		error("No inband dcmi ipmi device found");
+		ipmi_ctx_destroy(ipmi_dcmi_ctx);
+		ipmi_dcmi_ctx = NULL;
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -294,6 +340,9 @@ static int _init_ipmi_config (void)
 	/* if (slurm_ipmi_conf.entity_sensor_names) */
 	/* 	sensor_reading_flags |= */
 	/* 		IPMI_MONITORING_SENSOR_READING_FLAGS_ENTITY_SENSOR_NAMES; */
+
+	if (_open_dcmi_context() != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
@@ -962,6 +1011,13 @@ extern int fini(void)
 		ipmi_monitoring_ctx_destroy(ipmi_ctx);
 		ipmi_ctx = NULL;
 	}
+
+	if (ipmi_dcmi_ctx) {
+		ipmi_ctx_close(ipmi_dcmi_ctx);
+		ipmi_ctx_destroy(ipmi_dcmi_ctx);
+		ipmi_dcmi_ctx = NULL;
+	}
+
 	reset_slurm_ipmi_conf(&slurm_ipmi_conf);
 
 	slurm_mutex_unlock(&ipmi_mutex);
