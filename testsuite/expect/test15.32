@@ -30,7 +30,7 @@ set file_in        "$test_dir/input"
 set test_salloc    "$test_dir/test_salloc"
 set job_id         0
 set authorized     1
-set part_name      "QA_TEST"
+set part_name      $test_name
 
 proc cleanup {} {
 	global job_id scontrol part_name
@@ -46,29 +46,7 @@ if {![is_super_user]} {
 #
 # Confirm the partition name does not already exist
 #
-set found -1
-spawn $scontrol -a show part $part_name
-expect {
-	-re "not found" {
-		log_debug "This error was expected, no worries"
-		set found 0
-		exp_continue
-	}
-	-re "PartitionName" {
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$found == -1} {
-	fail "scontrol output format error"
-}
-if {$found == 1} {
+if {[dict exists [get_partitions] $part_name]} {
 	fail "Partition ($part_name) already exists"
 }
 
