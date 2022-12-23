@@ -203,6 +203,7 @@ static bool bf_hetjob_immediate = false;
 static uint16_t bf_hetjob_prio = 0;
 static bool bf_one_resv_per_job = false;
 static uint32_t job_start_cnt = 0;
+static uint32_t job_test_cnt = 0;
 static int max_backfill_job_cnt = DEF_BF_MAX_JOB_TEST;
 static int max_backfill_job_per_assoc = 0;
 static int max_backfill_job_per_part = 0;
@@ -1753,6 +1754,7 @@ static void _attempt_backfill(void)
 
 	bf_sleep_usec = 0;
 	job_start_cnt = 0;
+	job_test_cnt = 0;
 
 	if (!fed_mgr_sibs_synced()) {
 		info("returning, federation siblings not synced yet");
@@ -1878,7 +1880,7 @@ static void _attempt_backfill(void)
 			break;
 		}
 
-		if (slurmctld_diag_stats.bf_last_depth_try >=
+		if (job_test_cnt >=
 		    max_backfill_job_cnt) {
 			log_flag(BACKFILL, "bf_max_job_test: limit of %d reached",
 				 max_backfill_job_cnt);
@@ -2473,6 +2475,7 @@ next_task:
 
 		if (!already_counted) {
 			slurmctld_diag_stats.bf_last_depth_try++;
+			job_test_cnt++;
 			already_counted = true;
 		}
 		if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL_MAP)
