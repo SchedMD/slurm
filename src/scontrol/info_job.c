@@ -388,7 +388,7 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 {
 	int error_code, print_cnt = 0;
 	slurm_step_id_t step_id = {
-		.job_id = 0,
+		.job_id = NO_VAL,
 		.step_het_comp = NO_VAL,
 		.step_id = NO_VAL,
 	};
