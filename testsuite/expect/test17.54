@@ -26,7 +26,7 @@
 source ./globals
 
 set job_id      0
-set default_part [default_partition]
+set secs        [get_partition_maximum_time_limit ""]
 
 #
 # We must be SlurmUser or root in order to change the partition MaxTime limit,
@@ -37,11 +37,10 @@ if {![is_super_user]} {
 }
 
 proc cleanup {} {
-	global job_id
+	global job_id secs
 
 	cancel_job $job_id
-	# Restore partition MaxTime and DefaultTime.
-	reconfigure
+	set_partition_maximum_time_limit "" $secs
 }
 
 #
@@ -49,15 +48,8 @@ proc cleanup {} {
 # time limits greater than MaxTime. Ensure DefaultTime is UNLIMITED so the job
 # time limit is what we expect.
 #
-run_command -fail "$scontrol update partitionname=$default_part MaxTime=-1 DefaultTime=-1"
-
-set timelimit [get_partition_maximum_time_limit $default_part]
-if { $timelimit != -1 } {
-	fail "Unable to update partition MaxTime to UNLIMITED"
-}
-set timelimit [get_partition_default_time_limit $default_part]
-if { $timelimit != -1 } {
-	fail "Unable to update partition DefaultTime to UNLIMITED"
+if [set_partition_maximum_time_limit "" -1] {
+	fail "Unable to set partition MaxTime to UNLIMITED"
 }
 
 #
