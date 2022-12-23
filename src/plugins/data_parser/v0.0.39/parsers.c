@@ -2824,6 +2824,12 @@ static int DUMP_FUNC(JOB_INFO_MSG)(const parser_t *const parser, void *obj,
 
 	data_set_list(dst);
 
+	if (!*msg || !(*msg)->record_count) {
+		on_warn(DUMPING, parser->type, args, NULL, __func__,
+			"Zero jobs to dump");
+		return SLURM_SUCCESS;
+	}
+
 	for (size_t i = 0; !rc && (i < (*msg)->record_count); ++i)
 		rc = DUMP(JOB_INFO, (*msg)->job_array[i], data_list_append(dst),
 			  args);
