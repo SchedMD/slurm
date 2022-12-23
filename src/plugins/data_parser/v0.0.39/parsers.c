@@ -2908,10 +2908,15 @@ static int DUMP_FUNC(STEP_INFO_MSG)(const parser_t *const parser, void *obj,
 
 	data_set_list(dst);
 
-	if (*msg)
-		for (size_t i = 0; !rc && (i < (*msg)->job_step_count); ++i)
-			rc = DUMP(STEP_INFO, (*msg)->job_steps[i],
-				  data_list_append(dst), args);
+	if (!*msg || !(*msg)->job_step_count) {
+		on_warn(DUMPING, parser->type, args, NULL, __func__,
+			"Zero steps to dump");
+		return SLURM_SUCCESS;
+	}
+
+	for (size_t i = 0; !rc && (i < (*msg)->job_step_count); ++i)
+		rc = DUMP(STEP_INFO, (*msg)->job_steps[i],
+			  data_list_append(dst), args);
 
 	return rc;
 }
