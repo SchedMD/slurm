@@ -2742,10 +2742,8 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 						 INET6_ADDRSTRLEN);
 			}
 
-			set_node_comm_name(
-				node_ptr,
-				comm_name ? comm_name : reg_msg->hostname,
-				reg_msg->hostname);
+			set_node_comm_name(node_ptr, comm_name,
+					   reg_msg->hostname);
 			now = time(NULL);
 			node_ptr->node_state = NODE_STATE_IDLE;
 			node_ptr->node_state |= NODE_STATE_DYNAMIC_FUTURE;

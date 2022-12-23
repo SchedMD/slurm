@@ -1736,8 +1736,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					if (IS_NODE_CLOUD(node_ptr) &&
 					    cloud_reg_addrs)
 						set_node_comm_name(
-							node_ptr,
-							node_ptr->name,
+							node_ptr, NULL,
 							node_ptr->name);
 
 					node_ptr->power_save_req_time = 0;
@@ -1792,8 +1791,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					if (IS_NODE_DYNAMIC_FUTURE(node_ptr)) {
 						/* Reset comm and hostname */
 						set_node_comm_name(
-							node_ptr,
-							node_ptr->name,
+							node_ptr, NULL,
 							node_ptr->name);
 					}
 					/*
@@ -3231,10 +3229,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		else
 			hostname = xstrdup(reg_msg->hostname);
 
-		set_node_comm_name(
-			node_ptr,
-			comm_name ? comm_name : hostname,
-			hostname);
+		set_node_comm_name(node_ptr, comm_name, hostname);
 
 		xfree(comm_name);
 		xfree(hostname);
@@ -4666,7 +4661,7 @@ extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
 			       char *hostname)
 {
 	xfree(node_ptr->comm_name);
-	node_ptr->comm_name = xstrdup(comm_name);
+	node_ptr->comm_name = xstrdup(comm_name ? comm_name : hostname);
 
 	xfree(node_ptr->node_hostname);
 	node_ptr->node_hostname = xstrdup(hostname);
@@ -4911,9 +4906,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 				 INET6_ADDRSTRLEN);
 	}
 
-	set_node_comm_name(node_ptr,
-			   comm_name ? comm_name : reg_msg->hostname,
-			   reg_msg->hostname);
+	set_node_comm_name(node_ptr, comm_name, reg_msg->hostname);
 	xfree(comm_name);
 
 	node_ptr->features = xstrdup(node_ptr->config_ptr->feature);

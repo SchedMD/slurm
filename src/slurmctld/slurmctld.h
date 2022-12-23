@@ -2909,6 +2909,8 @@ extern void prep_epilog_slurmctld_callback(int rc, uint32_t job_id,
 
 /*
  * Set node's comm_name and hostname.
+ *
+ * If comm_name is NULL, hostname will be used for both fields.
  */
 extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
 			       char *hostname);
