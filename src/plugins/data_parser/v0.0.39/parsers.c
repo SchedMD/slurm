@@ -3222,6 +3222,21 @@ static int DUMP_FUNC(JOB_ARRAY_RESPONSE_MSG)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(ERROR)
+
+static int DUMP_FUNC(ERROR)(const parser_t *const parser, void *obj,
+			    data_t *dst, args_t *args)
+{
+	uint32_t *rc = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	data_set_string(dst, slurm_strerror(*rc));
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -4697,6 +4712,7 @@ static const parser_t parsers[] = {
 	addps(POWER_MGMT_DATA_PTR, power_mgmt_data_t *, NEED_NONE),
 	addps(NODE_STATES_NO_VAL, uint32_t, NEED_NONE),
 	addps(RESERVATION_INFO_ARRAY, reserve_info_t **, NEED_NONE),
+	addps(ERROR, int, NEED_NONE),
 
 	/* Complex type parsers */
 	addpc(QOS_PREEMPT_LIST, slurmdb_qos_rec_t, NEED_QOS),
