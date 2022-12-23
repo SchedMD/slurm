@@ -4665,14 +4665,11 @@ extern bool waiting_for_node_power_down(node_record_t *node_ptr)
 extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
 			       char *hostname)
 {
-	char *new_comm_name = xstrdup(comm_name);
-	char *new_hostname = xstrdup(hostname);
-
 	xfree(node_ptr->comm_name);
-	node_ptr->comm_name = new_comm_name;
+	node_ptr->comm_name = xstrdup(comm_name);
 
 	xfree(node_ptr->node_hostname);
-	node_ptr->node_hostname = new_hostname;
+	node_ptr->node_hostname = xstrdup(hostname);
 
 	slurm_reset_alias(node_ptr->name,
 			  node_ptr->comm_name,
