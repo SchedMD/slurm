@@ -118,8 +118,7 @@ if {$def_node eq ""} {
 # Some tests need nodenames in the regular form of node[min-max]
 # Note that the regular form needs to end with the number range
 set irregular_node_name 0
-set nodes_list [run_command_output -fail "$sinfo -h -o '%N' -tIDLE -p $def_partition"]
-set first_nodes [lindex [split $nodes_list ","] 0]
+set first_nodes [lindex [split $def_node ","] 0]
 if {![regexp -line {^([^[]+)\[(\d+)-(\d+)\]$} $first_nodes - def_node_name def_node_inx_min def_node_inx_max]} {
 	log_warn "Node name format not supported for all test"
 	set irregular_node_name 1
