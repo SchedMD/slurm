@@ -206,6 +206,8 @@ documents those changes that are of interest to users and administrators.
  -- Add configurable job requeue limit parameter - MaxBatchRequeue - in
     slurm.conf to permit changes from the old hard-coded value of 5.
  -- Add a new "nodes=" argument to "scontrol setdebugflags" as well.
+ -- slurmd - add --authinfo option to allow AuthInfo options to be changed
+    during the configless startup.
 
 * Changes in Slurm 22.05.8
 ==========================

@@ -112,7 +112,6 @@ static void _fetch_child(List controllers, uint32_t flags)
 	_init_minimal_conf_server_config(controllers);
 	config = fetch_config_from_controller(flags);
 
-
 	if (!config) {
 		error("%s: failed to fetch remote configs: %m", __func__);
 		safe_write(to_parent[1], &len, sizeof(int));
@@ -308,6 +307,10 @@ static void _init_minimal_conf_server_config(List controllers)
 
 	list_for_each(controllers, _print_controllers, &conf);
 	xstrfmtcat(conf, "ClusterName=CONFIGLESS\n");
+
+	/* Use for the --authinfo option in slurmd */
+	if (slurm_conf.authinfo)
+		xstrfmtcat(conf, "AuthInfo=%s\n", slurm_conf.authinfo);
 
 	if ((fd = dump_to_memfd("slurm.conf", conf, &filename)) < 0)
 		fatal("%s: could not write temporary config", __func__);

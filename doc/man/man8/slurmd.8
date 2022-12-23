@@ -1,4 +1,4 @@
-.TH slurmd "8" "Slurm Daemon" "August 2022" "Slurm Daemon"
+.TH slurmd "8" "Slurm Daemon" "December 2022" "Slurm Daemon"
 
 .SH "NAME"
 slurmd \- The compute node daemon for Slurm.
@@ -12,6 +12,13 @@ running on the compute node , accepts work (tasks), launches tasks, and kills
 running tasks upon request.
 
 .SH "OPTIONS"
+
+.TP
+\fB\--authinfo\fR
+Used with configless to set an alternate AuthInfo parameter to be used to
+establish communication with slurmctld before the configuration file has been
+retrieved. (E.g., to specify an alternate MUNGE socket location.)
+.IP
 
 .TP
 \fB\-b\fR

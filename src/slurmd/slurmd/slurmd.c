@@ -1452,11 +1452,13 @@ _process_cmdline(int ac, char **av)
 
 	enum {
 		LONG_OPT_ENUM_START = 0x100,
+		LONG_OPT_AUTHINFO,
 		LONG_OPT_CONF,
 		LONG_OPT_CONF_SERVER,
 	};
 
 	static struct option long_options[] = {
+		{"authinfo",		required_argument, 0, LONG_OPT_AUTHINFO},
 		{"conf",		required_argument, 0, LONG_OPT_CONF},
 		{"conf-server",		required_argument, 0, LONG_OPT_CONF_SERVER},
 		{"version",		no_argument,       0, 'V'},
@@ -1538,6 +1540,9 @@ _process_cmdline(int ac, char **av)
 				exit(1);
 			}
 			conf->dynamic_type = DYN_NODE_NORM;
+			break;
+		case LONG_OPT_AUTHINFO:
+			slurm_conf.authinfo = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONF:
 			conf->dynamic_conf = xstrdup(optarg);
