@@ -1403,6 +1403,10 @@ static int _print_file_slurmdb_hierarchical_rec_children(
 					list_iterator_destroy(itr2);
 				}
 			}
+			if (slurmdb_hierarchical_rec->assoc->comment)
+				xstrfmtcat(line, ":Comment='%s'",
+					   slurmdb_hierarchical_rec->
+					   assoc->comment);
 		} else {
 			acct_rec = sacctmgr_find_account_from_list(
 				acct_list,
