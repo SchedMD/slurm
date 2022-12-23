@@ -315,18 +315,19 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 	}
 
 	error_code = scontrol_load_job(&job_buffer_ptr, job_id);
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror ("slurm_load_jobs error");
-		return;
-	}
 
 	if (mime_type) {
 		if ((error_code = DATA_DUMP_CLI(JOB_INFO_MSG, job_buffer_ptr,
 						"jobs", argc, argv, NULL,
 						mime_type)))
 			exit_code =1;
+		return;
+	}
+
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror("slurm_load_jobs error");
 		return;
 	}
 
