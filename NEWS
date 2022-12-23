@@ -4,6 +4,9 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 22.05.8
 ==========================
  -- Fix potential deadlock at slurmctld startup when job has invalid qos.
+ -- Avoid unnecessary call to clusteracct_storage_g_cluster_tres() when pinging
+    dynamic nodes. This avoids significant slowdowns for slurmctld when
+    ping_nodes() calls all nodes to re-register.
 
 * Changes in Slurm 22.05.7
 ==========================

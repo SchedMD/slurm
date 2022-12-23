@@ -2824,6 +2824,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 	DEF_TIMERS;
 	int error_code = SLURM_SUCCESS;
 	bool newly_up = false;
+	bool already_registered = false;
 	slurm_node_registration_status_msg_t *node_reg_stat_msg =
 		(slurm_node_registration_status_msg_t *) msg->data;
 	slurmctld_lock_t job_write_lock = {
@@ -2883,6 +2884,9 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 					unlock_slurmctld(job_write_lock);
 
 				goto send_resp;
+			} else if (find_node_record2(
+					node_reg_stat_msg->node_name)) {
+				already_registered = true;
 			} else {
 				error_code = create_dynamic_reg_node(msg);
 			}
@@ -2942,7 +2946,8 @@ send_resp:
 		} else
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
-		if (node_reg_stat_msg->dynamic_type == DYN_NODE_NORM) {
+		if (!already_registered &&
+		    (node_reg_stat_msg->dynamic_type == DYN_NODE_NORM)) {
 			if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 				/* Must be called outside of locks */
 				clusteracct_storage_g_cluster_tres(
