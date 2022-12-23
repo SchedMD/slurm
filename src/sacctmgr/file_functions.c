@@ -408,6 +408,18 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 	slurmdb_init_assoc_rec(&mod_assoc, 0);
 	memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
 
+	if (file_opts->assoc_rec.comment
+	    && xstrcmp(assoc->comment, file_opts->assoc_rec.comment)) {
+		mod_assoc.comment = file_opts->assoc_rec.comment;
+		changed = 1;
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s "
+			   "%8s -> %s\n",
+			   " Changed Comment",
+			   type, name, assoc->comment,
+			   file_opts->assoc_rec.comment);
+	}
+
 	if ((file_opts->assoc_rec.shares_raw != NO_VAL)
 	    && (assoc->shares_raw != file_opts->assoc_rec.shares_raw)) {
 		mod_assoc.shares_raw = file_opts->assoc_rec.shares_raw;
