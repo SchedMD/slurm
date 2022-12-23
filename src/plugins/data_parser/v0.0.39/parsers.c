@@ -3196,6 +3196,32 @@ static int DUMP_FUNC(RESERVATION_INFO_ARRAY)(const parser_t *const parser,
 	return rc;
 }
 
+PARSE_DISABLED(JOB_ARRAY_RESPONSE_MSG)
+
+static int DUMP_FUNC(JOB_ARRAY_RESPONSE_MSG)(const parser_t *const parser,
+					     void *obj, data_t *dst,
+					     args_t *args)
+{
+	job_array_resp_msg_t *msg = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	data_set_list(dst);
+
+	for (int i = 0; i < msg->job_array_count; i++) {
+		data_t *j = data_set_dict(data_list_append(dst));
+		data_set_string(data_key_set(j, "job_id"),
+				msg->job_array_id[i]);
+		data_set_int(data_key_set(j, "error_code"), msg->error_code[i]);
+		data_set_string(data_key_set(j, "error"),
+				slurm_strerror(msg->error_code[i]));
+		data_set_string(data_key_set(j, "why"), msg->err_msg[i]);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -4703,6 +4729,7 @@ static const parser_t parsers[] = {
 	addpc(PARTITION_INFO_MSG, partition_info_msg_t, NEED_TRES),
 	addpc(RESERVATION_INFO_MSG, reserve_info_msg_t, NEED_NONE),
 	addpc(RESERVATION_INFO_CORE_SPEC, reserve_info_t, NEED_NONE),
+	addpc(JOB_ARRAY_RESPONSE_MSG, job_array_resp_msg_t, NEED_NONE),
 
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t),
