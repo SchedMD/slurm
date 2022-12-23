@@ -2719,7 +2719,6 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 		for (i = 0; (node_ptr = next_node(&i)); i++) {
 			slurm_addr_t addr;
 			char *comm_name = NULL;
-			char *hostname = NULL;
 
 			if (!IS_NODE_FUTURE(node_ptr))
 			    continue;
@@ -2743,17 +2742,10 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 						 INET6_ADDRSTRLEN);
 			}
 
-			/* 2 versions after 21.08 this if can be removed */
-			if (msg->protocol_version >=
-			    SLURM_21_08_PROTOCOL_VERSION)
-				hostname = reg_msg->hostname;
-			else
-				hostname = reg_msg->node_name;
-
 			set_node_comm_name(
 				node_ptr,
-				comm_name ? comm_name : hostname,
-				hostname);
+				comm_name ? comm_name : reg_msg->hostname,
+				reg_msg->hostname);
 			now = time(NULL);
 			node_ptr->node_state = NODE_STATE_IDLE;
 			node_ptr->node_state |= NODE_STATE_DYNAMIC_FUTURE;
