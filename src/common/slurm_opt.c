@@ -6117,11 +6117,22 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 		opt->cpus_set = true;
 	}
 
-	if (opt->cpus_set && !cpu_per_task_ptr) {
-		xstrfmtcat(opt->tres_per_task, "%scpu:%d",
-			   opt->tres_per_task ? "," : "",
-			   opt->cpus_per_task);
-	}
+	/*
+	 * FIXME: While it would be nice to see this in the tres_per_task str we
+	 * would need to change the situation where the allocation requested -c
+	 * and the step also does the same thing. If we unset the code below we
+	 * fail into this situation and we will fail above thinking we set the
+	 * --tres_per_task=cpu as well as -c. The correct fix would be to handle
+	 * this in arg_set_data_cpus_per_task() above by replacing the number in
+	 * tres_per_task here with the new number after it is validated and then
+	 * skip the check above. For now all works without putting this in the
+	 * string.
+	 */
+	/* if (opt->cpus_set && !cpu_per_task_ptr) { */
+	/* 	xstrfmtcat(opt->tres_per_task, "%scpu:%d", */
+	/* 		   opt->tres_per_task ? "," : "", */
+	/* 		   opt->cpus_per_task); */
+	/* } */
 }
 
 /* Validate shared options between srun, salloc, and sbatch */
