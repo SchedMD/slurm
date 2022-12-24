@@ -8709,6 +8709,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	}
 
 	job_ptr->bit_flags = job_desc->bitflags;
+	job_ptr->bit_flags &= ~TASKS_CHANGED;
 	job_ptr->bit_flags &= ~BACKFILL_TEST;
 	job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
 	job_ptr->spank_job_env = job_desc->spank_job_env;
