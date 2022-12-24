@@ -136,7 +136,7 @@ set cores_per_socket 0
 set sockets_per_node 0
 set heterogeneous 0
 log_user 0
-spawn $scontrol show node -o
+spawn $scontrol show node $def_node -o
 expect {
 	-re "CoresPerSocket=($number)" {
 		if {$cores_per_socket == 0} {
