@@ -208,8 +208,6 @@ documents those changes that are of interest to users and administrators.
  -- Add a new "nodes=" argument to "scontrol setdebugflags" as well.
  -- slurmd - add --authinfo option to allow AuthInfo options to be changed
     during the configless startup.
- -- sacct - Add --array-unique option to combine job array tasks with matching
-    fields and display them on a single line.
 
 * Changes in Slurm 22.05.8
 ==========================
