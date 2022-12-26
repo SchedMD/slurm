@@ -2247,6 +2247,26 @@ grab_includes:
 	}
 }
 /*
+ * Filter out changeable features and only feature conf only features
+ */
+static char *_filter_out_changeable_features(const char *features)
+{
+	char *conf_features = NULL, *tmp_feat, *tok, *saveptr;
+
+	tmp_feat = xstrdup(features);
+	for (tok = strtok_r(tmp_feat, ",", &saveptr); tok;
+	     tok = strtok_r(NULL, ",", &saveptr)) {
+		if (node_features_g_changeable_feature(tok))
+			continue;
+		xstrfmtcat(conf_features, "%s%s",
+			   conf_features ? "," : "", tok);
+	}
+	xfree(tmp_feat);
+
+	return conf_features;
+}
+
+/*
  * Configure node features.
  * IN old_node_table_ptr IN - Previous nodes information
  * IN old_node_record_count IN - Count of previous nodes information
@@ -2285,15 +2305,25 @@ static void _set_features(node_record_t **old_node_table_ptr,
 			continue;
 		}
 
-		xfree(node_ptr->features_act);
-		if (!IS_NODE_POWERED_DOWN(node_ptr)) {
+		/* No changeable features so active == available */
+		if (node_features_cnt == 0) {
+			xfree(node_ptr->features_act);
 			node_ptr->features_act = xstrdup(node_ptr->features);
+			continue;
 		}
 
-		if (node_features_cnt == 0)
-			continue;
-
 		/* If we are here, there's a node_features plugin active */
+
+		/*
+		 * Changeable features may be listed in the slurm.conf along
+		 * with the non-changeable features (e.g. cloud nodes). So
+		 * filter out the changeable features and leave only the
+		 * non-changeable features. non-changeable features are active
+		 * by default.
+		 */
+		xfree(node_ptr->features_act);
+		node_ptr->features_act =
+			_filter_conf_features(node_ptr->features);
 
 		/*
 		 * The subset of plugin-controlled features_available
