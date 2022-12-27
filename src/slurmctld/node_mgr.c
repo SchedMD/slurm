@@ -1742,14 +1742,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 
 					node_ptr->power_save_req_time = 0;
 
-					xfree(node_ptr->features_act);
-					node_ptr->features_act =
-						filter_out_changeable_features(
-							node_ptr->features);
-					update_node_active_features(
-						node_ptr->name,
-						node_ptr->features_act,
-						FEATURE_MODE_IND);
+					reset_node_active_features(node_ptr);
 
 					clusteracct_storage_g_node_down(
 						acct_db_conn,
@@ -2406,6 +2399,17 @@ extern char *filter_out_changeable_features(const char *features)
 	xfree(tmp_feat);
 
 	return conf_features;
+}
+
+extern void reset_node_active_features(node_record_t *node_ptr)
+{
+	xassert(node_ptr);
+
+	xfree(node_ptr->features_act);
+	node_ptr->features_act =
+		filter_out_changeable_features(node_ptr->features);
+	update_node_active_features(node_ptr->name, node_ptr->features_act,
+				    FEATURE_MODE_IND);
 }
 
 /*

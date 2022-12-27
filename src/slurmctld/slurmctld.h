@@ -2992,6 +2992,11 @@ extern int update_node_avail_features(char *node_names, char *avail_features,
 extern char *filter_out_changeable_features(const char *features);
 
 /*
+ * Reset a nodes active features to only non-changeable available features.
+ */
+extern void reset_node_active_features(node_record_t *node_ptr);
+
+/*
  * Return a hostlist with expanded node specification.
  *
  * Handles node range expressions, nodesets and ALL keyword.
