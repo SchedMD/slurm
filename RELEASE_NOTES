@@ -63,6 +63,10 @@ HIGHLIGHTS
  -- Automatically create directories for stdout/stderr output files. Paths may
     use %j and related substitution characters as well.
  -- Add --tres-per-task to salloc/sbatch/srun.
+ -- Allow nodefeatures plugin features to work with cloud nodes.
+    e.g. - Powered down nodes have no active changeable features.
+         - Nodes can't be changed to other active features until powered down.
+	 - Active changeable features are reset/cleared on power down.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
