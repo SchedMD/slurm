@@ -208,6 +208,8 @@ documents those changes that are of interest to users and administrators.
  -- Add a new "nodes=" argument to "scontrol setdebugflags" as well.
  -- slurmd - add --authinfo option to allow AuthInfo options to be changed
     during the configless startup.
+ -- helpers.conf - Allow specification of node specific features.
+ -- helpers.conf - Allow many features to one helper script.
 
 * Changes in Slurm 22.05.8
 ==========================

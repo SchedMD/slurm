@@ -87,6 +87,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Add new DebugFlags option 'JobComp' to replace 'Elasticsearch'.
  -- Add configurable job requeue limit parameter - MaxBatchRequeue - in
     slurm.conf to permit changes from the old hard-coded value of 5.
+ -- helpers.conf - Allow specification of node specific features.
+ -- helpers.conf - Allow many features to one helper script.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
