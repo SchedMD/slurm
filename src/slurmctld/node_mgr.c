@@ -1743,6 +1743,9 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					node_ptr->power_save_req_time = 0;
 
 					xfree(node_ptr->features_act);
+					node_ptr->features_act =
+						filter_out_changeable_features(
+							node_ptr->features);
 					update_node_active_features(
 						node_ptr->name,
 						node_ptr->features_act,

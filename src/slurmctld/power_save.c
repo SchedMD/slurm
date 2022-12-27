@@ -523,6 +523,9 @@ static void _do_power_work(time_t now)
 			node_ptr->power_save_req_time = 0;
 
 			xfree(node_ptr->features_act);
+			node_ptr->features_act =
+				filter_out_changeable_features(
+					node_ptr->features);
 			update_node_active_features(node_ptr->name,
 						    node_ptr->features_act,
 						    FEATURE_MODE_IND);
@@ -548,6 +551,14 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
+
+			xfree(node_ptr->features_act);
+			node_ptr->features_act =
+				filter_out_changeable_features(
+					node_ptr->features);
+			update_node_active_features(node_ptr->name,
+						    node_ptr->features_act,
+						    FEATURE_MODE_IND);
 			/*
 			 * set_node_down_ptr() will remove the node from the
 			 * avail_node_bitmap.
