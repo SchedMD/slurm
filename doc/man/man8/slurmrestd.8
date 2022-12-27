@@ -8,12 +8,15 @@ slurmrestd \- Interface to Slurm via REST API.
 \fBslurmrestd\fR is REST API interface for Slurm. It can be used in two modes:
 
 .PP
-Inetd Mode: slurmrestd will read and write to STDIN and STDOUT. It can detect if
-it is connected to a socket or a local TTY (interactive mode).
+\fBInetd Mode\fR: slurmrestd will read and write to STDIO. If STDIN is a socket
+file descriptor, then slurmrestd will detect this and use relevant
+functionatlity. If a controlling TTY is detected, interactive mode will
+automatically activate to provide additional logging information. This mode is
+designed to work with piped input, inetd, xinetd or systemd socket activation.
 
 .PP
-Listen Mode: slurmrestd will open a listening socket on each requested
-host:port pair or UNIX socket.
+\fBListen Mode\fR: slurmrestd will open a listening socket on each requested
+\fIhost\fR:\fIport\fR pair or UNIX socket.
 
 .SH "OPTIONS"
 
@@ -202,8 +205,10 @@ This signal is explicitly ignored.
 .IP
 
 .SH "NOTES"
-slurmrestd is designed to run with AuthAltTypes outside of the Munge cluster
-when configured AuthAltTypes supports this.
+\fBSPANK\fR and \fBclifilter\fR plugins are not supported in \fBslurmrestd\fR
+due to their lack of thread safety. Active \fBSPANK\fR plugins and
+\fBJobSubmitPlugins\fR in \fBslurmctld\fR are independent of slurmrestd and can
+be used to enforce site policy on job submissions.
 
 .SH "COPYING"
 Copyright (C) 2019\-2022 SchedMD LLC.
