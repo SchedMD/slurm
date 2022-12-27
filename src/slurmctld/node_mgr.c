@@ -2385,6 +2385,26 @@ extern int update_node_avail_features(char *node_names, char *avail_features,
 	return SLURM_SUCCESS;
 }
 
+extern char *filter_out_changeable_features(const char *features)
+{
+	char *conf_features = NULL, *tmp_feat, *tok, *saveptr;
+
+	if (!features)
+		return NULL;
+
+	tmp_feat = xstrdup(features);
+	for (tok = strtok_r(tmp_feat, ",", &saveptr); tok;
+	     tok = strtok_r(NULL, ",", &saveptr)) {
+		if (node_features_g_changeable_feature(tok))
+			continue;
+		xstrfmtcat(conf_features, "%s%s",
+			   conf_features ? "," : "", tok);
+	}
+	xfree(tmp_feat);
+
+	return conf_features;
+}
+
 /*
  * _update_node_gres - Update generic resources associated with nodes
  *	build new config list records as needed

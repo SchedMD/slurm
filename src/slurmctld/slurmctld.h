@@ -2983,6 +2983,15 @@ extern int update_node_avail_features(char *node_names, char *avail_features,
 				      int mode);
 
 /*
+ * Filter out changeable features and only feature conf only features
+ *
+ * IN features - features string to remove changeable features from
+ *
+ * RET: return xmalloc'ed string that doesn't contain changeable features.
+ */
+extern char *filter_out_changeable_features(const char *features);
+
+/*
  * Return a hostlist with expanded node specification.
  *
  * Handles node range expressions, nodesets and ALL keyword.
