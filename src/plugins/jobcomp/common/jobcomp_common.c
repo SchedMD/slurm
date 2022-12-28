@@ -50,11 +50,8 @@ extern int jobcomp_common_write_state_file(buf_t *buffer, int high_buffer_size,
 
 	xstrfmtcat(reg_file, "%s/%s", slurm_conf.state_save_location,
 		   state_file);
-
-	old_file = xstrdup(reg_file);
-	new_file = xstrdup(reg_file);
-	xstrcat(new_file, ".new");
-	xstrcat(old_file, ".old");
+	xstrfmtcat(old_file, "%s.old", reg_file);
+	xstrfmtcat(new_file, "%s.new", reg_file);
 
 	fd = open(new_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR |
 		  O_CLOEXEC);
