@@ -4857,9 +4857,6 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 		return ESLURM_ACCESS_DENIED;
 	}
 
-	if (find_node_record2(reg_msg->node_name))
-		return SLURM_SUCCESS;
-
 	if (reg_msg->dynamic_conf) {
 		slurm_conf_node_t *conf_node;
 		s_p_hashtbl_t *node_hashtbl = NULL;
