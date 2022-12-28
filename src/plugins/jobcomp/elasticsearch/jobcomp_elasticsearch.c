@@ -348,8 +348,7 @@ cleanup_global_init:
 /* Saves the state of all jobcomp data for further indexing retries */
 static int _save_state(void)
 {
-	int fd, rc = SLURM_SUCCESS;
-	char *state_file = NULL, *new_file, *old_file;
+	int rc = SLURM_SUCCESS;
 	ListIterator iter;
 	static int high_buffer_size = (1024 * 1024);
 	buf_t *buffer = init_buf(high_buffer_size);
@@ -364,63 +363,9 @@ static int _save_state(void)
 	}
 	list_iterator_destroy(iter);
 
-	xstrfmtcat(state_file, "%s/%s",
-		   slurm_conf.state_save_location, save_state_file);
-
-	old_file = xstrdup(state_file);
-	new_file = xstrdup(state_file);
-	xstrcat(new_file, ".new");
-	xstrcat(old_file, ".old");
-
 	slurm_mutex_lock(&save_lock);
-	fd = open(new_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR |
-		  O_CLOEXEC);
-	if (fd < 0) {
-		error("%s: Can't save jobcomp state, open file %s error %m",
-		      plugin_type, new_file);
-		rc = SLURM_ERROR;
-	} else {
-		int pos = 0, nwrite, amount, rc2;
-		char *data;
-		nwrite = get_buf_offset(buffer);
-		data = (char *) get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("%s: Error writing file %s, %m",
-				      plugin_type, new_file);
-				rc = SLURM_ERROR;
-				break;
-			}
-			nwrite -= amount;
-			pos += amount;
-		}
-		if ((rc2 = fsync_and_close(fd, save_state_file)))
-			rc = rc2;
-	}
-
-	if (rc == SLURM_ERROR)
-		(void) unlink(new_file);
-	else {
-		(void) unlink(old_file);
-		if (link(state_file, old_file)) {
-			error("%s: Unable to create link for %s -> %s: %m",
-			      plugin_type, state_file, old_file);
-			rc = SLURM_ERROR;
-		}
-		(void) unlink(state_file);
-		if (link(new_file, state_file)) {
-			error("%s: Unable to create link for %s -> %s: %m",
-			      plugin_type, new_file, state_file);
-			rc = SLURM_ERROR;
-		}
-		(void) unlink(new_file);
-	}
-
-	xfree(old_file);
-	xfree(state_file);
-	xfree(new_file);
+	rc = jobcomp_common_write_state_file(buffer, high_buffer_size, save_state_file,
+				      plugin_type);
 	slurm_mutex_unlock(&save_lock);
 
 	FREE_NULL_BUFFER(buffer);

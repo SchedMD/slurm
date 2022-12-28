@@ -36,10 +36,77 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/data.h"
+#include "src/common/fd.h"
 #include "src/common/parse_time.h"
 #include "src/common/uid.h"
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/slurmctld/slurmctld.h"
+
+extern int jobcomp_common_write_state_file(buf_t *buffer, int high_buffer_size,
+				    char *state_file, const char *plugin_type)
+{
+	int rc = SLURM_SUCCESS, fd;
+	char *reg_file = NULL, *new_file = NULL, *old_file = NULL;
+
+	xstrfmtcat(reg_file, "%s/%s", slurm_conf.state_save_location,
+		   state_file);
+
+	old_file = xstrdup(reg_file);
+	new_file = xstrdup(reg_file);
+	xstrcat(new_file, ".new");
+	xstrcat(old_file, ".old");
+
+	fd = open(new_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR |
+		  O_CLOEXEC);
+	if (fd < 0) {
+		error("%s: Can't save jobcomp state, open file %s error %m",
+		      plugin_type, new_file);
+		rc = SLURM_ERROR;
+	} else {
+		int pos = 0, nwrite, amount, rc2;
+		char *data;
+		nwrite = get_buf_offset(buffer);
+		data = (char *) get_buf_data(buffer);
+		high_buffer_size = MAX(nwrite, high_buffer_size);
+		while (nwrite > 0) {
+			amount = write(fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("%s: Error writing file %s, %m",
+				      plugin_type, new_file);
+				rc = SLURM_ERROR;
+				break;
+			}
+			nwrite -= amount;
+			pos += amount;
+		}
+		if ((rc2 = fsync_and_close(fd, state_file)))
+			rc = rc2;
+	}
+
+	if (rc == SLURM_ERROR)
+		(void) unlink(new_file);
+	else {
+		(void) unlink(old_file);
+		if (link(reg_file, old_file)) {
+			error("%s: Unable to create link for %s -> %s: %m",
+			      plugin_type, reg_file, old_file);
+			rc = SLURM_ERROR;
+		}
+		(void) unlink(reg_file);
+		if (link(new_file, reg_file)) {
+			error("%s: Unable to create link for %s -> %s: %m",
+			      plugin_type, new_file, reg_file);
+			rc = SLURM_ERROR;
+		}
+		(void) unlink(new_file);
+	}
+
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+
+	return rc;
+}
 
 extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr) {
 	char start_str[32], end_str[32], time_str[32];
