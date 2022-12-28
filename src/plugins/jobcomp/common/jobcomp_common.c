@@ -53,8 +53,7 @@ extern int jobcomp_common_write_state_file(buf_t *buffer, int high_buffer_size,
 	xstrfmtcat(old_file, "%s.old", reg_file);
 	xstrfmtcat(new_file, "%s.new", reg_file);
 
-	fd = open(new_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR |
-		  O_CLOEXEC);
+	fd = creat(new_file, 0600);
 	if (fd < 0) {
 		error("%s: Can't save jobcomp state, open file %s error %m",
 		      plugin_type, new_file);
