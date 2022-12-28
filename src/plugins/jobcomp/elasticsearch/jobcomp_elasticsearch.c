@@ -364,8 +364,7 @@ static int _save_state(void)
 	list_iterator_destroy(iter);
 
 	slurm_mutex_lock(&save_lock);
-	rc = jobcomp_common_write_state_file(buffer, high_buffer_size, save_state_file,
-				      plugin_type);
+	jobcomp_common_write_state_file(buffer, save_state_file);
 	slurm_mutex_unlock(&save_lock);
 
 	FREE_NULL_BUFFER(buffer);

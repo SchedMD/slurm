@@ -42,66 +42,48 @@
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/slurmctld/slurmctld.h"
 
-extern int jobcomp_common_write_state_file(buf_t *buffer, int high_buffer_size,
-				    char *state_file, const char *plugin_type)
+extern void jobcomp_common_write_state_file(buf_t *buffer, char *state_file)
 {
-	int rc = SLURM_SUCCESS, fd;
+	int fd;
 	char *reg_file = NULL, *new_file = NULL, *old_file = NULL;
+	char *tmp_str = NULL;
 
 	xstrfmtcat(reg_file, "%s/%s", slurm_conf.state_save_location,
 		   state_file);
 	xstrfmtcat(old_file, "%s.old", reg_file);
 	xstrfmtcat(new_file, "%s.new", reg_file);
 
-	fd = creat(new_file, 0600);
-	if (fd < 0) {
-		error("%s: Can't save jobcomp state, open file %s error %m",
-		      plugin_type, new_file);
-		rc = SLURM_ERROR;
-	} else {
-		int pos = 0, nwrite, amount, rc2;
-		char *data;
-		nwrite = get_buf_offset(buffer);
-		data = (char *) get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("%s: Error writing file %s, %m",
-				      plugin_type, new_file);
-				rc = SLURM_ERROR;
-				break;
-			}
-			nwrite -= amount;
-			pos += amount;
-		}
-		if ((rc2 = fsync_and_close(fd, state_file)))
-			rc = rc2;
+	if ((fd = creat(new_file, 0600)) < 0) {
+		xstrfmtcat(tmp_str, "creating");
+		goto rwfail;
 	}
 
-	if (rc == SLURM_ERROR)
-		(void) unlink(new_file);
-	else {
-		(void) unlink(old_file);
-		if (link(reg_file, old_file)) {
-			error("%s: Unable to create link for %s -> %s: %m",
-			      plugin_type, reg_file, old_file);
-			rc = SLURM_ERROR;
-		}
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file)) {
-			error("%s: Unable to create link for %s -> %s: %m",
-			      plugin_type, new_file, reg_file);
-			rc = SLURM_ERROR;
-		}
-		(void) unlink(new_file);
-	}
+	xstrfmtcat(tmp_str, "writing");
+	safe_write(fd, get_buf_data(buffer), get_buf_offset(buffer));
+	xfree(tmp_str);
 
+	if (fsync_and_close(fd, state_file))
+		goto rwfail;
+
+	(void) unlink(old_file);
+	if (link(reg_file, old_file))
+		debug2("unable to create link for %s -> %s: %m",
+		       reg_file, old_file);
+
+	(void) unlink(reg_file);
+	if (link(new_file, reg_file))
+		debug2("unable to create link for %s -> %s: %m",
+		       new_file, reg_file);
+
+rwfail:
+	if (tmp_str)
+		error("Can't save state, error %s file %s: %m",
+		      tmp_str, new_file);
+	(void) unlink(new_file);
 	xfree(old_file);
 	xfree(reg_file);
 	xfree(new_file);
-
-	return rc;
+	xfree(tmp_str);
 }
 
 extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr) {

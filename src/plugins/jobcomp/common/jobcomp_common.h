@@ -39,8 +39,7 @@
 
 #include "src/slurmctld/slurmctld.h"
 
-extern int jobcomp_common_write_state_file(buf_t *buffer, int high_buffer_size,
-				    char *state_file, const char *plugin_type);
+extern void jobcomp_common_write_state_file(buf_t *buffer, char *state_file);
 extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr);
 
 #endif
