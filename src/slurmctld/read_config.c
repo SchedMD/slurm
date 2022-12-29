@@ -2296,6 +2296,41 @@ static void _merge_changeable_features(char *old_features, char **features)
 	xfree(tmp_old);
 }
 
+static void _preserve_active_features(const char *available,
+				      const char *old_active,
+				      char **active)
+{
+	char *old_feature, *saveptr_old;
+	char *tmp_old_active;
+
+	if (!available || !old_active)
+		return;
+
+	tmp_old_active = xstrdup(old_active);
+	for (old_feature = strtok_r(tmp_old_active, ",", &saveptr_old);
+	     old_feature;
+	     old_feature = strtok_r(NULL, ",", &saveptr_old)) {
+		char *new_feature, *saveptr_avail;
+		char *tmp_avail;
+
+		if (!node_features_g_changeable_feature(old_feature))
+			continue;
+
+		tmp_avail = xstrdup(available);
+		for (new_feature = strtok_r(tmp_avail, ",", &saveptr_avail);
+		     new_feature;
+		     new_feature = strtok_r(NULL, ",", &saveptr_avail)) {
+			if (!xstrcmp(old_feature, new_feature)) {
+				xstrfmtcat(*active, "%s%s",
+					   *active ? "," : "", old_feature);
+				break;
+			}
+		}
+		xfree(tmp_avail);
+	}
+	xfree(tmp_old_active);
+}
+
 /*
  * Configure node features.
  * IN old_node_table_ptr IN - Previous nodes information
@@ -2311,6 +2346,8 @@ static void _set_features(node_record_t **old_node_table_ptr,
 	int i, node_features_cnt = node_features_g_count();
 
 	for (i = 0; i < old_node_record_count; i++) {
+		char *old_features_act;
+
 		if (!(old_node_ptr = old_node_table_ptr[i]))
 			continue;
 
@@ -2350,9 +2387,29 @@ static void _set_features(node_record_t **old_node_table_ptr,
 		 * non-changeable features. non-changeable features are active
 		 * by default.
 		 */
-		xfree(node_ptr->features_act);
+		old_features_act = node_ptr->features_act;
 		node_ptr->features_act =
 			filter_out_changeable_features(node_ptr->features);
+
+		/*
+		 * Preserve active features on startup but make sure they are a
+		 * subset of available features -- in case available features
+		 * were changed.
+		 *
+		 * features_act has all non-changeable features now. We need to
+		 * add back previous active features that are in available
+		 * features.
+		 *
+		 * For cloud nodes, changeable features are added in slurm.conf.
+		 * This will preserve the cloud active features on startup. When
+		 * changeable features aren't defined in slurm.conf then
+		 * features_act will be reset to all non-changeable features
+		 * read in from slurm.conf and will expect to get the available
+		 * and active features from the slurmd.
+		 */
+		_preserve_active_features(node_ptr->features, old_features_act,
+					  &node_ptr->features_act);
+		xfree(old_features_act);
 
 		/*
 		 * The subset of plugin-controlled features_available
