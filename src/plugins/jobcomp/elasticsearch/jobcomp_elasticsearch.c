@@ -136,74 +136,22 @@ static pthread_t job_handler_thread;
 static List jobslist = NULL;
 static bool thread_shutdown = false;
 
-/* Read file to data variable */
-static uint32_t _read_file(const char *file, char **data)
-{
-	uint32_t data_size = 0;
-	int data_allocated, data_read, fd, fsize = 0;
-	struct stat f_stat;
-
-	fd = open(file, O_RDONLY);
-	if (fd < 0) {
-		log_flag(JOBCOMP, "Could not open state file %s", file);
-		return data_size;
-	}
-	if (fstat(fd, &f_stat)) {
-		log_flag(JOBCOMP, "Could not stat state file %s", file);
-		close(fd);
-		return data_size;
-	}
-
-	fsize = f_stat.st_size;
-	data_allocated = BUF_SIZE;
-	*data = xmalloc(data_allocated);
-	while (1) {
-		data_read = read(fd, &(*data)[data_size], BUF_SIZE);
-		if (data_read < 0) {
-			if (errno == EINTR)
-				continue;
-			else {
-				error("%s: Read error on %s: %m", plugin_type,
-				      file);
-				break;
-			}
-		} else if (data_read == 0)	/* EOF */
-			break;
-		data_size += data_read;
-		data_allocated += data_read;
-		*data = xrealloc(*data, data_allocated);
-	}
-	close(fd);
-	if (data_size != fsize) {
-		error("%s: Could not read entire jobcomp state file %s (%d of %d)",
-		      plugin_type, file, data_size, fsize);
-	}
-	return data_size;
-}
-
 /* Load jobcomp data from save state file */
 static int _load_pending_jobs(void)
 {
 	int i, rc = SLURM_SUCCESS;
-	char *saved_data = NULL, *state_file = NULL, *job_data = NULL;
-	uint32_t data_size, job_cnt = 0, tmp32 = 0;
+	char *job_data = NULL;
+	uint32_t job_cnt = 0, tmp32 = 0;
 	buf_t *buffer = NULL;
 	struct job_node *jnode;
 
-	xstrfmtcat(state_file, "%s/%s",
-		   slurm_conf.state_save_location, save_state_file);
-
 	slurm_mutex_lock(&save_lock);
-	data_size = _read_file(state_file, &saved_data);
-	if ((data_size <= 0) || (saved_data == NULL)) {
+	if (!(buffer = jobcomp_common_load_state_file(save_state_file))) {
 		slurm_mutex_unlock(&save_lock);
-		xfree(saved_data);
-		xfree(state_file);
-		return rc;
+		return SLURM_ERROR;
 	}
 	slurm_mutex_unlock(&save_lock);
 
-	buffer = create_buf(saved_data, data_size);
 	safe_unpack32(&job_cnt, buffer);
 	for (i = 0; i < job_cnt; i++) {
 		safe_unpackstr_xmalloc(&job_data, &tmp32, buffer);
@@ -215,14 +163,12 @@ static int _load_pending_jobs(void)
 		log_flag(JOBCOMP, "Loaded %u jobs from state file", job_cnt);
 	}
 	FREE_NULL_BUFFER(buffer);
-	xfree(state_file);
 
 	return rc;
 
 unpack_error:
-	error("%s: Error unpacking file %s", plugin_type, state_file);
+	error("%s: Error unpacking file %s", plugin_type, save_state_file);
 	FREE_NULL_BUFFER(buffer);
-	xfree(state_file);
 	return SLURM_ERROR;
 }
 

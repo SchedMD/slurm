@@ -42,6 +42,40 @@
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/slurmctld/slurmctld.h"
 
+/*
+ * Open jobcomp state file, or backup if necessary.
+ *
+ * IN: char pointer to state file name.
+ * RET: buffer with the loaded file or NULL.
+ */
+extern buf_t *jobcomp_common_load_state_file(char *state_file)
+{
+	char *absolute_file = NULL;
+	buf_t *buf;
+
+	xassert(state_file);
+
+	xstrfmtcat(absolute_file, "%s/%s",
+		   slurm_conf.state_save_location, state_file);
+
+	if ((buf = create_mmap_buf(absolute_file))) {
+		xfree(absolute_file);
+		return buf;
+	}
+
+	error("Could not open jobcomp state file %s: %m", absolute_file);
+	error("NOTE: Trying backup jobcomp state save file. Finished jobs may be lost!");
+
+	xstrcat(absolute_file, ".old");
+
+	if (!(buf = create_mmap_buf(absolute_file)))
+		error("Could not open backup jobcomp state file %s: %m", absolute_file);
+
+	xfree(absolute_file);
+
+	return buf;
+}
+
 extern void jobcomp_common_write_state_file(buf_t *buffer, char *state_file)
 {
 	int fd;
