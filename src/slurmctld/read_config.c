@@ -2412,6 +2412,13 @@ static void _set_features(node_record_t **old_node_table_ptr,
 		xfree(old_features_act);
 
 		/*
+		 * On startup, node_record_table_ptr is passed as
+		 * old_node_table_ptr so no need to merge features.
+		 */
+		if (node_ptr == old_node_ptr)
+			continue;
+
+		/*
 		 * The subset of plugin-controlled features_available
 		 * and features_active found in the old node_ptr for this node
 		 * are copied into new node respective fields.
