@@ -908,6 +908,9 @@ typedef enum mem_bind_type {    /* memory binding type from --mem-bind=... */
 	MEM_BIND_PREFER = 0x80	/* =prefer */
 } mem_bind_type_t;
 
+#define MEM_BIND_TYPE_MASK 0x3e
+#define MEM_BIND_TYPE_FLAGS_MASK 0xc0
+
 typedef enum accel_bind_type {    /* accelerator binding from --accel_bind= */
 	ACCEL_BIND_VERBOSE         = 0x01, /* 'v' verbose */
 	ACCEL_BIND_CLOSEST_GPU     = 0x02, /* 'g' Use closest GPU to the CPU */
