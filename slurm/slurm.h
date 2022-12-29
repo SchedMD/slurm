@@ -873,6 +873,11 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu-bind=... */
 	CPU_BIND_OFF               = 0x80000	/* Disable binding */
 } cpu_bind_type_t;
 
+#define CPU_BIND_T_TO_MASK 0x001e
+#define CPU_BIND_T_AUTO_TO_MASK 0x000e
+#define CPU_BIND_T_MASK 0x0fe0
+#define CPU_BIND_T_TASK_PARAMS_MASK (SLURMD_OFF_SPEC | CPU_BIND_OFF)
+
 /* Flag to indicate that cpu_freq is a range: low,medium,high,high-1
  * instead of an integer value in kilohertz */
 #define CPU_FREQ_RANGE_FLAG		0x80000000
