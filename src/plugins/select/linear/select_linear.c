@@ -75,6 +75,7 @@
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/gres_ctld.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/plugins/select/linear/select_linear.h"
 
@@ -3541,7 +3542,7 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			     List *preemptee_job_list,
 			     bitstr_t *exc_core_bitmap)
 {
-	int max_share = 0, rc = EINVAL;
+	int max_share = 0, rc = EINVAL, license_rc;
 
 	xassert(bitmap);
 	if (job_ptr->details == NULL)
@@ -3566,6 +3567,20 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 		verbose("%s: %pJ core_spec(%u) not supported",
 			plugin_type, job_ptr, job_ptr->details->core_spec);
 		job_ptr->details->core_spec = NO_VAL16;
+	}
+
+	license_rc = license_job_test(job_ptr, time(NULL), true);
+	if (license_rc != SLURM_SUCCESS) {
+		if (license_rc == SLURM_ERROR) {
+			log_flag(SELECT_TYPE,
+				 "test fail: insufficient licenses configured");
+			return SLURM_ERROR;
+		}
+		if ((mode != SELECT_MODE_TEST_ONLY) && (license_rc == EAGAIN)) {
+			log_flag(SELECT_TYPE,
+				 "test fail: insufficient licenses available");
+			return SLURM_ERROR;
+		}
 	}
 
 	if (job_ptr->details->share_res)
