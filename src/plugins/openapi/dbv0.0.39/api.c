@@ -170,9 +170,9 @@ extern ctxt_t *init_connection(const char *context_id,
 		resp_error(ctxt, ESLURM_DB_CONNECTION, __func__,
 			   "openapi_get_db_conn() failed to open slurmdb connection");
 
-	ctxt->parser = data_parser_g_new(_on_error, _on_error, _on_error,
-					 errors, _on_warn, _on_warn, _on_warn,
-					 warn, DATA_PLUGIN, NULL, true);
+	ctxt->parser = data_parser_g_new(_on_error, _on_error, _on_error, ctxt,
+					 _on_warn, _on_warn, _on_warn, ctxt,
+					 DATA_PLUGIN, NULL, true);
 	if (!ctxt->parser)
 		xassert(ctxt->rc);
 
