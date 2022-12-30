@@ -270,6 +270,8 @@ static int parse_flag(void *dst, const parser_t *const parser, data_t *src,
 			      ESLURM_DATA_FLAGS_INVALID_TYPE, path, __func__,
 			      "Expected a List but found a %s",
 			      data_type_to_string(data_get_type(src)));
+
+		goto cleanup;
 	}
 
 	/*
