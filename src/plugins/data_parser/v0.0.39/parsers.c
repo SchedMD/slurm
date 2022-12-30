@@ -279,9 +279,35 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->size > 0);
 		xassert(parser->obj_type_string[0]);
 
-		/* recursively check the child parsers */
-		for (int i = 0; i < parser->field_count; i++)
+		for (int i = 0; i < parser->field_count; i++) {
+			/* recursively check the child parsers */
 			check_parser(&parser->fields[i]);
+
+			/*
+			 * Verify each field_name is unique while ignoring
+			 * complex parsers.
+			 */
+			if (parser->fields[i].field_name)
+				for (int j = 0; j < parser->field_count; j++)
+					xassert((i == j) ||
+						xstrcasecmp(
+							parser->fields[i]
+								.field_name,
+							parser->fields[j]
+								.field_name));
+
+			/*
+			 * Verify each key path is unique while ignoring skipped
+			 * parsers
+			 */
+			if (parser->fields[i].key)
+				for (int j = 0; j < parser->field_count; j++)
+					xassert((i == j) ||
+						xstrcasecmp(parser->fields[i]
+								    .key,
+							    parser->fields[j]
+								    .key));
+		}
 	} else if (!parser->dump) {
 		/* reference to a real parser in an array */
 
