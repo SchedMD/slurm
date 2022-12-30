@@ -1429,6 +1429,62 @@ static bool _valid_features_act(char *features_act, char *features)
 	return valid_subset;
 }
 
+/*
+ * Validate that reported active features match what the controller expects.
+ *
+ * If the node doesn't report any features then don't do any validation.
+ */
+static bool _valid_reported_active_features(const char *reg_active_features,
+					    const char *node_active_features)
+{
+	char *tok, *saveptr;
+	char *tmp_node_act, *tmp_reg_act;
+	list_t *changeable_list = NULL;
+	bool valid = true;
+
+	if (!node_active_features || !reg_active_features)
+		return true;
+
+	tmp_node_act = xstrdup(node_active_features);
+	for (tok = strtok_r(tmp_node_act, ",", &saveptr);
+	     tok;
+	     tok = strtok_r(NULL, ",", &saveptr)) {
+
+		if (!node_features_g_changeable_feature(tok))
+			continue;
+
+		if (!changeable_list)
+			changeable_list = list_create(NULL);
+		list_append(changeable_list, tok);
+	}
+
+	if (changeable_list && list_count(changeable_list)) {
+		tmp_reg_act = xstrdup(reg_active_features);
+		for (tok = strtok_r(tmp_reg_act, ",", &saveptr);
+		     tok;
+		     tok = strtok_r(NULL, ",", &saveptr)) {
+			if (!list_delete_all(changeable_list,
+					     slurm_find_char_in_list,
+					     tok)) {
+				/* feature not in current active list */
+				valid = false;
+				break;
+			}
+		}
+		xfree(tmp_reg_act);
+	}
+
+	if (valid && list_count(changeable_list)) {
+		/* not all current active features reported */
+		valid = false;
+	}
+
+	FREE_NULL_LIST(changeable_list);
+	xfree(tmp_node_act);
+
+	return valid;
+}
+
 static void _undo_reboot_asap(node_record_t *node_ptr)
 {
 	node_ptr->node_state &= (~NODE_STATE_DRAIN);
@@ -2855,17 +2911,29 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 							  FEATURE_MODE_IND);
 	}
 	if (reg_msg->features_active) {
-		char *tmp_feature;
-		tmp_feature = node_features_g_node_xlate(
-						reg_msg->features_active,
-						orig_features_act,
-						orig_features,
-						node_ptr->index);
-		xfree(node_ptr->features_act);
-		node_ptr->features_act = tmp_feature;
-		(void) update_node_active_features(node_ptr->name,
-						   node_ptr->features_act,
-						   FEATURE_MODE_IND);
+		if (!_valid_reported_active_features(reg_msg->features_active,
+						     node_ptr->features_act)) {
+			debug("Node %s reporting different active features (%s) than node currently has (%s)",
+			      reg_msg->node_name,
+			      node_ptr->features_act,
+			      reg_msg->features_active);
+			error_code  = EINVAL;
+			xstrfmtcat(reason_down, "%sReported active features (%s) different from currently active features (%s)",
+				   reason_down ? ", " : "",
+				   reg_msg->features_active, node_ptr->features_act);
+		} else {
+			char *tmp_feature;
+			tmp_feature =
+				node_features_g_node_xlate(
+					reg_msg->features_active,
+					orig_features_act, orig_features,
+					node_ptr->index);
+			xfree(node_ptr->features_act);
+			node_ptr->features_act = tmp_feature;
+			(void) update_node_active_features(
+				node_ptr->name, node_ptr->features_act,
+				FEATURE_MODE_IND);
+		}
 	}
 	xfree(orig_features);
 	xfree(orig_features_act);
