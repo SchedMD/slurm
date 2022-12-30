@@ -148,6 +148,34 @@ static void _set_flag_bit_equal(const parser_t *const parser, void *dst,
 	}
 }
 
+static char *_flag_parent_path(char **path_ptr,
+			       foreach_flag_parser_args_t *args)
+{
+	char *path = NULL;
+	data_t *ppath, *ppath_last;
+
+	if (*path_ptr)
+		return *path_ptr;
+
+	ppath = data_copy(NULL, args->parent_path);
+	ppath_last = data_get_list_last(ppath);
+
+	if (args->index < 0)
+		args->index = 0;
+
+	/* Use jq style array zero based array notation */
+	data_set_string_fmt(ppath_last, "%s[%zu]",
+			    data_get_string(ppath_last), args->index);
+
+	args->index++;
+	(void) data_list_join_str(&path, ppath, PATH_SEP);
+	FREE_NULL_DATA(ppath);
+
+	*path_ptr = path;
+
+	return path;
+}
+
 static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 {
 	foreach_flag_parser_args_t *args = arg;
@@ -160,36 +188,19 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 	xassert(args->args->magic == MAGIC_ARGS);
 	xassert(parser->magic == MAGIC_PARSER);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
-		/*
-		 * This is a terminal leaf so we don't always need to update the
-		 * parent_path unless DATA logging is active
-		 */
-		data_t *ppath = data_copy(NULL, args->parent_path);
-		data_t *ppath_last = data_get_list_last(ppath);
-
-		if (args->index < 0)
-			args->index = 0;
-
-		/* Use jq style array zero based array notation */
-		data_set_string_fmt(ppath_last, "%s[%zu]",
-				    data_get_string(ppath_last), args->index);
-
-		args->index++;
-		(void) data_list_join_str(&path, ppath, PATH_SEP);
-		FREE_NULL_DATA(ppath);
-	}
-
 	if (parser->flag == FLAG_TYPE_BIT_ARRAY) {
 		for (int8_t i = 0; (i < parser->flag_bit_array_count); i++) {
 			const flag_bit_t *bit = &parser->flag_bit_array[i];
 
 			if (bit->type == FLAG_BIT_TYPE_EQUAL)
-				_set_flag_bit(parser, dst, bit, matched, path,
+				_set_flag_bit(parser, dst, bit, matched,
+					      _flag_parent_path(&path, args),
 					      src);
 			else if (bit->type == FLAG_BIT_TYPE_BIT)
 				_set_flag_bit_equal(parser, dst, bit, matched,
-						    path, src);
+						    _flag_parent_path(&path,
+								      args),
+						    src);
 			else
 				fatal_abort("%s: invalid bit_flag_t", __func__);
 		}
@@ -216,7 +227,7 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 		}
 
 		log_flag(DATA, "%s: %s{%s(0x%" PRIxPTR ")} %s %s %s %s(0x%" PRIxPTR "+%zd)%s%s=%s via boolean flag parser %s(0x%" PRIxPTR ")",
-			 __func__, path,
+			 __func__, _flag_parent_path(&path, args),
 			 data_type_to_string(data_get_type(src)),
 			 (uintptr_t) src, (matched ? "==" : "!="),
 			 parser->flag_name,
