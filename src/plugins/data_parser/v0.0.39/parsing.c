@@ -197,6 +197,8 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 
 			if (matched)
 				matched_any = true;
+			else
+				continue;
 
 			if (bit->type == FLAG_BIT_TYPE_EQUAL)
 				_set_flag_bit(parser, dst, bit, matched,
