@@ -259,8 +259,6 @@ static int parse_flag(void *dst, const parser_t *const parser, data_t *src,
 	if (parser->ptr_offset > 0)
 		fargs.dst += parser->ptr_offset;
 
-	(void) data_list_split_str(ppath, parser->key, PATH_SEP);
-
 	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA)
 		(void) data_list_join_str(&path, ppath, PATH_SEP);
 
