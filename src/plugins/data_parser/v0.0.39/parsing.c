@@ -262,7 +262,21 @@ static int parse_flag(void *dst, const parser_t *const parser, data_t *src,
 	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA)
 		(void) data_list_join_str(&path, ppath, PATH_SEP);
 
-	if (data_get_type(src) != DATA_TYPE_LIST) {
+	if (data_get_type(src) == DATA_TYPE_STRING) {
+		/* List item may just be a single flag */
+		if (_foreach_flag_parser(src, &fargs) != DATA_FOR_EACH_CONT) {
+			if (!path)
+				(void) data_list_join_str(&path, ppath,
+							  PATH_SEP);
+
+			rc = on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_FLAGS_INVALID, path, __func__,
+				      "Parsing single flag \"%s\" failed",
+				      data_get_string(src));
+
+			goto cleanup;
+		}
+	} else if (data_get_type(src) != DATA_TYPE_LIST) {
 		if (!path)
 			(void) data_list_join_str(&path, ppath, PATH_SEP);
 
@@ -272,15 +286,13 @@ static int parse_flag(void *dst, const parser_t *const parser, data_t *src,
 			      data_type_to_string(data_get_type(src)));
 
 		goto cleanup;
-	}
-
 	/*
 	 * Flags need special handling as they are always a LIST with a
 	 * matching string value. This requires that each possible flag
 	 * must be searched for in the list to know if it is there or
 	 * not.
 	 */
-	if (data_list_for_each(src, _foreach_flag_parser, &fargs) < 0) {
+	} else if (data_list_for_each(src, _foreach_flag_parser, &fargs) < 0) {
 		if (!path)
 			(void) data_list_join_str(&path, ppath, PATH_SEP);
 
