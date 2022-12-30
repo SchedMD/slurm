@@ -4392,7 +4392,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, req_nodes, "required_nodes"),
 	add_skip(req_node_inx),
 	add_parse(UINT32, req_switch, "minimum_switches"),
-	add_parse(UINT16, requeue, "requeue"),
+	add_parse(BOOL16, requeue, "requeue"),
 	add_parse(UINT64, resize_time, "resize_time"),
 	add_parse(UINT16, restart_cnt, "restart_cnt"),
 	add_parse(STRING, resv_name, "resv_name"),
