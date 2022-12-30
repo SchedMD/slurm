@@ -977,20 +977,23 @@ _read_config(void)
 			conf->node_name,
 			conf->hostname);
 
+	node_ptr = find_node_record(conf->node_name);
+	xassert(node_ptr);
+
 	if (conf->dynamic_type == DYN_NODE_NORM)
 		conf->port = cf->slurmd_port;
 	else
-		conf->port = slurm_conf_get_port(conf->node_name);
+		conf->port = node_ptr->port;
 	slurm_conf.slurmd_port = conf->port;
-	slurm_conf_get_cpus_bsct(conf->node_name,
-				 &conf->conf_cpus, &conf->conf_boards,
-				 &conf->conf_sockets, &conf->conf_cores,
-				 &conf->conf_threads);
 
-	slurm_conf_get_res_spec_info(conf->node_name,
-				     &conf->cpu_spec_list,
-				     &conf->core_spec_cnt,
-				     &conf->mem_spec_limit);
+	conf->conf_boards = node_ptr->boards;
+	conf->conf_cores = node_ptr->cores;
+	conf->conf_cpus = node_ptr->cpus;
+	conf->conf_sockets = node_ptr->tot_sockets;
+	conf->conf_threads = node_ptr->threads;
+	conf->core_spec_cnt = node_ptr->core_spec_cnt;
+	conf->cpu_spec_list = xstrdup(node_ptr->cpu_spec_list);
+	conf->mem_spec_limit = node_ptr->mem_spec_limit;
 
 	/* store hardware properties in slurmd_config */
 	xfree(conf->block_map);
@@ -1128,8 +1131,6 @@ _read_config(void)
 	 * memory and the configured memory is needed to setup the slurmd's
 	 * memory cgroup.
 	 */
-	node_ptr = find_node_record(conf->node_name);
-	xassert(node_ptr);
 	conf->conf_memory_size = node_ptr->real_memory;
 
 	get_memory(&conf->physical_memory_size);
