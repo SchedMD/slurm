@@ -69,10 +69,14 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
    "all_nodes" : "cloud[1-3]",
    "jobs" : [
       {
+         "extra" : "An arbitrary string from --extra"
+         "features" : "c1,c2"
          "job_id" : 140814,
          "nodes" : "cloud[1-3]",
       },
       {
+         "extra" : null
+         "features" : "c1,c2"
          "job_id" : 140815,
          "nodes" : "cloud[1-2]",
       }
