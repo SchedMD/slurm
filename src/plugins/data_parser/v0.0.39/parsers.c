@@ -323,7 +323,11 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->list_del_func);
 		xassert(!parser->list_new_func);
-		xassert((parser->size == NO_VAL) || (parser->size > 0));
+		/* linked parsers must always be the same size if known */
+		xassert((parser->size == NO_VAL) ||
+			((parser->size > 0) &&
+			 (parser->size ==
+			  find_parser_by_type(parser->type)->size)));
 	} else {
 		/* parser of simple or complex type */
 		if (parser->ptr_offset == NO_VAL) {
