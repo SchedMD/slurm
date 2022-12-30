@@ -279,6 +279,9 @@ static int parse_flag(void *dst, const parser_t *const parser, data_t *src,
 	 * not.
 	 */
 	if (data_list_for_each(src, _foreach_flag_parser, &fargs) < 0) {
+		if (!path)
+			(void) data_list_join_str(&path, ppath, PATH_SEP);
+
 		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_FLAGS_INVALID, path, __func__,
 			      "Parsing flags failed");
