@@ -567,13 +567,6 @@ extern char *slurm_conf_get_aliased_nodename(void);
 extern char *slurm_conf_get_bcast_address(const char *node_name);
 
 /*
- * slurm_conf_get_port - Return the port for a given NodeName
- *
- * NOTE: Caller must NOT be holding slurm_conf_lock().
- */
-extern uint16_t slurm_conf_get_port(const char *node_name);
-
-/*
  * slurm_conf_get_addr - Return the slurm_addr_t for a given NodeName in
  *	the parameter "address".  The return code is SLURM_SUCCESS on success,
  *	and SLURM_ERROR if the address lookup failed.

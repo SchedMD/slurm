@@ -2634,35 +2634,6 @@ extern char *slurm_conf_get_bcast_address(const char *node_name)
 }
 
 /*
- * slurm_conf_get_port - Return the port for a given NodeName
- */
-extern uint16_t slurm_conf_get_port(const char *node_name)
-{
-	int idx;
-	names_ll_t *p;
-
-	slurm_conf_lock();
-	_init_slurmd_nodehash();
-
-	idx = _get_hash_idx(node_name);
-	p = node_to_host_hashtbl[idx];
-	while (p) {
-		if (xstrcmp(p->alias, node_name) == 0) {
-			uint16_t port;
-			if (!p->port)
-				p->port = (uint16_t) conf_ptr->slurmd_port;
-			port = p->port;
-			slurm_conf_unlock();
-			return port;
-		}
-		p = p->next_alias;
-	}
-	slurm_conf_unlock();
-
-	return 0;
-}
-
-/*
  * Unlink names_ll_t from host_to_node_hashtbl without free'ing.
  */
 static void _remove_host_to_node_link(names_ll_t *p)
