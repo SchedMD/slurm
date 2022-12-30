@@ -66,6 +66,7 @@
 
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
 
+#define MAGIC_FOREACH_CSV_LIST 0x8891be2b
 #define MAGIC_FOREACH_LIST 0xaefa2af3
 #define MAGIC_FOREACH_LIST_FLAG 0xa1d4acd2
 #define MAGIC_FOREACH_POPULATE_GLOBAL_TRES_LIST 0x31b8aad2
@@ -2264,7 +2265,91 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(CSV_LIST)
+typedef struct {
+	int magic; /* MAGIC_FOREACH_CSV_LIST */
+	int rc;
+	char *dst;
+	char *pos;
+	const parser_t *const parser;
+	args_t *args;
+	data_t *parent_path;
+} parse_foreach_CSV_LIST_t;
+
+static data_for_each_cmd_t _parse_foreach_CSV_LIST_list(data_t *data, void *arg)
+{
+	parse_foreach_CSV_LIST_t *args = arg;
+
+	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
+		args->rc = on_error(PARSING, args->parser->type, args->args,
+				    ESLURM_DATA_CONV_FAILED, NULL, __func__,
+				    "unable to convert csv entry %s to string",
+				    data_type_to_string(data_get_type(data)));
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	xstrfmtcatat(args->dst, &args->pos, "%s%s", (args->dst ? "," : ""),
+		     data_get_string(data));
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static data_for_each_cmd_t _parse_foreach_CSV_LIST_dict(const char *key,
+							data_t *data, void *arg)
+{
+	parse_foreach_CSV_LIST_t *args = arg;
+
+	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
+		args->rc = on_error(PARSING, args->parser->type, args->args,
+				    ESLURM_DATA_CONV_FAILED, NULL, __func__,
+				    "unable to convert csv entry %s to string",
+				    data_type_to_string(data_get_type(data)));
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	xstrfmtcatat(args->dst, &args->pos, "%s%s=%s", (args->dst ? "," : ""),
+		     key, data_get_string(data));
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static int PARSE_FUNC(CSV_LIST)(const parser_t *const parser, void *obj,
+				data_t *src, args_t *args, data_t *parent_path)
+{
+	char **dst = obj;
+	parse_foreach_CSV_LIST_t pargs = {
+		.magic = MAGIC_FOREACH_CSV_LIST,
+		.parser = parser,
+		.args = args,
+		.parent_path = parent_path,
+	};
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(!*dst);
+
+	xfree(*dst);
+
+	if (data_get_type(src) == DATA_TYPE_LIST) {
+		data_list_for_each(src, _parse_foreach_CSV_LIST_list, &pargs);
+	} else if (data_get_type(src) == DATA_TYPE_DICT) {
+		data_dict_for_each(src, _parse_foreach_CSV_LIST_dict, &pargs);
+	} else if (data_convert_type(src, DATA_TYPE_STRING) ==
+		   DATA_TYPE_STRING) {
+		*dst = xstrdup(data_get_string(src));
+		return SLURM_SUCCESS;
+	} else {
+		return on_error(PARSING, parser->type, args, ESLURM_DATA_CONV_FAILED,
+				NULL, __func__,
+				"Expected dictionary or list or string for comma delimited list but got %s",
+				data_type_to_string(data_get_type(src)));
+	}
+
+	if (!pargs.rc)
+		*dst = pargs.dst;
+	else
+		xfree(pargs.dst);
+
+	return pargs.rc;
+}
 
 static int DUMP_FUNC(CSV_LIST)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
