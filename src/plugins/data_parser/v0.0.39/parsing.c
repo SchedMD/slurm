@@ -181,7 +181,6 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 	foreach_flag_parser_args_t *args = arg;
 	void *dst = args->dst;
 	const parser_t *const parser = args->parser;
-	bool matched = !xstrcasecmp(data_get_string(src), parser->flag_name);
 	char *path = NULL;
 
 	xassert(args->magic == MAGIC_FOREACH_LIST_FLAG);
@@ -189,8 +188,15 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 	xassert(parser->magic == MAGIC_PARSER);
 
 	if (parser->flag == FLAG_TYPE_BIT_ARRAY) {
+		bool matched_any = false;
+
 		for (int8_t i = 0; (i < parser->flag_bit_array_count); i++) {
 			const flag_bit_t *bit = &parser->flag_bit_array[i];
+			bool matched =
+				!xstrcasecmp(data_get_string(src), bit->name);
+
+			if (matched)
+				matched_any = true;
 
 			if (bit->type == FLAG_BIT_TYPE_EQUAL)
 				_set_flag_bit(parser, dst, bit, matched,
@@ -204,7 +210,19 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 			else
 				fatal_abort("%s: invalid bit_flag_t", __func__);
 		}
+
+		if (!matched_any) {
+			on_error(PARSING, parser->type, args->args,
+				 ESLURM_DATA_FLAGS_INVALID,
+				 _flag_parent_path(&path, args), __func__,
+				 "Unknown flag \"%s\"", data_get_string(src));
+			xfree(path);
+			return DATA_FOR_EACH_FAIL;
+		}
 	} else if (parser->flag == FLAG_TYPE_BOOL) {
+		bool matched =
+			!xstrcasecmp(data_get_string(src), parser->flag_name);
+
 		/*
 		 * match size exactly of source to avoid any high bits
 		 * not getting cleared
