@@ -522,6 +522,8 @@ static void _do_power_work(time_t now)
 			node_ptr->last_busy = 0;
 			node_ptr->power_save_req_time = 0;
 
+			reset_node_active_features(node_ptr);
+
 			clusteracct_storage_g_node_down(
 				acct_db_conn, node_ptr, now,
 				"Powered down after SuspendTimeout",
@@ -543,6 +545,9 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
+
+			reset_node_active_features(node_ptr);
+
 			/*
 			 * set_node_down_ptr() will remove the node from the
 			 * avail_node_bitmap.

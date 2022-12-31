@@ -4363,14 +4363,10 @@ static void _set_reboot_features_active(bitstr_t *node_bitmap,
 	node_record_t *node_ptr;
 
 	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
-		char *tmp_feature, *orig_features_act;
+		char *tmp_feature;
 
-		/* Point to node features, don't copy */
-		orig_features_act =
-			node_ptr->features_act ?
-			node_ptr->features_act : node_ptr->features;
 		tmp_feature = node_features_g_node_xlate(reboot_features,
-							 orig_features_act,
+							 node_ptr->features_act,
 							 node_ptr->features, i);
 		xfree(node_ptr->features_act);
 		node_ptr->features_act = tmp_feature;
@@ -4385,6 +4381,7 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 	node_record_t *node_ptr;
 	time_t now = time(NULL);
 	bitstr_t *boot_node_bitmap = NULL, *feature_node_bitmap = NULL;
+	bitstr_t *non_feature_node_bitmap = NULL;
 	char *reboot_features = NULL;
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 	static bool power_save_on = false;
@@ -4406,7 +4403,58 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 		boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
 	else
 		boot_node_bitmap = node_features_reboot(job_ptr);
-	if (boot_node_bitmap == NULL) {
+
+	if (boot_node_bitmap &&
+	    job_ptr->details->features_use &&
+	    node_features_g_user_update(job_ptr->user_id)) {
+		non_feature_node_bitmap = bit_copy(boot_node_bitmap);
+		reboot_features = node_features_g_job_xlate(
+			job_ptr->details->features_use);
+		if (reboot_features)
+			feature_node_bitmap = node_features_g_get_node_bitmap();
+		if (feature_node_bitmap)
+			bit_and(feature_node_bitmap, non_feature_node_bitmap);
+		if (!feature_node_bitmap ||
+		    (bit_ffs(feature_node_bitmap) == -1)) {
+			/* No KNL nodes to reboot */
+			FREE_NULL_BITMAP(feature_node_bitmap);
+		} else {
+			bit_and_not(non_feature_node_bitmap,
+				    feature_node_bitmap);
+			if (bit_ffs(non_feature_node_bitmap) == -1) {
+				/* No non-KNL nodes to reboot */
+				FREE_NULL_BITMAP(non_feature_node_bitmap);
+			}
+		}
+	}
+
+	if (feature_node_bitmap) {
+		/*
+		 * Update node features now to avoid a race where a
+		 * second job may request that this node gets rebooted
+		 * (in order to get a new active feature) *after* the
+		 * first reboot request but *before* slurmd actually
+		 * starts up. If that would happen then the second job
+		 * would stay configuring forever, waiting for the node
+		 * to reboot even though the node already rebooted.
+		 *
+		 * By setting the node's active features right now, any
+		 * other job that wants that active feature can be
+		 * scheduled onto this node, which will also already be
+		 * rebooting, so those other jobs won't send additional
+		 * reboot requests to change the feature.
+		 */
+		_set_reboot_features_active(feature_node_bitmap,
+					    reboot_features);
+	}
+
+	/*
+	 * Assume the power save thread will handle the boot if any of the nodes
+	 * are cloud nodes. In KNL/features, the node is being rebooted and not
+	 * brought up from being powered down.
+	 */
+	if ((boot_node_bitmap == NULL) ||
+	    bit_overlap_any(cloud_node_bitmap, job_ptr->node_bitmap)) {
 		/* launch_job() when all nodes have booted */
 		if (bit_overlap_any(power_node_bitmap, job_ptr->node_bitmap) ||
 		    bit_overlap_any(booting_node_bitmap,
@@ -4444,59 +4492,21 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 		node_ptr->boot_req_time = now;
 	}
 
-	if (job_ptr->details->features_use &&
-	    node_features_g_user_update(job_ptr->user_id)) {
-		reboot_features = node_features_g_job_xlate(
-			job_ptr->details->features_use);
-		if (reboot_features)
-			feature_node_bitmap = node_features_g_get_node_bitmap();
-		if (feature_node_bitmap)
-			bit_and(feature_node_bitmap, boot_node_bitmap);
-		if (!feature_node_bitmap ||
-		    (bit_ffs(feature_node_bitmap) == -1)) {
-			/* No KNL nodes to reboot */
-			FREE_NULL_BITMAP(feature_node_bitmap);
-		} else {
-			bit_and_not(boot_node_bitmap, feature_node_bitmap);
-			if (bit_ffs(boot_node_bitmap) == -1) {
-				/* No non-KNL nodes to reboot */
-				FREE_NULL_BITMAP(boot_node_bitmap);
-			}
-		}
-	}
-
 	if (feature_node_bitmap) {
 		/* Reboot nodes to change KNL NUMA and/or MCDRAM mode */
 		_do_reboot(power_save_on, feature_node_bitmap, job_ptr,
 			   reboot_features, protocol_version);
-
-		/*
-		 * Update node features now to avoid a race where a
-		 * second job may request that this node gets rebooted
-		 * (in order to get a new active feature) *after* the
-		 * first reboot request but *before* slurmd actually
-		 * starts up. If that would happen then the second job
-		 * would stay configuring forever, waiting for the node
-		 * to reboot even though the node already rebooted.
-		 *
-		 * By setting the node's active features right now, any
-		 * other job that wants that active feature can be
-		 * scheduled onto this node, which will also already be
-		 * rebooting, so those other jobs won't send additional
-		 * reboot requests to change the feature.
-		 */
-		_set_reboot_features_active(feature_node_bitmap,
-					    reboot_features);
 	}
 
-	if (boot_node_bitmap) {
+	if (non_feature_node_bitmap) {
 		/* Reboot nodes with no feature changes */
-		_do_reboot(power_save_on, boot_node_bitmap, job_ptr, NULL,
-			   protocol_version);
+		_do_reboot(power_save_on, non_feature_node_bitmap, job_ptr,
+			   NULL, protocol_version);
 	}
 
 	xfree(reboot_features);
 	FREE_NULL_BITMAP(boot_node_bitmap);
+	FREE_NULL_BITMAP(non_feature_node_bitmap);
 	FREE_NULL_BITMAP(feature_node_bitmap);
 }
 #endif

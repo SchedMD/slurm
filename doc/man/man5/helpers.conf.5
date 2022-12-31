@@ -38,9 +38,35 @@ and a failure is assumed. Default value is 10 seconds.
 
 .TP
 \fBFeature\fR=<\fIstring\fR> \fBHelper\fR=<\fIfile\fR>
-Defines a \fBFeature\fR and the corresponding \fBHelper\fR program that reports
-and modifies the status of the feature. Multiple \fBFeature\fR entries are
-allowed, one for each feature and corresponding program/script.
+Defines \fBFeature(s)\fR and a corresponding \fBHelper\fR program that reports
+and modifies the status of the feature(s). Multiple \fBFeature\fR entries are
+allowed, one for each feature and corresponding program/script. A comma
+separated list of features can also be defined for one \fBHelper\fR.
+
+Features can be defined per node by creating a unique file for each node. The
+controller must have a \fBhelpers.conf\fR that lists all possible helper
+features.
+
+A single \fBhelpers.conf\fR can be created that defines features for specific
+nodes by prepending \fINodeName=<nodelist>\fR to the front of the \fBFeature\fR
+line. A \fBFeature\fR not prepended with \fINodeName\fR will apply to all
+nodes.
+
+.IP
+.nf
+# helpers.conf
+NodeName=n1_[1-10] Feature=a1,a2 Helper=/path/helper.sh
+NodeName=n2_[1-10] Feature=b1,b2 Helper=/path/helper.sh
+Feature=c1,c2 Helper=/path/helper.sh
+.fi
+
+If a feature is defined in the \fBhelpers.conf\fR and is not defined on a
+specific node in the \fBhelpers.conf\fR but is defined for that node in the
+slurm.conf, that feature is treated as a changeable/rebootable feature by the
+controller. For example, if feature \fIfa\fR is defined on node \fInode1\fR in
+the \fBslurm.conf\fR but is only listed on \fInode2\fR in the
+\fBhelpers.conf\fR, the feature will still trigger the node to be rebooted if
+not active.
 
 The \fBHelper\fR is an arbitrary program or script that reports and modifies
 the feature set on a given node. The helpers are site\-specific and are not
@@ -95,9 +121,7 @@ the same time.
 .IP
 .nf
 # helpers.conf
-Feature=nps1 Helper=/usr/local/bin/nps
-Feature=nps2 Helper=/usr/local/bin/nps
-Feature=nps4 Helper=/usr/local/bin/nps
+Feature=nps1,nps2,nps4 Helper=/usr/local/bin/nps
 Feature=mig=on Helper=/usr/local/bin/mig
 Feature=mig=off Helper=/usr/local/bin/mig
 MutuallyExclusive=nps1,nps2,nps4

@@ -63,6 +63,10 @@ HIGHLIGHTS
  -- Automatically create directories for stdout/stderr output files. Paths may
     use %j and related substitution characters as well.
  -- Add --tres-per-task to salloc/sbatch/srun.
+ -- Allow nodefeatures plugin features to work with cloud nodes.
+    e.g. - Powered down nodes have no active changeable features.
+         - Nodes can't be changed to other active features until powered down.
+	 - Active changeable features are reset/cleared on power down.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -87,6 +91,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Add new DebugFlags option 'JobComp' to replace 'Elasticsearch'.
  -- Add configurable job requeue limit parameter - MaxBatchRequeue - in
     slurm.conf to permit changes from the old hard-coded value of 5.
+ -- helpers.conf - Allow specification of node specific features.
+ -- helpers.conf - Allow many features to one helper script.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

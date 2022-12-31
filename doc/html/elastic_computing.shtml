@@ -69,10 +69,14 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
    "all_nodes" : "cloud[1-3]",
    "jobs" : [
       {
+         "extra" : "An arbitrary string from --extra"
+         "features" : "c1,c2"
          "job_id" : 140814,
          "nodes" : "cloud[1-3]",
       },
       {
+         "extra" : null
+         "features" : "c1,c2"
          "job_id" : 140815,
          "nodes" : "cloud[1-2]",
       }
@@ -492,6 +496,23 @@ debug*      up    infinite     1    drng!  c1-compute-0-0
 debug*      up    infinite    99    idle~  c1-compute-0-[1-99]
 </pre>
 
-<p style="text-align:center;">Last modified 28 October 2022</p>
+<h3 id="nodefeatures"><strong>NodeFeaturesPlugin and Cloud Nodes</strong>
+<a class="slurm_link" href="#nodefeatures"></a>
+</h3>
+<p>
+Features defined by a
+<a href="slurm.conf.html#OPT_NodeFeaturesPlugins">NodeFeaturesPlugin</a>
+and attached to a cloud node in the <b>slurm.conf</b>, will be available but
+not active when the node is powered down. If a job requests NodeFeaturesPlugin
+features, the controller will allocate nodes that are powered down and have the
+features as available. At allocation, the features will be made active. A cloud
+node will remain with the active features until the node is powered down (i.e.
+the node can't be rebooted to get other features until the node is powered
+down). When the node is powered down, the active NodeaFeaturesPlugin features
+are cleared. Any non-NodeFeaturesPlugin features are active by default and can
+be used as a label.
+</p>
+
+<p style="text-align:center;">Last modified 30 December 2022</p>
 
 <!--#include virtual="footer.txt"-->

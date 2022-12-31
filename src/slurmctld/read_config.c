@@ -366,6 +366,7 @@ static void _init_bitmaps(void)
 	FREE_NULL_BITMAP(bf_ignore_node_bitmap);
 	FREE_NULL_BITMAP(booting_node_bitmap);
 	FREE_NULL_BITMAP(cg_node_bitmap);
+	FREE_NULL_BITMAP(cloud_node_bitmap);
 	FREE_NULL_BITMAP(future_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(power_node_bitmap);
@@ -376,6 +377,7 @@ static void _init_bitmaps(void)
 	bf_ignore_node_bitmap = bit_alloc(node_record_count);
 	booting_node_bitmap = bit_alloc(node_record_count);
 	cg_node_bitmap = bit_alloc(node_record_count);
+	cloud_node_bitmap = bit_alloc(node_record_count);
 	future_node_bitmap = bit_alloc(node_record_count);
 	idle_node_bitmap = bit_alloc(node_record_count);
 	power_node_bitmap = bit_alloc(node_record_count);
@@ -561,6 +563,8 @@ static void _build_bitmaps(void)
 			bit_set(booting_node_bitmap, node_ptr->index);
 		if (IS_NODE_COMPLETING(node_ptr))
 			bit_set(cg_node_bitmap, node_ptr->index);
+		if (IS_NODE_CLOUD(node_ptr))
+			bit_set(cloud_node_bitmap, node_ptr->index);
 		if (IS_NODE_IDLE(node_ptr) ||
 		    IS_NODE_ALLOCATED(node_ptr) ||
 		    ((IS_NODE_REBOOT_REQUESTED(node_ptr) ||
@@ -2148,11 +2152,6 @@ extern void build_feature_list_ne(void)
 			while (token) {
 				_add_config_feature_inx(avail_feature_list,
 							token, node_ptr->index);
-				if (!node_ptr->features_act) {
-					_add_config_feature_inx(
-							active_feature_list,
-							token, node_ptr->index);
-				}
 				token = strtok_r(NULL, ",", &last);
 			}
 			xfree(tmp_str);
@@ -2247,6 +2246,91 @@ grab_includes:
 		gres_parse_config_dummy();
 	}
 }
+
+/*
+ * Append changeable features in old_features and not in features to features.
+ */
+static void _merge_changeable_features(char *old_features, char **features)
+{
+	char *save_ptr_old = NULL;
+	char *tok_old, *tmp_old, *tok_new;
+	char *sep;
+
+	if (*features)
+		sep = ",";
+	else
+		sep = "";
+
+	/* Merge features strings, skipping duplicates */
+	tmp_old = xstrdup(old_features);
+	for (tok_old = strtok_r(tmp_old, ",", &save_ptr_old);
+	     tok_old;
+	     tok_old = strtok_r(NULL, ",", &save_ptr_old)) {
+		bool match = false;
+
+		if (!node_features_g_changeable_feature(tok_old))
+			continue;
+
+		if (*features) {
+			char *tmp_new, *save_ptr_new = NULL;
+
+			/* Check if old feature already exists in features string */
+			tmp_new = xstrdup(*features);
+			for (tok_new = strtok_r(tmp_new, ",", &save_ptr_new);
+			     tok_new;
+			     tok_new = strtok_r(NULL, ",", &save_ptr_new)) {
+				if (!xstrcmp(tok_old, tok_new)) {
+					match = true;
+					break;
+				}
+			}
+			xfree(tmp_new);
+		}
+
+		if (match)
+			continue;
+
+		xstrfmtcat(*features, "%s%s", sep, tok_old);
+		sep = ",";
+	}
+	xfree(tmp_old);
+}
+
+static void _preserve_active_features(const char *available,
+				      const char *old_active,
+				      char **active)
+{
+	char *old_feature, *saveptr_old;
+	char *tmp_old_active;
+
+	if (!available || !old_active)
+		return;
+
+	tmp_old_active = xstrdup(old_active);
+	for (old_feature = strtok_r(tmp_old_active, ",", &saveptr_old);
+	     old_feature;
+	     old_feature = strtok_r(NULL, ",", &saveptr_old)) {
+		char *new_feature, *saveptr_avail;
+		char *tmp_avail;
+
+		if (!node_features_g_changeable_feature(old_feature))
+			continue;
+
+		tmp_avail = xstrdup(available);
+		for (new_feature = strtok_r(tmp_avail, ",", &saveptr_avail);
+		     new_feature;
+		     new_feature = strtok_r(NULL, ",", &saveptr_avail)) {
+			if (!xstrcmp(old_feature, new_feature)) {
+				xstrfmtcat(*active, "%s%s",
+					   *active ? "," : "", old_feature);
+				break;
+			}
+		}
+		xfree(tmp_avail);
+	}
+	xfree(tmp_old_active);
+}
+
 /*
  * Configure node features.
  * IN old_node_table_ptr IN - Previous nodes information
@@ -2259,10 +2343,11 @@ static void _set_features(node_record_t **old_node_table_ptr,
 			  int old_node_record_count, int recover)
 {
 	node_record_t *node_ptr, *old_node_ptr;
-	char *tmp, *tok, *sep;
 	int i, node_features_cnt = node_features_g_count();
 
 	for (i = 0; i < old_node_record_count; i++) {
+		char *old_features_act;
+
 		if (!(old_node_ptr = old_node_table_ptr[i]))
 			continue;
 
@@ -2286,13 +2371,52 @@ static void _set_features(node_record_t **old_node_table_ptr,
 			continue;
 		}
 
-		xfree(node_ptr->features_act);
-		node_ptr->features_act = xstrdup(node_ptr->features);
-
-		if (node_features_cnt == 0)
+		/* No changeable features so active == available */
+		if (node_features_cnt == 0) {
+			xfree(node_ptr->features_act);
+			node_ptr->features_act = xstrdup(node_ptr->features);
 			continue;
+		}
 
 		/* If we are here, there's a node_features plugin active */
+
+		/*
+		 * Changeable features may be listed in the slurm.conf along
+		 * with the non-changeable features (e.g. cloud nodes). So
+		 * filter out the changeable features and leave only the
+		 * non-changeable features. non-changeable features are active
+		 * by default.
+		 */
+		old_features_act = node_ptr->features_act;
+		node_ptr->features_act =
+			filter_out_changeable_features(node_ptr->features);
+
+		/*
+		 * Preserve active features on startup but make sure they are a
+		 * subset of available features -- in case available features
+		 * were changed.
+		 *
+		 * features_act has all non-changeable features now. We need to
+		 * add back previous active features that are in available
+		 * features.
+		 *
+		 * For cloud nodes, changeable features are added in slurm.conf.
+		 * This will preserve the cloud active features on startup. When
+		 * changeable features aren't defined in slurm.conf then
+		 * features_act will be reset to all non-changeable features
+		 * read in from slurm.conf and will expect to get the available
+		 * and active features from the slurmd.
+		 */
+		_preserve_active_features(node_ptr->features, old_features_act,
+					  &node_ptr->features_act);
+		xfree(old_features_act);
+
+		/*
+		 * On startup, node_record_table_ptr is passed as
+		 * old_node_table_ptr so no need to merge features.
+		 */
+		if (node_ptr == old_node_ptr)
+			continue;
 
 		/*
 		 * The subset of plugin-controlled features_available
@@ -2303,41 +2427,13 @@ static void _set_features(node_record_t **old_node_table_ptr,
 		 * registered to get KNL available and active features.
 		 */
 		if (old_node_ptr->features != NULL) {
-			char *save_ptr = NULL;
-			if (node_ptr->features)
-				sep = ",";
-			else
-				sep = "";
-			tmp = xstrdup(old_node_ptr->features);
-			tok = strtok_r(tmp, ",", &save_ptr);
-			while (tok) {
-				if (node_features_g_changeable_feature(tok)) {
-					xstrfmtcat(node_ptr->features,
-						   "%s%s", sep, tok);
-					sep = ",";
-				}
-				tok = strtok_r(NULL, ",", &save_ptr);
-			}
-			xfree(tmp);
+			_merge_changeable_features(old_node_ptr->features,
+						   &node_ptr->features);
 		}
 
 		if (old_node_ptr->features_act != NULL) {
-			char *save_ptr = NULL;
-			if (node_ptr->features_act)
-				sep = ",";
-			else
-				sep = "";
-			tmp = xstrdup(old_node_ptr->features_act);
-			tok = strtok_r(tmp, ",", &save_ptr);
-			while (tok) {
-				if (node_features_g_changeable_feature(tok)) {
-					xstrfmtcat(node_ptr->features_act,
-						   "%s%s", sep, tok);
-					sep = ",";
-				}
-				tok = strtok_r(NULL, ",", &save_ptr);
-			}
-			xfree(tmp);
+			_merge_changeable_features(old_node_ptr->features_act,
+						   &node_ptr->features_act);
 		}
 	}
 }
