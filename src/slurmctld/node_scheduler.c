@@ -1748,8 +1748,16 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			if (!feature_found)
 				continue;
 			if (!bit_super_set(job_ptr->details->req_node_bitmap,
-					   avail_bitmap))
+					   avail_bitmap)) {
 				missing_required_nodes = true;
+				/*
+				 * Since this node_set is not valid for this
+				 * job, don't accumulate nodes in this node_set
+				 * (unless we are accumulating for xand).
+				 */
+				if (!has_xand)
+					FREE_NULL_BITMAP(avail_bitmap);
+			}
 
 			if (missing_required_nodes)
 				continue;

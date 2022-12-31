@@ -232,6 +232,9 @@ documents those changes that are of interest to users and administrators.
  -- Add SLURM_JOB_START_TIME and SLURM_JOB_END_TIME environment variables.
  -- Add SuspendExcStates option to slurm.conf to avoid suspending/powering down
     specific node states.
+ -- Fix a job requesting --nodelist and --constraint with a Matching OR
+    operator could get allocated nodes that do not satisfy the constraint
+    request.
 
 * Changes in Slurm 22.05.8
 ==========================
