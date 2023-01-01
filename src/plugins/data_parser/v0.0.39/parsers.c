@@ -4325,7 +4325,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, array_task_str, "array_task_string"),
 	add_parse(UINT32, assoc_id, "association_id"),
 	add_parse(STRING, batch_features, "batch_features"),
-	add_parse(BOOL, batch_flag, "batch_flag"),
+	add_parse(BOOL16, batch_flag, "batch_flag"),
 	add_parse(STRING, batch_host, "batch_host"),
 	add_parse_bit_flag_array(slurm_job_info_t, JOB_FLAGS, false, bitflags, "flags"),
 	add_skip(boards_per_node),
