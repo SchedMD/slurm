@@ -3873,7 +3873,7 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 /* should mirror the structure of slurmdb_step_rec_t */
 static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(UINT32, elapsed, "time/elapsed", NEED_NONE),
-	add_parse(UINT32, end, "time/end", NEED_NONE),
+	add_parse(UINT64, end, "time/end", NEED_NONE),
 	add_parse(JOB_EXIT_CODE, exitcode, "exit_code", NEED_NONE),
 	add_skip(job_ptr), /* redundant here */
 	add_parse(UINT32, nnodes, "nodes/count", NEED_NONE),
