@@ -4080,7 +4080,6 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 	add_cparse(STATS_MSG_CYCLE_MEAN, "schedule_cycle_mean"),
 	add_cparse(STATS_MSG_CYCLE_MEAN_DEPTH, "schedule_cycle_mean_depth"),
 	add_cparse(STATS_MSG_CYCLE_PER_MIN, "schedule_cycle_per_minute"),
-	add_skip(schedule_cycle_counter),
 	add_skip(schedule_cycle_depth),
 	add_parse(UINT32, schedule_queue_len, "schedule_queue_length"),
 	add_parse(UINT32, jobs_submitted, "jobs_submitted"),
