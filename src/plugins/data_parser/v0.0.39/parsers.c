@@ -3723,7 +3723,7 @@ static const parser_t PARSER_ARRAY(ACCOUNT)[] = {
 static const parser_t PARSER_ARRAY(ACCOUNTING)[] = {
 	add_parse(UINT64, alloc_secs, "allocated/seconds", NEED_NONE),
 	add_parse(UINT32, id, "id", NEED_NONE),
-	add_parse(UINT32, period_start, "start", NEED_NONE),
+	add_parse(UINT64, period_start, "start", NEED_NONE),
 	add_parse(TRES, tres_rec, "TRES", NEED_TRES),
 };
 #undef add_parse
