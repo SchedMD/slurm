@@ -4004,7 +4004,6 @@ static const parser_t PARSER_ARRAY(CLUSTER_ACCT_REC)[] = {
 	add_parse(UINT64, over_secs, "time/overcommitted"),
 	add_parse(UINT64, pdown_secs, "time/planned_down"),
 	add_parse(UINT64, period_start, "time/start"),
-	add_parse(UINT64, period_start, "time/reserved"),
 	add_parse(STRING, tres_rec.name, "tres/name"),
 	add_parse(STRING, tres_rec.type, "tres/type"),
 	add_parse(UINT32, tres_rec.id, "tres/id"),
