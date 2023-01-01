@@ -91,6 +91,7 @@ typedef struct parser_s {
 	/* offset from parent object - for fields in structs */
 	ssize_t ptr_offset; /* set to NO_VAL if there is no offset */
 	char *field_name; /* name of field in struct if there is a ptr_offset */
+	uint8_t field_name_overloads; /* number of other parsers using same field name */
 	/* path of field key in dictionary */
 	char *key; /* set to NULL if this is simple object */
 	need_t needs;
