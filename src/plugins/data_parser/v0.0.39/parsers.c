@@ -4194,7 +4194,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(USER_ID, owner, "owner"),
 	add_parse(CSV_LIST, partitions, "partitions"),
 	add_parse(UINT16, port, "port"),
-	add_parse(UINT16, real_memory, "real_memory"),
+	add_parse(UINT64, real_memory, "real_memory"),
 	add_parse(STRING, comment, "comment"),
 	add_parse(STRING, reason, "reason"),
 	add_parse(UINT64, reason_time, "reason_changed_at"),
