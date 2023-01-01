@@ -4034,14 +4034,13 @@ static const parser_t PARSER_ARRAY(ASSOC_USAGE)[] = {
 	add_skip(parent_assoc_ptr), /* not packed */
 	add_parse(FLOAT64, priority_norm, "normalized_priority"),
 	add_skip(fs_assoc_ptr), /* not packed */
-	add_parse(FLOAT128, shares_norm, "normalized_shares"),
-	add_parse(FLOAT64, usage_efctv, "effective_normalized_usage"),
-	add_parse(FLOAT64, usage_norm, "normalized_usage"),
-	add_parse(UINT64, usage_raw, "raw_usage"),
-	add_skip(fs_assoc_ptr), /* not packed */
+	add_parse(FLOAT64, shares_norm, "normalized_shares"),
+	add_parse(FLOAT128, usage_efctv, "effective_normalized_usage"),
+	add_parse(FLOAT128, usage_norm, "normalized_usage"),
+	add_parse(FLOAT128, usage_raw, "raw_usage"),
 	add_parse(UINT32, used_jobs, "active_jobs"),
 	add_parse(UINT32, used_submit_jobs, "job_count"),
-	add_parse(FLOAT64, level_fs, "fairshare_level"),
+	add_parse(FLOAT128, level_fs, "fairshare_level"),
 	add_skip(valid_qos),
 };
 #undef add_parse
