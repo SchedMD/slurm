@@ -961,14 +961,24 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	bitstr_t *select_nodes_avail = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt = 0;
-	int cpu_cnt, i, max_rem_nodes;
+	int cpu_cnt, i;
 	int mem_blocked_nodes = 0, mem_blocked_cpus = 0;
 	int job_blocked_nodes = 0, job_blocked_cpus = 0;
 	int gres_invalid_nodes = 0;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	uint32_t *usable_cpu_cnt = NULL;
 	uint64_t gres_cpus;
-	bool first_step_node = true;
+	gres_ctld_step_test_args_t gres_test_args = {
+		.cpus_per_task = cpus_per_task,
+		.first_step_node = true,
+		.job_gres_list = job_ptr->gres_list_alloc,
+		.job_id = job_ptr->job_id,
+		.job_resrcs_ptr = job_resrcs_ptr,
+		.max_rem_nodes = step_spec->max_nodes,
+		.step_gres_list = step_gres_list,
+		.step_id = NO_VAL,
+		.test_mem = false,
+	};
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -987,7 +997,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		*return_code = ESLURM_INVALID_NODE_COUNT;
 		return NULL;
 	}
-	max_rem_nodes = step_spec->max_nodes;
 
 	/*
 	 * If we have a select plugin that selects step resources, then use it
@@ -1159,8 +1168,11 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			uint64_t tmp_mem;
 			uint32_t tmp_cpus, avail_cpus, total_cpus;
 			uint32_t avail_tasks, total_tasks;
-			bool test_mem_per_gres = false;
 			int err_code = SLURM_SUCCESS;
+
+			gres_test_args.err_code = &err_code;
+			gres_test_args.node_offset = node_inx;
+			gres_test_args.test_mem = false;
 
 			avail_cpus = total_cpus = usable_cpu_cnt[i];;
 			if (_is_mem_resv() &&
@@ -1213,19 +1225,11 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					fail_mode = ESLURM_INVALID_TASK_MEMORY;
 				}
 			} else if (_is_mem_resv())
-				test_mem_per_gres = true;
+				gres_test_args.test_mem = true;
 
 			/* ignore current step allocations */
-			gres_cpus = gres_ctld_step_test(
-				step_gres_list,
-				job_ptr->gres_list_alloc,
-				node_inx,
-				first_step_node,
-				cpus_per_task,
-				max_rem_nodes, true,
-				job_ptr->job_id, NO_VAL,
-				test_mem_per_gres,
-				job_resrcs_ptr, &err_code);
+			gres_test_args.ignore_alloc = true;
+			gres_cpus = gres_ctld_step_test(&gres_test_args);
 			total_cpus = MIN(total_cpus, gres_cpus);
 
 			/*
@@ -1233,17 +1237,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			 * not --overlap=force
 			 */
 			if (!(step_spec->flags & SSF_OVERLAP_FORCE)) {
-				gres_cpus = gres_ctld_step_test(
-					step_gres_list,
-					job_ptr->gres_list_alloc,
-					node_inx,
-					first_step_node,
-					cpus_per_task,
-					max_rem_nodes, false,
-					job_ptr->job_id, NO_VAL,
-					test_mem_per_gres,
-					job_resrcs_ptr,
-					&err_code);
+				gres_test_args.ignore_alloc = false;
+				gres_cpus =
+					gres_ctld_step_test(&gres_test_args);
 			}
 			if (gres_cpus < avail_cpus) {
 				log_flag(STEPS, "%s: %pJ Usable CPUs for GRES %"PRIu64" from %d previously available",
@@ -1300,7 +1296,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				mem_blocked_cpus += (total_cpus - avail_cpus);
 			} else {
 				mem_blocked_cpus += (total_cpus - avail_cpus);
-				first_step_node = false;
+				gres_test_args.first_step_node = false;
 			}
 		}
 	}
@@ -3547,16 +3543,26 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	slurm_step_layout_req_t step_layout_req;
 	uint64_t gres_cpus;
 	int cpu_inx = -1, cpus_task_inx = -1;
-	int usable_cpus, usable_mem, rem_nodes;
+	int usable_cpus, usable_mem;
 	int set_nodes = 0/* , set_tasks = 0 */;
-	int pos = -1, job_node_offset = -1;
+	int pos = -1;
 	uint32_t cpu_count_reps[node_count];
 	uint32_t cpus_task_reps[node_count];
 	uint32_t cpus_task = 0;
 	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
 	uint16_t ntasks_per_socket = 0;
-	bool first_step_node = true;
 	node_record_t *node_ptr;
+	gres_ctld_step_test_args_t gres_test_args = {
+		.cpus_per_task = step_ptr->cpus_per_task,
+		.first_step_node = true,
+		.job_gres_list = job_ptr->gres_list_alloc,
+		.job_id = job_ptr->job_id,
+		.job_resrcs_ptr = job_resrcs_ptr,
+		.node_offset = -1,
+		.step_gres_list = step_ptr->gres_list_req,
+		.step_id = step_ptr->step_id.step_id,
+		.test_mem = false,
+	};
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -3580,16 +3586,17 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 #endif
 
 	/* build cpus-per-node arrays for the subset of nodes used by step */
-	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
+	gres_test_args.max_rem_nodes =
+		bit_set_count(step_ptr->step_node_bitmap);
 	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
 	     i++) {
 		uint16_t cpus, cpus_used;
-		bool test_mem_per_gres = false;
-		bool ignore_alloc;
 		int err_code = SLURM_SUCCESS;
 		node_record_t *node_ptr;
 
-		job_node_offset++;
+		gres_test_args.test_mem = false;
+		gres_test_args.err_code = &err_code;
+		gres_test_args.node_offset++;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
 		node_ptr = node_record_table_ptr[i];
@@ -3686,20 +3693,15 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			usable_mem /= mem_use;
 			usable_cpus = MIN(usable_cpus, usable_mem);
 		} else if ((!step_ptr->pn_min_memory) && _is_mem_resv()) {
-			test_mem_per_gres = true;
+			gres_test_args.test_mem = true;
 		}
 
 		if (step_ptr->flags & SSF_OVERLAP_FORCE)
-			ignore_alloc = true;
+			gres_test_args.ignore_alloc = true;
 		else
-			ignore_alloc = false;
+			gres_test_args.ignore_alloc = false;
 
-		gres_cpus = gres_ctld_step_test(
-			step_ptr->gres_list_req, job_ptr->gres_list_alloc,
-			job_node_offset, first_step_node,
-			step_ptr->cpus_per_task, rem_nodes, ignore_alloc,
-			job_ptr->job_id, step_ptr->step_id.step_id,
-			test_mem_per_gres, job_resrcs_ptr, &err_code);
+		gres_cpus = gres_ctld_step_test(&gres_test_args);
 		if (usable_cpus > gres_cpus)
 			usable_cpus = gres_cpus;
 		if (usable_cpus <= 0) {
@@ -3717,8 +3719,8 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 		} else
 			cpu_count_reps[cpu_inx]++;
 		set_nodes++;
-		first_step_node = false;
-		rem_nodes--;
+		gres_test_args.first_step_node = false;
+		gres_test_args.max_rem_nodes--;
 
 #if 0
 		/*

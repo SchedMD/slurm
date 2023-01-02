@@ -2926,42 +2926,36 @@ static int _step_get_gres_cnt(void *x, void *arg)
 	return 0;
 }
 
-extern uint64_t gres_ctld_step_test(List step_gres_list, List job_gres_list,
-				    int node_offset, bool first_step_node,
-				    uint16_t cpus_per_task, int max_rem_nodes,
-				    bool ignore_alloc,
-				    uint32_t job_id, uint32_t step_id,
-				    bool test_mem,
-				    job_resources_t *job_resrcs_ptr,
-				    int *err_code)
+extern uint64_t gres_ctld_step_test(gres_ctld_step_test_args_t *args)
 {
 	uint64_t core_cnt, tmp_cnt;
+	uint16_t cpus_per_task = args->cpus_per_task;
 	ListIterator step_gres_iter;
 	gres_state_t *gres_state_step;
 	gres_step_state_t *gres_ss = NULL;
 	slurm_step_id_t tmp_step_id;
 	foreach_gres_cnt_t foreach_gres_cnt;
 
-	if (step_gres_list == NULL)
+	if (args->step_gres_list == NULL)
 		return NO_VAL64;
-	if (job_gres_list == NULL)
+	if (args->job_gres_list == NULL)
 		return 0;
 
 	if (cpus_per_task == 0)
 		cpus_per_task = 1;
 	core_cnt = NO_VAL64;
 	(void) gres_init();
-	*err_code = SLURM_SUCCESS;
+	*(args->err_code) = SLURM_SUCCESS;
 
-	tmp_step_id.job_id = job_id;
+	tmp_step_id.job_id = args->job_id;
 	tmp_step_id.step_het_comp = NO_VAL;
-	tmp_step_id.step_id = step_id;
+	tmp_step_id.step_id = args->step_id;
 
 	memset(&foreach_gres_cnt, 0, sizeof(foreach_gres_cnt));
-	foreach_gres_cnt.ignore_alloc = ignore_alloc;
+	foreach_gres_cnt.ignore_alloc = args->ignore_alloc;
 	foreach_gres_cnt.step_id = &tmp_step_id;
 
-	step_gres_iter = list_iterator_create(step_gres_list);
+	step_gres_iter = list_iterator_create(args->step_gres_list);
 	while ((gres_state_step = (gres_state_t *) list_next(step_gres_iter))) {
 		gres_key_t job_search_key;
 
@@ -2973,12 +2967,12 @@ extern uint64_t gres_ctld_step_test(List step_gres_list, List job_gres_list,
 		else
 			job_search_key.type_id = NO_VAL;
 
-		job_search_key.node_offset = node_offset;
+		job_search_key.node_offset = args->node_offset;
 
 		foreach_gres_cnt.job_search_key = &job_search_key;
 		foreach_gres_cnt.gres_cnt = INFINITE64;
 
-		(void)list_for_each(job_gres_list, _step_get_gres_cnt,
+		(void)list_for_each(args->job_gres_list, _step_get_gres_cnt,
 				    &foreach_gres_cnt);
 
 		if (foreach_gres_cnt.gres_cnt == INFINITE64) {
@@ -2994,12 +2988,13 @@ extern uint64_t gres_ctld_step_test(List step_gres_list, List job_gres_list,
 			break;
 		}
 
-		tmp_cnt = _step_test(gres_ss, first_step_node,
-				     cpus_per_task, max_rem_nodes,
-				     ignore_alloc, foreach_gres_cnt.gres_cnt,
-				     test_mem, node_offset,
+		tmp_cnt = _step_test(gres_ss, args->first_step_node,
+				     cpus_per_task, args->max_rem_nodes,
+				     args->ignore_alloc,
+				     foreach_gres_cnt.gres_cnt,
+				     args->test_mem, args->node_offset,
 				     &tmp_step_id,
-				     job_resrcs_ptr, err_code);
+				     args->job_resrcs_ptr, args->err_code);
 		if ((tmp_cnt != NO_VAL64) && (tmp_cnt < core_cnt))
 			core_cnt = tmp_cnt;
 
