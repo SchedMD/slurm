@@ -51,5 +51,7 @@ extern void *create_cluster_rec_obj(const parser_t *const parser,
 extern void *create_qos_rec_obj(const parser_t *const parser, ssize_t *size);
 extern void *create_user_rec_obj(const parser_t *const parser, ssize_t *size);
 extern void *create_wckey_rec_obj(const parser_t *const parser, ssize_t *size);
+extern void *create_job_desc_msg_obj(const parser_t *const parser,
+				     ssize_t *size);
 
 #endif

@@ -217,3 +217,23 @@ extern void *create_wckey_rec_obj(const parser_t *const parser, ssize_t *size)
 
 	return wckey;
 }
+
+extern void *create_job_desc_msg_obj(const parser_t *const parser,
+				     ssize_t *size)
+{
+	job_desc_msg_t *job;
+
+	xassert(size);
+	xassert(!*size);
+	xassert(parser->type == DATA_PARSER_JOB_DESC_MSG);
+
+	*size = sizeof(*job);
+	job = xmalloc(*size);
+	slurm_init_job_desc_msg(job);
+	xassert(*size == parser->size);
+
+	log_flag(DATA, "created %zd byte %s object at 0x%" PRIxPTR, *size,
+		 parser->obj_type_string, (uintptr_t) job);
+
+	return job;
+}

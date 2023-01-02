@@ -36,6 +36,7 @@
 
 #include <limits.h>
 #include <math.h>
+#include <signal.h>
 #include <stdint.h>
 #include <unistd.h>
 
@@ -45,6 +46,7 @@
 #include "src/common/data.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/slurm_protocol_api.h"
@@ -72,6 +74,7 @@
 #define MAGIC_FOREACH_POPULATE_GLOBAL_TRES_LIST 0x31b8aad2
 #define MAGIC_FOREACH_STEP 0x7e2eaef1
 #define MAGIC_FOREACH_STRING_ID 0x2ea1be2b
+#define MAGIC_FOREACH_STRING_ARRAY 0xaea1be2b
 #define MAGIC_LIST_PER_TRES_TYPE_NCT 0xb1d8acd2
 
 #define PARSER_ARRAY(type) _parser_array_##type
@@ -164,6 +167,14 @@ typedef struct {
 	List qos_list;
 	args_t *args;
 } foreach_qos_string_id_t;
+
+typedef struct {
+	int magic; /* MAGIC_FOREACH_STRING_ARRAY */
+	char **array;
+	int i;
+	const parser_t *const parser;
+	args_t *args;
+} foreach_string_array_t;
 
 #ifndef NDEBUG
 static void _check_flag_bit(int8_t i, const flag_bit_t *bit)
@@ -2646,7 +2657,32 @@ static int DUMP_FUNC(LICENSES)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
-PARSE_DISABLED(CORE_SPEC)
+static int PARSE_FUNC(CORE_SPEC)(const parser_t *const parser, void *obj,
+				 data_t *src, args_t *args, data_t *parent_path)
+{
+	uint16_t *spec = obj;
+
+	if (data_convert_type(src, DATA_TYPE_INT_64) != DATA_TYPE_INT_64)
+		return on_error(PARSING, parser->type, args, ESLURM_DATA_CONV_FAILED,
+				NULL, __func__,
+				"Expected integer for core specification but got %s",
+				data_type_to_string(data_get_type(src)));
+
+	if (data_get_int(src) >= CORE_SPEC_THREAD)
+		return on_error(PARSING, parser->type, args,
+				ESLURM_INVALID_CORE_CNT, NULL, __func__,
+				"Invalid core specification %zd >= %hu",
+				data_get_int(src), CORE_SPEC_THREAD);
+
+	if (data_get_int(src) <= 0)
+		return on_error(PARSING, parser->type, args,
+				ESLURM_INVALID_CORE_CNT, NULL, __func__,
+				"Invalid core specification %zd <= 0",
+				data_get_int(src));
+
+	*spec = data_get_int(src);
+	return SLURM_SUCCESS;
+}
 
 static int DUMP_FUNC(CORE_SPEC)(const parser_t *const parser, void *obj,
 				data_t *dst, args_t *args)
@@ -2662,7 +2698,34 @@ static int DUMP_FUNC(CORE_SPEC)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(THREAD_SPEC)
+static int PARSE_FUNC(THREAD_SPEC)(const parser_t *const parser, void *obj,
+				   data_t *src, args_t *args,
+				   data_t *parent_path)
+{
+	uint16_t *spec = obj;
+
+	if (data_convert_type(src, DATA_TYPE_INT_64) != DATA_TYPE_INT_64)
+		return on_error(PARSING, parser->type, args, ESLURM_DATA_CONV_FAILED,
+				NULL, __func__,
+				"Expected integer for thread specification but got %s",
+				data_type_to_string(data_get_type(src)));
+
+	if (data_get_int(src) >= CORE_SPEC_THREAD)
+		return on_error(PARSING, parser->type, args,
+				ESLURM_BAD_THREAD_PER_CORE, NULL, __func__,
+				"Invalid thread specification %zd >= %hu",
+				data_get_int(src), CORE_SPEC_THREAD);
+
+	if (data_get_int(src) <= 0)
+		return on_error(PARSING, parser->type, args,
+				ESLURM_BAD_THREAD_PER_CORE, NULL, __func__,
+				"Invalid thread specification %zd <= 0",
+				data_get_int(src));
+
+	*spec = data_get_int(src);
+	*spec |= CORE_SPEC_THREAD;
+	return SLURM_SUCCESS;
+}
 
 static int DUMP_FUNC(THREAD_SPEC)(const parser_t *const parser, void *obj,
 				  data_t *dst, args_t *args)
@@ -3185,6 +3248,12 @@ static int DUMP_FUNC(PARTITION_INFO_ARRAY)(const parser_t *const parser,
 
 	data_set_list(dst);
 
+	if (!parts || !parts[0]) {
+		on_warn(DUMPING, parser->type, args, NULL, __func__,
+			"No partitions to dump");
+		return SLURM_SUCCESS;
+	}
+
 	for (int i = 0; !rc && parts[i]; i++)
 		rc = DUMP(PARTITION_INFO, *parts[i], data_list_append(dst),
 			  args);
@@ -3204,6 +3273,12 @@ static int DUMP_FUNC(PARTITION_INFO_MSG)(const parser_t *const parser,
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_list(dst);
+
+	if (!msg || !msg->record_count) {
+		on_warn(DUMPING, parser->type, args, NULL, __func__,
+			"No partitions to dump");
+		return SLURM_SUCCESS;
+	}
 
 	for (uint32_t i = 0; !rc && (i < msg->record_count); ++i)
 		rc = DUMP(PARTITION_INFO, msg->partition_array[i],
@@ -3403,6 +3478,492 @@ static int DUMP_FUNC(ERROR)(const parser_t *const parser, void *obj,
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_string(dst, slurm_strerror(*rc));
+
+	return SLURM_SUCCESS;
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_ARGV)(const parser_t *const parser,
+					 void *obj, data_t *src, args_t *args,
+					 data_t *parent_path)
+{
+	int rc;
+	job_desc_msg_t *job = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	if (data_get_type(src) == DATA_TYPE_NULL) {
+		xassert(!job->argv);
+		xassert(!job->argc);
+		return SLURM_SUCCESS;
+	}
+
+	rc = PARSE(STRING_ARRAY, job->argv, src, parent_path, args);
+	job->argc = envcount(job->environment);
+
+	return rc;
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_ARGV)(const parser_t *const parser, void *obj,
+					data_t *dst, args_t *args)
+{
+	job_desc_msg_t *job = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	if (!job || !job->argv)
+		return SLURM_SUCCESS;
+
+	return DUMP(STRING_ARRAY, job->argv, dst, args);
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_CPU_FREQ)(const parser_t *const parser,
+					     void *obj, data_t *src,
+					     args_t *args, data_t *parent_path)
+{
+	int rc;
+	job_desc_msg_t *job = obj;
+	char *str = NULL;
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	if (data_get_type(src) == DATA_TYPE_NULL) {
+		job->cpu_freq_min = NO_VAL;
+		job->cpu_freq_max = NO_VAL;
+		job->cpu_freq_gov = NO_VAL;
+		return SLURM_SUCCESS;
+	}
+
+	if ((rc = data_get_string_converted(src, &str)))
+		return on_error(PARSING, parser->type, args, rc,
+				"data_get_string_converted()", __func__,
+				"string expected but got %s",
+				data_type_to_string(data_get_type(src)));
+
+	if ((rc = cpu_freq_verify_cmdline(str, &job->cpu_freq_min,
+					  &job->cpu_freq_max,
+					  &job->cpu_freq_gov)))
+		return on_error(PARSING, parser->type, args, rc,
+				"cpu_freq_verify_cmdline()", __func__,
+				"Invalid cpu_freuency");
+
+	return rc;
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_CPU_FREQ)(const parser_t *const parser,
+					    void *obj, data_t *dst,
+					    args_t *args)
+{
+	job_desc_msg_t *job = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	if (job->cpu_freq_min || job->cpu_freq_max || job->cpu_freq_gov) {
+		char *tmp = cpu_freq_to_cmdline(job->cpu_freq_min,
+						job->cpu_freq_max,
+						job->cpu_freq_gov);
+
+		if (tmp)
+			data_set_string_own(dst, tmp);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_ENV)(const parser_t *const parser, void *obj,
+					data_t *src, args_t *args,
+					data_t *parent_path)
+{
+	int rc;
+	job_desc_msg_t *job = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	if (data_get_type(src) == DATA_TYPE_NULL) {
+		xassert(!job->environment);
+		xassert(!job->env_size);
+		return SLURM_SUCCESS;
+	}
+
+	rc = PARSE(STRING_ARRAY, job->environment, src, parent_path, args);
+	job->env_size = envcount(job->environment);
+
+	return rc;
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_ENV)(const parser_t *const parser, void *obj,
+				       data_t *dst, args_t *args)
+{
+	job_desc_msg_t *job = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	if (!job || !job->environment)
+		return SLURM_SUCCESS;
+
+	return DUMP(STRING_ARRAY, job->environment, dst, args);
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_SPANK_ENV)(const parser_t *const parser,
+					      void *obj, data_t *src,
+					      args_t *args, data_t *parent_path)
+{
+	int rc;
+	job_desc_msg_t *job = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	if (data_get_type(src) == DATA_TYPE_NULL) {
+		xassert(!job->spank_job_env);
+		xassert(!job->spank_job_env_size);
+		return SLURM_SUCCESS;
+	}
+
+	rc = PARSE(STRING_ARRAY, job->spank_job_env, src, parent_path, args);
+	job->spank_job_env_size = envcount(job->spank_job_env);
+
+	return rc;
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_SPANK_ENV)(const parser_t *const parser,
+					     void *obj, data_t *dst,
+					     args_t *args)
+{
+	job_desc_msg_t *job = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	if (!job || !job->spank_job_env)
+		return SLURM_SUCCESS;
+
+	return DUMP(STRING_ARRAY, job->spank_job_env, dst, args);
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_PTR)(const parser_t *const parser, void *obj,
+					data_t *src, args_t *args,
+					data_t *parent_path)
+{
+	int rc;
+	job_desc_msg_t **ptr = obj;
+	job_desc_msg_t *job = NULL;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(!*ptr);
+
+	rc = PARSE(JOB_DESC_MSG, *job, src, parent_path, args);
+
+	if (job)
+		*ptr = job;
+
+	return rc;
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_PTR)(const parser_t *const parser, void *obj,
+				       data_t *dst, args_t *args)
+{
+	job_desc_msg_t **ptr = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	if (!*ptr)
+		return SLURM_SUCCESS;
+
+	return DUMP(JOB_DESC_MSG, **ptr, dst, args);
+}
+
+static data_for_each_cmd_t _foreach_string_array_list(const data_t *data,
+						      void *arg)
+{
+	foreach_string_array_t *args = arg;
+	char *str = NULL;
+	int rc;
+
+	xassert(args->magic == MAGIC_FOREACH_STRING_ARRAY);
+
+	if ((rc = data_get_string_converted(data, &str))) {
+		on_error(PARSING, args->parser->type, args->args, rc,
+			 "data_get_string_converted()", __func__,
+			 "expected string but got %s",
+			 data_type_to_string(data_get_type(data)));
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	args->array[args->i] = str;
+	args->i++;
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static data_for_each_cmd_t _foreach_string_array_dict(const char *key,
+						      const data_t *data,
+						      void *arg)
+{
+	foreach_string_array_t *args = arg;
+	char *str = NULL, *keyvalue = NULL;
+	int rc;
+
+	xassert(args->magic == MAGIC_FOREACH_STRING_ARRAY);
+
+	if ((rc = data_get_string_converted(data, &str))) {
+		on_error(PARSING, args->parser->type, args->args, rc,
+			 "data_get_string_converted()", __func__,
+			 "expected string but got %s",
+			 data_type_to_string(data_get_type(data)));
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	xstrfmtcat(keyvalue, "%s=%s", key, str);
+
+	args->array[args->i] = keyvalue;
+	args->i++;
+
+	xfree(str);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static int PARSE_FUNC(STRING_ARRAY)(const parser_t *const parser, void *obj,
+				    data_t *src, args_t *args,
+				    data_t *parent_path)
+{
+	char ***array_ptr = obj;
+	foreach_string_array_t fargs = {
+		.magic = MAGIC_FOREACH_STRING_ARRAY,
+		.parser = parser,
+		.args = args,
+	};
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	if (data_get_type(src) == DATA_TYPE_LIST) {
+		fargs.array = xcalloc(data_get_list_length(src) + 1,
+				      sizeof(*fargs.array));
+
+		if (data_list_for_each_const(src, _foreach_string_array_list,
+					     &fargs) < 0)
+			goto cleanup;
+	} else if (data_get_type(src) == DATA_TYPE_DICT) {
+		fargs.array = xcalloc(data_get_dict_length(src) + 1,
+				      sizeof(*fargs.array));
+
+		if (data_dict_for_each_const(src, _foreach_string_array_dict,
+					     &fargs) < 0)
+			goto cleanup;
+	} else {
+		on_error(PARSING, parser->type, args, ESLURM_DATA_EXPECTED_LIST,
+			 NULL, __func__,
+			 "expected a list of strings but got %s",
+			 data_type_to_string(data_get_type(src)));
+		goto cleanup;
+	}
+
+	xassert(!*array_ptr);
+	*array_ptr = fargs.array;
+
+	return SLURM_SUCCESS;
+cleanup:
+	for (int i = 0; fargs.array[i]; i++)
+		xfree(fargs.array[i]);
+	xfree(fargs.array);
+
+	return ESLURM_DATA_CONV_FAILED;
+}
+
+static int DUMP_FUNC(STRING_ARRAY)(const parser_t *const parser, void *obj,
+				   data_t *dst, args_t *args)
+{
+	char ***array_ptr = obj;
+	char **array = *array_ptr;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	if (!array_ptr)
+		return SLURM_SUCCESS;
+
+	data_set_list(dst);
+
+	for (int i = 0; array[i]; i++)
+		data_set_string(data_list_append(dst), array[i]);
+
+	return SLURM_SUCCESS;
+}
+
+static int PARSE_FUNC(SIGNAL)(const parser_t *const parser, void *obj,
+			      data_t *src, args_t *args, data_t *parent_path)
+{
+	int rc;
+	uint16_t *sig = obj;
+	char *str = NULL;
+
+	if (data_convert_type(src, DATA_TYPE_INT_64) == DATA_TYPE_INT_64) {
+		*sig = data_get_int(src);
+		return SLURM_SUCCESS;
+	}
+
+	if ((rc = data_get_string_converted(src, &str))) {
+		return on_error(PARSING, parser->type, args, rc,
+				"data_get_string_converted()", __func__,
+				"expected string but got %s",
+				data_type_to_string(data_get_type(src)));
+	}
+
+	if (!(*sig = sig_name2num(str))) {
+		xfree(str);
+		return on_error(PARSING, parser->type, args, rc,
+				"sig_name2num()", __func__, "Unknown signal %s",
+				str);
+	}
+
+	if ((*sig < 1) || (*sig >= SIGRTMAX)) {
+		on_warn(PARSING, parser->type, args, NULL, __func__,
+			"Non-standard signal number: %u", *sig);
+	}
+
+	xfree(str);
+	return rc;
+}
+
+static int DUMP_FUNC(SIGNAL)(const parser_t *const parser, void *obj,
+			     data_t *dst, args_t *args)
+{
+	uint16_t *sig = obj;
+
+	data_set_string_own(dst, sig_num2name(*sig));
+
+	return SLURM_SUCCESS;
+}
+
+static int PARSE_FUNC(CRON_ENTRY_PTR)(const parser_t *const parser, void *obj,
+				      data_t *src, args_t *args,
+				      data_t *parent_path)
+{
+	cron_entry_t **ptr = obj;
+
+	if (!*ptr)
+		*ptr = new_cron_entry();
+
+	return PARSE(CRON_ENTRY, **ptr, src, parent_path, args);
+}
+
+static int DUMP_FUNC(CRON_ENTRY_PTR)(const parser_t *const parser, void *obj,
+				     data_t *dst, args_t *args)
+{
+	cron_entry_t **ptr = obj;
+
+	if (!*ptr)
+		return SLURM_SUCCESS;
+
+	return DUMP(CRON_ENTRY, **ptr, dst, args);
+}
+
+static int PARSE_FUNC(BITSTR)(const parser_t *const parser, void *obj,
+			      data_t *src, args_t *args, data_t *parent_path)
+{
+	int rc;
+	bitstr_t *b = obj;
+
+	xassert(*b);
+
+	if (data_convert_type(src, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return on_error(PARSING, parser->type, args,
+				ESLURM_DATA_CONV_FAILED, NULL, __func__,
+				"Expecting string but got %s",
+				data_type_to_string(data_get_type(src)));
+
+	rc = bit_unfmt(b, data_get_string(src));
+
+	return rc;
+}
+
+static int DUMP_FUNC(BITSTR)(const parser_t *const parser, void *obj,
+			     data_t *dst, args_t *args)
+{
+	bitstr_t *b = obj;
+
+	if (!b)
+		return SLURM_SUCCESS;
+
+	data_set_string_own(dst, bit_fmt_full(b));
+
+	return SLURM_SUCCESS;
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_NODES)(const parser_t *const parser, void *obj,
+			      data_t *src, args_t *args, data_t *parent_path)
+{
+	job_desc_msg_t *job = obj;
+
+	if (data_get_type(src) == DATA_TYPE_LIST) {
+		data_t *min, *max;
+
+		if (!data_get_list_length(src) || (data_get_list_length(src) > 2)) {
+			return on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_CONV_FAILED, NULL, __func__,
+				      "Node count in format of a list must have a cardinality of 2 or 1");
+		}
+
+		min = data_list_dequeue(src);
+		max = data_list_dequeue(src);
+
+		if (!max)
+			SWAP(min, max);
+
+		if (min && (data_convert_type(min, DATA_TYPE_INT_64) != DATA_TYPE_INT_64))
+			return on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_CONV_FAILED, NULL, __func__,
+				      "Minimum nodes must be an integer instead of %s",
+				      data_type_to_string(data_get_type(min)));
+		if (max && (data_convert_type(max, DATA_TYPE_INT_64) != DATA_TYPE_INT_64))
+			return on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_CONV_FAILED, NULL, __func__,
+				      "Maximum nodes must be an integer instead of %s",
+				      data_type_to_string(data_get_type(max)));
+
+		job->max_nodes = data_get_int(max);
+		if (min)
+			job->min_nodes = data_get_int(min);
+	} else {
+		int min, max;
+
+		if (data_convert_type(src, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+			return on_error(PARSING, parser->type, args,
+					ESLURM_DATA_CONV_FAILED, NULL, __func__,
+					"Expected string instead of %s for node counts",
+					data_type_to_string(data_get_type(src)));
+
+		if (!verify_node_count(data_get_string(src), &min, &max))
+			return on_error(PARSING, parser->type, args,
+					ESLURM_DATA_CONV_FAILED,
+					"verify_node_count()",
+					__func__, "Unknown format: %s",
+					data_get_string(src));
+
+		job->min_nodes = min;
+		job->max_nodes = max;
+	}
+
+	if (job->min_nodes > job->max_nodes)
+		SWAP(job->min_nodes, job->max_nodes);
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_NODES)(const parser_t *const parser, void *obj,
+			     data_t *dst, args_t *args)
+{
+	job_desc_msg_t *job = obj;
+
+	if (job->min_nodes != job->max_nodes)
+		data_set_string_own(dst,
+				    xstrdup_printf("%d-%d", job->min_nodes,
+						   job->max_nodes));
+	else
+		data_set_string_own(dst, xstrdup_printf("%d", job->min_nodes));
 
 	return SLURM_SUCCESS;
 }
@@ -4775,6 +5336,242 @@ static const parser_t PARSER_ARRAY(JOB_SUBMIT_RESPONSE_MSG)[] = {
 #undef add_parse_overload
 #undef add_parse
 
+/* flag values based on output of slurm_sprint_cpu_bind_type() */
+static const flag_bit_t PARSER_FLAG_ARRAY(CPU_BINDING_FLAGS)[] = {
+	add_flag_masked_bit(CPU_BIND_VERBOSE, CPU_BIND_VERBOSE, "VERBOSE"),
+	add_flag_equal(CPU_BIND_TO_THREADS, CPU_BIND_T_TO_MASK, "THREADS"),
+	add_flag_equal(CPU_BIND_TO_CORES, CPU_BIND_T_TO_MASK, "CORES"),
+	add_flag_equal(CPU_BIND_TO_SOCKETS, CPU_BIND_T_TO_MASK, "SOCKETS"),
+	add_flag_equal(CPU_BIND_TO_LDOMS, CPU_BIND_T_TO_MASK, "LDOMS"),
+	add_flag_equal(CPU_BIND_NONE, CPU_BIND_T_MASK, "NONE"),
+	add_flag_equal(CPU_BIND_RANK, CPU_BIND_T_MASK, "RANK"),
+	add_flag_equal(CPU_BIND_MAP, CPU_BIND_T_MASK, "MAP"),
+	add_flag_equal(CPU_BIND_MASK, CPU_BIND_T_MASK, "MASK"),
+	add_flag_equal(CPU_BIND_LDRANK, CPU_BIND_T_MASK, "LDRANK"),
+	add_flag_equal(CPU_BIND_LDMAP, CPU_BIND_T_MASK, "LDMAP"),
+	add_flag_equal(CPU_BIND_LDMASK, CPU_BIND_T_MASK, "LDMASK"),
+	add_flag_masked_bit(CPU_BIND_ONE_THREAD_PER_CORE, CPU_BIND_ONE_THREAD_PER_CORE, "ONE_THREAD"),
+	add_flag_equal(CPU_AUTO_BIND_TO_THREADS, CPU_BIND_T_AUTO_TO_MASK, "THREADS"),
+	add_flag_equal(CPU_AUTO_BIND_TO_THREADS, CPU_BIND_T_AUTO_TO_MASK, "CORES"),
+	add_flag_equal(CPU_AUTO_BIND_TO_THREADS, CPU_BIND_T_AUTO_TO_MASK, "SOCKETS"),
+	add_flag_masked_bit(SLURMD_OFF_SPEC, CPU_BIND_T_TASK_PARAMS_MASK, "SLURMD_OFF"),
+	add_flag_masked_bit(CPU_BIND_OFF, CPU_BIND_T_TASK_PARAMS_MASK, "OFF"),
+};
+
+static const flag_bit_t PARSER_FLAG_ARRAY(CRON_ENTRY_FLAGS)[] = {
+	add_flag_bit(CRON_WILD_MINUTE, "WILD_MINUTE"),
+	add_flag_bit(CRON_WILD_HOUR, "WILD_HOUR"),
+	add_flag_bit(CRON_WILD_DOM, "WILD_DAY_OF_MONTH"),
+	add_flag_bit(CRON_WILD_MONTH, "WILD_MONTH"),
+	add_flag_bit(CRON_WILD_DOW, "WILD_DAY_OF_WEEK"),
+};
+
+#define add_parse(mtype, field, path) \
+	add_parser(cron_entry_t, mtype, false, field, 0, path, NEED_NONE)
+static const parser_t PARSER_ARRAY(CRON_ENTRY)[] = {
+	add_parse_bit_flag_array(cron_entry_t, CRON_ENTRY_FLAGS, false, flags, "flags"),
+	add_parse(BITSTR, minute, "minute"),
+	add_parse(BITSTR, hour, "hour"),
+	add_parse(BITSTR, day_of_month, "day_of_month"),
+	add_parse(BITSTR, month, "month"),
+	add_parse(BITSTR, day_of_week, "day_of_week"),
+	add_parse(STRING, cronspec, "specification"),
+	add_parse(STRING, command, "command"),
+	add_parse(UINT32, line_start, "line/start"),
+	add_parse(UINT32, line_end, "line/end"),
+};
+#undef add_parse
+
+static const flag_bit_t PARSER_FLAG_ARRAY(MEMORY_BINDING_TYPE)[] = {
+	add_flag_masked_bit(MEM_BIND_VERBOSE, MEM_BIND_TYPE_FLAGS_MASK, "VERBOSE"),
+	add_flag_equal(MEM_BIND_NONE, MEM_BIND_TYPE_MASK, "NONE"),
+	add_flag_equal(MEM_BIND_RANK, MEM_BIND_TYPE_MASK, "RANK"),
+	add_flag_equal(MEM_BIND_MAP, MEM_BIND_TYPE_MASK, "MAP"),
+	add_flag_equal(MEM_BIND_MASK, MEM_BIND_TYPE_MASK, "MASK"),
+	add_flag_equal(MEM_BIND_LOCAL, MEM_BIND_TYPE_MASK, "LOCAL"),
+	add_flag_masked_bit(MEM_BIND_SORT, MEM_BIND_TYPE_FLAGS_MASK, "SORT"),
+	add_flag_masked_bit(MEM_BIND_PREFER, MEM_BIND_TYPE_FLAGS_MASK, "PREFER"),
+};
+
+static const flag_bit_t PARSER_FLAG_ARRAY(OPEN_MODE)[] = {
+	add_flag_bit(OPEN_MODE_APPEND, "APPEND"),
+	add_flag_bit(OPEN_MODE_TRUNCATE, "TRUNCATE"),
+};
+
+static const flag_bit_t PARSER_FLAG_ARRAY(WARN_FLAGS)[] = {
+	add_flag_bit(KILL_JOB_BATCH, "BATCH_JOB"),
+	add_flag_bit(KILL_JOB_ARRAY, "ARRAY_JOB"),
+	add_flag_bit(KILL_STEPS_ONLY, "FULL_STEPS_ONLY"),
+	add_flag_bit(KILL_FULL_JOB, "FULL_JOB"),
+	add_flag_bit(KILL_FED_REQUEUE, "FEDERATION_REQUEUE"),
+	add_flag_bit(KILL_HURRY, "HURRY"),
+	add_flag_bit(KILL_OOM, "OUT_OF_MEMORY"),
+	add_flag_bit(KILL_NO_SIBS, "NO_SIBLING_JOBS"),
+	add_flag_bit(KILL_JOB_RESV, "RESERVATION_JOB"),
+	add_flag_bit(WARN_SENT, "WARNING_SENT"),
+};
+
+static const flag_bit_t PARSER_FLAG_ARRAY(X11_FLAGS)[] = {
+	add_flag_bit(X11_FORWARD_ALL, "FORWARD_ALL_NODES"),
+	add_flag_bit(X11_FORWARD_BATCH, "BATCH_NODE"),
+	add_flag_bit(X11_FORWARD_FIRST, "FIRST_NODE"),
+	add_flag_bit(X11_FORWARD_LAST, "LAST_NODE"),
+};
+
+#define add_cparse(mtype, path) \
+	add_complex_parser(job_desc_msg_t, mtype, false, path, NEED_NONE)
+#define add_parse(mtype, field, path) \
+	add_parser(job_desc_msg_t, mtype, false, field, 0, path, NEED_NONE)
+#define add_parse_overload(mtype, field, overloads, path) \
+	add_parser(job_desc_msg_t, mtype, false, field, overloads, path, NEED_NONE)
+#define add_skip(field) \
+	add_parser_skip(job_desc_msg_t, field)
+#define add_flags(mtype, field, path) \
+	add_parse_bit_flag_array(job_desc_msg_t, mtype, false, field, path)
+static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
+	add_parse(STRING, account, "account"),
+	add_parse(STRING, acctg_freq, "account_gather_frequency"),
+	add_parse(STRING, admin_comment, "admin_comment"),
+	add_parse(STRING, alloc_node, "allocation_node_list"),
+	add_parse(UINT16, alloc_resp_port, "allocation_node_port"),
+	add_skip(alloc_sid),
+	add_skip(argc),
+	add_skip(argv),
+	add_cparse(JOB_DESC_MSG_ARGV, "argv"),
+	add_parse(STRING, array_inx, "arraytaskthrottle"),
+	add_skip(array_bitmap),
+	add_parse(STRING, batch_features, "batch_features"),
+	add_parse(UINT64, begin_time, "begin_time"),
+	add_flags(JOB_FLAGS, bitflags, "flags"),
+	add_parse(STRING, burst_buffer, "burst_buffer"),
+	add_parse(STRING, clusters, "clusters"),
+	add_parse(STRING, cluster_features, "cluster_constraint"),
+	add_parse(STRING, comment, "comment"),
+	add_parse(BOOL16, contiguous, "contiguous"),
+	add_parse(STRING, container, "container"),
+	add_parse(STRING, container_id, "container_id"),
+	add_parse_overload(CORE_SPEC, core_spec, 1, "core_specification"),
+	add_parse_overload(THREAD_SPEC, core_spec, 1, "thread_specification"),
+	add_parse(STRING, cpu_bind, "cpu_binding"),
+	add_flags(CPU_BINDING_FLAGS, cpu_bind_type, "cpu_binding_flags"),
+	add_cparse(JOB_DESC_MSG_CPU_FREQ, "cpu_frequency"),
+	add_skip(cpu_freq_min),
+	add_skip(cpu_freq_max),
+	add_skip(cpu_freq_gov),
+	add_parse(STRING, cpus_per_tres, "cpus_per_tres"),
+	add_parse(CRON_ENTRY_PTR, crontab_entry, "crontab"),
+	add_parse(UINT64, deadline, "deadline"),
+	add_parse(UINT32, delay_boot, "delay_boot"),
+	add_parse(STRING, dependency, "dependency"),
+	add_parse(UINT64, end_time, "end_time"),
+	add_cparse(JOB_DESC_MSG_ENV, "environment"),
+	add_skip(environment),
+	add_skip(env_hash),
+	add_skip(env_size),
+	add_parse(CSV_LIST, exc_nodes, "excluded_nodes"),
+	add_parse(STRING, extra, "extra"),
+	add_parse(STRING, features, "constraints"),
+	add_skip(fed_siblings_active),
+	add_skip(fed_siblings_viable),
+	add_parse(GROUP_ID, group_id, "group_id"),
+	add_parse(UINT32, het_job_offset, "hetjob_group"),
+	add_parse(BOOL16, immediate, "immediate"),
+	add_parse(UINT32, job_id, "job_id"),
+	add_skip(job_id_str),
+	add_parse(BOOL16, kill_on_node_fail, "kill_on_node_fail"),
+	add_parse(STRING, licenses, "licenses"),
+	add_skip(licenses_tot),
+	add_flags(JOB_MAIL_FLAGS, mail_type, "mail_type"),
+	add_parse(STRING, mail_user, "mail_user"),
+	add_parse(STRING, mcs_label, "mcs_label"),
+	add_parse(STRING, mem_bind, "memory_binding"),
+	add_flags(MEMORY_BINDING_TYPE, mem_bind_type, "memory_binding_type"),
+	add_parse(STRING, mem_per_tres, "memory_per_tres"),
+	add_parse(STRING, name, "name"),
+	add_parse(STRING, network, "network"),
+	add_parse(NICE, nice, "nice"),
+	add_parse(UINT32, num_tasks, "tasks"),
+	add_flags(OPEN_MODE, open_mode, "open_mode"),
+	add_skip(origin_cluster),
+	add_parse(UINT16, other_port, "reserve_ports"),
+	add_parse(BOOL, overcommit, "overcommit"),
+	add_parse(STRING, partition, "partition"),
+	add_parse(UINT16, plane_size, "distribution_plane_size"),
+	add_flags(POWER_FLAGS, power_flags, "power_flags"),
+	add_parse(STRING, prefer, "prefer"),
+	add_parse(UINT32, priority, "priority"),
+	add_parse(ACCT_GATHER_PROFILE, profile, "profile"),
+	add_parse(STRING, qos, "qos"),
+	add_parse(BOOL16, reboot, "reboot"),
+	add_skip(resp_host),
+	add_skip(restart_cnt),
+	add_parse(CSV_LIST, req_nodes, "required_nodes"),
+	add_parse(BOOL16, requeue, "requeue"),
+	add_parse(STRING, reservation, "reservation"),
+	add_parse(STRING, script, "script"),
+	add_skip(script_buf),
+	add_skip(script_hash),
+	add_parse(JOB_SHARED, shared, "shared"),
+	add_parse(UINT32, site_factor, "site_factor"),
+	add_cparse(JOB_DESC_MSG_SPANK_ENV, "spank_environment"),
+	add_skip(spank_job_env),
+	add_skip(spank_job_env_size),
+	add_skip(submit_line),
+	add_parse(TASK_DISTRIBUTION, task_dist, "distribution"),
+	add_parse(UINT32_NO_VAL, time_limit, "time_limit"),
+	add_parse(UINT32_NO_VAL, time_min, "time_minimum"),
+	add_parse(STRING, tres_bind, "tres_bind"),
+	add_parse(STRING, tres_freq, "tres_freq"),
+	add_parse(STRING, tres_per_job, "tres_per_job"),
+	add_parse(STRING, tres_per_node, "tres_per_node"),
+	add_parse(STRING, tres_per_socket, "tres_per_socket"),
+	add_parse(STRING, tres_per_task, "tres_per_task"),
+	add_parse(USER_ID, user_id, "user_id"),
+	add_parse(BOOL16_NO_VAL, wait_all_nodes, "wait_all_nodes"),
+	add_flags(WARN_FLAGS, warn_flags, "kill_warning_flags"),
+	add_parse(SIGNAL, warn_signal, "kill_warning_signal"),
+	add_parse(UINT16_NO_VAL, warn_time, "kill_warning_delay"),
+	add_parse(STRING, work_dir, "current_working_directory"),
+	add_parse(UINT16, cpus_per_task, "cpus_per_task"),
+	add_parse(UINT32, min_cpus, "minimum_cpus"),
+	add_parse(UINT32, max_cpus, "maximum_cpus"),
+	add_cparse(JOB_DESC_MSG_NODES, "nodes"),
+	add_parse(UINT32, min_nodes, "minimum_nodes"),
+	add_parse(UINT32, max_nodes, "maximum_nodes"),
+	add_parse(UINT16, boards_per_node, "minimum_boards_per_node"),
+	add_parse(UINT16, sockets_per_board, "minimum_sockets_per_board"),
+	add_parse(UINT16, sockets_per_node, "sockets_per_node"),
+	add_parse(UINT16, threads_per_core, "threads_per_core"),
+	add_parse(UINT16, ntasks_per_node, "tasks_per_node"),
+	add_parse(UINT16, ntasks_per_socket, "tasks_per_socket"),
+	add_parse(UINT16, ntasks_per_core, "tasks_per_core"),
+	add_parse(UINT16, ntasks_per_board, "tasks_per_board"),
+	add_parse(UINT16, ntasks_per_tres, "ntasks_per_tres"),
+	add_parse(UINT16, pn_min_cpus, "minimum_cpus_per_node"),
+	add_parse_overload(JOB_MEM_PER_CPU, pn_min_memory, 1, "memory_per_cpu"),
+	add_parse_overload(JOB_MEM_PER_NODE, pn_min_memory, 1, "memory_per_node"),
+	add_parse(UINT32, pn_min_tmp_disk, "temporary_disk_per_node"),
+	add_parse(STRING, req_context, "selinux_context"),
+	add_parse(UINT32_NO_VAL, req_switch, "required_switches"),
+	add_skip(select_jobinfo),
+	add_skip(selinux_context),
+	add_parse(STRING, std_err, "standard_error"),
+	add_parse(STRING, std_in, "standard_input"),
+	add_parse(STRING, std_out, "standard_output"),
+	add_skip(tres_req_cnt),
+	add_parse(UINT32, wait4switch, "wait_for_switch"),
+	add_parse(STRING, wckey, "wckey"),
+	add_flags(X11_FLAGS, x11, "x11"),
+	add_parse(STRING, x11_magic_cookie, "x11_magic_cookie"),
+	add_parse(STRING, x11_target, "x11_target_host"),
+	add_parse(UINT16, x11_target_port, "x11_target_port"),
+};
+#undef add_parse
+#undef add_parse_overload
+#undef add_cparse
+#undef add_skip
+#undef add_flags
+
 #undef add_parser
 #undef add_parser_skip
 #undef add_complex_parser
@@ -4913,6 +5710,11 @@ static const parser_t parsers[] = {
 	addps(RESERVATION_INFO_ARRAY, reserve_info_t **, NEED_NONE),
 	addps(ERROR, int, NEED_NONE),
 	addps(JOB_INFO_MSG, job_info_msg_t, NEED_NONE),
+	addps(JOB_DESC_MSG_PTR, job_desc_msg_t *, NEED_NONE),
+	addps(STRING_ARRAY, char **, NEED_NONE),
+	addps(SIGNAL, uint16_t, NEED_NONE),
+	addps(CRON_ENTRY_PTR, cron_entry_t *, NEED_NONE),
+	addps(BITSTR, bitstr_t, NEED_NONE),
 
 	/* Complex type parsers */
 	addpc(QOS_PREEMPT_LIST, slurmdb_qos_rec_t, NEED_QOS),
@@ -4945,6 +5747,11 @@ static const parser_t parsers[] = {
 	addpc(RESERVATION_INFO_MSG, reserve_info_msg_t, NEED_NONE),
 	addpc(RESERVATION_INFO_CORE_SPEC, reserve_info_t, NEED_NONE),
 	addpc(JOB_ARRAY_RESPONSE_MSG, job_array_resp_msg_t, NEED_NONE),
+	addpc(JOB_DESC_MSG_ARGV, job_desc_msg_t, NEED_NONE),
+	addpc(JOB_DESC_MSG_CPU_FREQ, job_desc_msg_t, NEED_NONE),
+	addpc(JOB_DESC_MSG_ENV, job_desc_msg_t, NEED_NONE),
+	addpc(JOB_DESC_MSG_SPANK_ENV, job_desc_msg_t, NEED_NONE),
+	addpc(JOB_DESC_MSG_NODES, job_desc_msg_t, NEED_NONE),
 
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t),
@@ -4980,6 +5787,11 @@ static const parser_t parsers[] = {
 	addpa(RESERVATION_INFO, reserve_info_t),
 	addpa(RESERVATION_CORE_SPEC, resv_core_spec_t),
 	addpa(JOB_SUBMIT_RESPONSE_MSG, submit_response_msg_t),
+	addpa(JOB_DESC_MSG, job_desc_msg_t),
+	addpa(CRON_ENTRY, cron_entry_t),
+
+	/* Flag bit arrays */
+	addfa(OPEN_MODE, uint8_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, slurmdb_destroy_qos_rec, create_qos_rec_obj, NEED_QOS),
@@ -5001,6 +5813,7 @@ static const parser_t parsers[] = {
 	addpl(STATS_USER_LIST, STATS_USER, NULL, NULL, NEED_NONE),
 	addpl(TRES_LIST, TRES, slurmdb_destroy_tres_rec, create_parser_list_obj, NEED_NONE),
 	addpl(SINFO_DATA_LIST, SINFO_DATA, NULL, NULL, NEED_NONE),
+	addpl(JOB_DESC_MSG_LIST, JOB_DESC_MSG, (ListDelF) slurm_free_job_desc_msg, create_job_desc_msg_obj, NEED_NONE),
 };
 #undef addpl
 #undef addps

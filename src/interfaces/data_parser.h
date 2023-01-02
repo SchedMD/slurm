@@ -209,6 +209,24 @@ typedef enum {
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG, /* job_array_resp_msg_t */
 	DATA_PARSER_ERROR, /* int -> slurm_strerror() */
 	DATA_PARSER_JOB_SUBMIT_RESPONSE_MSG, /* submit_response_msg_t */
+	DATA_PARSER_JOB_DESC_MSG, /* job_desc_msg_t */
+	DATA_PARSER_JOB_DESC_MSG_ARGV, /* job_desc_msg_t->argv+argc */
+	DATA_PARSER_JOB_DESC_MSG_CPU_FREQ, /* job_desc_msg_t->cpu_freq* */
+	DATA_PARSER_JOB_DESC_MSG_ENV, /* job_desc_msg_t->env* */
+	DATA_PARSER_JOB_DESC_MSG_NODES, /* job_desc_msg_t->min/max_cpus */
+	DATA_PARSER_JOB_DESC_MSG_SPANK_ENV, /* job_desc_msg_t->spank_env* */
+	DATA_PARSER_JOB_DESC_MSG_PTR, /* job_desc_msg_t* */
+	DATA_PARSER_JOB_DESC_MSG_LIST, /* list_t of job_desc_msg_t* */
+	DATA_PARSER_STRING_ARRAY, /* char** (NULL terminated) */
+	DATA_PARSER_SIGNAL, /* uint16_t - UNIX process signal */
+	DATA_PARSER_CPU_BINDING_FLAGS, /* uint16_t <-> cpu_bind_type_t */
+	DATA_PARSER_CRON_ENTRY, /* cron_entry_t */
+	DATA_PARSER_CRON_ENTRY_PTR, /* cron_entry_t* */
+	DATA_PARSER_CRON_ENTRY_FLAGS, /* cron_entry_flag_t */
+	DATA_PARSER_MEMORY_BINDING_TYPE, /* mem_bind_type_t */
+	DATA_PARSER_OPEN_MODE, /* uint8_t - OPEN_MODE_* */
+	DATA_PARSER_WARN_FLAGS, /* uint16_t - KILL_*|WARN_SENT */
+	DATA_PARSER_X11_FLAGS, /* uint16_t - X11_FORWARD_* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
