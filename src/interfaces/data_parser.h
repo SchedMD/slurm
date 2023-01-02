@@ -206,6 +206,7 @@ typedef enum {
 	DATA_PARSER_RESERVATION_INFO_ARRAY, /* reserve_info_t** */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG, /* job_array_resp_msg_t */
 	DATA_PARSER_ERROR, /* int -> slurm_strerror() */
+	DATA_PARSER_JOB_SUBMIT_RESPONSE_MSG, /* submit_response_msg_t */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

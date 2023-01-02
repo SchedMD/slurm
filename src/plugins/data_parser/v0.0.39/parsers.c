@@ -4592,6 +4592,17 @@ static const parser_t PARSER_ARRAY(RESERVATION_INFO)[] = {
 #undef add_cparse
 #undef add_skip
 
+#define add_parse(mtype, field, path) \
+	add_parser(submit_response_msg_t, mtype, false, field, path, NEED_NONE)
+static const parser_t PARSER_ARRAY(JOB_SUBMIT_RESPONSE_MSG)[] = {
+	add_parse(UINT32, job_id, "job_id"),
+	add_parse(STEP_ID, step_id, "step_id"),
+	add_parse(UINT32, error_code, "error_code"),
+	add_parse(ERROR, error_code, "error"),
+	add_parse(STRING, job_submit_user_msg, "job_submit_user_msg"),
+};
+#undef add_parse
+
 #undef add_complex_parser
 #undef add_parse_enum_bool
 
@@ -4780,6 +4791,7 @@ static const parser_t parsers[] = {
 	addpa(POWER_MGMT_DATA, power_mgmt_data_t),
 	addpa(RESERVATION_INFO, reserve_info_t),
 	addpa(RESERVATION_CORE_SPEC, resv_core_spec_t),
+	addpa(JOB_SUBMIT_RESPONSE_MSG, submit_response_msg_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, slurmdb_destroy_qos_rec, create_qos_rec_obj, NEED_QOS),
