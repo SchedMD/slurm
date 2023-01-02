@@ -488,6 +488,14 @@ extern data_t *data_list_append(data_t *data);
 extern data_t *data_list_prepend(data_t *data);
 
 /*
+ * Extract first data from start of list
+ * IN data data object (list type only)
+ * RET first data start of list or NULL if list is empty
+ * 	Result must be free'd up with FREE_NULL_DATA()
+ */
+extern data_t *data_list_dequeue(data_t *data);
+
+/*
  * Copy and join array of data into a single list.
  * IN data - array of data objects (list type only) to copy/merge into a single
  * data list. Last entry must be NULL.

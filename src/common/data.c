@@ -650,6 +650,32 @@ extern data_t *data_list_prepend(data_t *data)
 	return ndata;
 }
 
+extern data_t *data_list_dequeue(data_t *data)
+{
+	data_list_node_t *n;
+	data_t *ret = NULL;
+	_check_magic(data);
+
+	if (!data || data->type != DATA_TYPE_LIST)
+		return NULL;
+
+	if (!(n = data->data.list_u->begin))
+		return NULL;
+
+	_check_data_list_node_magic(n);
+
+	/* extract out data for caller */
+	SWAP(ret, n->data);
+
+	/* remove node from list */
+	_release_data_list_node(data->data.list_u, n);
+
+	log_flag(DATA, "%s: list dequeue data (0x%"PRIXPTR") from (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) ret, (uintptr_t) data);
+
+	return ret;
+}
+
 static data_for_each_cmd_t _data_list_join(const data_t *src, void *arg)
 {
 	data_t *dst = (data_t *) arg;
