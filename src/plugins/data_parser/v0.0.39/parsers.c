@@ -2978,21 +2978,21 @@ static int DUMP_FUNC(JOB_INFO_MSG)(const parser_t *const parser, void *obj,
 				   data_t *dst, args_t *args)
 {
 	int rc = SLURM_SUCCESS;
-	job_info_msg_t **msg = obj;
+	job_info_msg_t *msg = obj;
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_list(dst);
 
-	if (!*msg || !(*msg)->record_count) {
+	if (!msg || !msg->record_count) {
 		on_warn(DUMPING, parser->type, args, NULL, __func__,
 			"Zero jobs to dump");
 		return SLURM_SUCCESS;
 	}
 
-	for (size_t i = 0; !rc && (i < (*msg)->record_count); ++i)
-		rc = DUMP(JOB_INFO, (*msg)->job_array[i], data_list_append(dst),
+	for (size_t i = 0; !rc && (i < msg->record_count); ++i)
+		rc = DUMP(JOB_INFO, msg->job_array[i], data_list_append(dst),
 			  args);
 
 	return rc;
