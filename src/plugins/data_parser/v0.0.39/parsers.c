@@ -3145,6 +3145,9 @@ static int DUMP_FUNC(PARTITION_INFO_PTR)(const parser_t *const parser,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
+	if (!part)
+		return SLURM_SUCCESS;
+
 	return DUMP(PARTITION_INFO, *part, dst, args);
 }
 
