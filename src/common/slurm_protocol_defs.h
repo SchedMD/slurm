@@ -1446,6 +1446,40 @@ extern int slurm_sort_char_list_desc(void *, void *);
  */
 extern char *slurm_sort_node_list_str(char *node_list);
 
+/*
+ * Take a string identifing any part of a job and parses it into an id
+ *
+ * Formats parsed:
+ *      0000 - JobId
+ *      0000+0000 - HetJob
+ *      0000+0000.0000 - HetJob Step
+ *      0000_0000 - Array Job
+ *      0000_0000.0000 - Array Job Step
+ *      0000.0000 - Job Step
+ *      0000.0000+0000 - Job HetStep
+ *
+ * Rejected formats:
+ *      0000_0000+0000 Array HetJob (not permitted)
+ *      0000+0000.0000+0000 HetJob with HetStep (not permitted)
+ *
+ * IN src - identifier string
+ * IN/OUT id - ptr to id to be populated.
+ * 	All values are always set to NO_VAL and then populated as parsed.
+ *      (Errors during parsing may result in partially populated ID.)
+ * RET SLURM_SUCCESS or error
+ */
+extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id);
+/*
+ * Dump id into string identifing a part of a job.
+ * Dumps same formats as unfmt_job_id_string() parsed.
+ * IN id - job identifer to dump
+ * IN/OUT dst - ptr to string to populate.
+ * 	*dst must always be NULL when called.
+ * 	Caller must xfree(*dst).
+ * RET SLURM_SUCCESS or error
+ */
+extern int fmt_job_id_string(slurm_selected_step_t *id, char **dst);
+
 extern slurm_selected_step_t *slurm_parse_step_str(char *name);
 
 extern resource_allocation_response_msg_t *

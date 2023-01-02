@@ -128,6 +128,15 @@ static const node_state_flags_t node_state_flags[] = {
 	{ NODE_STATE_POWERING_DOWN, "POWERING_DOWN" },
 };
 
+static const struct {
+	char *name;
+	int step_id;
+} step_names[] = {
+	{ "TBD", SLURM_PENDING_STEP },
+	{ "extern", SLURM_EXTERN_CONT },
+	{ "batch", SLURM_BATCH_SCRIPT },
+	{ "interactive", SLURM_INTERACTIVE_STEP },
+};
 
 static void _free_all_front_end_info(front_end_info_msg_t *msg);
 
@@ -740,6 +749,199 @@ extern char *slurm_sort_node_list_str(char *node_list)
 	hostset_destroy(hs);
 
 	return sorted_node_list;
+}
+
+extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
+{
+	char *end_ptr = NULL, *step_end_ptr = NULL, *step_het_end_ptr = NULL;
+	long job, step, step_het;
+
+	/*
+	 * Based on parser in scontrol_print_job() and scontrol_print_step()
+	 */
+
+	/* reset to default of NO_VAL */
+	id->array_task_id = NO_VAL;
+	id->het_job_offset = NO_VAL;
+	id->step_id.job_id = NO_VAL;
+	id->step_id.step_het_comp = NO_VAL;
+	id->step_id.step_id = NO_VAL;
+
+	if (!src || !src[0])
+		return ESLURM_EMPTY_JOB_ID;
+
+	job = strtol(src, &end_ptr, 10);
+	if (job == 0)
+		return ESLURM_INVALID_JOB_ID_ZERO;
+	else if (job < 0)
+		return ESLURM_INVALID_JOB_ID_NEGATIVE;
+	else if (job >= MAX_JOB_ID)
+		return ESLURM_INVALID_JOB_ID_TOO_LARGE;
+	else if (end_ptr == src)
+		return ESLURM_INVALID_JOB_ID_NON_NUMERIC;
+
+	id->step_id.job_id = job;
+
+	if (*end_ptr == '_') {
+		char *array_end_ptr = NULL;
+		long array;
+
+		if (*(end_ptr + 1) == '\0')
+			return ESLURM_EMPTY_JOB_ARRAY_ID;
+
+		array = strtol(end_ptr + 1, &array_end_ptr, 10);
+
+		if (array < 0)
+			return ESLURM_INVALID_JOB_ARRAY_ID_NEGATIVE;
+		else if (array == LONG_MAX)
+			return ESLURM_INVALID_JOB_ARRAY_ID_TOO_LARGE;
+		else if (array_end_ptr == end_ptr + 1)
+			return ESLURM_INVALID_JOB_ARRAY_ID_NON_NUMERIC;
+
+		id->array_task_id = array;
+		end_ptr = array_end_ptr;
+	}
+
+	if (*end_ptr == '+') {
+		char *het_end_ptr = NULL;
+		long het;
+
+		if (id->array_task_id != NO_VAL)
+			return ESLURM_INVALID_HET_JOB_AND_ARRAY;
+		else if (*(end_ptr + 1) == '\0')
+			return ESLURM_EMPTY_HET_JOB_COMP;
+
+		het = strtol(end_ptr + 1, &het_end_ptr, 10);
+
+		if (het < 0)
+			return ESLURM_INVALID_HET_JOB_COMP_NEGATIVE;
+		else if (het > MAX_HET_JOB_COMPONENTS)
+			return ESLURM_INVALID_HET_JOB_COMP_TOO_LARGE;
+		else if (het_end_ptr == end_ptr + 1)
+			return ESLURM_INVALID_HET_JOB_COMP_NON_NUMERIC;
+
+		id->het_job_offset = het;
+		end_ptr = het_end_ptr;
+
+		if (*end_ptr == '_')
+			return ESLURM_INVALID_HET_JOB_AND_ARRAY;
+	}
+
+	if (*end_ptr == '\0')
+		return SLURM_SUCCESS;
+
+	if (*end_ptr != '.')
+		return ESLURM_INVALID_JOB_ID_NON_NUMERIC;
+
+	end_ptr++;
+
+	if (*end_ptr == '\0')
+		return ESLURM_EMPTY_STEP_ID;
+
+	step = strtol(end_ptr, &step_end_ptr, 10);
+
+	if (step_end_ptr == end_ptr) {
+		/* check for step name instead */
+		for (int i = 0; true; i++) {
+			if (!xstrncasecmp(step_names[i].name, end_ptr,
+					  strlen(step_names[i].name))) {
+				step = step_names[i].step_id;
+				step_end_ptr =
+					end_ptr + strlen(step_names[i].name);
+				break;
+			}
+
+			if (i == ARRAY_SIZE(step_names))
+				return ESLURM_INVALID_STEP_ID_NON_NUMERIC;
+		}
+	} else if (step == 0) {
+		return ESLURM_INVALID_STEP_ID_ZERO;
+	} else if (step < 0) {
+		return ESLURM_INVALID_STEP_ID_NEGATIVE;
+	} else if (step >= SLURM_MAX_NORMAL_STEP_ID) {
+		return ESLURM_INVALID_STEP_ID_TOO_LARGE;
+	}
+
+	id->step_id.step_id = step;
+	end_ptr = step_end_ptr;
+
+	if (*end_ptr == '\0')
+		return SLURM_SUCCESS;
+
+	if (*end_ptr != '+')
+		return ESLURM_INVALID_STEP_ID_NON_NUMERIC;
+
+	if (id->het_job_offset != NO_VAL)
+		return ESLURM_INVALID_HET_STEP_JOB;
+
+	end_ptr++;
+
+	if (*end_ptr == '\0')
+		return SLURM_SUCCESS;
+
+	step_het = strtol(end_ptr, &step_het_end_ptr, 10);
+
+	if (step_het_end_ptr == end_ptr)
+		return ESLURM_EMPTY_HET_STEP;
+	else if (step_het == 0)
+		return ESLURM_INVALID_HET_STEP_ZERO;
+	else if (step_het < 0)
+		return ESLURM_INVALID_HET_STEP_NEGATIVE;
+	else if (step_het >= MAX_HET_JOB_COMPONENTS)
+		return ESLURM_INVALID_HET_STEP_TOO_LARGE;
+
+	if (*step_het_end_ptr != '\0')
+		return ESLURM_INVALID_HET_STEP_NON_NUMERIC;
+
+	id->step_id.step_het_comp = step_het;
+
+	return SLURM_SUCCESS;
+}
+
+extern int fmt_job_id_string(slurm_selected_step_t *id, char **dst)
+{
+	int rc;
+	char *str = NULL, *pos = NULL;
+
+	xassert(dst && !*dst);
+
+	if (id->step_id.job_id == NO_VAL) {
+		rc = ESLURM_EMPTY_JOB_ID;
+		goto cleanup;
+	}
+
+	xstrfmtcatat(str, &pos, "%u", id->step_id.job_id);
+
+	if ((id->array_task_id != NO_VAL) && (id->het_job_offset != NO_VAL)) {
+		rc = ESLURM_INVALID_HET_JOB_AND_ARRAY;
+		goto cleanup;
+	}
+
+	if (id->array_task_id != NO_VAL)
+		xstrfmtcatat(str, &pos, "_%u", id->array_task_id);
+
+	if (id->het_job_offset != NO_VAL)
+		xstrfmtcatat(str, &pos, "+%u", id->het_job_offset);
+
+	if ((id->step_id.step_id == NO_VAL) &&
+	    (id->step_id.step_het_comp != NO_VAL)) {
+		rc = ESLURM_EMPTY_STEP_ID;
+		goto cleanup;
+	}
+
+	if (id->step_id.step_id != NO_VAL) {
+		xstrfmtcatat(str, &pos, ".%u", id->step_id.step_id);
+
+		if (id->step_id.step_het_comp != NO_VAL)
+			xstrfmtcatat(str, &pos, "+%u",
+				     id->step_id.step_het_comp);
+	}
+
+	*dst = str;
+	return SLURM_SUCCESS;
+cleanup:
+	xfree(str);
+	return rc;
 }
 
 extern slurm_selected_step_t *slurm_parse_step_str(char *name)
