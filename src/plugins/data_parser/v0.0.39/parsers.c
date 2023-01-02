@@ -2604,12 +2604,14 @@ static int DUMP_FUNC(NODES)(const parser_t *const parser, void *obj,
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	xassert(nodes);
 
 	data_set_list(dst);
 
-	if (!nodes->record_count)
+	if (!nodes || !nodes->record_count) {
+		on_warn(DUMPING, parser->type, args, NULL, __func__,
+			"No nodes to dump");
 		return SLURM_SUCCESS;
+	}
 
 	for (int i = 0; !rc && (i < nodes->record_count); i++)
 		rc = DUMP(NODE, nodes->node_array[i], data_list_append(dst),
