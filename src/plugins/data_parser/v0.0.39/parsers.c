@@ -4819,7 +4819,7 @@ static const parser_t parsers[] = {
 	addps(ALLOCATED_CORES, uint32_t, NEED_NONE),
 	addps(ALLOCATED_CPUS, uint32_t, NEED_NONE),
 	addps(JOB_RES_PTR, job_resources_t *, NEED_NONE),
-	addps(CONTROLLER_PING_MODE, char *, NEED_NONE),
+	addps(CONTROLLER_PING_MODE, int, NEED_NONE),
 	addps(CONTROLLER_PING_RESULT, bool, NEED_NONE),
 	addps(CONTROLLER_PING_ARRAY, controller_ping_t *, NEED_NONE),
 	addps(HOSTLIST, hostlist_t, NEED_NONE),
