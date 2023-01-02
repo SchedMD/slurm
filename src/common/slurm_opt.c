@@ -6173,6 +6173,17 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 	/* } */
 }
 
+static void _validate_cpus_per_tres(slurm_opt_t *opt)
+{
+	/* --cpus-per-task and --cpus-per-gres are mutually exclusive */
+	if ((slurm_option_set_by_cli(opt, 'c') &&
+	     slurm_option_set_by_cli(opt, LONG_OPT_CPUS_PER_GPU)) ||
+	    (slurm_option_set_by_env(opt, 'c') &&
+	     slurm_option_set_by_env(opt, LONG_OPT_CPUS_PER_GPU))) {
+		fatal("--cpus-per-task and --cpus-per-gpu are mutually exclusive");
+	}
+}
+
 /* Validate shared options between srun, salloc, and sbatch */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 {
@@ -6182,6 +6193,7 @@ extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 	_validate_memory_options(opt);
 	_validate_share_options(opt);
 	_validate_tres_per_task(opt);
+	_validate_cpus_per_tres(opt);
 }
 
 extern char *slurm_option_get_argv_str(const int argc, char **argv)
