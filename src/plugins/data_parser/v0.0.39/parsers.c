@@ -4478,7 +4478,7 @@ static const parser_t PARSER_ARRAY(JOB_RES)[] = {
 static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
 	add_parse(STRING, hostname, "hostname"),
 	add_parse(CONTROLLER_PING_RESULT, pinged, "pinged"),
-	add_parse(UINT32, latency, "latency"),
+	add_parse(UINT64, latency, "latency"),
 	add_parse(CONTROLLER_PING_MODE, offset, "mode"),
 };
 #undef add_parse
