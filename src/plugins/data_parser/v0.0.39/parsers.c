@@ -2856,7 +2856,7 @@ static int DUMP_FUNC(JOB_RES_PTR)(const parser_t *const parser, void *obj,
 	if (!*res)
 		return SLURM_SUCCESS;
 
-	return DUMP(JOB_RES, *res, dst, args);
+	return DUMP(JOB_RES, **res, dst, args);
 }
 
 static void _dump_node_res(data_t *dnodes, job_resources_t *j,
