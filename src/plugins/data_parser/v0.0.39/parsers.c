@@ -4553,7 +4553,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(UINT32_NO_VAL, max_cpus_per_socket, "maximums/cpus_per_socket"),
 	add_parse(UINT64, max_mem_per_cpu, "maximums/memory_per_cpu"),
 	add_parse(UINT32_NO_VAL, max_nodes, "maximums/nodes"),
-	add_parse(UINT32, max_share, "maximums/shares"),
+	add_parse(UINT16, max_share, "maximums/shares"),
 	add_parse(UINT32_NO_VAL, max_time, "maximums/time"),
 	add_parse(UINT32, min_nodes, "minimums/nodes"),
 	add_parse(STRING, name, "name"),
@@ -4567,7 +4567,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(STRING, qos_char, "qos/assigned"),
 	add_parse(UINT16_NO_VAL, resume_timeout, "timeouts/resume"),
 	add_skip(state_up), //FIXME
-	add_parse(UINT16_NO_VAL, suspend_time, "suspend_time"),
+	add_parse(UINT32_NO_VAL, suspend_time, "suspend_time"),
 	add_parse(UINT16_NO_VAL, suspend_timeout, "timeouts/suspend"),
 	add_parse(UINT32, total_cpus, "cpus/total"),
 	add_parse(UINT32, total_nodes, "nodes/total"),
