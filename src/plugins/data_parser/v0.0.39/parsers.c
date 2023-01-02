@@ -1128,19 +1128,31 @@ static int DUMP_FUNC(JOB_USER)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(STATS_REC_ARRAY_PTR)
+
+static int DUMP_FUNC(STATS_REC_ARRAY_PTR)(const parser_t *const parser,
+					  void *obj, data_t *dst, args_t *args)
+{
+	slurmdb_rollup_stats_t **ptr = obj;
+
+	if (!*ptr)
+		return SLURM_SUCCESS;
+
+	return DUMP(STATS_REC_ARRAY, **ptr, dst, args);
+}
+
 PARSE_DISABLED(STATS_REC_ARRAY)
 
 static int DUMP_FUNC(STATS_REC_ARRAY)(const parser_t *const parser, void *obj,
 				      data_t *dst, args_t *args)
 {
-	slurmdb_rollup_stats_t **ptr_stats = obj;
-	slurmdb_rollup_stats_t *rollup_stats;
+	slurmdb_rollup_stats_t *rollup_stats = obj;
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	data_set_list(dst);
 
-	if (!(rollup_stats = *ptr_stats)) {
+	if (!rollup_stats) {
 		return on_error(DUMPING, parser->type, args,
 				ESLURM_DATA_CONV_FAILED, "slurmctld", __func__,
 				"rollup stats not provided by controller");
@@ -3918,8 +3930,8 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parser(slurmdb_stats_rec_t, mtype, false, field, 0, path, needs)
 /* should mirror the structure of slurmdb_stats_rec_t */
 static const parser_t PARSER_ARRAY(STATS_REC)[] = {
-	add_parse(UINT32, time_start, "time_start", NEED_NONE),
-	add_parse(STATS_REC_ARRAY, dbd_rollup_stats, "rollups", NEED_NONE),
+	add_parse(UINT64, time_start, "time_start", NEED_NONE),
+	add_parse(STATS_REC_ARRAY_PTR, dbd_rollup_stats, "rollups", NEED_NONE),
 	add_parse(STATS_RPC_LIST, rpc_list, "RPCs", NEED_NONE),
 	add_parse(STATS_USER_LIST, user_list, "users", NEED_NONE),
 };
@@ -4839,6 +4851,7 @@ static const parser_t parsers[] = {
 	addps(ADMIN_LVL, uint16_t, NEED_NONE),
 	addps(ASSOC_ID, uint32_t, NEED_NONE),
 	addps(STATS_REC_ARRAY, slurmdb_stats_rec_t, NEED_NONE),
+	addps(STATS_REC_ARRAY_PTR, slurmdb_stats_rec_t *, NEED_NONE),
 	addps(RPC_ID, slurmdbd_msg_type_t, NEED_NONE),
 	addps(CLUSTER_ACCT_REC, slurmdb_cluster_accounting_rec_t, NEED_NONE),
 	addps(SELECT_PLUGIN_ID, int, NEED_NONE),

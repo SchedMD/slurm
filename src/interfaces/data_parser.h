@@ -115,7 +115,8 @@ typedef enum {
 	DATA_PARSER_QOS_PREEMPT_MODES, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_* */
 	DATA_PARSER_RPC_ID, /* slurmdbd_msg_type_t */
 	DATA_PARSER_SELECT_PLUGIN_ID, /* int (SELECT_PLUGIN_*) -> string */
-	DATA_PARSER_STATS_REC_ARRAY, /* array of slurmdb_stats_rec_t* */
+	DATA_PARSER_STATS_REC_ARRAY, /* array of slurmdb_stats_rec_t */
+	DATA_PARSER_STATS_REC_ARRAY_PTR, /* slurmdb_stats_rec_t* */
 	DATA_PARSER_STATS_REC, /* slurmdb_stats_rec_t */
 	DATA_PARSER_STATS_RPC_LIST, /* list of slurmdb_rpc_obj_t* */
 	DATA_PARSER_STATS_RPC, /* slurmdb_rpc_obj_t */
