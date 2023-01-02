@@ -4845,7 +4845,7 @@ static const parser_t parsers[] = {
 	addps(TASK_DISTRIBUTION, uint32_t, NEED_NONE),
 	addps(SLURM_STEP_ID, slurm_step_id_t, NEED_NONE),
 	addps(STEP_ID, uint32_t, NEED_NONE),
-	addps(WCKEY_TAG, uint32_t, NEED_NONE),
+	addps(WCKEY_TAG, char *, NEED_NONE),
 	addps(GROUP_ID, gid_t, NEED_NONE),
 	addps(JOB_REASON, uint32_t, NEED_NONE),
 	addps(JOB_STATE, uint32_t, NEED_NONE),
