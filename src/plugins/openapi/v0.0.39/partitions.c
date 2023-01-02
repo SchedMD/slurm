@@ -55,228 +55,79 @@
 #include "src/plugins/openapi/v0.0.39/api.h"
 
 typedef enum {
-	URL_TAG_UNKNOWN = 0,
-	URL_TAG_PARTITION,
-	URL_TAG_PARTITIONS,
+	URL_TAG_PARTITION = 392,
+	URL_TAG_PARTITIONS = 12891
 } url_tag_t;
 
-static int _dump_part(data_t *p, partition_info_t *part)
-{
-	data_t *d = data_set_dict(data_list_append(p));
-	data_t *flags = data_set_list(data_key_set(d, "flags"));
-	data_t *pm = data_set_list(data_key_set(d, "preemption_mode"));
-
-	data_set_string(data_key_set(d, "allowed_allocation_nodes"),
-			part->allow_alloc_nodes);
-	data_set_string(data_key_set(d, "allowed_accounts"),
-			part->allow_accounts);
-	data_set_string(data_key_set(d, "allowed_groups"), part->allow_groups);
-	data_set_string(data_key_set(d, "allowed_qos"), part->allow_qos);
-	data_set_string(data_key_set(d, "alternative"), part->alternate);
-	data_set_string(data_key_set(d, "billing_weights"),
-			part->billing_weights_str);
-
-	xassert(part->def_mem_per_cpu != INFINITE64);
-	if ((part->def_mem_per_cpu == NO_VAL64) ||
-	    (part->def_mem_per_cpu == DEFAULT_MEM_PER_CPU) ||
-	    !(part->def_mem_per_cpu & ~MEM_PER_CPU)) {
-		data_set_null(data_key_set(d, "default_memory_per_cpu"));
-		data_set_null(data_key_set(d, "default_memory_per_node"));
-	} else if (part->def_mem_per_cpu & MEM_PER_CPU) {
-		data_set_int(data_key_set(d, "default_memory_per_cpu"),
-			     (part->def_mem_per_cpu & ~MEM_PER_CPU));
-		data_set_null(data_key_set(d, "default_memory_per_node"));
-	} else if (!(part->def_mem_per_cpu & MEM_PER_CPU)) {
-		data_set_null(data_key_set(d, "default_memory_per_cpu"));
-		data_set_int(data_key_set(d, "default_memory_per_node"),
-			     part->def_mem_per_cpu);
-	}
-
-	if (part->default_time == INFINITE)
-		data_set_int(data_key_set(d, "default_time_limit"), -1);
-	if (part->default_time == NO_VAL)
-		data_set_null(data_key_set(d, "default_time_limit"));
-	else
-		data_set_int(data_key_set(d, "default_time_limit"),
-			     part->default_time);
-
-	data_set_string(data_key_set(d, "denied_accounts"),
-			part->deny_accounts);
-	data_set_string(data_key_set(d, "denied_qos"), part->deny_qos);
-
-	if (part->flags & PART_FLAG_DEFAULT)
-		data_set_string(data_list_append(flags), "default");
-	if (part->flags & PART_FLAG_HIDDEN)
-		data_set_string(data_list_append(flags), "hidden");
-	if (part->flags & PART_FLAG_NO_ROOT)
-		data_set_string(data_list_append(flags), "no_root");
-	if (part->flags & PART_FLAG_ROOT_ONLY)
-		data_set_string(data_list_append(flags), "root_only");
-	if (part->flags & PART_FLAG_REQ_RESV)
-		data_set_string(data_list_append(flags),
-				"reservation_required");
-	if (part->flags & PART_FLAG_LLN)
-		data_set_string(data_list_append(flags), "least_loaded_nodes");
-	if (part->flags & PART_FLAG_EXCLUSIVE_USER)
-		data_set_string(data_list_append(flags), "exclusive_user");
-
-	data_set_int(data_key_set(d, "preemption_grace_time"),
-		     part->grace_time);
-
-	if (part->max_cpus_per_node == INFINITE)
-		data_set_int(data_key_set(d, "maximum_cpus_per_node"), -1);
-	else if (part->max_cpus_per_node == NO_VAL)
-		data_set_null(data_key_set(d, "maximum_cpus_per_node"));
-	else
-		data_set_int(data_key_set(d, "maximum_cpus_per_node"),
-			     part->max_cpus_per_node);
-
-	if (part->max_cpus_per_socket == INFINITE)
-		data_set_int(data_key_set(d, "maximum_cpus_per_socket"), -1);
-	else if (part->max_cpus_per_socket == NO_VAL)
-		data_set_null(data_key_set(d, "maximum_cpus_per_socket"));
-	else
-		data_set_int(data_key_set(d, "maximum_cpus_per_socket"),
-			     part->max_cpus_per_socket);
-
-	xassert(part->max_mem_per_cpu != INFINITE64);
-	if ((part->max_mem_per_cpu == NO_VAL64) ||
-	    (part->max_mem_per_cpu == DEFAULT_MAX_MEM_PER_CPU) ||
-	    !(part->max_mem_per_cpu & ~MEM_PER_CPU)) {
-		data_set_null(data_key_set(d, "maximum_memory_per_cpu"));
-		data_set_null(data_key_set(d, "maximum_memory_per_node"));
-	} else if (part->max_mem_per_cpu & MEM_PER_CPU) {
-		data_set_int(data_key_set(d, "maximum_memory_per_cpu"),
-			     (part->max_mem_per_cpu & ~MEM_PER_CPU));
-		data_set_null(data_key_set(d, "maximum_memory_per_node"));
-	} else if (!(part->max_mem_per_cpu & MEM_PER_CPU)) {
-		data_set_null(data_key_set(d, "maximum_memory_per_cpu"));
-		data_set_int(data_key_set(d, "maximum_memory_per_node"),
-			     part->max_mem_per_cpu);
-	}
-
-	if (part->max_nodes == INFINITE)
-		data_set_int(data_key_set(d, "maximum_nodes_per_job"), -1);
-	else
-		data_set_int(data_key_set(d, "maximum_nodes_per_job"),
-			     part->max_nodes);
-
-	if (part->max_time == INFINITE)
-		data_set_int(data_key_set(d, "max_time_limit"), -1);
-	else
-		data_set_int(data_key_set(d, "max_time_limit"), part->max_time);
-	data_set_int(data_key_set(d, "min nodes per job"), part->min_nodes);
-	data_set_string(data_key_set(d, "name"), part->name);
-	// TODO: int32_t *node_inx;	/* list index pairs into node_table:
-	// 			 * start_range_1, end_range_1,
-	// 			 * start_range_2, .., -1  */
-	data_set_string(data_key_set(d, "nodes"), part->nodes);
-	if (part->over_time_limit == NO_VAL16)
-		data_set_null(data_key_set(d, "over_time_limit"));
-	else
-		data_set_int(data_key_set(d, "over_time_limit"),
-			     part->over_time_limit);
-	
-	if (part->flags & PART_FLAG_PDOI)
-		data_set_string(data_list_append(flags), "power_down_on_idle");
-
-	if ((part->preempt_mode == PREEMPT_MODE_OFF) ||
-	    (part->preempt_mode == NO_VAL16)) {
-		data_set_string(data_list_append(pm), "disabled");
-	} else {
-		if (part->preempt_mode & PREEMPT_MODE_SUSPEND)
-			data_set_string(data_list_append(pm), "suspend");
-		if (part->preempt_mode & PREEMPT_MODE_REQUEUE)
-			data_set_string(data_list_append(pm), "requeue");
-		if (part->preempt_mode & PREEMPT_MODE_GANG)
-			data_set_string(data_list_append(pm), "gang_schedule");
-		if (part->preempt_mode & PREEMPT_MODE_WITHIN)
-			data_set_string(data_list_append(pm), "within");
-	}
-
-	data_set_int(data_key_set(d, "priority_job_factor"),
-		     part->priority_job_factor);
-	data_set_int(data_key_set(d, "priority_tier"), part->priority_tier);
-	data_set_string(data_key_set(d, "qos"), part->qos_char);
-	if (part->state_up == PARTITION_UP)
-		data_set_string(data_key_set(d, "state"), "UP");
-	else if (part->state_up == PARTITION_DOWN)
-		data_set_string(data_key_set(d, "state"), "DOWN");
-	else if (part->state_up == PARTITION_INACTIVE)
-		data_set_string(data_key_set(d, "state"), "INACTIVE");
-	else if (part->state_up == PARTITION_DRAIN)
-		data_set_string(data_key_set(d, "state"), "DRAIN");
-	else
-		data_set_string(data_key_set(d, "state"), "UNKNOWN");
-
-	data_set_int(data_key_set(d, "total_cpus"), part->total_cpus);
-	data_set_int(data_key_set(d, "total_nodes"), part->total_nodes);
-	data_set_string(data_key_set(d, "tres"), part->tres_fmt_str);
-
-	return SLURM_SUCCESS;
-}
-
-static int _op_handler_partitions(const char *context_id,
+extern int _op_handler_partitions(const char *context_id,
 				  http_request_method_t method,
-				  data_t *parameters, data_t *query,
-				  int tag, data_t *d, void *auth)
+				  data_t *parameters, data_t *query, int tag,
+				  data_t *resp, void *auth)
 {
-	int rc = SLURM_SUCCESS;
-	data_t *errors = populate_response_format(d);
-	data_t *partitions = data_set_list(data_key_set(d, "partitions"));
-	char *name = NULL;
+	int rc;
+	const char *name = NULL;
 	partition_info_msg_t *part_info_ptr = NULL;
 	time_t update_time = 0;
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
+	data_t *dpart = data_key_set(resp, "partitions");
+
+	if (ctxt->rc)
+		goto done;
+
+	if (method != HTTP_REQUEST_GET) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
+		goto done;
+	}
 
 	if ((rc = get_date_param(query, "update_time", &update_time)))
 		goto done;
 
-	if (tag == URL_TAG_PARTITION) {
-		const data_t *part_name = data_key_get_const(parameters,
-							     "partition_name");
-		if (!part_name || data_get_string_converted(part_name, &name) ||
-		    !name)
-			rc = ESLURM_INVALID_PARTITION_NAME;
+	if ((tag == URL_TAG_PARTITION) &&
+	    !(name = get_str_param("partition_name", ctxt))) {
+		resp_error(
+			ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			"partition_name must be provided for singular partition query");
+		goto done;
 	}
 
-	if (!rc)
-		rc = slurm_load_partitions(update_time, &part_info_ptr,
-					   SHOW_ALL);
-	if (errno == SLURM_NO_CHANGE_IN_DATA) {
-		/* no-op: nothing to do here */
-		rc = errno;
+	errno = 0;
+	if ((rc = slurm_load_partitions(update_time, &part_info_ptr,
+					SHOW_ALL))) {
+		if ((rc == SLURM_ERROR) && errno)
+			rc = errno;
+
 		goto done;
-	} else if (!rc && part_info_ptr) {
-		int found = 0;
+	}
+
+	if (part_info_ptr && name) {
+		partition_info_t *parts[2] = { 0 };
+
 		for (int i = 0; !rc && i < part_info_ptr->record_count; i++) {
-			if (tag == URL_TAG_PARTITIONS ||
-			    !xstrcasecmp(
-				    name,
-				    part_info_ptr->partition_array[i].name)) {
-				rc = _dump_part(
-					partitions,
-					&part_info_ptr->partition_array[i]);
-				found++;
+			if (!xstrcasecmp(name, part_info_ptr->partition_array[i]
+						       .name)) {
+				parts[0] = &part_info_ptr->partition_array[i];
+				break;
 			}
 		}
 
-		if (!found)
-			rc = ESLURM_INVALID_PARTITION_NAME;
-	}
-
-	if (!rc && (!part_info_ptr || part_info_ptr->record_count == 0))
-		rc = ESLURM_INVALID_PARTITION_NAME;
-
-	if (rc) {
-		data_t *e = data_set_dict(data_list_append(errors));
-		data_set_string(data_key_set(e, "error"), slurm_strerror(rc));
-		data_set_int(data_key_set(e, "errno"), rc);
+		if (!parts[0]) {
+			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				   "Unable to find partition %s", name);
+		} else {
+			partition_info_t **p = parts;
+			DATA_DUMP(ctxt->parser, PARTITION_INFO_ARRAY, p, dpart);
+		}
+	} else {
+		DATA_DUMP(ctxt->parser, PARTITION_INFO_MSG, *part_info_ptr,
+			  dpart);
 	}
 
 done:
 	slurm_free_partition_info_msg(part_info_ptr);
-	xfree(name);
-	return rc;
+	return fini_connection(ctxt);
 }
 
 extern void init_op_partitions(void)

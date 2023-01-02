@@ -37,31 +37,80 @@
 #ifndef SLURMRESTD_OPENAPI_V0039
 #define SLURMRESTD_OPENAPI_V0039
 
-#include "config.h"
-
-#include "slurm/slurm.h"
-
 #include "src/common/data.h"
+#include "src/interfaces/data_parser.h"
 
-extern int get_date_param(data_t *query, const char *param, time_t *time);
+#define DATA_VERSION "v0.0.39"
+#define DATA_PLUGIN "data_parser/" DATA_VERSION
+#define MAGIC_CTXT 0xafbb0fae
+
+typedef struct {
+	int magic; /* MAGIC_CTXT */
+	int rc;
+	data_t *errors;
+	data_t *warnings;
+	data_parser_t *parser;
+	const char *id; /* string identifying client (usually IP) */
+	void *db_conn;
+	http_request_method_t method;
+	data_t *parameters;
+	data_t *query;
+	data_t *resp;
+	data_t *parent_path;
+} ctxt_t;
 
 /*
- * Fill out boilerplate for every data response
- * RET ptr to errors dict
+ * Initiate connection context.
+ *
+ * This function is expected to be called in the callback handlers from
+ * operations router. It will setup everything required for handling the client
+ * request including tracking errors and warnings.
+ *
+ * IN context_id - string ident for client
+ * IN method - HTTP method of request
+ * IN parameters - data list of client supplied HTTP parameters
+ * IN query - data list of client supplied HTTP querys
+ * IN tag - callback assigned tag
+ * IN auth - auth ptr reference
  */
-extern data_t *populate_response_format(data_t *resp);
+extern ctxt_t *init_connection(const char *context_id,
+			       http_request_method_t method, data_t *parameters,
+			       data_t *query, int tag, data_t *resp,
+			       void *auth);
+
+/* provides RC for connection and releases connection context */
+extern int fini_connection(ctxt_t *ctxt);
 
 /*
- * Add a response error to errors
- * IN errors - data list to append a new error
+ * Add a response error
+ * IN ctxt - connection context
  * IN why - description of error or NULL
  * IN error_code - Error number
  * IN source - Where the error was generated
  * RET value of error_code
  */
-extern int resp_error(data_t *errors, int error_code, const char *source,
+extern int resp_error(ctxt_t *ctxt, int error_code, const char *source,
 		      const char *why, ...)
 	__attribute__((format(printf, 4, 5)));
+extern void resp_warn(ctxt_t *ctxt, const char *source, const char *why, ...)
+	__attribute__((format(printf, 3, 4)));
+
+/* ------------ handlers for user requests --------------- */
+
+#define get_str_param(path, ctxt) get_str_param_funcname(path, ctxt, __func__)
+
+/*
+ * Retrieve parameter
+ * IN path - Path to parameter in query
+ * IN ctxt - connection context
+ * RET string or NULL on error
+ */
+extern char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
+				    const char *caller);
+
+extern int get_date_param(data_t *query, const char *param, time_t *time);
+
+/* ------------ declarations for each operation --------------- */
 
 extern void init_op_diag(void);
 extern void init_op_jobs(void);
