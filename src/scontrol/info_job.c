@@ -317,7 +317,7 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 	error_code = scontrol_load_job(&job_buffer_ptr, job_id);
 
 	if (mime_type) {
-		if ((error_code = DATA_DUMP_CLI(JOB_INFO_MSG, job_buffer_ptr,
+		if ((error_code = DATA_DUMP_CLI(JOB_INFO_MSG, *job_buffer_ptr,
 						"jobs", argc, argv, NULL,
 						mime_type)))
 			exit_code =1;
