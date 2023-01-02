@@ -4889,6 +4889,7 @@ static const parser_t parsers[] = {
 	addps(NODE_STATES_NO_VAL, uint32_t, NEED_NONE),
 	addps(RESERVATION_INFO_ARRAY, reserve_info_t **, NEED_NONE),
 	addps(ERROR, int, NEED_NONE),
+	addps(JOB_INFO_MSG, job_info_msg_t, NEED_NONE),
 
 	/* Complex type parsers */
 	addpc(QOS_PREEMPT_LIST, slurmdb_qos_rec_t, NEED_QOS),
@@ -4916,7 +4917,6 @@ static const parser_t parsers[] = {
 	addpc(NODES, node_info_msg_t, NEED_NONE),
 	addpc(JOB_INFO_GRES_DETAIL, slurm_job_info_t, NEED_NONE),
 	addpc(JOB_RES_NODES, job_resources_t, NEED_NONE),
-	addpc(JOB_INFO_MSG, job_info_msg_t *, NEED_NONE),
 	addpc(STEP_INFO_MSG, job_step_info_response_msg_t *, NEED_TRES),
 	addpc(PARTITION_INFO_MSG, partition_info_msg_t, NEED_TRES),
 	addpc(RESERVATION_INFO_MSG, reserve_info_msg_t, NEED_NONE),
