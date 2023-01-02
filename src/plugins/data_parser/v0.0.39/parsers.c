@@ -1227,6 +1227,30 @@ static int DUMP_FUNC(TASK_DISTRIBUTION)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(SLURM_STEP_ID)
+
+static int DUMP_FUNC(SLURM_STEP_ID)(const parser_t *const parser, void *obj,
+				    data_t *dst, args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	slurm_step_id_t *id = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	data_set_dict(dst);
+
+	if (id->job_id != NO_VAL)
+		data_set_int(data_key_set(dst, "job_id"), id->job_id);
+	if (id->step_het_comp != NO_VAL)
+		data_set_int(data_key_set(dst, "step_het_component"),
+			     id->step_het_comp);
+	if (id->step_id != NO_VAL)
+		rc = DUMP(STEP_ID, id->step_id, data_key_set(dst, "step_id"),
+			  args);
+
+	return rc;
+}
+
 PARSE_DISABLED(STEP_ID)
 
 static int DUMP_FUNC(STEP_ID)(const parser_t *const parser, void *obj,
@@ -4773,6 +4797,7 @@ static const parser_t parsers[] = {
 	addps(CLUSTER_ACCT_REC, slurmdb_cluster_accounting_rec_t, NEED_NONE),
 	addps(SELECT_PLUGIN_ID, int, NEED_NONE),
 	addps(TASK_DISTRIBUTION, uint32_t, NEED_NONE),
+	addps(SLURM_STEP_ID, slurm_step_id_t, NEED_NONE),
 	addps(STEP_ID, uint32_t, NEED_NONE),
 	addps(WCKEY_TAG, uint32_t, NEED_NONE),
 	addps(GROUP_ID, gid_t, NEED_NONE),

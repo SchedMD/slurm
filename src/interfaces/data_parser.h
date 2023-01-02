@@ -122,6 +122,7 @@ typedef enum {
 	DATA_PARSER_STATS_USER_LIST, /* list of slurmdb_rpc_obj_t* */
 	DATA_PARSER_STATS_USER, /* slurmdb_rpc_obj_t */
 	DATA_PARSER_STEP_CPUFREQ_GOV, /* slurmdb_step_rec_t.req_cpufreq_gov (uint32_t) of CPU_FREQ_* flags */
+	DATA_PARSER_SLURM_STEP_ID, /* slurm_step_id_t */
 	DATA_PARSER_STEP_ID, /* uint32_t of job step id */
 	DATA_PARSER_TASK_DISTRIBUTION, /* uint32_t <-> task_dist_states_t */
 	DATA_PARSER_TRES_STR, /* List of slurmdb_tres_rec_t* combined into a TRES string with TRES type/name instead of ID */
