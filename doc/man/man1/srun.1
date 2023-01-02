@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "December 2022" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "January 2023" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -2679,21 +2679,11 @@ the \fBpreempt_send_user_signal\fR \fBSlurmctldParameter\fR.
 .TP
 \fB\-\-slurmd\-debug\fR=<\fIlevel\fR>
 Specify a debug level for slurmd(8). The \fIlevel\fR may be specified either
-an integer value between 0 [quiet, only errors are displayed] and 4 [verbose
-operation] or the \fISlurmdDebug\fR tags.
+as an integer value between 2 [error] and 6 [debug2],
+or as one of the \fISlurmdDebug\fR tags.
 .IP
 .RS
 .TP 10
-\fBquiet\fR
-Log nothing
-.IP
-
-.TP
-\fBfatal\fR
-Log only fatal errors
-.IP
-
-.TP
 \fBerror\fR
 Log only errors
 .IP
@@ -2706,6 +2696,16 @@ Log errors and general informational messages
 .TP
 \fBverbose\fR
 Log errors and verbose informational messages
+.IP
+
+.TP
+\fBdebug\fR
+Log errors and verbose informational messages and debugging messages
+.IP
+
+.TP
+\fBdebug2\fR
+Log errors and verbose informational messages and more debugging messages
 .RE
 .IP
 
