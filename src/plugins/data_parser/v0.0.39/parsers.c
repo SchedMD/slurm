@@ -4835,6 +4835,18 @@ static const parser_t PARSER_ARRAY(JOB_SUBMIT_RESPONSE_MSG)[] = {
 		.flag = FLAG_TYPE_NONE,                                        \
 		.flag_bit_array_count = NO_VAL8,                               \
 	}
+#define addfa(typev, typet)                                                    \
+	{                                                                      \
+		.magic = MAGIC_PARSER,                                         \
+		.type = DATA_PARSER_##typev,                                   \
+		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
+		.obj_type_string = XSTRINGIFY(typet),                          \
+		.size = sizeof(typet),                                         \
+		.needs = NEED_NONE,                                            \
+		.flag = FLAG_TYPE_BIT_ARRAY,                                   \
+		.flag_bit_array = PARSER_FLAG_ARRAY(typev),                    \
+		.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(typev)),  \
+	}
 static const parser_t parsers[] = {
 	/* Simple type parsers */
 	addps(STRING, char *, NEED_NONE),
