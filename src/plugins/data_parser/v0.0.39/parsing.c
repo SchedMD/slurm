@@ -281,7 +281,7 @@ static int parse_flag(void *dst, const parser_t *const parser, data_t *src,
 		.index = -1,
 	};
 
-	xassert(parser->key[0]);
+	xassert(parser->key && parser->key[0]);
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(parser->magic == MAGIC_PARSER);
 	xassert((parser->flag == FLAG_TYPE_BIT_ARRAY) ||
