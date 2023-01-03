@@ -264,7 +264,20 @@ static void _job_post_het_submit(ctxt_t *ctxt, data_t *djobs,
 		       ctxt->parent_path))
 		goto cleanup;
 
-	if (script && jobs && list_count(jobs)) {
+	if (!jobs || !list_count(jobs)) {
+		resp_error(ctxt, errno, __func__,
+			   "Refusing HET job submission without any components");
+		goto cleanup;
+	}
+
+	if (list_count(jobs) > MAX_HET_JOB_COMPONENTS) {
+		resp_error(ctxt, errno, __func__,
+			   "Refusing HET job submission too many components: %d > %u",
+			   list_count(jobs), MAX_HET_JOB_COMPONENTS);
+		goto cleanup;
+	}
+
+	if (script) {
 		job_desc_msg_t *j = list_peek(jobs);
 
 		if (!j->script)
