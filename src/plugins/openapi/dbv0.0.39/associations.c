@@ -448,6 +448,7 @@ static void _update_associations(ctxt_t *ctxt, bool commit)
 
 cleanup:
 	FREE_NULL_LIST(assoc_list);
+	FREE_NULL_DATA(parent_path);
 }
 
 static int op_handler_association(const char *context_id,
