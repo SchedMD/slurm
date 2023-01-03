@@ -305,8 +305,8 @@ static void _dump_cli_stdout_on_warn(void *arg, data_parser_type_t type,
 
 	if (why) {
 		va_start(ap, why);
-		data_set_string(data_key_set(w, "description"),
-				vxstrfmt(why, ap));
+		data_set_string_own(data_key_set(w, "description"),
+				    vxstrfmt(why, ap));
 		va_end(ap);
 	}
 
