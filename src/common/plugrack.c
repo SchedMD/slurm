@@ -623,8 +623,13 @@ cleanup:
 
 extern void unload_plugins(plugins_t *plugins)
 {
-	if (plugins->rack)
+	if (plugins->rack) {
+		for (size_t i = 0; i < plugins->count; i++)
+			plugrack_release_by_type(plugins->rack,
+						 plugins->types[i]);
+
 		(void) plugrack_destroy(plugins->rack);
+	}
 
 	xfree(plugins);
 
