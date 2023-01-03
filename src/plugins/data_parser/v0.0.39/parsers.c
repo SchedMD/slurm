@@ -3226,6 +3226,12 @@ static int DUMP_FUNC(STEP_INFO_ARRAY)(const parser_t *const parser, void *obj,
 
 	data_set_list(dst);
 
+	if (!steps || !*steps) {
+		on_warn(DUMPING, parser->type, args, NULL, __func__,
+			"Zero steps to dump");
+		return SLURM_SUCCESS;
+	}
+
 	for (int i = 0; !rc && steps[i]; i++)
 		rc = DUMP(STEP_INFO, *steps[i], data_list_append(dst), args);
 
