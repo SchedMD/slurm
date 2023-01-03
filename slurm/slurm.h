@@ -1860,7 +1860,7 @@ typedef struct job_info {
 				      *	either srun or the lowest slurmd version
 				      *	it is talking to */
 	char *state_desc;	/* optional details for state_reason */
-	uint16_t state_reason;	/* reason job still pending or failed, see
+	uint32_t state_reason;	/* reason job still pending or failed, see
 				 * slurm.h:enum job_state_reason */
 	char *std_err;		/* pathname of job's stderr file */
 	char *std_in;		/* pathname of job's stdin file */

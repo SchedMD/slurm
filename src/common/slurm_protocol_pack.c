@@ -3677,7 +3677,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		safe_unpack32(&job->job_state, buffer);
 		safe_unpack16(&job->batch_flag, buffer);
-		safe_unpack16(&job->state_reason, buffer);
+		safe_unpack32(&job->state_reason, buffer);
 		safe_unpack8(&job->power_flags, buffer);
 		safe_unpack8(&job->reboot, buffer);
 		safe_unpack16(&job->restart_cnt, buffer);
@@ -3831,6 +3831,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		safe_unpackstr(&job->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		uint16_t uint16_tmp = 0;
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
 		/* The array_task_str value is stored in slurmctld and passed
@@ -3856,7 +3857,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		safe_unpack32(&job->job_state, buffer);
 		safe_unpack16(&job->batch_flag, buffer);
-		safe_unpack16(&job->state_reason, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		job->state_reason = uint16_tmp;
 		safe_unpack8 (&job->power_flags, buffer);
 		safe_unpack8 (&job->reboot, buffer);
 		safe_unpack16(&job->restart_cnt, buffer);
@@ -4025,6 +4027,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr_xmalloc(&job->selinux_context, &uint32_tmp,
 				       buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t uint16_tmp = 0;
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
 		/* The array_task_str value is stored in slurmctld and passed
@@ -4050,7 +4053,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		safe_unpack32(&job->job_state, buffer);
 		safe_unpack16(&job->batch_flag, buffer);
-		safe_unpack16(&job->state_reason, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		job->state_reason = uint16_tmp;
 		safe_unpack8 (&job->power_flags, buffer);
 		safe_unpack8 (&job->reboot, buffer);
 		safe_unpack16(&job->restart_cnt, buffer);
