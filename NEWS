@@ -211,6 +211,7 @@ documents those changes that are of interest to users and administrators.
  -- helpers.conf - Allow specification of node specific features.
  -- helpers.conf - Allow many features to one helper script.
  -- Allow nodefeatures plugin features to work with cloud nodes.
+ -- squeue - removed --array-unique option.
 
 * Changes in Slurm 22.05.8
 ==========================

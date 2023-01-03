@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "November 2022" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "January 2023" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -32,14 +32,6 @@ Display one job array element per line.
 Without this option, the display will be optimized for use with job arrays
 (pending job array elements will be combined on one line of output with the
 array index values printed using a regular expression).
-.IP
-
-.TP
-\fB\-\-array\-unique\fR
-Display one unique pending job array element per line. Without this option,
-the pending job array elements will be grouped into the master array job to
-optimize the display.  This can also be set with the environment variable
-SQUEUE_ARRAY_UNIQUE.
 .IP
 
 .TP

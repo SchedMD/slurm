@@ -62,7 +62,6 @@
 #define OPT_LONG_HIDE         0x102
 #define OPT_LONG_START        0x103
 #define OPT_LONG_NOCONVERT    0x104
-#define OPT_LONG_ARRAY_UNIQUE 0x105
 #define OPT_LONG_LOCAL        0x106
 #define OPT_LONG_SIBLING      0x107
 #define OPT_LONG_FEDR         0x108
@@ -106,7 +105,6 @@ parse_command_line( int argc, char* *argv )
 		{"accounts",   required_argument, 0, 'A'},
 		{"all",        no_argument,       0, 'a'},
 		{"array",      no_argument,       0, 'r'},
-		{"array-unique",no_argument,      0, OPT_LONG_ARRAY_UNIQUE},
 		{"Format",     required_argument, 0, 'O'},
 		{"format",     required_argument, 0, 'o'},
 		{"federation", no_argument,       0, OPT_LONG_FEDR},
@@ -157,8 +155,6 @@ parse_command_line( int argc, char* *argv )
 		params.array_flag = true;
 	if ( ( env_val = getenv("SQUEUE_SORT") ) )
 		params.sort = xstrdup(env_val);
-	if (getenv("SQUEUE_ARRAY_UNIQUE"))
-		params.array_unique_flag = true;
 	if ( ( env_val = getenv("SLURM_CLUSTERS") ) ) {
 		if (!(params.clusters = slurmdb_get_info_cluster(env_val))) {
 			print_db_notok(env_val, 1);
@@ -324,9 +320,6 @@ parse_command_line( int argc, char* *argv )
 				      optarg);
 				exit(1);
 			}
-			break;
-		case OPT_LONG_ARRAY_UNIQUE:
-			params.array_unique_flag = true;
 			break;
 		case OPT_LONG_HELP:
 			_help();
