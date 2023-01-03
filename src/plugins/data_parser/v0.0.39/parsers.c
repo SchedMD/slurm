@@ -2459,7 +2459,7 @@ static int DUMP_FUNC(CSV_LIST)(const parser_t *const parser, void *obj,
 
 	data_set_list(dst);
 
-	if (!src || (src[0] = '\0'))
+	if (!src || (src[0] == '\0'))
 		return SLURM_SUCCESS;
 
 	str = xstrdup(src);
