@@ -3552,11 +3552,14 @@ static int PARSE_FUNC(JOB_DESC_MSG_CPU_FREQ)(const parser_t *const parser,
 
 	if ((rc = cpu_freq_verify_cmdline(str, &job->cpu_freq_min,
 					  &job->cpu_freq_max,
-					  &job->cpu_freq_gov)))
+					  &job->cpu_freq_gov))) {
+		xfree(str);
 		return on_error(PARSING, parser->type, args, rc,
 				"cpu_freq_verify_cmdline()", __func__,
 				"Invalid cpu_freuency");
+	}
 
+	xfree(str);
 	return rc;
 }
 
