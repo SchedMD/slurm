@@ -263,6 +263,7 @@ static void _update_users(ctxt_t *ctxt, bool commit)
 cleanup:
 	FREE_NULL_LIST(user_list);
 	FREE_NULL_LIST(add_coord_list);
+	FREE_NULL_DATA(parent_path);
 }
 
 static int _foreach_delete_user(void *x, void *arg)
