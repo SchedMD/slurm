@@ -493,7 +493,7 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 		}
 	}
 
-	if (mime_type && steps) {
+	if (mime_type) {
 		if (DATA_DUMP_CLI(STEP_INFO_ARRAY, steps, "steps", argc, argv,
 				  NULL, mime_type))
 			exit_code = SLURM_ERROR;
