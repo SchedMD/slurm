@@ -3377,7 +3377,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 			step_ptr->step_id.job_id = het_job_ptr->job_id;
 		} else {
 			int first_bit = 0;
-			het_grp_bits = bit_alloc(128);
+			het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
 			if (bit_unfmt_hexmask(het_grp_bits,
 					      step_specs->step_het_grps)) {
 				error("%s: bad het group given", __func__);
