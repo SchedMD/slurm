@@ -203,7 +203,7 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 				(void) data_list_join_str(&path, parent_path,
 							  "/");
 				on_error(op, parser->type, args, rc, path,
-					 caller, "QOS id#%zu too large",
+					 caller, "QOS id#%"PRIu64" too large",
 					 qos_id_full);
 			}
 			goto done;

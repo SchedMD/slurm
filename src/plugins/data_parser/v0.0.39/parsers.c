@@ -681,7 +681,7 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 				DUMPING, parser->type, args, ESLURM_INVALID_QOS,
 				"list_find_first()->slurmdb_find_qos_in_list()",
 				__func__,
-				"Unable to resolve Preempt QOS (bit %u/%zu[%s]) in QOS %s(%u)",
+				"Unable to resolve Preempt QOS (bit %u/%" PRId64 "[%s]) in QOS %s(%u)",
 				i, bit_size(qos->preempt_bitstr), bits,
 				qos->name, qos->id);
 
@@ -2671,13 +2671,13 @@ static int PARSE_FUNC(CORE_SPEC)(const parser_t *const parser, void *obj,
 	if (data_get_int(src) >= CORE_SPEC_THREAD)
 		return on_error(PARSING, parser->type, args,
 				ESLURM_INVALID_CORE_CNT, NULL, __func__,
-				"Invalid core specification %zd >= %hu",
+				"Invalid core specification %"PRId64" >= %hu",
 				data_get_int(src), CORE_SPEC_THREAD);
 
 	if (data_get_int(src) <= 0)
 		return on_error(PARSING, parser->type, args,
 				ESLURM_INVALID_CORE_CNT, NULL, __func__,
-				"Invalid core specification %zd <= 0",
+				"Invalid core specification %"PRId64" <= 0",
 				data_get_int(src));
 
 	*spec = data_get_int(src);
@@ -2713,13 +2713,13 @@ static int PARSE_FUNC(THREAD_SPEC)(const parser_t *const parser, void *obj,
 	if (data_get_int(src) >= CORE_SPEC_THREAD)
 		return on_error(PARSING, parser->type, args,
 				ESLURM_BAD_THREAD_PER_CORE, NULL, __func__,
-				"Invalid thread specification %zd >= %hu",
+				"Invalid thread specification %"PRId64" >= %hu",
 				data_get_int(src), CORE_SPEC_THREAD);
 
 	if (data_get_int(src) <= 0)
 		return on_error(PARSING, parser->type, args,
 				ESLURM_BAD_THREAD_PER_CORE, NULL, __func__,
-				"Invalid thread specification %zd <= 0",
+				"Invalid thread specification %"PRId64"<= 0",
 				data_get_int(src));
 
 	*spec = data_get_int(src);
