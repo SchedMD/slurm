@@ -392,7 +392,7 @@ static int _foreach_update_assoc(void *x, void *arg)
 		/* avoid double free of assoc */
 		assoc_list = list_create(NULL);
 		list_append(assoc_list, assoc);
-		db_query_rc(ctxt, assoc_list, slurmdb_associations_add);
+		(void) db_query_rc(ctxt, assoc_list, slurmdb_associations_add);
 	} else if (list_count(assoc_list) > 1) {
 		rc = resp_error(ctxt, ESLURM_DATA_AMBIGUOUS_MODIFY, __func__,
 				"ambiguous association modify request");
