@@ -148,32 +148,6 @@ sacctmgr modify user bob set GrpTRES=cpu=-1,mem=-1,gres/gpu=-1
 </pre>
 
 <ul>
-<li><b>GrpTRESMins=</b> The total number of TRES minutes that can
-  possibly be used by past, present and future jobs
-  running from an association and its children or QOS. If any limit is reached,
-  all running jobs with that TRES in this group will be killed, and no new
-  jobs will be allowed to run.  This usage is decayed (at a rate of
-  PriorityDecayHalfLife).  It can also be reset (according to
-  PriorityUsageResetPeriod) in order to allow jobs to run against the
-  association tree or QOS again.  QOS that have the NoDecay flag set
-  do not decay GrpTRESMins, see <a href="qos.html#qos_other">QOS Options</a>
-  for details.
-  This limit only applies when using the Priority Multifactor plugin.
-</li>
-
-<li><b>GrpTRESRunMins=</b> Used to limit the combined total number of TRES
-  minutes used by all jobs running with an association and its
-  children or QOS.  This takes into consideration time limit of
-  running jobs and consumes it, if the limit is reached no new jobs
-  are started until other jobs finish to allow time to free up.
-</li>
-
-<li><b>GrpTRES=</b> The total count of TRES able to be used at any given
-  time from jobs running from an association and its children or QOS.  If
-  this limit is reached new jobs will be queued but only allowed to
-  run after resources have been relinquished from this group.
-</li>
-
 <li><b>GrpJobs=</b> The total number of jobs able to run at any given
   time from an association and its children QOS.  If
   this limit is reached new jobs will be queued but only allowed to
@@ -194,6 +168,32 @@ sacctmgr modify user bob set GrpTRES=cpu=-1,mem=-1,gres/gpu=-1
   to the system at any given time from an association and its children
   or QOS.  If this limit is reached new submission requests will be
   denied until previous jobs complete from this group.
+</li>
+
+<li><b>GrpTRES=</b> The total count of TRES able to be used at any given
+  time from jobs running from an association and its children or QOS.  If
+  this limit is reached new jobs will be queued but only allowed to
+  run after resources have been relinquished from this group.
+</li>
+
+<li><b>GrpTRESMins=</b> The total number of TRES minutes that can
+  possibly be used by past, present and future jobs
+  running from an association and its children or QOS. If any limit is reached,
+  all running jobs with that TRES in this group will be killed, and no new
+  jobs will be allowed to run.  This usage is decayed (at a rate of
+  PriorityDecayHalfLife).  It can also be reset (according to
+  PriorityUsageResetPeriod) in order to allow jobs to run against the
+  association tree or QOS again.  QOS that have the NoDecay flag set
+  do not decay GrpTRESMins, see <a href="qos.html#qos_other">QOS Options</a>
+  for details.
+  This limit only applies when using the Priority Multifactor plugin.
+</li>
+
+<li><b>GrpTRESRunMins=</b> Used to limit the combined total number of TRES
+  minutes used by all jobs running with an association and its
+  children or QOS.  This takes into consideration time limit of
+  running jobs and consumes it, if the limit is reached no new jobs
+  are started until other jobs finish to allow time to free up.
 </li>
 
 <li><b>GrpWall=</b> The maximum wall clock time running jobs are able
