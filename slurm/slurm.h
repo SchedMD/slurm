@@ -874,7 +874,7 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu-bind=... */
 } cpu_bind_type_t;
 
 #define CPU_BIND_T_TO_MASK 0x001e
-#define CPU_BIND_T_AUTO_TO_MASK 0x000e
+#define CPU_BIND_T_AUTO_TO_MASK 0x34000
 #define CPU_BIND_T_MASK 0x0fe0
 #define CPU_BIND_T_TASK_PARAMS_MASK (SLURMD_OFF_SPEC | CPU_BIND_OFF)
 
