@@ -277,8 +277,8 @@ static bool _dump_cli_stdout_on_error(void *arg, data_parser_type_t type,
 
 	if (why) {
 		va_start(ap, why);
-		data_set_string(data_key_set(e, "description"),
-				vxstrfmt(why, ap));
+		data_set_string_own(data_key_set(e, "description"),
+				    vxstrfmt(why, ap));
 		va_end(ap);
 	}
 
