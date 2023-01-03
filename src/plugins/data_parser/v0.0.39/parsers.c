@@ -1145,6 +1145,7 @@ static int DUMP_FUNC(JOB_USER)(const parser_t *const parser, void *obj,
 	}
 
 	data_set_null(dst);
+	xfree(user);
 	return SLURM_SUCCESS;
 }
 
