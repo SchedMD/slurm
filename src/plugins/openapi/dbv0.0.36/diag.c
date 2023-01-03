@@ -63,7 +63,7 @@ static int _op_handler_diag(const char *context_id,
 	data_t *errors = populate_response_format(resp);
 	parser_env_t penv = { 0 };
 	slurmdb_stats_rec_t *stats_rec = NULL;
-	int rc;
+	int rc = SLURM_SUCCESS;
 	void *db_conn;
 
 	debug4("%s:[%s] diag handler called", __func__, context_id);
