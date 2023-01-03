@@ -5391,7 +5391,7 @@ static const parser_t PARSER_ARRAY(CRON_ENTRY)[] = {
 #undef add_parse
 
 static const flag_bit_t PARSER_FLAG_ARRAY(MEMORY_BINDING_TYPE)[] = {
-	add_flag_masked_bit(MEM_BIND_VERBOSE, MEM_BIND_TYPE_FLAGS_MASK, "VERBOSE"),
+	add_flag_masked_bit(MEM_BIND_VERBOSE, MEM_BIND_VERBOSE, "VERBOSE"),
 	add_flag_equal(MEM_BIND_NONE, MEM_BIND_TYPE_MASK, "NONE"),
 	add_flag_equal(MEM_BIND_RANK, MEM_BIND_TYPE_MASK, "RANK"),
 	add_flag_equal(MEM_BIND_MAP, MEM_BIND_TYPE_MASK, "MAP"),
