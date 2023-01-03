@@ -1805,6 +1805,7 @@ typedef struct job_info {
 	uint32_t het_job_offset; /* HetJob component offset from leader */
 	uint32_t job_id;	/* job ID */
 	job_resources_t *job_resrcs; /* opaque data type, job resources */
+	char *job_size_str;
 	uint32_t job_state;	/* state of the job, see enum job_states */
 	time_t last_sched_eval; /* last time job was evaluated for scheduling */
 	char *licenses;		/* licenses required by the job */

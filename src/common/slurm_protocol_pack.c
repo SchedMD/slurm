@@ -3761,6 +3761,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->max_cpus, buffer);
 		safe_unpack32(&job->num_nodes, buffer);
 		safe_unpack32(&job->max_nodes, buffer);
+		unpack_bit_str_hex_as_fmt_str(&job->job_size_str, buffer);
 		safe_unpack16(&job->requeue, buffer);
 		safe_unpack16(&job->ntasks_per_node, buffer);
 		safe_unpack16(&job->ntasks_per_tres, buffer);

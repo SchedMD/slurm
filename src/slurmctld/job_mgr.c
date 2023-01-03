@@ -11315,6 +11315,7 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				pack32(min_nodes, buffer);
 				pack32(detail_ptr->max_nodes, buffer);
 			}
+			pack_bit_str_hex(detail_ptr->job_size_bitmap, buffer);
 
 			pack16(detail_ptr->requeue,   buffer);
 			pack16(detail_ptr->ntasks_per_node, buffer);
