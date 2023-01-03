@@ -217,10 +217,10 @@ extern void data_parser_g_free(data_parser_t *parser, bool skip_unloading)
 	DEF_TIMERS;
 	const parse_funcs_t *funcs = plugins->functions[parser->plugin_offset];
 
-	xassert(parser->magic == PARSE_MAGIC);
 	if (plugins && parser) {
 		xassert(plugins->magic == PLUGINS_MAGIC);
 		xassert(plugins->functions[parser->plugin_offset]);
+		xassert(parser->magic == PARSE_MAGIC);
 		xassert(parser->plugin_offset < plugins->count);
 	}
 
