@@ -9,8 +9,6 @@ documents those changes that are of interest to users and administrators.
     ping_nodes() calls all nodes to re-register.
  -- openapi/dbv0.0.3[6-8] - fix segfault that could arrise from Slurm database
     connnection failing.
- -- common/slurmdbd_pack - fix env and script hash when unpacking a 21.08
-    dbd_job_start_msg_t.
 
 * Changes in Slurm 22.05.7
 ==========================
