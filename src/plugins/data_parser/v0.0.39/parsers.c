@@ -2626,21 +2626,21 @@ static int DUMP_FUNC(LICENSES)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
 {
 	int rc = SLURM_SUCCESS;
-	license_info_msg_t **msg = obj;
+	license_info_msg_t *msg = obj;
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_list(dst);
 
-	if (!msg || !(*msg)->num_lic) {
+	if (!msg->num_lic) {
 		on_warn(DUMPING, parser->type, args, NULL, __func__,
 			"Zero licenses to dump");
 		return SLURM_SUCCESS;
 	}
 
-	for (size_t i = 0; !rc && (i < (*msg)->num_lic); i++)
-		rc = DUMP(LICENSE, (*msg)->lic_array[i], data_list_append(dst),
+	for (size_t i = 0; !rc && (i < msg->num_lic); i++)
+		rc = DUMP(LICENSE, msg->lic_array[i], data_list_append(dst),
 			  args);
 
 	return rc;
@@ -4886,7 +4886,7 @@ static const parser_t parsers[] = {
 	addps(ASSOC_SHORT_PTR, slurmdb_assoc_rec_t *, NEED_NONE),
 	addps(ASSOC_USAGE_PTR, slurmdb_assoc_usage_t *, NEED_NONE),
 	addps(CSV_LIST, char *, NEED_NONE),
-	addps(LICENSES, license_info_msg_t *, NEED_NONE),
+	addps(LICENSES, license_info_msg_t, NEED_NONE),
 	addps(CORE_SPEC, uint16_t, NEED_NONE),
 	addps(THREAD_SPEC, uint16_t, NEED_NONE),
 	addps(NICE, uint32_t, NEED_NONE),
