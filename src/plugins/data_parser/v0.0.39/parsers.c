@@ -2427,7 +2427,8 @@ static int PARSE_FUNC(CSV_LIST)(const parser_t *const parser, void *obj,
 		(void) data_list_for_each(src, _parse_foreach_CSV_LIST_list,
 					  &pargs);
 	} else if (data_get_type(src) == DATA_TYPE_DICT) {
-		data_dict_for_each(src, _parse_foreach_CSV_LIST_dict, &pargs);
+		(void) data_dict_for_each(src, _parse_foreach_CSV_LIST_dict,
+					  &pargs);
 	} else if (data_convert_type(src, DATA_TYPE_STRING) ==
 		   DATA_TYPE_STRING) {
 		*dst = xstrdup(data_get_string(src));
