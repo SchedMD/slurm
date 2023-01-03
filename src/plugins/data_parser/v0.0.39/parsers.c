@@ -3787,12 +3787,12 @@ static int DUMP_FUNC(STRING_ARRAY)(const parser_t *const parser, void *obj,
 				   data_t *dst, args_t *args)
 {
 	char ***array_ptr = obj;
-	char **array = *array_ptr;
+	char **array;
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-	if (!array_ptr)
+	if (!(array = *array_ptr))
 		return SLURM_SUCCESS;
 
 	data_set_list(dst);
