@@ -414,12 +414,12 @@ static int _read_config_file(void)
 	}
 	xfree(confpath);
 
-	s_p_get_array(&features, &count, "Feature", tbl);
-	if (_handle_config_features((plugin_feature_t **)features, count))
+	if (s_p_get_array(&features, &count, "Feature", tbl) &&
+	    _handle_config_features((plugin_feature_t **)features, count))
 		goto fail;
 
-	s_p_get_array(&features, &count, "NodeName", tbl);
-	if (_handle_config_features((plugin_feature_t **)features, count))
+	if (s_p_get_array(&features, &count, "NodeName", tbl) &&
+	    _handle_config_features((plugin_feature_t **)features, count))
 		goto fail;
 
 	if (s_p_get_string(&tmp_str, "AllowUserBoot", tbl)) {
