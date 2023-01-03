@@ -249,6 +249,15 @@ extern void check_parser_funcname(const parser_t *const parser,
 			for (int8_t i = 0; i < parser->flag_bit_array_count;
 			     i++) {
 				_check_flag_bit(i, &parser->flag_bit_array[i]);
+
+				/* check for duplicate flag names */
+				for (int8_t j = 0;
+				     j < parser->flag_bit_array_count; j++) {
+					xassert((i == j) ||
+						xstrcasecmp(
+							parser->flag_bit_array[i].name,
+							parser->flag_bit_array[j].name));
+				}
 			}
 		} else {
 			xassert(parser->flag_name && parser->flag_name[0]);
