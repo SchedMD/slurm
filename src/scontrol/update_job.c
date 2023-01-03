@@ -830,9 +830,9 @@ extern int scontrol_update_job(int argc, char **argv)
 			} else {
 				min_nodes = (int) job_msg.min_nodes;
 				max_nodes = (int) job_msg.max_nodes;
-				rc = get_resource_arg_range(
-						val, "requested node count",
-						&min_nodes, &max_nodes, false);
+				rc = verify_node_count(val, &min_nodes,
+						       &max_nodes,
+						       NULL);
 				if (!rc)
 					return rc;
 				job_msg.min_nodes = (uint32_t) min_nodes;
