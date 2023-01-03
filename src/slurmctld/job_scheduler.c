@@ -4464,7 +4464,8 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 			job_ptr->job_state |= JOB_POWER_UP_NODE;
 			job_ptr->wait_all_nodes = 1;
 		}
-		return;
+
+		goto cleanup;
 	}
 
 	job_ptr->job_state |= JOB_CONFIGURING;
@@ -4504,6 +4505,7 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 			   NULL, protocol_version);
 	}
 
+cleanup:
 	xfree(reboot_features);
 	FREE_NULL_BITMAP(boot_node_bitmap);
 	FREE_NULL_BITMAP(non_feature_node_bitmap);
