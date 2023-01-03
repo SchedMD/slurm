@@ -875,7 +875,7 @@ static int _dump_list(const parser_t *const parser, void *src, data_t *dst,
 
 	xassert(args->magic == MAGIC_ARGS);
 	check_parser(parser);
-	xassert(!*list_ptr || (list_count(*list_ptr) >= 0));
+	xassert(!list_ptr || !*list_ptr || (list_count(*list_ptr) >= 0));
 	xassert((data_get_type(dst) == DATA_TYPE_NULL) ||
 		(data_get_type(dst) == DATA_TYPE_LIST));
 
