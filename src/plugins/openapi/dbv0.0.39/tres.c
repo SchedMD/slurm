@@ -103,6 +103,7 @@ static void _update_tres(ctxt_t *ctxt, bool commit)
 
 cleanup:
 	FREE_NULL_LIST(tres_list);
+	xfree(parent_path);
 #endif /*!NDEBUG*/
 }
 
