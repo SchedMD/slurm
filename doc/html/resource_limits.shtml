@@ -124,15 +124,24 @@ satisfy the new limits, but the new lower limits will be enforced.</p>
 <h2 id="limits">Association specific limits and scheduling policies
 <a class="slurm_link" href="#assoc"></a>
 </h2>
-<p>These represent the scheduling policies unique to associations.</p>
+<p>These represent the limits and scheduling policies relevant to Associations.
+When dealing with Associations, most of these limits are available
+not only for the user association, but also for each cluster and account.
+Limits and policies are applied in the following order:
+<br>
+1. The option specified for the user association.
+<br>
+2. The option specified for the account.
+<br>
+3. The option specified for the cluster.
+<br>
+4. If nothing is configured at the above levels, no limit will be applied.
+</p>
 
-<p>When dealing with Associations, most of these limits are available
-not only for a user association, but also for each cluster and account.
-If a new association is created for some user and a scheduling
-policy option is not specified the default will be: the option
-for the cluster/account pair, and if both are not specified
-then the option for the cluster, and if that also is not
-specified then no limit will apply.</p>
+<p>These are just the limits and policies for Associations. For a more
+complete description of the columns available to be displayed, see the
+<a href="sacctmgr.html#SECTION_LIST/SHOW-ASSOCIATION-FORMAT-OPTIONS">
+sacctmgr</a> man page.</p>
 
 <dl>
 <dt id="assoc_fairshare"><b>Fairshare</b>
