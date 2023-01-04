@@ -1368,14 +1368,18 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	hostlist_t host_list, hostaddr_list = NULL, hostname_list = NULL;
 	uint32_t base_state = 0, node_flags, state_val;
 	time_t now = time(NULL);
+	bool uniq = true;
 
 	if (update_node_msg->node_names == NULL ) {
 		info("%s: invalid node name", __func__);
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
+	if (update_node_msg->node_addr || update_node_msg->node_hostname)
+		uniq = false;
+
 	if (!(host_list = nodespec_to_hostlist(update_node_msg->node_names,
-					       NULL)))
+					       uniq, NULL)))
 		return ESLURM_INVALID_NODE_NAME;
 
 	if (!(node_cnt = hostlist_count(host_list))) {
@@ -4867,7 +4871,7 @@ extern int delete_nodes(char *names, char **err_msg)
 
 	lock_slurmctld(write_lock);
 
-	if (!(to_delete = nodespec_to_hostlist(names, NULL))) {
+	if (!(to_delete = nodespec_to_hostlist(names, true, NULL))) {
 		ret_rc = ESLURM_INVALID_NODE_NAME;
 		goto cleanup;
 	}
