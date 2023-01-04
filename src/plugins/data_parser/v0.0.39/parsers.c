@@ -2671,7 +2671,7 @@ static int PARSE_FUNC(CORE_SPEC)(const parser_t *const parser, void *obj,
 	if (data_get_int(src) >= CORE_SPEC_THREAD)
 		return on_error(PARSING, parser->type, args,
 				ESLURM_INVALID_CORE_CNT, NULL, __func__,
-				"Invalid core specification %"PRId64" >= %hu",
+				"Invalid core specification %"PRId64" >= %d",
 				data_get_int(src), CORE_SPEC_THREAD);
 
 	if (data_get_int(src) <= 0)
@@ -2713,7 +2713,7 @@ static int PARSE_FUNC(THREAD_SPEC)(const parser_t *const parser, void *obj,
 	if (data_get_int(src) >= CORE_SPEC_THREAD)
 		return on_error(PARSING, parser->type, args,
 				ESLURM_BAD_THREAD_PER_CORE, NULL, __func__,
-				"Invalid thread specification %"PRId64" >= %hu",
+				"Invalid thread specification %"PRId64" >= %d",
 				data_get_int(src), CORE_SPEC_THREAD);
 
 	if (data_get_int(src) <= 0)
