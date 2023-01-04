@@ -134,8 +134,10 @@ for the cluster/account pair, and if both are not specified
 then the option for the cluster, and if that also is not
 specified then no limit will apply.</p>
 
-<ul>
-<li><b>Fairshare=</b> Integer value used for determining priority.
+<dl>
+<dt id="assoc_fairshare"><b>Fairshare</b>
+<a class="slurm_link" href="#assoc_fairshare"></a></dt>
+<dd>Integer value used for determining priority.
   Essentially this is the amount of claim this association and its
   children have to the above system. Can also be the string "parent",
   when used on a user this means that the parent association is used
@@ -144,15 +146,19 @@ specified then no limit will apply.</p>
   calculations to the first parent of their parent that is not
   Fairshare=parent.  Limits remain the same, only its fairshare value
   is affected.
-</li>
+</dd>
 
-<li><b>GrpJobs=</b> The total number of jobs able to run at any given
+<dt id="assoc_grpjobs"><b>GrpJobs</b>
+<a class="slurm_link" href="#assoc_grpjobs"></a></dt>
+<dd>The total number of jobs able to run at any given
   time from an association and its children QOS.  If
   this limit is reached new jobs will be queued but only allowed to
   run after previous jobs complete from this group.
-</li>
+</dd>
 
-<li><b>GrpJobsAccrue=</b> The total number of pending jobs able to accrue age
+<dt id="assoc_grpjobsaccrue"><b>GrpJobsAccrue</b>
+<a class="slurm_link" href="#assoc_grpjobsaccrue"></a></dt>
+<dd>The total number of pending jobs able to accrue age
   priority at any given time from an association and its children QOS.  If
   this limit is reached new jobs will be queued but not accrue age priority
   until after previous jobs are removed from pending in this group.
@@ -160,21 +166,27 @@ specified then no limit will apply.</p>
   age factor of the priority.
   When set on a QOS, this limit only applies to the job's QOS and not the
   partition's QOS.
-</li>
+</dd>
 
-<li><b>GrpSubmitJobs=</b> The total number of jobs able to be submitted
+<dt id="assoc_grpsubmitjobs"><b>GrpSubmitJobs</b>
+<a class="slurm_link" href="#assoc_grpsubmitjobs"></a></dt>
+<dd>The total number of jobs able to be submitted
   to the system at any given time from an association and its children
   or QOS.  If this limit is reached new submission requests will be
   denied until previous jobs complete from this group.
-</li>
+</dd>
 
-<li><b>GrpTRES=</b> The total count of TRES able to be used at any given
+<dt id="assoc_grptres"><b>GrpTRES</b>
+<a class="slurm_link" href="#assoc_grptres"></a></dt>
+<dd>The total count of TRES able to be used at any given
   time from jobs running from an association and its children or QOS.  If
   this limit is reached new jobs will be queued but only allowed to
   run after resources have been relinquished from this group.
-</li>
+</dd>
 
-<li><b>GrpTRESMins=</b> The total number of TRES minutes that can
+<dt id="assoc_grptresmins"><b>GrpTRESMins</b>
+<a class="slurm_link" href="#assoc_grptresmins"></a></dt>
+<dd>The total number of TRES minutes that can
   possibly be used by past, present and future jobs
   running from an association and its children or QOS. If any limit is reached,
   all running jobs with that TRES in this group will be killed, and no new
@@ -185,16 +197,20 @@ specified then no limit will apply.</p>
   do not decay GrpTRESMins, see <a href="qos.html#qos_other">QOS Options</a>
   for details.
   This limit only applies when using the Priority Multifactor plugin.
-</li>
+</dd>
 
-<li><b>GrpTRESRunMins=</b> Used to limit the combined total number of TRES
+<dt id="assoc_grptresrunmins"><b>GrpTRESRunMins</b>
+<a class="slurm_link" href="#assoc_grptresrunmins"></a></dt>
+<dd>Used to limit the combined total number of TRES
   minutes used by all jobs running with an association and its
   children or QOS.  This takes into consideration time limit of
   running jobs and consumes it, if the limit is reached no new jobs
   are started until other jobs finish to allow time to free up.
-</li>
+</dd>
 
-<li><b>GrpWall=</b> The maximum wall clock time running jobs are able
+<dt id="assoc_grpwall"><b>GrpWall</b>
+<a class="slurm_link" href="#assoc_grpwall"></a></dt>
+<dd>The maximum wall clock time running jobs are able
   to be allocated in aggregate for a QOS or an association and its children.
   If this limit is reached, future jobs in this QOS or association will be
   queued until they are able to run inside the limit.
@@ -204,41 +220,53 @@ specified then no limit will apply.</p>
   association tree or QOS again.  QOS that have the NoDecay flag set
   do not decay GrpWall. See <a href="qos.html#qos_other">QOS Options</a> for
   details.
-</li>
+</dd>
 
-<li><b>MaxJobs=</b> The total number of jobs able to run at any given
+<dt id="assoc_maxjobs"><b>MaxJobs</b>
+<a class="slurm_link" href="#assoc_maxjobs"></a></dt>
+<dd>The total number of jobs able to run at any given
   time for the given association.  If this limit is reached, new jobs will
   be queued but only allowed to run after existing jobs in the association
   complete.
-</li>
+</dd>
 
-<li><b>MaxJobsAccrue=</b> The maximum number of pending jobs able to accrue age
+<dt id="assoc_maxjobsaccrue"><b>MaxJobsAccrue</b>
+<a class="slurm_link" href="#assoc_maxjobsaccrue"></a></dt>
+<dd>The maximum number of pending jobs able to accrue age
   priority at any given time for the given association.  If this limit is
   reached, new jobs will be queued but will not accrue age priority
   until after existing jobs in the association are moved from a pending state.
   This limit does not determine if the job can run, it only limits the
   age factor of the priority.
-</li>
+</dd>
 
-<li><b>MaxSubmitJobs=</b> The maximum number of jobs able to be submitted
+<dt id="assoc_maxsubmitjobs"><b>MaxSubmitJobs</b>
+<a class="slurm_link" href="#assoc_maxsubmitjobs"></a></dt>
+<dd>The maximum number of jobs able to be submitted
   to the system at any given time from the given association.  If
   this limit is reached, new submission requests will be denied until
   existing jobs in this association complete.
-</li>
+</dd>
 
-<li><b>MaxTRESMinsPerJob=</b> A limit of TRES minutes to be used by a job.
+<dt id="assoc_maxtresminsperjob"><b>MaxTRESMinsPerJob</b>
+<a class="slurm_link" href="#assoc_maxtresminsperjob"></a></dt>
+<dd>A limit of TRES minutes to be used by a job.
   If this limit is reached the job will be killed if not running in
   Safe mode, otherwise the job will pend until enough time is given to
   complete the job.
-</li>
+</dd>
 
-<li><b>MaxTRESPerJob=</b> The maximum size in TRES any given job can
+<dt id="assoc_maxtresperjob"><b>MaxTRESPerJob</b>
+<a class="slurm_link" href="#assoc_maxtresperjob"></a></dt>
+<dd>The maximum size in TRES any given job can
   have from the association/QOS.
-</li>
+</dd>
 
-<li><b>MaxTRESPerNode=</b> The maximum size in TRES each node in a job
+<dt id="assoc_maxtrespernode"><b>MaxTRESPerNode</b>
+<a class="slurm_link" href="#assoc_maxtrespernode"></a></dt>
+<dd>The maximum size in TRES each node in a job
   allocation can use.
-</li>
+</dd>
 
 <!-- For future use
 <li><b>MaxTRESRunMinsPerJob=</b> A limit of TRES minutes to be used by jobs
@@ -247,21 +275,27 @@ specified then no limit will apply.</p>
 </li>
 -->
 
-<li><b>MaxWallDurationPerJob=</b> The maximum wall clock time any individual job
+<dt id="assoc_maxwalldurationperjob"><b>MaxWallDurationPerJob</b>
+<a class="slurm_link" href="#assoc_maxwalldurationperjob"></a></dt>
+<dd>The maximum wall clock time any individual job
   can run for in the given association/QOS.  If this limit is reached
   the job will be denied at submission.
-</li>
+</dd>
 
-<li><b>MinPrioThreshold=</b> Minimum priority required to reserve resources
+<dt id="assoc_minpriothreshold"><b>MinPrioThreshold</b>
+<a class="slurm_link" href="#assoc_minpriothreshold"></a></dt>
+<dd>Minimum priority required to reserve resources
   in the given association/QOS. Used to override bf_min_prio_reserve.
   See <a href="slurm.conf.html#OPT_bf_min_prio_reserve=#">
   bf_min_prio_reserve</a> for details.
-</li>
+</dd>
 
-<li><b>QOS=</b> comma separated list of QOS's an association is
+<dt id="assoc_qos"><b>QOS</b>
+<a class="slurm_link" href="#assoc_qos"></a></dt>
+<dd>comma separated list of QOS's an association is
   able to run.
-</li>
-</ul>
+</dd>
+</dl>
 
 <p><b>NOTE:</b> When modifying a TRES field with <i>sacctmgr</i>, one must
 specify which TRES to modify (see <a href="tres.html">TRES</a> for complete
@@ -284,47 +318,65 @@ flag set, which will cause the job to be denied at submission.  When
 Grp limits are considered with respect to this flag the Grp limit
 is treated as a Max limit.</p>
 
-<ul>
-<li><b>MaxJobsAccruePerAccount=</b> The maximum number of pending jobs an
+<dl>
+<dt id="qos_maxjobsaccruepa"><b>MaxJobsAccruePerAccount</b>
+<a class="slurm_link" href="#qos_maxjobsaccruepa"></a></dt>
+<dd>The maximum number of pending jobs an
   account (or subacct) can have accruing age priority at any given time.
   This limit does not determine if the job can run, it only limits the
   age factor of the priority.
-</li>
+</dd>
 
-<li><b>MaxJobsAccruePerUser=</b> The maximum number of pending jobs a
+<dt id="qos_maxjobsaccruepu"><b>MaxJobsAccruePerUser</b>
+<a class="slurm_link" href="#qos_maxjobsaccruepu"></a></dt>
+<dd>The maximum number of pending jobs a
   user can have accruing age priority at any given time.
   This limit does not determine if the job can run, it only limits the
   age factor of the priority.
-</li>
+</dd>
 
-<li><b>MaxJobsPerAccount=</b> The maximum number of jobs an account (or
+<dt id="qos_maxjobspa"><b>MaxJobsPerAccount</b>
+<a class="slurm_link" href="#qos_maxjobspa"></a></dt>
+<dd>The maximum number of jobs an account (or
   subaccount) can have running at a given time.
-</li>
+</dd>
 
-<li><b>MaxJobsPerUser=</b> The maximum number of jobs a user can
+<dt id="qos_maxjobspu"><b>MaxJobsPerUser</b>
+<a class="slurm_link" href="#qos_maxjobspu"></a></dt>
+<dd>The maximum number of jobs a user can
   have running at a given time.
-</li>
+</dd>
 
-<li><b>MaxSubmitJobsPerAccount=</b> The maximum number of jobs an account (or
+<dt id="qos_maxsubmitjobspa"><b>MaxSubmitJobsPerAccount</b>
+<a class="slurm_link" href="#qos_maxsubmitjobspa"></a></dt>
+<dd>The maximum number of jobs an account (or
   subaccount) can have running and pending at a given time.
-</li>
+</dd>
 
-<li><b>MaxSubmitJobsPerUser=</b> The maximum number of jobs a user can
+<dt id="qos_maxsubmitjobspu"><b>MaxSubmitJobsPerUser</b>
+<a class="slurm_link" href="#qos_maxsubmitjobspu"></a></dt>
+<dd>The maximum number of jobs a user can
   have running and pending at a given time.
-</li>
+</dd>
 
-<li><b>MaxTRESPerAccount=</b> The maximum number of TRES an account can
+<dt id="qos_maxtrespa"><b>MaxTRESPerAccount</b>
+<a class="slurm_link" href="#qos_maxtrespa"></a></dt>
+<dd>The maximum number of TRES an account can
   allocate at a given time.
-</li>
+</dd>
 
-<li><b>MaxTRESPerUser=</b> The maximum number of TRES a user can
+<dt id="qos_maxtrespu"><b>MaxTRESPerUser</b>
+<a class="slurm_link" href="#qos_maxtrespu"></a></dt>
+<dd>The maximum number of TRES a user can
   allocate at a given time.
-</li>
+</dd>
 
-<li><b>MinTRESPerJob=</b> The minimum size in TRES any given job can
+<dt id="qos_mintresperjob"><b>MinTRESPerJob</b>
+<a class="slurm_link" href="#qos_mintresperjob"></a></dt>
+<dd>The minimum size in TRES any given job can
   have when using the requested QOS.
-</li>
-</ul>
+</dd>
+</dl>
 
 
 <p>The <b>MaxNodes</b> and <b>MaxTime</b> options already exist in
