@@ -4079,7 +4079,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 	.needs = need                                                 \
 }
 /* will never set to FALSE, only will set to TRUE if matched  */
-#define add_parse_enum_bool(stype, mtype, req, field, path,           \
+#define add_parse_bool(stype, mtype, req, field, path,           \
 			    name, need)                               \
 {                                                                     \
 	.magic = MAGIC_PARSER,                                        \
@@ -4180,7 +4180,7 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_skip(grp_tres_mins_ctld),
 	add_parse(TRES_STR, grp_tres_run_mins, "max/tres/group/active", NEED_TRES),
 	add_skip(id),
-	add_parse_enum_bool(slurmdb_assoc_rec_t, ASSOC_FLAG_DEFAULT, false, is_def, "is_default", "DEFAULT", NEED_NONE),
+	add_parse_bool(slurmdb_assoc_rec_t, ASSOC_FLAG_DEFAULT, false, is_def, "is_default", "DEFAULT", NEED_NONE),
 	add_parse(UINT32, max_jobs, "max/jobs/active", NEED_NONE),
 	add_parse(UINT32, max_jobs_accrue, "max/jobs/accruing", NEED_NONE),
 	add_parse(UINT32, max_submit_jobs, "max/jobs/total", NEED_NONE),
@@ -4846,7 +4846,7 @@ static const parser_t PARSER_ARRAY(LICENSE)[] = {
 	add_parse(UINT32, total, "Total"),
 	add_parse(UINT32, in_use, "Used"),
 	add_parse(UINT32, available, "Free"),
-	add_parse_enum_bool(slurm_license_info_t, LICENSE_FLAG_REMOTE, false, remote, "flags", "REMOTE", NEED_NONE),
+	add_parse_bool(slurm_license_info_t, LICENSE_FLAG_REMOTE, false, remote, "flags", "REMOTE", NEED_NONE),
 	add_parse(UINT32, reserved, "Reserved"),
 };
 #undef add_parse
@@ -5619,7 +5619,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 #undef add_parser
 #undef add_parser_skip
 #undef add_complex_parser
-#undef add_parse_enum_bool
+#undef add_parse_bool
 
 /* add parser array (for struct) */
 #define addpa(typev, typet)                                                    \
