@@ -202,6 +202,8 @@ function __slurm_comp() {
 		fi
 	done
 
+	__ltrim_colon_completions "${_cur}"
+
 	__slurm_log_info "$(__func__): #COMPREPLY[@]='${#COMPREPLY[@]}'"
 	__slurm_log_info "$(__func__): COMPREPLY[*]='${COMPREPLY[*]}'"
 }
@@ -470,7 +472,7 @@ function __slurm_init_completion() {
 	words=("${COMP_WORDS[@]}")
 	split="false"
 
-	_init_completion -s -n "=" || return 1
+	_init_completion -s -n "=:" || return 1
 	__slurm_split_opt && split="true"
 
 	__slurm_log_debug "$(__func__): prev='$prev'"
@@ -711,25 +713,6 @@ function __slurm_clusters_rpc() {
 
 	local cmd="sacctmgr -Pn list clusters format=rpc"
 	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to return accepted dependency type values
-#
-# RET: dependency_types list
-function __slurm_dependency_types() {
-	local dependency_types=(
-		"after:"
-		"afterany:"
-		"afterburstbuffer:"
-		"aftercorr:"
-		"afternotok:"
-		"afterok:"
-		"singleton"
-	)
-	local output="${dependency_types[*]}"
-
-	__slurm_log_trace "$(__func__): output='$output'"
-	echo "${output}"
 }
 
 # Slurm helper function to get features list
@@ -1045,6 +1028,90 @@ function __slurm_comp_flags() {
 	return 0
 }
 
+# Slurm completion helper for job dependency spec
+function __slurm_comp_dependency() {
+	local prefix=""
+	local suffix=","
+	if [[ $cur == *"?"* ]] && [[ $cur != *","* ]]; then
+		# Dependency expresson can use either ',' or '?' as the
+		# separator, but not both in the same expression.
+		#   , = logical and (all must be satisfied)
+		#   ? = logical or (any may be satisfied)
+		suffix="?"
+	fi
+	local curlist="${cur%"$suffix"*}"
+	local curitem="${cur##*"$suffix"}"
+	local curitem2="${curitem##*:}"
+	local curverb="${curitem%:*}:"
+	local compreply=()
+
+	local dependency_types=(
+		"after:"
+		"afterany:"
+		"afterburstbuffer:"
+		"aftercorr:"
+		"afternotok:"
+		"afterok:"
+		"singleton"
+	)
+
+	if [[ $curitem == "$curlist" ]]; then
+		curlist=""
+	elif [[ -n $curlist ]]; then
+		prefix="${curlist}${suffix}"
+	fi
+
+	__slurm_log_debug "$(__func__): cur='$cur' curitem='$curitem' curlist='$curlist'"
+	__slurm_log_debug "$(__func__): curitem2='$curitem2' prefix='$prefix' suffix='$suffix'"
+
+	case "${curitem}" in
+	*:*) ;;
+	*)
+		__slurm_log_debug "$(__func__): expect verb spec"
+		compreply=("$(compgen -W "${dependency_types[*]}" -- "${curitem}")")
+		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+		return
+		;;
+	esac
+
+	case "${curitem2}" in
+	*+)
+		__slurm_log_debug "$(__func__): expect time spec"
+		;;
+	*++([0-9]))
+		__slurm_log_debug "$(__func__): found time spec"
+
+		compreply+=("$(compgen -W "${curitem}" -S "${suffix}" -- "${curitem}")")
+		compreply+=("$(compgen -W "${curitem}" -S ":" -- "${curitem}")")
+		if [[ $cur != *","* ]]; then
+			compreply+=("$(compgen -W "${curitem}" -S "?" -- "${curitem}")")
+		fi
+		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+		;;
+	*)
+		__slurm_log_debug "$(__func__): expect job spec"
+		local jobs=()
+		local options=""
+		options="$(__slurm_jobs)"
+
+		# build array without seen items
+		for item in $options; do
+			__slurm_log_trace "$(__func__): for loop: item='$item'"
+			[[ $curitem =~ :"${item}". ]] && continue
+			jobs+=("$item")
+		done
+
+		compreply+=("$(compgen -W "${jobs[*]}" -P "${curverb}" -S "${suffix}" -- "${curitem2}")")
+		compreply+=("$(compgen -W "${jobs[*]}" -P "${curverb}" -S ":" -- "${curitem2}")")
+		compreply+=("$(compgen -W "${jobs[*]}" -P "${curverb}" -S "+" -- "${curitem2}")")
+		if [[ $cur != *","* ]]; then
+			compreply+=("$(compgen -W "${jobs[*]}" -P "${curverb}" -S "?" -- "${curitem2}")")
+		fi
+		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+		;;
+	esac
+}
+
 # Slurm completion helper for salloc, sbatch, srun
 #
 # $1: slurm command being completed
@@ -1233,8 +1300,7 @@ function __slurm_comp_common() {
 	--container) _filedir ;;
 	--cpu-bind) __slurm_compreply "${cpubind_types[*]}" ;;
 	--cpu-freq) __slurm_compreply "${cpufreq_types[*]}" ;;
-	-d | --dependency) __slurm_compreply "$(__slurm_dependency_types)" ;;
-	after*(any|burstbuffer|corr|notok|ok)) __slurm_compreply "$(__slurm_jobs)" ;; # dependency parameters
+	-d | --dependency) __slurm_comp_dependency ;;
 	-m | --distribution) __slurm_compreply "${distribution_types[*]}" ;;
 	--epilog) _filedir ;;
 	-e | --error) _filedir ;;
@@ -3666,8 +3732,7 @@ function __scontrol_update_jobid() {
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	clusterfeature?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	contiguous) __slurm_compreply "$(__slurm_boolean)" ;;
-	dependency) __slurm_compreply "$(__slurm_dependency_types)" ;;
-	after*(any|burstbuffer|corr|notok|ok)) __slurm_compreply "$(__slurm_jobs)" ;; # dependency parameters
+	dependency) __slurm_comp_dependency ;;
 	excnodelist) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	feature?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	gres) __slurm_compreply_list "$(__slurm_gres)" ;;
