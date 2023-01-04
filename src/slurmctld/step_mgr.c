@@ -2325,6 +2325,37 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		else
 			avail_cpus_per_core = vpus;
 
+		unused_core_bitmap = bit_copy(job_resrcs_ptr->core_bitmap);
+		bit_and_not(unused_core_bitmap,
+			    job_resrcs_ptr->core_bitmap_used);
+		rc = gres_ctld_step_alloc(step_ptr->gres_list_req,
+					  &step_ptr->gres_list_alloc,
+					  job_ptr->gres_list_alloc,
+					  job_node_inx, first_step_node,
+					  step_ptr->step_layout->
+					  tasks[step_node_inx],
+					  rem_nodes, job_ptr->job_id,
+					  step_ptr->step_id.step_id,
+					  !(step_ptr->flags &
+					    SSF_OVERLAP_FORCE),
+					  &gres_step_node_mem_alloc,
+					  node_ptr->gres_list,
+					  unused_core_bitmap);
+		FREE_NULL_BITMAP(unused_core_bitmap);
+		if (rc != SLURM_SUCCESS) {
+			log_flag(STEPS, "unable to allocate step GRES for job node %d (%s): %s",
+				 job_node_inx,
+				 node_ptr->name,
+				 slurm_strerror(rc));
+			/*
+			 * We need to set alloc resources before we continue to
+			 * avoid underflow in _step_dealloc_lps()
+			 */
+			final_rc = rc;
+		}
+		first_step_node = false;
+		rem_nodes--;
+
 		/*
 		 * Modify cpus-per-task to request full cores if they can't
 		 * be shared
@@ -2406,34 +2437,6 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		if (!(step_ptr->flags & SSF_OVERLAP_FORCE))
 			job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
 
-		unused_core_bitmap = bit_copy(job_resrcs_ptr->core_bitmap);
-		bit_and_not(unused_core_bitmap,
-			    job_resrcs_ptr->core_bitmap_used);
-		rc = gres_ctld_step_alloc(step_ptr->gres_list_req,
-					  &step_ptr->gres_list_alloc,
-					  job_ptr->gres_list_alloc,
-					  job_node_inx, first_step_node,
-					  step_ptr->step_layout->
-					  tasks[step_node_inx],
-					  rem_nodes, job_ptr->job_id,
-					  step_ptr->step_id.step_id,
-					  !(step_ptr->flags &
-					    SSF_OVERLAP_FORCE),
-					  &gres_step_node_mem_alloc,
-					  node_ptr->gres_list,
-					  unused_core_bitmap);
-		FREE_NULL_BITMAP(unused_core_bitmap);
-		if (rc != SLURM_SUCCESS) {
-			log_flag(STEPS, "unable to allocate step GRES for job node %d (%s): %s",
-				 job_node_inx,
-				 node_ptr->name,
-				 slurm_strerror(rc));
-			final_rc = rc;
-			/* Finish allocating resources to all nodes */
-			continue;
-		}
-		first_step_node = false;
-		rem_nodes--;
 		if (!step_ptr->pn_min_memory && !gres_step_node_mem_alloc) {
 			/* If we aren't requesting memory get it from the job */
 			step_ptr->pn_min_memory =
@@ -2473,6 +2476,18 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 				job_resrcs_ptr->memory_used[job_node_inx] +=
 					gres_step_node_mem_alloc;
 		}
+
+		/*
+		 * Now that we have set cpus and memory used for this node,
+		 * we can check if there was an error, and continue to the
+		 * next node. If any node had an error, we can also skip
+		 * picking cores and skip to the next node.
+		 *
+		 */
+		if (final_rc != SLURM_SUCCESS) {
+			continue;
+		}
+
 		if (pick_step_cores) {
 			uint16_t cpus_per_core = 1;
 			/*
