@@ -66,7 +66,9 @@ static int _op_handler_diag(const char *context_id,
 
 	debug4("%s: [%s] diag handler called", __func__, context_id);
 
-	if ((rc = slurmdb_get_stats(ctxt->db_conn, &stats_rec)))
+	if (ctxt->rc)
+		;	/* do nothing - error already logged */
+	else if ((rc = slurmdb_get_stats(ctxt->db_conn, &stats_rec)))
 		resp_error(ctxt, rc, "slurmdb_get_stats", "stats query failed");
 	else
 		rc = DATA_DUMP(ctxt->parser, STATS_REC_ARRAY, *stats_rec,
