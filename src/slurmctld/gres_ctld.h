@@ -245,6 +245,8 @@ extern void gres_ctld_step_test_per_step(List step_gres_list,
  * 		node based on mem_per_gres requirements.
  * IN node_gres_list - node's gres list
  * IN core_bitmap - bitmap of all cores available for the step
+ * OUT total_gres_cpu_cnt - sum of (cpus_per_gres * alloc_gres_cnt) for each
+ *                          gres allocated to the step on this node
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_step_alloc(List step_gres_list,
@@ -256,7 +258,8 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 				bool decr_job_alloc,
 				uint64_t *step_node_mem_alloc,
 				List node_gres_list,
-				bitstr_t *core_bitmap);
+				bitstr_t *core_bitmap,
+				int *total_gres_cpu_cnt);
 
 /*
  * Deallocate resource to a step and update job and step gres information

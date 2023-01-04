@@ -2036,7 +2036,8 @@ static bool _handle_core_select(step_record_t *step_ptr,
 static int _pick_step_cores(step_record_t *step_ptr,
 			    job_resources_t *job_resrcs_ptr, int job_node_inx,
 			    uint16_t task_cnt, uint16_t cpus_per_core,
-			    int node_inx, int ntasks_per_core)
+			    int node_inx, int ntasks_per_core,
+			    int gres_cpus_alloc)
 {
 	uint16_t sockets, cores, cores_per_task, tasks_per_node;
 	int core_cnt = (int) task_cnt;
@@ -2066,7 +2067,11 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	} else {
 		use_all_cores = false;
 
-		if (step_ptr->cpus_per_task > 0) {
+		if (gres_cpus_alloc) {
+			core_cnt = gres_cpus_alloc;
+			core_cnt += (cpus_per_core - 1);
+			core_cnt /= cpus_per_core;
+		} else if (step_ptr->cpus_per_task > 0) {
 			if (((ntasks_per_core == INFINITE16) ||
 			     (ntasks_per_core == 1)) &&
 			    (step_ptr->cpus_per_task > cpus_per_core)) {
@@ -2236,8 +2241,9 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 	int rc = SLURM_SUCCESS, final_rc = SLURM_SUCCESS;
 	uint16_t req_tpc = NO_VAL16;
 	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
-	uint16_t cpus_per_task = step_ptr->cpus_per_task;
+	uint16_t orig_cpus_per_task = step_ptr->cpus_per_task;
 	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
+	char *err_msg_pos = NULL;
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -2292,6 +2298,12 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 	for (int i = 0;
 	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
 	     i++) {
+		/*
+		 * gres_cpus_alloc - if cpus_per_gres is requested, this is
+		 * cpus_per_gres * gres_alloc on this node
+		 */
+		int gres_cpus_alloc = 0;
+		uint16_t cpus_per_task = orig_cpus_per_task;
 		uint64_t gres_step_node_mem_alloc = 0;
 		uint16_t vpus, avail_cpus_per_core, alloc_cpus_per_core;
 		uint16_t task_cnt;
@@ -2341,6 +2353,11 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		else
 			avail_cpus_per_core = vpus;
 
+		/*
+		 * If the step requested cpus_per_gres, this is mutually
+		 * exclusive with cpus_per_task. We need to calculate total
+		 * gres times cpus_per_gres to get a total cpu count.
+		 */
 		unused_core_bitmap = bit_copy(job_resrcs_ptr->core_bitmap);
 		bit_and_not(unused_core_bitmap,
 			    job_resrcs_ptr->core_bitmap_used);
@@ -2355,7 +2372,8 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 					    SSF_OVERLAP_FORCE),
 					  &gres_step_node_mem_alloc,
 					  node_ptr->gres_list,
-					  unused_core_bitmap);
+					  unused_core_bitmap,
+					  &gres_cpus_alloc);
 		FREE_NULL_BITMAP(unused_core_bitmap);
 		if (rc != SLURM_SUCCESS) {
 			log_flag(STEPS, "unable to allocate step GRES for job node %d (%s): %s",
@@ -2371,6 +2389,29 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		first_step_node = false;
 		rem_nodes--;
 
+		if (gres_cpus_alloc) {
+			if (task_cnt > gres_cpus_alloc) {
+				if (!(step_ptr->flags & SSF_OVERCOMMIT)) {
+					xstrfmtcatat(*err_msg, &err_msg_pos,
+						     "Requested fewer cpus (%d) than tasks (%u) on node %d (%s); request enough cpus for at least one cpu per task or use --overcommit\n",
+						     gres_cpus_alloc,
+						     task_cnt,
+						     job_node_inx,
+						     node_ptr->name);
+					rc = ESLURM_INVALID_CPU_COUNT;
+					final_rc = rc;
+					/*
+					 * We need to set alloc resources
+					 * before we continue to avoid
+					 * underflow in _step_dealloc_lps()
+					 */
+				} else
+					cpus_per_task = 1;
+			} else {
+				cpus_per_task = gres_cpus_alloc / task_cnt;
+			}
+		}
+
 		/*
 		 * Modify cpus-per-task to request full cores if they can't
 		 * be shared
@@ -2382,6 +2423,20 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 			    (cpus_per_task % alloc_cpus_per_core)) {
 				cpus_per_task += alloc_cpus_per_core -
 					(cpus_per_task % alloc_cpus_per_core);
+				/*
+				 * Modify gres_cpus_alloc to account for
+				 * ntasks_per_core. If this results in
+				 * requesting more cores than are available,
+				 * then _pick_step_cores() will fail.
+				 *
+				 * Make sure to use this same logic in
+				 * _step_dealloc_lps() to know how many
+				 * cpus were allocated to this step on this
+				 * node.
+				 */
+				if (gres_cpus_alloc)
+					gres_cpus_alloc = task_cnt *
+						cpus_per_task;
 			}
 		}
 		step_ptr->cpus_per_task = cpus_per_task;
@@ -2409,7 +2464,10 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 				cpus_alloc_mem *= req_tpc;
 			}
 		} else {
-			cpus_alloc = task_cnt * cpus_per_task;
+			if (gres_cpus_alloc)
+				cpus_alloc = gres_cpus_alloc;
+			else
+				cpus_alloc = task_cnt * cpus_per_task;
 
 			/*
 			 * If we are requesting all the memory in the job
@@ -2525,7 +2583,8 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 						   job_node_inx,
 						   task_cnt,
 						   cpus_per_core, i,
-						   ntasks_per_core))) {
+						   ntasks_per_core,
+						   gres_cpus_alloc))) {
 				log_flag(STEPS, "unable to pick step cores for job node %d (%s): %s",
 					 job_node_inx,
 					 node_ptr->name,

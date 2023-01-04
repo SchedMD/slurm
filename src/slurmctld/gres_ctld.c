@@ -51,6 +51,7 @@ typedef struct {
 	gres_state_t *gres_state_step;
 	uint64_t *step_node_mem_alloc;
 	slurm_step_id_t tmp_step_id;
+	int total_gres_cpu_cnt;
 } foreach_step_alloc_t;
 
 typedef struct {
@@ -2124,7 +2125,8 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 		       bool decr_job_alloc,
 		       uint64_t *step_node_mem_alloc,
 		       List node_gres_list,
-		       bitstr_t *core_bitmap)
+		       bitstr_t *core_bitmap,
+		       int *total_gres_cpu_cnt)
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	gres_step_state_t *gres_ss_req = gres_state_step_req->gres_data;
@@ -2231,6 +2233,8 @@ static int _step_alloc(gres_step_state_t *gres_ss,
 	bit_set(gres_ss->node_in_use, node_offset);
 	if (decr_job_alloc)
 		gres_js->gres_cnt_step_alloc[node_offset] += gres_alloc;
+	if (gres_ss_req->cpus_per_gres != NO_VAL16)
+		*total_gres_cpu_cnt += gres_alloc * gres_ss_req->cpus_per_gres;
 
 	return SLURM_SUCCESS;
 }
@@ -2302,7 +2306,8 @@ static int _step_alloc_type(gres_state_t *gres_state_job,
 			       args->decr_job_alloc,
 			       args->step_node_mem_alloc,
 			       args->node_gres_list,
-			       args->core_bitmap);
+			       args->core_bitmap,
+			       &args->total_gres_cpu_cnt);
 
 	if (args->rc != SLURM_SUCCESS) {
 		return -1;
@@ -2323,7 +2328,8 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 				bool decr_job_alloc,
 				uint64_t *step_node_mem_alloc,
 				List node_gres_list,
-				bitstr_t *core_bitmap)
+				bitstr_t *core_bitmap,
+				int *total_gres_cpu_cnt)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator step_gres_iter;
@@ -2376,6 +2382,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 		args.gres_state_step = gres_state_step;
 		args.step_node_mem_alloc = step_node_mem_alloc;
 		args.tmp_step_id = tmp_step_id;
+		args.total_gres_cpu_cnt = 0;
 
 		/* Pass 1: Allocate GRES overlapping available cores */
 		(void) list_for_each(job_gres_list, (ListForF) _step_alloc_type,
@@ -2388,6 +2395,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 		args.core_bitmap = NULL;
 		(void) list_for_each(job_gres_list, (ListForF) _step_alloc_type,
 				     &args);
+		*total_gres_cpu_cnt += args.total_gres_cpu_cnt;
 
 		if (args.rc != SLURM_SUCCESS)
 			rc = args.rc;
