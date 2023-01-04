@@ -460,7 +460,7 @@ static int op_handler_association(const char *context_id,
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
 
-	if (ctxt->rc && _populate_assoc_cond(ctxt, assoc_cond))
+	if (ctxt->rc || _populate_assoc_cond(ctxt, assoc_cond))
 		/* no-op - already logged */;
 	else if (method == HTTP_REQUEST_GET)
 		_dump_assoc_cond(ctxt, assoc_cond, true);
