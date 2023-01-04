@@ -61,7 +61,7 @@ static const char *syms[] = {
 };
 
 /* serializer plugin state */
-plugins_t *plugins = NULL;
+static plugins_t *plugins = NULL;
 
 typedef struct {
 	int magic;
@@ -241,7 +241,9 @@ extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf)
 extern void serializer_g_fini(void)
 {
 #ifdef MEMORY_LEAK_DEBUG
+	debug3("%s: cleaning up", __func__);
 	slurm_mutex_lock(&init_mutex);
+	FREE_NULL_LIST(mime_types_list);
 	FREE_NULL_PLUGINS(plugins);
 	slurm_mutex_unlock(&init_mutex);
 #endif
