@@ -73,6 +73,7 @@ typedef struct {
 		     data_parser_on_warn_t on_query_warn, void *warn);
 	void (*free)(void *arg);
 	int (*assign)(void *arg, data_parser_attr_type_t type, void *obj);
+	int (*specify)(void *arg, data_t *dst);
 } parse_funcs_t;
 
 /*
@@ -84,6 +85,7 @@ static const char *parse_syms[] = {
 	"data_parser_p_new",
 	"data_parser_p_free",
 	"data_parser_p_assign",
+	"data_parser_p_specify",
 };
 
 static plugins_t *plugins = NULL;
@@ -384,4 +386,22 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 #endif /* MEMORY_LEAK_DEBUG */
 
 	return SLURM_SUCCESS;
+}
+
+extern int data_parser_g_specify(data_parser_t *parser, data_t *dst)
+{
+	int rc;
+	DEF_TIMERS;
+	const parse_funcs_t *funcs = plugins->functions[parser->plugin_offset];
+
+	xassert(parser);
+	xassert(plugins);
+	xassert(parser->magic == PARSE_MAGIC);
+	xassert(parser->plugin_offset < plugins->count);
+
+	START_TIMER;
+	rc = funcs->specify(parser->arg, dst);
+	END_TIMER2(__func__);
+
+	return rc;
 }

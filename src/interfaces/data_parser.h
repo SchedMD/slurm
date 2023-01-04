@@ -392,4 +392,9 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 	data_parser_dump_cli_stdout(DATA_PARSER_##type, &src, sizeof(src), \
 				    key, argc, argv, db_conn, mime_type)
 
+/*
+ * Populate OpenAPI schema for each parser
+ */
+extern int data_parser_g_specify(data_parser_t *parser, data_t *dst);
+
 #endif
