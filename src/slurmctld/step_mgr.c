@@ -936,6 +936,55 @@ static int _mark_busy_nodes(void *x, void *arg)
 	return 0;
 }
 
+static void _step_test_gres(job_step_create_request_msg_t *step_spec,
+			    gres_ctld_step_test_args_t *gres_test_args,
+			    job_record_t *job_ptr,
+			    uint32_t *node_usable_cpu_cnt,
+			    uint32_t *total_cpus,
+			    uint32_t *avail_cpus,
+			    int *gres_invalid_nodes,
+			    int *fail_mode)
+{
+	uint64_t gres_cpus;
+	int err_code = SLURM_SUCCESS;
+
+	gres_test_args->err_code = &err_code;
+
+	/* ignore current step allocations */
+	gres_test_args->ignore_alloc = true;
+	gres_cpus = gres_ctld_step_test(gres_test_args);
+	*total_cpus = MIN(*total_cpus, gres_cpus);
+
+	/*
+	 * consider current step allocations if
+	 * not --overlap=force
+	 */
+	if (!(step_spec->flags & SSF_OVERLAP_FORCE)) {
+		gres_test_args->ignore_alloc = false;
+		gres_cpus = gres_ctld_step_test(gres_test_args);
+	}
+	if (gres_cpus < *avail_cpus) {
+		log_flag(STEPS, "%s: %pJ Usable CPUs for GRES %"PRIu64" from %d previously available",
+			 __func__, job_ptr, gres_cpus,
+			 *avail_cpus);
+		*avail_cpus = gres_cpus;
+		*node_usable_cpu_cnt = *avail_cpus;
+		if (err_code != SLURM_SUCCESS)
+			*fail_mode = err_code;
+		else
+			*fail_mode = ESLURM_INVALID_GRES;
+		if (*total_cpus == 0) {
+			/*
+			 * total_cpus == 0 is set from this:
+			 *   MIN(*total_cpus, gres_cpus);
+			 * This means that it is impossible to run this step on
+			 * this node due to GRES.
+			 */
+			*gres_invalid_nodes = *gres_invalid_nodes + 1;
+		}
+	}
+}
+
 /*
  * _pick_step_nodes - select nodes for a job step that satisfy its requirements
  *	we satisfy the super-set of constraints.
@@ -967,7 +1016,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	int gres_invalid_nodes = 0;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	uint32_t *usable_cpu_cnt = NULL;
-	uint64_t gres_cpus;
 	gres_ctld_step_test_args_t gres_test_args = {
 		.cpus_per_task = cpus_per_task,
 		.first_step_node = true,
@@ -1168,9 +1216,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			uint64_t tmp_mem;
 			uint32_t tmp_cpus, avail_cpus, total_cpus;
 			uint32_t avail_tasks, total_tasks;
-			int err_code = SLURM_SUCCESS;
 
-			gres_test_args.err_code = &err_code;
 			gres_test_args.node_offset = node_inx;
 			gres_test_args.test_mem = false;
 
@@ -1227,41 +1273,11 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			} else if (_is_mem_resv())
 				gres_test_args.test_mem = true;
 
-			/* ignore current step allocations */
-			gres_test_args.ignore_alloc = true;
-			gres_cpus = gres_ctld_step_test(&gres_test_args);
-			total_cpus = MIN(total_cpus, gres_cpus);
-
-			/*
-			 * consider current step allocations if
-			 * not --overlap=force
-			 */
-			if (!(step_spec->flags & SSF_OVERLAP_FORCE)) {
-				gres_test_args.ignore_alloc = false;
-				gres_cpus =
-					gres_ctld_step_test(&gres_test_args);
-			}
-			if (gres_cpus < avail_cpus) {
-				log_flag(STEPS, "%s: %pJ Usable CPUs for GRES %"PRIu64" from %d previously available",
-					 __func__, job_ptr, gres_cpus,
-					 avail_cpus);
-				avail_cpus = gres_cpus;
-				usable_cpu_cnt[i] = avail_cpus;
-				if (err_code != SLURM_SUCCESS)
-					fail_mode = err_code;
-				else
-					fail_mode = ESLURM_INVALID_GRES;
-				if (total_cpus == 0) {
-					/*
-					 * total_cpus == 0 is set from this:
-					 *   MIN(total_cpus, gres_cpus);
-					 * This means that it is impossible to
-					 * run this step on this node due to
-					 * GRES.
-					 */
-					gres_invalid_nodes++;
-				}
-			}
+			_step_test_gres(step_spec, &gres_test_args, job_ptr,
+					&usable_cpu_cnt[i],
+					&total_cpus, &avail_cpus,
+					&gres_invalid_nodes,
+					&fail_mode);
 
 			avail_tasks = avail_cpus;
 			total_tasks = total_cpus;
