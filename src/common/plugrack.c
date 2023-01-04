@@ -349,8 +349,11 @@ plugin_handle_t plugrack_use_by_type(plugrack_t *rack, const char *full_type)
 			error("%s: %s", e->fq_path, plugin_strerror(err));
 
 		/* If load was successful, increment the reference count. */
-		if (e->plug != PLUGIN_INVALID_HANDLE)
+		if (e->plug != PLUGIN_INVALID_HANDLE) {
 			e->refcount++;
+			debug3("%s: loaded plugin %s for type:%s",
+			       __func__, e->fq_path, full_type);
+		}
 
 		/*
 		 * Return the plugin, even if it failed to load -- this serves
