@@ -4096,21 +4096,6 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = need,                                                \
 }
-#define add_parse_skip_enum_bool(stype, path)                         \
-{                                                                     \
-	.magic = MAGIC_PARSER,                                        \
-	.ptr_offset = offsetof(stype, field),                         \
-	.field_name = XSTRINGIFY(field),                              \
-	.key = path,                                                  \
-	.required = req,                                              \
-	.type = DATA_PARSER_TYPE_INVALID,                             \
-	.type_string = "skipped",                                     \
-	.obj_type_string = XSTRINGIFY(stype),                         \
-	.flag = FLAG_TYPE_BOOL,                                       \
-	.flag_bit_array_count = NO_VAL8,                              \
-	.size = sizeof(((stype *) NULL)->field),                      \
-	.needs = NEED_NONE,                                           \
-}
 #define add_parse_bit_flag_array(stype, mtype, req, field, path)      \
 {                                                                     \
 	.magic = MAGIC_PARSER,                                        \
