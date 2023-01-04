@@ -507,6 +507,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->state_save_location = xstrdup(conf->state_save_location);
 	conf_ptr->suspend_exc_nodes   = xstrdup(conf->suspend_exc_nodes);
 	conf_ptr->suspend_exc_parts   = xstrdup(conf->suspend_exc_parts);
+	conf_ptr->suspend_exc_states  = xstrdup(conf->suspend_exc_states);
 	conf_ptr->suspend_program     = xstrdup(conf->suspend_program);
 	conf_ptr->suspend_rate        = conf->suspend_rate;
 	conf_ptr->suspend_time        = conf->suspend_time;

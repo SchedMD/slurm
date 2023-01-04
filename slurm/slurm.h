@@ -3044,6 +3044,7 @@ typedef struct {
 				   * directory */
 	char *suspend_exc_nodes;/* nodes to not make power saving */
 	char *suspend_exc_parts;/* partitions to not make power saving */
+	char *suspend_exc_states; /* states that should not be powered down */
 	char *suspend_program;	/* program to make nodes power saving */
 	uint16_t suspend_rate;	/* nodes to make power saving, per minute */
 	uint32_t suspend_time;	/* node idle for this long before power save mode */

@@ -418,6 +418,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"StateSaveLocation", S_P_STRING},
 	{"SuspendExcNodes", S_P_STRING},
 	{"SuspendExcParts", S_P_STRING},
+	{"SuspendExcStates", S_P_STRING},
 	{"SuspendProgram", S_P_STRING},
 	{"SuspendRate", S_P_UINT16},
 	{"SuspendTime", S_P_STRING},
@@ -2939,6 +2940,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->suspend_exc_nodes);
 	xfree (ctl_conf_ptr->suspend_exc_parts);
+	xfree (ctl_conf_ptr->suspend_exc_states);
 	xfree (ctl_conf_ptr->suspend_program);
 	xfree (ctl_conf_ptr->switch_param);
 	xfree (ctl_conf_ptr->switch_type);
@@ -3129,6 +3131,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->suspend_exc_nodes);
 	xfree (ctl_conf_ptr->suspend_exc_parts);
+	xfree (ctl_conf_ptr->suspend_exc_states);
 	xfree (ctl_conf_ptr->suspend_program);
 	ctl_conf_ptr->suspend_rate		= NO_VAL16;
 	ctl_conf_ptr->suspend_time		= NO_VAL16;
@@ -5203,6 +5206,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->suspend_exc_nodes, "SuspendExcNodes",
 			      hashtbl);
 	(void) s_p_get_string(&conf->suspend_exc_parts, "SuspendExcParts",
+			      hashtbl);
+	(void) s_p_get_string(&conf->suspend_exc_states, "SuspendExcStates",
 			      hashtbl);
 	(void) s_p_get_string(&conf->suspend_program, "SuspendProgram",
 			      hashtbl);
