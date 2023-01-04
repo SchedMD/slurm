@@ -2359,7 +2359,8 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_TYPE)(const parser_t *const parser,
 		xcalloc(stats->rpc_type_size, sizeof(*rpc_type_ave_time));
 
 	for (int i = 0; i < stats->rpc_type_size; i++) {
-		if (stats->rpc_type_time[i] > 0)
+		if ((stats->rpc_type_time[i] > 0) &&
+		    (stats->rpc_type_cnt[i] > 0))
 			rpc_type_ave_time[i] = stats->rpc_type_time[i] /
 					       stats->rpc_type_cnt[i];
 		else
@@ -2403,7 +2404,8 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
 		xcalloc(stats->rpc_user_size, sizeof(*rpc_user_ave_time));
 
 	for (int i = 0; i < stats->rpc_user_size; i++) {
-		if (stats->rpc_user_time[i] > 0)
+		if ((stats->rpc_user_time[i] > 0) &&
+		    (stats->rpc_user_cnt[i] > 0))
 			rpc_user_ave_time[i] = stats->rpc_user_time[i] /
 					       stats->rpc_user_cnt[i];
 		else
