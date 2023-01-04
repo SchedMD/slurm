@@ -460,7 +460,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		(void) data_list_join_str(&path, ppath, PATH_SEP);
 
 	check_parser(parser);
-	xassert(!parser->skip);
+	xassert(parser->model != PARSER_MODEL_ARRAY_SKIP_FIELD);
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(src) != DATA_TYPE_NONE);
 	xassert(dst);
@@ -468,8 +468,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	 * Make sure the target object is the same size since there is no
 	 * way to dump value of __typeof__ as a value in C99.
 	 */
-	xassert((parser->size == NO_VAL) || (dst_bytes == NO_VAL) ||
-		(dst_bytes == parser->size));
+	xassert((dst_bytes == NO_VAL) || (dst_bytes == parser->size));
 
 	if ((rc = load_prereqs(PARSING, parser, args)))
 		goto cleanup;
@@ -543,7 +542,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 
 			check_parser(pchild);
 			verify_parser_sliced(pchild);
-			if (pchild->skip) {
+			if (pchild->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
 				log_flag(DATA, "%s: SKIP: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via array parser %s(0x%" PRIxPTR ")[%d]=%s(0x%" PRIxPTR ")",
 					 __func__, pchild->field_name,
 					 data_type_to_string(data_get_type(pd)),
@@ -908,7 +907,7 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 		 (uintptr_t) parser, (uintptr_t) dst);
 
 	check_parser(parser);
-	xassert(!parser->skip);
+	xassert(parser->model != PARSER_MODEL_ARRAY_SKIP_FIELD);
 	xassert(dst && (data_get_type(dst) != DATA_TYPE_NONE));
 	xassert(args->magic == MAGIC_ARGS);
 	xassert((src_bytes == NO_VAL) || (src_bytes > 0));
@@ -917,8 +916,7 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 	 * Make sure the source object is the same size since there is no
 	 * way to dump value of __typeof__ as a value in C.
 	 */
-	xassert((parser->size == NO_VAL) || (src_bytes == NO_VAL) ||
-		(src_bytes == parser->size));
+	xassert((src_bytes == NO_VAL) || (src_bytes == parser->size));
 
 	if ((rc = load_prereqs(DUMPING, parser, args)))
 		goto done;
@@ -958,7 +956,7 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 			check_parser(pchild);
 			verify_parser_sliced(pchild);
 
-			if (pchild->skip) {
+			if (pchild->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
 				log_flag(DATA, "SKIP: %s parser %s[%d]->%s(0x%" PRIxPTR ") for %s(0x%" PRIxPTR ")->%s(+%zd) for data(0x%" PRIxPTR ")/%s(0x%" PRIxPTR ")",
 					 pchild->obj_type_string, parser->type_string,
 					 i, pchild->type_string, (uintptr_t) pchild,

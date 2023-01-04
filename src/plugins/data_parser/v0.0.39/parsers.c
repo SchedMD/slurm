@@ -221,23 +221,34 @@ extern void check_parser_funcname(const parser_t *const parser,
 {
 	xassert(parser->magic == MAGIC_PARSER);
 
-	if (parser->skip) {
-		/* ignore values in skipped parsers for now */
+	xassert(parser->model > PARSER_MODEL_INVALID);
+	xassert(parser->model < PARSER_MODEL_MAX);
+	xassert(parser->size > 0);
+	xassert(parser->obj_type_string && parser->obj_type_string[0]);
+
+	if (parser->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
+		/* field is only a place holder so most assert()s dont apply */
+		xassert(parser->field_name && parser->field_name[0]);
+		xassert(parser->type == DATA_PARSER_TYPE_INVALID);
+		xassert(parser->flag == FLAG_TYPE_NONE);
+		xassert(parser->flag_bit_array_count == NO_VAL8);
+		xassert(parser->needs == NEED_NONE);
+		xassert(!parser->field_name_overloads);
+		xassert(!parser->key);
+		xassert(!parser->type_string);
+		xassert(!parser->required);
+		xassert((parser->ptr_offset < NO_VAL) ||
+			(parser->ptr_offset >= 0));
 		return;
 	}
 
 	xassert(parser->type > DATA_PARSER_TYPE_INVALID);
 	xassert(parser->type < DATA_PARSER_TYPE_MAX);
 	xassert(parser->type_string && parser->type_string[0]);
-	xassert(parser->obj_type_string && parser->obj_type_string[0]);
 
-	xassert((parser->ptr_offset == NO_VAL) ||
-		((parser->ptr_offset >= 0) && (parser->ptr_offset < NO_VAL)));
-	xassert((parser->size == NO_VAL) ||
-		((parser->size >= 0) && (parser->size < NO_VAL)));
-
-	if (parser->flag != FLAG_TYPE_NONE) {
-		/* parser of a specific flag */
+	if (parser->model == PARSER_MODEL_FLAG_ARRAY) {
+		/* parser of a specific flag field list */
+		xassert(parser->flag != FLAG_TYPE_NONE);
 		xassert(parser->flag > FLAG_TYPE_INVALID);
 		xassert(parser->flag < FLAG_TYPE_MAX);
 
@@ -273,8 +284,8 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->field_count);
 		xassert(!parser->parse);
 		xassert(!parser->dump);
-		xassert(parser->size > 0);
-	} else if (parser->list_type != DATA_PARSER_TYPE_INVALID) {
+		xassert(parser->ptr_offset == NO_VAL);
+	} else if (parser->model == PARSER_MODEL_LIST) {
 		/* parser of a List */
 		xassert(parser->list_type > DATA_PARSER_TYPE_INVALID);
 		xassert(parser->list_type < DATA_PARSER_TYPE_MAX);
@@ -284,20 +295,21 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->field_count);
 		xassert(!parser->parse);
 		xassert(!parser->dump);
-		xassert(parser->size == sizeof(List));
-	} else if (parser->fields) {
+		xassert(parser->size == sizeof(list_t *));
+		xassert(parser->ptr_offset == NO_VAL);
+	} else if (parser->model == PARSER_MODEL_ARRAY) {
 		/* parser of a parser Array */
 		xassert(parser->field_count > 0);
 
 		xassert(parser->flag == FLAG_TYPE_NONE);
+		xassert(parser->ptr_offset == NO_VAL);
 		xassert(parser->flag_bit_array_count == NO_VAL8);
 		xassert(!parser->parse);
 		xassert(!parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->list_del_func);
 		xassert(!parser->list_new_func);
-		xassert(parser->size > 0);
-		xassert(parser->obj_type_string[0]);
+		xassert(parser->fields);
 
 		for (int i = 0; i < parser->field_count; i++) {
 			/* recursively check the child parsers */
@@ -336,12 +348,14 @@ extern void check_parser_funcname(const parser_t *const parser,
 							    parser->fields[j]
 								    .key));
 		}
-	} else if (!parser->dump) {
-		/* reference to a real parser in an array */
+	} else if (parser->model == PARSER_MODEL_ARRAY_LINK_SIMPLE_FIELD) {
+		/* parser array link to a simple parser */
 
 		/* real parser must exist */
 		xassert(find_parser_by_type(parser->type));
 
+		xassert(parser->field_name && parser->field_name[0]);
+		xassert(parser->key && parser->key[0]);
 		xassert(parser->flag == FLAG_TYPE_NONE);
 		xassert(parser->flag_bit_array_count == NO_VAL8);
 		xassert(!parser->fields);
@@ -351,33 +365,76 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->list_del_func);
 		xassert(!parser->list_new_func);
-		/* linked parsers must always be the same size if known */
-		xassert((parser->size == NO_VAL) ||
-			((parser->size > 0) &&
-			 (parser->size ==
-			  find_parser_by_type(parser->type)->size)));
-	} else {
-		/* parser of simple or complex type */
-		if (parser->ptr_offset == NO_VAL) {
-			/* complex type */
-			xassert((parser->size == NO_VAL) || (parser->size > 0));
-			xassert(!parser->field_name);
-		} else {
-			/* simple type */
-			xassert(parser->size > 0);
-			xassert((parser->ptr_offset < NO_VAL) ||
-				(parser->ptr_offset >= 0));
-			if (parser->key) {
-				/* this parser is of struct->field */
-				xassert(parser->key[0]);
-				xassert(parser->field_name &&
-					parser->field_name[0]);
-			} else {
-				/* not a field in struct */
-				xassert(!parser->field_name);
-			}
-		}
+		xassert((parser->ptr_offset < NO_VAL) ||
+			(parser->ptr_offset >= 0));
+		/* linked parsers must always be the same size */
+		xassert(parser->size ==
+			find_parser_by_type(parser->type)->size);
+	} else if (parser->model == PARSER_MODEL_ARRAY_LINK_FLAGS_FIELD) {
+		/* parser array linked to flags array field */
 
+		/* real parser must exist */
+		xassert(find_parser_by_type(parser->type));
+		xassert(parser->field_name && parser->field_name[0]);
+		xassert(parser->key && parser->key[0]);
+		xassert(parser->flag == FLAG_TYPE_BIT_ARRAY);
+		xassert(!parser->flag_name);
+		xassert(parser->flag_bit_array);
+		xassert(parser->flag_bit_array_count > 0);
+		xassert(parser->flag_bit_array_count < NO_VAL8);
+		xassert(!parser->fields);
+		xassert(!parser->field_count);
+		xassert(!parser->parse);
+		xassert(!parser->dump);
+		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
+		xassert(!parser->list_del_func);
+		xassert(!parser->list_new_func);
+		xassert((parser->ptr_offset < NO_VAL) ||
+			(parser->ptr_offset >= 0));
+		/* linked parsers must always be the same size */
+		xassert(parser->size ==
+			find_parser_by_type(parser->type)->size);
+	} else if (parser->model == PARSER_MODEL_ARRAY_LINK_COMPLEX_FIELD) {
+		/* parser array link to a complex parser */
+
+		/* real parser must exist */
+		xassert(find_parser_by_type(parser->type));
+
+		xassert(parser->ptr_offset == NO_VAL);
+		xassert(!parser->field_name);
+		xassert(parser->key && parser->key[0]);
+		xassert(parser->flag == FLAG_TYPE_NONE);
+		xassert(parser->flag_bit_array_count == NO_VAL8);
+		xassert(!parser->fields);
+		xassert(!parser->field_count);
+		xassert(!parser->parse);
+		xassert(!parser->dump);
+		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
+		xassert(!parser->list_del_func);
+		xassert(!parser->list_new_func);
+		/*
+		 * size for complex is the size of the struct and not the fields
+		 * with no easy way to check they match here.
+		 */
+		xassert(parser->size > 0);
+	} else if (parser->model == PARSER_MODEL_ARRAY_BOOL_FIELD) {
+		xassert((parser->ptr_offset < NO_VAL) ||
+			(parser->ptr_offset >= 0));
+		xassert(parser->field_name && parser->field_name[0]);
+		xassert(parser->key && parser->key[0]);
+		xassert(parser->flag == FLAG_TYPE_BOOL);
+		xassert(parser->flag_bit_array_count == NO_VAL8);
+		xassert(!parser->fields);
+		xassert(!parser->field_count);
+		xassert(!parser->parse);
+		xassert(!parser->dump);
+		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
+		xassert(!parser->list_del_func);
+		xassert(!parser->list_new_func);
+	} else if (parser->model == PARSER_MODEL_SIMPLE) {
+		xassert(parser->ptr_offset == NO_VAL);
+		xassert(!parser->key);
+		xassert(!parser->field_name);
 		xassert(parser->flag == FLAG_TYPE_NONE);
 		xassert(parser->flag_bit_array_count == NO_VAL8);
 		xassert(!parser->fields);
@@ -386,6 +443,21 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->list_del_func);
+	} else if (parser->model == PARSER_MODEL_COMPLEX) {
+		xassert(parser->ptr_offset == NO_VAL);
+		xassert(!parser->field_name);
+		xassert(!parser->key);
+		xassert(!parser->field_name);
+		xassert(parser->flag == FLAG_TYPE_NONE);
+		xassert(parser->flag_bit_array_count == NO_VAL8);
+		xassert(!parser->fields);
+		xassert(!parser->field_count);
+		xassert(parser->parse);
+		xassert(parser->dump);
+		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
+		xassert(!parser->list_del_func);
+	} else {
+		fatal_abort("invalid parser model %u", parser->model);
 	}
 }
 #endif /* !NDEBUG */
@@ -4033,6 +4105,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 #define add_parser(stype, mtype, req, field, overload, path, need)    \
 {                                                                     \
 	.magic = MAGIC_PARSER,                                        \
+	.model = PARSER_MODEL_ARRAY_LINK_SIMPLE_FIELD,                \
 	.ptr_offset = offsetof(stype, field),                         \
 	.field_name = XSTRINGIFY(field),                              \
 	.field_name_overloads = overload,                             \
@@ -4049,11 +4122,10 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 #define add_parser_skip(stype, field)                                 \
 {                                                                     \
 	.magic = MAGIC_PARSER,                                        \
-	.skip = true,                                                 \
+	.model = PARSER_MODEL_ARRAY_SKIP_FIELD,                       \
 	.ptr_offset = offsetof(stype, field),                         \
 	.field_name = XSTRINGIFY(field),                              \
 	.type = DATA_PARSER_TYPE_INVALID,                             \
-	.type_string = "skipped",                                     \
 	.obj_type_string = XSTRINGIFY(stype),                         \
 	.flag = FLAG_TYPE_NONE,                                       \
 	.flag_bit_array_count = NO_VAL8,                              \
@@ -4067,6 +4139,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 #define add_complex_parser(stype, mtype, req, path, need)             \
 {                                                                     \
 	.magic = MAGIC_PARSER,                                        \
+	.model = PARSER_MODEL_ARRAY_LINK_COMPLEX_FIELD,               \
 	.ptr_offset = NO_VAL,                                         \
 	.key = path,                                                  \
 	.required = req,                                              \
@@ -4083,6 +4156,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 			    name, need)                               \
 {                                                                     \
 	.magic = MAGIC_PARSER,                                        \
+	.model = PARSER_MODEL_ARRAY_BOOL_FIELD,                       \
 	.ptr_offset = offsetof(stype, field),                         \
 	.field_name = XSTRINGIFY(field),                              \
 	.key = path,                                                  \
@@ -4099,6 +4173,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 #define add_parse_bit_flag_array(stype, mtype, req, field, path)      \
 {                                                                     \
 	.magic = MAGIC_PARSER,                                        \
+	.model = PARSER_MODEL_ARRAY_LINK_FLAGS_FIELD,                 \
 	.ptr_offset = offsetof(stype, field),                         \
 	.field_name = XSTRINGIFY(field),                              \
 	.key = path,                                                  \
@@ -5625,6 +5700,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 #define addpa(typev, typet)                                                    \
 	{                                                                      \
 		.magic = MAGIC_PARSER,                                         \
+		.model = PARSER_MODEL_ARRAY,                                   \
 		.type = DATA_PARSER_##typev,                                   \
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_type_string = XSTRINGIFY(typet),                          \
@@ -5634,11 +5710,13 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.field_count = ARRAY_SIZE(PARSER_ARRAY(typev)),                \
 		.flag = FLAG_TYPE_NONE,                                        \
 		.flag_bit_array_count = NO_VAL8,                               \
+		.ptr_offset = NO_VAL,                                          \
 	}
 /* add parser for List */
 #define addpl(typev, typel, delf, addf, need)                                  \
 	{                                                                      \
 		.magic = MAGIC_PARSER,                                         \
+		.model = PARSER_MODEL_LIST,                                    \
 		.type = DATA_PARSER_##typev,                                   \
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.ptr_offset = NO_VAL,                                          \
@@ -5650,11 +5728,13 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.needs = need,                                                 \
 		.flag = FLAG_TYPE_NONE,                                        \
 		.flag_bit_array_count = NO_VAL8,                               \
+		.ptr_offset = NO_VAL,                                          \
 	}
 /* add parser for simple type */
 #define addps(typev, stype, need)                                              \
 	{                                                                      \
 		.magic = MAGIC_PARSER, .type = DATA_PARSER_##typev,            \
+		.model = PARSER_MODEL_SIMPLE,                                  \
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_type_string = XSTRINGIFY(stype),                          \
 		.size = sizeof(stype),                                         \
@@ -5663,11 +5743,13 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.dump = DUMP_FUNC(typev),                                      \
 		.flag = FLAG_TYPE_NONE,                                        \
 		.flag_bit_array_count = NO_VAL8,                               \
+		.ptr_offset = NO_VAL,                                          \
 	}
 /* add parser for complex type */
 #define addpc(typev, typet, need)                                              \
 	{                                                                      \
 		.magic = MAGIC_PARSER, .type = DATA_PARSER_##typev,            \
+		.model = PARSER_MODEL_COMPLEX,                                 \
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_type_string = XSTRINGIFY(typet),                          \
 		.size = sizeof(typet),                                         \
@@ -5676,10 +5758,12 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.dump = DUMP_FUNC(typev),                                      \
 		.flag = FLAG_TYPE_NONE,                                        \
 		.flag_bit_array_count = NO_VAL8,                               \
+		.ptr_offset = NO_VAL,                                          \
 	}
 #define addfa(typev, typet)                                                    \
 	{                                                                      \
 		.magic = MAGIC_PARSER,                                         \
+		.model = PARSER_MODEL_FLAG_ARRAY,                              \
 		.type = DATA_PARSER_##typev,                                   \
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_type_string = XSTRINGIFY(typet),                          \
@@ -5688,6 +5772,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.flag = FLAG_TYPE_BIT_ARRAY,                                   \
 		.flag_bit_array = PARSER_FLAG_ARRAY(typev),                    \
 		.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(typev)),  \
+		.ptr_offset = NO_VAL,                                          \
 	}
 static const parser_t parsers[] = {
 	/* Simple type parsers */
@@ -5839,6 +5924,25 @@ static const parser_t parsers[] = {
 	addpa(CRON_ENTRY, cron_entry_t),
 
 	/* Flag bit arrays */
+	addfa(ASSOC_FLAGS, uint16_t),
+	addfa(USER_FLAGS, uint32_t),
+	addfa(SLURMDB_JOB_FLAGS, uint32_t),
+	addfa(ACCOUNT_FLAGS, uint32_t),
+	addfa(WCKEY_FLAGS, uint32_t),
+	addfa(QOS_FLAGS, uint32_t),
+	addfa(QOS_PREEMPT_MODES, uint16_t),
+	addfa(CLUSTER_REC_FLAGS, uint32_t),
+	addfa(NODE_STATES, uint32_t),
+	addfa(JOB_FLAGS, uint64_t),
+	addfa(JOB_SHOW_FLAGS, uint16_t),
+	addfa(POWER_FLAGS, uint8_t),
+	addfa(JOB_MAIL_FLAGS, uint16_t),
+	addfa(RESERVATION_FLAGS, uint64_t),
+	addfa(CPU_BINDING_FLAGS, uint16_t), /* cpu_bind_type_t */
+	addfa(CRON_ENTRY_FLAGS, uint32_t),
+	addfa(MEMORY_BINDING_TYPE, uint16_t), /* mem_bind_type_t */
+	addfa(WARN_FLAGS, uint16_t),
+	addfa(X11_FLAGS, uint16_t),
 	addfa(OPEN_MODE, uint8_t),
 
 	/* List parsers */
