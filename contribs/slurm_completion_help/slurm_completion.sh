@@ -1375,7 +1375,7 @@ function __slurm_comp_common() {
 	--kill-command) __slurm_compreply "$(__slurm_signals)" ;;
 	--kill-on-bad-exit) __slurm_compreply "${binary[*]}" ;;
 	--kill-on-invalid-dep) __slurm_compreply "$(__slurm_boolean)" ;;
-	-L | --license?(s)) __slurm_compreply "$(__slurm_licenses)" ;;
+	-L | --license?(s)) __slurm_compreply_count "$(__slurm_licenses)" ;;
 	--mail-type) __slurm_compreply_list "${mail_types[*]}" ;;
 	--mail-user) __slurm_compreply "$(__slurm_users)" ;;
 	--mem-bind) __slurm_compreply "${membind_types[*]}" ;;
