@@ -344,7 +344,7 @@ function __slurm_compreply_list() {
 
 		local found=0
 		local filter=()
-		filter=($(compgen -W "${compreply[*]}" -- "${curitem}"))
+		filter=("$(compgen -W "${compreply[*]}" -- "${curitem}")")
 		((${#filter[@]} == 1)) && [[ ${filter[0]} == "$curitem" ]] && found=1
 		__slurm_log_trace "$(__func__): found='$found' #filter[@]='${#filter[@]}' filter[*]='${filter[*]}'"
 
