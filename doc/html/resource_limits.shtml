@@ -317,17 +317,106 @@ sacctmgr modify user bob set GrpTRES=cpu=-1,mem=-1,gres/gpu=-1
 </pre>
 
 
-<h2 id="qos">QOS specific limits supported
+<h2 id="qos">QOS specific limits and scheduling policies
 <a class="slurm_link" href="#qos"></a>
 </h2>
 
-<p><b>NOTE:</b> Unless noted, if a job request breaches a given limit
+<p>As noted <a href="#hierarchy">above</a>, the default behavior is that
+a limit set on a Partition QOS will be applied before a limit on the job's
+requested QOS. You can change this behavior with the <i>OverPartQOS</i>
+flag.</p>
+
+<p>Unless noted, if a job request breaches a given limit
 on its own, the job will pend unless the job's QOS has the DenyOnLimit
 flag set, which will cause the job to be denied at submission.  When
 Grp limits are considered with respect to this flag the Grp limit
 is treated as a Max limit.</p>
 
 <dl>
+<dt id="qos_gracetime"><b>GraceTime</b>
+<a class="slurm_link" href="#qos_gracetime"></a></dt>
+<dd>Preemption grace time to be extended to a job which
+  has been selected for preemption in the format of
+  &lt;hh&gt;:&lt;mm&gt;:&lt;ss&gt;. The default value is zero,
+  meaning no preemption grace time is allowed on this QOS. This value
+  is only meaningful for QOS PreemptMode=CANCEL and PreemptMode=REQUEUE.
+</dd>
+
+<dt id="qos_grpjobs"><b>GrpJobs</b>
+<a class="slurm_link" href="#qos_grpjobs"></a></dt>
+<dd>The total number of jobs able to run at any given time
+  from a QOS. If this limit is reached new jobs will be queued but only
+  allowed to run after previous jobs complete from this group.
+</dd>
+
+<dt id="qos_grpjobsaccrue"><b>GrpJobsAccrue</b>
+<a class="slurm_link" href="#qos_grpjobsaccrue"></a></dt>
+<dd>The total number of pending jobs able to accrue age priority at any
+  given time from a QOS. If this limit is reached new jobs will be queued but
+  will not accrue age based priority until after previous jobs are removed
+  from pending in this group. This limit does not determine if the job can
+  run or not, it only limits the age factor of the priority. This limit only
+  applies to the job's QOS and not the partition's QOS.
+</dd>
+
+<dt id="qos_grpsubmitjobs"><b>GrpSubmitJobs</b>
+<a class="slurm_link" href="#qos_grpsubmitjobs"></a></dt>
+<dd>The total number of jobs able to be submitted to the system at any
+  given time from a QOS. If this limit is reached new submission requests
+  will be denied until previous jobs complete from this group.
+</dd>
+
+<dt id="qos_grptres"><b>GrpTRES</b>
+<a class="slurm_link" href="#qos_grptres"></a></dt>
+<dd>The total count of TRES able to be used at any given time from jobs
+  running from a QOS. If this limit is reached new jobs will be queued but
+  only allowed to run after resources have been relinquished from this group.
+</dd>
+
+<dt id="qos_grptresmins"><b>GrpTRESMins</b>
+<a class="slurm_link" href="#qos_grptresmins"></a></dt>
+<dd>The total number of TRES minutes that can possibly be used by past,
+  present and future jobs running from a QOS. If any limit is reached,
+  all running jobs with that TRES in this group will be killed, and no new
+  jobs will be allowed to run.  This usage is decayed (at a rate of
+  PriorityDecayHalfLife).  It can also be reset (according to
+  PriorityUsageResetPeriod) in order to allow jobs to run against the
+  QOS again.  QOS that have the NoDecay flag set do not decay GrpTRESMins,
+  see <a href="qos.html#qos_other">QOS Options</a> for details.
+  This limit only applies when using the Priority Multifactor plugin.
+</dd>
+
+<dt id="qos_grptresrunmins"><b>GrpTRESRunMins</b>
+<a class="slurm_link" href="#qos_grptresrunmins"></a></dt>
+<dd>Used to limit the combined total number of TRES
+  minutes used by all jobs running with a QOS.  This takes into
+  consideration the time limit of running jobs and consumes it,
+  if the limit is reached, no new jobs are started until other jobs
+  finish to allow time to free up.
+</dd>
+
+<dt id="qos_grpwall"><b>GrpWall</b>
+<a class="slurm_link" href="#qos_grpwall"></a></dt>
+<dd>The maximum wall clock time running jobs are able
+  to be allocated in aggregate for a QOS. If this limit is reached,
+  future jobs in this QOS will be queued until they are able to run
+  inside the limit. This usage is decayed (at a rate of
+  PriorityDecayHalfLife).  It can also be reset (according to
+  PriorityUsageResetPeriod) in order to allow jobs to run against the
+  QOS again.  QOS that have the NoDecay flag set do not decay GrpWall.
+  See <a href="qos.html#qos_other">QOS Options</a> for details.
+</dd>
+
+<dt id="qos_limitfactor"><b>LimitFactor</b>
+<a class="slurm_link" href="#qos_limitfactor"></a></dt>
+<dd>A float that is factored into an associations [Grp|Max]TRES limits.
+  For example, if the LimitFactor is 2, then an association with a GrpTRES of
+  30 CPUs would be allowed to allocate 60 CPUs when running under this QOS.
+
+  <b>NOTE</b>: This factor is only applied to associations running in this
+  QOS and is not applied to any limits in the QOS itself.
+</dd>
+
 <dt id="qos_maxjobsaccruepa"><b>MaxJobsAccruePerAccount</b>
 <a class="slurm_link" href="#qos_maxjobsaccruepa"></a></dt>
 <dd>The maximum number of pending jobs an
@@ -368,10 +457,25 @@ is treated as a Max limit.</p>
   have running and pending at a given time.
 </dd>
 
+<dt id="qos_maxtresminsperjob"><b>MaxTRESMinsPerJob</b>
+<a class="slurm_link" href="#qos_maxtresminsperjob"></a></dt>
+<dd>Maximum number of TRES minutes each job is able to use.
+</dd>
+
 <dt id="qos_maxtrespa"><b>MaxTRESPerAccount</b>
 <a class="slurm_link" href="#qos_maxtrespa"></a></dt>
 <dd>The maximum number of TRES an account can
   allocate at a given time.
+</dd>
+
+<dt id="qos_maxtrespj"><b>MaxTRESPerJob</b>
+<a class="slurm_link" href="#qos_maxtrespj"></a></dt>
+<dd>The maximum number of TRES each job is able to use.
+</dd>
+
+<dt id="qos_maxtrespn"><b>MaxTRESPerNode</b>
+<a class="slurm_link" href="#qos_maxtrespn"></a></dt>
+<dd>The maximum number of TRES each node in a job allocation can use.
 </dd>
 
 <dt id="qos_maxtrespu"><b>MaxTRESPerUser</b>
@@ -380,10 +484,49 @@ is treated as a Max limit.</p>
   allocate at a given time.
 </dd>
 
+<dt id="qos_maxwalldurationpj"><b>MaxWallDurationPerJob</b>
+<a class="slurm_link" href="#qos_maxwalldurationpj"></a></dt>
+<dd>Maximum wall clock time each job is able to use. Format is &lt;min&gt;
+  or &lt;min&gt;:&lt;sec&gt; or &lt;hr&gt;:&lt;min&gt;:&lt;sec&gt; or
+  &lt;days&gt;-&lt;hr&gt;:&lt;min&gt;:&lt;sec&gt; or &lt;days&gt;-&lt;hr&gt;.
+  The value is recorded in minutes with rounding as needed.
+</dd>
+
+<dt id="qos_minpriothreshold"><b>MinPrioThreshold</b>
+<a class="slurm_link" href="#qos_minpriothreshold"></a></dt>
+<dd>Minimum priority required to reserve resources when scheduling.
+</dd>
+
 <dt id="qos_mintresperjob"><b>MinTRESPerJob</b>
 <a class="slurm_link" href="#qos_mintresperjob"></a></dt>
 <dd>The minimum size in TRES any given job can
   have when using the requested QOS.
+</dd>
+
+<dt id="qos_usagefactor"><b>UsageFactor</b>
+<a class="slurm_link" href="#qos_usagefactor"></a></dt>
+<dd>A float that is factored into a job’s TRES usage (e.g. RawUsage,
+  TRESMins, TRESRunMins). For example, if the usagefactor was 2, for every
+  TRESBillingUnit second a job ran it would count for 2. If the usagefactor
+  was .5, every second would only count for half of the time.
+  A setting of 0 would add no timed usage from the job.
+
+  The usage factor only applies to the job's QOS and not the partition QOS.
+
+  If the UsageFactorSafe flag is set and AccountingStorageEnforce includes
+  <i>Safe</i>, jobs will only be able to run if the job can run to completion
+  with the UsageFactor applied.
+
+  If the UsageFactorSafe flag is not set and AccountingStorageEnforce includes
+  <i>Safe</i>, a job will be able to be scheduled without the UsageFactor
+  applied and will be able to run without being killed due to limits.
+
+  If the UsageFactorSafe flag is not set and AccountingStorageEnforce does
+  not include <i>Safe</i>, a job will be able to be scheduled without the
+  UsageFactor applied and could be killed due to limits.
+
+  See <a href="slurm.conf.html#OPT_AccountingStorageEnforce">
+  AccountingStorageEnforce</a> in the slurm.conf man page.
 </dd>
 </dl>
 
