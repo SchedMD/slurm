@@ -307,7 +307,9 @@ static void _add_nodes_with_feature(hostlist_t hl, char *feature)
 	}
 }
 
-extern hostlist_t nodespec_to_hostlist(const char *nodes, char **nodesets)
+extern hostlist_t nodespec_to_hostlist(const char *nodes,
+				       bool uniq,
+				       char **nodesets)
 {
 	int count;
 	slurm_conf_nodeset_t *ptr, **ptr_array;
@@ -354,7 +356,8 @@ extern hostlist_t nodespec_to_hostlist(const char *nodes, char **nodesets)
 		}
 	}
 
-	hostlist_uniq(hl);
+	if (uniq)
+		hostlist_uniq(hl);
 	return hl;
 }
 
