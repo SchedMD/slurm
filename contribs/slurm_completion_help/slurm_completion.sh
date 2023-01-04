@@ -838,7 +838,7 @@ function __slurm_gres() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol -o show config | grep GresTypes | cut -d= -f2 | tr ',' '\n'"
+	local cmd="scontrol -o show config | grep 'GresTypes' | tr -d '[:space:]' | cut -d= -f2 | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
 }
 
