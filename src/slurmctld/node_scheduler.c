@@ -2251,6 +2251,39 @@ static void _end_null_job(job_record_t *job_ptr)
 	epilog_slurmctld(job_ptr);
 }
 
+static void _handle_explicit_req(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	list_t **ret_gres_list = arg;
+
+	/* Copy over the explicit gres, skip others */
+	if (!(gres_state_job->config_flags & GRES_CONF_EXPLICIT))
+		return;
+
+	if (!*ret_gres_list)
+		*ret_gres_list = list_create(gres_job_list_delete);
+
+	list_append(*ret_gres_list,
+		    gres_create_state(
+			    gres_state_job,
+			    GRES_STATE_SRC_STATE_PTR,
+			    GRES_STATE_TYPE_JOB,
+			    gres_job_state_dup(gres_state_job->gres_data)));
+
+	return;
+}
+
+static void _gres_select_explicit(
+	list_t *req_gres_list, list_t **ret_gres_list)
+{
+	if (!req_gres_list)
+		return;
+
+	(void) list_for_each(req_gres_list,
+			     (ListForF) _handle_explicit_req,
+			     ret_gres_list);
+}
+
 static List _handle_exclusive_gres(job_record_t *job_ptr,
 				   bitstr_t *select_bitmap, bool test_only)
 {
@@ -2266,6 +2299,9 @@ static List _handle_exclusive_gres(job_record_t *job_ptr,
 	if (!job_ptr->details ||
 	    !(job_ptr->details->whole_node == 1))
 		return NULL;
+
+	if (job_ptr->gres_list_req)
+		_gres_select_explicit(job_ptr->gres_list_req, &post_list);
 
 	for (int i = 0; (node_ptr = next_node_bitmap(select_bitmap, &i)); i++) {
 		gres_ctld_job_select_whole_node(&post_list,

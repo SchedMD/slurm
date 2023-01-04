@@ -204,6 +204,16 @@ affect filesystems with high latency metadata operations for non\-existent files
 .IP
 
 .TP
+\fBexplicit\fR
+If the flag is set, GRES is not allocated to the job as part of whole node
+allocation (--exclusive or OverSubscribe=EXCLUSIVE set on partition) unless
+it was explicitly requested by the job.
+
+NOTE: If a gres has this flag configured it is global, so all other nodes with
+that gres will have this flag implied.
+.IP
+
+.TP
 \fBone_sharing\fR
 To be used on a shared gres. If using a shared gres (mps) on top of a sharing
 gres (gpu) only allow one of the sharing gres to be used by the shared gres.

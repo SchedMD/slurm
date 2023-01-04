@@ -60,6 +60,19 @@ typedef struct {
 	slurm_step_id_t *step_id;
 } foreach_gres_cnt_t;
 
+typedef struct {
+	bitstr_t *core_bitmap;
+	gres_state_t *gres_state_node;
+	uint32_t job_id;
+	list_t **job_gres_list;
+	bool new_alloc;
+	int node_cnt;
+	int node_index;
+	int node_offset;
+	char *node_name;
+	int rc;
+} foreach_explicit_alloc_t;
+
 /*
  * Determine if specific GRES index on node is available to a job's allocated
  *	cores
@@ -803,6 +816,47 @@ static void _job_select_whole_node_internal(
 		gres_js->total_gres += gres_ns->gres_cnt_avail;
 }
 
+static void _handle_explicit_alloc(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_explicit_alloc_t *explicit_alloc = arg;
+	int rc;
+
+	if (!(gres_state_job->config_flags & GRES_CONF_EXPLICIT) ||
+	    !gres_find_id(x, &explicit_alloc->gres_state_node->plugin_id))
+		return;
+
+	if (!*explicit_alloc->job_gres_list)
+		*explicit_alloc->job_gres_list =
+			list_create(gres_job_list_delete);
+
+	rc = _job_alloc(gres_state_job,
+			*explicit_alloc->job_gres_list,
+			explicit_alloc->gres_state_node,
+			explicit_alloc->node_cnt,
+			explicit_alloc->node_index,
+			explicit_alloc->node_offset,
+			explicit_alloc->job_id,
+			explicit_alloc->node_name,
+			explicit_alloc->core_bitmap,
+			explicit_alloc->new_alloc);
+
+	if (rc != SLURM_SUCCESS)
+		explicit_alloc->rc = rc;
+}
+
+static void _job_alloc_explicit(
+	list_t *req_gres_list, foreach_explicit_alloc_t *explicit_alloc)
+{
+	if (!req_gres_list)
+		return;
+
+	(void) list_for_each(req_gres_list,
+			     (ListForF) _handle_explicit_alloc,
+			     explicit_alloc);
+	return;
+}
+
 static int _foreach_clear_job_gres(void *x, void *arg)
 {
 	gres_job_clear_alloc(((gres_state_t *)x)->gres_data);
@@ -853,6 +907,9 @@ extern int gres_ctld_job_select_whole_node(
 
 		/* Never allocate any shared GRES. */
 		if (gres_id_shared(gres_state_node->config_flags))
+			continue;
+
+		if (gres_state_node->config_flags & GRES_CONF_EXPLICIT)
 			continue;
 
 		job_search_key.config_flags = gres_state_node->config_flags;
@@ -1035,6 +1092,28 @@ extern int gres_ctld_job_alloc_whole_node(
 		/* Never allocate any shared GRES. */
 		if (gres_id_shared(gres_state_node->config_flags))
 			continue;
+
+		if (gres_state_node->config_flags & GRES_CONF_EXPLICIT) {
+			if (job_gres_list) {
+				foreach_explicit_alloc_t explicit_alloc = {
+					.core_bitmap = core_bitmap,
+					.gres_state_node = gres_state_node,
+					.job_id = job_id,
+					.job_gres_list = job_gres_list_alloc,
+					.new_alloc = new_alloc,
+					.node_cnt = node_cnt,
+					.node_index = node_index,
+					.node_offset = node_offset,
+					.node_name = node_name,
+					.rc = rc,
+
+				};
+				_job_alloc_explicit(job_gres_list,
+						    &explicit_alloc);
+
+			}
+			continue;
+		}
 
 		job_search_key.config_flags = gres_state_node->config_flags;
 		job_search_key.plugin_id = gres_state_node->plugin_id;

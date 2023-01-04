@@ -105,6 +105,9 @@ typedef struct {
 					     * on one of the sharing GRES */
 
 #define GRES_CONF_ENV_ONEAPI SLURM_BIT(11) /* Set ZE_AFFINITY_MASK */
+#define GRES_CONF_EXPLICIT   SLURM_BIT(12) /* Don't allocate as part of
+					      whole node alloc if wasn't
+					      directly requested */
 
 #define GRES_CONF_ENV_SET    0x000008E0   /* Easy check if any of
 					   * GRES_CONF_ENV_* are set. */

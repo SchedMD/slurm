@@ -125,6 +125,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Add new PrologFlags=ForceRequeueOnFail option to automatically requeue
     batch jobs on Prolog failures regardless of the job --requeue setting.
  -- Add HealthCheckNodeState=NONDRAINED_IDLE option.
+ -- Add 'explicit' to Flags in gres.conf. This makes it so the gres is not
+    automatically added to a job's allocation when --exclusive is used.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
