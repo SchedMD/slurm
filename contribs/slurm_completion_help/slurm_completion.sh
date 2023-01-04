@@ -769,7 +769,7 @@ function __slurm_features() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show nodes | grep -E -o 'AvailableFeatures=\S+' | cut -d= -f2 | tr ',' '\n'"
+	local cmd="scontrol -o show nodes | grep -E -o 'AvailableFeatures=\S+' | cut -d= -f2 | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -780,7 +780,7 @@ function __slurm_features_active() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show nodes | grep -E -o 'ActiveFeatures=\S+' | cut -d= -f2 | tr ',' '\n'"
+	local cmd="scontrol -o show nodes | grep -E -o 'ActiveFeatures=\S+' | cut -d= -f2 | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -818,7 +818,7 @@ function __slurm_helpformat() {
 # RET: space delimited list
 function __slurm_hostlist() {
 	local hostnames="$1"
-	local cmd="scontrol show hostlistsorted \"$hostnames\""
+	local cmd="scontrol -o show hostlistsorted \"$hostnames\""
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -827,7 +827,7 @@ function __slurm_hostlist() {
 # RET: space delimited list
 function __slurm_hostnames() {
 	local hostlist="${1-}"
-	local cmd="scontrol show hostnames \"$hostlist\""
+	local cmd="scontrol -o show hostnames \"$hostlist\""
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -838,7 +838,7 @@ function __slurm_gres() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show config | grep GresTypes | cut -d= -f2 | tr ',' '\n'"
+	local cmd="scontrol -o show config | grep GresTypes | cut -d= -f2 | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -849,7 +849,7 @@ function __slurm_jobs() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show jobs | grep -Po 'JobId=\S+' | cut -d'=' -f2"
+	local cmd="scontrol -o show jobs | grep -Po 'JobId=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -860,7 +860,7 @@ function __slurm_jobsteps_tasks() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show step | grep -Po 'StepId=\d+\.\d+' | cut -d'=' -f2"
+	local cmd="scontrol -o show step | grep -Po 'StepId=\d+\.\d+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -871,7 +871,7 @@ function __slurm_jobsteps() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol  show step | grep -Po 'StepId=\d+\.\S+' | cut -d'=' -f2"
+	local cmd="scontrol -o show step | grep -Po 'StepId=\d+\.\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -882,7 +882,7 @@ function __slurm_jobnames() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show jobs | grep -Po 'JobName=\S+' | cut -d'=' -f2"
+	local cmd="scontrol -o show jobs | grep -Po 'JobName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -893,7 +893,7 @@ function __slurm_licenses() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show license | grep -Po 'LicenseName=\S+' | cut -d'=' -f2"
+	local cmd="scontrol -o show license | grep -Po 'LicenseName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -904,7 +904,7 @@ function __slurm_nodes() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show nodes | grep -Po 'NodeName=\S+' | cut -d'=' -f2"
+	local cmd="scontrol -o show nodes | grep -Po 'NodeName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -915,7 +915,7 @@ function __slurm_nodes_frontend() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show frontend | grep -Po 'FrontendName=\S+' | cut -d'=' -f2"
+	local cmd="scontrol -o show frontend | grep -Po 'FrontendName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -937,7 +937,7 @@ function __slurm_partitions() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show partitions | grep -Po 'PartitionName=\S+' | cut -d'=' -f2"
+	local cmd="scontrol -o show partitions | grep -Po 'PartitionName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -970,7 +970,7 @@ function __slurm_reservations() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show reservations | grep -Po 'ReservationName=\S+' | cut -d= -f2"
+	local cmd="scontrol -o show reservations | grep -Po 'ReservationName=\S+' | cut -d= -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
