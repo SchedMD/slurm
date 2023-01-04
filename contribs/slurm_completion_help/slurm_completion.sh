@@ -1031,7 +1031,7 @@ function __slurm_tres() {
 	__slurm_comp_slurm_value || return
 	__slurm_dbd_status || return
 
-	local cmd="sacctmgr -Pn list tres format=type"
+	local cmd="scontrol -o show config | grep 'AccountingStorageTRES' | cut -d= -f2 | tr -d '[:space:]' | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -1398,6 +1398,7 @@ function __slurm_comp_common() {
 	--slurmd-debug) __slurm_compreply "${slurmd_levels[*]}" ;;
 	--task-epilog) _filedir ;;
 	--task-prolog) _filedir ;;
+	--tres-per-task) __slurm_compreply_count "$(__slurm_tres | tr '/' ':')" ;;
 	--uid?(s)) __slurm_compreply "$(__slurm_users) $(__slurm_linux_uids)" ;;
 	--wait-all-node?(s)) __slurm_compreply "${binary[*]}" ;;
 	--wckey?(s)) __slurm_compreply "$(__slurm_wckeys)" ;;
