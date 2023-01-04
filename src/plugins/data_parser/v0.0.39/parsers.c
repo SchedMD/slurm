@@ -5638,7 +5638,8 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 /* add parser for List */
 #define addpl(typev, typel, delf, addf, need)                                  \
 	{                                                                      \
-		.magic = MAGIC_PARSER, .type = DATA_PARSER_##typev,            \
+		.magic = MAGIC_PARSER,                                         \
+		.type = DATA_PARSER_##typev,                                   \
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.ptr_offset = NO_VAL,                                          \
 		.obj_type_string = XSTRINGIFY(List),                           \
