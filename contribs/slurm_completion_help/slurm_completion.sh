@@ -208,6 +208,53 @@ function __slurm_comp() {
 	__slurm_log_info "$(__func__): COMPREPLY[*]='${COMPREPLY[*]}'"
 }
 
+# Slurm completion helper for count notation
+# Example:
+#     GRES    = name[[:type]:count][,name[[:type]:count]...]
+#     LICENSE = license[@db][:count][,license[@db][:count]...]
+#
+# $1: list of items for completion
+function __slurm_compreply_count() {
+	local options="$1"
+	local prefix=""
+	local suffix=","
+	local curlist="${cur%"$suffix"*}"
+	local curitem="${cur##*"$suffix"}"
+	local compreply=()
+
+	if [[ $curitem == "$curlist" ]]; then
+		curlist=""
+	elif [[ -n $curlist ]]; then
+		prefix="${curlist}${suffix}"
+	fi
+
+	__slurm_log_debug "$(__func__): cur='$cur' curitem='$curitem' curlist='$curlist'"
+
+	case "${curitem}" in
+	*:)
+		__slurm_log_debug "$(__func__): expect count spec"
+		;;
+	*:+([0-9]))
+		__slurm_log_debug "$(__func__): found count spec"
+		__slurm_compreply_list "$cur"
+		;;
+	*)
+		__slurm_log_debug "$(__func__): expect item spec"
+		options="$(compgen -W "${options[*]}" -S ":" -- "${curitem}")"
+
+		# build array without seen items
+		for item in $options; do
+			__slurm_log_trace "$(__func__): for loop: item='$item'"
+			[[ $item =~ ^[[:space:]]*$ ]] && continue
+			[[ $curlist =~ "${item}"[[:digit:]]+"${suffix}"? ]] && continue
+			compreply+=("$item")
+		done
+
+		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+		;;
+	esac
+}
+
 # Completion function for parameters
 function __slurm_compreply_param() {
 	local options="$1"
@@ -1312,6 +1359,7 @@ function __slurm_comp_common() {
 	--gid) __slurm_compreply "$(__slurm_linux_groups) $(__slurm_linux_gids)" ;;
 	--gpu-bind) __slurm_compreply "${gpubind_types[*]}" ;;
 	--gpu-freq) __slurm_compreply "${gpufreq_types[*]}" ;;
+	--gres) __slurm_compreply_count "$(__slurm_gres)" ;;
 	--gres-flag?(s)) __slurm_compreply "${gres_flags[*]}" ;;
 	--hint) __slurm_compreply "${hints[*]}" ;;
 	-i | --input) _filedir ;;
