@@ -3983,6 +3983,48 @@ static int DUMP_FUNC(JOB_DESC_MSG_NODES)(const parser_t *const parser, void *obj
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(JOB_INFO_STDIN)
+
+static int DUMP_FUNC(JOB_INFO_STDIN)(const parser_t *const parser, void *obj,
+			    data_t *dst, args_t *args)
+{
+	slurm_job_info_t *job = obj;
+	char *str = xmalloc(PATH_MAX + 1);
+
+	slurm_get_job_stdin(str, PATH_MAX, job);
+	data_set_string_own(dst, str);
+
+	return SLURM_SUCCESS;
+}
+
+PARSE_DISABLED(JOB_INFO_STDOUT)
+
+static int DUMP_FUNC(JOB_INFO_STDOUT)(const parser_t *const parser, void *obj,
+			    data_t *dst, args_t *args)
+{
+	slurm_job_info_t *job = obj;
+	char *str = xmalloc(PATH_MAX + 1);
+
+	slurm_get_job_stdout(str, PATH_MAX, job);
+	data_set_string_own(dst, str);
+
+	return SLURM_SUCCESS;
+}
+
+PARSE_DISABLED(JOB_INFO_STDERR)
+
+static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
+			    data_t *dst, args_t *args)
+{
+	slurm_job_info_t *job = obj;
+	char *str = xmalloc(PATH_MAX + 1);
+
+	slurm_get_job_stderr(str, PATH_MAX, job);
+	data_set_string_own(dst, str);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -5013,9 +5055,12 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_skip(start_protocol_ver),
 	add_parse(STRING, state_desc, "state_description"),
 	add_parse(JOB_REASON, state_reason, "state_reason"),
-	add_parse(STRING, std_err, "standard_error"),
-	add_parse(STRING, std_in, "standard_input"),
-	add_parse(STRING, std_out, "standard_output"),
+	add_skip(std_err),
+	add_skip(std_in),
+	add_skip(std_out),
+	add_cparse(JOB_INFO_STDERR, "standard_error"),
+	add_cparse(JOB_INFO_STDIN, "standard_input"),
+	add_cparse(JOB_INFO_STDOUT, "standard_output"),
 	add_parse(UINT64, submit_time, "submit_time"),
 	add_parse(UINT64, suspend_time, "suspend_time"),
 	add_parse(STRING, system_comment, "system_comment"),
@@ -5766,6 +5811,9 @@ static const parser_t parsers[] = {
 	addpc(JOB_DESC_MSG_ENV, job_desc_msg_t, NEED_NONE),
 	addpc(JOB_DESC_MSG_SPANK_ENV, job_desc_msg_t, NEED_NONE),
 	addpc(JOB_DESC_MSG_NODES, job_desc_msg_t, NEED_NONE),
+	addpc(JOB_INFO_STDIN, slurm_job_info_t, NEED_NONE),
+	addpc(JOB_INFO_STDOUT, slurm_job_info_t, NEED_NONE),
+	addpc(JOB_INFO_STDERR, slurm_job_info_t, NEED_NONE),
 
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t),

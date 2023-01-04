@@ -172,6 +172,9 @@ typedef enum {
 	DATA_PARSER_LICENSE_FLAG_REMOTE, /* slurm_license_info_t->remote */
 	DATA_PARSER_JOB_INFO_MSG, /* job_info_msg_t */
 	DATA_PARSER_JOB_INFO, /* slurm_job_info_t */
+	DATA_PARSER_JOB_INFO_STDIN, /* slurm_job_info_t->stdin (handles % replacements) */
+	DATA_PARSER_JOB_INFO_STDOUT, /* slurm_job_info_t->stdout (handles % replacements) */
+	DATA_PARSER_JOB_INFO_STDERR, /* slurm_job_info_t->stderr (handles % replacements) */
 	DATA_PARSER_JOB_FLAGS, /* uint64_t & KILL_INV_DEP/HAS_STATE_DIR/... */
 	DATA_PARSER_JOB_SHOW_FLAGS, /* uint32_t & SHOW_* */
 	DATA_PARSER_CORE_SPEC, /* uint16_t & ~CORE_SPEC_THREAD */
