@@ -3002,6 +3002,7 @@ extern void reset_node_active_features(node_record_t *node_ptr);
  * Handles node range expressions, nodesets and ALL keyword.
  *
  * IN nodes - nodelist that can have nodesets or ALL in it.
+ * IN uniq - call hostlist_uniq() before returning the hostlist
  * OUT nodesets (optional) - list of nodesets found in nodes string
  *
  * RET NULL on error, hostlist_t otherwise.
@@ -3009,7 +3010,9 @@ extern void reset_node_active_features(node_record_t *node_ptr);
  * NOTE: Caller must FREE_NULL_HOSTLIST() returned hostlist_t.
  * NOTE: Caller should interpret a non-NULL but empty hostlist conveniently.
  */
-extern hostlist_t nodespec_to_hostlist(const char *nodes, char **nodesets);
+extern hostlist_t nodespec_to_hostlist(const char *nodes,
+				       bool uniq,
+				       char **nodesets);
 
 /*
  * set_node_reboot_reason - appropriately set node reason with reboot message

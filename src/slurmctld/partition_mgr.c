@@ -191,7 +191,7 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 		bit_clear_all(part_ptr->node_bitmap);
 	}
 
-	if (!(host_list = nodespec_to_hostlist(part_ptr->orig_nodes,
+	if (!(host_list = nodespec_to_hostlist(part_ptr->orig_nodes, true,
 					       &part_ptr->nodesets))) {
 		/* Error, restore original bitmap */
 		FREE_NULL_BITMAP(part_ptr->node_bitmap);
