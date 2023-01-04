@@ -634,6 +634,13 @@ extern void unload_plugins(plugins_t *plugins)
 		(void) plugrack_destroy(plugins->rack);
 	}
 
-	xfree(plugins);
+	for (size_t i = 0; i < plugins->count; i++) {
+		xfree(plugins->functions[i]);
+		xfree(plugins->types[i]);
+	}
 
+	xfree(plugins->functions);
+	xfree(plugins->handles);
+	xfree(plugins->types);
+	xfree(plugins);
 }
