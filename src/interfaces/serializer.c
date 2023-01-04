@@ -61,7 +61,7 @@ static const char *syms[] = {
 };
 
 /* serializer plugin state */
-plugins_t *plugins = NULL;
+static plugins_t *plugins = NULL;
 
 typedef struct {
 	int magic;
