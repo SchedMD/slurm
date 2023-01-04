@@ -1163,7 +1163,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 
 	usable_cpu_cnt = xcalloc(node_record_count, sizeof(uint32_t));
 	for (int i = 0, node_inx = -1;
-	     next_node_bitmap(job_resrcs_ptr->node_bitmap, &i); i++) {
+	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
+	     i++) {
 		node_inx++;
 		if (!bit_test(nodes_avail, i))
 			continue;	/* node now DOWN */
@@ -1244,9 +1245,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					usable_cpu_cnt[i] = avail_cpus;
 					fail_mode = ESLURM_INVALID_TASK_MEMORY;
 				}
-				log_flag(STEPS, "%s: %pJ Based on --mem-per-cpu=%"PRIu64" we have %d/%d usable of available cpus on node, usable memory was: %"PRIu64,
+				log_flag(STEPS, "%s: %pJ Based on --mem-per-cpu=%"PRIu64" we have %d/%d usable of available cpus on node %s, usable memory was: %"PRIu64,
 					 __func__, job_ptr, mem_use, tmp_cpus,
-					 avail_cpus, tmp_mem);
+					 avail_cpus, node_ptr->name, tmp_mem);
 			} else if (_is_mem_resv() && step_spec->pn_min_memory) {
 				uint64_t mem_use = step_spec->pn_min_memory;
 				/* ignore current step allocations */
@@ -1263,8 +1264,10 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						memory_used[node_inx];
 				}
 				if ((tmp_mem < mem_use) && (avail_cpus > 0)) {
-					log_flag(STEPS, "%s: %pJ Usable memory on node: %"PRIu64" is less than requested %"PRIu64" skipping the node",
-						 __func__, job_ptr, tmp_mem,
+					log_flag(STEPS, "%s: %pJ Usable memory on node %s: %"PRIu64" is less than requested %"PRIu64" skipping the node",
+						 __func__, job_ptr,
+						 node_ptr->name,
+						 tmp_mem,
 						 mem_use);
 					avail_cpus = 0;
 					usable_cpu_cnt[i] = avail_cpus;
@@ -1286,8 +1289,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				total_tasks /= cpus_per_task;
 			}
 			if (avail_tasks == 0) {
-				log_flag(STEPS, "%s: %pJ No task can start on node",
-					 __func__, job_ptr);
+				log_flag(STEPS, "%s: %pJ No task can start on node %s",
+					 __func__, job_ptr, node_ptr->name);
 				if ((step_spec->min_nodes == INFINITE) ||
 				    (step_spec->min_nodes ==
 				     job_ptr->node_cnt)) {
