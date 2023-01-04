@@ -209,7 +209,7 @@ extern void gres_ctld_set_node_tres_cnt(List gres_list,
  * Determine how many cores of a job's allocation can be allocated to a step
  *	on a specific node
  * IN args - see the definition of gres_ctld_step_test_args_t
- * RET Count of available cores on this node (sort of):
+ * RET Count of available cpus on this node (sort of):
  *     NO_VAL64 if no limit or 0 if node is not usable
  */
 extern uint64_t gres_ctld_step_test(gres_ctld_step_test_args_t *args);

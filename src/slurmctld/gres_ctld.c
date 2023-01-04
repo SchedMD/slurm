@@ -2792,7 +2792,7 @@ static uint64_t _step_test(gres_step_state_t *gres_ss, bool first_step_node,
 			   int node_offset, slurm_step_id_t *step_id,
 			   job_resources_t *job_resrcs_ptr, int *err_code)
 {
-	uint64_t core_cnt, min_gres = 1, task_cnt;
+	uint64_t cpu_cnt, min_gres = 1, task_cnt;
 
 	xassert(gres_ss);
 
@@ -2822,20 +2822,20 @@ static uint64_t _step_test(gres_step_state_t *gres_ss, bool first_step_node,
 
 	if (gres_cnt != NO_VAL64) {
 		if (min_gres > gres_cnt) {
-			core_cnt = 0;
+			cpu_cnt = 0;
 		} else if (gres_ss->gres_per_task) {
 			task_cnt = (gres_cnt + gres_ss->gres_per_task - 1)
 				/ gres_ss->gres_per_task;
-			core_cnt = task_cnt * cpus_per_task;
+			cpu_cnt = task_cnt * cpus_per_task;
 		} else
-			core_cnt = NO_VAL64;
+			cpu_cnt = NO_VAL64;
 	} else {
 		gres_cnt = 0;
-		core_cnt = NO_VAL64;
+		cpu_cnt = NO_VAL64;
 	}
 
 	/* Test if there is enough memory available to run the step. */
-	if (test_mem && core_cnt && gres_cnt && gres_ss->mem_per_gres &&
+	if (test_mem && cpu_cnt && gres_cnt && gres_ss->mem_per_gres &&
 	    (gres_ss->mem_per_gres != NO_VAL64)) {
 		uint64_t mem_per_gres, mem_req, mem_avail;
 
@@ -2849,19 +2849,19 @@ static uint64_t _step_test(gres_step_state_t *gres_ss, bool first_step_node,
 			log_flag(STEPS, "%s: JobId=%u: Usable memory on node: %"PRIu64" is less than requested %"PRIu64", skipping the node",
 				 __func__, step_id->job_id, mem_avail,
 				 mem_req);
-			core_cnt = 0;
+			cpu_cnt = 0;
 			*err_code = ESLURM_INVALID_TASK_MEMORY;
 		}
 	}
 
-	if (core_cnt != 0) {
+	if (cpu_cnt != 0) {
 		if (ignore_alloc)
 			gres_ss->gross_gres += gres_cnt;
 		else
 			gres_ss->total_gres += gres_cnt;
 	}
 
-	return core_cnt;
+	return cpu_cnt;
 }
 
 static int _step_get_gres_cnt(void *x, void *arg)
@@ -2928,7 +2928,7 @@ static int _step_get_gres_cnt(void *x, void *arg)
 
 extern uint64_t gres_ctld_step_test(gres_ctld_step_test_args_t *args)
 {
-	uint64_t core_cnt, tmp_cnt;
+	uint64_t cpu_cnt, tmp_cnt;
 	uint16_t cpus_per_task = args->cpus_per_task;
 	ListIterator step_gres_iter;
 	gres_state_t *gres_state_step;
@@ -2943,7 +2943,7 @@ extern uint64_t gres_ctld_step_test(gres_ctld_step_test_args_t *args)
 
 	if (cpus_per_task == 0)
 		cpus_per_task = 1;
-	core_cnt = NO_VAL64;
+	cpu_cnt = NO_VAL64;
 	(void) gres_init();
 	*(args->err_code) = SLURM_SUCCESS;
 
@@ -2979,12 +2979,12 @@ extern uint64_t gres_ctld_step_test(gres_ctld_step_test_args_t *args)
 			log_flag(GRES, "%s: Job lacks GRES (%s:%s) required by the step",
 				 __func__, gres_state_step->gres_name,
 				 gres_ss->type_name);
-			core_cnt = 0;
+			cpu_cnt = 0;
 			break;
 		}
 
 		if (foreach_gres_cnt.gres_cnt == NO_CONSUME_VAL64) {
-			core_cnt = NO_VAL64;
+			cpu_cnt = NO_VAL64;
 			break;
 		}
 
@@ -2995,15 +2995,15 @@ extern uint64_t gres_ctld_step_test(gres_ctld_step_test_args_t *args)
 				     args->test_mem, args->node_offset,
 				     &tmp_step_id,
 				     args->job_resrcs_ptr, args->err_code);
-		if ((tmp_cnt != NO_VAL64) && (tmp_cnt < core_cnt))
-			core_cnt = tmp_cnt;
+		if ((tmp_cnt != NO_VAL64) && (tmp_cnt < cpu_cnt))
+			cpu_cnt = tmp_cnt;
 
-		if (core_cnt == 0)
+		if (cpu_cnt == 0)
 			break;
 	}
 	list_iterator_destroy(step_gres_iter);
 
-	return core_cnt;
+	return cpu_cnt;
 }
 
 extern char *gres_ctld_gres_2_tres_str(List gres_list, bool locked)
