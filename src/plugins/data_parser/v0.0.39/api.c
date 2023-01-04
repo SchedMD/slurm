@@ -164,7 +164,7 @@ extern int data_parser_p_assign(args_t *args, data_parser_attr_type_t type,
 	xassert(args->magic == MAGIC_ARGS);
 
 	switch (type) {
-	case DATA_PARSER_ATTR_TRES_LIST :
+	case DATA_PARSER_ATTR_TRES_LIST:
 		xassert(!args->tres_list || (args->tres_list == obj) || !obj);
 		FREE_NULL_LIST(args->tres_list);
 		args->tres_list = obj;
@@ -172,7 +172,7 @@ extern int data_parser_p_assign(args_t *args, data_parser_attr_type_t type,
 		log_flag(DATA, "assigned TRES list 0x%"PRIxPTR" to parser 0x%"PRIxPTR,
 			 (uintptr_t) obj, (uintptr_t) args);
 		return SLURM_SUCCESS;
-	case DATA_PARSER_ATTR_DBCONN_PTR :
+	case DATA_PARSER_ATTR_DBCONN_PTR:
 		xassert(!args->db_conn || (args->db_conn == obj));
 		args->db_conn = obj;
 		args->close_db_conn = false;
@@ -180,7 +180,7 @@ extern int data_parser_p_assign(args_t *args, data_parser_attr_type_t type,
 		log_flag(DATA, "assigned db_conn 0x%"PRIxPTR" to parser 0x%"PRIxPTR,
 			 (uintptr_t) obj, (uintptr_t) args);
 		return SLURM_SUCCESS;
-	case DATA_PARSER_ATTR_QOS_LIST :
+	case DATA_PARSER_ATTR_QOS_LIST:
 		xassert(!args->qos_list || (args->qos_list == obj) || !obj);
 		FREE_NULL_LIST(args->qos_list);
 		args->qos_list = obj;
