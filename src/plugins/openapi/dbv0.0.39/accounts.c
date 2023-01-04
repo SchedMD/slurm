@@ -229,7 +229,7 @@ extern int op_handler_account(const char *context_id,
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
 
-	if (!ctxt) {
+	if (ctxt->rc) {
 		/* no-op already logged */
 	} else if (!(acct = get_str_param("account_name", ctxt))) {
 		/* no-op already logged */
@@ -270,7 +270,7 @@ extern int op_handler_accounts(const char *context_id,
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
 
-	if (!ctxt) {
+	if (ctxt->rc) {
 		/* no-op already logged */
 	} else if (method == HTTP_REQUEST_GET) {
 		slurmdb_account_cond_t acct_cond = {
