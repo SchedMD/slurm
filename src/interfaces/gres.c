@@ -8121,7 +8121,6 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 	gres_job_state_t *gres_js;
 	gres_step_state_t *gres_ss;
 	gres_key_t job_search_key;
-	uint16_t cpus_per_gres;
 	char *msg = NULL;
 
 	if (!step_gres_list || (list_count(step_gres_list) == 0))
@@ -8153,18 +8152,17 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
 			break;
 		}
 		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		if (gres_js->cpus_per_gres)
-			cpus_per_gres = gres_js->cpus_per_gres;
-		else
-			cpus_per_gres = gres_js->def_cpus_per_gres;
-		if (cpus_per_gres && gres_ss->cpus_per_gres &&
-		    (cpus_per_gres < gres_ss->cpus_per_gres)) {
-			xstrfmtcat(msg, "Step requested cpus_per_gres=%u is more than the job's cpu_per_gres=%u",
-				   gres_ss->cpus_per_gres,
-				   cpus_per_gres);
-			*rc = ESLURM_INVALID_GRES;
-			break;
-		}
+
+		/*
+		 * We cannot check cpus_per_gres properly here. For example,
+		 * salloc --gpus=2 --cpus-per-gpu=2
+		 * srun --gpus=1 --cpus-per-gpu=4
+		 * The step should be able to run even though the value for
+		 * --cpus-per-gpu is higher for the step than the job, but the
+		 * number of GPUs requested is lower. This is properly enforced
+		 * in slurmctld.
+		 */
+
 		if (gres_ss->gres_per_step) {
 			/*
 			 * This isn't a perfect check because step_min_nodes
