@@ -669,6 +669,12 @@ extern int node_features_p_job_valid(char *job_features, list_t *feature_list)
 	if (!job_features)
 		return SLURM_SUCCESS;
 
+	if (list_for_each(helper_features, _foreach_feature,
+			  job_features) >= 0) {
+		/* No helpers features requested */
+		return SLURM_SUCCESS;
+	}
+
 	/* Check the mutually exclusive lists */
 	feature_sets = job_features_list2feature_sets(job_features,
 						      feature_list);
