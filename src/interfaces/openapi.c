@@ -51,17 +51,6 @@
 #define MAGIC_PATH 0x1121baef
 #define MAGIC_OAS 0x1211be0f
 
-typedef enum {
-	OPENAPI_TYPE_UNKNOWN = 0,
-	OPENAPI_TYPE_INTEGER,
-	OPENAPI_TYPE_NUMBER,
-	OPENAPI_TYPE_STRING,
-	OPENAPI_TYPE_BOOL,
-	OPENAPI_TYPE_OBJECT,
-	OPENAPI_TYPE_ARRAY,
-	OPENAPI_TYPE_MAX
-} parameter_type_t;
-
 typedef struct {
 	int (*init)(void);
 	int (*fini)(void);
@@ -93,7 +82,7 @@ typedef struct {
 	char *entry;
 	char *name;
 	entry_type_t type;
-	parameter_type_t parameter;
+	openapi_type_t parameter;
 } entry_t;
 
 typedef struct {
@@ -169,51 +158,104 @@ struct openapi_s {
 };
 
 /*
- * Parse OAS type.
- * IN str string to parse
- * RET parameter_type_t  or OPENAPI_TYPE_UNKNOWN if unknown
+ * Based on
+ * https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md#data-types
  */
-static parameter_type_t _get_parameter_type(const char *str)
-{
-	if (!str)
-		return OPENAPI_TYPE_UNKNOWN;
-	if (!xstrcasecmp(str, "integer"))
-		return OPENAPI_TYPE_INTEGER;
-	if (!xstrcasecmp(str, "number"))
-		return OPENAPI_TYPE_NUMBER;
-	if (!xstrcasecmp(str, "string"))
-		return OPENAPI_TYPE_STRING;
-	if (!xstrcasecmp(str, "boolean") || !xstrcasecmp(str, "bool"))
-		return OPENAPI_TYPE_BOOL;
-	if (!xstrcasecmp(str, "object"))
-		return OPENAPI_TYPE_OBJECT;
-	if (!xstrcasecmp(str, "array"))
-		return OPENAPI_TYPE_ARRAY;
+static const struct {
+	openapi_type_t type;
+	openapi_type_format_t format;
+	char *str_type;
+	char *str_format;
+	data_type_t data_type; /* compatible data type for this field */
+} openapi_types[] = {
+	{ OPENAPI_TYPE_INTEGER, OPENAPI_FORMAT_INT, "integer", NULL,
+	  DATA_TYPE_INT_64 },
+	{ OPENAPI_TYPE_INTEGER, OPENAPI_FORMAT_INT32, "integer", "int32",
+	  DATA_TYPE_INT_64 },
+	{ OPENAPI_TYPE_INTEGER, OPENAPI_FORMAT_INT64, "integer", "int64",
+	  DATA_TYPE_INT_64 },
+	{ OPENAPI_TYPE_NUMBER, OPENAPI_FORMAT_NUMBER, "number", NULL,
+	  DATA_TYPE_FLOAT },
+	{ OPENAPI_TYPE_NUMBER, OPENAPI_FORMAT_FLOAT, "number", "float",
+	  DATA_TYPE_FLOAT },
+	{ OPENAPI_TYPE_NUMBER, OPENAPI_FORMAT_DOUBLE, "number", "double",
+	  DATA_TYPE_FLOAT },
+	{ OPENAPI_TYPE_STRING, OPENAPI_FORMAT_STRING, "string", NULL,
+	  DATA_TYPE_STRING },
+	{ OPENAPI_TYPE_STRING, OPENAPI_FORMAT_PASSWORD, "string", "password",
+	  DATA_TYPE_STRING },
+	{ OPENAPI_TYPE_BOOL, OPENAPI_FORMAT_BOOL, "boolean", NULL,
+	  DATA_TYPE_BOOL },
+	{ OPENAPI_TYPE_OBJECT, OPENAPI_FORMAT_OBJECT, "object", NULL,
+	  DATA_TYPE_DICT },
+	{ OPENAPI_TYPE_ARRAY, OPENAPI_FORMAT_ARRAY, "array", NULL,
+	  DATA_TYPE_LIST },
+};
 
-	return OPENAPI_TYPE_UNKNOWN;
+extern const char *openapi_type_format_to_format_string(
+	openapi_type_format_t format)
+{
+	for (int i = 0; i < ARRAY_SIZE(openapi_types); i++)
+		if (openapi_types[i].format == format)
+			return openapi_types[i].str_format;
+
+	return NULL;
 }
 
-static const char *_get_parameter_type_string(parameter_type_t type)
+extern const char *openapi_type_format_to_type_string(
+	openapi_type_format_t format)
 {
-	switch (type) {
-	case OPENAPI_TYPE_UNKNOWN:
-		return "unknown";
-	case OPENAPI_TYPE_INTEGER:
-		return "integer";
-	case OPENAPI_TYPE_NUMBER:
-		return "number";
-	case OPENAPI_TYPE_STRING:
-		return "string";
-	case OPENAPI_TYPE_BOOL:
-		return "boolean";
-	case OPENAPI_TYPE_OBJECT:
-		return "object";
-	case OPENAPI_TYPE_ARRAY:
-		return "array";
-	default:
-		xassert(false);
-		return "unknown";
-	}
+	for (int i = 0; i < ARRAY_SIZE(openapi_types); i++)
+		if (openapi_types[i].format == format)
+			return openapi_types[i].str_type;
+
+	return NULL;
+}
+
+extern const char *openapi_type_to_string(openapi_type_t type)
+{
+	for (int i = 0; i < ARRAY_SIZE(openapi_types); i++)
+		if (openapi_types[i].type == type)
+			return openapi_types[i].str_type;
+
+	return NULL;
+}
+
+extern openapi_type_t openapi_string_to_type(const char *str)
+{
+	for (int i = 0; i < ARRAY_SIZE(openapi_types); i++)
+		if (!xstrcasecmp(openapi_types[i].str_type, str))
+			return openapi_types[i].type;
+
+	return OPENAPI_TYPE_INVALID;
+}
+
+extern openapi_type_format_t openapi_string_to_type_format(const char *str)
+{
+	for (int i = 0; i < ARRAY_SIZE(openapi_types); i++)
+		if (!xstrcasecmp(openapi_types[i].str_format, str))
+			return openapi_types[i].format;
+
+	return OPENAPI_FORMAT_INVALID;
+}
+
+extern data_type_t openapi_type_format_to_data_type(
+	openapi_type_format_t format)
+{
+	for (int i = 0; i < ARRAY_SIZE(openapi_types); i++)
+		if (openapi_types[i].format == format)
+			return openapi_types[i].data_type;
+
+	return DATA_TYPE_NONE;
+}
+
+extern openapi_type_format_t openapi_data_type_to_type_format(data_type_t type)
+{
+	for (int i = 0; i < ARRAY_SIZE(openapi_types); i++)
+		if (openapi_types[i].data_type == type)
+			return openapi_types[i].format;
+
+	return OPENAPI_FORMAT_INVALID;
 }
 
 static const char *_get_entry_type_string(entry_type_t type)
@@ -568,8 +610,9 @@ static data_for_each_cmd_t _populate_parameters(const data_t *data, void *arg)
 			char *buffer = NULL;
 			if (!data_retrieve_dict_path_string(data, "schema/type",
 							    &buffer)) {
-				entry->parameter = _get_parameter_type(buffer);
-				if (entry->parameter == OPENAPI_TYPE_UNKNOWN)
+				entry->parameter =
+					openapi_string_to_type(buffer);
+				if (entry->parameter == OPENAPI_TYPE_INVALID)
 					fatal("%s: invalid type for %s",
 					      __func__, key);
 			} else
@@ -643,7 +686,7 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 			debug5("%s: add method:%s for path tag:%d entry:%s name:%s parameter:%s entry_type:%s",
 			       __func__, key, args->path->tag, entry->entry,
 			       entry->name,
-			       _get_parameter_type_string(entry->parameter),
+			       openapi_type_to_string(entry->parameter),
 			       _get_entry_type_string(entry->type));
 		}
 
@@ -746,7 +789,7 @@ static bool _match_param(const data_t *data, match_path_from_data_t *args)
 	}
 	default: /* assume string */
 		debug("%s: unknown parameter type %s",
-		      __func__, _get_parameter_type_string(entry->parameter));
+		      __func__, openapi_type_to_string(entry->parameter));
 		/* fall through */
 	case OPENAPI_TYPE_STRING:
 	{
@@ -766,7 +809,7 @@ static bool _match_param(const data_t *data, match_path_from_data_t *args)
 
 		debug5("%s: parameter %s[%s]->%s[%s] result=%s",
 		       __func__, entry->name,
-		       _get_parameter_type_string(entry->parameter),
+		       openapi_type_to_string(entry->parameter),
 		       str, data_type_to_string(data_get_type(data)),
 		       (matched ? "matched" : "failed"));
 

@@ -140,4 +140,43 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp);
  */
 extern void *openapi_get_db_conn(void *ctxt);
 
+typedef enum {
+	OPENAPI_TYPE_INVALID = 0,
+	OPENAPI_TYPE_INTEGER,
+	OPENAPI_TYPE_NUMBER,
+	OPENAPI_TYPE_STRING,
+	OPENAPI_TYPE_BOOL,
+	OPENAPI_TYPE_OBJECT, /* map/dictionary */
+	OPENAPI_TYPE_ARRAY, /* list */
+	OPENAPI_TYPE_MAX /* place holder */
+} openapi_type_t;
+
+extern const char *openapi_type_to_string(openapi_type_t type);
+extern openapi_type_t openapi_string_to_type(const char *str);
+
+typedef enum {
+	OPENAPI_FORMAT_INVALID = 0,
+	OPENAPI_FORMAT_INT, /* unbounded integer */
+	OPENAPI_FORMAT_INT32,
+	OPENAPI_FORMAT_INT64,
+	OPENAPI_FORMAT_NUMBER, /* unbounded floating point number */
+	OPENAPI_FORMAT_FLOAT,
+	OPENAPI_FORMAT_DOUBLE,
+	OPENAPI_FORMAT_STRING,
+	OPENAPI_FORMAT_PASSWORD,
+	OPENAPI_FORMAT_BOOL,
+	OPENAPI_FORMAT_OBJECT, /* map/dictionary */
+	OPENAPI_FORMAT_ARRAY, /* list */
+	OPENAPI_FORMAT_MAX /* place holder */
+} openapi_type_format_t;
+
+extern const char *openapi_type_format_to_format_string(
+	openapi_type_format_t format);
+extern const char *openapi_type_format_to_type_string(
+	openapi_type_format_t format);
+extern data_type_t openapi_type_format_to_data_type(
+	openapi_type_format_t format);
+extern openapi_type_format_t openapi_string_to_type_format(const char *str);
+extern openapi_type_format_t openapi_data_type_to_type_format(data_type_t type);
+
 #endif /* SLURM_OPENAPI_H */
