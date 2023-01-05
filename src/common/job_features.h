@@ -42,6 +42,8 @@
 
 #include "src/common/bitstring.h"
 
+#include "src/common/list.h"
+
 #define FEATURE_OP_OR   0
 #define FEATURE_OP_AND  1
 #define FEATURE_OP_XOR  2
@@ -58,5 +60,62 @@ typedef struct {
 	bitstr_t *node_bitmap_avail;	/* nodes with this feature available */
 	uint16_t paren;			/* count of enclosing parenthesis */
 } job_feature_t;
+
+/*
+ * This function handles FEATURE_OP_XOR in job_feature_list.
+ * This reads the job_feature_list (made from build_feature_list) and returns
+ * a list of lists of job_feature_t. Each feature list is a set of features
+ * that could be valid for the job. This is used for job feature expressions
+ * that contain at least one changeable node feature where every bar ('|')
+ * character is treated as FEATURE_OP_XOR (including '|' inside of
+ * parentheses), not FEATURE_OP_OR. This is done because it does not make sense
+ * to allow a mix of features in a job allocation. For example, if a job
+ * requests:
+ *
+ * salloc -C 'a|b' -N2
+ *
+ * For static features, you could get one node with feature 'a' and one node
+ * with feature 'b'. For changeable features, we want all nodes to have
+ * feature 'a' or all nodes to have feature 'b' (some nodes could have both
+ * features); we do not want a mix of feature sets the allocation. Given this
+ * feature request, this function returns the following list of lists:
+ *
+ * {[a],[b]}
+ *
+ * Here is a more complicated example:
+ *
+ * job_features == "(a|b)&(c|d)"
+ *
+ * This function returns the following list of lists:
+ *
+ * {[a,c],[a,d],[b,c],[b,d]}
+ *
+ * Each feature (i.e. 'a', 'b', 'c', 'd') is of type job_feature_t.
+ *
+ * IN job_features - feature string requested by the user
+ * IN job_feature_list - list created by build_feature_list
+ * RETURN - A list of lists, with destructor function (ListDelF) list_destroy.
+ *          Each inner list is a list of pointers to job_feature_t, not full
+ *          copies, so this list is only valid as long as job_feature_list is
+ *          unchanged. The caller must free the return value with
+ *          FREE_NULL_LIST().
+ */
+extern list_t *job_features_list2feature_sets(char *job_features,
+					      list_t *job_feature_list);
+
+/*
+ * IN x - list_t job_feature_list
+ * OUT arg - char **str_ptr
+ *
+ * The string is the feature names separated by commas enclosed in parentheses.
+ * If this is called successively with the same str_ptr, then the new string
+ * will be appended to *str_ptr and separated by a '|' character.
+ * Since this is just comma-separated feature names, this does not accurately
+ * represent the feature request unless the feature list was made from
+ * job_features_list2feature_sets().
+ *
+ * *str_ptr is set to the result. The result must be xfree'd.
+ */
+extern int job_features_set2str(void *x, void *arg);
 
 #endif
