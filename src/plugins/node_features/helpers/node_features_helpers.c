@@ -716,15 +716,16 @@ extern int node_features_p_node_set(char *active_features)
 			continue;
 		}
 
-		if (_feature_set_state(feature) != SLURM_SUCCESS)
-			goto fail;
+		if (_feature_set_state(feature) != SLURM_SUCCESS) {
+			active_features[0] = '\0';
+			goto fini;
+		}
 	}
 
 	rc = SLURM_SUCCESS;
 
-fail:
+fini:
 	xfree(input);
-	active_features[0] = '\0';
 	return rc;
 }
 
