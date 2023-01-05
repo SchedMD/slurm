@@ -54,29 +54,30 @@ static int cxi_ndevs = 0;
 
 /* Function pointers loaded from libcxi */
 static int (*cxil_get_device_list_p)(struct cxil_device_list **);
+static int (*cxil_get_svc_list_p)(struct cxil_dev *dev,
+				  struct cxil_svc_list **svc_list);
 static int (*cxil_open_device_p)(uint32_t, struct cxil_dev **);
 static int (*cxil_alloc_svc_p)(struct cxil_dev *, struct cxi_svc_desc *,
 	struct cxi_svc_fail_info *);
 static int (*cxil_destroy_svc_p)(struct cxil_dev *, unsigned int);
 
 
-#define LOOKUP_SYM(_lib, _version, x) \
+#define LOOKUP_SYM(_lib, x) \
 do { \
-	x ## _p = (_version && _version[0]) ? \
-		dlvsym(_lib, #x, _version) : dlsym(_lib, #x); \
+	x ## _p = dlsym(_lib, #x); \
 	if (x ## _p == NULL) { \
-		error("Error loading symbol %s, version '%s': %s", \
-			#x, _version, dlerror()); \
+		error("Error loading symbol %s: %s", #x, dlerror()); \
 		return false; \
 	} \
 } while (0)
 
-static bool _load_cxi_funcs(void *lib, char *version)
+static bool _load_cxi_funcs(void *lib)
 {
-	LOOKUP_SYM(lib, version, cxil_get_device_list);
-	LOOKUP_SYM(lib, version, cxil_open_device);
-	LOOKUP_SYM(lib, version, cxil_alloc_svc);
-	LOOKUP_SYM(lib, version, cxil_destroy_svc);
+	LOOKUP_SYM(lib, cxil_get_device_list);
+	LOOKUP_SYM(lib, cxil_get_svc_list);
+	LOOKUP_SYM(lib, cxil_open_device);
+	LOOKUP_SYM(lib, cxil_alloc_svc);
+	LOOKUP_SYM(lib, cxil_destroy_svc);
 
 	return true;
 }
@@ -121,7 +122,7 @@ static bool _get_reserved_limits(int dev, slingshot_limits_set_t *limits)
 
 	if (!cxi_devs[dev])
 		return true;
-	if ((rc = cxil_get_svc_list(cxi_devs[dev], &list))) {
+	if ((rc = cxil_get_svc_list_p(cxi_devs[dev], &list))) {
 		error("Could not get service list for CXI device[%d] dev_id=%d (%s): %d",
 			dev, cxi_devs[dev]->info.dev_id,
 			cxi_devs[dev]->info.device_name, rc);
@@ -183,10 +184,10 @@ static bool _create_cxi_devs(void)
 			continue;
 		}
 		/* Only done in debug mode */
-		if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH)
+		if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
 			_print_devinfo(dev, &cxi_devs[dev]->info);
-		if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH)
 			_get_reserved_limits(dev, &reslimits);
+		}
 	}
 
 	return true;
@@ -300,28 +301,14 @@ static void _create_cxi_descriptor(struct cxi_svc_desc *desc,
  */
 extern bool slingshot_open_cxi_lib(void)
 {
-	char *libfile;
-	char *version;
-
-	if (!(libfile = getenv(SLINGSHOT_CXI_LIB_ENV)))
-		libfile = SLINGSHOT_CXI_LIB;
-
-	if (!libfile || (libfile[0] == '\0')) {
-		error("Bad library file specified by %s variable",
-		      SLINGSHOT_CXI_LIB_ENV);
+	if (!(cxi_handle = dlopen(HPE_SLINGSHOT_LIB,
+				  RTLD_LAZY | RTLD_GLOBAL))) {
+		error("Couldn't find CXI library %s: %s",
+		      HPE_SLINGSHOT_LIB, dlerror());
 		goto out;
 	}
 
-	if (!(cxi_handle = dlopen(libfile, RTLD_LAZY | RTLD_GLOBAL))) {
-		error("Couldn't find CXI library %s: %s", libfile, dlerror());
-		goto out;
-	}
-
-	if (!(version = getenv(SLINGSHOT_CXI_LIB_VERSION_ENV)))
-		version = SLINGSHOT_CXI_LIB_VERSION;
-
-	debug("CXI library %s, version '%s'", libfile, version);
-	if (!_load_cxi_funcs(cxi_handle, version))
+	if (!_load_cxi_funcs(cxi_handle))
 		goto out;
 
 	if (!_create_cxi_devs())
@@ -330,6 +317,7 @@ extern bool slingshot_open_cxi_lib(void)
 	cxi_avail = true;
 out:
 	log_flag(SWITCH, "cxi_avail=%d", cxi_avail);
+
 	return cxi_avail;
 }
 
@@ -345,6 +333,7 @@ static struct cxil_dev *_device_name_to_dev(const char *devname)
 		if (!xstrcmp(devname, cxi_devs[dev]->info.device_name))
 			return cxi_devs[dev];
 	}
+
 	return NULL;
 }
 
@@ -530,6 +519,7 @@ extern bool slingshot_create_services(slingshot_jobinfo_t *job, uint32_t uid,
 
 error:
 	slingshot_destroy_services(job);
+
 	return false;
 }
 

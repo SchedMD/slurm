@@ -40,7 +40,9 @@
 
 #include <stdint.h>
 
-#include "src/common/bitstring.h"
+#include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /* Version of the state file */
 #define SLINGSHOT_STATE_VERSION 1
@@ -52,11 +54,8 @@
 #define SLINGSHOT_STATE_FILE_NEW "slingshot_state.new"
 
 /* Environment variable for libcxi library name (for dlopen()) */
-#define SLINGSHOT_CXI_LIB_ENV         "SLURM_SLINGSHOT_CXI_LIB"
 #define SLINGSHOT_CXI_LIB_VERSION_ENV "SLURM_SLINGSHOT_CXI_VERSION"
 
-/* Name of CXI library if environment variable not set */
-#define SLINGSHOT_CXI_LIB         "libcxi.so"
 /* Suffix of versioned CXI library functions if environment variable not set */
 #define SLINGSHOT_CXI_LIB_VERSION "LIBCXI_1.0"
 
