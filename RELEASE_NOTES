@@ -69,6 +69,8 @@ HIGHLIGHTS
 	 - Active changeable features are reset/cleared on power down.
  -- Make slurmstepd cgroups constrained by total configured memory from
     slurm.conf (NodeName=<> RealMemory=#) instead of total physical memory.
+ -- node_features/helpers - add support for the OR and parentheses operators
+    in a --constraint expression.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -167,3 +169,6 @@ API CHANGES
     Backwards compatibility is maintained for all other hooks because the new
     arguments are passed after the existing arguments.
  -- node_features plugins - node_features_p_reboot_weight() function removed.
+    node_features_p_job_valid() - added parameter feature_list.
+    node_features_p_job_xlate() - added parameters feature_list and
+    job_node_bitmap.

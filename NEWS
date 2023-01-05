@@ -216,6 +216,8 @@ documents those changes that are of interest to users and administrators.
     symbols when dumping job information via dump_job_info().
  -- Make slurmstepd cgroups constrained by total configured memory from
     slurm.conf (NodeName=<> RealMemory=#) instead of total physical memory.
+ -- node_features/helpers - add support for the OR and parentheses operators
+    in a --constraint expression.
 
 * Changes in Slurm 22.05.8
 ==========================
