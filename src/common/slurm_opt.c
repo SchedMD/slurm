@@ -6182,6 +6182,37 @@ static void _validate_cpus_per_tres(slurm_opt_t *opt)
 	     slurm_option_set_by_env(opt, LONG_OPT_CPUS_PER_GPU))) {
 		fatal("--cpus-per-task and --cpus-per-gpu are mutually exclusive");
 	}
+
+	/*
+	 * If either is specified on the command line, it should override
+	 * anything set by the environment.
+	 */
+	if (slurm_option_set_by_cli(opt, 'c') &&
+	    slurm_option_set_by_env(opt, LONG_OPT_CPUS_PER_GPU)) {
+		if (opt->verbose) {
+			char *env_str = NULL;
+
+			if (opt->salloc_opt)
+				env_str = "SALLOC_CPUS_PER_GPU";
+			else if (opt->sbatch_opt)
+				env_str = "SBATCH_CPUS_PER_GPU";
+			else /* opt->srun_opt */
+				env_str = "SLURM_CPUS_PER_GPU";
+			info("Ignoring %s since --cpus-per-task given as command line option",
+			     env_str);
+		}
+		slurm_option_reset(opt, "cpus-per-gpu");
+	} else if (slurm_option_set_by_cli(opt, LONG_OPT_CPUS_PER_GPU) &&
+		   slurm_option_set_by_env(opt, 'c')) {
+		if (opt->verbose) {
+			char *env_str = "SRUN_CPUS_PER_TASK";
+			/* salloc, sbatch don't read env for cpus-per-task */
+
+			info("Ignoring %s since --cpus-per-gpu given as command line option",
+			     env_str);
+		}
+		slurm_option_reset(opt, "cpus-per-task");
+	}
 }
 
 /* Validate shared options between srun, salloc, and sbatch */
