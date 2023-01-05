@@ -56,24 +56,6 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-static bool constrain_ram_space;
-static bool constrain_swap_space;
-static bool constrain_kmem_space;
-
-static float allowed_ram_space;   /* Allowed RAM in percent       */
-static float allowed_swap_space;  /* Allowed Swap percent         */
-
-static uint64_t max_kmem;       /* Upper bound for kmem.limit_in_bytes  */
-static uint64_t max_ram;        /* Upper bound for memory.limit_in_bytes  */
-static uint64_t max_swap;       /* Upper bound for swap                   */
-static uint64_t totalram;       /* Total real memory available on node    */
-static uint64_t min_ram_space;  /* Don't constrain RAM below this value   */
-
-static uint64_t _percent_in_bytes (uint64_t mb, float percent)
-{
-	return ((mb * 1024 * 1024) * (percent / 100.0));
-}
-
 extern int init_system_cpuset_cgroup(void)
 {
 	if (cgroup_g_initialize(CG_CPUS) != SLURM_SUCCESS)
@@ -86,57 +68,6 @@ extern int init_system_memory_cgroup(void)
 {
 	if (cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-
-	constrain_kmem_space = slurm_cgroup_conf.constrain_kmem_space;
-	constrain_ram_space = slurm_cgroup_conf.constrain_ram_space;
-	constrain_swap_space = slurm_cgroup_conf.constrain_swap_space;
-
-	/*
-	 * as the swap space threshold will be configured with a
-	 * mem+swp parameter value, if RAM space is not monitored,
-	 * set allowed RAM space to 100% of the job requested memory.
-	 * It will help to construct the mem+swp value that will be
-	 * used for both mem and mem+swp limit during memcg creation.
-	 */
-	if ( constrain_ram_space )
-		allowed_ram_space = slurm_cgroup_conf.allowed_ram_space;
-	else
-		allowed_ram_space = 100.0;
-
-	allowed_swap_space = slurm_cgroup_conf.allowed_swap_space;
-
-	if ((totalram = (uint64_t) conf->real_memory_size) == 0)
-		error ("system cgroup: Unable to get RealMemory size");
-
-	max_kmem = _percent_in_bytes(totalram,
-				     slurm_cgroup_conf.max_kmem_percent);
-	max_ram = _percent_in_bytes(totalram,
-				    slurm_cgroup_conf.max_ram_percent);
-	max_swap = _percent_in_bytes(totalram,
-				     slurm_cgroup_conf.max_swap_percent);
-	max_swap += max_ram;
-	min_ram_space = slurm_cgroup_conf.min_ram_space * 1024 * 1024;
-
-	if (running_in_slurmd()) {
-		debug("system cgroup: memory: total:%luM allowed:%.4g%%(%s), "
-		      "swap:%.4g%%(%s), max:%.4g%%(%luM) "
-		      "max+swap:%.4g%%(%luM) min:%luM "
-		      "kmem:%.4g%%(%luM %s) min:%luM",
-		      (unsigned long) totalram,
-		      allowed_ram_space,
-		      constrain_ram_space?"enforced":"permissive",
-		      allowed_swap_space,
-		      constrain_swap_space?"enforced":"permissive",
-		      slurm_cgroup_conf.max_ram_percent,
-		      (unsigned long) (max_ram/(1024*1024)),
-		      slurm_cgroup_conf.max_swap_percent,
-		      (unsigned long) (max_swap/(1024*1024)),
-		      (unsigned long) slurm_cgroup_conf.min_ram_space,
-		      slurm_cgroup_conf.max_kmem_percent,
-		      (unsigned long)(max_kmem/(1024*1024)),
-		      constrain_kmem_space?"enforced":"permissive",
-		      (unsigned long) slurm_cgroup_conf.min_kmem_space);
-	}
 
         /*
          *  Warning: OOM Killer must be disabled for slurmstepd

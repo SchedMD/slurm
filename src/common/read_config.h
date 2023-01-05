@@ -567,13 +567,6 @@ extern char *slurm_conf_get_aliased_nodename(void);
 extern char *slurm_conf_get_bcast_address(const char *node_name);
 
 /*
- * slurm_conf_get_port - Return the port for a given NodeName
- *
- * NOTE: Caller must NOT be holding slurm_conf_lock().
- */
-extern uint16_t slurm_conf_get_port(const char *node_name);
-
-/*
  * slurm_conf_get_addr - Return the slurm_addr_t for a given NodeName in
  *	the parameter "address".  The return code is SLURM_SUCCESS on success,
  *	and SLURM_ERROR if the address lookup failed.
@@ -582,31 +575,6 @@ extern uint16_t slurm_conf_get_port(const char *node_name);
  */
 extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
 			       uint16_t flags);
-
-/*
- * slurm_conf_get_cpus_bsct -
- * Return the cpus, boards, sockets, cores, and threads configured for a
- * given NodeName
- * Returns SLURM_SUCCESS on success, SLURM_ERROR on failure.
- *
- * NOTE: Caller must NOT be holding slurm_conf_lock().
- */
-extern int slurm_conf_get_cpus_bsct(const char *node_name,
-				    uint16_t *cpus, uint16_t *boards,
-				    uint16_t *sockets, uint16_t *cores,
-				    uint16_t *threads);
-
-/*
- * slurm_conf_get_res_spec_info - Return resource specialization info
- * for a given NodeName
- * Returns SLURM_SUCCESS on success, SLURM_ERROR on failure.
- *
- * NOTE: Caller must NOT be holding slurm_conf_lock().
- */
-extern int slurm_conf_get_res_spec_info(const char *node_name,
-					char **cpu_spec_list,
-					uint16_t *core_spec_cnt,
-					uint64_t *mem_spec_limit);
 
 /*
  * Parse slurm.conf NodeName line and return single slurm_conf_node_t*.

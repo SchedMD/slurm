@@ -95,7 +95,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 
 /*
- * get_memory - Return the count of procs on this system
+ * get_memory - Return the size of physical memory in MB on this system
  * Input: real_memory - buffer for the Real Memory size
  * Output: real_memory - the Real Memory size in MB, "1" if error
  *         return code - 0 if no error, otherwise errno

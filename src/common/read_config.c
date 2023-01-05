@@ -134,14 +134,6 @@ typedef struct names_ll_s {
 	char *address;	/* NodeAddr */
 	char *bcast_address; /* BcastAddress */
 	uint16_t port;
-	uint16_t cpus;
-	uint16_t boards;
-	uint16_t sockets;
-	uint16_t cores;
-	uint16_t threads;
-	char *cpu_spec_list;
-	uint16_t core_spec_cnt;
-	uint64_t mem_spec_limit;
 	slurm_addr_t addr;
 	slurm_addr_t bcast_addr;
 	bool addr_initialized;
@@ -204,11 +196,7 @@ static uint16_t *_parse_srun_ports(const char *);
 
 static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 			      char *bcast_address, uint16_t port,
-			      uint16_t cpus, uint16_t boards,
-			      uint16_t sockets, uint16_t cores,
-			      uint16_t threads, bool front_end,
-			      char *cpu_spec_list, uint16_t core_spec_cnt,
-			      uint64_t mem_spec_limit, slurm_addr_t *addr,
+			      bool front_end, slurm_addr_t *addr,
 			      bool initialized);
 
 static s_p_options_t slurm_conf_stepd_options[] = {
@@ -2159,7 +2147,6 @@ static void _free_single_names_ll_t(names_ll_t *p)
 {
 	xfree(p->address);
 	xfree(p->alias);
-	xfree(p->cpu_spec_list);
 	xfree(p->hostname);
 	xfree(p);
 }
@@ -2205,11 +2192,7 @@ static int _get_hash_idx(const char *name)
 
 static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 			      char *bcast_address, uint16_t port,
-			      uint16_t cpus, uint16_t boards,
-			      uint16_t sockets, uint16_t cores,
-			      uint16_t threads, bool front_end,
-			      char *cpu_spec_list, uint16_t core_spec_cnt,
-			      uint64_t mem_spec_limit, slurm_addr_t *addr,
+			      bool front_end, slurm_addr_t *addr,
 			      bool initialized)
 {
 	int hostname_idx, alias_idx;
@@ -2253,15 +2236,7 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 	new->address	= xstrdup(address);
 	new->bcast_address = xstrdup(bcast_address);
 	new->port	= port;
-	new->cpus	= cpus;
-	new->boards	= boards;
-	new->sockets	= sockets;
-	new->cores	= cores;
-	new->threads	= threads;
 	new->addr_initialized = initialized;
-	new->cpu_spec_list = xstrdup(cpu_spec_list);
-	new->core_spec_cnt = core_spec_cnt;
-	new->mem_spec_limit = mem_spec_limit;
 
 	if (addr)
 		memcpy(&new->addr, addr, sizeof(slurm_addr_t));
@@ -2323,8 +2298,7 @@ static int _register_front_ends(slurm_conf_frontend_t *front_end_ptr)
 	while ((hostname = hostlist_shift(hostname_list))) {
 		address = hostlist_shift(address_list);
 		_push_to_hashtbls(hostname, hostname, address, NULL,
-				  front_end_ptr->port, 1, 1, 1, 1, 1, 1,
-				  NULL, 0, 0, NULL, false);
+				  front_end_ptr->port, true, NULL, false);
 		free(hostname);
 		free(address);
 	}
@@ -2344,11 +2318,7 @@ static void _check_callback(char *alias, char *hostname, char *address,
 			    config_record_t *config_ptr)
 {
 	_push_to_hashtbls(alias, hostname, address, bcast_address, port,
-			  node_ptr->cpus, node_ptr->boards,
-			  node_ptr->tot_sockets, node_ptr->cores,
-			  node_ptr->threads, 0, node_ptr->cpu_spec_list,
-			  node_ptr->core_spec_cnt,
-			  node_ptr->mem_spec_limit, NULL, false);
+			  false, NULL, false);
 }
 
 static void _init_slurmd_nodehash(void)
@@ -2664,35 +2634,6 @@ extern char *slurm_conf_get_bcast_address(const char *node_name)
 }
 
 /*
- * slurm_conf_get_port - Return the port for a given NodeName
- */
-extern uint16_t slurm_conf_get_port(const char *node_name)
-{
-	int idx;
-	names_ll_t *p;
-
-	slurm_conf_lock();
-	_init_slurmd_nodehash();
-
-	idx = _get_hash_idx(node_name);
-	p = node_to_host_hashtbl[idx];
-	while (p) {
-		if (xstrcmp(p->alias, node_name) == 0) {
-			uint16_t port;
-			if (!p->port)
-				p->port = (uint16_t) conf_ptr->slurmd_port;
-			port = p->port;
-			slurm_conf_unlock();
-			return port;
-		}
-		p = p->next_alias;
-	}
-	slurm_conf_unlock();
-
-	return 0;
-}
-
-/*
  * Unlink names_ll_t from host_to_node_hashtbl without free'ing.
  */
 static void _remove_host_to_node_link(names_ll_t *p)
@@ -2779,8 +2720,7 @@ extern void slurm_reset_alias(char *node_name, char *node_addr,
 	}
 	if (!p) {
 		_push_to_hashtbls(node_name, node_hostname, node_addr,
-				  NULL, 0, 0, 0, 0, 0, 0, false, NULL, 0, 0,
-				  NULL, false);
+				  NULL, 0, false, NULL, false);
 	}
 	slurm_conf_unlock();
 
@@ -2846,85 +2786,6 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
 	*address = p->addr;
 	slurm_conf_unlock();
 	return SLURM_SUCCESS;
-}
-
-/*
- * slurm_conf_get_cpus_bsct -
- * Return the cpus, boards, sockets, cores, and threads configured for a
- * given NodeName
- * Returns SLURM_SUCCESS on success, SLURM_ERROR on failure.
- */
-extern int slurm_conf_get_cpus_bsct(const char *node_name,
-				    uint16_t *cpus, uint16_t *boards,
-				    uint16_t *sockets, uint16_t *cores,
-				    uint16_t *threads)
-{
-	int idx;
-	names_ll_t *p;
-
-	slurm_conf_lock();
-	_init_slurmd_nodehash();
-
-	idx = _get_hash_idx(node_name);
-	p = node_to_host_hashtbl[idx];
-	while (p) {
-		if (xstrcmp(p->alias, node_name) == 0) {
-		    	if (cpus)
-				*cpus    = p->cpus;
-			if (boards)
-				*boards  = p->boards;
-			if (sockets)
-				*sockets = p->sockets;
-			if (cores)
-				*cores   = p->cores;
-			if (threads)
-				*threads = p->threads;
-			slurm_conf_unlock();
-			return SLURM_SUCCESS;
-		}
-		p = p->next_alias;
-	}
-	slurm_conf_unlock();
-
-	return SLURM_ERROR;
-}
-
-/*
- * slurm_conf_get_res_spec_info - Return resource specialization info
- * for a given NodeName
- * Returns SLURM_SUCCESS on success, SLURM_ERROR on failure.
- */
-extern int slurm_conf_get_res_spec_info(const char *node_name,
-					char **cpu_spec_list,
-					uint16_t *core_spec_cnt,
-					uint64_t *mem_spec_limit)
-{
-	int idx;
-	names_ll_t *p;
-
-	slurm_conf_lock();
-	_init_slurmd_nodehash();
-
-	idx = _get_hash_idx(node_name);
-	p = node_to_host_hashtbl[idx];
-	while (p) {
-		if (xstrcmp(p->alias, node_name) == 0) {
-			if (core_spec_cnt) {
-				xfree(*cpu_spec_list);
-				*cpu_spec_list = xstrdup(p->cpu_spec_list);
-			}
-			if (core_spec_cnt)
-				*core_spec_cnt  = p->core_spec_cnt;
-			if (mem_spec_limit)
-				*mem_spec_limit = p->mem_spec_limit;
-			slurm_conf_unlock();
-			return SLURM_SUCCESS;
-		}
-		p = p->next_alias;
-	}
-	slurm_conf_unlock();
-
-	return SLURM_ERROR;
 }
 
 /*
@@ -6407,10 +6268,8 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 
 	while ((hostname = hostlist_shift(host_list))) {
 		_internal_conf_remove_node(hostname);
-		_push_to_hashtbls(hostname, hostname,
-				  NULL, NULL, 0, 0,
-				  0, 0, 0, 0, false, NULL, 0,
-				  0, &node_addrs[i++], true);
+		_push_to_hashtbls(hostname, hostname, NULL, NULL, 0,
+				  false, &node_addrs[i++], true);
 		free(hostname);
 	}
 	slurm_conf_unlock();
@@ -6446,11 +6305,7 @@ extern void slurm_conf_add_node(node_record_t *node_ptr)
 
 	_push_to_hashtbls(node_ptr->name, node_ptr->node_hostname,
 			  node_ptr->comm_name, node_ptr->bcast_address,
-			  node_ptr->port, node_ptr->cpus, node_ptr->boards,
-			  node_ptr->tot_sockets, node_ptr->cores,
-			  node_ptr->threads, 0, node_ptr->cpu_spec_list,
-			  node_ptr->core_spec_cnt, node_ptr->mem_spec_limit,
-			  NULL, false);
+			  node_ptr->port, false, NULL, false);
 	slurm_conf_unlock();
 }
 

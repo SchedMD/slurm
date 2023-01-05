@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "Slurm Configuration File" "April 2022" "Slurm Configuration File"
+.TH "cgroup.conf" "5" "Slurm Configuration File" "January 2023" "Slurm Configuration File"
 
 .SH "NAME"
 cgroup.conf \- Slurm configuration file for the cgroup support
@@ -156,20 +156,20 @@ Also see \fBAllowedSwapSpace\fR.
 
 .TP
 \fBMaxRAMPercent\fR=\fIPERCENT\fR
-Set an upper bound in percent of total RAM on the RAM constraint for a job.
-This will be the memory constraint applied to jobs that are not explicitly
-allocated memory by Slurm (i.e. Slurm's select plugin is not configured to manage
-memory allocations). The \fIPERCENT\fR may be an arbitrary floating
-point number. The default value is 100.
+Set an upper bound in percent of total RAM (configured RealMemory of the node)
+on the RAM constraint for a job. This will be the memory constraint applied to
+jobs that are not explicitly allocated memory by Slurm (i.e. Slurm's select
+plugin is not configured to manage memory allocations). The \fIPERCENT\fR may
+be an arbitrary floating point number. The default value is 100.
 .IP
 
 .TP
 \fBMaxSwapPercent\fR=\fIPERCENT\fR
-Set an upper bound (in percent of total RAM) on the amount of RAM+Swap
-that may be used for a job. This will be the swap limit applied to jobs
-on systems where memory is not being explicitly allocated to job. The
-\fIPERCENT\fR may be an arbitrary floating point number between 0 and 100.
-The default value is 100.
+Set an upper bound (in percent of total RAM, configured RealMemory of the node)
+on the amount of RAM+Swap that may be used for a job. This will be the swap
+limit applied to jobs on systems where memory is not being explicitly allocated
+to job. The \fIPERCENT\fR may be an arbitrary floating point number between 0
+and 100. The default value is 100.
 .IP
 
 .TP

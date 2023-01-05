@@ -56,7 +56,7 @@ static float max_kmem_percent;	   /* Allowed Kernel memory percent*/
 static uint64_t max_kmem;       /* Upper bound for kmem.limit_in_bytes */
 static uint64_t max_ram;        /* Upper bound for memory.limit_in_bytes */
 static uint64_t max_swap;       /* Upper bound for swap */
-static uint64_t totalram;       /* Total real memory available on node */
+static uint64_t totalram;       /* Total RealMemory of node from slurm.conf */
 static uint64_t min_ram_space;  /* Don't constrain RAM below this value */
 static uint64_t min_kmem_space; /* Don't constrain Kernel mem below */
 
@@ -91,7 +91,7 @@ extern int task_cgroup_memory_init(void)
 	allowed_kmem_space = slurm_cgroup_conf.allowed_kmem_space;
 	allowed_swap_space = slurm_cgroup_conf.allowed_swap_space;
 
-	if ((totalram = (uint64_t) conf->real_memory_size) == 0)
+	if ((totalram = (uint64_t) conf->conf_memory_size) == 0)
 		error ("Unable to get RealMemory size");
 
 	max_kmem = percent_in_bytes(totalram,
@@ -105,7 +105,7 @@ extern int task_cgroup_memory_init(void)
 	max_kmem_percent = slurm_cgroup_conf.max_kmem_percent;
 	min_kmem_space = slurm_cgroup_conf.min_kmem_space * 1024 * 1024;
 
-	debug("task/cgroup/memory: total:%"PRIu64"M allowed:%.4g%%(%s), "
+	debug("task/cgroup/memory: TotCfgRealMem:%"PRIu64"M allowed:%.4g%%(%s), "
 	      "swap:%.4g%%(%s), max:%.4g%%(%"PRIu64"M) "
 	      "max+swap:%.4g%%(%"PRIu64"M) min:%"PRIu64"M "
 	      "kmem:%.4g%%(%"PRIu64"M %s) min:%"PRIu64"M ",

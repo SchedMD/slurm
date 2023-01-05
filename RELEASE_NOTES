@@ -67,6 +67,8 @@ HIGHLIGHTS
     e.g. - Powered down nodes have no active changeable features.
          - Nodes can't be changed to other active features until powered down.
 	 - Active changeable features are reset/cleared on power down.
+ -- Make slurmstepd cgroups constrained by total configured memory from
+    slurm.conf (NodeName=<> RealMemory=#) instead of total physical memory.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

@@ -57,7 +57,7 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, buf_t *buffer)
 	packstr(conf->cpu_spec_list, buffer);
 	pack16(conf->core_spec_cnt, buffer);
 	pack64(conf->mem_spec_limit, buffer);
-	pack64(conf->real_memory_size, buffer);
+	pack64(conf->conf_memory_size, buffer);
 	pack16(conf->block_map_size, buffer);
 	pack16_array(conf->block_map, conf->block_map_size, buffer);
 	pack16_array(conf->block_map_inv, conf->block_map_size, buffer);
@@ -94,7 +94,7 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, buf_t *buffer)
 				       buffer);
 		safe_unpack16(&conf->core_spec_cnt, buffer);
 		safe_unpack64(&conf->mem_spec_limit, buffer);
-		safe_unpack64(&conf->real_memory_size, buffer);
+		safe_unpack64(&conf->conf_memory_size, buffer);
 		safe_unpack16(&conf->block_map_size, buffer);
 		safe_unpack16_array(&conf->block_map, &uint32_tmp, buffer);
 		safe_unpack16_array(&conf->block_map_inv,  &uint32_tmp, buffer);

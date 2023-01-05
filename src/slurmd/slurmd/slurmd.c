@@ -796,7 +796,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		msg->cpu_spec_list = NULL;
 	else
 		msg->cpu_spec_list = xstrdup(res_abs_cpus);
-	msg->real_memory = conf->real_memory_size;
+	msg->real_memory = conf->physical_memory_size;
 	msg->tmp_disk    = conf->tmp_disk_space;
 	msg->hash_val = slurm_conf.hash_val;
 	get_cpu_load(&msg->cpu_load);
@@ -920,6 +920,7 @@ _read_config(void)
 	slurm_conf_t *cf = NULL;
 	int cc;
 	bool cgroup_mem_confinement = false;
+	node_record_t *node_ptr;
 #ifndef HAVE_FRONT_END
 	bool cr_flag = false, gang_flag = false;
 	bool config_overrides = false;
@@ -976,20 +977,23 @@ _read_config(void)
 			conf->node_name,
 			conf->hostname);
 
+	node_ptr = find_node_record(conf->node_name);
+	xassert(node_ptr);
+
 	if (conf->dynamic_type == DYN_NODE_NORM)
 		conf->port = cf->slurmd_port;
 	else
-		conf->port = slurm_conf_get_port(conf->node_name);
+		conf->port = node_ptr->port;
 	slurm_conf.slurmd_port = conf->port;
-	slurm_conf_get_cpus_bsct(conf->node_name,
-				 &conf->conf_cpus, &conf->conf_boards,
-				 &conf->conf_sockets, &conf->conf_cores,
-				 &conf->conf_threads);
 
-	slurm_conf_get_res_spec_info(conf->node_name,
-				     &conf->cpu_spec_list,
-				     &conf->core_spec_cnt,
-				     &conf->mem_spec_limit);
+	conf->conf_boards = node_ptr->boards;
+	conf->conf_cores = node_ptr->cores;
+	conf->conf_cpus = node_ptr->cpus;
+	conf->conf_sockets = node_ptr->tot_sockets;
+	conf->conf_threads = node_ptr->threads;
+	conf->core_spec_cnt = node_ptr->core_spec_cnt;
+	conf->cpu_spec_list = xstrdup(node_ptr->cpu_spec_list);
+	conf->mem_spec_limit = node_ptr->mem_spec_limit;
 
 	/* store hardware properties in slurmd_config */
 	xfree(conf->block_map);
@@ -1118,7 +1122,18 @@ _read_config(void)
 	}
 #endif
 
-	get_memory(&conf->real_memory_size);
+	/*
+	 * Set the node's configured 'RealMemory' as conf_memory_size as
+	 * slurmd_conf_t->real_memory is set to the actual physical memory. We
+	 * need to distinguish from configured memory and actual physical
+	 * memory. Actual physical memory is reported to the controller to
+	 * validate that the slurmd's memory isn't less than the configured
+	 * memory and the configured memory is needed to setup the slurmd's
+	 * memory cgroup.
+	 */
+	conf->conf_memory_size = node_ptr->real_memory;
+
+	get_memory(&conf->physical_memory_size);
 	get_up_time(&conf->up_time);
 
 	cf = slurm_conf_lock();
@@ -1304,7 +1319,8 @@ _print_conf(void)
 	debug3("Inverse Map = %s", str);
 	xfree(str);
 
-	debug3("RealMemory  = %"PRIu64"",conf->real_memory_size);
+	debug3("ConfMemory  = %"PRIu64"", conf->conf_memory_size);
+	debug3("PhysicalMem = %"PRIu64"", conf->physical_memory_size);
 	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
 	debug3("Epilog      = `%s'",     cf->epilog);
 	debug3("Logfile     = `%s'",     conf->logfile);
@@ -1422,8 +1438,8 @@ _print_config(void)
 	       (conf->actual_sockets / conf->actual_boards),
 	       conf->actual_cores, conf->actual_threads);
 
-	get_memory(&conf->real_memory_size);
-	printf("RealMemory=%"PRIu64"\n", conf->real_memory_size);
+	get_memory(&conf->physical_memory_size);
+	printf("RealMemory=%"PRIu64"\n", conf->physical_memory_size);
 
 	get_up_time(&conf->up_time);
 	secs  =  conf->up_time % 60;
@@ -1851,7 +1867,7 @@ static void _dynamic_init(void)
 	conf->sockets = conf->actual_sockets;
 	conf->cores   = conf->actual_cores;
 	conf->threads = conf->actual_threads;
-	get_memory(&conf->real_memory_size);
+	get_memory(&conf->physical_memory_size);
 
 	switch (conf->dynamic_type) {
 	case DYN_NODE_FUTURE:
@@ -1898,7 +1914,7 @@ static void _dynamic_init(void)
 
 		if (!xstrcasestr(conf->dynamic_conf, "RealMemory="))
 			xstrfmtcat(tmp, "RealMemory=%"PRIu64" ",
-				   conf->real_memory_size);
+				   conf->physical_memory_size);
 
 		if (conf->dynamic_conf)
 			xstrcat(tmp, conf->dynamic_conf);
