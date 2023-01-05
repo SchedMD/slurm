@@ -49,6 +49,8 @@ COMMAND CHANGES (see man pages for details)
     associations.
  -- sacctmgr list associations 'lft' column is removed.
  -- sacctmgr list associations 'lineage' has been added.
+ -- Fix --cpus-per-gpu for step allocations, which was previously ignored for
+    job steps. --cpus-per-gpu implies --exact.
 
 API CHANGES
 ===========

@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
     associations.
  -- Add SlurmctldParameters=no_quick_restart to avoid a new slurmctld taking
     over the old slurmctld on accedent.
+ -- Fix --cpus-per-gpu for step allocations, which was previously ignored for
+    job steps. --cpus-per-gpu implies --exact.
 
 * Changes in Slurm 23.02.3
 ==========================
