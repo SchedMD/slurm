@@ -885,6 +885,16 @@ extern char *node_features_p_job_xlate(char *job_features,
 
 	node_features = _xlate_job_features(job_features, feature_list,
 					    job_node_bitmap);
+	if (!node_features) {
+		char *job_nodes = bitmap2node_name(job_node_bitmap);
+		/*
+		 * This should not happen and means there is a mismatch in
+		 * handling features in this plugin and in the scheduler.
+		 */
+		error("Failed to translate feature request '%s' into features that match with the job's nodes '%s'",
+		      job_features, job_nodes);
+		xfree(job_nodes);
+	}
 
 	return node_features;
 }
