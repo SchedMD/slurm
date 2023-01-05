@@ -160,7 +160,7 @@ sacctmgr</a> man page.</p>
 <dt id="assoc_grpjobs"><b>GrpJobs</b>
 <a class="slurm_link" href="#assoc_grpjobs"></a></dt>
 <dd>The total number of jobs able to run at any given
-  time from an association and its children QOS.  If
+  time from an association and its children.  If
   this limit is reached new jobs will be queued but only allowed to
   run after previous jobs complete from this group.
 </dd>
@@ -168,27 +168,25 @@ sacctmgr</a> man page.</p>
 <dt id="assoc_grpjobsaccrue"><b>GrpJobsAccrue</b>
 <a class="slurm_link" href="#assoc_grpjobsaccrue"></a></dt>
 <dd>The total number of pending jobs able to accrue age
-  priority at any given time from an association and its children QOS.  If
+  priority at any given time from an association and its children.  If
   this limit is reached new jobs will be queued but not accrue age priority
   until after previous jobs are removed from pending in this group.
   This limit does not determine if the job can run or not, it only limits the
   age factor of the priority.
-  When set on a QOS, this limit only applies to the job's QOS and not the
-  partition's QOS.
 </dd>
 
 <dt id="assoc_grpsubmitjobs"><b>GrpSubmitJobs</b>
 <a class="slurm_link" href="#assoc_grpsubmitjobs"></a></dt>
 <dd>The total number of jobs able to be submitted
-  to the system at any given time from an association and its children
-  or QOS.  If this limit is reached new submission requests will be
+  to the system at any given time from an association and its children.
+  If this limit is reached new submission requests will be
   denied until previous jobs complete from this group.
 </dd>
 
 <dt id="assoc_grptres"><b>GrpTRES</b>
 <a class="slurm_link" href="#assoc_grptres"></a></dt>
 <dd>The total count of TRES able to be used at any given
-  time from jobs running from an association and its children or QOS.  If
+  time from jobs running from an association and its children. If
   this limit is reached new jobs will be queued but only allowed to
   run after resources have been relinquished from this group.
 </dd>
@@ -197,14 +195,12 @@ sacctmgr</a> man page.</p>
 <a class="slurm_link" href="#assoc_grptresmins"></a></dt>
 <dd>The total number of TRES minutes that can
   possibly be used by past, present and future jobs
-  running from an association and its children or QOS. If any limit is reached,
+  running from an association and its children. If any limit is reached,
   all running jobs with that TRES in this group will be killed, and no new
   jobs will be allowed to run.  This usage is decayed (at a rate of
   PriorityDecayHalfLife).  It can also be reset (according to
   PriorityUsageResetPeriod) in order to allow jobs to run against the
-  association tree or QOS again.  QOS that have the NoDecay flag set
-  do not decay GrpTRESMins, see <a href="qos.html#qos_other">QOS Options</a>
-  for details.
+  association tree.
   This limit only applies when using the Priority Multifactor plugin.
 </dd>
 
@@ -212,7 +208,7 @@ sacctmgr</a> man page.</p>
 <a class="slurm_link" href="#assoc_grptresrunmins"></a></dt>
 <dd>Used to limit the combined total number of TRES
   minutes used by all jobs running with an association and its
-  children or QOS.  This takes into consideration time limit of
+  children.  This takes into consideration time limit of
   running jobs and consumes it, if the limit is reached no new jobs
   are started until other jobs finish to allow time to free up.
 </dd>
@@ -220,15 +216,13 @@ sacctmgr</a> man page.</p>
 <dt id="assoc_grpwall"><b>GrpWall</b>
 <a class="slurm_link" href="#assoc_grpwall"></a></dt>
 <dd>The maximum wall clock time running jobs are able
-  to be allocated in aggregate for a QOS or an association and its children.
-  If this limit is reached, future jobs in this QOS or association will be
+  to be allocated in aggregate for an association and its children.
+  If this limit is reached, future jobs in this association will be
   queued until they are able to run inside the limit.
   This usage is decayed (at a rate of
   PriorityDecayHalfLife).  It can also be reset (according to
   PriorityUsageResetPeriod) in order to allow jobs to run against the
-  association tree or QOS again.  QOS that have the NoDecay flag set
-  do not decay GrpWall. See <a href="qos.html#qos_other">QOS Options</a> for
-  details.
+  association tree again.
 </dd>
 
 <dt id="assoc_maxjobs"><b>MaxJobs</b>
@@ -268,7 +262,7 @@ sacctmgr</a> man page.</p>
 <dt id="assoc_maxtresperjob"><b>MaxTRESPerJob</b>
 <a class="slurm_link" href="#assoc_maxtresperjob"></a></dt>
 <dd>The maximum size in TRES any given job can
-  have from the association/QOS.
+  have from the association.
 </dd>
 
 <dt id="assoc_maxtrespernode"><b>MaxTRESPerNode</b>
@@ -287,14 +281,14 @@ sacctmgr</a> man page.</p>
 <dt id="assoc_maxwalldurationperjob"><b>MaxWallDurationPerJob</b>
 <a class="slurm_link" href="#assoc_maxwalldurationperjob"></a></dt>
 <dd>The maximum wall clock time any individual job
-  can run for in the given association/QOS.  If this limit is reached
+  can run for in the given association.  If this limit is reached
   the job will be denied at submission.
 </dd>
 
 <dt id="assoc_minpriothreshold"><b>MinPrioThreshold</b>
 <a class="slurm_link" href="#assoc_minpriothreshold"></a></dt>
 <dd>Minimum priority required to reserve resources
-  in the given association/QOS. Used to override bf_min_prio_reserve.
+  in the given association. Used to override bf_min_prio_reserve.
   See <a href="slurm.conf.html#OPT_bf_min_prio_reserve=#">
   bf_min_prio_reserve</a> for details.
 </dd>
