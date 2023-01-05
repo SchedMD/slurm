@@ -12464,15 +12464,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	error_code = job_submit_g_modify(job_desc, job_ptr, uid, err_msg);
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
-	error_code = node_features_g_job_valid(job_desc->features);
-	if (error_code != SLURM_SUCCESS)
-		return error_code;
-
-	error_code = node_features_g_job_valid(job_desc->prefer);
-	if (error_code == ESLURM_INVALID_FEATURE)
-		return ESLURM_INVALID_PREFER;
-	else if (error_code != SLURM_SUCCESS)
-		return error_code;
 
 	error_code = _test_job_desc_fields(job_desc);
 	if (error_code != SLURM_SUCCESS)
@@ -13936,6 +13927,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				detail_ptr->features = old_features;
 				detail_ptr->feature_list = old_list;
 				error_code = ESLURM_INVALID_FEATURE;
+			} else if (node_features_g_job_valid(
+						detail_ptr->features) !=
+				   SLURM_SUCCESS) {
+				FREE_NULL_LIST(detail_ptr->feature_list);
+				xfree(detail_ptr->features);
+				detail_ptr->features = old_features;
+				detail_ptr->feature_list = old_list;
+				error_code = ESLURM_INVALID_FEATURE;
 			} else {
 				sched_info("%s: setting features to %s for %pJ",
 					   __func__, job_desc->features,
@@ -13978,6 +13977,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				xfree(detail_ptr->prefer);
 				detail_ptr->prefer = old_prefer;
 				detail_ptr->prefer_list = old_list;
+				error_code = ESLURM_INVALID_PREFER;
+			} else if (node_features_g_job_valid(
+						detail_ptr->prefer) !=
+				   SLURM_SUCCESS) {
+				FREE_NULL_LIST(detail_ptr->prefer_list);
+				xfree(detail_ptr->prefer);
+				detail_ptr->features = old_prefer;
+				detail_ptr->feature_list = old_list;
 				error_code = ESLURM_INVALID_PREFER;
 			} else {
 				sched_info("%s: setting prefer to %s for %pJ",
