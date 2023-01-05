@@ -796,7 +796,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		msg->cpu_spec_list = NULL;
 	else
 		msg->cpu_spec_list = xstrdup(res_abs_cpus);
-	msg->real_memory = conf->real_memory_size;
+	msg->real_memory = conf->physical_memory_size;
 	msg->tmp_disk    = conf->tmp_disk_space;
 	msg->hash_val = slurm_conf.hash_val;
 	get_cpu_load(&msg->cpu_load);
@@ -1132,7 +1132,7 @@ _read_config(void)
 	xassert(node_ptr);
 	conf->conf_memory_size = node_ptr->real_memory;
 
-	get_memory(&conf->real_memory_size);
+	get_memory(&conf->physical_memory_size);
 	get_up_time(&conf->up_time);
 
 	cf = slurm_conf_lock();
@@ -1319,7 +1319,7 @@ _print_conf(void)
 	xfree(str);
 
 	debug3("ConfMemory  = %"PRIu64"", conf->conf_memory_size);
-	debug3("RealMemory  = %"PRIu64"",conf->real_memory_size);
+	debug3("PhysicalMem = %"PRIu64"", conf->physical_memory_size);
 	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
 	debug3("Epilog      = `%s'",     cf->epilog);
 	debug3("Logfile     = `%s'",     conf->logfile);
@@ -1437,8 +1437,8 @@ _print_config(void)
 	       (conf->actual_sockets / conf->actual_boards),
 	       conf->actual_cores, conf->actual_threads);
 
-	get_memory(&conf->real_memory_size);
-	printf("RealMemory=%"PRIu64"\n", conf->real_memory_size);
+	get_memory(&conf->physical_memory_size);
+	printf("RealMemory=%"PRIu64"\n", conf->physical_memory_size);
 
 	get_up_time(&conf->up_time);
 	secs  =  conf->up_time % 60;
@@ -1866,7 +1866,7 @@ static void _dynamic_init(void)
 	conf->sockets = conf->actual_sockets;
 	conf->cores   = conf->actual_cores;
 	conf->threads = conf->actual_threads;
-	get_memory(&conf->real_memory_size);
+	get_memory(&conf->physical_memory_size);
 
 	switch (conf->dynamic_type) {
 	case DYN_NODE_FUTURE:
@@ -1913,7 +1913,7 @@ static void _dynamic_init(void)
 
 		if (!xstrcasestr(conf->dynamic_conf, "RealMemory="))
 			xstrfmtcat(tmp, "RealMemory=%"PRIu64" ",
-				   conf->real_memory_size);
+				   conf->physical_memory_size);
 
 		if (conf->dynamic_conf)
 			xstrcat(tmp, conf->dynamic_conf);

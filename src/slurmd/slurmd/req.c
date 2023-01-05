@@ -3640,7 +3640,7 @@ static void _rpc_daemon_status(slurm_msg_t *msg)
 	resp->actual_sockets     = conf->actual_sockets;
 	resp->actual_cores       = conf->actual_cores;
 	resp->actual_threads     = conf->actual_threads;
-	resp->actual_real_mem    = conf->real_memory_size;
+	resp->actual_real_mem    = conf->physical_memory_size;
 	resp->actual_tmp_disk    = conf->tmp_disk_space;
 	resp->booted             = startup;
 	resp->hostname           = xstrdup(conf->node_name);
