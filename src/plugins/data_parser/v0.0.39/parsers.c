@@ -5908,6 +5908,12 @@ static const parser_t parsers[] = {
 
 // clang-format on
 
+extern void get_parsers(const parser_t **parsers_ptr, int *count_ptr)
+{
+	*count_ptr = ARRAY_SIZE(parsers);
+	*parsers_ptr = parsers;
+}
+
 extern const parser_t *const find_parser_by_type(type_t type)
 {
 	for (int i = 0; i < ARRAY_SIZE(parsers); i++)

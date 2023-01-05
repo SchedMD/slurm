@@ -186,4 +186,6 @@ extern void verify_parser_not_sliced_funcname(const parser_t *const parser,
 
 extern const parser_t *const find_parser_by_type(type_t type);
 
+extern void get_parsers(const parser_t **parsers_ptr, int *count_ptr);
+
 #endif
