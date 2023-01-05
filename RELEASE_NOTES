@@ -51,6 +51,10 @@ COMMAND CHANGES (see man pages for details)
  -- sacctmgr list associations 'lineage' has been added.
  -- Fix --cpus-per-gpu for step allocations, which was previously ignored for
     job steps. --cpus-per-gpu implies --exact.
+ -- Fix mutual exclusivity of --cpus-per-gpu and --cpus-per-task: fatal if both
+    options are requested in the commandline or both are requested in the
+    environment. If one option is requested in the command line, it will
+    override the other option in the environment.
 
 API CHANGES
 ===========
