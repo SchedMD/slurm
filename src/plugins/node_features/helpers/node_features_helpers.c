@@ -43,6 +43,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/list.h"
+#include "src/common/job_features.h"
 #include "src/common/node_conf.h"
 #include "src/common/read_config.h"
 #include "src/common/run_command.h"
@@ -73,6 +74,16 @@ static List helper_features = NULL;
 static List helper_exclusives = NULL;
 static uint32_t boot_time = (5 * 60);
 static uint32_t exec_time = 10;
+
+typedef struct {
+	list_t *final_list;
+	bitstr_t *job_node_bitmap;
+} build_valid_feature_set_args_t;
+
+typedef struct {
+	char *final_feature_str;
+	bitstr_t *job_node_bitmap;
+} valid_feature_args_t;
 
 typedef struct {
 	const char *name;
@@ -450,6 +461,100 @@ fail:
 	return rc;
 }
 
+static int _build_valid_feature_set(void *x, void *arg)
+{
+	job_feature_t *job_feat_ptr = x;
+	build_valid_feature_set_args_t *args = arg;
+
+	if (bit_super_set(args->job_node_bitmap,
+			  job_feat_ptr->node_bitmap_avail)) {
+		/* Valid - only include changeable features */
+		if (!job_feat_ptr->changeable)
+			return 0;
+
+		/* The list should be unique already */
+		list_append(args->final_list, xstrdup(job_feat_ptr->name));
+	} else {
+		/* Invalid */
+		log_flag(NODE_FEATURES, "Feature %s is invalid",
+			 job_feat_ptr->name);
+		return -1; /* Exit list_for_each */
+	}
+
+	return 0;
+}
+
+static int _reconcile_job_features(void *x, void *arg)
+{
+	int rc = 0;
+	list_t *final_list = NULL;
+	list_t *features_list = x;
+	valid_feature_args_t *valid_arg = arg;
+	build_valid_feature_set_args_t build_arg = {
+		.job_node_bitmap = valid_arg->job_node_bitmap,
+	};
+
+	final_list = list_create(xfree_ptr);
+	build_arg.final_list = final_list;
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
+		char *list_str = NULL;
+		char *nodes_str = bitmap2node_name(valid_arg->job_node_bitmap);
+
+		job_features_set2str(features_list, &list_str);
+		log_flag(NODE_FEATURES, "Check if the features %s are valid on nodes %s",
+			 list_str, nodes_str);
+		xfree(list_str);
+		xfree(nodes_str);
+	}
+	if (list_for_each(features_list, _build_valid_feature_set,
+			  &build_arg) < 0) {
+		rc = 0; /* Continue to next list */
+	} else {
+		list_for_each(final_list, _list_make_str,
+			      &valid_arg->final_feature_str);
+		rc = -1; /* Got a valid feature list; stop iterating */
+	}
+
+	FREE_NULL_LIST(final_list);
+	return rc;
+}
+
+static char *_xlate_job_features(char *job_features,
+				 list_t *job_feature_list,
+				 bitstr_t *job_node_bitmap)
+{
+	list_t *feature_sets;
+	valid_feature_args_t valid_arg = {
+		.final_feature_str = NULL,
+		.job_node_bitmap = job_node_bitmap
+	};
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
+		char *tmp_str = bitmap2node_name(job_node_bitmap);
+		log_flag(NODE_FEATURES, "Find a valid feature combination for %s on nodes %s",
+			 job_features, tmp_str);
+		xfree(tmp_str);
+	}
+
+	feature_sets = job_features_list2feature_sets(job_features,
+						      job_feature_list);
+
+	/*
+	 * Find the first feature set that works for this job and turn it into a
+	 * comma-separated list of char* of only the changeable features.
+	 */
+	list_for_each(feature_sets,
+		      _reconcile_job_features,
+		      &valid_arg);
+	log_flag(NODE_FEATURES, "final_feature_str=%s",
+		 valid_arg.final_feature_str);
+
+	FREE_NULL_LIST(feature_sets);
+
+	return valid_arg.final_feature_str;
+}
+
 extern int init(void)
 {
 	return _read_config_file();
@@ -747,14 +852,8 @@ extern char *node_features_p_job_xlate(char *job_features,
 		return NULL;
 	}
 
-	/*
-	 * The only special character allowed in this plugin is the
-	 * ampersand '&' character. Substitute all '&' for commas.
-	 * If we allow other special characters then more parsing may be
-	 * needed, similar to the knl_cray or knl_generic node_features plugins.
-	 */
-	node_features = xstrdup(job_features);
-	xstrsubstituteall(node_features, "&", ",");
+	node_features = _xlate_job_features(job_features, feature_list,
+					    job_node_bitmap);
 
 	return node_features;
 }
