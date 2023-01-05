@@ -75,9 +75,11 @@ extern void main_sched_fini(void);
  * IN  details->features|prefer
  * OUT details->feature_list|prefer_list
  * IN  prefer - if prefer or feature is being processed
+ * IN  is_reservation - true if for a reservation, false otherwise
  * RET error code
  */
-extern int build_feature_list(job_record_t *job_ptr, bool prefer);
+extern int build_feature_list(job_record_t *job_ptr, bool prefer,
+			      bool is_reservation);
 
 /*
  * Set up job_queue_rec->job_ptr to use a magnetic reservation if the

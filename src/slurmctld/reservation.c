@@ -4942,7 +4942,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		job_ptr->details->features = resv_desc_ptr->features;
 		/* job_ptr->job_id = 0; */
 		/* job_ptr->user_id = 0; */
-		rc = build_feature_list(job_ptr, false);
+		rc = build_feature_list(job_ptr, false, true);
 		if ((rc == SLURM_SUCCESS) &&
 		    list_find_first(job_ptr->details->feature_list,
 				    _have_xor_feature, &dummy)) {

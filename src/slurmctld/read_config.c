@@ -3296,8 +3296,8 @@ static void _restore_job_accounting(void)
 
 	list_iterator_reset(job_iterator);
 	while ((job_ptr = list_next(job_iterator))) {
-		(void) build_feature_list(job_ptr, false);
-		(void) build_feature_list(job_ptr, true);
+		(void) build_feature_list(job_ptr, false, false);
+		(void) build_feature_list(job_ptr, true, false);
 
 		if (job_ptr->details->features_use ==
 		    job_ptr->details->features)

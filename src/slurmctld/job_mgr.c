@@ -7709,10 +7709,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_ptr->details->orig_dependency = xstrdup(job_ptr->details->
 						    dependency);
 
-	if ((error_code = build_feature_list(job_ptr, false)))
+	if ((error_code = build_feature_list(job_ptr, false, false)))
 		goto cleanup_fail;
 
-	if ((error_code = build_feature_list(job_ptr, true)))
+	if ((error_code = build_feature_list(job_ptr, true, false)))
 		goto cleanup_fail;
 
 	/*
@@ -13918,7 +13918,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			List old_list = detail_ptr->feature_list;
 			detail_ptr->features = xstrdup(job_desc->features);
 			detail_ptr->feature_list = NULL;
-			if (build_feature_list(job_ptr, false)) {
+			if (build_feature_list(job_ptr, false, false)) {
 				sched_info("%s: invalid features(%s) for %pJ",
 					   __func__, job_desc->features,
 					   job_ptr);
@@ -13969,7 +13969,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			List old_list = detail_ptr->prefer_list;
 			detail_ptr->prefer = xstrdup(job_desc->prefer);
 			detail_ptr->prefer_list = NULL;
-			if (build_feature_list(job_ptr, true)) {
+			if (build_feature_list(job_ptr, true, false)) {
 				sched_info("%s: invalid prefer(%s) for %pJ",
 					   __func__, job_desc->prefer,
 					   job_ptr);

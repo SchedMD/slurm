@@ -114,7 +114,8 @@ static void *	_sched_agent(void *args);
 static int	_schedule(bool full_queue);
 static int	_valid_batch_features(job_record_t *job_ptr, bool can_reboot);
 static int	_valid_feature_list(job_record_t *job_ptr, List feature_list,
-				    bool can_reboot);
+				    bool can_reboot, char *debug_str,
+				    bool is_reservation);
 static int	_valid_node_feature(char *feature, bool can_reboot);
 static int	build_queue_timeout = BUILD_TIMEOUT;
 static int	correspond_after_task_cnt = CORRESPOND_ARRAY_TASK_CNT;
@@ -4641,12 +4642,14 @@ extern List feature_list_copy(List feature_list_src)
 
 /*
  * build_feature_list - Translate a job's feature string into a feature_list
- * NOTE: This function is also used for reservations if job_id == 0
+ * NOTE: This function is also used for reservations if is_reservation is true
+ * and for job_desc_msg_t if job_id == 0
  * IN  details->features
  * OUT details->feature_list
  * RET error code
  */
-extern int build_feature_list(job_record_t *job_ptr, bool prefer)
+extern int build_feature_list(job_record_t *job_ptr, bool prefer,
+			      bool is_reservation)
 {
 	struct job_details *detail_ptr = job_ptr->details;
 	char *tmp_requested, *str_ptr, *feature = NULL;
@@ -4658,6 +4661,7 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer)
 	bool fail = false;
 	job_feature_t *feat;
 	bool can_reboot;
+	char *debug_str = NULL;
 
 	/* no hard constraints */
 	if (!detail_ptr || (!detail_ptr->features && !detail_ptr->prefer)) {
@@ -4685,6 +4689,13 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer)
 	/* Use of commas separator is a common error. Replace them with '&' */
 	while ((str_ptr = strstr(features, ",")))
 		str_ptr[0] = '&';
+
+	if (is_reservation)
+		debug_str = xstrdup("Reservation");
+	else if (!job_ptr->job_id)
+		debug_str = xstrdup("Job specs");
+	else
+		debug_str = xstrdup_printf("%pJ", job_ptr);
 
 	can_reboot = node_features_g_user_update(job_ptr->user_id);
 	tmp_requested = xstrdup(features);
@@ -4756,15 +4767,10 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer)
 		} else if (tmp_requested[i] == ']') {
 			tmp_requested[i] = '\0';
 			if ((feature == NULL) || (bracket == 0)) {
-				if (job_ptr->job_id) {
-					verbose("%pJ invalid constraint %s",
-						job_ptr, features);
-				} else {
-					verbose("Reservation invalid constraint %s",
-						features);
-				}
-				xfree(tmp_requested);
-				return feature_err;
+				verbose("%s invalid constraint %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
 			}
 			bracket--;
 		} else if (tmp_requested[i] == '(') {
@@ -4797,46 +4803,29 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer)
 			feature = &tmp_requested[i];
 		}
 	}
-	xfree(tmp_requested);
 	if (fail) {
-		if (job_ptr->job_id) {
-			verbose("%pJ invalid constraint %s",
-				job_ptr, features);
-		} else {
-			verbose("Reservation invalid constraint %s",
-				features);
-		}
-		return ESLURM_INVALID_FEATURE;
+		verbose("%s invalid constraint %s",
+			debug_str, features);
+		rc = ESLURM_INVALID_FEATURE;
+		goto fini;
 	}
 	if (brack_set_count > 1) {
-		if (job_ptr->job_id) {
-			verbose("%pJ constraint has more than one set of brackets: %s",
-				job_ptr, detail_ptr->features);
-		} else {
-			verbose("Reservation constraint has more than one set of brackets: %s",
-				detail_ptr->features);
-		}
-		return ESLURM_INVALID_FEATURE;
+		verbose("%s constraint has more than one set of brackets: %s",
+			debug_str, detail_ptr->features);
+		rc = ESLURM_INVALID_FEATURE;
+		goto fini;
 	}
 	if (bracket != 0) {
-		if (job_ptr->job_id) {
-			verbose("%pJ constraint has unbalanced brackets: %s",
-				job_ptr, features);
-		} else {
-			verbose("Reservation constraint has unbalanced brackets: %s",
-				features);
-		}
-		return ESLURM_INVALID_FEATURE;
+		verbose("%s constraint has unbalanced brackets: %s",
+			debug_str, features);
+		rc = ESLURM_INVALID_FEATURE;
+		goto fini;
 	}
 	if (paren != 0) {
-		if (job_ptr->job_id) {
-			verbose("%pJ constraint has unbalanced parenthesis: %s",
-				job_ptr, features);
-		} else {
-			verbose("Reservation constraint has unbalanced parenthesis: %s",
-				features);
-		}
-		return feature_err;
+		verbose("%s constraint has unbalanced parenthesis: %s",
+			debug_str, features);
+		rc = feature_err;
+		goto fini;
 	}
 
 	if (job_ptr->batch_features) {
@@ -4846,12 +4835,19 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer)
 		detail_ptr->feature_list_use = NULL;
 		detail_ptr->features_use = NULL;
 		if (rc != SLURM_SUCCESS)
-			return rc;
+			goto fini;
 	}
 
-	rc = _valid_feature_list(job_ptr, *feature_list, can_reboot);
-	if (rc == ESLURM_INVALID_FEATURE)
-		return feature_err;
+	rc = _valid_feature_list(job_ptr, *feature_list, can_reboot, debug_str,
+				 is_reservation);
+	if (rc == ESLURM_INVALID_FEATURE) {
+		rc = feature_err;
+		goto fini;
+	}
+
+fini:
+	xfree(debug_str);
+	xfree(tmp_requested);
 	return rc;
 }
 
@@ -4917,7 +4913,8 @@ static int _valid_batch_features(job_record_t *job_ptr, bool can_reboot)
 }
 
 static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
-			       bool can_reboot)
+			       bool can_reboot, char *debug_str,
+			       bool is_reservation)
 {
 	static time_t sched_update = 0;
 	static bool ignore_prefer_val = false;
@@ -4929,10 +4926,7 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 	bool has_xand = false, has_xor = false;
 
 	if (feature_list == NULL) {
-		if (job_ptr->job_id)
-			debug2("%pJ feature list is empty", job_ptr);
-		else
-			debug2("Reservation feature list is empty");
+		debug2("%s feature list is empty", debug_str);
 		return rc;
 	}
 
@@ -4997,20 +4991,17 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 	list_iterator_destroy(feat_iter);
 
 	if (rc == SLURM_SUCCESS) {
-		if (job_ptr->job_id)
-			debug("%pJ feature list: %s", job_ptr, buf);
-		else
-			debug("Reservation feature list: %s", buf);
+		debug("%s feature list: %s", debug_str, buf);
 	} else {
-		if (job_ptr->job_id) {
-			if (can_reboot)
-				info("%pJ has invalid feature list: %s",
-				     job_ptr, buf);
-			else
-				info("%pJ has invalid feature list (%s) or the features are not active and this user cannot reboot to update node features",
-				     job_ptr, buf);
-		} else {
+		if (is_reservation) {
 			info("Reservation has invalid feature list: %s", buf);
+		} else {
+			if (can_reboot)
+				info("%s has invalid feature list: %s",
+				     debug_str, buf);
+			else
+				info("%s has invalid feature list (%s) or the features are not active and this user cannot reboot to update node features",
+				     debug_str, buf);
 		}
 	}
 	xfree(buf);
