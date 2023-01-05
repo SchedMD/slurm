@@ -46,8 +46,11 @@
 
 #define FEATURE_OP_OR   0
 #define FEATURE_OP_AND  1
-#define FEATURE_OP_MOR  2
-#define FEATURE_OP_XAND 3
+#define FEATURE_OP_MOR  2		/* "matching" OR - all nodes in the job
+					 * must have the same set of features */
+#define FEATURE_OP_XAND 3		/* Used for counts of how many nodes
+					 * in the allocation must have a
+					 * particular set of features */
 #define FEATURE_OP_END  4		/* last entry lacks separator */
 
 typedef struct {
