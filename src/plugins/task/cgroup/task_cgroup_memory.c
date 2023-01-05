@@ -56,7 +56,7 @@ static float max_kmem_percent;	   /* Allowed Kernel memory percent*/
 static uint64_t max_kmem;       /* Upper bound for kmem.limit_in_bytes */
 static uint64_t max_ram;        /* Upper bound for memory.limit_in_bytes */
 static uint64_t max_swap;       /* Upper bound for swap */
-static uint64_t totalram;       /* Total real memory available on node */
+static uint64_t totalram;       /* Total RealMemory of node from slurm.conf */
 static uint64_t min_ram_space;  /* Don't constrain RAM below this value */
 static uint64_t min_kmem_space; /* Don't constrain Kernel mem below */
 
