@@ -161,7 +161,7 @@ sacctmgr</a> man page.</p>
 <a class="slurm_link" href="#assoc_grpjobs"></a></dt>
 <dd>The total number of jobs able to run at any given
   time from an association and its children.  If
-  this limit is reached new jobs will be queued but only allowed to
+  this limit is reached, new jobs will be queued but only allowed to
   run after previous jobs complete from this group.
 </dd>
 
@@ -169,7 +169,7 @@ sacctmgr</a> man page.</p>
 <a class="slurm_link" href="#assoc_grpjobsaccrue"></a></dt>
 <dd>The total number of pending jobs able to accrue age
   priority at any given time from an association and its children.  If
-  this limit is reached new jobs will be queued but not accrue age priority
+  this limit is reached, new jobs will be queued but not accrue age priority
   until after previous jobs are removed from pending in this group.
   This limit does not determine if the job can run or not, it only limits the
   age factor of the priority.
@@ -179,7 +179,7 @@ sacctmgr</a> man page.</p>
 <a class="slurm_link" href="#assoc_grpsubmitjobs"></a></dt>
 <dd>The total number of jobs able to be submitted
   to the system at any given time from an association and its children.
-  If this limit is reached new submission requests will be
+  If this limit is reached, new submission requests will be
   denied until previous jobs complete from this group.
 </dd>
 
@@ -187,7 +187,7 @@ sacctmgr</a> man page.</p>
 <a class="slurm_link" href="#assoc_grptres"></a></dt>
 <dd>The total count of TRES able to be used at any given
   time from jobs running from an association and its children. If
-  this limit is reached new jobs will be queued but only allowed to
+  this limit is reached, new jobs will be queued but only allowed to
   run after resources have been relinquished from this group.
 </dd>
 
@@ -209,7 +209,7 @@ sacctmgr</a> man page.</p>
 <dd>Used to limit the combined total number of TRES
   minutes used by all jobs running with an association and its
   children.  This takes into consideration time limit of
-  running jobs and consumes it, if the limit is reached no new jobs
+  running jobs and consumes it. If the limit is reached, no new jobs
   are started until other jobs finish to allow time to free up.
 </dd>
 
@@ -254,7 +254,7 @@ sacctmgr</a> man page.</p>
 <dt id="assoc_maxtresminsperjob"><b>MaxTRESMinsPerJob</b>
 <a class="slurm_link" href="#assoc_maxtresminsperjob"></a></dt>
 <dd>A limit of TRES minutes to be used by a job.
-  If this limit is reached the job will be killed if not running in
+  If this limit is reached, the job will be killed if not running in
   Safe mode, otherwise the job will pend until enough time is given to
   complete the job.
 </dd>
@@ -281,7 +281,7 @@ sacctmgr</a> man page.</p>
 <dt id="assoc_maxwalldurationperjob"><b>MaxWallDurationPerJob</b>
 <a class="slurm_link" href="#assoc_maxwalldurationperjob"></a></dt>
 <dd>The maximum wall clock time any individual job
-  can run for in the given association.  If this limit is reached
+  can run for in the given association.  If this limit is reached,
   the job will be denied at submission.
 </dd>
 
@@ -339,14 +339,14 @@ is treated as a Max limit.</p>
 <dt id="qos_grpjobs"><b>GrpJobs</b>
 <a class="slurm_link" href="#qos_grpjobs"></a></dt>
 <dd>The total number of jobs able to run at any given time
-  from a QOS. If this limit is reached new jobs will be queued but only
+  from a QOS. If this limit is reached, new jobs will be queued but only
   allowed to run after previous jobs complete from this group.
 </dd>
 
 <dt id="qos_grpjobsaccrue"><b>GrpJobsAccrue</b>
 <a class="slurm_link" href="#qos_grpjobsaccrue"></a></dt>
 <dd>The total number of pending jobs able to accrue age priority at any
-  given time from a QOS. If this limit is reached new jobs will be queued but
+  given time from a QOS. If this limit is reached, new jobs will be queued but
   will not accrue age based priority until after previous jobs are removed
   from pending in this group. This limit does not determine if the job can
   run or not, it only limits the age factor of the priority. This limit only
@@ -356,14 +356,14 @@ is treated as a Max limit.</p>
 <dt id="qos_grpsubmitjobs"><b>GrpSubmitJobs</b>
 <a class="slurm_link" href="#qos_grpsubmitjobs"></a></dt>
 <dd>The total number of jobs able to be submitted to the system at any
-  given time from a QOS. If this limit is reached new submission requests
+  given time from a QOS. If this limit is reached, new submission requests
   will be denied until previous jobs complete from this group.
 </dd>
 
 <dt id="qos_grptres"><b>GrpTRES</b>
 <a class="slurm_link" href="#qos_grptres"></a></dt>
 <dd>The total count of TRES able to be used at any given time from jobs
-  running from a QOS. If this limit is reached new jobs will be queued but
+  running from a QOS. If this limit is reached, new jobs will be queued but
   only allowed to run after resources have been relinquished from this group.
 </dd>
 
@@ -384,8 +384,8 @@ is treated as a Max limit.</p>
 <a class="slurm_link" href="#qos_grptresrunmins"></a></dt>
 <dd>Used to limit the combined total number of TRES
   minutes used by all jobs running with a QOS.  This takes into
-  consideration the time limit of running jobs and consumes it,
-  if the limit is reached, no new jobs are started until other jobs
+  consideration the time limit of running jobs and consumes it.
+  If the limit is reached, no new jobs are started until other jobs
   finish to allow time to free up.
 </dd>
 
@@ -1268,6 +1268,6 @@ the network, etc.</p>
 
 <p><b>TimeLimit</b> &mdash; The job exhausted its time limit.</p>
 
-<p style="text-align: center;">Last modified 28 October 2022</p>
+<p style="text-align: center;">Last modified 05 January 2023</p>
 
 <!--#include virtual="footer.txt"-->
