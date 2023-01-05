@@ -644,7 +644,7 @@ static int _foreach_feature(void *x, void *y)
 	return 0;
 }
 
-extern int node_features_p_job_valid(char *job_features)
+extern int node_features_p_job_valid(char *job_features, list_t *feature_list)
 {
 	if (!job_features)
 		return SLURM_SUCCESS;

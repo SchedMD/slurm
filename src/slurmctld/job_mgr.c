@@ -8047,6 +8047,7 @@ static void _figure_out_num_tasks(
 extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 				   char **err_msg)
 {
+	job_record_t *job_ptr = NULL;
 	int rc;
 
 	/*
@@ -8075,26 +8076,47 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	rc = job_submit_g_submit(job_desc, submit_uid, err_msg);
 	if (rc != SLURM_SUCCESS)
 		return rc;
-	rc = node_features_g_job_valid(job_desc->features);
-	if (rc != SLURM_SUCCESS)
-		return rc;
 
-	rc = node_features_g_job_valid(job_desc->prefer);
+	/* Add a temporary job_ptr for node_features_g_job_valid */
+	job_ptr = xmalloc(sizeof(job_record_t));
+	job_ptr->details = xmalloc(sizeof(struct job_details));
+	/* Point, don't dup, so don't free */
+	job_ptr->details->features = job_desc->features;
+	job_ptr->details->prefer = job_desc->prefer;
+	/* job_ptr->job_id = 0; */
+	job_ptr->user_id = job_desc->user_id;
+	if ((rc = build_feature_list(job_ptr, false, false)) != SLURM_SUCCESS)
+		goto fini;
+	rc = node_features_g_job_valid(job_desc->features,
+				       job_ptr->details->feature_list);
+	if (rc != SLURM_SUCCESS)
+		goto fini;
+
+	if (build_feature_list(job_ptr, true, false) != SLURM_SUCCESS) {
+		rc = ESLURM_INVALID_PREFER;
+		goto fini;
+	}
+	rc = node_features_g_job_valid(job_desc->prefer,
+				       job_ptr->details->prefer_list);
 	if (rc == ESLURM_INVALID_FEATURE)
-		return ESLURM_INVALID_PREFER;
-	else if (rc != SLURM_SUCCESS) {
-		return rc;
+		rc = ESLURM_INVALID_PREFER;
+	if (rc != SLURM_SUCCESS) {
+		goto fini;
 	}
 
 	rc = _test_job_desc_fields(job_desc);
 	if (rc != SLURM_SUCCESS)
-		return rc;
+		goto fini;
 
-	if (!_valid_array_inx(job_desc))
-		return ESLURM_INVALID_ARRAY;
+	if (!_valid_array_inx(job_desc)) {
+		rc = ESLURM_INVALID_ARRAY;
+		goto fini;
+	}
 
-	if (job_desc->x11 && !(slurm_conf.prolog_flags & PROLOG_FLAG_X11))
-		return ESLURM_X11_NOT_AVAIL;
+	if (job_desc->x11 && !(slurm_conf.prolog_flags & PROLOG_FLAG_X11)) {
+		rc = ESLURM_X11_NOT_AVAIL;
+		goto fini;
+	}
 
 	/* Make sure anything that may be put in the database will be
 	 * lower case */
@@ -8109,7 +8131,8 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		if (hl == NULL) {
 			/* likely a badly formatted hostlist */
 			error("validate_job_create_req: bad hostlist");
-			return ESLURM_INVALID_NODE_NAME;
+			rc = ESLURM_INVALID_NODE_NAME;
+			goto fini;
 		}
 		host_cnt = hostlist_count(hl);
 		hostlist_destroy(hl);
@@ -8145,7 +8168,13 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	if (job_desc->reboot && (job_desc->reboot != NO_VAL16))
 		job_desc->shared = 0;
 
-	return SLURM_SUCCESS;
+fini:
+	FREE_NULL_LIST(job_ptr->details->feature_list);
+	FREE_NULL_LIST(job_ptr->details->prefer_list);
+	xfree(job_ptr->details);
+	xfree(job_ptr);
+
+	return rc;
 }
 
 /* _copy_job_desc_to_file - copy the job script and environment from the RPC
@@ -13928,7 +13957,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				detail_ptr->feature_list = old_list;
 				error_code = ESLURM_INVALID_FEATURE;
 			} else if (node_features_g_job_valid(
-						detail_ptr->features) !=
+						detail_ptr->features,
+						detail_ptr->feature_list) !=
 				   SLURM_SUCCESS) {
 				FREE_NULL_LIST(detail_ptr->feature_list);
 				xfree(detail_ptr->features);
@@ -13979,7 +14009,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				detail_ptr->prefer_list = old_list;
 				error_code = ESLURM_INVALID_PREFER;
 			} else if (node_features_g_job_valid(
-						detail_ptr->prefer) !=
+						detail_ptr->prefer,
+						detail_ptr->prefer_list) !=
 				   SLURM_SUCCESS) {
 				FREE_NULL_LIST(detail_ptr->prefer_list);
 				xfree(detail_ptr->prefer);

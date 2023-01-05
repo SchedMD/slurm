@@ -61,7 +61,7 @@ extern bool node_features_g_changeable_feature(char *feature);
 extern int node_features_g_get_node(char *node_list);
 
 /* Test if a job's feature specification is valid */
-extern int node_features_g_job_valid(char *job_features);
+extern int node_features_g_job_valid(char *job_features, list_t *feature_list);
 
 /*
  * Translate a job's feature request to the node features needed at boot time.

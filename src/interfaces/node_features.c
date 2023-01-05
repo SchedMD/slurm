@@ -54,7 +54,7 @@ typedef struct node_features_ops {
 	uint32_t(*boot_time)	(void);
 	bool    (*changeable_feature) (char *feature);
 	int	(*get_node)	(char *node_list);
-	int	(*job_valid)	(char *job_features);
+	int	(*job_valid)	(char *job_features, list_t *feature_list);
 	char *	(*job_xlate)	(char *job_features, list_t *feature_list,
 				 bitstr_t *job_node_bitmap);
 	bitstr_t * (*get_node_bitmap) (void);
@@ -267,7 +267,7 @@ extern int node_features_g_get_node(char *node_list)
 }
 
 /* Test if a job's feature specification is valid */
-extern int node_features_g_job_valid(char *job_features)
+extern int node_features_g_job_valid(char *job_features, list_t *feature_list)
 {
 	DEF_TIMERS;
 	int i, rc = SLURM_SUCCESS;
@@ -276,7 +276,7 @@ extern int node_features_g_job_valid(char *job_features)
 	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].job_valid))(job_features);
+		rc = (*(ops[i].job_valid))(job_features, feature_list);
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
 

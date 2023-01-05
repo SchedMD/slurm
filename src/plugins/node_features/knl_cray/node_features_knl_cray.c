@@ -2609,7 +2609,7 @@ extern void node_features_p_node_state(char **avail_modes, char **current_mode)
 }
 
 /* Test if a job's feature specification is valid */
-extern int node_features_p_job_valid(char *job_features)
+extern int node_features_p_job_valid(char *job_features, list_t *feature_list)
 {
 	uint16_t job_mcdram, job_numa;
 	int mcdram_cnt, numa_cnt;
