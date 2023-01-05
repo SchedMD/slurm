@@ -694,6 +694,12 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	if (opt_local->cpus_per_gpu) {
 		xstrfmtcat(step_req->cpus_per_tres, "gres:gpu:%d",
 			   opt_local->cpus_per_gpu);
+		/* Like cpus_per_task, imply --exact */
+		if (srun_opt->whole)
+			info("Ignoring --whole since --cpus-per-gpu used");
+		else if (!srun_opt->exact)
+			verbose("Implicitly setting --exact, because --cpus-per-gpu given.");
+		srun_opt->exact = true;
 	}
 
 	step_req->exc_nodes = xstrdup(opt_local->exclude);
