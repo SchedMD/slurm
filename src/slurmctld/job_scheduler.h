@@ -185,9 +185,12 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 /*
  * Determine which nodes must be rebooted for a job
  * IN job_ptr - pointer to job that will be initiated
+ * IN/OUT reboot_features - features that should be applied to the node on
+ *                          reboot. Caller must xfree().
  * RET bitmap of nodes requiring a reboot for NodeFeaturesPlugin or NULL if none
  */
-extern bitstr_t *node_features_reboot(job_record_t *job_ptr);
+extern bitstr_t *node_features_reboot(job_record_t *job_ptr,
+				      char **reboot_features);
 
 /* Print a job's dependency information based upon job_ptr->depend_list */
 extern void print_job_dependency(job_record_t *job_ptr, const char *func);

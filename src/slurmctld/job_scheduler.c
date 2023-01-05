@@ -4252,13 +4252,18 @@ extern void epilog_slurmctld(job_record_t *job_ptr)
 /*
  * Determine which nodes must be rebooted for a job
  * IN job_ptr - pointer to job that will be initiated
+ * IN/OUT reboot_features - features that should be applied to the node on
+ *                          reboot. Caller must xfree().
  * RET bitmap of nodes requiring a reboot for NodeFeaturesPlugin or NULL if none
  */
-extern bitstr_t *node_features_reboot(job_record_t *job_ptr)
+extern bitstr_t *node_features_reboot(job_record_t *job_ptr,
+				      char **reboot_features)
 {
 	bitstr_t *active_bitmap = NULL, *boot_node_bitmap = NULL;
 	bitstr_t *feature_node_bitmap, *tmp_bitmap;
-	char *reboot_features;
+
+	xassert(reboot_features);
+	xassert(!(*reboot_features)); /* It needs to start out NULL */
 
 	if ((node_features_g_count() == 0) ||
 	    !node_features_g_user_update(job_ptr->user_id))
@@ -4281,12 +4286,11 @@ extern bitstr_t *node_features_reboot(job_record_t *job_ptr)
 	if (feature_node_bitmap == NULL) /* No nodes under NodeFeaturesPlugin */
 		return NULL;
 
-	reboot_features = node_features_g_job_xlate(
+	*reboot_features = node_features_g_job_xlate(
 		job_ptr->details->features_use,
 		job_ptr->details->feature_list_use,
 		job_ptr->node_bitmap);
-	tmp_bitmap = build_active_feature_bitmap2(reboot_features);
-	xfree(reboot_features);
+	tmp_bitmap = build_active_feature_bitmap2(*reboot_features);
 	boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
 	bit_and(boot_node_bitmap, feature_node_bitmap);
 	FREE_NULL_BITMAP(feature_node_bitmap);
@@ -4406,16 +4410,24 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 	if (job_ptr->reboot)
 		boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
 	else
-		boot_node_bitmap = node_features_reboot(job_ptr);
+		boot_node_bitmap = node_features_reboot(job_ptr,
+							&reboot_features);
 
 	if (boot_node_bitmap &&
 	    job_ptr->details->features_use &&
 	    node_features_g_user_update(job_ptr->user_id)) {
 		non_feature_node_bitmap = bit_copy(boot_node_bitmap);
-		reboot_features = node_features_g_job_xlate(
-			job_ptr->details->features_use,
-			job_ptr->details->feature_list_use,
-			job_ptr->node_bitmap);
+		/*
+		 * node_features_g_job_xlate is called from
+		 * node_features_reboot, which we may have already called.
+		 * Avoid calling node_features_g_job_xlate twice.
+		 */
+		if (!reboot_features) {
+			reboot_features = node_features_g_job_xlate(
+				job_ptr->details->features_use,
+				job_ptr->details->feature_list_use,
+				job_ptr->node_bitmap);
+		}
 		if (reboot_features)
 			feature_node_bitmap = node_features_g_get_node_bitmap();
 		if (feature_node_bitmap)
