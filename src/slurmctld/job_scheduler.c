@@ -4641,7 +4641,8 @@ extern List feature_list_copy(List feature_list_src)
 }
 
 static int _feature_string2list(char *features, char *debug_str,
-				int feature_err, list_t **feature_list)
+				int feature_err, list_t **feature_list,
+				bool *convert_to_matching_or)
 {
 	int rc = SLURM_SUCCESS;
 	int bracket = 0, count = 0, i, paren = 0;
@@ -4649,6 +4650,9 @@ static int _feature_string2list(char *features, char *debug_str,
 	char *tmp_requested;
 	char *str_ptr, *feature = NULL;
 	bool fail = false;
+	bool has_changeable = false;
+	bool has_static_or = false;
+	bool has_paren_or = false;
 
 	xassert(feature_list);
 
@@ -4682,6 +4686,9 @@ static int _feature_string2list(char *features, char *debug_str,
 				feature);
 			feat->count = count;
 			feat->paren = paren;
+
+			has_changeable |= feat->changeable;
+
 			if (paren)
 				feat->op_code = FEATURE_OP_AND;
 			else if (bracket)
@@ -4706,9 +4713,21 @@ static int _feature_string2list(char *features, char *debug_str,
 			feat->changeable = changeable;
 			feat->count = count;
 			feat->paren = paren;
-			if (paren)
+
+			has_changeable |= changeable;
+			has_static_or |= !changeable;
+			has_paren_or |= paren;
+
+			/*
+			 * The if-else-if is like this for priority:
+			 * - paren is highest priority
+			 * - then bracket
+			 * - then outside of paren/bracket
+			 */
+			if (paren && !(*convert_to_matching_or))
 				feat->op_code = FEATURE_OP_OR;
-			else if (bracket)
+			else if (bracket || changeable ||
+				 (*convert_to_matching_or))
 				feat->op_code = FEATURE_OP_XOR;
 			else
 				feat->op_code = FEATURE_OP_OR;
@@ -4758,6 +4777,8 @@ static int _feature_string2list(char *features, char *debug_str,
 				feat->paren = paren;
 				feat->op_code = FEATURE_OP_END;
 				list_append(*feature_list, feat);
+
+				has_changeable |= feat->changeable;
 			}
 			break;
 		} else if (feature == NULL) {
@@ -4784,6 +4805,31 @@ static int _feature_string2list(char *features, char *debug_str,
 		goto fini;
 	}
 
+	/*
+	 * If at least one changeable feature is requested, then all the nodes
+	 * in the job allocation need to match the same feature set. Changeable
+	 * feature that request OR are already automatically set to matching OR.
+	 * We need to convert the feature list if a changeable feature is
+	 * requested and:
+	 *
+	 * - Any feature requests OR inside a paren
+	 * - Or a static feature was requested with OR (regardless of paren)
+	 *
+	 * Examples:
+	 * s1 and s2 are static; c1 and c2 are changeable
+	 *
+	 * The following feature expressions do not need to be converted:
+	 * c1|c2
+	 * s1&c1|c2
+	 * c2|(s1&s2)
+	 *
+	 * The following feature expressions need to be converted:
+	 * s1&(c1|c2)
+	 * s1|c1
+	 */
+	*convert_to_matching_or = (has_changeable &&
+				   (has_paren_or || has_static_or));
+
 fini:
 	if (fail)
 		FREE_NULL_LIST(*feature_list);
@@ -4809,6 +4855,7 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 	int rc;
 	int feature_err;
 	bool can_reboot;
+	bool convert_to_matching_or = false;
 	char *debug_str = NULL;
 
 	/* no hard constraints */
@@ -4843,12 +4890,56 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 
 	can_reboot = node_features_g_user_update(job_ptr->user_id);
 	rc = _feature_string2list(features, debug_str, feature_err,
-				  feature_list);
+				  feature_list, &convert_to_matching_or);
 	if (rc != SLURM_SUCCESS) {
 		verbose("%s invalid constraint %s",
 			debug_str, features);
 		rc = ESLURM_INVALID_FEATURE;
 		goto fini;
+	}
+
+	if (convert_to_matching_or) {
+		char *str = NULL;
+		list_t *feature_sets;
+
+		/*
+		 * Restructure the list into a format of AND'ing features in
+		 * parentheses and matching OR each parentheses together. The
+		 * current scheduling logic does not know how to handle matching
+		 * OR inside of parentheses; however, it does know how to handle
+		 * matching OR outside of parentheses, so we restructure the
+		 * feature list to a format the scheduling logic understands.
+		 * This is needed for changeable features which need all nodes
+		 * in the job allocation to match the same feature set, so they
+		 * cannot have any boolean OR in the feature list.
+		 *
+		 * For example, "(a|b)&c" becomes "(a&c)|(b&c)"
+		 *
+		 * Restructure only the feature list; leave the original
+		 * constraint expression intact.
+		 */
+		feature_sets = job_features_list2feature_sets(features,
+							      *feature_list);
+		list_for_each(feature_sets, job_features_set2str, &str);
+		FREE_NULL_LIST(feature_sets);
+		FREE_NULL_LIST(*feature_list);
+		rc = _feature_string2list(str, debug_str,
+					  feature_err, feature_list,
+					  &convert_to_matching_or);
+		if (rc != SLURM_SUCCESS) {
+			/*
+			 * Something went wrong - we should have caught this
+			 * error the first time we called _feature_string2list.
+			 */
+			error("%s: Problem converting feature string %s to matching OR list",
+			      __func__, str);
+			rc = feature_err;
+			xfree(str);
+			goto fini;
+		}
+		log_flag(NODE_FEATURES, "%s: Converted %sfeature list:'%s' to matching OR:'%s'",
+			 __func__, prefer ? "prefer " : "", features, str);
+		xfree(str);
 	}
 
 	if (job_ptr->batch_features) {
