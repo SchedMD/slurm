@@ -189,6 +189,27 @@ static int _list_part_node_lists(void *x, void *arg)
 }
 
 /*
+ * Is it possible to suspend this node
+ */
+static bool _node_state_suspendable(node_record_t *node_ptr)
+{
+	/* Must have idle or down base state */
+	if (!IS_NODE_IDLE(node_ptr) && !IS_NODE_DOWN(node_ptr))
+		return false;
+
+	/* Must not have these flags */
+	if (IS_NODE_COMPLETING(node_ptr) ||
+	    IS_NODE_POWERING_UP(node_ptr) ||
+	    IS_NODE_POWERED_DOWN(node_ptr) ||
+	    IS_NODE_POWERING_DOWN(node_ptr) ||
+	    IS_NODE_REBOOT_ISSUED(node_ptr) ||
+	    IS_NODE_REBOOT_REQUESTED(node_ptr))
+	    return false;
+
+	return true;
+}
+
+/*
  * Select the nodes specific nodes to be excluded from consideration for
  * suspension based upon the node states and specified count. Nodes which
  * can not be used (e.g. ALLOCATED, DOWN, DRAINED, etc.).
@@ -215,13 +236,9 @@ static int _pick_exc_nodes(void *x, void *arg)
 		      next_node_bitmap(ext_part_struct->exc_node_cnt_bitmap,
 				       &i));
 		     i++) {
-			if (!IS_NODE_IDLE(node_ptr)			||
-			    IS_NODE_COMPLETING(node_ptr)		||
+			if (!_node_state_suspendable(node_ptr)		||
 			    IS_NODE_DOWN(node_ptr)			||
 			    IS_NODE_DRAIN(node_ptr)			||
-			    IS_NODE_POWERING_UP(node_ptr)		||
-			    IS_NODE_POWERED_DOWN(node_ptr)		||
-			    IS_NODE_POWERING_DOWN(node_ptr)		||
 			    (node_ptr->sus_job_cnt > 0))
 				continue;
 			bit_set(exc_node_cnt_bitmap, i);
@@ -413,15 +430,9 @@ static void _do_power_work(time_t now)
 		}
 
 		/* Suspend nodes as appropriate */
-		if ((susp_state == 0)					&&
+		if (_node_state_suspendable(node_ptr) &&
 		    ((suspend_rate == 0) || (suspend_cnt < suspend_rate)) &&
-		    (IS_NODE_IDLE(node_ptr) || IS_NODE_DOWN(node_ptr))	&&
 		    (node_ptr->sus_job_cnt == 0)			&&
-		    (!IS_NODE_COMPLETING(node_ptr))			&&
-		    (!IS_NODE_POWERING_UP(node_ptr))			&&
-		    (!IS_NODE_POWERING_DOWN(node_ptr))			&&
-		    (!IS_NODE_REBOOT_ISSUED(node_ptr))			&&
-		    (!IS_NODE_REBOOT_REQUESTED(node_ptr))		&&
 		    (IS_NODE_POWER_DOWN(node_ptr) ||
 		     ((node_ptr->last_busy != 0) &&
 		      (node_ptr->last_busy < (now - node_ptr->suspend_time)) &&
