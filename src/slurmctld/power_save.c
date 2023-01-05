@@ -131,41 +131,35 @@ static void _exc_node_part_free(void *x)
 static int _parse_exc_nodes(void)
 {
 	int rc = SLURM_SUCCESS;
-	char *end_ptr = NULL, *save_ptr = NULL, *sep, *tmp, *tok;
+	char *save_ptr = NULL, *sep, *tmp, *tok, *node_cnt_str;
 
+	/* Shortcut if ":<node_cnt>" is not used */
 	sep = strchr(exc_nodes, ':');
 	if (!sep)
 		return node_name2bitmap(exc_nodes, false, &exc_node_bitmap);
 
 	partial_node_list = list_create(_exc_node_part_free);
 	tmp = xstrdup(exc_nodes);
-	tok = strtok_r(tmp, ":", &save_ptr);
+	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		bitstr_t *exc_node_cnt_bitmap = NULL;
 		long ext_node_cnt = 0;
 		exc_node_partital_t *ext_part_struct;
 
+		if ((node_cnt_str = xstrstr(tok, ":"))) {
+			*node_cnt_str = '\0';
+			ext_node_cnt = strtol(node_cnt_str + 1, NULL, 10);
+		}
 		rc = node_name2bitmap(tok, false, &exc_node_cnt_bitmap);
-		if ((rc != SLURM_SUCCESS) || !exc_node_cnt_bitmap)
-			break;
-		tok = strtok_r(NULL, ",", &save_ptr);
-		if (tok) {
-			ext_node_cnt = strtol(tok, &end_ptr, 10);
-			if ((end_ptr[0] != '\0') || (ext_node_cnt < 1) ||
-			    (ext_node_cnt >
-			     bit_set_count(exc_node_cnt_bitmap))) {
-				FREE_NULL_BITMAP(exc_node_cnt_bitmap);
-				rc = SLURM_ERROR;
-				break;
-			}
-		} else {
+
+		if (!ext_node_cnt) {
 			ext_node_cnt = bit_set_count(exc_node_cnt_bitmap);
 		}
 		ext_part_struct = xmalloc(sizeof(exc_node_partital_t));
 		ext_part_struct->exc_node_cnt = (int) ext_node_cnt;
 		ext_part_struct->exc_node_cnt_bitmap = exc_node_cnt_bitmap;
 		list_append(partial_node_list, ext_part_struct);
-		tok = strtok_r(NULL, ":", &save_ptr);
+		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(tmp);
 	if (rc != SLURM_SUCCESS)
