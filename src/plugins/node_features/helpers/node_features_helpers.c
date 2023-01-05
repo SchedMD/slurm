@@ -552,13 +552,13 @@ extern int node_features_p_job_valid(char *job_features)
 	}
 
 	/* Check for unsupported constraint operators in constraint expression */
-	if (!strpbrk(job_features, "[]()|*"))
+	if (!strpbrk(job_features, "[]*"))
 		return SLURM_SUCCESS;
 
 	/* If an unsupported operator was used, the constraint is valid only if
 	 * the expression doesn't contain a feature handled by this plugin. */
 	if (list_for_each(helper_features, _foreach_feature, job_features) < 0) {
-		error("operator(s) \"[]()|*\" not allowed in constraint \"%s\" when using changeable features",
+		error("operator(s) \"[]*\" not allowed in constraint \"%s\" when using changeable features",
 		      job_features);
 		return ESLURM_INVALID_FEATURE;
 	}
@@ -739,7 +739,7 @@ extern char *node_features_p_job_xlate(char *job_features)
 	if (!job_features)
 		return NULL;
 
-	if (strpbrk(job_features, "[]()|*") != NULL) {
+	if (strpbrk(job_features, "[]*")) {
 		info("an unsupported constraint operator was used in \"%s\", clearing job constraint",
 		     job_features);
 		return NULL;

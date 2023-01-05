@@ -4724,16 +4724,6 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer)
 			}
 			changeable = node_features_g_changeable_feature(
 				feature);
-			if (paren && changeable) {
-				/*
-				 * Most (but not all) of the logic to support
-				 * OR within parenthesis works today except when
-				 * trying to use available (not active) features
-				 * srun -C "(hemi|snc2|snc4|quad)&(flat|cache)" ...
-				 */
-				fail = true;
-				break;
-			}
 			feat = xmalloc(sizeof(job_feature_t));
 			feat->name = xstrdup(feature);
 			feat->changeable = changeable;
