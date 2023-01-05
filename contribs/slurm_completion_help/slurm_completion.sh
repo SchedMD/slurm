@@ -8,11 +8,6 @@
 #   - Accepted values:
 #     - 0 = Disabled -- no call to slurm{ctl,db}d for value completion.
 #     - 1 = Enabled -- will make call to slurm{ctl,db}d. (default)
-# - SLURM_COMP_LIST=[0-1]
-#   - Description: Alter list comprehension completion behavior.
-#   - Accepted values:
-#     - 0 = Manual mode -- manually type ',' to continue list completion.
-#     - 1 = Automatic mode -- uses suffix ','. (default)
 # - SLURM_COMP_HOSTLIST=[0-1]
 #   - Description: Alter slurm hostlist comprehension completion behavior.
 #   - Accepted values:
@@ -358,13 +353,6 @@ function __slurm_compreply_list() {
 		__slurm_log_trace "$(__func__): curlist_hostlist='$curlist_hostlist'"
 	fi
 
-	# simulate old completion script's list behavior
-	if ((SLURM_COMP_LIST == 0)); then
-		_mode="manual"
-		ifs=""
-		suffix=""
-	fi
-
 	__slurm_log_info "$(__func__): Slurm list completion is in $_mode mode."
 	__slurm_log_debug "$(__func__): prefix='$prefix' suffix='$suffix' ifs='$ifs'"
 	__slurm_log_debug "$(__func__): #compreply[@]='${#compreply[@]}'"
@@ -546,7 +534,6 @@ function __slurm_compinit() {
 	SLURM_COMPLOG_FILE="${SLURM_COMPLOG_FILE:-""}"
 	SLURM_COMPLOG_LEVEL="${SLURM_COMPLOG_LEVEL:-3}"
 	SLURM_COMP_VALUE="${SLURM_COMP_VALUE:-1}"
-	SLURM_COMP_LIST="${SLURM_COMP_LIST:-1}"
 	SLURM_COMP_HOSTLIST="${SLURM_COMP_HOSTLIST:-1}"
 
 	__slurm_log_info ""
@@ -554,7 +541,6 @@ function __slurm_compinit() {
 	__slurm_log_info "$(__func__): SLURM_COMPLOG_LEVEL='${SLURM_COMPLOG_LEVEL}'"
 	__slurm_log_info "$(__func__): SLURM_COMPLOG_FILE='$SLURM_COMPLOG_FILE'"
 	__slurm_log_info "$(__func__): SLURM_COMP_VALUE='${SLURM_COMP_VALUE}'"
-	__slurm_log_info "$(__func__): SLURM_COMP_LIST='${SLURM_COMP_LIST}'"
 	__slurm_log_info "$(__func__): SLURM_COMP_HOSTLIST='${SLURM_COMP_HOSTLIST}'"
 
 	__slurm_init_completion || return 1
