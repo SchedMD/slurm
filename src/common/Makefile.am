@@ -47,6 +47,8 @@ libcommon_la_SOURCES =				\
 	http.c					\
 	io_hdr.c				\
 	io_hdr.h				\
+	job_features.c				\
+	job_features.h				\
 	job_options.c				\
 	job_options.h				\
 	job_resources.c				\

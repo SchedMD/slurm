@@ -162,12 +162,12 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	cbuf.lo conmgr.lo cpu_frequency.lo cron.lo daemonize.lo \
 	data.lo eio.lo env.lo fd.lo fetch_config.lo forward.lo \
 	global_defaults.lo group_cache.lo half_duplex.lo hostlist.lo \
-	http.lo io_hdr.lo job_options.lo job_resources.lo list.lo \
-	log.lo net.lo node_conf.lo oci_config.lo optz.lo pack.lo \
-	parse_config.lo parse_time.lo parse_value.lo plugin.lo \
-	plugrack.lo print_fields.lo proc_args.lo read_config.lo \
-	reverse_tree.lo run_command.lo run_in_daemon.lo \
-	setproctitle.lo slurm_errno.lo slurm_opt.lo \
+	http.lo io_hdr.lo job_features.lo job_options.lo \
+	job_resources.lo list.lo log.lo net.lo node_conf.lo \
+	oci_config.lo optz.lo pack.lo parse_config.lo parse_time.lo \
+	parse_value.lo plugin.lo plugrack.lo print_fields.lo \
+	proc_args.lo read_config.lo reverse_tree.lo run_command.lo \
+	run_in_daemon.lo setproctitle.lo slurm_errno.lo slurm_opt.lo \
 	slurm_persist_conn.lo slurm_protocol_api.lo \
 	slurm_protocol_defs.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket.lo \
@@ -215,8 +215,9 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/global_defaults.Plo ./$(DEPDIR)/group_cache.Plo \
 	./$(DEPDIR)/half_duplex.Plo ./$(DEPDIR)/hostlist.Plo \
 	./$(DEPDIR)/http.Plo ./$(DEPDIR)/io_hdr.Plo \
-	./$(DEPDIR)/job_options.Plo ./$(DEPDIR)/job_resources.Plo \
-	./$(DEPDIR)/list.Plo ./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
+	./$(DEPDIR)/job_features.Plo ./$(DEPDIR)/job_options.Plo \
+	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/list.Plo \
+	./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
 	./$(DEPDIR)/node_conf.Plo ./$(DEPDIR)/oci_config.Plo \
 	./$(DEPDIR)/optz.Plo ./$(DEPDIR)/pack.Plo \
 	./$(DEPDIR)/parse_config.Plo ./$(DEPDIR)/parse_time.Plo \
@@ -598,6 +599,8 @@ libcommon_la_SOURCES = \
 	http.c					\
 	io_hdr.c				\
 	io_hdr.h				\
+	job_features.c				\
+	job_features.h				\
 	job_options.c				\
 	job_options.h				\
 	job_resources.c				\
@@ -810,6 +813,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io_hdr.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_features.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_options.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_resources.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list.Plo@am__quote@ # am--include-marker
@@ -1014,6 +1018,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/hostlist.Plo
 	-rm -f ./$(DEPDIR)/http.Plo
 	-rm -f ./$(DEPDIR)/io_hdr.Plo
+	-rm -f ./$(DEPDIR)/job_features.Plo
 	-rm -f ./$(DEPDIR)/job_options.Plo
 	-rm -f ./$(DEPDIR)/job_resources.Plo
 	-rm -f ./$(DEPDIR)/list.Plo
@@ -1138,6 +1143,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/hostlist.Plo
 	-rm -f ./$(DEPDIR)/http.Plo
 	-rm -f ./$(DEPDIR)/io_hdr.Plo
+	-rm -f ./$(DEPDIR)/job_features.Plo
 	-rm -f ./$(DEPDIR)/job_options.Plo
 	-rm -f ./$(DEPDIR)/job_resources.Plo
 	-rm -f ./$(DEPDIR)/list.Plo
