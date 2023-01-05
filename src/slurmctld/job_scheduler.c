@@ -4280,7 +4280,9 @@ extern bitstr_t *node_features_reboot(job_record_t *job_ptr)
 		return NULL;
 
 	reboot_features = node_features_g_job_xlate(
-		job_ptr->details->features_use);
+		job_ptr->details->features_use,
+		job_ptr->details->feature_list_use,
+		job_ptr->node_bitmap);
 	tmp_bitmap = build_active_feature_bitmap2(reboot_features);
 	xfree(reboot_features);
 	boot_node_bitmap = bit_copy(job_ptr->node_bitmap);
@@ -4409,7 +4411,9 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 	    node_features_g_user_update(job_ptr->user_id)) {
 		non_feature_node_bitmap = bit_copy(boot_node_bitmap);
 		reboot_features = node_features_g_job_xlate(
-			job_ptr->details->features_use);
+			job_ptr->details->features_use,
+			job_ptr->details->feature_list_use,
+			job_ptr->node_bitmap);
 		if (reboot_features)
 			feature_node_bitmap = node_features_g_get_node_bitmap();
 		if (feature_node_bitmap)

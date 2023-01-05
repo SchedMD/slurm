@@ -2660,7 +2660,9 @@ extern int node_features_p_job_valid(char *job_features)
  * RET comma-delimited features required on node reboot. Must xfree to release
  *     memory
  */
-extern char *node_features_p_job_xlate(char *job_features)
+extern char *node_features_p_job_xlate(char *job_features,
+				       list_t *feature_list,
+				       bitstr_t *job_node_bitmap)
 {
 	char *node_features = NULL;
 	char *tmp, *save_ptr = NULL, *mult, *sep = "", *tok;

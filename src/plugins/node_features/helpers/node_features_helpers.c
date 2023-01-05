@@ -732,7 +732,9 @@ extern char *node_features_p_node_xlate(char *new_features, char *orig_features,
 	return merged;
 }
 
-extern char *node_features_p_job_xlate(char *job_features)
+extern char *node_features_p_job_xlate(char *job_features,
+				       list_t *feature_list,
+				       bitstr_t *job_node_bitmap)
 {
 	char *node_features = NULL;
 

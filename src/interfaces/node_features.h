@@ -70,7 +70,8 @@ extern int node_features_g_job_valid(char *job_features);
  * RET comma-delimited features required on node reboot. Must xfree to release
  *     memory
  */
-extern char *node_features_g_job_xlate(char *job_features);
+extern char *node_features_g_job_xlate(char *job_features, list_t *feature_list,
+				       bitstr_t *job_node_bitmap);
 
 /* Return bitmap of KNL nodes, NULL if none identified */
 extern bitstr_t *node_features_g_get_node_bitmap(void);

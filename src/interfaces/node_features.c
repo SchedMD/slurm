@@ -55,7 +55,8 @@ typedef struct node_features_ops {
 	bool    (*changeable_feature) (char *feature);
 	int	(*get_node)	(char *node_list);
 	int	(*job_valid)	(char *job_features);
-	char *	(*job_xlate)	(char *job_features);
+	char *	(*job_xlate)	(char *job_features, list_t *feature_list,
+				 bitstr_t *job_node_bitmap);
 	bitstr_t * (*get_node_bitmap) (void);
 	int     (*overlap)      (bitstr_t *active_bitmap);
 	bool	(*node_power)	(void);
@@ -289,7 +290,8 @@ extern int node_features_g_job_valid(char *job_features)
  * RET comma-delimited features required on node reboot. Must xfree to release
  *     memory
  */
-extern char *node_features_g_job_xlate(char *job_features)
+extern char *node_features_g_job_xlate(char *job_features, list_t *feature_list,
+				       bitstr_t *job_node_bitmap)
 {
 	DEF_TIMERS;
 	char *node_features = NULL, *tmp_str;
@@ -299,7 +301,8 @@ extern char *node_features_g_job_xlate(char *job_features)
 	xassert(g_context_cnt >= 0);
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_cnt; i++) {
-		tmp_str = (*(ops[i].job_xlate))(job_features);
+		tmp_str = (*(ops[i].job_xlate))(job_features, feature_list,
+						job_node_bitmap);
 		if (tmp_str) {
 			if (node_features) {
 				xstrfmtcat(node_features, ",%s", tmp_str);
