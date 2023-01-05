@@ -46,7 +46,7 @@
 
 #define FEATURE_OP_OR   0
 #define FEATURE_OP_AND  1
-#define FEATURE_OP_XOR  2
+#define FEATURE_OP_MOR  2
 #define FEATURE_OP_XAND 3
 #define FEATURE_OP_END  4		/* last entry lacks separator */
 
@@ -62,12 +62,12 @@ typedef struct {
 } job_feature_t;
 
 /*
- * This function handles FEATURE_OP_XOR in job_feature_list.
+ * This function handles FEATURE_OP_MOR in job_feature_list.
  * This reads the job_feature_list (made from build_feature_list) and returns
  * a list of lists of job_feature_t. Each feature list is a set of features
  * that could be valid for the job. This is used for job feature expressions
  * that contain at least one changeable node feature where every bar ('|')
- * character is treated as FEATURE_OP_XOR (including '|' inside of
+ * character is treated as FEATURE_OP_MOR (including '|' inside of
  * parentheses), not FEATURE_OP_OR. This is done because it does not make sense
  * to allow a mix of features in a job allocation. For example, if a job
  * requests:

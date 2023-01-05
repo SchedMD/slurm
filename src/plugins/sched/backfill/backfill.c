@@ -242,7 +242,7 @@ static bool _many_pending_rpcs(void);
 static bool _more_work(time_t last_backfill_time);
 static uint32_t _my_sleep(int64_t usec);
 static int  _num_feature_count(job_record_t *job_ptr, bool *has_xand,
-			       bool *has_xor);
+			       bool *has_mor);
 static int  _het_job_find_map(void *x, void *key);
 static void _het_job_map_del(void *x);
 static void _het_job_start_clear(void);
@@ -353,11 +353,11 @@ static bool _many_pending_rpcs(void)
  * Report summary of job's feature specification
  * IN job_ptr - job to schedule
  * OUT has_xand - true if features are XANDed together
- * OUT has_xor - true if features are XORed together
+ * OUT has_mor - true if features are MORed together
  * RET Total count for ALL job features, even counts with XAND separator
  */
 static int _num_feature_count(job_record_t *job_ptr, bool *has_xand,
-			      bool *has_xor)
+			      bool *has_mor)
 {
 	struct job_details *detail_ptr = job_ptr->details;
 	int rc = 0;
@@ -365,7 +365,7 @@ static int _num_feature_count(job_record_t *job_ptr, bool *has_xand,
 	job_feature_t *feat_ptr;
 
 	*has_xand = false;
-	*has_xor = false;
+	*has_mor = false;
 	if (detail_ptr->feature_list_use == NULL)	/* no constraints */
 		return rc;
 
@@ -375,8 +375,8 @@ static int _num_feature_count(job_record_t *job_ptr, bool *has_xand,
 			rc++;
 		if (feat_ptr->op_code == FEATURE_OP_XAND)
 			*has_xand = true;
-		if (feat_ptr->op_code == FEATURE_OP_XOR)
-			*has_xor = true;
+		if (feat_ptr->op_code == FEATURE_OP_MOR)
+			*has_mor = true;
 	}
 	list_iterator_destroy(feat_iter);
 
@@ -404,8 +404,8 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 {
 	bitstr_t *low_bitmap = NULL, *tmp_bitmap = NULL;
 	int rc = SLURM_SUCCESS;
-	bool has_xand = false, has_xor = false;
-	int feat_cnt = _num_feature_count(job_ptr, &has_xand, &has_xor);
+	bool has_xand = false, has_mor = false;
+	int feat_cnt = _num_feature_count(job_ptr, &has_xand, &has_mor);
 	struct job_details *detail_ptr = job_ptr->details;
 	List feature_cache = detail_ptr->feature_list_use;
 	List preemptee_candidates = NULL;
@@ -518,7 +518,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 
 		/* Restore the original feature information */
 		detail_ptr->feature_list_use = feature_cache;
-	} else if (has_xor) {
+	} else if (has_mor) {
 		/*
 		 * Cache the feature information and test the individual
 		 * features (or sets of features in parenthesis), one at a time

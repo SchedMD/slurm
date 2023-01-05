@@ -4738,11 +4738,11 @@ static int _have_xand_feature(void *x, void *key)
 	return 0;
 }
 
-static int _have_xor_feature(void *x, void *key)
+static int _have_mor_feature(void *x, void *key)
 {
 	job_feature_t *feat_ptr = (job_feature_t *) x;
 
-	if (feat_ptr->op_code == FEATURE_OP_XOR)
+	if (feat_ptr->op_code == FEATURE_OP_MOR)
 		return 1;
 	return 0;
 }
@@ -4945,7 +4945,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		rc = build_feature_list(job_ptr, false, true);
 		if ((rc == SLURM_SUCCESS) &&
 		    list_find_first(job_ptr->details->feature_list,
-				    _have_xor_feature, &dummy)) {
+				    _have_mor_feature, &dummy)) {
 			rc = ESLURM_INVALID_FEATURE;
 		} else {
 			find_feature_nodes(job_ptr->details->feature_list,

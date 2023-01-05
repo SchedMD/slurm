@@ -4279,7 +4279,7 @@ extern bitstr_t *node_features_reboot(job_record_t *job_ptr,
 	FREE_NULL_BITMAP(active_bitmap);
 
 	/*
-	 * If some XOR/XAND option, filter out only first set of features
+	 * If some MOR/XAND option, filter out only first set of features
 	 * for NodeFeaturesPlugin
 	 */
 	feature_node_bitmap = node_features_g_get_node_bitmap();
@@ -4740,7 +4740,7 @@ static int _feature_string2list(char *features, char *debug_str,
 				feat->op_code = FEATURE_OP_OR;
 			else if (bracket || changeable ||
 				 (*convert_to_matching_or))
-				feat->op_code = FEATURE_OP_XOR;
+				feat->op_code = FEATURE_OP_MOR;
 			else
 				feat->op_code = FEATURE_OP_OR;
 			list_append(*feature_list, feat);
@@ -5049,7 +5049,7 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 	char *buf = NULL;
 	int bracket = 0, paren = 0;
 	int rc = SLURM_SUCCESS;
-	bool has_xand = false, has_xor = false;
+	bool has_xand = false, has_mor = false;
 
 	if (feature_list == NULL) {
 		debug2("%s feature list is empty", debug_str);
@@ -5067,7 +5067,7 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 
 	feat_iter = list_iterator_create(feature_list);
 	while ((feat_ptr = list_next(feat_iter))) {
-		if ((feat_ptr->op_code == FEATURE_OP_XOR) ||
+		if ((feat_ptr->op_code == FEATURE_OP_MOR) ||
 		    (feat_ptr->op_code == FEATURE_OP_XAND)) {
 			if (bracket == 0)
 				xstrcat(buf, "[");
@@ -5090,29 +5090,29 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 			xstrfmtcat(buf, "*%u", feat_ptr->count);
 		if (feat_ptr->op_code == FEATURE_OP_XAND && !feat_ptr->count)
 			rc = ESLURM_INVALID_FEATURE;
-		if (feat_ptr->op_code == FEATURE_OP_XOR && feat_ptr->count)
+		if (feat_ptr->op_code == FEATURE_OP_MOR && feat_ptr->count)
 			rc = ESLURM_INVALID_FEATURE;
 		if ((bracket > paren) &&
-		    ((feat_ptr->op_code != FEATURE_OP_XOR) &&
+		    ((feat_ptr->op_code != FEATURE_OP_MOR) &&
 		     (feat_ptr->op_code != FEATURE_OP_XAND))) {
 			if ((has_xand && !feat_ptr->count) ||
-			    (has_xor && feat_ptr->count))
+			    (has_mor && feat_ptr->count))
 				rc = ESLURM_INVALID_FEATURE;
 			xstrcat(buf, "]");
 			bracket = 0;
 			has_xand = false;
-			has_xor = false;
+			has_mor = false;
 		}
 		if ((feat_ptr->op_code == FEATURE_OP_AND) ||
 		    (feat_ptr->op_code == FEATURE_OP_XAND))
 			xstrcat(buf, "&");
 		else if ((feat_ptr->op_code == FEATURE_OP_OR) ||
-			 (feat_ptr->op_code == FEATURE_OP_XOR))
+			 (feat_ptr->op_code == FEATURE_OP_MOR))
 			xstrcat(buf, "|");
 		if (feat_ptr->op_code == FEATURE_OP_XAND)
 			has_xand = true;
-		if (feat_ptr->op_code == FEATURE_OP_XOR)
-			has_xor = true;
+		if (feat_ptr->op_code == FEATURE_OP_MOR)
+			has_mor = true;
 	}
 	list_iterator_destroy(feat_iter);
 

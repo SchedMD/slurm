@@ -265,7 +265,7 @@ static int _evaluate_job_feature(void *x, void *arg)
 
 	/* Always do matching OR logic */
 	if ((args->last_op == FEATURE_OP_OR) ||
-	    (args->last_op == FEATURE_OP_XOR)) {
+	    (args->last_op == FEATURE_OP_MOR)) {
 		/* New list */
 		/* Each list-node is a pointer - nothing to free */
 		args->tmp_feature_list = list_create(NULL);
@@ -309,7 +309,7 @@ static int _evaluate_job_feature(void *x, void *arg)
 		 * OR: Transfer paren_lists to feature_sets.
 		 */
 		if ((args->last_paren_op == FEATURE_OP_OR) ||
-		    (args->last_paren_op == FEATURE_OP_XOR)) {
+		    (args->last_paren_op == FEATURE_OP_MOR)) {
 			list_transfer(args->feature_sets,
 				      args->paren_lists);
 		} else { /* FEATURE_OP_AND, other ops not supported */

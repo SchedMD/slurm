@@ -1711,7 +1711,7 @@ extern bool job_independent(job_record_t *job_ptr);
  *	clear from a bitmap the nodes which can not be used for a job
  *	test memory size, required features, processor count, etc.
  * NOTE: Does not support exclusive OR of features.
- *	It just matches first element of XOR and ignores count.
+ *	It just matches first element of MOR and ignores count.
  * IN job_ptr - pointer to node to be scheduled
  * IN/OUT bitmap - set of nodes being considered for use
  * RET SLURM_SUCCESS or EINVAL if can't filter (exclusive OR of features)

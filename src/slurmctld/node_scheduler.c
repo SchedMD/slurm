@@ -93,7 +93,7 @@
 struct node_set {		/* set of nodes with same configuration */
 	uint16_t cpus_per_node;	/* NOTE: This is the minimum count */
 	char     *features;		/* Node features */
-	bitstr_t *feature_bits;		/* XORed feature's position */
+	bitstr_t *feature_bits;		/* MORed feature's position */
 	uint32_t flags;			/* See NODE_SET_* below */
 	bitstr_t *my_bitmap;		/* Node bitmap */
 	uint32_t node_cnt;		/* Node count */
@@ -488,8 +488,8 @@ static void _log_feature_nodes(job_feature_t  *job_feat_ptr)
 		tmp3 = "OR";
 	else if (job_feat_ptr->op_code == FEATURE_OP_AND)
 		tmp3 = "AND";
-	else if (job_feat_ptr->op_code == FEATURE_OP_XOR)
-		tmp3 = "XOR";
+	else if (job_feat_ptr->op_code == FEATURE_OP_MOR)
+		tmp3 = "MOR";
 	else if (job_feat_ptr->op_code == FEATURE_OP_XAND)
 		tmp3 = "XAND";
 	else if (job_feat_ptr->op_code == FEATURE_OP_END)
@@ -561,7 +561,7 @@ extern void find_feature_nodes(List feature_list, bool can_reboot)
  * IN feature_list - Job's feature request list
  * OUT inactive_bitmap - Nodes with this as inactive feature
  * RET 1 if some nodes with this inactive feature, 0 no inactive feature
- * NOTE: Currently fully supports only AND/OR of features, not XAND/XOR
+ * NOTE: Currently fully supports only AND/OR of features, not XAND/MOR
  */
 static int _match_feature(List feature_list, bitstr_t **inactive_bitmap)
 {
@@ -597,7 +597,7 @@ static int _match_feature(List feature_list, bitstr_t **inactive_bitmap)
 			} else if (last_op == FEATURE_OP_OR) {
 				bit_or(work_bitmap,
 				       job_feat_ptr->node_bitmap_active);
-			} else {	/* FEATURE_OP_XOR or FEATURE_OP_XAND */
+			} else {	/* FEATURE_OP_MOR or FEATURE_OP_XAND */
 				bit_and(work_bitmap,
 				        job_feat_ptr->node_bitmap_active);
 			}
@@ -613,7 +613,7 @@ static int _match_feature(List feature_list, bitstr_t **inactive_bitmap)
 				bit_and(feature_bitmap, work_bitmap);
 			} else if (last_paren_op == FEATURE_OP_OR) {
 				bit_or(feature_bitmap, work_bitmap);
-			} else {	/* FEATURE_OP_XOR or FEATURE_OP_XAND */
+			} else {	/* FEATURE_OP_MOR or FEATURE_OP_XAND */
 				bit_and(feature_bitmap, work_bitmap);
 			}
 			work_bitmap = feature_bitmap;
@@ -649,7 +649,7 @@ static int _match_feature(List feature_list, bitstr_t **inactive_bitmap)
  * IN avail_bitmap - nodes currently available for this job
  * OUT active_bitmap - nodes with job's features currently active, NULL if
  *	identical to avail_bitmap
- * NOTE: Currently fully supports only AND/OR of features, not XAND/XOR
+ * NOTE: Currently fully supports only AND/OR of features, not XAND/MOR
  */
 extern void build_active_feature_bitmap(job_record_t *job_ptr,
 					bitstr_t *avail_bitmap,
@@ -3116,16 +3116,16 @@ extern int list_find_feature(void *feature_entry, void *key)
 
 /*
  * valid_feature_counts - validate a job's features can be satisfied
- *	by the selected nodes (NOTE: does not process XOR or XAND operators)
+ *	by the selected nodes (NOTE: does not process MOR or XAND operators)
  * IN job_ptr - job to operate on
  * IN use_active - if set, then only consider nodes with the identified features
  *	active, otherwise use available features
  * IN/OUT node_bitmap - nodes available for use, clear if unusable
- * OUT has_xor - set if XOR/XAND found in feature expression
+ * OUT has_mor - set if MOR/XAND found in feature expression
  * RET SLURM_SUCCESS or error
  */
 extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
-				bitstr_t *node_bitmap, bool *has_xor)
+				bitstr_t *node_bitmap, bool *has_mor)
 {
 	struct job_details *detail_ptr = job_ptr->details;
 	ListIterator job_feat_iter;
@@ -3141,7 +3141,7 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 
 	xassert(detail_ptr);
 	xassert(node_bitmap);
-	xassert(has_xor);
+	xassert(has_mor);
 
 	/*
 	 * This is used in two different ways.  1 to pick nodes where
@@ -3156,7 +3156,7 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 		features = detail_ptr->features;
 	}
 
-	*has_xor = false;
+	*has_mor = false;
 	if (!feature_list)	/* no constraints */
 		return rc;
 
@@ -3191,7 +3191,7 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 			tmp_bitmap = job_feat_ptr->node_bitmap_avail;
 		if (tmp_bitmap) {
 			/*
-			 * Here we need to use the current feature for XOR/AND
+			 * Here we need to use the current feature for MOR/AND
 			 * not the last_op.  For instance fastio&[xeon|nehalem]
 			 * should ignore xeon (in valid_feature_count), but if
 			 * would be based on last_op it will see AND operation.
@@ -3199,9 +3199,9 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 			 * options, not for the end as done in the last_paren
 			 * check below.
 			 */
-			if ((job_feat_ptr->op_code == FEATURE_OP_XOR) ||
+			if ((job_feat_ptr->op_code == FEATURE_OP_MOR) ||
 			    (job_feat_ptr->op_code == FEATURE_OP_XAND)) {
-				*has_xor = true;
+				*has_mor = true;
 			} else if (last_op == FEATURE_OP_AND) {
 				bit_and(work_bitmap, tmp_bitmap);
 			} else if (last_op == FEATURE_OP_OR) {
@@ -3220,8 +3220,8 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 				bit_and(feature_bitmap, work_bitmap);
 			} else if (last_paren_op == FEATURE_OP_OR) {
 				bit_or(feature_bitmap, work_bitmap);
-			} else {	/* FEATURE_OP_XOR or FEATURE_OP_XAND */
-				*has_xor = true;
+			} else {	/* FEATURE_OP_MOR or FEATURE_OP_XAND */
+				*has_mor = true;
 				bit_or(feature_bitmap, work_bitmap);
 			}
 			FREE_NULL_BITMAP(paren_bitmap);
@@ -3252,8 +3252,8 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		char *tmp = bitmap2node_name(node_bitmap);
-		log_flag(NODE_FEATURES, "%s: NODES:%s HAS_XOR:%c status:%s",
-			 __func__, tmp, (*has_xor ? 'T' : 'F'),
+		log_flag(NODE_FEATURES, "%s: NODES:%s HAS_MOR:%c status:%s",
+			 __func__, tmp, (*has_mor ? 'T' : 'F'),
 			 slurm_strerror(rc));
 		xfree(tmp);
 	}
@@ -3266,7 +3266,7 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
  *	clear from a bitmap the nodes which can not be used for a job
  *	test memory size, required features, processor count, etc.
  * NOTE: Does not support exclusive OR of features.
- *	It just matches first element of XOR and ignores count.
+ *	It just matches first element of MOR and ignores count.
  * IN job_ptr - pointer to node to be scheduled
  * IN/OUT bitmap - set of nodes being considered for use
  * RET SLURM_SUCCESS or EINVAL if can't filter (exclusive OR of features)
@@ -3277,7 +3277,7 @@ extern int job_req_node_filter(job_record_t *job_ptr,
 	struct job_details *detail_ptr = job_ptr->details;
 	multi_core_data_t *mc_ptr;
 	node_record_t *node_ptr;
-	bool has_xor = false;
+	bool has_mor = false;
 
 	if (detail_ptr == NULL) {
 		error("%s: %pJ has no details",
@@ -3311,7 +3311,7 @@ extern int job_req_node_filter(job_record_t *job_ptr,
 		}
 	}
 
-	return valid_feature_counts(job_ptr, false, avail_bitmap, &has_xor);
+	return valid_feature_counts(job_ptr, false, avail_bitmap, &has_mor);
 }
 
 /*
@@ -3385,7 +3385,7 @@ static int _build_node_list(job_record_t *job_ptr,
 	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
 	bitstr_t *tmp_feature;
 	bitstr_t *grp_node_bitmap;
-	bool has_xor = false;
+	bool has_mor = false;
 	bool resv_overlap = false;
 	bitstr_t *node_maps[NM_TYPES] = { NULL, NULL, NULL, NULL, NULL, NULL };
 	bitstr_t *reboot_bitmap = NULL;
@@ -3452,7 +3452,7 @@ static int _build_node_list(job_record_t *job_ptr,
 	}
 
 	if ((rc = valid_feature_counts(job_ptr, false, usable_node_mask,
-				       &has_xor))) {
+				       &has_mor))) {
 		info("%pJ feature requirements can not be satisfied: %s",
 		     job_ptr, slurm_strerror(rc));
 		FREE_NULL_BITMAP(usable_node_mask);
@@ -3527,11 +3527,11 @@ static int _build_node_list(job_record_t *job_ptr,
 			continue;
 		}
 
-		if (has_xor) {
+		if (has_mor) {
 			tmp_feature = _valid_features(job_ptr, config_ptr,
 						      can_reboot, reboot_bitmap);
 			if (tmp_feature == NULL) {
-				debug2("%s: JobId=%u matched 0 nodes (%s) due to XOR job features",
+				debug2("%s: JobId=%u matched 0 nodes (%s) due to MOR job features",
 				       __func__, job_ptr->job_id,
 				       config_ptr->nodes);
 				FREE_NULL_BITMAP(node_set_ptr[node_set_inx].
@@ -3580,7 +3580,7 @@ static int _build_node_list(job_record_t *job_ptr,
 
 		/* Identify the nodes that need reboot for use */
 		if (!test_only && can_reboot) {
-			if (has_xor) {
+			if (has_mor) {
 				node_maps[REBOOT] = bit_copy(reboot_bitmap);
 			} else {
 				(void) _match_feature(
@@ -4139,7 +4139,7 @@ extern int pick_batch_host(job_record_t *job_ptr)
 
 /*
  * _valid_features - Determine if the requested features are satisfied by
- *	the available nodes. This is only used for XOR operators.
+ *	the available nodes. This is only used for MOR operators.
  * IN job_ptr - job being scheduled
  * IN config_ptr - node's configuration record
  * IN can_reboot - if true node can use any available feature,
@@ -4224,11 +4224,11 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 			      __func__, job_ptr, details_ptr->features_use);
 		}
 		if ((job_feat_ptr->op_code == FEATURE_OP_XAND) ||
-		    (job_feat_ptr->op_code == FEATURE_OP_XOR)  ||
+		    (job_feat_ptr->op_code == FEATURE_OP_MOR)  ||
 		    ((job_feat_ptr->op_code != FEATURE_OP_XAND) &&
-		     (job_feat_ptr->op_code != FEATURE_OP_XOR)  &&
+		     (job_feat_ptr->op_code != FEATURE_OP_MOR)  &&
 		     ((last_op == FEATURE_OP_XAND) ||
-		      (last_op == FEATURE_OP_XOR)))) {
+		      (last_op == FEATURE_OP_MOR)))) {
 			if (bit_overlap_any(config_ptr->node_bitmap,
 					    working_node_bitmap)) {
 				if (!result_node_bitmap)
@@ -4260,7 +4260,7 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 		bit_fmt(tmp, sizeof(tmp), result_node_bitmap);
 	else
 		snprintf(tmp, sizeof(tmp), "NONE");
-	info("CONFIG_FEATURE:%s FEATURE_XOR_BITS:%s", config_ptr->feature, tmp);
+	info("CONFIG_FEATURE:%s FEATURE_MOR_BITS:%s", config_ptr->feature, tmp);
 	if (reboot_bitmap && (bit_ffs(reboot_bitmap) >= 0)) {
 		char *reboot_node_str = bitmap2node_name(reboot_bitmap);
 		info("REBOOT_NODES:%s", reboot_node_str);
