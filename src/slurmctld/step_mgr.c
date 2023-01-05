@@ -2625,6 +2625,15 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("_step_dealloc_lps: node index bad");
 
+		/*
+		 * We need to free GRES structures regardless of overlap.
+		 */
+		gres_ctld_step_dealloc(step_ptr->gres_list_alloc,
+				       job_ptr->gres_list_alloc, job_ptr->job_id,
+				       step_ptr->step_id.step_id,
+				       job_node_inx,
+				       !(step_ptr->flags & SSF_OVERLAP_FORCE));
+
 		if (step_ptr->flags & SSF_OVERLAP_FORCE) {
 			log_flag(STEPS, "step dealloc on job node %d (%s); did not count against job allocation",
 				 job_node_inx,
@@ -2727,11 +2736,6 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		}
 		FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
 	}
-
-	gres_ctld_step_dealloc(step_ptr->gres_list_alloc,
-			       job_ptr->gres_list_alloc, job_ptr->job_id,
-			       step_ptr->step_id.step_id,
-			       !(step_ptr->flags & SSF_OVERLAP_FORCE));
 }
 
 static int _test_strlen(char *test_str, char *str_name, int max_str_len)

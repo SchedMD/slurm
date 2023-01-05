@@ -263,6 +263,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
  * IN step_gres_list_alloc - step's list of allocated gres
  * IN job_gres_list - job's allocated gres_list built by gres_ctld_job_alloc()
  * IN job_id, step_id - ID of the step being allocated.
+ * IN node_offset - job's zero-origin index to the node of interest
  * IN decr_job_alloc - whether or not to decrement the step allocation from the
  *                     job allocation.
  * RET SLURM_SUCCESS or error code
@@ -270,6 +271,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 extern int gres_ctld_step_dealloc(List step_gres_list_alloc,
 				  List job_gres_list,
 				  uint32_t job_id, uint32_t step_id,
+				  int node_offset,
 				  bool decr_job_alloc);
 
 /*
