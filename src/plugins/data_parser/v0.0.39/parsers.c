@@ -5721,7 +5721,6 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.model = PARSER_MODEL_LIST,                                    \
 		.type = DATA_PARSER_##typev,                                   \
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
-		.ptr_offset = NO_VAL,                                          \
 		.obj_type_string = XSTRINGIFY(List),                           \
 		.list_type = DATA_PARSER_##typel,                              \
 		.list_del_func = delf,                                         \
