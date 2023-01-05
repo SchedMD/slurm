@@ -2312,21 +2312,6 @@ static int _step_alloc_type(gres_state_t *gres_state_job,
 	return 0;
 }
 
-/*
- * Allocate resource to a step and update job and step gres information
- * IN step_gres_list - step's gres_list built by
- *		gres_step_state_validate()
- * OUT step_gres_list_alloc - step's list of allocated gres
- * IN job_gres_list - job's allocated gres_list built by gres_ctld_job_alloc()
- * IN node_offset - job's zero-origin index to the node of interest
- * IN first_step_node - true if this is the first node in the step's allocation
- * IN tasks_on_node - number of tasks to be launched on this node
- * IN rem_nodes - desired additional node count to allocate, including this node
- * IN job_id, step_id - ID of the step being allocated.
- * IN node_gres_list - node's gres list
- * IN core_bitmap - bitmap of all cores available for the step
- * RET SLURM_SUCCESS or error code
- */
 extern int gres_ctld_step_alloc(List step_gres_list,
 				List *step_gres_list_alloc,
 				List job_gres_list,
@@ -2526,13 +2511,6 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 	return SLURM_SUCCESS;
 }
 
-/*
- * Deallocate resource to a step and update job and step gres information
- * IN step_gres_list_alloc - steps's list for allocated gres.
- * IN job_gres_list - job's allocated gres_list built by gres_ctld_job_alloc()
- * IN job_id, step_id - ID of the step being allocated.
- * RET SLURM_SUCCESS or error code
- */
 extern int gres_ctld_step_dealloc(List step_gres_list, List job_gres_list,
 				  uint32_t job_id, uint32_t step_id,
 				  int node_offset,
