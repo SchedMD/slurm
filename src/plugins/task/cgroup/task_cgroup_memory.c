@@ -105,7 +105,7 @@ extern int task_cgroup_memory_init(void)
 	max_kmem_percent = slurm_cgroup_conf.max_kmem_percent;
 	min_kmem_space = slurm_cgroup_conf.min_kmem_space * 1024 * 1024;
 
-	debug("task/cgroup/memory: total:%"PRIu64"M allowed:%.4g%%(%s), "
+	debug("task/cgroup/memory: TotCfgRealMem:%"PRIu64"M allowed:%.4g%%(%s), "
 	      "swap:%.4g%%(%s), max:%.4g%%(%"PRIu64"M) "
 	      "max+swap:%.4g%%(%"PRIu64"M) min:%"PRIu64"M "
 	      "kmem:%.4g%%(%"PRIu64"M %s) min:%"PRIu64"M ",
