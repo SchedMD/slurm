@@ -4640,67 +4640,28 @@ extern List feature_list_copy(List feature_list_src)
 	return feature_list_dest;
 }
 
-/*
- * build_feature_list - Translate a job's feature string into a feature_list
- * NOTE: This function is also used for reservations if is_reservation is true
- * and for job_desc_msg_t if job_id == 0
- * IN  details->features
- * OUT details->feature_list
- * RET error code
- */
-extern int build_feature_list(job_record_t *job_ptr, bool prefer,
-			      bool is_reservation)
+static int _feature_string2list(char *features, char *debug_str,
+				int feature_err, list_t **feature_list)
 {
-	struct job_details *detail_ptr = job_ptr->details;
-	char *tmp_requested, *str_ptr, *feature = NULL;
-	char *features;
-	List *feature_list;
-	int feature_err;
-	int bracket = 0, count = 0, i, paren = 0, rc;
+	int rc = SLURM_SUCCESS;
+	int bracket = 0, count = 0, i, paren = 0;
 	int brack_set_count = 0;
+	char *tmp_requested;
+	char *str_ptr, *feature = NULL;
 	bool fail = false;
-	job_feature_t *feat;
-	bool can_reboot;
-	char *debug_str = NULL;
 
-	/* no hard constraints */
-	if (!detail_ptr || (!detail_ptr->features && !detail_ptr->prefer)) {
-		if (job_ptr->batch_features)
-			return ESLURM_BATCH_CONSTRAINT;
-		return SLURM_SUCCESS;
-	}
-
-	if (prefer) {
-		features = detail_ptr->prefer;
-		feature_list = &detail_ptr->prefer_list;
-		feature_err = ESLURM_INVALID_PREFER;
-	} else {
-		features = detail_ptr->features;
-		feature_list = &detail_ptr->feature_list;
-		feature_err = ESLURM_INVALID_FEATURE;
-	}
-
-	if (!features) /* The other constraint is non NULL. */
-		return SLURM_SUCCESS;
-
-	if (*feature_list)		/* already processed */
-		return SLURM_SUCCESS;
+	xassert(feature_list);
 
 	/* Use of commas separator is a common error. Replace them with '&' */
 	while ((str_ptr = strstr(features, ",")))
 		str_ptr[0] = '&';
 
-	if (is_reservation)
-		debug_str = xstrdup("Reservation");
-	else if (!job_ptr->job_id)
-		debug_str = xstrdup("Job specs");
-	else
-		debug_str = xstrdup_printf("%pJ", job_ptr);
-
-	can_reboot = node_features_g_user_update(job_ptr->user_id);
 	tmp_requested = xstrdup(features);
 	*feature_list = list_create(feature_list_delete);
+
 	for (i = 0; ; i++) {
+		job_feature_t *feat;
+
 		if (tmp_requested[i] == '*') {
 			tmp_requested[i] = '\0';
 			count = strtol(&tmp_requested[i+1], &str_ptr, 10);
@@ -4803,15 +4764,10 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 			feature = &tmp_requested[i];
 		}
 	}
-	if (fail) {
-		verbose("%s invalid constraint %s",
-			debug_str, features);
-		rc = ESLURM_INVALID_FEATURE;
-		goto fini;
-	}
+
 	if (brack_set_count > 1) {
 		verbose("%s constraint has more than one set of brackets: %s",
-			debug_str, detail_ptr->features);
+			debug_str, features);
 		rc = ESLURM_INVALID_FEATURE;
 		goto fini;
 	}
@@ -4825,6 +4781,73 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 		verbose("%s constraint has unbalanced parenthesis: %s",
 			debug_str, features);
 		rc = feature_err;
+		goto fini;
+	}
+
+fini:
+	if (fail)
+		FREE_NULL_LIST(*feature_list);
+	xfree(tmp_requested);
+
+	return rc;
+}
+
+/*
+ * build_feature_list - Translate a job's feature string into a feature_list
+ * NOTE: This function is also used for reservations if is_reservation is true
+ * and for job_desc_msg_t if job_id == 0
+ * IN  details->features
+ * OUT details->feature_list
+ * RET error code
+ */
+extern int build_feature_list(job_record_t *job_ptr, bool prefer,
+			      bool is_reservation)
+{
+	struct job_details *detail_ptr = job_ptr->details;
+	char *features;
+	list_t **feature_list;
+	int rc;
+	int feature_err;
+	bool can_reboot;
+	char *debug_str = NULL;
+
+	/* no hard constraints */
+	if (!detail_ptr || (!detail_ptr->features && !detail_ptr->prefer)) {
+		if (job_ptr->batch_features)
+			return ESLURM_BATCH_CONSTRAINT;
+		return SLURM_SUCCESS;
+	}
+
+	if (prefer) {
+		features = detail_ptr->prefer;
+		feature_list = &detail_ptr->prefer_list;
+		feature_err = ESLURM_INVALID_PREFER;
+	} else {
+		features = detail_ptr->features;
+		feature_list = &detail_ptr->feature_list;
+		feature_err = ESLURM_INVALID_FEATURE;
+	}
+
+	if (!features) /* The other constraint is non NULL. */
+		return SLURM_SUCCESS;
+
+	if (*feature_list)		/* already processed */
+		return SLURM_SUCCESS;
+
+	if (is_reservation)
+		debug_str = xstrdup("Reservation");
+	else if (!job_ptr->job_id)
+		debug_str = xstrdup("Job specs");
+	else
+		debug_str = xstrdup_printf("%pJ", job_ptr);
+
+	can_reboot = node_features_g_user_update(job_ptr->user_id);
+	rc = _feature_string2list(features, debug_str, feature_err,
+				  feature_list);
+	if (rc != SLURM_SUCCESS) {
+		verbose("%s invalid constraint %s",
+			debug_str, features);
+		rc = ESLURM_INVALID_FEATURE;
 		goto fini;
 	}
 
@@ -4847,7 +4870,6 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 
 fini:
 	xfree(debug_str);
-	xfree(tmp_requested);
 	return rc;
 }
 
