@@ -604,9 +604,10 @@ static int _parse_frontend(void **dest, slurm_parser_enum_t type,
 
 		if (!s_p_get_uint16(&n->port, "Port", tbl) &&
 		    !s_p_get_uint16(&n->port, "Port", dflt)) {
-			/* This gets resolved in slurm_conf_get_port()
-			 * and slurm_conf_get_addr(). For now just
-			 * leave with a value of zero */
+			/*
+			 * This gets resolved in slurm_conf_get_addr().
+			 * For now just leave with a value of zero.
+			 */
 			n->port = 0;
 		}
 
@@ -763,9 +764,10 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 
 		if (!s_p_get_string(&n->port_str, "Port", tbl) &&
 		    !s_p_get_string(&n->port_str, "Port", dflt)) {
-			/* This gets resolved in slurm_conf_get_port()
-			 * and slurm_conf_get_addr(). For now just
-			 * leave with a value of NULL */
+			/*
+			 * This gets resolved in slurm_conf_get_addr().
+			 * For now just leave with a value of NULL.
+			 */
 		}
 
 		if (!s_p_get_uint16(&n->cpus, "CPUs",  tbl)  &&
