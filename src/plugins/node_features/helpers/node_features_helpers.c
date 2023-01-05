@@ -644,14 +644,37 @@ static int _foreach_feature(void *x, void *y)
 	return 0;
 }
 
+static int _has_exclusive_features(void *x, void *arg)
+{
+	List feature_list = x;
+	char *str = NULL;
+	int rc = 0;
+
+	job_features_set2str(feature_list, &str);
+	log_flag(NODE_FEATURES, "Testing if feature list %s has exclusive features",
+		 str);
+
+	if (list_count(feature_list) > 1)
+		rc = list_for_each(helper_exclusives, _count_exclusivity, str);
+	xfree(str);
+
+	return rc;
+}
+
 extern int node_features_p_job_valid(char *job_features, list_t *feature_list)
 {
+	List feature_sets;
+	int rc;
+
 	if (!job_features)
 		return SLURM_SUCCESS;
 
 	/* Check the mutually exclusive lists */
-	if (list_for_each(helper_exclusives, _count_exclusivity,
-			  job_features) < 0) {
+	feature_sets = job_features_list2feature_sets(job_features,
+						      feature_list);
+	rc = list_for_each(feature_sets, _has_exclusive_features, NULL);
+	FREE_NULL_LIST(feature_sets);
+	if (rc < 0) {
 		error("job requests mutually exclusive features");
 		return ESLURM_INVALID_FEATURE;
 	}
