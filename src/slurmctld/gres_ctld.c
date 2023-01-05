@@ -2426,7 +2426,7 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 	gres_step_state_t *gres_ss =
 		(gres_step_state_t *)gres_state_step->gres_data;
 	gres_job_state_t *gres_js;
-	uint32_t i = node_offset, j;
+	uint32_t j;
 	uint64_t gres_cnt;
 	int len_j, len_s;
 	gres_key_t job_search_key;
@@ -2440,7 +2440,7 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 		job_search_key.type_id = gres_ss->type_id;
 	else
 		job_search_key.type_id = NO_VAL;
-	job_search_key.node_offset = i;
+	job_search_key.node_offset = node_offset;
 	if (!(gres_state_job = list_find_first(
 		      job_gres_list,
 		      gres_find_job_by_key_with_cnt,
@@ -2452,7 +2452,7 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 		xassert(!gres_ss->node_in_use);
 		xassert(!gres_ss->gres_bit_alloc);
 		return SLURM_SUCCESS;
-	} else if (gres_js->node_cnt < i) {
+	} else if (gres_js->node_cnt < node_offset) {
 		/*
 		 * gres_find_job_by_key_with_cnt() already does this
 		 * check so we should never get here, but here as a
@@ -2467,18 +2467,18 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 		return SLURM_ERROR;
 	}
 
-	if (!bit_test(gres_ss->node_in_use, i))
+	if (!bit_test(gres_ss->node_in_use, node_offset))
 		return SLURM_SUCCESS;
 
 	if (!decr_job_alloc) {
 		/* This step was not counted against job allocation */
 		if (gres_ss->gres_bit_alloc)
-			FREE_NULL_BITMAP(gres_ss->gres_bit_alloc[i]);
+			FREE_NULL_BITMAP(gres_ss->gres_bit_alloc[node_offset]);
 		return SLURM_SUCCESS;
 	}
 
 	if (gres_ss->gres_cnt_node_alloc)
-		gres_cnt = gres_ss->gres_cnt_node_alloc[i];
+		gres_cnt = gres_ss->gres_cnt_node_alloc[node_offset];
 	else {
 		error("gres/%s: %s %ps dealloc, gres_cnt_node_alloc is NULL",
 		      gres_state_job->gres_name, __func__, step_id);
@@ -2486,42 +2486,42 @@ static int _step_dealloc(gres_state_t *gres_state_step, List job_gres_list,
 	}
 
 	if (gres_js->gres_cnt_step_alloc) {
-		if (gres_js->gres_cnt_step_alloc[i] >= gres_cnt) {
-			gres_js->gres_cnt_step_alloc[i] -= gres_cnt;
+		if (gres_js->gres_cnt_step_alloc[node_offset] >= gres_cnt) {
+			gres_js->gres_cnt_step_alloc[node_offset] -= gres_cnt;
 		} else {
 			error("gres/%s: %s %ps dealloc count underflow",
 			      gres_state_job->gres_name, __func__,
 			      step_id);
-			gres_js->gres_cnt_step_alloc[i] = 0;
+			gres_js->gres_cnt_step_alloc[node_offset] = 0;
 		}
 	}
 	if ((gres_ss->gres_bit_alloc == NULL) ||
-	    (gres_ss->gres_bit_alloc[i] == NULL))
+	    (gres_ss->gres_bit_alloc[node_offset] == NULL))
 		return SLURM_SUCCESS;
-	if (gres_js->gres_bit_alloc[i] == NULL) {
+	if (gres_js->gres_bit_alloc[node_offset] == NULL) {
 		error("gres/%s: %s job %u gres_bit_alloc[%d] is NULL",
 		      gres_state_job->gres_name, __func__,
-		      step_id->job_id, i);
+		      step_id->job_id, node_offset);
 		return SLURM_SUCCESS;
 	}
-	len_j = bit_size(gres_js->gres_bit_alloc[i]);
-	len_s = bit_size(gres_ss->gres_bit_alloc[i]);
+	len_j = bit_size(gres_js->gres_bit_alloc[node_offset]);
+	len_s = bit_size(gres_ss->gres_bit_alloc[node_offset]);
 	if (len_j != len_s) {
 		error("gres/%s: %s %ps dealloc, bit_alloc[%d] size mis-match (%d != %d)",
 		      gres_state_job->gres_name, __func__,
-		      step_id, i, len_j, len_s);
+		      step_id, node_offset, len_j, len_s);
 		len_j = MIN(len_j, len_s);
 	}
 	for (j = 0; j < len_j; j++) {
-		if (!bit_test(gres_ss->gres_bit_alloc[i], j))
+		if (!bit_test(gres_ss->gres_bit_alloc[node_offset], j))
 			continue;
 		if (gres_js->gres_bit_step_alloc &&
-		    gres_js->gres_bit_step_alloc[i]) {
-			bit_clear(gres_js->gres_bit_step_alloc[i],
+		    gres_js->gres_bit_step_alloc[node_offset]) {
+			bit_clear(gres_js->gres_bit_step_alloc[node_offset],
 				  j);
 		}
 	}
-	FREE_NULL_BITMAP(gres_ss->gres_bit_alloc[i]);
+	FREE_NULL_BITMAP(gres_ss->gres_bit_alloc[node_offset]);
 
 	return SLURM_SUCCESS;
 }
