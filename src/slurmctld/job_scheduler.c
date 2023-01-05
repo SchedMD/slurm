@@ -4931,7 +4931,8 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 		 * constraint expression intact.
 		 */
 		feature_sets = job_features_list2feature_sets(features,
-							      *feature_list);
+							      *feature_list,
+							      false);
 		list_for_each(feature_sets, job_features_set2str, &str);
 		FREE_NULL_LIST(feature_sets);
 		FREE_NULL_LIST(*feature_list);

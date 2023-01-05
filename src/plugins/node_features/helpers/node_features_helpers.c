@@ -538,7 +538,8 @@ static char *_xlate_job_features(char *job_features,
 	}
 
 	feature_sets = job_features_list2feature_sets(job_features,
-						      job_feature_list);
+						      job_feature_list,
+						      true);
 
 	/*
 	 * Find the first feature set that works for this job and turn it into a
@@ -677,7 +678,7 @@ extern int node_features_p_job_valid(char *job_features, list_t *feature_list)
 
 	/* Check the mutually exclusive lists */
 	feature_sets = job_features_list2feature_sets(job_features,
-						      feature_list);
+						      feature_list, true);
 	rc = list_for_each(feature_sets, _has_exclusive_features, NULL);
 	FREE_NULL_LIST(feature_sets);
 	if (rc < 0) {

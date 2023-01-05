@@ -94,6 +94,7 @@ typedef struct {
  *
  * IN job_features - feature string requested by the user
  * IN job_feature_list - list created by build_feature_list
+ * IN suppress_log_flag - if true, do not call log_flag
  * RETURN - A list of lists, with destructor function (ListDelF) list_destroy.
  *          Each inner list is a list of pointers to job_feature_t, not full
  *          copies, so this list is only valid as long as job_feature_list is
@@ -101,7 +102,8 @@ typedef struct {
  *          FREE_NULL_LIST().
  */
 extern list_t *job_features_list2feature_sets(char *job_features,
-					      list_t *job_feature_list);
+					      list_t *job_feature_list,
+					      bool suppress_log_flag);
 
 /*
  * IN x - list_t job_feature_list

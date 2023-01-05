@@ -41,6 +41,7 @@
 #include "src/common/xstring.h"
 
 typedef struct {
+	bool debug_flag;
 	list_t *distribute_lists;
 	list_t *feature_set;
 	list_t *new_feature_sets;
@@ -118,7 +119,7 @@ static int _distribute_one_list(void *x, void *arg)
 
 	list_append(dist_args->new_feature_sets, new_feature_set);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
+	if (dist_args->debug_flag) {
 		char *dist_str = NULL;
 		char *old_str = NULL;
 		char *new_str = NULL;
@@ -143,6 +144,7 @@ static int _foreach_distribute_lists(void *x, void *arg)
 	list_t *possible_list = x;
 	distribute_arg_t *distribute_args = arg;
 	distribute_arg_t distribute_args2 = {
+		.debug_flag = distribute_args->debug_flag,
 		.feature_set = possible_list,
 		.new_feature_sets = distribute_args->new_feature_sets,
 	};
@@ -198,7 +200,8 @@ static int _foreach_distribute_lists(void *x, void *arg)
  * feature_sets = {[a,c],[a,d],[b,c],[b,d]}
  */
 static void _distribute_lists(list_t **feature_sets,
-			      list_t *distribute_lists)
+			      list_t *distribute_lists,
+			      bool debug_flag)
 {
 	list_t *new_feature_sets;
 
@@ -214,11 +217,12 @@ static void _distribute_lists(list_t **feature_sets,
 		list_transfer(new_feature_sets, distribute_lists);
 	} else {
 		distribute_arg_t distribute_args = {
+			.debug_flag = debug_flag,
 			.distribute_lists = distribute_lists,
 			.new_feature_sets = new_feature_sets,
 		};
 
-		if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
+		if (debug_flag) {
 			char *feature_sets_str = NULL;
 			char *paren_lists_str = NULL;
 
@@ -290,7 +294,8 @@ static int _evaluate_job_feature(void *x, void *arg)
 
 			list_append(features, job_feat_ptr);
 			list_append(tmp, features);
-			_distribute_lists(&args->feature_sets, tmp);
+			_distribute_lists(&args->feature_sets, tmp,
+					  args->debug_flag);
 			/* Update working_list to the new list */
 			args->working_list = args->feature_sets;
 
@@ -309,7 +314,8 @@ static int _evaluate_job_feature(void *x, void *arg)
 				      args->paren_lists);
 		} else { /* FEATURE_OP_AND, other ops not supported */
 			_distribute_lists(&args->feature_sets,
-					  args->paren_lists);
+					  args->paren_lists,
+					  args->debug_flag);
 		}
 		FREE_NULL_LIST(args->paren_lists);
 		args->tmp_feature_list = NULL;
@@ -317,7 +323,7 @@ static int _evaluate_job_feature(void *x, void *arg)
 		args->working_list = args->feature_sets;
 	}
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
+	if (args->debug_flag) {
 		char *feature_sets_str = NULL, *paren_lists_str = NULL;
 
 		if (args->feature_sets)
@@ -343,7 +349,8 @@ static int _evaluate_job_feature(void *x, void *arg)
 }
 
 extern list_t *job_features_list2feature_sets(char *job_features,
-					      list_t *job_feature_list)
+					      list_t *job_feature_list,
+					      bool suppress_log_flag)
 {
 	evalute_feature_arg_t feature_sets_arg = {
 		.last_paren_cnt = 0,
@@ -355,11 +362,16 @@ extern list_t *job_features_list2feature_sets(char *job_features,
 		.working_list = NULL,
 	};
 
+	feature_sets_arg.debug_flag =
+		suppress_log_flag ? false :
+		(slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES);
+
 	feature_sets_arg.feature_sets = list_create((ListDelF) list_destroy);
 	feature_sets_arg.working_list = feature_sets_arg.feature_sets;
 
-	log_flag(NODE_FEATURES, "%s: Convert %s to a matching OR expression",
-		 __func__, job_features);
+	if (feature_sets_arg.debug_flag)
+		log_flag(NODE_FEATURES, "%s: Convert %s to a matching OR expression",
+			 __func__, job_features);
 	list_for_each(job_feature_list, _evaluate_job_feature,
 		      &feature_sets_arg);
 
