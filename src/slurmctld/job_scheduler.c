@@ -57,6 +57,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/env.h"
 #include "src/common/group_cache.h"
+#include "src/common/job_features.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/strlcpy.h"

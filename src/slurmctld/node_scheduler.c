@@ -55,6 +55,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
+#include "src/common/job_features.h"
 #include "src/common/list.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"

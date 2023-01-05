@@ -68,6 +68,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/job_features.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"

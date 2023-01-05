@@ -515,22 +515,6 @@ extern time_t last_job_update;	/* time of last update to job records */
 #define DETAILS_MAGIC	0xdea84e7
 #define JOB_MAGIC	0xf0b7392c
 
-#define FEATURE_OP_OR   0
-#define FEATURE_OP_AND  1
-#define FEATURE_OP_XOR  2
-#define FEATURE_OP_XAND 3
-#define FEATURE_OP_END  4		/* last entry lacks separator */
-typedef struct job_feature {
-	char *name;			/* name of feature */
-	bool changeable;		/* return value of
-					 * node_features_g_changeable_feature */
-	uint16_t count;			/* count of nodes with this feature */
-	uint8_t op_code;		/* separator, see FEATURE_OP_ above */
-	bitstr_t *node_bitmap_active;	/* nodes with this feature active */
-	bitstr_t *node_bitmap_avail;	/* nodes with this feature available */
-	uint16_t paren;			/* count of enclosing parenthesis */
-} job_feature_t;
-
 /*
  * these related to the JOB_SHARED_ macros in slurm.h
  * but with the logic for zero vs one inverted

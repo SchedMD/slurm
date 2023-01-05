@@ -37,4 +37,26 @@
 #ifndef _JOB_FEATURES_H
 #define _JOB_FEATURES_H
 
+#include <inttypes.h>
+#include <stdbool.h>
+
+#include "src/common/bitstring.h"
+
+#define FEATURE_OP_OR   0
+#define FEATURE_OP_AND  1
+#define FEATURE_OP_XOR  2
+#define FEATURE_OP_XAND 3
+#define FEATURE_OP_END  4		/* last entry lacks separator */
+
+typedef struct {
+	char *name;			/* name of feature */
+	bool changeable;		/* return value of
+					 * node_features_g_changeable_feature */
+	uint16_t count;			/* count of nodes with this feature */
+	uint8_t op_code;		/* separator, see FEATURE_OP_ above */
+	bitstr_t *node_bitmap_active;	/* nodes with this feature active */
+	bitstr_t *node_bitmap_avail;	/* nodes with this feature available */
+	uint16_t paren;			/* count of enclosing parenthesis */
+} job_feature_t;
+
 #endif
