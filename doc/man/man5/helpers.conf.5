@@ -1,4 +1,4 @@
-.TH "helpers.conf" "5" "Slurm Configuration File" "December 2022" "Slurm Configuration File"
+.TH "helpers.conf" "5" "Slurm Configuration File" "January 2023" "Slurm Configuration File"
 
 .SH "NAME"
 helpers.conf \- Slurm configuration file for the helpers plugin.
@@ -82,13 +82,6 @@ execute the \fBHelper\fR in one of two ways:
 .LP
 2. Execute with a single argument of the feature to be activated on node reboot.
 .RE
-
-.RS
-\fBNOTE\fR: Any feature under the control of a Helper cannot be requested with
-complex specification language. If any more complex specifications are
-specified by a job using constraints with "[]()!*", the job will be rejected.
-.RE
-.IP
 
 .TP
 \fBMutuallyExclusive\fR=<\fIfeature_list\fR>

@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "December 2022" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "January 2023" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -269,14 +269,13 @@ special characters.
 Nodes can have \fBfeatures\fR assigned to them by the Slurm administrator.
 Users can specify which of these \fBfeatures\fR are required by their job
 using the constraint option. If you are looking for 'soft' constraints please
-see see \fB\-\-prefer\fR for more information.
+see \fB\-\-prefer\fR for more information.
 Only nodes having features matching the job constraints will be used to
 satisfy the request.
 Multiple constraints may be specified with AND, OR, matching OR,
 resource counts, etc. (some operators are not supported on all system types).
 
-\fBNOTE\fR: If features that are part of the node_features/helpers plugin are
-requested, then only the \fBSingle Name\fR and \fBAND\fR options are supported.
+\fBNOTE\fR: Changeable features are features defined by a NodeFeatures plugin.
 
 Supported \fB\-\-constraint\fR options include:
 .IP
@@ -295,20 +294,35 @@ by appending an asterisk and count after the feature name.
 For example, \fB\-\-nodes=16 \-\-constraint="graphics*4 ..."\fR
 indicates that the job requires 16 nodes and that at least four of those
 nodes must have the feature "graphics."
+\fBNOTE\fR: This option is not supported by the helpers NodeFeatures plugin.
+Heterogeneous jobs can be used instead.
 .IP
 
 .TP
 \fBAND\fR
-If only nodes with all of specified features will be used.
+Only nodes with all of specified features will be used.
 The ampersand is used for an AND operator.
 For example, \fB\-\-constraint="intel&gpu"\fR
 .IP
 
 .TP
 \fBOR\fR
-If only nodes with at least one of specified features will be used.
-The vertical bar is used for an OR operator.
-For example, \fB\-\-constraint="intel|amd"\fR
+Only nodes with at least one of specified features will be used.
+The vertical bar is used for an OR operator. If changeable features are not
+requested, nodes in the allocation can have different features. For example,
+\fBsalloc -N2 \-\-constraint="intel|amd"\fR can result in a job allocation
+where one node has the intel feature and the other node has the amd feature.
+However, if the expression contains a changeable feature, then all OR operators
+are automatically treated as Matching OR so that all nodes in the job
+allocation have the same set of features. For example,
+\fBsalloc -N2 \-\-constraint="foo|bar&baz"\fR
+The job is allocated two nodes where both nodes have foo, or bar and baz (one
+or both nodes could have foo, bar, and baz). The helpers NodeFeatures plugin
+will find the first set of node features that matches all nodes in the job
+allocation; these features are set as active features on the node and passed to
+RebootProgram (see \fBslurm.conf\fR(5)) and the helper script (see
+\fBhelpers.conf\fR(5)). In this case, the helpers plugin uses the first of
+"foo" or "bar,baz" that match the two nodes in the job allocation.
 .IP
 
 .TP
@@ -334,6 +348,8 @@ modes. For example, while \fB\-\-constraint="[(knl&quad)*2&(knl&hemi)*4]"\fR is
 not supported, \fB\-\-constraint="[haswell*2&(knl&hemi)*4]"\fR is supported.
 Specification of multiple KNL modes requires the use of a heterogeneous job.
 
+\fBNOTE\fR: This option is not supported by the helpers NodeFeatures plugin.
+
 \fBNOTE\fR: Multiple Counts can cause jobs to be allocated with a non-optimal
 network layout.
 .IP
@@ -352,15 +368,28 @@ meets those requirements.
 AND operators require a count for each feature inside square brackets
 (i.e. "[quad*2&hemi*1]"). Slurm will only allow a single set of bracketed
 constraints per job.
+
+\fBNOTE\fR: Square brackets are not supported by the helpers NodeFeatures
+plugin. Matching OR can be requested without square brackets by using the
+vertical bar character with at least one changeable feature.
 .IP
 
 .TP
-\fBParenthesis\fR
-Parenthesis can be used to group like node features together. For example,
+\fBParentheses\fR
+Parentheses can be used to group like node features together. For example,
 \fB\-\-constraint="[(knl&snc4&flat)*4&haswell*1]"\fR might be used to specify
 that four nodes with the features "knl", "snc4" and "flat" plus one node with
-the feature "haswell" are required. All options within parenthesis should be
-grouped with AND (e.g. "&") operands.
+the feature "haswell" are required.
+Parentheses can also be used to group operations. Without parentheses, node
+features are parsed strictly from left to right.
+For example,
+\fB\-\-constraint="foo&bar|baz"\fR requests nodes with foo and bar, or baz.
+\fB\-\-constraint="foo|bar&baz"\fR requests nodes with foo and baz, or bar and
+baz (note how baz was AND'd with everything).
+\fB\-\-constraint="foo&(bar|baz)" requests nodes with foo and at least
+one of bar or baz.
+\fBNOTE\fR: OR within parentheses should not be used with a KNL
+NodeFeatures plugin but is supported by the helpers NodeFeatures plugin.
 .RE
 .IP
 
