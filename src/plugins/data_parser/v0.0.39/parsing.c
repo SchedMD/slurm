@@ -397,6 +397,23 @@ cleanup:
 	return rc;
 }
 
+static int _parse_pointer(const parser_t *const parser, void *dst, data_t *src,
+			  args_t *args, data_t *parent_path)
+{
+	int rc;
+	void **ptr = dst;
+	const parser_t *const pt = find_parser_by_type(parser->pointer_type);
+
+	xassert(!*ptr);
+
+	*ptr = alloc_parser_obj(pt);
+
+	if ((rc = parse(dst, NO_VAL, pt, src, args, parent_path)))
+		free_parser_obj(parser, *ptr);
+
+	return rc;
+}
+
 /* parser linked parser inside of parser array */
 static int _parser_linked(args_t *args, const parser_t *const array,
 			  const parser_t *const parser, data_t *src, void *dst,
@@ -579,6 +596,9 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		for (int i = 0; !rc && (i < parser->field_count); i++)
 			rc = _parser_linked(args, parser, &parser->fields[i],
 					    src, dst, ppath);
+	} else if (parser->model == PARSER_MODEL_PTR) {
+		verify_parser_not_sliced(parser);
+		rc = _parse_pointer(parser, dst, src, args, ppath);
 	} else if ((parser->model == PARSER_MODEL_SIMPLE) ||
 		   (parser->model == PARSER_MODEL_COMPLEX)) {
 		xassert(parser->parse != _parse_list);
@@ -777,6 +797,18 @@ static int _dump_list(const parser_t *const parser, void *src, data_t *dst,
 	return SLURM_SUCCESS;
 }
 
+static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
+			 args_t *args)
+{
+	void **ptr = src;
+
+	if (!*ptr)
+		return SLURM_SUCCESS;
+
+	return data_parser_p_dump(args, parser->pointer_type, *ptr, NO_VAL,
+				  dst);
+}
+
 static int _dump_linked(args_t *args, const parser_t *const array,
 			const parser_t *const parser, void *src, data_t *dst)
 {
@@ -889,6 +921,13 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 		xassert((src_bytes == NO_VAL) || (src_bytes == sizeof(List)));
 		xassert(!parser->dump);
 		rc = _dump_list(parser, src, dst, args);
+	} else if (parser->model == PARSER_MODEL_PTR) {
+		xassert(parser->pointer_type > DATA_PARSER_TYPE_INVALID);
+		xassert(parser->pointer_type < DATA_PARSER_TYPE_MAX);
+		verify_parser_not_sliced(parser);
+		xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+		rc = _dump_pointer(parser, src, dst, args);
 	} else if ((parser->model == PARSER_MODEL_SIMPLE) ||
 		   (parser->model == PARSER_MODEL_COMPLEX)) {
 		xassert(data_get_type(dst) == DATA_TYPE_NULL);

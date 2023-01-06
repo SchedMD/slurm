@@ -82,6 +82,7 @@ typedef enum {
 	PARSER_MODEL_COMPLEX, /* parser for uses multiple fields in struct */
 	PARSER_MODEL_FLAG_ARRAY, /* parser for single bool field in a parser array */
 	PARSER_MODEL_LIST, /* parser for list_t's */
+	PARSER_MODEL_PTR, /* parser for pointer */
 
 	PARSER_MODEL_MAX /* place holder */
 } parser_model_t;
@@ -105,6 +106,9 @@ typedef struct parser_s {
 	ssize_t size; /* size of target obj */
 	char *obj_type_string; /* stringified C type */
 	char *type_string; /* stringified DATA_PARSE enum */
+
+	/* pointer specific properties */
+	type_t pointer_type;
 
 	/* flag specific properties */
 	const flag_bit_t *flag_bit_array;
