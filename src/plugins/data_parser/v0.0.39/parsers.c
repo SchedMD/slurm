@@ -306,13 +306,11 @@ extern void check_parser_funcname(const parser_t *const parser,
 							    parser->fields[j]
 								    .key));
 		}
-	} else if (parser->model == PARSER_MODEL_ARRAY_LINK_SIMPLE_FIELD) {
-		/* parser array link to a simple parser */
+	} else if (parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) {
+		/* parser array link to a another parser */
+		const parser_t *const linked =
+			find_parser_by_type(parser->type);
 
-		/* real parser must exist */
-		xassert(find_parser_by_type(parser->type));
-
-		xassert(parser->field_name && parser->field_name[0]);
 		xassert(parser->key && parser->key[0]);
 		xassert(!parser->flag_bit_array_count);
 		xassert(!parser->fields);
@@ -322,55 +320,37 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->list_del_func);
 		xassert(!parser->list_new_func);
-		xassert((parser->ptr_offset < NO_VAL) ||
-			(parser->ptr_offset >= 0));
-		/* linked parsers must always be the same size */
-		xassert(parser->size ==
-			find_parser_by_type(parser->type)->size);
-	} else if (parser->model == PARSER_MODEL_ARRAY_LINK_FLAGS_FIELD) {
-		/* parser array linked to flags array field */
 
-		/* real parser must exist */
-		xassert(find_parser_by_type(parser->type));
-		xassert(parser->field_name && parser->field_name[0]);
-		xassert(parser->key && parser->key[0]);
-		xassert(parser->flag_bit_array);
-		xassert(parser->flag_bit_array_count > 0);
-		xassert(parser->flag_bit_array_count < NO_VAL8);
-		xassert(!parser->fields);
-		xassert(!parser->field_count);
-		xassert(!parser->parse);
-		xassert(!parser->dump);
-		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
-		xassert(!parser->list_del_func);
-		xassert(!parser->list_new_func);
-		xassert((parser->ptr_offset < NO_VAL) ||
-			(parser->ptr_offset >= 0));
-		/* linked parsers must always be the same size */
-		xassert(parser->size ==
-			find_parser_by_type(parser->type)->size);
-	} else if (parser->model == PARSER_MODEL_ARRAY_LINK_COMPLEX_FIELD) {
-		/* parser array link to a complex parser */
-
-		/* real parser must exist */
-		xassert(find_parser_by_type(parser->type));
-
-		xassert(parser->ptr_offset == NO_VAL);
-		xassert(!parser->field_name);
-		xassert(parser->key && parser->key[0]);
-		xassert(!parser->flag_bit_array_count);
-		xassert(!parser->fields);
-		xassert(!parser->field_count);
-		xassert(!parser->parse);
-		xassert(!parser->dump);
-		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
-		xassert(!parser->list_del_func);
-		xassert(!parser->list_new_func);
-		/*
-		 * size for complex is the size of the struct and not the fields
-		 * with no easy way to check they match here.
-		 */
-		xassert(parser->size > 0);
+		switch (linked->model) {
+		case PARSER_MODEL_ARRAY:
+		case PARSER_MODEL_SIMPLE:
+		case PARSER_MODEL_FLAG_ARRAY:
+		case PARSER_MODEL_LIST:
+			xassert(parser->field_name && parser->field_name[0]);
+			/* linked parsers must always be the same size */
+			xassert(parser->size ==
+				find_parser_by_type(parser->type)->size);
+			xassert((parser->ptr_offset < NO_VAL) ||
+				(parser->ptr_offset >= 0));
+			break;
+		case PARSER_MODEL_COMPLEX:
+			xassert(!parser->field_name);
+			/*
+			 * complex uses the size of the struct which we don't
+			 * know here
+			 */
+			xassert(parser->size > 0);
+			xassert(parser->size <= NO_VAL);
+			xassert(parser->ptr_offset == NO_VAL);
+			break;
+		case PARSER_MODEL_ARRAY_LINKED_FIELD:
+			fatal_abort("linked parsers must not link to other linked parsers");
+		case PARSER_MODEL_ARRAY_SKIP_FIELD:
+			fatal_abort("linked parsers must not link to a skip parsers");
+		case PARSER_MODEL_INVALID:
+		case PARSER_MODEL_MAX:
+			fatal_abort("invalid model");
+		}
 	} else if (parser->model == PARSER_MODEL_SIMPLE) {
 		xassert(parser->ptr_offset == NO_VAL);
 		xassert(!parser->key);
@@ -3996,7 +3976,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 #define add_parser(stype, mtype, req, field, overload, path, need)    \
 {                                                                     \
 	.magic = MAGIC_PARSER,                                        \
-	.model = PARSER_MODEL_ARRAY_LINK_SIMPLE_FIELD,                \
+	.model = PARSER_MODEL_ARRAY_LINKED_FIELD,                     \
 	.ptr_offset = offsetof(stype, field),                         \
 	.field_name = XSTRINGIFY(field),                              \
 	.field_name_overloads = overload,                             \
@@ -4026,7 +4006,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 #define add_complex_parser(stype, mtype, req, path, need)             \
 {                                                                     \
 	.magic = MAGIC_PARSER,                                        \
-	.model = PARSER_MODEL_ARRAY_LINK_COMPLEX_FIELD,               \
+	.model = PARSER_MODEL_ARRAY_LINKED_FIELD,                     \
 	.ptr_offset = NO_VAL,                                         \
 	.key = path,                                                  \
 	.required = req,                                              \
@@ -4039,7 +4019,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 #define add_parse_bit_flag_array(stype, mtype, req, field, path)      \
 {                                                                     \
 	.magic = MAGIC_PARSER,                                        \
-	.model = PARSER_MODEL_ARRAY_LINK_FLAGS_FIELD,                 \
+	.model = PARSER_MODEL_ARRAY_LINKED_FIELD,                     \
 	.ptr_offset = offsetof(stype, field),                         \
 	.field_name = XSTRINGIFY(field),                              \
 	.key = path,                                                  \
@@ -4047,8 +4027,6 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 	.type = DATA_PARSER_ ## mtype,                                \
 	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
 	.obj_type_string = XSTRINGIFY(stype),                         \
-	.flag_bit_array = PARSER_FLAG_ARRAY(mtype),                   \
-	.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(mtype)), \
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = NEED_NONE,                                           \
 }

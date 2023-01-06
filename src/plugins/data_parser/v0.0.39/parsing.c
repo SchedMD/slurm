@@ -236,10 +236,10 @@ static int _parse_flag(void *dst, const parser_t *const parser, data_t *src,
 		.index = -1,
 	};
 
-	xassert(parser->key && parser->key[0]);
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(parser->magic == MAGIC_PARSER);
 	xassert(parser->ptr_offset == NO_VAL);
+	xassert(parser->model == PARSER_MODEL_FLAG_ARRAY);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA)
 		(void) data_list_join_str(&path, ppath, PATH_SEP);
@@ -471,6 +471,8 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 		rc = SLURM_SUCCESS;
 		goto cleanup;
 	}
+
+	xassert(parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD);
 
 	log_flag(DATA, "%s: BEGIN: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via array parser %s(0x%" PRIxPTR ")=%s(0x%" PRIxPTR ")",
 		 __func__, path, data_type_to_string(data_get_type(dst)),
@@ -814,6 +816,8 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 		rc = SLURM_SUCCESS;
 		goto cleanup;
 	}
+
+	xassert(parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD);
 
 	log_flag(DATA, "BEGIN: dumping %s parser %s->%s(0x%" PRIxPTR ") for %s(0x%" PRIxPTR ")->%s(+%zd) for data(0x%" PRIxPTR ")/%s(0x%" PRIxPTR ")",
 		 parser->obj_type_string, array->type_string,
