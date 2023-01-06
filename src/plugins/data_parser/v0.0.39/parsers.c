@@ -5753,7 +5753,7 @@ static const parser_t parsers[] = {
 	addps(JOB_EXIT_CODE, int32_t, NEED_NONE),
 	addps(JOB_USER, slurmdb_job_rec_t, NEED_NONE),
 	addps(ADMIN_LVL, uint16_t, NEED_NONE),
-	addps(ASSOC_ID, uint32_t, NEED_NONE),
+	addps(ASSOC_ID, uint32_t, NEED_ASSOC),
 	addps(STATS_REC_ARRAY, slurmdb_stats_rec_t, NEED_NONE),
 	addps(STATS_REC_ARRAY_PTR, slurmdb_stats_rec_t *, NEED_NONE),
 	addps(RPC_ID, slurmdbd_msg_type_t, NEED_NONE),
