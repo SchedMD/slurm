@@ -115,6 +115,10 @@ already powered down) in the set "nid[10\-20]" from being powered down.
 Multiple sets of nodes can be specified with or without counts in a comma
 separated list (e.g "nid[10\-20]:4,nid[80\-90]:2").
 By default, no nodes are excluded.
+<dt><b>SuspendExcStates</b>
+<dd>Specifies node states that are not to be powered down automatically.
+Valid options include Down, Drain and Planned. By default, any of these states,
+if idle for <b>SuspendTime</b>, would be powered down.
 <dt><b>SuspendProgram</b>
 <dd>The program executed when a node is no longer required and can be
 relinquished to the cloud.

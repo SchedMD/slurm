@@ -5253,6 +5253,13 @@ By default no nodes are excluded.
 .IP
 
 .TP
+\fBSuspendExcStates\fR
+Specifies node states that are not to be powered down automatically.
+Valid options include Down, Drain and Planned.
+By default, any of these states, if idle for SuspendTime, would be powered down.
+.IP
+
+.TP
 \fBSuspendProgram\fR
 \fBSuspendProgram\fR is the program that will be executed when a node
 remains idle for an extended period of time.

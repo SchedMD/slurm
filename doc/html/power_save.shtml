@@ -115,6 +115,11 @@ List of partitions with nodes to never place in power saving mode.
 Multiple partitions may be specified using a comma separator.
 By default, no nodes are excluded.</li>
 
+<li><b>SuspendExcStates</b>:
+Specifies node states that are not to be powered down automatically. Valid
+options include Down, Drain and Planned. By default, any of these states, if
+idle for <b>SuspendTime</b>, would be powered down.
+
 <li><b>BatchStartTimeout</b>:
 Specifies how long to wait after a batch job start request is issued
 before we expect the batch job to be running on the compute node.
