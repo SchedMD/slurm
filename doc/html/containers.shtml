@@ -195,7 +195,7 @@ RunTimeDelete="kill -s SIGTERM %p"
 </pre>
 /usr/local/bin/enroot-start-wrapper:
 <pre>
-#!/bin/bash -xv
+#!/bin/bash
 BUNDLE="$1"
 SPOOLDIR="$2"
 ENVFILE="$3"
