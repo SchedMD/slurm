@@ -71,6 +71,8 @@ HIGHLIGHTS
     slurm.conf (NodeName=<> RealMemory=#) instead of total physical memory.
  -- node_features/helpers - add support for the OR and parentheses operators
     in a --constraint expression.
+ -- slurmctld will fatal() when [Prolog|Epilog]Slurmctld are defined but are not
+    executable.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

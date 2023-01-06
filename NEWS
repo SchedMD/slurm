@@ -220,6 +220,7 @@ documents those changes that are of interest to users and administrators.
     in a --constraint expression.
  -- Fix race condition between PMIx authentication and slurmstepd task launches
     that can lead to job launch failures.
+ -- fatal() when [Prolog|Epilog]Slurmctld are defined but not executable.
 
 * Changes in Slurm 22.05.8
 ==========================
