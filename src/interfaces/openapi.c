@@ -1091,8 +1091,11 @@ data_for_each_cmd_t _merge_schema(const char *key, data_t *data, void *arg)
 	data_t *cs = arg;
 	data_t *e;
 
-	if (data_get_type(data) != DATA_TYPE_DICT)
+	if (data_get_type(data) != DATA_TYPE_DICT) {
+		error("%s: expected schema[%s] as type dictionary but got type %s",
+		      __func__, key, data_type_to_string(data_get_type(data)));
 		return DATA_FOR_EACH_FAIL;
+	}
 
 	e = data_key_set(cs, key);
 
