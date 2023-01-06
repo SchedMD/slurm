@@ -4393,7 +4393,7 @@ static const parser_t PARSER_ARRAY(ACCOUNTING)[] = {
 /* should mirror the structure of slurmdb_coord_rec_t  */
 static const parser_t PARSER_ARRAY(COORD)[] = {
 	add_parse_req(STRING, name, "name", NEED_NONE),
-	add_parse(UINT16, direct, "direct", NEED_NONE),
+	add_parse(BOOL16, direct, "direct", NEED_NONE),
 };
 #undef add_parse
 #undef add_parse_req
