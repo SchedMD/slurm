@@ -5751,7 +5751,6 @@ static const parser_t parsers[] = {
 	addps(QOS_ID, uint32_t, NEED_NONE),
 	addps(QOS_STRING_ID_LIST, List, NEED_NONE),
 	addps(JOB_EXIT_CODE, int32_t, NEED_NONE),
-	addps(JOB_USER, slurmdb_job_rec_t, NEED_NONE),
 	addps(ADMIN_LVL, uint16_t, NEED_NONE),
 	addps(ASSOC_ID, uint32_t, NEED_ASSOC),
 	addps(STATS_REC_ARRAY, slurmdb_stats_rec_t, NEED_NONE),
@@ -5842,6 +5841,7 @@ static const parser_t parsers[] = {
 	addpc(JOB_INFO_STDIN, slurm_job_info_t, NEED_NONE),
 	addpc(JOB_INFO_STDOUT, slurm_job_info_t, NEED_NONE),
 	addpc(JOB_INFO_STDERR, slurm_job_info_t, NEED_NONE),
+	addpc(JOB_USER, slurmdb_job_rec_t, NEED_NONE),
 
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t),
