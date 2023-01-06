@@ -83,6 +83,7 @@ typedef enum {
 	PARSER_MODEL_FLAG_ARRAY, /* parser for single bool field in a parser array */
 	PARSER_MODEL_LIST, /* parser for list_t's */
 	PARSER_MODEL_PTR, /* parser for pointer */
+	PARSER_MODEL_NT_ARRAY, /* parser for NULL terminated array of pointers */
 
 	PARSER_MODEL_MAX /* place holder */
 } parser_model_t;
@@ -109,6 +110,9 @@ typedef struct parser_s {
 
 	/* pointer specific properties */
 	type_t pointer_type;
+
+	/* NULL terminated array of pointers - properties */
+	type_t array_type;
 
 	/* flag specific properties */
 	const flag_bit_t *flag_bit_array;

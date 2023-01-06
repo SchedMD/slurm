@@ -244,6 +244,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->dump);
 		xassert(parser->ptr_offset == NO_VAL);
 		xassert(!parser->pointer_type);
+		xassert(!parser->array_type);
 	} else if (parser->model == PARSER_MODEL_LIST) {
 		/* parser of a List */
 		xassert(parser->list_type > DATA_PARSER_TYPE_INVALID);
@@ -256,6 +257,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->size == sizeof(list_t *));
 		xassert(parser->ptr_offset == NO_VAL);
 		xassert(!parser->pointer_type);
+		xassert(!parser->array_type);
 	} else if (parser->model == PARSER_MODEL_ARRAY) {
 		/* parser of a parser Array */
 		xassert(parser->field_count > 0);
@@ -267,6 +269,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
 		xassert(parser->fields);
 		xassert(!parser->pointer_type);
+		xassert(!parser->array_type);
 
 		for (int i = 0; i < parser->field_count; i++) {
 			/* recursively check the child parsers */
@@ -318,6 +321,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->pointer_type);
+		xassert(!parser->array_type);
 
 		switch (linked->model) {
 		case PARSER_MODEL_ARRAY:
@@ -325,6 +329,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		case PARSER_MODEL_FLAG_ARRAY:
 		case PARSER_MODEL_LIST:
 		case PARSER_MODEL_PTR:
+		case PARSER_MODEL_NT_ARRAY:
 			xassert(parser->field_name && parser->field_name[0]);
 			/* linked parsers must always be the same size */
 			xassert(parser->size ==
@@ -361,6 +366,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->pointer_type);
+		xassert(!parser->array_type);
 	} else if (parser->model == PARSER_MODEL_COMPLEX) {
 		xassert(parser->ptr_offset == NO_VAL);
 		xassert(!parser->field_name);
@@ -373,9 +379,26 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->pointer_type);
+		xassert(!parser->array_type);
 	} else if (parser->model == PARSER_MODEL_PTR) {
 		xassert(parser->pointer_type > DATA_PARSER_TYPE_INVALID);
 		xassert(parser->pointer_type < DATA_PARSER_TYPE_MAX);
+		xassert(parser->size == sizeof(void *));
+		xassert(parser->ptr_offset == NO_VAL);
+		xassert(!parser->field_name);
+		xassert(!parser->key);
+		xassert(!parser->field_name);
+		xassert(!parser->flag_bit_array_count);
+		xassert(!parser->fields);
+		xassert(!parser->field_count);
+		xassert(!parser->parse);
+		xassert(!parser->dump);
+		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
+		xassert(!parser->array_type);
+	} else if (parser->model == PARSER_MODEL_NT_ARRAY) {
+		xassert(!parser->pointer_type);
+		xassert(parser->array_type > DATA_PARSER_TYPE_INVALID);
+		xassert(parser->array_type < DATA_PARSER_TYPE_MAX);
 		xassert(parser->size == sizeof(void *));
 		xassert(parser->ptr_offset == NO_VAL);
 		xassert(!parser->field_name);
@@ -2917,29 +2940,6 @@ static int DUMP_FUNC(JOB_INFO_MSG)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
-PARSE_DISABLED(CONTROLLER_PING_ARRAY)
-
-static int DUMP_FUNC(CONTROLLER_PING_ARRAY)(const parser_t *const parser,
-					    void *obj, data_t *dst,
-					    args_t *args)
-{
-	int rc = SLURM_SUCCESS;
-	controller_ping_t **ping_ptr = obj;
-	controller_ping_t *ping = *ping_ptr;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
-	data_set_list(dst);
-
-	for (; !rc && ping && ping->hostname; ping++) {
-		rc = DUMP(CONTROLLER_PING, *ping,
-			  data_set_dict(data_list_append(dst)), args);
-	}
-
-	return rc;
-}
-
 PARSE_DISABLED(CONTROLLER_PING_MODE)
 
 static int DUMP_FUNC(CONTROLLER_PING_MODE)(const parser_t *const parser,
@@ -3053,53 +3053,6 @@ static int DUMP_FUNC(CPU_FREQ_FLAGS)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(NODE_ARRAY)
-
-static int DUMP_FUNC(NODE_ARRAY)(const parser_t *const parser, void *obj,
-				 data_t *dst, args_t *args)
-{
-	int rc = SLURM_SUCCESS;
-	node_info_t ***ptr = obj;
-	node_info_t **nodes = *ptr;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
-	data_set_list(dst);
-
-	for (int i = 0; !rc && nodes[i]; i++)
-		rc = DUMP(NODE, *nodes[i], data_list_append(dst), args);
-
-	return rc;
-}
-
-PARSE_DISABLED(PARTITION_INFO_ARRAY)
-
-static int DUMP_FUNC(PARTITION_INFO_ARRAY)(const parser_t *const parser,
-					   void *obj, data_t *dst, args_t *args)
-{
-	int rc = SLURM_SUCCESS;
-	partition_info_t ***ptr = obj;
-	partition_info_t **parts = *ptr;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
-	data_set_list(dst);
-
-	if (!parts || !parts[0]) {
-		on_warn(DUMPING, parser->type, args, NULL, __func__,
-			"No partitions to dump");
-		return SLURM_SUCCESS;
-	}
-
-	for (int i = 0; !rc && parts[i]; i++)
-		rc = DUMP(PARTITION_INFO, *parts[i], data_list_append(dst),
-			  args);
-
-	return rc;
-}
-
 PARSE_DISABLED(PARTITION_INFO_MSG)
 
 static int DUMP_FUNC(PARTITION_INFO_MSG)(const parser_t *const parser,
@@ -3122,32 +3075,6 @@ static int DUMP_FUNC(PARTITION_INFO_MSG)(const parser_t *const parser,
 	for (uint32_t i = 0; !rc && (i < msg->record_count); ++i)
 		rc = DUMP(PARTITION_INFO, msg->partition_array[i],
 			  data_list_append(dst), args);
-
-	return rc;
-}
-
-PARSE_DISABLED(STEP_INFO_ARRAY)
-
-static int DUMP_FUNC(STEP_INFO_ARRAY)(const parser_t *const parser, void *obj,
-				      data_t *dst, args_t *args)
-{
-	int rc = SLURM_SUCCESS;
-	job_step_info_t ***ptr = obj;
-	job_step_info_t **steps = *ptr;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
-	data_set_list(dst);
-
-	if (!steps || !*steps) {
-		on_warn(DUMPING, parser->type, args, NULL, __func__,
-			"Zero steps to dump");
-		return SLURM_SUCCESS;
-	}
-
-	for (int i = 0; !rc && steps[i]; i++)
-		rc = DUMP(STEP_INFO, *steps[i], data_list_append(dst), args);
 
 	return rc;
 }
@@ -3207,28 +3134,6 @@ static int DUMP_FUNC(RESERVATION_INFO_CORE_SPEC)(const parser_t *const parser,
 			  data_list_append(dst), args);
 
 	return SLURM_SUCCESS;
-}
-
-PARSE_DISABLED(RESERVATION_INFO_ARRAY)
-
-static int DUMP_FUNC(RESERVATION_INFO_ARRAY)(const parser_t *const parser,
-					     void *obj, data_t *dst,
-					     args_t *args)
-{
-	int rc = SLURM_SUCCESS;
-	reserve_info_t ***ptr = obj;
-	reserve_info_t **res = *ptr;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
-	data_set_list(dst);
-
-	for (int i = 0; !rc && res[i]; i++)
-		rc = DUMP(RESERVATION_INFO, *res[i], data_list_append(dst),
-			  args);
-
-	return rc;
 }
 
 PARSE_DISABLED(JOB_ARRAY_RESPONSE_MSG)
@@ -5353,6 +5258,19 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.ptr_offset = NO_VAL,                                          \
 		.pointer_type = DATA_PARSER_##typep,                           \
 	}
+/* add parser for NULL terminated array of pointers */
+#define addnt(typev, typea)                                                    \
+	{                                                                      \
+		.magic = MAGIC_PARSER,                                         \
+		.model = PARSER_MODEL_NT_ARRAY,                                \
+		.type = DATA_PARSER_##typev,                                   \
+		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
+		.obj_type_string = "void **",                                  \
+		.size = sizeof(void **),                                       \
+		.needs = NEED_NONE,                                            \
+		.ptr_offset = NO_VAL,                                          \
+		.array_type = DATA_PARSER_##typea,                             \
+	}
 /* add parser for List */
 #define addpl(typev, typel, need)                                              \
 	{                                                                      \
@@ -5452,14 +5370,9 @@ static const parser_t parsers[] = {
 	addps(ALLOCATED_CPUS, uint32_t, NEED_NONE),
 	addps(CONTROLLER_PING_MODE, int, NEED_NONE),
 	addps(CONTROLLER_PING_RESULT, bool, NEED_NONE),
-	addps(CONTROLLER_PING_ARRAY, controller_ping_t *, NEED_NONE),
 	addps(HOSTLIST, hostlist_t, NEED_NONE),
 	addps(CPU_FREQ_FLAGS, uint32_t, NEED_NONE),
-	addps(NODE_ARRAY, node_info_t **, NEED_NONE),
-	addps(PARTITION_INFO_ARRAY, partition_info_t **, NEED_NONE),
-	addps(STEP_INFO_ARRAY, job_step_info_t **, NEED_NONE),
 	addps(NODE_STATES_NO_VAL, uint32_t, NEED_NONE),
-	addps(RESERVATION_INFO_ARRAY, reserve_info_t **, NEED_NONE),
 	addps(ERROR, int, NEED_NONE),
 	addps(JOB_INFO_MSG, job_info_msg_t, NEED_NONE),
 	addps(STRING_ARRAY, char **, NEED_NONE),
@@ -5506,6 +5419,13 @@ static const parser_t parsers[] = {
 	addpc(JOB_INFO_STDOUT, slurm_job_info_t, NEED_NONE),
 	addpc(JOB_INFO_STDERR, slurm_job_info_t, NEED_NONE),
 	addpc(JOB_USER, slurmdb_job_rec_t, NEED_NONE),
+
+	/* NULL terminated model parsers */
+	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),
+	addnt(NODE_ARRAY, NODE),
+	addnt(PARTITION_INFO_ARRAY, PARTITION_INFO),
+	addnt(STEP_INFO_ARRAY, STEP_INFO),
+	addnt(RESERVATION_INFO_ARRAY, RESERVATION_INFO),
 
 	/* Pointer model parsers */
 	addpp(STATS_REC_ARRAY_PTR, slurmdb_stats_rec_t *, STATS_REC_ARRAY),

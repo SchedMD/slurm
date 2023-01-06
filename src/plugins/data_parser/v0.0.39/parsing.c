@@ -50,6 +50,7 @@
 
 #define MAGIC_FOREACH_LIST_FLAG 0xa1d4acd2
 #define MAGIC_FOREACH_LIST 0xaefa2af3
+#define MAGIC_FOREACH_NT_ARRAY 0xaba1be2b
 #define PATH_SEP "."
 
 typedef struct {
@@ -70,6 +71,16 @@ typedef struct {
 	data_t *parent_path;
 	ssize_t index;
 } foreach_flag_parser_args_t;
+
+typedef struct {
+	int magic; /* MAGIC_FOREACH_NT_ARRAY */
+	void **array;
+	int index;
+	const parser_t *const parser;
+	const parser_t *const array_parser;
+	args_t *args;
+	data_t *parent_path;
+} foreach_nt_array_t;
 
 static void _set_flag_bit(const parser_t *const parser, void *dst,
 			  const flag_bit_t *bit, bool matched, const char *path,
@@ -414,6 +425,93 @@ static int _parse_pointer(const parser_t *const parser, void *dst, data_t *src,
 	return rc;
 }
 
+static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
+{
+	int rc;
+	foreach_nt_array_t *args = arg;
+	void *obj = alloc_parser_obj(args->parser);
+	data_t *ppath = data_copy(NULL, args->parent_path);
+	data_t *ppath_last = data_get_list_last(ppath);
+
+	xassert(args->magic == MAGIC_FOREACH_NT_ARRAY);
+	xassert((args->index > 0) || (args->index == -1));
+
+	if (args->index < 0)
+		args->index = 0;
+
+	/* Use jq style array zero based array notation */
+	data_set_string_fmt(ppath_last, "%s[%d]",
+			    data_get_string(ppath_last),
+			    args->index);
+
+	if ((rc = parse(obj, NO_VAL, args->parser, src, args->args, ppath))) {
+		log_flag(DATA, "%s object at 0x%"PRIxPTR" freed due to parser error: %s",
+			 args->parser->obj_type_string, (uintptr_t) obj,
+			 slurm_strerror(rc));
+		free_parser_obj(args->parser, obj);
+		FREE_NULL_DATA(ppath);
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	xassert(!args->array[args->index]);
+	args->array[args->index] = obj;
+	args->index++;
+
+	FREE_NULL_DATA(ppath);
+	return DATA_FOR_EACH_CONT;
+}
+
+static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
+			   args_t *args, data_t *parent_path)
+{
+	int rc = SLURM_SUCCESS;
+	void ***array_ptr = dst;
+	foreach_nt_array_t fargs = {
+		.magic = MAGIC_FOREACH_NT_ARRAY,
+		.array_parser = parser,
+		.parser = find_parser_by_type(parser->pointer_type),
+		.args = args,
+		.parent_path = parent_path,
+		.index = -1,
+	};
+	char *path = NULL;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(!*array_ptr);
+
+	if (data_get_type(src) != DATA_TYPE_LIST) {
+		if (!path)
+			(void) data_list_join_str(&path, parent_path, PATH_SEP);
+
+		rc = on_error(PARSING, parser->type, args,
+				ESLURM_DATA_FLAGS_INVALID_TYPE, path, __func__,
+				"Expected List but found a %s",
+				data_type_to_string(data_get_type(src)));
+		goto cleanup;
+	}
+
+	/* assume list can parse all entries */
+	fargs.array = xcalloc(data_get_list_length(src) + 1,
+			      sizeof(*fargs.array));
+
+	if (data_list_for_each(src, _foreach_array_entry, &fargs) < 0)
+		goto cleanup;
+
+	SWAP(*array_ptr, fargs.array);
+
+cleanup:
+	xfree(path);
+
+	if (fargs.array) {
+		/* must have failed - cleanup the memory */
+		for (int i = 0; fargs.array[i]; i++)
+			free_parser_obj(parser, &fargs.array[i]);
+		xfree(fargs.array);
+	}
+
+	return rc;
+}
+
 /* parser linked parser inside of parser array */
 static int _parser_linked(args_t *args, const parser_t *const array,
 			  const parser_t *const parser, data_t *src, void *dst,
@@ -601,6 +699,10 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	case PARSER_MODEL_PTR:
 		verify_parser_not_sliced(parser);
 		rc = _parse_pointer(parser, dst, src, args, ppath);
+		break;
+	case PARSER_MODEL_NT_ARRAY:
+		verify_parser_not_sliced(parser);
+		rc = _parse_nt_array(parser, dst, src, args, ppath);
 		break;
 	case PARSER_MODEL_SIMPLE:
 	case PARSER_MODEL_COMPLEX:
@@ -820,6 +922,25 @@ static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 				  dst);
 }
 
+static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
+			  args_t *args)
+{
+	int rc = SLURM_SUCCESS;
+	void ***array_ptr = src;
+	void **array;
+
+	data_set_list(dst);
+
+	if (!(array = *array_ptr))
+		return SLURM_SUCCESS;
+
+	for (int i = 0; rc && array[i]; i++)
+		rc = data_parser_p_dump(args, parser->array_type, &array[i],
+					NO_VAL, dst);
+
+	return rc;
+}
+
 static int _dump_linked(args_t *args, const parser_t *const array,
 			const parser_t *const parser, void *src, data_t *dst)
 {
@@ -943,6 +1064,14 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 		xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 		rc = _dump_pointer(parser, src, dst, args);
+		break;
+	case PARSER_MODEL_NT_ARRAY:
+		xassert(parser->array_type > DATA_PARSER_TYPE_INVALID);
+		xassert(parser->array_type < DATA_PARSER_TYPE_MAX);
+		verify_parser_not_sliced(parser);
+		xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+		rc = _dump_nt_array(parser, src, dst, args);
 		break;
 	case PARSER_MODEL_SIMPLE:
 	case PARSER_MODEL_COMPLEX:
