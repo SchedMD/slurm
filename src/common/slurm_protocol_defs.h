@@ -508,13 +508,6 @@ typedef struct forward_message {
 	int timeout;
 } forward_msg_t;
 
-typedef struct slurm_protocol_config {
-	uint32_t control_cnt;
-	slurm_addr_t *controller_addr;
-	bool vip_addr_set;
-	slurm_addr_t vip_addr;
-} slurm_protocol_config_t;
-
 typedef struct slurm_msg {
 	slurm_addr_t address;
 	void *auth_cred;

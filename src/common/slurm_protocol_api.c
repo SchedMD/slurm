@@ -80,6 +80,13 @@
 
 #include "src/slurmdbd/read_config.h"
 
+typedef struct {
+	uint32_t control_cnt;
+	slurm_addr_t *controller_addr;
+	bool vip_addr_set;
+	slurm_addr_t vip_addr;
+} slurm_protocol_config_t;
+
 strong_alias(convert_num_unit2, slurm_convert_num_unit2);
 strong_alias(convert_num_unit, slurm_convert_num_unit);
 strong_alias(revert_num_unit, slurm_revert_num_unit);
