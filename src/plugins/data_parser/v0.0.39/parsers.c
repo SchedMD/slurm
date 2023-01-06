@@ -5655,7 +5655,7 @@ static const parser_t parsers[] = {
 	addps(BOOL16, uint16_t, NEED_NONE),
 	addps(BOOL16_NO_VAL, uint16_t, NEED_NONE),
 	addps(QOS_NAME, char *, NEED_QOS),
-	addps(QOS_ID, uint32_t, NEED_NONE),
+	addps(QOS_ID, uint32_t, NEED_QOS),
 	addps(QOS_STRING_ID_LIST, List, NEED_NONE),
 	addps(JOB_EXIT_CODE, int32_t, NEED_NONE),
 	addps(ADMIN_LVL, uint16_t, NEED_NONE),
