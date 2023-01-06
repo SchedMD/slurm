@@ -221,8 +221,8 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int parse_flag(void *dst, const parser_t *const parser, data_t *src,
-		      args_t *args, data_t *parent_path)
+static int _parse_flag(void *dst, const parser_t *const parser, data_t *src,
+		       args_t *args, data_t *parent_path)
 {
 	int rc = SLURM_SUCCESS;
 	char *path = NULL;
@@ -239,9 +239,7 @@ static int parse_flag(void *dst, const parser_t *const parser, data_t *src,
 	xassert(parser->key && parser->key[0]);
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(parser->magic == MAGIC_PARSER);
-
-	if (parser->ptr_offset > 0)
-		fargs.dst += parser->ptr_offset;
+	xassert(parser->ptr_offset == NO_VAL);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA)
 		(void) data_list_join_str(&path, ppath, PATH_SEP);
@@ -402,11 +400,109 @@ cleanup:
 	return rc;
 }
 
+/* parser linked parser inside of parser array */
+static int _parser_linked(args_t *args, const parser_t *const array,
+			  const parser_t *const parser, data_t *src, void *dst,
+			  data_t *parent_path)
+{
+	int rc;
+	data_t *ppath = data_copy(NULL, parent_path);
+	char *path = NULL;
+
+	check_parser(parser);
+	verify_parser_sliced(parser);
+
+	/* only look for child via key if there was one defined */
+	if (parser->key) {
+		src = data_resolve_dict_path(src, parser->key);
+
+		(void) data_list_split_str(ppath, parser->key, PATH_SEP);
+
+		if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
+			/* update path */
+			xfree(path);
+			(void) data_list_join_str(&path, ppath, PATH_SEP);
+		}
+	}
+
+	if (!src) {
+		if (parser->required) {
+			if (!path)
+				(void) data_list_join_str(&path, ppath,
+							  PATH_SEP);
+
+			if ((rc = on_error(
+				     PARSING, parser->type, args,
+				     ESLURM_DATA_PATH_NOT_FOUND, path, __func__,
+				     "Missing required field '%s' in dictionary",
+				     parser->key)))
+				goto cleanup;
+		} else {
+			/* field is missing but not required */
+			log_flag(DATA, "%s: skip parsing missing %s to object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ")",
+				__func__, path, parser->obj_type_string,
+				(uintptr_t) dst,
+				(parser->ptr_offset == NO_VAL ?
+					 0 :
+					 parser->ptr_offset),
+				(parser->field_name ? "->" : ""),
+				(parser->field_name ? parser->field_name : ""),
+				parser->type_string, (uintptr_t) src);
+
+			rc = SLURM_SUCCESS;
+			goto cleanup;
+		}
+	}
+
+	if (parser->ptr_offset != NO_VAL)
+		dst += parser->ptr_offset;
+
+	if (parser->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
+		log_flag(DATA, "%s: SKIP: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via array parser %s(0x%" PRIxPTR ")=%s(0x%" PRIxPTR ")",
+			 __func__, parser->field_name,
+			 data_type_to_string(data_get_type(dst)),
+			 (uintptr_t) dst, parser->obj_type_string,
+			 (uintptr_t) dst, parser->ptr_offset,
+			 (parser->field_name ? "->" : ""),
+			 (parser->field_name ? parser->field_name : ""),
+			 parser->obj_type_string, (uintptr_t) src,
+			 parser->type_string, (uintptr_t) array,
+			 parser->type_string, (uintptr_t) parser);
+		rc = SLURM_SUCCESS;
+		goto cleanup;
+	}
+
+	log_flag(DATA, "%s: BEGIN: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via array parser %s(0x%" PRIxPTR ")=%s(0x%" PRIxPTR ")",
+		 __func__, path, data_type_to_string(data_get_type(dst)),
+		 (uintptr_t) dst, array->obj_type_string, (uintptr_t) dst,
+		 array->ptr_offset, (array->field_name ? "->" : ""),
+		 (array->field_name ? array->field_name : ""),
+		 parser->obj_type_string, (uintptr_t) src, array->type_string,
+		 (uintptr_t) array, parser->type_string, (uintptr_t) parser);
+
+	rc = parse(dst, NO_VAL, find_parser_by_type(parser->type), src, args,
+		   ppath);
+
+	log_flag(DATA, "%s: END: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via array parser %s(0x%" PRIxPTR ")=%s(0x%" PRIxPTR ") rc[%d]:%s",
+		 __func__, path, data_type_to_string(data_get_type(dst)),
+		 (uintptr_t) dst, array->obj_type_string, (uintptr_t) dst,
+		 array->ptr_offset, (array->field_name ? "->" : ""),
+		 (array->field_name ? array->field_name : ""),
+		 parser->obj_type_string, (uintptr_t) parser,
+		 array->type_string, (uintptr_t) array, parser->type_string,
+		 (uintptr_t) parser, rc, slurm_strerror(rc));
+
+cleanup:
+	xfree(ppath);
+	xfree(path);
+	return rc;
+}
+
 extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		 data_t *src, args_t *args, data_t *parent_path)
 {
 	int rc;
-	data_t *pd = NULL, *ppath = data_copy(NULL, parent_path);
+	data_t *ppath = data_copy(NULL, parent_path);
 	char *path = NULL;
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA)
@@ -426,22 +522,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	if ((rc = load_prereqs(PARSING, parser, args)))
 		goto cleanup;
 
-	/* only look for child via key if there was one defined */
-	if (parser->key) {
-		pd = data_resolve_dict_path(src, parser->key);
-
-		(void) data_list_split_str(ppath, parser->key, PATH_SEP);
-
-		if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
-			/* update path */
-			xfree(path);
-			(void) data_list_join_str(&path, ppath, PATH_SEP);
-		}
-	} else {
-		pd = src;
-	}
-
-	if (!pd) {
+	if (!src) {
 		if (parser->required) {
 			if (!path)
 				(void) data_list_join_str(&path, ppath,
@@ -471,8 +552,8 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	}
 
 	log_flag(DATA, "%s: BEGIN: parsing %s{%s(0x%" PRIxPTR ")} to %zd byte object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ")",
-		 __func__, path, data_type_to_string(data_get_type(pd)),
-		 (uintptr_t) pd, (dst_bytes == NO_VAL ? -1 : dst_bytes),
+		 __func__, path, data_type_to_string(data_get_type(src)),
+		 (uintptr_t) src, (dst_bytes == NO_VAL ? -1 : dst_bytes),
 		 parser->obj_type_string, (uintptr_t) dst,
 		 (parser->ptr_offset == NO_VAL ? 0 : parser->ptr_offset),
 		 (parser->field_name ? "->" : ""),
@@ -480,129 +561,39 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		 parser->type_string, (uintptr_t) parser);
 
 	if (parser->model == PARSER_MODEL_FLAG_ARRAY) {
-		verify_parser_sliced(parser);
-		rc = parse_flag(dst, parser, pd, args, ppath);
-		goto cleanup;
-	}
-
-	if (parser->fields) {
 		verify_parser_not_sliced(parser);
-
-		/* recursively run the child parsers */
-		for (int i = 0; !rc && (i < parser->field_count); i++) {
-			const parser_t *const pchild = &parser->fields[i];
-			void *schild = dst;
-
-			check_parser(pchild);
-			verify_parser_sliced(pchild);
-			if (pchild->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
-				log_flag(DATA, "%s: SKIP: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via array parser %s(0x%" PRIxPTR ")[%d]=%s(0x%" PRIxPTR ")",
-					 __func__, pchild->field_name,
-					 data_type_to_string(data_get_type(pd)),
-					 (uintptr_t) pd,
-					 parser->obj_type_string,
-					 (uintptr_t) dst, parser->ptr_offset,
-					 (parser->field_name ? "->" : ""),
-					 (parser->field_name ?
-						  parser->field_name :
-						  ""),
-					 pchild->obj_type_string,
-					 (uintptr_t) schild,
-					 parser->type_string,
-					 (uintptr_t) parser, i,
-					 pchild->type_string,
-					 (uintptr_t) pchild);
-
-				continue;
-			}
-
-			if (parser->ptr_offset != NO_VAL)
-				schild += parser->ptr_offset;
-
-			log_flag(DATA, "%s: BEGIN: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via array parser %s(0x%" PRIxPTR ")[%d]=%s(0x%" PRIxPTR ")",
-				 __func__, path,
-				 data_type_to_string(data_get_type(pd)),
-				 (uintptr_t) pd, parser->obj_type_string,
-				 (uintptr_t) dst, parser->ptr_offset,
-				 (parser->field_name ? "->" : ""),
-				 (parser->field_name ? parser->field_name : ""),
-				 pchild->obj_type_string, (uintptr_t) schild,
-				 parser->type_string, (uintptr_t) parser, i,
-				 pchild->type_string, (uintptr_t) pchild);
-
-			rc = parse(schild, NO_VAL, pchild, pd, args, ppath);
-
-			log_flag(DATA, "%s: END: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via array parser %s(0x%" PRIxPTR ")[%d]=%s(0x%" PRIxPTR ") rc[%d]:%s",
-				 __func__, path,
-				 data_type_to_string(data_get_type(pd)),
-				 (uintptr_t) pd, parser->obj_type_string,
-				 (uintptr_t) dst, parser->ptr_offset,
-				 (parser->field_name ? "->" : ""),
-				 (parser->field_name ? parser->field_name : ""),
-				 pchild->obj_type_string, (uintptr_t) schild,
-				 parser->type_string, (uintptr_t) parser, i,
-				 pchild->type_string, (uintptr_t) pchild, rc,
-				 slurm_strerror(rc));
-		}
-
+		rc = _parse_flag(dst, parser, src, args, ppath);
 		goto cleanup;
-	}
-
-	if (parser->list_type) {
+	} else if (parser->model == PARSER_MODEL_LIST) {
+		xassert(parser->list_type > DATA_PARSER_TYPE_INVALID);
+		xassert(parser->list_type < DATA_PARSER_TYPE_MAX);
 		verify_parser_not_sliced(parser);
 		xassert((dst_bytes == NO_VAL) || (dst_bytes == sizeof(List)));
 		xassert(!parser->parse);
-		rc = _parse_list(parser, dst, pd, args, ppath);
+		rc = _parse_list(parser, dst, src, args, ppath);
 		goto cleanup;
+	} else if (parser->model == PARSER_MODEL_ARRAY) {
+		xassert(parser->fields);
+		verify_parser_not_sliced(parser);
+
+		/* recursively run the child parsers */
+		for (int i = 0; !rc && (i < parser->field_count); i++)
+			rc = _parser_linked(args, parser, &parser->fields[i],
+					    src, dst, ppath);
+	} else if ((parser->model == PARSER_MODEL_SIMPLE) ||
+		   (parser->model == PARSER_MODEL_COMPLEX)) {
+		xassert(parser->parse != _parse_list);
+		verify_parser_not_sliced(parser);
+
+		rc = parser->parse(parser, dst, src, args, ppath);
+	} else {
+		fatal_abort("%s: unexpected model %u", __func__, parser->model);
 	}
-	xassert(parser->parse != _parse_list);
-
-	if (!parser->parse) {
-		const parser_t *const pchild =
-			find_parser_by_type(parser->type);
-		void *schild = dst;
-
-		verify_parser_not_sliced(pchild);
-		check_parser(pchild);
-
-		if (parser->ptr_offset != NO_VAL)
-			schild += parser->ptr_offset;
-
-		xassert(!xstrcmp(parser->type_string, pchild->type_string));
-		log_flag(DATA, "%s: BEGIN: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via linked parser %s(0x%" PRIxPTR "->0x%" PRIxPTR ")",
-			 __func__, path, data_type_to_string(data_get_type(pd)),
-			 (uintptr_t) pd, parser->obj_type_string,
-			 (uintptr_t) dst, parser->ptr_offset,
-			 (parser->field_name ? "->" : ""),
-			 (parser->field_name ? parser->field_name : ""),
-			 pchild->obj_type_string, (uintptr_t) schild,
-			 parser->type_string, (uintptr_t) parser,
-			 (uintptr_t) pchild);
-
-		rc = parse(schild, NO_VAL, pchild, pd, args, ppath);
-
-		log_flag(DATA, "%s: END: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via linked parser %s(0x%" PRIxPTR "->0x%" PRIxPTR ") rc[%d]:%s",
-			 __func__, path, data_type_to_string(data_get_type(pd)),
-			 (uintptr_t) pd, parser->obj_type_string,
-			 (uintptr_t) dst, parser->ptr_offset,
-			 (parser->field_name ? "->" : ""),
-			 (parser->field_name ? parser->field_name : ""),
-			 pchild->obj_type_string, (uintptr_t) schild,
-			 parser->type_string, (uintptr_t) parser,
-			 (uintptr_t) pchild, rc, slurm_strerror(rc));
-
-		goto cleanup;
-	}
-
-	verify_parser_not_sliced(parser);
-
-	/* must be a simple or complex type */
-	rc = parser->parse(parser, dst, pd, args, ppath);
 
 cleanup:
 	log_flag(DATA, "%s: END: parsing %s{%s(0x%" PRIxPTR ")} to %zd byte object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ") rc[%d]:%s",
-		 __func__, path, data_type_to_string(data_get_type(pd)),
-		 (uintptr_t) pd, (dst_bytes == NO_VAL ? -1 : dst_bytes),
+		 __func__, path, data_type_to_string(data_get_type(src)),
+		 (uintptr_t) src, (dst_bytes == NO_VAL ? -1 : dst_bytes),
 		 parser->obj_type_string, (uintptr_t) dst,
 		 (parser->ptr_offset == NO_VAL ? 0 : parser->ptr_offset),
 		 (parser->field_name ? "->" : ""),
@@ -734,23 +725,6 @@ static int _dump_flag_bit_array(args_t *args, void *src, data_t *dst,
 	return SLURM_SUCCESS;
 }
 
-static int dump_flag(void *src, const parser_t *const parser, data_t *dst,
-		     args_t *args)
-{
-	void *obj = src + parser->ptr_offset;
-
-	xassert((parser->ptr_offset == NO_VAL) || (parser->ptr_offset >= 0));
-	check_parser(parser);
-	xassert(args->magic == MAGIC_ARGS);
-
-	if (data_get_type(dst) != DATA_TYPE_LIST) {
-		xassert(data_get_type(dst) == DATA_TYPE_NULL);
-		data_set_list(dst);
-	}
-
-	return _dump_flag_bit_array(args, obj, dst, parser);
-}
-
 static int _foreach_dump_list(void *obj, void *arg)
 {
 	foreach_list_t *args = arg;
@@ -804,11 +778,67 @@ static int _dump_list(const parser_t *const parser, void *src, data_t *dst,
 	return SLURM_SUCCESS;
 }
 
+static int _dump_linked(args_t *args, const parser_t *const array,
+			const parser_t *const parser, void *src, data_t *dst)
+{
+	int rc;
+
+	check_parser(parser);
+	verify_parser_sliced(parser);
+
+	if (parser->ptr_offset != NO_VAL)
+		src += parser->ptr_offset;
+
+	/*
+	 * Only look for child via key if there was one defined
+	 */
+	if (parser->key) {
+		/*
+		 * Detect duplicate keys
+		 */
+		xassert(!data_resolve_dict_path(dst, parser->key));
+		dst = data_define_dict_path(dst, parser->key);
+	}
+
+	xassert(dst && (data_get_type(dst) != DATA_TYPE_NONE));
+
+	if (parser->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
+		log_flag(DATA, "SKIP: %s parser %s->%s(0x%" PRIxPTR ") for %s(0x%" PRIxPTR ")->%s(+%zd) for data(0x%" PRIxPTR ")/%s(0x%" PRIxPTR ")",
+			 parser->obj_type_string,
+			 array->type_string,
+			 parser->type_string, (uintptr_t)
+			 parser, array->obj_type_string,
+			 (uintptr_t) src, array->field_name,
+			 array->ptr_offset, (uintptr_t) dst,
+			 array->key, (uintptr_t) dst);
+		rc = SLURM_SUCCESS;
+		goto cleanup;
+	}
+
+	log_flag(DATA, "BEGIN: dumping %s parser %s->%s(0x%" PRIxPTR ") for %s(0x%" PRIxPTR ")->%s(+%zd) for data(0x%" PRIxPTR ")/%s(0x%" PRIxPTR ")",
+		 parser->obj_type_string, array->type_string,
+		 parser->type_string, (uintptr_t) parser,
+		 parser->obj_type_string, (uintptr_t) src, array->field_name,
+		 array->ptr_offset, (uintptr_t) dst, array->key,
+		 (uintptr_t) dst);
+
+	rc = dump(src, NO_VAL, find_parser_by_type(parser->type), dst, args);
+
+	log_flag(DATA, "END: dumping %s parser %s->%s(0x%" PRIxPTR ") for %s(0x%" PRIxPTR ")->%s(+%zd) for data(0x%" PRIxPTR ")/%s(0x%" PRIxPTR ")",
+		 parser->obj_type_string, array->type_string,
+		 parser->type_string, (uintptr_t) parser,
+		 array->obj_type_string, (uintptr_t) src, array->field_name,
+		 array->ptr_offset, (uintptr_t) dst, array->key,
+		 (uintptr_t) dst);
+
+cleanup:
+	return rc;
+}
+
 extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 		data_t *dst, args_t *args)
 {
 	int rc;
-	data_t *pd;
 
 	log_flag(DATA, "dump %zd byte %s object at 0x%" PRIxPTR " with parser %s(0x%" PRIxPTR ") to data 0x%" PRIxPTR,
 		 (src_bytes == NO_VAL ? -1 : src_bytes),
@@ -830,110 +860,46 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 	if ((rc = load_prereqs(DUMPING, parser, args)))
 		goto done;
 
-	/* only look for child via key if there was one defined */
-	if (parser->key) {
-		/*
-		 * Detect duplicate keys
-		 */
-		xassert(!data_resolve_dict_path(dst, parser->key));
-		pd = data_define_dict_path(dst, parser->key);
-	} else {
-		pd = dst;
-	}
-
-	xassert(pd && (data_get_type(pd) != DATA_TYPE_NONE));
-
 	if (parser->model == PARSER_MODEL_FLAG_ARRAY) {
-		verify_parser_sliced(parser);
-		xassert((data_get_type(pd) == DATA_TYPE_NULL) ||
-			(data_get_type(pd) == DATA_TYPE_LIST));
-		rc = dump_flag(src, parser, pd, args);
-		goto done;
-	}
-
-	if (parser->fields) {
 		verify_parser_not_sliced(parser);
-		xassert((data_get_type(pd) == DATA_TYPE_NULL) ||
-			(data_get_type(pd) == DATA_TYPE_DICT));
-		/* recursively run the parsers for each struct field */
-		for (int i = 0; !rc && (i < parser->field_count); i++) {
-			const parser_t *const pchild = &parser->fields[i];
-			void *schild = src;
+		xassert((data_get_type(dst) == DATA_TYPE_NULL) ||
+			(data_get_type(dst) == DATA_TYPE_LIST));
+		xassert(parser->ptr_offset == NO_VAL);
 
-			check_parser(pchild);
-			verify_parser_sliced(pchild);
+		if (data_get_type(dst) != DATA_TYPE_LIST)
+			data_set_list(dst);
 
-			if (pchild->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
-				log_flag(DATA, "SKIP: %s parser %s[%d]->%s(0x%" PRIxPTR ") for %s(0x%" PRIxPTR ")->%s(+%zd) for data(0x%" PRIxPTR ")/%s(0x%" PRIxPTR ")",
-					 pchild->obj_type_string, parser->type_string,
-					 i, pchild->type_string, (uintptr_t) pchild,
-					 parser->obj_type_string, (uintptr_t) src,
-					 parser->field_name, parser->ptr_offset,
-					 (uintptr_t) dst, parser->key, (uintptr_t) pd);
-				continue;
-			}
-
-			if (parser->ptr_offset != NO_VAL)
-				schild += parser->ptr_offset;
-
-			log_flag(DATA, "BEGIN: dumping %s parser %s[%d]->%s(0x%" PRIxPTR ") for %s(0x%" PRIxPTR ")->%s(+%zd) for data(0x%" PRIxPTR ")/%s(0x%" PRIxPTR ")",
-				 pchild->obj_type_string, parser->type_string,
-				 i, pchild->type_string, (uintptr_t) pchild,
-				 parser->obj_type_string, (uintptr_t) src,
-				 parser->field_name, parser->ptr_offset,
-				 (uintptr_t) dst, parser->key, (uintptr_t) pd);
-
-			rc = dump(schild, NO_VAL, pchild, pd, args);
-
-			log_flag(DATA, "END: dumping %s parser %s[%d]->%s(0x%" PRIxPTR ") for %s(0x%" PRIxPTR ")->%s(+%zd) for data(0x%" PRIxPTR ")/%s(0x%" PRIxPTR ")",
-				 pchild->obj_type_string, parser->type_string,
-				 i, pchild->type_string, (uintptr_t) pchild,
-				 parser->obj_type_string, (uintptr_t) src,
-				 parser->field_name, parser->ptr_offset,
-				 (uintptr_t) dst, parser->key, (uintptr_t) pd);
-		}
-
-		goto done;
-	}
-
-	if (parser->list_type) {
+		rc = _dump_flag_bit_array(args, src, dst, parser);
+	} else if (parser->model == PARSER_MODEL_ARRAY) {
 		verify_parser_not_sliced(parser);
-		xassert((data_get_type(pd) == DATA_TYPE_NULL) ||
-			(data_get_type(pd) == DATA_TYPE_LIST));
+		xassert(parser->fields);
+		xassert((data_get_type(dst) == DATA_TYPE_NULL) ||
+			(data_get_type(dst) == DATA_TYPE_DICT));
+		/* recursively run linked parsers for each struct field */
+		for (int i = 0; !rc && (i < parser->field_count); i++)
+			rc = _dump_linked(args, parser, &parser->fields[i], src,
+					  dst);
+	} else if (parser->model == PARSER_MODEL_LIST) {
+		xassert(parser->list_type > DATA_PARSER_TYPE_INVALID);
+		xassert(parser->list_type < DATA_PARSER_TYPE_MAX);
+		verify_parser_not_sliced(parser);
+		xassert((data_get_type(dst) == DATA_TYPE_NULL) ||
+			(data_get_type(dst) == DATA_TYPE_LIST));
 		xassert((src_bytes == NO_VAL) || (src_bytes == sizeof(List)));
 		xassert(!parser->dump);
-		rc = _dump_list(parser, src, pd, args);
-		goto done;
+		rc = _dump_list(parser, src, dst, args);
+	} else if ((parser->model == PARSER_MODEL_SIMPLE) ||
+		   (parser->model == PARSER_MODEL_COMPLEX)) {
+		xassert(data_get_type(dst) == DATA_TYPE_NULL);
+		verify_parser_not_sliced(parser);
+
+		xassert(parser->dump != _dump_list);
+
+		/* must be a simple or complex type */
+		rc = parser->dump(parser, src, dst, args);
+	} else {
+		fatal_abort("%s: unexpected model %u", __func__, parser->model);
 	}
-	xassert(parser->dump != _dump_list);
-
-	if (!parser->dump) {
-		const parser_t *const pchild =
-			find_parser_by_type(parser->type);
-		void *schild = src;
-
-		check_parser(pchild);
-
-		if (parser->ptr_offset != NO_VAL)
-			schild += parser->ptr_offset;
-
-		log_flag(DATA, "%s: using %s parser %s(0x%" PRIxPTR ") for %s(0x%" PRIxPTR ")->%s(+%zd) for data(0x%" PRIxPTR ")/%s(0x%" PRIxPTR ")",
-			 __func__, pchild->obj_type_string, pchild->type_string,
-			 (uintptr_t) pchild, parser->obj_type_string,
-			 (uintptr_t) src, parser->field_name,
-			 parser->ptr_offset, (uintptr_t) dst, parser->key,
-			 (uintptr_t) pd);
-
-		rc = dump(schild, NO_VAL, pchild, pd, args);
-
-		goto done;
-	}
-
-	xassert(data_get_type(pd) == DATA_TYPE_NULL);
-	verify_parser_not_sliced(parser);
-
-	/* must be a simple or complex type */
-	rc = parser->dump(parser, src, pd, args);
 
 done:
 	log_flag(DATA, "dump %zd byte %s object at 0x%" PRIxPTR " with parser %s(0x%" PRIxPTR ") to data 0x%" PRIxPTR " rc[%d]=%s",
