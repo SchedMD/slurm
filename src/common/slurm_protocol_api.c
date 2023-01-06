@@ -2448,6 +2448,7 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	slurm_addr_t ctrl_addr;
 	static bool use_backup = false;
 	slurmdb_cluster_rec_t *save_comm_cluster_rec = comm_cluster_rec;
+	int ratelimited = 0;
 
 	/*
 	 * Just in case the caller didn't initialize his slurm_msg_t, and
@@ -2519,6 +2520,20 @@ tryagain:
 
 		if (rc == -1)
 			break;
+	}
+
+	if (!rc && (response_msg->msg_type == RESPONSE_SLURM_RC) &&
+	    ((((return_code_msg_t *) response_msg->data)->return_code)
+	     == SLURMCTLD_COMMUNICATIONS_BACKOFF)) {
+		ratelimited++;
+		/*
+		 * slurmctld thinks we're being too chatty.
+		 * sleep for one second and try again.
+		 */
+		verbose("RPC rate limited %d time(s). Sleeping then trying again.",
+			ratelimited);
+		sleep(1);
+		goto tryagain;
 	}
 
 	if (!rc && (response_msg->msg_type == RESPONSE_SLURM_REROUTE_MSG)) {
