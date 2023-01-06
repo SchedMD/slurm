@@ -99,6 +99,13 @@ extern int slurm_auth_index(void *cred);
 extern bool slurm_get_plugin_hash_enable(int index);
 
 /*
+ * Expose the context_lock externally so slurmstepd can prevent the
+ * auth subsystem from connecting to MUNGE when part of the process
+ * is running under _drop_privileges().
+ */
+extern void auth_setuid_lock(void);
+extern void auth_setuid_unlock(void);
+/*
  * Static bindings for the global authentication context.
  */
 extern void *auth_g_create(int index, char *auth_info, uid_t r_uid,

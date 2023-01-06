@@ -2585,6 +2585,7 @@ static int
 _drop_privileges(stepd_step_rec_t *step, bool do_setuid,
 		 struct priv_state *ps, bool get_list)
 {
+	auth_setuid_lock();
 	ps->saved_uid = getuid();
 	ps->saved_gid = getgid();
 
@@ -2655,6 +2656,7 @@ _reclaim_privileges(struct priv_state *ps)
 	}
 
 done:
+	auth_setuid_unlock();
 	xfree(ps->gid_list);
 
 	return rc;

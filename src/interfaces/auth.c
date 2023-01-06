@@ -117,7 +117,34 @@ auth_plugin_types_t auth_plugin_types[] = {
 static slurm_auth_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static int g_context_num = -1;
-static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
+
+static bool at_forked = false;
+static bool externally_locked = false;
+static void _atfork_child()
+{
+	slurm_rwlock_init(&context_lock);
+
+	/*
+	 * If we're in _drop_privileges() when we fork we need to hold the lock
+	 * in the child process to prevent any other auth plugin calls until
+	 * _reclaim_privileges(). However, for rwlocks, you cannot simply call
+	 * slurm_rwlock_unlock() in the pthread_atfork() child handler -
+	 * testing demonstrated that this won't unlock and you'll be deadlocked
+	 * on the next lock acquisition.
+	 *
+	 * (This does work for slurm_mutex_unlock() - as is used in other
+	 * pthread_atfork() child handlers within Slurm. This appears to be
+	 * something specific to pthread_rwlock_t's construction.)
+	 *
+	 * Instead, reacquire the lock immediately after the
+	 * slurm_rwlock_init() call. Since we're in the child process here, the
+	 * eventual _reclaim_privileges() call to auth_setuid_unlock() will
+	 * behave as expected.
+	 */
+	if (externally_locked)
+		slurm_rwlock_wrlock(&context_lock);
+}
 
 extern const char *auth_get_plugin_name(int plugin_id)
 {
@@ -144,7 +171,7 @@ extern int slurm_auth_init(char *auth_type)
 	char *plugin_type = "auth";
 	static bool daemon_run = false, daemon_set = false;
 
-	slurm_mutex_lock(&context_lock);
+	slurm_rwlock_wrlock(&context_lock);
 
 	if (g_context_num > 0)
 		goto done;
@@ -200,8 +227,13 @@ extern int slurm_auth_init(char *auth_type)
 		}
 	}
 done:
+	if (!at_forked) {
+		pthread_atfork(NULL, NULL, _atfork_child);
+		at_forked = true;
+	}
+
 	xfree(auth_alt_types);
-	slurm_mutex_unlock(&context_lock);
+	slurm_rwlock_unlock(&context_lock);
 	return retval;
 }
 
@@ -210,7 +242,7 @@ extern int slurm_auth_fini(void)
 {
 	int i, rc = SLURM_SUCCESS, rc2;
 
-	slurm_mutex_lock(&context_lock);
+	slurm_rwlock_wrlock(&context_lock);
 	if (!g_context)
 		goto done;
 
@@ -229,7 +261,7 @@ extern int slurm_auth_fini(void)
 	g_context_num = -1;
 
 done:
-	slurm_mutex_unlock(&context_lock);
+	slurm_rwlock_unlock(&context_lock);
 	return rc;
 }
 
@@ -254,6 +286,23 @@ int slurm_auth_index(void *cred)
 	return 0;
 }
 
+extern void auth_setuid_lock(void)
+{
+	slurm_rwlock_wrlock(&context_lock);
+	/*
+	 * If running under _drop_privileges(), we want the locked state
+	 * to persist after fork() as it is still not safe to use the
+	 * rest of the auth API until after _reclaim_privileges().
+	 */
+	externally_locked = true;
+}
+
+extern void auth_setuid_unlock(void)
+{
+	externally_locked = false;
+	slurm_rwlock_unlock(&context_lock);
+}
+
 /*
  * Static bindings for the global authentication context.  The test
  * of the function pointers is omitted here because the global
@@ -271,7 +320,10 @@ void *auth_g_create(int index, char *auth_info, uid_t r_uid,
 	if (r_uid == SLURM_AUTH_NOBODY)
 		return NULL;
 
+	slurm_rwlock_rdlock(&context_lock);
 	cred = (*(ops[index].create))(auth_info, r_uid, data, dlen);
+	slurm_rwlock_unlock(&context_lock);
+
 	if (cred)
 		cred->index = index;
 	return cred;
@@ -291,6 +343,7 @@ int auth_g_destroy(void *cred)
 
 int auth_g_verify(void *cred, char *auth_info)
 {
+	int rc = SLURM_ERROR;
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
 	xassert(g_context_num > 0);
@@ -298,55 +351,79 @@ int auth_g_verify(void *cred, char *auth_info)
 	if (!wrap)
 		return SLURM_ERROR;
 
-	return (*(ops[wrap->index].verify))(cred, auth_info);
+	slurm_rwlock_rdlock(&context_lock);
+	rc = (*(ops[wrap->index].verify))(cred, auth_info);
+	slurm_rwlock_unlock(&context_lock);
+
+	return rc;
 }
 
 uid_t auth_g_get_uid(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+	uid_t uid = SLURM_AUTH_NOBODY;
 
 	xassert(g_context_num > 0);
 
 	if (!wrap)
 		return SLURM_AUTH_NOBODY;
 
-	return (*(ops[wrap->index].get_uid))(cred);
+	slurm_rwlock_rdlock(&context_lock);
+	uid = (*(ops[wrap->index].get_uid))(cred);
+	slurm_rwlock_unlock(&context_lock);
+
+	return uid;
 }
 
 gid_t auth_g_get_gid(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+	gid_t gid = SLURM_AUTH_NOBODY;
 
 	xassert(g_context_num > 0);
 
 	if (!wrap)
 		return SLURM_AUTH_NOBODY;
 
-	return (*(ops[wrap->index].get_gid))(cred);
+	slurm_rwlock_rdlock(&context_lock);
+	gid = (*(ops[wrap->index].get_gid))(cred);
+	slurm_rwlock_unlock(&context_lock);
+
+	return gid;
 }
 
 char *auth_g_get_host(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+	char *host = NULL;
 
 	xassert(g_context_num > 0);
 
 	if (!wrap)
 		return NULL;
 
-	return (*(ops[wrap->index].get_host))(cred);
+	slurm_rwlock_rdlock(&context_lock);
+	host = (*(ops[wrap->index].get_host))(cred);
+	slurm_rwlock_unlock(&context_lock);
+
+	return host;
 }
 
 extern int auth_g_get_data(void *cred, char **data, uint32_t *len)
 {
 	cred_wrapper_t *wrap = cred;
+	int rc = SLURM_ERROR;
 
 	xassert(g_context_num > 0);
 
 	if (!wrap)
 		return SLURM_ERROR;
 
-	return (*(ops[wrap->index].get_data))(cred, data, len);
+	slurm_rwlock_rdlock(&context_lock);
+	rc = (*(ops[wrap->index].get_data))(cred, data, len);
+	slurm_rwlock_unlock(&context_lock);
+
+	return rc;
 }
 
 int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version)
@@ -404,28 +481,39 @@ unpack_error:
 
 int auth_g_thread_config(const char *token, const char *username)
 {
+	int rc = SLURM_SUCCESS;
 	xassert(g_context_num > 0);
 
-	return (*(ops[0].thread_config))(token, username);
+	slurm_rwlock_rdlock(&context_lock);
+	rc = (*(ops[0].thread_config))(token, username);
+	slurm_rwlock_unlock(&context_lock);
+
+	return rc;
 }
 
 void auth_g_thread_clear(void)
 {
 	xassert(g_context_num > 0);
 
+	slurm_rwlock_rdlock(&context_lock);
 	(*(ops[0].thread_clear))();
+	slurm_rwlock_unlock(&context_lock);
 }
 
 char *auth_g_token_generate(int plugin_id, const char *username,
 			    int lifespan)
 {
+	char *token = NULL;
 	xassert(g_context_num > 0);
 
+	slurm_rwlock_rdlock(&context_lock);
 	for (int i = 0; i < g_context_num; i++) {
 		if (plugin_id == *(ops[i].plugin_id)) {
-			return (*(ops[i].token_generate))(username, lifespan);
+			token = (*(ops[i].token_generate))(username, lifespan);
+			break;
 		}
 	}
+	slurm_rwlock_unlock(&context_lock);
 
-	return NULL;
+	return token;
 }
