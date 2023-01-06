@@ -70,7 +70,6 @@ typedef enum {
 	DATA_PARSER_ASSOC_SHORT_PTR, /* slurmdb_assoc_rec_t* (for id only) */
 	DATA_PARSER_ASSOC, /* slurmdb_assoc_rec_t */
 	DATA_PARSER_ASSOC_FLAGS, /* slurmdb_assoc_rec_t->flags & ASSOC_FLAG_* */
-	DATA_PARSER_ASSOC_FLAG_DEFAULT, /* slurmdb_assoc_rec_t->is_def */
 	DATA_PARSER_ASSOC_USAGE, /* slurmdb_assoc_usage_t */
 	DATA_PARSER_ASSOC_USAGE_PTR, /* slurmdb_assoc_usage_t* */
 	DATA_PARSER_CLASSIFICATION_TYPE, /* slurmdb_classification_type_t */
@@ -168,7 +167,6 @@ typedef enum {
 	DATA_PARSER_NODE_SELECT_TRES_WEIGHTED, /* node_info_t->select_nodeinfo  */
 	DATA_PARSER_LICENSES, /* license_info_msg_t */
 	DATA_PARSER_LICENSE, /* slurm_license_info_t */
-	DATA_PARSER_LICENSE_FLAG_REMOTE, /* slurm_license_info_t->remote */
 	DATA_PARSER_JOB_INFO_MSG, /* job_info_msg_t */
 	DATA_PARSER_JOB_INFO, /* slurm_job_info_t */
 	DATA_PARSER_JOB_INFO_STDIN, /* slurm_job_info_t->stdin (handles % replacements) */

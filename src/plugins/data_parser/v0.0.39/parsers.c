@@ -202,8 +202,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		/* field is only a place holder so most assert()s dont apply */
 		xassert(parser->field_name && parser->field_name[0]);
 		xassert(parser->type == DATA_PARSER_TYPE_INVALID);
-		xassert(parser->flag == FLAG_TYPE_NONE);
-		xassert(parser->flag_bit_array_count == NO_VAL8);
+		xassert(!parser->flag_bit_array_count);
 		xassert(parser->needs == NEED_NONE);
 		xassert(!parser->field_name_overloads);
 		xassert(!parser->key);
@@ -220,32 +219,21 @@ extern void check_parser_funcname(const parser_t *const parser,
 
 	if (parser->model == PARSER_MODEL_FLAG_ARRAY) {
 		/* parser of a specific flag field list */
-		xassert(parser->flag != FLAG_TYPE_NONE);
-		xassert(parser->flag > FLAG_TYPE_INVALID);
-		xassert(parser->flag < FLAG_TYPE_MAX);
+		xassert(parser->flag_bit_array);
+		xassert(parser->flag_bit_array_count < NO_VAL8);
 
-		if (parser->flag == FLAG_TYPE_BIT_ARRAY) {
-			xassert(!parser->flag_name);
-			xassert(parser->flag_bit_array);
-			xassert(parser->flag_bit_array_count < NO_VAL8);
+		for (int8_t i = 0; i < parser->flag_bit_array_count; i++) {
+			_check_flag_bit(i, &parser->flag_bit_array[i]);
 
-			for (int8_t i = 0; i < parser->flag_bit_array_count;
-			     i++) {
-				_check_flag_bit(i, &parser->flag_bit_array[i]);
-
-				/* check for duplicate flag names */
-				for (int8_t j = 0;
-				     j < parser->flag_bit_array_count; j++) {
-					xassert((i == j) ||
-						xstrcasecmp(
-							parser->flag_bit_array[i].name,
-							parser->flag_bit_array[j].name));
-				}
+			/* check for duplicate flag names */
+			for (int8_t j = 0; j < parser->flag_bit_array_count;
+			     j++) {
+				xassert((i == j) ||
+					xstrcasecmp(parser->flag_bit_array[i]
+							    .name,
+						    parser->flag_bit_array[j]
+							    .name));
 			}
-		} else {
-			xassert(parser->flag_name && parser->flag_name[0]);
-			xassert(!parser->flag_bit_array);
-			xassert(parser->flag_bit_array_count == NO_VAL8);
 		}
 
 		/* make sure this is not a list or array type */
@@ -261,8 +249,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		/* parser of a List */
 		xassert(parser->list_type > DATA_PARSER_TYPE_INVALID);
 		xassert(parser->list_type < DATA_PARSER_TYPE_MAX);
-		xassert(parser->flag == FLAG_TYPE_NONE);
-		xassert(parser->flag_bit_array_count == NO_VAL8);
+		xassert(!parser->flag_bit_array_count);
 		xassert(!parser->fields);
 		xassert(!parser->field_count);
 		xassert(!parser->parse);
@@ -273,9 +260,8 @@ extern void check_parser_funcname(const parser_t *const parser,
 		/* parser of a parser Array */
 		xassert(parser->field_count > 0);
 
-		xassert(parser->flag == FLAG_TYPE_NONE);
 		xassert(parser->ptr_offset == NO_VAL);
-		xassert(parser->flag_bit_array_count == NO_VAL8);
+		xassert(!parser->flag_bit_array_count);
 		xassert(!parser->parse);
 		xassert(!parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
@@ -328,8 +314,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 
 		xassert(parser->field_name && parser->field_name[0]);
 		xassert(parser->key && parser->key[0]);
-		xassert(parser->flag == FLAG_TYPE_NONE);
-		xassert(parser->flag_bit_array_count == NO_VAL8);
+		xassert(!parser->flag_bit_array_count);
 		xassert(!parser->fields);
 		xassert(!parser->field_count);
 		xassert(!parser->parse);
@@ -349,8 +334,6 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(find_parser_by_type(parser->type));
 		xassert(parser->field_name && parser->field_name[0]);
 		xassert(parser->key && parser->key[0]);
-		xassert(parser->flag == FLAG_TYPE_BIT_ARRAY);
-		xassert(!parser->flag_name);
 		xassert(parser->flag_bit_array);
 		xassert(parser->flag_bit_array_count > 0);
 		xassert(parser->flag_bit_array_count < NO_VAL8);
@@ -375,8 +358,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->ptr_offset == NO_VAL);
 		xassert(!parser->field_name);
 		xassert(parser->key && parser->key[0]);
-		xassert(parser->flag == FLAG_TYPE_NONE);
-		xassert(parser->flag_bit_array_count == NO_VAL8);
+		xassert(!parser->flag_bit_array_count);
 		xassert(!parser->fields);
 		xassert(!parser->field_count);
 		xassert(!parser->parse);
@@ -389,26 +371,11 @@ extern void check_parser_funcname(const parser_t *const parser,
 		 * with no easy way to check they match here.
 		 */
 		xassert(parser->size > 0);
-	} else if (parser->model == PARSER_MODEL_ARRAY_BOOL_FIELD) {
-		xassert((parser->ptr_offset < NO_VAL) ||
-			(parser->ptr_offset >= 0));
-		xassert(parser->field_name && parser->field_name[0]);
-		xassert(parser->key && parser->key[0]);
-		xassert(parser->flag == FLAG_TYPE_BOOL);
-		xassert(parser->flag_bit_array_count == NO_VAL8);
-		xassert(!parser->fields);
-		xassert(!parser->field_count);
-		xassert(!parser->parse);
-		xassert(!parser->dump);
-		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
-		xassert(!parser->list_del_func);
-		xassert(!parser->list_new_func);
 	} else if (parser->model == PARSER_MODEL_SIMPLE) {
 		xassert(parser->ptr_offset == NO_VAL);
 		xassert(!parser->key);
 		xassert(!parser->field_name);
-		xassert(parser->flag == FLAG_TYPE_NONE);
-		xassert(parser->flag_bit_array_count == NO_VAL8);
+		xassert(!parser->flag_bit_array_count);
 		xassert(!parser->fields);
 		xassert(!parser->field_count);
 		xassert(parser->parse);
@@ -420,8 +387,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->field_name);
 		xassert(!parser->key);
 		xassert(!parser->field_name);
-		xassert(parser->flag == FLAG_TYPE_NONE);
-		xassert(parser->flag_bit_array_count == NO_VAL8);
+		xassert(!parser->flag_bit_array_count);
 		xassert(!parser->fields);
 		xassert(!parser->field_count);
 		xassert(parser->parse);
@@ -4039,8 +4005,6 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 	.type = DATA_PARSER_ ## mtype,                                \
 	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
 	.obj_type_string = XSTRINGIFY(stype),                         \
-	.flag = FLAG_TYPE_NONE,                                       \
-	.flag_bit_array_count = NO_VAL8,                              \
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = need,                                                \
 }
@@ -4052,8 +4016,6 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 	.field_name = XSTRINGIFY(field),                              \
 	.type = DATA_PARSER_TYPE_INVALID,                             \
 	.obj_type_string = XSTRINGIFY(stype),                         \
-	.flag = FLAG_TYPE_NONE,                                       \
-	.flag_bit_array_count = NO_VAL8,                              \
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = NEED_NONE,                                           \
 }
@@ -4071,29 +4033,8 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 	.type = DATA_PARSER_ ## mtype,                                \
 	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
 	.obj_type_string = XSTRINGIFY(stype),                         \
-	.flag = FLAG_TYPE_NONE,                                       \
-	.flag_bit_array_count = NO_VAL8,                              \
 	.size = NO_VAL,                                               \
 	.needs = need                                                 \
-}
-/* will never set to FALSE, only will set to TRUE if matched  */
-#define add_parse_bool(stype, mtype, req, field, path,           \
-			    name, need)                               \
-{                                                                     \
-	.magic = MAGIC_PARSER,                                        \
-	.model = PARSER_MODEL_ARRAY_BOOL_FIELD,                       \
-	.ptr_offset = offsetof(stype, field),                         \
-	.field_name = XSTRINGIFY(field),                              \
-	.key = path,                                                  \
-	.required = req,                                              \
-	.type = DATA_PARSER_ ## mtype,                                \
-	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
-	.obj_type_string = XSTRINGIFY(stype),                         \
-	.flag = FLAG_TYPE_BOOL,                                       \
-	.flag_name = name,                                            \
-	.flag_bit_array_count = NO_VAL8,                              \
-	.size = sizeof(((stype *) NULL)->field),                      \
-	.needs = need,                                                \
 }
 #define add_parse_bit_flag_array(stype, mtype, req, field, path)      \
 {                                                                     \
@@ -4106,8 +4047,6 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 	.type = DATA_PARSER_ ## mtype,                                \
 	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
 	.obj_type_string = XSTRINGIFY(stype),                         \
-	.flag = FLAG_TYPE_BIT_ARRAY,                                  \
-	.flag_name = NULL,                                            \
 	.flag_bit_array = PARSER_FLAG_ARRAY(mtype),                   \
 	.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(mtype)), \
 	.size = sizeof(((stype *) NULL)->field),                      \
@@ -4180,7 +4119,7 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_skip(grp_tres_mins_ctld),
 	add_parse(TRES_STR, grp_tres_run_mins, "max/tres/group/active", NEED_TRES),
 	add_skip(id),
-	add_parse_bool(slurmdb_assoc_rec_t, ASSOC_FLAG_DEFAULT, false, is_def, "is_default", "DEFAULT", NEED_NONE),
+	add_parse(BOOL16, is_def, "is_default", NEED_NONE),
 	add_parse(UINT32, max_jobs, "max/jobs/active", NEED_NONE),
 	add_parse(UINT32, max_jobs_accrue, "max/jobs/accruing", NEED_NONE),
 	add_parse(UINT32, max_submit_jobs, "max/jobs/total", NEED_NONE),
@@ -4846,7 +4785,7 @@ static const parser_t PARSER_ARRAY(LICENSE)[] = {
 	add_parse(UINT32, total, "Total"),
 	add_parse(UINT32, in_use, "Used"),
 	add_parse(UINT32, available, "Free"),
-	add_parse_bool(slurm_license_info_t, LICENSE_FLAG_REMOTE, false, remote, "flags", "REMOTE", NEED_NONE),
+	add_parse(BOOL, remote, "remote"),
 	add_parse(UINT32, reserved, "Reserved"),
 };
 #undef add_parse
@@ -5642,8 +5581,6 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.needs = NEED_NONE,                                            \
 		.fields = PARSER_ARRAY(typev),                                 \
 		.field_count = ARRAY_SIZE(PARSER_ARRAY(typev)),                \
-		.flag = FLAG_TYPE_NONE,                                        \
-		.flag_bit_array_count = NO_VAL8,                               \
 		.ptr_offset = NO_VAL,                                          \
 	}
 /* add parser for List */
@@ -5659,8 +5596,6 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.list_new_func = addf,                                         \
 		.size = sizeof(List),                                          \
 		.needs = need,                                                 \
-		.flag = FLAG_TYPE_NONE,                                        \
-		.flag_bit_array_count = NO_VAL8,                               \
 		.ptr_offset = NO_VAL,                                          \
 	}
 /* add parser for simple type */
@@ -5675,8 +5610,6 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.needs = need,                                                 \
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
-		.flag = FLAG_TYPE_NONE,                                        \
-		.flag_bit_array_count = NO_VAL8,                               \
 		.ptr_offset = NO_VAL,                                          \
 	}
 /* add parser for complex type */
@@ -5691,8 +5624,6 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.needs = need,                                                 \
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
-		.flag = FLAG_TYPE_NONE,                                        \
-		.flag_bit_array_count = NO_VAL8,                               \
 		.ptr_offset = NO_VAL,                                          \
 	}
 #define addfa(typev, typet)                                                    \
@@ -5704,7 +5635,6 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.obj_type_string = XSTRINGIFY(typet),                          \
 		.size = sizeof(typet),                                         \
 		.needs = NEED_NONE,                                            \
-		.flag = FLAG_TYPE_BIT_ARRAY,                                   \
 		.flag_bit_array = PARSER_FLAG_ARRAY(typev),                    \
 		.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(typev)),  \
 		.ptr_offset = NO_VAL,                                          \

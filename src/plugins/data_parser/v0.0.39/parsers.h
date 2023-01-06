@@ -73,20 +73,11 @@ typedef struct {
 } flag_bit_t;
 
 typedef enum {
-	FLAG_TYPE_INVALID = 0, /* aka not a flag */
-	FLAG_TYPE_NONE, /* not applicable aka not a flag */
-	FLAG_TYPE_BIT_ARRAY, /* array of bit flags */
-	FLAG_TYPE_BOOL, /* set a bool using offset */
-	FLAG_TYPE_MAX /* place holder */
-} flag_type_t;
-
-typedef enum {
 	PARSER_MODEL_INVALID = 0, /* aka not initialized */
 	PARSER_MODEL_ARRAY, /* parser array to parse every field in a struct */
 	PARSER_MODEL_ARRAY_LINK_SIMPLE_FIELD, /* link to a simple parser in a parser array */
 	PARSER_MODEL_ARRAY_LINK_COMPLEX_FIELD, /* link to a complex parser in a parser array */
 	PARSER_MODEL_ARRAY_SKIP_FIELD, /* parser to mark field as not being parsed in a parser array */
-	PARSER_MODEL_ARRAY_BOOL_FIELD, /* parser for single bool field in a parser array */
 	PARSER_MODEL_ARRAY_LINK_FLAGS_FIELD, /* link to a flags array parser in a parser array */
 
 	PARSER_MODEL_SIMPLE, /* parser for single field */
@@ -118,8 +109,6 @@ typedef struct parser_s {
 	char *type_string; /* stringified DATA_PARSE enum */
 
 	/* flag specific properties */
-	flag_type_t flag;
-	char *flag_name;
 	const flag_bit_t *flag_bit_array;
 	uint8_t flag_bit_array_count; /* number of entries in flag_bit_array */
 

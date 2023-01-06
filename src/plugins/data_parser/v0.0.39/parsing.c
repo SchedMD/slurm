@@ -182,84 +182,39 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 	void *dst = args->dst;
 	const parser_t *const parser = args->parser;
 	char *path = NULL;
+	bool matched_any = false;
 
 	xassert(args->magic == MAGIC_FOREACH_LIST_FLAG);
 	xassert(args->args->magic == MAGIC_ARGS);
 	xassert(parser->magic == MAGIC_PARSER);
 
-	if (parser->flag == FLAG_TYPE_BIT_ARRAY) {
-		bool matched_any = false;
+	for (int8_t i = 0; (i < parser->flag_bit_array_count); i++) {
+		const flag_bit_t *bit = &parser->flag_bit_array[i];
+		bool matched = !xstrcasecmp(data_get_string(src), bit->name);
 
-		for (int8_t i = 0; (i < parser->flag_bit_array_count); i++) {
-			const flag_bit_t *bit = &parser->flag_bit_array[i];
-			bool matched =
-				!xstrcasecmp(data_get_string(src), bit->name);
+		if (matched)
+			matched_any = true;
+		else
+			continue;
 
-			if (matched)
-				matched_any = true;
-			else
-				continue;
+		if (bit->type == FLAG_BIT_TYPE_EQUAL)
+			_set_flag_bit(parser, dst, bit, matched,
+				      _flag_parent_path(&path, args), src);
+		else if (bit->type == FLAG_BIT_TYPE_BIT)
+			_set_flag_bit_equal(parser, dst, bit, matched,
+					    _flag_parent_path(&path, args),
+					    src);
+		else
+			fatal_abort("%s: invalid bit_flag_t", __func__);
+	}
 
-			if (bit->type == FLAG_BIT_TYPE_EQUAL)
-				_set_flag_bit(parser, dst, bit, matched,
-					      _flag_parent_path(&path, args),
-					      src);
-			else if (bit->type == FLAG_BIT_TYPE_BIT)
-				_set_flag_bit_equal(parser, dst, bit, matched,
-						    _flag_parent_path(&path,
-								      args),
-						    src);
-			else
-				fatal_abort("%s: invalid bit_flag_t", __func__);
-		}
-
-		if (!matched_any) {
-			on_error(PARSING, parser->type, args->args,
-				 ESLURM_DATA_FLAGS_INVALID,
-				 _flag_parent_path(&path, args), __func__,
-				 "Unknown flag \"%s\"", data_get_string(src));
-			xfree(path);
-			return DATA_FOR_EACH_FAIL;
-		}
-	} else if (parser->flag == FLAG_TYPE_BOOL) {
-		bool matched =
-			!xstrcasecmp(data_get_string(src), parser->flag_name);
-
-		/*
-		 * match size exactly of source to avoid any high bits
-		 * not getting cleared
-		 */
-		if (parser->size == sizeof(uint64_t)) {
-			uint64_t *flags = dst;
-			*flags = (matched ? 1 : 0);
-		} else if (parser->size == sizeof(uint32_t)) {
-			uint32_t *flags = dst;
-			*flags = (matched ? 1 : 0);
-		} else if (parser->size == sizeof(uint16_t)) {
-			uint16_t *flags = dst;
-			*flags = (matched ? 1 : 0);
-		} else if (parser->size == sizeof(uint8_t)) {
-			uint8_t *flags = dst;
-			*flags = (matched ? 1 : 0);
-		} else {
-			fatal_abort("%s: unexpected enum size: %zu", __func__,
-				    parser->size);
-		}
-
-		log_flag(DATA, "%s: %s{%s(0x%" PRIxPTR ")} %s %s %s %s(0x%" PRIxPTR "+%zd)%s%s=%s via boolean flag parser %s(0x%" PRIxPTR ")",
-			 __func__, _flag_parent_path(&path, args),
-			 data_type_to_string(data_get_type(src)),
-			 (uintptr_t) src, (matched ? "==" : "!="),
-			 parser->flag_name,
-			 (matched ? "setting" : "not setting"),
-			 parser->obj_type_string, (uintptr_t) dst,
-			 parser->ptr_offset, (parser->field_name ? "->" : ""),
-			 (parser->field_name ? parser->field_name : ""),
-			 (matched ? "true" : "false"), parser->obj_type_string,
-			 (uintptr_t) parser);
-	} else {
-		fatal_abort("%s: invalid flag type: 0x%d", __func__,
-			    parser->flag);
+	if (!matched_any) {
+		on_error(PARSING, parser->type, args->args,
+			 ESLURM_DATA_FLAGS_INVALID,
+			 _flag_parent_path(&path, args), __func__,
+			 "Unknown flag \"%s\"", data_get_string(src));
+		xfree(path);
+		return DATA_FOR_EACH_FAIL;
 	}
 
 	xfree(path);
@@ -284,8 +239,6 @@ static int parse_flag(void *dst, const parser_t *const parser, data_t *src,
 	xassert(parser->key && parser->key[0]);
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(parser->magic == MAGIC_PARSER);
-	xassert((parser->flag == FLAG_TYPE_BIT_ARRAY) ||
-		(parser->flag == FLAG_TYPE_BOOL));
 
 	if (parser->ptr_offset > 0)
 		fargs.dst += parser->ptr_offset;
@@ -526,7 +479,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		 (parser->field_name ? parser->field_name : ""),
 		 parser->type_string, (uintptr_t) parser);
 
-	if (parser->flag != FLAG_TYPE_NONE) {
+	if (parser->model == PARSER_MODEL_FLAG_ARRAY) {
 		verify_parser_sliced(parser);
 		rc = parse_flag(dst, parser, pd, args, ppath);
 		goto cleanup;
@@ -663,41 +616,6 @@ cleanup:
 	return rc;
 }
 
-static int _dump_flag_bool(args_t *args, void *src, data_t *dst,
-			   const parser_t *const parser)
-{
-	bool found = false;
-
-	xassert(args->magic == MAGIC_ARGS);
-	check_parser(parser);
-
-	if (data_get_type(dst) == DATA_TYPE_NULL)
-		data_set_list(dst);
-	if (data_get_type(dst) != DATA_TYPE_LIST)
-		return ESLURM_DATA_CONV_FAILED;
-
-	if (parser->size == sizeof(uint64_t)) {
-		uint64_t *ptr = src;
-		found = !!*ptr;
-	} else if (parser->size == sizeof(uint32_t)) {
-		uint32_t *ptr = src;
-		found = !!*ptr;
-	} else if (parser->size == sizeof(uint16_t)) {
-		uint16_t *ptr = src;
-		found = !!*ptr;
-	} else if (parser->size == sizeof(uint8_t)) {
-		uint8_t *ptr = src;
-		found = !!*ptr;
-	} else {
-		fatal("%s: unexpected bool size: %zu", __func__, parser->size);
-	}
-
-	if (found)
-		data_set_string(data_list_append(dst), parser->flag_name);
-
-	return SLURM_SUCCESS;
-}
-
 static bool _match_flag_bit(const parser_t *const parser, void *src,
 			    const flag_bit_t *bit)
 {
@@ -824,22 +742,13 @@ static int dump_flag(void *src, const parser_t *const parser, data_t *dst,
 	xassert((parser->ptr_offset == NO_VAL) || (parser->ptr_offset >= 0));
 	check_parser(parser);
 	xassert(args->magic == MAGIC_ARGS);
-	xassert((parser->flag == FLAG_TYPE_BIT_ARRAY) ||
-		(parser->flag == FLAG_TYPE_BOOL));
 
 	if (data_get_type(dst) != DATA_TYPE_LIST) {
 		xassert(data_get_type(dst) == DATA_TYPE_NULL);
 		data_set_list(dst);
 	}
 
-	switch (parser->flag) {
-	case FLAG_TYPE_BOOL:
-		return _dump_flag_bool(args, obj, dst, parser);
-	case FLAG_TYPE_BIT_ARRAY:
-		return _dump_flag_bit_array(args, obj, dst, parser);
-	default :
-		fatal("%s: invalid flag type: 0x%d", __func__, parser->flag);
-	}
+	return _dump_flag_bit_array(args, obj, dst, parser);
 }
 
 static int _foreach_dump_list(void *obj, void *arg)
@@ -924,11 +833,9 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 	/* only look for child via key if there was one defined */
 	if (parser->key) {
 		/*
-		 * Detect duplicate keys - unless parser is for an enum flag
-		 * where repeats are expected.
+		 * Detect duplicate keys
 		 */
-		xassert(parser->flag ||
-			!data_resolve_dict_path(dst, parser->key));
+		xassert(!data_resolve_dict_path(dst, parser->key));
 		pd = data_define_dict_path(dst, parser->key);
 	} else {
 		pd = dst;
@@ -936,7 +843,7 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 
 	xassert(pd && (data_get_type(pd) != DATA_TYPE_NONE));
 
-	if (parser->flag != FLAG_TYPE_NONE) {
+	if (parser->model == PARSER_MODEL_FLAG_ARRAY) {
 		verify_parser_sliced(parser);
 		xassert((data_get_type(pd) == DATA_TYPE_NULL) ||
 			(data_get_type(pd) == DATA_TYPE_LIST));
