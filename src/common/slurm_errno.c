@@ -745,18 +745,6 @@ slurm_errtab_t slurm_errtab[] = {
 	{ ESLURMD_CPU_LAYOUT_ERROR,
 	  "Unable to layout tasks on given cpus"		},
 
-	/* slurmd errors in user batch job */
-	{ ESCRIPT_CHDIR_FAILED,
-	  "ESCRIPT_CHDIR_FAILED",
-	  "unable to change directory to work directory"	},
-	{ ESCRIPT_OPEN_OUTPUT_FAILED,
-	  "ESCRIPT_OPEN_OUTPUT_FAILED",
-	  "could not open output file"			        },
-	{ ESCRIPT_NON_ZERO_RETURN,
-	  "ESCRIPT_NON_ZERO_RETURN",
-	  "Script terminated with non-zero exit code"		},
-
-
 	/* socket specific Slurm communications error */
 
 	{ SLURM_PROTOCOL_SOCKET_IMPL_ZERO_RECV_LENGTH,

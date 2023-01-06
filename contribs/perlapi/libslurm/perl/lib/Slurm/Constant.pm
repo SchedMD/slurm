@@ -1188,18 +1188,6 @@ head2 SLURM ERRNO
 
 =back
 
-=head3 slurmd errors in user batch job
-
-=over 2
-
-=item * ESCRIPT_CHDIR_FAILED              4100
-
-=item * ESCRIPT_OPEN_OUTPUT_FAILED        4101
-
-=item * ESCRIPT_NON_ZERO_RETURN           4102
-
-=back
-
 =head3 socket specific Slurm communications error
 
 =over 2
