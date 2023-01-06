@@ -14,6 +14,7 @@ data_parser_v0_0_39_la_SOURCES = \
 	slurmdb_helpers.h slurmdb_helpers.c \
 	events.h events.c \
 	alloc.h alloc.c \
+	openapi.h openapi.c \
 	parsing.h parsing.c \
 	parsers.h parsers.c
 data_parser_v0_0_39_la_DEPENDENCIES =

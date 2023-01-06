@@ -184,6 +184,7 @@ am_data_parser_v0_0_39_la_OBJECTS = data_parser_v0_0_39_la-api.lo \
 	data_parser_v0_0_39_la-slurmdb_helpers.lo \
 	data_parser_v0_0_39_la-events.lo \
 	data_parser_v0_0_39_la-alloc.lo \
+	data_parser_v0_0_39_la-openapi.lo \
 	data_parser_v0_0_39_la-parsing.lo \
 	data_parser_v0_0_39_la-parsers.lo
 data_parser_v0_0_39_la_OBJECTS = $(am_data_parser_v0_0_39_la_OBJECTS)
@@ -213,6 +214,7 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/data_parser_v0_0_39_la-alloc.Plo \
 	./$(DEPDIR)/data_parser_v0_0_39_la-api.Plo \
 	./$(DEPDIR)/data_parser_v0_0_39_la-events.Plo \
+	./$(DEPDIR)/data_parser_v0_0_39_la-openapi.Plo \
 	./$(DEPDIR)/data_parser_v0_0_39_la-parsers.Plo \
 	./$(DEPDIR)/data_parser_v0_0_39_la-parsing.Plo \
 	./$(DEPDIR)/data_parser_v0_0_39_la-slurmdb_helpers.Plo
@@ -532,6 +534,7 @@ data_parser_v0_0_39_la_SOURCES = \
 	slurmdb_helpers.h slurmdb_helpers.c \
 	events.h events.c \
 	alloc.h alloc.c \
+	openapi.h openapi.c \
 	parsing.h parsing.c \
 	parsers.h parsers.c
 
@@ -620,6 +623,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_39_la-alloc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_39_la-api.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_39_la-events.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_39_la-openapi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_39_la-parsers.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_39_la-parsing.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser_v0_0_39_la-slurmdb_helpers.Plo@am__quote@ # am--include-marker
@@ -678,6 +682,13 @@ data_parser_v0_0_39_la-alloc.lo: alloc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='alloc.c' object='data_parser_v0_0_39_la-alloc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_39_la-alloc.lo `test -f 'alloc.c' || echo '$(srcdir)/'`alloc.c
+
+data_parser_v0_0_39_la-openapi.lo: openapi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_39_la-openapi.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_39_la-openapi.Tpo -c -o data_parser_v0_0_39_la-openapi.lo `test -f 'openapi.c' || echo '$(srcdir)/'`openapi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_parser_v0_0_39_la-openapi.Tpo $(DEPDIR)/data_parser_v0_0_39_la-openapi.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='openapi.c' object='data_parser_v0_0_39_la-openapi.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -c -o data_parser_v0_0_39_la-openapi.lo `test -f 'openapi.c' || echo '$(srcdir)/'`openapi.c
 
 data_parser_v0_0_39_la-parsing.lo: parsing.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_parser_v0_0_39_la_CFLAGS) $(CFLAGS) -MT data_parser_v0_0_39_la-parsing.lo -MD -MP -MF $(DEPDIR)/data_parser_v0_0_39_la-parsing.Tpo -c -o data_parser_v0_0_39_la-parsing.lo `test -f 'parsing.c' || echo '$(srcdir)/'`parsing.c
@@ -796,6 +807,7 @@ distclean: distclean-am
 		-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-alloc.Plo
 	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-api.Plo
 	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-events.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-openapi.Plo
 	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-parsers.Plo
 	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-parsing.Plo
 	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-slurmdb_helpers.Plo
@@ -847,6 +859,7 @@ maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-alloc.Plo
 	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-api.Plo
 	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-events.Plo
+	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-openapi.Plo
 	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-parsers.Plo
 	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-parsing.Plo
 	-rm -f ./$(DEPDIR)/data_parser_v0_0_39_la-slurmdb_helpers.Plo
