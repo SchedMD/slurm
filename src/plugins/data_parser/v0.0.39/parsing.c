@@ -576,19 +576,20 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		 (parser->field_name ? parser->field_name : ""),
 		 parser->type_string, (uintptr_t) parser);
 
-	if (parser->model == PARSER_MODEL_FLAG_ARRAY) {
+	switch (parser->model) {
+	case PARSER_MODEL_FLAG_ARRAY:
 		verify_parser_not_sliced(parser);
 		rc = _parse_flag(dst, parser, src, args, ppath);
-		goto cleanup;
-	} else if (parser->model == PARSER_MODEL_LIST) {
+		break;
+	case PARSER_MODEL_LIST:
 		xassert(parser->list_type > DATA_PARSER_TYPE_INVALID);
 		xassert(parser->list_type < DATA_PARSER_TYPE_MAX);
 		verify_parser_not_sliced(parser);
 		xassert((dst_bytes == NO_VAL) || (dst_bytes == sizeof(List)));
 		xassert(!parser->parse);
 		rc = _parse_list(parser, dst, src, args, ppath);
-		goto cleanup;
-	} else if (parser->model == PARSER_MODEL_ARRAY) {
+		break;
+	case PARSER_MODEL_ARRAY:
 		xassert(parser->fields);
 		verify_parser_not_sliced(parser);
 
@@ -596,17 +597,27 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		for (int i = 0; !rc && (i < parser->field_count); i++)
 			rc = _parser_linked(args, parser, &parser->fields[i],
 					    src, dst, ppath);
-	} else if (parser->model == PARSER_MODEL_PTR) {
+		break;
+	case PARSER_MODEL_PTR:
 		verify_parser_not_sliced(parser);
 		rc = _parse_pointer(parser, dst, src, args, ppath);
-	} else if ((parser->model == PARSER_MODEL_SIMPLE) ||
-		   (parser->model == PARSER_MODEL_COMPLEX)) {
+		break;
+	case PARSER_MODEL_SIMPLE:
+	case PARSER_MODEL_COMPLEX:
 		xassert(parser->parse != _parse_list);
 		verify_parser_not_sliced(parser);
 
 		rc = parser->parse(parser, dst, src, args, ppath);
-	} else {
-		fatal_abort("%s: unexpected model %u", __func__, parser->model);
+		break;
+	case PARSER_MODEL_ARRAY_LINKED_FIELD:
+		fatal_abort("%s: link model not allowed %u",
+			    __func__, parser->model);
+	case PARSER_MODEL_ARRAY_SKIP_FIELD:
+		fatal_abort("%s: skip model not allowed %u",
+			    __func__, parser->model);
+	case PARSER_MODEL_INVALID:
+	case PARSER_MODEL_MAX:
+		fatal_abort("%s: invalid model %u", __func__, parser->model);
 	}
 
 cleanup:
@@ -893,7 +904,8 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 	if ((rc = load_prereqs(DUMPING, parser, args)))
 		goto done;
 
-	if (parser->model == PARSER_MODEL_FLAG_ARRAY) {
+	switch (parser->model) {
+	case PARSER_MODEL_FLAG_ARRAY:
 		verify_parser_not_sliced(parser);
 		xassert((data_get_type(dst) == DATA_TYPE_NULL) ||
 			(data_get_type(dst) == DATA_TYPE_LIST));
@@ -903,7 +915,8 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 			data_set_list(dst);
 
 		rc = _dump_flag_bit_array(args, src, dst, parser);
-	} else if (parser->model == PARSER_MODEL_ARRAY) {
+		break;
+	case PARSER_MODEL_ARRAY:
 		verify_parser_not_sliced(parser);
 		xassert(parser->fields);
 		xassert((data_get_type(dst) == DATA_TYPE_NULL) ||
@@ -912,7 +925,8 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 		for (int i = 0; !rc && (i < parser->field_count); i++)
 			rc = _dump_linked(args, parser, &parser->fields[i], src,
 					  dst);
-	} else if (parser->model == PARSER_MODEL_LIST) {
+		break;
+	case PARSER_MODEL_LIST:
 		xassert(parser->list_type > DATA_PARSER_TYPE_INVALID);
 		xassert(parser->list_type < DATA_PARSER_TYPE_MAX);
 		verify_parser_not_sliced(parser);
@@ -921,15 +935,17 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 		xassert((src_bytes == NO_VAL) || (src_bytes == sizeof(List)));
 		xassert(!parser->dump);
 		rc = _dump_list(parser, src, dst, args);
-	} else if (parser->model == PARSER_MODEL_PTR) {
+		break;
+	case PARSER_MODEL_PTR:
 		xassert(parser->pointer_type > DATA_PARSER_TYPE_INVALID);
 		xassert(parser->pointer_type < DATA_PARSER_TYPE_MAX);
 		verify_parser_not_sliced(parser);
 		xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 		rc = _dump_pointer(parser, src, dst, args);
-	} else if ((parser->model == PARSER_MODEL_SIMPLE) ||
-		   (parser->model == PARSER_MODEL_COMPLEX)) {
+		break;
+	case PARSER_MODEL_SIMPLE:
+	case PARSER_MODEL_COMPLEX:
 		xassert(data_get_type(dst) == DATA_TYPE_NULL);
 		verify_parser_not_sliced(parser);
 
@@ -937,8 +953,16 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 
 		/* must be a simple or complex type */
 		rc = parser->dump(parser, src, dst, args);
-	} else {
-		fatal_abort("%s: unexpected model %u", __func__, parser->model);
+		break;
+	case PARSER_MODEL_ARRAY_LINKED_FIELD:
+		fatal_abort("%s: link model not allowed %u",
+			    __func__, parser->model);
+	case PARSER_MODEL_ARRAY_SKIP_FIELD:
+		fatal_abort("%s: skip model not allowed %u",
+			    __func__, parser->model);
+	case PARSER_MODEL_INVALID:
+	case PARSER_MODEL_MAX:
+		fatal_abort("%s: invalid model %u", __func__, parser->model);
 	}
 
 done:
