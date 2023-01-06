@@ -46,117 +46,24 @@
 
 #include "alloc.h"
 
-extern void *create_parser_list_obj(const parser_t *const parser, ssize_t *size)
+static void *_create_assoc_rec_obj(void)
 {
-	void *obj;
-
-	xassert(size);
-	xassert(*size <= 0);
-
-	*size = parser->size;
-
-	xassert((*size > 0) && (*size < NO_VAL));
-
-	obj = xmalloc(*size);
-
-	log_flag(DATA, "created %zd byte %s object at 0x%" PRIxPTR, *size,
-		 parser->obj_type_string, (uintptr_t) obj);
-
-	return obj;
-}
-
-extern void *create_assoc_rec_obj(const parser_t *const parser, ssize_t *size)
-{
-	slurmdb_assoc_rec_t *assoc;
-
-	xassert(size);
-	xassert(!*size);
-	xassert((parser->type == DATA_PARSER_ASSOC_SHORT) ||
-		(parser->type == DATA_PARSER_ASSOC));
-
-	*size = sizeof(*assoc);
-	assoc = xmalloc(*size);
+	slurmdb_assoc_rec_t *assoc = xmalloc(sizeof(*assoc));
 	slurmdb_init_assoc_rec(assoc, false);
-
-	xassert(xsize(assoc) == *size);
-	xassert(*size == parser->size);
-
-	log_flag(DATA, "created %zd byte %s object at 0x%" PRIxPTR, *size,
-		 parser->obj_type_string, (uintptr_t) assoc);
-
 	return assoc;
 }
 
-extern void *create_job_rec_obj(const parser_t *const parser, ssize_t *size)
+static void *_create_cluster_rec_obj(void)
 {
-	slurmdb_job_rec_t *job;
-
-	xassert(size);
-	xassert(!*size);
-	xassert(parser->type == DATA_PARSER_JOB);
-
-	*size = sizeof(slurmdb_job_rec_t);
-	job = slurmdb_create_job_rec();
-
-	xassert(xsize(job) == *size);
-	xassert(*size == parser->size);
-
-	log_flag(DATA, "created %zd byte %s object at 0x%" PRIxPTR, *size,
-		 parser->obj_type_string, (uintptr_t) job);
-
-	return job;
-}
-
-extern void *create_step_rec_obj(const parser_t *const parser, ssize_t *size)
-{
-	slurmdb_step_rec_t *step;
-
-	xassert(size);
-	xassert(!*size);
-	xassert(parser->type == DATA_PARSER_STEP);
-
-	*size = sizeof(slurmdb_step_rec_t);
-	step = slurmdb_create_step_rec();
-
-	xassert(xsize(step) == *size);
-	xassert(*size == parser->size);
-
-	log_flag(DATA, "created %zd byte %s object at 0x%" PRIxPTR, *size,
-		 parser->obj_type_string, (uintptr_t) step);
-
-	return step;
-}
-
-extern void *create_cluster_rec_obj(const parser_t *const parser, ssize_t *size)
-{
-	slurmdb_cluster_rec_t *cluster;
-
-	xassert(size);
-	xassert(!*size);
-	xassert(parser->type == DATA_PARSER_CLUSTER_REC);
-
-	*size = sizeof(*cluster);
-	cluster = xmalloc(*size);
+	slurmdb_cluster_rec_t *cluster = xmalloc(sizeof(*cluster));
 	slurmdb_init_cluster_rec(cluster, false);
-
-	xassert(*size == parser->size);
-
-	log_flag(DATA, "created %zd byte %s object at 0x%" PRIxPTR, *size,
-		 parser->obj_type_string, (uintptr_t) cluster);
-
 	return cluster;
 }
 
-extern void *create_qos_rec_obj(const parser_t *const parser, ssize_t *size)
+static void *_create_qos_rec_obj(void)
 {
-	slurmdb_qos_rec_t *qos;
+	slurmdb_qos_rec_t *qos = xmalloc(sizeof(*qos));
 
-	xassert(size);
-	xassert(!*size);
-	xassert(parser->type == DATA_PARSER_QOS);
-
-	*size = sizeof(*qos);
-	qos = xmalloc(*size);
 	slurmdb_init_qos_rec(qos, false, NO_VAL);
 
 	/*
@@ -168,72 +75,126 @@ extern void *create_qos_rec_obj(const parser_t *const parser, ssize_t *size)
 	/* force to off instead of NO_VAL */
 	qos->preempt_mode = PREEMPT_MODE_OFF;
 
-	xassert(*size == parser->size);
-
-	log_flag(DATA, "created %zd byte %s object at 0x%" PRIxPTR, *size,
-		 parser->obj_type_string, (uintptr_t) qos);
-
 	return qos;
 }
 
-extern void *create_user_rec_obj(const parser_t *const parser, ssize_t *size)
+static void *_create_user_rec_obj(void)
 {
-	slurmdb_user_rec_t *user;
-
-	xassert(size);
-	xassert(!*size);
-	xassert(parser->type == DATA_PARSER_USER);
-
-	*size = sizeof(*user);
-	user = xmalloc(*size);
+	slurmdb_user_rec_t *user = xmalloc(sizeof(*user));
 	user->assoc_list = list_create(slurmdb_destroy_assoc_rec);
 	user->coord_accts = list_create(slurmdb_destroy_coord_rec);
-
-	xassert(*size == parser->size);
-
-	log_flag(DATA, "created %zd byte %s object at 0x%" PRIxPTR, *size,
-		 parser->obj_type_string, (uintptr_t) user);
-
 	return user;
 }
 
-extern void *create_wckey_rec_obj(const parser_t *const parser, ssize_t *size)
+static void *_create_wckey_rec_obj(void)
 {
-	slurmdb_wckey_rec_t *wckey;
-
-	xassert(size);
-	xassert(!*size);
-	xassert(parser->type == DATA_PARSER_WCKEY);
-
-	*size = sizeof(*wckey);
-	wckey = xmalloc(*size);
+	slurmdb_wckey_rec_t *wckey = xmalloc(sizeof(*wckey));
 	slurmdb_init_wckey_rec(wckey, false);
 	wckey->accounting_list = list_create(slurmdb_destroy_account_rec);
-
-	xassert(*size == parser->size);
-
-	log_flag(DATA, "created %zd byte %s object at 0x%" PRIxPTR, *size,
-		 parser->obj_type_string, (uintptr_t) wckey);
-
 	return wckey;
 }
 
-extern void *create_job_desc_msg_obj(const parser_t *const parser,
-				     ssize_t *size)
+static void *_create_job_desc_msg_obj(void)
 {
-	job_desc_msg_t *job;
-
-	xassert(size);
-	xassert(!*size);
-	xassert(parser->type == DATA_PARSER_JOB_DESC_MSG);
-
-	*size = sizeof(*job);
-	job = xmalloc(*size);
+	job_desc_msg_t *job = xmalloc(sizeof(*job));
 	slurm_init_job_desc_msg(job);
-	xassert(*size == parser->size);
-
-	log_flag(DATA, "created %zd byte %s object at 0x%" PRIxPTR, *size,
-		 parser->obj_type_string, (uintptr_t) job);
-
 	return job;
+}
+
+typedef void *(*alloc_func_t)();
+
+#define add(typem, freef, addf)             \
+{                                           \
+	.type = DATA_PARSER_ ## typem,      \
+	.free_func = (ListDelF) freef,      \
+	.alloc_func = (alloc_func_t) addf,  \
+}
+static const struct {
+	type_t type;
+	/* if NULL then xfree_ptr() is used */
+	ListDelF free_func;
+	/*
+	 * function to create object
+	 * RET ptr to obj
+	 *
+	 * if NULL, then xmalloc() is used
+	 */
+	alloc_func_t alloc_func;
+} types[] = {
+	add(ACCOUNTING, slurmdb_destroy_accounting_rec, NULL),
+	add(ACCOUNT, slurmdb_destroy_account_rec, NULL),
+	add(ASSOC_SHORT, slurmdb_destroy_assoc_rec, _create_assoc_rec_obj),
+	add(ASSOC, slurmdb_destroy_assoc_rec, _create_assoc_rec_obj),
+	add(CLUSTER_ACCT_REC, slurmdb_destroy_clus_res_rec, NULL),
+	add(CLUSTER_REC, slurmdb_destroy_cluster_rec, _create_cluster_rec_obj),
+	add(COORD, slurmdb_destroy_coord_rec, NULL),
+	add(JOB_DESC_MSG, (ListDelF) slurm_free_job_desc_msg,
+	    _create_job_desc_msg_obj),
+	add(JOB, slurmdb_destroy_job_rec, slurmdb_create_job_rec),
+	add(QOS_ID, NULL, NULL),
+	add(QOS_NAME, NULL, NULL),
+	add(QOS, slurmdb_destroy_qos_rec, _create_qos_rec_obj),
+	add(STRING, NULL, NULL),
+	add(STEP, slurmdb_destroy_step_rec, slurmdb_create_step_rec),
+	add(TRES, slurmdb_destroy_tres_rec, NULL),
+	add(USER, slurmdb_destroy_user_rec, _create_user_rec_obj),
+	add(WCKEY, slurmdb_destroy_wckey_rec, _create_wckey_rec_obj),
+};
+#undef add
+
+extern void *alloc_parser_obj(const parser_t *const parser)
+{
+	void *obj = NULL;
+	xassert(alloc_registered(parser));
+	check_parser(parser);
+
+	for (int i = 0; i < ARRAY_SIZE(types); i++) {
+		if (types[i].type == parser->type) {
+			if (types[i].alloc_func)
+				obj = types[i].alloc_func(parser);
+			else
+				obj = xmalloc(parser->size);
+		}
+	}
+
+	log_flag(DATA, "created %zd byte %s object at 0x%"PRIxPTR,
+		 xsize(obj), parser->obj_type_string, (uintptr_t) obj);
+
+	return obj;
+}
+
+extern void free_parser_obj(const parser_t *const parser, void *ptr)
+{
+	ListDelF free_func = parser_obj_free_func(parser);
+
+	xassert(alloc_registered(parser));
+	check_parser(parser);
+
+	log_flag(DATA, "destroying %zd byte %s object at 0x%"PRIxPTR,
+		 xsize(ptr), parser->obj_type_string, (uintptr_t) ptr);
+
+	free_func(ptr);
+}
+
+extern bool alloc_registered(const parser_t *const parser)
+{
+	for (int i = 0; i < ARRAY_SIZE(types); i++)
+		if (types[i].type == parser->type)
+			return true;
+
+	return false;
+}
+
+extern ListDelF parser_obj_free_func(const parser_t *const parser)
+{
+	for (int i = 0; i < ARRAY_SIZE(types); i++) {
+		if (types[i].type == parser->type) {
+			if (types[i].free_func)
+				return types[i].free_func;
+			else
+				return xfree_ptr;
+		}
+	}
+
+	return false;
 }

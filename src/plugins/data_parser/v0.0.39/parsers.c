@@ -238,8 +238,6 @@ extern void check_parser_funcname(const parser_t *const parser,
 
 		/* make sure this is not a list or array type */
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
-		xassert(!parser->list_del_func);
-		xassert(!parser->list_new_func);
 		xassert(!parser->fields);
 		xassert(!parser->field_count);
 		xassert(!parser->parse);
@@ -265,8 +263,6 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->parse);
 		xassert(!parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
-		xassert(!parser->list_del_func);
-		xassert(!parser->list_new_func);
 		xassert(parser->fields);
 
 		for (int i = 0; i < parser->field_count; i++) {
@@ -318,8 +314,6 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->parse);
 		xassert(!parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
-		xassert(!parser->list_del_func);
-		xassert(!parser->list_new_func);
 
 		switch (linked->model) {
 		case PARSER_MODEL_ARRAY:
@@ -361,7 +355,6 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->parse);
 		xassert(parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
-		xassert(!parser->list_del_func);
 	} else if (parser->model == PARSER_MODEL_COMPLEX) {
 		xassert(parser->ptr_offset == NO_VAL);
 		xassert(!parser->field_name);
@@ -373,7 +366,6 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->parse);
 		xassert(parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
-		xassert(!parser->list_del_func);
 	} else {
 		fatal_abort("invalid parser model %u", parser->model);
 	}
@@ -5562,7 +5554,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.ptr_offset = NO_VAL,                                          \
 	}
 /* add parser for List */
-#define addpl(typev, typel, delf, addf, need)                                  \
+#define addpl(typev, typel, need)                                              \
 	{                                                                      \
 		.magic = MAGIC_PARSER,                                         \
 		.model = PARSER_MODEL_LIST,                                    \
@@ -5570,8 +5562,6 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_type_string = XSTRINGIFY(List),                           \
 		.list_type = DATA_PARSER_##typel,                              \
-		.list_del_func = delf,                                         \
-		.list_new_func = addf,                                         \
 		.size = sizeof(List),                                          \
 		.needs = need,                                                 \
 		.ptr_offset = NO_VAL,                                          \
@@ -5788,26 +5778,25 @@ static const parser_t parsers[] = {
 	addfa(ACCT_GATHER_PROFILE, uint32_t),
 
 	/* List parsers */
-	addpl(QOS_LIST, QOS, slurmdb_destroy_qos_rec, create_qos_rec_obj, NEED_QOS),
-	addpl(QOS_NAME_LIST, QOS_NAME, xfree_ptr, create_parser_list_obj, NEED_QOS),
-	addpl(QOS_ID_LIST, QOS_ID, xfree_ptr, create_parser_list_obj, NEED_QOS),
-	addpl(QOS_STRING_ID_LIST, STRING, xfree_ptr, create_qos_rec_obj, NEED_QOS),
-	addpl(USER_LIST, USER, slurmdb_destroy_user_rec, create_user_rec_obj, NEED_NONE),
-	addpl(WCKEY_LIST, WCKEY, slurmdb_destroy_wckey_rec, create_wckey_rec_obj, NEED_NONE),
-	addpl(ACCOUNT_LIST, ACCOUNT, slurmdb_destroy_account_rec, create_parser_list_obj, NEED_NONE),
-	addpl(ACCOUNTING_LIST, ACCOUNTING, slurmdb_destroy_accounting_rec, create_parser_list_obj, NEED_NONE),
-	addpl(CLUSTER_REC_LIST, CLUSTER_REC, slurmdb_destroy_cluster_rec, create_cluster_rec_obj, NEED_NONE),
-	addpl(ASSOC_LIST, ASSOC, slurmdb_destroy_assoc_rec, create_assoc_rec_obj, NEED_NONE),
-	addpl(ASSOC_SHORT_LIST, ASSOC_SHORT, slurmdb_destroy_assoc_rec, create_assoc_rec_obj, NEED_NONE),
-	addpl(COORD_LIST, COORD, slurmdb_destroy_coord_rec, create_parser_list_obj, NEED_NONE),
-	addpl(CLUSTER_ACCT_REC_LIST, CLUSTER_ACCT_REC, slurmdb_destroy_clus_res_rec, create_parser_list_obj, NEED_NONE),
-	addpl(JOB_LIST, JOB, slurmdb_destroy_job_rec, create_job_rec_obj, NEED_NONE),
-	addpl(STEP_LIST, STEP, slurmdb_destroy_step_rec, create_step_rec_obj, NEED_NONE),
-	addpl(STATS_RPC_LIST, STATS_RPC, NULL, NULL, NEED_NONE),
-	addpl(STATS_USER_LIST, STATS_USER, NULL, NULL, NEED_NONE),
-	addpl(TRES_LIST, TRES, slurmdb_destroy_tres_rec, create_parser_list_obj, NEED_NONE),
-	addpl(SINFO_DATA_LIST, SINFO_DATA, NULL, NULL, NEED_NONE),
-	addpl(JOB_DESC_MSG_LIST, JOB_DESC_MSG, (ListDelF) slurm_free_job_desc_msg, create_job_desc_msg_obj, NEED_NONE),
+	addpl(QOS_LIST, QOS, NEED_QOS),
+	addpl(QOS_NAME_LIST, QOS_NAME, NEED_QOS),
+	addpl(QOS_ID_LIST, QOS_ID, NEED_QOS),
+	addpl(QOS_STRING_ID_LIST, STRING, NEED_QOS),
+	addpl(USER_LIST, USER, NEED_NONE),
+	addpl(WCKEY_LIST, WCKEY, NEED_NONE),
+	addpl(ACCOUNT_LIST, ACCOUNT, NEED_NONE),
+	addpl(ACCOUNTING_LIST, ACCOUNTING, NEED_NONE),
+	addpl(CLUSTER_REC_LIST, CLUSTER_REC, NEED_NONE),
+	addpl(ASSOC_LIST, ASSOC, NEED_NONE),
+	addpl(ASSOC_SHORT_LIST, ASSOC_SHORT, NEED_NONE),
+	addpl(COORD_LIST, COORD, NEED_NONE),
+	addpl(CLUSTER_ACCT_REC_LIST, CLUSTER_ACCT_REC, NEED_NONE),
+	addpl(JOB_LIST, JOB, NEED_NONE),
+	addpl(STEP_LIST, STEP, NEED_NONE),
+	addpl(STATS_RPC_LIST, STATS_RPC, NEED_NONE),
+	addpl(STATS_USER_LIST, STATS_USER, NEED_NONE),
+	addpl(TRES_LIST, TRES, NEED_NONE),
+	addpl(SINFO_DATA_LIST, SINFO_DATA, NEED_NONE),
 };
 #undef addpl
 #undef addps

@@ -122,12 +122,10 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 		return SLURM_SUCCESS;
 	} else if (data_get_type(src) == DATA_TYPE_DICT) {
 		/* user may have provided entire QOS record */
-		ssize_t size = 0;
 		const parser_t *const qos_parser =
 			find_parser_by_type(DATA_PARSER_QOS);
-		slurmdb_qos_rec_t *pqos = create_qos_rec_obj(qos_parser, &size);
+		slurmdb_qos_rec_t *pqos = alloc_parser_obj(qos_parser);
 
-		xassert(size == qos_parser->size);
 		xassert(xsize(pqos) == sizeof(*pqos));
 
 		if ((rc = parse(pqos, sizeof(*pqos), qos_parser, src, args,

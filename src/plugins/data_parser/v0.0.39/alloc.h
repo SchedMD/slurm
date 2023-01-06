@@ -40,18 +40,24 @@
 #include "api.h"
 #include "parsers.h"
 
-/* alloc generic zeroed obj the size of the list_type's size */
-extern void *create_parser_list_obj(const parser_t *const parser,
-				    ssize_t *size);
-extern void *create_assoc_rec_obj(const parser_t *const parser, ssize_t *size);
-extern void *create_job_rec_obj(const parser_t *const parser, ssize_t *size);
-extern void *create_step_rec_obj(const parser_t *const parser, ssize_t *size);
-extern void *create_cluster_rec_obj(const parser_t *const parser,
-				    ssize_t *size);
-extern void *create_qos_rec_obj(const parser_t *const parser, ssize_t *size);
-extern void *create_user_rec_obj(const parser_t *const parser, ssize_t *size);
-extern void *create_wckey_rec_obj(const parser_t *const parser, ssize_t *size);
-extern void *create_job_desc_msg_obj(const parser_t *const parser,
-				     ssize_t *size);
+/*
+ * Create new object for parser
+ */
+extern void *alloc_parser_obj(const parser_t *const parser);
+
+/*
+ * Free object for parser
+ */
+extern void free_parser_obj(const parser_t *const parser, void *ptr);
+
+/*
+ * Get ptr to free function for given object
+ */
+extern ListDelF parser_obj_free_func(const parser_t *const parser);
+
+/*
+ * Check if allocator for parser is registered
+ */
+extern bool alloc_registered(const parser_t *const parser);
 
 #endif

@@ -112,14 +112,6 @@ typedef struct parser_s {
 
 	/* set if is a List of given type */
 	type_t list_type;
-	ListDelF list_del_func;
-	/*
-	 * function to create object to add to List for this parser
-	 * IN parser - current list parser
-	 * IN size - ptr to size. set with the size of the new object
-	 * RET ptr to obj
-	 */
-	void *(*list_new_func)(const parser_t *const parser, ssize_t *size);
 
 	/* parser is for a struct and has child fields to parse */
 	const parser_t *const fields;
