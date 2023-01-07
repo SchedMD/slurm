@@ -5717,7 +5717,8 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 /* add parser for simple type */
 #define addps(typev, stype, need)                                              \
 	{                                                                      \
-		.magic = MAGIC_PARSER, .type = DATA_PARSER_##typev,            \
+		.magic = MAGIC_PARSER,                                         \
+		.type = DATA_PARSER_##typev,                                   \
 		.model = PARSER_MODEL_SIMPLE,                                  \
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_type_string = XSTRINGIFY(stype),                          \
@@ -5732,7 +5733,8 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 /* add parser for complex type */
 #define addpc(typev, typet, need)                                              \
 	{                                                                      \
-		.magic = MAGIC_PARSER, .type = DATA_PARSER_##typev,            \
+		.magic = MAGIC_PARSER,                                         \
+		.type = DATA_PARSER_##typev,                                   \
 		.model = PARSER_MODEL_COMPLEX,                                 \
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_type_string = XSTRINGIFY(typet),                          \
