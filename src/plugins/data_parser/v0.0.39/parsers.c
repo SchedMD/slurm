@@ -3657,7 +3657,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
  * instead being treated as piles of data instead of code.
  */
 // clang-format off
-#define add_parser(stype, mtype, req, field, overload, path, need)    \
+#define add_parser(stype, mtype, req, field, overload, path)          \
 {                                                                     \
 	.magic = MAGIC_PARSER,                                        \
 	.model = PARSER_MODEL_ARRAY_LINKED_FIELD,                     \
@@ -3670,7 +3670,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
 	.obj_type_string = XSTRINGIFY(stype),                         \
 	.size = sizeof(((stype *) NULL)->field),                      \
-	.needs = need,                                                \
+	.needs = NEED_NONE,                                           \
 }
 #define add_parser_skip(stype, field)                                 \
 {                                                                     \
@@ -3687,7 +3687,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
  * Parser that needs the location of struct as
  * it will reference multiple fields at once.
  */
-#define add_complex_parser(stype, mtype, req, path, need)             \
+#define add_complex_parser(stype, mtype, req, path)                   \
 {                                                                     \
 	.magic = MAGIC_PARSER,                                        \
 	.model = PARSER_MODEL_ARRAY_LINKED_FIELD,                     \
@@ -3698,7 +3698,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
 	.obj_type_string = XSTRINGIFY(stype),                         \
 	.size = NO_VAL,                                               \
-	.needs = need                                                 \
+	.needs = NEED_NONE                                            \
 }
 #define add_parse_bit_flag_array(stype, mtype, req, field, path)      \
 {                                                                     \
@@ -3738,9 +3738,9 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 }
 
 #define add_parse(mtype, field, path) \
-	add_parser(slurmdb_assoc_rec_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(slurmdb_assoc_rec_t, mtype, false, field, 0, path)
 #define add_parse_req(mtype, field, path) \
-	add_parser(slurmdb_assoc_rec_t, mtype, true, field, 0, path, NEED_NONE)
+	add_parser(slurmdb_assoc_rec_t, mtype, true, field, 0, path)
 static const parser_t PARSER_ARRAY(ASSOC_SHORT)[] = {
 	/* Identifiers required for any given association */
 	add_parse_req(STRING, acct, "account"),
@@ -3757,55 +3757,55 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_FLAGS)[] = {
 
 #define add_skip(field) \
 	add_parser_skip(slurmdb_assoc_rec_t, field)
-#define add_parse(mtype, field, path, needs) \
-	add_parser(slurmdb_assoc_rec_t, mtype, false, field, 0, path, needs)
-#define add_parse_req(mtype, field, path, needs) \
-	add_parser(slurmdb_assoc_rec_t, mtype, true, field, 0, path, needs)
+#define add_parse(mtype, field, path) \
+	add_parser(slurmdb_assoc_rec_t, mtype, false, field, 0, path)
+#define add_parse_req(mtype, field, path) \
+	add_parser(slurmdb_assoc_rec_t, mtype, true, field, 0, path)
 /* should mirror the structure of slurmdb_assoc_rec_t */
 static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_skip(accounting_list),
-	add_parse_req(STRING, acct, "account", NEED_NONE),
+	add_parse_req(STRING, acct, "account"),
 	add_skip(assoc_next),
 	add_skip(assoc_next_id),
 	add_skip(bf_usage),
-	add_parse(STRING, cluster, "cluster", NEED_NONE),
-	add_parse(QOS_ID, def_qos_id, "default/qos", NEED_QOS),
+	add_parse(STRING, cluster, "cluster"),
+	add_parse(QOS_ID, def_qos_id, "default/qos"),
 	add_parse_bit_flag_array(slurmdb_assoc_rec_t, ASSOC_FLAGS, false, flags, "flags"),
 	add_skip(lft),
-	add_parse(UINT32, grp_jobs, "max/jobs/per/count", NEED_NONE),
-	add_parse(UINT32, grp_jobs_accrue, "max/jobs/per/accruing", NEED_NONE),
-	add_parse(UINT32, grp_submit_jobs, "max/jobs/per/submitted", NEED_NONE),
-	add_parse(TRES_STR, grp_tres, "max/tres/total", NEED_TRES),
-	add_parse(TRES_STR, max_tres_mins_pj, "max/tres/minutes/per/job", NEED_TRES),
-	add_parse(TRES_STR, grp_tres_mins, "max/tres/group/minutes", NEED_TRES),
+	add_parse(UINT32, grp_jobs, "max/jobs/per/count"),
+	add_parse(UINT32, grp_jobs_accrue, "max/jobs/per/accruing"),
+	add_parse(UINT32, grp_submit_jobs, "max/jobs/per/submitted"),
+	add_parse(TRES_STR, grp_tres, "max/tres/total"),
+	add_parse(TRES_STR, max_tres_mins_pj, "max/tres/minutes/per/job"),
+	add_parse(TRES_STR, grp_tres_mins, "max/tres/group/minutes"),
 	add_skip(grp_tres_mins_ctld),
-	add_parse(TRES_STR, grp_tres_run_mins, "max/tres/group/active", NEED_TRES),
+	add_parse(TRES_STR, grp_tres_run_mins, "max/tres/group/active"),
 	add_skip(id),
-	add_parse(BOOL16, is_def, "is_default", NEED_NONE),
-	add_parse(UINT32, max_jobs, "max/jobs/active", NEED_NONE),
-	add_parse(UINT32, max_jobs_accrue, "max/jobs/accruing", NEED_NONE),
-	add_parse(UINT32, max_submit_jobs, "max/jobs/total", NEED_NONE),
+	add_parse(BOOL16, is_def, "is_default"),
+	add_parse(UINT32, max_jobs, "max/jobs/active"),
+	add_parse(UINT32, max_jobs_accrue, "max/jobs/accruing"),
+	add_parse(UINT32, max_submit_jobs, "max/jobs/total"),
 	add_skip(max_tres_mins_ctld),
-	add_parse(TRES_STR, max_tres_run_mins, "max/tres/minutes/total", NEED_TRES),
+	add_parse(TRES_STR, max_tres_run_mins, "max/tres/minutes/total"),
 	add_skip(grp_tres_run_mins_ctld),
-	add_parse(UINT32, grp_wall, "max/per/account/wall_clock", NEED_NONE),
-	add_parse(TRES_STR, max_tres_pj, "max/tres/per/job", NEED_TRES),
+	add_parse(UINT32, grp_wall, "max/per/account/wall_clock"),
+	add_parse(TRES_STR, max_tres_pj, "max/tres/per/job"),
 	add_skip(max_tres_ctld),
-	add_parse(TRES_STR, max_tres_pn, "max/tres/per/node", NEED_TRES),
+	add_parse(TRES_STR, max_tres_pn, "max/tres/per/node"),
 	add_skip(max_tres_pn_ctld),
-	add_parse(UINT32, max_wall_pj, "max/jobs/per/wall_clock", NEED_NONE),
-	add_parse(UINT32, min_prio_thresh, "min/priority_threshold", NEED_NONE),
-	add_parse(STRING, parent_acct, "parent_account", NEED_NONE),
+	add_parse(UINT32, max_wall_pj, "max/jobs/per/wall_clock"),
+	add_parse(UINT32, min_prio_thresh, "min/priority_threshold"),
+	add_parse(STRING, parent_acct, "parent_account"),
 	add_skip(parent_id),
-	add_parse(STRING, partition, "partition", NEED_NONE),
-	add_parse(UINT32, priority, "priority", NEED_NONE),
-	add_parse(QOS_STRING_ID_LIST, qos_list, "qos", NEED_QOS),
+	add_parse(STRING, partition, "partition"),
+	add_parse(UINT32, priority, "priority"),
+	add_parse(QOS_STRING_ID_LIST, qos_list, "qos"),
 	add_skip(rgt),
-	add_parse(UINT32, shares_raw, "shares_raw", NEED_NONE),
+	add_parse(UINT32, shares_raw, "shares_raw"),
 	/* slurmdbd should never set uid - it should always be zero */
 	add_skip(uid),
-	add_parse(ASSOC_USAGE_PTR, usage, "usage", NEED_NONE),
-	add_parse_req(STRING, user, "user", NEED_NONE),
+	add_parse(ASSOC_USAGE_PTR, usage, "usage"),
+	add_parse_req(STRING, user, "user"),
 	add_skip(user_rec ),
 };
 #undef add_parse
@@ -3819,19 +3819,19 @@ static const flag_bit_t PARSER_FLAG_ARRAY(USER_FLAGS)[] = {
 
 #define add_skip(field) \
 	add_parser_skip(slurmdb_user_rec_t, field)
-#define add_parse(mtype, field, path, needs) \
-	add_parser(slurmdb_user_rec_t, mtype, false, field, 0, path, needs)
-#define add_parse_req(mtype, field, path, needs) \
-	add_parser(slurmdb_user_rec_t, mtype, true, field, 0, path, needs)
+#define add_parse(mtype, field, path) \
+	add_parser(slurmdb_user_rec_t, mtype, false, field, 0, path)
+#define add_parse_req(mtype, field, path) \
+	add_parser(slurmdb_user_rec_t, mtype, true, field, 0, path)
 /* should mirror the structure of slurmdb_user_rec_t */
 static const parser_t PARSER_ARRAY(USER)[] = {
-	add_parse(ADMIN_LVL, admin_level, "administrator_level", NEED_NONE),
-	add_parse(ASSOC_SHORT_LIST, assoc_list, "associations", NEED_ASSOC),
-	add_parse(COORD_LIST, coord_accts, "coordinators", NEED_NONE),
-	add_parse(STRING, default_acct, "default/account", NEED_NONE),
-	add_parse(STRING, default_wckey, "default/wckey", NEED_NONE),
+	add_parse(ADMIN_LVL, admin_level, "administrator_level"),
+	add_parse(ASSOC_SHORT_LIST, assoc_list, "associations"),
+	add_parse(COORD_LIST, coord_accts, "coordinators"),
+	add_parse(STRING, default_acct, "default/account"),
+	add_parse(STRING, default_wckey, "default/wckey"),
 	add_parse_bit_flag_array(slurmdb_user_rec_t, USER_FLAGS, false, flags, "flags"),
-	add_parse_req(STRING, name, "name", NEED_NONE),
+	add_parse_req(STRING, name, "name"),
 	add_skip(old_name),
 	/* uid should always be 0 */
 	add_skip(uid),
@@ -3851,78 +3851,78 @@ static const flag_bit_t PARSER_FLAG_ARRAY(SLURMDB_JOB_FLAGS)[] = {
 
 #define add_skip(field) \
 	add_parser_skip(slurmdb_job_rec_t, field)
-#define add_parse(mtype, field, path, needs) \
-	add_parser(slurmdb_job_rec_t, mtype, false, field, 0, path, needs)
+#define add_parse(mtype, field, path) \
+	add_parser(slurmdb_job_rec_t, mtype, false, field, 0, path)
 /* should mirror the structure of slurmdb_job_rec_t  */
 static const parser_t PARSER_ARRAY(JOB)[] = {
-	add_parse(STRING, account, "account", NEED_NONE),
-	add_parse(STRING, admin_comment, "comment/administrator", NEED_NONE),
-	add_parse(UINT32, alloc_nodes, "allocation_nodes", NEED_NONE),
-	add_parse(UINT32, array_job_id, "array/job_id", NEED_NONE),
-	add_parse(UINT32, array_max_tasks, "array/limits/max/running/tasks", NEED_NONE),
-	add_parse(UINT32_NO_VAL, array_task_id, "array/task_id", NEED_NONE),
-	add_parse(STRING, array_task_str, "array/task", NEED_NONE),
-	add_parse(ASSOC_ID, associd, "association", NEED_ASSOC),
-	add_parse(STRING, blockid, "block", NEED_NONE),
-	add_parse(STRING, cluster, "cluster", NEED_NONE),
-	add_parse(STRING, constraints, "constraints", NEED_NONE),
-	add_parse(STRING, container, "container", NEED_NONE),
+	add_parse(STRING, account, "account"),
+	add_parse(STRING, admin_comment, "comment/administrator"),
+	add_parse(UINT32, alloc_nodes, "allocation_nodes"),
+	add_parse(UINT32, array_job_id, "array/job_id"),
+	add_parse(UINT32, array_max_tasks, "array/limits/max/running/tasks"),
+	add_parse(UINT32_NO_VAL, array_task_id, "array/task_id"),
+	add_parse(STRING, array_task_str, "array/task"),
+	add_parse(ASSOC_ID, associd, "association"),
+	add_parse(STRING, blockid, "block"),
+	add_parse(STRING, cluster, "cluster"),
+	add_parse(STRING, constraints, "constraints"),
+	add_parse(STRING, container, "container"),
 	add_skip(db_index),
-	add_parse(JOB_EXIT_CODE, derived_ec, "derived_exit_code", NEED_NONE),
-	add_parse(STRING, derived_es, "comment/job", NEED_NONE),
-	add_parse(UINT32, elapsed, "time/elapsed", NEED_NONE),
-	add_parse(UINT64, eligible, "time/eligible", NEED_NONE),
-	add_parse(UINT64, end, "time/end", NEED_NONE),
+	add_parse(JOB_EXIT_CODE, derived_ec, "derived_exit_code"),
+	add_parse(STRING, derived_es, "comment/job"),
+	add_parse(UINT32, elapsed, "time/elapsed"),
+	add_parse(UINT64, eligible, "time/eligible"),
+	add_parse(UINT64, end, "time/end"),
 	add_skip(env),
-	add_parse(JOB_EXIT_CODE, exitcode, "exit_code", NEED_NONE),
-	add_parse(STRING, extra, "extra", NEED_NONE),
-	add_parse(STRING, failed_node, "failed_node", NEED_NONE),
+	add_parse(JOB_EXIT_CODE, exitcode, "exit_code"),
+	add_parse(STRING, extra, "extra"),
+	add_parse(STRING, failed_node, "failed_node"),
 	add_parse_bit_flag_array(slurmdb_job_rec_t, SLURMDB_JOB_FLAGS, false, flags, "flags"),
 	add_skip(first_step_ptr),
-	add_parse(GROUP_ID, gid, "group", NEED_NONE),
-	add_parse(UINT32, het_job_id, "het/job_id", NEED_NONE),
-	add_parse(UINT32_NO_VAL, het_job_offset, "het/job_offset", NEED_NONE),
-	add_parse(UINT32, jobid, "job_id", NEED_NONE),
-	add_parse(STRING, jobname, "name", NEED_NONE),
+	add_parse(GROUP_ID, gid, "group"),
+	add_parse(UINT32, het_job_id, "het/job_id"),
+	add_parse(UINT32_NO_VAL, het_job_offset, "het/job_offset"),
+	add_parse(UINT32, jobid, "job_id"),
+	add_parse(STRING, jobname, "name"),
 	add_skip(lft),
-	add_parse(STRING, licenses, "licenses", NEED_NONE),
-	add_parse(STRING, mcs_label, "mcs/label", NEED_NONE),
-	add_parse(STRING, nodes, "nodes", NEED_NONE),
-	add_parse(STRING, partition, "partition", NEED_NONE),
-	add_parse(UINT32_NO_VAL, priority, "priority", NEED_NONE),
-	add_parse(QOS_ID, qosid, "qos", NEED_QOS),
-	add_parse(UINT32, req_cpus, "required/CPUs", NEED_NONE),
-	add_parse(UINT64, req_mem, "required/memory", NEED_NONE),
-	add_parse(USER_ID, requid, "kill_request_user", NEED_NONE),
-	add_parse(UINT32, resvid, "reservation/id", NEED_NONE),
-	add_parse(STRING, resv_name, "reservation/name", NEED_NONE),
-	add_parse(STRING, script, "script", NEED_NONE),
+	add_parse(STRING, licenses, "licenses"),
+	add_parse(STRING, mcs_label, "mcs/label"),
+	add_parse(STRING, nodes, "nodes"),
+	add_parse(STRING, partition, "partition"),
+	add_parse(UINT32_NO_VAL, priority, "priority"),
+	add_parse(QOS_ID, qosid, "qos"),
+	add_parse(UINT32, req_cpus, "required/CPUs"),
+	add_parse(UINT64, req_mem, "required/memory"),
+	add_parse(USER_ID, requid, "kill_request_user"),
+	add_parse(UINT32, resvid, "reservation/id"),
+	add_parse(STRING, resv_name, "reservation/name"),
+	add_parse(STRING, script, "script"),
 	add_skip(show_full),
-	add_parse(UINT64, start, "time/start", NEED_NONE),
-	add_parse(JOB_STATE, state, "state/current", NEED_NONE),
-	add_parse(JOB_REASON, state_reason_prev, "state/reason", NEED_NONE),
-	add_parse(STEP_LIST, steps, "steps", NEED_NONE),
-	add_parse(UINT64, submit, "time/submission", NEED_NONE),
-	add_parse(STRING, submit_line, "submit_line", NEED_NONE),
-	add_parse(UINT32, suspended, "time/suspended", NEED_NONE),
-	add_parse(STRING, system_comment, "comment/system", NEED_NONE),
-	add_parse(UINT64, sys_cpu_sec, "time/system/seconds", NEED_NONE),
-	add_parse(UINT64, sys_cpu_usec, "time/system/microseconds", NEED_NONE),
-	add_parse(UINT32_NO_VAL, timelimit, "time/limit", NEED_NONE),
-	add_parse(UINT64, tot_cpu_sec, "time/total/seconds", NEED_NONE),
-	add_parse(UINT64, tot_cpu_usec, "time/total/microseconds", NEED_NONE),
-	add_parse(TRES_STR, tres_alloc_str, "tres/allocated", NEED_TRES),
-	add_parse(TRES_STR, tres_req_str, "tres/requested", NEED_TRES),
+	add_parse(UINT64, start, "time/start"),
+	add_parse(JOB_STATE, state, "state/current"),
+	add_parse(JOB_REASON, state_reason_prev, "state/reason"),
+	add_parse(STEP_LIST, steps, "steps"),
+	add_parse(UINT64, submit, "time/submission"),
+	add_parse(STRING, submit_line, "submit_line"),
+	add_parse(UINT32, suspended, "time/suspended"),
+	add_parse(STRING, system_comment, "comment/system"),
+	add_parse(UINT64, sys_cpu_sec, "time/system/seconds"),
+	add_parse(UINT64, sys_cpu_usec, "time/system/microseconds"),
+	add_parse(UINT32_NO_VAL, timelimit, "time/limit"),
+	add_parse(UINT64, tot_cpu_sec, "time/total/seconds"),
+	add_parse(UINT64, tot_cpu_usec, "time/total/microseconds"),
+	add_parse(TRES_STR, tres_alloc_str, "tres/allocated"),
+	add_parse(TRES_STR, tres_req_str, "tres/requested"),
 	add_skip(uid), /* dup with complex parser JOB_USER  below */
-	add_parse(STRING, used_gres, "used_gres", NEED_NONE),
+	add_parse(STRING, used_gres, "used_gres"),
 	add_skip(user), /* dup with complex parser JOB_USER below */
 	/* parse uid or user depending on which is available */
-	add_complex_parser(slurmdb_job_rec_t, JOB_USER, false, "user", NEED_NONE),
-	add_parse(UINT64, user_cpu_sec, "time/user/seconds", NEED_NONE),
-	add_parse(UINT64, user_cpu_usec, "time/user/microseconds", NEED_NONE),
-	add_parse(WCKEY_TAG, wckey, "wckey", NEED_NONE),
+	add_complex_parser(slurmdb_job_rec_t, JOB_USER, false, "user"),
+	add_parse(UINT64, user_cpu_sec, "time/user/seconds"),
+	add_parse(UINT64, user_cpu_usec, "time/user/microseconds"),
+	add_parse(WCKEY_TAG, wckey, "wckey"),
 	add_skip(wckeyid),
-	add_parse(STRING, work_dir, "working_directory", NEED_NONE),
+	add_parse(STRING, work_dir, "working_directory"),
 };
 #undef add_parse
 #undef add_skip
@@ -3931,38 +3931,38 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ACCOUNT_FLAGS)[] = {
 	add_flag_bit(SLURMDB_ACCT_FLAG_DELETED, "DELETED"),
 };
 
-#define add_parse(mtype, field, path, needs) \
-	add_parser(slurmdb_account_rec_t, mtype, false, field, 0, path, needs)
+#define add_parse(mtype, field, path) \
+	add_parser(slurmdb_account_rec_t, mtype, false, field, 0, path)
 /* should mirror the structure of slurmdb_account_rec_t */
 static const parser_t PARSER_ARRAY(ACCOUNT)[] = {
-	add_parse(ASSOC_SHORT_LIST, assoc_list, "associations", NEED_ASSOC),
-	add_parse(COORD_LIST, coordinators, "coordinators", NEED_NONE),
-	add_parse(STRING, description, "description", NEED_NONE),
-	add_parse(STRING, name, "name", NEED_NONE),
-	add_parse(STRING, organization, "organization", NEED_NONE),
+	add_parse(ASSOC_SHORT_LIST, assoc_list, "associations"),
+	add_parse(COORD_LIST, coordinators, "coordinators"),
+	add_parse(STRING, description, "description"),
+	add_parse(STRING, name, "name"),
+	add_parse(STRING, organization, "organization"),
 	add_parse_bit_flag_array(slurmdb_account_rec_t, ACCOUNT_FLAGS, false, flags, "flags"),
 };
 #undef add_parse
 
-#define add_parse(mtype, field, path, needs) \
-	add_parser(slurmdb_accounting_rec_t, mtype, false, field, 0, path, needs)
+#define add_parse(mtype, field, path) \
+	add_parser(slurmdb_accounting_rec_t, mtype, false, field, 0, path)
 /* should mirror the structure of slurmdb_accounting_rec_t */
 static const parser_t PARSER_ARRAY(ACCOUNTING)[] = {
-	add_parse(UINT64, alloc_secs, "allocated/seconds", NEED_NONE),
-	add_parse(UINT32, id, "id", NEED_NONE),
-	add_parse(UINT64, period_start, "start", NEED_NONE),
-	add_parse(TRES, tres_rec, "TRES", NEED_TRES),
+	add_parse(UINT64, alloc_secs, "allocated/seconds"),
+	add_parse(UINT32, id, "id"),
+	add_parse(UINT64, period_start, "start"),
+	add_parse(TRES, tres_rec, "TRES"),
 };
 #undef add_parse
 
-#define add_parse(mtype, field, path, needs) \
-	add_parser(slurmdb_coord_rec_t, mtype, false, field, 0, path, needs)
-#define add_parse_req(mtype, field, path, needs) \
-	add_parser(slurmdb_coord_rec_t, mtype, true, field, 0, path, needs)
+#define add_parse(mtype, field, path) \
+	add_parser(slurmdb_coord_rec_t, mtype, false, field, 0, path)
+#define add_parse_req(mtype, field, path) \
+	add_parser(slurmdb_coord_rec_t, mtype, true, field, 0, path)
 /* should mirror the structure of slurmdb_coord_rec_t  */
 static const parser_t PARSER_ARRAY(COORD)[] = {
-	add_parse_req(STRING, name, "name", NEED_NONE),
-	add_parse(BOOL16, direct, "direct", NEED_NONE),
+	add_parse_req(STRING, name, "name"),
+	add_parse(BOOL16, direct, "direct"),
 };
 #undef add_parse
 #undef add_parse_req
@@ -3974,9 +3974,9 @@ static const flag_bit_t PARSER_FLAG_ARRAY(WCKEY_FLAGS)[] = {
 #define add_skip(field) \
 	add_parser_skip(slurmdb_wckey_rec_t, field)
 #define add_parse(mtype, field, path) \
-	add_parser(slurmdb_wckey_rec_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(slurmdb_wckey_rec_t, mtype, false, field, 0, path)
 #define add_parse_req(mtype, field, path) \
-	add_parser(slurmdb_wckey_rec_t, mtype, true, field, 0, path, NEED_NONE)
+	add_parser(slurmdb_wckey_rec_t, mtype, true, field, 0, path)
 /* should mirror the structure of slurmdb_wckey_rec_t */
 static const parser_t PARSER_ARRAY(WCKEY)[] = {
 	add_parse(ACCOUNTING_LIST, accounting_list, "accounting"),
@@ -3993,18 +3993,18 @@ static const parser_t PARSER_ARRAY(WCKEY)[] = {
 
 #define add_skip(field) \
 	add_parser_skip(slurmdb_tres_rec_t, field)
-#define add_parse(mtype, field, path, needs) \
-	add_parser(slurmdb_tres_rec_t, mtype, false, field, 0, path, needs)
-#define add_parse_req(mtype, field, path, needs) \
-	add_parser(slurmdb_tres_rec_t, mtype, true, field, 0, path, needs)
+#define add_parse(mtype, field, path) \
+	add_parser(slurmdb_tres_rec_t, mtype, false, field, 0, path)
+#define add_parse_req(mtype, field, path) \
+	add_parser(slurmdb_tres_rec_t, mtype, true, field, 0, path)
 /* should mirror the structure of slurmdb_tres_rec_t  */
 static const parser_t PARSER_ARRAY(TRES)[] = {
 	add_skip(alloc_secs), /* sreport func */
 	add_skip(rec_count), /* not packed */
-	add_parse_req(STRING, type, "type", NEED_NONE),
-	add_parse(STRING, name, "name", NEED_NONE),
-	add_parse(UINT32, id, "id", NEED_NONE),
-	add_parse(INT64, count, "count", NEED_NONE),
+	add_parse_req(STRING, type, "type"),
+	add_parse(STRING, name, "name"),
+	add_parse(UINT32, id, "id"),
+	add_parse(INT64, count, "count"),
 };
 #undef add_parse
 #undef add_parse_req
@@ -4036,56 +4036,56 @@ static const flag_bit_t PARSER_FLAG_ARRAY(QOS_PREEMPT_MODES)[] = {
 
 #define add_skip(field) \
 	add_parser_skip(slurmdb_qos_rec_t, field)
-#define add_parse(mtype, field, path, needs) \
-	add_parser(slurmdb_qos_rec_t, mtype, false, field, 0, path, needs)
-#define add_parse_req(mtype, field, path, needs) \
-	add_parser(slurmdb_qos_rec_t, mtype, true, field, 0, path, needs)
+#define add_parse(mtype, field, path) \
+	add_parser(slurmdb_qos_rec_t, mtype, false, field, 0, path)
+#define add_parse_req(mtype, field, path) \
+	add_parser(slurmdb_qos_rec_t, mtype, true, field, 0, path)
 /* should mirror the structure of slurmdb_qos_rec_t */
 static const parser_t PARSER_ARRAY(QOS)[] = {
-	add_parse(STRING, description, "description", NEED_NONE),
+	add_parse(STRING, description, "description"),
 	add_parse_bit_flag_array(slurmdb_qos_rec_t, QOS_FLAGS, false, flags, "flags"),
-	add_parse(UINT32, id, "id", NEED_NONE),
-	add_parse(UINT32, grace_time, "limits/grace_time", NEED_NONE),
-	add_parse(UINT32, grp_jobs_accrue, "limits/max/active_jobs/accruing", NEED_NONE),
-	add_parse(UINT32, grp_jobs, "limits/max/active_jobs/count", NEED_NONE),
-	add_parse(TRES_STR, grp_tres, "limits/max/tres/total", NEED_TRES),
+	add_parse(UINT32, id, "id"),
+	add_parse(UINT32, grace_time, "limits/grace_time"),
+	add_parse(UINT32, grp_jobs_accrue, "limits/max/active_jobs/accruing"),
+	add_parse(UINT32, grp_jobs, "limits/max/active_jobs/count"),
+	add_parse(TRES_STR, grp_tres, "limits/max/tres/total"),
 	add_skip(grp_tres_ctld), /* not packed */
-	add_parse(TRES_STR, grp_tres_run_mins, "limits/max/tres/minutes/per/qos", NEED_TRES),
+	add_parse(TRES_STR, grp_tres_run_mins, "limits/max/tres/minutes/per/qos"),
 	add_skip(grp_tres_run_mins_ctld), /* not packed */
-	add_parse(STRING, name, "name", NEED_NONE),
-	add_parse(UINT32, grp_wall, "limits/max/wall_clock/per/qos", NEED_NONE),
-	add_parse(FLOAT64, limit_factor, "limits/factor", NEED_NONE),
-	add_parse(UINT32, max_jobs_pa, "limits/max/jobs/active_jobs/per/account", NEED_NONE),
-	add_parse(UINT32, max_jobs_pu, "limits/max/jobs/active_jobs/per/user", NEED_NONE),
-	add_parse(UINT32, max_jobs_accrue_pa, "limits/max/accruing/per/account", NEED_NONE),
-	add_parse(UINT32, max_jobs_accrue_pu, "limits/max/accruing/per/user", NEED_NONE),
-	add_parse(UINT32, max_submit_jobs_pa, "limits/max/jobs/per/account", NEED_NONE),
-	add_parse(UINT32, max_submit_jobs_pu, "limits/max/jobs/per/user", NEED_NONE),
-	add_parse(TRES_STR, max_tres_mins_pj, "limits/max/tres/minutes/per/job", NEED_TRES),
+	add_parse(STRING, name, "name"),
+	add_parse(UINT32, grp_wall, "limits/max/wall_clock/per/qos"),
+	add_parse(FLOAT64, limit_factor, "limits/factor"),
+	add_parse(UINT32, max_jobs_pa, "limits/max/jobs/active_jobs/per/account"),
+	add_parse(UINT32, max_jobs_pu, "limits/max/jobs/active_jobs/per/user"),
+	add_parse(UINT32, max_jobs_accrue_pa, "limits/max/accruing/per/account"),
+	add_parse(UINT32, max_jobs_accrue_pu, "limits/max/accruing/per/user"),
+	add_parse(UINT32, max_submit_jobs_pa, "limits/max/jobs/per/account"),
+	add_parse(UINT32, max_submit_jobs_pu, "limits/max/jobs/per/user"),
+	add_parse(TRES_STR, max_tres_mins_pj, "limits/max/tres/minutes/per/job"),
 	add_skip(max_tres_mins_pj_ctld), /* not packed */
-	add_parse(TRES_STR, max_tres_pa, "limits/max/tres/per/account", NEED_TRES),
+	add_parse(TRES_STR, max_tres_pa, "limits/max/tres/per/account"),
 	add_skip(max_tres_pa_ctld), /* not packed */
-	add_parse(TRES_STR, max_tres_pj, "limits/max/tres/per/job", NEED_TRES),
+	add_parse(TRES_STR, max_tres_pj, "limits/max/tres/per/job"),
 	add_skip(max_tres_pj_ctld), /* not packed */
-	add_parse(TRES_STR, max_tres_pn, "limits/max/tres/per/node", NEED_TRES),
+	add_parse(TRES_STR, max_tres_pn, "limits/max/tres/per/node"),
 	add_skip(max_tres_pn_ctld), /* not packed */
-	add_parse(TRES_STR, max_tres_pu, "limits/max/tres/per/user", NEED_TRES),
+	add_parse(TRES_STR, max_tres_pu, "limits/max/tres/per/user"),
 	add_skip(max_tres_pu_ctld), /* not packed */
-	add_parse(TRES_STR, max_tres_run_mins_pa, "limits/max/tres/minutes/per/account", NEED_TRES),
+	add_parse(TRES_STR, max_tres_run_mins_pa, "limits/max/tres/minutes/per/account"),
 	add_skip(max_tres_run_mins_pa_ctld), /* not packed */
-	add_parse(TRES_STR, max_tres_run_mins_pu, "limits/max/tres/minutes/per/user", NEED_TRES),
+	add_parse(TRES_STR, max_tres_run_mins_pu, "limits/max/tres/minutes/per/user"),
 	add_skip(max_tres_run_mins_pu_ctld), /* not packed */
-	add_parse(UINT32, max_wall_pj, "limits/max/wall_clock/per/job", NEED_NONE),
-	add_parse(UINT32, min_prio_thresh, "limits/min/priority_threshold", NEED_NONE),
-	add_parse(TRES_STR, min_tres_pj, "limits/min/tres/per/job", NEED_NONE),
+	add_parse(UINT32, max_wall_pj, "limits/max/wall_clock/per/job"),
+	add_parse(UINT32, min_prio_thresh, "limits/min/priority_threshold"),
+	add_parse(TRES_STR, min_tres_pj, "limits/min/tres/per/job"),
 	add_skip(min_tres_pj_ctld), /* not packed */
-	add_complex_parser(slurmdb_qos_rec_t, QOS_PREEMPT_LIST, false, "preempt/list", NEED_QOS),
+	add_complex_parser(slurmdb_qos_rec_t, QOS_PREEMPT_LIST, false, "preempt/list"),
 	add_parse_bit_flag_array(slurmdb_qos_rec_t, QOS_PREEMPT_MODES, false, preempt_mode, "preempt/mode"),
-	add_parse(UINT32, preempt_exempt_time, "preempt/exempt_time", NEED_NONE),
-	add_parse(UINT32, priority, "priority", NEED_NONE),
+	add_parse(UINT32, preempt_exempt_time, "preempt/exempt_time"),
+	add_parse(UINT32, priority, "priority"),
 	add_skip(usage), /* not packed */
-	add_parse(FLOAT64, usage_factor, "usage_factor", NEED_NONE),
-	add_parse(FLOAT64, usage_thres, "usage_threshold", NEED_NONE),
+	add_parse(FLOAT64, usage_factor, "usage_factor"),
+	add_parse(FLOAT64, usage_thres, "usage_threshold"),
 	add_skip(blocked_until), /* not packed */
 };
 #undef add_parse
@@ -4095,80 +4095,80 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 
 #define add_skip(field) \
 	add_parser_skip(slurmdb_step_rec_t, field)
-#define add_parse(mtype, field, path, needs) \
-	add_parser(slurmdb_step_rec_t, mtype, false, field, 0, path, needs)
+#define add_parse(mtype, field, path) \
+	add_parser(slurmdb_step_rec_t, mtype, false, field, 0, path)
 /* should mirror the structure of slurmdb_step_rec_t */
 static const parser_t PARSER_ARRAY(STEP)[] = {
-	add_parse(UINT32, elapsed, "time/elapsed", NEED_NONE),
-	add_parse(UINT64, end, "time/end", NEED_NONE),
-	add_parse(JOB_EXIT_CODE, exitcode, "exit_code", NEED_NONE),
+	add_parse(UINT32, elapsed, "time/elapsed"),
+	add_parse(UINT64, end, "time/end"),
+	add_parse(JOB_EXIT_CODE, exitcode, "exit_code"),
 	add_skip(job_ptr), /* redundant here */
-	add_parse(UINT32, nnodes, "nodes/count", NEED_NONE),
-	add_parse(STRING, nodes, "nodes/range", NEED_NONE),
-	add_parse(UINT32, ntasks, "tasks/count", NEED_NONE),
-	add_parse(STRING, pid_str, "pid", NEED_NONE),
-	add_parse(UINT32_NO_VAL, req_cpufreq_min, "CPU/requested_frequency/min", NEED_NONE),
-	add_parse(UINT32_NO_VAL, req_cpufreq_max, "CPU/requested_frequency/max", NEED_NONE),
-	add_parse(CPU_FREQ_FLAGS, req_cpufreq_gov, "CPU/governor", NEED_NONE),
-	add_parse(USER_ID, requid, "kill_request_user", NEED_NONE),
-	add_parse(UINT64, start, "time/start", NEED_NONE),
-	add_parse(JOB_STATE, state, "state", NEED_NONE),
-	add_parse(UINT64, stats.act_cpufreq, "statistics/CPU/actual_frequency", NEED_NONE),
-	add_parse(UINT64, stats.consumed_energy, "statistics/energy/consumed", NEED_NONE),
-	add_parse(SLURM_STEP_ID, step_id, "step/id", NEED_NONE),
-	add_parse(STRING, stepname, "step/name", NEED_NONE),
-	add_parse(UINT32, suspended, "time/suspended", NEED_NONE),
-	add_parse(UINT64, sys_cpu_sec, "time/system/seconds", NEED_NONE),
-	add_parse(UINT32, sys_cpu_usec, "time/system/microseconds", NEED_NONE),
-	add_parse(TASK_DISTRIBUTION, task_dist, "task/distribution", NEED_NONE),
-	add_parse(UINT64, tot_cpu_sec, "time/total/seconds", NEED_NONE),
-	add_parse(UINT32, tot_cpu_usec, "time/total/microseconds", NEED_NONE),
-	add_parse(UINT64, user_cpu_sec, "time/user/seconds", NEED_NONE),
-	add_parse(UINT32, user_cpu_usec, "time/user/microseconds", NEED_NONE),
-	add_complex_parser(slurmdb_step_rec_t, STEP_NODES, false, "nodes/list", NEED_NONE),
-	add_complex_parser(slurmdb_step_rec_t, STEP_TRES_REQ_MAX, false, "tres/requested/max", NEED_TRES),
-	add_complex_parser(slurmdb_step_rec_t, STEP_TRES_REQ_MIN, false, "tres/requested/min", NEED_TRES),
-	add_complex_parser(slurmdb_step_rec_t, STEP_TRES_USAGE_MAX, false, "tres/consumed/max", NEED_TRES),
-	add_complex_parser(slurmdb_step_rec_t, STEP_TRES_USAGE_MIN, false, "tres/consumed/min", NEED_TRES),
-	add_parse(TRES_STR, stats.tres_usage_in_ave, "tres/requested/average", NEED_TRES),
-	add_parse(TRES_STR, stats.tres_usage_in_tot, "tres/requested/total", NEED_TRES),
-	add_parse(TRES_STR, stats.tres_usage_out_ave, "tres/consumed/average", NEED_TRES),
-	add_parse(TRES_STR, stats.tres_usage_out_tot, "tres/consumed/total", NEED_TRES),
-	add_parse(TRES_STR, tres_alloc_str, "tres/allocated", NEED_TRES),
+	add_parse(UINT32, nnodes, "nodes/count"),
+	add_parse(STRING, nodes, "nodes/range"),
+	add_parse(UINT32, ntasks, "tasks/count"),
+	add_parse(STRING, pid_str, "pid"),
+	add_parse(UINT32_NO_VAL, req_cpufreq_min, "CPU/requested_frequency/min"),
+	add_parse(UINT32_NO_VAL, req_cpufreq_max, "CPU/requested_frequency/max"),
+	add_parse(CPU_FREQ_FLAGS, req_cpufreq_gov, "CPU/governor"),
+	add_parse(USER_ID, requid, "kill_request_user"),
+	add_parse(UINT64, start, "time/start"),
+	add_parse(JOB_STATE, state, "state"),
+	add_parse(UINT64, stats.act_cpufreq, "statistics/CPU/actual_frequency"),
+	add_parse(UINT64, stats.consumed_energy, "statistics/energy/consumed"),
+	add_parse(SLURM_STEP_ID, step_id, "step/id"),
+	add_parse(STRING, stepname, "step/name"),
+	add_parse(UINT32, suspended, "time/suspended"),
+	add_parse(UINT64, sys_cpu_sec, "time/system/seconds"),
+	add_parse(UINT32, sys_cpu_usec, "time/system/microseconds"),
+	add_parse(TASK_DISTRIBUTION, task_dist, "task/distribution"),
+	add_parse(UINT64, tot_cpu_sec, "time/total/seconds"),
+	add_parse(UINT32, tot_cpu_usec, "time/total/microseconds"),
+	add_parse(UINT64, user_cpu_sec, "time/user/seconds"),
+	add_parse(UINT32, user_cpu_usec, "time/user/microseconds"),
+	add_complex_parser(slurmdb_step_rec_t, STEP_NODES, false, "nodes/list"),
+	add_complex_parser(slurmdb_step_rec_t, STEP_TRES_REQ_MAX, false, "tres/requested/max"),
+	add_complex_parser(slurmdb_step_rec_t, STEP_TRES_REQ_MIN, false, "tres/requested/min"),
+	add_complex_parser(slurmdb_step_rec_t, STEP_TRES_USAGE_MAX, false, "tres/consumed/max"),
+	add_complex_parser(slurmdb_step_rec_t, STEP_TRES_USAGE_MIN, false, "tres/consumed/min"),
+	add_parse(TRES_STR, stats.tres_usage_in_ave, "tres/requested/average"),
+	add_parse(TRES_STR, stats.tres_usage_in_tot, "tres/requested/total"),
+	add_parse(TRES_STR, stats.tres_usage_out_ave, "tres/consumed/average"),
+	add_parse(TRES_STR, stats.tres_usage_out_tot, "tres/consumed/total"),
+	add_parse(TRES_STR, tres_alloc_str, "tres/allocated"),
 };
 #undef add_parse
 #undef add_skip
 
-#define add_parse(mtype, field, path, needs) \
-	add_parser(slurmdb_stats_rec_t, mtype, false, field, 0, path, needs)
+#define add_parse(mtype, field, path) \
+	add_parser(slurmdb_stats_rec_t, mtype, false, field, 0, path)
 /* should mirror the structure of slurmdb_stats_rec_t */
 static const parser_t PARSER_ARRAY(STATS_REC)[] = {
-	add_parse(UINT64, time_start, "time_start", NEED_NONE),
-	add_parse(STATS_REC_ARRAY_PTR, dbd_rollup_stats, "rollups", NEED_NONE),
-	add_parse(STATS_RPC_LIST, rpc_list, "RPCs", NEED_NONE),
-	add_parse(STATS_USER_LIST, user_list, "users", NEED_NONE),
+	add_parse(UINT64, time_start, "time_start"),
+	add_parse(STATS_REC_ARRAY_PTR, dbd_rollup_stats, "rollups"),
+	add_parse(STATS_RPC_LIST, rpc_list, "RPCs"),
+	add_parse(STATS_USER_LIST, user_list, "users"),
 };
 #undef add_parse
 
-#define add_parse(mtype, field, path, needs) \
-	add_parser(slurmdb_rpc_obj_t, mtype, false, field, 0, path, needs)
+#define add_parse(mtype, field, path) \
+	add_parser(slurmdb_rpc_obj_t, mtype, false, field, 0, path)
 /* should mirror the structure of slurmdb_rpc_obj_t */
 static const parser_t PARSER_ARRAY(STATS_USER)[] = {
-	add_parse(USER_ID, id, "user", NEED_NONE),
-	add_parse(UINT32, cnt, "count", NEED_NONE),
-	add_parse(UINT64, time_ave, "time/average", NEED_NONE),
-	add_parse(UINT64, time, "time/total", NEED_NONE),
+	add_parse(USER_ID, id, "user"),
+	add_parse(UINT32, cnt, "count"),
+	add_parse(UINT64, time_ave, "time/average"),
+	add_parse(UINT64, time, "time/total"),
 };
 #undef add_parse
 
-#define add_parse(mtype, field, path, needs) \
-	add_parser(slurmdb_rpc_obj_t, mtype, false, field, 0, path, needs)
+#define add_parse(mtype, field, path) \
+	add_parser(slurmdb_rpc_obj_t, mtype, false, field, 0, path)
 /* should mirror the structure of slurmdb_rpc_obj_t */
 static const parser_t PARSER_ARRAY(STATS_RPC)[] = {
-	add_parse(RPC_ID, id, "rpc", NEED_NONE),
-	add_parse(UINT32, cnt, "count", NEED_NONE),
-	add_parse(UINT64, time_ave, "time/average", NEED_NONE),
-	add_parse(UINT64, time, "time/total", NEED_NONE),
+	add_parse(RPC_ID, id, "rpc"),
+	add_parse(UINT32, cnt, "count"),
+	add_parse(UINT64, time_ave, "time/average"),
+	add_parse(UINT64, time, "time/total"),
 };
 #undef add_parse
 
@@ -4183,32 +4183,32 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CLUSTER_REC_FLAGS)[] = {
 
 #define add_skip(field) \
 	add_parser_skip(slurmdb_cluster_rec_t, field)
-#define add_parse(mtype, field, path, needs) \
-	add_parser(slurmdb_cluster_rec_t, mtype, false, field, 0, path, needs)
+#define add_parse(mtype, field, path) \
+	add_parser(slurmdb_cluster_rec_t, mtype, false, field, 0, path)
 /* should mirror the structure of slurmdb_cluster_rec_t */
 static const parser_t PARSER_ARRAY(CLUSTER_REC)[] = {
 	add_skip(classification), /* to be deprecated */
 	add_skip(comm_fail_time), /* not packed */
 	add_skip(control_addr), /* not packed */
-	add_parse(STRING, control_host, "controller/host", NEED_NONE),
-	add_parse(UINT32, control_port, "controller/port", NEED_NONE),
+	add_parse(STRING, control_host, "controller/host"),
+	add_parse(UINT32, control_port, "controller/port"),
 	add_skip(dim_size), /* BG deprecated */
 	add_skip(fed), /* federation not supportted */
 	add_parse_bit_flag_array(slurmdb_cluster_rec_t, CLUSTER_REC_FLAGS, false, flags, "flags"),
 	add_skip(lock), /* not packed */
-	add_parse(STRING, name, "name", NEED_NONE),
-	add_parse(STRING, nodes, "nodes", NEED_NONE),
-	add_parse(SELECT_PLUGIN_ID, plugin_id_select, "select_plugin", NEED_NONE),
-	add_parse(ASSOC_SHORT_PTR, root_assoc, "associations/root", NEED_ASSOC),
-	add_parse(UINT16, rpc_version, "rpc_version", NEED_NONE),
+	add_parse(STRING, name, "name"),
+	add_parse(STRING, nodes, "nodes"),
+	add_parse(SELECT_PLUGIN_ID, plugin_id_select, "select_plugin"),
+	add_parse(ASSOC_SHORT_PTR, root_assoc, "associations/root"),
+	add_parse(UINT16, rpc_version, "rpc_version"),
 	add_skip(send_rpc), /* not packed */
-	add_parse(TRES_STR, tres_str, "tres", NEED_TRES),
+	add_parse(TRES_STR, tres_str, "tres"),
 };
 #undef add_parse
 #undef add_skip
 
 #define add_parse(mtype, field, path) \
-	add_parser(slurmdb_cluster_accounting_rec_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(slurmdb_cluster_accounting_rec_t, mtype, false, field, 0, path)
 /* should mirror the structure of slurmdb_cluster_accounting_rec_t */
 static const parser_t PARSER_ARRAY(CLUSTER_ACCT_REC)[] = {
 	add_parse(UINT64, alloc_secs, "time/allocated"),
@@ -4225,9 +4225,9 @@ static const parser_t PARSER_ARRAY(CLUSTER_ACCT_REC)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path) \
-	add_parser(slurmdb_tres_nct_rec_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(slurmdb_tres_nct_rec_t, mtype, false, field, 0, path)
 #define add_parse_req(mtype, field, path) \
-	add_parser(slurmdb_tres_nct_rec_t, mtype, true, field, 0, path, NEED_NONE)
+	add_parser(slurmdb_tres_nct_rec_t, mtype, true, field, 0, path)
 /* should mirror the structure of slurmdb_tres_nct_rec_t  */
 static const parser_t PARSER_ARRAY(TRES_NCT)[] = {
 	add_parse_req(STRING, type, "type"),
@@ -4243,7 +4243,7 @@ static const parser_t PARSER_ARRAY(TRES_NCT)[] = {
 #define add_skip(field) \
 	add_parser_skip(slurmdb_assoc_usage_t, field)
 #define add_parse(mtype, field, path) \
-	add_parser(slurmdb_assoc_usage_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(slurmdb_assoc_usage_t, mtype, false, field, 0, path)
 /* should mirror the structure of slurmdb_assoc_usage_t */
 static const parser_t PARSER_ARRAY(ASSOC_USAGE)[] = {
 	add_parse(UINT32, accrue_cnt, "accrue_job_count"),
@@ -4273,9 +4273,9 @@ static const parser_t PARSER_ARRAY(ASSOC_USAGE)[] = {
 #define add_skip(field) \
 	add_parser_skip(stats_info_response_msg_t, field)
 #define add_parse(mtype, field, path) \
-	add_parser(stats_info_response_msg_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(stats_info_response_msg_t, mtype, false, field, 0, path)
 #define add_cparse(mtype, path) \
-	add_complex_parser(stats_info_response_msg_t, mtype, false, path, NEED_NONE)
+	add_complex_parser(stats_info_response_msg_t, mtype, false, path)
 static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 	add_parse(UINT32, parts_packed, "parts_packed"),
 	add_parse(INT64, req_time, "req_time"),
@@ -4379,9 +4379,9 @@ static const flag_bit_t PARSER_FLAG_ARRAY(NODE_STATES)[] = {
 };
 
 #define add_parse(mtype, field, path) \
-	add_parser(node_info_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(node_info_t, mtype, false, field, 0, path)
 #define add_cparse(mtype, path) \
-	add_complex_parser(node_info_t, mtype, false, path, NEED_NONE)
+	add_complex_parser(node_info_t, mtype, false, path)
 static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, arch, "architecture"),
 	add_parse(STRING, bcast_address, "burstbuffer_network_address"),
@@ -4441,7 +4441,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 #undef add_cparse
 
 #define add_parse(mtype, field, path) \
-	add_parser(slurm_license_info_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(slurm_license_info_t, mtype, false, field, 0, path)
 static const parser_t PARSER_ARRAY(LICENSE)[] = {
 	add_parse(STRING, name, "LicenseName"),
 	add_parse(UINT32, total, "Total"),
@@ -4529,11 +4529,11 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ACCT_GATHER_PROFILE)[] = {
 #define add_skip(field) \
 	add_parser_skip(slurm_job_info_t, field)
 #define add_parse(mtype, field, path) \
-	add_parser(slurm_job_info_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(slurm_job_info_t, mtype, false, field, 0, path)
 #define add_parse_overload(mtype, field, overloads, path) \
-	add_parser(slurm_job_info_t, mtype, false, field, overloads, path, NEED_NONE)
+	add_parser(slurm_job_info_t, mtype, false, field, overloads, path)
 #define add_cparse(mtype, path) \
-	add_complex_parser(slurm_job_info_t, mtype, false, path, NEED_NONE)
+	add_complex_parser(slurm_job_info_t, mtype, false, path)
 static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, account, "account"),
 	add_parse(UINT64, accrue_time, "accrue_time"),
@@ -4682,11 +4682,11 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 #undef add_skip
 
 #define add_parse(mtype, field, path) \
-	add_parser(job_resources_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(job_resources_t, mtype, false, field, 0, path)
 #define add_parse_overload(mtype, field, overloads, path) \
-	add_parser(job_resources_t, mtype, false, field, overloads, path, NEED_NONE)
+	add_parser(job_resources_t, mtype, false, field, overloads, path)
 #define add_cparse(mtype, path) \
-	add_complex_parser(job_resources_t, mtype, false, path, NEED_NONE)
+	add_complex_parser(job_resources_t, mtype, false, path)
 static const parser_t PARSER_ARRAY(JOB_RES)[] = {
 	add_parse(STRING, nodes, "nodes"),
 	add_parse_overload(ALLOCATED_CORES, ncpus, 1, "allocated_cores"),
@@ -4699,7 +4699,7 @@ static const parser_t PARSER_ARRAY(JOB_RES)[] = {
 #undef add_cparse
 
 #define add_parse(mtype, field, path) \
-	add_parser(controller_ping_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(controller_ping_t, mtype, false, field, 0, path)
 static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
 	add_parse(STRING, hostname, "hostname"),
 	add_parse(CONTROLLER_PING_RESULT, pinged, "pinged"),
@@ -4709,7 +4709,7 @@ static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path) \
-	add_parser(job_step_info_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(job_step_info_t, mtype, false, field, 0, path)
 #define add_skip(field) \
 	add_parser_skip(job_step_info_t, field)
 static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
@@ -4755,7 +4755,7 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 #undef add_skip
 
 #define add_parse(mtype, field, path) \
-	add_parser(partition_info_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(partition_info_t, mtype, false, field, 0, path)
 #define add_skip(field) \
 	add_parser_skip(partition_info_t, field)
 static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
@@ -4804,7 +4804,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 #undef add_skip
 
 #define add_parse(mtype, field, path) \
-	add_parser(sinfo_data_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(sinfo_data_t, mtype, false, field, 0, path)
 #define add_skip(field) \
 	add_parser_skip(sinfo_data_t, field)
 static const parser_t PARSER_ARRAY(SINFO_DATA)[] = {
@@ -4860,7 +4860,7 @@ static const parser_t PARSER_ARRAY(SINFO_DATA)[] = {
 #undef add_skip
 
 #define add_parse(mtype, field, path) \
-	add_parser(acct_gather_energy_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(acct_gather_energy_t, mtype, false, field, 0, path)
 static const parser_t PARSER_ARRAY(ACCT_GATHER_ENERGY)[] = {
 	add_parse(UINT32, ave_watts, "average_watts"),
 	add_parse(UINT64, base_consumed_energy, "base_consumed_energy"),
@@ -4872,7 +4872,7 @@ static const parser_t PARSER_ARRAY(ACCT_GATHER_ENERGY)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path) \
-	add_parser(ext_sensors_data_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(ext_sensors_data_t, mtype, false, field, 0, path)
 static const parser_t PARSER_ARRAY(EXT_SENSORS_DATA)[] = {
 	add_parse(UINT64, consumed_energy, "consumed_energy"),
 	add_parse(UINT32, temperature, "temperature"),
@@ -4882,7 +4882,7 @@ static const parser_t PARSER_ARRAY(EXT_SENSORS_DATA)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path) \
-	add_parser(power_mgmt_data_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(power_mgmt_data_t, mtype, false, field, 0, path)
 static const parser_t PARSER_ARRAY(POWER_MGMT_DATA)[] = {
 	add_parse(UINT32, cap_watts, "maximum_watts"),
 	add_parse(UINT32, current_watts, "current_watts"),
@@ -4935,7 +4935,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(RESERVATION_FLAGS)[] = {
 };
 
 #define add_parse(mtype, field, path) \
-	add_parser(resv_core_spec_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(resv_core_spec_t, mtype, false, field, 0, path)
 static const parser_t PARSER_ARRAY(RESERVATION_CORE_SPEC)[] = {
 	add_parse(STRING, node_name, "node"),
 	add_parse(STRING, core_id, "core"),
@@ -4943,9 +4943,9 @@ static const parser_t PARSER_ARRAY(RESERVATION_CORE_SPEC)[] = {
 #undef add_parse
 
 #define add_cparse(mtype, path) \
-	add_complex_parser(reserve_info_t, mtype, false, path, NEED_NONE)
+	add_complex_parser(reserve_info_t, mtype, false, path)
 #define add_parse(mtype, field, path) \
-	add_parser(reserve_info_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(reserve_info_t, mtype, false, field, 0, path)
 #define add_skip(field) \
 	add_parser_skip(reserve_info_t, field)
 static const parser_t PARSER_ARRAY(RESERVATION_INFO)[] = {
@@ -4977,9 +4977,9 @@ static const parser_t PARSER_ARRAY(RESERVATION_INFO)[] = {
 #undef add_skip
 
 #define add_parse(mtype, field, path) \
-	add_parser(submit_response_msg_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(submit_response_msg_t, mtype, false, field, 0, path)
 #define add_parse_overload(mtype, field, overloads, path) \
-	add_parser(submit_response_msg_t, mtype, false, field, overloads, path, NEED_NONE)
+	add_parser(submit_response_msg_t, mtype, false, field, overloads, path)
 static const parser_t PARSER_ARRAY(JOB_SUBMIT_RESPONSE_MSG)[] = {
 	add_parse(UINT32, job_id, "job_id"),
 	add_parse(STEP_ID, step_id, "step_id"),
@@ -5021,7 +5021,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CRON_ENTRY_FLAGS)[] = {
 };
 
 #define add_parse(mtype, field, path) \
-	add_parser(cron_entry_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(cron_entry_t, mtype, false, field, 0, path)
 static const parser_t PARSER_ARRAY(CRON_ENTRY)[] = {
 	add_parse_bit_flag_array(cron_entry_t, CRON_ENTRY_FLAGS, false, flags, "flags"),
 	add_parse(BITSTR, minute, "minute"),
@@ -5073,11 +5073,11 @@ static const flag_bit_t PARSER_FLAG_ARRAY(X11_FLAGS)[] = {
 };
 
 #define add_cparse(mtype, path) \
-	add_complex_parser(job_desc_msg_t, mtype, false, path, NEED_NONE)
+	add_complex_parser(job_desc_msg_t, mtype, false, path)
 #define add_parse(mtype, field, path) \
-	add_parser(job_desc_msg_t, mtype, false, field, 0, path, NEED_NONE)
+	add_parser(job_desc_msg_t, mtype, false, field, 0, path)
 #define add_parse_overload(mtype, field, overloads, path) \
-	add_parser(job_desc_msg_t, mtype, false, field, overloads, path, NEED_NONE)
+	add_parser(job_desc_msg_t, mtype, false, field, overloads, path)
 #define add_skip(field) \
 	add_parser_skip(job_desc_msg_t, field)
 #define add_flags(mtype, field, path) \
