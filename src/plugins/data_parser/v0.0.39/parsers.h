@@ -92,44 +92,44 @@ typedef enum {
 
 typedef struct parser_s {
 	int magic; /* MAGIC_PARSER */
-	type_t type;
 	parser_model_t model;
 
-	/* field is not to be parser and dumped */
-	bool required;
-	/* offset from parent object - for fields in structs */
-	ssize_t ptr_offset; /* set to NO_VAL if there is no offset */
+	/* common model properties ------------------------------------------ */
+	type_t type;
+	char *type_string; /* stringified DATA_PARSE enum */
+	char *obj_type_string; /* stringified C type */
+	ssize_t size; /* size of target obj */
+
+	/* Linked model properties ------------------------------------------ */
 	char *field_name; /* name of field in struct if there is a ptr_offset */
 	uint8_t field_name_overloads; /* number of other parsers using same field name */
-	/* path of field key in dictionary */
-	char *key; /* set to NULL if this is simple object */
-	need_t needs;
-	ssize_t size; /* size of target obj */
-	char *obj_type_string; /* stringified C type */
-	char *type_string; /* stringified DATA_PARSE enum */
+	char *key; /* path of field key in dictionary */
+	ssize_t ptr_offset; /* offset from parent object or NO_VAL */
+	bool required;
 
-	/* pointer specific properties */
+	/* Pointer model properties ----------------------------------------- */
 	type_t pointer_type;
 
-	/* NULL terminated array of pointers - properties */
+	/* NULL terminated array of pointers model properties --------------- */
 	type_t array_type;
 
-	/* flag specific properties */
+	/* Flag array model properties -------------------------------------- */
 	const flag_bit_t *flag_bit_array;
 	uint8_t flag_bit_array_count; /* number of entries in flag_bit_array */
 
-	/* set if is a List of given type */
+	/* List model properties -------------------------------------------- */
 	type_t list_type;
 
-	/* parser is for a struct and has child fields to parse */
-	const parser_t *const fields;
+	/* Array model properties ------------------------------------------- */
+	const parser_t *const fields; /* pointer to array of parsers for each field */
 	const size_t field_count; /* number of fields in fields array */
 
-	/* parser has functions to handle parsing and dumping */
-	int (*parse)(const parser_t *const parser, void *dst, data_t *src,
-		     args_t *args, data_t *parent_path);
+	/* Simple and Complex model properties ------------------------------ */
 	int (*dump)(const parser_t *const parser, void *src, data_t *dst,
 		    args_t *args);
+	int (*parse)(const parser_t *const parser, void *dst, data_t *src,
+		     args_t *args, data_t *parent_path);
+	need_t needs;
 } parser_t;
 
 /*
