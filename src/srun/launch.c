@@ -651,6 +651,30 @@ extern slurm_step_layout_t *launch_common_get_slurm_step_layout(srun_job_t *job)
 		NULL : job->step_ctx->step_resp->step_layout;
 }
 
+static int _parse_gpu_request(char *in_str)
+{
+	char *save_ptr = NULL, *tmp_str, *tok, *sep;
+	int gpus_val = 0;
+
+	tmp_str = xstrdup(in_str);
+
+	tok = strtok_r(tmp_str, ",", &save_ptr);
+	while (tok) {
+		int tmp = 0;
+		sep = xstrchr(tok, ':');
+		if (sep)
+			tmp += atoi(sep + 1);
+		else
+			tmp += atoi(tok);
+		if (tmp > 0)
+			gpus_val += tmp;
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp_str);
+
+	return gpus_val;
+}
+
 static job_step_create_request_msg_t *_create_job_step_create_request(
 	slurm_opt_t *opt_local, bool use_all_cpus, srun_job_t *job)
 {
@@ -725,24 +749,10 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 			verbose("Implicitly setting --exact, because -c/--cpus-per-task given.");
 		srun_opt->exact = true;
 	} else if (opt_local->gpus_per_task && opt_local->cpus_per_gpu) {
-		char *save_ptr = NULL, *tmp_str, *tok, *sep;
-		int gpus_per_task = 0;
+		int gpus_per_task;
 
-		tmp_str = xstrdup(opt_local->gpus_per_task);
+		gpus_per_task = _parse_gpu_request(opt_local->gpus_per_task);
 
-		tok = strtok_r(tmp_str, ",", &save_ptr);
-		while (tok) {
-			int tmp = 0;
-			sep = xstrchr(tok, ':');
-			if (sep)
-				tmp += atoi(sep + 1);
-			else
-				tmp += atoi(tok);
-			if (tmp > 0)
-				gpus_per_task += tmp;
-			tok = strtok_r(NULL, ",", &save_ptr);
-		}
-		xfree(tmp_str);
 		step_req->cpu_count = opt_local->ntasks * gpus_per_task *
 				      opt_local->cpus_per_gpu;
 	} else if (opt_local->ntasks_set ||
