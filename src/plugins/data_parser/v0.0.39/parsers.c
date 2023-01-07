@@ -112,18 +112,6 @@ typedef enum {
 	TRES_EXPLODE_TASK,
 } tres_explode_type_t;
 
-typedef args_t parser_env_t;
-
-typedef struct {
-	int magic; /* MAGIC_FOREACH_LIST */
-	ssize_t index;
-	args_t *args;
-	const parser_t *const parser;
-	List list;
-	data_t *dlist;
-	data_t *parent_path;
-} foreach_list_t;
-
 typedef struct {
 	int magic; /* MAGIC_LIST_PER_TRES_TYPE_NCT */
 	tres_explode_type_t type;
@@ -140,22 +128,6 @@ typedef struct {
 	int tres_nct_count;
 	int offset;
 } foreach_populate_g_tres_list;
-
-typedef struct {
-	int magic; /* MAGIC_FOREACH_STEP */
-	data_t *steps;
-	args_t *args;
-	const parser_t *const parser;
-} foreach_step_t;
-
-typedef struct {
-	int magic; /* MAGIC_FOREACH_LIST_FLAG */
-	args_t *args;
-	const parser_t *const parser;
-	void *dst; /* already has offset applied */
-	data_t *parent_path;
-	ssize_t index;
-} foreach_flag_parser_args_t;
 
 typedef struct {
 	int magic; /* MAGIC_FOREACH_STRING_ID */
