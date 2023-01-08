@@ -2849,38 +2849,6 @@ static int DUMP_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(ACCT_GATHER_PROFILE)
-
-static int DUMP_FUNC(ACCT_GATHER_PROFILE)(const parser_t *const parser,
-					  void *obj, data_t *dst, args_t *args)
-{
-	uint32_t *profile = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
-	if (*profile == ACCT_GATHER_PROFILE_NOT_SET)
-		return SLURM_SUCCESS;
-
-	data_set_list(dst);
-
-	if (*profile == ACCT_GATHER_PROFILE_NONE) {
-		data_set_string(data_list_append(dst), "None");
-		return SLURM_SUCCESS;
-	}
-
-	if (*profile & ACCT_GATHER_PROFILE_ENERGY)
-		data_set_string(data_list_append(dst), "Energy");
-	if (*profile & ACCT_GATHER_PROFILE_LUSTRE)
-		data_set_string(data_list_append(dst), "Lustre");
-	if (*profile & ACCT_GATHER_PROFILE_NETWORK)
-		data_set_string(data_list_append(dst), "Network");
-	if (*profile & ACCT_GATHER_PROFILE_TASK)
-		data_set_string(data_list_append(dst), "Task");
-
-	return SLURM_SUCCESS;
-}
-
 PARSE_DISABLED(JOB_SHARED)
 
 static int DUMP_FUNC(JOB_SHARED)(const parser_t *const parser, void *obj,
@@ -4948,6 +4916,15 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_MAIL_FLAGS)[] = {
 	add_flag_bit(MAIL_INVALID_DEPEND, "INVALID_DEPENDENCY"),
 };
 
+static const flag_bit_t PARSER_FLAG_ARRAY(ACCT_GATHER_PROFILE)[] = {
+	add_flag_equal(ACCT_GATHER_PROFILE_NOT_SET, INFINITE, "NOT_SET"),
+	add_flag_equal(ACCT_GATHER_PROFILE_NONE, INFINITE, "NONE"),
+	add_flag_bit(ACCT_GATHER_PROFILE_ENERGY, "ENERGY"),
+	add_flag_bit(ACCT_GATHER_PROFILE_LUSTRE, "LUSTRE"),
+	add_flag_bit(ACCT_GATHER_PROFILE_NETWORK, "NETWORK"),
+	add_flag_bit(ACCT_GATHER_PROFILE_TASK, "TASK"),
+};
+
 #define add_skip(field) \
 	add_parser_skip(slurm_job_info_t, field)
 #define add_parse(mtype, field, path) \
@@ -5775,7 +5752,6 @@ static const parser_t parsers[] = {
 	addps(NICE, uint32_t, NEED_NONE),
 	addps(JOB_MEM_PER_CPU, uint64_t, NEED_NONE),
 	addps(JOB_MEM_PER_NODE, uint64_t, NEED_NONE),
-	addps(ACCT_GATHER_PROFILE, uint32_t, NEED_NONE),
 	addps(JOB_SHARED, uint16_t, NEED_NONE),
 	addps(ALLOCATED_CORES, uint32_t, NEED_NONE),
 	addps(ALLOCATED_CPUS, uint32_t, NEED_NONE),
@@ -5901,6 +5877,7 @@ static const parser_t parsers[] = {
 	addfa(WARN_FLAGS, uint16_t),
 	addfa(X11_FLAGS, uint16_t),
 	addfa(OPEN_MODE, uint8_t),
+	addfa(ACCT_GATHER_PROFILE, uint32_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, slurmdb_destroy_qos_rec, create_qos_rec_obj, NEED_QOS),
