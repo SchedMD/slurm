@@ -1303,23 +1303,6 @@ static int DUMP_FUNC(RPC_ID)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(CLUSTER_ACCT_REC)
-
-static int DUMP_FUNC(CLUSTER_ACCT_REC)(const parser_t *const parser, void *obj,
-				       data_t *dst, args_t *args)
-{
-	slurmdb_cluster_accounting_rec_t *acct = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	data_set_list(dst);
-
-	if (!acct)
-		return ESLURM_DATA_CONV_FAILED;
-
-	return SLURM_SUCCESS;
-}
-
 static int PARSE_FUNC(SELECT_PLUGIN_ID)(const parser_t *const parser, void *obj,
 					data_t *src, args_t *args,
 					data_t *parent_path)
@@ -5800,7 +5783,6 @@ static const parser_t parsers[] = {
 	addps(STATS_REC_ARRAY, slurmdb_stats_rec_t, NEED_NONE),
 	addps(STATS_REC_ARRAY_PTR, slurmdb_stats_rec_t *, NEED_NONE),
 	addps(RPC_ID, slurmdbd_msg_type_t, NEED_NONE),
-	addps(CLUSTER_ACCT_REC, slurmdb_cluster_accounting_rec_t, NEED_NONE),
 	addps(SELECT_PLUGIN_ID, int, NEED_NONE),
 	addps(TASK_DISTRIBUTION, uint32_t, NEED_NONE),
 	addps(SLURM_STEP_ID, slurm_step_id_t, NEED_NONE),
