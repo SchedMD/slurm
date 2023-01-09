@@ -221,6 +221,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix race condition between PMIx authentication and slurmstepd task launches
     that can lead to job launch failures.
  -- fatal() when [Prolog|Epilog]Slurmctld are defined but not executable.
+ -- slurmctld - Add new RPC rate limiting feature. This is enabled through
+    SlurmctldParameters=rl_enable, otherwise disabled by default.
 
 * Changes in Slurm 22.05.8
 ==========================

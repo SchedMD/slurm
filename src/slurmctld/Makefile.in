@@ -164,9 +164,9 @@ am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
 	port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
 	prep_slurmctld.$(OBJEXT) proc_req.$(OBJEXT) \
-	read_config.$(OBJEXT) reservation.$(OBJEXT) \
-	rpc_queue.$(OBJEXT) slurmscriptd.$(OBJEXT) \
-	slurmscriptd_protocol_defs.$(OBJEXT) \
+	rate_limit.$(OBJEXT) read_config.$(OBJEXT) \
+	reservation.$(OBJEXT) rpc_queue.$(OBJEXT) \
+	slurmscriptd.$(OBJEXT) slurmscriptd_protocol_defs.$(OBJEXT) \
 	slurmscriptd_protocol_pack.$(OBJEXT) srun_comm.$(OBJEXT) \
 	state_save.$(OBJEXT) statistics.$(OBJEXT) step_mgr.$(OBJEXT) \
 	trigger_mgr.$(OBJEXT)
@@ -205,9 +205,9 @@ am__depfiles_remade = ./$(DEPDIR)/acct_policy.Po ./$(DEPDIR)/agent.Po \
 	./$(DEPDIR)/node_scheduler.Po ./$(DEPDIR)/partition_mgr.Po \
 	./$(DEPDIR)/ping_nodes.Po ./$(DEPDIR)/port_mgr.Po \
 	./$(DEPDIR)/power_save.Po ./$(DEPDIR)/prep_slurmctld.Po \
-	./$(DEPDIR)/proc_req.Po ./$(DEPDIR)/read_config.Po \
-	./$(DEPDIR)/reservation.Po ./$(DEPDIR)/rpc_queue.Po \
-	./$(DEPDIR)/slurmscriptd.Po \
+	./$(DEPDIR)/proc_req.Po ./$(DEPDIR)/rate_limit.Po \
+	./$(DEPDIR)/read_config.Po ./$(DEPDIR)/reservation.Po \
+	./$(DEPDIR)/rpc_queue.Po ./$(DEPDIR)/slurmscriptd.Po \
 	./$(DEPDIR)/slurmscriptd_protocol_defs.Po \
 	./$(DEPDIR)/slurmscriptd_protocol_pack.Po \
 	./$(DEPDIR)/srun_comm.Po ./$(DEPDIR)/state_save.Po \
@@ -565,6 +565,8 @@ slurmctld_SOURCES = \
 	prep_slurmctld.c \
 	proc_req.c	\
 	proc_req.h	\
+	rate_limit.c	\
+	rate_limit.h	\
 	read_config.c	\
 	read_config.h	\
 	reservation.c	\
@@ -706,6 +708,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/power_save.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prep_slurmctld.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_req.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rate_limit.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reservation.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rpc_queue.Po@am__quote@ # am--include-marker
@@ -869,6 +872,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/power_save.Po
 	-rm -f ./$(DEPDIR)/prep_slurmctld.Po
 	-rm -f ./$(DEPDIR)/proc_req.Po
+	-rm -f ./$(DEPDIR)/rate_limit.Po
 	-rm -f ./$(DEPDIR)/read_config.Po
 	-rm -f ./$(DEPDIR)/reservation.Po
 	-rm -f ./$(DEPDIR)/rpc_queue.Po
@@ -948,6 +952,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/power_save.Po
 	-rm -f ./$(DEPDIR)/prep_slurmctld.Po
 	-rm -f ./$(DEPDIR)/proc_req.Po
+	-rm -f ./$(DEPDIR)/rate_limit.Po
 	-rm -f ./$(DEPDIR)/read_config.Po
 	-rm -f ./$(DEPDIR)/reservation.Po
 	-rm -f ./$(DEPDIR)/rpc_queue.Po
