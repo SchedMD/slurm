@@ -442,11 +442,17 @@ extern data_t *get_query_key_list_funcname(const char *path, ctxt_t *ctxt,
 
 const data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 {
+	static data_parser_t *parser;
 	data_t *spec = NULL;
 
 	*flags |= OAS_FLAG_MANGLE_OPID;
 
 	static_ref_json_to_data_t(spec, openapi_json);
+
+	parser = data_parser_g_new(NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+				   NULL, DATA_PLUGIN, NULL, false);
+	(void) data_parser_g_specify(parser, spec);
+	data_parser_g_free(parser, false);
 
 	return spec;
 }
