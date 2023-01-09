@@ -398,7 +398,7 @@ For example,
 \fB\-\-constraint="foo&bar|baz"\fR requests nodes with foo and bar, or baz.
 \fB\-\-constraint="foo|bar&baz"\fR requests nodes with foo and baz, or bar and
 baz (note how baz was AND'd with everything).
-\fB\-\-constraint="foo&(bar|baz)" requests nodes with foo and at least
+\fB\-\-constraint="foo&(bar|baz)"\fR requests nodes with foo and at least
 one of bar or baz.
 \fBNOTE\fR: OR within parentheses should not be used with a KNL
 NodeFeatures plugin but is supported by the helpers NodeFeatures plugin.
