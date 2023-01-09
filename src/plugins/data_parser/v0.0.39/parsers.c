@@ -5883,7 +5883,7 @@ static const parser_t parsers[] = {
 	addpl(QOS_LIST, QOS, slurmdb_destroy_qos_rec, create_qos_rec_obj, NEED_QOS),
 	addpl(QOS_NAME_LIST, QOS_NAME, xfree_ptr, create_parser_list_obj, NEED_QOS),
 	addpl(QOS_ID_LIST, QOS_ID, xfree_ptr, create_parser_list_obj, NEED_QOS),
-	addpl(QOS_STRING_ID_LIST, QOS_STRING_ID, xfree_ptr, create_qos_rec_obj, NEED_QOS),
+	addpl(QOS_STRING_ID_LIST, STRING, xfree_ptr, create_qos_rec_obj, NEED_QOS),
 	addpl(USER_LIST, USER, slurmdb_destroy_user_rec, create_user_rec_obj, NEED_NONE),
 	addpl(WCKEY_LIST, WCKEY, slurmdb_destroy_wckey_rec, create_wckey_rec_obj, NEED_NONE),
 	addpl(ACCOUNT_LIST, ACCOUNT, slurmdb_destroy_account_rec, create_parser_list_obj, NEED_NONE),

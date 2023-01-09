@@ -104,7 +104,6 @@ typedef enum {
 	DATA_PARSER_JOB_USER, /* user/uid from slurmdb_job_rec_t* */
 	DATA_PARSER_QOS_ID, /* uint32_t of QOS id */
 	DATA_PARSER_QOS_ID_LIST, /* List of char* of QOS ids */
-	DATA_PARSER_QOS_STRING_ID, /* char * of QOS id */
 	DATA_PARSER_QOS_STRING_ID_LIST, /* List of char* of QOS ids */
 	DATA_PARSER_QOS_NAME, /* char * of QOS name */
 	DATA_PARSER_QOS_NAME_LIST, /* List of char* of QOS names */
