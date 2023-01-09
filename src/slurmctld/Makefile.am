@@ -49,6 +49,8 @@ slurmctld_SOURCES =     \
 	prep_slurmctld.c \
 	proc_req.c	\
 	proc_req.h	\
+	rate_limit.c	\
+	rate_limit.h	\
 	read_config.c	\
 	read_config.h	\
 	reservation.c	\
