@@ -64,11 +64,30 @@ static int refill_period = 1;
 
 extern void rate_limit_init(void)
 {
+	char *tmp_ptr;
+
 	if (!xstrcasestr(slurm_conf.slurmctld_params, "rl_enable"))
 		return;
 
+	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
+				   "rl_table_size=")))
+		table_size = atoi(tmp_ptr + 14);
+	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
+				   "rl_bucket_size=")))
+		bucket_size = atoi(tmp_ptr + 15);
+	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
+				   "rl_refill_rate=")))
+		refill_rate = atoi(tmp_ptr + 15);
+	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
+				   "rl_refill_period=")))
+		refill_period = atoi(tmp_ptr + 17);
+
 	rate_limit_enabled = true;
 	user_buckets = xcalloc(table_size, sizeof(user_bucket_t));
+
+	info("RPC rate limiting enabled");
+	debug("%s: rl_table_size=%d,rl_bucket_size=%d,rl_refill_rate=%d,rl_refill_period=%d",
+	      __func__, table_size, bucket_size, refill_rate, refill_period);
 }
 
 extern void rate_limit_shutdown(void)
