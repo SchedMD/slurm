@@ -21729,6 +21729,12 @@ then :
   printf "%s\n" "#define HAVE_MEMFD_CREATE 1" >>confdefs.h
 
 fi
+ac_fn_c_check_func "$LINENO" "getrandom" "ac_cv_func_getrandom"
+if test "x$ac_cv_func_getrandom" = xyes
+then :
+  printf "%s\n" "#define HAVE_GETRANDOM 1" >>confdefs.h
+
+fi
 
 
 ac_fn_check_decl "$LINENO" "hstrerror" "ac_cv_have_decl_hstrerror" "$ac_includes_default" "$ac_c_undeclared_builtin_options" "CFLAGS"

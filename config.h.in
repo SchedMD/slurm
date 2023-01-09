@@ -82,6 +82,9 @@
 /* Define to 1 if running slurmd on front-end only */
 #undef HAVE_FRONT_END
 
+/* Define to 1 if you have the `getrandom' function. */
+#undef HAVE_GETRANDOM
+
 /* Define to 1 if you have the `get_current_dir_name' function. */
 #undef HAVE_GET_CURRENT_DIR_NAME
 
