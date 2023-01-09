@@ -646,20 +646,8 @@ static char *_relative_date_fmt(const struct tm *when)
 	return "%a %H:%M";			/* near distance */
 }
 
-/*
- * slurm_make_time_str - convert time_t to formatted string for user output
- *
- * The format depends on the environment variable SLURM_TIME_FORMAT, which may
- * be set to 'standard' (fallback, same as if not set), 'relative' (format is
- * relative to today's date and optimized for space), or a strftime(3) string.
- *
- * IN time - a time stamp
- * OUT string - pointer user defined buffer
- * IN size - length of string buffer, we recommend a size of 32 bytes to
- *	easily support different site-specific formats
- */
-extern void
-slurm_make_time_str (time_t *time, char *string, int size)
+static void _make_time_str_internal(time_t *time, bool utc, char *string,
+				    int size)
 {
 	struct tm time_tm;
 
@@ -694,6 +682,24 @@ slurm_make_time_str (time_t *time, char *string, int size)
 
 		slurm_strftime(string, size, display_fmt, &time_tm);
 	}
+}
+
+/*
+ * slurm_make_time_str - convert time_t to formatted string for user output
+ *
+ * The format depends on the environment variable SLURM_TIME_FORMAT, which may
+ * be set to 'standard' (fallback, same as if not set), 'relative' (format is
+ * relative to today's date and optimized for space), or a strftime(3) string.
+ *
+ * IN time - a time stamp
+ * OUT string - pointer user defined buffer
+ * IN size - length of string buffer, we recommend a size of 32 bytes to
+ *	easily support different site-specific formats
+ */
+extern void
+slurm_make_time_str (time_t *time, char *string, int size)
+{
+	_make_time_str_internal(time, false, string, size);
 }
 
 /* Convert a string to an equivalent time value
