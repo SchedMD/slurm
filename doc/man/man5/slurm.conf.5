@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "December 2022" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "January 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4716,6 +4716,42 @@ Run the \fBRebootProgram\fR from the controller instead of on the slurmds. The
 RebootProgram will be passed a comma\-separated list of nodes to reboot as the
 first argument and if applicable the required features needed for reboot as the
 second argument.
+.IP
+
+.TP
+\fBrl_bucket_size=\fR
+Size of the token bucket. This permits a certain amount of RPC burst from a
+user before the steady\-state rate limit takes effect.
+The default value is 30.
+.IP
+
+.TP
+\fBrl_enable\fR
+Enable per\-user RPC rate\-limiting support. Client\-commands will be told to
+back off and sleep for a second once the limit has been reached.
+This is implemented as a "token bucket", which permits a certain degree of
+"bursty" RPC load from an individual user before holding them to a
+steady\-state RPC load established by the refill period and rate.
+.IP
+
+.TP
+\fBrl_refill_period=\fR
+How frequently, in seconds, in which additional tokens are added to each user
+bucket.
+The default value is 1.
+.IP
+
+.TP
+\fBrl_refill_rate=\fR
+How many tokens to add to the bucket on each period.
+The default value is 2.
+.IP
+
+.TP
+\fBrl_table_size=\fR
+Number of entries in the user hash\-table. Recommended value should be at least
+twice the number of active user accounts on the system.
+The default value is 8192.
 .IP
 
 .TP

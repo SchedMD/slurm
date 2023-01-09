@@ -22,6 +22,8 @@ NOTE: PMIx v1.x is no longer supported.
 
 HIGHLIGHTS
 ==========
+ -- slurmctld - Add new RPC rate limiting feature. This is enabled through
+    SlurmctldParameters=rl_enable, otherwise disabled by default.
  -- Make scontrol reconfigure and sending a SIGHUP to the slurmctld behave the
     same. If you were using SIGHUP as a 'lighter' scontrol reconfigure to rotate
     logs please update your scripts to use SIGUSR2 instead.
