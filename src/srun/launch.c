@@ -729,6 +729,10 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	    (opt_local->min_nodes < step_req->min_nodes))
 		step_req->min_nodes = opt_local->min_nodes;
 
+	if (opt_local->gres)
+		add_tres = opt_local->gres;
+	else
+		add_tres = getenv("SLURM_STEP_GRES");
 	/*
 	 * If the number of CPUs was specified (cpus_set==true), then we need to
 	 * set exact = true. Otherwise the step will be allocated the wrong
@@ -748,13 +752,57 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 		else if (!srun_opt->exact)
 			verbose("Implicitly setting --exact, because -c/--cpus-per-task given.");
 		srun_opt->exact = true;
-	} else if (opt_local->gpus_per_task && opt_local->cpus_per_gpu) {
-		int gpus_per_task;
+	} else if (opt_local->cpus_per_gpu) {
+		if (opt_local->gpus) {
+			int gpus_per_step;
 
-		gpus_per_task = _parse_gpu_request(opt_local->gpus_per_task);
+			gpus_per_step = _parse_gpu_request(opt_local->gpus);
+			step_req->cpu_count = gpus_per_step *
+				opt_local->cpus_per_gpu;
+		} else if (opt_local->gpus_per_node) {
+			int gpus_per_node;
 
-		step_req->cpu_count = opt_local->ntasks * gpus_per_task *
-				      opt_local->cpus_per_gpu;
+			gpus_per_node =
+				_parse_gpu_request(opt_local->gpus_per_node);
+			/* Use a minimum value for requested cpus */
+			step_req->cpu_count = opt_local->min_nodes *
+				gpus_per_node * opt_local->cpus_per_gpu;
+		} else if (opt_local->gpus_per_task) {
+			int gpus_per_task;
+
+			gpus_per_task =
+				_parse_gpu_request(opt_local->gpus_per_task);
+			step_req->cpu_count = opt_local->ntasks *
+				gpus_per_task * opt_local->cpus_per_gpu;
+		} else if (add_tres) {
+			int rc = SLURM_SUCCESS;
+			uint64_t gpus_per_node = 0;
+			char *save_ptr = NULL;
+
+			while (slurm_option_get_tres_per_tres(
+				       opt_local->gres, "gpu",
+				       &gpus_per_node, &save_ptr,
+				       &rc));
+			if (rc != SLURM_SUCCESS) {
+				error("No gpus requested with --cpus-per-gpu");
+				return NULL;
+			}
+			/* Same math as gpus_per_node */
+			step_req->cpu_count = opt_local->min_nodes *
+				gpus_per_node * opt_local->cpus_per_gpu;
+		} else if (opt_local->gpus_per_socket) {
+			/*
+			 * gpus_per_socket is not supported for steps;
+			 * one of the other gpus_per options must be used in
+			 * conjunction with cpus_per_gpu.
+			 */
+			error("gpus_per_socket and cpus_per_gpu is not supported for steps");
+			return NULL;
+		}
+		/*
+		 * If none of these are requested, the step may inherit gres
+		 * from the job.
+		 */
 	} else if (opt_local->ntasks_set ||
 		   (opt_local->ntasks_per_tres != NO_VAL) ||
 		   (opt_local->ntasks_per_gpu != NO_VAL)) {
@@ -862,10 +910,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 
 	xfmt_tres(&step_req->tres_per_node, "gres:gpu",
 		  opt_local->gpus_per_node);
-	if (opt_local->gres)
-		add_tres = opt_local->gres;
-	else
-		add_tres = getenv("SLURM_STEP_GRES");
+	/* add_tres set from opt_local->gres or environment above */
 	if (add_tres) {
 		if (step_req->tres_per_node) {
 			xstrfmtcat(step_req->tres_per_node, ",%s", add_tres);
