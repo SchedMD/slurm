@@ -58,6 +58,7 @@
 ** for details.
 */
 strong_alias(parse_time, slurm_parse_time);
+strong_alias(parse_time_make_str_utc, slurm_parse_time_make_str_utc);
 //slurm_make_time_str is already exported
 strong_alias(time_str2mins, slurm_time_str2mins);
 strong_alias(time_str2secs, slurm_time_str2secs);
@@ -651,24 +652,25 @@ static void _make_time_str_internal(time_t *time, bool utc, char *string,
 {
 	struct tm time_tm;
 
-	localtime_r(time, &time_tm);
+	if (utc)
+		gmtime_r(time, &time_tm);
+	else
+		localtime_r(time, &time_tm);
 	if ((*time == (time_t) 0) || (*time == (time_t) INFINITE)) {
 		snprintf(string, size, "Unknown");
 	} else if (*time == (time_t) NO_VAL) {
 		snprintf(string, size, "None");
 	} else {
 		static char fmt_buf[32];
-		static const char *display_fmt;
-		static bool use_relative_format;
+		static const char *display_fmt = "%FT%T";
 
-		if (!display_fmt) {
+		if (!utc) {
 			char *fmt = getenv("SLURM_TIME_FORMAT");
-			display_fmt = "%FT%T";
 
 			if ((!fmt) || (!*fmt) || (!xstrcmp(fmt, "standard"))) {
 				;
 			} else if (xstrcmp(fmt, "relative") == 0) {
-				use_relative_format = true;
+				display_fmt = _relative_date_fmt(&time_tm);
 			} else if ((strchr(fmt, '%')  == NULL) ||
 				   (strlen(fmt) >= sizeof(fmt_buf))) {
 				error("invalid SLURM_TIME_FORMAT = '%s'", fmt);
@@ -677,8 +679,6 @@ static void _make_time_str_internal(time_t *time, bool utc, char *string,
 				display_fmt = fmt_buf;
 			}
 		}
-		if (use_relative_format)
-			display_fmt = _relative_date_fmt(&time_tm);
 
 		slurm_strftime(string, size, display_fmt, &time_tm);
 	}
@@ -700,6 +700,18 @@ extern void
 slurm_make_time_str (time_t *time, char *string, int size)
 {
 	_make_time_str_internal(time, false, string, size);
+}
+
+/*
+ * Convert time_t to fixed "%FT%T" formatted string expressed in UTC.
+ *
+ * IN time - a timestamp
+ * OUT string - pointer user defined buffer
+ * IN size - length of string buffer (recommend 32 bytes)
+ */
+extern void parse_time_make_str_utc(time_t *time, char *string, int size)
+{
+	_make_time_str_internal(time, true, string, size);
 }
 
 /* Convert a string to an equivalent time value

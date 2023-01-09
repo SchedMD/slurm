@@ -56,6 +56,15 @@
 extern time_t parse_time(const char *time_str, int past);
 
 /*
+ * Convert time_t to fixed "%FT%T" formatted string expressed in UTC.
+ *
+ * IN time - a timestamp
+ * OUT string - pointer user defined buffer
+ * IN size - length of string buffer (recommend 32 bytes)
+ */
+extern void parse_time_make_str_utc(time_t *time, char *string, int size);
+
+/*
  * slurm_make_time_str - convert time_t to string with a format of
  *	"month/date hour:min:sec"
  *
