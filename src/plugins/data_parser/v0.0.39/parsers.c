@@ -247,6 +247,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->ptr_offset == NO_VAL);
 		xassert(!parser->pointer_type);
 		xassert(!parser->array_type);
+		xassert(!parser->obj_openapi);
 	} else if (parser->model == PARSER_MODEL_LIST) {
 		/* parser of a List */
 		xassert(parser->list_type > DATA_PARSER_TYPE_INVALID);
@@ -260,6 +261,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->ptr_offset == NO_VAL);
 		xassert(!parser->pointer_type);
 		xassert(!parser->array_type);
+		xassert(!parser->obj_openapi);
 	} else if (parser->model == PARSER_MODEL_ARRAY) {
 		/* parser of a parser Array */
 		xassert(parser->field_count > 0);
@@ -272,6 +274,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->fields);
 		xassert(!parser->pointer_type);
 		xassert(!parser->array_type);
+		xassert(!parser->obj_openapi);
 
 		for (int i = 0; i < parser->field_count; i++) {
 			/* recursively check the child parsers */
@@ -324,6 +327,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->pointer_type);
 		xassert(!parser->array_type);
+		xassert(!parser->obj_openapi);
 
 		switch (linked->model) {
 		case PARSER_MODEL_ARRAY:
@@ -357,7 +361,8 @@ extern void check_parser_funcname(const parser_t *const parser,
 		case PARSER_MODEL_MAX:
 			fatal_abort("invalid model");
 		}
-	} else if (parser->model == PARSER_MODEL_SIMPLE) {
+	} else if ((parser->model == PARSER_MODEL_SIMPLE) ||
+		   (parser->model == PARSER_MODEL_COMPLEX)) {
 		xassert(parser->ptr_offset == NO_VAL);
 		xassert(!parser->key);
 		xassert(!parser->field_name);
@@ -367,21 +372,37 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->parse);
 		xassert(parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
-		xassert(!parser->pointer_type);
-		xassert(!parser->array_type);
-	} else if (parser->model == PARSER_MODEL_COMPLEX) {
-		xassert(parser->ptr_offset == NO_VAL);
-		xassert(!parser->field_name);
-		xassert(!parser->key);
-		xassert(!parser->field_name);
-		xassert(!parser->flag_bit_array_count);
-		xassert(!parser->fields);
-		xassert(!parser->field_count);
-		xassert(parser->parse);
-		xassert(parser->dump);
-		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
-		xassert(!parser->pointer_type);
-		xassert(!parser->array_type);
+		if ((parser->obj_openapi == OPENAPI_FORMAT_ARRAY) ||
+		    (parser->obj_openapi == OPENAPI_FORMAT_OBJECT) ||
+		    (parser->obj_openapi == OPENAPI_FORMAT_INVALID)) {
+			/*
+			 * Only one of the overrides is allowed but one must be
+			 * set
+			 */
+			if (parser->array_type) {
+				xassert(!parser->pointer_type);
+				xassert(!parser->openapi_spec);
+			} else if (parser->pointer_type) {
+				xassert(!parser->array_type);
+				xassert(!parser->openapi_spec);
+			} else if (parser->openapi_spec) {
+				xassert(!parser->array_type);
+				xassert(!parser->pointer_type);
+
+				xassert(parser->obj_openapi >
+					OPENAPI_FORMAT_INVALID);
+				xassert(parser->obj_openapi <
+					OPENAPI_FORMAT_MAX);
+			} else {
+				fatal_abort("invalid openapi override");
+			}
+		} else {
+			xassert(parser->obj_openapi > OPENAPI_FORMAT_INVALID);
+			xassert(parser->obj_openapi < OPENAPI_FORMAT_MAX);
+			xassert(!parser->pointer_type);
+			xassert(!parser->array_type);
+			xassert(!parser->openapi_spec);
+		}
 	} else if (parser->model == PARSER_MODEL_PTR) {
 		xassert(parser->pointer_type > DATA_PARSER_TYPE_INVALID);
 		xassert(parser->pointer_type < DATA_PARSER_TYPE_MAX);
@@ -397,6 +418,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->array_type);
+		xassert(!parser->obj_openapi);
 	} else if (parser->model == PARSER_MODEL_NT_ARRAY) {
 		xassert(!parser->pointer_type);
 		xassert(parser->array_type > DATA_PARSER_TYPE_INVALID);
@@ -412,6 +434,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->parse);
 		xassert(!parser->dump);
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
+		xassert(!parser->obj_openapi);
 	} else {
 		fatal_abort("invalid parser model %u", parser->model);
 	}
