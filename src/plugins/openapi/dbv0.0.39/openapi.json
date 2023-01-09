@@ -81,12 +81,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -122,12 +122,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -146,12 +146,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_config_response"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_config_response"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -161,12 +161,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -201,12 +201,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_tres"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_tres"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             },
@@ -217,12 +217,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -286,12 +286,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_qos_delete"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_qos_delete"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             },
@@ -302,12 +302,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -354,12 +354,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -431,12 +431,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -454,12 +454,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_qos"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_qos"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             },
@@ -470,12 +470,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -511,12 +511,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_associations"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_associations"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             },
@@ -527,12 +527,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -628,12 +628,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -713,12 +713,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -800,12 +800,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -885,12 +885,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -911,28 +911,28 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_user_delete"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_user_delete"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             },
-            "description": "Delete user"
+            "description": "User deleted"
           },
           "default": {
             "description": "User not found or unable to delete user",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -979,12 +979,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1044,12 +1044,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_user_update"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_user_update"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             },
@@ -1060,12 +1060,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1099,12 +1099,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1137,12 +1137,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_cluster_delete"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_cluster_delete"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             },
@@ -1153,12 +1153,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1189,12 +1189,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_cluster_info"
+                  "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_cluster_info"
+                  "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
                 }
               }
             },
@@ -1205,12 +1205,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1242,12 +1242,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_cluster_info"
+                  "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_cluster_info"
+                  "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
                 }
               }
             },
@@ -1258,12 +1258,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1281,12 +1281,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_cluster_add"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_cluster_add"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             },
@@ -1297,12 +1297,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1314,12 +1314,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_clusters_properties"
+                "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_clusters_properties"
+                "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
               }
             }
           },
@@ -1339,12 +1339,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_wckey_delete"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_wckey_delete"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             },
@@ -1355,12 +1355,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1407,12 +1407,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1460,12 +1460,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1483,12 +1483,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_wckey_add"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_wckey_add"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             },
@@ -1499,12 +1499,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1541,12 +1541,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_account_delete"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_response_account_delete"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             },
@@ -1557,12 +1557,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1609,12 +1609,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1686,12 +1686,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1709,12 +1709,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_account_response"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_account_response"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             },
@@ -1725,12 +1725,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -1742,12 +1742,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_update_account"
+                "$ref": "DATA_PARSER_ACCOUNT_LIST"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_update_account"
+                "$ref": "DATA_PARSER_ACCOUNT_LIST"
               }
             }
           },
@@ -2070,12 +2070,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -2111,12 +2111,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_errors"
+                  "$ref": "#/components/schemas/status"
                 }
               }
             }
@@ -2220,155 +2220,13 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
+            "$ref": "#/components/schemas/status"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/dbv0.0.39_warnings"
           },
           "statistics": {
-            "type": "object",
-            "properties": {
-              "time_start": {
-                "type": "integer",
-                "description": "Unix timestamp of start time"
-              },
-              "rollups": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "description": "Rollup statistics",
-                  "properties": {
-                    "type": {
-                      "type": "string",
-                      "description": "Type of rollup"
-                    },
-                    "last_run": {
-                      "type": "integer",
-                      "description": "Timestamp of last rollup"
-                    },
-                    "last_cycle": {
-                      "type": "integer",
-                      "description": "Timestamp of last cycle"
-                    },
-                    "max_cycle": {
-                      "type": "integer",
-                      "description": "Max time of all cycles"
-                    },
-                    "total_time": {
-                      "type": "integer",
-                      "description": "Total time (s) spent doing rollup"
-                    },
-                    "mean_cycles": {
-                      "type": "integer",
-                      "description": "Average time (s) of cycle"
-                    }
-                  }
-                }
-              },
-              "RPCs": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "description": "Statistics by RPC type",
-                  "properties": {
-                    "rpc": {
-                      "type": "string",
-                      "description": "RPC type"
-                    },
-                    "count": {
-                      "type": "integer",
-                      "description": "Number of RPCs"
-                    },
-                    "time": {
-                      "type": "object",
-                      "description": "Time values",
-                      "properties": {
-                        "average": {
-                          "type": "integer",
-                          "description": "Average time spent processing this RPC type"
-                        },
-                        "total": {
-                          "type": "integer",
-                          "description": "Total time spent processing this RPC type"
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "users": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "description": "Statistics by user RPCs",
-                  "properties": {
-                    "user": {
-                      "type": "string",
-                      "description": "User name"
-                    },
-                    "count": {
-                      "type": "integer",
-                      "description": "Number of RPCs"
-                    },
-                    "time": {
-                      "type": "object",
-                      "description": "Time values",
-                      "properties": {
-                        "average": {
-                          "type": "integer",
-                          "description": "Average time spent processing each user RPC"
-                        },
-                        "total": {
-                          "type": "integer",
-                          "description": "Total time spent processing each user RPC"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "dbv0.0.39_account": {
-        "type": "object",
-        "description": "Account description",
-        "properties": {
-          "associations": {
-            "type": "array",
-            "description": "List of assigned associations",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_association_short_info"
-            }
-          },
-          "coordinators": {
-            "type": "array",
-            "description": "List of assigned coordinators",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_coordinator_info"
-            }
-          },
-          "description": {
-            "type": "string",
-            "description": "Description of account"
-          },
-          "name": {
-            "type": "string",
-            "description": "Name of account"
-          },
-          "organization": {
-            "type": "string",
-            "description": "Assigned organization of account"
-          },
-          "flags": {
-            "type": "array",
-            "description": "List of properties of account",
-            "items": {
-              "type": "string",
-              "description": "String of property name"
-            }
+            "$ref": "DATA_PARSER_STATS_REC_ARRAY"
           }
         }
       },
@@ -2379,82 +2237,13 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
+            "$ref": "#/components/schemas/status"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/dbv0.0.39_warnings"
           },
           "accounts": {
-            "type": "array",
-            "description": "List of accounts",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_account"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_coordinator_info": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Name of user"
-          },
-          "direct": {
-            "type": "integer",
-            "description": "If user is coordinator of this account directly or coordinator status was inheirted from a higher account in the tree"
-          }
-        }
-      },
-      "dbv0.0.39_association_short_info": {
-        "type": "object",
-        "properties": {
-          "account": {
-            "type": "string",
-            "description": "Account name"
-          },
-          "cluster": {
-            "type": "string",
-            "description": "Cluster name"
-          },
-          "partition": {
-            "type": "string",
-            "description": "Partition name (optional)"
-          },
-          "user": {
-            "type": "string",
-            "description": "User name"
-          }
-        }
-      },
-      "dbv0.0.39_response_account_delete": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_response_wckey_add": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
+            "$ref": "DATA_PARSER_ACCOUNT_LIST"
           }
         }
       },
@@ -2465,223 +2254,10 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
+            "$ref": "#/components/schemas/status"
           },
           "wckeys": {
-            "type": "array",
-            "description": "List of wckeys",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_wckey"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_wckey": {
-        "type": "object",
-        "properties": {
-          "cluster": {
-            "type": "string",
-            "description": "Cluster name"
-          },
-          "id": {
-            "type": "integer",
-            "description": "wckey database unique id"
-          },
-          "name": {
-            "type": "string",
-            "description": "wckey name"
-          },
-          "user": {
-            "type": "string",
-            "description": "wckey user"
-          },
-          "flags": {
-            "type": "array",
-            "description": "List of properties of wckey",
-            "items": {
-              "type": "string",
-              "description": "String of property name"
-            }
-          },
-          "accounting": {
-            "type": "array",
-            "description": "List of accounting records",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_accounting"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_response_wckey_delete": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_response_cluster_add": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_cluster_info": {
-        "type": "object",
-        "properties": {
-          "controller": {
-            "type": "object",
-            "description": "Information about controller",
-            "properties": {
-              "host": {
-                "type": "string",
-                "description": "Hostname"
-              },
-              "port": {
-                "type": "integer",
-                "description": "Port number"
-              }
-            }
-          },
-          "flags": {
-            "type": "array",
-            "description": "List of properties of cluster",
-            "items": {
-              "type": "string",
-              "description": "String of property name"
-            }
-          },
-          "name": {
-            "type": "string",
-            "description": "Cluster name"
-          },
-          "nodes": {
-            "type": "string",
-            "description": "Assigned nodes"
-          },
-          "select_plugin": {
-            "type": "string",
-            "description": "Configured select plugin"
-          },
-          "associations": {
-            "type": "object",
-            "description": "Information about associations",
-            "properties": {
-              "root": {
-                "$ref": "#/components/schemas/dbv0.0.39_association_short_info"
-              }
-            }
-          },
-          "rpc_version": {
-            "type": "integer",
-            "description": "Number rpc version"
-          },
-          "tres": {
-            "type": "array",
-            "description": "List of TRES in cluster",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_response_tres"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_response_cluster_delete": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_response_user_update": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_user": {
-        "type": "object",
-        "description": "User description",
-        "properties": {
-          "administrator_level": {
-            "type": "string",
-            "description": "Description of administrator level"
-          },
-          "associations": {
-            "type": "array",
-            "description": "Assigned associations",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_association_short_info"
-            }
-          },
-          "coordinators": {
-            "type": "array",
-            "description": "List of assigned coordinators",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_coordinator_info"
-            }
-          },
-          "default": {
-            "type": "object",
-            "description": "Default settings",
-            "properties": {
-              "account": {
-                "type": "string",
-                "description": "Default account name"
-              },
-              "wckey": {
-                "type": "string",
-                "description": "Default wckey"
-              }
-            }
-          },
-          "flags": {
-            "type": "array",
-            "description": "List of properties of user",
-            "items": {
-              "type": "string",
-              "description": "String of property name"
-            }
-          },
-          "name": {
-            "type": "string",
-            "description": "User name"
+            "$ref": "DATA_PARSER_WCKEY_LIST"
           }
         }
       },
@@ -2692,226 +2268,13 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
+            "$ref": "#/components/schemas/status"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/dbv0.0.39_warnings"
           },
           "users": {
-            "type": "array",
-            "description": "Array of users",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_user"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_response_user_delete": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_association": {
-        "type": "object",
-        "description": "Association description",
-        "properties": {
-          "account": {
-            "type": "string",
-            "description": "Assigned account"
-          },
-          "cluster": {
-            "type": "string",
-            "description": "Assigned cluster"
-          },
-          "default": {
-            "type": "object",
-            "description": "Default settings",
-            "properties": {
-              "qos": {
-                "type": "string",
-                "description": "Default QOS"
-              }
-            }
-          },
-          "flags": {
-            "type": "array",
-            "description": "List of properties of association",
-            "items": {
-              "type": "string",
-              "description": "String of property name"
-            }
-          },
-          "max": {
-            "type": "object",
-            "description": "Max settings",
-            "properties": {
-              "jobs": {
-                "type": "object",
-                "description": "Max jobs settings",
-                "properties": {
-                  "per": {
-                    "type": "object",
-                    "description": "Max jobs per settings",
-                    "properties": {
-                      "wall_clock": {
-                        "type": "integer",
-                        "description": "Max wallclock per job"
-                      }
-                    }
-                  }
-                }
-              },
-              "per": {
-                "type": "object",
-                "description": "Max per settings",
-                "properties": {
-                  "account": {
-                    "type": "object",
-                    "description": "Max per accounting settings",
-                    "properties": {
-                      "wall_clock": {
-                        "type": "integer",
-                        "description": "Max wallclock per account"
-                      }
-                    }
-                  }
-                }
-              },
-              "tres": {
-                "type": "object",
-                "description": "Max TRES settings",
-                "properties": {
-                  "per": {
-                    "type": "object",
-                    "description": "Max TRES per settings",
-                    "properties": {
-                      "job": {
-                        "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                      },
-                      "node": {
-                        "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                      }
-                    }
-                  },
-                  "total": {
-                    "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                  },
-                  "minutes": {
-                    "type": "object",
-                    "description": "Max TRES minutes settings",
-                    "properties": {
-                      "per": {
-                        "type": "object",
-                        "description": "Max TRES minutes per settings",
-                        "properties": {
-                          "job": {
-                            "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                          }
-                        }
-                      },
-                      "total": {
-                        "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "min": {
-            "type": "object",
-            "description": "Min settings",
-            "properties": {
-              "priority_threshold": {
-                "type": "integer",
-                "description": "Min priority threshold"
-              }
-            }
-          },
-          "parent_account": {
-            "type": "string",
-            "description": "Parent account name"
-          },
-          "partition": {
-            "type": "string",
-            "description": "Assigned partition"
-          },
-          "priority": {
-            "type": "integer",
-            "description": "Assigned priority"
-          },
-          "shares_raw": {
-            "type": "integer",
-            "description": "Raw fairshare shares"
-          },
-          "usage": {
-            "type": "object",
-            "description": "Association usage",
-            "properties": {
-              "accrue_job_count": {
-                "type": "integer",
-                "description": "Jobs accuring priority"
-              },
-              "group_used_wallclock": {
-                "type": "number",
-                "description": "Group used wallclock time (s)"
-              },
-              "fairshare_factor": {
-                "type": "number",
-                "description": "Fairshare factor"
-              },
-              "fairshare_shares": {
-                "type": "integer",
-                "description": "Fairshare shares"
-              },
-              "normalized_priority": {
-                "type": "integer",
-                "description": "Currently active jobs"
-              },
-              "normalized_shares": {
-                "type": "number",
-                "description": "Normalized shares"
-              },
-              "effective_normalized_usage": {
-                "type": "number",
-                "description": "Effective normalized usage"
-              },
-              "raw_usage": {
-                "type": "integer",
-                "description": "Raw usage"
-              },
-              "job_count": {
-                "type": "integer",
-                "description": "Total jobs submitted"
-              },
-              "fairshare_level": {
-                "type": "number",
-                "description": "Fairshare level"
-              }
-            }
-          },
-          "user": {
-            "type": "string",
-            "description": "Assigned user"
-          },
-          "QOS": {
-            "type": "array",
-            "description": "Assigned QOS",
-            "items": {
-              "type": "string",
-              "description": "Assigned single QOS name"
-            }
+            "$ref": "DATA_PARSER_USER_LIST"
           }
         }
       },
@@ -2922,237 +2285,13 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
+            "$ref": "#/components/schemas/status"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/dbv0.0.39_warnings"
           },
           "associations": {
-            "type": "array",
-            "description": "Array of associations",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_association"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_qos": {
-        "type": "object",
-        "description": "QOS description",
-        "properties": {
-          "description": {
-            "type": "string",
-            "description": "QOS description"
-          },
-          "flags": {
-            "type": "array",
-            "description": "List of properties of QOS",
-            "items": {
-              "type": "string",
-              "description": "String of property name"
-            }
-          },
-          "id": {
-            "type": "string",
-            "description": "Database id"
-          },
-          "limits": {
-            "type": "object",
-            "description": "Assigned limits",
-            "properties": {
-              "factor": {
-                "type": "number",
-                "description": "factor to apply to TRES count for associations using this QOS"
-              },
-              "max": {
-                "type": "object",
-                "description": "Limits on max settings",
-                "properties": {
-                  "wall_clock": {
-                    "type": "object",
-                    "description": "Limit on wallclock settings",
-                    "properties": {
-                      "per": {
-                        "type": "object",
-                        "description": "Limit on wallclock per settings",
-                        "properties": {
-                          "qos": {
-                            "type": "integer",
-                            "description": "Max wallclock per QOS"
-                          },
-                          "job": {
-                            "type": "integer",
-                            "description": "Max wallclock per job"
-                          }
-                        }
-                      }
-                    }
-                  },
-                  "jobs": {
-                    "type": "object",
-                    "description": "Limits on jobs settings",
-                    "properties": {
-                      "active_jobs": {
-                        "type": "object",
-                        "description": "Limits on active jobs settings",
-                        "properties": {
-                          "per": {
-                            "type": "object",
-                            "description": "Limits on active jobs per settings",
-                            "properties": {
-                              "account": {
-                                "type": "integer",
-                                "description": "Max jobs per account"
-                              },
-                              "user": {
-                                "type": "integer",
-                                "description": "Max jobs per user"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  },
-                  "accruing": {
-                    "type": "object",
-                    "description": "Limits on accruing priority",
-                    "properties": {
-                      "per": {
-                        "type": "object",
-                        "description": "Max accuring priority per setting",
-                        "properties": {
-                          "account": {
-                            "type": "integer",
-                            "description": "Max accuring priority per account"
-                          },
-                          "user": {
-                            "type": "integer",
-                            "description": "Max accuring priority per user"
-                          }
-                        }
-                      }
-                    }
-                  },
-                  "tres": {
-                    "type": "object",
-                    "description": "Limits on TRES",
-                    "properties": {
-                      "minutes": {
-                        "type": "object",
-                        "description": "Max TRES minutes settings",
-                        "properties": {
-                          "per": {
-                            "type": "object",
-                            "description": "Max TRES minutes per settings",
-                            "properties": {
-                              "job": {
-                                "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                              },
-                              "account": {
-                                "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                              },
-                              "user": {
-                                "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                              },
-                              "qos": {
-                                "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "per": {
-                        "type": "object",
-                        "description": "Max TRES per settings",
-                        "properties": {
-                          "account": {
-                            "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                          },
-                          "job": {
-                            "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                          },
-                          "node": {
-                            "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                          },
-                          "user": {
-                            "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "min": {
-                "type": "object",
-                "description": "Min limit settings",
-                "properties": {
-                  "priority_threshold": {
-                    "type": "integer",
-                    "description": "Min priority threshold"
-                  },
-                  "tres": {
-                    "type": "object",
-                    "description": "Min tres settings",
-                    "properties": {
-                      "per": {
-                        "type": "object",
-                        "description": "Min tres per settings",
-                        "properties": {
-                          "job": {
-                            "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "preempt": {
-            "type": "object",
-            "description": "Preemption settings",
-            "properties": {
-              "list": {
-                "type": "array",
-                "description": "List of preemptable QOS",
-                "items": {
-                  "type": "string",
-                  "description": "Preemptable QOS"
-                }
-              },
-              "mode": {
-                "type": "array",
-                "description": "List of preemption modes",
-                "items": {
-                  "type": "string",
-                  "description": "Preemption mode"
-                }
-              },
-              "exempt_time": {
-                "type": "integer",
-                "description": "Grace period (s) before jobs can preempted"
-              }
-            }
-          },
-          "priority": {
-            "type": "integer",
-            "description": "QOS priority"
-          },
-          "usage_factor": {
-            "type": "number",
-            "description": "Usage factor"
-          },
-          "usage_threshold": {
-            "type": "number",
-            "description": "Usage threshold"
-          },
-          "name": {
-            "description": "Assigned name of QOS",
-            "type": "string"
+            "$ref": "DATA_PARSER_ASSOC_LIST"
           }
         }
       },
@@ -3162,79 +2301,14 @@
           "meta": {
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
+          "warnings": {
+            "$ref": "#/components/schemas/dbv0.0.39_warnings"
+          },
           "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
+            "$ref": "#/components/schemas/status"
           },
           "qos": {
-            "type": "array",
-            "description": "Array of QOS",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_qos"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_response_qos": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_response_qos_delete": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_response_associations": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_response_tres": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
+            "$ref": "DATA_PARSER_QOS_LIST"
           }
         }
       },
@@ -3245,39 +2319,13 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
+            "$ref": "#/components/schemas/status"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/dbv0.0.39_warnings"
           },
           "tres": {
-            "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-          }
-        }
-      },
-      "dbv0.0.39_tres_list": {
-        "type": "array",
-        "description": "TRES list of attributes",
-        "items": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "description": "TRES type"
-            },
-            "name": {
-              "type": "string",
-              "description": "TRES name (optional)"
-            },
-            "id": {
-              "type": "integer",
-              "description": "database id"
-            },
-            "count": {
-              "type": "integer",
-              "description": "count of TRES"
-            }
+            "$ref": "DATA_PARSER_TRES_LIST"
           }
         }
       },
@@ -3288,604 +2336,13 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
+            "$ref": "#/components/schemas/status"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/dbv0.0.39_warnings"
           },
           "jobs": {
-            "type": "array",
-            "description": "Array of jobs",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_job"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_job": {
-        "type": "object",
-        "description": "Single job description",
-        "properties": {
-          "account": {
-            "type": "string",
-            "description": "Account charged by job"
-          },
-          "comment": {
-            "type": "object",
-            "description": "Job comments by type",
-            "properties": {
-              "administrator": {
-                "type": "string",
-                "description": "Administrator set comment"
-              },
-              "job": {
-                "type": "string",
-                "description": "Job comment"
-              },
-              "system": {
-                "type": "string",
-                "description": "System set comment"
-              }
-            }
-          },
-          "allocation_nodes": {
-            "type": "string",
-            "description": "Nodes allocated to job"
-          },
-          "array": {
-            "type": "object",
-            "description": "Array properties (optional)",
-            "properties": {
-              "job_id": {
-                "type": "integer",
-                "description": "Job id of array"
-              },
-              "limits": {
-                "type": "object",
-                "description": "Limits on array settings",
-                "properties": {
-                  "max": {
-                    "type": "object",
-                    "description": "Limits on array settings",
-                    "properties": {
-                      "running": {
-                        "type": "object",
-                        "description": "Limits on array settings",
-                        "properties": {
-                          "tasks": {
-                            "type": "integer",
-                            "description": "Max running tasks in array at any one time"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "task": {
-                "type": "string",
-                "description": "Array task"
-              },
-              "task_id": {
-                "type": "integer",
-                "description": "Array task id"
-              }
-            }
-          },
-          "time": {
-            "type": "object",
-            "description": "Time properties",
-            "properties": {
-              "elapsed": {
-                "type": "integer",
-                "description": "Total time elapsed"
-              },
-              "eligible": {
-                "type": "integer",
-                "description": "Total time eligible to run"
-              },
-              "end": {
-                "type": "integer",
-                "description": "Timestamp of when job ended"
-              },
-              "start": {
-                "type": "integer",
-                "description": "Timestamp of when job started"
-              },
-              "submission": {
-                "type": "integer",
-                "description": "Timestamp of when job submitted"
-              },
-              "suspended": {
-                "type": "integer",
-                "description": "Timestamp of when job last suspended"
-              },
-              "system": {
-                "type": "object",
-                "description": "System time values",
-                "properties": {
-                  "seconds": {
-                    "type": "integer",
-                    "description": "Total number of CPU-seconds used by the system on behalf of the process (in kernel mode), in seconds"
-                  },
-                  "microseconds": {
-                    "type": "integer",
-                    "description": "Total number of CPU-seconds used by the system on behalf of the process (in kernel mode), in microseconds"
-                  }
-                }
-              },
-              "total": {
-                "type": "object",
-                "description": "System time values",
-                "properties": {
-                  "seconds": {
-                    "type": "integer",
-                    "description": "Total number of CPU-seconds used by the job, in seconds"
-                  },
-                  "microseconds": {
-                    "type": "integer",
-                    "description": "Total number of CPU-seconds used by the job, in microseconds"
-                  }
-                }
-              },
-              "user": {
-                "type": "object",
-                "description": "User land time values",
-                "properties": {
-                  "seconds": {
-                    "type": "integer",
-                    "description": "Total number of CPU-seconds used by the job in user land, in seconds"
-                  },
-                  "microseconds": {
-                    "type": "integer",
-                    "description": "Total number of CPU-seconds used by the job in user land, in microseconds"
-                  }
-                }
-              },
-              "limit": {
-                "type": "integer",
-                "description": "Job wall clock time limit"
-              }
-            }
-          },
-          "association": {
-            "$ref": "#/components/schemas/dbv0.0.39_association_short_info"
-          },
-          "cluster": {
-            "type": "string",
-            "description": "Assigned cluster"
-          },
-          "constraints": {
-            "type": "string",
-            "description": "Constraints on job"
-          },
-          "derived_exit_code": {
-            "$ref": "#/components/schemas/dbv0.0.39_job_exit_code"
-          },
-          "exit_code": {
-            "$ref": "#/components/schemas/dbv0.0.39_job_exit_code"
-          },
-          "flags": {
-            "type": "array",
-            "description": "List of properties of job",
-            "items": {
-              "type": "string",
-              "description": "String of property name"
-            }
-          },
-          "group": {
-            "type": "string",
-            "description": "User's group to run job"
-          },
-          "het": {
-            "type": "object",
-            "description": "Heterogeneous Job details (optional)",
-            "properties": {
-              "job_id": {
-                "type": "integer",
-                "description": "Parent HetJob id"
-              },
-              "job_offset": {
-                "type": "integer",
-                "description": "Offset of this job to parent"
-              }
-            }
-          },
-          "job_id": {
-            "type": "integer",
-            "description": "Job id"
-          },
-          "name": {
-            "type": "string",
-            "description": "Assigned job name"
-          },
-          "mcs": {
-            "type": "object",
-            "description": "Multi-Category Security",
-            "properties": {
-              "label": {
-                "type": "string",
-                "description": "Assigned MCS label"
-              }
-            }
-          },
-          "nodes": {
-            "type": "string",
-            "description": "List of nodes allocated for job"
-          },
-          "partition": {
-            "type": "string",
-            "description": "Assigned job's partition"
-          },
-          "priority": {
-            "type": "integer",
-            "description": "Priority"
-          },
-          "qos": {
-            "type": "string",
-            "description": "Assigned qos name"
-          },
-          "required": {
-            "type": "object",
-            "description": "Job run requirements",
-            "properties": {
-              "CPUs": {
-                "type": "integer",
-                "description": "Required number of CPUs"
-              },
-              "memory": {
-                "type": "integer",
-                "description": "Required amount of memory (MiB)"
-              }
-            }
-          },
-          "kill_request_user": {
-            "type": "string",
-            "description": "User who requested job killed"
-          },
-          "reservation": {
-            "type": "object",
-            "description": "Reservation usage details",
-            "properties": {
-              "id": {
-                "type": "integer",
-                "description": "Database id of reservation"
-              },
-              "name": {
-                "type": "integer",
-                "description": "Name of reservation"
-              }
-            }
-          },
-          "state": {
-            "type": "object",
-            "description": "State properties of job",
-            "properties": {
-              "current": {
-                "type": "string",
-                "description": "Current state of job"
-              },
-              "reason": {
-                "type": "string",
-                "description": "Last reason job didn't run"
-              }
-            }
-          },
-          "steps": {
-            "type": "array",
-            "description": "Job step description",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_job_step"
-            }
-          },
-          "tres": {
-            "type": "object",
-            "description": "TRES settings",
-            "properties": {
-              "allocated": {
-                "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-              },
-              "requested": {
-                "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-              }
-            }
-          },
-          "user": {
-            "type": "string",
-            "description": "Job user"
-          },
-          "wckey": {
-            "type": "object",
-            "description": "Job assigned wckey details",
-            "properties": {
-              "wckey": {
-                "type": "string",
-                "description": "Job assigned wckey"
-              },
-              "flags": {
-                "type": "array",
-                "description": "wckey flags",
-                "items": {
-                  "type": "string",
-                  "description": "Flag string"
-                }
-              }
-            }
-          },
-          "working_directory": {
-            "type": "string",
-            "description": "Directory where job was initially started"
-          },
-          "container": {
-            "type": "string",
-            "description": "absolute path to OCI container bundle"
-          }
-        }
-      },
-      "dbv0.0.39_job_exit_code": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "description": "Job exit status"
-          },
-          "return_code": {
-            "type": "integer",
-            "description": "Return code from parent process"
-          },
-          "signal": {
-            "type": "object",
-            "description": "Signal details (if signaled)",
-            "properties": {
-              "signal_id": {
-                "type": "integer",
-                "description": "Signal number process received"
-              },
-              "name": {
-                "type": "string",
-                "description": "Name of signal received"
-              }
-            }
-          }
-        }
-      },
-      "dbv0.0.39_job_step": {
-        "type": "object",
-        "properties": {
-          "time": {
-            "type": "object",
-            "description": "Time properties",
-            "properties": {
-              "elapsed": {
-                "type": "integer",
-                "description": "Total time elapsed"
-              },
-              "end": {
-                "type": "integer",
-                "description": "Timestamp of when job ended"
-              },
-              "start": {
-                "type": "integer",
-                "description": "Timestamp of when job started"
-              },
-              "suspended": {
-                "type": "integer",
-                "description": "Timestamp of when job last suspended"
-              },
-              "system": {
-                "type": "object",
-                "description": "System time values",
-                "properties": {
-                  "seconds": {
-                    "type": "integer",
-                    "description": "Total number of CPU-seconds used by the system on behalf of the process (in kernel mode), in seconds"
-                  },
-                  "microseconds": {
-                    "type": "integer",
-                    "description": "Total number of CPU-seconds used by the system on behalf of the process (in kernel mode), in microseconds"
-                  }
-                }
-              },
-              "total": {
-                "type": "object",
-                "description": "System time values",
-                "properties": {
-                  "seconds": {
-                    "type": "integer",
-                    "description": "Total number of CPU-seconds used by the job, in seconds"
-                  },
-                  "microseconds": {
-                    "type": "integer",
-                    "description": "Total number of CPU-seconds used by the job, in microseconds"
-                  }
-                }
-              },
-              "user": {
-                "type": "object",
-                "description": "User land time values",
-                "properties": {
-                  "seconds": {
-                    "type": "integer",
-                    "description": "Total number of CPU-seconds used by the job in user land, in seconds"
-                  },
-                  "microseconds": {
-                    "type": "integer",
-                    "description": "Total number of CPU-seconds used by the job in user land, in microseconds"
-                  }
-                }
-              }
-            }
-          },
-          "exit_code": {
-            "$ref": "#/components/schemas/dbv0.0.39_job_exit_code"
-          },
-          "nodes": {
-            "type": "object",
-            "description": "Node details",
-            "properties": {
-              "count": {
-                "type": "integer",
-                "description": "Total number of nodes in step"
-              },
-              "range": {
-                "type": "string",
-                "description": "Nodes in step"
-              }
-            }
-          },
-          "tasks": {
-            "type": "object",
-            "description": "Task properties",
-            "properties": {
-              "count": {
-                "type": "integer",
-                "description": "Number of tasks in step"
-              }
-            }
-          },
-          "pid": {
-            "type": "string",
-            "description": "First process PID"
-          },
-          "CPU": {
-            "type": "object",
-            "description": "CPU properties",
-            "properties": {
-              "requested_frequency": {
-                "type": "object",
-                "description": "CPU frequency requested",
-                "properties": {
-                  "min": {
-                    "type": "integer",
-                    "description": "Min CPU frequency"
-                  },
-                  "max": {
-                    "type": "integer",
-                    "description": "Max CPU frequency"
-                  }
-                }
-              },
-              "governor": {
-                "type": "array",
-                "description": "CPU governor",
-                "items": {
-                  "type": "string",
-                  "description": "CPU governor type"
-                }
-              }
-            }
-          },
-          "kill_request_user": {
-            "type": "string",
-            "description": "User who requested job killed"
-          },
-          "state": {
-            "type": "string",
-            "description": "State of job step"
-          },
-          "statistics": {
-            "type": "object",
-            "description": "Statistics of job step",
-            "properties": {
-              "CPU": {
-                "type": "object",
-                "description": "Statistics of CPU",
-                "properties": {
-                  "actual_frequency": {
-                    "type": "integer",
-                    "description": "Actual frequency of CPU during step"
-                  }
-                }
-              },
-              "energy": {
-                "type": "object",
-                "description": "Statistics of energy",
-                "properties": {
-                  "consumed": {
-                    "type": "integer",
-                    "description": "Energy consumed during step"
-                  }
-                }
-              }
-            }
-          },
-          "step": {
-            "type": "object",
-            "description": "Step details",
-            "properties": {
-              "job_id": {
-                "type": "integer",
-                "description": "Parent job id"
-              },
-              "het": {
-                "type": "object",
-                "description": "Heterogeneous job details",
-                "properties": {
-                  "component": {
-                    "type": "integer",
-                    "description": "Parent HetJob component id"
-                  }
-                }
-              },
-              "id": {
-                "type": "string",
-                "description": "Step id"
-              },
-              "name": {
-                "type": "string",
-                "description": "Step name"
-              }
-            }
-          },
-          "task": {
-            "description": "Task distribution properties",
-            "type": "string"
-          },
-          "tres": {
-            "type": "object",
-            "description": "TRES usage",
-            "properties": {
-              "requested": {
-                "type": "object",
-                "description": "TRES requested for job",
-                "properties": {
-                  "average": {
-                    "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                  },
-                  "max": {
-                    "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                  },
-                  "min": {
-                    "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                  },
-                  "total": {
-                    "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                  }
-                }
-              },
-              "consumed": {
-                "type": "object",
-                "description": "TRES requested for job",
-                "properties": {
-                  "average": {
-                    "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                  },
-                  "max": {
-                    "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                  },
-                  "min": {
-                    "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                  },
-                  "total": {
-                    "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-                  }
-                }
-              },
-              "allocated": {
-                "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-              }
-            }
+            "$ref": "DATA_PARSER_JOB_LIST"
           }
         }
       },
@@ -3896,85 +2353,68 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
+            "$ref": "#/components/schemas/status"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/dbv0.0.39_warnings"
           },
           "tres": {
-            "type": "array",
-            "description": "Array of TRES",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_tres_list"
-            }
+            "$ref": "DATA_PARSER_TRES_LIST"
           },
           "accounts": {
-            "type": "array",
-            "description": "Array of accounts",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_account"
-            }
+            "$ref": "DATA_PARSER_ACCOUNT_LIST"
           },
           "associations": {
-            "type": "array",
-            "description": "Array of associations",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_association"
-            }
+            "$ref": "DATA_PARSER_ASSOC_LIST"
           },
           "users": {
-            "type": "array",
-            "description": "Array of users",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_user"
-            }
+            "$ref": "DATA_PARSER_USER_LIST"
           },
           "qos": {
-            "type": "array",
-            "description": "Array of qos",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_qos"
-            }
+            "$ref": "DATA_PARSER_QOS_LIST"
           },
           "wckeys": {
-            "type": "array",
-            "description": "Array of wckeys",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_wckey"
-            }
+            "$ref": "DATA_PARSER_WCKEY_LIST"
           }
         }
       },
-      "dbv0.0.39_account_response": {
+      "status": {
         "type": "object",
         "properties": {
           "meta": {
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
+            "$ref": "#/components/schemas/status"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/dbv0.0.39_warnings"
           }
         }
       },
-      "dbv0.0.39_config_response": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
-          }
+      "dbv0.0.39_warnings": {
+        "type": "array",
+        "description": "Slurm warnings",
+        "items": {
+          "$ref": "#/components/schemas/dbv0.0.39_warning"
         }
+      },
+      "dbv0.0.39_warning": {
+        "properties": {
+          "warning": {
+            "description": "Earning message",
+            "type": "string"
+          },
+          "source": {
+            "description": "Where error occured in the source",
+            "type": "string"
+          },
+          "description": {
+            "description": "Explaination of cause of error",
+            "type": "string"
+          }
+        },
+        "type": "object"
       },
       "dbv0.0.39_errors": {
         "type": "array",
@@ -4052,10 +2492,7 @@
       "dbv0.0.39_update_users": {
         "properties": {
           "users": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_user"
-            }
+            "$ref": "DATA_PARSER_USER_LIST"
           }
         },
         "type": "object"
@@ -4063,31 +2500,10 @@
       "dbv0.0.39_update_qos": {
         "properties": {
           "qos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_qos"
-            }
+            "$ref": "DATA_PARSER_QOS_LIST"
           }
         },
         "type": "object"
-      },
-      "dbv0.0.39_update_account": {
-        "properties": {
-          "accounts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_account"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_clusters_properties": {
-        "type": "object",
-        "properties": {
-          "clusters": {
-            "$ref": "#/components/schemas/dbv0.0.39_cluster_info"
-          }
-        }
       },
       "dbv0.0.39_response_associations_delete": {
         "type": "object",
@@ -4096,11 +2512,10 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "type": "array",
-            "description": "Slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_error"
-            }
+            "$ref": "#/components/schemas/status"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/dbv0.0.39_warnings"
           },
           "removed_associations": {
             "type": "array",
@@ -4115,7 +2530,7 @@
         "type": "object",
         "properties": {
           "tres": {
-            "$ref": "#/components/schemas/dbv0.0.39_tres_list"
+            "$ref": "DATA_PARSER_TRES_LIST"
           }
         }
       },
@@ -4123,66 +2538,28 @@
         "type": "object",
         "properties": {
           "clusters": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_clusters_properties"
-            }
+            "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
           },
           "TRES": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_tres_list"
+              "$ref": "DATA_PARSER_TRES_LIST"
             }
           },
           "accounts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_update_account"
-            }
+            "$ref": "DATA_PARSER_ACCOUNT_LIST"
           },
           "users": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_user"
-            }
+            "$ref": "DATA_PARSER_USER_LIST"
           },
           "qos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_qos"
-            }
+            "$ref": "DATA_PARSER_QOS_LIST"
           },
           "wckeys": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_wckey"
-            }
+            "$ref": "DATA_PARSER_WCKEY_LIST"
           },
           "associations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/dbv0.0.39_association"
-            }
-          }
-        }
-      },
-      "dbv0.0.39_accounting": {
-        "type": "object",
-        "properties": {
-          "allocated": {
-            "type": "integer",
-            "description": "total seconds allocated"
-          },
-          "id": {
-            "type": "integer",
-            "description": "association/wckey ID"
-          },
-          "start": {
-            "type": "integer",
-            "description": "UNIX timestamp when accounting period started"
-          },
-          "TRES": {
-            "$ref": "#/components/schemas/dbv0.0.39_tres_list"
+            "$ref": "DATA_PARSER_ASSOC_LIST"
           }
         }
       }
