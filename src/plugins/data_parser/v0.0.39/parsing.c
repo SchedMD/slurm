@@ -1041,6 +1041,23 @@ cleanup:
 	return rc;
 }
 
+static void _check_dump(const parser_t *const parser, data_t *dst, args_t *args)
+{
+	/*
+	 * Resultant dump must be either NULL (aka unset) or the
+	 * proscribed OpenAPI compatible data_t type. Anything else will
+	 * break most generated OpenAPI clients.
+	 */
+	if (data_get_type(dst) == DATA_TYPE_NULL)
+		return;
+
+	if (parser->obj_openapi == OPENAPI_FORMAT_INVALID)
+		return;
+
+	xassert(data_get_type(dst) ==
+		openapi_type_format_to_data_type(parser->obj_openapi));
+}
+
 extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 		data_t *dst, args_t *args)
 {
@@ -1123,6 +1140,7 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 
 		/* must be a simple or complex type */
 		rc = parser->dump(parser, src, dst, args);
+		_check_dump(parser, dst, args);
 		break;
 	case PARSER_MODEL_ARRAY_LINKED_FIELD:
 		fatal_abort("%s: link model not allowed %u",
