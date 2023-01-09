@@ -612,6 +612,47 @@ cleanup:
 	return rc;
 }
 
+static void _parse_check_openapi(const parser_t *const parser, data_t *src,
+				 args_t *args, data_t *parent_path)
+{
+	char *path = NULL;
+	const char *oas_type, *oas_format, *found_type, *found_format;
+	openapi_type_format_t found;
+
+	if (data_get_type(src) == DATA_TYPE_NULL)
+		return;
+
+	if (data_get_type(src) ==
+	    openapi_type_format_to_data_type(parser->obj_openapi))
+		return;
+
+	oas_type = openapi_type_format_to_type_string(parser->obj_openapi);
+	oas_format =
+		openapi_type_format_to_format_string(parser->obj_openapi);
+	found = openapi_data_type_to_type_format(data_get_type(src));
+	found_type = openapi_type_format_to_type_string(found);
+	found_format = openapi_type_format_to_format_string(found);
+
+	(void) data_list_join_str(&path, parent_path, PATH_SEP);
+
+	/*
+	 * Warn as this is user provided data and the parser may accept
+	 * the format anyway. Steer the user towards the formats given
+	 * in the OpenAPI specification as set in the parser.
+	 */
+	on_warn(PARSING, parser->type, args, path, __func__,
+		"Expected OpenAPI type=%s%s%s (Slurm type=%s) but got OpenAPI type=%s%s%s (Slurm type=%s)",
+		oas_type, (oas_format ? " format=" : ""),
+		(oas_format ? oas_format : ""),
+		data_type_to_string(openapi_type_format_to_data_type(
+			parser->obj_openapi)),
+		found_type, (found_format ? " format=" : ""),
+		(found_format ? found_format : ""),
+		data_type_to_string(data_get_type(src)));
+
+	xfree(path);
+}
+
 extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		 data_t *src, args_t *args, data_t *parent_path)
 {
@@ -708,7 +749,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	case PARSER_MODEL_COMPLEX:
 		xassert(parser->parse != _parse_list);
 		verify_parser_not_sliced(parser);
-
+		_parse_check_openapi(parser, src, args, ppath);
 		rc = parser->parse(parser, dst, src, args, ppath);
 		break;
 	case PARSER_MODEL_ARRAY_LINKED_FIELD:
