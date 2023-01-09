@@ -5783,6 +5783,7 @@ static const parser_t parsers[] = {
 	addpl(STATS_USER_LIST, STATS_USER, NEED_NONE),
 	addpl(TRES_LIST, TRES, NEED_NONE),
 	addpl(SINFO_DATA_LIST, SINFO_DATA, NEED_NONE),
+	addpl(JOB_DESC_MSG_LIST, JOB_DESC_MSG, NEED_NONE),
 };
 #undef addpl
 #undef addps
