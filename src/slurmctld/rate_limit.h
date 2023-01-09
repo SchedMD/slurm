@@ -37,4 +37,12 @@
 #ifndef _RATE_LIMIT_H
 #define _RATE_LIMIT_H
 
+#include "src/common/slurm_protocol_defs.h"
+
+extern void rate_limit_init(void);
+
+extern void rate_limit_shutdown(void);
+
+extern bool rate_limit_exceeded(slurm_msg_t *msg);
+
 #endif

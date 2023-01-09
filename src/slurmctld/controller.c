@@ -115,6 +115,7 @@
 #include "src/slurmctld/port_mgr.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/rate_limit.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/rpc_queue.h"
@@ -1381,6 +1382,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	}
 	unlock_slurmctld(config_read_lock);
 
+	rate_limit_init();
 	rpc_queue_init();
 
 	/*
@@ -1440,6 +1442,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		close(fds[i].fd);
 	xfree(fds);
 
+	rate_limit_shutdown();
 	rpc_queue_shutdown();
 
 	server_thread_decr();
@@ -1478,13 +1481,23 @@ static void *_service_connection(void *arg)
 		goto cleanup;
 	}
 
-	if (rpc_enqueue(msg)) {
-		server_thread_decr();
-		return NULL;
-	}
+	/*
+	 * Check msg against the rate limit. Tell client to retry in a second
+	 * to minimize controller disruption.
+	 */
+	if (rate_limit_exceeded(msg)) {
+		debug("RPC rate limit exceeded by uid %u with %s, telling to back off",
+		      msg->auth_uid, rpc_num2string(msg->msg_type));
+		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
+	} else {
+		if (rpc_enqueue(msg)) {
+			server_thread_decr();
+			return NULL;
+		}
 
-	/* process the request */
-	slurmctld_req(msg);
+		/* process the request */
+		slurmctld_req(msg);
+	}
 
 	if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))
 		error("close(%d): %m", msg->conn_fd);
