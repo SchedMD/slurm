@@ -37,8 +37,9 @@
 #ifndef DATA_PARSER_PARSERS
 #define DATA_PARSER_PARSERS
 
-#include "src/interfaces/data_parser.h"
 #include "api.h"
+#include "src/interfaces/data_parser.h"
+#include "src/interfaces/openapi.h"
 
 typedef data_parser_type_t type_t;
 typedef struct parser_s parser_t;
@@ -97,7 +98,9 @@ typedef struct parser_s {
 	/* common model properties ------------------------------------------ */
 	type_t type;
 	char *type_string; /* stringified DATA_PARSE enum */
+	const char *obj_desc; /* description of object */
 	char *obj_type_string; /* stringified C type */
+	openapi_type_format_t obj_openapi; /* OpenAPI format for object */
 	ssize_t size; /* size of target obj */
 
 	/* Linked model properties ------------------------------------------ */
@@ -130,6 +133,20 @@ typedef struct parser_s {
 	int (*parse)(const parser_t *const parser, void *dst, data_t *src,
 		     args_t *args, data_t *parent_path);
 	need_t needs;
+	/*
+	 * Populates OpenAPI specification.
+	 * 	For parsers where the normal OpenAPI specification generation is
+	 * 	insufficent. This allows the parser to explicitly set the
+	 * 	specification for the type. General goal is to not to need to
+	 * 	use this function but some output formats are just too different
+	 * 	the original data source.
+	 * IN parser - parser needing specification
+	 * IN args - parser args
+	 * IN spec - ptr to entire OpenAPI specification
+	 * IN dst - entry in specificaiton needed to be populated
+	 */
+	void (*openapi_spec)(const parser_t *const parser, args_t *args,
+			     data_t *spec, data_t *dst);
 } parser_t;
 
 /*
