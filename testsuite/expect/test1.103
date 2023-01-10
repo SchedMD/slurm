@@ -27,6 +27,7 @@
 source ./globals
 
 set job_id	0
+set secs        [get_partition_maximum_time_limit ""]
 
 #
 # We must be SlurmUser or root in order to change the partition MaxTime limit,
@@ -41,10 +42,10 @@ if {![is_super_user]} {
 # the configuration before exiting.
 #
 proc cleanup {} {
-	global job_id
+	global job_id secs
 
 	cancel_job $job_id
-	reconfigure
+	set_partition_maximum_time_limit "" $secs
 }
 
 #
