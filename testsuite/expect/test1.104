@@ -30,7 +30,7 @@ set file_in        "$test_dir/script"
 set test_srun      "$test_dir/test_srun"
 set job_id         0
 set authorized     1
-set part_name      "QA_TEST"
+set part_name      $test_name
 
 if {![is_super_user]} {
 	skip "Can not test more unless SlurmUser or root"
@@ -46,29 +46,7 @@ proc cleanup {} {
 #
 # Confirm the partition name does not already exist
 #
-set found -1
-spawn $scontrol -a show part $part_name
-expect {
-	-re "not found" {
-		log_debug "This error was expected, no worries"
-		set found 0
-		exp_continue
-	}
-	-re "PartitionName" {
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$found == -1} {
-	fail "scontrol output format error"
-}
-if {$found == 1} {
+if {[dict exists [get_partitions] $part_name]} {
 	fail "Partition ($part_name) already exists"
 }
 
@@ -81,48 +59,16 @@ if {$def_node eq ""} {
 }
 
 #
-# Create a new partition
+# Create a new partition with a MaxTime
 #
-spawn $scontrol create PartitionName=$part_name Nodes=$def_node MaxTime=30
-expect {
-	-re "error" {
-		fail "Something bad happened on partition create"
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol create PartitionName=$part_name Nodes=$def_node MaxTime=30"
 
 #
 # Confirm the partition now exists
 #
-set allow  0
-set found -1
-spawn $scontrol show part $part_name
-expect {
-	-re "not found" {
-		set found 0
-		exp_continue
-	}
-	-re "PartitionName" {
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
+if {![dict exists [get_partitions] $part_name]} {
+	fail "Partition ($part_name) was not created"
 }
-if {$found != 1} {
-	fail "Partition not created"
-}
-
-set found 0
 
 # Check EnforcePartLimits value
 set enforcepartlimits [get_config_param "EnforcePartLimits"]
@@ -131,101 +77,19 @@ log_debug "EnforcePartLimits=$enforcepartlimits"
 #
 # Run a job in this new partition and validate the time limit
 #
-make_bash_script $test_srun "
-set -m
-$srun -N1 --deadline now+1hour -p $part_name -t100  -v $bin_sleep 1 &
-"
+set job_id [submit_job -none "-N1 --deadline now+1hour -p $part_name -t45  --wrap '$bin_sleep 1'"]
 
-make_bash_script $file_in "
-bash -i $test_srun
-"
-
-set timeout $max_job_delay
-spawn bash -i $file_in
 if {$enforcepartlimits eq "NO"} {
 
 	#
 	# Job is not rejected at submit time
-	#
-
-	expect {
-		-re "job ($number) queued and waiting for resources" {
-			set job_id $expect_out(1,string)
-		}
-		timeout {
-			fail "srun not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	#
 	# verify time limit. Add a temporization to wait for update reason
 	#
-	if {$job_id == 0} {
-		fail "Job_id = 0 : salloc not OK"
-	}
-	if {[wait_job_reason $job_id "PENDING" "PartitionTimeLimit"]} {
-		fail "Reason should be PartitionTimeLimit"
-	}
-	cancel_job $job_id
-
+	subtest {$job_id != 0} "Job should be submited"
+	subtest {![wait_job_reason $job_id "PENDING" "PartitionTimeLimit"]} "Reason should be PartitionTimeLimit"
 } else {
 	#
 	# Job should be rejected at submit time
 	#
-	expect {
-	        -re "Requested time limit is invalid (missing or exceeds some limit)" {
-	                exp_continue
-	        }
-	        -re "unrecognized option '--deadline'" {
-	                fail "Unrecognized option --deadline"
-	        }
-	        timeout {
-	                fail "srun not responding"
-	        }
-	        eof {
-	                wait
-	        }
-	}
-
-}
-
-#
-# Now delete the partition
-#
-spawn $scontrol delete PartitionName=$part_name
-expect {
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# Confirm the partition is now gone
-#
-set found -1
-spawn $scontrol show part $part_name
-expect {
-	-re "not found" {
-		log_debug "This error was expected, no worries"
-		set found 0
-		exp_continue
-	}
-	-re "PartitionName" {
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$found != 0} {
-	fail "Partition not deleted"
+	subtest {$job_id == 0} "Job should be rejected"
 }
