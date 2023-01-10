@@ -444,7 +444,6 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 	char *resp = NULL;
 	bool killed = false;
 	int tmp_fd = 0;
-	char *tmp_file = NULL;
 
 	if ((timeout <= 0) || (timeout == NO_VAL16))
 		ms_timeout = -1; /* wait indefinitely in run_command() */
@@ -455,6 +454,7 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 	run_command_args->status = &status;
 
 	if (tmp_file_str) {
+		char *tmp_file = NULL;
 		/*
 		 * Open a file into which we dump tmp_file_str.
 		 * Set an environment variable so the script will know how to
@@ -472,6 +472,7 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 			env_array_append(&run_command_args->env,
 					 tmp_file_env_name, tmp_file);
 		}
+		xfree(tmp_file);
 	}
 
 	if (run_command_args->tid)
