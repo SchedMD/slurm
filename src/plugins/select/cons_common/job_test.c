@@ -48,7 +48,6 @@
 
 typedef struct {
 	int action;
-	bool job_fini;
 	bitstr_t *node_map;
 	node_use_record_t *node_usage;
 	part_res_record_t *part_record_ptr;
@@ -1735,20 +1734,18 @@ static int _wrapper_job_res_rm_job(void *x, void *arg)
 	wrapper_rm_job_args_t *wargs = (wrapper_rm_job_args_t *)arg;
 
 	(void)job_res_rm_job(wargs->part_record_ptr, wargs->node_usage,
-			     job_ptr, wargs->action, wargs->job_fini,
-			     wargs->node_map);
+			     job_ptr, wargs->action, wargs->node_map);
 
 	return 0;
 }
 
 static int _job_res_rm_job(part_res_record_t *part_record_ptr,
 			   node_use_record_t *node_usage,
-			   job_record_t *job_ptr, int action, bool job_fini,
+			   job_record_t *job_ptr, int action,
 			   bitstr_t *node_map)
 {
 	wrapper_rm_job_args_t wargs = {
 		.action = action,
-		.job_fini = job_fini,
 		.node_usage = node_usage,
 		.part_record_ptr = part_record_ptr,
 		.node_map = node_map
@@ -1820,7 +1817,7 @@ static int _build_cr_job_list(void *x, void *arg)
 			action = 0;	/* remove cores and memory */
 		/* Remove preemptable job now */
 		_job_res_rm_job(args->future_part, args->future_usage,
-				tmp_job_ptr, action, false,
+				tmp_job_ptr, action,
 				args->orig_map);
 	}
 	return 0;
@@ -1972,7 +1969,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				last_job_ptr = tmp_job_ptr;
 				(void) job_res_rm_job(
 					future_part, future_usage,
-					tmp_job_ptr, 0, false, orig_map);
+					tmp_job_ptr, 0, orig_map);
 				next_job_ptr = list_peek_next(job_iterator);
 				if (!next_job_ptr) {
 					more_jobs = false;
@@ -2119,7 +2116,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 				continue;	/* can't remove job */
 			/* Remove preemptable job now */
 			if(_job_res_rm_job(future_part, future_usage,
-					   tmp_job_ptr, 0, false,
+					   tmp_job_ptr, 0,
 					   orig_node_map))
 				continue;
 			bit_or(node_bitmap, orig_node_map);

@@ -2283,7 +2283,6 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 		}
 
 		if (remove_all) {
-			List job_gres_list;
 			List node_gres_list;
 
 			if (cr_ptr->nodes[i].gres_list)
@@ -2291,15 +2290,10 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 			else
 				node_gres_list = node_ptr->gres_list;
 
-			/* Dealloc from allocated GRES if not testing */
-			if (job_fini)
-				job_gres_list = job_ptr->gres_list_alloc;
-			else
-				job_gres_list = job_ptr->gres_list_req;
-
-			gres_ctld_job_dealloc(job_gres_list, node_gres_list,
-					      node_offset, job_ptr->job_id,
-					      node_ptr->name, old_job, false);
+			gres_ctld_job_dealloc(job_ptr->gres_list_alloc,
+					      node_gres_list, node_offset,
+					      job_ptr->job_id, node_ptr->name,
+					      old_job, false);
 			gres_node_state_log(node_gres_list, node_ptr->name);
 		}
 
