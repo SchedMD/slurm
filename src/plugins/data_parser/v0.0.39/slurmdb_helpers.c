@@ -110,9 +110,11 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 	/* find qos by name from global list */
 	if (!args->qos_list) {
 		rc = ESLURM_REST_EMPTY_RESULT;
-		if (!ignore_failure)
+		if (!ignore_failure) {
+			(void) data_list_join_str(&path, parent_path, "/");
 			on_error(op, parser->type, args, rc, path, caller,
 				 "Unable to resolve QOS when there are no QOS");
+		}
 		goto done;
 	}
 
