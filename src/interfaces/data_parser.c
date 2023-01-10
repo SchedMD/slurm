@@ -100,11 +100,13 @@ extern int data_parser_g_parse(data_parser_t *parser, data_parser_type_t type,
 	DEF_TIMERS;
 	int rc;
 
+	if (!src || (data_get_type(src) == DATA_TYPE_NONE))
+		return ESLURM_DATA_PARSE_NOTHING;
+
 	xassert(type > DATA_PARSER_TYPE_INVALID);
 	xassert(type < DATA_PARSER_TYPE_MAX);
 	xassert(parser->magic == PARSE_MAGIC);
 	xassert(data_get_type(parent_path) == DATA_TYPE_LIST);
-	xassert(data_get_type(src) != DATA_TYPE_NONE);
 	xassert(plugins && (plugins->magic == PLUGINS_MAGIC));
 	xassert(parser->plugin_offset < plugins->count);
 	xassert(plugins->functions[parser->plugin_offset]);
