@@ -922,6 +922,9 @@ slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_DATA_AMBIGUOUS_QUERY,
 	  "ESLURM_DATA_AMBIGUOUS_QUERY",
 	  "Request matched more than one object to query. Request is limited to query of a single matching object."},
+	{ ESLURM_DATA_PARSE_NOTHING,
+	  "ESLURM_DATA_PARSE_NOTHING",
+	  "Request to parse empty string rejected"},
 
 	/* container  errors */
 	{ ESLURM_CONTAINER_NOT_CONFIGURED,
