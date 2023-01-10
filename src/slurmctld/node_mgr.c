@@ -1430,7 +1430,8 @@ static bool _valid_features_act(char *features_act, char *features)
 }
 
 /*
- * Validate that reported active features match what the controller expects.
+ * Validate that reported active changeable features are a superset of the
+ * current active changeable features in the controller.
  *
  * If the node doesn't report any features then don't do any validation.
  */
@@ -1445,8 +1446,8 @@ static bool _valid_reported_active_features(const char *reg_active_features,
 	if (!node_active_features || !reg_active_features)
 		return true;
 
-	tmp_node_act = xstrdup(node_active_features);
-	for (tok = strtok_r(tmp_node_act, ",", &saveptr);
+	tmp_reg_act = xstrdup(reg_active_features);
+	for (tok = strtok_r(tmp_reg_act, ",", &saveptr);
 	     tok;
 	     tok = strtok_r(NULL, ",", &saveptr)) {
 
@@ -1458,12 +1459,17 @@ static bool _valid_reported_active_features(const char *reg_active_features,
 		list_append(changeable_list, tok);
 	}
 
+	/*
+	 * The node's current active changeable features should be a subset of
+	 * the changeable features in the registration message.
+	 */
 	if (changeable_list && list_count(changeable_list)) {
-		tmp_reg_act = xstrdup(reg_active_features);
-		for (tok = strtok_r(tmp_reg_act, ",", &saveptr);
+		tmp_node_act = xstrdup(node_active_features);
+		for (tok = strtok_r(tmp_node_act, ",", &saveptr);
 		     tok;
 		     tok = strtok_r(NULL, ",", &saveptr)) {
-			if (!list_delete_all(changeable_list,
+			if (node_features_g_changeable_feature(tok) &&
+			    !list_delete_all(changeable_list,
 					     slurm_find_char_in_list,
 					     tok)) {
 				/* feature not in current active list */
@@ -1471,18 +1477,39 @@ static bool _valid_reported_active_features(const char *reg_active_features,
 				break;
 			}
 		}
-		xfree(tmp_reg_act);
-	}
-
-	if (valid && list_count(changeable_list)) {
-		/* not all current active features reported */
-		valid = false;
+		xfree(tmp_node_act);
 	}
 
 	FREE_NULL_LIST(changeable_list);
-	xfree(tmp_node_act);
+	xfree(tmp_reg_act);
 
 	return valid;
+}
+
+/*
+ * Return a new string containing containing only changeable features.
+ */
+static char *_node_changeable_features(char *all_features)
+{
+	char *tmp_features;
+	char *tok, *saveptr;
+	char *changeable_features = NULL;
+
+	tmp_features = xstrdup(all_features);
+	for (tok = strtok_r(tmp_features, ",", &saveptr);
+	     tok;
+	     tok = strtok_r(NULL, ",", &saveptr)) {
+
+		if (!node_features_g_changeable_feature(tok))
+			continue;
+
+		xstrfmtcat(changeable_features, "%s%s",
+			   changeable_features ? "," : "",
+			   tok);
+	}
+	xfree(tmp_features);
+
+	return changeable_features;
 }
 
 static void _undo_reboot_asap(node_record_t *node_ptr)
@@ -2917,14 +2944,19 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	if (reg_msg->features_active) {
 		if (!_valid_reported_active_features(reg_msg->features_active,
 						     node_ptr->features_act)) {
-			debug("Node %s reporting different active features (%s) than node currently has (%s)",
+			char *active_changeable_features =
+				_node_changeable_features(
+					node_ptr->features_act);
+			debug("Node %s reported active features (%s) are not a super set of node's active changeable features (%s)",
 			      reg_msg->node_name,
-			      node_ptr->features_act,
-			      reg_msg->features_active);
+			      reg_msg->features_active,
+			      active_changeable_features);
 			error_code  = EINVAL;
-			xstrfmtcat(reason_down, "%sReported active features (%s) different from currently active features (%s)",
+			xstrfmtcat(reason_down, "%sReported active features (%s) are not a superset of currently active changeable features (%s)",
 				   reason_down ? ", " : "",
-				   reg_msg->features_active, node_ptr->features_act);
+				   reg_msg->features_active,
+				   active_changeable_features);
+			xfree(active_changeable_features);
 		} else {
 			char *tmp_feature;
 			tmp_feature =

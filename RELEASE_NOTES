@@ -76,6 +76,8 @@ HIGHLIGHTS
     in a --constraint expression.
  -- slurmctld will fatal() when [Prolog|Epilog]Slurmctld are defined but are not
     executable.
+ -- Validate node registered active features are a super set of node's
+    currently active changeable features.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
