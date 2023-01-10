@@ -49,6 +49,7 @@
 #define SCHEMAS_PATH PATH_SEP "components" PATH_SEP "schemas" PATH_SEP
 #define REF_PATH PATH_REL SCHEMAS_PATH
 #define TYPE_PREFIX "DATA_PARSER_"
+#define KEY_PREFIX XSTRINGIFY(DATA_VERSION) "_"
 
 typedef struct {
 	int magic; /* MAGIC_SPEC_ARGS */
@@ -74,7 +75,7 @@ static char *_get_parser_key(const parser_t *parser)
 			  strlen(TYPE_PREFIX)));
 
 	stype = xstrtolower(xstrdup(parser->type_string + strlen(TYPE_PREFIX)));
-	xstrfmtcat(key, "%s_%s", XSTRINGIFY(DATA_VERSION), stype);
+	xstrfmtcat(key, "%s%s", KEY_PREFIX, stype);
 	xfree(stype);
 
 	return key;
