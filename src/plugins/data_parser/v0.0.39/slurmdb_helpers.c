@@ -106,7 +106,6 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 	xassert(data_get_type(src));
 	xassert(data_get_type(parent_path));
 	xassert(!*qos_ptr);
-	xassert(args->qos_list);
 
 	/* find qos by name from global list */
 	if (!args->qos_list) {
