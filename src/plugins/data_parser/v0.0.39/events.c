@@ -44,6 +44,7 @@
 #include "api.h"
 #include "events.h"
 #include "parsers.h"
+#include "parsing.h"
 
 extern int on_error(parse_op_t op, data_parser_type_t type, args_t *args,
 		    int error_code, const char *source, const char *caller,
@@ -75,7 +76,8 @@ extern int on_error(parse_op_t op, data_parser_type_t type, args_t *args,
 		 * with a /. This makes it sooo much easier for a client to
 		 * figure out what they are incorrectly submitting to Slurm.
 		 */
-		xassert(source && (source[0] == '.'));
+		xassert(source && (source[0] == PATH_REL[0]) &&
+			(source[1] == PATH_SEP[0]));
 		cont = args->on_parse_error(args->error_arg, type, error_code,
 					    source, "%s", str);
 		break;

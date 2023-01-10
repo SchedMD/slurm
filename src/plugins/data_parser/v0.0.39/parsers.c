@@ -495,9 +495,9 @@ static int PARSE_FUNC(QOS_NAME)(const parser_t *const parser, void *obj,
 			name = xstrdup_printf(
 				"of type %s",
 				data_type_to_string(data_get_type(src)));
-		(void) data_list_join_str(&path, parent_path, "/");
-		(void) on_error(PARSING, parser->type, args, rc, path, __func__,
-				"Unable to resolve QOS %s", name);
+		on_error(PARSING, parser->type, args, rc,
+			 set_source_path(&path, parent_path),
+			 __func__, "Unable to resolve QOS %s", name);
 		xfree(name);
 		xfree(path);
 	}
@@ -857,6 +857,7 @@ static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 	char **tres = obj;
 	int rc;
 	List tres_list = NULL;
+	char *path = NULL;
 
 	xassert(!*tres);
 	xassert(args->magic == MAGIC_ARGS);
@@ -869,13 +870,11 @@ static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 	}
 
 	if (data_get_type(src) != DATA_TYPE_LIST) {
-		char *path = NULL;
-		(void) data_list_join_str(&path, parent_path, "/");
 		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_REST_FAIL_PARSING, path, __func__,
+			      ESLURM_REST_FAIL_PARSING,
+			      set_source_path(&path, parent_path), __func__,
 			      "TRES should be LIST but is type %s",
 			      data_type_to_string(data_get_type(src)));
-		xfree(path);
 		goto cleanup;
 	}
 
@@ -888,16 +887,15 @@ static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 					      TRES_STR_FLAG_SIMPLE))) {
 		rc = SLURM_SUCCESS;
 	} else {
-		char *path = NULL;
-		xassert(false); /* should not have failed */
-		(void) data_list_join_str(&path, parent_path, "/");
 		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_REST_FAIL_PARSING, path, __func__,
+			      ESLURM_REST_FAIL_PARSING,
+			      set_source_path(&path, parent_path), __func__,
 			      "Unable to convert TRES to string");
-		xfree(path);
+		xassert(!rc); /* should not have failed */
 	}
 
 cleanup:
+	xfree(path);
 	FREE_NULL_LIST(tres_list);
 	return rc;
 }
@@ -1086,19 +1084,18 @@ cleanup:
 static int PARSE_FUNC(ADMIN_LVL)(const parser_t *const parser, void *obj,
 				 data_t *src, args_t *args, data_t *parent_path)
 {
+	int rc = SLURM_SUCCESS;
 	uint16_t *admin_level = obj;
+	char *path = NULL;
 
 	if (data_convert_type(src, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
-		char *path = NULL;
-		int rc;
-		(void) data_list_join_str(&path, parent_path, "/");
-		rc = on_error(
-			PARSING, parser->type, args, ESLURM_REST_FAIL_PARSING,
-			path, __func__,
-			"unable to convert administrator level to string from type %s",
-			data_type_to_string(data_get_type(src)));
-		xfree(path);
-		return rc;
+		rc = on_error(PARSING, parser->type, args,
+			      ESLURM_REST_FAIL_PARSING,
+			      set_source_path(&path, parent_path),
+			      __func__,
+			      "unable to convert administrator level to string from type %s",
+			      data_type_to_string(data_get_type(src)));
+		goto cleanup;
 	}
 
 	xassert(args->magic == MAGIC_ARGS);
@@ -1106,19 +1103,18 @@ static int PARSE_FUNC(ADMIN_LVL)(const parser_t *const parser, void *obj,
 	*admin_level = str_2_slurmdb_admin_level(data_get_string(src));
 
 	if (*admin_level == SLURMDB_ADMIN_NOTSET) {
-		char *path = NULL;
-		int rc;
-		(void) data_list_join_str(&path, parent_path, "/");
-		rc = on_error(
-			PARSING, parser->type, args, ESLURM_REST_FAIL_PARSING,
-			path, __func__,
-			"unable to parse %s as a known administrator level",
-			data_get_string(src));
-		xfree(path);
-		return rc;
+		rc = on_error(PARSING, parser->type, args,
+			      ESLURM_REST_FAIL_PARSING,
+			      set_source_path(&path, parent_path),
+			      __func__,
+			      "unable to parse %s as a known administrator level",
+			      data_get_string(src));
+		goto cleanup;
 	}
 
-	return SLURM_SUCCESS;
+cleanup:
+	xfree(path);
+	return rc;
 }
 
 static int DUMP_FUNC(ADMIN_LVL)(const parser_t *const parser, void *obj,

@@ -110,11 +110,10 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 	/* find qos by name from global list */
 	if (!args->qos_list) {
 		rc = ESLURM_REST_EMPTY_RESULT;
-		if (!ignore_failure) {
-			(void) data_list_join_str(&path, parent_path, "/");
-			on_error(op, parser->type, args, rc, path, caller,
+		if (!ignore_failure)
+			on_error(op, parser->type, args, rc,
+				 set_source_path(&path, parent_path), caller,
 				 "Unable to resolve QOS when there are no QOS");
-		}
 		goto done;
 	}
 
@@ -131,13 +130,11 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 
 		if ((rc = parse(pqos, sizeof(*pqos), qos_parser, src, args,
 				parent_path))) {
-			if (!ignore_failure) {
-				(void) data_list_join_str(&path, parent_path,
-							  "/");
-				on_error(op, parser->type, args, rc, path,
+			if (!ignore_failure)
+				on_error(op, parser->type, args, rc,
+					 set_source_path(&path, parent_path),
 					 caller,
 					 "Parsing dictionary into QOS failed");
-			}
 			slurmdb_destroy_qos_rec(pqos);
 			goto done;
 		}
@@ -148,15 +145,13 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 						    slurmdb_find_qos_in_list,
 						    &pqos->id))) {
 				rc = ESLURM_REST_EMPTY_RESULT;
-				if (!ignore_failure) {
-					(void) data_list_join_str(&path,
-								  parent_path,
-								  "/");
+				if (!ignore_failure)
 					on_error(op, parser->type, args, rc,
-						 __func__, path,
+						 __func__,
+						 set_source_path(&path,
+								 parent_path),
 						 "Unable to find QOS by given ID#%d",
 						 pqos->id);
-				}
 			}
 		} else if (pqos->name) {
 			if (!(qos = list_find_first(
@@ -164,25 +159,22 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 				      slurmdb_find_qos_in_list_by_name,
 				      pqos->name))) {
 				rc = ESLURM_REST_EMPTY_RESULT;
-				if (!ignore_failure) {
-					(void) data_list_join_str(&path,
-								  parent_path,
-								  "/");
+				if (!ignore_failure)
 					on_error(op, parser->type, args, rc,
-						 path, __func__,
+						 set_source_path(&path,
+								 parent_path),
+						 __func__,
 						 "Unable to find QOS by given name: %s",
 						 pqos->name);
-				}
 			}
 		} else {
 			rc = ESLURM_REST_FAIL_PARSING;
-			if (!ignore_failure) {
-				(void) data_list_join_str(&path, parent_path,
-							  "/");
+			if (!ignore_failure)
 				on_error(op, parser->type, args,
-					 ESLURM_REST_FAIL_PARSING, path, caller,
+					 ESLURM_REST_FAIL_PARSING,
+					 set_source_path(&path, parent_path),
+					 caller,
 					 "Unable to find QOS without ID# or name provided");
-			}
 		}
 
 		slurmdb_destroy_qos_rec(pqos);
@@ -198,13 +190,11 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 
 		if (qos_id_full > INT32_MAX) {
 			rc = ESLURM_INVALID_QOS;
-			if (!ignore_failure) {
-				(void) data_list_join_str(&path, parent_path,
-							  "/");
-				on_error(op, parser->type, args, rc, path,
+			if (!ignore_failure)
+				on_error(op, parser->type, args, rc,
+					 set_source_path(&path, parent_path),
 					 caller, "QOS id#%"PRIu64" too large",
 					 qos_id_full);
-			}
 			goto done;
 		}
 
@@ -216,12 +206,10 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 
 		if (!qos_name || !qos_name[0]) {
 			rc = ESLURM_INVALID_QOS;
-			if (ignore_failure) {
-				(void) data_list_join_str(&path, parent_path,
-							  "/");
-				on_error(op, parser->type, args, rc, path,
+			if (ignore_failure)
+				on_error(op, parser->type, args, rc,
+					 set_source_path(&path, parent_path),
 					 caller, "Unable to resolve QOS with empty name");
-			}
 			goto done;
 		}
 
@@ -230,12 +218,11 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 				      qos_name);
 	} else {
 		rc = ESLURM_REST_FAIL_PARSING;
-		if (ignore_failure) {
-			(void) data_list_join_str(&path, parent_path, "/");
-			on_error(op, parser->type, args, rc, path, caller,
+		if (ignore_failure)
+			on_error(op, parser->type, args, rc,
+				 set_source_path(&path, parent_path), caller,
 				 "QOS resolution failed with unexpected QOS name/id formated as data type:%s",
 				 data_type_to_string(data_get_type(src)));
-		}
 		goto done;
 	}
 

@@ -51,7 +51,7 @@
 #define MAGIC_FOREACH_LIST_FLAG 0xa1d4acd2
 #define MAGIC_FOREACH_LIST 0xaefa2af3
 #define MAGIC_FOREACH_NT_ARRAY 0xaba1be2b
-#define PATH_SEP "."
+#define MAGIC_FOREACH_PATH 0xaba1aaab
 
 typedef struct {
 	int magic;
@@ -81,6 +81,12 @@ typedef struct {
 	args_t *args;
 	data_t *parent_path;
 } foreach_nt_array_t;
+
+typedef struct {
+	int magic; /* MAGIC_FOREACH_PATH */
+	char *path;
+	char *at;
+} merge_path_strings_t;
 
 static void _set_flag_bit(const parser_t *const parser, void *dst,
 			  const flag_bit_t *bit, bool matched, const char *path,
@@ -163,29 +169,16 @@ static void _set_flag_bit_equal(const parser_t *const parser, void *dst,
 static char *_flag_parent_path(char **path_ptr,
 			       foreach_flag_parser_args_t *args)
 {
-	char *path = NULL;
-	data_t *ppath, *ppath_last;
+	data_t *ppath;
 
 	if (*path_ptr)
 		return *path_ptr;
 
-	ppath = data_copy(NULL, args->parent_path);
-	ppath_last = data_get_list_last(ppath);
-
-	if (args->index < 0)
-		args->index = 0;
-
-	/* Use jq style array zero based array notation */
-	data_set_string_fmt(ppath_last, "%s[%zu]",
-			    data_get_string(ppath_last), args->index);
-
-	args->index++;
-	(void) data_list_join_str(&path, ppath, PATH_SEP);
+	ppath = clone_source_path_index(args->parent_path, args->index);
+	set_source_path(path_ptr, ppath);
 	FREE_NULL_DATA(ppath);
 
-	*path_ptr = path;
-
-	return path;
+	return *path_ptr;
 }
 
 static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
@@ -218,6 +211,8 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 					    src);
 		else
 			fatal_abort("%s: invalid bit_flag_t", __func__);
+
+		args->index++;
 	}
 
 	if (!matched_any) {
@@ -245,7 +240,6 @@ static int _parse_flag(void *dst, const parser_t *const parser, data_t *src,
 		.parser = parser,
 		.dst = dst,
 		.parent_path = ppath,
-		.index = -1,
 	};
 
 	xassert(args->magic == MAGIC_ARGS);
@@ -253,29 +247,21 @@ static int _parse_flag(void *dst, const parser_t *const parser, data_t *src,
 	xassert(parser->ptr_offset == NO_VAL);
 	xassert(parser->model == PARSER_MODEL_FLAG_ARRAY);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA)
-		(void) data_list_join_str(&path, ppath, PATH_SEP);
-
 	if (data_get_type(src) == DATA_TYPE_STRING) {
 		/* List item may just be a single flag */
 		if (_foreach_flag_parser(src, &fargs) != DATA_FOR_EACH_CONT) {
-			if (!path)
-				(void) data_list_join_str(&path, ppath,
-							  PATH_SEP);
-
 			rc = on_error(PARSING, parser->type, args,
-				      ESLURM_DATA_FLAGS_INVALID, path, __func__,
+				      ESLURM_DATA_FLAGS_INVALID,
+				      set_source_path(&path, ppath), __func__,
 				      "Parsing single flag \"%s\" failed",
 				      data_get_string(src));
 
 			goto cleanup;
 		}
 	} else if (data_get_type(src) != DATA_TYPE_LIST) {
-		if (!path)
-			(void) data_list_join_str(&path, ppath, PATH_SEP);
-
 		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_FLAGS_INVALID_TYPE, path, __func__,
+			      ESLURM_DATA_FLAGS_INVALID_TYPE,
+			      set_source_path(&path, ppath), __func__,
 			      "Expected a List but found a %s",
 			      data_type_to_string(data_get_type(src)));
 
@@ -287,11 +273,10 @@ static int _parse_flag(void *dst, const parser_t *const parser, data_t *src,
 	 * not.
 	 */
 	} else if (data_list_for_each(src, _foreach_flag_parser, &fargs) < 0) {
-		if (!path)
-			(void) data_list_join_str(&path, ppath, PATH_SEP);
-
 		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_FLAGS_INVALID, path, __func__,
+			      ESLURM_DATA_FLAGS_INVALID, set_source_path(&path,
+									 ppath),
+			      __func__,
 			      "Parsing flags failed");
 		goto cleanup;
 	}
@@ -363,13 +348,10 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 	xassert(args->magic == MAGIC_ARGS);
 	check_parser(parser);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA)
-		(void) data_list_join_str(&path, parent_path, PATH_SEP);
-
 	log_flag(DATA, "%s: BEGIN: list parsing %s{%s(0x%"PRIxPTR")} to List 0x%"PRIxPTR" via parser %s(0x%"PRIxPTR")",
-		__func__, path, data_type_to_string(data_get_type(src)),
-		(uintptr_t) src, (uintptr_t) dst, parser->type_string,
-		(uintptr_t) parser
+		__func__, set_source_path(&path, parent_path),
+		data_type_to_string(data_get_type(src)), (uintptr_t) src,
+		(uintptr_t) dst, parser->type_string, (uintptr_t) parser
 	);
 
 	if (!list_args.list)
@@ -386,11 +368,10 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 	}
 
 	if (data_list_for_each(src, _foreach_parse_list, &list_args) < 0) {
-		if (!path)
-			(void) data_list_join_str(&path, parent_path, PATH_SEP);
 		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_REST_FAIL_PARSING, path, __func__,
-			      "parsing failed");
+			ESLURM_REST_FAIL_PARSING,
+			set_source_path(&path, parent_path),
+			__func__, "parsing failed");
 		goto cleanup;
 	}
 
@@ -480,13 +461,11 @@ static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
 	xassert(!*array_ptr);
 
 	if (data_get_type(src) != DATA_TYPE_LIST) {
-		if (!path)
-			(void) data_list_join_str(&path, parent_path, PATH_SEP);
-
 		rc = on_error(PARSING, parser->type, args,
-				ESLURM_DATA_FLAGS_INVALID_TYPE, path, __func__,
-				"Expected List but found a %s",
-				data_type_to_string(data_get_type(src)));
+			      ESLURM_DATA_FLAGS_INVALID_TYPE,
+			      set_source_path(&path, parent_path), __func__,
+			      "Expected List but found a %s",
+			      data_type_to_string(data_get_type(src)));
 		goto cleanup;
 	}
 
@@ -525,29 +504,16 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 	verify_parser_sliced(parser);
 
 	/* only look for child via key if there was one defined */
-	if (parser->key) {
+	if (parser->key)
 		src = data_resolve_dict_path(src, parser->key);
-
-		(void) data_list_split_str(ppath, parser->key, PATH_SEP);
-
-		if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
-			/* update path */
-			xfree(path);
-			(void) data_list_join_str(&path, ppath, PATH_SEP);
-		}
-	}
 
 	if (!src) {
 		if (parser->required) {
-			if (!path)
-				(void) data_list_join_str(&path, ppath,
-							  PATH_SEP);
-
-			if ((rc = on_error(
-				     PARSING, parser->type, args,
-				     ESLURM_DATA_PATH_NOT_FOUND, path, __func__,
-				     "Missing required field '%s' in dictionary",
-				     parser->key)))
+			if ((rc = on_error(PARSING, parser->type, args,
+					   ESLURM_DATA_PATH_NOT_FOUND,
+					   set_source_path(&path, ppath),
+					   __func__, "Missing required field '%s' in dictionary",
+					   parser->key)))
 				goto cleanup;
 		} else {
 			/* field is missing but not required */
@@ -633,14 +599,14 @@ static void _parse_check_openapi(const parser_t *const parser, data_t *src,
 	found_type = openapi_type_format_to_type_string(found);
 	found_format = openapi_type_format_to_format_string(found);
 
-	(void) data_list_join_str(&path, parent_path, PATH_SEP);
-
 	/*
 	 * Warn as this is user provided data and the parser may accept
 	 * the format anyway. Steer the user towards the formats given
 	 * in the OpenAPI specification as set in the parser.
 	 */
-	on_warn(PARSING, parser->type, args, path, __func__,
+	on_warn(PARSING, parser->type, args, set_source_path(&path,
+							     parent_path),
+		__func__,
 		"Expected OpenAPI type=%s%s%s (Slurm type=%s) but got OpenAPI type=%s%s%s (Slurm type=%s)",
 		oas_type, (oas_format ? " format=" : ""),
 		(oas_format ? oas_format : ""),
@@ -660,9 +626,6 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	data_t *ppath = data_copy(NULL, parent_path);
 	char *path = NULL;
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA)
-		(void) data_list_join_str(&path, ppath, PATH_SEP);
-
 	check_parser(parser);
 	xassert(parser->model != PARSER_MODEL_ARRAY_SKIP_FIELD);
 	xassert(args->magic == MAGIC_ARGS);
@@ -679,19 +642,17 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 
 	if (!src) {
 		if (parser->required) {
-			if (!path)
-				(void) data_list_join_str(&path, ppath,
-							  PATH_SEP);
-
 			if ((rc = on_error(PARSING, parser->type, args,
-					   ESLURM_DATA_PATH_NOT_FOUND, path, __func__,
+					   ESLURM_DATA_PATH_NOT_FOUND,
+					   set_source_path(&path, ppath),
+					   __func__,
 					   "Missing required field '%s' in dictionary",
 					   parser->key)))
 				goto cleanup;
 		} else {
 			/* field is missing but not required */
 			log_flag(DATA, "%s: skip parsing missing %s to %zd byte object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ")",
-				__func__, path,
+				__func__, set_source_path(&path, ppath),
 				(dst_bytes == NO_VAL ? -1 : dst_bytes),
 				parser->obj_type_string, (uintptr_t) dst,
 				(parser->ptr_offset == NO_VAL ?
@@ -707,7 +668,8 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	}
 
 	log_flag(DATA, "%s: BEGIN: parsing %s{%s(0x%" PRIxPTR ")} to %zd byte object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ")",
-		 __func__, path, data_type_to_string(data_get_type(src)),
+		 __func__, set_source_path(&path, ppath),
+		 data_type_to_string(data_get_type(src)),
 		 (uintptr_t) src, (dst_bytes == NO_VAL ? -1 : dst_bytes),
 		 parser->obj_type_string, (uintptr_t) dst,
 		 (parser->ptr_offset == NO_VAL ? 0 : parser->ptr_offset),
@@ -765,12 +727,14 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 
 cleanup:
 	log_flag(DATA, "%s: END: parsing %s{%s(0x%" PRIxPTR ")} to %zd byte object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ") rc[%d]:%s",
-		 __func__, path, data_type_to_string(data_get_type(src)),
-		 (uintptr_t) src, (dst_bytes == NO_VAL ? -1 : dst_bytes),
-		 parser->obj_type_string, (uintptr_t) dst,
-		 (parser->ptr_offset == NO_VAL ? 0 : parser->ptr_offset),
-		 (parser->field_name ? "->" : ""),
-		 (parser->field_name ? parser->field_name : ""),
+		 __func__, set_source_path(&path, ppath),
+		 data_type_to_string(data_get_type(src)), (uintptr_t) src,
+		 (dst_bytes == NO_VAL ? -1 : dst_bytes),
+		 parser->obj_type_string, (uintptr_t) dst, (parser->ptr_offset
+							    == NO_VAL ? 0 :
+							    parser->ptr_offset),
+		 (parser->field_name ? "->" : ""), (parser->field_name ?
+						    parser->field_name : ""),
 		 parser->type_string, (uintptr_t) parser, rc,
 		 slurm_strerror(rc));
 
@@ -1160,4 +1124,57 @@ done:
 		 (uintptr_t) parser, (uintptr_t) dst, rc, slurm_strerror(rc));
 
 	return rc;
+}
+
+static data_for_each_cmd_t _foreach_join_path_str(data_t *data, void *arg)
+{
+	merge_path_strings_t *args = arg;
+
+	xassert(args->magic == MAGIC_FOREACH_PATH);
+
+	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		fatal_abort("%s: path must be a string", __func__);
+
+	/* path entry must not contain any of the seperators */
+	xassert(!xstrstr(data_get_string(data), PATH_SEP));
+	xassert(!xstrstr(data_get_string(data), PATH_REL));
+
+	xstrfmtcatat(args->path, &args->at, "%s%s",
+		     data_get_string(data), PATH_SEP);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+extern char *set_source_path(char **path_ptr, data_t *parent_path)
+{
+	merge_path_strings_t args = {
+		.magic = MAGIC_FOREACH_PATH,
+	};
+
+	xassert(data_get_type(parent_path) == DATA_TYPE_LIST);
+
+	/* path always starts with "#/" */
+	xstrfmtcatat(args.path, &args.at, "%s%s", PATH_REL, PATH_SEP);
+
+	data_list_for_each(parent_path, _foreach_join_path_str, &args);
+
+	if (*path_ptr)
+		xfree(*path_ptr);
+	*path_ptr = args.path;
+
+	return args.path;
+}
+
+extern data_t *clone_source_path_index(data_t *parent_path, int index)
+{
+	data_t *ppath, *ppath_last;
+
+	ppath = data_copy(NULL, parent_path);
+	ppath_last = data_get_list_last(ppath);
+
+	/* Use jq style array zero based array notation */
+	data_set_string_fmt(ppath_last, "%s[%d]",
+			    data_get_string(ppath_last), index);
+
+	return ppath;
 }

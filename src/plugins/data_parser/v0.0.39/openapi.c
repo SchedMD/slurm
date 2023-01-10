@@ -46,8 +46,8 @@
 #include "parsing.h"
 
 #define MAGIC_SPEC_ARGS 0xa891beab
-#define SCHEMAS_PATH "/components/schemas/"
-#define REF_PATH "#"SCHEMAS_PATH
+#define SCHEMAS_PATH PATH_SEP "components" PATH_SEP "schemas" PATH_SEP
+#define REF_PATH PATH_REL SCHEMAS_PATH
 #define TYPE_PREFIX "DATA_PARSER_"
 
 typedef struct {
@@ -276,7 +276,7 @@ static data_t *_resolve_parser_key(const parser_t *parser, data_t *dst)
 	 * Need to create each dict needed to complete path.
 	 */
 
-	if ((rc = data_list_split_str(path, parser->key, "/")))
+	if ((rc = data_list_split_str(path, parser->key, PATH_SEP)))
 		fatal("%s: failed to split %s: %s", __func__, parser->key,
 		      slurm_strerror(rc));
 
