@@ -703,7 +703,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 	bool timed_out = false;
 	pthread_t tid = pthread_self();
 	run_command_args_t run_command_args = {
-		.env = script_msg->env,
+		.env = env_array_copy((const char **) script_msg->env),
 		.script_argv = script_msg->argv,
 		.script_path = script_msg->script_path,
 		.script_type = script_msg->script_name,
@@ -779,6 +779,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 				   script_msg->script_type, signalled, status,
 				   timed_out);
 	xfree(resp_msg);
+	env_array_free(run_command_args.env);
 
 	return rc;
 }
