@@ -444,7 +444,6 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 	char *resp = NULL;
 	bool killed = false;
 	int tmp_fd = 0;
-	char *tmp_file = NULL;
 
 	if ((timeout <= 0) || (timeout == NO_VAL16))
 		ms_timeout = -1; /* wait indefinitely in run_command() */
@@ -455,6 +454,7 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 	run_command_args->status = &status;
 
 	if (tmp_file_str) {
+		char *tmp_file = NULL;
 		/*
 		 * Open a file into which we dump tmp_file_str.
 		 * Set an environment variable so the script will know how to
@@ -472,6 +472,7 @@ static int _run_script(run_command_args_t *run_command_args, uint32_t job_id,
 			env_array_append(&run_command_args->env,
 					 tmp_file_env_name, tmp_file);
 		}
+		xfree(tmp_file);
 	}
 
 	if (run_command_args->tid)
@@ -703,7 +704,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 	bool timed_out = false;
 	pthread_t tid = pthread_self();
 	run_command_args_t run_command_args = {
-		.env = script_msg->env,
+		.env = env_array_copy((const char **) script_msg->env),
 		.script_argv = script_msg->argv,
 		.script_path = script_msg->script_path,
 		.script_type = script_msg->script_name,
@@ -779,6 +780,7 @@ static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 				   script_msg->script_type, signalled, status,
 				   timed_out);
 	xfree(resp_msg);
+	env_array_free(run_command_args.env);
 
 	return rc;
 }
