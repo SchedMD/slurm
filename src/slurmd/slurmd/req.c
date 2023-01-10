@@ -1901,42 +1901,6 @@ static int _connect_as_other(char *sock_name, uid_t uid, gid_t gid, int *fd)
 	_exit(SLURM_SUCCESS);
 }
 
-static void
-_prolog_error(batch_job_launch_msg_t *req, int rc)
-{
-	char *err_name = NULL, *path_name = NULL;
-	int fd, rc2;
-	int flags = (O_CREAT|O_APPEND|O_WRONLY);
-	uint32_t jobid;
-
-#ifdef HAVE_NATIVE_CRAY
-	if (req->het_job_id && (req->het_job_id != NO_VAL))
-		jobid = req->het_job_id;
-	else
-		jobid = req->job_id;
-#else
-	jobid = req->job_id;
-#endif
-
-	path_name = fname_create2(req);
-	rc2 = _open_as_other(path_name, flags, 0644, jobid, req->uid, req->gid,
-			     req->ngids, req->gids, false, &fd);
-	if (rc2 != SLURM_SUCCESS) {
-		error("Unable to open %s: %s", path_name, strerror(rc2));
-		xfree(path_name);
-		return;
-	}
-	xfree(path_name);
-
-	xstrfmtcat(err_name, "Error running slurm prolog: %d\n",
-		   WEXITSTATUS(rc));
-	safe_write(fd, err_name, strlen(err_name));
-
-rwfail:
-	xfree(err_name);
-	close(fd);
-}
-
 /* load the user's environment on this machine if requested
  * SLURM_GET_USER_ENV environment variable is set */
 static int
@@ -2555,8 +2519,6 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 				exit_status = WEXITSTATUS(rc);
 			error("[job %u] prolog failed status=%d:%d",
 			      req->job_id, exit_status, term_sig);
-
-			_prolog_error(req, rc);
 			rc = ESLURMD_PROLOG_FAILED;
 			goto done;
 		}

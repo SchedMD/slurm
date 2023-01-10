@@ -78,6 +78,8 @@ HIGHLIGHTS
     executable.
  -- Validate node registered active features are a super set of node's
     currently active changeable features.
+ -- On clusters without any PrologFlags options, batch jobs with failed prologs
+    nolonger generate an output file.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
