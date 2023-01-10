@@ -69,14 +69,14 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
    "all_nodes" : "cloud[1-3]",
    "jobs" : [
       {
-         "extra" : "An arbitrary string from --extra"
-         "features" : "c1,c2"
+         "extra" : "An arbitrary string from --extra",
+         "features" : "c1,c2",
          "job_id" : 140814,
          "nodes" : "cloud[1-3]",
       },
       {
-         "extra" : null
-         "features" : "c1,c2"
+         "extra" : null,
+         "features" : "c1,c2",
          "job_id" : 140815,
          "nodes" : "cloud[1-2]",
       }
@@ -513,6 +513,6 @@ are cleared. Any non-NodeFeaturesPlugin features are active by default and can
 be used as a label.
 </p>
 
-<p style="text-align:center;">Last modified 30 December 2022</p>
+<p style="text-align:center;">Last modified 9 January 2023</p>
 
 <!--#include virtual="footer.txt"-->
