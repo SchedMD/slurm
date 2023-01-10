@@ -740,6 +740,11 @@ WITH_BPF_TRUE
 BPF_CPPFLAGS
 WITH_CGROUP_FALSE
 WITH_CGROUP_TRUE
+WITH_RDKAFKA_FALSE
+WITH_RDKAFKA_TRUE
+RDKAFKA_LDFLAGS
+RDKAFKA_LIBS
+RDKAFKA_CPPFLAGS
 libselinux_LIBS
 libselinux_CFLAGS
 HAVE_UCX_FALSE
@@ -1041,6 +1046,7 @@ with_rrdtool
 with_ucx
 enable_x11
 enable_selinux
+with_rdkafka
 with_bpf
 enable_glibtest
 enable_gtktest
@@ -1810,6 +1816,7 @@ Optional Packages:
   --with-freeipmi=PATH    Specify path to freeipmi installation
   --with-rrdtool=PATH     Specify path to rrdtool-devel installation
   --with-ucx=PATH         Build with Unified Communication X library support
+  --with-rdkafka=PATH     Specify path to librdkafka installation
   --with-bpf=PATH         Specify path to bpf header
   --with-cray_dir=PATH    Specify path to Cray file installation - /opt/cray
                           by default
@@ -24639,6 +24646,140 @@ fi
 
 
 
+  _x_ac_rdkafka_dirs="/usr"
+  _x_ac_rdkafka_lib_dirs="lib/x86_64-linux-gnu lib"
+
+
+# Check whether --with-rdkafka was given.
+if test ${with_rdkafka+y}
+then :
+  withval=$with_rdkafka; if test "x$with_rdkafka" != xno && test "x$with_rdkafka" != xyes
+then :
+  _x_ac_rdkafka_dirs="$with_rdkafka"
+fi
+fi
+
+
+  if test "x$with_rdkafka" = xno; then
+     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for rdkafka disabled" >&5
+printf "%s\n" "$as_me: WARNING: support for rdkafka disabled" >&2;}
+  else
+    # Check for librdkafka header and library in the default location
+    # or in the location specified during configure
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for librdkafka installation" >&5
+printf %s "checking for librdkafka installation... " >&6; }
+if test ${_x_ac_cv_rdkafka_avail+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+      cppflags_save="$CPPFLAGS"
+      ldflags_save="$LDFLAGS"
+
+      for dir in $_x_ac_rdkafka_dirs; do
+        RDKAFKA_CPPFLAGS="-I$dir/include"
+        CPPFLAGS="$RDKAFKA_CPPFLAGS/librdkafka"
+        { ac_cv_header_rdkafka_h=; unset ac_cv_header_rdkafka_h;}
+        ac_fn_c_check_header_compile "$LINENO" "rdkafka.h" "ac_cv_header_rdkafka_h" "$ac_includes_default"
+if test "x$ac_cv_header_rdkafka_h" = xyes
+then :
+
+else $as_nop
+  continue
+fi
+
+        for lib_dir in $_x_ac_rdkafka_lib_dirs; do
+          if test "$ac_with_rpath" = "yes"; then
+            RDKAFKA_LDFLAGS="-Wl,-rpath -Wl,$dir/$lib_dir -L$dir/$lib_dir"
+          else
+            RDKAFKA_LDFLAGS="-L$dir/$lib_dir"
+          fi
+          LDFLAGS="$RDKAFKA_LDFLAGS"
+          { ac_cv_lib_rdkafka_rd_kafka_version=; unset ac_cv_lib_rdkafka_rd_kafka_version;}
+          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for rd_kafka_version in -lrdkafka" >&5
+printf %s "checking for rd_kafka_version in -lrdkafka... " >&6; }
+if test ${ac_cv_lib_rdkafka_rd_kafka_version+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lrdkafka  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char rd_kafka_version ();
+int
+main (void)
+{
+return rd_kafka_version ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_rdkafka_rd_kafka_version=yes
+else $as_nop
+  ac_cv_lib_rdkafka_rd_kafka_version=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rdkafka_rd_kafka_version" >&5
+printf "%s\n" "$ac_cv_lib_rdkafka_rd_kafka_version" >&6; }
+if test "x$ac_cv_lib_rdkafka_rd_kafka_version" = xyes
+then :
+  _x_ac_cv_rdkafka_avail=yes
+else $as_nop
+  _x_ac_cv_rdkafka_avail=no
+fi
+
+          if test "$_x_ac_cv_rdkafka_avail" = "yes"; then
+            break 2;
+          fi
+        done
+      done
+
+      CPPFLAGS="$cppflags_save"
+      LDFLAGS="$ldflags_save"
+
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $_x_ac_cv_rdkafka_avail" >&5
+printf "%s\n" "$_x_ac_cv_rdkafka_avail" >&6; }
+
+    if test "$_x_ac_cv_rdkafka_avail" != "yes"; then
+      if test -z "$with_rdkafka"; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate librdkafka.so and/or rdkafka.h" >&5
+printf "%s\n" "$as_me: WARNING: unable to locate librdkafka.so and/or rdkafka.h" >&2;}
+      else
+        as_fn_error $? "unable to locate librdkafka.so and/or rdkafka.h" "$LINENO" 5
+      fi
+    else
+
+printf "%s\n" "#define HAVE_RDKAFKA 1" >>confdefs.h
+
+
+      RDKAFKA_LIBS="-lrdkafka"
+
+
+    fi
+  fi
+
+   if test "$_x_ac_cv_rdkafka_avail" = "yes"; then
+  WITH_RDKAFKA_TRUE=
+  WITH_RDKAFKA_FALSE='#'
+else
+  WITH_RDKAFKA_TRUE='#'
+  WITH_RDKAFKA_FALSE=
+fi
+
+
+
+
   case ${host_os} in
   darwin* | freebsd* | netbsd* )
     with_cgroup=no
@@ -28139,6 +28280,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_UCX_TRUE}" && test -z "${HAVE_UCX_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_UCX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_RDKAFKA_TRUE}" && test -z "${WITH_RDKAFKA_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_RDKAFKA\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_CGROUP_TRUE}" && test -z "${WITH_CGROUP_FALSE}"; then

@@ -217,6 +217,9 @@
 /* Define to 1 if you have the <pty.h> header file. */
 #undef HAVE_PTY_H
 
+/* Define to 1 if librdkafka library found */
+#undef HAVE_RDKAFKA
+
 /* Define if you are compiling with readline. */
 #undef HAVE_READLINE
 
