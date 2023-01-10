@@ -199,7 +199,8 @@ documents those changes that are of interest to users and administrators.
  -- Change srun/salloc to wait indefinitely for their allocations to be ready.
  -- Do not attempt to "fix" malformed input to 'scontrol show hostlist'.
  -- RSMI - Add usage gathering for AMD gpus (requires ROCM 5.5+).
- -- Add job's features to SLURM_RESUME_FILE output for power saving.
+ -- Add job's features and reservation  to SLURM_RESUME_FILE output for power
+    saving.
  -- Automatically create directories for stdout/stderr output files. Paths may
     use %j and related substitution characters as well.
  -- Add --tres-per-task to salloc/sbatch/srun.

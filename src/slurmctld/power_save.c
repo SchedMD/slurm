@@ -354,6 +354,8 @@ static void _do_power_work(time_t now)
 		}
 
 		job_node_data = data_set_dict(data_list_append(jobs_data));
+		data_set_string(data_key_set(job_node_data, "extra"),
+				job_ptr->extra);
 		data_set_int(data_key_set(job_node_data, "job_id"),
 			     job_ptr->job_id);
 		data_set_string(data_key_set(job_node_data, "features"),
@@ -361,8 +363,8 @@ static void _do_power_work(time_t now)
 		nodes = bitmap2node_name(to_resume_bitmap);
 		data_set_string_own(data_key_set(job_node_data, "nodes"),
 				    nodes);
-		data_set_string(data_key_set(job_node_data, "extra"),
-				job_ptr->extra);
+		data_set_string(data_key_set(job_node_data, "reservation"),
+				job_ptr->resv_name);
 
 		/* No more nodes to power up, remove job from list */
 		if (!bit_overlap_any(need_resume_bitmap, job_ptr->node_bitmap))
