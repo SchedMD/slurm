@@ -42,9 +42,11 @@
 #include "config.h"
 
 #define _GNU_SOURCE	/* for setresuid() */
+#define _XOPEN_SOURCE 500 /* for ftw.h */
 
 #include <ctype.h>
 #include <fcntl.h>
+#include <ftw.h>
 #include <grp.h>
 #ifdef HAVE_NUMA
 #undef NUMA_VERSION1_COMPATIBILITY
@@ -1705,6 +1707,29 @@ done:
 
 }
 
+int _rm_file(const char *fpath, const struct stat *sb, int typeflag,
+	     struct FTW *ftwbuf)
+{
+	if (remove(fpath)) {
+		switch (typeflag) {
+		case FTW_NS:
+			error("%s: stat() call failed on path: %s",
+			      __func__, fpath);
+			break;
+		case FTW_DNR:
+			error("%s: Directory can't be read: %s",
+			      __func__, fpath);
+			break;
+		}
+
+		error("%s: Could not remove path: %s: %s",
+		      __func__, fpath, strerror(errno));
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Open file based upon permissions of a different user
  * IN path_name - name of file to open
@@ -1714,12 +1739,13 @@ done:
  * IN uid - User ID to use for file access check
  * IN gid - Group ID to use for file access check
  * IN make_dir - if true, create a directory instead of a file
+ * IN force - if true and the library directory already exists, replace it
  * OUT fd - File descriptor
  * RET error or SLURM_SUCCESS
  * */
 static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
 			  uid_t uid, gid_t gid, int ngids, gid_t *gids,
-			  bool make_dir, int *fd)
+			  bool make_dir, bool force, int *fd)
 {
 	pid_t child;
 	int pipe[2];
@@ -1799,6 +1825,13 @@ static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
 	}
 
 	if (make_dir) {
+		if (force &&
+		    (nftw(path_name, _rm_file, 20, FTW_DEPTH | FTW_PHYS) < 0) &&
+		    errno != ENOENT) {
+			error("%s: uid:%u can't delete dir `%s` code %d: %m, %d",
+			      __func__, uid, path_name, errno, errno);
+			_exit(errno);
+		}
 		if (mkdir(path_name, mode) < 0) {
 			error("%s: uid:%u can't create dir `%s` code %d: %m",
 			      __func__, uid, path_name, errno);
@@ -4375,22 +4408,24 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	int fd = -1, flags, rc;
 	file_bcast_info_t *file_info;
 	libdir_rec_t *libdir = NULL;
+	bool force_opt = false;
 
 	/* may still be unset in credential */
 	if (!cred_arg->ngids || !cred_arg->gids)
 		cred_arg->ngids = group_cache_lookup(key->uid, key->gid,
 						     cred_arg->user_name,
 						     &cred_arg->gids);
+	force_opt = req->flags & FILE_BCAST_FORCE;
 
 	flags = O_WRONLY | O_CREAT;
-	if (req->flags & FILE_BCAST_FORCE)
+	if (force_opt)
 		flags |= O_TRUNC;
 	else
 		flags |= O_EXCL;
 
 	rc = _open_as_other(req->fname, flags, 0700, key->job_id, key->uid,
 			    key->gid, cred_arg->ngids, cred_arg->gids, false,
-			    &fd);
+			    false, &fd);
 	if (rc != SLURM_SUCCESS) {
 		error("Unable to open %s: %s", req->fname, strerror(rc));
 		return rc;
@@ -4401,7 +4436,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 		char *directory = xstrdup_printf("%s_libs", key->fname);
 		rc = _open_as_other(directory, 0, 0700, key->job_id, key->uid,
 				    key->gid, cred_arg->ngids, cred_arg->gids,
-				    true, &fd_dir);
+				    true, force_opt, &fd_dir);
 		if (rc != SLURM_SUCCESS) {
 			error("Unable to create directory %s: %s",
 			      directory, strerror(rc));
