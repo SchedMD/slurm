@@ -443,7 +443,7 @@ static void _update_associations(ctxt_t *ctxt, bool commit)
 	if (list_for_each(assoc_list, _foreach_update_assoc, ctxt) < 0)
 		goto cleanup;
 
-	if (commit)
+	if (!ctxt->rc && commit)
 		db_query_commit(ctxt);
 
 cleanup:
