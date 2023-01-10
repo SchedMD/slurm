@@ -705,6 +705,29 @@ extern bool slingshot_destroy_services(slingshot_jobinfo_t *job,
 }
 
 /*
+ * Log any non-system CXI services, to help with diagnosing allocation failures
+ */
+static void _log_other_services(struct cxil_dev *dev)
+{
+	struct cxil_svc_list *list = NULL;
+	int rc;
+
+	if ((rc = cxil_get_svc_list(dev, &list))) {
+		error("Could not get service list for CXI dev_id=%d (%s): %s",
+		      dev->info.dev_id, dev->info.device_name, strerror(-rc));
+		return;
+	}
+	for (int svc = 0; svc < list->count; svc++) {
+		if (list->descs[svc].is_system_svc)
+			continue;
+		error("CXI allocation failed for %s: svc_id=%d UID=%d also on device",
+		      dev->info.device_name, list->descs[svc].svc_id,
+		      list->descs[svc].members[0].svc_member.uid);
+	}
+	free(list);	/* can't use xfree() */
+}
+
+/*
  * If cxil_alloc_svc failed, log information about the failure
  */
 static void _alloc_fail_info(struct cxil_dev *dev,
@@ -728,6 +751,9 @@ static void _alloc_fail_info(struct cxil_dev *dev,
 		error("No TLE pools available on %s", dev->info.device_name);
 	if (fail_info->no_cntr_pools)
 		error("No CNTR pools available on %s", dev->info.device_name);
+
+	/* log any other non-system services on this node */
+	_log_other_services(dev);
 }
 
 /*
