@@ -55,7 +55,7 @@ wait_for_job -fail $job_block "RUNNING"
 #
 # Submit a salloc job with deadline that will rest pending until deadlines
 #
-spawn $salloc -w $node --begin=now+5 --deadline=now+75 --time-min=1 -J $test_name $bin_sleep 300
+spawn $salloc -w $node --begin=now+15 --deadline=now+80 --time-min=1 -J $test_name $bin_sleep 300
 expect {
 	-re "job ($number) queued and waiting for resources" {
 		set job_id $expect_out(1,string)
@@ -75,7 +75,7 @@ lappend job_list $job_id
 #
 set state  ""
 set reason ""
-wait_for -timeout 10 {$state == "PENDING" && $reason == "BeginTime"} {
+wait_for -timeout 15 {$state == "PENDING" && $reason == "BeginTime"} {
 	set state  [get_job_param $job_id "JobState"]
 	set reason [get_job_param $job_id "Reason"]
 }

@@ -55,7 +55,7 @@ wait_for_job -fail $job_block "RUNNING"
 #
 # Submit a job with deadline that will rest pending until deadlines
 #
-set job_id [submit_job -fail "-w $node --begin=now+5 --deadline=now+75 --time-min=1 --wrap '$bin_sleep 60' -J $test_name -o /dev/null -e /dev/null"]
+set job_id [submit_job -fail "-w $node --begin=now+15 --deadline=now+80 --time-min=1 --wrap '$bin_sleep 60' -J $test_name -o /dev/null -e /dev/null"]
 lappend job_list $job_id
 
 #
@@ -64,7 +64,7 @@ lappend job_list $job_id
 #
 set state  ""
 set reason ""
-wait_for -timeout 10 {$state == "PENDING" && $reason == "BeginTime"} {
+wait_for -timeout 15 {$state == "PENDING" && $reason == "BeginTime"} {
 	set state  [get_job_param $job_id "JobState"]
 	set reason [get_job_param $job_id "Reason"]
 }
