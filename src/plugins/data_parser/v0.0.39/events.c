@@ -69,30 +69,15 @@ extern int on_error(parse_op_t op, data_parser_type_t type, args_t *args,
 	str = vxstrfmt(why, ap);
 	va_end(ap);
 
-	switch (op) {
-	case PARSING :
-		/*
-		 * All parsing must be providing the source path with starts
-		 * with a /. This makes it sooo much easier for a client to
-		 * figure out what they are incorrectly submitting to Slurm.
-		 */
-		xassert(source && (source[0] == PATH_REL[0]) &&
-			(source[1] == PATH_SEP[0]));
-		cont = args->on_parse_error(args->error_arg, type, error_code,
-					    source, "%s", str);
-		break;
-	case DUMPING :
-		cont = args->on_dump_error(args->error_arg, type, error_code,
-					   source, "%s", str);
-		break;
-	case QUERYING :
-		cont = args->on_query_error(args->error_arg, type, error_code,
-					    source, "%s", str);
-		break;
-	default :
-		/* this should never happen */
-		fatal_abort("%s: _on_error() invalid op 0x%x", source, op);
-	}
+	/*
+	 * All parsing must be providing the source path with starts with a /.
+	 * This makes it sooo much easier for a client to figure out what they
+	 * are incorrectly submitting to Slurm.
+	 */
+	xassert((op != PARSING) || (source && (source[0] == PATH_REL[0]) &&
+				    (source[1] == PATH_SEP[0])));
+	cont = args->on_parse_error(args->error_arg, type, error_code,
+				    source, "%s", str);
 
 	debug2("%s->%s->%s continue=%c type=%s return_code[%u]=%s why=%s",
 	       caller, source, __func__, (cont ? 'T' : 'F'),
