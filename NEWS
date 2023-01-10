@@ -224,6 +224,8 @@ documents those changes that are of interest to users and administrators.
  -- fatal() when [Prolog|Epilog]Slurmctld are defined but not executable.
  -- slurmctld - Add new RPC rate limiting feature. This is enabled through
     SlurmctldParameters=rl_enable, otherwise disabled by default.
+ -- Validate node registered active features are a super set of node's
+    currently active changeable features.
 
 * Changes in Slurm 22.05.8
 ==========================
