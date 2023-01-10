@@ -4337,7 +4337,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 				     file_bcast_info_t *key)
 {
 	file_bcast_msg_t *req = msg->data;
-	int fd, flags, rc;
+	int fd = -1, flags, rc;
 	file_bcast_info_t *file_info;
 	libdir_rec_t *libdir = NULL;
 
@@ -4370,6 +4370,14 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 		if (rc != SLURM_SUCCESS) {
 			error("Unable to create directory %s: %s",
 			      directory, strerror(rc));
+			/*
+			 * fd might be opened from the previous call to
+			 * _open_as_other() for the file that is being
+			 * transmitted and won't be cleaned up otherwise, so
+			 * close it here.
+			 */
+			if (fd > 0)
+				close(fd);
 			return rc;
 		}
 
