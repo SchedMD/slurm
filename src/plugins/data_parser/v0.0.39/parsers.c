@@ -5250,7 +5250,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_skip(argc),
 	add_skip(argv),
 	add_cparse(JOB_DESC_MSG_ARGV, "argv", NULL),
-	add_parse(STRING, array_inx, "arraytaskthrottle", NULL),
+	add_parse(STRING, array_inx, "array", NULL),
 	add_skip(array_bitmap),
 	add_parse(STRING, batch_features, "batch_features", NULL),
 	add_parse(UINT64, begin_time, "begin_time", NULL),
