@@ -1430,7 +1430,7 @@ static int DUMP_FUNC(STEP_ID)(const parser_t *const parser, void *obj,
 		data_set_string(dst, "interactive");
 		break;
 	default :
-		data_set_int(dst, *id);
+		data_set_string_fmt(dst, "%u", *id);
 	}
 
 	return SLURM_SUCCESS;
