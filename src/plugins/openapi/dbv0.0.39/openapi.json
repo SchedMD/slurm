@@ -2220,7 +2220,7 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "$ref": "#/components/schemas/status"
+            "$ref": "#/components/schemas/dbv0.0.39_errors"
           },
           "warnings": {
             "$ref": "#/components/schemas/dbv0.0.39_warnings"
@@ -2237,7 +2237,7 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "$ref": "#/components/schemas/status"
+            "$ref": "#/components/schemas/dbv0.0.39_errors"
           },
           "warnings": {
             "$ref": "#/components/schemas/dbv0.0.39_warnings"
@@ -2254,7 +2254,7 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "$ref": "#/components/schemas/status"
+            "$ref": "#/components/schemas/dbv0.0.39_errors"
           },
           "wckeys": {
             "$ref": "DATA_PARSER_WCKEY_LIST"
@@ -2268,7 +2268,7 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "$ref": "#/components/schemas/status"
+            "$ref": "#/components/schemas/dbv0.0.39_errors"
           },
           "warnings": {
             "$ref": "#/components/schemas/dbv0.0.39_warnings"
@@ -2285,7 +2285,7 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "$ref": "#/components/schemas/status"
+            "$ref": "#/components/schemas/dbv0.0.39_errors"
           },
           "warnings": {
             "$ref": "#/components/schemas/dbv0.0.39_warnings"
@@ -2305,7 +2305,7 @@
             "$ref": "#/components/schemas/dbv0.0.39_warnings"
           },
           "errors": {
-            "$ref": "#/components/schemas/status"
+            "$ref": "#/components/schemas/dbv0.0.39_errors"
           },
           "qos": {
             "$ref": "DATA_PARSER_QOS_LIST"
@@ -2319,7 +2319,7 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "$ref": "#/components/schemas/status"
+            "$ref": "#/components/schemas/dbv0.0.39_errors"
           },
           "warnings": {
             "$ref": "#/components/schemas/dbv0.0.39_warnings"
@@ -2336,7 +2336,7 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "$ref": "#/components/schemas/status"
+            "$ref": "#/components/schemas/dbv0.0.39_errors"
           },
           "warnings": {
             "$ref": "#/components/schemas/dbv0.0.39_warnings"
@@ -2353,7 +2353,7 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "$ref": "#/components/schemas/status"
+            "$ref": "#/components/schemas/dbv0.0.39_errors"
           },
           "warnings": {
             "$ref": "#/components/schemas/dbv0.0.39_warnings"
@@ -2385,7 +2385,7 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "$ref": "#/components/schemas/status"
+            "$ref": "#/components/schemas/dbv0.0.39_errors"
           },
           "warnings": {
             "$ref": "#/components/schemas/dbv0.0.39_warnings"
@@ -2512,7 +2512,7 @@
             "$ref": "#/components/schemas/dbv0.0.39_meta"
           },
           "errors": {
-            "$ref": "#/components/schemas/status"
+            "$ref": "#/components/schemas/dbv0.0.39_errors"
           },
           "warnings": {
             "$ref": "#/components/schemas/dbv0.0.39_warnings"
