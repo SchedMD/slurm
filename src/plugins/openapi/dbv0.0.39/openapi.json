@@ -1703,7 +1703,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "update_account",
+        "operationId": "update_accounts",
         "responses": {
           "200": {
             "content": {
