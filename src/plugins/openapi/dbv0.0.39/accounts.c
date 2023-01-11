@@ -280,9 +280,8 @@ extern int op_handler_accounts(const char *context_id,
 		};
 
 		/* Change search conditions based on parameters */
-		_parse_other_params(ctxt, &acct_cond);
-
-		_dump_accounts(ctxt, &acct_cond);
+		if (!_parse_other_params(ctxt, &acct_cond))
+			_dump_accounts(ctxt, &acct_cond);
 	} else if (method == HTTP_REQUEST_POST) {
 		_update_accts(ctxt, (tag != CONFIG_OP_TAG));
 	} else {
