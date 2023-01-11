@@ -280,7 +280,8 @@ extern void resp_warn(ctxt_t *ctxt, const char *source, const char *why, ...)
 
 extern int db_query_list_funcname(ctxt_t *ctxt, List *list,
 				  db_list_query_func_t func, void *cond,
-				  const char *func_name, const char *caller)
+				  const char *func_name, const char *caller,
+				  bool ignore_empty_result)
 {
 	List l;
 	int rc = SLURM_SUCCESS;
@@ -306,8 +307,12 @@ extern int db_query_list_funcname(ctxt_t *ctxt, List *list,
 
 	if (!list_count(l)) {
 		FREE_NULL_LIST(l);
-		resp_warn(ctxt, caller, "%s(0x%" PRIxPTR ") found nothing",
-			  func_name, (uintptr_t) ctxt->db_conn);
+
+		if (!ignore_empty_result) {
+			resp_warn(ctxt, caller,
+				  "%s(0x%" PRIxPTR ") found nothing",
+				  func_name, (uintptr_t) ctxt->db_conn);
+		}
 	} else {
 		*list = l;
 	}

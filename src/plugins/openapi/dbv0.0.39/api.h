@@ -121,7 +121,11 @@ typedef List (*db_rc_modify_func_t)(void *db_conn, void **cond, void *obj);
  */
 #define db_query_list(ctxt, list, func, cond)                                 \
 	db_query_list_funcname(ctxt, list, (db_list_query_func_t) func, cond, \
-			       XSTRINGIFY(func), __func__)
+			       XSTRINGIFY(func), __func__, false)
+/* query db but avoid error/warn on empty results */
+#define db_query_list_xempty(ctxt, list, func, cond)                          \
+	db_query_list_funcname(ctxt, list, (db_list_query_func_t) func, cond, \
+			       XSTRINGIFY(func), __func__, true)
 
 /*
  * Query database API for List output
@@ -130,11 +134,13 @@ typedef List (*db_rc_modify_func_t)(void *db_conn, void **cond, void *obj);
  * IN func - function ptr to call
  * IN cond - conditional to pass to func
  * IN func_name - string of func name (for errors)
+ * IN ignore_empty_result - do not error/warn on empty results
  * RET SLURM_SUCCESS or error
  */
 extern int db_query_list_funcname(ctxt_t *ctxt, List *list,
 				  db_list_query_func_t func, void *cond,
-				  const char *func_name, const char *caller);
+				  const char *func_name, const char *caller,
+				  bool ignore_empty_result);
 
 /*
  * Macro helper for Query database API for rc output.
