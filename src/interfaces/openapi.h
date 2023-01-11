@@ -179,4 +179,30 @@ extern data_type_t openapi_type_format_to_data_type(
 extern openapi_type_format_t openapi_string_to_type_format(const char *str);
 extern openapi_type_format_t openapi_data_type_to_type_format(data_type_t type);
 
+/*
+ * Separator used to split up a relative path.
+ * OpenAPI specification 3.1.0 explictly requires $ref paths must be compliant
+ * with RFC3986 URIs. It is expected that inside of "$ref" path that the
+ * relative path use "/" to delimit components and that the relative paths start
+ * with "#".
+ */
+#define OPENAPI_PATH_SEP "/"
+#define OPENAPI_PATH_REL "#"
+
+/*
+ * Generate formated path string from relative path
+ * IN/OUT str_ptr - ptr to path string to set/replace
+ * IN relative_path - data list with each component of relative path
+ * RET ptr to path string (to allow jit generation for logging)
+ */
+extern char *openapi_fmt_rel_path_str(char **str_ptr, data_t *relative_path);
+
+/*
+ * Fork parent_path and append list index to last component
+ * IN parent_path - data list with each each component of relative path
+ * IN index - index of entry in list
+ * RET new relative path (caller must release with FREE_NULL_DATA())
+ */
+extern data_t *openapi_fork_rel_path_list(data_t *relative_path, int index);
+
 #endif /* SLURM_OPENAPI_H */

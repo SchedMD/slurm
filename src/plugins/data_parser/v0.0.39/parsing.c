@@ -51,7 +51,6 @@
 #define MAGIC_FOREACH_LIST_FLAG 0xa1d4acd2
 #define MAGIC_FOREACH_LIST 0xaefa2af3
 #define MAGIC_FOREACH_NT_ARRAY 0xaba1be2b
-#define MAGIC_FOREACH_PATH 0xaba1aaab
 
 typedef struct {
 	int magic;
@@ -81,12 +80,6 @@ typedef struct {
 	args_t *args;
 	data_t *parent_path;
 } foreach_nt_array_t;
-
-typedef struct {
-	int magic; /* MAGIC_FOREACH_PATH */
-	char *path;
-	char *at;
-} merge_path_strings_t;
 
 static void _set_flag_bit(const parser_t *const parser, void *dst,
 			  const flag_bit_t *bit, bool matched, const char *path,
@@ -1124,57 +1117,4 @@ done:
 		 (uintptr_t) parser, (uintptr_t) dst, rc, slurm_strerror(rc));
 
 	return rc;
-}
-
-static data_for_each_cmd_t _foreach_join_path_str(data_t *data, void *arg)
-{
-	merge_path_strings_t *args = arg;
-
-	xassert(args->magic == MAGIC_FOREACH_PATH);
-
-	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
-		fatal_abort("%s: path must be a string", __func__);
-
-	/* path entry must not contain any of the seperators */
-	xassert(!xstrstr(data_get_string(data), PATH_SEP));
-	xassert(!xstrstr(data_get_string(data), PATH_REL));
-
-	xstrfmtcatat(args->path, &args->at, "%s%s",
-		     data_get_string(data), PATH_SEP);
-
-	return DATA_FOR_EACH_CONT;
-}
-
-extern char *set_source_path(char **path_ptr, data_t *parent_path)
-{
-	merge_path_strings_t args = {
-		.magic = MAGIC_FOREACH_PATH,
-	};
-
-	xassert(data_get_type(parent_path) == DATA_TYPE_LIST);
-
-	/* path always starts with "#/" */
-	xstrfmtcatat(args.path, &args.at, "%s%s", PATH_REL, PATH_SEP);
-
-	data_list_for_each(parent_path, _foreach_join_path_str, &args);
-
-	if (*path_ptr)
-		xfree(*path_ptr);
-	*path_ptr = args.path;
-
-	return args.path;
-}
-
-extern data_t *clone_source_path_index(data_t *parent_path, int index)
-{
-	data_t *ppath, *ppath_last;
-
-	ppath = data_copy(NULL, parent_path);
-	ppath_last = data_get_list_last(ppath);
-
-	/* Use jq style array zero based array notation */
-	data_set_string_fmt(ppath_last, "%s[%d]",
-			    data_get_string(ppath_last), index);
-
-	return ppath;
 }

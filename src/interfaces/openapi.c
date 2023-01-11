@@ -50,6 +50,7 @@
 
 #define MAGIC_PATH 0x1121baef
 #define MAGIC_OAS 0x1211be0f
+#define MAGIC_FOREACH_PATH 0xaba1aaab
 
 typedef struct {
 	int (*init)(void);
@@ -191,6 +192,12 @@ static const struct {
 	{ OPENAPI_TYPE_ARRAY, OPENAPI_FORMAT_ARRAY, "array", NULL,
 	  DATA_TYPE_LIST },
 };
+
+typedef struct {
+	int magic; /* MAGIC_FOREACH_PATH */
+	char *path;
+	char *at;
+} merge_path_strings_t;
 
 extern const char *openapi_type_format_to_format_string(
 	openapi_type_format_t format)
@@ -1457,4 +1464,60 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 	 * out
 	 */
 	return SLURM_SUCCESS;
+}
+
+static data_for_each_cmd_t _foreach_join_path_str(data_t *data, void *arg)
+{
+	merge_path_strings_t *args = arg;
+
+	xassert(args->magic == MAGIC_FOREACH_PATH);
+
+	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		fatal_abort("%s: path must be a string", __func__);
+
+	/* path entry must not contain any of the seperators */
+	xassert(!xstrstr(data_get_string(data), OPENAPI_PATH_SEP));
+	xassert(!xstrstr(data_get_string(data), OPENAPI_PATH_REL));
+
+	xstrfmtcatat(args->path, &args->at, "%s%s",
+		     data_get_string(data), OPENAPI_PATH_SEP);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+extern char *openapi_fmt_rel_path_str(char **str_ptr, data_t *relative_path)
+{
+	merge_path_strings_t args = {
+		.magic = MAGIC_FOREACH_PATH,
+	};
+
+	xassert(data_get_type(relative_path) == DATA_TYPE_LIST);
+	if (data_get_type(relative_path) != DATA_TYPE_LIST)
+		return NULL;
+
+	/* path always starts with "#/" */
+	xstrfmtcatat(args.path, &args.at, "%s%s",
+		     OPENAPI_PATH_REL, OPENAPI_PATH_SEP);
+
+	data_list_for_each(relative_path, _foreach_join_path_str, &args);
+
+	if (*str_ptr)
+		xfree(*str_ptr);
+	*str_ptr = args.path;
+
+	return args.path;
+}
+
+extern data_t *openapi_fork_rel_path_list(data_t *relative_path, int index)
+{
+	data_t *ppath, *ppath_last;
+
+	ppath = data_copy(NULL, relative_path);
+	ppath_last = data_get_list_last(ppath);
+
+	/* Use jq style array zero based array notation */
+	data_set_string_fmt(ppath_last, "%s[%d]",
+			    data_get_string(ppath_last), index);
+
+	return ppath;
 }

@@ -38,34 +38,21 @@
 #define DATA_PARSER_PARSING
 
 #include "src/interfaces/data_parser.h"
+#include "src/interfaces/openapi.h"
 #include "api.h"
 #include "parsers.h"
 
 /*
- * Separator used to split up the source path.
- * OpenAPI specification 3.1.0 explictly requires $ref paths must be compliant
- * with RFC3986 URIs. It is expected that inside of "$ref" path that the
- * relative path use "/" as seperators and that the relative paths start with
- * "#".
+ * All parsing uses a parent path (list of path components) to track parsing
+ * path to provide client a useful error/warning message about issues. OpenAPI
+ * specifies how path strings are to be constructed.
  */
-#define PATH_SEP "/"
-#define PATH_REL "#"
-
-/*
- * Set path string from parent_path
- * IN/OUT path_ptr - ptr to path string to set/replace
- * IN parent_path - data list with each path entry
- * RET ptr to path (to make logging easier)
- */
-extern char *set_source_path(char **path_ptr, data_t *parent_path);
-
-/*
- * Clone parent_path and append list index to last entry
- * IN parent_path - data list with each path entry
- * IN index - index of entry in list
- * RET new parent path (caller must release with FREE_NULL_DATA())
- */
-extern data_t *clone_source_path_index(data_t *parent_path, int index);
+#define PATH_SEP OPENAPI_PATH_SEP
+#define PATH_REL OPENAPI_PATH_REL
+#define set_source_path(path_ptr, parent_path) \
+	openapi_fmt_rel_path_str(path_ptr, parent_path)
+#define clone_source_path_index(parent_path, index) \
+	openapi_fork_rel_path_list(parent_path, index)
 
 /*
  * Remove macros to avoid calling them after this point since all calls should
