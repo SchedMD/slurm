@@ -1274,6 +1274,7 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr(&cred->job_alias_list, buffer);
 		safe_unpackstr(&cred->job_comment, buffer);
 		safe_unpackstr(&cred->job_constraints, buffer);
+		safe_unpack_time(&cred->job_end_time, buffer);
 		safe_unpackstr(&cred->job_extra, buffer);
 		safe_unpackstr(&cred->job_partition, buffer);
 		safe_unpackstr(&cred->job_reservation, buffer);
@@ -1839,6 +1840,7 @@ static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 		packstr(cred->job_alias_list, buffer);
 		packstr(cred->job_comment, buffer);
 		packstr(cred->job_constraints, buffer);
+		pack_time(cred->job_end_time, buffer);
 		packstr(cred->job_extra, buffer);
 		packstr(cred->job_partition, buffer);
 		packstr(cred->job_reservation, buffer);

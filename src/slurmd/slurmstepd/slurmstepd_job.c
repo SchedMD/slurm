@@ -261,6 +261,7 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *step)
 	cred_arg->gids = copy_gids(cred_arg->ngids, cred_arg->gids);
 	step->gr_names = copy_gr_names(cred_arg->ngids, cred_arg->gr_names);
 
+	step->job_end_time = cred_arg->job_end_time;
 	step->job_licenses = xstrdup(cred_arg->job_licenses);
 	step->selinux_context = xstrdup(cred_arg->selinux_context);
 

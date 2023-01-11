@@ -188,6 +188,7 @@ typedef struct {
 	char     *job_constraints;	/* constraints in job allocation */
 	bitstr_t *job_core_bitmap;	/* cores allocated to JOB */
 	uint16_t  job_core_spec;	/* count of specialized cores */
+	time_t job_end_time;            /* UNIX timestamp for job end time */
 	char *job_extra;		/* Extra - arbitrary string */
 	char     *job_hostlist;		/* list of nodes allocated to JOB */
 	char *job_licenses;		/* Licenses allocated to job */
