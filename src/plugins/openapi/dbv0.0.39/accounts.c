@@ -60,6 +60,7 @@
 
 #define MAGIC_FOREACH_ACCOUNT 0xaefefef0
 #define MAGIC_FOREACH_SEARCH 0xaefef9fa
+#define MAGIC_FOREACH_COORD 0xabfbf9fa
 
 typedef struct {
 	int magic; /* MAGIC_FOREACH_ACCOUNT */
@@ -163,6 +164,113 @@ static void _dump_accounts(ctxt_t *ctxt, slurmdb_account_cond_t *acct_cond)
 	FREE_NULL_LIST(acct_list);
 }
 
+typedef struct {
+	int magic; /* MAGIC_FOREACH_COORD */
+	ctxt_t *ctxt;
+	slurmdb_account_rec_t *acct;
+	slurmdb_account_rec_t *orig_acct;
+} foreach_update_acct_coord_t;
+
+static int _foreach_match_coord(void *x, void *key)
+{
+	slurmdb_coord_rec_t *coord1 = x;
+	slurmdb_coord_rec_t *coord2 = key;
+
+	return !xstrcasecmp(coord1->name, coord2->name) ? 1 : 0;
+}
+
+static int _foreach_add_acct_coord(void *x, void *arg)
+{
+	int rc;
+	slurmdb_coord_rec_t *coord = x;
+	foreach_update_acct_coord_t *args = arg;
+	ctxt_t *ctxt = args->ctxt;
+	list_t *acct_list;
+	slurmdb_assoc_cond_t assoc_cond = {};
+	slurmdb_user_cond_t user_cond = {
+		.assoc_cond = &assoc_cond,
+	};
+
+	xassert(args->magic = MAGIC_FOREACH_COORD);
+	xassert(args->ctxt->magic = MAGIC_CTXT);
+
+	if (args->orig_acct &&
+	    list_find_first(args->orig_acct->coordinators, _foreach_match_coord,
+			    coord)) {
+		/* account already has coordinator -> nothing to do here */
+		return SLURM_SUCCESS;
+	}
+
+	acct_list = list_create(NULL);
+	list_append(acct_list, args->acct->name);
+	assoc_cond.user_list = list_create(NULL);
+	list_append(assoc_cond.user_list, coord->name);
+
+	errno = 0;
+	if ((rc = slurmdb_coord_add(ctxt->db_conn, acct_list, &user_cond))) {
+		if (errno)
+			rc = errno;
+
+		resp_error(ctxt, rc, "slurmdb_coord_add()",
+			   "adding coordinator %s to account %s failed",
+			   coord->name, args->acct->name);
+	}
+
+	FREE_NULL_LIST(acct_list);
+	FREE_NULL_LIST(assoc_cond.user_list);
+
+	return rc ? SLURM_ERROR : SLURM_ERROR;
+}
+
+static int _foreach_rm_acct_coord(void *x, void *arg)
+{
+	int rc = SLURM_SUCCESS;
+	slurmdb_coord_rec_t *coord = x;
+	foreach_update_acct_coord_t *args = arg;
+	ctxt_t *ctxt = args->ctxt;
+	list_t *acct_list = NULL, *rm_list = NULL;
+	slurmdb_assoc_cond_t assoc_cond = {};
+	slurmdb_user_cond_t user_cond = {
+		.assoc_cond = &assoc_cond,
+	};
+
+	xassert(args->magic = MAGIC_FOREACH_COORD);
+	xassert(args->ctxt->magic = MAGIC_CTXT);
+
+	if (args->acct->coordinators &&
+	    list_find_first(args->acct->coordinators, _foreach_match_coord,
+			    coord)) {
+		/* account already has coordinator -> nothing to do here */
+		return SLURM_SUCCESS;
+	}
+
+	/* coordinator not in new acct list -> must be removed */
+	acct_list = list_create(NULL);
+	list_append(acct_list, args->acct->name);
+	assoc_cond.user_list = list_create(NULL);
+	list_append(assoc_cond.user_list, coord->name);
+
+	errno = 0;
+	if (!(rm_list = slurmdb_coord_remove(ctxt->db_conn, acct_list, &user_cond))) {
+		if (errno)
+			rc = errno;
+		else
+			rc = SLURM_ERROR;
+
+		resp_error(ctxt, rc, "slurmdb_coord_remove()",
+			   "removing coordinator %s from account %s failed",
+			   coord->name, args->acct->name);
+	} else {
+		xassert(list_count(rm_list) == 1);
+	}
+
+	FREE_NULL_LIST(acct_list);
+	FREE_NULL_LIST(rm_list);
+	FREE_NULL_LIST(assoc_cond.user_list);
+
+	return rc ? SLURM_ERROR : SLURM_ERROR;
+}
+
 static int _foreach_update_acct(void *x, void *arg)
 {
 	slurmdb_account_rec_t *acct = x;
@@ -171,6 +279,7 @@ static int _foreach_update_acct(void *x, void *arg)
 	slurmdb_assoc_cond_t assoc_cond = {};
 	slurmdb_account_cond_t acct_cond = {
 		.assoc_cond = &assoc_cond,
+		.with_coords = true,
 	};
 	assoc_cond.acct_list = list_create(NULL);
 	list_append(assoc_cond.acct_list, acct->name);
@@ -188,6 +297,17 @@ static int _foreach_update_acct(void *x, void *arg)
 		list_append(acct_list, acct);
 
 		db_query_rc(ctxt, acct_list, slurmdb_accounts_add);
+
+		if (acct->coordinators) {
+			foreach_update_acct_coord_t cargs = {
+				.magic = MAGIC_FOREACH_COORD,
+				.ctxt = ctxt,
+				.acct = acct,
+			};
+
+			list_for_each(acct->coordinators,
+				      _foreach_add_acct_coord, &cargs);
+		}
 	} else if (list_count(acct_list) > 1) {
 		resp_error(ctxt, ESLURM_DATA_AMBIGUOUS_MODIFY, __func__,
 			   "ambiguous account modify request");
@@ -195,7 +315,22 @@ static int _foreach_update_acct(void *x, void *arg)
 		debug("%s: [%s] modifying account request: acct=%s", __func__,
 		      ctxt->id, acct->name);
 
-		db_modify_rc(ctxt, &acct_cond, acct, slurmdb_accounts_modify);
+		if (!db_modify_rc(ctxt, &acct_cond, acct,
+				  slurmdb_accounts_modify)) {
+			foreach_update_acct_coord_t cargs = {
+				.magic = MAGIC_FOREACH_COORD,
+				.ctxt = ctxt,
+				.acct = acct,
+				.orig_acct = list_peek(acct_list),
+			};
+
+			if (acct->coordinators)
+				list_for_each(acct->coordinators,
+					      _foreach_add_acct_coord, &cargs);
+			if (cargs.orig_acct->coordinators)
+				list_for_each(cargs.orig_acct->coordinators,
+					      _foreach_rm_acct_coord, &cargs);
+		}
 	}
 
 cleanup:
