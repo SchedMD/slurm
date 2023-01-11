@@ -19293,6 +19293,8 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 	if (job_ptr->comment)
 		setenvf(&my_env, "SLURM_JOB_COMMENT", "%s", job_ptr->comment);
 
+	setenvf(&my_env, "SLURM_JOB_END_TIME", "%lu", job_ptr->end_time);
+
 	if (job_ptr->extra)
 		setenvf(&my_env, "SLURM_JOB_EXTRA", "%s", job_ptr->extra);
 
@@ -19381,6 +19383,8 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 			job_ptr->resv_ptr->name);
 
 	setenvf(&my_env, "SLURM_JOB_RESTART_COUNT", "%d", job_ptr->restart_cnt);
+
+	setenvf(&my_env, "SLURM_JOB_START_TIME", "%lu", job_ptr->start_time);
 
 	setenvf(&my_env, "SLURM_JOB_UID", "%u", job_ptr->user_id);
 	name = uid_to_string((uid_t) job_ptr->user_id);

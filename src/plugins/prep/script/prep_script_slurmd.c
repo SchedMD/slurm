@@ -312,6 +312,9 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		if (cred_arg->job_constraints)
 			setenvf(&env, "SLURM_JOB_CONSTRAINTS", "%s",
 				cred_arg->job_constraints);
+		if (cred_arg->job_end_time)
+			setenvf(&env, "SLURM_JOB_END_TIME", "%lu",
+				cred_arg->job_end_time);
 		if (cred_arg->job_extra)
 			setenvf(&env, "SLURM_JOB_EXTRA", "%s",
 				cred_arg->job_extra);
@@ -341,6 +344,9 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		if (cred_arg->job_restart_cnt != INFINITE16)
 			setenvf(&env, "SLURM_JOB_RESTART_COUNT", "%u",
 				cred_arg->job_restart_cnt);
+		if (cred_arg->job_start_time)
+			setenvf(&env, "SLURM_JOB_START_TIME", "%lu",
+				cred_arg->job_start_time);
 		if (cred_arg->job_std_err)
 			setenvf(&env, "SLURM_JOB_STDERR", "%s",
 				cred_arg->job_std_err);
