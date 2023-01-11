@@ -1092,15 +1092,15 @@
                 "type": "object",
                 "properties": {
                   "major": {
-                    "type": "string",
+                    "type": "integer",
                     "description": ""
                   },
                   "micro": {
-                    "type": "string",
+                    "type": "integer",
                     "description": ""
                   },
                   "minor": {
-                    "type": "string",
+                    "type": "integer",
                     "description": ""
                   }
                 }
