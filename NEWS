@@ -249,6 +249,7 @@ documents those changes that are of interest to users and administrators.
     data_parser/v0.0.39 plugins. Significant restructuring of OpenAPI
     specification compared to previous plugin version.
  -- Validate --gpu-bind options more strictly.
+ -- Fix slurmd segfault on bad EnergyIPMIPowerSensors= parameter.
 
 * Changes in Slurm 22.05.8
 ==========================

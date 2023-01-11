@@ -1336,14 +1336,10 @@ static int _parse_sensor_descriptions(void)
 	return SLURM_SUCCESS;
 
 error:
-	error("Configuration of EnergyIPMIPowerSensors is malformed. "
+	fatal("Configuration of EnergyIPMIPowerSensors is malformed. "
 	      "Make sure that the expected format is respected and that "
 	      "the \"Node\" label is provided.");
-	for (i = 0; i < descriptions_len; ++i) {
-		xfree(descriptions[i].label);
-		xfree(descriptions[i].sensor_idxs);
-	}
-	xfree(descriptions); descriptions = NULL;
+
 	return SLURM_ERROR;
 }
 
