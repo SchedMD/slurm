@@ -1598,7 +1598,7 @@ static int DUMP_FUNC(STRING)(const parser_t *const parser, void *obj,
 	if (*src)
 		data_set_string(data, *src);
 	else
-		data_set_null(data);
+		data_set_string(data, "");
 
 	return rc;
 }
