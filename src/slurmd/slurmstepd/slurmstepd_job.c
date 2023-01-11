@@ -263,6 +263,7 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *step)
 
 	step->job_end_time = cred_arg->job_end_time;
 	step->job_licenses = xstrdup(cred_arg->job_licenses);
+	step->job_start_time = cred_arg->job_start_time;
 	step->selinux_context = xstrdup(cred_arg->selinux_context);
 
 	step->alias_list = xstrdup(cred_arg->job_alias_list);

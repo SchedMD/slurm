@@ -201,6 +201,7 @@ typedef struct {
 	char *job_partition;		/* partition */
 	char *job_reservation;		/* Reservation, if applicable */
 	uint16_t job_restart_cnt;	/* restart count */
+	time_t job_start_time;          /* UNIX timestamp for job start time */
 	char *job_std_err;
 	char *job_std_in;
 	char *job_std_out;
