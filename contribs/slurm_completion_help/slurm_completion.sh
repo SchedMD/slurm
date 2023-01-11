@@ -722,7 +722,7 @@ function __slurm_features() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show nodes | grep -E -o 'AvailableFeatures=(\w,?)+' | cut -d= -f2 | tr ',' '\n'"
+	local cmd="scontrol show nodes | grep -E -o 'AvailableFeatures=\S+' | cut -d= -f2 | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -733,7 +733,7 @@ function __slurm_features_active() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show nodes | grep -E -o 'ActiveFeatures=(\w,?)+' | cut -d= -f2 | tr ',' '\n'"
+	local cmd="scontrol show nodes | grep -E -o 'ActiveFeatures=\S+' | cut -d= -f2 | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -802,7 +802,7 @@ function __slurm_jobs() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show jobs | grep -Po 'JobId=\w+' | cut -d'=' -f2"
+	local cmd="scontrol show jobs | grep -Po 'JobId=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -824,7 +824,7 @@ function __slurm_jobsteps() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol  show step | grep -Po 'StepId=\d+\.\w+' | cut -d'=' -f2"
+	local cmd="scontrol  show step | grep -Po 'StepId=\d+\.\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -835,7 +835,7 @@ function __slurm_jobnames() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show jobs | grep -Po 'JobName=\w+' | cut -d'=' -f2"
+	local cmd="scontrol show jobs | grep -Po 'JobName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -846,7 +846,7 @@ function __slurm_licenses() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show license | grep -Po 'LicenseName=\w+' | cut -d'=' -f2"
+	local cmd="scontrol show license | grep -Po 'LicenseName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -857,7 +857,7 @@ function __slurm_nodes() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show nodes | grep -Po 'NodeName=\w+' | cut -d'=' -f2"
+	local cmd="scontrol show nodes | grep -Po 'NodeName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -868,7 +868,7 @@ function __slurm_nodes_frontend() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show frontend | grep -Po 'FrontendName=\w+' | cut -d'=' -f2"
+	local cmd="scontrol show frontend | grep -Po 'FrontendName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -890,7 +890,7 @@ function __slurm_partitions() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show partitions | grep -Po 'PartitionName=\w+' | cut -d'=' -f2"
+	local cmd="scontrol show partitions | grep -Po 'PartitionName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -923,7 +923,7 @@ function __slurm_reservations() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show reservations | grep -Po 'ReservationName=\w+' | cut -d= -f2"
+	local cmd="scontrol show reservations | grep -Po 'ReservationName=\S+' | cut -d= -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
