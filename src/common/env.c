@@ -619,6 +619,14 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_ERROR;
 	}
 
+	if (env->job_end_time) {
+		if (setenvf(&env->env, "SLURM_JOB_END_TIME", "%lu",
+			    env->job_end_time)) {
+			error("Unable to set SLURM_JOB_END_TIME environment variable");
+			rc = SLURM_ERROR;
+		}
+	}
+
 	if (env->jobid >= 0) {
 		if (setenvf(&env->env, "SLURM_JOB_ID", "%d", env->jobid)) {
 			error("Unable to set SLURM_JOB_ID environment");
@@ -642,6 +650,14 @@ int setup_env(env_t *env, bool preserve_env)
 	if (env->job_name) {
 		if (setenvf(&env->env, "SLURM_JOB_NAME", "%s", env->job_name)) {
 			error("Unable to set SLURM_JOB_NAME environment");
+			rc = SLURM_ERROR;
+		}
+	}
+
+	if (env->job_start_time) {
+		if (setenvf(&env->env, "SLURM_JOB_START_TIME", "%lu",
+			    env->job_start_time)) {
+			error("Unable to set SLURM_JOB_START_TIME environment");
 			rc = SLURM_ERROR;
 		}
 	}

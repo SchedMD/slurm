@@ -366,7 +366,9 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	step->envtp->distribution = -1;
 	step->envtp->batch_flag = step->batch;
 	step->envtp->uid = step->uid;
+	step->envtp->job_end_time = step->job_end_time;
 	step->envtp->job_licenses = xstrdup(step->job_licenses);
+	step->envtp->job_start_time = step->job_start_time;
 	step->envtp->user_name = xstrdup(step->user_name);
 
 	/*
