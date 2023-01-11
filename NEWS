@@ -230,6 +230,8 @@ documents those changes that are of interest to users and administrators.
     nolonger generate an output file.
  -- sreport - print "Top ALL Users" for Top User report when topcount = -1.
  -- Add SLURM_JOB_START_TIME and SLURM_JOB_END_TIME environment variables.
+ -- Add SuspendExcStates option to slurm.conf to avoid suspending/powering down
+    specific node states.
 
 * Changes in Slurm 22.05.8
 ==========================
