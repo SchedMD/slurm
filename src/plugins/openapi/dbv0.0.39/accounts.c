@@ -387,8 +387,7 @@ static void _delete_account(ctxt_t *ctxt, char *account)
 	if (db_query_list(ctxt, &removed, slurmdb_accounts_remove, &acct_cond))
 		goto cleanup;
 
-	dremoved =
-		data_set_list(data_key_set(ctxt->resp, "removed_associations"));
+	dremoved = data_set_list(data_key_set(ctxt->resp, "removed_accounts"));
 
 	if (list_for_each(removed, _foreach_delete_acct, dremoved) >= 0)
 		db_query_commit(ctxt);
