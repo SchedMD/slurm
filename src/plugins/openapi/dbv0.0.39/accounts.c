@@ -163,6 +163,47 @@ static void _dump_accounts(ctxt_t *ctxt, slurmdb_account_cond_t *acct_cond)
 	FREE_NULL_LIST(acct_list);
 }
 
+static int _foreach_update_acct(void *x, void *arg)
+{
+	slurmdb_account_rec_t *acct = x;
+	ctxt_t *ctxt = arg;
+	List acct_list = NULL;
+	slurmdb_assoc_cond_t assoc_cond = {};
+	slurmdb_account_cond_t acct_cond = {
+		.assoc_cond = &assoc_cond,
+	};
+	assoc_cond.acct_list = list_create(NULL);
+	list_append(assoc_cond.acct_list, acct->name);
+
+	if (db_query_list_xempty(ctxt, &acct_list, slurmdb_accounts_get,
+				 &acct_cond))
+		goto cleanup;
+
+	if (!acct_list || list_is_empty(acct_list)) {
+		debug("%s: [%s] add account request: acct=%s",
+		      __func__, ctxt->id, acct->name);
+
+		if (!acct_list)
+			acct_list = list_create(NULL);
+		list_append(acct_list, acct);
+
+		db_query_rc(ctxt, acct_list, slurmdb_accounts_add);
+	} else if (list_count(acct_list) > 1) {
+		resp_error(ctxt, ESLURM_DATA_AMBIGUOUS_MODIFY, __func__,
+			   "ambiguous account modify request");
+	} else {
+		debug("%s: [%s] modifying account request: acct=%s", __func__,
+		      ctxt->id, acct->name);
+
+		db_modify_rc(ctxt, &acct_cond, acct, slurmdb_accounts_modify);
+	}
+
+cleanup:
+	FREE_NULL_LIST(assoc_cond.acct_list);
+	FREE_NULL_LIST(acct_list);
+	return ctxt->rc ? SLURM_ERROR : SLURM_SUCCESS;
+}
+
 static void _update_accts(ctxt_t *ctxt, bool commit)
 {
 	data_t *parent_path = NULL;
@@ -173,7 +214,10 @@ static void _update_accts(ctxt_t *ctxt, bool commit)
 		       parent_path))
 		goto cleanup;
 
-	if (!db_query_rc(ctxt, acct_list, slurmdb_accounts_add) && commit)
+	if (list_for_each(acct_list, _foreach_update_acct, ctxt) < 0)
+		goto cleanup;
+
+	if (!ctxt->rc && commit)
 		db_query_commit(ctxt);
 
 cleanup:
