@@ -385,7 +385,12 @@
             "style": "form",
             "explode": false,
             "schema": {
-              "type": "boolean"
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "default": "false"
             }
           }
         ]
@@ -406,7 +411,12 @@
             "style": "form",
             "explode": false,
             "schema": {
-              "type": "boolean"
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "default": "false"
             }
           }
         ],
@@ -1010,7 +1020,12 @@
             "style": "form",
             "explode": false,
             "schema": {
-              "type": "boolean"
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "default": "false"
             }
           }
         ]
@@ -1119,7 +1134,12 @@
             "style": "form",
             "explode": false,
             "schema": {
-              "type": "boolean"
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "default": "false"
             }
           }
         ]
@@ -1640,7 +1660,12 @@
             "style": "form",
             "explode": false,
             "schema": {
-              "type": "boolean"
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "default": "false"
             }
           }
         ]
@@ -1661,7 +1686,12 @@
             "style": "form",
             "explode": false,
             "schema": {
-              "type": "boolean"
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "default": "false"
             }
           }
         ],
@@ -1880,7 +1910,12 @@
             "style": "form",
             "explode": false,
             "schema": {
-              "type": "boolean"
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "default": "false"
             }
           },
           {
@@ -1891,7 +1926,12 @@
             "style": "form",
             "explode": false,
             "schema": {
-              "type": "boolean"
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "default": "false"
             }
           },
           {
