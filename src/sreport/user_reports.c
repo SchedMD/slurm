@@ -494,8 +494,14 @@ extern int user_top(int argc, char **argv)
 		slurm_make_time_str(&my_end, end_char, sizeof(end_char));
 		printf("----------------------------------------"
 		       "----------------------------------------\n");
-		printf("Top %u Users %s - %s (%d secs)\n",
-		       top_limit, start_char, end_char,
+
+		if (top_limit != INFINITE)
+			printf("Top %u", top_limit);
+		else
+			printf("Top ALL");
+
+		printf(" Users %s - %s (%d secs)\n",
+		       start_char, end_char,
 		       (int)(user_cond->assoc_cond->usage_end
 			- user_cond->assoc_cond->usage_start));
 

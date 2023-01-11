@@ -228,6 +228,7 @@ documents those changes that are of interest to users and administrators.
     currently active changeable features.
  -- On clusters without any PrologFlags options, batch jobs with failed prologs
     nolonger generate an output file.
+ -- sreport - print "Top ALL Users" for Top User report when topcount = -1.
 
 * Changes in Slurm 22.05.8
 ==========================
