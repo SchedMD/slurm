@@ -1742,12 +1742,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "DATA_PARSER_ACCOUNT_LIST"
+                "$ref": "#/components/schemas/dbv0.0.39_account_info"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "DATA_PARSER_ACCOUNT_LIST"
+                "$ref": "#/components/schemas/dbv0.0.39_account_info"
               }
             }
           },
