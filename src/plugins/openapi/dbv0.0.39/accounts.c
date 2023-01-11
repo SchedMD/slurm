@@ -288,6 +288,10 @@ static int _foreach_update_acct(void *x, void *arg)
 				 &acct_cond))
 		goto cleanup;
 
+	if (acct->assoc_list && list_count(acct->assoc_list)) {
+		resp_warn(ctxt, __func__, "Account associations ignored. They must be set via the associations end point.");
+	}
+
 	if (!acct_list || list_is_empty(acct_list)) {
 		debug("%s: [%s] add account request: acct=%s",
 		      __func__, ctxt->id, acct->name);
