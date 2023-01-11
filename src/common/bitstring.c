@@ -140,6 +140,7 @@ strong_alias(bit_unfmt_hexmask,	slurm_bit_unfmt_hexmask);
 strong_alias(bit_fmt_binmask,	slurm_bit_fmt_binmask);
 strong_alias(bit_unfmt_binmask,	slurm_bit_unfmt_binmask);
 strong_alias(bit_fls,		slurm_bit_fls);
+strong_alias(bit_fls_from_bit,	slurm_bit_fls_from_bit);
 strong_alias(bit_fill_gaps,	slurm_bit_fill_gaps);
 strong_alias(bit_super_set,	slurm_bit_super_set);
 strong_alias(bit_overlap,	slurm_bit_overlap);
@@ -614,18 +615,30 @@ bitoff_t bit_ffs(bitstr_t *b)
  *   b (IN)		bitstring to search
  *   RETURN 		resulting bit position (-1 if none found)
  */
-bitoff_t
-bit_fls(bitstr_t *b)
+bitoff_t bit_fls(bitstr_t *b)
 {
-	bitoff_t bit, value = -1;
+	/* zero origin */
+	bitoff_t bit = _bitstr_bits(b) - 1;
+
+	return bit_fls_from_bit(b, bit);
+}
+
+/*
+ * Find last bit set in b from an offset.
+ *   b (IN)		bitstring to search
+ *   bit (IN)		bit to start the search at
+ *   RETURN		resulting bit position (-1 if none found)
+ */
+bitoff_t bit_fls_from_bit(bitstr_t *b, bitoff_t bit)
+{
+	bitoff_t value = -1;
 	int32_t word;
 
 	_assert_bitstr_valid(b);
+	_assert_bit_valid(b, bit);
 
 	if (_bitstr_bits(b) == 0)	/* empty bitstring */
 		return -1;
-
-	bit = _bitstr_bits(b) - 1;	/* zero origin */
 
 	while (bit >= 0 && 		/* test partial words */
 		(_bit_word(bit) == _bit_word(bit + 1))) {

@@ -150,6 +150,7 @@ char	*bit_fmt_binmask(bitstr_t *b);
 void 	bit_unfmt_binmask(bitstr_t *b, const char *str);
 bitoff_t bit_ffs_from_bit(bitstr_t *b, bitoff_t bit);
 bitoff_t bit_fls(bitstr_t *b);
+bitoff_t bit_fls_from_bit(bitstr_t *b, bitoff_t bit);
 void	bit_fill_gaps(bitstr_t *b);
 int	bit_super_set(bitstr_t *b1, bitstr_t *b2);
 int     bit_overlap(bitstr_t *b1, bitstr_t *b2);

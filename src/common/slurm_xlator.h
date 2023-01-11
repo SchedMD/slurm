@@ -102,6 +102,7 @@
 #define	bit_fmt_binmask		slurm_bit_fmt_binmask
 #define bit_unfmt_binmask	slurm_bit_unfmt_binmask
 #define	bit_fls			slurm_bit_fls
+#define	bit_fls_from_bit	slurm_bit_fls_from_bit
 #define	bit_fill_gaps		slurm_bit_fill_gaps
 #define	bit_super_set		slurm_bit_super_set
 #define	bit_overlap		slurm_bit_overlap
