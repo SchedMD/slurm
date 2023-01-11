@@ -402,6 +402,7 @@ extern data_t *get_query_key_list_funcname(const char *path, ctxt_t *ctxt,
 					   data_t **parent_path,
 					   const char *caller)
 {
+	char *path_str = NULL;
 	data_t *dst = NULL;
 
 	/* start parent path data list */
@@ -410,33 +411,38 @@ extern data_t *get_query_key_list_funcname(const char *path, ctxt_t *ctxt,
 	xassert(ctxt->magic == MAGIC_CTXT);
 
 	*parent_path = data_set_list(data_new());
-	(void) data_set_string(data_list_append(*parent_path), path);
+	openapi_append_rel_path(*parent_path, path);
 
 	if (!ctxt->query) {
 		resp_warn(ctxt, caller, "empty HTTP query while looking for %s",
-			  path);
-		return NULL;
+			  openapi_fmt_rel_path_str(&path_str, *parent_path));
+		goto cleanup;
 	}
 
 	if (data_get_type(ctxt->query) != DATA_TYPE_DICT) {
 		resp_warn(ctxt, caller,
-			  "expected query to be a dictionary instead of %s while searching for %s",
+			  "expected HTTP query to be a dictionary instead of %s while searching for %s",
 			  data_type_to_string(data_get_type(ctxt->query)),
-			  path);
-		return NULL;
+			  openapi_fmt_rel_path_str(&path_str, *parent_path));
+		goto cleanup;
 	}
 
 	if (!(dst = data_dict_find_first(ctxt->query, _match_case_string,
 					 (void *) path))) {
-		resp_warn(ctxt, caller, "unable to find %s in query", path);
-		return NULL;
+		resp_warn(ctxt, caller, "unable to find %s in HTTP query",
+			  openapi_fmt_rel_path_str(&path_str, *parent_path));
+		goto cleanup;
 	}
 
 	if (data_get_type(dst) != DATA_TYPE_LIST) {
-		resp_warn(ctxt, caller, "Query %s must be a list", path);
-		return NULL;
+		resp_warn(ctxt, caller, "%s must be a list but found %s",
+			  openapi_fmt_rel_path_str(&path_str, *parent_path),
+			  data_type_to_string(data_get_type(dst)));
+		goto cleanup;
 	}
 
+cleanup:
+	xfree(path_str);
 	return dst;
 }
 
