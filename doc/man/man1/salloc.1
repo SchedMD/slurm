@@ -2478,11 +2478,6 @@ Account name associated of the job allocation.
 .IP
 
 .TP
-\fBSLURM_JOB_ID\fR
-The ID of the job allocation.
-.IP
-
-.TP
 \fBSLURM_JOB_CPUS_PER_NODE\fR
 Count of CPUs available to the job on the nodes in the allocation, using the
 format \fICPU_count\fR[(x\fInumber_of_nodes\fR)][,\fICPU_count\fR
@@ -2506,6 +2501,11 @@ The UNIX timestamp for a job's projected end time.
 The global GPU IDs of the GPUs allocated to this job. The GPU IDs are not
 relative to any device cgroup, even if devices are constrained with task/cgroup.
 Only set in batch and interactive jobs.
+.IP
+
+.TP
+\fBSLURM_JOB_ID\fR
+The ID of the job allocation.
 .IP
 
 .TP
