@@ -205,4 +205,13 @@ extern char *openapi_fmt_rel_path_str(char **str_ptr, data_t *relative_path);
  */
 extern data_t *openapi_fork_rel_path_list(data_t *relative_path, int index);
 
+/*
+ * Append split up sub_path to existing relative path list
+ * IN/OUT relative_path - data list with each component of relative path
+ * IN sub_path - additional sub path components to append.
+ * 	May start with #/ or have the components delimited by /
+ * RET SLURM_SUCCESS or error
+ */
+extern int openapi_append_rel_path(data_t *relative_path, const char *sub_path);
+
 #endif /* SLURM_OPENAPI_H */

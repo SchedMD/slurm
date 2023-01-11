@@ -1521,3 +1521,19 @@ extern data_t *openapi_fork_rel_path_list(data_t *relative_path, int index)
 
 	return ppath;
 }
+
+extern int openapi_append_rel_path(data_t *relative_path, const char *sub_path)
+{
+	if (data_get_type(relative_path) != DATA_TYPE_LIST)
+		return ESLURM_DATA_EXPECTED_LIST;
+
+	/* ignore empty sub paths */
+	if (!sub_path || !sub_path[0])
+		return SLURM_SUCCESS;
+
+	/* If string starts with # then just ignore it */
+	if (sub_path[0] == OPENAPI_PATH_REL[0])
+		sub_path = &sub_path[1];
+
+	return data_list_split_str(relative_path, sub_path, OPENAPI_PATH_SEP);
+}
