@@ -277,7 +277,7 @@ static data_t *_resolve_parser_key(const parser_t *parser, data_t *dst)
 	 * Need to create each dict needed to complete path.
 	 */
 
-	if ((rc = data_list_split_str(path, parser->key, PATH_SEP)))
+	if ((rc = openapi_append_rel_path(path, parser->key)))
 		fatal("%s: failed to split %s: %s", __func__, parser->key,
 		      slurm_strerror(rc));
 
