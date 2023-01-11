@@ -7280,6 +7280,11 @@ Available in \fBEpilog\fR and \fBEpilogSlurmctld\fR.
 .IP
 
 .TP
+\fBSLURM_JOB_END_TIME\fR
+The UNIX timestamp for a job's end time.
+.IP
+
+.TP
 \fBSLURM_JOB_EXIT_CODE\fR
 The exit code of the job script (or salloc). The value is the status
 as returned by the wait() system call (See wait(2))
@@ -7348,6 +7353,11 @@ Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 Partition that job runs in.
 Available in \fBProlog\fR, \fBPrologSlurmctld\fR, \fBEpilog\fR and
 \fBEpilogSlurmctld\fR.
+.IP
+
+.TP
+\fBSLURM_JOB_START_TIME\fR
+The UNIX timestamp of a job's start time.
 .IP
 
 .TP

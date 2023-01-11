@@ -80,6 +80,7 @@ HIGHLIGHTS
     currently active changeable features.
  -- On clusters without any PrologFlags options, batch jobs with failed prologs
     nolonger generate an output file.
+ -- Add SLURM_JOB_START_TIME and SLURM_JOB_END_TIME environment variables.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
