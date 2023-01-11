@@ -102,13 +102,23 @@ The default value is 60 seconds.</li>
 
 <li><b>SuspendExcNodes</b>:
 List of nodes to never place in power saving mode.
-Use Slurm's hostlist expression format.
-By default, no nodes are excluded.</li>
+Use Slurm's hostlist expression to identify nodes with an optional ":"
+separator and count of nodes to exclude from the preceding range. For example
+"nid[10\-20]:4" will prevent 4 usable nodes (i.e IDLE and not DOWN, DRAINING or
+already powered down) in the set "nid[10\-20]" from being powered down.
+Multiple sets of nodes can be specified with or without counts in a comma
+separated list (e.g "nid[10\-20]:4,nid[80\-90]:2"). By default, no nodes are
+excluded.
 
 <li><b>SuspendExcParts</b>:
 List of partitions with nodes to never place in power saving mode.
 Multiple partitions may be specified using a comma separator.
 By default, no nodes are excluded.</li>
+
+<li><b>SuspendExcStates</b>:
+Specifies node states that are not to be powered down automatically. Valid
+options include Down, Drain and Planned. By default, any of these states, if
+idle for <b>SuspendTime</b>, would be powered down.
 
 <li><b>BatchStartTimeout</b>:
 Specifies how long to wait after a batch job start request is issued
@@ -259,6 +269,6 @@ and perform the following actions:
 <li>Boot the appropriate image for each node</li>
 </ol>
 
-<p style="text-align:center;">Last modified 28 October 2022</p>
+<p style="text-align:center;">Last modified 11 January 2023</p>
 
 <!--#include virtual="footer.txt"-->

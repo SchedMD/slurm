@@ -91,7 +91,7 @@ bool power_save_debug = false;
 
 int suspend_rate, resume_rate, max_timeout;
 char *suspend_prog = NULL, *resume_prog = NULL, *resume_fail_prog = NULL;
-char *exc_nodes = NULL, *exc_parts = NULL;
+char *exc_nodes = NULL, *exc_parts = NULL, *exc_states = NULL;
 time_t last_log = (time_t) 0, last_work_scan = (time_t) 0;
 uint16_t slurmd_timeout;
 static bool idle_on_node_suspend = false;
@@ -108,6 +108,9 @@ typedef struct exc_node_partital {
 List partial_node_list;
 
 bitstr_t *exc_node_bitmap = NULL;
+
+/* Possible SuspendExcStates */
+static bool suspend_exc_down, suspend_exc_drain, suspend_exc_planned;
 
 int   suspend_cnt,   resume_cnt;
 float suspend_cnt_f, resume_cnt_f;
@@ -131,41 +134,35 @@ static void _exc_node_part_free(void *x)
 static int _parse_exc_nodes(void)
 {
 	int rc = SLURM_SUCCESS;
-	char *end_ptr = NULL, *save_ptr = NULL, *sep, *tmp, *tok;
+	char *save_ptr = NULL, *sep, *tmp, *tok, *node_cnt_str;
 
+	/* Shortcut if ":<node_cnt>" is not used */
 	sep = strchr(exc_nodes, ':');
 	if (!sep)
 		return node_name2bitmap(exc_nodes, false, &exc_node_bitmap);
 
 	partial_node_list = list_create(_exc_node_part_free);
 	tmp = xstrdup(exc_nodes);
-	tok = strtok_r(tmp, ":", &save_ptr);
+	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		bitstr_t *exc_node_cnt_bitmap = NULL;
 		long ext_node_cnt = 0;
 		exc_node_partital_t *ext_part_struct;
 
+		if ((node_cnt_str = xstrstr(tok, ":"))) {
+			*node_cnt_str = '\0';
+			ext_node_cnt = strtol(node_cnt_str + 1, NULL, 10);
+		}
 		rc = node_name2bitmap(tok, false, &exc_node_cnt_bitmap);
-		if ((rc != SLURM_SUCCESS) || !exc_node_cnt_bitmap)
-			break;
-		tok = strtok_r(NULL, ",", &save_ptr);
-		if (tok) {
-			ext_node_cnt = strtol(tok, &end_ptr, 10);
-			if ((end_ptr[0] != '\0') || (ext_node_cnt < 1) ||
-			    (ext_node_cnt >
-			     bit_set_count(exc_node_cnt_bitmap))) {
-				FREE_NULL_BITMAP(exc_node_cnt_bitmap);
-				rc = SLURM_ERROR;
-				break;
-			}
-		} else {
+
+		if (!ext_node_cnt) {
 			ext_node_cnt = bit_set_count(exc_node_cnt_bitmap);
 		}
 		ext_part_struct = xmalloc(sizeof(exc_node_partital_t));
 		ext_part_struct->exc_node_cnt = (int) ext_node_cnt;
 		ext_part_struct->exc_node_cnt_bitmap = exc_node_cnt_bitmap;
 		list_append(partial_node_list, ext_part_struct);
-		tok = strtok_r(NULL, ":", &save_ptr);
+		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(tmp);
 	if (rc != SLURM_SUCCESS)
@@ -186,6 +183,64 @@ static int _list_part_node_lists(void *x, void *arg)
 	xfree(tmp);
 	return 0;
 
+}
+
+static void _parse_exc_states(void)
+{
+	char *buf, *tok, *saveptr;
+	int tok_len;
+
+	buf = xstrdup(exc_states);
+	for (tok = strtok_r(buf, ",", &saveptr); tok;
+	     tok = strtok_r(NULL, ",", &saveptr)) {
+		tok_len = strlen(tok);
+		if (!xstrncasecmp(tok, "Down", MAX(tok_len, 2)))
+			suspend_exc_down = true;
+		else if (!xstrncasecmp(tok, "Drained", MAX(tok_len, 2)))
+			suspend_exc_drain = true;
+		else if (!xstrncasecmp(tok, "Planned", MAX(tok_len, 1)))
+			suspend_exc_planned = true;
+		else
+			error("Invalid SuspendExcState %s", tok);
+	}
+	xfree(buf);
+}
+
+/*
+ * Is it possible to suspend this node
+ */
+static bool _node_state_suspendable(node_record_t *node_ptr)
+{
+	/* Must have idle or down base state */
+	if (!IS_NODE_IDLE(node_ptr) && !IS_NODE_DOWN(node_ptr))
+		return false;
+
+	/* Must not have these flags */
+	if (IS_NODE_COMPLETING(node_ptr) ||
+	    IS_NODE_POWERING_UP(node_ptr) ||
+	    IS_NODE_POWERED_DOWN(node_ptr) ||
+	    IS_NODE_POWERING_DOWN(node_ptr) ||
+	    IS_NODE_REBOOT_ISSUED(node_ptr) ||
+	    IS_NODE_REBOOT_REQUESTED(node_ptr))
+	    return false;
+
+	return true;
+}
+
+/*
+ * Should this node be suspended after SuspendTime has elapsed
+ */
+static bool _node_state_should_suspend(node_record_t *node_ptr)
+{
+	/* SuspendExcStates */
+	if (suspend_exc_down && IS_NODE_DOWN(node_ptr))
+		return false;
+	if (suspend_exc_drain && IS_NODE_DRAIN(node_ptr))
+		return false;
+	if (suspend_exc_planned && (node_ptr->node_state & NODE_STATE_PLANNED))
+		return false;
+
+	return true;
 }
 
 /*
@@ -215,13 +270,9 @@ static int _pick_exc_nodes(void *x, void *arg)
 		      next_node_bitmap(ext_part_struct->exc_node_cnt_bitmap,
 				       &i));
 		     i++) {
-			if (!IS_NODE_IDLE(node_ptr)			||
-			    IS_NODE_COMPLETING(node_ptr)		||
+			if (!_node_state_suspendable(node_ptr)		||
 			    IS_NODE_DOWN(node_ptr)			||
 			    IS_NODE_DRAIN(node_ptr)			||
-			    IS_NODE_POWERING_UP(node_ptr)		||
-			    IS_NODE_POWERED_DOWN(node_ptr)		||
-			    IS_NODE_POWERING_DOWN(node_ptr)		||
 			    (node_ptr->sus_job_cnt > 0))
 				continue;
 			bit_set(exc_node_cnt_bitmap, i);
@@ -235,12 +286,6 @@ static int _pick_exc_nodes(void *x, void *arg)
 	} else {
 		bit_or(*orig_exc_nodes, exc_node_cnt_bitmap);
 		FREE_NULL_BITMAP(exc_node_cnt_bitmap);
-	}
-
-	if (power_save_debug) {
-		char *tmp = bitmap2node_name(*orig_exc_nodes);
-		log_flag(POWER, "excluded nodes %s", tmp);
-		xfree(tmp);
 	}
 
 	return 0;
@@ -289,6 +334,11 @@ static void _do_power_work(time_t now)
 			avoid_node_bitmap = bit_copy(exc_node_bitmap);
 	}
 
+	if (avoid_node_bitmap && power_save_debug) {
+		char *tmp = bitmap2node_name(avoid_node_bitmap);
+		log_flag(POWER, "avoid nodes %s", tmp);
+		xfree(tmp);
+	}
 
 	/*
 	 * Buid job to node mapping for json output
@@ -413,18 +463,13 @@ static void _do_power_work(time_t now)
 		}
 
 		/* Suspend nodes as appropriate */
-		if ((susp_state == 0)					&&
+		if (_node_state_suspendable(node_ptr) &&
 		    ((suspend_rate == 0) || (suspend_cnt < suspend_rate)) &&
-		    (IS_NODE_IDLE(node_ptr) || IS_NODE_DOWN(node_ptr))	&&
 		    (node_ptr->sus_job_cnt == 0)			&&
-		    (!IS_NODE_COMPLETING(node_ptr))			&&
-		    (!IS_NODE_POWERING_UP(node_ptr))			&&
-		    (!IS_NODE_POWERING_DOWN(node_ptr))			&&
-		    (!IS_NODE_REBOOT_ISSUED(node_ptr))			&&
-		    (!IS_NODE_REBOOT_REQUESTED(node_ptr))		&&
 		    (IS_NODE_POWER_DOWN(node_ptr) ||
 		     ((node_ptr->last_busy != 0) &&
 		      (node_ptr->last_busy < (now - node_ptr->suspend_time)) &&
+		      _node_state_should_suspend(node_ptr) &&
 		      ((avoid_node_bitmap == NULL) ||
 		       (bit_test(avoid_node_bitmap, node_ptr->index) == 0))))) {
 			if (sleep_node_bitmap == NULL) {
@@ -647,6 +692,10 @@ static void _clear_power_config(void)
 	xfree(resume_fail_prog);
 	xfree(exc_nodes);
 	xfree(exc_parts);
+	xfree(exc_states);
+	suspend_exc_down = false;
+	suspend_exc_drain = false;
+	suspend_exc_planned = false;
 	FREE_NULL_BITMAP(exc_node_bitmap);
 	FREE_NULL_LIST(partial_node_list);
 }
@@ -722,6 +771,9 @@ static void _setup_exc_nodes_parts(void)
 		xfree(part_list);
 	}
 
+	if (exc_states)
+		_parse_exc_states();
+
 	if (power_save_debug) {
 		if (exc_node_bitmap) {
 			char *tmp = bitmap2node_name(exc_node_bitmap);
@@ -763,6 +815,8 @@ static int _init_power_config(void)
 		exc_nodes = xstrdup(slurm_conf.suspend_exc_nodes);
 	if (slurm_conf.suspend_exc_parts)
 		exc_parts = xstrdup(slurm_conf.suspend_exc_parts);
+	if (slurm_conf.suspend_exc_states)
+		exc_states = xstrdup(slurm_conf.suspend_exc_states);
 
 	cloud_reg_addrs = xstrcasestr(slurm_conf.slurmctld_params,
 				      "cloud_reg_addrs");

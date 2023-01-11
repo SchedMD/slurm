@@ -108,6 +108,21 @@ SuspendProgram so that nodes will be eligible to be resumed at a later time.
 suspending and resuming nodes which are not in the cloud. Alternately the
 suspend/resume programs can treat local nodes differently from nodes being
 provisioned from cloud.
+Use Slurm's hostlist expression to identify nodes with an optional ":"
+separator and count of nodes to exclude from the preceding range. For example
+"nid[10\-20]:4" will prevent 4 usable nodes (i.e IDLE and not DOWN, DRAINING or
+already powered down) in the set "nid[10\-20]" from being powered down.
+Multiple sets of nodes can be specified with or without counts in a comma
+separated list (e.g "nid[10\-20]:4,nid[80\-90]:2").
+By default, no nodes are excluded.
+<dt><b>SuspendExcParts</b>
+<dd>List of partitions with nodes to never place in power saving mode.
+Multiple partitions may be specified using a comma separator.
+By default, no nodes are excluded.
+<dt><b>SuspendExcStates</b>
+<dd>Specifies node states that are not to be powered down automatically.
+Valid options include Down, Drain and Planned. By default, any of these states,
+if idle for <b>SuspendTime</b>, would be powered down.
 <dt><b>SuspendProgram</b>
 <dd>The program executed when a node is no longer required and can be
 relinquished to the cloud.
@@ -515,6 +530,6 @@ are cleared. Any non-NodeFeaturesPlugin features are active by default and can
 be used as a label.
 </p>
 
-<p style="text-align:center;">Last modified 9 January 2023</p>
+<p style="text-align:center;">Last modified 11 January 2023</p>
 
 <!--#include virtual="footer.txt"-->

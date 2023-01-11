@@ -1726,6 +1726,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("SuspendExcStates");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->suspend_exc_states);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SuspendProgram");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->suspend_program);
 	list_append(ret_list, key_pair);
@@ -2204,6 +2209,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 
 		if (!xstrcasecmp(key_pair->name, "SuspendExcNodes") ||
 		    !xstrcasecmp(key_pair->name, "SuspendExcParts") ||
+		    !xstrcasecmp(key_pair->name, "SuspendExcStates") ||
 		    !xstrcasecmp(key_pair->name, "SuspendProgram") ||
 		    !xstrcasecmp(key_pair->name, "SuspendRate") ||
 		    !xstrcasecmp(key_pair->name, "SuspendTime") ||

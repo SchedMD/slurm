@@ -81,6 +81,8 @@ HIGHLIGHTS
  -- On clusters without any PrologFlags options, batch jobs with failed prologs
     nolonger generate an output file.
  -- Add SLURM_JOB_START_TIME and SLURM_JOB_END_TIME environment variables.
+ -- Add SuspendExcStates option to slurm.conf to avoid suspending/powering down
+    specific node states.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
