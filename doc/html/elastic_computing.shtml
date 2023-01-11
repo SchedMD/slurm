@@ -45,6 +45,9 @@ establishing the node's network address. This option disables the cache and
 Slurm will look up the node's network address each time a connection is made.
 This is useful, for example, in a cloud environment where the node addresses
 come and go out of DNS.
+<dt><b>ReconfigFlags=KeepPowerSaveSettings</b>
+<dd>If set, an "scontrol reconfig" command will preserve the current state of
+SuspendExcNodes, SuspendExcParts and SuspendExcStates.
 <dt><b>ResumeFailProgram</b>
 <dd>The program that will be executed when nodes fail to resume by
 <b>ResumeTimeout</b>. The argument to the program will be the names of the
@@ -135,16 +138,19 @@ already powered down) in the set "nid[10\-20]" from being powered down.
 Multiple sets of nodes can be specified with or without counts in a comma
 separated list (e.g "nid[10\-20]:4,nid[80\-90]:2").
 By default, no nodes are excluded.
+See <b>ReconfigFlags=KeepPowerSaveSettings</b> for setting persistence.
 <dt><b>SuspendExcParts</b>
 <dd>List of partitions with nodes to never place in power saving mode.
 Multiple partitions may be specified using a comma separator.
 By default, no nodes are excluded.
+See <b>ReconfigFlags=KeepPowerSaveSettings</b> for setting persistence.
 <dt><b>SuspendExcStates</b>
 <dd>Specifies node states that are not to be powered down automatically.
 Valid states include CLOUD, DOWN, DRAIN, DYNAMIC_FUTURE, DYNAMIC_NORM, FAIL,
 INVALID_REG, MAINTENANCE, NOT_RESPONDING, PERFCTRS, PLANNED, and RESERVED.
 By default, any of these states, if idle for <b>SuspendTime</b>, would be
 powered down.
+See <b>ReconfigFlags=KeepPowerSaveSettings</b> for setting persistence.
 <dt><b>SuspendProgram</b>
 <dd>The program executed when a node is no longer required and can be
 relinquished to the cloud.

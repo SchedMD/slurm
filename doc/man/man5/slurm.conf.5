@@ -3537,6 +3537,13 @@ parameters of the partitions that may have been dynamically updated by
 information in the slurm.conf file will be merged with in\-memory
 data.
 .IP
+
+.TP
+\KeepPowerSaveSettings\fR
+If set, an "scontrol reconfig" command will preserve the current state of
+SuspendExcNodes, SuspendExcParts and SuspendExcStates.
+.IP
+
 .RE
 .RS 7
 The default for the above flags is not set, and the
@@ -5420,6 +5427,7 @@ powered down.
 Multiple sets of nodes can be specified with or without counts in a comma
 separated list (e.g "nid[10\-20]:4,nid[80\-90]:2").
 By default no nodes are excluded.
+See \fBReconfigFlags=KeepPowerSaveSettings\fR for setting persistence.
 .IP
 
 .TP
@@ -5428,6 +5436,7 @@ Specifies the partitions whose nodes are to not be placed in power save
 mode, even if the node remains idle for an extended period of time.
 Multiple partitions can be identified and separated by commas.
 By default no nodes are excluded.
+See \fBReconfigFlags=KeepPowerSaveSettings\fR for setting persistence.
 .IP
 
 .TP
@@ -5437,6 +5446,7 @@ Valid states include CLOUD, DOWN, DRAIN, DYNAMIC_FUTURE, DYNAMIC_NORM, FAIL,
 INVALID_REG, MAINTENANCE, NOT_RESPONDING, PERFCTRS, PLANNED, and RESERVED.
 By default, any of these states, if idle for \fBSuspendTime\fR, would be
 powered down.
+See \fBReconfigFlags=KeepPowerSaveSettings\fR for setting persistence.
 .IP
 
 .TP
