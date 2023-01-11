@@ -288,12 +288,6 @@ static int _pick_exc_nodes(void *x, void *arg)
 		FREE_NULL_BITMAP(exc_node_cnt_bitmap);
 	}
 
-	if (power_save_debug) {
-		char *tmp = bitmap2node_name(*orig_exc_nodes);
-		log_flag(POWER, "excluded nodes %s", tmp);
-		xfree(tmp);
-	}
-
 	return 0;
 }
 
@@ -340,6 +334,11 @@ static void _do_power_work(time_t now)
 			avoid_node_bitmap = bit_copy(exc_node_bitmap);
 	}
 
+	if (avoid_node_bitmap && power_save_debug) {
+		char *tmp = bitmap2node_name(avoid_node_bitmap);
+		log_flag(POWER, "avoid nodes %s", tmp);
+		xfree(tmp);
+	}
 
 	/*
 	 * Buid job to node mapping for json output
