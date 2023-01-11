@@ -234,9 +234,7 @@ extern int op_handler_account(const char *context_id,
 	} else if (!(acct = get_str_param("account_name", ctxt))) {
 		/* no-op already logged */
 	} else if (method == HTTP_REQUEST_GET) {
-		slurmdb_assoc_cond_t assoc_cond = {
-			.acct_list = list_create(NULL),
-		};
+		slurmdb_assoc_cond_t assoc_cond = {};
 		slurmdb_account_cond_t acct_cond = {
 			.assoc_cond = &assoc_cond,
 			.with_assocs = true,
@@ -244,11 +242,14 @@ extern int op_handler_account(const char *context_id,
 			/* with_deleted defaults to false */
 		};
 
-		list_append(assoc_cond.acct_list, acct);
+		assoc_cond.acct_list = list_create(NULL);
 
 		/* Change search conditions based on parameters */
-		if (!_parse_other_params(ctxt, &acct_cond))
+		if (!_parse_other_params(ctxt, &acct_cond)) {
+			list_append(assoc_cond.acct_list, acct);
+
 			_dump_accounts(ctxt, &acct_cond);
+		}
 
 		FREE_NULL_LIST(assoc_cond.acct_list);
 	} else if (method == HTTP_REQUEST_DELETE) {
