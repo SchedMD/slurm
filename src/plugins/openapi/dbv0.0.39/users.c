@@ -44,6 +44,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
+#include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurmdbd_defs.h"
@@ -122,6 +123,17 @@ static void _dump_users(ctxt_t *ctxt, char *user_name,
 	user_cond->assoc_cond = NULL;
 }
 
+static int _match_wckey_name(void *x, void *key)
+{
+	slurmdb_wckey_rec_t *wckey = x;
+	char *name = key;
+
+	xassert(name && name[0]);
+	xassert(wckey->name && wckey->name[0]);
+
+	return !xstrcmp(wckey->name, name);
+}
+
 static int _foreach_update_user(void *x, void *arg)
 {
 	slurmdb_user_rec_t *user = x;
@@ -197,6 +209,33 @@ static int _foreach_update_user(void *x, void *arg)
 		resp_warn(ctxt, __func__, "User %s coordinators list ignored. They must be set via the coordinators or accounts end point.",
 			  user->name);
 		FREE_NULL_LIST(user->coord_accts);
+	}
+
+	if (user->default_wckey && user->default_wckey[0]) {
+		/*
+		 * User may provide wckey as default but not in the list of
+		 * wckeys. Automatically add it.
+		 */
+		slurmdb_wckey_rec_t *key = NULL;
+
+		if (user->wckey_list)
+			key = list_find_first(user->wckey_list,
+					      _match_wckey_name,
+					      user->default_wckey);
+
+		if (!key) {
+			if (!user->wckey_list)
+				user->wckey_list =
+					list_create(slurmdb_destroy_wckey_rec);
+
+			key = xmalloc(sizeof(*key));
+			slurmdb_init_wckey_rec(key, false);
+			key->name = xstrdup(user->default_wckey);
+			key->user = xstrdup(user->name);
+			key->cluster = xstrdup(slurm_conf.cluster_name);
+
+			list_append(user->wckey_list, key);
+		}
 	}
 
 	if (user->flags & SLURMDB_USER_FLAG_DELETED) {
