@@ -123,8 +123,8 @@ static int _foreach_del_cluster(void *x, void *arg)
 static void _delete_cluster(ctxt_t *ctxt, char *cluster)
 {
 	slurmdb_cluster_cond_t cluster_cond = {
-		.with_deleted = true,
 		.cluster_list = list_create(NULL),
+		.flags = NO_VAL,
 	};
 	foreach_del_cluster_t args = {
 		.magic = MAGIC_FOREACH_DEL_CLUSTER,
