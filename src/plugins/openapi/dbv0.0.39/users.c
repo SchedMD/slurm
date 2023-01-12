@@ -57,36 +57,13 @@
 
 #include "src/plugins/openapi/dbv0.0.39/api.h"
 
-#define MAGIC_FOREACH_USER 0xa13efef2
 #define MAGIC_QUERY_SEARCH 0x9e8dbee1
-
-typedef struct {
-	int magic; /* MAGIC_FOREACH_USER */
-	data_t *users;
-	ctxt_t *ctxt;
-} foreach_user_t;
 
 typedef struct {
 	int magic; /* MAGIC_QUERY_SEARCH */
 	ctxt_t *ctxt;
 	slurmdb_user_cond_t *user_cond;
 } foreach_query_search_t;
-
-static int _foreach_user(void *x, void *arg)
-{
-	slurmdb_user_rec_t *user = x;
-	foreach_user_t *args = arg;
-
-	xassert(args->magic == MAGIC_FOREACH_USER);
-	xassert(args->ctxt->magic == MAGIC_CTXT);
-	xassert(user);
-
-	if (DATA_DUMP(args->ctxt->parser, USER, *user,
-		      data_list_append(args->users)))
-		return -1;
-	else
-		return 0;
-}
 
 static data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 						 void *arg)
@@ -120,14 +97,12 @@ static data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 static void _dump_users(ctxt_t *ctxt, char *user_name,
 			slurmdb_user_cond_t *user_cond)
 {
+	data_t *dusers;
 	List user_list = NULL;
-	foreach_user_t args = {
-		.magic = MAGIC_FOREACH_USER,
-		.ctxt = ctxt,
-	};
 	slurmdb_assoc_cond_t assoc_cond = { 0 };
 
-	args.users = data_set_list(data_key_set(ctxt->resp, "users"));
+	dusers = data_key_set(ctxt->resp, "users");
+
 	user_cond->assoc_cond = &assoc_cond;
 	user_cond->with_assocs = true;
 	user_cond->with_coords = true;
@@ -140,7 +115,7 @@ static void _dump_users(ctxt_t *ctxt, char *user_name,
 	}
 
 	if (!db_query_list(ctxt, &user_list, slurmdb_users_get, user_cond))
-		list_for_each(user_list, _foreach_user, &args);
+		DATA_DUMP(ctxt->parser, USER_LIST, user_list, dusers);
 
 	FREE_NULL_LIST(user_list);
 	FREE_NULL_LIST(assoc_cond.user_list);
