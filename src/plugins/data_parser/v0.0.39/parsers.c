@@ -3897,7 +3897,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 	add_parser(slurmdb_assoc_rec_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(ASSOC_SHORT)[] = {
 	/* Identifiers required for any given association */
-	add_parse_req(STRING, acct, "account", NULL),
+	add_parse(STRING, acct, "account", NULL),
 	add_parse(STRING, cluster, "cluster", NULL),
 	add_parse(STRING, partition, "partition", NULL),
 	add_parse_req(STRING, user, "user", NULL),
@@ -3918,7 +3918,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_FLAGS)[] = {
 /* should mirror the structure of slurmdb_assoc_rec_t */
 static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_skip(accounting_list),
-	add_parse_req(STRING, acct, "account", NULL),
+	add_parse(STRING, acct, "account", NULL),
 	add_skip(assoc_next),
 	add_skip(assoc_next_id),
 	add_skip(bf_usage),
