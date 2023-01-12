@@ -1098,7 +1098,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		error("%s: [%s] auth_g_verify: %s has authentication error: %s",
 		      __func__, peer, rpc_num2string(header.msg_type),
 		      slurm_strerror(rc));
-		(void) auth_g_destroy(auth_cred);
+		auth_g_destroy(auth_cred);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto total_return;
 	}
@@ -1120,7 +1120,7 @@ skip_auth:
 	    _check_hash(buffer, &header, msg, auth_cred) ||
 	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
-		(void) auth_g_destroy(auth_cred);
+		auth_g_destroy(auth_cred);
 		goto total_return;
 	}
 
@@ -1388,7 +1388,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 
 		error("%s: [%s] auth_g_verify: %s has authentication error: %m",
 		      __func__, peer, rpc_num2string(header.msg_type));
-		(void) auth_g_destroy(auth_cred);
+		auth_g_destroy(auth_cred);
 		FREE_NULL_BUFFER(buffer);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto total_return;
@@ -1409,7 +1409,7 @@ skip_auth:
 	if ((header.body_length > remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, &msg, auth_cred) ||
 	    (unpack_msg(&msg, buffer) != SLURM_SUCCESS)) {
-		(void) auth_g_destroy(auth_cred);
+		auth_g_destroy(auth_cred);
 		FREE_NULL_BUFFER(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
@@ -1817,7 +1817,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 
 		error("%s: [%s] auth_g_verify: %s has authentication error: %m",
 		      __func__, peer, rpc_num2string(header.msg_type));
-		(void) auth_g_destroy(auth_cred);
+		auth_g_destroy(auth_cred);
 		FREE_NULL_BUFFER(buffer);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto total_return;
@@ -1836,7 +1836,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	if ( (header.body_length > remaining_buf(buffer)) ||
 	    _check_hash(buffer, &header, msg, auth_cred) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
-		(void) auth_g_destroy(auth_cred);
+		auth_g_destroy(auth_cred);
 		FREE_NULL_BUFFER(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
@@ -1940,7 +1940,7 @@ skip_auth1:
 		goto skip_auth2;
 
 	if (difftime(time(NULL), start_time) >= 60) {
-		(void) auth_g_destroy(auth_cred);
+		auth_g_destroy(auth_cred);
 		if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
 			auth_cred = auth_g_create(msg->auth_index,
 						  _global_auth_key(),
@@ -1969,12 +1969,12 @@ skip_auth1:
 	if (rc) {
 		error("%s: auth_g_pack: %s has  authentication error: %m",
 		      __func__, rpc_num2string(header.msg_type));
-		(void) auth_g_destroy(auth_cred);
+		auth_g_destroy(auth_cred);
 		FREE_NULL_BUFFER(buffers->auth);
 		FREE_NULL_BUFFER(buffers->body);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
-	(void) auth_g_destroy(auth_cred);
+	auth_g_destroy(auth_cred);
 	log_flag_hex(NET_RAW, get_buf_data(buffers->auth),
 		     get_buf_offset(buffers->auth),
 		     "%s: packed auth_cred", __func__);
@@ -3004,7 +3004,7 @@ extern void slurm_free_msg_members(slurm_msg_t *msg)
 {
 	if (msg) {
 		if (msg->auth_cred)
-			(void) auth_g_destroy(msg->auth_cred);
+			auth_g_destroy(msg->auth_cred);
 		FREE_NULL_BUFFER(msg->buffer);
 		slurm_free_msg_data(msg->msg_type, msg->data);
 		FREE_NULL_LIST(msg->ret_list);

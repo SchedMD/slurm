@@ -162,7 +162,7 @@ extern void spawn_req_pack(spawn_req_t *req, buf_t *buf)
 	 * of protocol mismatch.
 	 */
 	(void) auth_g_pack(auth_cred, buf, SLURM_PROTOCOL_VERSION);
-	(void) auth_g_destroy(auth_cred);
+	auth_g_destroy(auth_cred);
 
 	pack32(req->seq, buf);
 	packstr(req->from_node, buf);
@@ -213,7 +213,7 @@ extern int spawn_req_unpack(spawn_req_t **req_ptr, buf_t *buf)
 		return SLURM_ERROR;
 	}
 	auth_uid = auth_g_get_uid(auth_cred);
-	(void) auth_g_destroy(auth_cred);
+	auth_g_destroy(auth_cred);
 	my_uid = getuid();
 	if ((auth_uid != 0) && (auth_uid != my_uid)) {
 		error("mpi/pmi2: spawn request apparently from uid %u",
