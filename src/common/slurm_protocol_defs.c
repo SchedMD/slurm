@@ -6783,4 +6783,3 @@ fini:	if (rc != SLURM_SUCCESS) {
 
 	return rc;
 }
-
