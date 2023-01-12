@@ -2052,7 +2052,7 @@ fini:	if (ret == 0) {
  * validate_alloc_node - validate that the allocating node
  * is allowed to use this partition
  * IN part_ptr - pointer to a partition
- * IN alloc_node - allocting node of the request
+ * IN alloc_node - allocating node of the request
  * RET 1 if permitted to run, 0 otherwise
  */
 extern int validate_alloc_node(part_record_t *part_ptr, char *alloc_node)
