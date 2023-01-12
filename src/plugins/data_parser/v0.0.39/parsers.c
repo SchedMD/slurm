@@ -4087,16 +4087,19 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ACCOUNT_FLAGS)[] = {
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_account_rec_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(slurmdb_account_rec_t, mtype, true, field, 0, path, desc)
 /* should mirror the structure of slurmdb_account_rec_t */
 static const parser_t PARSER_ARRAY(ACCOUNT)[] = {
 	add_parse(ASSOC_SHORT_LIST, assoc_list, "associations", NULL),
 	add_parse(COORD_LIST, coordinators, "coordinators", NULL),
-	add_parse(STRING, description, "description", NULL),
-	add_parse(STRING, name, "name", NULL),
-	add_parse(STRING, organization, "organization", NULL),
+	add_parse_req(STRING, description, "description", NULL),
+	add_parse_req(STRING, name, "name", NULL),
+	add_parse_req(STRING, organization, "organization", NULL),
 	add_parse_bit_flag_array(slurmdb_account_rec_t, ACCOUNT_FLAGS, false, flags, "flags", NULL),
 };
 #undef add_parse
+#undef add_parse_req
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_accounting_rec_t, mtype, false, field, 0, path, desc)
