@@ -212,6 +212,9 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 				data_set_string(data_list_append(fenums),
 						parser->flag_bit_array[i].name);
 		} else if (parser->fields) {
+			data_t *required =
+				data_set_list(data_key_set(obj, "required"));
+
 			for (int i = 0; i < parser->field_count; i++) {
 				data_t *dchild;
 				const parser_t *const pchild =
@@ -220,6 +223,12 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 				if (pchild->model ==
 				    PARSER_MODEL_ARRAY_SKIP_FIELD)
 					continue;
+
+				if (pchild->required) {
+					data_set_string(
+						data_list_append(required),
+						pchild->field_name);
+				}
 
 				dchild = _resolve_parser_key(pchild, obj);
 				_set_ref(dchild, pchild, sargs);
