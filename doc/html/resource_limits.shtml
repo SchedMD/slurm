@@ -414,7 +414,7 @@ is treated as a Max limit.</p>
 <dt id="qos_maxjobsaccruepa"><b>MaxJobsAccruePerAccount</b>
 <a class="slurm_link" href="#qos_maxjobsaccruepa"></a></dt>
 <dd>The maximum number of pending jobs an
-  account (or subacct) can have accruing age priority at any given time.
+  account (or sub-account) can have accruing age priority at any given time.
   This limit does not determine if the job can run, it only limits the
   age factor of the priority.
 </dd>
@@ -429,8 +429,8 @@ is treated as a Max limit.</p>
 
 <dt id="qos_maxjobspa"><b>MaxJobsPerAccount</b>
 <a class="slurm_link" href="#qos_maxjobspa"></a></dt>
-<dd>The maximum number of jobs an account (or
-  subaccount) can have running at a given time.
+<dd>The maximum number of jobs an account (or sub-account) can have running at
+  a given time.
 </dd>
 
 <dt id="qos_maxjobspu"><b>MaxJobsPerUser</b>
@@ -441,8 +441,8 @@ is treated as a Max limit.</p>
 
 <dt id="qos_maxsubmitjobspa"><b>MaxSubmitJobsPerAccount</b>
 <a class="slurm_link" href="#qos_maxsubmitjobspa"></a></dt>
-<dd>The maximum number of jobs an account (or
-  subaccount) can have running and pending at a given time.
+<dd>The maximum number of jobs an account (or sub-account) can have running and
+  pending at a given time.
 </dd>
 
 <dt id="qos_maxsubmitjobspu"><b>MaxSubmitJobsPerUser</b>
