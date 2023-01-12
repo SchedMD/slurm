@@ -13492,7 +13492,32 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
 			acct_policy_limit_set.tres[TRES_ARRAY_NODE];
 		update_accounting = true;
+		FREE_NULL_BITMAP(detail_ptr->job_size_bitmap);
 	}
+	if (job_desc->job_size_str) {
+		if (detail_ptr->min_nodes && (detail_ptr->max_nodes != NO_VAL &&
+					      detail_ptr->max_nodes)) {
+			bitstr_t  *new_size_bitmap;
+			new_size_bitmap = bit_alloc(detail_ptr->max_nodes + 1);
+			if (bit_unfmt(new_size_bitmap,
+				      job_desc->job_size_str)) {
+				FREE_NULL_BITMAP(new_size_bitmap);
+				info("%s: %pJ: invalid job_size_str:%s",
+				     __func__, job_ptr, job_desc->job_size_str);
+				error_code = ESLURM_INVALID_NODE_COUNT;
+			} else {
+				FREE_NULL_BITMAP(detail_ptr->job_size_bitmap);
+				detail_ptr->job_size_bitmap = new_size_bitmap;
+			}
+		} else {
+			info("%s: %pJ: invalid job_size_str:%s", __func__,
+			     job_ptr, job_desc->job_size_str);
+			error_code = ESLURM_INVALID_NODE_COUNT;
+		}
+
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
 
 	if ((job_desc->num_tasks != NO_VAL) &&
 	    (job_desc->bitflags & TASKS_CHANGED)) {
