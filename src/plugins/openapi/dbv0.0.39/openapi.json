@@ -1209,12 +1209,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
+                  "$ref": "#/components/schemas/dbv0.0.39_clusters_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
+                  "$ref": "#/components/schemas/dbv0.0.39_clusters_info"
                 }
               }
             },
@@ -1262,12 +1262,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
+                  "$ref": "#/components/schemas/dbv0.0.39_clusters_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
+                  "$ref": "#/components/schemas/dbv0.0.39_clusters_info"
                 }
               }
             },
@@ -1334,12 +1334,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
+                "$ref": "#/components/schemas/dbv0.0.39_clusters_info"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
+                "$ref": "#/components/schemas/dbv0.0.39_clusters_info"
               }
             }
           },
@@ -2386,6 +2386,23 @@
           }
         }
       },
+      "dbv0.0.39_clusters_info": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/dbv0.0.39_meta"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/dbv0.0.39_errors"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/dbv0.0.39_warnings"
+          },
+          "clusters": {
+            "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
+          }
+        }
+      },
       "dbv0.0.39_config_info": {
         "type": "object",
         "properties": {
@@ -2415,6 +2432,9 @@
           },
           "wckeys": {
             "$ref": "DATA_PARSER_WCKEY_LIST"
+          },
+          "clusters": {
+            "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
           }
         }
       },
