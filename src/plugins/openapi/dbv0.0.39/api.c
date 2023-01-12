@@ -300,6 +300,15 @@ extern int db_query_list_funcname(ctxt_t *ctxt, List *list,
 		rc = ESLURM_REST_INVALID_QUERY;
 	}
 
+	if (rc == SLURM_NO_CHANGE_IN_DATA) {
+		if (ignore_empty_result) {
+			resp_warn(ctxt, caller,
+				  "%s(0x%" PRIxPTR ") reports nothing changed",
+				  func_name, (uintptr_t) ctxt->db_conn);
+			rc = SLURM_SUCCESS;
+		}
+	}
+
 	if (rc) {
 		return resp_error(ctxt, rc, caller, "%s(0x%" PRIxPTR ") failed",
 				  func_name, (uintptr_t) ctxt->db_conn);
