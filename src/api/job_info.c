@@ -403,6 +403,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char tmp_path[MAXPATHLEN];
 	uint16_t exit_status = 0, term_sig = 0;
 	job_resources_t *job_resrcs = job_ptr->job_resrcs;
+	char *job_size_str = NULL;
 	char *out = NULL;
 	time_t run_time;
 	uint32_t min_nodes, max_nodes = 0;
@@ -685,6 +686,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	if (IS_JOB_PENDING(job_ptr)) {
 		min_nodes = job_ptr->num_nodes;
 		max_nodes = job_ptr->max_nodes;
+		job_size_str = job_ptr->job_size_str;
 		if (max_nodes && (max_nodes < min_nodes))
 			min_nodes = max_nodes;
 	} else {
@@ -692,7 +694,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		max_nodes = 0;
 	}
 
-	_sprint_range(tmp_line, sizeof(tmp_line), min_nodes, max_nodes);
+	if (job_size_str)
+		snprintf(tmp_line, sizeof(tmp_line), "%s", job_size_str);
+	else
+		_sprint_range(tmp_line, sizeof(tmp_line), min_nodes, max_nodes);
 	xstrfmtcat(out, "NumNodes=%s ", tmp_line);
 	_sprint_range(tmp_line, sizeof(tmp_line), job_ptr->num_cpus, job_ptr->max_cpus);
 	xstrfmtcat(out, "NumCPUs=%s ", tmp_line);
