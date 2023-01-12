@@ -828,15 +828,17 @@ extern int scontrol_update_job(int argc, char **argv)
 			} else if (xstrcasecmp(val, "ALL") == 0) {
 				job_msg.min_nodes = INFINITE;
 			} else {
+				char *job_size_str = NULL;
 				min_nodes = (int) job_msg.min_nodes;
 				max_nodes = (int) job_msg.max_nodes;
 				rc = verify_node_count(val, &min_nodes,
 						       &max_nodes,
-						       NULL);
+						       &job_size_str);
 				if (!rc)
 					return rc;
 				job_msg.min_nodes = (uint32_t) min_nodes;
 				job_msg.max_nodes = (uint32_t) max_nodes;
+				job_msg.job_size_str = job_size_str;
 			}
 			update_size = true;
 			update_cnt++;
