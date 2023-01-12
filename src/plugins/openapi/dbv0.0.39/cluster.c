@@ -104,7 +104,7 @@ static void _dump_clusters(ctxt_t *ctxt, char *cluster)
 	if (db_query_list(ctxt, &cluster_list, slurmdb_clusters_get,
 			  &cluster_cond))
 		/* no-op - error already logged */;
-	else
+	else if (cluster_list)
 		list_for_each(cluster_list, _foreach_cluster, &args);
 
 	FREE_NULL_LIST(cluster_list);
