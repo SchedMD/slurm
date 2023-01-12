@@ -3331,33 +3331,30 @@ extern char *trigger_res_type(uint16_t res_type)
 extern char *health_check_node_state_str(uint32_t node_state)
 {
 	char *state_str = NULL;
+	char *sep = "";
 
-	if (node_state & HEALTH_CHECK_CYCLE)
+	if (node_state & HEALTH_CHECK_CYCLE) {
 		state_str = xstrdup("CYCLE");
-	else
-		state_str = xstrdup("");
+		sep = ",";
+	}
 
 	if ((node_state & HEALTH_CHECK_NODE_ANY) == HEALTH_CHECK_NODE_ANY) {
-		if (state_str[0])
-			xstrcat(state_str, ",");
-		xstrcat(state_str, "ANY");
+		xstrfmtcat(state_str, "%s%s", sep, "ANY");
 		return state_str;
 	}
 
 	if (node_state & HEALTH_CHECK_NODE_IDLE) {
-		if (state_str[0])
-			xstrcat(state_str, ",");
-		xstrcat(state_str, "IDLE");
+		xstrfmtcat(state_str, "%s%s", sep, "IDLE");
+		sep = ",";
 	}
 	if (node_state & HEALTH_CHECK_NODE_ALLOC) {
-		if (state_str[0])
-			xstrcat(state_str, ",");
-		xstrcat(state_str, "ALLOC");
+		xstrfmtcat(state_str, "%s%s", sep, "ALLOC");
+		sep = ",";
 	}
 	if (node_state & HEALTH_CHECK_NODE_MIXED) {
-		if (state_str[0])
-			xstrcat(state_str, ",");
-		xstrcat(state_str, "MIXED");
+		xstrfmtcat(state_str, "%s%s", sep, "MIXED");
+		sep = ",";
+	}
 	}
 
 	return state_str;
