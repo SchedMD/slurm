@@ -328,6 +328,14 @@ extern int unpackmem_array(char *valp, uint32_t size_valp, buf_t *buffer);
 	FREE_NULL_BITMAP(b);				\
 } while (0)
 
+#define unpack_bit_str_hex_as_fmt_str(str, buf) do {	\
+	bitstr_t *b = NULL;				\
+	unpack_bit_str_hex(&b, buf);			\
+	if (b)						\
+		*str = bit_fmt_full(b);			\
+	FREE_NULL_BITMAP(b);				\
+} while (0)
+
 #define safe_unpackstr(valp, buf) do {				\
 	uint32_t size_valp;					\
 	xassert(buf->magic == BUF_MAGIC);		        \
