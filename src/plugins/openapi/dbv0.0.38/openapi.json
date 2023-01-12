@@ -171,6 +171,22 @@
               }
             }
           }
+        },
+        "requestBody": {
+          "description": "Add or update config",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_set_config"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_set_config"
+              }
+            }
+          },
+          "required": false
         }
       }
     },
@@ -212,7 +228,23 @@
             }
           }
         },
-        "summary": "Set TRES info"
+        "summary": "Set TRES info",
+        "requestBody": {
+          "description": "Add or Update TRES",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_tres_update"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_tres_update"
+              }
+            }
+          },
+          "required": true
+        }
       },
       "get": {
         "tags": [
@@ -506,7 +538,23 @@
             }
           }
         },
-        "summary": "Set associations info"
+        "summary": "Set associations info",
+        "requestBody": {
+          "description": "Add or update associations",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_associations_info"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_associations_info"
+              }
+            }
+          },
+          "required": true
+        }
       },
       "get": {
         "tags": [
@@ -1462,7 +1510,23 @@
             }
           }
         },
-        "summary": "Add wckeys"
+        "summary": "Add wckeys",
+        "requestBody": {
+          "description": "add wckeys",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_wckey_info"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/dbv0.0.38_wckey_info"
+              }
+            }
+          },
+          "required": false
+        }
       }
     },
     "/account/{account_name}": {
@@ -1688,6 +1752,14 @@
             }
           },
           "required": true
+        }
+      },
+      "dbv0.0.38_tres_update": {
+        "type": "object",
+        "properties": {
+          "tres": {
+            "$ref": "#/components/schemas/dbv0.0.38_tres_list"
+          }
         }
       }
     },
@@ -2408,14 +2480,6 @@
       "dbv0.0.38_wckey": {
         "type": "object",
         "properties": {
-          "accounts": {
-            "type": "array",
-            "description": "List of assigned accounts",
-            "items": {
-              "type": "string",
-              "description": "Account name"
-            }
-          },
           "cluster": {
             "type": "string",
             "description": "Cluster name"
@@ -2438,6 +2502,13 @@
             "items": {
               "type": "string",
               "description": "String of property name"
+            }
+          },
+          "accounting": {
+            "type": "array",
+            "description": "List of accounting records",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_accounting"
             }
           }
         }
@@ -2777,14 +2848,6 @@
             "type": "integer",
             "description": "Assigned priority"
           },
-          "qos": {
-            "type": "array",
-            "description": "Assigned QOS",
-            "items": {
-              "type": "string",
-              "description": "Assigned single QOS name"
-            }
-          },
           "shares_raw": {
             "type": "integer",
             "description": "Raw fairshare shares"
@@ -2838,6 +2901,14 @@
           "user": {
             "type": "string",
             "description": "Assigned user"
+          },
+          "QOS": {
+            "type": "array",
+            "description": "Assigned QOS",
+            "items": {
+              "type": "string",
+              "description": "Assigned single QOS name"
+            }
           }
         }
       },
@@ -3983,7 +4054,8 @@
               "$ref": "#/components/schemas/dbv0.0.38_user"
             }
           }
-        }
+        },
+        "type": "object"
       },
       "dbv0.0.38_update_qos": {
         "properties": {
@@ -3993,7 +4065,8 @@
               "$ref": "#/components/schemas/dbv0.0.38_qos"
             }
           }
-        }
+        },
+        "type": "object"
       },
       "dbv0.0.38_update_account": {
         "properties": {
@@ -4003,7 +4076,8 @@
               "$ref": "#/components/schemas/dbv0.0.38_account"
             }
           }
-        }
+        },
+        "type": "object"
       },
       "dbv0.0.38_clusters_properties": {
         "type": "object",
@@ -4032,6 +4106,81 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "dbv0.0.38_tres_update": {
+        "type": "object",
+        "properties": {
+          "tres": {
+            "$ref": "#/components/schemas/dbv0.0.38_tres_list"
+          }
+        }
+      },
+      "dbv0.0.38_set_config": {
+        "type": "object",
+        "properties": {
+          "clusters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_clusters_properties"
+            }
+          },
+          "TRES": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_tres_list"
+            }
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_update_account"
+            }
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_user"
+            }
+          },
+          "qos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_qos"
+            }
+          },
+          "wckeys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_wckey"
+            }
+          },
+          "associations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_association"
+            }
+          }
+        }
+      },
+      "dbv0.0.38_accounting": {
+        "type": "object",
+        "properties": {
+          "allocated": {
+            "type": "integer",
+            "description": "total seconds allocated"
+          },
+          "id": {
+            "type": "integer",
+            "description": "association/wckey ID"
+          },
+          "start": {
+            "type": "integer",
+            "description": "UNIX timestamp when accounting period started"
+          },
+          "TRES": {
+            "$ref": "#/components/schemas/dbv0.0.38_tres_list"
           }
         }
       }

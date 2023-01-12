@@ -243,6 +243,8 @@ documents those changes that are of interest to users and administrators.
     connnection failing.
  -- Fix regression introduced in 22.05.0rc1 when updating a NodeName=<nodelist>
     with NodeAddr and/or NodeHostname if the specified nodelist wasn't sorted.
+ -- openapi/v0.0.38 - change type of nice field for job submissions to integer
+    from string.
 
 * Changes in Slurm 22.05.7
 ==========================
