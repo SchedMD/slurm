@@ -59,7 +59,6 @@
 
 #define MAGIC_FOREACH_USER 0xa13efef2
 #define MAGIC_QUERY_SEARCH 0x9e8dbee1
-#define MAGIC_USER_COORD 0x8e8dbee1
 
 typedef struct {
 	int magic; /* MAGIC_FOREACH_USER */
@@ -72,13 +71,6 @@ typedef struct {
 	ctxt_t *ctxt;
 	slurmdb_user_cond_t *user_cond;
 } foreach_query_search_t;
-
-typedef struct {
-	int magic; /* MAGIC_USER_COORD */
-	List acct_list; /* list of char *'s of names of accounts */
-	slurmdb_user_cond_t user_cond;
-	slurmdb_assoc_cond_t assoc_cond;
-} add_user_coord_t;
 
 static int _foreach_user(void *x, void *arg)
 {
@@ -155,79 +147,111 @@ static void _dump_users(ctxt_t *ctxt, char *user_name,
 	user_cond->assoc_cond = NULL;
 }
 
-static int _foreach_user_split_coord(void *x, void *arg)
-{
-	slurmdb_coord_rec_t *coord = x;
-	add_user_coord_t *uc = arg;
-
-	xassert(uc->magic == MAGIC_USER_COORD);
-
-	/* ignore inherited coordinators */
-	if (coord->direct)
-		list_append(uc->acct_list, xstrdup(coord->name));
-
-	return SLURM_SUCCESS;
-}
-
-static int _foreach_user_coord_split(void *x, void *arg)
+static int _foreach_update_user(void *x, void *arg)
 {
 	slurmdb_user_rec_t *user = x;
-#ifndef NDEBUG
-	List add_coord_list = arg;
-#endif
-	add_user_coord_t *uc;
-
-	xassert(list_count(add_coord_list) >= 0);
-
-	if (!user->coord_accts || list_is_empty(user->coord_accts))
-		/* nothing to do here */
-		return SLURM_SUCCESS;
-
-	uc = xmalloc(sizeof(*uc));
-	uc->magic = MAGIC_USER_COORD;
-	uc->acct_list = list_create(xfree_ptr);
-	uc->user_cond.assoc_cond = &uc->assoc_cond;
-	uc->assoc_cond.user_list = list_create(xfree_ptr);
-	list_append(uc->assoc_cond.user_list, xstrdup(user->name));
-
-	if (list_for_each(user->coord_accts, _foreach_user_split_coord, uc) < 0)
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
-}
-
-static int _foreach_user_coord_add(void *x, void *arg)
-{
-	int rc = SLURM_SUCCESS;
-	add_user_coord_t *uc = x;
 	ctxt_t *ctxt = arg;
+	list_t *user_list = NULL;
+	bool modify;
 
-	xassert(uc->magic == MAGIC_USER_COORD);
-	xassert(ctxt->magic == MAGIC_CTXT);
+	slurmdb_assoc_cond_t assoc_cond = {};
+	slurmdb_user_cond_t user_cond = {
+		.assoc_cond = &assoc_cond,
+	};
 
-	errno = 0;
-	if ((rc = slurmdb_coord_add(ctxt->db_conn, uc->acct_list,
-				    &uc->user_cond))) {
-		if (errno)
-			rc = errno;
+	assoc_cond.user_list = list_create(NULL);
 
-		resp_error(ctxt, rc, "slurmdb_coord_add",
-			   "adding coordinators failed");
-		return SLURM_ERROR;
+	if (user->old_name) {
+		list_append(assoc_cond.user_list, user->old_name);
+
+		if (db_query_list_xempty(ctxt, &user_list, slurmdb_users_get,
+					 &user_cond))
+			goto cleanup;
+
+		if (!user_list || list_is_empty(user_list)) {
+			resp_error(ctxt, ESLURM_USER_ID_MISSING, __func__,
+			   "Unable to rename non-existant user %s to %s",
+			   user->old_name, user->name);
+			goto cleanup;
+		}
+
+		list_flush(assoc_cond.user_list);
+		FREE_NULL_LIST(user_list);
+
+		list_append(assoc_cond.user_list, user->name);
+
+		if (db_query_list_xempty(ctxt, &user_list, slurmdb_users_get,
+					 &user_cond))
+			goto cleanup;
+
+		if (user_list && !list_is_empty(user_list)) {
+			resp_error(ctxt, ESLURM_DATA_AMBIGUOUS_MODIFY, __func__,
+			   "Unable to rename user %s to existing %s",
+			   user->old_name, user->name);
+			goto cleanup;
+		}
+
+		list_append(assoc_cond.user_list, user->old_name);
+		modify = true;
+	} else {
+		list_append(assoc_cond.user_list, user->name);
+
+		if (db_query_list_xempty(ctxt, &user_list, slurmdb_users_get,
+					 &user_cond))
+			goto cleanup;
+
+		if (!user_list || list_is_empty(user_list)) {
+			modify = false;
+		} else if (list_count(user_list) > 1) {
+			resp_error(ctxt, ESLURM_DATA_AMBIGUOUS_MODIFY, __func__,
+				   "ambiguous user modify request");
+			goto cleanup;
+		} else {
+			modify = true;
+		}
 	}
 
-	return SLURM_SUCCESS;
-}
 
-static void _destroy_user_coord_t(void *x)
-{
-	add_user_coord_t *uc = x;
-	xassert(uc->magic == MAGIC_USER_COORD);
+	if (user->assoc_list && list_count(user->assoc_list)) {
+		resp_warn(ctxt, __func__, "User %s associations list ignored. They must be set via the associations end point.",
+			  user->name);
+		FREE_NULL_LIST(user->assoc_list);
+	}
 
-	FREE_NULL_LIST(uc->acct_list);
-	FREE_NULL_LIST(uc->assoc_cond.user_list);
+	if (user->coord_accts && list_count(user->coord_accts)) {
+		resp_warn(ctxt, __func__, "User %s coordinators list ignored. They must be set via the coordinators or accounts end point.",
+			  user->name);
+		FREE_NULL_LIST(user->coord_accts);
+	}
 
-	xfree(uc);
+	if (user->flags & SLURMDB_USER_FLAG_DELETED) {
+		resp_warn(ctxt, __func__,
+			  "Ignoring request to set flag: DELETED");
+		user->flags &= ~SLURMDB_USER_FLAG_DELETED;
+	}
+
+	if (!modify) {
+		debug("%s: [%s] add user request: user=%s",
+		      __func__, ctxt->id, user->name);
+
+		if (!user_list)
+			user_list = list_create(NULL);
+		list_append(user_list, user);
+
+		db_query_rc(ctxt, user_list, slurmdb_users_add);
+	} else {
+		debug("%s: [%s] modifying user request: user=%s%s%s",
+		      __func__,
+		      ctxt->id, (user->old_name ? user->old_name : ""),
+		      (user->old_name ? "->" : ""), user->name);
+
+		db_modify_rc(ctxt, &user_cond, user, slurmdb_users_modify);
+	}
+
+cleanup:
+	FREE_NULL_LIST(assoc_cond.user_list);
+	FREE_NULL_LIST(user_list);
+	return ctxt->rc ? SLURM_ERROR : SLURM_SUCCESS;
 }
 
 static void _update_users(ctxt_t *ctxt, bool commit)
@@ -235,7 +259,6 @@ static void _update_users(ctxt_t *ctxt, bool commit)
 	data_t *parent_path = NULL;
 	data_t *dusers = get_query_key_list("users", ctxt, &parent_path);
 	List user_list = list_create(slurmdb_destroy_user_rec);
-	List add_coord_list = list_create(_destroy_user_coord_t);
 
 	if (!dusers) {
 		resp_warn(ctxt, __func__,
@@ -246,23 +269,14 @@ static void _update_users(ctxt_t *ctxt, bool commit)
 	if (DATA_PARSE(ctxt->parser, USER_LIST, user_list, dusers, parent_path))
 		goto cleanup;
 
-	/* split out the coordinators until after the users are added */
-	if (list_for_each(user_list, _foreach_user_coord_split,
-			  add_coord_list) < 0)
+	if (list_for_each(user_list, _foreach_update_user, ctxt) < 0)
 		goto cleanup;
 
-	if (db_query_rc(ctxt, user_list, slurmdb_users_add))
-		goto cleanup;
-
-	if (list_for_each(add_coord_list, _foreach_user_coord_add, ctxt) < 0)
-		goto cleanup;
-
-	if (commit)
+	if (!ctxt->rc && commit)
 		db_query_commit(ctxt);
 
 cleanup:
 	FREE_NULL_LIST(user_list);
-	FREE_NULL_LIST(add_coord_list);
 	FREE_NULL_DATA(parent_path);
 }
 
