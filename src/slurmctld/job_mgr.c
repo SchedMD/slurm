@@ -19438,10 +19438,10 @@ extern uint16_t get_job_share_value(job_record_t *job_ptr)
 	if (!detail_ptr)
 		shared = NO_VAL16;
 	else if (detail_ptr->share_res == 1)	/* User --share */
-		shared = 1;
+		shared = JOB_SHARED_OK;
 	else if ((detail_ptr->share_res == 0) ||
 		 (detail_ptr->whole_node == 1))
-		shared = 0;			/* User --exclusive */
+		shared = JOB_SHARED_NONE;	/* User --exclusive */
 	else if (detail_ptr->whole_node == WHOLE_NODE_USER)
 		shared = JOB_SHARED_USER;	/* User --exclusive=user */
 	else if (detail_ptr->whole_node == WHOLE_NODE_MCS)
@@ -19454,7 +19454,8 @@ extern uint16_t get_job_share_value(job_record_t *job_ptr)
 			 ((job_ptr->part_ptr->max_share & (~SHARED_FORCE)) > 1))
 			shared = 1; /* Partition OverSubscribe=force */
 		else if (job_ptr->part_ptr->max_share == 0)
-			shared = 0; /* Partition OverSubscribe=exclusive */
+			/* Partition OverSubscribe=exclusive */
+			shared = JOB_SHARED_NONE;
 		else
 			shared = NO_VAL16;  /* Part OverSubscribe=yes or no */
 	} else
