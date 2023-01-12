@@ -415,6 +415,8 @@ static void _do_power_work(time_t now)
 				    nodes);
 		data_set_string(data_key_set(job_node_data, "oversubscribe"),
 				job_share_string(get_job_share_value(job_ptr)));
+		data_set_string(data_key_set(job_node_data, "partition"),
+				job_ptr->part_ptr->name);
 		data_set_string(data_key_set(job_node_data, "reservation"),
 				job_ptr->resv_name);
 

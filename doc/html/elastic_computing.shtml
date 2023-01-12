@@ -74,6 +74,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
          "job_id" : 140814,
          "nodes" : "cloud[1-3]",
          "oversubscribe" : "OK",
+         "partition" : "cloud",
 	 "reservation" : "resv_1234"
       },
       {
@@ -82,6 +83,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
          "job_id" : 140815,
          "nodes" : "cloud[1-2]",
          "oversubscribe" : "OK",
+         "partition" : "cloud",
 	 "reservation" : null
       }
       {
@@ -90,6 +92,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
          "job_id" : 140816,
          "nodes" : "cloud[7-8]",
          "oversubscribe" : "NO",
+         "partition" : "cloud_exclusive",
 	 "reservation" : null
       }
    ]
