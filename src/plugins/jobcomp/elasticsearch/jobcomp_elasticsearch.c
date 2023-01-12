@@ -49,6 +49,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/slurm_xlator.h"
 #include "src/common/assoc_mgr.h"
 #include "src/common/data.h"
 #include "src/common/fd.h"

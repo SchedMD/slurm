@@ -36,6 +36,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+/*
+ * We can't include common/slurm_xlator.h here since it contains
+ * list_push and list_pop which are mysql macros what for some reason
+ * are given to us.  So if you need something from the header just
+ * copy it here.
+ */
+#define	error			slurm_error
+
 #include "mysql_jobcomp_process.h"
 #include <pwd.h>
 #include <grp.h>
