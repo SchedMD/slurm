@@ -410,6 +410,8 @@ static void _do_power_work(time_t now)
 			     job_ptr->job_id);
 		data_set_string(data_key_set(job_node_data, "features"),
 				job_ptr->details->features_use);
+		data_set_string_own(data_key_set(job_node_data, "nodes_alloc"),
+				    bitmap2node_name(job_ptr->node_bitmap));
 		nodes = bitmap2node_name(to_resume_bitmap);
 		data_set_string_own(data_key_set(job_node_data, "nodes"),
 				    nodes);
