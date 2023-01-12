@@ -1081,54 +1081,6 @@ cleanup:
 	return rc;
 }
 
-static int PARSE_FUNC(ADMIN_LVL)(const parser_t *const parser, void *obj,
-				 data_t *src, args_t *args, data_t *parent_path)
-{
-	int rc = SLURM_SUCCESS;
-	uint16_t *admin_level = obj;
-	char *path = NULL;
-
-	if (data_convert_type(src, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_REST_FAIL_PARSING,
-			      set_source_path(&path, parent_path),
-			      __func__,
-			      "unable to convert administrator level to string from type %s",
-			      data_type_to_string(data_get_type(src)));
-		goto cleanup;
-	}
-
-	xassert(args->magic == MAGIC_ARGS);
-
-	*admin_level = str_2_slurmdb_admin_level(data_get_string(src));
-
-	if (*admin_level == SLURMDB_ADMIN_NOTSET) {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_REST_FAIL_PARSING,
-			      set_source_path(&path, parent_path),
-			      __func__,
-			      "unable to parse %s as a known administrator level",
-			      data_get_string(src));
-		goto cleanup;
-	}
-
-cleanup:
-	xfree(path);
-	return rc;
-}
-
-static int DUMP_FUNC(ADMIN_LVL)(const parser_t *const parser, void *obj,
-				data_t *dst, args_t *args)
-{
-	uint16_t *admin_level = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-
-	(void) data_set_string(dst, slurmdb_admin_level_str(*admin_level));
-
-	return SLURM_SUCCESS;
-}
-
 PARSE_DISABLED(JOB_EXIT_CODE)
 
 static int DUMP_FUNC(JOB_EXIT_CODE)(const parser_t *const parser, void *obj,
@@ -3966,6 +3918,13 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 #undef add_parse_req
 #undef add_skip
 
+static const flag_bit_t PARSER_FLAG_ARRAY(ADMIN_LVL)[] = {
+	add_flag_equal(SLURMDB_ADMIN_NOTSET, INFINITE16, "Not Set"),
+	add_flag_equal(SLURMDB_ADMIN_NONE, INFINITE16, "None"),
+	add_flag_equal(SLURMDB_ADMIN_OPERATOR, INFINITE16, "Operator"),
+	add_flag_equal(SLURMDB_ADMIN_SUPER_USER, INFINITE16, "Administrator"),
+};
+
 static const flag_bit_t PARSER_FLAG_ARRAY(USER_FLAGS)[] = {
 	add_flag_equal(SLURMDB_USER_FLAG_NONE, INFINITE64, "NONE"),
 	add_flag_bit(SLURMDB_USER_FLAG_DELETED, "DELETED"),
@@ -5607,7 +5566,6 @@ static const parser_t parsers[] = {
 	addps(QOS_ID, uint32_t, NEED_QOS, STRING, NULL),
 	addpsa(QOS_STRING_ID_LIST, STRING, List, NEED_NONE, "List of QOS names"),
 	addpss(JOB_EXIT_CODE, int32_t, NEED_NONE, OBJECT, NULL),
-	addps(ADMIN_LVL, uint16_t, NEED_NONE, STRING, NULL),
 	addpsp(ASSOC_ID, ASSOC_SHORT_PTR, uint32_t, NEED_ASSOC, NULL),
 	addpss(STATS_REC_ARRAY, slurmdb_stats_rec_t, NEED_NONE, ARRAY, NULL),
 	addps(RPC_ID, slurmdbd_msg_type_t, NEED_NONE, STRING, NULL),
@@ -5761,6 +5719,7 @@ static const parser_t parsers[] = {
 	addfa(X11_FLAGS, uint16_t),
 	addfa(OPEN_MODE, uint8_t),
 	addfa(ACCT_GATHER_PROFILE, uint32_t),
+	addfa(ADMIN_LVL, uint16_t), /* slurmdb_admin_level_t */
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, NEED_QOS),
