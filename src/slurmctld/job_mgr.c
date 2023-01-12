@@ -17580,6 +17580,9 @@ reply:
 		debug("%s: Holding %pJ due to prolog failure",
 		      __func__, job_ptr);
 		job_ptr->priority = 0;
+	} else if (flags & JOB_LAUNCH_FAILED) {
+		job_ptr->batch_flag++;
+		_handle_requeue_limit(job_ptr, __func__);
 	}
 
 	/*
