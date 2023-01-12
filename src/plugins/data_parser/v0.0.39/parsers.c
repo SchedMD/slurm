@@ -1346,7 +1346,7 @@ static int DUMP_FUNC(SELECT_PLUGIN_ID)(const parser_t *const parser, void *obj,
 	if (s) {
 		data_set_string(dst, s);
 	} else
-		data_set_null(dst);
+		data_set_string(dst, "");
 
 	return SLURM_SUCCESS;
 }
