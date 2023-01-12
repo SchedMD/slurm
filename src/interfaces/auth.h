@@ -110,7 +110,7 @@ extern void auth_setuid_unlock(void);
  */
 extern void *auth_g_create(int index, char *auth_info, uid_t r_uid,
 			   void *data, int dlen);
-extern int auth_g_destroy(void *cred);
+extern void auth_g_destroy(void *cred);
 extern int auth_g_verify(void *cred, char *auth_info);
 extern uid_t auth_g_get_uid(void *cred);
 extern gid_t auth_g_get_gid(void *cred);

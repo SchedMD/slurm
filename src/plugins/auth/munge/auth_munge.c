@@ -116,7 +116,7 @@ typedef struct {
 
 extern auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data,
 					int dlen);
-extern int auth_p_destroy(auth_credential_t *cred);
+extern void auth_p_destroy(auth_credential_t *cred);
 
 /* Static prototypes */
 
@@ -251,12 +251,10 @@ again:
 /*
  * Free a credential that was allocated with auth_p_create().
  */
-int auth_p_destroy(auth_credential_t *cred)
+extern void auth_p_destroy(auth_credential_t *cred)
 {
-	if (!cred) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
-		return SLURM_ERROR;
-	}
+	if (!cred)
+		return;
 
 	xassert(cred->magic == MUNGE_MAGIC);
 
@@ -270,7 +268,6 @@ int auth_p_destroy(auth_credential_t *cred)
 		free(cred->data);
 
 	xfree(cred);
-	return SLURM_SUCCESS;
 }
 
 /*

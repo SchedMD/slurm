@@ -161,15 +161,13 @@ auth_credential_t *auth_p_create(char *auth_info, uid_t r_uid,
  * Free a credential that was allocated with auth_p_create() or
  * auth_p_unpack().
  */
-int auth_p_destroy(auth_credential_t *cred)
+extern void auth_p_destroy(auth_credential_t *cred)
 {
-	if (!cred) {
-		slurm_seterrno(ESLURM_AUTH_MEMORY);
-		return SLURM_ERROR;
-	}
+	if (!cred)
+		return;
+
 	xfree(cred->hostname);
 	xfree(cred);
-	return SLURM_SUCCESS;
 }
 
 /*

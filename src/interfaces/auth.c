@@ -64,7 +64,7 @@ typedef struct {
 	bool		(*hash_enable);
 	void *		(*create)	(char *auth_info, uid_t r_uid,
 					 void *data, int dlen);
-	int		(*destroy)	(void *cred);
+	void		(*destroy)	(void *cred);
 	int		(*verify)	(void *cred, char *auth_info);
 	uid_t		(*get_uid)	(void *cred);
 	gid_t		(*get_gid)	(void *cred);
@@ -330,16 +330,16 @@ void *auth_g_create(int index, char *auth_info, uid_t r_uid,
 	return cred;
 }
 
-int auth_g_destroy(void *cred)
+extern void auth_g_destroy(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
 	xassert(g_context_num > 0);
 
 	if (!wrap)
-		return SLURM_ERROR;
+		return;
 
-	return (*(ops[wrap->index].destroy))(cred);
+	(*(ops[wrap->index].destroy))(cred);
 }
 
 int auth_g_verify(void *cred, char *auth_info)

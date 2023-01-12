@@ -296,17 +296,14 @@ auth_token_t *auth_p_create(char *auth_info, uid_t r_uid, void *data, int dlen)
 	return xmalloc(sizeof(auth_token_t));
 }
 
-int auth_p_destroy(auth_token_t *cred)
+extern void auth_p_destroy(auth_token_t *cred)
 {
-	if (cred == NULL) {
-		slurm_seterrno(ESLURM_AUTH_MEMORY);
-		return SLURM_ERROR;
-	}
+	if (!cred)
+		return;
 
 	xfree(cred->token);
 	xfree(cred->username);
 	xfree(cred);
-	return SLURM_SUCCESS;
 }
 
 typedef struct {
