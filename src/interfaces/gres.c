@@ -1678,7 +1678,8 @@ static void _compare_conf_counts(List gres_conf_list_tmp, uint64_t count,
 	while ((gres_slurmd_conf = list_next(iter))) {
 		/* Note: plugin type filter already applied */
 		/* Check that type is the same */
-		if (xstrcasecmp(gres_slurmd_conf->type_name, type_name))
+		if (gres_slurmd_conf->type_name &&
+		    xstrcasecmp(gres_slurmd_conf->type_name, type_name))
 			continue;
 		/* Keep track of counts */
 		if (gres_slurmd_conf->count > count) {
