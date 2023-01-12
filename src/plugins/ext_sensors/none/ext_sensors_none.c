@@ -112,7 +112,7 @@ extern int ext_sensors_p_get_stependdata(step_record_t *step_rec)
 
 extern List ext_sensors_p_get_config(void)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 /*
