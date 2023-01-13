@@ -388,8 +388,24 @@ static int _parse_pointer(const parser_t *const parser, void *dst, data_t *src,
 	int rc;
 	void **ptr = dst;
 	const parser_t *const pt = find_parser_by_type(parser->pointer_type);
+	bool is_empty_dict = (pt->obj_openapi == OPENAPI_FORMAT_OBJECT) &&
+			     (data_get_type(src) == DATA_TYPE_DICT) &&
+			     !data_get_dict_length(src);
+	bool is_empty_list = (pt->obj_openapi == OPENAPI_FORMAT_ARRAY) &&
+			     (data_get_type(src) == DATA_TYPE_LIST) &&
+			     !data_get_list_length(src);
 
 	xassert(!*ptr);
+
+	if (is_empty_dict || is_empty_list) {
+		/*
+		 * Detect work around for OpenAPI clients being unable to handle
+		 * a null in place of a object/array by placing an empty
+		 * dict/array.
+		 */
+		*ptr = NULL;
+		return SLURM_SUCCESS;
+	}
 
 	*ptr = alloc_parser_obj(pt);
 
@@ -911,13 +927,33 @@ static int _dump_list(const parser_t *const parser, void *src, data_t *dst,
 static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 			 args_t *args)
 {
+	const parser_t *const pt = find_parser_by_type(parser->pointer_type);
 	void **ptr = src;
 
-	if (!*ptr)
-		return SLURM_SUCCESS;
+	if (!*ptr) {
+		if ((pt->model == PARSER_MODEL_ARRAY) ||
+		    (pt->obj_openapi == OPENAPI_FORMAT_OBJECT)) {
+			/*
+			 * OpenAPI clients can't handle a null instead of an
+			 * object. Work around by placing an empty dictionary
+			 * instead of null.
+			 */
+			data_set_dict(dst);
+		} else if ((pt->model == PARSER_MODEL_LIST) ||
+			   (pt->model == PARSER_MODEL_NT_ARRAY) ||
+			   (pt->obj_openapi == OPENAPI_FORMAT_ARRAY)) {
+			/*
+			 * OpenAPI clients can't handle a null instead of an
+			 * array. Work around by placing an empty list instead
+			 * of null.
+			 */
+			data_set_list(dst);
+		}
 
-	return data_parser_p_dump(args, parser->pointer_type, *ptr, NO_VAL,
-				  dst);
+		return SLURM_SUCCESS;
+	}
+
+	return dump(src, NO_VAL, pt, dst, args);
 }
 
 static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
