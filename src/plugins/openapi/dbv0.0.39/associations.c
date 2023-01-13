@@ -166,7 +166,8 @@ static void _dump_assoc_cond(ctxt_t *ctxt, slurmdb_assoc_cond_t *cond,
 		goto cleanup;
 	}
 
-	(void) list_for_each(assoc_list, _foreach_assoc, &args);
+	if (assoc_list)
+		list_for_each(assoc_list, _foreach_assoc, &args);
 
 cleanup:
 	FREE_NULL_LIST(assoc_list);
