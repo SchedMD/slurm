@@ -881,7 +881,7 @@ static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 	if ((rc = PARSE(TRES_LIST, tres_list, src, parent_path, args)))
 		goto cleanup;
 
-	(void) list_for_each(tres_list, _foreach_resolve_tres_id, &args);
+	list_for_each(tres_list, _foreach_resolve_tres_id, args);
 
 	if ((*tres = slurmdb_make_tres_string(tres_list,
 					      TRES_STR_FLAG_SIMPLE))) {
