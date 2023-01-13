@@ -381,8 +381,8 @@ static int _foreach_update_assoc(void *x, void *arg)
 	list_append(cond.user_list, (assoc->user ? assoc->user : ""));
 
 	/* first query is an existence check and we don't care about errors */
-	if ((rc = db_query_list(ctxt, &assoc_list, slurmdb_associations_get,
-				&cond)) ||
+	if ((rc = db_query_list_xempty(ctxt, &assoc_list,
+				       slurmdb_associations_get, &cond)) ||
 	    !assoc_list || list_is_empty(assoc_list)) {
 		debug("%s: [%s] adding association request: acct=%s cluster=%s partition=%s user=%s existence_check[%d]:%s",
 		      __func__, ctxt->id, assoc->acct, assoc->cluster,
