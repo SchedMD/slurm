@@ -764,6 +764,12 @@ enum acct_energy_type {
 	ENERGY_DATA_STEP_PTR
 };
 
+typedef enum {
+	UPDATE_SET, /* Set to specified value */
+	UPDATE_ADD, /* Append to existing value (+=)*/
+	UPDATE_REMOVE, /* Remove from existing vale (-=) */
+} update_mode_t;
+
 /*
  * Task distribution states/methods
  *
@@ -1945,6 +1951,11 @@ typedef struct step_update_request_msg {
 	uint32_t step_id;
 	uint32_t time_limit;	/* In minutes */
 } step_update_request_msg_t;
+
+typedef struct suspend_exc_update_msg {
+	char *update_str;
+	update_mode_t mode;
+} suspend_exc_update_msg_t;
 
 typedef struct {
 	char *node_list; /* nodelist corresponding to task layout */
@@ -4761,6 +4772,30 @@ extern int slurm_set_schedlog_level(uint32_t schedlog_level);
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_set_fs_dampeningfactor(uint16_t factor);
+
+/*
+ * slurm_update_suspend_exc_nodes - issue RPC to set SuspendExcNodes
+ * IN nodes - string to set
+ * IN mode - Whether to set, append or remove nodes from the setting
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+extern int slurm_update_suspend_exc_nodes(char *nodes, update_mode_t mode);
+
+/*
+ * slurm_update_suspend_exc_parts - issue RPC to set SuspendExcParts
+ * IN parts - string to set
+ * IN mode - Whether to set, append or remove partitions from the setting
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+extern int slurm_update_suspend_exc_parts(char *parts, update_mode_t mode);
+
+/*
+ * slurm_update_suspend_exc_states - issue RPC to set SuspendExcStates
+ * IN states - string to set
+ * IN mode - Whether to set, append or remove states from the setting
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+extern int slurm_update_suspend_exc_states(char *states, update_mode_t mode);
 
 /*****************************************************************************\
  *      SLURM JOB SUSPEND FUNCTIONS

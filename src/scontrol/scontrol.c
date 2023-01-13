@@ -1828,7 +1828,10 @@ static void _update_it(int argc, char **argv)
 	int node_tag = 0, part_tag = 0, job_tag = 0;
 	int res_tag = 0;
 	int debug_tag = 0, step_tag = 0, front_end_tag = 0;
+	int suspend_exc_nodes_tag = 0, suspend_exc_parts_tag = 0,
+	    suspend_exc_states_tag = 0;
 	int jerror_code = SLURM_SUCCESS;
+	update_mode_t mode = UPDATE_SET;
 
 	/* First identify the entity to update */
 	for (i=0; i<argc; i++) {
@@ -1841,6 +1844,13 @@ static void _update_it(int argc, char **argv)
 			++i;
 		} else {
 			tag_len = val - argv[i];
+			if ((*(val - 1) == '+')){
+				mode = UPDATE_ADD;
+				tag_len--;
+			} else if ((*(val - 1) == '-')) {
+				mode = UPDATE_REMOVE;
+				tag_len--;
+			}
 			val++;
 		}
 		if (!xstrncasecmp(tag, "NodeName", MAX(tag_len, 3))) {
@@ -1862,6 +1872,15 @@ static void _update_it(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "SlurmctldDebug",
 					 MAX(tag_len, 2))) {
 			debug_tag = 1;
+		} else if (!xstrncasecmp(tag, "SuspendExcNodes",
+					 MAX(tag_len, 11))) {
+			suspend_exc_nodes_tag = 1;
+		} else if (!xstrncasecmp(tag, "SuspendExcParts",
+					 MAX(tag_len, 11))) {
+			suspend_exc_parts_tag = 1;
+		} else if (!xstrncasecmp(tag, "SuspendExcStates",
+					 MAX(tag_len, 11))) {
+			suspend_exc_states_tag = 1;
 		}
 	}
 	/* The order of tests matters here.  An update job request can include
@@ -1885,6 +1904,12 @@ static void _update_it(int argc, char **argv)
 		error_code = scontrol_update_part (argc, argv);
 	else if (debug_tag)
 		error_code = _update_slurmctld_debug(val);
+	else if (suspend_exc_nodes_tag)
+		error_code = slurm_update_suspend_exc_nodes(val, mode);
+	else if (suspend_exc_parts_tag)
+		error_code = slurm_update_suspend_exc_parts(val, mode);
+	else if (suspend_exc_states_tag)
+		error_code = slurm_update_suspend_exc_states(val, mode);
 	else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in update command\n");

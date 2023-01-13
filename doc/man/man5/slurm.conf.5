@@ -5427,6 +5427,7 @@ powered down.
 Multiple sets of nodes can be specified with or without counts in a comma
 separated list (e.g "nid[10\-20]:4,nid[80\-90]:2").
 By default no nodes are excluded.
+This value may be updated with scontrol.
 See \fBReconfigFlags=KeepPowerSaveSettings\fR for setting persistence.
 .IP
 
@@ -5436,6 +5437,7 @@ Specifies the partitions whose nodes are to not be placed in power save
 mode, even if the node remains idle for an extended period of time.
 Multiple partitions can be identified and separated by commas.
 By default no nodes are excluded.
+This value may be updated with scontrol.
 See \fBReconfigFlags=KeepPowerSaveSettings\fR for setting persistence.
 .IP
 
@@ -5446,6 +5448,7 @@ Valid states include CLOUD, DOWN, DRAIN, DYNAMIC_FUTURE, DYNAMIC_NORM, FAIL,
 INVALID_REG, MAINTENANCE, NOT_RESPONDING, PERFCTRS, PLANNED, and RESERVED.
 By default, any of these states, if idle for \fBSuspendTime\fR, would be
 powered down.
+This value may be updated with scontrol.
 See \fBReconfigFlags=KeepPowerSaveSettings\fR for setting persistence.
 .IP
 

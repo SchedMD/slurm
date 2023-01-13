@@ -5283,6 +5283,197 @@ static void _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
+static char *_update_hostset_from_mode(char *update_str,
+				       update_mode_t mode,
+				       char *current_str)
+{
+	char *new_str = NULL;
+
+	if (mode == UPDATE_SET) {
+		if (*update_str)
+			new_str = xstrdup(update_str);
+	} else {
+		hostset_t current_hostset = hostset_create(current_str);
+		if (mode == UPDATE_ADD) {
+			hostset_insert(current_hostset, update_str);
+		} else if (mode == UPDATE_REMOVE) {
+			hostset_delete(current_hostset, update_str);
+		} /* If bad mode is sent do nothing */
+
+		if (hostset_count(current_hostset))
+			new_str =
+				hostset_ranged_string_xmalloc(current_hostset);
+		hostset_destroy(current_hostset);
+	}
+	return new_str;
+}
+
+static char *_update_string_from_mode(char *update_str,
+				      update_mode_t mode,
+				      char *current_str,
+				      bool lower_case_normalization)
+{
+	char *new_str = NULL;
+
+	if (mode == UPDATE_ADD) {
+		if (current_str && *current_str) {
+			list_t *current_list = list_create(xfree_ptr);
+
+			slurm_addto_char_list_with_case(
+				current_list, current_str,
+				lower_case_normalization);
+			if (*update_str)
+				slurm_addto_char_list_with_case(
+					current_list, update_str,
+					lower_case_normalization);
+			new_str = slurm_char_list_to_xstr(current_list);
+
+			FREE_NULL_LIST(current_list);
+		} else if (*update_str) {
+			new_str = xstrdup(update_str);
+		}
+	} else if (mode == UPDATE_REMOVE) {
+		if (current_str && *current_str) {
+			list_t *current_list = list_create(xfree_ptr);
+			list_t *rem_list = list_create(xfree_ptr);
+
+			slurm_addto_char_list_with_case(
+				current_list, current_str,
+				lower_case_normalization);
+			slurm_addto_char_list_with_case(
+				rem_list, update_str,
+				lower_case_normalization);
+
+			slurm_remove_char_list_from_char_list(current_list,
+							      rem_list);
+			new_str = slurm_char_list_to_xstr(current_list);
+
+			FREE_NULL_LIST(current_list);
+			FREE_NULL_LIST(rem_list);
+		}
+	} else if (mode == UPDATE_SET) {
+		if (*update_str)
+			new_str = xstrdup(update_str);
+	} else	{ /* If bad mode is sent do nothing */
+		error("bad update mode %d", mode);
+		if (current_str && *current_str)
+			new_str = xstrdup(current_str);
+	}
+
+	return new_str;
+}
+
+static void _set_power_save_settings(char *new_str, char **slurm_conf_setting)
+{
+	slurmctld_lock_t locks = {
+		.conf = WRITE_LOCK,
+		.node = READ_LOCK,
+		.part = READ_LOCK
+	};
+
+	lock_slurmctld(locks);
+	xfree(*slurm_conf_setting);
+	*slurm_conf_setting = new_str;
+	slurm_conf.last_update = time(NULL);
+	power_save_exc_setup(); /* Reload power save settings */
+	unlock_slurmctld(locks);
+}
+
+static void _slurm_rpc_set_suspend_exc_nodes(slurm_msg_t *msg)
+{
+	suspend_exc_update_msg_t *update_msg = msg->data;
+	char *new_str;
+
+	if (!validate_super_user(msg->auth_uid)) {
+		error("set SuspendExcNodes request from non-super user uid=%u",
+		      msg->auth_uid);
+		slurm_send_rc_msg(msg, EACCES);
+		return;
+	}
+
+	if ((update_msg->mode != UPDATE_SET) &&
+	    (xstrchr(slurm_conf.suspend_exc_nodes, ':') ||
+	     xstrchr(update_msg->update_str, ':'))) {
+		error("Append and remove from SuspendExcNodes with ':' is not supported. Please use direct assignment instead.");
+		slurm_send_rc_msg(msg, ESLURM_INVALID_NODE_NAME);
+		return;
+	}
+
+	new_str = _update_hostset_from_mode(update_msg->update_str,
+					    update_msg->mode,
+					    slurm_conf.suspend_exc_nodes);
+
+	if (!xstrcmp(new_str, slurm_conf.suspend_exc_nodes)) {
+		info("SuspendExcNodes did not change from %s with update: %s",
+		      slurm_conf.suspend_exc_nodes, update_msg->update_str);
+		xfree(new_str);
+	} else {
+		info("Setting SuspendExcNodes to '%s'", new_str);
+		_set_power_save_settings(new_str,
+					 &slurm_conf.suspend_exc_nodes);
+	}
+
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+}
+
+static void _slurm_rpc_set_suspend_exc_parts(slurm_msg_t *msg)
+{
+	suspend_exc_update_msg_t *update_msg = msg->data;
+	char *new_str;
+
+	if (!validate_super_user(msg->auth_uid)) {
+		error("set SuspendExcParts request from non-super user uid=%u",
+		      msg->auth_uid);
+		slurm_send_rc_msg(msg, EACCES);
+		return;
+	}
+
+	new_str = _update_string_from_mode(update_msg->update_str,
+					   update_msg->mode,
+					   slurm_conf.suspend_exc_parts, false);
+
+	if (!xstrcmp(new_str, slurm_conf.suspend_exc_parts)) {
+		info("SuspendExcParts did not change from %s with update: %s",
+		      slurm_conf.suspend_exc_parts, update_msg->update_str);
+		xfree(new_str);
+	} else {
+		info("Setting SuspendExcParts to '%s'", new_str);
+		_set_power_save_settings(new_str,
+					 &slurm_conf.suspend_exc_parts);
+	}
+
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+}
+
+static void _slurm_rpc_set_suspend_exc_states(slurm_msg_t *msg)
+{
+	suspend_exc_update_msg_t *update_msg = msg->data;
+	char *new_str;
+
+	if (!validate_super_user(msg->auth_uid)) {
+		error("set SuspendExcStates request from non-super user uid=%u",
+		      msg->auth_uid);
+		slurm_send_rc_msg(msg, EACCES);
+		return;
+	}
+
+	new_str = _update_string_from_mode(update_msg->update_str,
+					   update_msg->mode,
+					   slurm_conf.suspend_exc_states,
+					   true);
+
+	if (!xstrcmp(new_str, slurm_conf.suspend_exc_states)) {
+		info("SuspendExcStates did not change from %s with update: %s",
+		      slurm_conf.suspend_exc_states, update_msg->update_str);
+		xfree(new_str);
+	} else {
+		info("Setting SuspendExcStates to '%s'", new_str);
+		_set_power_save_settings(new_str, &slurm_conf.suspend_exc_states);
+	}
+
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+}
+
 static void _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 {
 	int schedlog_level;
@@ -6560,6 +6751,15 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_SET_SCHEDLOG_LEVEL,
 		.func = _slurm_rpc_set_schedlog_level,
+	},{
+		.msg_type = REQUEST_SET_SUSPEND_EXC_NODES,
+		.func = _slurm_rpc_set_suspend_exc_nodes,
+	},{
+		.msg_type = REQUEST_SET_SUSPEND_EXC_PARTS,
+		.func = _slurm_rpc_set_suspend_exc_parts,
+	},{
+		.msg_type = REQUEST_SET_SUSPEND_EXC_STATES,
+		.func = _slurm_rpc_set_suspend_exc_states,
 	},{
 		.msg_type = ACCOUNTING_UPDATE_MSG,
 		.func = _slurm_rpc_accounting_update_msg,

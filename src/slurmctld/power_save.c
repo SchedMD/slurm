@@ -794,6 +794,12 @@ static int _set_partition_options(void *x, void *arg)
  */
 extern void power_save_exc_setup(void)
 {
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+	xassert(verify_lock(NODE_LOCK, READ_LOCK));
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
+
+	FREE_NULL_BITMAP(exc_node_bitmap);
+
 	if (slurm_conf.suspend_exc_nodes &&
 	    (_parse_exc_nodes() != SLURM_SUCCESS))
 		error("Invalid SuspendExcNodes %s some nodes may be ignored.",

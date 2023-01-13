@@ -5350,6 +5350,15 @@ extern void slurm_free_crontab_update_response_msg(
 	xfree(msg);
 }
 
+extern void slurm_free_suspend_exc_update_msg(suspend_exc_update_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->update_str);
+	xfree(msg);
+}
+
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
 	if (!data)
@@ -5708,6 +5717,11 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SET_FS_DAMPENING_FACTOR:
 		slurm_free_set_fs_dampening_factor_msg(data);
 		break;
+	case REQUEST_SET_SUSPEND_EXC_NODES:
+	case REQUEST_SET_SUSPEND_EXC_PARTS:
+	case REQUEST_SET_SUSPEND_EXC_STATES:
+		slurm_free_suspend_exc_update_msg(data);
+		break;
 	case RESPONSE_CONTROL_STATUS:
 		slurm_free_control_status_msg(data);
 		break;
@@ -5900,6 +5914,12 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_LICENSE_INFO";
 	case REQUEST_SET_FS_DAMPENING_FACTOR:
 		return "REQUEST_SET_FS_DAMPENING_FACTOR,";
+	case REQUEST_SET_SUSPEND_EXC_NODES:
+		return "REQUEST_SET_SUSPEND_EXC_NODES";
+	case REQUEST_SET_SUSPEND_EXC_PARTS:
+		return "REQUEST_SET_SUSPEND_EXC_PARTS";
+	case REQUEST_SET_SUSPEND_EXC_STATES:
+		return "REQUEST_SET_SUSPEND_EXC_STATES";
 
 	case REQUEST_BUILD_INFO:				/* 2001 */
 		return "REQUEST_BUILD_INFO";
