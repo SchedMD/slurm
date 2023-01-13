@@ -526,7 +526,7 @@ static int DUMP_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 	xassert(args->magic == MAGIC_ARGS);
 
 	if (*qos_id == 0) {
-		data_set_null(dst);
+		data_set_string(dst, "");
 		return SLURM_SUCCESS;
 	}
 
