@@ -114,8 +114,17 @@ def test_core_spec_override(node_names):
 
     assert output == total_cores - 2, f"--core-spec=1 should allocate all cores except 1 per node"
 
-    exit_code = atf.run_job_exit(f" -w {node_names} -N2 --core-spec=2 -n{total_cores} true", xfail=True)
-    assert exit_code != 0, "--core-spec cannot be bigger than CoreSpecCount"
+    job_id = atf.submit_job(f"-w {node_names} --core-spec=2 -n{total_cores - 4} --wrap='srun true'")
+    atf.wait_for_job_state(job_id, "DONE")
+
+    output = int(re.findall(
+	    rf'{job_id}\.0\s+(\d+)',
+	    atf.run_command_output(f"sacct -j {job_id} -o jobid%20,alloccpus"))[0])
+
+    assert output == total_cores - 4, f"--core-spec=2 should allocate all cores except 2 per node"
+
+    exit_code = atf.run_job_exit(f" -w {node_names} -N2 --core-spec=2 -n{available_cores} true", xfail=True)
+    assert exit_code != 0, "--core-spec limits the available cores in nodes"
 
 
 def test_thread_spec_override(node_names):
