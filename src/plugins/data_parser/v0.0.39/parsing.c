@@ -1001,13 +1001,9 @@ cleanup:
 static void _check_dump(const parser_t *const parser, data_t *dst, args_t *args)
 {
 	/*
-	 * Resultant dump must be either NULL (aka unset) or the
-	 * proscribed OpenAPI compatible data_t type. Anything else will
-	 * break most generated OpenAPI clients.
+	 * Resultant dump must be the proscribed OpenAPI compatible data_t type.
+	 * Anything else will break most generated OpenAPI clients.
 	 */
-	if (data_get_type(dst) == DATA_TYPE_NULL)
-		return;
-
 	if (parser->obj_openapi == OPENAPI_FORMAT_INVALID)
 		return;
 
