@@ -11282,8 +11282,6 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 					ntasks_per_node;
 				min_nodes = MAX(min_nodes,
 						detail_ptr->min_nodes);
-				if (detail_ptr->num_tasks % ntasks_per_node)
-					min_nodes++;
 				pack32(min_nodes, buffer);
 				pack32(detail_ptr->max_nodes, buffer);
 			} else if (detail_ptr->mc_ptr &&

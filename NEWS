@@ -237,6 +237,8 @@ documents those changes that are of interest to users and administrators.
     request.
  -- job_container/tmpfs - Add "Shared" option to support shared namespaces.
     This allows autofs to work with the job_container/tmpfs plugin when enabled.
+ -- Fix incorrect min node estimation for pending jobs as displayed by client
+    commands (e.g. squeue, scontrol show job).
 
 * Changes in Slurm 22.05.8
 ==========================
