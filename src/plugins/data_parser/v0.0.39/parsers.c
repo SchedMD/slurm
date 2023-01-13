@@ -4612,7 +4612,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ACCT_GATHER_PROFILE)[] = {
 
 static const flag_bit_t PARSER_FLAG_ARRAY(JOB_SHARED)[] = {
 	add_flag_equal(JOB_SHARED_NONE, INFINITE16, "none"),
-	add_flag_equal(JOB_SHARED_OK, INFINITE16, "shared"),
+	add_flag_equal(JOB_SHARED_OK, INFINITE16, "oversubscribe"),
 	add_flag_equal(JOB_SHARED_USER, INFINITE16, "user"),
 	add_flag_equal(JOB_SHARED_MCS, INFINITE16, "mcs"),
 };
