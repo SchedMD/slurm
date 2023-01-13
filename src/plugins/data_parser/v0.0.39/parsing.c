@@ -1130,7 +1130,11 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 
 		xassert(parser->dump != _dump_list);
 
-		/* must be a simple or complex type */
+		/*
+		 * parser->pointer_type and parser->array_type may be set but
+		 * they are only used to OpenAPI typing and are ignored here.
+		 */
+
 		rc = parser->dump(parser, src, dst, args);
 		_check_dump(parser, dst, args);
 		break;
