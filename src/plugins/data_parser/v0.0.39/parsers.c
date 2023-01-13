@@ -855,7 +855,7 @@ static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
 	char **tres = obj;
-	int rc;
+	int rc = SLURM_SUCCESS;
 	List tres_list = NULL;
 	char *path = NULL;
 
@@ -875,6 +875,11 @@ static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 			      set_source_path(&path, parent_path), __func__,
 			      "TRES should be LIST but is type %s",
 			      data_type_to_string(data_get_type(src)));
+		goto cleanup;
+	}
+
+	if (!data_get_list_length(src)) {
+		/* Ignore empty list used as workaround for OpenAPI clients */
 		goto cleanup;
 	}
 
@@ -917,9 +922,14 @@ static int DUMP_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 				__func__, "TRES conversion requires TRES list");
 	}
 
-	if (!*tres || !*tres[0])
-		/* ignore empty TRES strings */
+	if (!*tres || !*tres[0]) {
+		/*
+		 * Ignore empty TRES strings but set result as List for OpenAPI
+		 * clients.
+		 */
+		data_set_list(dst);
 		return SLURM_SUCCESS;
+	}
 
 	slurmdb_tres_list_from_string(&tres_list, *tres, TRES_STR_FLAG_BYTES);
 
