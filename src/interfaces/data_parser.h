@@ -45,14 +45,15 @@ typedef enum {
 	DATA_PARSER_BITSTR, /* bitstr_t */
 	DATA_PARSER_STRING, /* char* */
 	DATA_PARSER_UINT16, /* uint16_t */
-	DATA_PARSER_UINT16_NO_VAL, /* uint16_t - NO_VAL if unset */
+	DATA_PARSER_UINT16_NO_VAL, /* uint16_t - may be NO_VAL16 or INFINTE16 */
 	DATA_PARSER_UINT32, /* uint32_t */
-	DATA_PARSER_UINT32_NO_VAL, /* uint32_t - NO_VAL if unset */
+	DATA_PARSER_UINT32_NO_VAL, /* uint32_t - maybe NO_VAL or INFINTE*/
 	DATA_PARSER_UINT64, /* uint64_t */
+	DATA_PARSER_UINT64_NO_VAL, /* uint64_t - NO_VAL64 or INFINTE64 */
 	DATA_PARSER_INT64, /* int64_t */
 	DATA_PARSER_FLOAT128, /* long double */
 	DATA_PARSER_FLOAT64, /* double */
-	DATA_PARSER_FLOAT64_NO_VAL, /* double - NO_VAL/INFINITE if unset*/
+	DATA_PARSER_FLOAT64_NO_VAL, /* double - may be NO_VAL of INFINITE */
 	DATA_PARSER_BOOL, /* uint8_t */
 	DATA_PARSER_BOOL16, /* uint16_t */
 	DATA_PARSER_BOOL16_NO_VAL, /* uint16_t - false if NO_VAL16 */

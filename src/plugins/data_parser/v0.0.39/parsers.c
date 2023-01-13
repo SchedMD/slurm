@@ -150,6 +150,14 @@ typedef struct {
 	args_t *args;
 } foreach_string_array_t;
 
+static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
+				     data_t *str, args_t *args,
+				     data_t *parent_path);
+static void SPEC_FUNC(UINT64_NO_VAL)(const parser_t *const parser, args_t *args,
+				     data_t *spec, data_t *dst);
+static int PARSE_FUNC(UINT64)(const parser_t *const parser, void *obj,
+			      data_t *str, args_t *args, data_t *parent_path);
+
 #ifndef NDEBUG
 static void _check_flag_bit(int8_t i, const flag_bit_t *bit)
 {
@@ -1644,6 +1652,11 @@ static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 				      data_t *parent_path)
 {
 	double *dst = obj;
+	data_t *dset, *dinf, *dnum;
+	bool set = false, inf = false;
+	double num = NAN;
+	char *path = NULL;
+	int rc = SLURM_SUCCESS;
 
 	xassert(sizeof(double) * 8 == 64);
 	xassert(args->magic == MAGIC_ARGS);
@@ -1653,24 +1666,128 @@ static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	return PARSE_FUNC(FLOAT64)(parser, obj, str, args, parent_path);
+	if (data_get_type(str) == DATA_TYPE_FLOAT)
+		return PARSE_FUNC(FLOAT64)(parser, obj, str, args, parent_path);
+
+	if (data_get_type(str) != DATA_TYPE_DICT) {
+		rc = on_error(PARSING, parser->type, args,
+			      ESLURM_DATA_EXPECTED_DICT,
+			      set_source_path(&path, parent_path),
+			      __func__, "Expected dictionary but got %s",
+			      data_type_to_string(data_get_type(str)));
+		goto cleanup;
+	}
+
+	if ((dset = data_key_get(str, "set"))) {
+		if (data_convert_type(dset, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
+			rc = on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_CONV_FAILED,
+				      set_source_path(&path, parent_path),
+				      __func__,
+				      "Expected bool for \"set\" field but got %s",
+				      data_type_to_string(data_get_type(str)));
+			goto cleanup;
+		}
+
+		set = data_get_bool(dset);
+	}
+	if ((dinf = data_key_get(str, "infinite"))) {
+		if (data_convert_type(dinf, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
+			rc = on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_CONV_FAILED,
+				      set_source_path(&path, parent_path),
+				      __func__,
+				      "Expected bool for \"infinite\" field but got %s",
+				      data_type_to_string(data_get_type(str)));
+			goto cleanup;
+		}
+
+		inf = data_get_bool(dinf);
+	}
+	if ((dnum = data_key_get(str, "number"))) {
+		if (data_convert_type(dnum, DATA_TYPE_FLOAT) !=
+		    DATA_TYPE_FLOAT) {
+			rc = on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_CONV_FAILED,
+				      set_source_path(&path, parent_path),
+				      __func__,
+				      "Expected floating point number for \"number\" field but got %s",
+				      data_type_to_string(data_get_type(str)));
+			goto cleanup;
+		}
+
+		num = data_get_float(dnum);
+	}
+
+	if (inf)
+		*dst = (double) INFINITE;
+	else if (!set)
+		*dst = (double) NO_VAL;
+	else if (set && dnum)
+		*dst = num;
+	else if (set && !dnum)
+		rc = on_error(PARSING, parser->type, args,
+			      ESLURM_DATA_CONV_FAILED,
+			      set_source_path(&path, parent_path), __func__,
+			      "Expected \"number\" field when \"set\"=True but field not present");
+
+cleanup:
+	xfree(path);
+	return rc;
 }
 
 static int DUMP_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *dst, args_t *args)
 {
 	double *src = obj;
+	data_t *set, *inf, *num;
 
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->magic == MAGIC_ARGS);
 
-	/* see bug#9674 about double comparison and casting */
-	if (((uint32_t) *src == INFINITE) || ((uint32_t) *src == NO_VAL))
-		(void) data_set_null(dst);
-	else
-		(void) data_set_float(dst, *src);
+	data_set_dict(dst);
+	set = data_key_set(dst, "set");
+	inf = data_key_set(dst, "infinite");
+	num = data_key_set(dst, "number");
+
+	if ((uint32_t) *src == INFINITE) {
+		data_set_bool(set, false);
+		data_set_bool(inf, true);
+		data_set_float(num, 0);
+	} else if ((uint32_t) *src == NO_VAL) {
+		data_set_bool(set, false);
+		data_set_bool(inf, false);
+		data_set_float(num, 0);
+	} else {
+		data_set_bool(set, true);
+		data_set_bool(inf, false);
+		data_set_float(num, *src);
+	}
 
 	return SLURM_SUCCESS;
+}
+
+static void SPEC_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser,
+				      args_t *args, data_t *spec, data_t *dst)
+{
+	data_t *props, *dset, *dinf, *dnum;
+
+	props = set_openapi_props(dst, OPENAPI_FORMAT_OBJECT,
+				  "64 bit floating point number with flags");
+
+	dset = data_set_dict(data_key_set(props, "set"));
+	dinf = data_set_dict(data_key_set(props, "infinite"));
+	dnum = data_set_dict(data_key_set(props, "number"));
+
+	set_openapi_props(dset, OPENAPI_FORMAT_BOOL,
+		"True if number has been set. False if number is unset");
+	data_set_bool(data_key_set(dset, "default"), false);
+	set_openapi_props(dinf, OPENAPI_FORMAT_BOOL,
+		"True if number has been set to infinite. \"set\" and \"number\" will be ignored.");
+	data_set_bool(data_key_set(dinf, "default"), false);
+	set_openapi_props(dnum, OPENAPI_FORMAT_DOUBLE,
+		"If set is True the number will be set with value. Otherwise ignore number contents.");
+	data_set_float(data_key_set(dinf, "default"), 0);
 }
 
 static int PARSE_FUNC(INT64)(const parser_t *const parser, void *obj,
@@ -1749,33 +1866,202 @@ static int PARSE_FUNC(UINT16_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
 				     data_t *parent_path)
 {
+	int rc;
 	uint16_t *dst = obj;
+	uint64_t num;
 
 	xassert(args->magic == MAGIC_ARGS);
 
-	if (data_get_type(str) == DATA_TYPE_NULL) {
+	if ((rc = PARSE_FUNC(UINT64_NO_VAL)(parser, &num, str, args,
+					    parent_path)))
+		; /* do nothing on error */
+	else if (num == NO_VAL64)
 		*dst = NO_VAL16;
-		return SLURM_SUCCESS;
-	}
+	else if (num >= NO_VAL16)
+		*dst = INFINITE16;
+	else
+		*dst = num;
 
-	return PARSE_FUNC(UINT16)(parser, obj, str, args, parent_path);
+	return rc;
 }
 
 static int DUMP_FUNC(UINT16_NO_VAL)(const parser_t *const parser, void *obj,
 				    data_t *dst, args_t *args)
 {
 	uint16_t *src = obj;
+	data_t *set, *inf, *num;
 
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->magic == MAGIC_ARGS);
 
-	/* Never set values of INF or NO_VAL */
-	if ((*src == NO_VAL16) || (*src == INFINITE16))
-		data_set_null(dst);
-	else
-		(void) data_set_int(dst, *src);
+	data_set_dict(dst);
+	set = data_key_set(dst, "set");
+	inf = data_key_set(dst, "infinite");
+	num = data_key_set(dst, "number");
+
+	if (*src == INFINITE16) {
+		data_set_bool(set, false);
+		data_set_bool(inf, true);
+		data_set_int(num, 0);
+	} else if (*src == NO_VAL16) {
+		data_set_bool(set, false);
+		data_set_bool(inf, false);
+		data_set_int(num, 0);
+	} else {
+		data_set_bool(set, true);
+		data_set_bool(inf, false);
+		data_set_int(num, *src);
+	}
 
 	return SLURM_SUCCESS;
+}
+
+static void SPEC_FUNC(UINT16_NO_VAL)(const parser_t *const parser, args_t *args,
+				     data_t *spec, data_t *dst)
+{
+	return SPEC_FUNC(UINT64_NO_VAL)(parser, args, spec, dst);
+}
+
+static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
+				     data_t *str, args_t *args,
+				     data_t *parent_path)
+{
+	uint64_t *dst = obj;
+	data_t *dset, *dinf, *dnum;
+	bool set = false, inf = false;
+	uint64_t num = 0;
+	char *path = NULL;
+	int rc = SLURM_SUCCESS;
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	if (data_get_type(str) == DATA_TYPE_NULL) {
+		*dst = NO_VAL64;
+		return SLURM_SUCCESS;
+	}
+
+	if (data_get_type(str) == DATA_TYPE_INT_64)
+		return PARSE_FUNC(UINT64)(parser, obj, str, args, parent_path);
+
+	if (data_get_type(str) != DATA_TYPE_DICT) {
+		rc = on_error(PARSING, parser->type, args,
+			      ESLURM_DATA_EXPECTED_DICT,
+			      set_source_path(&path, parent_path),
+			      __func__, "Expected dictionary but got %s",
+			      data_type_to_string(data_get_type(str)));
+		goto cleanup;
+	}
+
+	if ((dset = data_key_get(str, "set"))) {
+		if (data_convert_type(dset, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
+			rc = on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_CONV_FAILED,
+				      set_source_path(&path, parent_path),
+				      __func__,
+				      "Expected bool for \"set\" field but got %s",
+				      data_type_to_string(data_get_type(str)));
+			goto cleanup;
+		}
+
+		set = data_get_bool(dset);
+	}
+	if ((dinf = data_key_get(str, "infinite"))) {
+		if (data_convert_type(dinf, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
+			rc = on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_CONV_FAILED,
+				      set_source_path(&path, parent_path),
+				      __func__,
+				      "Expected bool for \"infinite\" field but got %s",
+				      data_type_to_string(data_get_type(str)));
+			goto cleanup;
+		}
+
+		inf = data_get_bool(dinf);
+	}
+	if ((dnum = data_key_get(str, "number"))) {
+		if (data_convert_type(dnum, DATA_TYPE_INT_64) !=
+		    DATA_TYPE_INT_64) {
+			rc = on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_CONV_FAILED,
+				      set_source_path(&path, parent_path),
+				      __func__,
+				      "Expected integer number for \"number\" field but got %s",
+				      data_type_to_string(data_get_type(str)));
+			goto cleanup;
+		}
+
+		num = data_get_int(dnum);
+	}
+
+	if (inf)
+		*dst = INFINITE64;
+	else if (!set)
+		*dst = NO_VAL64;
+	else if (set && dnum)
+		*dst = num;
+	else if (set && !dnum)
+		rc = on_error(PARSING, parser->type, args,
+			      ESLURM_DATA_CONV_FAILED,
+			      set_source_path(&path, parent_path), __func__,
+			      "Expected \"number\" field when \"set\"=True but field not present");
+
+cleanup:
+	xfree(path);
+	return rc;
+}
+
+static int DUMP_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
+				    data_t *dst, args_t *args)
+{
+	uint64_t *src = obj;
+	data_t *set, *inf, *num;
+
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+	xassert(args->magic == MAGIC_ARGS);
+
+	data_set_dict(dst);
+	set = data_key_set(dst, "set");
+	inf = data_key_set(dst, "infinite");
+	num = data_key_set(dst, "number");
+
+	if (*src == INFINITE64) {
+		data_set_bool(set, false);
+		data_set_bool(inf, true);
+		data_set_int(num, 0);
+	} else if (*src == NO_VAL64) {
+		data_set_bool(set, false);
+		data_set_bool(inf, false);
+		data_set_int(num, 0);
+	} else {
+		data_set_bool(set, true);
+		data_set_bool(inf, false);
+		data_set_int(num, *src);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static void SPEC_FUNC(UINT64_NO_VAL)(const parser_t *const parser, args_t *args,
+				     data_t *spec, data_t *dst)
+{
+	data_t *props, *dset, *dinf, *dnum;
+
+	props = set_openapi_props(dst, OPENAPI_FORMAT_OBJECT,
+				  "Integer number with flags");
+
+	dset = data_set_dict(data_key_set(props, "set"));
+	dinf = data_set_dict(data_key_set(props, "infinite"));
+	dnum = data_set_dict(data_key_set(props, "number"));
+
+	set_openapi_props(dset, OPENAPI_FORMAT_BOOL,
+		"True if number has been set. False if number is unset");
+	data_set_bool(data_key_set(dset, "default"), false);
+	set_openapi_props(dinf, OPENAPI_FORMAT_BOOL,
+		"True if number has been set to infinite. \"set\" and \"number\" will be ignored.");
+	data_set_bool(data_key_set(dinf, "default"), false);
+	set_openapi_props(dnum, OPENAPI_FORMAT_INT64,
+		"If set is True the number will be set with value. Otherwise ignore number contents.");
+	data_set_int(data_key_set(dinf, "default"), 0);
 }
 
 static int PARSE_FUNC(UINT64)(const parser_t *const parser, void *obj,
@@ -1861,18 +2147,21 @@ static int PARSE_FUNC(UINT32_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
 				     data_t *parent_path)
 {
+	int rc;
 	uint32_t *dst = obj;
-	int rc = SLURM_SUCCESS;
+	uint64_t num;
 
 	xassert(args->magic == MAGIC_ARGS);
 
-	if (data_get_type(str) == DATA_TYPE_NULL)
+	if ((rc = PARSE_FUNC(UINT64_NO_VAL)(parser, &num, str, args,
+					    parent_path)))
+		; /* do nothing on error */
+	else if (num == NO_VAL64)
 		*dst = NO_VAL;
+	else if (num >= NO_VAL)
+		*dst = INFINITE;
 	else
-		rc = PARSE_FUNC(UINT32)(parser, obj, str, args, parent_path);
-
-	log_flag(DATA, "%s: string %u rc[%d]=%s", __func__, *dst, rc,
-		 slurm_strerror(rc));
+		*dst = num;
 
 	return rc;
 }
@@ -1880,18 +2169,38 @@ static int PARSE_FUNC(UINT32_NO_VAL)(const parser_t *const parser, void *obj,
 static int DUMP_FUNC(UINT32_NO_VAL)(const parser_t *const parser, void *obj,
 				    data_t *dst, args_t *args)
 {
-	int rc = SLURM_SUCCESS;
 	uint32_t *src = obj;
+	data_t *set, *inf, *num;
 
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->magic == MAGIC_ARGS);
 
-	if ((*src == NO_VAL) || (*src == INFINITE))
-		data_set_null(dst);
-	else
-		rc = DUMP_FUNC(UINT32)(parser, obj, dst, args);
+	data_set_dict(dst);
+	set = data_key_set(dst, "set");
+	inf = data_key_set(dst, "infinite");
+	num = data_key_set(dst, "number");
 
-	return rc;
+	if (*src == INFINITE) {
+		data_set_bool(set, false);
+		data_set_bool(inf, true);
+		data_set_int(num, 0);
+	} else if (*src == NO_VAL) {
+		data_set_bool(set, false);
+		data_set_bool(inf, false);
+		data_set_int(num, 0);
+	} else {
+		data_set_bool(set, true);
+		data_set_bool(inf, false);
+		data_set_int(num, *src);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static void SPEC_FUNC(UINT32_NO_VAL)(const parser_t *const parser, args_t *args,
+				     data_t *spec, data_t *dst)
+{
+	return SPEC_FUNC(UINT64_NO_VAL)(parser, args, spec, dst);
 }
 
 PARSE_DISABLED(STEP_NODES)
@@ -2057,6 +2366,12 @@ static int PARSE_FUNC(BOOL16_NO_VAL)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
+	if ((data_get_type(src) == DATA_TYPE_INT_64) &&
+	    (data_get_int(src) == -1)) {
+		*b = NO_VAL16;
+		return SLURM_SUCCESS;
+	}
+
 	return PARSE_FUNC(BOOL16)(parser, obj, src, args, parent_path);
 }
 
@@ -2068,12 +2383,11 @@ static int DUMP_FUNC(BOOL16_NO_VAL)(const parser_t *const parser, void *obj,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-	if (*b == NO_VAL16) {
-		/* leave as NULL */
-		return SLURM_SUCCESS;
-	}
+	if (*b == NO_VAL16)
+		data_set_bool(dst, false);
+	else
+		data_set_bool(dst, *b);
 
-	data_set_bool(dst, *b);
 	return SLURM_SUCCESS;
 }
 
@@ -3171,6 +3485,8 @@ static int DUMP_FUNC(NODE_STATES_NO_VAL)(const parser_t *const parser,
 
 	if (*ptr != NO_VAL)
 		return DUMP(NODE_STATES, *ptr, dst, args);
+	else
+		data_set_string(dst, "");
 
 	return SLURM_SUCCESS;
 }
@@ -5536,14 +5852,15 @@ static const parser_t parsers[] = {
 	/* Simple type parsers */
 	addps(STRING, char *, NEED_NONE, STRING, NULL),
 	addps(UINT32, uint32_t, NEED_NONE, INT32, NULL),
-	addps(UINT32_NO_VAL, uint32_t, NEED_NONE, INT32, NULL),
+	addpss(UINT32_NO_VAL, uint32_t, NEED_NONE, OBJECT, NULL),
 	addps(UINT64, uint64_t, NEED_NONE, INT64, NULL),
+	addpss(UINT64_NO_VAL, uint64_t, NEED_NONE, OBJECT, NULL),
 	addps(UINT16, uint16_t, NEED_NONE, INT32, NULL),
-	addps(UINT16_NO_VAL, uint16_t, NEED_NONE, INT32, NULL),
+	addpss(UINT16_NO_VAL, uint16_t, NEED_NONE, OBJECT, NULL),
 	addps(INT64, int64_t, NEED_NONE, INT64, NULL),
 	addps(FLOAT128, long double, NEED_NONE, NUMBER, NULL),
 	addps(FLOAT64, double, NEED_NONE, DOUBLE, NULL),
-	addps(FLOAT64_NO_VAL, double, NEED_NONE, DOUBLE, NULL),
+	addpss(FLOAT64_NO_VAL, double, NEED_NONE, OBJECT, NULL),
 	addps(BOOL, uint8_t, NEED_NONE, BOOL, NULL),
 	addps(BOOL16, uint16_t, NEED_NONE, BOOL, NULL),
 	addps(BOOL16_NO_VAL, uint16_t, NEED_NONE, BOOL, NULL),
