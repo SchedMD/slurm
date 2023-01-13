@@ -4,15 +4,15 @@
 <p>Core specialization is a feature designed to isolate system overhead
 (system interrupts, etc.) to designated cores on a compute node.
 This can reduce context switching in applications to improve completion time.
-The job will be charged for all allocated cores, but will not be able to
-directly use the specialized cores.</p>
+The job processes will not be able to directly use the specialized cores.</p>
 
 <h2 id="command">Command Options<a class="slurm_link" href="#command"></a></h2>
 <p>All job allocation commands (<i>salloc</i>, <i>sbatch</i> and <i>srun</i>)
 accept the <i>-S</i> or <i>--core-spec</i> option with a core count value
 argument (e.g. "-S 1" or "--core-spec=2").
 The count identifies the number of cores to be reserved for system overhead on
-each allocated compute node.
+each allocated compute node. Note that the <i>--core-spec</i> option will be
+ignored if <b>AllowSpecResourcesUsage</b> is not enabled in your slurm.conf.
 Each job's core specialization count can be viewed using the <i>scontrol</i>,
 <i>sview</i> or <i>squeue</i> command.
 Specification of a core specialization count for a job step is ignored
@@ -30,11 +30,19 @@ NumCPUs value reported by the <i>scontrol</i>, <i>sview</i> and <i>squeue</i>
 commands will reflect all non-specialized CPUS on all allocated nodes as will
 the job's accounting.</p>
 
-<p>If AllowSpecResourcesUsage=yes and the explicitly requested specialized
-core/thread count is lower than the number of cores in the CoreSpecCount or in
-the CpuSpecList (leaving what would otherwise be specialized cores available
-for use), then the step will have access to all of the normal cores as well as
-the extra unused specialized cores. In <i>sacct</i>, the step's allocated CPUs
+<p>Note that, due to the implicit --exclusive, if the requested specialized
+core/thread count is lower than the number of cores in the CoreSpecCount or
+in the CpuSpecList of the allocated node, then the step will have access to
+all of the non-specialized cores as well as the specialized cores freed for
+this job.</p>
+
+<p>For example, suppose a node has <b>AllowSpecResourcesUsage=yes</b> and
+<b>CoreSpecCount=2</b> configured in the slurm.conf for a node
+with a total of 16 Cores. If a job specified <b>--core-spec=1</b>, the implicit
+<b>--exclusive</b> would lead to an exclusive allocation of the node, leaving
+15 cores for use by the job, and keeping 1 core for system use.</p>
+
+<p>In <i>sacct</i>, the step's allocated CPUs
 will include the specialized cores or threads that it has access to. However,
 the job's allocated CPU count never includes specialized cores or threads to
 ensure that utilization reports are accurate.</p>
@@ -145,6 +153,6 @@ system use.</p>
 cores for their job, the configuration parameter <i>AllowSpecResourcesUsage</i>
 must be set to a value of <i>1</i>.</p>
 
-<p style="text-align:center;">Last modified 21 October 2022</p>
+<p style="text-align:center;">Last modified 17 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
