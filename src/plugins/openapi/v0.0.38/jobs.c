@@ -183,7 +183,7 @@ const params_t job_params[] = {
 	{ "no_shell", LONG_OPT_NO_SHELL, true },
 	{ "open_mode", LONG_OPT_OPEN_MODE },
 	{ "overcommit", 'O', true },
-	{ "oversubscribe", 's', true },
+	{ "oversubscribe", 's' },
 	{ "hetjob_group", LONG_OPT_HET_GROUP, true },
 	{ "parsable", LONG_OPT_PARSABLE, true },
 	{ "partition", 'p' },

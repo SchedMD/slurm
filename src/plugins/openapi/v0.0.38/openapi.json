@@ -2298,6 +2298,11 @@
               "truncate"
             ]
           },
+          "oversubscribe": {
+            "type": "boolean",
+            "description": "The job allocation can over-subscribe resources with other running jobs.",
+            "default": "false"
+          },
           "partition": {
             "type": "string",
             "description": "Request a specific partition for the resource allocation."
