@@ -481,7 +481,7 @@ static bool _opt_verify(void)
 			exit(error_exit);
 	}
 
-	if (opt.nodelist) {
+	if (opt.nodelist && !opt.nodes_set) {
 		hl = hostlist_create(opt.nodelist);
 		if (!hl) {
 			error("memory allocation failure");
@@ -489,10 +489,7 @@ static bool _opt_verify(void)
 		}
 		hostlist_uniq(hl);
 		hl_cnt = hostlist_count(hl);
-		if (opt.nodes_set)
-			opt.min_nodes = MAX(hl_cnt, opt.min_nodes);
-		else
-			opt.min_nodes = hl_cnt;
+		opt.min_nodes = hl_cnt;
 		opt.nodes_set = true;
 	}
 
@@ -585,26 +582,11 @@ static bool _opt_verify(void)
 		 *  make sure # of procs >= min_nodes
 		 */
 		if (opt.ntasks < opt.min_nodes) {
-
 			info ("Warning: can't run %d processes on %d "
 			      "nodes, setting nnodes to %d",
 			      opt.ntasks, opt.min_nodes, opt.ntasks);
 
 			opt.min_nodes = opt.max_nodes = opt.ntasks;
-
-			if (hl_cnt > opt.min_nodes) {
-				int del_cnt, i;
-				char *host;
-				del_cnt = hl_cnt - opt.min_nodes;
-				for (i=0; i<del_cnt; i++) {
-					host = hostlist_pop(hl);
-					free(host);
-				}
-				xfree(opt.nodelist);
-				opt.nodelist =
-					hostlist_ranged_string_xmalloc(hl);
-			}
-
 		}
 
 	} /* else if (opt.ntasks_set && !opt.nodes_set) */

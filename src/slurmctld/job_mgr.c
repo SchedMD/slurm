@@ -8136,8 +8136,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		}
 		host_cnt = hostlist_count(hl);
 		hostlist_destroy(hl);
-		if ((job_desc->min_nodes == NO_VAL) ||
-		    (job_desc->min_nodes <  host_cnt))
+		if (job_desc->min_nodes == NO_VAL)
 			job_desc->min_nodes = host_cnt;
 	}
 

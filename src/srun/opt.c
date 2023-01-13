@@ -1118,37 +1118,6 @@ static bool _opt_verify(void)
 
 	pmi_server_max_threads(sropt.max_threads);
 
-	/*
-	 * now if max is set make sure we have <= max_nodes in the
-	 * nodelist but only if it isn't arbitrary since the user has
-	 * laid it out how it should be so don't mess with it print an
-	 * error later if it doesn't work the way they wanted
-	 */
-	if (opt.max_nodes && opt.nodelist &&
-	    ((opt.distribution & SLURM_DIST_STATE_BASE)!=SLURM_DIST_ARBITRARY)) {
-		hostlist_t hl = hostlist_create(opt.nodelist);
-		int count = hostlist_count(hl);
-		if (count > opt.max_nodes) {
-			int i = 0;
-			error("Required nodelist includes more nodes than "
-			      "permitted by max-node count (%d > %d). "
-			      "Eliminating nodes from the nodelist.",
-			      count, opt.max_nodes);
-			count -= opt.max_nodes;
-			while (i<count) {
-				char *name = hostlist_pop(hl);
-				if (name)
-					free(name);
-				else
-					break;
-				i++;
-			}
-			xfree(opt.nodelist);
-			opt.nodelist = hostlist_ranged_string_xmalloc(hl);
-		}
-		hostlist_destroy(hl);
-	}
-
 	/* check for realistic arguments */
 	if (opt.ntasks <= 0) {
 		error("invalid number of tasks (-n %d)", opt.ntasks);
@@ -1208,7 +1177,7 @@ static bool _opt_verify(void)
 	}
 
 	/* massage the numbers */
-	if (opt.nodelist) {
+	if (opt.nodelist && !opt.nodes_set) {
 		hl = hostlist_create(opt.nodelist);
 		if (!hl) {
 			error("memory allocation failure");
@@ -1216,10 +1185,7 @@ static bool _opt_verify(void)
 		}
 		hostlist_uniq(hl);
 		hl_cnt = hostlist_count(hl);
-		if (opt.nodes_set)
-			opt.min_nodes = MAX(hl_cnt, opt.min_nodes);
-		else
-			opt.min_nodes = hl_cnt;
+		opt.min_nodes = hl_cnt;
 		opt.nodes_set = true;
 	}
 
@@ -1261,10 +1227,6 @@ static bool _opt_verify(void)
 			}
 			hostlist_uniq(hl);
 			hl_cnt = hostlist_count(hl);
-			if (opt.nodes_set)
-				opt.min_nodes = MAX(hl_cnt, opt.min_nodes);
-			else
-				opt.min_nodes = hl_cnt;
 			/* Don't destroy hl here since it may be used later */
 		}
 	} else if (opt.nodes_set && opt.ntasks_set) {
