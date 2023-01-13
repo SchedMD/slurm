@@ -953,7 +953,7 @@ static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 		return SLURM_SUCCESS;
 	}
 
-	return dump(src, NO_VAL, pt, dst, args);
+	return dump(*ptr, NO_VAL, pt, dst, args);
 }
 
 static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
