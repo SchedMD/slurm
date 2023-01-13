@@ -3945,9 +3945,10 @@ static const parser_t PARSER_ARRAY(USER)[] = {
 	add_parse(STRING, default_wckey, "default/wckey", NULL),
 	add_parse_bit_flag_array(slurmdb_user_rec_t, USER_FLAGS, false, flags, "flags", NULL),
 	add_parse_req(STRING, name, "name", NULL),
-	add_skip(old_name),
+	add_parse(STRING, old_name, "old_name", NULL),
 	/* uid should always be 0 */
 	add_skip(uid),
+	add_parse(WCKEY_LIST, wckey_list, "wckeys", NULL),
 };
 #undef add_parse
 #undef add_parse_req
