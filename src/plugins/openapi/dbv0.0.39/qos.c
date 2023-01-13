@@ -116,7 +116,8 @@ static void _dump_qos(ctxt_t *ctxt, list_t *qos_list, char *qos_name)
 			data_t *q = data_list_append(dqos_list);
 
 			debug("%s: [%s] dumping QOS %s",
-			      __func__, ctxt->id, qos_name);
+			      __func__, ctxt->id,
+			      (qos_name ? qos_name : ""));
 
 			if (DATA_DUMP(ctxt->parser, QOS, *qos, q))
 				break;
