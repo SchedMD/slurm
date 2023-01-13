@@ -597,6 +597,9 @@ static void _parse_check_openapi(const parser_t *const parser, data_t *src,
 	if (data_get_type(src) == DATA_TYPE_NULL)
 		return;
 
+	if (parser->obj_openapi == OPENAPI_FORMAT_INVALID)
+		return;
+
 	if (data_get_type(src) ==
 	    openapi_type_format_to_data_type(parser->obj_openapi))
 		return;
