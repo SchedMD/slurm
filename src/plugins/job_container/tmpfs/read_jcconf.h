@@ -51,6 +51,7 @@ typedef struct slurm_jc_conf {
 	char *basepath;
 	char *dirs;
 	char *initscript;
+	bool shared;
 } slurm_jc_conf_t;
 
 extern char *tmpfs_conf_file;

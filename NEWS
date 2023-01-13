@@ -235,6 +235,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix a job requesting --nodelist and --constraint with a Matching OR
     operator could get allocated nodes that do not satisfy the constraint
     request.
+ -- job_container/tmpfs - Add "Shared" option to support shared namespaces.
+    This allows autofs to work with the job_container/tmpfs plugin when enabled.
 
 * Changes in Slurm 22.05.8
 ==========================

@@ -328,10 +328,16 @@ static int _mount_private_shm(void)
 
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 	/* handle mounting a new /dev/shm */
-	rc = umount("/dev/shm");
-	if (rc && errno != EINVAL) {
-		error("%s: umount /dev/shm failed: %m", __func__);
-		return rc;
+	if (!jc_conf->shared) {
+		/*
+		 * only unmount old /dev/shm if private, otherwise this can
+		 * impact the root namespace
+		 */
+		rc = umount("/dev/shm");
+		if (rc && errno != EINVAL) {
+			error("%s: umount /dev/shm failed: %m", __func__);
+			return rc;
+		}
 	}
 	rc = mount("tmpfs", "/dev/shm", "tmpfs", 0, NULL);
 	if (rc) {
@@ -580,17 +586,29 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 			goto child_exit;
 		}
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
-		/* Set root filesystem to shared */
-		if (mount(NULL, "/", NULL, MS_SHARED | MS_REC, NULL)) {
-			error("%s: Failed to make root shared: %m", __func__);
-			rc = -1;
-			goto child_exit;
-		}
-		/* Set root filesystem to slave */
-		if (mount(NULL, "/", NULL, MS_SLAVE | MS_REC, NULL)) {
-			error("%s: Failed to make root slave: %m", __func__);
-			rc = -1;
-			goto child_exit;
+		if (!jc_conf->shared) {
+			/* Set root filesystem to private */
+			if (mount(NULL, "/", NULL, MS_PRIVATE|MS_REC, NULL)) {
+				error("%s: Failed to make root private: %m",
+				      __func__);
+				rc = -1;
+				goto child_exit;
+			}
+		} else {
+			/* Set root filesystem to shared */
+			if (mount(NULL, "/", NULL, MS_SHARED | MS_REC, NULL)) {
+				error("%s: Failed to make root shared: %m",
+				      __func__);
+				rc = -1;
+				goto child_exit;
+			}
+			/* Set root filesystem to slave */
+			if (mount(NULL, "/", NULL, MS_SLAVE | MS_REC, NULL)) {
+				error("%s: Failed to make root slave: %m",
+				      __func__);
+				rc = -1;
+				goto child_exit;
+			}
 		}
 #endif
 

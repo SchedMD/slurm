@@ -54,6 +54,7 @@ static slurm_jc_conf_t slurm_jc_conf;
 static buf_t *slurm_jc_conf_buf = NULL;
 static bool slurm_jc_conf_inited = false;
 static bool auto_basepath_set = false;
+static bool shared_set = false;
 
 static s_p_hashtbl_t *_create_ns_hashtbl(void)
 {
@@ -62,6 +63,7 @@ static s_p_hashtbl_t *_create_ns_hashtbl(void)
 		{"BasePath", S_P_STRING},
 		{"Dirs", S_P_STRING},
 		{"InitScript", S_P_STRING},
+		{"Shared", S_P_BOOLEAN},
 		{NULL}
 	};
 
@@ -78,6 +80,7 @@ static void _pack_slurm_jc_conf_buf(void)
 	packstr(slurm_jc_conf.basepath, slurm_jc_conf_buf);
 	packstr(slurm_jc_conf.dirs, slurm_jc_conf_buf);
 	packstr(slurm_jc_conf.initscript, slurm_jc_conf_buf);
+	packbool(slurm_jc_conf.shared, slurm_jc_conf_buf);
 }
 
 static int _parse_jc_conf_internal(void **dest, slurm_parser_enum_t type,
@@ -113,6 +116,9 @@ static int _parse_jc_conf_internal(void **dest, slurm_parser_enum_t type,
 
 	if (!s_p_get_string(&slurm_jc_conf.initscript, "InitScript", tbl))
 		debug3("empty init script detected");
+
+	if (s_p_get_boolean(&slurm_jc_conf.shared, "Shared", tbl))
+		shared_set = true;
 
 end_it:
 	s_p_hashtbl_destroy(tbl);
@@ -157,6 +163,7 @@ static int _read_slurm_jc_conf(void)
 		{"BasePath", S_P_ARRAY, _parse_jc_conf_internal, NULL},
 		{"Dirs", S_P_STRING},
 		{"NodeName", S_P_ARRAY, _parse_jc_conf, NULL},
+		{"Shared", S_P_BOOLEAN},
 		{NULL}
 	};
 
@@ -192,6 +199,9 @@ static int _read_slurm_jc_conf(void)
 		      tmpfs_conf_file);
 		rc = SLURM_ERROR;
 	}
+
+	if (!shared_set)
+		s_p_get_boolean(&slurm_jc_conf.shared, "Shared", tbl);
 
 end_it:
 
@@ -241,6 +251,7 @@ extern slurm_jc_conf_t *set_slurm_jc_conf(buf_t *buf)
 	safe_unpackstr(&slurm_jc_conf.basepath, buf);
 	safe_unpackstr(&slurm_jc_conf.dirs, buf);
 	safe_unpackstr(&slurm_jc_conf.initscript, buf);
+	safe_unpackbool(&slurm_jc_conf.shared, buf);
 	slurm_jc_conf_inited = true;
 
 	return &slurm_jc_conf;
