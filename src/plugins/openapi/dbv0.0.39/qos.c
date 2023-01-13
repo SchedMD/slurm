@@ -179,7 +179,8 @@ static int _foreach_update_qos(void *x, void *arg)
 		}
 
 		/* See if QOS already exists */
-		rc = db_query_list(ctxt, &qos_list, slurmdb_qos_get, &cond);
+		rc = db_query_list_xempty(ctxt, &qos_list, slurmdb_qos_get,
+					  &cond);
 
 		if (!rc && qos_list && (list_count(qos_list) == 1))
 			found_qos = list_pop(qos_list);
