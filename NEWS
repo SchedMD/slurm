@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
     with NodeAddr and/or NodeHostname if the specified nodelist wasn't sorted.
  -- openapi/v0.0.38 - change type of nice field for job submissions to integer
     from string.
+ -- openapi/v0.0.38 - add oversubscribe option to job submission properties.
 
 * Changes in Slurm 22.05.7
 ==========================
@@ -68,7 +69,6 @@ documents those changes that are of interest to users and administrators.
  -- Fix dynamic node losing dynamic node status when changing state to FUTURE.
  -- Fix adoption into most recent job in pam_slurm_adopt and cgroup/v2.
  -- gres/shard - Fix plugin_name definition to print correctly in debug lines.
- -- openapi/v0.0.38 - add oversubscribe option to job submission properties.
 
 * Changes in Slurm 22.05.6
 ==========================
