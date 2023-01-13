@@ -2832,39 +2832,6 @@ static int DUMP_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(JOB_SHARED)
-
-static int DUMP_FUNC(JOB_SHARED)(const parser_t *const parser, void *obj,
-				 data_t *dst, args_t *args)
-{
-	uint16_t *shared = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
-	if (*shared == NO_VAL16)
-		return SLURM_SUCCESS;
-
-	switch (*shared) {
-	case JOB_SHARED_NONE :
-		data_set_string(dst, "none");
-		break;
-	case JOB_SHARED_OK :
-		data_set_string(dst, "shared");
-		break;
-	case JOB_SHARED_USER :
-		data_set_string(dst, "user");
-		break;
-	case JOB_SHARED_MCS :
-		data_set_string(dst, "mcs");
-		break;
-	default :
-		return ESLURM_DATA_FLAGS_INVALID_TYPE;
-	}
-
-	return SLURM_SUCCESS;
-}
-
 PARSE_DISABLED(ALLOCATED_CORES)
 
 static int DUMP_FUNC(ALLOCATED_CORES)(const parser_t *const parser, void *obj,
@@ -4643,6 +4610,13 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ACCT_GATHER_PROFILE)[] = {
 	add_flag_bit(ACCT_GATHER_PROFILE_TASK, "TASK"),
 };
 
+static const flag_bit_t PARSER_FLAG_ARRAY(JOB_SHARED)[] = {
+	add_flag_equal(JOB_SHARED_NONE, INFINITE16, "none"),
+	add_flag_equal(JOB_SHARED_OK, INFINITE16, "shared"),
+	add_flag_equal(JOB_SHARED_USER, INFINITE16, "user"),
+	add_flag_equal(JOB_SHARED_MCS, INFINITE16, "mcs"),
+};
+
 #define add_skip(field) \
 	add_parser_skip(slurm_job_info_t, field)
 #define add_parse(mtype, field, path, desc) \
@@ -5587,7 +5561,6 @@ static const parser_t parsers[] = {
 	addps(NICE, uint32_t, NEED_NONE, INT32, NULL),
 	addps(JOB_MEM_PER_CPU, uint64_t, NEED_NONE, INT64, NULL),
 	addps(JOB_MEM_PER_NODE, uint64_t, NEED_NONE, INT64, NULL),
-	addps(JOB_SHARED, uint16_t, NEED_NONE, STRING, NULL),
 	addps(ALLOCATED_CORES, uint32_t, NEED_NONE, INT32, NULL),
 	addps(ALLOCATED_CPUS, uint32_t, NEED_NONE, INT32, NULL),
 	addps(CONTROLLER_PING_MODE, int, NEED_NONE, STRING, NULL),
@@ -5721,6 +5694,7 @@ static const parser_t parsers[] = {
 	addfa(OPEN_MODE, uint8_t),
 	addfa(ACCT_GATHER_PROFILE, uint32_t),
 	addfa(ADMIN_LVL, uint16_t), /* slurmdb_admin_level_t */
+	addfa(JOB_SHARED, uint16_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, NEED_QOS),
