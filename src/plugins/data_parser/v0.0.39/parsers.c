@@ -1795,21 +1795,24 @@ static void SPEC_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser,
 static int PARSE_FUNC(INT64)(const parser_t *const parser, void *obj,
 			     data_t *str, args_t *args, data_t *parent_path)
 {
+	char *path;
 	int64_t *dst = obj;
 	int rc = SLURM_SUCCESS;
 
 	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(str) == DATA_TYPE_NULL)
-		*dst = (double) NO_VAL;
-	else if (data_convert_type(str, DATA_TYPE_FLOAT) == DATA_TYPE_FLOAT)
-		*dst = data_get_float(str);
+		*dst = 0;
+	else if (data_convert_type(str, DATA_TYPE_INT_64) == DATA_TYPE_INT_64)
+		*dst = data_get_int(str);
 	else
-		rc = ESLURM_DATA_CONV_FAILED;
+		rc = on_error(PARSING, parser->type, args,
+			      ESLURM_DATA_CONV_FAILED,
+			      set_source_path(&path, parent_path),
+			      __func__, "Expected integer but got %s",
+			      data_type_to_string(data_get_type(str)));
 
-	log_flag(DATA, "%s: string %" PRId64 " rc[%d]=%s", __func__, *dst, rc,
-		 slurm_strerror(rc));
-
+	xfree(path);
 	return rc;
 }
 
