@@ -281,10 +281,34 @@
         },
         "responses": {
           "200": {
-            "description": "job information"
+            "description": "job updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.39_job_update_response"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.39_job_update_response"
+                }
+              }
+            }
           },
-          "500": {
-            "description": "job not found"
+          "default": {
+            "description": "job update failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/status"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/status"
+                }
+              }
+            }
           }
         }
       },
@@ -993,6 +1017,23 @@
           }
         },
         "type": "object"
+      },
+      "v0.0.39_job_update_response": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.39_meta"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/v0.0.39_errors"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/v0.0.39_warnings"
+          },
+          "results": {
+            "$ref": "DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_PTR"
+          }
+        }
       },
       "v0.0.39_job_submission_response": {
         "type": "object",
