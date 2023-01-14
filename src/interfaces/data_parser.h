@@ -51,6 +51,7 @@ typedef enum {
 	DATA_PARSER_UINT64, /* uint64_t */
 	DATA_PARSER_UINT64_NO_VAL, /* uint64_t - NO_VAL64 or INFINTE64 */
 	DATA_PARSER_INT64, /* int64_t */
+	DATA_PARSER_INT64_NO_VAL, /* int64_t - NO_VAL64 or INFINTE64 */
 	DATA_PARSER_FLOAT128, /* long double */
 	DATA_PARSER_FLOAT64, /* double */
 	DATA_PARSER_FLOAT64_NO_VAL, /* double - may be NO_VAL of INFINITE */

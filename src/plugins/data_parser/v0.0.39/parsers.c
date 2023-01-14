@@ -157,6 +157,8 @@ static void SPEC_FUNC(UINT64_NO_VAL)(const parser_t *const parser, args_t *args,
 				     data_t *spec, data_t *dst);
 static int PARSE_FUNC(UINT64)(const parser_t *const parser, void *obj,
 			      data_t *str, args_t *args, data_t *parent_path);
+static int DUMP_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
+				    data_t *dst, args_t *args);
 
 #ifndef NDEBUG
 static void _check_flag_bit(int8_t i, const flag_bit_t *bit)
@@ -1826,6 +1828,36 @@ static int DUMP_FUNC(INT64)(const parser_t *const parser, void *obj,
 		(void) data_set_int(dst, *src);
 
 	return SLURM_SUCCESS;
+}
+
+static int PARSE_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
+			     data_t *str, args_t *args, data_t *parent_path)
+{
+	int64_t *dst = obj;
+	int rc;
+	uint64_t num;
+
+	/* data_t already handles the parsing of signed */
+	rc = PARSE_FUNC(UINT64_NO_VAL)(parser, &num, str, args, parent_path);
+
+	if (!rc)
+		*dst = num;
+
+	return rc;
+}
+
+static int DUMP_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
+				   data_t *dst, args_t *args)
+{
+	int64_t *src = obj;
+
+	return DUMP_FUNC(UINT64_NO_VAL)(parser, src, dst, args);
+}
+
+static void SPEC_FUNC(INT64_NO_VAL)(const parser_t *const parser, args_t *args,
+				    data_t *spec, data_t *dst)
+{
+	return SPEC_FUNC(UINT64_NO_VAL)(parser, args, spec, dst);
 }
 
 static int PARSE_FUNC(UINT16)(const parser_t *const parser, void *obj,
@@ -5858,6 +5890,7 @@ static const parser_t parsers[] = {
 	addps(UINT16, uint16_t, NEED_NONE, INT32, NULL),
 	addpss(UINT16_NO_VAL, uint16_t, NEED_NONE, OBJECT, NULL),
 	addps(INT64, int64_t, NEED_NONE, INT64, NULL),
+	addpss(INT64_NO_VAL, int64_t, NEED_NONE, OBJECT, NULL),
 	addps(FLOAT128, long double, NEED_NONE, NUMBER, NULL),
 	addps(FLOAT64, double, NEED_NONE, DOUBLE, NULL),
 	addpss(FLOAT64_NO_VAL, double, NEED_NONE, OBJECT, NULL),
