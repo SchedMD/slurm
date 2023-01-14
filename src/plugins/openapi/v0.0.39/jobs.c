@@ -205,6 +205,24 @@ cleanup:
 	slurm_free_job_desc_msg(job);
 }
 
+static void _job_submit_rc(ctxt_t *ctxt, submit_response_msg_t *resp,
+			   const char *src)
+{
+	int rc = resp->error_code;
+
+	if (!rc)
+		return;
+
+	if (rc == ESLURM_JOB_HELD) {
+		/* Job submitted with held state is not an error */
+		resp_warn(ctxt, "slurm_submit_batch_job()",
+			"%s", slurm_strerror(rc));
+		return;
+	}
+
+	resp_error(ctxt, rc, src, NULL);
+}
+
 static void _job_post_submit(ctxt_t *ctxt, data_t *djob, const char *script)
 {
 	submit_response_msg_t *resp = NULL;
@@ -243,9 +261,8 @@ static void _job_post_submit(ctxt_t *ctxt, data_t *djob, const char *script)
 		  data_key_set(ctxt->resp, "step_id"));
 	DATA_DUMP(ctxt->parser, STRING, resp->job_submit_user_msg,
 		  data_key_set(ctxt->resp, "job_submit_user_msg"));
-	if (resp->error_code)
-		resp_error(ctxt, resp->error_code, "slurm_submit_batch_job",
-			   NULL);
+
+	_job_submit_rc(ctxt, resp, "slurm_submit_batch_job()");
 
 cleanup:
 	slurm_free_submit_response_response_msg(resp);
@@ -304,9 +321,8 @@ static void _job_post_het_submit(ctxt_t *ctxt, data_t *djobs,
 		  data_key_set(ctxt->resp, "step_id"));
 	DATA_DUMP(ctxt->parser, STRING, resp->job_submit_user_msg,
 		  data_key_set(ctxt->resp, "job_submit_user_msg"));
-	if (resp->error_code)
-		resp_error(ctxt, resp->error_code, "slurm_submit_batch_job",
-			   NULL);
+
+	_job_submit_rc(ctxt, resp, "slurm_submit_batch_het_job()");
 
 cleanup:
 	slurm_free_submit_response_response_msg(resp);
