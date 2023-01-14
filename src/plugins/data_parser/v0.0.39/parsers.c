@@ -2292,7 +2292,7 @@ void SPEC_FUNC(STATS_MSG_RPCS_BY_TYPE)(const parser_t *const parser,
 	set_openapi_props(data_key_set(props, "type_id"), OPENAPI_FORMAT_INT32,
 			  "Message type as integer");
 	set_openapi_props(data_key_set(props, "count"), OPENAPI_FORMAT_INT64,
-			  "Number of RPCs recieved");
+			  "Number of RPCs received");
 	set_openapi_props(data_key_set(props, "average_time"),
 			  OPENAPI_FORMAT_INT64,
 			  "Average time spent processing RPC in seconds");
@@ -2363,7 +2363,7 @@ void SPEC_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
 	set_openapi_props(data_key_set(props, "user_id"), OPENAPI_FORMAT_INT32,
 			  "user id (numeric)");
 	set_openapi_props(data_key_set(props, "count"), OPENAPI_FORMAT_INT64,
-			  "Number of RPCs recieved");
+			  "Number of RPCs received");
 	set_openapi_props(data_key_set(props, "average_time"),
 			  OPENAPI_FORMAT_INT64,
 			  "Average time spent processing RPC in seconds");

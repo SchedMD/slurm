@@ -505,7 +505,7 @@ no_rollup_change:
 	else if (job_ptr->partition)
 		partition = job_ptr->partition;
 
-	/* Mark the database so we know we have recieved the start record. */
+	/* Mark the database so we know we have received the start record. */
 	job_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
 
 	if (!job_ptr->db_index) {

@@ -696,7 +696,7 @@ _init_from_slurmd(int sock, char **argv,
 	_set_job_log_prefix(&step_id);
 
 	/*
-	 * Init all plugins after recieving the slurm.conf from the slurmd.
+	 * Init all plugins after receiving the slurm.conf from the slurmd.
 	 */
 	if ((slurm_auth_init(NULL) != SLURM_SUCCESS) ||
 	    (cgroup_g_init() != SLURM_SUCCESS) ||
