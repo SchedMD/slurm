@@ -1463,7 +1463,7 @@ static int DUMP_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 	if ((u = uid_to_string_or_null(*uid)))
 		data_set_string_own(dst, u);
 	else
-		data_set_null(dst);
+		data_set_string(dst, "");
 
 	return SLURM_SUCCESS;
 }
