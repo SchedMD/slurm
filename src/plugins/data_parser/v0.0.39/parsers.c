@@ -3073,6 +3073,8 @@ static int DUMP_FUNC(CORE_SPEC)(const parser_t *const parser, void *obj,
 
 	if (!(*mem & CORE_SPEC_THREAD))
 		data_set_int(dst, *mem);
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -3116,6 +3118,8 @@ static int DUMP_FUNC(THREAD_SPEC)(const parser_t *const parser, void *obj,
 
 	if ((*mem & CORE_SPEC_THREAD))
 		data_set_int(dst, (*mem & ~CORE_SPEC_THREAD));
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -3151,6 +3155,8 @@ static int DUMP_FUNC(NICE)(const parser_t *const parser, void *obj, data_t *dst,
 
 	if ((*nice != NO_VAL) && (*nice != NICE_OFFSET))
 		data_set_int(dst, (*nice - NICE_OFFSET));
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -3167,6 +3173,8 @@ static int DUMP_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
 
 	if (*mem & MEM_PER_CPU)
 		data_set_int(dst, (*mem & ~MEM_PER_CPU));
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -3199,6 +3207,8 @@ static int DUMP_FUNC(ALLOCATED_CORES)(const parser_t *const parser, void *obj,
 
 	if (slurm_conf.select_type_param & (CR_CORE | CR_SOCKET))
 		data_set_int(dst, *cores);
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -3215,6 +3225,8 @@ static int DUMP_FUNC(ALLOCATED_CPUS)(const parser_t *const parser, void *obj,
 
 	if (slurm_conf.select_type_param & (CR_CPU))
 		data_set_int(dst, *cpus);
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
