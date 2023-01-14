@@ -1821,11 +1821,7 @@ static int DUMP_FUNC(INT64)(const parser_t *const parser, void *obj,
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->magic == MAGIC_ARGS);
 
-	/* Never set values of INF or NO_VAL */
-	if ((*src == NO_VAL64) || (*src == INFINITE64))
-		(void) data_set_null(dst);
-	else
-		(void) data_set_int(dst, *src);
+	data_set_int(dst, *src);
 
 	return SLURM_SUCCESS;
 }
