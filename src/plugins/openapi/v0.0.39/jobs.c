@@ -239,7 +239,7 @@ static void _job_post_submit(ctxt_t *ctxt, data_t *djob, const char *script)
 	/* TODO: backwards compatibility output */
 	DATA_DUMP(ctxt->parser, UINT32, resp->job_id,
 		  data_key_set(ctxt->resp, "job_id"));
-	DATA_DUMP(ctxt->parser, UINT32, resp->step_id,
+	DATA_DUMP(ctxt->parser, STEP_ID, resp->step_id,
 		  data_key_set(ctxt->resp, "step_id"));
 	DATA_DUMP(ctxt->parser, STRING, resp->job_submit_user_msg,
 		  data_key_set(ctxt->resp, "job_submit_user_msg"));
