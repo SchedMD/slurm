@@ -268,12 +268,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "DATA_PARSER_JOB_INFO_MSG"
+                "$ref": "#/components/schemas/v0.0.39_job_submission"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "DATA_PARSER_JOB_INFO_MSG"
+                "$ref": "#/components/schemas/v0.0.39_job_submission"
               }
             }
           },
