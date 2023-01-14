@@ -3601,6 +3601,24 @@ static int DUMP_FUNC(JOB_ARRAY_RESPONSE_MSG)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
+void SPEC_FUNC(JOB_ARRAY_RESPONSE_MSG)(const parser_t *const parser,
+				       args_t *args, data_t *spec, data_t *dst)
+{
+	data_t *items = set_openapi_props(dst, OPENAPI_FORMAT_ARRAY,
+					  "Result per ArrayJob");
+	data_t *props = set_openapi_props(items, OPENAPI_FORMAT_OBJECT,
+					  "ArrayJob");
+
+	set_openapi_props(data_key_set(props, "job_id"), OPENAPI_FORMAT_INT32,
+			  "JobId");
+	set_openapi_props(data_key_set(props, "error_code"),
+			  OPENAPI_FORMAT_INT32, "numeric error code");
+	set_openapi_props(data_key_set(props, "error"), OPENAPI_FORMAT_STRING,
+			  "error code description");
+	set_openapi_props(data_key_set(props, "why"), OPENAPI_FORMAT_STRING,
+			  "error message");
+}
+
 PARSE_DISABLED(ERROR)
 
 static int DUMP_FUNC(ERROR)(const parser_t *const parser, void *obj,
@@ -5944,6 +5962,7 @@ static const parser_t parsers[] = {
 	addpsa(STRING_ARRAY, STRING, char **, NEED_NONE, NULL),
 	addps(SIGNAL, uint16_t, NEED_NONE, STRING, NULL),
 	addps(BITSTR, bitstr_t, NEED_NONE, STRING, NULL),
+	addpss(JOB_ARRAY_RESPONSE_MSG, job_array_resp_msg_t, NEED_NONE, ARRAY, NULL),
 
 	/* Complex type parsers */
 	addpca(QOS_PREEMPT_LIST, STRING, slurmdb_qos_rec_t, NEED_QOS, NULL),
@@ -5975,7 +5994,6 @@ static const parser_t parsers[] = {
 	addpca(PARTITION_INFO_MSG, PARTITION_INFO, partition_info_msg_t, NEED_TRES, NULL),
 	addpca(RESERVATION_INFO_MSG, RESERVATION_INFO, reserve_info_msg_t, NEED_NONE, NULL),
 	addpcp(RESERVATION_INFO_CORE_SPEC, RESERVATION_CORE_SPEC, reserve_info_t, NEED_NONE, NULL),
-	addpca(JOB_ARRAY_RESPONSE_MSG, RESERVATION_CORE_SPEC, job_array_resp_msg_t, NEED_NONE, NULL),
 	addpcp(JOB_DESC_MSG_ARGV, STRING_ARRAY, job_desc_msg_t, NEED_NONE, NULL),
 	addpc(JOB_DESC_MSG_CPU_FREQ, job_desc_msg_t, NEED_NONE, STRING, NULL),
 	addpcp(JOB_DESC_MSG_ENV, STRING_ARRAY, job_desc_msg_t, NEED_NONE, NULL),
