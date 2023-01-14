@@ -5055,7 +5055,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(UINT32_NO_VAL, het_job_id, "het_job_id", NULL),
 	add_parse(STRING, het_job_id_set, "het_job_id_set", NULL),
 	add_parse(UINT32_NO_VAL, het_job_offset, "het_job_offset", NULL),
-	add_parse(UINT32_NO_VAL, job_id, "job_id", NULL),
+	add_parse(UINT32, job_id, "job_id", NULL),
 	add_parse(JOB_RES_PTR, job_resrcs, "job_resources", NULL),
 	add_parse(JOB_STATE, job_state, "job_state", NULL),
 	add_parse(UINT64, last_sched_eval, "last_sched_evaluation", NULL),
