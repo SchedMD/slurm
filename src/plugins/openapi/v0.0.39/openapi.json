@@ -362,10 +362,34 @@
         ],
         "responses": {
           "200": {
-            "description": "job cancelled or sent signal"
+            "description": "job cancelled or sent signal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/status"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/status"
+                }
+              }
+            }
           },
-          "500": {
-            "description": "job not found"
+          "default": {
+            "description": "Job cancel request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/status"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/status"
+                }
+              }
+            }
           }
         }
       }
