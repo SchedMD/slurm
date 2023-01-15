@@ -4999,7 +4999,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(UINT16, core_spec_cnt, "specialized_cores", NULL),
 	add_parse(UINT32, cpu_bind, "cpu_binding", NULL),
 	add_parse(UINT32, cpu_load, "cpu_load", NULL),
-	add_parse(UINT64, free_mem, "free_mem", NULL),
+	add_parse(UINT64_NO_VAL, free_mem, "free_mem", NULL),
 	add_parse(UINT16, cpus, "cpus", NULL),
 	add_parse(UINT16, cpus_efctv, "effective_cpus", NULL),
 	add_parse(STRING, cpu_spec_list, "specialized_cpus", NULL),
