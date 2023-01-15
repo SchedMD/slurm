@@ -972,7 +972,7 @@
             "$ref": "#/components/schemas/v0.0.39_warnings"
           },
           "reservations": {
-            "$ref": "DATA_PARSER_RESERVATION_INFO"
+            "$ref": "DATA_PARSER_RESERVATION_INFO_ARRAY"
           }
         }
       },
