@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "December 2022" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "January 2023" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -48,6 +48,11 @@ Commit changes immediately without asking for confirmation.
 .IP
 
 .TP
+\fB\-\-json\fR
+Dump job information as JSON. All other formatting arguments will be ignored.
+.IP
+
+.TP
 \fB\-n\fR, \fB\-\-noheader\fR
 No header will be added to the beginning of the output.
 .IP
@@ -72,6 +77,11 @@ This is equivalent to the \fBquiet\fR command.
 \fB\-r\fR, \fB\-\-readonly\fR
 Makes it so the running sacctmgr cannot modify accounting information.
 The \fBreadonly\fR option is for use within interactive mode.
+.IP
+
+.TP
+\fB\-\-yaml\fR
+Dump job information as YAML. All other formatting arguments will be ignored.
 .IP
 
 .TP

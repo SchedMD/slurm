@@ -41,6 +41,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/data_parser.h"
 
 typedef struct {
 	char *cluster;
@@ -1442,6 +1443,14 @@ extern int sacctmgr_list_user(int argc, char **argv)
 
 	user_list = slurmdb_users_get(db_conn, user_cond);
 	slurmdb_destroy_user_cond(user_cond);
+
+	if (mime_type) {
+		rc = DATA_DUMP_CLI(USER_LIST, user_list, "users", argc, argv,
+				   db_conn, mime_type);
+		FREE_NULL_LIST(print_fields_list);
+		FREE_NULL_LIST(user_list);
+		return rc;
+	}
 
 	if (!user_list) {
 		exit_code=1;

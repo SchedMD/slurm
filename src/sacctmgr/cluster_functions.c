@@ -40,6 +40,7 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/uid.h"
+#include "src/interfaces/data_parser.h"
 
 static bool with_deleted = 0;
 static bool with_fed = 0;
@@ -504,6 +505,14 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 
 	cluster_list = slurmdb_clusters_get(db_conn, cluster_cond);
 	slurmdb_destroy_cluster_cond(cluster_cond);
+
+	if (mime_type) {
+		rc = DATA_DUMP_CLI(CLUSTER_REC_LIST, cluster_list, "clusters",
+				   argc, argv, db_conn, mime_type);
+		FREE_NULL_LIST(print_fields_list);
+		FREE_NULL_LIST(cluster_list);
+		return rc;
+	}
 
 	if (!cluster_list) {
 		exit_code=1;

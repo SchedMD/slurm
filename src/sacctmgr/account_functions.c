@@ -40,6 +40,7 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
+#include "src/interfaces/data_parser.h"
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_account_cond_t *acct_cond,
@@ -647,6 +648,14 @@ extern int sacctmgr_list_account(int argc, char **argv)
 
 	acct_list = slurmdb_accounts_get(db_conn, acct_cond);
 	slurmdb_destroy_account_cond(acct_cond);
+
+	if (mime_type) {
+		rc = DATA_DUMP_CLI(ACCOUNT_LIST, acct_list, "accounts", argc,
+				   argv, db_conn, mime_type);
+		FREE_NULL_LIST(print_fields_list);
+		FREE_NULL_LIST(acct_list);
+		return rc;
+	}
 
 	if (!acct_list) {
 		exit_code=1;

@@ -42,11 +42,16 @@
 #include "config.h"
 
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/data.h"
 #include "src/common/xsignal.h"
 #include "src/common/proc_args.h"
 #include "src/common/strlcpy.h"
 
+#include "src/interfaces/serializer.h"
+
 #define OPT_LONG_AUTOCOMP 0x100
+#define OPT_LONG_JSON 0x101
+#define OPT_LONG_YAML 0x102
 
 char *command_name;
 int exit_code;		/* sacctmgr's exit code, =1 on any error at any time */
@@ -62,6 +67,7 @@ uint32_t my_uid = 0;
 List g_qos_list = NULL;
 List g_res_list = NULL;
 List g_tres_list = NULL;
+const char *mime_type = NULL; /* mimetype if we are using data_parser */
 
 /* by default, normalize all usernames to lower case */
 bool user_case_norm = true;
@@ -101,6 +107,8 @@ int main(int argc, char **argv)
 		{"associations", 0, 0, 's'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
+		{"json", 0, 0, OPT_LONG_JSON},
+		{"yaml", 0, 0, OPT_LONG_YAML},
 		{NULL,       0, 0, 0}
 	};
 
@@ -163,6 +171,20 @@ int main(int argc, char **argv)
 		case OPT_LONG_AUTOCOMP:
 			suggest_completion(long_options, optarg);
 			exit(0);
+			break;
+		case OPT_LONG_JSON :
+			mime_type = MIME_TYPE_JSON;
+			if (data_init())
+				fatal("data_init() failed");
+			if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
+				fatal("JSON plugin load failure");
+			break;
+		case OPT_LONG_YAML :
+			mime_type = MIME_TYPE_YAML;
+			if (data_init())
+				fatal("data_init() failed");
+			if (serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL))
+				fatal("YAML plugin load failure");
 			break;
 		default:
 			exit_code = 1;
@@ -890,11 +912,13 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                             \n\
      -h or --help: equivalent to \"help\" command                          \n\
      -i or --immediate: commit changes immediately                         \n\
+     --json: Produce JSON output (where supported)                         \n\
      -n or --noheader: no header will be added to the beginning of output  \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -p or --parsable: output will be '|' delimited with a '|' at the end  \n\
      -P or --parsable2: output will be '|' delimited without a '|' at the end\n\
      -Q or --quiet: equivalent to \"quiet\" command                        \n\
+     --yaml: Produce YAML output (where supported)                         \n\
      -r or --readonly: equivalent to \"readonly\" command                  \n\
      -s or --associations: equivalent to \"associations\" command          \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\

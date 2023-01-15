@@ -40,6 +40,7 @@
 
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
+#include "src/interfaces/data_parser.h"
 
 static int _parse_preempt_modes_internal(List null, char *name, void *x)
 {
@@ -953,6 +954,14 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 	}
 	qos_list = slurmdb_qos_get(db_conn, qos_cond);
 	slurmdb_destroy_qos_cond(qos_cond);
+
+	if (mime_type) {
+		rc = DATA_DUMP_CLI(QOS_LIST, qos_list, "QOS", argc, argv,
+				   db_conn, mime_type);
+		FREE_NULL_LIST(print_fields_list);
+		FREE_NULL_LIST(qos_list);
+		return rc;
+	}
 
 	if (!qos_list) {
 		exit_code=1;

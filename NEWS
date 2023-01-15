@@ -241,6 +241,7 @@ documents those changes that are of interest to users and administrators.
     commands (e.g. squeue, scontrol show job).
  -- Add support for DCMI power readings in IPMI plugin.
  -- Prevent the backfill counter of tested jobs being reset by sdiag -r.
+ -- sacctmgr - Add --json and --yaml arguments.
 
 * Changes in Slurm 22.05.8
 ==========================

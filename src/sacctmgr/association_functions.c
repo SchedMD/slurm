@@ -39,6 +39,7 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/interfaces/data_parser.h"
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_assoc_cond_t *assoc_cond,
@@ -883,6 +884,14 @@ extern int sacctmgr_list_assoc(int argc, char **argv)
 
 	assoc_list = slurmdb_associations_get(db_conn, assoc_cond);
 	slurmdb_destroy_assoc_cond(assoc_cond);
+
+	if (mime_type) {
+		rc = DATA_DUMP_CLI(ASSOC_LIST, assoc_list, "associations", argc,
+				   argv, db_conn, mime_type);
+		FREE_NULL_LIST(print_fields_list);
+		FREE_NULL_LIST(assoc_list);
+		return rc;
+	}
 
 	if (!assoc_list) {
 		exit_code=1;
