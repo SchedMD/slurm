@@ -955,7 +955,7 @@
             "$ref": "#/components/schemas/v0.0.39_warnings"
           },
           "partitions": {
-            "$ref": "DATA_PARSER_PARTITION_INFO"
+            "$ref": "DATA_PARSER_PARTITION_INFO_ARRAY"
           }
         }
       },
