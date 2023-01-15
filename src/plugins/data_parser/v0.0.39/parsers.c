@@ -5367,7 +5367,7 @@ static const parser_t PARSER_ARRAY(EXT_SENSORS_DATA)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(power_mgmt_data_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(POWER_MGMT_DATA)[] = {
-	add_parse(UINT32, cap_watts, "maximum_watts", NULL),
+	add_parse(UINT32_NO_VAL, cap_watts, "maximum_watts", NULL),
 	add_parse(UINT32, current_watts, "current_watts", NULL),
 	add_parse(UINT64, joule_counter, "total_energy", NULL),
 	add_parse(UINT32, new_cap_watts, "new_maximum_watts", NULL),
