@@ -71,7 +71,7 @@ static int _op_handler_diag(const char *context_id,
 	else if ((rc = slurmdb_get_stats(ctxt->db_conn, &stats_rec)))
 		resp_error(ctxt, rc, "slurmdb_get_stats", "stats query failed");
 	else
-		rc = DATA_DUMP(ctxt->parser, STATS_REC_ARRAY, *stats_rec,
+		rc = DATA_DUMP(ctxt->parser, STATS_REC_ARRAY_PTR, stats_rec,
 			       data_key_set(ctxt->resp, "statistics"));
 
 	slurmdb_destroy_stats_rec(stats_rec);
