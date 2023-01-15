@@ -3521,24 +3521,6 @@ static int DUMP_FUNC(PARTITION_INFO_MSG)(const parser_t *const parser,
 	return rc;
 }
 
-PARSE_DISABLED(NODE_STATES_NO_VAL)
-
-static int DUMP_FUNC(NODE_STATES_NO_VAL)(const parser_t *const parser,
-					 void *obj, data_t *dst, args_t *args)
-{
-	uint32_t *ptr = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
-	if (*ptr != NO_VAL)
-		return DUMP(NODE_STATES, *ptr, dst, args);
-	else
-		data_set_string(dst, "");
-
-	return SLURM_SUCCESS;
-}
-
 PARSE_DISABLED(RESERVATION_INFO_MSG)
 
 static int DUMP_FUNC(RESERVATION_INFO_MSG)(const parser_t *const parser,
@@ -4822,6 +4804,7 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 #undef add_skip
 
 static const flag_bit_t PARSER_FLAG_ARRAY(NODE_STATES)[] = {
+	add_flag_equal(NO_VAL, INFINITE, "INVALID"),
 	add_flag_equal(NODE_STATE_UNKNOWN, NODE_STATE_BASE, "UNKNOWN"),
 	add_flag_equal(NODE_STATE_DOWN, NODE_STATE_BASE, "DOWN"),
 	add_flag_equal(NODE_STATE_IDLE, NODE_STATE_BASE, "IDLE"),
@@ -4885,7 +4868,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, mcs_label, "mcs_label", NULL),
 	add_parse(UINT64, mem_spec_limit, "specialized_memory", NULL),
 	add_parse(STRING, name, "name", NULL),
-	add_parse(NODE_STATES_NO_VAL, next_state, "next_state_after_reboot", NULL),
+	add_parse(NODE_STATES, next_state, "next_state_after_reboot", NULL),
 	add_parse(STRING, node_addr, "address", NULL),
 	add_parse(STRING, node_hostname, "hostname", NULL),
 	add_parse_bit_flag_array(node_info_t, NODE_STATES, false, node_state, "state", NULL),
@@ -5974,7 +5957,6 @@ static const parser_t parsers[] = {
 	addps(CONTROLLER_PING_RESULT, bool, NEED_NONE, STRING, NULL),
 	addpsa(HOSTLIST, STRING, hostlist_t, NEED_NONE, NULL),
 	addps(CPU_FREQ_FLAGS, uint32_t, NEED_NONE, STRING, NULL),
-	addpsp(NODE_STATES_NO_VAL, NODE_STATES, uint32_t, NEED_NONE, NULL),
 	addps(ERROR, int, NEED_NONE, STRING, NULL),
 	addpsa(JOB_INFO_MSG, JOB_INFO, job_info_msg_t, NEED_NONE, NULL),
 	addpsa(STRING_ARRAY, STRING, char **, NEED_NONE, NULL),
