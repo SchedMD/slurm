@@ -1806,7 +1806,7 @@ static void SPEC_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser,
 static int PARSE_FUNC(INT64)(const parser_t *const parser, void *obj,
 			     data_t *str, args_t *args, data_t *parent_path)
 {
-	char *path;
+	char *path = NULL;
 	int64_t *dst = obj;
 	int rc = SLURM_SUCCESS;
 
