@@ -35,6 +35,7 @@
 \*****************************************************************************/
 
 #include "src/common/data.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -49,6 +50,34 @@ typedef enum {
 	URL_TAG_NODE = 328382,
 	URL_TAG_NODES = 21389,
 } url_tag_t;
+
+static void _update_node(ctxt_t *ctxt, char *name)
+{
+	int rc;
+	data_t *ppath = data_set_list(data_new());
+	update_node_msg_t *node_msg = xmalloc(sizeof(*node_msg));
+
+	if ((rc = DATA_PARSE(ctxt->parser, UPDATE_NODE_MSG, *node_msg,
+			     ctxt->query, ppath)))
+		goto cleanup;
+
+	if (node_msg->node_names) {
+		resp_warn(ctxt, __func__,
+			  "node_names field %s ignored for singular node update",
+			  node_msg->node_names);
+		xfree(node_msg->node_names);
+	}
+
+	node_msg->node_names = xstrdup(name);
+
+	if (!rc && slurm_update_node(node_msg))
+		resp_error(ctxt, errno, __func__,
+			   "Failure to update node %s", name);
+
+cleanup:
+	slurm_free_update_node_msg(node_msg);
+	FREE_NULL_DATA(ppath);
+}
 
 static void _dump_nodes(ctxt_t *ctxt, char *name)
 {
@@ -120,6 +149,8 @@ static int _op_handler_nodes(const char *context_id,
 
 	if (method == HTTP_REQUEST_GET) {
 		_dump_nodes(ctxt, name);
+	} else if ((method == HTTP_REQUEST_POST) && (tag == URL_TAG_NODE)) {
+		_update_node(ctxt, name);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
