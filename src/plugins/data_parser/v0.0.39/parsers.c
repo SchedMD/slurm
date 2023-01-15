@@ -2953,7 +2953,10 @@ static int DUMP_FUNC(NODE_SELECT_TRES_USED)(const parser_t *const parser,
 				node->name);
 	}
 
-	data_set_string_own(dst, node_alloc_tres);
+	if (node_alloc_tres)
+		data_set_string_own(dst, node_alloc_tres);
+	else
+		data_set_string(dst, "");
 
 	return SLURM_SUCCESS;
 }
