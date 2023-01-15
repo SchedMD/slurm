@@ -626,6 +626,58 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "slurm"
+        ],
+        "operationId": "delete_node",
+        "summary": "delete node",
+        "parameters": [
+          {
+            "name": "node_name",
+            "in": "path",
+            "description": "Slurm Node Name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "node deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/status"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/status"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "node delete request failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/status"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/status"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/partitions/": {

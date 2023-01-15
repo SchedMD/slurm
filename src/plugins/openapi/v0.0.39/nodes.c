@@ -51,6 +51,20 @@ typedef enum {
 	URL_TAG_NODES = 21389,
 } url_tag_t;
 
+static void _delete_node(ctxt_t *ctxt, char *name)
+{
+	update_node_msg_t *node_msg = xmalloc(sizeof(*node_msg));
+	slurm_init_update_node_msg(node_msg);
+
+	node_msg->node_names = xstrdup(name);
+
+	if (slurm_delete_node(node_msg))
+		resp_error(ctxt, errno, __func__,
+			   "Failure to update node %s", name);
+
+	slurm_free_update_node_msg(node_msg);
+}
+
 static void _update_node(ctxt_t *ctxt, char *name)
 {
 	int rc;
@@ -149,6 +163,8 @@ static int _op_handler_nodes(const char *context_id,
 
 	if (method == HTTP_REQUEST_GET) {
 		_dump_nodes(ctxt, name);
+	} else if ((method == HTTP_REQUEST_DELETE) && (tag == URL_TAG_NODE)) {
+		_delete_node(ctxt, name);
 	} else if ((method == HTTP_REQUEST_POST) && (tag == URL_TAG_NODE)) {
 		_update_node(ctxt, name);
 	} else {
