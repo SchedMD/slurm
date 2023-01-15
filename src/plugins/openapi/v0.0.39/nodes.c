@@ -50,28 +50,14 @@ typedef enum {
 	URL_TAG_NODES = 21389,
 } url_tag_t;
 
-static int _op_handler_nodes(const char *context_id,
-			     http_request_method_t method, data_t *parameters,
-			     data_t *query, int tag, data_t *resp, void *auth)
+static void _dump_nodes(ctxt_t *ctxt, char *name)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
-	node_info_msg_t *node_info_ptr = NULL;
-	data_t *dnodes = data_key_set(resp, "nodes");
 	time_t update_time = 0;
+	node_info_msg_t *node_info_ptr = NULL;
+	data_t *dnodes = data_key_set(ctxt->resp, "nodes");
 
-	if (ctxt->rc)
-		goto done;
-
-	if (method != HTTP_REQUEST_GET) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
-		goto done;
-	}
-
-	if (tag == URL_TAG_NODES) {
-		if (get_date_param(query, "update_time", &update_time))
+	if (!name) {
+		if (get_date_param(ctxt->query, "update_time", &update_time))
 			goto done;
 		if ((slurm_load_node(update_time, &node_info_ptr,
 				     SHOW_ALL | SHOW_DETAIL | SHOW_MIXED))) {
@@ -79,28 +65,14 @@ static int _op_handler_nodes(const char *context_id,
 				   "Failure to query nodes");
 			goto done;
 		}
-	} else if (tag == URL_TAG_NODE) {
-		data_t *node_name = data_key_get(parameters, "node_name");
-		char *name = NULL;
-
-		if (!node_name || data_get_string_converted(node_name, &name)) {
-			resp_error(
-				ctxt, ESLURM_INVALID_NODE_NAME, __func__,
-				"Expected string for node name but got %s",
-				data_type_to_string(data_get_type(node_name)));
-			goto done;
-		} else if (slurm_load_node_single(&node_info_ptr, name,
-						  SHOW_ALL | SHOW_DETAIL |
-							  SHOW_MIXED) ||
-			   !node_info_ptr || !node_info_ptr->record_count) {
+	} else {
+		if (slurm_load_node_single(&node_info_ptr, name,
+			(SHOW_ALL|SHOW_DETAIL|SHOW_MIXED)) ||
+		    !node_info_ptr || !node_info_ptr->record_count) {
 			resp_error(ctxt, errno, __func__,
 				   "Failure to query node %s", name);
 			goto done;
 		}
-
-		xfree(name);
-	} else {
-		fatal_abort("Invalid tag requested: %d", tag);
 	}
 
 	if (node_info_ptr && node_info_ptr->record_count) {
@@ -118,10 +90,44 @@ static int _op_handler_nodes(const char *context_id,
 		slurm_free_partition_info_msg(part_info_ptr);
 	}
 
-	DATA_DUMP(ctxt->parser, NODES, *node_info_ptr, dnodes);
+done:
+	DATA_DUMP(ctxt->parser, NODES_PTR, node_info_ptr, dnodes);
+	slurm_free_node_info_msg(node_info_ptr);
+}
+
+static int _op_handler_nodes(const char *context_id,
+			     http_request_method_t method, data_t *parameters,
+			     data_t *query, int tag, data_t *resp, void *auth)
+{
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
+	char *name = NULL;
+
+	if (ctxt->rc)
+		goto done;
+
+	if (tag == URL_TAG_NODE) {
+		data_t *node_name = data_key_get(parameters, "node_name");
+
+		if (!node_name || data_get_string_converted(node_name, &name)) {
+			resp_error(
+				ctxt, ESLURM_INVALID_NODE_NAME, __func__,
+				"Expected string for node name but got %s",
+				data_type_to_string(data_get_type(node_name)));
+			goto done;
+		}
+	}
+
+	if (method == HTTP_REQUEST_GET) {
+		_dump_nodes(ctxt, name);
+	} else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
+	}
 
 done:
-	slurm_free_node_info_msg(node_info_ptr);
+	xfree(name);
 	return fini_connection(ctxt);
 }
 
