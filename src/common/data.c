@@ -440,6 +440,7 @@ extern void data_free(data_t *data)
 	_release(data);
 
 	data->magic = ~DATA_MAGIC;
+	data->type = DATA_TYPE_NONE;
 	xfree(data);
 }
 
