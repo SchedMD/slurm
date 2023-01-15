@@ -5840,6 +5840,26 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 #undef add_skip
 #undef add_flags
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(update_node_msg_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(UPDATE_NODE_MSG)[] = {
+	add_parse(STRING, comment, "comment", "arbitrary comment"),
+	add_parse(UINT32, cpu_bind, "cpu_bind", "default CPU binding type"),
+	add_parse(STRING, extra, "extra", "arbitrary string"),
+	add_parse(CSV_LIST, features, "features", "new available feature for node"),
+	add_parse(CSV_LIST, features_act, "features_act", "new active feature for node"),
+	add_parse(STRING, gres, "gres", "new generic resources for node"),
+	add_parse(HOSTLIST_STRING, node_addr, "address", "communication name"),
+	add_parse(HOSTLIST_STRING, node_hostname, "hostname", "node's hostname"),
+	add_parse(HOSTLIST_STRING, node_names, "name", "node to update"),
+	add_parse(NODE_STATES, node_state, "state", "assign new node state"),
+	add_parse(STRING, reason, "reason", "reason for node being DOWN or DRAINING"),
+	add_parse(USER_ID, reason_uid, "reason_uid", "user ID of sending (needed if user root is sending message)"),
+	add_parse(UINT32_NO_VAL, resume_after, "resume_after", "automatically resume DOWN or DRAINED node after this amount of seconds"),
+	add_parse(UINT32_NO_VAL, weight, "weight", "new weight for node"),
+};
+#undef add_parse
+
 #undef add_parser
 #undef add_parser_skip
 #undef add_complex_parser
@@ -6210,6 +6230,7 @@ static const parser_t parsers[] = {
 	addpa(JOB_SUBMIT_RESPONSE_MSG, submit_response_msg_t),
 	addpa(JOB_DESC_MSG, job_desc_msg_t),
 	addpa(CRON_ENTRY, cron_entry_t),
+	addpa(UPDATE_NODE_MSG, update_node_msg_t),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
