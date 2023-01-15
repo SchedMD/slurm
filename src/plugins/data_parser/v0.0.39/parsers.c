@@ -346,6 +346,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 		case PARSER_MODEL_LIST:
 		case PARSER_MODEL_PTR:
 		case PARSER_MODEL_NT_ARRAY:
+		case PARSER_MODEL_NT_PTR_ARRAY:
 			xassert(parser->field_name && parser->field_name[0]);
 			/* linked parsers must always be the same size */
 			xassert(parser->size ==
@@ -429,7 +430,8 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(parser->list_type == DATA_PARSER_TYPE_INVALID);
 		xassert(!parser->array_type);
 		xassert(!parser->obj_openapi);
-	} else if (parser->model == PARSER_MODEL_NT_ARRAY) {
+	} else if ((parser->model == PARSER_MODEL_NT_ARRAY) ||
+		   (parser->model == PARSER_MODEL_NT_PTR_ARRAY)) {
 		xassert(!parser->pointer_type);
 		xassert(parser->array_type > DATA_PARSER_TYPE_INVALID);
 		xassert(parser->array_type < DATA_PARSER_TYPE_MAX);
@@ -5736,11 +5738,24 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 		.ptr_offset = NO_VAL,                                          \
 		.pointer_type = DATA_PARSER_##typep,                           \
 	}
-/* add parser for NULL terminated array of pointers */
+/* add parser for NULL terminated array of (sequential) objects */
 #define addnt(typev, typea)                                                    \
 	{                                                                      \
 		.magic = MAGIC_PARSER,                                         \
 		.model = PARSER_MODEL_NT_ARRAY,                                \
+		.type = DATA_PARSER_##typev,                                   \
+		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
+		.obj_type_string = "void **",                                  \
+		.size = sizeof(void **),                                       \
+		.needs = NEED_NONE,                                            \
+		.ptr_offset = NO_VAL,                                          \
+		.array_type = DATA_PARSER_##typea,                             \
+	}
+/* add parser for NULL terminated array of pointers to objects */
+#define addntp(typev, typea)                                                   \
+	{                                                                      \
+		.magic = MAGIC_PARSER,                                         \
+		.model = PARSER_MODEL_NT_PTR_ARRAY,                            \
 		.type = DATA_PARSER_##typev,                                   \
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_type_string = "void **",                                  \
@@ -6006,10 +6021,10 @@ static const parser_t parsers[] = {
 
 	/* NULL terminated model parsers */
 	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),
-	addnt(NODE_ARRAY, NODE),
-	addnt(PARTITION_INFO_ARRAY, PARTITION_INFO),
-	addnt(STEP_INFO_ARRAY, STEP_INFO),
-	addnt(RESERVATION_INFO_ARRAY, RESERVATION_INFO),
+	addntp(NODE_ARRAY, NODE),
+	addntp(PARTITION_INFO_ARRAY, PARTITION_INFO),
+	addntp(STEP_INFO_ARRAY, STEP_INFO),
+	addntp(RESERVATION_INFO_ARRAY, RESERVATION_INFO),
 
 	/* Pointer model parsers */
 	addpp(STATS_REC_ARRAY_PTR, slurmdb_stats_rec_t *, STATS_REC_ARRAY),

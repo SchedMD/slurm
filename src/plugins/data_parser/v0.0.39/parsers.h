@@ -84,7 +84,9 @@ typedef enum {
 	PARSER_MODEL_FLAG_ARRAY, /* parser for single bool field in a parser array */
 	PARSER_MODEL_LIST, /* parser for list_t's */
 	PARSER_MODEL_PTR, /* parser for pointer */
-	PARSER_MODEL_NT_ARRAY, /* parser for NULL terminated array of pointers */
+	PARSER_MODEL_NT_PTR_ARRAY, /* parser for NULL terminated array of pointers */
+	/* NT_ARRAY objects must not require an special initializer */
+	PARSER_MODEL_NT_ARRAY, /* parser for NULL terminated array of objects */
 
 	PARSER_MODEL_MAX /* place holder */
 } parser_model_t;

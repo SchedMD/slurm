@@ -73,7 +73,8 @@ typedef struct {
 
 typedef struct {
 	int magic; /* MAGIC_FOREACH_NT_ARRAY */
-	void **array;
+	void **array; /* array of pointers to objects */
+	void *sarray; /* array of objects */
 	int index;
 	const parser_t *const parser;
 	const parser_t *const array_parser;
@@ -419,7 +420,7 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 {
 	int rc;
 	foreach_nt_array_t *args = arg;
-	void *obj = alloc_parser_obj(args->parser);
+	void *obj = NULL;
 	data_t *ppath = data_copy(NULL, args->parent_path);
 	data_t *ppath_last = data_get_list_last(ppath);
 
@@ -434,6 +435,11 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 			    data_get_string(ppath_last),
 			    args->index);
 
+	if (args->parser->model == PARSER_MODEL_NT_PTR_ARRAY)
+		obj = alloc_parser_obj(args->parser);
+	else if (args->parser->model == PARSER_MODEL_NT_ARRAY)
+		obj = args->sarray + (args->parser->size * args->index);
+
 	if ((rc = parse(obj, NO_VAL, args->parser, src, args->args, ppath))) {
 		log_flag(DATA, "%s object at 0x%"PRIxPTR" freed due to parser error: %s",
 			 args->parser->obj_type_string, (uintptr_t) obj,
@@ -443,8 +449,11 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 		return DATA_FOR_EACH_FAIL;
 	}
 
-	xassert(!args->array[args->index]);
-	args->array[args->index] = obj;
+	if (args->parser->model == PARSER_MODEL_NT_PTR_ARRAY) {
+		xassert(!args->array[args->index]);
+		args->array[args->index] = obj;
+	}
+
 	args->index++;
 
 	FREE_NULL_DATA(ppath);
@@ -455,7 +464,6 @@ static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
 			   args_t *args, data_t *parent_path)
 {
 	int rc = SLURM_SUCCESS;
-	void ***array_ptr = dst;
 	foreach_nt_array_t fargs = {
 		.magic = MAGIC_FOREACH_NT_ARRAY,
 		.array_parser = parser,
@@ -467,7 +475,6 @@ static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
 	char *path = NULL;
 
 	xassert(args->magic == MAGIC_ARGS);
-	xassert(!*array_ptr);
 
 	if (data_get_type(src) != DATA_TYPE_LIST) {
 		rc = on_error(PARSING, parser->type, args,
@@ -479,13 +486,25 @@ static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
 	}
 
 	/* assume list can parse all entries */
-	fargs.array = xcalloc(data_get_list_length(src) + 1,
-			      sizeof(*fargs.array));
+	if (parser->model == PARSER_MODEL_NT_PTR_ARRAY)
+		fargs.array = xcalloc(data_get_list_length(src) + 1,
+				      sizeof(*fargs.array));
+	else if (parser->model == PARSER_MODEL_NT_ARRAY)
+		fargs.sarray = xcalloc(data_get_list_length(src) + 1,
+				       sizeof(fargs.parser->size));
 
 	if (data_list_for_each(src, _foreach_array_entry, &fargs) < 0)
 		goto cleanup;
 
-	SWAP(*array_ptr, fargs.array);
+	if (parser->model == PARSER_MODEL_NT_PTR_ARRAY) {
+		void ***array_ptr = dst;
+		xassert(!*array_ptr);
+		SWAP(*array_ptr, fargs.array);
+	} else if (parser->model == PARSER_MODEL_NT_ARRAY) {
+		void **array_ptr = dst;
+		xassert(!*array_ptr);
+		SWAP(*array_ptr, fargs.sarray);
+	}
 
 cleanup:
 	xfree(path);
@@ -715,6 +734,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		verify_parser_not_sliced(parser);
 		rc = _parse_pointer(parser, dst, src, args, ppath);
 		break;
+	case PARSER_MODEL_NT_PTR_ARRAY:
 	case PARSER_MODEL_NT_ARRAY:
 		verify_parser_not_sliced(parser);
 		rc = _parse_nt_array(parser, dst, src, args, ppath);
@@ -944,6 +964,7 @@ static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 			data_set_dict(dst);
 		} else if ((pt->model == PARSER_MODEL_LIST) ||
 			   (pt->model == PARSER_MODEL_NT_ARRAY) ||
+			   (pt->model == PARSER_MODEL_NT_PTR_ARRAY) ||
 			   (pt->obj_openapi == OPENAPI_FORMAT_ARRAY)) {
 			/*
 			 * OpenAPI clients can't handle a null instead of an
@@ -963,17 +984,47 @@ static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
 			  args_t *args)
 {
 	int rc = SLURM_SUCCESS;
-	void ***array_ptr = src;
-	void **array;
 
 	data_set_list(dst);
 
-	if (!(array = *array_ptr))
-		return SLURM_SUCCESS;
+	if (parser->model == PARSER_MODEL_NT_PTR_ARRAY) {
+		void ***array_ptr = src;
+		void **array;
 
-	for (int i = 0; rc && array[i]; i++)
-		rc = data_parser_p_dump(args, parser->array_type, &array[i],
-					NO_VAL, dst);
+		if (!(array = *array_ptr))
+			return SLURM_SUCCESS;
+
+		for (int i = 0; !rc && array[i]; i++) {
+			rc = data_parser_p_dump(args, parser->array_type,
+						array[i], NO_VAL,
+						data_list_append(dst));
+		}
+	} else if (parser->model == PARSER_MODEL_NT_ARRAY) {
+		const parser_t *const ap =
+			find_parser_by_type(parser->array_type);
+		void **array = src;
+
+		if (!*array)
+			return SLURM_SUCCESS;
+
+		for (int i = 0; !rc; i++) {
+			bool done = true;
+			void *ptr = *array + (ap->size * i);
+
+			/* check every byte of object is zero */
+			for (int j = 0; j < ap->size; j++)
+				if (((char *) ptr)[j])
+					done = false;
+
+			if (done)
+				break;
+
+			rc = data_parser_p_dump(args, parser->array_type, ptr,
+						NO_VAL, data_list_append(dst));
+		}
+	} else {
+		fatal_abort("invalid model");
+	}
 
 	return rc;
 }
@@ -1115,6 +1166,7 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 
 		rc = _dump_pointer(parser, src, dst, args);
 		break;
+	case PARSER_MODEL_NT_PTR_ARRAY:
 	case PARSER_MODEL_NT_ARRAY:
 		xassert(parser->array_type > DATA_PARSER_TYPE_INVALID);
 		xassert(parser->array_type < DATA_PARSER_TYPE_MAX);
