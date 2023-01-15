@@ -2266,7 +2266,7 @@
             "$ref": "#/components/schemas/dbv0.0.39_warnings"
           },
           "statistics": {
-            "$ref": "DATA_PARSER_STATS_REC_ARRAY"
+            "$ref": "DATA_PARSER_STATS_REC_PTR"
           }
         }
       },

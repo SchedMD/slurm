@@ -115,13 +115,14 @@ typedef enum {
 	DATA_PARSER_QOS_PREEMPT_MODES, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_* */
 	DATA_PARSER_RPC_ID, /* slurmdbd_msg_type_t */
 	DATA_PARSER_SELECT_PLUGIN_ID, /* int (SELECT_PLUGIN_*) -> string */
-	DATA_PARSER_STATS_REC_ARRAY, /* array of slurmdb_stats_rec_t */
-	DATA_PARSER_STATS_REC_ARRAY_PTR, /* slurmdb_stats_rec_t* */
+	DATA_PARSER_STATS_REC_PTR, /* slurmdb_stats_rec_t* */
 	DATA_PARSER_STATS_REC, /* slurmdb_stats_rec_t */
 	DATA_PARSER_STATS_RPC_LIST, /* list of slurmdb_rpc_obj_t* */
 	DATA_PARSER_STATS_RPC, /* slurmdb_rpc_obj_t */
 	DATA_PARSER_STATS_USER_LIST, /* list of slurmdb_rpc_obj_t* */
 	DATA_PARSER_STATS_USER, /* slurmdb_rpc_obj_t */
+	DATA_PARSER_ROLLUP_STATS, /* slurmdb_rollup_stats_t */
+	DATA_PARSER_ROLLUP_STATS_PTR, /* slurmdb_rollup_stats_t* */
 	DATA_PARSER_STEP_CPUFREQ_GOV, /* slurmdb_step_rec_t.req_cpufreq_gov (uint32_t) of CPU_FREQ_* flags */
 	DATA_PARSER_SLURM_STEP_ID, /* slurm_step_id_t */
 	DATA_PARSER_STEP_ID, /* uint32_t of job step id */

@@ -63,17 +63,18 @@ static int _op_handler_diag(const char *context_id,
 	slurmdb_stats_rec_t *stats_rec = NULL;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
+	data_t *dstats = data_key_set(ctxt->resp, "statistics");
 
 	debug4("%s: [%s] diag handler called", __func__, context_id);
 
 	if (ctxt->rc)
-		;	/* do nothing - error already logged */
+		goto cleanup;
 	else if ((rc = slurmdb_get_stats(ctxt->db_conn, &stats_rec)))
 		resp_error(ctxt, rc, "slurmdb_get_stats", "stats query failed");
-	else
-		rc = DATA_DUMP(ctxt->parser, STATS_REC_ARRAY_PTR, stats_rec,
-			       data_key_set(ctxt->resp, "statistics"));
 
+	DATA_DUMP(ctxt->parser, STATS_REC_PTR, stats_rec, dstats);
+
+cleanup:
 	slurmdb_destroy_stats_rec(stats_rec);
 	return fini_connection(ctxt);
 }

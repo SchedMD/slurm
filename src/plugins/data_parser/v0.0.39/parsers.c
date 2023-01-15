@@ -1199,10 +1199,10 @@ static int DUMP_FUNC(JOB_USER)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(STATS_REC_ARRAY)
+PARSE_DISABLED(ROLLUP_STATS)
 
-static int DUMP_FUNC(STATS_REC_ARRAY)(const parser_t *const parser, void *obj,
-				      data_t *dst, args_t *args)
+static int DUMP_FUNC(ROLLUP_STATS)(const parser_t *const parser, void *obj,
+				   data_t *dst, args_t *args)
 {
 	slurmdb_rollup_stats_t *rollup_stats = obj;
 
@@ -1253,8 +1253,8 @@ static int DUMP_FUNC(STATS_REC_ARRAY)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-void SPEC_FUNC(STATS_REC_ARRAY)(const parser_t *const parser, args_t *args,
-				data_t *spec, data_t *dst)
+void SPEC_FUNC(ROLLUP_STATS)(const parser_t *const parser, args_t *args,
+			     data_t *spec, data_t *dst)
 {
 	data_t *items, *rec, *type, *types;
 
@@ -4750,7 +4750,7 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 /* should mirror the structure of slurmdb_stats_rec_t */
 static const parser_t PARSER_ARRAY(STATS_REC)[] = {
 	add_parse(UINT64, time_start, "time_start", NULL),
-	add_parse(STATS_REC_ARRAY_PTR, dbd_rollup_stats, "rollups", NULL),
+	add_parse(ROLLUP_STATS_PTR, dbd_rollup_stats, "rollups", NULL),
 	add_parse(STATS_RPC_LIST, rpc_list, "RPCs", NULL),
 	add_parse(STATS_USER_LIST, user_list, "users", NULL),
 };
@@ -6100,7 +6100,6 @@ static const parser_t parsers[] = {
 	addpsa(QOS_STRING_ID_LIST, STRING, List, NEED_NONE, "List of QOS names"),
 	addpss(JOB_EXIT_CODE, int32_t, NEED_NONE, OBJECT, NULL),
 	addpsp(ASSOC_ID, ASSOC_SHORT_PTR, uint32_t, NEED_ASSOC, NULL),
-	addpss(STATS_REC_ARRAY, slurmdb_stats_rec_t, NEED_NONE, ARRAY, NULL),
 	addps(RPC_ID, slurmdbd_msg_type_t, NEED_NONE, STRING, NULL),
 	addps(SELECT_PLUGIN_ID, int, NEED_NONE, STRING, NULL),
 	addps(TASK_DISTRIBUTION, uint32_t, NEED_NONE, STRING, NULL),
@@ -6132,6 +6131,7 @@ static const parser_t parsers[] = {
 	addps(SIGNAL, uint16_t, NEED_NONE, STRING, NULL),
 	addps(BITSTR, bitstr_t, NEED_NONE, STRING, NULL),
 	addpss(JOB_ARRAY_RESPONSE_MSG, job_array_resp_msg_t, NEED_NONE, ARRAY, NULL),
+	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL),
 
 	/* Complex type parsers */
 	addpca(QOS_PREEMPT_LIST, STRING, slurmdb_qos_rec_t, NEED_QOS, NULL),
@@ -6181,7 +6181,8 @@ static const parser_t parsers[] = {
 	addntp(RESERVATION_INFO_ARRAY, RESERVATION_INFO),
 
 	/* Pointer model parsers */
-	addpp(STATS_REC_ARRAY_PTR, slurmdb_stats_rec_t *, STATS_REC_ARRAY),
+	addpp(STATS_REC_PTR, slurmdb_stats_rec_t *, STATS_REC),
+	addpp(ROLLUP_STATS_PTR, slurmdb_rollup_stats_t *, ROLLUP_STATS),
 	addpp(ASSOC_SHORT_PTR, slurmdb_assoc_rec_t *, ASSOC_SHORT),
 	addpp(ASSOC_USAGE_PTR, slurmdb_assoc_usage_t *, ASSOC_USAGE),
 	addpp(JOB_RES_PTR, job_resources_t *, JOB_RES),
