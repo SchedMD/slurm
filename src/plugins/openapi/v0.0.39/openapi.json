@@ -1058,7 +1058,7 @@
             "$ref": "#/components/schemas/v0.0.39_warnings"
           },
           "pings": {
-            "$ref": "DATA_PARSER_CONTROLLER_PING"
+            "$ref": "DATA_PARSER_CONTROLLER_PING_ARRAY"
           }
         }
       },
