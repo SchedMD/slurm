@@ -91,12 +91,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.39_licenses"
+                  "$ref": "#/components/schemas/v0.0.39_licenses_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.39_licenses"
+                  "$ref": "#/components/schemas/v0.0.39_licenses_info"
                 }
               }
             }
@@ -1028,7 +1028,7 @@
           }
         }
       },
-      "v0.0.39_licenses": {
+      "v0.0.39_licenses_info": {
         "type": "object",
         "properties": {
           "meta": {
