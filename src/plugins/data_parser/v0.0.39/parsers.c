@@ -76,6 +76,7 @@
 #define MAGIC_FOREACH_STEP 0x7e2eaef1
 #define MAGIC_FOREACH_STRING_ID 0x2ea1be2b
 #define MAGIC_FOREACH_STRING_ARRAY 0xaea1be2b
+#define MAGIC_FOREACH_HOSTLIST 0xae71b92b
 #define MAGIC_LIST_PER_TRES_TYPE_NCT 0xb1d8acd2
 
 #define PARSER_ARRAY(type) _parser_array_##type
@@ -149,6 +150,14 @@ typedef struct {
 	const parser_t *const parser;
 	args_t *args;
 } foreach_string_array_t;
+
+typedef struct {
+	int magic; /* MAGIC_FOREACH_HOSTLIST */
+	const parser_t *const parser;
+	args_t *args;
+	hostlist_t host_list;
+	data_t *parent_path;
+} foreach_hostlist_parse_t;
 
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
@@ -3449,7 +3458,96 @@ static int DUMP_FUNC(STEP_INFO_MSG)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
-PARSE_DISABLED(HOSTLIST)
+static data_for_each_cmd_t _foreach_hostlist_parse(data_t *data, void *arg)
+{
+	foreach_hostlist_parse_t *args = arg;
+
+	xassert(args->magic == MAGIC_FOREACH_HOSTLIST);
+
+	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
+		char *path = NULL;
+		on_error(PARSING, args->parser->type, args->args,
+			 ESLURM_DATA_CONV_FAILED,
+			 set_source_path(&path, args->parent_path), __func__,
+			 "string expected but got %s",
+			 data_type_to_string(data_get_type(data)));
+		xfree(path);
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	if (!hostlist_push(args->host_list, data_get_string(data))) {
+		char *path = NULL;
+		on_error(PARSING, args->parser->type, args->args,
+			 ESLURM_DATA_CONV_FAILED,
+			 set_source_path(&path, args->parent_path), __func__,
+			 "Invalid host string: %s", data_get_string(data));
+		xfree(path);
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static int PARSE_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
+				data_t *src, args_t *args, data_t *parent_path)
+{
+	int rc;
+	hostlist_t *host_list_ptr = obj;
+	hostlist_t host_list = NULL;
+	char *path = NULL;
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	if (data_get_type(src) == DATA_TYPE_NULL)
+		return SLURM_SUCCESS;
+
+	if (data_get_type(src) == DATA_TYPE_STRING) {
+		char *host_list_str = data_get_string(src);
+
+		if (!host_list_str || !host_list_str[0]) {
+			/* empty list -> no hostlist */
+			return SLURM_SUCCESS;
+		}
+
+		if (!(host_list = hostlist_create(host_list_str))) {
+			rc = on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_CONV_FAILED,
+				      set_source_path(&path, parent_path),
+				      __func__, "Invalid hostlist string: %s",
+				      host_list_str);
+			goto cleanup;
+		}
+	} else if (data_get_type(src) == DATA_TYPE_LIST) {
+		foreach_hostlist_parse_t fargs = {
+			.magic = MAGIC_FOREACH_HOSTLIST,
+			.parser = parser,
+			.args = args,
+			.parent_path = parent_path,
+		};
+
+		fargs.host_list = host_list = hostlist_create(NULL);
+
+		if (data_list_for_each(src, _foreach_hostlist_parse, &fargs) <
+		    0)
+			rc = ESLURM_DATA_CONV_FAILED;
+	} else {
+		rc = on_error(PARSING, parser->type, args,
+			      ESLURM_DATA_CONV_FAILED,
+			      set_source_path(&path, parent_path), __func__,
+			      "string expected but got %s",
+			      data_type_to_string(data_get_type(src)));
+		goto cleanup;
+	}
+
+	if (!rc)
+		*host_list_ptr = host_list;
+	else if (host_list)
+		hostlist_destroy(host_list);
+
+cleanup:
+	xfree(path);
+	return rc;
+}
 
 static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
@@ -3475,6 +3573,56 @@ static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 		hostlist_iterator_destroy(itr);
 	}
 
+	return rc;
+}
+
+static int PARSE_FUNC(HOSTLIST_STRING)(const parser_t *const parser, void *obj,
+				       data_t *src, args_t *args,
+				       data_t *parent_path)
+{
+	int rc;
+	char **host_list_str = obj;
+	hostlist_t host_list = NULL;
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	if ((rc = PARSE_FUNC(HOSTLIST)(parser, &host_list, src, args,
+				       parent_path)))
+		return rc;
+
+	*host_list_str = hostlist_ranged_string_xmalloc(host_list);
+
+	hostlist_destroy(host_list);
+	return rc;
+}
+
+static int DUMP_FUNC(HOSTLIST_STRING)(const parser_t *const parser, void *obj,
+				      data_t *dst, args_t *args)
+{
+	int rc;
+	char **host_list_ptr = obj;
+	char *host_list_str = *host_list_ptr;
+	hostlist_t host_list;
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	if (!host_list_str || !host_list_str[0]) {
+		/* empty list */
+		data_set_list(dst);
+		return SLURM_SUCCESS;
+	}
+
+	if (!(host_list = hostlist_create(host_list_str))) {
+		return on_error(DUMPING, parser->type, args,
+				ESLURM_DATA_CONV_FAILED, "hostlist_create()",
+				__func__, "Invalid hostlist string: %s",
+				host_list_str);
+	}
+
+	rc = DUMP_FUNC(HOSTLIST)(parser, &host_list, dst, args);
+
+	hostlist_destroy(host_list);
 	return rc;
 }
 
@@ -5956,6 +6104,7 @@ static const parser_t parsers[] = {
 	addps(CONTROLLER_PING_MODE, int, NEED_NONE, STRING, NULL),
 	addps(CONTROLLER_PING_RESULT, bool, NEED_NONE, STRING, NULL),
 	addpsa(HOSTLIST, STRING, hostlist_t, NEED_NONE, NULL),
+	addpsa(HOSTLIST_STRING, STRING, char *, NEED_NONE, NULL),
 	addps(CPU_FREQ_FLAGS, uint32_t, NEED_NONE, STRING, NULL),
 	addps(ERROR, int, NEED_NONE, STRING, NULL),
 	addpsa(JOB_INFO_MSG, JOB_INFO, job_info_msg_t, NEED_NONE, NULL),
