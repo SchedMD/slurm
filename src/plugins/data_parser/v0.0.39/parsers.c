@@ -5358,7 +5358,7 @@ static const parser_t PARSER_ARRAY(ACCT_GATHER_ENERGY)[] = {
 	add_parser(ext_sensors_data_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(EXT_SENSORS_DATA)[] = {
 	add_parse(UINT64_NO_VAL, consumed_energy, "consumed_energy", NULL),
-	add_parse(UINT32, temperature, "temperature", NULL),
+	add_parse(UINT32_NO_VAL, temperature, "temperature", NULL),
 	add_parse(UINT64, energy_update_time, "energy_update_time", NULL),
 	add_parse(UINT32, current_watts, "current_watts", NULL),
 };
