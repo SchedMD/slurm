@@ -4807,7 +4807,7 @@ static int _feature_string2list(char *features, char *debug_str,
 	if (bracket != 0) {
 		verbose("%s constraint has unbalanced brackets: %s",
 			debug_str, features);
-		rc = ESLURM_INVALID_FEATURE;
+		rc = feature_err;
 		goto fini;
 	}
 	if (paren != 0) {
