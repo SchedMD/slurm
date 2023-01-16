@@ -55,6 +55,7 @@ static pthread_rwlock_t paths_lock = PTHREAD_RWLOCK_INITIALIZER;
 static List paths = NULL;
 
 #define MAGIC 0xDFFEAAAE
+#define MAGIC_HEADER_ACCEPT 0xDF9EAABE
 
 typedef struct {
 	int magic;
@@ -67,6 +68,7 @@ typedef struct {
 } path_t;
 
 typedef struct {
+	int magic; /* MAGIC_HEADER_ACCEPT */
 	char *type; /* mime type and sub type unchanged */
 	float q; /* quality factor (priority) */
 } http_header_accept_t;
@@ -285,6 +287,7 @@ static void _parse_http_accept_entry(char *entry, List l)
 	char *token = NULL;
 	char *buffer = xstrdup(entry);
 	http_header_accept_t *act = xmalloc(sizeof(*act));
+	act->magic = MAGIC_HEADER_ACCEPT;
 	act->type = NULL;
 	act->q = 1; /* default to 1 per rfc7231:5.3.1 */
 
@@ -311,6 +314,9 @@ static int _compare_q(void *x, void *y)
 	http_header_accept_t *xobj = (http_header_accept_t *) x;
 	http_header_accept_t *yobj = (http_header_accept_t *) y;
 
+	xassert(xobj->magic == MAGIC_HEADER_ACCEPT);
+	xassert(yobj->magic == MAGIC_HEADER_ACCEPT);
+
 	if (xobj->q < yobj->q)
 		return -1;
 	else if (xobj->q > yobj->q)
@@ -325,6 +331,9 @@ static void _http_accept_list_delete(void *x)
 
 	if (!obj)
 		return;
+
+	xassert(obj->magic == MAGIC_HEADER_ACCEPT);
+	obj->magic = ~MAGIC_HEADER_ACCEPT;
 
 	xfree(obj->type);
 	xfree(obj);
@@ -371,6 +380,8 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 		http_header_accept_t *ptr = NULL;
 		ListIterator itr = list_iterator_create(accept);
 		while ((ptr = list_next(itr))) {
+			xassert(ptr->magic == MAGIC_HEADER_ACCEPT);
+
 			debug4("%s: [%s] accepts %s with q=%f",
 			       __func__, args->context->con->name, ptr->type,
 			       ptr->q);
