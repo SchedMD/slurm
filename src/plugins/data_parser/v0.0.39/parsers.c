@@ -3497,7 +3497,7 @@ static data_for_each_cmd_t _foreach_hostlist_parse(data_t *data, void *arg)
 static int PARSE_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	hostlist_t *host_list_ptr = obj;
 	hostlist_t host_list = NULL;
 	char *path = NULL;
