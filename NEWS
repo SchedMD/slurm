@@ -263,6 +263,7 @@ documents those changes that are of interest to users and administrators.
     batch jobs on Prolog failures regardless of the job --requeue setting.
  -- Add HealthCheckNodeState=NONDRAINED_IDLE option.
  -- Add 'explicit' to Flags in gres.conf
+ -- Improve validation of --constraint expression syntax.
 
 * Changes in Slurm 22.05.8
 ==========================
