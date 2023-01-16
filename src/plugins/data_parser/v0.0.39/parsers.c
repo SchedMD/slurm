@@ -2443,11 +2443,11 @@ static int DUMP_FUNC(STATS_MSG_CYCLE_MEAN)(const parser_t *const parser,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-	if (!stats->schedule_cycle_counter)
-		return SLURM_SUCCESS;
-
-	data_set_int(dst, (stats->schedule_cycle_sum /
-			   stats->schedule_cycle_counter));
+	if (stats->schedule_cycle_counter)
+		data_set_int(dst, (stats->schedule_cycle_sum /
+				   stats->schedule_cycle_counter));
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -2463,11 +2463,11 @@ static int DUMP_FUNC(STATS_MSG_CYCLE_MEAN_DEPTH)(const parser_t *const parser,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-	if (!stats->schedule_cycle_counter)
-		return SLURM_SUCCESS;
-
-	data_set_int(dst, (stats->schedule_cycle_depth /
-			   stats->schedule_cycle_counter));
+	if (stats->schedule_cycle_counter)
+		data_set_int(dst, (stats->schedule_cycle_depth /
+				   stats->schedule_cycle_counter));
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -2483,11 +2483,12 @@ static int DUMP_FUNC(STATS_MSG_CYCLE_PER_MIN)(const parser_t *const parser,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-	if ((stats->req_time - stats->req_time_start) < 60)
-		return SLURM_SUCCESS;
-
-	data_set_int(dst, (stats->schedule_cycle_counter /
-			   ((stats->req_time - stats->req_time_start) / 60)));
+	if ((stats->req_time - stats->req_time_start) >= 60)
+		data_set_int(dst, (stats->schedule_cycle_counter /
+				   ((stats->req_time - stats->req_time_start) /
+				    60)));
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -2503,10 +2504,11 @@ static int DUMP_FUNC(STATS_MSG_BF_CYCLE_MEAN)(const parser_t *const parser,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-	if (!stats->bf_cycle_counter)
-		return SLURM_SUCCESS;
-
-	data_set_int(dst, (stats->bf_cycle_sum / stats->bf_cycle_counter));
+	if (stats->bf_cycle_counter)
+		data_set_int(dst,
+			     (stats->bf_cycle_sum / stats->bf_cycle_counter));
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -2522,10 +2524,11 @@ static int DUMP_FUNC(STATS_MSG_BF_DEPTH_MEAN)(const parser_t *const parser,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-	if (!stats->bf_cycle_counter)
-		return SLURM_SUCCESS;
-
-	data_set_int(dst, (stats->bf_depth_sum / stats->bf_cycle_counter));
+	if (stats->bf_cycle_counter)
+		data_set_int(dst,
+			     (stats->bf_depth_sum / stats->bf_cycle_counter));
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -2541,10 +2544,11 @@ static int DUMP_FUNC(STATS_MSG_BF_DEPTH_MEAN_TRY)(const parser_t *const parser,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-	if (!stats->bf_cycle_counter)
-		return SLURM_SUCCESS;
-
-	data_set_int(dst, (stats->bf_depth_try_sum / stats->bf_cycle_counter));
+	if (stats->bf_cycle_counter)
+		data_set_int(dst, (stats->bf_depth_try_sum /
+				   stats->bf_cycle_counter));
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -2560,10 +2564,11 @@ static int DUMP_FUNC(STATS_MSG_BF_QUEUE_LEN_MEAN)(const parser_t *const parser,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-	if (!stats->bf_cycle_counter)
-		return SLURM_SUCCESS;
-
-	data_set_int(dst, (stats->bf_queue_len_sum / stats->bf_cycle_counter));
+	if (stats->bf_cycle_counter)
+		data_set_int(dst, (stats->bf_queue_len_sum /
+				   stats->bf_cycle_counter));
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -2580,9 +2585,10 @@ static int DUMP_FUNC(STATS_MSG_BF_TABLE_SIZE_MEAN)(const parser_t *const parser,
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if (!stats->bf_cycle_counter)
-		return SLURM_SUCCESS;
-
-	data_set_int(dst, (stats->bf_table_size_sum / stats->bf_cycle_counter));
+		data_set_int(dst, (stats->bf_table_size_sum /
+				   stats->bf_cycle_counter));
+	else
+		data_set_int(dst, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -2614,10 +2620,10 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_TYPE)(const parser_t *const parser,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
+	data_set_list(dst);
+
 	if (!stats->rpc_type_size)
 		return SLURM_SUCCESS;
-
-	data_set_list(dst);
 
 	rpc_type_ave_time =
 		xcalloc(stats->rpc_type_size, sizeof(*rpc_type_ave_time));
@@ -2679,10 +2685,10 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
+	data_set_list(dst);
+
 	if (!stats->rpc_user_size)
 		return SLURM_SUCCESS;
-
-	data_set_list(dst);
 
 	rpc_user_ave_time =
 		xcalloc(stats->rpc_user_size, sizeof(*rpc_user_ave_time));
