@@ -813,23 +813,27 @@ static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	uint32_t *associd = obj;
 	slurmdb_assoc_rec_t *assoc = NULL;
 
-	if (!*associd || (*associd == NO_VAL))
-		return SLURM_SUCCESS;
-
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->assoc_list);
 
-	if (!(assoc = list_find_first(args->assoc_list,
+	if (!*associd || (*associd == NO_VAL) ||
+	    !(assoc = list_find_first(args->assoc_list,
 				      slurmdb_find_assoc_in_list, associd))) {
-		return on_error(DUMPING, parser->type, args,
-				ESLURM_DATA_CONV_FAILED,
-				"list_find_first()->slurmdb_find_assoc_in_list()",
-				__func__, "dumping association id#%u failed",
-				*associd);
+		/*
+		 * The association is either invalid or unknown or deleted.
+		 * Since this is coming from Slurm internally, issue a warning
+		 * instead of erroring out to allow graceful dumping of the
+		 * data.
+		 */
+		on_warn(DUMPING, parser->type, args, NULL, __func__,
+			"unknown association with id#%u. Unable to dump assocation.",
+			*associd);
+		data_set_dict(dst);
+		return SLURM_SUCCESS;
+	} else {
+		return DUMP(ASSOC_SHORT_PTR, assoc, dst, args);
 	}
-
-	return DUMP(ASSOC_SHORT_PTR, assoc, dst, args);
 }
 
 static int _foreach_resolve_tres_id(void *x, void *arg)
