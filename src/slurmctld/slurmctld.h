@@ -671,7 +671,7 @@ typedef struct {
 					   sibling names */
 } job_fed_details_t;
 
-#define HETJOB_PRIO_MIN	0x0001	/* Sort by mininum component priority[tier] */
+#define HETJOB_PRIO_MIN	0x0001	/* Sort by minimum component priority[tier] */
 #define HETJOB_PRIO_MAX	0x0002	/* Sort by maximum component priority[tier] */
 #define HETJOB_PRIO_AVG	0x0004	/* Sort by average component priority[tier] */
 
