@@ -369,8 +369,10 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 		goto cleanup;
 	}
 
-	if (!rc)
+	if (!rc) {
 		*list = list_args.list;
+		list_args.list = NULL;
+	}
 
 cleanup:
 	log_flag(DATA, "%s: END: list parsing %s{%s(0x%"PRIxPTR")} to List 0x%"PRIxPTR" via parser %s(0x%"PRIxPTR") rc[%d]:%s",
@@ -379,6 +381,7 @@ cleanup:
 		(uintptr_t) parser, rc, slurm_strerror(rc)
 	);
 
+	FREE_NULL_LIST(list_args.list);
 	xfree(path);
 	return rc;
 }
