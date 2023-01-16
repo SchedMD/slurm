@@ -1196,11 +1196,11 @@ head2 SLURM ERRNO
 
 =item * ESLURM_AUTH_CRED_INVALID        6000
 
-=item * ESLURM_AUTH_FOPEN_ERROR         6001
+=item * ESLURM_AUTH_BADARG              6004
 
-=item * ESLURM_AUTH_NET_ERROR           6002
+=item * ESLURM_AUTH_UNPACK              6007
 
-=item * ESLURM_AUTH_UNABLE_TO_SIGN      6003
+=item * ESLURM_AUTH_SKIP                6008
 
 =back
 
