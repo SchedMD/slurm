@@ -2091,6 +2091,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
   Node names may be specified using simple range expressions,              \n\
   (e.g. \"lx[10-20]\" corresponds to lx10, lx11, lx12, ...)                \n\
   The job step id is the job id followed by a period and the step id.      \n\
+  Steps can be filtered by providing containerid=<id>.                     \n\
 									   \n\
   <SPECIFICATIONS> are specified in the same format as the configuration   \n\
   file. You may wish to use the \"show\" keyword then use its output as    \n\

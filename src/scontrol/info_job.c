@@ -51,6 +51,7 @@
 
 #include "src/interfaces/data_parser.h"
 
+#define CONTAINER_ID_TAG "containerid="
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 
 /* Load current job table information into *job_buffer_pptr */
@@ -395,14 +396,34 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 	};
 	uint32_t array_id = NO_VAL;
 	char *next_str;
-	job_step_info_response_msg_t *job_step_info_ptr;
+	job_step_info_response_msg_t *job_step_info_ptr = NULL;
 	static uint32_t last_job_id = 0, last_array_id, last_step_id = 0;
 	static job_step_info_response_msg_t *old_job_step_info_ptr = NULL;
 	static uint16_t last_show_flags = 0xffff;
 	uint16_t show_flags = 0;
 	job_step_info_t **steps = NULL;
 
-	if (job_step_id_str) {
+	if (!job_step_id_str) {
+		/* do nothing */
+	} else if (!xstrncasecmp(job_step_id_str, CONTAINER_ID_TAG,
+				 strlen(CONTAINER_ID_TAG))) {
+		uid_t uid = SLURM_AUTH_NOBODY;
+		list_t *step_list = list_create((ListDelF) slurm_free_step_id);
+		char *cid = job_step_id_str + strlen(CONTAINER_ID_TAG);
+
+		error_code = slurm_find_step_ids_by_container_id(
+			SHOW_ALL, uid, cid, step_list);
+
+		if (error_code || list_is_empty(step_list)) {
+			step_id.job_id = 0;
+		} else {
+			/* just clone out the first step id details */
+			step_id = *(slurm_step_id_t *) list_peek(step_list);
+			job_step_id_str = NULL;
+		}
+
+		FREE_NULL_LIST(step_list);
+	} else {
 		step_id.job_id = (uint32_t)strtol(job_step_id_str, &next_str,
 						  10);
 		if (next_str[0] == '_')
@@ -417,7 +438,9 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 	if (local_flag)
 		show_flags |= SHOW_LOCAL;
 
-	if ((old_job_step_info_ptr) && (last_job_id == step_id.job_id) &&
+	if (!step_id.job_id || error_code) {
+		/* step lookup failed already - skip trying again */
+	} else if ((old_job_step_info_ptr) && (last_job_id == step_id.job_id) &&
 	    (last_array_id == array_id) && (last_step_id == step_id.step_id)) {
 		if (last_show_flags != show_flags)
 			old_job_step_info_ptr->last_update = (time_t) 0;
@@ -446,7 +469,7 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 						   show_flags);
 	}
 
-	if (error_code) {
+	if (error_code || !job_step_info_ptr) {
 		if (mime_type) {
 			DATA_DUMP_CLI(STEP_INFO_MSG, job_step_info_ptr, "steps",
 				      argc, argv, NULL, mime_type);
@@ -457,8 +480,14 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 		}
 
 		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror ("slurm_get_job_steps error");
+		if (quiet_flag != 1) {
+			if (!step_id.job_id)
+				printf("No job steps found\n");
+			else
+				error("%s: slurm_get_job_steps(%s) failed: %s",
+				      __func__, job_step_id_str,
+				      slurm_strerror(error_code));
+		}
 		return;
 	}
 
