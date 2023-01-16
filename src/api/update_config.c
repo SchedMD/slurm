@@ -116,6 +116,8 @@ tryagain:
 		working_cluster_rec = rr_msg->working_cluster_rec;
 		slurmdb_setup_cluster_rec(working_cluster_rec);
 		rr_msg->working_cluster_rec = NULL;
+		slurm_free_msg_data(resp_msg.msg_type, resp_msg.data);
+		resp_msg.data = NULL;
 		goto tryagain;
 	}
 	case RESPONSE_JOB_ARRAY_ERRORS:
@@ -125,6 +127,8 @@ tryagain:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
 		if (rc)
 			slurm_seterrno(rc);
+		slurm_free_msg_data(resp_msg.msg_type, resp_msg.data);
+		resp_msg.data = NULL;
 		break;
 	default:
 		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
