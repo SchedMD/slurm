@@ -3041,7 +3041,7 @@ static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_ns,
 			}
 		} else {
 			for (j = 0; j < gres_ns->topo_cnt; j++) {
-				if (gres_ns->type_id[i] ==
+				if (gres_ns->topo_type_id[i] ==
 				    gres_ns->topo_type_id[j])
 					model_cnt += gres_ns->
 						topo_gres_cnt_avail[j];
