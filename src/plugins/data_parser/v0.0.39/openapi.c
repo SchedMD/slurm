@@ -318,6 +318,7 @@ static data_t *_resolve_parser_key(const parser_t *parser, data_t *dst)
 		FREE_NULL_DATA(pkey);
 	}
 
+	FREE_NULL_DATA(path);
 	return dst;
 }
 
