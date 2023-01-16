@@ -84,6 +84,11 @@ HIGHLIGHTS
  -- Add SuspendExcStates option to slurm.conf to avoid suspending/powering down
     specific node states.
  -- Add support for DCMI power readings in IPMI plugin.
+ -- slurmrestd served /slurm/v0.0.39 and /slurmdb/v0.0.39 endpoints had major
+    changes from prior versions. Almost all schemas have been renamed and
+    modified. Sites using OpenAPI Generator clients are highly suggested to
+    upgrade to to using atleast version 6.x due to limitations with prior
+    versions.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -156,6 +161,10 @@ COMMAND CHANGES (see man pages for details)
     components (<exit_status>:<signal_number>).
  -- sacct - Add --array option to expand job arrays and display array tasks on
     separate lines.
+ -- Partial support for '--json' and '--yaml' formated outputs have been
+    implemented for sacctmgr, sdiag, sinfo, squeue, and scontrol. The resultant
+    data ouput will be filtered by normal command arguments. Formatting
+    arguments will continue to be ignored.
 
 API CHANGES
 ===========
@@ -189,3 +198,4 @@ API CHANGES
     node_features_p_job_valid() - added parameter feature_list.
     node_features_p_job_xlate() - added parameters feature_list and
     job_node_bitmap.
+ -- New data_parser interface with v0.0.39 plugin.
