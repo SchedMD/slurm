@@ -5,23 +5,17 @@
 <h4>New plugin</h4>
 The v0.0.39 plugin forked from the v0.0.38 plugin.
 
-<h4>Change type for nice from string to integer<h4>
-<table class="tchange">
-<tr>
-	<td class="tdfield">modified value</td>
-	<td class="tdchange">.components.schemas."v0.0.39_job_properties".properties.nice</td>
-</tr>
-</table>
+<h4>New Schema</h4>
+Plugin has been converted to new data_parser/v0.0.39 plugin for handling
+parsing and dumping of all data structures and automatic data structure schema
+generation. There have been significant changes to all schemas and care needs
+to be take to update data sent and expected from requests while porting to new
+plugin. Developers are advised to review the generated OpenAPI output directly
+while updating.
 
-<h4>Add missing field to job properties</h4>
-<table class="tchange">
-<tr class="trchange">
-	<td class="tdfield">Add field prefer to jobs</td>
-	<td class="tdchange">
-			.components.schemas."v0.0.39_job_properties".properties.prefer
-	</td>
-</tr>
-</table>
+<h4>New methods for node queries</h4>
+DELETE and POST methods are now supported for /slurm/v0.0.39/node/{node_id}
+paths.
 
 <h3>openapi/v0.0.37 (src/plugins/openapi/v0.0.37/openapi.json)</h3>
 
@@ -38,113 +32,13 @@ The v0.0.36 plugin has now been removed.
 <h4>New plugin</h4>
 The dbv0.0.39 plugin forked from the dbv0.0.38 plugin.
 
-<h4>Add missing meta schema<h4>
-<table class="tchange">
-<tr>
-	<td class="tdfield">new path</td>
-	<td class="tdchange">.components.schemas."dbv0.0.39_meta"</td>
-</tr>
-<tr>
-	<td class="tdfield">field modified to new meta path</td>
-	<td class="tdchange">.components.schemas[].properties.meta</td>
-</tr>
-</table>
-
-<h4>Add new fields<h4>
-<table class="tchange">
-<tr>
-	<td class="tdfield">new path</td>
-	<td class="tdchange">.components.schemas."v0.0.39_partition".properties.default_memory_per_node</td>
-</tr>
-<tr>
-	<td class="tdfield">new path</td>
-	<td class="tdchange">.components.schemas."v0.0.39_partition".properties.maximum_memory_per_cpu</td>
-</tr>
-</table>
-
-<h4>Add "users" to Jobs filters<h4>
-<table class="tchange">
-<tr>
-	<td class="tdfield">path</td>
-	<td class="tdchange">.paths."/jobs/".get.parameters[0]</td>
-</tr>
-</table>
-
-<h4>Populate POST /tres/ body<h4>
-<table class="tchange">
-<tr>
-	<td class="tdfield">new path</td>
-	<td class="tdchange">.paths."/tres/".post.requestBody</td>
-</tr>
-<tr>
-	<td class="tdfield">new path</td>
-	<td class="tdchange">.components.schemas."dbv0.0.39_tres_update"</td>
-</tr>
-</table>
-
-<h4>Add missing type field<h4>
-<table class="tchange">
-<tr>
-	<td class="tdfield">new field</td>
-	<td class="tdchange">.components.schemas."dbv0.0.39_update_account".type</td>
-</tr>
-<tr>
-	<td class="tdfield">new field</td>
-	<td class="tdchange">.components.schemas."dbv0.0.39_update_users".type</td>
-</tr>
-</table>
-
-<h4>Add missing requestBody field<h4>
-<table class="tchange">
-<tr>
-	<td class="tdfield">new path</td>
-	<td class="tdchange">.paths."/associations/".post.requestBody</td>
-</tr>
-<tr>
-	<td class="tdfield">new path</td>
-	<td class="tdchange">.paths."/wckeys/".post.requestBody</td>
-</tr>
-</table>
-
-<h4>Add missing requestBody field for /config<h4>
-<table class="tchange">
-<tr>
-	<td class="tdfield">new field</td>
-	<td class="tdchange">.paths."/config".post.requestBody</td>
-</tr>
-<tr>
-	<td class="tdfield">new field</td>
-	<td class="tdchange">.components.schemas."dbv0.0.39_set_config"</td>
-</tr>
-</table>
-
-<h4>Correct type of field accounts->accounting in wckeys<h4>
-<table class="tchange">
-<tr>
-	<td class="tdfield">new schema</td>
-	<td class="tdchange">.components.schemas."dbv0.0.39_accounting"</td>
-</tr>
-<tr>
-	<td class="tdfield">new field</td>
-	<td class="tdchange">.components.schemas."dbv0.0.39_wckey".properties.accounting</td>
-</tr>
-<tr>
-	<td class="tdfield">removed field</td>
-	<td class="tdchange">.components.schemas."dbv0.0.39_wckey".properties.accounts</td>
-</tr>
-</table>
-
-<h4>Use "QOS" in dbv0.0.39_qos_info<h4>
-<table class="tchange">
-<tr>
-	<td class="tdfield">previous path</td>
-	<td class="tdchange">.components.schemas."dbv0.0.39_qos_info".properties.qos</td>
-</tr>
-<tr>
-	<td class="tdfield">new path</td>
-	<td class="tdchange">.components.schemas."dbv0.0.39_qos_info".properties.QOS</td>
-</tr>
-</table>
+<h4>New Schema</h4>
+Plugin has been converted to new data_parser/v0.0.39 plugin for handling
+parsing and dumping of all data structures and automatic data structure schema
+generation. There have been significant changes to all schemas and care needs
+to be take to update data sent and expected from requests while porting to new
+plugin. Developers are advised to review the generated OpenAPI output directly
+while updating.
 
 <h3>openapi/dbv0.0.37 (src/plugins/openapi/dbv0.0.37/openapi.json)</h3>
 
