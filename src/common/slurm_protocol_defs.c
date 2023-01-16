@@ -4939,6 +4939,7 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 	int i, j;
 	burst_buffer_info_t *bb_info_ptr;
 	burst_buffer_resv_t *bb_resv_ptr;
+	burst_buffer_pool_t *bb_pool_ptr;
 
 	if (!msg)
 		return;
@@ -4946,12 +4947,19 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 	for (i = 0, bb_info_ptr = msg->burst_buffer_array;
 	     ((i < msg->record_count) && bb_info_ptr); i++, bb_info_ptr++) {
 		xfree(bb_info_ptr->allow_users);
+		xfree(bb_info_ptr->default_pool);
 		xfree(bb_info_ptr->create_buffer);
 		xfree(bb_info_ptr->deny_users);
 		xfree(bb_info_ptr->destroy_buffer);
 		xfree(bb_info_ptr->get_sys_state);
 		xfree(bb_info_ptr->get_sys_status);
 		xfree(bb_info_ptr->name);
+		for (j = 0, bb_pool_ptr = bb_info_ptr->pool_ptr;
+		     ((j < bb_info_ptr->pool_cnt) && bb_pool_ptr);
+		     j++, bb_pool_ptr++) {
+			xfree(bb_pool_ptr->name);
+		}
+		xfree(bb_info_ptr->pool_ptr);
 		xfree(bb_info_ptr->start_stage_in);
 		xfree(bb_info_ptr->start_stage_out);
 		xfree(bb_info_ptr->stop_stage_in);
