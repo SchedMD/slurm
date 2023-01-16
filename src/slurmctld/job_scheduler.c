@@ -4861,8 +4861,11 @@ static int _feature_string2list(char *features, char *debug_str,
 				   (has_paren_or || has_static_or));
 
 fini:
-	if (rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS) {
 		FREE_NULL_LIST(*feature_list);
+		info("%s invalid constraint: %s",
+		     debug_str, features);
+	}
 	xfree(tmp_requested);
 
 	return rc;
@@ -4922,8 +4925,6 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 	rc = _feature_string2list(features, debug_str, feature_err,
 				  feature_list, &convert_to_matching_or);
 	if (rc != SLURM_SUCCESS) {
-		verbose("%s invalid constraint %s",
-			debug_str, features);
 		rc = ESLURM_INVALID_FEATURE;
 		goto fini;
 	}
@@ -5096,18 +5097,35 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 		}
 		if (rc == SLURM_SUCCESS &&
 		    (!ignore_prefer_val ||
-		     (feature_list != job_ptr->details->prefer_list)))
+		     (feature_list != job_ptr->details->prefer_list))) {
 			rc = _valid_node_feature(feat_ptr->name, can_reboot);
-		if (feat_ptr->op_code == FEATURE_OP_XAND && !feat_ptr->count)
+			if (rc != SLURM_SUCCESS)
+				verbose("%s feature %s is not usable on any node: %s",
+					debug_str, feat_ptr->name, features);
+		}
+		if (feat_ptr->op_code == FEATURE_OP_XAND && !feat_ptr->count) {
+			verbose("%s feature %s invalid, count must be used with XAND: %s",
+				debug_str, feat_ptr->name, features);
 			rc = ESLURM_INVALID_FEATURE;
-		if (feat_ptr->op_code == FEATURE_OP_MOR && feat_ptr->count)
+		}
+		if (feat_ptr->op_code == FEATURE_OP_MOR && feat_ptr->count) {
+			verbose("%s feature %s invalid, count must not be used with MOR: %s",
+				debug_str, feat_ptr->name, features);
 			rc = ESLURM_INVALID_FEATURE;
+		}
 		if ((bracket > paren) && /* In brackets, outside of paren */
 		    ((feat_ptr->op_code != FEATURE_OP_MOR) &&
 		     (feat_ptr->op_code != FEATURE_OP_XAND))) {
-			if ((has_xand && !feat_ptr->count) ||
-			    (has_mor && feat_ptr->count))
+			if (has_xand && !feat_ptr->count) {
 				rc = ESLURM_INVALID_FEATURE;
+				verbose("%s feature %s invalid, count must be used with XAND: %s",
+					debug_str, feat_ptr->name, features);
+			}
+			if (has_mor && feat_ptr->count) {
+				rc = ESLURM_INVALID_FEATURE;
+				verbose("%s feature %s invalid, count must not be used with MOR: %s",
+					debug_str, feat_ptr->name, features);
+			}
 			bracket = 0;
 			has_xand = false;
 			has_mor = false;
