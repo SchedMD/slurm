@@ -196,7 +196,8 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 	char *usr_str = NULL, *grp_str = NULL, lim_str[32], *jname = NULL;
 	uint32_t job_state;
 	char *query = NULL, *on_dup = NULL;
-	uint32_t time_limit, start_time, end_time;
+	uint32_t time_limit;
+	time_t start_time, end_time;
 
 	if (!jobcomp_mysql_conn || mysql_db_ping(jobcomp_mysql_conn) != 0) {
 		if (jobcomp_p_set_location(slurm_conf.job_comp_loc))
@@ -256,7 +257,7 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 	if (job_ptr->details && (job_ptr->details->max_cpus != NO_VAL))
 		xstrcat(query, ", maxprocs");
 	xstrfmtcat(query, ") values (%u, %u, '%s', %u, '%s', '%s', %u, %u, "
-		   "'%s', '%s', %u, %u, %u",
+		   "'%s', '%s', %ld, %ld, %u",
 		   job_ptr->job_id, job_ptr->user_id, usr_str,
 		   job_ptr->group_id, grp_str, jname,
 		   job_state, job_ptr->total_cpus, job_ptr->partition, lim_str,
