@@ -1032,10 +1032,6 @@ head2 SLURM ERRNO
 
 =item * ESLURM_BATCH_ONLY                               2039
 
-=item * ESLURM_TASKDIST_ARBITRARY_UNSUPPORTED           2040
-
-=item * ESLURM_TASKDIST_REQUIRES_OVERCOMMIT             2041
-
 =item * ESLURM_JOB_HELD                                 2042
 
 =item * ESLURM_INVALID_CRED_TYPE_CHANGE                 2043
