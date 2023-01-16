@@ -4753,7 +4753,7 @@ static int _feature_string2list(char *features, char *debug_str,
 			count = 0;
 		} else if (tmp_requested[i] == '[') {
 			tmp_requested[i] = '\0';
-			if ((feature != NULL) || bracket) {
+			if ((feature != NULL) || bracket || paren) {
 				verbose("%s constraint has imbalanced brackets: %s",
 					debug_str, features);
 				rc = feature_err;
@@ -4769,7 +4769,7 @@ static int _feature_string2list(char *features, char *debug_str,
 			}
 		} else if (tmp_requested[i] == ']') {
 			tmp_requested[i] = '\0';
-			if ((feature == NULL) || (bracket == 0)) {
+			if ((feature == NULL) || (bracket == 0) || paren) {
 				verbose("%s constraint has imbalanced brackets: %s",
 					debug_str, features);
 				rc = feature_err;
