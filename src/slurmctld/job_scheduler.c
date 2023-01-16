@@ -4664,6 +4664,7 @@ static int _feature_string2list(char *features, char *debug_str,
 	bool has_changeable = false;
 	bool has_static_or = false;
 	bool has_paren_or = false;
+	bool has_asterisk = false;
 
 	xassert(feature_list);
 
@@ -4680,6 +4681,8 @@ static int _feature_string2list(char *features, char *debug_str,
 		if (tmp_requested[i] == '*') {
 			tmp_requested[i] = '\0';
 			count = strtol(&tmp_requested[i+1], &str_ptr, 10);
+			if (!bracket)
+				has_asterisk = true;
 			if ((feature == NULL) || (count <= 0) || (paren != 0)) {
 				verbose("%s constraint invalid, '*' must be requested with a positive integer, and after a feature or parentheses: %s",
 					debug_str, features);
@@ -4821,6 +4824,12 @@ static int _feature_string2list(char *features, char *debug_str,
 	}
 	if (paren != 0) {
 		verbose("%s constraint has unbalanced parenthesis: %s",
+			debug_str, features);
+		rc = feature_err;
+		goto fini;
+	}
+	if (has_asterisk && (list_count(*feature_list) > 1)) {
+		verbose("%s constraint has '*' outside of brackets with more than one feature: %s",
 			debug_str, features);
 		rc = feature_err;
 		goto fini;
