@@ -1078,12 +1078,6 @@ head2 SLURM ERRNO
 
 =item * ESLURM_NO_STEPS                                 2062
 
-=item * ESLURM_INVALID_BLOCK_STATE                      2063
-
-=item * ESLURM_INVALID_BLOCK_LAYOUT                     2064
-
-=item * ESLURM_INVALID_BLOCK_NAME                       2065
-
 =item * ESLURM_INVALID_QOS                              2066
 
 =item * ESLURM_QOS_PREEMPTION_LOOP                      2067
