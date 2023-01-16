@@ -4944,7 +4944,7 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 		return;
 
 	for (i = 0, bb_info_ptr = msg->burst_buffer_array;
-	     i < msg->record_count; i++, bb_info_ptr++) {
+	     ((i < msg->record_count) && bb_info_ptr); i++, bb_info_ptr++) {
 		xfree(bb_info_ptr->allow_users);
 		xfree(bb_info_ptr->create_buffer);
 		xfree(bb_info_ptr->deny_users);
@@ -4957,7 +4957,7 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 		xfree(bb_info_ptr->stop_stage_in);
 		xfree(bb_info_ptr->stop_stage_out);
 		for (j = 0, bb_resv_ptr = bb_info_ptr->burst_buffer_resv_ptr;
-		     j < bb_info_ptr->buffer_count;
+		     ((j < bb_info_ptr->buffer_count) && bb_resv_ptr);
 		     j++, bb_resv_ptr++) {
 			xfree(bb_resv_ptr->account);
 			xfree(bb_resv_ptr->name);
