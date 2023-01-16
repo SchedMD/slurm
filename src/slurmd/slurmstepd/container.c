@@ -522,6 +522,12 @@ extern void container_task_init(stepd_step_rec_t *step,
 	char *path = NULL;
 	step_container_t *c = step->container;
 
+	if (!oci_conf) {
+		debug2("%s: ignoring step container when oci.conf not configured",
+		       __func__);
+		return;
+	}
+
 	/* re-generate out the spool_dir now we know the task */
 	if (oci_conf->container_path) {
 		path = _generate_pattern(oci_conf->container_path, step,
