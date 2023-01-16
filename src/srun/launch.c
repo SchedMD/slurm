@@ -1223,18 +1223,26 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 			return SLURM_ERROR;
 		}
 	}
+	job->step_id.step_id = step_req->step_id.step_id;
 
-	job->step_id.step_id = job->step_ctx->step_req->step_id.step_id;
+	step_layout = launch_common_get_slurm_step_layout(job);
+	if (!step_layout) {
+		info("No step_layout given for pending step for job %u",
+		     step_req->step_id.job_id);
+		slurm_free_job_step_create_request_msg(step_req);
+		return SLURM_ERROR;
+	}
+
+	if (job->ntasks != step_layout->task_cnt)
+		job->ntasks = step_layout->task_cnt;
+
 	/*
 	 *  Number of hosts in job may not have been initialized yet if
 	 *    --jobid was used or only SLURM_JOB_ID was set in user env.
 	 *    Reset the value here just in case.
 	 */
-	job->nhosts = job->step_ctx->step_resp->step_layout->node_cnt;
+	job->nhosts = step_layout->node_cnt;
 
-	step_layout = launch_common_get_slurm_step_layout(job);
-	if (job->ntasks != step_layout->task_cnt)
-		job->ntasks = step_layout->task_cnt;
 	/*
 	 * Recreate filenames which may depend upon step id
 	 */
