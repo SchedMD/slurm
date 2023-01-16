@@ -535,8 +535,10 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 	verify_parser_sliced(parser);
 
 	/* only look for child via key if there was one defined */
-	if (parser->key)
+	if (parser->key) {
 		src = data_resolve_dict_path(src, parser->key);
+		openapi_append_rel_path(ppath, parser->key);
+	}
 
 	if (!src) {
 		if (parser->required) {
