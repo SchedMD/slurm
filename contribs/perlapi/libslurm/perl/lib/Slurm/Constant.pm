@@ -1128,10 +1128,6 @@ head2 SLURM ERRNO
 
 =item * ESLURMD_INVALID_JOB_CREDENTIAL          4004
 
-=item * ESLURMD_UID_NOT_FOUND                   4005
-
-=item * ESLURMD_GID_NOT_FOUND                   4006
-
 =item * ESLURMD_CREDENTIAL_EXPIRED              4007
 
 =item * ESLURMD_CREDENTIAL_REVOKED              4008
