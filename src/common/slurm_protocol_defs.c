@@ -4940,36 +4940,37 @@ extern void slurm_free_burst_buffer_info_msg(burst_buffer_info_msg_t *msg)
 	burst_buffer_info_t *bb_info_ptr;
 	burst_buffer_resv_t *bb_resv_ptr;
 
-	if (msg) {
-		for (i = 0, bb_info_ptr = msg->burst_buffer_array;
-		     i < msg->record_count; i++, bb_info_ptr++) {
-			xfree(bb_info_ptr->allow_users);
-			xfree(bb_info_ptr->create_buffer);
-			xfree(bb_info_ptr->deny_users);
-			xfree(bb_info_ptr->destroy_buffer);
-			xfree(bb_info_ptr->get_sys_state);
-			xfree(bb_info_ptr->get_sys_status);
-			xfree(bb_info_ptr->name);
-			xfree(bb_info_ptr->start_stage_in);
-			xfree(bb_info_ptr->start_stage_out);
-			xfree(bb_info_ptr->stop_stage_in);
-			xfree(bb_info_ptr->stop_stage_out);
-			for (j = 0,
-			     bb_resv_ptr = bb_info_ptr->burst_buffer_resv_ptr;
-			     j < bb_info_ptr->buffer_count;
-			     j++, bb_resv_ptr++) {
-				xfree(bb_resv_ptr->account);
-				xfree(bb_resv_ptr->name);
-				xfree(bb_resv_ptr->partition);
-				xfree(bb_resv_ptr->pool);
-				xfree(bb_resv_ptr->qos);
-			}
-			xfree(bb_info_ptr->burst_buffer_resv_ptr);
-			xfree(bb_info_ptr->burst_buffer_use_ptr);
+	if (!msg)
+		return;
+
+	for (i = 0, bb_info_ptr = msg->burst_buffer_array;
+	     i < msg->record_count; i++, bb_info_ptr++) {
+		xfree(bb_info_ptr->allow_users);
+		xfree(bb_info_ptr->create_buffer);
+		xfree(bb_info_ptr->deny_users);
+		xfree(bb_info_ptr->destroy_buffer);
+		xfree(bb_info_ptr->get_sys_state);
+		xfree(bb_info_ptr->get_sys_status);
+		xfree(bb_info_ptr->name);
+		xfree(bb_info_ptr->start_stage_in);
+		xfree(bb_info_ptr->start_stage_out);
+		xfree(bb_info_ptr->stop_stage_in);
+		xfree(bb_info_ptr->stop_stage_out);
+		for (j = 0, bb_resv_ptr = bb_info_ptr->burst_buffer_resv_ptr;
+		     j < bb_info_ptr->buffer_count;
+		     j++, bb_resv_ptr++) {
+			xfree(bb_resv_ptr->account);
+			xfree(bb_resv_ptr->name);
+			xfree(bb_resv_ptr->partition);
+			xfree(bb_resv_ptr->pool);
+			xfree(bb_resv_ptr->qos);
 		}
-		xfree(msg->burst_buffer_array);
-		xfree(msg);
+		xfree(bb_info_ptr->burst_buffer_resv_ptr);
+		xfree(bb_info_ptr->burst_buffer_use_ptr);
 	}
+	xfree(msg->burst_buffer_array);
+
+	xfree(msg);
 }
 
 extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
