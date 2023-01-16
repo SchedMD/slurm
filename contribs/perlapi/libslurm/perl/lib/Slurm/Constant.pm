@@ -1118,8 +1118,6 @@ head2 SLURM ERRNO
 
 =over 2
 
-=item * ESLURMD_PIPE_ERROR_ON_TASK_SPAWN        4000
-
 =item * ESLURMD_KILL_TASK_FAILED                4001
 
 =item * ESLURMD_KILL_JOB_ALREADY_COMPLETE       4002
@@ -1136,23 +1134,9 @@ head2 SLURM ERRNO
 
 =item * ESLURMD_CREATE_BATCH_DIR_ERROR          4010
 
-=item * ESLURMD_MODIFY_BATCH_DIR_ERROR          4011
-
-=item * ESLURMD_CREATE_BATCH_SCRIPT_ERROR       4012
-
-=item * ESLURMD_MODIFY_BATCH_SCRIPT_ERROR       4013
-
 =item * ESLURMD_SETUP_ENVIRONMENT_ERROR         4014
 
-=item * ESLURMD_SHARED_MEMORY_ERROR             4015
-
 =item * ESLURMD_SET_UID_OR_GID_ERROR            4016
-
-=item * ESLURMD_SET_SID_ERROR                   4017
-
-=item * ESLURMD_CANNOT_SPAWN_IO_THREAD          4018
-
-=item * ESLURMD_FORK_FAILED                     4019
 
 =item * ESLURMD_EXECVE_FAILED                   4020
 
@@ -1161,8 +1145,6 @@ head2 SLURM ERRNO
 =item * ESLURMD_PROLOG_FAILED                   4022
 
 =item * ESLURMD_EPILOG_FAILED                   4023
-
-=item * ESLURMD_SESSION_KILLED                  4024
 
 =item * ESLURMD_TOOMANYSTEPS                    4025
 
