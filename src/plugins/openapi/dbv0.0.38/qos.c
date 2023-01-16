@@ -220,7 +220,7 @@ static data_for_each_cmd_t _foreach_update_qos(data_t *data, void *arg)
 
 	/* Search for a QOS with the same id and/or name, if set */
 	if (qos->id || qos->name) {
-		data_t *query_errors = data_new();
+		data_t *query_errors = data_set_list(data_new());
 		if (qos->id) {
 			/* Need to free string copy of id with xfree_ptr */
 			cond.id_list = list_create(xfree_ptr);

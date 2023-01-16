@@ -393,7 +393,7 @@ static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
 	int rc;
 	List assoc_list = NULL;
 	slurmdb_assoc_cond_t cond = {0};
-	data_t *query_errors = data_new();
+	data_t *query_errors = data_set_list(data_new());
 
 	xassert(args->magic == MAGIC_FOREACH_UP_ASSOC);
 
