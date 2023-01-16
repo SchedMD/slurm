@@ -4769,6 +4769,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 	if (node) {
 		xfree(node->arch);
 		xfree(node->cluster_name);
+		xfree(node->comment);
 		xfree(node->cpu_spec_list);
 		acct_gather_energy_destroy(node->energy);
 		ext_sensors_destroy(node->ext_sensors);
