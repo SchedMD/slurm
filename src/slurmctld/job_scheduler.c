@@ -4661,7 +4661,6 @@ static int _feature_string2list(char *features, char *debug_str,
 	int brack_set_count = 0;
 	char *tmp_requested;
 	char *str_ptr, *feature = NULL;
-	bool fail = false;
 	bool has_changeable = false;
 	bool has_static_or = false;
 	bool has_paren_or = false;
@@ -4682,15 +4681,19 @@ static int _feature_string2list(char *features, char *debug_str,
 			tmp_requested[i] = '\0';
 			count = strtol(&tmp_requested[i+1], &str_ptr, 10);
 			if ((feature == NULL) || (count <= 0) || (paren != 0)) {
-				fail = true;
-				break;
+				verbose("%s constraint invalid, '*' must be requested with a positive integer, and after a feature or parentheses: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
 			}
 			i = str_ptr - tmp_requested - 1;
 		} else if (tmp_requested[i] == '&') {
 			tmp_requested[i] = '\0';
 			if (feature == NULL) {
-				fail = true;
-				break;
+				verbose("%s constraint requested '&' without a feature: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
 			}
 			feat = xmalloc(sizeof(job_feature_t));
 			feat->name = xstrdup(feature);
@@ -4715,8 +4718,10 @@ static int _feature_string2list(char *features, char *debug_str,
 
 			tmp_requested[i] = '\0';
 			if (feature == NULL) {
-				fail = true;
-				break;
+				verbose("%s constraint requested '|' without a feature: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
 			}
 			changeable = node_features_g_changeable_feature(
 				feature);
@@ -4749,17 +4754,23 @@ static int _feature_string2list(char *features, char *debug_str,
 		} else if (tmp_requested[i] == '[') {
 			tmp_requested[i] = '\0';
 			if ((feature != NULL) || bracket) {
-				fail = true;
-				break;
+				verbose("%s constraint has imbalanced brackets: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
 			}
 			bracket++;
 			brack_set_count++;
-			if (brack_set_count > 1)
-				break;
+			if (brack_set_count > 1) {
+				verbose("%s constraint has more than one set of brackets: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
+			}
 		} else if (tmp_requested[i] == ']') {
 			tmp_requested[i] = '\0';
 			if ((feature == NULL) || (bracket == 0)) {
-				verbose("%s invalid constraint %s",
+				verbose("%s constraint has imbalanced brackets: %s",
 					debug_str, features);
 				rc = feature_err;
 				goto fini;
@@ -4768,15 +4779,19 @@ static int _feature_string2list(char *features, char *debug_str,
 		} else if (tmp_requested[i] == '(') {
 			tmp_requested[i] = '\0';
 			if ((feature != NULL) || paren) {
-				fail = true;
-				break;
+				verbose("%s constraint has imbalanced parentheses: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
 			}
 			paren++;
 		} else if (tmp_requested[i] == ')') {
 			tmp_requested[i] = '\0';
 			if ((feature == NULL) || (paren == 0)) {
-				fail = true;
-				break;
+				verbose("%s constraint has imbalanced parentheses: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
 			}
 			paren--;
 		} else if (tmp_requested[i] == '\0') {
@@ -4798,12 +4813,6 @@ static int _feature_string2list(char *features, char *debug_str,
 		}
 	}
 
-	if (brack_set_count > 1) {
-		verbose("%s constraint has more than one set of brackets: %s",
-			debug_str, features);
-		rc = ESLURM_INVALID_FEATURE;
-		goto fini;
-	}
 	if (bracket != 0) {
 		verbose("%s constraint has unbalanced brackets: %s",
 			debug_str, features);
@@ -4843,7 +4852,7 @@ static int _feature_string2list(char *features, char *debug_str,
 				   (has_paren_or || has_static_or));
 
 fini:
-	if (fail)
+	if (rc != SLURM_SUCCESS)
 		FREE_NULL_LIST(*feature_list);
 	xfree(tmp_requested);
 
