@@ -536,6 +536,9 @@ static void _dump_jobs(ctxt_t *ctxt, slurmdb_job_cond_t *job_cond)
 		list_for_each(jobs, _foreach_job, &args);
 
 	FREE_NULL_LIST(jobs);
+
+	if (job_cond)
+		FREE_NULL_LIST(job_cond->cluster_list);
 }
 
 /* based on get_data() in sacct/options.c */
