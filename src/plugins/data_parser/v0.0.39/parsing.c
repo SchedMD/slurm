@@ -196,10 +196,10 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 		else
 			continue;
 
-		if (bit->type == FLAG_BIT_TYPE_EQUAL)
+		if (bit->type == FLAG_BIT_TYPE_BIT)
 			_set_flag_bit(parser, dst, bit, matched,
 				      _flag_parent_path(&path, args), src);
-		else if (bit->type == FLAG_BIT_TYPE_BIT)
+		else if (bit->type == FLAG_BIT_TYPE_EQUAL)
 			_set_flag_bit_equal(parser, dst, bit, matched,
 					    _flag_parent_path(&path, args),
 					    src);
