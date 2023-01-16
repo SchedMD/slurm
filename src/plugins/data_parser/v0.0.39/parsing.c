@@ -657,7 +657,6 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		 data_t *src, args_t *args, data_t *parent_path)
 {
 	int rc;
-	data_t *ppath = data_copy(NULL, parent_path);
 	char *path = NULL;
 
 	check_parser(parser);
@@ -678,7 +677,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		if (parser->required) {
 			if ((rc = on_error(PARSING, parser->type, args,
 					   ESLURM_DATA_PATH_NOT_FOUND,
-					   set_source_path(&path, ppath),
+					   set_source_path(&path, parent_path),
 					   __func__,
 					   "Missing required field '%s' in dictionary",
 					   parser->key)))
@@ -686,7 +685,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		} else {
 			/* field is missing but not required */
 			log_flag(DATA, "%s: skip parsing missing %s to %zd byte object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ")",
-				__func__, set_source_path(&path, ppath),
+				__func__, set_source_path(&path, parent_path),
 				(dst_bytes == NO_VAL ? -1 : dst_bytes),
 				parser->obj_type_string, (uintptr_t) dst,
 				(parser->ptr_offset == NO_VAL ?
@@ -702,7 +701,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	}
 
 	log_flag(DATA, "%s: BEGIN: parsing %s{%s(0x%" PRIxPTR ")} to %zd byte object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ")",
-		 __func__, set_source_path(&path, ppath),
+		 __func__, set_source_path(&path, parent_path),
 		 data_type_to_string(data_get_type(src)),
 		 (uintptr_t) src, (dst_bytes == NO_VAL ? -1 : dst_bytes),
 		 parser->obj_type_string, (uintptr_t) dst,
@@ -714,7 +713,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	switch (parser->model) {
 	case PARSER_MODEL_FLAG_ARRAY:
 		verify_parser_not_sliced(parser);
-		rc = _parse_flag(dst, parser, src, args, ppath);
+		rc = _parse_flag(dst, parser, src, args, parent_path);
 		break;
 	case PARSER_MODEL_LIST:
 		xassert(parser->list_type > DATA_PARSER_TYPE_INVALID);
@@ -722,7 +721,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		verify_parser_not_sliced(parser);
 		xassert((dst_bytes == NO_VAL) || (dst_bytes == sizeof(List)));
 		xassert(!parser->parse);
-		rc = _parse_list(parser, dst, src, args, ppath);
+		rc = _parse_list(parser, dst, src, args, parent_path);
 		break;
 	case PARSER_MODEL_ARRAY:
 		xassert(parser->fields);
@@ -731,23 +730,23 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		/* recursively run the child parsers */
 		for (int i = 0; !rc && (i < parser->field_count); i++)
 			rc = _parser_linked(args, parser, &parser->fields[i],
-					    src, dst, ppath);
+					    src, dst, parent_path);
 		break;
 	case PARSER_MODEL_PTR:
 		verify_parser_not_sliced(parser);
-		rc = _parse_pointer(parser, dst, src, args, ppath);
+		rc = _parse_pointer(parser, dst, src, args, parent_path);
 		break;
 	case PARSER_MODEL_NT_PTR_ARRAY:
 	case PARSER_MODEL_NT_ARRAY:
 		verify_parser_not_sliced(parser);
-		rc = _parse_nt_array(parser, dst, src, args, ppath);
+		rc = _parse_nt_array(parser, dst, src, args, parent_path);
 		break;
 	case PARSER_MODEL_SIMPLE:
 	case PARSER_MODEL_COMPLEX:
 		xassert(parser->parse != _parse_list);
 		verify_parser_not_sliced(parser);
-		_parse_check_openapi(parser, src, args, ppath);
-		rc = parser->parse(parser, dst, src, args, ppath);
+		_parse_check_openapi(parser, src, args, parent_path);
+		rc = parser->parse(parser, dst, src, args, parent_path);
 		break;
 	case PARSER_MODEL_ARRAY_LINKED_FIELD:
 		fatal_abort("%s: link model not allowed %u",
@@ -762,7 +761,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 
 cleanup:
 	log_flag(DATA, "%s: END: parsing %s{%s(0x%" PRIxPTR ")} to %zd byte object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ") rc[%d]:%s",
-		 __func__, set_source_path(&path, ppath),
+		 __func__, set_source_path(&path, parent_path),
 		 data_type_to_string(data_get_type(src)), (uintptr_t) src,
 		 (dst_bytes == NO_VAL ? -1 : dst_bytes),
 		 parser->obj_type_string, (uintptr_t) dst, (parser->ptr_offset
@@ -773,7 +772,6 @@ cleanup:
 		 parser->type_string, (uintptr_t) parser, rc,
 		 slurm_strerror(rc));
 
-	FREE_NULL_DATA(ppath);
 	xfree(path);
 
 	return rc;
