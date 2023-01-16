@@ -538,12 +538,6 @@ slurm_errtab_t slurm_errtab[] = {
 
 	/* socket specific Slurm communications error */
 
-	{ ERRTAB_ENTRY(SLURM_PROTOCOL_SOCKET_IMPL_ZERO_RECV_LENGTH),
-	  "Received zero length message"			},
-	{ ERRTAB_ENTRY(SLURM_PROTOCOL_SOCKET_IMPL_NEGATIVE_RECV_LENGTH),
-	  "Received message length < 0"				},
-	{ ERRTAB_ENTRY(SLURM_PROTOCOL_SOCKET_IMPL_NOT_ALL_DATA_SENT),
-	  "Failed to send entire message"			},
 	{ ERRTAB_ENTRY(ESLURM_PROTOCOL_INCOMPLETE_PACKET),
 	  "Header lengths are longer than data received"	},
 	{ ERRTAB_ENTRY(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT),
