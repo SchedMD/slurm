@@ -311,8 +311,10 @@ static void _parse_http_accept_entry(char *entry, List l)
 
 static int _compare_q(void *x, void *y)
 {
-	http_header_accept_t *xobj = (http_header_accept_t *) x;
-	http_header_accept_t *yobj = (http_header_accept_t *) y;
+	http_header_accept_t **xobj_ptr = x;
+	http_header_accept_t **yobj_ptr = y;
+	http_header_accept_t *xobj = *xobj_ptr;
+	http_header_accept_t *yobj = *yobj_ptr;
 
 	xassert(xobj->magic == MAGIC_HEADER_ACCEPT);
 	xassert(yobj->magic == MAGIC_HEADER_ACCEPT);
