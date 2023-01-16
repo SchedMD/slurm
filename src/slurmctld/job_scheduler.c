@@ -115,7 +115,7 @@ static int	_schedule(bool full_queue);
 static int	_valid_batch_features(job_record_t *job_ptr, bool can_reboot);
 static int	_valid_feature_list(job_record_t *job_ptr, List feature_list,
 				    bool can_reboot, char *debug_str,
-				    bool is_reservation);
+				    char *features, bool is_reservation);
 static int	_valid_node_feature(char *feature, bool can_reboot);
 static int	build_queue_timeout = BUILD_TIMEOUT;
 static int	correspond_after_task_cnt = CORRESPOND_ARRAY_TASK_CNT;
@@ -4966,7 +4966,7 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 	}
 
 	rc = _valid_feature_list(job_ptr, *feature_list, can_reboot, debug_str,
-				 is_reservation);
+				 features, is_reservation);
 	if (rc == ESLURM_INVALID_FEATURE) {
 		rc = feature_err;
 		goto fini;
@@ -5039,14 +5039,13 @@ static int _valid_batch_features(job_record_t *job_ptr, bool can_reboot)
 }
 
 static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
-			       bool can_reboot, char *debug_str,
+			       bool can_reboot, char *debug_str, char *features,
 			       bool is_reservation)
 {
 	static time_t sched_update = 0;
 	static bool ignore_prefer_val = false;
 	ListIterator feat_iter;
 	job_feature_t *feat_ptr;
-	char *buf = NULL;
 	int bracket = 0, paren = 0;
 	int rc = SLURM_SUCCESS;
 	bool has_xand = false, has_mor = false;
@@ -5069,46 +5068,32 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 	while ((feat_ptr = list_next(feat_iter))) {
 		if ((feat_ptr->op_code == FEATURE_OP_MOR) ||
 		    (feat_ptr->op_code == FEATURE_OP_XAND)) {
-			if (bracket == 0)
-				xstrcat(buf, "[");
 			bracket = feat_ptr->paren + 1;
 		}
 		if (feat_ptr->paren > paren) {
-			xstrcat(buf, "(");
 			paren = feat_ptr->paren;
 		}
-		xstrcat(buf, feat_ptr->name);
 		if (feat_ptr->paren < paren) {
-			xstrcat(buf, ")");
 			paren = feat_ptr->paren;
 		}
 		if (rc == SLURM_SUCCESS &&
 		    (!ignore_prefer_val ||
 		     (feature_list != job_ptr->details->prefer_list)))
 			rc = _valid_node_feature(feat_ptr->name, can_reboot);
-		if (feat_ptr->count)
-			xstrfmtcat(buf, "*%u", feat_ptr->count);
 		if (feat_ptr->op_code == FEATURE_OP_XAND && !feat_ptr->count)
 			rc = ESLURM_INVALID_FEATURE;
 		if (feat_ptr->op_code == FEATURE_OP_MOR && feat_ptr->count)
 			rc = ESLURM_INVALID_FEATURE;
-		if ((bracket > paren) &&
+		if ((bracket > paren) && /* In brackets, outside of paren */
 		    ((feat_ptr->op_code != FEATURE_OP_MOR) &&
 		     (feat_ptr->op_code != FEATURE_OP_XAND))) {
 			if ((has_xand && !feat_ptr->count) ||
 			    (has_mor && feat_ptr->count))
 				rc = ESLURM_INVALID_FEATURE;
-			xstrcat(buf, "]");
 			bracket = 0;
 			has_xand = false;
 			has_mor = false;
 		}
-		if ((feat_ptr->op_code == FEATURE_OP_AND) ||
-		    (feat_ptr->op_code == FEATURE_OP_XAND))
-			xstrcat(buf, "&");
-		else if ((feat_ptr->op_code == FEATURE_OP_OR) ||
-			 (feat_ptr->op_code == FEATURE_OP_MOR))
-			xstrcat(buf, "|");
 		if (feat_ptr->op_code == FEATURE_OP_XAND)
 			has_xand = true;
 		if (feat_ptr->op_code == FEATURE_OP_MOR)
@@ -5117,20 +5102,20 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 	list_iterator_destroy(feat_iter);
 
 	if (rc == SLURM_SUCCESS) {
-		debug("%s feature list: %s", debug_str, buf);
+		debug("%s feature list: %s", debug_str, features);
 	} else {
 		if (is_reservation) {
-			info("Reservation has invalid feature list: %s", buf);
+			info("Reservation has invalid feature list: %s",
+			     features);
 		} else {
 			if (can_reboot)
 				info("%s has invalid feature list: %s",
-				     debug_str, buf);
+				     debug_str, features);
 			else
 				info("%s has invalid feature list (%s) or the features are not active and this user cannot reboot to update node features",
-				     debug_str, buf);
+				     debug_str, features);
 		}
 	}
-	xfree(buf);
 
 	return rc;
 }
