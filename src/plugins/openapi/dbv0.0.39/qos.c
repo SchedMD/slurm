@@ -239,7 +239,7 @@ static void _update_qos(ctxt_t *ctxt, bool commit)
 		resp_warn(
 			ctxt, __func__,
 			"ignoring empty or non-existant QOS array for update");
-		xfree(parent_path);
+		FREE_NULL_DATA(parent_path);
 		return;
 	}
 
