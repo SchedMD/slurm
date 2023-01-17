@@ -343,7 +343,7 @@ static const parser_t parse_job[] = {
 	_add_parse(UINT32, resvid, "reservation/id"),
 	_add_parse(UINT32, resv_name, "reservation/name"),
 	/* skipping show_full */
-	_add_parse(UINT32, eligible, "time/start"),
+	_add_parse(UINT32, start, "time/start"),
 	_add_parse(JOB_STATE, state, "state/current"),
 	_add_parse(JOB_REASON, state_reason_prev, "state/reason"),
 	_add_parse(UINT32, submit, "time/submission"),
