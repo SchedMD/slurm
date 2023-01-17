@@ -429,7 +429,7 @@ static void _update_associations(ctxt_t *ctxt, bool commit)
 {
 	data_t *parent_path = NULL;
 	data_t *dassoc = get_query_key_list("associations", ctxt, &parent_path);
-	List assoc_list = list_create(slurmdb_destroy_assoc_rec);
+	List assoc_list = NULL;
 
 	if (!dassoc) {
 		resp_warn(ctxt, __func__,
