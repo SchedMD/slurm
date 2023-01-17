@@ -17365,27 +17365,6 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 	if (flags & JOB_RECONFIG_FAIL)
 		node_features_g_get_node(job_ptr->nodes);
 
-	if (!job_ptr->part_ptr && job_ptr->partition) {
-		
-		/* part_record_t *part_ptr = find_part_record(job_ptr->partition); */
-		/* if (part_ptr == NULL) { */
-		/* 	part_ptr_list = get_part_list( */
-		/* 		job_ptr->partition, */
-		/* 		&err_part); */
-		/* 	if (part_ptr_list) { */
-		/* 		part_ptr = list_peek(part_ptr_list); */
-		/* 		if (list_count(part_ptr_list) == 1) */
-		/* 			FREE_NULL_LIST(part_ptr_list); */
-		/* 	} */
-		/* } */
-		/* if (part_ptr == NULL) { */
-		/* 	error("Invalid partition (%s) for %pJ", */
-		/* 	      err_part, job_ptr); */
-		/* 	xfree(err_part); */
-		/* 	job_fail = true; */
-		/* } */
-	}
-
 	/*
 	 * If the partition was removed don't allow the job to be
 	 * requeued.  If it doesn't have details then something is very
