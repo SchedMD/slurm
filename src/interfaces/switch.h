@@ -185,7 +185,7 @@ extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
 /*
  * Notes on job related switch_g functions:
  *
- * switch_g functions are run within slurmd in the following way:
+ * switch_g functions are run within slurmstepd in the following way:
  * (Diagram courtesy of Jim Garlick [see qsw.c] )
  *
  *  Process 1 (root)        Process 2 (root, user)  |  Process 3 (user task)
@@ -205,7 +205,7 @@ extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
 /*
  * Prepare node for job.
  *
- * pre is run as root in the first slurmd process, the so called job
+ * pre is run as root in the first slurmstepd process, the so called job
  * manager. This function can be used to perform any initialization
  * that needs to be performed in the same process as switch_g_job_fini()
  *
@@ -295,7 +295,7 @@ extern int switch_g_job_fini(dynamic_plugin_data_t *jobinfo);
 /*
  * Finalize switch_g on node.
  *
- * This function is run from the initial slurmd process (same process
+ * This function is run from the initial slurmstepd process (same process
  * as switch_g_job_preinit()), and is run as root. Any cleanup routines
  * that need to be run with root privileges should be run from this
  * function.
