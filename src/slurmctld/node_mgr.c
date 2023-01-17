@@ -4994,6 +4994,7 @@ extern int create_nodes(char *nodeline, char **err_msg)
 	set_cluster_tres(false);
 	_update_parts();
 	power_save_set_timeouts(NULL);
+	power_save_exc_setup();
 	select_g_reconfigure();
 
 fini:
@@ -5097,6 +5098,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	set_cluster_tres(false);
 	_update_parts();
 	power_save_set_timeouts(NULL);
+	power_save_exc_setup();
 	select_g_reconfigure();
 
 	return SLURM_SUCCESS;
@@ -5161,7 +5163,9 @@ extern int delete_nodes(char *names, char **err_msg)
 	xassert(err_msg);
 
 	slurmctld_lock_t write_lock = {
-		.job = WRITE_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK};
+		.job = WRITE_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK,
+		.conf = READ_LOCK
+	};
 
 	if (!xstrstr(slurm_conf.select_type, "cons_tres")) {
 		*err_msg = xstrdup("Node deletion only compatible with select/cons_tres");
@@ -5200,6 +5204,7 @@ extern int delete_nodes(char *names, char **err_msg)
 		set_cluster_tres(false);
 		_update_parts();
 		select_g_reconfigure();
+		power_save_exc_setup();
 	}
 	if (error_hostlist) {
 		char *nodes = hostlist_ranged_string_xmalloc(error_hostlist);

@@ -91,7 +91,6 @@ bool power_save_debug = false;
 
 int suspend_rate, resume_rate, max_timeout;
 char *suspend_prog = NULL, *resume_prog = NULL, *resume_fail_prog = NULL;
-char *exc_nodes = NULL, *exc_parts = NULL, *exc_states = NULL;
 time_t last_log = (time_t) 0, last_work_scan = (time_t) 0;
 uint16_t slurmd_timeout;
 static bool idle_on_node_suspend = false;
@@ -138,12 +137,14 @@ static int _parse_exc_nodes(void)
 	char *save_ptr = NULL, *sep, *tmp, *tok, *node_cnt_str;
 
 	/* Shortcut if ":<node_cnt>" is not used */
-	sep = strchr(exc_nodes, ':');
+	sep = strchr(slurm_conf.suspend_exc_nodes, ':');
 	if (!sep)
-		return node_name2bitmap(exc_nodes, false, &exc_node_bitmap);
+		return node_name2bitmap(slurm_conf.suspend_exc_nodes, false,
+					&exc_node_bitmap);
 
+	FREE_NULL_LIST(partial_node_list);
 	partial_node_list = list_create(_exc_node_part_free);
-	tmp = xstrdup(exc_nodes);
+	tmp = xstrdup(slurm_conf.suspend_exc_nodes);
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		bitstr_t *exc_node_cnt_bitmap = NULL;
@@ -159,14 +160,18 @@ static int _parse_exc_nodes(void)
 		if (!ext_node_cnt) {
 			ext_node_cnt = bit_set_count(exc_node_cnt_bitmap);
 		}
-		ext_part_struct = xmalloc(sizeof(exc_node_partital_t));
-		ext_part_struct->exc_node_cnt = (int) ext_node_cnt;
-		ext_part_struct->exc_node_cnt_bitmap = exc_node_cnt_bitmap;
-		list_append(partial_node_list, ext_part_struct);
+		if (bit_set_count(exc_node_cnt_bitmap)) {
+			ext_part_struct = xmalloc(sizeof(exc_node_partital_t));
+			ext_part_struct->exc_node_cnt = (int) ext_node_cnt;
+			ext_part_struct->exc_node_cnt_bitmap =
+				exc_node_cnt_bitmap;
+			list_append(partial_node_list, ext_part_struct);
+		} else
+			FREE_NULL_BITMAP(exc_node_cnt_bitmap);
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(tmp);
-	if (rc != SLURM_SUCCESS)
+	if (list_is_empty(partial_node_list))
 		FREE_NULL_LIST(partial_node_list);
 
 	return rc;
@@ -202,7 +207,7 @@ static void _parse_exc_states(void)
 					  NODE_STATE_PLANNED |
 					  NODE_STATE_RES;
 
-	buf = xstrdup(exc_states);
+	buf = xstrdup(slurm_conf.suspend_exc_states);
 	for (tok = strtok_r(buf, ",", &saveptr); tok;
 	     tok = strtok_r(NULL, ",", &saveptr)) {
 		uint32_t flag = 0;
@@ -732,9 +737,6 @@ static void _clear_power_config(void)
 	xfree(suspend_prog);
 	xfree(resume_prog);
 	xfree(resume_fail_prog);
-	xfree(exc_nodes);
-	xfree(exc_parts);
-	xfree(exc_states);
 	suspend_exc_down = false;
 	suspend_exc_state_flags = 0;
 	FREE_NULL_BITMAP(exc_node_bitmap);
@@ -787,18 +789,21 @@ static int _set_partition_options(void *x, void *arg)
 /*
  * Parse settings for excluding nodes, partitions and states from being
  * suspended.
+ *
  * This creates node bitmaps. Must be done again when node bitmaps change.
  */
 extern void power_save_exc_setup(void)
 {
-	if (exc_nodes && (_parse_exc_nodes() != SLURM_SUCCESS))
-		error("Invalid SuspendExcNodes %s ignored", exc_nodes);
+	if (slurm_conf.suspend_exc_nodes &&
+	    (_parse_exc_nodes() != SLURM_SUCCESS))
+		error("Invalid SuspendExcNodes %s some nodes may be ignored.",
+		      slurm_conf.suspend_exc_nodes);
 
-	if (exc_parts) {
+	if (slurm_conf.suspend_exc_parts) {
 		char *tmp = NULL, *one_part = NULL, *part_list = NULL;
 		part_record_t *part_ptr = NULL;
 
-		part_list = xstrdup(exc_parts);
+		part_list = xstrdup(slurm_conf.suspend_exc_parts);
 		one_part = strtok_r(part_list, ",", &tmp);
 		while (one_part != NULL) {
 			part_ptr = find_part_record(one_part);
@@ -817,7 +822,7 @@ extern void power_save_exc_setup(void)
 		xfree(part_list);
 	}
 
-	if (exc_states)
+	if (slurm_conf.suspend_exc_states)
 		_parse_exc_states();
 
 	if (power_save_debug) {
@@ -857,12 +862,6 @@ static int _init_power_config(void)
 		resume_fail_prog = xstrdup(slurm_conf.resume_fail_program);
 	if (slurm_conf.resume_program)
 		resume_prog = xstrdup(slurm_conf.resume_program);
-	if (slurm_conf.suspend_exc_nodes)
-		exc_nodes = xstrdup(slurm_conf.suspend_exc_nodes);
-	if (slurm_conf.suspend_exc_parts)
-		exc_parts = xstrdup(slurm_conf.suspend_exc_parts);
-	if (slurm_conf.suspend_exc_states)
-		exc_states = xstrdup(slurm_conf.suspend_exc_states);
 
 	cloud_reg_addrs = xstrcasestr(slurm_conf.slurmctld_params,
 				      "cloud_reg_addrs");
