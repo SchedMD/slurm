@@ -264,6 +264,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.38 - change type of nice field for job submissions to integer
     from string.
  -- openapi/v0.0.38 - add oversubscribe option to job submission properties.
+ -- openapi/v0.0.38 - fix incorrect data used to populate "time/start" field
+    for jobs.
 
 * Changes in Slurm 22.05.7
 ==========================
