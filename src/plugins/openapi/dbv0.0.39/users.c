@@ -148,6 +148,14 @@ static int _foreach_update_user(void *x, void *arg)
 
 	assoc_cond.user_list = list_create(NULL);
 
+	if (user->old_name && !user->old_name[0]) {
+		/*
+		 * Ignore empty string since they client is not asking to change
+		 * user from nothing.
+		 */
+		xfree(user->old_name);
+	}
+
 	if (user->old_name) {
 		list_append(assoc_cond.user_list, user->old_name);
 
