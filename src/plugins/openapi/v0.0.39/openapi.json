@@ -34,6 +34,9 @@
     {
       "user": [],
       "token": []
+    },
+    {
+      "bearerAuth": []
     }
   ],
   "paths": {
@@ -1008,6 +1011,12 @@
         "description": "User access token",
         "name": "X-SLURM-USER-TOKEN",
         "in": "header"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "description": "Bearer Authentication",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
       }
     },
     "schemas": {
