@@ -305,6 +305,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix node reason time skew when setting a reboot message.
  -- Append ResumeTimeout message to an existing node reason instead of always
     clearing it first.
+ -- slurmrestd - added support for Bearer Authentication using auth/jwt.
 
 * Changes in Slurm 22.05.9
 ==========================
