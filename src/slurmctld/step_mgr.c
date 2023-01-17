@@ -1340,7 +1340,13 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		FREE_NULL_BITMAP(select_nodes_avail);
 	}
 
-	if (step_spec->node_list) {
+	/*
+	 * An allocating srun will send in the same node_list that was already
+	 * used to construct the job allocation. In that case, we can assume
+	 * that the job allocation already satifies those requirements.
+	 */
+	if (step_spec->node_list && xstrcmp(step_spec->node_list,
+					    job_ptr->details->req_nodes)) {
 		bitstr_t *selected_nodes = NULL;
 		log_flag(STEPS, "%s: selected nodelist is %s",
 			 __func__, step_spec->node_list);
