@@ -371,6 +371,9 @@ static int _foreach_update_assoc(void *x, void *arg)
 
 	xassert(ctxt->magic == MAGIC_CTXT);
 
+	if (assoc->parent_acct && !assoc->parent_acct[0])
+		xfree(assoc->parent_acct);
+
 	/*
 	 * slurmdbd will treat an empty list as a wildcard so we must place
 	 * empty string values to for unset fields
