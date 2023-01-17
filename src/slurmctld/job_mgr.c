@@ -7408,17 +7408,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 			job_desc->min_nodes = i;
 		if (i > job_desc->min_cpus)
 			job_desc->min_cpus = i;
-		if (job_desc->max_nodes &&
-		    (job_desc->min_nodes > job_desc->max_nodes)) {
-#if 0
-			info("%s: max node count less than required hostlist "
-			     "size for user %u", __func__, job_desc->user_id);
-			job_desc->max_nodes = job_desc->min_nodes;
-#else
-			error_code = ESLURM_INVALID_NODE_COUNT;
-			goto cleanup_fail;
-#endif
-		}
 	}
 
 	/* Zero node count OK for persistent burst buffer create or destroy */
