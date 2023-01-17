@@ -86,6 +86,7 @@ HIGHLIGHTS
     modified. Sites using OpenAPI Generator clients are highly suggested to
     upgrade to to using atleast version 6.x due to limitations with prior
     versions.
+ -- Allow for --nodelist to contain more nodes than required by --nodes.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

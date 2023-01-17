@@ -250,6 +250,7 @@ documents those changes that are of interest to users and administrators.
     specification compared to previous plugin version.
  -- Validate --gpu-bind options more strictly.
  -- Fix slurmd segfault on bad EnergyIPMIPowerSensors= parameter.
+ -- Allow for --nodelist to contain more nodes than required by --nodes.
 
 * Changes in Slurm 22.05.8
 ==========================
