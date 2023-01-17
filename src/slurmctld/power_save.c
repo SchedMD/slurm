@@ -784,7 +784,12 @@ static int _set_partition_options(void *x, void *arg)
 	return 0;
 }
 
-static void _setup_exc_nodes_parts(void)
+/*
+ * Parse settings for excluding nodes, partitions and states from being
+ * suspended.
+ * This creates node bitmaps. Must be done again when node bitmaps change.
+ */
+extern void power_save_exc_setup(void)
 {
 	if (exc_nodes && (_parse_exc_nodes() != SLURM_SUCCESS))
 		error("Invalid SuspendExcNodes %s ignored", exc_nodes);
@@ -924,7 +929,7 @@ static int _init_power_config(void)
 		xfree(resume_fail_prog);
 	}
 
-	_setup_exc_nodes_parts();
+	power_save_exc_setup();
 
 	return 0;
 }
