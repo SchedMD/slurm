@@ -49,7 +49,7 @@
 typedef struct {
 	int magic;
 	uint32_t plugin_id;
-	/* user supplied user name */
+	/* optional user supplied user name */
 	char *user_name;
 	void *plugin_data;
 } rest_auth_context_t;

@@ -86,9 +86,7 @@ static void _check_magic(rest_auth_context_t *ctx)
 	xassert(ctx);
 	xassert(ctx->magic == MAGIC);
 
-	if (ctx->plugin_id) {
-		xassert(ctx->user_name);
-	} else {
+	if (!ctx->plugin_id) {
 		xassert(!ctx->plugin_data);
 		xassert(!ctx->user_name);
 	}

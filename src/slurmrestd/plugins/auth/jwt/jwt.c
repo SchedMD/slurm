@@ -109,15 +109,13 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 		      HTTP_HEADER_USER_TOKEN);
 		return ESLURM_AUTH_CRED_INVALID;
 	}
-	if (!user_name) {
-		error("%s: [%s] missing header user name: %s",
-		      __func__, args->context->con->name,
-		      HTTP_HEADER_USER_NAME);
-		return ESLURM_AUTH_CRED_INVALID;
-	}
 
-	info("[%s] attempting user_name %s token authentication pass through",
-	     args->context->con->name, user_name);
+	if (user_name)
+		info("[%s] attempting user_name %s token authentication pass through",
+		     args->context->con->name, user_name);
+	else
+		info("[%s] attempting token authentication pass through",
+		     args->context->con->name);
 
 	xassert(!ctxt->user_name);
 	xassert(!ctxt->plugin_data);
