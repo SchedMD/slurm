@@ -44,6 +44,8 @@
 #include "src/slurmrestd/http.h"
 
 #define HTTP_HEADER_USER_TOKEN "X-SLURM-USER-TOKEN"
+#define HTTP_HEADER_AUTH "Authorization"
+#define HTTP_HEADER_AUTH_BEARER "Bearer "
 #define HTTP_HEADER_USER_NAME "X-SLURM-USER-NAME"
 
 typedef struct {

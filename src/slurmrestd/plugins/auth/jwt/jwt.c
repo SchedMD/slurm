@@ -92,30 +92,29 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 					  rest_auth_context_t *ctxt)
 {
 	plugin_data_t *data;
-	const char *key, *user_name;
+	const char *key, *user_name, *bearer;
 
 	key = find_http_header(args->headers, HTTP_HEADER_USER_TOKEN);
+	bearer = find_http_header(args->headers, HTTP_HEADER_AUTH);
 	user_name = find_http_header(args->headers, HTTP_HEADER_USER_NAME);
 
-	if (!key && !user_name) {
+	if (!key && !user_name && !bearer) {
 		debug3("%s: [%s] skipping token authentication",
 		       __func__, args->context->con->name);
 		return ESLURM_AUTH_SKIP;
 	}
 
-	if (!key) {
+	if (!key && !bearer) {
 		error("%s: [%s] missing header user token: %s",
 		      __func__, args->context->con->name,
 		      HTTP_HEADER_USER_TOKEN);
 		return ESLURM_AUTH_CRED_INVALID;
+	} else if (key && bearer) {
+		error("%s: [%s] mutually exclusive headers %s and %s found. Rejecting ambiguous authentication request.",
+		      __func__, args->context->con->name,
+		      HTTP_HEADER_USER_TOKEN, HTTP_HEADER_AUTH);
+		return ESLURM_AUTH_CRED_INVALID;
 	}
-
-	if (user_name)
-		info("[%s] attempting user_name %s token authentication pass through",
-		     args->context->con->name, user_name);
-	else
-		info("[%s] attempting token authentication pass through",
-		     args->context->con->name);
 
 	xassert(!ctxt->user_name);
 	xassert(!ctxt->plugin_data);
@@ -124,7 +123,31 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 	ctxt->plugin_data = data = xmalloc(sizeof(*data));
 	data->magic = MAGIC;
 	ctxt->user_name = xstrdup(user_name);
-	data->token = xstrdup(key);
+
+	if (key) {
+		data->token = xstrdup(key);
+	} else if (bearer) {
+		if (!xstrncmp(HTTP_HEADER_AUTH_BEARER, bearer,
+			      strlen(HTTP_HEADER_AUTH_BEARER))) {
+			data->token = xstrdup(bearer +
+					      strlen(HTTP_HEADER_AUTH_BEARER));
+		} else {
+			error("%s: [%s] unexpected format for %s header: %s",
+			      __func__, args->context->con->name,
+			      HTTP_HEADER_AUTH, bearer);
+			return ESLURM_AUTH_CRED_INVALID;
+		}
+	}
+
+	if (user_name)
+		info("[%s] attempting user_name %s token authentication pass through",
+		     args->context->con->name, user_name);
+	else if (key)
+		info("[%s] attempting token authentication pass through",
+		     args->context->con->name);
+	else
+		info("[%s] attempting bearer token authentication pass through",
+		     args->context->con->name);
 
 	return SLURM_SUCCESS;
 }
