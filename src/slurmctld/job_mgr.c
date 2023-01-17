@@ -7367,7 +7367,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		       bool cron, job_record_t **job_pptr, uid_t submit_uid,
 		       char **err_msg, uint16_t protocol_version)
 {
-	int error_code = SLURM_SUCCESS, i, qos_error;
+	int error_code = SLURM_SUCCESS, qos_error;
 	part_record_t *part_ptr = NULL;
 	List part_ptr_list = NULL;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
@@ -7403,11 +7403,16 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		if ((job_desc->contiguous != NO_VAL16) &&
 		    (job_desc->contiguous))
 			bit_fill_gaps(req_bitmap);
-		i = bit_set_count(req_bitmap);
-		if (i > job_desc->min_nodes)
-			job_desc->min_nodes = i;
-		if (i > job_desc->min_cpus)
-			job_desc->min_cpus = i;
+		if (bit_set_count(req_bitmap) > job_desc->min_nodes) {
+			/*
+			 * If a nodelist has been provided with more nodes than
+			 * are required for the job, translate this into an
+			 * exclusion of all nodes except those requested.
+			 */
+			exc_bitmap = bit_alloc(node_record_count);
+			bit_or_not(exc_bitmap, req_bitmap);
+			FREE_NULL_BITMAP(req_bitmap);
+		}
 	}
 
 	/* Zero node count OK for persistent burst buffer create or destroy */
@@ -7595,12 +7600,18 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	}
 
 	if (job_desc->exc_nodes) {
+		bitstr_t *old_exc_bitmap = exc_bitmap;
+
 		error_code = node_name2bitmap(job_desc->exc_nodes, false,
 					      &exc_bitmap);
 		if (error_code) {
 			error_code = ESLURM_INVALID_NODE_NAME;
 			goto cleanup_fail;
 		}
+
+		if (old_exc_bitmap)
+			bit_or(exc_bitmap, old_exc_bitmap);
+		FREE_NULL_BITMAP(old_exc_bitmap);
 	}
 	if (exc_bitmap && req_bitmap) {
 		bitstr_t *tmp_bitmap = NULL;
@@ -8784,6 +8795,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 			_copy_nodelist_no_dup(job_desc->req_nodes);
 		detail_ptr->req_node_bitmap = *req_bitmap;
 		*req_bitmap = NULL;	/* Reused nothing left to free */
+		detail_ptr->exc_node_bitmap = *exc_bitmap;
+		*exc_bitmap = NULL; /* Reused nothing left to free */
 	}
 	if (job_desc->exc_nodes) {
 		detail_ptr->exc_nodes =
@@ -13291,6 +13304,21 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		new_req_bitmap = NULL;
 		sched_info("%s: setting req_nodes to %s for %pJ",
 			   __func__, job_desc->req_nodes, job_ptr);
+
+		/*
+		 * If a nodelist has been provided with more nodes than are
+		 * required for the job, translate this into an exclusion of
+		 * all nodes except those requested.
+		 */
+		if (bit_set_count(detail_ptr->req_node_bitmap) >
+		    job_desc->min_nodes) {
+			if (!detail_ptr->exc_node_bitmap)
+				detail_ptr->exc_node_bitmap =
+					bit_alloc(node_record_count);
+			bit_or_not(detail_ptr->exc_node_bitmap,
+				   detail_ptr->req_node_bitmap);
+			FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
+		}
 	}
 
 	if (new_resv_ptr) {
