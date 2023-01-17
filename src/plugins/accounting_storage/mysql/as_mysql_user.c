@@ -297,6 +297,11 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		 */
 	}
 
+	if (!user_list || !list_count(user_list)) {
+		error("%s: Trying to add empty user list", __func__);
+		return ESLURM_EMPTY_LIST;
+	}
+
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 	wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
