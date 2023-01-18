@@ -1679,7 +1679,7 @@ extern List slurmdb_jobs_get(void *db_conn, slurmdb_job_cond_t *job_cond);
 extern int slurmdb_jobs_fix_runaway(void *db_conn, List jobs);
 
 /* initialization of job completion logging */
-extern int slurmdb_jobcomp_init(char *jobcomp_loc);
+extern int slurmdb_jobcomp_init(void);
 
 /* terminate pthreads and free, general clean-up for termination */
 extern int slurmdb_jobcomp_fini(void);
