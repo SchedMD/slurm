@@ -1,7 +1,5 @@
-
 /*****************************************************************************\
- *  slurm_jobcomp.c - implementation-independent job completion logging
- *  functions
+ *  jobcomp.c - implementation-independent job completion logging functions
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
