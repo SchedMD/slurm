@@ -1666,14 +1666,63 @@ Only used for database type storage plugins, ignored otherwise.
 
 .TP
 \fBJobCompLoc\fR
-The fully qualified file name where job completion records are written
-when the \fBJobCompType\fR is "jobcomp/filetxt" or the database where
-job completion records are stored when the \fBJobCompType\fR is a
-database, or a complete URL endpoint with format <host>:<port>/<target>/_doc
-when \fBJobCompType\fR is "jobcomp/elasticsearch" like i.e.
-"localhost:9200/slurm/_doc".
-NOTE: More information is available at the Slurm web site
-<https://slurm.schedmd.com/elasticsearch.html>.
+This option sets a string which has different meanings depending on
+\fBJobCompType\fR:
+.IP
+.RS
+.TP
+If \fBjobcomp/elasticsearch\fR:
+Instructs this plugin to send the finished job records information to the
+Elasticsearch server URL endpoint (including the port number and the target
+index) configured in this option. This string should typically take the form
+of \fI<host>:<port>/<target>/_doc\fR.
+
+\fBNOTE\fR: the default value for this plugin is
+\fI/var/log/slurm_jobcomp.log\fR.
+
+
+\fBNOTE\fR: refer to <https://slurm.schedmd.com/elasticsearch.html> for more
+information.
+.IP
+
+.TP
+If \fBjobcomp/filetxt\fR:
+Instructs this plugin to send the finished job records information to a file
+configured in this option. This string should represent an absolute path to
+a file.
+
+\fBNOTE\fR: the default value for this plugin is
+\fI/var/log/slurm_jobcomp.log\fR.
+.IP
+
+.TP
+If \fBjobcomp/lua\fR:
+This option is ignored in this plugin. The finished job record is processed
+by a hardcoded \fIjobcomp.lua\fR script expected to be located in the same
+location of slurm.conf.
+
+\fBNOTE\fR: there is no default value for this option when this plugin is
+enabled.
+.IP
+
+.TP
+If \fBjobcomp/mysql\fR:
+Instructs this plugin to send the finished job records information to a database
+name configured in this option. This string should represent a database name.
+
+\fBNOTE\fR: the default value for this plugin is \fIslurm_jobcomp_db\fR.
+.IP
+
+.TP
+If \fBjobcomp/script\fR:
+The finished job record information is made available via environment variables
+and processed by a script with name configured by this option. This string
+should represent a path to a script.
+
+\fBNOTE\fR: there's no default JobCompLoc value if this plugin is configured,
+since JobCompLoc needs to be explicitly configured. Otherwise, the plugin
+will fail to initialize.
+.RE
 .IP
 
 .TP
