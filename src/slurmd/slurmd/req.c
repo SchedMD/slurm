@@ -2715,8 +2715,7 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 	rpc_rc = slurm_send_recv_controller_rc_msg(&resp_msg, &rc,
 						   working_cluster_rec);
 
-	if ((resp_msg.msg_type == REQUEST_JOB_REQUEUE) &&
-	    ((rc == ESLURM_DISABLED) || (rc == ESLURM_BATCH_ONLY))) {
+	if ((rc == ESLURM_DISABLED) || (rc == ESLURM_BATCH_ONLY)) {
 		info("Could not launch job %u and not able to requeue it, "
 		     "cancelling job", job_id);
 
