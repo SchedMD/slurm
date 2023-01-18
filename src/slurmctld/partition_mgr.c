@@ -2235,6 +2235,9 @@ extern int part_policy_valid_acct(part_record_t *part_ptr, char *acct,
 
 	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
 
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS))
+		return SLURM_SUCCESS;
+
 	if (job_ptr)
 		assoc_ptr = job_ptr->assoc_ptr;
 	else if (acct) {
