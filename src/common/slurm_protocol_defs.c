@@ -3789,6 +3789,21 @@ extern char *node_state_string_complete(uint32_t state)
 	return state_str;
 }
 
+extern uint32_t parse_node_state_flag(char *flag_str)
+{
+	int flag_str_len = strlen(flag_str);
+
+	for (int i = 0; i < ARRAY_SIZE(node_state_flags); i++) {
+		if (!xstrncasecmp(flag_str, node_state_flags[i].str,
+				  MIN(flag_str_len,
+				      strlen(node_state_flags[i].str)))) {
+			return node_state_flags[i].flag;
+		}
+	}
+
+	return 0; /* No flags */
+}
+
 extern char *node_state_string(uint32_t inx)
 {
 	int  base            = (inx & NODE_STATE_BASE);

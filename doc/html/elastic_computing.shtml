@@ -141,8 +141,10 @@ Multiple partitions may be specified using a comma separator.
 By default, no nodes are excluded.
 <dt><b>SuspendExcStates</b>
 <dd>Specifies node states that are not to be powered down automatically.
-Valid options include Down, Drain and Planned. By default, any of these states,
-if idle for <b>SuspendTime</b>, would be powered down.
+Valid states include CLOUD, DOWN, DRAIN, DYNAMIC_FUTURE, DYNAMIC_NORM, FAIL,
+INVALID_REG, MAINTENANCE, NOT_RESPONDING, PERFCTRS, PLANNED, and RESERVED.
+By default, any of these states, if idle for <b>SuspendTime</b>, would be
+powered down.
 <dt><b>SuspendProgram</b>
 <dd>The program executed when a node is no longer required and can be
 relinquished to the cloud.
