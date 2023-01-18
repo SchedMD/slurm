@@ -309,6 +309,18 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		if (cred_arg->job_comment)
 			setenvf(&env, "SLURM_JOB_COMMENT", "%s",
 				cred_arg->job_comment);
+		if (cred_arg->job_core_spec == NO_VAL16) {
+			setenvf(&env, "SLURM_JOB_CORE_SPEC_COUNT", "0");
+			setenvf(&env, "SLURM_JOB_CORE_SPEC_TYPE", "cores");
+		} else if (cred_arg->job_core_spec & CORE_SPEC_THREAD) {
+			setenvf(&env, "SLURM_JOB_CORE_SPEC_COUNT", "%u",
+				cred_arg->job_core_spec & (~CORE_SPEC_THREAD));
+			setenvf(&env, "SLURM_JOB_CORE_SPEC_TYPE", "threads");
+		} else {
+			setenvf(&env, "SLURM_JOB_CORE_SPEC_COUNT", "%u",
+				cred_arg->job_core_spec);
+			setenvf(&env, "SLURM_JOB_CORE_SPEC_TYPE", "cores");
+		}
 		if (cred_arg->job_constraints)
 			setenvf(&env, "SLURM_JOB_CONSTRAINTS", "%s",
 				cred_arg->job_constraints);
