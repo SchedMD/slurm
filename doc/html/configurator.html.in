@@ -204,6 +204,7 @@ function displayfile()
    get_field("AccountingStoreFlags",document.config.acctng_store_flags) + "<br>" +
    get_field("JobCompHost",document.config.job_comp_host) + "<br>" +
    get_field("JobCompLoc",document.config.job_comp_loc) + "<br>" +
+   get_field("JobCompParams",document.config.job_comp_params) + "<br>" +
    get_field("JobCompPass",document.config.job_comp_pass) + "<br>" +
    get_field("JobCompPort",document.config.job_comp_port) + "<br>" +
    "JobCompType=jobcomp/" + get_radio_value(document.config.job_comp_type) + "<br>" +
@@ -582,6 +583,8 @@ Host the database is running on for Job completion<br>
 Port the database server is listening on for Job completion<br>
 <input type="text" name="job_comp_user" value=""> <B>JobCompUser</B>:
 User we are to use to talk to the database for Job completion<br>
+<input type="text" name="job_comp_params" value=""> <B>JobCompParams</B>:
+Pass arbitrary text string to Job completion plugin<br>
 <input type="text" name="job_comp_pass" value=""> <B>JobCompPass</B>:
 Password we are to use to talk to the database for Job completion<br>
 <P>
