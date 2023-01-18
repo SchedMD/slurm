@@ -17344,10 +17344,18 @@ reply:
 static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 			   uint32_t flags)
 {
+	static time_t config_update = 0;
+	static bool requeue_nohold_prolog = true;
 	bool is_running = false, is_suspended = false, is_completed = false;
 	bool is_completing = false;
 	time_t now = time(NULL);
 	uint32_t completing_flags = 0;
+
+	if (config_update != slurm_conf.last_update) {
+		requeue_nohold_prolog = (xstrcasestr(slurm_conf.sched_params,
+						     "nohold_on_prolog_fail"));
+		config_update = slurm_conf.last_update;
+	}
 
 	/* validate the request */
 	if ((uid != job_ptr->user_id) && !validate_operator(uid) &&
@@ -17553,13 +17561,14 @@ reply:
 	if (flags & JOB_REQUEUE_HOLD) {
 		job_ptr->state_reason = WAIT_HELD_USER;
 		xfree(job_ptr->state_desc);
-		if (flags & JOB_LAUNCH_FAILED) {
-			job_ptr->state_desc
-				= xstrdup("launch failed requeued held");
-		} else {
-			job_ptr->state_desc
-				= xstrdup("job requeued in held state");
-		}
+		job_ptr->state_desc = xstrdup("job requeued in held state");
+		debug("%s: Holding %pJ, requeue-hold exit", __func__, job_ptr);
+		job_ptr->priority = 0;
+	}
+	if ((flags & JOB_LAUNCH_FAILED) && !requeue_nohold_prolog) {
+		job_ptr->state_reason = WAIT_HELD_USER;
+		xfree(job_ptr->state_desc);
+		job_ptr->state_desc = xstrdup("launch failed requeued held");
 		debug("%s: Holding %pJ, requeue-hold exit", __func__, job_ptr);
 		job_ptr->priority = 0;
 	}

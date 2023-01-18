@@ -2689,14 +2689,6 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 	struct requeue_msg req_msg = {0};
 	slurm_msg_t resp_msg;
 	int rc = 0, rpc_rc;
-	static time_t config_update = 0;
-	static bool requeue_no_hold = false;
-
-	if (config_update != slurm_conf.last_update) {
-		requeue_no_hold = (xstrcasestr(slurm_conf.sched_params,
-					       "nohold_on_prolog_fail"));
-		config_update = slurm_conf.last_update;
-	}
 
 	slurm_msg_t_init(&resp_msg);
 
@@ -2706,10 +2698,7 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 	/* Try to requeue the job. If that doesn't work, kill the job. */
 	req_msg.job_id = job_id;
 	req_msg.job_id_str = NULL;
-	if (requeue_no_hold)
-		req_msg.flags = JOB_PENDING;
-	else
-		req_msg.flags = (JOB_REQUEUE_HOLD | JOB_LAUNCH_FAILED);
+	req_msg.flags = JOB_LAUNCH_FAILED;
 	resp_msg.msg_type = REQUEST_JOB_REQUEUE;
 	resp_msg.data = &req_msg;
 	rpc_rc = slurm_send_recv_controller_rc_msg(&resp_msg, &rc,
