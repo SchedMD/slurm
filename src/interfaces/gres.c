@@ -1648,7 +1648,7 @@ static void _validate_gres_conf(List gres_conf_list,
 
 	if (!(gres_ctx->config_flags & GRES_CONF_LOADED)) {
 		/*
-		 * This means there was no gre.conf line for this gres found.
+		 * This means there was no gres.conf line for this gres found.
 		 * We still need to try to load it for AutoDetect's sake.
 		 * If we fail loading we will treat it as a count
 		 * only GRES since the stepd will try to load it elsewise.
