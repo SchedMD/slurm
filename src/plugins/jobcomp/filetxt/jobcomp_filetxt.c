@@ -113,8 +113,9 @@ int fini ( void )
  * logging API.
  */
 
-extern int jobcomp_p_set_location(char *location)
+extern int jobcomp_p_set_location(void)
 {
+	char *location = slurm_conf.job_comp_loc;
 	int rc = SLURM_SUCCESS;
 
 	if (location == NULL) {

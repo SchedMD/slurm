@@ -51,7 +51,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct slurm_jobcomp_ops {
-	int          (*set_loc)   ( char *loc );
+	int          (*set_loc)   ( void );
 	int          (*job_write) ( job_record_t *job_ptr);
 	List         (*get_jobs)  ( slurmdb_job_cond_t *params );
 } slurm_jobcomp_ops_t;
@@ -129,7 +129,7 @@ extern int jobcomp_g_init(void)
 
 done:
 	if (g_context)
-		retval = (*(ops.set_loc))(slurm_conf.job_comp_loc);
+		retval = (*(ops.set_loc))();
 	slurm_mutex_unlock( &context_lock );
 	return retval;
 }
@@ -179,7 +179,7 @@ extern int jobcomp_g_set_location(void)
 
 	slurm_mutex_lock(&context_lock);
 	xassert(g_context);
-	retval = (*(ops.set_loc))(slurm_conf.job_comp_loc);
+	retval = (*(ops.set_loc))();
 	slurm_mutex_unlock(&context_lock);
 	return retval;
 }

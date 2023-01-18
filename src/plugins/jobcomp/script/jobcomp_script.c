@@ -603,8 +603,9 @@ extern int init(void)
 }
 
 /* Set the location of the script to run*/
-extern int jobcomp_p_set_location(char *location)
+extern int jobcomp_p_set_location(void)
 {
+	char *location = slurm_conf.job_comp_loc;
 	if (location == NULL) {
 		return error("jobcomp/script JobCompLoc needs to be set");
 	}
