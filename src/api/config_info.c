@@ -926,6 +926,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->job_comp_loc);
 	list_append(ret_list, key_pair);
 
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("JobCompParams");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->job_comp_params);
+	list_append(ret_list, key_pair);
+
 	snprintf(tmp_str, sizeof(tmp_str), "%u",
 		 slurm_ctl_conf_ptr->job_comp_port);
 	key_pair = xmalloc(sizeof(config_key_pair_t));
