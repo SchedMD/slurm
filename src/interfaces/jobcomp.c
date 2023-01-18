@@ -106,7 +106,7 @@ jobcomp_destroy_job(void *object)
 }
 
 
-extern int jobcomp_g_init(char *jobcomp_loc)
+extern int jobcomp_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "jobcomp";
@@ -129,7 +129,7 @@ extern int jobcomp_g_init(char *jobcomp_loc)
 
 done:
 	if (g_context)
-		retval = (*(ops.set_loc))(jobcomp_loc);
+		retval = (*(ops.set_loc))(slurm_conf.job_comp_loc);
 	slurm_mutex_unlock( &context_lock );
 	return retval;
 }

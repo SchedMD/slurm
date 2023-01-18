@@ -87,7 +87,7 @@ typedef struct {
 extern void jobcomp_destroy_job(void *object);
 
 /* initialization of job completion logging */
-extern int jobcomp_g_init(char *jobcomp_loc);
+extern int jobcomp_g_init(void);
 
 /* terminate pthreads and free, general clean-up for termination */
 extern int jobcomp_g_fini(void);

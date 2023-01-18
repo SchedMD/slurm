@@ -1643,7 +1643,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		if (!test_config)
 			dump_config_state_lite(); }
 	update_logging();
-	if (jobcomp_g_init(slurm_conf.job_comp_loc) != SLURM_SUCCESS) {
+	if (jobcomp_g_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("Failed to initialize jobcomp plugin");
 			test_config_rc = 1;
