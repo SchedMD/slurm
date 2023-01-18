@@ -38,7 +38,9 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <signal.h>
+#ifdef HAVE_GETRANDOM
 #include <sys/random.h>
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
