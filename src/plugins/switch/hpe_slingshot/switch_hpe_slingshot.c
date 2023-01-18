@@ -870,11 +870,16 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo, char *nodelist)
 {
 	slingshot_jobinfo_t *job = (slingshot_jobinfo_t *) jobinfo;
 
-	xassert(job);
-	xassert(job->version == SLINGSHOT_JOBINFO_VERSION);
+	/*
+	 * job will not be set for any jobs running before the
+	 * switch plugin was enabled
+	 */
+	if (job) {
+		xassert(job->version == SLINGSHOT_JOBINFO_VERSION);
 
-	/* Free job step VNI */
-	slingshot_free_job_step(job);
+		/* Free job step VNI */
+		slingshot_free_job_step(job);
+	}
 
 	return SLURM_SUCCESS;
 }
