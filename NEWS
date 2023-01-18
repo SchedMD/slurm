@@ -253,6 +253,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow for --nodelist to contain more nodes than required by --nodes.
  -- Add missing logic for JobCompParams configuration key pair to be available
     for consumers of the get/print/write configuration API functions.
+ -- mpi/cray_shasta - Add new PALS/PMI environment variables.
 
 * Changes in Slurm 22.05.8
 ==========================
