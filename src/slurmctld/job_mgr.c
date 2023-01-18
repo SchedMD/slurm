@@ -17569,7 +17569,8 @@ reply:
 		job_ptr->state_reason = WAIT_HELD_USER;
 		xfree(job_ptr->state_desc);
 		job_ptr->state_desc = xstrdup("launch failed requeued held");
-		debug("%s: Holding %pJ, requeue-hold exit", __func__, job_ptr);
+		debug("%s: Holding %pJ due to prolog failure",
+		      __func__, job_ptr);
 		job_ptr->priority = 0;
 	}
 
