@@ -103,6 +103,6 @@ extern int jobcomp_g_write(job_record_t *job_ptr);
 extern List jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond);
 
 /* set the location based on JobCompLoc */
-extern int jobcomp_g_set_location(char *jobcomp_loc);
+extern int jobcomp_g_set_location(void);
 
 #endif /*__SLURM_JOBCOMP_H__*/
