@@ -351,6 +351,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 
 	conf_ptr->job_comp_host       = xstrdup(conf->job_comp_host);
 	conf_ptr->job_comp_loc        = xstrdup(conf->job_comp_loc);
+	conf_ptr->job_comp_params = xstrdup(conf->job_comp_params);
 	conf_ptr->job_comp_port       = conf->job_comp_port;
 	conf_ptr->job_comp_type       = xstrdup(conf->job_comp_type);
 	conf_ptr->job_comp_user       = xstrdup(conf->job_comp_user);
