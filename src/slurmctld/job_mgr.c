@@ -6334,6 +6334,8 @@ static void _handle_requeue_limit(job_record_t *job_ptr, const char *caller)
 	job_ptr->job_state |= JOB_REQUEUE_HOLD;
 	job_ptr->state_reason = WAIT_MAX_REQUEUE;
 	xfree(job_ptr->state_desc);
+	job_ptr->state_desc =
+		xstrdup("launch failure limit exceeded requeued held");
 	job_ptr->batch_flag = 1;
 	job_ptr->priority = 0;
 }
