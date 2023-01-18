@@ -133,7 +133,7 @@ const char plugin_name[]       	= "Job completion logging script plugin";
 const char plugin_type[]       	= "jobcomp/script";
 const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
-static char * script = NULL;
+static char *jobcomp_script = NULL;
 static List comp_list = NULL;
 
 static pthread_t script_thread = 0;
@@ -564,7 +564,7 @@ static void * _script_agent (void *args)
 		slurm_mutex_unlock(&comp_list_mutex);
 
 		if ((job = list_pop(comp_list))) {
-			_jobcomp_exec_child (script, job);
+			_jobcomp_exec_child(jobcomp_script, job);
 			_jobcomp_info_destroy (job);
 		}
 
@@ -613,8 +613,8 @@ extern int jobcomp_p_set_location(void)
 	if (_check_script_permissions(location) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	xfree(script);
-	script = xstrdup(location);
+	xfree(jobcomp_script);
+	jobcomp_script = xstrdup(location);
 
 	return SLURM_SUCCESS;
 }
@@ -651,7 +651,7 @@ extern int fini ( void )
 	}
 	slurm_mutex_unlock(&thread_flag_mutex);
 
-	xfree(script);
+	xfree(jobcomp_script);
 	slurm_mutex_lock(&comp_list_mutex);
 	FREE_NULL_LIST(comp_list);
 	slurm_mutex_unlock(&comp_list_mutex);
