@@ -4411,6 +4411,7 @@ extern int gres_node_state_pack(List gres_list, buf_t *buffer,
 		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
 		pack32(magic, buffer);
 		pack32(gres_state_node->plugin_id, buffer);
+		pack32(gres_state_node->config_flags, buffer);
 		pack64(gres_ns->gres_cnt_avail, buffer);
 		/*
 		 * Just note if gres_bit_alloc exists.
@@ -4445,7 +4446,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 				  uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
-	uint32_t magic = 0, plugin_id = 0;
+	uint32_t magic = 0, plugin_id = 0, config_flags = 0;
 	uint64_t gres_cnt_avail = 0;
 	uint16_t gres_bitmap_size = 0, rec_cnt = 0;
 	gres_state_t *gres_state_node;
@@ -4468,11 +4469,13 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
+
 		if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
 			safe_unpack32(&plugin_id, buffer);
+			safe_unpack32(&config_flags, buffer);
 			safe_unpack64(&gres_cnt_avail, buffer);
 			safe_unpack16(&gres_bitmap_size, buffer);
 		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -4503,6 +4506,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 			gres_ns->gres_bit_alloc =
 				bit_alloc(gres_bitmap_size);
 		}
+		gres_ctx->config_flags = config_flags;
 
 		gres_state_node = gres_create_state(
 			gres_ctx, GRES_STATE_SRC_CONTEXT_PTR,
