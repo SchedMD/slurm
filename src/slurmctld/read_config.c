@@ -1228,8 +1228,9 @@ static int _sync_detail_bitmaps(job_record_t *job_ptr)
 	 * for the job, translate this into an exclusion of all nodes except
 	 * those requested.
 	 */
-	if (bit_set_count(job_ptr->details->req_node_bitmap) >
-	    job_ptr->details->min_nodes) {
+	if (job_ptr->details->req_node_bitmap &&
+	    (bit_set_count(job_ptr->details->req_node_bitmap) >
+	     job_ptr->details->min_nodes)) {
 		if (!job_ptr->details->exc_node_bitmap)
 			job_ptr->details->exc_node_bitmap =
 				bit_alloc(node_record_count);
