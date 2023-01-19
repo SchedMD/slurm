@@ -11187,30 +11187,7 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 	struct job_details *detail_ptr = job_ptr->details;
 	uint16_t shared = 0;
 
-	if (!detail_ptr)
-		shared = NO_VAL16;
-	else if (detail_ptr->share_res == 1)	/* User --share */
-		shared = 1;
-	else if ((detail_ptr->share_res == 0) ||
-		 (detail_ptr->whole_node == 1))
-		shared = 0;			/* User --exclusive */
-	else if (detail_ptr->whole_node == WHOLE_NODE_USER)
-		shared = JOB_SHARED_USER;	/* User --exclusive=user */
-	else if (detail_ptr->whole_node == WHOLE_NODE_MCS)
-		shared = JOB_SHARED_MCS;	/* User --exclusive=mcs */
-	else if (job_ptr->part_ptr) {
-		/* Report shared status based upon latest partition info */
-		if (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
-			shared = JOB_SHARED_USER;
-		else if ((job_ptr->part_ptr->max_share & SHARED_FORCE) &&
-			 ((job_ptr->part_ptr->max_share & (~SHARED_FORCE)) > 1))
-			shared = 1; /* Partition OverSubscribe=force */
-		else if (job_ptr->part_ptr->max_share == 0)
-			shared = 0; /* Partition OverSubscribe=exclusive */
-		else
-			shared = NO_VAL16;  /* Part OverSubscribe=yes or no */
-	} else
-		shared = NO_VAL16;	/* No user or partition info */
+	shared = get_job_share_value(job_ptr);
 
 	if (job_ptr->part_ptr && job_ptr->part_ptr->max_cpu_cnt) {
 		max_cpu_cnt  = job_ptr->part_ptr->max_cpu_cnt;
@@ -19451,4 +19428,38 @@ extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap)
 		return -1;
 
 	return bit_set_count_range(node_bitmap, 0, node_inx);
+}
+
+extern uint16_t get_job_share_value(job_record_t *job_ptr)
+{
+	uint16_t shared = 0;
+	struct job_details *detail_ptr = job_ptr->details;
+
+	if (!detail_ptr)
+		shared = NO_VAL16;
+	else if (detail_ptr->share_res == 1)	/* User --share */
+		shared = JOB_SHARED_OK;
+	else if ((detail_ptr->share_res == 0) ||
+		 (detail_ptr->whole_node == 1))
+		shared = JOB_SHARED_NONE;	/* User --exclusive */
+	else if (detail_ptr->whole_node == WHOLE_NODE_USER)
+		shared = JOB_SHARED_USER;	/* User --exclusive=user */
+	else if (detail_ptr->whole_node == WHOLE_NODE_MCS)
+		shared = JOB_SHARED_MCS;	/* User --exclusive=mcs */
+	else if (job_ptr->part_ptr) {
+		/* Report shared status based upon latest partition info */
+		if (job_ptr->part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
+			shared = JOB_SHARED_USER;
+		else if ((job_ptr->part_ptr->max_share & SHARED_FORCE) &&
+			 ((job_ptr->part_ptr->max_share & (~SHARED_FORCE)) > 1))
+			shared = 1; /* Partition OverSubscribe=force */
+		else if (job_ptr->part_ptr->max_share == 0)
+			/* Partition OverSubscribe=exclusive */
+			shared = JOB_SHARED_NONE;
+		else
+			shared = NO_VAL16;  /* Part OverSubscribe=yes or no */
+	} else
+		shared = NO_VAL16;	/* No user or partition info */
+
+	return shared;
 }

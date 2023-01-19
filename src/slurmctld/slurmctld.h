@@ -3022,4 +3022,9 @@ extern int reconfigure_slurm(void);
  */
 extern void reconfigure_slurm_post_send(int error_code);
 
+/*
+ * Return the job's sharing value from job or partition value.
+ */
+extern uint16_t get_job_share_value(job_record_t *job_ptr);
+
 #endif /* !_HAVE_SLURMCTLD_H */

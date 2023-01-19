@@ -58,8 +58,8 @@ HIGHLIGHTS
  -- Removed 'launch' plugin.
  -- Add "Extra" field to job to store extra information other than a comment.
  -- Add usage gathering for AMD (requires ROCM 5.5+) and NVIDIA gpus.
- -- Add job's features and reservation to SLURM_RESUME_FILE output for power
-    saving.
+ -- Add job's allocated nodes, features, oversubscribe, partition, and
+    reservation to SLURM_RESUME_FILE output for power saving.
  -- Automatically create directories for stdout/stderr output files. Paths may
     use %j and related substitution characters as well.
  -- Add --tres-per-task to salloc/sbatch/srun.
@@ -87,6 +87,8 @@ HIGHLIGHTS
     upgrade to to using atleast version 6.x due to limitations with prior
     versions.
  -- Allow for --nodelist to contain more nodes than required by --nodes.
+ -- Rename "nodes" to "nodes_resume" in SLURM_RESUME_FILE job output.
+ -- Rename "all_nodes" to "all_nodes_resume" in SLURM_RESUME_FILE output.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

@@ -199,8 +199,8 @@ documents those changes that are of interest to users and administrators.
  -- Change srun/salloc to wait indefinitely for their allocations to be ready.
  -- Do not attempt to "fix" malformed input to 'scontrol show hostlist'.
  -- RSMI - Add usage gathering for AMD gpus (requires ROCM 5.5+).
- -- Add job's features and reservation  to SLURM_RESUME_FILE output for power
-    saving.
+ -- Add job's allocated nodes, features, oversubscribe, partition, and
+    reservation to SLURM_RESUME_FILE output for power saving.
  -- Automatically create directories for stdout/stderr output files. Paths may
     use %j and related substitution characters as well.
  -- Add --tres-per-task to salloc/sbatch/srun.
@@ -260,6 +260,8 @@ documents those changes that are of interest to users and administrators.
  -- Limit the number of successive times a batch job may be requeued due to a
     prolog failure. This limit is defined by the value of the max_batch_requeue
     parameter (default 5). Jobs over this limit will be put on admin hold.
+ -- Rename "nodes" to "nodes_resume" in SLURM_RESUME_FILE job output.
+ -- Rename "all_nodes" to "all_nodes_resume" in SLURM_RESUME_FILE output.
 
 * Changes in Slurm 22.05.8
 ==========================

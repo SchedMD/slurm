@@ -410,9 +410,15 @@ static void _do_power_work(time_t now)
 			     job_ptr->job_id);
 		data_set_string(data_key_set(job_node_data, "features"),
 				job_ptr->details->features_use);
+		data_set_string_own(data_key_set(job_node_data, "nodes_alloc"),
+				    bitmap2node_name(job_ptr->node_bitmap));
 		nodes = bitmap2node_name(to_resume_bitmap);
-		data_set_string_own(data_key_set(job_node_data, "nodes"),
+		data_set_string_own(data_key_set(job_node_data, "nodes_resume"),
 				    nodes);
+		data_set_string(data_key_set(job_node_data, "oversubscribe"),
+				job_share_string(get_job_share_value(job_ptr)));
+		data_set_string(data_key_set(job_node_data, "partition"),
+				job_ptr->part_ptr->name);
 		data_set_string(data_key_set(job_node_data, "reservation"),
 				job_ptr->resv_name);
 
@@ -605,7 +611,8 @@ static void _do_power_work(time_t now)
 		char *nodes, *json = NULL;
 		nodes = bitmap2node_name(wake_node_bitmap);
 
-		data_set_string(data_key_set(resume_json_data, "all_nodes"),
+		data_set_string(data_key_set(resume_json_data,
+					     "all_nodes_resume"),
 				nodes);
 		if (serialize_g_data_to_string(&json, NULL, resume_json_data,
 					       MIME_TYPE_JSON,
