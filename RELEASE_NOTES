@@ -87,6 +87,7 @@ HIGHLIGHTS
     upgrade to to using atleast version 6.x due to limitations with prior
     versions.
  -- Allow for --nodelist to contain more nodes than required by --nodes.
+ -- Rename "nodes" to "nodes_resume" in SLURM_RESUME_FILE job output.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

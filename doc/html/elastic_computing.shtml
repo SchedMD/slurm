@@ -73,7 +73,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
          "features" : "c1,c2",
          "job_id" : 140814,
          "nodes_alloc" : "cloud[1-4]",
-         "nodes" : "cloud[1-3]",
+         "nodes_resume" : "cloud[1-3]",
          "oversubscribe" : "OK",
          "partition" : "cloud",
 	 "reservation" : "resv_1234"
@@ -83,7 +83,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
          "features" : "c1,c2",
          "job_id" : 140815,
          "nodes_alloc" : "cloud[1-2]",
-         "nodes" : "cloud[1-2]",
+         "nodes_resume" : "cloud[1-2]",
          "oversubscribe" : "OK",
          "partition" : "cloud",
 	 "reservation" : null
@@ -93,7 +93,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
          "features" : null
          "job_id" : 140816,
          "nodes_alloc" : "cloud[7-8]",
-         "nodes" : "cloud[7-8]",
+         "nodes_resume" : "cloud[7-8]",
          "oversubscribe" : "NO",
          "partition" : "cloud_exclusive",
 	 "reservation" : null
