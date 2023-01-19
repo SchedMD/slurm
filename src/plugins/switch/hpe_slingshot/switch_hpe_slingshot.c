@@ -472,9 +472,36 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 
 	xassert(buffer);
 
-	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		/* nothing to pack, pack special "null" version number */
+		if (!jobinfo ||
+		    (jobinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION)) {
+			debug("Nothing to pack");
+			pack32(SLINGSHOT_JOBINFO_NULL_VERSION, buffer);
+			return SLURM_SUCCESS;
+		}
+
+		pack32(jobinfo->version, buffer);
+		pack16_array(jobinfo->vnis, jobinfo->num_vnis, buffer);
+		pack32(jobinfo->tcs, buffer);
+		pack32(jobinfo->flags, buffer);
+		_pack_slingshot_limits(&jobinfo->limits.txqs, buffer);
+		_pack_slingshot_limits(&jobinfo->limits.tgqs, buffer);
+		_pack_slingshot_limits(&jobinfo->limits.eqs, buffer);
+		_pack_slingshot_limits(&jobinfo->limits.cts, buffer);
+		_pack_slingshot_limits(&jobinfo->limits.tles, buffer);
+		_pack_slingshot_limits(&jobinfo->limits.ptes, buffer);
+		_pack_slingshot_limits(&jobinfo->limits.les, buffer);
+		_pack_slingshot_limits(&jobinfo->limits.acs, buffer);
+		pack32(jobinfo->depth, buffer);
+		pack32(jobinfo->num_profiles, buffer);
+		for (pidx = 0; pidx < jobinfo->num_profiles; pidx++) {
+			_pack_comm_profile(&jobinfo->profiles[pidx], buffer);
+		}
+		pack_bit_str_hex(jobinfo->vni_pids, buffer);
+	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		/* use SLURM_MIN_PROTOCOL_VERSION in 23.11 */
-		/* Nothing to pack, pack special "null" version number */
+		/* nothing to pack, pack special "null" version number */
 		if (!jobinfo ||
 		    (jobinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION)) {
 			debug("Nothing to pack");
@@ -524,7 +551,42 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 	jobinfo = xmalloc(sizeof(*jobinfo));
 	*switch_job = (switch_jobinfo_t *)jobinfo;
 
-	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		safe_unpack32(&jobinfo->version, buffer);
+		if (jobinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION) {
+			debug("Nothing to unpack");
+			return SLURM_SUCCESS;
+		}
+		if (jobinfo->version != protocol_version) {
+			error("SLINGSHOT jobinfo version %"PRIu32" != %d",
+			      jobinfo->version, protocol_version);
+			goto error;
+		}
+
+		safe_unpack16_array(&jobinfo->vnis, &jobinfo->num_vnis, buffer);
+		safe_unpack32(&jobinfo->tcs, buffer);
+		safe_unpack32(&jobinfo->flags, buffer);
+		if (!_unpack_slingshot_limits(&jobinfo->limits.txqs, buffer) ||
+		    !_unpack_slingshot_limits(&jobinfo->limits.tgqs, buffer) ||
+		    !_unpack_slingshot_limits(&jobinfo->limits.eqs, buffer) ||
+		    !_unpack_slingshot_limits(&jobinfo->limits.cts, buffer) ||
+		    !_unpack_slingshot_limits(&jobinfo->limits.tles, buffer) ||
+		    !_unpack_slingshot_limits(&jobinfo->limits.ptes, buffer) ||
+		    !_unpack_slingshot_limits(&jobinfo->limits.les, buffer) ||
+		    !_unpack_slingshot_limits(&jobinfo->limits.acs, buffer))
+			goto unpack_error;
+
+		safe_unpack32(&jobinfo->depth, buffer);
+		safe_unpack32(&jobinfo->num_profiles, buffer);
+		jobinfo->profiles = xcalloc(jobinfo->num_profiles,
+					    sizeof(slingshot_comm_profile_t));
+		for (pidx = 0; pidx < jobinfo->num_profiles; pidx++) {
+			if (!_unpack_comm_profile(&jobinfo->profiles[pidx],
+						  buffer))
+				goto unpack_error;
+		}
+		unpack_bit_str_hex(&jobinfo->vni_pids, buffer);
+	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		/* use SLURM_MIN_PROTOCOL_VERSION in 23.11 */
 		safe_unpack32(&jobinfo->version, buffer);
 		if (jobinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION) {
