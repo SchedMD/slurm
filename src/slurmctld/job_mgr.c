@@ -17573,16 +17573,21 @@ reply:
 		debug("%s: Holding %pJ, requeue-hold exit", __func__, job_ptr);
 		job_ptr->priority = 0;
 	}
-	if ((flags & JOB_LAUNCH_FAILED) && !requeue_nohold_prolog) {
-		job_ptr->state_reason = WAIT_HELD_USER;
-		xfree(job_ptr->state_desc);
-		job_ptr->state_desc = xstrdup("launch failed requeued held");
-		debug("%s: Holding %pJ due to prolog failure",
-		      __func__, job_ptr);
-		job_ptr->priority = 0;
-	} else if (flags & JOB_LAUNCH_FAILED) {
+	if (flags & JOB_LAUNCH_FAILED) {
 		job_ptr->batch_flag++;
 		_handle_requeue_limit(job_ptr, __func__);
+
+		/* If job not already held, make it so if needed. */
+		if (!(job_ptr->job_state & JOB_REQUEUE_HOLD) &&
+		    !requeue_nohold_prolog) {
+			job_ptr->state_reason = WAIT_HELD_USER;
+			xfree(job_ptr->state_desc);
+			job_ptr->state_desc =
+				xstrdup("launch failed requeued held");
+			debug("%s: Holding %pJ due to prolog failure",
+			      __func__, job_ptr);
+			job_ptr->priority = 0;
+		}
 	}
 
 	/*
