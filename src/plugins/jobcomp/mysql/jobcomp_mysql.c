@@ -147,7 +147,6 @@ extern int jobcomp_p_set_location(void)
 	mysql_db_info_t *db_info;
 	int rc = SLURM_SUCCESS;
 	char *db_name = NULL;
-	int i = 0;
 
 	if (jobcomp_mysql_conn && mysql_db_ping(jobcomp_mysql_conn) == 0)
 		return SLURM_SUCCESS;
@@ -155,18 +154,11 @@ extern int jobcomp_p_set_location(void)
 	if (!location)
 		db_name = xstrdup(slurm_conf.job_comp_loc);
 	else {
-		while(location[i]) {
-			if (location[i] == '.' || location[i] == '/') {
-				debug("%s doesn't look like a database "
-				      "name using %s",
-				      location, DEFAULT_JOB_COMP_DB);
-				break;
-			}
-			i++;
-		}
-		if (location[i])
+		if (xstrchr(location, '.') || xstrchr(location, '/')) {
+			debug("%s doesn't look like a database name using %s",
+			      location, DEFAULT_JOB_COMP_DB);
 			db_name = xstrdup(DEFAULT_JOB_COMP_DB);
-		else
+		} else
 			db_name = xstrdup(location);
 	}
 
