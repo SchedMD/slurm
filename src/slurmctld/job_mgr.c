@@ -2357,10 +2357,9 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		goto free_it;
 	}
 
-	if (((job_state & JOB_STATE_BASE) >= JOB_END) ||
-	    (batch_flag > slurm_conf.max_batch_requeue)) {
-		error("Invalid data for JobId=%u: job_state=%u batch_flag=%u",
-		      job_id, job_state, batch_flag);
+	if ((job_state & JOB_STATE_BASE) >= JOB_END) {
+		error("Invalid data for JobId=%u: job_state=%u",
+		      job_id, job_state);
 		goto unpack_error;
 	}
 	if (kill_on_node_fail > 1) {
