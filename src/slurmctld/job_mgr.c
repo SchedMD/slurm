@@ -186,6 +186,7 @@ static bool     validate_cfgd_licenses = true;
 /* Local functions */
 static void _add_job_hash(job_record_t *job_ptr);
 static void _add_job_array_hash(job_record_t *job_ptr);
+static void _handle_requeue_limit(job_record_t *job_ptr, const char *caller);
 static void _clear_job_gres_details(job_record_t *job_ptr);
 static int  _copy_job_desc_to_file(job_desc_msg_t * job_desc,
 				   uint32_t job_id);
@@ -6322,6 +6323,23 @@ extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
 	return SLURM_SUCCESS;
 }
 
+static void _handle_requeue_limit(job_record_t *job_ptr, const char *caller)
+{
+	if (job_ptr->batch_flag <= slurm_conf.max_batch_requeue)
+		return;
+
+	debug("%s: Holding %pJ, repeated requeue failures",
+	      caller, job_ptr);
+
+	job_ptr->job_state |= JOB_REQUEUE_HOLD;
+	job_ptr->state_reason = WAIT_MAX_REQUEUE;
+	xfree(job_ptr->state_desc);
+	job_ptr->state_desc =
+		xstrdup("launch failure limit exceeded requeued held");
+	job_ptr->batch_flag = 1;
+	job_ptr->priority = 0;
+}
+
 static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 			 bool node_fail, uint32_t job_return_code)
 {
@@ -6437,18 +6455,8 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 			info("%s: requeue %pJ per user/system request",
 			     __func__, job_ptr);
 		}
-		/*
-		 * We have reached the maximum number of requeue
-		 * attempts hold the job with HoldMaxRequeue reason.
-		 */
-		if (job_ptr->batch_flag > slurm_conf.max_batch_requeue) {
-			job_ptr->job_state |= JOB_REQUEUE_HOLD;
-			job_ptr->state_reason = WAIT_MAX_REQUEUE;
-			job_ptr->batch_flag = 1;
-			debug("%s: Holding %pJ, repeated requeue failures",
-			      __func__, job_ptr);
-			job_ptr->priority = 0;
-		}
+		/* hold job if over requeue limit */
+		_handle_requeue_limit(job_ptr, __func__);
 	} else if (IS_JOB_PENDING(job_ptr) && job_ptr->details &&
 		   job_ptr->batch_flag) {
 		/*
@@ -17344,10 +17352,18 @@ reply:
 static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 			   uint32_t flags)
 {
+	static time_t config_update = 0;
+	static bool requeue_nohold_prolog = true;
 	bool is_running = false, is_suspended = false, is_completed = false;
 	bool is_completing = false;
 	time_t now = time(NULL);
 	uint32_t completing_flags = 0;
+
+	if (config_update != slurm_conf.last_update) {
+		requeue_nohold_prolog = (xstrcasestr(slurm_conf.sched_params,
+						     "nohold_on_prolog_fail"));
+		config_update = slurm_conf.last_update;
+	}
 
 	/* validate the request */
 	if ((uid != job_ptr->user_id) && !validate_operator(uid) &&
@@ -17553,15 +17569,25 @@ reply:
 	if (flags & JOB_REQUEUE_HOLD) {
 		job_ptr->state_reason = WAIT_HELD_USER;
 		xfree(job_ptr->state_desc);
-		if (flags & JOB_LAUNCH_FAILED) {
-			job_ptr->state_desc
-				= xstrdup("launch failed requeued held");
-		} else {
-			job_ptr->state_desc
-				= xstrdup("job requeued in held state");
-		}
+		job_ptr->state_desc = xstrdup("job requeued in held state");
 		debug("%s: Holding %pJ, requeue-hold exit", __func__, job_ptr);
 		job_ptr->priority = 0;
+	}
+	if (flags & JOB_LAUNCH_FAILED) {
+		job_ptr->batch_flag++;
+		_handle_requeue_limit(job_ptr, __func__);
+
+		/* If job not already held, make it so if needed. */
+		if (!(job_ptr->job_state & JOB_REQUEUE_HOLD) &&
+		    !requeue_nohold_prolog) {
+			job_ptr->state_reason = WAIT_HELD_USER;
+			xfree(job_ptr->state_desc);
+			job_ptr->state_desc =
+				xstrdup("launch failed requeued held");
+			debug("%s: Holding %pJ due to prolog failure",
+			      __func__, job_ptr);
+			job_ptr->priority = 0;
+		}
 	}
 
 	/*

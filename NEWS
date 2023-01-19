@@ -257,6 +257,9 @@ documents those changes that are of interest to users and administrators.
  -- Add cache around calls to getnameinfo().
  -- Add CommunicationParameters=getnameinfo_cache_timeout to tune or disable the
     getnameinfo cache.
+ -- Limit the number of successive times a batch job may be requeued due to a
+    prolog failure. This limit is defined by the value of the max_batch_requeue
+    parameter (default 5). Jobs over this limit will be put on admin hold.
 
 * Changes in Slurm 22.05.8
 ==========================

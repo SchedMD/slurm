@@ -4917,6 +4917,23 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 	}
 	unlock_slurmctld(fed_read_lock);
 
+	/*
+	 * Pre-23.02 slurmd would send either JOB_PENDING or
+	 * (JOB_REQUEUE_HOLD | JOB_LAUNCH_FAILED) from _launch_job_fail()
+	 * depending on whether nohold_on_prolog_fail was set.
+	 * (Handling for that option is now in _job_requeue_op().)
+	 *
+	 * Fortunately nothing else used the JOB_PENDING or JOB_LAUNCH_FAILED
+	 * flags so we can safely normalize to the new 23.02 behavior here.
+	 *
+	 * Remove this two versions after 23.02.
+	 */
+	if (msg->protocol_version <= SLURM_22_05_PROTOCOL_VERSION) {
+		if ((req_ptr->flags == JOB_PENDING) ||
+		    (req_ptr->flags & JOB_LAUNCH_FAILED))
+			req_ptr->flags = JOB_LAUNCH_FAILED;
+	}
+
 	START_TIMER;
 	lock_slurmctld(job_write_lock);
 	if (req_ptr->job_id_str) {
