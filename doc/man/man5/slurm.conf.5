@@ -1878,6 +1878,14 @@ The value may not exceed 65533.
 .IP
 
 .TP
+\fBMaxBatchRequeue\fR
+Maximum number of times a batch job may be automatically requeued before
+being marked as JobHeldAdmin. (Mainly useful when the \fBSchedulerParameters\fR
+option \fBnohold_on_prolog_fail\fR is enabled.)
+The default value is 5.
+.IP
+
+.TP
 \fBNodeFeaturesPlugins\fR
 Identifies the plugins to be used for support of node features which can
 change through time. For example, a node which might be booted with various
