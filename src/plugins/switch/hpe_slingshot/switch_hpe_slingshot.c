@@ -875,8 +875,6 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo, char *nodelist)
 	 * switch plugin was enabled
 	 */
 	if (job) {
-		xassert(job->version == SLINGSHOT_JOBINFO_VERSION);
-
 		/* Free job step VNI */
 		slingshot_free_job_step(job);
 	}
