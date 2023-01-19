@@ -74,6 +74,7 @@
 #include "src/common/timers.h"
 #include "src/common/track_script.h"
 #include "src/common/uid.h"
+#include "src/common/util-net.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
