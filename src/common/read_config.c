@@ -4218,8 +4218,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl)) {
 		if (!xstrcmp(conf->job_comp_type, "jobcomp/mysql"))
 			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_DB);
-		else
-			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_LOC);
 	}
 
 	if (!s_p_get_string(&conf->job_comp_host, "JobCompHost",

@@ -80,6 +80,8 @@ const char plugin_name[]       	= "Job completion text file logging plugin";
 const char plugin_type[]       	= "jobcomp/filetxt";
 const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
+const char default_job_comp_loc[] = "/var/log/slurm_jobcomp.log";
+
 #define JOB_FORMAT "JobId=%lu UserId=%s(%lu) GroupId=%s(%lu) Name=%s JobState=%s Partition=%s "\
 		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u ProcCnt=%u "\
 		"WorkDir=%s ReservationName=%s Tres=%s Account=%s QOS=%s "\
@@ -115,21 +117,20 @@ int fini ( void )
 
 extern int jobcomp_p_set_location(void)
 {
-	char *location = slurm_conf.job_comp_loc;
 	int rc = SLURM_SUCCESS;
 
-	if (location == NULL) {
-		return SLURM_ERROR;
-	}
+	if (!slurm_conf.job_comp_loc)
+		slurm_conf.job_comp_loc = xstrdup(default_job_comp_loc);
+
 	xfree(log_name);
-	log_name = xstrdup(location);
+	log_name = xstrdup(slurm_conf.job_comp_loc);
 
 	slurm_mutex_lock( &file_lock );
 	if (job_comp_fd >= 0)
 		close(job_comp_fd);
-	job_comp_fd = open(location, O_WRONLY | O_CREAT | O_APPEND, 0644);
+	job_comp_fd = open(log_name, O_WRONLY | O_CREAT | O_APPEND, 0644);
 	if (job_comp_fd == -1) {
-		fatal("open %s: %m", location);
+		fatal("open %s: %m", log_name);
 		rc = SLURM_ERROR;
 	} else
 		fchmod(job_comp_fd, 0644);
