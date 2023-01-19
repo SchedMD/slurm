@@ -84,7 +84,7 @@ static bool _config_vnis(const char *token, char *arg, uint16_t *min_ptr,
 			 uint16_t *max_ptr)
 {
 	char *end_ptr;
-	int min, max;
+	long min, max;
 
 	if (!arg)
 		goto err;
@@ -105,7 +105,7 @@ static bool _config_vnis(const char *token, char *arg, uint16_t *min_ptr,
 
 	*min_ptr = min;
 	*max_ptr = max;
-	log_flag(SWITCH, "[token=%s]: min/max %hu %hu", token, min, max);
+	log_flag(SWITCH, "[token=%s]: min/max %ld %ld", token, min, max);
 	return true;
 
 err:
