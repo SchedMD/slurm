@@ -203,8 +203,6 @@ typedef struct {
 	char device_name[16];  /* Device name */
 } slingshot_hsn_nic_t;
 
-/* Version of the jobinfo structure */
-#define SLINGSHOT_JOBINFO_VERSION SLURM_PROTOCOL_VERSION
 /* Denotes packing a null jobinfo structure */
 #define SLINGSHOT_JOBINFO_NULL_VERSION 0xDEAFDEAF
 

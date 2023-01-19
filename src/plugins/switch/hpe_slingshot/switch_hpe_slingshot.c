@@ -339,7 +339,7 @@ extern int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job,
 
 	xassert(switch_job);
 
-	new->version = SLINGSHOT_JOBINFO_VERSION;
+	new->version = SLURM_PROTOCOL_VERSION;
 	*switch_job = (switch_jobinfo_t *)new;
 
 	return SLURM_SUCCESS;
@@ -363,7 +363,7 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 		debug("switch_job was NULL");
 		return SLURM_SUCCESS;
 	}
-	xassert(job->version == SLINGSHOT_JOBINFO_VERSION);
+	xassert(job->version == SLURM_PROTOCOL_VERSION);
 
 	/* Do VNI allocation/traffic classes/network limits */
 	if (!slingshot_setup_job_step(job, step_layout->node_cnt,
