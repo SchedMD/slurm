@@ -109,7 +109,6 @@ typedef struct node_record node_record_t;
 #define DEFAULT_CORE_SPEC_PLUGIN    "core_spec/none"
 #define DEFAULT_ENFORCE_PART_LIMITS 0
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
-#define DEFAULT_JOB_COMP_DB         "slurm_jobcomp_db"
 #if defined HAVE_NATIVE_CRAY
 #  define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 1
 #  define DEFAULT_JOB_CONTAINER_PLUGIN  "job_container/cncu"

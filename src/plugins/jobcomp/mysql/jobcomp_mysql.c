@@ -73,6 +73,8 @@ const char plugin_name[] = "Job completion MYSQL plugin";
 const char plugin_type[] = "jobcomp/mysql";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+const char default_job_comp_loc[] = "slurm_jobcomp_db";
+
 mysql_conn_t *jobcomp_mysql_conn = NULL;
 
 char *jobcomp_table = "jobcomp_table";
@@ -143,7 +145,6 @@ extern int fini(void)
 
 extern int jobcomp_p_set_location(void)
 {
-	char *location = slurm_conf.job_comp_loc;
 	mysql_db_info_t *db_info;
 	int rc = SLURM_SUCCESS;
 	char *db_name = NULL;
@@ -151,15 +152,17 @@ extern int jobcomp_p_set_location(void)
 	if (jobcomp_mysql_conn && mysql_db_ping(jobcomp_mysql_conn) == 0)
 		return SLURM_SUCCESS;
 
-	if (!location)
-		db_name = xstrdup(slurm_conf.job_comp_loc);
-	else {
-		if (xstrchr(location, '.') || xstrchr(location, '/')) {
+	if (!slurm_conf.job_comp_loc) {
+		slurm_conf.job_comp_loc = xstrdup(default_job_comp_loc);
+		db_name = slurm_conf.job_comp_loc;
+	} else {
+		if (xstrchr(slurm_conf.job_comp_loc, '.') ||
+		    xstrchr(slurm_conf.job_comp_loc, '/')) {
 			debug("%s doesn't look like a database name using %s",
-			      location, DEFAULT_JOB_COMP_DB);
-			db_name = xstrdup(DEFAULT_JOB_COMP_DB);
+			      slurm_conf.job_comp_loc, default_job_comp_loc);
+			db_name = (char *) default_job_comp_loc;
 		} else
-			db_name = xstrdup(location);
+			db_name = slurm_conf.job_comp_loc;
 	}
 
 	debug2("mysql_connect() called for db %s", db_name);
@@ -170,7 +173,6 @@ extern int jobcomp_p_set_location(void)
 	db_info = create_mysql_db_info(SLURM_MYSQL_PLUGIN_JC);
 
 	mysql_db_get_db_connection(jobcomp_mysql_conn, db_name, db_info);
-	xfree(db_name);
 
 	rc = _mysql_jobcomp_check_tables();
 
