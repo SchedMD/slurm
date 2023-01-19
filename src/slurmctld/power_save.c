@@ -611,7 +611,8 @@ static void _do_power_work(time_t now)
 		char *nodes, *json = NULL;
 		nodes = bitmap2node_name(wake_node_bitmap);
 
-		data_set_string(data_key_set(resume_json_data, "all_nodes"),
+		data_set_string(data_key_set(resume_json_data,
+					     "all_nodes_resume"),
 				nodes);
 		if (serialize_g_data_to_string(&json, NULL, resume_json_data,
 					       MIME_TYPE_JSON,

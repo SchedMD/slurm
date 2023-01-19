@@ -88,6 +88,7 @@ HIGHLIGHTS
     versions.
  -- Allow for --nodelist to contain more nodes than required by --nodes.
  -- Rename "nodes" to "nodes_resume" in SLURM_RESUME_FILE job output.
+ -- Rename "all_nodes" to "all_nodes_resume" in SLURM_RESUME_FILE output.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
