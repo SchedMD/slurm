@@ -842,8 +842,8 @@ extern int gres_ctld_job_select_whole_node(
 	node_gres_iter = list_iterator_create(node_gres_list);
 	while ((gres_state_node = list_next(node_gres_iter))) {
 		gres_key_t job_search_key;
-		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
 
+		gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
 		/*
 		 * Don't check for no_consume here, we need them added here and
 		 * will filter them out in gres_job_alloc_whole_node()
@@ -885,7 +885,8 @@ extern int gres_ctld_job_select_whole_node(
  * GRES is already correct on the gres_node_state_t only the types are wrong if
  * only generic GRES was requested by the job.
  */
-static int _set_node_type_cnt(gres_state_t *gres_state_job, List node_gres_list)
+static int _set_node_type_cnt(gres_state_t *gres_state_job,
+			      list_t *node_gres_list)
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
 	gres_state_t *gres_state_node;
