@@ -3023,9 +3023,12 @@ static int DUMP_FUNC(NODES)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	for (int i = 0; !rc && (i < nodes->record_count); i++)
-		rc = DUMP(NODE, nodes->node_array[i], data_list_append(dst),
-			  args);
+	for (int i = 0; !rc && (i < nodes->record_count); i++) {
+		/* filter unassigned dynamic nodes */
+		if (nodes->node_array[i].name)
+			rc = DUMP(NODE, nodes->node_array[i],
+				  data_list_append(dst), args);
+	}
 
 	return SLURM_SUCCESS;
 }
