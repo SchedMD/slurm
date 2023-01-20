@@ -17376,6 +17376,7 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 	static bool requeue_nohold_prolog = true;
 	bool is_running = false, is_suspended = false, is_completed = false;
 	bool is_completing = false;
+	bool force_requeue = false;
 	time_t now = time(NULL);
 	uint32_t completing_flags = 0;
 
@@ -17403,10 +17404,14 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 	/*
 	 * If the partition was removed don't allow the job to be
 	 * requeued.  If it doesn't have details then something is very
-	 * wrong and if the job doesn't want to be requeued don't.
+	 * wrong and if the job doesn't want to be requeued don't unless
+	 * it's being forced to do so after a launch failure.
 	 */
+	if ((flags & JOB_LAUNCH_FAILED) &&
+	    (slurm_conf.prolog_flags & PROLOG_FLAG_FORCE_REQUEUE_ON_FAIL))
+		force_requeue = true;
 	if (!job_ptr->part_ptr || !job_ptr->details
-	    || !job_ptr->details->requeue) {
+	    || (!job_ptr->details->requeue && !force_requeue)) {
 		if (flags & JOB_RECONFIG_FAIL)
 			(void) _job_fail(job_ptr, JOB_BOOT_FAIL);
 		return ESLURM_DISABLED;
