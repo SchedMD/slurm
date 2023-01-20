@@ -110,7 +110,8 @@ List partial_node_list;
 bitstr_t *exc_node_bitmap = NULL;
 
 /* Possible SuspendExcStates */
-static bool suspend_exc_down, suspend_exc_drain, suspend_exc_planned;
+static bool suspend_exc_down;
+static uint32_t suspend_exc_state_flags;
 
 int   suspend_cnt,   resume_cnt;
 float suspend_cnt_f, resume_cnt_f;
@@ -188,22 +189,48 @@ static int _list_part_node_lists(void *x, void *arg)
 static void _parse_exc_states(void)
 {
 	char *buf, *tok, *saveptr;
-	int tok_len;
+	/* Flags in _node_state_suspendable() are already excluded */
+	uint32_t excludable_state_flags = NODE_STATE_CLOUD |
+					  NODE_STATE_DRAIN |
+					  NODE_STATE_DYNAMIC_FUTURE |
+					  NODE_STATE_DYNAMIC_NORM |
+					  NODE_STATE_FAIL |
+					  NODE_STATE_INVALID_REG |
+					  NODE_STATE_MAINT |
+					  NODE_STATE_NET |
+					  NODE_STATE_NO_RESPOND |
+					  NODE_STATE_PLANNED |
+					  NODE_STATE_RES;
 
 	buf = xstrdup(exc_states);
 	for (tok = strtok_r(buf, ",", &saveptr); tok;
 	     tok = strtok_r(NULL, ",", &saveptr)) {
-		tok_len = strlen(tok);
-		if (!xstrncasecmp(tok, "Down", MAX(tok_len, 2)))
+		uint32_t flag = 0;
+
+		/* Base node states */
+		if (!xstrncasecmp(tok, "DOWN", MAX(strlen(tok), 2))){
 			suspend_exc_down = true;
-		else if (!xstrncasecmp(tok, "Drained", MAX(tok_len, 2)))
-			suspend_exc_drain = true;
-		else if (!xstrncasecmp(tok, "Planned", MAX(tok_len, 1)))
-			suspend_exc_planned = true;
-		else
-			error("Invalid SuspendExcState %s", tok);
+			continue;
+		}
+
+		/* Flag node states */
+		flag = parse_node_state_flag(tok);
+		if (flag & excludable_state_flags) {
+			suspend_exc_state_flags |= flag;
+			continue;
+		}
+
+		error("Invalid SuspendExcState %s", tok);
 	}
 	xfree(buf);
+
+	if (power_save_debug) {
+		char *exc_states_str =
+			node_state_string_complete(suspend_exc_state_flags);
+		log_flag(POWER, "suspend_exc_down=%d suspend_exc_state_flags=%s",
+			 suspend_exc_down, exc_states_str);
+		xfree(exc_states_str);
+	}
 }
 
 /*
@@ -235,9 +262,7 @@ static bool _node_state_should_suspend(node_record_t *node_ptr)
 	/* SuspendExcStates */
 	if (suspend_exc_down && IS_NODE_DOWN(node_ptr))
 		return false;
-	if (suspend_exc_drain && IS_NODE_DRAIN(node_ptr))
-		return false;
-	if (suspend_exc_planned && (node_ptr->node_state & NODE_STATE_PLANNED))
+	if (suspend_exc_state_flags & node_ptr->node_state)
 		return false;
 
 	return true;
@@ -701,8 +726,7 @@ static void _clear_power_config(void)
 	xfree(exc_parts);
 	xfree(exc_states);
 	suspend_exc_down = false;
-	suspend_exc_drain = false;
-	suspend_exc_planned = false;
+	suspend_exc_state_flags = 0;
 	FREE_NULL_BITMAP(exc_node_bitmap);
 	FREE_NULL_LIST(partial_node_list);
 }

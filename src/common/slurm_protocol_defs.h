@@ -1704,6 +1704,11 @@ extern char *node_state_string_compact(uint32_t inx);
  */
 extern char *node_state_string_complete(uint32_t inx);
 
+/*
+ * Return first node state flag that matches the string
+ */
+extern uint32_t parse_node_state_flag(char *flag_str);
+
 extern uint16_t power_flags_id(const char *power_flags);
 extern char    *power_flags_str(uint16_t power_flags);
 
