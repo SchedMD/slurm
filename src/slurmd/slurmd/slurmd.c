@@ -1081,7 +1081,8 @@ _read_config(void)
 		 * in a different NUMA configuration */
 		info("Node reconfigured socket/core boundaries "
 		     "SocketsPerBoard=%u:%u(hw) CoresPerSocket=%u:%u(hw)",
-		     conf->conf_sockets, conf->actual_sockets,
+		     (conf->conf_sockets / conf->conf_boards),
+		     (conf->actual_sockets / conf->actual_boards),
 		     conf->conf_cores, conf->actual_cores);
 		conf->cpus    = conf->conf_cpus;
 		conf->boards  = conf->conf_boards;
@@ -1116,7 +1117,8 @@ _read_config(void)
 			"Node configuration differs from hardware: CPUs=%u:%u(hw) Boards=%u:%u(hw) SocketsPerBoard=%u:%u(hw) CoresPerSocket=%u:%u(hw) ThreadsPerCore=%u:%u(hw)",
 			conf->cpus,    conf->actual_cpus,
 			conf->boards,  conf->actual_boards,
-			conf->sockets, conf->actual_sockets,
+			(conf->sockets / conf->boards),
+			(conf->actual_sockets / conf->actual_boards),
 			conf->cores,   conf->actual_cores,
 			conf->threads, conf->actual_threads);
 	}
