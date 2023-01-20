@@ -469,11 +469,11 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 	xassert(avail_core);
 	avail_cores_per_sock = xcalloc(sockets, sizeof(uint16_t));
 	for (int s = 0; s < sockets; s++) {
-		for (int c = 0; c < cores_per_socket; c++) {
-			int i = (s * cores_per_socket) + c;
-			if (bit_test(avail_core, i))
-				avail_cores_per_sock[s]++;
-		}
+		int start_core = s * cores_per_socket;
+		int end_core = start_core + cores_per_socket;
+		avail_cores_per_sock[s] = bit_set_count_range(avail_core,
+							      start_core,
+							      end_core);
 		tot_core_cnt += avail_cores_per_sock[s];
 	}
 
