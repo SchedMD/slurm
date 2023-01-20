@@ -703,7 +703,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * Remove cores on not required sockets when enforce-binding,
 		 * this has to happen also when max_tasks_this_node == NO_VAL
 		 */
-		if (enforce_binding || first_pass) {
+		if ((sock_cnt != sockets) && (enforce_binding || first_pass)) {
 			for (int s = 0; s < sockets; s++) {
 				if (req_sock[s])
 					continue;
@@ -871,7 +871,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * In case of enforce-binding those are already cleared.
 		 */
 		if ((avail_cores_tot > req_cores) &&
-		    !enforce_binding && !first_pass) {
+		    !enforce_binding && !first_pass &&
+		    (sock_cnt != sockets)) {
 			for (int s = 0; s < sockets; s++) {
 				if (avail_cores_tot == req_cores)
 					break;
@@ -899,7 +900,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * spread them out so that every socket has some cores
 		 * available to use with the nearby GRES that we do need.
 		 */
-		while (avail_cores_tot > req_cores) {
+		while (!sock_cnt && (avail_cores_tot > req_cores)) {
 			int full_socket = -1;
 			for (int s = 0; s < sockets; s++) {
 				if (avail_cores_tot == req_cores)
