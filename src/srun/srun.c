@@ -704,7 +704,11 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	}
 
 	setup_env(env, srun_opt->preserve_env);
+	set_env_from_opts(opt_local, &job->env,
+			  (job->het_job_offset == NO_VAL) ?
+			  -1 : job->het_job_offset);
 	env_array_merge(&job->env, (const char **)environ);
+
 	xfree(env->task_count);
 	xfree(env->user_name);
 	xfree(env);
