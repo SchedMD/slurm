@@ -489,7 +489,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		uint64_t cnt_avail_total, max_tasks;
 		uint64_t max_gres = 0, rem_gres = 0;
 		uint16_t avail_cores_tot = 0, cpus_per_gres;
-		int min_core_cnt, req_cores, rem_sockets, sock_cnt = 0;
+		int min_core_cnt, req_cores, rem_sockets, req_sock_cnt = 0;
 		int threads_per_core;
 
 		if (mc_ptr->threads_per_core)
@@ -649,7 +649,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				 * contributed to cnt_avail_total
 				 */
 				req_sock[s] = true;
-				sock_cnt++;
+				req_sock_cnt++;
 			}
 
 			if (!sock_gres->cnt_any_sock &&
@@ -703,7 +703,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * Remove cores on not required sockets when enforce-binding,
 		 * this has to happen also when max_tasks_this_node == NO_VAL
 		 */
-		if ((sock_cnt != sockets) && (enforce_binding || first_pass)) {
+		if ((req_sock_cnt != sockets) &&
+		    (enforce_binding || first_pass)) {
 			for (int s = 0; s < sockets; s++) {
 				if (req_sock[s])
 					continue;
@@ -790,7 +791,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					 node_name,
 					 gres_js->gres_per_node);
 			} else if (gres_js->gres_per_socket) {
-				i = gres_js->gres_per_socket * sock_cnt;
+				i = gres_js->gres_per_socket * req_sock_cnt;
 				log_flag(SELECT_TYPE, "Node %s: estimating req_cores gres_per_socket=%"PRIu64,
 					 node_name,
 					 gres_js->gres_per_socket);
@@ -823,8 +824,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * Ensure that the number required cores is at least equal to
 		 * the number of required sockets if enforce-binding.
 		 */
-		if (enforce_binding && (req_cores < sock_cnt)) {
-			req_cores = sock_cnt;
+		if (enforce_binding && (req_cores < req_sock_cnt)) {
+			req_cores = req_sock_cnt;
 		}
 
 		/*
@@ -872,7 +873,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 */
 		if ((avail_cores_tot > req_cores) &&
 		    !enforce_binding && !first_pass &&
-		    (sock_cnt != sockets)) {
+		    (req_sock_cnt != sockets)) {
 			for (int s = 0; s < sockets; s++) {
 				if (avail_cores_tot == req_cores)
 					break;
@@ -900,7 +901,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * spread them out so that every socket has some cores
 		 * available to use with the nearby GRES that we do need.
 		 */
-		while (!sock_cnt && (avail_cores_tot > req_cores)) {
+		while (!req_sock_cnt && (avail_cores_tot > req_cores)) {
 			int full_socket = -1;
 			for (int s = 0; s < sockets; s++) {
 				if (avail_cores_tot == req_cores)
