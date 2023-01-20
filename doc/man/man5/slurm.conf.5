@@ -3151,6 +3151,14 @@ flags.
 .IP
 
 .TP
+\fBForceRequeueOnFail\fR
+When a batch job fails to launch due to a Prolog failure, always requeue it
+automatically even if the job requested no requeues.
+
+\fBNOTE: Setting this flag implicitly sets the Alloc flag.\fR
+.IP
+
+.TP
 \fBSerial\fR
 By default, the Prolog and Epilog scripts run concurrently on each node.
 This flag forces those scripts to run serially within each node, but with

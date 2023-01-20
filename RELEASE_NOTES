@@ -122,6 +122,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Add new "getnameinfo_cache_timeout=<number>" option to
     CommunicationParameters to adjust or disable caching the results of
     getnameinfo().
+ -- Add new PrologFlags=ForceRequeueOnFail option to automatically requeue
+    batch jobs on Prolog failures regardless of the job --requeue setting.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

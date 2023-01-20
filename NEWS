@@ -262,6 +262,8 @@ documents those changes that are of interest to users and administrators.
     parameter (default 5). Jobs over this limit will be put on admin hold.
  -- Rename "nodes" to "nodes_resume" in SLURM_RESUME_FILE job output.
  -- Rename "all_nodes" to "all_nodes_resume" in SLURM_RESUME_FILE output.
+ -- Add new PrologFlags=ForceRequeueOnFail option to automatically requeue
+    batch jobs on Prolog failures regardless of the job --requeue setting.
 
 * Changes in Slurm 22.05.8
 ==========================

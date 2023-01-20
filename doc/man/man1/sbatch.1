@@ -1705,7 +1705,8 @@ range of allocated nodes.
 
 .TP
 \fB\-\-no\-requeue\fR
-Specifies that the batch job should never be requeued under any circumstances.
+Specifies that the batch job should never be requeued under any circumstances
+(see note below).
 Setting this option will prevent system administrators from being able
 to restart the job (for example, after a scheduled downtime), recover from
 a node failure, or be requeued upon preemption by a higher priority job.
@@ -1713,6 +1714,9 @@ When a job is requeued, the batch script is initiated from its beginning.
 Also see the \fB\-\-requeue\fR option.
 The \fIJobRequeue\fR configuration parameter controls the default
 behavior on the cluster.
+
+\fBNOTE\fR: \fBForceRequeueOnFail\fR if set as an option to the PrologFlags
+parameter in slurm.conf can override this setting.
 .IP
 
 .TP
