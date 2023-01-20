@@ -5471,6 +5471,12 @@ extern char * prolog_flags2str(uint16_t prolog_flags)
 		xstrcat(rc, "NoHold");
 	}
 
+	if (prolog_flags & PROLOG_FLAG_FORCE_REQUEUE_ON_FAIL) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "ForceRequeueOnFail");
+	}
+
 	if (prolog_flags & PROLOG_FLAG_SERIAL) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5510,6 +5516,9 @@ extern uint16_t prolog_str2flags(char *prolog_flags)
 			rc |= PROLOG_FLAG_DEFER_BATCH;
 		else if (xstrcasecmp(tok, "NoHold") == 0)
 			rc |= PROLOG_FLAG_NOHOLD;
+		else if (xstrcasecmp(tok, "ForceRequeueOnFail") == 0)
+			rc |= (PROLOG_FLAG_ALLOC |
+			       PROLOG_FLAG_FORCE_REQUEUE_ON_FAIL);
 		else if (xstrcasecmp(tok, "Serial") == 0)
 			rc |= PROLOG_FLAG_SERIAL;
 		else if (xstrcasecmp(tok, "X11") == 0) {
