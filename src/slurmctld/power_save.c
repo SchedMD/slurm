@@ -223,6 +223,14 @@ static void _parse_exc_states(void)
 		error("Invalid SuspendExcState %s", tok);
 	}
 	xfree(buf);
+
+	if (power_save_debug) {
+		char *exc_states_str =
+			node_state_string_complete(suspend_exc_state_flags);
+		log_flag(POWER, "suspend_exc_down=%d suspend_exc_state_flags=%s",
+			 suspend_exc_down, exc_states_str);
+		xfree(exc_states_str);
+	}
 }
 
 /*
