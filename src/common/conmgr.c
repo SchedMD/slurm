@@ -660,7 +660,8 @@ static void _wrap_con_work(work_t *work, con_mgr_fd_t *con, con_mgr_t *mgr)
 		((void *) work->func == (void *) _wrap_on_connection));
 	xassert(change.on_data_tried == con->on_data_tried ||
 		((void *) work->func == (void *) _wrap_on_data));
-	xassert(change.msglen == con->msglen);
+	xassert((change.msglen == con->msglen) ||
+		((void *) work->func == _wrap_on_data));
 #endif /* !NDEBUG */
 	xassert(con->has_work);
 	con->has_work = false;
