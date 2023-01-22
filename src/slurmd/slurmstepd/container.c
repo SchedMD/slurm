@@ -1030,6 +1030,8 @@ extern void container_run(stepd_step_rec_t *step,
 		if (!rc && chmod(envfile, 0750) < 0)
 			error("%s: chmod(%s, 750): %m", __func__, envfile);
 
+		debug("%s: wrote %s", __func__, envfile);
+
 		xfree(envfile);
 	}
 
