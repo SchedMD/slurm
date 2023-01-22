@@ -982,7 +982,10 @@ extern void container_run(stepd_step_rec_t *step,
 	if (c->config) {
 		int rc;
 		char *out = NULL;
-		char *jconfig = _get_config_path(step);
+		char *jconfig = NULL;
+
+		/* create new config.json in spooldir */
+		xstrfmtcat(jconfig, "%s/config.json", c->spool_dir);
 
 		if ((rc = _modify_config(step)))
 			fatal("%s: configuring container failed: %s",
@@ -1000,6 +1003,8 @@ extern void container_run(stepd_step_rec_t *step,
 		if ((rc = _write_config(step, jconfig, out)))
 			fatal("%s: unable to write %s: %s",
 			      __func__, jconfig, slurm_strerror(rc));
+
+		debug("%s: wrote %s", __func__, jconfig);
 
 		xfree(out);
 		xfree(jconfig);
