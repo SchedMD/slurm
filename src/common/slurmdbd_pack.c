@@ -627,7 +627,7 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&msg_ptr->script_hash,
 				       &uint32_tmp, buffer);
 	} else if (rpc_version >= SLURM_21_08_PROTOCOL_VERSION) {
-		char *env, *script;
+		char *env, *script, *tmp;
 		slurm_hash_t hash = {
 			.type = HASH_PLUGIN_K12,
 		};
@@ -684,15 +684,21 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		if (env) {
 			(void) hash_g_compute(env, strlen(env),
 					      NULL, 0, &hash);
+			tmp = xstring_bytes2hex(
+				hash.hash, sizeof(hash.hash), NULL);
 			msg_ptr->env_hash = xstrdup_printf(
-				"%c:%s", hash.type, hash.hash);
+				"%d:%s", hash.type, tmp);
+			xfree(tmp);
 			xfree(env);
 		}
 		if (script) {
 			(void) hash_g_compute(script, strlen(script),
 					      NULL, 0, &hash);
+			tmp = xstring_bytes2hex(
+				hash.hash, sizeof(hash.hash), NULL);
 			msg_ptr->script_hash = xstrdup_printf(
-				"%c:%s", hash.type, hash.hash);
+				"%d:%s", hash.type, tmp);
+			xfree(tmp);
 			xfree(script);
 		}
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
