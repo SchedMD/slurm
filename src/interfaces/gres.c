@@ -6260,6 +6260,26 @@ extern List gres_job_state_list_dup(List gres_list)
 	return gres_job_state_extract(gres_list, -1);
 }
 
+static gres_job_state_t *_job_state_dup_common(gres_job_state_t *gres_js)
+{
+	gres_job_state_t *new_gres_js = xmalloc(sizeof(gres_job_state_t));
+
+	new_gres_js->cpus_per_gres = gres_js->cpus_per_gres;
+	new_gres_js->def_cpus_per_gres = gres_js->def_cpus_per_gres;
+	new_gres_js->def_mem_per_gres = gres_js->def_mem_per_gres;
+	new_gres_js->gres_per_job = gres_js->gres_per_job;
+	new_gres_js->gres_per_node = gres_js->gres_per_node;
+	new_gres_js->gres_per_socket = gres_js->gres_per_socket;
+	new_gres_js->gres_per_task = gres_js->gres_per_task;
+	new_gres_js->mem_per_gres = gres_js->mem_per_gres;
+	new_gres_js->node_cnt = gres_js->node_cnt;
+	new_gres_js->total_gres	= gres_js->total_gres;
+	new_gres_js->type_id = gres_js->type_id;
+	new_gres_js->type_name = xstrdup(gres_js->type_name);
+
+	return new_gres_js;
+}
+
 /* Copy gres_job_state_t record for ALL nodes */
 extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 {
@@ -6270,19 +6290,7 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 	if (gres_js == NULL)
 		return NULL;
 
-	new_gres_js = xmalloc(sizeof(gres_job_state_t));
-	new_gres_js->cpus_per_gres	= gres_js->cpus_per_gres;
-	new_gres_js->def_cpus_per_gres	= gres_js->def_cpus_per_gres;
-	new_gres_js->gres_per_job	= gres_js->gres_per_job;
-	new_gres_js->gres_per_node	= gres_js->gres_per_node;
-	new_gres_js->gres_per_socket	= gres_js->gres_per_socket;
-	new_gres_js->gres_per_task	= gres_js->gres_per_task;
-	new_gres_js->mem_per_gres	= gres_js->mem_per_gres;
-	new_gres_js->def_mem_per_gres	= gres_js->def_mem_per_gres;
-	new_gres_js->node_cnt		= gres_js->node_cnt;
-	new_gres_js->total_gres	= gres_js->total_gres;
-	new_gres_js->type_id		= gres_js->type_id;
-	new_gres_js->type_name		= xstrdup(gres_js->type_name);
+	new_gres_js = _job_state_dup_common(gres_js);
 
 	if (gres_js->gres_cnt_node_alloc) {
 		i = sizeof(uint64_t) * gres_js->node_cnt;
@@ -6311,19 +6319,8 @@ static void *_job_state_dup2(gres_job_state_t *gres_js, int node_index)
 	if (gres_js == NULL)
 		return NULL;
 
-	new_gres_js = xmalloc(sizeof(gres_job_state_t));
-	new_gres_js->cpus_per_gres	= gres_js->cpus_per_gres;
-	new_gres_js->def_cpus_per_gres	= gres_js->def_cpus_per_gres;
-	new_gres_js->gres_per_job	= gres_js->gres_per_job;
-	new_gres_js->gres_per_node	= gres_js->gres_per_node;
-	new_gres_js->gres_per_socket	= gres_js->gres_per_socket;
-	new_gres_js->gres_per_task	= gres_js->gres_per_task;
-	new_gres_js->mem_per_gres	= gres_js->mem_per_gres;
-	new_gres_js->def_mem_per_gres	= gres_js->def_mem_per_gres;
+	new_gres_js = _job_state_dup_common(gres_js);
 	new_gres_js->node_cnt		= 1;
-	new_gres_js->total_gres	= gres_js->total_gres;
-	new_gres_js->type_id		= gres_js->type_id;
-	new_gres_js->type_name		= xstrdup(gres_js->type_name);
 
 	if (gres_js->gres_cnt_node_alloc) {
 		new_gres_js->gres_cnt_node_alloc = xmalloc(sizeof(uint64_t));
