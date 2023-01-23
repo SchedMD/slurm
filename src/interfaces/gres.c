@@ -6274,6 +6274,7 @@ static gres_job_state_t *_job_state_dup_common(gres_job_state_t *gres_js)
 	new_gres_js->mem_per_gres = gres_js->mem_per_gres;
 	new_gres_js->node_cnt = gres_js->node_cnt;
 	new_gres_js->total_gres	= gres_js->total_gres;
+	new_gres_js->total_node_cnt = gres_js->total_node_cnt;
 	new_gres_js->type_id = gres_js->type_id;
 	new_gres_js->type_name = xstrdup(gres_js->type_name);
 
@@ -6308,6 +6309,23 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 				bit_copy(gres_js->gres_bit_alloc[i]);
 		}
 	}
+
+	if (gres_js->gres_cnt_node_select) {
+		i = sizeof(uint64_t) * gres_js->total_node_cnt;
+		new_gres_js->gres_cnt_node_select = xmalloc(i);
+		memcpy(new_gres_js->gres_cnt_node_select,
+		       gres_js->gres_cnt_node_select, i);
+	}
+	if (gres_js->gres_bit_select) {
+		new_gres_js->gres_bit_select = xcalloc(gres_js->total_node_cnt,
+						       sizeof(bitstr_t *));
+		for (i = 0; i < gres_js->total_node_cnt; i++) {
+			if (gres_js->gres_bit_select[i] == NULL)
+				continue;
+			new_gres_js->gres_bit_select[i] =
+				bit_copy(gres_js->gres_bit_select[i]);
+		}
+	}
 	return new_gres_js;
 }
 
@@ -6320,6 +6338,7 @@ static void *_job_state_dup2(gres_job_state_t *gres_js, int node_index)
 		return NULL;
 
 	new_gres_js = _job_state_dup_common(gres_js);
+	new_gres_js->total_node_cnt = 1;
 	new_gres_js->node_cnt		= 1;
 
 	if (gres_js->gres_cnt_node_alloc) {
@@ -6332,6 +6351,18 @@ static void *_job_state_dup2(gres_job_state_t *gres_js, int node_index)
 		new_gres_js->gres_bit_alloc[0] =
 			bit_copy(gres_js->gres_bit_alloc[node_index]);
 	}
+
+	if (gres_js->gres_cnt_node_select) {
+		new_gres_js->gres_cnt_node_select = xmalloc(sizeof(uint64_t));
+		new_gres_js->gres_cnt_node_select[0] =
+			gres_js->gres_cnt_node_select[node_index];
+	}
+	if (gres_js->gres_bit_select) {
+		new_gres_js->gres_bit_select = xmalloc(sizeof(bitstr_t *));
+		new_gres_js->gres_bit_select[0] =
+			bit_copy(gres_js->gres_bit_select[node_index]);
+	}
+
 	return new_gres_js;
 }
 
