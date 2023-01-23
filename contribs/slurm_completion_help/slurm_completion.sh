@@ -8,11 +8,6 @@
 #   - Accepted values:
 #     - 0 = Disabled -- no call to slurm{ctl,db}d for value completion.
 #     - 1 = Enabled -- will make call to slurm{ctl,db}d. (default)
-# - SLURM_COMP_LIST=[0-1]
-#   - Description: Alter list comprehension completion behavior.
-#   - Accepted values:
-#     - 0 = Manual mode -- manually type ',' to continue list completion.
-#     - 1 = Automatic mode -- uses suffix ','. (default)
 # - SLURM_COMP_HOSTLIST=[0-1]
 #   - Description: Alter slurm hostlist comprehension completion behavior.
 #   - Accepted values:
@@ -202,8 +197,57 @@ function __slurm_comp() {
 		fi
 	done
 
+	__ltrim_colon_completions "${_cur}"
+
 	__slurm_log_info "$(__func__): #COMPREPLY[@]='${#COMPREPLY[@]}'"
 	__slurm_log_info "$(__func__): COMPREPLY[*]='${COMPREPLY[*]}'"
+}
+
+# Slurm completion helper for count notation
+# Example:
+#     GRES    = name[[:type]:count][,name[[:type]:count]...]
+#     LICENSE = license[@db][:count][,license[@db][:count]...]
+#
+# $1: list of items for completion
+function __slurm_compreply_count() {
+	local options="$1"
+	local prefix=""
+	local suffix=","
+	local curlist="${cur%"$suffix"*}"
+	local curitem="${cur##*"$suffix"}"
+	local compreply=()
+
+	if [[ $curitem == "$curlist" ]]; then
+		curlist=""
+	elif [[ -n $curlist ]]; then
+		prefix="${curlist}${suffix}"
+	fi
+
+	__slurm_log_debug "$(__func__): cur='$cur' curitem='$curitem' curlist='$curlist'"
+
+	case "${curitem}" in
+	*:)
+		__slurm_log_debug "$(__func__): expect count spec"
+		;;
+	*:+([0-9]))
+		__slurm_log_debug "$(__func__): found count spec"
+		__slurm_compreply_list "$cur"
+		;;
+	*)
+		__slurm_log_debug "$(__func__): expect item spec"
+		options="$(compgen -W "${options[*]}" -S ":" -- "${curitem}")"
+
+		# build array without seen items
+		for item in $options; do
+			__slurm_log_trace "$(__func__): for loop: item='$item'"
+			[[ $item =~ ^[[:space:]]*$ ]] && continue
+			[[ $curlist =~ "${item}"[[:digit:]]+"${suffix}"? ]] && continue
+			compreply+=("$item")
+		done
+
+		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+		;;
+	esac
 }
 
 # Completion function for parameters
@@ -220,7 +264,7 @@ function __slurm_compreply_param() {
 	for param in $options; do
 		p="${param%%?(\\)=*}"
 		__slurm_log_trace "$(__func__): for loop: param='$param' p*='$p'"
-		[[ ${words[*]} =~ "${p}=" ]] && continue
+		[[ ${words[*]} =~ ${p}= ]] && continue
 		[[ ${words[*]} =~ [[:space:]]+${p}[[:space:]]+ ]] && continue
 		compreply+=("$param")
 	done
@@ -295,7 +339,7 @@ function __slurm_compreply_list() {
 
 		local found=0
 		local filter=()
-		filter=($(compgen -W "${compreply[*]}" -- "${curitem}"))
+		filter=("$(compgen -W "${compreply[*]}" -- "${curitem}")")
 		((${#filter[@]} == 1)) && [[ ${filter[0]} == "$curitem" ]] && found=1
 		__slurm_log_trace "$(__func__): found='$found' #filter[@]='${#filter[@]}' filter[*]='${filter[*]}'"
 
@@ -307,13 +351,6 @@ function __slurm_compreply_list() {
 		fi
 
 		__slurm_log_trace "$(__func__): curlist_hostlist='$curlist_hostlist'"
-	fi
-
-	# simulate old completion script's list behavior
-	if ((SLURM_COMP_LIST == 0)); then
-		_mode="manual"
-		ifs=""
-		suffix=""
 	fi
 
 	__slurm_log_info "$(__func__): Slurm list completion is in $_mode mode."
@@ -470,7 +507,7 @@ function __slurm_init_completion() {
 	words=("${COMP_WORDS[@]}")
 	split="false"
 
-	_init_completion -s -n "=" || return 1
+	_init_completion -s -n "=:" || return 1
 	__slurm_split_opt && split="true"
 
 	__slurm_log_debug "$(__func__): prev='$prev'"
@@ -497,7 +534,6 @@ function __slurm_compinit() {
 	SLURM_COMPLOG_FILE="${SLURM_COMPLOG_FILE:-""}"
 	SLURM_COMPLOG_LEVEL="${SLURM_COMPLOG_LEVEL:-3}"
 	SLURM_COMP_VALUE="${SLURM_COMP_VALUE:-1}"
-	SLURM_COMP_LIST="${SLURM_COMP_LIST:-1}"
 	SLURM_COMP_HOSTLIST="${SLURM_COMP_HOSTLIST:-1}"
 
 	__slurm_log_info ""
@@ -505,7 +541,6 @@ function __slurm_compinit() {
 	__slurm_log_info "$(__func__): SLURM_COMPLOG_LEVEL='${SLURM_COMPLOG_LEVEL}'"
 	__slurm_log_info "$(__func__): SLURM_COMPLOG_FILE='$SLURM_COMPLOG_FILE'"
 	__slurm_log_info "$(__func__): SLURM_COMP_VALUE='${SLURM_COMP_VALUE}'"
-	__slurm_log_info "$(__func__): SLURM_COMP_LIST='${SLURM_COMP_LIST}'"
 	__slurm_log_info "$(__func__): SLURM_COMP_HOSTLIST='${SLURM_COMP_HOSTLIST}'"
 
 	__slurm_init_completion || return 1
@@ -713,25 +748,6 @@ function __slurm_clusters_rpc() {
 	__slurm_func_wrapper "$cmd"
 }
 
-# Slurm helper function to return accepted dependency type values
-#
-# RET: dependency_types list
-function __slurm_dependency_types() {
-	local dependency_types=(
-		"after:"
-		"afterany:"
-		"afterburstbuffer:"
-		"aftercorr:"
-		"afternotok:"
-		"afterok:"
-		"singleton"
-	)
-	local output="${dependency_types[*]}"
-
-	__slurm_log_trace "$(__func__): output='$output'"
-	echo "${output}"
-}
-
 # Slurm helper function to get features list
 #
 # RET: space delimited list
@@ -739,7 +755,7 @@ function __slurm_features() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show nodes | grep -E -o 'AvailableFeatures=(\w,?)+' | cut -d= -f2 | tr ',' '\n'"
+	local cmd="scontrol -o show nodes | grep -E -o 'AvailableFeatures=\S+' | cut -d= -f2 | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -750,7 +766,7 @@ function __slurm_features_active() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show nodes | grep -E -o 'ActiveFeatures=(\w,?)+' | cut -d= -f2 | tr ',' '\n'"
+	local cmd="scontrol -o show nodes | grep -E -o 'ActiveFeatures=\S+' | cut -d= -f2 | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -788,7 +804,7 @@ function __slurm_helpformat() {
 # RET: space delimited list
 function __slurm_hostlist() {
 	local hostnames="$1"
-	local cmd="scontrol show hostlistsorted \"$hostnames\""
+	local cmd="scontrol -o show hostlistsorted \"$hostnames\""
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -797,7 +813,7 @@ function __slurm_hostlist() {
 # RET: space delimited list
 function __slurm_hostnames() {
 	local hostlist="${1-}"
-	local cmd="scontrol show hostnames \"$hostlist\""
+	local cmd="scontrol -o show hostnames \"$hostlist\""
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -808,7 +824,7 @@ function __slurm_gres() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show config | grep GresTypes | cut -d= -f2 | tr ',' '\n'"
+	local cmd="scontrol -o show config | grep 'GresTypes' | tr -d '[:space:]' | cut -d= -f2 | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -819,7 +835,7 @@ function __slurm_jobs() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show jobs | grep -Po 'JobId=\w+' | cut -d'=' -f2"
+	local cmd="scontrol -o show jobs | grep -Po 'JobId=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -830,7 +846,7 @@ function __slurm_jobsteps_tasks() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show step | grep -Po 'StepId=\d+\.\d+' | cut -d'=' -f2"
+	local cmd="scontrol -o show step | grep -Po 'StepId=\d+\.\d+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -841,7 +857,7 @@ function __slurm_jobsteps() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol  show step | grep -Po 'StepId=\d+\.\w+' | cut -d'=' -f2"
+	local cmd="scontrol -o show step | grep -Po 'StepId=\d+\.\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -852,7 +868,7 @@ function __slurm_jobnames() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show jobs | grep -Po 'JobName=\w+' | cut -d'=' -f2"
+	local cmd="scontrol -o show jobs | grep -Po 'JobName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -863,7 +879,7 @@ function __slurm_licenses() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show license | grep -Po 'LicenseName=\w+' | cut -d'=' -f2"
+	local cmd="scontrol -o show license | grep -Po 'LicenseName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -874,7 +890,7 @@ function __slurm_nodes() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show nodes | grep -Po 'NodeName=\w+' | cut -d'=' -f2"
+	local cmd="scontrol -o show nodes | grep -Po 'NodeName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -885,7 +901,7 @@ function __slurm_nodes_frontend() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show frontend | grep -Po 'FrontendName=\w+' | cut -d'=' -f2"
+	local cmd="scontrol -o show frontend | grep -Po 'FrontendName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -907,7 +923,7 @@ function __slurm_partitions() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show partitions | grep -Po 'PartitionName=\w+' | cut -d'=' -f2"
+	local cmd="scontrol -o show partitions | grep -Po 'PartitionName=\S+' | cut -d'=' -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -940,7 +956,7 @@ function __slurm_reservations() {
 	__slurm_comp_slurm_value || return
 	__slurm_ctld_status || return
 
-	local cmd="scontrol show reservations | grep -Po 'ReservationName=\w+' | cut -d= -f2"
+	local cmd="scontrol -o show reservations | grep -Po 'ReservationName=\S+' | cut -d= -f2"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -1001,7 +1017,7 @@ function __slurm_tres() {
 	__slurm_comp_slurm_value || return
 	__slurm_dbd_status || return
 
-	local cmd="sacctmgr -Pn list tres format=type"
+	local cmd="scontrol -o show config | grep 'AccountingStorageTRES' | cut -d= -f2 | tr -d '[:space:]' | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -1043,6 +1059,90 @@ function __slurm_comp_flags() {
 	esac
 
 	return 0
+}
+
+# Slurm completion helper for job dependency spec
+function __slurm_comp_dependency() {
+	local prefix=""
+	local suffix=","
+	if [[ $cur == *"?"* ]] && [[ $cur != *","* ]]; then
+		# Dependency expresson can use either ',' or '?' as the
+		# separator, but not both in the same expression.
+		#   , = logical and (all must be satisfied)
+		#   ? = logical or (any may be satisfied)
+		suffix="?"
+	fi
+	local curlist="${cur%"$suffix"*}"
+	local curitem="${cur##*"$suffix"}"
+	local curitem2="${curitem##*:}"
+	local curverb="${curitem%:*}:"
+	local compreply=()
+
+	local dependency_types=(
+		"after:"
+		"afterany:"
+		"afterburstbuffer:"
+		"aftercorr:"
+		"afternotok:"
+		"afterok:"
+		"singleton"
+	)
+
+	if [[ $curitem == "$curlist" ]]; then
+		curlist=""
+	elif [[ -n $curlist ]]; then
+		prefix="${curlist}${suffix}"
+	fi
+
+	__slurm_log_debug "$(__func__): cur='$cur' curitem='$curitem' curlist='$curlist'"
+	__slurm_log_debug "$(__func__): curitem2='$curitem2' prefix='$prefix' suffix='$suffix'"
+
+	case "${curitem}" in
+	*:*) ;;
+	*)
+		__slurm_log_debug "$(__func__): expect verb spec"
+		compreply=("$(compgen -W "${dependency_types[*]}" -- "${curitem}")")
+		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+		return
+		;;
+	esac
+
+	case "${curitem2}" in
+	*+)
+		__slurm_log_debug "$(__func__): expect time spec"
+		;;
+	*++([0-9]))
+		__slurm_log_debug "$(__func__): found time spec"
+
+		compreply+=("$(compgen -W "${curitem}" -S "${suffix}" -- "${curitem}")")
+		compreply+=("$(compgen -W "${curitem}" -S ":" -- "${curitem}")")
+		if [[ $cur != *","* ]]; then
+			compreply+=("$(compgen -W "${curitem}" -S "?" -- "${curitem}")")
+		fi
+		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+		;;
+	*)
+		__slurm_log_debug "$(__func__): expect job spec"
+		local jobs=()
+		local options=""
+		options="$(__slurm_jobs)"
+
+		# build array without seen items
+		for item in $options; do
+			__slurm_log_trace "$(__func__): for loop: item='$item'"
+			[[ $curitem =~ :"${item}". ]] && continue
+			jobs+=("$item")
+		done
+
+		compreply+=("$(compgen -W "${jobs[*]}" -P "${curverb}" -S "${suffix}" -- "${curitem2}")")
+		compreply+=("$(compgen -W "${jobs[*]}" -P "${curverb}" -S ":" -- "${curitem2}")")
+		compreply+=("$(compgen -W "${jobs[*]}" -P "${curverb}" -S "+" -- "${curitem2}")")
+		if [[ $cur != *","* ]]; then
+			compreply+=("$(compgen -W "${jobs[*]}" -P "${curverb}" -S "?" -- "${curitem2}")")
+		fi
+		__slurm_comp "${compreply[*]}" "${prefix-}" "${curitem}" "" ""
+		;;
+	esac
 }
 
 # Slurm completion helper for salloc, sbatch, srun
@@ -1233,8 +1333,7 @@ function __slurm_comp_common() {
 	--container) _filedir ;;
 	--cpu-bind) __slurm_compreply "${cpubind_types[*]}" ;;
 	--cpu-freq) __slurm_compreply "${cpufreq_types[*]}" ;;
-	-d | --dependency) __slurm_compreply "$(__slurm_dependency_types)" ;;
-	after*(any|burstbuffer|corr|notok|ok)) __slurm_compreply "$(__slurm_jobs)" ;; # dependency parameters
+	-d | --dependency) __slurm_comp_dependency ;;
 	-m | --distribution) __slurm_compreply "${distribution_types[*]}" ;;
 	--epilog) _filedir ;;
 	-e | --error) _filedir ;;
@@ -1246,6 +1345,7 @@ function __slurm_comp_common() {
 	--gid) __slurm_compreply "$(__slurm_linux_groups) $(__slurm_linux_gids)" ;;
 	--gpu-bind) __slurm_compreply "${gpubind_types[*]}" ;;
 	--gpu-freq) __slurm_compreply "${gpufreq_types[*]}" ;;
+	--gres) __slurm_compreply_count "$(__slurm_gres)" ;;
 	--gres-flag?(s)) __slurm_compreply "${gres_flags[*]}" ;;
 	--hint) __slurm_compreply "${hints[*]}" ;;
 	-i | --input) _filedir ;;
@@ -1261,7 +1361,7 @@ function __slurm_comp_common() {
 	--kill-command) __slurm_compreply "$(__slurm_signals)" ;;
 	--kill-on-bad-exit) __slurm_compreply "${binary[*]}" ;;
 	--kill-on-invalid-dep) __slurm_compreply "$(__slurm_boolean)" ;;
-	-L | --license?(s)) __slurm_compreply "$(__slurm_licenses)" ;;
+	-L | --license?(s)) __slurm_compreply_count "$(__slurm_licenses)" ;;
 	--mail-type) __slurm_compreply_list "${mail_types[*]}" ;;
 	--mail-user) __slurm_compreply "$(__slurm_users)" ;;
 	--mem-bind) __slurm_compreply "${membind_types[*]}" ;;
@@ -1284,6 +1384,7 @@ function __slurm_comp_common() {
 	--slurmd-debug) __slurm_compreply "${slurmd_levels[*]}" ;;
 	--task-epilog) _filedir ;;
 	--task-prolog) _filedir ;;
+	--tres-per-task) __slurm_compreply_count "$(__slurm_tres | tr '/' ':')" ;;
 	--uid?(s)) __slurm_compreply "$(__slurm_users) $(__slurm_linux_uids)" ;;
 	--wait-all-node?(s)) __slurm_compreply "${binary[*]}" ;;
 	--wckey?(s)) __slurm_compreply "$(__slurm_wckeys)" ;;
@@ -3666,8 +3767,7 @@ function __scontrol_update_jobid() {
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	clusterfeature?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	contiguous) __slurm_compreply "$(__slurm_boolean)" ;;
-	dependency) __slurm_compreply "$(__slurm_dependency_types)" ;;
-	after*(any|burstbuffer|corr|notok|ok)) __slurm_compreply "$(__slurm_jobs)" ;; # dependency parameters
+	dependency) __slurm_comp_dependency ;;
 	excnodelist) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	feature?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	gres) __slurm_compreply_list "$(__slurm_gres)" ;;
