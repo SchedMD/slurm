@@ -49,7 +49,7 @@
 extern void set_user_limits(stepd_step_rec_t *step);
 
 /*
- * Set user ulimit based upon SLURM_ULIMIT envirionment variable
+ * Set user ulimit based upon SLURM_ULIMIT environment variable
  * contained in job->env
  */
 int set_umask(stepd_step_rec_t *step);
