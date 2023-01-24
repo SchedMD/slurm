@@ -4591,7 +4591,6 @@ function _squeue() {
 		"resvport"
 		"schednodes"
 		"sct"
-		"selectjobinfo"
 		"siblingsactive"
 		"siblingsactiveraw"
 		"siblingsviable"
