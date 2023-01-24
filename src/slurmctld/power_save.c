@@ -425,6 +425,7 @@ static void _do_power_work(time_t now)
 
 				bit_set(job_power_node_bitmap, i);
 				bit_set(to_resume_bitmap, i);
+				bit_clear(need_resume_bitmap, i);
 			}
 		}
 
@@ -448,8 +449,11 @@ static void _do_power_work(time_t now)
 				job_ptr->resv_name);
 
 		/* No more nodes to power up, remove job from list */
-		if (!bit_overlap_any(need_resume_bitmap, job_ptr->node_bitmap))
+		if (!bit_set_count(need_resume_bitmap)) {
+			log_flag(POWER, "no more nodes to resume for job %pJ",
+				 job_ptr);
 			list_delete_item(iter);
+		}
 
 		FREE_NULL_BITMAP(need_resume_bitmap);
 		FREE_NULL_BITMAP(to_resume_bitmap);
