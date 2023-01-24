@@ -478,7 +478,7 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 				   gres_mc_data_t *tres_mc_ptr)
 {
 	int i, rc;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	avail_res_t **avail_res_array;
 
@@ -806,7 +806,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	uint64_t save_mem = 0, avail_mem = 0, needed_mem = 0, lowest_mem = 0;
 	int32_t build_cnt;
 	job_resources_t *job_res;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	part_res_record_t *p_ptr, *jp_ptr;
 	uint16_t *cpu_count;
 	int i;

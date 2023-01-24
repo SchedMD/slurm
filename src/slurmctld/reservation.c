@@ -4938,7 +4938,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		 * job record was explored and found too cumbersome.
 		 */
 		job_ptr = xmalloc(sizeof(job_record_t));
-		job_ptr->details = xmalloc(sizeof(struct job_details));
+		job_ptr->details = xmalloc(sizeof(job_details_t));
 		job_ptr->details->features = resv_desc_ptr->features;
 		/* job_ptr->job_id = 0; */
 		/* job_ptr->user_id = 0; */

@@ -360,7 +360,7 @@ static bool _many_pending_rpcs(void)
 static int _num_feature_count(job_record_t *job_ptr, bool *has_xand,
 			      bool *has_mor)
 {
-	struct job_details *detail_ptr = job_ptr->details;
+	job_details_t *detail_ptr = job_ptr->details;
 	int rc = 0;
 	ListIterator feat_iter;
 	job_feature_t *feat_ptr;
@@ -407,7 +407,7 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 	int rc = SLURM_SUCCESS;
 	bool has_xand = false, has_mor = false;
 	int feat_cnt = _num_feature_count(job_ptr, &has_xand, &has_mor);
-	struct job_details *detail_ptr = job_ptr->details;
+	job_details_t *detail_ptr = job_ptr->details;
 	List feature_cache = detail_ptr->feature_list_use;
 	List preemptee_candidates = NULL;
 	ListIterator feat_iter;

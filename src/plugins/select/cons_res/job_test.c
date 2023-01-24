@@ -251,7 +251,7 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
 }
 
 static void _cpus_to_use(int *avail_cpus, int rem_cpus, int rem_nodes,
-			 struct job_details *details_ptr, uint16_t *cpu_cnt,
+			 job_details_t *details_ptr, uint16_t *cpu_cnt,
 			 int node_inx, uint16_t cr_type)
 {
 	int resv_cpus;	/* CPUs to be allocated on other nodes */
@@ -296,7 +296,7 @@ static int _eval_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 	int best_fit_sufficient, best_fit_index = 0;
 	int avail_cpus;
 	bool required_node;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bitstr_t *req_map    = details_ptr->req_node_bitmap;
 
 	xassert(node_map);
@@ -701,7 +701,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr, bitstr_t *node_map,
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
 	int avail_cpus = 0;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 
 	rem_cpus = details_ptr->min_cpus;
@@ -777,7 +777,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr, bitstr_t *node_map,
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
 	int avail_cpus = 0;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 
 	rem_cpus = details_ptr->min_cpus;
@@ -878,7 +878,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr, bitstr_t *node_map,
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
 	int avail_cpus;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	int last_max_cpu_cnt = -1;
 
@@ -976,7 +976,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr, bitstr_t *node_map,
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
 	int avail_cpus;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 
 	rem_cpus = details_ptr->min_cpus;

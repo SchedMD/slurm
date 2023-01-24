@@ -524,7 +524,7 @@ extern time_t last_job_update;	/* time of last update to job records */
 #define WHOLE_NODE_MCS		0x03
 
 /* job_details - specification of a job's constraints */
-struct job_details {
+typedef struct {
 	uint32_t magic;			/* magic cookie for data integrity */
 					/* DO NOT ALPHABETIZE */
 	char *acctg_freq;		/* accounting polling interval */
@@ -635,7 +635,7 @@ struct job_details {
 	char *x11_magic_cookie;		/* x11 magic cookie */
 	char *x11_target;		/* target host, or socket if port == 0 */
 	uint16_t x11_target_port;	/* target TCP port on alloc_node */
-};
+} job_details_t;
 
 typedef struct job_array_struct {
 	uint32_t task_cnt;		/* count of remaining task IDs */
@@ -737,7 +737,7 @@ struct job_record {
 	time_t deadline;		/* deadline */
 	uint32_t delay_boot;		/* Delay boot for desired node mode */
 	uint32_t derived_ec;		/* highest exit code of all job steps */
-	struct job_details *details;	/* job details */
+	job_details_t *details;		/* job details */
 	uint16_t direct_set_prio;	/* Priority set directly if
 					 * set the system will not
 					 * change the priority any further. */
@@ -2343,7 +2343,7 @@ extern void server_thread_incr(void);
 extern void set_job_alias_list(job_record_t *job_ptr);
 
 /* Set a job's features_use and feature_list_use pointers */
-extern void set_job_features_use(struct job_details *details_ptr);
+extern void set_job_features_use(job_details_t *details_ptr);
 
 /*
  * set_job_prio - set a default job priority

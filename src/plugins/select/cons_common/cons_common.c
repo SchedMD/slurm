@@ -223,7 +223,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	uint32_t c;
 	uint32_t core_begin;
 	uint32_t core_end;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	uint16_t cpus_per_task = details_ptr->cpus_per_task;
 	uint16_t free_core_count = 0, spec_threads = 0;
 	uint16_t i, j;
@@ -808,7 +808,7 @@ extern void common_free_avail_res(avail_res_t *avail_res)
  * Return the number of usable logical processors by a given job on
  * some specified node. Returns INFINITE16 if no limit.
  */
-extern uint16_t common_cpus_per_core(struct job_details *details, int node_inx)
+extern uint16_t common_cpus_per_core(job_details_t *details, int node_inx)
 {
 	uint16_t ncpus_per_core = INFINITE16;	/* Usable CPUs per core */
 	uint16_t threads_per_core = node_record_table_ptr[node_inx]->tpc;

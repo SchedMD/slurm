@@ -4189,7 +4189,7 @@ extern int acct_policy_update_pending_job(job_record_t *job_ptr)
 	job_desc_msg_t job_desc;
 	acct_policy_limit_set_t acct_policy_limit_set;
 	bool update_accounting = false;
-	struct job_details *details_ptr;
+	job_details_t *details_ptr;
 	int rc = SLURM_SUCCESS;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
 
@@ -4503,7 +4503,7 @@ static void _handle_add_accrue(job_record_t *job_ptr,
 			       int create_cnt,
 			       time_t now)
 {
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	job_record_t *old_job_ptr;
 
 	/* No limit (or there is space to accrue) */
@@ -4590,7 +4590,7 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 {
 	slurmdb_qos_rec_t *qos_ptr;
 	slurmdb_assoc_rec_t *assoc_ptr;
-	struct job_details *details_ptr;
+	job_details_t *details_ptr;
 	slurmdb_used_limits_t *used_limits_acct = NULL;
 	slurmdb_used_limits_t *used_limits_user = NULL;
 
@@ -4715,7 +4715,7 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 	int create_cnt = 0;
 	uint32_t max_jobs_accrue = INFINITE;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	time_t now = time(NULL);
 
 	/*

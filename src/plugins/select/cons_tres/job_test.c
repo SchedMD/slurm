@@ -55,9 +55,8 @@ typedef struct topo_weight_info {
 /* Local functions */
 static List _build_node_weight_list(bitstr_t *node_bitmap);
 static void _cpus_to_use(uint16_t *avail_cpus, int64_t rem_cpus, int rem_nodes,
-			 struct job_details *details_ptr,
-			 avail_res_t *avail_res, int node_inx,
-			 uint16_t cr_type);
+			 job_details_t *details_ptr, avail_res_t *avail_res,
+			 int node_inx, uint16_t cr_type);
 static bool _enough_nodes(int avail_nodes, int rem_nodes,
 			  uint32_t min_nodes, uint32_t req_nodes);
 static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
@@ -102,8 +101,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			    uint32_t max_nodes, uint32_t req_nodes,
 			    avail_res_t **avail_res_array, uint16_t cr_type,
 			    bool prefer_alloc_nodes, bool first_pass);
-static int64_t  _get_rem_max_cpus(struct job_details *details_ptr,
-				  int rem_nodes);
+static int64_t _get_rem_max_cpus(job_details_t *details_ptr, int rem_nodes);
 static int _node_weight_find(void *x, void *key);
 static void _node_weight_free(void *x);
 static int _node_weight_sort(void *x, void *y);
@@ -218,7 +216,7 @@ static void _avail_res_log(avail_res_t *avail_res, char *node_name)
  * IN cr_type - Resource allocation units (CR_CORE, CR_SOCKET, etc).
  */
 static void _cpus_to_use(uint16_t *avail_cpus, int64_t rem_max_cpus,
-			 int rem_nodes, struct job_details *details_ptr,
+			 int rem_nodes, job_details_t *details_ptr,
 			 avail_res_t *avail_res, int node_inx,
 			 uint16_t cr_type)
 {
@@ -255,8 +253,7 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
 	return (avail_nodes >= needed_nodes);
 }
 
-static int64_t  _get_rem_max_cpus(struct job_details *details_ptr,
-				  int rem_nodes)
+static int64_t _get_rem_max_cpus(job_details_t *details_ptr, int rem_nodes)
 {
 	int64_t rem_max_cpus = details_ptr->min_cpus;
 
@@ -295,7 +292,7 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	int alloc_tasks = 0;
 	uint32_t min_tasks_this_node = 0, max_tasks_this_node = 0;
 	uint32_t min_cores_this_node = 0;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	node_record_t *node_ptr = node_record_table_ptr[node_inx];
 
 	rem_nodes = MIN(rem_nodes, 1);	/* If range of node counts */
@@ -431,7 +428,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	int64_t rem_max_cpus;
 	int total_cpus = 0;	/* #CPUs allocated to job */
 	bool gres_per_job, required_node;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	bool enforce_binding = false;
 	uint16_t *avail_cpu_per_node = NULL;
@@ -1013,7 +1010,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
 	int64_t rem_max_cpus;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	bitstr_t *orig_node_map = bit_copy(node_map);
 	bool all_done = false, gres_per_job;
@@ -1188,7 +1185,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
 	int64_t rem_max_cpus;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	bitstr_t *orig_node_map = bit_copy(node_map);
 	bool all_done = false, gres_per_job;
@@ -1519,7 +1516,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	int rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	bool enforce_binding = false;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bool gres_per_job, sufficient = false;
 	uint16_t *avail_cpu_per_node = NULL;
 	time_t time_waiting = 0;
@@ -2139,7 +2136,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	int rem_cpus, start_rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	bool enforce_binding = false;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bool gres_per_job, requested, sufficient = false;
 	uint16_t *avail_cpu_per_node = NULL;
 	uint32_t *switches_dist= NULL;
@@ -2758,7 +2755,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
 	int64_t rem_max_cpus;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	bitstr_t *orig_node_map = bit_copy(node_map);
 	bool all_done = false, gres_per_job;
@@ -2967,7 +2964,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
 	int64_t rem_max_cpus;
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	bitstr_t *orig_node_map = bit_copy(node_map);
 	bool all_done = false, gres_per_job;

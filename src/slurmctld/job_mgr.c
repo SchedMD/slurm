@@ -201,7 +201,7 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
 	bool locked, log_level_t log_lvl);
-static void _dump_job_details(struct job_details *detail_ptr, buf_t *buffer);
+static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer);
 static int _dump_job_state(void *object, void *arg);
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 				  buf_t *buffer);
@@ -230,8 +230,8 @@ static buf_t *_open_job_state_file(char **state_file);
 static time_t _get_last_job_state_write_time(void);
 static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				      uint16_t protocol_version);
-static void _pack_pending_job_details(struct job_details *detail_ptr,
-				      buf_t *buffer, uint16_t protocol_version);
+static void _pack_pending_job_details(job_details_t *detail_ptr, buf_t *buffer,
+				      uint16_t protocol_version);
 static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max);
 static void _purge_missing_jobs(int node_inx, time_t now);
 static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
@@ -630,7 +630,7 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 static job_record_t *_create_job_record(uint32_t num_jobs)
 {
 	job_record_t *job_ptr = xmalloc(sizeof(*job_ptr));
-	struct job_details *detail_ptr = xmalloc(sizeof(*detail_ptr));
+	job_details_t *detail_ptr = xmalloc(sizeof(*detail_ptr));
 
 	if ((job_count + num_jobs) >= slurm_conf.max_job_cnt) {
 		error("%s: MaxJobCount limit from slurm.conf reached (%u)",
@@ -1396,7 +1396,7 @@ static int _dump_job_state(void *object, void *arg)
 {
 	job_record_t *dump_job_ptr = object;
 	buf_t *buffer = arg;
-	struct job_details *detail_ptr;
+	job_details_t *detail_ptr;
 	uint32_t tmp_32;
 
 	xassert(dump_job_ptr->magic == JOB_MAGIC);
@@ -2765,7 +2765,7 @@ free_it:
  * IN detail_ptr - pointer to job details for which information is requested
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-void _dump_job_details(struct job_details *detail_ptr, buf_t *buffer)
+static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer)
 {
 	/*
 	 * Some job fields can change in the course of scheduling, so we
@@ -4634,7 +4634,7 @@ extern void rehash_jobs(void)
 extern job_record_t *job_array_split(job_record_t *job_ptr)
 {
 	job_record_t *job_ptr_pend = NULL;
-	struct job_details *job_details, *details_new, *save_details;
+	job_details_t *job_details, *details_new, *save_details;
 	uint32_t save_job_id;
 	uint64_t save_db_index = job_ptr->db_index;
 	priority_factors_t *save_prio_factors;
@@ -4729,7 +4729,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	job_ptr_pend->fed_details = _dup_job_fed_details(job_ptr->fed_details);
 
 	job_ptr_pend->front_end_ptr = NULL;
-	/* struct job_details *details;		*** NOTE: Copied below */
+	/* job_details_t *details;		*** NOTE: Copied below */
 
 	job_ptr_pend->limit_set.tres = xcalloc(slurmctld_tres_cnt,
 					       sizeof(uint16_t));
@@ -4812,7 +4812,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 
 	job_details = job_ptr->details;
 	details_new = job_ptr_pend->details;
-	memcpy(details_new, job_details, sizeof(struct job_details));
+	memcpy(details_new, job_details, sizeof(job_details_t));
 
 	/*
 	 * Reset the preempt_start_time or high priority array jobs will hang
@@ -4932,7 +4932,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 /* Add job array data stucture to the job record */
 static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 {
-	struct job_details *details;
+	job_details_t *details;
 	char *sep = NULL;
 	int max_run_tasks, min_task_id, max_task_id, step_task_id = 1, task_cnt;
 
@@ -7135,7 +7135,7 @@ fini:
  */
 extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 {
-	struct job_details *detail_ptr;
+	job_details_t *detail_ptr;
 	enum job_state_reason fail_reason;
 	part_record_t *part_ptr = NULL;
 	job_record_t *job_ptr = NULL;
@@ -8086,7 +8086,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 
 	/* Add a temporary job_ptr for node_features_g_job_valid */
 	job_ptr = xmalloc(sizeof(job_record_t));
-	job_ptr->details = xmalloc(sizeof(struct job_details));
+	job_ptr->details = xmalloc(sizeof(job_details_t));
 	/* Point, don't dup, so don't free */
 	job_ptr->details->features = job_desc->features;
 	job_ptr->details->prefer = job_desc->prefer;
@@ -8626,7 +8626,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 					bitstr_t **exc_bitmap)
 {
 	int error_code;
-	struct job_details *detail_ptr;
+	job_details_t *detail_ptr;
 	job_record_t *job_ptr;
 
 	if (slurm_conf.conf_flags & CTL_CONF_WCKEY) {
@@ -10652,7 +10652,7 @@ static void _pack_job_gres(job_record_t *dump_job_ptr, buf_t *buffer,
 void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 	      uint16_t protocol_version, uid_t uid, bool has_qos_lock)
 {
-	struct job_details *detail_ptr;
+	job_details_t *detail_ptr;
 	time_t accrue_time = 0, begin_time = 0, start_time = 0, end_time = 0;
 	uint32_t time_limit;
 	char *nodelist = NULL;
@@ -11184,7 +11184,7 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 {
 	int max_cpu_cnt = -1, max_core_cnt = -1;
 	int i;
-	struct job_details *detail_ptr = job_ptr->details;
+	job_details_t *detail_ptr = job_ptr->details;
 	uint16_t shared = 0;
 
 	shared = get_job_share_value(job_ptr);
@@ -11667,8 +11667,8 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 }
 
 /* pack pending job details for "get_job_info" RPC */
-static void _pack_pending_job_details(struct job_details *detail_ptr,
-				      buf_t *buffer, uint16_t protocol_version)
+static void _pack_pending_job_details(job_details_t *detail_ptr, buf_t *buffer,
+				      uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (detail_ptr) {
@@ -12031,7 +12031,7 @@ extern void sync_job_priorities(void)
  */
 static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset)
 {
-	struct job_details *detail_ptr = job_ptr->details;
+	job_details_t *detail_ptr = job_ptr->details;
 	time_t now = time(NULL);
 	int pend_time;
 	bool top;
@@ -12367,7 +12367,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	bool is_coord_oldacc = false, is_coord_newacc = false;
 	uint32_t save_min_nodes = 0, save_max_nodes = 0;
 	uint32_t save_min_cpus = 0, save_max_cpus = 0;
-	struct job_details *detail_ptr;
+	job_details_t *detail_ptr;
 	part_record_t *new_part_ptr = NULL, *use_part_ptr = NULL;
 	bitstr_t *exc_bitmap = NULL, *new_req_bitmap = NULL;
 	time_t now = time(NULL);
@@ -16558,7 +16558,7 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
  */
 extern bool job_independent(job_record_t *job_ptr)
 {
-	struct job_details *detail_ptr = job_ptr->details;
+	job_details_t *detail_ptr = job_ptr->details;
 	time_t now = time(NULL);
 	int depend_rc;
 
@@ -18296,7 +18296,7 @@ extern int send_jobs_to_accounting(void)
 extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 {
 	job_desc_msg_t *job_desc;
-	struct job_details *details = job_ptr->details;
+	job_details_t *details = job_ptr->details;
 	multi_core_data_t *mc_ptr = details->mc_ptr;
 	int i;
 
@@ -19433,7 +19433,7 @@ extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap)
 extern uint16_t get_job_share_value(job_record_t *job_ptr)
 {
 	uint16_t shared = 0;
-	struct job_details *detail_ptr = job_ptr->details;
+	job_details_t *detail_ptr = job_ptr->details;
 
 	if (!detail_ptr)
 		shared = NO_VAL16;

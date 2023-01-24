@@ -1404,7 +1404,7 @@ static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 {
 	dbd_job_comp_msg_t *job_comp_msg = msg->data;
 	job_record_t job;
-	struct job_details details;
+	job_details_t details;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
@@ -1417,7 +1417,7 @@ static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	}
 
 	memset(&job, 0, sizeof(job_record_t));
-	memset(&details, 0, sizeof(struct job_details));
+	memset(&details, 0, sizeof(job_details_t));
 
 	job.admin_comment = job_comp_msg->admin_comment;
 	job.assoc_id = job_comp_msg->assoc_id;
@@ -1503,7 +1503,7 @@ static int _job_heavy(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 {
 	dbd_job_heavy_msg_t *job_heavy_msg = msg->data;
 	job_record_t job;
-	struct job_details details;
+	job_details_t details;
 	char *comment = NULL;
 	int rc;
 
@@ -1523,7 +1523,7 @@ static int _job_heavy(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	       job_heavy_msg->env ? "yes" : "no");
 
 	memset(&job, 0, sizeof(job_record_t));
-	memset(&details, 0, sizeof(struct job_details));
+	memset(&details, 0, sizeof(job_details_t));
 
 	if (job_heavy_msg->env) {
 		details.env_sup = xmalloc(sizeof(*details.env_sup));
@@ -1550,7 +1550,7 @@ static int _job_suspend(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 {
 	dbd_job_suspend_msg_t *job_suspend_msg = msg->data;
 	job_record_t job;
-	struct job_details details;
+	job_details_t details;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
@@ -1567,7 +1567,7 @@ static int _job_suspend(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	       job_state_string(job_suspend_msg->job_state));
 
 	memset(&job, 0, sizeof(job_record_t));
-	memset(&details, 0, sizeof(struct job_details));
+	memset(&details, 0, sizeof(job_details_t));
 
 	job.assoc_id = job_suspend_msg->assoc_id;
 	if (job_suspend_msg->db_index != NO_VAL64)
@@ -2182,11 +2182,11 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 			       dbd_id_rc_msg_t *id_rc_msg)
 {
 	job_record_t job, *job_ptr;
-	struct job_details details;
+	job_details_t details;
 	job_array_struct_t array_recs;
 
 	memset(&job, 0, sizeof(job_record_t));
-	memset(&details, 0, sizeof(struct job_details));
+	memset(&details, 0, sizeof(job_details_t));
 	memset(&array_recs, 0, sizeof(job_array_struct_t));
 	memset(id_rc_msg, 0, sizeof(dbd_id_rc_msg_t));
 
@@ -3011,7 +3011,7 @@ static int _step_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_step_comp_msg_t *step_comp_msg = msg->data;
 	step_record_t step;
 	job_record_t job;
-	struct job_details details;
+	job_details_t details;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
@@ -3028,7 +3028,7 @@ static int _step_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	memset(&step, 0, sizeof(step_record_t));
 	memset(&job, 0, sizeof(job_record_t));
-	memset(&details, 0, sizeof(struct job_details));
+	memset(&details, 0, sizeof(job_details_t));
 
 	job.assoc_id = step_comp_msg->assoc_id;
 	if (step_comp_msg->db_index != NO_VAL64)
@@ -3080,7 +3080,7 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_step_start_msg_t *step_start_msg = msg->data;
 	step_record_t step;
 	job_record_t job;
-	struct job_details details;
+	job_details_t details;
 	slurm_step_layout_t layout;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
@@ -3099,7 +3099,7 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	memset(&step, 0, sizeof(step_record_t));
 	memset(&job, 0, sizeof(job_record_t));
-	memset(&details, 0, sizeof(struct job_details));
+	memset(&details, 0, sizeof(job_details_t));
 	memset(&layout, 0, sizeof(slurm_step_layout_t));
 
 	job.assoc_id = step_start_msg->assoc_id;

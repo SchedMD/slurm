@@ -829,7 +829,7 @@ extern int as_mysql_job_heavy(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 {
 	char *query = NULL, *pos = NULL;
 	int rc = SLURM_SUCCESS;
-	struct job_details *details = job_ptr->details;
+	job_details_t *details = job_ptr->details;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;

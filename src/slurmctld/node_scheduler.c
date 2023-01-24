@@ -152,7 +152,7 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
  *	the given job_details record.  If it wasn't set, return INFINITE16.
  *	Intended for use with the adjust_cpus_nppcu function.
  */
-static uint16_t _get_ntasks_per_core(struct job_details *details)
+static uint16_t _get_ntasks_per_core(job_details_t *details)
 {
 	if (details->mc_ptr)
 		return details->mc_ptr->ntasks_per_core;
@@ -267,7 +267,7 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 	}
 }
 
-extern void set_job_features_use(struct job_details *details_ptr)
+extern void set_job_features_use(job_details_t *details_ptr)
 {
 	if (!details_ptr)
 		return;
@@ -655,7 +655,7 @@ extern void build_active_feature_bitmap(job_record_t *job_ptr,
 					bitstr_t *avail_bitmap,
 					bitstr_t **active_bitmap)
 {
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bitstr_t *tmp_bitmap = NULL;
 	bool can_reboot;
 
@@ -2531,7 +2531,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 
 	if (!test_only && preemptee_job_list
 	    && (error_code == SLURM_SUCCESS)) {
-		struct job_details *detail_ptr = job_ptr->details;
+		job_details_t *detail_ptr = job_ptr->details;
 		time_t now = time(NULL);
 		bool kill_pending = true;
 		if ((detail_ptr->preempt_start_time != 0) &&
@@ -3137,7 +3137,7 @@ extern int list_find_feature(void *feature_entry, void *key)
 extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 				bitstr_t *node_bitmap, bool *has_mor)
 {
-	struct job_details *detail_ptr = job_ptr->details;
+	job_details_t *detail_ptr = job_ptr->details;
 	ListIterator job_feat_iter;
 	job_feature_t *job_feat_ptr;
 	int last_op = FEATURE_OP_AND, last_paren_op = FEATURE_OP_AND;
@@ -3284,7 +3284,7 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 extern int job_req_node_filter(job_record_t *job_ptr,
 			       bitstr_t *avail_bitmap, bool test_only)
 {
-	struct job_details *detail_ptr = job_ptr->details;
+	job_details_t *detail_ptr = job_ptr->details;
 	multi_core_data_t *mc_ptr;
 	node_record_t *node_ptr;
 	bool has_mor = false;
@@ -3390,7 +3390,7 @@ static int _build_node_list(job_record_t *job_ptr,
 	part_record_t *part_ptr = job_ptr->part_ptr;
 	ListIterator config_iterator;
 	int total_cores;
-	struct job_details *detail_ptr = job_ptr->details;
+	job_details_t *detail_ptr = job_ptr->details;
 	bitstr_t *usable_node_mask = NULL;
 	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
 	bitstr_t *tmp_feature;
@@ -4168,7 +4168,7 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 				 config_record_t *config_ptr,
 				 bool can_reboot, bitstr_t *reboot_bitmap)
 {
-	struct job_details *details_ptr = job_ptr->details;
+	job_details_t *details_ptr = job_ptr->details;
 	bitstr_t *result_node_bitmap = NULL, *paren_node_bitmap = NULL;
 	bitstr_t *working_node_bitmap, *active_node_bitmap = NULL;
 	bitstr_t *tmp_node_bitmap = NULL;

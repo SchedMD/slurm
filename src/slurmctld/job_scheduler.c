@@ -4861,7 +4861,7 @@ fini:
 extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 			      bool is_reservation)
 {
-	struct job_details *detail_ptr = job_ptr->details;
+	job_details_t *detail_ptr = job_ptr->details;
 	char *features;
 	list_t **feature_list;
 	int rc;
