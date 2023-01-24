@@ -6272,6 +6272,7 @@ static gres_job_state_t *_job_state_dup_common(gres_job_state_t *gres_js)
 	new_gres_js->gres_per_socket = gres_js->gres_per_socket;
 	new_gres_js->gres_per_task = gres_js->gres_per_task;
 	new_gres_js->mem_per_gres = gres_js->mem_per_gres;
+	new_gres_js->ntasks_per_gres = gres_js->ntasks_per_gres;
 	new_gres_js->node_cnt = gres_js->node_cnt;
 	new_gres_js->total_gres	= gres_js->total_gres;
 	new_gres_js->total_node_cnt = gres_js->total_node_cnt;
