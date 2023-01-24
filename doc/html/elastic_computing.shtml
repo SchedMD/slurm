@@ -573,7 +573,7 @@ all the active features. If the <i>Helper</i> is set to a script that reports
 the active features, the controller will validate that the reported active
 features are a super set of the node's active changeable features in the
 controller.
-Features l1 and l2 will always be active and can be used as a selectable labels.
+Features l1 and l2 will always be active and can be used as selectable labels.
 </p>
 
 <p style="text-align:center;">Last modified 23 January 2023</p>
