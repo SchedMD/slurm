@@ -1123,7 +1123,7 @@ enum node_states {
 #define JOB_WAS_RUNNING    SLURM_BIT(20) /* Job was running */
 #define RESET_ACCRUE_TIME  SLURM_BIT(21) /* Reset the job's accrue time */
 #define CRON_JOB           SLURM_BIT(22) /* Job submitted through scrontab */
-#define JOB_MEM_SET        SLURM_BIT(23) /* Memory limit explicity set by job */
+#define JOB_MEM_SET        SLURM_BIT(23) /* Memory limit explicitly set by job */
 #define JOB_RESIZED        SLURM_BIT(24) /* Running job added/removed nodes */
 #define USE_DEFAULT_ACCT   SLURM_BIT(25) /* Job submitted to default account */
 #define USE_DEFAULT_PART   SLURM_BIT(26) /* Job submitted to default

@@ -137,7 +137,7 @@ extern int slurm_shutdown(uint16_t options)
 	req_msg.data         = &shutdown_msg;
 
 	/*
-	 * Explicity send the message to both primary and backup controllers
+	 * Explicitly send the message to both primary and backup controllers
 	 */
 	if (!working_cluster_rec) {
 		for (i = 1; i < slurm_conf.control_cnt; i++)

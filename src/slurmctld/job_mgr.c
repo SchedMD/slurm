@@ -9931,7 +9931,7 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 						part_list)) {
 		return ESLURM_INVALID_TASK_MEMORY;
 	} else {
-		/* Memory limit explicity set by user */
+		/* Memory limit explicitly set by user */
 		job_desc_msg->bitflags |= JOB_MEM_SET;
 	}
 

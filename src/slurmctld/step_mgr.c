@@ -2861,7 +2861,7 @@ static void _set_def_cpu_bind(job_record_t *job_ptr)
 }
 
 /*
- * A step may explicity set a TRES count to zero in order to avoid making use
+ * A step may explicitly set a TRES count to zero in order to avoid making use
  * of the job's TRES specifications. At this point, clear the records with
  * zero counts.
  */
@@ -2896,7 +2896,7 @@ static void _clear_zero_tres(char **tres_spec)
 }
 
 /*
- * A step may explicity request --gres=none in order to avoid making use
+ * A step may explicitly request --gres=none in order to avoid making use
  * of the job's TRES specifications. At this point, clear all GRES records.
  */
 static void _clear_gres_tres(char **tres_spec)
