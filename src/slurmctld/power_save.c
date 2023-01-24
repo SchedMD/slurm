@@ -453,6 +453,12 @@ static void _do_power_work(time_t now)
 			log_flag(POWER, "no more nodes to resume for job %pJ",
 				 job_ptr);
 			list_delete_item(iter);
+		} else if (power_save_debug) {
+			char *still_needed_nodes =
+				bitmap2node_name(need_resume_bitmap);
+			log_flag(POWER, "%s still left to boot for %pJ",
+				 still_needed_nodes, job_ptr);
+			xfree(still_needed_nodes);
 		}
 
 		FREE_NULL_BITMAP(need_resume_bitmap);
