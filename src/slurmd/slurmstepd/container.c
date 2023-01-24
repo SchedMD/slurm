@@ -56,7 +56,7 @@
  * We need a location inside of the container that is controlled by Slurm to
  * pass the startup script and I/O handling for batch steps.
  *
- * /tmp/slurm was choosen since runc will always mount it private
+ * /tmp/slurm was chosen since runc will always mount it private
  */
 #define SLURM_CONTAINER_BATCH_SCRIPT "/tmp/slurm/startup"
 #define SLURM_CONTAINER_ENV_FILE "environment"
