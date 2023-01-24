@@ -3355,6 +3355,9 @@ extern char *health_check_node_state_str(uint32_t node_state)
 		xstrfmtcat(state_str, "%s%s", sep, "MIXED");
 		sep = ",";
 	}
+	if (node_state & HEALTH_CHECK_NODE_NONDRAINED_IDLE) {
+		xstrfmtcat(state_str, "%s%s", sep, "NONDRAINED_IDLE");
+		sep = ",";
 	}
 
 	return state_str;

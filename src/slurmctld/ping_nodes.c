@@ -476,8 +476,11 @@ extern void run_health_check(void)
 			 *       means the node is allocated
 			 */
 			if (cpus_used == 0) {
-				if (!(node_states & HEALTH_CHECK_NODE_IDLE))
+				if (!(node_states & HEALTH_CHECK_NODE_IDLE) &&
+				    (!(node_states & HEALTH_CHECK_NODE_NONDRAINED_IDLE) ||
+				     IS_NODE_DRAIN(node_ptr))) {
 					continue;
+				}
 				if (!IS_NODE_IDLE(node_ptr))
 					continue;
 			} else if (cpus_used < cpus_total) {

@@ -124,6 +124,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     getnameinfo().
  -- Add new PrologFlags=ForceRequeueOnFail option to automatically requeue
     batch jobs on Prolog failures regardless of the job --requeue setting.
+ -- Add HealthCheckNodeState=NONDRAINED_IDLE option.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

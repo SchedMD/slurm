@@ -3665,6 +3665,9 @@ static uint16_t _health_node_state(char *state_str)
 		} else if (!xstrcasecmp(token, "MIXED")) {
 			state_num |= HEALTH_CHECK_NODE_MIXED;
 			state_set = true;
+		} else if (!xstrcasecmp(token, "NONDRAINED_IDLE")) {
+			state_num |= HEALTH_CHECK_NODE_NONDRAINED_IDLE;
+			state_set = true;
 		} else {
 			error("Invalid HealthCheckNodeState value %s ignored",
 			      token);

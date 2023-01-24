@@ -2765,6 +2765,8 @@ typedef struct reservation_name_msg {
 #define HEALTH_CHECK_NODE_IDLE	0x0001	/* execute on idle nodes */
 #define HEALTH_CHECK_NODE_ALLOC	0x0002	/* execute on fully allocated nodes */
 #define HEALTH_CHECK_NODE_MIXED	0x0004	/* execute on partially allocated nodes */
+#define HEALTH_CHECK_NODE_NONDRAINED_IDLE 0x0008 /* execute on idle nodes that
+						  * are not drained */
 #define HEALTH_CHECK_CYCLE	0x8000	/* cycle through nodes node */
 #define HEALTH_CHECK_NODE_ANY	0x000f	/* execute on all node states */
 
