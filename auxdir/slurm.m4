@@ -258,7 +258,7 @@ AC_SUBST(SLURM_VERSION_STRING)
 dnl
 dnl Test if we want to include rpath in the executables (default=yes)
 dnl Doing so is generally discouraged due to problems this causes in upgrading
-dnl software and general incompatability issues
+dnl software and general incompatibility issues
 dnl
 AC_DEFUN([X_AC_RPATH], [
   ac_with_rpath=yes
