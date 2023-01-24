@@ -3475,7 +3475,7 @@ function __scontrol_setdebug() {
 	esac
 }
 
-# completion handler for: scontrol setdebugflags *
+# completion handler for: scontrol setdebugflags * [key=val]...
 function __scontrol_setdebugflags() {
 	local debug_flags=(
 		"accrue"
@@ -3519,10 +3519,22 @@ function __scontrol_setdebugflags() {
 		"workqueue"
 	)
 	local _debug_flags=()
-	_debug_flags+=("$(compgen -P "+" -W "${debug_flags[*]}")")
-	_debug_flags+=("$(compgen -P "-" -W "${debug_flags[*]}")")
+	local parameters=(
+		"nodes="
+	)
 
-	__slurm_compreply "${_debug_flags[*]}"
+	case "${prev}" in
+	setdebugflag?(s))
+		_debug_flags+=("$(compgen -P "+" -W "${debug_flags[*]}")")
+		_debug_flags+=("$(compgen -P "-" -W "${debug_flags[*]}")")
+		__slurm_compreply_list "${_debug_flags[*]}"
+		;;
+	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	*)
+		[[ $split == "true" ]] && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
 }
 
 # completion handler for: scontrol show assoc_mgr *
