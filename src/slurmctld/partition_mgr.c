@@ -442,7 +442,7 @@ int dump_all_part_state(void)
 	unlock_state_files();
 
 	FREE_NULL_BUFFER(buffer);
-	END_TIMER2("dump_all_part_state");
+	END_TIMER2(__func__);
 	return 0;
 }
 
@@ -2149,7 +2149,7 @@ void load_part_uid_allow_list(int force)
 	}
 
 	clear_group_cache();
-	END_TIMER2("load_part_uid_allow_list");
+	END_TIMER2(__func__);
 }
 
 /* part_fini - free all memory associated with partition records */

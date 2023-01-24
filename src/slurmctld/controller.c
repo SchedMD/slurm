@@ -1214,7 +1214,7 @@ extern int reconfigure_slurm(void)
 	}
 	trigger_reconfig();
 
-	END_TIMER2("reconfigure_slurm");
+	END_TIMER2(__func__);
 
 	if (rc)
 		error("%s: %s", __func__, slurm_strerror(rc));
@@ -2440,7 +2440,7 @@ static void *_slurmctld_background(void *no_data)
 			assoc_mgr_set_missing_uids();
 		}
 
-		END_TIMER2("_slurmctld_background");
+		END_TIMER2(__func__);
 	}
 
 	debug3("_slurmctld_background shutting down");

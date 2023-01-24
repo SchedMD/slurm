@@ -3385,7 +3385,7 @@ extern int fed_mgr_state_save(char *state_save_location)
 
 	FREE_NULL_BUFFER(buffer);
 
-	END_TIMER2("fed_mgr_state_save");
+	END_TIMER2(__func__);
 
 	return error_code;
 }

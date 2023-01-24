@@ -215,7 +215,7 @@ int dump_all_node_state ( void )
 	unlock_state_files ();
 
 	FREE_NULL_BUFFER(buffer);
-	END_TIMER2("dump_all_node_state");
+	END_TIMER2(__func__);
 	return error_code;
 }
 

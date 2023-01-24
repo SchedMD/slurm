@@ -521,7 +521,7 @@ static void _validate_slurmd_addr(void)
 	xassert(list_is_empty(nodes));
 	FREE_NULL_LIST(nodes);
 
-	END_TIMER2("_validate_slurmd_addr");
+	END_TIMER2(__func__);
 #endif
 }
 
@@ -1986,7 +1986,7 @@ end_it:
 	xfree(old_switch_type);
 	xfree(state_save_dir);
 
-	END_TIMER2("read_slurm_conf");
+	END_TIMER2(__func__);
 	return error_code;
 
 }
@@ -3517,9 +3517,8 @@ extern int dump_config_state_lite(void)
 
 	FREE_NULL_BUFFER(buffer);
 
-	END_TIMER2("dump_config_state_lite");
+	END_TIMER2(__func__);
 	return error_code;
-
 }
 
 extern int load_config_state_lite(void)

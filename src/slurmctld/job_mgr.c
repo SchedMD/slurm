@@ -992,7 +992,7 @@ int dump_all_job_state(void)
 	unlock_state_files();
 
 	FREE_NULL_BUFFER(buffer);
-	END_TIMER2("dump_all_job_state");
+	END_TIMER2(__func__);
 	return error_code;
 }
 
@@ -8246,7 +8246,7 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 	}
 
 	xfree(dir_name);
-	END_TIMER2("_copy_job_desc_to_file");
+	END_TIMER2(__func__);
 	return error_code;
 }
 

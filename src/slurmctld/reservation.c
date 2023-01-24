@@ -3792,7 +3792,7 @@ no_assocs:
 
 	*buffer_size = get_buf_offset(buffer);
 	buffer_ptr[0] = xfer_buf_data(buffer);
-	END_TIMER2("show_resv");
+	END_TIMER2(__func__);
 }
 
 /* Save the state of all reservations to file */
@@ -3878,7 +3878,7 @@ extern int dump_all_resv_state(void)
 	unlock_state_files();
 
 	FREE_NULL_BUFFER(buffer);
-	END_TIMER2("dump_all_resv_state");
+	END_TIMER2(__func__);
 	return 0;
 }
 
@@ -7474,7 +7474,7 @@ extern void reservation_update_groups(int force)
 		last_resv_update = time(NULL);
 	}
 
-	END_TIMER2("reservation_update_groups");
+	END_TIMER2(__func__);
 }
 
 /*

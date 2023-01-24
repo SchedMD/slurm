@@ -742,7 +742,7 @@ extern int dump_all_front_end_state(void)
 	unlock_state_files ();
 
 	FREE_NULL_BUFFER(buffer);
-	END_TIMER2("dump_all_front_end_state");
+	END_TIMER2(__func__);
 	return error_code;
 #else
 	return SLURM_SUCCESS;
