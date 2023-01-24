@@ -422,7 +422,7 @@ extern int common_cgroup_move_process(xcgroup_t *cg, pid_t pid)
 
 	/*
 	 * First we check permissions to see if we will be able to move the pid.
-	 * The path is a path to cgroup.procs and writting there will instruct
+	 * The path is a path to cgroup.procs and writing there will instruct
 	 * the cgroup subsystem to move the process and all its threads there.
 	 */
 	path = _cgroup_procs_writable_path(cg);

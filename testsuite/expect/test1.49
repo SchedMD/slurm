@@ -64,7 +64,7 @@ make_bash_script $file_in "
 #
 # Submit a slurm job that will execute $tasks tasks
 # Note: If running on more than one node and writing to an
-#    NFS file, overwritting of data has been observed, this
+#    NFS file, overwriting of data has been observed, this
 #    causes the test to fail
 #
 set timeout [expr $max_job_delay + 30]

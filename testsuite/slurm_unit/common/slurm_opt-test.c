@@ -779,7 +779,7 @@ int main(void)
 	size_t csize = sizeof(slurm_unit_conf_content);
 	ssize_t rc = write(fd, slurm_unit_conf_content, csize);
 	if (rc < csize) {
-		error("error writting slurm_unit.conf (%s)",
+		error("error writing slurm_unit.conf (%s)",
 		      slurm_unit_conf_filename);
 		return EXIT_FAILURE;
 	}

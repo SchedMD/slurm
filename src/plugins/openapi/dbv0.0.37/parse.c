@@ -77,7 +77,7 @@
  * top of every parser/dumper, we put the pointer math to keep everything simple
  * in the function when using the offsets. The field can be a nested dictionary
  * and any "/" will automatically be expanded into dictionary entries to make
- * writting these definitions easy.
+ * writing these definitions easy.
  *
  * Every struct type and primitive type is defined in parser_type_t along with a
  * description of what is being transcribed. With most types, there is a dumper
