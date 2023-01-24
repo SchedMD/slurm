@@ -54,9 +54,10 @@ typedef struct topo_weight_info {
 
 /* Local functions */
 static List _build_node_weight_list(bitstr_t *node_bitmap);
-static void _cpus_to_use(uint16_t *avail_cpus, int64_t rem_cpus, int rem_nodes,
-			 job_details_t *details_ptr, avail_res_t *avail_res,
-			 int node_inx, uint16_t cr_type);
+static void _cpus_to_use(uint16_t *avail_cpus, int64_t rem_max_cpus,
+			 int rem_nodes, job_details_t *details_ptr,
+			 avail_res_t *avail_res, int node_inx,
+			 uint16_t cr_type);
 static bool _enough_nodes(int avail_nodes, int rem_nodes,
 			  uint32_t min_nodes, uint32_t req_nodes);
 static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
