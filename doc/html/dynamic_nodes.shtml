@@ -21,7 +21,7 @@ In order for srun and the slurmds to know how to communicate with the other
 nodes in a job allocation, slurmctld passes each node's address information
 (NodeName, NodeAddr, NodeHostname) -- known as the alias list -- to the srun
 and the srun forwards the list to the slurmds. This list is seen in the job's
-environment as the <b>SLURM_NODE_ALIASES</b> envirionment variable.
+environment as the <b>SLURM_NODE_ALIASES</b> environment variable.
 </p>
 
 <p>

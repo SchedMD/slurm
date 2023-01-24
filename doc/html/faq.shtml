@@ -226,9 +226,9 @@ report higher scalability, better performance and lower costs.</p>
 
 <p><a id="acronym"><b>What does "Slurm" stand for?</b></a><br>
 Nothing.
-<p>Originally, "SLURM" (completely capitalized) was an acryonym for
+<p>Originally, "SLURM" (completely capitalized) was an acronym for
 "Simple Linux Utility for Resource Management". In 2012 the preferred
-capitalization was changed to Slurm, and the acroynm was dropped &mdash; the
+capitalization was changed to Slurm, and the acronym was dropped &mdash; the
 developers preferred to think of Slurm as "sophisticated" rather than "Simple"
 by this point. And, as Slurm continued to expand it's scheduling capabilities,
 the "Resource Management" label was also viewed as outdated.</p>
@@ -1618,7 +1618,7 @@ core location directories.</p>
 /var/spool/abrt is pointing to an in-memory filespace like tmpfs, if the job
 caused an OOM, then the generation of the core may fill up your machine's
 memory and hang it. It is encouraged then to make coredumps go to a persistent
-storage. Be careful of multiple nodes writting a core dump to a shared
+storage. Be careful of multiple nodes writing a core dump to a shared
 filesystem since it may significantly impact it.
 </p>
 
@@ -2289,8 +2289,8 @@ However, with each release, we have been adding more places that use the
 serializer plugins. Because the list is evolving we do not plan on listing all
 the commands that require the plugins but will instead provide the error
 (shown above). To correct the issue, please make sure that Slurm is configured,
-compiled and installed with the relavent JSON or YAML library (or preferably
-both). Configure can be made to explicity request these libraries:
+compiled and installed with the relevant JSON or YAML library (or preferably
+both). Configure can be made to explicitly request these libraries:
 </p>
 <pre>
 ./configure --with-json=PATH --with-yaml=PATH $@

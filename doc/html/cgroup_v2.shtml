@@ -367,7 +367,7 @@ is done to add a pid to a step with <i>proctrack_g_add_pid</i>.</p>
 <p>In Control Group v2, the devices controller interfaces has been removed.
 Instead of controlling it through files, now it is required to create a bpf
 program of type BPF_PROG_TYPE_CGROUP_DEVICE and attach it to the desired
-cgroup. This program is created by slurmtepd dynamically and inserted into
+cgroup. This program is created by slurmstepd dynamically and inserted into
 the kernel with a bpf syscall, and describes which devices are allowed or
 denied for the job, step and task.</p>
 <p>The only devices that are managed are the ones described in the

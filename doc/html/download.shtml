@@ -93,7 +93,7 @@ There is a wrapper for Maui/Moab's showq command
 <li><b>Scripting interfaces</b></li>
 <ul>
 <li>A <b>Perl</b> interface is included in the Slurm distribution in the
-<i>contribs/perlapi</i> directory and packaged in the <i>perapi</i> RPM.</li>
+<i>contribs/perlapi</i> directory and packaged in the <i>perlapi</i> RPM.</li>
 
 <li><a href="https://github.com/pyslurm/">PySlurm</a> is a
 Python/Cython module to interface with Slurm.

@@ -121,7 +121,7 @@ allocated by <i>slurm_load_partitions</i>.</li>
 <li><b>slurm_get_errno</b> &mdash; Return the error code set by the
 last Slurm API function executed.</li>
 
-<li><b>slurm_perror</b> &mdash; Prin. Slurm error information to
+<li><b>slurm_perror</b> &mdash; Print Slurm error information to
 standard output.</li>
 
 <li><b>slurm_strerror</b> &mdash; Return a string describing a specific

@@ -74,7 +74,7 @@ ensure compatibility.
 <p>
 For <i>runc</i> and <i>crun</i>, there are two sets of examples provided.
 The OCI runtime specification only provides the <i>start</i> and <i>create</i>
-operations sequence, but these runtimes provides a much more efficent <i>run</i>
+operations sequence, but these runtimes provides a much more efficient <i>run</i>
 operation. Sites are strongly encouraged to use the <i>run</i> operation
 (if provided) as the <i>start</i> and <i>create</i> operations require that
 Slurm poll the OCI runtime to know when the containers have completed execution.
@@ -405,10 +405,10 @@ Plugins</a> that can be called at various points of job execution to
 support containers. Slurm is generally agnostic to SPANK based containers and
 can be made to start most, if not all, types. Any site using a plugin to start
 containers should not create or configure the "oci.conf" configuration file to
-deactive the OCI container functionality.
+deactivate the OCI container functionality.
 </p>
 
-<p>Some container developers have choosen a command line interface only which
+<p>Some container developers have chosen a command line interface only which
 requires users to explicitly execute the container solution.</p>
 
 <p>Links to several third party container solutions are provided below:
@@ -502,8 +502,8 @@ generally a logical grouping of containers for singular purpose. </p>
 
 <p>There is currently no direct support for Kubernetes Pods in Slurm.  Sites
 are encouraged to extract the OCI image from Kubernetes and then run the
-containers using Slurm. Users can create create jobs that start together using
-the "--dependency=" agument in <i>sbatch</i> to mirror the functionality of
+containers using Slurm. Users can create jobs that start together using
+the "--dependency=" argument in <i>sbatch</i> to mirror the functionality of
 Pods. Users can also use a larger allocation and then start each pod as a
 parallel step using <i>srun</i>.</p>
 

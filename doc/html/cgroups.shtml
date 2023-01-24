@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Control Ggroup in Slurm</h1>
+<h1>Control Group in Slurm</h1>
 
 <h2 id="overview">Control Group Overview
 <a class="slurm_link" href="#overview"></a>

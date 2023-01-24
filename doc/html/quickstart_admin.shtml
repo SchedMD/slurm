@@ -750,7 +750,7 @@ a major release.</p>
 
 <p>As an example, MPI stacks like OpenMPI and MVAPICH2 link against Slurm's
 PMI-1 and/or PMI-2 API, but not against our main public API. This means that at
-the time of writting this documentation, you don't need to recompile these
+the time of writing this documentation, you don't need to recompile these
 stacks after a Slurm upgrade. One known exception is MPICH. When MPICH is
 compiled with Slurm support and with the Hydra Process Manager, it will use
 the Slurm API to obtain job information. This link means you will need to
