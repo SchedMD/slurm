@@ -4172,6 +4172,7 @@ static int PARSE_FUNC(JOB_DESC_MSG_NODES)(const parser_t *const parser, void *ob
 			job->min_nodes = data_get_int(min);
 	} else {
 		int min, max;
+		char *job_size_str = NULL;
 
 		if (data_convert_type(src, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 			return on_error(PARSING, parser->type, args,
@@ -4179,15 +4180,19 @@ static int PARSE_FUNC(JOB_DESC_MSG_NODES)(const parser_t *const parser, void *ob
 					"Expected string instead of %s for node counts",
 					data_type_to_string(data_get_type(src)));
 
-		if (!verify_node_count(data_get_string(src), &min, &max, NULL))
+		if (!verify_node_count(data_get_string(src), &min, &max,
+				       &job_size_str)) {
+			xfree(job_size_str);
 			return on_error(PARSING, parser->type, args,
 					ESLURM_DATA_CONV_FAILED,
 					"verify_node_count()",
 					__func__, "Unknown format: %s",
 					data_get_string(src));
+		}
 
 		job->min_nodes = min;
 		job->max_nodes = max;
+		job->job_size_str = job_size_str;
 	}
 
 	if (job->min_nodes > job->max_nodes)
@@ -4201,7 +4206,9 @@ static int DUMP_FUNC(JOB_DESC_MSG_NODES)(const parser_t *const parser, void *obj
 {
 	job_desc_msg_t *job = obj;
 
-	if (job->min_nodes != job->max_nodes)
+	if (job->job_size_str) {
+		data_set_string(dst, job->job_size_str);
+	} else if (job->min_nodes != job->max_nodes)
 		data_set_string_own(dst,
 				    xstrdup_printf("%d-%d", job->min_nodes,
 						   job->max_nodes));
@@ -5220,6 +5227,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(UINT32_NO_VAL, het_job_offset, "het_job_offset", NULL),
 	add_parse(UINT32, job_id, "job_id", NULL),
 	add_parse(JOB_RES_PTR, job_resrcs, "job_resources", NULL),
+	add_parse(CSV_LIST, job_size_str, "job_size_str", NULL),
 	add_parse(JOB_STATE, job_state, "job_state", NULL),
 	add_parse(UINT64, last_sched_eval, "last_sched_evaluation", NULL),
 	add_parse(STRING, licenses, "licenses", NULL),
