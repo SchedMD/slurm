@@ -552,6 +552,30 @@ are cleared. Any non-NodeFeaturesPlugin features are active by default and can
 be used as a label.
 </p>
 
-<p style="text-align:center;">Last modified 11 January 2023</p>
+<p>
+Example:
+<pre>
+slurm.conf:
+NodeFeaturesPlugin=node_features/helpers
+
+NodeName=cloud[1-5] ... State=CLOUD Feature=f1,f2,l1
+NodeName=cloud[6-10] ... State=CLOUD Feature=f3,f4,l2
+
+helpers.conf:
+NodeName=cloud[1-5] Feature=f1,f2 Helper=/bin/true
+NodeName=cloud[6-10] Feature=f3,f4 Helper=/bin/true
+</pre>
+Features f1, f2, f3, and f4 are changeable features and are defined on the node
+lines in the slurm.conf because <b>CLOUD</b> nodes do not register before being
+allocated. By setting the <i>Helper</i> script to /bin/true, the slurmd's will
+not report any active features to the controller and the controller will manage
+all the active features. If the <i>Helper</i> is set to a script that reports
+the active features, the controller will validate that the reported active
+features are a super set of the node's active changeable features in the
+controller.
+Features l1 and l2 will always be active and can be used as a selectable labels.
+</p>
+
+<p style="text-align:center;">Last modified 23 January 2023</p>
 
 <!--#include virtual="footer.txt"-->
