@@ -909,10 +909,40 @@ static void _set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state)
 	slurm_mutex_unlock(&step->state_mutex);
 }
 
+static bool _need_join_container()
+{
+	/*
+	 * To avoid potential problems with the job_container/tmpfs and
+	 * home_xauthority, don't join the container to create the xauthority
+	 * file when it is set.
+	 */
+	if ((xstrcasestr(slurm_conf.job_container_plugin, "tmpfs")) &&
+	    (!xstrcasestr(slurm_conf.x11_params, "home_xauthority"))) {
+		return true;
+	}
+
+	return false;
+}
+
+static void _shutdown_x11_forward(stepd_step_rec_t *step)
+{
+	struct priv_state sprivs = { 0 };
+
+	if (_drop_privileges(step, true, &sprivs, false) < 0) {
+		error("%s: Unable to drop privileges", __func__);
+		return;
+	}
+
+	if (shutdown_x11_forward(step) != SLURM_SUCCESS)
+		error("%s: x11 forward shutdown failed", __func__);
+
+	if (_reclaim_privileges(&sprivs) < 0)
+		error("%s: Unable to reclaim privileges", __func__);
+}
+
 static void *_x11_signal_handler(void *arg)
 {
 	stepd_step_rec_t *step = (stepd_step_rec_t *) arg;
-	struct priv_state sprivs = { 0 };
 	int sig, status;
 	sigset_t set;
 	pid_t cpid, pid;
@@ -928,16 +958,19 @@ static void *_x11_signal_handler(void *arg)
 		switch (sig) {
 		case SIGTERM:	/* kill -15 */
 			debug("Terminate signal (SIGTERM) received");
+			if (!_need_join_container()) {
+				_shutdown_x11_forward(step);
+				return NULL;
+			}
 			if ((cpid = fork()) == 0) {
-				container_g_join(step->step_id.job_id,
-						 step->uid);
-				if (_drop_privileges(step, true, &sprivs,
-						     false) < 0) {
-					error("%s: Unable to drop privileges",
+				if (container_g_join(step->step_id.job_id,
+						     step->uid) !=
+				    SLURM_SUCCESS) {
+					error("%s: cannot join container",
 					      __func__);
 					_exit(1);
 				}
-				shutdown_x11_forward(step);
+				_shutdown_x11_forward(step);
 				_exit(0);
 			} else if (cpid < 0) {
 				error("%s: fork: %m", __func__);
@@ -958,6 +991,29 @@ static void *_x11_signal_handler(void *arg)
 			error("Invalid signal (%d) received", sig);
 		}
 	}
+}
+
+static int _set_xauthority(stepd_step_rec_t *step)
+{
+	struct priv_state sprivs = { 0 };
+
+	if (_drop_privileges(step, true, &sprivs, false) < 0) {
+		error("%s: Unable to drop privileges before xauth", __func__);
+		return SLURM_ERROR;
+	}
+
+	if (x11_set_xauth(step->x11_xauthority, step->x11_magic_cookie,
+			  step->x11_display)) {
+		error("%s: failed to run xauth", __func__);
+		return SLURM_ERROR;
+	}
+
+	if (_reclaim_privileges(&sprivs) < 0) {
+		error("%s: Unable to reclaim privileges after xauth", __func__);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 static int _spawn_job_container(stepd_step_rec_t *step)
@@ -1026,6 +1082,46 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 		      step->x11_xauthority);
 	}
 
+	/*
+	 * When using job_container/tmpfs we need to get into
+	 * the correct namespace or .Xauthority won't be visible
+	 * in /tmp from inside the job.
+	 */
+	if (step->x11) {
+		if (_need_join_container()) {
+			/*
+			 * The fork is necessary because we cannot join a
+			 * namespace if we are multithreaded. Also we need to
+			 * wait for the child to end before proceeding or there
+			 * can be a timing race with srun starting X11 apps very
+			 * fast.
+			 */
+			pid = fork();
+			if (pid == 0) {
+				if (container_g_join(jobid, step->uid) !=
+				    SLURM_SUCCESS)
+					_exit(1);
+				_exit(_set_xauthority(step));
+			} else if (pid < 0) {
+				error("fork: %m");
+				rc = SLURM_ERROR;
+			}
+			if ((waitpid(pid, &status, 0) != pid) ||
+			    WEXITSTATUS(status)) {
+				error("%s: Xauthority setup failed", __func__);
+				rc = SLURM_ERROR;
+			}
+		} else {
+			rc = _set_xauthority(step);
+		}
+
+		if (rc != SLURM_SUCCESS) {
+			_set_job_state(step, SLURMSTEPD_STEP_ENDING);
+			close_slurmd_conn();
+			goto fail1;
+		}
+	}
+
 	pid = fork();
 	if (pid == 0) {
 		setpgid(0, 0);
@@ -1033,31 +1129,6 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 		set_oom_adj(0);	/* the tasks may be killed by OOM */
 		acct_gather_profile_g_child_forked();
 		_unblock_signals();
-
-		if (step->x11) {
-			struct priv_state sprivs = { 0 };
-
-			container_g_join(jobid, step->uid);
-			if (_drop_privileges(step, true, &sprivs, false) < 0) {
-				error("%s: Unable to drop privileges before xauth",
-				      __func__);
-				_exit(1);
-			}
-
-			if (x11_set_xauth(step->x11_xauthority,
-					  step->x11_magic_cookie,
-					  step->x11_display)) {
-				error("%s: failed to run xauth", __func__);
-				_exit(1);
-			}
-
-			if (_reclaim_privileges(&sprivs) < 0) {
-				error("%s: Unable to reclaim privileges after xauth",
-				      __func__);
-				_exit(1);
-			}
-		}
-
 		/*
 		 * Need to exec() something for proctrack/linuxproc to
 		 * work, it will not keep a process named "slurmstepd"
@@ -1159,8 +1230,10 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	task_g_post_step(step);
 
 fail1:
-	if (x11_signal_handler_thread)
+	if (x11_signal_handler_thread) {
 		(void) pthread_kill(x11_signal_handler_thread, SIGTERM);
+		pthread_join(x11_signal_handler_thread, NULL);
+	}
 
 	debug2("%s: Before call to spank_fini()", __func__);
 	if (spank_fini(step) < 0)

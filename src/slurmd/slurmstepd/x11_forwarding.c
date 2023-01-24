@@ -197,21 +197,25 @@ static char *_get_home(uid_t uid)
 
 extern int shutdown_x11_forward(stepd_step_rec_t *step)
 {
+	int rc = SLURM_SUCCESS;
+
 	debug("x11 forwarding shutdown in progress");
 	eio_signal_shutdown(eio_handle);
 
 	if (step->x11_xauthority) {
 		if (local_xauthority) {
-			if (unlink(step->x11_xauthority))
+			if (unlink(step->x11_xauthority)) {
 				error("%s: problem unlinking xauthority file %s: %m",
 				      __func__, step->x11_xauthority);
+				rc = SLURM_ERROR;
+			}
 		} else
-			x11_delete_xauth(step->x11_xauthority, hostname,
-					 step->x11_display);
+			rc = x11_delete_xauth(step->x11_xauthority, hostname,
+					      step->x11_display);
 	}
 
 	info("x11 forwarding shutdown complete");
-	_exit(0);
+	return rc;
 }
 
 /*
