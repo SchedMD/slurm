@@ -436,11 +436,6 @@ extern void run_health_check(void)
 		             slurm_conf.health_check_interval;
 		node_limit = MAX(node_limit, 10);
 	}
-	if ((node_states != HEALTH_CHECK_NODE_ANY) &&
-	    (node_states != HEALTH_CHECK_NODE_IDLE)) {
-		/* Update each node's alloc_cpus count */
-		select_g_select_nodeinfo_set_all();
-	}
 
 	check_agent_args = xmalloc (sizeof (agent_arg_t));
 	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
