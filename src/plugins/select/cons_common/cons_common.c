@@ -1093,6 +1093,10 @@ extern int select_p_node_init()
 		      slurm_conf.select_type_param);
 	}
 
+	preempt_for_licenses = false;
+	if (xstrcasestr(slurm_conf.preempt_params, "reclaim_licenses"))
+		preempt_for_licenses = true;
+
 	preempt_strict_order = false;
 	if (xstrcasestr(slurm_conf.preempt_params, "strict_order") ||
 	    xstrcasestr(slurm_conf.sched_params, "preempt_strict_order"))

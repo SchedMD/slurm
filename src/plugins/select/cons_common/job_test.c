@@ -69,6 +69,7 @@ typedef struct {
 uint64_t def_cpu_per_gpu = 0;
 uint64_t def_mem_per_gpu = 0;
 bool preempt_strict_order = false;
+bool preempt_for_licenses = false;
 int preempt_reorder_cnt	= 1;
 
 /* When any cores on a node are removed from being available for a job,
@@ -859,12 +860,12 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		if (license_rc == SLURM_ERROR) {
 			log_flag(SELECT_TYPE,
 				 "test 0 fail: insufficient licenses configured");
-			return SLURM_ERROR;
+			return ESLURM_LICENSES_UNAVAILABLE;
 		}
 		if (!test_only && license_rc == EAGAIN) {
 			log_flag(SELECT_TYPE,
 				 "test 0 fail: insufficient licenses available");
-			return SLURM_ERROR;
+			return ESLURM_LICENSES_UNAVAILABLE;
 		}
 	}
 
@@ -1936,6 +1937,10 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		return SLURM_SUCCESS;
 	}
 
+	/* Don't try preempting for licenses if not enabled */
+	if ((rc == ESLURM_LICENSES_UNAVAILABLE) && !preempt_for_licenses)
+		preemptee_candidates = NULL;
+
 	if (!preemptee_candidates && (job_ptr->bit_flags & TEST_NOW_ONLY)) {
 		FREE_NULL_BITMAP(orig_map);
 		return SLURM_ERROR;
@@ -2152,6 +2157,10 @@ top:	orig_node_map = bit_copy(save_node_map);
 		       select_part_record, select_node_usage,
 		       cluster_license_list, exc_cores, false, false,
 		       preempt_mode);
+
+	/* Don't try preempting for licenses if not enabled */
+	if ((rc == ESLURM_LICENSES_UNAVAILABLE) && !preempt_for_licenses)
+		preemptee_candidates = NULL;
 
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos) {
 		/* Determine QOS preempt mode of first job */

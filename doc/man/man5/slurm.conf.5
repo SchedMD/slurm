@@ -2752,6 +2752,14 @@ lower than this value will be marked as preemptable.
 .IP
 
 .TP
+\fBreclaim_licenses\fR
+If set, jobs may be preempted to reclaim licenses. Otherwise jobs requesting
+busy licenses will have to wait even if they have premption priority.
+The logic to support this option is only available in the select/cons_res and
+select/cons_tres plugins.
+.IP
+
+.TP
 \fBreorder_count=#\fR
 Specify how many attempts should be made in reordering preemptable jobs to
 minimize the count of jobs preempted.
