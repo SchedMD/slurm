@@ -3294,7 +3294,7 @@ extern void slurm_setup_addr(slurm_addr_t *sin, uint16_t port)
  * IN: s - socket
  * IN: port - port number to attempt to bind
  * IN: local - only bind to localhost if true
- * OUT: true/false if port was bound successfully
+ * OUT: port was bound successfully or -1 on failure
  */
 extern int sock_bind_listen_range(int s, uint16_t *range, bool local)
 {

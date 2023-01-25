@@ -213,6 +213,11 @@ extern int slurm_init_msg_engine_ports(uint16_t *);
 
 /*
  * bind() and then listen() to any port in a given range of ports
+ *
+ * IN: s - socket
+ * IN: port - port number to attempt to bind
+ * IN: local - only bind to localhost if true
+ * OUT: port was bound successfully or -1 on failure
  */
 extern int sock_bind_listen_range(int s, uint16_t *range, bool local);
 
