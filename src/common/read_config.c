@@ -3430,6 +3430,18 @@ rwfail:
 	FREE_NULL_BUFFER(conf_buf);
 }
 
+extern void read_config_add_key_pair(list_t *key_pair_list,
+				     char *key,
+				     char *value)
+{
+	config_key_pair_t *key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup(key);
+	key_pair->value = xstrdup(value);
+
+	if (key_pair_list)
+		list_append(key_pair_list, key_pair);
+}
+
 extern void slurm_conf_init_stepd(void)
 {
 	if (slurm_conf.propagate_rlimits_except) {

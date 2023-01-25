@@ -381,6 +381,20 @@ extern int read_conf_send_stepd(int fd);
 extern void read_conf_recv_stepd(int fd);
 
 /*
+ * Allocate memory for a config_key_pair_t pointer and initialize it by
+ * duplicating the key-value arguments. Append the resulting pair to the
+ * argument list if it's not NULL.
+ *
+ * IN: list_t *key_pair_list
+ * IN: char *key
+ * IN: char *value
+ */
+extern void read_config_add_key_pair(list_t *key_pair_list,
+				     char *key,
+				     char *value);
+
+
+/*
  * slurm_conf_init_stepd - Since the stepd does not read in the file and
  * receives it from the slurm we need to call a different function to do this.
  */
