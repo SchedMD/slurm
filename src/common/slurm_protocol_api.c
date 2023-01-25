@@ -2059,7 +2059,7 @@ extern int slurm_send_node_msg(int fd, slurm_msg_t *msg)
 		      __func__, fd, rpc_num2string(msg->msg_type));
 	} else {
 		int err = errno;
-		char *peer = fd_resolve_peer(fd);
+		char *peer = fd_resolve_path(fd);
 		error("%s: [%s] slurm_bufs_sendto(msg_type=%s) failed: %s",
 		      __func__, peer, rpc_num2string(msg->msg_type),
 		      slurm_strerror(err));
