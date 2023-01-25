@@ -2083,7 +2083,7 @@ extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level)
 }
 
 /* This reorders the list into a alphabetical hierarchy returned in a
- * separate list.  The orginal list is not affected */
+ * separate list. The original list is not affected. */
 extern List slurmdb_get_hierarchical_sorted_assoc_list(
 	List assoc_list, bool use_lft)
 {
