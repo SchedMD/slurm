@@ -7517,17 +7517,6 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-/*
- * Translate GRES flag to string.
- * NOT reentrant
- */
-static char *_gres_flags_str(uint16_t flags)
-{
-	if (flags & GRES_NO_CONSUME)
-		return "no_consume";
-	return "";
-}
-
 static void _job_state_log(gres_state_t *gres_state_job, uint32_t job_id)
 {
 	gres_job_state_t *gres_js = gres_state_job->gres_data;
@@ -7538,7 +7527,7 @@ static void _job_state_log(gres_state_t *gres_state_job, uint32_t job_id)
 	info("gres_job_state gres:%s(%u) type:%s(%u) job:%u flags:%s",
 	     gres_state_job->gres_name, gres_state_job->plugin_id,
 	     gres_js->type_name,
-	     gres_js->type_id, job_id, _gres_flags_str(gres_js->flags));
+	     gres_js->type_id, job_id, gres_flags2str(gres_js->flags));
 	if (gres_js->cpus_per_gres)
 		info("  cpus_per_gres:%u", gres_js->cpus_per_gres);
 	else if (gres_js->def_cpus_per_gres)
@@ -9364,7 +9353,7 @@ static void _step_state_log(gres_step_state_t *gres_ss,
 	xassert(gres_ss);
 	info("gres:%s type:%s(%u) %ps flags:%s state", gres_name,
 	     gres_ss->type_name, gres_ss->type_id, step_id,
-	     _gres_flags_str(gres_ss->flags));
+	     gres_flags2str(gres_ss->flags));
 	if (gres_ss->cpus_per_gres)
 		info("  cpus_per_gres:%u", gres_ss->cpus_per_gres);
 	if (gres_ss->gres_per_step)
