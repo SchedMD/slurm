@@ -69,7 +69,8 @@ typedef struct {
 } bf_licenses_find_resv_t;
 
 /* Print all licenses on a list */
-static void _licenses_print(char *header, List licenses, job_record_t *job_ptr)
+static void _licenses_print(char *header, list_t *licenses,
+			    job_record_t *job_ptr)
 {
 	list_itr_t *iter;
 	licenses_t *license_entry;
@@ -129,12 +130,12 @@ static int _license_find_remote_rec(void *x, void *key)
 }
 
 /* Given a license string, return a list of license_t records */
-static List _build_license_list(char *licenses, bool *valid)
+static list_t *_build_license_list(char *licenses, bool *valid)
 {
 	int i;
 	char *end_num, *tmp_str, *token, *last;
 	licenses_t *license_entry;
-	List lic_list;
+	list_t *lic_list;
 
 	*valid = true;
 	if ((licenses == NULL) || (licenses[0] == '\0'))
@@ -193,7 +194,7 @@ static List _build_license_list(char *licenses, bool *valid)
  *
  * RET string representation of licenses. Must be destroyed by caller.
  */
-extern char *license_list_to_string(List license_list)
+extern char *license_list_to_string(list_t *license_list)
 {
 	char *sep = "";
 	char *licenses = NULL;
@@ -254,7 +255,7 @@ extern int license_update(char *licenses)
 {
         list_itr_t *iter;
         licenses_t *license_entry, *match;
-        List new_list;
+        list_t *new_list;
         bool valid = true;
 
         new_list = _build_license_list(licenses, &valid);
@@ -422,7 +423,7 @@ extern void license_remove_remote(slurmdb_res_rec_t *rec)
 	slurm_mutex_unlock(&license_mutex);
 }
 
-extern void license_sync_remote(List res_list)
+extern void license_sync_remote(list_t *res_list)
 {
 	slurmdb_res_rec_t *rec = NULL;
 	licenses_t *license_entry;
@@ -508,13 +509,13 @@ extern void license_free(void)
  *             are configured (though not necessarily available now)
  * RET license_list, must be destroyed by caller
  */
-extern List license_validate(char *licenses, bool validate_configured,
-			     bool validate_existing,
-			     uint64_t *tres_req_cnt, bool *valid)
+extern list_t *license_validate(char *licenses, bool validate_configured,
+				bool validate_existing, uint64_t *tres_req_cnt,
+				bool *valid)
 {
 	list_itr_t *iter;
 	licenses_t *license_entry, *match;
-	List job_license_list;
+	list_t *job_license_list;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_req;
 	int tres_pos;
@@ -670,11 +671,11 @@ extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
  * IN license_list_src - job license list to be copied
  * RET a copy of the license list
  */
-extern List license_copy(List license_list_src)
+extern list_t *license_copy(List license_list_src)
 {
 	licenses_t *license_entry_src, *license_entry_dest;
 	list_itr_t *iter;
-	List license_list_dest = NULL;
+	list_t *license_list_dest = NULL;
 
 	if (!license_list_src)
 		return license_list_dest;
@@ -774,7 +775,7 @@ extern int license_job_return(job_record_t *job_ptr)
  * license_list_overlap - test if there is any overlap in licenses
  *	names found in the two lists
  */
-extern bool license_list_overlap(List list_1, List list_2)
+extern bool license_list_overlap(list_t *list_1, List list_2)
 {
 	list_itr_t *iter;
 	licenses_t *license_entry;
@@ -874,7 +875,7 @@ extern uint32_t get_total_license_cnt(char *name)
 /* node_read should be locked before coming in here
  * returns 1 if change happened.
  */
-extern char *licenses_2_tres_str(List license_list)
+extern char *licenses_2_tres_str(list_t *license_list)
 {
 	list_itr_t *itr;
 	slurmdb_tres_rec_t *tres_rec;
@@ -915,7 +916,7 @@ extern char *licenses_2_tres_str(List license_list)
 	return tres_str;
 }
 
-extern void license_set_job_tres_cnt(List license_list,
+extern void license_set_job_tres_cnt(list_t *license_list,
 				     uint64_t *tres_cnt,
 				     bool locked)
 {
@@ -1018,9 +1019,9 @@ static int _bf_licenses_find_resv(void *x, void *key)
 	return 1;
 }
 
-extern List bf_licenses_initial(bool bf_running_job_reserve)
+extern list_t *bf_licenses_initial(bool bf_running_job_reserve)
 {
-	List bf_list;
+	list_t *bf_list;
 	list_itr_t *iter;
 	licenses_t *license_entry;
 	bf_license_t *bf_entry;

@@ -74,7 +74,7 @@ extern int license_update(char *licenses);
 extern void license_add_remote(slurmdb_res_rec_t *rec);
 extern void license_update_remote(slurmdb_res_rec_t *rec);
 extern void license_remove_remote(slurmdb_res_rec_t *rec);
-extern void license_sync_remote(List res_list);
+extern void license_sync_remote(list_t *res_list);
 
 /* Free memory associated with licenses on this system */
 extern void license_free(void);
@@ -87,7 +87,7 @@ extern void license_free_rec(void *x);
  * IN license_list_src - job license list to be copied
  * RET a copy of the license list
  */
-extern List license_copy(List license_list_src);
+extern list_t *license_copy(list_t *license_list_src);
 
 /*
  * license_job_get - Get the licenses required for a job
@@ -133,15 +133,15 @@ extern int license_job_test(job_record_t *job_ptr, time_t when,
  *             are configured (though not necessarily available now)
  * RET license_list, must be destroyed by caller
  */
-extern List license_validate(char *licenses, bool validate_configured,
-			     bool validate_existing,
-			     uint64_t *tres_req_cnt, bool *valid);
+extern list_t *license_validate(char *licenses, bool validate_configured,
+				bool validate_existing,
+				uint64_t *tres_req_cnt, bool *valid);
 
 /*
  * license_list_overlap - test if there is any overlap in licenses
  *	names found in the two lists
  */
-extern bool license_list_overlap(List list_1, List list_2);
+extern bool license_list_overlap(list_t *list_1, list_t *list_2);
 
 /*
  * Given a list of license_t records, return a license string.
@@ -153,7 +153,7 @@ extern bool license_list_overlap(List list_1, List list_2);
  *
  * RET string representation of licenses. Must be destroyed by caller.
  */
-extern char *license_list_to_string(List license_list);
+extern char *license_list_to_string(list_t *license_list);
 
 /* pack_all_licenses()
  *
@@ -175,14 +175,14 @@ extern uint32_t get_total_license_cnt(char *name);
 /* node_read should be locked before coming in here
  * returns tres_str of the license_list.
  */
-extern char *licenses_2_tres_str(List license_list);
+extern char *licenses_2_tres_str(list_t *license_list);
 
 
 /* node_read should be locked before coming in here
  * fills in tres_cnt of the license_list.
  * locked if assoc_mgr tres read lock is locked or not.
  */
-extern void license_set_job_tres_cnt(List license_list,
+extern void license_set_job_tres_cnt(list_t *license_list,
 				     uint64_t *tres_cnt,
 				     bool locked);
 
