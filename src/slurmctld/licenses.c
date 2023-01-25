@@ -71,7 +71,7 @@ typedef struct {
 /* Print all licenses on a list */
 static void _licenses_print(char *header, List licenses, job_record_t *job_ptr)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	licenses_t *license_entry;
 
 	if (licenses == NULL)
@@ -197,7 +197,7 @@ extern char *license_list_to_string(List license_list)
 {
 	char *sep = "";
 	char *licenses = NULL;
-	ListIterator iter;
+	list_itr_t *iter;
 	licenses_t *license_entry;
 
 	if (!license_list)
@@ -252,7 +252,7 @@ extern int license_init(char *licenses)
  * Remove all previously allocated licenses */
 extern int license_update(char *licenses)
 {
-        ListIterator iter;
+        list_itr_t *iter;
         licenses_t *license_entry, *match;
         List new_list;
         bool valid = true;
@@ -386,7 +386,7 @@ extern void license_update_remote(slurmdb_res_rec_t *rec)
 extern void license_remove_remote(slurmdb_res_rec_t *rec)
 {
 	licenses_t *license_entry;
-	ListIterator iter;
+	list_itr_t *iter;
 	char *name;
 
 	xassert(rec);
@@ -426,7 +426,7 @@ extern void license_sync_remote(List res_list)
 {
 	slurmdb_res_rec_t *rec = NULL;
 	licenses_t *license_entry;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	slurm_mutex_lock(&license_mutex);
 	if (res_list && !cluster_license_list) {
@@ -436,7 +436,7 @@ extern void license_sync_remote(List res_list)
 
 	iter = list_iterator_create(cluster_license_list);
 	if (res_list) {
-		ListIterator iter2 = list_iterator_create(res_list);
+		list_itr_t *iter2 = list_iterator_create(res_list);
 		while ((rec = list_next(iter2))) {
 			char *name;
 			if (rec->type != SLURMDB_RESOURCE_LICENSE)
@@ -512,7 +512,7 @@ extern List license_validate(char *licenses, bool validate_configured,
 			     bool validate_existing,
 			     uint64_t *tres_req_cnt, bool *valid)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	licenses_t *license_entry, *match;
 	List job_license_list;
 	static bool first_run = 1;
@@ -621,7 +621,7 @@ extern void license_job_merge(job_record_t *job_ptr)
  */
 extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	licenses_t *license_entry, *match;
 	int rc = SLURM_SUCCESS, resv_licenses;
 
@@ -673,7 +673,7 @@ extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
 extern List license_copy(List license_list_src)
 {
 	licenses_t *license_entry_src, *license_entry_dest;
-	ListIterator iter;
+	list_itr_t *iter;
 	List license_list_dest = NULL;
 
 	if (!license_list_src)
@@ -698,7 +698,7 @@ extern List license_copy(List license_list_src)
  */
 extern int license_job_get(job_record_t *job_ptr)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	licenses_t *license_entry, *match;
 	int rc = SLURM_SUCCESS;
 
@@ -734,7 +734,7 @@ extern int license_job_get(job_record_t *job_ptr)
  */
 extern int license_job_return(job_record_t *job_ptr)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	licenses_t *license_entry, *match;
 	int rc = SLURM_SUCCESS;
 
@@ -776,7 +776,7 @@ extern int license_job_return(job_record_t *job_ptr)
  */
 extern bool license_list_overlap(List list_1, List list_2)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	licenses_t *license_entry;
 	bool match = false;
 
@@ -806,7 +806,7 @@ get_all_license_info(char **buffer_ptr,
                      uid_t uid,
                      uint16_t protocol_version)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	licenses_t *lic_entry;
 	uint32_t lics_packed;
 	int tmp_offset;
@@ -876,7 +876,7 @@ extern uint32_t get_total_license_cnt(char *name)
  */
 extern char *licenses_2_tres_str(List license_list)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_tres_rec_t *tres_rec;
 	licenses_t *license_entry;
 	char *tres_str = NULL;
@@ -919,7 +919,7 @@ extern void license_set_job_tres_cnt(List license_list,
 				     uint64_t *tres_cnt,
 				     bool locked)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	licenses_t *license_entry;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_rec;
@@ -1021,7 +1021,7 @@ static int _bf_licenses_find_resv(void *x, void *key)
 extern List bf_licenses_initial(bool bf_running_job_reserve)
 {
 	List bf_list;
-	ListIterator iter;
+	list_itr_t *iter;
 	licenses_t *license_entry;
 	bf_license_t *bf_entry;
 
@@ -1050,7 +1050,7 @@ extern char *bf_licenses_to_string(bf_licenses_t *licenses_list)
 {
 	char *sep = "";
 	char *licenses = NULL;
-	ListIterator iter;
+	list_itr_t *iter;
 	bf_license_t *entry;
 
 	if (!licenses_list)
@@ -1073,7 +1073,7 @@ extern char *bf_licenses_to_string(bf_licenses_t *licenses_list)
 extern bf_licenses_t *slurm_bf_licenses_copy(bf_licenses_t *licenses_src)
 {
 	bf_license_t *entry_src, *entry_dest;
-	ListIterator iter;
+	list_itr_t *iter;
 	bf_licenses_t *licenses_dest = NULL;
 
 	if (!licenses_src)
@@ -1098,7 +1098,7 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 				     job_record_t *job_ptr)
 {
 	licenses_t *job_entry;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	xassert(job_ptr);
 
@@ -1155,7 +1155,7 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 				       job_record_t *job_ptr)
 {
 	licenses_t *resv_entry;
-	ListIterator iter;
+	list_itr_t *iter;
 
 	xassert(job_ptr);
 
@@ -1192,7 +1192,7 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 				    job_record_t *job_ptr)
 {
-	ListIterator iter;
+	list_itr_t *iter;
 	licenses_t *need;
 	bool avail = true;
 
@@ -1241,7 +1241,7 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b)
 {
 	bf_license_t *entry_a, *entry_b;
-	ListIterator iter;
+	list_itr_t *iter;
 	bool equivalent = true;
 
 	iter = list_iterator_create(a);
