@@ -207,6 +207,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Job dependency problem"				},
 	{ ERRTAB_ENTRY(ESLURM_BATCH_ONLY),
 	  "Only batch jobs are accepted or processed"		},
+	{ ERRTAB_ENTRY(ESLURM_LICENSES_UNAVAILABLE),
+	  "Licenses currently unavailable"			},
 	{ ERRTAB_ENTRY(ESLURM_JOB_HELD),
 	  "Job is in held state, pending scheduler release"	},
 	{ ERRTAB_ENTRY(ESLURM_INVALID_TASK_MEMORY),
