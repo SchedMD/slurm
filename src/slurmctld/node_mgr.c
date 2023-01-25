@@ -831,7 +831,6 @@ unpack_error:
 	goto fini;
 }
 
-
 /* list_compare_config - compare two entry from the config list based upon
  *	weight, see common/list.h for documentation */
 int list_compare_config (void *config_entry1, void *config_entry2)
