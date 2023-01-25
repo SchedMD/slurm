@@ -141,7 +141,7 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
  * IN job_gres_list  - job's gres_list built by gres_job_state_validate()
  * IN node_gres_list - node's gres_list built by gres_node_config_validate()
  * IN use_total_gres - if set then consider all gres resources as available,
- *		       and none are commited to running jobs
+ *		       and none are committed to running jobs
  * IN cpu_bitmap     - Identification of available CPUs (NULL if no restriction)
  * IN cpu_start_bit  - index into cpu_bitmap for this node's first CPU
  * IN cpu_end_bit    - index into cpu_bitmap for this node's last CPU

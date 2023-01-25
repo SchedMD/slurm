@@ -1008,7 +1008,7 @@ enum node_states {
 				 * level. Jobs will not be co-allocated
 				 * within a board. */
 #define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is
-				 * not over-commited when selected as a CR. */
+				 * not over-committed when selected as a CR. */
 #define CR_OTHER_CONS_RES    0x0020 /* if layering select plugins use
 				     * cons_res instead of linear (default)
 				     */

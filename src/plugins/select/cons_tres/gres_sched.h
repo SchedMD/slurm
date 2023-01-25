@@ -91,7 +91,7 @@ extern bool gres_sched_sufficient(List job_gres_list, List sock_gres_list);
  * IN job_gres_list   - job's gres_list built by gres_job_state_validate()
  * IN node_gres_list  - node's gres_list built by gres_node_config_validate()
  * IN use_total_gres  - if set then consider all gres resources as available,
- *			and none are commited to running jobs
+ *			and none are committed to running jobs
  * IN/OUT core_bitmap - Identification of available cores on this node
  * IN sockets         - Count of sockets on the node
  * IN cores_per_sock  - Count of cores per socket on this node
