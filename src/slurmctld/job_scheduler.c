@@ -2026,7 +2026,7 @@ fail_this_part:	if (fail_by_part) {
 	}
 	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 	unlock_slurmctld(job_write_lock);
-	END_TIMER2("schedule");
+	END_TIMER2(__func__);
 
 	_do_diag_stats(DELTA_TIMER);
 
