@@ -1019,7 +1019,7 @@ extern void launch_common_set_stdio_fds(srun_job_t *job,
 	}
 
 	/*
-	 * create seperate stderr file descriptor only if stderr is not sharing
+	 * create separate stderr file descriptor only if stderr is not sharing
 	 * the stdout file descriptor
 	 */
 	if (err_shares_out) {

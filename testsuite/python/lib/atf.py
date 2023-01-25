@@ -1160,7 +1160,7 @@ def get_nodes(live=True, quiet=False, **run_command_kwargs):
         # Convert keys to lower case so we can do a case-insensitive search
         lower_config_dict = dict((key.lower(), value) for key, value in config_dict.items())
 
-        # DEFAULT will be included seperately
+        # DEFAULT will be included separately
         if 'nodename' in lower_config_dict:
             for node_expression, node_expression_dict in lower_config_dict['nodename'].items():
                 port_expression = node_expression_dict['Port'] if 'Port' in node_expression_dict else ''

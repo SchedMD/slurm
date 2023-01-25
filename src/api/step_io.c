@@ -1006,7 +1006,7 @@ _init_stdio_eio_objs(slurm_step_io_fds_t fds, client_io_t *cio)
 	}
 
 	/*
-	 * build a seperate stderr eio_obj_t only if stderr is not sharing
+	 * build a separate stderr eio_obj_t only if stderr is not sharing
 	 * the stdout file descriptor and task filtering option.
 	 */
 	if (fds.err.fd == fds.out.fd

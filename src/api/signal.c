@@ -283,7 +283,7 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
 
 	/*
 	 * The controller won't give us info about the batch script job step,
-	 * so we need to handle that seperately.
+	 * so we need to handle that separately.
 	 */
 	if (step_id == SLURM_BATCH_SCRIPT) {
 		rc = _signal_batch_script_step(alloc_info, signal);
@@ -341,7 +341,7 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 
 	/*
 	 * The controller won't give us info about the batch script job step,
-	 * so we need to handle that seperately.
+	 * so we need to handle that separately.
 	 */
 	if (step_id == SLURM_BATCH_SCRIPT) {
 		rc = _terminate_batch_script_step(alloc_info);
