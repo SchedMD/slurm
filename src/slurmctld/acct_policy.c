@@ -4739,7 +4739,7 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 		/*
 		 * If the job was previously accruing time (for example,
 		 * ACCRUE_ALWAYS could have been on or not having
-		 * ACCOUTING_ENFORCE_LIMITS), we need to remove the accrue_time.
+		 * ACCOUNTING_ENFORCE_LIMITS), we need to remove the accrue_time.
 		 */
 		if (details_ptr)
 			details_ptr->accrue_time = 0;

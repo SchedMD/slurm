@@ -33,7 +33,7 @@ set file_prog2       "$test_name.prog2"
 
 set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
 if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
-	skip "This test can not be run with nosteps or nojobs (AccoutingStorageEnforce)"
+	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
 }
 
 proc cleanup {} {

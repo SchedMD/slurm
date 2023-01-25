@@ -609,7 +609,7 @@ extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
 }
 
 /*
- * acct_get_db_name - get database name of accouting storage
+ * acct_get_db_name - get database name of accounting storage
  * RET: database name, should be free-ed by caller
  */
 extern char *acct_get_db_name(void)
