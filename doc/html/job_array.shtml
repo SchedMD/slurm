@@ -205,7 +205,7 @@ Neither field is displayed if the job is not part of a job array.
 The optional job ID specified with the <i>scontrol show job</i> or
 <i>scontrol show step</i> commands can identify job array elements by
 specifying <i>ArrayJobId</i> and <i>ArrayTaskId</i> with an underscore between
-them (eg. &lt;ArrayJobID&gt;_&lt;ArrayTaskId&gt;). 
+them (e.g. &lt;ArrayJobID&gt;_&lt;ArrayTaskId&gt;). 
 
 <p>The scontrol command will operate on all elements of a job array if the
 job ID specified is <i>ArrayJobID</i>.

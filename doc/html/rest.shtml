@@ -32,7 +32,7 @@ discarded. Any request to slurmrestd is completely synchronous with the
 Slurm controller (slurmctld or slurmdbd) and is only considered complete once
 the HTTP response code has been sent to the client. Slurmrestd will hold a
 client connection open while processing a request. Slurm database commands are
-commited at the end of every request, on the success of all API calls in the
+committed at the end of every request, on the success of all API calls in the
 request.</p>
 <p>Sites are strongly encouraged to setup a caching proxy between slurmrestd
 and clients to avoid having clients repeatedly call queries, causing usage to
@@ -171,7 +171,7 @@ deprecating plugins per the
 OpenAPI standard method of setting "Deprecated: True"</a>
 in the method path. Any plugin that is not marked as deprecated will
 continue to exist in the next Slurm Major release pending any critical issues
-which will be announced seperately. Any plugin marked for deprecation will be
+which will be announced separately. Any plugin marked for deprecation will be
 removed on the next Slurm major release. In general, the last three plugins
 have been retained in each Slurm major release with the oldest getting marked
 as deprecated.
@@ -279,12 +279,12 @@ provide the correct HTTP headers (<b>X-SLURM-USER-NAME</b> and
 HTTP 1.1 compliant and that it provides the correct HTTP headers to allow
 client authentication. Slurm will explicitly trust the HTTP headers provided
 and has no way to verify them (beyond the proxy's trusted token
-<b>X-SLURM-USER-TOKEN</b>). Any authentiticating proxy will need to follow
+<b>X-SLURM-USER-TOKEN</b>). Any authenticating proxy will need to follow
 your site's security policies and ensure that the proxied requests come from
 the correct user. These requirements are standard to any authenticated
 proxy and are not Slurm specific.</p>
 
-<p>A working trival example can be found in an <a
+<p>A working trivial example can be found in an <a
 href="https://gitlab.com/SchedMD/training/docker-scale-out/-/tree/master/proxy">
 internal tool</a> used for testing and training. It uses
 <a href="https://www.php.net/">PHP</a> and

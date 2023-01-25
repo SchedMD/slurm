@@ -5,7 +5,7 @@
 <h2>Contents</h2>
 <ul>
 <li><a href=#intro>Introduction</a></li>
-<li><a href=#fairshare>Depth-Oblivous Fair-Share Formula</a></li>
+<li><a href=#fairshare>Depth-Oblivious Fair-Share Formula</a></li>
 <li><a href=#ratio>The Effective Usage Ratio Under an Account Hierarchy</a></li>
 <li><a href=#config>Configuration</a></li>
 </ul>
@@ -21,7 +21,7 @@ and only the specifics of the depth-oblivious factor are documented
 here</p>
 
 <!-------------------------------------------------------------------------->
-<h2 id="fairshare">Depth-Oblivous Fair-Share Formula
+<h2 id="fairshare">Depth-Oblivious Fair-Share Formula
 <a class="slurm_link" href="#fairshare"></a>
 </h2>
 
@@ -58,7 +58,7 @@ ratio R is equal to the usage ratio r defined as: </P>
 <DD> is the normalized usage factoring in half-life decay
 </DL>
 
-<P> which is the same as the orginal formula. </P>
+<P> which is the same as the original formula. </P>
 
 <h2 id="ratio">The Effective Usage Ratio Under an Account Hierarchy
 <a class="slurm_link" href="#ratio"></a>
@@ -122,7 +122,7 @@ the fair-share factor of the account should get a bonus/malus by
 moving towards the fair-share factor of its parent. Therefore, k tends
 towards 0 when R<sub>parent</sub> diverges from 1. However, if the
 account usage imbalance is greater than its ancestors' in the same
-direction, (for exemple, the ancestors have consumed two times their
+direction, (for example, the ancestors have consumed two times their
 shares, and the child has consumed 3 times its shares), moving the
 fair-share factor back towards the one of the parent is not
 helpful. As a result, k is kept to 1 in that case.</P>

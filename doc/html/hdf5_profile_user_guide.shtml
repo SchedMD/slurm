@@ -269,7 +269,7 @@ is required in slurm.conf to collect energy data.
 Appropriately set energy=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.
 Also appropriately set EnergyIPMIFrequency in acct_gather.conf.</p>
-<p>Each data sample in the Energe Time Series contains the following data items.
+<p>Each data sample in the Energy Time Series contains the following data items.
 </p>
 <DL>
 <dt><B>Date Time</B></dt>

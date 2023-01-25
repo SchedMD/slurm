@@ -192,7 +192,7 @@ Job submission rejected due to error as defined by
 <i>slurm/slurm_errno.h</i> and <i>src/common/slurm_errno.c</i>.<br>
 
 <p><b>NOTE</b>: As <span class="commandline">job_desc</span> contains only
-user-specified values, undefinded values can be recognized (before defaults
+user-specified values, undefined values can be recognized (before defaults
 are set) by either checking for <span class="commandline">nil</span> or for
 the corresponding <span class="commandline">slurm.NO_VAL/16/64</span>. This
 allows sites to apply policies, such as requiring users to define the number

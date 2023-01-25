@@ -46,7 +46,7 @@ in other Slurm functions used by the plugin.
 <p>Slurm can be configured to use multiple prep plugins if desired through the
 PrEpPlugins configuration option. Additional plugins should be comma-separated.
 Note that, by default, the <i>prep/script</i> plugin is loaded if that option
-is not set, but will not be loaded if an explict setting has been made. Thus,
+is not set, but will not be loaded if an explicit setting has been made. Thus,
 if you do set that option, and intend to still use the <i>Prolog</i>,
 <i>Epilog</i>, <i>PrologSlurmctld</i>, and/or <i>EpilogSlurmctld</i> options
 you will need to ensure both your additional plugin and <i>prep/script</i> are

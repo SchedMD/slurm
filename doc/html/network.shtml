@@ -238,7 +238,7 @@ This is handled by setting <b>CommunicationParameters=EnableIPv6</b>
 in your slurm.conf and slurmdbd.conf, then restarting all of the daemons.
 The <b>slurmd</b> may operate over IPv4 OR IPv6 in this mode. IPv4 can be
 disabled by setting <b>CommunicationParameters=EnableIPv6,DisableIPv4</b>.
-In is mode, everything must have a valid IPv6 address or the conection will
+In is mode, everything must have a valid IPv6 address or the connection will
 fail.</p>
 
 <p>The <b>slurmctld</b> expects a node to map to a single IP address (which

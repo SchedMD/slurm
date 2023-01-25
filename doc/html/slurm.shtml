@@ -82,7 +82,7 @@ a peak performance of 6.27 Petaflops.</li>
 
 <li><a href="http://www.tacc.utexas.edu/stampede">Stampede</a> at the
 <a href="http://www.tacc.utexas.edu">Texas Advanced Computing Center/University of Texas</a>
-is a <a herf="http://www.dell.com">Dell</a> with over
+is a <a href="http://www.dell.com">Dell</a> with over
 80,000 <a href="http://www.intel.com">Intel</a> Xeon cores,
 Intel Phi co-processors, plus
 128 <a href="http://www.nvidia.com">NVIDIA</a> GPUs

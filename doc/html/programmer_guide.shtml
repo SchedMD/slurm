@@ -167,7 +167,7 @@ with our work.</p>
 </h2>
 <p>Add the new file name to the Makefile.am file in the appropriate directory.
 Then execute autoreconf (at the top level of the Slurm source directory).
-Note that a relatively current version of auotmake is required.
+Note that a relatively current version of automake is required.
 The autoreconf program will build Makefile.in files from the Makefile.am files.
 If any new files need to be installed, update the slurm.spec file to identify
 the RPM in which the new files should be placed</p>
@@ -175,7 +175,7 @@ the RPM in which the new files should be placed</p>
 <p>If new directories need to be added, add to the configure.ac file the path
 to the Makefile to be built in the new directory. In summary:<br>
 <u>autoreconf</u> translates <u>.am</u> files into <u>.in</u> files<br>
-<u>configure</u> tranlates <u>.in</u> files, adding paths and version numbers.</p>
+<u>configure</u> translates <u>.in</u> files, adding paths and version numbers.</p>
 
 <h2 id="Compiling">Compiling<a class="slurm_link" href="#Compiling"></a></h2>
 <p>Sending the standard output of "make" to a file makes it easier to see any

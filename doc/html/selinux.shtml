@@ -112,7 +112,7 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
     end
     job_desc.selinux_context = job_desc.req_context
   else
-    -- Force a specifc context if one wasn't requested
+    -- Force a specific context if one wasn't requested
     job_desc.selinux_context = unconfined_u:unconfined_r:slurm_t:s0
   end
   <b>job_desc.admin_comment = "SELinuxContext=" + job_desc.selinux_context</b>

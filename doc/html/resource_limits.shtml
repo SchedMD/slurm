@@ -953,7 +953,7 @@ partition's current time limit.</p>
 when using the cray_aries power management plugin.</p>
 
 <p><b>PowerReserved</b> &mdash; The job's power request is for more than
-what is currently available when using the cray_aires power management plugin.
+what is currently available when using the cray_aries power management plugin.
 </p>
 
 <p><b>Priority</b> &mdash; One of more higher priority jobs exist for the

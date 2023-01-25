@@ -111,7 +111,7 @@ present. Build dependencies for various plugins and commands are denoted below:
 <li> <b>HTML Man Pages</b> HTML versions of the man pages will be generated if
 		the <i>man2html</i> command is present.</li>
 <li> <b>IPMI Energy Consumption</b> The <i>acct_gather_energy/ipmi</i>
-		accouting plugin will be built if the <i>freeipmi</i>
+		accounting plugin will be built if the <i>freeipmi</i>
 		development library is present.</li>
 <li> <b>InfiniBand Accounting</b> The <i>acct_gather_interconnect/ofed</i>
 		InfiniBand accounting plugin will be built if the
@@ -267,7 +267,7 @@ responsiveness, the transition back and forth should go undetected.</p>
 <p>Note that with an already running cluster, changing the order of the
 SlurmctldHost entries via <code>scontrol reconfigure</code> is not supported.
 The supported method is to drain and restart the cluster since running jobs
-may still go the prevous primary controller when completing and delay
+may still go the previous primary controller when completing and delay
 scheduling.</p>
 
 <p>Prior to 18.08, Slurm used the <a href="slurm.conf.html#OPT_BackupAddr">
@@ -766,7 +766,7 @@ releases (e.g. a version 22.05.x SlurmDBD will support slurmctld daemons and
 commands with a version of 22.05.x, 21.08.x or 20.11.x).
 This means that upgrading at least once each year is recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
-Changes in the mainenance release number generally only include bug fixes,
+Changes in the maintenance release number generally only include bug fixes,
 but may also include other minor enhancements.</p>
 
 <p><b>Be mindful of your configured SlurmdTimeout and SlurmctldTimeout values</b>.

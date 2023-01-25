@@ -217,7 +217,7 @@ administrators in writing an interface for the lua plugin.
 Since the batch script will only be executed by the first job
 component, the subsequent job components will not include commands from the
 original script. These scripts are built and managed by Slurm for internal
-purposes (and visiable from various Slurm commands) from a user script as shown
+purposes (and visible from various Slurm commands) from a user script as shown
 above. An example is shown below:</p>
 
 <pre>
@@ -477,7 +477,7 @@ allocated resources because of two srun commands executing at the same time).
 If the srun --het-group option is used to create multiple job steps (for the
 different components of a heterogeneous job), those job steps will be created
 sequentially.
-When multiple srun commmands execute at the same time, this may result in some
+When multiple srun commands execute at the same time, this may result in some
 step allocations taking place, while others are delayed.
 Only after all job step allocations have been granted will the application
 being launched.</p>

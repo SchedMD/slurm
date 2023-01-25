@@ -58,7 +58,7 @@ The HBM will always be known by Slurm GRES name of "hbm".
 Examples below demonstrate use of HBM.</p>
 
 <p>Sorting of the free cache pages at step startup using Intel's zonesort
-module can be configred as the default for all steps using the
+module can be configured as the default for all steps using the
 "LaunchParameters=mem_sort" option in the slurm.conf file.
 Individual job steps can enable or disable sorting using the "--mem-bind=sort"
 or "--mem-bind=nosort" command line options for srun.

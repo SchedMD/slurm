@@ -7,7 +7,7 @@
 <p>The select plugin is responsible for selecting compute resources to be
 allocated to a job, plus allocating and deallocating those resources.
 The select plugin is aware of the systems topology, based upon data structures
-established by the topology plugn. It can also over-subscribe resources to
+established by the topology plugin. It can also over-subscribe resources to
 support gang scheduling (time slicing of parallel jobs), if so configured.
 The select plugin is also capable of communicating with an external entity
 to perform these actions (the select/cray_aries plugin is one example).
@@ -16,7 +16,7 @@ or select/cons_tres plugins. The select/linear plugin allocates
 whole nodes to jobs and is the simplest implementation. The select/cons_res
 plugin (<i>cons_res</i> is an abbreviation for <i>consumable resources</i>)
 can allocate individual sockets, cores, threads, or CPUs within a node.
-The select/cons_tres plugin (<i>cons_tres</i> is an abbrebiation for
+The select/cons_tres plugin (<i>cons_tres</i> is an abbreviation for
 <i>trackable resources</i>) and is similar to the <i>cons_res</i> plugin,
 with an improved ability to manage other generic resources, such as GPUs.
 The select/cons_res and select/cons_tres plugins are slightly slower than

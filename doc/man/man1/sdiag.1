@@ -106,7 +106,7 @@ Time stamp of when the running job count was taken.
 The next block of information is related to main scheduling algorithm based
 on jobs priorities. A scheduling cycle implies to get the job_write_lock lock,
 then trying to get resources for jobs pending, starting from the most priority
-one and going in descendent order. Once a job can not get the resources the
+one and going in descending order. Once a job can not get the resources the
 loop keeps going but just for jobs requesting other partitions. Jobs with
 dependencies or affected  by accounts limits are not processed.
 
@@ -268,7 +268,7 @@ iteration.
 \fBMean table size\fR
 Mean count of different time slots tested by the backfill scheduler.
 Larger counts increase the time required for the backfill operation.
-The table size is influenced by many schuling parameters, including:
+The table size is influenced by many scheduling parameters, including:
 bf_min_age_reserve, bf_min_prio_reserve, bf_resolution, and bf_window.
 .IP
 

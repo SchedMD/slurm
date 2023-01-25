@@ -426,8 +426,8 @@ Select one value for <B>JobAcctGatherType</B>:<BR>
 <input type="radio" name="job_acct_gather_type" value="none" checked> <B>None</B>: No
 job accounting<BR>
 <input type="radio" name="job_acct_gather_type" value="cgroup"> <b>cgroup</b>:
-Specifc Linux cgroup information gathered, use with Linux systems only<br>
-<input type="radio" name="job_acct_gather_type" value="linux"> <B>Linux</B>: Specifc
+Specific Linux cgroup information gathered, use with Linux systems only<br>
+<input type="radio" name="job_acct_gather_type" value="linux"> <B>Linux</B>: Specific
 Linux process table information gathered, use with Linux systems only<BR>
 
 <H2>Job Accounting Storage</H2>
