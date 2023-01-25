@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurmctld.h - definitions of functions and structures for slurmcltd use
+ *  slurmctld.h - definitions of functions and structures for slurmctld use
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
