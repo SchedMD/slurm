@@ -949,8 +949,9 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 	xassert(p);
 
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_GRES)) {
-		verbose("Gres Name=%s Type=%s Count=%"PRIu64,
-			p->name, p->type_name, p->count);
+		verbose("Gres Name=%s Type=%s Count=%"PRIu64" Flags=%s",
+			p->name, p->type_name, p->count,
+			gres_flags2str(p->config_flags));
 		return 0;
 	}
 
@@ -969,21 +970,44 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 	if (p->links)
 		xstrfmtcat(links, "Links=%s", p->links);
 	if (p->cpus && (index != -1)) {
-		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u "
-		     "File=%s Cores=%s CoreCnt=%u %s",
-		     p->name, p->type_name, p->count, index, p->plugin_id,
-		     p->file, p->cpus, p->cpu_cnt, links);
+		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u File=%s Cores=%s CoreCnt=%u %s Flags=%s",
+		     p->name,
+		     p->type_name,
+		     p->count,
+		     index,
+		     p->plugin_id,
+		     p->file,
+		     p->cpus,
+		     p->cpu_cnt,
+		     links,
+		     gres_flags2str(p->config_flags));
 	} else if (index != -1) {
-		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u File=%s %s",
-		     p->name, p->type_name, p->count, index, p->plugin_id,
-		     p->file, links);
+		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u File=%s %s Flags=%s",
+		     p->name,
+		     p->type_name,
+		     p->count,
+		     index,
+		     p->plugin_id,
+		     p->file,
+		     links,
+		     gres_flags2str(p->config_flags));
 	} else if (p->file) {
-		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s %s",
-		     p->name, p->type_name, p->count, p->plugin_id, p->file,
-		     links);
+		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s %s Flags=%s",
+		     p->name,
+		     p->type_name,
+		     p->count,
+		     p->plugin_id,
+		     p->file,
+		     links,
+		     gres_flags2str(p->config_flags));
 	} else {
-		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u %s", p->name,
-		     p->type_name, p->count, p->plugin_id, links);
+		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u %s Flags=%s",
+		     p->name,
+		     p->type_name,
+		     p->count,
+		     p->plugin_id,
+		     links,
+		     gres_flags2str(p->config_flags));
 	}
 	xfree(links);
 
