@@ -78,11 +78,11 @@
 #define MAX_OPEN_CONNECTIONS 124
 
 /*
- * there can only be 1 SIGINT handler, so we are using a mutex to protect
- * the sigint_fd for changes.
+ * there can only be 1 SIGNAL handler, so we are using a mutex to protect
+ * the signal_fd for changes.
  */
-pthread_mutex_t sigint_mutex = PTHREAD_MUTEX_INITIALIZER;
-int sigint_fd[2] = { -1, -1 };
+pthread_mutex_t signal_mutex = PTHREAD_MUTEX_INITIALIZER;
+int signal_fd[2] = { -1, -1 };
 
 static int _close_con_for_each(void *x, void *arg);
 static void _listen_accept(con_mgr_t *mgr, con_mgr_fd_t *con,
@@ -149,6 +149,18 @@ typedef struct {
 	struct pollfd *fds;
 	int nfds;
 } poll_args_t;
+
+static void _signal_handler(int signo);
+
+/* array of all signals to be caught */
+static struct {
+	struct sigaction prior;
+	struct sigaction new;
+	int signal;
+} catch_signals[] = {
+	/* Catch SIGINT as a safe way to shutdown */
+	{ {}, { .sa_handler = _signal_handler }, SIGINT },
+};
 
 #ifndef NDEBUG
 static int _find_by_ptr(void *x, void *key)
@@ -270,16 +282,13 @@ static void _connection_fd_delete(void *x)
 	xfree(con);
 }
 
-static void _sig_int_handler(int signo)
+static void _signal_handler(int signo)
 {
-	char buf[] = "1";
-	xassert(signo == SIGINT);
-	xassert(sigint_fd[0] != -1);
-	xassert(sigint_fd[1] != -1);
+	xassert(signal_fd[0] != -1);
+	xassert(signal_fd[1] != -1);
 
 try_again:
-	/* send 1 byte of trash */
-	if (write(sigint_fd[1], buf, 1) != 1) {
+	if (write(signal_fd[1], &signo, sizeof(signo)) != sizeof(signo)) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
 			log_flag(NET, "%s: trying again: %m", __func__);
 			goto try_again;
@@ -309,11 +318,12 @@ extern con_mgr_t *init_con_mgr(int thread_count, con_mgr_callbacks_t callbacks)
 	fd_set_blocking(mgr->event_fd[0]);
 	fd_set_blocking(mgr->event_fd[1]);
 
-	if (pipe(mgr->sigint_fd))
+	if (pipe(mgr->signal_fd))
 		fatal("%s: unable to open unnamed pipe: %m", __func__);
 
-	fd_set_blocking(mgr->sigint_fd[0]);
-	fd_set_blocking(mgr->sigint_fd[1]);
+	/* block for writes only */
+	fd_set_nonblocking(mgr->signal_fd[0]);
+	fd_set_blocking(mgr->signal_fd[1]);
 
 	_check_magic_mgr(mgr);
 
@@ -424,8 +434,8 @@ extern void free_con_mgr(con_mgr_t *mgr)
 	if (close(mgr->event_fd[0]) || close(mgr->event_fd[1]))
 		error("%s: unable to close event_fd: %m", __func__);
 
-	if (close(mgr->sigint_fd[0]) || close(mgr->sigint_fd[1]))
-		error("%s: unable to close sigint_fd: %m", __func__);
+	if (close(mgr->signal_fd[0]) || close(mgr->signal_fd[1]))
+		error("%s: unable to close signal_fd: %m", __func__);
 
 	mgr->magic = ~MAGIC_CON_MGR;
 	xfree(mgr);
@@ -1514,6 +1524,35 @@ static void _handle_event_pipe(con_mgr_t *mgr, const struct pollfd *fds_ptr,
 	}
 }
 
+static int _handle_signal(con_mgr_t *mgr)
+{
+	int sig;
+
+#ifdef FIONREAD
+	int readable;
+
+	/* request kernel tell us the size of the incoming buffer */
+	if (ioctl(mgr->signal_fd[0], FIONREAD, &readable))
+		log_flag(NET, "%s: [fd:%d] unable to call FIONREAD: %m",
+			 __func__, mgr->signal_fd[0]);
+
+	if (!readable) {
+		/* Didn't fail but buffer is empty so no more signals */
+		return -1;
+	}
+#endif /* FIONREAD */
+
+	safe_read(mgr->signal_fd[0], &sig, sizeof(sig));
+
+	return sig;
+rwfail:
+	if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+		return -1;
+
+	fatal("%s: unable to read(signal_fd[0]=%d): %m",
+	      __func__, mgr->signal_fd[0]);
+}
+
 /*
  * Handle poll and events
  *
@@ -1551,12 +1590,22 @@ again:
 		if (!fds_ptr->revents)
 			continue;
 
-		if (fds_ptr->fd == mgr->sigint_fd[0]) {
-			if (!mgr->shutdown)
-				info("%s: [%s] caught SIGINT. Shutting down.",
-				     __func__, tag);
-			mgr->shutdown = true;
-			_handle_event_pipe(mgr, fds_ptr, tag, "SIGINT");
+		if (fds_ptr->fd == mgr->signal_fd[0]) {
+			int sig;
+
+			while ((sig = _handle_signal(mgr)) >= 0) {
+				if (sig == SIGINT) {
+					if (!mgr->shutdown)
+						info("%s: [%s] caught SIGINT. Shutting down.",
+						     __func__, tag);
+					mgr->shutdown = true;
+				} else {
+					info("%s: [%s] caught and ignoring %s",
+					     __func__, tag, strsignal(sig));
+				}
+			}
+
+			_handle_event_pipe(mgr, fds_ptr, tag, "CAUGHT_SIGNAL");
 			_signal_change(mgr, true);
 		}
 
@@ -1613,7 +1662,7 @@ static void _poll_connections(void *x)
 	fds_ptr = args->fds;
 
 	/* Add signal fd */
-	fds_ptr->fd = mgr->sigint_fd[0];
+	fds_ptr->fd = mgr->signal_fd[0];
 	fds_ptr->events = POLLIN;
 	fds_ptr++;
 	args->nfds++;
@@ -1730,7 +1779,7 @@ static void _listen(void *x)
 	args->nfds = 0;
 
 	/* Add signal fd */
-	fds_ptr->fd = mgr->sigint_fd[0];
+	fds_ptr->fd = mgr->signal_fd[0];
 	fds_ptr->events = POLLIN;
 	fds_ptr++;
 	args->nfds++;
@@ -1912,34 +1961,38 @@ watch:
 extern int con_mgr_run(con_mgr_t *mgr)
 {
 	int rc = SLURM_SUCCESS;
-	struct sigaction old_sa, sa = { .sa_handler = _sig_int_handler };
 
 	_check_magic_mgr(mgr);
 
-	slurm_mutex_lock(&sigint_mutex);
+	slurm_mutex_lock(&signal_mutex);
 	//TODO: allow for multiple conmgrs to run at once
-	xassert(sigint_fd[0] == -1);
-	xassert(sigint_fd[1] == -1);
-	sigint_fd[0] = mgr->sigint_fd[0];
-	sigint_fd[1] = mgr->sigint_fd[1];
-	slurm_mutex_unlock(&sigint_mutex);
+	xassert(signal_fd[0] == -1);
+	xassert(signal_fd[1] == -1);
+	signal_fd[0] = mgr->signal_fd[0];
+	signal_fd[1] = mgr->signal_fd[1];
 
-	/*
-	 * Catch SIGINT as a safe way to shutdown
-	 */
-	if (sigaction(SIGINT, &sa, &old_sa))
-		fatal("%s: unable to catch SIGINT: %m", __func__);
+	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
+		if (sigaction(catch_signals[i].signal, &catch_signals[i].new,
+			      &catch_signals[i].prior))
+			fatal("%s: unable to catch %s: %m",
+			      __func__, strsignal(catch_signals[i].signal));
+	}
+	slurm_mutex_unlock(&signal_mutex);
 
 	rc = _watch(mgr);
 	xassert(mgr->shutdown);
 
-	if (sigaction(SIGINT, &old_sa, NULL))
-		fatal("%s: unable to return SIGINT to default: %m", __func__);
+	slurm_mutex_lock(&signal_mutex);
+	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
+		if (sigaction(catch_signals[i].signal, &catch_signals[i].prior,
+			      NULL))
+			fatal("%s: unable to restore %s: %m",
+			      __func__, strsignal(catch_signals[i].signal));
+	}
 
-	slurm_mutex_lock(&sigint_mutex);
-	sigint_fd[0] = -1;
-	sigint_fd[1] = -1;
-	slurm_mutex_unlock(&sigint_mutex);
+	signal_fd[0] = -1;
+	signal_fd[1] = -1;
+	slurm_mutex_unlock(&signal_mutex);
 
 	return rc;
 }
