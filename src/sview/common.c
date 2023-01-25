@@ -1670,29 +1670,29 @@ extern gboolean delete_popups(void)
 
 extern void *popup_thr(popup_info_t *popup_win)
 {
-	void (*specifc_info) (popup_info_t *popup_win) = NULL;
+	void (*specific_info) (popup_info_t *popup_win) = NULL;
 	int running = 1;
 	if (_DEBUG)
 		g_print("popup_thr:global_row_count = %d \n",
 			global_row_count);
 	switch(popup_win->type) {
 	case PART_PAGE:
-		specifc_info = specific_info_part;
+		specific_info = specific_info_part;
 		break;
 	case JOB_PAGE:
-		specifc_info = specific_info_job;
+		specific_info = specific_info_job;
 		break;
 	case NODE_PAGE:
-		specifc_info = specific_info_node;
+		specific_info = specific_info_node;
 		break;
 	case RESV_PAGE:
-		specifc_info = specific_info_resv;
+		specific_info = specific_info_resv;
 		break;
 	case FRONT_END_PAGE:
-		specifc_info = specific_info_front_end;
+		specific_info = specific_info_front_end;
 		break;
 	case BB_PAGE:
-		specifc_info = specific_info_bb;
+		specific_info = specific_info_bb;
 		break;
 	case SUBMIT_PAGE:
 	default:
@@ -1704,7 +1704,7 @@ extern void *popup_thr(popup_info_t *popup_win)
 	/* when popup is killed running will be set to 0 */
 	while (running) {
 		gdk_threads_enter();
-		(specifc_info)(popup_win);
+		(specific_info)(popup_win);
 		gdk_threads_leave();
 		sleep(working_sview_config.refresh_delay);
 	}
