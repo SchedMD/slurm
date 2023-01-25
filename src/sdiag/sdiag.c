@@ -1,5 +1,5 @@
 /****************************************************************************\
- *  sdiag.c - Utility for getting information about slurmctld behaviour
+ *  sdiag.c - Utility for getting information about slurmctld behavior
  *****************************************************************************
  *  Produced at Barcelona Supercomputing Center, December 2011
  *  Written by Alejandro Lucero <alucero@bsc.es>

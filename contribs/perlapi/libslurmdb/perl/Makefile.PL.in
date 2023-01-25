@@ -278,7 +278,7 @@ sub set_macro {
 }
 
 # For some reason initializing the vars on the global scope doesn't work;
-# guess its some weird Perl behaviour in combination with bless().
+# guess its some weird Perl behavior in combination with bless().
 sub init_MY_globals {
 	my $self = shift;
 

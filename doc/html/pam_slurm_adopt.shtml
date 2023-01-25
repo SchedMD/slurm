@@ -383,7 +383,7 @@ NodeName in <b>slurm.conf</b> that this host operates as.
 it only runs for sshd for which it was designed for. A
 different service name can be specified like "login" or "*" to
 allow the module to in any service context. For local pam logins
-this module could cause unexpected behaviour or even security
+this module could cause unexpected behavior or even security
 issues. Therefore if the service name does not match then this
 module will not perform the adoption logic and returns
 PAM_IGNORE immediately.
