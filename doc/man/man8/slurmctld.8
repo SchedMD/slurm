@@ -1,4 +1,4 @@
-.TH slurmctld "8" "Slurm Daemon" "August 2022" "Slurm Daemon"
+.TH slurmctld "8" "Slurm Daemon" "January 2023" "Slurm Daemon"
 
 .SH "NAME"
 slurmctld \- The central management daemon of Slurm.
@@ -70,7 +70,8 @@ This is the default action.
 
 .TP
 \fB\-R\fR
-Recover full state from last checkpoint: jobs, node, and partition state.
+Recover full state from last checkpoint: jobs, node, partition state, and power
+save settings.
 Without this option, previously running jobs will be preserved along
 with node \fIState\fR of DOWN, DRAINED and DRAINING nodes and the associated
 \fIReason\fR field for those nodes. No other node or partition state will
