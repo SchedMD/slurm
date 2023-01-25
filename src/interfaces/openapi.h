@@ -181,7 +181,7 @@ extern openapi_type_format_t openapi_data_type_to_type_format(data_type_t type);
 
 /*
  * Separator used to split up a relative path.
- * OpenAPI specification 3.1.0 explictly requires $ref paths must be compliant
+ * OpenAPI specification 3.1.0 explicitly requires $ref paths must be compliant
  * with RFC3986 URIs. It is expected that inside of "$ref" path that the
  * relative path use "/" to delimit components and that the relative paths start
  * with "#".
