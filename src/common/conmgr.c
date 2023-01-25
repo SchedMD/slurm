@@ -289,11 +289,10 @@ static void _signal_handler(int signo)
 
 try_again:
 	if (write(signal_fd[1], &signo, sizeof(signo)) != sizeof(signo)) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
-			log_flag(NET, "%s: trying again: %m", __func__);
+		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
 			goto try_again;
-		}
 
+		log_reinit();
 		fatal("%s: unable to signal connection manager: %m", __func__);
 	}
 }
