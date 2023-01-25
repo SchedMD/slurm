@@ -154,27 +154,6 @@ AC_DEFUN([X_AC_DEBUG], [
     AC_MSG_RESULT([no])
   fi
 
-# NOTE: Default value of SALLOC_RUN_FOREGROUND is system dependent
-# x_ac_salloc_background is set to "no" for Cray systems in x_ac_cray.m4
-  AC_MSG_CHECKING([whether to disable salloc execution in the background])
-  AC_ARG_ENABLE(
-    [salloc-background],
-    AS_HELP_STRING(--disable-salloc-background,disable salloc execution in the background),
-    [ case "$enableval" in
-        yes) x_ac_salloc_background=yes ;;
-         no) x_ac_salloc_background=no ;;
-          *) AC_MSG_RESULT([doh!])
-             AC_MSG_ERROR([bad value "$enableval" for --disable-salloc-background]) ;;
-      esac
-    ]
-  )
-  if test "$x_ac_salloc_background" = no; then
-    AC_DEFINE(SALLOC_RUN_FOREGROUND, 1, [Define to 1 to require salloc execution in the foreground.])
-    AC_MSG_RESULT([yes])
-  else
-    AC_MSG_RESULT([no])
-  fi
-
   if test "$x_ac_optimizations" = no; then
     test "$GCC" = yes && CFLAGS="$CFLAGS -O0"
   fi

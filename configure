@@ -1056,7 +1056,6 @@ enable_memory_leak_debug
 enable_front_end
 enable_partial_attach
 enable_salloc_kill_cmd
-enable_salloc_background
 with_slurmctld_port
 with_slurmd_port
 with_slurmdbd_port
@@ -1768,8 +1767,6 @@ Optional Features:
   --enable-salloc-kill-cmd
                           salloc should kill child processes at job
                           termination
-  --disable-salloc-background
-                          disable salloc execution in the background
   --disable-slurmrestd    disable slurmrestd support
   --enable-multiple-slurmd
                           enable multiple-slurmd support
@@ -26484,35 +26481,6 @@ fi
   if test "$x_ac_salloc_kill_cmd" = yes; then
 
 printf "%s\n" "#define SALLOC_KILL_CMD 1" >>confdefs.h
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-  fi
-
-# NOTE: Default value of SALLOC_RUN_FOREGROUND is system dependent
-# x_ac_salloc_background is set to "no" for Cray systems in x_ac_cray.m4
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to disable salloc execution in the background" >&5
-printf %s "checking whether to disable salloc execution in the background... " >&6; }
-  # Check whether --enable-salloc-background was given.
-if test ${enable_salloc_background+y}
-then :
-  enableval=$enable_salloc_background;  case "$enableval" in
-        yes) x_ac_salloc_background=yes ;;
-         no) x_ac_salloc_background=no ;;
-          *) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
-printf "%s\n" "doh!" >&6; }
-             as_fn_error $? "bad value \"$enableval\" for --disable-salloc-background" "$LINENO" 5 ;;
-      esac
-
-
-fi
-
-  if test "$x_ac_salloc_background" = no; then
-
-printf "%s\n" "#define SALLOC_RUN_FOREGROUND 1" >>confdefs.h
 
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
