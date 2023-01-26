@@ -1707,8 +1707,6 @@ extern void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			if (tmp_uint32 == NO_VAL)
-				tmp_uint32 = NO_VAL;
 			field->print_routine(field,
 					     tmp_uint32,
 					     (curr_inx == field_count));
