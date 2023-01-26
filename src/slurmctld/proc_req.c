@@ -1022,7 +1022,7 @@ static void _create_het_job_id_set(hostset_t jobid_hostset,
 }
 
 /* _slurm_rpc_allocate_het_job: process RPC to allocate a hetjob resources */
-static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
+static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS, inx, het_job_cnt = -1;
@@ -1294,7 +1294,7 @@ send_msg:	info("%s: %s ", __func__, slurm_strerror(error_code));
 /* _slurm_rpc_allocate_resources:  process RPC to allocate resources for
  *	a job
  */
-static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
+static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
@@ -1483,7 +1483,7 @@ send_msg:
 }
 
 /* _slurm_rpc_dump_conf - process RPC for Slurm configuration information */
-static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
+static void _slurm_rpc_dump_conf(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	slurm_msg_t response_msg;
@@ -1516,7 +1516,7 @@ static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_dump_jobs - process RPC for job state information */
-static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
+static void _slurm_rpc_dump_jobs(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	char *dump;
@@ -1566,7 +1566,7 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_dump_jobs - process RPC for job state information */
-static void _slurm_rpc_dump_jobs_user(slurm_msg_t * msg)
+static void _slurm_rpc_dump_jobs_user(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	char *dump;
@@ -1599,7 +1599,7 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_dump_job_single - process RPC for one job's state information */
-static void _slurm_rpc_dump_job_single(slurm_msg_t * msg)
+static void _slurm_rpc_dump_job_single(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	char *dump = NULL;
@@ -1634,7 +1634,7 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t * msg)
 	xfree(dump);
 }
 
-static void  _slurm_rpc_get_shares(slurm_msg_t *msg)
+static void _slurm_rpc_get_shares(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	shares_request_msg_t *req_msg = msg->data;
@@ -1653,7 +1653,7 @@ static void  _slurm_rpc_get_shares(slurm_msg_t *msg)
 	debug2("%s %s", __func__, TIME_STR);
 }
 
-static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
+static void _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	/* req_msg can be removed 2 versions after 23.02 */
@@ -1688,7 +1688,7 @@ static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 }
 
 /* _slurm_rpc_end_time - Process RPC for job end time */
-static void _slurm_rpc_end_time(slurm_msg_t * msg)
+static void _slurm_rpc_end_time(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	job_alloc_info_msg_t *time_req_msg = msg->data;
@@ -1715,7 +1715,7 @@ static void _slurm_rpc_end_time(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_get_fd - process RPC for federation state information */
-static void _slurm_rpc_get_fed(slurm_msg_t * msg)
+static void _slurm_rpc_get_fed(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	slurm_msg_t response_msg;
@@ -1739,7 +1739,7 @@ static void _slurm_rpc_get_fed(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_dump_front_end - process RPC for front_end state information */
-static void _slurm_rpc_dump_front_end(slurm_msg_t * msg)
+static void _slurm_rpc_dump_front_end(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	char *dump = NULL;
@@ -1775,7 +1775,7 @@ static void _slurm_rpc_dump_front_end(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_dump_nodes - dump RPC for node state information */
-static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
+static void _slurm_rpc_dump_nodes(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	char *dump;
@@ -1826,7 +1826,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_dump_node_single - done RPC state information for one node */
-static void _slurm_rpc_dump_node_single(slurm_msg_t * msg)
+static void _slurm_rpc_dump_node_single(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	char *dump;
@@ -1872,7 +1872,7 @@ static void _slurm_rpc_dump_node_single(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_dump_partitions - process RPC for partition state information */
-static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
+static void _slurm_rpc_dump_partitions(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	char *dump;
@@ -1921,7 +1921,7 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 
 /* _slurm_rpc_epilog_complete - process RPC noting the completion of
  * the epilog denoting the completion of a job it its entirety */
-static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg)
+static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	static time_t config_update = 0;
@@ -2020,7 +2020,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 
 /* _slurm_rpc_complete_job_allocation - process RPC to note the
  *	completion of a job allocation */
-static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
+static void _slurm_rpc_complete_job_allocation(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
@@ -2076,7 +2076,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 
 /* _slurm_rpc_complete_prolog - process RPC to note the
  *	completion of a prolog */
-static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
+static void _slurm_rpc_complete_prolog(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
@@ -2300,7 +2300,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 		(void) schedule_node_save();	/* Has own locking */
 }
 
-static void  _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
+static void _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	int rc = SLURM_SUCCESS;
@@ -2346,7 +2346,7 @@ static void  _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 
 /* _slurm_rpc_job_step_create - process RPC to create/register a job step
  *	with the step_mgr */
-static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
+static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 {
 	char *err_msg = NULL;
 	static int active_rpc_cnt = 0;
@@ -2504,7 +2504,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_job_step_get_info - process request for job step info */
-static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
+static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	void *resp_buffer = NULL;
@@ -2557,7 +2557,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 
 /* _slurm_rpc_job_will_run - process RPC to determine if job with given
  *	configuration can be initiated */
-static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
+static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 {
 	/* init */
 	DEF_TIMERS;
@@ -2907,7 +2907,7 @@ send_resp:
 }
 
 /* _slurm_rpc_job_alloc_info - process RPC to get details on existing job */
-static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
+static void _slurm_rpc_job_alloc_info(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
@@ -2968,7 +2968,7 @@ static void _het_job_alloc_list_del(void *x)
  * _slurm_rpc_het_job_alloc_info - process RPC to get details on existing
  *				       hetjob.
  */
-static void _slurm_rpc_het_job_alloc_info(slurm_msg_t * msg)
+static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
@@ -3051,7 +3051,7 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t * msg)
 
 /* _slurm_rpc_job_sbcast_cred - process RPC to get details on existing job
  *	plus sbcast credential */
-static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
+static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 {
 #ifdef HAVE_FRONT_END
 	slurm_send_rc_msg(msg, ESLURM_NOT_SUPPORTED);
@@ -3203,7 +3203,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_ping - process ping RPC */
-static void _slurm_rpc_ping(slurm_msg_t * msg)
+static void _slurm_rpc_ping(slurm_msg_t *msg)
 {
 	/* We could authenticate here, if desired */
 
@@ -3247,7 +3247,7 @@ static void _slurm_rpc_config_request(slurm_msg_t *msg)
  * slurm_reconfigure function inside controller.c try
  * to keep these in sync.
  */
-static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
+static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 {
 	int error_code;
 
@@ -3269,7 +3269,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_takeover - process takeover RPC */
-static void _slurm_rpc_takeover(slurm_msg_t * msg)
+static void _slurm_rpc_takeover(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 
@@ -3290,7 +3290,7 @@ static void _slurm_rpc_takeover(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_shutdown_controller - process RPC to shutdown slurmctld */
-static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
+static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	slurmctld_shutdown_type_t options = SLURMCTLD_SHUTDOWN_ALL;
@@ -3991,7 +3991,7 @@ send_msg:
 /* _slurm_rpc_update_job - process RPC to update the configuration of a
  * job (e.g. priority)
  */
-static void _slurm_rpc_update_job(slurm_msg_t * msg)
+static void _slurm_rpc_update_job(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
@@ -4117,7 +4117,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
  * _slurm_rpc_update_front_end - process RPC to update the configuration of a
  *	front_end node (e.g. UP/DOWN)
  */
-static void _slurm_rpc_update_front_end(slurm_msg_t * msg)
+static void _slurm_rpc_update_front_end(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
@@ -4204,7 +4204,7 @@ static void _slurm_rpc_create_node(slurm_msg_t *msg)
  * _slurm_rpc_update_node - process RPC to update the configuration of a
  *	node (e.g. UP/DOWN)
  */
-static void _slurm_rpc_update_node(slurm_msg_t * msg)
+static void _slurm_rpc_update_node(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
@@ -4250,7 +4250,7 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 /*
  * _slurm_rpc_delete_node - process RPC to delete node.
  */
-static void _slurm_rpc_delete_node(slurm_msg_t * msg)
+static void _slurm_rpc_delete_node(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	update_node_msg_t *node_msg = msg->data;
@@ -4294,7 +4294,7 @@ static void _slurm_rpc_delete_node(slurm_msg_t * msg)
 
 /* _slurm_rpc_update_partition - process RPC to update the configuration
  *	of a partition (e.g. UP/DOWN) */
-static void _slurm_rpc_update_partition(slurm_msg_t * msg)
+static void _slurm_rpc_update_partition(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
@@ -4341,7 +4341,7 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_delete_partition - process RPC to delete a partition */
-static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
+static void _slurm_rpc_delete_partition(slurm_msg_t *msg)
 {
 	/* init */
 	int error_code = SLURM_SUCCESS;
@@ -4382,7 +4382,7 @@ static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_resv_create - process RPC to create a reservation */
-static void _slurm_rpc_resv_create(slurm_msg_t * msg)
+static void _slurm_rpc_resv_create(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	char *err_msg = NULL;
@@ -4436,7 +4436,7 @@ static void _slurm_rpc_resv_create(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_resv_update - process RPC to update a reservation */
-static void _slurm_rpc_resv_update(slurm_msg_t * msg)
+static void _slurm_rpc_resv_update(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	char *err_msg = NULL;
@@ -4494,7 +4494,7 @@ static void _slurm_rpc_resv_update(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_resv_delete - process RPC to delete a reservation */
-static void _slurm_rpc_resv_delete(slurm_msg_t * msg)
+static void _slurm_rpc_resv_delete(slurm_msg_t *msg)
 {
 	/* init */
 	int error_code = SLURM_SUCCESS;
@@ -4540,7 +4540,7 @@ static void _slurm_rpc_resv_delete(slurm_msg_t * msg)
 }
 
 /* _slurm_rpc_resv_show - process RPC to dump reservation info */
-static void _slurm_rpc_resv_show(slurm_msg_t * msg)
+static void _slurm_rpc_resv_show(slurm_msg_t *msg)
 {
 	resv_info_request_msg_t *resv_req_msg = msg->data;
 	DEF_TIMERS;
@@ -4579,7 +4579,7 @@ static void _slurm_rpc_node_registration_status(slurm_msg_t *msg)
 }
 
 /* determine of nodes are ready for the job */
-static void _slurm_rpc_job_ready(slurm_msg_t * msg)
+static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 {
 	int error_code, result;
 	job_id_msg_t *id_msg = msg->data;
@@ -4629,7 +4629,7 @@ static int _is_prolog_finished(uint32_t job_id)
 }
 
 /* get node select info plugin */
-static void  _slurm_rpc_burst_buffer_info(slurm_msg_t * msg)
+static void _slurm_rpc_burst_buffer_info(slurm_msg_t *msg)
 {
 	void *resp_buffer = NULL;
 	int resp_buffer_size = 0;
@@ -5645,7 +5645,7 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
  *
  * Pack the assoc_mgr lists and return it back to the caller.
  */
-static void _slurm_rpc_assoc_mgr_info(slurm_msg_t * msg)
+static void _slurm_rpc_assoc_mgr_info(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	char *dump = NULL;
