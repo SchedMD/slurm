@@ -199,6 +199,28 @@ size_t rfc2822_timestamp(char *s, size_t max)
 	return _make_timestamp(s, max, "%a, %d %b %Y %H:%M:%S %z");
 }
 
+static size_t _fix_tz(char *s, size_t max, size_t written)
+{
+	xassert(written == 24);
+	xassert(max >= 26);
+
+	if ((max < 26) || (written != 24))
+		return written;
+
+	/*
+	 * The strftime %z format creates timezone offsets of
+	 * the form (+/-)hhmm, whereas the RFC 5424 format is
+	 * (+/-)hh:mm. So shift the minutes one step back and
+	 * insert the semicolon.
+	 */
+	s[25] = '\0';
+	s[24] = s[23];
+	s[23] = s[22];
+	s[22] = ':';
+
+	return 25;
+}
+
 size_t log_timestamp(char *s, size_t max)
 {
 	if (!log)
@@ -208,18 +230,7 @@ size_t log_timestamp(char *s, size_t max)
 	case LOG_FMT_RFC5424:
 	{
 		size_t written = _make_timestamp(s, max, "%Y-%m-%dT%T%z");
-		if (max >= 26 && written == 24) {
-			/* The strftime %z format creates timezone offsets of
-			 * the form (+/-)hhmm, whereas the RFC 5424 format is
-			 * (+/-)hh:mm. So shift the minutes one step back and
-			 * insert the semicolon. */
-			s[25] = '\0';
-			s[24] = s[23];
-			s[23] = s[22];
-			s[22] = ':';
-			return written + 1;
-		}
-		return written;
+		return _fix_tz(s, max, written);
 	}
 	case LOG_FMT_SHORT:
 		return _make_timestamp(s, max, "%b %d %T");
