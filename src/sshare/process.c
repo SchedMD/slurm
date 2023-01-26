@@ -250,9 +250,9 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 						share->fs_factor,
 						(curr_inx == field_count));
 					else
-						print_fields_str(
+						field->print_routine(
 							field,
-							NULL,
+							NO_VAL64,
 							(curr_inx ==
 							 field_count)
 						);
@@ -269,9 +269,9 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 				break;
 			case PRINT_LEVELFS:
 				if (share->shares_raw == SLURMDB_FS_USE_PARENT)
-					print_fields_str(field, NULL,
-							 (curr_inx ==
-							  field_count));
+					field->print_routine(field, NO_VAL64,
+							     (curr_inx ==
+							      field_count));
 				else
 					field->print_routine(field,
 						     (double) share->level_fs,
