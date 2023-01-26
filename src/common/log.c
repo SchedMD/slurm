@@ -232,6 +232,11 @@ size_t log_timestamp(char *s, size_t max)
 		size_t written = _make_timestamp(s, max, "%Y-%m-%dT%T%z");
 		return _fix_tz(s, max, written);
 	}
+	case LOG_FMT_RFC3339:
+	{
+		size_t written = _make_timestamp(s, max, "%FT%T%z");
+		return _fix_tz(s, max, written);
+	}
 	case LOG_FMT_SHORT:
 		return _make_timestamp(s, max, "%b %d %T");
 		break;
@@ -990,6 +995,10 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 				case LOG_FMT_RFC5424:
 					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff(+/-)hh:mm" */
 					xrfc5424timecat(substitute, false);
+					break;
+				case LOG_FMT_RFC3339:
+					/* "%M" => "yyyy-mm-ddThh:mm:ssZ" */
+					xrfc3339timecat(substitute);
 					break;
 				case LOG_FMT_CLOCK:
 					/* "%M" => "usec" */

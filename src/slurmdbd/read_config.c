@@ -352,6 +352,8 @@ extern int read_slurmdbd_conf(void)
 				slurm_conf.log_fmt = LOG_FMT_RFC5424_MS;
 			else if (xstrcasestr(temp_str, "rfc5424"))
 				slurm_conf.log_fmt = LOG_FMT_RFC5424;
+			else if (xstrcasestr(temp_str, "rfc3339"))
+				slurm_conf.log_fmt = LOG_FMT_RFC3339;
 			else if (xstrcasestr(temp_str, "clock"))
 				slurm_conf.log_fmt = LOG_FMT_CLOCK;
 			else if (xstrcasestr(temp_str, "short"))

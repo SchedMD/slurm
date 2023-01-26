@@ -301,6 +301,35 @@ void _xrfc5424timecat(char **buf, bool msec)
 		_xstrfmtcat(buf, "%s%s", p, z);
 }
 
+extern void _xrfc3339timecat(char **buf)
+{
+	char p[64] = "";
+	char z[12] = "";
+	struct timeval tv;
+	struct tm tm;
+
+	if (gettimeofday(&tv, NULL) == -1)
+		fprintf(stderr, "gettimeofday() failed\n");
+
+	if (!localtime_r(&tv.tv_sec, &tm))
+		fprintf(stderr, "localtime_r() failed\n");
+
+	if (strftime(p, sizeof(p), "%FT%T", &tm) == 0)
+		fprintf(stderr, "strftime() returned 0\n");
+
+	/* The strftime %z format creates timezone offsets of the form
+	 * (+/-)hhmm, whereas the RFC 3339 format is (+/-)hh:mm. So
+	 * shift the minutes one step back and insert the semicolon.
+	 */
+	if (strftime(z, sizeof(z), "%z", &tm) == 0)
+		fprintf(stderr, "strftime() returned 0\n");
+	z[5] = z[4];
+	z[4] = z[3];
+	z[3] = ':';
+
+	_xstrfmtcat(buf, "%s%s", p, z);
+}
+
 /*
  * append formatted string with printf-style args to buf, expanding
  * buf as needed

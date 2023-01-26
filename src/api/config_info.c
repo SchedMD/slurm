@@ -1024,6 +1024,8 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 		key_pair->value = xstrdup("rfc5424_ms");
 	else if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_RFC5424)
 		key_pair->value = xstrdup("rfc5424");
+	else if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_RFC3339)
+		key_pair->value = xstrdup("rfc3339");
 	else if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_CLOCK)
 		key_pair->value = xstrdup("clock");
 	else if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_SHORT)

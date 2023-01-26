@@ -4352,6 +4352,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->log_fmt = LOG_FMT_RFC5424_MS;
 		else if (xstrcasestr(temp_str, "rfc5424"))
 			conf->log_fmt = LOG_FMT_RFC5424;
+		else if (xstrcasestr(temp_str, "rfc3339"))
+			conf->log_fmt = LOG_FMT_RFC3339;
 		else if (xstrcasestr(temp_str, "clock"))
 			conf->log_fmt = LOG_FMT_CLOCK;
 		else if (xstrcasestr(temp_str, "short"))
