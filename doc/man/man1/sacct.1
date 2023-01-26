@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "December 2022" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "February 2023" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -1111,8 +1111,8 @@ Can only be modified by a Slurm administrator.
 The amount of system CPU time used by the job or job step. Format
 is the same as \f3Elapsed\fP.
 
-NOTE: SystemCPU provides a measure of the task's parent process and
-does not include CPU time of child processes.
+\fBNOTE\fR: See the note for TotalCPU for information about how canceled jobs
+are handled.
 .IP
 
 .TP
@@ -1131,8 +1131,15 @@ The sum of the SystemCPU and UserCPU time used by the job or job step.
 The total CPU time of the job may exceed the job's elapsed time for
 jobs that include multiple job steps. Format is the same as \f3Elapsed\fP.
 
-NOTE: TotalCPU provides a measure of the task's parent process and
-does not include CPU time of child processes.
+\fBNOTE\fR: For the steps interrupted by signal (e.g. scancel, job timeout)
+TotalCPU provides a measure of the task's parent process and may not include
+CPU time of child processes.
+This is a result of \f3wait3\fP resource usage (\f3getrusage\fP) internals.
+For processes completing in regular way all the descendant processes (forks and
+execs) resources are included. However, if the processes are killed the result
+may differ between proctrack plugins and end-user applications.
+\"Proctrack pgid is significantly different, since it makes use of killpg
+\"not kill, which seems to allow better resources usage gathering.
 .IP
 
 .TP
@@ -1240,8 +1247,8 @@ The user name of the user who ran the job.
 The amount of user CPU time used by the job or job step. Format is the same as
 \f3Elapsed\fP.
 
-NOTE: UserCPU provides a measure of the task's parent process and does
-not include CPU time of child processes.
+\fBNOTE\fR: See the note for TotalCPU for information about how canceled jobs
+are handled.
 .IP
 
 .TP
