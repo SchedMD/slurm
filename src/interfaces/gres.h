@@ -112,8 +112,6 @@ typedef struct {
 #define GRES_CONF_ENV_SET    0x000008E0   /* Easy check if any of
 					   * GRES_CONF_ENV_* are set. */
 
-#define GRES_NO_CONSUME		0x0001	/* Requesting no consume of resources */
-
 /* GRES AutoDetect options */
 #define GRES_AUTODETECT_UNSET     0x00000000 /* Not set */
 #define GRES_AUTODETECT_GPU_NVML  0x00000001
@@ -245,7 +243,7 @@ typedef struct gres_node_state {
 typedef struct gres_job_state {
 	uint32_t type_id;		/* GRES type (e.g. model ID) */
 	char *type_name;		/* GRES type (e.g. model name) */
-	uint16_t flags;			/* GRES_NO_CONSUME, etc. */
+	uint16_t flags;			/* GRES_CONF_HAS_FILE, etc. */
 
 	/* Count of required GRES resources plus associated CPUs and memory */
 	uint16_t cpus_per_gres;
@@ -336,7 +334,7 @@ typedef struct {
 typedef struct gres_step_state {
 	uint32_t type_id;		/* GRES type (e.g. model ID) */
 	char *type_name;		/* GRES type (e.g. model name) */
-	uint16_t flags;			/* GRES_NO_CONSUME, etc. */
+	uint16_t flags;			/* GRES_CONF_HAS_FILE, etc. */
 
 	/* Count of required GRES resources plus associated CPUs and memory */
 	uint16_t cpus_per_gres;
