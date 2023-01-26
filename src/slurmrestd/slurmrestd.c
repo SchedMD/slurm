@@ -511,7 +511,7 @@ int main(int argc, char **argv)
 		debug("Interactive mode activated (TTY detected on STDIN)");
 
 	if (!run_mode.listen) {
-		if ((rc = con_mgr_process_fd(conmgr, STDIN_FILENO,
+		if ((rc = con_mgr_process_fd(conmgr, CON_TYPE_RAW, STDIN_FILENO,
 					     STDOUT_FILENO, conmgr_events, NULL,
 					     0, operations_router)))
 			fatal("%s: unable to process stdin: %s",
@@ -522,7 +522,7 @@ int main(int argc, char **argv)
 	} else if (run_mode.listen) {
 		mode_t mask = umask(0);
 
-		if (con_mgr_create_sockets(conmgr, socket_listen,
+		if (con_mgr_create_sockets(conmgr, CON_TYPE_RAW, socket_listen,
 					   conmgr_events, operations_router))
 			fatal("Unable to create sockets");
 

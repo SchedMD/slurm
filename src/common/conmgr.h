@@ -110,12 +110,22 @@ typedef struct {
 } con_mgr_callbacks_t;
 
 /*
+ * conmgr can handle RPC or raw connections
+ */
+typedef enum {
+	CON_TYPE_INVALID = 0,
+	CON_TYPE_RAW, /* handle data unprocessed to/from */
+	CON_TYPE_MAX /* place holder - do not use */
+} con_mgr_con_type_t;
+
+/*
  * Connection tracking structure
  *
  * Opaque struct - do not access directly
  */
 struct con_mgr_fd_s {
 	int magic;
+	con_mgr_con_type_t type;
 	/* input and output may be a different fd to inet mode */
 	int input_fd;
 	int output_fd;
@@ -236,6 +246,7 @@ extern void free_con_mgr(con_mgr_t *mgr);
 /*
  * instruct connection manager to process fd (async)
  * IN mgr connection manager to update
+ * IN type connection type for fd
  * IN input_fd file descriptor to have mgr take ownership and read from
  * IN output_fd file descriptor to have mgr take ownership and write to
  * IN events call backs on events of fd
@@ -244,7 +255,8 @@ extern void free_con_mgr(con_mgr_t *mgr);
  * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
-extern int con_mgr_process_fd(con_mgr_t *mgr, int input_fd, int output_fd,
+extern int con_mgr_process_fd(con_mgr_t *mgr, con_mgr_con_type_t type,
+			      int input_fd, int output_fd,
 			      const con_mgr_events_t events,
 			      const slurm_addr_t *addr, socklen_t addrlen,
 			      void *arg);
@@ -252,6 +264,7 @@ extern int con_mgr_process_fd(con_mgr_t *mgr, int input_fd, int output_fd,
 /*
  * instruct connection manager to listen to fd (async)
  * IN mgr connection manager to update
+ * IN type connection type for fd
  * IN fd file descriptor to have mgr take ownership of
  * IN events call backs on events of fd
  * IN addr socket listen address (will not xfree())
@@ -260,6 +273,7 @@ extern int con_mgr_process_fd(con_mgr_t *mgr, int input_fd, int output_fd,
  * RET SLURM_SUCCESS or error
  */
 extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
+				     con_mgr_con_type_t type,
 				     const con_mgr_events_t events,
 				     const slurm_addr_t *addr,
 				     socklen_t addrlen, void *arg);
@@ -267,6 +281,7 @@ extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
 /*
  * instruct connection manager to listen to unix socket fd (async)
  * IN mgr connection manager to update
+ * IN type connection type for fd
  * IN fd file descriptor to have mgr take ownership of
  * IN events call backs on events of fd
  * IN addr socket listen address (will not xfree())
@@ -275,7 +290,8 @@ extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
  * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
-extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr, int fd,
+extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr,
+					  con_mgr_con_type_t type, int fd,
 					  const con_mgr_events_t events,
 					  const slurm_addr_t *addr,
 					  socklen_t addrlen, const char *path,
@@ -304,14 +320,16 @@ extern void con_mgr_queue_close_fd(con_mgr_fd_t *con);
  * create sockets based on requested SOCKET_LISTEN
  * IN  mgr assigned connection manager
  * to accepted connections.
+ * IN type connection type for fd
  * IN  hostports list_t* of cstrings to listen on.
  *	format: host:port
  * IN events function callback on events
  * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
-extern int con_mgr_create_sockets(con_mgr_t *mgr, list_t *hostports,
-				  con_mgr_events_t events, void *arg);
+extern int con_mgr_create_sockets(con_mgr_t *mgr, con_mgr_con_type_t type,
+				  list_t *hostports, con_mgr_events_t events,
+				  void *arg);
 
 /*
  * Run connection manager main loop for until all processing is done
