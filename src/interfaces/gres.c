@@ -5485,21 +5485,18 @@ static int _test_gres_cnt(gres_state_t *gres_state_job,
  * in_val IN - initial input string
  * type OUT -  must be xfreed by caller
  * cnt OUT - count of values
- * flags OUT - user flags (GRES_NO_CONSUME)
  * save_ptr IN/OUT - NULL on initial call, otherwise value from previous call
  * RET rc - error code
  */
 static int _get_next_gres(char *in_val, char **type_ptr, int *context_inx_ptr,
-			  uint64_t *cnt, uint16_t *flags, char **save_ptr)
+			  uint64_t *cnt, char **save_ptr)
 {
 	char *name = NULL, *type = NULL;
 	int i, rc = SLURM_SUCCESS;
 	uint64_t value = 0;
 
 	xassert(cnt);
-	xassert(flags);
 	xassert(save_ptr);
-	*flags = 0;
 
 	rc = slurm_get_next_tres("gres:", in_val, &name, &type,
 				 &value, save_ptr);
@@ -5554,7 +5551,6 @@ static gres_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 	gres_state_t *gres_state_job = NULL;
 	gres_key_t job_search_key;
 	char *type = NULL, *name = NULL;
-	uint16_t flags = 0;
 
 	xassert(save_ptr);
 	if (!in_val && (*save_ptr == NULL)) {
@@ -5575,7 +5571,7 @@ static gres_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 	}
 
 	if ((my_rc = _get_next_gres(in_val, &type, &context_inx,
-				    cnt, &flags, &prev_save_ptr)) ||
+				    cnt, &prev_save_ptr)) ||
 	    (context_inx == NO_VAL)) {
 		prev_save_ptr = NULL;
 		goto fini;
@@ -5601,7 +5597,6 @@ static gres_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 			GRES_STATE_TYPE_JOB, gres_js);
 		list_append(gres_list, gres_state_job);
 	}
-	gres_js->flags = flags;
 
 fini:	xfree(name);
 	xfree(type);
@@ -7937,7 +7932,6 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 	gres_state_t *gres_state_step;
 	gres_key_t step_search_key;
 	char *type = NULL, *name = NULL;
-	uint16_t flags = 0;
 
 	xassert(save_ptr);
 	if (!in_val && (*save_ptr == NULL)) {
@@ -7958,7 +7952,7 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 	}
 
 	if ((my_rc = _get_next_gres(in_val, &type, &context_inx,
-				    cnt, &flags, &prev_save_ptr)) ||
+				    cnt, &prev_save_ptr)) ||
 	    (context_inx == NO_VAL)) {
 		prev_save_ptr = NULL;
 		goto fini;
@@ -7983,7 +7977,6 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 			GRES_STATE_TYPE_STEP, gres_ss);
 		list_append(gres_list, gres_state_step);
 	}
-	gres_ss->flags = flags;
 
 fini:	xfree(name);
 	xfree(type);
