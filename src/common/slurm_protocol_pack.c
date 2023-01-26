@@ -3003,6 +3003,7 @@ static void _pack_job_step_create_response_msg(
 	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		pack32(msg->def_cpu_bind_type, buffer);
 		packstr(msg->resv_ports, buffer);
+		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
 		pack_slurm_step_layout(msg->step_layout, buffer,
 				       protocol_version);
@@ -3041,6 +3042,7 @@ static int _unpack_job_step_create_response_msg(
 	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		safe_unpack32(&tmp_ptr->def_cpu_bind_type, buffer);
 		safe_unpackstr(&tmp_ptr->resv_ports, buffer);
+		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->job_step_id, buffer);
 		if (unpack_slurm_step_layout(&tmp_ptr->step_layout, buffer,
 					     protocol_version))
