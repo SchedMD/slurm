@@ -115,7 +115,7 @@ static int	_schedule(bool full_queue);
 static int	_valid_batch_features(job_record_t *job_ptr, bool can_reboot);
 static int	_valid_feature_list(job_record_t *job_ptr, List feature_list,
 				    bool can_reboot, char *debug_str,
-				    bool is_reservation);
+				    char *features, bool is_reservation);
 static int	_valid_node_feature(char *feature, bool can_reboot);
 static int	build_queue_timeout = BUILD_TIMEOUT;
 static int	correspond_after_task_cnt = CORRESPOND_ARRAY_TASK_CNT;
@@ -4661,10 +4661,10 @@ static int _feature_string2list(char *features, char *debug_str,
 	int brack_set_count = 0;
 	char *tmp_requested;
 	char *str_ptr, *feature = NULL;
-	bool fail = false;
 	bool has_changeable = false;
 	bool has_static_or = false;
 	bool has_paren_or = false;
+	bool has_asterisk = false;
 
 	xassert(feature_list);
 
@@ -4681,16 +4681,22 @@ static int _feature_string2list(char *features, char *debug_str,
 		if (tmp_requested[i] == '*') {
 			tmp_requested[i] = '\0';
 			count = strtol(&tmp_requested[i+1], &str_ptr, 10);
+			if (!bracket)
+				has_asterisk = true;
 			if ((feature == NULL) || (count <= 0) || (paren != 0)) {
-				fail = true;
-				break;
+				verbose("%s constraint invalid, '*' must be requested with a positive integer, and after a feature or parentheses: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
 			}
 			i = str_ptr - tmp_requested - 1;
 		} else if (tmp_requested[i] == '&') {
 			tmp_requested[i] = '\0';
 			if (feature == NULL) {
-				fail = true;
-				break;
+				verbose("%s constraint requested '&' without a feature: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
 			}
 			feat = xmalloc(sizeof(job_feature_t));
 			feat->name = xstrdup(feature);
@@ -4715,8 +4721,10 @@ static int _feature_string2list(char *features, char *debug_str,
 
 			tmp_requested[i] = '\0';
 			if (feature == NULL) {
-				fail = true;
-				break;
+				verbose("%s constraint requested '|' without a feature: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
 			}
 			changeable = node_features_g_changeable_feature(
 				feature);
@@ -4748,18 +4756,24 @@ static int _feature_string2list(char *features, char *debug_str,
 			count = 0;
 		} else if (tmp_requested[i] == '[') {
 			tmp_requested[i] = '\0';
-			if ((feature != NULL) || bracket) {
-				fail = true;
-				break;
+			if ((feature != NULL) || bracket || paren) {
+				verbose("%s constraint has imbalanced brackets: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
 			}
 			bracket++;
 			brack_set_count++;
-			if (brack_set_count > 1)
-				break;
+			if (brack_set_count > 1) {
+				verbose("%s constraint has more than one set of brackets: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
+			}
 		} else if (tmp_requested[i] == ']') {
 			tmp_requested[i] = '\0';
-			if ((feature == NULL) || (bracket == 0)) {
-				verbose("%s invalid constraint %s",
+			if ((feature == NULL) || (bracket == 0) || paren) {
+				verbose("%s constraint has imbalanced brackets: %s",
 					debug_str, features);
 				rc = feature_err;
 				goto fini;
@@ -4768,15 +4782,19 @@ static int _feature_string2list(char *features, char *debug_str,
 		} else if (tmp_requested[i] == '(') {
 			tmp_requested[i] = '\0';
 			if ((feature != NULL) || paren) {
-				fail = true;
-				break;
+				verbose("%s constraint has imbalanced parentheses: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
 			}
 			paren++;
 		} else if (tmp_requested[i] == ')') {
 			tmp_requested[i] = '\0';
 			if ((feature == NULL) || (paren == 0)) {
-				fail = true;
-				break;
+				verbose("%s constraint has imbalanced parentheses: %s",
+					debug_str, features);
+				rc = feature_err;
+				goto fini;
 			}
 			paren--;
 		} else if (tmp_requested[i] == '\0') {
@@ -4798,20 +4816,20 @@ static int _feature_string2list(char *features, char *debug_str,
 		}
 	}
 
-	if (brack_set_count > 1) {
-		verbose("%s constraint has more than one set of brackets: %s",
-			debug_str, features);
-		rc = ESLURM_INVALID_FEATURE;
-		goto fini;
-	}
 	if (bracket != 0) {
 		verbose("%s constraint has unbalanced brackets: %s",
 			debug_str, features);
-		rc = ESLURM_INVALID_FEATURE;
+		rc = feature_err;
 		goto fini;
 	}
 	if (paren != 0) {
 		verbose("%s constraint has unbalanced parenthesis: %s",
+			debug_str, features);
+		rc = feature_err;
+		goto fini;
+	}
+	if (has_asterisk && (list_count(*feature_list) > 1)) {
+		verbose("%s constraint has '*' outside of brackets with more than one feature: %s",
 			debug_str, features);
 		rc = feature_err;
 		goto fini;
@@ -4843,8 +4861,11 @@ static int _feature_string2list(char *features, char *debug_str,
 				   (has_paren_or || has_static_or));
 
 fini:
-	if (fail)
+	if (rc != SLURM_SUCCESS) {
 		FREE_NULL_LIST(*feature_list);
+		info("%s invalid constraint: %s",
+		     debug_str, features);
+	}
 	xfree(tmp_requested);
 
 	return rc;
@@ -4904,8 +4925,6 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 	rc = _feature_string2list(features, debug_str, feature_err,
 				  feature_list, &convert_to_matching_or);
 	if (rc != SLURM_SUCCESS) {
-		verbose("%s invalid constraint %s",
-			debug_str, features);
 		rc = ESLURM_INVALID_FEATURE;
 		goto fini;
 	}
@@ -4966,7 +4985,7 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 	}
 
 	rc = _valid_feature_list(job_ptr, *feature_list, can_reboot, debug_str,
-				 is_reservation);
+				 features, is_reservation);
 	if (rc == ESLURM_INVALID_FEATURE) {
 		rc = feature_err;
 		goto fini;
@@ -5039,14 +5058,13 @@ static int _valid_batch_features(job_record_t *job_ptr, bool can_reboot)
 }
 
 static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
-			       bool can_reboot, char *debug_str,
+			       bool can_reboot, char *debug_str, char *features,
 			       bool is_reservation)
 {
 	static time_t sched_update = 0;
 	static bool ignore_prefer_val = false;
 	ListIterator feat_iter;
 	job_feature_t *feat_ptr;
-	char *buf = NULL;
 	int bracket = 0, paren = 0;
 	int rc = SLURM_SUCCESS;
 	bool has_xand = false, has_mor = false;
@@ -5069,46 +5087,49 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 	while ((feat_ptr = list_next(feat_iter))) {
 		if ((feat_ptr->op_code == FEATURE_OP_MOR) ||
 		    (feat_ptr->op_code == FEATURE_OP_XAND)) {
-			if (bracket == 0)
-				xstrcat(buf, "[");
 			bracket = feat_ptr->paren + 1;
 		}
 		if (feat_ptr->paren > paren) {
-			xstrcat(buf, "(");
 			paren = feat_ptr->paren;
 		}
-		xstrcat(buf, feat_ptr->name);
 		if (feat_ptr->paren < paren) {
-			xstrcat(buf, ")");
 			paren = feat_ptr->paren;
 		}
 		if (rc == SLURM_SUCCESS &&
 		    (!ignore_prefer_val ||
-		     (feature_list != job_ptr->details->prefer_list)))
+		     (feature_list != job_ptr->details->prefer_list))) {
 			rc = _valid_node_feature(feat_ptr->name, can_reboot);
-		if (feat_ptr->count)
-			xstrfmtcat(buf, "*%u", feat_ptr->count);
-		if (feat_ptr->op_code == FEATURE_OP_XAND && !feat_ptr->count)
+			if (rc != SLURM_SUCCESS)
+				verbose("%s feature %s is not usable on any node: %s",
+					debug_str, feat_ptr->name, features);
+		}
+		if (feat_ptr->op_code == FEATURE_OP_XAND && !feat_ptr->count) {
+			verbose("%s feature %s invalid, count must be used with XAND: %s",
+				debug_str, feat_ptr->name, features);
 			rc = ESLURM_INVALID_FEATURE;
-		if (feat_ptr->op_code == FEATURE_OP_MOR && feat_ptr->count)
+		}
+		if (feat_ptr->op_code == FEATURE_OP_MOR && feat_ptr->count) {
+			verbose("%s feature %s invalid, count must not be used with MOR: %s",
+				debug_str, feat_ptr->name, features);
 			rc = ESLURM_INVALID_FEATURE;
-		if ((bracket > paren) &&
+		}
+		if ((bracket > paren) && /* In brackets, outside of paren */
 		    ((feat_ptr->op_code != FEATURE_OP_MOR) &&
 		     (feat_ptr->op_code != FEATURE_OP_XAND))) {
-			if ((has_xand && !feat_ptr->count) ||
-			    (has_mor && feat_ptr->count))
+			if (has_xand && !feat_ptr->count) {
 				rc = ESLURM_INVALID_FEATURE;
-			xstrcat(buf, "]");
+				verbose("%s feature %s invalid, count must be used with XAND: %s",
+					debug_str, feat_ptr->name, features);
+			}
+			if (has_mor && feat_ptr->count) {
+				rc = ESLURM_INVALID_FEATURE;
+				verbose("%s feature %s invalid, count must not be used with MOR: %s",
+					debug_str, feat_ptr->name, features);
+			}
 			bracket = 0;
 			has_xand = false;
 			has_mor = false;
 		}
-		if ((feat_ptr->op_code == FEATURE_OP_AND) ||
-		    (feat_ptr->op_code == FEATURE_OP_XAND))
-			xstrcat(buf, "&");
-		else if ((feat_ptr->op_code == FEATURE_OP_OR) ||
-			 (feat_ptr->op_code == FEATURE_OP_MOR))
-			xstrcat(buf, "|");
 		if (feat_ptr->op_code == FEATURE_OP_XAND)
 			has_xand = true;
 		if (feat_ptr->op_code == FEATURE_OP_MOR)
@@ -5117,20 +5138,20 @@ static int _valid_feature_list(job_record_t *job_ptr, List feature_list,
 	list_iterator_destroy(feat_iter);
 
 	if (rc == SLURM_SUCCESS) {
-		debug("%s feature list: %s", debug_str, buf);
+		debug("%s feature list: %s", debug_str, features);
 	} else {
 		if (is_reservation) {
-			info("Reservation has invalid feature list: %s", buf);
+			info("Reservation has invalid feature list: %s",
+			     features);
 		} else {
 			if (can_reboot)
 				info("%s has invalid feature list: %s",
-				     debug_str, buf);
+				     debug_str, features);
 			else
 				info("%s has invalid feature list (%s) or the features are not active and this user cannot reboot to update node features",
-				     debug_str, buf);
+				     debug_str, features);
 		}
 	}
-	xfree(buf);
 
 	return rc;
 }
