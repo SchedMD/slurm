@@ -264,6 +264,7 @@ documents those changes that are of interest to users and administrators.
  -- Add HealthCheckNodeState=NONDRAINED_IDLE option.
  -- Add 'explicit' to Flags in gres.conf
  -- Improve validation of --constraint expression syntax.
+ -- srun - support job array ids as an argument to --jobid.
 
 * Changes in Slurm 22.05.9
 ==========================

@@ -250,6 +250,7 @@ typedef struct {
 	bool exclusive;			/* --exclusive			*/
 	bool interactive;		/* --interactive		*/
 	uint32_t jobid;			/* --jobid			*/
+	uint32_t array_task_id;		/* --jobid			*/
 	int32_t kill_bad_exit;		/* --kill-on-bad-exit		*/
 	bool labelio;			/* --label-output		*/
 	int32_t max_threads;		/* --threads			*/

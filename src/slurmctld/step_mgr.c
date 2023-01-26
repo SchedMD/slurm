@@ -2981,7 +2981,12 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 #endif
 
 	*new_step_record = NULL;
-	job_ptr = find_job_record (step_specs->step_id.job_id);
+	if (step_specs->array_task_id != NO_VAL)
+		job_ptr = find_job_array_rec(step_specs->step_id.job_id,
+					     step_specs->array_task_id);
+	else
+		job_ptr = find_job_record(step_specs->step_id.job_id);
+
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID ;
 
@@ -3190,6 +3195,9 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 
 	memcpy(&step_ptr->step_id, &step_specs->step_id,
 	       sizeof(step_ptr->step_id));
+
+	if (step_specs->array_task_id != NO_VAL)
+		step_ptr->step_id.job_id = job_ptr->job_id;
 
 	if (step_specs->step_id.step_id != NO_VAL) {
 		if (step_specs->step_id.step_het_comp == NO_VAL) {

@@ -804,6 +804,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	step_req->step_het_comp_cnt = opt_local->step_het_comp_cnt;
 	step_req->step_het_grps = xstrdup(opt_local->step_het_grps);
 	memcpy(&step_req->step_id, &job->step_id, sizeof(step_req->step_id));
+	step_req->array_task_id = srun_opt->array_task_id;
 
 	step_req->submit_line = xstrdup(opt_local->submit_line);
 
@@ -1137,9 +1138,15 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 	if (!step_req)
 		return SLURM_ERROR;
 
-	debug("requesting job %u, user %u, nodes %u including (%s)",
-	      step_req->step_id.job_id, step_req->user_id,
-	      step_req->min_nodes, step_req->node_list);
+	if (step_req->array_task_id != NO_VAL)
+		debug("requesting job %u_%u, user %u, nodes %u including (%s)",
+		      step_req->step_id.job_id, step_req->array_task_id,
+		      step_req->user_id, step_req->min_nodes,
+		      step_req->node_list);
+	else
+		debug("requesting job %u, user %u, nodes %u including (%s)",
+		      step_req->step_id.job_id, step_req->user_id,
+		      step_req->min_nodes, step_req->node_list);
 	debug("cpus %u, tasks %u, name %s, relative %u",
 	      step_req->cpu_count, step_req->num_tasks,
 	      step_req->name, step_req->relative);
@@ -1223,6 +1230,8 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 			return SLURM_ERROR;
 		}
 	}
+
+	job->step_id.job_id = step_req->step_id.job_id;
 	job->step_id.step_id = step_req->step_id.step_id;
 
 	step_layout = launch_common_get_slurm_step_layout(job);

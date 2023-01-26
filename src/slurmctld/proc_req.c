@@ -2455,6 +2455,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 			 __func__, step_rec, req_step_msg->node_list, TIME_STR);
 
 		memset(&job_step_resp, 0, sizeof(job_step_resp));
+		job_step_resp.job_id = step_rec->step_id.job_id;
 		job_step_resp.job_step_id = step_rec->step_id.step_id;
 		job_step_resp.resv_ports  = step_rec->resv_ports;
 
