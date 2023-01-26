@@ -239,7 +239,10 @@ handle_write:
 		/* error in load hardware topology */
 		debug("hwloc_topology_load() failed.");
 		ret = SLURM_ERROR;
-	} else if (!conf->def_config) {
+		goto end_it;
+	}
+
+	if (!conf->def_config) {
 		debug2("hwloc_topology_export_xml");
 		if (_internal_hwloc_topology_export_xml(*topology, topo_file)) {
 			/* error in export hardware topology */
@@ -247,6 +250,7 @@ handle_write:
 		}
 	}
 
+end_it:
 	if (!topology_in)
 		hwloc_topology_destroy(tmp_topo);
 
