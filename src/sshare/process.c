@@ -274,7 +274,7 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 							      field_count));
 				else
 					field->print_routine(field,
-						     (double) share->level_fs,
+						     share->level_fs,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_ID:
