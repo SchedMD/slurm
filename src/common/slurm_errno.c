@@ -433,6 +433,10 @@ slurm_errtab_t slurm_errtab[] = {
 	  "HetStep component includes unexpected non-numeric characters" },
 	{ ERRTAB_ENTRY(ESLURM_INVALID_HET_STEP_JOB),
 	  "HetJob can not Het step id" },
+	{ ERRTAB_ENTRY(ESLURM_JOB_TIMEOUT_KILLED),
+	  "Job killed due hitting max wall clock limit" },
+	{ ERRTAB_ENTRY(ESLURM_JOB_NODE_FAIL_KILLED),
+	  "Job killed due node failure" },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),
