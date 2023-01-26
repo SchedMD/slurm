@@ -802,6 +802,7 @@ typedef struct job_step_specs {
 				     * allocation. */
 	char *step_het_grps;	/* what het groups are used by step */
 	slurm_step_id_t step_id;
+	uint32_t array_task_id;	/* Array Task Id, or NO_VAL */
 	uint32_t srun_pid;	/* PID of srun command, also see host */
 	char *submit_line;	/* The command issued with all it's options in a
 				 * string */

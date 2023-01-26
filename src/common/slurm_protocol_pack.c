@@ -2615,6 +2615,7 @@ static void _pack_job_step_create_request_msg(
 
 	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
+		pack32(msg->array_task_id, buffer);
 		pack32(msg->user_id, buffer);
 		pack32(msg->min_nodes, buffer);
 		pack32(msg->max_nodes, buffer);
@@ -2720,6 +2721,7 @@ static int _unpack_job_step_create_request_msg(
 		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
+		safe_unpack32(&tmp_ptr->array_task_id, buffer);
 		safe_unpack32(&tmp_ptr->user_id, buffer);
 		safe_unpack32(&tmp_ptr->min_nodes, buffer);
 		safe_unpack32(&tmp_ptr->max_nodes, buffer);
@@ -2767,6 +2769,7 @@ static int _unpack_job_step_create_request_msg(
 		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
+		tmp_ptr->array_task_id = NO_VAL;
 		safe_unpack32(&tmp_ptr->user_id, buffer);
 		safe_unpack32(&tmp_ptr->min_nodes, buffer);
 		safe_unpack32(&tmp_ptr->max_nodes, buffer);
