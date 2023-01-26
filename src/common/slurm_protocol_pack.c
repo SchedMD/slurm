@@ -2997,7 +2997,19 @@ static void _pack_job_step_create_response_msg(
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		pack32(msg->def_cpu_bind_type, buffer);
+		packstr(msg->resv_ports, buffer);
+		pack32(msg->job_step_id, buffer);
+		pack_slurm_step_layout(msg->step_layout, buffer,
+				       protocol_version);
+		slurm_cred_pack(msg->cred, buffer, protocol_version);
+		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
+					     protocol_version);
+		switch_g_pack_jobinfo(msg->switch_job, buffer,
+				      protocol_version);
+		pack16(msg->use_protocol_ver, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->def_cpu_bind_type, buffer);
 		packstr(msg->resv_ports, buffer);
 		pack32(msg->job_step_id, buffer);
@@ -3017,14 +3029,36 @@ static int _unpack_job_step_create_response_msg(
 	uint16_t protocol_version)
 {
 	job_step_create_response_msg_t *tmp_ptr = NULL;
-	uint32_t uint32_tmp;
 
 	/* alloc memory for structure */
 	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(job_step_create_response_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		safe_unpack32(&tmp_ptr->def_cpu_bind_type, buffer);
+		safe_unpackstr(&tmp_ptr->resv_ports, buffer);
+		safe_unpack32(&tmp_ptr->job_step_id, buffer);
+		if (unpack_slurm_step_layout(&tmp_ptr->step_layout, buffer,
+					     protocol_version))
+			goto unpack_error;
+
+		if (!(tmp_ptr->cred = slurm_cred_unpack(buffer,
+							protocol_version)))
+			goto unpack_error;
+
+		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
+						   buffer, protocol_version))
+			goto unpack_error;
+		if (switch_g_unpack_jobinfo(&tmp_ptr->switch_job, buffer,
+					    protocol_version)) {
+			error("switch_g_unpack_jobinfo: %m");
+			switch_g_free_jobinfo(tmp_ptr->switch_job);
+			goto unpack_error;
+		}
+		safe_unpack16(&tmp_ptr->use_protocol_ver, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
 		safe_unpack32(&tmp_ptr->def_cpu_bind_type, buffer);
 		safe_unpackstr_xmalloc(
 			&tmp_ptr->resv_ports, &uint32_tmp, buffer);
