@@ -265,6 +265,9 @@ documents those changes that are of interest to users and administrators.
  -- Add 'explicit' to Flags in gres.conf
  -- Improve validation of --constraint expression syntax.
 
+* Changes in Slurm 22.05.9
+==========================
+
 * Changes in Slurm 22.05.8
 ==========================
  -- Fix potential deadlock at slurmctld startup when job has invalid qos.
