@@ -242,6 +242,49 @@ handle_write:
 		goto end_it;
 	}
 
+#if HWLOC_API_VERSION > 0x00020401
+	/*
+	 * Handle the removal of Intel E-Cores here.
+	 *
+	 * At the time of writing this Intel Gen 12+ procs have introduced what
+	 * are known as 'P' (performance) and 'E' (efficiency) cores. The
+	 * former can have pthreads, where the latter are only single threaded,
+	 * thus creating a situation where we could get a heterogeneous socket
+	 * (which Slurm doesn't like). Here we can restrict to only
+	 * "IntelCore" (P-Cores) and disregard the "IntelAtom" (E-Cores).
+	 *
+	 * In the future, if desired, we should probably figure out a way to
+	 * handle these E-Cores through a core spec instead.
+	 *
+	 * This logic should do nothing on any other existing processor.
+	 */
+	if (!xstrcasestr(slurm_conf.slurmd_params, "allow_ecores")) {
+		int type_cnt = hwloc_cpukinds_get_nr(*topology, 0);
+		if (type_cnt) {
+			hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
+			for (int i = 0; i < type_cnt; i++) {
+				unsigned nr_infos = 0;
+				struct hwloc_info_s *infos;
+				if (hwloc_cpukinds_get_info(
+					    *topology, i, cpuset,
+					    NULL, &nr_infos, &infos, 0))
+					fatal("Error getting info from hwloc_cpukinds_get_info()");
+
+				for (int j = 0; j < nr_infos; j++) {
+					if (!xstrcasecmp(infos[j].name,
+							 "CoreType") &&
+					    !xstrcasecmp(infos[j].value,
+							 "IntelCore")) {
+						hwloc_topology_restrict(
+							*topology, cpuset, 0);
+					}
+				}
+			}
+			hwloc_bitmap_free(cpuset);
+		}
+	}
+#endif
+
 	if (!conf->def_config) {
 		debug2("hwloc_topology_export_xml");
 		if (_internal_hwloc_topology_export_xml(*topology, topo_file)) {

@@ -5123,6 +5123,12 @@ Multiple options may be comma separated.
 .IP
 .RS
 .TP
+\fBallow_ecores\fR
+If set, and processors on your nodes have E\-Cores, allows them to be used in
+for scheduling and task placement. (By default, E\-Cores are ignored.)
+.IP
+
+.TP
 \fBconfig_overrides\fR
 If set, consider the configuration of each node to be that specified in the
 slurm.conf configuration file and any node with less than the
