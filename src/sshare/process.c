@@ -40,9 +40,6 @@
 #include "src/sshare/sshare.h"
 #include <math.h>
 
-static void _print_tres(print_field_t *field, uint64_t *tres_cnts,
-			int last);
-
 int long_flag;		/* exceeds 80 character limit with more info */
 char **tres_names = NULL;
 uint32_t tres_cnt = 0;
@@ -53,8 +50,8 @@ print_field_t fields[] = {
 	{10, "Cluster", print_fields_str, PRINT_CLUSTER},
 	{13, "EffectvUsage", print_fields_double, PRINT_EUSED},
 	{10, "FairShare", print_fields_double, PRINT_FSFACTOR},
-	{30, "GrpTRESMins", _print_tres, PRINT_TRESMINS},
-	{30, "GrpTRESRaw", _print_tres, PRINT_GRPTRESRAW},
+	{30, "GrpTRESMins", print_fields_str, PRINT_TRESMINS},
+	{30, "GrpTRESRaw", print_fields_str, PRINT_GRPTRESRAW},
 	{6,  "ID", print_fields_uint, PRINT_ID},
 	{10, "LevelFS", print_fields_double, PRINT_LEVELFS},
 	{11, "NormShares", print_fields_double, PRINT_NORMS},
@@ -62,38 +59,22 @@ print_field_t fields[] = {
 	{12, "Partition", print_fields_str, PRINT_PART},
 	{10, "RawShares", print_fields_uint32, PRINT_RAWS},
 	{11, "RawUsage", print_fields_uint64, PRINT_RAWU},
-	{30, "TRESRunMins", _print_tres, PRINT_RUNMINS},
+	{30, "TRESRunMins", print_fields_str, PRINT_RUNMINS},
 	{10, "User", print_fields_str, PRINT_USER},
 	{0,  NULL, NULL, 0}
 };
 
-static void _print_tres(print_field_t *field, uint64_t *tres_cnts,
-			int last)
+static void _print_tres_array(print_field_t *field, uint64_t *tres_cnts,
+				    int last)
 {
-	int abs_len = abs(field->len);
-	char *print_this;
+	char *tmp_char;
 
-	print_this = slurmdb_make_tres_string_from_arrays(
+	tmp_char = slurmdb_make_tres_string_from_arrays(
 		tres_names, tres_cnts, tres_cnt, TRES_STR_FLAG_REMOVE);
 
-	if (!print_this)
-		print_this = xstrdup("");
+	field->print_routine(field, tmp_char, last);
 
-	if (print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
-	    && last)
-		printf("%s", print_this);
-	else if (print_fields_parsable_print)
-		printf("%s|", print_this);
-	else {
-		if (strlen(print_this) > abs_len)
-			print_this[abs_len-1] = '+';
-
-		if (field->len == abs_len)
-			printf("%*.*s ", abs_len, abs_len, print_this);
-		else
-			printf("%-*.*s ", abs_len, abs_len, print_this);
-	}
-	xfree(print_this);
+	xfree(tmp_char);
 }
 
 extern int process(shares_response_msg_t *resp, uint16_t options)
@@ -340,26 +321,27 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 						     (curr_inx == field_count));
 				break;
 			case PRINT_TRESMINS:
-				field->print_routine(field,
-						     share->tres_grp_mins,
-						     (curr_inx == field_count));
+				_print_tres_array(field,
+						  share->tres_grp_mins,
+						  (curr_inx == field_count));
 				break;
 			case PRINT_GRPTRESRAW:
 				/* convert to ints and minutes */
 				for (i=0; i<tres_cnt; i++)
 					tres_raw[i] = (uint64_t)
 						(share->usage_tres_raw[i] / 60);
-				field->print_routine(field,
-						     tres_raw,
-						     (curr_inx == field_count));
+				_print_tres_array(field,
+						  tres_raw,
+						  (curr_inx == field_count));
 				break;
 			case PRINT_RUNMINS:
 				/* convert to minutes */
 				for (i=0; i<tres_cnt; i++)
 					share->tres_run_secs[i] /= 60;
-				field->print_routine(field,
-						     share->tres_run_secs,
-						     (curr_inx == field_count));
+
+				_print_tres_array(field,
+						  share->tres_run_secs,
+						  (curr_inx == field_count));
 				break;
 			default:
 				field->print_routine(
