@@ -1287,8 +1287,10 @@ static void _log_msg(log_level_t level, bool sched, bool spank, const char *fmt,
 		fflush(stderr);
 	}
 
-	if ((level <= log->opt.logfile_level) && (log->logfp != NULL)) {
-
+	if (!log->logfp || (level > log->opt.logfile_level)) {
+		/* do nothing */
+	} else {
+		xassert(log->opt.logfile_fmt == LOG_FILE_FMT_TIMESTAMP);
 		xlogfmtcat(&msgbuf, "[%M] %s%s%s", log->prefix, pfx, buf);
 		_log_printf(log, log->fbuf, log->logfp, "%s\n", msgbuf);
 		fflush(log->logfp);

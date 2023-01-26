@@ -90,6 +90,9 @@ typedef enum {
 	LOG_LEVEL_END
 }	log_level_t;
 
+typedef enum {
+	LOG_FILE_FMT_TIMESTAMP = 0,
+} log_file_fmt_t;
 
 /*
  * log options: Each of stderr, syslog, and logfile can have a different level
@@ -101,6 +104,7 @@ typedef struct {
 	bool prefix_level;          /* prefix level (e.g. "debug: ") if true */
 	bool buffered;              /* use internal buffer to never block    */
 	bool raw;                   /* output is to a raw terminal           */
+	log_file_fmt_t logfile_fmt; /* format of logfile output */
 } 	log_options_t;
 
 extern char *slurm_prog_name;
@@ -108,16 +112,20 @@ extern char *slurm_prog_name;
 /* some useful initializers for log_options_t
  */
 #define LOG_OPTS_INITIALIZER	\
-	{ LOG_LEVEL_INFO, LOG_LEVEL_INFO, LOG_LEVEL_INFO, 1, 0 , 0}
+	{ LOG_LEVEL_INFO, LOG_LEVEL_INFO, LOG_LEVEL_INFO, \
+		1, 0, 0, LOG_FILE_FMT_TIMESTAMP }
 
 #define LOG_OPTS_SYSLOG_DEFAULT	\
-	{ LOG_LEVEL_QUIET, LOG_LEVEL_INFO, LOG_LEVEL_QUIET, 1, 0, 0}
+	{ LOG_LEVEL_QUIET, LOG_LEVEL_INFO, LOG_LEVEL_QUIET, \
+		1, 0, 0, LOG_FILE_FMT_TIMESTAMP }
 
 #define LOG_OPTS_STDERR_ONLY	\
-	{ LOG_LEVEL_INFO,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, 1, 0, 0}
+	{ LOG_LEVEL_INFO,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, \
+		1, 0, 0, LOG_FILE_FMT_TIMESTAMP }
 
 #define SCHEDLOG_OPTS_INITIALIZER	\
-	{ LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, 0, 1, 0}
+	{ LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, \
+		0, 1, 0, LOG_FILE_FMT_TIMESTAMP }
 
 
 /* Functions for filling in a char buffer with a timestamp. */
