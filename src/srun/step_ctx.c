@@ -210,6 +210,11 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 		if (step_req->step_id.step_id == NO_VAL)
 			step_req->step_id.step_id = step_resp->job_step_id;
 
+		if (step_req->array_task_id != NO_VAL) {
+			step_req->step_id.job_id = step_resp->job_id;
+			ctx->job_id = step_resp->job_id;
+		}
+
 		ctx->step_resp	= step_resp;
 		ctx->launch_state = step_launch_state_create(ctx);
 		ctx->launch_state->slurmctld_socket_fd = sock;

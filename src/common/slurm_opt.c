@@ -2385,10 +2385,18 @@ static slurm_cli_opt_t slurm_opt_interactive = {
 
 static int arg_set_jobid(slurm_opt_t *opt, const char *arg)
 {
+	slurm_selected_step_t *step;
+	char *job;
+
 	if (!opt->srun_opt)
 		return SLURM_ERROR;
 
-	opt->srun_opt->jobid = parse_int("--jobid", arg, true);
+	job = xstrdup(arg);
+	/* will modify job, thus the xstrdup() from arg */
+	step = slurm_parse_step_str(job);
+	opt->srun_opt->jobid = step->step_id.job_id;
+	opt->srun_opt->array_task_id = step->array_task_id;
+	xfree(job);
 
 	return SLURM_SUCCESS;
 }
@@ -2404,8 +2412,10 @@ static char *arg_get_jobid(slurm_opt_t *opt)
 }
 static void arg_reset_jobid(slurm_opt_t *opt)
 {
-	if (opt->srun_opt)
+	if (opt->srun_opt) {
 		opt->srun_opt->jobid = NO_VAL;
+		opt->srun_opt->array_task_id = NO_VAL;
+	}
 }
 static slurm_cli_opt_t slurm_opt_jobid = {
 	.name = "jobid",
