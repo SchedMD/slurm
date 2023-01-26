@@ -7941,13 +7941,15 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_return_code2_msg(return_code2_msg_t * msg, buf_t *buffer,
-		       uint16_t protocol_version)
+static void _pack_return_code2_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	return_code2_msg_t *msg = smsg->data;
+
 	xassert(msg);
-	pack32(msg->return_code, buffer);
-	packstr(msg->err_msg,    buffer);
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(msg->return_code, buffer);
+		packstr(msg->err_msg, buffer);
+	}
 }
 
 /* Log error message, otherwise replicate _unpack_return_code_msg() */
@@ -12622,9 +12624,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 				      msg->protocol_version);
 		break;
 	case RESPONSE_SLURM_RC_MSG:
-		_pack_return_code2_msg((return_code2_msg_t *) msg->data,
-				       buffer,
-				       msg->protocol_version);
+		_pack_return_code2_msg(msg, buffer);
 		break;
 	case RESPONSE_SLURM_REROUTE_MSG:
 		_pack_reroute_msg((reroute_msg_t *)msg->data, buffer,
