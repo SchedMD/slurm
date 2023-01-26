@@ -51,6 +51,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in rc1 causing sacctmgr to segfault when printing unrelated
     fields.
  -- jobcomp/kafka - don't use the purge API if librdkafka < v1.0.0.
+ -- Change shown start time of pending array job to be start time of earliest
+    pending array task.
 
 * Changes in Slurm 23.02.0rc1
 =============================

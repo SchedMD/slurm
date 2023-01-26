@@ -1724,7 +1724,7 @@ static void _attempt_backfill(void)
 	job_record_t *reject_array_job = NULL;
 	part_record_t *reject_array_part = NULL;
 	slurmctld_resv_t *reject_array_resv = NULL;
-	uint32_t start_time;
+	uint32_t start_time, array_start_time = 0;
 	struct timeval start_tv;
 	uint32_t test_array_job_id = 0;
 	uint32_t test_array_count = 0;
@@ -1863,7 +1863,16 @@ static void _attempt_backfill(void)
 			    slurm_conf.preempt_mode && orig_time_limit &&
 			    (orig_time_limit != job_ptr->time_limit))
 				job_ptr->time_limit = orig_time_limit;
+
+			/*
+			 * An array job with pending tasks should take on the
+			 * start_time of the earliest pending task in the
+			 * array.
+			 */
+			if (job_ptr->array_recs && array_start_time)
+				job_ptr->start_time = array_start_time;
 		}
+		array_start_time = 0;
 		xfree(job_queue_rec);
 		job_queue_rec = list_pop(job_queue);
 		if (!job_queue_rec) {
@@ -3043,8 +3052,11 @@ skip_start:
 			if (test_array_job_id != job_ptr->array_job_id) {
 				test_array_job_id = job_ptr->array_job_id;
 				test_array_count = 1;
+				array_start_time = job_ptr->start_time;
 			} else {
 				test_array_count++;
+				array_start_time = MIN(array_start_time,
+						       job_ptr->start_time);
 			}
 
 			/*
@@ -3071,6 +3083,9 @@ skip_start:
 		_restore_preempt_state(job_ptr, &tmp_preempt_start_time,
 				       &tmp_preempt_in_progress);
 		job_resv_clear_magnetic_flag(job_ptr);
+
+		if (job_ptr->array_recs && array_start_time)
+			job_ptr->start_time = array_start_time;
 	}
 
 	_het_job_deadlock_fini();
