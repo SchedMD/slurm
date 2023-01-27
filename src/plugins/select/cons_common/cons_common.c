@@ -1095,6 +1095,8 @@ extern int select_p_node_init()
 		preempt_strict_order = true;
 	else
 		preempt_strict_order = false;
+
+	preempt_reorder_cnt = 1;
 	if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 				   "preempt_reorder_count="))) {
 		preempt_reorder_cnt = atoi(tmp_ptr + 22);
