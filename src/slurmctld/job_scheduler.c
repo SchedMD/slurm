@@ -4636,7 +4636,7 @@ extern List feature_list_copy(List feature_list_src)
 }
 
 static int _feature_string2list(char *features, char *debug_str,
-				int feature_err, list_t **feature_list,
+				list_t **feature_list,
 				bool *convert_to_matching_or)
 {
 	int rc = SLURM_SUCCESS;
@@ -4669,7 +4669,7 @@ static int _feature_string2list(char *features, char *debug_str,
 			if ((feature == NULL) || (count <= 0) || (paren != 0)) {
 				verbose("%s constraint invalid, '*' must be requested with a positive integer, and after a feature or parentheses: %s",
 					debug_str, features);
-				rc = feature_err;
+				rc = ESLURM_INVALID_FEATURE;
 				goto fini;
 			}
 			i = str_ptr - tmp_requested - 1;
@@ -4678,7 +4678,7 @@ static int _feature_string2list(char *features, char *debug_str,
 			if (feature == NULL) {
 				verbose("%s constraint requested '&' without a feature: %s",
 					debug_str, features);
-				rc = feature_err;
+				rc = ESLURM_INVALID_FEATURE;
 				goto fini;
 			}
 			feat = xmalloc(sizeof(job_feature_t));
@@ -4706,7 +4706,7 @@ static int _feature_string2list(char *features, char *debug_str,
 			if (feature == NULL) {
 				verbose("%s constraint requested '|' without a feature: %s",
 					debug_str, features);
-				rc = feature_err;
+				rc = ESLURM_INVALID_FEATURE;
 				goto fini;
 			}
 			changeable = node_features_g_changeable_feature(
@@ -4742,7 +4742,7 @@ static int _feature_string2list(char *features, char *debug_str,
 			if ((feature != NULL) || bracket || paren) {
 				verbose("%s constraint has imbalanced brackets: %s",
 					debug_str, features);
-				rc = feature_err;
+				rc = ESLURM_INVALID_FEATURE;
 				goto fini;
 			}
 			bracket++;
@@ -4750,7 +4750,7 @@ static int _feature_string2list(char *features, char *debug_str,
 			if (brack_set_count > 1) {
 				verbose("%s constraint has more than one set of brackets: %s",
 					debug_str, features);
-				rc = feature_err;
+				rc = ESLURM_INVALID_FEATURE;
 				goto fini;
 			}
 		} else if (tmp_requested[i] == ']') {
@@ -4758,7 +4758,7 @@ static int _feature_string2list(char *features, char *debug_str,
 			if ((feature == NULL) || (bracket == 0) || paren) {
 				verbose("%s constraint has imbalanced brackets: %s",
 					debug_str, features);
-				rc = feature_err;
+				rc = ESLURM_INVALID_FEATURE;
 				goto fini;
 			}
 			bracket--;
@@ -4767,7 +4767,7 @@ static int _feature_string2list(char *features, char *debug_str,
 			if ((feature != NULL) || paren) {
 				verbose("%s constraint has imbalanced parentheses: %s",
 					debug_str, features);
-				rc = feature_err;
+				rc = ESLURM_INVALID_FEATURE;
 				goto fini;
 			}
 			paren++;
@@ -4776,7 +4776,7 @@ static int _feature_string2list(char *features, char *debug_str,
 			if ((feature == NULL) || (paren == 0)) {
 				verbose("%s constraint has imbalanced parentheses: %s",
 					debug_str, features);
-				rc = feature_err;
+				rc = ESLURM_INVALID_FEATURE;
 				goto fini;
 			}
 			paren--;
@@ -4802,19 +4802,19 @@ static int _feature_string2list(char *features, char *debug_str,
 	if (bracket != 0) {
 		verbose("%s constraint has unbalanced brackets: %s",
 			debug_str, features);
-		rc = feature_err;
+		rc = ESLURM_INVALID_FEATURE;
 		goto fini;
 	}
 	if (paren != 0) {
 		verbose("%s constraint has unbalanced parenthesis: %s",
 			debug_str, features);
-		rc = feature_err;
+		rc = ESLURM_INVALID_FEATURE;
 		goto fini;
 	}
 	if (has_asterisk && (list_count(*feature_list) > 1)) {
 		verbose("%s constraint has '*' outside of brackets with more than one feature: %s",
 			debug_str, features);
-		rc = feature_err;
+		rc = ESLURM_INVALID_FEATURE;
 		goto fini;
 	}
 
@@ -4905,10 +4905,10 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 		debug_str = xstrdup_printf("%pJ", job_ptr);
 
 	can_reboot = node_features_g_user_update(job_ptr->user_id);
-	rc = _feature_string2list(features, debug_str, feature_err,
+	rc = _feature_string2list(features, debug_str,
 				  feature_list, &convert_to_matching_or);
 	if (rc != SLURM_SUCCESS) {
-		rc = ESLURM_INVALID_FEATURE;
+		rc = feature_err;
 		goto fini;
 	}
 
@@ -4939,7 +4939,7 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 		FREE_NULL_LIST(feature_sets);
 		FREE_NULL_LIST(*feature_list);
 		rc = _feature_string2list(str, debug_str,
-					  feature_err, feature_list,
+					  feature_list,
 					  &convert_to_matching_or);
 		if (rc != SLURM_SUCCESS) {
 			/*
@@ -4969,7 +4969,7 @@ extern int build_feature_list(job_record_t *job_ptr, bool prefer,
 
 	rc = _valid_feature_list(job_ptr, *feature_list, can_reboot, debug_str,
 				 features, is_reservation);
-	if (rc == ESLURM_INVALID_FEATURE) {
+	if (rc != SLURM_SUCCESS) {
 		rc = feature_err;
 		goto fini;
 	}
