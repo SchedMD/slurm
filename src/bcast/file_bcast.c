@@ -78,7 +78,8 @@
  * seen any common systems where this is not the correct path.
  */
 #define LDD_PATH "/usr/bin/ldd"
-#define MAX_THREADS      8	/* These can be huge messages, so
+#define DEFAULT_THREADS 8
+#define MAX_THREADS     64	/* These can be huge messages, so
 				 * only run MAX_THREADS at one time */
 
 int block_len;				/* block size */
@@ -343,7 +344,7 @@ static int _bcast_file(struct bcast_parameters *params)
 	}
 
 	if (!params->fanout)
-		params->fanout = MAX_THREADS;
+		params->fanout = DEFAULT_THREADS;
 	else
 		params->fanout = MIN(MAX_THREADS, params->fanout);
 
