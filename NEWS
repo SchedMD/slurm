@@ -266,6 +266,8 @@ documents those changes that are of interest to users and administrators.
  -- Improve validation of --constraint expression syntax.
  -- srun - support job array ids as an argument to --jobid.
  -- Add jobcomp/kafka plugin.
+ -- Automatically filter out E-Cores on Intel processors to avoid issues from
+    differing threads-per-core values within a single socket.
 
 * Changes in Slurm 22.05.9
 ==========================
