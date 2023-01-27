@@ -1062,6 +1062,8 @@ static int _schedule(bool full_queue)
 	job_record_t *reject_array_job = NULL;
 	part_record_t *reject_array_part = NULL;
 	slurmctld_resv_t *reject_array_resv = NULL;
+	List reject_array_features = NULL;
+	bool use_prefer;
 	bool fail_by_part, wait_on_resv;
 	uint32_t deadline_time_limit, save_time_limit = 0;
 	uint32_t prio_reserve;
@@ -1468,6 +1470,7 @@ next_part:
 				if (!_job_runnable_test2(job_ptr, now, false))
 					continue;
 			}
+			use_prefer = false;
 		} else {
 			job_queue_rec = list_pop(job_queue);
 			if (!job_queue_rec)
@@ -1496,7 +1499,8 @@ next_part:
 				continue;	/* started in other partition */
 			}
 
-			_set_features(job_ptr, job_queue_rec->use_prefer);
+			use_prefer = job_queue_rec->use_prefer;
+			_set_features(job_ptr, use_prefer);
 
 			if (job_ptr->resv_list)
 				job_queue_rec_resv_list(job_queue_rec);
@@ -1540,13 +1544,18 @@ next_task:
 			    (reject_array_job->array_job_id ==
 				job_ptr->array_job_id) &&
 			    (reject_array_part == part_ptr) &&
-			    (reject_array_resv == job_ptr->resv_ptr))
+			    (reject_array_resv == job_ptr->resv_ptr) &&
+			    (reject_array_features ==
+			     job_ptr->details->feature_list_use))
 				continue;  /* already rejected array element */
+
 
 			/* assume reject whole array for now, clear if OK */
 			reject_array_job = job_ptr;
 			reject_array_part = part_ptr;
 			reject_array_resv = job_ptr->resv_ptr;
+			reject_array_features =
+				job_ptr->details->feature_list_use;
 
 			if (!job_array_start_test(job_ptr))
 				continue;
@@ -1838,6 +1847,7 @@ skip_start:
 				reject_array_job = NULL;
 				reject_array_part = NULL;
 				reject_array_resv = NULL;
+				reject_array_features = NULL;
 			}
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
 				     job_ptr,
@@ -1887,6 +1897,7 @@ skip_start:
 			reject_array_job = NULL;
 			reject_array_part = NULL;
 			reject_array_resv = NULL;
+			reject_array_features = NULL;
 
 			sched_info("Allocate %pJ NodeList=%s #CPUs=%u Partition=%s",
 				   job_ptr, job_ptr->nodes,
@@ -1905,8 +1916,11 @@ skip_start:
 				job_ptr = find_job_record(job_ptr->array_job_id);
 				if (job_ptr && (job_ptr != tmp) &&
 				    IS_JOB_PENDING(job_ptr) &&
-				    (bb_g_job_test_stage_in(job_ptr,false) ==1))
+				    (bb_g_job_test_stage_in(job_ptr, false) ==
+				     1)) {
+					_set_features(job_ptr, use_prefer);
 					goto next_task;
+				}
 			}
 			continue;
 		} else if ((error_code ==
