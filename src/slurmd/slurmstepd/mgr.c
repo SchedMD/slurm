@@ -1167,7 +1167,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 
 	_set_job_state(step, SLURMSTEPD_STEP_RUNNING);
 	if (!slurm_conf.job_acct_gather_freq)
-		jobacct_gather_stat_task(0);
+		jobacct_gather_stat_task(0, true);
 
 	if (spank_task_post_fork(step, -1) < 0)
 		error("spank extern task post-fork failed");
@@ -1394,7 +1394,7 @@ job_manager(stepd_step_rec_t *step)
 	 * information here
 	 */
 	if (!slurm_conf.job_acct_gather_freq)
-		jobacct_gather_stat_task(0);
+		jobacct_gather_stat_task(0, true);
 
 	/* Send step launch response with list of pids */
 	_send_launch_resp(step, 0);

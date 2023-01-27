@@ -1817,6 +1817,7 @@ rwfail:	if (lock_set) {
 static int
 _handle_stat_jobacct(int fd, stepd_step_rec_t *step, uid_t uid)
 {
+	bool update_data = true;
 	jobacctinfo_t *jobacct = NULL;
 	jobacctinfo_t *temp_jobacct = NULL;
 	int i = 0;
@@ -1855,7 +1856,9 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *step, uid_t uid)
 		proctrack_g_get_pids(step->cont_id, &pids, &npids);
 
 		for (i = 0; i < npids; i++) {
-			temp_jobacct = jobacct_gather_stat_task(pids[i]);
+			temp_jobacct = jobacct_gather_stat_task(pids[i],
+								update_data);
+			update_data = false;
 			if (temp_jobacct) {
 				jobacctinfo_aggregate(jobacct, temp_jobacct);
 				jobacctinfo_destroy(temp_jobacct);
@@ -1868,7 +1871,10 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *step, uid_t uid)
 	} else {
 		for (i = 0; i < step->node_tasks; i++) {
 			temp_jobacct =
-				jobacct_gather_stat_task(step->task[i]->pid);
+				jobacct_gather_stat_task(step->task[i]->pid,
+							 update_data);
+
+			update_data = false;
 			if (temp_jobacct) {
 				jobacctinfo_aggregate(jobacct, temp_jobacct);
 				jobacctinfo_destroy(temp_jobacct);

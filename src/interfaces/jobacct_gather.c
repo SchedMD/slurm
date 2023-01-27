@@ -695,12 +695,13 @@ error:
 	return SLURM_ERROR;
 }
 
-extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid)
+extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid, bool update_data)
 {
 	if (!plugin_polling || _jobacct_shutdown_test())
 		return NULL;
 
-	_poll_data(0);
+	if (update_data)
+		_poll_data(0);
 
 	if (pid) {
 		struct jobacctinfo *jobacct = NULL;

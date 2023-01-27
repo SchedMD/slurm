@@ -274,6 +274,8 @@ documents those changes that are of interest to users and administrators.
     priority jobs to preempt jobs to free up used licenses. (This is only
     enabled for with PreemptModes of CANCEL and REQUEUE, as Slurm cannot
     guarantee suspended jobs will release licenses correctly.)
+ -- Make it so that the REQUEST_STEP_STAT handler only polls jobacct_gather
+    information once per RPC. This improves sstat results performance time.
 
 * Changes in Slurm 22.05.9
 ==========================
