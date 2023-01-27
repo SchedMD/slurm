@@ -276,6 +276,9 @@ documents those changes that are of interest to users and administrators.
     guarantee suspended jobs will release licenses correctly.)
  -- Make it so that the REQUEST_STEP_STAT handler only polls jobacct_gather
     information once per RPC. This improves sstat results performance time.
+ -- Fix sbcast --force option to work with --send-libs option. Now when --force
+    is set, library directores transmitted will overwrite pre-existing libraries
+    that were previously transmitted.
 
 * Changes in Slurm 22.05.9
 ==========================
