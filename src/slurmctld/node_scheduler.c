@@ -2128,8 +2128,10 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 
 	if (sched_update != slurm_conf.last_update) {
 		preempt_send_user_signal = false;
-		if (xstrcasestr(slurm_conf.slurmctld_params,
-		                "preempt_send_user_signal"))
+		if (xstrcasestr(slurm_conf.preempt_params,
+				"send_user_signal") ||
+		    xstrcasestr(slurm_conf.slurmctld_params,
+				"preempt_send_user_signal"))
 			preempt_send_user_signal = true;
 
 		sched_update = slurm_conf.last_update;

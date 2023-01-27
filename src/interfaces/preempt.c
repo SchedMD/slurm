@@ -244,7 +244,8 @@ extern int slurm_preempt_init(void)
 	}
 
 	youngest_order = false;
-	if (xstrcasestr(slurm_conf.sched_params, "preempt_youngest_first"))
+	if (xstrcasestr(slurm_conf.preempt_params, "youngest_first") ||
+	    xstrcasestr(slurm_conf.sched_params, "preempt_youngest_first"))
 		youngest_order = true;
 
 	min_exempt_priority = NO_VAL;

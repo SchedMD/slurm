@@ -1091,20 +1091,22 @@ extern int select_p_node_init()
 		      slurm_conf.select_type_param);
 	}
 
-	if (xstrcasestr(slurm_conf.sched_params, "preempt_strict_order"))
+	preempt_strict_order = false;
+	if (xstrcasestr(slurm_conf.preempt_params, "strict_order") ||
+	    xstrcasestr(slurm_conf.sched_params, "preempt_strict_order"))
 		preempt_strict_order = true;
-	else
-		preempt_strict_order = false;
 
 	preempt_reorder_cnt = 1;
-	if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
-				   "preempt_reorder_count="))) {
+	if ((tmp_ptr = xstrcasestr(slurm_conf.preempt_params,
+				   "reorder_count=")))
+		preempt_reorder_cnt = atoi(tmp_ptr + 14);
+	else if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+					"preempt_reorder_count=")))
 		preempt_reorder_cnt = atoi(tmp_ptr + 22);
-		if (preempt_reorder_cnt < 0) {
-			error("Invalid SchedulerParameters preempt_reorder_count: %d",
-			      preempt_reorder_cnt);
-			preempt_reorder_cnt = 1;	/* Use default value */
-		}
+	if (preempt_reorder_cnt < 0) {
+		error("Invalid SchedulerParameters preempt_reorder_count: %d",
+		      preempt_reorder_cnt);
+		preempt_reorder_cnt = 1;	/* Use default value */
 	}
 
 	if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
