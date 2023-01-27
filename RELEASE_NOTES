@@ -90,6 +90,10 @@ HIGHLIGHTS
  -- Rename "nodes" to "nodes_resume" in SLURM_RESUME_FILE job output.
  -- Rename "all_nodes" to "all_nodes_resume" in SLURM_RESUME_FILE output.
  -- Add jobcomp/kafka plugin.
+ -- Add new PreemptParameters=reclaim_licenses option which will allow higher
+    priority jobs to preempt jobs to free up used licenses. (This is only
+    enabled for with PreemptModes of CANCEL and REQUEUE, as Slurm cannot
+    guarantee suspended jobs will release licenses correctly.)
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

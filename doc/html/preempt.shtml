@@ -238,6 +238,13 @@ used to set the PreemptMode for all components. The <I>GraceTime</I> and user
 warning signal for each component of the heterogeneous job remain unique.
 </P>
 
+<p>
+Because licenses are not freed when jobs are suspended, jobs using licenses
+requested by higher priority jobs will only be prempted when PreemptMode is
+either <i>REQUEUE</i> or <i>CANCEL</i> and
+<i>PreemptParameters=reclaim_licenses</i> is set.
+</p>
+
 <h2 id="operation">Preemption Design and Operation
 <a class="slurm_link" href="#operation"></a>
 </h2>
@@ -523,6 +530,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 18 February 2022</p>
+<p style="text-align:center;">Last modified 27 January 2023</p>
 
 <!--#include virtual="footer.txt"-->

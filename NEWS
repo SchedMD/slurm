@@ -270,6 +270,10 @@ documents those changes that are of interest to users and administrators.
     differing threads-per-core values within a single socket.
  -- Add LaunchParameters=ulimit_pam_adopt, which enables setting RLIMIT_RSS in
     adopted processes.
+ -- Add new PreemptParameters=reclaim_licenses option which will allow higher
+    priority jobs to preempt jobs to free up used licenses. (This is only
+    enabled for with PreemptModes of CANCEL and REQUEUE, as Slurm cannot
+    guarantee suspended jobs will release licenses correctly.)
 
 * Changes in Slurm 22.05.9
 ==========================
