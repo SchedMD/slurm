@@ -80,6 +80,8 @@ static char *start_argv[] = {
 	"/bin/sh", "-c", "echo 'RunTimeStart never configured in oci.conf'; exit 1", NULL };
 
 static char *_get_config_path(stepd_step_rec_t *step);
+static char *_generate_spooldir(stepd_step_rec_t *step,
+				stepd_step_task_info_t *task);
 
 static void _dump_command_args(run_command_args_t *args, const char *caller)
 {
@@ -526,20 +528,11 @@ static int _generate_bundle_path(stepd_step_rec_t *step)
 	return rc;
 }
 
-extern void container_task_init(stepd_step_rec_t *step,
+static char *_generate_spooldir(stepd_step_rec_t *step,
 				stepd_step_task_info_t *task)
 {
-	int rc;
 	char *path = NULL;
-	step_container_t *c = step->container;
 
-	if (!oci_conf) {
-		debug2("%s: ignoring step container when oci.conf not configured",
-		       __func__);
-		return;
-	}
-
-	/* re-generate out the spool_dir now we know the task */
 	if (oci_conf->container_path) {
 		path = _generate_pattern(oci_conf->container_path, step,
 					 task->id, task->argv);
@@ -555,9 +548,26 @@ extern void container_task_init(stepd_step_rec_t *step,
 			   step->step_id.step_id, task->id);
 	}
 
+	return path;
+}
+
+extern void container_task_init(stepd_step_rec_t *step,
+				stepd_step_task_info_t *task)
+{
+	int rc;
+	step_container_t *c = step->container;
+
+	if (!oci_conf) {
+		debug2("%s: ignoring step container when oci.conf not configured",
+		       __func__);
+		return;
+	}
+
 	xassert(c->spool_dir);
 	xfree(c->spool_dir);
-	c->spool_dir = path;
+
+	/* re-generate out the spool_dir now we know the task */
+	c->spool_dir = _generate_spooldir(step, task);
 
 	if ((rc = _mkpath(c->spool_dir, step->uid, step->gid)))
 		fatal("%s: unable to create spool directory %s: %s",
