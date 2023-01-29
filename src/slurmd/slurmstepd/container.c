@@ -692,7 +692,7 @@ static data_t *_get_container_state()
 	out = run_command(&run_command_args);
 	debug("%s: RunTimeQuery rc:%u output:%s", __func__, rc, out);
 
-	if (!out || !out[0]) {
+	if (!out || !out[0] || rc) {
 		error("%s: RunTimeQuery failed rc:%u output:%s", __func__, rc, out);
 		return NULL;
 	}
