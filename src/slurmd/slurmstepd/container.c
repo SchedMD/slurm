@@ -1099,6 +1099,8 @@ extern void cleanup_container(stepd_step_rec_t *step)
 	/* cleanup may be called without ever setting up container */
 	_generate_patterns(step, NULL);
 
+	_kill_container();
+
 	if (!oci_conf->ignore_config_json && !oci_conf->disable_cleanup) {
 		char *jconfig = NULL;
 
@@ -1126,8 +1128,6 @@ extern void cleanup_container(stepd_step_rec_t *step)
 	/* spool always created by setup_container() */
 	if (rmdir(c->spool_dir))
 		error("rmdir(%s): %m", c->spool_dir);
-
-	_kill_container();
 
 	FREE_NULL_OCI_CONF(oci_conf);
 }
