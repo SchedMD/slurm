@@ -1101,7 +1101,10 @@ extern void cleanup_container(stepd_step_rec_t *step)
 
 	_kill_container();
 
-	if (!oci_conf->ignore_config_json && !oci_conf->disable_cleanup) {
+	if (oci_conf->disable_cleanup)
+		goto done;
+
+	if (!oci_conf->ignore_config_json) {
 		char *jconfig = NULL;
 
 		xstrfmtcat(jconfig, "%s/config.json", c->spool_dir);
@@ -1112,7 +1115,7 @@ extern void cleanup_container(stepd_step_rec_t *step)
 		xfree(jconfig);
 	}
 
-	if (!oci_conf->disable_cleanup && oci_conf->create_env_file) {
+	if (oci_conf->create_env_file) {
 		char *envfile = NULL;
 
 		/* keep _generate_pattern() in sync with this path */
@@ -1129,5 +1132,6 @@ extern void cleanup_container(stepd_step_rec_t *step)
 	if (rmdir(c->spool_dir) && (errno != ENOENT))
 		error("rmdir(%s): %m", c->spool_dir);
 
+done:
 	FREE_NULL_OCI_CONF(oci_conf);
 }
