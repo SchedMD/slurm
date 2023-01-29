@@ -126,6 +126,8 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 	if (!pattern)
 		return NULL;
 
+	xassert((task_id == -1) || (step->ntasks >= task_id));
+
 	for (const char *b = pattern; *b; b++) {
 		if (*b == '%') {
 			switch (*(++b)) {
@@ -133,7 +135,12 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 				xstrfmtcatat(buffer, &offset, "%s", "%");
 				break;
 			case '@':
-				_pattern_argv(&buffer, &offset, cmd_args);
+				if (cmd_args)
+					_pattern_argv(&buffer, &offset,
+						      cmd_args);
+				else
+					xstrfmtcatat(buffer, &offset,
+						     "\"/bin/false\"");
 				break;
 			case 'b':
 				xstrfmtcatat(buffer, &offset, "%s", c->bundle);
@@ -156,8 +163,12 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 					     step->node_name);
 				break;
 			case 'p':
-				xstrfmtcatat(buffer, &offset, "%u",
-					     step->task[task_id]->pid);
+				if (task_id >= 0)
+					xstrfmtcatat(buffer, &offset, "%u",
+						     step->task[task_id]->pid);
+				else
+					xstrfmtcatat(buffer, &offset, "%u",
+						     INFINITE);
 				break;
 			case 'r':
 				xstrfmtcatat(buffer, &offset, "%s", c->rootfs);
@@ -892,35 +903,36 @@ static void _generate_patterns(stepd_step_rec_t *step,
 			       stepd_step_task_info_t *task)
 {
 	char *gen;
+	int id = -1;
+	char **argv = NULL;
 
-	gen = _generate_pattern(oci_conf->runtime_create, step,
-				task->id, task->argv);
+	if (task) {
+		id = task->id;
+		argv = task->argv;
+	}
+
+	gen = _generate_pattern(oci_conf->runtime_create, step, id, argv);
 	if (gen)
 		create_argv[2] = gen;
 
-	gen = _generate_pattern(oci_conf->runtime_delete, step,
-				task->id, task->argv);
+	gen = _generate_pattern(oci_conf->runtime_delete, step, id, argv);
 	if (gen)
 		delete_argv[2] = gen;
 
-	gen = _generate_pattern(oci_conf->runtime_kill, step, task->id,
-				task->argv);
+	gen = _generate_pattern(oci_conf->runtime_kill, step, id, argv);
 	if (gen)
 		kill_argv[2] = gen;
 
-	gen = _generate_pattern(oci_conf->runtime_query, step, task->id,
-				task->argv);
+	gen = _generate_pattern(oci_conf->runtime_query, step, id, argv);
 	if (gen)
 		query_argv[2] = gen;
 
-	gen = _generate_pattern(oci_conf->runtime_run, step, task->id,
-				task->argv);
+	gen = _generate_pattern(oci_conf->runtime_run, step, id, argv);
 
 	if (gen)
 		run_argv[2] = gen;
 
-	gen = _generate_pattern(oci_conf->runtime_start, step, task->id,
-				task->argv);
+	gen = _generate_pattern(oci_conf->runtime_start, step, id, argv);
 	if (gen)
 		start_argv[2] = gen;
 }
