@@ -1057,7 +1057,6 @@ extern void container_run(stepd_step_rec_t *step,
 		_run(step, task);
 	else
 		_create_start(step, task);
-
 }
 
 extern void cleanup_container(stepd_step_rec_t *step)
@@ -1085,7 +1084,6 @@ extern void cleanup_container(stepd_step_rec_t *step)
 		if (rmdir(step->cwd))
 			error("rmdir(%s): %m", jconfig);
 	}
-
 
 	if (!oci_conf->disable_cleanup && oci_conf->create_env_file) {
 		char *envfile = NULL;
