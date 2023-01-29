@@ -888,12 +888,10 @@ static void _create_start(stepd_step_rec_t *step,
 	_exit(rc);
 }
 
-static void _generate_args(stepd_step_rec_t *step, stepd_step_task_info_t *task)
+static void _generate_patterns(stepd_step_rec_t *step,
+			       stepd_step_task_info_t *task)
 {
-	step_container_t *c = step->container;
 	char *gen;
-
-	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
 	gen = _generate_pattern(oci_conf->runtime_create, step,
 				task->id, task->argv);
@@ -925,6 +923,15 @@ static void _generate_args(stepd_step_rec_t *step, stepd_step_task_info_t *task)
 				task->argv);
 	if (gen)
 		start_argv[2] = gen;
+}
+
+static void _generate_args(stepd_step_rec_t *step, stepd_step_task_info_t *task)
+{
+	step_container_t *c = step->container;
+
+	xassert(c->magic == STEP_CONTAINER_MAGIC);
+
+	_generate_patterns(step, task);
 
 	if (c->config) {
 		data_t *args = data_define_dict_path(c->config,
