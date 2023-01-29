@@ -902,9 +902,15 @@ static void _create_start(stepd_step_rec_t *step,
 static void _generate_patterns(stepd_step_rec_t *step,
 			       stepd_step_task_info_t *task)
 {
+	static bool generated = false;
 	char *gen;
 	int id = -1;
 	char **argv = NULL;
+
+	if (generated)
+		return;
+
+	generated = true;
 
 	if (task) {
 		id = task->id;
