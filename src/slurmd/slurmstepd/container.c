@@ -1106,7 +1106,7 @@ extern void cleanup_container(stepd_step_rec_t *step)
 
 		xstrfmtcat(jconfig, "%s/config.json", c->spool_dir);
 
-		if (unlink(jconfig) < 0)
+		if ((unlink(jconfig) < 0) && (errno != ENOENT))
 			error("unlink(%s): %m", jconfig);
 
 		xfree(jconfig);
@@ -1119,14 +1119,14 @@ extern void cleanup_container(stepd_step_rec_t *step)
 		xstrfmtcat(envfile, "%s/%s", c->spool_dir,
 			   SLURM_CONTAINER_ENV_FILE);
 
-		if (unlink(envfile))
+		if (unlink(envfile) && (errno != ENOENT))
 			error("unlink(%s): %m", envfile);
 
 		xfree(envfile);
 	}
 
 	/* spool always created by setup_container() */
-	if (rmdir(c->spool_dir))
+	if (rmdir(c->spool_dir) && (errno != ENOENT))
 		error("rmdir(%s): %m", c->spool_dir);
 
 	FREE_NULL_OCI_CONF(oci_conf);
