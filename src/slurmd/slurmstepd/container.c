@@ -549,6 +549,10 @@ static int _generate_container_paths(stepd_step_rec_t *step)
 	xassert(!c->spool_dir);
 	c->spool_dir = _generate_spooldir(step, NULL);
 
+	if ((rc = _mkpath(c->spool_dir, step->uid, step->gid)))
+		fatal("%s: unable to create spool directory %s: %s",
+		      __func__, c->spool_dir, slurm_strerror(rc));
+
 	return rc;
 }
 
