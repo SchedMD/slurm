@@ -465,7 +465,7 @@ static int _modify_config(stepd_step_rec_t *step)
 	return rc;
 }
 
-static int _generate_bundle_path(stepd_step_rec_t *step)
+static int _generate_container_paths(stepd_step_rec_t *step)
 {
 	step_container_t *c = step->container;
 	int rc = SLURM_SUCCESS;
@@ -657,7 +657,7 @@ extern int setup_container(stepd_step_rec_t *step)
 			goto error;
 	}
 
-	if ((rc = _generate_bundle_path(step)))
+	if ((rc = _generate_container_paths(step)))
 		goto error;
 
 	if ((rc = _mkpath(c->spool_dir, step->uid, step->gid)))
