@@ -532,20 +532,27 @@ static char *_generate_spooldir(stepd_step_rec_t *step,
 				stepd_step_task_info_t *task)
 {
 	char *path = NULL;
+	int id = -1;
+	char **argv = NULL;
+
+	if (task) {
+		id = task->id;
+		argv = task->argv;
+	}
 
 	if (oci_conf->container_path) {
-		path = _generate_pattern(oci_conf->container_path, step,
-					 task->id, task->argv);
+		path = _generate_pattern(oci_conf->container_path, step, id,
+					 argv);
 	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		xstrfmtcat(path, "%s/oci-job%05u-batch/task-%05u/",
-			   conf->spooldir, step->step_id.job_id, task->id);
+			   conf->spooldir, step->step_id.job_id, id);
 	} else if (step->step_id.step_id == SLURM_INTERACTIVE_STEP) {
 		xstrfmtcat(path, "%s/oci-job%05u-interactive/task-%05u/",
-			   conf->spooldir, step->step_id.job_id, task->id);
+			   conf->spooldir, step->step_id.job_id, id);
 	} else {
 		xstrfmtcat(path, "%s/oci-job%05u-%05u/task-%05u/",
 			   conf->spooldir, step->step_id.job_id,
-			   step->step_id.step_id, task->id);
+			   step->step_id.step_id, id);
 	}
 
 	return path;
