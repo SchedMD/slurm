@@ -1073,7 +1073,7 @@ extern void container_run(stepd_step_rec_t *step,
 		environ = env;
 	}
 
-	debug4("%s: swapping cwd from %s to %s",
+	debug4("%s: setting cwd from %s to %s",
 	       __func__, step->cwd, c->spool_dir);
 	xfree(step->cwd);
 	step->cwd = xstrdup(c->spool_dir);
