@@ -1096,6 +1096,9 @@ extern void cleanup_container(stepd_step_rec_t *step)
 		return;
 	}
 
+	/* cleanup may be called without ever setting up container */
+	_generate_patterns(step, NULL);
+
 	if (!oci_conf->ignore_config_json && !oci_conf->disable_cleanup) {
 		char *jconfig = NULL;
 
