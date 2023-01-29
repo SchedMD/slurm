@@ -469,7 +469,6 @@ static int _generate_bundle_path(stepd_step_rec_t *step)
 {
 	step_container_t *c = step->container;
 	int rc = SLURM_SUCCESS;
-	char *path = NULL;
 
 	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
@@ -495,25 +494,6 @@ static int _generate_bundle_path(stepd_step_rec_t *step)
 	}
 
 	/* generate step's spool_dir */
-	if (oci_conf->container_path) {
-		/*
-		 * Path generated will just be in the INFINITE task for the
-		 * job to avoid having to have 2 potentially conflicting paths
-		 * for step and tasks.
-		 */
-		path = _generate_pattern(oci_conf->container_path, step,
-					 INFINITE, NULL);
-	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
-		xstrfmtcat(path, "%s/oci-job%05u-batch/", conf->spooldir,
-			   step->step_id.job_id);
-	} else if (step->step_id.step_id == SLURM_INTERACTIVE_STEP) {
-		xstrfmtcat(path, "%s/oci-job%05u-interactive/", conf->spooldir,
-			   step->step_id.job_id);
-	} else {
-		xstrfmtcat(path, "%s/oci-job%05u-%05u/", conf->spooldir,
-			   step->step_id.job_id, step->step_id.step_id);
-	}
-
 	if (oci_conf->mount_spool_dir) {
 		c->mount_spool_dir =
 			_generate_pattern(oci_conf->mount_spool_dir, step,
@@ -523,7 +503,7 @@ static int _generate_bundle_path(stepd_step_rec_t *step)
 	}
 
 	xassert(!c->spool_dir);
-	c->spool_dir = path;
+	c->spool_dir = _generate_spooldir(step, NULL);
 
 	return rc;
 }
