@@ -201,24 +201,68 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 	return buffer;
 }
 
-static int _mkpath(const char *path, uid_t uid, gid_t gid)
+static int _mkdir(const char *pathname, mode_t mode, uid_t uid, gid_t gid)
 {
-	if ((mkdir(path, 0750) < 0) && (errno != EEXIST)) {
-		error("%s: mkdir(%s): %m", __func__, path);
-		return errno;
+	int rc;
+
+	if ((rc = mkdir(pathname, mode)))
+		rc = errno;
+	else {
+		/*
+		 * Directory was successfully created so it needs user:group set
+		 */
+		if (chown(pathname, uid, gid) < 0) {
+			error("%s: chown(%s): %m", __func__, pathname);
+			return errno;
+		}
+
+		if (chmod(pathname, mode) < 0) {
+			error("%s: chmod(%s, 750): %m", __func__, pathname);
+			return errno;
+		}
+
+		debug("%s: created %s for %u:%u mode %o",
+		      __func__, pathname, uid, gid, mode);
+
+		return SLURM_SUCCESS;
 	}
 
-	if (chown(path, uid, gid) < 0) {
-		error("%s: chown(%s): %m", __func__, path);
-		return errno;
+	if (rc == EEXIST)
+		return SLURM_SUCCESS;
+
+	error("%s: unable to mkdir(%s): %s",
+	      __func__, pathname, slurm_strerror(rc));
+
+	return rc;
+}
+
+/*
+ * Create entire directory path while setting uid:gid for every newly created
+ * directory.
+ */
+static int _mkpath(const char *pathname, uid_t uid, gid_t gid)
+{
+	static const mode_t mode = S_IRWXU | S_IRWXG;
+	int rc;
+	char *p, *dst;
+
+	p = dst = xstrdup(pathname);
+
+	while ((p = xstrchr(p + 1, '/'))) {
+		*p = '\0';
+
+		if ((rc = _mkdir(dst, mode, uid, gid)))
+			goto cleanup;
+
+		*p = '/';
 	}
 
-	if (chmod(path, 0750) < 0) {
-		error("%s: chmod(%s, 750): %m", __func__, path);
-		return errno;
-	}
+	/* final directory */
+	rc = _mkdir(dst, mode, uid, gid);
 
-	return SLURM_SUCCESS;
+cleanup:
+	xfree(dst);
+	return rc;
 }
 
 static int _load_config(stepd_step_rec_t *step)
@@ -658,9 +702,6 @@ extern int setup_container(stepd_step_rec_t *step)
 	}
 
 	if ((rc = _generate_container_paths(step)))
-		goto error;
-
-	if ((rc = _mkpath(c->spool_dir, step->uid, step->gid)))
 		goto error;
 
 error:
