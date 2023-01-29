@@ -1102,29 +1102,30 @@ extern void cleanup_container(stepd_step_rec_t *step)
 	if (!oci_conf->ignore_config_json && !oci_conf->disable_cleanup) {
 		char *jconfig = NULL;
 
-		xstrfmtcat(jconfig, "%s/config.json", step->cwd);
+		xstrfmtcat(jconfig, "%s/config.json", c->spool_dir);
 
 		if (unlink(jconfig) < 0)
 			error("unlink(%s): %m", jconfig);
 
 		xfree(jconfig);
-
-		if (rmdir(step->cwd))
-			error("rmdir(%s): %m", jconfig);
 	}
 
 	if (!oci_conf->disable_cleanup && oci_conf->create_env_file) {
 		char *envfile = NULL;
 
 		/* keep _generate_pattern() in sync with this path */
-		xstrfmtcat(envfile, "%s/%s",
-			   step->cwd, SLURM_CONTAINER_ENV_FILE);
+		xstrfmtcat(envfile, "%s/%s", c->spool_dir,
+			   SLURM_CONTAINER_ENV_FILE);
 
 		if (unlink(envfile))
 			error("unlink(%s): %m", envfile);
 
 		xfree(envfile);
 	}
+
+	/* spool always created by setup_container() */
+	if (rmdir(c->spool_dir))
+		error("rmdir(%s): %m", c->spool_dir);
 
 	_kill_container();
 
