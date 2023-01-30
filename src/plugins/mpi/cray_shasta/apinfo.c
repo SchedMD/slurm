@@ -627,7 +627,9 @@ extern int create_apinfo(const stepd_step_rec_t *step, const char *spool)
 	if (free_tid_offsets)
 		xfree(tid_offsets);
 
+	xfree(nics);
 	xfree(pes);
+	xfree(profiles);
 	xfree(cmds);
 	close(fd);
 	return SLURM_SUCCESS;
@@ -636,7 +638,9 @@ rwfail:
 	if (free_tid_offsets)
 		xfree(tid_offsets);
 
+	xfree(nics);
 	xfree(pes);
+	xfree(profiles);
 	xfree(cmds);
 	close(fd);
 	return SLURM_ERROR;
