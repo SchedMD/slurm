@@ -1612,11 +1612,18 @@ static void _poll(con_mgr_t *mgr, poll_args_t *args, list_t *fds,
 	int rc = SLURM_SUCCESS;
 	struct pollfd *fds_ptr = NULL;
 	con_mgr_fd_t *con;
+	int signal_fd, event_fd;
 
 again:
 	rc = poll(args->fds, args->nfds, -1);
 	if (rc == -1) {
-		if ((errno == EINTR) && !mgr->exit_on_error) {
+		bool exit_on_error;
+
+		slurm_mutex_lock(&mgr->mutex);
+		exit_on_error = mgr->exit_on_error;
+		slurm_mutex_unlock(&mgr->mutex);
+
+		if ((errno == EINTR) && !exit_on_error) {
 			log_flag(NET, "%s: [%s] poll interrupted. Trying again.",
 				 __func__, tag);
 			goto again;
@@ -1626,28 +1633,34 @@ again:
 		      __func__, tag);
 	}
 
-	slurm_mutex_lock(&mgr->mutex);
-
 	if (rc == 0) {
 		log_flag(NET, "%s: [%s] poll timed out", __func__, tag);
 		return;
 	}
 
+	slurm_mutex_lock(&mgr->mutex);
+	signal_fd = mgr->signal_fd[0];
+	event_fd = mgr->event_fd[0];
+	slurm_mutex_unlock(&mgr->mutex);
+
 	fds_ptr = args->fds;
 	for (int i = 0; i < args->nfds; i++, fds_ptr++) {
+
 		if (!fds_ptr->revents)
 			continue;
 
-		if (fds_ptr->fd == mgr->signal_fd[0]) {
+		if (fds_ptr->fd == signal_fd ) {
 			bool caught_sigalrm = false;
 			int sig;
 
 			while ((sig = _handle_signal(mgr)) >= 0) {
 				if (sig == SIGINT) {
+					slurm_mutex_lock(&mgr->mutex);
 					if (!mgr->shutdown)
 						info("%s: [%s] caught SIGINT. Shutting down.",
 						     __func__, tag);
 					mgr->shutdown = true;
+					slurm_mutex_unlock(&mgr->mutex);
 				} else if (sig == SIGALRM) {
 					/*
 					 * Defer adding work as timer may have
@@ -1664,14 +1677,16 @@ again:
 			}
 
 			_handle_event_pipe(mgr, fds_ptr, tag, "CAUGHT_SIGNAL");
+			slurm_mutex_lock(&mgr->mutex);
 			_signal_change(mgr, true);
 
 			if (caught_sigalrm)
 				_queue_func(true, mgr, _handle_timer, mgr,
 					    "_handle_timer");
+			slurm_mutex_unlock(&mgr->mutex);
 		}
 
-		if (fds_ptr->fd == mgr->event_fd[0])
+		if (fds_ptr->fd == event_fd)
 			_handle_event_pipe(mgr, fds_ptr, tag, "CHANGE_EVENT");
 		else if ((con = list_find_first(fds, _find_by_fd,
 						&fds_ptr->fd))) {
@@ -1682,12 +1697,14 @@ again:
 					 __func__, tag, con->name, flags);
 				xfree(flags);
 			}
+			slurm_mutex_lock(&mgr->mutex);
 			on_poll(mgr, fds_ptr->fd, con, fds_ptr->revents);
 			/*
 			 * signal that something might have happened and to
 			 * restart listening
 			 * */
 			_signal_change(mgr, true);
+			slurm_mutex_unlock(&mgr->mutex);
 		} else
 			/* FD probably got closed between poll start and now */
 			log_flag(NET, "%s: [%s] unable to find connection for fd=%u",
@@ -1793,6 +1810,7 @@ static void _poll_connections(void *x)
 
 	_poll(mgr, args, mgr->connections, _handle_poll_event, __func__);
 
+	slurm_mutex_lock(&mgr->mutex);
 	mgr->poll_active = false;
 	/* notify _watch it can run but don't send signal to event PIPE*/
 	slurm_cond_broadcast(&mgr->cond);
@@ -1886,6 +1904,8 @@ static void _listen(void *x)
 
 	/* _poll() will lock mgr->mutex */
 	_poll(mgr, args, mgr->listen, _handle_listen_event, __func__);
+
+	slurm_mutex_lock(&mgr->mutex);
 cleanup:
 	mgr->listen_active = false;
 	_signal_change(mgr, true);
