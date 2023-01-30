@@ -282,6 +282,11 @@ documents those changes that are of interest to users and administrators.
  -- hpe/slingshot - Add support for user requestible job VNIs.
  -- hpe/slingshot - Add support for user requestible single node vnis.
  -- hpe/slingshot - Add support for the instant-on feature.
+ -- Add ability to update SuspendExc* parameters with scontrol.
+ -- Add ability to preserve SuspendExc* parameters on reconfig with
+    ReconfigFlags=KeepPowerSaveSettings.
+ -- Add ability to restore SuspendExc* parameters on restart with slurmctld -R
+    option.
 
 * Changes in Slurm 22.05.9
 ==========================

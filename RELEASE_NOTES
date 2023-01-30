@@ -95,6 +95,9 @@ HIGHLIGHTS
     enabled for with PreemptModes of CANCEL and REQUEUE, as Slurm cannot
     guarantee suspended jobs will release licenses correctly.)
  -- hpe/slingshot - add support for the instant-on feature.
+ -- Add ability to update SuspendExc* parameters with scontrol.
+ -- Add ability to restore SuspendExc* parameters on restart with slurmctld -R
+    option.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -142,6 +145,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     jobs, or when a user requests them.
  -- Update SwitchParameters=single_node_vni to enable/disable creating single
     node vnis for all jobs, or when a user requests them.
+ -- Add ability to preserve SuspendExc* parameters on reconfig with
+    ReconfigFlags=KeepPowerSaveSettings.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
