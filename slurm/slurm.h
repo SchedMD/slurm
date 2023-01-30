@@ -4127,6 +4127,17 @@ extern int slurm_get_job_steps(time_t update_time,
 			       uint16_t show_flags);
 
 /*
+ * Issue RPC to find all steps matching container id and uid (unless uid=NO_VAL)
+ * IN show_flags - job step filtering options
+ * IN/OUT steps - List (of slurm_step_id_t*) to populate.
+ * 	Must free step ids with slurm_free_step_id().
+ * RET SLURM_SUCCESS or error
+ */
+extern int slurm_find_step_ids_by_container_id(uint16_t show_flags, uid_t uid,
+					       const char *container_id,
+					       list_t *steps);
+
+/*
  * slurm_free_job_step_info_response_msg - free the job step
  *	information response message
  * IN msg - pointer to job step information response message

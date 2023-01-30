@@ -514,6 +514,47 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	return rc;
 }
 
+extern int slurm_find_step_ids_by_container_id(uint16_t show_flags, uid_t uid,
+					       const char *container_id,
+					       list_t *steps)
+{
+	int rc;
+	slurm_msg_t req_msg, resp_msg;
+	container_id_request_msg_t req = { 0 };
+	container_id_response_msg_t *resp;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	req.uid = uid;
+	req.container_id = xstrdup(container_id);
+	req.show_flags = show_flags;
+	req_msg.msg_type = REQUEST_STEP_BY_CONTAINER_ID;
+	req_msg.data = &req;
+
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
+					   working_cluster_rec))
+		return errno;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_STEP_BY_CONTAINER_ID:
+		if ((resp = resp_msg.data) && resp->steps)
+			list_transfer(steps, resp->steps);
+		rc = SLURM_SUCCESS;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		break;
+	default:
+		rc = SLURM_UNEXPECTED_MSG_ERROR;
+		break;
+	}
+
+	slurm_free_msg_data(resp_msg.msg_type, resp_msg.data);
+
+	return rc;
+}
+
 extern slurm_step_layout_t *slurm_job_step_layout_get(slurm_step_id_t *step_id)
 {
 	slurm_step_id_t data;
