@@ -1193,7 +1193,7 @@ extern void slurmscriptd_run_power(char *script_path, char *hosts,
 	run_script_msg.tmp_file_env_name = tmp_file_env_name;
 	run_script_msg.tmp_file_str = tmp_file_str;
 
-	/* Send message; wait for response */
+	/* Send message; don't wait for response */
 	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
 			      &run_script_msg, false, NULL, NULL);
 
@@ -1308,7 +1308,7 @@ extern void slurmscriptd_run_resv(char *script_path, uint32_t argc, char **argv,
 	run_script_msg.script_type = SLURMSCRIPTD_RESV;
 	run_script_msg.timeout = timeout;
 
-	/* Send message; wait for response */
+	/* Send message; don't wait for response */
 	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
 			      &run_script_msg, false, NULL, NULL);
 }
