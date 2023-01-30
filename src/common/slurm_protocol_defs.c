@@ -341,6 +341,22 @@ extern char *slurm_char_list_to_xstr(List char_list)
 	return out;
 }
 
+static int _for_each_remove_str_from_list(void *x, void *arg)
+{
+	char *rem_str = x;
+	list_t *from_list = arg;
+
+	list_delete_all(from_list, slurm_find_char_exact_in_list, rem_str);
+
+	return 0;
+}
+
+extern void slurm_remove_char_list_from_char_list(list_t *haystack,
+						  list_t *needles)
+{
+	list_for_each(needles, _for_each_remove_str_from_list, haystack);
+}
+
 static int _char_list_copy(void *item, void *dst)
 {
 	list_append((List)dst, xstrdup((char *)item));
