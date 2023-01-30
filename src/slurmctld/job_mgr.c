@@ -13495,8 +13495,10 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		FREE_NULL_BITMAP(detail_ptr->job_size_bitmap);
 	}
 	if (job_desc->job_size_str) {
-		if (detail_ptr->min_nodes && (detail_ptr->max_nodes != NO_VAL &&
-					      detail_ptr->max_nodes)) {
+		if ((!IS_JOB_PENDING(job_ptr)) || !detail_ptr)
+			error_code = ESLURM_JOB_NOT_PENDING;
+		else if (detail_ptr->min_nodes && detail_ptr->max_nodes &&
+			 (detail_ptr->max_nodes != NO_VAL)) {
 			bitstr_t  *new_size_bitmap;
 			new_size_bitmap = bit_alloc(detail_ptr->max_nodes + 1);
 			if (bit_unfmt(new_size_bitmap,
