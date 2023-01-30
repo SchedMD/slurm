@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
     of brackets, for example: "feat1&[feat2|(feat3|feat4)]".
  -- Fix regression in 23.02.0rc1 which made --gres-flags=enforce-binding no
     longer enforce optimal core-gpu job placement.
+ -- switch/hpe_slingshot - add option to disable VNI allocation per-job.
 
 * Changes in Slurm 23.02.0
 ==========================
