@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect task count in steps that request --ntasks-per-node and a node
     count with a range (e.g. -N1-2).
  -- Fix some valid step requests hanging instead of running.
+ -- slurmrestd - avoid possible race condition which would cause slurmrestd to
+    silently no longer accept new client connections.
 
 * Changes in Slurm 22.05.8
 ==========================

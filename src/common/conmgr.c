@@ -229,7 +229,7 @@ extern con_mgr_t *init_con_mgr(int thread_count, con_mgr_callbacks_t callbacks)
 	if (pipe(mgr->event_fd))
 		fatal("%s: unable to open unnamed pipe: %m", __func__);
 
-	fd_set_blocking(mgr->event_fd[0]);
+	fd_set_nonblocking(mgr->event_fd[0]);
 	fd_set_blocking(mgr->event_fd[1]);
 
 	if (pipe(mgr->sigint_fd))
