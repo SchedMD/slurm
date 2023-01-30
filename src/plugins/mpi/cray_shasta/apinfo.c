@@ -299,6 +299,8 @@ static int _open_ss_info(const stepd_step_rec_t *job, const char *spool,
 	return fd;
 
 rwfail:
+	if (fd == -1)
+		close(fd);
 	xfree(*ss_apinfop);
 	return -1;
 }
