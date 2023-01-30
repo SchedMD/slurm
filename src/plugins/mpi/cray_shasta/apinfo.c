@@ -590,7 +590,8 @@ extern int create_apinfo(const stepd_step_rec_t *step, const char *spool)
 	fd = _open_ss_info(step, spool, &hdr, &ss_apinfo);
 	profiles = _setup_pals_profiles(fd, &hdr, ss_apinfo, &nprofiles);
 	nics = _setup_pals_nics(fd, &hdr, ss_apinfo, &nnics);
-	close(fd);
+	if (fd)
+		close(fd);
 	xfree(ss_apinfo);
 
 	_build_header(&hdr, ncmds, ntasks, nnodes, nprofiles, nnics);
