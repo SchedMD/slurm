@@ -591,14 +591,12 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 				xfree(tmp_char);
 				break;
 			case PRINT_FLAGS:
-			{
-				char *tmp_char = slurmdb_cluster_flags_2_str(
-							     cluster->flags);
+				tmp_char = slurmdb_cluster_flags_2_str(
+							cluster->flags);
 				field->print_routine(field, tmp_char,
 						     (curr_inx == field_count));
 				xfree(tmp_char);
 				break;
-			}
 			case PRINT_NODECNT:
 			{
 				hostlist_t hl = hostlist_create(cluster->nodes);

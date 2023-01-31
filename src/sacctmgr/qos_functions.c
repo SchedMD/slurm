@@ -911,6 +911,7 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 	slurmdb_qos_rec_t *qos = NULL;
 	List qos_list = NULL;
 	int field_count = 0;
+	char *tmp_char;
 
 	print_field_t *field = NULL;
 
@@ -985,16 +986,13 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 					(curr_inx == field_count));
 				break;
 			case PRINT_FLAGS:
-			{
-				char *tmp_char = slurmdb_qos_flags_str(
-					qos->flags);
+				tmp_char = slurmdb_qos_flags_str(qos->flags);
 				field->print_routine(
 					field,
 					tmp_char,
 					(curr_inx == field_count));
 				xfree(tmp_char);
 				break;
-			}
 			case PRINT_UT:
 				field->print_routine(
 					field, qos->usage_thres,
@@ -1229,8 +1227,6 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 					(curr_inx == field_count));
 				break;
 			case PRINT_PREEM:
-			{
-				char *tmp_char;
 				if (qos->preempt_mode) {
 					tmp_char = xstrdup(
 						preempt_mode_string(
@@ -1245,7 +1241,6 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 					(curr_inx == field_count));
 				xfree(tmp_char);
 				break;
-			}
 			case PRINT_PRXMPT:
 			{
 				uint64_t tmp64;
