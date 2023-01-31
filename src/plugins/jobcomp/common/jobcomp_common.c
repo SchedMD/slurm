@@ -79,6 +79,7 @@ extern buf_t *jobcomp_common_load_state_file(char *state_file)
 extern void jobcomp_common_write_state_file(buf_t *buffer, char *state_file)
 {
 	int fd;
+	bool do_close = true;
 	char *reg_file = NULL, *new_file = NULL, *old_file = NULL;
 	char *tmp_str = NULL;
 
@@ -96,6 +97,7 @@ extern void jobcomp_common_write_state_file(buf_t *buffer, char *state_file)
 	safe_write(fd, get_buf_data(buffer), get_buf_offset(buffer));
 	xfree(tmp_str);
 
+	do_close = false;
 	if (fsync_and_close(fd, state_file))
 		goto rwfail;
 
@@ -113,6 +115,8 @@ rwfail:
 	if (tmp_str)
 		error("Can't save state, error %s file %s: %m",
 		      tmp_str, new_file);
+	if (do_close && fsync_and_close(fd, state_file))
+		;
 	(void) unlink(new_file);
 	xfree(old_file);
 	xfree(reg_file);
