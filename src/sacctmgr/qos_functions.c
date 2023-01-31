@@ -1221,10 +1221,13 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 				if (!g_qos_list)
 					g_qos_list = slurmdb_qos_get(
 						db_conn, NULL);
-
-				field->print_routine(
-					field, g_qos_list, qos->preempt_bitstr,
-					(curr_inx == field_count));
+				tmp_char = get_qos_complete_str_bitstr(
+						g_qos_list,
+						qos->preempt_bitstr);
+				field->print_routine(field,
+						     tmp_char,
+						     (curr_inx == field_count));
+				xfree(tmp_char);
 				break;
 			case PRINT_PREEM:
 				if (qos->preempt_mode) {
