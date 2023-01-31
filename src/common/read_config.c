@@ -3434,12 +3434,12 @@ extern void read_config_add_key_pair(list_t *key_pair_list,
 				     char *key,
 				     char *value)
 {
+	xassert(key_pair_list);
+
 	config_key_pair_t *key_pair = xmalloc(sizeof(*key_pair));
 	key_pair->name = xstrdup(key);
 	key_pair->value = xstrdup(value);
-
-	if (key_pair_list)
-		list_append(key_pair_list, key_pair);
+	list_append(key_pair_list, key_pair);
 }
 
 extern void slurm_conf_init_stepd(void)
