@@ -435,6 +435,20 @@ extern int slurm_addto_char_list(List char_list, char *names)
 	return slurm_addto_char_list_with_case(char_list, names, true);
 }
 
+static void _add_to_list(char *name,
+			 list_t *char_list,
+			 bool lower_case_normalization)
+{
+	/*
+	 * If we get a duplicate remove the first one and tack this on the end.
+	 * This is needed for get associations with QOS.
+	 */
+	list_delete_all(char_list, slurm_find_char_in_list, name);
+	if (lower_case_normalization)
+		xstrtolower(name);
+	list_append(char_list, name);
+}
+
 /* returns number of objects added to list */
 extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					   bool lower_case_normalization)
@@ -493,19 +507,9 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					if (i != start) {
 						name = xstrndup(names+start,
 								(i-start));
-						/*
-						* If we get a duplicate remove
-						* the first one and tack this on
-						* the end. This is needed for
-						* get associations with QOS.
-						*/
-						list_delete_all(
-							char_list,
-							slurm_find_char_in_list,
-							name);
-						if (lower_case_normalization)
-							xstrtolower(name);
-						list_append(char_list, name);
+
+						_add_to_list(name, char_list,
+							     lower_case_normalization);
 					}
 
 					/*
@@ -539,21 +543,10 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 						this_node_name =
 						    xstrdup(tmp_this_node_name);
 						free(tmp_this_node_name);
-						/*
-						 * If we get a duplicate
-						 * remove the first one and tack
-						 * this on the end. This is
-						 * needed for get associations
-						 * with QOS.
-						 */
-						list_delete_all(
-							char_list,
-							slurm_find_char_in_list,
-							this_node_name);
-						if (lower_case_normalization)
-							xstrtolower(this_node_name);
-						list_append(char_list,
-							    this_node_name);
+
+						_add_to_list(this_node_name,
+							     char_list,
+							     lower_case_normalization);
 
 						start = i + 1;
 					}
@@ -567,16 +560,8 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 		/* check for empty strings user='' etc */
 		if ((cnt == list_count(char_list)) || (i - start)) {
 			name = xstrndup(names+start, (i-start));
-			/*
-			 * If we get a duplicate remove the first one and
-			 * tack this on the end. This is needed for get
-			 * associations with QOS.
-			 */
-			list_delete_all(char_list, slurm_find_char_in_list,
-					name);
-			if (lower_case_normalization)
-				xstrtolower(name);
-			list_append(char_list, name);
+
+			_add_to_list(name, char_list, lower_case_normalization);
 		}
 	}
 
