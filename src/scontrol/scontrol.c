@@ -1844,10 +1844,10 @@ static void _update_it(int argc, char **argv)
 			++i;
 		} else {
 			tag_len = val - argv[i];
-			if ((*(val - 1) == '+')){
+			if (*(val - 1) == '+'){
 				mode = UPDATE_ADD;
 				tag_len--;
-			} else if ((*(val - 1) == '-')) {
+			} else if (*(val - 1) == '-') {
 				mode = UPDATE_REMOVE;
 				tag_len--;
 			}
