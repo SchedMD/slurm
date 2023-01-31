@@ -443,7 +443,6 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 	char *name = NULL;
 	char quote_c = '\0';
 	int quote = 0;
-	int count = 0;
 	bool brack_not = false;
 	bool first_brack = false;
 	char *this_node_name;
@@ -500,11 +499,10 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 						* the end. This is needed for
 						* get associations with QOS.
 						*/
-						if (!list_delete_all(
+						list_delete_all(
 							char_list,
 							slurm_find_char_in_list,
-							name))
-							count++;
+							name);
 						if (lower_case_normalization)
 							xstrtolower(name);
 						list_append(char_list, name);
@@ -548,11 +546,10 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 						 * needed for get associations
 						 * with QOS.
 						 */
-						if (!list_delete_all(
+						list_delete_all(
 							char_list,
 							slurm_find_char_in_list,
-							this_node_name))
-							count++;
+							this_node_name);
 						if (lower_case_normalization)
 							xstrtolower(this_node_name);
 						list_append(char_list,
@@ -575,16 +572,15 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 			 * tack this on the end. This is needed for get
 			 * associations with QOS.
 			 */
-			if (!list_delete_all(char_list, slurm_find_char_in_list,
-					     name))
-				count++;
+			list_delete_all(char_list, slurm_find_char_in_list,
+					name);
 			if (lower_case_normalization)
 				xstrtolower(name);
 			list_append(char_list, name);
 		}
 	}
 
-	return count;
+	return list_count(char_list);
 }
 
 /* Parses string and converts names to either uid or gid list */
