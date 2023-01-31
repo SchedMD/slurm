@@ -101,7 +101,7 @@ static void *_create_job_desc_msg_obj(void)
 	return job;
 }
 
-typedef void *(*alloc_func_t)();
+typedef void *(*alloc_func_t)(const parser_t *const parser);
 
 #define add(typem, freef, addf)             \
 {                                           \
