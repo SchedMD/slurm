@@ -247,6 +247,15 @@ static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str,
 	int rc = SLURM_SUCCESS;
 
 	/*
+	 * Lock the root cgroup so we don't race with other steps that are being
+	 * started.
+	 */
+	if (!root_locked && (common_cgroup_lock(root_cg) != SLURM_SUCCESS)) {
+		error("common_cgroup_lock error (%s)", log_str);
+		return SLURM_ERROR;
+	}
+
+	/*
 	 * Always try to move slurmstepd process to the root cgroup, otherwise
 	 * the rmdir(2) triggered by the calls below will always fail if the pid
 	 * of stepd is in the cgroup. We don't know what other plugins will do
@@ -258,15 +267,6 @@ static int _remove_cg_subsystem(xcgroup_t int_cg[], const char *log_str,
 		goto end;
 	}
 	xcgroup_wait_pid_moved(step_cg, log_str);
-
-	/*
-	 * Lock the root cgroup so we don't race with other steps that are being
-	 * started.
-	 */
-	if (!root_locked && (common_cgroup_lock(root_cg) != SLURM_SUCCESS)) {
-		error("common_cgroup_lock error (%s)", log_str);
-		return SLURM_ERROR;
-	}
 
 	/* Delete step cgroup. */
 	if ((rc = common_cgroup_delete(step_cg)) != SLURM_SUCCESS)
@@ -627,9 +627,6 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
 
-	/* Don't let other plugins destroy our structs. */
-	g_step_active_cnt[sub]++;
-
 	/*
 	 * Lock the root cgroup so we don't race with other steps that are being
 	 * terminated, they could remove the directories while we're creating
@@ -639,6 +636,9 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *step)
 		error("common_cgroup_lock error");
 		return SLURM_ERROR;
 	}
+
+	/* Don't let other plugins destroy our structs. */
+	g_step_active_cnt[sub]++;
 
 	switch (sub) {
 	case CG_TRACK:

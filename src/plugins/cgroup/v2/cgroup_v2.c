@@ -1119,9 +1119,6 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *step)
 	char *new_path = NULL;
 	char tmp_char[64];
 
-	/* Don't let other plugins destroy our structs. */
-	step_active_cnt++;
-
 	/*
 	 * Lock the root cgroup so we don't race with other steps that are being
 	 * terminated and trying to destroy the job_x directory.
@@ -1130,6 +1127,9 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *step)
 		error("common_cgroup_lock error (%s)", ctl_names[ctl]);
 		return SLURM_ERROR;
 	}
+
+	/* Don't let other plugins destroy our structs. */
+	step_active_cnt++;
 
 	/* Job cgroup */
 	xstrfmtcat(new_path, "/job_%u", step->step_id.job_id);
@@ -1344,6 +1344,15 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t ctl)
 	}
 
 	/*
+	 * Lock the root cgroup so we don't race with other steps that are being
+	 * started and trying to create things inside job_x directory.
+	 */
+	if (common_cgroup_lock(&int_cg[CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
+		error("common_cgroup_lock error (%s)", ctl_names[ctl]);
+		return SLURM_ERROR;
+	}
+
+	/*
 	 * FUTURE:
 	 * Here we can implement a recursive kill of all pids in the step.
 	 */
@@ -1365,15 +1374,6 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t ctl)
 
 	/* Remove any possible task directories first */
 	_all_tasks_destroy();
-
-	/*
-	 * Lock the root cgroup so we don't race with other steps that are being
-	 * started and trying to create things inside job_x directory.
-	 */
-	if (common_cgroup_lock(&int_cg[CG_LEVEL_ROOT]) != SLURM_SUCCESS) {
-		error("common_cgroup_lock error (%s)", ctl_names[ctl]);
-		return SLURM_ERROR;
-	}
 
 	/* Rmdir this job's stepd cgroup */
 	if ((rc = common_cgroup_delete(&int_cg[CG_LEVEL_STEP_SLURM])) !=
