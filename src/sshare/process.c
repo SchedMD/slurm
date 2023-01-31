@@ -209,6 +209,7 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 		char *local_acct = NULL;
 		print_field_t *field = NULL;
 		uint64_t tres_raw[tres_cnt];
+		double tmp_double;
 
 		if ((options & PRINT_USERS_ONLY) && share->user == 0)
 			continue;
@@ -239,57 +240,58 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 				break;
 			case PRINT_EUSED:
 				field->print_routine(field,
-						     share->usage_efctv,
+						     &share->usage_efctv,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_FSFACTOR:
 				if (flags & PRIORITY_FLAGS_FAIR_TREE) {
+					tmp_double = (double)NO_VAL64;
 					if(share->user)
 						field->print_routine(
 						field,
-						share->fs_factor,
+						&share->fs_factor,
 						(curr_inx == field_count));
 					else
 						field->print_routine(
 							field,
-							NO_VAL64,
+							&tmp_double,
 							(curr_inx ==
 							 field_count)
 						);
-				}
-				else
-					field->print_routine(field,
-						     priority_g_calc_fs_factor(
-							     (long double)
+				} else {
+					tmp_double = priority_g_calc_fs_factor(
 							     share->usage_efctv,
-							     (long double)
 							     share->
 							     shares_norm),
-						     (curr_inx == field_count));
+					field->print_routine(field,
+						&tmp_double,
+						(curr_inx == field_count));
+				}
 				break;
 			case PRINT_LEVELFS:
+				tmp_double = (double)NO_VAL64;
 				if (share->shares_raw == SLURMDB_FS_USE_PARENT)
-					field->print_routine(field, NO_VAL64,
+					field->print_routine(field, &tmp_double,
 							     (curr_inx ==
 							      field_count));
 				else
 					field->print_routine(field,
-						     share->level_fs,
+						     &share->level_fs,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_ID:
 				field->print_routine(field,
-						     share->assoc_id,
+						     &share->assoc_id,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_NORMS:
 				field->print_routine(field,
-						     share->shares_norm,
+						     &share->shares_norm,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_NORMU:
 				field->print_routine(field,
-						     share->usage_norm,
+						     &share->usage_norm,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_RAWS:
@@ -299,13 +301,13 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 							  field_count));
 				else
 					field->print_routine(field,
-							     share->shares_raw,
+							     &share->shares_raw,
 							     (curr_inx ==
 							      field_count));
 				break;
 			case PRINT_RAWU:
 				field->print_routine(field,
-						     share->usage_raw,
+						     &share->usage_raw,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_USER:
