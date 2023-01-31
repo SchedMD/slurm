@@ -1558,16 +1558,12 @@ extern int sacctmgr_list_user(int argc, char **argv)
 							field,
 							user->default_acct,
 							(curr_inx ==
-							 field_count),
-							(curr_inx ==
 							 field_count));
 						break;
 					case PRINT_DWCKEY:
 						field->print_routine(
 							field,
 							user->default_wckey,
-							(curr_inx ==
-							 field_count),
 							(curr_inx ==
 							 field_count));
 						break;
