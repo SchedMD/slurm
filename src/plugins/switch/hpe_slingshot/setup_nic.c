@@ -707,9 +707,9 @@ extern bool slingshot_destroy_services(slingshot_jobinfo_t *job,
 /*
  * If cxil_alloc_svc failed, log information about the failure
  */
-static void _alloc_fail_info(const struct cxil_dev *dev,
-			     const struct cxi_svc_desc *desc,
-			     const struct cxi_svc_fail_info *fail_info)
+static void _alloc_fail_info(struct cxil_dev *dev,
+			     struct cxi_svc_desc *desc,
+			     struct cxi_svc_fail_info *fail_info)
 {
 	for (int rsrc = 0; rsrc < CXI_RSRC_TYPE_MAX; rsrc++) {
 		const char *rsrc_str = cxi_rsrc_type_strs[rsrc];
