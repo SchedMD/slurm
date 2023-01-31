@@ -199,7 +199,7 @@ int sacctmgr_list_tres(int argc, char **argv)
 					break;
 				case PRINT_ID:
 					field->print_routine(field,
-							     tres->id,
+							     &tres->id,
 							     (curr_inx ==
 							      field_count));
 					break;

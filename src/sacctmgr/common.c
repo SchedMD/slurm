@@ -1550,11 +1550,13 @@ extern int addto_action_char_list(List char_list, char *names)
 }
 
 extern void sacctmgr_print_coord_list(
-	print_field_t *field, List value, int last)
+	print_field_t *field, void *input, int last)
 {
 	int abs_len = abs(field->len);
 	ListIterator itr = NULL;
 	char *print_this = NULL;
+	List value = *(List *)input;
+
 	slurmdb_coord_rec_t *object = NULL;
 
 	if (!value || !list_count(value)) {
@@ -1592,18 +1594,16 @@ extern void sacctmgr_print_coord_list(
 	xfree(print_this);
 }
 
-extern void sacctmgr_print_tres(print_field_t *field, char *tres_simple_str,
-				int last)
+extern void sacctmgr_print_tres(print_field_t *field, void *input, int last)
 {
 	int abs_len = abs(field->len);
 	char *print_this;
+	char *value = *(char **)input;
 
 	sacctmgr_initialize_g_tres_list();
 
 	print_this = slurmdb_make_tres_string_from_simple(
-		tres_simple_str, g_tres_list, NO_VAL, CONVERT_NUM_UNIT_EXACT, 0,
-		NULL);
-
+		value, g_tres_list, NO_VAL, CONVERT_NUM_UNIT_EXACT, 0, NULL);
 
 	if (!print_this)
 		print_this = xstrdup("");

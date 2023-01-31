@@ -286,7 +286,7 @@ extern int sacctmgr_list_wckey(int argc, char **argv)
 			case PRINT_ID:
 				field->print_routine(
 					field,
-					wckey->id,
+					&wckey->id,
 					(curr_inx == field_count));
 				break;
 			case PRINT_NAME:

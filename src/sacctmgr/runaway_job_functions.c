@@ -110,7 +110,7 @@ static void _print_runaway_jobs(List format_list, List jobs)
 			case PRINT_ID:
 				field->print_routine(
 					field,
-					job->jobid,
+					&job->jobid,
 					(curr_inx == field_count));
 				break;
 			case PRINT_NAME:
@@ -142,25 +142,25 @@ static void _print_runaway_jobs(List format_list, List jobs)
 			case PRINT_TIMESTART:
 				field->print_routine(
 					field,
-					job->start,
+					&job->start,
 					(curr_inx == field_count));
 				break;
 			case PRINT_TIMEEND:
 				field->print_routine(
 					field,
-					job->end,
+					&job->end,
 					(curr_inx == field_count));
 				break;
 			case PRINT_TIMESUBMIT:
 				field->print_routine(
 					field,
-					job->submit,
+					&job->submit,
 					(curr_inx == field_count));
 				break;
 			case PRINT_TIMEELIGIBLE:
 				field->print_routine(
 					field,
-					job->eligible,
+					&job->eligible,
 					(curr_inx == field_count));
 				break;
 			default:

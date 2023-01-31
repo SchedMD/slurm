@@ -649,7 +649,7 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 						tmp_list = tmp_cluster->
 							fed.feature_list;
 					field->print_routine(
-						field, tmp_list,
+						field, &tmp_list,
 						(curr_inx == field_count));
 					break;
 				}
@@ -672,7 +672,7 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 						tmp_uint32 =
 							tmp_cluster->fed.state;
 					field->print_routine(
-						field, tmp_uint32,
+						field, &tmp_uint32,
 						(curr_inx == field_count));
 					break;
 				case PRINT_ID:
@@ -682,7 +682,7 @@ extern int sacctmgr_list_federation(int argc, char **argv)
 						tmp_uint32 =
 							tmp_cluster->fed.id;
 					field->print_routine(
-						field, tmp_uint32,
+						field, &tmp_uint32,
 						(curr_inx == field_count));
 					break;
 				default:

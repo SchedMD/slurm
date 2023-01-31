@@ -275,7 +275,7 @@ int sacctmgr_list_reservation(int argc, char **argv)
 			}
 			case PRINT_ID:
 				field->print_routine(field,
-						     reservation->id,
+						     &reservation->id,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_NAME:
@@ -298,13 +298,13 @@ int sacctmgr_list_reservation(int argc, char **argv)
 			case PRINT_TIMEEND:
 				field->print_routine(
 					field,
-					reservation->time_end,
+					&reservation->time_end,
 					(curr_inx == field_count));
 				break;
 			case PRINT_TIMESTART:
 				field->print_routine(
 					field,
-					reservation->time_start,
+					&reservation->time_start,
 					(curr_inx == field_count));
 				break;
 			case PRINT_TRES:
@@ -328,7 +328,7 @@ int sacctmgr_list_reservation(int argc, char **argv)
 			case PRINT_UNUSED:
 				field->print_routine(
 					field,
-					reservation->unused_wall,
+					&reservation->unused_wall,
 					(curr_inx == field_count));
 				break;
 			}

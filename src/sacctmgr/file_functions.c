@@ -2251,19 +2251,18 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				switch(field->type) {
 				case PRINT_DESC:
 					field->print_routine(
-						field, acct->description);
+						field, acct->description, 0);
 					break;
 				case PRINT_NAME:
 					field->print_routine(
-						field, acct->name);
+						field, acct->name, 0);
 					break;
 				case PRINT_ORG:
 					field->print_routine(
-						field, acct->organization);
+						field, acct->organization, 0);
 					break;
 				default:
-					field->print_routine(
-						field, NULL);
+					field->print_routine(field, NULL, 0);
 					break;
 				}
 			}
@@ -2303,34 +2302,37 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 					field->print_routine(
 						field,
 						slurmdb_admin_level_str(
-							user->admin_level));
+							user->admin_level),
+						0);
 					break;
 				case PRINT_COORDS:
 					field->print_routine(
 						field,
-						user->coord_accts);
+						&user->coord_accts,
+						0);
 					break;
 				case PRINT_DACCT:
 					field->print_routine(
 						field,
-						user->default_acct);
+						user->default_acct,
+						0);
 					break;
 				case PRINT_DWCKEY:
 					field->print_routine(
 						field,
-						user->default_wckey);
+						user->default_wckey,
+						0);
 					break;
 				case PRINT_NAME:
 					field->print_routine(
-						field, user->name);
+						field, user->name, 0);
 					break;
 				case PRINT_WCKEYS:
 					field->print_routine(
-						field, user->wckey_list);
+						field, &user->wckey_list, 0);
 					break;
 				default:
-					field->print_routine(
-						field, NULL);
+					field->print_routine(field, NULL, 0);
 					break;
 				}
 			}

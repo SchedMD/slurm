@@ -401,7 +401,7 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 	int curr_inx = 1;
 	char *tmp_char;
 	print_field_t *field = NULL;
-	uint32_t count;
+	uint32_t tmp_uint32;
 
 	xassert(itr);
 	xassert(res);
@@ -409,27 +409,29 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 	while ((field = list_next(itr))) {
 		switch(field->type) {
 		case PRINT_ALLOWED:
+			tmp_uint32 = clus_res ? clus_res->allowed : 0;
 			field->print_routine(
-				field, clus_res ? clus_res->allowed : 0,
+				field, &tmp_uint32,
 				(curr_inx == field_count));
 			break;
 		case PRINT_CLUSTER:
+			tmp_char = clus_res ? clus_res->cluster : NULL;
 			field->print_routine(
-				field, clus_res ? clus_res->cluster : NULL,
+				field, tmp_char,
 				(curr_inx == field_count));
 			break;
 		case PRINT_CALLOWED:
 			if (clus_res)
-				count = (res->count *
-					 clus_res->allowed) / 100;
+				tmp_uint32 = (res->count *
+					      clus_res->allowed) / 100;
 			else
-				count = 0;
-			field->print_routine(field, count,
+				tmp_uint32 = 0;
+			field->print_routine(field, &tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_COUNT:
 			field->print_routine(field,
-					     res->count,
+					     &res->count,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_DESC:
@@ -439,7 +441,7 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 			break;
 		case PRINT_ID:
 			field->print_routine(
-				field, res->id,
+				field, &res->id,
 				(curr_inx == field_count));
 			break;
 		case PRINT_FLAGS:
@@ -466,14 +468,15 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_TYPE:
+			tmp_char = slurmdb_res_type_str(res->type);
 			field->print_routine(field,
-					     slurmdb_res_type_str(
-						     res->type),
+					     tmp_char,
 					     (curr_inx == field_count));
+			tmp_char = NULL;
 			break;
 		case PRINT_ALLOCATED:
 			field->print_routine(
-				field, res->allocated,
+				field, &res->allocated,
 				(curr_inx == field_count));
 			break;
 		default:

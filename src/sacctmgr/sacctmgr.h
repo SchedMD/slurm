@@ -302,10 +302,9 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 			       int option);
 extern int addto_action_char_list(List char_list, char *names);
 extern void sacctmgr_print_coord_list(
-	print_field_t *field, List value, int last);
+	print_field_t *field, void *input, int last);
 
-extern void sacctmgr_print_tres(print_field_t *field, char *tres_simple_str,
-				int last);
+extern void sacctmgr_print_tres(print_field_t *field, void *input, int last);
 extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc);
 extern void sacctmgr_print_cluster(slurmdb_cluster_rec_t *cluster);
 extern void sacctmgr_print_federation(slurmdb_federation_rec_t *fed);

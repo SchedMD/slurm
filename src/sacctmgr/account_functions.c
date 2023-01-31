@@ -589,6 +589,7 @@ extern int sacctmgr_list_account(int argc, char **argv)
 	slurmdb_account_rec_t *acct = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	char *tmp_char = NULL;
+	uint32_t tmp_uint32;
 
 	int field_count = 0;
 
@@ -758,9 +759,10 @@ extern int sacctmgr_list_account(int argc, char **argv)
 						 field_count));
 					break;
 				case PRINT_PRIO:
+					tmp_uint32 = INFINITE;
 					field->print_routine(
 						field,
-						INFINITE,
+						&tmp_uint32,
 						(curr_inx == field_count));
 					break;
 				default:

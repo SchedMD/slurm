@@ -406,6 +406,7 @@ extern int sacctmgr_list_event(int argc, char **argv)
 	while((event = list_next(itr))) {
 		int curr_inx = 1;
 		char tmp[20], *tmp_char;
+		uint64_t tmp_uint64;
 		time_t newend = event->period_end;
 
 		while((field = list_next(itr2))) {
@@ -435,19 +436,19 @@ extern int sacctmgr_list_event(int argc, char **argv)
 			case PRINT_DURATION:
 				if (!newend)
 					newend = time(NULL);
+				tmp_uint64 = newend - event->period_start;
 				field->print_routine(
 					field,
-					(uint64_t)(newend
-						   - event->period_start),
+					&tmp_uint64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_TIMEEND:
 				field->print_routine(field,
-						     event->period_end,
+						     &event->period_end,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_EVENTRAW:
-				field->print_routine(field, event->event_type,
+				field->print_routine(field, &event->event_type,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_EVENT:
@@ -469,7 +470,7 @@ extern int sacctmgr_list_event(int argc, char **argv)
 				break;
 			case PRINT_TIMESTART:
 				field->print_routine(field,
-						     event->period_start,
+						     &event->period_start,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_REASON:
@@ -477,7 +478,7 @@ extern int sacctmgr_list_event(int argc, char **argv)
 						     (curr_inx == field_count));
 				break;
 			case PRINT_STATERAW:
-				field->print_routine(field, event->state,
+				field->print_routine(field, &event->state,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_STATE:

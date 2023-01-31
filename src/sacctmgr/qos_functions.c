@@ -912,6 +912,7 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 	List qos_list = NULL;
 	int field_count = 0;
 	char *tmp_char;
+	uint64_t tmp64;
 
 	print_field_t *field = NULL;
 
@@ -995,221 +996,234 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 				break;
 			case PRINT_UT:
 				field->print_routine(
-					field, qos->usage_thres,
+					field, &qos->usage_thres,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRACE:
+				tmp64 = qos->grace_time;
 				field->print_routine(
-					field, (uint64_t)qos->grace_time,
+					field, &tmp64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPCM:
+				tmp64 = slurmdb_find_tres_count_in_string(
+						qos->grp_tres_mins, TRES_CPU);
 				field->print_routine(
 					field,
-					slurmdb_find_tres_count_in_string(
-						qos->grp_tres_mins, TRES_CPU),
+					&tmp64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPCRM:
+				tmp64 = slurmdb_find_tres_count_in_string(
+						qos->grp_tres_run_mins,
+						TRES_CPU);
 				field->print_routine(
 					field,
-					slurmdb_find_tres_count_in_string(
-						qos->grp_tres_run_mins,
-						TRES_CPU),
+					&tmp64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPC:
+				tmp64 = slurmdb_find_tres_count_in_string(
+						qos->grp_tres, TRES_CPU);
 				field->print_routine(
 					field,
-					slurmdb_find_tres_count_in_string(
-						qos->grp_tres, TRES_CPU),
+					&tmp64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPTM:
 				field->print_routine(
-					field, qos->grp_tres_mins,
+					field, &qos->grp_tres_mins,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPTRM:
 				field->print_routine(
-					field, qos->grp_tres_run_mins,
+					field, &qos->grp_tres_run_mins,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPT:
 				field->print_routine(
-					field, qos->grp_tres,
+					field, &qos->grp_tres,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPJ:
 				field->print_routine(field,
-						     qos->grp_jobs,
+						     &qos->grp_jobs,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_GRPJA:
 				field->print_routine(field,
-						     qos->grp_jobs_accrue,
+						     &qos->grp_jobs_accrue,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_GRPMEM:
+				tmp64 = slurmdb_find_tres_count_in_string(
+						qos->grp_tres, TRES_MEM);
 				field->print_routine(
 					field,
-					slurmdb_find_tres_count_in_string(
-						qos->grp_tres, TRES_MEM),
+					&tmp64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPN:
+				tmp64 = slurmdb_find_tres_count_in_string(
+						qos->grp_tres, TRES_NODE);
 				field->print_routine(
 					field,
-					slurmdb_find_tres_count_in_string(
-						qos->grp_tres, TRES_NODE),
+					&tmp64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_GRPS:
 				field->print_routine(field,
-						     qos->grp_submit_jobs,
+						     &qos->grp_submit_jobs,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_GRPW:
 				field->print_routine(
 					field,
-					qos->grp_wall,
+					&qos->grp_wall,
 					(curr_inx == field_count));
 				break;
 			case PRINT_ID:
 				field->print_routine(
-					field, qos->id,
+					field, &qos->id,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXCM:
+				tmp64 = slurmdb_find_tres_count_in_string(
+						qos->max_tres_mins_pj,
+						TRES_CPU);
 				field->print_routine(
 					field,
-					slurmdb_find_tres_count_in_string(
-						qos->max_tres_mins_pj,
-						TRES_CPU),
+					&tmp64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXCRM:
+				tmp64 = slurmdb_find_tres_count_in_string(
+						qos->max_tres_run_mins_pu,
+						TRES_CPU);
 				field->print_routine(
 					field,
-					slurmdb_find_tres_count_in_string(
-						qos->max_tres_run_mins_pu,
-						TRES_CPU),
+					&tmp64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXC:
+				tmp64 = slurmdb_find_tres_count_in_string(
+						qos->max_tres_pj, TRES_CPU);
 				field->print_routine(
 					field,
-					slurmdb_find_tres_count_in_string(
-						qos->max_tres_pj, TRES_CPU),
+					&tmp64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXCU:
+				tmp64 = slurmdb_find_tres_count_in_string(
+						qos->max_tres_pu, TRES_CPU);
 				field->print_routine(
 					field,
-					slurmdb_find_tres_count_in_string(
-						qos->max_tres_pu, TRES_CPU),
+					&tmp64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MINPT:
 				field->print_routine(
-					field, qos->min_prio_thresh,
+					field, &qos->min_prio_thresh,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXTM:
 				field->print_routine(
-					field, qos->max_tres_mins_pj,
+					field, &qos->max_tres_mins_pj,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXTRM:
 				field->print_routine(
-					field, qos->max_tres_run_mins_pu,
+					field, &qos->max_tres_run_mins_pu,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXTRMA:
 				field->print_routine(
-					field, qos->max_tres_run_mins_pa,
+					field, &qos->max_tres_run_mins_pa,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXT:
 				field->print_routine(
-					field, qos->max_tres_pj,
+					field, &qos->max_tres_pj,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXTA:
 				field->print_routine(
-					field, qos->max_tres_pa,
+					field, &qos->max_tres_pa,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXTN:
 				field->print_routine(
-					field, qos->max_tres_pn,
+					field, &qos->max_tres_pn,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXTU:
 				field->print_routine(
-					field, qos->max_tres_pu,
+					field, &qos->max_tres_pu,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXJ:
 				field->print_routine(field,
-						     qos->max_jobs_pu,
+						     &qos->max_jobs_pu,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_MAXJPA:
 				field->print_routine(field,
-						     qos->max_jobs_pa,
+						     &qos->max_jobs_pa,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_MAXJAA:
 				field->print_routine(field,
-						     qos->max_jobs_accrue_pa,
+						     &qos->max_jobs_accrue_pa,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_MAXJAU:
 				field->print_routine(field,
-						     qos->max_jobs_accrue_pu,
+						     &qos->max_jobs_accrue_pu,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_MAXN:
+				tmp64 = slurmdb_find_tres_count_in_string(
+						qos->max_tres_pj, TRES_NODE);
 				field->print_routine(
 					field,
-					slurmdb_find_tres_count_in_string(
-						qos->max_tres_pj, TRES_NODE),
+					&tmp64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXNU:
+				tmp64 = slurmdb_find_tres_count_in_string(
+						qos->max_tres_pu, TRES_NODE);
 				field->print_routine(
 					field,
-					slurmdb_find_tres_count_in_string(
-						qos->max_tres_pu, TRES_NODE),
+					&tmp64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MAXS:
 				field->print_routine(field,
-						     qos->max_submit_jobs_pu,
+						     &qos->max_submit_jobs_pu,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_MAXSA:
 				field->print_routine(field,
-						     qos->max_submit_jobs_pa,
+						     &qos->max_submit_jobs_pa,
 						     (curr_inx == field_count));
 				break;
 			case PRINT_MAXW:
 				field->print_routine(
 					field,
-					qos->max_wall_pj,
+					&qos->max_wall_pj,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MINC:
+				tmp64 = slurmdb_find_tres_count_in_string(
+						qos->min_tres_pj, TRES_CPU),
 				field->print_routine(
 					field,
-					slurmdb_find_tres_count_in_string(
-						qos->min_tres_pj, TRES_CPU),
+					&tmp64,
 					(curr_inx == field_count));
 				break;
 			case PRINT_MINT:
 				field->print_routine(
-					field, qos->min_tres_pj,
+					field, &qos->min_tres_pj,
 					(curr_inx == field_count));
 				break;
 			case PRINT_NAME:
@@ -1245,27 +1259,24 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 				xfree(tmp_char);
 				break;
 			case PRINT_PRXMPT:
-			{
-				uint64_t tmp64;
-				tmp64 = (uint64_t) qos->preempt_exempt_time;
+				tmp64 = qos->preempt_exempt_time;
 				tmp64 = (tmp64 == INFINITE) ? INFINITE64 : tmp64;
-				field->print_routine(field, tmp64,
+				field->print_routine(field, &tmp64,
 						     (curr_inx == field_count));
 				break;
-			}
 			case PRINT_PRIO:
 				field->print_routine(
-					field, qos->priority,
+					field, &qos->priority,
 					(curr_inx == field_count));
 				break;
 			case PRINT_UF:
 				field->print_routine(
-					field, qos->usage_factor,
+					field, &qos->usage_factor,
 					(curr_inx == field_count));
 				break;
 			case PRINT_LF:
 				field->print_routine(
-					field, qos->limit_factor,
+					field, &qos->limit_factor,
 					(curr_inx == field_count));
 				break;
 			default:

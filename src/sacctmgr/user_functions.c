@@ -1467,6 +1467,7 @@ extern int sacctmgr_list_user(int argc, char **argv)
 
 	while((user = list_next(itr))) {
 		char *tmp_char = NULL;
+		uint32_t tmp_uint32;
 		if (user->assoc_list) {
 			char *curr_cluster = NULL;
 			ListIterator itr3 =
@@ -1539,18 +1540,20 @@ extern int sacctmgr_list_user(int argc, char **argv)
 				while((field = list_next(itr2))) {
 					switch(field->type) {
 					case PRINT_ADMIN:
-						field->print_routine(
-							field,
+						tmp_char =
 							slurmdb_admin_level_str(
 								user->
-								admin_level),
+								admin_level);
+						field->print_routine(
+							field,
+							tmp_char,
 							(curr_inx ==
 							 field_count));
 						break;
 					case PRINT_COORDS:
 						field->print_routine(
 							field,
-							user->coord_accts,
+							&user->coord_accts,
 							(curr_inx ==
 							 field_count));
 						break;
@@ -1595,16 +1598,17 @@ extern int sacctmgr_list_user(int argc, char **argv)
 					xfree(tmp_char);
 					break;
 				case PRINT_ADMIN:
+					tmp_char = slurmdb_admin_level_str(
+							user->admin_level);
 					field->print_routine(
 						field,
-						slurmdb_admin_level_str(
-							user->admin_level),
+						tmp_char,
 						(curr_inx == field_count));
 					break;
 				case PRINT_COORDS:
 					field->print_routine(
 						field,
-						user->coord_accts,
+						&user->coord_accts,
 						(curr_inx == field_count));
 					break;
 				case PRINT_DACCT:
@@ -1626,9 +1630,10 @@ extern int sacctmgr_list_user(int argc, char **argv)
 						(curr_inx == field_count));
 					break;
 				case PRINT_PRIO:
+					tmp_uint32 = INFINITE;
 					field->print_routine(
 						field,
-						INFINITE,
+						&tmp_uint32,
 						(curr_inx == field_count));
 					break;
 				default:
