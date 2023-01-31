@@ -177,6 +177,14 @@ extern int list_transfer_unique(list_t *l, ListFindF f, list_t *sub);
 extern int list_transfer_max(list_t *l, list_t *sub, int max);
 
 /*
+ *  Traverses list [l] using [f] to match each item with [key].
+ *  Matching items are then transfered to [sub].
+ *  Note: list [l] must have the same destroy function as list [sub].
+ *  Returns a count of the number of items moved to list [sub] from list [l].
+ */
+extern int list_transfer_match(list_t *l, list_t *sub, ListFindF f, void *key);
+
+/*
  *  Inserts data [x] at the beginning of list [l].
  */
 extern void list_prepend(list_t *l, void *x);

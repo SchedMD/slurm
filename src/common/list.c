@@ -305,6 +305,40 @@ extern int list_transfer_max(list_t *l, list_t *sub, int max)
 	return n;
 }
 
+extern int list_transfer_match(list_t *l, list_t *sub, ListFindF f, void *key)
+{
+	list_node_t **pp;
+	void *v;
+	int n = 0;
+
+	xassert(l);
+	xassert(sub);
+	xassert(l != sub);
+	xassert(l->magic == LIST_MAGIC);
+	xassert(sub->magic == LIST_MAGIC);
+	xassert(l->fDel == sub->fDel);
+
+	slurm_rwlock_wrlock(&l->mutex);
+	slurm_rwlock_wrlock(&sub->mutex);
+
+	pp = &l->head;
+	while (*pp) {
+		if (f((*pp)->data, key)) {
+			if ((v = _list_node_destroy(l, pp)))
+				n++;
+
+			_list_node_create(sub, sub->tail, v);
+		} else {
+			pp = &(*pp)->next;
+		}
+	}
+
+	slurm_rwlock_unlock(&sub->mutex);
+	slurm_rwlock_unlock(&l->mutex);
+
+	return n;
+}
+
 /*
  *  Pops off list [sub] to [l].
  *  Set max = 0 to transfer all entries.
