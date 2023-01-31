@@ -335,9 +335,12 @@ extern char *run_command_poll_child(int cpid,
 			new_wait = MIN(new_wait, MAX_POLL_WAIT);
 		}
 		i = poll(&fds, 1, new_wait);
+
 		if (i == 0) {
 			continue;
 		} else if (i < 0) {
+			if ((errno == EAGAIN) || (errno == EINTR))
+				continue;
 			error("%s: %s poll:%m",
 			      __func__, script_type);
 			break;
