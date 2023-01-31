@@ -290,6 +290,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 22.05.9
 ==========================
+ -- Allocate correct number of sockets when requesting gres and running with
+    CR_SOCKET*.
 
 * Changes in Slurm 22.05.8
 ==========================

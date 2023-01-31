@@ -643,7 +643,11 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				continue;
 
 			cnt_avail_total += cnt_avail_sock;
-			if (!sufficient_gres) {
+			if (!sufficient_gres && cnt_avail_sock) {
+				/*
+				 * Mark the socked required only if it
+				 * contributed to cnt_avail_total
+				 */
 				req_sock[s] = true;
 				sock_cnt++;
 			}
