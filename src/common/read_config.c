@@ -6009,6 +6009,11 @@ extern char * reconfig_flags2str(uint16_t reconfig_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "KeepPartState");
 	}
+	if (reconfig_flags & RECONFIG_KEEP_POWER_SAVE_SETTINGS) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "KeepPowerSaveSettings");
+	}
 
 	return rc;
 }
@@ -6033,6 +6038,8 @@ extern uint16_t reconfig_str2flags(char *reconfig_flags)
 			rc |= RECONFIG_KEEP_PART_INFO;
 		else if (xstrcasecmp(tok, "KeepPartState") == 0)
 			rc |= RECONFIG_KEEP_PART_STAT;
+		else if (xstrcasecmp(tok, "KeepPowerSaveSettings") == 0)
+			rc |= RECONFIG_KEEP_POWER_SAVE_SETTINGS;
 		else {
 			error("Invalid ReconfigFlag: %s", tok);
 			rc = NO_VAL16;

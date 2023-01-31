@@ -71,6 +71,14 @@ extern bool power_save_test(void);
 extern int power_job_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
 			    char *features);
 
+/*
+ * Parse settings for excluding nodes, partitions and states from being
+ * suspended.
+ *
+ * This creates node bitmaps. Must be done again when node bitmaps change.
+ */
+extern void power_save_exc_setup(void);
+
 /* Free module's allocated memory */
 extern void power_save_fini(void);
 

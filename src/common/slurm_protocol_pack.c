@@ -11401,6 +11401,35 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_suspend_exc_update_msg(suspend_exc_update_msg_t *msg,
+				         buf_t *buffer,
+					 uint16_t protocol_version)
+{
+	packstr(msg->update_str, buffer);
+	pack32(msg->mode, buffer);
+}
+
+static int _unpack_suspend_exc_update_msg(suspend_exc_update_msg_t **msg_ptr,
+					  buf_t *buffer,
+					  uint16_t protocol_version)
+{
+	suspend_exc_update_msg_t *msg;
+
+	msg = xmalloc(sizeof(*msg));
+	*msg_ptr = msg;
+
+	safe_unpackstr(&msg->update_str, buffer);
+	safe_unpack32(&msg->mode, buffer);
+	*msg_ptr = msg;
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_suspend_exc_update_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
 static void
 _pack_will_run_response_msg(will_run_response_msg_t *msg, buf_t *buffer,
 			    uint16_t protocol_version)
@@ -12882,6 +12911,13 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 			(set_debug_level_msg_t *)msg->data, buffer,
 			msg->protocol_version);
 		break;
+	case REQUEST_SET_SUSPEND_EXC_NODES:
+	case REQUEST_SET_SUSPEND_EXC_PARTS:
+	case REQUEST_SET_SUSPEND_EXC_STATES:
+		_pack_suspend_exc_update_msg(
+			(suspend_exc_update_msg_t *) msg->data, buffer,
+			msg->protocol_version);
+		break;
 	case ACCOUNTING_UPDATE_MSG:
 		_pack_accounting_update_msg(
 			(accounting_update_msg_t *)msg->data,
@@ -13548,6 +13584,13 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_SET_SCHEDLOG_LEVEL:
 		rc = _unpack_set_debug_level_msg(
 			(set_debug_level_msg_t **)&(msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_SET_SUSPEND_EXC_NODES:
+	case REQUEST_SET_SUSPEND_EXC_PARTS:
+	case REQUEST_SET_SUSPEND_EXC_STATES:
+		rc = _unpack_suspend_exc_update_msg(
+			(suspend_exc_update_msg_t **) &(msg->data), buffer,
 			msg->protocol_version);
 		break;
 	case ACCOUNTING_UPDATE_MSG:

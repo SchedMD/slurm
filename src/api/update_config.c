@@ -45,6 +45,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xstring.h"
 
 static int _slurm_update (void * data, slurm_msg_type_t msg_type);
 
@@ -277,6 +278,60 @@ int
 slurm_update_step (step_update_request_msg_t * step_msg)
 {
 	return _slurm_update ((void *) step_msg, REQUEST_UPDATE_JOB_STEP);
+}
+
+/*
+ * slurm_update_suspend_exc_nodes - issue RPC to set SuspendExcNodes
+ * IN nodes - string to set
+ * IN mode - Whether to set, append or remove nodes from the setting
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+extern int slurm_update_suspend_exc_nodes(char *nodes, update_mode_t mode)
+{
+	suspend_exc_update_msg_t req = { .update_str = nodes, .mode = mode };
+	int rc = SLURM_SUCCESS;
+
+	/* Check for bad input before sending rpc. */
+	if (xstrchr(nodes, ':') && (mode != UPDATE_SET)) {
+		error("Append and remove from SuspendExcNodes with ':' is not supported. Please use direct assignment instead.");
+		slurm_seterrno_ret(ESLURM_INVALID_NODE_NAME);
+		return SLURM_SUCCESS;
+	}
+
+	rc = _slurm_update((void *) &req, REQUEST_SET_SUSPEND_EXC_NODES);
+
+	/*
+	 * We don't know what SuspendExcNodes currently is in the slurmctld.
+	 * Give user feedback after rpc.
+	 */
+	if (errno == ESLURM_INVALID_NODE_NAME)
+		error("SuspendExcNodes may have ':' in it. Append and remove are not supported in this case. Please use direct assignment instead.");
+
+	return rc;
+}
+
+/*
+ * slurm_update_suspend_exc_parts - issue RPC to set SuspendExcParts
+ * IN parts - string to set
+ * IN mode - Whether to set, append or remove partitions from the setting
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+extern int slurm_update_suspend_exc_parts(char *parts, update_mode_t mode)
+{
+	suspend_exc_update_msg_t req = { .update_str = parts, .mode = mode };
+	return _slurm_update((void *) &req, REQUEST_SET_SUSPEND_EXC_PARTS);
+}
+
+/*
+ * slurm_update_suspend_exc_states - issue RPC to set SuspendExcStates
+ * IN states - string to set
+ * IN mode - Whether to set, append or remove nodes from the setting
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
+ */
+extern int slurm_update_suspend_exc_states(char *states, update_mode_t mode)
+{
+	suspend_exc_update_msg_t req = { .update_str = states, .mode = mode };
+	return _slurm_update((void *) &req, REQUEST_SET_SUSPEND_EXC_STATES);
 }
 
 /*

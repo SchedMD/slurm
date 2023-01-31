@@ -1531,6 +1531,9 @@ int read_slurm_conf(int recover, bool reconfig)
 	char *old_select_type = xstrdup(slurm_conf.select_type);
 	char *old_switch_type = xstrdup(slurm_conf.switch_type);
 	char *state_save_dir = xstrdup(slurm_conf.state_save_location);
+	char *old_suspend_exc_nodes = NULL;
+	char *old_suspend_exc_parts = NULL;
+	char *old_suspend_exc_states = NULL;
 	uint16_t old_select_type_p = slurm_conf.select_type_param;
 	bool cgroup_mem_confinement = false;
 	uint32_t old_max_node_cnt = 0;
@@ -1571,6 +1574,10 @@ int read_slurm_conf(int recover, bool reconfig)
 		part_list = NULL;
 		old_def_part_name = default_part_name;
 		default_part_name = NULL;
+
+		old_suspend_exc_nodes = xstrdup(slurm_conf.suspend_exc_nodes);
+		old_suspend_exc_parts = xstrdup(slurm_conf.suspend_exc_parts);
+		old_suspend_exc_states = xstrdup(slurm_conf.suspend_exc_states);
 	}
 
 	_init_all_slurm_conf();
@@ -1737,6 +1744,19 @@ int read_slurm_conf(int recover, bool reconfig)
 			                         old_def_part_name,
 			                         slurm_conf.reconfig_flags);
 			error_code = MAX(error_code, rc);  /* not fatal */
+		}
+		if (slurm_conf.reconfig_flags &
+		    RECONFIG_KEEP_POWER_SAVE_SETTINGS) {
+			xfree(slurm_conf.suspend_exc_nodes);
+			slurm_conf.suspend_exc_nodes = old_suspend_exc_nodes;
+			xfree(slurm_conf.suspend_exc_parts);
+			slurm_conf.suspend_exc_parts = old_suspend_exc_parts;
+			xfree(slurm_conf.suspend_exc_states);
+			slurm_conf.suspend_exc_states = old_suspend_exc_states;
+		} else {
+			xfree(old_suspend_exc_nodes);
+			xfree(old_suspend_exc_parts);
+			xfree(old_suspend_exc_states);
 		}
 		load_last_job_id();
 		reset_first_job_id();

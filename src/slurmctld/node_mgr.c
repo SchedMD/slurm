@@ -135,6 +135,53 @@ static int	_update_node_gres(char *node_names, char *gres);
 static int	_update_node_weight(char *node_names, uint32_t weight);
 static bool 	_valid_node_state_change(uint32_t old, uint32_t new);
 
+static void _dump_cluster_settings(buf_t *buffer)
+{
+	packstr(slurm_conf.suspend_exc_nodes, buffer);
+	packstr(slurm_conf.suspend_exc_parts, buffer);
+	packstr(slurm_conf.suspend_exc_states, buffer);
+}
+
+static int _load_cluster_settings(bool state_only,
+				  buf_t *buffer,
+				  uint16_t protocol_version)
+{
+	char *suspend_exc_nodes, *suspend_exc_parts, *suspend_exc_states;
+
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		safe_unpackstr(&suspend_exc_nodes, buffer);
+		safe_unpackstr(&suspend_exc_parts, buffer);
+		safe_unpackstr(&suspend_exc_states, buffer);
+
+		if (!state_only) {
+			xfree(slurm_conf.suspend_exc_nodes);
+			slurm_conf.suspend_exc_nodes = suspend_exc_nodes;
+			suspend_exc_nodes = NULL;
+
+			xfree(slurm_conf.suspend_exc_parts);
+			slurm_conf.suspend_exc_parts = suspend_exc_parts;
+			suspend_exc_parts = NULL;
+
+			xfree(slurm_conf.suspend_exc_states);
+			slurm_conf.suspend_exc_states = suspend_exc_states;
+			suspend_exc_states = NULL;
+		} else {
+			xfree(suspend_exc_nodes);
+			xfree(suspend_exc_parts);
+			xfree(suspend_exc_states);
+		}
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(suspend_exc_nodes);
+	xfree(suspend_exc_parts);
+	xfree(suspend_exc_states);
+
+	return SLURM_ERROR;
+}
+
 /* dump_all_node_state - save the state of all nodes to file */
 int dump_all_node_state ( void )
 {
@@ -157,6 +204,7 @@ int dump_all_node_state ( void )
 
 	/* write node records to buffer */
 	lock_slurmctld (node_read_lock);
+	_dump_cluster_settings(buffer);
 	for (inx = 0; (node_ptr = next_node(&inx)); inx++) {
 		xassert (node_ptr->magic == NODE_MAGIC);
 		xassert (node_ptr->config_ptr->magic == CONFIG_MAGIC);
@@ -365,6 +413,9 @@ extern int load_all_node_state ( bool state_only )
 	xfree(ver_str);
 
 	safe_unpack_time (&time_stamp, buffer);
+
+	if (_load_cluster_settings(state_only, buffer, protocol_version))
+		goto unpack_error;
 
 	while (remaining_buf (buffer) > 0) {
 		uint32_t base_state;
@@ -830,7 +881,6 @@ unpack_error:
 	xfree(reason);
 	goto fini;
 }
-
 
 /* list_compare_config - compare two entry from the config list based upon
  *	weight, see common/list.h for documentation */
@@ -4944,6 +4994,7 @@ extern int create_nodes(char *nodeline, char **err_msg)
 	set_cluster_tres(false);
 	_update_parts();
 	power_save_set_timeouts(NULL);
+	power_save_exc_setup();
 	select_g_reconfigure();
 
 fini:
@@ -5047,6 +5098,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	set_cluster_tres(false);
 	_update_parts();
 	power_save_set_timeouts(NULL);
+	power_save_exc_setup();
 	select_g_reconfigure();
 
 	return SLURM_SUCCESS;
@@ -5111,7 +5163,9 @@ extern int delete_nodes(char *names, char **err_msg)
 	xassert(err_msg);
 
 	slurmctld_lock_t write_lock = {
-		.job = WRITE_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK};
+		.job = WRITE_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK,
+		.conf = READ_LOCK
+	};
 
 	if (!xstrstr(slurm_conf.select_type, "cons_tres")) {
 		*err_msg = xstrdup("Node deletion only compatible with select/cons_tres");
@@ -5150,6 +5204,7 @@ extern int delete_nodes(char *names, char **err_msg)
 		set_cluster_tres(false);
 		_update_parts();
 		select_g_reconfigure();
+		power_save_exc_setup();
 	}
 	if (error_hostlist) {
 		char *nodes = hostlist_ranged_string_xmalloc(error_hostlist);

@@ -1616,6 +1616,7 @@ static int _parse_single_range(const char *str, struct _range *range, int dims)
 	/* do NOT allow boxes here */
 	if ((p = strchr(str, 'x'))) {
 		error("%s: Invalid range: `%s'", __func__, orig);
+		free(orig);
 		return 0;
 	}
 
@@ -1623,6 +1624,7 @@ static int _parse_single_range(const char *str, struct _range *range, int dims)
 		*p++ = '\0';
 		if (*p == '-') {   /* do NOT allow negative numbers */
 			error("%s: Invalid range: `%s'", __func__, orig);
+			free(orig);
 			return 0;
 		}
 	}
@@ -1641,6 +1643,7 @@ static int _parse_single_range(const char *str, struct _range *range, int dims)
 
 	if (q == str) {
 		error("%s: Invalid range: `%s'", __func__, orig);
+		free(orig);
 		return 0;
 	}
 
@@ -1648,16 +1651,19 @@ static int _parse_single_range(const char *str, struct _range *range, int dims)
 
 	if (q == p || *q != '\0') {
 		error("%s: Invalid range: `%s'", __func__, orig);
+		free(orig);
 		return 0;
 	}
 
 	if (range->lo > range->hi) {
 		error("%s: Invalid range: `%s'", __func__, orig);
+		free(orig);
 		return 0;
 	}
 
 	if (range->hi - range->lo + 1 > MAX_RANGE) {
 		error("%s: Too many hosts in range `%s'", __func__, orig);
+		free(orig);
 		return 0;
 	}
 

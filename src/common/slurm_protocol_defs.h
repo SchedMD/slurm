@@ -242,6 +242,9 @@ typedef enum {
 	RESPONSE_LICENSE_INFO,
 	REQUEST_SET_FS_DAMPENING_FACTOR,
 	RESPONSE_NODE_REGISTRATION,
+	REQUEST_SET_SUSPEND_EXC_NODES,
+	REQUEST_SET_SUSPEND_EXC_PARTS,
+	REQUEST_SET_SUSPEND_EXC_STATES,
 
 	PERSIST_RC = 1433, /* To mirror the DBD_RC this is replacing */
 	/* Don't make any messages in this range as this is what the DBD uses
@@ -1440,6 +1443,8 @@ extern int slurm_char_list_copy(List dst, List src);
 extern char *slurm_char_list_to_xstr(List char_list);
 extern int slurm_find_char_exact_in_list(void *x, void *key);
 extern int slurm_find_char_in_list(void *x, void *key);
+extern void slurm_remove_char_list_from_char_list(list_t *haystack,
+						  list_t *needles);
 extern int slurm_sort_char_list_asc(void *, void *);
 extern int slurm_sort_char_list_desc(void *, void *);
 
@@ -1666,6 +1671,7 @@ extern void slurm_free_crontab_update_request_msg(
 	crontab_update_request_msg_t *msg);
 extern void slurm_free_crontab_update_response_msg(
 	crontab_update_response_msg_t *msg);
+extern void slurm_free_suspend_exc_update_msg(suspend_exc_update_msg_t *msg);
 
 extern const char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);

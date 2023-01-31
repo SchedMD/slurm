@@ -91,6 +91,10 @@ At that time the node must ready for a resume request to be issued
 as needed for new workload.
 The default value is 30 seconds.</li>
 
+<li><b>ReconfigFlags=KeepPowerSaveSettings</b>:
+If set, an "scontrol reconfig" command will preserve the current state of
+SuspendExcNodes, SuspendExcParts and SuspendExcStates.</li>
+
 <li><b>ResumeTimeout</b>:
 Maximum time permitted (in seconds) between when a node resume request
 is issued and when the node is actually available for use.
@@ -109,11 +113,15 @@ already powered down) in the set "nid[10\-20]" from being powered down.
 Multiple sets of nodes can be specified with or without counts in a comma
 separated list (e.g "nid[10\-20]:4,nid[80\-90]:2"). By default, no nodes are
 excluded.
+This value may be updated with scontrol.
+See <b>ReconfigFlags=KeepPowerSaveSettings</b> for setting persistence.
 
 <li><b>SuspendExcParts</b>:
 List of partitions with nodes to never place in power saving mode.
 Multiple partitions may be specified using a comma separator.
 By default, no nodes are excluded.</li>
+This value may be updated with scontrol.
+See <b>ReconfigFlags=KeepPowerSaveSettings</b> for setting persistence.
 
 <li><b>SuspendExcStates</b>:
 Specifies node states that are not to be powered down automatically.
@@ -121,6 +129,8 @@ Valid states include CLOUD, DOWN, DRAIN, DYNAMIC_FUTURE, DYNAMIC_NORM, FAIL,
 INVALID_REG, MAINTENANCE, NOT_RESPONDING, PERFCTRS, PLANNED, and RESERVED.
 By default, any of these states, if idle for <b>SuspendTime</b>, would be
 powered down.
+This value may be updated with scontrol.
+See <b>ReconfigFlags=KeepPowerSaveSettings</b> for setting persistence.
 
 <li><b>BatchStartTimeout</b>:
 Specifies how long to wait after a batch job start request is issued

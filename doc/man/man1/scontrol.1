@@ -646,6 +646,18 @@ the \fIreconfigure\fP command (described above).
 .IP
 
 .TP
+\fBupdate\fR <SuspendExc*>[=|+=|\-=]<\fILIST\fR>
+Update \fISuspendExcNodes\fP, \fISuspendExcParts\fP, or \fISuspendExcStates\fP.
+<\fILIST\fR> is either a NodeList, list of partitions, or list of node states
+respectively. Use +=/\-= to add/remove nodes, partitions, or states to/from the
+currently configured list. Use = to replace the current list.
+SuspendExcNodes does not support "+="/"\-=" when the ":" option is used,
+however, direct assignment "=" is always supported.
+Consider using "scontrol show config | grep SuspendExc" to see current state of
+these settings.
+.IP
+
+.TP
 \fBversion\fR
 Display the version number of scontrol being executed.
 .IP

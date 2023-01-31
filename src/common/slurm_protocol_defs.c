@@ -341,6 +341,22 @@ extern char *slurm_char_list_to_xstr(List char_list)
 	return out;
 }
 
+static int _for_each_remove_str_from_list(void *x, void *arg)
+{
+	char *rem_str = x;
+	list_t *from_list = arg;
+
+	list_delete_all(from_list, slurm_find_char_exact_in_list, rem_str);
+
+	return 0;
+}
+
+extern void slurm_remove_char_list_from_char_list(list_t *haystack,
+						  list_t *needles)
+{
+	list_for_each(needles, _for_each_remove_str_from_list, haystack);
+}
+
 static int _char_list_copy(void *item, void *dst)
 {
 	list_append((List)dst, xstrdup((char *)item));
@@ -419,16 +435,28 @@ extern int slurm_addto_char_list(List char_list, char *names)
 	return slurm_addto_char_list_with_case(char_list, names, true);
 }
 
+static void _add_to_list(char *name,
+			 list_t *char_list,
+			 bool lower_case_normalization)
+{
+	/*
+	 * If we get a duplicate remove the first one and tack this on the end.
+	 * This is needed for get associations with QOS.
+	 */
+	if (lower_case_normalization)
+		xstrtolower(name);
+	list_delete_all(char_list, slurm_find_char_exact_in_list, name);
+	list_append(char_list, name);
+}
+
 /* returns number of objects added to list */
 extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					   bool lower_case_normalization)
 {
 	int i = 0, start = 0, cnt = 0;
 	char *name = NULL;
-	ListIterator itr = NULL;
 	char quote_c = '\0';
 	int quote = 0;
-	int count = 0;
 	bool brack_not = false;
 	bool first_brack = false;
 	char *this_node_name;
@@ -440,7 +468,6 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 		return 0;
 	}
 
-	itr = list_iterator_create(char_list);
 	if (names) {
 		if (names[i] == '\"' || names[i] == '\'') {
 			quote_c = names[i];
@@ -480,24 +507,9 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					if (i != start) {
 						name = xstrndup(names+start,
 								(i-start));
-						/*
-						* If we get a duplicate remove
-						* the first one and tack this on
-						* the end. This is needed for
-						* get associations with QOS.
-						*/
-						if (list_find(
-							itr,
-							slurm_find_char_in_list,
-							name)) {
-							list_delete_item(itr);
-						} else
-							count++;
-						if (lower_case_normalization)
-							xstrtolower(name);
-						list_append(char_list, name);
 
-						list_iterator_reset(itr);
+						_add_to_list(name, char_list,
+							     lower_case_normalization);
 					}
 
 					/*
@@ -531,26 +543,10 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 						this_node_name =
 						    xstrdup(tmp_this_node_name);
 						free(tmp_this_node_name);
-						/*
-						 * If we get a duplicate
-						 * remove the first one and tack
-						 * this on the end. This is
-						 * needed for get associations
-						 * with QOS.
-						 */
-						if (list_find(
-							itr,
-							slurm_find_char_in_list,
-							this_node_name)) {
-							list_delete_item(itr);
-						} else
-							count++;
-						if (lower_case_normalization)
-							xstrtolower(this_node_name);
-						list_append(char_list,
-							    this_node_name);
 
-						list_iterator_reset(itr);
+						_add_to_list(this_node_name,
+							     char_list,
+							     lower_case_normalization);
 
 						start = i + 1;
 					}
@@ -564,23 +560,12 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 		/* check for empty strings user='' etc */
 		if ((cnt == list_count(char_list)) || (i - start)) {
 			name = xstrndup(names+start, (i-start));
-			/*
-			 * If we get a duplicate remove the first one and
-			 * tack this on the end. This is needed for get
-			 * associations with QOS.
-			 */
-			if (list_find(itr, slurm_find_char_in_list, name)) {
-				list_delete_item(itr);
-			} else
-				count++;
-			if (lower_case_normalization)
-				xstrtolower(name);
-			list_append(char_list, name);
+
+			_add_to_list(name, char_list, lower_case_normalization);
 		}
 	}
 
-	list_iterator_destroy(itr);
-	return count;
+	return list_count(char_list);
 }
 
 /* Parses string and converts names to either uid or gid list */
@@ -5334,6 +5319,15 @@ extern void slurm_free_crontab_update_response_msg(
 	xfree(msg);
 }
 
+extern void slurm_free_suspend_exc_update_msg(suspend_exc_update_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->update_str);
+	xfree(msg);
+}
+
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
 	if (!data)
@@ -5692,6 +5686,11 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SET_FS_DAMPENING_FACTOR:
 		slurm_free_set_fs_dampening_factor_msg(data);
 		break;
+	case REQUEST_SET_SUSPEND_EXC_NODES:
+	case REQUEST_SET_SUSPEND_EXC_PARTS:
+	case REQUEST_SET_SUSPEND_EXC_STATES:
+		slurm_free_suspend_exc_update_msg(data);
+		break;
 	case RESPONSE_CONTROL_STATUS:
 		slurm_free_control_status_msg(data);
 		break;
@@ -5884,6 +5883,12 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_LICENSE_INFO";
 	case REQUEST_SET_FS_DAMPENING_FACTOR:
 		return "REQUEST_SET_FS_DAMPENING_FACTOR,";
+	case REQUEST_SET_SUSPEND_EXC_NODES:
+		return "REQUEST_SET_SUSPEND_EXC_NODES";
+	case REQUEST_SET_SUSPEND_EXC_PARTS:
+		return "REQUEST_SET_SUSPEND_EXC_PARTS";
+	case REQUEST_SET_SUSPEND_EXC_STATES:
+		return "REQUEST_SET_SUSPEND_EXC_STATES";
 
 	case REQUEST_BUILD_INFO:				/* 2001 */
 		return "REQUEST_BUILD_INFO";
