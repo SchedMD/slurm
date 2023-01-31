@@ -798,6 +798,7 @@ int load_all_part_state(void)
 		 * from orig_nodes.
 		 */
 		xfree(part_ptr->nodes);
+		xfree(part_ptr->orig_nodes);
 		part_ptr->orig_nodes = nodes;
 
 		xfree(part_name);
