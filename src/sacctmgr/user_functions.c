@@ -1466,6 +1466,7 @@ extern int sacctmgr_list_user(int argc, char **argv)
 	field_count = list_count(print_fields_list);
 
 	while((user = list_next(itr))) {
+		char *tmp_char = NULL;
 		if (user->assoc_list) {
 			char *curr_cluster = NULL;
 			ListIterator itr3 =
@@ -1585,10 +1586,13 @@ extern int sacctmgr_list_user(int argc, char **argv)
 			while((field = list_next(itr2))) {
 				switch(field->type) {
 				case PRINT_QOS:
+					tmp_char = get_qos_complete_str(NULL,
+									NULL);
 					field->print_routine(
-						field, NULL,
-						NULL,
+						field,
+						tmp_char,
 						(curr_inx == field_count));
+					xfree(tmp_char);
 					break;
 				case PRINT_ADMIN:
 					field->print_routine(

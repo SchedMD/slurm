@@ -588,6 +588,7 @@ extern int sacctmgr_list_account(int argc, char **argv)
 	ListIterator itr2 = NULL;
 	slurmdb_account_rec_t *acct = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
+	char *tmp_char = NULL;
 
 	int field_count = 0;
 
@@ -723,10 +724,13 @@ extern int sacctmgr_list_account(int argc, char **argv)
 			while((field = list_next(itr2))) {
 				switch(field->type) {
 				case PRINT_QOS:
+					tmp_char = get_qos_complete_str(NULL,
+									NULL);
 					field->print_routine(
-						field, NULL,
-						NULL,
+						field,
+						tmp_char,
 						(curr_inx == field_count));
+					xfree(tmp_char);
 					break;
 				case PRINT_ACCT:
 					field->print_routine(

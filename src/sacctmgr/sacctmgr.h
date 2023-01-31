@@ -303,8 +303,6 @@ extern int addto_qos_char_list(List char_list, List qos_list, char *names,
 extern int addto_action_char_list(List char_list, char *names);
 extern void sacctmgr_print_coord_list(
 	print_field_t *field, List value, int last);
-extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
-				    List value, int last);
 extern void sacctmgr_print_qos_bitstr(print_field_t *field, List qos_list,
 				      bitstr_t *value, int last);
 

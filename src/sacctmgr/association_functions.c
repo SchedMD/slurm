@@ -813,8 +813,9 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		if (!g_qos_list)
 			g_qos_list = slurmdb_qos_get(
 				db_conn, NULL);
-
-		field->print_routine(field, g_qos_list, assoc->qos_list, last);
+		tmp_char = get_qos_complete_str(g_qos_list, assoc->qos_list);
+		field->print_routine(field, tmp_char, last);
+		xfree(tmp_char);
 		break;
 	case PRINT_QOS_RAW:
 		field->print_routine(field, assoc->qos_list, last);

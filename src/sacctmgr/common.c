@@ -684,7 +684,7 @@ static print_field_t *_get_print_field(char *object)
 		field->type = PRINT_QOS;
 		field->name = xstrdup("QOS");
 		field->len = 20;
-		field->print_routine = sacctmgr_print_qos_list;
+		field->print_routine = print_fields_str;
 	} else if (!xstrncasecmp("QOSRAWLevel", object, MAX(command_len, 4))) {
 		field->type = PRINT_QOS_RAW;
 		field->name = xstrdup("QOS_RAW");
@@ -1581,31 +1581,6 @@ extern void sacctmgr_print_coord_list(
 	else if (print_fields_parsable_print)
 		printf("%s|", print_this);
 	else if (print_this) {
-		if (strlen(print_this) > abs_len)
-			print_this[abs_len-1] = '+';
-
-		if (field->len == abs_len)
-			printf("%*.*s ", abs_len, abs_len, print_this);
-		else
-			printf("%-*.*s ", abs_len, abs_len, print_this);
-	}
-	xfree(print_this);
-}
-
-extern void sacctmgr_print_qos_list(print_field_t *field, List qos_list,
-				    List value, int last)
-{
-	int abs_len = abs(field->len);
-	char *print_this = NULL;
-
-	print_this = get_qos_complete_str(qos_list, value);
-
-	if (print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
-	    && last)
-		printf("%s", print_this);
-	else if (print_fields_parsable_print)
-		printf("%s|", print_this);
-	else {
 		if (strlen(print_this) > abs_len)
 			print_this[abs_len-1] = '+';
 
