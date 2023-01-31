@@ -441,7 +441,6 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 {
 	int i = 0, start = 0, cnt = 0;
 	char *name = NULL;
-	ListIterator itr = NULL;
 	char quote_c = '\0';
 	int quote = 0;
 	int count = 0;
@@ -456,7 +455,6 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 		return 0;
 	}
 
-	itr = list_iterator_create(char_list);
 	if (names) {
 		if (names[i] == '\"' || names[i] == '\'') {
 			quote_c = names[i];
@@ -502,18 +500,14 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 						* the end. This is needed for
 						* get associations with QOS.
 						*/
-						if (list_find(
-							itr,
+						if (!list_delete_all(
+							char_list,
 							slurm_find_char_in_list,
-							name)) {
-							list_delete_item(itr);
-						} else
+							name))
 							count++;
 						if (lower_case_normalization)
 							xstrtolower(name);
 						list_append(char_list, name);
-
-						list_iterator_reset(itr);
 					}
 
 					/*
@@ -554,19 +548,15 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 						 * needed for get associations
 						 * with QOS.
 						 */
-						if (list_find(
-							itr,
+						if (!list_delete_all(
+							char_list,
 							slurm_find_char_in_list,
-							this_node_name)) {
-							list_delete_item(itr);
-						} else
+							this_node_name))
 							count++;
 						if (lower_case_normalization)
 							xstrtolower(this_node_name);
 						list_append(char_list,
 							    this_node_name);
-
-						list_iterator_reset(itr);
 
 						start = i + 1;
 					}
@@ -585,9 +575,8 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 			 * tack this on the end. This is needed for get
 			 * associations with QOS.
 			 */
-			if (list_find(itr, slurm_find_char_in_list, name)) {
-				list_delete_item(itr);
-			} else
+			if (!list_delete_all(char_list, slurm_find_char_in_list,
+					     name))
 				count++;
 			if (lower_case_normalization)
 				xstrtolower(name);
@@ -595,7 +584,6 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 		}
 	}
 
-	list_iterator_destroy(itr);
 	return count;
 }
 
