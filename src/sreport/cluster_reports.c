@@ -1397,7 +1397,7 @@ static void _cluster_util_tres_report(slurmdb_tres_rec_t *tres,
 			break;
 		case PRINT_CLUSTER_TRES_CNT:
 			field->print_routine(field,
-					     total_acct->tres_rec.count,
+					     &total_acct->tres_rec.count,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_CLUSTER_TRES_ALLOC:

@@ -424,11 +424,11 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_TRES_CNT:
-			field->print_routine(field, tres_alloc_cnt,
+			field->print_routine(field, &tres_alloc_cnt,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_ID:
-			field->print_routine(field, resv_ptr->id,
+			field->print_routine(field, &resv_ptr->id,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_TRES_ALLOC:
@@ -454,11 +454,11 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_START:
-			field->print_routine(field, resv_ptr->time_start,
+			field->print_routine(field, &resv_ptr->time_start,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_END:
-			field->print_routine(field, resv_ptr->time_end,
+			field->print_routine(field, &resv_ptr->time_end,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_FLAGS:
@@ -474,7 +474,7 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 			break;
 		}
 		case PRINT_RESV_TIME:
-			field->print_routine(field, total_time,
+			field->print_routine(field, &total_time,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_TRES_NAME:
@@ -488,7 +488,7 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 			xfree(tres_tmp);
 			break;
 		case PRINT_RESV_TRES_USAGE:
-			field->print_routine(field, total_reported,
+			field->print_routine(field, &total_reported,
 					     (curr_inx == field_count));
 			break;
 		default:

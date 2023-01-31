@@ -876,7 +876,7 @@ static int _run_report(int type, int argc, char **argv)
 				case PRINT_JOB_COUNT:
 					field->print_routine(
 						field,
-						job_group->count,
+						&job_group->count,
 						0);
 					break;
 				default:
