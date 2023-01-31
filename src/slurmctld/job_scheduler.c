@@ -1007,6 +1007,27 @@ extern void job_queue_append_internal(job_queue_req_t *job_queue_req)
 	list_append(job_queue_req->job_queue, job_queue_rec);
 }
 
+static void _set_features(job_record_t *job_ptr, bool use_prefer)
+{
+	/*
+	 * feature_list_use is a temporary variable and should
+	 * be reset before each use. Do this after the check for
+	 * pending because the job could have started with
+	 * "preferred" job_queue_rec.
+	 */
+	if (use_prefer) {
+		job_ptr->details->features_use =
+			job_ptr->details->prefer;
+		job_ptr->details->feature_list_use =
+			job_ptr->details->prefer_list;
+	} else {
+		job_ptr->details->features_use =
+			job_ptr->details->features;
+		job_ptr->details->feature_list_use =
+			job_ptr->details->feature_list;
+	}
+}
+
 static int _schedule(bool full_queue)
 {
 	ListIterator job_iterator = NULL, part_iterator = NULL;
@@ -1475,23 +1496,7 @@ next_part:
 				continue;	/* started in other partition */
 			}
 
-			/*
-			 * feature_list_use is a temporary variable and should
-			 * be reset before each use. Do this after the check for
-			 * pending because the job could have started with
-			 * "preferred" job_queue_rec.
-			 */
-			if (job_queue_rec->use_prefer) {
-				job_ptr->details->features_use =
-					job_ptr->details->prefer;
-				job_ptr->details->feature_list_use =
-					job_ptr->details->prefer_list;
-			} else {
-				job_ptr->details->features_use =
-					job_ptr->details->features;
-				job_ptr->details->feature_list_use =
-					job_ptr->details->feature_list;
-			}
+			_set_features(job_ptr, job_queue_rec->use_prefer);
 
 			if (job_ptr->resv_list)
 				job_queue_rec_resv_list(job_queue_rec);
