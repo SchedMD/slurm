@@ -839,8 +839,6 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id)
 			if (i == ARRAY_SIZE(step_names))
 				return ESLURM_INVALID_STEP_ID_NON_NUMERIC;
 		}
-	} else if (step == 0) {
-		return ESLURM_INVALID_STEP_ID_ZERO;
 	} else if (step < 0) {
 		return ESLURM_INVALID_STEP_ID_NEGATIVE;
 	} else if (step >= SLURM_MAX_NORMAL_STEP_ID) {

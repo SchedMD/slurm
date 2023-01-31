@@ -415,8 +415,6 @@ slurm_errtab_t slurm_errtab[] = {
 	  "HetJob component larger than acceptable range" },
 	{ ERRTAB_ENTRY(ESLURM_EMPTY_STEP_ID),
 	  "StepID must not be an empty string" },
-	{ ERRTAB_ENTRY(ESLURM_INVALID_STEP_ID_ZERO),
-	  "StepID can not be zero" },
 	{ ERRTAB_ENTRY(ESLURM_INVALID_STEP_ID_NEGATIVE),
 	  "StepID can not be a negative number" },
 	{ ERRTAB_ENTRY(ESLURM_INVALID_STEP_ID_TOO_LARGE),
