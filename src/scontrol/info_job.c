@@ -395,7 +395,6 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 		.step_id = NO_VAL,
 	};
 	uint32_t array_id = NO_VAL;
-	char *next_str;
 	job_step_info_response_msg_t *job_step_info_ptr = NULL;
 	static uint32_t last_job_id = 0, last_array_id, last_step_id = 0;
 	static job_step_info_response_msg_t *old_job_step_info_ptr = NULL;
@@ -424,13 +423,14 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 
 		FREE_NULL_LIST(step_list);
 	} else {
-		step_id.job_id = (uint32_t)strtol(job_step_id_str, &next_str,
-						  10);
-		if (next_str[0] == '_')
-			array_id = (uint32_t) strtol(next_str+1, &next_str, 10);
-		else if (next_str[0] == '.')
-			step_id.step_id = (uint32_t)strtol(next_str + 1, NULL,
-							   10);
+		slurm_selected_step_t id = {0};
+		if (!(error_code = unfmt_job_id_string(job_step_id_str, &id))) {
+			if ((id.array_task_id != NO_VAL) ||
+			    (id.het_job_offset != NO_VAL))
+				error_code = ESLURM_INVALID_JOB_ID;
+			else
+				step_id = id.step_id;
+		}
 	}
 
 	if (all_flag)
