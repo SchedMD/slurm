@@ -1806,6 +1806,17 @@ skip_start:
 				     job_reason_string(job_ptr->state_reason),
 				     job_ptr->priority, job_ptr->partition);
 			fail_by_part = true;
+		} else if (error_code == ESLURM_LICENSES_UNAVAILABLE) {
+			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
+				     job_ptr,
+				     job_state_string(job_ptr->job_state),
+				     job_reason_string(job_ptr->state_reason),
+				     job_ptr->priority);
+			if (bf_licenses) {
+				sched_debug("%pJ is blocked on licenses. Stopping scheduling so license backfill can handle this",
+					    job_ptr);
+				break;
+			}
 		} else if (error_code == ESLURM_BURST_BUFFER_WAIT) {
 			if (job_ptr->start_time == 0) {
 				job_ptr->start_time = last_job_sched_start;

@@ -1555,7 +1555,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	static uint32_t cr_enabled = NO_VAL;
 	static uint32_t single_select_job_test = 0;
 
-	int error_code = SLURM_SUCCESS, i, j, pick_code;
+	int error_code = SLURM_SUCCESS, i, j, pick_code = SLURM_SUCCESS;
 	int total_nodes = 0, avail_nodes = 0;
 	bitstr_t *avail_bitmap = NULL, *total_bitmap = NULL;
 	bitstr_t *backup_bitmap = NULL;
@@ -1567,6 +1567,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool tried_sched = false;	/* Tried to schedule with avail nodes */
 	bool preempt_flag = false;
 	bool nodes_busy = false;
+	bool licenses_unavailable = false;
 	int shared = 0, select_mode;
 	List preemptee_cand;
 
@@ -1611,7 +1612,10 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			return SLURM_SUCCESS;
 		} else {
 			FREE_NULL_BITMAP(avail_bitmap);
-			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+			if (pick_code == ESLURM_LICENSES_UNAVAILABLE)
+				return ESLURM_LICENSES_UNAVAILABLE;
+			else
+				return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		}
 	} else if (node_set_size == 0) {
 		info("%s: empty node set for selection", __func__);
@@ -1976,6 +1980,9 @@ try_sched:
 			}
 		}
 
+		if (pick_code == ESLURM_LICENSES_UNAVAILABLE)
+			licenses_unavailable = true;
+
 		/* determine if job could possibly run (if all configured
 		 * nodes available) */
 		if (total_bitmap)
@@ -2068,7 +2075,9 @@ try_sched:
 		error_code = ESLURM_RESERVATION_BUSY;
 		return error_code;
 	}
-	if (!runable_ever) {
+	if (licenses_unavailable) {
+		error_code = ESLURM_LICENSES_UNAVAILABLE;
+	} else if (!runable_ever) {
 		if (part_ptr->name) {
 			info("%s: %pJ never runnable in partition %s",
 			     __func__, job_ptr, part_ptr->name);
@@ -2634,6 +2643,9 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 		} else if ((error_code == ESLURM_RESERVATION_NOT_USABLE) ||
 			   (error_code == ESLURM_RESERVATION_BUSY)) {
 			job_ptr->state_reason = WAIT_RESERVATION;
+			xfree(job_ptr->state_desc);
+		} else if (error_code == ESLURM_LICENSES_UNAVAILABLE) {
+			job_ptr->state_reason = WAIT_LICENSES;
 			xfree(job_ptr->state_desc);
 		} else if ((job_ptr->state_reason == WAIT_HELD) &&
 			   (job_ptr->priority == 0)) {

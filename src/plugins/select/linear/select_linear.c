@@ -3575,12 +3575,12 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 		if (license_rc == SLURM_ERROR) {
 			log_flag(SELECT_TYPE,
 				 "test fail: insufficient licenses configured");
-			return SLURM_ERROR;
+			return ESLURM_LICENSES_UNAVAILABLE;
 		}
 		if ((mode != SELECT_MODE_TEST_ONLY) && (license_rc == EAGAIN)) {
 			log_flag(SELECT_TYPE,
 				 "test fail: insufficient licenses available");
-			return SLURM_ERROR;
+			return ESLURM_LICENSES_UNAVAILABLE;
 		}
 	}
 
