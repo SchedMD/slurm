@@ -54,12 +54,15 @@
 #include "src/common/xstring.h"
 #include "src/common/list.h"
 
-typedef struct {
+typedef struct print_field print_field_t;
+
+struct print_field {
 	int len;  /* what is the width of the print */
 	char *name;  /* name to be printed in header */
-	void (*print_routine) (); /* what is the function to print with  */
+	/* what is the function to print with  */
+	void (*print_routine) (print_field_t *field, void *value, int last);
 	uint16_t type; /* defined in the local function */
-} print_field_t;
+};
 
 enum {
 	PRINT_FIELDS_PARSABLE_NOT = 0,
@@ -73,23 +76,20 @@ extern char *fields_delimiter;
 
 extern void destroy_print_field(void *object);
 extern void print_fields_header(List print_fields_list);
-extern void print_fields_date(print_field_t *field, time_t value, int last);
-extern void print_fields_str(print_field_t *field, char *value, int last);
-extern void print_fields_double(print_field_t *field, double value, int last);
+extern void print_fields_date(print_field_t *field, void *input, int last);
+extern void print_fields_str(print_field_t *field, void *input, int last);
+extern void print_fields_double(print_field_t *field, void *input, int last);
 /* print_fields_t->print_routine does not like uint16_t being passed
  * in so pass in a uint32_t and typecast.
  */
-extern void print_fields_uint16(
-	print_field_t *field, uint32_t value, int last);
-extern void print_fields_uint32(
-	print_field_t *field, uint32_t value, int last);
-extern void print_fields_uint64(
-	print_field_t *field, uint64_t value, int last);
+extern void print_fields_uint16(print_field_t *field, void *input, int last);
+extern void print_fields_uint32(print_field_t *field, void *input, int last);
+extern void print_fields_uint64(print_field_t *field, void *input, int last);
 extern void print_fields_time_from_mins(print_field_t *field,
-					uint32_t value, int last);
+					void *input, int last);
 extern void print_fields_time_from_secs(print_field_t *field,
-					uint64_t value, int last);
-extern void print_fields_char_list(print_field_t *field, List value, int last);
+					void *input, int last);
+extern void print_fields_char_list(print_field_t *field, void *input, int last);
 
 #define print_fields_uint print_fields_uint32
 #define print_fields_time print_fields_time_from_mins
