@@ -1955,6 +1955,9 @@ static bool _handle_core_select(step_record_t *step_ptr,
 
 	xassert(cpu_cnt);
 
+	if (*cpu_cnt <= 0)
+		return true;
+
 	/*
 	 * Use last_core_inx to avoid putting all of the extra
 	 * work onto core zero when oversubscribing cpus.
