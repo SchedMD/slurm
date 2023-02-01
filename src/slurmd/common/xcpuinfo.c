@@ -168,6 +168,15 @@ static inline int _internal_hwloc_topology_export_xml(
 static void _remove_ecores(hwloc_topology_t *topology)
 {
 #if HWLOC_API_VERSION > 0x00020401
+	int type_cnt;
+	hwloc_bitmap_t cpuset;
+
+	if (xstrcasestr(slurm_conf.slurmd_params, "allow_ecores"))
+		return;
+
+	if (!(type_cnt = hwloc_cpukinds_get_nr(*topology, 0)))
+		return;
+
 	/*
 	 * Handle the removal of Intel E-Cores here.
 	 *
@@ -184,31 +193,23 @@ static void _remove_ecores(hwloc_topology_t *topology)
 	 *
 	 * This logic should do nothing on any other existing processor.
 	 */
-	if (!xstrcasestr(slurm_conf.slurmd_params, "allow_ecores")) {
-		int type_cnt = hwloc_cpukinds_get_nr(*topology, 0);
-		if (type_cnt) {
-			hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
-			for (int i = 0; i < type_cnt; i++) {
-				unsigned nr_infos = 0;
-				struct hwloc_info_s *infos;
-				if (hwloc_cpukinds_get_info(
-					    *topology, i, cpuset,
-					    NULL, &nr_infos, &infos, 0))
-					fatal("Error getting info from hwloc_cpukinds_get_info()");
+	cpuset = hwloc_bitmap_alloc();
+	for (int i = 0; i < type_cnt; i++) {
+		unsigned nr_infos = 0;
+		struct hwloc_info_s *infos;
+		if (hwloc_cpukinds_get_info(
+			    *topology, i, cpuset, NULL, &nr_infos, &infos, 0))
+			fatal("Error getting info from hwloc_cpukinds_get_info()");
 
-				for (int j = 0; j < nr_infos; j++) {
-					if (!xstrcasecmp(infos[j].name,
-							 "CoreType") &&
-					    !xstrcasecmp(infos[j].value,
-							 "IntelCore")) {
-						hwloc_topology_restrict(
-							*topology, cpuset, 0);
-					}
-				}
+		for (int j = 0; j < nr_infos; j++) {
+			if (!xstrcasecmp(infos[j].name, "CoreType") &&
+			    !xstrcasecmp(infos[j].value, "IntelCore")) {
+				hwloc_topology_restrict(*topology, cpuset, 0);
 			}
-			hwloc_bitmap_free(cpuset);
 		}
 	}
+	hwloc_bitmap_free(cpuset);
+
 #endif
 }
 
