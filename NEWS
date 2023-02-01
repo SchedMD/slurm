@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- Allocate correct number of sockets when requesting gres and running with
     CR_SOCKET*.
  -- Fix handling of --prefer for job arrays.
+ -- Fix regression in 22.05.5 that causes some jobs that request
+    --ntasks-per-node to be incorrectly rejected.
 
 * Changes in Slurm 22.05.8
 ==========================
