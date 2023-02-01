@@ -136,6 +136,7 @@ extern const char *con_mgr_work_status_string(con_mgr_work_status_t status);
 typedef enum {
 	CONMGR_WORK_TYPE_INVALID = 0,
 	CONMGR_WORK_TYPE_CONNECTION_FIFO, /* connection specific work ordered by FIFO */
+	CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE, /* call once all connection writes complete then FIFO */
 	CONMGR_WORK_TYPE_MAX /* place holder */
 } con_mgr_work_type_t;
 
@@ -229,6 +230,11 @@ struct con_mgr_fd_s {
 	 * type: wrap_work_arg_t
 	 */
 	list_t *work;
+	/*
+	 * list of non-IO work pending out buffer being full sent
+	 * type: wrap_work_arg_t
+	 */
+	list_t *write_complete_work;
 	/* owning connection manager */
 	con_mgr_t *mgr;
 };

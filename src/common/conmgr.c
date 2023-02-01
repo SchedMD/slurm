@@ -135,6 +135,8 @@ struct {
 } types[] = {
 	{ CONMGR_WORK_TYPE_INVALID, "INVALID" },
 	{ CONMGR_WORK_TYPE_CONNECTION_FIFO, "CONNECTION_FIFO" },
+	{ CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE,
+	  "CONNECTION_WRITE_COMPLETE" },
 };
 
 /* simple struct to keep track of fds */
@@ -243,6 +245,7 @@ static void _connection_fd_delete(void *x)
 		 __func__, con->name, con->input_fd, con->output_fd);
 
 	xassert(list_is_empty(con->work));
+	xassert(list_is_empty(con->write_complete_work));
 
 	/* make sure this isn't a dangling pointer */
 	if (con->is_listen)
@@ -253,6 +256,7 @@ static void _connection_fd_delete(void *x)
 	FREE_NULL_BUFFER(con->in);
 	FREE_NULL_BUFFER(con->out);
 	FREE_NULL_LIST(con->work);
+	FREE_NULL_LIST(con->write_complete_work);
 	xfree(con->name);
 	xfree(con->unix_socket);
 
@@ -518,6 +522,7 @@ static con_mgr_fd_t *_add_connection(
 		.is_listen = is_listen,
 		.mgr = mgr,
 		.work = list_create(NULL),
+		.write_complete_work = list_create(NULL),
 		.new_arg = arg,
 		.type = type,
 	};
@@ -685,6 +690,7 @@ static void _wrap_work(void *x)
 		 (uintptr_t) work->arg);
 
 	switch (work->type) {
+	case CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE:
 	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
 		_wrap_con_work(work, con, mgr);
 		break;
@@ -715,7 +721,8 @@ static void _queue_con_work(work_t *work)
 	_check_magic_mgr(work->mgr);
 	_check_magic_fd(work->con);
 	xassert(work->magic == MAGIC_WORK);
-	xassert(work->type == CONMGR_WORK_TYPE_CONNECTION_FIFO);
+	xassert((work->type == CONMGR_WORK_TYPE_CONNECTION_FIFO) ||
+		(work->type == CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE));
 	xassert(work->status == CONMGR_WORK_STATUS_PENDING);
 
 	xassert(!con->has_work);
@@ -751,19 +758,30 @@ static void _add_con_work(bool locked, con_mgr_fd_t *con,
 	xassert((void *) work->func != _wrap_work);
 	xassert(work->magic == MAGIC_WORK);
 	xassert(work->status == CONMGR_WORK_STATUS_INVALID);
-	xassert(work->type == CONMGR_WORK_TYPE_CONNECTION_FIFO);
 
 	if (!locked)
 		slurm_mutex_lock(&con->mgr->mutex);
 
-	if (!con->has_work) {
-		_queue_con_work(work);
-	} else {
-		log_flag(NET, "%s: [%s] queuing \"%s\" pending work: %u total",
-			 __func__, con->name, work->tag, list_count(con->work));
+	switch (type) {
+	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
+	{
+		if (!con->has_work) {
+			_queue_con_work(work);
+		} else {
+			log_flag(NET, "%s: [%s] queuing \"%s\" pending work: %u total",
+				 __func__, con->name, work->tag, list_count(con->work));
 
+			work->status = CONMGR_WORK_STATUS_PENDING;
+			list_append(con->work, work);
+		}
+		break;
+	}
+	case CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE:
 		work->status = CONMGR_WORK_STATUS_PENDING;
-		list_append(con->work, work);
+		list_append(con->write_complete_work, work);
+		break;
+	default:
+		fatal("%s: invalid type", __func__);
 	}
 
 	_signal_change(con->mgr, true);
@@ -1337,6 +1355,17 @@ static int _handle_connection(void *x, void *arg)
 			log_flag(NET, "%s: [%s] waiting to write %u bytes",
 				 __func__, con->name, get_buf_offset(con->out));
 		}
+		return 0;
+	}
+
+	if ((count = list_count(con->write_complete_work))) {
+		work_t *work = list_pop(con->write_complete_work);
+		xassert(work);
+
+		log_flag(NET, "%s: [%s] queuing pending write complete work: %u total",
+			 __func__, con->name, count);
+
+		_queue_con_work(work);
 		return 0;
 	}
 
