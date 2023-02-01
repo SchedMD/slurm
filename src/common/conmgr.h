@@ -137,6 +137,7 @@ typedef enum {
 	CONMGR_WORK_TYPE_INVALID = 0,
 	CONMGR_WORK_TYPE_CONNECTION_FIFO, /* connection specific work ordered by FIFO */
 	CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE, /* call once all connection writes complete then FIFO */
+	CONMGR_WORK_TYPE_FIFO, /* non-connection work ordered by FIFO */
 	CONMGR_WORK_TYPE_MAX /* place holder */
 } con_mgr_work_type_t;
 

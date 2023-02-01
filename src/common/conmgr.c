@@ -141,6 +141,7 @@ struct {
 	{ CONMGR_WORK_TYPE_CONNECTION_FIFO, "CONNECTION_FIFO" },
 	{ CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE,
 	  "CONNECTION_WRITE_COMPLETE" },
+	{ CONMGR_WORK_TYPE_FIFO, "FIFO" },
 };
 
 /* simple struct to keep track of fds */
@@ -706,6 +707,10 @@ static void _wrap_work(void *x)
 		 (uintptr_t) work->arg);
 
 	switch (work->type) {
+	case CONMGR_WORK_TYPE_FIFO:
+		work->func(work->mgr, work->con, work->type, work->status,
+			   work->tag, work->arg);
+		break;
 	case CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE:
 	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
 		_wrap_con_work(work, con, mgr);
@@ -2461,6 +2466,11 @@ static void _add_work(bool locked, con_mgr_t *mgr, con_mgr_fd_t *con,
 
 		work->status = CONMGR_WORK_STATUS_PENDING;
 		list_append(con->write_complete_work, work);
+		break;
+	case CONMGR_WORK_TYPE_FIFO:
+		xassert(!con);
+		work->status = CONMGR_WORK_STATUS_RUN;
+		workq_add_work(mgr->workq, _wrap_work, work, work->tag);
 		break;
 	default:
 		fatal("%s: invalid type", __func__);
