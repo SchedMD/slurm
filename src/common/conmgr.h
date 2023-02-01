@@ -142,6 +142,20 @@ typedef enum {
 extern const char *con_mgr_work_type_string(con_mgr_work_type_t type);
 
 /*
+ * Prototype for all conmgr callbacks
+ * IN mgr - ptr to owning conmgr
+ * IN con - ptr to relavent connection (or NULL)
+ * IN type - work type
+ * IN status - work status
+ * IN tag - logging tag for work
+ * IN arg - arbitrary pointer
+ */
+typedef void (*con_mgr_work_func_t)(con_mgr_t *mgr, con_mgr_fd_t *con,
+				    con_mgr_work_type_t type,
+				    con_mgr_work_status_t status,
+				    const char *tag, void *arg);
+
+/*
  * conmgr can handle RPC or raw connections
  */
 typedef enum {

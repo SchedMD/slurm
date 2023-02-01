@@ -85,11 +85,24 @@ pthread_mutex_t sigint_mutex = PTHREAD_MUTEX_INITIALIZER;
 int sigint_fd[2] = { -1, -1 };
 
 static int _close_con_for_each(void *x, void *arg);
-static void _listen_accept(void *x);
-static void _wrap_on_connection(void *x);
-static void _add_con_work(bool locked, con_mgr_fd_t *con, work_func_t func,
-			  void *arg, const char *tag);
-static void _wrap_on_data(void *x);
+static void _listen_accept(con_mgr_t *mgr, con_mgr_fd_t *con,
+			   con_mgr_work_type_t type,
+			   con_mgr_work_status_t status, const char *tag,
+			   void *arg);
+static void _wrap_on_connection(con_mgr_t *mgr, con_mgr_fd_t *con,
+				con_mgr_work_type_t type,
+				con_mgr_work_status_t status, const char *tag,
+				void *arg);
+static void _add_con_work(bool locked, con_mgr_fd_t *con,
+			  con_mgr_work_func_t func, void *arg, const char *tag);
+static void _wrap_on_data(con_mgr_t *mgr, con_mgr_fd_t *con,
+			  con_mgr_work_type_t type,
+			  con_mgr_work_status_t status, const char *tag,
+			  void *arg);
+static void _on_finish_wrapper(con_mgr_t *mgr, con_mgr_fd_t *con,
+			       con_mgr_work_type_t type,
+			       con_mgr_work_status_t status, const char *tag,
+			       void *arg);
 
 typedef void (*on_poll_event_t)(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 				short revents);
@@ -98,7 +111,7 @@ typedef struct {
 	int magic;
 	con_mgr_t *mgr;
 	con_mgr_fd_t *con;
-	work_func_t func;
+	con_mgr_work_func_t func;
 	void *arg;
 	const char *tag;
 	con_mgr_work_status_t status;
@@ -617,7 +630,8 @@ static void _wrap_con_work(work_t *work, con_mgr_fd_t *con, con_mgr_t *mgr)
 	slurm_mutex_unlock(&mgr->mutex);
 #endif /* !NDEBUG */
 
-	work->func(work->arg);
+	work->func(work->mgr, work->con, work->type, work->status, work->tag,
+		   work->arg);
 
 	slurm_mutex_lock(&mgr->mutex);
 #ifndef NDEBUG
@@ -631,9 +645,9 @@ static void _wrap_con_work(work_t *work, con_mgr_fd_t *con, con_mgr_t *mgr)
 	xassert(change.name == con->name);
 	xassert(change.mgr == con->mgr);
 	xassert((change.arg == con->arg) ||
-		(args->func == _wrap_on_connection));
+		((void *) work->func == (void *) _wrap_on_connection));
 	xassert(change.on_data_tried == con->on_data_tried ||
-		(work->func == _wrap_on_data));
+		((void *) work->func == (void *) _wrap_on_data));
 	xassert(change.msglen == con->msglen);
 #endif /* !NDEBUG */
 	xassert(con->has_work);
@@ -660,8 +674,8 @@ static void _wrap_work(void *x)
 		(work->status == CONMGR_WORK_STATUS_CANCELLED));
 
 	/* catch cyclic calls */
-	xassert(work->func != (work_func_t) _wrap_work);
-	xassert(work->func != (work_func_t) _wrap_con_work);
+	xassert((void *) work->func != _wrap_work);
+	xassert((void *) work->func != _wrap_con_work);
 
 	log_flag(NET, "%s: [%s] BEGIN %s@0x%"PRIxPTR" type=%s status=%s  arg=0x%"PRIxPTR,
 		 __func__, con->name, work->tag, (uintptr_t) work->func,
@@ -712,8 +726,8 @@ static void _queue_con_work(work_t *work)
 /*
  * Add work to connection
  */
-static void _add_con_work(bool locked, con_mgr_fd_t *con, work_func_t func,
-			  void *arg, const char *tag)
+static void _add_con_work(bool locked, con_mgr_fd_t *con,
+			  con_mgr_work_func_t func, void *arg, const char *tag)
 {
 	work_t *work = xmalloc(sizeof(*work));
 	*work = (work_t) {
@@ -732,7 +746,7 @@ static void _add_con_work(bool locked, con_mgr_fd_t *con, work_func_t func,
 
 	_check_magic_mgr(work->mgr);
 	_check_magic_fd(work->con);
-	xassert(work->func != _wrap_work);
+	xassert((void *) work->func != _wrap_work);
 	xassert(work->magic == MAGIC_WORK);
 	xassert(work->status == CONMGR_WORK_STATUS_INVALID);
 	xassert(work->type == CONMGR_WORK_TYPE_CONNECTION_FIFO);
@@ -756,9 +770,10 @@ static void _add_con_work(bool locked, con_mgr_fd_t *con, work_func_t func,
 		slurm_mutex_unlock(&con->mgr->mutex);
 }
 
-static void _handle_read(void *x)
+static void _handle_read(con_mgr_t *mgr, con_mgr_fd_t *con,
+			 con_mgr_work_type_t type, con_mgr_work_status_t status,
+			 const char *tag, void *arg)
 {
-	con_mgr_fd_t *con = x;
 	ssize_t read_c;
 	int readable;
 
@@ -836,9 +851,11 @@ static void _handle_read(void *x)
 	}
 }
 
-static void _handle_write(void *x)
+static void _handle_write(con_mgr_t *mgr, con_mgr_fd_t *con,
+			  con_mgr_work_type_t type,
+			  con_mgr_work_status_t status, const char *tag,
+			  void *arg)
 {
-	con_mgr_fd_t *con = x;
 	ssize_t wrote;
 
 	_check_magic_fd(con);
@@ -1000,10 +1017,11 @@ static int _on_rpc_connection_data(con_mgr_fd_t *con, void *arg)
 	return rc;
 }
 
-static void _wrap_on_data(void *x)
+static void _wrap_on_data(con_mgr_t *mgr, con_mgr_fd_t *con,
+			  con_mgr_work_type_t type,
+			  con_mgr_work_status_t status, const char *tag,
+			  void *arg)
 {
-	con_mgr_fd_t *con = x;
-	con_mgr_t *mgr = con->mgr;
 	int avail = get_buf_offset(con->in);
 	int size = size_buf(con->in);
 	int rc;
@@ -1083,15 +1101,11 @@ static void _wrap_on_data(void *x)
 	con->in->size = size;
 }
 
-static void _wrap_on_connection(void *x)
+static void _wrap_on_connection(con_mgr_t *mgr, con_mgr_fd_t *con,
+				con_mgr_work_type_t type,
+				con_mgr_work_status_t status, const char *tag,
+				void *arg)
 {
-	con_mgr_fd_t *con = x;
-	con_mgr_t *mgr = con->mgr;
-	void *arg;
-
-	_check_magic_fd(con);
-	_check_magic_mgr(mgr);
-
 	log_flag(NET, "%s: [%s] BEGIN func=0x%"PRIxPTR,
 		 __func__, con->name, (uintptr_t) con->events.on_connection);
 
@@ -1253,6 +1267,14 @@ static void _handle_poll_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 		 (con->can_write ? "T" : "F"));
 }
 
+static void _on_finish_wrapper(con_mgr_t *mgr, con_mgr_fd_t *con,
+			       con_mgr_work_type_t type,
+			       con_mgr_work_status_t status, const char *tag,
+			       void *arg)
+{
+	con->events.on_finish(arg);
+}
+
 /*
  * handle connection states and apply actions required.
  * mgr mutex must be locked.
@@ -1352,7 +1374,7 @@ static int _handle_connection(void *x, void *arg)
 
 		/* notify caller of closing */
 		if (con->is_connected) {
-			_add_con_work(true, con, con->events.on_finish, con->arg,
+			_add_con_work(true, con, _on_finish_wrapper, con->arg,
 				      "on_finish");
 			/* on_finish must free arg */
 			con->arg = NULL;
@@ -1919,17 +1941,15 @@ extern int con_mgr_run(con_mgr_t *mgr)
 /*
  * listen socket is ready to accept
  */
-static void _listen_accept(void *x)
+static void _listen_accept(con_mgr_t *mgr, con_mgr_fd_t *con,
+			   con_mgr_work_type_t type,
+			   con_mgr_work_status_t status, const char *tag,
+			   void *arg)
 {
-	con_mgr_fd_t *con = x;
-	con_mgr_t *mgr = con->mgr;
 	int rc;
 	slurm_addr_t addr = {0};
 	socklen_t addrlen = sizeof(addr);
 	int fd;
-
-	_check_magic_fd(con);
-	_check_magic_mgr(mgr);
 
 	if (con->input_fd == -1) {
 		log_flag(NET, "%s: [%s] skipping accept on closed connection",
