@@ -94,7 +94,8 @@ static void _wrap_on_connection(con_mgr_t *mgr, con_mgr_fd_t *con,
 				con_mgr_work_status_t status, const char *tag,
 				void *arg);
 static void _add_con_work(bool locked, con_mgr_fd_t *con,
-			  con_mgr_work_func_t func, void *arg, const char *tag);
+			  con_mgr_work_func_t func, con_mgr_work_type_t type,
+			  void *arg, const char *tag);
 static void _wrap_on_data(con_mgr_t *mgr, con_mgr_fd_t *con,
 			  con_mgr_work_type_t type,
 			  con_mgr_work_status_t status, const char *tag,
@@ -727,7 +728,8 @@ static void _queue_con_work(work_t *work)
  * Add work to connection
  */
 static void _add_con_work(bool locked, con_mgr_fd_t *con,
-			  con_mgr_work_func_t func, void *arg, const char *tag)
+			  con_mgr_work_func_t func, con_mgr_work_type_t type,
+			  void *arg, const char *tag)
 {
 	work_t *work = xmalloc(sizeof(*work));
 	*work = (work_t) {
@@ -737,7 +739,7 @@ static void _add_con_work(bool locked, con_mgr_fd_t *con,
 		.func = func,
 		.arg = arg,
 		.tag = tag,
-		.type = CONMGR_WORK_TYPE_CONNECTION_FIFO,
+		.type = type,
 		.status = CONMGR_WORK_STATUS_INVALID,
 	};
 
@@ -1150,7 +1152,8 @@ extern int _con_mgr_process_fd_internal(con_mgr_t *mgr, con_mgr_con_type_t type,
 
 	_check_magic_fd(con);
 
-	_add_con_work(false, con, _wrap_on_connection, con,
+	_add_con_work(false, con, _wrap_on_connection,
+		      CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
 		      "_wrap_on_connection");
 
 	return SLURM_SUCCESS;
@@ -1173,7 +1176,8 @@ extern int con_mgr_process_fd(con_mgr_t *mgr, con_mgr_con_type_t type,
 
 	_check_magic_fd(con);
 
-	_add_con_work(false, con, _wrap_on_connection, con,
+	_add_con_work(false, con, _wrap_on_connection,
+		      CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
 		      "_wrap_on_connection");
 
 	return SLURM_SUCCESS;
@@ -1325,7 +1329,8 @@ static int _handle_connection(void *x, void *arg)
 		if (con->can_write) {
 			log_flag(NET, "%s: [%s] need to write %u bytes",
 				 __func__, con->name, count);
-			_add_con_work(true, con, _handle_write, con,
+			_add_con_work(true, con, _handle_write,
+				      CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
 				      "_handle_write");
 		} else {
 			/* must wait until poll allows write of this socket */
@@ -1341,7 +1346,9 @@ static int _handle_connection(void *x, void *arg)
 		log_flag(NET, "%s: [%s] queuing read", __func__, con->name);
 		/* reset if data has already been tried if about to read data */
 		con->on_data_tried = false;
-		_add_con_work(true, con, _handle_read, con, "_handle_read");
+		_add_con_work(true, con, _handle_read,
+			      CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
+			      "_handle_read");
 		return 0;
 	}
 
@@ -1350,7 +1357,9 @@ static int _handle_connection(void *x, void *arg)
 		log_flag(NET, "%s: [%s] need to process %u bytes",
 			 __func__, con->name, get_buf_offset(con->in));
 
-		_add_con_work(true, con, _wrap_on_data, con, "_wrap_on_data");
+		_add_con_work(true, con, _wrap_on_data,
+			      CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
+			      "_wrap_on_data");
 		return 0;
 	}
 
@@ -1374,8 +1383,9 @@ static int _handle_connection(void *x, void *arg)
 
 		/* notify caller of closing */
 		if (con->is_connected) {
-			_add_con_work(true, con, _on_finish_wrapper, con->arg,
-				      "on_finish");
+			_add_con_work(true, con, _on_finish_wrapper,
+				      CONMGR_WORK_TYPE_CONNECTION_FIFO,
+				      con->arg, "on_finish");
 			/* on_finish must free arg */
 			con->arg = NULL;
 		} else {
@@ -1484,7 +1494,9 @@ static void _handle_listen_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 	} else if (revents & POLLIN) {
 		log_flag(NET, "%s: [%s] listen has incoming connection",
 			 __func__, con->name);
-		_add_con_work(true, con, _listen_accept, con, "_listen_accept");
+		_add_con_work(true, con, _listen_accept,
+			      CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
+			      "_listen_accept");
 		return;
 	} else /* should never happen */
 		log_flag(NET, "%s: [%s] listen unexpected revents: 0x%04x",
