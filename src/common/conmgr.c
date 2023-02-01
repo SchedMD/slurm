@@ -72,7 +72,7 @@
 
 #define MAGIC_CON_MGR_FD 0xD23444EF
 #define MAGIC_CON_MGR 0xD232444A
-#define MAGIC_WRAP_WORK 0xD231444A
+#define MAGIC_WORK 0xD231444A
 /* Default buffer to 1 page */
 #define BUFFER_START_SIZE 4096
 #define MAX_OPEN_CONNECTIONS 124
@@ -102,7 +102,7 @@ typedef struct {
 	const char *tag;
 	con_mgr_work_status_t status;
 	con_mgr_work_type_t type;
-} wrap_work_arg_t;
+} work_t;
 
 struct {
 	con_mgr_work_status_t status;
@@ -597,8 +597,7 @@ static con_mgr_fd_t *_add_connection(
 	return con;
 }
 
-static void _wrap_con_work(wrap_work_arg_t *args, con_mgr_fd_t *con,
-				con_mgr_t *mgr)
+static void _wrap_con_work(work_t *args, con_mgr_fd_t *con, con_mgr_t *mgr)
 {
 #ifndef NDEBUG
 	/* detect any changes to connection that are not allowed */
@@ -646,14 +645,14 @@ static void _wrap_con_work(wrap_work_arg_t *args, con_mgr_fd_t *con,
  */
 static void _wrap_work(void *x)
 {
-	wrap_work_arg_t *work = x;
+	work_t *work = x;
 	con_mgr_fd_t *con = work->con;
 	con_mgr_t *mgr = work->con->mgr;
 
 	_check_magic_fd(con);
 	_check_magic_mgr(mgr);
 
-	xassert(work->magic == MAGIC_WRAP_WORK);
+	xassert(work->magic == MAGIC_WORK);
 	xassert(work->type > CONMGR_WORK_TYPE_INVALID);
 	xassert(work->type < CONMGR_WORK_TYPE_MAX);
 	xassert((work->status == CONMGR_WORK_STATUS_RUN) ||
@@ -688,43 +687,23 @@ static void _wrap_work(void *x)
 
 	_signal_change(mgr, false);
 
-	work->magic = ~MAGIC_WRAP_WORK;
+	work->magic = ~MAGIC_WORK;
 	xfree(work);
 }
 
-/*
- * Add work to connection with existing args struct
- */
-static void _add_con_work_args(bool locked, con_mgr_fd_t *con,
-			       wrap_work_arg_t *args)
+/* mgr->lock must be locked */
+static void _queue_con_work(work_t *work)
 {
-	log_flag(NET, "%s: [%s] locked=%s func=%s",
-		 __func__, con->name, (locked ? "T" : "F"), args->tag);
+	con_mgr_fd_t *con = work->con;
 
-	if (!locked)
-		slurm_mutex_lock(&con->mgr->mutex);
+	xassert(work->magic == MAGIC_WORK);
+	xassert(work->type == CONMGR_WORK_TYPE_CONNECTION_FIFO);
+	xassert(work->status == CONMGR_WORK_STATUS_PENDING);
 
-	xassert(args->func != _wrap_work);
-	xassert(args->magic == MAGIC_WRAP_WORK);
-	xassert(args->status == CONMGR_WORK_STATUS_INVALID);
-	xassert(args->type == CONMGR_WORK_TYPE_CONNECTION_FIFO);
-
-	if (!con->has_work) {
-		con->has_work = true;
-		args->status = CONMGR_WORK_STATUS_RUN;
-		workq_add_work(con->mgr->workq, _wrap_work, args, args->tag);
-	} else {
-		log_flag(NET, "%s: [%s] queuing \"%s\" pending work: %u total",
-			 __func__, con->name, args->tag, list_count(con->work));
-
-		args->status = CONMGR_WORK_STATUS_PENDING;
-		list_append(con->work, args);
-	}
-
-	_signal_change(con->mgr, true);
-
-	if (!locked)
-		slurm_mutex_unlock(&con->mgr->mutex);
+	xassert(!con->has_work);
+	con->has_work = true;
+	work->status = CONMGR_WORK_STATUS_RUN;
+	workq_add_work(con->mgr->workq, _wrap_work, work, work->tag);
 }
 
 /*
@@ -733,9 +712,9 @@ static void _add_con_work_args(bool locked, con_mgr_fd_t *con,
 static void _add_con_work(bool locked, con_mgr_fd_t *con, work_func_t func,
 			  void *arg, const char *tag)
 {
-	wrap_work_arg_t *args = xmalloc(sizeof(*args));
-	*args = (wrap_work_arg_t) {
-		.magic = MAGIC_WRAP_WORK,
+	work_t *work = xmalloc(sizeof(*work));
+	*work = (work_t) {
+		.magic = MAGIC_WORK,
 		.con = con,
 		.func = func,
 		.arg = arg,
@@ -744,7 +723,31 @@ static void _add_con_work(bool locked, con_mgr_fd_t *con, work_func_t func,
 		.status = CONMGR_WORK_STATUS_INVALID,
 	};
 
-	_add_con_work_args(locked, con, args);
+	log_flag(NET, "%s: [%s] locked=%s func=%s",
+		 __func__, con->name, (locked ? "T" : "F"), work->tag);
+
+	xassert(work->func != _wrap_work);
+	xassert(work->magic == MAGIC_WORK);
+	xassert(work->status == CONMGR_WORK_STATUS_INVALID);
+	xassert(work->type == CONMGR_WORK_TYPE_CONNECTION_FIFO);
+
+	if (!locked)
+		slurm_mutex_lock(&con->mgr->mutex);
+
+	if (!con->has_work) {
+		_queue_con_work(work);
+	} else {
+		log_flag(NET, "%s: [%s] queuing \"%s\" pending work: %u total",
+			 __func__, con->name, work->tag, list_count(con->work));
+
+		work->status = CONMGR_WORK_STATUS_PENDING;
+		list_append(con->work, work);
+	}
+
+	_signal_change(con->mgr, true);
+
+	if (!locked)
+		slurm_mutex_unlock(&con->mgr->mutex);
 }
 
 static void _handle_read(void *x)
@@ -1278,17 +1281,12 @@ static int _handle_connection(void *x, void *arg)
 
 	/* always do work first */
 	if ((count = list_count(con->work))) {
-		wrap_work_arg_t *args = list_pop(con->work);
-		xassert(args);
-		xassert(args->magic == MAGIC_WRAP_WORK);
-		xassert(args->type == CONMGR_WORK_TYPE_CONNECTION_FIFO);
-		xassert(args->status == CONMGR_WORK_STATUS_PENDING);
+		work_t *work = list_pop(con->work);
 
 		log_flag(NET, "%s: [%s] queuing pending work: %u total",
 			 __func__, con->name, count);
 
-		args->status = CONMGR_WORK_STATUS_RUN;
-		_add_con_work_args(true, con, args);
+		_queue_con_work(work);
 		return 0;
 	}
 
