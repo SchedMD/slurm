@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix handling of --prefer for job arrays.
  -- Fix regression in 22.05.5 that causes some jobs that request
     --ntasks-per-node to be incorrectly rejected.
+ -- Fix slurmctld crash when a step requests fewer tasks than nodes.
 
 * Changes in Slurm 22.05.8
 ==========================
