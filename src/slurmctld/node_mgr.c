@@ -4036,6 +4036,8 @@ void set_node_down_ptr(node_record_t *node_ptr, char *reason)
 {
 	time_t now = time(NULL);
 
+	xassert(node_ptr);
+
 	set_node_reason(node_ptr, reason, now);
 	_make_node_down(node_ptr, now);
 	(void) kill_running_job_by_node_name(node_ptr->name);
