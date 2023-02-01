@@ -2416,32 +2416,26 @@ extern void con_mgr_request_shutdown(con_mgr_t *mgr)
 	slurm_mutex_unlock(&mgr->mutex);
 }
 
-static void _add_work(bool locked, con_mgr_t *mgr, con_mgr_fd_t *con,
-		      con_mgr_work_func_t func, con_mgr_work_type_t type,
-		      void *arg, const char *tag)
+static void _handle_work(bool locked, work_t *work)
 {
-	work_t *work = xmalloc(sizeof(*work));
-	*work = (work_t){
-		.magic = MAGIC_WORK,
-		.mgr = mgr,
-		.con = con,
-		.func = func,
-		.arg = arg,
-		.tag = tag,
-		.type = type,
-		.status = CONMGR_WORK_STATUS_INVALID,
-	};
+	con_mgr_t *mgr = work->mgr;
+	con_mgr_fd_t *con = work->con;
 
-	log_flag(NET, "%s: [%s] locked=%s func=%s",
-		 __func__, con->name, (locked ? "T" : "F"), work->tag);
+	if (con)
+		log_flag(NET, "%s: [%s] locked=%s func=%s",
+			 __func__, con->name, (locked ? "T" : "F"),
+			 work->tag);
+	else
+		log_flag(NET, "%s: locked=%s func=%s",
+			 __func__, (locked ? "T" : "F"), work->tag);
 
-	_check_magic_mgr(work->mgr);
-	_check_magic_fd(work->con);
+	_check_magic_mgr(mgr);
+	_check_magic_fd(con);
 
 	if (!locked)
-		slurm_mutex_lock(&con->mgr->mutex);
+		slurm_mutex_lock(&mgr->mutex);
 
-	switch (type) {
+	switch (work->type) {
 	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
 	{
 		if (!con)
@@ -2476,10 +2470,29 @@ static void _add_work(bool locked, con_mgr_t *mgr, con_mgr_fd_t *con,
 		fatal("%s: invalid type", __func__);
 	}
 
-	_signal_change(con->mgr, true);
+	_signal_change(mgr, true);
 
 	if (!locked)
-		slurm_mutex_unlock(&con->mgr->mutex);
+		slurm_mutex_unlock(&mgr->mutex);
+}
+
+static void _add_work(bool locked, con_mgr_t *mgr, con_mgr_fd_t *con,
+		      con_mgr_work_func_t func, con_mgr_work_type_t type,
+		      void *arg, const char *tag)
+{
+	work_t *work = xmalloc(sizeof(*work));
+	*work = (work_t) {
+		.magic = MAGIC_WORK,
+		.mgr = mgr,
+		.con = con,
+		.func = func,
+		.arg = arg,
+		.tag = tag,
+		.type = type,
+		.status = CONMGR_WORK_STATUS_INVALID,
+	};
+
+	_handle_work(locked, work);
 }
 
 extern void con_mgr_add_work(con_mgr_t *mgr, con_mgr_fd_t *con,
