@@ -3571,6 +3571,7 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 
 	license_rc = license_job_test(job_ptr, time(NULL), true);
 	if (license_rc != SLURM_SUCCESS) {
+		slurm_mutex_unlock(&cr_mutex);
 		if (license_rc == SLURM_ERROR) {
 			log_flag(SELECT_TYPE,
 				 "test fail: insufficient licenses configured");
