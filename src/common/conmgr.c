@@ -96,6 +96,7 @@ typedef void (*on_poll_event_t)(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 
 typedef struct {
 	int magic;
+	con_mgr_t *mgr;
 	con_mgr_fd_t *con;
 	work_func_t func;
 	void *arg;
@@ -597,7 +598,7 @@ static con_mgr_fd_t *_add_connection(
 	return con;
 }
 
-static void _wrap_con_work(work_t *args, con_mgr_fd_t *con, con_mgr_t *mgr)
+static void _wrap_con_work(work_t *work, con_mgr_fd_t *con, con_mgr_t *mgr)
 {
 #ifndef NDEBUG
 	/* detect any changes to connection that are not allowed */
@@ -611,18 +612,18 @@ static void _wrap_con_work(work_t *args, con_mgr_fd_t *con, con_mgr_t *mgr)
 
 	/* con may get deleted by func */
 	log_flag(NET, "%s: [%s] BEGIN func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
-		 __func__, con->name, (uintptr_t) args->func,
-		 (uintptr_t) args->arg);
+		 __func__, con->name, (uintptr_t) work->func,
+		 (uintptr_t) work->arg);
 	slurm_mutex_unlock(&mgr->mutex);
 #endif /* !NDEBUG */
 
-	args->func(args->arg);
+	work->func(work->arg);
 
 	slurm_mutex_lock(&mgr->mutex);
 #ifndef NDEBUG
 	log_flag(NET, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" queued_work=%u",
-		 __func__, con->name, (uintptr_t) args->func,
-		 (uintptr_t) args->arg, list_count(con->work));
+		 __func__, con->name, (uintptr_t) work->func,
+		 (uintptr_t) work->arg, list_count(con->work));
 
 	/* verify nothing has changed in the promised members */
 	xassert(change.in == con->in);
@@ -632,7 +633,7 @@ static void _wrap_con_work(work_t *args, con_mgr_fd_t *con, con_mgr_t *mgr)
 	xassert((change.arg == con->arg) ||
 		(args->func == _wrap_on_connection));
 	xassert(change.on_data_tried == con->on_data_tried ||
-		(args->func == _wrap_on_data));
+		(work->func == _wrap_on_data));
 	xassert(change.msglen == con->msglen);
 #endif /* !NDEBUG */
 	xassert(con->has_work);
@@ -647,7 +648,7 @@ static void _wrap_work(void *x)
 {
 	work_t *work = x;
 	con_mgr_fd_t *con = work->con;
-	con_mgr_t *mgr = work->con->mgr;
+	con_mgr_t *mgr = work->mgr;
 
 	_check_magic_fd(con);
 	_check_magic_mgr(mgr);
@@ -696,6 +697,8 @@ static void _queue_con_work(work_t *work)
 {
 	con_mgr_fd_t *con = work->con;
 
+	_check_magic_mgr(work->mgr);
+	_check_magic_fd(work->con);
 	xassert(work->magic == MAGIC_WORK);
 	xassert(work->type == CONMGR_WORK_TYPE_CONNECTION_FIFO);
 	xassert(work->status == CONMGR_WORK_STATUS_PENDING);
@@ -715,6 +718,7 @@ static void _add_con_work(bool locked, con_mgr_fd_t *con, work_func_t func,
 	work_t *work = xmalloc(sizeof(*work));
 	*work = (work_t) {
 		.magic = MAGIC_WORK,
+		.mgr = con->mgr,
 		.con = con,
 		.func = func,
 		.arg = arg,
@@ -726,6 +730,8 @@ static void _add_con_work(bool locked, con_mgr_fd_t *con, work_func_t func,
 	log_flag(NET, "%s: [%s] locked=%s func=%s",
 		 __func__, con->name, (locked ? "T" : "F"), work->tag);
 
+	_check_magic_mgr(work->mgr);
+	_check_magic_fd(work->con);
 	xassert(work->func != _wrap_work);
 	xassert(work->magic == MAGIC_WORK);
 	xassert(work->status == CONMGR_WORK_STATUS_INVALID);
