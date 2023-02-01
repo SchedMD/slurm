@@ -169,7 +169,7 @@ static void _remove_ecores(hwloc_topology_t *topology)
 {
 #if HWLOC_API_VERSION > 0x00020401
 	int type_cnt;
-	hwloc_bitmap_t cpuset;
+	hwloc_bitmap_t cpuset, cpuset_tot = NULL;
 
 	if (xstrcasestr(slurm_conf.slurmd_params, "allow_ecores"))
 		return;
@@ -199,13 +199,27 @@ static void _remove_ecores(hwloc_topology_t *topology)
 		struct hwloc_info_s *infos;
 		if (hwloc_cpukinds_get_info(
 			    *topology, i, cpuset, NULL, &nr_infos, &infos, 0))
-			fatal("Error getting info from hwloc_cpukinds_get_info()");
+			fatal("Error getting info from hwloc_cpukinds_get_info() %m");
 
 		for (int j = 0; j < nr_infos; j++) {
 			if (!xstrcasecmp(infos[j].name, "CoreType") &&
 			    !xstrcasecmp(infos[j].value, "IntelCore")) {
-				hwloc_topology_restrict(*topology, cpuset, 0);
+				/* Restrict the node to only IntelCores */
+				if (!cpuset_tot)
+					cpuset_tot = hwloc_bitmap_alloc();
+				hwloc_bitmap_or(cpuset_tot, cpuset_tot, cpuset);
 			}
+		}
+
+		/*
+		 * If we have a cpuset_tot it means we are on a system with
+		 * IntelCore cpus. We will restrict to only those and be done
+		 * here.
+		 */
+		if (cpuset_tot) {
+			hwloc_topology_restrict(*topology, cpuset_tot, 0);
+			hwloc_bitmap_free(cpuset_tot);
+			break;
 		}
 	}
 	hwloc_bitmap_free(cpuset);
