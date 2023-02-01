@@ -100,7 +100,27 @@ typedef struct {
 	work_func_t func;
 	void *arg;
 	const char *tag;
+	con_mgr_work_status_t status;
+	con_mgr_work_type_t type;
 } wrap_work_arg_t;
+
+struct {
+	con_mgr_work_status_t status;
+	const char *string;
+} statuses[] = {
+	{ CONMGR_WORK_STATUS_INVALID, "INVALID" },
+	{ CONMGR_WORK_STATUS_PENDING, "PENDING" },
+	{ CONMGR_WORK_STATUS_RUN, "RUN" },
+	{ CONMGR_WORK_STATUS_CANCELLED, "CANCELLED" },
+};
+
+struct {
+	con_mgr_work_type_t type;
+	const char *string;
+} types[] = {
+	{ CONMGR_WORK_TYPE_INVALID, "INVALID" },
+	{ CONMGR_WORK_TYPE_CONNECTION_FIFO, "CONNECTION_FIFO" },
+};
 
 /* simple struct to keep track of fds */
 typedef struct {
@@ -174,6 +194,24 @@ static void _check_magic_fd(con_mgr_fd_t *con)
 		xassert(list_find_first(con->mgr->connections, _find_by_ptr,
 					con));
 	}
+}
+
+extern const char *con_mgr_work_status_string(con_mgr_work_status_t status)
+{
+	for (int i = 0; i < ARRAY_SIZE(statuses); i++)
+		if (statuses[i].status == status)
+			return statuses[i].string;
+
+	fatal_abort("%s: invalid work status 0x%x", __func__, status);
+}
+
+extern const char *con_mgr_work_type_string(con_mgr_work_type_t type)
+{
+	for (int i = 0; i < ARRAY_SIZE(types); i++)
+		if (types[i].type == type)
+			return types[i].string;
+
+	fatal_abort("%s: invalid work type 0x%x", __func__, type);
 }
 
 static void _connection_fd_delete(void *x)
@@ -559,23 +597,14 @@ static con_mgr_fd_t *_add_connection(
 	return con;
 }
 
-/*
- * Wrap work requested to notify mgr when that work is complete
- */
-static void _wrap_work(void *x)
+static void _wrap_con_work(wrap_work_arg_t *args, con_mgr_fd_t *con,
+				con_mgr_t *mgr)
 {
-	wrap_work_arg_t *args = x;
-	con_mgr_fd_t *con = args->con;
-	con_mgr_t *mgr = con->mgr;
 #ifndef NDEBUG
 	/* detect any changes to connection that are not allowed */
 	con_mgr_fd_t change;
 #endif /* !NDEBUG */
 
-	_check_magic_fd(con);
-	_check_magic_mgr(mgr);
-
-	xassert(args->magic == MAGIC_WRAP_WORK);
 #ifndef NDEBUG
 	slurm_mutex_lock(&mgr->mutex);
 	xassert(con->has_work);
@@ -588,13 +617,7 @@ static void _wrap_work(void *x)
 	slurm_mutex_unlock(&mgr->mutex);
 #endif /* !NDEBUG */
 
-	/* catch cyclic calls */
-	xassert(args->func != _wrap_work);
-
 	args->func(args->arg);
-
-	_check_magic_fd(con);
-	_check_magic_mgr(mgr);
 
 	slurm_mutex_lock(&mgr->mutex);
 #ifndef NDEBUG
@@ -615,12 +638,58 @@ static void _wrap_work(void *x)
 #endif /* !NDEBUG */
 	xassert(con->has_work);
 	con->has_work = false;
-
-	_signal_change(mgr, true);
 	slurm_mutex_unlock(&mgr->mutex);
+}
 
-	args->magic = ~MAGIC_WRAP_WORK;
-	xfree(args);
+/*
+ * Wrap work requested to notify mgr when that work is complete
+ */
+static void _wrap_work(void *x)
+{
+	wrap_work_arg_t *work = x;
+	con_mgr_fd_t *con = work->con;
+	con_mgr_t *mgr = work->con->mgr;
+
+	_check_magic_fd(con);
+	_check_magic_mgr(mgr);
+
+	xassert(work->magic == MAGIC_WRAP_WORK);
+	xassert(work->type > CONMGR_WORK_TYPE_INVALID);
+	xassert(work->type < CONMGR_WORK_TYPE_MAX);
+	xassert((work->status == CONMGR_WORK_STATUS_RUN) ||
+		(work->status == CONMGR_WORK_STATUS_CANCELLED));
+
+	/* catch cyclic calls */
+	xassert(work->func != (work_func_t) _wrap_work);
+	xassert(work->func != (work_func_t) _wrap_con_work);
+
+	log_flag(NET, "%s: [%s] BEGIN %s@0x%"PRIxPTR" type=%s status=%s  arg=0x%"PRIxPTR,
+		 __func__, con->name, work->tag, (uintptr_t) work->func,
+		 con_mgr_work_type_string(work->type),
+		 con_mgr_work_status_string(work->status),
+		 (uintptr_t) work->arg);
+
+	switch (work->type) {
+	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
+		_wrap_con_work(work, con, mgr);
+		break;
+	default:
+		fatal_abort("%s: invalid work type 0x%x", __func__, work->type);
+	}
+
+	_check_magic_fd(con);
+	_check_magic_mgr(mgr);
+
+	log_flag(NET, "%s: [%s] END %s@0x%"PRIxPTR" type=%s status=%s  arg=0x%"PRIxPTR,
+		 __func__, con->name, work->tag, (uintptr_t) work->func,
+		 con_mgr_work_type_string(work->type),
+		 con_mgr_work_status_string(work->status),
+		 (uintptr_t) work->arg);
+
+	_signal_change(mgr, false);
+
+	work->magic = ~MAGIC_WRAP_WORK;
+	xfree(work);
 }
 
 /*
@@ -636,14 +705,19 @@ static void _add_con_work_args(bool locked, con_mgr_fd_t *con,
 		slurm_mutex_lock(&con->mgr->mutex);
 
 	xassert(args->func != _wrap_work);
+	xassert(args->magic == MAGIC_WRAP_WORK);
+	xassert(args->status == CONMGR_WORK_STATUS_INVALID);
+	xassert(args->type == CONMGR_WORK_TYPE_CONNECTION_FIFO);
 
 	if (!con->has_work) {
 		con->has_work = true;
+		args->status = CONMGR_WORK_STATUS_RUN;
 		workq_add_work(con->mgr->workq, _wrap_work, args, args->tag);
 	} else {
 		log_flag(NET, "%s: [%s] queuing \"%s\" pending work: %u total",
 			 __func__, con->name, args->tag, list_count(con->work));
 
+		args->status = CONMGR_WORK_STATUS_PENDING;
 		list_append(con->work, args);
 	}
 
@@ -666,6 +740,8 @@ static void _add_con_work(bool locked, con_mgr_fd_t *con, work_func_t func,
 		.func = func,
 		.arg = arg,
 		.tag = tag,
+		.type = CONMGR_WORK_TYPE_CONNECTION_FIFO,
+		.status = CONMGR_WORK_STATUS_INVALID,
 	};
 
 	_add_con_work_args(locked, con, args);
@@ -1204,10 +1280,14 @@ static int _handle_connection(void *x, void *arg)
 	if ((count = list_count(con->work))) {
 		wrap_work_arg_t *args = list_pop(con->work);
 		xassert(args);
+		xassert(args->magic == MAGIC_WRAP_WORK);
+		xassert(args->type == CONMGR_WORK_TYPE_CONNECTION_FIFO);
+		xassert(args->status == CONMGR_WORK_STATUS_PENDING);
 
 		log_flag(NET, "%s: [%s] queuing pending work: %u total",
 			 __func__, con->name, count);
 
+		args->status = CONMGR_WORK_STATUS_RUN;
 		_add_con_work_args(true, con, args);
 		return 0;
 	}

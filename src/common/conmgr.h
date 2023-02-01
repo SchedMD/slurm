@@ -123,6 +123,24 @@ typedef struct {
 	void (*free_parse)(parsed_host_port_t *parsed);
 } con_mgr_callbacks_t;
 
+typedef enum {
+	CONMGR_WORK_STATUS_INVALID = 0,
+	CONMGR_WORK_STATUS_PENDING,
+	CONMGR_WORK_STATUS_RUN,
+	CONMGR_WORK_STATUS_CANCELLED,
+	CONMGR_WORK_STATUS_MAX /* place holder */
+} con_mgr_work_status_t;
+
+extern const char *con_mgr_work_status_string(con_mgr_work_status_t status);
+
+typedef enum {
+	CONMGR_WORK_TYPE_INVALID = 0,
+	CONMGR_WORK_TYPE_CONNECTION_FIFO, /* connection specific work ordered by FIFO */
+	CONMGR_WORK_TYPE_MAX /* place holder */
+} con_mgr_work_type_t;
+
+extern const char *con_mgr_work_type_string(con_mgr_work_type_t type);
+
 /*
  * conmgr can handle RPC or raw connections
  */
