@@ -3001,14 +3001,14 @@ extern hostlist_t nodespec_to_hostlist(const char *nodes,
 				       char **nodesets);
 
 /*
- * set_node_reboot_reason - appropriately set node reason with reboot message
+ * set_node_reason - appropriately set node reason with message
  * IN node_ptr - node_ptr to the node
- * IN reason - message to be appended
+ * IN message - message to be set/appended
  * IN time - timestamp of message
  */
-extern void set_node_reboot_reason(node_record_t *node_ptr,
-				   char *message,
-				   time_t time);
+extern void set_node_reason(node_record_t *node_ptr,
+			    char *message,
+			    time_t time);
 
 /*
  * Read configuration file - first part, reconfigure_slurm_post_send() must be

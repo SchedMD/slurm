@@ -3279,8 +3279,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			    NODE_STATE_DOWN) {
 				node_ptr->node_state = NODE_STATE_DOWN |
 						       node_flags;
-				set_node_reboot_reason(node_ptr,
-						       "reboot complete", now);
+				set_node_reason(node_ptr, "reboot complete",
+						now);
 			} else if (reg_msg->job_count) {
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
 						       node_flags;
@@ -4747,8 +4747,7 @@ extern void check_node_timers()
 		     (!power_save_on && IS_NODE_POWERING_UP(node_ptr))) &&
 		    node_ptr->boot_req_time &&
 		    (node_ptr->boot_req_time + resume_timeout < now)) {
-			set_node_reboot_reason(node_ptr,
-					       "reboot timed out", now);
+			set_node_reason(node_ptr, "reboot timed out", now);
 
 			/*
 			 * Remove states now so that event state shows as DOWN.
@@ -5226,9 +5225,9 @@ cleanup:
 	return ret_rc;
 }
 
-extern void set_node_reboot_reason(node_record_t *node_ptr,
-				   char *message,
-				   time_t time)
+extern void set_node_reason(node_record_t *node_ptr,
+			    char *message,
+			    time_t time)
 {
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(node_ptr);
