@@ -4449,6 +4449,20 @@ extern int gres_node_state_pack(List gres_list, buf_t *buffer,
 		else
 			gres_bitmap_size = 0;
 		pack16(gres_bitmap_size, buffer);
+
+		pack16(gres_ns->topo_cnt, buffer);
+		for (int i = 0; i < gres_ns->topo_cnt; i++) {
+			pack_bit_str_hex(gres_ns->topo_core_bitmap[i], buffer);
+			pack_bit_str_hex(gres_ns->topo_gres_bitmap[i], buffer);
+		}
+		pack64_array(gres_ns->topo_gres_cnt_alloc, gres_ns->topo_cnt,
+			     buffer);
+		pack64_array(gres_ns->topo_gres_cnt_avail, gres_ns->topo_cnt,
+			     buffer);
+		pack32_array(gres_ns->topo_type_id, gres_ns->topo_cnt, buffer);
+		packstr_array(gres_ns->topo_type_name, gres_ns->topo_cnt,
+			      buffer);
+
 		rec_cnt++;
 	}
 	list_iterator_destroy(gres_iter);
@@ -4491,6 +4505,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 		*gres_list = list_create(_gres_node_list_delete);
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
+		uint32_t tmp_uint32;
 		slurm_gres_context_t *gres_ctx;
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
@@ -4506,6 +4521,32 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 			safe_unpack32(&config_flags, buffer);
 			safe_unpack64(&gres_ns->gres_cnt_avail, buffer);
 			safe_unpack16(&gres_bitmap_size, buffer);
+
+			safe_unpack16(&gres_ns->topo_cnt, buffer);
+			if (gres_ns->topo_cnt) {
+				gres_ns->topo_core_bitmap =
+					xcalloc(gres_ns->topo_cnt,
+						sizeof(bitstr_t *));
+				gres_ns->topo_gres_bitmap =
+					xcalloc(gres_ns->topo_cnt,
+						sizeof(bitstr_t *));
+				for (int i = 0; i < gres_ns->topo_cnt; i++) {
+					unpack_bit_str_hex(
+						&gres_ns->topo_core_bitmap[i],
+						buffer);
+					unpack_bit_str_hex(
+						&gres_ns->topo_gres_bitmap[i],
+						buffer);
+				}
+			}
+			safe_unpack64_array(&gres_ns->topo_gres_cnt_alloc,
+					    &tmp_uint32, buffer);
+			safe_unpack64_array(&gres_ns->topo_gres_cnt_avail,
+					    &tmp_uint32, buffer);
+			safe_unpack32_array(&gres_ns->topo_type_id, &tmp_uint32,
+					    buffer);
+			safe_unpackstr_array(&gres_ns->topo_type_name,
+					     &tmp_uint32, buffer);
 		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
