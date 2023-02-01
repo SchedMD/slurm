@@ -137,7 +137,9 @@ typedef enum {
 	CONMGR_WORK_TYPE_INVALID = 0,
 	CONMGR_WORK_TYPE_CONNECTION_FIFO, /* connection specific work ordered by FIFO */
 	CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE, /* call once all connection writes complete then FIFO */
+	CONMGR_WORK_TYPE_CONNECTION_DELAY_FIFO, /* call once time delay completes then FIFO */
 	CONMGR_WORK_TYPE_FIFO, /* non-connection work ordered by FIFO */
+	CONMGR_WORK_TYPE_TIME_DELAY_FIFO, /* call once time delay completes then FIFO */
 	CONMGR_WORK_TYPE_MAX /* place holder */
 } con_mgr_work_type_t;
 
@@ -283,6 +285,12 @@ struct con_mgr_s {
 	bool exit_on_error;
 	/* First observed error */
 	int error;
+	/* list of work_t */
+	list_t *delayed_work;
+	/* last time clock was queried */
+	struct timespec last_time;
+	/* monotonic timer */
+	timer_t timer;
 
 	/* functions to handle host/port parsing */
 	con_mgr_callbacks_t callbacks;
@@ -426,5 +434,21 @@ extern void con_mgr_request_shutdown(con_mgr_t *mgr);
 extern void con_mgr_add_work(con_mgr_t *mgr, con_mgr_fd_t *con,
 			     con_mgr_work_func_t func, con_mgr_work_type_t type,
 			     void *arg, const char *tag);
+
+/*
+ * Add time delayed work for connection manager
+ * IN mgr - manager to assign work
+ * IN con - connection to assign work or NULL for non-connection related work
+ * IN func - function pointer to run work
+ * IN type - type of work
+ * IN arg - arg to hand to function pointer
+ * IN tag - tag used in logging this function
+ * NOTE: never add a thread that will never return or con_mgr_run() will never
+ * return either.
+ */
+extern void con_mgr_add_delayed_work(con_mgr_t *mgr, con_mgr_fd_t *con,
+				     con_mgr_work_func_t func, time_t seconds,
+				     long nanoseconds, void *arg,
+				     const char *tag);
 
 #endif /* SLURMRESTD_CONMGR_H */
