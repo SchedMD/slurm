@@ -660,11 +660,13 @@ static void _add_con_work(bool locked, con_mgr_fd_t *con, work_func_t func,
 			  void *arg, const char *tag)
 {
 	wrap_work_arg_t *args = xmalloc(sizeof(*args));
-	*args = (wrap_work_arg_t){ .magic = MAGIC_WRAP_WORK,
-				   .con = con,
-				   .func = func,
-				   .arg = arg,
-				   .tag = tag };
+	*args = (wrap_work_arg_t) {
+		.magic = MAGIC_WRAP_WORK,
+		.con = con,
+		.func = func,
+		.arg = arg,
+		.tag = tag,
+	};
 
 	_add_con_work_args(locked, con, args);
 }
