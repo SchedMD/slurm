@@ -1628,7 +1628,7 @@ static void _set_ntasks(allocation_info_t *ai, slurm_opt_t *opt_local)
 {
 	int cnt = 0;
 
-	if (opt_local->ntasks_set)
+	if (opt_local->ntasks_set && (opt_local->ntasks_per_node == NO_VAL))
 		return;
 
 	if (opt_local->ntasks_per_node != NO_VAL) {

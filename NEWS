@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 22.05.5 that causes some jobs that request
     --ntasks-per-node to be incorrectly rejected.
  -- Fix slurmctld crash when a step requests fewer tasks than nodes.
+ -- Fix incorrect task count in steps that request --ntasks-per-node and a node
+    count with a range (e.g. -N1-2).
 
 * Changes in Slurm 22.05.8
 ==========================
