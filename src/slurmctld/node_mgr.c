@@ -5218,7 +5218,7 @@ extern void set_node_reason(node_record_t *node_ptr,
 			    char *message,
 			    time_t time)
 {
-	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 	xassert(node_ptr);
 
 	if (message && message[0]) {
