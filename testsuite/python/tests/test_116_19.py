@@ -20,7 +20,7 @@ def test_user_limits():
     file_in = atf.module_tmp_path / 'file_in'
     file_out = atf.module_tmp_path / 'file_out'
     file_err = atf.module_tmp_path / 'file_err'
-    script_file = pathlib.Path(__file__).parent.resolve() / 'print_user_limits.py'
+    script_file = pathlib.Path(atf.properties['testsuite_python_lib']) / 'print_user_limits.py'
     atf.run_command(f"srun python3 {script_file}")
 
     limit_core = 943
