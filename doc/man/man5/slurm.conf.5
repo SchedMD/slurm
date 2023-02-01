@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "May 2023" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "July 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -7733,15 +7733,19 @@ will be out of service for an extended period of time, it may be
 desirable to relocate them.
 In order to do so, follow this procedure:
 .LP
-1. Stop the Slurm daemons
+1. Stop the Slurm daemons on the old controller and nodes.
 .br
-2. Modify the slurm.conf file appropriately
+2. Modify the slurm.conf file appropriately.
 .br
-3. Distribute the updated slurm.conf file to all nodes
+3. Copy the files from the StateSaveLocation to the new contoller or ensure
+that they are accessible to the new contoller via a shared drive.
 .br
-4. Restart the Slurm daemons
+4. Distribute the updated slurm.conf file to all nodes.
+.br
+5. Restart the Slurm daemons on the new controller and nodes.
 .LP
-There should be no loss of any running or pending jobs.
+There should be no loss of any pending jobs but the cluster should be drained
+of running jobs before changing hosts for the controller.
 Ensure that any nodes added to the cluster have the current
 slurm.conf file installed.
 .LP
