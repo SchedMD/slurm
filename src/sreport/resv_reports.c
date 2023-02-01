@@ -212,7 +212,7 @@ static int _setup_print_fields_list(List format_list)
 				field->len = 29;
 			else
 				field->len = 20;
-			field->print_routine = slurmdb_report_print_time;
+			field->print_routine = print_fields_str;
 		} else if (!xstrncasecmp("Associations",
 					 object, MAX(command_len, 2))) {
 			field->type = PRINT_RESV_ASSOCS;
@@ -246,7 +246,7 @@ static int _setup_print_fields_list(List format_list)
 				field->len = 29;
 			else
 				field->len = 20;
-			field->print_routine = slurmdb_report_print_time;
+			field->print_routine = print_fields_str;
 		} else if (!xstrncasecmp("Name", object,
 					 MAX(command_len, 2))) {
 			field->type = PRINT_RESV_NAME;
@@ -432,13 +432,18 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_TRES_ALLOC:
-			field->print_routine(field, tres_alloc_secs,
-					     total_reported,
+			tmp_char = sreport_get_time_str(tres_alloc_secs,
+							total_reported);
+			field->print_routine(field, tmp_char,
 					     (curr_inx == field_count));
+			xfree(tmp_char);
 			break;
 		case PRINT_RESV_TRES_IDLE:
-			field->print_routine(field, idle_secs, total_reported,
+			tmp_char = sreport_get_time_str(idle_secs,
+							total_reported);
+			field->print_routine(field, tmp_char,
 					     (curr_inx == field_count));
+			xfree(tmp_char);
 			break;
 		case PRINT_RESV_NODES:
 			field->print_routine(field, resv_ptr->nodes,

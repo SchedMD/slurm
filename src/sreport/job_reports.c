@@ -478,7 +478,7 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		if (print_job_count)
 			field->print_routine = print_fields_uint;
 		else
-			field->print_routine = slurmdb_report_print_time;
+			field->print_routine = print_fields_str;
 		last_size = size;
 		last_object = object;
 		if ((tmp_char = strstr(object, "\%"))) {
@@ -507,7 +507,7 @@ static int _setup_grouping_print_fields_list(List grouping_list)
 		if (print_job_count)
 			field->print_routine = print_fields_uint;
 		else
-			field->print_routine = slurmdb_report_print_time;
+			field->print_routine = print_fields_str;
 		if ((tmp_char = strstr(last_object, "\%"))) {
 			int newlen = atoi(tmp_char+1);
 			if (newlen)
@@ -685,7 +685,7 @@ static int _run_report(int type, int argc, char **argv)
 	List format_list = list_create(xfree_ptr);
 	List grouping_list = list_create(xfree_ptr);
 	List header_list = NULL;
-	char *object_str = "";
+	char *object_str = "", *tmp_char;
 
 	/* init memory before chance of going to end_it before being init'ed. */
 	memset(&total_field, 0, sizeof(print_field_t));
@@ -790,7 +790,7 @@ static int _run_report(int type, int argc, char **argv)
 	total_field.type = PRINT_JOB_SIZE;
 	total_field.name = xstrdup("% of cluster");
 	total_field.len = 12;
-	total_field.print_routine = slurmdb_report_print_time;
+	total_field.print_routine = print_fields_str;
 	list_append(header_list, &total_field);
 
 	print_fields_header(header_list);
@@ -864,11 +864,14 @@ static int _run_report(int type, int argc, char **argv)
 				field = list_next(itr2);
 				switch (field->type) {
 				case PRINT_JOB_SIZE:
+					tmp_char = sreport_get_time_str(
+							job_cpu_alloc_secs,
+							acct_tres_alloc_secs);
 					field->print_routine(
 						field,
-						job_cpu_alloc_secs,
-						acct_tres_alloc_secs,
+						tmp_char,
 						0);
+					xfree(tmp_char);
 					break;
 				case PRINT_JOB_COUNT:
 					field->print_routine(
@@ -895,8 +898,9 @@ static int _run_report(int type, int argc, char **argv)
 				count1 = acct_group->count;
 				count2 = cluster_group->count;
 			}
-			total_field.print_routine(&total_field,
-						  count1, count2, 1);
+			tmp_char = sreport_get_time_str(count1, count2);
+			total_field.print_routine(&total_field, tmp_char, 1);
+			xfree(tmp_char);
 			time_format = temp_format;
 			printf("\n");
 		}

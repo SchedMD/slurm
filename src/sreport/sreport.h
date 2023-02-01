@@ -99,8 +99,7 @@ extern char *cluster_flag;
 extern char *tres_usage_str;
 extern bool user_case_norm;
 
-extern void slurmdb_report_print_time(print_field_t *field,
-			       uint64_t value, uint64_t total_time, int last);
+extern char *sreport_get_time_str(uint64_t value, uint64_t total_time);
 extern int parse_option_end(char *option);
 extern time_t sanity_check_endtime(time_t endtime);
 extern char *strip_quotes(char *option, int *increased);

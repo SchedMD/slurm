@@ -216,7 +216,7 @@ static int _setup_print_fields_list(List format_list)
 				field->len = 18;
 			else
 				field->len = 10;
-			field->print_routine = slurmdb_report_print_time;
+			field->print_routine = print_fields_str;
 		} else if (!xstrncasecmp("Login", object,
 					 MAX(command_len, 1))) {
 			field->type = PRINT_USER_LOGIN;
@@ -244,7 +244,7 @@ static int _setup_print_fields_list(List format_list)
 				field->len = 18;
 			else
 				field->len = 10;
-			field->print_routine = slurmdb_report_print_time;
+			field->print_routine = print_fields_str;
 		} else {
 			exit_code = 1;
 			fprintf(stderr, " Unknown field '%s'\n", object);
@@ -333,12 +333,13 @@ static void _user_top_tres_report(slurmdb_tres_rec_t *tres,
 			tmp_char = NULL;	/* Not xmalloced */
 			break;
 		case PRINT_USER_USED:
-			field->print_routine(field,
-					     tres_rec ?
-					     tres_rec->alloc_secs : 0,
-					     cluster_tres_rec ?
-					     cluster_tres_rec->alloc_secs : 0,
+			tmp_char = sreport_get_time_str(
+					tres_rec ? tres_rec->alloc_secs : 0,
+					cluster_tres_rec ?
+					cluster_tres_rec->alloc_secs : 0);
+			field->print_routine(field, tmp_char,
 					     (curr_inx == field_count));
+			xfree(tmp_char);
 			break;
 		case PRINT_USER_ENERGY:
 			/* For backward compatibility with pre-TRES logic,
@@ -354,9 +355,11 @@ static void _user_top_tres_report(slurmdb_tres_rec_t *tres,
 					slurmdb_find_tres_in_list,
 					&tres_energy)))
 				user_energy_cnt = total_energy->alloc_secs;
-			field->print_routine(field, user_energy_cnt,
-					     cluster_energy_cnt,
+			tmp_char = sreport_get_time_str(user_energy_cnt,
+							cluster_energy_cnt);
+			field->print_routine(field, tmp_char,
 					     (curr_inx == field_count));
+			xfree(tmp_char);
 			break;
 		case PRINT_USER_TRES_NAME:
 			xstrfmtcat(tres_tmp, "%s%s%s",

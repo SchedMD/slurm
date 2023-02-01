@@ -43,26 +43,14 @@
 
 int sort_user_tres_id = TRES_CPU; /* controls sorting users (sort_user_dec) */
 
-extern void slurmdb_report_print_time(print_field_t *field, uint64_t value,
-				      uint64_t total_time, int last)
+extern char *sreport_get_time_str(uint64_t value, uint64_t total_time)
 {
-	int abs_len = abs(field->len);
+	char *output = NULL;
 
 	if (!total_time)
 		total_time = 1;
 
-	/* (value == unset)  || (value == cleared) */
-	if ((value == NO_VAL) || (value == INFINITE)) {
-		if (print_fields_parsable_print
-		   == PRINT_FIELDS_PARSABLE_NO_ENDING
-		   && last)
-			;
-		else if (print_fields_parsable_print)
-			printf("|");
-		else
-			printf("%-*s ", abs_len, " ");
-	} else {
-		char *output = NULL;
+	if (!(value == NO_VAL) || (value == INFINITE)) {
 		double percent = (double)value;
 		double temp_d = (double)value;
 
@@ -108,20 +96,8 @@ extern void slurmdb_report_print_time(print_field_t *field, uint64_t value,
 			output = xstrdup_printf("%.0lf", temp_d);
 			break;
 		}
-
-		if (print_fields_parsable_print
-		   == PRINT_FIELDS_PARSABLE_NO_ENDING
-		   && last)
-			printf("%s", output);
-		else if (print_fields_parsable_print)
-			printf("%s|", output);
-		else if (field->len == abs_len)
-			printf("%*.*s ", abs_len, abs_len, output);
-		else
-			printf("%-*.*s ", abs_len, abs_len, output);
-
-		xfree(output);
 	}
+	return output;
 }
 
 extern int parse_option_end(char *option)
