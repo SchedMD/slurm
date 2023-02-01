@@ -102,6 +102,7 @@ HIGHLIGHTS
     'scontrol update job'.
  -- Add SLURM_JOB_OVERSUBSCRIBE environment variable for Epilog, Prolog,
     EpilogSlurmctld, PrologSlurmctld, and mail ouput.
+ -- System node down reasons are appended to existing reasons, separated by ':'.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
