@@ -1007,7 +1007,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	List ret_list = NULL;
 	char *vals = NULL, *clus_vals = NULL;
 	time_t now = time(NULL);
-	char *user_name = NULL, *tmp = NULL;
+	char *user_name = NULL, *tmp = NULL, *col_names = NULL;
 	char *name_char = NULL, *clus_char = NULL;
 	char *query = NULL;
 	char *extra = NULL;
@@ -1020,6 +1020,25 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	bool have_clusters = 0;
 	int last_res = -1;
 	uint32_t allocated = 0;
+
+	/* if this changes you will need to edit the corresponding enum */
+	char *res_req_inx[] = {
+		"id",
+		"name",
+		"server",
+	};
+	enum {
+		RES_REQ_ID,
+		RES_REQ_NAME,
+		RES_REQ_SERVER,
+		RES_REQ_NUMBER
+	};
+
+	/*
+	 * This will be added if we are looking for clusters so pretend it is
+	 * added to the enum above.
+	 */
+	int RES_REQ_CLUSTER = RES_REQ_NUMBER;
 
 	if (!res_cond || !res) {
 		error("we need something to change");
@@ -1057,21 +1076,27 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	_setup_res_cond(res_cond, &extra);
 	query_clusters += _setup_clus_res_cond(res_cond, &clus_extra);
 
+	xfree(col_names);
+	xstrfmtcat(col_names, "%s", res_req_inx[0]);
+	for (int i = 1; i < RES_REQ_NUMBER; i++) {
+		xstrfmtcat(col_names, ", %s", res_req_inx[i]);
+	}
+
 	if (query_clusters || send_update)
-		query = xstrdup_printf("select id, name, server, cluster "
+		query = xstrdup_printf("select %s, cluster "
 				       "from %s as t1 left outer join "
 				       "%s as t2 on (res_id = id%s) %s && %s;",
-				       res_table, clus_res_table,
+				       col_names, res_table, clus_res_table,
 				       (!res_cond || !res_cond->with_deleted) ?
 				       " && t2.deleted=0" : "",
 				       extra, clus_extra);
 	else
-		query = xstrdup_printf("select id, name, server "
-				       "from %s as t1 %s;",
-				       res_table, extra);
+		query = xstrdup_printf("select %s from %s as t1 %s;",
+				       col_names, res_table, extra);
 
 	DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(col_names);
 		xfree(extra);
 		xfree(vals);
 		xfree(clus_extra);
@@ -1092,6 +1117,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		have_clusters = 1;
 
 	if (!query_clusters && !vals) {
+		xfree(col_names);
 		xfree(clus_vals);
 		if (result)
 			mysql_free_result(result);
@@ -1101,11 +1127,11 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if (!result) {
-		query = xstrdup_printf("select id, name, server "
-				       "from %s as t1 %s;",
-				       res_table, extra);
+		query = xstrdup_printf("select %s from %s as t1 %s;",
+				       col_names, res_table, extra);
 		DB_DEBUG(DB_RES, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			xfree(col_names);
 			xfree(extra);
 			xfree(vals);
 			xfree(clus_extra);
@@ -1115,13 +1141,14 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 	}
 
+	xfree(col_names);
 	xfree(extra);
 
 	name_char = NULL;
 	ret_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		char *name = NULL;
-		int curr_res = atoi(row[0]);
+		int curr_res = atoi(row[RES_REQ_ID]);
 
 		if (last_res != curr_res) {
 			res_added = 0;
@@ -1139,20 +1166,26 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (query_clusters) {
 			xstrfmtcat(clus_char,
 				   "%s(res_id='%s' && cluster='%s')",
-				   clus_char ? " || " : "", row[0], row[3]);
+				   clus_char ? " || " : "",
+				   row[RES_REQ_ID],
+				   row[RES_REQ_CLUSTER]);
 		} else {
 			if (!res_added) {
-				name = xstrdup_printf("%s@%s", row[1], row[2]);
+				name = xstrdup_printf("%s@%s",
+						      row[RES_REQ_NAME],
+						      row[RES_REQ_SERVER]);
 				list_append(ret_list, name);
 				res_added = 1;
 				name = NULL;
 			}
 			xstrfmtcat(name_char, "%sid='%s'",
-				   name_char ? " || " : "", row[0]);
+				   name_char ? " || " : "", row[RES_REQ_ID]);
 			xstrfmtcat(clus_char, "%sres_id='%s'",
-				   clus_char ? " || " : "", row[0]);
+				   clus_char ? " || " : "", row[RES_REQ_ID]);
 		}
-		if (have_clusters && row[3] && row[3][0]) {
+		if (have_clusters &&
+		    row[RES_REQ_CLUSTER] &&
+		    row[RES_REQ_CLUSTER][0]) {
 			slurmdb_res_rec_t *res_rec;
 
 			if (res->allocated != NO_VAL)
@@ -1160,8 +1193,8 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			if (allocated > 100) {
 				DB_DEBUG(DB_RES, mysql_conn->conn,
 				         "Modifying resource %s@%s with %u%% allowed to each cluster would put the usage at %u%%, (which is over 100%%). Please redo your math and resubmit.",
-				         row[1], row[2], res->allocated,
-				         allocated);
+				         row[RES_REQ_NAME], row[RES_REQ_SERVER],
+				         res->allocated, allocated);
 
 				mysql_free_result(result);
 				xfree(clus_extra);
@@ -1185,7 +1218,8 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			res_rec->clus_res_rec =
 				xmalloc(sizeof(slurmdb_clus_res_rec_t));
-			res_rec->clus_res_rec->cluster = xstrdup(row[3]);
+			res_rec->clus_res_rec->cluster =
+				xstrdup(row[RES_REQ_CLUSTER]);
 			res_rec->clus_res_rec->allowed = res->allocated;
 			if (addto_update_list(mysql_conn->update_list,
 					      SLURMDB_MODIFY_RES, res_rec)
@@ -1193,9 +1227,13 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 				slurmdb_destroy_res_rec(res_rec);
 
 			name = xstrdup_printf("Cluster - %s\t- %s@%s",
-					      row[3], row[1], row[2]);
+					      row[RES_REQ_CLUSTER],
+					      row[RES_REQ_NAME],
+					      row[RES_REQ_SERVER]);
 		} else if (!res_added)
-			name = xstrdup_printf("%s@%s", row[1], row[2]);
+			name = xstrdup_printf("%s@%s",
+					      row[RES_REQ_NAME],
+					      row[RES_REQ_SERVER]);
 
 		if (name)
 			list_append(ret_list, name);
