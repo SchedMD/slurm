@@ -48,6 +48,7 @@ typedef struct {
 	uint32_t	used;		/* used licenses */
 	uint32_t	reserved;	/* currently reserved licenses */
 	uint8_t         remote;	        /* non-zero if remote (from database) */
+	time_t last_update;		/* last updated timestamp (for remote) */
 } licenses_t;
 
 /*

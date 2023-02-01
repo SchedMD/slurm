@@ -999,6 +999,7 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 		pack32(lic->used, buffer);
 		pack32(lic->reserved, buffer);
 		pack8(lic->remote, buffer);
+		pack_time(lic->last_update, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(lic->name, buffer);
 		pack32(lic->total, buffer);
