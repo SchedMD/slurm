@@ -411,4 +411,20 @@ extern int con_mgr_run(con_mgr_t *mgr);
  */
 extern void con_mgr_request_shutdown(con_mgr_t *mgr);
 
+/*
+ * Add work for connection manager
+ * NOTE: only call from within an con_mgr_events_t callback
+ * IN mgr - manager to assign work
+ * IN con - connection to assign work or NULL for non-connection related work
+ * IN func - function pointer to run work
+ * IN type - type of work
+ * IN arg - arg to hand to function pointer
+ * IN tag - tag used in logging this function
+ * NOTE: never add a thread that will never return or con_mgr_run() will never
+ * return either.
+ */
+extern void con_mgr_add_work(con_mgr_t *mgr, con_mgr_fd_t *con,
+			     con_mgr_work_func_t func, con_mgr_work_type_t type,
+			     void *arg, const char *tag);
+
 #endif /* SLURMRESTD_CONMGR_H */

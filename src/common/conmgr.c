@@ -93,6 +93,9 @@ static void _wrap_on_connection(con_mgr_t *mgr, con_mgr_fd_t *con,
 				con_mgr_work_type_t type,
 				con_mgr_work_status_t status, const char *tag,
 				void *arg);
+static void _add_work(bool locked, con_mgr_t *mgr, con_mgr_fd_t *con,
+		      con_mgr_work_func_t func, con_mgr_work_type_t type,
+		      void *arg, const char *tag);
 static void _add_con_work(bool locked, con_mgr_fd_t *con,
 			  con_mgr_work_func_t func, con_mgr_work_type_t type,
 			  void *arg, const char *tag);
@@ -738,56 +741,7 @@ static void _add_con_work(bool locked, con_mgr_fd_t *con,
 			  con_mgr_work_func_t func, con_mgr_work_type_t type,
 			  void *arg, const char *tag)
 {
-	work_t *work = xmalloc(sizeof(*work));
-	*work = (work_t) {
-		.magic = MAGIC_WORK,
-		.mgr = con->mgr,
-		.con = con,
-		.func = func,
-		.arg = arg,
-		.tag = tag,
-		.type = type,
-		.status = CONMGR_WORK_STATUS_INVALID,
-	};
-
-	log_flag(NET, "%s: [%s] locked=%s func=%s",
-		 __func__, con->name, (locked ? "T" : "F"), work->tag);
-
-	_check_magic_mgr(work->mgr);
-	_check_magic_fd(work->con);
-	xassert((void *) work->func != _wrap_work);
-	xassert(work->magic == MAGIC_WORK);
-	xassert(work->status == CONMGR_WORK_STATUS_INVALID);
-
-	if (!locked)
-		slurm_mutex_lock(&con->mgr->mutex);
-
-	switch (type) {
-	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
-	{
-		if (!con->has_work) {
-			_queue_con_work(work);
-		} else {
-			log_flag(NET, "%s: [%s] queuing \"%s\" pending work: %u total",
-				 __func__, con->name, work->tag, list_count(con->work));
-
-			work->status = CONMGR_WORK_STATUS_PENDING;
-			list_append(con->work, work);
-		}
-		break;
-	}
-	case CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE:
-		work->status = CONMGR_WORK_STATUS_PENDING;
-		list_append(con->write_complete_work, work);
-		break;
-	default:
-		fatal("%s: invalid type", __func__);
-	}
-
-	_signal_change(con->mgr, true);
-
-	if (!locked)
-		slurm_mutex_unlock(&con->mgr->mutex);
+	_add_work(locked, con->mgr, con, func, type, arg, tag);
 }
 
 static void _handle_read(con_mgr_t *mgr, con_mgr_fd_t *con,
@@ -2295,4 +2249,72 @@ extern void con_mgr_request_shutdown(con_mgr_t *mgr)
 	mgr->shutdown = true;
 	_signal_change(mgr, true);
 	slurm_mutex_unlock(&mgr->mutex);
+}
+
+static void _add_work(bool locked, con_mgr_t *mgr, con_mgr_fd_t *con,
+		      con_mgr_work_func_t func, con_mgr_work_type_t type,
+		      void *arg, const char *tag)
+{
+	work_t *work = xmalloc(sizeof(*work));
+	*work = (work_t){
+		.magic = MAGIC_WORK,
+		.mgr = mgr,
+		.con = con,
+		.func = func,
+		.arg = arg,
+		.tag = tag,
+		.type = type,
+		.status = CONMGR_WORK_STATUS_INVALID,
+	};
+
+	log_flag(NET, "%s: [%s] locked=%s func=%s",
+		 __func__, con->name, (locked ? "T" : "F"), work->tag);
+
+	_check_magic_mgr(work->mgr);
+	_check_magic_fd(work->con);
+
+	if (!locked)
+		slurm_mutex_lock(&con->mgr->mutex);
+
+	switch (type) {
+	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
+	{
+		if (!con)
+			fatal_abort("%s: CONMGR_WORK_TYPE_CONNECTION_FIFO requires a connection",
+				    __func__);
+
+		if (!con->has_work) {
+			_queue_con_work(work);
+		} else {
+			log_flag(NET, "%s: [%s] queuing \"%s\" pending work: %u total",
+				 __func__, con->name, work->tag, list_count(con->work));
+
+			work->status = CONMGR_WORK_STATUS_PENDING;
+			list_append(con->work, work);
+		}
+		break;
+	}
+	case CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE:
+		if (!con)
+			fatal_abort("%s: CONMGR_WORK_TYPE_CONNECTION_FIFO requires a connection",
+				    __func__);
+
+		work->status = CONMGR_WORK_STATUS_PENDING;
+		list_append(con->write_complete_work, work);
+		break;
+	default:
+		fatal("%s: invalid type", __func__);
+	}
+
+	_signal_change(con->mgr, true);
+
+	if (!locked)
+		slurm_mutex_unlock(&con->mgr->mutex);
+}
+
+extern void con_mgr_add_work(con_mgr_t *mgr, con_mgr_fd_t *con,
+			     con_mgr_work_func_t func, con_mgr_work_type_t type,
+			     void *arg, const char *tag)
+{
+	_add_work(false, mgr, con, func, type, arg, tag);
 }
