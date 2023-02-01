@@ -3812,7 +3812,6 @@ static void _node_did_resp(front_end_record_t *fe_ptr)
 			fe_ptr->reason_uid = NO_VAL;
 		}
 	}
-	return;
 }
 #else
 static void _node_did_resp(node_record_t *node_ptr)
@@ -3883,7 +3882,6 @@ static void _node_did_resp(node_record_t *node_ptr)
 		bit_clear (up_node_bitmap, node_ptr->index);
 	else
 		bit_set   (up_node_bitmap, node_ptr->index);
-	return;
 }
 #endif
 
@@ -3970,8 +3968,6 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 	last_node_update = time(NULL);
 	bit_clear (avail_node_bitmap, node_ptr->index);
 #endif
-
-	return;
 }
 
 /* For every node with the "not_responding" flag set, clear the flag
@@ -4021,8 +4017,6 @@ void set_node_down (char *name, char *reason)
 		return;
 	}
 	set_node_down_ptr (node_ptr, reason);
-
-	return;
 }
 
 /*
@@ -4041,8 +4035,6 @@ void set_node_down_ptr(node_record_t *node_ptr, char *reason)
 	_make_node_down(node_ptr, now);
 	(void) kill_running_job_by_node_name(node_ptr->name);
 	_sync_bitmaps(node_ptr, 0);
-
-	return;
 }
 
 /*
