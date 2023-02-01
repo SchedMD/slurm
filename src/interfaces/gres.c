@@ -4474,7 +4474,6 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t magic = 0, plugin_id = 0, config_flags = 0;
-	uint64_t gres_cnt_avail = 0;
 	uint16_t gres_bitmap_size = 0, rec_cnt = 0;
 	gres_state_t *gres_state_node;
 	gres_node_state_t *gres_ns;
@@ -4497,20 +4496,22 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 			break;
 		rec_cnt--;
 
+		gres_ns = _build_gres_node_state();
+
 		if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
 			safe_unpack32(&plugin_id, buffer);
 			safe_unpack32(&config_flags, buffer);
-			safe_unpack64(&gres_cnt_avail, buffer);
+			safe_unpack64(&gres_ns->gres_cnt_avail, buffer);
 			safe_unpack16(&gres_bitmap_size, buffer);
 		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
 			safe_unpack32(&plugin_id, buffer);
-			safe_unpack64(&gres_cnt_avail, buffer);
+			safe_unpack64(&gres_ns->gres_cnt_avail, buffer);
 			safe_unpack16(&gres_bitmap_size, buffer);
 		} else {
 			error("%s: protocol_version %hu not supported",
@@ -4525,10 +4526,10 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 			 * A likely sign that GresPlugins has changed.
 			 * Not a fatal error, skip over the data.
 			 */
+			_gres_node_state_delete(gres_ns);
 			continue;
 		}
-		gres_ns = _build_gres_node_state();
-		gres_ns->gres_cnt_avail = gres_cnt_avail;
+
 		if (gres_bitmap_size) {
 			gres_ns->gres_bit_alloc =
 				bit_alloc(gres_bitmap_size);
@@ -4545,6 +4546,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 
 unpack_error:
 	error("%s: unpack error from node %s", __func__, node_name);
+	_gres_node_state_delete(gres_ns);
 	if (locked)
 		slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
