@@ -375,7 +375,7 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 	uint64_t idle_secs = 0, total_reported = 0;
 	uint64_t tres_alloc_cnt = 0, tres_alloc_secs = 0;
 	int curr_inx = 1;
-	char *temp_char = NULL, *tres_tmp = NULL;
+	char *tmp_char = NULL, *tres_tmp = NULL;
 	slurmdb_tres_rec_t *tres_rec;
 	print_field_t *field;
 	int field_count = 0;
@@ -462,9 +462,10 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 				.flags = resv_ptr->flags,
 			};
 
-			temp_char = reservation_flags_string(&resv_info);
-			field->print_routine(field, temp_char,
+			tmp_char = reservation_flags_string(&resv_info);
+			field->print_routine(field, tmp_char,
 					     (curr_inx == field_count));
+			tmp_char = NULL;
 			break;
 		}
 		case PRINT_RESV_TIME:
@@ -491,7 +492,7 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 			break;
 		}
 		curr_inx++;
-		xfree(temp_char);
+		xfree(tmp_char);
 	}
 	list_iterator_reset(iter);
 	printf("\n");
