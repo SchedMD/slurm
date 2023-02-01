@@ -4036,18 +4036,7 @@ void set_node_down_ptr(node_record_t *node_ptr, char *reason)
 {
 	time_t now = time(NULL);
 
-	if ((node_ptr->reason == NULL) ||
-	    (xstrncmp(node_ptr->reason, "Not responding", 14) == 0)) {
-		xfree(node_ptr->reason);
-		if (reason) {
-			node_ptr->reason = xstrdup(reason);
-			node_ptr->reason_time = now;
-			node_ptr->reason_uid = slurm_conf.slurm_user_id;
-		} else {
-			node_ptr->reason_time = 0;
-			node_ptr->reason_uid = NO_VAL;
-		}
-	}
+	set_node_reason(node_ptr, reason, now);
 	_make_node_down(node_ptr, now);
 	(void) kill_running_job_by_node_name(node_ptr->name);
 	_sync_bitmaps(node_ptr, 0);
