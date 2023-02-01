@@ -5232,11 +5232,7 @@ extern void set_node_reason(node_record_t *node_ptr,
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(node_ptr);
 
-	if (message == NULL) {
-		xfree(node_ptr->reason);
-		node_ptr->reason_time = 0;
-		node_ptr->reason_uid = NO_VAL;
-	} else {
+	if (message && message[0]) {
 		if (node_ptr->reason &&
 		    !xstrstr(node_ptr->reason, message)) {
 			xstrfmtcat(node_ptr->reason, " : %s", message);
@@ -5246,5 +5242,9 @@ extern void set_node_reason(node_record_t *node_ptr,
 		}
 		node_ptr->reason_time = time;
 		node_ptr->reason_uid = slurm_conf.slurm_user_id;
+	} else {
+		xfree(node_ptr->reason);
+		node_ptr->reason_time = 0;
+		node_ptr->reason_uid = NO_VAL;
 	}
 }
