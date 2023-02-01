@@ -3311,8 +3311,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			if (!node_ptr->reason ||
 			    (node_ptr->reason &&
 			     !xstrcmp(node_ptr->reason, "Not responding"))) {
-				if (node_ptr->reason)
-					xfree(node_ptr->reason);
+				xfree(node_ptr->reason);
 				node_ptr->reason_time = now;
 				node_ptr->reason_uid = slurm_conf.slurm_user_id;
 				node_ptr->reason = xstrdup(
