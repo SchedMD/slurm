@@ -738,7 +738,8 @@ static void _wrap_con_work(work_t *work, con_mgr_fd_t *con, con_mgr_t *mgr)
 	xassert(change.name == con->name);
 	xassert(change.mgr == con->mgr);
 	xassert((change.arg == con->arg) ||
-		((void *) work->func == (void *) _wrap_on_connection));
+		((void *) work->func == (void *) _wrap_on_connection) ||
+		((void *) work->func == (void *) _on_finish_wrapper));
 	xassert(change.on_data_tried == con->on_data_tried ||
 		((void *) work->func == (void *) _wrap_on_data));
 	xassert((change.msglen == con->msglen) ||
@@ -1313,6 +1314,12 @@ static void _on_finish_wrapper(con_mgr_t *mgr, con_mgr_fd_t *con,
 			       void *arg)
 {
 	con->events.on_finish(arg);
+
+	slurm_mutex_lock(&mgr->mutex);
+	con->wait_on_finish = false;
+	/* on_finish must free arg */
+	con->arg = NULL;
+	slurm_mutex_unlock(&mgr->mutex);
 }
 
 /*
@@ -1448,22 +1455,24 @@ static int _handle_connection(void *x, void *arg)
 		con->input_fd = -1;
 	}
 
+	if (con->wait_on_finish) {
+		log_flag(NET, "%s: [%s] waiting for on_finish()",
+			 __func__, con->name);
+		return 0;
+	}
+
 	if (!con->is_listen && con->arg) {
 		log_flag(NET, "%s: [%s] queuing up on_finish",
 			 __func__, con->name);
 
+		con->wait_on_finish = true;
+
 		/* notify caller of closing */
-		if (con->is_connected) {
-			_add_work(true, mgr, con, _on_finish_wrapper,
-				  CONMGR_WORK_TYPE_CONNECTION_FIFO, con->arg,
-				  "on_finish");
-			/* on_finish must free arg */
-			con->arg = NULL;
-			return 0;
-		} else {
-			/* arg should only be set if after on_connection() */
-			xassert(!con->arg);
-		}
+		_add_work(true, mgr, con, _on_finish_wrapper,
+			  CONMGR_WORK_TYPE_CONNECTION_FIFO, con->arg,
+			  "on_finish");
+
+		return 0;
 	}
 
 	if (!list_is_empty(con->work) || !list_is_empty(con->write_complete_work)) {

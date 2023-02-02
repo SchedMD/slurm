@@ -202,6 +202,8 @@ struct con_mgr_fd_s {
 	char *unix_socket;
 	/* this is a listen only socket */
 	bool is_listen;
+	/* connection is waiting for on_finish() to complete */
+	bool wait_on_finish;
 	/* poll has indicated write is possible */
 	bool can_write;
 	/* poll has indicated read is possible */
