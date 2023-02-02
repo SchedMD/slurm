@@ -4490,7 +4490,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 	uint32_t magic = 0, plugin_id = 0, config_flags = 0;
 	uint16_t gres_bitmap_size = 0, rec_cnt = 0;
 	gres_state_t *gres_state_node;
-	gres_node_state_t *gres_ns;
+	gres_node_state_t *gres_ns = NULL;
 	bool locked = false;
 
 	safe_unpack16(&rec_cnt, buffer);
