@@ -1587,15 +1587,19 @@ static void _handle_event_pipe(con_mgr_t *mgr, const struct pollfd *fds_ptr,
 
 static int _handle_signal(con_mgr_t *mgr)
 {
-	int sig;
+	int sig, signal_fd;
+
+	slurm_mutex_lock(&mgr->mutex);
+	signal_fd = mgr->signal_fd[0];
+	slurm_mutex_unlock(&mgr->mutex);
 
 #ifdef FIONREAD
 	int readable;
 
 	/* request kernel tell us the size of the incoming buffer */
-	if (ioctl(mgr->signal_fd[0], FIONREAD, &readable))
+	if (ioctl(signal_fd, FIONREAD, &readable))
 		log_flag(NET, "%s: [fd:%d] unable to call FIONREAD: %m",
-			 __func__, mgr->signal_fd[0]);
+			 __func__, signal_fd);
 
 	if (!readable) {
 		/* Didn't fail but buffer is empty so no more signals */
@@ -1603,7 +1607,7 @@ static int _handle_signal(con_mgr_t *mgr)
 	}
 #endif /* FIONREAD */
 
-	safe_read(mgr->signal_fd[0], &sig, sizeof(sig));
+	safe_read(signal_fd, &sig, sizeof(sig));
 
 	return sig;
 rwfail:
@@ -1611,7 +1615,7 @@ rwfail:
 		return -1;
 
 	fatal("%s: unable to read(signal_fd[0]=%d): %m",
-	      __func__, mgr->signal_fd[0]);
+	      __func__, signal_fd);
 }
 
 /*
