@@ -1317,10 +1317,8 @@ static int _handle_connection(void *x, void *arg)
 	con_mgr_t *mgr = con->mgr;
 	int count, rc;
 
-	/* cant run full magic checks inside of list lock */
-	xassert(mgr->magic == MAGIC_CON_MGR);
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->name && con->name[0]);
+	_check_magic_fd(true, con);
+	_check_magic_mgr(true, mgr);
 
 	/* make sure the connection has finished on_connection */
 	if (!con->is_listen && !con->is_connected) {
