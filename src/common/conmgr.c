@@ -2683,6 +2683,13 @@ static void _handle_timer(void *x)
 }
 
 /* mgr must be locked */
+static void _handle_work_run(work_t *work)
+{
+	con_mgr_t *mgr = work->mgr;
+	workq_add_work(mgr->workq, _wrap_work, work, work->tag);
+}
+
+/* mgr must be locked */
 static void _handle_work_pending(work_t *work)
 {
 	con_mgr_t *mgr = work->mgr;
@@ -2710,8 +2717,7 @@ static void _handle_work_pending(work_t *work)
 		if (!con->has_work) {
 			con->has_work = true;
 			work->status = CONMGR_WORK_STATUS_RUN;
-			workq_add_work(con->mgr->workq, _wrap_work, work,
-				       work->tag);
+			_handle_work_run(work);
 		} else {
 			log_flag(NET, "%s: [%s] queuing \"%s\" pending work: %u total",
 				 __func__, con->name, work->tag, list_count(con->work));
@@ -2726,9 +2732,10 @@ static void _handle_work_pending(work_t *work)
 		list_append(con->write_complete_work, work);
 		break;
 	case CONMGR_WORK_TYPE_FIFO:
+		/* can be run now */
 		xassert(!con);
 		work->status = CONMGR_WORK_STATUS_RUN;
-		workq_add_work(mgr->workq, _wrap_work, work, work->tag);
+		_handle_work(true, work);
 		break;
 	case CONMGR_WORK_TYPE_INVALID:
 	case CONMGR_WORK_TYPE_MAX:
@@ -2771,7 +2778,7 @@ static void _handle_work(bool locked, work_t *work)
 		break;
 	case CONMGR_WORK_STATUS_CANCELLED:
 	case CONMGR_WORK_STATUS_RUN:
-		fatal("not yet implemented");
+		_handle_work_run(work);
 		break;
 	case CONMGR_WORK_STATUS_MAX:
 	case CONMGR_WORK_STATUS_INVALID:
