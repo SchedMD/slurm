@@ -817,6 +817,7 @@ extern int sacctmgr_list_res(int argc, char **argv)
 		if (res_cond->with_clusters)
 			slurm_addto_char_list(
 				format_list, "Cluster,Allowed");
+		slurm_addto_char_list(format_list, "Flags");
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
