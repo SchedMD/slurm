@@ -2736,15 +2736,8 @@ static void _handle_timer(void *x)
 	_update_timer(true, mgr);
 
 	while ((work = list_pop(elapsed))) {
-		if (work->con) {
-			if (!work->con->has_work)
-				_handle_work(true, work);
-			else
-				list_append(work->con->work, work);
-		} else {
-			work->status = CONMGR_WORK_STATUS_RUN;
-			_handle_work(true, work);
-		}
+		work->status = CONMGR_WORK_STATUS_RUN;
+		_handle_work(true, work);
 	}
 
 	if (count > 0)
