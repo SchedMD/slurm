@@ -433,18 +433,19 @@ done:
 		slurm_mutex_unlock(&mgr->mutex);
 }
 
-static void _close_all_connections(void *x)
+static void _close_all_connections(bool locked, con_mgr_t *mgr)
 {
-	con_mgr_t *mgr = x;
-	_check_magic_mgr(false, mgr);
+	_check_magic_mgr(locked, mgr);
 
-	slurm_mutex_lock(&mgr->mutex);
+	if (!locked)
+		slurm_mutex_lock(&mgr->mutex);
 
 	/* close all connections */
 	list_for_each(mgr->connections, _close_con_for_each, NULL);
 	list_for_each(mgr->listen, _close_con_for_each, NULL);
 
-	slurm_mutex_unlock(&mgr->mutex);
+	if (!locked)
+		slurm_mutex_unlock(&mgr->mutex);
 }
 
 extern void free_con_mgr(con_mgr_t *mgr)
@@ -455,7 +456,7 @@ extern void free_con_mgr(con_mgr_t *mgr)
 	log_flag(NET, "%s: connection manager shutting down", __func__);
 
 	/* processing may still be running at this point in a thread */
-	_close_all_connections(mgr);
+	_close_all_connections(false, mgr);
 
 	/* tell all timers about being canceled */
 	_cancel_delayed_work(false, mgr);
@@ -1929,11 +1930,8 @@ static int _watch(con_mgr_t *mgr)
 	_check_magic_mgr(false, mgr);
 	slurm_mutex_lock(&mgr->mutex);
 watch:
-	if (mgr->shutdown) {
-		slurm_mutex_unlock(&mgr->mutex);
-		_close_all_connections(mgr);
-		slurm_mutex_lock(&mgr->mutex);
-	}
+	if (mgr->shutdown)
+		_close_all_connections(true, mgr);
 
 	/* grab counts once */
 	count = list_count(mgr->connections);
