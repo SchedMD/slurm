@@ -2716,7 +2716,6 @@ static void _handle_work(bool locked, work_t *work)
 	{
 		_update_last_time(true, work->mgr);
 		work->begin.seconds += mgr->last_time.tv_sec;
-		work->status = CONMGR_WORK_STATUS_PENDING;
 		list_append(mgr->delayed_work, work);
 		break;
 	}
@@ -2734,8 +2733,6 @@ static void _handle_work(bool locked, work_t *work)
 		} else {
 			log_flag(NET, "%s: [%s] queuing \"%s\" pending work: %u total",
 				 __func__, con->name, work->tag, list_count(con->work));
-
-			work->status = CONMGR_WORK_STATUS_PENDING;
 			list_append(con->work, work);
 		}
 		break;
@@ -2744,8 +2741,6 @@ static void _handle_work(bool locked, work_t *work)
 		if (!con)
 			fatal_abort("%s: CONMGR_WORK_TYPE_CONNECTION_FIFO requires a connection",
 				    __func__);
-
-		work->status = CONMGR_WORK_STATUS_PENDING;
 		list_append(con->write_complete_work, work);
 		break;
 	case CONMGR_WORK_TYPE_FIFO:
