@@ -2668,7 +2668,7 @@ static void _handle_timer(void *x)
 				list_append(work->con->work, work);
 		} else {
 			work->status = CONMGR_WORK_STATUS_RUN;
-			workq_add_work(mgr->workq, _wrap_work, work, work->tag);
+			_handle_work(true, work);
 		}
 	}
 
