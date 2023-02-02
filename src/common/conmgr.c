@@ -2776,7 +2776,7 @@ static void _add_work(bool locked, con_mgr_t *mgr, con_mgr_fd_t *con,
 		.arg = arg,
 		.tag = tag,
 		.type = type,
-		.status = CONMGR_WORK_STATUS_INVALID,
+		.status = CONMGR_WORK_STATUS_PENDING,
 	};
 
 	_handle_work(locked, work);
