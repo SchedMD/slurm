@@ -199,7 +199,7 @@ static void _stat_slurm_dirs(void)
 
 	if (problem_dir) {
 		error("################################################");
-		error("###       SEVERE SECURITY VULERABILTY        ###");
+		error("###       SEVERE SECURITY VULNERABILTY       ###");
 		error("### %s DIRECTORY IS WORLD WRITABLE ###", problem_dir);
 		error("###         CORRECT FILE PERMISSIONS         ###");
 		error("################################################");
