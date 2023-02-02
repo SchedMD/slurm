@@ -1352,6 +1352,15 @@ static int _handle_connection(void *x, void *arg)
 		log_flag(NET, "%s: [%s] queuing pending work: %u total",
 			 __func__, con->name, count);
 
+		work->status = CONMGR_WORK_STATUS_RUN;
+		con->has_work = true; /* unset by _wrap_con_work() */
+
+		log_flag(NET, "%s: [%s] queuing work=0x%"PRIxPTR" status=%s type=%s func=%s@0x%"PRIxPTR,
+			 __func__, con->name, (uintptr_t) work,
+			con_mgr_work_status_string(work->status),
+			con_mgr_work_type_string(work->type),
+			work->tag, (uintptr_t) work->func);
+
 		_handle_work(true, work);
 		return 0;
 	}
@@ -1375,13 +1384,10 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	if ((count = list_count(con->write_complete_work))) {
-		work_t *work = list_pop(con->write_complete_work);
-		xassert(work);
-
 		log_flag(NET, "%s: [%s] queuing pending write complete work: %u total",
 			 __func__, con->name, count);
 
-		_handle_work(true, work);
+		list_transfer(con->work, con->write_complete_work);
 		return 0;
 	}
 
