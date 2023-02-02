@@ -2812,7 +2812,7 @@ extern void con_mgr_add_delayed_work(con_mgr_t *mgr, con_mgr_fd_t *con,
 		.func = func,
 		.arg = arg,
 		.tag = tag,
-		.status = CONMGR_WORK_STATUS_INVALID,
+		.status = CONMGR_WORK_STATUS_PENDING,
 		.begin.seconds = seconds,
 		.begin.nanoseconds = nanoseconds,
 	};
