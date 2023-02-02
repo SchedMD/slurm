@@ -211,16 +211,27 @@ static int _find_by_fd(void *x, void *key)
 	return (con->input_fd == fd) || (con->output_fd == fd);
 }
 
-static void _check_magic_mgr(con_mgr_t *mgr)
+static void _check_magic_mgr(bool locked, con_mgr_t *mgr)
 {
 	xassert(mgr);
+
+	if (!locked)
+		slurm_mutex_lock(&mgr->mutex);
+
 	xassert(mgr->magic == MAGIC_CON_MGR);
 	xassert(mgr->connections);
+
+	if (!locked)
+		slurm_mutex_unlock(&mgr->mutex);
 }
 
-static void _check_magic_fd(con_mgr_fd_t *con)
+static void _check_magic_fd(bool locked, con_mgr_fd_t *con)
 {
 	xassert(con);
+
+	if (!locked)
+		slurm_mutex_lock(&con->mgr->mutex);
+
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->events.on_connection);
 	xassert(con->name && con->name[0]);
@@ -259,6 +270,9 @@ static void _check_magic_fd(con_mgr_fd_t *con)
 		xassert(list_find_first(con->mgr->connections, _find_by_ptr,
 					con));
 	}
+
+	if (!locked)
+		slurm_mutex_unlock(&con->mgr->mutex);
 }
 
 extern const char *con_mgr_work_status_string(con_mgr_work_status_t status)
@@ -288,7 +302,7 @@ static void _connection_fd_delete(void *x)
 		return;
 	mgr = con->mgr;
 
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(true, mgr);
 	log_flag(NET, "%s: [%s] free connection input_fd=%d output_fd=%d",
 		 __func__, con->name, con->input_fd, con->output_fd);
 
@@ -357,7 +371,7 @@ extern con_mgr_t *init_con_mgr(int thread_count, con_mgr_callbacks_t callbacks)
 	fd_set_nonblocking(mgr->signal_fd[0]);
 	fd_set_blocking(mgr->signal_fd[1]);
 
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 
 	return mgr;
 }
@@ -371,7 +385,7 @@ static void _signal_change(con_mgr_t *mgr, bool locked)
 	char buf[] = "1";
 	int rc;
 
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(locked, mgr);
 
 	if (!locked)
 		slurm_mutex_lock(&mgr->mutex);
@@ -419,7 +433,7 @@ done:
 static void _close_all_connections(void *x)
 {
 	con_mgr_t *mgr = x;
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 
 	slurm_mutex_lock(&mgr->mutex);
 
@@ -504,11 +518,8 @@ static void _close_con(bool locked, con_mgr_fd_t *con)
 
 	log_flag(NET, "%s: [%s] closing input", __func__, con->name);
 
-	if (!locked) {
-		/* avoid mutex deadlock */
-		_check_magic_fd(con);
-		_check_magic_mgr(con->mgr);
-	}
+	_check_magic_fd(true, con);
+	_check_magic_mgr(true, con->mgr);
 
 	/* unlink listener sockets to avoid leaving ghost socket */
 	if (con->is_listen && con->unix_socket &&
@@ -553,7 +564,7 @@ static con_mgr_fd_t *_add_connection(
 	struct stat fbuf = { 0 };
 	con_mgr_fd_t *con = NULL;
 
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 	xassert((type == CON_TYPE_RAW && events.on_data && !events.on_msg) ||
 		(type == CON_TYPE_RPC && !events.on_data && events.on_msg));
 
@@ -674,7 +685,7 @@ static con_mgr_fd_t *_add_connection(
 		list_append(mgr->connections, con);
 	slurm_mutex_unlock(&mgr->mutex);
 
-	_check_magic_fd(con);
+	_check_magic_fd(false, con);
 
 	return con;
 }
@@ -733,7 +744,7 @@ static void _wrap_work(void *x)
 	con_mgr_fd_t *con = work->con;
 	con_mgr_t *mgr = work->mgr;
 
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 
 	xassert(work->magic == MAGIC_WORK);
 	xassert(work->type > CONMGR_WORK_TYPE_INVALID);
@@ -762,15 +773,15 @@ static void _wrap_work(void *x)
 	case CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE:
 	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
 	case CONMGR_WORK_TYPE_CONNECTION_DELAY_FIFO:
-		_check_magic_fd(con);
+		_check_magic_fd(false, con);
 		_wrap_con_work(work, con, mgr);
-		_check_magic_fd(con);
+		_check_magic_fd(false, con);
 		break;
 	default:
 		fatal_abort("%s: invalid work type 0x%x", __func__, work->type);
 	}
 
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 
 	log_flag(NET, "%s: %s%s%sEND %s@0x%"PRIxPTR" type=%s status=%s  arg=0x%"PRIxPTR,
 		 __func__, (con ? "[" : ""), (con ? con->name : ""),
@@ -793,8 +804,8 @@ static void _handle_read(con_mgr_t *mgr, con_mgr_fd_t *con,
 	int readable;
 
 	con->can_read = false;
-	_check_magic_fd(con);
-	_check_magic_mgr(con->mgr);
+	_check_magic_fd(false, con);
+	_check_magic_mgr(false, con->mgr);
 
 	if (con->input_fd < 0) {
 		xassert(con->read_eof);
@@ -873,8 +884,8 @@ static void _handle_write(con_mgr_t *mgr, con_mgr_fd_t *con,
 {
 	ssize_t wrote;
 
-	_check_magic_fd(con);
-	_check_magic_mgr(con->mgr);
+	_check_magic_fd(false, con);
+	_check_magic_mgr(false, con->mgr);
 
 	if (get_buf_offset(con->out) == 0) {
 		log_flag(NET, "%s: [%s] skipping attempt to write 0 bytes",
@@ -940,7 +951,7 @@ static int _on_rpc_connection_data(con_mgr_fd_t *con, void *arg)
 	uint32_t need;
 	slurm_msg_t *msg = NULL;
 
-	_check_magic_fd(con);
+	_check_magic_fd(false, con);
 
 	/* based on slurm_msg_recvfrom_timeout() */
 	if (!con->msglen) {
@@ -1041,8 +1052,8 @@ static void _wrap_on_data(con_mgr_t *mgr, con_mgr_fd_t *con,
 	int size = size_buf(con->in);
 	int rc;
 
-	_check_magic_fd(con);
-	_check_magic_mgr(mgr);
+	_check_magic_fd(false, con);
+	_check_magic_mgr(false, mgr);
 	xassert(con->arg);
 
 	/* override buffer offset to allow reading */
@@ -1143,8 +1154,8 @@ static void _wrap_on_connection(con_mgr_t *mgr, con_mgr_fd_t *con,
 		slurm_mutex_unlock(&mgr->mutex);
 	}
 
-	_check_magic_fd(con);
-	_check_magic_mgr(mgr);
+	_check_magic_fd(false, con);
+	_check_magic_mgr(false, mgr);
 }
 
 extern int _con_mgr_process_fd_internal(con_mgr_t *mgr, con_mgr_con_type_t type,
@@ -1155,7 +1166,7 @@ extern int _con_mgr_process_fd_internal(con_mgr_t *mgr, con_mgr_con_type_t type,
 					socklen_t addrlen, void *arg)
 {
 	con_mgr_fd_t *con;
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 
 	con = _add_connection(mgr, type, source, input_fd, output_fd, events,
 			      addr, addrlen, false, NULL, arg);
@@ -1163,7 +1174,7 @@ extern int _con_mgr_process_fd_internal(con_mgr_t *mgr, con_mgr_con_type_t type,
 	if (!con)
 		return SLURM_ERROR;
 
-	_check_magic_fd(con);
+	_check_magic_fd(false, con);
 
 	_add_work(false, mgr, con, _wrap_on_connection,
 		  CONMGR_WORK_TYPE_CONNECTION_FIFO, con, "_wrap_on_connection");
@@ -1178,7 +1189,7 @@ extern int con_mgr_process_fd(con_mgr_t *mgr, con_mgr_con_type_t type,
 			      void *arg)
 {
 	con_mgr_fd_t *con;
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 
 	con = _add_connection(mgr, type, NULL, input_fd, output_fd, events,
 			      addr, addrlen, false, NULL, arg);
@@ -1186,7 +1197,7 @@ extern int con_mgr_process_fd(con_mgr_t *mgr, con_mgr_con_type_t type,
 	if (!con)
 		return SLURM_ERROR;
 
-	_check_magic_fd(con);
+	_check_magic_fd(false, con);
 
 	_add_work(false, mgr, con, _wrap_on_connection,
 		  CONMGR_WORK_TYPE_CONNECTION_FIFO, con, "_wrap_on_connection");
@@ -1201,14 +1212,14 @@ extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
 				     socklen_t addrlen, void *arg)
 {
 	con_mgr_fd_t *con;
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 
 	con = _add_connection(mgr, type, NULL, fd, fd, events, addr, addrlen,
 			      true, NULL, arg);
 	if (!con)
 		return SLURM_ERROR;
 
-	_check_magic_fd(con);
+	_check_magic_fd(false, con);
 
 	_signal_change(mgr, false);
 
@@ -1223,14 +1234,14 @@ extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr,
 					  void *arg)
 {
 	con_mgr_fd_t *con;
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 
 	con = _add_connection(mgr, type, NULL, fd, fd, events, addr, addrlen,
 			      true, path, arg);
 	if (!con)
 		return SLURM_ERROR;
 
-	_check_magic_fd(con);
+	_check_magic_fd(false, con);
 
 	_signal_change(mgr, false);
 
@@ -1498,7 +1509,7 @@ static int _close_con_for_each(void *x, void *arg)
 static void _inspect_connections(void *x)
 {
 	con_mgr_t *mgr = x;
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 
 	slurm_mutex_lock(&mgr->mutex);
 
@@ -1697,7 +1708,7 @@ static void _poll_connections(void *x)
 	int count;
 	list_itr_t *itr;
 
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 
 	slurm_mutex_lock(&mgr->mutex);
 
@@ -1729,7 +1740,7 @@ static void _poll_connections(void *x)
 	 */
 	itr = list_iterator_create(mgr->connections);
 	while ((con = list_next(itr))) {
-		_check_magic_fd(con);
+		_check_magic_fd(true, con);
 
 		if (con->has_work)
 			continue;
@@ -1802,7 +1813,7 @@ static void _listen(void *x)
 	int count;
 	list_itr_t *itr;
 
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 
 	slurm_mutex_lock(&mgr->mutex);
 	xassert(mgr->listen_active);
@@ -1844,7 +1855,7 @@ static void _listen(void *x)
 	/* populate listening sockets */
 	itr = list_iterator_create(mgr->listen);
 	while ((con = list_next(itr))) {
-		_check_magic_fd(con);
+		_check_magic_fd(true, con);
 
 		/* already accept queued or listener already closed */
 		if (con->has_work || con->read_eof)
@@ -1892,7 +1903,7 @@ static int _watch(con_mgr_t *mgr)
 	char buf[100]; /* buffer for event_read */
 	bool work; /* is there any work to do? */
 
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 	slurm_mutex_lock(&mgr->mutex);
 watch:
 	if (mgr->shutdown) {
@@ -1981,7 +1992,7 @@ watch:
 	if (work) {
 		/* wait until something happens */
 		slurm_cond_wait(&mgr->cond, &mgr->mutex);
-		_check_magic_mgr(mgr);
+		_check_magic_mgr(true, mgr);
 		goto watch;
 	}
 
@@ -2013,7 +2024,7 @@ extern int con_mgr_run(con_mgr_t *mgr)
 {
 	int rc = SLURM_SUCCESS;
 
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 
 	slurm_mutex_lock(&mgr->mutex);
 	slurm_mutex_lock(&signal_mutex);
@@ -2151,7 +2162,7 @@ static int _for_each_deferred_write(void *x, void *arg)
 {
 	buf_t *buf = x;
 	con_mgr_fd_t *con = arg;
-	_check_magic_fd(con);
+	_check_magic_fd(false, con);
 
 	(void) con_mgr_queue_write_fd(con, get_buf_data(buf),
 				  get_buf_offset(buf));
@@ -2162,7 +2173,7 @@ static int _for_each_deferred_write(void *x, void *arg)
 extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 				  const size_t bytes)
 {
-	_check_magic_fd(con);
+	_check_magic_fd(false, con);
 
 	if (list_count(con->deferred_out)) {
 		/* handle deferred first */
@@ -2242,7 +2253,7 @@ extern int con_mgr_queue_write_msg(con_mgr_fd_t *con, slurm_msg_t *msg)
 	msg_bufs_t buffers = {0};
 	uint32_t msglen = 0;
 
-	_check_magic_fd(con);
+	_check_magic_fd(false, con);
 
 	if ((rc = slurm_buffers_pack_msg(msg, &buffers, false)))
 		goto cleanup;
@@ -2309,7 +2320,7 @@ static void _deferred_close_fd(con_mgr_t *mgr, con_mgr_fd_t *con,
 
 extern void con_mgr_queue_close_fd(con_mgr_fd_t *con)
 {
-	_check_magic_fd(con);
+	_check_magic_fd(false, con);
 
 	slurm_mutex_lock(&con->mgr->mutex);
 	if (!con->has_work) {
@@ -2471,7 +2482,7 @@ extern int con_mgr_create_sockets(con_mgr_t *mgr, con_mgr_con_type_t type,
 
 extern void con_mgr_request_shutdown(con_mgr_t *mgr)
 {
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(false, mgr);
 
 	log_flag(NET, "%s: shutdown requested", __func__);
 
@@ -2830,7 +2841,7 @@ static void _handle_work(bool locked, work_t *work)
 			con_mgr_work_type_string(work->type),
 			work->tag, (uintptr_t) work->func);
 
-	_check_magic_mgr(mgr);
+	_check_magic_mgr(locked, mgr);
 	/* skip _check_magic_fd(con) -> will deadlock */
 	xassert(work->magic == MAGIC_WORK);
 	xassert(work->type > CONMGR_WORK_TYPE_INVALID);
