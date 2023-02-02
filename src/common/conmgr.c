@@ -2828,7 +2828,7 @@ static void _handle_work(bool locked, work_t *work)
 			work->tag, (uintptr_t) work->func);
 
 	_check_magic_mgr(mgr);
-	_check_magic_fd(con);
+	/* skip _check_magic_fd(con) -> will deadlock */
 	xassert(work->magic == MAGIC_WORK);
 	xassert(work->type > CONMGR_WORK_TYPE_INVALID);
 	xassert(work->type < CONMGR_WORK_TYPE_MAX);
