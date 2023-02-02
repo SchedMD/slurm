@@ -191,8 +191,8 @@ typedef struct {
 } foreach_delayed_work_t;
 
 static void _handle_work(bool locked, work_t *work);
-static int _queue_func(bool locked, con_mgr_t *mgr, work_func_t func, void *arg,
-		       const char *tag);
+static void _queue_func(bool locked, con_mgr_t *mgr, work_func_t func,
+			void *arg, const char *tag);
 
 #ifndef NDEBUG
 static int _find_by_ptr(void *x, void *key)
@@ -1319,7 +1319,7 @@ static int _handle_connection(void *x, void *arg)
 {
 	con_mgr_fd_t *con = x;
 	con_mgr_t *mgr = con->mgr;
-	int count, rc;
+	int count;
 
 	_check_magic_fd(true, con);
 	_check_magic_mgr(true, mgr);
@@ -1487,12 +1487,8 @@ static int _handle_connection(void *x, void *arg)
 	/* have a thread free all the memory */
 	xassert(list_is_empty(con->work));
 	xassert(!con->has_work);
-	if ((rc = _queue_func(true, mgr, _connection_fd_delete, con,
-			      "_connection_fd_delete"))) {
-		log_flag(NET, "%s: [%s] direct cleanup as workq rejected _connection_fd_delete(): %s",
-			 __func__, con->name, slurm_strerror(rc));
-		_connection_fd_delete(con);
-	}
+	_queue_func(true, mgr, _connection_fd_delete, con,
+		    "_connection_fd_delete");
 
 	/* remove this connection */
 	return 1;
@@ -2751,16 +2747,20 @@ static void _handle_timer(void *x)
 }
 
 /* Single point to queue internal function callback via mgr->workq. */
-static int _queue_func(bool locked, con_mgr_t *mgr, work_func_t func, void *arg,
-		       const char *tag)
+static void _queue_func(bool locked, con_mgr_t *mgr, work_func_t func,
+			void *arg, const char *tag)
 {
-	int rc;
-
 	if (!locked)
 		slurm_mutex_lock(&mgr->mutex);
 
 	if (!mgr->deferred_funcs) {
+		int rc;
+
+		/* this should never fail here */
 		rc = workq_add_work(mgr->workq, func, arg, tag);
+
+		if (rc)
+			xassert(!rc);
 	} else {
 		/*
 		 * Defer all funcs until con_mgr_run() as adding new connections
@@ -2780,8 +2780,6 @@ static int _queue_func(bool locked, con_mgr_t *mgr, work_func_t func, void *arg,
 
 	if (!locked)
 		slurm_mutex_unlock(&mgr->mutex);
-
-	return rc;
 }
 
 /* mgr must be locked */
