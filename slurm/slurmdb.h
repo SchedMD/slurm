@@ -1130,6 +1130,7 @@ typedef struct {
 	char *description;
 	uint32_t flags; /* resource attribute flags */
 	uint32_t id;
+	time_t last_update;
 	char *manager;  /* resource manager name */
 	char *name;
 	char *server;  /* resource server name */

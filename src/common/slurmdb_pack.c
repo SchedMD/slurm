@@ -2244,6 +2244,7 @@ extern void slurmdb_pack_res_rec(void *in, uint16_t protocol_version,
 			pack32(0, buffer); // allocated
 			packnull(buffer); // server
 			pack32(SLURMDB_RESOURCE_NOTSET, buffer); // type
+			pack_time(0, buffer); // last_update
 
 			return;
 		}
@@ -2268,6 +2269,7 @@ extern void slurmdb_pack_res_rec(void *in, uint16_t protocol_version,
 		pack32(object->allocated, buffer);
 		packstr(object->server, buffer);
 		pack32(object->type, buffer);
+		pack_time(object->last_update, buffer); // last_update
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer); // clus_res_list
@@ -2358,6 +2360,7 @@ extern int slurmdb_unpack_res_rec(void **object, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&object_ptr->server,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->type, buffer);
+		safe_unpack_time(&object_ptr->last_update, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint16_t tmp16;
 		safe_unpack32(&count, buffer);
