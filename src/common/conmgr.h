@@ -260,6 +260,11 @@ struct con_mgr_s {
 	 * */
 	list_t *listen;
 	/*
+	 * list of complete connections pending cleanup
+	 * type: con_mgr_fd_t
+	 * */
+	list_t *complete;
+	/*
 	 * True if there is a thread for listen queued or running
 	 */
 	bool listen_active;

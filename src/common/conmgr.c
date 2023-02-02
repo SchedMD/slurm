@@ -300,27 +300,33 @@ extern const char *con_mgr_work_type_string(con_mgr_work_type_t type)
 static void _connection_fd_delete(void *x)
 {
 	con_mgr_fd_t *con = x;
-	con_mgr_t *mgr;
+	con_mgr_t *mgr = con->mgr;
 
-	if (!con)
-		return;
-	mgr = con->mgr;
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
+		slurm_mutex_lock(&mgr->mutex);
+		_check_magic_mgr(true, mgr);
+		_check_magic_fd(true, con);
+		log_flag(NET, "%s: [%s] free connection input_fd=%d output_fd=%d",
+			 __func__, con->name, con->input_fd, con->output_fd);
 
-	slurm_mutex_lock(&mgr->mutex);
-	_check_magic_mgr(true, mgr);
-	log_flag(NET, "%s: [%s] free connection input_fd=%d output_fd=%d",
-		 __func__, con->name, con->input_fd, con->output_fd);
+		/* make sure this isn't a dangling pointer */
+		if (con->is_listen)
+			xassert(!list_remove_first(mgr->listen, _find_by_ptr,
+						   con));
+		else
+			xassert(!list_remove_first(mgr->connections,
+						   _find_by_ptr, con));
+		slurm_mutex_unlock(&mgr->mutex);
+	}
 
+	xassert(!con->arg);
+	xassert(!con->has_work);
+	xassert(con->read_eof);
+	xassert(con->input_fd == -1);
+	xassert(con->output_fd == -1);
 	xassert(list_is_empty(con->work));
 	xassert(list_is_empty(con->write_complete_work));
-
-	/* make sure this isn't a dangling pointer */
-	if (con->is_listen)
-		xassert(!list_remove_first(mgr->listen, _find_by_ptr, con));
-	else
-		xassert(!list_remove_first(mgr->connections, _find_by_ptr,
-					   con));
-	slurm_mutex_unlock(&mgr->mutex);
+	xassert(list_is_empty(con->deferred_out));
 
 	FREE_NULL_BUFFER(con->in);
 	FREE_NULL_BUFFER(con->out);
@@ -330,7 +336,6 @@ static void _connection_fd_delete(void *x)
 	xfree(con->name);
 	xfree(con->unix_socket);
 
-	xassert(!con->arg);
 	con->magic = ~MAGIC_CON_MGR_FD;
 	xfree(con);
 }
@@ -357,6 +362,7 @@ extern con_mgr_t *init_con_mgr(int thread_count, con_mgr_callbacks_t callbacks)
 	mgr->magic = MAGIC_CON_MGR;
 	mgr->connections = list_create(NULL);
 	mgr->listen = list_create(NULL);
+	mgr->complete = list_create(NULL);
 	mgr->callbacks = callbacks;
 
 	slurm_mutex_init(&mgr->mutex);
@@ -1487,10 +1493,8 @@ static int _handle_connection(void *x, void *arg)
 	/* have a thread free all the memory */
 	xassert(list_is_empty(con->work));
 	xassert(!con->has_work);
-	_queue_func(true, mgr, _connection_fd_delete, con,
-		    "_connection_fd_delete");
 
-	/* remove this connection */
+	/* mark this connection for cleanup */
 	return 1;
 }
 
@@ -1515,7 +1519,8 @@ static void _inspect_connections(void *x)
 
 	slurm_mutex_lock(&mgr->mutex);
 
-	if (list_delete_all(mgr->connections, _handle_connection, NULL))
+	if (list_transfer_match(mgr->connections, mgr->complete,
+				_handle_connection, NULL))
 		slurm_cond_broadcast(&mgr->cond);
 	mgr->inspecting = false;
 
@@ -1964,7 +1969,8 @@ watch:
 		}
 
 		/* run any queued work */
-		list_delete_all(mgr->listen, _handle_connection, NULL);
+		list_transfer_match(mgr->listen, mgr->complete,
+				    _handle_connection, NULL);
 
 		if (!mgr->listen_active) {
 			/* only try to listen if number connections is below limit */
@@ -2004,6 +2010,16 @@ watch:
 				    "_poll_connections");
 		} else
 			log_flag(NET, "%s: poll active already", __func__);
+
+		work = true;
+	}
+
+	if (!list_is_empty(mgr->complete)) {
+		con_mgr_fd_t *con;
+
+		while ((con = list_pop(mgr->complete)))
+			_queue_func(true, mgr, _connection_fd_delete, con,
+				    "_connection_fd_delete");
 
 		work = true;
 	}
