@@ -182,6 +182,8 @@ typedef struct {
 	work_t *shortest;
 } foreach_delayed_work_t;
 
+static void _handle_work(bool locked, work_t *work);
+
 #ifndef NDEBUG
 static int _find_by_ptr(void *x, void *key)
 {
@@ -765,24 +767,6 @@ static void _wrap_work(void *x)
 	xfree(work);
 }
 
-/* mgr->lock must be locked */
-static void _queue_con_work(work_t *work)
-{
-	con_mgr_fd_t *con = work->con;
-
-	_check_magic_mgr(work->mgr);
-	_check_magic_fd(work->con);
-	xassert(work->magic == MAGIC_WORK);
-	xassert((work->type == CONMGR_WORK_TYPE_CONNECTION_FIFO) ||
-		(work->type == CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE));
-	xassert(work->status == CONMGR_WORK_STATUS_PENDING);
-
-	xassert(!con->has_work);
-	con->has_work = true;
-	work->status = CONMGR_WORK_STATUS_RUN;
-	workq_add_work(con->mgr->workq, _wrap_work, work, work->tag);
-}
-
 static void _handle_read(con_mgr_t *mgr, con_mgr_fd_t *con,
 			 con_mgr_work_type_t type, con_mgr_work_status_t status,
 			 const char *tag, void *arg)
@@ -1327,7 +1311,7 @@ static int _handle_connection(void *x, void *arg)
 		log_flag(NET, "%s: [%s] queuing pending work: %u total",
 			 __func__, con->name, count);
 
-		_queue_con_work(work);
+		_handle_work(true, work);
 		return 0;
 	}
 
@@ -1356,7 +1340,7 @@ static int _handle_connection(void *x, void *arg)
 		log_flag(NET, "%s: [%s] queuing pending write complete work: %u total",
 			 __func__, con->name, count);
 
-		_queue_con_work(work);
+		_handle_work(true, work);
 		return 0;
 	}
 
@@ -2679,7 +2663,7 @@ static void _handle_timer(void *x)
 	while ((work = list_pop(elapsed))) {
 		if (work->con) {
 			if (!work->con->has_work)
-				_queue_con_work(work);
+				_handle_work(true, work);
 			else
 				list_append(work->con->work, work);
 		} else {
@@ -2713,6 +2697,11 @@ static void _handle_work(bool locked, work_t *work)
 
 	_check_magic_mgr(mgr);
 	_check_magic_fd(con);
+	xassert(work->magic == MAGIC_WORK);
+	xassert(work->type > CONMGR_WORK_TYPE_INVALID);
+	xassert(work->type < CONMGR_WORK_TYPE_MAX);
+	xassert(work->status > CONMGR_WORK_STATUS_INVALID);
+	xassert(work->status < CONMGR_WORK_STATUS_MAX);
 
 	if (!locked)
 		slurm_mutex_lock(&mgr->mutex);
@@ -2738,7 +2727,10 @@ static void _handle_work(bool locked, work_t *work)
 				    __func__);
 
 		if (!con->has_work) {
-			_queue_con_work(work);
+			con->has_work = true;
+			work->status = CONMGR_WORK_STATUS_RUN;
+			workq_add_work(con->mgr->workq, _wrap_work, work,
+				       work->tag);
 		} else {
 			log_flag(NET, "%s: [%s] queuing \"%s\" pending work: %u total",
 				 __func__, con->name, work->tag, list_count(con->work));
