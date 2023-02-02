@@ -2461,7 +2461,7 @@ static void _cancel_delayed_work(bool locked, con_mgr_t *mgr)
 		/* run everything immediately but with cancelled status */
 		while ((work = list_pop(mgr->delayed_work))) {
 			work->status = CONMGR_WORK_STATUS_CANCELLED;
-			workq_add_work(mgr->workq, _wrap_work, work, work->tag);
+			_handle_work(true, work);
 		}
 	}
 
