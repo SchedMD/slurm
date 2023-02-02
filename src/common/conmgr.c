@@ -2828,16 +2828,10 @@ static void _handle_work_pending(work_t *work)
 		if (!con)
 			fatal_abort("%s: CONMGR_WORK_TYPE_CONNECTION_FIFO requires a connection",
 				    __func__);
-
-		if (!con->has_work) {
-			con->has_work = true;
-			work->status = CONMGR_WORK_STATUS_RUN;
-			_handle_work_run(work);
-		} else {
-			log_flag(NET, "%s: [%s] queuing \"%s\" pending work: %u total",
-				 __func__, con->name, work->tag, list_count(con->work));
-			list_append(con->work, work);
-		}
+		log_flag(NET, "%s: [%s] has_work=%c queuing \"%s\" pending work: %u total",
+			 __func__, con->name, (con->has_work ? 'T' : 'F'),
+			 work->tag, list_count(con->work));
+		list_append(con->work, work);
 		break;
 	}
 	case CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE:
