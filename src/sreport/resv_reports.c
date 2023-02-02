@@ -380,11 +380,11 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 	print_field_t *field;
 	int field_count = 0;
 	ListIterator iter = NULL;
-	int32_t total_time = 0;
+	uint64_t total_time = 0;
 
-	total_time = resv_ptr->time_end - resv_ptr->time_start;
-	if (total_time <= 0)
+	if (resv_ptr->time_end <= resv_ptr->time_start)
 		return;
+	total_time = resv_ptr->time_end - resv_ptr->time_start;
 
 	/*
 	 * Need to get allocated from reservation which is in
@@ -469,7 +469,7 @@ static void _resv_tres_report(slurmdb_reservation_rec_t *resv_ptr,
 			break;
 		}
 		case PRINT_RESV_TIME:
-			field->print_routine(field, (uint32_t)total_time,
+			field->print_routine(field, total_time,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_TRES_NAME:
