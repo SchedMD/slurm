@@ -2377,6 +2377,11 @@ static int _create_socket(void *x, void *arg)
 				  .ai_flags = AI_PASSIVE | AI_ADDRCONFIG };
 	struct addrinfo *addrlist = NULL;
 	parsed_host_port_t *parsed_hp;
+	con_mgr_callbacks_t callbacks;
+
+	slurm_mutex_lock(&init->mgr->mutex);
+	callbacks = init->mgr->callbacks;
+	slurm_mutex_unlock(&init->mgr->mutex);
 
 	/* check for name local sockets */
 	if (unixsock) {
@@ -2413,7 +2418,7 @@ static int _create_socket(void *x, void *arg)
 			init->arg);
 	} else {
 		/* split up host and port */
-		if (!(parsed_hp = init->mgr->callbacks.parse(hostport)))
+		if (!(parsed_hp = callbacks.parse(hostport)))
 			fatal("%s: Unable to parse %s", __func__, hostport);
 
 		/* resolve out the host and port if provided */
@@ -2473,7 +2478,7 @@ static int _create_socket(void *x, void *arg)
 	}
 
 	freeaddrinfo(addrlist);
-	init->mgr->callbacks.free_parse(parsed_hp);
+	callbacks.free_parse(parsed_hp);
 
 	return rc;
 }
