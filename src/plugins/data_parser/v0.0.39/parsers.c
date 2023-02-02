@@ -5070,7 +5070,7 @@ static const parser_t PARSER_ARRAY(LICENSE)[] = {
 	add_parse(UINT32, total, "Total", NULL),
 	add_parse(UINT32, in_use, "Used", NULL),
 	add_parse(UINT32, available, "Free", NULL),
-	add_parse(BOOL, remote, "remote", NULL),
+	add_parse(BOOL, remote, "Remote", NULL),
 	add_parse(UINT32, reserved, "Reserved", NULL),
 };
 #undef add_parse
