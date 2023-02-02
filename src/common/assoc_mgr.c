@@ -5022,6 +5022,8 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 				rec->clus_res_rec->allowed =
 					object->clus_res_rec->allowed;
 
+			rec->last_update = object->last_update;
+
 			switch (rec->type) {
 			case SLURMDB_RESOURCE_LICENSE:
 				if (init_setup.update_license_notify)

@@ -576,6 +576,7 @@ static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
 			res_rec->name = xstrdup(res->name);
 			res_rec->server = xstrdup(res->server);
 			res_rec->type = res->type;
+			res_rec->last_update = res->last_update;
 
 			res_rec->clus_res_rec =
 				xmalloc(sizeof(slurmdb_clus_res_rec_t));
@@ -736,6 +737,7 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 		"flags",
 		"id",
 		"manager",
+		"t1.mod_time",
 		"name",
 		"server",
 		"type",
@@ -747,6 +749,7 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 		RES_REQ_FLAGS,
 		RES_REQ_ID,
 		RES_REQ_MANAGER,
+		RES_REQ_MOD_TIME,
 		RES_REQ_NAME,
 		RES_REQ_SERVER,
 		RES_REQ_TYPE,
@@ -826,6 +829,8 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 			res->flags = slurm_atoul(row[RES_REQ_FLAGS]);
 		if (row[RES_REQ_MANAGER] && row[RES_REQ_MANAGER][0])
 			res->manager = xstrdup(row[RES_REQ_MANAGER]);
+		if (row[RES_REQ_MOD_TIME] && row[RES_REQ_MOD_TIME][0])
+			res->last_update = slurm_atoul(row[RES_REQ_MOD_TIME]);
 		if (row[RES_REQ_NAME] && row[RES_REQ_NAME][0])
 			res->name = xstrdup(row[RES_REQ_NAME]);
 		if (row[RES_REQ_SERVER] && row[RES_REQ_SERVER][0])
@@ -1176,6 +1181,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			res_rec->flags = res->flags;
 			res_rec->id = curr_res;
 			res_rec->type = res->type;
+			res_rec->last_update = now;
 
 			res_rec->clus_res_rec =
 				xmalloc(sizeof(slurmdb_clus_res_rec_t));
