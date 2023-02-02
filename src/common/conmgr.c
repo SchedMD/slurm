@@ -259,7 +259,11 @@ static void _check_magic_fd(bool locked, con_mgr_fd_t *con)
 
 	xassert(con->is_listen || (con->in && con->out));
 
-	if (con->is_listen) {
+	if (locked) {
+		/* avoid attempting any list locks if mgr already locked */
+	} else if ((con->input_fd == -1) && (con->output_fd == -1)) {
+		/* connection has already been closed */
+	} else if (con->is_listen) {
 		/* listening con should only be in listen list */
 		xassert(list_find_first(con->mgr->listen, _find_by_ptr, con));
 		xassert(!list_find_first(con->mgr->connections, _find_by_ptr,
