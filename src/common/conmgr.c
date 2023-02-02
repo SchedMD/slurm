@@ -2682,29 +2682,11 @@ static void _handle_timer(void *x)
 	FREE_NULL_LIST(elapsed);
 }
 
-static void _handle_work(bool locked, work_t *work)
+/* mgr must be locked */
+static void _handle_work_pending(work_t *work)
 {
 	con_mgr_t *mgr = work->mgr;
 	con_mgr_fd_t *con = work->con;
-
-	if (con)
-		log_flag(NET, "%s: [%s] locked=%s func=%s",
-			 __func__, con->name, (locked ? "T" : "F"),
-			 work->tag);
-	else
-		log_flag(NET, "%s: locked=%s func=%s",
-			 __func__, (locked ? "T" : "F"), work->tag);
-
-	_check_magic_mgr(mgr);
-	_check_magic_fd(con);
-	xassert(work->magic == MAGIC_WORK);
-	xassert(work->type > CONMGR_WORK_TYPE_INVALID);
-	xassert(work->type < CONMGR_WORK_TYPE_MAX);
-	xassert(work->status > CONMGR_WORK_STATUS_INVALID);
-	xassert(work->status < CONMGR_WORK_STATUS_MAX);
-
-	if (!locked)
-		slurm_mutex_lock(&mgr->mutex);
 
 	switch (work->type) {
 	case CONMGR_WORK_TYPE_CONNECTION_DELAY_FIFO:
@@ -2748,8 +2730,48 @@ static void _handle_work(bool locked, work_t *work)
 		work->status = CONMGR_WORK_STATUS_RUN;
 		workq_add_work(mgr->workq, _wrap_work, work, work->tag);
 		break;
-	default:
+	case CONMGR_WORK_TYPE_INVALID:
+	case CONMGR_WORK_TYPE_MAX:
 		fatal("%s: invalid type", __func__);
+	}
+}
+
+static void _handle_work(bool locked, work_t *work)
+{
+	con_mgr_t *mgr = work->mgr;
+	con_mgr_fd_t *con = work->con;
+
+	if (con)
+		log_flag(NET, "%s: [%s] locked=%s func=%s",
+			 __func__, con->name, (locked ? "T" : "F"),
+			 work->tag);
+	else
+		log_flag(NET, "%s: locked=%s func=%s",
+			 __func__, (locked ? "T" : "F"), work->tag);
+
+	_check_magic_mgr(mgr);
+	_check_magic_fd(con);
+	xassert(work->magic == MAGIC_WORK);
+	xassert(work->type > CONMGR_WORK_TYPE_INVALID);
+	xassert(work->type < CONMGR_WORK_TYPE_MAX);
+	xassert(work->status > CONMGR_WORK_STATUS_INVALID);
+	xassert(work->status < CONMGR_WORK_STATUS_MAX);
+
+	if (!locked)
+		slurm_mutex_lock(&mgr->mutex);
+
+	switch (work->status) {
+	case CONMGR_WORK_STATUS_PENDING:
+		_handle_work_pending(work);
+		break;
+	case CONMGR_WORK_STATUS_CANCELLED:
+	case CONMGR_WORK_STATUS_RUN:
+		fatal("not yet implemented");
+		break;
+	case CONMGR_WORK_STATUS_MAX:
+	case CONMGR_WORK_STATUS_INVALID:
+		fatal_abort("%s: invalid work status 0x%x",
+			    __func__, work->status);
 	}
 
 	_signal_change(mgr, true);
