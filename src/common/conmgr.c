@@ -733,7 +733,6 @@ static void _wrap_work(void *x)
 	con_mgr_fd_t *con = work->con;
 	con_mgr_t *mgr = work->mgr;
 
-	_check_magic_fd(con);
 	_check_magic_mgr(mgr);
 
 	xassert(work->magic == MAGIC_WORK);
@@ -746,8 +745,9 @@ static void _wrap_work(void *x)
 	xassert((void *) work->func != _wrap_work);
 	xassert((void *) work->func != _wrap_con_work);
 
-	log_flag(NET, "%s: [%s] BEGIN %s@0x%"PRIxPTR" type=%s status=%s  arg=0x%"PRIxPTR,
-		 __func__, con->name, work->tag, (uintptr_t) work->func,
+	log_flag(NET, "%s: %s%s%sBEGIN %s@0x%"PRIxPTR" type=%s status=%s  arg=0x%"PRIxPTR,
+		 __func__, (con ? "[" : ""), (con ? con->name : ""),
+		 (con ? "] " : ""), work->tag, (uintptr_t) work->func,
 		 con_mgr_work_type_string(work->type),
 		 con_mgr_work_status_string(work->status),
 		 (uintptr_t) work->arg);
@@ -755,23 +755,26 @@ static void _wrap_work(void *x)
 	switch (work->type) {
 	case CONMGR_WORK_TYPE_FIFO:
 	case CONMGR_WORK_TYPE_TIME_DELAY_FIFO:
-		work->func(work->mgr, work->con, work->type, work->status,
-			   work->tag, work->arg);
+		xassert(!con);
+		work->func(work->mgr, NULL, work->type, work->status, work->tag,
+			   work->arg);
 		break;
 	case CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE:
 	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
 	case CONMGR_WORK_TYPE_CONNECTION_DELAY_FIFO:
+		_check_magic_fd(con);
 		_wrap_con_work(work, con, mgr);
+		_check_magic_fd(con);
 		break;
 	default:
 		fatal_abort("%s: invalid work type 0x%x", __func__, work->type);
 	}
 
-	_check_magic_fd(con);
 	_check_magic_mgr(mgr);
 
-	log_flag(NET, "%s: [%s] END %s@0x%"PRIxPTR" type=%s status=%s  arg=0x%"PRIxPTR,
-		 __func__, con->name, work->tag, (uintptr_t) work->func,
+	log_flag(NET, "%s: %s%s%sEND %s@0x%"PRIxPTR" type=%s status=%s  arg=0x%"PRIxPTR,
+		 __func__, (con ? "[" : ""), (con ? con->name : ""),
+		 (con ? "] " : ""), work->tag, (uintptr_t) work->func,
 		 con_mgr_work_type_string(work->type),
 		 con_mgr_work_status_string(work->status),
 		 (uintptr_t) work->arg);
