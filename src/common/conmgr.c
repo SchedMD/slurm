@@ -183,6 +183,8 @@ typedef struct {
 } foreach_delayed_work_t;
 
 static void _handle_work(bool locked, work_t *work);
+static int _queue_func(bool locked, con_mgr_t *mgr, work_func_t func, void *arg,
+		       const char *tag);
 
 #ifndef NDEBUG
 static int _find_by_ptr(void *x, void *key)
@@ -1452,8 +1454,8 @@ static int _handle_connection(void *x, void *arg)
 	/* have a thread free all the memory */
 	xassert(list_is_empty(con->work));
 	xassert(!con->has_work);
-	if ((rc = workq_add_work(mgr->workq, _connection_fd_delete, con,
-				 "_connection_fd_delete"))) {
+	if ((rc = _queue_func(true, mgr, _connection_fd_delete, con,
+			      "_connection_fd_delete"))) {
 		log_flag(NET, "%s: [%s] direct cleanup as workq rejected _connection_fd_delete(): %s",
 			 __func__, con->name, slurm_strerror(rc));
 		_connection_fd_delete(con);
@@ -1638,8 +1640,8 @@ again:
 			_signal_change(mgr, true);
 
 			if (caught_sigalrm)
-				workq_add_work(mgr->workq, _handle_timer, mgr,
-					       "_handle_timer");
+				_queue_func(true, mgr, _handle_timer, mgr,
+					    "_handle_timer");
 		}
 
 		if (fds_ptr->fd == mgr->event_fd[0])
@@ -1926,8 +1928,8 @@ watch:
 			else { /* request a listen thread to run */
 				log_flag(NET, "%s: queuing up listen", __func__);
 				mgr->listen_active = true;
-				workq_add_work(mgr->workq, _listen, listen_args,
-					       "_listen");
+				_queue_func(true, mgr, _listen, listen_args,
+					    "_listen");
 			}
 		} else
 			log_flag(NET, "%s: listeners active already", __func__);
@@ -1944,16 +1946,16 @@ watch:
 
 		if (!mgr->inspecting) {
 			mgr->inspecting = true;
-			workq_add_work(mgr->workq, _inspect_connections, mgr,
-				       "_inspect_connections");
+			_queue_func(true, mgr, _inspect_connections, mgr,
+				    "_inspect_connections");
 		}
 
 		if (!mgr->poll_active) {
 			/* request a listen thread to run */
 			log_flag(NET, "%s: queuing up poll", __func__);
 			mgr->poll_active = true;
-			workq_add_work(mgr->workq, _poll_connections, poll_args,
-				       "_poll_connections");
+			_queue_func(true, mgr, _poll_connections, poll_args,
+				    "_poll_connections");
 		} else
 			log_flag(NET, "%s: poll active already", __func__);
 
@@ -2682,11 +2684,27 @@ static void _handle_timer(void *x)
 	FREE_NULL_LIST(elapsed);
 }
 
+/* Single point to queue internal function callback via mgr->workq. */
+static int _queue_func(bool locked, con_mgr_t *mgr, work_func_t func, void *arg,
+		       const char *tag)
+{
+	int rc;
+
+	if (!locked)
+		slurm_mutex_lock(&mgr->mutex);
+
+	rc = workq_add_work(mgr->workq, func, arg, tag);
+
+	if (!locked)
+		slurm_mutex_unlock(&mgr->mutex);
+
+	return rc;
+}
+
 /* mgr must be locked */
 static void _handle_work_run(work_t *work)
 {
-	con_mgr_t *mgr = work->mgr;
-	workq_add_work(mgr->workq, _wrap_work, work, work->tag);
+	_queue_func(true, work->mgr, _wrap_work, work, work->tag);
 }
 
 /* mgr must be locked */
