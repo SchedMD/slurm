@@ -75,6 +75,7 @@
 #define MAGIC_CON_MGR 0xD232444A
 #define MAGIC_WORK 0xD231444A
 #define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
+#define MAGIC_DEFERRED_FUNC 0xA230403A
 /* Default buffer to 1 page */
 #define BUFFER_START_SIZE 4096
 #define MAX_OPEN_CONNECTIONS 124
@@ -131,6 +132,13 @@ typedef struct {
 		long nanoseconds; /* offset from seconds */
 	} begin;
 } work_t;
+
+typedef struct {
+	int magic; /* MAGIC_DEFERRED_FUNC */
+	work_func_t func;
+	void *arg;
+	const char *tag;
+} deferred_func_t;
 
 struct {
 	con_mgr_work_status_t status;
@@ -334,6 +342,7 @@ extern con_mgr_t *init_con_mgr(int thread_count, con_mgr_callbacks_t callbacks)
 	slurm_cond_init(&mgr->cond, NULL);
 
 	mgr->workq = new_workq(thread_count);
+	mgr->deferred_funcs = list_create(NULL);
 
 	if (pipe(mgr->event_fd))
 		fatal("%s: unable to open unnamed pipe: %m", __func__);
@@ -439,6 +448,10 @@ extern void free_con_mgr(con_mgr_t *mgr)
 	 * any outstanding threads running
 	 */
 	FREE_NULL_WORKQ(mgr->workq);
+
+	/* deferred_funcs should have been cleared by con_mgr_run() */
+	xassert(!mgr->deferred_funcs);
+	FREE_NULL_LIST(mgr->deferred_funcs);
 
 	/*
 	 * At this point, there should be no threads running.
@@ -1999,6 +2012,7 @@ extern int con_mgr_run(con_mgr_t *mgr)
 
 	_check_magic_mgr(mgr);
 
+	slurm_mutex_lock(&mgr->mutex);
 	slurm_mutex_lock(&signal_mutex);
 	//TODO: allow for multiple conmgrs to run at once
 	xassert(signal_fd[0] == -1);
@@ -2014,9 +2028,25 @@ extern int con_mgr_run(con_mgr_t *mgr)
 	}
 	slurm_mutex_unlock(&signal_mutex);
 
-	rc = _watch(mgr);
-	xassert(mgr->shutdown);
+	if (mgr->deferred_funcs) {
+		list_t *deferred_funcs = NULL;
+		deferred_func_t *df;
 
+		SWAP(deferred_funcs, mgr->deferred_funcs);
+		while ((df = list_pop(deferred_funcs))) {
+			xassert(df->magic == MAGIC_DEFERRED_FUNC);
+			_queue_func(true, mgr, df->func, df->arg, df->tag);
+			df->magic = ~MAGIC_DEFERRED_FUNC;
+			xfree(df);
+		}
+		FREE_NULL_LIST(deferred_funcs);
+	}
+	slurm_mutex_unlock(&mgr->mutex);
+
+	rc = _watch(mgr);
+
+	slurm_mutex_lock(&mgr->mutex);
+	xassert(mgr->shutdown);
 	slurm_mutex_lock(&signal_mutex);
 	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
 		if (sigaction(catch_signals[i].signal, &catch_signals[i].prior,
@@ -2028,6 +2058,7 @@ extern int con_mgr_run(con_mgr_t *mgr)
 	signal_fd[0] = -1;
 	signal_fd[1] = -1;
 	slurm_mutex_unlock(&signal_mutex);
+	slurm_mutex_unlock(&mgr->mutex);
 
 	return rc;
 }
@@ -2693,7 +2724,24 @@ static int _queue_func(bool locked, con_mgr_t *mgr, work_func_t func, void *arg,
 	if (!locked)
 		slurm_mutex_lock(&mgr->mutex);
 
-	rc = workq_add_work(mgr->workq, func, arg, tag);
+	if (!mgr->deferred_funcs) {
+		rc = workq_add_work(mgr->workq, func, arg, tag);
+	} else {
+		/*
+		 * Defer all funcs until con_mgr_run() as adding new connections
+		 * will call _queue_func() including on_connection() callback
+		 * which is very surprising before conmgr is running and can
+		 * cause locking conflicts.
+		 */
+		deferred_func_t *df = xmalloc(sizeof(*df));
+		*df = (deferred_func_t) {
+			.magic = MAGIC_DEFERRED_FUNC,
+			.func = func,
+			.arg = arg,
+			.tag = tag,
+		};
+		list_append(mgr->deferred_funcs, df);
+	}
 
 	if (!locked)
 		slurm_mutex_unlock(&mgr->mutex);

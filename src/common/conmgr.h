@@ -291,6 +291,8 @@ struct con_mgr_s {
 	struct timespec last_time;
 	/* monotonic timer */
 	timer_t timer;
+	/* list of deferred_func_t */
+	list_t *deferred_funcs;
 
 	/* functions to handle host/port parsing */
 	con_mgr_callbacks_t callbacks;
