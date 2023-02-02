@@ -302,6 +302,7 @@ static void _connection_fd_delete(void *x)
 		return;
 	mgr = con->mgr;
 
+	slurm_mutex_lock(&mgr->mutex);
 	_check_magic_mgr(true, mgr);
 	log_flag(NET, "%s: [%s] free connection input_fd=%d output_fd=%d",
 		 __func__, con->name, con->input_fd, con->output_fd);
@@ -315,6 +316,8 @@ static void _connection_fd_delete(void *x)
 	else
 		xassert(!list_remove_first(mgr->connections, _find_by_ptr,
 					   con));
+	slurm_mutex_unlock(&mgr->mutex);
+
 	FREE_NULL_BUFFER(con->in);
 	FREE_NULL_BUFFER(con->out);
 	FREE_NULL_LIST(con->work);
