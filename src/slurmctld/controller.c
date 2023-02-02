@@ -712,7 +712,39 @@ int main(int argc, char **argv)
 				info("%s configuration test", result_str);
 				exit(test_config_rc);
 			}
+		}
 
+		/* This needs to be done before priority_g_init() is called */
+		if (!acct_db_conn) {
+			acct_db_conn = acct_storage_g_get_connection(
+				0, NULL, false, slurm_conf.cluster_name);
+			clusteracct_storage_g_register_ctld(
+				acct_db_conn, slurm_conf.slurmctld_port);
+			/*
+			 * We only send in a variable the first time
+			 * we call this since we are setting up static
+			 * variables inside the function sending a
+			 * NULL will just use those set before.
+			 */
+			if (assoc_mgr_init(acct_db_conn, NULL, errno) &&
+			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
+			    (running_cache == RUNNING_CACHE_STATE_NOTRUNNING)) {
+				trigger_primary_dbd_fail();
+				error("assoc_mgr_init failure");
+				fatal("slurmdbd and/or database must be up at "
+				      "slurmctld start time");
+			}
+		}
+
+		/*
+		 * priority_g_init() needs to be called after assoc_mgr_init()
+		 * and before read_slurm_conf() because jobs could be killed
+		 * during read_slurm_conf() and call priority_g_job_end().
+		 */
+		if (priority_g_init() != SLURM_SUCCESS)
+			fatal("failed to initialize priority plugin");
+
+		if (test_config || slurmctld_primary) {
 			if ((error_code = read_slurm_conf(recover, false))) {
 				fatal("read_slurm_conf reading %s: %s",
 				      slurm_conf.slurm_conf,
@@ -742,26 +774,6 @@ int main(int argc, char **argv)
 			}
 		}
 
-		if (!acct_db_conn) {
-			acct_db_conn = acct_storage_g_get_connection(
-				0, NULL, false, slurm_conf.cluster_name);
-			clusteracct_storage_g_register_ctld(
-				acct_db_conn, slurm_conf.slurmctld_port);
-			/*
-			 * We only send in a variable the first time
-			 * we call this since we are setting up static
-			 * variables inside the function sending a
-			 * NULL will just use those set before.
-			 */
-			if (assoc_mgr_init(acct_db_conn, NULL, errno) &&
-			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
-			    (running_cache == RUNNING_CACHE_STATE_NOTRUNNING)) {
-				trigger_primary_dbd_fail();
-				error("assoc_mgr_init failure");
-				fatal("slurmdbd and/or database must be up at "
-				      "slurmctld start time");
-			}
-		}
 
 		slurm_persist_conn_recv_server_init();
 		info("Running as primary controller");
@@ -784,8 +796,6 @@ int main(int argc, char **argv)
 
 		_restore_job_dependencies();
 
-		if (priority_g_init() != SLURM_SUCCESS)
-			fatal("failed to initialize priority plugin");
 		if (bb_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize burst buffer plugin");
 		if (power_g_init() != SLURM_SUCCESS)

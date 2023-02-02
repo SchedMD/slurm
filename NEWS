@@ -287,6 +287,8 @@ documents those changes that are of interest to users and administrators.
     ReconfigFlags=KeepPowerSaveSettings.
  -- Add ability to restore SuspendExc* parameters on restart with slurmctld -R
     option.
+ -- Fix leaving allocated gres on a non-cloud node after being allocated
+    from a powered down state after a slurmctld restart.
 
 * Changes in Slurm 22.05.9
 ==========================
