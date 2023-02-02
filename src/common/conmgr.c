@@ -2885,9 +2885,14 @@ static void _handle_work(bool locked, work_t *work)
 	case CONMGR_WORK_STATUS_PENDING:
 		_handle_work_pending(work);
 		break;
-	case CONMGR_WORK_STATUS_CANCELLED:
 	case CONMGR_WORK_STATUS_RUN:
 		_handle_work_run(work);
+		break;
+	case CONMGR_WORK_STATUS_CANCELLED:
+		if (con)
+			list_append(con->work, work);
+		else
+			_handle_work_run(work);
 		break;
 	case CONMGR_WORK_STATUS_MAX:
 	case CONMGR_WORK_STATUS_INVALID:
