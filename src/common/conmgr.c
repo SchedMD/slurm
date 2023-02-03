@@ -87,33 +87,6 @@
 pthread_mutex_t signal_mutex = PTHREAD_MUTEX_INITIALIZER;
 int signal_fd[2] = { -1, -1 };
 
-static int _close_con_for_each(void *x, void *arg);
-static void _listen_accept(con_mgr_t *mgr, con_mgr_fd_t *con,
-			   con_mgr_work_type_t type,
-			   con_mgr_work_status_t status, const char *tag,
-			   void *arg);
-static void _wrap_on_connection(con_mgr_t *mgr, con_mgr_fd_t *con,
-				con_mgr_work_type_t type,
-				con_mgr_work_status_t status, const char *tag,
-				void *arg);
-static void _add_work(bool locked, con_mgr_t *mgr, con_mgr_fd_t *con,
-		      con_mgr_work_func_t func, con_mgr_work_type_t type,
-		      void *arg, const char *tag);
-static void _wrap_on_data(con_mgr_t *mgr, con_mgr_fd_t *con,
-			  con_mgr_work_type_t type,
-			  con_mgr_work_status_t status, const char *tag,
-			  void *arg);
-static void _on_finish_wrapper(con_mgr_t *mgr, con_mgr_fd_t *con,
-			       con_mgr_work_type_t type,
-			       con_mgr_work_status_t status, const char *tag,
-			       void *arg);
-static void _deferred_write_fd(con_mgr_t *mgr, con_mgr_fd_t *con,
-			  con_mgr_work_type_t type,
-			  con_mgr_work_status_t status, const char *tag,
-			  void *arg);
-static void _cancel_delayed_work(bool locked, con_mgr_t *mgr);
-static void _handle_timer(void *x);
-
 typedef void (*on_poll_event_t)(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 				short revents);
 
@@ -198,6 +171,32 @@ typedef struct {
 	con_mgr_con_type_t type;
 } socket_listen_init_t;
 
+static int _close_con_for_each(void *x, void *arg);
+static void _listen_accept(con_mgr_t *mgr, con_mgr_fd_t *con,
+			   con_mgr_work_type_t type,
+			   con_mgr_work_status_t status, const char *tag,
+			   void *arg);
+static void _wrap_on_connection(con_mgr_t *mgr, con_mgr_fd_t *con,
+				con_mgr_work_type_t type,
+				con_mgr_work_status_t status, const char *tag,
+				void *arg);
+static void _add_work(bool locked, con_mgr_t *mgr, con_mgr_fd_t *con,
+		      con_mgr_work_func_t func, con_mgr_work_type_t type,
+		      void *arg, const char *tag);
+static void _wrap_on_data(con_mgr_t *mgr, con_mgr_fd_t *con,
+			  con_mgr_work_type_t type,
+			  con_mgr_work_status_t status, const char *tag,
+			  void *arg);
+static void _on_finish_wrapper(con_mgr_t *mgr, con_mgr_fd_t *con,
+			       con_mgr_work_type_t type,
+			       con_mgr_work_status_t status, const char *tag,
+			       void *arg);
+static void _deferred_write_fd(con_mgr_t *mgr, con_mgr_fd_t *con,
+			  con_mgr_work_type_t type,
+			  con_mgr_work_status_t status, const char *tag,
+			  void *arg);
+static void _cancel_delayed_work(bool locked, con_mgr_t *mgr);
+static void _handle_timer(void *x);
 static void _handle_work(bool locked, work_t *work);
 static void _queue_func(bool locked, con_mgr_t *mgr, work_func_t func,
 			void *arg, const char *tag);
