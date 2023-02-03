@@ -24,7 +24,7 @@ def test_signal_forwarding():
 
     file_in = atf.module_tmp_path / 'file_in'
     file_out = atf.module_tmp_path / 'file_out'
-    script_file = pathlib.Path(__file__).parent.resolve() / 'signal_forwarding_script.py'
+    script_file = pathlib.Path(atf.properties['testsuite_python_lib']) / 'signal_forwarding_script.py'
     atf.make_bash_script(file_in, f"""srun --output={file_out} python3 {script_file}""")
     job_id = atf.submit_job(f'{file_in}')
 

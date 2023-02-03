@@ -3,6 +3,7 @@
 ############################################################################
 import atf
 import pathlib
+import os
 import pytest
 import re
 
@@ -20,6 +21,6 @@ def compiled_program(tmp_path):
 def test_route_topology(compiled_program, test_case):
     """Test the route/topology plugin"""
     cwd = str(pathlib.Path(__file__).resolve().parent)
-    test_dir = f"{cwd}/testcase{test_case}"
+    test_dir = os.path.splitext(__file__)[0] + f'_testcases/testcase{test_case}'
     error = atf.run_command_error(f"{compiled_program} --configdir={test_dir} --testcases={test_dir}/testcases", fatal=True)
     assert re.search(r'Failed cases 0', error) is not None
