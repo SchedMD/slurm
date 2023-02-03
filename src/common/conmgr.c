@@ -190,6 +190,14 @@ typedef struct {
 	work_t *shortest;
 } foreach_delayed_work_t;
 
+
+typedef struct {
+	con_mgr_events_t events;
+	con_mgr_t *mgr;
+	void *arg;
+	con_mgr_con_type_t type;
+} socket_listen_init_t;
+
 static void _handle_work(bool locked, work_t *work);
 static void _queue_func(bool locked, con_mgr_t *mgr, work_func_t func,
 			void *arg, const char *tag);
@@ -2391,13 +2399,6 @@ extern void con_mgr_queue_close_fd(con_mgr_fd_t *con)
 	}
 	slurm_mutex_unlock(&con->mgr->mutex);
 }
-
-typedef struct {
-	con_mgr_events_t events;
-	con_mgr_t *mgr;
-	void *arg;
-	con_mgr_con_type_t type;
-} socket_listen_init_t;
 
 static int _create_socket(void *x, void *arg)
 {
