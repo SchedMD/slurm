@@ -779,10 +779,10 @@ static void _wrap_work(void *x)
 	xassert((void *) work->func != _wrap_work);
 	xassert((void *) work->func != _wrap_con_work);
 
-	log_flag(NET, "%s: %s%s%sBEGIN %s@0x%"PRIxPTR" type=%s status=%s  arg=0x%"PRIxPTR,
+	log_flag(NET, "%s: %s%s%sBEGIN work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
 		 __func__, (con ? "[" : ""), (con ? con->name : ""),
-		 (con ? "] " : ""), work->tag, (uintptr_t) work->func,
-		 con_mgr_work_type_string(work->type),
+		 (con ? "] " : ""), (uintptr_t) work, work->tag,
+		 (uintptr_t) work->func, con_mgr_work_type_string(work->type),
 		 con_mgr_work_status_string(work->status),
 		 (uintptr_t) work->arg);
 
@@ -806,10 +806,10 @@ static void _wrap_work(void *x)
 
 	_check_magic_mgr(false, mgr);
 
-	log_flag(NET, "%s: %s%s%sEND %s@0x%"PRIxPTR" type=%s status=%s  arg=0x%"PRIxPTR,
+	log_flag(NET, "%s: %s%s%sEND work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
 		 __func__, (con ? "[" : ""), (con ? con->name : ""),
-		 (con ? "] " : ""), work->tag, (uintptr_t) work->func,
-		 con_mgr_work_type_string(work->type),
+		 (con ? "] " : ""), (uintptr_t) work, work->tag,
+		 (uintptr_t) work->func, con_mgr_work_type_string(work->type),
 		 con_mgr_work_status_string(work->status),
 		 (uintptr_t) work->arg);
 
