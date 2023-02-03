@@ -1203,6 +1203,7 @@ function __slurm_comp_common() {
 		"S"
 	)
 	local exclusive_types=(
+		"exclusive"
 		"mcs"
 		"oversubscribe"
 		"user"
