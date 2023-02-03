@@ -1107,7 +1107,7 @@ data_for_each_cmd_t _merge_schema(const char *key, data_t *data, void *arg)
 	e = data_key_set(cs, key);
 
 	if (data_get_type(e) != DATA_TYPE_NULL)
-		debug("%s: WARNING: overwriting component schema %s",
+		debug("%s: overwriting component schema %s",
 		      __func__, key);
 
 	(void) data_copy(e, data);
