@@ -121,7 +121,7 @@ static int _file_state(struct bcast_parameters *params)
 	verbose("size     = %ld", (long) f_stat.st_size);
 
 	if (!f_stat.st_size) {
-		error("Warning: file `%s` is empty.", params->src_fname);
+		warning("file `%s` is empty.", params->src_fname);
 		return SLURM_SUCCESS;
 	}
 	src = mmap(NULL, f_stat.st_size, PROT_READ, MAP_SHARED, fd, 0);

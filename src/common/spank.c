@@ -1555,13 +1555,13 @@ spank_stack_find_option_by_name(struct spank_stack *stack, const char *str)
 		opt = list_find_first(option_cache, (ListFindF) _opt_find,
 				      &args);
 		if (opt == NULL) {
-			error("Warning: SPANK plugin \"%s\" option \"%s\" not "
-			      "found", name, buf);
+			warning("SPANK plugin \"%s\" option \"%s\" not found",
+				name, buf);
 			return (NULL);
 		}
 	} else {
-		error("Warning: no SPANK plugin found to process option \"%s\"",
-		      name);
+		warning("no SPANK plugin found to process option \"%s\"",
+			name);
 		return (NULL);
 	}
 

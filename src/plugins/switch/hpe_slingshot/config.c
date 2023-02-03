@@ -162,8 +162,8 @@ static bool _setup_vni_table(uint16_t min, uint16_t max)
 	newbits = bit_set_count(table);
 	/* Go on even if we're losing VNIs */
 	if (newbits != oldbits) {
-		error("WARNING: changing vni_min/max %hu %hu -> %hu %hu; %d VNIs will be lost!",
-		      oldmin, oldmax, min, max, oldbits - newbits);
+		warning("changing vni_min/max %hu %hu -> %hu %hu; %d VNIs will be lost!",
+			oldmin, oldmax, min, max, oldbits - newbits);
 		lost_vnis = true;
 	}
 
@@ -766,8 +766,8 @@ static void _free_vni(uint16_t vni)
 	}
 	bitoff_t bit = vni - slingshot_state.vni_min;
 	if (!bit_test(slingshot_state.vni_table, bit)) {
-		error("WARNING: _free_vni(%hu): bit %zu not set in vni_table!",
-		      vni, bit);
+		warning("%s(%hu): bit %zu not set in vni_table!",
+			__func__, vni, bit);
 		return;
 	}
 	bit_clear(slingshot_state.vni_table, bit);
