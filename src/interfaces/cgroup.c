@@ -138,27 +138,27 @@ static void _cgroup_conf_fini()
 
 static void _clear_slurm_cgroup_conf(void)
 {
-	slurm_cgroup_conf.cgroup_automount = false;
-	xfree(slurm_cgroup_conf.cgroup_mountpoint);
-	xfree(slurm_cgroup_conf.cgroup_prepend);
-	slurm_cgroup_conf.constrain_cores = false;
-	slurm_cgroup_conf.constrain_ram_space = false;
-	slurm_cgroup_conf.allowed_ram_space = 100;
-	slurm_cgroup_conf.max_ram_percent = 100;
-	slurm_cgroup_conf.min_ram_space = XCGROUP_DEFAULT_MIN_RAM;
-	slurm_cgroup_conf.constrain_swap_space = false;
-	slurm_cgroup_conf.constrain_kmem_space = false;
 	slurm_cgroup_conf.allowed_kmem_space = -1;
-	slurm_cgroup_conf.max_kmem_percent = 100;
-	slurm_cgroup_conf.min_kmem_space = XCGROUP_DEFAULT_MIN_RAM;
+	slurm_cgroup_conf.allowed_ram_space = 100;
 	slurm_cgroup_conf.allowed_swap_space = 0;
-	slurm_cgroup_conf.max_swap_percent = 100;
+	slurm_cgroup_conf.cgroup_automount = false;
+	slurm_cgroup_conf.constrain_cores = false;
 	slurm_cgroup_conf.constrain_devices = false;
-	slurm_cgroup_conf.memory_swappiness = NO_VAL64;
-	xfree(slurm_cgroup_conf.cgroup_plugin);
+	slurm_cgroup_conf.constrain_kmem_space = false;
+	slurm_cgroup_conf.constrain_ram_space = false;
+	slurm_cgroup_conf.constrain_swap_space = false;
 	slurm_cgroup_conf.ignore_systemd = false;
 	slurm_cgroup_conf.ignore_systemd_on_failure = false;
+	slurm_cgroup_conf.max_kmem_percent = 100;
+	slurm_cgroup_conf.max_ram_percent = 100;
+	slurm_cgroup_conf.max_swap_percent = 100;
+	slurm_cgroup_conf.memory_swappiness = NO_VAL64;
+	slurm_cgroup_conf.min_kmem_space = XCGROUP_DEFAULT_MIN_RAM;
+	slurm_cgroup_conf.min_ram_space = XCGROUP_DEFAULT_MIN_RAM;
 	slurm_cgroup_conf.root_owned_cgroups = true;
+	xfree(slurm_cgroup_conf.cgroup_mountpoint);
+	xfree(slurm_cgroup_conf.cgroup_plugin);
+	xfree(slurm_cgroup_conf.cgroup_prepend);
 }
 
 static void _pack_cgroup_conf(buf_t *buffer)
