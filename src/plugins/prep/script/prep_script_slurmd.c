@@ -347,6 +347,8 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		if (cred_arg->job_nhosts)
 			setenvf(&env, "SLURM_JOB_NUM_NODES", "%u",
 				cred_arg->job_nhosts);
+		setenvf(&env, "SLURM_JOB_OVERSUBSCRIBE", "%s",
+			job_share_string(cred_arg->job_oversubscribe));
 		if (cred_arg->job_partition)
 			setenvf(&env, "SLURM_JOB_PARTITION", "%s",
 				cred_arg->job_partition);

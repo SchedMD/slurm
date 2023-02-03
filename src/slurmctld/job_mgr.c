@@ -19517,6 +19517,9 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 			setenvf(&my_env, "SLURM_JOB_CONSTRAINTS", "%s",
 				job_ptr->details->features_use);
 
+		setenvf(&my_env, "SLURM_JOB_OVERSUBSCRIBE", "%s",
+			job_share_string(get_job_share_value(job_ptr)));
+
 		if (job_ptr->details->std_err)
 			setenvf(&my_env, "SLURM_JOB_STDERR", "%s",
 				job_ptr->details->std_err);

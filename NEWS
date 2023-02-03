@@ -300,6 +300,8 @@ documents those changes that are of interest to users and administrators.
     updated GRES, whereas without it, the srun job would use the old GRES.
  -- Cleaned up various "warning", "Warning", and "WARNING" messages with a new
     warning() logging call. All will now print as "warning: ...".
+ -- Add SLURM_JOB_OVERSUBSCRIBE environment variable for Epilog, Prolog,
+    EpilogSlurmctld, PrologSlurmctld, and mail ouput.
 
 * Changes in Slurm 22.05.9
 ==========================

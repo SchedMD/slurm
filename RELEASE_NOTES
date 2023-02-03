@@ -100,6 +100,8 @@ HIGHLIGHTS
     option.
  -- Add ability to clear a GRES specification by setting it to "0" via
     'scontrol update job'.
+ -- Add SLURM_JOB_OVERSUBSCRIBE environment variable for Epilog, Prolog,
+    EpilogSlurmctld, PrologSlurmctld, and mail ouput.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
