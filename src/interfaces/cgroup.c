@@ -136,28 +136,43 @@ static void _cgroup_conf_fini()
 	slurm_rwlock_unlock(&cg_conf_lock);
 }
 
-static void _clear_slurm_cgroup_conf()
+static void _clear_slurm_cgroup_conf(void)
 {
-	slurm_cgroup_conf.cgroup_automount = false;
 	xfree(slurm_cgroup_conf.cgroup_mountpoint);
-	xfree(slurm_cgroup_conf.cgroup_prepend);
-	slurm_cgroup_conf.constrain_cores = false;
-	slurm_cgroup_conf.constrain_ram_space = false;
-	slurm_cgroup_conf.allowed_ram_space = 100;
-	slurm_cgroup_conf.max_ram_percent = 100;
-	slurm_cgroup_conf.min_ram_space = XCGROUP_DEFAULT_MIN_RAM;
-	slurm_cgroup_conf.constrain_swap_space = false;
-	slurm_cgroup_conf.constrain_kmem_space = false;
-	slurm_cgroup_conf.allowed_kmem_space = -1;
-	slurm_cgroup_conf.max_kmem_percent = 100;
-	slurm_cgroup_conf.min_kmem_space = XCGROUP_DEFAULT_MIN_RAM;
-	slurm_cgroup_conf.allowed_swap_space = 0;
-	slurm_cgroup_conf.max_swap_percent = 100;
-	slurm_cgroup_conf.constrain_devices = false;
-	slurm_cgroup_conf.memory_swappiness = NO_VAL64;
 	xfree(slurm_cgroup_conf.cgroup_plugin);
+	xfree(slurm_cgroup_conf.cgroup_prepend);
+
+	memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf));
+}
+
+static void _init_slurm_cgroup_conf(void)
+{
+	_clear_slurm_cgroup_conf();
+
+	slurm_cgroup_conf.allowed_kmem_space = -1;
+	slurm_cgroup_conf.allowed_ram_space = 100;
+	slurm_cgroup_conf.allowed_swap_space = 0;
+	slurm_cgroup_conf.cgroup_automount = false;
+	slurm_cgroup_conf.cgroup_mountpoint = xstrdup(DEFAULT_CGROUP_BASEDIR);
+	slurm_cgroup_conf.cgroup_plugin = xstrdup(DEFAULT_CGROUP_PLUGIN);
+#ifndef MULTIPLE_SLURMD
+	slurm_cgroup_conf.cgroup_prepend = xstrdup("/slurm");
+#else
+	slurm_cgroup_conf.cgroup_prepend = xstrdup("/slurm_%n");
+#endif
+	slurm_cgroup_conf.constrain_cores = false;
+	slurm_cgroup_conf.constrain_devices = false;
+	slurm_cgroup_conf.constrain_kmem_space = false;
+	slurm_cgroup_conf.constrain_ram_space = false;
+	slurm_cgroup_conf.constrain_swap_space = false;
 	slurm_cgroup_conf.ignore_systemd = false;
 	slurm_cgroup_conf.ignore_systemd_on_failure = false;
+	slurm_cgroup_conf.max_kmem_percent = 100;
+	slurm_cgroup_conf.max_ram_percent = 100;
+	slurm_cgroup_conf.max_swap_percent = 100;
+	slurm_cgroup_conf.memory_swappiness = NO_VAL64;
+	slurm_cgroup_conf.min_kmem_space = XCGROUP_DEFAULT_MIN_RAM;
+	slurm_cgroup_conf.min_ram_space = XCGROUP_DEFAULT_MIN_RAM;
 	slurm_cgroup_conf.root_owned_cgroups = true;
 }
 
@@ -316,15 +331,11 @@ static void _read_slurm_cgroup_conf(void)
 		}
 
 		/* cgroup initialization parameters */
-		if (!s_p_get_boolean(&slurm_cgroup_conf.cgroup_automount,
-				     "CgroupAutomount", tbl))
-			slurm_cgroup_conf.cgroup_automount = false;
+		(void) s_p_get_boolean(&slurm_cgroup_conf.cgroup_automount,
+				       "CgroupAutomount", tbl);
 
-		if (!s_p_get_string(&slurm_cgroup_conf.cgroup_mountpoint,
-				    "CgroupMountpoint", tbl)) {
-			slurm_cgroup_conf.cgroup_mountpoint =
-				xstrdup(DEFAULT_CGROUP_BASEDIR);
-		} else {
+		if (s_p_get_string(&slurm_cgroup_conf.cgroup_mountpoint,
+				   "CgroupMountpoint", tbl)) {
 			/* Remove the trailing / if any. */
 			tmp_str = slurm_cgroup_conf.cgroup_mountpoint;
 			sz = strlen(tmp_str);
@@ -338,22 +349,13 @@ static void _read_slurm_cgroup_conf(void)
 			fatal("Support for CgroupReleaseAgentDir option has been removed.");
 		}
 
-		/* cgroup prepend directory */
-#ifndef MULTIPLE_SLURMD
-		slurm_cgroup_conf.cgroup_prepend = xstrdup("/slurm");
-#else
-		slurm_cgroup_conf.cgroup_prepend = xstrdup("/slurm_%n");
-#endif
-
 		/* Cores constraints related conf items */
-		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_cores,
-				     "ConstrainCores", tbl))
-			slurm_cgroup_conf.constrain_cores = false;
+		(void) s_p_get_boolean(&slurm_cgroup_conf.constrain_cores,
+				       "ConstrainCores", tbl);
 
 		/* RAM and Swap constraints related conf items */
-		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_ram_space,
-				     "ConstrainRAMSpace", tbl))
-			slurm_cgroup_conf.constrain_ram_space = false;
+		(void) s_p_get_boolean(&slurm_cgroup_conf.constrain_ram_space,
+				       "ConstrainRAMSpace", tbl);
 
 		(void) s_p_get_float(&slurm_cgroup_conf.allowed_ram_space,
 				     "AllowedRAMSpace", tbl);
@@ -361,9 +363,8 @@ static void _read_slurm_cgroup_conf(void)
 		(void) s_p_get_float(&slurm_cgroup_conf.max_ram_percent,
 				     "MaxRAMPercent", tbl);
 
-		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_swap_space,
-				     "ConstrainSwapSpace", tbl))
-			slurm_cgroup_conf.constrain_swap_space = false;
+		(void) s_p_get_boolean(&slurm_cgroup_conf.constrain_swap_space,
+				       "ConstrainSwapSpace", tbl);
 
 		/*
 		 * Disable constrain_kmem_space by default because of a known
@@ -376,10 +377,8 @@ static void _read_slurm_cgroup_conf(void)
 		 * and is not used in cgroup v2, so we are deprecating
 		 * ConstrainKmemSpace and related parameters.
 		 */
-		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_kmem_space,
-				     "ConstrainKmemSpace", tbl))
-			slurm_cgroup_conf.constrain_kmem_space = false;
-		else
+		if (s_p_get_boolean(&slurm_cgroup_conf.constrain_kmem_space,
+				    "ConstrainKmemSpace", tbl))
 			kmem_deprecate_msg = true;
 
 		if (s_p_get_float(&slurm_cgroup_conf.allowed_kmem_space,
@@ -415,26 +414,22 @@ static void _read_slurm_cgroup_conf(void)
 		}
 
 		/* Devices constraint related conf items */
-		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_devices,
-				     "ConstrainDevices", tbl))
-			slurm_cgroup_conf.constrain_devices = false;
+		(void) s_p_get_boolean(&slurm_cgroup_conf.constrain_devices,
+				       "ConstrainDevices", tbl);
 
 		if (s_p_get_string(&tmp_str, "AllowedDevicesFile", tbl)) {
 			xfree(tmp_str);
 			info("WARNING: AllowedDevicesFile option is obsolete, please remove it from your configuration.");
 		}
 
-		if (!s_p_get_string(&slurm_cgroup_conf.cgroup_plugin,
-				    "CgroupPlugin", tbl))
-			slurm_cgroup_conf.cgroup_plugin =
-				xstrdup(DEFAULT_CGROUP_PLUGIN);
+		(void) s_p_get_string(&slurm_cgroup_conf.cgroup_plugin,
+				      "CgroupPlugin", tbl);
 
-		if (!s_p_get_boolean(&slurm_cgroup_conf.ignore_systemd,
-				     "IgnoreSystemd", tbl))
-			slurm_cgroup_conf.ignore_systemd = false;
-		else
+		if (s_p_get_boolean(&slurm_cgroup_conf.ignore_systemd,
+				    "IgnoreSystemd", tbl)) {
 			/* Implicitly set these other one. */
 			slurm_cgroup_conf.ignore_systemd_on_failure = true;
+		}
 
 		if (!slurm_cgroup_conf.ignore_systemd &&
 		    (!s_p_get_boolean(
@@ -521,7 +516,7 @@ extern int cgroup_conf_init(void)
 	slurm_rwlock_wrlock(&cg_conf_lock);
 
 	if (!cg_conf_inited) {
-		_clear_slurm_cgroup_conf();
+		_init_slurm_cgroup_conf();
 		_read_slurm_cgroup_conf();
 		/*
 		 * Initialize and pack cgroup.conf info into a buffer that can
