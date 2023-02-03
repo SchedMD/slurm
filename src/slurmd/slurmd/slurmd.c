@@ -1024,7 +1024,7 @@ _read_config(void)
 
 	if (!conf->conf_cache && xstrcasestr(cf->slurmctld_params,
 					     "enable_configless"))
-		error("Running with local config file despite slurmctld having been setup for configless operation");
+		warning("Running with local config file despite slurmctld having been setup for configless operation");
 
 	/*
 	 * xcpuinfo_hwloc_topo_get here needs spooldir to be set before
