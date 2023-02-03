@@ -467,9 +467,17 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 	 * Generate node_inx outside of locks -- not _setup_job_start_msg().
 	 * See slurmdbd/acct_storage_p_node_inx() for need to
 	 * use_create_node_inx().
+	 *
+	 * msg->node_inx shouldn't be set when it's being packed for the
+	 * first time.
+	 *
+	 * msg->node_inx will be set if messages were loaded from state
+	 * with a different major version. See _load_dbd_state() which
+	 * unpacks and packs the message at the current protocol
+	 * version.
 	 */
-	xassert(!msg->node_inx);
-	msg->node_inx = acct_storage_g_node_inx(NULL, msg->nodes);
+	if (!msg->node_inx)
+		msg->node_inx = acct_storage_g_node_inx(NULL, msg->nodes);
 
 	if (rpc_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
@@ -1161,9 +1169,17 @@ static void _pack_step_start_msg(dbd_step_start_msg_t *msg,
 	 * jobacct_storage_p_step_start().
 	 * See slurmdbd/acct_storage_p_node_inx() for need to
 	 * use_create_node_inx().
+	 *
+	 * msg->node_inx shouldn't be set when it's being packed for the
+	 * first time.
+	 *
+	 * msg->node_inx will be set if messages were loaded from state
+	 * with a different major version. See _load_dbd_state() which
+	 * unpacks and packs the message at the current protocol
+	 * version.
 	 */
-	xassert(!msg->node_inx);
-	msg->node_inx = acct_storage_g_node_inx(NULL, msg->nodes);
+	if (!msg->node_inx)
+		msg->node_inx = acct_storage_g_node_inx(NULL, msg->nodes);
 
 	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->assoc_id, buffer);
