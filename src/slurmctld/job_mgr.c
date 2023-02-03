@@ -2933,6 +2933,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr_xmalloc(&cluster_features, &name_len, buffer);
 		safe_unpackstr_xmalloc(&prefer, &name_len, buffer);
 		safe_unpack8(&features_use, buffer);
+		unpack_bit_str_hex(&job_size_bitmap, buffer);
 
 		unpack_dep_list(&depend_list, buffer, protocol_version);
 		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
