@@ -737,7 +737,8 @@ static void _wrap_con_work(work_t *work, con_mgr_fd_t *con, con_mgr_t *mgr)
 #ifndef NDEBUG
 	log_flag(NET, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR" queued_work=%u",
 		 __func__, con->name, (uintptr_t) work->func,
-		 (uintptr_t) work->arg, list_count(con->work));
+		 (uintptr_t) work->arg,
+		 (list_count(con->work) + list_count(con->write_complete_work)));
 
 	/* verify nothing has changed in the promised members */
 	xassert(change.in == con->in);
