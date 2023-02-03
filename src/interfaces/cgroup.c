@@ -136,7 +136,7 @@ static void _cgroup_conf_fini()
 	slurm_rwlock_unlock(&cg_conf_lock);
 }
 
-static void _clear_slurm_cgroup_conf()
+static void _clear_slurm_cgroup_conf(void)
 {
 	slurm_cgroup_conf.cgroup_automount = false;
 	xfree(slurm_cgroup_conf.cgroup_mountpoint);
