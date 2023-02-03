@@ -1330,14 +1330,6 @@ static int _handle_connection(void *x, void *arg)
 	_check_magic_fd(true, con);
 	_check_magic_mgr(true, mgr);
 
-	/* make sure the connection has finished on_connection */
-	if (!con->is_listen && !con->is_connected) {
-		xassert(con->output_fd != -1);
-		log_flag(NET, "%s: [%s] waiting for on_connection to complete",
-			 __func__, con->name);
-		return 0;
-	}
-
 	/* connection may have a running thread, do nothing */
 	if (con->has_work) {
 		log_flag(NET, "%s: [%s] connection has work to do",
@@ -1362,6 +1354,14 @@ static int _handle_connection(void *x, void *arg)
 			work->tag, (uintptr_t) work->func);
 
 		_handle_work(true, work);
+		return 0;
+	}
+
+	/* make sure the connection has finished on_connection */
+	if (!con->is_listen && !con->is_connected) {
+		xassert(con->output_fd != -1);
+		log_flag(NET, "%s: [%s] waiting for on_connection to complete",
+			 __func__, con->name);
 		return 0;
 	}
 
