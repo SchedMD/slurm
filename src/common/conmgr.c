@@ -2451,7 +2451,7 @@ static int _foreach_delayed_work(void *x, void *arg)
 static void _update_timer(bool locked, con_mgr_t *mgr)
 {
 	int rc;
-	struct itimerspec spec = {0};
+	struct itimerspec spec = {{0}};
 
 	foreach_delayed_work_t args = {
 		.magic = MAGIC_FOREACH_DELAYED_WORK,
