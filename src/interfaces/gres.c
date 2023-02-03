@@ -1457,7 +1457,6 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	if (set_default_envs && !xstrcasecmp(p->name, "gpu")) {
 		uint32_t env_flags = GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF;
 		p->config_flags |= env_flags;
-		_set_prev_env_flags(&prev_env, p, env_flags, false);
 	}
 
 	if (s_p_get_string(&p->links, "Link",  tbl) ||
