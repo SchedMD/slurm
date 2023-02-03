@@ -285,7 +285,7 @@ static int _update_unused_wall(local_resv_usage_t *r_usage, List job_tres,
 		 * With a Flex reservation you can easily have more time than is
 		 * possible.  Just print this debug3 warning if it happens.
 		 */
-		debug3("WARNING: Unused wall is less than zero; this should never happen outside a Flex reservation. Setting it to zero for resv id = %d, start = %ld.",
+		debug3("Unused wall is less than zero; this should never happen outside a Flex reservation. Setting it to zero for resv id = %d, start = %ld.",
 		       r_usage->id, r_usage->orig_start);
 		r_usage->unused_wall = 0;
 	}
