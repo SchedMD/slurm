@@ -231,7 +231,7 @@ struct con_mgr_fd_s {
 	 *	msglen
 	 *
 	 */
-	bool has_work;
+	bool work_active;
 	/*
 	 * list of non-IO work pending
 	 * type: wrap_work_arg_t

@@ -327,7 +327,7 @@ static void _connection_fd_delete(void *x)
 	}
 
 	xassert(!con->arg);
-	xassert(!con->has_work);
+	xassert(!con->work_active);
 	xassert(con->read_eof);
 	xassert(con->input_fd == -1);
 	xassert(con->output_fd == -1);
@@ -720,7 +720,7 @@ static void _wrap_con_work(work_t *work, con_mgr_fd_t *con, con_mgr_t *mgr)
 
 #ifndef NDEBUG
 	slurm_mutex_lock(&mgr->mutex);
-	xassert(con->has_work);
+	xassert(con->work_active);
 	memcpy(&change, con, sizeof(change));
 
 	/* con may get deleted by func */
@@ -752,8 +752,8 @@ static void _wrap_con_work(work_t *work, con_mgr_fd_t *con, con_mgr_t *mgr)
 	xassert((change.msglen == con->msglen) ||
 		((void *) work->func == _wrap_on_data));
 #endif /* !NDEBUG */
-	xassert(con->has_work);
-	con->has_work = false;
+	xassert(con->work_active);
+	con->work_active = false;
 	slurm_mutex_unlock(&mgr->mutex);
 }
 
@@ -1345,7 +1345,7 @@ static int _handle_connection(void *x, void *arg)
 	_check_magic_mgr(true, mgr);
 
 	/* connection may have a running thread, do nothing */
-	if (con->has_work) {
+	if (con->work_active) {
 		log_flag(NET, "%s: [%s] connection has work to do",
 			 __func__, con->name);
 		return 0;
@@ -1359,7 +1359,7 @@ static int _handle_connection(void *x, void *arg)
 			 __func__, con->name, count);
 
 		work->status = CONMGR_WORK_STATUS_RUN;
-		con->has_work = true; /* unset by _wrap_con_work() */
+		con->work_active = true; /* unset by _wrap_con_work() */
 
 		log_flag(NET, "%s: [%s] queuing work=0x%"PRIxPTR" status=%s type=%s func=%s@0x%"PRIxPTR,
 			 __func__, con->name, (uintptr_t) work,
@@ -1435,10 +1435,10 @@ static int _handle_connection(void *x, void *arg)
 			log_flag(NET, "%s: [%s] waiting for new connection",
 				 __func__, con->name);
 		else
-			log_flag(NET, "%s: [%s] waiting to read pending_read=%u pending_write=%u has_work=%c",
+			log_flag(NET, "%s: [%s] waiting to read pending_read=%u pending_write=%u work_active=%c",
 				 __func__, con->name, get_buf_offset(con->in),
 				 get_buf_offset(con->out),
-				 (con->has_work ? 'T' : 'F'));
+				 (con->work_active ? 'T' : 'F'));
 		return 0;
 	}
 
@@ -1514,7 +1514,7 @@ static int _handle_connection(void *x, void *arg)
 
 	/* have a thread free all the memory */
 	xassert(list_is_empty(con->work));
-	xassert(!con->has_work);
+	xassert(!con->work_active);
 
 	/* mark this connection for cleanup */
 	return 1;
@@ -1786,19 +1786,19 @@ static void _poll_connections(void *x)
 	args->nfds++;
 
 	/*
-	 * populate sockets with !has_work
+	 * populate sockets with !work_active
 	 */
 	itr = list_iterator_create(mgr->connections);
 	while ((con = list_next(itr))) {
 		_check_magic_fd(true, con);
 
-		if (con->has_work)
+		if (con->work_active)
 			continue;
 
-		log_flag(NET, "%s: [%s] poll read_eof=%s input=%u output=%u has_work=%c",
+		log_flag(NET, "%s: [%s] poll read_eof=%s input=%u output=%u work_active=%c",
 			 __func__, con->name, (con->read_eof ? "T" : "F"),
 			 get_buf_offset(con->in), get_buf_offset(con->out),
-			 (con->has_work ? 'T' : 'F'));
+			 (con->work_active ? 'T' : 'F'));
 
 		if (con->input_fd == con->output_fd) {
 			/* if fd is same, only poll it */
@@ -1909,7 +1909,7 @@ static void _listen(void *x)
 		_check_magic_fd(true, con);
 
 		/* already accept queued or listener already closed */
-		if (con->has_work || con->read_eof)
+		if (con->work_active || con->read_eof)
 			continue;
 
 		fds_ptr->fd = con->input_fd;
@@ -2253,7 +2253,7 @@ extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 		return SLURM_SUCCESS;
 	}
 
-	if (con->has_work) {
+	if (con->work_active) {
 		/* Grow buffer as needed to handle the outgoing data */
 		if (remaining_buf(con->out) < bytes) {
 			int need = bytes - remaining_buf(con->out);
@@ -2370,7 +2370,7 @@ static void _deferred_close_fd(con_mgr_t *mgr, con_mgr_fd_t *con,
 			       const char *tag, void *arg)
 {
 	slurm_mutex_lock(&mgr->mutex);
-	if (con->has_work) {
+	if (con->work_active) {
 		slurm_mutex_unlock(&mgr->mutex);
 		con_mgr_queue_close_fd(con);
 	} else {
@@ -2384,7 +2384,7 @@ extern void con_mgr_queue_close_fd(con_mgr_fd_t *con)
 	_check_magic_fd(false, con);
 
 	slurm_mutex_lock(&con->mgr->mutex);
-	if (!con->has_work) {
+	if (!con->work_active) {
 		/*
 		 * Defer request to close connection until connection is no
 		 * longer actively doing work as closing connection would change
@@ -2847,8 +2847,8 @@ static void _handle_work_pending(work_t *work)
 		if (!con)
 			fatal_abort("%s: CONMGR_WORK_TYPE_CONNECTION_FIFO requires a connection",
 				    __func__);
-		log_flag(NET, "%s: [%s] has_work=%c queuing \"%s\" pending work: %u total",
-			 __func__, con->name, (con->has_work ? 'T' : 'F'),
+		log_flag(NET, "%s: [%s] work_active=%c queuing \"%s\" pending work: %u total",
+			 __func__, con->name, (con->work_active ? 'T' : 'F'),
 			 work->tag, list_count(con->work));
 		list_append(con->work, work);
 		break;
