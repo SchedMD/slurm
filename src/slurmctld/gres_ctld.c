@@ -639,7 +639,7 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 					pre_alloc_type_cnt[j];
 		}
 
-		goto already_alloced;
+		goto already_allocated;
 	}
 
 	/*
@@ -728,7 +728,7 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 				gres_js->gres_bit_alloc[node_offset]);
 	}
 
-already_alloced:
+already_allocated:
 
 	xfree(pre_alloc_type_cnt);
 
