@@ -2013,4 +2013,3 @@ extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
 unpack_error:
 	return SLURM_ERROR;
 }
-
