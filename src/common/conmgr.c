@@ -83,8 +83,8 @@ int sigint_fd[2] = { -1, -1 };
 static int _close_con_for_each(void *x, void *arg);
 static void _listen_accept(void *x);
 static void _wrap_on_connection(void *x);
-static inline void _add_con_work(bool locked, con_mgr_fd_t *con,
-				 work_func_t func, void *arg, const char *tag);
+static void _add_con_work(bool locked, con_mgr_fd_t *con, work_func_t func,
+			  void *arg, const char *tag);
 static void _wrap_on_data(void *x);
 
 typedef void (*on_poll_event_t)(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
@@ -122,14 +122,14 @@ static int _find_by_fd(void *x, void *key)
 	return (con->input_fd == fd) || (con->output_fd == fd);
 }
 
-static inline void _check_magic_mgr(con_mgr_t *mgr)
+static void _check_magic_mgr(con_mgr_t *mgr)
 {
 	xassert(mgr);
 	xassert(mgr->magic == MAGIC_CON_MGR);
 	xassert(mgr->connections);
 }
 
-static inline void _check_magic_fd(con_mgr_fd_t *con)
+static void _check_magic_fd(con_mgr_fd_t *con)
 {
 	xassert(con);
 	xassert(con->magic == MAGIC_CON_MGR_FD);
@@ -607,8 +607,8 @@ static void _wrap_work(void *x)
 /*
  * Add work to connection with existing args struct
  */
-static inline void _add_con_work_args(bool locked, con_mgr_fd_t *con,
-				      wrap_work_arg_t *args)
+static void _add_con_work_args(bool locked, con_mgr_fd_t *con,
+			       wrap_work_arg_t *args)
 {
 	log_flag(NET, "%s: [%s] locked=%s func=%s",
 		 __func__, con->name, (locked ? "T" : "F"), args->tag);
@@ -637,8 +637,8 @@ static inline void _add_con_work_args(bool locked, con_mgr_fd_t *con,
 /*
  * Add work to connection
  */
-static inline void _add_con_work(bool locked, con_mgr_fd_t *con,
-				 work_func_t func, void *arg, const char *tag)
+static void _add_con_work(bool locked, con_mgr_fd_t *con, work_func_t func,
+			  void *arg, const char *tag)
 {
 	wrap_work_arg_t *args = xmalloc(sizeof(*args));
 	*args = (wrap_work_arg_t){ .magic = MAGIC_WRAP_WORK,
@@ -997,8 +997,8 @@ extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr, int fd,
  * Event on a processing socket.
  * mgr must be locked.
  */
-static inline void _handle_poll_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
-				      short revents)
+static void _handle_poll_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
+			       short revents)
 {
 	con->can_read = false;
 	con->can_write = false;
@@ -1226,8 +1226,8 @@ static void _inspect_connections(void *x)
  * Event on a listen only socket
  * mgr must be locked.
  */
-static inline void _handle_listen_event(con_mgr_t *mgr, int fd,
-					con_mgr_fd_t *con, short revents)
+static void _handle_listen_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
+				 short revents)
 {
 	if (revents & POLLHUP) {
 		/* how can a listening socket hang up? */
@@ -1277,8 +1277,8 @@ static void _handle_event_pipe(con_mgr_t *mgr, const struct pollfd *fds_ptr,
  *
  * NOTE: mgr mutex must not be locked but will be locked upon return
  */
-static inline void _poll(con_mgr_t *mgr, poll_args_t *args, list_t *fds,
-			 on_poll_event_t on_poll, const char *tag)
+static void _poll(con_mgr_t *mgr, poll_args_t *args, list_t *fds,
+		  on_poll_event_t on_poll, const char *tag)
 {
 	int rc = SLURM_SUCCESS;
 	struct pollfd *fds_ptr = NULL;
@@ -1542,7 +1542,7 @@ cleanup:
 /*
  * Poll all sockets non-listen connections
  */
-static inline int _watch(con_mgr_t *mgr)
+static int _watch(con_mgr_t *mgr)
 {
 	poll_args_t *listen_args = NULL;
 	poll_args_t *poll_args = NULL;
