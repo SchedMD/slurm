@@ -1083,7 +1083,7 @@ static int _apply_new_usage(job_record_t *job_ptr, time_t start_period,
 				     job_ptr->tres_alloc_cnt[i]);
 			}
 		} else
-			info("No alloced TRES, state is %s",
+			info("No allocated TRES, state is %s",
 			     job_state_string(job_ptr->job_state));
 	}
 	/* get the time in decayed fashion */
