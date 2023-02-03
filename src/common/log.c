@@ -93,7 +93,7 @@
 	    (sched && (level <= highest_sched_log_level))) {	\
 		va_list ap;					\
 		va_start(ap, fmt);				\
-		_log_msg(level, sched, false, fmt, ap);		\
+		_log_msg(level, sched, false, false, fmt, ap);	\
 		va_end(ap);					\
 	}							\
 }
@@ -1183,7 +1183,8 @@ static void _log_printf(log_t *log, cbuf_t *cb, FILE *stream,
  * log a message at the specified level to facilities that have been
  * configured to receive messages at that level
  */
-static void _log_msg(log_level_t level, bool sched, bool spank, const char *fmt, va_list args)
+static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
+		     const char *fmt, va_list args)
 {
 	char *pfx = "";
 	char *buf = NULL;
@@ -1225,15 +1226,15 @@ static void _log_msg(log_level_t level, bool sched, bool spank, const char *fmt,
 			break;
 
 		case LOG_LEVEL_ERROR:
-			priority = LOG_ERR;
 			pfx = sched? "error: sched: " : "error: ";
 			pfx = spank ? "" : pfx;
 			break;
 
 		case LOG_LEVEL_INFO:
 		case LOG_LEVEL_VERBOSE:
-			priority = LOG_INFO;
+			priority = warn ? LOG_WARNING : LOG_INFO;
 			pfx = sched ? "sched: " : "";
+			pfx = warn ? "warning: " : pfx;
 			break;
 
 		case LOG_LEVEL_DEBUG:
@@ -1447,7 +1448,15 @@ void spank_log(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_ERROR, false, true, fmt, ap);
+	_log_msg(LOG_LEVEL_ERROR, false, true, false, fmt, ap);
+	va_end(ap);
+}
+
+void warning(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	_log_msg(LOG_LEVEL_INFO, false, false, true, fmt, ap);
 	va_end(ap);
 }
 

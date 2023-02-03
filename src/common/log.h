@@ -308,6 +308,7 @@ extern void fatal_abort(const char *, ...)
 extern void fatal(const char *, ...)
 	__attribute__((format (printf, 1, 2))) __attribute__((noreturn));
 int	error(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	warning(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	slurm_info(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	slurm_verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 
