@@ -928,8 +928,8 @@ static int _find_fileless_gres(void *x, void *arg)
 
 	if ((gres_slurmd_conf->plugin_id == plugin_id) &&
 	    !gres_slurmd_conf->file) {
-		info("WARNING: Ignoring file-less GPU %s:%s from final GRES list",
-		     gres_slurmd_conf->name, gres_slurmd_conf->type_name);
+		warning("Ignoring file-less GPU %s:%s from final GRES list",
+			gres_slurmd_conf->name, gres_slurmd_conf->type_name);
 		return 1;
 	}
 	return 0;
@@ -1797,12 +1797,12 @@ static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
 	iter = list_iterator_create(gres_conf_list_tmp);
 	while ((gres_slurmd_conf = list_next(iter)))
 		if (gres_slurmd_conf->count > 0)
-			info("WARNING: A line in gres.conf for GRES %s%s%s has %"PRIu64" more configured than expected in slurm.conf. Ignoring extra GRES.",
-			     gres_slurmd_conf->name,
-			     (gres_slurmd_conf->type_name) ? ":" : "",
-			     (gres_slurmd_conf->type_name) ?
-			     gres_slurmd_conf->type_name : "",
-			     gres_slurmd_conf->count);
+			warning("A line in gres.conf for GRES %s%s%s has %"PRIu64" more configured than expected in slurm.conf. Ignoring extra GRES.",
+				gres_slurmd_conf->name,
+				(gres_slurmd_conf->type_name) ? ":" : "",
+				(gres_slurmd_conf->type_name) ?
+				gres_slurmd_conf->type_name : "",
+				gres_slurmd_conf->count);
 	list_iterator_destroy(iter);
 
 	FREE_NULL_LIST(gres_conf_list_tmp);

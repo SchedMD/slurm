@@ -771,8 +771,7 @@ extern int xcpuinfo_hwloc_topo_get(
 		if (cores == 0) {
 			cores = numcpu / sockets;	/* assume multi-core */
 			if (cores > 1) {
-				debug3("Warning: cpuinfo missing 'core id' or "
-				       "'cpu cores' but assuming multi-core");
+				debug3("cpuinfo missing 'core id' or 'cpu cores' but assuming multi-core");
 			}
 		}
 		if (cores == 0)

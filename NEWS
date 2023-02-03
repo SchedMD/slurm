@@ -298,6 +298,8 @@ documents those changes that are of interest to users and administrators.
     updated while they are pending. By having tres_per_node in the
     resourece_allocation_response_msg, slurmctld can send back the correct and
     updated GRES, whereas without it, the srun job would use the old GRES.
+ -- Cleaned up various "warning", "Warning", and "WARNING" messages with a new
+    warning() logging call. All will now print as "warning: ...".
 
 * Changes in Slurm 22.05.9
 ==========================

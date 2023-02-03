@@ -552,20 +552,18 @@ extern int jobacct_gather_init(void)
 	init_run = true;
 	slurm_mutex_unlock(&init_run_mutex);
 
-	/* only print the WARNING messages if in the slurmctld */
+	/* only print the warning messages if in the slurmctld */
 	if (!running_in_slurmctld())
 		goto done;
 
 	if (!xstrcasecmp(slurm_conf.proctrack_type, "proctrack/pgid"))
-		info("WARNING: We will use a much slower algorithm with proctrack/pgid, use Proctracktype=proctrack/linuxproc or some other proctrack when using %s",
-		     slurm_conf.job_acct_gather_type);
+		warning("We will use a much slower algorithm with proctrack/pgid, use Proctracktype=proctrack/linuxproc or some other proctrack when using %s",
+			slurm_conf.job_acct_gather_type);
 
 	if (!xstrcasecmp(slurm_conf.accounting_storage_type,
 	                 ACCOUNTING_STORAGE_TYPE_NONE)) {
-		error("WARNING: Even though we are collecting accounting "
-		      "information you have asked for it not to be stored "
-		      "(%s) if this is not what you have in mind you will "
-		      "need to change it.", ACCOUNTING_STORAGE_TYPE_NONE);
+		warning("Even though we are collecting accounting information you have asked for it not to be stored (%s). If this is not what you have in mind you will need to change it.",
+			ACCOUNTING_STORAGE_TYPE_NONE);
 	}
 
 done:
@@ -780,9 +778,8 @@ extern int jobacct_gather_set_proctrack_container_id(uint64_t id)
 		return SLURM_SUCCESS;
 
 	if (cont_id != NO_VAL64)
-		info("Warning: jobacct: set_proctrack_container_id: cont_id "
-		     "is already set to %"PRIu64" you are setting it to "
-		     "%"PRIu64"", cont_id, id);
+		warning("jobacct: set_proctrack_container_id: cont_id is already set to %"PRIu64" you are setting it to %"PRIu64,
+			cont_id, id);
 	if (id <= 0) {
 		error("jobacct: set_proctrack_container_id: "
 		      "I was given most likely an unset cont_id %"PRIu64"",

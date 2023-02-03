@@ -94,8 +94,7 @@ extern int init(void)
 	mcs_params_specific = slurm_mcs_get_params_specific();
 
 	if (_check_and_load_params() != 0) {
-		info("mcs: plugin warning : no group in %s",
-		     mcs_params_specific);
+		warning("%s: no group in %s", plugin_type, mcs_params_specific);
 		xfree(mcs_params_specific);
 		/* no need to check others options : default values used */
 		return SLURM_SUCCESS;

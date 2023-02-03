@@ -338,7 +338,7 @@ static char *_get_shell(void)
 
 	if (!pw_ent_ptr) {
 		pw_ent_ptr = getpwnam("nobody");
-		error("warning - no user information for user %u", opt.uid);
+		warning("no user information for user %u", opt.uid);
 	}
 	return pw_ent_ptr->pw_shell;
 }
@@ -582,9 +582,8 @@ static bool _opt_verify(void)
 		 *  make sure # of procs >= min_nodes
 		 */
 		if (opt.ntasks < opt.min_nodes) {
-			info ("Warning: can't run %d processes on %d "
-			      "nodes, setting nnodes to %d",
-			      opt.ntasks, opt.min_nodes, opt.ntasks);
+			warning("can't run %d processes on %d nodes, setting nnodes to %d",
+				opt.ntasks, opt.min_nodes, opt.ntasks);
 
 			opt.min_nodes = opt.max_nodes = opt.ntasks;
 		}

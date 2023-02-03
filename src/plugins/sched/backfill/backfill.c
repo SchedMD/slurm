@@ -810,8 +810,8 @@ static void _load_config(void)
 	}
 	if ((max_backfill_job_per_user != 0) &&
 	    (max_backfill_job_per_user > max_backfill_job_cnt)) {
-		info("warning: bf_max_job_user > bf_max_job_test (%u > %u)",
-		     max_backfill_job_per_user, max_backfill_job_cnt);
+		warning("bf_max_job_user > bf_max_job_test (%u > %u)",
+			max_backfill_job_per_user, max_backfill_job_cnt);
 	}
 
 	bf_job_part_count_reserve = 0;
@@ -837,8 +837,8 @@ static void _load_config(void)
 	}
 	if ((max_backfill_job_per_user_part != 0) &&
 	    (max_backfill_job_per_user_part > max_backfill_job_cnt)) {
-		info("warning: bf_max_job_user_part > bf_max_job_test (%u > %u)",
-		     max_backfill_job_per_user_part, max_backfill_job_cnt);
+		warning("bf_max_job_user_part > bf_max_job_test (%u > %u)",
+			max_backfill_job_per_user_part, max_backfill_job_cnt);
 	}
 
 
@@ -854,8 +854,8 @@ static void _load_config(void)
 	}
 	if ((max_backfill_job_per_assoc != 0) &&
 	    (max_backfill_job_per_assoc > max_backfill_job_cnt)) {
-		info("warning: bf_max_job_assoc > bf_max_job_test (%u > %u)",
-		     max_backfill_job_per_assoc, max_backfill_job_cnt);
+		warning("bf_max_job_assoc > bf_max_job_test (%u > %u)",
+			max_backfill_job_per_assoc, max_backfill_job_cnt);
 	}
 	if ((max_backfill_job_per_assoc != 0) &&
 	    (max_backfill_job_per_user != 0)) {
@@ -3004,15 +3004,15 @@ skip_start:
 				} else if ((max_backfill_job_per_user != 0) &&
 					   (max_backfill_job_per_user >
 					    (bf_node_space_size / 2))) {
-					info("warning: bf_max_job_user > bf_node_space_size / 2 (%u > %u)",
-					     max_backfill_job_per_user,
-					     (bf_node_space_size / 2));
+					warning("bf_max_job_user > bf_node_space_size / 2 (%u > %u)",
+						max_backfill_job_per_user,
+						(bf_node_space_size / 2));
 				} else if  ((max_backfill_job_per_assoc != 0) &&
 					    (max_backfill_job_per_assoc >
 					     (bf_node_space_size / 2))) {
-					info("warning: bf_max_job_assoc > bf_node_space_size / 2 (%u > %u)",
-					     max_backfill_job_per_assoc,
-					     (bf_node_space_size / 2));
+					warning("bf_max_job_assoc > bf_node_space_size / 2 (%u > %u)",
+						max_backfill_job_per_assoc,
+						(bf_node_space_size / 2));
 				}
 				_set_job_time_limit(job_ptr, orig_time_limit);
 				break;

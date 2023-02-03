@@ -745,9 +745,8 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 			int delta_time = time(NULL) - start_time;
 			int cc;
 			if (delta_time > 5) {
-				info("Warning: slurmstepd startup took %d sec, "
-				     "possible file system problem or full "
-				     "memory", delta_time);
+				warning("slurmstepd startup took %d sec, possible file system problem or full memory",
+					delta_time);
 			}
 			if (rc != SLURM_SUCCESS)
 				error("slurmstepd return code %d: %s",

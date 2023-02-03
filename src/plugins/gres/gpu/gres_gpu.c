@@ -601,7 +601,7 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 
 	/* Print out all the leftover system GPUs that are not being used */
 	if (gres_list_system && list_count(gres_list_system)) {
-		info("WARNING: The following autodetected GPUs are being ignored:");
+		warning("The following autodetected GPUs are being ignored:");
 		print_gres_list(gres_list_system, LOG_LEVEL_INFO);
 	}
 

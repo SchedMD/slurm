@@ -485,7 +485,7 @@ extern char *get_argument(const char *file, int lineno, const char *line,
 	if (!xstrncasecmp(ptr, "packjob", 7) &&
 	    ((ptr[7] == '\0') || (isspace(ptr[7])))) {
 		if (!logged) {
-			info("Warning: the \"packjob\" component separator is being deprecated. Please, use \"hetjob\" instead.");
+			warning("The \"packjob\" component separator is deprecated. Please use \"hetjob\" instead.");
 			logged = true;
 		}
 		memcpy((char *)ptr, "       ", 7);
@@ -873,9 +873,8 @@ static bool _opt_verify(void)
 		 *  make sure # of procs >= min_nodes
 		 */
 		if (opt.ntasks < opt.min_nodes) {
-			info ("Warning: can't run %d processes on %d "
-			      "nodes, setting nnodes to %d",
-			      opt.ntasks, opt.min_nodes, opt.ntasks);
+			warning("can't run %d processes on %d nodes, setting nnodes to %d",
+				opt.ntasks, opt.min_nodes, opt.ntasks);
 
 			opt.min_nodes = opt.max_nodes = opt.ntasks;
 		}

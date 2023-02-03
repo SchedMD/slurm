@@ -446,8 +446,8 @@ static void _validate_switches(void)
 		i = bit_set_count(switches_bitmap);
 		if (i > 0) {
 			child = bitmap2node_name(switches_bitmap);
-			error("WARNING: switches lack access to %d nodes: %s",
-			      i, child);
+			warning("switches lack access to %d nodes: %s",
+				i, child);
 			xfree(child);
 		}
 		FREE_NULL_BITMAP(switches_bitmap);
@@ -456,8 +456,7 @@ static void _validate_switches(void)
 
 	if (invalid_hl) {
 		buf = hostlist_ranged_string_xmalloc(invalid_hl);
-		error("WARNING: Invalid hostnames in switch configuration: %s",
-		      buf);
+		warning("Invalid hostnames in switch configuration: %s", buf);
 		xfree(buf);
 		hostlist_destroy(invalid_hl);
 	}
@@ -467,8 +466,7 @@ static void _validate_switches(void)
 	i = bit_set_count(multi_homed_bitmap);
 	if (i > 0) {
 		child = bitmap2node_name(multi_homed_bitmap);
-		error("WARNING: Multiple leaf switches contain nodes: %s",
-		      child);
+		warning("Multiple leaf switches contain nodes: %s", child);
 		xfree(child);
 	}
 	FREE_NULL_BITMAP(multi_homed_bitmap);
@@ -521,7 +519,7 @@ static void _validate_switches(void)
 		}
 	}
 	if (!have_root && running_in_daemon())
-		info("TOPOLOGY: warning -- no switch can reach all nodes through its descendants. If this is not intentional, fix the topology.conf file.");
+		warning("TOPOLOGY: no switch can reach all nodes through its descendants. If this is not intentional, fix the topology.conf file.");
 
 	s_p_hashtbl_destroy(conf_hashtbl);
 	_log_switches();

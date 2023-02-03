@@ -1242,9 +1242,8 @@ static bool _opt_verify(void)
 		 */
 		if ((opt.ntasks < opt.min_nodes) && (opt.ntasks > 0)) {
 			char *tmp = NULL;
-			info ("Warning: can't run %d processes on %d "
-			      "nodes, setting nnodes to %d",
-			      opt.ntasks, opt.min_nodes, opt.ntasks);
+			warning("can't run %d processes on %d nodes, setting nnodes to %d",
+				opt.ntasks, opt.min_nodes, opt.ntasks);
 			opt.min_nodes = opt.ntasks;
 			if (opt.max_nodes
 			    &&  (opt.min_nodes > opt.max_nodes) )
@@ -1275,12 +1274,12 @@ static bool _opt_verify(void)
 		    (opt.ntasks_per_node != (opt.ntasks / opt.min_nodes))) {
 			if ((opt.ntasks > opt.ntasks_per_node) &&
 			    !mpack_reset_nodes)
-				info("Warning: can't honor --ntasks-per-node set to %u which doesn't match the requested tasks %u with the number of requested nodes %u. Ignoring --ntasks-per-node.",
-				     opt.ntasks_per_node, opt.ntasks,
-				     opt.min_nodes);
+				warning("can't honor --ntasks-per-node set to %u which doesn't match the requested tasks %u with the number of requested nodes %u. Ignoring --ntasks-per-node.",
+					opt.ntasks_per_node, opt.ntasks,
+					opt.min_nodes);
 			else if (opt.ntasks > opt.ntasks_per_node)
-				info("Warning: can't honor --ntasks-per-node set to %u which doesn't match the requested tasks %u and -mpack, which forces min number of nodes to 1",
-				     opt.ntasks_per_node, opt.ntasks);
+				warning("can't honor --ntasks-per-node set to %u which doesn't match the requested tasks %u and -mpack, which forces min number of nodes to 1",
+					opt.ntasks_per_node, opt.ntasks);
 
 			slurm_option_reset(&opt, "ntasks-per-node");
 		}

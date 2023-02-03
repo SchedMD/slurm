@@ -375,7 +375,7 @@ extern int read_slurmdbd_conf(void)
 		                    tbl))
 			slurm_conf.msg_timeout = DEFAULT_MSG_TIMEOUT;
 		else if (slurm_conf.msg_timeout > 100)
-			info("WARNING: MessageTimeout is too high for effective fault-tolerance");
+			warning("MessageTimeout is too high for effective fault-tolerance");
 
 		s_p_get_string(&slurmdbd_conf->parameters, "Parameters", tbl);
 		if (slurmdbd_conf->parameters) {

@@ -419,7 +419,7 @@ static void _read_slurm_cgroup_conf(void)
 
 		if (s_p_get_string(&tmp_str, "AllowedDevicesFile", tbl)) {
 			xfree(tmp_str);
-			info("WARNING: AllowedDevicesFile option is obsolete, please remove it from your configuration.");
+			warning("AllowedDevicesFile option is obsolete, please remove it from your configuration.");
 		}
 
 		(void) s_p_get_string(&slurm_cgroup_conf.cgroup_plugin,

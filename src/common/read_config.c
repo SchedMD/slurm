@@ -4463,8 +4463,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (conf->mcs_plugin_params &&
 	    !xstrcmp(conf->mcs_plugin, "mcs/none")) {
 		/* plugin mcs none and a mcs plugin param */
-		info("WARNING: MCSParameters=%s can't be used with"
-			"MCSPlugin=mcs/none",
+		warning("MCSParameters=%s can't be used with MCSPlugin=mcs/none",
 			conf->mcs_plugin_params);
 	}
 	if (!conf->mcs_plugin_params &&

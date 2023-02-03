@@ -2310,8 +2310,7 @@ static job_state_t *_job_state_unpack_one(buf_t *buffer)
 	       j->jobid, j->ctime, j->revoked, j->expiration);
 
 	if ((j->revoked) && (j->expiration == (time_t) MAX_TIME)) {
-		info("Warning: revoke on job %u has no expiration",
-		     j->jobid);
+		warning("revoke on job %u has no expiration", j->jobid);
 		j->expiration = j->revoked + 600;
 	}
 
