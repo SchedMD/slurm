@@ -572,7 +572,7 @@ static void _wrap_work(void *x)
 #endif /* !NDEBUG */
 
 	/* catch cyclic calls */
-	xassert(args->func != &_wrap_work);
+	xassert(args->func != _wrap_work);
 
 	args->func(args->arg);
 
@@ -590,9 +590,10 @@ static void _wrap_work(void *x)
 	xassert(change.out == con->out);
 	xassert(change.name == con->name);
 	xassert(change.mgr == con->mgr);
-	xassert(change.arg == con->arg || (args->func == &_wrap_on_connection));
+	xassert((change.arg == con->arg) ||
+		(args->func == _wrap_on_connection));
 	xassert(change.on_data_tried == con->on_data_tried ||
-		(args->func == &_wrap_on_data));
+		(args->func == _wrap_on_data));
 #endif /* !NDEBUG */
 	xassert(con->has_work);
 	con->has_work = false;
@@ -616,7 +617,7 @@ static void _add_con_work_args(bool locked, con_mgr_fd_t *con,
 	if (!locked)
 		slurm_mutex_lock(&con->mgr->mutex);
 
-	xassert(args->func != &_wrap_work);
+	xassert(args->func != _wrap_work);
 
 	if (!con->has_work) {
 		con->has_work = true;
@@ -1438,7 +1439,7 @@ static void _poll_connections(void *x)
 	log_flag(NET, "%s: polling %u file descriptors for %u connections",
 		 __func__, args->nfds, count);
 
-	_poll(mgr, args, mgr->connections, &_handle_poll_event, __func__);
+	_poll(mgr, args, mgr->connections, _handle_poll_event, __func__);
 
 	mgr->poll_active = false;
 	/* notify _watch it can run but don't send signal to event PIPE*/
@@ -1532,7 +1533,7 @@ static void _listen(void *x)
 		 __func__, args->nfds, (count + 2));
 
 	/* _poll() will lock mgr->mutex */
-	_poll(mgr, args, mgr->listen, &_handle_listen_event, __func__);
+	_poll(mgr, args, mgr->listen, _handle_listen_event, __func__);
 cleanup:
 	mgr->listen_active = false;
 	_signal_change(mgr, true);
