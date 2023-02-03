@@ -7539,7 +7539,7 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 	gres_state_t *gres_state_job = NULL;
 	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
-	bool sharing_gres_alloced = false;
+	bool sharing_gres_allocated = false;
 	gres_internal_flags_t flags = GRES_INTERNAL_FLAG_NONE;
 
 	xassert(gres_context_cnt >= 0);
@@ -7562,7 +7562,7 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 					&gres_cnt);
 				/* Does job have a sharing GRES (GPU)? */
 				if (gres_id_sharing(gres_ctx->plugin_id))
-					sharing_gres_alloced = true;
+					sharing_gres_allocated = true;
 			}
 			list_iterator_destroy(gres_iter);
 		}
@@ -7574,7 +7574,7 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 		 * shared GRES, so we don't need to protect MPS/Shard from GPU.
 		 */
 		if (gres_id_shared(gres_ctx->config_flags) &&
-		    sharing_gres_alloced)
+		    sharing_gres_allocated)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
 		(*(gres_ctx->ops.job_set_env))(&step->env,
@@ -9294,7 +9294,7 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 	gres_state_t *gres_state_step = NULL;
 	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
-	bool sharing_gres_alloced = false;
+	bool sharing_gres_allocated = false;
 	gres_internal_flags_t flags = GRES_INTERNAL_FLAG_NONE;
 
 	xassert(gres_context_cnt >= 0);
@@ -9317,7 +9317,7 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 				gres_state_step, &gres_bit_alloc, &gres_cnt);
 			/* Does step have a sharing GRES (GPU)? */
 			if (gres_id_sharing(gres_ctx->plugin_id))
-				sharing_gres_alloced = true;
+				sharing_gres_allocated = true;
 		}
 		list_iterator_destroy(gres_iter);
 
@@ -9328,7 +9328,7 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 		 * shared GRES, so we don't need to protect MPS/Shard from GPU.
 		 */
 		if (gres_id_shared(gres_ctx->config_flags) &&
-		    sharing_gres_alloced)
+		    sharing_gres_allocated)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
 		(*(gres_ctx->ops.step_set_env))(&step->env, gres_bit_alloc,
@@ -9352,7 +9352,7 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
 	tres_bind_t tres_bind;
-	bool sharing_gres_alloced = false;
+	bool sharing_gres_allocated = false;
 	gres_internal_flags_t flags;
 
 	_parse_tres_bind(step->accel_bind_type, step->tres_bind, &tres_bind);
@@ -9381,7 +9381,7 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 				gres_state_step, &gres_bit_alloc, &gres_cnt);
 			/* Does task have a sharing GRES (GPU)? */
 			if (gres_id_sharing(gres_ctx->plugin_id))
-				sharing_gres_alloced = true;
+				sharing_gres_allocated = true;
 		}
 		if (_get_usable_gres(gres_ctx->gres_name, i, local_proc_id,
 				     &tres_bind, &usable_gres, gres_bit_alloc,
@@ -9397,7 +9397,7 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 		 * shared GRES, so we don't need to protect MPS/Shard from GPU.
 		 */
 		if (gres_id_shared(gres_ctx->config_flags) &&
-		    sharing_gres_alloced)
+		    sharing_gres_allocated)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
 		(*(gres_ctx->ops.task_set_env))(&step->envtp->env,
