@@ -78,6 +78,7 @@ AC_SEARCH_LIBS([kstat_open],    [kstat])
 AC_SEARCH_LIBS([ns_initparse],  [resolv])
 AC_SEARCH_LIBS([log],		[m])
 AC_SEARCH_LIBS([lrint],		[m])
+AC_SEARCH_LIBS([timer_create],	[rt])
 CFLAGS=$old_CFLAGS
 
 dnl Checks for header files.
