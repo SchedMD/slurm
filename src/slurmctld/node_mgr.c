@@ -4738,8 +4738,6 @@ extern void check_node_timers()
 		     (!power_save_on && IS_NODE_POWERING_UP(node_ptr))) &&
 		    node_ptr->boot_req_time &&
 		    (node_ptr->boot_req_time + resume_timeout < now)) {
-			set_node_reason(node_ptr, "reboot timed out", now);
-
 			/*
 			 * Remove states now so that event state shows as DOWN.
 			 */
@@ -4747,7 +4745,7 @@ extern void check_node_timers()
 			node_ptr->node_state &= (~NODE_STATE_REBOOT_ISSUED);
 			node_ptr->node_state &= (~NODE_STATE_DRAIN);
 			node_ptr->boot_req_time = 0;
-			set_node_down_ptr(node_ptr, NULL);
+			set_node_down_ptr(node_ptr, "reboot timed out");
 
 			bit_clear(rs_node_bitmap, node_ptr->index);
 		} else if (node_ptr->resume_after &&
