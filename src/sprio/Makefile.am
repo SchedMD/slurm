@@ -7,7 +7,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 bin_PROGRAMS = sprio
 
-sprio_LDADD = $(LIB_SLURM) $(DL_LIBS)
+sprio_LDADD = $(LIB_SLURM)
 sprio_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 noinst_HEADERS = sprio.h print.h

@@ -132,7 +132,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
 	$(top_srcdir)/auxdir/x_ac_deprecated.m4 \
-	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_hpe_slingshot.m4 \
@@ -302,7 +301,6 @@ DATAWARP_LDFLAGS = @DATAWARP_LDFLAGS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
-DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -544,7 +542,7 @@ SRCS = \
 @WITH_SLURMRESTD_TRUE@slurmrestd_SOURCES = $(SRCS)
 @WITH_SLURMRESTD_TRUE@slurmrestd_DEPENDENCIES = $(LIB_SLURM_BUILD)
 @WITH_SLURMRESTD_TRUE@slurmrestd_LDFLAGS = $(CMD_LDFLAGS)
-@WITH_SLURMRESTD_TRUE@slurmrestd_LDADD = $(LIB_SLURM) $(DL_LIBS) \
+@WITH_SLURMRESTD_TRUE@slurmrestd_LDADD = $(LIB_SLURM) \
 @WITH_SLURMRESTD_TRUE@	$(HTTP_PARSER_LDFLAGS) $(LIB_REF)
 @WITH_SLURMRESTD_TRUE@REF = usage.txt
 @WITH_SLURMRESTD_TRUE@BIN_REF = $(REF:.txt=.bino)

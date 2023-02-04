@@ -117,7 +117,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
 	$(top_srcdir)/auxdir/x_ac_deprecated.m4 \
-	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_hpe_slingshot.m4 \
@@ -161,7 +160,7 @@ PROGRAMS = $(sbin_PROGRAMS)
 am_slurmsmwd_OBJECTS = main.$(OBJEXT) read_config.$(OBJEXT)
 slurmsmwd_OBJECTS = $(am_slurmsmwd_OBJECTS)
 am__DEPENDENCIES_1 =
-slurmsmwd_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+slurmsmwd_DEPENDENCIES = $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -265,7 +264,6 @@ DATAWARP_LDFLAGS = @DATAWARP_LDFLAGS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
-DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -497,7 +495,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
 slurmsmwd_SOURCES = main.c read_config.c
-slurmsmwd_LDADD = $(LIB_SLURM) $(DL_LIBS)
+slurmsmwd_LDADD = $(LIB_SLURM)
 slurmsmwd_LDFLAGS = $(CMD_LDFLAGS)
 ETC_FILES = slurmsmwd.service
 CLEANFILES = $(ETC_FILES)

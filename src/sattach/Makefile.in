@@ -114,7 +114,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
 	$(top_srcdir)/auxdir/x_ac_deprecated.m4 \
-	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_hpe_slingshot.m4 \
@@ -159,7 +158,7 @@ am_sattach_OBJECTS = attach.$(OBJEXT) opt.$(OBJEXT) sattach.$(OBJEXT) \
 	sattach.wrapper.$(OBJEXT)
 sattach_OBJECTS = $(am_sattach_OBJECTS)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -263,7 +262,6 @@ DATAWARP_LDFLAGS = @DATAWARP_LDFLAGS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
-DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -500,7 +498,7 @@ sattach_SOURCES = \
 	sattach.c \
 	sattach.wrapper.c
 
-convenience_libs = $(LIB_SLURM) $(DL_LIBS)
+convenience_libs = $(LIB_SLURM)
 sattach_DEPENDENCIES = $(LIB_SLURM_BUILD)
 sattach_LDADD = \
 	$(convenience_libs)

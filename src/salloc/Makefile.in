@@ -114,7 +114,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
 	$(top_srcdir)/auxdir/x_ac_deprecated.m4 \
-	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_hpe_slingshot.m4 \
@@ -158,7 +157,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am_salloc_OBJECTS = salloc.$(OBJEXT) opt.$(OBJEXT)
 salloc_OBJECTS = $(am_salloc_OBJECTS)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -261,7 +260,6 @@ DATAWARP_LDFLAGS = @DATAWARP_LDFLAGS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
-DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -494,7 +492,7 @@ AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 AM_CPPFLAGS = -I$(top_srcdir)
 salloc_SOURCES = salloc.c salloc.h opt.c opt.h
-convenience_libs = $(LIB_SLURM) $(DL_LIBS)
+convenience_libs = $(LIB_SLURM)
 salloc_DEPENDENCIES = $(LIB_SLURM_BUILD)
 salloc_LDADD = \
 	$(convenience_libs)

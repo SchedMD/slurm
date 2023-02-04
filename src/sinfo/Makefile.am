@@ -6,7 +6,7 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir)
 bin_PROGRAMS = sinfo
 
-sinfo_LDADD = $(LIB_SLURM) $(DL_LIBS)
+sinfo_LDADD = $(LIB_SLURM)
 sinfo_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 noinst_HEADERS = sinfo.h print.h

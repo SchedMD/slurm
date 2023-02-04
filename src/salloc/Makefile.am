@@ -9,7 +9,7 @@ bin_PROGRAMS = salloc
 
 salloc_SOURCES = salloc.c salloc.h opt.c opt.h
 
-convenience_libs = $(LIB_SLURM) $(DL_LIBS)
+convenience_libs = $(LIB_SLURM)
 salloc_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 salloc_LDADD = \

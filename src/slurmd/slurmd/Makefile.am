@@ -18,7 +18,7 @@ depend_ldflags += -Wl,--no-as-needed
 
 AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 
-slurmd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(NUMA_LIBS) \
+slurmd_LDADD = $(depend_libs) $(LIB_SLURM) $(NUMA_LIBS) \
 	$(depend_ldadd) $(SLURMD_INTERFACES)
 
 slurmd_LDFLAGS = $(CMD_LDFLAGS) $(depend_ldflags)

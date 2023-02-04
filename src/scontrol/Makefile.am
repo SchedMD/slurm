@@ -24,7 +24,7 @@ scontrol_SOURCES =	\
 	update_part.c	\
 	update_step.c
 
-scontrol_LDADD = $(LIB_SLURM) $(DL_LIBS) $(READLINE_LIBS)
+scontrol_LDADD = $(LIB_SLURM) $(READLINE_LIBS)
 scontrol_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 scontrol_LDFLAGS = $(CMD_LDFLAGS)

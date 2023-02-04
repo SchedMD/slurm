@@ -115,7 +115,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
 	$(top_srcdir)/auxdir/x_ac_deprecated.m4 \
-	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_hpe_slingshot.m4 \
@@ -265,7 +264,6 @@ DATAWARP_LDFLAGS = @DATAWARP_LDFLAGS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
-DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -506,7 +504,7 @@ depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS)
 # This is needed to actually link to the libs that it doesn't use.
 depend_ldflags = $(HWLOC_LDFLAGS) -Wl,--no-as-needed
 AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
-slurmd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(NUMA_LIBS) \
+slurmd_LDADD = $(depend_libs) $(LIB_SLURM) $(NUMA_LIBS) \
 	$(depend_ldadd) $(SLURMD_INTERFACES)
 
 slurmd_LDFLAGS = $(CMD_LDFLAGS) $(depend_ldflags)

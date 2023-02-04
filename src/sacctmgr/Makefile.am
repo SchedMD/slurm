@@ -9,7 +9,7 @@ bin_PROGRAMS = sacctmgr
 
 sacctmgr_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
-sacctmgr_LDADD = $(LIB_SLURM) $(DL_LIBS) $(READLINE_LIBS)
+sacctmgr_LDADD = $(LIB_SLURM) $(READLINE_LIBS)
 
 sacctmgr_SOURCES =	\
 	account_functions.c	\

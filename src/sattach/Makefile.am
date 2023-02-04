@@ -12,7 +12,7 @@ sattach_SOURCES = \
 	sattach.c \
 	sattach.wrapper.c
 
-convenience_libs = $(LIB_SLURM) $(DL_LIBS)
+convenience_libs = $(LIB_SLURM)
 sattach_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 sattach_LDADD = \

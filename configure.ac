@@ -79,6 +79,7 @@ AC_SEARCH_LIBS([ns_initparse],  [resolv])
 AC_SEARCH_LIBS([log],		[m])
 AC_SEARCH_LIBS([lrint],		[m])
 AC_SEARCH_LIBS([timer_create],	[rt])
+AC_SEARCH_LIBS([dlopen],	[dl svdl])
 CFLAGS=$old_CFLAGS
 
 dnl Checks for header files.
@@ -102,10 +103,6 @@ old_CFLAGS=$CFLAGS
 CFLAGS="$CFLAGS -Werror"
 AC_HEADER_MAJOR
 CFLAGS=$old_CFLAGS
-
-dnl Check for dlfcn
-dnl
-X_AC_DLFCN
 
 dnl check to see if glibc's program_invocation_name is available:
 dnl

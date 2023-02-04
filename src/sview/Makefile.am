@@ -7,7 +7,7 @@ if BUILD_SVIEW
 
 bin_PROGRAMS = sview
 
-sview_LDADD = $(LIB_SLURM) $(DL_LIBS)
+sview_LDADD = $(LIB_SLURM)
 sview_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 noinst_HEADERS = sview.h gthread_helper.h

@@ -19,7 +19,7 @@ depend_ldflags = $(HWLOC_LDFLAGS)
 
 AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 
-slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(depend_ldadd) $(libselinux_LIBS) $(SLURMD_INTERFACES)
+slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(depend_ldadd) $(libselinux_LIBS) $(SLURMD_INTERFACES)
 
 slurmstepd_LDFLAGS = $(CMD_LDFLAGS) $(depend_ldflags)
 

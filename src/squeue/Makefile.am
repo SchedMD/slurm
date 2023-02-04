@@ -7,7 +7,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 bin_PROGRAMS = squeue
 
-squeue_LDADD = 	$(LIB_SLURM) $(DL_LIBS)
+squeue_LDADD = 	$(LIB_SLURM)
 squeue_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 noinst_HEADERS = squeue.h print.h

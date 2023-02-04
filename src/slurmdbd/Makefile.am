@@ -8,7 +8,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 sbin_PROGRAMS = slurmdbd
 
-slurmdbd_LDADD = $(LIB_SLURM) $(DL_LIBS)
+slurmdbd_LDADD = $(LIB_SLURM)
 
 slurmdbd_SOURCES = 		\
 	backup.c		\

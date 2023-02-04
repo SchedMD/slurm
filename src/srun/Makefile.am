@@ -23,7 +23,7 @@ srun_SOURCES = \
 	step_ctx.c step_ctx.h \
 	task_state.c task_state.h
 
-srun_LDADD = $(depend_libs) $(DL_LIBS) $(LIB_SLURM)
+srun_LDADD = $(depend_libs) $(LIB_SLURM)
 
 srun_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 

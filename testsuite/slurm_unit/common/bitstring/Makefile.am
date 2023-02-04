@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
-LDADD = $(LIB_SLURM) $(DL_LIBS)
+LDADD = $(LIB_SLURM)
 
 if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99

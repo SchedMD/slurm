@@ -6,7 +6,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 bin_PROGRAMS = scancel
 
-scancel_LDADD = $(LIB_SLURM) $(DL_LIBS)
+scancel_LDADD = $(LIB_SLURM)
 scancel_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 noinst_HEADERS  = scancel.h

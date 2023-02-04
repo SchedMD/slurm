@@ -119,7 +119,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
 	$(top_srcdir)/auxdir/x_ac_deprecated.m4 \
-	$(top_srcdir)/auxdir/x_ac_dlfcn.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_hpe_slingshot.m4 \
@@ -164,8 +163,7 @@ PROGRAMS = $(sbin_PROGRAMS)
 @WITH_JSON_PARSER_TRUE@	capmc_resume.$(OBJEXT)
 capmc_resume_OBJECTS = $(am_capmc_resume_OBJECTS)
 am__DEPENDENCIES_1 =
-@WITH_JSON_PARSER_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
-@WITH_JSON_PARSER_TRUE@	$(am__DEPENDENCIES_1)
+@WITH_JSON_PARSER_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 @WITH_JSON_PARSER_TRUE@capmc_resume_DEPENDENCIES =  \
 @WITH_JSON_PARSER_TRUE@	$(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -324,7 +322,6 @@ DATAWARP_LDFLAGS = @DATAWARP_LDFLAGS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
-DL_LIBS = @DL_LIBS@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -558,7 +555,7 @@ AUTOMAKE_OPTIONS = foreign
 @HAVE_NATIVE_CRAY_TRUE@sbin_SCRIPTS = slurmconfgen.py
 @HAVE_NATIVE_CRAY_TRUE@noinst_DATA = opt_modulefiles_slurm
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
-@WITH_JSON_PARSER_TRUE@convenience_libs = $(LIB_SLURM) $(DL_LIBS)
+@WITH_JSON_PARSER_TRUE@convenience_libs = $(LIB_SLURM)
 @WITH_JSON_PARSER_TRUE@capmc_suspend_SOURCES = capmc_suspend.c
 @WITH_JSON_PARSER_TRUE@capmc_suspend_LDADD = $(convenience_libs)
 @WITH_JSON_PARSER_TRUE@capmc_suspend_LDFLAGS = $(JSON_LDFLAGS)

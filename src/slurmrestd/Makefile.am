@@ -20,7 +20,7 @@ slurmrestd_SOURCES = $(SRCS)
 slurmrestd_DEPENDENCIES = $(LIB_SLURM_BUILD)
 slurmrestd_LDFLAGS = $(CMD_LDFLAGS)
 
-slurmrestd_LDADD = $(LIB_SLURM) $(DL_LIBS) $(HTTP_PARSER_LDFLAGS)
+slurmrestd_LDADD = $(LIB_SLURM) $(HTTP_PARSER_LDFLAGS)
 
 REF = usage.txt
 include $(top_srcdir)/make_ref.include
