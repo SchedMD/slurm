@@ -2621,6 +2621,7 @@ static void _handle_work_pending(work_t *work)
 		_update_last_time(true, work->mgr);
 		work->begin.seconds += mgr->last_time.tv_sec;
 		list_append(mgr->delayed_work, work);
+		_update_timer(true, mgr);
 		break;
 	}
 	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
