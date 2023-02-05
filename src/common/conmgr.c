@@ -701,7 +701,8 @@ static void _handle_read(con_mgr_t *mgr, con_mgr_fd_t *con,
 			return;
 		}
 
-		error("%s: [%s] error while reading: %m", __func__, con->name);
+		log_flag(NET, "%s: [%s] error while reading: %m",
+			 __func__, con->name);
 		_close_con(false, con);
 		return;
 	} else if (read_c == 0) {
