@@ -1869,8 +1869,6 @@ watch:
 		while ((con = list_pop(mgr->complete)))
 			_queue_func(true, mgr, _connection_fd_delete, con,
 				    "_connection_fd_delete");
-
-		work = true;
 	}
 
 	if (work) {
