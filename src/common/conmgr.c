@@ -1568,7 +1568,10 @@ static void _poll_connections(void *x)
 	slurm_mutex_lock(&mgr->mutex);
 
 	/* grab counts once */
-	count = list_count(mgr->connections);
+	if (!(count = list_count(mgr->connections))) {
+		log_flag(NET, "%s: no connections to poll()", __func__);
+		goto done;
+	}
 
 	fds_ptr = args->fds;
 
@@ -1644,6 +1647,7 @@ static void _poll_connections(void *x)
 	_poll(mgr, args, mgr->connections, _handle_poll_event, __func__);
 
 	slurm_mutex_lock(&mgr->mutex);
+done:
 	mgr->poll_active = false;
 	/* notify _watch it can run but don't send signal to event PIPE*/
 	slurm_cond_broadcast(&mgr->cond);
