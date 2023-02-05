@@ -2541,7 +2541,7 @@ static void _handle_timer(void *x)
 	int count, total;
 	con_mgr_t *mgr = x;
 	work_t *work;
-	list_t *elapsed = list_create(NULL);
+	list_t *elapsed = list_create(xfree_ptr);
 
 	slurm_mutex_lock(&mgr->mutex);
 	_update_last_time(true, mgr);
