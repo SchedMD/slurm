@@ -1646,6 +1646,12 @@ static void _poll_connections(void *x)
 	}
 	list_iterator_destroy(itr);
 
+	if (args->nfds == 2) {
+		log_flag(NET, "%s: skipping poll() due to no open file descriptors for %d connections",
+			 __func__, count);
+		goto done;
+	}
+
 	slurm_mutex_unlock(&mgr->mutex);
 
 	log_flag(NET, "%s: polling %u file descriptors for %u connections",
