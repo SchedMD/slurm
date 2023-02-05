@@ -1425,6 +1425,9 @@ static int _handle_signal(con_mgr_t *mgr)
 	if (!readable) {
 		/* Didn't fail but buffer is empty so no more signals */
 		return -1;
+	} else if (readable < sizeof(sig)) {
+		/* write() must have not completed */
+		return -1;
 	}
 #endif /* FIONREAD */
 
