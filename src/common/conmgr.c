@@ -1487,7 +1487,7 @@ again:
 		if (!fds_ptr->revents)
 			continue;
 
-		if (fds_ptr->fd == signal_fd ) {
+		if (fds_ptr->fd == signal_fd) {
 			bool caught_sigalrm = false;
 			int sig;
 
