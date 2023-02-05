@@ -288,6 +288,8 @@ struct con_mgr_s {
 	int event_fd[2];
 	/* Signal PIPE to catch POSIX signals */
 	int signal_fd[2];
+	/* track when there is a pending signal to read */
+	bool signaled;
 	/* Caller requests finish on error */
 	bool exit_on_error;
 	/* First observed error */

@@ -1406,21 +1406,17 @@ static void _handle_event_pipe(con_mgr_t *mgr, const struct pollfd *fds_ptr,
 	}
 }
 
-static int _handle_signal(con_mgr_t *mgr)
+static int _read_signal(con_mgr_t *mgr)
 {
-	int sig, signal_fd;
-
-	slurm_mutex_lock(&mgr->mutex);
-	signal_fd = mgr->signal_fd[0];
-	slurm_mutex_unlock(&mgr->mutex);
+	int sig;
 
 #ifdef FIONREAD
 	int readable;
 
 	/* request kernel tell us the size of the incoming buffer */
-	if (ioctl(signal_fd, FIONREAD, &readable))
+	if (ioctl(mgr->signal_fd[0], FIONREAD, &readable))
 		log_flag(NET, "%s: [fd:%d] unable to call FIONREAD: %m",
-			 __func__, signal_fd);
+			 __func__, mgr->signal_fd[0]);
 
 	if (!readable) {
 		/* Didn't fail but buffer is empty so no more signals */
@@ -1431,7 +1427,7 @@ static int _handle_signal(con_mgr_t *mgr)
 	}
 #endif /* FIONREAD */
 
-	safe_read(signal_fd, &sig, sizeof(sig));
+	safe_read(mgr->signal_fd[0], &sig, sizeof(sig));
 
 	return sig;
 rwfail:
@@ -1439,7 +1435,44 @@ rwfail:
 		return -1;
 
 	fatal("%s: unable to read(signal_fd[0]=%d): %m",
-	      __func__, signal_fd);
+	      __func__, mgr->signal_fd[0]);
+}
+
+static void _handle_signals(con_mgr_t *mgr)
+{
+	bool caught_sigalrm = false;
+	bool caught_sigint = false;
+	int sig, count = 0;
+
+	while ((sig = _read_signal(mgr)) > 0) {
+		count++;
+		if (sig == SIGINT) {
+			caught_sigint = true;
+		} else if (sig == SIGALRM) {
+			caught_sigalrm = true;
+		} else {
+			info("%s: caught and ignoring signal %s",
+			     __func__, strsignal(sig));
+		}
+	}
+
+	log_flag(NET, "%s: caught %d signals", __func__, count);
+	mgr->signaled = false;
+
+	if (caught_sigint) {
+		if (!mgr->shutdown)
+			info("%s: caught SIGINT. Shutting down.",
+			     __func__);
+		mgr->shutdown = true;
+	}
+
+	if (caught_sigalrm) {
+		log_flag(NET, "%s: caught SIGALRM", __func__);
+		_queue_func(true, mgr, _handle_timer, mgr, "_handle_timer");
+	}
+
+	if (caught_sigint || caught_sigalrm)
+		_signal_change(mgr, true);
 }
 
 /*
@@ -1491,43 +1524,9 @@ again:
 			continue;
 
 		if (fds_ptr->fd == signal_fd) {
-			bool caught_sigalrm = false;
-			int sig;
-
-			while ((sig = _handle_signal(mgr)) >= 0) {
-				if (sig == SIGINT) {
-					slurm_mutex_lock(&mgr->mutex);
-					if (!mgr->shutdown)
-						info("%s: [%s] caught SIGINT. Shutting down.",
-						     __func__, tag);
-					mgr->shutdown = true;
-					slurm_mutex_unlock(&mgr->mutex);
-				} else if (sig == SIGALRM) {
-					/*
-					 * Defer adding work as timer may have
-					 * hit several times before poll()
-					 * finished.
-					 */
-					caught_sigalrm = true;
-					log_flag(NET, "%s: [%s] caught SIGALRM",
-						 __func__, tag);
-				} else {
-					info("%s: [%s] caught and ignoring %s",
-					     __func__, tag, strsignal(sig));
-				}
-			}
-
+			mgr->signaled = true;
 			_handle_event_pipe(mgr, fds_ptr, tag, "CAUGHT_SIGNAL");
-			slurm_mutex_lock(&mgr->mutex);
-			_signal_change(mgr, true);
-
-			if (caught_sigalrm)
-				_queue_func(true, mgr, _handle_timer, mgr,
-					    "_handle_timer");
-			slurm_mutex_unlock(&mgr->mutex);
-		}
-
-		if (fds_ptr->fd == event_fd)
+		} else if (fds_ptr->fd == event_fd)
 			_handle_event_pipe(mgr, fds_ptr, tag, "CHANGE_EVENT");
 		else if ((con = list_find_first(fds, _find_by_fd,
 						&fds_ptr->fd))) {
@@ -1573,6 +1572,11 @@ static void _poll_connections(void *x)
 	/* grab counts once */
 	if (!(count = list_count(mgr->connections))) {
 		log_flag(NET, "%s: no connections to poll()", __func__);
+		goto done;
+	}
+
+	if (mgr->signaled) {
+		log_flag(NET, "%s: skipping poll() due to signal", __func__);
 		goto done;
 	}
 
@@ -1682,6 +1686,12 @@ static void _listen(void *x)
 		goto cleanup;
 	}
 
+	if (mgr->signaled) {
+		log_flag(NET, "%s: skipping poll() to pending signal",
+			 __func__);
+		goto cleanup;
+	}
+
 	/* grab counts once */
 	count = list_count(mgr->listen);
 
@@ -1771,7 +1781,7 @@ watch:
 		 __func__, count, list_count(mgr->listen));
 
 	if (!mgr->poll_active && !mgr->listen_active) {
-		/* only clear event pipe once both polls are done */
+		/* only clear signal and event pipes once both polls are done */
 		event_read = read(mgr->event_fd[0], buf, sizeof(buf));
 		if (event_read > 0) {
 			log_flag(NET, "%s: detected %u events from event fd",
@@ -1785,6 +1795,11 @@ watch:
 				 __func__);
 		else
 			fatal("%s: unable to read from event fd: %m", __func__);
+
+		if (mgr->signaled) {
+			_handle_signals(mgr);
+			goto watch;
+		}
 	}
 
 	work = false;
