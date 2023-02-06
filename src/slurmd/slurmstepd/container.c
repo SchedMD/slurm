@@ -82,6 +82,8 @@ static char *start_argv[] = {
 static char *_get_config_path(stepd_step_rec_t *step);
 static char *_generate_spooldir(stepd_step_rec_t *step,
 				stepd_step_task_info_t *task);
+static void _generate_patterns(stepd_step_rec_t *step,
+			       stepd_step_task_info_t *task);
 
 static void _dump_command_args(run_command_args_t *args, const char *caller)
 {
@@ -364,11 +366,11 @@ static bool _match_env(const data_t *data, void *needle)
 	return match;
 }
 
-static int _modify_config(stepd_step_rec_t *step)
+static int _modify_config(stepd_step_rec_t *step, stepd_step_task_info_t *task)
 {
 	step_container_t *c = step->container;
 	int rc = SLURM_SUCCESS;
-	data_t *mnts, *env;
+	data_t *mnts, *env, *args;
 
 	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
@@ -504,6 +506,15 @@ static int _modify_config(stepd_step_rec_t *step)
 
 		data_set_string(entry, *ptr);
 		xfree(name);
+	}
+
+	args = data_define_dict_path(c->config, "/process/args/");
+	data_set_list(args);
+
+	/* move args to the config.json for runtime to handle */
+	for (int i = 0; i < task->argc; i++) {
+		data_set_string_own(data_list_append(args), task->argv[i]);
+		task->argv[i] = NULL;
 	}
 
 	return rc;
@@ -986,44 +997,6 @@ static void _generate_patterns(stepd_step_rec_t *step,
 		start_argv[2] = gen;
 }
 
-static void _generate_args(stepd_step_rec_t *step, stepd_step_task_info_t *task)
-{
-	step_container_t *c = step->container;
-
-	xassert(c->magic == STEP_CONTAINER_MAGIC);
-
-	_generate_patterns(step, task);
-
-	if (c->config) {
-		data_t *args = data_define_dict_path(c->config,
-						     "/process/args/");
-		data_set_list(args);
-
-		/* move args to the config.json for runtime to handle */
-		for (int i = 0; i < task->argc; i++) {
-			data_set_string_own(data_list_append(args),
-					    task->argv[i]);
-			task->argv[i] = NULL;
-		}
-	} else {
-		/* argv is about to be overriden so cleanup first */
-		for (int i = 0; i < task->argc; i++) {
-			xfree(task->argv[i]);
-		}
-	}
-
-	/*
-	 * containers do not use task->argv but we will leave a canary
-	 * to catch any code paths that avoid the container code
-	 */
-	xassert(step->argv == task->argv);
-	env_array_free(task->argv);
-	step->argv = task->argv = xcalloc(4, sizeof(*task->argv));
-	task->argv[0] = xstrdup("/bin/sh");
-	task->argv[1] = xstrdup("-c");
-	task->argv[2] = xstrdup("echo 'this should never execute with a container'; exit 1");
-}
-
 extern void container_run(stepd_step_rec_t *step,
 			  stepd_step_task_info_t *task)
 {
@@ -1055,7 +1028,7 @@ extern void container_run(stepd_step_rec_t *step,
 		/* create new config.json in spooldir */
 		xstrfmtcat(jconfig, "%s/config.json", c->spool_dir);
 
-		if ((rc = _modify_config(step)))
+		if ((rc = _modify_config(step, task)))
 			fatal("%s: configuring container failed: %s",
 			      __func__, slurm_strerror(rc));
 
