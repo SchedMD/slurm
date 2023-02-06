@@ -2595,7 +2595,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 	assoc->uid              = ret_assoc->uid;
 
 	/* Don't send any usage info since we don't know if the usage
-	   is really in existance here, if they really want it they can
+	   is really in existence here, if they really want it they can
 	   use the pointer that is returned. */
 
 	/* if (!assoc->usage->children_list) */
@@ -2830,7 +2830,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	qos->priority = found_qos->priority;
 
 	/* Don't send any usage info since we don't know if the usage
-	   is really in existance here, if they really want it they can
+	   is really in existence here, if they really want it they can
 	   use the pointer that is returned. */
 
 	/* if (!qos->usage->acct_limit_list) */

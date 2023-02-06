@@ -1586,7 +1586,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 						row2[ASSOC2_REQ_PRIO]);
 
 				/* We don't have to copy these strings
-				 * or check for there existance,
+				 * or check for their existence,
 				 * slurmdb_combine_tres_strings will
 				 * do this for us below.
 				 */

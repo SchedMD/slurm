@@ -60,7 +60,7 @@ AC_DEFUN([X_AC_BPF], [
         AC_MSG_ERROR([unable to locate bpf header])
       fi
     else
-      #Check for bpf defines existance added after original file creation
+      #Check for bpf defines existence added after original file creation
       #in linux kernel release 3.18
       AC_LINK_IFELSE(
 	[AC_LANG_PROGRAM([[#include <linux/bpf.h>]],

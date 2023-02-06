@@ -520,7 +520,7 @@ static int _check_default_wckeys(char *def_wckey,
 /*
  * IN: user_cond - used for the assoc_cond pointing to the user and
  *     account list
- * IN: check - whether or not to check if the existance of the above lists
+ * IN: check - whether or not to check if the existence of the above lists
  */
 static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 {

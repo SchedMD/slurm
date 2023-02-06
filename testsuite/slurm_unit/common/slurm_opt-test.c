@@ -769,7 +769,7 @@ int main(void)
 
 	/*
 	 * PluginDir=. is needed as loading the slurm.conf will check for the
-	 * existance of the dir. As 'make check' doesn't install anything the
+	 * existence of the dir. As 'make check' doesn't install anything the
 	 * normal PluginDir might not exist. As we don't load any plugins for
 	 * these test this should be ok.
 	 */

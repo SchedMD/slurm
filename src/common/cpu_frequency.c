@@ -766,7 +766,7 @@ _cpu_freq_get_scaling_freq(int cpuidx, char* option)
 }
 
 /*
- * test for existance of cpufreq file
+ * test for existence of cpufreq file
  *
  * Return: true if file found
  */

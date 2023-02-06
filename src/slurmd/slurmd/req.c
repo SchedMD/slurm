@@ -2828,7 +2828,7 @@ static void _rpc_reconfig_with_config(slurm_msg_t *msg)
 				(config_response_msg_t *) msg->data;
 			/*
 			 * Running in "configless" mode as indicated by the
-			 * cache directory's existance. Update those so
+			 * cache directory's existence. Update those so
 			 * our reconfigure picks up the changes, and so
 			 * client commands see the changes as well.
 			 */

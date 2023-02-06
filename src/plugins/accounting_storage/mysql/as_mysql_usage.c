@@ -850,7 +850,7 @@ extern int as_mysql_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 				goto bad_user;
 			}
 
-			/* Existance of user.coord_accts is checked in
+			/* Existence of user.coord_accts is checked in
 			   is_user_any_coord.
 			*/
 			itr = list_iterator_create(user.coord_accts);
