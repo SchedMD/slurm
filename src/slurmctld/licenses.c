@@ -759,6 +759,13 @@ extern int license_job_get(job_record_t *job_ptr, bool restore)
 		if (match) {
 			match->used += license_entry->total;
 			license_entry->used += license_entry->total;
+			if (match->remote && restore) {
+				if (license_entry->total > match->last_deficit)
+					match->last_deficit = 0;
+				else
+					match->last_deficit -=
+						license_entry->total;
+			}
 		} else {
 			error("could not find license %s for job %u",
 			      license_entry->name, job_ptr->job_id);
