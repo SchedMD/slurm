@@ -160,7 +160,6 @@ PROGRAMS = $(sbin_PROGRAMS)
 am_slurmsmwd_OBJECTS = main.$(OBJEXT) read_config.$(OBJEXT)
 slurmsmwd_OBJECTS = $(am_slurmsmwd_OBJECTS)
 am__DEPENDENCIES_1 =
-slurmsmwd_DEPENDENCIES = $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -496,6 +495,7 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
 slurmsmwd_SOURCES = main.c read_config.c
 slurmsmwd_LDADD = $(LIB_SLURM)
+slurmsmwd_DEPENDENCIES = $(LIB_SLURM_BUILD)
 slurmsmwd_LDFLAGS = $(CMD_LDFLAGS)
 ETC_FILES = slurmsmwd.service
 CLEANFILES = $(ETC_FILES)
@@ -820,7 +820,7 @@ slurmsmwd.service: Makefile $(srcdir)/slurmsmwd.service.in
 	$(edit) $(srcdir)/slurmsmwd.service.in > slurmsmwd.service
 
 force:
-$(slurmsmwd_LDADD) : force
+$(slurmsmwd_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

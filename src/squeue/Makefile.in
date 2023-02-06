@@ -814,7 +814,7 @@ uninstall-am: uninstall-binPROGRAMS
 
 
 force:
-$(squeue_LDADD) : force
+$(squeue_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

@@ -13,7 +13,7 @@ noinst_HEADERS = sinfo.h print.h
 sinfo_SOURCES = sinfo.c opts.c print.c sort.c
 
 force:
-$(sinfo_LDADD) : force
+$(sinfo_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 sinfo_LDFLAGS = $(CMD_LDFLAGS)

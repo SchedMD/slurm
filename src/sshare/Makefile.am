@@ -17,5 +17,5 @@ sshare_SOURCES =	\
 sshare_LDFLAGS = $(CMD_LDFLAGS)
 
 force:
-$(sshare_LDADD) : force
+$(sshare_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

@@ -1085,7 +1085,7 @@ uninstall-am: uninstall-binPROGRAMS
 
 
 @BUILD_SVIEW_TRUE@force:
-@BUILD_SVIEW_TRUE@$(sview_LDADD) : force
+@BUILD_SVIEW_TRUE@$(sview_DEPENDENCIES) : force
 @BUILD_SVIEW_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

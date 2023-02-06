@@ -19,5 +19,5 @@ sstat_SOURCES =		\
 	sstat.h
 
 force:
-$(sstat_LDADD) : force
+$(sstat_DEPENDENCIES) : force
 	 @cd `dirname $@` && $(MAKE) `basename $@`

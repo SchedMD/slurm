@@ -14,7 +14,7 @@ noinst_HEADERS = sprio.h print.h
 sprio_SOURCES = sprio.c print.c opts.c sort.c filter.c
 
 force:
-$(sprio_LDADD) : force
+$(sprio_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 sprio_LDFLAGS = $(CMD_LDFLAGS)

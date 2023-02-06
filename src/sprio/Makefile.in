@@ -817,7 +817,7 @@ uninstall-am: uninstall-binPROGRAMS
 
 
 force:
-$(sprio_LDADD) : force
+$(sprio_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

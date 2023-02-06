@@ -17,7 +17,7 @@ sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \
 	config_info.c defaults.c gthread_helper.c bb_info.c
 
 force:
-$(sview_LDADD) : force
+$(sview_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 sview_LDFLAGS = $(CMD_LDFLAGS) $(BG_LDFLAGS) $(GTK_LIBS)

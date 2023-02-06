@@ -810,7 +810,7 @@ uninstall-am: uninstall-binPROGRAMS
 
 
 @BUILD_HDF5_TRUE@force:
-@BUILD_HDF5_TRUE@$(sh5util_LDADD) : force
+@BUILD_HDF5_TRUE@$(sh5util_DEPENDENCIES) : force
 @BUILD_HDF5_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

@@ -22,7 +22,7 @@ sh5util_LDFLAGS = $(CMD_LDFLAGS) \
 	$(HDF5_LDFLAGS) $(HDF5_LIBS)
 
 force:
-$(sh5util_LDADD) : force
+$(sh5util_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 else

@@ -21,5 +21,5 @@ sreport_DEPENDENCIES = $(LIB_SLURM_BUILD)
 sreport_LDFLAGS = $(CMD_LDFLAGS)
 
 force:
-$(sreport_LDADD) : force
+$(sreport_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

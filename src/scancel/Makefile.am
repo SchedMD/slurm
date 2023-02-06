@@ -15,5 +15,5 @@ scancel_SOURCES = scancel.c opt.c
 scancel_LDFLAGS = $(CMD_LDFLAGS)
 
 force:
-$(scancel_LDADD) : force
+$(scancel_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

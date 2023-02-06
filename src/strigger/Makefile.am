@@ -13,7 +13,7 @@ noinst_HEADERS = strigger.h
 strigger_SOURCES = strigger.c opts.c
 
 force:
-$(strigger_LDADD) : force
+$(strigger_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 strigger_LDFLAGS = $(CMD_LDFLAGS)
