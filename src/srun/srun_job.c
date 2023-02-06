@@ -2029,6 +2029,24 @@ static void _set_env_vars(resource_allocation_response_msg_t *resp,
 		}
 	}
 
+	if (resp->pn_min_memory & MEM_PER_CPU) {
+		uint64_t tmp_mem = resp->pn_min_memory & (~MEM_PER_CPU);
+		key = _build_key("SLURM_MEM_PER_CPU", het_job_offset);
+		if (!getenv(key) &&
+		    (setenvf(NULL, key, "%"PRIu64, tmp_mem) < 0)) {
+			error("unable to set %s in environment", key);
+		}
+		xfree(key);
+	} else if (resp->pn_min_memory) {
+		uint64_t tmp_mem = resp->pn_min_memory;
+		key = _build_key("SLURM_MEM_PER_NODE", het_job_offset);
+		if (!getenv(key) &&
+		    (setenvf(NULL, key, "%"PRIu64, tmp_mem) < 0)) {
+			error("unable to set %s in environment", key);
+		}
+		xfree(key);
+	}
+
 	return;
 }
 
