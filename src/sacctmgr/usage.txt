@@ -153,8 +153,9 @@ sacctmgr [<OPTION>] [<COMMAND>]
                             Ids=, Names=, ServerType=, Servers=,
                             and WithClusters
        add resource       - Allowed=, Clusters=, Count=, Descriptions=, Flags=,
-                            ServerType=, Names=, Server=, and Type=
-       modify resource    - (set options) Allowed=, Count=, Flags=, Manager=,
+                            LastConsumed=, Names=, Server=, ServerType=, Type=
+       modify resource    - (set options) Allowed=, Count=, Flags=,
+                            LastConsumed=, Manager=,
                             (where options) Clusters=, Names=, Servers=,
        delete resource    - Clusters=, Names=
 
@@ -235,8 +236,8 @@ sacctmgr [<OPTION>] [<COMMAND>]
                             Priority, UsageFactor, UsageThreshold
 
        Resource           - Allowed, Cluster, Count, CountAllowed, CountUsed,
-                            Description, Flags, Manager, Name, Server, Type,
-                            Used
+                            Description, Flags, LastConsumed, Manager, Name,
+                            Server, Type, Used
 
        Reservation        - Assoc, Cluster, Comment, End, Flags, ID, Name,
                             NodeNames, Start, TRES, UnusedWall

@@ -1124,7 +1124,9 @@ typedef struct {
 } slurmdb_res_cond_t;
 
 typedef struct {
-	uint32_t allocated;
+	uint32_t allocated; /* count allocated to the clus_res_list */
+	uint32_t last_consumed; /* number from the server saying how many it
+				 * currently has consumed */
 	List clus_res_list; /* list of slurmdb_clus_res_rec_t *'s */
 	slurmdb_clus_res_rec_t *clus_res_rec; /* if only one cluster
 						 being represented */

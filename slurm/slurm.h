@@ -3300,6 +3300,9 @@ typedef struct slurm_license_info {
 	uint8_t remote;      /* non-zero if remote license (not
 			      * defined in slurm.conf) */
 	uint32_t reserved;   /* number of licenses reserved */
+	uint32_t last_consumed; /* number of licenses last known to be
+				   consumed in the license manager
+				   (for remote) */
 	time_t last_update;  /* last updated (for remote) */
 } slurm_license_info_t;
 

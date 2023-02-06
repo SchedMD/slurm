@@ -698,6 +698,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "count", "int unsigned default 0" },
 		{ "type", "int unsigned default 0"},
 		{ "flags", "int unsigned default 0"},
+		{ "last_consumed", "int unsigned default 0" },
 		{ NULL, NULL}
 	};
 

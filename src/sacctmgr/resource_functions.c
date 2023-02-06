@@ -369,6 +369,12 @@ static int _set_res_rec(int *start, int argc, char **argv,
 				     "Allowed") == SLURM_SUCCESS) {
 				set = 1;
 			}
+		} else if (!xstrncasecmp(argv[i], "LastConsumed",
+					 MAX(command_len, 8))) {
+			if (get_uint(argv[i]+end, &res->last_consumed,
+				     "LastConsumed") == SLURM_SUCCESS) {
+				set = 1;
+			}
 		} else if (!xstrncasecmp(argv[i], "Type",
 					 MAX(command_len, 1))) {
 			char *temp = strip_quotes(argv[i]+end, NULL, 1);
@@ -412,6 +418,10 @@ static void _print_res_format(slurmdb_res_rec_t *res,
 
 	while ((field = list_next(itr))) {
 		switch(field->type) {
+		case PRINT_LAST_CONSUMED:
+			field->print_routine(field, &res->last_consumed,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_ALLOWED:
 			tmp_uint32 = clus_res ? clus_res->allowed : 0;
 			field->print_routine(
@@ -598,6 +608,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 			res->manager = xstrdup(start_res->manager);
 			res->server = xstrdup(start_res->server);
 			res->count = start_res->count;
+			res->last_consumed = start_res->last_consumed;
 			res->flags = start_res->flags;
 			res->type = start_res->type;
 			res->allocated = 0;
@@ -623,6 +634,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 				res = xmalloc(sizeof(slurmdb_res_rec_t));
 				slurmdb_init_res_rec(res, 0);
 				res->count = found_res->count;
+				res->last_consumed = found_res->last_consumed;
 				res->id = found_res->id;
 				xfree(res->name);
 				res->name = xstrdup(found_res->name);
@@ -745,6 +757,8 @@ extern int sacctmgr_add_res(int argc, char **argv)
 			printf("  ServerType     = %s\n", res->manager);
 		if (res->count != NO_VAL)
 			printf("  Count          = %u\n", res->count);
+		if (res->last_consumed != NO_VAL)
+			printf("  LastConsumed   = %u\n", res->last_consumed);
 		if (!(res->flags & SLURMDB_RES_FLAG_NOTSET)) {
 			char *res_tmp_str = slurmdb_res_flags_str(res->flags);
 			printf("  Flags          = %s\n", res_tmp_str);
@@ -813,7 +827,7 @@ extern int sacctmgr_list_res(int argc, char **argv)
 	} else if (!list_count(format_list)) {
 		slurm_addto_char_list(
 			format_list,
-			"Name,Server,Type,Count,Allocated,ServerType");
+			"Name,Server,Type,Count,LastConsumed,Allocated,ServerType");
 		if (res_cond->with_clusters)
 			slurm_addto_char_list(
 				format_list, "Cluster,Allowed");
@@ -920,6 +934,10 @@ extern int sacctmgr_modify_res(int argc, char **argv)
 			list_count(res_cond->cluster_list)) {
 		fprintf(stderr, "Can't change \"count\" on a cluster-based "
 			"resource. Remove cluster selection.\n");
+		return SLURM_ERROR;
+	} else if (res->last_consumed != NO_VAL && res_cond->cluster_list &&
+		   list_count(res_cond->cluster_list)) {
+		fprintf(stderr, "Can't change \"lastconsumed\" on a cluster-based resource. Remove cluster selection.\n");
 		return SLURM_ERROR;
 	} else if ((res->allocated != NO_VAL) && !res_cond->cluster_list) {
 		fprintf(stderr, "Can't change \"allowed\" without "

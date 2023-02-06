@@ -2242,6 +2242,7 @@ extern void slurmdb_pack_res_rec(void *in, uint16_t protocol_version,
 			packnull(buffer); // manager
 			packnull(buffer); // name
 			pack32(0, buffer); // allocated
+			pack32(0, buffer); // last_consumed
 			packnull(buffer); // server
 			pack32(SLURMDB_RESOURCE_NOTSET, buffer); // type
 			pack_time(0, buffer); // last_update
@@ -2267,6 +2268,7 @@ extern void slurmdb_pack_res_rec(void *in, uint16_t protocol_version,
 		packstr(object->manager, buffer);
 		packstr(object->name, buffer);
 		pack32(object->allocated, buffer);
+		pack32(object->last_consumed, buffer);
 		packstr(object->server, buffer);
 		pack32(object->type, buffer);
 		pack_time(object->last_update, buffer); // last_update
@@ -2357,6 +2359,7 @@ extern int slurmdb_unpack_res_rec(void **object, uint16_t protocol_version,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->allocated, buffer);
+		safe_unpack32(&object_ptr->last_consumed, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->server,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->type, buffer);

@@ -263,6 +263,15 @@ static int _setup_res_limits(slurmdb_res_rec_t *res,
 			*send_update = 1;
 	}
 
+	if (res->last_consumed != NO_VAL) {
+		if (cols)
+			xstrcat(*cols, ", last_consumed");
+		xstrfmtcat(*vals, ", %u", res->last_consumed);
+		xstrfmtcat(*extra, ", last_consumed=%u", res->last_consumed);
+		if (send_update)
+			*send_update = 1;
+	}
+
 	if (res->manager) {
 		if (cols)
 			xstrcat(*cols, ", manager");
@@ -340,6 +349,7 @@ static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
 		"count",
 		"flags",
 		"id",
+		"last_consumed",
 		"name",
 		"server",
 		"type",
@@ -349,6 +359,7 @@ static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
 		RES_REQ_COUNT,
 		RES_REQ_FLAGS,
 		RES_REQ_ID,
+		RES_REQ_LAST_CONSUMED,
 		RES_REQ_NAME,
 		RES_REQ_SERVER,
 		RES_REQ_TYPE,
@@ -394,6 +405,8 @@ static int _fill_in_res_rec(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res)
 		res->count = slurm_atoul(row[RES_REQ_COUNT]);
 	if (row[RES_REQ_FLAGS] && row[RES_REQ_FLAGS][0])
 		res->flags = slurm_atoul(row[RES_REQ_FLAGS]);
+	if (row[RES_REQ_LAST_CONSUMED] && row[RES_REQ_LAST_CONSUMED][0])
+		res->last_consumed = slurm_atoul(row[RES_REQ_LAST_CONSUMED]);
 	if (row[RES_REQ_NAME] && row[RES_REQ_NAME][0]) {
 		xfree(res->name);
 		res->name = xstrdup(row[RES_REQ_NAME]);
@@ -579,12 +592,16 @@ static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
 			slurmdb_init_res_rec(res_rec, 0);
 
 			res_rec->count = res->count;
+			if (res->last_consumed != NO_VAL)
+				res_rec->last_consumed = res->last_consumed;
+			else
+				res_rec->last_consumed = 0;
 			res_rec->flags = res->flags;
 			res_rec->id = res->id;
 			res_rec->name = xstrdup(res->name);
 			res_rec->server = xstrdup(res->server);
 			res_rec->type = res->type;
-			res_rec->last_update = res->last_update;
+			res_rec->last_update = now;
 
 			res_rec->clus_res_rec =
 				xmalloc(sizeof(slurmdb_clus_res_rec_t));
@@ -744,6 +761,7 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 		"description",
 		"flags",
 		"id",
+		"last_consumed",
 		"manager",
 		"t1.mod_time",
 		"name",
@@ -756,6 +774,7 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 		RES_REQ_DESC,
 		RES_REQ_FLAGS,
 		RES_REQ_ID,
+		RES_REQ_LAST_CONSUMED,
 		RES_REQ_MANAGER,
 		RES_REQ_MOD_TIME,
 		RES_REQ_NAME,
@@ -831,6 +850,9 @@ extern List as_mysql_get_res(mysql_conn_t *mysql_conn, uid_t uid,
 
 		if (row[RES_REQ_COUNT] && row[RES_REQ_COUNT][0])
 			res->count = slurm_atoul(row[RES_REQ_COUNT]);
+		if (row[RES_REQ_LAST_CONSUMED] && row[RES_REQ_LAST_CONSUMED][0])
+			res->last_consumed =
+				slurm_atoul(row[RES_REQ_LAST_CONSUMED]);
 		if (row[RES_REQ_DESC] && row[RES_REQ_DESC][0])
 			res->description = xstrdup(row[RES_REQ_DESC]);
 		if (row[RES_REQ_FLAGS] && row[RES_REQ_FLAGS][0])
@@ -1235,6 +1257,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 			res_rec->count = res->count;
 			res_rec->flags = res->flags;
 			res_rec->id = curr_res;
+			res_rec->last_consumed = res->last_consumed;
 			res_rec->type = res->type;
 			res_rec->last_update = now;
 

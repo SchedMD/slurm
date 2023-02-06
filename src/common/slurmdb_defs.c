@@ -1646,6 +1646,7 @@ extern void slurmdb_init_res_rec(slurmdb_res_rec_t *res,
 	res->count = NO_VAL;
 	res->flags = SLURMDB_RES_FLAG_NOTSET;
 	res->id = NO_VAL;
+	res->last_consumed = NO_VAL;
 	res->allocated = NO_VAL;
 	res->type = SLURMDB_RESOURCE_NOTSET;
 }

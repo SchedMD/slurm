@@ -794,6 +794,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Allocated");
 		field->len = 9;
 		field->print_routine = print_fields_uint32;
+	} else if (!xstrncasecmp("LastConsumed", object, MAX(command_len, 8))) {
+		field->type = PRINT_LAST_CONSUMED;
+		field->name = xstrdup("LastConsumed");
+		field->len = 12;
+		field->print_routine = print_fields_uint32;
 	} else if (!xstrncasecmp("User", object, MAX(command_len, 1))) {
 		field->type = PRINT_USER;
 		field->name = xstrdup("User");

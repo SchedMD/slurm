@@ -5015,6 +5015,9 @@ extern int assoc_mgr_update_res(slurmdb_update_object_t *update, bool locked)
 			if (object->count != NO_VAL)
 				rec->count = object->count;
 
+			if (object->last_consumed != NO_VAL)
+				rec->last_consumed = object->last_consumed;
+
 			if (object->type != SLURMDB_RESOURCE_NOTSET)
 				rec->type = object->type;
 

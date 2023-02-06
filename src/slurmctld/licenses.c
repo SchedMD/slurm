@@ -215,20 +215,27 @@ extern char *license_list_to_string(list_t *license_list)
 	return licenses;
 }
 
-/* license_mutex should be locked before calling this. */
-static void _add_res_rec_2_lic_list(slurmdb_res_rec_t *rec, bool sync)
+static void _handle_consumed(licenses_t *license_entry, slurmdb_res_rec_t *rec)
 {
-	licenses_t *license_entry = xmalloc(sizeof(licenses_t));
-
-	license_entry->name = xstrdup_printf("%s@%s", rec->name, rec->server);
 	if (rec->flags & SLURMDB_RES_FLAG_ABSOLUTE) {
 		license_entry->total = rec->clus_res_rec->allowed;
 	} else {
 		license_entry->total = ((rec->count *
 					 rec->clus_res_rec->allowed) / 100);
 	}
-	license_entry->remote = sync ? 2 : 1;
+
+	license_entry->last_consumed = rec->last_consumed;
 	license_entry->last_update = rec->last_update;
+}
+
+/* license_mutex should be locked before calling this. */
+static void _add_res_rec_2_lic_list(slurmdb_res_rec_t *rec, bool sync)
+{
+	licenses_t *license_entry = xmalloc(sizeof(licenses_t));
+
+	license_entry->name = xstrdup_printf("%s@%s", rec->name, rec->server);
+	license_entry->remote = sync ? 2 : 1;
+	_handle_consumed(license_entry, rec);
 
 	list_push(cluster_license_list, license_entry);
 	last_license_update = time(NULL);
@@ -374,14 +381,7 @@ extern void license_update_remote(slurmdb_res_rec_t *rec)
 		      name);
 		_add_res_rec_2_lic_list(rec, 0);
 	} else {
-		license_entry->total =
-			((rec->count *
-			  rec->clus_res_rec->allowed) / 100);
-		if (license_entry->used > license_entry->total) {
-			info("license %s count decreased",
-			     license_entry->name);
-		}
-		license_entry->last_update = rec->last_update;
+		_handle_consumed(license_entry, rec);
 	}
 	last_license_update = time(NULL);
 
@@ -454,19 +454,13 @@ extern void license_sync_remote(list_t *res_list)
 					continue;
 				if (!xstrcmp(license_entry->name, name)) {
 					license_entry->remote = 2;
-					license_entry->total =
-						((rec->count *
-						  rec->clus_res_rec->
-						  allowed) / 100);
+					_handle_consumed(license_entry, rec);
 					if (license_entry->used >
 					    license_entry->total) {
 						info("license %s count "
 						     "decreased",
 						     license_entry->name);
 					}
-					license_entry->last_update =
-						rec->last_update;
-					last_license_update = time(NULL);
 					break;
 				}
 			}
@@ -1007,6 +1001,7 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 		pack32(lic->used, buffer);
 		pack32(lic->reserved, buffer);
 		pack8(lic->remote, buffer);
+		pack32(lic->last_consumed, buffer);
 		pack_time(lic->last_update, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(lic->name, buffer);

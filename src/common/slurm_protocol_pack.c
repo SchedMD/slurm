@@ -11805,6 +11805,7 @@ static int _unpack_license_info_msg(license_info_msg_t **msg_ptr,
 					msg->lic_array[i].total -
 					msg->lic_array[i].in_use;
 			safe_unpack8(&msg->lic_array[i].remote, buffer);
+			safe_unpack32(&msg->lic_array[i].last_consumed, buffer);
 			safe_unpack_time(&msg->lic_array[i].last_update,
 					 buffer);
 		}
