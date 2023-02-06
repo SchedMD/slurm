@@ -128,7 +128,7 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 	if (!pattern)
 		return NULL;
 
-	xassert((task_id == -1) || (step->ntasks >= task_id));
+	xassert((task_id == -1) || (step->node_tasks >= task_id));
 
 	for (const char *b = pattern; *b; b++) {
 		if (*b == '%') {
@@ -1147,9 +1147,9 @@ extern void cleanup_container(stepd_step_rec_t *step)
 	if (oci_conf->disable_cleanup)
 		goto done;
 
-	if (!oci_conf->ignore_config_json && (step->ntasks > 0)) {
+	if (!oci_conf->ignore_config_json && (step->node_tasks > 0)) {
 		/* clear every config.json and task dir */
-		for (int i = 0; i < step->ntasks; i++) {
+		for (int i = 0; i < step->node_tasks; i++) {
 			char *jconfig = NULL;
 
 			path = _generate_spooldir(step, step->task[i]);
