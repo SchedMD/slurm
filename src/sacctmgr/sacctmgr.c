@@ -1169,6 +1169,6 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        all of the options for Association.                                 \n\
                                                                            \n\
                                                                            \n\
-  All commands entitys, and options are case-insensitive.               \n\n");
+  All commands entities, and options are case-insensitive.              \n\n");
 
 }
