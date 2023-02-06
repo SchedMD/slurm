@@ -1083,8 +1083,6 @@ extern void container_run(stepd_step_rec_t *step,
 		xfree(envfile);
 	}
 
-	_generate_args(step, task);
-
 	if (oci_conf->runtime_env_exclude_set) {
 		extern char **environ;
 		char **env = env_array_exclude((const char **) environ,
@@ -1100,6 +1098,8 @@ extern void container_run(stepd_step_rec_t *step,
 	       __func__, step->cwd, c->spool_dir);
 	xfree(step->cwd);
 	step->cwd = xstrdup(c->spool_dir);
+
+	_generate_patterns(step, task);
 
 	if (oci_conf->runtime_run)
 		_run(step, task);
