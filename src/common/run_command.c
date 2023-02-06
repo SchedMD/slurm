@@ -420,7 +420,7 @@ extern int run_command_waitpid_timeout(
 		if (rc < 0) {
 			if (errno == EINTR)
 				continue;
-			error("waitpid: %m");
+			error("%s: waitpid(%d): %m", __func__, pid);
 			return -1;
 		} else if (command_shutdown) {
 			error("%s: killing %s on shutdown",
