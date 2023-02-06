@@ -95,9 +95,10 @@ extern list_t *license_copy(list_t *license_list_src);
 /*
  * license_job_get - Get the licenses required for a job
  * IN job_ptr - job identification
+ * IN restore - is this a new allocation, or are we loading state from disk
  * RET SLURM_SUCCESS or failure code
  */
-extern int license_job_get(job_record_t *job_ptr);
+extern int license_job_get(job_record_t *job_ptr, bool restore);
 
 /*
  * license_job_merge - The licenses from one job have just been merged into

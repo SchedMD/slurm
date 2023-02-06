@@ -204,7 +204,7 @@ extern void allocate_nodes(job_record_t *job_ptr)
 	}
 
 	last_node_update = time(NULL);
-	license_job_get(job_ptr);
+	license_job_get(job_ptr, false);
 
 	if (has_cloud) {
 		if (has_cloud_power_save &&

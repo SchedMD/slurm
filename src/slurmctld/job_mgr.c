@@ -14603,7 +14603,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				   job_desc->licenses, job_ptr);
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = xstrdup(job_desc->licenses);
-			license_job_get(job_ptr);
+			license_job_get(job_ptr, false);
 		} else {
 			/*
 			 * licenses are valid, but job state or user not

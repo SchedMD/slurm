@@ -740,7 +740,7 @@ extern list_t *license_copy(List license_list_src)
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code
  */
-extern int license_job_get(job_record_t *job_ptr)
+extern int license_job_get(job_record_t *job_ptr, bool restore)
 {
 	list_itr_t *iter;
 	licenses_t *license_entry, *match;

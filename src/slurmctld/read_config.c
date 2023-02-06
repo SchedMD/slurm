@@ -3385,7 +3385,7 @@ static void _restore_job_accounting(void)
 		}
 
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
-			license_job_get(job_ptr);
+			license_job_get(job_ptr, true);
 
 	}
 	list_iterator_destroy(job_iterator);
