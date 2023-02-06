@@ -44,6 +44,7 @@
 #include "scontrol.h"
 #include "src/common/data.h"
 #include "src/common/proc_args.h"
+#include "src/common/ref.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/interfaces/data_parser.h"
@@ -99,6 +100,8 @@ static void	_update_it(int argc, char **argv);
 static int	_update_slurmctld_debug(char *val);
 static void	_usage(void);
 static void	_write_config(char *file_name);
+
+decl_static_data(usage_txt);
 
 int main(int argc, char **argv)
 {
@@ -1960,145 +1963,8 @@ static int _update_slurmctld_debug(char *val)
 /* _usage - show the valid scontrol commands */
 void _usage(void)
 {
-	printf ("\
-scontrol [<OPTION>] [<COMMAND>]                                            \n\
-    Valid <OPTION> values are:                                             \n\
-     -a, --all      Equivalent to \"all\" command                          \n\
-     -d, --details  Equivalent to \"details\" command                      \n\
-     --federation   Report federated job information if a member of a  one \n\
-     -F, --future   Report information about nodes in \"FUTURE\" state.    \n\
-     -h, --help     Equivalent to \"help\" command                         \n\
-     --hide         Equivalent to \"hide\" command                         \n\
-     --json         Produce JSON output                                    \n\
-     --local        Report information only about jobs on the local cluster.\n\
-	            Overrides --federation.                                \n\
-     -M, --cluster  Equivalent to \"cluster\" command. Implies --local.    \n\
-                    NOTE: SlurmDBD must be up.                             \n\
-     -o, --oneliner Equivalent to \"oneliner\" command                     \n\
-     -Q, --quiet    Equivalent to \"quiet\" command                        \n\
-     --sibling      Report information about all sibling jobs on a         \n\
-	            federated cluster. Implies --federation option.        \n\
-     -u,--uid       Update job as user \"uid\" instead of the invoking user.\n\
-     -v, --verbose  Equivalent to \"verbose\" command                      \n\
-     -V, --version  Equivalent to \"version\" command                      \n\
-     --yaml         Produce YAML output                                    \n\
-									   \n\
-  <keyword> may be omitted from the execute line and scontrol will execute \n\
-  in interactive mode. It will process commands as entered until explicitly\n\
-  terminated.                                                              \n\
-									   \n\
-    Valid <COMMAND> values are:                                            \n\
-     abort                    shutdown slurm controller immediately        \n\
-			      generating a core file.                      \n\
-     all                      display information about all partitions,    \n\
-			      including hidden partitions.                 \n\
-     cancel_reboot <nodelist> Cancel pending reboot on nodes.              \n\
-     cluster                  cluster to issue commands to.  Default is    \n\
-			      current cluster.  cluster with no name will  \n\
-			      reset to default.                            \n\
-                              NOTE: SlurmDBD must be up.                   \n\
-     completing               display jobs in completing state along with  \n\
-			      their completing or down nodes               \n\
-     create <SPECIFICATIONS>  create a new partition or reservation        \n\
-     details                  evokes additional details from the \"show\"  \n\
-			      command                                      \n\
-     delete <SPECIFICATIONS>  delete the specified partition or reservation\n\
-     errnumstr <ERRNO>        Given a Slurm error number, return a         \n\
-                              descriptive string.                          \n\
-     exit                     terminate scontrol                           \n\
-     fsdampeningfactor <factor> Set the FairShareDampeningFactor in slurmctld\n\
-     help                     print this description of use.               \n\
-     hold <job_list>          prevent specified job from starting. <job_list>\n\
-			      is either a space separate list of job IDs or\n\
-			      job names \n\
-     holdu <job_list>         place user hold on specified job (see hold)  \n\
-     hide                     do not display information about hidden      \n\
-			      partitions                                   \n\
-     listpids <job_id<.step>> List pids associated with the given jobid, or\n\
-			      all jobs if no id is given (This will only   \n\
-			      display the processes on the node which the  \n\
-			      scontrol is ran on, and only for those       \n\
-			      processes spawned by Slurm and their         \n\
-			      descendants)                                 \n\
-     notify <job_id> msg      send message to specified job                \n\
-     oneliner                 report output one record per line.           \n\
-     pidinfo <pid>            return slurm job information for given pid.  \n\
-     ping                     print status of slurmctld daemons.           \n\
-     quiet                    print no messages other than error messages. \n\
-     quit                     terminate this command.                      \n\
-     reboot [ASAP] [nextstate=] [reason=] <ALL|nodelist>		   \n\
-			      reboot the nodes when they become idle.      \n\
-     reconfigure              re-read configuration files.                 \n\
-     release <job_list>       permit specified job to start (see hold)     \n\
-     requeue <job_id>         re-queue a batch job                         \n\
-     requeuehold <job_id>     re-queue and hold a batch                    \n\
-     resume <jobid_list>      resume previously suspended job (see suspend)\n\
-     setdebug <level>         set slurmctld debug level                    \n\
-     setdebugflags [+|-]<flag>  add or remove slurmctld DebugFlags         \n\
-     schedloglevel <level>    set scheduler log level                      \n\
-     show <ENTITY> [<ID>]     display state of identified entity, default  \n\
-			      is all records.                              \n\
-     shutdown <OPTS>          shutdown slurm daemons                       \n\
-			      (the primary controller will be stopped)     \n\
-     suspend <job_list>       susend specified job (see resume)            \n\
-     top <job_list>           Put specified job first in queue for user    \n\
-     token [lifespan=] [username=] fetch an auth token                     \n\
-     takeover                 ask slurm backup controller to take over     \n\
-     uhold <jobid_list>       place user hold on specified job (see hold)  \n\
-     update <SPECIFICATIONS>  update job, node, partition, reservation, or \n\
-			      step                                         \n\
-     verbose                  enable detailed logging.                     \n\
-     version                  display tool version number.                 \n\
-     wait_job <job_id>        wait until the nodes allocated to the job    \n\
-			      are booted and usable                        \n\
-     write batch_script <job_id> <optional filename>                       \n\
-                              Write the batch script for a given job to a  \n\
-                              local file. Default is slurm-<job_id>.sh if  \n\
-                              the (optional) filename is not given.        \n\
-     write config <optional filename>                                      \n\
-                              Write the current configuration to a file    \n\
-                              with the naming convention of                \n\
-                              slurm.conf.<datetime> in the same directory  \n\
-                              as the original slurm.conf.                  \n\
-                              If a filename is given that file location    \n\
-                              with a .<datetime> suffix is created.        \n\
-     !!                       Repeat the last command entered.             \n\
-									   \n\
-  <ENTITY> may be \"aliases\", \"assoc_mgr\", \"bbstat\", \"burstBuffer\", \n\
-       \"config\", \"daemons\", \"dwstat\", \"federation\", \"frontend\",  \n\
-       \"hostlist\", \"hostlistsorted\", \"hostnames\", \"job\",           \n\
-       \"licenses\", \"node\", \"partition\", \"reservation\", \"slurmd\", \n\
-       \"step\", or \"topology\"                                           \n\
-									   \n\
-  <ID> may be a configuration parameter name, job id, node name, partition \n\
-       name, reservation name, job step id, license name or hostlist or    \n\
-       pathname to a list of host names.                                   \n\
-									   \n\
-  <HOSTLIST> may either be a comma separated list of host names or the     \n\
-       absolute pathname of a file (with leading '/' containing host names \n\
-       either separated by commas or new-lines                             \n\
-									   \n\
-  <LEVEL> may be an integer value like SlurmctldDebug in the slurm.conf    \n\
-       file or the name of the most detailed errors to report (e.g. \"info\",\n\
-       \"verbose\", \"debug\", \"debug2\", etc.).                          \n\
-									   \n\
-  <SLEVEL> may be an integer value like SlurmSchedLogLevel in the          \n\
-       slurm.conf file or \"enable\" or \"disable\".                       \n\
-									   \n\
-  <OPTS> may be \"slurmctld\" to shutdown just the slurmctld daemon,       \n\
-       otherwise all slurm daemons are shutdown                            \n\
-									   \n\
-  Node names may be specified using simple range expressions,              \n\
-  (e.g. \"lx[10-20]\" corresponds to lx10, lx11, lx12, ...)                \n\
-  The job step id is the job id followed by a period and the step id.      \n\
-  Steps can be filtered by providing containerid=<id>.                     \n\
-									   \n\
-  <SPECIFICATIONS> are specified in the same format as the configuration   \n\
-  file. You may wish to use the \"show\" keyword then use its output as    \n\
-  input for the update keyword, editing as needed.                         \n\
-									   \n\
-  All commands and options are case-insensitive, although node names and   \n\
-  partition names tests are case-sensitive (node names \"LX\" and \"lx\"   \n\
-  are distinct).                                                       \n\n");
-
+	char *txt;
+	static_ref_to_cstring(txt, usage_txt);
+	printf("%s\n", txt);
+	xfree(txt);
 }

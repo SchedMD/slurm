@@ -1,0 +1,139 @@
+scontrol [<OPTION>] [<COMMAND>]
+    Valid <OPTION> values are:
+     -a, --all      Equivalent to "all" command
+     -d, --details  Equivalent to "details" command
+     --federation   Report federated job information if a member of a  one
+     -F, --future   Report information about nodes in "FUTURE" state.
+     -h, --help     Equivalent to "help" command
+     --hide         Equivalent to "hide" command
+     --json         Produce JSON output
+     --local        Report information only about jobs on the local cluster.
+	            Overrides --federation.
+     -M, --cluster  Equivalent to "cluster" command. Implies --local.
+                    NOTE: SlurmDBD must be up.
+     -o, --oneliner Equivalent to "oneliner" command
+     -Q, --quiet    Equivalent to "quiet" command
+     --sibling      Report information about all sibling jobs on a
+	            federated cluster. Implies --federation option.
+     -u,--uid       Update job as user "uid" instead of the invoking user.
+     -v, --verbose  Equivalent to "verbose" command
+     -V, --version  Equivalent to "version" command
+     --yaml         Produce YAML output
+
+  <keyword> may be omitted from the execute line and scontrol will execute
+  in interactive mode. It will process commands as entered until explicitly
+  terminated.
+
+    Valid <COMMAND> values are:
+     abort                    shutdown slurm controller immediately
+			      generating a core file.
+     all                      display information about all partitions,
+			      including hidden partitions.
+     cancel_reboot <nodelist> Cancel pending reboot on nodes.
+     cluster                  cluster to issue commands to.  Default is
+			      current cluster.  cluster with no name will
+			      reset to default.
+                              NOTE: SlurmDBD must be up.
+     completing               display jobs in completing state along with
+			      their completing or down nodes
+     create <SPECIFICATIONS>  create a new partition or reservation
+     details                  evokes additional details from the "show"
+			      command
+     delete <SPECIFICATIONS>  delete the specified partition or reservation
+     errnumstr <ERRNO>        Given a Slurm error number, return a
+                              descriptive string.
+     exit                     terminate scontrol
+     fsdampeningfactor <factor> Set the FairShareDampeningFactor in slurmctld
+     help                     print this description of use.
+     hold <job_list>          prevent specified job from starting. <job_list>
+			      is either a space separate list of job IDs or
+			      job names
+     holdu <job_list>         place user hold on specified job (see hold)
+     hide                     do not display information about hidden
+			      partitions
+     listpids <job_id<.step>> List pids associated with the given jobid, or
+			      all jobs if no id is given (This will only
+			      display the processes on the node which the
+			      scontrol is ran on, and only for those
+			      processes spawned by Slurm and their
+			      descendants)
+     notify <job_id> msg      send message to specified job
+     oneliner                 report output one record per line.
+     pidinfo <pid>            return slurm job information for given pid.
+     ping                     print status of slurmctld daemons.
+     quiet                    print no messages other than error messages.
+     quit                     terminate this command.
+     reboot [ASAP] [nextstate=] [reason=] <ALL|nodelist>
+			      reboot the nodes when they become idle.
+     reconfigure              re-read configuration files.
+     release <job_list>       permit specified job to start (see hold)
+     requeue <job_id>         re-queue a batch job
+     requeuehold <job_id>     re-queue and hold a batch
+     resume <jobid_list>      resume previously suspended job (see suspend)
+     setdebug <level>         set slurmctld debug level
+     setdebugflags [+|-]<flag>  add or remove slurmctld DebugFlags
+     schedloglevel <level>    set scheduler log level
+     show <ENTITY> [<ID>]     display state of identified entity, default
+			      is all records.
+     shutdown <OPTS>          shutdown slurm daemons
+			      (the primary controller will be stopped)
+     suspend <job_list>       susend specified job (see resume)
+     top <job_list>           Put specified job first in queue for user
+     token [lifespan=] [username=] fetch an auth token
+     takeover                 ask slurm backup controller to take over
+     uhold <jobid_list>       place user hold on specified job (see hold)
+     update <SPECIFICATIONS>  update job, node, partition, reservation, or
+			      step
+     verbose                  enable detailed logging.
+     version                  display tool version number.
+     wait_job <job_id>        wait until the nodes allocated to the job
+			      are booted and usable
+     write batch_script <job_id> <optional filename>
+                              Write the batch script for a given job to a
+                              local file. Default is slurm-<job_id>.sh if
+                              the (optional) filename is not given.
+     write config <optional filename>
+                              Write the current configuration to a file
+                              with the naming convention of
+                              slurm.conf.<datetime> in the same directory
+                              as the original slurm.conf.
+                              If a filename is given that file location
+                              with a .<datetime> suffix is created.
+     !!                       Repeat the last command entered.
+
+  <ENTITY> may be "aliases", "assoc_mgr", "bbstat", "burstBuffer",
+       "config", "daemons", "dwstat", "federation", "frontend",
+       "hostlist", "hostlistsorted", "hostnames", "job",
+       "licenses", "node", "partition", "reservation", "slurmd",
+       "step", or "topology"
+
+  <ID> may be a configuration parameter name, job id, node name, partition
+       name, reservation name, job step id, license name or hostlist or
+       pathname to a list of host names.
+
+  <HOSTLIST> may either be a comma separated list of host names or the
+       absolute pathname of a file (with leading '/' containing host names
+       either separated by commas or new-lines
+
+  <LEVEL> may be an integer value like SlurmctldDebug in the slurm.conf
+       file or the name of the most detailed errors to report (e.g. "info",
+       "verbose", "debug", "debug2", etc.).
+
+  <SLEVEL> may be an integer value like SlurmSchedLogLevel in the
+       slurm.conf file or "enable" or "disable".
+
+  <OPTS> may be "slurmctld" to shutdown just the slurmctld daemon,
+       otherwise all slurm daemons are shutdown
+
+  Node names may be specified using simple range expressions,
+  (e.g. "lx[10-20]" corresponds to lx10, lx11, lx12, ...)
+  The job step id is the job id followed by a period and the step id.
+  Steps can be filtered by providing containerid=<id>.
+
+  <SPECIFICATIONS> are specified in the same format as the configuration
+  file. You may wish to use the "show" keyword then use its output as
+  input for the update keyword, editing as needed.
+
+  All commands and options are case-insensitive, although node names and
+  partition names tests are case-sensitive (node names "LX" and "lx"
+  are distinct).
