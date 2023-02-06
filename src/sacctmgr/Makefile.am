@@ -33,8 +33,14 @@ sacctmgr_SOURCES =	\
 	problem_functions.c     \
 	tres_function.c
 
-sacctmgr_LDFLAGS = $(CMD_LDFLAGS)
+sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+
+REF = usage.txt
+include $(top_srcdir)/make_ref.include
+noinst_LTLIBRARIES = $(LIB_REF)
+EXTRA_sacctmgr_DEPENDENCIES = $(LIB_REF)
+sacctmgr_LDADD += $(LIB_REF)
 
 force:
-$(sacctmgr_LDADD) : force
+$(sacctmgr_DEPENDENCIES) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
