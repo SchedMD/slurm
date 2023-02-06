@@ -217,7 +217,7 @@ extern char *license_list_to_string(list_t *license_list)
 
 static void _handle_consumed(licenses_t *license_entry, slurmdb_res_rec_t *rec)
 {
-	uint32_t external;
+	uint32_t external = 0;
 
 	if (rec->flags & SLURMDB_RES_FLAG_ABSOLUTE) {
 		license_entry->total = rec->clus_res_rec->allowed;
@@ -226,7 +226,11 @@ static void _handle_consumed(licenses_t *license_entry, slurmdb_res_rec_t *rec)
 					 rec->clus_res_rec->allowed) / 100);
 	}
 
-	external = rec->count - license_entry->total;
+	if (license_entry->total > rec->count) {
+		debug("allocated more licenses than exist total (%u > %u). this should not happen.",
+		      license_entry->total, rec->count);
+	} else
+		external = rec->count - license_entry->total;
 
 	license_entry->last_consumed = rec->last_consumed;
 	if (license_entry->last_consumed <= (external + license_entry->used)) {
