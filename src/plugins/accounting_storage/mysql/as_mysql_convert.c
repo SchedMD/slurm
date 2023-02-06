@@ -493,7 +493,28 @@ extern void as_mysql_convert_possible(mysql_conn_t *mysql_conn)
 	/*
 	 * Check to see if conversion is possible.
 	 */
-	if (db_curr_ver < MIN_CONVERT_VERSION) {
+	if (db_curr_ver == NO_VAL) {
+		/*
+		 * Check if the cluster_table exists before deciding if this is
+		 * a new database or a database that predates the
+		 * convert_version_table.
+		 */
+		MYSQL_RES *result = NULL;
+		char *query = xstrdup_printf("select name from %s limit 1",
+					     cluster_table);
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+		if ((result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			/*
+			 * knowing that the table exists is enough to say this
+			 * is an old database.
+			 */
+			xfree(query);
+			mysql_free_result(result);
+			fatal("Database schema is too old for this version of Slurm to upgrade.");
+		}
+		xfree(query);
+		debug4("Database is new, conversion is not required");
+	} else if (db_curr_ver < MIN_CONVERT_VERSION) {
 		fatal("Database schema is too old for this version of Slurm to upgrade.");
 	} else if (db_curr_ver > CONVERT_VERSION) {
 		char *err_msg = "Database schema is from a newer version of Slurm, downgrading is not possible.";
