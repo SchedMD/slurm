@@ -155,7 +155,8 @@ static void _print_license_info(const char *name, license_info_msg_t *msg)
 			char time_str[256];
 			slurm_make_time_str(&sorted_lic[cc]->last_update,
 					    time_str, sizeof(time_str));
-			printf(" LastConsumed=%u LastDeficit=%u LastUpdate=%s\n",
+			printf("%sLastConsumed=%u LastDeficit=%u LastUpdate=%s\n",
+			       one_liner ? " " : "\n    ",
 			       sorted_lic[cc]->last_consumed,
 			       sorted_lic[cc]->last_deficit, time_str);
 		} else {
