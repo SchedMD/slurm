@@ -1890,7 +1890,7 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	jobacctinfo_destroy(jobacct);
 	END_TIMER;
-	msg_timeout_us = ((uint32_t) slurm_conf.msg_timeout) * USEC_IN_SEC;
+	msg_timeout_us = ((uint64_t) slurm_conf.msg_timeout) * USEC_IN_SEC;
 	if (DELTA_TIMER > msg_timeout_us)
 		error("%s: Took %s, which is more than MessageTimeout (%us). The result won't be delivered",
 		      __func__, TIME_STR, slurm_conf.msg_timeout);
@@ -1902,7 +1902,7 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *step, uid_t uid)
 rwfail:
 	jobacctinfo_destroy(jobacct);
 	END_TIMER;
-	msg_timeout_us = ((uint32_t) slurm_conf.msg_timeout) * USEC_IN_SEC;
+	msg_timeout_us = ((uint64_t) slurm_conf.msg_timeout) * USEC_IN_SEC;
 	if (DELTA_TIMER > msg_timeout_us)
 		error("%s: Failed in %lus", __func__, DELTA_TIMER);
 
