@@ -1073,6 +1073,13 @@ extern void container_run(stepd_step_rec_t *step,
 
 		debug("%s: wrote %s", __func__, jconfig);
 
+		/*
+		 * Swap bundle path to spool directory to ensure runtime uses
+		 * correct config.json
+		 */
+		xfree(c->bundle);
+		c->bundle = xstrdup(c->spool_dir);
+
 		xfree(out);
 		xfree(jconfig);
 	}
