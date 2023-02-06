@@ -334,15 +334,14 @@ static void _read_slurm_cgroup_conf(void)
 		(void) s_p_get_boolean(&slurm_cgroup_conf.cgroup_automount,
 				       "CgroupAutomount", tbl);
 
-		if (s_p_get_string(&slurm_cgroup_conf.cgroup_mountpoint,
-				   "CgroupMountpoint", tbl)) {
+		if (s_p_get_string(&tmp_str, "CgroupMountpoint", tbl)) {
 			/* Remove the trailing / if any. */
-			tmp_str = slurm_cgroup_conf.cgroup_mountpoint;
 			sz = strlen(tmp_str);
 			if (*(tmp_str + sz - 1) == '/')
 				*(tmp_str + sz - 1) = '\0';
-			slurm_cgroup_conf.cgroup_mountpoint = xstrdup(tmp_str);
-			xfree(tmp_str);
+			xfree(slurm_cgroup_conf.cgroup_mountpoint);
+			slurm_cgroup_conf.cgroup_mountpoint = tmp_str;
+			tmp_str = NULL;
 		}
 		if (s_p_get_string(&tmp_str, "CgroupReleaseAgentDir", tbl)) {
 			xfree(tmp_str);
@@ -422,8 +421,11 @@ static void _read_slurm_cgroup_conf(void)
 			warning("AllowedDevicesFile option is obsolete, please remove it from your configuration.");
 		}
 
-		(void) s_p_get_string(&slurm_cgroup_conf.cgroup_plugin,
-				      "CgroupPlugin", tbl);
+		if (s_p_get_string(&tmp_str, "CgroupPlugin", tbl)) {
+			xfree(slurm_cgroup_conf.cgroup_plugin);
+			slurm_cgroup_conf.cgroup_plugin = tmp_str;
+			tmp_str = NULL;
+		}
 
 		if (s_p_get_boolean(&slurm_cgroup_conf.ignore_systemd,
 				    "IgnoreSystemd", tbl)) {
