@@ -3303,6 +3303,7 @@ typedef struct slurm_license_info {
 	uint32_t last_consumed; /* number of licenses last known to be
 				   consumed in the license manager
 				   (for remote) */
+	uint32_t last_deficit;
 	time_t last_update;  /* last updated (for remote) */
 } slurm_license_info_t;
 

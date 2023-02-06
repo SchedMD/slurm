@@ -217,6 +217,8 @@ extern char *license_list_to_string(list_t *license_list)
 
 static void _handle_consumed(licenses_t *license_entry, slurmdb_res_rec_t *rec)
 {
+	uint32_t external;
+
 	if (rec->flags & SLURMDB_RES_FLAG_ABSOLUTE) {
 		license_entry->total = rec->clus_res_rec->allowed;
 	} else {
@@ -224,7 +226,27 @@ static void _handle_consumed(licenses_t *license_entry, slurmdb_res_rec_t *rec)
 					 rec->clus_res_rec->allowed) / 100);
 	}
 
+	external = rec->count - license_entry->total;
+
 	license_entry->last_consumed = rec->last_consumed;
+	if (license_entry->last_consumed <= (external + license_entry->used)) {
+		/*
+		 * "Normal" operation - license consumption is below what the
+		 * local cluster, plus possible use from other clusters,
+		 * have assigned out. No deficit in this case.
+		 */
+		license_entry->last_deficit = 0;
+	} else {
+		/*
+		 * "Deficit" operation. Someone is using licenses that aren't
+		 * included in our local tracking, and exceed that available
+		 * to other clusters. So... we need to adjust our scheduling
+		 * behavior here to avoid over-allocating licenses.
+		 */
+		license_entry->last_deficit = license_entry->last_consumed;
+		license_entry->last_deficit -= external;
+		license_entry->last_deficit -= license_entry->used;
+	}
 	license_entry->last_update = rec->last_update;
 }
 
@@ -648,8 +670,8 @@ extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
 			     job_ptr->job_id, match->name);
 			rc = SLURM_ERROR;
 			break;
-		} else if ((license_entry->total + match->used) >
-			   match->total) {
+		} else if ((license_entry->total + match->used +
+			    match->last_deficit) > match->total) {
 			rc = EAGAIN;
 			break;
 		} else {
@@ -659,7 +681,8 @@ extern int license_job_test_with_list(job_record_t *job_ptr, time_t when,
 							  license_entry->name,
 							  when, reboot);
 			if ((license_entry->total + match->used +
-			     resv_licenses) > match->total) {
+			     match->last_deficit + resv_licenses)
+			    > match->total) {
 				rc = EAGAIN;
 				break;
 			}
@@ -704,6 +727,8 @@ extern list_t *license_copy(List license_list_src)
 		license_entry_dest->name = xstrdup(license_entry_src->name);
 		license_entry_dest->total = license_entry_src->total;
 		license_entry_dest->used = license_entry_src->used;
+		license_entry_dest->last_deficit =
+			license_entry_src->last_deficit;
 		list_push(license_list_dest, license_entry_dest);
 	}
 	list_iterator_destroy(iter);
@@ -1002,6 +1027,7 @@ static void _pack_license(licenses_t *lic, buf_t *buffer,
 		pack32(lic->reserved, buffer);
 		pack8(lic->remote, buffer);
 		pack32(lic->last_consumed, buffer);
+		pack32(lic->last_deficit, buffer);
 		pack_time(lic->last_update, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(lic->name, buffer);

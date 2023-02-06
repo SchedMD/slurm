@@ -11795,19 +11795,24 @@ static int _unpack_license_info_msg(license_info_msg_t **msg_ptr,
 			safe_unpack32(&msg->lic_array[i].total, buffer);
 			safe_unpack32(&msg->lic_array[i].in_use, buffer);
 			safe_unpack32(&msg->lic_array[i].reserved, buffer);
+			safe_unpack8(&msg->lic_array[i].remote, buffer);
+			safe_unpack32(&msg->lic_array[i].last_consumed, buffer);
+			safe_unpack32(&msg->lic_array[i].last_deficit, buffer);
+			safe_unpack_time(&msg->lic_array[i].last_update,
+					 buffer);
+
 			/* The total number of licenses can decrease
 			 * at runtime.
 			 */
-			if (msg->lic_array[i].total < msg->lic_array[i].in_use)
+			if (msg->lic_array[i].total <
+				(msg->lic_array[i].in_use +
+				 msg->lic_array[i].last_deficit))
 				msg->lic_array[i].available = 0;
 			else
 				msg->lic_array[i].available =
 					msg->lic_array[i].total -
-					msg->lic_array[i].in_use;
-			safe_unpack8(&msg->lic_array[i].remote, buffer);
-			safe_unpack32(&msg->lic_array[i].last_consumed, buffer);
-			safe_unpack_time(&msg->lic_array[i].last_update,
-					 buffer);
+					msg->lic_array[i].in_use -
+					msg->lic_array[i].last_deficit;
 		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->num_lic, buffer);
