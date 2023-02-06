@@ -1,18 +1,18 @@
 sacctmgr [<OPTION>] [<COMMAND>]
     Valid <OPTION> values are:
-     -h or --help: equivalent to \"help\" command
+     -h or --help: equivalent to "help" command
      -i or --immediate: commit changes immediately
      --json: Produce JSON output (where supported)
      -n or --noheader: no header will be added to the beginning of output
-     -o or --oneliner: equivalent to \"oneliner\" command
+     -o or --oneliner: equivalent to "oneliner" command
      -p or --parsable: output will be '|' delimited with a '|' at the end
      -P or --parsable2: output will be '|' delimited without a '|' at the end
-     -Q or --quiet: equivalent to \"quiet\" command
+     -Q or --quiet: equivalent to "quiet" command
      --yaml: Produce YAML output (where supported)
-     -r or --readonly: equivalent to \"readonly\" command
-     -s or --associations: equivalent to \"associations\" command
-     -v or --verbose: equivalent to \"verbose\" command
-     -V or --version: equivalent to \"version\" command
+     -r or --readonly: equivalent to "readonly" command
+     -s or --associations: equivalent to "associations" command
+     -v or --verbose: equivalent to "verbose" command
+     -V or --version: equivalent to "version" command
 
   <keyword> may be omitted from the execute line and sacctmgr will execute
   in interactive mode. It will process commands as entered until explicitly
@@ -59,11 +59,11 @@ sacctmgr [<OPTION>] [<COMMAND>]
      version                  display tool version number.
      !!                       Repeat the last command entered.
 
-  <ENTITY> may be \"account\", \"association\", \"cluster\",
-                  \"configuration\", \"coordinator\", \"event\",
-                  \"federation\", \"job\", \"problem\", \"qos\",
-                  \"resource\", \"reservation\", \"runawayjobs\", \"stats\"
-                  \"transaction\", \"tres\", \"user\" or \"wckey\"
+  <ENTITY> may be "account", "association", "cluster",
+                  "configuration", "coordinator", "event",
+                  "federation", "job", "problem", "qos",
+                  "resource", "reservation", "runawayjobs", "stats"
+                  "transaction", "tres", "user" or "wckey"
 
   <SPECS> are different for each command entity pair.
        list account       - Clusters=, Descriptions=, Format=,
@@ -206,7 +206,7 @@ sacctmgr [<OPTION>] [<COMMAND>]
   Format options are different for listing each entity pair.
 
   One can get an number of characters by following the field option with
-  a %%NUMBER option.  i.e. format=name%%30 will print 30 chars of field name.
+  a %NUMBER option.  i.e. format=name%30 will print 30 chars of field name.
 
        Account            - Account, Coordinators, Description, Organization
 

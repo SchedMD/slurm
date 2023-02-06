@@ -911,6 +911,6 @@ static void _usage(void)
 {
         char *txt;
         static_ref_to_cstring(txt, usage_txt);
-        fprintf(stderr, "%s", txt);
+        printf("%s\n", txt);
         xfree(txt);
 }
