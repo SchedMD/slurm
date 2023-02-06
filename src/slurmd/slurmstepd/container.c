@@ -840,6 +840,7 @@ static void _kill_container()
 
 static void _run(stepd_step_rec_t *step, stepd_step_task_info_t *task)
 {
+	debug3("%s: executing: %s", __func__, run_argv[2]);
 	execv(run_argv[0], run_argv);
 	fatal("execv(%s) failed: %m", run_argv[0]);
 }
