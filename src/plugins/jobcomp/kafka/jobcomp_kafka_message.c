@@ -533,7 +533,7 @@ static int _unpack_jobcomp_kafka_msg(uint16_t protocol_version, buf_t *buffer)
 
 	xassert(buffer);
 
-	unpack32(&job_id, buffer);
+	safe_unpack32(&job_id, buffer);
 	safe_unpackstr(&payload, buffer);
 
 	jobcomp_kafka_message_produce(job_id, payload);
