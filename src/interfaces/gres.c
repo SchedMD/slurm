@@ -1236,7 +1236,7 @@ static void _handle_global_autodetect(char *str)
  * Check to see if current GRES record matches the name of the previous GRES
  * record that set env flags.
  */
-static bool _same_gres_type_as_prev(prev_env_flags_t *prev_env,
+static bool _same_gres_name_as_prev(prev_env_flags_t *prev_env,
 				    gres_slurmd_conf_t *p)
 {
 	if ((gres_build_id(p->name) == prev_env->name_hash))
@@ -1429,7 +1429,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			 * if set for multiple lines of the same GRES.
 			 */
 			if (prev_env.name_hash &&
-			    _same_gres_type_as_prev(&prev_env, p) &&
+			    _same_gres_name_as_prev(&prev_env, p) &&
 			    ((prev_env.flags != env_flags) ||
 			     (prev_env.no_gpu_env != no_gpu_env)))
 				fatal("Invalid GRES record name=%s type=%s: Flags (%s) does not match env flags for previous GRES of same node and name",
@@ -1443,7 +1443,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 		xfree(tmp_str);
 	} else if ((prev_env.flags || prev_env.no_gpu_env) &&
-		   _same_gres_type_as_prev(&prev_env, p)) {
+		   _same_gres_name_as_prev(&prev_env, p)) {
 		/* Inherit env flags from previous GRES line with same name */
 		set_default_envs = false;
 		if (!prev_env.no_gpu_env)
