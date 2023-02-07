@@ -558,7 +558,7 @@ static void _unpack_jobcomp_kafka_state(buf_t *buffer)
 	xassert(buffer);
 
 	/* Unpack state header. */
-	unpack16(&protocol_version, buffer);
+	safe_unpack16(&protocol_version, buffer);
 	safe_unpack32(&msg_cnt, buffer);
 
 	/* Unpack state body. */
