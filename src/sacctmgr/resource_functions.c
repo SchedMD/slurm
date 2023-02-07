@@ -623,9 +623,6 @@ extern int sacctmgr_add_res(int argc, char **argv)
 			ListIterator found_itr = NULL;
 			slurmdb_clus_res_rec_t *clus_res;
 			char *cluster;
-			uint16_t start_used = 0;
-			uint32_t total_pos = 100;
-			char *percent_str = "%";
 
 			if (found_res) {
 				if (found_res->clus_res_list)
@@ -642,14 +639,9 @@ extern int sacctmgr_add_res(int argc, char **argv)
 				xfree(res->server);
 				res->server = xstrdup(found_res->server);
 				res->flags = found_res->flags;
-				start_used = res->allocated =
-					found_res->allocated;
+				res->allocated = found_res->allocated;
 			}
 
-			if (res->flags & SLURMDB_RES_FLAG_ABSOLUTE) {
-				total_pos = res->count;
-				percent_str = "";
-			}
 			res->clus_res_list = list_create(
 				slurmdb_destroy_clus_res_rec);
 
@@ -673,20 +665,6 @@ extern int sacctmgr_add_res(int argc, char **argv)
 						list_append(res_list, res);
 						added = true;
 					}
-					/* make sure we don't overcommit */
-					res->allocated += start_res->allocated;
-					if (res->allocated > total_pos) {
-						exit_code = 1;
-						fprintf(stderr,
-							" Adding these clusters to resource %s@%s at %u%s each (%u total possible), with %u%s already used, would be more tha possible. Please redo your math and resubmit.\n",
-							res->name, res->server,
-							start_res->allocated,
-							percent_str,
-							res->count,
-							start_used,
-							percent_str);
-						break;
-					}
 					clus_res = xmalloc(
 						sizeof(slurmdb_clus_res_rec_t));
 					list_append(res->clus_res_list,
@@ -695,12 +673,9 @@ extern int sacctmgr_add_res(int argc, char **argv)
 					clus_res->allowed =
 						start_res->allocated;
 					xstrfmtcat(res_str,
-						   "   Cluster - %s\t%u%s\n",
+						   "   Cluster - %s\t%u\n",
 						   cluster,
-						   clus_res->allowed,
-						   percent_str);
-					/* FIXME: make sure we don't
-					   overcommit */
+						   clus_res->allowed);
 				}
 			}
 
@@ -709,9 +684,6 @@ extern int sacctmgr_add_res(int argc, char **argv)
 
 			if (found_itr)
 				list_iterator_destroy(found_itr);
-
-			if (added && (res->allocated > total_pos))
-				break;
 
 			list_iterator_reset(clus_itr);
 		}
