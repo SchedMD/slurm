@@ -46,18 +46,6 @@
 #include "src/common/pack.h"
 
 /*
- * This API operates on a global authentication
- * context, one per application.  The API thunks with the "g_" prefix
- * operate on that global instance.  It is initialized implicitly if
- * necessary when any API thunk is called, or explicitly with
- *
- *	slurm_auth_init();
- *
- * The authentication type and other parameters are taken from the
- * system's global configuration.
- */
-
-/*
  * This is what the UID and GID accessors return on error.
  * The value is currently RedHat Linux's ID for the user "nobody".
  */
