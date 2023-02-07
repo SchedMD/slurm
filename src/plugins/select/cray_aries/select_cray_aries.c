@@ -61,9 +61,6 @@
 #include "alpscomm_sn.h"
 #endif
 
-#define IS_CLEANING_STARTED(_X)		(false)
-#define IS_CLEANING_COMPLETE(_X)	(false)
-
 /**
  * struct select_jobinfo - data specific to Cray node selection plugin
  * @magic:		magic number, must equal %JOBINFO_MAGIC
@@ -1211,9 +1208,7 @@ extern int select_p_job_init(List job_list)
 				jobinfo->used_blades = bit_realloc(
 					jobinfo->used_blades, blade_cnt);
 
-			if ((IS_CLEANING_STARTED(jobinfo) &&
-			     !IS_CLEANING_COMPLETE(jobinfo)) ||
-			    IS_JOB_RUNNING(job_ptr))
+			if (IS_JOB_RUNNING(job_ptr))
 				_set_job_running_restore(jobinfo);
 
 #if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
@@ -1938,11 +1933,7 @@ extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 		*select_jobinfo = jobinfo->other_jobinfo;
 		break;
 	case SELECT_JOBDATA_CLEANING:
-		if (IS_CLEANING_STARTED(jobinfo) &&
-		    !IS_CLEANING_COMPLETE(jobinfo))
-			*uint16 = 1;
-		else
-			*uint16 = 0;
+		*uint16 = 0;
 		break;
 	case SELECT_JOBDATA_NETWORK:
 		xassert(in_char);
