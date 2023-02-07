@@ -1438,8 +1438,6 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			_set_prev_env_flags(&prev_env, p, env_flags,
 					    no_gpu_env);
 		}
-		if (flags & GRES_CONF_EXPLICIT)
-			p->config_flags |= GRES_CONF_EXPLICIT;
 
 		xfree(tmp_str);
 	} else if ((prev_env.flags || prev_env.no_gpu_env) &&
