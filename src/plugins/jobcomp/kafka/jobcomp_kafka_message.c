@@ -559,7 +559,7 @@ static void _unpack_jobcomp_kafka_state(buf_t *buffer)
 
 	/* Unpack state header. */
 	unpack16(&protocol_version, buffer);
-	unpack32(&msg_cnt, buffer);
+	safe_unpack32(&msg_cnt, buffer);
 
 	/* Unpack state body. */
 	for (int i = 0; i < msg_cnt; i++)
@@ -567,6 +567,7 @@ static void _unpack_jobcomp_kafka_state(buf_t *buffer)
 					      buffer) != SLURM_SUCCESS)
 			break;
 
+unpack_error:
 	FREE_NULL_BUFFER(buffer);
 }
 
