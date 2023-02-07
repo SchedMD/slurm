@@ -452,8 +452,7 @@ static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 		return SLURM_SUCCESS;
 
 	query = xstrdup_printf("select version from %s", convert_version_table);
-	debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
-	       THIS_FILE, __LINE__, query);
+	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -465,17 +464,12 @@ static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 		db_curr_ver = slurm_atoul(row[0]);
 		mysql_free_result(result);
 	} else {
-		int tmp_ver = 0;
+		int tmp_ver = CONVERT_VERSION;
 		mysql_free_result(result);
-
-		/* no valid clusters, just return */
-		if (as_mysql_total_cluster_list &&
-		    !list_count(as_mysql_total_cluster_list))
-			tmp_ver = CONVERT_VERSION;
 
 		query = xstrdup_printf("insert into %s (version) values (%d);",
 				       convert_version_table, tmp_ver);
-		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS)
@@ -493,7 +487,28 @@ extern void as_mysql_convert_possible(mysql_conn_t *mysql_conn)
 	/*
 	 * Check to see if conversion is possible.
 	 */
-	if (db_curr_ver < MIN_CONVERT_VERSION) {
+	if (db_curr_ver == NO_VAL) {
+		/*
+		 * Check if the cluster_table exists before deciding if this is
+		 * a new database or a database that predates the
+		 * convert_version_table.
+		 */
+		MYSQL_RES *result = NULL;
+		char *query = xstrdup_printf("select name from %s limit 1",
+					     cluster_table);
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+		if ((result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			/*
+			 * knowing that the table exists is enough to say this
+			 * is an old database.
+			 */
+			xfree(query);
+			mysql_free_result(result);
+			fatal("Database schema is too old for this version of Slurm to upgrade.");
+		}
+		xfree(query);
+		debug4("Database is new, conversion is not required");
+	} else if (db_curr_ver < MIN_CONVERT_VERSION) {
 		fatal("Database schema is too old for this version of Slurm to upgrade.");
 	} else if (db_curr_ver > CONVERT_VERSION) {
 		char *err_msg = "Database schema is from a newer version of Slurm, downgrading is not possible.";
@@ -625,7 +640,7 @@ extern int as_mysql_convert_non_cluster_tables_post_create(
 
 		info("Conversion done: success!");
 
-		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 	}
