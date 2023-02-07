@@ -161,7 +161,6 @@ extern bool slurm_get_plugin_hash_enable(int index)
 	xassert(g_context_num > 0);
 
 	return *(ops[index].hash_enable);
-
 }
 
 extern int slurm_auth_init(char *auth_type)
