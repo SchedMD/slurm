@@ -72,14 +72,14 @@ const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
 extern int init(void)
 {
-	debug("%s: %s loaded", __func__, plugin_name);
+	debug("loaded");
 
 	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
 {
-	debug("%s: unloading %s", __func__, plugin_name);
+	debug("unloaded");
 
 	return SLURM_SUCCESS;
 }
