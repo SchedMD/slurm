@@ -81,7 +81,7 @@ static kafka_msg_t *_init_kafka_msg(uint32_t job_id, char *payload);
 static void _load_jobcomp_kafka_state(void);
 static void _pack_jobcomp_kafka_state(buf_t *buffer);
 static int _pack_kafka_msg(void *object, void *arg);
-static void *_poll_handler(void *);
+static void *_poll_handler(void *no_data);
 static void _purge_rd_kafka_msgs(void);
 static void _terminate_poll_handler(void);
 static void _save_jobcomp_kafka_state(void);
@@ -411,7 +411,7 @@ static void _destroy_kafka_msg(void *arg)
 }
 
 /* Kafka poll thread handler. */
-static void *_poll_handler(void *)
+static void *_poll_handler(void *no_data)
 {
 	struct timespec ts = {0, 0};
 
