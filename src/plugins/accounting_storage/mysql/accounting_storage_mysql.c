@@ -2943,8 +2943,7 @@ extern void *acct_storage_p_get_connection(
 {
 	mysql_conn_t *mysql_conn = NULL;
 
-	debug2("acct_storage_p_get_connection: request new connection %d",
-	       rollback);
+	debug2("request new connection %d", rollback);
 
 	if (!(mysql_conn = create_mysql_conn(
 		      conn_num, rollback, cluster_name))) {

@@ -358,7 +358,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	debug2("%s: called", __func__);
+	debug2("called");
 
 	job_state = job_ptr->job_state;
 
@@ -836,7 +836,7 @@ extern int as_mysql_job_heavy(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 
 	xassert(details);
 
-	debug2("%s() called", __func__);
+	debug2("called");
 
 	/*
 	 * make sure we handle any quotes that may be in the comment
@@ -1138,7 +1138,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	debug2("%s() called", __func__);
+	debug2("called");
 
 	if (job_ptr->resize_time)
 		submit_time = job_ptr->resize_time;
