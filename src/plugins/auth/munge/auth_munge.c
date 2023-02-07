@@ -158,6 +158,10 @@ int init(void)
 	return rc;
 }
 
+extern int fini(void)
+{
+	return SLURM_SUCCESS;
+}
 
 /*
  * Allocate a credential.  This function should return NULL if it cannot
