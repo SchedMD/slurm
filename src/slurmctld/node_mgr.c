@@ -3279,8 +3279,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			    NODE_STATE_DOWN) {
 				node_ptr->node_state = NODE_STATE_DOWN |
 						       node_flags;
-				set_node_reboot_reason(node_ptr,
-						       "reboot complete");
+				set_node_reason(node_ptr, "reboot complete",
+						now);
 			} else if (reg_msg->job_count) {
 				node_ptr->node_state = NODE_STATE_ALLOCATED |
 						       node_flags;
@@ -3311,8 +3311,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			if (!node_ptr->reason ||
 			    (node_ptr->reason &&
 			     !xstrcmp(node_ptr->reason, "Not responding"))) {
-				if (node_ptr->reason)
-					xfree(node_ptr->reason);
+				xfree(node_ptr->reason);
 				node_ptr->reason_time = now;
 				node_ptr->reason_uid = slurm_conf.slurm_user_id;
 				node_ptr->reason = xstrdup(
@@ -3813,7 +3812,6 @@ static void _node_did_resp(front_end_record_t *fe_ptr)
 			fe_ptr->reason_uid = NO_VAL;
 		}
 	}
-	return;
 }
 #else
 static void _node_did_resp(node_record_t *node_ptr)
@@ -3884,7 +3882,6 @@ static void _node_did_resp(node_record_t *node_ptr)
 		bit_clear (up_node_bitmap, node_ptr->index);
 	else
 		bit_set   (up_node_bitmap, node_ptr->index);
-	return;
 }
 #endif
 
@@ -3971,8 +3968,6 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 	last_node_update = time(NULL);
 	bit_clear (avail_node_bitmap, node_ptr->index);
 #endif
-
-	return;
 }
 
 /* For every node with the "not_responding" flag set, clear the flag
@@ -4022,8 +4017,6 @@ void set_node_down (char *name, char *reason)
 		return;
 	}
 	set_node_down_ptr (node_ptr, reason);
-
-	return;
 }
 
 /*
@@ -4036,23 +4029,12 @@ void set_node_down_ptr(node_record_t *node_ptr, char *reason)
 {
 	time_t now = time(NULL);
 
-	if ((node_ptr->reason == NULL) ||
-	    (xstrncmp(node_ptr->reason, "Not responding", 14) == 0)) {
-		xfree(node_ptr->reason);
-		if (reason) {
-			node_ptr->reason = xstrdup(reason);
-			node_ptr->reason_time = now;
-			node_ptr->reason_uid = slurm_conf.slurm_user_id;
-		} else {
-			node_ptr->reason_time = 0;
-			node_ptr->reason_uid = NO_VAL;
-		}
-	}
+	xassert(node_ptr);
+
+	set_node_reason(node_ptr, reason, now);
 	_make_node_down(node_ptr, now);
 	(void) kill_running_job_by_node_name(node_ptr->name);
 	_sync_bitmaps(node_ptr, 0);
-
-	return;
 }
 
 /*
@@ -4747,9 +4729,6 @@ extern void check_node_timers()
 		     (!power_save_on && IS_NODE_POWERING_UP(node_ptr))) &&
 		    node_ptr->boot_req_time &&
 		    (node_ptr->boot_req_time + resume_timeout < now)) {
-			set_node_reboot_reason(node_ptr,
-					       "reboot timed out");
-
 			/*
 			 * Remove states now so that event state shows as DOWN.
 			 */
@@ -4757,7 +4736,7 @@ extern void check_node_timers()
 			node_ptr->node_state &= (~NODE_STATE_REBOOT_ISSUED);
 			node_ptr->node_state &= (~NODE_STATE_DRAIN);
 			node_ptr->boot_req_time = 0;
-			set_node_down_ptr(node_ptr, NULL);
+			set_node_down_ptr(node_ptr, "reboot timed out");
 
 			bit_clear(rs_node_bitmap, node_ptr->index);
 		} else if (node_ptr->resume_after &&
@@ -5226,16 +5205,14 @@ cleanup:
 	return ret_rc;
 }
 
-extern void set_node_reboot_reason(node_record_t *node_ptr, char *message)
+extern void set_node_reason(node_record_t *node_ptr,
+			    char *message,
+			    time_t time)
 {
-	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 	xassert(node_ptr);
 
-	if (message == NULL) {
-		xfree(node_ptr->reason);
-		node_ptr->reason_time = 0;
-		node_ptr->reason_uid = NO_VAL;
-	} else {
+	if (message && message[0]) {
 		if (node_ptr->reason &&
 		    !xstrstr(node_ptr->reason, message)) {
 			xstrfmtcat(node_ptr->reason, " : %s", message);
@@ -5243,7 +5220,11 @@ extern void set_node_reboot_reason(node_record_t *node_ptr, char *message)
 			xfree(node_ptr->reason);
 			node_ptr->reason = xstrdup(message);
 		}
-		node_ptr->reason_time = time(NULL);
+		node_ptr->reason_time = time;
 		node_ptr->reason_uid = slurm_conf.slurm_user_id;
+	} else {
+		xfree(node_ptr->reason);
+		node_ptr->reason_time = 0;
+		node_ptr->reason_uid = NO_VAL;
 	}
 }

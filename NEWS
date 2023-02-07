@@ -302,6 +302,9 @@ documents those changes that are of interest to users and administrators.
     warning() logging call. All will now print as "warning: ...".
  -- Add SLURM_JOB_OVERSUBSCRIBE environment variable for Epilog, Prolog,
     EpilogSlurmctld, PrologSlurmctld, and mail ouput.
+ -- Fix node reason time skew when setting a reboot message.
+ -- Append ResumeTimeout message to an existing node reason instead of always
+    clearing it first.
 
 * Changes in Slurm 22.05.9
 ==========================
