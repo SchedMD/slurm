@@ -522,7 +522,7 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 		return rc;
 
 	if (db_curr_ver == CONVERT_VERSION) {
-		debug4("%s: No conversion needed, Horray!", __func__);
+		debug4("No conversion needed, Horray!");
 		return SLURM_SUCCESS;
 	} else if (backup_dbd) {
 		/*
@@ -580,7 +580,7 @@ extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn)
 		return rc;
 
 	if (db_curr_ver == CONVERT_VERSION) {
-		debug4("%s: No conversion needed, Horray!", __func__);
+		debug4("No conversion needed, Horray!");
 		return SLURM_SUCCESS;
 	} else if (backup_dbd) {
 		/*
@@ -614,7 +614,7 @@ extern int as_mysql_convert_non_cluster_tables_post_create(
 		return rc;
 
 	if (db_curr_ver == CONVERT_VERSION) {
-		debug4("%s: No conversion needed, Horray!", __func__);
+		debug4("No conversion needed, Horray!");
 		return SLURM_SUCCESS;
 	}
 
