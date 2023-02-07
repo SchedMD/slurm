@@ -637,7 +637,6 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	if (opt_local->job_name)
 		env->job_name = opt_local->job_name;
 
-	env->select_jobinfo = job->select_jobinfo;
 	if (job->het_job_node_list)
 		env->nodelist = job->het_job_node_list;
 	else

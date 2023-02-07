@@ -56,7 +56,6 @@ typedef struct env_options {
 	bool overcommit;	/* --overcommit,   -O		*/
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
 	bool labelio;		/* --label-output, -l		*/
-	dynamic_plugin_data_t *select_jobinfo;
 	int nhosts;
 	char *nodelist;		/* nodelist in string form */
 	char *partition;	/* partition name */

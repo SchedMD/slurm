@@ -223,7 +223,6 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 
 	step->envtp->cli = cli;
 	step->envtp->self = self;
-	step->envtp->select_jobinfo = msg->select_jobinfo;
 	step->accel_bind_type = msg->accel_bind_type;
 	step->tres_bind = xstrdup(msg->tres_bind);
 	step->tres_freq = xstrdup(msg->tres_freq);
@@ -423,7 +422,6 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 	/* this is the old way of setting environment variables (but
 	 * needed) */
 	step->envtp->overcommit = msg->overcommit;
-	step->envtp->select_jobinfo = msg->select_jobinfo;
 
 	return step;
 
