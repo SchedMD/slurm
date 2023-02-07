@@ -567,7 +567,13 @@ static void _unpack_jobcomp_kafka_state(buf_t *buffer)
 					      buffer) != SLURM_SUCCESS)
 			break;
 
+	FREE_NULL_BUFFER(buffer);
+	return;
+
 unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete jobcomp/kafka state file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
+	error("Incomplete jobcomp/kafka state file");
 	FREE_NULL_BUFFER(buffer);
 }
 
