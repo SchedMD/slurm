@@ -61,13 +61,8 @@
 #include "alpscomm_sn.h"
 #endif
 
-#define CLEANING_INIT		0x0000
-#define CLEANING_STARTED	0x0001
-#define CLEANING_COMPLETE	0x0002
-
-#define IS_CLEANING_INIT(_X)		(_X->cleaning == CLEANING_INIT)
-#define IS_CLEANING_STARTED(_X)		(_X->cleaning & CLEANING_STARTED)
-#define IS_CLEANING_COMPLETE(_X)	(_X->cleaning & CLEANING_COMPLETE)
+#define IS_CLEANING_STARTED(_X)		(false)
+#define IS_CLEANING_COMPLETE(_X)	(false)
 
 /**
  * struct select_jobinfo - data specific to Cray node selection plugin
@@ -79,7 +74,6 @@ struct select_jobinfo {
 	bool                    killing; /* (NO NEED TO PACK) used on
 					    a step to signify it being killed */
 	uint16_t                released;
-	uint16_t                cleaning;
 	uint16_t		magic;
 	uint8_t                 npc;
 	select_jobinfo_t       *other_jobinfo;
@@ -846,7 +840,7 @@ static void _select_jobinfo_pack(select_jobinfo_t *jobinfo, buf_t *buffer,
 			pack_bit_str_hex(NULL, buffer);
 		} else {
 			pack_bit_str_hex(jobinfo->blade_map, buffer);
-			pack16(jobinfo->cleaning, buffer);
+			pack16(0, buffer); /* was cleaning */
 			pack8(jobinfo->npc, buffer);
 			pack_bit_str_hex(jobinfo->used_blades, buffer);
 		}
@@ -863,8 +857,9 @@ static int _select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
 	jobinfo->magic = JOBINFO_MAGIC;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t uint16_tmp;
 		unpack_bit_str_hex(&jobinfo->blade_map, buffer);
-		safe_unpack16(&jobinfo->cleaning, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was cleaning */
 		safe_unpack8(&jobinfo->npc, buffer);
 		unpack_bit_str_hex(&jobinfo->used_blades, buffer);
 	}
@@ -1482,7 +1477,6 @@ extern int select_p_job_begin(job_record_t *job_ptr)
 	xassert(job_ptr->select_jobinfo->data);
 
 	jobinfo = job_ptr->select_jobinfo->data;
-	jobinfo->cleaning = CLEANING_INIT;	/* Reset needed if requeued */
 	jobinfo->released = 0;
 
 	slurm_mutex_lock(&blade_mutex);
