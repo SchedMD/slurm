@@ -2801,8 +2801,12 @@ static uint64_t _step_test(gres_step_state_t *gres_ss, bool first_step_node,
 	}
 
 	if (gres_cnt != NO_VAL64) {
+		uint16_t cpus_per_gres = gres_ss->cpus_per_gres;
+
 		if (min_gres > gres_cnt) {
 			cpu_cnt = 0;
+		} else if (cpus_per_gres && (cpus_per_gres != NO_VAL16)) {
+			cpu_cnt = cpus_per_gres * gres_cnt;
 		} else if (gres_ss->gres_per_task) {
 			task_cnt = (gres_cnt + gres_ss->gres_per_task - 1)
 				/ gres_ss->gres_per_task;
