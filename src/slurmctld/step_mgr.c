@@ -389,16 +389,8 @@ static int _step_not_cleaning(void *x, void *arg)
 	step_record_t *step_ptr = (step_record_t *) x;
 	int *remaining = (int *) arg;
 
-	if (step_ptr->step_id.step_id != SLURM_PENDING_STEP) {
-		uint16_t cleaning = 0;
-		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-					    SELECT_JOBDATA_CLEANING,
-					    &cleaning);
-		if (cleaning)	/* Step already in cleanup. */
-			return 0;
-	} else {
+	if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
 		srun_step_signal(step_ptr, 0);
-	}
 	_internal_step_complete(step_ptr, *remaining);
 
 	(*remaining)--;
@@ -482,19 +474,11 @@ extern void free_step_record(void *x)
  */
 void delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr)
 {
-	uint16_t cleaning = 0;
-
 	xassert(job_ptr);
 	xassert(job_ptr->step_list);
 	xassert(step_ptr);
 
 	last_job_update = time(NULL);
-	select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-				    SELECT_JOBDATA_CLEANING,
-				    &cleaning);
-	if (cleaning) /* Step clean-up in progress. */
-		return;
-
 	list_delete_ptr(job_ptr->step_list, step_ptr);
 }
 
@@ -757,9 +741,6 @@ static int _wake_steps(void *x, void *arg)
 	if ((args->start_count < args->config_start_count) ||
 	    (step_ptr->time_last_active <= args->max_age)) {
 		srun_step_signal(step_ptr, 0);
-		/*
-		 * Step never started, no need to check SELECT_JOBDATA_CLEANING.
-		 */
 		args->start_count++;
 		return 1;
 	}
@@ -4298,23 +4279,11 @@ no_aggregate:
 
 	/* The step has finished, finish it completely */
 	if (!*rem && finish) {
-		uint16_t cleaning = 0;
 		int remaining;
 		job_record_t *job_ptr = step_ptr->job_ptr;
 
 		if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
 			return SLURM_SUCCESS;
-
-		/* If the job is already cleaning we have already been here
-		 * before, so just return. */
-		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-					    SELECT_JOBDATA_CLEANING,
-					    &cleaning);
-		if (cleaning) {	/* Step hasn't finished cleanup yet. */
-			debug("%s: Cleaning flag already set for %pS, no reason to cleanup again.",
-			      __func__, step_ptr);
-			return SLURM_SUCCESS;
-		}
 
 		remaining = list_count(job_ptr->step_list);
 		_internal_step_complete(step_ptr, remaining);

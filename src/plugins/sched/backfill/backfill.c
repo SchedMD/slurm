@@ -1194,8 +1194,6 @@ static bool _job_part_valid(job_record_t *job_ptr, part_record_t *part_ptr)
  * Job state could change when lock are periodically released */
 static bool _job_runnable_now(job_record_t *job_ptr)
 {
-	uint16_t cleaning = 0;
-
 	if (IS_JOB_REVOKED(job_ptr)) {
 		log_flag(BACKFILL, "%pJ revoked during bf yield", job_ptr);
 		return false;
@@ -1224,13 +1222,6 @@ static bool _job_runnable_now(job_record_t *job_ptr)
 	      (job_ptr->array_recs->pend_run_tasks >=
 	     job_ptr->array_recs->max_run_tasks))))
 		return false;
-
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_CLEANING, &cleaning);
-	if (cleaning) {			/* Started, requeue and completing */
-		log_flag(BACKFILL, "%pJ job cleaning after bf yield", job_ptr);
-		return false;
-	}
 
 	return true;
 }

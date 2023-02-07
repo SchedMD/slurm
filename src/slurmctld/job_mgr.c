@@ -10265,7 +10265,6 @@ static int _list_find_job_old(void *job_entry, void *key)
 {
 	time_t kill_age, min_age, now = time(NULL);
 	job_record_t *job_ptr = (job_record_t *) job_entry;
-	uint16_t cleaning = 0;
 
 	if ((job_ptr->job_id == NO_VAL) && IS_JOB_REVOKED(job_ptr))
 		return 1;
@@ -10335,12 +10334,6 @@ static int _list_find_job_old(void *job_entry, void *key)
 			return 0;
 		}
 	}
-
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_CLEANING,
-				    &cleaning);
-	if (cleaning)
-		return 0;      /* Job hasn't finished yet */
 
 	if (bb_g_job_test_stage_out(job_ptr) != 1)
 		return 0;      /* Stage out in progress */
