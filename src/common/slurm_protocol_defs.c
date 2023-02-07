@@ -1749,8 +1749,6 @@ extern void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 		xfree(msg->details);
 		FREE_NULL_LIST(msg->job_gres_prep);
 		xfree(msg->nodes);
-		select_g_select_jobinfo_free(msg->select_jobinfo);
-		msg->select_jobinfo = NULL;
 
 		if (msg->spank_job_env) {
 			for (i = 0; i < msg->spank_job_env_size; i++)

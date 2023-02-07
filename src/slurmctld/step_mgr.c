@@ -4952,8 +4952,6 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 	kill_step->time      = now;
 	kill_step->start_time = job_ptr->start_time;
 	kill_step->details = xstrdup(job_ptr->state_desc);
-	kill_step->select_jobinfo = select_g_select_jobinfo_copy(
-		job_ptr->select_jobinfo);
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
@@ -4988,10 +4986,6 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 	if (agent_args->node_count == 0) {
 		hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
-		if (kill_step->select_jobinfo) {
-			select_g_select_jobinfo_free(
-				kill_step->select_jobinfo);
-		}
 		slurm_free_kill_job_msg(kill_step);
 		return;
 	}

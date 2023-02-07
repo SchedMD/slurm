@@ -15271,8 +15271,6 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 	msg->job_state = job_ptr->job_state;
 	msg->job_uid = job_ptr->user_id;
 	msg->job_gid = job_ptr->group_id;
-	msg->select_jobinfo =
-		select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 	msg->start_time = job_ptr->start_time;
 	msg->step_id.job_id = job_ptr->job_id;
 	msg->step_id.step_het_comp = NO_VAL;
