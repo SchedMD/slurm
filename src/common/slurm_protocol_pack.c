@@ -2843,7 +2843,30 @@ _pack_kill_job_msg(kill_job_msg_t * msg, buf_t *buffer, uint16_t protocol_versio
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		if (msg->cred) {
+			pack8(1, buffer);
+			slurm_cred_pack(msg->cred, buffer, protocol_version);
+		} else
+			pack8(0, buffer);
+		packstr(msg->details, buffer);
+		pack32(msg->derived_ec, buffer);
+		pack32(msg->exit_code, buffer);
+		gres_prep_pack(msg->job_gres_prep, buffer, protocol_version);
+		pack_step_id(&msg->step_id, buffer, protocol_version);
+		pack32(msg->het_job_id, buffer);
+		pack32(msg->job_state, buffer);
+		pack32(msg->job_uid, buffer);
+		pack32(msg->job_gid, buffer);
+		packstr(msg->nodes, buffer);
+		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
+					     protocol_version);
+		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
+			      buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->time, buffer);
+		packstr(msg->work_dir, buffer);
+	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		if (msg->cred) {
 			pack8(1, buffer);
 			slurm_cred_pack(msg->cred, buffer, protocol_version);
@@ -2897,7 +2920,37 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, buf_t *buffer,
 	tmp_ptr = xmalloc(sizeof(kill_job_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp) {
+			tmp_ptr->cred = slurm_cred_unpack(buffer,
+							  protocol_version);
+			if (!tmp_ptr->cred)
+				goto unpack_error;
+		}
+		safe_unpackstr_xmalloc(&tmp_ptr->details, &uint32_tmp, buffer);
+		safe_unpack32(&tmp_ptr->derived_ec, buffer);
+		safe_unpack32(&tmp_ptr->exit_code, buffer);
+		if (gres_prep_unpack(&tmp_ptr->job_gres_prep,
+				     buffer, protocol_version))
+			goto unpack_error;
+		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
+					   protocol_version))
+			goto unpack_error;
+		safe_unpack32(&tmp_ptr->het_job_id, buffer);
+		safe_unpack32(&tmp_ptr->job_state, buffer);
+		safe_unpack32(&tmp_ptr->job_uid, buffer);
+		safe_unpack32(&tmp_ptr->job_gid, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->nodes, &uint32_tmp, buffer);
+		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
+						   buffer, protocol_version))
+			goto unpack_error;
+		safe_unpackstr_array(&tmp_ptr->spank_job_env,
+				     &tmp_ptr->spank_job_env_size, buffer);
+		safe_unpack_time(&tmp_ptr->start_time, buffer);
+		safe_unpack_time(&tmp_ptr->time, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->work_dir, &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			tmp_ptr->cred = slurm_cred_unpack(buffer,
