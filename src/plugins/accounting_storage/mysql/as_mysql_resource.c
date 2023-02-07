@@ -1066,12 +1066,14 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		"name",
 		"server",
 		"flags",
+		"count",
 	};
 	enum {
 		RES_REQ_ID,
 		RES_REQ_NAME,
 		RES_REQ_SERVER,
 		RES_REQ_FLAGS,
+		RES_REQ_COUNT,
 		RES_REQ_NUMBER
 	};
 
@@ -1198,7 +1200,7 @@ extern List as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		} else if ((res->flags & SLURMDB_RES_FLAG_ABSOLUTE) ||
 		    (slurm_atoul(row[RES_REQ_FLAGS]) &
 		     SLURMDB_RES_FLAG_ABSOLUTE)) {
-			total_pos = res->count;
+			total_pos = slurm_atoul(row[RES_REQ_COUNT]);
 			percent_str = "";
 		}
 
