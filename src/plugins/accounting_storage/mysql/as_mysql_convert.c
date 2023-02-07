@@ -452,8 +452,7 @@ static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 		return SLURM_SUCCESS;
 
 	query = xstrdup_printf("select version from %s", convert_version_table);
-	debug4("%d(%s:%d) query\n%s", mysql_conn->conn,
-	       THIS_FILE, __LINE__, query);
+	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
@@ -470,7 +469,7 @@ static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 
 		query = xstrdup_printf("insert into %s (version) values (%d);",
 				       convert_version_table, tmp_ver);
-		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS)
@@ -641,7 +640,7 @@ extern int as_mysql_convert_non_cluster_tables_post_create(
 
 		info("Conversion done: success!");
 
-		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
 	}
