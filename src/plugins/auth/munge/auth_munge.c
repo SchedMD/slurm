@@ -154,7 +154,7 @@ int init(void)
 		xfree(socket);
 		auth_p_destroy(cred);
 	}
-	debug("%s loaded", plugin_name);
+	debug("loaded");
 	return rc;
 }
 
@@ -580,15 +580,15 @@ static void _print_cred(munge_ctx_t ctx)
 
 	e = munge_ctx_get(ctx, MUNGE_OPT_ENCODE_TIME, &encoded);
 	if (e != EMUNGE_SUCCESS)
-		debug("%s: Unable to retrieve encode time: %s",
-		      plugin_type, munge_ctx_strerror(ctx));
+		debug("Unable to retrieve encode time: %s",
+		      munge_ctx_strerror(ctx));
 	else
 		info("ENCODED: %s", slurm_ctime2_r(&encoded, buf));
 
 	e = munge_ctx_get(ctx, MUNGE_OPT_DECODE_TIME, &decoded);
 	if (e != EMUNGE_SUCCESS)
-		debug("%s: Unable to retrieve decode time: %s",
-		      plugin_type, munge_ctx_strerror(ctx));
+		debug("Unable to retrieve decode time: %s",
+		      munge_ctx_strerror(ctx));
 	else
 		info("DECODED: %s", slurm_ctime2_r(&decoded, buf));
 }
