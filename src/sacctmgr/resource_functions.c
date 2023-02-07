@@ -72,6 +72,11 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 	itr = list_iterator_create(res_list);
 	while ((found_res = list_next(itr))) {
 		int total = 0, allowed;
+		char *percent_str = "%";
+
+		if (found_res->flags & SLURMDB_RES_FLAG_ABSOLUTE)
+			percent_str = "";
+
 		fprintf(stderr, "  %s@%s\n",
 			found_res->name, found_res->server);
 		if (cluster_list)
@@ -103,23 +108,24 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 				total += allowed;
 
 				fprintf(stderr,
-					"   Cluster - %s\t %u%%\n",
+					"   Cluster - %s\t %u%s\n",
 					clus_res->cluster,
-					allowed);
+					allowed, percent_str);
 			}
 		} else if (clus_itr) {
 			while ((cluster = list_next(clus_itr))) {
 				total += res->allocated;
 				fprintf(stderr,
-					"   Cluster - %s\t %u%%\n",
-					cluster, res->allocated);
+					"   Cluster - %s\t %u%s\n",
+					cluster, res->allocated,
+					percent_str);
 			}
 		}
 		if (clus_itr)
 			list_iterator_destroy(clus_itr);
 		if (found_clus_itr)
 			list_iterator_destroy(found_clus_itr);
-		fprintf(stderr, "   total\t\t%u%%\n", total);
+		fprintf(stderr, "   total\t\t%u%s\n", total, percent_str);
 	}
 	list_iterator_destroy(itr);
 
