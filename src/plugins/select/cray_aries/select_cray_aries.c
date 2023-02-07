@@ -1892,7 +1892,6 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 				       void *data)
 {
 	int rc = SLURM_SUCCESS;
-	uint16_t *uint16 = (uint16_t *) data;
 	char *in_char = (char *) data;
 
 	if (jobinfo == NULL) {
@@ -1905,12 +1904,6 @@ extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
 	}
 
 	switch (data_type) {
-	case SELECT_JOBDATA_CLEANING:
-		jobinfo->cleaning = *uint16;
-		break;
-	case SELECT_JOBDATA_RELEASED:
-		jobinfo->released = *uint16;
-		break;
 	case SELECT_JOBDATA_NETWORK:
 		if (!in_char || !strlen(in_char)
 		    || !xstrcmp(in_char, "none"))
