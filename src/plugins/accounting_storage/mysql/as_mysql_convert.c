@@ -465,13 +465,8 @@ static int _set_db_curr_ver(mysql_conn_t *mysql_conn)
 		db_curr_ver = slurm_atoul(row[0]);
 		mysql_free_result(result);
 	} else {
-		int tmp_ver = 0;
+		int tmp_ver = CONVERT_VERSION;
 		mysql_free_result(result);
-
-		/* no valid clusters, just return */
-		if (as_mysql_total_cluster_list &&
-		    !list_count(as_mysql_total_cluster_list))
-			tmp_ver = CONVERT_VERSION;
 
 		query = xstrdup_printf("insert into %s (version) values (%d);",
 				       convert_version_table, tmp_ver);
