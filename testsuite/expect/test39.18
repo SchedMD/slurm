@@ -41,7 +41,7 @@ set mismatch_err	"error: This GPU specified in \\\[slurm\\\|gres\\\].conf has mi
 set no_name_err		"error: Invalid GRES data, no type name"
 set parse_err		"error: Parse error in file"
 set links_err		"error: gres.conf: Ignoring invalid Link"
-set conf_mismatch_err	"WARNING: A line in gres.conf for GRES $re_word_str has $number more configured than expected in slurm.conf"
+set conf_mismatch_err	"warning: A line in gres.conf for GRES $re_word_str has $number more configured than expected in slurm.conf"
 set slurm_conf_type_err	"GRES in slurm.conf have a type while others do not"
 set gres_conf_type_err	"fatal: gres.conf for $re_word_str, some records have \"Type=\" specification while others do not"
 set gres_conf_file_err	"fatal: gres.conf for $re_word_str, some records have \"File\" specification while others do not"
