@@ -127,7 +127,7 @@ static int _parse_uint32(uint32_t *result, char *key, const char *nptr)
 	errno = 0;
 	conversion = strtoul(nptr, &endptr, 0);
 
-	if (!errno && nptr && (!*endptr || (endptr != nptr))) {
+	if (!errno && (!*endptr || (endptr != nptr))) {
 		*result = (uint32_t) conversion;
 		return SLURM_SUCCESS;
 	}
