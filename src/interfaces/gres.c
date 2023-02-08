@@ -1307,7 +1307,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	char *autodetect_string = NULL;
 	bool autodetect = false, set_default_envs = true;
 	/* Remember the last-set Flags value */
-	static prev_env_flags_t prev_env;
+	static prev_env_flags_t prev_env = { 0 };
 
 	tbl = s_p_hashtbl_create(_gres_options);
 	s_p_parse_line(tbl, *leftover, leftover);
