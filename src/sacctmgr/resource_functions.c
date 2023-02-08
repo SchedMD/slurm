@@ -591,14 +591,7 @@ extern int sacctmgr_add_res(int argc, char **argv)
 		found_res = sacctmgr_find_res_from_list(
 			g_res_list, NO_VAL, name, start_res->server);
 		if (!found_res) {
-			if (start_res->type == SLURMDB_RESOURCE_NOTSET) {
-				exit_code=1;
-				fprintf(stderr,
-					" Need to designate a resource "
-					"type to initially add '%s'.\n", name);
-				break;
-
-			} else if (start_res->count == NO_VAL) {
+			if (start_res->count == NO_VAL) {
 				exit_code=1;
 				fprintf(stderr,
 					" Need to designate a resource "
