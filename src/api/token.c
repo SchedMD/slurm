@@ -89,6 +89,8 @@ extern char *slurm_fetch_token(char *username, int lifespan)
 		token = token_resp->token;
 		token_resp->token = NULL;
 		slurm_free_token_response_msg(token_resp);
+		if (!token)
+			error("%s: no token returned", __func__);
 		break;
 	}
 
