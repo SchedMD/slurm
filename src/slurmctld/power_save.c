@@ -364,9 +364,10 @@ static void _do_power_work(time_t now)
 			avoid_node_bitmap = bit_copy(exc_node_bitmap);
 	}
 
-	if (avoid_node_bitmap && power_save_debug) {
+	if (avoid_node_bitmap && power_save_debug &&
+	    (get_log_level() >= LOG_LEVEL_DEBUG)) {
 		char *tmp = bitmap2node_name(avoid_node_bitmap);
-		log_flag(POWER, "avoid nodes %s", tmp);
+		debug("avoid nodes %s", tmp);
 		xfree(tmp);
 	}
 
