@@ -1922,6 +1922,9 @@ static bool _handle_core_select(step_record_t *step_ptr,
 
 	xassert(cpu_cnt);
 
+	if (*cpu_cnt <= 0)
+		return true;
+
 	/*
 	 * Use last_core_inx to avoid putting all of the extra
 	 * work onto core zero when oversubscribing cpus.
@@ -2112,7 +2115,10 @@ static int _pick_step_cores(step_record_t *step_ptr,
 				job_resrcs_ptr->core_bitmap);
 		}
 	}
-	cpus_per_task = cpu_cnt / task_cnt;
+	if (task_cnt)
+		cpus_per_task = cpu_cnt / task_cnt;
+	else
+		cpus_per_task = cpu_cnt;
 	/* select idle cores that fit all gres binding first */
 	if (_handle_core_select(step_ptr, job_resrcs_ptr,
 				all_gres_core_bitmap, job_node_inx,
