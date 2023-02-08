@@ -306,6 +306,7 @@ documents those changes that are of interest to users and administrators.
  -- Append ResumeTimeout message to an existing node reason instead of always
     clearing it first.
  -- slurmrestd - added support for Bearer Authentication using auth/jwt.
+ -- Add check to detect invalid HetJob component and abort job if identified.
 
 * Changes in Slurm 22.05.9
 ==========================

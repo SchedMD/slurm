@@ -1109,6 +1109,17 @@ static void _validate_het_jobs(void)
 					error("Not able to remove the job.");
 				continue;
 			}
+			if (job_ptr->het_job_id &&
+			    (job_ptr->job_id == job_ptr->het_job_id)) {
+				error("Invalid HetJob component %pJ HetJobIdSet=%s. Aborting and removing job.",
+				      job_ptr,
+				      job_ptr->het_job_id_set);
+				_abort_job(job_ptr, JOB_FAILED, FAIL_SYSTEM,
+					   "Invalid HetJob component");
+				if (list_delete_item(job_iterator) != 1)
+					error("Not able to remove the job.");
+				continue;
+			}
 		}
 
 		if ((job_ptr->het_job_id == 0) ||
