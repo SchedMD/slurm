@@ -1915,9 +1915,7 @@ extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 				       void *data)
 {
 	int rc = SLURM_SUCCESS;
-	uint16_t *uint16 = (uint16_t *) data;
 	char **in_char = (char **) data;
-	select_jobinfo_t **select_jobinfo = (select_jobinfo_t **) data;
 
 	if (jobinfo == NULL) {
 		debug("select/cray jobinfo_get: jobinfo not set");
@@ -1929,12 +1927,6 @@ extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 	}
 
 	switch (data_type) {
-	case SELECT_JOBDATA_PTR:
-		*select_jobinfo = jobinfo->other_jobinfo;
-		break;
-	case SELECT_JOBDATA_CLEANING:
-		*uint16 = 0;
-		break;
 	case SELECT_JOBDATA_NETWORK:
 		xassert(in_char);
 		switch (jobinfo->npc) {
