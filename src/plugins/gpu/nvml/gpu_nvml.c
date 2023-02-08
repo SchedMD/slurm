@@ -100,6 +100,7 @@ const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
 static int gpumem_pos = -1;
 static int gpuutil_pos = -1;
+static pid_t init_pid = 0;
 
 /*
  * Converts a cpu_set returned from the NVML API into a Slurm bitstr_t
@@ -168,13 +169,13 @@ static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
  */
 static void _nvml_init(void)
 {
-	static bool inited = false;
+	pid_t my_pid = conf->pid ? conf->pid : getpid();
 	nvmlReturn_t nvml_rc;
 
-	if (inited)
+	if (init_pid == my_pid)
 		return;
 
-	inited = true;
+	init_pid = my_pid;
 
 	DEF_TIMERS;
 	START_TIMER;
@@ -197,6 +198,7 @@ static void _nvml_shutdown(void)
 	DEF_TIMERS;
 	START_TIMER;
 	nvml_rc = nvmlShutdown();
+	init_pid = 0;
 	END_TIMER;
 	debug3("nvmlShutdown() took %ld microseconds", DELTA_TIMER);
 	if (nvml_rc != NVML_SUCCESS)
