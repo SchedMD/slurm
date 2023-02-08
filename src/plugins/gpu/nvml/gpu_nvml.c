@@ -41,6 +41,12 @@
 
 #include "../common/gpu_common.h"
 
+#if defined (__APPLE__)
+extern slurmd_conf_t *conf __attribute__((weak_import));
+#else
+slurmd_conf_t *conf = NULL;
+#endif
+
 /*
  * #defines needed to test nvml.
  */
