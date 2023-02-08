@@ -491,7 +491,6 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 	struct option *spanked = slurm_option_table_create(&opt, &opt_string);
 	job_desc_msg_t *desc;
 	job_info_msg_t *jobs = NULL;
-	slurm_job_info_t *job;
 
 	slurm_reset_all_options(&opt, true);
 
@@ -572,8 +571,7 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 	}
 
 	/* grab the first job */
-	job = jobs->job_array;
-	xassert(job->job_id == alloc->job_id);
+	xassert(jobs->job_array->job_id == alloc->job_id);
 
 	write_lock_state();
 	state.jobid = alloc->job_id;
