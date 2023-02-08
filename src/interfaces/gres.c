@@ -1416,36 +1416,33 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 		/* Break out flags into env flags and non-env flags */
 		env_flags = flags & GRES_CONF_ENV_SET;
-		p->config_flags |= flags & ~GRES_CONF_ENV_SET;
+		p->config_flags |= flags;
 
 		if (env_flags && no_gpu_env)
 			fatal("Invalid GRES record name=%s type=%s: Flags (%s) contains \"no_gpu_env\", which must be mutually exclusive to all other GRES env flags of same node and name",
 			      p->name, p->type_name, tmp_str);
 
-		if (env_flags || no_gpu_env) {
-			set_default_envs = false;
-			/*
-			 * Make sure that Flags are consistent with each other
-			 * if set for multiple lines of the same GRES.
-			 */
-			if (prev_env.name_hash &&
-			    _same_gres_name_as_prev(&prev_env, p) &&
-			    ((prev_env.flags != env_flags) ||
-			     (prev_env.no_gpu_env != no_gpu_env)))
-				fatal("Invalid GRES record name=%s type=%s: Flags (%s) does not match env flags for previous GRES of same node and name",
-				      p->name, p->type_name, tmp_str);
-			p->config_flags |= env_flags;
-			_set_prev_env_flags(&prev_env, p, env_flags,
-					    no_gpu_env);
-		}
+		set_default_envs = false;
+		/*
+		 * Make sure that Flags are consistent with each other
+		 * if set for multiple lines of the same GRES.
+		 */
+		if (prev_env.name_hash &&
+		    _same_gres_name_as_prev(&prev_env, p) &&
+		    ((prev_env.flags != flags) ||
+		     (prev_env.no_gpu_env != no_gpu_env)))
+			fatal("Invalid GRES record name=%s type=%s: Flags (%s) does not match env flags for previous GRES of same node and name",
+			      p->name, p->type_name, tmp_str);
+
+		_set_prev_env_flags(&prev_env, p, flags,
+				    no_gpu_env);
 
 		xfree(tmp_str);
 	} else if ((prev_env.flags || prev_env.no_gpu_env) &&
 		   _same_gres_name_as_prev(&prev_env, p)) {
-		/* Inherit env flags from previous GRES line with same name */
+		/* Inherit flags from previous GRES line with same name */
 		set_default_envs = false;
-		if (!prev_env.no_gpu_env)
-			p->config_flags |= prev_env.flags;
+		p->config_flags |= prev_env.flags;
 	} else {
 		if (!xstrcasecmp(p->name, "mps"))
 			p->config_flags |= GRES_CONF_ONE_SHARING;
@@ -1455,6 +1452,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	if (set_default_envs && !xstrcasecmp(p->name, "gpu")) {
 		uint32_t env_flags = GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF;
 		p->config_flags |= env_flags;
+		_set_prev_env_flags(&prev_env, p, env_flags, false);
 	}
 
 	if (s_p_get_string(&p->links, "Link",  tbl) ||
