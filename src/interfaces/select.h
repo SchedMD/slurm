@@ -372,7 +372,6 @@ extern int select_g_select_jobinfo_set(dynamic_plugin_data_t *jobinfo,
  * IN jobinfo  - updated select job credential
  * IN data_type - type of data to enter into job credential
  * OUT data - the data to get from job credential, caller must xfree
- *	data for data_type == SELECT_JOBDATA_PART_ID
  */
 extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
 				       enum select_jobdata_type data_type,

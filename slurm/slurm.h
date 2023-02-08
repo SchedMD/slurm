@@ -675,12 +675,7 @@ enum switch_plugin_type {
 };
 
 enum select_jobdata_type {
-	SELECT_JOBDATA_PAGG_ID	= 14,	/* data-> uint64_t job container ID */
-	SELECT_JOBDATA_PTR	= 15,	/* data-> select_jobinfo_t *jobinfo */
-	SELECT_JOBDATA_CLEANING	= 22,	/* data-> uint16_t if the job is in
-					 * cleaning state or not. */
 	SELECT_JOBDATA_NETWORK	= 23,	/* data-> char * network info */
-	SELECT_JOBDATA_RELEASED	= 24,	/* if job resources have been released */
 };
 
 enum select_nodedata_type {
