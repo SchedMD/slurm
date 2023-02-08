@@ -603,6 +603,7 @@ AC_CONFIG_FILES([Makefile
 		 src/sacctmgr/Makefile
 		 src/salloc/Makefile
 		 src/sattach/Makefile
+		 src/scrun/Makefile
 		 src/sbatch/Makefile
 		 src/sbcast/Makefile
 		 src/scancel/Makefile

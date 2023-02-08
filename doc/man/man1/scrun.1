@@ -1,0 +1,666 @@
+.TH scrun "1" "Slurm Commands" "February 2023" "Slurm Commands"
+
+.SH "NAME"
+\fBscrun\fR \- an OCI runtime proxy for Slurm.
+
+.SH "SYNOPSIS"
+
+.TP
+.SH Create Operation
+\fBscrun\fR [\fIGLOBAL OPTIONS\fR...] \fIcreate\fR [\fICREATE OPTIONS\fR] <\fIcontainer-id\fR>
+.IP
+Prepares a new container with container-id in current working directory.
+.RE
+
+.TP
+.SH Start Operation
+\fBscrun\fR [\fIGLOBAL OPTIONS\fR...] \fIstart\fR <\fIcontainer-id\fR>
+.IP
+Request to start and run container in job.
+.RE
+
+.TP
+.SH Query State Operation
+\fBscrun\fR [\fIGLOBAL OPTIONS\fR...] \fIstate\fR <\fIcontainer-id\fR>
+.IP
+Output OCI defined JSON state of container.
+.RE
+
+.TP
+.SH Kill Operation
+\fBscrun\fR [\fIGLOBAL OPTIONS\fR...] \fIkill\fR <\fIcontainer-id\fR> [\fIsignal\fR]
+.IP
+Send signal (default: SIGTERM) to container.
+.RE
+
+.TP
+.SH Delete Operation
+\fBscrun\fR [\fIGLOBAL OPTIONS\fR...] \fIdelete\fR [\fIDELETE OPTIONS\fR] <\fIcontainer-id\fR>
+.IP
+Release any resources held by container locally and remotely.
+.RE
+
+Perform OCI runtime operations against \fIcontainer-id\fR per:
+.br
+https://github.com/opencontainers/runtime-spec/blob/main/runtime.md
+
+\fBscrun\fR attempts to mimic the commandline behavior as closely as possible
+to \fBcrun\fR(1) and \fBrunc\fR(1) in order to maintain in place replacement
+compatiblity with \fBDOCKER\fR(1) and \fBpodman\fR(1). All commandline
+arguments for \fBcrun\fR(1) and \fBrunc\fR(1) will be accepted for compatiblity
+but may be ignored depending on their applicability.
+
+.SH "DESCRIPTION"
+\fBscrun\fR is an OCI runtime proxy for Slurm. \fBscrun\fR will accept all
+commands as an OCI compliant runtime but will instead proxy the container and
+all STDIO to Slurm for scheduling and execution. The containers will be
+executed remotely on Slurm compute nodes according to settings in
+\fBoci.conf\fR(5).
+
+\fBscrun\fR requires all containers to be OCI image complaint per:
+.br
+https://github.com/opencontainers/image-spec/blob/main/spec.md
+
+.SH "RETURN VALUE"
+On successful operation, \fBscrun\fR will return 0. For any other condition
+\fBscrun\fR will return any non-zero number to denote a error.
+
+.SH "GLOBAL OPTIONS"
+
+.TP
+\fB\-\-cgroup\-manager\fR
+Ignored.
+.IP
+
+.TP
+\fB\-\-debug\fR
+Activate debug level logging.
+.IP
+
+.TP
+\fB\-f\fR <\fIslurm_conf_path\fR>
+Use specified slurm.conf for configuration.
+.br
+Default: sysconfdir from \fBconfigure\fR during compilation
+.IP
+
+.TP
+\fB\-\-usage\fR
+Show quick help on how to call \fBscrun\fR
+.IP
+
+.TP
+\fB\-\-log\-format\fR=<\fIjson|text\fR>
+Optional select format for logging. May be "json" or "text".
+.br
+Default: text
+.IP
+
+.TP
+\fB\-\-root\fR=<\fIroot_path\fR>
+Path to spool directory to communication sockets and temporary directories and
+files. This should be a tmpfs and should be cleared on reboot.
+.br
+Default: /run/user/\fI{user_id}\fR/scrun/
+.IP
+
+.TP
+\fB\-\-rootless\fR
+Ignored. All \fBscrun\fR commands are always rootless.
+.IP
+
+.TP
+\fB\-\-systemd\-cgroup\fR
+Ignored.
+.IP
+
+.TP
+\fB\-v\fR
+Increase logging verbosity. Multiple -v's increase verbosity.
+.IP
+
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version information and exit.
+.IP
+
+.SH "CREATE OPTIONS"
+
+.TP
+\fB\-b\fR <\fIbundle_path\fR>, \fB\-\-bundle\fR=<\fIbundle_path\fR>
+Path to the root of the bundle directory.
+.br
+Default: caller's working directory
+.IP
+
+.TP
+\fB\-\-console\-socket\fR=<\fIconsole_socket_path\fR>
+Optional path to an AF_UNIX socket which will receive a file descriptor
+referencing the master end of the console's pseudoterminal.
+.br
+Default: \fIignored\fR
+.IP
+
+.TP
+\fB\-\-no\-pivot\fR
+Ignored.
+.IP
+
+.TP
+\fB\-\-no\-new\-keyring\fR
+Ignored.
+.IP
+
+.TP
+\fB\-\-pid\-file\fR=<\fIpid_file_path\fR>
+Specify the file to lock and populate with process ID.
+.br
+Default: \fIignored\fR
+.IP
+
+.TP
+\fB\-\-preserve\-fds\fR
+Ignored.
+.IP
+
+.SH "DELETE OPTIONS"
+
+.TP
+\fB\-\-force\fR
+Ignored. All delete requests are forced and will kill any running jobs.
+.IP
+
+.SH "INPUT ENVIRONMENT VARIABLES"
+
+.TP
+\fBSCRUN_DEBUG\fR=<quiet|fatal|error|info|verbose|debug|debug2|debug3|debug4|debug5>
+Set logging level.
+.IP
+
+.TP
+\fBSCRUN_STDERR_DEBUG\fR=<quiet|fatal|error|info|verbose|debug|debug2|debug3|debug4|debug5>
+Set logging level for standard error ouput only.
+.IP
+
+.TP
+\fBSCRUN_SYSLOG_DEBUG\fR=<quiet|fatal|error|info|verbose|debug|debug2|debug3|debug4|debug5>
+Set logging level for syslogging only.
+.IP
+
+.TP
+\fBSCRUN_FILE_DEBUG\fR=<quiet|fatal|error|info|verbose|debug|debug2|debug3|debug4|debug5>
+Set logging level for log file only.
+.IP
+
+.SH "JOB INPUT ENVIRONMENT VARIABLES"
+
+.TP
+\fBSCRUN_ACCOUNT\fR
+See \fBSLURM_ACCOUNT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_ACCTG_FREQ\fR
+See \fBSLURM_ACCTG_FREQ\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_BURST_BUFFER\fR
+See \fBSLURM_BURST_BUFFER\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CLUSTER_CONSTRAINT\fR
+See \fBSLURM_CLUSTER_CONSTRAINT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CLUSTERS\fR
+See \fBSLURM_CLUSTERS\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CONSTRAINT\fR
+See \fBSLURM_CONSTRAINT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSLURM_CORE_SPEC\fR
+See \fBSLURM_ACCOUNT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CPU_BIND\fR
+See \fBSLURM_CPU_BIND\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CPU_FREQ_REQ\fR
+See \fBSLURM_CPU_FREQ_REQ\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CPUS_PER_GPU\fR
+See \fBSLURM_CPUS_PER_GPU\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_CPUS_PER_TASK\fR
+See \fBSRUN_CPUS_PER_TASK\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_DELAY_BOOT\fR
+See \fBSLURM_DELAY_BOOT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_DEPENDENCY\fR
+See \fBSLURM_DEPENDENCY\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_DISTRIBUTION\fR
+See \fBSLURM_DISTRIBUTION\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_EPILOG\fR
+See \fBSLURM_EPILOG\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_EXACT\fR
+See \fBSLURM_EXACT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_EXCLUSIVE\fR
+See \fBSLURM_EXCLUSIVE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GPU_BIND\fR
+See \fBSLURM_GPU_BIND\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GPU_FREQ\fR
+See \fBSLURM_GPU_FREQ\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GPUS\fR
+See \fBSLURM_GPUS\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GPUS_PER_NODE\fR
+See \fBSLURM_GPUS_PER_NODE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GPUS_PER_SOCKET\fR
+See \fBSLURM_GPUS_PER_SOCKET\fR from \fBsalloc\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GPUS_PER_TASK\fR
+See \fBSLURM_GPUS_PER_TASK\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GRES_FLAGS\fR
+See \fBSLURM_GRES_FLAGS\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_GRES\fR
+See \fBSLURM_GRES\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_HINT\fR
+See \fBSLURM_HIST\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_JOB_NAME\fR
+See \fBSLURM_JOB_NAME\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_JOB_NODELIST\fR
+See \fBSLURM_JOB_NODELIST\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_JOB_NUM_NODES\fR
+See \fBSLURM_JOB_NUM_NODES\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_LABELIO\fR
+See \fBSLURM_LABELIO\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_MEM_BIND\fR
+See \fBSLURM_MEM_BIND\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_MEM_PER_CPU\fR
+See \fBSLURM_MEM_PER_CPU\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_MEM_PER_GPU\fR
+See \fBSLURM_MEM_PER_GPU\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_MEM_PER_NODE\fR
+See \fBSLURM_MEM_PER_NODE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_MPI_TYPE\fR
+See \fBSLURM_MPI_TYPE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NCORES_PER_SOCKET\fR
+See \fBSLURM_NCORES_PER_SOCKET\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NETWORK\fR
+See \fBSLURM_NETWORK\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NSOCKETS_PER_NODE\fR
+See \fBSLURM_NSOCKETS_PER_NODE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NTASKS\fR
+See \fBSLURM_NTASKS\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NTASKS_PER_CORE\fR
+See \fBSLURM_NTASKS_PER_CORE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NTASKS_PER_GPU\fR
+See \fBSLURM_NTASKS_PER_GPU\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NTASKS_PER_NODE\fR
+See \fBSLURM_NTASKS_PER_NODE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_NTASKS_PER_TRES\fR
+See \fBSLURM_NTASKS_PER_TRES\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_OPEN_MODE\fR
+See \fBSLURM_MODE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_OVERCOMMIT\fR
+See \fBSLURM_OVERCOMMIT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_OVERLAP\fR
+See \fBSLURM_OVERLAP\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_PARTITION\fR
+See \fBSLURM_PARTITION\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_POWER\fR
+See \fBSLURM_POWER\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_PROFILE\fR
+See \fBSLURM_PROFILE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_PROLOG\fR
+See \fBSLURM_PROLOG\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_QOS\fR
+See \fBSLURM_QOS\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_REMOTE_CWD\fR
+See \fBSLURM_REMOTE_CWD\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_REQ_SWITCH\fR
+See \fBSLURM_REQ_SWITCH\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_RESERVATION\fR
+See \fBSLURM_RESERVATION\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_SIGNAL\fR
+See \fBSLURM_SIGNAL\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_SLURMD_DEBUG\fR
+See \fBSLURMD_DEBUG\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_SPREAD_JOB\fR
+See \fBSLURM_SPREAD_JOB\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_TASK_EPILOG\fR
+See \fBSLURM_TASK_EPILOG\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_TASK_PROLOG\fR
+See \fBSLURM_TASK_PROLOG\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_THREAD_SPEC\fR
+See \fBSLURM_THREAD_SPEC\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_THREADS_PER_CORE\fR
+See \fBSLURM_THREADS_PER_CORE\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_THREADS\fR
+See \fBSLURM_THREADS\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_TIMELIMIT\fR
+See \fBSLURM_TIMELIMIT\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_TRES_PER_TASK\fR
+See \fBSLURM_TRES_PER_TASK\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_UNBUFFEREDIO\fR
+See \fBSLURM_UNBUFFEREDIO\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_USE_MIN_NODES\fR
+See \fBSLURM_USE_MIN_NODES\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_WAIT4SWITCH\fR
+See \fBSLURM_WAIT4SWITCH\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_WCKEY\fR
+See \fBSLURM_WCKEY\fR from \fBsrun\fR(1).
+.IP
+
+.TP
+\fBSCRUN_WORKING_DIR\fR
+See \fBSLURM_WORKING_DIR\fR from \fBsrun\fR(1).
+.IP
+
+.SH "OUTPUT ENVIRONMENT VARIABLES"
+
+.TP
+\fBSCRUN_OCI_VERSION\fR
+Advertised version of OCI compliance of container.
+.IP
+
+.TP
+\fBSCRUN_CONTAINER_ID\fR
+Value based as \fIcontainer_id\fR during create operation.
+.IP
+
+.TP
+\fBSCRUN_PID\fR
+PID of process used to monitor and control container on allocation node.
+.IP
+
+.TP
+\fBSCRUN_BUNDLE\fR
+Path to container bundle directory.
+.IP
+
+.TP
+\fBSCRUN_SUBMISSION_BUNDLE\fR
+Path to container bundle directory before modification by Lua script.
+.IP
+
+.TP
+\fBSCRUN_ANNOTATION_*\fR
+List of annotations from container's config.json.
+.IP
+
+.TP
+\fBSCRUN_PID_FILE\fR
+Path to pid file that is locked and populated with PID of scrun.
+.IP
+
+.TP
+\fBSCRUN_SOCKET\fR
+Path to control socket for scrun.
+.IP
+
+.TP
+\fBSCRUN_SPOOL_DIR\fR
+Path to workspace for all temporary files for current container. Purged by
+deletion operation.
+.IP
+
+.TP
+\fBSCRUN_SUBMISSION_CONFIG_FILE\fR
+Path to container's config.json file at time of submission.
+.IP
+
+.TP
+\fBSCRUN_USER\fR
+Name of user that called create operation.
+.IP
+
+.TP
+\fBSCRUN_USER_ID\fR
+Numeric ID of user that called create operation.
+.IP
+
+.TP
+\fBSCRUN_GROUP\fR
+Name of user's primary group that called create operation.
+.IP
+
+.TP
+\fBSCRUN_GROUP_ID\fR
+Numeric ID of user primary group that called create operation.
+.IP
+
+.TP
+\fBSCRUN_ROOT\fR
+See \fB\-\-root\fR.
+.IP
+
+.TP
+\fBSCRUN_ROOTFS_PATH\fR
+Path to container's root directory.
+.IP
+
+.TP
+\fBSCRUN_SUBMISSION_ROOTFS_PATH\fR
+Path to container's root directory at submission time.
+.IP
+
+.TP
+\fBSCRUN_LOG_FILE\fR
+Path to scrun's log file during create operation.
+.IP
+
+.TP
+\fBSCRUN_LOG_FORMAT\fR
+Log format type during create operation.
+.IP
+
+.SH "JOB OUTPUT ENVIRONMENT VARIABLES"
+
+.SH "SIGNALS"
+.LP
+When \fBscrun\fR receives SIGINT, it will attempt to gracefully cancel any
+related jobs (if any) and cleanup.
+
+.SH "COPYING"
+Copyright (C) 2023 SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBSlurm\fR(1), \fBoci.conf\fR(5), \fBsrun\fR(1), \fBcrun\fR(1), \fBrunc\fR(1),
+\fBDOCKER\fR(1) and \fBpodman\fR(1)

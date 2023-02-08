@@ -15,6 +15,7 @@ SUBDIRS =		\
 	scancel		\
 	scontrol	\
 	scrontab	\
+	scrun		\
 	sdiag		\
 	sinfo		\
 	slurmctld	\
