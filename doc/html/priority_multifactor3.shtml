@@ -135,7 +135,7 @@ helpful. As a result, k is kept to 1 in that case.</P>
 <!-------------------------------------------------------------------------->
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
-<p> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used
+<p>The following slurm.conf parameters are used
 to enable the depth-oblivious flavor of the fair-share factor.  See
 slurm.conf(5) man page for more details.</p>
 

@@ -171,7 +171,7 @@ calculation at each level.</p>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
-<p> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used to
+<p>The following slurm.conf parameters are used to
 configure the Fair Tree algorithm.  See slurm.conf(5) man page for more
 details.</p>
 

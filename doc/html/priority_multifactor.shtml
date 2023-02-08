@@ -296,7 +296,7 @@ factor as it is currently configured.</P>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
-<P> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used to configure the Multifactor Job Priority Plugin.  See slurm.conf(5) man page for more details.</P>
+<p>The following slurm.conf parameters are used to configure the Multifactor Job Priority Plugin. See slurm.conf(5) man page for more details.</p>
 
 <DL>
 <DT> PriorityType
