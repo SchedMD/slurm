@@ -247,6 +247,7 @@ static void _catch_sigchld(int sig)
 
 rwfail:
 	/* would log but it would result in a dead lock here */
+	return;	/* explicit return avoids a compiler error */
 }
 
 static void _tear_down(con_mgr_t *mgr, con_mgr_fd_t *con,
