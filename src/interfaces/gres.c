@@ -8304,6 +8304,8 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 
 	*step_gres_list = NULL;
 	xassert(gres_context_cnt >= 0);
+	xassert(num_tasks);
+	xassert(cpu_count);
 
 	slurm_mutex_lock(&gres_context_lock);
 	new_step_list = list_create(gres_step_list_delete);
@@ -8381,7 +8383,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 		}
 	}
 
-	if ((ntasks_per_tres != NO_VAL16) && num_tasks && cpu_count) {
+	if ((ntasks_per_tres != NO_VAL16)) {
 		rc = _handle_ntasks_per_tres_step(new_step_list,
 						  ntasks_per_tres,
 						  num_tasks,
