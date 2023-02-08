@@ -237,6 +237,7 @@ static volatile uint32_t autodetect_flags = GRES_AUTODETECT_UNSET;
 static uint32_t select_plugin_type = NO_VAL;
 static buf_t *gres_context_buf = NULL;
 static buf_t *gres_conf_buf = NULL;
+static bool reset_prev = true;
 
 /* Local functions */
 static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js,
@@ -901,6 +902,9 @@ extern int gres_reconfig(void)
 		plugin_change = true;
 	else
 		plugin_change = false;
+
+	reset_prev = true;
+
 	slurm_mutex_unlock(&gres_context_lock);
 
 	if (plugin_change) {
@@ -1308,6 +1312,11 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	bool autodetect = false, set_default_envs = true;
 	/* Remember the last-set Flags value */
 	static prev_gres_flags_t prev_gres = { 0 };
+
+	if (reset_prev) {
+		memset(&prev_gres, 0, sizeof(prev_gres));
+		reset_prev = false;
+	}
 
 	tbl = s_p_hashtbl_create(_gres_options);
 	s_p_parse_line(tbl, *leftover, leftover);
