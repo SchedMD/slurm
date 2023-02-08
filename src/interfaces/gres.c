@@ -905,6 +905,10 @@ extern int gres_reconfig(void)
 
 	reset_prev = true;
 
+	/* Reset the flags so when the node checks in we believe that */
+	for (int i = 0; i < gres_context_cnt; i++)
+		gres_context[i].config_flags |= GRES_CONF_FROM_STATE;
+
 	slurm_mutex_unlock(&gres_context_lock);
 
 	if (plugin_change) {
@@ -2811,7 +2815,14 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			}
 		}
 
-		gres_ctx->config_flags |= config_flags;
+		/*
+		 * If we read in from state we want to take the slurmd's view
+		 * over our state.
+		 */
+		if (gres_ctx->config_flags & GRES_CONF_FROM_STATE)
+			gres_ctx->config_flags = config_flags;
+		else
+			gres_ctx->config_flags |= config_flags;
 
 		/*
 		 * On the slurmctld we need to load the plugins to
@@ -4579,7 +4590,12 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 			gres_ns->gres_bit_alloc =
 				bit_alloc(gres_bitmap_size);
 		}
-		gres_ctx->config_flags = config_flags;
+
+		/*
+		 * Flag this as flags read from state so we only use them until
+		 * the node checks in.
+		 */
+		gres_ctx->config_flags = config_flags | GRES_CONF_FROM_STATE;
 
 		gres_state_node = gres_create_state(
 			gres_ctx, GRES_STATE_SRC_CONTEXT_PTR,

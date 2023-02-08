@@ -108,6 +108,8 @@ typedef struct {
 #define GRES_CONF_EXPLICIT   SLURM_BIT(12) /* Don't allocate as part of
 					      whole node alloc if wasn't
 					      directly requested */
+#define GRES_CONF_FROM_STATE SLURM_BIT(13) /* Flags from state, blow away once
+					      node checks in. */
 
 #define GRES_CONF_ENV_SET    0x000008E0   /* Easy check if any of
 					   * GRES_CONF_ENV_* are set. */
