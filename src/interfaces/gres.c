@@ -4388,8 +4388,8 @@ extern void gres_node_remove(node_record_t *node_ptr)
 		gres_state_t *gres_state_node;
 
 		if (!(gres_state_node =
-			list_find_first(node_ptr->gres_list, gres_find_id,
-					&gres_context[i].plugin_id)))
+		      list_find_first(node_ptr->gres_list, gres_find_id,
+				      &gres_context[i].plugin_id)))
 			continue;
 
 		if (gres_state_node->gres_data) {
@@ -5970,8 +5970,8 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	if (tres_per_task) {
 		char *in_val = tres_per_task, *save_ptr = NULL;
 		while ((gres_state_job = _get_next_job_gres(in_val, &cnt,
-						     *gres_list,
-						     &save_ptr, &rc))) {
+							    *gres_list,
+							    &save_ptr, &rc))) {
 			if (!requested_gpu &&
 			    (!xstrcmp(gres_state_job->gres_name, "gpu")))
 				requested_gpu = true;
@@ -7574,8 +7574,8 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
 		(*(gres_ctx->ops.job_set_env))(&step->env,
-						     gres_bit_alloc, gres_cnt,
-						     flags);
+					       gres_bit_alloc, gres_cnt,
+					       flags);
 		gres_cnt = 0;
 		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
@@ -8934,7 +8934,7 @@ static bitstr_t *_get_single_usable_gres(int context_inx,
 	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES){
 		char *usable_gres_str = bit_fmt_hexmask_trim(usable_gres);
 		log_flag(GRES, "%s: local_proc_id = %d; usable_gres: %s",
-			__func__, local_proc_id, usable_gres_str);
+			 __func__, local_proc_id, usable_gres_str);
 		xfree(usable_gres_str);
 	}
 
@@ -9328,7 +9328,7 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
 		(*(gres_ctx->ops.step_set_env))(&step->env, gres_bit_alloc,
-					       gres_cnt, flags);
+						gres_cnt, flags);
 		gres_cnt = 0;
 		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
