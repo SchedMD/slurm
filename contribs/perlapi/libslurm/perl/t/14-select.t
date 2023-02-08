@@ -8,7 +8,7 @@ use Devel::Peek;
 my $slurm = Slurm::new();
 ok(defined $slurm,  "create slurm object with default configuration");
 
-my ($resp, $rc, $type, $select_type, $jobid, $jobinfo, $nodeinfo, $data);
+my ($resp, $rc, $type, $select_type, $jobid, $nodeinfo, $data);
 
 # 2
 $resp = $slurm->load_ctl_conf();
@@ -38,26 +38,8 @@ SKIP: {
     skip "job submit failure", 1 unless $jobid;
     $resp = $slurm->load_job($jobid);
     ok($resp, "load job info") or diag("load_job: " . $slurm->strerror());
-    $jobinfo = $resp->{job_array}->[0]->{select_jobinfo};
 }
 
-
-my $jobinfo_data = {
-    SELECT_JOBDATA_RESV_ID() => ["", [qw(cray)]],
-    SELECT_JOBDATA_PTR() => ["Slurm::select_jobinfo_t", [qw(cray)]],
-};
-
-
-# 5 - 19
-foreach $type (0 .. SELECT_JOBDATA_PTR) {
-  SKIP: {
-      skip "job submit failure", 1 unless $jobinfo;
-      skip "plugin not support", 1 unless grep {$select_type eq $_} @{$jobinfo_data->{$type}->[1]};
-      $rc = $slurm->get_select_jobinfo($jobinfo, $type, $data);
-      ok($rc == SLURM_SUCCESS && ref($data) eq $jobinfo_data->{$type}->[0], "get select jobinfo $type")
-	  or diag("get select jobinfo $type: $rc, " . ref($data));
-    }
-}
 $slurm->kill_job($jobid, SIGKILL) if $jobid;
 
 

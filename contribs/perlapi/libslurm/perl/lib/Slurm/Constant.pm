@@ -599,42 +599,6 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =back
 
-=head3 Select jobdata type
-
-=over 2
-
-=item * SELECT_JOBDATA_GEOMETRY           0
-
-=item * SELECT_JOBDATA_ROTATE             1
-
-=item * SELECT_JOBDATA_CONN_TYPE          2
-
-=item * SELECT_JOBDATA_BLOCK_ID           3
-
-=item * SELECT_JOBDATA_NODES              4
-
-=item * SELECT_JOBDATA_IONODES            5
-
-=item * SELECT_JOBDATA_NODE_CNT           6
-
-=item * SELECT_JOBDATA_ALTERED            7
-
-=item * SELECT_JOBDATA_BLRTS_IMAGE        8
-
-=item * SELECT_JOBDATA_LINUX_IMAGE        9
-
-=item * SELECT_JOBDATA_MLOADER_IMAGE      10
-
-=item * SELECT_JOBDATA_RAMDISK_IMAGE      11
-
-=item * SELECT_JOBDATA_REBOOT             12
-
-=item * SELECT_JOBDATA_RESV_ID            13
-
-=item * SELECT_JOBDATA_PTR                14
-
-=back
-
 =head3 Select nodedata type
 
 =over 2
