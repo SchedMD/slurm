@@ -226,8 +226,10 @@ typedef struct {
 
 typedef struct {
 	int config_type_cnt;
+	uint32_t cpu_set_cnt;
 	uint64_t gres_cnt;
 	uint32_t plugin_id;
+	uint32_t rec_cnt;
 	uint64_t topo_cnt;
 } tot_from_slurmd_conf_t;
 
@@ -3241,12 +3243,14 @@ static void _get_tot_from_slurmd_conf(tot_from_slurmd_conf_t *slurmd_conf_tot)
 {
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
-	uint32_t cpu_set_cnt = 0, rec_cnt = 0;
 
 	xassert(slurmd_conf_tot);
+
+	slurmd_conf_tot->cpu_set_cnt = 0;
 	slurmd_conf_tot->config_type_cnt = 0;
 	slurmd_conf_tot->topo_cnt = 0;
 	slurmd_conf_tot->gres_cnt = 0;
+	slurmd_conf_tot->rec_cnt = 0;
 
 	if (gres_conf_list == NULL)
 		return;
@@ -3256,14 +3260,14 @@ static void _get_tot_from_slurmd_conf(tot_from_slurmd_conf_t *slurmd_conf_tot)
 		if (gres_slurmd_conf->plugin_id != slurmd_conf_tot->plugin_id)
 			continue;
 		slurmd_conf_tot->gres_cnt += gres_slurmd_conf->count;
-		rec_cnt++;
+		slurmd_conf_tot->rec_cnt++;
 		if (gres_slurmd_conf->cpus || gres_slurmd_conf->type_name)
-			cpu_set_cnt++;
+			slurmd_conf_tot->cpu_set_cnt++;
 	}
 	list_iterator_destroy(iter);
-	slurmd_conf_tot->config_type_cnt = rec_cnt;
-	if (cpu_set_cnt)
-		slurmd_conf_tot->topo_cnt = rec_cnt;
+	slurmd_conf_tot->config_type_cnt = slurmd_conf_tot->rec_cnt;
+	if (slurmd_conf_tot->cpu_set_cnt)
+		slurmd_conf_tot->topo_cnt = slurmd_conf_tot->rec_cnt;
 }
 
 /* Convert comma-delimited array of link counts to an integer array */
