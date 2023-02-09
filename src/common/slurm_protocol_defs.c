@@ -1329,8 +1329,6 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->resp_host);
 		xfree(msg->script);
 		FREE_NULL_BUFFER(msg->script_buf);
-		select_g_select_jobinfo_free(msg->select_jobinfo);
-		msg->select_jobinfo = NULL;
 		xfree(msg->selinux_context);
 		xfree(msg->std_err);
 		xfree(msg->std_in);

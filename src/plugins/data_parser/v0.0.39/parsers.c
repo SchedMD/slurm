@@ -5839,7 +5839,6 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(UINT32, pn_min_tmp_disk, "temporary_disk_per_node", NULL),
 	add_parse(STRING, req_context, "selinux_context", NULL),
 	add_parse(UINT32_NO_VAL, req_switch, "required_switches", NULL),
-	add_skip(select_jobinfo),
 	add_skip(selinux_context),
 	add_parse(STRING, std_err, "standard_error", NULL),
 	add_parse(STRING, std_in, "standard_input", NULL),

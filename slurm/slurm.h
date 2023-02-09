@@ -1722,8 +1722,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				  * default=0 */
 	char *req_context;	/* requested selinux context */
 	uint32_t req_switch;    /* Minimum number of switches */
-	dynamic_plugin_data_t *select_jobinfo; /* opaque data type,
-					   * Slurm internal use only */
 	char *selinux_context;	/* used internally in the slurmctld,
 				   DON'T PACK */
 	char *std_err;		/* pathname of stderr */

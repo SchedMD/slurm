@@ -6739,17 +6739,6 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		pack32(job_desc_ptr->req_switch, buffer);
 		pack32(job_desc_ptr->wait4switch, buffer);
 
-		if (job_desc_ptr->select_jobinfo) {
-			select_g_select_jobinfo_pack(
-				job_desc_ptr->select_jobinfo,
-				buffer, protocol_version);
-		} else {
-			dynamic_plugin_data_t *select_jobinfo;
-			select_jobinfo = select_g_select_jobinfo_alloc();
-			select_g_select_jobinfo_pack(select_jobinfo, buffer,
-						     protocol_version);
-			select_g_select_jobinfo_free(select_jobinfo);
-		}
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
 		pack64(job_desc_ptr->bitflags, buffer);
 		pack32(job_desc_ptr->delay_boot, buffer);
@@ -6884,17 +6873,8 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		pack32(job_desc_ptr->req_switch, buffer);
 		pack32(job_desc_ptr->wait4switch, buffer);
 
-		if (job_desc_ptr->select_jobinfo) {
-			select_g_select_jobinfo_pack(
-				job_desc_ptr->select_jobinfo,
-				buffer, protocol_version);
-		} else {
-			dynamic_plugin_data_t *select_jobinfo;
-			select_jobinfo = select_g_select_jobinfo_alloc();
-			select_g_select_jobinfo_pack(select_jobinfo, buffer,
-						     protocol_version);
-			select_g_select_jobinfo_free(select_jobinfo);
-		}
+		select_g_select_jobinfo_pack(NULL, buffer, protocol_version);
+
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
 		pack64(job_desc_ptr->bitflags, buffer);
 		pack32(job_desc_ptr->delay_boot, buffer);
@@ -7028,17 +7008,8 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		pack32(job_desc_ptr->req_switch, buffer);
 		pack32(job_desc_ptr->wait4switch, buffer);
 
-		if (job_desc_ptr->select_jobinfo) {
-			select_g_select_jobinfo_pack(
-				job_desc_ptr->select_jobinfo,
-				buffer, protocol_version);
-		} else {
-			dynamic_plugin_data_t *select_jobinfo;
-			select_jobinfo = select_g_select_jobinfo_alloc();
-			select_g_select_jobinfo_pack(select_jobinfo, buffer,
-						     protocol_version);
-			select_g_select_jobinfo_free(select_jobinfo);
-		}
+		select_g_select_jobinfo_pack(NULL, buffer, protocol_version);
+
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
 		pack64(job_desc_ptr->bitflags, buffer);
 		pack32(job_desc_ptr->delay_boot, buffer);
@@ -7221,11 +7192,6 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpack32(&job_desc_ptr->req_switch, buffer);
 		safe_unpack32(&job_desc_ptr->wait4switch, buffer);
 
-		if (select_g_select_jobinfo_unpack(
-			    &job_desc_ptr->select_jobinfo,
-			    buffer, protocol_version))
-			goto unpack_error;
-
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
 		safe_unpack64(&job_desc_ptr->bitflags, buffer);
 		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
@@ -7247,6 +7213,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 				      protocol_version, buffer))
 			goto unpack_error;
 	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		dynamic_plugin_data_t *select_jobinfo;
 		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
 		*job_desc_buffer_ptr = job_desc_ptr;
 
@@ -7426,10 +7393,10 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpack32(&job_desc_ptr->wait4switch, buffer);
 
 		if (select_g_select_jobinfo_unpack(
-			    &job_desc_ptr->select_jobinfo,
+			    &select_jobinfo,
 			    buffer, protocol_version))
 			goto unpack_error;
-
+		select_g_select_jobinfo_free(select_jobinfo);
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
 		safe_unpack64(&job_desc_ptr->bitflags, buffer);
 		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
@@ -7462,6 +7429,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 				      protocol_version, buffer))
 			goto unpack_error;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		dynamic_plugin_data_t *select_jobinfo;
 		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
 		*job_desc_buffer_ptr = job_desc_ptr;
 
@@ -7640,10 +7608,10 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpack32(&job_desc_ptr->wait4switch, buffer);
 
 		if (select_g_select_jobinfo_unpack(
-			    &job_desc_ptr->select_jobinfo,
+			    &select_jobinfo,
 			    buffer, protocol_version))
 			goto unpack_error;
-
+		select_g_select_jobinfo_free(select_jobinfo);
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
 		safe_unpack64(&job_desc_ptr->bitflags, buffer);
 		safe_unpack32(&job_desc_ptr->delay_boot, buffer);

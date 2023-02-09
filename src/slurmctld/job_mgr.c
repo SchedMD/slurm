@@ -8973,8 +8973,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->work_dir = xstrdup(job_desc->work_dir);
 	if (job_desc->begin_time > time(NULL))
 		detail_ptr->begin_time = job_desc->begin_time;
-	job_ptr->select_jobinfo =
-		select_g_select_jobinfo_copy(job_desc->select_jobinfo);
+	job_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
 
 	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_NETWORK,
