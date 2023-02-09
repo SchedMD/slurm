@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "January 2023" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "February 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4835,7 +4835,9 @@ slurmctld, and on any 'scontrol reconfigure' command new configs will
 be automatically pushed out and applied to nodes that are running in this
 "configless" mode.
 A restart of slurmctld is required for changes to this parameter to take effect.
-NOTE: Included files with the \fBInclude\fR directive will only be pushed
+See https://slurm.schedmd.com/configless_slurm.html for more details.
+
+\fBNOTE\fR: Included files with the \fBInclude\fR directive will only be pushed
 if the filename has no path separators and is located adjacent to slurm.conf.
 .IP
 
