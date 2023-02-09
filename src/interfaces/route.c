@@ -226,7 +226,7 @@ extern int route_split_hostlist_treewidth(hostlist_t hl,
 	while ((name = hostlist_shift(hl))) {
 		(*sp_hl)[nhl] = hostlist_create(name);
 		free(name);
-		for (j = 0; j < span[nhl]; j++) {
+		for (j = 0; span && (j < span[nhl]); j++) {
 			name = hostlist_shift(hl);
 			if (!name) {
 				break;
