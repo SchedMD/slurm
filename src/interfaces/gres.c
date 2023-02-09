@@ -225,6 +225,7 @@ typedef struct {
 } prev_gres_flags_t;
 
 typedef struct {
+	uint32_t config_flags;
 	int config_type_cnt;
 	uint32_t cpu_set_cnt;
 	uint64_t gres_cnt;
@@ -3234,6 +3235,8 @@ static int _foreach_get_tot_from_slurmd_conf(void *x, void *arg)
 	if (gres_slurmd_conf->plugin_id != slurmd_conf_tot->plugin_id)
 		return 0;
 
+	slurmd_conf_tot->config_flags |= gres_slurmd_conf->config_flags;
+
 	slurmd_conf_tot->gres_cnt += gres_slurmd_conf->count;
 	slurmd_conf_tot->rec_cnt++;
 
@@ -3248,6 +3251,7 @@ static int _foreach_get_tot_from_slurmd_conf(void *x, void *arg)
  *
  * tot_from_slurmd_conf_t:
  * plugin_id IN - plugin number to search for
+ * config_flags OUT - config flags from slurmd
  * topo_cnt OUT - count of gres.conf records of this ID found by slurmd
  *		  (each can have different topology)
  * config_type_cnt OUT - Count of records for this GRES found in configuration,
@@ -3260,6 +3264,7 @@ static void _get_tot_from_slurmd_conf(tot_from_slurmd_conf_t *slurmd_conf_tot)
 {
 	xassert(slurmd_conf_tot);
 
+	slurmd_conf_tot->config_flags = 0;
 	slurmd_conf_tot->cpu_set_cnt = 0;
 	slurmd_conf_tot->config_type_cnt = 0;
 	slurmd_conf_tot->topo_cnt = 0;
@@ -3422,10 +3427,11 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	if (gres_ns->node_feature)
 		return rc;
 
-	/* Make sure these are insync after we get it from the slurmd */
-	gres_state_node->config_flags = gres_ctx->config_flags;
-
 	_get_tot_from_slurmd_conf(&slurmd_conf_tot);
+
+	/* Make sure these are insync after we get it from the slurmd */
+	gres_state_node->config_flags = slurmd_conf_tot.config_flags;
+
 	if (gres_ns->gres_cnt_config > slurmd_conf_tot.gres_cnt) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
