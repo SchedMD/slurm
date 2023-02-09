@@ -211,9 +211,9 @@ static void _fname_format(char *buf, int buf_size, job_info_t * job_ptr,
 		} else
 			p++;
 	}
-	xfree(tmp);
 	if (p != q)
 		xmemcat(tmp2, q, p);
+	xfree(tmp);
 
 	if (tmp2[0] == '/')
 		snprintf(buf, buf_size, "%s", tmp2);
