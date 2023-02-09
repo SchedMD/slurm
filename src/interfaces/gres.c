@@ -3226,6 +3226,23 @@ extern int gres_init_node_config(char *orig_config, List *gres_list)
 	return rc;
 }
 
+static int _foreach_get_tot_from_slurmd_conf(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	tot_from_slurmd_conf_t *slurmd_conf_tot = arg;
+
+	if (gres_slurmd_conf->plugin_id != slurmd_conf_tot->plugin_id)
+		return 0;
+
+	slurmd_conf_tot->gres_cnt += gres_slurmd_conf->count;
+	slurmd_conf_tot->rec_cnt++;
+
+	if (gres_slurmd_conf->cpus || gres_slurmd_conf->type_name)
+		slurmd_conf_tot->cpu_set_cnt++;
+
+	return 0;
+}
+
 /*
  * Determine GRES availability on some node
  *
@@ -3241,9 +3258,6 @@ extern int gres_init_node_config(char *orig_config, List *gres_list)
  */
 static void _get_tot_from_slurmd_conf(tot_from_slurmd_conf_t *slurmd_conf_tot)
 {
-	ListIterator iter;
-	gres_slurmd_conf_t *gres_slurmd_conf;
-
 	xassert(slurmd_conf_tot);
 
 	slurmd_conf_tot->cpu_set_cnt = 0;
@@ -3255,16 +3269,9 @@ static void _get_tot_from_slurmd_conf(tot_from_slurmd_conf_t *slurmd_conf_tot)
 	if (gres_conf_list == NULL)
 		return;
 
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
-		if (gres_slurmd_conf->plugin_id != slurmd_conf_tot->plugin_id)
-			continue;
-		slurmd_conf_tot->gres_cnt += gres_slurmd_conf->count;
-		slurmd_conf_tot->rec_cnt++;
-		if (gres_slurmd_conf->cpus || gres_slurmd_conf->type_name)
-			slurmd_conf_tot->cpu_set_cnt++;
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(gres_conf_list, _foreach_get_tot_from_slurmd_conf,
+			     slurmd_conf_tot);
+
 	slurmd_conf_tot->config_type_cnt = slurmd_conf_tot->rec_cnt;
 	if (slurmd_conf_tot->cpu_set_cnt)
 		slurmd_conf_tot->topo_cnt = slurmd_conf_tot->rec_cnt;
