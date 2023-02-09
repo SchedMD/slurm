@@ -307,6 +307,8 @@ documents those changes that are of interest to users and administrators.
     clearing it first.
  -- slurmrestd - added support for Bearer Authentication using auth/jwt.
  -- Add check to detect invalid HetJob component and abort job if identified.
+ -- sched/backfill - fix job test against advanced reservations if job uses a
+    preemptable QOS with Flags=NoReserve.
 
 * Changes in Slurm 22.05.9
 ==========================

@@ -2350,6 +2350,13 @@ next_task:
 		resv_end = 0;
 		later_start = 0;
 		licenses_unavail = false;
+		/*
+		 * Restore the original time limit before checking against
+		 * reservations, and revert it after.
+		 */
+		if ((qos_flags & QOS_FLAG_NO_RESERVE) &&
+		    slurm_conf.preempt_mode)
+			job_ptr->time_limit = orig_time_limit;
 		/* Determine impact of any advance reservations */
 		j = job_test_resv(job_ptr, &start_res, true, &avail_bitmap,
 				  &exc_core_bitmap, &resv_overlap, false);
@@ -2358,7 +2365,9 @@ next_task:
 				 job_ptr);
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			continue;
-		}
+		} else if ((qos_flags & QOS_FLAG_NO_RESERVE) &&
+		    slurm_conf.preempt_mode)
+			job_ptr->time_limit = time_limit;
 		if (start_res > now)
 			end_time = (time_limit * 60) + start_res;
 		else
@@ -2507,11 +2516,21 @@ next_task:
 			bitstr_t *tmp_node_bitmap = NULL;
 			debug2("entering _try_sched for %pJ. Need to use features which can be made available after node reboot",
 			       job_ptr);
+			/*
+			 * Restore the original time limit before checking against
+			 * reservations, and revert it after.
+			 */
+			if ((qos_flags & QOS_FLAG_NO_RESERVE) &&
+			    slurm_conf.preempt_mode)
+				job_ptr->time_limit = orig_time_limit;
 			/* Determine impact of any advance reservations */
 			resv_end = 0;
 			j = job_test_resv(job_ptr, &start_res, false,
 					  &tmp_node_bitmap, &tmp_core_bitmap,
 					  &resv_overlap, true);
+			if ((qos_flags & QOS_FLAG_NO_RESERVE) &&
+					    slurm_conf.preempt_mode)
+				job_ptr->time_limit = time_limit;
 			if (resv_overlap)
 				resv_end = find_resv_end(start_res,
 							 backfill_resolution);
