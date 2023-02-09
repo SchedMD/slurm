@@ -4970,6 +4970,13 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 	xfree(auth_username);
 	END_TIMER2(__func__);
 
+	if (!resp_data->token) {
+		error("%s: error generating auth token: %m", __func__);
+		xfree(resp_data);
+		slurm_send_rc_msg(msg, ESLURM_AUTH_UNABLE_TO_GENERATE_TOKEN);
+		return;
+	}
+
 	response_init(&response_msg, msg, RESPONSE_AUTH_TOKEN, resp_data);
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	slurm_free_token_response_msg(resp_data);

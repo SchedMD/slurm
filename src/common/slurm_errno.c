@@ -527,6 +527,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Cannot unpack credential"				},
 	{ ERRTAB_ENTRY(ESLURM_AUTH_SKIP),
 	  "Authentication does not apply to request"		},
+	{ ERRTAB_ENTRY(ESLURM_AUTH_UNABLE_TO_GENERATE_TOKEN),
+	  "Token Generation failed."				},
 
 	/* accounting errors */
 	{ ERRTAB_ENTRY(ESLURM_DB_CONNECTION),
