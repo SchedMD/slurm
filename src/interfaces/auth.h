@@ -87,6 +87,11 @@ extern int slurm_auth_index(void *cred);
 extern bool slurm_get_plugin_hash_enable(int index);
 
 /*
+ * Check if specific plugin type has been initalized
+ */
+extern bool auth_is_plugin_type_inited(int plugin_id);
+
+/*
  * Expose the context_lock externally so slurmstepd can prevent the
  * auth subsystem from connecting to MUNGE when part of the process
  * is running under _drop_privileges().

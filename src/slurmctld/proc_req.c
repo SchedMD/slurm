@@ -4903,6 +4903,11 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 		return;
 	}
 
+	if (!auth_is_plugin_type_inited(AUTH_PLUGIN_JWT)) {
+		slurm_send_rc_msg(msg, ESLURM_PLUGIN_NOT_LOADED);
+		return;
+	}
+
 	if (max_lifespan == -1) {
 		char *tmp_ptr;
 

@@ -163,6 +163,14 @@ extern bool slurm_get_plugin_hash_enable(int index)
 	return *(ops[index].hash_enable);
 }
 
+extern bool auth_is_plugin_type_inited(int plugin_id)
+{
+	for (int i = 0; i < g_context_num; i++)
+		if (plugin_id == *(ops[i].plugin_id))
+			return true;
+	return false;
+}
+
 extern int slurm_auth_init(char *auth_type)
 {
 	int retval = SLURM_SUCCESS;
