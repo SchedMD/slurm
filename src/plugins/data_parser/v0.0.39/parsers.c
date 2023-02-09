@@ -5274,7 +5274,6 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(UINT16, restart_cnt, "restart_cnt", NULL),
 	add_parse(STRING, resv_name, "resv_name", NULL),
 	add_parse(STRING, sched_nodes, "scheduled_nodes", NULL),
-	add_skip(select_jobinfo),
 	add_parse(STRING, selinux_context, "selinux_context", NULL),
 	add_parse(JOB_SHARED, shared, "shared", NULL),
 	add_parse_bit_flag_array(slurm_job_info_t, JOB_SHOW_FLAGS, false, show_flags, "show_flags", NULL),

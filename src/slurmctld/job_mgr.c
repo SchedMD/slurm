@@ -10924,9 +10924,6 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		else
 			pack_bit_str_hex(dump_job_ptr->node_bitmap_cg, buffer);
 
-		select_g_select_jobinfo_pack(dump_job_ptr->select_jobinfo,
-					     buffer, protocol_version);
-
 		/* A few details are always dumped here */
 		_pack_default_job_details(dump_job_ptr, buffer,
 					  protocol_version);
@@ -11166,7 +11163,7 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		else
 			pack_bit_str_hex(dump_job_ptr->node_bitmap_cg, buffer);
 
-		select_g_select_jobinfo_pack(dump_job_ptr->select_jobinfo,
+		select_g_select_jobinfo_pack(NULL,
 					     buffer, protocol_version);
 
 		/* A few details are always dumped here */

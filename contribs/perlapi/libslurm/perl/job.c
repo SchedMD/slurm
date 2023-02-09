@@ -284,7 +284,6 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 	STORE_FIELD(hv, job_info, restart_cnt, uint16_t);
 	if(job_info->resv_name)
 		STORE_FIELD(hv, job_info, resv_name, charp);
-	STORE_PTR_FIELD(hv, job_info, select_jobinfo, "Slurm::dynamic_plugin_data_t");
 	STORE_PTR_FIELD(hv, job_info, job_resrcs, "Slurm::job_resources_t");
 	STORE_FIELD(hv, job_info, shared, uint16_t);
 	STORE_FIELD(hv, job_info, show_flags, uint16_t);
@@ -419,7 +418,6 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, resize_time, time_t, TRUE);
 	FETCH_FIELD(hv, job_info, restart_cnt, uint16_t, TRUE);
 	FETCH_FIELD(hv, job_info, resv_name, charp, FALSE);
-	FETCH_PTR_FIELD(hv, job_info, select_jobinfo, "Slurm::dynamic_plugin_data_t", FALSE);
 	FETCH_PTR_FIELD(hv, job_info, job_resrcs, "Slurm::job_resources_t", FALSE);
 	FETCH_FIELD(hv, job_info, shared, uint16_t, TRUE);
 	FETCH_FIELD(hv, job_info, show_flags, uint16_t, TRUE);

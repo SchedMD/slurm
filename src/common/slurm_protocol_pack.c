@@ -3835,10 +3835,6 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		unpack_bit_str_hex_as_inx(&job->node_inx, buffer);
 
-		if (select_g_select_jobinfo_unpack(&job->select_jobinfo,
-						   buffer, protocol_version))
-			goto unpack_error;
-
 		/*** unpack default job details ***/
 		safe_unpackstr(&job->features, buffer);
 		safe_unpackstr(&job->prefer, buffer);
@@ -3923,6 +3919,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		uint16_t uint16_tmp = 0;
+		dynamic_plugin_data_t *select_jobinfo;
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
 		/* The array_task_str value is stored in slurmctld and passed
@@ -4018,10 +4015,10 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		unpack_bit_str_hex_as_inx(&job->node_inx, buffer);
 
-		if (select_g_select_jobinfo_unpack(&job->select_jobinfo,
+		if (select_g_select_jobinfo_unpack(&select_jobinfo,
 						   buffer, protocol_version))
 			goto unpack_error;
-
+		select_g_select_jobinfo_free(select_jobinfo);
 		/*** unpack default job details ***/
 		safe_unpackstr_xmalloc(&job->features, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->prefer, &uint32_tmp, buffer);
@@ -4119,6 +4116,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 				       buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint16_t uint16_tmp = 0;
+		dynamic_plugin_data_t *select_jobinfo;
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
 		/* The array_task_str value is stored in slurmctld and passed
@@ -4214,10 +4212,10 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		unpack_bit_str_hex_as_inx(&job->node_inx, buffer);
 
-		if (select_g_select_jobinfo_unpack(&job->select_jobinfo,
+		if (select_g_select_jobinfo_unpack(&select_jobinfo,
 						   buffer, protocol_version))
 			goto unpack_error;
-
+		select_g_select_jobinfo_free(select_jobinfo);
 		/*** unpack default job details ***/
 		safe_unpackstr_xmalloc(&job->features, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->cluster_features, &uint32_tmp,

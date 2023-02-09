@@ -1857,10 +1857,6 @@ typedef struct job_info {
 	uint16_t restart_cnt;	/* count of job restarts */
 	char *resv_name;	/* reservation name */
 	char *sched_nodes;	/* list of nodes scheduled to be used for job */
-	dynamic_plugin_data_t *select_jobinfo; /* opaque data type,
-						* process using
-						* select_g_select_jobinfo_*
-						*/
 	char *selinux_context;
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint16_t show_flags;	/* conveys level of details requested */
