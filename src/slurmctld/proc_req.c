@@ -876,8 +876,6 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 	alloc_msg->partition      = xstrdup(job_ptr->partition);
 	alloc_msg->alias_list     = xstrdup(job_ptr->alias_list);
 	alloc_msg->batch_host = xstrdup(job_ptr->batch_host);
-	alloc_msg->select_jobinfo =
-		select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 	if (job_ptr->details) {
 		if (job_ptr->bit_flags & JOB_MEM_SET) {
 			alloc_msg->pn_min_memory =

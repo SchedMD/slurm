@@ -2502,10 +2502,6 @@ typedef struct resource_allocation_response_msg {
 				  * default=0 (no limit) */
 	char *qos;               /* allocation qos */
 	char *resv_name;         /* allocation reservation */
-	dynamic_plugin_data_t *select_jobinfo;	/* opaque data structure,
-						 * use
-						 * select_g_select_jobinfo_*
-						 * to access contents */
 	char *tres_per_node; /* comma delimited list of TRES=# values */
 	uid_t uid; /* resolved user id of job */
 	char *user_name; /* resolved user name of job */

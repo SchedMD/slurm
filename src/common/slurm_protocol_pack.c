@@ -1381,9 +1381,6 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		pack64(msg->pn_min_memory, buffer);
 		packstr(msg->qos, buffer);
 		packstr(msg->resv_name, buffer);
-		select_g_select_jobinfo_pack(msg->select_jobinfo,
-					     buffer,
-					     protocol_version);
 		packstr(msg->tres_per_node, buffer);
 		pack32(msg->uid, buffer);
 		packstr(msg->user_name, buffer);
@@ -1431,7 +1428,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		pack64(msg->pn_min_memory, buffer);
 		packstr(msg->qos, buffer);
 		packstr(msg->resv_name, buffer);
-		select_g_select_jobinfo_pack(msg->select_jobinfo,
+		select_g_select_jobinfo_pack(NULL,
 					     buffer,
 					     protocol_version);
 
@@ -1477,7 +1474,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		pack64(msg->pn_min_memory, buffer);
 		packstr(msg->qos, buffer);
 		packstr(msg->resv_name, buffer);
-		select_g_select_jobinfo_pack(msg->select_jobinfo,
+		select_g_select_jobinfo_pack(NULL,
 					     buffer,
 					     protocol_version);
 
@@ -1552,9 +1549,6 @@ _unpack_resource_allocation_response_msg(
 		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
 		safe_unpackstr(&tmp_ptr->qos, buffer);
 		safe_unpackstr(&tmp_ptr->resv_name, buffer);
-		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
-						   buffer, protocol_version))
-			goto unpack_error;
 		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
 		safe_unpack32(&tmp_ptr->uid, buffer);
 		safe_unpackstr(&tmp_ptr->user_name, buffer);
@@ -1566,6 +1560,7 @@ _unpack_resource_allocation_response_msg(
 				protocol_version, buffer);
 		}
 	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		dynamic_plugin_data_t *select_jobinfo;
 		safe_unpackstr(&tmp_ptr->account, buffer);
 		safe_unpackstr(&tmp_ptr->alias_list, buffer);
 		safe_unpackstr(&tmp_ptr->batch_host, buffer);
@@ -1610,10 +1605,10 @@ _unpack_resource_allocation_response_msg(
 		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
 		safe_unpackstr(&tmp_ptr->qos, buffer);
 		safe_unpackstr(&tmp_ptr->resv_name, buffer);
-		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
+		if (select_g_select_jobinfo_unpack(&select_jobinfo,
 						   buffer, protocol_version))
 			goto unpack_error;
-
+		select_g_select_jobinfo_free(select_jobinfo);
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			slurmdb_unpack_cluster_rec(
@@ -1621,6 +1616,7 @@ _unpack_resource_allocation_response_msg(
 				protocol_version, buffer);
 		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		dynamic_plugin_data_t *select_jobinfo;
 		safe_unpackstr(&tmp_ptr->account, buffer);
 		safe_unpackstr(&tmp_ptr->alias_list, buffer);
 		safe_unpackstr_array(&tmp_ptr->environment,
@@ -1664,9 +1660,10 @@ _unpack_resource_allocation_response_msg(
 		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
 		safe_unpackstr(&tmp_ptr->qos, buffer);
 		safe_unpackstr(&tmp_ptr->resv_name, buffer);
-		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
+		if (select_g_select_jobinfo_unpack(&select_jobinfo,
 						   buffer, protocol_version))
 			goto unpack_error;
+		select_g_select_jobinfo_free(select_jobinfo);
 
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {

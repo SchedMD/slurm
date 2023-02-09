@@ -234,7 +234,6 @@ resource_allocation_response_msg_to_hv(resource_allocation_response_msg_t *resp_
 	}
 	STORE_FIELD(hv, resp_msg, node_cnt, uint32_t);
 	STORE_FIELD(hv, resp_msg, error_code, uint32_t);
-	STORE_PTR_FIELD(hv, resp_msg, select_jobinfo, "Slurm::dynamic_plugin_data_t");
 
 	return 0;
 }

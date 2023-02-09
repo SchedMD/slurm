@@ -19140,8 +19140,6 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 		job_info_resp_msg->qos = xstrdup(qos->name);
 	}
 	job_info_resp_msg->resv_name      = xstrdup(job_ptr->resv_name);
-	job_info_resp_msg->select_jobinfo =
-		select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 	if (job_ptr->details) {
 		if (job_ptr->bit_flags & JOB_MEM_SET) {
 			job_info_resp_msg->pn_min_memory =
