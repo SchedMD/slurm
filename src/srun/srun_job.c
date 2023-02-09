@@ -99,7 +99,6 @@ typedef struct allocation_info {
 				    * each socket */
 	uint32_t                num_cpu_groups;
 	char                   *partition;
-	dynamic_plugin_data_t  *select_jobinfo;
 	slurm_step_id_t         step_id;
 	uid_t uid; /* resolved user id of job */
 	char *user_name; /* resolved user name of job */
@@ -511,8 +510,6 @@ extern srun_job_t *job_create_allocation(
 	i->ntasks_per_board = resp->ntasks_per_board;
 	i->ntasks_per_core = resp->ntasks_per_core;
 	i->ntasks_per_socket = resp->ntasks_per_socket;
-
-	i->select_jobinfo = select_g_select_jobinfo_copy(resp->select_jobinfo);
 
 	i->uid = resp->uid;
 	i->user_name = xstrdup(resp->user_name);
