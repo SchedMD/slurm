@@ -116,9 +116,6 @@ typedef struct srun_job {
 	fname_t *ofname;
 	fname_t *efname;
 
-	/* Output streams and stdin fileno */
-	dynamic_plugin_data_t *select_jobinfo;
-
 	/* Pseudo terminial support */
 	int pty_fd;		/* file to communicate window size changes */
 	uint16_t pty_port;	/* used to communicate window size changes */

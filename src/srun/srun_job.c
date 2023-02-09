@@ -1704,8 +1704,6 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
 		return NULL;
 	}
 #endif
-	job->select_jobinfo = ainfo->select_jobinfo;
-
 	job->ntasks  = opt_local->ntasks;
 	job->ntasks_per_board = ainfo->ntasks_per_board;
 	job->ntasks_per_core = ainfo->ntasks_per_core;
