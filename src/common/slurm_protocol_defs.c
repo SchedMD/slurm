@@ -4746,8 +4746,6 @@ extern void slurm_free_job_step_info_members(job_step_info_t * msg)
 		xfree(msg->node_inx);
 		xfree(msg->partition);
 		xfree(msg->resv_ports);
-		select_g_select_jobinfo_free(msg->select_jobinfo);
-		msg->select_jobinfo = NULL;
 		xfree(msg->srun_host);
 		xfree(msg->tres_alloc_str);
 		xfree(msg->tres_bind);

@@ -2188,10 +2188,6 @@ typedef struct {
 	char *partition;	/* name of assigned partition */
 	char *resv_ports;	/* ports allocated for MPI */
 	time_t run_time;	/* net run time (factor out time suspended) */
-	dynamic_plugin_data_t *select_jobinfo; /* opaque data type,
-						* process using
-						* select_g_select_jobinfo_*
-						*/
 	char *srun_host;	/* host of srun command */
 	uint32_t srun_pid;	/* PID of srun command */
 	time_t start_time;	/* step start time */

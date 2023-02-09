@@ -5365,7 +5365,6 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 	add_parse(STRING, partition, "partition", NULL),
 	add_parse(STRING, resv_ports, "reserved_ports", NULL),
 	add_parse(UINT64, run_time, "time/running", NULL),
-	add_skip(select_jobinfo),
 	add_parse(STRING, srun_host, "srun/host", NULL),
 	add_parse(UINT32, srun_pid, "srun/pid", NULL),
 	add_parse(UINT64, start_time, "time/start", NULL),

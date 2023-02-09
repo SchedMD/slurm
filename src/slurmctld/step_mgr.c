@@ -3856,8 +3856,6 @@ static int _pack_ctld_job_step_info(void *x, void *arg)
 		packstr(step_ptr->name, buffer);
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
-		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
-					     args->proto_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
 		pack16(step_ptr->start_protocol_ver, buffer);
 
@@ -3913,7 +3911,7 @@ static int _pack_ctld_job_step_info(void *x, void *arg)
 		packstr(step_ptr->name, buffer);
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
-		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
+		select_g_select_jobinfo_pack(NULL, buffer,
 					     args->proto_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
 		pack16(step_ptr->start_protocol_ver, buffer);

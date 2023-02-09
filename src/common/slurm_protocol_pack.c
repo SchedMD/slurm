@@ -3530,9 +3530,6 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 		safe_unpackstr(&step->network, buffer);
 		unpack_bit_str_hex_as_inx(&step->node_inx, buffer);
 
-		if (select_g_select_jobinfo_unpack(&step->select_jobinfo,
-						   buffer, protocol_version))
-			goto unpack_error;
 		safe_unpackstr(&step->tres_alloc_str, buffer);
 		safe_unpack16(&step->start_protocol_ver, buffer);
 
@@ -3546,6 +3543,7 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 		safe_unpackstr(&step->tres_per_socket, buffer);
 		safe_unpackstr(&step->tres_per_task, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		dynamic_plugin_data_t *select_jobinfo;
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);
 		if (unpack_step_id_members(&step->step_id, buffer,
@@ -3575,9 +3573,10 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 		safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
 		unpack_bit_str_hex_as_inx(&step->node_inx, buffer);
 
-		if (select_g_select_jobinfo_unpack(&step->select_jobinfo,
+		if (select_g_select_jobinfo_unpack(&select_jobinfo,
 						   buffer, protocol_version))
 			goto unpack_error;
+		select_g_select_jobinfo_free(select_jobinfo);
 		safe_unpackstr_xmalloc(&step->tres_alloc_str,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&step->start_protocol_ver, buffer);
