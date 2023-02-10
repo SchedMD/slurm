@@ -779,7 +779,9 @@ extern int time_str2mins(const char *string)
 
 extern void secs2time_str(time_t time, char *string, int size)
 {
-	if (time == INFINITE) {
+	if (time == NO_VAL) {
+		snprintf(string, size, "%s", "");
+	} else if (time == INFINITE) {
 		snprintf(string, size, "UNLIMITED");
 	} else {
 		long days, hours, minutes, seconds;
@@ -805,7 +807,9 @@ extern void secs2time_str(time_t time, char *string, int size)
 
 extern void mins2time_str(uint32_t time, char *string, int size)
 {
-	if (time == INFINITE) {
+	if (time == NO_VAL) {
+		snprintf(string, size, "%s", "");
+	} else if (time == INFINITE) {
 		snprintf(string, size, "UNLIMITED");
 	} else {
 		long days, hours, minutes, seconds;
