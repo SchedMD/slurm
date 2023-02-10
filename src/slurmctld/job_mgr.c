@@ -16469,6 +16469,14 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 
+	/*
+	 * If the job is configuring, the node might be booting, or a script
+	 * such as PrologSlurmctld is running; delay job launch until these
+	 * are finished.
+	 */
+	if (IS_JOB_CONFIGURING(job_ptr))
+		return EAGAIN;
+
 	/* Always call select_g_job_ready() so that select/bluegene can
 	 * test and update block state information. */
 	rc = select_g_job_ready(job_ptr);
