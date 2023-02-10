@@ -415,7 +415,7 @@ extern void check_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 		 */
 		debug("%s: bailing due to status %s != %s",
 		      __func__,
-		      slurm_container_status_to_str(status),
+		      slurm_container_status_to_str(state.status),
 		      slurm_container_status_to_str(CONTAINER_ST_CREATING));
 		stop_anchor(ESLURM_ALREADY_DONE);
 		return;
