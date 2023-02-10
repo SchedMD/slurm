@@ -824,18 +824,20 @@ extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 	if (job->num_profiles == 0)
 		return SLURM_SUCCESS;
 
-	/* svc_ids, devices, traffic classes are per-device, comma-separated */
+	/* svc_ids and devices are per-device, comma-separated */
 	for (pidx = 0; pidx < job->num_profiles; pidx++) {
 		char *sep = pidx ? "," : "";
 		slingshot_comm_profile_t *profile = &job->profiles[pidx];
 		xstrfmtcat(svc_ids, "%s%u", sep, profile->svc_id);
 		xstrfmtcat(devices, "%s%s", sep, profile->device_name);
-		xstrfmtcat(tcss, "%s%#x", sep, profile->tcs);
 	}
 
 	/* vnis are global (all services share VNIs), comma-separated */
 	for (vidx = 0; vidx < job->num_vnis; vidx++)
 		xstrfmtcat(vnis, "%s%hu", vidx ? "," : "", job->vnis[vidx]);
+
+	/* traffic classes are global */
+	xstrfmtcat(tcss, "0x%x", job->profiles[0].tcs);
 
 	/* convert bitstr_t into range list */
 	if (job->vni_pids)
