@@ -2286,9 +2286,6 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	       job_ptr->job_resrcs->cpu_array_reps,
 	       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
 
-	launch_msg_ptr->select_jobinfo = select_g_select_jobinfo_copy(
-		job_ptr->select_jobinfo);
-
 	if (job_ptr->qos_ptr) {
 		if (!xstrcmp(job_ptr->qos_ptr->description,
 			     "Normal QOS default"))

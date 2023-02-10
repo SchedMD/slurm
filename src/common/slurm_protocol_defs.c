@@ -1445,7 +1445,6 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->resv_name);
 		xfree(msg->script);
 		FREE_NULL_BUFFER(msg->script_buf);
-		select_g_select_jobinfo_free(msg->select_jobinfo);
 		if (msg->spank_job_env) {
 			for (i = 0; i < msg->spank_job_env_size; i++)
 				xfree(msg->spank_job_env[i]);

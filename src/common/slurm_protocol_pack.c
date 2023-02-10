@@ -10197,9 +10197,6 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack16(cred_version, buffer);
 		slurm_cred_pack(msg->cred, buffer, cred_version);
 
-		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
-					     protocol_version);
-
 		packstr(msg->account, buffer);
 		packstr(msg->qos, buffer);
 		packstr(msg->resv_name, buffer);
@@ -10262,7 +10259,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack16(cred_version, buffer);
 		slurm_cred_pack(msg->cred, buffer, cred_version);
 
-		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
+		select_g_select_jobinfo_pack(NULL, buffer,
 					     protocol_version);
 
 		packstr(msg->account, buffer);
@@ -10326,7 +10323,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 
 		slurm_cred_pack(msg->cred, buffer, protocol_version);
 
-		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
+		select_g_select_jobinfo_pack(NULL, buffer,
 					     protocol_version);
 
 		packstr(msg->account, buffer);
@@ -10429,11 +10426,6 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 			      buffer, launch_msg_ptr->cred_version)))
 			goto unpack_error;
 
-		if (select_g_select_jobinfo_unpack(&launch_msg_ptr->
-						   select_jobinfo,
-						   buffer, protocol_version))
-			goto unpack_error;
-
 		safe_unpackstr_xmalloc(&launch_msg_ptr->account, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->qos, &uint32_tmp,
@@ -10446,6 +10438,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr_xmalloc(&launch_msg_ptr->tres_freq, &uint32_tmp,
 				       buffer);
 	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		dynamic_plugin_data_t *select_jobinfo;
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
@@ -10522,11 +10515,10 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 			      buffer, launch_msg_ptr->cred_version)))
 			goto unpack_error;
 
-		if (select_g_select_jobinfo_unpack(&launch_msg_ptr->
-						   select_jobinfo,
+		if (select_g_select_jobinfo_unpack(&select_jobinfo,
 						   buffer, protocol_version))
 			goto unpack_error;
-
+		select_g_select_jobinfo_free(select_jobinfo);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->account, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->qos, &uint32_tmp,
@@ -10539,6 +10531,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr_xmalloc(&launch_msg_ptr->tres_freq, &uint32_tmp,
 				       buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		dynamic_plugin_data_t *select_jobinfo;
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
@@ -10615,11 +10608,10 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 			      buffer, protocol_version)))
 			goto unpack_error;
 
-		if (select_g_select_jobinfo_unpack(&launch_msg_ptr->
-						   select_jobinfo,
+		if (select_g_select_jobinfo_unpack(&select_jobinfo,
 						   buffer, protocol_version))
 			goto unpack_error;
-
+		select_g_select_jobinfo_free(select_jobinfo);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->account,
 				       &uint32_tmp,
 				       buffer);
