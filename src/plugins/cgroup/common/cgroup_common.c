@@ -35,6 +35,7 @@
 \*****************************************************************************/
 
 #include "cgroup_common.h"
+#include <poll.h>
 
 /* Testing read() on cgroup interfaces returns 4092 bytes at most. */
 #define CGROUP_READ_COUNT 4092
@@ -496,10 +497,13 @@ extern int common_cgroup_delete(xcgroup_t *cg)
 	}
 
 	/*
-	 * Do 5 retries if we receive an EBUSY and there are no pids, because we
-	 * may be trying to remove the directory when the kernel hasn't yet
-	 * drained the cgroup internal references (css_online), even if
-	 * cgroup.procs is already empty.
+	 * Do 5 retries and wait 1000 milis on each if we receive an EBUSY and
+	 * there are no pids, because we may be trying to remove the directory
+	 * when the kernel hasn't yet drained the cgroup internal references
+	 * (css_online), even if cgroup.procs is already empty.
+	 *
+	 * This workaround tries to mitigate a bug on kernels < 3.18 as per
+	 * commit 41c25707d21716826e3c1f60967f5550610ec1c9 in the linux kernel.
 	 */
 	while ((rmdir(cg->path) < 0) && (errno != ENOENT)) {
 		if (errno == EBUSY) {
@@ -527,7 +531,9 @@ extern int common_cgroup_delete(xcgroup_t *cg)
 				}
 			}
 
+			/* This should happen usually only on kernels < 3.18 */
 			if (retries < 5) {
+				poll(NULL, 0, 1000);
 				retries++;
 				continue;
 			}

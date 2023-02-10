@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
  -- switch/hpe_slingshot - fix rolling upgrades from 22.05 to 23.02
  -- Change cgroup/v1 behavior when waiting for a pid to be moved by waiting some
     time between retries. This helps with stray cgroup dirs on slow kernels.
+ -- Workaround a bug in kernels < 3.18 with cpuset which randomly leaves stray
+    cgroups after jobs have ended.
 
 * Changes in Slurm 23.02.0rc1
 =============================
