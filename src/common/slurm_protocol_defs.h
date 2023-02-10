@@ -1014,16 +1014,6 @@ typedef struct control_status_msg {
 	time_t control_time;	/* Time we became primary slurmctld (or 0) */
 } control_status_msg_t;
 
-/*
- * Note: We include the node list here for reliable cleanup on XCPU systems.
- *
- * Note: We include select_jobinfo here in addition to the job launch
- * RPC in order to ensure reliable clean-up of a BlueGene partition in
- * the event of some launch failure or race condition preventing slurmd
- * from getting the MPIRUN_PARTITION at that time. It is needed for
- * the job epilog.
- */
-
 #define SIG_OOM		253	/* Dummy signal value for out of memory
 				 * (OOM) notification. Exit status reported as
 				 * 0:125 (0x80 is the signal flag and
@@ -1049,7 +1039,7 @@ typedef struct kill_job_msg {
 	uint32_t job_state;
 	uint32_t job_uid;
 	uint32_t job_gid;
-	char *nodes;
+	char *nodes; /* Used for reliable cleanup on XCPU systems. */
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
 	time_t   start_time;	/* time of job start, track job requeue */
