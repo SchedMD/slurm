@@ -290,8 +290,6 @@ static char *_get_qos_list_str(List qos_list)
 
 extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 {
-	int plugin_id_select = 0;
-
 	xassert(cluster_rec);
 
 	if (!cluster_rec->control_port) {
@@ -299,15 +297,6 @@ extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 		      cluster_rec->name);
 		return SLURM_ERROR;
 	}
-
-	if ((plugin_id_select = select_get_plugin_id_pos(
-		     cluster_rec->plugin_id_select)) == SLURM_ERROR) {
-		error("Cluster '%s' has an unknown select plugin_id %u",
-		      cluster_rec->name,
-		      cluster_rec->plugin_id_select);
-		return SLURM_ERROR;
-	}
-	cluster_rec->plugin_id_select = plugin_id_select;
 
 	slurm_set_addr(&cluster_rec->control_addr,
 		       cluster_rec->control_port,

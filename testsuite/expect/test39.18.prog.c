@@ -133,6 +133,9 @@ int main(int argc, char *argv[])
 
 	slurm_init(NULL);
 
+	if (select_g_init(1) != SLURM_SUCCESS)
+		fatal("failed to initialize node selection plugin");
+
 	// Initialize GRES info (from slurm.conf)
 	rc = gres_init_node_config(slurm_conf_gres_str, &gres_list);
 	if (rc != SLURM_SUCCESS) {

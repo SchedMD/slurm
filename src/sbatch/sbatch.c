@@ -58,7 +58,6 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/run_command.h"
-#include "src/interfaces/select.h"
 #include "src/interfaces/auth.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/spank.h"
@@ -344,7 +343,6 @@ int main(int argc, char **argv)
 		rc = _job_wait(resp->job_id);
 
 #ifdef MEMORY_LEAK_DEBUG
-	select_g_fini();
 	slurm_reset_all_options(&opt, false);
 	slurm_auth_fini();
 	slurm_conf_destroy();
