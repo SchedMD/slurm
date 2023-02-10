@@ -67,6 +67,6 @@
 #include <sys/eventfd.h>
 #endif
 
-#define MAX_MOVE_WAIT 5000
+#define MAX_MOVE_WAIT 1000 /* Miliseconds */
 
 #endif /* !_CGROUP_V1_H */
