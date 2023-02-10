@@ -98,6 +98,8 @@
  **********************************************************/
 // Opaque Cray jobinfo structure
 typedef struct slurm_cray_jobinfo {
+	uint16_t access;
+
 	uint32_t magic;
 	uint32_t num_cookies;	/* The number of cookies sent to configure the
 	                           HSN */

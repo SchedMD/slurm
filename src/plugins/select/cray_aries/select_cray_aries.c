@@ -59,6 +59,7 @@
 
 #ifdef HAVE_NATIVE_CRAY
 #include "alpscomm_sn.h"
+#include "alpscomm_cn.h"
 #endif
 
 /**
@@ -1911,7 +1912,7 @@ extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 				       void *data)
 {
 	int rc = SLURM_SUCCESS;
-	char **in_char = (char **) data;
+	uint16_t *in_int16 = data;
 
 	if (jobinfo == NULL) {
 		debug("select/cray jobinfo_get: jobinfo not set");
@@ -1924,19 +1925,21 @@ extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
 
 	switch (data_type) {
 	case SELECT_JOBDATA_NETWORK:
-		xassert(in_char);
+		xassert(in_int16);
 		switch (jobinfo->npc) {
+#ifdef HAVE_NATIVE_CRAY
 		case NPC_NONE:
-			*in_char = "none";
+			*in_int16  = ALPSC_NET_PERF_CTR_NONE;
 			break;
 		case NPC_SYS:
-			*in_char = "system";
+			*in_int16 = ALPSC_NET_PERF_CTR_SYSTEM;
 			break;
 		case NPC_BLADE:
-			*in_char = "blade";
+			*in_int16 = ALPSC_NET_PERF_CTR_BLADE;
 			break;
+#endif
 		default:
-			*in_char = "unknown";
+			*in_int16 = NO_VAL16;
 			break;
 		}
 		break;

@@ -217,6 +217,9 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
+	select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+				    SELECT_JOBDATA_NETWORK,
+				    &job->access);
 	xfree(nodes);
 	if (rc != SLURM_SUCCESS) {
 		return rc;
@@ -335,6 +338,7 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 		packstr_array(job->cookies, job->num_cookies, buffer);
 		pack32_array(job->cookie_ids, job->num_cookies, buffer);
 		pack64(job->apid, buffer);
+		pack16(job->access, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job->magic, buffer);
 		pack32(job->num_cookies, buffer);
@@ -387,6 +391,7 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 			goto unpack_error;
 		}
 		safe_unpack64(&job->apid, buffer);
+		safe_unpack16(&job->access, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job->magic, buffer);
 
@@ -469,10 +474,6 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 	uint32_t jobid;
 #endif
 
-#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
-	char *npc = "none";
-	int access = ALPSC_NET_PERF_CTR_NONE;
-#endif
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -605,18 +606,13 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 	 * If there is reserved access to network performance counters,
 	 * configure the appropriate access permission in the kernel.
 	 */
-	access = ALPSC_NET_PERF_CTR_NONE;
-	select_g_select_jobinfo_get(step->msg->select_jobinfo,
-		SELECT_JOBDATA_NETWORK, &npc);
-	CRAY_DEBUG("network performance counters SELECT_JOBDATA_NETWORK %s",
-		npc);
-	if (xstrcasecmp(npc, "system") == 0) {
-		access = ALPSC_NET_PERF_CTR_SYSTEM;
-	} else if (xstrcasecmp(npc, "blade") == 0) {
-		access = ALPSC_NET_PERF_CTR_BLADE;
-	}
-	if (access != ALPSC_NET_PERF_CTR_NONE) {
-		rc = alpsc_set_perf_ctr_perms(&err_msg, step->cont_id, access);
+	CRAY_DEBUG("network performance counters SELECT_JOBDATA_NETWORK %u",
+		   sw_job->access);
+
+	if ((sw_job->access != ALPSC_NET_PERF_CTR_NONE) &&
+	    (sw_job->access != NO_VAL16)) {
+		rc = alpsc_set_perf_ctr_perms(&err_msg, step->cont_id,
+					      (int)sw_job->access);
 		ALPSC_CN_DEBUG("alpsc_set_perf_ctr_perms");
 		if (rc != 1) {
 			free_alpsc_pe_info(&alpsc_pe_info);
