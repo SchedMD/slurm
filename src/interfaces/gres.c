@@ -3237,7 +3237,7 @@ extern int gres_init_node_config(char *orig_config, List *gres_list)
  * gres_cnt OUT - total number of GRES available of this ID on this node in (sum
  * 		  across all records of this ID)
  */
-static void _get_tot_gres_cnt(tot_from_slurmd_conf_t *slurmd_conf_tot)
+static void _get_tot_from_slurmd_conf(tot_from_slurmd_conf_t *slurmd_conf_tot)
 {
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
@@ -3414,7 +3414,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	/* Make sure these are insync after we get it from the slurmd */
 	gres_state_node->config_flags = gres_ctx->config_flags;
 
-	_get_tot_gres_cnt(&slurmd_conf_tot);
+	_get_tot_from_slurmd_conf(&slurmd_conf_tot);
 	if (gres_ns->gres_cnt_config > slurmd_conf_tot.gres_cnt) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
