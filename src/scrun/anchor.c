@@ -1583,9 +1583,9 @@ extern int spawn_anchor(void)
 		debug("created: %s", state.spool_dir);
 	}
 
-	_daemonize_logs(state);
+	_daemonize_logs();
 
-	_set_proctitle(state);
+	_set_proctitle();
 
 	/* setup new TTY*/
 	if (isatty(STDIN_FILENO))

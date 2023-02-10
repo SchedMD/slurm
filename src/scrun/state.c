@@ -371,7 +371,7 @@ extern int get_anchor_state(void)
 	} else {
 		debug2("%s: failed to query state via %s",
 		       __func__, state.anchor_socket);
-		rc = _get_job_state(state);
+		rc = _get_job_state();
 	}
 
 	check_state();
