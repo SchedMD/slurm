@@ -53,6 +53,7 @@ AC_DEFUN([X_AC_HPE_SLINGSHOT],
         ac_hpe_ss="yes"
         AC_CHECK_TYPES([struct cxi_rsrc_use], [], [],
                        [
+			#include <string.h>
                         #include <stddef.h>
                         #include <sys/types.h>
                         #include <libcxi/libcxi.h>
