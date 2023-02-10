@@ -94,15 +94,13 @@ if (($nnodes == INFINITE64) || ($nnodes == 0)) {
 	$nnodes = 1;
 }
 
-my $reqmem = $job->{'req_mem'};
-my $pernode;
-if ($reqmem & MEM_PER_CPU) {
-    $reqmem = ($reqmem & ~MEM_PER_CPU) * 1024 * $ncpus;
-    $pernode = 0;
-} else {
-    $reqmem = $reqmem * 1024 * $nnodes;
-    $pernode = 1;
-}
+my $pernode = 1;
+if ($job->{'req_mem'} & MEM_PER_CPU) {
+	$pernode = 0;
+ }
+my $reqmem = Slurmdb::find_tres_count_in_string($job->{'tres_req_str'}, TRES_MEM);
+$reqmem = $reqmem * 1024;
+
 my $walltime = $job->{'elapsed'};
 # Only use hi-order byte for error code.
 my $exit_status = $job->{'exitcode'} >> 8;
