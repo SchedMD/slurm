@@ -1089,7 +1089,6 @@ typedef struct prolog_launch_msg {
 	uint32_t nnodes;			/* count of nodes, passed via cred */
 	char *nodes;			/* list of nodes allocated to job_step */
 	char *partition;		/* partition the job is running in */
-	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
 	char **spank_job_env;		/* SPANK job environment variables */
 	uint32_t spank_job_env_size;	/* size of spank_job_env */
 	char *std_err;			/* pathname of stderr */
