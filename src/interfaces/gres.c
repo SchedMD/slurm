@@ -224,6 +224,16 @@ typedef struct {
 	bool no_gpu_env;
 } prev_gres_flags_t;
 
+typedef struct {
+	uint32_t config_flags;
+	int config_type_cnt;
+	uint32_t cpu_set_cnt;
+	uint64_t gres_cnt;
+	uint32_t plugin_id;
+	uint32_t rec_cnt;
+	uint64_t topo_cnt;
+} tot_from_slurmd_conf_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -258,8 +268,6 @@ static void	_get_gres_cnt(gres_node_state_t *gres_ns, char *orig_config,
 			      int gres_name_colon_len);
 static uint64_t _get_job_gres_list_cnt(List gres_list, char *gres_name,
 				       char *gres_type);
-static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
-				  int *config_type_cnt);
 static void	_job_state_delete(gres_job_state_t *gres_js);
 static void *	_job_state_dup2(gres_job_state_t *gres_js, int node_index);
 static void	_job_state_log(gres_state_t *gres_js, uint32_t job_id);
@@ -3219,46 +3227,59 @@ extern int gres_init_node_config(char *orig_config, List *gres_list)
 	return rc;
 }
 
+static int _foreach_get_tot_from_slurmd_conf(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	tot_from_slurmd_conf_t *slurmd_conf_tot = arg;
+
+	if (gres_slurmd_conf->plugin_id != slurmd_conf_tot->plugin_id)
+		return 0;
+
+	slurmd_conf_tot->config_flags |= gres_slurmd_conf->config_flags;
+
+	slurmd_conf_tot->gres_cnt += gres_slurmd_conf->count;
+	slurmd_conf_tot->rec_cnt++;
+
+	if (gres_slurmd_conf->cpus || gres_slurmd_conf->type_name)
+		slurmd_conf_tot->cpu_set_cnt++;
+
+	return 0;
+}
+
 /*
  * Determine GRES availability on some node
+ *
+ * tot_from_slurmd_conf_t:
  * plugin_id IN - plugin number to search for
+ * config_flags OUT - config flags from slurmd
  * topo_cnt OUT - count of gres.conf records of this ID found by slurmd
  *		  (each can have different topology)
  * config_type_cnt OUT - Count of records for this GRES found in configuration,
  *		  each of this represents a different Type of of GRES with
  *		  this name (e.g. GPU model)
- * RET - total number of GRES available of this ID on this node in (sum
- *	 across all records of this ID)
+ * gres_cnt OUT - total number of GRES available of this ID on this node in (sum
+ * 		  across all records of this ID)
  */
-static uint64_t _get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
-				  int *config_type_cnt)
+static void _get_tot_from_slurmd_conf(tot_from_slurmd_conf_t *slurmd_conf_tot)
 {
-	ListIterator iter;
-	gres_slurmd_conf_t *gres_slurmd_conf;
-	uint32_t cpu_set_cnt = 0, rec_cnt = 0;
-	uint64_t gres_cnt = 0;
+	xassert(slurmd_conf_tot);
 
-	xassert(config_type_cnt);
-	xassert(topo_cnt);
-	*config_type_cnt = 0;
-	*topo_cnt = 0;
+	slurmd_conf_tot->config_flags = 0;
+	slurmd_conf_tot->cpu_set_cnt = 0;
+	slurmd_conf_tot->config_type_cnt = 0;
+	slurmd_conf_tot->topo_cnt = 0;
+	slurmd_conf_tot->gres_cnt = 0;
+	slurmd_conf_tot->rec_cnt = 0;
+
 	if (gres_conf_list == NULL)
-		return gres_cnt;
+		return;
 
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
-		if (gres_slurmd_conf->plugin_id != plugin_id)
-			continue;
-		gres_cnt += gres_slurmd_conf->count;
-		rec_cnt++;
-		if (gres_slurmd_conf->cpus || gres_slurmd_conf->type_name)
-			cpu_set_cnt++;
-	}
-	list_iterator_destroy(iter);
-	*config_type_cnt = rec_cnt;
-	if (cpu_set_cnt)
-		*topo_cnt = rec_cnt;
-	return gres_cnt;
+	(void) list_for_each(gres_conf_list, _foreach_get_tot_from_slurmd_conf,
+			     slurmd_conf_tot);
+
+	slurmd_conf_tot->config_type_cnt = slurmd_conf_tot->rec_cnt;
+	if (slurmd_conf_tot->cpu_set_cnt)
+		slurmd_conf_tot->topo_cnt = slurmd_conf_tot->rec_cnt;
 }
 
 /* Convert comma-delimited array of link counts to an integer array */
@@ -3389,15 +3410,16 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				 slurm_gres_context_t *gres_ctx)
 {
 	int cpus_config = 0, i, j, gres_inx, rc = SLURM_SUCCESS;
-	int config_type_cnt = 0;
-	uint64_t dev_cnt, gres_cnt, topo_cnt = 0;
+	uint64_t dev_cnt;
 	bool cpu_config_err = false, updated_config = false;
 	gres_node_state_t *gres_ns;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	bool has_file, has_type, rebuild_topo = false;
 	uint32_t type_id;
-
+	tot_from_slurmd_conf_t slurmd_conf_tot = {
+		.plugin_id = gres_ctx->plugin_id,
+	};
 	xassert(core_cnt);
 	if (gres_state_node->gres_data == NULL)
 		gres_state_node->gres_data = _build_gres_node_state();
@@ -3405,33 +3427,36 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	if (gres_ns->node_feature)
 		return rc;
 
-	/* Make sure these are insync after we get it from the slurmd */
-	gres_state_node->config_flags = gres_ctx->config_flags;
+	_get_tot_from_slurmd_conf(&slurmd_conf_tot);
 
-	gres_cnt = _get_tot_gres_cnt(gres_ctx->plugin_id, &topo_cnt,
-				     &config_type_cnt);
-	if (gres_ns->gres_cnt_config > gres_cnt) {
+	/* Make sure these are insync after we get it from the slurmd */
+	gres_state_node->config_flags = slurmd_conf_tot.config_flags;
+
+	if (gres_ns->gres_cnt_config > slurmd_conf_tot.gres_cnt) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
 				   "%s count reported lower than configured "
 				   "(%"PRIu64" < %"PRIu64")",
 				   gres_ctx->gres_type,
-				   gres_cnt, gres_ns->gres_cnt_config);
+				   slurmd_conf_tot.gres_cnt,
+				   gres_ns->gres_cnt_config);
 		}
 		rc = EINVAL;
 	}
-	if ((gres_cnt > gres_ns->gres_cnt_config)) {
+	if ((slurmd_conf_tot.gres_cnt > gres_ns->gres_cnt_config)) {
 		debug("%s: %s: Ignoring excess count on node %s (%"
 		      PRIu64" > %"PRIu64")",
-		      __func__, gres_ctx->gres_type, node_name, gres_cnt,
+		      __func__, gres_ctx->gres_type, node_name,
+		      slurmd_conf_tot.gres_cnt,
 		      gres_ns->gres_cnt_config);
-		gres_cnt = gres_ns->gres_cnt_config;
+		slurmd_conf_tot.gres_cnt = gres_ns->gres_cnt_config;
 	}
-	if (gres_ns->gres_cnt_found != gres_cnt) {
+	if (gres_ns->gres_cnt_found != slurmd_conf_tot.gres_cnt) {
 		if (gres_ns->gres_cnt_found != NO_VAL64) {
 			info("%s: %s: Count changed on node %s (%"PRIu64" != %"PRIu64")",
 			     __func__, gres_ctx->gres_type, node_name,
-			     gres_ns->gres_cnt_found, gres_cnt);
+			     gres_ns->gres_cnt_found,
+			     slurmd_conf_tot.gres_cnt);
 		}
 		if ((gres_ns->gres_cnt_found != NO_VAL64) &&
 		    (gres_ns->gres_cnt_alloc != 0)) {
@@ -3440,11 +3465,12 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					   "%s count changed and jobs are using them "
 					   "(%"PRIu64" != %"PRIu64")",
 					   gres_ctx->gres_type,
-					   gres_ns->gres_cnt_found, gres_cnt);
+					   gres_ns->gres_cnt_found,
+					   slurmd_conf_tot.gres_cnt);
 			}
 			rc = EINVAL;
 		} else {
-			gres_ns->gres_cnt_found = gres_cnt;
+			gres_ns->gres_cnt_found = slurmd_conf_tot.gres_cnt;
 			updated_config = true;
 		}
 	}
@@ -3463,26 +3489,30 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	}
 	if (!updated_config)
 		return rc;
-	if ((gres_cnt > gres_ns->gres_cnt_config) && config_overrides) {
+	if ((slurmd_conf_tot.gres_cnt > gres_ns->gres_cnt_config) &&
+	    config_overrides) {
 		info("%s: %s: count on node %s inconsistent with slurmctld count (%"PRIu64" != %"PRIu64")",
 		     __func__, gres_ctx->gres_type, node_name,
-		     gres_cnt, gres_ns->gres_cnt_config);
-		gres_cnt = gres_ns->gres_cnt_config;	/* Ignore excess GRES */
+		     slurmd_conf_tot.gres_cnt, gres_ns->gres_cnt_config);
+		slurmd_conf_tot.gres_cnt = gres_ns->gres_cnt_config;
+		/* Ignore excess GRES */
 	}
-	if ((topo_cnt == 0) && (topo_cnt != gres_ns->topo_cnt)) {
+	if ((slurmd_conf_tot.topo_cnt == 0) &&
+	    (slurmd_conf_tot.topo_cnt != gres_ns->topo_cnt)) {
 		/* Need to clear topology info */
 		_gres_node_state_delete_topo(gres_ns);
 
-		gres_ns->topo_cnt = topo_cnt;
+		gres_ns->topo_cnt = slurmd_conf_tot.topo_cnt;
 	}
 
 	has_file = gres_ctx->config_flags & GRES_CONF_HAS_FILE;
 	has_type = gres_ctx->config_flags & GRES_CONF_HAS_TYPE;
 	if (gres_id_shared(gres_ctx->config_flags))
-		dev_cnt = topo_cnt;
+		dev_cnt = slurmd_conf_tot.topo_cnt;
 	else
-		dev_cnt = gres_cnt;
-	if (has_file && (topo_cnt != gres_ns->topo_cnt) && (dev_cnt == 0)) {
+		dev_cnt = slurmd_conf_tot.gres_cnt;
+	if (has_file && (slurmd_conf_tot.topo_cnt != gres_ns->topo_cnt) &&
+	    (dev_cnt == 0)) {
 		/*
 		 * Clear any vestigial GRES node state info.
 		 */
@@ -3491,7 +3521,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		xfree(gres_ns->gres_bit_alloc);
 
 		gres_ns->topo_cnt = 0;
-	} else if (has_file && (topo_cnt != gres_ns->topo_cnt)) {
+	} else if (has_file &&
+		   (slurmd_conf_tot.topo_cnt != gres_ns->topo_cnt)) {
 		/*
 		 * Need to rebuild topology info.
 		 * Resize the data structures here.
@@ -3499,10 +3530,10 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		rebuild_topo = true;
 		gres_ns->topo_gres_cnt_alloc =
 			xrealloc(gres_ns->topo_gres_cnt_alloc,
-				 topo_cnt * sizeof(uint64_t));
+				 slurmd_conf_tot.topo_cnt * sizeof(uint64_t));
 		gres_ns->topo_gres_cnt_avail =
 			xrealloc(gres_ns->topo_gres_cnt_avail,
-				 topo_cnt * sizeof(uint64_t));
+				 slurmd_conf_tot.topo_cnt * sizeof(uint64_t));
 		for (i = 0; i < gres_ns->topo_cnt; i++) {
 			if (gres_ns->topo_gres_bitmap) {
 				FREE_NULL_BITMAP(gres_ns->
@@ -3516,17 +3547,21 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		}
 		gres_ns->topo_gres_bitmap =
 			xrealloc(gres_ns->topo_gres_bitmap,
-				 topo_cnt * sizeof(bitstr_t *));
+				 slurmd_conf_tot.topo_cnt *
+				 sizeof(bitstr_t *));
 		gres_ns->topo_core_bitmap =
 			xrealloc(gres_ns->topo_core_bitmap,
-				 topo_cnt * sizeof(bitstr_t *));
+				 slurmd_conf_tot.topo_cnt *
+				 sizeof(bitstr_t *));
 		gres_ns->topo_type_id = xrealloc(gres_ns->topo_type_id,
-						 topo_cnt * sizeof(uint32_t));
+						 slurmd_conf_tot.topo_cnt *
+						 sizeof(uint32_t));
 		gres_ns->topo_type_name = xrealloc(gres_ns->topo_type_name,
-						   topo_cnt * sizeof(char *));
+						   slurmd_conf_tot.topo_cnt *
+						   sizeof(char *));
 		if (gres_ns->gres_bit_alloc)
 			bit_realloc(gres_ns->gres_bit_alloc, dev_cnt);
-		gres_ns->topo_cnt = topo_cnt;
+		gres_ns->topo_cnt = slurmd_conf_tot.topo_cnt;
 	} else if (gres_id_shared(gres_ctx->config_flags) &&
 		   gres_ns->topo_cnt) {
 		/*
@@ -3573,20 +3608,26 @@ static int _node_config_validate(char *node_name, char *orig_config,
 
 			if (gres_slurmd_conf->links) {
 				if (gres_ns->links_cnt &&
-				    (gres_ns->link_len != gres_cnt)) {
+				    (gres_ns->link_len !=
+				     slurmd_conf_tot.gres_cnt)) {
 					/* Size changed, need to rebuild */
 					for (j = 0; j < gres_ns->link_len;j++)
 						xfree(gres_ns->links_cnt[j]);
 					xfree(gres_ns->links_cnt);
 				}
 				if (!gres_ns->links_cnt) {
-					gres_ns->link_len = gres_cnt;
+					gres_ns->link_len =
+						slurmd_conf_tot.gres_cnt;
 					gres_ns->links_cnt =
-						xcalloc(gres_cnt,
+						xcalloc(slurmd_conf_tot.
+							gres_cnt,
 							sizeof(int *));
-					for (j = 0; j < gres_cnt; j++) {
+					for (j = 0;
+					     j < slurmd_conf_tot.gres_cnt;
+					     j++) {
 						gres_ns->links_cnt[j] =
-							xcalloc(gres_cnt,
+							xcalloc(slurmd_conf_tot.
+								gres_cnt,
 								sizeof(int));
 					}
 				}
@@ -3625,7 +3666,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					if (_links_str2array(
 						    gres_slurmd_conf->links,
 						    node_name, gres_ns,
-						    gres_inx, gres_cnt,
+						    gres_inx,
+						    slurmd_conf_tot.gres_cnt,
 						    reason_down) !=
 					    SLURM_SUCCESS)
 						rc = EINVAL;
@@ -3708,7 +3750,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	if (has_file) {
 		uint64_t gres_bits;
 		if (gres_id_shared(gres_ctx->config_flags)) {
-			gres_bits = topo_cnt;
+			gres_bits = slurmd_conf_tot.topo_cnt;
 		} else {
 			if (gres_ns->gres_cnt_avail > MAX_GRES_BITMAP) {
 				error("%s: %s has \"File\" plus very large \"Count\" "
@@ -3725,7 +3767,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		_gres_bit_alloc_resize(gres_ns, gres_bits);
 	}
 
-	if ((config_type_cnt > 1) &&
+	if ((slurmd_conf_tot.config_type_cnt > 1) &&
 	    !_valid_gres_types(gres_ctx->gres_type, gres_ns, reason_down)){
 		rc = EINVAL;
 	} else if (!config_overrides &&

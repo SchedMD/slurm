@@ -140,7 +140,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     batch jobs on Prolog failures regardless of the job --requeue setting.
  -- Add HealthCheckNodeState=NONDRAINED_IDLE option.
  -- Add 'explicit' to Flags in gres.conf. This makes it so the gres is not
-    automatically added to a job's allocation when --exclusive is used.
+    automatically added to a job's allocation when --exclusive is used. Note
+    that this is a per-node flag.
  -- Moved the "preempt_" options from SchedulerParameters to PreemptParameters,
     and dropped the prefix from the option names. (The old options will still
     be parsed for backwards compatibility, but are now undocumented.)
