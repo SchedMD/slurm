@@ -51,7 +51,6 @@
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
 #include "src/common/run_command.h"
-#include "src/interfaces/select.h"
 #include "src/common/setproctitle.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/jobacct_gather.h"
@@ -663,10 +662,7 @@ _init_from_slurmd(int sock, char **argv,
 		break;
 	}
 
-	/* Init select and switch before unpack_msg to only init the default */
-	if (select_g_init(1) != SLURM_SUCCESS )
-		fatal( "failed to initialize node selection plugin" );
-
+	/* Init switch before unpack_msg to only init the default */
 	if (switch_init(1) != SLURM_SUCCESS)
 		fatal( "failed to initialize authentication plugin" );
 
