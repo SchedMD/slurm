@@ -292,14 +292,10 @@ static void _create_cxi_descriptor(struct cxi_svc_desc *desc,
 
 	memset(desc, 0, sizeof(*desc));
 
-#ifdef CXI_SVC_MEMBER_UID
 	desc->restricted_members = true;
 	desc->members[0].type = CXI_SVC_MEMBER_UID;
 	desc->members[0].svc_member.uid = uid;
 	desc->members[1].type = CXI_SVC_MEMBER_IGNORE;
-#else
-	desc->restricted_members = false;
-#endif
 
 	/* Set up VNI */
 	if (job->num_vnis > 0) {
