@@ -2480,9 +2480,17 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 		}
 		job_step_resp.cred           = slurm_cred;
 		job_step_resp.use_protocol_ver = step_rec->start_protocol_ver;
-		select_jobinfo = select_g_select_jobinfo_copy(
-			step_rec->select_jobinfo);
-		job_step_resp.select_jobinfo = select_jobinfo;
+
+		/*
+		 * select_jobinfo can be removed from
+		 * job_step_create_response_msg_t 2 versions after 23.02 */
+		if (job_step_resp.use_protocol_ver <
+		    SLURM_23_02_PROTOCOL_VERSION) {
+			select_jobinfo = select_g_select_jobinfo_copy(
+				step_rec->select_jobinfo);
+			job_step_resp.select_jobinfo = select_jobinfo;
+		}
+
 		if (step_rec->switch_job)
 			switch_g_duplicate_jobinfo(step_rec->switch_job,
 						   &switch_job);
@@ -2500,7 +2508,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 
 		slurm_cred_destroy(slurm_cred);
 		slurm_step_layout_destroy(step_layout);
-		select_g_select_jobinfo_free(select_jobinfo);
+		if (select_jobinfo)
+			select_g_select_jobinfo_free(select_jobinfo);
 		switch_g_free_jobinfo(switch_job);
 
 		schedule_job_save();	/* Sets own locks */

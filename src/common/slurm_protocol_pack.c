@@ -3059,8 +3059,6 @@ static void _pack_job_step_create_response_msg(
 		pack_slurm_step_layout(msg->step_layout, buffer,
 				       protocol_version);
 		slurm_cred_pack(msg->cred, buffer, protocol_version);
-		select_g_select_jobinfo_pack(msg->select_jobinfo, buffer,
-					     protocol_version);
 		switch_g_pack_jobinfo(msg->switch_job, buffer,
 				      protocol_version);
 		pack16(msg->use_protocol_ver, buffer);
@@ -3071,6 +3069,9 @@ static void _pack_job_step_create_response_msg(
 		pack_slurm_step_layout(
 			msg->step_layout, buffer, protocol_version);
 		slurm_cred_pack(msg->cred, buffer, protocol_version);
+		/*
+		 * After this version we no longer need to send select_jobinfo
+		 */
 		select_g_select_jobinfo_pack(
 			msg->select_jobinfo, buffer, protocol_version);
 		switch_g_pack_jobinfo(msg->switch_job, buffer,
@@ -3103,9 +3104,6 @@ static int _unpack_job_step_create_response_msg(
 							protocol_version)))
 			goto unpack_error;
 
-		if (select_g_select_jobinfo_unpack(&tmp_ptr->select_jobinfo,
-						   buffer, protocol_version))
-			goto unpack_error;
 		if (switch_g_unpack_jobinfo(&tmp_ptr->switch_job, buffer,
 					    protocol_version)) {
 			error("switch_g_unpack_jobinfo: %m");
@@ -8356,8 +8354,6 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack32(msg->cpu_freq_max, buffer);
 		pack32(msg->cpu_freq_gov, buffer);
 
-		select_g_select_jobinfo_pack(msg->select_jobinfo,
-					     buffer, protocol_version);
 		packstr(msg->tres_bind, buffer);
 		packstr(msg->tres_freq, buffer);
 		pack16(msg->x11, buffer);
@@ -8715,10 +8711,6 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack32(&msg->cpu_freq_max, buffer);
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
 
-		if (select_g_select_jobinfo_unpack(&msg->select_jobinfo,
-						   buffer, protocol_version)) {
-			goto unpack_error;
-		}
 		safe_unpackstr_xmalloc(&msg->tres_bind, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->tres_freq, &uint32_tmp, buffer);
 		safe_unpack16(&msg->x11, buffer);
