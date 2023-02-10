@@ -178,18 +178,20 @@ if ($state ne "PENDING") {
         printf("Memory Utilized: %s (estimated maximum)\n", kbytes2str($mem));
     }
     my $mem_eff;
-    if ($reqmem != 0) {
-        $mem_eff = $mem / $reqmem * 100;
+    my $allocmem = Slurmdb::find_tres_count_in_string($job->{'tres_alloc_str'}, TRES_MEM);
+    $allocmem = $allocmem * 1024;
+    if ($allocmem != 0) {
+        $mem_eff = $mem / $allocmem * 100;
     } else {
         $mem_eff = 0.0;
     }
     if ($ntasks == 1) {
-        printf("Memory Efficiency: %.2f%% of %s\n", $mem_eff, kbytes2str($reqmem));
+        printf("Memory Efficiency: %.2f%% of %s\n", $mem_eff, kbytes2str($allocmem));
     } else {
         if ($pernode) {
-            printf("Memory Efficiency: %.2f%% of %s (%s\/node)\n", $mem_eff, kbytes2str($reqmem), kbytes2str($reqmem / $nnodes));
+            printf("Memory Efficiency: %.2f%% of %s (%s\/node)\n", $mem_eff, kbytes2str($allocmem), kbytes2str($allocmem / $nnodes));
         } else {
-            printf("Memory Efficiency: %.2f%% of %s (%s\/core)\n", $mem_eff, kbytes2str($reqmem), kbytes2str($reqmem / $ncpus));
+            printf("Memory Efficiency: %.2f%% of %s (%s\/core)\n", $mem_eff, kbytes2str($allocmem), kbytes2str($allocmem / $ncpus));
         }
     }
     if ($state eq "RUNNING") {
