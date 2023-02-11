@@ -59,13 +59,12 @@ AC_DEFUN([X_AC_HPE_SLINGSHOT],
                        ])
 	AC_SUBST(HPE_SLINGSHOT_CFLAGS)
 	AC_DEFINE_UNQUOTED(HPE_SLINGSHOT_LIB, "$_x_ac_hpe_ss_dir/lib64/libcxi.so", [Full path of libcxi.so])
-        CFLAGS="$cflags_save"
-      break;
+	CFLAGS="$cflags_save"
+	break;
+      fi
       CFLAGS="$cflags_save"
 
-      fi
     done
-
 
     AM_CONDITIONAL(WITH_SWITCH_HPE_SLINGSHOT, test x$ac_hpe_ss = xyes)
     if test -z "$ac_hpe_ss"; then
