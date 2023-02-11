@@ -26363,7 +26363,6 @@ else $as_nop
   ac_hpe_ss_h=no
 fi
 
-      CFLAGS="$cflags_save"
 
       # We only care about the headers here.
       # This plugin is designed to work without the lib.
@@ -26377,6 +26376,7 @@ fi
       if test "$ac_hpe_ss_h" = "yes"; then
         ac_hpe_ss="yes"
         ac_fn_c_check_type "$LINENO" "struct cxi_rsrc_use" "ac_cv_type_struct_cxi_rsrc_use" "
+			#include <string.h>
                         #include <stddef.h>
                         #include <sys/types.h>
                         #include <libcxi/libcxi.h>
@@ -26394,7 +26394,10 @@ fi
 
 printf "%s\n" "#define HPE_SLINGSHOT_LIB \"$_x_ac_hpe_ss_dir/lib64/libcxi.so\"" >>confdefs.h
 
-        break;
+        CFLAGS="$cflags_save"
+      break;
+      CFLAGS="$cflags_save"
+
       fi
     done
 
