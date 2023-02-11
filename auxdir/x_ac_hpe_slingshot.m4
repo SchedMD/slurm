@@ -38,7 +38,6 @@ AC_DEFUN([X_AC_HPE_SLINGSHOT],
       HPE_SLINGSHOT_CFLAGS="-I$_x_ac_hpe_ss_dir/include"
       CFLAGS="$HPE_SLINGSHOT_CFLAGS"
       AC_CHECK_HEADER([libcxi/libcxi.h], [ac_hpe_ss_h=yes], [ac_hpe_ss_h=no])
-      CFLAGS="$cflags_save"
 
       # We only care about the headers here.
       # This plugin is designed to work without the lib.
@@ -60,7 +59,10 @@ AC_DEFUN([X_AC_HPE_SLINGSHOT],
                        ])
 	AC_SUBST(HPE_SLINGSHOT_CFLAGS)
 	AC_DEFINE_UNQUOTED(HPE_SLINGSHOT_LIB, "$_x_ac_hpe_ss_dir/lib64/libcxi.so", [Full path of libcxi.so])
-        break;
+        CFLAGS="$cflags_save"
+      break;
+      CFLAGS="$cflags_save"
+
       fi
     done
 
