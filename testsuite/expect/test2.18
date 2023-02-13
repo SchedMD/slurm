@@ -121,7 +121,7 @@ proc test_part { acct part acct_con } {
 			if { $acct_con == 1 } {
 				log_debug "This error is expected"
 			} else {
-				fail "This error should not have occured"
+				fail "This error should not have occurred"
 			}
 			exp_continue
 		}

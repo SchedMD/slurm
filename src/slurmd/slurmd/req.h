@@ -62,7 +62,7 @@ void file_bcast_purge(void);
 
 /*
  * ume_notify - Notify all jobs and steps on this node that a Uncorrectable
- *	Memory Error (UME) has occured by sending SIG_UME (to log event in
+ *	Memory Error (UME) has occurred by sending SIG_UME (to log event in
  *	stderr)
  * RET count of signaled job steps
  */

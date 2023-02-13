@@ -3991,7 +3991,7 @@
             "type": "string"
           },
           "source": {
-            "description": "Where error occured in the source",
+            "description": "Where error occurred in the source",
             "type": "string"
           },
           "description": {

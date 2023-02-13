@@ -1711,7 +1711,7 @@ static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
 		error_code = ESLURM_CAN_NOT_START_IMMEDIATELY;
 
 send_msg:
-	/* Send response back about origin jobid if an error occured. */
+	/* Send response back about origin jobid if an error occurred. */
 	if (reject_job)
 		_persist_fed_job_response(sibling, job_desc->job_id, error_code);
 	else {

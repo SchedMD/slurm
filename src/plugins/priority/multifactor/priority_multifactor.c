@@ -1178,7 +1178,7 @@ static int _apply_new_usage(job_record_t *job_ptr, time_t start_period,
 	/* We want to do this all the way up
 	 * to and including root.  This way we
 	 * can keep track of how much usage
-	 * has occured on the entire system
+	 * has occurred on the entire system
 	 * and use that to normalize against. */
 	while (assoc) {
 		assoc->usage->grp_used_wall += run_decay;

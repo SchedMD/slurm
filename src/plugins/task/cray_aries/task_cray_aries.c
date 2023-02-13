@@ -134,7 +134,7 @@ static int track_status = 1;
 
 // Filename to write status information to
 // This file consists of step->node_tasks + 1 bytes. Each byte will
-// be either 1 or 0, indicating that that particular event has occured.
+// be either 1 or 0, indicating that that particular event has occurred.
 // The first byte indicates the starting LLI message, and the next bytes
 // indicate the exiting LLI messages for each task
 #define LLI_STATUS_FILE	    LLI_SPOOL_DIR"/status%"PRIu64

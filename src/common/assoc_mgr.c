@@ -5763,7 +5763,7 @@ extern int load_assoc_usage(void)
 
 		/* We want to do this all the way up to and including
 		   root.  This way we can keep track of how much usage
-		   has occured on the entire system and use that to
+		   has occurred on the entire system and use that to
 		   normalize against.
 		*/
 		if (assoc) {

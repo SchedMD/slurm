@@ -67,7 +67,7 @@ extern void slurm_lua_stack_dump(const char *plugin,
  *
  * Returns:
  * SLURM_SUCCESS - if a correct Lua object is set.
- * SLURM_ERROR - an error occured, and there's no lua state loaded.
+ * SLURM_ERROR - an error occurred, and there's no lua state loaded.
  */
 extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 				const char *script_path,

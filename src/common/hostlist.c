@@ -2483,7 +2483,7 @@ static void hostlist_coalesce(hostlist_t hl)
 /* attempt to join ranges at loc and loc-1 in a hostlist  */
 /* delete duplicates, return the number of hosts deleted  */
 /* assumes that the hostlist hl has been locked by caller */
-/* returns -1 if no range join occured */
+/* returns -1 if no range join occurred */
 static int _attempt_range_join(hostlist_t hl, int loc)
 {
 	int ndup;

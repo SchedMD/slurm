@@ -1291,7 +1291,7 @@ _direct_conn_establish(pmixp_conn_t *conn, void *_hdr, void *msg)
 	if (!dconn) {
 		/* connection was refused because we already
 		 * have established connection
-		 * It seems that some sort of race condition occured
+		 * It seems that some sort of race condition occurred
 		 */
 		close(fd);
 		nodename = pmixp_info_job_host(hdr->nodeid);
