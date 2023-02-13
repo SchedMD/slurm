@@ -1426,7 +1426,7 @@ static priority_factors_object_t *_create_prio_factors_obj(
 	obj->job_id = job_ptr->job_id;
 	obj->partition = job_part_ptr ?
 		job_part_ptr->name : job_ptr->part_ptr->name;
-	obj->qos = job_ptr->qos_ptr->name;
+	obj->qos = job_ptr->qos_ptr ? job_ptr->qos_ptr->name : NULL;
 	obj->user_id = job_ptr->user_id;
 
 	if (job_ptr->direct_set_prio) {
@@ -1739,8 +1739,6 @@ static void _set_usage_efctv(slurmdb_assoc_rec_t *assoc)
 int init ( void )
 {
 	/* Write lock on jobs, read lock on nodes and partitions */
-	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 
 	/* This means we aren't running from the controller so skip setup. */
 	if (cluster_cpus == NO_VAL) {
@@ -1752,7 +1750,6 @@ int init ( void )
 
 	/* Check to see if we are running a supported accounting plugin */
 	if (!slurm_with_slurmdbd()) {
-		time_t start_time = time(NULL);
 		if (weight_age)
 			error("PriorityWeightAge can only be used with SlurmDBD, ignoring");
 		if (weight_fs)
@@ -1760,14 +1757,6 @@ int init ( void )
 		calc_fairshare = 0;
 		weight_age = 0;
 		weight_fs = 0;
-
-		/* Initialize job priority factors for valid sprio output */
-		lock_slurmctld(job_write_lock);
-		list_for_each(
-			job_list,
-			(ListForF) _decay_apply_new_usage_and_weighted_factors,
-			&start_time);
-		unlock_slurmctld(job_write_lock);
 	} else if (assoc_mgr_root_assoc) {
 		assoc_mgr_root_assoc->usage->usage_efctv = 1.0;
 
@@ -2107,6 +2096,28 @@ extern int decay_apply_weighted_factors(job_record_t *job_ptr,
 	return SLURM_SUCCESS;
 }
 
+extern uint32_t priority_p_recover(uint32_t prio_boost)
+{
+	time_t start_time;
+	slurmctld_lock_t job_write_lock = {
+		.job = WRITE_LOCK,
+		.node = READ_LOCK,
+		.part = READ_LOCK,
+	};
+
+	if (slurm_with_slurmdbd())
+		return 0;
+
+	start_time = time(NULL);
+	/* Initialize job priority factors for valid sprio output */
+	lock_slurmctld(job_write_lock);
+	list_for_each(job_list,
+		      (ListForF) _decay_apply_new_usage_and_weighted_factors,
+		      &start_time);
+	unlock_slurmctld(job_write_lock);
+
+	return 0;
+}
 
 extern void set_priority_factors(time_t start_time, job_record_t *job_ptr)
 {

@@ -127,6 +127,27 @@ extern uint32_t priority_p_set(uint32_t last_prio, job_record_t *job_ptr)
 	return new_prio;
 }
 
+static int _foreach_job_boost_prio(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+	uint32_t prio_boost = *(uint32_t *) arg;
+
+	if ((job_ptr->priority) && (job_ptr->direct_set_prio == 0))
+		job_ptr->priority += prio_boost;
+
+	return 0;
+}
+
+extern uint32_t priority_p_recover(uint32_t prio_boost)
+{
+	if (prio_boost < 1000000)
+		return 0;
+
+	list_for_each(job_list, _foreach_job_boost_prio, &prio_boost);
+
+	return prio_boost;
+}
+
 extern void priority_p_reconfig(bool assoc_clear)
 {
 	return;

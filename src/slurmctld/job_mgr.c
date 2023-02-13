@@ -12074,22 +12074,12 @@ extern void set_job_prio(job_record_t *job_ptr)
  * priorities of all jobs to avoid decrementing the base down to zero */
 extern void sync_job_priorities(void)
 {
-	ListIterator job_iterator;
-	job_record_t *job_ptr;
 	uint32_t prio_boost = 0;
 
 	if ((highest_prio != 0) && (highest_prio < TOP_PRIORITY))
 		prio_boost = TOP_PRIORITY - highest_prio;
-	if (xstrcmp(slurm_conf.priority_type, "priority/basic") ||
-	    (prio_boost < 1000000))
-		return;
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if ((job_ptr->priority) && (job_ptr->direct_set_prio == 0))
-			job_ptr->priority += prio_boost;
-	}
-	list_iterator_destroy(job_iterator);
+	prio_boost = priority_g_recover(prio_boost);
 	lowest_prio += prio_boost;
 }
 
