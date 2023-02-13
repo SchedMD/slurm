@@ -52,6 +52,7 @@ typedef struct slurm_priority_ops {
 	List	 (*get_priority_factors)
 	(priority_factors_request_msg_t *req_msg, uid_t uid);
 	void     (*job_end)        (job_record_t *job_ptr);
+	uint32_t (*recover) (uint32_t prio_boost);
 } slurm_priority_ops_t;
 
 /*
@@ -64,6 +65,7 @@ static const char *syms[] = {
 	"priority_p_calc_fs_factor",
 	"priority_p_get_priority_factors_list",
 	"priority_p_job_end",
+	"priority_p_recover",
 };
 
 static slurm_priority_ops_t ops;
@@ -139,6 +141,13 @@ extern void priority_g_reconfig(bool assoc_clear)
 	(*(ops.reconfig))(assoc_clear);
 
 	return;
+}
+
+extern uint32_t priority_g_recover(uint32_t prio_boost)
+{
+	xassert(g_priority_context);
+
+	return (*(ops.recover))(prio_boost);
 }
 
 extern void priority_g_set_assoc_usage(slurmdb_assoc_rec_t *assoc)

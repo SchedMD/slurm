@@ -1784,7 +1784,6 @@ int read_slurm_conf(int recover, bool reconfig)
 			      recover);
 		(void) load_all_front_end_state(true);
 		load_job_ret = load_all_job_state();
-		sync_job_priorities();
 	} else if (recover > 1) {	/* Load node, part & job state files */
 		(void) load_all_node_state(false);
 		_set_features(old_node_table_ptr, old_node_record_count,
@@ -1792,7 +1791,6 @@ int read_slurm_conf(int recover, bool reconfig)
 		(void) load_all_front_end_state(false);
 		(void) load_all_part_state();
 		load_job_ret = load_all_job_state();
-		sync_job_priorities();
 	}
 
 	_sync_part_prio();

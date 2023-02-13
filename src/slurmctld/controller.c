@@ -796,6 +796,8 @@ int main(int argc, char **argv)
 
 		_restore_job_dependencies();
 
+		sync_job_priorities();
+
 		if (bb_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize burst buffer plugin");
 		if (power_g_init() != SLURM_SUCCESS)
