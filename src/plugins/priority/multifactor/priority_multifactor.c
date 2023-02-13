@@ -1426,7 +1426,7 @@ static priority_factors_object_t *_create_prio_factors_obj(
 	obj->job_id = job_ptr->job_id;
 	obj->partition = job_part_ptr ?
 		job_part_ptr->name : job_ptr->part_ptr->name;
-	obj->qos = job_ptr->qos_ptr->name;
+	obj->qos = job_ptr->qos_ptr ? job_ptr->qos_ptr->name : NULL;
 	obj->user_id = job_ptr->user_id;
 
 	if (job_ptr->direct_set_prio) {
