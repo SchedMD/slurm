@@ -120,6 +120,8 @@ typedef enum {
 extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
 extern slurm_conf_t slurm_conf __attribute__((weak_import));
 extern slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import));
+extern node_record_t **node_record_table_ptr __attribute__((weak_import));
+extern int node_record_count __attribute__((weak_import));
 extern time_t last_node_update __attribute__((weak_import));
 extern int slurmctld_primary __attribute__((weak_import));
 extern void *acct_db_conn  __attribute__((weak_import));
@@ -128,6 +130,8 @@ extern bool ignore_state_errors __attribute__((weak_import));
 slurmctld_config_t slurmctld_config;
 slurm_conf_t slurm_conf;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
+node_record_t **node_record_table_ptr;
+int node_record_count;
 time_t last_node_update;
 int slurmctld_primary;
 void *acct_db_conn = NULL;

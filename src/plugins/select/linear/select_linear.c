@@ -90,9 +90,13 @@
  */
 #if defined (__APPLE__)
 extern slurm_conf_t slurm_conf __attribute__((weak_import));
+extern node_record_t **node_record_table_ptr __attribute__((weak_import));
 extern List part_list __attribute__((weak_import));
 extern List job_list __attribute__((weak_import));
+extern int node_record_count __attribute__((weak_import));
 extern time_t last_node_update __attribute__((weak_import));
+extern switch_record_t *switch_record_table __attribute__((weak_import));
+extern int switch_record_cnt __attribute__((weak_import));
 extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
 
 extern int hypercube_dimensions __attribute__((weak_import));
@@ -102,9 +106,13 @@ extern struct hypercube_switch ***hypercube_switches __attribute__((weak_import)
 
 #else
 slurm_conf_t slurm_conf;
+node_record_t **node_record_table_ptr;
 List part_list;
 List job_list;
+int node_record_count;
 time_t last_node_update;
+switch_record_t *switch_record_table;
+int switch_record_cnt;
 slurmctld_config_t slurmctld_config;
 
 int hypercube_dimensions;
