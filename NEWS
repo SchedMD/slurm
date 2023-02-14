@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.39 - avoid error while adding account coordinators.
  -- scrun - catch invalid values of environment SCRUN_FILE_DEBUG.
  -- scrun - avoid memory leak due to invalid annotation.
+ -- scrun - avoid false error when pidfile not requested.
 
 * Changes in Slurm 23.02.0rc1
 =============================

@@ -388,7 +388,7 @@ static void _check_if_stopped(con_mgr_t *mgr, con_mgr_fd_t *con,
 	/* conmgr will unlink anchor_socket at shutdown */
 	if (pid_file && unlink(pid_file))
 		debug("%s: unable to unlink(%s): %m", __func__, pid_file);
-	if (ftruncate(pid_file_fd, 0))
+	if ((pid_file_fd != -1) && ftruncate(pid_file_fd, 0))
 		error("%s: unable to ftruncate(%d): %m", __func__, pid_file_fd);
 	if ((pid_file_fd != -1) && close(pid_file_fd))
 		debug("%s: unable to close(%d): %m", __func__, pid_file_fd);
