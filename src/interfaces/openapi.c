@@ -1499,7 +1499,7 @@ extern char *openapi_fmt_rel_path_str(char **str_ptr, data_t *relative_path)
 	xstrfmtcatat(args.path, &args.at, "%s%s",
 		     OPENAPI_PATH_REL, OPENAPI_PATH_SEP);
 
-	data_list_for_each(relative_path, _foreach_join_path_str, &args);
+	(void) data_list_for_each(relative_path, _foreach_join_path_str, &args);
 
 	if (*str_ptr)
 		xfree(*str_ptr);
