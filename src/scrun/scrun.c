@@ -343,7 +343,7 @@ static void _parse_env(void)
 	if ((buffer = getenv("SCRUN_FILE_DEBUG"))) {
 		log_opt.logfile_level = log_string2num(buffer);
 
-		if (log_opt.syslog_level <= 0)
+		if (log_opt.logfile_level <= 0)
 			fatal("Invalid env SCRUN_FILE_DEBUG=%s", buffer);
 
 		update_logging();
