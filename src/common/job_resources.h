@@ -168,11 +168,6 @@ extern int build_job_resources(job_resources_t *job_resrcs_ptr);
  * Return total CPU count or -1 on error */
 extern int build_job_resources_cpu_array(job_resources_t *job_resrcs_ptr);
 
-/* Rebuild cpus array based upon the values of nhosts, cpu_array_value and
- * cpu_array_reps in an existing data structure
- * Return total CPU count or -1 on error */
-extern int build_job_resources_cpus_array(job_resources_t *job_resrcs_ptr);
-
 /* Validate a job_resources data structure originally built using
  * build_job_resources() is still valid based upon slurmctld state.
  * NOTE: Reset the node_bitmap field before calling this function.
