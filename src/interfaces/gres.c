@@ -6119,18 +6119,22 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 		return rc;
 	}
 
+	/*
+	 * If someone requested [mem|cpus]_per_tres but didn't request any GPUs
+	 * (even if --exclusive was used), then error. For now we only test for
+	 * GPUs since --[mem|cpus]-per-gpu are the only allowed
+	 * [mem|cpus]_per_gres options. Even though --exclusive means that you
+	 * will be allocated all of the GRES on the node, we still require that
+	 * GPUs are explicitly requested when --[mem|cpus]-per-gpu is used.
+	 */
 	if (mem_per_tres && (!requested_gpu)) {
-		/*
-		 * If someone requested mem_per_tres but didn't request any
-		 * GPUs (even if --exclusive was used), then error.
-		 * For now we only test for GPUs since --mem-per-gpu is the
-		 * only allowed mem_per_gres option.
-		 * Even though --exclusive means that you will be allocated all
-		 * of the GRES on the node, we still require that GPUs are
-		 * explicitly requested when --mem-per-gpu is used.
-		 */
 		error("Requested mem_per_tres=%s but did not request any GPU.",
 		      mem_per_tres);
+		return ESLURM_INVALID_GRES;
+	}
+	if (cpus_per_tres && (!requested_gpu)) {
+		error("Requested cpus_per_tres=%s but did not request any GPU.",
+		      cpus_per_tres);
 		return ESLURM_INVALID_GRES;
 	}
 
