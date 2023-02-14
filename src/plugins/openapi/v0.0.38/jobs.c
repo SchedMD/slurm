@@ -572,7 +572,7 @@ static void _dump_node_res(data_t *dnodes, job_resources_t *j,
 			   const size_t sock_inx, size_t *bit_inx,
 			   const size_t array_size)
 {
-	size_t bit_reps;
+	int bit_reps;
 	data_t *dnode = data_set_dict(data_list_append(dnodes));
 	data_t *dsockets = data_set_dict(data_key_set(dnode, "sockets"));
 	data_t **sockets;
@@ -593,9 +593,9 @@ static void _dump_node_res(data_t *dnodes, job_resources_t *j,
 
 	bit_reps = j->sockets_per_node[sock_inx] *
 		   j->cores_per_socket[sock_inx];
-	for (size_t i = 0; i < bit_reps; i++) {
-		size_t socket_inx = i / j->cores_per_socket[sock_inx];
-		size_t core_inx = i % j->cores_per_socket[sock_inx];
+	for (int i = 0; i < bit_reps; i++) {
+		int socket_inx = i / j->cores_per_socket[sock_inx];
+		int core_inx = i % j->cores_per_socket[sock_inx];
 
 		xassert(*bit_inx < array_size);
 

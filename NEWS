@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
  -- topology/tree - Add new TopologyParam=SwitchAsNodeRank option to reorder
     nodes based on switch layout. This can be useful if the naming convention
     for the nodes does not natually map to the network topology.
+ -- openapi/v0.0.38 - avoid signed math errors while dumping node resources.
 
 * Changes in Slurm 23.02.0rc1
 =============================
