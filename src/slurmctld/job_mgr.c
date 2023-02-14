@@ -8085,9 +8085,11 @@ static void _figure_out_num_tasks(
 		if (max_nodes == 0)
 			max_nodes = min_nodes;
 
-		if (ntasks_per_node == NO_VAL16)
+		if ((ntasks_per_node == NO_VAL16) &&
+		    job_ptr->details->ntasks_per_node)
 			ntasks_per_node = job_ptr->details->ntasks_per_node;
-		else if (ntasks_per_tres == NO_VAL16)
+		else if ((ntasks_per_tres == NO_VAL16) &&
+			 job_ptr->details->ntasks_per_tres)
 			ntasks_per_tres = job_ptr->details->ntasks_per_tres;
 
 	} else if (job_desc->min_nodes == NO_VAL) {
