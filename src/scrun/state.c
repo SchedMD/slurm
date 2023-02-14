@@ -115,6 +115,7 @@ extern void check_state(void)
 			xassert(!stat(state.anchor_socket, &statbuf));
 			xassert(!stat(state.config_file, &statbuf));
 			xassert(state.anchor_socket && state.anchor_socket[0]);
+			/* fall through */
 		case CONTAINER_ST_RUNNING :
 			xassert(state.user_id != SLURM_AUTH_NOBODY);
 			xassert(state.jobid > 0);
