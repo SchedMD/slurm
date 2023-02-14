@@ -8098,7 +8098,7 @@ static void _figure_out_num_tasks(
 	    (min_nodes != NO_VAL) &&
 	    (!job_ptr || (job_ptr && (min_nodes == max_nodes)))) {
 		/* Implicitly set task count */
-		if (job_desc->ntasks_per_tres != NO_VAL16)
+		if (ntasks_per_tres != NO_VAL16)
 			num_tasks = min_nodes * ntasks_per_tres;
 		else if (ntasks_per_node != NO_VAL16)
 			num_tasks = min_nodes * ntasks_per_node;
