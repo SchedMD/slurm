@@ -4041,7 +4041,6 @@ extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
 	node_record_t *node_ptr;
 	char *this_node_name;
 	int node_inx = 0;
-	int tpn = job_ptr->details->ntasks_per_node;
 
 	if ((job_ptr->node_bitmap == NULL) || (job_ptr->nodes == NULL)) {
 		/* No nodes allocated, we're done... */
@@ -4053,10 +4052,6 @@ extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
 	if ((host_list = hostlist_create(job_ptr->nodes)) == NULL)
 		fatal("hostlist_create error for %s: %m", job_ptr->nodes);
 	job_ptr->total_nodes = job_ptr->node_cnt = hostlist_count(host_list);
-
-	/* Update the job num_tasks to account for variable node count jobs */
-	if (tpn && !(job_ptr->bit_flags & JOB_NTASKS_SET))
-		job_ptr->details->num_tasks = job_ptr->node_cnt * tpn;
 
 #ifdef HAVE_FRONT_END
 	if (new_alloc) {

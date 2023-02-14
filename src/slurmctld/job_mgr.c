@@ -8089,11 +8089,12 @@ static void _figure_out_num_tasks(
 
 		if (cpus_per_task == NO_VAL16)
 			cpus_per_task = job_ptr->details->cpus_per_task;
+	} else if (job_desc->min_nodes == NO_VAL) {
+		min_nodes = job_desc->min_nodes = 1;
 	}
 
 	/* If we are creating the job we want the tasks to be set every time. */
-	if ((ntasks_per_tres != NO_VAL16) &&
-	    (num_tasks == NO_VAL) &&
+	if ((num_tasks == NO_VAL) &&
 	    (min_nodes != NO_VAL) &&
 	    (!job_ptr || (job_ptr && (min_nodes == max_nodes)))) {
 		/* Implicitly set task count */
@@ -14426,6 +14427,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		else if (operator) {
 			detail_ptr->ntasks_per_node =
 				job_desc->ntasks_per_node;
+			if (detail_ptr->pn_min_cpus <
+			    detail_ptr->ntasks_per_node) {
+				detail_ptr->pn_min_cpus =
+					detail_ptr->orig_pn_min_cpus =
+					job_desc->ntasks_per_node;
+			}
 			sched_info("%s: setting ntasks_per_node to %u for %pJ",
 				   __func__, job_desc->ntasks_per_node, job_ptr);
 		} else {
