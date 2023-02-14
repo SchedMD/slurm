@@ -14427,6 +14427,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		else if (operator) {
 			detail_ptr->ntasks_per_node =
 				job_desc->ntasks_per_node;
+			if (detail_ptr->pn_min_cpus <
+			    detail_ptr->ntasks_per_node) {
+				detail_ptr->pn_min_cpus =
+					detail_ptr->orig_pn_min_cpus =
+					job_desc->ntasks_per_node;
+			}
 			sched_info("%s: setting ntasks_per_node to %u for %pJ",
 				   __func__, job_desc->ntasks_per_node, job_ptr);
 		} else {
