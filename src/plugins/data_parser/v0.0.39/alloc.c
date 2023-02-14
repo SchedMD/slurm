@@ -154,6 +154,7 @@ extern void *alloc_parser_obj(const parser_t *const parser)
 				obj = types[i].alloc_func(parser);
 			else
 				obj = xmalloc(parser->size);
+			break;
 		}
 	}
 
