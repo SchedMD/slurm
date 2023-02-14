@@ -219,7 +219,7 @@ static int _foreach_add_acct_coord(void *x, void *arg)
 	FREE_NULL_LIST(acct_list);
 	FREE_NULL_LIST(assoc_cond.user_list);
 
-	return rc ? SLURM_ERROR : SLURM_ERROR;
+	return rc ? SLURM_ERROR : SLURM_SUCCESS;
 }
 
 static int _foreach_rm_acct_coord(void *x, void *arg)

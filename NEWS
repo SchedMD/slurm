@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.38 - avoid signed math errors while dumping node resources.
  -- openapi/dbv0.0.39 - avoid error while dumping account coordinators.
  -- data_parser/v0.0.39 - correct dump of stats backfill mean table size.
+ -- openapi/dbv0.0.39 - avoid error while adding account coordinators.
 
 * Changes in Slurm 23.02.0rc1
 =============================
