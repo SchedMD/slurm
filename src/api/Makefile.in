@@ -1296,6 +1296,12 @@ $(VERSION_SCRIPT) :
 	 echo "   slurmdb_*;"; \
 	 echo "   plugin_context_*;"; \
 	 echo "   working_cluster_rec;"; \
+	 echo "   node_record_count;"; \
+	 echo "   active_node_record_count;"; \
+	 echo "   node_record_table_ptr;"; \
+	 echo "   switch_record_cnt;"; \
+	 echo "   switch_levels;"; \
+	 echo "   switch_record_table;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
 
