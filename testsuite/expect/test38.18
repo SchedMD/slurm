@@ -232,10 +232,10 @@ proc test_cpus_per_gpu {} {
 	log_info "Testing --cpus-per-gpu"
 
 	set tests [list \
-		"--cpus-per-gpu=1 : --cpus-per-gpu=2" \
-		"--cpus-per-gpu=2 : --cpus-per-gpu=1" \
-		"--cpus-per-gpu=2 : -n1" \
-		"-n1 : --cpus-per-gpu=2" \
+		"--gpus=1 --cpus-per-gpu=1 : --gpus=1 --cpus-per-gpu=2" \
+		"--gpus=1 --cpus-per-gpu=2 : --gpus=1 --cpus-per-gpu=1" \
+		"--gpus=1 --cpus-per-gpu=2 : -n1" \
+		"-n1 : --gpus=1 --cpus-per-gpu=2" \
 	]
 
 	set regexes [list \
