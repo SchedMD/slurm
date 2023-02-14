@@ -2440,6 +2440,11 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 			}
 		}
 		step_ptr->cpus_per_task = cpus_per_task;
+		step_layout->cpus_per_task[step_node_inx] = cpus_per_task;
+		log_flag(STEPS, "%s: %pS node %d (%s) gres_cpus_alloc=%d tasks=%u cpus_per_task=%u",
+			 __func__, step_ptr, job_node_inx, node_ptr->name,
+			 gres_cpus_alloc, task_cnt,
+			 step_layout->cpus_per_task[step_node_inx]);
 
 		if (step_ptr->flags & SSF_WHOLE) {
 			cpus_alloc_mem = cpus_alloc =

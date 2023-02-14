@@ -155,6 +155,11 @@ extern slurm_step_layout_t *fake_slurm_step_layout_create(
 	step_layout->node_cnt = node_cnt;
 	step_layout->start_protocol_ver = protocol_version;
 	step_layout->tasks = xcalloc(node_cnt, sizeof(uint16_t));
+	/*
+	 * Alloc cpus_per_task so it can be packed, but the
+	 * data is unused so no need to set it.
+	 */
+	step_layout->cpus_per_task = xcalloc(node_cnt, sizeof(uint16_t));
 	step_layout->tids = xcalloc(node_cnt, sizeof(uint32_t *));
 
 	step_layout->task_cnt = 0;
@@ -220,6 +225,9 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 	layout->tasks = xcalloc(layout->node_cnt, sizeof(uint16_t));
 	memcpy(layout->tasks, step_layout->tasks,
 	       (sizeof(uint16_t) * layout->node_cnt));
+	layout->cpus_per_task = xcalloc(layout->node_cnt, sizeof(uint16_t));
+	memcpy(layout->cpus_per_task, step_layout->cpus_per_task,
+	       (sizeof(uint16_t) * layout->node_cnt));
 
 	layout->tids = xcalloc(layout->node_cnt, sizeof(uint32_t *));
 	for (i = 0; i < layout->node_cnt; i++) {
@@ -254,6 +262,13 @@ extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
 			hostlist_push_host(hl, host);
 			pos = step_layout1->node_cnt++;
 			xrecalloc(step_layout1->tasks,
+				  step_layout1->node_cnt,
+				  sizeof(uint16_t));
+			/*
+			 * Alloc cpus_per_task so it can be packed, but the
+			 * data is unused so no need to set it.
+			 */
+			xrecalloc(step_layout1->cpus_per_task,
 				  step_layout1->node_cnt,
 				  sizeof(uint16_t));
 			xrecalloc(step_layout1->tids,
@@ -414,6 +429,7 @@ extern int slurm_step_layout_destroy(slurm_step_layout_t *step_layout)
 		xfree(step_layout->front_end);
 		xfree(step_layout->node_list);
 		xfree(step_layout->tasks);
+		xfree(step_layout->cpus_per_task);
 		for (i = 0; i < step_layout->node_cnt; i++) {
 			xfree(step_layout->tids[i]);
 		}
@@ -482,6 +498,8 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 	step_layout->plane_size = step_layout_req->plane_size;
 
 	step_layout->tasks = xcalloc(step_layout->node_cnt, sizeof(uint16_t));
+	step_layout->cpus_per_task = xcalloc(step_layout->node_cnt,
+					     sizeof(uint16_t));
 	step_layout->tids = xcalloc(step_layout->node_cnt, sizeof(uint32_t *));
 	hl = hostlist_create(step_layout->node_list);
 	/* make sure the number of nodes we think we have
