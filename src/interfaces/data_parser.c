@@ -355,6 +355,7 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 				       char **argv, void *acct_db_conn,
 				       const char *mime_type)
 {
+	int rc = SLURM_SUCCESS;
 	data_t *resp = data_set_dict(data_new());
 	data_t *meta = data_set_dict(data_key_set(resp, "meta"));
 	data_t *dout = data_key_set(resp, key);
@@ -370,8 +371,10 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 				  data_set_list(data_key_set(resp, "warnings")),
 				  SLURM_DATA_PARSER_VERSION, NULL, false);
 
-	if (!parser)
-		return ESLURM_NOT_SUPPORTED;
+	if (!parser) {
+		rc = ESLURM_NOT_SUPPORTED;
+		goto cleanup;
+	}
 
 	_populate_cli_response_meta(meta, argc, argv, parser);
 
@@ -382,12 +385,13 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 
 	printf("%s\n", out);
 
+cleanup:
 #ifdef MEMORY_LEAK_DEBUG
 	xfree(out);
 	FREE_NULL_DATA_PARSER(parser);
 #endif /* MEMORY_LEAK_DEBUG */
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int data_parser_g_specify(data_parser_t *parser, data_t *dst)
