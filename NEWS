@@ -309,6 +309,8 @@ documents those changes that are of interest to users and administrators.
  -- Add check to detect invalid HetJob component and abort job if identified.
  -- sched/backfill - fix job test against advanced reservations if job uses a
     preemptable QOS with Flags=NoReserve.
+ -- New command scrun has been added. scrun acts as an Open Container Initiative
+    (OCI) runtime proxy to run containers seamlessly via Slurm.
 
 * Changes in Slurm 22.05.9
 ==========================

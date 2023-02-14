@@ -103,6 +103,8 @@ HIGHLIGHTS
  -- Add SLURM_JOB_OVERSUBSCRIBE environment variable for Epilog, Prolog,
     EpilogSlurmctld, PrologSlurmctld, and mail ouput.
  -- System node down reasons are appended to existing reasons, separated by ':'.
+ -- New command scrun has been added. scrun acts as an Open Container Initiative
+    (OCI) runtime proxy to run containers seamlessly via Slurm.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
