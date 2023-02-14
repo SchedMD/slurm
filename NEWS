@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 23.02.0rc2
+=============================
+
 * Changes in Slurm 23.02.0rc1
 =============================
  -- Make scontrol reconfigure and sending a SIGHUP to the slurmctld behave the
