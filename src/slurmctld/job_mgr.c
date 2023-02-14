@@ -8106,9 +8106,8 @@ static void _figure_out_num_tasks(
 	}
 
 	if (job_ptr) {
-		if (num_tasks == NO_VAL)
-			num_tasks = job_ptr->details->num_tasks;
-		if (num_tasks != job_ptr->details->num_tasks) {
+		if ((num_tasks != NO_VAL) &&
+		    (num_tasks != job_ptr->details->num_tasks)) {
 			job_desc->num_tasks = num_tasks;
 			job_desc->bitflags |= TASKS_CHANGED;
 		}
