@@ -8089,11 +8089,12 @@ static void _figure_out_num_tasks(
 
 		if (cpus_per_task == NO_VAL16)
 			cpus_per_task = job_ptr->details->cpus_per_task;
+	} else if (job_desc->min_nodes == NO_VAL) {
+		min_nodes = job_desc->min_nodes = 1;
 	}
 
 	/* If we are creating the job we want the tasks to be set every time. */
-	if ((ntasks_per_tres != NO_VAL16) &&
-	    (num_tasks == NO_VAL) &&
+	if ((num_tasks == NO_VAL) &&
 	    (min_nodes != NO_VAL) &&
 	    (!job_ptr || (job_ptr && (min_nodes == max_nodes)))) {
 		/* Implicitly set task count */
