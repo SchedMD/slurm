@@ -219,9 +219,14 @@ extern const char *data_parser_get_plugin(data_parser_t *parser)
 extern void data_parser_g_free(data_parser_t *parser, bool skip_unloading)
 {
 	DEF_TIMERS;
-	const parse_funcs_t *funcs = plugins->functions[parser->plugin_offset];
+	const parse_funcs_t *funcs;
 
-	if (plugins && parser) {
+	if (!parser)
+		return;
+
+	funcs = plugins->functions[parser->plugin_offset];
+
+	if (plugins) {
 		xassert(plugins->magic == PLUGINS_MAGIC);
 		xassert(plugins->functions[parser->plugin_offset]);
 		xassert(parser->magic == PARSE_MAGIC);
@@ -229,25 +234,23 @@ extern void data_parser_g_free(data_parser_t *parser, bool skip_unloading)
 	}
 
 	START_TIMER;
-	if (plugins && parser)
+	if (plugins)
 		funcs->free(parser->arg);
 	END_TIMER2(__func__);
 
-	if (parser) {
-		parser->arg = NULL;
-		parser->plugin_offset = -1;
-		parser->magic = ~PARSE_MAGIC;
-		xfree(parser);
+	parser->arg = NULL;
+	parser->plugin_offset = -1;
+	parser->magic = ~PARSE_MAGIC;
+	xfree(parser);
 
-		slurm_mutex_lock(&init_mutex);
-		xassert(active_parsers >= 0);
-		active_parsers--;
-		xassert(active_parsers >= 0);
+	slurm_mutex_lock(&init_mutex);
+	xassert(active_parsers >= 0);
+	active_parsers--;
+	xassert(active_parsers >= 0);
 
-		if (!skip_unloading && !active_parsers)
-			FREE_NULL_PLUGINS(plugins);
-		slurm_mutex_unlock(&init_mutex);
-	}
+	if (!skip_unloading && !active_parsers)
+		FREE_NULL_PLUGINS(plugins);
+	slurm_mutex_unlock(&init_mutex);
 }
 
 extern int data_parser_g_assign(data_parser_t *parser,
