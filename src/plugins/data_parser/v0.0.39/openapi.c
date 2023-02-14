@@ -420,9 +420,9 @@ static void _replace_refs(data_t *data, spec_args_t *sargs)
 		return;
 
 	if (data_get_type(data) == DATA_TYPE_DICT)
-		data_dict_for_each(data, _convert_dict_entry, sargs);
+		(void) data_dict_for_each(data, _convert_dict_entry, sargs);
 	else if (data_get_type(data) == DATA_TYPE_LIST)
-		data_list_for_each(data, _convert_list_entry, sargs);
+		(void) data_list_for_each(data, _convert_list_entry, sargs);
 }
 
 extern int data_parser_p_specify(args_t *args, data_t *spec)
