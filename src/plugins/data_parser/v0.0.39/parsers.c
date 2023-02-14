@@ -2588,7 +2588,7 @@ static int DUMP_FUNC(STATS_MSG_BF_TABLE_SIZE_MEAN)(const parser_t *const parser,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-	if (!stats->bf_cycle_counter)
+	if (stats->bf_cycle_counter)
 		data_set_int(dst, (stats->bf_table_size_sum /
 				   stats->bf_cycle_counter));
 	else
