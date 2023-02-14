@@ -191,8 +191,8 @@ static int _foreach_add_acct_coord(void *x, void *arg)
 		.assoc_cond = &assoc_cond,
 	};
 
-	xassert(args->magic = MAGIC_FOREACH_COORD);
-	xassert(args->ctxt->magic = MAGIC_CTXT);
+	xassert(args->magic == MAGIC_FOREACH_COORD);
+	xassert(args->ctxt->magic == MAGIC_CTXT);
 
 	if (args->orig_acct &&
 	    list_find_first(args->orig_acct->coordinators, _foreach_match_coord,
