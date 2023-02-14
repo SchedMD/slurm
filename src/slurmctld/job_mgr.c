@@ -8072,7 +8072,6 @@ static void _figure_out_num_tasks(
 	uint32_t max_nodes = job_desc->max_nodes;
 	uint16_t ntasks_per_node = job_desc->ntasks_per_node;
 	uint16_t ntasks_per_tres = job_desc->ntasks_per_tres;
-	uint16_t cpus_per_task = job_desc->cpus_per_task;
 
 	if (num_tasks != NO_VAL) {
 		job_desc->bitflags |= JOB_NTASKS_SET;
@@ -8091,8 +8090,6 @@ static void _figure_out_num_tasks(
 		else if (ntasks_per_tres == NO_VAL16)
 			ntasks_per_tres = job_ptr->details->ntasks_per_tres;
 
-		if (cpus_per_task == NO_VAL16)
-			cpus_per_task = job_ptr->details->cpus_per_task;
 	} else if (job_desc->min_nodes == NO_VAL) {
 		min_nodes = job_desc->min_nodes = 1;
 	}
@@ -8106,8 +8103,6 @@ static void _figure_out_num_tasks(
 			num_tasks = min_nodes * ntasks_per_tres;
 		else if (ntasks_per_node != NO_VAL16)
 			num_tasks = min_nodes * ntasks_per_node;
-		else if (cpus_per_task == NO_VAL16)
-			num_tasks = min_nodes;
 	}
 
 	if (job_ptr) {
