@@ -2223,7 +2223,15 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 		goto job_failed;
 	}
 
-	launch_msg_ptr->ntasks = job_ptr->details->num_tasks;
+	/*
+	 * We only want send the number of tasks if we explicitly requested
+	 * them: num_tasks could be set (job_mgr.c
+	 * _figure_out_num_tasks()). Otherwise a step requesting less than the
+	 * allocation will be polluted with this calculated task count
+	 * erroneously.
+	 */
+	if (job_ptr->bit_flags & JOB_NTASKS_SET)
+		launch_msg_ptr->ntasks = job_ptr->details->num_tasks;
 	launch_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
 	launch_msg_ptr->container = xstrdup(job_ptr->container);
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);

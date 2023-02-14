@@ -8074,6 +8074,10 @@ static void _figure_out_num_tasks(
 	uint16_t ntasks_per_tres = job_desc->ntasks_per_tres;
 	uint16_t cpus_per_task = job_desc->cpus_per_task;
 
+	if (num_tasks != NO_VAL) {
+		job_desc->bitflags |= JOB_NTASKS_SET;
+	}
+
 	if (job_ptr) {
 		if (min_nodes == NO_VAL)
 			min_nodes = job_ptr->details->min_nodes;
@@ -13575,6 +13579,13 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			error_code = ESLURM_BAD_TASK_COUNT;
 		else {
 			detail_ptr->num_tasks = job_desc->num_tasks;
+			/*
+			 * Once you actually requested ntasks you will get
+			 * SLURM_NTASKS in your environment. There is no way to
+			 * remove that.
+			 */
+			if (job_desc->bitflags & JOB_NTASKS_SET)
+				job_ptr->bit_flags |= JOB_NTASKS_SET;
 			info("%s: setting num_tasks to %u for %pJ",
 			     __func__, job_desc->num_tasks, job_ptr);
 		}
