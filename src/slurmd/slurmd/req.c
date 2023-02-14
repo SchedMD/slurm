@@ -1198,7 +1198,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	 * memory limit within the credential.
 	 */
 	slurm_cred_get_mem(cred, conf->node_name, __func__, &req->job_mem_lim,
-			   &req->step_mem_lim);
+			   &req->step_mem_lim, job_cpus, step_cpus);
 
 	/* Reset the CPU count on this node to correct value. */
 	req->job_core_spec = arg->job_core_spec;
@@ -1983,11 +1983,21 @@ _set_batch_job_limits(slurm_msg_t *msg)
 {
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
 	slurm_cred_arg_t *arg = slurm_cred_get_args(req->cred);
+	uint32_t job_cpus = 1, step_cpus = 1;
 
 	req->job_core_spec = arg->job_core_spec; /* Prevent user reset */
 
+	/*
+	 * In case we receive an old message populate job and step cpus
+	 * for later use in slurm_cred_get_mem.
+	 */
+	if (req->cred_version < SLURM_21_08_PROTOCOL_VERSION &&
+	    _get_ncpus(arg, -1, &job_cpus, &step_cpus))
+		error("%s: Could not get the number of cpus allocated for job %d",
+		      __func__, req->job_id);
+
 	slurm_cred_get_mem(req->cred, conf->node_name, __func__, &req->job_mem,
-			   NULL);
+			   NULL, job_cpus, step_cpus);
 
 	/*
 	 * handle x11 settings here since this is the only access to the cred
@@ -2064,6 +2074,7 @@ static int _convert_job_mem(slurm_msg_t *msg)
 {
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
 	slurm_cred_arg_t *arg = slurm_cred_get_args(req->cred);
+	uint32_t job_cpus = 1, step_cpus = 1;
 
 	if (req->nnodes > arg->job_nhosts) {
 		error("%s: request node count:%u is larger than cred job node count:%u",
@@ -2073,8 +2084,17 @@ static int _convert_job_mem(slurm_msg_t *msg)
 
 	req->nnodes = arg->job_nhosts;
 
+	/*
+	 * In case we receive an old message populate job and step cpus
+	 * for later use in slurm_cred_get_mem.
+	 */
+	if (msg->protocol_version < SLURM_21_08_PROTOCOL_VERSION &&
+	    _get_ncpus(arg, -1, &job_cpus, &step_cpus))
+		error("%s: Could not get the number of cpus allocated for job %d",
+		      __func__, req->job_id);
+
 	slurm_cred_get_mem(req->cred, conf->node_name, __func__,
-			   &req->job_mem_limit, NULL);
+			   &req->job_mem_limit, NULL, job_cpus, step_cpus);
 
 	slurm_cred_unlock_args(req->cred);
 	return SLURM_SUCCESS;

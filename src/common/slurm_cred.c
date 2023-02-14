@@ -969,11 +969,41 @@ slurm_cred_get_signature(slurm_cred_t *cred, char **datap, uint32_t *datalen)
 extern void slurm_cred_get_mem(slurm_cred_t *credential, char *node_name,
 			       const char *func_name,
 			       uint64_t *job_mem_limit,
-			       uint64_t *step_mem_limit)
+			       uint64_t *step_mem_limit,
+			       uint32_t job_cpus, uint32_t step_cpus)
 {
 	slurm_cred_arg_t *cred = credential->arg;
 	int rep_idx = -1;
 	int node_id = -1;
+
+	if (credential->buf_version &&
+	    (credential->buf_version < SLURM_21_08_PROTOCOL_VERSION)) {
+		/*
+		 * [job|step]_mem_alloc is not packed, so we need to
+		 * re-calculate the memory limit.
+		 */
+		*job_mem_limit = cred->job_mem_limit;
+		if (*job_mem_limit & MEM_PER_CPU) {
+			*job_mem_limit &= ~MEM_PER_CPU;
+			*job_mem_limit *= job_cpus;
+		}
+		if (!step_mem_limit) {
+			log_flag(CPU_BIND, "%s: Memory extracted from credential for %ps job_mem_limit= %"PRIu64,
+				 func_name, &cred->step_id, *job_mem_limit);
+			return;
+		}
+		*step_mem_limit = cred->step_mem_limit;
+		if (*step_mem_limit & MEM_PER_CPU) {
+			*step_mem_limit &= ~MEM_PER_CPU;
+			*step_mem_limit *= step_cpus;
+		}
+		if (!(*step_mem_limit))
+			*step_mem_limit = *job_mem_limit;
+
+		log_flag(CPU_BIND, "Memory extracted from credential for %ps job_mem_limit=%"PRIu64" step_mem_limit=%"PRIu64,
+			 &cred->step_id, *job_mem_limit, *step_mem_limit);
+		return;
+	}
 
 	/*
 	 * Batch steps only have the job_hostlist set and will always be 0 here.
@@ -1133,7 +1163,7 @@ void format_core_allocs(slurm_cred_t *credential, char *node_name,
 	}
 
 	slurm_cred_get_mem(credential, node_name, __func__, job_mem_limit,
-			   step_mem_limit);
+			   step_mem_limit, job_cpu_cnt, step_cpu_cnt);
 
 	*job_alloc_cores  = _core_format(job_core_bitmap);
 	*step_alloc_cores = _core_format(step_core_bitmap);
@@ -1531,7 +1561,11 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 	/*
 	 * Both srun and slurmd will unpack the credential just to pack it
 	 * again. Hold onto a buffer with the pre-packed representation.
+	 * The buf_version is used to check the memory limit, so it is needed
+	 * in slurmstepd too when receiving old messages.
 	 */
+	if (protocol_version < SLURM_21_08_PROTOCOL_VERSION)
+		credential->buf_version = protocol_version;
 	if (!running_in_slurmstepd()) {
 		credential->buffer = init_buf(cred_len);
 		credential->buf_version = protocol_version;

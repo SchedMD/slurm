@@ -266,12 +266,15 @@ extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type);
  * func_name - name of the calling function (for logging purpose)
  * jot_mem_limit - UPDATED job memory limit
  * step_mem_limit - UPDATED step memory limit
+ * job_cpus - the number of cpus assigned to the job (used in --mem-per-cpu)
+ * step_cpus - the number of cpus assigned to the step (used in --mem-per-cpu)
  */
 extern void slurm_cred_get_mem(slurm_cred_t *cred,
 			      char *node_name,
 			      const char *func_name,
 			      uint64_t *job_mem_limit,
-			      uint64_t *step_mem_limit);
+			      uint64_t *step_mem_limit,
+			      uint32_t job_cpus, uint32_t step_cpus);
 /*
  * Verify the signed credential 'cred', and return cred contents.
  * The credential is cached and cannot be reused.
