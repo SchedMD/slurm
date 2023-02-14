@@ -120,8 +120,8 @@ struct spank_plugin_opt {
 	struct spank_option *opt;   /* Copy of plugin option info           */
 	struct spank_plugin *plugin;/* Link back to plugin structure        */
 	int optval;                 /* Globally unique value                */
-	int found:1;                /* 1 if option was found, 0 otherwise   */
-	int disabled:1;             /* 1 if option is cached but disabled   */
+	bool found;		    /* 1 if option was found, 0 otherwise   */
+	bool disabled;		    /* 1 if option is cached but disabled   */
 	char *optarg;               /* Option argument.                     */
 	bool set;                   /* true if argument is set              */
 	bool set_by_env;            /* true if argument is set by environ   */

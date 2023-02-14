@@ -134,7 +134,7 @@ typedef struct {
 	cbuf_t *fbuf;             /* logfile data buffer                 */
 	log_facility_t facility;
 	log_options_t opt;
-	unsigned initialized:1;
+	bool initialized;
 	uint16_t fmt;            /* Flag for specifying timestamp format */
 }	log_t;
 

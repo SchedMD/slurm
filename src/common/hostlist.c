@@ -168,7 +168,7 @@ typedef struct {
 	int width;
 
 	/* If singlehost is 1, `lo' and `hi' are invalid */
-	unsigned singlehost:1;
+	bool singlehost;
 } hostrange_t;
 
 /* The hostlist type: An array based list of hostrange_t's */

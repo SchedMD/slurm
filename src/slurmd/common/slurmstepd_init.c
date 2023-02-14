@@ -66,7 +66,7 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, buf_t *buffer)
 	packstr(conf->logfile, buffer);
 	pack32(conf->debug_level, buffer);
 	pack32(conf->syslog_debug, buffer);
-	pack32(conf->daemonize, buffer);
+	packbool(conf->daemonize, buffer);
 	packstr(conf->node_topo_addr, buffer);
 	packstr(conf->node_topo_pattern, buffer);
 	pack16(conf->port, buffer);
@@ -103,8 +103,7 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, buf_t *buffer)
 		safe_unpackstr_xmalloc(&conf->logfile,     &uint32_tmp, buffer);
 		safe_unpack32(&conf->debug_level, buffer);
 		safe_unpack32(&conf->syslog_debug, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		conf->daemonize = uint32_tmp;
+		safe_unpackbool(&conf->daemonize, buffer);
 		safe_unpackstr_xmalloc(&conf->node_topo_addr, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&conf->node_topo_pattern, &uint32_tmp, buffer);
 		safe_unpack16(&conf->port, buffer);

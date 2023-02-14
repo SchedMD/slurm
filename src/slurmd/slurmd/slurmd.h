@@ -134,12 +134,12 @@ typedef struct slurmd_config {
 	log_options_t log_opts;         /* current logging options         */
 	uint32_t      debug_level;	/* logging detail level            */
 	uint16_t      debug_level_set;	/* debug_level set on command line */
-	int	      boot_time:1;      /* Report node boot time now (-b)  */
-	int           daemonize:1;	/* daemonize flag (-D)		   */
+	bool	      boot_time;	/* Report node boot time now (-b)  */
+	bool	      daemonize;	/* daemonize flag (-D)		   */
 	bool          setwd;		/* setwd flag (-s)		   */
 	bool          def_config;       /* We haven't read in the config yet */
-	int	      cleanstart:1;     /* clean start requested (-c)      */
-	int           mlock_pages:1;	/* mlock() slurmd  */
+	bool	      cleanstart;	/* clean start requested (-c)      */
+	bool	      mlock_pages;	/* mlock() slurmd  */
 
 	slurm_cred_ctx_t vctx;          /* slurm_cred_t verifier context   */
 
