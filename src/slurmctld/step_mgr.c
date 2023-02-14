@@ -3540,6 +3540,8 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		return ret_code;
 	}
 
+	xassert(bit_set_count(step_ptr->core_bitmap_job) != 0);
+
 	*new_step_record = step_ptr;
 
 	select_g_step_start(step_ptr);
