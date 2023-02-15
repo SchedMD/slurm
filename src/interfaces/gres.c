@@ -8361,9 +8361,8 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 						      &save_ptr, &rc))) {
 			gres_ss->gres_per_node = cnt;
 			in_val = NULL;
-			/* Step only has 1 node, always */
 			gres_ss->total_gres =
-				MAX(gres_ss->total_gres, cnt);
+				MAX(gres_ss->total_gres, step_min_nodes * cnt);
 		}
 	}
 	if (tres_per_socket) {
