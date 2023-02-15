@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
     to be sent to children processes in a step/job rather than just the parent.
  -- Add PreemptParameters=suspend_grace_time parameter to control amount of
     time between SIGTSTP and SIGSTOP signals when suspending jobs.
+ -- job_submit/throttle - improve reset of submitted job counts per user in
+    order to better honor SchedulerParameters=jobs_per_user_per_hour=#.
 
 * Changes in Slurm 23.02.3
 ==========================

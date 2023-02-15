@@ -25,6 +25,8 @@ HIGHLIGHTS
  -- Removed select/cons_res. Please update your configuration to
     select/cons_tres.
  -- Change TreeWidth default from 50 to 16.
+ -- job_submit/throttle - improve reset of submitted job counts per user in
+    order to better honor SchedulerParameters=jobs_per_user_per_hour=#.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

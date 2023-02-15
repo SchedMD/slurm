@@ -107,6 +107,7 @@ static void _reset_counters(void)
 {
 	time_t now = time(NULL);
 	uint32_t orig_count;
+	int count;
 	int delta_t, i;
 
 	if (!last_reset) {
@@ -120,17 +121,11 @@ static void _reset_counters(void)
 	last_reset += (delta_t * 360);
 	for (i = 0; i < thru_put_size; i++) {
 		orig_count = thru_put_array[i].job_count;
-		if (thru_put_array[i].job_count <= 10) {
-			if (thru_put_array[i].job_count > delta_t)
-				thru_put_array[i].job_count -= delta_t;
-			else
-				thru_put_array[i].job_count = 0;
-		} else if (delta_t >= 10) {
+		count = orig_count - ((jobs_per_user_per_hour * delta_t) / 10);
+		if (count > 0)
+			thru_put_array[i].job_count = count;
+		else
 			thru_put_array[i].job_count = 0;
-		} else {
-			thru_put_array[i].job_count *= (delta_t - 1);
-			thru_put_array[i].job_count /=  delta_t;
-		}
 		debug2("count for user %u reset from %u to %u",
 		       thru_put_array[i].uid, orig_count,
 		       thru_put_array[i].job_count);
