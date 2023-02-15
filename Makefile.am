@@ -19,7 +19,13 @@ MAINTAINERCLEANFILES = 					\
 	slurm/slurm_version.h				\
 	stamp-h.in
 
-distclean-local:
+# Cleanup contribs with distclean/mrproper
+distclean-contrib:
+	@cd contribs && \
+	$(MAKE) distclean && \
+	cd ..;
+
+distclean-local: distclean-contrib
 	-(cd $(top_srcdir) && rm -rf autom4te*.cache autoscan.*)
 	-(cd $(top_srcdir) && rm -rf $(PACKAGE)-*)
 
@@ -40,4 +46,9 @@ contrib:
 install-contrib:
 	@cd contribs && \
 	$(MAKE) DESTDIR=$(DESTDIR) install && \
+	cd ..;
+
+clean-contrib:
+	@cd contribs && \
+	$(MAKE) clean && \
 	cd ..;
