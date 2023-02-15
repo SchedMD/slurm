@@ -9742,7 +9742,7 @@ static int _get_job_info(int gres_inx, gres_job_state_t *gres_js,
 	if (node_inx >= gres_js->node_cnt)
 		return ESLURM_INVALID_NODE_COUNT;
 	if (data_type == GRES_JOB_DATA_COUNT) {
-		*u64_data = gres_js->gres_per_node;
+		*u64_data = gres_js->gres_cnt_node_alloc[node_inx];
 	} else if (data_type == GRES_JOB_DATA_BITMAP) {
 		if (gres_js->gres_bit_alloc)
 			*bit_data = gres_js->gres_bit_alloc[node_inx];
@@ -9819,7 +9819,7 @@ static int _get_step_info(int gres_inx, gres_step_state_t *gres_ss,
 	if (node_inx >= gres_ss->node_cnt)
 		return ESLURM_INVALID_NODE_COUNT;
 	if (data_type == GRES_STEP_DATA_COUNT) {
-		*u64_data = gres_ss->gres_per_node;
+		*u64_data = gres_ss->gres_cnt_node_alloc[node_inx];
 	} else if (data_type == GRES_STEP_DATA_BITMAP) {
 		if (gres_ss->gres_bit_alloc)
 			*bit_data = gres_ss->gres_bit_alloc[node_inx];

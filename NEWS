@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix some valid step requests hanging instead of running.
  -- slurmrestd - avoid possible race condition which would cause slurmrestd to
     silently no longer accept new client connections.
+ -- Fix GPU setup on CRAY systems when using the CRAY_CUDA_MPS environment
+    variable. GPUs are now correctly detected in such scenarios.
 
 * Changes in Slurm 22.05.8
 ==========================
