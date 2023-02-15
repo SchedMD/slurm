@@ -5049,7 +5049,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, reason, "reason", NULL),
 	add_parse(UINT64, reason_time, "reason_changed_at", NULL),
 	add_parse(USER_ID, reason_uid, "reason_set_by_user", NULL),
-	add_parse(UINT64, resume_after, "resume_after", NULL),
+	add_parse(UINT64_NO_VAL, resume_after, "resume_after", NULL),
 	add_parse(STRING, resv_name, "reservation", NULL),
 	add_cparse(NODE_SELECT_ALLOC_MEMORY, "alloc_memory", NULL),
 	add_cparse(NODE_SELECT_ALLOC_CPUS, "alloc_cpus", NULL),
