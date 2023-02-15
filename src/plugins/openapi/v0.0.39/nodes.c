@@ -71,6 +71,8 @@ static void _update_node(ctxt_t *ctxt, char *name)
 	data_t *ppath = data_set_list(data_new());
 	update_node_msg_t *node_msg = xmalloc(sizeof(*node_msg));
 
+	slurm_init_update_node_msg(node_msg);
+
 	if ((rc = DATA_PARSE(ctxt->parser, UPDATE_NODE_MSG, *node_msg,
 			     ctxt->query, ppath)))
 		goto cleanup;
