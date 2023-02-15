@@ -122,7 +122,7 @@ log_info "---Checking that srun uses correct ports---"
 
 make_bash_script $file_in "
 $srun $bin_bash -c \"
-task_id=\\\$($scontrol show step \$SLURM_JOBID\.\$SLURM_STEPID | $bin_grep SrunHost | $bin_awk -F: '{print \\\$3}')
+task_id=\\\$($scontrol show step \\\$SLURM_JOBID\.\\\$SLURM_STEPID | $bin_grep SrunHost | $bin_awk -F: '{print \\\$3}')
 lsof -P -p \\\$task_id 2>/dev/null | $bin_grep LISTEN | $bin_awk '{print \\\$9}' | $bin_awk -F: '{print \\\$2}'
 \""
 
