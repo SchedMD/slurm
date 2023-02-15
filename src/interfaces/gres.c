@@ -286,7 +286,6 @@ static int	_node_reconfig(char *node_name, char *new_gres, char **gres_str,
 static int	_node_reconfig_test(char *node_name, char *new_gres,
 				    gres_state_t *gres_state_node,
 				    slurm_gres_context_t *gres_ctx);
-static void	_node_state_dealloc(gres_state_t *gres_state_node);
 static void *	_node_state_dup(gres_node_state_t *gres_ns);
 static void	_node_state_log(gres_node_state_t *gres_ns, char *node_name,
 				char *gres_name);
@@ -4782,8 +4781,9 @@ extern List gres_node_state_list_dup(List gres_list)
 	return new_list;
 }
 
-static void _node_state_dealloc(gres_state_t *gres_state_node)
+static int _node_state_dealloc(void *x, void *arg)
 {
+	gres_state_t *gres_state_node = x;
 	int i;
 	gres_node_state_t *gres_ns;
 
@@ -4813,6 +4813,8 @@ static void _node_state_dealloc(gres_state_t *gres_state_node)
 	for (i = 0; i < gres_ns->type_cnt; i++) {
 		gres_ns->type_cnt_alloc[i] = 0;
 	}
+
+	return 0;
 }
 
 /*
@@ -4823,19 +4825,12 @@ static void _node_state_dealloc(gres_state_t *gres_state_node)
  */
 extern void gres_node_state_dealloc_all(List gres_list)
 {
-	ListIterator gres_iter;
-	gres_state_t *gres_state_node;
-
 	if (gres_list == NULL)
 		return;
 
 	xassert(gres_context_cnt >= 0);
 
-	gres_iter = list_iterator_create(gres_list);
-	while ((gres_state_node = (gres_state_t *) list_next(gres_iter))) {
-		_node_state_dealloc(gres_state_node);
-	}
-	list_iterator_destroy(gres_iter);
+	(void) list_for_each(gres_list, _node_state_dealloc, NULL);
 }
 
 static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
