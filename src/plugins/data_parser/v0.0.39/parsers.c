@@ -996,17 +996,17 @@ static int _foreach_list_per_tres_type_nct(void *x, void *arg)
 		return -1;
 
 	switch (args->parser->type) {
-	case TRES_EXPLODE_NODE :
+	case TRES_EXPLODE_NODE:
 		xassert(!tres_nct->node);
 		free(tres_nct->node);
 		/* based on find_hostname() */
 		tres_nct->node = hostlist_nth(args->host_list, tres->count);
 		return 1;
-	case TRES_EXPLODE_TASK :
+	case TRES_EXPLODE_TASK:
 		xassert(!tres_nct->task);
 		tres_nct->task = tres->count;
 		return 1;
-	case TRES_EXPLODE_COUNT :
+	case TRES_EXPLODE_COUNT:
 		xassert(!tres_nct->count);
 		tres_nct->count = tres->count;
 		return 1;
