@@ -3603,7 +3603,8 @@ static int PARSE_FUNC(HOSTLIST_STRING)(const parser_t *const parser, void *obj,
 				       parent_path)))
 		return rc;
 
-	*host_list_str = hostlist_ranged_string_xmalloc(host_list);
+	if (host_list)
+		*host_list_str = hostlist_ranged_string_xmalloc(host_list);
 
 	hostlist_destroy(host_list);
 	return rc;
