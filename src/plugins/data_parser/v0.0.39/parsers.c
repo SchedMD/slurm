@@ -995,7 +995,7 @@ static int _foreach_list_per_tres_type_nct(void *x, void *arg)
 		/* out of sync?? */
 		return -1;
 
-	switch (args->parser->type) {
+	switch (args->type) {
 	case TRES_EXPLODE_NODE:
 		xassert(!tres_nct->node);
 		free(tres_nct->node);
