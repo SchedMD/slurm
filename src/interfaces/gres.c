@@ -8329,6 +8329,9 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	gres_state_t *gres_state_step;
 	List new_step_list;
 	uint64_t cnt = 0;
+	uint16_t cpus_per_gres = 0;
+	char *cpus_per_gres_name = NULL;
+	char *cpus_per_gres_type = NULL;
 
 	*step_gres_list = NULL;
 	xassert(gres_context_cnt >= 0);
@@ -8346,6 +8349,20 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 			gres_ss = gres_state_step->gres_data;
 			gres_ss->cpus_per_gres = cnt;
 			in_val = NULL;
+			/* Only a single cpus_per_tres value is allowed. */
+			if (cpus_per_gres) {
+				if (err_msg)
+					*err_msg = xstrdup("You may only request cpus_per_tres for one tres");
+				else
+					error("You may only request cpus_per_tres for one tres");
+				rc = ESLURM_INVALID_GRES;
+				FREE_NULL_LIST(new_step_list);
+				goto fini;
+			} else {
+				cpus_per_gres = cnt;
+				cpus_per_gres_name = gres_state_step->gres_name;
+				cpus_per_gres_type = gres_ss->type_name;
+			}
 		}
 	}
 	if (tres_per_step) {
@@ -8429,6 +8446,31 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 						  cpu_count);
 	}
 
+	if ((rc == SLURM_SUCCESS) && cpus_per_gres && *cpu_count &&
+	    running_in_slurmctld()) {
+		/*
+		 * Update cpu_count = the total requested gres * cpus_per_gres
+		 *
+		 * If SSF_OVERCOMMIT (step_spec->cpu_count == 0), don't update.
+		 * Only update if in slurmctld because the step can inherit
+		 * gres from the job_gres_list_req, which only exists in
+		 * slurmctld.
+		 */
+		uint64_t gpu_cnt = _get_step_gres_list_cnt(new_step_list,
+							   cpus_per_gres_name,
+							   cpus_per_gres_type);
+
+		if (gpu_cnt == NO_VAL64) {
+			if (err_msg)
+				*err_msg = xstrdup("cpus_per_gres also requires specifying the same gres");
+			else
+				error("cpus_per_gres also requires specifying the same gres");
+			rc = ESLURM_INVALID_GRES;
+			FREE_NULL_LIST(new_step_list);
+		} else
+			*cpu_count = gpu_cnt * cpus_per_gres;
+	}
+
 	if (list_count(new_step_list) == 0) {
 		FREE_NULL_LIST(new_step_list);
 	} else {
@@ -8466,6 +8508,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 		else
 			FREE_NULL_LIST(new_step_list);
 	}
+fini:
 	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
 }

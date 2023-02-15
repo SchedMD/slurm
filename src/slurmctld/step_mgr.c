@@ -3330,7 +3330,14 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->cpus_per_task = (uint16_t)cpus_per_task;
 	step_ptr->ntasks_per_core = step_specs->ntasks_per_core;
 	step_ptr->pn_min_memory = step_specs->pn_min_memory;
-	step_ptr->cpu_count = orig_cpu_count;
+	/*
+	 * cpu_count can be updated by gres_step_state_validate() if OVERCOMMIT
+	 * is not used. If so, use the updated value.
+	 */
+	if (step_specs->flags & SSF_OVERCOMMIT)
+		step_ptr->cpu_count = orig_cpu_count;
+	else
+		step_ptr->cpu_count = step_specs->cpu_count;
 	step_ptr->exit_code = NO_VAL;
 	step_ptr->flags = step_specs->flags;
 	step_ptr->ext_sensors = ext_sensors_alloc();
