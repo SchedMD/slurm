@@ -4786,7 +4786,6 @@ static void _node_state_dealloc(gres_state_t *gres_state_node)
 {
 	int i;
 	gres_node_state_t *gres_ns;
-	char *gres_name = NULL;
 
 	gres_ns = (gres_node_state_t *) gres_state_node->gres_data;
 	gres_ns->gres_cnt_alloc = 0;
@@ -4794,14 +4793,9 @@ static void _node_state_dealloc(gres_state_t *gres_state_node)
 		bit_clear_all(gres_ns->gres_bit_alloc);
 
 	if (gres_ns->topo_cnt && !gres_ns->topo_gres_cnt_alloc) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_state_node->plugin_id == gres_context[i].plugin_id) {
-				gres_name = gres_context[i].gres_name;
-				break;
-			}
-		}
 		error("gres_node_state_dealloc_all: gres/%s topo_cnt!=0 "
-		      "and topo_gres_cnt_alloc is NULL", gres_name);
+		      "and topo_gres_cnt_alloc is NULL",
+		      gres_state_node->gres_name);
 	} else if (gres_ns->topo_cnt) {
 		for (i = 0; i < gres_ns->topo_cnt; i++) {
 			gres_ns->topo_gres_cnt_alloc[i] = 0;
@@ -4837,13 +4831,11 @@ extern void gres_node_state_dealloc_all(List gres_list)
 
 	xassert(gres_context_cnt >= 0);
 
-	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_state_node = (gres_state_t *) list_next(gres_iter))) {
 		_node_state_dealloc(gres_state_node);
 	}
 	list_iterator_destroy(gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 }
 
 static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
