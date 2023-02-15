@@ -3527,6 +3527,11 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		 * Resize the data structures here.
 		 */
 		rebuild_topo = true;
+		/*
+		 * Clear any vestigial GRES node state info.
+		 */
+		_gres_node_state_delete_topo(gres_ns);
+
 		gres_ns->topo_gres_cnt_alloc =
 			xrealloc(gres_ns->topo_gres_cnt_alloc,
 				 slurmd_conf_tot.topo_cnt * sizeof(uint64_t));
@@ -3594,9 +3599,12 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					      gres_slurmd_conf->cpus,
 					      node_name);
 					FREE_NULL_BITMAP(tmp_bitmap);
-				} else
+				} else {
+					FREE_NULL_BITMAP(
+						gres_ns->topo_core_bitmap[i]);
 					gres_ns->topo_core_bitmap[i] =
 						tmp_bitmap;
+				}
 				cpus_config = core_cnt;
 			} else if (cpus_config && !cpu_config_err) {
 				cpu_config_err = true;
@@ -3647,6 +3655,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				 */
 				has_file = false;
 			} else {
+				FREE_NULL_BITMAP(gres_ns->topo_gres_bitmap[i]);
 				gres_ns->topo_gres_bitmap[i] =
 					bit_alloc(dev_cnt);
 				for (j = 0; j < gres_slurmd_conf->count; j++) {
@@ -3677,6 +3686,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			gres_ns->topo_type_id[i] =
 				gres_build_id(gres_slurmd_conf->
 					      type_name);
+			xfree(gres_ns->topo_type_name[i]);
 			gres_ns->topo_type_name[i] =
 				xstrdup(gres_slurmd_conf->type_name);
 			i++;
