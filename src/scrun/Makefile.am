@@ -18,7 +18,7 @@ if HAVE_LUA
 
 AM_CPPFLAGS = -I$(top_srcdir) $(lua_CFLAGS) -I$(top_srcdir)/src/scrun/
 
-sbin_PROGRAMS = scrun
+bin_PROGRAMS = scrun
 scrun_SOURCES = $(SRCS)
 scrun_DEPENDENCIES = $(LIB_SLURM_BUILD)
 scrun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

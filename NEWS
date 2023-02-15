@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.02.0rc2
 =============================
+ -- scrun - Install into /bin instead of /sbin, which also ensures it is
+    included in the RPM packages.
 
 * Changes in Slurm 23.02.0rc1
 =============================
