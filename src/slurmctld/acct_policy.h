@@ -45,26 +45,27 @@
  * acct_policy_add_job_submit - Note that a job has been submitted for
  *	accounting policy purposes.
  */
-extern void acct_policy_add_job_submit(job_record_t *job_ptr);
+extern void acct_policy_add_job_submit(job_record_t *job_ptr, bool assoc_lock);
 
 /*
  * acct_policy_remove_job_submit - Note that a job has finished (might
  *      not had started or been allocated resources) for accounting
  *      policy purposes.
  */
-extern void acct_policy_remove_job_submit(job_record_t *job_ptr);
+extern void acct_policy_remove_job_submit(job_record_t *job_ptr,
+					  bool assoc_lock);
 
 /*
  * acct_policy_job_begin - Note that a job is starting for accounting
  *	policy purposes.
  */
-extern void acct_policy_job_begin(job_record_t *job_ptr);
+extern void acct_policy_job_begin(job_record_t *job_ptr, bool assoc_lock);
 
 /*
  * acct_policy_job_fini - Note that a job is completing for accounting
  *	policy purposes.
  */
-extern void acct_policy_job_fini(job_record_t *job_ptr);
+extern void acct_policy_job_fini(job_record_t *job_ptr, bool assoc_lock);
 
 /*
  * acct_policy_alter_job - if resources change on a job this needs to

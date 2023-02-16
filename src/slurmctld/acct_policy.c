@@ -788,7 +788,8 @@ static int _find_qos_part(void *x, void *key)
 	return 0;
 }
 
-static void _adjust_limit_usage(int type, job_record_t *job_ptr)
+static void _adjust_limit_usage(int type, job_record_t *job_ptr,
+				bool assoc_locked)
 {
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
 	assoc_mgr_lock_t locks =
@@ -796,6 +797,16 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr)
 	uint64_t used_tres_run_secs[slurmctld_tres_cnt];
 	int i;
 	uint32_t job_cnt = 1;
+
+	if (assoc_locked) {
+		xassert(verify_assoc_lock(ASSOC_LOCK, WRITE_LOCK));
+		xassert(verify_assoc_lock(QOS_LOCK, WRITE_LOCK));
+		xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
+	} else {
+		xassert(verify_assoc_unlock(ASSOC_LOCK));
+		xassert(verify_assoc_unlock(QOS_LOCK));
+		xassert(verify_assoc_unlock(TRES_LOCK));
+	}
 
 	memset(used_tres_run_secs, 0, sizeof(uint64_t) * slurmctld_tres_cnt);
 
@@ -824,8 +835,8 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr)
 		    (type == ACCT_POLICY_REM_SUBMIT)) &&
 		   job_ptr->array_recs && job_ptr->array_recs->task_cnt)
 		job_cnt = job_ptr->array_recs->task_cnt;
-
-	assoc_mgr_lock(&locks);
+	if (!assoc_locked)
+		assoc_mgr_lock(&locks);
 
 	/*
 	 * This handles removal of the accrual_cnt pending on
@@ -1040,7 +1051,8 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr)
 		/* now handle all the group limits of the parents */
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 	}
-	assoc_mgr_unlock(&locks);
+	if (!assoc_locked)
+		assoc_mgr_unlock(&locks);
 }
 
 static void _set_time_limit(uint32_t *time_limit, uint32_t part_max_time,
@@ -2640,9 +2652,9 @@ end_it:
  * acct_policy_add_job_submit - Note that a job has been submitted for
  *	accounting policy purposes.
  */
-extern void acct_policy_add_job_submit(job_record_t *job_ptr)
+extern void acct_policy_add_job_submit(job_record_t *job_ptr, bool assoc_locked)
 {
-	_adjust_limit_usage(ACCT_POLICY_ADD_SUBMIT, job_ptr);
+	_adjust_limit_usage(ACCT_POLICY_ADD_SUBMIT, job_ptr, assoc_locked);
 }
 
 /*
@@ -2650,29 +2662,31 @@ extern void acct_policy_add_job_submit(job_record_t *job_ptr)
  *      not had started or been allocated resources) for accounting
  *      policy purposes.
  */
-extern void acct_policy_remove_job_submit(job_record_t *job_ptr)
+extern void acct_policy_remove_job_submit(job_record_t *job_ptr,
+					  bool assoc_locked)
 {
-	_adjust_limit_usage(ACCT_POLICY_REM_SUBMIT, job_ptr);
+	_adjust_limit_usage(ACCT_POLICY_REM_SUBMIT, job_ptr, assoc_locked);
 }
 
 /*
  * acct_policy_job_begin - Note that a job is starting for accounting
  *	policy purposes.
  */
-extern void acct_policy_job_begin(job_record_t *job_ptr)
+extern void acct_policy_job_begin(job_record_t *job_ptr, bool assoc_locked)
 {
-	_adjust_limit_usage(ACCT_POLICY_JOB_BEGIN, job_ptr);
+	_adjust_limit_usage(ACCT_POLICY_JOB_BEGIN, job_ptr, assoc_locked);
 }
 
 /*
  * acct_policy_job_fini - Note that a job is completing for accounting
  *	policy purposes.
  */
-extern void acct_policy_job_fini(job_record_t *job_ptr)
+extern void acct_policy_job_fini(job_record_t *job_ptr, bool assoc_locked)
 {
 	/* if end_time_exp == NO_VAL this has already happened */
 	if (job_ptr->end_time_exp != (time_t)NO_VAL)
-		_adjust_limit_usage(ACCT_POLICY_JOB_FINI, job_ptr);
+		_adjust_limit_usage(ACCT_POLICY_JOB_FINI, job_ptr,
+				    assoc_locked);
 	else
 		debug2("We have already ran the job_fini for %pJ", job_ptr);
 }

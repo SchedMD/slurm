@@ -3762,7 +3762,7 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 			job_ptr->tres_alloc_cnt = xmalloc(slurmctld_tres_size);
 			memcpy(job_ptr->tres_alloc_cnt, tres_req_cnt,
 			       slurmctld_tres_size);
-			acct_policy_job_begin(job_ptr);
+			acct_policy_job_begin(job_ptr, false);
 
 		} else {
 			assoc_mgr_unlock(&locks);
@@ -3782,7 +3782,7 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 			job_ptr->end_time_exp = now;
 			job_ptr->end_time = job_ptr->start_time;
 			job_ptr->job_state = JOB_COMPLETE | JOB_COMPLETING;
-			acct_policy_job_fini(job_ptr);
+			acct_policy_job_fini(job_ptr, false);
 			job_ptr->end_time_exp = end_time_exp;
 			job_ptr->end_time = end_time;
 			job_ptr->job_state = job_state;
@@ -3938,7 +3938,7 @@ static void _het_job_kill_now(het_job_map_t *map)
 		 */
 		save_bitflags = job_ptr->bit_flags;
 		job_ptr->bit_flags |= JOB_KILL_HURRY;
-		acct_policy_add_job_submit(job_ptr);
+		acct_policy_add_job_submit(job_ptr, false);
 		job_ptr->bit_flags = save_bitflags;
 		if (!job_ptr->node_bitmap_cg ||
 		    (bit_set_count(job_ptr->node_bitmap_cg) == 0))

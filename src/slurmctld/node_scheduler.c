@@ -311,7 +311,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 
 	log_flag(TRACE_JOBS, "%s: %pJ", __func__, job_ptr);
 
-	acct_policy_job_fini(job_ptr);
+	acct_policy_job_fini(job_ptr, false);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
 		error("select_g_job_fini(%pJ): %m", job_ptr);
 
@@ -2236,7 +2236,7 @@ static void _end_null_job(job_record_t *job_ptr)
 	slurmctld_diag_stats.jobs_started++;
 	/* Call job_set_alloc_tres() before acct_policy_job_begin() */
 	job_set_alloc_tres(job_ptr, false);
-	acct_policy_job_begin(job_ptr);
+	acct_policy_job_begin(job_ptr, false);
 	/*
 	 * If run with slurmdbd, this is handled out of band in the job if
 	 * happening right away.  If the job has already become eligible and
@@ -2248,7 +2248,7 @@ static void _end_null_job(job_record_t *job_ptr)
 	job_ptr->end_time = now;
 	job_ptr->job_state = JOB_COMPLETE;
 	job_completion_logger(job_ptr, false);
-	acct_policy_job_fini(job_ptr);
+	acct_policy_job_fini(job_ptr, false);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
 		error("select_g_job_fini(%pJ): %m", job_ptr);
 	epilog_slurmctld(job_ptr);
@@ -2796,7 +2796,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 
 	/* job_set_alloc_tres has to be done before acct_policy_job_begin */
 	job_set_alloc_tres(job_ptr, false);
-	acct_policy_job_begin(job_ptr);
+	acct_policy_job_begin(job_ptr, false);
 
 	job_claim_resv(job_ptr);
 
