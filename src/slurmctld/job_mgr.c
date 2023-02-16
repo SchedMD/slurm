@@ -419,7 +419,7 @@ extern int job_fail_qos(job_record_t *job_ptr, const char *func_name,
 		 */
 		job_ptr->assoc_ptr = NULL;
 
-		acct_policy_remove_job_submit(job_ptr, false);
+		acct_policy_remove_job_submit(job_ptr, assoc_locked);
 
 		job_ptr->assoc_ptr = tmp_assoc;
 
