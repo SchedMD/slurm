@@ -685,6 +685,8 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 		 * don't exist here.
 		 */
 		assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
+		uint32_t prev_tres_count;
+		bool rebuild_conf_buf = false;
 
 		/*
 		 * We only needed the resp to get the tres the first time,
@@ -694,10 +696,29 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 			get_reg_resp = false;
 
 		assoc_mgr_lock(&locks);
+		prev_tres_count = g_tres_count;
 		assoc_mgr_post_tres_list(resp->tres_list);
 		debug("%s: slurmctld sent back %u TRES.",
 		       __func__, g_tres_count);
+
+		/*
+		 * If we change the TRES on the slurmctld we need to rebuild the
+		 * config buf being sent to the stepds.
+		 */
+		if (prev_tres_count && (prev_tres_count != g_tres_count))
+			rebuild_conf_buf = true;
+
 		assoc_mgr_unlock(&locks);
+
+		/*
+		 * We have to call this outside of the assoc_mgr locks so we can
+		 * keep the locking order correct as build_conf_buf() locks the
+		 * assoc_mgr inside the conf->config_mutex.  If we called
+		 * build_conf_buf() inside the locks above we would do it out of
+		 * order.
+		 */
+		if (rebuild_conf_buf)
+			build_conf_buf();
 
 		/*
 		 * Signal any threads potentially waiting to run.
