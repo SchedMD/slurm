@@ -357,7 +357,10 @@ typedef struct gres_step_state {
 	 * gres_cnt_node_alloc is an array the same size as the number of nodes
 	 * in the job because node_cnt is the same as the job.
 	 */
-	uint64_t total_gres;		/* allocated GRES for this step */
+	uint64_t total_gres;		/* allocated GRES for this step.
+					 * Also used in the requested step list
+					 * as the total requested GRES for
+					 * this step. */
 	uint64_t gross_gres;		/* used during the scheduling phase,
 					 * GRES that could be available for this
 					 * step if no other steps active */
