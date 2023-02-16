@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.39 - avoid erroring on unknown association id.
  -- data_parser/v0.0.39 - avoid fatal while dumping TRES values.
  -- Improve error message for using --cpus-per-gpus without any GPUs.
+ -- switch/hpe_slingshot - fix rolling upgrades from 22.05 to 23.02
 
 * Changes in Slurm 23.02.0rc1
 =============================

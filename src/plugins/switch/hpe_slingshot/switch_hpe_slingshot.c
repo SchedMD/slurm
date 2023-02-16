@@ -564,7 +564,7 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 			return SLURM_SUCCESS;
 		}
 
-		pack32(jobinfo->version, buffer);
+		pack32(SLURM_22_05_PROTOCOL_VERSION, buffer);
 		pack16_array(jobinfo->vnis, jobinfo->num_vnis, buffer);
 		pack32(jobinfo->tcs, buffer);
 		pack32(jobinfo->flags, buffer);
