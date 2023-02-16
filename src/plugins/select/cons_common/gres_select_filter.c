@@ -555,6 +555,21 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 			 (gres_js->ntasks_per_gres != NO_VAL16)) {
 			cpus_per_gres = gres_js->ntasks_per_gres *
 				mc_ptr->cpus_per_task;
+		} else if (first_pass && mc_ptr->ntasks_per_job &&
+			   (mc_ptr->ntasks_per_job != NO_VAL) &&
+			   gres_js->gres_per_job) {
+			uint64_t tasks_per_gres = mc_ptr->ntasks_per_job;
+			tasks_per_gres +=  gres_js->gres_per_job - 1;
+			tasks_per_gres /= gres_js->gres_per_job;
+			cpus_per_gres = tasks_per_gres * mc_ptr->cpus_per_task;
+			/*
+			 * We use round-up division here in case of requests
+			 * like -n3 --gpus=2, where coming up with 3/2=1 CPU
+			 * per GRES results in underestimation and may lead to
+			 * too many GRES selected from the socket. If we won't
+			 * allocate because of overestimate this won't be an
+			 * issue since it's only in first_pass.
+			 */
 		} else if (gres_js->def_cpus_per_gres) {
 			cpus_per_gres = gres_js->def_cpus_per_gres;
 			has_cpus_per_gres = true;
