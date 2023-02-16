@@ -488,7 +488,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		bool sufficient_gres;
 		uint64_t cnt_avail_total, max_tasks;
 		uint64_t max_gres = 0, rem_gres = 0;
-		uint16_t avail_cores_tot = 0, cpus_per_gres;
+		uint16_t avail_cores_tot = 0;
+		uint16_t cpus_per_gres = 0;
 		int min_core_cnt, req_cores, rem_sockets, req_sock_cnt = 0;
 		int threads_per_core;
 
@@ -551,13 +552,12 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 			cpus_per_gres = gres_js->cpus_per_gres;
 			has_cpus_per_gres = true;
 		} else if (gres_js->ntasks_per_gres &&
-			 (gres_js->ntasks_per_gres != NO_VAL16))
+			 (gres_js->ntasks_per_gres != NO_VAL16)) {
 			cpus_per_gres = gres_js->ntasks_per_gres *
 				mc_ptr->cpus_per_task;
-		else {
+		} else if (gres_js->def_cpus_per_gres) {
 			cpus_per_gres = gres_js->def_cpus_per_gres;
-			if (cpus_per_gres)
-				has_cpus_per_gres = true;
+			has_cpus_per_gres = true;
 		}
 
 		/* Filter out unusable GRES by socket */
