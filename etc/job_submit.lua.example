@@ -27,9 +27,11 @@ function _log_user_and_debug(fmt, ...)
 	--  Returning a message to user from slurm_job_modify is supported
 	--  since Slurm 23.02, using it in older versions will result in
 	--  an error message in slurmctld logs.
+	--  In older versions of Lua - prior to Lua 5.2 you may need to use
+	--  unpack as a built-in instead of table.unpack
 	]]--
-	slurm.log_user(fmt, unpack(arg))
-	slurm.log_debug(fmt, unpack(arg))
+	slurm.log_user(fmt, table.unpack(arg))
+	slurm.log_debug(fmt, table.unpack(arg))
 end
 
 

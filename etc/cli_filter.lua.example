@@ -28,13 +28,15 @@ function _verbose_wrapper(options, fmt, ...)
 	--   Logging to client at levels lower than info is only possible for
 	--   sbatch and scrontab in case of salloc and srun only info and error
 	--   are displayed.
+	--   In older versions of Lua - prior to Lua 5.2 you may need to use
+	--   unpack as a built-in instead of table.unpack
 	--]]
 
 	if options["type"] == "sbatch" or options["type"] == "scrontab" then
-		slurm.log_verbose(fmt, unpack(arg))
+		slurm.log_verbose(fmt, table.unpack(arg))
 	else
 		if options["verbose"] and tonumber(options["verbose"]) >= 1 then
-			slurm.log_info(fmt, unpack(arg))
+			slurm.log_info(fmt, table.unpack(arg))
 		end
 	end
 end
