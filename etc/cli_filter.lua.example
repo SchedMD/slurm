@@ -15,9 +15,9 @@ function _find_in_str(str, arg)
 		else
 			return false
 		end
-        else
-                return false
-        end
+	else
+	        return false
+	end
 end
 
 function _verbose_wrapper(options, fmt, ...)
@@ -121,11 +121,11 @@ function slurm_cli_setup_defaults(options, early_pass)
 	--]]--
 	options['hint'] = 'nomultithread'
 
-        return slurm.SUCCESS
+	return slurm.SUCCESS
 end
 
 function slurm_cli_post_submit(offset, job_id, step_id)
 	saved_type = slurm.cli_retrieve(0);
 	slurm.log_info("Submitted: %d.%d component: %d using: %s", job_id, step_id, offset, saved_type);
-        return slurm.SUCCESS
+	return slurm.SUCCESS
 end
