@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
  -- switch/hpe_slingshot - add option to disable VNI allocation per-job.
  -- switch/hpe_slingshot - restrict CXI services to the requesting user.
  -- switch/hpe_slingshot - Only output tcs once in SLINGSHOT_TCS env.
+ -- switch/hpe_slingshot - Fix updating LEs and ACs limits.
 
 * Changes in Slurm 23.02.0
 ==========================

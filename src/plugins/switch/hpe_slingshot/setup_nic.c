@@ -192,11 +192,11 @@ static bool _adjust_dev_limits(int dev, struct cxil_devinfo *devinfo)
 		_adjust_limit(CXI_RSRC_TYPE_CT, dev, svc, lim,
 			      usage.in_use, &devinfo->num_cts);
 		_adjust_limit(CXI_RSRC_TYPE_LE, dev, svc, lim,
-			      usage.in_use, &devinfo->num_acs);
+			      usage.in_use, &devinfo->num_les);
 		_adjust_limit(CXI_RSRC_TYPE_TLE, dev, svc, lim,
 			      usage.in_use, &devinfo->num_tles);
 		_adjust_limit(CXI_RSRC_TYPE_AC, dev, svc, lim,
-			      usage.in_use, &devinfo->num_les);
+			      usage.in_use, &devinfo->num_acs);
 	}
 	log_flag(SWITCH, "CXI services=%d system=%d user=%d",
 		 list->count, num_system_svc, num_svc);
