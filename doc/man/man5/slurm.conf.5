@@ -5871,10 +5871,17 @@ The default value is "/tmp".
 Comma\-separated options identifying network topology options.
 .IP
 .RS
-.TP 15
+.TP 17
 \fBDragonfly\fR
 Optimize allocation for Dragonfly network.
 Valid when TopologyPlugin=topology/tree.
+.IP
+
+.TP
+\fBSwitchAsNodeRank\fR
+Assign the same node rank to all nodes under one leaf switch.
+This can be useful if the naming convention for the nodes does not match the
+network topology.
 .IP
 
 .TP

@@ -3,6 +3,7 @@
  *	switch topology
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
+ *  Copyright (C) 2023 NVIDIA CORPORATION.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
@@ -158,11 +159,43 @@ extern int topo_build_config(void)
 }
 
 /*
- * topo_generate_node_ranking  -  this plugin does not set any node_rank fields
+ * When TopologyParam=SwitchAsNodeRank is set, this plugin assigns a unique
+ * node_rank for all nodes belonging to the same leaf switch.
  */
 extern bool topo_generate_node_ranking(void)
 {
-	return false;
+	/* By default, node_rank is 0, so start at 1 */
+	int switch_rank = 1;
+
+	if (!xstrcasestr(slurm_conf.topology_param, "SwitchAsNodeRank"))
+		return false;
+
+	/* Build a temporary topology to be able to find the leaf switches. */
+	_validate_switches();
+
+	if (switch_record_cnt == 0)
+		return false;
+
+	for (int sw = 0; sw < switch_record_cnt; sw++) {
+		/* skip if not a leaf switch */
+		if (switch_record_table[sw].level != 0)
+			continue;
+
+		for (int n = 0; n < node_record_count; n++) {
+			if (!bit_test(switch_record_table[sw].node_bitmap, n))
+				continue;
+			node_record_table_ptr[n]->node_rank = switch_rank;
+			debug("node=%s rank=%d",
+			      node_record_table_ptr[n]->name, switch_rank);
+		}
+
+		switch_rank++;
+	}
+
+	/* Discard the temporary topology since it is using node bitmaps */
+	_free_switch_record_table();
+
+	return true;
 }
 
 /*
