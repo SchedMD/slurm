@@ -181,6 +181,7 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 	void *dst = args->dst;
 	const parser_t *const parser = args->parser;
 	char *path = NULL;
+	uint64_t set = 0;
 	bool matched_any = false;
 
 	xassert(args->magic == MAGIC_FOREACH_LIST_FLAG);
@@ -193,16 +194,18 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 
 		if (matched)
 			matched_any = true;
-		else
-			continue;
 
 		if (bit->type == FLAG_BIT_TYPE_BIT)
 			_set_flag_bit(parser, dst, bit, matched,
 				      _flag_parent_path(&path, args), src);
-		else if (bit->type == FLAG_BIT_TYPE_EQUAL)
-			_set_flag_bit_equal(parser, dst, bit, matched,
-					    _flag_parent_path(&path, args),
-					    src);
+		else if (bit->type == FLAG_BIT_TYPE_EQUAL) {
+			if (matched || ((~set & bit->mask) == bit->mask))
+				_set_flag_bit_equal(parser, dst, bit, matched,
+						    _flag_parent_path(&path,
+								      args),
+						    src);
+			set |= bit->mask;
+		}
 		else
 			fatal_abort("%s: invalid bit_flag_t", __func__);
 
