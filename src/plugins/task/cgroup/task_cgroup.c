@@ -75,8 +75,9 @@ extern int init(void)
 
 	if (slurm_cgroup_conf.constrain_cores)
 		use_cpuset = true;
-	if (slurm_cgroup_conf.constrain_ram_space ||
-	    slurm_cgroup_conf.constrain_swap_space)
+	if ((slurm_conf.select_type_param & CR_MEMORY) &&
+	    (slurm_cgroup_conf.constrain_ram_space ||
+	     slurm_cgroup_conf.constrain_swap_space))
 		use_memory = true;
 	if (slurm_cgroup_conf.constrain_devices)
 		use_devices = true;

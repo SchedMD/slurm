@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
  -- scrun - catch invalid values of environment SCRUN_FILE_DEBUG.
  -- scrun - avoid memory leak due to invalid annotation.
  -- scrun - avoid false error when pidfile not requested.
+ -- Do not constrain memory in task/cgroup unless CR_Memory is set.
 
 * Changes in Slurm 23.02.0rc1
 =============================

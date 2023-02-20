@@ -4690,7 +4690,8 @@ Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 
 .TP
 \fBNOTE:\fR If memory isn't configured as a consumable resource (CR_CPU,
-CR_Core or CR_Socket without _Memory) memory can be oversubscribed. In this
+CR_Core or CR_Socket without _Memory) memory can be oversubscribed and will not
+be constrained by task/cgroup even if it is configured in cgroup.conf. In this
 case the \fI--mem\fR option is only used to filter out nodes with lower
 configured memory and does not take running jobs into account. For instance,
 two jobs requesting all the memory of a node can run at the same time.
