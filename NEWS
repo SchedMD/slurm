@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
  -- Add new 'make clean-contrib' target to build system to clean contribs dir.
  -- Treat newlines as delimeters for hostlist_create(). (This is used internally
     by "scontrol show hostlist" and for handling SLURM_JOB_NODELIST.)
+ -- scontrol - Print "Invalid job id specified" for 'scontrol show step ...'
+    when the job does not exist, rather than "Unexpected error".
 
 * Changes in Slurm 23.02.0rc1
 =============================

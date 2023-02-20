@@ -456,6 +456,8 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)
 				printf("slurm_get_job_steps no change in data\n");
+		} else {
+			error_code = errno;
 		}
 	} else {
 		if (old_job_step_info_ptr) {
@@ -467,6 +469,8 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 						   step_id.step_id,
 						   &job_step_info_ptr,
 						   show_flags);
+		if ((error_code == SLURM_ERROR) && errno)
+			error_code = errno;
 	}
 
 	if (error_code || !job_step_info_ptr) {
