@@ -3172,7 +3172,7 @@ static int _node_config_init(char *orig_config,
  */
 extern int gres_init_node_config(char *orig_config, List *gres_list)
 {
-	int i, rc, rc2;
+	int i, rc = SLURM_SUCCESS, rc2;
 	gres_state_t *gres_state_node, *gres_state_node_sharing = NULL,
 		*gres_state_node_shared = NULL;
 
