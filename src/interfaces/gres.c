@@ -9449,8 +9449,10 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 		}
 		if (_get_usable_gres(gres_ctx->gres_name, i, local_proc_id,
 				     &tres_bind, &usable_gres, gres_bit_alloc,
-				     false, step) == SLURM_ERROR)
+				     false, step) == SLURM_ERROR) {
+			FREE_NULL_BITMAP(gres_bit_alloc);
 			continue;
+		}
 
 		list_iterator_destroy(gres_iter);
 
