@@ -157,6 +157,9 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     ReconfigFlags=KeepPowerSaveSettings.
  -- slurmdbd.conf - Add new AllResourcesAbsolute to force all new resources
     to be created with the Absolute flag.
+ -- topology/tree - Add new TopologyParam=SwitchAsNodeRank option to reorder
+    nodes based on switch layout. This can be useful if the naming convention
+    for the nodes does not natually map to the network topology.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

@@ -24,6 +24,9 @@ documents those changes that are of interest to users and administrators.
     variable. GPUs are now correctly detected in such scenarios.
  -- data_parser/v0.0.39 - improve flag handling to avoid flags having bits left
     unset after parsing.
+ -- topology/tree - Add new TopologyParam=SwitchAsNodeRank option to reorder
+    nodes based on switch layout. This can be useful if the naming convention
+    for the nodes does not natually map to the network topology.
 
 * Changes in Slurm 23.02.0rc1
 =============================
