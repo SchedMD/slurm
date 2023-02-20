@@ -4299,7 +4299,8 @@ static int _step_partial_comp(step_record_t *step_ptr,
 	 *
 	 * This can be removed 2 versions after 23.02.
 	 */
-	if (step_ptr->jobacct->tres_count != req->jobacct->tres_count) {
+	if (step_ptr->jobacct && req->jobacct &&
+	    (step_ptr->jobacct->tres_count != req->jobacct->tres_count)) {
 		jobacctinfo_t *dest = step_ptr->jobacct, *from = req->jobacct;
 		int i, j;
 
