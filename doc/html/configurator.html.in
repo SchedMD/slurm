@@ -564,6 +564,8 @@ No job completion logging<BR>
 Write job completion info to an Elasticsearch server<BR>
 <input type="radio" name="job_comp_type" value="filetxt"> <B>FileTxt</B>:
 Write job completion status to a text file<BR>
+<input type="radio" name="job_comp_type" value="kafka"> <b>Kafka</b>:
+Write job completion info to a Kafka server<br>
 <input type="radio" name="job_comp_type" value="lua"> <B>Lua</B>:
 Use a script called jobcomp.lua to log job completion<BR>
 <input type="radio" name="job_comp_type" value="script"> <B>Script</B>:
@@ -574,7 +576,8 @@ Write completion status to a MySQL or MariaDB database<BR>
 <input type="text" name="job_comp_loc" value=""> <B>JobCompLoc</B>:
 This is the location of the text file to be written to (if JobCompType=filetxt),
 or the script to be run (if JobCompType=script), or the URL to the
-Elasticsearch server (if JobCompType=elasticsearch), or database name
+Elasticsearch server (if JobCompType=elasticsearch), or file containing
+librdkafka parameters (if JobCompType=jobcomp/kafka), database name
 (for other values of JobCompType).
 <p><b>Options below are for use with a database to specify where the database is running and how to connect to it</b><br>
 <input type="text" name="job_comp_host" value=""> <B>JobCompHost</B>:
