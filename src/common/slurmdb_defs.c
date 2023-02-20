@@ -581,7 +581,7 @@ static int _find_arch_in_list(void *x, void *key)
 }
 
 static void _add_arch_rec(slurmdb_assoc_rec_t *assoc_rec,
-			  List arch_rec_list, List total_arch_list)
+			  List arch_rec_list, List all_parents)
 {
 	slurmdb_hierarchical_rec_t *arch_rec =
 		xmalloc(sizeof(slurmdb_hierarchical_rec_t));
@@ -600,22 +600,22 @@ static void _add_arch_rec(slurmdb_assoc_rec_t *assoc_rec,
 	assoc_rec->rgt = 0;
 	list_append(arch_rec_list, arch_rec);
 	if (!assoc_rec->user) /* Users are never parent assocs */
-		list_append(total_arch_list, arch_rec);
+		list_append(all_parents, arch_rec);
 }
 
 static void _find_create_parent(slurmdb_assoc_rec_t *assoc_rec, List assoc_list,
-				List arch_rec_list, List total_arch_list)
+				List arch_rec_list, List all_parents)
 {
 	slurmdb_assoc_rec_t *par_assoc_rec = NULL;
 	slurmdb_hierarchical_rec_t *par_arch_rec = NULL;
 
 	if (assoc_rec->parent_id) {
 		if ((par_arch_rec = list_find_first(
-			    total_arch_list, _find_arch_in_list,
+			    all_parents, _find_arch_in_list,
 			    assoc_rec))) {
 
 			_add_arch_rec(assoc_rec, par_arch_rec->children,
-				      total_arch_list);
+				      all_parents);
 			return;
 		}
 
@@ -625,25 +625,25 @@ static void _find_create_parent(slurmdb_assoc_rec_t *assoc_rec, List assoc_list,
 
 			/* This means we weren't starting at root */
 			_add_arch_rec(assoc_rec, arch_rec_list,
-				      total_arch_list);
+				      all_parents);
 			return;
 		}
 
 		_find_create_parent(par_assoc_rec, assoc_list, arch_rec_list,
-				    total_arch_list);
+				    all_parents);
 		/* Now that it has been added lets try again */
 		if ((par_arch_rec = list_find_first(
-			    total_arch_list, _find_arch_in_list,
+			    all_parents, _find_arch_in_list,
 			    assoc_rec))) {
 
 			_add_arch_rec(assoc_rec, par_arch_rec->children,
-				      total_arch_list);
+				      all_parents);
 			return;
 		}
 		error("%s: no parent found, this should never happen",
 		      __func__);
 	} else
-		_add_arch_rec(assoc_rec, arch_rec_list, total_arch_list);
+		_add_arch_rec(assoc_rec, arch_rec_list, all_parents);
 
 	return;
 }
@@ -2146,7 +2146,7 @@ extern void slurmdb_sort_hierarchical_assoc_list(
 extern List slurmdb_get_acct_hierarchical_rec_list_no_lft(List assoc_list)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
-	List total_arch_list = list_create(NULL);
+	List all_parents = list_create(NULL);
 	List arch_rec_list = list_create(slurmdb_destroy_hierarchical_rec);
 	ListIterator itr;
 	/* DEF_TIMERS; */
@@ -2158,12 +2158,12 @@ extern List slurmdb_get_acct_hierarchical_rec_list_no_lft(List assoc_list)
 			continue;
 
 		_find_create_parent(assoc, assoc_list,
-				    arch_rec_list, total_arch_list);
+				    arch_rec_list, all_parents);
 	}
 	list_iterator_destroy(itr);
 	/* END_TIMER; */
 	/* info("took %s", TIME_STR); */
-	FREE_NULL_LIST(total_arch_list);
+	FREE_NULL_LIST(all_parents);
 //	info("got %d", list_count(arch_rec_list));
 	_sort_slurmdb_hierarchical_rec_list(arch_rec_list);
 
@@ -2177,7 +2177,7 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 	slurmdb_hierarchical_rec_t *last_parent = NULL;
 	slurmdb_hierarchical_rec_t *arch_rec = NULL;
 	slurmdb_assoc_rec_t *assoc = NULL;
-	List total_assoc_list = list_create(NULL);
+	List all_parents = list_create(NULL);
 	List arch_rec_list =
 		list_create(slurmdb_destroy_hierarchical_rec);
 	ListIterator itr;
@@ -2207,7 +2207,7 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 		if (!assoc->parent_id) {
 			arch_rec->sort_name = assoc->cluster;
 			list_append(arch_rec_list, arch_rec);
-			list_append(total_assoc_list, arch_rec);
+			list_append(all_parents, arch_rec);
 			continue;
 		}
 
@@ -2226,7 +2226,7 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 				    last_acct_parent->assoc->cluster)) {
 			par_arch_rec = last_acct_parent;
 		} else {
-			par_arch_rec = list_find_first(total_assoc_list,
+			par_arch_rec = list_find_first(all_parents,
 						       _find_arch_in_list,
 						       assoc);
 			if (par_arch_rec) {
@@ -2243,11 +2243,11 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 			list_append(par_arch_rec->children, arch_rec);
 
 		if (!assoc->user) /* Users are never parent assocs */
-			list_append(total_assoc_list, arch_rec);
+			list_append(all_parents, arch_rec);
 	}
 	list_iterator_destroy(itr);
 
-	FREE_NULL_LIST(total_assoc_list);
+	FREE_NULL_LIST(all_parents);
 /*	info("got %d", list_count(arch_rec_list)); */
 	_sort_slurmdb_hierarchical_rec_list(arch_rec_list);
 
