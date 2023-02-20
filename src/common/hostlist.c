@@ -1870,7 +1870,7 @@ hostlist_t hostlist_create_dims(const char *str, int dims)
 {
 	if (!dims)
 		dims = slurmdb_setup_cluster_name_dims();
-	return _hostlist_create(str, "\t, ", "-", dims);
+	return _hostlist_create(str, "\t, \n", "-", dims);
 }
 
 hostlist_t hostlist_create(const char *str)
