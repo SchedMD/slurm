@@ -35,6 +35,7 @@ generated_html = \
 	heterogeneous_jobs.html \
 	high_throughput.html \
 	intel_knl.html \
+	jobcomp_kafka.html \
 	job_array.html \
 	job_container_tmpfs.html \
 	job_exit_code.html \
@@ -107,6 +108,7 @@ html_DATA = \
 	hdf5_job_outline.png \
 	ibm_pe_fig1.png \
 	ibm_pe_fig2.png \
+	jobcomp_kafka_fig1.png \
 	jquery.min.js \
 	k_function.gif \
 	mc_support.gif \
