@@ -146,7 +146,9 @@ static int _load_cluster_settings(bool state_only,
 				  buf_t *buffer,
 				  uint16_t protocol_version)
 {
-	char *suspend_exc_nodes, *suspend_exc_parts, *suspend_exc_states;
+	char *suspend_exc_nodes = NULL;
+	char *suspend_exc_parts = NULL;
+	char *suspend_exc_states = NULL;
 
 	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		safe_unpackstr(&suspend_exc_nodes, buffer);
