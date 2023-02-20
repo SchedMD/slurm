@@ -599,7 +599,8 @@ static void _add_arch_rec(slurmdb_assoc_rec_t *assoc_rec,
 
 	assoc_rec->rgt = 0;
 	list_append(arch_rec_list, arch_rec);
-	list_append(total_arch_list, arch_rec);
+	if (!assoc_rec->user) /* Users are never parent assocs */
+		list_append(total_arch_list, arch_rec);
 }
 
 static void _find_create_parent(slurmdb_assoc_rec_t *assoc_rec, List assoc_list,
@@ -2241,7 +2242,8 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 		} else
 			list_append(par_arch_rec->children, arch_rec);
 
-		list_append(total_assoc_list, arch_rec);
+		if (!assoc->user) /* Users are never parent assocs */
+			list_append(total_assoc_list, arch_rec);
 	}
 	list_iterator_destroy(itr);
 
