@@ -2397,6 +2397,7 @@ static int arg_set_jobid(slurm_opt_t *opt, const char *arg)
 	opt->srun_opt->jobid = step->step_id.job_id;
 	opt->srun_opt->array_task_id = step->array_task_id;
 	xfree(job);
+	slurm_destroy_selected_step(step);
 
 	return SLURM_SUCCESS;
 }
