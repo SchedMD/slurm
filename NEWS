@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- Workaround a bug in kernels < 3.18 with cpuset which randomly leaves stray
     cgroups after jobs have ended.
  -- Rebuild the prepacked buf going to the slurmstepd if TRES changed.
+ -- Add new 'make clean-contrib' target to build system to clean contribs dir.
 
 * Changes in Slurm 23.02.0rc1
 =============================
