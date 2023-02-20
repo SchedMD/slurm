@@ -48,6 +48,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="cpu_management.html">CPU Management User and Administrator Guide</a></li>
 <li><a href="dynamic_nodes.html">Dynamic Nodes</a></li>
 <li><a href="elasticsearch.html">Elasticsearch Guide</a></li>
+<li><a href="jobcomp_kafka.html">Job Completion Kafka plugin Guide</a></li>
 <li><a href="job_container_tmpfs.html">job_container/tmpfs - Job Specific Temporary File Management</a></li>
 <li><a href="jwt.html">JSON Web Tokens Authentication</a></li>
 <li><a href="nonstop.html">Failure Management Support</a></li>
