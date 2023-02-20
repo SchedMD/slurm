@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
     by "scontrol show hostlist" and for handling SLURM_JOB_NODELIST.)
  -- scontrol - Print "Invalid job id specified" for 'scontrol show step ...'
     when the job does not exist, rather than "Unexpected error".
+ -- Handle mismatched TRES count from the slurmstepd's instead of fatal()'ing.
 
 * Changes in Slurm 23.02.0rc1
 =============================

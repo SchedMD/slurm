@@ -4174,6 +4174,45 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 	return _step_partial_comp(step_ptr, req, finish, rem, max_rc);
 }
 
+static void _recalloc_jobacct(jobacctinfo_t *from, uint32_t new_count)
+{
+	xrecalloc(from->tres_ids, new_count, sizeof(uint32_t));
+	xrecalloc(from->tres_usage_in_max, new_count, sizeof(uint64_t));
+	xrecalloc(from->tres_usage_in_max_nodeid, new_count, sizeof(uint64_t));
+	xrecalloc(from->tres_usage_in_max_taskid, new_count, sizeof(uint64_t));
+	xrecalloc(from->tres_usage_in_min, new_count, sizeof(uint64_t));
+	xrecalloc(from->tres_usage_in_min_nodeid, new_count, sizeof(uint64_t));
+	xrecalloc(from->tres_usage_in_min_taskid, new_count, sizeof(uint64_t));
+	xrecalloc(from->tres_usage_in_tot, new_count, sizeof(uint64_t));
+	xrecalloc(from->tres_usage_out_max, new_count, sizeof(uint64_t));
+	xrecalloc(from->tres_usage_out_max_nodeid, new_count, sizeof(uint64_t));
+	xrecalloc(from->tres_usage_out_max_taskid, new_count, sizeof(uint64_t));
+	xrecalloc(from->tres_usage_out_min, new_count, sizeof(uint64_t));
+	xrecalloc(from->tres_usage_out_min_nodeid, new_count, sizeof(uint64_t));
+	xrecalloc(from->tres_usage_out_min_taskid, new_count, sizeof(uint64_t));
+	xrecalloc(from->tres_usage_out_tot, new_count, sizeof(uint64_t));
+
+	/* init the new ones if dest is larger than from */
+	for (int i = from->tres_count; i < new_count; i++) {
+		from->tres_ids[i] = NO_VAL;
+		from->tres_usage_in_min[i] = INFINITE64;
+		from->tres_usage_in_max[i] = INFINITE64;
+		from->tres_usage_in_tot[i] = INFINITE64;
+		from->tres_usage_out_max[i] = INFINITE64;
+		from->tres_usage_out_min[i] = INFINITE64;
+		from->tres_usage_out_tot[i] = INFINITE64;
+		from->tres_usage_in_max_taskid[i] = INFINITE64;
+		from->tres_usage_in_min_taskid[i] = INFINITE64;
+		from->tres_usage_out_max_taskid[i] = INFINITE64;
+		from->tres_usage_out_min_taskid[i] = INFINITE64;
+		from->tres_usage_in_max_nodeid[i] = INFINITE64;
+		from->tres_usage_in_min_nodeid[i] = INFINITE64;
+		from->tres_usage_out_max_nodeid[i] = INFINITE64;
+		from->tres_usage_out_min_nodeid[i] = INFINITE64;
+	}
+	from->tres_count = new_count;
+}
+
 static int _step_partial_comp(step_record_t *step_ptr,
 			      step_complete_msg_t *req, bool finish,
 			      int *rem, uint32_t *max_rc)
@@ -4251,6 +4290,148 @@ static int _step_partial_comp(step_record_t *step_ptr,
 #endif
 
 	ext_sensors_g_get_stependdata(step_ptr);
+
+	/*
+	 * Before 23.02 it was possible for the slurmd to send the wrong TRES
+	 * count when starting a stepd if the TRES was changed in the slurmctld
+	 * but the slurmd was never restarted. In this event we will ignore the
+	 * accounting for the TRES coming in until the slurmd is restarted.
+	 *
+	 * This can be removed 2 versions after 23.02.
+	 */
+	if (step_ptr->jobacct->tres_count != req->jobacct->tres_count) {
+		jobacctinfo_t *dest = step_ptr->jobacct, *from = req->jobacct;
+		int i, j;
+
+		/*
+		 * If the controller is bigger we want to alter the size here
+		 * before we swap things.
+		 */
+		if (dest->tres_count > from->tres_count)
+			_recalloc_jobacct(from, dest->tres_count);
+
+		for (i = 0, j = 0; i < dest->tres_count; i++, j++) {
+			int j2, j_no_val = -1, found = -1;
+			uint32_t tmp_id;
+			uint32_t tmp_val;
+
+			/* Skip the already correct ones. */
+			if (dest->tres_ids[i] == from->tres_ids[j])
+				continue;
+
+			/*
+			 * Here we are looking for the right spot and the first
+			 * NO_VAL to put the mismatch from the stepd into a
+			 * blank spot.
+			 */
+			for (j2 = j; j2 < from->tres_count; j2++) {
+				if (from->tres_ids[j2] == NO_VAL) {
+					j_no_val = j2;
+					if (found)
+						break;
+				}
+				if (dest->tres_ids[i] != from->tres_ids[j2]) {
+					continue;
+				}
+				found = j2;
+				if (j_no_val != -1)
+					break;
+			}
+
+			if (found == -1)
+				j2 = j_no_val;
+			else
+				j2 = found;
+
+			if (j2 == -1) {
+				error("Bad TRES from the stepd, this should never happen");
+				continue;
+			}
+
+			/* swap j for j2 */
+			tmp_id = from->tres_ids[j];
+			from->tres_ids[j] = from->tres_ids[j2];
+			from->tres_ids[j2] = tmp_id;
+
+			tmp_val = from->tres_usage_in_min[j];
+			from->tres_usage_in_min[j] =
+				from->tres_usage_in_min[j2];
+			from->tres_usage_in_min[j2] = tmp_val;
+
+			tmp_val = from->tres_usage_in_max[j];
+			from->tres_usage_in_max[j] =
+				from->tres_usage_in_max[j2];
+			from->tres_usage_in_max[j2] = tmp_val;
+
+			tmp_val = from->tres_usage_in_tot[j];
+			from->tres_usage_in_tot[j] =
+				from->tres_usage_in_tot[j2];
+			from->tres_usage_in_tot[j2] = tmp_val;
+
+			tmp_val = from->tres_usage_out_max[j];
+			from->tres_usage_out_max[j] =
+				from->tres_usage_out_max[j2];
+			from->tres_usage_out_max[j2] = tmp_val;
+
+			tmp_val = from->tres_usage_out_min[j];
+			from->tres_usage_out_min[j] =
+				from->tres_usage_out_min[j2];
+			from->tres_usage_out_min[j2] = tmp_val;
+
+			tmp_val = from->tres_usage_out_tot[j];
+			from->tres_usage_out_tot[j] =
+				from->tres_usage_out_tot[j2];
+			from->tres_usage_out_tot[j2] = tmp_val;
+
+			tmp_val = from->tres_usage_in_max_taskid[j];
+			from->tres_usage_in_max_taskid[j] =
+				from->tres_usage_in_max_taskid[j2];
+			from->tres_usage_in_max_taskid[j2] = tmp_val;
+
+			tmp_val = from->tres_usage_in_min_taskid[j];
+			from->tres_usage_in_min_taskid[j] =
+				from->tres_usage_in_min_taskid[j2];
+			from->tres_usage_in_min_taskid[j2] = tmp_val;
+
+			tmp_val = from->tres_usage_out_max_taskid[j];
+			from->tres_usage_out_max_taskid[j] =
+				from->tres_usage_out_max_taskid[j2];
+			from->tres_usage_out_max_taskid[j2] = tmp_val;
+
+			tmp_val = from->tres_usage_out_min_taskid[j];
+			from->tres_usage_out_min_taskid[j] =
+				from->tres_usage_out_min_taskid[j2];
+			from->tres_usage_out_min_taskid[j2] = tmp_val;
+
+			tmp_val = from->tres_usage_in_max_nodeid[j];
+			from->tres_usage_in_max_nodeid[j] =
+				from->tres_usage_in_max_nodeid[j2];
+			from->tres_usage_in_max_nodeid[j2] = tmp_val;
+
+			tmp_val = from->tres_usage_in_min_nodeid[j];
+			from->tres_usage_in_min_nodeid[j] =
+				from->tres_usage_in_min_nodeid[j2];
+			from->tres_usage_in_min_nodeid[j2] = tmp_val;
+
+			tmp_val = from->tres_usage_out_max_nodeid[j];
+			from->tres_usage_out_max_nodeid[j] =
+				from->tres_usage_out_max_nodeid[j2];
+			from->tres_usage_out_max_nodeid[j2] = tmp_val;
+
+			tmp_val = from->tres_usage_out_min_nodeid[j];
+			from->tres_usage_out_min_nodeid[j] =
+				from->tres_usage_out_min_nodeid[j2];
+			from->tres_usage_out_min_nodeid[j2] = tmp_val;
+		}
+
+		/*
+		 * If the ctld has less tres we have swapped everything we can
+		 * so we can now shrink the arrays.
+		 */
+		if (dest->tres_count < from->tres_count)
+			_recalloc_jobacct(from, dest->tres_count);
+	}
+
 	jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
 
 #ifndef HAVE_FRONT_END
