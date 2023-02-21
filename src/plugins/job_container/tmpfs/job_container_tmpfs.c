@@ -353,6 +353,14 @@ static int _rm_data(const char *path, const struct stat *st_buf,
 {
 	int rc = SLURM_SUCCESS;
 
+	/*
+	 * ftwbuf->level == 0 means path is the initial path passed to nftw
+	 * We expect this rmdir to fail since it is a mount point.  Just skip it
+	 * and expect that it will be removed later.
+	 */
+	if (ftwbuf->level == 0)
+		return SLURM_SUCCESS;
+
 	if (remove(path) < 0) {
 		log_level_t log_lvl;
 		if (force_rm) {

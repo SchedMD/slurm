@@ -46,6 +46,8 @@ documents those changes that are of interest to users and administrators.
  -- salloc/sbatch/srun - error out if "--cpu-bind=[map,mask]_cpu:<list>" fails
     to extract a list of cpus.
  -- job_container/tmpfs - cleanup job_mount when container creation fails.
+ -- job_container/tmpfs - don't attempt to remove job_mount directory when it is
+    still mounted.
 
 * Changes in Slurm 23.02.0rc1
 =============================
