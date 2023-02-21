@@ -465,12 +465,19 @@ static int _redirect_stdio (void)
 	int devnull;
 	if ((devnull = open ("/dev/null", O_RDWR)) < 0)
 		return error ("jobcomp/script: Failed to open /dev/null: %m");
-	if (dup2 (devnull, STDIN_FILENO) < 0)
+	if (dup2(devnull, STDIN_FILENO) < 0) {
+		close(devnull);
 		return error ("jobcomp/script: Failed to redirect stdin: %m");
-	if (dup2 (devnull, STDOUT_FILENO) < 0)
+	}
+	if (dup2(devnull, STDOUT_FILENO) < 0) {
+		close(devnull);
 		return error ("jobcomp/script: Failed to redirect stdout: %m");
-	if (dup2 (devnull, STDERR_FILENO) < 0)
+	}
+	if (dup2(devnull, STDERR_FILENO) < 0) {
+		close(devnull);
 		return error ("jobcomp/script: Failed to redirect stderr: %m");
+	}
+	(void) close(devnull);
 	closeall(3);
 	return (0);
 }
