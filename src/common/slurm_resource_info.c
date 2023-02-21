@@ -152,6 +152,11 @@ static char *_expand_mult(char *list, char *type, int *error_code)
 	}
 	xfree(tmp);
 
+	if (!result) {
+		error("Failed to expand list: '%s'", list);
+		*error_code = SLURM_ERROR;
+	}
+
 	return result;
 }
 
