@@ -518,7 +518,7 @@ typedef struct slurmdb_assoc_rec {
 				    * associations can run for */
 
 	uint32_t id;		   /* id identifing a combination of
-				    * user-account-cluster(-partition) */
+				    * user-account(-partition) */
 
 	uint16_t is_def;           /* Is this the users default assoc/acct */
 
