@@ -362,6 +362,10 @@ documents those changes that are of interest to users and administrators.
     silently no longer accept new client connections.
  -- Fix GPU setup on CRAY systems when using the CRAY_CUDA_MPS environment
     variable. GPUs are now correctly detected in such scenarios.
+ -- Fix the job prolog not running for jobs with the interactive step
+    (salloc jobs with LaunchParameters=use_interactive_step set in slurm.conf)
+    that were scheduled on powered down nodes. The prolog not running also
+    broke job_container/tmpfs, pam_slurm_adopt, and x11 forwarding.
 
 * Changes in Slurm 22.05.8
 ==========================
