@@ -105,7 +105,10 @@ extern void print_fields_date(print_field_t *field, void *input, int last)
 {
 	int abs_len = abs(field->len);
 	char temp_char[abs_len+1];
-	time_t value = *(time_t *)input;
+	time_t value = 0;
+
+	if (input)
+		value = *(time_t *) input;
 
 	slurm_make_time_str(&value, (char *)temp_char, sizeof(temp_char));
 	if (print_fields_parsable_print == PRINT_FIELDS_PARSABLE_NO_ENDING
@@ -166,7 +169,10 @@ extern void print_fields_str(print_field_t *field, void *input, int last)
 extern void print_fields_uint16(print_field_t *field, void *input, int last)
 {
 	int abs_len = abs(field->len);
-	uint16_t value = *(uint16_t *)input;
+	uint16_t value = NO_VAL16;
+
+	if (input)
+		value = *(uint16_t *) input;
 
 	/* (value == unset)  || (value == cleared) */
 	if (((uint16_t)value == NO_VAL16)
@@ -200,7 +206,10 @@ extern void print_fields_uint16(print_field_t *field, void *input, int last)
 extern void print_fields_uint32(print_field_t *field, void *input, int last)
 {
 	int abs_len = abs(field->len);
-	uint32_t value = *(uint32_t *)input;
+	uint32_t value = NO_VAL;
+
+	if (input)
+		value = *(uint32_t *) input;
 
 	/* (value == unset)  || (value == cleared) */
 	if ((value == NO_VAL) || (value == INFINITE)) {
@@ -233,7 +242,10 @@ extern void print_fields_uint32(print_field_t *field, void *input, int last)
 extern void print_fields_uint64(print_field_t *field, void *input, int last)
 {
 	int abs_len = abs(field->len);
-	uint64_t value = *(uint64_t *)input;
+	uint64_t value = NO_VAL64;
+
+	if (input)
+		value = *(uint64_t *) input;
 
 	/* (value == unset)  || (value == cleared) */
 	if ((value == NO_VAL64) || (value == INFINITE64)) {
@@ -267,7 +279,10 @@ extern void print_fields_uint64(print_field_t *field, void *input, int last)
 extern void print_fields_double(print_field_t *field, void *input, int last)
 {
 	int abs_len = abs(field->len);
-	double value = *(double *)input;
+	double value = (double) NO_VAL64;
+
+	if (input)
+		value = *(double *) input;
 
 	/* (value == unset)  || (value == cleared) */
 	if ((value == (double) NO_VAL64) || (value == (double) INFINITE64) ||
@@ -320,7 +335,10 @@ extern void print_fields_double(print_field_t *field, void *input, int last)
 extern void print_fields_time(print_field_t *field, void *input, int last)
 {
 	int abs_len = abs(field->len);
-	uint32_t value = *(uint32_t *)input;
+	uint32_t value = NO_VAL;
+
+	if (input)
+		value = *(uint32_t *) input;
 
 	/* (value == unset)  || (value == cleared) */
 	if ((value == NO_VAL) || (value == INFINITE)) {
@@ -356,7 +374,10 @@ extern void print_fields_time_from_secs(print_field_t *field,
 					void *input, int last)
 {
 	int abs_len = abs(field->len);
-	uint64_t value = *(uint64_t *)input;
+	uint64_t value = NO_VAL64;
+
+	if (input)
+		value = *(uint64_t *) input;
 
 	/* (value == unset)  || (value == cleared) */
 	if ((value == NO_VAL64) || (value == INFINITE64)) {
@@ -392,7 +413,10 @@ extern void print_fields_char_list(print_field_t *field, void *input, int last)
 {
 	int abs_len = abs(field->len);
 	char *print_this = NULL;
-	List value = *(List *)input;
+	List value = NULL;
+
+	if (input)
+		value = *(List *) input;
 
 	if (!value || !list_count(value)) {
 		if (print_fields_parsable_print)
