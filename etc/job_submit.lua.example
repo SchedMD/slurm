@@ -17,12 +17,15 @@ function _find_in_str(str, arg)
 end
 
 function _log_user_and_debug(fmt, ...)
---[[Different messages logged to end user should be associated
-    unique return code, to make those properly displayed in case
-    of modification of array job.
-  ]]--
---[[Implicit definition of arg was removed in Lua 5.2]]--
+	--[[
+	    Different messages logged to end user should be associated
+	    unique return code, to make those properly displayed in case
+	    of modification of array job.
+  	--]]
+
+	--[[ Implicit definition of arg was removed in Lua 5.2 --]]
 	local arg = {...}
+
 	--[[
 	--  Returning a message to user from slurm_job_modify is supported
 	--  since Slurm 23.02, using it in older versions will result in
@@ -30,6 +33,7 @@ function _log_user_and_debug(fmt, ...)
 	--  In older versions of Lua - prior to Lua 5.2 you may need to use
 	--  unpack as a built-in instead of table.unpack
 	]]--
+
 	slurm.log_user(fmt, table.unpack(arg))
 	slurm.log_debug(fmt, table.unpack(arg))
 end
@@ -40,7 +44,7 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 	--[[
 	   Don't block any activity from root.
 	   This may make reproduction of user errors difficult
-	]]--
+	--]]
 	if submit_uid == 0 then
 		return slurm.SUCCESS
 	end
@@ -66,7 +70,7 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 	end
 
 
-	--[[ Forbid unlimited --mem if memory specified ]]--
+	--[[ Forbid unlimited --mem if memory specified --]]
 	if job_desc['min_mem_per_node'] ~= nil then
 		if job_desc['min_mem_per_node'] == 0 then
 			slurm.log_user("%s: --mem=0 is not allowed",
@@ -74,7 +78,7 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 			return slurm.ESLURM_ACCOUNTING_POLICY;
 		end
 	else
-		--[[ Enforce --mem specification ]]--
+		--[[ Enforce --mem specification --]]
 		if job_desc['min_mem_per_cpu'] == nil then
 			_log_user_and_debug("%s: Neither --mem nor --mem-per-cpu specified",
 				            log_prefix);
@@ -88,7 +92,7 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 		end
 	end
 
-       --[[ Forbid usage of MAINT job name ]]--
+       --[[ Forbid usage of MAINT job name --]]
 	if job_desc['name'] == "MAINT" then
 	       _log_user_and_debug("%s: JobName=MAINT reserved. Please use other name.",
 			           log_prefix);
@@ -151,7 +155,7 @@ function  slurm_job_modify(job_desc, job_ptr, part_list, modify_uid)
         --]]
 
 
-	--[[ Don't block/modify any update from root ]]--
+	--[[ Don't block/modify any update from root --]]
 	if modify_uid == 0 then
 		return slurm.SUCCESS
 	end
@@ -175,7 +179,7 @@ function  slurm_job_modify(job_desc, job_ptr, part_list, modify_uid)
 		end
 	end
 
-       --[[ Forbid usage of MAINT job name ]]--
+       --[[ Forbid usage of MAINT job name --]]
 	if job_desc['name'] == "MAINT" then
 		_log_user_and_debug("%s: Updating JobName to MAINT is not allowed from non-root user",
 			            log_prefix);
