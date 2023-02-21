@@ -221,9 +221,10 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 	int rc = SLURM_SUCCESS;
 
 	if (!req->cpu_bind) {
-		error("No list of CPU IDs provided to --cpu-bind=map_cpu:<list>");
+		char *err = "No list of CPU IDs provided to --cpu-bind=map_cpu:<list>";
+		error("%s", err);
 		if (err_msg)
-			xstrfmtcat(*err_msg, "No list of CPU IDs provided to --cpu-bind=map_cpu:<list>");
+			xstrfmtcat(*err_msg, "%s", err);
 		return ESLURMD_CPU_BIND_ERROR;
 	}
 
@@ -270,9 +271,10 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 	int rc = SLURM_SUCCESS;
 
 	if (!req->cpu_bind) {
-		error("No list of CPU masks provided to --cpu-bind=mask_cpu:<list>");
+		char *err = "No list of CPU masks provided to --cpu-bind=mask_cpu:<list>";
+		error("%s", err);
 		if (err_msg)
-			xstrfmtcat(*err_msg, "No list of CPU masks provided to --cpu-bind=mask_cpu:<list>");
+			xstrfmtcat(*err_msg, "%s", err);
 		return ESLURMD_CPU_BIND_ERROR;
 	}
 
