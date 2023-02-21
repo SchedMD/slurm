@@ -1677,11 +1677,11 @@ Elasticsearch server URL endpoint (including the port number and the target
 index) configured in this option. This string should typically take the form
 of \fI<host>:<port>/<target>/_doc\fR.
 
-\fBNOTE\fR: the default value for this plugin is
+\fBNOTE\fR: The default value for this plugin is
 \fI/var/log/slurm_jobcomp.log\fR.
 
 
-\fBNOTE\fR: refer to <https://slurm.schedmd.com/elasticsearch.html> for more
+\fBNOTE\fR: Refer to <https://slurm.schedmd.com/elasticsearch.html> for more
 information.
 .IP
 
@@ -1691,7 +1691,7 @@ Instructs this plugin to send the finished job records information to a file
 configured in this option. This string should represent an absolute path to
 a file.
 
-\fBNOTE\fR: the default value for this plugin is
+\fBNOTE\fR: The default value for this plugin is
 \fI/var/log/slurm_jobcomp.log\fR.
 .IP
 
@@ -1703,17 +1703,17 @@ an absolute path to a file containing 'key=value' pairs configuring the library
 behavior. For the plugin to work properly, this file needs to exist and least
 the \fIbrokers.list\fR \fBlibrdkafka\fR property needs to be configured in it.
 
-\fBNOTE\fR: for a full list of \fBlibrdkafka\fR properties, please refer to
+\fBNOTE\fR: For a full list of \fBlibrdkafka\fR properties, please refer to
 the library documentation. You can also view the jobcomp_kafka page for more
 information: <https://slurm.schedmd.com/jobcomp_kafka.html>
 
-\fBNOTE\fR: the target Kafka topic and other plugin parameters can be configured
+\fBNOTE\fR: The target Kafka topic and other plugin parameters can be configured
 via \fBJobCompParams\fR.
 
-\fBNOTE\fR: there is no default value for JobCompLoc when this plugin is
+\fBNOTE\fR: There is no default value for JobCompLoc when this plugin is
 configured, and thus it needs to be explicitly set.
 
-\fBNOTE\fR: the \fBlibrdkafka\fR parameters configured in the file referenced by
+\fBNOTE\fR: The \fBlibrdkafka\fR parameters configured in the file referenced by
 this option take effect upon slurmctld restart.
 .IP
 
@@ -1723,7 +1723,7 @@ This option is ignored in this plugin. The finished job record is processed
 by a hardcoded \fIjobcomp.lua\fR script expected to be located in the same
 location of slurm.conf.
 
-\fBNOTE\fR: there is no default value for this option when this plugin is
+\fBNOTE\fR: There is no default value for this option when this plugin is
 enabled.
 .IP
 
@@ -1732,7 +1732,7 @@ If \fBjobcomp/mysql\fR:
 Instructs this plugin to send the finished job records information to a database
 name configured in this option. This string should represent a database name.
 
-\fBNOTE\fR: the default value for this plugin is \fIslurm_jobcomp_db\fR.
+\fBNOTE\fR: The default value for this plugin is \fIslurm_jobcomp_db\fR.
 .IP
 
 .TP
@@ -1741,7 +1741,7 @@ The finished job record information is made available via environment variables
 and processed by a script with name configured by this option. This string
 should represent a path to a script.
 
-\fBNOTE\fR: there's no default JobCompLoc value if this plugin is configured,
+\fBNOTE\fR: There's no default JobCompLoc value if this plugin is configured,
 since JobCompLoc needs to be explicitly configured. Otherwise, the plugin
 will fail to initialize.
 .RE
@@ -3227,7 +3227,7 @@ Acceptable values at present include:
 Uses linux cgroups to constrain and track processes, and is the default
 for systems with cgroup support.
 .br
-\fBNOTE\fR: see "man cgroup.conf" for configuration details.
+\fBNOTE\fR: See "man cgroup.conf" for configuration details.
 .IP
 
 .TP
