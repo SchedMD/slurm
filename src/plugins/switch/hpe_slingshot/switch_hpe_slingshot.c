@@ -481,6 +481,8 @@ static bool _unpack_comm_profile(slingshot_comm_profile_t *profile,
 	safe_unpack32(&profile->tcs, buffer);
 
 	safe_unpackstr_xmalloc(&device_name, &name_len, buffer);
+	if (!device_name)
+		goto unpack_error;
 	strlcpy(profile->device_name, device_name,
 		sizeof(profile->device_name));
 	xfree(device_name);
@@ -500,12 +502,16 @@ static bool _unpack_hsn_nic(slingshot_hsn_nic_t *nic, buf_t *buffer)
 	safe_unpack32(&nic->address_type, buffer);
 
 	safe_unpackstr_xmalloc(&address, &name_len, buffer);
+	if (!address)
+		goto unpack_error;
 	strlcpy(nic->address, address, sizeof(nic->address));
 	xfree(address);
 
 	safe_unpack16(&nic->numa_node, buffer);
 
 	safe_unpackstr_xmalloc(&device_name, &name_len, buffer);
+	if (!device_name)
+		goto unpack_error;
 	strlcpy(nic->device_name, device_name, sizeof(nic->device_name));
 	xfree(device_name);
 
