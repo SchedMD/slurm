@@ -715,6 +715,7 @@ exit2:
 			goto end_it;
 		}
 		umount2(job_mount, MNT_DETACH);
+		rmdir(job_mount);
 	}
 
 end_it:
