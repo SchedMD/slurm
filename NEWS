@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
     (salloc jobs with LaunchParameters=use_interactive_step set in slurm.conf)
     that were scheduled on powered down nodes. The prolog not running also
     broke job_container/tmpfs, pam_slurm_adopt, and x11 forwarding.
+ -- swich/hpe_slingshot - fix issues using 22.05 commands with 23.02 slurmd.
 
 * Changes in Slurm 23.02.0rc1
 =============================

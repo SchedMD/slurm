@@ -567,7 +567,6 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 		pack32(SLURM_22_05_PROTOCOL_VERSION, buffer);
 		pack16_array(jobinfo->vnis, jobinfo->num_vnis, buffer);
 		pack32(jobinfo->tcs, buffer);
-		pack32(jobinfo->flags, buffer);
 		_pack_slingshot_limits(&jobinfo->limits.txqs, buffer);
 		_pack_slingshot_limits(&jobinfo->limits.tgqs, buffer);
 		_pack_slingshot_limits(&jobinfo->limits.eqs, buffer);
@@ -581,7 +580,6 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 		for (pidx = 0; pidx < jobinfo->num_profiles; pidx++) {
 			_pack_comm_profile(&jobinfo->profiles[pidx], buffer);
 		}
-		pack_bit_str_hex(jobinfo->vni_pids, buffer);
 	} else {
 		/* invalid protocol specified */
 		xassert(false);
@@ -664,7 +662,6 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 
 		safe_unpack16_array(&jobinfo->vnis, &jobinfo->num_vnis, buffer);
 		safe_unpack32(&jobinfo->tcs, buffer);
-		safe_unpack32(&jobinfo->flags, buffer);
 		if (!_unpack_slingshot_limits(&jobinfo->limits.txqs, buffer) ||
 		    !_unpack_slingshot_limits(&jobinfo->limits.tgqs, buffer) ||
 		    !_unpack_slingshot_limits(&jobinfo->limits.eqs, buffer) ||
@@ -684,8 +681,9 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 						  buffer))
 				goto unpack_error;
 		}
-		unpack_bit_str_hex(&jobinfo->vni_pids, buffer);
 		/* Not present in this version, set to none */
+		jobinfo->vni_pids = NULL;
+		jobinfo->flags = 0;
 		jobinfo->num_nics = 0;
 		jobinfo->nics = NULL;
 	} else {
