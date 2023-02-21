@@ -823,6 +823,19 @@ static int _delete_ns(uint32_t job_id)
 	errno = 0;
 
 	/*
+	 * Close the step_ns_fd if it was opened.  If close fails here, it
+	 * should be safe to continue since ns_holder is lazy unmounted later
+	 * and will get cleaned up when the slurmstepd process ends.
+	 */
+	if (step_ns_fd != -1) {
+		if (close(step_ns_fd))
+			log_flag(JOB_CONT, "close step_ns_fd(%d) failed: %m",
+				 step_ns_fd);
+		else
+			step_ns_fd = -1;
+	}
+
+	/*
 	 * umount2() sets errno to EINVAL if the target is not a mount point
 	 * but also if called with invalid flags.  Consider this if changing the
 	 * flags to umount2().

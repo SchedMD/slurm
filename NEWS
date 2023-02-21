@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
  -- jobcomp/kafka - don't use the purge API if librdkafka < v1.0.0.
  -- Change shown start time of pending array job to be start time of earliest
     pending array task.
+ -- job_container/tmpfs - ensure that step_ns_fd is closed before cleaning up
+    the namespace.
 
 * Changes in Slurm 23.02.0rc1
 =============================
