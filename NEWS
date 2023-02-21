@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
     broke job_container/tmpfs, pam_slurm_adopt, and x11 forwarding.
  -- swich/hpe_slingshot - fix issues using 22.05 commands with 23.02 slurmd.
  -- swith/hpe_slingshot - avoid slurmd segfault if there is a protocol error.
+ -- task/affinity - fix slurmd segfault when request launch task requests of
+    type "--cpu-bind=[map,mask]_cpu:<list>" have no <list> provided.
 
 * Changes in Slurm 23.02.0rc1
 =============================
@@ -372,6 +374,8 @@ documents those changes that are of interest to users and administrators.
     (salloc jobs with LaunchParameters=use_interactive_step set in slurm.conf)
     that were scheduled on powered down nodes. The prolog not running also
     broke job_container/tmpfs, pam_slurm_adopt, and x11 forwarding.
+ -- task/affinity - fix slurmd segfault when request launch task requests of
+    type "--cpu-bind=[map,mask]_cpu:<list>" have no <list> provided.
 
 * Changes in Slurm 22.05.8
 ==========================

@@ -220,6 +220,13 @@ static int _validate_map(launch_tasks_request_msg_t *req, char *avail_mask,
 	bool superset = true;
 	int rc = SLURM_SUCCESS;
 
+	if (!req->cpu_bind) {
+		error("No list of CPU IDs provided to --cpu-bind=map_cpu:<list>");
+		if (err_msg)
+			xstrfmtcat(*err_msg, "No list of CPU IDs provided to --cpu-bind=map_cpu:<list>");
+		return ESLURMD_CPU_BIND_ERROR;
+	}
+
 	CPU_ZERO(&avail_cpus);
 	if (task_str_to_cpuset(&avail_cpus, avail_mask)) {
 		char *err = "Failed to convert avail_mask into hex for CPU bind map";
@@ -261,6 +268,13 @@ static int _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask,
 	cpu_set_t avail_cpus, task_cpus;
 	bool superset = true;
 	int rc = SLURM_SUCCESS;
+
+	if (!req->cpu_bind) {
+		error("No list of CPU masks provided to --cpu-bind=mask_cpu:<list>");
+		if (err_msg)
+			xstrfmtcat(*err_msg, "No list of CPU masks provided to --cpu-bind=mask_cpu:<list>");
+		return ESLURMD_CPU_BIND_ERROR;
+	}
 
 	CPU_ZERO(&avail_cpus);
 	if (task_str_to_cpuset(&avail_cpus, avail_mask)) {
