@@ -35,6 +35,10 @@ documents those changes that are of interest to users and administrators.
  -- scrun - avoid memory leak due to invalid annotation.
  -- scrun - avoid false error when pidfile not requested.
  -- Do not constrain memory in task/cgroup unless CR_Memory is set.
+ -- Fix the job prolog not running for jobs with the interactive step
+    (salloc jobs with LaunchParameters=use_interactive_step set in slurm.conf)
+    that were scheduled on powered down nodes. The prolog not running also
+    broke job_container/tmpfs, pam_slurm_adopt, and x11 forwarding.
 
 * Changes in Slurm 23.02.0rc1
 =============================
