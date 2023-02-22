@@ -1701,7 +1701,8 @@ When this plugin is configured, finished job records information is sent to a
 Kafka server. The plugin makes use of \fBlibrdkafka\fR. This string represents
 an absolute path to a file containing 'key=value' pairs configuring the library
 behavior. For the plugin to work properly, this file needs to exist and least
-the \fIbrokers.list\fR \fBlibrdkafka\fR property needs to be configured in it.
+the \fIbootstrap.servers\fR \fBlibrdkafka\fR property needs to be configured
+in it.
 
 \fBNOTE\fR: For a full list of \fBlibrdkafka\fR properties, please refer to
 the library documentation. You can also view the jobcomp_kafka page for more
