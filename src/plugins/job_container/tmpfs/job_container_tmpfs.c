@@ -842,7 +842,7 @@ static int _delete_ns(uint32_t job_id)
 	 */
 	rc = umount2(ns_holder, MNT_DETACH);
 	if (rc) {
-		if (errno == EINVAL) {
+		if ((errno == EINVAL) || (errno == ENOENT)) {
 			debug2("%s: umount2 %s failed: %m",
 			       __func__, ns_holder);
 		} else {
