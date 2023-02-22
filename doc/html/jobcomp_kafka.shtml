@@ -126,6 +126,12 @@ parameter. Purged messages are always saved to the plugin state file in the
 Slurm StateSaveLocation, and messages purged while "in-flight" are discarded.
 </p>
 
+<p><b>NOTE</b>: You must be using librdkafka v1.0.0 or later in order to take
+advantage of the purge functionality described above. With previous versions
+the outgoing queue can not be purged to the state file on shutdown, which
+means that any messages that weren't delivered before the termination of the
+kafka plugin will be lost.</p>
+
 <p>On plugin initialization, after parsing the configuration, saved messages in
 the state are loaded and attempted to be produced again. So undelivered messages
 should be resilient to slurmctld restarts.</p>
