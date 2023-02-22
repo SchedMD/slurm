@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
     still mounted.
  -- Fix regression in rc1 causing sacctmgr to segfault when printing unrelated
     fields.
+ -- jobcomp/kafka - don't use the purge API if librdkafka < v1.0.0.
 
 * Changes in Slurm 23.02.0rc1
 =============================

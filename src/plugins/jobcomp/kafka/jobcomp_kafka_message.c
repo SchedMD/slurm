@@ -213,6 +213,7 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 		xfree(action_str);
 
 		break;
+#if RD_KAFKA_VERSION >= 0x010000ff
 	case RD_KAFKA_RESP_ERR__PURGE_QUEUE:
 		/* Purged in-queue. Always requeue in this case. */
 		log_flag(JOBCOMP, "Message delivery for JobId=%u failed: %s. Saving message to plugin state file.",
@@ -236,6 +237,7 @@ static void _dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage,
 			_add_kafka_msg_to_state(job_id, xstrdup(payload));
 
 		break;
+#endif
 	default:
 		error("%s: Message delivery for JobId=%u failed: %s. Message discarded.",
 		      plugin_type, job_id, err_str);
@@ -461,6 +463,7 @@ static void *_poll_handler(void *no_data)
  */
 static void _purge_rd_kafka_msgs(void)
 {
+#if RD_KAFKA_VERSION >= 0x010000ff
 	int purge_flags = 0;
 	rd_kafka_resp_err_t err;
 
@@ -480,6 +483,7 @@ static void _purge_rd_kafka_msgs(void)
 	    RD_KAFKA_RESP_ERR_NO_ERROR)
 		error("%s: rd_kafka_purge(0x%x) failed: %s",
 		      plugin_type, purge_flags, rd_kafka_err2str(err));
+#endif
 }
 
 /*
