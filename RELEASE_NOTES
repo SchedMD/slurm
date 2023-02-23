@@ -160,6 +160,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- topology/tree - Add new TopologyParam=SwitchAsNodeRank option to reorder
     nodes based on switch layout. This can be useful if the naming convention
     for the nodes does not natually map to the network topology.
+ -- Removed the default setting for GpuFreqDef. If unset, no attempt to change
+    the GPU frequency will be made if --gpu-freq is not set for the step.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

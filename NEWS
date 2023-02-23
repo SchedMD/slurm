@@ -63,6 +63,8 @@ documents those changes that are of interest to users and administrators.
     "memory_per_cpu" and "memory_per_node" fields are managed.
  -- Fix regression in 23.02.0rc1 which caused slurmctld to segfault when
     gres is added or removed in the configuration.
+ -- Removed the default setting for GpuFreqDef. If unset, no attempt to change
+    the GPU frequency will be made if --gpu-freq is not set for the step.
 
 * Changes in Slurm 23.02.0rc1
 =============================

@@ -1398,7 +1398,9 @@ Also see the \fBGroupUpdateForce\fR parameter.
 Default GPU frequency to use when running a job step if it
 has not been explicitly set using the \-\-gpu\-freq option.
 This option can be used to independently configure the GPU and its memory
-frequencies. Defaults to "high,memory=high".
+frequencies.
+There is no default value. If unset, no attempt to change the GPU frequency
+is made if the \-\-gpu\-freq option has not been set.
 After the job is completed, the frequencies of all affected GPUs will be reset
 to the highest possible values.
 In some cases, system power caps may override the requested values.
