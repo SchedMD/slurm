@@ -3538,17 +3538,6 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		gres_ns->topo_gres_cnt_avail =
 			xrealloc(gres_ns->topo_gres_cnt_avail,
 				 slurmd_conf_tot.topo_cnt * sizeof(uint64_t));
-		for (i = 0; i < gres_ns->topo_cnt; i++) {
-			if (gres_ns->topo_gres_bitmap) {
-				FREE_NULL_BITMAP(gres_ns->
-						 topo_gres_bitmap[i]);
-			}
-			if (gres_ns->topo_core_bitmap) {
-				FREE_NULL_BITMAP(gres_ns->
-						 topo_core_bitmap[i]);
-			}
-			xfree(gres_ns->topo_type_name[i]);
-		}
 		gres_ns->topo_gres_bitmap =
 			xrealloc(gres_ns->topo_gres_bitmap,
 				 slurmd_conf_tot.topo_cnt *

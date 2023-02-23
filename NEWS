@@ -61,6 +61,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.39 - correct OpenAPI schema for job update requests.
  -- openapi/v0.0.39 - prevent assertion on jobs endpoint by altering how the
     "memory_per_cpu" and "memory_per_node" fields are managed.
+ -- Fix regression in 23.02.0rc1 which caused slurmctld to segfault when
+    gres is added or removed in the configuration.
 
 * Changes in Slurm 23.02.0rc1
 =============================
