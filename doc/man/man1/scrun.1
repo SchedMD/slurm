@@ -639,6 +639,397 @@ Log format type during create operation.
 
 .SH "JOB OUTPUT ENVIRONMENT VARIABLES"
 
+.SH "SCRUN.LUA"
+.LP
+/etc/slurm/\fBscrun.lua\fR must be present on any node
+where \fBscrun\fR will be invoked. \fBscrun.lua\fR must be a compliant
+\fBlua\fR(1) script.
+
+.SS "Required functions"
+The following functions must be defined.
+
+.TP
+\(bu function \fBslurm_scrun_stage_in\fR(\fBid\fR, \fBbundle\fR, \fBspool_dir\fR, \fBconfig_file\fR, \fBjob_id\fR, \fBuser_id\fR, \fBgroup_id\fR, \fBjob_env\fR)
+Called right after job allocation to stage container into job node(s). Must
+return \fISLURM.success\fR or job will be cancelled. It is required that
+function will prepare the container for execution on job node(s) as required to
+run as configured in \fBoci.conf\fR(1). The function may block as long as
+required until container has been fully prepared (up to the job's max wall
+time).
+.RS 4
+.TP
+\fBid\fR
+Container ID
+.TP
+\fBbundle\fR
+OCI bundle path
+.TP
+\fBspool_dir\fR
+Temporary working directory for container
+.TP
+\fBconfig_file\fR
+Path to config.json for container
+.TP
+\fBjob_id\fR
+\fIjobid\fR of job allocation
+.TP
+\fBuser_id\fR
+Resolved numeric user id of job allocation. It is generally expected that the
+lua script will be executed inside of a user namespace running under the
+\fIroot(0)\fR user.
+.TP
+\fBgroup_id\fR
+Resolved numeric group id of job allocation. It is generally expected that the
+lua script will be executed inside of a user namespace running under the
+\fIroot(0)\fR group.
+.TP
+\fBjob_env\fR
+Table with each entry of Key=Value or Value of each environment variable of the
+job.
+.IP
+.RE
+
+.TP
+\(bu function \fBslurm_scrun_stage_out\fR(\fBid\fR, \fBbundle\fR, \fBorig_bundle\fR, \fBroot_path\fR, \fBorig_root_path\fR, \fBspool_dir\fR, \fBconfig_file\fR, \fBjobid\fR, \fBuser_id\fR, \fBgroup_id\fR)
+Called right after container step completes to stage out files from job nodes.
+Must return \fISLURM.success\fR or job will be cancelled. It is required that
+function will pull back any changes and cleanup the container on job node(s).
+The function may block as long as required until container has been fully
+prepared (up to the job's max wall time).
+
+.RS 4
+.TP
+\fBid\fR
+Container ID
+.TP
+\fBbundle\fR
+OCI bundle path
+.TP
+\fBorig_bundle\fR
+Originally submitted OCI bundle path before modification by
+\fBset_bundle_path\fR().
+.TP
+\fBroot_path\fR
+Path to directory root of container contents.
+.TP
+\fBorig_root_path\fR
+Original path to directory root of container contents before modification by
+\fBset_root_path\fR().
+.TP
+\fBspool_dir\fR
+Temporary working directory for container
+.TP
+\fBconfig_file\fR
+Path to config.json for container
+.TP
+\fBjob_id\fR
+\fIjobid\fR of job allocation
+.TP
+\fBuser_id\fR
+Resolved numeric user id of job allocation. It is generally expected that the
+lua script will be executed inside of a user namespace running under the
+\fIroot(0)\fR user.
+.TP
+\fBgroup_id\fR
+Resolved numeric group id of job allocation. It is generally expected that the
+lua script will be executed inside of a user namespace running under the
+\fIroot(0)\fR group.
+.RE
+
+.SS "Provided functions"
+The following functions are provided for any Lua function to call as needed.
+
+.TP
+\(bu \fBslurm.set_bundle_path\fR(\fIPATH\fR)
+Called to notify \fBscrun\fR to use \fIPATH\fR as new OCI container bundle
+path. Depending on the filesystem layout, cloning the container bundle may be
+required to allow execution on job nodes.
+
+.TP
+\(bu \fBslurm.set_root_path\fR(\fIPATH\fR)
+Called to notify \fBscrun\fR to use \fIPATH\fR as new container root filesystem
+path. Depending on the filesystem layout, cloning the container bundle may be
+required to allow execution on job nodes. Script must also update #/root/path
+in config.json when changing root path.
+
+.TP
+\(bu \fISTATUS\fR,\fIOUTPUT\fR = \fBslurm.remote_command\fR(\fISCRIPT\fR)
+Run \fISCRIPT\fR in new job step on all job nodes. Returns numeric job status
+as \fISTATUS\fR and job stdio as \fIOUTPUT\fR. Blocks until \fISCRIPT\fR exits.
+
+.TP
+\(bu \fISTATUS\fR,\fIOUTPUT\fR = \fBslurm.allocator_command\fR(\fISCRIPT\fR)
+Run \fISCRIPT\fR as forked child process of \fBscrun\fR. Returns numeric job status
+as \fISTATUS\fR and job stdio as \fIOUTPUT\fR. Blocks until \fISCRIPT\fR exits.
+
+.TP
+\(bu \fBslurm.log\fR(\fIMSG\fR, \fILEVEL\fR)
+Log \fIMSG\fR at log \fILEVEL\fR. Valid range of values for \fILEVEL\fR is [0,
+4].
+
+.TP
+\(bu \fBslurm.error\fR(\fIMSG\fR)
+Log error \fIMSG\fR.
+
+.TP
+\(bu \fBslurm.log_error\fR(\fIMSG\fR)
+Log error \fIMSG\fR.
+
+.TP
+\(bu \fBslurm.log_info\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level INFO.
+
+.TP
+\(bu \fBslurm.log_verbose\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level VERBOSE.
+
+.TP
+\(bu \fBslurm.log_verbose\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level VERBOSE.
+
+.TP
+\(bu \fBslurm.log_debug\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level DEBUG.
+
+.TP
+\(bu \fBslurm.log_debug2\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level DEBUG2.
+
+.TP
+\(bu \fBslurm.log_debug3\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level DEBUG3.
+
+.TP
+\(bu \fBslurm.log_debug4\fR(\fIMSG\fR)
+Log \fIMSG\fR at log level DEBUG4.
+
+.TP
+\(bu \fIMINUTES\fR = \fBslurm.time_str2mins\fR(\fITIME_STRING\fR)
+Parse \fITIME_STRING\fR into number of minutes as \fIMINUTES\fR. Valid formats:
+.RS 8
+.TP
+\(bu days-[hours[:minutes[:seconds]]]
+.TP
+\(bu hours:minutes:seconds
+.TP
+\(bu minutes[:seconds]
+.TP
+\(bu -1
+.TP
+\(bu INFINITE
+.TP
+\(bu UNLIMITED
+.RE
+
+.SS Example \fBscrun.lua\fR scripts
+
+.TP
+Minimal required for \fBscrun\fR operation:
+.nf
+function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_id, group_id, job_env)
+	return slurm.SUCCESS
+end
+
+function slurm_scrun_stage_out(id, bundle, orig_bundle, root_path, orig_root_path, spool_dir, config_file, jobid, user_id, group_id)
+	return slurm.SUCCESS
+end
+
+return slurm.SUCCESS
+.fi
+
+.TP
+Full Container staging using rsync:
+This is full example that will stage container as given by \fBdocker\fR(1) or
+\fBpodman\fR(1). Container's config.json is modified to remove unwanted
+functions that may cause container run to under \fBcrun\fR(1) or \fBcrun\fR(1).
+Script uses rsync to move container to an shared /home filesystem.
+
+.nf
+local json = require 'json'
+local open = io.open
+
+local function read_file(path)
+	local file = open(path, "rb")
+	if not file then return nil end
+	local content = file:read "*all"
+	file:close()
+	return content
+end
+
+local function write_file(path, contents)
+	local file = open(path, "wb")
+	if not file then return nil end
+	file:write(contents)
+	file:close()
+	return
+end
+
+function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_id, group_id, job_env)
+	slurm.log_debug(string.format("stage_in(%s, %s, %s, %s, %d, %d, %d)",
+		       id, bundle, spool_dir, config_file, job_id, user_id, group_id))
+
+	local status, output, user, rc
+	local config = json.decode(read_file(config_file))
+	local src_rootfs = config["root"]["path"]
+	rc, user = slurm.allocator_command(string.format("id -un %d", user_id))
+	user = string.gsub(user, "%s+", "")
+	local root = "/home/"..user.."/containers/"
+	local dst_bundle = root.."/"..id.."/"
+	local dst_config = root.."/"..id.."/config.json"
+	local dst_rootfs = root.."/"..id.."/rootfs/"
+
+	if string.sub(src_rootfs, 1, 1) ~= "/"
+	then
+		-- always use absolute path
+		src_rootfs = string.format("%s/%s", bundle, src_rootfs)
+	end
+
+	status, output = slurm.allocator_command("mkdir -p "..dst_rootfs)
+	if (status ~= 0)
+	then
+		slurm.log_info(string.format("mkdir(%s) failed %u: %s",
+			       dst_rootfs, status, output))
+		return slurm.ERROR
+	end
+
+	status, output = slurm.allocator_command(string.format("/usr/bin/env rsync --exclude sys --exclude proc --numeric-ids --delete-after --ignore-errors --stats -a -- %s/ %s/", src_rootfs, dst_rootfs))
+	if (status ~= 0)
+	then
+		-- rsync can fail due to permissions which may not matter
+		slurm.log_info(string.format("WARNING: rsync failed: %s", output))
+	end
+
+	slurm.set_bundle_path(dst_bundle)
+	slurm.set_root_path(dst_rootfs)
+
+	config["root"]["path"] = dst_rootfs
+
+	-- Always force user namespace support in container or runc will reject
+	if ((config["process"] ~= nil) and (config["process"]["user"] ~= nil))
+	then
+		-- purge additionalGids as they are not supported in rootless
+		config["process"]["user"]["additionalGids"] = nil
+	end
+
+	if (config["linux"] ~= nil)
+	then
+		-- force user namespace to always be defined for rootless mode
+		local found = false
+		if (config["linux"]["namespaces"] == nil)
+		then
+			config["linux"]["namespaces"] = {}
+		else
+			for _, namespace in ipairs(config["linux"]["namespaces"]) do
+				if (namespace["type"] == "user")
+				then
+					found=true
+					break
+				end
+			end
+		end
+		if (found == false)
+		then
+			table.insert(config["linux"]["namespaces"], {type= "user"})
+		end
+
+		-- clear all attempts to map uid/gids
+		config["linux"]["uidMappings"] = nil
+		config["linux"]["gidMappings"] = nil
+
+		-- disable trying to use a specific cgroup
+		config["linux"]["cgroupsPath"] = nil
+	end
+
+	if (config["mounts"] ~= nil)
+	then
+		-- Find and remove any user/group settings in mounts
+		for _, mount in ipairs(config["mounts"]) do
+			local opts = {}
+
+			if (mount["options"] ~= nil)
+			then
+				for _, opt in ipairs(mount["options"]) do
+					if ((string.sub(opt, 1, 4) ~= "gid=") and (string.sub(opt, 1, 4) ~= "uid="))
+					then
+						table.insert(opts, opt)
+					end
+				end
+			end
+
+			mount["options"] = opts
+		end
+
+		-- Remove all bind mounts by copying files into rootfs
+		local mounts = {}
+		for i, mount in ipairs(config["mounts"]) do
+			if ((mount["type"] ~= nil) and (mount["type"] == "bind") and (string.sub(mount["source"], 1, 4) ~= "/sys") and (string.sub(mount["source"], 1, 5) ~= "/proc"))
+			then
+				status, output = slurm.allocator_command(string.format("/usr/bin/env rsync --numeric-ids --ignore-errors --stats -a -- %s %s", mount["source"], dst_rootfs..mount["destination"]))
+				if (status ~= 0)
+				then
+					-- rsync can fail due to permissions which may not matter
+					slurm.log_info("rsync failed")
+				end
+			else
+				table.insert(mounts, mount)
+			end
+		end
+		config["mounts"] = mounts
+	end
+
+	-- Merge in Job environment into container
+	if (config["process"]["env"] == nil)
+	then
+		config["process"]["env"] = {}
+	end
+	for _, env in ipairs(job_env) do
+		table.insert(config["process"]["env"], env)
+	end
+
+	-- Remove all prestart hooks to squash any networking attempts
+	if ((config["hooks"] ~= nil) and (config["hooks"]["prestart"] ~= nil))
+	then
+		config["hooks"]["prestart"] = nil
+	end
+
+	-- Remove all rlimits
+	if ((config["process"] ~= nil) and (config["process"]["rlimits"] ~= nil))
+	then
+		config["process"]["rlimits"] = nil
+	end
+
+	write_file(dst_config, json.encode(config))
+	slurm.log_info("created: "..dst_config)
+
+	return slurm.SUCCESS
+end
+
+function slurm_scrun_stage_out(id, bundle, orig_bundle, root_path, orig_root_path, spool_dir, config_file, jobid, user_id, group_id)
+	slurm.log_debug(string.format("stage_out(%s, %s, %s, %s, %s, %s, %s, %d, %d, %d)",
+		       id, bundle, orig_bundle, root_path, orig_root_path, spool_dir, config_file, jobid, user_id, group_id))
+
+	if (bundle == orig_bundle)
+	then
+		slurm.log_info(string.format("skipping stage_out as bundle=orig_bundle=%s", bundle))
+		return slurm.SUCCESS
+	end
+
+	status, output = slurm.allocator_command(string.format("/usr/bin/env rsync --numeric-ids --delete-after --ignore-errors --stats -a -- %s/ %s/", root_path, orig_root_path))
+	if (status ~= 0)
+	then
+		-- rsync can fail due to permissions which may not matter
+		slurm.log_info("rsync failed")
+	end
+
+	return slurm.SUCCESS
+end
+
+slurm.log_info("initialized scrun.lua")
+
+return slurm.SUCCESS
+.fi
+
+
 .SH "SIGNALS"
 .LP
 When \fBscrun\fR receives SIGINT, it will attempt to gracefully cancel any
