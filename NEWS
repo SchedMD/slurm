@@ -56,6 +56,7 @@ documents those changes that are of interest to users and administrators.
  -- job_container/tmpfs - ensure that step_ns_fd is closed before cleaning up
     the namespace.
  -- Fix assert when suspending or requeueing array tasks with scontrol.
+ -- Fix federated job submissions.
 
 * Changes in Slurm 23.02.0rc1
 =============================

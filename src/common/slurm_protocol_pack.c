@@ -6361,6 +6361,7 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, buf_t *buffer, uint16_t protocol_version)
 		pack16(sib_msg_ptr->data_type, buffer);
 		pack16(sib_msg_ptr->data_version, buffer);
 		pack64(sib_msg_ptr->fed_siblings, buffer);
+		pack32(sib_msg_ptr->group_id, buffer);
 		pack32(sib_msg_ptr->job_id, buffer);
 		pack32(sib_msg_ptr->job_state, buffer);
 		pack32(sib_msg_ptr->return_code, buffer);
@@ -6369,6 +6370,7 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, buf_t *buffer, uint16_t protocol_version)
 		pack32(sib_msg_ptr->req_uid, buffer);
 		pack16(sib_msg_ptr->sib_msg_type, buffer);
 		packstr(sib_msg_ptr->submit_host, buffer);
+		pack32(sib_msg_ptr->user_id, buffer);
 
 		/* add already packed data_buffer to buffer */
 		if (sib_msg_ptr->data_buffer &&
@@ -6444,6 +6446,7 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, buf_t *buffer,
 		safe_unpack16(&sib_msg_ptr->data_type, buffer);
 		safe_unpack16(&sib_msg_ptr->data_version, buffer);
 		safe_unpack64(&sib_msg_ptr->fed_siblings, buffer);
+		safe_unpack32(&sib_msg_ptr->group_id, buffer);
 		safe_unpack32(&sib_msg_ptr->job_id, buffer);
 		safe_unpack32(&sib_msg_ptr->job_state, buffer);
 		safe_unpack32(&sib_msg_ptr->return_code, buffer);
@@ -6452,6 +6455,7 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, buf_t *buffer,
 		safe_unpack32(&sib_msg_ptr->req_uid, buffer);
 		safe_unpack16(&sib_msg_ptr->sib_msg_type, buffer);
 		safe_unpackstr(&sib_msg_ptr->submit_host, buffer);
+		safe_unpack32(&sib_msg_ptr->user_id, buffer);
 
 		safe_unpack16(&tmp_uint16, buffer);
 		if (tmp_uint16) {

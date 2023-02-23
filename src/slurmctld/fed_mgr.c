@@ -3739,9 +3739,11 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	sib_msg.data_type    = msg->msg_type;
 	sib_msg.data_version = msg->protocol_version;
 	sib_msg.fed_siblings = job_desc->fed_siblings_viable;
+	sib_msg.group_id = job_desc->group_id;
 	sib_msg.job_id       = job_desc->job_id;
 	sib_msg.resp_host    = job_desc->resp_host;
 	sib_msg.submit_host  = job_desc->alloc_node;
+	sib_msg.user_id = job_desc->user_id;
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_SIB_MSG;
@@ -5783,6 +5785,19 @@ static int _q_sib_job_submission(slurm_msg_t *msg, bool interactive_job)
 	job_desc->job_id              = sib_msg->job_id;
 	job_desc->fed_siblings_viable = sib_msg->fed_siblings;
 	job_desc->alloc_node          = sib_msg->submit_host;
+	/*
+	 * Prior to 23.02, the uid and gid were in the client sent
+	 * job_desc_msg_t. In 23.02, the client sends SLURM_AUTH_NOBODY and the
+	 * origin cluster will set user_id and group_id from the auth. So the
+	 * origin cluster has to send them to the siblings since the
+	 * job_desc from the client isn't repacked when being sent to the
+	 * siblings.
+	 */
+	if (msg->protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		job_desc->user_id = sib_msg->user_id;
+		job_desc->group_id = sib_msg->group_id;
+	}
+
 	/*
 	 * If the job has a dependency, it won't be submitted to siblings
 	 * or it will be revoked from siblings if it became dependent.
