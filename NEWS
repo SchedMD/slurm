@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
  -- switch/hpe_slingshot - Only output tcs once in SLINGSHOT_TCS env.
  -- switch/hpe_slingshot - Fix updating LEs and ACs limits.
  -- switch/hpe_slingshot - Use correct Max for EQs and CTs.
+ -- switch/hpe_slingshot - support configuring network options per-job.
 
 * Changes in Slurm 23.02.0
 ==========================

@@ -2094,6 +2094,14 @@ in a comma-separated list.
 
 .RS 4
 .TP
+\fBtcs\fR=<\fIclass1\fR>[:<\fIclass2\fR>]...
+Set of traffic classes to configure for applications.
+Supported traffic classes are DEDICATED_ACCESS, LOW_LATENCY, BULK_DATA, and
+BEST_EFFORT.
+This option applies to the job allocation, but not to step allocations.
+.IP
+
+.TP
 \fBno_vni\fR
 Don't allocate any VNIs for this job (even if multi-node).
 .IP

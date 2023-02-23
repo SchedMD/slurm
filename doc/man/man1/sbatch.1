@@ -1672,6 +1672,123 @@ In all cases the job allocation request \fBmust specify the
 Also with any of these options steps are not allowed to share blades,
 so resources would remain idle inside an allocation if the step
 running on a blade does not take up all the nodes on the blade.
+
+The \fBnetwork\fR option is also available on systems with HPE Slingshot
+networks. It can be used to request a job VNI (to be used for communication
+between job steps in a job). It also can be used to override the default
+network resources allocated for the job step. Multiple values may be specified
+in a comma-separated list.
+.IP
+.RS
+.TP 6
+\fBtcs\fR=<\fIclass1\fR>[:<\fIclass2\fR>]...
+Set of traffic classes to configure for applications.
+Supported traffic classes are DEDICATED_ACCESS, LOW_LATENCY, BULK_DATA, and
+BEST_EFFORT.
+.IP
+
+.TP
+\fBno_vni\fR
+Don't allocate any VNIs for this job (even if multi-node).
+.IP
+
+.TP
+\fBjob_vni\fR
+Allocate a job VNI for this job.
+.IP
+
+.TP
+\fBsingle_node_vni\fR
+Allocate a job VNI for this job, even if it is a single-node job.
+.IP
+
+.TP
+\fBadjust_limits\fR
+If set, slurmd will set an upper bound on network resource reservations
+by taking the per-NIC maximum resource quantity and subtracting the
+reserved or used values (whichever is higher) for any system network services;
+this is the default.
+.IP
+
+.TP
+\fBno_adjust_limits\fR
+If set, slurmd will calculate network resource reservations
+based only upon the per-resource configuration default and number of tasks
+in the application; it will not set an upper bound on those reservation
+requests based on resource usage of already-existing system network services.
+Setting this will mean more application launches could fail based
+on network resource exhaustion, but if the application
+absolutely needs a certain amount of resources to function, this option
+will ensure that.
+.IP
+
+.TP
+\fBdef_<rsrc>\fR=<\fIval\fR>
+Per-CPU reserved allocation for this resource.
+.IP
+
+.TP
+\fBres_<rsrc>\fR=<\fIval\fR>
+Per-node reserved allocation for this resource.
+If set, overrides the per-CPU allocation.
+.IP
+
+.TP
+\fBmax_<rsrc>\fR=<\fIval\fR>
+Maximum per-node limit for this resource.
+.IP
+
+.TP
+\fBdepth\fR=<\fIdepth\fR>
+Multiplier for per-CPU resource allocation.
+Default is the number of reserved CPUs on the node.
+.RE
+.IP
+
+The resources that may be requested are:
+.IP
+.RS
+.TP 6
+\fBtxqs\fR
+Transmit command queues. The default is 2 per-CPU, maximum 1024 per-node.
+.IP
+
+.TP
+\fBtgqs\fR
+Target command queues. The default is 1 per-CPU, maximum 512 per-node.
+.IP
+
+.TP
+\fBeqs\fR
+Event queues. The default is 2 per-CPU, maximum 2047 per-node.
+.IP
+
+.TP
+\fBcts\fR
+Counters. The default is 1 per-CPU, maximum 2047 per-node.
+.IP
+
+.TP
+\fBtles\fR
+Trigger list entries. The default is 1 per-CPU, maximum 2048 per-node.
+.IP
+
+.TP
+\fBptes\fR
+Portable table entries. The default is 6 per-CPU, maximum 2048 per-node.
+.IP
+
+.TP
+\fBles\fR
+List entries. The default is 16 per-CPU, maximum 16384 per-node.
+.IP
+
+.TP
+\fBacs\fR
+Addressing contexts. The default is 4 per-CPU, maximum 1022 per-node.
+.RE
+.IP
+
 .IP
 
 .TP

@@ -368,7 +368,8 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	/* Do VNI allocation/traffic classes/network limits */
 	if (!slingshot_setup_job_step(job, step_layout->node_cnt,
 				      step_ptr->step_id.job_id,
-				      step_ptr->network))
+				      step_ptr->network,
+				      step_ptr->job_ptr->network))
 		return SLURM_ERROR;
 
 	/*

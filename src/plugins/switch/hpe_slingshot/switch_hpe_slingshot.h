@@ -261,7 +261,8 @@ extern void remove_slingshot_apinfo(const stepd_step_rec_t *step);
 extern void slingshot_free_config(void);
 extern bool slingshot_setup_config(const char *switch_params);
 extern bool slingshot_setup_job_step(slingshot_jobinfo_t *job, int node_cnt,
-	uint32_t job_id, const char *network_params);
+	uint32_t job_id, const char *network_params,
+	const char *job_network_params);
 extern void slingshot_free_job_step(slingshot_jobinfo_t *job);
 extern void slingshot_free_job(uint32_t job_id);
 /* instant_on.c */
