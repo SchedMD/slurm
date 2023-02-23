@@ -639,6 +639,268 @@ Log format type during create operation.
 
 .SH "JOB OUTPUT ENVIRONMENT VARIABLES"
 
+.TP
+\fBSLURM_*_HET_GROUP_#\fR
+For a heterogeneous job allocation, the environment variables are set separately
+for each component.
+.IP
+
+.TP
+\fBSLURM_CLUSTER_NAME\fR
+Name of the cluster on which the job is executing.
+.IP
+
+.TP
+\fBSLURM_CONTAINER\fR
+OCI Bundle for job.
+.IP
+
+.TP
+\fBSLURM_CONTAINER_ID\fR
+OCI id for job.
+.IP
+
+.TP
+\fBSLURM_CPUS_PER_GPU\fR
+Number of CPUs requested per allocated GPU.
+.IP
+
+.TP
+\fBSLURM_CPUS_PER_TASK\fR
+Number of CPUs requested per task.
+.IP
+
+.TP
+\fBSLURM_DIST_PLANESIZE\fR
+Plane distribution size. Only set for plane distributions.
+.IP
+
+.TP
+\fBSLURM_DISTRIBUTION\fR
+Distribution type for the allocated jobs.
+.IP
+
+.TP
+\fBSLURM_GPU_BIND\fR
+Requested binding of tasks to GPU.
+.IP
+
+.TP
+\fBSLURM_GPU_FREQ\fR
+Requested GPU frequency.
+.IP
+
+.TP
+\fBSLURM_GPUS\fR
+Number of GPUs requested.
+.IP
+
+.TP
+\fBSLURM_GPUS_PER_NODE\fR
+Requested GPU count per allocated node.
+.IP
+
+.TP
+\fBSLURM_GPUS_PER_SOCKET\fR
+Requested GPU count per allocated socket.
+.IP
+
+.TP
+\fBSLURM_GPUS_PER_TASK\fR
+Requested GPU count per allocated task.
+.IP
+
+.TP
+\fBSLURM_HET_SIZE\fR
+Set to count of components in heterogeneous job.
+.IP
+
+.TP
+\fBSLURM_JOB_ACCOUNT\fR
+Account name associated of the job allocation.
+.IP
+
+.TP
+\fBSLURM_JOB_CPUS_PER_NODE\fR
+Count of CPUs available to the job on the nodes in the allocation, using the
+format \fICPU_count\fR[(x\fInumber_of_nodes\fR)][,\fICPU_count\fR
+[(x\fInumber_of_nodes\fR)] ...].
+For example: SLURM_JOB_CPUS_PER_NODE='72(x2),36' indicates that on the
+first and second nodes (as listed by SLURM_JOB_NODELIST) the allocation
+has 72 CPUs, while the third node has 36 CPUs.
+\fBNOTE\fR: The \fBselect/linear\fR plugin allocates entire nodes to jobs, so
+the value indicates the total count of CPUs on allocated nodes. The
+\fBselect/cons_res\fR and \fBselect/cons_tres\fR plugins allocate individual
+CPUs to jobs, so this number indicates the number of CPUs allocated to the job.
+.IP
+
+.TP
+\fBSLURM_JOB_END_TIME\fR
+The UNIX timestamp for a job's projected end time.
+.IP
+
+.TP
+\fBSLURM_JOB_GPUS\fR
+The global GPU IDs of the GPUs allocated to this job. The GPU IDs are not
+relative to any device cgroup, even if devices are constrained with task/cgroup.
+Only set in batch and interactive jobs.
+.IP
+
+.TP
+\fBSLURM_JOB_ID\fR
+The ID of the job allocation.
+.IP
+
+.TP
+\fBSLURM_JOB_NODELIST\fR
+List of nodes allocated to the job.
+.IP
+
+.TP
+\fBSLURM_JOB_NUM_NODES\fR
+Total number of nodes in the job allocation.
+.IP
+
+.TP
+\fBSLURM_JOB_PARTITION\fR
+Name of the partition in which the job is running.
+.IP
+
+.TP
+\fBSLURM_JOB_QOS\fR
+Quality Of Service (QOS) of the job allocation.
+.IP
+
+.TP
+\fBSLURM_JOB_RESERVATION\fR
+Advanced reservation containing the job allocation, if any.
+.IP
+
+.TP
+\fBSLURM_JOB_START_TIME\fR
+UNIX timestamp for a job's start time.
+.IP
+
+.TP
+\fBSLURM_MEM_BIND\fR
+Bind tasks to memory.
+.IP
+
+.TP
+\fBSLURM_MEM_BIND_LIST\fR
+Set to bit mask used for memory binding.
+.IP
+
+.TP
+\fBSLURM_MEM_BIND_PREFER\fR
+Set to "prefer" if the \fBSLURM_MEM_BIND\fR option includes the prefer option.
+.IP
+
+.TP
+\fBSLURM_MEM_BIND_SORT\fR
+Sort free cache pages (run zonesort on Intel KNL nodes)
+.IP
+
+.TP
+\fBSLURM_MEM_BIND_TYPE\fR
+Set to the memory binding type specified with the \fBSLURM_MEM_BIND\fR option.
+Possible values are "none", "rank", "map_map", "mask_mem" and "local".
+.IP
+
+.TP
+\fBSLURM_MEM_BIND_VERBOSE\fR
+Set to "verbose" if the \fBSLURM_MEM_BIND\fR option includes the verbose option.
+Set to "quiet" otherwise.
+.IP
+
+.TP
+\fBSLURM_MEM_PER_CPU\fR
+Minimum memory required per usable allocated CPU.
+.IP
+
+.TP
+\fBSLURM_MEM_PER_GPU\fR
+Requested memory per allocated GPU.
+.IP
+
+.TP
+\fBSLURM_MEM_PER_NODE\fR
+Specify the real memory required per node.
+.IP
+
+.TP
+\fBSLURM_NODE_ALIASES\fR
+Sets of node name, communication address and hostname for nodes allocated to
+the job from the cloud. Each element in the set if colon separated and each
+set is comma separated. For example:
+SLURM_NODE_ALIASES=ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
+.IP
+
+.TP
+\fBSLURM_NTASKS\fR
+Specify the number of tasks to run.
+.IP
+
+.TP
+\fBSLURM_NTASKS_PER_CORE\fR
+Request the maximum \fIntasks\fR be invoked on each core.
+.IP
+
+.TP
+\fBSLURM_NTASKS_PER_GPU\fR
+Request that there are \fIntasks\fR tasks invoked for every GPU.
+.IP
+
+.TP
+\fBSLURM_NTASKS_PER_NODE\fR
+Request that \fIntasks\fR be invoked on each node.
+.IP
+
+.TP
+\fBSLURM_NTASKS_PER_SOCKET\fR
+Request the maximum \fIntasks\fR be invoked on each socket.
+.IP
+
+.TP
+\fBSLURM_OVERCOMMIT\fR
+Overcommit resources.
+.IP
+
+.TP
+\fBSLURM_PROFILE\fR
+Enables detailed data collection by the acct_gather_profile plugin.
+.IP
+
+.TP
+\fBSLURM_SHARDS_ON_NODE\fR
+Number of GPU Shards available to the step on this node.
+.IP
+
+.TP
+\fBSLURM_SUBMIT_HOST\fR
+The hostname of the computer from which \fBscrun\fR was invoked.
+.IP
+
+.TP
+\fBSLURM_TASKS_PER_NODE\fR
+Number of tasks to be initiated on each node. Values are
+comma separated and in the same order as SLURM_JOB_NODELIST.
+If two or more consecutive nodes are to have the same task
+count, that count is followed by "(x#)" where "#" is the
+repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
+indicates that the first three nodes will each execute two
+tasks and the fourth node will execute one task.
+.IP
+
+.TP
+\fBSLURM_THREADS_PER_CORE\fR
+This is only set if \fB\-\-threads\-per\-core\fR or
+\fBSCRUN_THREADS_PER_CORE\fR were specified. The value will be set to the
+value specified by \fB\-\-threads\-per\-core\fR or
+\fBSCRUN_THREADS_PER_CORE\fR. This is used by subsequent srun calls within the
+job allocation.
+.IP
+
 .SH "SCRUN.LUA"
 .LP
 /etc/slurm/\fBscrun.lua\fR must be present on any node
