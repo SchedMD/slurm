@@ -6448,12 +6448,10 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, buf_t *buffer,
 		safe_unpack32(&sib_msg_ptr->job_state, buffer);
 		safe_unpack32(&sib_msg_ptr->return_code, buffer);
 		safe_unpack_time(&sib_msg_ptr->start_time, buffer);
-		safe_unpackstr_xmalloc(&sib_msg_ptr->resp_host, &tmp_uint32,
-				       buffer);
+		safe_unpackstr(&sib_msg_ptr->resp_host, buffer);
 		safe_unpack32(&sib_msg_ptr->req_uid, buffer);
 		safe_unpack16(&sib_msg_ptr->sib_msg_type, buffer);
-		safe_unpackstr_xmalloc(&sib_msg_ptr->submit_host, &tmp_uint32,
-				       buffer);
+		safe_unpackstr(&sib_msg_ptr->submit_host, buffer);
 
 		safe_unpack16(&tmp_uint16, buffer);
 		if (tmp_uint16) {
