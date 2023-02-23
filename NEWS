@@ -67,6 +67,7 @@ documents those changes that are of interest to users and administrators.
     the GPU frequency will be made if --gpu-freq is not set for the step.
  -- Fixed GpuFreqDef option. When set in slurm.conf, it will be used if
     --gpu-freq was not explicitly set by the job step.
+ -- Update database index for usage tables used for archive and purge.
 
 * Changes in Slurm 23.02.0rc1
 =============================
