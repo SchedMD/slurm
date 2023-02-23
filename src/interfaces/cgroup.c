@@ -171,6 +171,7 @@ static void _init_slurm_cgroup_conf(void)
 	slurm_cgroup_conf.memory_swappiness = NO_VAL64;
 	slurm_cgroup_conf.min_ram_space = XCGROUP_DEFAULT_MIN_RAM;
 	slurm_cgroup_conf.root_owned_cgroups = true;
+	slurm_cgroup_conf.signal_children_processes = false;
 }
 
 static void _pack_cgroup_conf(buf_t *buffer)
@@ -211,6 +212,7 @@ static void _pack_cgroup_conf(buf_t *buffer)
 
 	packbool(slurm_cgroup_conf.root_owned_cgroups, buffer);
 	packbool(slurm_cgroup_conf.enable_controllers, buffer);
+	packbool(slurm_cgroup_conf.signal_children_processes, buffer);
 }
 
 static int _unpack_cgroup_conf(buf_t *buffer)
@@ -256,6 +258,8 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 
 	safe_unpackbool(&slurm_cgroup_conf.root_owned_cgroups, buffer);
 	safe_unpackbool(&slurm_cgroup_conf.enable_controllers, buffer);
+	safe_unpackbool(&slurm_cgroup_conf.signal_children_processes, buffer);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -292,6 +296,7 @@ static void _read_slurm_cgroup_conf(void)
 		{"IgnoreSystemdOnFailure", S_P_BOOLEAN},
 		{"RootOwnedCgroups", S_P_BOOLEAN},
 		{"EnableControllers", S_P_BOOLEAN},
+		{"SignalChildrenProcesses", S_P_BOOLEAN},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL, *tmp_str;
@@ -398,6 +403,9 @@ static void _read_slurm_cgroup_conf(void)
 
 		(void) s_p_get_boolean(&slurm_cgroup_conf.enable_controllers,
 				       "EnableControllers", tbl);
+		(void) s_p_get_boolean(
+			&slurm_cgroup_conf.signal_children_processes,
+			"SignalChildrenProcesses", tbl);
 
 		s_p_hashtbl_destroy(tbl);
 	}
