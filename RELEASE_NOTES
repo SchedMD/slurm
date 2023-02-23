@@ -33,6 +33,9 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Added max_submit_line_size to SchedulerParameters.
  -- cgroup.conf - Removed deprecated parameters AllowedKmemSpace,
     ConstrainKmemSpace, MaxKmemPercent, and MinKmemSpace.
+ -- proctrack/cgroup - Add "SignalChildrenProcesses=<yes|no>" option to
+    cgroup.conf. This allows signals for cancelling, suspending, resuming, etc.
+    to be sent to children processes in a step/job rather than just the parent.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

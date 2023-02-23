@@ -18,6 +18,9 @@ documents those changes that are of interest to users and administrators.
  -- Change TreeWidth default from 50 to 16.
  -- cgroup.conf - Removed deprecated parameters AllowedKmemSpace,
     ConstrainKmemSpace, MaxKmemPercent, and MinKmemSpace.
+ -- proctrack/cgroup - Add "SignalChildrenProcesses=<yes|no>" option to
+    cgroup.conf. This allows signals for cancelling, suspending, resuming, etc.
+    to be sent to children processes in a step/job rather than just the parent.
 
 * Changes in Slurm 23.02.3
 ==========================
