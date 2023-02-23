@@ -200,6 +200,19 @@ accidentally creating a memory cgroup with such a low limit that slurmstepd
 is immediately killed due to lack of RAM. The default limit is 30M.
 .IP
 
+.SH "PROCTRACK/CGROUP PLUGIN"
+
+.LP
+The following cgroup.conf parameters are defined to control the behavior
+of this particular plugin:
+
+.TP
+\fBSignalChildrenProcesses\fR=<yes|no>
+If configured to "yes", then send signals (for cancelling, suspending, resuming,
+etc.) to all children processes in a job/step. Otherwise, only send signals to
+the parent process of a job/step. The default setting is "no".
+.IP
+
 .SH "DISTRIBUTION\-SPECIFIC NOTES"
 
 .LP
