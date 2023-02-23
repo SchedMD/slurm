@@ -105,6 +105,8 @@ HIGHLIGHTS
  -- System node down reasons are appended to existing reasons, separated by ':'.
  -- New command scrun has been added. scrun acts as an Open Container Initiative
     (OCI) runtime proxy to run containers seamlessly via Slurm.
+ -- Fixed GpuFreqDef option. When set in slurm.conf, it will be used if
+    --gpu-freq was not explicitly set by the job step.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

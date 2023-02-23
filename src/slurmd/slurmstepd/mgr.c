@@ -1848,13 +1848,20 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	 * config options). Make sure stepd is root. If not, emit error.
 	 * TODO: generic "settings" parameter rather than tres_freq
 	 */
-	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP)
-	    && step->tres_freq) {
-		if (getuid() == (uid_t) 0) {
+	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
+		/* Handle GpuFreqDef option */
+		if (!step->tres_freq && slurm_conf.gpu_freq_def) {
+			debug("Setting GPU to GpuFreqDef=%s",
+			      slurm_conf.gpu_freq_def);
+			xstrfmtcat(step->tres_freq, "gpu:%s",
+				   slurm_conf.gpu_freq_def);
+		}
+
+		if (step->tres_freq && (getuid() == (uid_t) 0)) {
 			gres_g_step_hardware_init(step->step_gres_list,
 						  step->nodeid,
 						  step->tres_freq);
-		} else {
+		} else if (step->tres_freq) {
 			error("%s: invalid permissions: cannot initialize GRES hardware unless Slurmd was started as root",
 			      __func__);
 		}

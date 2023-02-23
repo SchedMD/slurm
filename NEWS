@@ -65,6 +65,8 @@ documents those changes that are of interest to users and administrators.
     gres is added or removed in the configuration.
  -- Removed the default setting for GpuFreqDef. If unset, no attempt to change
     the GPU frequency will be made if --gpu-freq is not set for the step.
+ -- Fixed GpuFreqDef option. When set in slurm.conf, it will be used if
+    --gpu-freq was not explicitly set by the job step.
 
 * Changes in Slurm 23.02.0rc1
 =============================
