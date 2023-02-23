@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
     the namespace.
  -- Fix assert when suspending or requeueing array tasks with scontrol.
  -- Fix federated job submissions.
+ -- Fix sinfo returning non-zero exit code when querying specific clusters.
 
 * Changes in Slurm 23.02.0rc1
 =============================

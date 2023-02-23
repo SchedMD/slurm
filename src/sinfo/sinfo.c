@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 		if (!params.clusters) {
 			if (_get_info(false, params.fed, NULL, argc, argv))
 				rc = 1;
-		} else if (!_multi_cluster(params.clusters, argc, argv))
+		} else if (_multi_cluster(params.clusters, argc, argv))
 			rc = 1;
 		if (params.iterate) {
 			printf("\n");
