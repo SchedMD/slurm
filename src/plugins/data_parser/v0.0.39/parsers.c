@@ -3194,16 +3194,15 @@ static int DUMP_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
 				      data_t *dst, args_t *args)
 {
 	uint64_t *mem = obj;
+	uint64_t cpu_mem = NO_VAL64;
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if (*mem & MEM_PER_CPU)
-		data_set_int(dst, (*mem & ~MEM_PER_CPU));
-	else
-		data_set_int(dst, 0);
+		cpu_mem = *mem & ~MEM_PER_CPU;
 
-	return SLURM_SUCCESS;
+	return DUMP(UINT64_NO_VAL, cpu_mem, dst, args);
 }
 
 PARSE_DISABLED(JOB_MEM_PER_NODE)
@@ -3212,14 +3211,15 @@ static int DUMP_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
 				       data_t *dst, args_t *args)
 {
 	uint64_t *mem = obj;
+	uint64_t node_mem = NO_VAL64;
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	if (!(*mem & MEM_PER_CPU))
-		data_set_int(dst, *mem);
+		node_mem = *mem;
 
-	return SLURM_SUCCESS;
+	return DUMP(UINT64_NO_VAL, node_mem, dst, args);
 }
 
 PARSE_DISABLED(ALLOCATED_CORES)
@@ -6138,8 +6138,8 @@ static const parser_t parsers[] = {
 	addps(CORE_SPEC, uint16_t, NEED_NONE, INT32, NULL),
 	addps(THREAD_SPEC, uint16_t, NEED_NONE, INT32, NULL),
 	addps(NICE, uint32_t, NEED_NONE, INT32, NULL),
-	addps(JOB_MEM_PER_CPU, uint64_t, NEED_NONE, INT64, NULL),
-	addps(JOB_MEM_PER_NODE, uint64_t, NEED_NONE, INT64, NULL),
+	addpsp(JOB_MEM_PER_CPU, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
+	addpsp(JOB_MEM_PER_NODE, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
 	addps(ALLOCATED_CORES, uint32_t, NEED_NONE, INT32, NULL),
 	addps(ALLOCATED_CPUS, uint32_t, NEED_NONE, INT32, NULL),
 	addps(CONTROLLER_PING_MODE, int, NEED_NONE, STRING, NULL),

@@ -59,6 +59,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix federated job submissions.
  -- Fix sinfo returning non-zero exit code when querying specific clusters.
  -- openapi/v0.0.39 - correct OpenAPI schema for job update requests.
+ -- openapi/v0.0.39 - prevent assertion on jobs endpoint by altering how the
+    "memory_per_cpu" and "memory_per_node" fields are managed.
 
 * Changes in Slurm 23.02.0rc1
 =============================
