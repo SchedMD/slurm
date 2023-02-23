@@ -292,6 +292,192 @@ sbatch --wrap 'srun bash -c "--container $ABS_PATH_TO_BUNDLE cat /etc/*rel*"'
 </pre></li>
 </ul>
 
+<h2 id="scrun">Integration with Rootless Docker (Docker Engine v20.10+ & Slurm-23.02+)
+<a class="slurm_link" href="#docker-scrun"></a>
+</h2>
+<p>Slurm's <a href="scrun.html">scrun</a> can be directly integrated with <a
+href="https://docs.docker.com/engine/security/rootless/">Rootless Docker</a> to
+run containers as jobs. No special user permissions are required and <b>should
+not</b> be granted to use this functionality.</p>
+<h3>Prerequisites</h3>
+<ol>
+<li>Slurm must be fully configured and running on host running dockerd.</li>
+<li><a href="slurm.conf.html">slurm.conf</a> must be configured to use Munge
+authentication.<pre>AuthType=auth/munge</pre></li>
+<li><a href="scrun.html">scrun.lua</a> must be configured for site storage
+configuration.</li>
+</ol>
+<h3>Limitations</h3>
+<ol>
+<li>JWT authentication is not supported.</li>
+<li>Docker container building is not currently functional pending merge of
+<a href="https://github.com/moby/moby/pull/41442"> Docker pull request</a>.</li>
+<li>Docker does <b>not</b> expose configuration options to disable security
+options needed to run jobs. This requires that all calls to docker provide the
+following command line arguments.  This can be done via shell variable, an
+alias, wrapper function, or wrapper script:
+<pre>--security-opt label:disable --security-opt seccomp=unconfined --security-opt apparmor=unconfined --net=none</pre>
+Docker's builtin security functionality is not required (or wanted) for
+containers being run by Slurm.  Docker is only acting as a container image
+lifecycle manager. The containers will be executed remotely via Slurm following
+the existing security configuration in Slurm outside of unprivileged user
+control.</li>
+<li>All containers must use <a href="https://docs.docker.com/network/host/">
+host networking</a></li>
+</ol>
+
+<h3>Setup procedure</h3>
+<ol>
+<li><a href="https://docs.docker.com/engine/security/rootless/"> Install and
+configure Rootless Docker</a><br> Rootless Docker must be fully operational and
+able to run containers before continuing.</li>
+<li>
+Setup environment for all docker calls:
+<pre>export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock</pre>
+All commands following this will expect this environment variable to be set.</li>
+<li>Stop rootless docker: <pre>systemctl --user stop docker</pre></li>
+<li>Configure Docker to call scrun instead of the default OCI runtime.
+<!-- Docker does not document: --runtime= argument -->
+<ul>
+<li>To configure for all users: <pre>/etc/docker/daemon.json</pre></li>
+<li>To configure per user: <pre>~/.config/docker/daemon.json</pre></li>
+</ul>
+Set the following fields to configure Docker:
+<pre>{
+  "default-runtime": "slurm",
+  "runtimes": {
+    "slurm": {
+      "path": "/usr/local/bin/scrun"
+    }
+  },
+  "experimental": true,
+  "iptables": false,
+  "bridge": "none",
+  "no-new-privileges": true,
+  "rootless": true,
+  "selinux-enabled": false,
+}</pre>
+Correct path to scrun as if installation prefix was configured.</li>
+<li>It is strongly suggested that sites consider using inter-node shared
+filesystems to store Docker's containers. While it is possible to have a
+scrun.lua script to push and pull images for each deployment, there can be a
+massive performance penalty.  Using a shared filesystem will avoid moving these
+files around.<br>Possible configuration additions to daemon.json to use a
+shared filesystem with <a
+href="https://docs.docker.com/storage/storagedriver/vfs-driver/"> vfs storage
+driver</a>:
+<pre>{
+  "storage-driver": "vfs",
+  "data-root": "/path/to/shared/filesystem/user_name/data/",
+  "exec-root": "/path/to/shared/filesystem/user_name/exec/",
+}</pre>
+Any node expected to be able to run containers from Docker must have ability to
+atleast read the filesystem used. Full write privileges are suggested and will
+be required if changes to the container filesystem are desired.</li>
+<li>Start rootless docker: <pre>systemctl --user start docker</pre></li>
+<li>Verify Docker is using scrun:
+<pre>export DOCKER_SECURITY="--security-opt label:disable --security-opt seccomp=unconfined  --security-opt apparmor=unconfined --net=none"
+docker run $DOCKER_SECURITY hello-world
+docker run $DOCKER_SECURITY alpine printenv SLURM_JOB_ID
+docker run $DOCKER_SECURITY alpine hostname
+docker run $DOCKER_SECURITY alpine -e SCRUN_JOB_NUM_NODES=10 hostname</pre>
+</li>
+</ol>
+
+<h2 id="scrun">Integration with Podman (Slurm-23.02+)
+<a class="slurm_link" href="#podman-scrun"></a>
+</h2>
+<p>
+Slurm's <a href="scrun.html">scrun</a> can be directly integrated with
+<a href="https://podman.io/">Podman</a>
+to run containers as jobs. No special user permissions are required and
+<b>should not</b> be granted to use this functionality.
+</p>
+<h3>Prerequisites</h3>
+<ol>
+<li>Slurm must be fully configured and running on host running dockerd.</li>
+<li><a href="slurm.conf.html">slurm.conf</a> must be configured to use Munge
+authentication.<pre>AuthType=auth/munge</pre></li>
+<li><a href="scrun.html">scrun.lua</a> must be configured for site storage
+configuration.</li>
+</ol>
+<h3>Limitations</h3>
+<ol>
+<li>JWT authentication is not supported.</li>
+<li>All containers must use
+<a href="https://github.com/containers/podman/blob/main/docs/tutorials/basic_networking.md">
+host networking</a></li>
+</ol>
+
+<h3>Setup procedure</h3>
+<ol>
+<li>
+<a href="https://podman.io/getting-started/installation"> Install and configure
+Podman</a><br>Podman must be fully operational and able to run containers
+before continuing.</li>
+<li>
+Configure Podman to call scrun instead of the <a
+href="https://github.com/opencontainers/runtime-spec"> default OCI runtime</a>.
+<ul>
+<li>To configure for all users: <pre>/etc/containers/containers.conf</pre></li>
+<li>To configure per user: <pre>~/.config/containers/containers.conf</pre></li>
+</ul>
+Set the following configuration parameters to configure Podman:
+<pre>[containers]
+apparmor_profile = "unconfined"
+cgroupns = "host"
+cgroups = "enabled"
+default_sysctls = []
+label = false
+netns = "host"
+no_hosts = true
+pidns = "host"
+utsns = "host"
+userns = "host"
+
+[engine]
+runtime = "slurm"
+runtime_supports_nocgroups = [ "slurm" ]
+runtime_supports_json = [ "slurm" ]
+remote = false
+
+[engine.runtimes]
+slurm = [ "/usr/local/bin/scrun" ]</pre>
+Correct path to scrun as if installation prefix was configured.</li>
+<li>It is strongly suggested that sites consider using inter-node shared
+filesystems to store Podman's containers. While it is possible to have a
+scrun.lua script to push and pull images for each deployment, there can be a
+massive performance penalty. Using a shared filesystem will avoid moving these
+files around.<br>
+<ul>
+<li>To configure for all users: <pre>/etc/containers/storage.conf</pre></li>
+<li>To configure per user: <pre>~/.config/containers/storage.conf</pre></li>
+</ul>
+Possible configuration additions to storage.conf to use a shared filesystem with
+<a href="https://docs.podman.io/en/latest/markdown/podman.1.html#storage-driver-value">
+vfs storage driver</a>:
+<pre>[storage]
+driver = "vfs"
+runroot = "$HOME/containers"
+graphroot = "$HOME/containers"
+
+[storage.options]
+pull_options = {use_hard_links = "true", enable_partial_images = "true"}
+
+
+[storage.options.vfs]
+ignore_chown_errors = "true"</pre>
+Any node expected to be able to run containers from Podman must have ability to
+atleast read the filesystem used. Full write privileges are suggested and will
+be required if changes to the container filesystem are desired.</li>
+<li> Verify Podman is using scrun:
+<pre>podman run hello-world
+podman run alpine printenv SLURM_JOB_ID
+podman run alpine hostname
+podman run alpine -e SCRUN_JOB_NUM_NODES=10 hostname</pre>
+</li>
+</ol>
+
 <h2 id="bundle">OCI Container bundle
 <a class="slurm_link" href="#bundle"></a>
 </h2>
@@ -602,6 +788,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 21 December 2022</p>
+<p style="text-align:center;">Last modified 23 February 2023</p>
 
 <!--#include virtual="footer.txt"-->
