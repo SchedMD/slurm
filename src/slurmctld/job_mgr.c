@@ -17393,7 +17393,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
 		goto reply;
 	}
 
-	for (int i = 0; next_node_bitmap(array_bitmap, &i); i++) {
+	for (int i = 0; (i = bit_ffs_from_bit(array_bitmap, i)) >= 0; i++) {
 		job_ptr = find_job_array_rec(job_id, i);
 		if (job_ptr == NULL) {
 			info("%s: invalid JobId=%u_%d", __func__, job_id, i);
@@ -17869,7 +17869,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 		goto reply;
 	}
 
-	for (int i = 0; next_node_bitmap(array_bitmap, &i); i++) {
+	for (int i = 0; (i = bit_ffs_from_bit(array_bitmap, i)) >= 0; i++) {
 		job_ptr = find_job_array_rec(job_id, i);
 		if (job_ptr == NULL) {
 			info("%s: invalid JobId=%u_%d", __func__, job_id, i);
