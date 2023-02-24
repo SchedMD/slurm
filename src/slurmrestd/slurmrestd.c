@@ -80,6 +80,10 @@
 
 #define OPT_LONG_MAX_CON 0x100
 
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#define unshare(_) (false)
+#endif
+
 decl_static_data(usage_txt);
 
 typedef struct {
@@ -351,10 +355,12 @@ static void _lock_down(void)
 	if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1)
 		fatal("Unable to disable new privileges: %m");
 #endif
+
 	if (unshare_sysv && unshare(CLONE_SYSVSEM))
 		fatal("Unable to unshare System V namespace: %m");
 	if (unshare_files && unshare(CLONE_FILES))
 		fatal("Unable to unshare file descriptors: %m");
+
 	if (gid && setgroups(0, NULL))
 		fatal("Unable to drop supplementary groups: %m");
 	if (uid != 0 && (gid == 0))
