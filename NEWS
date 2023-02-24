@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
  -- Fixed GpuFreqDef option. When set in slurm.conf, it will be used if
     --gpu-freq was not explicitly set by the job step.
  -- Update database index for usage tables used for archive and purge.
+ -- Fix configure script on FreeBSD.
 
 * Changes in Slurm 23.02.0rc1
 =============================

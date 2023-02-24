@@ -18,13 +18,13 @@ AC_DEFUN([X_AC_HPE_SLINGSHOT],
   # /usr is the current default location.
   # We will use a for loop to check for any.
   # Unless _x_ac_hpe_ss_dirs is overwritten with --with-hpe-slingshot
-  declare -a _x_ac_hpe_ss_dirs=("/usr")
+  _x_ac_hpe_ss_dirs="/usr"
 
   AC_ARG_WITH(
     [hpe-slingshot],
     AS_HELP_STRING(--with-hpe-slingshot=PATH, Specify path to HPE Slingshot installation dir),
     [AS_IF([test "x$with_hpe_slingshot" != xno && test "x$with_hpe_slingshot" != xyes],
-           [_x_ac_hpe_ss_dirs=("$with_hpe_slingshot")])])
+           [_x_ac_hpe_ss_dirs="$with_hpe_slingshot"])])
 
   if [test "x$with_hpe_slingshot" = xno]; then
      AC_MSG_WARN([support for HPE Slingshot disabled])
@@ -33,7 +33,7 @@ AC_DEFUN([X_AC_HPE_SLINGSHOT],
     # Check for HPE Slingshot header and library in the default location
     # or in the location specified during configure
     AC_MSG_RESULT([])
-    for _x_ac_hpe_ss_dir in "${_x_ac_hpe_ss_dirs@<:@@@:>@}"; do
+    for _x_ac_hpe_ss_dir in $_x_ac_hpe_ss_dirs; do
       cflags_save="$CFLAGS"
       HPE_SLINGSHOT_CFLAGS="-I$_x_ac_hpe_ss_dir/include"
       CFLAGS="$HPE_SLINGSHOT_CFLAGS"

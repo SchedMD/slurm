@@ -26328,7 +26328,7 @@ fi
   # /usr is the current default location.
   # We will use a for loop to check for any.
   # Unless _x_ac_hpe_ss_dirs is overwritten with --with-hpe-slingshot
-  declare -a _x_ac_hpe_ss_dirs=("/usr")
+  _x_ac_hpe_ss_dirs="/usr"
 
 
 # Check whether --with-hpe-slingshot was given.
@@ -26336,7 +26336,7 @@ if test ${with_hpe_slingshot+y}
 then :
   withval=$with_hpe_slingshot; if test "x$with_hpe_slingshot" != xno && test "x$with_hpe_slingshot" != xyes
 then :
-  _x_ac_hpe_ss_dirs=("$with_hpe_slingshot")
+  _x_ac_hpe_ss_dirs="$with_hpe_slingshot"
 fi
 fi
 
@@ -26351,7 +26351,7 @@ printf %s "checking whether HPE Slingshot is installed in this system... " >&6; 
     # or in the location specified during configure
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: " >&5
 printf "%s\n" "" >&6; }
-    for _x_ac_hpe_ss_dir in "${_x_ac_hpe_ss_dirs[@]}"; do
+    for _x_ac_hpe_ss_dir in $_x_ac_hpe_ss_dirs; do
       cflags_save="$CFLAGS"
       HPE_SLINGSHOT_CFLAGS="-I$_x_ac_hpe_ss_dir/include"
       CFLAGS="$HPE_SLINGSHOT_CFLAGS"
