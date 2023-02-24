@@ -602,7 +602,9 @@ static void _arch_hash_rec_id(void *item, const char **key, uint32_t *key_len)
 {
 	slurmdb_hierarchical_rec_t *arch_rec = item;
 
-	*key = _create_hash_rec_id(arch_rec->assoc, false);
+	xfree(arch_rec->key);
+	arch_rec->key = _create_hash_rec_id(arch_rec->assoc, false);
+	*key = arch_rec->key;
 	*key_len = strlen(*key);
 }
 
@@ -1399,6 +1401,7 @@ extern void slurmdb_destroy_hierarchical_rec(void *object)
 	slurmdb_hierarchical_rec_t *slurmdb_hierarchical_rec =
 		(slurmdb_hierarchical_rec_t *)object;
 	if (slurmdb_hierarchical_rec) {
+		xfree(slurmdb_hierarchical_rec->key);
 		FREE_NULL_LIST(slurmdb_hierarchical_rec->children);
 		xfree(slurmdb_hierarchical_rec);
 	}

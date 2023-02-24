@@ -1279,6 +1279,7 @@ typedef struct {
 
 typedef struct {
 	slurmdb_assoc_rec_t *assoc;
+	char *key;
 	char *sort_name;
 	List children;
 } slurmdb_hierarchical_rec_t;
