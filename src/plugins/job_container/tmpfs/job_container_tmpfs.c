@@ -152,10 +152,6 @@ extern void container_p_reconfig(void)
  */
 extern int init(void)
 {
-#if defined(__APPLE__) || defined(__FreeBSD__)
-	fatal("%s is not available on this system. (mount bind limitation)",
-	      plugin_name);
-#endif
 	if (running_in_slurmd()) {
 		/*
 		 * Only init the config here for the slurmd. It will be sent by
@@ -273,7 +269,6 @@ static int _mount_private_dirs(char *path, uid_t uid)
 		      __func__);
 		return -1;
 	}
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	buffer = xstrdup(jc_conf->dirs);
 	token = strtok_r(buffer, ",", &save_ptr);
 	while (token) {
@@ -307,7 +302,6 @@ static int _mount_private_dirs(char *path, uid_t uid)
 		token = strtok_r(NULL, ",", &save_ptr);
 		xfree(mount_path);
 	}
-#endif
 
 private_mounts_exit:
 	xfree(buffer);
@@ -326,7 +320,6 @@ static int _mount_private_shm(void)
 	if (!((loc[8] == ',') || (loc[8] == 0)))
 		return rc;
 
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	/* handle mounting a new /dev/shm */
 	if (!jc_conf->shared) {
 		/*
@@ -344,7 +337,6 @@ static int _mount_private_shm(void)
 		error("%s: /dev/shm mount failed: %m", __func__);
 		return -1;
 	}
-#endif
 	return rc;
 }
 
@@ -446,7 +438,6 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		goto exit2;
 	}
 
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	/*
 	 * MS_BIND mountflag would make mount() ignore all other mountflags
 	 * except MS_REC. We need MS_PRIVATE mountflag as well to make the
@@ -464,7 +455,6 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-#endif
 
 	fd = open(ns_holder, O_CREAT|O_RDWR, S_IRWXU);
 	if (fd == -1) {
@@ -593,7 +583,6 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 			rc = -1;
 			goto child_exit;
 		}
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		if (!jc_conf->shared) {
 			/* Set root filesystem to private */
 			if (mount(NULL, "/", NULL, MS_PRIVATE|MS_REC, NULL)) {
@@ -618,7 +607,6 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 				goto child_exit;
 			}
 		}
-#endif
 
 		/*
 		 * Now we have a persistent mount namespace.
@@ -681,7 +669,6 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		 * Bind mount /proc/pid/ns/mnt to hold namespace active
 		 * without a process attached to it
 		 */
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		rc = mount(proc_path, ns_holder, NULL, MS_BIND, NULL);
 		xfree(proc_path);
 		if (rc) {
@@ -691,7 +678,6 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 				      __func__);
 			goto exit1;
 		}
-#endif
 		if (sem_post(sem2) < 0) {
 			error("%s: sem_post failed: %m", __func__);
 			goto exit1;
