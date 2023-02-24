@@ -593,7 +593,13 @@ static void _add_arch_rec(slurmdb_assoc_rec_t *assoc_rec,
 
 static char *_create_hash_rec_id(slurmdb_assoc_rec_t *assoc, bool parent)
 {
-	return xstrdup_printf("%u%s",
+	/*
+	 * Add comma to key to distinguish between id and cluster name
+	 * .e.g
+	 * associd: 11 cluster: foo
+	 * associd: 1  cluster: 1foo
+	 */
+	return xstrdup_printf("%u,%s",
 			      parent ? assoc->parent_id : assoc->id,
 			      assoc->cluster);
 }
