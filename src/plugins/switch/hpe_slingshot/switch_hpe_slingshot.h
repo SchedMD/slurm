@@ -117,8 +117,8 @@ typedef struct slingshot_state {
 /* Max NIC resources per application */
 #define SLINGSHOT_TXQ_MAX     1024    /* Max transmit command queues */
 #define SLINGSHOT_TGQ_MAX     512     /* Max target command queues */
-#define SLINGSHOT_EQ_MAX      1023    /* Max event queues */
-#define SLINGSHOT_CT_MAX      1023    /* Max counters */
+#define SLINGSHOT_EQ_MAX      2047    /* Max event queues */
+#define SLINGSHOT_CT_MAX      2047    /* Max counters */
 #define SLINGSHOT_TLE_MAX     2048    /* Max trigger list entries */
 #define SLINGSHOT_PTE_MAX     2048    /* Max portal table entries */
 #define SLINGSHOT_LE_MAX      16384   /* Max list entries */
