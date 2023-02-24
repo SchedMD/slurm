@@ -39,6 +39,7 @@
 #define _GNU_SOURCE /* posix_openpt() */
 
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/param.h>

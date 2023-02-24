@@ -36,6 +36,7 @@
 
 #include "config.h"
 
+#include <signal.h>
 #include <unistd.h>
 
 #include "src/common/daemonize.h"
