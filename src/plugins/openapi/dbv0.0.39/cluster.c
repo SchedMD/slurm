@@ -159,7 +159,7 @@ static void _update_clusters(ctxt_t *ctxt, bool commit)
 {
 	data_t *parent_path = NULL;
 	data_t *dclusters;
-	List cluster_list = list_create(slurmdb_destroy_cluster_rec);
+	list_t *cluster_list = NULL;
 
 	dclusters = get_query_key_list("clusters", ctxt, &parent_path);
 

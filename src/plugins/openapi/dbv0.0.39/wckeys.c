@@ -152,7 +152,7 @@ static void _update_wckeys(ctxt_t *ctxt, bool commit)
 {
 	data_t *parent_path = NULL;
 	data_t *dwckeys = get_query_key_list("wckeys", ctxt, &parent_path);
-	List wckey_list = list_create(slurmdb_destroy_wckey_rec);
+	list_t *wckey_list = NULL;
 
 	if (!dwckeys) {
 		resp_warn(ctxt, __func__,

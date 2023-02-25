@@ -280,7 +280,7 @@ static void _update_users(ctxt_t *ctxt, bool commit)
 {
 	data_t *parent_path = NULL;
 	data_t *dusers = get_query_key_list("users", ctxt, &parent_path);
-	List user_list = list_create(slurmdb_destroy_user_rec);
+	list_t *user_list = NULL;
 
 	if (!dusers) {
 		resp_warn(ctxt, __func__,

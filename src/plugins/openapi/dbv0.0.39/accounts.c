@@ -351,7 +351,7 @@ cleanup:
 static void _update_accts(ctxt_t *ctxt, bool commit)
 {
 	data_t *parent_path = NULL;
-	List acct_list = list_create(slurmdb_destroy_account_rec);
+	list_t *acct_list = NULL;
 	data_t *daccts = get_query_key_list("accounts", ctxt, &parent_path);
 
 	if (DATA_PARSE(ctxt->parser, ACCOUNT_LIST, acct_list, daccts,
