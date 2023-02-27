@@ -6169,7 +6169,7 @@ _rpc_forward_data(slurm_msg_t *msg)
 		rc = errno;
 		debug2("failed connecting to specified socket '%s': %m",
 		       req->address);
-		goto done;
+		goto rwfail;
 	}
 
 	/*
@@ -6183,7 +6183,6 @@ _rpc_forward_data(slurm_msg_t *msg)
 	safe_write(fd, req->data, req->len);
 
 rwfail:
-done:
 	if (fd >= 0){
 		close(fd);
 	}
