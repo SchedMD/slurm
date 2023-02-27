@@ -593,9 +593,8 @@ extern int scontrol_update_job(int argc, char **argv)
 			}
 			val++;
 			vallen = strlen(val);
-		}
 		/* Handle any tags that might not have an equal sign here */
-		else if (xstrncasecmp(tag, "Nice", MAX(strlen(tag), 2)) == 0) {
+		} else if (!xstrncasecmp(tag, "Nice", MAX(strlen(tag), 2))) {
 			job_msg.nice = NICE_OFFSET + 100;
 			update_cnt++;
 			continue;
