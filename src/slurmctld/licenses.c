@@ -1307,7 +1307,7 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
 					   need->name);
 
-		if (bf_entry->remaining < needed) {
+		if (!bf_entry || (bf_entry->remaining < needed)) {
 			avail = false;
 			break;
 		}
