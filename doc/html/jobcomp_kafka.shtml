@@ -31,7 +31,7 @@ consumes its API, thus the library development files are another prerequisite.
 Should be set to <b>jobcomp/kafka</b>.
 <pre>JobCompType=jobcomp/kafka</pre>
 </li>
-<br>
+
 <li>
 <a href="slurm.conf.html#OPT_JobCompLoc"><b>JobCompLoc</b></a> This string
 represents an absolute path to a file containing 'key=value' pairs configuring
@@ -59,22 +59,24 @@ debug=broker,topic,msg
 linger.ms=400
 log_level=7
 </pre>
-
 </li>
-<br>
+
 <li>
 <a href="slurm.conf.html#OPT_JobCompParams"><b>JobCompParams</b></a> Comma
 separated list of extra configurable parameters. Please refer to the slurm.conf
 man page for specific details. Example:
 <pre>JobCompParams=flush_timeout=200,poll_interval=3,requeue_on_msg_timeout,
 topic=mycluster</pre>
-</li>
 <p><b>NOTE</b>: Changes to this option do not require a slurmctld restart.
 Reconfiguration or SIGHUP is sufficient for them to take effect.</p>
+</li>
+
 <li>
 <a href="slurm.conf.html#OPT_DebugFlags"><b>DebugFlags</b></a> Optional
 <b>JobComp</b> debug flag for extra plugin specific logging.
 <pre>DebugFlags=JobComp</pre>
+</li>
+</ul>
 
 <h2 id="functionality">Plugin Functionality<a class="slurm_link"
 		href="#functionality"></a></h2>
