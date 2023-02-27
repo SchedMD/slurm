@@ -18316,8 +18316,6 @@ static void _set_job_requeue_exit_value(job_record_t *job_ptr)
 	int exit_code;
 
 	exit_code = WEXITSTATUS(job_ptr->exit_code);
-	if ((exit_code < 0) || (exit_code > MAX_EXIT_VAL))
-		return;
 
 	if (requeue_exit && bit_test(requeue_exit, exit_code)) {
 		debug2("%s: %pJ exit code %d state JOB_REQUEUE",
