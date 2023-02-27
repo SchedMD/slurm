@@ -6183,9 +6183,8 @@ _rpc_forward_data(slurm_msg_t *msg)
 	safe_write(fd, req->data, req->len);
 
 rwfail:
-	if (fd >= 0){
+	if (fd >= 0)
 		close(fd);
-	}
 	slurm_send_rc_msg(msg, rc);
 }
 
