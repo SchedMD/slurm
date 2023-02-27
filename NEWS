@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- job_container/tmpfs - cleanup job container even if namespace mount is
     already unmounted.
+ -- When cluster specific tables are be removed also remove the job_env_table
+    and job_script_table.
 
 * Changes in Slurm 23.02.0
 ==========================
