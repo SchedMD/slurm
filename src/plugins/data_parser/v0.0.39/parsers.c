@@ -3263,7 +3263,7 @@ static void _dump_node_res(data_t *dnodes, job_resources_t *j,
 			   const size_t sock_inx, size_t *bit_inx,
 			   const size_t array_size)
 {
-	size_t bit_reps;
+	size_t bit_reps, spn, cps;
 	data_t *dnode = data_set_dict(data_list_append(dnodes));
 	data_t *dsockets = data_set_dict(data_key_set(dnode, "sockets"));
 	data_t **sockets;
@@ -3281,9 +3281,9 @@ static void _dump_node_res(data_t *dnodes, job_resources_t *j,
 		     j->memory_allocated[node_inx]);
 
 	/* set the used cores as found */
-
-	bit_reps =
-		j->sockets_per_node[sock_inx] * j->cores_per_socket[sock_inx];
+	spn = j->sockets_per_node[sock_inx];
+	cps = j->cores_per_socket[sock_inx];
+	bit_reps = spn * cps;
 	for (size_t i = 0; i < bit_reps; i++) {
 		size_t socket_inx = i / j->cores_per_socket[sock_inx];
 		size_t core_inx = i % j->cores_per_socket[sock_inx];
