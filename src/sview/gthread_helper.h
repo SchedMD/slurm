@@ -28,11 +28,13 @@
 
 #include "config.h"
 
+#include <stdbool.h>
+
 #include <gtk/gtk.h>
 
 void sview_thread_init(gpointer vtable);
-GThread *sview_thread_new(GThreadFunc func, gpointer data,
-			  gboolean joinable, GError **error);
+bool sview_thread_new(GThreadFunc func, gpointer data,
+		      gboolean joinable, GError **error);
 void sview_mutex_new(GMutex **mutex);
 void sview_cond_new(GCond **cond);
 
