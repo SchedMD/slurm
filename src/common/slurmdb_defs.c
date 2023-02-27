@@ -2986,7 +2986,7 @@ extern int slurmdb_send_accounting_update_persist(
 	rc = slurm_send_recv_msg(0, &req, &resp, 0);
 
 	if (rc != SLURM_SUCCESS) {
-		error("update cluster: %m to %s at %s(%hu)",
+		error("update cluster: %s at %s(%hu): %m",
 		      persist_conn->cluster_name,
 		      persist_conn->rem_host,
 		      persist_conn->rem_port);
