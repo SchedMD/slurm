@@ -277,13 +277,6 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 	if (job_env->node_list)
 		setenvf(&env, "SLURM_NODELIST", "%s", job_env->node_list);
 
-	/*
-	 * Overridden by the credential version if available.
-	 * Remove two versions after 22.05.
-	 */
-	if (job_env->partition)
-		setenvf(&env, "SLURM_JOB_PARTITION", "%s", job_env->partition);
-
 	if (is_epilog)
 		setenvf(&env, "SLURM_SCRIPT_CONTEXT", "epilog_slurmd");
 	else

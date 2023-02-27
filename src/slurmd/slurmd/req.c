@@ -648,10 +648,6 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		launch_tasks_request_msg_t *job = req;
 		if ((job->step_id.step_id != SLURM_EXTERN_CONT) &&
 		    (job->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
-			/* 2 versions after 22.05 this check can be removed */
-			if (!job->mpi_plugin_id)
-				job->mpi_plugin_id = mpi_id_from_plugin_type(
-					getenvp(job->env, "SLURM_MPI_TYPE"));
 			if (mpi_conf_send_stepd(fd, job->mpi_plugin_id) !=
 			    SLURM_SUCCESS)
 				goto rwfail;

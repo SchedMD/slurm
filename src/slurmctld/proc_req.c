@@ -644,7 +644,7 @@ static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid,
 		     uint16_t protocol_version)
 {
 	/* TODO: remove this 2 versions after 23.02 release */
-	if (protocol_version <= SLURM_22_05_PROTOCOL_VERSION) {
+	if (protocol_version < SLURM_23_02_PROTOCOL_VERSION) {
 		/*
 		 * Correct uid/gid with value NO_VAL set by
 		 * slurm_init_job_desc_msg() in prior releases
@@ -5018,7 +5018,7 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 	 *
 	 * Remove this two versions after 23.02.
 	 */
-	if (msg->protocol_version <= SLURM_22_05_PROTOCOL_VERSION) {
+	if (msg->protocol_version < SLURM_23_02_PROTOCOL_VERSION) {
 		if ((req_ptr->flags == JOB_PENDING) ||
 		    (req_ptr->flags & JOB_LAUNCH_FAILED))
 			req_ptr->flags = JOB_LAUNCH_FAILED;

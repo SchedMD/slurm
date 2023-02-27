@@ -560,7 +560,7 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 		for (pidx = 0; pidx < jobinfo->num_nics; pidx++) {
 			_pack_hsn_nic(&jobinfo->nics[pidx], buffer);
 		}
-	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* use SLURM_MIN_PROTOCOL_VERSION in 23.11 */
 		/* nothing to pack, pack special "null" version number */
 		if (!jobinfo ||
@@ -653,7 +653,7 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 			if (!_unpack_hsn_nic(&jobinfo->nics[pidx], buffer))
 				goto unpack_error;
 		}
-	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* use SLURM_MIN_PROTOCOL_VERSION in 23.11 */
 		safe_unpack32(&jobinfo->version, buffer);
 		if (jobinfo->version == SLINGSHOT_JOBINFO_NULL_VERSION) {

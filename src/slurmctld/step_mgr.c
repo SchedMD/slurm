@@ -4013,13 +4013,8 @@ extern int pack_ctld_job_step_info_response_msg(
 		.visible_parts = build_visible_parts(uid, skip_visible_parts),
 	};
 
-	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
-		pack32(args.steps_packed, buffer);/* steps_packed placeholder */
-		pack_time(now, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_time(now, buffer);
-		pack32(args.steps_packed, buffer);/* steps_packed placeholder */
-	}
+	pack32(args.steps_packed, buffer);/* steps_packed placeholder */
+	pack_time(now, buffer);
 
 	list_for_each_ro(job_list, _pack_job_steps, &args);
 
@@ -4029,12 +4024,8 @@ extern int pack_ctld_job_step_info_response_msg(
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, 0);
-	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
-		pack32(args.steps_packed, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_time(now, buffer);
-		pack32(args.steps_packed, buffer);
-	}
+	pack32(args.steps_packed, buffer);
+
 	set_buf_offset(buffer, tmp_offset);
 	xfree(args.visible_parts);
 

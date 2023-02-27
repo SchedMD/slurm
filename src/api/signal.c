@@ -88,14 +88,7 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 	slurm_msg_t msg;
 	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
-	bool free_name = false;
 	char *name = allocation->batch_host;
-
-	/* This check can be removed 2 versions after 22.05 */
-	if (!name) {
-		name = nodelist_nth_host(allocation->node_list, 0);
-		free_name = true;
-	}
 
 	if (!name) {
 		error("%s: No batch_host in allocation", __func__);
@@ -116,12 +109,8 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 	    == SLURM_ERROR) {
 		error("%s: can't find address for host %s, check slurm.conf",
 		      __func__, name);
-		if (free_name)
-			free(name);
 		return -1;
 	}
-	if (free_name)
-		free(name);
 	if (slurm_send_recv_rc_msg_only_one(&msg, &rc, 0) < 0) {
 		error("%s: %m", __func__);
 		rc = -1;
@@ -153,14 +142,8 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
 	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
 	int i;
-	bool free_name = false;
 	char *name = allocation->batch_host;
 
-	/* This check can be removed 2 versions after 22.05 */
-	if (!name) {
-		name = nodelist_nth_host(allocation->node_list, 0);
-		free_name = true;
-	}
 	if (!name) {
 		error("%s: No batch_host in allocation", __func__);
 		return -1;
@@ -181,12 +164,8 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
 	    == SLURM_ERROR) {
 		error("%s: " "can't find address for host %s, check slurm.conf",
 		      __func__, name);
-		if (free_name)
-			free(name);
 		return -1;
 	}
-	if (free_name)
-		free(name);
 	i = slurm_send_recv_rc_msg_only_one(&msg, &rc, 0);
 	if (i != 0)
 		rc = i;

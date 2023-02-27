@@ -3092,14 +3092,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	cred_arg.step_hostlist   = job_ptr->job_resrcs->nodes;
 #endif
 
-	/*
-	 * Pre-22.05 slurmd does verify the credential, and still requires
-	 * the signature. Newer versions trust the prolog launch implicitly.
-	 */
-	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION)
-		sign_cred = false;
-	else
-		sign_cred = true;
+	sign_cred = false;
 
 	prolog_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
 						 &cred_arg, sign_cred,
