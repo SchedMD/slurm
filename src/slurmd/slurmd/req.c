@@ -6165,7 +6165,7 @@ _rpc_forward_data(slurm_msg_t *msg)
 
 	rc = _connect_as_other(req->address, req_uid, req_gid, &fd);
 
-	if (rc < 0) {
+	if ((rc < 0) || (fd < 0)) {
 		rc = errno;
 		debug2("failed connecting to specified socket '%s': %m",
 		       req->address);
