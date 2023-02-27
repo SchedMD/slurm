@@ -1247,12 +1247,16 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((resv_entry = list_next(iter))) {
 		bf_license_t *bf_entry, *new_entry;
-		int needed = resv_entry->total, reservable;
+		int needed = resv_entry->total;
+		int reservable = resv_entry->total;
 
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
 					   resv_entry->name);
 
-		if (bf_entry->remaining < needed) {
+		if (!bf_entry) {
+			error("%s: missing license %s",
+			      __func__, resv_entry->name);
+		} else if (bf_entry->remaining < needed) {
 			error("%s: underflow on %s", __func__, bf_entry->name);
 			reservable = bf_entry->remaining;
 			bf_entry->remaining = 0;
