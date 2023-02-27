@@ -220,6 +220,7 @@ extern char *run_command(run_command_args_t *args)
 			dup2(pfd[1], STDERR_FILENO);
 			dup2(pfd[1], STDOUT_FILENO);
 			closeall(3);
+			/* coverity[leaked_handle] */
 		} else {
 			closeall(0);
 		}
