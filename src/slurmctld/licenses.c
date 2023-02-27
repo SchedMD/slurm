@@ -1328,7 +1328,7 @@ extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b)
 		entry_b = list_find_first(b, _bf_licenses_find_rec,
 					  entry_a->name);
 
-		if ((entry_a->remaining != entry_b->remaining) ||
+		if (!entry_b || (entry_a->remaining != entry_b->remaining) ||
 		    (entry_a->resv_ptr != entry_b->resv_ptr)) {
 			equivalent = false;
 			break;
