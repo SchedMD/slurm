@@ -389,10 +389,8 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 	printf("%s\n", out);
 
 cleanup:
-#ifdef MEMORY_LEAK_DEBUG
 	xfree(out);
 	FREE_NULL_DATA_PARSER(parser);
-#endif /* MEMORY_LEAK_DEBUG */
 
 	return rc;
 }
