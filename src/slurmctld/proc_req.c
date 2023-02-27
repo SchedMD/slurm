@@ -2846,7 +2846,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 					node_reg_stat_msg->node_name)) {
 				already_registered = true;
 			} else {
-				error_code = create_dynamic_reg_node(msg);
+				(void) create_dynamic_reg_node(msg);
 			}
 		}
 
