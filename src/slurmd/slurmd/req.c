@@ -1823,8 +1823,8 @@ static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
 		if (force &&
 		    (nftw(path_name, _rm_file, 20, FTW_DEPTH | FTW_PHYS) < 0) &&
 		    errno != ENOENT) {
-			error("%s: uid:%u can't delete dir `%s` code %d: %m, %d",
-			      __func__, uid, path_name, errno, errno);
+			error("%s: uid:%u can't delete dir `%s` code %d: %m",
+			      __func__, uid, path_name, errno);
 			_exit(errno);
 		}
 		if (mkdir(path_name, mode) < 0) {
