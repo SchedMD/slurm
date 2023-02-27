@@ -285,8 +285,7 @@ static void _page_switched(GtkNotebook     *notebook,
 		return;
 	else if (!grid_init && !started_grid_init) {
 		/* start the thread to make the grid only once */
-		if (!sview_thread_new(
-			    _grid_init_thr, notebook, false, &error)) {
+		if (!sview_thread_new(_grid_init_thr, notebook, &error)) {
 			g_printerr ("Failed to create grid init thread: %s\n",
 				    error->message);
 			return;
@@ -319,7 +318,7 @@ static void _page_switched(GtkNotebook     *notebook,
 		page_thr->page_num = i;
 		page_thr->table = table;
 
-		if (!sview_thread_new(_page_thr, page_thr, false, &error)) {
+		if (!sview_thread_new(_page_thr, page_thr, &error)) {
 			g_printerr ("Failed to create page thread: %s\n",
 				    error->message);
 			return;

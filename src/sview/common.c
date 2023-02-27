@@ -1961,8 +1961,7 @@ extern void display_edit_note(char *edit_note)
 	msg_id = gtk_statusbar_push(GTK_STATUSBAR(main_statusbar),
 				    STATUS_ADMIN_EDIT,
 				    edit_note);
-	if (!sview_thread_new(_editing_thr, GINT_TO_POINTER(msg_id),
-			      false, &error))
+	if (!sview_thread_new(_editing_thr, GINT_TO_POINTER(msg_id), &error))
 		g_printerr("Failed to create edit thread: %s\n",
 			   error->message);
 

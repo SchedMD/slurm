@@ -1991,8 +1991,7 @@ extern void popup_all_node_name(char *name, int id, char *cluster_name)
 		if (cluster_flags & CLUSTER_FLAG_FED)
 			popup_win->spec_info->search_info->cluster_name =
 				g_strdup(cluster_name);
-		if (!sview_thread_new((gpointer)popup_thr, popup_win,
-				      false, &error)) {
+		if (!sview_thread_new((gpointer)popup_thr, popup_win, &error)) {
 			g_printerr ("Failed to create node popup thread: "
 				    "%s\n",
 				    error->message);

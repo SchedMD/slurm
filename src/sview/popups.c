@@ -153,7 +153,7 @@ void _search_entry(sview_search_info_t *sview_search_info)
 	memcpy(popup_win->spec_info->search_info, sview_search_info,
 	       sizeof(sview_search_info_t));
 
-	if (!sview_thread_new((gpointer)popup_thr, popup_win, false, &error)) {
+	if (!sview_thread_new((gpointer)popup_thr, popup_win, &error)) {
 		g_printerr ("Failed to create main popup thread: %s\n",
 			    error->message);
 		return;
@@ -839,7 +839,7 @@ extern void change_refresh_popup(GtkAction *action, gpointer user_data)
 					      temp);
 		g_free(temp);
 		if (!sview_thread_new(_refresh_thr, GINT_TO_POINTER(response),
-				      false, &error)) {
+				      &error)) {
 			g_printerr ("Failed to create refresh thread: %s\n",
 				    error->message);
 		}
@@ -969,7 +969,7 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 					      temp);
 		g_free(temp);
 		if (!sview_thread_new(_refresh_thr, GINT_TO_POINTER(response),
-				      false, &error)) {
+				      &error)) {
 			g_printerr ("Failed to create refresh thread: %s\n",
 				    error->message);
 		}

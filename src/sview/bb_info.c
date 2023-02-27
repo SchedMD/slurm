@@ -1002,7 +1002,7 @@ extern void popup_all_bb(GtkTreeModel *model, GtkTreeIter *iter, int id)
 	default:
 		g_print("Burst Buffer got unknown type %d\n", id);
 	}
-	if (!sview_thread_new((gpointer)popup_thr, popup_win, false, &error)) {
+	if (!sview_thread_new((gpointer)popup_thr, popup_win, &error)) {
 		g_printerr ("Failed to create burst buffer popup thread: %s\n",
 			    error->message);
 		return;
