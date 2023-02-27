@@ -381,20 +381,9 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		begin_time = INFINITE;
 
 	/*
-	 * Strip the RESIZING flag and end the job if there was a db_index.  In
-	 * 21.08 we reset the db_index on the slurmctld side, previously it was
-	 * done here.
+	 * Strip the RESIZING flag and end the job if there was a db_index.
 	 */
 	if (IS_JOB_RESIZING(job_ptr)) {
-		/*
-		 * If we have a db_index lets end the previous record.
-		 * This should only need to be around 2 versions after 21.08.
-		 */
-		if (job_ptr->db_index) {
-			as_mysql_job_complete(mysql_conn, job_ptr);
-			job_ptr->db_index = 0;
-		}
-
 		job_state &= (~JOB_RESIZING);
 	}
 
