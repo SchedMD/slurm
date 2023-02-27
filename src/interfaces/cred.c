@@ -774,6 +774,7 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
 
 	slurm_mutex_unlock(&ctx->mutex);
 
+	/* coverity[missing_unlock] */
 	return cred->arg;
 
 error:
