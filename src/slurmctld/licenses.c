@@ -1215,7 +1215,10 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
 					   job_entry->name);
 
-		if (bf_entry->remaining < needed) {
+		if (!bf_entry) {
+			error("%s: missing license %s",
+			      __func__, job_entry->name);
+		} else if (bf_entry->remaining < needed) {
 			error("%s: underflow on %s", __func__, bf_entry->name);
 			bf_entry->remaining = 0;
 		} else {
