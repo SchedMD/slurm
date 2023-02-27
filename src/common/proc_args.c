@@ -439,9 +439,6 @@ uint64_t str_to_mbytes(const char *arg)
 	else
 		return NO_VAL64;
 
-	if (result < 0)
-		return NO_VAL64;
-
 	return (uint64_t) result;
 }
 
