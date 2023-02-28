@@ -141,6 +141,9 @@ extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
 
 extern void data_parser_p_free(args_t *args)
 {
+	if (!args)
+		return;
+
 	xassert(args->magic == MAGIC_ARGS);
 	args->magic = ~MAGIC_ARGS;
 
