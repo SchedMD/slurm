@@ -241,6 +241,14 @@ typedef enum {
 	DATA_PARSER_OPEN_MODE, /* uint8_t - OPEN_MODE_* */
 	DATA_PARSER_WARN_FLAGS, /* uint16_t - KILL_*|WARN_SENT */
 	DATA_PARSER_X11_FLAGS, /* uint16_t - X11_FORWARD_* */
+	DATA_PARSER_OPENAPI_META, /* openapi_resp_meta_t */
+	DATA_PARSER_OPENAPI_META_PTR, /* openapi_resp_meta_t* */
+	DATA_PARSER_OPENAPI_ERROR, /* openapi_resp_error_t */
+	DATA_PARSER_OPENAPI_ERRORS, /* list_t of openapi_resp_error_t* */
+	DATA_PARSER_OPENAPI_ERRORS_PTR, /* ptr to list_t of openapi_resp_error_t* */
+	DATA_PARSER_OPENAPI_WARNING, /* openapi_resp_warning_t */
+	DATA_PARSER_OPENAPI_WARNINGS, /* list_t of openapi_resp_warning_t* */
+	DATA_PARSER_OPENAPI_WARNINGS_PTR, /* ptr to list_t of openapi_resp_warning_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

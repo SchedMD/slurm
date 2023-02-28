@@ -6045,10 +6045,62 @@ static const parser_t PARSER_ARRAY(UPDATE_NODE_MSG)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_resp_meta_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_META)[] = {
+	add_parse(STRING, plugin.type, "plugin/type", "Slurm plugin type"),
+	add_parse(STRING, plugin.name, "plugin/name", "Slurm plugin name"),
+	add_parse(STRING, plugin.data_parser, "plugin/data_parser", "Slurm data_parser plugin"),
+	add_parse(STRING, client.source, "client/source", "Client source description"),
+	add_parse(STRING, slurm.version.major, "slurm/version/major", "Slurm release major version"),
+	add_parse(STRING, slurm.version.micro, "slurm/version/micro", "Slurm release micro version"),
+	add_parse(STRING, slurm.version.minor, "slurm/version/minor", "Slurm release minor version"),
+	add_parse(STRING, slurm.release, "slurm/release", "Slurm release string"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_resp_error_t, mtype, false, field, 0, path, desc)
+#define add_parse_overload(mtype, field, overloads, path, desc) \
+	add_parser(openapi_resp_error_t, mtype, false, field, overloads, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_ERROR)[] = {
+	add_parse(STRING, description, "description", "Long form error description"),
+	add_parse_overload(INT32, num, 1, "error_number", "Slurm numeric error identifier"),
+	add_parse_overload(ERROR, num, 1, "error", "Short form error description"),
+	add_parse(STRING, source, "source", "Source of error or where error was first detected"),
+};
+#undef add_parse
+#undef add_parse_overload
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_resp_warning_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_WARNING)[] = {
+	add_parse(STRING, description, "description", "Long form warning description"),
+	add_parse(STRING, source, "source", "Source of warning or where warning was first detected"),
+};
+#undef add_parse
+
+#define add_openapi_response_meta(rtype) \
+	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
+#define add_openapi_response_errors(rtype) \
+	add_parser(rtype, OPENAPI_ERRORS_PTR, false, errors, 0, OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME , "Query errors")
+#define add_openapi_response_warnings(rtype) \
+	add_parser(rtype, OPENAPI_WARNINGS_PTR, false, warnings, 0, OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME , "Query warnings")
+
+/* add parser array for an OpenAPI response with a single field */
+#define add_openapi_response_single(stype, mtype, path, desc)                             \
+	static const parser_t PARSER_ARRAY(stype)[] = {                                   \
+		add_openapi_response_meta(openapi_resp_single_t),                         \
+		add_openapi_response_errors(openapi_resp_single_t),                       \
+		add_openapi_response_warnings(openapi_resp_single_t),                     \
+		add_parser(openapi_resp_single_t, mtype, false, response, 0, path, desc), \
+	}
+
 #undef add_parser
 #undef add_parser_skip
 #undef add_complex_parser
 #undef add_parse_bool
+#undef add_openapi_response_single
 
 /* add parser array (for struct) */
 #define addpa(typev, typet)                                                    \
@@ -6278,6 +6330,8 @@ static const parser_t PARSER_ARRAY(UPDATE_NODE_MSG)[] = {
 		.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(typev)),  \
 		.ptr_offset = NO_VAL,                                          \
 	}
+/* add OpenAPI singular response */
+#define addoar(mtype) addpa(mtype, openapi_resp_single_t)
 static const parser_t parsers[] = {
 	/* Simple type parsers */
 	addps(STRING, char *, NEED_NONE, STRING, NULL),
@@ -6402,6 +6456,11 @@ static const parser_t parsers[] = {
 	addpp(PARTITION_INFO_MSG_PTR, partition_info_msg_t *, PARTITION_INFO_MSG),
 	addpp(RESERVATION_INFO_MSG_PTR, reserve_info_msg_t *, RESERVATION_INFO_MSG),
 
+	/* Pointer model parsers allowing NULL */
+	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),
+	addppn(OPENAPI_ERRORS_PTR, list_t *, OPENAPI_ERRORS),
+	addppn(OPENAPI_WARNINGS_PTR, list_t *, OPENAPI_WARNINGS),
+
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t),
 	addpa(ASSOC, slurmdb_assoc_rec_t),
@@ -6439,6 +6498,9 @@ static const parser_t parsers[] = {
 	addpa(JOB_DESC_MSG, job_desc_msg_t),
 	addpa(CRON_ENTRY, cron_entry_t),
 	addpa(UPDATE_NODE_MSG, update_node_msg_t),
+	addpa(OPENAPI_META, openapi_resp_meta_t),
+	addpa(OPENAPI_ERROR, openapi_resp_error_t),
+	addpa(OPENAPI_WARNING, openapi_resp_warning_t),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
@@ -6486,11 +6548,14 @@ static const parser_t parsers[] = {
 	addpl(TRES_LIST, TRES, NEED_NONE),
 	addpl(SINFO_DATA_LIST, SINFO_DATA, NEED_NONE),
 	addpl(JOB_DESC_MSG_LIST, JOB_DESC_MSG, NEED_NONE),
+	addpl(OPENAPI_ERRORS, OPENAPI_ERROR, NEED_NONE),
+	addpl(OPENAPI_WARNINGS, OPENAPI_WARNING, NEED_NONE),
 };
 #undef addpl
 #undef addps
 #undef addpc
 #undef addpa
+#undef addoar
 
 // clang-format on
 

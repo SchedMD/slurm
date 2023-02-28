@@ -1619,3 +1619,46 @@ extern int openapi_append_rel_path(data_t *relative_path, const char *sub_path)
 
 	return data_list_split_str(relative_path, sub_path, OPENAPI_PATH_SEP);
 }
+
+
+extern void free_openapi_resp_meta(void *obj)
+{
+	openapi_resp_meta_t *x = obj;
+
+	if (!obj)
+		return;
+
+	xfree(x->plugin.type);
+	xfree(x->plugin.name);
+	xfree(x->plugin.data_parser);
+	xfree(x->client.source);
+	xfree(x->slurm.version.major);
+	xfree(x->slurm.version.micro);
+	xfree(x->slurm.version.minor);
+	xfree(x->slurm.release);
+	xfree(x);
+}
+
+extern void free_openapi_resp_error(void *obj)
+{
+	openapi_resp_error_t *x = obj;
+
+	if (!obj)
+		return;
+
+	xfree(x->description);
+	xfree(x->source);
+	xfree(x);
+}
+
+extern void free_openapi_resp_warning(void *obj)
+{
+	openapi_resp_warning_t *x = obj;
+
+	if (!obj)
+		return;
+
+	xfree(x->description);
+	xfree(x->source);
+	xfree(x);
+}

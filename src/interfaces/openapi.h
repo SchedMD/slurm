@@ -230,4 +230,56 @@ extern data_t *openapi_fork_rel_path_list(data_t *relative_path, int index);
  */
 extern int openapi_append_rel_path(data_t *relative_path, const char *sub_path);
 
+typedef struct {
+	struct {
+		char *type;
+		char *name;
+		char *data_parser;
+	} plugin;
+	struct {
+		char *source;
+	} client;
+	struct {
+		struct {
+			char *major;
+			char *micro;
+			char *minor;
+		} version;
+		char *release;
+	} slurm;
+} openapi_resp_meta_t;
+
+extern void free_openapi_resp_meta(void *obj);
+
+typedef struct {
+	char *description;
+	int num;
+	char *source;
+} openapi_resp_error_t;
+
+extern void free_openapi_resp_error(void *obj);
+
+typedef struct {
+	char *description;
+	char *source;
+} openapi_resp_warning_t;
+
+extern void free_openapi_resp_warning(void *obj);
+
+/* Macros to declare each of the common response fields */
+#define OPENAPI_RESP_STRUCT_META_FIELD openapi_resp_meta_t *meta
+#define OPENAPI_RESP_STRUCT_META_FIELD_NAME "meta"
+#define OPENAPI_RESP_STRUCT_ERRORS_FIELD list_t *errors
+#define OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME "errors"
+#define OPENAPI_RESP_STRUCT_WARNINGS_FIELD list_t *warnings
+#define OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME "warnings"
+
+/* macro to declare a single entry OpenAPI response struct */
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	void *response;
+} openapi_resp_single_t;
+
 #endif /* SLURM_OPENAPI_H */
