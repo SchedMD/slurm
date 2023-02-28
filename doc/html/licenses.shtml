@@ -225,20 +225,93 @@ $ sacctmgr show resource withclusters
     matlab   rlm_host  License    200          60        rlm      pdf         60 
 </pre>
 
-
-
 <h2 id="dynamic_licenses">Dynamic licenses
 <a class="slurm_link" href="#dynamic_licenses"></a>
 </h2>
-<p>When the license counter and percentage is updated using the <i>sacctmgr</i>
-command, the values are updated in the database and the updated values are sent
-to the slurmctld daemon.
-It is possible for sites to write a script that detects global license counter
-changes due to new licenses being added, or old licenses being removed, and
-updates Slurm. Should the license count decrease, the running jobs will not be
-affected, only the dispatch of new jobs will reflect the new license count.</p>
+<p>Starting with Slurm 23.02, the <i>LastConsumed</i> field for remote licenses
+is designed to be periodically updated with the active use count from a license
+server. An example script for FlexLM's lmstat command is provided below &mdash;
+similar scripts can be easily constructed for other license management
+stacks.</p>
 
+<pre>
+#!/bin/bash
 
-<p style="text-align:center;">Last modified 25 June 2019</p>
+set -euxo pipefail
+
+LMSTAT=/opt/foobar/bin/lmstat
+LICENSE=foobar
+
+consumed=$(${LMSTAT} | grep "Users of ${LICENSE}"|sed "s/.*Total of \([0-9]\+\) licenses in use)/\1/")
+
+sacctmgr -i update resource ${LICENSE} set lastconsumed=${consumed}
+</pre>
+
+<p>When the LastConsumed value is changed through sacctmgr an update is
+automatically pushed to the Slurm controllers. They will use this value
+to calculate a <i>LastDeficit</i> value &mdash; this value indicates how many
+licenses that have "gone missing" from the cluster's perspective and will
+need to be set aside temporarily.</p>
+
+<p>E.g., on this cluster 100 "foobar" licenses are available, and we are
+allocating access to 80 of them on the "blackhole" cluster:</p>
+<pre>
+$ sacctmgr add resource foobar count=100 flags=absolute cluster=blackhole allowed=80
+ Adding Resource(s)
+  foobar@slurmdb
+   Cluster - blackhole	80
+ Settings
+  Name           = foobar
+  Server         = slurmdb
+  Description    = foobar
+  Count          = 100
+  Flags          = Absolute
+  Type           = Unknown
+Would you like to commit changes? (You have 30 seconds to decide)
+(N/y): y
+$ scontrol show license
+LicenseName=foobar@slurmdb
+    Total=80 Used=0 Free=80 Reserved=0 Remote=yes
+    LastConsumed=0 LastDeficit=0 LastUpdate=2023-02-28T16:36:55
+</pre>
+
+<p>Now, our cron job comes in and updates the LastConsumed value to 30, while
+the cluster has yet to allocate any licenses to jobs:</p>
+
+<pre>
+$ sacctmgr -i update resource foobar set lastconsumed=30
+ Modified server resource ...
+  foobar@slurmdb
+  Cluster - blackhole	- foobar@slurmdb
+$ scontrol show license
+LicenseName=foobar@slurmdb
+    Total=80 Used=0 Free=70 Reserved=0 Remote=yes
+    LastConsumed=30 LastDeficit=10 LastUpdate=2023-02-28T16:39:27
+</pre>
+
+<p>Note that the cluster has now calculated a deficit of 10 licenses, and
+has noticed that it should only schedule up to 70 licenses at the moment.
+The cluster knows that up to 20 licenses are reserved for other clusters or
+external use at the moment. However, since LastConsumed was set to 30 this
+implies an additional 10 licenses have "gone rogue" and their usage cannot
+be accounted for. Thus the cluster must not assign those to any pending jobs,
+as it's likely that the job would fail to acquire the desired licenses.</p>
+
+<p>If a further update (likely driven through cron) now reduces the
+LastConsumed count to 10, the deficit is now considered to have disappeared,
+and the cluster will make all 80 assigned licenses available again:</p>
+
+<pre>
+$ sacctmgr -i update resource foobar set lastconsumed=20
+ Modified server resource ...
+  foobar@slurmdb
+  Cluster - blackhole	- foobar@slurmdb
+$ scontrol show license
+LicenseName=foobar@slurmdb
+    Total=80 Used=0 Free=80 Reserved=0 Remote=yes
+    LastConsumed=20 LastDeficit=0 LastUpdate=2023-02-28T16:44:26
+</pre>
+
+<p style="text-align:center;">Last modified 28 Februrary 2023</p>
 
 <!--#include virtual="footer.txt"-->
