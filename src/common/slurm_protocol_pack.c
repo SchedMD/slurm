@@ -3219,8 +3219,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_buffer_msg(slurm_msg_t * msg, buf_t *buffer)
+static void _pack_buffer_msg(const slurm_msg_t *msg, buf_t *buffer)
 {
 	xassert(msg);
 	packmem_array(msg->data, msg->data_size, buffer);
@@ -10924,7 +10923,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 	case RESPONSE_RESERVATION_INFO:
 	case RESPONSE_ASSOC_MGR_INFO:
 	case RESPONSE_LICENSE_INFO:
-		_pack_buffer_msg((slurm_msg_t *) msg, buffer);
+		_pack_buffer_msg(msg, buffer);
 		break;
 	case REQUEST_NODE_INFO:
 		_pack_node_info_request_msg((node_info_request_msg_t *)
