@@ -403,7 +403,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		first_job = (srun_job_t *) list_peek(srun_job_list);
 		if (!opt_list) {
 			if (first_job)
-				fini_srun(first_job, got_alloc, &global_rc, 0);
+				fini_srun(first_job, got_alloc, &global_rc);
 			fatal("%s: have srun_job_list, but no opt_list",
 			      __func__);
 		}
@@ -487,7 +487,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 				slurm_mutex_unlock(&step_mutex);
 				if (first_job) {
 					fini_srun(first_job, got_alloc,
-						  &global_rc, 0);
+						  &global_rc);
 				}
 				fatal("%s: job allocation count does not match request count (%d != %d)",
 				      __func__, list_count(srun_job_list),
@@ -544,7 +544,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		slurm_mutex_unlock(&step_mutex);
 
 		if (first_job)
-			fini_srun(first_job, got_alloc, &global_rc, 0);
+			fini_srun(first_job, got_alloc, &global_rc);
 	} else {
 		int i;
 		mpir_init(job->ntasks);
@@ -586,7 +586,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		opts->opt_local   = &opt;
 		sropt.het_step_cnt = 1;
 		_launch_one_app(opts);
-		fini_srun(job, got_alloc, &global_rc, 0);
+		fini_srun(job, got_alloc, &global_rc);
 	}
 }
 
@@ -722,7 +722,7 @@ static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 		srun_job_t *first_job = list_peek(srun_job_list);
 		if (!opt_list) {
 			if (first_job)
-				fini_srun(first_job, got_alloc, &global_rc, 0);
+				fini_srun(first_job, got_alloc, &global_rc);
 			fatal("%s: have srun_job_list, but no opt_list",
 			      __func__);
 		}
@@ -733,7 +733,7 @@ static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 			if (!job) {
 				if (first_job) {
 					fini_srun(first_job, got_alloc,
-						  &global_rc, 0);
+						  &global_rc);
 				}
 				fatal("%s: job allocation count does not match request count (%d != %d)",
 				      __func__, list_count(srun_job_list),

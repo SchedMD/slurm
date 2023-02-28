@@ -1536,12 +1536,8 @@ extern void pre_launch_srun_job(srun_job_t *job, slurm_opt_t *opt_local)
 	env_array_merge(&job->env, (const char **)environ);
 }
 
-extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
-		      bool slurm_started)
+extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc)
 {
-	/* If running from poe, most of this already happened in srun. */
-	if (slurm_started)
-		goto cleanup;
 	if (got_alloc) {
 		cleanup_allocation();
 
@@ -1553,15 +1549,13 @@ extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
 	}
 	_shepherd_notify(shepherd_fd);
 
-cleanup:
 	if (signal_thread) {
 		srun_shutdown = true;
 		pthread_kill(signal_thread, SIGINT);
 		pthread_join(signal_thread,  NULL);
 	}
 
-	if (!slurm_started)
-		_run_srun_epilog(job);
+	_run_srun_epilog(job);
 
 	step_ctx_destroy(job->step_ctx);
 
