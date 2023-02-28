@@ -1789,7 +1789,6 @@ static int
 _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 			     uint16_t protocol_version)
 {
-	uint32_t uint32_tmp;
 	update_part_msg_t *tmp_ptr;
 
 	xassert(msg);
@@ -1799,29 +1798,20 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 	*msg = tmp_ptr;
 
 	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&tmp_ptr->allow_accounts,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->allow_alloc_nodes,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->allow_groups,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->allow_qos,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->alternate, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->billing_weights_str,
-				       &uint32_tmp, buffer);
+		safe_unpackstr(&tmp_ptr->allow_accounts, buffer);
+		safe_unpackstr(&tmp_ptr->allow_alloc_nodes, buffer);
+		safe_unpackstr(&tmp_ptr->allow_groups, buffer);
+		safe_unpackstr(&tmp_ptr->allow_qos, buffer);
+		safe_unpackstr(&tmp_ptr->alternate, buffer);
+		safe_unpackstr(&tmp_ptr->billing_weights_str, buffer);
 
 		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
 		safe_unpack64(&tmp_ptr->def_mem_per_cpu, buffer);
 		safe_unpack32(&tmp_ptr->default_time, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->deny_accounts,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->deny_qos,
-				       &uint32_tmp, buffer);
+		safe_unpackstr(&tmp_ptr->deny_accounts, buffer);
+		safe_unpackstr(&tmp_ptr->deny_qos, buffer);
 		safe_unpack16(&tmp_ptr->flags,     buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->job_defaults_str, &uint32_tmp,
-				       buffer);
+		safe_unpackstr(&tmp_ptr->job_defaults_str, buffer);
 		safe_unpack32(&tmp_ptr->grace_time, buffer);
 
 		safe_unpack32(&tmp_ptr->max_cpus_per_node, buffer);
@@ -1832,40 +1822,30 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&tmp_ptr->max_time, buffer);
 		safe_unpack32(&tmp_ptr->min_nodes, buffer);
 
-		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpackstr(&tmp_ptr->name, buffer);
+		safe_unpackstr(&tmp_ptr->nodes, buffer);
 
 		safe_unpack16(&tmp_ptr->over_time_limit, buffer);
 		safe_unpack16(&tmp_ptr->preempt_mode, buffer);
 		safe_unpack16(&tmp_ptr->priority_job_factor, buffer);
 		safe_unpack16(&tmp_ptr->priority_tier, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->qos_char,
-				       &uint32_tmp, buffer);
+		safe_unpackstr(&tmp_ptr->qos_char, buffer);
 		safe_unpack16(&tmp_ptr->state_up,  buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&tmp_ptr->allow_accounts,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->allow_alloc_nodes,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->allow_groups,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->allow_qos,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->alternate, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->billing_weights_str,
-				       &uint32_tmp, buffer);
+		safe_unpackstr(&tmp_ptr->allow_accounts, buffer);
+		safe_unpackstr(&tmp_ptr->allow_alloc_nodes, buffer);
+		safe_unpackstr(&tmp_ptr->allow_groups, buffer);
+		safe_unpackstr(&tmp_ptr->allow_qos, buffer);
+		safe_unpackstr(&tmp_ptr->alternate, buffer);
+		safe_unpackstr(&tmp_ptr->billing_weights_str, buffer);
 
 		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
 		safe_unpack64(&tmp_ptr->def_mem_per_cpu, buffer);
 		safe_unpack32(&tmp_ptr->default_time, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->deny_accounts,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->deny_qos,
-				       &uint32_tmp, buffer);
+		safe_unpackstr(&tmp_ptr->deny_accounts, buffer);
+		safe_unpackstr(&tmp_ptr->deny_qos, buffer);
 		safe_unpack16(&tmp_ptr->flags,     buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->job_defaults_str, &uint32_tmp,
-				       buffer);
+		safe_unpackstr(&tmp_ptr->job_defaults_str, buffer);
 		safe_unpack32(&tmp_ptr->grace_time, buffer);
 
 		safe_unpack32(&tmp_ptr->max_cpus_per_node, buffer);
@@ -1875,15 +1855,14 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&tmp_ptr->max_time, buffer);
 		safe_unpack32(&tmp_ptr->min_nodes, buffer);
 
-		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->nodes, &uint32_tmp, buffer);
+		safe_unpackstr(&tmp_ptr->name, buffer);
+		safe_unpackstr(&tmp_ptr->nodes, buffer);
 
 		safe_unpack16(&tmp_ptr->over_time_limit, buffer);
 		safe_unpack16(&tmp_ptr->preempt_mode, buffer);
 		safe_unpack16(&tmp_ptr->priority_job_factor, buffer);
 		safe_unpack16(&tmp_ptr->priority_tier, buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->qos_char,
-				       &uint32_tmp, buffer);
+		safe_unpackstr(&tmp_ptr->qos_char, buffer);
 		safe_unpack16(&tmp_ptr->state_up,  buffer);
 	}
 
