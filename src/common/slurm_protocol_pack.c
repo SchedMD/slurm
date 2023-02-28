@@ -1719,69 +1719,69 @@ _pack_update_partition_msg(update_part_msg_t * msg, buf_t *buffer,
 		packstr(msg->allow_accounts, buffer);
 		packstr(msg->allow_alloc_nodes, buffer);
 		packstr(msg->allow_groups, buffer);
-		packstr(msg->allow_qos,    buffer);
-		packstr(msg->alternate,    buffer);
+		packstr(msg->allow_qos, buffer);
+		packstr(msg->alternate, buffer);
 		packstr(msg->billing_weights_str,  buffer);
 
 		pack32(msg->cpu_bind, buffer);
 		pack64(msg->def_mem_per_cpu, buffer);
 		pack32(msg->default_time, buffer);
 		packstr(msg->deny_accounts, buffer);
-		packstr(msg->deny_qos,     buffer);
-		pack16(msg->flags,        buffer);
+		packstr(msg->deny_qos, buffer);
+		pack16(msg->flags, buffer);
 		packstr(msg->job_defaults_str, buffer);
-		pack32(msg->grace_time,   buffer);
+		pack32(msg->grace_time, buffer);
 
 		pack32(msg->max_cpus_per_node, buffer);
 		pack32(msg->max_cpus_per_socket, buffer);
 		pack64(msg->max_mem_per_cpu, buffer);
-		pack32(msg->max_nodes,    buffer);
-		pack16(msg->max_share,    buffer);
-		pack32(msg->max_time,     buffer);
-		pack32(msg->min_nodes,    buffer);
+		pack32(msg->max_nodes, buffer);
+		pack16(msg->max_share, buffer);
+		pack32(msg->max_time, buffer);
+		pack32(msg->min_nodes, buffer);
 
-		packstr(msg->name,         buffer);
-		packstr(msg->nodes,        buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->nodes, buffer);
 
 		pack16(msg->over_time_limit, buffer);
 		pack16(msg->preempt_mode, buffer);
 		pack16(msg->priority_job_factor, buffer);
 		pack16(msg->priority_tier, buffer);
-		packstr(msg->qos_char,     buffer);
-		pack16(msg->state_up,     buffer);
+		packstr(msg->qos_char, buffer);
+		pack16(msg->state_up, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->allow_accounts, buffer);
 		packstr(msg->allow_alloc_nodes, buffer);
 		packstr(msg->allow_groups, buffer);
-		packstr(msg->allow_qos,    buffer);
-		packstr(msg->alternate,    buffer);
-		packstr(msg->billing_weights_str,  buffer);
+		packstr(msg->allow_qos, buffer);
+		packstr(msg->alternate, buffer);
+		packstr(msg->billing_weights_str, buffer);
 
 		pack32(msg->cpu_bind, buffer);
-		pack64(msg-> def_mem_per_cpu, buffer);
-		pack32(msg-> default_time, buffer);
+		pack64(msg->def_mem_per_cpu, buffer);
+		pack32(msg->default_time, buffer);
 		packstr(msg->deny_accounts, buffer);
-		packstr(msg->deny_qos,     buffer);
-		pack16(msg-> flags,        buffer);
+		packstr(msg->deny_qos, buffer);
+		pack16(msg->flags, buffer);
 		packstr(msg->job_defaults_str, buffer);
-		pack32(msg-> grace_time,   buffer);
+		pack32(msg->grace_time, buffer);
 
-		pack32(msg-> max_cpus_per_node, buffer);
-		pack64(msg-> max_mem_per_cpu, buffer);
-		pack32(msg-> max_nodes,    buffer);
-		pack16(msg-> max_share,    buffer);
-		pack32(msg-> max_time,     buffer);
-		pack32(msg-> min_nodes,    buffer);
+		pack32(msg->max_cpus_per_node, buffer);
+		pack64(msg->max_mem_per_cpu, buffer);
+		pack32(msg->max_nodes, buffer);
+		pack16(msg->max_share, buffer);
+		pack32(msg->max_time, buffer);
+		pack32(msg->min_nodes, buffer);
 
-		packstr(msg->name,         buffer);
-		packstr(msg->nodes,        buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->nodes, buffer);
 
-		pack16(msg-> over_time_limit, buffer);
-		pack16(msg-> preempt_mode, buffer);
-		pack16(msg-> priority_job_factor, buffer);
-		pack16(msg-> priority_tier, buffer);
-		packstr(msg->qos_char,     buffer);
-		pack16(msg-> state_up,     buffer);
+		pack16(msg->over_time_limit, buffer);
+		pack16(msg->preempt_mode, buffer);
+		pack16(msg->priority_job_factor, buffer);
+		pack16(msg->priority_tier, buffer);
+		packstr(msg->qos_char, buffer);
+		pack16(msg->state_up, buffer);
 	}
 }
 
