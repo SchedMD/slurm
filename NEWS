@@ -1,8 +1,8 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 23.02.0rc2
-=============================
+* Changes in Slurm 23.02.0
+==========================
  -- scrun - Install into /bin instead of /sbin, which also ensures it is
     included in the RPM packages.
  -- data_parser/v0.0.39 - avoid erroring on unknown association id.
