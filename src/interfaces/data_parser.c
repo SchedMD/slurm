@@ -123,7 +123,12 @@ extern int data_parser_g_dump(data_parser_t *parser, data_parser_type_t type,
 {
 	DEF_TIMERS;
 	int rc;
-	const parse_funcs_t *funcs = plugins->functions[parser->plugin_offset];
+	const parse_funcs_t *funcs;
+
+	if (!parser)
+		return EINVAL;
+
+	funcs = plugins->functions[parser->plugin_offset];
 
 	xassert(data_get_type(dst));
 	xassert(type > DATA_PARSER_TYPE_INVALID);
