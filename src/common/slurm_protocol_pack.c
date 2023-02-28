@@ -1802,7 +1802,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&tmp_ptr->default_time, buffer);
 		safe_unpackstr(&tmp_ptr->deny_accounts, buffer);
 		safe_unpackstr(&tmp_ptr->deny_qos, buffer);
-		safe_unpack16(&tmp_ptr->flags,     buffer);
+		safe_unpack16(&tmp_ptr->flags, buffer);
 		safe_unpackstr(&tmp_ptr->job_defaults_str, buffer);
 		safe_unpack32(&tmp_ptr->grace_time, buffer);
 
@@ -1822,7 +1822,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 		safe_unpack16(&tmp_ptr->priority_job_factor, buffer);
 		safe_unpack16(&tmp_ptr->priority_tier, buffer);
 		safe_unpackstr(&tmp_ptr->qos_char, buffer);
-		safe_unpack16(&tmp_ptr->state_up,  buffer);
+		safe_unpack16(&tmp_ptr->state_up, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->allow_accounts, buffer);
 		safe_unpackstr(&tmp_ptr->allow_alloc_nodes, buffer);
@@ -1836,7 +1836,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&tmp_ptr->default_time, buffer);
 		safe_unpackstr(&tmp_ptr->deny_accounts, buffer);
 		safe_unpackstr(&tmp_ptr->deny_qos, buffer);
-		safe_unpack16(&tmp_ptr->flags,     buffer);
+		safe_unpack16(&tmp_ptr->flags, buffer);
 		safe_unpackstr(&tmp_ptr->job_defaults_str, buffer);
 		safe_unpack32(&tmp_ptr->grace_time, buffer);
 
@@ -1855,7 +1855,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 		safe_unpack16(&tmp_ptr->priority_job_factor, buffer);
 		safe_unpack16(&tmp_ptr->priority_tier, buffer);
 		safe_unpackstr(&tmp_ptr->qos_char, buffer);
-		safe_unpack16(&tmp_ptr->state_up,  buffer);
+		safe_unpack16(&tmp_ptr->state_up, buffer);
 	}
 
 	return SLURM_SUCCESS;
