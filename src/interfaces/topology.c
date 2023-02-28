@@ -85,7 +85,7 @@ static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
  * be restarted and job priority changes may be required to change
  * the topology type.
  */
-extern int slurm_topo_init(void)
+extern int topology_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "topo";
@@ -111,7 +111,7 @@ done:
 	return retval;
 }
 
-extern int slurm_topo_fini(void)
+extern int topology_g_fini(void)
 {
 	int rc;
 

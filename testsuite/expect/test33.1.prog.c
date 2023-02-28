@@ -294,7 +294,7 @@ int main(int argc, char *argv[])
 
 	slurm_init(NULL);
 	route_init();
-	slurm_topo_init();
+	topology_g_init();
 	opts.stderr_level = LOG_LEVEL_DEBUG;
 	log_init(argv[0], opts, SYSLOG_FACILITY_USER, NULL);
 

@@ -2769,7 +2769,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout)
 			return NULL;
 		}
 
-		if (slurm_topo_init() != SLURM_SUCCESS) {
+		if (topology_g_init() != SLURM_SUCCESS) {
 			error("failed to initialize route plugins");
 			return NULL;
 		}

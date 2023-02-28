@@ -106,14 +106,14 @@ extern struct hypercube_switch ***hypercube_switches;
  *
  * Returns a Slurm errno.
  */
-int slurm_topo_init( void );
+extern int topology_g_init(void);
 
 /*
  * Terminate the topology plugin.
  *
  * Returns a Slurm errno.
  */
-extern int slurm_topo_fini(void);
+extern int topology_g_fini(void);
 
 /*
  **************************************************************************

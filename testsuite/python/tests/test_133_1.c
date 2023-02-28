@@ -297,7 +297,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (slurm_topo_init() != SLURM_SUCCESS) {
+	if (topology_g_init() != SLURM_SUCCESS) {
 		error("failed to initialize route plugins");
 		exit(1);
 	}

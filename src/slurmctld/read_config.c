@@ -1610,7 +1610,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (slurm_conf.slurmd_user_id != 0)
 		_test_cgroup_plugin_use();
 
-	if (slurm_topo_init() != SLURM_SUCCESS) {
+	if (topology_g_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("Failed to initialize topology plugin");
 			test_config_rc = 1;

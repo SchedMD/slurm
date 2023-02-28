@@ -2073,7 +2073,7 @@ _slurmd_init(void)
 	rc = _load_gres();
 	if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	if (slurm_topo_init() != SLURM_SUCCESS)
+	if (topology_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	/*
@@ -2214,7 +2214,7 @@ _slurmd_fini(void)
 	node_fini2();
 	gres_fini();
 	prep_g_fini();
-	slurm_topo_fini();
+	topology_g_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	select_g_fini();
 	spank_slurmd_exit();

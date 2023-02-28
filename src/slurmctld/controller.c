@@ -989,7 +989,7 @@ int main(int argc, char **argv)
 	jobacct_gather_fini();
 	acct_gather_conf_destroy();
 	select_g_fini();
-	slurm_topo_fini();
+	topology_g_fini();
 	slurm_auth_fini();
 	switch_fini();
 	route_fini();
