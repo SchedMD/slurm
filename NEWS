@@ -4,6 +4,9 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 23.11.0rc1
 =============================
 
+* Changes in Slurm 23.02.1
+==========================
+
 * Changes in Slurm 23.02.0
 ==========================
  -- scrun - Install into /bin instead of /sbin, which also ensures it is
