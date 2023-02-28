@@ -476,11 +476,12 @@ static int _op_handler_submit_job(const char *context_id,
 
 extern void init_op_jobs(void)
 {
-	bind_operation_handler("/slurm/v0.0.40/job/submit",
+	bind_operation_handler("/slurm/{data_parser}/job/submit",
 			       _op_handler_submit_job, 0);
-	bind_operation_handler("/slurm/v0.0.40/jobs/", _op_handler_jobs, 0);
-	bind_operation_handler("/slurm/v0.0.40/job/{job_id}", _op_handler_job,
+	bind_operation_handler("/slurm/{data_parser}/jobs/", _op_handler_jobs,
 			       0);
+	bind_operation_handler("/slurm/{data_parser}/job/{job_id}",
+			       _op_handler_job, 0);
 }
 
 extern void destroy_op_jobs(void)

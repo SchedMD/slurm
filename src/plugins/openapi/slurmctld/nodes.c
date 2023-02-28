@@ -182,9 +182,9 @@ done:
 
 extern void init_op_nodes(void)
 {
-	bind_operation_handler("/slurm/v0.0.40/nodes/", _op_handler_nodes,
+	bind_operation_handler("/slurm/{data_parser}/nodes/", _op_handler_nodes,
 			       URL_TAG_NODES);
-	bind_operation_handler("/slurm/v0.0.40/node/{node_name}",
+	bind_operation_handler("/slurm/{data_parser}/node/{node_name}",
 			       _op_handler_nodes, URL_TAG_NODE);
 }
 

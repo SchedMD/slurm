@@ -40,8 +40,6 @@
 #include "src/common/data.h"
 #include "src/interfaces/data_parser.h"
 
-#define DATA_VERSION "v0.0.40"
-#define DATA_PLUGIN "data_parser/" DATA_VERSION
 #define MAGIC_CTXT 0xafbb0fae
 
 typedef struct {

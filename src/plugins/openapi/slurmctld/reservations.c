@@ -132,9 +132,9 @@ done:
 
 extern void init_op_reservations(void)
 {
-	bind_operation_handler("/slurm/v0.0.40/reservations/",
+	bind_operation_handler("/slurm/{data_parser}/reservations/",
 			       _op_handler_reservations, URL_TAG_RESERVATIONS);
-	bind_operation_handler("/slurm/v0.0.40/reservation/{reservation_name}",
+	bind_operation_handler("/slurm/{data_parser}/reservation/{reservation_name}",
 			       _op_handler_reservations, URL_TAG_RESERVATION);
 }
 

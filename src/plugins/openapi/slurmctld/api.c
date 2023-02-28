@@ -129,6 +129,7 @@ extern ctxt_t *init_connection(const char *context_id,
 			       data_t *query, int tag, data_t *resp, void *auth)
 {
 	data_t *plugin, *slurm, *slurmv, *meta, *errors, *warn, *client;
+	data_t *data_parser;
 	ctxt_t *ctxt = xmalloc(sizeof(*ctxt));
 
 	ctxt->magic = MAGIC_CTXT;
@@ -164,7 +165,6 @@ extern ctxt_t *init_connection(const char *context_id,
 
 	data_set_string(data_key_set(plugin, "type"), plugin_type);
 	data_set_string(data_key_set(plugin, "name"), plugin_name);
-	data_set_string(data_key_set(plugin, "data_parser"), DATA_VERSION);
 	data_set_string(data_key_set(client, "source"), context_id);
 
 	ctxt->errors = errors;
@@ -174,9 +174,31 @@ extern ctxt_t *init_connection(const char *context_id,
 		resp_error(ctxt, ESLURM_DB_CONNECTION, __func__,
 			   "openapi_get_db_conn() failed to open slurmdb connection");
 
-	ctxt->parser = data_parser_g_new(_on_error, _on_error, _on_error, ctxt,
-					 _on_warn, _on_warn, _on_warn, ctxt,
-					 DATA_PLUGIN, NULL, true);
+	if ((data_parser = data_key_get(parameters, "data_parser"))) {
+		if (data_get_type(data_parser) == DATA_TYPE_STRING) {
+			char *p = xstrdup_printf("data_parser/%s",
+						 data_get_string(data_parser));
+
+			if ((ctxt->parser = data_parser_g_new(
+				_on_error, _on_error, _on_error, ctxt, _on_warn,
+				_on_warn, _on_warn, ctxt, p, NULL, true))) {
+				data_set_string(
+					data_key_set(plugin, "data_parser"),
+					data_parser_get_plugin(ctxt->parser));
+			} else {
+				ctxt->rc = SLURM_PLUGIN_NAME_INVALID;
+			}
+
+			xfree(p);
+		} else {
+			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				   "data_parser parameter must be a string");
+		}
+	} else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "data_parser parameter not found");
+	}
+
 	if (!ctxt->parser)
 		xassert(ctxt->rc);
 
@@ -230,8 +252,9 @@ extern int resp_error(ctxt_t *ctxt, int error_code, const char *source,
 		str = vxstrfmt(why, ap);
 		va_end(ap);
 
-		error("%s: [%s] parser="DATA_VERSION" rc[%d]=%s -> %s",
-		      (source ? source : __func__), ctxt->id, error_code,
+		error("%s: [%s] parser=%s rc[%d]=%s -> %s",
+		      (source ? source : __func__), ctxt->id,
+		      data_parser_get_plugin(ctxt->parser), error_code,
 		      slurm_strerror(error_code), str);
 
 		data_set_string_own(data_key_set(e, "description"), str);
@@ -273,8 +296,9 @@ extern void resp_warn(ctxt_t *ctxt, const char *source, const char *why, ...)
 		str = vxstrfmt(why, ap);
 		va_end(ap);
 
-		debug("%s: [%s] parser="DATA_VERSION" WARNING: %s",
-		      (source ? source : __func__), ctxt->id, str);
+		debug("%s: [%s] parser=%s WARNING: %s",
+		      (source ? source : __func__), ctxt->id,
+		      data_parser_get_plugin(ctxt->parser), str);
 
 		data_set_string_own(data_key_set(w, "description"), str);
 	}
@@ -330,7 +354,7 @@ extern data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 	static_ref_json_to_data_t(spec, openapi_json);
 
 	parser = data_parser_g_new(NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-				   NULL, DATA_PLUGIN, NULL, false);
+				   NULL, SLURM_DATA_PARSER_VERSION, NULL, false);
 	(void) data_parser_g_specify(parser, spec);
 	data_parser_g_free(parser, false);
 
@@ -341,7 +365,8 @@ extern void slurm_openapi_p_init(void)
 {
 	xassert(!global_parser);
 	global_parser = data_parser_g_new(NULL, NULL, NULL, NULL, NULL, NULL,
-					  NULL, NULL, DATA_PLUGIN, NULL, false);
+					  NULL, NULL, SLURM_DATA_PARSER_VERSION,
+					  NULL, false);
 
 	init_op_diag();
 	init_op_jobs();

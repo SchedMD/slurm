@@ -126,10 +126,12 @@ static int _op_handler_licenses(const char *context_id,
 
 extern void init_op_diag(void)
 {
-	bind_operation_handler("/slurm/v0.0.40/diag/", _op_handler_diag, 0);
-	bind_operation_handler("/slurm/v0.0.40/ping/", _op_handler_ping, 0);
-	bind_operation_handler("/slurm/v0.0.40/licenses/", _op_handler_licenses,
+	bind_operation_handler("/slurm/{data_parser}/diag/", _op_handler_diag,
 			       0);
+	bind_operation_handler("/slurm/{data_parser}/ping/", _op_handler_ping,
+			       0);
+	bind_operation_handler("/slurm/{data_parser}/licenses/",
+			       _op_handler_licenses, 0);
 }
 
 extern void destroy_op_diag(void)

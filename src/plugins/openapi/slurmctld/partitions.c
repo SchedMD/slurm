@@ -132,9 +132,9 @@ done:
 
 extern void init_op_partitions(void)
 {
-	bind_operation_handler("/slurm/v0.0.40/partitions/",
+	bind_operation_handler("/slurm/{data_parser}/partitions/",
 			       _op_handler_partitions, URL_TAG_PARTITIONS);
-	bind_operation_handler("/slurm/v0.0.40/partition/{partition_name}",
+	bind_operation_handler("/slurm/{data_parser}/partition/{partition_name}",
 			       _op_handler_partitions, URL_TAG_PARTITION);
 }
 
