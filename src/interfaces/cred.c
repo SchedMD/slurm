@@ -477,36 +477,6 @@ slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx)
 }
 
 int
-slurm_cred_ctx_set(slurm_cred_ctx_t ctx, slurm_cred_opt_t opt, ...)
-{
-	int     rc  = SLURM_SUCCESS;
-	va_list ap;
-
-	xassert(ctx != NULL);
-
-	va_start(ap, opt);
-
-	slurm_mutex_lock(&ctx->mutex);
-	xassert(ctx->magic == CRED_CTX_MAGIC);
-
-	switch (opt) {
-	case SLURM_CRED_OPT_EXPIRY_WINDOW:
-		ctx->expiry_window = va_arg(ap, int);
-		break;
-	default:
-		slurm_seterrno(EINVAL);
-		rc = SLURM_ERROR;
-		break;
-	}
-
-	slurm_mutex_unlock(&ctx->mutex);
-
-	va_end(ap);
-
-	return rc;
-}
-
-int
 slurm_cred_ctx_get(slurm_cred_ctx_t ctx, slurm_cred_opt_t opt, ...)
 {
 	int rc = SLURM_SUCCESS;

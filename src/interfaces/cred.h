@@ -119,7 +119,6 @@ typedef enum {
 	SLURM_CRED_OPT_EXPIRY_WINDOW /* expiration time of creds (int );  */
 } slurm_cred_opt_t;
 
-int slurm_cred_ctx_set(slurm_cred_ctx_t ctx, slurm_cred_opt_t opt, ...);
 int slurm_cred_ctx_get(slurm_cred_ctx_t ctx, slurm_cred_opt_t opt, ...);
 
 /*
