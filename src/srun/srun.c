@@ -274,7 +274,7 @@ static void *_launch_one_app(void *data)
 		launch_begin = true;
 		slurm_mutex_unlock(&launch_mutex);
 
-		pre_launch_srun_job(job, 1, opt_local);
+		pre_launch_srun_job(job, opt_local);
 
 		slurm_mutex_lock(&launch_mutex);
 		launch_fini = true;
