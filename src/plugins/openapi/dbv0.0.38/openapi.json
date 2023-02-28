@@ -1753,14 +1753,6 @@
           },
           "required": true
         }
-      },
-      "dbv0.0.38_tres_update": {
-        "type": "object",
-        "properties": {
-          "tres": {
-            "$ref": "#/components/schemas/dbv0.0.38_tres_list"
-          }
-        }
       }
     },
     "/jobs/": {
