@@ -1521,16 +1521,12 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	        _srun_cli_filter_post_submit(my_job_id, job->step_id.step_id);
 }
 
-extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
+extern void pre_launch_srun_job(srun_job_t *job,
 				bool handle_signals, slurm_opt_t *opt_local)
 {
 	if (handle_signals && !signal_thread) {
 		slurm_thread_create(&signal_thread, _srun_signal_mgr, job);
 	}
-
-	/* if running from poe This already happened in srun. */
-	if (slurm_started)
-		return;
 
 	_run_srun_prolog(job);
 	if (_call_spank_local_user(job, opt_local) < 0) {

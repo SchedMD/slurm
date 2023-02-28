@@ -159,7 +159,7 @@ extern void init_srun(int argc, char **argv, log_options_t *logopt,
 extern void create_srun_job(void **p_job, bool *got_alloc,
 			    bool slurm_started, bool handle_signals);
 
-extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
+extern void pre_launch_srun_job(srun_job_t *job,
 				bool handle_signals, slurm_opt_t *opt_local);
 
 extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
