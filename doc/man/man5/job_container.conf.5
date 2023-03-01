@@ -61,6 +61,9 @@ with the hostname on which the \fBslurmd\fR is running. The first "%n" within
 the name is replaced with the Slurm node name on which the \fBslurmd\fR is
 running.
 
+\fBNOTE\fR: The \fBBasePath\fR must be unique to each node.  If BasePath is on a
+shared filesystem, you can use "%h" or "%n" to create node-uinque directories.
+
 \fBNOTE\fR: The \fBBasePath\fR parameter cannot be set to any of
 the paths specified by \fBDirs\fR. Using these directories will cause conflicts
 when trying to mount and unmount the private directories for the job.
