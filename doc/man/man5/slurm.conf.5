@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "February 2023" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "March 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -7376,7 +7376,8 @@ use the \fBSuspendTimeout\fR value set for the entire cluster.
 
 .TP
 \fBTRESBillingWeights\fR
-TRESBillingWeights is used to define the billing weights of each TRES type that
+TRESBillingWeights is used to define the billing weights of each tracked TRES
+type (see \fBAccountingStorageTRES\fR) that
 will be used in calculating the usage of a job. The calculated usage is used
 when calculating fairshare and when enforcing the TRES billing limit on jobs.
 
