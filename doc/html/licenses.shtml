@@ -236,6 +236,48 @@ $ sacctmgr show resource withclusters
     matlab   rlm_host  License    200            0        60        rlm        pdf       60
 </pre>
 
+<p>Starting with Slurm 23.02, a new <i>Absolute</i> flag is available that
+indicates the license allowed values for each cluster are to be treated as
+absolute license counts rather than percentages.</p>
+
+<p>Some brief examples of license management using this flag.</p>
+<pre>
+$ sacctmgr -i add resource name=deluxe cluster=fluid,pdf count=150 allowed=70 \
+  server=flex_host servertype=flexlm flags=absolute
+ Adding Resource(s)
+  deluxe@flex_host
+   Cluster - fluid	70
+   Cluster - pdf	70
+ Settings
+  Name           = deluxe
+  Server         = flex_host
+  Description    = deluxe
+  ServerType     = flexlm
+  Count          = 150
+  Flags          = Absolute
+  Type           = Unknown
+
+$ sacctmgr show resource withclusters
+      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags 
+---------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- -------------------- 
+    deluxe  flex_host  License    150            0       140     flexlm      fluid       70             Absolute 
+    deluxe  flex_host  License    150            0       140     flexlm        pdf       70             Absolute
+
+$ sacctmgr -i update resource deluxe set allowed=25 where cluster=fluid
+ Modified server resource ...
+  Cluster - fluid	- deluxe@flex_host
+
+$ sacctmgr show resource withclusters
+      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags 
+---------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- -------------------- 
+    deluxe  flex_host  License    150            0        95     flexlm      fluid       25             Absolute 
+    deluxe  flex_host  License    150            0        95     flexlm        pdf       70             Absolute 
+</pre>
+
+<p>This can also be established as the default for all newly created licenses
+by adding <i>AllResourcesAbsolute=yes</i> to <i>slurmdbd.conf</i> (and restarting
+SlurmDBD to make the change take effect).</p>
+
 <h2 id="dynamic_licenses">Dynamic licenses
 <a class="slurm_link" href="#dynamic_licenses"></a>
 </h2>
