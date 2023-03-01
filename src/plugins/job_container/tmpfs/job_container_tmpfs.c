@@ -432,18 +432,10 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 
 	_create_paths(job_id, &job_mount, &ns_holder, &src_bind);
 
-	rc = mkdir(job_mount, 0700);
-	if (rc && errno != EEXIST) {
+	if (mkdir(job_mount, 0700)) {
 		error("%s: mkdir %s failed: %m", __func__, job_mount);
 		rc = SLURM_ERROR;
 		goto end_it;
-	} else if (rc && errno == EEXIST) {
-		/*
-		 * This is coming from sbcast likely,
-		 * exit as success
-		 */
-		rc = 0;
-		goto exit2;
 	}
 
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
