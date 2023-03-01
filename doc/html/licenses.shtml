@@ -6,10 +6,10 @@
 <a class="slurm_link" href="#overview"></a>
 </h2>
 <p>Slurm can help with software license management by assigning available
-licenses to jobs at scheduling time. If the licenses are not available,
-jobs are kept pending until licenses become available.
-Licenses in Slurm are essentially shared resources, meaning configured resources
-that are not tied to a specific host but are associated with the entire cluster.
+licenses to jobs at scheduling time. If the licenses are not available, jobs
+are kept pending until licenses become available.  Licenses in Slurm are
+essentially shared resources, meaning configured resources that are not tied to
+a specific host but are associated with the entire cluster.</p>
 
 <p>Licenses in Slurm can be configured in two ways:</p>
 <ul>
@@ -25,19 +25,18 @@ licenses are assigned to.
 </li>
 </ul>
 
-
 <h2 id="local_licenses">Local Licenses
 <a class="slurm_link" href="#local_licenses"></a>
 </h2>
 <p>Local licenses are defined in the slurm.conf using the <i>Licenses</i>
-option.
+option.</p>
 
-<p>slurm.conf:
+<p>slurm.conf:</p>
 <pre>
 Licenses=fluent:30,ansys:100
 </pre>
 
-<p>Configured licenses can be viewed using the <i>scontrol</i> command.
+<p>Configured licenses can be viewed using the <i>scontrol</i> command.</p>
 <pre>
 $ scontrol show lic
 LicenseName=ansys
@@ -47,7 +46,7 @@ LicenseName=fluent
 </pre>
 
 <p>Requesting licenses is done by using the -L, or --licenses, submission
-option.
+option.</p>
 <pre>
 $ sbatch -L ansys:2 script.sh
 Submitted batch job 5212
@@ -67,8 +66,8 @@ LicenseName=fluent
 <p>A site has two license servers, one serves 100 Nastran licenses provided by
 FlexNet and the other serves 50 Matlab licenses from Reprise License
 Management. The site has two clusters named "fluid" and "pdf" dedicated to run
-simulation jobs using both products. The managers want to split the number
-of Nastran licenses equally between clusters, but assign 70% of the Matlab
+simulation jobs using both products. The managers want to split the number of
+Nastran licenses equally between clusters, but assign 70% of the Matlab
 licenses to cluster "pdf" and the remaining 30% to cluster "fluid".</p>
 
 <h3 id="configuring">Configuring Slurm for the use case
@@ -87,9 +86,9 @@ $ sacctmgr show clusters format=cluster,controlhost
 <p>The licenses are added using the <i>sacctmgr</i> command, specifying the
 total count of licenses and the percentage that should be allocated
 to each cluster. This can be done either in one step or through a
-multi-step process.
+multi-step process.</p>
 
-<p>One step:
+<p>One step:</p>
 <pre>
 $ sacctmgr add resource name=nastran cluster=fluid,pdf \
   count=100 allowed=50 server=flex_host servertype=flexlm type=license
@@ -106,7 +105,7 @@ $ sacctmgr add resource name=nastran cluster=fluid,pdf \
   Type           = License
 </pre>
 
-<p>Multi-step:
+<p>Multi-step:</p>
 <pre>
 $ sacctmgr add resource name=matlab count=50 server=rlm_host \
   servertype=rlm type=license
@@ -149,7 +148,7 @@ $ sacctmgr add resource name=matlab server=rlm_host \
 
 
 <p>The <i>sacctmgr</i> command will now display the grand total
-of licenses.
+of licenses.</p>
 <pre>
 $ sacctmgr show resource
       Name     Server     Type  Count LastConsumed Allocated ServerType                Flags
@@ -166,7 +165,7 @@ $ sacctmgr show resource withclusters
 </pre>
 
 <p>The configured licenses are now visible on both clusters using the
-<i>scontrol</i> command.
+<i>scontrol</i> command.</p>
 <pre>
 # On cluster "pdf":
 $ scontrol show lic
@@ -187,14 +186,15 @@ LicenseName=nastran@flex_host
     LastConsumed=0 LastDeficit=0 LastUpdate=2023-02-28T17:01:44
 </pre>
 
-<p>When submitting jobs to remote licenses, the name and server must be used.
+<p>When submitting jobs to remote licenses, the name and server must be
+used.</p>
 <pre>
 $ sbatch -L nastran@flex_host script.sh
 Submitted batch job 5172
 </pre>
 
 
-<p>License percentages and counts can be modified as shown below:
+<p>License percentages and counts can be modified as shown below:</p>
 <pre>
 $ sacctmgr modify resource name=matlab server=rlm_host set \
   count=200
@@ -217,7 +217,7 @@ $ sacctmgr show resource withclusters
     matlab   rlm_host  License    200            0        90        rlm        pdf       60
 </pre>
 
-<p>Licenses can be deleted either on the cluster or all together as shown:
+<p>Licenses can be deleted either on the cluster or all together as shown:</p>
 <pre>
 $ sacctmgr delete resource where name=matlab server=rlm_host cluster=fluid
  Deleting resource(s)...
