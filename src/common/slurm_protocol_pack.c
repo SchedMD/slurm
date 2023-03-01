@@ -10550,14 +10550,12 @@ static void _pack_crontab_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_crontab_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	uint32_t uint32_tmp;
 	crontab_response_msg_t *msg = xmalloc(sizeof(*msg));
 	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&msg->crontab, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&msg->disabled_lines, &uint32_tmp,
-				       buffer);
+		safe_unpackstr(&msg->crontab, buffer);
+		safe_unpackstr(&msg->disabled_lines, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -10584,12 +10582,11 @@ static void _pack_crontab_update_request_msg(const slurm_msg_t *smsg,
 
 static int _unpack_crontab_update_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	uint32_t uint32_tmp;
 	crontab_update_request_msg_t *msg = xmalloc(sizeof(*msg));
 	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&msg->crontab, &uint32_tmp, buffer);
+		safe_unpackstr(&msg->crontab, buffer);
 		if (_unpack_job_desc_list_msg(&msg->jobs, buffer,
 					      smsg->protocol_version))
 			goto unpack_error;
@@ -10626,20 +10623,18 @@ static void _pack_crontab_update_response_msg(const slurm_msg_t *smsg,
 
 static int _unpack_crontab_update_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	uint32_t uint32_tmp;
 	crontab_update_response_msg_t *msg = xmalloc(sizeof(*msg));
 	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&msg->err_msg, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&msg->job_submit_user_msg, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&msg->failed_lines, &uint32_tmp, buffer);
+		safe_unpackstr(&msg->err_msg, buffer);
+		safe_unpackstr(&msg->job_submit_user_msg, buffer);
+		safe_unpackstr(&msg->failed_lines, buffer);
 		safe_unpack32_array(&msg->jobids, &msg->jobids_count, buffer);
 		safe_unpack32(&msg->return_code, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&msg->err_msg, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&msg->failed_lines, &uint32_tmp, buffer);
+		safe_unpackstr(&msg->err_msg, buffer);
+		safe_unpackstr(&msg->failed_lines, buffer);
 		safe_unpack32_array(&msg->jobids, &msg->jobids_count, buffer);
 		safe_unpack32(&msg->return_code, buffer);
 	}
