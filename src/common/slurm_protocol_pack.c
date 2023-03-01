@@ -355,9 +355,9 @@ static void _pack_network_callerid_resp_msg(const slurm_msg_t *smsg,
 	xassert(msg);
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(msg->job_id,		buffer);
-		pack32(msg->return_code,	buffer);
-		packstr(msg->node_name,		buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->return_code, buffer);
+		packstr(msg->node_name, buffer);
 	}
 }
 
@@ -368,8 +368,8 @@ static int _unpack_network_callerid_resp_msg(slurm_msg_t *smsg, buf_t *buffer)
 	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id,		buffer);
-		safe_unpack32(&msg->return_code,	buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->return_code, buffer);
 		safe_unpackstr(&msg->node_name, buffer);
 	}
 
