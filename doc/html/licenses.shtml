@@ -92,12 +92,11 @@ multi-step process.
 <p>One step:
 <pre>
 $ sacctmgr add resource name=nastran cluster=fluid,pdf \
-  count=100 percentallowed=50 server=flex_host
-  servertype=flexlm type=license
+  count=100 allowed=50 server=flex_host servertype=flexlm type=license
  Adding Resource(s)
   nastran@flex_host
-   Cluster - pdf        50%
-   Cluster - fluid      50%
+   Cluster - fluid	50
+   Cluster - pdf	50
  Settings
   Name           = nastran
   Server         = flex_host
@@ -121,22 +120,30 @@ $ sacctmgr add resource name=matlab count=50 server=rlm_host \
   Count          = 50
   Type           = License
 
-$ sacctmgr add resource name=matlab server=rlm_host
-  cluster=pdf percentallowed=70
-Adding Resource(s)
-  matlab@rlm_host
-   Cluster - pdf        70%
- Settings
-  Server         = rlm_host
-  Type           = License
-
-$ sacctmgr add resource name=matlab server=rlm_host
-  cluster=fluid percentallowed=30
+$ sacctmgr add resource name=matlab server=rlm_host \
+  cluster=pdf allowed=70
  Adding Resource(s)
   matlab@rlm_host
-   Cluster - fluid     30%
+   Cluster - pdf	70
  Settings
+  Name           = matlab
   Server         = rlm_host
+  Count          = 50
+  LastConsumed   = 0
+  Flags          = (null)
+  Type           = License
+
+$ sacctmgr add resource name=matlab server=rlm_host \
+  cluster=fluid allowed=30
+ Adding Resource(s)
+  matlab@rlm_host
+   Cluster - fluid	30
+ Settings
+  Name           = matlab
+  Server         = rlm_host
+  Count          = 50
+  LastConsumed   = 0
+  Flags          = (null)
   Type           = License
 </pre>
 
@@ -145,35 +152,39 @@ $ sacctmgr add resource name=matlab server=rlm_host
 of licenses.
 <pre>
 $ sacctmgr show resource
-      Name     Server     Type  Count % Allocated ServerType 
----------- ---------- -------- ------ ----------- ---------- 
-   nastran  flex_host  License    100         100     flexlm 
-    matlab   rlm_host  License     50         100        rlm 
-
-$sacctmgr show resource withclusters
-      Name     Server     Type  Count % Allocated ServerType    Cluster  % Allowed 
----------- ---------- -------- ------ ----------- ---------- ---------- ---------- 
-   nastran  flex_host  License    100         100     flexlm        pdf         50 
-   nastran  flex_host  License    100         100     flexlm      fluid         50 
-    matlab   rlm_host  License     50         100        rlm        pdf         70 
-    matlab   rlm_host  License     50         100        rlm      fluid         30 
+      Name     Server     Type  Count LastConsumed Allocated ServerType                Flags
+---------- ---------- -------- ------ ------------ --------- ---------- --------------------
+   nastran  flex_host  License    100            0       100     flexlm
+    matlab   rlm_host  License     50            0       100        rlm
+$ sacctmgr show resource withclusters
+      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags
+---------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- --------------------
+   nastran  flex_host  License    100            0       100     flexlm      fluid       50
+   nastran  flex_host  License    100            0       100     flexlm        pdf       50 
+    matlab   rlm_host  License     50            0       100        rlm      fluid       30
+    matlab   rlm_host  License     50            0       100        rlm        pdf       70
 </pre>
 
 <p>The configured licenses are now visible on both clusters using the
 <i>scontrol</i> command.
 <pre>
+# On cluster "pdf":
 $ scontrol show lic
 LicenseName=matlab@rlm_host
-    Total=35 Used=0 Free=35 Remote=yes
+    Total=35 Used=0 Free=35 Reserved=0 Remote=yes
+    LastConsumed=0 LastDeficit=0 LastUpdate=2023-02-28T17:01:44
 LicenseName=nastran@flex_host
-    Total=50 Used=0 Free=50 Remote=yes
+    Total=50 Used=0 Free=50 Reserved=0 Remote=yes
+    LastConsumed=0 LastDeficit=0 LastUpdate=2023-02-28T17:01:44
 
 # On cluster "fluid":
 $ scontrol show lic
 LicenseName=matlab@rlm_host
-    Total=15 Used=0 Free=15 Remote=yes
+    Total=15 Used=0 Free=15 Reserved=0 Remote=yes
+    LastConsumed=0 LastDeficit=0 LastUpdate=2023-02-28T17:01:44
 LicenseName=nastran@flex_host
-    Total=50 Used=0 Free=50 Remote=yes
+    Total=50 Used=0 Free=50 Reserved=0 Remote=yes
+    LastConsumed=0 LastDeficit=0 LastUpdate=2023-02-28T17:01:44
 </pre>
 
 <p>When submitting jobs to remote licenses, the name and server must be used.
@@ -189,40 +200,40 @@ $ sacctmgr modify resource name=matlab server=rlm_host set \
   count=200
  Modified server resource ...
   matlab@rlm_host
-  Cluster - pdf         - matlab@rlm_host
-  Cluster - fluid       - matlab@rlm_host
+  Cluster - fluid	- matlab@rlm_host
+  Cluster - pdf	- matlab@rlm_host
 
 $ sacctmgr modify resource name=matlab server=rlm_host \
-  cluster=pdf set percentallowed=60
+  cluster=pdf set allowed=60
  Modified server resource ...
-  Cluster - pdf         - matlab@rlm_host
+  Cluster - pdf	- matlab@rlm_host
 
 $ sacctmgr show resource withclusters
-      Name     Server     Type  Count % Allocated ServerType    Cluster  % Allowed 
----------- ---------- -------- ------ ----------- ---------- ---------- ---------- 
-   nastran  flex_host  License    100         100     flexlm        pdf         50 
-   nastran  flex_host  License    100         100     flexlm      fluid         50 
-    matlab   rlm_host  License    200          90        rlm        pdf         60 
-    matlab   rlm_host  License    200          90        rlm      fluid         30 
+      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags
+---------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- --------------------
+   nastran  flex_host  License    100            0       100     flexlm      fluid       50
+   nastran  flex_host  License    100            0       100     flexlm        pdf       50
+    matlab   rlm_host  License    200            0        90        rlm      fluid       30
+    matlab   rlm_host  License    200            0        90        rlm        pdf       60
 </pre>
 
 <p>Licenses can be deleted either on the cluster or all together as shown:
 <pre>
-$ sacctmgr delete resource where name=matlab server=rlm_host \
-  cluster=fluid
+$ sacctmgr delete resource where name=matlab server=rlm_host cluster=fluid
  Deleting resource(s)...
-  Cluster - fluid      - matlab@rlm_host
+ Deleting resource(s)...
+  Cluster - fluid	- matlab@rlm_host
 
 $ sacctmgr delete resource where name=nastran server=flex_host
  Deleting resource(s)...
   nastran@flex_host
-  Cluster - pdf        - nastran@flex_host
-  Cluster - fluid      - nastran@flex_host
+  Cluster - fluid	- nastran@flex_host
+  Cluster - pdf	- nastran@flex_host
 
 $ sacctmgr show resource withclusters
-      Name     Server     Type  Count % Allocated ServerType    Cluster  % Allowed 
----------- ---------- -------- ------ ----------- ---------- ---------- ---------- 
-    matlab   rlm_host  License    200          60        rlm      pdf         60 
+      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags
+---------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- --------------------
+    matlab   rlm_host  License    200            0        60        rlm        pdf       60
 </pre>
 
 <h2 id="dynamic_licenses">Dynamic licenses
