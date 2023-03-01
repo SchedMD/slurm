@@ -1198,15 +1198,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
-				       buf_t *buffer,
-				       uint16_t protocol_version)
+static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
+						   buf_t *buffer)
 {
+	resource_allocation_response_msg_t *msg = smsg->data;
 	xassert(msg);
 
-
-	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		packstr(msg->alias_list, buffer);
 		packstr(msg->batch_host, buffer);
@@ -1251,11 +1249,12 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		if (msg->working_cluster_rec) {
 			pack8(1, buffer);
 			slurmdb_pack_cluster_rec(msg->working_cluster_rec,
-						 protocol_version, buffer);
+						 smsg->protocol_version,
+						 buffer);
 		} else {
 			pack8(0, buffer);
 		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		packstr(msg->alias_list, buffer);
 		packstr(msg->batch_host, buffer);
@@ -1293,33 +1292,31 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		packstr(msg->resv_name, buffer);
 		select_g_select_jobinfo_pack(NULL,
 					     buffer,
-					     protocol_version);
+					     smsg->protocol_version);
 
 		if (msg->working_cluster_rec) {
 			pack8(1, buffer);
 			slurmdb_pack_cluster_rec(msg->working_cluster_rec,
-						 protocol_version, buffer);
+						 smsg->protocol_version,
+						 buffer);
 		} else {
 			pack8(0, buffer);
 		}
 	}
 }
 
-static int
-_unpack_resource_allocation_response_msg(
-	resource_allocation_response_msg_t** msg, buf_t *buffer,
-	uint16_t protocol_version)
+static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
+						    buf_t *buffer)
 {
 	uint8_t  uint8_tmp;
 	uint32_t uint32_tmp;
 	resource_allocation_response_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(resource_allocation_response_msg_t));
-	*msg = tmp_ptr;
+	smsg->data = tmp_ptr;
 
-	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->account, buffer);
 		safe_unpackstr(&tmp_ptr->alias_list, buffer);
 		safe_unpackstr(&tmp_ptr->batch_host, buffer);
@@ -1374,9 +1371,9 @@ _unpack_resource_allocation_response_msg(
 		if (uint8_tmp) {
 			slurmdb_unpack_cluster_rec(
 				(void **)&tmp_ptr->working_cluster_rec,
-				protocol_version, buffer);
+				smsg->protocol_version, buffer);
 		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		dynamic_plugin_data_t *select_jobinfo;
 		safe_unpackstr(&tmp_ptr->account, buffer);
 		safe_unpackstr(&tmp_ptr->alias_list, buffer);
@@ -1423,14 +1420,15 @@ _unpack_resource_allocation_response_msg(
 		safe_unpackstr(&tmp_ptr->qos, buffer);
 		safe_unpackstr(&tmp_ptr->resv_name, buffer);
 		if (select_g_select_jobinfo_unpack(&select_jobinfo,
-						   buffer, protocol_version))
+						   buffer,
+						   smsg->protocol_version))
 			goto unpack_error;
 		select_g_select_jobinfo_free(select_jobinfo);
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			slurmdb_unpack_cluster_rec(
 				(void **)&tmp_ptr->working_cluster_rec,
-				protocol_version, buffer);
+				smsg->protocol_version, buffer);
 		}
 	}
 
@@ -1438,7 +1436,7 @@ _unpack_resource_allocation_response_msg(
 
 unpack_error:
 	slurm_free_resource_allocation_response_msg(tmp_ptr);
-	*msg = NULL;
+	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -6146,6 +6144,7 @@ static void
 _pack_job_info_list_msg(List job_resp_list, buf_t *buffer,
 			uint16_t protocol_version)
 {
+	slurm_msg_t msg = { .protocol_version = protocol_version };
 	resource_allocation_response_msg_t *resp;
 	ListIterator iter;
 	uint16_t cnt = 0;
@@ -6158,8 +6157,8 @@ _pack_job_info_list_msg(List job_resp_list, buf_t *buffer,
 
 	iter = list_iterator_create(job_resp_list);
 	while ((resp = list_next(iter))){
-		_pack_resource_allocation_response_msg(resp, buffer,
-						       protocol_version);
+		msg.data = resp;
+		_pack_resource_allocation_response_msg(&msg, buffer);
 	}
 	list_iterator_destroy(iter);
 }
@@ -6174,7 +6173,7 @@ static int
 _unpack_job_info_list_msg(List *job_resp_list, buf_t *buffer,
 			  uint16_t protocol_version)
 {
-	resource_allocation_response_msg_t *resp;
+	slurm_msg_t msg = { .protocol_version = protocol_version };
 	uint16_t cnt = 0;
 	int i;
 
@@ -6188,11 +6187,10 @@ _unpack_job_info_list_msg(List *job_resp_list, buf_t *buffer,
 
 	*job_resp_list = list_create(_free_job_info_list);
 	for (i = 0; i < cnt; i++) {
-		resp = NULL;
-		if (_unpack_resource_allocation_response_msg(&resp, buffer,
-							     protocol_version) != SLURM_SUCCESS)
+		if (_unpack_resource_allocation_response_msg(&msg, buffer))
 			goto unpack_error;
-		list_append(*job_resp_list, resp);
+		list_append(*job_resp_list, msg.data);
+		msg.data = NULL;
 	}
 	return SLURM_SUCCESS;
 
@@ -11072,10 +11070,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		break;
 	case RESPONSE_JOB_ALLOCATION_INFO:
 	case RESPONSE_RESOURCE_ALLOCATION:
-		_pack_resource_allocation_response_msg
-			((resource_allocation_response_msg_t *) msg->data,
-			 buffer,
-			 msg->protocol_version);
+		_pack_resource_allocation_response_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_WILL_RUN:
 		_pack_will_run_response_msg((will_run_response_msg_t *)
@@ -11727,10 +11722,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case RESPONSE_JOB_ALLOCATION_INFO:
 	case RESPONSE_RESOURCE_ALLOCATION:
-		rc = _unpack_resource_allocation_response_msg(
-			(resource_allocation_response_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_resource_allocation_response_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_WILL_RUN:
 		rc = _unpack_will_run_response_msg((will_run_response_msg_t **)
