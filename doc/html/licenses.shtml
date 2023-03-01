@@ -6,10 +6,10 @@
 <a class="slurm_link" href="#overview"></a>
 </h2>
 <p>Slurm can help with software license management by assigning available
-licenses to jobs at scheduling time. If the licenses are not available,
-jobs are kept pending until licenses become available.
-Licenses in Slurm are essentially shared resources, meaning configured resources
-that are not tied to a specific host but are associated with the entire cluster.
+licenses to jobs at scheduling time. If the licenses are not available, jobs
+are kept pending until licenses become available.  Licenses in Slurm are
+essentially shared resources, meaning configured resources that are not tied to
+a specific host but are associated with the entire cluster.</p>
 
 <p>Licenses in Slurm can be configured in two ways:</p>
 <ul>
@@ -25,19 +25,18 @@ licenses are assigned to.
 </li>
 </ul>
 
-
 <h2 id="local_licenses">Local Licenses
 <a class="slurm_link" href="#local_licenses"></a>
 </h2>
 <p>Local licenses are defined in the slurm.conf using the <i>Licenses</i>
-option.
+option.</p>
 
-<p>slurm.conf:
+<p>slurm.conf:</p>
 <pre>
 Licenses=fluent:30,ansys:100
 </pre>
 
-<p>Configured licenses can be viewed using the <i>scontrol</i> command.
+<p>Configured licenses can be viewed using the <i>scontrol</i> command.</p>
 <pre>
 $ scontrol show lic
 LicenseName=ansys
@@ -47,7 +46,7 @@ LicenseName=fluent
 </pre>
 
 <p>Requesting licenses is done by using the -L, or --licenses, submission
-option.
+option.</p>
 <pre>
 $ sbatch -L ansys:2 script.sh
 Submitted batch job 5212
@@ -67,8 +66,8 @@ LicenseName=fluent
 <p>A site has two license servers, one serves 100 Nastran licenses provided by
 FlexNet and the other serves 50 Matlab licenses from Reprise License
 Management. The site has two clusters named "fluid" and "pdf" dedicated to run
-simulation jobs using both products. The managers want to split the number
-of Nastran licenses equally between clusters, but assign 70% of the Matlab
+simulation jobs using both products. The managers want to split the number of
+Nastran licenses equally between clusters, but assign 70% of the Matlab
 licenses to cluster "pdf" and the remaining 30% to cluster "fluid".</p>
 
 <h3 id="configuring">Configuring Slurm for the use case
@@ -87,17 +86,16 @@ $ sacctmgr show clusters format=cluster,controlhost
 <p>The licenses are added using the <i>sacctmgr</i> command, specifying the
 total count of licenses and the percentage that should be allocated
 to each cluster. This can be done either in one step or through a
-multi-step process.
+multi-step process.</p>
 
-<p>One step:
+<p>One step:</p>
 <pre>
 $ sacctmgr add resource name=nastran cluster=fluid,pdf \
-  count=100 percentallowed=50 server=flex_host
-  servertype=flexlm type=license
+  count=100 allowed=50 server=flex_host servertype=flexlm type=license
  Adding Resource(s)
   nastran@flex_host
-   Cluster - pdf        50%
-   Cluster - fluid      50%
+   Cluster - fluid	50
+   Cluster - pdf	50
  Settings
   Name           = nastran
   Server         = flex_host
@@ -107,7 +105,7 @@ $ sacctmgr add resource name=nastran cluster=fluid,pdf \
   Type           = License
 </pre>
 
-<p>Multi-step:
+<p>Multi-step:</p>
 <pre>
 $ sacctmgr add resource name=matlab count=50 server=rlm_host \
   servertype=rlm type=license
@@ -121,124 +119,252 @@ $ sacctmgr add resource name=matlab count=50 server=rlm_host \
   Count          = 50
   Type           = License
 
-$ sacctmgr add resource name=matlab server=rlm_host
-  cluster=pdf percentallowed=70
-Adding Resource(s)
-  matlab@rlm_host
-   Cluster - pdf        70%
- Settings
-  Server         = rlm_host
-  Type           = License
-
-$ sacctmgr add resource name=matlab server=rlm_host
-  cluster=fluid percentallowed=30
+$ sacctmgr add resource name=matlab server=rlm_host \
+  cluster=pdf allowed=70
  Adding Resource(s)
   matlab@rlm_host
-   Cluster - fluid     30%
+   Cluster - pdf	70
  Settings
+  Name           = matlab
   Server         = rlm_host
+  Count          = 50
+  LastConsumed   = 0
+  Flags          = (null)
+  Type           = License
+
+$ sacctmgr add resource name=matlab server=rlm_host \
+  cluster=fluid allowed=30
+ Adding Resource(s)
+  matlab@rlm_host
+   Cluster - fluid	30
+ Settings
+  Name           = matlab
+  Server         = rlm_host
+  Count          = 50
+  LastConsumed   = 0
+  Flags          = (null)
   Type           = License
 </pre>
 
 
 <p>The <i>sacctmgr</i> command will now display the grand total
-of licenses.
+of licenses.</p>
 <pre>
 $ sacctmgr show resource
-      Name     Server     Type  Count % Allocated ServerType 
----------- ---------- -------- ------ ----------- ---------- 
-   nastran  flex_host  License    100         100     flexlm 
-    matlab   rlm_host  License     50         100        rlm 
-
-$sacctmgr show resource withclusters
-      Name     Server     Type  Count % Allocated ServerType    Cluster  % Allowed 
----------- ---------- -------- ------ ----------- ---------- ---------- ---------- 
-   nastran  flex_host  License    100         100     flexlm        pdf         50 
-   nastran  flex_host  License    100         100     flexlm      fluid         50 
-    matlab   rlm_host  License     50         100        rlm        pdf         70 
-    matlab   rlm_host  License     50         100        rlm      fluid         30 
+      Name     Server     Type  Count LastConsumed Allocated ServerType                Flags
+---------- ---------- -------- ------ ------------ --------- ---------- --------------------
+   nastran  flex_host  License    100            0       100     flexlm
+    matlab   rlm_host  License     50            0       100        rlm
+$ sacctmgr show resource withclusters
+      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags
+---------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- --------------------
+   nastran  flex_host  License    100            0       100     flexlm      fluid       50
+   nastran  flex_host  License    100            0       100     flexlm        pdf       50 
+    matlab   rlm_host  License     50            0       100        rlm      fluid       30
+    matlab   rlm_host  License     50            0       100        rlm        pdf       70
 </pre>
 
 <p>The configured licenses are now visible on both clusters using the
-<i>scontrol</i> command.
+<i>scontrol</i> command.</p>
 <pre>
+# On cluster "pdf":
 $ scontrol show lic
 LicenseName=matlab@rlm_host
-    Total=35 Used=0 Free=35 Remote=yes
+    Total=35 Used=0 Free=35 Reserved=0 Remote=yes
+    LastConsumed=0 LastDeficit=0 LastUpdate=2023-02-28T17:01:44
 LicenseName=nastran@flex_host
-    Total=50 Used=0 Free=50 Remote=yes
+    Total=50 Used=0 Free=50 Reserved=0 Remote=yes
+    LastConsumed=0 LastDeficit=0 LastUpdate=2023-02-28T17:01:44
 
 # On cluster "fluid":
 $ scontrol show lic
 LicenseName=matlab@rlm_host
-    Total=15 Used=0 Free=15 Remote=yes
+    Total=15 Used=0 Free=15 Reserved=0 Remote=yes
+    LastConsumed=0 LastDeficit=0 LastUpdate=2023-02-28T17:01:44
 LicenseName=nastran@flex_host
-    Total=50 Used=0 Free=50 Remote=yes
+    Total=50 Used=0 Free=50 Reserved=0 Remote=yes
+    LastConsumed=0 LastDeficit=0 LastUpdate=2023-02-28T17:01:44
 </pre>
 
-<p>When submitting jobs to remote licenses, the name and server must be used.
+<p>When submitting jobs to remote licenses, the name and server must be
+used.</p>
 <pre>
 $ sbatch -L nastran@flex_host script.sh
 Submitted batch job 5172
 </pre>
 
 
-<p>License percentages and counts can be modified as shown below:
+<p>License percentages and counts can be modified as shown below:</p>
 <pre>
 $ sacctmgr modify resource name=matlab server=rlm_host set \
   count=200
  Modified server resource ...
   matlab@rlm_host
-  Cluster - pdf         - matlab@rlm_host
-  Cluster - fluid       - matlab@rlm_host
+  Cluster - fluid	- matlab@rlm_host
+  Cluster - pdf	- matlab@rlm_host
 
 $ sacctmgr modify resource name=matlab server=rlm_host \
-  cluster=pdf set percentallowed=60
+  cluster=pdf set allowed=60
  Modified server resource ...
-  Cluster - pdf         - matlab@rlm_host
+  Cluster - pdf	- matlab@rlm_host
 
 $ sacctmgr show resource withclusters
-      Name     Server     Type  Count % Allocated ServerType    Cluster  % Allowed 
----------- ---------- -------- ------ ----------- ---------- ---------- ---------- 
-   nastran  flex_host  License    100         100     flexlm        pdf         50 
-   nastran  flex_host  License    100         100     flexlm      fluid         50 
-    matlab   rlm_host  License    200          90        rlm        pdf         60 
-    matlab   rlm_host  License    200          90        rlm      fluid         30 
+      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags
+---------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- --------------------
+   nastran  flex_host  License    100            0       100     flexlm      fluid       50
+   nastran  flex_host  License    100            0       100     flexlm        pdf       50
+    matlab   rlm_host  License    200            0        90        rlm      fluid       30
+    matlab   rlm_host  License    200            0        90        rlm        pdf       60
 </pre>
 
-<p>Licenses can be deleted either on the cluster or all together as shown:
+<p>Licenses can be deleted either on the cluster or all together as shown:</p>
 <pre>
-$ sacctmgr delete resource where name=matlab server=rlm_host \
-  cluster=fluid
+$ sacctmgr delete resource where name=matlab server=rlm_host cluster=fluid
  Deleting resource(s)...
-  Cluster - fluid      - matlab@rlm_host
+ Deleting resource(s)...
+  Cluster - fluid	- matlab@rlm_host
 
 $ sacctmgr delete resource where name=nastran server=flex_host
  Deleting resource(s)...
   nastran@flex_host
-  Cluster - pdf        - nastran@flex_host
-  Cluster - fluid      - nastran@flex_host
+  Cluster - fluid	- nastran@flex_host
+  Cluster - pdf	- nastran@flex_host
 
 $ sacctmgr show resource withclusters
-      Name     Server     Type  Count % Allocated ServerType    Cluster  % Allowed 
----------- ---------- -------- ------ ----------- ---------- ---------- ---------- 
-    matlab   rlm_host  License    200          60        rlm      pdf         60 
+      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags
+---------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- --------------------
+    matlab   rlm_host  License    200            0        60        rlm        pdf       60
 </pre>
 
+<p>Starting with Slurm 23.02, a new <i>Absolute</i> flag is available that
+indicates the license allowed values for each cluster are to be treated as
+absolute license counts rather than percentages.</p>
 
+<p>Some brief examples of license management using this flag.</p>
+<pre>
+$ sacctmgr -i add resource name=deluxe cluster=fluid,pdf count=150 allowed=70 \
+  server=flex_host servertype=flexlm flags=absolute
+ Adding Resource(s)
+  deluxe@flex_host
+   Cluster - fluid	70
+   Cluster - pdf	70
+ Settings
+  Name           = deluxe
+  Server         = flex_host
+  Description    = deluxe
+  ServerType     = flexlm
+  Count          = 150
+  Flags          = Absolute
+  Type           = Unknown
+
+$ sacctmgr show resource withclusters
+      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags 
+---------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- -------------------- 
+    deluxe  flex_host  License    150            0       140     flexlm      fluid       70             Absolute 
+    deluxe  flex_host  License    150            0       140     flexlm        pdf       70             Absolute
+
+$ sacctmgr -i update resource deluxe set allowed=25 where cluster=fluid
+ Modified server resource ...
+  Cluster - fluid	- deluxe@flex_host
+
+$ sacctmgr show resource withclusters
+      Name     Server     Type  Count LastConsumed Allocated ServerType    Cluster  Allowed                Flags 
+---------- ---------- -------- ------ ------------ --------- ---------- ---------- -------- -------------------- 
+    deluxe  flex_host  License    150            0        95     flexlm      fluid       25             Absolute 
+    deluxe  flex_host  License    150            0        95     flexlm        pdf       70             Absolute 
+</pre>
+
+<p>This can also be established as the default for all newly created licenses
+by adding <i>AllResourcesAbsolute=yes</i> to <i>slurmdbd.conf</i> (and restarting
+SlurmDBD to make the change take effect).</p>
 
 <h2 id="dynamic_licenses">Dynamic licenses
 <a class="slurm_link" href="#dynamic_licenses"></a>
 </h2>
-<p>When the license counter and percentage is updated using the <i>sacctmgr</i>
-command, the values are updated in the database and the updated values are sent
-to the slurmctld daemon.
-It is possible for sites to write a script that detects global license counter
-changes due to new licenses being added, or old licenses being removed, and
-updates Slurm. Should the license count decrease, the running jobs will not be
-affected, only the dispatch of new jobs will reflect the new license count.</p>
+<p>Starting with Slurm 23.02, the <i>LastConsumed</i> field for remote licenses
+is designed to be periodically updated with the active use count from a license
+server. An example script for FlexLM's lmstat command is provided below &mdash;
+similar scripts can be easily constructed for other license management
+stacks.</p>
 
+<pre>
+#!/bin/bash
 
-<p style="text-align:center;">Last modified 25 June 2019</p>
+set -euxo pipefail
+
+LMSTAT=/opt/foobar/bin/lmstat
+LICENSE=foobar
+
+consumed=$(${LMSTAT} | grep "Users of ${LICENSE}"|sed "s/.*Total of \([0-9]\+\) licenses in use)/\1/")
+
+sacctmgr -i update resource ${LICENSE} set lastconsumed=${consumed}
+</pre>
+
+<p>When the LastConsumed value is changed through sacctmgr an update is
+automatically pushed to the Slurm controllers. They will use this value
+to calculate a <i>LastDeficit</i> value &mdash; this value indicates how many
+licenses that have "gone missing" from the cluster's perspective and will
+need to be set aside temporarily.</p>
+
+<p>E.g., on this cluster 100 "foobar" licenses are available, and we are
+allocating access to 80 of them on the "blackhole" cluster:</p>
+<pre>
+$ sacctmgr add resource foobar count=100 flags=absolute cluster=blackhole allowed=80
+ Adding Resource(s)
+  foobar@slurmdb
+   Cluster - blackhole	80
+ Settings
+  Name           = foobar
+  Server         = slurmdb
+  Description    = foobar
+  Count          = 100
+  Flags          = Absolute
+  Type           = Unknown
+Would you like to commit changes? (You have 30 seconds to decide)
+(N/y): y
+$ scontrol show license
+LicenseName=foobar@slurmdb
+    Total=80 Used=0 Free=80 Reserved=0 Remote=yes
+    LastConsumed=0 LastDeficit=0 LastUpdate=2023-02-28T16:36:55
+</pre>
+
+<p>Now, our cron job comes in and updates the LastConsumed value to 30, while
+the cluster has yet to allocate any licenses to jobs:</p>
+
+<pre>
+$ sacctmgr -i update resource foobar set lastconsumed=30
+ Modified server resource ...
+  foobar@slurmdb
+  Cluster - blackhole	- foobar@slurmdb
+$ scontrol show license
+LicenseName=foobar@slurmdb
+    Total=80 Used=0 Free=70 Reserved=0 Remote=yes
+    LastConsumed=30 LastDeficit=10 LastUpdate=2023-02-28T16:39:27
+</pre>
+
+<p>Note that the cluster has now calculated a deficit of 10 licenses, and
+has noticed that it should only schedule up to 70 licenses at the moment.
+The cluster knows that up to 20 licenses are reserved for other clusters or
+external use at the moment. However, since LastConsumed was set to 30 this
+implies an additional 10 licenses have "gone rogue" and their usage cannot
+be accounted for. Thus the cluster must not assign those to any pending jobs,
+as it's likely that the job would fail to acquire the desired licenses.</p>
+
+<p>If a further update (likely driven through cron) now reduces the
+LastConsumed count to 10, the deficit is now considered to have disappeared,
+and the cluster will make all 80 assigned licenses available again:</p>
+
+<pre>
+$ sacctmgr -i update resource foobar set lastconsumed=20
+ Modified server resource ...
+  foobar@slurmdb
+  Cluster - blackhole	- foobar@slurmdb
+$ scontrol show license
+LicenseName=foobar@slurmdb
+    Total=80 Used=0 Free=80 Reserved=0 Remote=yes
+    LastConsumed=20 LastDeficit=0 LastUpdate=2023-02-28T16:44:26
+</pre>
+
+<p style="text-align:center;">Last modified 28 Februrary 2023</p>
 
 <!--#include virtual="footer.txt"-->
