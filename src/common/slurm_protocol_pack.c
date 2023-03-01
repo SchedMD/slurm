@@ -2918,19 +2918,19 @@ _unpack_reserve_info_members(reserve_info_t * resv, buf_t *buffer,
 		safe_unpackstr(&resv->accounts, buffer);
 		safe_unpackstr(&resv->burst_buffer,buffer);
 		safe_unpackstr(&resv->comment, buffer);
-		safe_unpack32(&resv->core_cnt,          buffer);
-		safe_unpack_time(&resv->end_time,	buffer);
-		safe_unpackstr(&resv->features,	buffer);
-		safe_unpack64(&resv->flags,		buffer);
+		safe_unpack32(&resv->core_cnt, buffer);
+		safe_unpack_time(&resv->end_time, buffer);
+		safe_unpackstr(&resv->features, buffer);
+		safe_unpack64(&resv->flags, buffer);
 		safe_unpackstr(&resv->licenses, buffer);
 		safe_unpack32(&resv->max_start_delay, buffer);
 		safe_unpackstr(&resv->name, buffer);
-		safe_unpack32(&resv->node_cnt,		buffer);
+		safe_unpack32(&resv->node_cnt, buffer);
 		safe_unpackstr(&resv->node_list, buffer);
 		safe_unpackstr(&resv->partition, buffer);
-		safe_unpack32(&resv->purge_comp_time,   buffer);
-		safe_unpack32(&resv->resv_watts,        buffer);
-		safe_unpack_time(&resv->start_time,	buffer);
+		safe_unpack32(&resv->purge_comp_time, buffer);
+		safe_unpack32(&resv->resv_watts, buffer);
+		safe_unpack_time(&resv->start_time, buffer);
 
 		safe_unpackstr(&resv->tres_str, buffer);
 		safe_unpackstr(&resv->users, buffer);
@@ -2938,7 +2938,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, buf_t *buffer,
 
 		unpack_bit_str_hex_as_inx(&resv->node_inx, buffer);
 
-		safe_unpack32(&resv->core_spec_cnt,        buffer);
+		safe_unpack32(&resv->core_spec_cnt, buffer);
 		if (resv->core_spec_cnt > 0) {
 			safe_xcalloc(resv->core_spec, resv->core_spec_cnt,
 				     sizeof(resv_core_spec_t));
@@ -2950,19 +2950,19 @@ _unpack_reserve_info_members(reserve_info_t * resv, buf_t *buffer,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&resv->accounts, buffer);
 		safe_unpackstr(&resv->burst_buffer, buffer);
-		safe_unpack32(&resv->core_cnt,          buffer);
-		safe_unpack_time(&resv->end_time,	buffer);
+		safe_unpack32(&resv->core_cnt, buffer);
+		safe_unpack_time(&resv->end_time, buffer);
 		safe_unpackstr(&resv->features, buffer);
-		safe_unpack64(&resv->flags,		buffer);
+		safe_unpack64(&resv->flags, buffer);
 		safe_unpackstr(&resv->licenses, buffer);
 		safe_unpack32(&resv->max_start_delay, buffer);
 		safe_unpackstr(&resv->name, buffer);
-		safe_unpack32(&resv->node_cnt,		buffer);
+		safe_unpack32(&resv->node_cnt, buffer);
 		safe_unpackstr(&resv->node_list, buffer);
 		safe_unpackstr(&resv->partition, buffer);
-		safe_unpack32(&resv->purge_comp_time,   buffer);
-		safe_unpack32(&resv->resv_watts,        buffer);
-		safe_unpack_time(&resv->start_time,	buffer);
+		safe_unpack32(&resv->purge_comp_time, buffer);
+		safe_unpack32(&resv->resv_watts, buffer);
+		safe_unpack_time(&resv->start_time, buffer);
 
 		safe_unpackstr(&resv->tres_str, buffer);
 		safe_unpackstr(&resv->users, buffer);
@@ -8598,15 +8598,15 @@ static void _pack_suspend_msg(suspend_msg_t *msg, buf_t *buffer,
 static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, buf_t *buffer,
 				uint16_t protocol_version)
 {
-	suspend_msg_t * msg;
+	suspend_msg_t *msg;
 	xassert(msg_ptr);
 
-	msg = xmalloc ( sizeof (suspend_msg_t) );
-	*msg_ptr = msg ;
+	msg = xmalloc(sizeof(suspend_msg_t));
+	*msg_ptr = msg;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack16(&msg->op,      buffer);
-		safe_unpack32(&msg->job_id , buffer);
+		safe_unpack16(&msg->op, buffer);
+		safe_unpack32(&msg->job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
 	}
 
@@ -8670,18 +8670,18 @@ static void _pack_top_job_msg(top_job_msg_t *msg, buf_t *buffer,
 	}
 }
 
-static int  _unpack_top_job_msg(top_job_msg_t **msg_ptr, buf_t *buffer,
-				uint16_t protocol_version)
+static int _unpack_top_job_msg(top_job_msg_t **msg_ptr, buf_t *buffer,
+			       uint16_t protocol_version)
 {
-	top_job_msg_t * msg;
+	top_job_msg_t *msg;
 	xassert(msg_ptr);
 
-	msg = xmalloc ( sizeof (top_job_msg_t) );
-	*msg_ptr = msg ;
+	msg = xmalloc(sizeof(top_job_msg_t));
+	*msg_ptr = msg;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack16(&msg->op,      buffer);
-		safe_unpack32(&msg->job_id , buffer);
+		safe_unpack16(&msg->op, buffer);
+		safe_unpack32(&msg->job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
 	}
 
