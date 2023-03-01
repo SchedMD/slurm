@@ -302,7 +302,7 @@ static void _pack_network_callerid_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packmem((char *)msg->ip_src, 16, buffer);
 		packmem((char *)msg->ip_dst, 16, buffer);
 		pack32(msg->port_src, buffer);
-		pack32(msg->port_dst,	buffer);
+		pack32(msg->port_dst, buffer);
 		pack32((uint32_t)msg->af, buffer);
 	}
 }
@@ -334,9 +334,9 @@ static int _unpack_network_callerid_msg(slurm_msg_t *smsg, buf_t *buffer)
 		}
 		memcpy(msg->ip_dst, charptr_tmp, (size_t)uint32_tmp);
 		xfree(charptr_tmp);
-		safe_unpack32(&msg->port_src,		buffer);
-		safe_unpack32(&msg->port_dst,		buffer);
-		safe_unpack32((uint32_t *)&msg->af,	buffer);
+		safe_unpack32(&msg->port_src, buffer);
+		safe_unpack32(&msg->port_dst, buffer);
+		safe_unpack32((uint32_t *)&msg->af, buffer);
 	}
 
 	return SLURM_SUCCESS;
