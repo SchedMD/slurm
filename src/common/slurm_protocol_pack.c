@@ -348,29 +348,26 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_network_callerid_resp_msg(network_callerid_resp_t *msg,
-					    buf_t *buffer,
-					    uint16_t protocol_version)
+static void _pack_network_callerid_resp_msg(const slurm_msg_t *smsg,
+					    buf_t *buffer)
 {
+	network_callerid_resp_t *msg = smsg->data;
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id,		buffer);
 		pack32(msg->return_code,	buffer);
 		packstr(msg->node_name,		buffer);
 	}
 }
 
-static int _unpack_network_callerid_resp_msg(network_callerid_resp_t **msg_ptr,
-					     buf_t *buffer,
-					     uint16_t protocol_version)
+static int _unpack_network_callerid_resp_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	network_callerid_resp_t *msg;
-	xassert(msg_ptr);
-
 	msg = xmalloc(sizeof(network_callerid_resp_t));
-	*msg_ptr = msg;
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id,		buffer);
 		safe_unpack32(&msg->return_code,	buffer);
 		safe_unpackstr(&msg->node_name, buffer);
@@ -379,7 +376,7 @@ static int _unpack_network_callerid_resp_msg(network_callerid_resp_t **msg_ptr,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	*msg_ptr = NULL;
+	smsg->data = NULL;
 	slurm_free_network_callerid_resp(msg);
 	return SLURM_ERROR;
 }
@@ -11463,9 +11460,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		_pack_network_callerid_msg(msg, buffer);
 		break;
 	case RESPONSE_NETWORK_CALLERID:
-		_pack_network_callerid_resp_msg((network_callerid_resp_t *)
-						msg->data, buffer,
-						msg->protocol_version);
+		_pack_network_callerid_resp_msg(msg, buffer);
 		break;
 	case REQUEST_CTLD_MULT_MSG:
 	case RESPONSE_CTLD_MULT_MSG:
@@ -12181,9 +12176,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_network_callerid_msg(msg, buffer);
 		break;
 	case RESPONSE_NETWORK_CALLERID:
-		rc = _unpack_network_callerid_resp_msg(
-			(network_callerid_resp_t **)&(msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_network_callerid_resp_msg(msg, buffer);
 		break;
 	case REQUEST_CTLD_MULT_MSG:
 	case RESPONSE_CTLD_MULT_MSG:
