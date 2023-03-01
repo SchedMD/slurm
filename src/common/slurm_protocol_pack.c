@@ -293,12 +293,12 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_network_callerid_msg(network_callerid_msg_t *msg,
-				       buf_t *buffer, uint16_t protocol_version)
+static void _pack_network_callerid_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	network_callerid_msg_t *msg = smsg->data;
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packmem((char *)msg->ip_src, 16, buffer);
 		packmem((char *)msg->ip_dst, 16, buffer);
 		pack32(msg->port_src, buffer);
@@ -307,17 +307,15 @@ static void _pack_network_callerid_msg(network_callerid_msg_t *msg,
 	}
 }
 
-static int _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr,
-					buf_t *buffer, uint16_t protocol_version)
+static int _unpack_network_callerid_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	char *charptr_tmp = NULL;
 	network_callerid_msg_t *msg;
-	xassert(msg_ptr);
 
 	msg = xmalloc(sizeof(network_callerid_msg_t));
-	*msg_ptr = msg;
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	smsg->data = msg;
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
 		if (uint32_tmp > (uint32_t)sizeof(msg->ip_src)) {
 			error("%s: ip_src that came across is %u and we can only handle %lu",
@@ -344,7 +342,7 @@ static int _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	*msg_ptr = NULL;
+	smsg->data = NULL;
 	xfree(charptr_tmp);
 	slurm_free_network_callerid_msg(msg);
 	return SLURM_ERROR;
@@ -11462,9 +11460,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 			buffer, msg->protocol_version);
 		break;
 	case REQUEST_NETWORK_CALLERID:
-		_pack_network_callerid_msg((network_callerid_msg_t *)
-					   msg->data, buffer,
-					   msg->protocol_version);
+		_pack_network_callerid_msg(msg, buffer);
 		break;
 	case RESPONSE_NETWORK_CALLERID:
 		_pack_network_callerid_resp_msg((network_callerid_resp_t *)
@@ -12182,9 +12178,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 					       msg->protocol_version);
 		break;
 	case REQUEST_NETWORK_CALLERID:
-		rc = _unpack_network_callerid_msg((network_callerid_msg_t **)
-						  &(msg->data), buffer,
-						  msg->protocol_version);
+		rc = _unpack_network_callerid_msg(msg, buffer);
 		break;
 	case RESPONSE_NETWORK_CALLERID:
 		rc = _unpack_network_callerid_resp_msg(
