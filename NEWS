@@ -3,7 +3,6 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.02.1
 ==========================
- -- common/parse_time - format unset time (NO_VAL) as empty string.
 
 * Changes in Slurm 23.02.0
 ==========================
