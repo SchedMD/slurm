@@ -233,7 +233,7 @@ static int _enable_subtree_control(char *path, bitstr_t *ctl_bitmap)
 
 static int _get_controllers(char *path, bitstr_t *ctl_bitmap)
 {
-	char *buf, *ptr, *save_ptr, *ctl_filepath = NULL;
+	char *buf = NULL, *ptr, *save_ptr, *ctl_filepath = NULL;
 	size_t sz;
 
 	xassert(ctl_bitmap);
@@ -246,6 +246,9 @@ static int _get_controllers(char *path, bitstr_t *ctl_bitmap)
 		return SLURM_ERROR;
 	}
 	xfree(ctl_filepath);
+
+	if (buf[sz - 1] == '\n')
+		buf[sz - 1] = '\0';
 
 	ptr = strtok_r(buf, " ", &save_ptr);
 	while (ptr) {

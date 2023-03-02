@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.39 - Avoid crash while parsing composite structures.
  -- sched/backfill - fix deleted planned node staying in planned node bitmap.
  -- Fix nodes remaining as PLANNED after slurmctld save state recovery.
+ -- Fix parsing of cgroup.controllers file with a blank line at the end.
 
 * Changes in Slurm 23.02.0
 ==========================
