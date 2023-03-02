@@ -3607,7 +3607,7 @@ slurm_conf_destroy(void)
 
 	_destroy_slurm_conf();
 
-	hash_g_init();
+	hash_g_fini();
 	slurm_auth_fini();
 
 	slurm_mutex_unlock(&conf_lock);
