@@ -8456,30 +8456,31 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_requeue_msg(requeue_msg_t *msg, buf_t *buf, uint16_t protocol_version)
+static void _pack_job_requeue_msg(requeue_msg_t *msg, buf_t *buffer,
+				  uint16_t protocol_version)
 {
 	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(msg->job_id, buf);
-		packstr(msg->job_id_str, buf);
-		pack32(msg->flags, buf);
+		pack32(msg->job_id, buffer);
+		packstr(msg->job_id_str, buffer);
+		pack32(msg->flags, buffer);
 	}
 }
 
-static int
-_unpack_job_requeue_msg(requeue_msg_t **msg, buf_t *buf, uint16_t protocol_version)
+static int _unpack_job_requeue_msg(requeue_msg_t **msg, buf_t *buffer,
+				   uint16_t protocol_version)
 {
 	*msg = xmalloc(sizeof(requeue_msg_t));
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&(*msg)->job_id, buf);
-		safe_unpackstr(&(*msg)->job_id_str, buf);
-		safe_unpack32(&(*msg)->flags, buf);
+		safe_unpack32(&(*msg)->job_id, buffer);
+		safe_unpackstr(&(*msg)->job_id_str, buffer);
+		safe_unpack32(&(*msg)->flags, buffer);
 	}
 
 	return SLURM_SUCCESS;
+
 unpack_error:
 	slurm_free_requeue_msg(*msg);
 	*msg = NULL;
