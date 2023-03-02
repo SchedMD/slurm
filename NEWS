@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- sched/backfill - fix deleted planned node staying in planned node bitmap.
  -- Fix nodes remaining as PLANNED after slurmctld save state recovery.
  -- Fix parsing of cgroup.controllers file with a blank line at the end.
+ -- Add cgroup.conf EnableControllers option for cgroup/v2.
 
 * Changes in Slurm 23.02.0
 ==========================

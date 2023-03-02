@@ -191,6 +191,7 @@ typedef struct {
 	bool ignore_systemd_on_failure;
 
 	bool root_owned_cgroups;
+	bool enable_controllers;
 } cgroup_conf_t;
 
 

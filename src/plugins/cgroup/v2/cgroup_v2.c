@@ -202,7 +202,7 @@ static void _set_int_cg_ns()
  */
 static int _enable_subtree_control(char *path, bitstr_t *ctl_bitmap)
 {
-	int i, rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS, rc2;
 	char *content = NULL, *file_path = NULL;
 
 	xassert(ctl_bitmap);
@@ -213,19 +213,30 @@ static int _enable_subtree_control(char *path, bitstr_t *ctl_bitmap)
 			continue;
 
 		xstrfmtcat(content, "+%s", ctl_names[i]);
-		rc = common_file_write_content(file_path, content,
+		rc2 = common_file_write_content(file_path, content,
 					       strlen(content));
-		xfree(content);
-		if (rc != SLURM_SUCCESS) {
-			error("Cannot enable %s in %s",
-			      ctl_names[i], file_path);
-			bit_clear(ctl_bitmap, i);
-			rc = SLURM_ERROR;
+		if (rc2 != SLURM_SUCCESS) {
+			/*
+			 * In a container it is possible that part of the
+			 * cgroup tree is mounted in read-only mode, so skip
+			 * the parts that we cannot touch.
+			 */
+			if (errno == EROFS) {
+				log_flag(CGROUP,
+					 "Cannot enable %s in %s, skipping: %m",
+					 ctl_names[i], file_path);
+			} else {
+				/* Controller won't be available. */
+				error("Cannot enable %s in %s: %m",
+				      ctl_names[i], file_path);
+				bit_clear(ctl_bitmap, i);
+				rc = SLURM_ERROR;
+			}
 		} else {
 			log_flag(CGROUP, "Enabled %s controller in %s",
 				 ctl_names[i], file_path);
-			bit_set(ctl_bitmap, i);
 		}
+		xfree(content);
 	}
 	xfree(file_path);
 	return rc;
@@ -351,13 +362,18 @@ static int _setup_controllers()
 	int_cg_ns.subsystems = NULL;
 
 	/*
-	 * Slurmd will check the real available controllers in this system and
-	 * will enable them in every level of the tree if CgroupAutomount is set
-	 * but only if we decide to ignore systemd. Basically systemd mounts all
-	 * the controllers if unit has Delegate=yes.
+	 * Check all the available controllers in this system and enable them in
+	 * every level of the cgroup tree if EnableControllers=yes.
+	 * Normally, if the unit we're starting up has a Delegate=yes, systemd
+	 * will set the cgroup.subtree_controllers of the parent with all the
+	 * available controllers on that level, making all of them available on
+	 * our unit automatically. In some situations, like if the parent cgroup
+	 * doesn't have write permissions or if it started with fewer
+	 * controllers available than the ones on the system (when the
+	 * grandfather doesn't have subtree_control set), that won't happen and
+	 * we may need Enablecontrollers. This may happen in containers.
 	 */
-	if (running_in_slurmd() && slurm_cgroup_conf.cgroup_automount &&
-	    slurm_cgroup_conf.ignore_systemd)
+	if (running_in_slurmd() && slurm_cgroup_conf.enable_controllers)
 		_enable_system_controllers();
 
 	/* Get the controllers on our namespace. */

@@ -165,6 +165,7 @@ static void _init_slurm_cgroup_conf(void)
 	slurm_cgroup_conf.constrain_kmem_space = false;
 	slurm_cgroup_conf.constrain_ram_space = false;
 	slurm_cgroup_conf.constrain_swap_space = false;
+	slurm_cgroup_conf.enable_controllers = false;
 	slurm_cgroup_conf.ignore_systemd = false;
 	slurm_cgroup_conf.ignore_systemd_on_failure = false;
 	slurm_cgroup_conf.max_kmem_percent = 100;
@@ -218,6 +219,7 @@ static void _pack_cgroup_conf(buf_t *buffer)
 	packbool(slurm_cgroup_conf.ignore_systemd_on_failure, buffer);
 
 	packbool(slurm_cgroup_conf.root_owned_cgroups, buffer);
+	packbool(slurm_cgroup_conf.enable_controllers, buffer);
 }
 
 static int _unpack_cgroup_conf(buf_t *buffer)
@@ -267,7 +269,7 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 	safe_unpackbool(&slurm_cgroup_conf.ignore_systemd_on_failure, buffer);
 
 	safe_unpackbool(&slurm_cgroup_conf.root_owned_cgroups, buffer);
-
+	safe_unpackbool(&slurm_cgroup_conf.enable_controllers, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -307,6 +309,7 @@ static void _read_slurm_cgroup_conf(void)
 		{"IgnoreSystemd", S_P_BOOLEAN},
 		{"IgnoreSystemdOnFailure", S_P_BOOLEAN},
 		{"RootOwnedCgroups", S_P_BOOLEAN},
+		{"EnableControllers", S_P_BOOLEAN},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL, *tmp_str;
@@ -441,6 +444,9 @@ static void _read_slurm_cgroup_conf(void)
 
 		(void) s_p_get_boolean(&slurm_cgroup_conf.root_owned_cgroups,
 				       "RootOwnedCgroups", tbl);
+
+		(void) s_p_get_boolean(&slurm_cgroup_conf.enable_controllers,
+				       "EnableControllers", tbl);
 
 		s_p_hashtbl_destroy(tbl);
 	}
@@ -701,6 +707,13 @@ extern List cgroup_get_conf_list(void)
 	key_pair->name = xstrdup("IgnoreSystemdOnFailure");
 	key_pair->value = xstrdup_printf("%s",
 					 cg_conf->ignore_systemd_on_failure ?
+					 "yes" : "no");
+	list_append(cgroup_conf_l, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("EnableControllers");
+	key_pair->value = xstrdup_printf("%s",
+					 cg_conf->enable_controllers ?
 					 "yes" : "no");
 	list_append(cgroup_conf_l, key_pair);
 
