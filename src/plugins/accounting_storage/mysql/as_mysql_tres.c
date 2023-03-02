@@ -56,9 +56,9 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))
 		return ESLURM_ACCESS_DENIED;
 
-	if (!tres_list_in) {
-		error("as_mysql_add_tres: Trying to add a blank list");
-		return SLURM_ERROR;
+	if (!tres_list_in || !list_count(tres_list_in)) {
+		error("%s: Trying to add empty tres list", __func__);
+		return ESLURM_EMPTY_LIST;
 	}
 
 	user_name = uid_to_string((uid_t) uid);

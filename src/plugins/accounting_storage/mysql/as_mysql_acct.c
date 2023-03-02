@@ -153,6 +153,11 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		 */
 	}
 
+	if (!acct_list || !list_count(acct_list)) {
+		error("%s: Trying to add empty account list", __func__);
+		return ESLURM_EMPTY_LIST;
+	}
+
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(acct_list);

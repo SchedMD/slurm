@@ -506,6 +506,11 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))
 		return ESLURM_ACCESS_DENIED;
 
+	if (!wckey_list || !list_count(wckey_list)) {
+		error("%s: Trying to add empty wckey list", __func__);
+		return ESLURM_EMPTY_LIST;
+	}
+
 	local_cluster_list = list_create(NULL);
 
 	user_name = uid_to_string((uid_t) uid);

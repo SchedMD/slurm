@@ -2522,13 +2522,13 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	List assoc_list_tmp = NULL;
 	bool acct_added = false;
 
-	if (!assoc_list) {
-		error("No association list given");
-		return SLURM_ERROR;
-	}
-
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
+
+	if (!assoc_list || !list_count(assoc_list)) {
+		error("%s: Trying to add empty assoc list", __func__);
+		return ESLURM_EMPTY_LIST;
+	}
 
 	if (!is_user_min_admin_level(mysql_conn, uid,
 				     SLURMDB_ADMIN_OPERATOR)) {

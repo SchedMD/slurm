@@ -708,6 +708,11 @@ extern int as_mysql_add_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER))
 		return ESLURM_ACCESS_DENIED;
 
+	if (!res_list || !list_count(res_list)) {
+		error("%s: Trying to add empty resource list", __func__);
+		return ESLURM_EMPTY_LIST;
+	}
+
 	user_name = uid_to_string((uid_t) uid);
 	itr = list_iterator_create(res_list);
 	while ((object = list_next(itr))) {

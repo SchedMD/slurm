@@ -232,6 +232,11 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER))
 		return ESLURM_ACCESS_DENIED;
 
+	if (!cluster_list || !list_count(cluster_list)) {
+		error("%s: Trying to add empty cluster list", __func__);
+		return ESLURM_EMPTY_LIST;
+	}
+
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
 	user_name = uid_to_string((uid_t) uid);

@@ -736,6 +736,11 @@ extern int as_mysql_add_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_SUPER_USER))
 		return ESLURM_ACCESS_DENIED;
 
+	if (!qos_list || !list_count(qos_list)) {
+		error("%s: Trying to add empty qos list", __func__);
+		return ESLURM_EMPTY_LIST;
+	}
+
 	assoc_mgr_lock(&locks);
 	qos_cnt = g_qos_count;
 	assoc_mgr_unlock(&locks);
