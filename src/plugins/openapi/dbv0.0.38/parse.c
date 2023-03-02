@@ -987,7 +987,7 @@ static data_for_each_cmd_t _for_each_parse_flag(data_t *data, void *arg)
 			if (!match)
 				continue;
 
-			/* C allows complier to choose a size for the enum */
+			/* C allows compiler to choose a size for the enum */
 			if (b == sizeof(uint64_t)) {
 				uint64_t *flags = (((void *)args->obj) +
 						   f->field_offset);
@@ -1085,7 +1085,7 @@ static int _dump_flags(const parser_t *const parse, void *obj, data_t *data,
 		if (f->type == PARSER_ENUM_FLAG_BIT) {
 			const size_t b = f->size;
 
-			/* C allows complier to choose a size for the enum */
+			/* C allows compiler to choose a size for the enum */
 			if (b == sizeof(uint64_t)) {
 				uint64_t *flags = (((void *)obj) +
 						   f->field_offset);
