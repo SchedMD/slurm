@@ -150,6 +150,54 @@ static char *_get_self_cg_path()
 	 * node, and the path takes the name of the service file, e.g:
 	 * /sys/fs/cgroup/system.slice/slurmd-<nodename>.service/
 	 */
+	if ((p = xstrchr(buf, ':'))) {
+		if ((p + 2) < (buf + sz - 1))
+			start = p + 2;
+	}
+
+	if (start && (*start != '\0')) {
+		if ((p = xstrchr(start, '\n')))
+			*p = '\0';
+		xstrfmtcat(ret, "%s%s",
+			   slurm_cgroup_conf.cgroup_mountpoint, start);
+	}
+
+	xfree(buf);
+	return ret;
+}
+
+/*
+ * Get the cgroup root directory by reading /proc/1/cgroup path.
+ *
+ * We expect one single line like this:
+ * "0::/init.scope\n"
+ *
+ * But in containerized environments it could look like:
+ * "0::/docker.slice/docker-<some UUID>.scope/init.scope"
+ *
+ * This function just strips the "0::" and "init.scope" portions.
+ *
+ * In normal systems the final path will look like this:
+ * /sys/fs/cgroup[/]
+ *
+ * In containerized environments it will look like:
+ * /sys/fs/cgroup[/docker.slice/docker-<some UUID>.scope]
+ *
+ */
+static char *_get_init_cg_path()
+{
+	char *buf, *start = NULL, *p, *ret = NULL;
+	size_t sz;
+
+	if (common_file_read_content("/proc/1/cgroup", &buf, &sz) !=
+	    SLURM_SUCCESS)
+		fatal("cannot read /proc/1/cgroup contents: %m");
+
+	/*
+	 * In Unified mode there will be just one line containing the path
+	 * of the cgroup and starting by 0. If there are more than one then
+	 * some v1 cgroups are mounted, we do not support it.
+	 */
 	if (buf && (buf[0] != '0'))
 		fatal("Hybrid mode is not supported. Mounted cgroups are: %s",
 		      buf);
@@ -162,10 +210,15 @@ static char *_get_self_cg_path()
 	if (start && *start != '\0') {
 		if ((p = xstrchr(start, '\n')))
 			*p = '\0';
-		xstrfmtcat(ret, "%s%s",
-			   slurm_cgroup_conf.cgroup_mountpoint, start);
+		p = xdirname(start);
+		if (!xstrcmp(p, "/"))
+			xstrfmtcat(ret, "%s",
+				   slurm_cgroup_conf.cgroup_mountpoint);
+		else
+			xstrfmtcat(ret, "%s%s",
+				   slurm_cgroup_conf.cgroup_mountpoint, p);
+		xfree(p);
 	}
-
 	xfree(buf);
 	return ret;
 }
@@ -177,20 +230,24 @@ static char *_get_self_cg_path()
  */
 static void _set_int_cg_ns()
 {
+	char *init_cg_path = _get_init_cg_path();
+
 #ifdef MULTIPLE_SLURMD
 	xstrfmtcat(stepd_scope_path, "%s/%s/%s_%s.scope",
-		   slurm_cgroup_conf.cgroup_mountpoint,
+		   init_cg_path,
 		   SYSTEM_CGSLICE, conf->node_name,
 		   SYSTEM_CGSCOPE);
 #else
 	xstrfmtcat(stepd_scope_path, "%s/%s/%s.scope",
-		   slurm_cgroup_conf.cgroup_mountpoint,
+		   init_cg_path,
 		   SYSTEM_CGSLICE, SYSTEM_CGSCOPE);
 #endif
 	if (running_in_slurmstepd())
 		int_cg_ns.mnt_point = stepd_scope_path;
 	else
 		int_cg_ns.mnt_point = _get_self_cg_path();
+
+	xfree(init_cg_path);
 }
 
 /*
@@ -342,9 +399,11 @@ static int _enable_system_controllers()
 	xfree(next);
 
 
-	/* Enable it for system slice, where stepd scope will reside. */
-	xstrfmtcat(slice_path, "%s/%s",
-		   slurm_cgroup_conf.cgroup_mountpoint, SYSTEM_CGSLICE);
+	/*
+	 * Enable it for system.slice, where the stepd scope will reside when
+	 * it is created later.
+	 */
+	slice_path = xdirname(stepd_scope_path);
 	_enable_subtree_control(slice_path, system_ctrls);
 	xfree(slice_path);
 
@@ -689,7 +748,13 @@ static int _init_new_scope_dbus(char *scope_path)
 			log_flag(CGROUP, "Possible systemd slowness, %d msec waiting scope to show up.",
 				 (retries * 10));
 
-		/* Do last try here. */
+		/*
+		 * Assuming the scope is created, let's mkdir the /system dir
+		 * which will allocate the sleep inifnity pid. This way the
+		 * slurmstepd scope won't be a leaf anymore and we'll be able
+		 * to create more directories. _init_new_scope here is simply
+		 * used as a mkdir.
+		 */
 		memset(&sys_root, 0, sizeof(sys_root));
 		xstrfmtcat(sys_root.path, "%s/%s", scope_path, SYSTEM_CGDIR);
 		if (_init_new_scope(sys_root.path) != SLURM_SUCCESS) {
