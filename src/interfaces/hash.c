@@ -112,6 +112,37 @@ done:
 	return rc;
 }
 
+extern int hash_g_fini(void)
+{
+	int rc = SLURM_SUCCESS;
+
+	slurm_mutex_lock(&g_context_lock);
+	if (!g_context)
+		goto done;
+
+	for (int i = 0; i < g_context_num; i++) {
+		int rc2;
+		if (!g_context[i])
+			continue;
+		rc2 = plugin_context_destroy(g_context[i]);
+		if (rc2 != SLURM_SUCCESS) {
+			debug("%s: %s: %s",
+			      __func__,
+			      g_context[i]->type,
+			      slurm_strerror(rc2));
+			rc = SLURM_ERROR;
+		}
+	}
+
+	xfree(ops);
+	xfree(g_context);
+	g_context_num = -1;
+
+done:
+	slurm_mutex_unlock(&g_context_lock);
+	return rc;
+}
+
 extern int hash_g_compute(char *input, int len, char *custom_str, int cs_len,
 			  slurm_hash_t *hash)
 {
