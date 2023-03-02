@@ -1705,6 +1705,35 @@ def get_job_parameter(job_id, parameter_name, default=None, quiet=False):
         return default
 
 
+def wait_for_node_state(nodename, desired_node_state, timeout=default_polling_timeout, poll_interval=None, fatal=False, reverse=False):
+    """Waits for the specified node state to be reached.
+
+    This function polls the node state every poll interval seconds, waiting up
+    to the timeout for the specified node state to be reached.
+
+    Args:
+        nodename (string): The name of the node.
+        desired_node_state (string): The desired node state.
+        timeout (integer): Number of seconds to poll before timing out.
+        poll_interval (float): Number of seconds to wait between node state
+            polls.
+        fatal (boolean): If True, a timeout will result in the test failing.
+        reverse (boolean): If True, wait for the node to lose the desired_node_state.
+    """
+
+    # Figure out if we're waiting for the desired_node_state to be present or to be gone
+    if reverse:
+        condition = lambda state : desired_node_state not in state.split("+")
+    else:
+        condition = lambda state : desired_node_state in state.split("+")
+
+    # Wrapper for the repeat_until command to do all our state checking for us
+    repeat_until(lambda : get_node_parameter(nodename, "State"),
+        condition, timeout=timeout, poll_interval=poll_interval, fatal=fatal)
+
+    return (desired_node_state in get_node_parameter(nodename, "State").split("+")) != reverse
+
+
 def wait_for_job_state(job_id, desired_job_state, timeout=default_polling_timeout, poll_interval=None, fatal=False, quiet=False):
     """Waits for the specified job state to be reached.
 
