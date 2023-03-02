@@ -946,12 +946,14 @@ def require_config_parameter(parameter_name, parameter_value, condition=None, so
     Note:
         When requiring a complex parameter (one which may be repeated and has
         its own subparameters, such as with nodes, partitions and gres),
-        the parameter_value should be a dictionary of dictionaries.
+        the parameter_value should be a dictionary of dictionaries. See the
+        fourth example for multi-line parameters.
 
     Examples:
         >>> require_config_parameter('SelectType', 'select/cons_tres')
         >>> require_config_parameter('SlurmdTimeout', 5, lambda v: v <= 5)
         >>> require_config_parameter('Name', {'gpu': {'File': '/dev/tty0'}, 'mps': {'Count': 100}}, source='gres')
+        >>> require_config_parameter("PartitionName", {"primary": {"Nodes": "ALL"}, "dynamic1": {"Nodes": "ns1"}, "dynamic2": {"Nodes": "ns2"}, "dynamic3": {"Nodes": "ns1,ns2"}})
     """
 
     observed_value = get_config_parameter(parameter_name, live=False, source=source, quiet=True)
