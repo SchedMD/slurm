@@ -7196,8 +7196,7 @@ static int _unpack_prolog_launch_msg(prolog_launch_msg_t **msg,
 			goto unpack_error;
 
 		safe_unpackstr(&launch_msg_ptr->user_name, buffer);
-	} else
-		goto unpack_error;
+	}
 
 	return SLURM_SUCCESS;
 
