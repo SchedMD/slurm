@@ -190,7 +190,7 @@ static void _reset_coll(pmixp_coll_t *coll)
 		/* collective is spoiled, reset state */
 		tree->state = PMIXP_COLL_TREE_SYNC;
 		slurm_kill_job_step(pmixp_info_jobid(),
-				    pmixp_info_stepid(), SIGKILL);
+				    pmixp_info_stepid(), SIGKILL, 0);
 	}
 }
 
@@ -610,7 +610,7 @@ static int _progress_ufwd(pmixp_coll_t *coll)
 		/* collective is spoiled, reset state */
 		tree->state = PMIXP_COLL_TREE_SYNC;
 		slurm_kill_job_step(pmixp_info_jobid(),
-				    pmixp_info_stepid(), SIGKILL);
+				    pmixp_info_stepid(), SIGKILL, 0);
 		return false;
 	}
 
@@ -742,7 +742,7 @@ static int _progress_ufwd_sc(pmixp_coll_t *coll)
 		/* collective is spoiled, reset state */
 		tree->state = PMIXP_COLL_TREE_SYNC;
 		slurm_kill_job_step(pmixp_info_jobid(),
-				    pmixp_info_stepid(), SIGKILL);
+				    pmixp_info_stepid(), SIGKILL, 0);
 		return false;
 	}
 
@@ -836,7 +836,7 @@ static int _progress_dfwd(pmixp_coll_t *coll)
 		/* collective is spoiled, reset state */
 		tree->state = PMIXP_COLL_TREE_SYNC;
 		slurm_kill_job_step(pmixp_info_jobid(),
-				    pmixp_info_stepid(), SIGKILL);
+				    pmixp_info_stepid(), SIGKILL, 0);
 		return false;
 	}
 #ifdef PMIXP_COLL_DEBUG
@@ -944,7 +944,7 @@ int pmixp_coll_tree_local(pmixp_coll_t *coll, char *data, size_t size,
 		/* collective is spoiled, reset state */
 		tree->state = PMIXP_COLL_TREE_SYNC;
 		slurm_kill_job_step(pmixp_info_jobid(),
-				    pmixp_info_stepid(), SIGKILL);
+				    pmixp_info_stepid(), SIGKILL, 0);
 		ret = SLURM_ERROR;
 		goto exit;
 	}
@@ -1143,7 +1143,7 @@ error:
 	_reset_coll(coll);
 error2:
 	slurm_kill_job_step(pmixp_info_jobid(),
-			    pmixp_info_stepid(), SIGKILL);
+			    pmixp_info_stepid(), SIGKILL, 0);
 	/* unlock the structure */
 	slurm_mutex_unlock(&coll->lock);
 
@@ -1292,7 +1292,7 @@ error:
 	_reset_coll(coll);
 error2:
 	slurm_kill_job_step(pmixp_info_jobid(),
-			    pmixp_info_stepid(), SIGKILL);
+			    pmixp_info_stepid(), SIGKILL, 0);
 	slurm_mutex_unlock(&coll->lock);
 
 	return SLURM_ERROR;

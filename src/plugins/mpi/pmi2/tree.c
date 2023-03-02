@@ -152,7 +152,7 @@ static int _handle_kvs_fence(int fd, buf_t *buf)
 			/* cancel the step to avoid tasks hang */
 			slurm_kill_job_step(job_info.step_id.job_id,
 					    job_info.step_id.step_id,
-					    SIGKILL);
+					    SIGKILL, 0);
 		} else {
 			if (in_stepd())
 				waiting_kvs_resp = 1;
@@ -213,7 +213,7 @@ resp:
 	send_kvs_fence_resp_to_clients(rc, errmsg);
 	if (rc != SLURM_SUCCESS) {
 		slurm_kill_job_step(job_info.step_id.job_id,
-				    job_info.step_id.step_id, SIGKILL);
+				    job_info.step_id.step_id, SIGKILL, 0);
 	}
 	return rc;
 

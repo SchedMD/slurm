@@ -484,8 +484,7 @@ slurm_kill_job(slurm_t self, uint32_t job_id, uint16_t signal, uint16_t batch_fl
 	C_ARGS:
 		job_id, signal, batch_flag
 
-int
-slurm_kill_job_step(slurm_t self, uint32_t job_id, uint32_t step_id, uint16_t signal)
+int slurm_kill_job_step(slurm_t self, uint32_t job_id, uint32_t step_id, uint16_t signal, uint16_t flags)
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
@@ -493,7 +492,7 @@ slurm_kill_job_step(slurm_t self, uint32_t job_id, uint32_t step_id, uint16_t si
 			      only Slurm::
 			    */
 	C_ARGS:
-		job_id, step_id, signal
+		job_id, step_id, signal, flags
 
 int
 slurm_signal_job(slurm_t self, uint32_t job_id, uint16_t signal)

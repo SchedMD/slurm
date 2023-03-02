@@ -783,7 +783,8 @@ extern int pmixp_lib_abort(int status, void *cbfunc, void *cbdata)
 	 */
 	pmixp_abort_propagate(status);
 
-	slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(), SIGKILL);
+	slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(), SIGKILL,
+			    0);
 
 	if (abort_cbfunc)
 		abort_cbfunc(PMIX_SUCCESS, cbdata);

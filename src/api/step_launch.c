@@ -624,7 +624,7 @@ static void _step_abort(slurm_step_ctx_t *ctx)
 
 	if (!sls->abort_action_taken) {
 		slurm_kill_job_step(ctx->job_id, ctx->step_resp->job_step_id,
-				    SIGKILL);
+				    SIGKILL, 0);
 		sls->abort_action_taken = true;
 	}
 }
@@ -694,7 +694,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 				slurm_kill_job_step(ctx->job_id,
 						    ctx->step_resp->
 						    job_step_id,
-						    SIGKILL);
+						    SIGKILL, 0);
 				sls->abort_action_taken = true;
 			}
 			if (!time_set) {
@@ -725,7 +725,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 				 */
 				slurm_kill_job_step(ctx->job_id,
 						    ctx->step_resp->job_step_id,
-						    SIGKILL);
+						    SIGKILL, 0);
 				client_io_handler_abort(sls->io);
 				break;
 			} else if (errnum != 0) {

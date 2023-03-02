@@ -100,7 +100,8 @@ static int _step_signal(int signal)
 	while ((my_srun_job = (srun_job_t *) list_next(iter))) {
 		info("Terminating %ps", &my_srun_job->step_id);
 		rc2 = slurm_kill_job_step(my_srun_job->step_id.job_id,
-					  my_srun_job->step_id.step_id, signal);
+					  my_srun_job->step_id.step_id, signal,
+					  0);
 		if (rc2)
 			rc = rc2;
 	}
@@ -269,7 +270,7 @@ _handle_openmpi_port_error(const char *tasks, const char *hosts,
 	      hosts, tasks, msg);
 
 	info("Terminating job step %ps", &step_id);
-	slurm_kill_job_step(step_id.job_id, step_id.step_id, SIGKILL);
+	slurm_kill_job_step(step_id.job_id, step_id.step_id, SIGKILL, 0);
 }
 
 static char *_mpir_get_host_name(char *node_name)

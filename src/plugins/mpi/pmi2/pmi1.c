@@ -192,7 +192,7 @@ _handle_barrier_in(int fd, int lrank, client_req_t *req)
 			/* cancel the step to avoid tasks hang */
 			slurm_kill_job_step(job_info.step_id.job_id,
 					    job_info.step_id.step_id,
-					    SIGKILL);
+					    SIGKILL, 0);
 		} else {
 			waiting_kvs_resp = 1;
 		}
@@ -228,7 +228,7 @@ _handle_abort(int fd, int lrank, client_req_t *req)
 	debug3("mpi/pmi2: in _handle_abort");
 	/* no response needed. just cancel the job */
 	slurm_kill_job_step(job_info.step_id.job_id, job_info.step_id.step_id,
-			    SIGKILL);
+			    SIGKILL, 0);
 	debug3("mpi/pmi2: out _handle_abort");
 	return SLURM_SUCCESS;
 }

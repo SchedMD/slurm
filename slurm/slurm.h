@@ -3615,11 +3615,11 @@ extern int slurm_kill_job(uint32_t job_id, uint16_t signal, uint16_t flags);
  * IN job_id  - the job's id
  * IN step_id - the job step's id
  * IN signal  - signal number
+ * IN flags - see KILL_* or 0 for no flags
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_kill_job_step(uint32_t job_id,
-			       uint32_t step_id,
-			       uint16_t signal);
+extern int slurm_kill_job_step(uint32_t job_id, uint32_t step_id,
+			       uint16_t signal, uint16_t flags);
 /*
  * slurm_kill_job2 - send REQUEST_KILL_JOB msg to an existing job or step.
  * IN job_id - the job's id (in a string format)

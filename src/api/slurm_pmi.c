@@ -388,5 +388,5 @@ void slurm_pmi_finalize(void)
 extern int slurm_pmi_kill_job_step(uint32_t job_id, uint32_t step_id,
 				   uint16_t signal)
 {
-	return slurm_kill_job_step(job_id, step_id, signal);
+	return slurm_kill_job_step(job_id, step_id, signal, 0);
 }

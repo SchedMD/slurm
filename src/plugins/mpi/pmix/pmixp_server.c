@@ -833,7 +833,7 @@ static void _process_server_request(pmixp_base_hdr_t *hdr, buf_t *buf)
 				    hdr->seq, nodename, hdr->nodeid, coll->seq);
 			pmixp_debug_hang(0); /* enable hang to debug this! */
 			slurm_kill_job_step(pmixp_info_jobid(),
-					    pmixp_info_stepid(), SIGKILL);
+					    pmixp_info_stepid(), SIGKILL, 0);
 			xfree(nodename);
 			break;
 		} else if (PMIXP_COLL_REQ_SKIP == rc) {

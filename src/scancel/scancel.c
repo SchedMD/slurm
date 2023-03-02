@@ -854,7 +854,7 @@ _cancel_step_id (void *ci)
 		START_TIMER;
 		if ((!sig_set) || opt.ctld)
 			error_code = slurm_kill_job_step(job_id, step_id,
-							 cancel_info->sig);
+							 cancel_info->sig, 0);
 		else if (cancel_info->sig == SIGKILL)
 			error_code = slurm_terminate_job_step(job_id, step_id);
 		else
