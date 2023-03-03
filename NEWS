@@ -72,6 +72,9 @@ documents those changes that are of interest to users and administrators.
     request --cpus-per-gpu and gpus with types.
  -- sacct - when printing PLANNED time, use end time instead of start time for
     jobs cancelled before they started.
+ -- Fix potentially waiting indefinitely for a defunct process to finish,
+    which affects various scripts including Prolog and Epilog. This could have
+    various symptoms, such as jobs getting stuck in a completing state.
 
 * Changes in Slurm 23.02.2
 ==========================
