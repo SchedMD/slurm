@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
     broke job_container/tmpfs, pam_slurm_adopt, and x11 forwarding.
  -- task/affinity - fix slurmd segfault when request launch task requests of
     type "--cpu-bind=[map,mask]_cpu:<list>" have no <list> provided.
+ -- sched/backfill - fix segfault when removing a PLANNED node from system.
 
 * Changes in Slurm 22.05.8
 ==========================

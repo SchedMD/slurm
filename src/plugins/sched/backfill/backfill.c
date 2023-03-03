@@ -1687,6 +1687,8 @@ static void _handle_planned(bool set)
 		if (!bit_test(planned_bitmap, n))
 			continue;
 		node_ptr = node_record_table_ptr[n];
+		if (!node_ptr)
+			continue;
 		if (set) {
 			/*
 			 * If the node is allocated ignore this flag. This only
