@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- When cluster specific tables are be removed also remove the job_env_table
     and job_script_table.
  -- Fix the way bf_max_job_test is applied to job arrays in backfill.
+ -- data_parser/v0.0.39 - Avoid dumping -1 value or NULL when step's
+    consumed_energy is unset.
 
 * Changes in Slurm 23.02.0
 ==========================
