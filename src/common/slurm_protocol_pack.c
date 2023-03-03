@@ -8352,31 +8352,26 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_srun_node_fail_msg(srun_node_fail_msg_t * msg, buf_t *buffer,
-			 uint16_t protocol_version)
+static void _pack_srun_node_fail_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	srun_node_fail_msg_t *msg = smsg->data;
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->nodelist, buffer);
 	}
 }
 
-static int
-_unpack_srun_node_fail_msg(srun_node_fail_msg_t ** msg_ptr, buf_t *buffer,
-			   uint16_t protocol_version)
+static int _unpack_srun_node_fail_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	srun_node_fail_msg_t * msg;
-	xassert(msg_ptr);
+	srun_node_fail_msg_t *msg = xmalloc(sizeof(srun_node_fail_msg_t));
+	smsg->data = msg;
 
-	msg = xmalloc ( sizeof (srun_node_fail_msg_t) ) ;
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version)
+		    != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr(&msg->nodelist, buffer);
 	}
@@ -8385,7 +8380,7 @@ _unpack_srun_node_fail_msg(srun_node_fail_msg_t ** msg_ptr, buf_t *buffer,
 
 unpack_error:
 	slurm_free_srun_node_fail_msg(msg);
-	*msg_ptr = NULL;
+	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -10862,9 +10857,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 					 buffer, msg->protocol_version);
 		break;
 	case SRUN_NODE_FAIL:
-		_pack_srun_node_fail_msg((srun_node_fail_msg_t *)msg->data,
-					 buffer,
-					 msg->protocol_version);
+		_pack_srun_node_fail_msg(msg, buffer);
 		break;
 	case SRUN_STEP_MISSING:
 		_pack_srun_step_missing_msg((srun_step_missing_msg_t *)
@@ -11533,9 +11526,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 					     buffer, msg->protocol_version);
 		break;
 	case SRUN_NODE_FAIL:
-		rc = _unpack_srun_node_fail_msg((srun_node_fail_msg_t **)
-						& msg->data, buffer,
-						msg->protocol_version);
+		rc = _unpack_srun_node_fail_msg(msg, buffer);
 		break;
 	case SRUN_STEP_MISSING:
 		rc = _unpack_srun_step_missing_msg((srun_step_missing_msg_t **)
