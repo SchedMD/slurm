@@ -79,6 +79,7 @@
 #include "src/interfaces/gres.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/jobcomp.h"
+#include "src/interfaces/mcs.h"
 #include "src/interfaces/mpi.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/priority.h"
@@ -166,6 +167,7 @@ static __thread bool drop_priv = false;
 #endif
 
 typedef struct {
+	uid_t request_uid;
 	uid_t uid;
 	const char *id;
 	list_t *step_list;
@@ -3417,6 +3419,20 @@ static int _find_stepid_by_userid(void *x, void *arg)
 	find_job_by_container_id_args_t *args = arg;
 	job_record_t *job_ptr = x;
 
+	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (job_ptr->user_id != args->request_uid) &&
+	    !validate_operator(args->request_uid)) {
+		if (slurm_mcs_get_privatedata()) {
+			if (mcs_g_check_mcs_label(args->request_uid,
+						  job_ptr->mcs_label, false))
+				return SLURM_SUCCESS;
+		} else if (!assoc_mgr_is_user_acct_coord(acct_db_conn,
+							 args->request_uid,
+							 job_ptr->account)) {
+			return SLURM_SUCCESS;
+		}
+	}
+
 	if ((args->uid != SLURM_AUTH_NOBODY) &&
 	    (args->uid != job_ptr->user_id)) {
 		/* skipping per non-matching user */
@@ -3431,12 +3447,13 @@ static int _find_stepid_by_userid(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _find_stepids_by_container_id(uid_t uid, const char *id,
-					  list_t **step_list)
+static void _find_stepids_by_container_id(uid_t request_uid, uid_t uid,
+					  const char *id, list_t **step_list)
 {
 	slurmctld_lock_t job_read_lock =
 		{ .conf = READ_LOCK, .job = READ_LOCK };
-	find_job_by_container_id_args_t args = { .uid = uid, .id = id };
+	find_job_by_container_id_args_t args =
+		{ .request_uid = request_uid, .uid = uid, .id = id };
 	DEF_TIMERS;
 
 	xassert(id && id[0]);
@@ -3465,11 +3482,6 @@ static void _slurm_rpc_step_by_container_id(slurm_msg_t *msg)
 	if (!msg->auth_uid_set) {
 		/* this should never happen? */
 		rc = ESLURM_AUTH_CRED_INVALID;
-	} else if ((msg->auth_uid != req->uid) &&
-		   !validate_super_user(msg->auth_uid)) {
-		error("%s: Security violation: REQUEST_STEP_BY_CONTAINER_ID from uid=%u for uid=%u",
-		      __func__, msg->auth_uid, req->uid);
-		rc = ESLURM_USER_ID_MISSING;
 	} else if (!req->container_id || !req->container_id[0]) {
 		rc = ESLURM_INVALID_CONTAINER_ID;
 	} else {
@@ -3482,7 +3494,7 @@ static void _slurm_rpc_step_by_container_id(slurm_msg_t *msg)
 		response_msg.data_size = sizeof(resp);
 
 		if (req->container_id && req->container_id[0])
-			_find_stepids_by_container_id(req->uid,
+			_find_stepids_by_container_id(msg->auth_uid, req->uid,
 						      req->container_id,
 						      &resp.steps);
 

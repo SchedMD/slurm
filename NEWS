@@ -21,6 +21,9 @@ documents those changes that are of interest to users and administrators.
  -- Add cgroup.conf EnableControllers option for cgroup/v2.
  -- Get correct cgroup root to allow slurmd to run in containers like Docker.
  -- Fix "(null)" cluster name in SLURM_WORKING_CLUSTER env.
+ -- slurmctld - add missing PrivateData=jobs check to step ContainerID lookup
+    requests originated from 'scontrol show step container-id=<id>' or certain
+    scrun operations when container state can't be directly queried.
 
 * Changes in Slurm 23.02.0
 ==========================
