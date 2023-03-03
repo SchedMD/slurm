@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
     already unmounted.
  -- When cluster specific tables are be removed also remove the job_env_table
     and job_script_table.
+ -- Fix the way bf_max_job_test is applied to job arrays in backfill.
 
 * Changes in Slurm 23.02.0
 ==========================

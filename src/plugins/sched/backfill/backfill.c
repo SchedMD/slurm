@@ -2819,6 +2819,11 @@ skip_start:
 						 max_backfill_jobs_start);
 					break;
 				}
+				if (job_test_cnt >= max_backfill_job_cnt) {
+					log_flag(BACKFILL, "bf_max_job_test: limit of %d reached",
+						 max_backfill_job_cnt);
+					break;
+				}
 				if (is_job_array_head &&
 				    (job_ptr->array_task_id != NO_VAL)) {
 					/* Try starting next task of job array */
