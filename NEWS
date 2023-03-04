@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.39 - Avoid dumping -1 value or NULL when step's
     consumed_energy is unset.
  -- scontrol - Fix showing Array Job Steps.
+ -- scontrol - Fix showing Job HetStep.
 
 * Changes in Slurm 23.02.0
 ==========================
