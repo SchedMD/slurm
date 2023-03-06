@@ -5689,14 +5689,14 @@ list. The prefix of "task/" is optional. Acceptable values include:
 .RS
 .TP 15
 \fBtask/affinity\fR
-enables resource containment using sched_setaffinity().
+binds processes to specified resources using sched_setaffinity().
 This enables the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
 .IP
 
 .TP
 \fBtask/cgroup\fR
-enables resource containment using Linux control cgroups.
-This enables the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
+enables process containment to specified resources using Cgroups cpuset
+interface. This enables the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
 NOTE: see "man cgroup.conf" for configuration details.
 .IP
 
@@ -5712,8 +5712,8 @@ The default value is "task/none".
 \fBNOTE:\fR It is recommended to stack \fBtask/cgroup,task/affinity\fR together
 when configuring TaskPlugin, and setting \fBConstrainCores=yes\fR in
 \fBcgroup.conf\fR. This setup uses the task/affinity plugin for setting the
-affinity of the tasks and uses the task/cgroup plugin to fence tasks into the
-specified resources.
+cpu mask for tasks and uses the task/cgroup plugin to fence tasks into the
+allocated cpus.
 
 \fBNOTE:\fR For CRAY systems only: task/cgroup must be used with task/cray_aries
 in TaskPlugin. For CRAY systems a configuration like this is recommended:
