@@ -4741,7 +4741,7 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(UINT64, start, "time/start", NULL),
 	add_parse(JOB_STATE, state, "state", NULL),
 	add_parse(UINT64, stats.act_cpufreq, "statistics/CPU/actual_frequency", NULL),
-	add_parse(UINT64, stats.consumed_energy, "statistics/energy/consumed", NULL),
+	add_parse(UINT64_NO_VAL, stats.consumed_energy, "statistics/energy/consumed", NULL),
 	add_parse(SLURM_STEP_ID, step_id, "step/id", NULL),
 	add_parse(STRING, stepname, "step/name", NULL),
 	add_parse(UINT32, suspended, "time/suspended", NULL),
