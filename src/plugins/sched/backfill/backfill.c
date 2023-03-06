@@ -1687,9 +1687,8 @@ static void _handle_planned(bool set)
 	if (!planned_bitmap)
 		return;
 
-	for (int n = 0; (node_ptr = next_node_bitmap(planned_bitmap, &n));
-	     n++) {
-		if (!node_ptr) {
+	for (int n = 0; (n = bit_ffs_from_bit(planned_bitmap, n)) >= 0; n++) {
+		if (!(node_ptr = node_record_table_ptr[n])) {
 			/* Node could have been deleted while planned */
 			bit_clear(planned_bitmap, n);
 			continue;
