@@ -234,8 +234,9 @@ int slurm_cred_fini(void);
  *
  * Returns NULL on failure.
  */
-slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx, slurm_cred_arg_t *arg,
-				bool sign_it, uint16_t protocol_version);
+extern slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx,
+				       slurm_cred_arg_t *arg,
+				       bool sign_it, uint16_t protocol_version);
 
 /*
  * Create a "fake" credential with bogus data in the signature.
@@ -243,11 +244,11 @@ slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx, slurm_cred_arg_t *arg,
  * to talk to slurmd directly, bypassing the controller
  * (which normally signs creds)
  */
-slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg);
+extern slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg);
 
 /* Free the credential arguments as loaded by either
  * slurm_cred_get_args() or slurm_cred_verify() */
-void slurm_cred_free_args(slurm_cred_arg_t *arg);
+extern void slurm_cred_free_args(slurm_cred_arg_t *arg);
 
 /*
  * Release the internal lock acquired through slurm_cred_get_args()
@@ -304,7 +305,7 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t *ctx,
  *  be used again. Returns SLURM_ERROR if no credential state is found
  *  to be rewound, SLURM_SUCCESS otherwise.
  */
-int slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
+extern int slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 
 /*
  * Check to see if this credential is a reissue of an existing credential
@@ -312,8 +313,8 @@ int slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
  * this credential is a reissue, then the old credential is cleared
  * from the cred context "ctx".
  */
-void slurm_cred_handle_reissue(slurm_cred_ctx_t *ctx, slurm_cred_t *cred,
-			       bool locked);
+extern void slurm_cred_handle_reissue(slurm_cred_ctx_t *ctx, slurm_cred_t *cred,
+				      bool locked);
 
 /*
  * Revoke all credentials for job id jobid
@@ -321,8 +322,8 @@ void slurm_cred_handle_reissue(slurm_cred_ctx_t *ctx, slurm_cred_t *cred,
  *           (local time from slurmctld server)
  * start_time IN - job start time, used to recongnize job requeue
  */
-int slurm_cred_revoke(slurm_cred_ctx_t *ctx, uint32_t jobid, time_t time,
-		      time_t start_time);
+extern int slurm_cred_revoke(slurm_cred_ctx_t *ctx, uint32_t jobid, time_t time,
+			     time_t start_time);
 
 /*
  * Report if a all credentials for a give job id have been
@@ -332,7 +333,7 @@ int slurm_cred_revoke(slurm_cred_ctx_t *ctx, uint32_t jobid, time_t time,
  * than the revoke time, see "scontrol requeue", purge the old
  * job record and make like it never existed
  */
-bool slurm_cred_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
+extern bool slurm_cred_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 
 /*
  * Begin expiration period for the revocation of credentials
@@ -347,14 +348,14 @@ bool slurm_cred_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
  *  EEXIST if expiration period has already begun for jobid.
  *
  */
-int slurm_cred_begin_expiration(slurm_cred_ctx_t *ctx, uint32_t jobid);
+extern int slurm_cred_begin_expiration(slurm_cred_ctx_t *ctx, uint32_t jobid);
 
 
 /*
  * Returns true if the credential context has a cached state for
  * job id jobid.
  */
-bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid);
+extern bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid);
 
 
 /*
@@ -362,29 +363,30 @@ bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid);
  * a credential state. This is used by the verifier to track job ids
  * that it has seen, but not necessarily received a credential for.
  */
-int slurm_cred_insert_jobid(slurm_cred_ctx_t *ctx, uint32_t jobid);
+extern int slurm_cred_insert_jobid(slurm_cred_ctx_t *ctx, uint32_t jobid);
 
 /* Free memory associated with slurm credential `cred.'
  */
-void slurm_cred_destroy(slurm_cred_t *cred);
+extern void slurm_cred_destroy(slurm_cred_t *cred);
 
 /*
  * Pack a slurm credential for network transmission
  */
-void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
+extern void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
 		     uint16_t protocol_version);
 
 /*
  * Unpack a slurm job credential
  */
-slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version);
+extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer,
+				       uint16_t protocol_version);
 
 /*
  * Get a pointer to the slurm credential signature
  * (used by slurm IO connections to verify connecting agent)
  */
-int slurm_cred_get_signature(slurm_cred_t *cred, char **datap,
-			     uint32_t *len);
+extern int slurm_cred_get_signature(slurm_cred_t *cred, char **datap,
+				    uint32_t *len);
 
 /*
  * Retrieve the set of cores that were allocated to the job and step then
@@ -393,9 +395,13 @@ int slurm_cred_get_signature(slurm_cred_t *cred, char **datap,
  *
  * NOTE: caller must xfree the returned strings.
  */
-void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
-			 char **job_alloc_cores, char **step_alloc_cores,
-			 uint64_t *job_mem_limit, uint64_t *step_mem_limit);
+extern void format_core_allocs(slurm_cred_t *cred,
+			       char *node_name,
+			       uint16_t cpus,
+			       char **job_alloc_cores,
+			       char **step_alloc_cores,
+			       uint64_t *job_mem_limit,
+			       uint64_t *step_mem_limit);
 
 /*
  * Retrieve the job and step generic resources (gres) allocate to this job
@@ -409,7 +415,7 @@ extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
 /*
  * Print a slurm job credential using the info() call
  */
-void slurm_cred_print(slurm_cred_t *cred);
+extern void slurm_cred_print(slurm_cred_t *cred);
 
 /*
  * Functions to create, delete, pack, and unpack an sbcast credential
@@ -430,20 +436,20 @@ typedef struct {
 	char *nodes;
 } sbcast_cred_arg_t;
 
-sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t *ctx,
+extern sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t *ctx,
 				  sbcast_cred_arg_t *arg,
 				  uint16_t protocol_version);
-void delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
-sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t *ctx,
+extern void delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
+extern sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t *ctx,
 				       sbcast_cred_t *sbcast_cred,
 				       uint16_t block_no,
 				       uint16_t flags,
 				       uint16_t protocol_version);
-void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
+extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 		      uint16_t protocol_Version);
-sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, uint16_t protocol_version);
-void print_sbcast_cred(sbcast_cred_t *sbcast_cred);
-void sbcast_cred_arg_free(sbcast_cred_arg_t *arg);
+extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, uint16_t protocol_version);
+extern void print_sbcast_cred(sbcast_cred_t *sbcast_cred);
+extern void sbcast_cred_arg_free(sbcast_cred_arg_t *arg);
 extern bool slurm_cred_send_gids_enabled(void);
 
 #endif  /* _HAVE_SLURM_CREDS_H */
