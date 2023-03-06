@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
     consumed_energy is unset.
  -- scontrol - Fix showing Array Job Steps.
  -- scontrol - Fix showing Job HetStep.
+ -- openapi/dbv0.0.38 - Fix not displaying an error when updating QOS or
+    associations fails.
 
 * Changes in Slurm 23.02.0
 ==========================
