@@ -52,6 +52,7 @@ documents those changes that are of interest to users and administrators.
  -- switch/hpe_slingshot - Fix updating LEs and ACs limits.
  -- switch/hpe_slingshot - Use correct Max for EQs and CTs.
  -- switch/hpe_slingshot - support configuring network options per-job.
+ -- switch/hpe_slingshot - retry destroying CXI service if necessary.
 
 * Changes in Slurm 23.02.0
 ==========================

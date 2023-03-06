@@ -645,6 +645,29 @@ out:
 }
 
 /*
+ * Attempt to destroy a CXI service; retry a few times on EBUSY
+ */
+static bool _destroy_cxi_service(struct cxil_dev *dev, const char *devname,
+				 int svc_id)
+{
+	int i, rc;
+
+	for (i = 0; i < SLINGSHOT_CXI_DESTROY_RETRIES; i++) {
+		debug("Destroying CXI SVC ID %d on NIC %s (retry %d)",
+		      svc_id, devname, i);
+		rc = cxil_destroy_svc_p(dev, svc_id);
+		if (rc == 0)
+			return true;
+		error("Failed to destroy CXI Service ID %d (%s): %s",
+		      svc_id, devname, strerror(-rc));
+		if (rc != -EBUSY)
+			break;
+		sleep(1);
+	}
+	return false;
+}
+
+/*
  * In the daemon, when the shepherd for an App terminates, free any CXI
  * Services we have allocated for it
  */
@@ -674,15 +697,9 @@ extern bool slingshot_destroy_services(slingshot_jobinfo_t *job,
 			continue;
 		}
 
-		debug("Destroying CXI SVC ID %d on NIC %s",
-			svc_id, devname);
-
-		int rc = cxil_destroy_svc_p(dev, svc_id);
-		if (rc) {
-			error("Failed to destroy CXI Service ID %d (%s): %s",
-			      svc_id, devname, strerror(-rc));
+		/* Try to destroy service (with retries) */
+		if (!_destroy_cxi_service(dev, devname, svc_id))
 			retval = false;
-		}
 	}
 
 	xfree(job->profiles);

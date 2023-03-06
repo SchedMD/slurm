@@ -77,6 +77,9 @@
 /* Format for VNI "PIDs" job file name */
 #define SLINGSHOT_VNI_PIDS_FMT "%s/vni_pids.%u" /* <spooldir>, <job_id> */
 
+/* Number of retries for destroying CXI services */
+#define SLINGSHOT_CXI_DESTROY_RETRIES 5
+
 /*
  * Values/directories/filenames for jackaloped BASIC/OAUTH authentication
  */
