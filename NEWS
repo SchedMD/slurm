@@ -24,6 +24,9 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - add missing PrivateData=jobs check to step ContainerID lookup
     requests originated from 'scontrol show step container-id=<id>' or certain
     scrun operations when container state can't be directly queried.
+ -- Automatically sort the TaskPlugin list reverse-alphabetically. This
+    addresses an issue where cpu masks were reset if task/affinity was listed
+    before task/cgroup on cgroup/v2 systems with Linux kernel < 6.2.
 
 * Changes in Slurm 23.02.0
 ==========================

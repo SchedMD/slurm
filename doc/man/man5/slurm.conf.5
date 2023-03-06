@@ -5709,18 +5709,16 @@ The default value is "task/none".
 .IP
 
 .RS
-\fBNOTE:\fR It is recommended to stack \fBtask/affinity,task/cgroup\fR together
+\fBNOTE:\fR It is recommended to stack \fBtask/cgroup,task/affinity\fR together
 when configuring TaskPlugin, and setting \fBConstrainCores=yes\fR in
 \fBcgroup.conf\fR. This setup uses the task/affinity plugin for setting the
 affinity of the tasks and uses the task/cgroup plugin to fence tasks into the
 specified resources.
 
-\fBNOTE:\fR For CRAY systems only: task/cgroup must be used with, and listed
-\fBafter\fR task/cray_aries in TaskPlugin. The task/affinity plugin can be listed
-anywhere, but the previous constraint must be satisfied. For CRAY systems,
-a configuration like this is recommended:
+\fBNOTE:\fR For CRAY systems only: task/cgroup must be used with task/cray_aries
+in TaskPlugin. For CRAY systems a configuration like this is recommended:
 .nf
-TaskPlugin=task/affinity,task/cray_aries,task/cgroup
+TaskPlugin=task/cray_aries,task/cgroup,task/affinity
 .fi
 .RE
 .IP
