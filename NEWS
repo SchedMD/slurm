@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix the way bf_max_job_test is applied to job arrays in backfill.
  -- data_parser/v0.0.39 - Avoid dumping -1 value or NULL when step's
     consumed_energy is unset.
+ -- scontrol - Fix showing Array Job Steps.
+ -- scontrol - Fix showing Job HetStep.
 
 * Changes in Slurm 23.02.0
 ==========================

@@ -425,11 +425,10 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 	} else {
 		slurm_selected_step_t id = {0};
 		if (!(error_code = unfmt_job_id_string(job_step_id_str, &id))) {
-			if ((id.array_task_id != NO_VAL) ||
-			    (id.het_job_offset != NO_VAL))
-				error_code = ESLURM_INVALID_JOB_ID;
-			else
-				step_id = id.step_id;
+			if (id.array_task_id != NO_VAL)
+				array_id = id.array_task_id;
+
+			step_id = id.step_id;
 		}
 	}
 
