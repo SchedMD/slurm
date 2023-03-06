@@ -303,7 +303,7 @@ done:
 /* Initialize the plugin. */
 int slurm_cred_init(void)
 {
-	if (_slurm_cred_init() < 0)
+	if (_slurm_cred_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -454,7 +454,7 @@ slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx)
 {
 	if (ctx == NULL)
 		return;
-	if (_slurm_cred_init() < 0)
+	if (_slurm_cred_init() != SLURM_SUCCESS)
 		return;
 
 	slurm_mutex_lock(&ctx->mutex);
@@ -511,7 +511,7 @@ slurm_cred_ctx_get(slurm_cred_ctx_t ctx, slurm_cred_opt_t opt, ...)
 int
 slurm_cred_ctx_key_update(slurm_cred_ctx_t ctx, const char *path)
 {
-	if (_slurm_cred_init() < 0)
+	if (_slurm_cred_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	if (ctx->type == SLURM_CRED_CREATOR)
@@ -2485,7 +2485,7 @@ void sbcast_cred_arg_free(sbcast_cred_arg_t *arg)
 
 extern bool slurm_cred_send_gids_enabled(void)
 {
-	if (_slurm_cred_init() < 0)
+	if (_slurm_cred_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	return enable_send_gids;

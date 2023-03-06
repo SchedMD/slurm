@@ -3473,7 +3473,7 @@ extern int slurm_conf_init_load(const char *file_name, bool load_auth)
 	}
 
 	config_file = xstrdup(file_name);
-	if (_establish_config_source(&config_file, &memfd)) {
+	if (_establish_config_source(&config_file, &memfd) != SLURM_SUCCESS) {
 		log_var(lvl, "Could not establish a configuration source");
 		xfree(config_file);
 		return SLURM_ERROR;
@@ -3937,7 +3937,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_uint16(&conf->complete_wait, "CompleteWait", hashtbl))
 		conf->complete_wait = DEFAULT_COMPLETE_WAIT;
 
-	if (_load_slurmctld_host(conf))
+	if (_load_slurmctld_host(conf) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	if (!s_p_get_string(&conf->acct_gather_energy_type,
@@ -4125,7 +4125,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (s_p_get_string(&temp_str,
 			   "EnforcePartLimits", hashtbl)) {
 		uint16_t enforce_param;
-		if (parse_part_enforce_type(temp_str, &enforce_param) < 0) {
+		if (parse_part_enforce_type(temp_str, &enforce_param) !=
+		    SLURM_SUCCESS) {
 			error("Bad EnforcePartLimits: %s", temp_str);
 			xfree(temp_str);
 			return SLURM_ERROR;
@@ -4542,7 +4543,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 
 	if (s_p_get_string(&temp_str, "AccountingStorageEnforce", hashtbl)) {
-		if (_validate_accounting_storage_enforce(temp_str, conf)) {
+		if (_validate_accounting_storage_enforce(temp_str, conf) !=
+		    SLURM_SUCCESS) {
 			error("AccountingStorageEnforce invalid: %s",
 			      temp_str);
 			xfree(temp_str);
@@ -5030,7 +5032,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (s_p_get_string(&temp_str,
 			   "SelectTypeParameters", hashtbl)) {
 		uint16_t type_param;
-		if ((_parse_select_type_param(temp_str, &type_param) < 0)) {
+		if ((_parse_select_type_param(temp_str, &type_param) !=
+		     SLURM_SUCCESS)) {
 			error("Bad SelectTypeParameter: %s", temp_str);
 			xfree(temp_str);
 			return SLURM_ERROR;

@@ -204,7 +204,7 @@ plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 	 * returns nonzero, unload the plugin and signal an error.
 	 */
 	if ((init = dlsym(plug, "init")) != NULL) {
-		if ((*init)() != 0) {
+		if ((*init)() != SLURM_SUCCESS) {
 			dlclose(plug);
 			return EPLUGIN_INIT_FAILED;
 		}
