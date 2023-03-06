@@ -452,8 +452,7 @@ extern void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx)
 {
 	if (ctx == NULL)
 		return;
-	if (_slurm_cred_init() != SLURM_SUCCESS)
-		return;
+	xassert(g_context);
 
 	slurm_mutex_lock(&ctx->mutex);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
@@ -507,8 +506,7 @@ extern int slurm_cred_ctx_get(slurm_cred_ctx_t *ctx, slurm_cred_opt_t opt, ...)
 
 extern int slurm_cred_ctx_key_update(slurm_cred_ctx_t *ctx, const char *path)
 {
-	if (_slurm_cred_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	if (ctx->type == SLURM_CRED_CREATOR)
 		return _ctx_update_private_key(ctx, path);
@@ -2461,8 +2459,7 @@ extern void sbcast_cred_arg_free(sbcast_cred_arg_t *arg)
 
 extern bool slurm_cred_send_gids_enabled(void)
 {
-	if (_slurm_cred_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
+	xassert(g_context);
 
 	return enable_send_gids;
 }
