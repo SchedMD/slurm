@@ -170,28 +170,28 @@ extern List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 				       slurmdb_user_cond_t *user_q,
 				       slurmdb_user_rec_t *user)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 					   slurmdb_account_cond_t *acct_q,
 					   slurmdb_account_rec_t *acct)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 					  slurmdb_cluster_cond_t *cluster_q,
 					  slurmdb_cluster_rec_t *cluster)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_modify_assocs(void *db_conn, uint32_t uid,
 					      slurmdb_assoc_cond_t *assoc_q,
 					      slurmdb_assoc_rec_t *assoc)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_modify_federations(
@@ -199,35 +199,35 @@ extern List acct_storage_p_modify_federations(
 				slurmdb_federation_cond_t *fed_cond,
 				slurmdb_federation_rec_t *fed)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 				      slurmdb_job_cond_t *job_cond,
 				      slurmdb_job_rec_t *job)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 				      slurmdb_qos_cond_t *qos_cond,
 				      slurmdb_qos_rec_t *qos)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_modify_res(void *db_conn, uint32_t uid,
 				      slurmdb_res_cond_t *res_cond,
 				      slurmdb_res_rec_t *res)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 				      slurmdb_wckey_cond_t *wckey_cond,
 				      slurmdb_wckey_rec_t *wckey)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern int acct_storage_p_modify_reservation(void *db_conn,
@@ -239,39 +239,39 @@ extern int acct_storage_p_modify_reservation(void *db_conn,
 extern List acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 				       slurmdb_user_cond_t *user_q)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
 					List acct_list,
 					slurmdb_user_cond_t *user_q)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
 				       slurmdb_account_cond_t *acct_q)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 					  slurmdb_account_cond_t *cluster_q)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_remove_assocs(void *db_conn, uint32_t uid,
 					      slurmdb_assoc_cond_t *assoc_q)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_remove_federations(
 					void *db_conn, uint32_t uid,
 					slurmdb_federation_cond_t *fed_cond)
 {
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 extern List acct_storage_p_remove_qos(void *db_conn, uint32_t uid,

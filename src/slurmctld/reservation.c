@@ -6815,14 +6815,14 @@ static void *_update_resv_jobs(void *arg)
 	lock_slurmctld(job_write_lock);
 	if (!resv_list) {
 		unlock_slurmctld(job_write_lock);
-		return SLURM_SUCCESS;
+		return NULL;
 	}
 
 	resv_ptr = list_find_first(resv_list, _find_resv_id, &resv_id);
 
 	if (!resv_ptr) {
 		unlock_slurmctld(job_write_lock);
-		return SLURM_SUCCESS;
+		return NULL;
 	}
 
 	list_for_each(job_list, _set_job_resvid, resv_ptr);
