@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
  -- task/affinity - fix slurmd segfault when request launch task requests of
     type "--cpu-bind=[map,mask]_cpu:<list>" have no <list> provided.
  -- sched/backfill - fix segfault when removing a PLANNED node from system.
+ -- sched/backfill - fix deleted planned node staying in planned node bitmap.
 
 * Changes in Slurm 22.05.8
 ==========================
