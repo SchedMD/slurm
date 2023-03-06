@@ -214,7 +214,7 @@ static void      _reconfigure(void);
 static void     *_registration_engine(void *arg);
 static void      _resource_spec_fini(void);
 static int       _resource_spec_init(void);
-static int       _restore_cred_state(slurm_cred_ctx_t ctx);
+static int       _restore_cred_state(slurm_cred_ctx_t *ctx);
 static void      _select_spec_cores(void);
 static void     *_service_connection(void *);
 static int       _set_slurmd_spooldir(const char *dir);
@@ -2159,7 +2159,7 @@ _slurmd_init(void)
 }
 
 static int
-_restore_cred_state(slurm_cred_ctx_t ctx)
+_restore_cred_state(slurm_cred_ctx_t *ctx)
 {
 	char *file_name = NULL, *data = NULL;
 	uint32_t data_offset = 0;
@@ -2244,7 +2244,7 @@ _slurmd_fini(void)
  * IN list - list of credentials
  * RET int - zero or error code
  */
-int save_cred_state(slurm_cred_ctx_t ctx)
+int save_cred_state(slurm_cred_ctx_t *ctx)
 {
 	char *old_file, *new_file, *reg_file;
 	int cred_fd = -1, error_code = SLURM_SUCCESS, rc;

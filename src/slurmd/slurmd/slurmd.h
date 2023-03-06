@@ -141,7 +141,7 @@ typedef struct slurmd_config {
 	bool	      cleanstart;	/* clean start requested (-c)      */
 	bool	      mlock_pages;	/* mlock() slurmd  */
 
-	slurm_cred_ctx_t vctx;          /* slurm_cred_t verifier context   */
+	slurm_cred_ctx_t *vctx;          /* slurm_cred_t verifier context   */
 
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        acct_freq_task;
@@ -176,7 +176,7 @@ int send_registration_msg(uint32_t status);
  * IN list - list of credentials
  * RET int - zero or error code
  */
-int save_cred_state(slurm_cred_ctx_t vctx);
+int save_cred_state(slurm_cred_ctx_t *vctx);
 
 /* Run the health check program if configured */
 int run_script_health_check(void);

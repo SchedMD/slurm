@@ -209,37 +209,38 @@ static bool enable_send_gids = true;
  * Needs to be a global here since we don't want to modify the entire
  * unpack chain ahead of slurm_cred_unpack() to pass this around.
  */
-static slurm_cred_ctx_t verifier_ctx = NULL;
+static slurm_cred_ctx_t *verifier_ctx = NULL;
 
 /*
  * Static prototypes:
  */
 
-static slurm_cred_ctx_t _slurm_cred_ctx_alloc(void);
+static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void);
 static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg);
 
-static int  _ctx_update_private_key(slurm_cred_ctx_t ctx, const char *path);
-static int  _ctx_update_public_key(slurm_cred_ctx_t ctx, const char *path);
-static bool _exkey_is_valid(slurm_cred_ctx_t ctx);
+static int  _ctx_update_private_key(slurm_cred_ctx_t *ctx, const char *path);
+static int  _ctx_update_public_key(slurm_cred_ctx_t *ctx, const char *path);
+static bool _exkey_is_valid(slurm_cred_ctx_t *ctx);
 
-static cred_state_t * _cred_state_create(slurm_cred_ctx_t ctx, slurm_cred_t *c);
+static cred_state_t * _cred_state_create(slurm_cred_ctx_t *ctx,
+					 slurm_cred_t *c);
 static job_state_t  * _job_state_create(uint32_t jobid);
 static void           _job_state_destroy(job_state_t   *js);
 
-static job_state_t  * _find_job_state(slurm_cred_ctx_t ctx, uint32_t jobid);
-static job_state_t  * _insert_job_state(slurm_cred_ctx_t ctx,  uint32_t jobid);
+static job_state_t  * _find_job_state(slurm_cred_ctx_t *ctx, uint32_t jobid);
+static job_state_t  * _insert_job_state(slurm_cred_ctx_t *ctx,  uint32_t jobid);
 static int _list_find_cred_state(void *x, void *key);
 
-static void _insert_cred_state(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
-static void _clear_expired_job_states(slurm_cred_ctx_t ctx);
-static void _clear_expired_credential_states(slurm_cred_ctx_t ctx);
-static void _verifier_ctx_init(slurm_cred_ctx_t ctx);
+static void _insert_cred_state(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
+static void _clear_expired_job_states(slurm_cred_ctx_t *ctx);
+static void _clear_expired_credential_states(slurm_cred_ctx_t *ctx);
+static void _verifier_ctx_init(slurm_cred_ctx_t *ctx);
 
-static bool _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
-static bool _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
+static bool _credential_replayed(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
+static bool _credential_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 
-static int _cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
-static void _cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
+static int _cred_sign(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
+static void _cred_verify_signature(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 
 static int _slurm_cred_init(void);
 static int _slurm_cred_fini(void);
@@ -249,10 +250,10 @@ static cred_state_t *_cred_state_unpack_one(buf_t *buffer);
 
 static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 		       uint16_t protocol_version);
-static void _job_state_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
-static void _job_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer);
-static void _cred_state_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
-static void _cred_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer);
+static void _job_state_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer);
+static void _job_state_pack(slurm_cred_ctx_t *ctx, buf_t *buffer);
+static void _cred_state_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer);
+static void _cred_state_pack(slurm_cred_ctx_t *ctx, buf_t *buffer);
 
 static void _sbast_cache_add(sbcast_cred_t *sbcast_cred);
 
@@ -392,10 +393,10 @@ extern int slurm_cred_fini(void)
 	return SLURM_SUCCESS;
 }
 
-slurm_cred_ctx_t
+slurm_cred_ctx_t *
 slurm_cred_creator_ctx_create(const char *path)
 {
-	slurm_cred_ctx_t ctx = NULL;
+	slurm_cred_ctx_t *ctx = NULL;
 
 	xassert(g_context);
 
@@ -418,10 +419,10 @@ fail:
 	return NULL;
 }
 
-slurm_cred_ctx_t
+slurm_cred_ctx_t *
 slurm_cred_verifier_ctx_create(const char *path)
 {
-	slurm_cred_ctx_t ctx = NULL;
+	slurm_cred_ctx_t *ctx = NULL;
 
 	xassert(g_context);
 
@@ -450,7 +451,7 @@ fail:
 
 
 void
-slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx)
+slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx)
 {
 	if (ctx == NULL)
 		return;
@@ -477,7 +478,7 @@ slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx)
 }
 
 int
-slurm_cred_ctx_get(slurm_cred_ctx_t ctx, slurm_cred_opt_t opt, ...)
+slurm_cred_ctx_get(slurm_cred_ctx_t *ctx, slurm_cred_opt_t opt, ...)
 {
 	int rc = SLURM_SUCCESS;
 	va_list ap;
@@ -509,7 +510,7 @@ slurm_cred_ctx_get(slurm_cred_ctx_t ctx, slurm_cred_opt_t opt, ...)
 }
 
 int
-slurm_cred_ctx_key_update(slurm_cred_ctx_t ctx, const char *path)
+slurm_cred_ctx_key_update(slurm_cred_ctx_t *ctx, const char *path)
 {
 	if (_slurm_cred_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
@@ -520,7 +521,7 @@ slurm_cred_ctx_key_update(slurm_cred_ctx_t ctx, const char *path)
 		return _ctx_update_public_key(ctx, path);
 }
 
-slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
+slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx, slurm_cred_arg_t *arg,
 				bool sign_it, uint16_t protocol_version)
 {
 	slurm_cred_t *cred = NULL;
@@ -587,7 +588,7 @@ fail:
 slurm_cred_t *
 slurm_cred_faker(slurm_cred_arg_t *arg)
 {
-	slurm_cred_ctx_t ctx;
+	slurm_cred_ctx_t *ctx;
 	slurm_cred_t *cred = NULL;
 
 	/*
@@ -700,7 +701,7 @@ extern void *slurm_cred_get(slurm_cred_t *cred,
  * On success, returns a pointer to the arg structure within the credential.
  * Caller *must* release the lock.
  */
-extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
+extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t *ctx,
 					   slurm_cred_t *cred)
 {
 	time_t now = time(NULL);
@@ -777,7 +778,7 @@ slurm_cred_destroy(slurm_cred_t *cred)
 
 
 bool
-slurm_cred_jobid_cached(slurm_cred_ctx_t ctx, uint32_t jobid)
+slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid)
 {
 	bool retval = false;
 
@@ -800,7 +801,7 @@ slurm_cred_jobid_cached(slurm_cred_ctx_t ctx, uint32_t jobid)
 }
 
 int
-slurm_cred_insert_jobid(slurm_cred_ctx_t ctx, uint32_t jobid)
+slurm_cred_insert_jobid(slurm_cred_ctx_t *ctx, uint32_t jobid)
 {
 	xassert(ctx != NULL);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
@@ -817,7 +818,7 @@ slurm_cred_insert_jobid(slurm_cred_ctx_t ctx, uint32_t jobid)
 }
 
 int
-slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
+slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 {
 	int rc = 0;
 
@@ -839,7 +840,7 @@ slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 }
 
 int
-slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time,
+slurm_cred_revoke(slurm_cred_ctx_t *ctx, uint32_t jobid, time_t time,
 		  time_t start_time)
 {
 	job_state_t  *j = NULL;
@@ -882,7 +883,7 @@ error:
 }
 
 int
-slurm_cred_begin_expiration(slurm_cred_ctx_t ctx, uint32_t jobid)
+slurm_cred_begin_expiration(slurm_cred_ctx_t *ctx, uint32_t jobid)
 {
 	job_state_t  *j = NULL;
 
@@ -1466,7 +1467,7 @@ unpack_error:
 	return NULL;
 }
 
-int slurm_cred_ctx_pack(slurm_cred_ctx_t ctx, buf_t *buffer)
+int slurm_cred_ctx_pack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 {
 	slurm_mutex_lock(&ctx->mutex);
 	_job_state_pack(ctx, buffer);
@@ -1476,7 +1477,7 @@ int slurm_cred_ctx_pack(slurm_cred_ctx_t ctx, buf_t *buffer)
 	return SLURM_SUCCESS;
 }
 
-int slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, buf_t *buffer)
+int slurm_cred_ctx_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 {
 	xassert(ctx != NULL);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
@@ -1497,7 +1498,7 @@ int slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, buf_t *buffer)
 }
 
 static void
-_verifier_ctx_init(slurm_cred_ctx_t ctx)
+_verifier_ctx_init(slurm_cred_ctx_t *ctx)
 {
 	xassert(ctx != NULL);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
@@ -1511,7 +1512,7 @@ _verifier_ctx_init(slurm_cred_ctx_t ctx)
 
 
 static int
-_ctx_update_private_key(slurm_cred_ctx_t ctx, const char *path)
+_ctx_update_private_key(slurm_cred_ctx_t *ctx, const char *path)
 {
 	void *pk   = NULL;
 	void *tmpk = NULL;
@@ -1539,7 +1540,7 @@ _ctx_update_private_key(slurm_cred_ctx_t ctx, const char *path)
 
 
 static int
-_ctx_update_public_key(slurm_cred_ctx_t ctx, const char *path)
+_ctx_update_public_key(slurm_cred_ctx_t *ctx, const char *path)
 {
 	void *pk   = NULL;
 
@@ -1571,7 +1572,7 @@ _ctx_update_public_key(slurm_cred_ctx_t ctx, const char *path)
 
 
 static bool
-_exkey_is_valid(slurm_cred_ctx_t ctx)
+_exkey_is_valid(slurm_cred_ctx_t *ctx)
 {
 	if (!ctx->exkey)
 		return false;
@@ -1587,10 +1588,9 @@ _exkey_is_valid(slurm_cred_ctx_t ctx)
 }
 
 
-static slurm_cred_ctx_t
-_slurm_cred_ctx_alloc(void)
+static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void)
 {
-	slurm_cred_ctx_t ctx = xmalloc(sizeof(*ctx));
+	slurm_cred_ctx_t *ctx = xmalloc(sizeof(*ctx));
 	/* Contents initialized to zero */
 
 	slurm_mutex_init(&ctx->mutex);
@@ -1622,7 +1622,7 @@ static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg)
 	return cred;
 }
 
-static int _cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
+static int _cred_sign(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 {
 	int rc;
 
@@ -1640,7 +1640,7 @@ static int _cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 	return SLURM_SUCCESS;
 }
 
-static void _cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
+static void _cred_verify_signature(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 {
 	int rc;
 	void *start = get_buf_data(cred->buffer);
@@ -1858,7 +1858,7 @@ static int _list_find_cred_state(void *x, void *key)
 
 
 static bool
-_credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
+_credential_replayed(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 {
 	cred_state_t *s = NULL;
 
@@ -1880,7 +1880,7 @@ _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 }
 
 extern void
-slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred, bool locked)
+slurm_cred_handle_reissue(slurm_cred_ctx_t *ctx, slurm_cred_t *cred, bool locked)
 {
 	job_state_t *j;
 
@@ -1906,7 +1906,7 @@ slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred, bool locked)
 }
 
 extern bool
-slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
+slurm_cred_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 {
 	job_state_t *j;
 	bool rc = false;
@@ -1924,7 +1924,7 @@ slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 }
 
 static bool
-_credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
+_credential_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 {
 	job_state_t  *j = NULL;
 
@@ -1954,7 +1954,7 @@ static int _list_find_job_state(void *x, void *key)
 }
 
 static job_state_t *
-_find_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
+_find_job_state(slurm_cred_ctx_t *ctx, uint32_t jobid)
 {
 	job_state_t *j =
 		list_find_first(ctx->job_list, _list_find_job_state, &jobid);
@@ -1962,7 +1962,7 @@ _find_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
 }
 
 static job_state_t *
-_insert_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
+_insert_job_state(slurm_cred_ctx_t *ctx, uint32_t jobid)
 {
 	job_state_t *j = list_find_first(
 		ctx->job_list, _list_find_job_state, &jobid);;
@@ -2007,7 +2007,7 @@ static int _list_find_expired_job_state(void *x, void *key)
 }
 
 static void
-_clear_expired_job_states(slurm_cred_ctx_t ctx)
+_clear_expired_job_states(slurm_cred_ctx_t *ctx)
 {
 	time_t        now = time(NULL);
 
@@ -2025,7 +2025,7 @@ static int _list_find_expired_cred_state(void *x, void *key)
 }
 
 static void
-_clear_expired_credential_states(slurm_cred_ctx_t ctx)
+_clear_expired_credential_states(slurm_cred_ctx_t *ctx)
 {
 	time_t        now = time(NULL);
 
@@ -2034,7 +2034,7 @@ _clear_expired_credential_states(slurm_cred_ctx_t ctx)
 
 
 static void
-_insert_cred_state(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
+_insert_cred_state(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 {
 	cred_state_t *s = _cred_state_create(ctx, cred);
 	list_append(ctx->state_list, s);
@@ -2042,7 +2042,7 @@ _insert_cred_state(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 
 
 static cred_state_t *
-_cred_state_create(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
+_cred_state_create(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 {
 	cred_state_t *s = xmalloc(sizeof(*s));
 
@@ -2121,7 +2121,7 @@ unpack_error:
 }
 
 
-static void _cred_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer)
+static void _cred_state_pack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 {
 	pack32(list_count(ctx->state_list), buffer);
 
@@ -2129,7 +2129,7 @@ static void _cred_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer)
 }
 
 
-static void _cred_state_unpack(slurm_cred_ctx_t ctx, buf_t *buffer)
+static void _cred_state_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 {
 	time_t        now = time(NULL);
 	uint32_t      n;
@@ -2157,7 +2157,7 @@ unpack_error:
 }
 
 
-static void _job_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer)
+static void _job_state_pack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 {
 	pack32((uint32_t) list_count(ctx->job_list), buffer);
 
@@ -2165,7 +2165,7 @@ static void _job_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer)
 }
 
 
-static void _job_state_unpack(slurm_cred_ctx_t ctx, buf_t *buffer)
+static void _job_state_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 {
 	time_t       now = time(NULL);
 	uint32_t     n   = 0;
@@ -2220,7 +2220,7 @@ static void _pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 /* Create an sbcast credential for the specified job and nodes
  *	including digital signature.
  * RET the sbcast credential or NULL on error */
-sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
+sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t *ctx,
 				  sbcast_cred_arg_t *arg,
 				  uint16_t protocol_version)
 {
@@ -2310,7 +2310,7 @@ static void _sbast_cache_add(sbcast_cred_t *sbcast_cred)
  *	blocks or shared object files must have a recent signature on file
  *	(in our cache) or the slurmd must have recently been restarted.
  * RET 0 on success, -1 on error */
-sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
+sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t *ctx,
 				       sbcast_cred_t *sbcast_cred,
 				       uint16_t block_no,
 				       uint16_t flags,

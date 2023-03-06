@@ -82,7 +82,7 @@
 /*
  * The slurm_cred_ctx_t incomplete type
  */
-typedef struct slurm_cred_context   * slurm_cred_ctx_t;
+typedef struct slurm_cred_context slurm_cred_ctx_t;
 
 /* Used by slurm_cred_get() */
 typedef enum {
@@ -101,7 +101,7 @@ typedef enum {
  *
  *
  */
-slurm_cred_ctx_t slurm_cred_creator_ctx_create(const char *privkey);
+slurm_cred_ctx_t *slurm_cred_creator_ctx_create(const char *privkey);
 
 /*
  * Initialize current process for slurm credential verification.
@@ -109,7 +109,7 @@ slurm_cred_ctx_t slurm_cred_creator_ctx_create(const char *privkey);
  *
  * Returns 0 for success, -1 on failure.
  */
-slurm_cred_ctx_t slurm_cred_verifier_ctx_create(const char *pubkey);
+slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(const char *pubkey);
 
 /*
  * Set and get credential context options
@@ -119,18 +119,18 @@ typedef enum {
 	SLURM_CRED_OPT_EXPIRY_WINDOW /* expiration time of creds (int );  */
 } slurm_cred_opt_t;
 
-int slurm_cred_ctx_get(slurm_cred_ctx_t ctx, slurm_cred_opt_t opt, ...);
+int slurm_cred_ctx_get(slurm_cred_ctx_t *ctx, slurm_cred_opt_t opt, ...);
 
 /*
  * Update the context's current key.
  */
-int slurm_cred_ctx_key_update(slurm_cred_ctx_t ctx, const char *keypath);
+int slurm_cred_ctx_key_update(slurm_cred_ctx_t *ctx, const char *keypath);
 
 
 /*
  * Destroy a credential context, freeing associated memory.
  */
-void slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx);
+void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx);
 
 /*
  * Pack and unpack slurm credential context.
@@ -139,8 +139,8 @@ void slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx);
  * buffer, on unpack() the contents of the buffer are used to
  * initialize the state of the context ctx.
  */
-int slurm_cred_ctx_pack(slurm_cred_ctx_t ctx, buf_t *buffer);
-int slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
+int slurm_cred_ctx_pack(slurm_cred_ctx_t *ctx, buf_t *buffer);
+int slurm_cred_ctx_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer);
 
 
 /*
@@ -234,7 +234,7 @@ int slurm_cred_fini(void);
  *
  * Returns NULL on failure.
  */
-slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
+slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx, slurm_cred_arg_t *arg,
 				bool sign_it, uint16_t protocol_version);
 
 /*
@@ -296,7 +296,7 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred,
  *
  * *Must* release lock with slurm_cred_unlock_args().
  */
-extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
+extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t *ctx,
 					   slurm_cred_t *cred);
 
 /*
@@ -304,7 +304,7 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t ctx,
  *  be used again. Returns SLURM_ERROR if no credential state is found
  *  to be rewound, SLURM_SUCCESS otherwise.
  */
-int slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
+int slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 
 /*
  * Check to see if this credential is a reissue of an existing credential
@@ -312,7 +312,7 @@ int slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
  * this credential is a reissue, then the old credential is cleared
  * from the cred context "ctx".
  */
-void slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
+void slurm_cred_handle_reissue(slurm_cred_ctx_t *ctx, slurm_cred_t *cred,
 			       bool locked);
 
 /*
@@ -321,7 +321,7 @@ void slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
  *           (local time from slurmctld server)
  * start_time IN - job start time, used to recongnize job requeue
  */
-int slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time,
+int slurm_cred_revoke(slurm_cred_ctx_t *ctx, uint32_t jobid, time_t time,
 		      time_t start_time);
 
 /*
@@ -332,7 +332,7 @@ int slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time,
  * than the revoke time, see "scontrol requeue", purge the old
  * job record and make like it never existed
  */
-bool slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
+bool slurm_cred_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 
 /*
  * Begin expiration period for the revocation of credentials
@@ -347,14 +347,14 @@ bool slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
  *  EEXIST if expiration period has already begun for jobid.
  *
  */
-int slurm_cred_begin_expiration(slurm_cred_ctx_t ctx, uint32_t jobid);
+int slurm_cred_begin_expiration(slurm_cred_ctx_t *ctx, uint32_t jobid);
 
 
 /*
  * Returns true if the credential context has a cached state for
  * job id jobid.
  */
-bool slurm_cred_jobid_cached(slurm_cred_ctx_t ctx, uint32_t jobid);
+bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid);
 
 
 /*
@@ -362,7 +362,7 @@ bool slurm_cred_jobid_cached(slurm_cred_ctx_t ctx, uint32_t jobid);
  * a credential state. This is used by the verifier to track job ids
  * that it has seen, but not necessarily received a credential for.
  */
-int slurm_cred_insert_jobid(slurm_cred_ctx_t ctx, uint32_t jobid);
+int slurm_cred_insert_jobid(slurm_cred_ctx_t *ctx, uint32_t jobid);
 
 /* Free memory associated with slurm credential `cred.'
  */
@@ -430,11 +430,11 @@ typedef struct {
 	char *nodes;
 } sbcast_cred_arg_t;
 
-sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
+sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t *ctx,
 				  sbcast_cred_arg_t *arg,
 				  uint16_t protocol_version);
 void delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
-sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
+sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t *ctx,
 				       sbcast_cred_t *sbcast_cred,
 				       uint16_t block_no,
 				       uint16_t flags,
