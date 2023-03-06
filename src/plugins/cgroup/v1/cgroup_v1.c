@@ -855,10 +855,11 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 extern bool cgroup_p_has_pid(pid_t pid)
 {
 	bool rc;
+	int rc2;
 	xcgroup_t cg;
 
-	rc = xcgroup_ns_find_by_pid(&g_cg_ns[CG_TRACK], &cg, pid);
-	if (rc != SLURM_SUCCESS)
+	rc2 = xcgroup_ns_find_by_pid(&g_cg_ns[CG_TRACK], &cg, pid);
+	if (rc2 != SLURM_SUCCESS)
 		return false;
 
 	rc = true;
