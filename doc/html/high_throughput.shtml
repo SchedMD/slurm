@@ -200,11 +200,6 @@ More detailed logging will decrease system throughput. Set to <i>error</i> or
 <i>info</i> for regular operations with high throughput workload.</li>
 <li><b>SlurmdLogFile</b>:
 Writing to local storage is recommended.</li>
-<li><b>TaskPlugin</b>:
-Avoid using <i>task/cgroup</i> with the combination of <i>ConstrainRAMSpace</i>
-it is slower than other alternatives.  On the same note <i>task/affinity</i>
-does not appear to add any measurable overhead.  Using task/affinity for
-affinity is advised in any case.</li>
 <li><b>Other</b>: Configure logging, accounting and other overhead to a minimum
 appropriate for your environment.</li>
 </ul>
@@ -231,6 +226,6 @@ appropriate for your environment.</li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 14 July 2021</p>
+<p style="text-align:center;">Last modified 09 March 2023</p>
 
 <!--#include virtual="footer.txt"-->
