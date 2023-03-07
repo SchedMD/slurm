@@ -374,6 +374,8 @@ __attribute__((nonnull));					\
 static char *arg_get_##field(slurm_opt_t *opt)			\
 {								\
 	char time_str[32];					\
+	if (opt->field == NO_VAL)				\
+		return NULL;					\
 	mins2time_str(opt->field, time_str, sizeof(time_str));	\
 	return xstrdup(time_str);				\
 }								\
@@ -1383,6 +1385,8 @@ static char *arg_get_delay_boot(slurm_opt_t *opt)
 {
 	char time_str[32];
 
+	if (opt->delay_boot == NO_VAL)
+		return NULL;
 	secs2time_str(opt->delay_boot, time_str, sizeof(time_str));
 
 	return xstrdup(time_str);
@@ -4265,6 +4269,8 @@ static int arg_set_data_switch_wait(slurm_opt_t *opt, const data_t *arg,
 static char *arg_get_switch_wait(slurm_opt_t *opt)
 {
 	char time_str[32];
+	if (opt->wait4switch == NO_VAL)
+		return NULL;
 	secs2time_str(opt->wait4switch, time_str, sizeof(time_str));
 	return xstrdup_printf("%s", time_str);
 }

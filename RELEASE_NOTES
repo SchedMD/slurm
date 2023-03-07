@@ -29,3 +29,6 @@ COMMAND CHANGES (see man pages for details)
 
 API CHANGES
 ===========
+ -- cli_filter/lua - return nil for unset time options rather than the string
+    "2982616-04:14:00" (which is the internal macro "NO_VAL" represented as
+    time string).
