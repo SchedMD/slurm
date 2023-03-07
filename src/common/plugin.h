@@ -87,6 +87,12 @@ typedef enum {
 	EPLUGIN_BAD_VERSION,     /* incompatible plugin version         */
 } plugin_err_t;
 
+typedef enum {
+	PLUGIN_NOT_INITED = 0,
+	PLUGIN_NOOP,
+	PLUGIN_INITED,
+} plugin_init_t;
+
 const char *plugin_strerror(plugin_err_t err);
 
 /*
