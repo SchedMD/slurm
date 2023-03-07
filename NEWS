@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- scontrol - Fix showing Job HetStep.
  -- openapi/dbv0.0.38 - Fix not displaying an error when updating QOS or
     associations fails.
+ -- data_parser/v0.0.39 - Avoid crash while parsing composite structures.
 
 * Changes in Slurm 23.02.0
 ==========================
