@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow a dynamic node to register with a reason, using --conf, when the
     state is DOWN or DRAIN.
  -- Fix slurmd running tasks before RPC Prolog is run.
+ -- Fix slurmd deadlock iff the controller were to give a bad alias_list.
 
 * Changes in Slurm 23.02.1
 ==========================

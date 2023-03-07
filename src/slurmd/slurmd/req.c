@@ -1538,6 +1538,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	if (_set_node_alias(req)) {
 		errnum = ESLURM_INVALID_NODE_NAME;
+		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
 	}
 
