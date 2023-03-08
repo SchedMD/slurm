@@ -381,69 +381,46 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _packstr_with_version(void *object, uint16_t protocol_version,
+				  buf_t *buffer)
+{
+	packstr(object, buffer);
+}
+
 static void _pack_shares_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	shares_request_msg_t *msg = smsg->data;
-	uint32_t count = NO_VAL;
-	char *tmp_info = NULL;
-	ListIterator itr = NULL;
-
 	xassert(msg);
 
-	if (msg->acct_list)
-		count = list_count(msg->acct_list);
-	pack32(count, buffer);
-	if (count && count != NO_VAL) {
-		itr = list_iterator_create(msg->acct_list);
-		while ((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
-	count = NO_VAL;
+	(void) slurm_pack_list(msg->acct_list, _packstr_with_version, buffer,
+			       smsg->protocol_version);
+	(void) slurm_pack_list(msg->user_list, _packstr_with_version, buffer,
+			       smsg->protocol_version);
+}
 
+static int _unpackstr_with_version(void **object, uint16_t protocol_version,
+				   buf_t *buffer)
+{
+	uint32_t uint32_tmp;
 
-	if (msg->user_list)
-		count = list_count(msg->user_list);
-	pack32(count, buffer);
-	if (count && count != NO_VAL) {
-		itr = list_iterator_create(msg->user_list);
-		while ((tmp_info = list_next(itr))) {
-			packstr(tmp_info, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
+	return unpackstr_xmalloc((char **) object, &uint32_tmp, buffer);
 }
 
 static int _unpack_shares_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	uint32_t count = NO_VAL;
-	int i;
-	char *tmp_info = NULL;
 	shares_request_msg_t *object_ptr = xmalloc(sizeof(*object_ptr));
 	smsg->data = object_ptr;
 
-	safe_unpack32(&count, buffer);
-	if (count > NO_VAL)
+	if (slurm_unpack_list(&object_ptr->acct_list, _unpackstr_with_version,
+			      xfree_ptr, buffer, smsg->protocol_version) !=
+	    SLURM_SUCCESS)
 		goto unpack_error;
-	if (count != NO_VAL) {
-		object_ptr->acct_list = list_create(xfree_ptr);
-		for (i = 0; i < count; i++) {
-			safe_unpackstr(&tmp_info, buffer);
-			list_append(object_ptr->acct_list, tmp_info);
-		}
-	}
 
-	safe_unpack32(&count, buffer);
-	if (count > NO_VAL)
+	if (slurm_unpack_list(&object_ptr->user_list, _unpackstr_with_version,
+			      xfree_ptr, buffer, smsg->protocol_version) !=
+	    SLURM_SUCCESS)
 		goto unpack_error;
-	if (count != NO_VAL) {
-		object_ptr->user_list = list_create(xfree_ptr);
-		for (i = 0; i < count; i++) {
-			safe_unpackstr(&tmp_info, buffer);
-			list_append(object_ptr->user_list, tmp_info);
-		}
-	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
