@@ -49,6 +49,7 @@ typedef struct scancel_options {
 	char *sibling;		/* --sibling=<sib_name>		*/
 	bool ctld;		/* --ctld			*/
 	List clusters;          /* --cluster=cluster_name -Mcluster-name */
+	bool cron;		/* --cron */
 	bool full;		/* --full, -f			*/
 	bool hurry;		/* --hurry, -H			*/
 	bool interactive;	/* --interactive, -i		*/

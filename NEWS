@@ -74,6 +74,8 @@ documents those changes that are of interest to users and administrators.
     slurm_spank_job_epilog().
  -- Fix srun < 23.02 always getting an "exact" core allocation.
  -- Prevent scontrol < 23.02 from setting MaxCPUsPerSocket to 0.
+ -- Add ScronParameters=explicit_scancel and corresponding scancel --cron
+    option.
 
 * Changes in Slurm 23.02.0
 ==========================
