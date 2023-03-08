@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - Fix not displaying an error when updating QOS or
     associations fails.
  -- data_parser/v0.0.39 - Avoid crash while parsing composite structures.
+ -- sched/backfill - fix deleted planned node staying in planned node bitmap.
+ -- Fix nodes remaining as PLANNED after slurmctld save state recovery.
 
 * Changes in Slurm 23.02.0
 ==========================
