@@ -4329,7 +4329,6 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
  */
 extern void re_kill_job(job_record_t *job_ptr)
 {
-	kill_job_msg_t *kill_job;
 	agent_arg_t *agent_args;
 	hostlist_t kill_hostlist;
 	char *host_str = NULL;
@@ -4351,7 +4350,6 @@ extern void re_kill_job(job_record_t *job_ptr)
 	agent_args->hostlist = hostlist_create(NULL);
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	agent_args->retry = 0;
-	kill_job = create_kill_job_msg(job_ptr, SLURM_PROTOCOL_VERSION);
 
 	/* On a Cray system this will start the NHC early so it is
 	 * able to gather any information it can from the apparent
@@ -4437,7 +4435,6 @@ extern void re_kill_job(job_record_t *job_ptr)
 #endif
 
 	if (agent_args->node_count == 0) {
-		slurm_free_kill_job_msg(kill_job);
 		if (agent_args->hostlist)
 			hostlist_destroy(agent_args->hostlist);
 		xfree(agent_args);
@@ -4457,7 +4454,8 @@ extern void re_kill_job(job_record_t *job_ptr)
 	xfree(host_str);
 	last_job_id = job_ptr->job_id;
 	hostlist_destroy(kill_hostlist);
-	agent_args->msg_args = kill_job;
+	agent_args->msg_args =
+		create_kill_job_msg(job_ptr, agent_args->protocol_version);
 	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_args);
 	return;
