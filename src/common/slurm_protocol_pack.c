@@ -457,16 +457,16 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_shares_response_msg(shares_response_msg_t *msg, buf_t *buffer,
-				      uint16_t protocol_version)
+static void _pack_shares_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	shares_response_msg_t *msg = smsg->data;
 	ListIterator itr = NULL;
 	assoc_shares_object_t *share = NULL;
 	uint32_t count = NO_VAL;
 
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr_array(msg->tres_names, msg->tres_cnt, buffer);
 
 		if (!msg->assoc_shares_list ||
@@ -479,28 +479,22 @@ static void _pack_shares_response_msg(shares_response_msg_t *msg, buf_t *buffer,
 			while ((share = list_next(itr)))
 				_pack_assoc_shares_object(
 					share, msg->tres_cnt, buffer,
-					protocol_version);
+					smsg->protocol_version);
 			list_iterator_destroy(itr);
 		}
 		pack64(msg->tot_shares, buffer);
 	}
 }
 
-static int _unpack_shares_response_msg(shares_response_msg_t **msg,
-				       buf_t *buffer,
-				       uint16_t protocol_version)
+static int _unpack_shares_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t count = NO_VAL;
 	int i = 0;
 	void *tmp_info = NULL;
-	shares_response_msg_t *object_ptr = NULL;
+	shares_response_msg_t *object_ptr = xmalloc(sizeof(*object_ptr));
+	smsg->data = object_ptr;
 
-	xassert(msg);
-
-	object_ptr = xmalloc(sizeof(shares_response_msg_t));
-	*msg = object_ptr;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_array(&object_ptr->tres_names,
 				     &object_ptr->tres_cnt, buffer);
 
@@ -513,7 +507,7 @@ static int _unpack_shares_response_msg(shares_response_msg_t **msg,
 			for (i=0; i<count; i++) {
 				if (_unpack_assoc_shares_object(
 					    &tmp_info, object_ptr->tres_cnt,
-					    buffer, protocol_version)
+					    buffer, smsg->protocol_version)
 				    != SLURM_SUCCESS)
 					goto unpack_error;
 				list_append(object_ptr->assoc_shares_list,
@@ -528,7 +522,7 @@ static int _unpack_shares_response_msg(shares_response_msg_t **msg,
 
 unpack_error:
 	slurm_free_shares_response_msg(object_ptr);
-	*msg = NULL;
+	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -10916,9 +10910,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 					 msg->protocol_version);
 		break;
 	case RESPONSE_SHARE_INFO:
-		_pack_shares_response_msg((shares_response_msg_t *)msg->data,
-					  buffer,
-					  msg->protocol_version);
+		_pack_shares_response_msg(msg, buffer);
 		break;
 	case REQUEST_PRIORITY_FACTORS:
 		break;
@@ -11586,10 +11578,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 			msg->protocol_version);
 		break;
 	case RESPONSE_SHARE_INFO:
-		rc = _unpack_shares_response_msg(
-			(shares_response_msg_t **)&msg->data,
-			buffer,
-			msg->protocol_version);
+		rc = _unpack_shares_response_msg(msg, buffer);
 		break;
 	case REQUEST_PRIORITY_FACTORS:
 		/* this unpack call can be removed 2 versions after 23.02 */
