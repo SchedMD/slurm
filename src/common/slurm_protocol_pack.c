@@ -1400,38 +1400,31 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_sbcast_cred_msg(job_sbcast_cred_msg_t * msg, buf_t *buffer,
-			  uint16_t protocol_version)
+static void _pack_job_sbcast_cred_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	job_sbcast_cred_msg_t *msg = smsg->data;
 	xassert(msg);
 
 	pack32(msg->job_id, buffer);
 	packstr(msg->node_list, buffer);
 
 	pack32(0, buffer); /* was node_cnt */
-	pack_sbcast_cred(msg->sbcast_cred, buffer, protocol_version);
+	pack_sbcast_cred(msg->sbcast_cred, buffer, smsg->protocol_version);
 }
 
-static int
-_unpack_job_sbcast_cred_msg(job_sbcast_cred_msg_t ** msg, buf_t *buffer,
-			    uint16_t protocol_version)
+static int _unpack_job_sbcast_cred_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t uint32_tmp;
-	job_sbcast_cred_msg_t *tmp_ptr;
+	job_sbcast_cred_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
+	smsg->data = tmp_ptr;
 
-	/* alloc memory for structure */
-	xassert(msg);
-	tmp_ptr = xmalloc(sizeof(job_sbcast_cred_msg_t));
-	*msg = tmp_ptr;
-
-	/* load the data values */
 	safe_unpack32(&tmp_ptr->job_id, buffer);
 	safe_unpackstr(&tmp_ptr->node_list, buffer);
 
 	safe_unpack32(&uint32_tmp, buffer); /* was node_cnt */
 
-	tmp_ptr->sbcast_cred = unpack_sbcast_cred(buffer, protocol_version);
+	tmp_ptr->sbcast_cred =
+		unpack_sbcast_cred(buffer, smsg->protocol_version);
 	if (tmp_ptr->sbcast_cred == NULL)
 		goto unpack_error;
 
@@ -1439,7 +1432,7 @@ _unpack_job_sbcast_cred_msg(job_sbcast_cred_msg_t ** msg, buf_t *buffer,
 
 unpack_error:
 	slurm_free_sbcast_cred_msg(tmp_ptr);
-	*msg = NULL;
+	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -10940,9 +10933,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 			msg->protocol_version);
 		break;
 	case RESPONSE_JOB_SBCAST_CRED:
-		_pack_job_sbcast_cred_msg(
-			(job_sbcast_cred_msg_t *)msg->data, buffer,
-			msg->protocol_version);
+		_pack_job_sbcast_cred_msg(msg, buffer);
 		break;
 	case REQUEST_FRONT_END_INFO:
 		_pack_front_end_info_request_msg(
@@ -11618,9 +11609,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 			msg->protocol_version);
 		break;
 	case RESPONSE_JOB_SBCAST_CRED:
-		rc = _unpack_job_sbcast_cred_msg(
-			(job_sbcast_cred_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
+		rc = _unpack_job_sbcast_cred_msg(msg, buffer);
 		break;
 	case RESPONSE_FED_INFO:
 		rc = slurmdb_unpack_federation_rec(&msg->data,
