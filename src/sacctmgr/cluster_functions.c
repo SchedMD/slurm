@@ -119,15 +119,6 @@ static int _set_cond(int *start, int argc, char **argv,
 					 MAX(command_len, 2))) {
 			if (format_list)
 				slurm_addto_char_list(format_list, argv[i]+end);
-		} else if (!end || !xstrncasecmp(argv[i], "PluginIDSelect",
-						MAX(command_len, 1))) {
-			if (!cluster_cond->plugin_id_select_list)
-				cluster_cond->plugin_id_select_list =
-					list_create(xfree_ptr);
-			if (slurm_addto_char_list(
-				   cluster_cond->plugin_id_select_list,
-				   argv[i]+end))
-				cond_set |= SA_SET_CLUST;
 		} else if (!end || !xstrncasecmp(argv[i], "RPCVersions",
 						MAX(command_len, 1))) {
 			if (!cluster_cond->rpc_version_list)

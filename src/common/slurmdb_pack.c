@@ -3101,7 +3101,6 @@ extern void slurmdb_pack_cluster_cond(void *in, uint16_t protocol_version,
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
 			pack_time(0, buffer);
 			pack_time(0, buffer);
 			pack16(0, buffer);
@@ -3117,7 +3116,6 @@ extern void slurmdb_pack_cluster_cond(void *in, uint16_t protocol_version,
 		pack32(object->flags, buffer);
 
 		_pack_list_of_str(object->format_list, buffer);
-		_pack_list_of_str(object->plugin_id_select_list, buffer);
 		_pack_list_of_str(object->rpc_version_list, buffer);
 
 		pack_time(object->usage_end, buffer);
@@ -3149,7 +3147,7 @@ extern void slurmdb_pack_cluster_cond(void *in, uint16_t protocol_version,
 		pack32(object->flags, buffer);
 
 		_pack_list_of_str(object->format_list, buffer);
-		_pack_list_of_str(object->plugin_id_select_list, buffer);
+		pack32(NO_VAL, buffer);
 		_pack_list_of_str(object->rpc_version_list, buffer);
 
 		pack_time(object->usage_end, buffer);
@@ -3218,20 +3216,6 @@ extern int slurmdb_unpack_cluster_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->plugin_id_select_list =
-				list_create(xfree_ptr);
-			for (i = 0; i < count; i++) {
-				safe_unpackstr_xmalloc(&tmp_info,
-						       &uint32_tmp, buffer);
-				list_append(object_ptr->plugin_id_select_list,
-					    tmp_info);
-			}
-		}
-
-		safe_unpack32(&count, buffer);
-		if (count > NO_VAL)
-			goto unpack_error;
-		if (count && (count != NO_VAL)) {
 			object_ptr->rpc_version_list = list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
@@ -3291,13 +3275,10 @@ extern int slurmdb_unpack_cluster_cond(void **object, uint16_t protocol_version,
 		if (count > NO_VAL)
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
-			object_ptr->plugin_id_select_list =
-				list_create(xfree_ptr);
 			for (i = 0; i < count; i++) {
 				safe_unpackstr_xmalloc(&tmp_info,
 						       &uint32_tmp, buffer);
-				list_append(object_ptr->plugin_id_select_list,
-					    tmp_info);
+				xfree(tmp_info);
 			}
 		}
 

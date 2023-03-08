@@ -166,21 +166,6 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 		xstrcat(*extra, ")");
 	}
 
-	if (cluster_cond->plugin_id_select_list
-	    && list_count(cluster_cond->plugin_id_select_list)) {
-		set = 0;
-		xstrcat(*extra, " && (");
-		itr = list_iterator_create(cluster_cond->plugin_id_select_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "plugin_id_select='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(*extra, ")");
-	}
-
 	if (cluster_cond->rpc_version_list
 	    && list_count(cluster_cond->rpc_version_list)) {
 		set = 0;

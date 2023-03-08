@@ -669,7 +669,6 @@ typedef struct {
 	List federation_list; /* list of char */
 	uint32_t flags;
 	List format_list; 	/* list of char * */
-	List plugin_id_select_list; /* list of char * */
 	List rpc_version_list; /* list of char * */
 	time_t usage_end;
 	time_t usage_start;
