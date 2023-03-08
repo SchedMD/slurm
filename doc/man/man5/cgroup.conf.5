@@ -28,9 +28,7 @@ of Slurm cgroup plugins.
 \fBCgroupAutomount\fR=<yes|no>
 In cgroup/v1 this parameter detects if /sys/fs/cgroup/<controller_name> is
 available, and if not it tries to mount the filesystem.
-In cgroup/v2 this parameter only takes effect if IgnoreSystemd is set, and
-enables the required controllers on slurmd and slurmstepd cgroup directories.
-This parameter is intended for development and testing with cgroup/v2.
+In cgroup/v2 this parameter is ignored.
 .IP
 
 .TP
@@ -61,6 +59,14 @@ can be modified by systemd and cause issues to jobs.
 \fBIgnoreSystemdOnFailure\fR=\fI<yes|no>\fR
 Only for cgroup/v2 and for development and testing. It has similar functionality
 to \fBIgnoreSystemd\fR but only in the case that a dbus call does not succeed.
+.IP
+
+.TP
+\fBEnableControllers\fR=\fI<yes|no>\fR
+Only for cgroup/v2 and generally for development and testing. It gets the
+available controllers from the root (\fBCgroupMountPoint\fR, by default
+/sys/fs/cgroup/) and makes them available in all levels of the cgroup tree until
+it reaches Slurm's cgroup leaf.
 .IP
 
 .SH "TASK/CGROUP PLUGIN"
