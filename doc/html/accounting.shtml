@@ -98,15 +98,16 @@ RPMs on the server where SlurmDBD is to run.</p>
 <p>Note if you switch from using the MySQL plugin to use the SlurmDBD plugin
   you must make sure the cluster has been added to the database.  The MySQL
   plugin doesn't require this, but also will not hurt things if you have it
-  there when using the MySQL plugin.  You can verify with
+  there when using the MySQL plugin. You can verify with</p>
 <pre>
 sacctmgr list cluster
 </pre>
-If the cluster isn't there add it (where my cluster's name was snowflake):
+<p>If the cluster isn't there, add it (where my cluster's name was
+snowflake):</p>
 <pre>
 sacctmgr add cluster snowflake
 </pre>
-Failure to do so will result in the slurmctld failing to talk to the slurmdbd
+<p>Failure to do so will result in the slurmctld failing to talk to the slurmdbd
 after the switch.  If you plan to upgrade to a new version of Slurm don't switch
 plugins at the same time or you may get unexpected results.  Do one then the
 other.</p>
@@ -241,12 +242,13 @@ plan to upgrade your database server to MariaDB 10.2.1 (or newer) from a
 pre-10.2.1 version or from any version of MySQL, please contact SchedMD
 for assistance.</p>
 
-To enable this database support
+<p>To enable this database support
 one only needs to have the development package for the database they
 wish to use on the system. <b>Slurm uses the InnoDB storage
 engine in MySQL to make rollback possible.  This must be available on your
 MySQL installation or rollback will not work.</b>
-</p><p>The slurm configure
+</p>
+<p>The slurm configure
 script uses mysql_config to find out the information it needs
 about installed libraries and headers. You can specify where your
 mysql_config script is with the
@@ -273,6 +275,7 @@ larger values than the default is also recommended.</p>
 
 <p>
 See the following example:
+</p>
 <pre>
 mysql> SHOW VARIABLES LIKE 'innodb_buffer_pool_size';
 +-------------------------+------------+
@@ -291,7 +294,6 @@ $cat my.cnf
 <i>innodb_lock_wait_timeout=900</i>
 ...
 </pre>
-</p>
 
 <p>Also, in MySQL versions prior to 5.7 the default row format was set to
 <i>COMPACT</i> which could cause some issues during an upgrade when creating
@@ -305,13 +307,13 @@ creating your database tables if you are not using DYNAMIC by default, and
 consider setting that if your database version supports it. If the
 following InnoDB error shows up during an upgrade, the table can then be
 altered (may take some time) to set the row format to DYNAMIC in order to
-allow the conversion to proceed:
+allow the conversion to proceed:</p>
 <pre>
 <i>[Warning] InnoDB: Cannot add field ... in table ... because after adding it, the row size is Y which is greater than maximum allowed size (X) for a record on index leaf page.</i>
 </pre>
 
-You can see what the default row format is by showing the
-<i>innodb_default_row_format</i> variable:
+<p>You can see what the default row format is by showing the
+<i>innodb_default_row_format</i> variable:</p>
 <pre>
 mysql> SHOW VARIABLES LIKE 'innodb_default_row_format';
 +---------------------------+---------+
@@ -322,13 +324,12 @@ mysql> SHOW VARIABLES LIKE 'innodb_default_row_format';
 1 row in set (0.001 sec)
 </pre>
 
-You can also see how the tables are created by running the following command,
+<p>You can also see how the tables are created by running the following command,
 where <i>db_name</i> is the name of your Slurm database (StorageLoc) set in
-your slurmdbd.conf:
+your slurmdbd.conf:</p>
 <pre>
 mysql> SHOW TABLE STATUS IN db_name;
 </pre>
-</p>
 
 <h2 id="slurm-accounting-configuration-after-build">
 Slurm Accounting Configuration After Build
