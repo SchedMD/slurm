@@ -709,7 +709,7 @@ struct slurmdb_cluster_rec {
 	pthread_mutex_t lock; /* For convenience only. DOESN"T GET PACKED */
 	char *name;
 	char *nodes;
-	uint32_t plugin_id_select; /* id of the select plugin */
+	uint32_t plugin_id_select; /* Remove 2 versions after 23.02 */
 	slurmdb_assoc_rec_t *root_assoc; /* root assoc for
 						* cluster */
 	uint16_t rpc_version; /* rpc version this cluster is running */
