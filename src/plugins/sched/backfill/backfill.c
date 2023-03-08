@@ -1013,6 +1013,22 @@ static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2,
 	slurmctld_diag_stats.bf_table_size_sum += node_space_recs;
 }
 
+static void _init_planned_bitmap(void)
+{
+	slurmctld_lock_t read_node_lock = { .node = READ_LOCK };
+	node_record_t *node_ptr = NULL;
+
+	xassert(!planned_bitmap);
+	planned_bitmap = bit_alloc(node_record_count);
+
+	/* Sync planned_bitmap with NODE_STATE_PLANNED nodes from state save */
+	lock_slurmctld(read_node_lock);
+	for (int i = 0; (node_ptr = next_node(&i)); i++)
+		if (IS_NODE_PLANNED(node_ptr))
+			bit_set(planned_bitmap, i);
+	unlock_slurmctld(read_node_lock);
+}
+
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args)
 {
@@ -1033,7 +1049,7 @@ extern void *backfill_agent(void *args)
 #endif
 	_load_config();
 	last_backfill_time = time(NULL);
-	planned_bitmap = bit_alloc(node_record_count);
+	_init_planned_bitmap();
 	het_job_list = list_create(_het_job_map_del);
 	while (!stop_backfill) {
 		if (short_sleep)
@@ -1687,6 +1703,11 @@ static void _handle_planned(bool set)
 		if (!bit_test(planned_bitmap, n))
 			continue;
 		node_ptr = node_record_table_ptr[n];
+		if (!node_ptr) {
+			/* Node could have been deleted while planned */
+			bit_clear(planned_bitmap, n);
+			continue;
+		}
 		if (set) {
 			/*
 			 * If the node is allocated ignore this flag. This only
