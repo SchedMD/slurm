@@ -5783,12 +5783,6 @@ _pack_job_desc_list_msg(List job_req_list, buf_t *buffer,
 	list_iterator_destroy(iter);
 }
 
-static void _free_job_desc_list(void *x)
-{
-	job_desc_msg_t *job_desc_ptr = x;
-	slurm_free_job_desc_msg(job_desc_ptr);
-}
-
 static int
 _unpack_job_desc_list_msg(List *job_req_list, buf_t *buffer,
 			  uint16_t protocol_version)
@@ -5805,7 +5799,7 @@ _unpack_job_desc_list_msg(List *job_req_list, buf_t *buffer,
 	if (cnt > NO_VAL16)
 		goto unpack_error;
 
-	*job_req_list = list_create(_free_job_desc_list);
+	*job_req_list = list_create((ListDelF) slurm_free_job_desc_msg);
 	for (i = 0; i < cnt; i++) {
 		req = NULL;
 		if (_unpack_job_desc_msg(&req, buffer, protocol_version) !=
