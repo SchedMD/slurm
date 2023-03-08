@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
     will report (null) now.
  -- Removed select/cons_res. Please update your configuration to
     select/cons_tres.
+ -- mpi/pmix - When aborted with status 0, avoid marking job/step as failed.
 
 * Changes in Slurm 23.02.1
 ==========================

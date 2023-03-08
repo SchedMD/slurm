@@ -775,6 +775,7 @@ error:
 
 extern int pmixp_lib_abort(int status, void *cbfunc, void *cbdata)
 {
+	uint16_t flags = 0;
 	pmix_op_cbfunc_t abort_cbfunc = (pmix_op_cbfunc_t)cbfunc;
 
 	/*
@@ -783,8 +784,11 @@ extern int pmixp_lib_abort(int status, void *cbfunc, void *cbdata)
 	 */
 	pmixp_abort_propagate(status);
 
+	if (!status)
+		flags |= KILL_NO_SIG_FAIL;
+
 	slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(), SIGKILL,
-			    0);
+			    flags);
 
 	if (abort_cbfunc)
 		abort_cbfunc(PMIX_SUCCESS, cbdata);
