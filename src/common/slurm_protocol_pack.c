@@ -1443,13 +1443,12 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_submit_response_msg(submit_response_msg_t * msg, buf_t *buffer,
-			  uint16_t protocol_version)
+static void _pack_submit_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	submit_response_msg_t *msg = smsg->data;
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->step_id, buffer);
 		pack32(msg->error_code, buffer);
@@ -1457,19 +1456,12 @@ _pack_submit_response_msg(submit_response_msg_t * msg, buf_t *buffer,
 	}
 }
 
-static int
-_unpack_submit_response_msg(submit_response_msg_t ** msg, buf_t *buffer,
-			    uint16_t protocol_version)
+static int _unpack_submit_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	submit_response_msg_t *tmp_ptr;
+	submit_response_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
+	smsg->data = tmp_ptr;
 
-	/* alloc memory for structure */
-	xassert(msg);
-	tmp_ptr = xmalloc(sizeof(submit_response_msg_t));
-	*msg = tmp_ptr;
-
-	/* load the data values */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->step_id, buffer);
 		safe_unpack32(&tmp_ptr->error_code, buffer);
@@ -1480,7 +1472,7 @@ _unpack_submit_response_msg(submit_response_msg_t ** msg, buf_t *buffer,
 
 unpack_error:
 	slurm_free_submit_response_response_msg(tmp_ptr);
-	*msg = NULL;
+	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -10601,9 +10593,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 				   msg->protocol_version);
 		break;
 	case RESPONSE_SUBMIT_BATCH_JOB:
-		_pack_submit_response_msg((submit_response_msg_t *)
-					  msg->data, buffer,
-					  msg->protocol_version);
+		_pack_submit_response_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_ALLOCATION_INFO:
 	case RESPONSE_RESOURCE_ALLOCATION:
@@ -11243,9 +11233,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 					  msg->protocol_version);
 		break;
 	case RESPONSE_SUBMIT_BATCH_JOB:
-		rc = _unpack_submit_response_msg((submit_response_msg_t **)
-						 & (msg->data), buffer,
-						 msg->protocol_version);
+		rc = _unpack_submit_response_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_ALLOCATION_INFO:
 	case RESPONSE_RESOURCE_ALLOCATION:
