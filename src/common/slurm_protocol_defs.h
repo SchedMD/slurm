@@ -150,6 +150,8 @@
 	(_X->node_state & NODE_STATE_COMPLETING)
 #define IS_NODE_INVALID_REG(_X)	\
 	(_X->node_state & NODE_STATE_INVALID_REG)
+#define IS_NODE_PLANNED(_X)		\
+	(_X->node_state & NODE_STATE_PLANNED)
 #define IS_NODE_POWER_DOWN(_X)		\
 	(_X->node_state & NODE_STATE_POWER_DOWN)
 #define IS_NODE_POWER_UP(_X)		\
