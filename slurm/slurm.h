@@ -1164,6 +1164,7 @@ typedef enum {
 				     * steps; resources allocated to this step
 				     * are not decremented from the job's
 				     * allocation */
+	SSF_NO_SIG_FAIL = 1 << 7, /* Don't fail step due to signal */
 } step_spec_flags_t;
 
 /*****************************************************************************\
@@ -3595,6 +3596,7 @@ typedef struct job_step_kill_msg {
 #define KILL_NO_SIBS     SLURM_BIT(7) /* Don't kill other sibling jobs */
 #define KILL_JOB_RESV    SLURM_BIT(8) /* Job is willing to run on nodes in a
 				       * magnetic reservation. */
+#define KILL_NO_SIG_FAIL     SLURM_BIT(9) /* Don't fail job due to signal (steps only) */
 
 /* Use top bit of uint16_t in conjuction with KILL_* flags to indicate signal
  * has been sent to job previously. Does not need to be passed to slurmd. */

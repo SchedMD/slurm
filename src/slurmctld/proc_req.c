@@ -2014,8 +2014,8 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	job_step_kill_msg_t *job_step_kill_msg = msg->data;
 
-	log_flag(STEPS, "Processing RPC details: REQUEST_CANCEL_JOB_STEP %ps",
-		 &job_step_kill_msg->step_id);
+	log_flag(STEPS, "Processing RPC details: REQUEST_CANCEL_JOB_STEP %ps flags=0x%x",
+		 &job_step_kill_msg->step_id, job_step_kill_msg->flags);
 	_throttle_start(&active_rpc_cnt);
 
 	error_code = kill_job_step(job_step_kill_msg, msg->auth_uid);

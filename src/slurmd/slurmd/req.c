@@ -3424,7 +3424,7 @@ static int _signal_jobstep(slurm_step_id_t *step_id, uint16_t signal,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	debug2("container signal %d to %ps", signal, step_id);
+	debug2("container signal %d to %ps flags=0x%x", signal, step_id, flags);
 	rc = stepd_signal_container(fd, protocol_version, signal, flags,
 				    details, req_uid);
 	if (rc == -1)

@@ -619,6 +619,8 @@ _send_exit_msg(stepd_step_rec_t *step, uint32_t *tid, int n, int status)
 	msg.num_tasks		= n;
 	if (step->oom_error)
 		msg.return_code = SIG_OOM;
+	else if (WIFSIGNALED(status) && (step->flags & LAUNCH_NO_SIG_FAIL))
+		msg.return_code = SLURM_SUCCESS;
 	else
 		msg.return_code = status;
 

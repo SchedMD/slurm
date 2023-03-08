@@ -361,6 +361,11 @@ static int _step_signal(void *object, void *arg)
 
 	if (step_signal->flags & KILL_OOM)
 		step_ptr->exit_code = SIG_OOM;
+	if (step_signal->flags & KILL_NO_SIG_FAIL) {
+		debug("%s: setting SSF_NO_SIG_FAIL for %pS",
+		      __func__, step_ptr);
+		step_ptr->flags |= SSF_NO_SIG_FAIL;
+	}
 
 	/*
 	 * If SIG_NODE_FAIL codes through it means we had nodes failed
@@ -644,6 +649,11 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 	memcpy(&signal_tasks_msg->step_id, &step_ptr->step_id,
 	       sizeof(signal_tasks_msg->step_id));
 	signal_tasks_msg->signal      = signal;
+	if (step_ptr->flags & SSF_NO_SIG_FAIL)
+		signal_tasks_msg->flags |= KILL_NO_SIG_FAIL;
+
+	log_flag(STEPS, "%s: queueing signal %d with flags=0x%x for %pS",
+	      __func__, signal, signal_tasks_msg->flags, step_ptr);
 
 #ifdef HAVE_FRONT_END
 	xassert(step_ptr->job_ptr->batch_host);
@@ -4243,6 +4253,10 @@ static int _step_partial_comp(step_record_t *step_ptr,
 		      __func__, step_ptr, req->range_first, req->range_last,
 		      nodes);
 		return EINVAL;
+	}
+
+	if ((step_ptr->flags & SSF_NO_SIG_FAIL) && WIFSIGNALED(req->step_rc)) {
+		step_ptr->exit_code = 0;
 	}
 
 #ifdef HAVE_FRONT_END

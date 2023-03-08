@@ -661,8 +661,8 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 	safe_read(fd, details, details_len);
 	safe_read(fd, &req_uid, sizeof(uid_t));
 
-	debug("_handle_signal_container for %ps uid=%u signal=%d",
-	      &step->step_id, req_uid, sig);
+	debug("_handle_signal_container for %ps uid=%u signal=%d flag=0x%x",
+	      &step->step_id, req_uid, sig, flag);
 	/* verify uid off uid instead of req_uid as we can trust that one */
 	if ((uid != step->uid) && !_slurm_authorized_user(uid)) {
 		error("signal container req from uid %u for %ps owned by uid %u",
@@ -671,6 +671,9 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 		errnum = EPERM;
 		goto done;
 	}
+
+	if (flag & KILL_NO_SIG_FAIL)
+		step->flags |= LAUNCH_NO_SIG_FAIL;
 
 	/*
 	 * Sanity checks
