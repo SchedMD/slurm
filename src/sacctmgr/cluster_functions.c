@@ -625,12 +625,6 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 					&cluster->rpc_version,
 					(curr_inx == field_count));
 				break;
-			case PRINT_SELECT:
-				field->print_routine(
-					field,
-					&cluster->plugin_id_select,
-					(curr_inx == field_count));
-				break;
 			default:
 				sacctmgr_print_assoc_rec(cluster->root_assoc,
 							 field, NULL,
