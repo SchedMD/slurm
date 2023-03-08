@@ -9936,34 +9936,30 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_set_fs_dampening_factor_msg(
-	set_fs_dampening_factor_msg_t *msg,
-	buf_t *buffer, uint16_t protocol_version)
+static void _pack_set_fs_dampening_factor_msg(const slurm_msg_t *smsg,
+					      buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION)
+	set_fs_dampening_factor_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION)
 		pack16(msg->dampening_factor, buffer);
 }
 
 
-static int _unpack_set_fs_dampening_factor_msg(
-	set_fs_dampening_factor_msg_t **msg_ptr,
-	buf_t *buffer, uint16_t protocol_version)
+static int _unpack_set_fs_dampening_factor_msg(slurm_msg_t *smsg,
+					       buf_t *buffer)
 {
-	set_fs_dampening_factor_msg_t *msg;
+	set_fs_dampening_factor_msg_t *msg  = xmalloc(sizeof(*msg));
+	smsg->data = msg;
 
-	msg = xmalloc(sizeof(set_fs_dampening_factor_msg_t));
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION)
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION)
 		safe_unpack16(&msg->dampening_factor, buffer);
-	else
-		goto unpack_error;
 
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_set_fs_dampening_factor_msg(msg);
-	*msg_ptr = NULL;
+	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -10985,9 +10981,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 				   msg->protocol_version);
 		break;
 	case REQUEST_SET_FS_DAMPENING_FACTOR:
-		_pack_set_fs_dampening_factor_msg(
-			(set_fs_dampening_factor_msg_t *)msg->data, buffer,
-			msg->protocol_version);
+		_pack_set_fs_dampening_factor_msg(msg, buffer);
 		break;
 	case RESPONSE_CONTROL_STATUS:
 		_pack_control_status_msg((control_status_msg_t *)(msg->data),
@@ -11687,9 +11681,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 					  buffer, msg->protocol_version);
 		break;
 	case REQUEST_SET_FS_DAMPENING_FACTOR:
-		rc = _unpack_set_fs_dampening_factor_msg(
-			(set_fs_dampening_factor_msg_t **)&(msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_set_fs_dampening_factor_msg(msg, buffer);
 		break;
 	case RESPONSE_CONTROL_STATUS:
 		rc = _unpack_control_status_msg(
