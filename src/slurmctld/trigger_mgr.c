@@ -124,9 +124,10 @@ typedef struct trig_mgr_info {
 	time_t   orig_time;	/* offset (pending) or time stamp (complete) */
 } trig_mgr_info_t;
 
-/* Prototype for ListDelF */
-void _trig_del(void *x) {
-	trig_mgr_info_t * tmp = (trig_mgr_info_t *) x;
+static void _trig_del(void *x)
+{
+	trig_mgr_info_t *tmp = x;
+
 	xfree(tmp->res_id);
 	xfree(tmp->orig_res_id);
 	xfree(tmp->program);
