@@ -15,7 +15,6 @@ SUBDIRS =		\
 	scancel		\
 	scontrol	\
 	scrontab	\
-	scrun		\
 	sdiag		\
 	sinfo		\
 	slurmctld	\
@@ -30,3 +29,7 @@ SUBDIRS =		\
 	sstat		\
 	strigger	\
 	sview
+
+if LINUX_BUILD
+SUBDIRS += scrun
+endif
