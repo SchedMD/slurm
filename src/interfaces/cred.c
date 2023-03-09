@@ -135,8 +135,8 @@ struct slurm_cred_context {
 	pthread_mutex_t mutex;
 	enum ctx_type type;	/* context type (creator or verifier)	*/
 	void *key;		/* private or public key		*/
-	List job_list;		/* List of used jobids (for verifier)	*/
-	List state_list;	/* List of cred states (for verifier)	*/
+	list_t *job_list;	/* List of used jobids (for verifier)	*/
+	list_t *state_list;	/* List of cred states (for verifier)	*/
 
 	int expiry_window;	/* expiration window for cached creds	*/
 
@@ -199,7 +199,7 @@ static slurm_cred_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static time_t cred_restart_time = (time_t) 0;
-static List sbcast_cache_list = NULL;
+static list_t *sbcast_cache_list = NULL;
 static int cred_expire = DEFAULT_EXPIRATION_WINDOW;
 static bool enable_nss_slurm = false;
 static bool enable_send_gids = true;
@@ -1094,7 +1094,7 @@ extern void format_core_allocs(slurm_cred_t *credential, char *node_name,
  * NOTE: Caller must destroy the returned lists
  */
 extern void get_cred_gres(slurm_cred_t *credential, char *node_name,
-			  List *job_gres_list, List *step_gres_list)
+			  list_t **job_gres_list, list_t **step_gres_list)
 {
 	slurm_cred_arg_t *cred = credential->arg;
 	hostlist_t	hset = NULL;
@@ -2321,7 +2321,7 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t *ctx,
 	} else {
 		char *err_str = NULL;
 		bool cache_match_found = false;
-		ListIterator sbcast_iter;
+		list_itr_t *sbcast_iter;
 		for (i = 0; i < sbcast_cred->siglen; i += 2) {
 			sig_num += (sbcast_cred->signature[i] << 8) +
 				   sbcast_cred->signature[i+1];
