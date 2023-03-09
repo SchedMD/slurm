@@ -39,7 +39,7 @@
 struct step_launch_state;
 
 
-struct client_io {
+typedef struct {
 	/* input parameters - set (indirectly) by user */
 	int num_tasks;
 	int num_nodes;
@@ -92,9 +92,7 @@ struct client_io {
 
 	struct step_launch_state *sls; /* Used to notify the main thread of an
 				       I/O problem.  */
-};
-
-typedef struct client_io client_io_t;
+} client_io_t;
 
 
 /*
