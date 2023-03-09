@@ -691,12 +691,6 @@ type. Available in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
 User name of the job's wckey (if any).
 Available in PrologSlurmctld and EpilogSlurmctld only.</li>
 
-<li><b>SLURM_WORKING_CLUSTER</b>
-For use when using a Federation. Set to the remote sibling cluster's name,
-hostname, port, rpc version and plugin ID. Available in SrunProlog,
-TaskProlog, SrunEpilog and TaskEpilog.</li>
-</ul>
-
 <p>Plugin functions may also be useful to execute logic at various well-defined
 points.</p>
 
@@ -728,6 +722,6 @@ canceled.</p>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 6 February 2023</p>
+<p style="text-align:center;">Last modified 9 March 2023</p>
 
 <!--#include virtual="footer.txt"-->
