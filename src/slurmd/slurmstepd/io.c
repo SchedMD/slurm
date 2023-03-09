@@ -1189,9 +1189,11 @@ io_init_tasks_stdio(stepd_step_rec_t *step)
 
 extern void io_thread_start(stepd_step_rec_t *step)
 {
-	slurm_thread_create(&step->ioid, _io_thr, step);
+	slurm_mutex_lock(&step->io_mutex);
+	slurm_thread_create_detached(NULL, _io_thr, step);
+	step->io_running = true;
+	slurm_mutex_unlock(&step->io_mutex);
 }
-
 
 void
 _shrink_msg_cache(List cache, stepd_step_rec_t *step)
@@ -1482,6 +1484,10 @@ _io_thr(void *arg)
 	debug("IO handler started pid=%lu", (unsigned long) getpid());
 	rc = eio_handle_mainloop(step->eio);
 	debug("IO handler exited, rc=%d", rc);
+	slurm_mutex_lock(&step->io_mutex);
+	step->io_running = false;
+	slurm_cond_broadcast(&step->io_cond);
+	slurm_mutex_unlock(&step->io_mutex);
 	return (void *)1;
 }
 
