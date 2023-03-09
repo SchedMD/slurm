@@ -475,7 +475,10 @@ static int PARSE_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 			      __func__, false)))
 		return rc;
 
-	*qos_id = qos->id;
+	if (qos)
+		*qos_id = qos->id;
+	else
+		*qos_id = INFINITE;
 	return rc;
 }
 
