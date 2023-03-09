@@ -2404,9 +2404,8 @@ extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer,
 					 uint16_t protocol_version)
 {
-	sbcast_cred_t *sbcast_cred;
+	sbcast_cred_t *sbcast_cred = xmalloc(sizeof(*sbcast_cred));
 
-	sbcast_cred = xmalloc(sizeof(struct sbcast_cred));
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_time(&sbcast_cred->ctime, buffer);
 		safe_unpack_time(&sbcast_cred->expiration, buffer);
