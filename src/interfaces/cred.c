@@ -255,8 +255,6 @@ static void _job_state_pack(slurm_cred_ctx_t *ctx, buf_t *buffer);
 static void _cred_state_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer);
 static void _cred_state_pack(slurm_cred_ctx_t *ctx, buf_t *buffer);
 
-static void _sbast_cache_add(sbcast_cred_t *sbcast_cred);
-
 static int _slurm_cred_init(void)
 {
 	char *tok;
@@ -2257,7 +2255,7 @@ extern void delete_sbcast_cred(sbcast_cred_t *sbcast_cred)
 	xfree(sbcast_cred);
 }
 
-static void _sbast_cache_add(sbcast_cred_t *sbcast_cred)
+static void _sbcast_cache_add(sbcast_cred_t *sbcast_cred)
 {
 	int i;
 	uint32_t sig_num = 0;
@@ -2318,7 +2316,7 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t *ctx,
 			      (*(ops.cred_str_error))(rc));
 			return NULL;
 		}
-		_sbast_cache_add(sbcast_cred);
+		_sbcast_cache_add(sbcast_cred);
 
 	} else {
 		char *err_str = NULL;
@@ -2361,7 +2359,7 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t *ctx,
 				return NULL;
 			}
 			info("sbcast_cred verify: signature revalidated");
-			_sbast_cache_add(sbcast_cred);
+			_sbcast_cache_add(sbcast_cred);
 		}
 	}
 
