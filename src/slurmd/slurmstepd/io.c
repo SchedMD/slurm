@@ -99,7 +99,7 @@ struct client_io_info {
 	stepd_step_rec_t *step; /* pointer back to step data */
 
 	/* incoming variables */
-	struct slurm_io_header header;
+	io_hdr_t header;
 	struct io_buf *in_msg;
 	int32_t in_remaining;
 	bool in_eof;
@@ -516,7 +516,7 @@ _local_file_write(eio_obj_t *obj, List objs)
 	struct client_io_info *client = (struct client_io_info *) obj->arg;
 	void *buf;
 	int n;
-	struct slurm_io_header header;
+	io_hdr_t header;
 	buf_t *header_tmp_buf;
 
 	xassert(client->magic == CLIENT_IO_MAGIC);
@@ -1252,7 +1252,7 @@ _build_connection_okay_message(stepd_step_rec_t *step)
 {
 	struct io_buf *msg;
 	buf_t *packbuf;
-	struct slurm_io_header header;
+	io_hdr_t header;
 
 	if (_outgoing_buf_free(step)) {
 		msg = list_dequeue(step->free_outgoing);
@@ -1724,7 +1724,7 @@ _send_eof_msg(struct task_read_info *out)
 	struct io_buf *msg = NULL;
 	eio_obj_t *eio;
 	ListIterator clients;
-	struct slurm_io_header header;
+	io_hdr_t header;
 	buf_t *packbuf;
 
 	debug4("Entering _send_eof_msg");
@@ -1789,7 +1789,7 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 	buf_t *packbuf;
 	bool must_truncate = false;
 	int avail;
-	struct slurm_io_header header;
+	io_hdr_t header;
 	int n;
 	bool buffered_stdio = step->flags & LAUNCH_BUFFERED_IO;
 

@@ -114,7 +114,7 @@ struct server_io_info {
 	bool testing_connection;
 
 	/* incoming variables */
-	struct slurm_io_header header;
+	io_hdr_t header;
 	struct io_buf *in_msg;
 	int32_t in_remaining;
 	bool in_eof;
@@ -168,7 +168,7 @@ struct file_read_info {
 	client_io_t *cio;
 
 	/* header contains destination of file input */
-	struct slurm_io_header header;
+	io_hdr_t header;
 	uint32_t nodeid;
 
 	bool eof;

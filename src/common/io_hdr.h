@@ -65,7 +65,7 @@ typedef struct {
 } io_init_msg_t;
 
 
-typedef struct slurm_io_header {
+typedef struct {
 	uint16_t      type;
 	uint16_t      gtaskid;
 	uint16_t      ltaskid;
