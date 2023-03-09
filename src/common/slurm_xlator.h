@@ -321,7 +321,6 @@
 #define time_str2secs           slurm_time_str2secs
 #define secs2time_str           slurm_secs2time_str
 #define mins2time_str           slurm_mins2time_str
-#define mon_abbr                slurm_mon_abbr
 
 /* env.[ch] functions */
 #define	setenvf 		slurm_setenvpf
