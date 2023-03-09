@@ -1316,10 +1316,10 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 			      __func__);
 			goto unpack_error;
 		}
-		safe_unpackstr_xmalloc(&cred->pw_name, &len, buffer);
-		safe_unpackstr_xmalloc(&cred->pw_gecos, &len, buffer);
-		safe_unpackstr_xmalloc(&cred->pw_dir, &len, buffer);
-		safe_unpackstr_xmalloc(&cred->pw_shell, &len, buffer);
+		safe_unpackstr(&cred->pw_name, buffer);
+		safe_unpackstr(&cred->pw_gecos, buffer);
+		safe_unpackstr(&cred->pw_dir, buffer);
+		safe_unpackstr(&cred->pw_shell, buffer);
 		safe_unpack32_array(&cred->gids, &u32_ngids, buffer);
 		cred->ngids = u32_ngids;
 		safe_unpackstr_array(&cred->gr_names, &u32_ngids, buffer);
@@ -1340,17 +1340,17 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 		safe_unpack16(&cred->job_core_spec, buffer);
-		safe_unpackstr_xmalloc(&cred->job_account, &len, buffer);
-		safe_unpackstr_xmalloc(&cred->job_alias_list, &len, buffer);
-		safe_unpackstr_xmalloc(&cred->job_comment, &len, buffer);
-		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
-		safe_unpackstr_xmalloc(&cred->job_partition, &len, buffer);
-		safe_unpackstr_xmalloc(&cred->job_reservation, &len, buffer);
+		safe_unpackstr(&cred->job_account, buffer);
+		safe_unpackstr(&cred->job_alias_list, buffer);
+		safe_unpackstr(&cred->job_comment, buffer);
+		safe_unpackstr(&cred->job_constraints, buffer);
+		safe_unpackstr(&cred->job_partition, buffer);
+		safe_unpackstr(&cred->job_reservation, buffer);
 		safe_unpack16(&cred->job_restart_cnt, buffer);
-		safe_unpackstr_xmalloc(&cred->job_std_err, &len, buffer);
-		safe_unpackstr_xmalloc(&cred->job_std_in, &len, buffer);
-		safe_unpackstr_xmalloc(&cred->job_std_out, &len, buffer);
-		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
+		safe_unpackstr(&cred->job_std_err, buffer);
+		safe_unpackstr(&cred->job_std_in, buffer);
+		safe_unpackstr(&cred->job_std_out, buffer);
+		safe_unpackstr(&cred->step_hostlist, buffer);
 		safe_unpack16(&cred->x11, buffer);
 		safe_unpack_time(&credential->ctime, buffer);
 		safe_unpack32(&tot_core_cnt, buffer);
@@ -1383,7 +1383,7 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		}
 		safe_unpack32(&cred->job_nhosts, buffer);
 		safe_unpack32(&cred->job_ntasks, buffer);
-		safe_unpackstr_xmalloc(&cred->job_hostlist, &len, buffer);
+		safe_unpackstr(&cred->job_hostlist, buffer);
 
 		safe_unpack32(&cred->job_mem_alloc_size, buffer);
 		if (cred->job_mem_alloc_size) {
@@ -1411,7 +1411,7 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 				goto unpack_error;
 		}
 
-		safe_unpackstr_xmalloc(&cred->selinux_context, &len, buffer);
+		safe_unpackstr(&cred->selinux_context, buffer);
 
 		/* "sigp" must be last */
 		cred_len = get_buf_offset(buffer) - cred_start;
@@ -2405,7 +2405,6 @@ extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer,
 					 uint16_t protocol_version)
 {
 	sbcast_cred_t *sbcast_cred;
-	uint32_t uint32_tmp;
 
 	sbcast_cred = xmalloc(sizeof(struct sbcast_cred));
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -2416,11 +2415,10 @@ extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer,
 		safe_unpack32(&sbcast_cred->step_id, buffer);
 		safe_unpack32(&sbcast_cred->uid, buffer);
 		safe_unpack32(&sbcast_cred->gid, buffer);
-		safe_unpackstr_xmalloc(&sbcast_cred->user_name, &uint32_tmp,
-				       buffer);
+		safe_unpackstr(&sbcast_cred->user_name, buffer);
 		safe_unpack32_array(&sbcast_cred->gids, &sbcast_cred->ngids,
 				    buffer);
-		safe_unpackstr_xmalloc(&sbcast_cred->nodes, &uint32_tmp, buffer);
+		safe_unpackstr(&sbcast_cred->nodes, buffer);
 
 		/* "sigp" must be last */
 		safe_unpackmem_xmalloc(&sbcast_cred->signature,
