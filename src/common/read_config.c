@@ -4007,9 +4007,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_string(&conf->acct_gather_interconnect_type,
 			    "AcctGatherInterconnectType", hashtbl) &&
 	    !s_p_get_string(&conf->acct_gather_interconnect_type,
-			    "AcctGatherInfinibandType", hashtbl))
-		conf->acct_gather_interconnect_type =
-			xstrdup(DEFAULT_ACCT_GATHER_INTERCONNECT_TYPE);
+			    "AcctGatherInfinibandType", hashtbl)) {
+		/* empty */
+	} else if (xstrcasestr(conf->acct_gather_interconnect_type, "none"))
+		xfree(conf->acct_gather_interconnect_type);
 	else
 		xstrsubstituteall(conf->acct_gather_interconnect_type,
 				  "infiniband", "interconnect");

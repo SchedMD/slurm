@@ -129,8 +129,13 @@ extern int acct_gather_interconnect_init(void)
 	if (g_context_num >= 0)
 		goto done;
 
-	full_plugin_type = slurm_get_acct_gather_interconnect_type();
 	g_context_num = 0; /* mark it before anything else */
+	if (!slurm_conf.acct_gather_interconnect_type) {
+		init_run = true;
+		goto done;
+	}
+
+	full_plugin_type = slurm_get_acct_gather_interconnect_type();
 	plugin_entry = full_plugin_type;
 	while ((type = strtok_r(plugin_entry, ",", &last))) {
 		xrealloc(ops, sizeof(slurm_acct_gather_interconnect_ops_t) *
@@ -243,6 +248,9 @@ extern int acct_gather_interconnect_g_conf_options(
 
 	xassert(init_run);
 
+	if (!g_context_num)
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_num; i++) {
 		if (!g_context[i])
@@ -259,6 +267,9 @@ extern int acct_gather_interconnect_g_conf_set(s_p_hashtbl_t *tbl)
 
 	xassert(init_run);
 
+	if (!g_context_num)
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_num; i++) {
 		if (!g_context[i])
@@ -274,6 +285,9 @@ extern int acct_gather_interconnect_g_conf_values(void *data)
 	int i;
 
 	xassert(init_run);
+
+	if (!g_context_num)
+		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_num; i++) {
@@ -296,6 +310,9 @@ extern int acct_gather_interconnect_g_get_data(acct_gather_data_t *data)
 	int retval = SLURM_SUCCESS;
 
 	xassert(init_run);
+
+	if (!g_context_num)
+		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; i < g_context_num; i++) {
