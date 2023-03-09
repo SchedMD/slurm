@@ -3414,7 +3414,7 @@ static int _find_stepid_by_container_id(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static int _find_stepid_by_userid(void *x, void *arg)
+static int _foreach_job_filter_steps(void *x, void *arg)
 {
 	find_job_by_container_id_args_t *args = arg;
 	job_record_t *job_ptr = x;
@@ -3464,7 +3464,7 @@ static void _find_stepids_by_container_id(uid_t request_uid, uid_t uid,
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
-	list_for_each_ro(job_list, _find_stepid_by_userid, &args);
+	list_for_each_ro(job_list, _foreach_job_filter_steps, &args);
 	unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
 }
