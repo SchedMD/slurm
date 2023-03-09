@@ -959,4 +959,5 @@ static void _setup_env_working_cluster(void)
 								NULL, 10));
 	}
 	xfree(working_env);
+	unsetenv("SLURM_WORKING_CLUSTER");
 }

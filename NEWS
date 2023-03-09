@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 23.11.0rc1
 =============================
  -- task/affinity - remove Power7 cpu-specific workarounds.
+ -- Remove SLURM_WORKING_CLUSTER env from batch and srun environments.
 
 * Changes in Slurm 23.02.1
 ==========================
