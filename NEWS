@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix parsing of cgroup.controllers file with a blank line at the end.
  -- Add cgroup.conf EnableControllers option for cgroup/v2.
  -- Get correct cgroup root to allow slurmd to run in containers like Docker.
+ -- Fix "(null)" cluster name in SLURM_WORKING_CLUSTER env.
 
 * Changes in Slurm 23.02.0
 ==========================
