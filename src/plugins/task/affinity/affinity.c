@@ -57,8 +57,6 @@
   __CPU_OP_S (sizeof (cpu_set_t), destset, srcset1, srcset2, |)
 #endif
 
-static int is_power = -1;
-
 /* If HAVE_NUMA, create mask for given ldom.
  * Otherwise create mask for given socket
  */
@@ -225,101 +223,6 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
 	}
 
 	return false;
-}
-
-#define	BUFFLEN	127
-
-/* Return true if Power7 processor */
-static bool _is_power_cpu(void)
-{
-	if (is_power == -1) {
-#ifdef HAVE_SYSCTLBYNAME
-
-		char    buffer[BUFFLEN+1];
-		size_t  len = BUFFLEN;
-
-		if ( sysctlbyname("hw.model", buffer, &len, NULL, 0) == 0 )
-		    is_power = ( strstr(buffer, "POWER7") != NULL );
-		else {
-		    error("_get_is_power: sysctl could not retrieve hw.model");
-		    return false;
-		}
-
-#elif defined(__linux__)
-
-		FILE *cpu_info_file;
-		char buffer[BUFFLEN+1];
-		char* _cpuinfo_path = "/proc/cpuinfo";
-		cpu_info_file = fopen(_cpuinfo_path, "r");
-		if (cpu_info_file == NULL) {
-			error("_get_is_power: error %d opening %s", errno,
-			      _cpuinfo_path);
-			return false;	/* assume not power processor */
-		}
-
-		is_power = 0;
-		while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
-			if (strstr(buffer, "POWER7")) {
-				is_power = 1;
-				break;
-			}
-		}
-		fclose(cpu_info_file);
-
-#else
-
-/* Assuming other platforms don't support sysctlbyname() or /proc/cpuinfo */
-#warning	"Power7 check not implemented for this platform."
-	is_power = 0;
-
-#endif
-	}
-
-	if (is_power == 1)
-		return true;
-	return false;
-}
-
-/* Translate global CPU index to local CPU index. This is needed for
- * Power7 processors with multi-threading disabled. On those processors,
- * the CPU mask has gaps for the unused threads (different from Intel
- * processors) which need to be skipped over in the mask used in the
- * set system call. */
-void reset_cpuset(cpu_set_t *new_mask)
-{
-	cpu_set_t full_mask, newer_mask, cur_mask;
-	int cur_offset, new_offset = 0, last_set = -1;
-
-	if (!_is_power_cpu())
-		return;
-
-	slurm_getaffinity(0, sizeof(cur_mask), &cur_mask);
-
-	if (slurm_getaffinity(1, sizeof(full_mask), &full_mask)) {
-		/* Try to get full CPU mask from process init */
-		CPU_ZERO(&full_mask);
-#if defined(__FreeBSD__) && (__FreeBSD_version < 1300524)
-		CPU_OR(&full_mask, &cur_mask);
-#else
-		CPU_OR(&full_mask, &full_mask, &cur_mask);
-#endif
-	}
-	CPU_ZERO(&newer_mask);
-	for (cur_offset = 0; cur_offset < CPU_SETSIZE; cur_offset++) {
-		if (!CPU_ISSET(cur_offset, &full_mask))
-			continue;
-		if (CPU_ISSET(new_offset, new_mask)) {
-			CPU_SET(cur_offset, &newer_mask);
-			last_set = cur_offset;
-		}
-		new_offset++;
-	}
-
-	CPU_ZERO(new_mask);
-	for (cur_offset = 0; cur_offset <= last_set; cur_offset++) {
-		if (CPU_ISSET(cur_offset, &newer_mask))
-			CPU_SET(cur_offset, new_mask);
-	}
 }
 
 int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)

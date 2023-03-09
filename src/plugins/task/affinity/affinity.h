@@ -98,7 +98,6 @@
 /*** from affinity.c ***/
 void	slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step, int statval);
 int	get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid);
-void	reset_cpuset(cpu_set_t *new_mask);
 int	slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask);
 int	slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
 
