@@ -301,7 +301,6 @@ run containers as jobs. No special user permissions are required and <b>should
 not</b> be granted to use this functionality.</p>
 <h3>Prerequisites</h3>
 <ol>
-<li>Slurm must be fully configured and running on host running dockerd.</li>
 <li><a href="slurm.conf.html">slurm.conf</a> must be configured to use Munge
 authentication.<pre>AuthType=auth/munge</pre></li>
 <li><a href="scrun.html">scrun.lua</a> must be configured for site storage
@@ -788,6 +787,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 23 February 2023</p>
+<p style="text-align:center;">Last modified 9 March 2023</p>
 
 <!--#include virtual="footer.txt"-->
