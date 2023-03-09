@@ -3397,7 +3397,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 		pthread_kill(slurmctld_config.thread_id_sig, SIGABRT);
 }
 
-static int _find_stepid_by_container_id(void *x, void *arg)
+static int _foreach_step_match_containerid(void *x, void *arg)
 {
 	find_job_by_container_id_args_t *args = arg;
 	step_record_t *step_ptr = x;
@@ -3440,7 +3440,8 @@ static int _foreach_job_filter_steps(void *x, void *arg)
 	}
 
 	/* walk steps for matching container_id */
-	if (list_for_each_ro(job_ptr->step_list, _find_stepid_by_container_id,
+	if (list_for_each_ro(job_ptr->step_list,
+			     _foreach_step_match_containerid,
 			     args) < 0)
 		return SLURM_ERROR;
 
