@@ -192,7 +192,7 @@ static const char *syms[] = {
 
 struct sbcast_cache {
 	time_t       expire;	/* Time that the cred was created	*/
-	uint32_t     value;	/* Slurm job id for this credential	*/
+	uint32_t value;		/* Hash of credential signature */
 };
 
 static slurm_cred_ops_t ops;
