@@ -1122,7 +1122,11 @@ int xcpuinfo_abs_to_mac(char *lrange, char **prange)
 	for (icore = 0; icore < total_cores; icore++) {
 		if (bit_test(absmap, icore)) {
 			for (ithread = 0; ithread < conf->threads; ithread++) {
-				absid = icore * conf->threads + ithread;
+				/*
+				 * Use actual hardware thread count to get the
+				 * correct offset for the CPU ID.
+				 */
+				absid = icore * conf->actual_threads + ithread;
 				absid %= total_cpus;
 
 				macid = conf->block_map[absid];
@@ -1193,7 +1197,11 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 	for (int icore = 0; icore < total_cores; icore++) {
 		for (int ithread = 0; ithread < conf->threads; ithread++) {
 			int absid, macid;
-			macid = (icore * conf->threads) + ithread;
+			/*
+			 * Use actual hardware thread count to get the
+			 * correct offset for the CPU ID.
+			 */
+			macid = (icore * conf->actual_threads) + ithread;
 			macid %= total_cpus;
 
 			/* Skip this machine CPU id if not in in_range */
@@ -1210,7 +1218,11 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 	/* condense abstract CPU bitmap into an abstract core bitmap */
 	for (int icore = 0; icore < total_cores; icore++) {
 		for (int ithread = 0; ithread < conf->threads; ithread++) {
-			int icpu = (icore * conf->threads) + ithread;
+			/*
+			 * Use actual hardware thread count to get the
+			 * correct offset for the CPU ID.
+			 */
+			int icpu = (icore * conf->actual_threads) + ithread;
 			icpu %= total_cpus;
 
 			if (bit_test(absmap, icpu)) {
