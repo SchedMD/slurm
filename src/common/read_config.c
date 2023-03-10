@@ -4088,9 +4088,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	}
 
 	if (!s_p_get_string(&conf->core_spec_plugin, "CoreSpecPlugin",
-	    hashtbl)) {
-		conf->core_spec_plugin =
-			xstrdup(DEFAULT_CORE_SPEC_PLUGIN);
+			    hashtbl)) {
+		/* empty */
+	} else if (xstrcasestr(conf->core_spec_plugin, "none")) {
+		xfree(conf->core_spec_plugin);
 	}
 
 	if (!s_p_get_string(&conf->cli_filter_plugins, "CliFilterPlugins",

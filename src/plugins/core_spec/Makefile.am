@@ -1,3 +1,3 @@
 # Makefile for core specialization plugins
 
-SUBDIRS = cray_aries none
+SUBDIRS = cray_aries

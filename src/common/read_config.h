@@ -100,7 +100,6 @@ typedef struct node_record node_record_t;
 #define DEFAULT_JOB_ACCT_GATHER_TYPE  "jobacct_gather/none"
 #define JOB_ACCT_GATHER_TYPE_NONE "jobacct_gather/none"
 #define DEFAULT_JOB_ACCT_GATHER_FREQ  "30"
-#define DEFAULT_CORE_SPEC_PLUGIN    "core_spec/none"
 #define DEFAULT_ENFORCE_PART_LIMITS 0
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #if defined HAVE_NATIVE_CRAY
