@@ -386,8 +386,7 @@ int main(int argc, char **argv)
 		test_config_rc = 1;
 	}
 
-	if (!xstrcmp(slurm_conf.accounting_storage_type,
-	             "accounting_storage/none")) {
+	if (!slurm_conf.accounting_storage_type) {
 		if (xstrcmp(slurm_conf.job_acct_gather_type,
 		            "jobacct_gather/none"))
 			error("Job accounting information gathered, "

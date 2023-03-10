@@ -79,7 +79,6 @@ typedef struct node_record node_record_t;
 #define DEFAULT_ACCOUNTING_TRES  "cpu,mem,energy,node,billing,fs/disk,vmem,pages"
 #define DEFAULT_ACCOUNTING_DB      "slurm_acct_db"
 #define DEFAULT_ACCOUNTING_ENFORCE  0
-#define DEFAULT_ACCOUNTING_STORAGE_TYPE "accounting_storage/none"
 #define DEFAULT_AUTH_TYPE          "auth/munge"
 #define DEFAULT_AUTH_TOKEN_LIFESPAN 1800
 #define DEFAULT_BATCH_START_TIMEOUT 10
@@ -105,7 +104,6 @@ typedef struct node_record node_record_t;
 #define DEFAULT_ACCT_GATHER_PROFILE_TYPE "acct_gather_profile/none"
 #define DEFAULT_ACCT_GATHER_INTERCONNECT_TYPE "acct_gather_interconnect/none"
 #define DEFAULT_ACCT_GATHER_FILESYSTEM_TYPE "acct_gather_filesystem/none"
-#define ACCOUNTING_STORAGE_TYPE_NONE "accounting_storage/none"
 #define DEFAULT_CORE_SPEC_PLUGIN    "core_spec/none"
 #define DEFAULT_ENFORCE_PART_LIMITS 0
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"

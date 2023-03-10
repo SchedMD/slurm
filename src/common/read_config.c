@@ -4558,9 +4558,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->conf_flags |= CTL_CONF_WCKEY;
 
 	if (!s_p_get_string(&conf->accounting_storage_type,
-			    "AccountingStorageType", hashtbl))
-		conf->accounting_storage_type =
-				xstrdup(DEFAULT_ACCOUNTING_STORAGE_TYPE);
+			    "AccountingStorageType", hashtbl)) {
+		/* empty */
+	} else if (xstrcasestr(conf->accounting_storage_type, "none"))
+		xfree(conf->accounting_storage_type);
 	else if (xstrcasestr(conf->accounting_storage_type, "mysql"))
 		fatal("AccountingStorageType=accounting_storage/mysql only permitted in SlurmDBD.");
 

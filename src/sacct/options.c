@@ -1058,8 +1058,7 @@ extern void parse_command_line(int argc, char **argv)
 			fprintf(stderr, "Slurm unable to initialize storage plugin\n");
 			exit(1);
 		}
-		if (!xstrcmp(slurm_conf.accounting_storage_type,
-			     "accounting_storage/none")) {
+		if (!slurm_conf.accounting_storage_type) {
 			fprintf(stderr,
 				"Slurm accounting storage is disabled\n");
 			exit(1);

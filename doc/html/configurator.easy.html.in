@@ -27,6 +27,13 @@ with Slurm; if not, write to the Free Software Foundation, Inc.,
 <title>Slurm System Configuration Tool</title>
 <SCRIPT type="text/javascript">
 <!--
+function print_pair(name,value)
+{
+  if (value)
+     return name + "=" + value
+  return "#" + name + "="
+}
+
 function get_field(name,form)
 {
   if (form.value)
@@ -140,7 +147,7 @@ function displayfile()
    "# <br>" +
    "# <br>" +
    "# LOGGING AND ACCOUNTING <br>" +
-   "AccountingStorageType=accounting_storage/" + get_radio_value(document.config.accounting_storage_type) + "<br>" +
+   print_pair("AccountingStorageType",get_radio_value(document.config.accounting_storage_type)) + "<br>" +
    "#JobAcctGatherFrequency=30 <br>" +
    "JobAcctGatherType=jobacct_gather/" + get_radio_value(document.config.job_acct_gather_type) + "<br>" +
    "#SlurmctldDebug=info <br>" +
@@ -433,9 +440,9 @@ Linux process table information gathered, use with Linux systems only<BR>
 <H2>Job Accounting Storage</H2>
 Used with the Job Accounting Gather Slurm can store the accounting information in many different fashions.  Fill in your systems choice here<BR>
 Select one value for <B>AccountingStorageType</B>:<BR>
-<input type="radio" name="accounting_storage_type" value="none" checked> <B>None</B>:
+<input type="radio" name="accounting_storage_type" value="" checked> <B>None</B>:
 No job accounting storage<BR>
-<input type="radio" name="accounting_storage_type" value="slurmdbd"> <B>SlurmDBD</B>:
+<input type="radio" name="accounting_storage_type" value="accounting_storage/slurmdbd"> <B>SlurmDBD</B>:
 Write job accounting to Slurm DBD (database daemon) which can securely
 save the data from many Slurm managed clusters into a common database<BR>
 <P>

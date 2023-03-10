@@ -3600,7 +3600,6 @@ extern int load_config_state_lite(void)
 		safe_unpackstr_xmalloc(&last_accounting_storage_type,
 				       &uint32_tmp, buffer);
 	}
-	xassert(slurm_conf.accounting_storage_type);
 
 	if (last_accounting_storage_type
 	    && !xstrcmp(last_accounting_storage_type,

@@ -27,6 +27,13 @@ with Slurm; if not, write to the Free Software Foundation, Inc.,
 <title>Slurm System Configuration Tool</title>
 <SCRIPT type="text/javascript">
 <!--
+function print_pair(name,value)
+{
+  if (value)
+     return name + "=" + value
+  return "#" + name + "="
+}
+
 function get_field(name,form)
 {
   if (form.value)
@@ -199,7 +206,7 @@ function displayfile()
    get_field("AccountingStorageHost",document.config.accounting_storage_host) + "<br>" +
    get_field("AccountingStoragePass",document.config.accounting_storage_pass) + "<br>" +
    get_field("AccountingStoragePort",document.config.accounting_storage_port) + "<br>" +
-   "AccountingStorageType=accounting_storage/" + get_radio_value(document.config.accounting_storage_type) + "<br>" +
+   print_pair("AccountingStorageType",get_radio_value(document.config.accounting_storage_type)) + "<br>" +
    get_field("AccountingStorageUser",document.config.accounting_storage_user) + "<br>" +
    get_field("AccountingStoreFlags",document.config.acctng_store_flags) + "<br>" +
    get_field("JobCompHost",document.config.job_comp_host) + "<br>" +
@@ -610,9 +617,9 @@ polling interval in seconds. Zero disables periodic sampling.<BR>
 <H2>Job Accounting Storage</H2>
 Used with the Job Accounting Gather Slurm can store the accounting information in many different fashions.  Fill in your systems choice here<BR>
 Select one value for <B>AccountingStorageType</B>:<BR>
-<input type="radio" name="accounting_storage_type" value="none" checked> <B>None</B>:
+<input type="radio" name="accounting_storage_type" value="" checked> <B>None</B>:
 No job accounting storage<BR>
-<input type="radio" name="accounting_storage_type" value="slurmdbd"> <B>SlurmDBD</B>:
+<input type="radio" name="accounting_storage_type" value="accounting_storage/slurmdbd"> <B>SlurmDBD</B>:
 Write job accounting to Slurm DBD (database daemon) which can securely
 save the data from many Slurm managed clusters into a common database<BR>
 <input type="text" name="accounting_storage_loc" value=""> <B>AccountingStorageLoc</B>:

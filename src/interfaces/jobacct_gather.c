@@ -560,10 +560,8 @@ extern int jobacct_gather_init(void)
 		warning("We will use a much slower algorithm with proctrack/pgid, use Proctracktype=proctrack/linuxproc or some other proctrack when using %s",
 			slurm_conf.job_acct_gather_type);
 
-	if (!xstrcasecmp(slurm_conf.accounting_storage_type,
-	                 ACCOUNTING_STORAGE_TYPE_NONE)) {
-		warning("Even though we are collecting accounting information you have asked for it not to be stored (%s). If this is not what you have in mind you will need to change it.",
-			ACCOUNTING_STORAGE_TYPE_NONE);
+	if (!slurm_conf.accounting_storage_type) {
+		warning("Even though we are collecting accounting information you have asked for it not to be stored (no AccountingStorageType set). If this is not what you have in mind you will need to change it.");
 	}
 
 done:

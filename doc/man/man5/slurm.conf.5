@@ -204,13 +204,11 @@ may be desired in order to force jobs to explicitly specify some GPU type.
 .TP
 \fBAccountingStorageType\fR
 The accounting storage mechanism type.  Acceptable values at
-present include "accounting_storage/none"
-and "accounting_storage/slurmdbd".
+present "accounting_storage/slurmdbd".
 The "accounting_storage/slurmdbd" value indicates that accounting records
 will be written to the Slurm DBD, which manages an underlying MySQL
-database. See "man slurmdbd" for more information.  The
-default value is "accounting_storage/none" and indicates that account
-records are not maintained.
+database. See "man slurmdbd" for more information.  When this is not set it
+indicates that account records are not maintained.
 .IP
 
 .TP
