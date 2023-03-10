@@ -4015,9 +4015,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 				  "infiniband", "interconnect");
 
 	if (!s_p_get_string(&conf->acct_gather_filesystem_type,
-			   "AcctGatherFilesystemType", hashtbl))
-		conf->acct_gather_filesystem_type =
-			xstrdup(DEFAULT_ACCT_GATHER_FILESYSTEM_TYPE);
+			    "AcctGatherFilesystemType", hashtbl)) {
+		/* empty */
+	} else if (xstrcasestr(conf->acct_gather_filesystem_type, "none"))
+		xfree(conf->acct_gather_filesystem_type);
 
 	if (!s_p_get_uint16(&conf->acct_gather_node_freq,
 			    "AcctGatherNodeFreq", hashtbl))

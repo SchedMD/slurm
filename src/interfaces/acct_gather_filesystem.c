@@ -79,7 +79,7 @@ static const char *syms[] = {
 static slurm_acct_gather_filesystem_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
-static bool init_run = false;
+static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 static bool acct_shutdown = true;
 static int freq = 0;
 static pthread_t watch_node_thread_id = 0;
@@ -94,7 +94,7 @@ static void *_watch_node(void *arg)
 	}
 #endif
 
-	while (init_run && acct_gather_profile_test()) {
+	while ((plugin_inited == PLUGIN_INITED) && acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
 		slurm_mutex_lock(&g_context_lock);
 		(*(ops.node_update))();
@@ -116,8 +116,13 @@ extern int acct_gather_filesystem_init(void)
 
 	slurm_mutex_lock(&g_context_lock);
 
-	if (g_context)
+	if (plugin_inited != PLUGIN_NOT_INITED)
 		goto done;
+
+	if (!slurm_conf.acct_gather_filesystem_type) {
+		plugin_inited = PLUGIN_NOOP;
+		goto done;
+	}
 
 	type = slurm_get_acct_gather_filesystem_type();
 
@@ -127,9 +132,10 @@ extern int acct_gather_filesystem_init(void)
 	if (!g_context) {
 		error("cannot create %s context for %s", plugin_type, type);
 		retval = SLURM_ERROR;
+		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
-	init_run = true;
+	plugin_inited = PLUGIN_INITED;
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
@@ -146,8 +152,6 @@ extern int acct_gather_filesystem_fini(void)
 
 	slurm_mutex_lock(&g_context_lock);
 	if (g_context) {
-		init_run = false;
-
 		if (watch_node_thread_id) {
 			slurm_mutex_unlock(&g_context_lock);
 			slurm_mutex_lock(&profile_timer->notify_mutex);
@@ -160,6 +164,7 @@ extern int acct_gather_filesystem_fini(void)
 		rc = plugin_context_destroy(g_context);
 		g_context = NULL;
 	}
+	plugin_inited = PLUGIN_NOT_INITED;
 	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
@@ -173,7 +178,11 @@ extern int acct_gather_filesystem_g_get_data(acct_gather_data_t *data)
 {
 	int retval = SLURM_SUCCESS;
 
-	xassert(init_run);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return retval;
+
 	retval = (*(ops.get_data))(data);
 	return retval;
 }
@@ -182,7 +191,10 @@ extern int acct_gather_filesystem_startpoll(uint32_t frequency)
 {
 	int retval = SLURM_SUCCESS;
 
-	xassert(init_run);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return retval;
 
 	if (!acct_shutdown) {
 		error("acct_gather_filesystem_startpoll: "
@@ -211,14 +223,21 @@ extern int acct_gather_filesystem_startpoll(uint32_t frequency)
 extern int acct_gather_filesystem_g_conf_options(s_p_options_t **full_options,
 						  int *full_options_cnt)
 {
-	xassert(init_run);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
+
         (*(ops.conf_options))(full_options, full_options_cnt);
 	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_filesystem_g_conf_set(s_p_hashtbl_t *tbl)
 {
-	xassert(init_run);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
         (*(ops.conf_set))(tbl);
 	return SLURM_SUCCESS;
@@ -227,7 +246,10 @@ extern int acct_gather_filesystem_g_conf_set(s_p_hashtbl_t *tbl)
 
 extern int acct_gather_filesystem_g_conf_values(void *data)
 {
-	xassert(init_run);
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	(*(ops.conf_values))(data);
 	return SLURM_SUCCESS;
