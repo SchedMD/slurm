@@ -4293,8 +4293,11 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			fatal("JobAcctGatherParams options UsePSS and NoShared are mutually exclusive.");
 	}
 
-	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl))
-		conf->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
+	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl)) {
+		/* empty */
+	} else if (xstrcasestr(conf->job_comp_type, "none"))
+		xfree(conf->job_comp_type);
+
 	s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl);
 
 	if (!s_p_get_string(&conf->job_comp_host, "JobCompHost",

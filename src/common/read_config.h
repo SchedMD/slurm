@@ -98,7 +98,6 @@ typedef struct node_record node_record_t;
 #define DEFAULT_INTERACTIVE_STEP_OPTS "--interactive --preserve-env --pty $SHELL"
 #define DEFAULT_JOB_ACCT_GATHER_FREQ  "30"
 #define DEFAULT_ENFORCE_PART_LIMITS 0
-#define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #if defined HAVE_NATIVE_CRAY
 #  define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 1
 #  define DEFAULT_JOB_CONTAINER_PLUGIN  "job_container/cncu"

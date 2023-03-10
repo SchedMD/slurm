@@ -516,7 +516,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/kafka/Makefile
 		 src/plugins/jobcomp/lua/Makefile
 		 src/plugins/jobcomp/mysql/Makefile
-		 src/plugins/jobcomp/none/Makefile
 		 src/plugins/jobcomp/script/Makefile
 		 src/plugins/mcs/Makefile
 		 src/plugins/mcs/account/Makefile
