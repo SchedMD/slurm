@@ -216,7 +216,7 @@ function displayfile()
    get_field("JobCompPort",document.config.job_comp_port) + "<br>" +
    "JobCompType=jobcomp/" + get_radio_value(document.config.job_comp_type) + "<br>" +
    get_field("JobCompUser",document.config.job_comp_user) + "<br>" +
-   "#JobContainerType=job_container/none <br>" +
+   "#JobContainerType= <br>" +
    get_field("JobAcctGatherFrequency",document.config.job_acct_gather_frequency) + "<br>" +
    print_pair("JobAcctGatherType" + get_radio_value(document.config.job_acct_gather_type)) + "<br>" +
    "SlurmctldDebug=" + document.config.slurmctld_debug.value + "<br>" +

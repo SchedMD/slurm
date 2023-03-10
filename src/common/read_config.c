@@ -4319,9 +4319,13 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_string(&conf->job_container_plugin, "JobContainerType",
 	    hashtbl)) {
-		conf->job_container_plugin =
-			xstrdup(DEFAULT_JOB_CONTAINER_PLUGIN);
-	}
+#ifdef HAVE_NATIVE_CRAY
+		conf->job_container_plugin = xstrdup("job_container/cncu");
+#else
+		/* empty */
+#endif
+	} else if (xstrcasestr(conf->job_container_plugin, "none"))
+		xfree(conf->job_container_plugin);
 
 	if (!s_p_get_uint16(&conf->job_file_append, "JobFileAppend", hashtbl))
 		conf->job_file_append = 0;

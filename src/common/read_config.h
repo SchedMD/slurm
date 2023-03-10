@@ -100,10 +100,8 @@ typedef struct node_record node_record_t;
 #define DEFAULT_ENFORCE_PART_LIMITS 0
 #if defined HAVE_NATIVE_CRAY
 #  define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 1
-#  define DEFAULT_JOB_CONTAINER_PLUGIN  "job_container/cncu"
 #else
 #  define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 0
-#  define DEFAULT_JOB_CONTAINER_PLUGIN "job_container/none"
 #endif
 #define DEFAULT_KEEPALIVE_TIME (NO_VAL)
 #define DEFAULT_KILL_ON_BAD_EXIT    0
