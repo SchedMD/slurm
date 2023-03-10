@@ -67,11 +67,6 @@ extern uint32_t slurmdb_str_2_cluster_flags(char *flags_in);
 extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in);
 
 /*
- * Return the plugin select id of the cluster working or current
- */
-extern uint32_t slurmdb_setup_plugin_id_select(void);
-
-/*
  * Setup the working_cluster_rec with the working_cluster_rec and node_addrs
  * returned in an allocation response msg.
  */

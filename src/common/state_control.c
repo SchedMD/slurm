@@ -114,19 +114,6 @@ cleanup:
 	return rc;
 }
 
-extern int state_control_corecnt_supported(void)
-{
-	uint32_t select_type = slurmdb_setup_plugin_id_select();
-
-	if ((select_type != SELECT_PLUGIN_CONS_RES) &&
-	    (select_type != SELECT_PLUGIN_CONS_TRES) &&
-	    (select_type != SELECT_PLUGIN_CRAY_CONS_RES) &&
-	    (select_type != SELECT_PLUGIN_CRAY_CONS_TRES))
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
-}
-
 extern int state_control_parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr,
 					    char *val, uint32_t *res_free_flags,
 					    bool from_tres, char **err_msg)
@@ -336,11 +323,6 @@ extern int state_control_parse_resv_tres(char *val,
 
 	if (tres_corecnt && tres_corecnt[0] != '\0') {
 		/* only have this on a cons_res machine */
-		ret = state_control_corecnt_supported();
-		if (ret != SLURM_SUCCESS) {
-			xstrfmtcat(*err_msg, "CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
-			goto error;
-		}
 		ret = state_control_parse_resv_corecnt(resv_msg_ptr,
 						       tres_corecnt,
 						       res_free_flags, true,

@@ -60,12 +60,6 @@ extern uint32_t state_control_parse_resv_watts(char * watts_str,
 extern int state_control_configured_tres(char *type);
 
 /*
- * RET SLURM_SUCCESS if SelectType includes select/cons_res or if
- * SelectTypeParameters includes OTHER_CONS_RES on a Cray.
- */
-extern int state_control_corecnt_supported(void);
-
-/*
  * Parse and process reservation request option CoreCnt= or TRES=cpu=
  *
  * IN/OUT resv_msg_ptr - msg where core_cnt member is modified

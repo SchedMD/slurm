@@ -2613,6 +2613,15 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	}
 
 	/* Validate the request */
+	if (resv_desc_ptr->core_cnt && !slurm_select_cr_type()) {
+		char *err_str = "CoreCnt only supported with cons_res/cons_tres.";
+		info("%s", err_str);
+		if (err_msg)
+			*err_msg = xstrdup(err_str);
+		rc = ESLURM_NOT_SUPPORTED;
+		goto bad_parse;
+	}
+
 	if (resv_desc_ptr->start_time != (time_t) NO_VAL) {
 		if (resv_desc_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
 			if (resv_desc_ptr->start_time < now)
@@ -3053,6 +3062,14 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	resv_ptr = find_resv_name(resv_desc_ptr->name);
 	if (!resv_ptr)
 		return ESLURM_RESERVATION_INVALID;
+
+	if (resv_desc_ptr->core_cnt && !slurm_select_cr_type()) {
+		char *err_str = "CoreCnt only supported with cons_res/cons_tres.";
+		info("%s", err_str);
+		if (err_msg)
+			*err_msg = xstrdup(err_str);
+		return ESLURM_NOT_SUPPORTED;
+	}
 
 	/* FIXME: Support more core based reservation updates */
 	if ((!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) &&

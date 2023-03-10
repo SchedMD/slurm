@@ -270,14 +270,6 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			   xstrncasecmp(tag, "CPUCnt",    MAX(taglen,5)) == 0 ||
 			   xstrncasecmp(tag, "CPUCount",  MAX(taglen,5)) == 0) {
 
-			/* only have this on a cons_res machine */
-			if (state_control_corecnt_supported()
-			    != SLURM_SUCCESS) {
-				error("CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
-				exit_code = 1;
-				return SLURM_ERROR;
-			}
-
 			if (state_control_parse_resv_corecnt(resv_msg_ptr, val,
 							     res_free_flags,
 							     false, &err_msg)
