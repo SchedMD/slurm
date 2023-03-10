@@ -86,7 +86,6 @@ typedef struct node_record node_record_t;
 #define DEFAULT_COMPLETE_WAIT       0
 #define DEFAULT_CRED_TYPE           "cred/munge"
 #define DEFAULT_EPILOG_MSG_TIME     2000
-#define DEFAULT_EXT_SENSORS_TYPE    "ext_sensors/none"
 #define DEFAULT_FIRST_JOB_ID        1
 #define DEFAULT_GET_ENV_TIMEOUT     2
 #define DEFAULT_GETNAMEINFO_CACHE_TIMEOUT 60

@@ -476,7 +476,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/data_parser/Makefile
 		 src/plugins/data_parser/v0.0.39/Makefile
 		 src/plugins/ext_sensors/Makefile
-		 src/plugins/ext_sensors/none/Makefile
 		 src/plugins/ext_sensors/rrd/Makefile
 		 src/plugins/gpu/Makefile
 		 src/plugins/gpu/common/Makefile

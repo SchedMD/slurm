@@ -4209,9 +4209,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			      hashtbl);
 
 	if (!s_p_get_string(&conf->ext_sensors_type,
-			    "ExtSensorsType", hashtbl))
-		conf->ext_sensors_type =
-			xstrdup(DEFAULT_EXT_SENSORS_TYPE);
+			    "ExtSensorsType", hashtbl)) {
+		/* empty */
+	} else if (xstrcasestr(conf->ext_sensors_type, "none"))
+		xfree(conf->ext_sensors_type);
 
 	if (!s_p_get_uint16(&conf->ext_sensors_freq,
 			    "ExtSensorsFreq", hashtbl))
