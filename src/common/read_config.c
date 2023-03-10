@@ -3896,6 +3896,56 @@ static int _parse_select_type_param(
 	return rc;
 }
 
+static int _add_to_str(void *x, void *arg)
+{
+	char *elem = x;
+	char **sorted_str = arg;
+
+	if (*sorted_str)
+		xstrcat(*sorted_str, ",");
+	xstrfmtcat(*sorted_str, "task/%s", elem);
+
+	return SLURM_SUCCESS;
+}
+
+/* reverse-alphabetical */
+static int _sort_plugins_by_name(void *x, void *y)
+{
+	char *s1 = *(char **) x;
+	char *s2 = *(char **) y;
+	return xstrcmp(s2, s1);
+}
+
+/*
+ * Sort the TaskPlugin= parameters in reverse alphabetical order.
+ * This provides a convenient shortcut to following these rules:
+ * a) task/cray_aries must be listed before task/cgroup
+ * b) task/cgroup must be listed before task/affinity.
+ *    (This is due to a bug in kernels < 6.2 with cgroup/v2.)
+ */
+static void _sort_task_plugin(char **task_plugin)
+{
+	char *str, *save_ptr = NULL, *sorted_list = NULL;
+	list_t *plugin_list;
+
+	if (!*task_plugin || !*task_plugin[0])
+		return;
+
+	plugin_list = list_create(NULL);
+	str = *task_plugin;
+	while ((str = strtok_r(str, ",", &save_ptr))) {
+		if (!xstrncmp(str, "task/", 5))
+			str += 5;
+		list_append(plugin_list, str);
+		str = NULL;
+	}
+	list_sort(plugin_list, _sort_plugins_by_name);
+	list_for_each(plugin_list, _add_to_str, &sorted_list);
+	list_destroy(plugin_list);
+	xfree(*task_plugin);
+	*task_plugin = sorted_list;
+}
+
 /*
  *
  * IN/OUT ctl_conf_ptr - a configuration as loaded by read_slurm_conf_ctl
@@ -5263,6 +5313,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_string(&conf->task_plugin, "TaskPlugin", hashtbl))
 		conf->task_plugin = xstrdup(DEFAULT_TASK_PLUGIN);
+	_sort_task_plugin(&conf->task_plugin);
 #ifdef HAVE_FRONT_END
 	if (xstrcmp(conf->task_plugin, "task/none")) {
 		error("On FrontEnd systems TaskPlugin=task/none is required");
