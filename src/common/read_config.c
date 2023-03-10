@@ -4000,9 +4000,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 				  "rsmi", "gpu");
 
 	if (!s_p_get_string(&conf->acct_gather_profile_type,
-			    "AcctGatherProfileType", hashtbl))
-		conf->acct_gather_profile_type =
-			xstrdup(DEFAULT_ACCT_GATHER_PROFILE_TYPE);
+			    "AcctGatherProfileType", hashtbl)) {
+		/* empty */
+	} else if (xstrcasestr(conf->acct_gather_profile_type, "none"))
+		xfree(conf->acct_gather_profile_type);
 
 	if (!s_p_get_string(&conf->acct_gather_interconnect_type,
 			    "AcctGatherInterconnectType", hashtbl) &&
