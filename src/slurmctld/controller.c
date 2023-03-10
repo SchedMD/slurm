@@ -387,16 +387,10 @@ int main(int argc, char **argv)
 	}
 
 	if (!slurm_conf.accounting_storage_type) {
-		if (xstrcmp(slurm_conf.job_acct_gather_type,
-		            "jobacct_gather/none"))
-			error("Job accounting information gathered, "
-			      "but not stored");
-	} else {
-		if (!xstrcmp(slurm_conf.job_acct_gather_type,
-		             "jobacct_gather/none"))
-			info("Job accounting information stored, "
-			     "but details not gathered");
-	}
+		if (slurm_conf.job_acct_gather_type)
+			error("Job accounting information gathered, but not stored");
+	} else if (!slurm_conf.job_acct_gather_type)
+		info("Job accounting information stored, but details not gathered");
 
 	if (license_init(slurm_conf.licenses) != SLURM_SUCCESS) {
 		if (test_config) {

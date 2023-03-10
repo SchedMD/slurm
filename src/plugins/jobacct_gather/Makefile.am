@@ -1,6 +1,6 @@
 # Makefile for jobacct plugins
 
-SUBDIRS = common linux none
+SUBDIRS = common linux
 
 if WITH_CGROUP
 SUBDIRS += cgroup

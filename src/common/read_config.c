@@ -4265,9 +4265,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			xstrdup(DEFAULT_JOB_ACCT_GATHER_FREQ);
 
 	if (!s_p_get_string(&conf->job_acct_gather_type,
-			   "JobAcctGatherType", hashtbl))
-		conf->job_acct_gather_type =
-			xstrdup(DEFAULT_JOB_ACCT_GATHER_TYPE);
+			    "JobAcctGatherType", hashtbl)) {
+		/* empty */
+	} else if (xstrcasestr(conf->job_acct_gather_type, "none"))
+		xfree(conf->job_acct_gather_type);
 
 	(void) s_p_get_string(&conf->job_acct_gather_params,
 			     "JobAcctGatherParams", hashtbl);

@@ -149,7 +149,7 @@ function displayfile()
    "# LOGGING AND ACCOUNTING <br>" +
    print_pair("AccountingStorageType",get_radio_value(document.config.accounting_storage_type)) + "<br>" +
    "#JobAcctGatherFrequency=30 <br>" +
-   "JobAcctGatherType=jobacct_gather/" + get_radio_value(document.config.job_acct_gather_type) + "<br>" +
+   print_pair("JobAcctGatherType" + get_radio_value(document.config.job_acct_gather_type)) + "<br>" +
    "#SlurmctldDebug=info <br>" +
    get_field("SlurmctldLogFile",document.config.slurmctld_logfile) + "<br>" +
    "#SlurmdDebug=info <br>" +
@@ -430,11 +430,11 @@ replaced with hostname)
 Slurm accounts for resource use per job.  System specifics can be polled
 determined by system type<BR>
 Select one value for <B>JobAcctGatherType</B>:<BR>
-<input type="radio" name="job_acct_gather_type" value="none" checked> <B>None</B>: No
+<input type="radio" name="job_acct_gather_type" value="" checked> <B>None</B>: No
 job accounting<BR>
-<input type="radio" name="job_acct_gather_type" value="cgroup"> <b>cgroup</b>:
+<input type="radio" name="job_acct_gather_type" value="jobacct_gather/cgroup"> <b>cgroup</b>:
 Specific Linux cgroup information gathered, use with Linux systems only<br>
-<input type="radio" name="job_acct_gather_type" value="linux"> <B>Linux</B>: Specific
+<input type="radio" name="job_acct_gather_type" value="jobacct_gather/linux"> <B>Linux</B>: Specific
 Linux process table information gathered, use with Linux systems only<BR>
 
 <H2>Job Accounting Storage</H2>

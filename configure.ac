@@ -509,7 +509,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobacct_gather/cgroup/Makefile
 		 src/plugins/jobacct_gather/common/Makefile
 		 src/plugins/jobacct_gather/linux/Makefile
-		 src/plugins/jobacct_gather/none/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/common/Makefile
 		 src/plugins/jobcomp/elasticsearch/Makefile

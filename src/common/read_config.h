@@ -96,8 +96,6 @@ typedef struct node_record node_record_t;
 /* NOTE: DEFAULT_INACTIVE_LIMIT must be 0 for Blue Gene/L systems */
 #define DEFAULT_INACTIVE_LIMIT      0
 #define DEFAULT_INTERACTIVE_STEP_OPTS "--interactive --preserve-env --pty $SHELL"
-#define DEFAULT_JOB_ACCT_GATHER_TYPE  "jobacct_gather/none"
-#define JOB_ACCT_GATHER_TYPE_NONE "jobacct_gather/none"
 #define DEFAULT_JOB_ACCT_GATHER_FREQ  "30"
 #define DEFAULT_ENFORCE_PART_LIMITS 0
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
