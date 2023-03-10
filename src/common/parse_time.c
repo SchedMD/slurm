@@ -679,7 +679,14 @@ static void _make_time_str_internal(time_t *time, bool utc, char *string,
 			}
 		}
 
-		slurm_strftime(string, size, display_fmt, &time_tm);
+		/*
+		 * The result from strftime() is undefined if the buffer is
+		 * too small. Fill it with "#######..." instead.
+		 */
+		if (!strftime(string, size, display_fmt, &time_tm)) {
+			memset(string, '#', size);
+			string[size - 1] = 0;
+		}
 	}
 }
 
