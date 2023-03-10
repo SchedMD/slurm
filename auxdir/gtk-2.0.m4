@@ -67,7 +67,7 @@ dnl Now check if the installed GTK+ is sufficiently new. (Also sanity
 dnl checks the results of pkg-config to some extent)
 dnl
       rm -f conf.gtktest
-      AC_TRY_RUN([
+      AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -138,7 +138,7 @@ main ()
     }
   return 1;
 }
-],, no_gtk=yes,[echo $ac_n "cross compiling; assumed OK... $ac_c"])
+]])],[],[no_gtk=yes],[echo $ac_n "cross compiling; assumed OK... $ac_c"])
        CFLAGS="$ac_save_CFLAGS"
        LIBS="$ac_save_LIBS"
      fi
@@ -160,10 +160,10 @@ main ()
 	  ac_save_LIBS="$LIBS"
           CFLAGS="$CFLAGS $GTK_CFLAGS"
           LIBS="$LIBS $GTK_LIBS"
-          AC_TRY_LINK([
+          AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #include <gtk/gtk.h>
 #include <stdio.h>
-],      [ return ((gtk_major_version) || (gtk_minor_version) || (gtk_micro_version)); ],
+]],      [[ return ((gtk_major_version) || (gtk_minor_version) || (gtk_micro_version)); ]])],
         [ echo "*** The test program compiled, but did not run. This usually means"
           echo "*** that the run-time linker is not finding GTK+ or finding the wrong"
           echo "*** version of GTK+. If it is not finding GTK+, you'll need to set your"
