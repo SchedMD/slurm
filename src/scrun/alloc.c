@@ -594,12 +594,36 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 	int rc;
 	job_info_msg_t *jobs = NULL;
 	int job_id;
+	char *job_id_str = getenv("SLURM_JOB_ID");
+	bool existing_allocation = false;
 
-	_alloc_job(conmgr);
+	if (job_id_str && job_id_str[0]) {
+		extern char **environ;
+		slurm_selected_step_t id = {0};
 
-	read_lock_state();
-	job_id = state.jobid;
-	unlock_state();
+		if ((rc = unfmt_job_id_string(job_id_str, &id))) {
+			fatal("%s: invalid SLURM_JOB_ID=%s: %s",
+			      __func__, job_id_str, slurm_strerror(rc));
+			return;
+		}
+
+		write_lock_state();
+		state.jobid = job_id = id.step_id.job_id;
+		state.existing_allocation = existing_allocation = true;
+
+		/* scrape SLURM_* from calling env */
+		state.job_env = env_array_create();
+		env_array_merge_slurm(&state.job_env, (const char **) environ);
+		unlock_state();
+
+		debug("Running under existing JobId=%u", job_id);
+	} else {
+		_alloc_job(conmgr);
+
+		read_lock_state();
+		job_id = state.jobid;
+		unlock_state();
+	}
 
 	/* alloc response is too sparse. get full job info */
 	rc = slurm_load_job(&jobs, job_id, 0);
@@ -608,7 +632,7 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 		if ((rc == SLURM_ERROR) && errno)
 			rc = errno;
 
-		error("%s: unable to find JobId=%u after allocation: %s",
+		error("%s: unable to find JobId=%u: %s",
 		      __func__, job_id, slurm_strerror(rc));
 
 		stop_anchor(rc);
@@ -619,6 +643,15 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 	xassert(jobs->job_array->job_id == job_id);
 
 	write_lock_state();
+	if (existing_allocation) {
+		xassert(state.user_id == getuid());
+		state.user_id = jobs->job_array->user_id;
+		xassert(state.user_id != SLURM_AUTH_NOBODY);
+
+		xassert(state.group_id == getgid());
+		state.group_id = jobs->job_array->group_id;
+		xassert(state.group_id != SLURM_AUTH_NOBODY);
+	}
 	_script_env();
 	unlock_state();
 
@@ -628,12 +661,21 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 			for (int i = 0; state.job_env[i]; i++)
 				debug("Job env[%d]=%s", i, state.job_env[i]);
 		else
-			debug("allocation did not provide an environment");
+			debug("JobId=%u did not provide an environment",
+			      job_id);
 		unlock_state();
 	}
 
 	slurm_free_job_info_msg(jobs);
 
-	con_mgr_add_delayed_work(conmgr, NULL, check_allocation, 0, 1, NULL,
-				 "check_allocation");
+	if (existing_allocation) {
+		if ((rc = _stage_in()))
+			stop_anchor(rc);
+		else
+			con_mgr_add_work(conmgr, NULL, on_allocation,
+					 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
+	} else {
+		con_mgr_add_delayed_work(conmgr, NULL, check_allocation, 0, 1,
+					 NULL, "check_allocation");
+	}
 }

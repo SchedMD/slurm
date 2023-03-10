@@ -65,6 +65,7 @@ documents those changes that are of interest to users and administrators.
     potential memory problems.
  -- Clean up OCI containers task directories correctly.
  -- slurm.spec - add "--with jwt" option.
+ -- scrun - Run under existing job when SLURM_JOB_ID is present.
 
 * Changes in Slurm 23.02.0
 ==========================

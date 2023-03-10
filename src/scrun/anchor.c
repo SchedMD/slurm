@@ -410,6 +410,7 @@ static void _finish_job(con_mgr_t *mgr, con_mgr_fd_t *con,
 			const char *tag, void *arg)
 {
 	int jobid, rc;
+	bool existing_allocation;
 
 	xassert(!arg);
 
@@ -419,9 +420,14 @@ static void _finish_job(con_mgr_t *mgr, con_mgr_fd_t *con,
 
 	jobid = state.jobid;
 	rc = state.srun_rc;
+	existing_allocation = state.existing_allocation;
 	unlock_state();
 
-	if (!jobid) {
+	if (existing_allocation) {
+		debug("%s: skipping slurm_complete_job(jobId=%u)",
+		      __func__, jobid);
+		goto done;
+	} else if (!jobid) {
 		debug("%s: no Job to complete", __func__);
 		return;
 	}
@@ -439,6 +445,7 @@ static void _finish_job(con_mgr_t *mgr, con_mgr_fd_t *con,
 		debug("%s: jobId=%u released successfully", __func__, jobid);
 	}
 
+done:
 	write_lock_state();
 	xassert(!state.job_completed);
 	state.job_completed = true;
@@ -1457,7 +1464,8 @@ static void *_on_startup_con(con_mgr_fd_t *con, void *arg)
 	 * job may already be allocated at this point so see if we need to mark
 	 * as created
 	 */
-	if ((state.status == CONTAINER_ST_CREATING) && (state.jobid > 0))
+	if ((state.status == CONTAINER_ST_CREATING) && (state.jobid > 0) &&
+	    !state.existing_allocation)
 		queue = true;
 	unlock_state();
 

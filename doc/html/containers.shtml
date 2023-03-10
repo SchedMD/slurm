@@ -473,7 +473,9 @@ be required if changes to the container filesystem are desired.</li>
 <pre>podman run hello-world
 podman run alpine printenv SLURM_JOB_ID
 podman run alpine hostname
-podman run alpine -e SCRUN_JOB_NUM_NODES=10 hostname</pre>
+podman run alpine -e SCRUN_JOB_NUM_NODES=10 hostname
+salloc podman run --env-host=true alpine hostname
+salloc sh -c 'podman run -e SLURM_JOB_ID=$SLURM_JOB_ID alpine hostname'</pre>
 </li>
 </ol>
 
