@@ -178,6 +178,9 @@ extern int cli_filter_g_setup_defaults(slurm_opt_t *opt, bool early)
 
 	xassert(g_context_cnt >= 0);
 
+	if (!g_context_cnt)
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].setup_defaults))(opt, early);
@@ -195,6 +198,9 @@ extern int cli_filter_g_pre_submit(slurm_opt_t *opt, int offset)
 	START_TIMER;
 
 	xassert(g_context_cnt >= 0);
+
+	if (!g_context_cnt)
+		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
@@ -214,6 +220,9 @@ extern void cli_filter_g_post_submit(int offset, uint32_t jobid,
 	START_TIMER;
 
 	xassert(g_context_cnt >= 0);
+
+	if (!g_context_cnt)
+		return;
 
 	slurm_mutex_lock(&g_context_lock);
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)

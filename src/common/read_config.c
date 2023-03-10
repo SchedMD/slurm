@@ -4093,8 +4093,16 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			xstrdup(DEFAULT_CORE_SPEC_PLUGIN);
 	}
 
-	(void) s_p_get_string(&conf->cli_filter_plugins, "CliFilterPlugins",
-			      hashtbl);
+	if (!s_p_get_string(&conf->cli_filter_plugins, "CliFilterPlugins",
+			    hashtbl)) {
+		/* empty */
+	} else if (xstrcasestr(conf->cli_filter_plugins, "none")) {
+		if (xstrcasestr(conf->cli_filter_plugins, ","))
+		    error("Ignoring invalid CliFilterPlugins: '%s'. You can't have 'none' with another plugin.",
+			  conf->cli_filter_plugins);
+
+		xfree(conf->cli_filter_plugins);
+	}
 
 	if (s_p_get_string(&temp_str, "CpuFreqDef", hashtbl)) {
 		if (cpu_freq_verify_def(temp_str, &conf->cpu_freq_def)) {
