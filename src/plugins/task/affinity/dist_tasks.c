@@ -756,7 +756,7 @@ static bitstr_t *_get_avail_map(slurm_cred_t *cred, uint16_t *hw_sockets,
 				uint16_t *hw_cores, uint16_t *hw_threads)
 {
 	bitstr_t *req_map, *hw_map;
-	uint16_t p, t, new_p, num_cpus, sockets, cores;
+	uint16_t p, t, new_p, num_cores, sockets, cores;
 	int job_node_id;
 	int start;
 	char *str;
@@ -779,8 +779,8 @@ static bitstr_t *_get_avail_map(slurm_cred_t *cred, uint16_t *hw_sockets,
 	debug3("slurmctld s %u c %u; hw s %u c %u t %u",
 	       sockets, cores, *hw_sockets, *hw_cores, *hw_threads);
 
-	num_cpus = MIN((sockets * cores), ((*hw_sockets)*(*hw_cores)));
-	req_map = (bitstr_t *) bit_alloc(num_cpus);
+	num_cores = MIN((sockets * cores), ((*hw_sockets)*(*hw_cores)));
+	req_map = (bitstr_t *) bit_alloc(num_cores);
 	hw_map  = (bitstr_t *) bit_alloc(conf->block_map_size);
 
 	/* Transfer core_bitmap data to local req_map.
@@ -789,7 +789,7 @@ static bitstr_t *_get_avail_map(slurm_cred_t *cred, uint16_t *hw_sockets,
 	 * sync with the slurmctld daemon). */
 	for (p = 0; p < (sockets * cores); p++) {
 		if (bit_test(arg->step_core_bitmap, start + p))
-			bit_set(req_map, (p % num_cpus));
+			bit_set(req_map, (p % num_cores));
 	}
 
 	str = (char *)bit_fmt_hexmask(req_map);
@@ -797,7 +797,7 @@ static bitstr_t *_get_avail_map(slurm_cred_t *cred, uint16_t *hw_sockets,
 	       &arg->step_id, str);
 	xfree(str);
 
-	for (p = 0; p < num_cpus; p++) {
+	for (p = 0; p < num_cores; p++) {
 		if (bit_test(req_map, p) == 0)
 			continue;
 		/* If we are pretending we have a larger system than
