@@ -1298,7 +1298,7 @@ _print_conf(void)
 	char *str = NULL, time_str[32];
 	int i;
 
-	if (conf->log_opts.stderr_level < LOG_LEVEL_DEBUG3)
+	if (get_log_level() < LOG_LEVEL_DEBUG3)
 		return;
 
 	cf = slurm_conf_lock();
