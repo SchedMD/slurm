@@ -162,7 +162,7 @@ static int _foreach_env_annotation(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _script_env(const resource_allocation_response_msg_t *alloc)
+static void _script_env(void)
 {
 	xassert(state.locked);
 
@@ -580,7 +580,6 @@ static void _alloc_job(con_mgr_t *conmgr)
 	xassert(state.group_id != SLURM_AUTH_NOBODY);
 
 	env_array_for_job(&state.job_env, alloc, desc, -1);
-	_script_env(alloc);
 	unlock_state();
 
 	slurm_free_job_desc_msg(desc);
@@ -618,6 +617,10 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 
 	/* grab the first job */
 	xassert(jobs->job_array->job_id == job_id);
+
+	write_lock_state();
+	_script_env();
+	unlock_state();
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG) {
 		read_lock_state();
