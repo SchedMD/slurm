@@ -273,17 +273,12 @@ consumption data takes place on the node level, hence only in case of exclusive
 job allocation the energy consumption measurements will reflect the job's
 real consumption. In case of node sharing between jobs the reported consumed
 energy per job (through sstat or sacct) will not reflect the real energy
-consumed by the jobs.
+consumed by the jobs. Default is nothing is collected.
 
 Configurable values at present are:
 .IP
 .RS
 .TP 20
-\fBacct_gather_energy/none\fR
-No energy consumption data is collected.
-.IP
-
-.TP
 \fBacct_gather_energy/ipmi\fR
 Energy consumption data is collected from the Baseboard Management Controller
 (BMC) using the Intelligent Platform Management Interface (IPMI).
