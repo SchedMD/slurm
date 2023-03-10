@@ -519,7 +519,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mcs/Makefile
 		 src/plugins/mcs/account/Makefile
 		 src/plugins/mcs/group/Makefile
-		 src/plugins/mcs/none/Makefile
 		 src/plugins/mcs/user/Makefile
 		 src/plugins/mpi/Makefile
 		 src/plugins/mpi/cray_shasta/Makefile

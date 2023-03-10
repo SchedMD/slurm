@@ -4523,17 +4523,18 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	(void) s_p_get_string(&conf->mcs_plugin_params, "MCSParameters",
 			      hashtbl);
+
 	if (!s_p_get_string(&conf->mcs_plugin, "MCSPlugin", hashtbl)) {
-		conf->mcs_plugin = xstrdup(DEFAULT_MCS_PLUGIN);
 		if (conf->mcs_plugin_params) {
 			/* no plugin mcs and a mcs plugin param */
 			error("MCSParameters=%s used and no MCSPlugin",
-				conf->mcs_plugin_params);
+			      conf->mcs_plugin_params);
 			return SLURM_ERROR;
 		}
-	}
-	if (conf->mcs_plugin_params &&
-	    !xstrcmp(conf->mcs_plugin, "mcs/none")) {
+	} else if (xstrcasestr(conf->mcs_plugin, "none"))
+		xfree(conf->mcs_plugin);
+
+	if (conf->mcs_plugin_params && !conf->mcs_plugin) {
 		/* plugin mcs none and a mcs plugin param */
 		warning("MCSParameters=%s can't be used with MCSPlugin=mcs/none",
 			conf->mcs_plugin_params);

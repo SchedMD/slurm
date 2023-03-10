@@ -61,6 +61,7 @@ static bool label_strict_enforced = false;
 static uint32_t select_value = MCS_SELECT_ONDEMANDSELECT;
 static char *mcs_params_common = NULL;
 static char *mcs_params_specific = NULL;
+static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 
 static int _slurm_mcs_check_and_load_enforced(char *params);
 static int _slurm_mcs_check_and_load_select(char *params);
@@ -76,8 +77,14 @@ extern int slurm_mcs_init(void)
 	char *sep;
 
 	slurm_mutex_lock(&g_mcs_context_lock);
-	if (g_mcs_context)
+
+	if (plugin_inited)
 		goto done;
+
+	if (!slurm_conf.mcs_plugin) {
+		plugin_inited = PLUGIN_NOOP;
+		goto done;
+	}
 
 	xfree(mcs_params_common);
 	xfree(mcs_params_specific);
@@ -107,9 +114,11 @@ extern int slurm_mcs_init(void)
 		error("cannot create %s context for %s",
 		      plugin_type, slurm_conf.mcs_plugin);
 		retval = SLURM_ERROR;
+		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
 
+	plugin_inited = PLUGIN_INITED;
 done:
 	slurm_mutex_unlock(&g_mcs_context_lock);
 	return retval;
@@ -119,6 +128,7 @@ extern int slurm_mcs_fini(void)
 {
 	int rc = SLURM_SUCCESS;
 
+	plugin_inited = PLUGIN_NOT_INITED;
 	if (!g_mcs_context)
 		return rc;
 
@@ -225,7 +235,10 @@ extern int slurm_mcs_get_privatedata(void)
 
 extern int mcs_g_set_mcs_label(job_record_t *job_ptr, char *label)
 {
-	xassert(g_mcs_context);
+	xassert(plugin_inited);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (int) (*(ops.set))(job_ptr, label);
 }
@@ -239,7 +252,10 @@ extern int mcs_g_set_mcs_label(job_record_t *job_ptr, char *label)
 extern int mcs_g_check_mcs_label(uint32_t user_id, char *mcs_label,
 				 bool assoc_locked)
 {
-	xassert(g_mcs_context);
+	xassert(plugin_inited);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	return (int)(*(ops.check))(user_id, mcs_label);
 }
