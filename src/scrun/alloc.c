@@ -476,10 +476,7 @@ extern void check_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 	}
 }
 
-extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
-			   con_mgr_work_type_t type,
-			   con_mgr_work_status_t status, const char *tag,
-			   void *arg)
+static void _alloc_job(con_mgr_t *conmgr)
 {
 	int rc;
 	resource_allocation_response_msg_t *alloc = NULL;
@@ -490,7 +487,6 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 	char *opt_string = NULL;
 	struct option *spanked = slurm_option_table_create(&opt, &opt_string);
 	job_desc_msg_t *desc;
-	job_info_msg_t *jobs = NULL;
 
 	slurm_reset_all_options(&opt, true);
 
@@ -542,7 +538,6 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 		      __func__, slurm_strerror(alloc->error_code));
 
 		stop_anchor(alloc->error_code);
-		return;
 	}
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG) {
@@ -555,23 +550,6 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 		xfree(user);
 		xfree(group);
 	}
-
-	/* alloc response is too sparse. get full job info */
-	rc = slurm_load_job(&jobs, alloc->job_id, 0);
-	if (rc || !jobs || (jobs->record_count <= 0)) {
-		/* job not found or already died ? */
-		if ((rc == SLURM_ERROR) && errno)
-			rc = errno;
-
-		error("%s: unable to find JobId=%u after allocation: %s",
-		      __func__, alloc->job_id, slurm_strerror(rc));
-
-		stop_anchor(rc);
-		return;
-	}
-
-	/* grab the first job */
-	xassert(jobs->job_array->job_id == alloc->job_id);
 
 	write_lock_state();
 	state.jobid = alloc->job_id;
@@ -605,6 +583,42 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 	_script_env(alloc);
 	unlock_state();
 
+	slurm_free_job_desc_msg(desc);
+	slurm_free_resource_allocation_response_msg(alloc);
+}
+
+extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
+			   con_mgr_work_type_t type,
+			   con_mgr_work_status_t status, const char *tag,
+			   void *arg)
+{
+	int rc;
+	job_info_msg_t *jobs = NULL;
+	int job_id;
+
+	_alloc_job(conmgr);
+
+	read_lock_state();
+	job_id = state.jobid;
+	unlock_state();
+
+	/* alloc response is too sparse. get full job info */
+	rc = slurm_load_job(&jobs, job_id, 0);
+	if (rc || !jobs || (jobs->record_count <= 0)) {
+		/* job not found or already died ? */
+		if ((rc == SLURM_ERROR) && errno)
+			rc = errno;
+
+		error("%s: unable to find JobId=%u after allocation: %s",
+		      __func__, job_id, slurm_strerror(rc));
+
+		stop_anchor(rc);
+		return;
+	}
+
+	/* grab the first job */
+	xassert(jobs->job_array->job_id == job_id);
+
 	if (get_log_level() >= LOG_LEVEL_DEBUG) {
 		read_lock_state();
 		if (state.job_env)
@@ -615,8 +629,6 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 		unlock_state();
 	}
 
-	slurm_free_job_desc_msg(desc);
-	slurm_free_resource_allocation_response_msg(alloc);
 	slurm_free_job_info_msg(jobs);
 
 	con_mgr_add_delayed_work(conmgr, NULL, check_allocation, 0, 1, NULL,
