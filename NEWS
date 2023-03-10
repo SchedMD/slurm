@@ -275,6 +275,9 @@ documents those changes that are of interest to users and administrators.
     variables were unchanged from the job allocation. This bug only affected the
     output environment variables, not the actual step resource allocation.
  -- RoutePlugin=route/topology has been replaced with TopologyParam=RouteTree.
+ -- If ThreadsPerCore in slurm.conf is configured with less
+    than the number of hardware threads, fix a bug where the task plugins used
+    fewer cores instead of using fewer threads per core.
 
 * Changes in Slurm 23.02.7
 ==========================
