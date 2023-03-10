@@ -452,8 +452,8 @@ extern void check_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 		/* job failed! */
 		if (get_log_level() >= LOG_LEVEL_DEBUG) {
 			read_lock_state();
-			debug("%s: JobId=%d failed. Bailing on checking for nodes.",
-			      __func__, state.jobid);
+			debug("%s: JobId=%d failed. Bailing on checking for nodes: %s",
+			      __func__, state.jobid, slurm_strerror(rc));
 			unlock_state();
 		}
 		stop_anchor(ESLURM_ALREADY_DONE);
