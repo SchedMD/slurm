@@ -1624,13 +1624,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	/* Are Consumable Resources enabled?  Check once. */
 	if (cr_enabled == NO_VAL) {
-		cr_enabled = 0;	/* select/linear and others are no-ops */
-		error_code = select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
-							   NULL, &cr_enabled);
-		if (error_code != SLURM_SUCCESS) {
-			cr_enabled = NO_VAL;
-			return error_code;
-		}
+		cr_enabled = slurm_select_cr_type();
 		(void) select_g_get_info_from_plugin(SELECT_SINGLE_JOB_TEST,
 						     NULL,
 						     &single_select_job_test);

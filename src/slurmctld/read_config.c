@@ -1279,18 +1279,9 @@ void _sync_jobs_to_conf(void)
 	bool job_fail = false;
 	time_t now = time(NULL);
 	bool gang_flag = false;
-	static uint32_t cr_flag = NO_VAL;
 
 	xassert(job_list);
 
-	if (cr_flag == NO_VAL) {
-		cr_flag = 0;  /* call is no-op for select/linear and others */
-		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
-						  NULL, &cr_flag)) {
-			cr_flag = NO_VAL;	/* error */
-		}
-
-	}
 	if (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)
 		gang_flag = true;
 
@@ -1390,7 +1381,8 @@ void _sync_jobs_to_conf(void)
 		if (reset_node_bitmap(job_ptr))
 			job_fail = true;
 		if (!job_fail &&
-		    job_ptr->job_resrcs && (cr_flag || gang_flag) &&
+		    job_ptr->job_resrcs &&
+		    (slurm_select_cr_type() || gang_flag) &&
 		    valid_job_resources(job_ptr->job_resrcs)) {
 			error("Aborting %pJ due to change in socket/core configuration of allocated nodes",
 			      job_ptr);

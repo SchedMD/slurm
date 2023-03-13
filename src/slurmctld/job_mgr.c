@@ -15623,8 +15623,6 @@ extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 				 uint16_t min_sockets_per_node,
 				 uint32_t num_tasks)
 {
-	static bool is_cons_tres;
-	static bool set_is_cons_tres = false;
 	uint64_t mem_total = 0;
 	int i;
 
@@ -15635,33 +15633,11 @@ extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 		return mem_total;
 	}
 
-	/*
-	 * Plugins can't change on reconfig, so we can cache this here and
-	 * don't need to worry about reconfig.
-	 */
-	if (!set_is_cons_tres) {
-		uint32_t select_plugin_type = NO_VAL;
-
-		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
-						  &select_plugin_type)
-		    != SLURM_SUCCESS) {
-			/*
-			 * Problem getting select type from plugin, we can't
-			 * really recover from that so just assume it is
-			 * not cons_tres.
-			 */
-			is_cons_tres = false;
-		} else if (select_plugin_type == SELECT_TYPE_CONS_TRES)
-			is_cons_tres = true;
-		else
-			is_cons_tres = false;
-		set_is_cons_tres = true;
-	}
-
 	if (pn_min_memory == NO_VAL64)
 		return mem_total;
 
-	if (!user_set_mem && is_cons_tres && gres_list) {
+	if (!user_set_mem && gres_list &&
+	    (slurm_select_cr_type() == SELECT_TYPE_CONS_TRES)) {
 		/* mem_per_[cpu|node] not set, check if mem_per_gres was set */
 		gres_job_state_t gres_js;
 		memset(&gres_js, 0, sizeof(gres_js));

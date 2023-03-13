@@ -738,7 +738,7 @@ fini:
 		select_plugin_type = NO_VAL;	/* error */
 	}
 	if (have_shared && running_in_slurmctld() &&
-	    (select_plugin_type != SELECT_TYPE_CONS_TRES)) {
+	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES)) {
 		fatal("Use of shared gres requires the use of select/cons_tres");
 	}
 
@@ -6187,7 +6187,7 @@ extern int gres_job_revalidate(List gres_list)
 	ListIterator iter;
 	int rc = SLURM_SUCCESS;
 
-	if (!gres_list || (select_plugin_type == SELECT_TYPE_CONS_TRES))
+	if (!gres_list || (slurm_select_cr_type() == SELECT_TYPE_CONS_TRES))
 		return SLURM_SUCCESS;
 
 	iter = list_iterator_create(gres_list);

@@ -2828,13 +2828,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	bit_clear(booting_node_bitmap, node_ptr->index);
 
 	if (cr_flag == NO_VAL) {
-		cr_flag = 0;  /* call is no-op for select/linear and others */
-		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
-						  NULL, &cr_flag)) {
-			cr_flag = NO_VAL;	/* error */
-		}
-		if (cr_flag == SELECT_TYPE_CONS_TRES)
-			cr_flag = SELECT_TYPE_CONS_RES;
+		cr_flag = slurm_select_cr_type();
 		node_features_cnt = node_features_g_count();
 	}
 
@@ -2942,7 +2936,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		}
 
 		if ((error_code == SLURM_SUCCESS) &&
-		    (cr_flag == SELECT_TYPE_CONS_RES) &&
+		    cr_flag &&
 		    (node_features_cnt > 0) &&
 		    (reg_msg->sockets != config_ptr->tot_sockets) &&
 		    (reg_msg->cores   != config_ptr->cores) &&

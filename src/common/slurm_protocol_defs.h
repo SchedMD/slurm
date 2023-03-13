@@ -1967,6 +1967,13 @@ extern int slurm_get_next_tres(
 	char *tres_type, char *in_val, char **name_ptr, char **type_ptr,
 	uint64_t *cnt, char **save_ptr);
 
+/*
+ * Return cached select cons res type.
+ *
+ * Returns SELECT_TYPE_CONS_TRES, SELECT_TYPE_CONS_RES or 0 (linear).
+ */
+extern uint32_t slurm_select_cr_type(void);
+
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\
