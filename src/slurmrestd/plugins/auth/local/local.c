@@ -130,8 +130,8 @@ static int _auth_socket(on_http_request_args_t *args,
 {
 	struct ucred cred = { 0 };
 	socklen_t len = sizeof(cred);
-	const int input_fd = args->context->con->input_fd;
-	const char *name = args->context->con->name;
+	int input_fd = args->context->con->input_fd;
+	char *name = args->context->con->name;
 
 	xassert(!ctxt->user_name);
 
