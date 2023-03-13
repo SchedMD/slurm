@@ -78,7 +78,7 @@ static int _op_handler_jobs(const char *context_id,
 
 	if (rc == SLURM_NO_CHANGE_IN_DATA) {
 		resp_warn(ctxt, __func__,
-			  "No job changes since update_time=%"PRIu64,
+			  "No job changes since update_time=%ld",
 			  update_time);
 	} else if (rc) {
 		resp_error(ctxt, rc, "slurm_load_jobs()",
