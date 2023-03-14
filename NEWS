@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
  -- Automatically sort the TaskPlugin list reverse-alphabetically. This
     addresses an issue where cpu masks were reset if task/affinity was listed
     before task/cgroup on cgroup/v2 systems with Linux kernel < 6.2.
+ -- Fix some failed terminate job requests from a 23.02 slurmctld to a 22.05 or
+    21.08 slurmd.
 
 * Changes in Slurm 23.02.0
 ==========================
