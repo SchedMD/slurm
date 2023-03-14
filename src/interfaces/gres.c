@@ -5891,6 +5891,10 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	uint64_t cnt = 0;
 	ListIterator iter;
 
+	if (tres_per_task && running_in_slurmctld() &&
+	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES))
+		return ESLURM_UNSUPPORTED_GRES;
+
 	if (!cpus_per_tres && !tres_per_job && !tres_per_node &&
 	    !tres_per_socket && !tres_per_task && !mem_per_tres &&
 	    !ntasks_per_tres)
