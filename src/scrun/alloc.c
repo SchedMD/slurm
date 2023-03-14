@@ -287,7 +287,7 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	case SRUN_TIMEOUT:
 	{
 		srun_timeout_msg_t *to = msg->data;
-		debug("%s:[%s] srun RPC %pS timeout at %"PRIu64" RPC",
+		debug("%s:[%s] srun RPC %pS timeout at %ld RPC",
 		      __func__, con->name, &to->step_id, to->timeout);
 		stop_anchor(ESLURM_JOB_TIMEOUT_KILLED);
 		break;
@@ -442,7 +442,7 @@ extern void check_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 
 		if (get_log_level() >= LOG_LEVEL_DEBUG) {
 			read_lock_state();
-			debug("%s: rechecking JobId=%d for nodes ready in %"PRId64"ns",
+			debug("%s: rechecking JobId=%d for nodes ready in %ld ns",
 			      __func__, state.jobid, delay);
 			unlock_state();
 		}

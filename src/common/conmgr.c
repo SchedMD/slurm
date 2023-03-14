@@ -2785,7 +2785,7 @@ extern void con_mgr_add_delayed_work(con_mgr_t *mgr, con_mgr_fd_t *con,
 	else
 		work->type = CONMGR_WORK_TYPE_TIME_DELAY_FIFO;
 
-	log_flag(NET, "%s: adding %"PRId64"s %"PRId64"ns delayed work %s@0x%"PRIxPTR,
+	log_flag(NET, "%s: adding %lds %ldns delayed work %s@0x%"PRIxPTR,
 		 __func__, seconds, nanoseconds, work->tag,
 		 (uintptr_t) work->func);
 
