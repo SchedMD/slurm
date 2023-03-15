@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix compile issues on 32-bit systems.
  -- Fix nodes un-draining after being drained due to unkillable step.
  -- Fix remote licenses allowed percentages reset to 0 during upgrade.
+ -- sacct - Avoid truncating time strings when using SLURM_TIME_FORMAT with
+    the --parsable option.
 
 * Changes in Slurm 23.02.0
 ==========================

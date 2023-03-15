@@ -103,7 +103,7 @@ extern void print_fields_header(List print_fields_list)
 
 extern void print_fields_date(print_field_t *field, void *input, int last)
 {
-	int abs_len = abs(field->len);
+	int abs_len = print_fields_parsable_print ? 256 : abs(field->len);
 	char temp_char[abs_len+1];
 	time_t value = 0;
 
