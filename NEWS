@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
     21.08 slurmd.
  -- Fix compile issues on 32-bit systems.
  -- Fix nodes un-draining after being drained due to unkillable step.
+ -- Fix remote licenses allowed percentages reset to 0 during upgrade.
 
 * Changes in Slurm 23.02.0
 ==========================
