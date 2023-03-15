@@ -64,7 +64,7 @@ typedef struct {
 
 static uint32_t db_curr_ver = NO_VAL;
 
-static int _rename_res_columns(mysql_conn_t *mysql_conn, char *table)
+static int _rename_clus_res_columns(mysql_conn_t *mysql_conn)
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
@@ -75,12 +75,12 @@ static int _rename_res_columns(mysql_conn_t *mysql_conn, char *table)
 	query = xstrdup_printf(
 		"alter table %s change percent_allowed allowed "
 		"int unsigned default 0;",
-		table);
+		clus_res_table);
 
 	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
 	if ((rc = as_mysql_convert_alter_query(mysql_conn, query)) !=
 	    SLURM_SUCCESS)
-		error("Can't update %s %m", table);
+		error("Can't update %s %m", clus_res_table);
 	xfree(query);
 
 	return rc;
@@ -91,7 +91,7 @@ static int _convert_clus_res_table_pre(mysql_conn_t *mysql_conn)
 	int rc = SLURM_SUCCESS;
 
 	if (db_curr_ver < 13) {
-		if ((rc = _rename_res_columns(mysql_conn, clus_res_table)) !=
+		if ((rc = _rename_clus_res_columns(mysql_conn)) !=
 		    SLURM_SUCCESS)
 			return rc;
 	}
