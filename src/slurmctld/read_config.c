@@ -3198,7 +3198,7 @@ static int _sync_nodes_to_comp_job(void)
 			 * now
 			 */
 			if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
-				acct_policy_job_begin(job_ptr);
+				acct_policy_job_begin(job_ptr, false);
 
 			if (job_ptr->front_end_ptr)
 				job_ptr->front_end_ptr->job_cnt_run++;
@@ -3359,10 +3359,10 @@ static void _restore_job_accounting(void)
 
 		if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) {
 			if (!IS_JOB_FINISHED(job_ptr))
-				acct_policy_add_job_submit(job_ptr);
+				acct_policy_add_job_submit(job_ptr, false);
 			if (IS_JOB_RUNNING(job_ptr) ||
 			    IS_JOB_SUSPENDED(job_ptr)) {
-				acct_policy_job_begin(job_ptr);
+				acct_policy_job_begin(job_ptr, false);
 				job_claim_resv(job_ptr);
 			} else if (IS_JOB_PENDING(job_ptr) &&
 				   job_ptr->details &&

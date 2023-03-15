@@ -289,7 +289,8 @@ static char *_get_mail_user(const char *user_name, uid_t user_id)
 	return mail_user;
 }
 
-static int _job_fail_account(job_record_t *job_ptr, const char *func_name)
+static int _job_fail_account(job_record_t *job_ptr, const char *func_name,
+			     bool assoc_locked)
 {
 	int rc = 0; // Return number of pending jobs held
 
@@ -352,7 +353,7 @@ static int _job_fail_account(job_record_t *job_ptr, const char *func_name)
 		job_ptr->part_ptr_list = NULL;
 		job_ptr->qos_ptr = NULL;
 
-		acct_policy_remove_job_submit(job_ptr);
+		acct_policy_remove_job_submit(job_ptr, assoc_locked);
 
 		job_ptr->part_ptr = tmp_part;
 		job_ptr->part_ptr_list = tmp_part_list;
@@ -419,7 +420,7 @@ extern int job_fail_qos(job_record_t *job_ptr, const char *func_name,
 		 */
 		job_ptr->assoc_ptr = NULL;
 
-		acct_policy_remove_job_submit(job_ptr);
+		acct_policy_remove_job_submit(job_ptr, assoc_locked);
 
 		job_ptr->assoc_ptr = tmp_assoc;
 
@@ -2401,7 +2402,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 				    accounting_enforce,
 				    &job_ptr->assoc_ptr, true) &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
-		_job_fail_account(job_ptr, __func__);
+		_job_fail_account(job_ptr, __func__, true);
 	} else {
 		job_ptr->assoc_id = assoc_rec.id;
 		info("Recovered %pJ Assoc=%u", job_ptr, job_ptr->assoc_id);
@@ -3786,7 +3787,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 				/* Since the job completion logger
 				 * removes the submit we need to add it
 				 * again. */
-				acct_policy_add_job_submit(job_ptr);
+				acct_policy_add_job_submit(job_ptr, false);
 
 				if (!job_ptr->node_bitmap_cg ||
 				    bit_ffs(job_ptr->node_bitmap_cg) == -1)
@@ -4040,7 +4041,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				 * removes the submit we need to add it
 				 * again.
 				 */
-				acct_policy_add_job_submit(job_ptr);
+				acct_policy_add_job_submit(job_ptr, false);
 
 				if (!job_ptr->node_bitmap_cg ||
 				    bit_ffs(job_ptr->node_bitmap_cg) == -1)
@@ -5240,7 +5241,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 		(job_ptr->array_recs && job_ptr->array_recs->task_cnt) ?
 		job_ptr->array_recs->task_cnt : 1;
 
-	acct_policy_add_job_submit(job_ptr);
+	acct_policy_add_job_submit(job_ptr, false);
 
 	if ((error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 	    (slurm_conf.enforce_part_limits != PARTITION_ENFORCE_NONE))
@@ -5932,7 +5933,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 
 					job_ptr->array_recs->task_cnt -=
 						new_task_count;
-					acct_policy_remove_job_submit(job_ptr);
+					acct_policy_remove_job_submit(job_ptr,
+								      false);
 					job_ptr->bit_flags &= ~JOB_ACCRUE_OVER;
 					job_ptr->job_state = tmp_state;
 				}
@@ -6200,7 +6202,7 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 		 * Since the job completion logger removes the job submit
 		 * information, we need to add it again.
 		 */
-		acct_policy_add_job_submit(job_ptr);
+		acct_policy_add_job_submit(job_ptr, false);
 		if (node_fail) {
 			info("%s: requeue %pJ due to node failure",
 			     __func__, job_ptr);
@@ -12806,7 +12808,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		 * Since we are successful to this point remove the job from the
 		 * old qos/assoc's
 		 */
-		acct_policy_remove_job_submit(job_ptr);
+		acct_policy_remove_job_submit(job_ptr, false);
 		acct_policy_remove_accrue_time(job_ptr, false);
 	}
 
@@ -12862,7 +12864,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	/* Now add the job to the new qos/assoc's */
 	if (new_qos_ptr || new_assoc_ptr || new_part_ptr) {
 		update_accounting = true;
-		acct_policy_add_job_submit(job_ptr);
+		acct_policy_add_job_submit(job_ptr, false);
 	}
 
 	if (new_req_bitmap_given) {
@@ -14878,7 +14880,7 @@ extern void job_pre_resize_acctg(job_record_t *job_ptr)
 
 	/* This doesn't happen in job_completion_logger, but gets
 	 * added back in with job_post_resize_acctg so remove it here. */
-	acct_policy_job_fini(job_ptr);
+	acct_policy_job_fini(job_ptr, false);
 
 	/* NOTE: The RESIZING FLAG needed to be cleared with
 	   job_post_resize_acctg */
@@ -14892,10 +14894,10 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 	 * the assert is here to make sure we code it that way.
 	 */
 	xassert(IS_JOB_RESIZING(job_ptr));
-	acct_policy_add_job_submit(job_ptr);
+	acct_policy_add_job_submit(job_ptr, false);
 	/* job_set_alloc_tres() must be called before acct_policy_job_begin() */
 	job_set_alloc_tres(job_ptr, false);
-	acct_policy_job_begin(job_ptr);
+	acct_policy_job_begin(job_ptr, false);
 	job_claim_resv(job_ptr);
 
 	/*
@@ -16076,7 +16078,7 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 
 	xassert(job_ptr);
 
-	acct_policy_remove_job_submit(job_ptr);
+	acct_policy_remove_job_submit(job_ptr, false);
 	if (job_ptr->nodes && ((job_ptr->bit_flags & JOB_KILL_HURRY) == 0)
 	    && !IS_JOB_RESIZING(job_ptr)) {
 		(void) bb_g_job_start_stage_out(job_ptr);
@@ -17175,7 +17177,7 @@ reply:
 	 * Since the job completion logger removes the submit we need
 	 * to add it again.
 	 */
-	acct_policy_add_job_submit(job_ptr);
+	acct_policy_add_job_submit(job_ptr, false);
 
 	acct_policy_update_pending_job(job_ptr);
 
@@ -17781,7 +17783,7 @@ extern int job_hold_by_assoc_id(uint32_t assoc_id)
 		if (job_ptr->assoc_id != assoc_id)
 			continue;
 
-		cnt += _job_fail_account(job_ptr, __func__);
+		cnt += _job_fail_account(job_ptr, __func__, false);
 	}
 	list_iterator_destroy(job_iterator);
 	unlock_slurmctld(job_write_lock);
@@ -17911,7 +17913,7 @@ extern int send_jobs_to_accounting(void)
 				    accounting_enforce,
 				    &job_ptr->assoc_ptr, false) &&
 			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
-				_job_fail_account(job_ptr, __func__);
+				_job_fail_account(job_ptr, __func__, false);
 				continue;
 			} else
 				job_ptr->assoc_id = assoc_rec.id;
