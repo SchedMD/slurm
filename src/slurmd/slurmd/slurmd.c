@@ -2303,11 +2303,10 @@ static int _drain_node(char *reason)
 	slurm_msg_t req_msg;
 	update_node_msg_t update_node_msg;
 
-	memset(&update_node_msg, 0, sizeof(update_node_msg_t));
+	slurm_init_update_node_msg(&update_node_msg);
 	update_node_msg.node_names = conf->node_name;
 	update_node_msg.node_state = NODE_STATE_DRAIN;
 	update_node_msg.reason = reason;
-	update_node_msg.weight = NO_VAL;
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_UPDATE_NODE;
 	req_msg.data = &update_node_msg;
