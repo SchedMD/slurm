@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix some failed terminate job requests from a 23.02 slurmctld to a 22.05 or
     21.08 slurmd.
  -- Fix compile issues on 32-bit systems.
+ -- Fix nodes un-draining after being drained due to unkillable step.
 
 * Changes in Slurm 23.02.0
 ==========================
