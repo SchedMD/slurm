@@ -1662,7 +1662,8 @@ static void _delete_it(int argc, char **argv)
 
 	/* First identify the entity type to delete */
 	if (xstrncasecmp(tag, "NodeName", MAX(tag_len, 3)) == 0) {
-		update_node_msg_t node_msg = {0};
+		update_node_msg_t node_msg;
+		slurm_init_update_node_msg(&node_msg);
 		node_msg.node_names = val;
 		if (slurm_delete_node(&node_msg)) {
 			char errmsg[64];
