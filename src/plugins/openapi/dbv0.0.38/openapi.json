@@ -1753,14 +1753,6 @@
           },
           "required": true
         }
-      },
-      "dbv0.0.38_tres_update": {
-        "type": "object",
-        "properties": {
-          "tres": {
-            "$ref": "#/components/schemas/dbv0.0.38_tres_list"
-          }
-        }
       }
     },
     "/jobs/": {
@@ -2214,7 +2206,7 @@
       "dbv0.0.38_diag": {
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -2373,7 +2365,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -2429,7 +2421,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -2444,7 +2436,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -2459,7 +2451,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -2517,7 +2509,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -2532,7 +2524,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -2606,7 +2598,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -2621,7 +2613,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -2686,7 +2678,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -2708,7 +2700,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -2916,7 +2908,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -3157,7 +3149,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -3179,7 +3171,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -3194,7 +3186,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -3209,7 +3201,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -3224,7 +3216,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -3239,7 +3231,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -3282,7 +3274,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -3890,7 +3882,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -3947,7 +3939,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -3962,7 +3954,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
@@ -4091,7 +4083,7 @@
         "type": "object",
         "properties": {
           "meta": {
-            "$ref": "#/components/schemas/v0.0.38_meta"
+            "$ref": "#/components/schemas/dbv0.0.38_meta"
           },
           "errors": {
             "type": "array",
