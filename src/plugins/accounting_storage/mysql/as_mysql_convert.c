@@ -86,17 +86,12 @@ static int _rename_res_columns(mysql_conn_t *mysql_conn, char *table)
 	return rc;
 }
 
-static int _convert_res_table_pre(mysql_conn_t *mysql_conn,
-				  char *cluster_name)
+static int _convert_clus_res_table_pre(mysql_conn_t *mysql_conn)
 {
 	int rc = SLURM_SUCCESS;
 
 	if (db_curr_ver < 13) {
-		char table[200];
-
-		snprintf(table, sizeof(table), "\"%s_%s\"",
-			 cluster_name, clus_res_table);
-		if ((rc = _rename_res_columns(mysql_conn, table)) !=
+		if ((rc = _rename_res_columns(mysql_conn, clus_res_table)) !=
 		    SLURM_SUCCESS)
 			return rc;
 	}
@@ -553,6 +548,10 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 		return SLURM_ERROR;
 	}
 
+	info("pre-converting cluster resource table");
+	if ((rc = _convert_clus_res_table_pre(mysql_conn)) != SLURM_SUCCESS)
+		return rc;
+
 	/* make it up to date */
 	itr = list_iterator_create(as_mysql_total_cluster_list);
 	while ((cluster_name = list_next(itr))) {
@@ -561,10 +560,6 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 		 * as_mysql_convert_alter_query instead of mysql_db_query to be
 		 * able to detect a previous failed conversion.
 		 */
-		info("pre-converting resource table for %s", cluster_name);
-		if ((rc = _convert_res_table_pre(mysql_conn, cluster_name) !=
-		     SLURM_SUCCESS))
-			break;
 		info("pre-converting usage table for %s", cluster_name);
 		if ((rc = _convert_usage_table_pre(mysql_conn, cluster_name)
 		     != SLURM_SUCCESS))
