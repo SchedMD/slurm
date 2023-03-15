@@ -58,7 +58,9 @@ details.</p>
 <p>The preemption method is determined by the "PreemptType"
 configuration parameter defined in slurm.conf.  When the "PreemptType"
 is set to "preempt/qos", a queued job's QOS will be used to determine
-whether it can preempt a running job.</p>
+whether it can preempt a running job. It is important to note that the QOS
+used to determine if a job is eligible for preemption is the QOS associated
+with the job and not a <a href="#partition">Partition QOS</a>.</p>
 
 <P> The QOS can be assigned (using <i>sacctmgr</i>) a list of other
 QOS's that it can preempt.  When there is a queued job with a QOS that
@@ -67,7 +69,9 @@ scheduler will preempt the running job.</P>
 
 <P> The QOS option PreemptExemptTime specifies the minimum run time before the
 job is considered for preemption. The QOS option takes precedence over the
-global option of the same name.</P>
+global option of the same name. A Partition QOS with PreemptExemptTime
+takes precedence over a job QOS with PreemptExemptTime, unless the job QOS
+has the OverPartQOS flag enabled.</p>
 
 <!-------------------------------------------------------------------------->
 <h2 id="limits">Job Limits<a class="slurm_link" href="#limits"></a></h2>
@@ -323,6 +327,6 @@ $ sacctmgr delete qos alligator
   alligator
 </pre>
 
-<p style="text-align: center;">Last modified 28 September 2021</p>
+<p style="text-align: center;">Last modified 07 April 2023</p>
 
 <!--#include virtual="footer.txt"-->
