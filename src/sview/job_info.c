@@ -30,6 +30,7 @@
 
 #include <fcntl.h>
 #include <grp.h>
+#include <limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -1013,8 +1014,8 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			if (token)
 				job_msg->name = xstrdup(token + 1);
 		} else {
-			job_msg->argv[0] = xmalloc(1024);
-			if (!getcwd(job_msg->argv[0], 1024))
+			job_msg->argv[0] = xmalloc(PATH_MAX);
+			if (!getcwd(job_msg->argv[0], PATH_MAX))
 				goto return_error;
 			xstrcat(job_msg->argv[0], "/");
 			xstrcat(job_msg->argv[0], new_text);
