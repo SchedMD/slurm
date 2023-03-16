@@ -4364,7 +4364,7 @@ static int DUMP_FUNC(JOB_INFO_STDIN)(const parser_t *const parser, void *obj,
 			    data_t *dst, args_t *args)
 {
 	slurm_job_info_t *job = obj;
-	char *str = xmalloc(PATH_MAX + 1);
+	char *str = xmalloc(PATH_MAX);
 
 	slurm_get_job_stdin(str, PATH_MAX, job);
 	data_set_string_own(dst, str);
@@ -4378,7 +4378,7 @@ static int DUMP_FUNC(JOB_INFO_STDOUT)(const parser_t *const parser, void *obj,
 			    data_t *dst, args_t *args)
 {
 	slurm_job_info_t *job = obj;
-	char *str = xmalloc(PATH_MAX + 1);
+	char *str = xmalloc(PATH_MAX);
 
 	slurm_get_job_stdout(str, PATH_MAX, job);
 	data_set_string_own(dst, str);
@@ -4392,7 +4392,7 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 			    data_t *dst, args_t *args)
 {
 	slurm_job_info_t *job = obj;
-	char *str = xmalloc(PATH_MAX + 1);
+	char *str = xmalloc(PATH_MAX);
 
 	slurm_get_job_stderr(str, PATH_MAX, job);
 	data_set_string_own(dst, str);

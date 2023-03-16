@@ -903,7 +903,7 @@ static int arg_set_data_chdir(slurm_opt_t *opt, const data_t *arg,
 COMMON_STRING_OPTION_GET(chdir);
 static void arg_reset_chdir(slurm_opt_t *opt)
 {
-	char buf[PATH_MAX + 1];
+	char buf[PATH_MAX];
 	xfree(opt->chdir);
 	if (opt->salloc_opt || opt->scron_opt)
 		return;
