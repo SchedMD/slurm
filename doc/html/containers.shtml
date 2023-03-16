@@ -435,6 +435,7 @@ utsns = "host"
 userns = "host"
 
 [engine]
+cgroup_manager = "systemd"
 runtime = "slurm"
 runtime_supports_nocgroups = [ "slurm" ]
 runtime_supports_json = [ "slurm" ]
@@ -443,6 +444,8 @@ remote = false
 [engine.runtimes]
 slurm = [ "/usr/local/bin/scrun" ]</pre>
 Correct path to scrun as if installation prefix was configured.</li>
+<li>The "cgroup_manager" field will need to be swapped to "cgroupfs" on systems
+not running systemd.</li>
 <li>It is strongly suggested that sites consider using inter-node shared
 filesystems to store Podman's containers. While it is possible to have a
 scrun.lua script to push and pull images for each deployment, there can be a
@@ -789,6 +792,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 9 March 2023</p>
+<p style="text-align:center;">Last modified 19 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
