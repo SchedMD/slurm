@@ -523,8 +523,6 @@ extern bool slingshot_setup_config(const char *switch_params)
 	const size_t size_adjust_limits = sizeof(adjust_limits) - 1;
 	const char no_adjust_limits[] = "no_adjust_limits";
 	const size_t size_no_adjust_limits = sizeof(no_adjust_limits) - 1;
-	const char vni_pids[] = "vni_pids";
-	const size_t size_vni_pids = sizeof(vni_pids) - 1;
 	const char jlope_url[] = "jlope_url";
 	const size_t size_jlope_url = sizeof(jlope_url) - 1;
 	const char jlope_auth[] = "jlope_auth";
@@ -550,8 +548,6 @@ extern bool slingshot_setup_config(const char *switch_params)
 	 *   {no_}adjust_limits: {don't} adjust resource reservations
 	 *     for each NIC by subtracting resources already
 	 *     used/reserved by system services
-	 *   vni_pids: set up unique Slingshot "VNI PIDs" for libfabric when
-	 *     compute nodes have overlapping job steps
 	 *   jlope_url=<url>: use URL for jackaloped REST requests
 	 *   jlope_auth="BASIC|OAUTH": jackaloped REST API authentication type
 	 *   jlope_authdir=<dir>: directory containing authentication info
@@ -608,8 +604,6 @@ extern bool slingshot_setup_config(const char *switch_params)
 					 size_no_adjust_limits)) {
 			slingshot_config.flags &=
 					~(SLINGSHOT_FLAGS_ADJUST_LIMITS);
-		} else if (!xstrncasecmp(token, vni_pids, size_vni_pids)) {
-			slingshot_config.flags |= SLINGSHOT_FLAGS_VNI_PIDS;
 		} else if (!xstrncasecmp(token, jlope_url, size_jlope_url)) {
 			if (!_config_jlope_url(token, arg))
 				goto err;
@@ -1044,7 +1038,7 @@ extern bool slingshot_setup_job_step(slingshot_jobinfo_t *job, int node_cnt,
 	job->num_profiles = 0;
 	job->profiles = NULL;
 
-	/* vni_pids are allocated in slurmstepd */
+	/* vni_pids are deprecated */
 	job->vni_pids = NULL;
 
 	return true;

@@ -585,8 +585,6 @@ extern void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 	xassert(jobinfo);
 	xfree(jobinfo->vnis);
 	xfree(jobinfo->profiles);
-	if (jobinfo->vni_pids)
-		bit_free(jobinfo->vni_pids);
 	xfree(jobinfo->nics);
 	xfree(jobinfo);
 }
@@ -716,7 +714,7 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 		for (pidx = 0; pidx < jobinfo->num_profiles; pidx++) {
 			_pack_comm_profile(&jobinfo->profiles[pidx], buffer);
 		}
-		pack_bit_str_hex(jobinfo->vni_pids, buffer);
+		pack_bit_str_hex(jobinfo->vni_pids, buffer); /* Unused */
 		pack32(jobinfo->flags, buffer);
 		pack32(jobinfo->num_nics, buffer);
 		for (pidx = 0; pidx < jobinfo->num_nics; pidx++) {
@@ -805,7 +803,7 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 						  buffer))
 				goto unpack_error;
 		}
-		unpack_bit_str_hex(&jobinfo->vni_pids, buffer);
+		unpack_bit_str_hex(&jobinfo->vni_pids, buffer); /* Unused */
 		safe_unpack32(&jobinfo->flags, buffer);
 
 		safe_unpack32(&jobinfo->num_nics, buffer);
@@ -981,7 +979,6 @@ extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 	slingshot_jobinfo_t *job = (slingshot_jobinfo_t *)jobinfo;
 	int pidx, vidx;
 	char *svc_ids = NULL, *vnis = NULL, *devices = NULL, *tcss = NULL;
-	char *vni_pids = NULL;
 
 	if (job->num_profiles == 0)
 		return SLURM_SUCCESS;
@@ -1001,28 +998,19 @@ extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 	/* traffic classes are global */
 	xstrfmtcat(tcss, "0x%x", job->profiles[0].tcs);
 
-	/* convert bitstr_t into range list */
-	if (job->vni_pids)
-		vni_pids = bit_fmt_full(job->vni_pids);
-
-	log_flag(SWITCH, "%s=%s %s=%s %s=%s %s=%s %s=%s",
+	log_flag(SWITCH, "%s=%s %s=%s %s=%s %s=%s",
 		SLINGSHOT_SVC_IDS_ENV, svc_ids, SLINGSHOT_VNIS_ENV, vnis,
-		SLINGSHOT_DEVICES_ENV, devices, SLINGSHOT_TCS_ENV, tcss,
-		SLINGSHOT_INTER_VNI_PIDS_ENV, vni_pids);
+		SLINGSHOT_DEVICES_ENV, devices, SLINGSHOT_TCS_ENV, tcss);
 
 	env_array_overwrite(env, SLINGSHOT_SVC_IDS_ENV, svc_ids);
 	env_array_overwrite(env, SLINGSHOT_VNIS_ENV, vnis);
 	env_array_overwrite(env, SLINGSHOT_DEVICES_ENV, devices);
 	env_array_overwrite(env, SLINGSHOT_TCS_ENV, tcss);
-	if (vni_pids)
-		env_array_overwrite(env, SLINGSHOT_INTER_VNI_PIDS_ENV,
-				    vni_pids);
 
 	xfree(svc_ids);
 	xfree(vnis);
 	xfree(devices);
 	xfree(tcss);
-	xfree(vni_pids);
 
 	return SLURM_SUCCESS;
 }
