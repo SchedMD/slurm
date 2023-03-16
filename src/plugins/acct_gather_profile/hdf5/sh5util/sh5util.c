@@ -51,6 +51,7 @@
 #include <fcntl.h>
 #include <float.h>
 #include <getopt.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -68,7 +69,6 @@
 
 const char plugin_type[] = "";
 
-#define MAX_PROFILE_PATH 1024
 // #define MAX_ATTR_NAME 64
 #define MAX_GROUP_NAME 64
 // #define MAX_DATASET_NAME 64
@@ -776,9 +776,8 @@ static void _table_free(void *table)
 
 static void _table_path(table_t *t, char *path)
 {
-	snprintf(path, MAX_PROFILE_PATH,
-	         "/"GRP_STEPS"/%s/"GRP_NODES"/%s/%s/%s",
-	         t->step, t->node, t->group, t->name);
+	snprintf(path, PATH_MAX, "/"GRP_STEPS"/%s/"GRP_NODES"/%s/%s/%s",
+		 t->step, t->node, t->group, t->name);
 }
 
 static herr_t _collect_tables_group(hid_t g_id, const char *name,
@@ -809,7 +808,7 @@ static herr_t _collect_tables_group(hid_t g_id, const char *name,
 static herr_t _collect_tables_node(hid_t g_id, const char *name,
                                    const H5L_info_t *link_info, void *op_data)
 {
-	char object_path[MAX_PROFILE_PATH+1];
+	char object_path[PATH_MAX];
 	List tables = (List)op_data;
 	hid_t object_id = -1;
 	herr_t err;
@@ -820,7 +819,7 @@ static herr_t _collect_tables_node(hid_t g_id, const char *name,
 	    && xstrcmp(params.node, name) != 0)
 		return 0;
 
-	snprintf(object_path, MAX_PROFILE_PATH+1, "%s/%s", name, params.series);
+	snprintf(object_path, PATH_MAX, "%s/%s", name, params.series);
 	current_node = name;
 
 	/* open the dataset. */
@@ -858,14 +857,14 @@ static herr_t _collect_tables_node(hid_t g_id, const char *name,
 static herr_t _collect_tables_step(hid_t g_id, const char *name,
                                    const H5L_info_t *link_info, void *op_data)
 {
-	char nodes_path[MAX_PROFILE_PATH];
+	char nodes_path[PATH_MAX];
 	herr_t err;
 
 	/* step filter */
 	if ((params.step_id != -1) && (atoi(name) != params.step_id))
 		return 0;
 
-	snprintf(nodes_path, MAX_PROFILE_PATH, "%s/"GRP_NODES, name);
+	snprintf(nodes_path, PATH_MAX, "%s/"GRP_NODES, name);
 	current_step = name;
 
 	err = H5Literate_by_name(g_id, nodes_path, H5_INDEX_NAME,
@@ -1009,7 +1008,7 @@ static void _extract_totals(size_t nb_fields, size_t *offsets, hid_t *types,
 static int _extract_series_table(hid_t fid_job, table_t *table, List fields,
 				 FILE *output, bool level_total)
 {
-	char path[MAX_PROFILE_PATH];
+	char path[PATH_MAX];
 
 	size_t i, j;
 
@@ -1432,8 +1431,8 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 {
 	static bool first = true;
 
-	char nodes_path[MAX_PROFILE_PATH];
-	char path[MAX_PROFILE_PATH];
+	char nodes_path[PATH_MAX];
+	char path[PATH_MAX];
 
 	size_t i, j;
 	size_t buf_size = 0;
@@ -1459,7 +1458,7 @@ static herr_t _extract_item_step(hid_t g_id, const char *step_name,
 
 	current_step = step_name;
 
-	snprintf(nodes_path, MAX_PROFILE_PATH, "%s/"GRP_NODES, step_name);
+	snprintf(nodes_path, PATH_MAX, "%s/"GRP_NODES, step_name);
 
 	tables = list_create(_table_free);
 	err = H5Literate_by_name(g_id, nodes_path, H5_INDEX_NAME,
@@ -1657,7 +1656,7 @@ static int _fields_intersection(hid_t fid_job, List tables, List fields)
 	char *field;
 	ListIterator it1, it2;
 	bool found;
-	char path[MAX_PROFILE_PATH];
+	char path[PATH_MAX];
 	table_t *t;
 	bool first = true;
 

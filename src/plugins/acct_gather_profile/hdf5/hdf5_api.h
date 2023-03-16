@@ -49,7 +49,6 @@
 #include <hdf5.h>
 #include <hdf5_hl.h>
 
-#define MAX_PROFILE_PATH 1024
 #define MAX_ATTR_NAME 64
 #define MAX_GROUP_NAME 64
 
