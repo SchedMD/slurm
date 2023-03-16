@@ -58,7 +58,7 @@ authenticated.</p>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 slurmrestd can be configured either by environment variables or command line
-arguments. Please see the <b>doc/man/man1/slurmrestd.1</b> man page for details.
+arguments. Please see the <b>doc/man/man1/slurmrestd.8</b> man page for details.
 
 <h2 id="openapi">OpenAPI Specification (OAS)
 <a class="slurm_link" href="#openapi"></a>
@@ -293,6 +293,6 @@ internal tool</a> used for testing and training. It uses
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 01 July 2022</p>
+<p style="text-align:center;">Last modified 16 March 2023</p>
 
 <!--#include virtual="footer.txt"-->
