@@ -86,8 +86,6 @@ static bool force_rm = true;
 static void _create_paths(uint32_t job_id, char **job_mount, char **ns_holder,
 			  char **src_bind)
 {
-	jc_conf = get_slurm_jc_conf();
-	xassert(jc_conf);
 	xassert(job_mount);
 
 	xstrfmtcat(*job_mount, "%s/%u", jc_conf->basepath, job_id);
@@ -156,7 +154,7 @@ extern int init(void)
 		 * Only init the config here for the slurmd. It will be sent by
 		 * the slurmd to the slurmstepd at launch time.
 		 */
-		if (!init_slurm_jc_conf()) {
+		if (!(jc_conf = init_slurm_jc_conf())) {
 			error("%s: Configuration not read correctly: Does '%s' not exist?",
 			      plugin_type, tmpfs_conf_file);
 			return SLURM_ERROR;
@@ -203,9 +201,6 @@ extern int container_p_restore(char *dir_name, bool recover)
 #ifdef HAVE_NATIVE_CRAY
 	return SLURM_SUCCESS;
 #endif
-
-	jc_conf = get_slurm_jc_conf();
-	xassert(jc_conf);
 
 	if (jc_conf->auto_basepath) {
 		int fstatus;
@@ -912,7 +907,7 @@ extern int container_p_recv_stepd(int fd)
 	buf = init_buf(len);
 	safe_read(fd, buf->head, len);
 
-	if(!set_slurm_jc_conf(buf))
+	if (!(jc_conf = set_slurm_jc_conf(buf)))
 		goto rwfail;
 
 	return SLURM_SUCCESS;
