@@ -48,7 +48,6 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/param.h>	/* MAXPATHLEN */
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/time.h>

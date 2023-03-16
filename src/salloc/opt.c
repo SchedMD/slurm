@@ -49,7 +49,6 @@
 #include <pwd.h>		/* getpwuid   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv, strtol, etc. */
-#include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>

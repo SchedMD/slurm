@@ -48,7 +48,6 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
-#include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>

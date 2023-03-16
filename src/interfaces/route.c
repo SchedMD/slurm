@@ -41,7 +41,6 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/param.h>		/* MAXPATHLEN */
 
 #include "slurm/slurm.h"
 
