@@ -48,6 +48,7 @@
 #endif
 
 #include <grp.h>
+#include <limits.h>
 #include <poll.h>
 #include <pthread.h>
 #include <pwd.h>
@@ -130,7 +131,7 @@ struct priv_state {
 	gid_t	saved_gid;
 	gid_t *	gid_list;
 	int	ngids;
-	char	saved_cwd [4096];
+	char saved_cwd[PATH_MAX];
 };
 
 step_complete_t step_complete = {

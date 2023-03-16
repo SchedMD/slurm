@@ -44,6 +44,7 @@
 #include <dlfcn.h>
 #include <glob.h>
 #include <libgen.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -402,7 +403,7 @@ void _spank_plugin_destroy(struct spank_plugin *sp)
 static char *
 _spank_plugin_find (const char *path, const char *file)
 {
-	char dir [4096];
+	char dir[PATH_MAX];
 	char *p, *entry;
 	int pathlen = strlen (path);
 
@@ -554,7 +555,7 @@ static int _spank_stack_load(struct spank_stack *stack, const char *path)
 {
 	int rc = 0;
 	int line;
-	char buf[4096];
+	char buf[PATH_MAX];
 	int fd;
 	FILE *fp;
 
