@@ -79,10 +79,13 @@ system. Likewise, if \fInosteps\fR is set, Slurm will not account for any
 steps that have run.
 
 If \fIsafe\fR is enforced, a job will only be launched against an association
-or qos that has a \fBGrpTRESMins\fR limit set, if the job will be able to
+or qos that has a TRES\-minutes limit set, if the job will be able to
 run to completion. Without this option set, jobs will be launched as long as
-their usage hasn't reached the cpu\-minutes limit. This can lead to jobs being
+their usage hasn't reached the TRES\-minutes limit. This can lead to jobs being
 launched but then killed when the limit is reached.
+With the 'safe' option set, a job won't be killed due to limits,
+even if the limits are changed after the job was started and the
+association or qos violates the updated limits.
 
 With \fIqos\fR and/or \fIwckeys\fR enforced jobs will not be scheduled unless
 a valid qos and/or workload characterization key is specified.

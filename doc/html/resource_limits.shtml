@@ -84,11 +84,15 @@ each association in the database.  By setting this option, the
 'associations' option is also set.
 </li>
 <li>safe - This will ensure a job will only be launched when using an
-  association or qos that has a GrpTRESMins limit set if the job will be
+  association or qos that has a TRES-minutes limit set if the job will be
   able to run to completion. Without this option set, jobs will be
-  launched as long as their usage hasn't reached the cpu-minutes limit
+  launched as long as their usage hasn't reached the TRES-minutes limit
   which can lead to jobs being launched but then killed when the limit is
-  reached. By setting this option, both the 'associations' option and the
+  reached.
+  With the 'safe' option set, a job won't be killed due to limits,
+  even if the limits are changed after the job was started and the
+  association or qos violates the updated limits.
+  By setting this option, both the 'associations' option and the
   'limits' option are set automatically.
 </li>
 <li>wckeys - This will prevent users from running jobs under a wckey
@@ -506,19 +510,19 @@ is treated as a Max limit.</p>
   A setting of 0 would add no timed usage from the job.
 
   The usage factor only applies to the job's QOS and not the partition QOS.
-
+  <br>
   If the UsageFactorSafe flag is set and AccountingStorageEnforce includes
   <i>Safe</i>, jobs will only be able to run if the job can run to completion
-  with the UsageFactor applied.
-
+  with the UsageFactor applied, and won't be killed due to limits.
+  <br>
   If the UsageFactorSafe flag is not set and AccountingStorageEnforce includes
   <i>Safe</i>, a job will be able to be scheduled without the UsageFactor
-  applied and will be able to run without being killed due to limits.
-
+  applied and won't be killed due to limits.
+  <br>
   If the UsageFactorSafe flag is not set and AccountingStorageEnforce does
-  not include <i>Safe</i>, a job will be able to be scheduled without the
-  UsageFactor applied and could be killed due to limits.
-
+  not include <i>Safe</i>, a job will be scheduled as long as the limits are
+  not reached, but could be killed due to limits.
+  <br>
   See <a href="slurm.conf.html#OPT_AccountingStorageEnforce">
   AccountingStorageEnforce</a> in the slurm.conf man page.
 </dd>
@@ -1268,6 +1272,6 @@ the network, etc.</p>
 
 <p><b>TimeLimit</b> &mdash; The job exhausted its time limit.</p>
 
-<p style="text-align: center;">Last modified 05 January 2023</p>
+<p style="text-align: center;">Last modified 24 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
