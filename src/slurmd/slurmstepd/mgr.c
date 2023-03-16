@@ -56,7 +56,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
@@ -2381,7 +2380,7 @@ _wait_for_io(stepd_step_rec_t *step)
 static char *
 _make_batch_dir(stepd_step_rec_t *step)
 {
-	char path[MAXPATHLEN];
+	char path[PATH_MAX];
 
 	if (step->step_id.step_id == SLURM_BATCH_SCRIPT)
 		snprintf(path, sizeof(path), "%s/job%05u",

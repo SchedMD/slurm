@@ -48,13 +48,13 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/param.h>
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
@@ -7739,9 +7739,9 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->qos, "qos", 1024)			||
 	    _test_strlen(job_desc->reservation, "reservation", 1024)	||
 	    _test_strlen(job_desc->script, "script", max_script)	||
-	    _test_strlen(job_desc->std_err, "std_err", MAXPATHLEN)	||
-	    _test_strlen(job_desc->std_in, "std_in", MAXPATHLEN)	||
-	    _test_strlen(job_desc->std_out, "std_out", MAXPATHLEN)	||
+	    _test_strlen(job_desc->std_err, "std_err", PATH_MAX)	||
+	    _test_strlen(job_desc->std_in, "std_in", PATH_MAX)		||
+	    _test_strlen(job_desc->std_out, "std_out", PATH_MAX)	||
 	    _test_strlen(job_desc->submit_line, "submit_line", 1024*1024) ||
 	    _test_strlen(job_desc->tres_bind, "tres_bind", 1024)	||
 	    _test_strlen(job_desc->tres_freq, "tres_freq", 1024)	||
@@ -7750,7 +7750,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->tres_per_socket, "tres_per_socket", 1024) ||
 	    _test_strlen(job_desc->tres_per_task, "tres_per_task", 1024)||
 	    _test_strlen(job_desc->wckey, "wckey", 1024)		||
-	    _test_strlen(job_desc->work_dir, "work_dir", MAXPATHLEN))
+	    _test_strlen(job_desc->work_dir, "work_dir", PATH_MAX))
 		return ESLURM_PATHNAME_TOO_LONG;
 
 	return SLURM_SUCCESS;

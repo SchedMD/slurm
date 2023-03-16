@@ -40,6 +40,7 @@
 #include "config.h"
 
 #include <fcntl.h>
+#include <limits.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -48,7 +49,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/param.h>		/* MAXPATHLEN */
 #include <unistd.h>
 
 #include "slurm/slurm.h"
@@ -1978,7 +1978,7 @@ rwfail:
  */
 static char **_load_env_cache(const char *username)
 {
-	char fname[MAXPATHLEN];
+	char fname[PATH_MAX];
 	char *line, name[256], *value;
 	char **env = NULL;
 	FILE *fp;
@@ -2051,7 +2051,7 @@ static char **_load_env_cache(const char *username)
 char **env_array_user_default(const char *username, int timeout, int mode,
 			      bool no_cache)
 {
-	char *line = NULL, *last = NULL, name[MAXPATHLEN], *value, *buffer;
+	char *line = NULL, *last = NULL, name[PATH_MAX], *value, *buffer;
 	char **env = NULL;
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";

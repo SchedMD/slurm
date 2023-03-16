@@ -38,8 +38,8 @@
 
 #include <ctype.h>
 #include <getopt.h>
+#include <limits.h>
 #include <signal.h>
-#include <sys/param.h>
 
 #ifdef WITH_SELINUX
 #include <selinux/selinux.h>
@@ -903,12 +903,12 @@ static int arg_set_data_chdir(slurm_opt_t *opt, const data_t *arg,
 COMMON_STRING_OPTION_GET(chdir);
 static void arg_reset_chdir(slurm_opt_t *opt)
 {
-	char buf[MAXPATHLEN + 1];
+	char buf[PATH_MAX + 1];
 	xfree(opt->chdir);
 	if (opt->salloc_opt || opt->scron_opt)
 		return;
 
-	if (!(getcwd(buf, MAXPATHLEN))) {
+	if (!(getcwd(buf, PATH_MAX))) {
 		error("getcwd failed: %m");
 		exit(-1);
 	}

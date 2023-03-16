@@ -39,13 +39,13 @@
 \*****************************************************************************/
 
 #include <fcntl.h>
+#include <limits.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/param.h>               /* MAXPATHLEN */
 #include <sys/resource.h> /* for RLIMIT_NOFILE */
 
 #include "slurm/slurm.h"
@@ -501,9 +501,9 @@ static void _set_spank_env(void)
  * current state */
 static void _set_submit_dir_env(void)
 {
-	char buf[MAXPATHLEN + 1], host[256];
+	char buf[PATH_MAX], host[256];
 
-	if ((getcwd(buf, MAXPATHLEN)) == NULL)
+	if ((getcwd(buf, PATH_MAX)) == NULL)
 		error("getcwd failed: %m");
 	else if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", buf) < 0)
 		error("unable to set SLURM_SUBMIT_DIR in environment");

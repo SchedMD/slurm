@@ -43,11 +43,11 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <grp.h>
+#include <limits.h>
 #include <pwd.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/param.h>
 #include <sys/resource.h> /* for struct rlimit */
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -782,8 +782,8 @@ static void _set_submit_dir_env(void)
 {
 	char host[256];
 
-	work_dir = xmalloc(MAXPATHLEN + 1);
-	if ((getcwd(work_dir, MAXPATHLEN)) == NULL)
+	work_dir = xmalloc(PATH_MAX);
+	if ((getcwd(work_dir, PATH_MAX)) == NULL)
 		error("getcwd failed: %m");
 	else if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", work_dir) < 0)
 		error("unable to set SLURM_SUBMIT_DIR in environment");

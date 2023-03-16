@@ -41,11 +41,11 @@
 
 #include <fcntl.h>
 #include <grp.h>
+#include <limits.h>
 #include <netdb.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/param.h>           /* MAXPATHLEN */
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -2184,7 +2184,7 @@ static int _set_rlimit_env(void)
  * variables within current state */
 static void _set_submit_dir_env(void)
 {
-	char buf[MAXPATHLEN + 1], host[256];
+	char buf[PATH_MAX], host[256];
 
 	/* Only set these environment variables in new allocations */
 	if (sropt.jobid != NO_VAL)
@@ -2194,7 +2194,7 @@ static void _set_submit_dir_env(void)
 		    slurm_conf.cluster_name) < 0)
 		error("unable to set SLURM_CLUSTER_NAME in environment");
 
-	if ((getcwd(buf, MAXPATHLEN)) == NULL)
+	if ((getcwd(buf, PATH_MAX)) == NULL)
 		error("getcwd failed: %m");
 	else if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", buf) < 0)
 		error("unable to set SLURM_SUBMIT_DIR in environment");
