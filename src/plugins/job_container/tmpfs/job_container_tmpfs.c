@@ -49,7 +49,6 @@
 #include <fcntl.h>
 #include <ftw.h>
 #include <sys/mount.h>
-#include <linux/limits.h>
 #include <semaphore.h>
 
 #include "src/common/slurm_xlator.h"

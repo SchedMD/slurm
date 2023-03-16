@@ -43,7 +43,6 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
-#include <linux/limits.h>
 #include <math.h>
 #include <sched.h>
 #include <signal.h>
