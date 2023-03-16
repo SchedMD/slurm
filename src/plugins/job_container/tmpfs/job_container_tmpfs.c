@@ -82,6 +82,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static slurm_jc_conf_t *jc_conf = NULL;
 static int step_ns_fd = -1;
 static bool force_rm = true;
+static bool plugin_disabled = false;
 
 static void _create_paths(uint32_t job_id, char **job_mount, char **ns_holder,
 			  char **src_bind)
@@ -100,6 +101,11 @@ static void _create_paths(uint32_t job_id, char **job_mount, char **ns_holder,
 static int _find_step_in_list(step_loc_t *stepd, uint32_t *job_id)
 {
 	return (stepd->step_id.job_id == *job_id);
+}
+
+static bool _is_plugin_disabled(char *basepath)
+{
+	return (!basepath);
 }
 
 static int _restore_ns(List steps, const char *d_name)
@@ -159,6 +165,7 @@ extern int init(void)
 			      plugin_type, tmpfs_conf_file);
 			return SLURM_ERROR;
 		}
+		plugin_disabled = _is_plugin_disabled(jc_conf->basepath);
 		debug("job_container.conf read successfully");
 	}
 
@@ -201,6 +208,9 @@ extern int container_p_restore(char *dir_name, bool recover)
 #ifdef HAVE_NATIVE_CRAY
 	return SLURM_SUCCESS;
 #endif
+
+	if (plugin_disabled)
+		return SLURM_SUCCESS;
 
 	if (jc_conf->auto_basepath) {
 		int fstatus;
@@ -721,6 +731,9 @@ extern int container_p_join_external(uint32_t job_id)
 {
 	char *job_mount = NULL, *ns_holder = NULL;
 
+	if (plugin_disabled)
+		return SLURM_SUCCESS;
+
 	_create_paths(job_id, &job_mount, &ns_holder, NULL);
 
 	if (step_ns_fd == -1) {
@@ -749,6 +762,9 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 #ifdef HAVE_NATIVE_CRAY
 	return SLURM_SUCCESS;
 #endif
+
+	if (plugin_disabled)
+		return SLURM_SUCCESS;
 
 	/*
 	 * Jobid 0 means we are not a real job, but a script running instead we
@@ -869,11 +885,17 @@ extern int container_p_delete(uint32_t job_id)
 
 extern int container_p_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
 {
+	if (plugin_disabled)
+		return SLURM_SUCCESS;
+
 	return _create_ns(job_id, step);
 }
 
 extern int container_p_stepd_delete(uint32_t job_id)
 {
+	if (plugin_disabled)
+		return SLURM_SUCCESS;
+
 	return _delete_ns(job_id);
 }
 
@@ -909,6 +931,8 @@ extern int container_p_recv_stepd(int fd)
 
 	if (!(jc_conf = set_slurm_jc_conf(buf)))
 		goto rwfail;
+
+	plugin_disabled = _is_plugin_disabled(jc_conf->basepath);
 
 	return SLURM_SUCCESS;
 rwfail:

@@ -197,9 +197,8 @@ static int _read_slurm_jc_conf(void)
 		slurm_jc_conf.dirs = xstrdup(SLURM_TMPFS_DEF_DIRS);
 
 	if (!slurm_jc_conf.basepath) {
-		error("Configuration for this node not found in %s",
+		debug("Config not found in %s. Disabling plugin on this node",
 		      tmpfs_conf_file);
-		rc = SLURM_ERROR;
 	}
 
 	if (!shared_set)

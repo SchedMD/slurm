@@ -109,6 +109,8 @@ documents those changes that are of interest to users and administrators.
     derived_exit_code field as verbose job exit code object.
  -- Avoid database upgrade failures with galera by enabling streaming
     replication for Galera 4 clusters during the upgrade process.
+ -- job_container/tmpfs - disable plugin for nodes that are not listed in
+    job_container.conf when there is no global BasePath set.
 
 * Changes in Slurm 23.02.5
 ==========================
