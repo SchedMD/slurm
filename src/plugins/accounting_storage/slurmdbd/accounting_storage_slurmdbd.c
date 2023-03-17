@@ -437,7 +437,8 @@ static void *_set_db_inx_thread(void *no_data)
 			} else if (resp.msg_type == PERSIST_RC) {
 				persist_rc_msg_t *msg = resp.data;
 				if (msg->rc == SLURM_SUCCESS) {
-					info("%s", msg->comment);
+					log_var(LOG_LEVEL_INFO, "%s",
+						msg->comment);
 				} else
 					error("%s", msg->comment);
 				slurm_persist_free_rc_msg(msg);
@@ -983,7 +984,7 @@ extern List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		if (msg->rc == SLURM_SUCCESS) {
-			info("%s", msg->comment);
+			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
 			slurm_seterrno(msg->rc);
@@ -1027,7 +1028,7 @@ extern List acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		if (msg->rc == SLURM_SUCCESS) {
-			info("%s", msg->comment);
+			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
 			slurm_seterrno(msg->rc);
@@ -1073,7 +1074,7 @@ extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		if (msg->rc == SLURM_SUCCESS) {
-			info("%s", msg->comment);
+			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
 			slurm_seterrno(msg->rc);
@@ -1120,7 +1121,7 @@ extern List acct_storage_p_modify_assocs(
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		if (msg->rc == SLURM_SUCCESS) {
-			info("%s", msg->comment);
+			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
 			slurm_seterrno(msg->rc);
@@ -1167,7 +1168,7 @@ extern List acct_storage_p_modify_federations(
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		if (msg->rc == SLURM_SUCCESS) {
-			info("%s", msg->comment);
+			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
 			slurm_seterrno(msg->rc);
@@ -1221,7 +1222,7 @@ extern List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		if (msg->rc == SLURM_SUCCESS) {
-			info("%s", msg->comment);
+			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
 			slurm_seterrno(msg->rc);
@@ -1265,7 +1266,7 @@ extern List acct_storage_p_modify_qos(void *db_conn, uint32_t uid,
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		if (msg->rc == SLURM_SUCCESS) {
-			info("%s", msg->comment);
+			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
 			slurm_seterrno(msg->rc);
@@ -1309,7 +1310,7 @@ extern List acct_storage_p_modify_res(void *db_conn, uint32_t uid,
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		if (msg->rc == SLURM_SUCCESS) {
-			info("%s", msg->comment);
+			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
 			slurm_seterrno(msg->rc);
@@ -1353,7 +1354,7 @@ extern List acct_storage_p_modify_wckeys(void *db_conn, uint32_t uid,
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		if (msg->rc == SLURM_SUCCESS) {
-			info("%s", msg->comment);
+			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
 			slurm_seterrno(msg->rc);
@@ -1438,7 +1439,7 @@ extern List acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		if (msg->rc == SLURM_SUCCESS) {
-			info("%s", msg->comment);
+			log_var(LOG_LEVEL_INFO, "%s", msg->comment);
 			ret_list = list_create(NULL);
 		} else {
 			slurm_seterrno(msg->rc);
