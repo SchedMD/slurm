@@ -57,6 +57,7 @@
 #include <dirent.h>
 #include <inttypes.h>
 #include <libgen.h>
+#include <limits.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -213,7 +214,7 @@ static int _find_inode_in_fddir(pid_t pid, ino_t inode)
 	DIR *dirp;
 	struct dirent *entryp;
 	char dirpath[1024];
-	char fdpath[2048];
+	char fdpath[PATH_MAX];
 	int rc = SLURM_ERROR;
 	struct stat statbuf;
 
