@@ -46,6 +46,7 @@
 #include <netdb.h>		/* for gethostbyname */
 #include <netinet/in.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>

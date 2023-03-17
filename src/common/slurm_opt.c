@@ -38,6 +38,7 @@
 
 #include <ctype.h>
 #include <getopt.h>
+#include <signal.h>
 #include <sys/param.h>
 
 #ifdef WITH_SELINUX
