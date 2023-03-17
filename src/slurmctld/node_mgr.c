@@ -2777,8 +2777,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	time_t now = time(NULL);
 	bool orig_node_avail;
 	bool was_invalid_reg, was_powering_up = false, was_powered_down = false;
-	static uint32_t cr_flag = NO_VAL;
-	static int node_features_cnt = 0;
+	static int node_features_cnt = -1;
 	int sockets1, sockets2;	/* total sockets on node */
 	int cores1, cores2;	/* total cores on node */
 	int threads1, threads2;	/* total threads on node */
@@ -2827,10 +2826,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		return SLURM_SUCCESS;
 	bit_clear(booting_node_bitmap, node_ptr->index);
 
-	if (cr_flag == NO_VAL) {
-		cr_flag = slurm_select_cr_type();
+	if (node_features_cnt == -1)
 		node_features_cnt = node_features_g_count();
-	}
 
 	if (reg_msg->features_avail || reg_msg->features_active) {
 		orig_features = xstrdup(node_ptr->features);
@@ -2936,7 +2933,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		}
 
 		if ((error_code == SLURM_SUCCESS) &&
-		    cr_flag &&
+		    slurm_select_cr_type() &&
 		    (node_features_cnt > 0) &&
 		    (reg_msg->sockets != config_ptr->tot_sockets) &&
 		    (reg_msg->cores   != config_ptr->cores) &&
