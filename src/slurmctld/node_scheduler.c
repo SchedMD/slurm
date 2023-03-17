@@ -500,9 +500,9 @@ static void _log_feature_nodes(job_feature_t  *job_feat_ptr)
 	}
 	tmp1 = bitmap2node_name(job_feat_ptr->node_bitmap_active);
 	tmp2 = bitmap2node_name(job_feat_ptr->node_bitmap_avail);
-	log_flag(NODE_FEATURES, "%s: FEAT:%s COUNT:%u PAREN:%d OP:%s ACTIVE:%s AVAIL:%s",
+	log_flag(NODE_FEATURES, "%s: FEAT:%s COUNT:%u BRACKET:%u PAREN:%d OP:%s ACTIVE:%s AVAIL:%s",
 	     __func__, job_feat_ptr->name, job_feat_ptr->count,
-	     job_feat_ptr->paren, tmp3, tmp1, tmp2);
+	     job_feat_ptr->bracket, job_feat_ptr->paren, tmp3, tmp1, tmp2);
 	xfree(tmp1);
 	xfree(tmp2);
 	xfree(tmp4);
