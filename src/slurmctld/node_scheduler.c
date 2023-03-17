@@ -738,7 +738,6 @@ extern bitstr_t *build_active_feature_bitmap2(char *reboot_features)
  * IN user_flag - may be 0 (do not share nodes), 1 (node sharing allowed),
  *                or any other number means "don't care"
  * IN part_max_share - current partition's node sharing policy
- * IN cons_res_flag - 1:select/cons_res, 2:select/cons_tres, 0:otherwise
  *
  *
  * The followed table details the node SHARED state for the various scenarios
@@ -778,8 +777,7 @@ extern bitstr_t *build_active_feature_bitmap2(char *reboot_features)
  *	1 = can use non-idle nodes
  */
 static int _resolve_shared_status(job_record_t *job_ptr,
-				  uint16_t part_max_share,
-				  uint32_t cons_res_flag)
+				  uint16_t part_max_share)
 {
 	if (job_ptr->reboot)
 		return 0;
@@ -798,7 +796,7 @@ static int _resolve_shared_status(job_record_t *job_ptr,
 		return 1;
 	}
 
-	if (cons_res_flag) {
+	if (slurm_select_cr_type()) {
 		if ((job_ptr->details->share_res  == 0) ||
 		    (job_ptr->details->whole_node == WHOLE_NODE_REQUIRED)) {
 			job_ptr->details->share_res = 0;
@@ -1630,8 +1628,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						     &single_select_job_test);
 	}
 
-	shared = _resolve_shared_status(job_ptr, part_ptr->max_share,
-					cr_enabled);
+	shared = _resolve_shared_status(job_ptr, part_ptr->max_share);
 
 	/*
 	 * If job preemption is enabled, then do NOT limit the set of available
