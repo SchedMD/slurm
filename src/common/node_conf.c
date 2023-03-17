@@ -128,12 +128,11 @@ static void _delete_config_record(void)
  */
 static void xhash_walk_helper_cbk (void* item, void* arg)
 {
-	static int i = 0; /* sequential walk, so just update a static i */
-	int inx;
+	int *i_ptr = arg;
 	node_record_t *node_ptr = (node_record_t *) item;
 
-	inx = node_ptr -  node_record_table_ptr;
-	debug3("node_hash[%d]:%d(%s)", i++, inx, node_ptr->name);
+	debug3("node_hash[%d]:%d(%s)", (*i_ptr)++, node_ptr->index,
+	       node_ptr->name);
 }
 /*
  * _dump_hash - print the node_hash_table contents, used for debugging
@@ -143,11 +142,12 @@ static void xhash_walk_helper_cbk (void* item, void* arg)
  */
 static void _dump_hash (void)
 {
+	int i = 0;
 	if (node_hash_table == NULL)
 		return;
-	debug2("node_hash: indexing %ld elements",
-	      xhash_count(node_hash_table));
-	xhash_walk(node_hash_table, xhash_walk_helper_cbk, NULL);
+	debug2("node_hash: indexing %u elements",
+	       xhash_count(node_hash_table));
+	xhash_walk(node_hash_table, xhash_walk_helper_cbk, &i);
 }
 #endif
 
