@@ -930,6 +930,7 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	if (!extra && !ret_list) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("Nothing to remove");
 		return NULL;
 	} else if (!extra) {
