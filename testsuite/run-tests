@@ -236,6 +236,7 @@ sub run_unit_tests {
         my $test_status = 'Passed';
         $test_status = 'Failed' if $rc;
 
+        $test_output = $test_output . "\nTEST OUTPUT\n" . `cat ${test}.log`;
         print_test_status($test_name, $test_status, '', $test_output);
     }
 }
