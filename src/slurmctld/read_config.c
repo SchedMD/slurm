@@ -351,8 +351,13 @@ extern hostlist_t nodespec_to_hostlist(const char *nodes,
 			if (ptr->feature)
 				_add_nodes_with_feature(hl, ptr->feature);
 
-			if (ptr->nodes)
+			/* Handle keywords for Nodes= in a NodeSet */
+			if (!xstrcasecmp(ptr->nodes, "ALL")) {
+				for (int i = 0; (node_ptr = next_node(&i)); i++)
+					hostlist_push_host(hl, node_ptr->name);
+			} else if (ptr->nodes) {
 				hostlist_push(hl, ptr->nodes);
+			}
 		}
 	}
 

@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- sched/backfill - fix segfault when removing a PLANNED node from system.
  -- sched/backfill - fix deleted planned node staying in planned node bitmap.
  -- Fix nodes remaining as PLANNED after slurmctld save state recovery.
+ -- Fix regression in 22.05.0rc1 that broke Nodes=ALL in a NodeSet.
 
 * Changes in Slurm 22.05.8
 ==========================
