@@ -8488,7 +8488,6 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->other_port = job_desc->other_port;
 	job_ptr->power_flags = job_desc->power_flags;
 	job_ptr->time_last_active = time(NULL);
-	job_ptr->cr_enabled = 0;
 	job_ptr->derived_ec = 0;
 
 	job_ptr->licenses  = xstrdup(job_desc->licenses_tot);

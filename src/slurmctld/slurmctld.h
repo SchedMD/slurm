@@ -724,14 +724,6 @@ struct job_record {
 					 * by the job, decremented while job is
 					 * completing */
 	char *cpus_per_tres;		/* semicolon delimited list of TRES=# values */
-	uint16_t cr_enabled;            /* specify if Consumable Resources
-					 * is enabled. Needed since CR deals
-					 * with a finer granularity in its
-					 * node/cpu scheduling (available cpus
-					 * instead of available nodes) than the
-					 * linear plugin
-					 * 0 if cr is NOT enabled,
-					 * 1 if cr is enabled */
 	uint32_t db_flags;              /* Flags to send to the database
 					 * record */
 	uint64_t db_index;              /* used only for database plugins */
