@@ -230,7 +230,7 @@ sub run_unit_tests {
         }
 
         # Execute the unit test using the test driver
-        my $test_output = `make ${test}.log 2>&1`;
+        my $test_output = `make check TESTS='${test}' 2>&1`;
         $rc = $? >> 8;
 
         my $test_status = 'Passed';
