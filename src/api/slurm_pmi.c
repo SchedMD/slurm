@@ -222,7 +222,7 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	int rc, srun_fd, retries = 0, timeout = 0;
 	slurm_msg_t msg_send, msg_rcv;
 	slurm_addr_t slurm_addr, srun_reply_addr;
-	char hostname[64];
+	char hostname[HOST_NAME_MAX];
 	kvs_get_msg_t data;
 	char *env_pmi_ifhn;
 

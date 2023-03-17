@@ -3101,7 +3101,7 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 {
 	local_cluster_rec_t *local_cluster = NULL;
 	int rc = SLURM_SUCCESS;
-	char local_hostname[64];
+	char local_hostname[HOST_NAME_MAX];
 	ListIterator itr;
 	List cluster_list = NULL;
 	List ret_list = NULL;
@@ -3232,7 +3232,7 @@ extern int slurmdb_get_first_het_job_cluster(List job_req_list,
 	job_desc_msg_t *req;
 	local_cluster_rec_t *local_cluster = NULL;
 	int rc = SLURM_SUCCESS;
-	char local_hostname[64] = "";
+	char local_hostname[HOST_NAME_MAX] = "";
 	ListIterator itr;
 	List cluster_list = NULL;
 	List ret_list = NULL;
