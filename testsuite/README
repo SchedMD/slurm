@@ -1019,6 +1019,10 @@ test_140_#   Testing --tres options.
 ====================================
 test_140_1   Test --tres-per-task option
 
+test_141_#   Testing PowerSave/Cloud operations.
+================================================
+test_141_1   Test state cycle, timeouts, scontrol commands, PowerDownOnIdle, and Node Features reboot
+
 test_143_#   Testing --switches.
 ================================
 test_143_1   Test switches with topology/tree + select/cons_tres
