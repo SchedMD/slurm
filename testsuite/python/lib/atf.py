@@ -1742,12 +1742,12 @@ def wait_for_job_state(job_id, desired_job_state, timeout=default_polling_timeou
     This function polls the job state every poll interval seconds, waiting up
     to the timeout for the specified job state to be reached.
 
-    Supported target states include:
-        COMPLETING, DONE, PENDING, PREEMPTED, RUNNING, SPECIAL_EXIT, SUSPENDED
-
     Some of the supported job states are aggregate states, and may be satisfied
     by multiple discrete states. Some logic is built-in to fail if a job
     reaches a state that makes the desired job state impossible to reach.
+
+    Current supported aggregate states:
+        DONE
 
     Args:
         job_id (integer): The job id.
@@ -1758,23 +1758,6 @@ def wait_for_job_state(job_id, desired_job_state, timeout=default_polling_timeou
         fatal (boolean): If True, a timeout will result in the test failing.
         quiet (boolean): If True, logging is performed at the TRACE log level.
     """
-
-    # Verify the desired state is supported
-    if desired_job_state not in [
-        'COMPLETING',
-        'DONE',
-        'PENDING',
-        'PREEMPTED',
-        'RUNNING',
-        'SPECIAL_EXIT',
-        'SUSPENDED',
-    ]:
-        message = f"The specified desired job state ({desired_job_state}) is not supported"
-        if fatal:
-            pytest.fail(message)
-        else:
-            logging.warning(message)
-            return False
 
     if poll_interval is None:
         if timeout <= 5:
@@ -1807,8 +1790,9 @@ def wait_for_job_state(job_id, desired_job_state, timeout=default_polling_timeou
             'NODE_FAIL',
             'OUT_OF_MEMORY',
             'TIMEOUT',
+            'PREEMPTED',
         ]:
-            if desired_job_state == 'DONE':
+            if desired_job_state == 'DONE' or job_state == desired_job_state:
                 logging.log(log_level, f"Job ({job_id}) is in desired state {desired_job_state}")
                 return True
             else:
@@ -1818,19 +1802,9 @@ def wait_for_job_state(job_id, desired_job_state, timeout=default_polling_timeou
                 else:
                     logging.warning(message)
                     return False
-        elif job_state in [
-            'COMPLETING',
-            'PENDING',
-            'PREEMPTED',
-            'RUNNING',
-            'SPECIAL_EXIT',
-            'SUSPENDED',
-        ]:
-            if job_state == desired_job_state or (job_state == 'PREEMPTED' and desired_job_state == 'DONE'):
-                logging.log(log_level, f"Job ({job_id}) is in desired state {desired_job_state}")
-                return True
-            else:
-                logging.log(log_level, f"Job ({job_id}) is in state {job_state}, but we are waiting for {desired_job_state}")
+        elif job_state == desired_job_state:
+            logging.log(log_level, f"Job ({job_id}) is in desired state {desired_job_state}")
+            return True
         else:
                 logging.log(log_level, f"Job ({job_id}) is in state {job_state}, but we are waiting for {desired_job_state}")
 
