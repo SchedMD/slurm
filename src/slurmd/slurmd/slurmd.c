@@ -1230,13 +1230,6 @@ _reconfigure(void)
 	_read_config();
 
 	/*
-	 * Rebuild topology information and refresh slurmd topo infos
-	 */
-	slurm_topo_build_config();
-	_set_topo_info();
-	route_g_reconfigure();
-
-	/*
 	 * In case the administrator changed the cpu frequency set capabilities
 	 * on this node, rebuild the cpu frequency table information
 	 */
@@ -1269,6 +1262,14 @@ _reconfigure(void)
 	build_all_frontend_info(true);
 	_dynamic_reconfig();
 	_load_gres();
+
+	/*
+	 * Rebuild topology information and refresh slurmd topo infos
+	 */
+	rehash_node();
+	slurm_topo_build_config();
+	_set_topo_info();
+	route_g_reconfigure();
 
 	build_conf_buf();
 
