@@ -1550,9 +1550,6 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			    List *preemptee_job_list, bool has_xand,
 			    bitstr_t *exc_core_bitmap, bool resv_overlap)
 {
-	static uint32_t cr_enabled = NO_VAL;
-	static uint32_t single_select_job_test = 0;
-
 	int error_code = SLURM_SUCCESS, i, j, pick_code = SLURM_SUCCESS;
 	int total_nodes = 0, avail_nodes = 0;
 	bitstr_t *avail_bitmap = NULL, *total_bitmap = NULL;
@@ -1618,14 +1615,6 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	} else if (node_set_size == 0) {
 		info("%s: empty node set for selection", __func__);
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-	}
-
-	/* Are Consumable Resources enabled?  Check once. */
-	if (cr_enabled == NO_VAL) {
-		cr_enabled = slurm_select_cr_type();
-		(void) select_g_get_info_from_plugin(SELECT_SINGLE_JOB_TEST,
-						     NULL,
-						     &single_select_job_test);
 	}
 
 	shared = _resolve_shared_status(job_ptr, part_ptr->max_share);
@@ -1700,7 +1689,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	       __func__, job_ptr, bit_set_count(idle_node_bitmap),
 		bit_set_count(share_node_bitmap));
 
-	if (single_select_job_test)
+	if (slurm_select_cr_type() == SELECT_TYPE_CONS_TRES)
 		_sync_node_weight(node_set_ptr, node_set_size);
 	/*
 	 * Accumulate resources for this job based upon its required
@@ -1827,7 +1816,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 			tried_sched = false;	/* need to test these nodes */
 
-			if (single_select_job_test && ((i+1) < node_set_size)) {
+			if ((slurm_select_cr_type() == SELECT_TYPE_CONS_TRES) &&
+			    ((i+1) < node_set_size)) {
 				/*
 				 * Execute select_g_job_test() _once_ using
 				 * sched_weight in node_record_t as set

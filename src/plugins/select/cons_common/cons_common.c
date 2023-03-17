@@ -1981,9 +1981,6 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 	case SELECT_CONFIG_INFO:
 		*tmp_list = NULL;
 		break;
-	case SELECT_SINGLE_JOB_TEST:
-		*tmp_32 = is_cons_tres ? 1 : 0;
-		break;
 	default:
 		error("info type %d invalid", info);
 		rc = SLURM_ERROR;
