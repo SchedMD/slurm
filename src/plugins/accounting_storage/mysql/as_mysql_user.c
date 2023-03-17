@@ -906,18 +906,21 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (user_cond->assoc_cond && user_cond->assoc_cond->user_list
 	    && list_count(user_cond->assoc_cond->user_list)) {
 		set = 0;
-		xstrcat(extra, " && (");
 		itr = list_iterator_create(user_cond->assoc_cond->user_list);
 		while ((object = list_next(itr))) {
 			if (!object[0])
 				continue;
 			if (set)
 				xstrcat(extra, " || ");
+			else
+				xstrcat(extra, " && (");
+
 			xstrfmtcat(extra, "name='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
+		if (extra)
+			xstrcat(extra, ")");
 	}
 
 	ret_list = _get_other_user_names_to_mod(mysql_conn, uid, user_cond);
