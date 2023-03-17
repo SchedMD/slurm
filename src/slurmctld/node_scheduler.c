@@ -3291,7 +3291,6 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 				bit_or(feature_bitmap, work_bitmap);
 			} else {	/* FEATURE_OP_MOR or FEATURE_OP_XAND */
 				*has_mor = true;
-				bit_or(feature_bitmap, work_bitmap);
 			}
 			FREE_NULL_BITMAP(paren_bitmap);
 			work_bitmap = feature_bitmap;
