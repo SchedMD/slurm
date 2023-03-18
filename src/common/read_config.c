@@ -4883,8 +4883,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			      "PrioritySiteFactorParameters", hashtbl);
 
 	if (!s_p_get_string(&conf->site_factor_plugin,
-			    "PrioritySiteFactorPlugin", hashtbl))
-		conf->site_factor_plugin = xstrdup(DEFAULT_SITE_FACTOR_PLUGIN);
+			    "PrioritySiteFactorPlugin", hashtbl)) {
+		/* empty */
+	} else if (xstrcasestr(conf->site_factor_plugin, "none"))
+		xfree(conf->site_factor_plugin);
 
 	if (!s_p_get_string(&conf->priority_type, "PriorityType", hashtbl))
 		conf->priority_type = xstrdup(DEFAULT_PRIORITY_TYPE);

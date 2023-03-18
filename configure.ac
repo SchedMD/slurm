@@ -567,7 +567,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/serializer/url-encoded/Makefile
 		 src/plugins/serializer/yaml/Makefile
 		 src/plugins/site_factor/Makefile
-		 src/plugins/site_factor/none/Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/cray_aries/Makefile
 		 src/plugins/switch/hpe_slingshot/Makefile

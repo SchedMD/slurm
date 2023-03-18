@@ -62,6 +62,7 @@ static const char *syms[] = {
 static slurm_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
+static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 
 /*
  * Initialize the site_factor plugin.
@@ -75,8 +76,13 @@ extern int site_factor_g_init(void)
 
 	slurm_mutex_lock(&g_context_lock);
 
-	if (g_context)
+	if (plugin_inited)
 		goto done;
+
+	if (!slurm_conf.site_factor_plugin) {
+		plugin_inited = PLUGIN_NOOP;
+		goto done;
+	}
 
 	g_context = plugin_context_create(plugin_type,
 					  slurm_conf.site_factor_plugin,
@@ -86,11 +92,13 @@ extern int site_factor_g_init(void)
 		error("cannot create %s context for %s",
 		      plugin_type, slurm_conf.site_factor_plugin);
 		retval = SLURM_ERROR;
+		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
 
 	debug2("%s: plugin %s loaded", __func__, slurm_conf.site_factor_plugin);
 
+	plugin_inited = PLUGIN_INITED;
 done:
 	slurm_mutex_unlock(&g_context_lock);
 
@@ -99,14 +107,14 @@ done:
 
 extern int site_factor_g_fini(void)
 {
-	int rc;
-
-	if (!g_context)
-		return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&g_context_lock);
-	rc = plugin_context_destroy(g_context);
-	g_context = NULL;
+	if (g_context) {
+		rc = plugin_context_destroy(g_context);
+		g_context = NULL;
+	}
+	plugin_inited = PLUGIN_NOT_INITED;
 	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
@@ -116,7 +124,10 @@ extern void site_factor_g_reconfig(void)
 {
 	DEF_TIMERS;
 
-	xassert(g_context);
+	xassert(plugin_inited);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return;
 
 	START_TIMER;
 	(*(ops.reconfig))();
@@ -127,7 +138,10 @@ extern void site_factor_g_set(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
 
-	xassert(g_context);
+	xassert(plugin_inited);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return;
 
 	START_TIMER;
 	(*(ops.set))(job_ptr);
@@ -138,7 +152,10 @@ extern void site_factor_g_update(void)
 {
 	DEF_TIMERS;
 
-	xassert(g_context);
+	xassert(plugin_inited);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return;
 
 	START_TIMER;
 	(*(ops.update))();

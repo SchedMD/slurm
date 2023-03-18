@@ -144,7 +144,6 @@ typedef struct node_record node_record_t;
 #else
 #  define DEFAULT_SELECT_TYPE       "select/linear"
 #endif
-#define DEFAULT_SITE_FACTOR_PLUGIN  "site_factor/none"
 #define DEFAULT_SLURMCTLD_PIDFILE   "/var/run/slurmctld.pid"
 #define DEFAULT_SLURMCTLD_TIMEOUT   120
 #define DEFAULT_SLURMD_PIDFILE      "/var/run/slurmd.pid"
