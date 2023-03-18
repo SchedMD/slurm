@@ -82,7 +82,7 @@ extern int power_g_init(void)
 		goto fini;
 
 	g_context_cnt = 0;
-	if (!slurm_conf.power_plugin || !slurm_conf.power_plugin[0])
+	if (!slurm_conf.power_plugin)
 		goto fini;
 
 	names = power_plugin = xstrdup(slurm_conf.power_plugin);

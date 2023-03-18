@@ -121,7 +121,6 @@ typedef struct node_record node_record_t;
 #define DEFAULT_MSG_AGGR_WINDOW_MSGS 1
 #define DEFAULT_MSG_AGGR_WINDOW_TIME 100
 #define DEFAULT_MSG_TIMEOUT         10
-#define DEFAULT_POWER_PLUGIN        ""
 #if defined WITH_CGROUP
 #  define DEFAULT_PROCTRACK_TYPE      "proctrack/cgroup"
 #else

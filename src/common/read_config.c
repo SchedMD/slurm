@@ -4697,8 +4697,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	(void) s_p_get_string(&conf->power_parameters, "PowerParameters",
 			      hashtbl);
-	if (!s_p_get_string(&conf->power_plugin, "PowerPlugin", hashtbl))
-		conf->power_plugin = xstrdup(DEFAULT_POWER_PLUGIN);
+	if (!s_p_get_string(&conf->power_plugin, "PowerPlugin", hashtbl)) {
+		/* empty */
+	} else if (xstrcasestr(conf->power_plugin, "none"))
+		xfree(conf->power_plugin);
 
 	if (s_p_get_string(&temp_str, "PreemptExemptTime", hashtbl)) {
 		uint32_t exempt_time = time_str2secs(temp_str);
