@@ -78,6 +78,7 @@ static const char *syms[] = {
 static slurm_topo_ops_t ops;
 static plugin_context_t	*g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
+static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 
 /*
  * The topology plugin can not be changed via reconfiguration
@@ -92,8 +93,13 @@ extern int topology_g_init(void)
 
 	slurm_mutex_lock(&g_context_lock);
 
-	if (g_context)
+	if (plugin_inited)
 		goto done;
+
+	if (!slurm_conf.topology_plugin) {
+		plugin_inited = PLUGIN_NOOP;
+		goto done;
+	}
 
 	g_context = plugin_context_create(plugin_type,
 					  slurm_conf.topology_plugin,
@@ -103,9 +109,11 @@ extern int topology_g_init(void)
 		error("cannot create %s context for %s",
 		      plugin_type, slurm_conf.topology_plugin);
 		retval = SLURM_ERROR;
+		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
 
+	plugin_inited = PLUGIN_INITED;
 done:
 	slurm_mutex_unlock(&g_context_lock);
 	return retval;
@@ -113,13 +121,15 @@ done:
 
 extern int topology_g_fini(void)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
-	if (!g_context)
-		return SLURM_SUCCESS;
+	if (g_context) {
+		rc = plugin_context_destroy(g_context);
+		g_context = NULL;
+	}
 
-	rc = plugin_context_destroy(g_context);
-	g_context = NULL;
+	plugin_inited = PLUGIN_NOT_INITED;
+
 	return rc;
 }
 
@@ -128,7 +138,10 @@ extern int slurm_topo_build_config(void)
 	int rc;
 	DEF_TIMERS;
 
-	xassert(g_context);
+	xassert(plugin_inited);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return SLURM_SUCCESS;
 
 	START_TIMER;
 	rc = (*(ops.build_config))();
@@ -143,7 +156,10 @@ extern int slurm_topo_build_config(void)
  */
 extern bool slurm_topo_generate_node_ranking(void)
 {
-	xassert(g_context);
+	xassert(plugin_inited);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return false;
 
 	return (*(ops.node_ranking))();
 }
@@ -152,7 +168,17 @@ extern int slurm_topo_get_node_addr(char* node_name,
 				    char **addr,
 				    char **pattern)
 {
-	xassert(g_context);
+	xassert(plugin_inited);
+
+	if (plugin_inited == PLUGIN_NOOP) {
+#ifndef HAVE_FRONT_END
+		if (find_node_record(node_name) == NULL)
+			return SLURM_ERROR;
+#endif
+
+		*addr = xstrdup(node_name);
+		*pattern = xstrdup("node");
+	}
 
 	return (*(ops.get_node_addr))(node_name,addr,pattern);
 }

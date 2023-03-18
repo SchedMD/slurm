@@ -4486,7 +4486,7 @@ for allocation of entire nodes assuming a one\-dimensional array of nodes in
 which sequentially ordered nodes are preferable.
 For a heterogeneous cluster (e.g. different CPU counts on the various nodes),
 resource allocations will favor nodes with high CPU counts as needed based upon
-the job's node and CPU specification if \fBTopologyPlugin=topology/none\fR is
+the job's node and CPU specification if no TopologyPlugin is
 configured. Use of other topology plugins with select/linear and heterogeneous
 nodes is not recommended and may result in valid job allocation requests being
 rejected. The linear plugin is not designed to track generic resources on a
@@ -5874,11 +5874,6 @@ Acceptable values include:
 .TP 21
 \fBtopology/3d_torus\fR
 best\-fit logic over three\-dimensional topology
-.IP
-
-.TP
-\fBtopology/none\fR
-default for other systems, best\-fit logic over one\-dimensional topology
 .IP
 
 .TP
@@ -7641,8 +7636,6 @@ The \fBTopologyPlugin\fR parameter controls which plugin is used to
 collect network topology information.
 The only values presently supported are "topology/3d_torus" (default for
 Cray XT/XE systems, performs best\-fit logic over three\-dimensional topology),
-"topology/none" (default for other systems,
-best\-fit logic over one\-dimensional topology),
 "topology/tree" (determine the network topology based
 upon information contained in a topology.conf file,
 see "man topology.conf" for more information).
