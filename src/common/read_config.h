@@ -157,11 +157,6 @@ typedef struct node_record node_record_t;
 #define DEFAULT_SUSPEND_RATE        60
 #define DEFAULT_SUSPEND_TIME        0
 #define DEFAULT_SUSPEND_TIMEOUT     30
-#if defined HAVE_NATIVE_CRAY
-#  define DEFAULT_SWITCH_TYPE         "switch/cray_aries"
-#else
-#  define DEFAULT_SWITCH_TYPE         "switch/none"
-#endif
 #define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TCP_TIMEOUT         2
 #define DEFAULT_TMP_FS              "/tmp"

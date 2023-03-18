@@ -146,7 +146,7 @@ function displayfile()
    get_field("SrunEpilog",document.config.srun_epilog) + "<br>" +
    get_field("SrunProlog",document.config.srun_prolog) + "<br>" +
    "StateSaveLocation=" + document.config.state_save_location.value + "<br>" +
-   "SwitchType=switch/" + get_radio_value(document.config.switch_type) + "<br>" +
+   print_pair("SwitchType" + get_radio_value(document.config.switch_type)) + "<br>" +
    get_field("TaskEpilog",document.config.task_epilog) + "<br>" +
    "TaskPlugin=" + get_checkbox_value(document.config.task_plugin) + "<br>" +
    get_field("TaskProlog",document.config.task_prolog) + "<br>" +
@@ -448,9 +448,10 @@ First-Out (FIFO)<BR>
 <H2>Interconnect</H2>
 Define the node interconnect used.<BR>
 Select one value for <B>SwitchType</B>:<BR>
-<input type="radio" name="switch_type" value="cray_aries"> <B>Cray XC</B>: Cray XC proprietary interconnect<BR>
-<input type="radio" name="switch_type" value="none" checked> <B>None</B>: No special
-handling required (InfiniBand, Myrinet, Ethernet, etc.)<BR>
+<input type="radio" name="switch_type" value="switch/cray_aries"> <B>Cray XC</B>: Cray XC proprietary interconnect<BR>
+<input type="radio" name="switch_type" value="switch/hpe_slingshot"> <B>HPE
+  Slingshot</B>: HPE Slingshot proprietary interconnect<BR>
+<input type="radio" name="switch_type" value="" checked> <B>None</B>: No special
 <P>
 
 <H2>Default MPI Type</H2>

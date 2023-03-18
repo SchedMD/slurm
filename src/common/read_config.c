@@ -4926,8 +4926,14 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		error("PriorityWeight values too high, job priority value may overflow");
 
 	/* Out of order due to use with ProctrackType */
-	if (!s_p_get_string(&conf->switch_type, "SwitchType", hashtbl))
-		conf->switch_type = xstrdup(DEFAULT_SWITCH_TYPE);
+	if (!s_p_get_string(&conf->switch_type, "SwitchType", hashtbl)) {
+#if defined HAVE_NATIVE_CRAY
+		conf->switch_type = xstrdup("switch/cray_aries");
+#else
+		/* empty */
+#endif
+	} else if (xstrcasestr(conf->switch_type, "none"))
+		xfree(conf->switch_type);
 
 	if (!s_p_get_string(&conf->proctrack_type, "ProctrackType", hashtbl)) {
 		conf->proctrack_type = xstrdup(DEFAULT_PROCTRACK_TYPE);

@@ -12,7 +12,7 @@ step_lifetime = 10
 # Setup/Teardown
 @pytest.fixture(scope='module', autouse=True)
 def setup():
-    atf.require_config_parameter('SwitchType', 'switch/none')
+    atf.require_config_parameter('SwitchType', None)
     atf.require_slurm_running()
 
 

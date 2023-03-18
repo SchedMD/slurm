@@ -1,6 +1,6 @@
 # Makefile for switch plugins
 
-SUBDIRS = none
+SUBDIRS =
 
 if WITH_SWITCH_CRAY_ARIES
 SUBDIRS += cray_aries

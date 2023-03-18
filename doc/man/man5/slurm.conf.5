@@ -5623,11 +5623,10 @@ Addressing contexts. The default is 4 per-CPU, maximum 1022 per-node.
 Identifies the type of switch or interconnect used for application
 communications.
 Acceptable values include
-"switch/cray_aries" for Cray systems,
-"switch/hpe_slingshot" for HPE Slingshot systems and
-"switch/none" for switches not requiring special processing for job launch
-or termination (Ethernet, and InfiniBand).
-The default value is "switch/none".
+"switch/cray_aries" for Cray systems, and
+"switch/hpe_slingshot" for HPE Slingshot systems.
+The default value is no special plugin requiring special processing for job
+launch or termination (Ethernet, and InfiniBand).
 All Slurm daemons, commands and running jobs must be restarted for a
 change in \fBSwitchType\fR to take effect.
 If running jobs exist at the time \fBslurmctld\fR is restarted with a new
@@ -7708,7 +7707,6 @@ SlurmctldPort=7002
 SlurmdPort=7003
 SlurmdSpoolDir=/var/spool/slurmd.spool
 StateSaveLocation=/var/spool/slurm.state
-SwitchType=switch/none
 TmpFS=/tmp
 WaitTime=30
 #

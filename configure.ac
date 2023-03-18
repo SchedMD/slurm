@@ -570,7 +570,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/cray_aries/Makefile
 		 src/plugins/switch/hpe_slingshot/Makefile
-		 src/plugins/switch/none/Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/cgroup/Makefile

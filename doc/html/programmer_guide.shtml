@@ -255,7 +255,7 @@ networking and protocol changes, or anytime you want to simulate a larger
 cluster than you really have.  The author uses this on his desktop to simulate
 multiple nodes.  However, it is important to note that not all slurm functions
 will work with multiple slurmd support enabled (e.g. many switch plugins will
-not work, it is best to use switch/none).</p>
+not work, it is best not to use any).</p>
 
 <p>Multiple support is enabled at configure-time with the
 "--enable-multiple-slurmd" parameter.  This enables a new parameter in the
