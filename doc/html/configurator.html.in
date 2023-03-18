@@ -122,7 +122,7 @@ function displayfile()
    "#MaxJobCount=10000 <br>" +
    "#MaxStepCount=40000 <br>" +
    "#MaxTasksPerNode=512 <br>" +
-   "MpiDefault=" + get_radio_value(document.config.mpi_default) + "<br>" +
+    print_pair("MpiDefault" + get_radio_value(document.config.mpi_default)) + "<br>" +
    "#MpiParams=ports=#-# <br>" +
    "#PluginDir= <br>" +
    "#PlugStackConfig= <br>" +
@@ -457,11 +457,11 @@ handling required (InfiniBand, Myrinet, Ethernet, etc.)<BR>
 Specify the type of MPI to be used by default. Slurm will configure environment
 variables accordingly. Users can over-ride this specification with an srun option.<BR>
 Select one value for <B>MpiDefault</B>:<BR>
-<input type="radio" name="mpi_default" value="pmi2"> <B>MPI-PMI2</B>
+<input type="radio" name="mpi_default" value="mpi/pmi2"> <B>MPI-PMI2</B>
 (For PMI2-supporting MPI implementations)<BR>
-<input type="radio" name="mpi_default" value="pmix"> <B>MPI-PMIx</B>
+<input type="radio" name="mpi_default" value="mpi/pmix"> <B>MPI-PMIx</B>
 (Exascale PMI implementation)<BR>
-<input type="radio" name="mpi_default" value="none" checked> <B>None</B>:
+<input type="radio" name="mpi_default" value="" checked> <B>None</B>:
  This works for most other MPI types.<BR>
 <P>
 

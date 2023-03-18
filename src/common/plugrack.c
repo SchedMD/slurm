@@ -413,6 +413,7 @@ extern int plugrack_print_mpi_plugins(plugrack_t *rack)
 	xassert(rack->entries);
 	itr = list_iterator_create(rack->entries);
 	printf("MPI plugin types are...\n");
+	printf("\tnone\n");
 	while ((e = list_next(itr))) {
 		/*
 		 * Support symbolic links for various pmix plugins with names

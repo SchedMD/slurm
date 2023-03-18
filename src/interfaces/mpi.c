@@ -268,6 +268,15 @@ static int _mpi_fini_locked(void)
 	return rc;
 }
 
+static bool _is_none_plugin(char *mpi_type)
+{
+	if (!mpi_type ||
+	    !xstrcmp(mpi_type, "openmpi") ||
+	    !xstrcmp(mpi_type, "none"))
+		return true;
+	return false;
+}
+
 static int _mpi_init_locked(char **mpi_type)
 {
 	int count = 0, *opts_cnt;
@@ -283,18 +292,18 @@ static int _mpi_init_locked(char **mpi_type)
 	if (mpi_type) {
 		debug("MPI: Type: %s", *mpi_type);
 
-		if (!slurm_conf.mpi_default) {
-			error("MPI: No default type set.");
-			return SLURM_ERROR;
-		} else if (!*mpi_type)
+		if (!*mpi_type)
 			*mpi_type = xstrdup(slurm_conf.mpi_default);
 		/*
 		 * The openmpi plugin has been equivalent to none for a while.
-		 * Translate so we can discard that duplicated no-op plugin.
+		 * Return immediately if no plugin is needed.
 		 */
-		if (!xstrcmp(*mpi_type, "openmpi")) {
+		if (_is_none_plugin(*mpi_type)) {
 			xfree(*mpi_type);
-			*mpi_type = xstrdup("none");
+			g_context_cnt = 0;
+			client_plugin_id = NO_VAL;
+			setenv("SLURM_MPI_TYPE", "none", 1);
+			return SLURM_SUCCESS;
 		}
 
 		plugin_names = list_create(xfree_ptr);
@@ -488,6 +497,10 @@ extern int mpi_g_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
 {
 	xassert(step);
 	xassert(env);
+
+	if (!g_context_cnt)
+		return SLURM_SUCCESS;
+
 	xassert(g_context);
 	xassert(ops);
 
@@ -502,6 +515,10 @@ extern int mpi_g_slurmstepd_task(const mpi_task_info_t *mpi_task, char ***env)
 {
 	xassert(mpi_task);
 	xassert(env);
+
+	if (!g_context_cnt)
+		return SLURM_SUCCESS;
+
 	xassert(g_context);
 	xassert(ops);
 
@@ -526,6 +543,10 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 
 	xassert(mpi_step);
 	xassert(env);
+
+	if (!g_context_cnt)
+		return (void *)0xdeadbeef; /* only return NULL on error */
+
 	xassert(g_context);
 	xassert(ops);
 
@@ -543,6 +564,9 @@ extern mpi_plugin_client_state_t *mpi_g_client_prelaunch(
 
 extern int mpi_g_client_fini(mpi_plugin_client_state_t *state)
 {
+	if (!g_context_cnt)
+		return SLURM_SUCCESS;
+
 	xassert(g_context);
 	xassert(ops);
 
@@ -611,6 +635,11 @@ extern int mpi_conf_send_stepd(int fd, uint32_t plugin_id)
 	/* 0 shouldn't ever happen here. */
 	xassert(plugin_id);
 
+	if (plugin_id == NO_VAL) {
+		safe_write(fd, &len, sizeof(len));
+		return SLURM_SUCCESS;
+	}
+
 	slurm_mutex_lock(&context_lock);
 
 	if ((index = _plugin_idx(plugin_id)) < 0)
@@ -647,7 +676,9 @@ extern int mpi_conf_recv_stepd(int fd)
 	int rc;
 
 	safe_read(fd, &len, sizeof(len));
-	xassert(len);
+	if (!len) /* no plugin */
+		return SLURM_SUCCESS;
+
 	mpi_type = xmalloc(len+1);
 	safe_read(fd, mpi_type, len);
 
@@ -689,6 +720,10 @@ rwfail:
 extern int mpi_id_from_plugin_type(char *mpi_type)
 {
 	int id = -1;
+
+	if (_is_none_plugin(mpi_type))
+		return NO_VAL;
+
 	xassert(g_context_cnt);
 
 	slurm_mutex_lock(&context_lock);

@@ -4559,13 +4559,11 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->min_job_age = 2;
 	}
 
-	if (!s_p_get_string(&conf->mpi_default, "MpiDefault", hashtbl))
-		conf->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);
-	else if (!xstrcmp(conf->mpi_default, "openmpi")) {
+	if (!s_p_get_string(&conf->mpi_default, "MpiDefault", hashtbl)) {
+		/* empty */
+	} else if (xstrcasestr(conf->mpi_default, "none") ||
+		   xstrcasestr(conf->mpi_default, "openmpi")) {
 		xfree(conf->mpi_default);
-		conf->mpi_default = xstrdup("none");
-		if (running_in_slurmctld())
-			error("Translating obsolete 'MpiDefault=openmpi' option to 'MpiDefault=none'. Please update your configuration.");
 	}
 
 	(void) s_p_get_string(&conf->mpi_params, "MpiParams", hashtbl);
