@@ -537,7 +537,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/power/common/Makefile
 		 src/plugins/power/cray_aries/Makefile
 		 src/plugins/preempt/Makefile
-		 src/plugins/preempt/none/Makefile
 		 src/plugins/preempt/partition_prio/Makefile
 		 src/plugins/preempt/qos/Makefile
 		 src/plugins/prep/Makefile

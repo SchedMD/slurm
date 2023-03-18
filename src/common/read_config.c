@@ -4731,9 +4731,16 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->preempt_params, "PreemptParameters",
 			      hashtbl);
 
-	if (!s_p_get_string(&conf->preempt_type, "PreemptType", hashtbl))
-		conf->preempt_type = xstrdup(DEFAULT_PREEMPT_TYPE);
-	if (xstrcmp(conf->preempt_type, "preempt/qos") == 0) {
+	if (!s_p_get_string(&conf->preempt_type, "PreemptType", hashtbl) ||
+	    !xstrcmp(conf->preempt_type, "preempt/none")) {
+		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
+		/* empty */
+		xfree(conf->preempt_type);
+		if (preempt_mode != PREEMPT_MODE_OFF) {
+			error("PreemptType and PreemptMode values incompatible");
+			return SLURM_ERROR;
+		}
+	} else if (xstrcmp(conf->preempt_type, "preempt/qos") == 0) {
 		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
 		preempt_mode &= ~PREEMPT_MODE_WITHIN;
 		if (preempt_mode == PREEMPT_MODE_OFF) {
@@ -4745,13 +4752,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
 		preempt_mode &= ~PREEMPT_MODE_WITHIN;
 		if (preempt_mode == PREEMPT_MODE_OFF) {
-			error("PreemptType and PreemptMode values "
-			      "incompatible");
-			return SLURM_ERROR;
-		}
-	} else if (xstrcmp(conf->preempt_type, "preempt/none") == 0) {
-		int preempt_mode = conf->preempt_mode & (~PREEMPT_MODE_GANG);
-		if (preempt_mode != PREEMPT_MODE_OFF) {
 			error("PreemptType and PreemptMode values "
 			      "incompatible");
 			return SLURM_ERROR;
