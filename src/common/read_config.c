@@ -5343,12 +5343,15 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	/* see above for switch_type, order dependent */
 
-	if (!s_p_get_string(&conf->task_plugin, "TaskPlugin", hashtbl))
-		conf->task_plugin = xstrdup(DEFAULT_TASK_PLUGIN);
+	if (!s_p_get_string(&conf->task_plugin, "TaskPlugin", hashtbl)) {
+		/* empty */
+	} else if (xstrcasestr(conf->task_plugin, "none"))
+		xfree(conf->task_plugin);
+
 	_sort_task_plugin(&conf->task_plugin);
 #ifdef HAVE_FRONT_END
-	if (xstrcmp(conf->task_plugin, "task/none")) {
-		error("On FrontEnd systems TaskPlugin=task/none is required");
+	if (conf->task_plugin) {
+		error("On FrontEnd systems no TaskPlugin should be configured");
 		return SLURM_ERROR;
 	}
 #endif

@@ -109,7 +109,7 @@ extern int slurmd_task_init(void)
 		goto done;
 
 	g_task_context_num = 0; /* mark it before anything else */
-	if (!slurm_conf.task_plugin || !slurm_conf.task_plugin[0])
+	if (!slurm_conf.task_plugin)
 		goto done;
 
 	task_plugin_list = task_plugin_type = xstrdup(slurm_conf.task_plugin);
@@ -192,6 +192,9 @@ extern int task_g_slurmd_batch_request(batch_job_launch_msg_t *req)
 
 	xassert(g_task_context_num >= 0);
 
+	if (!g_task_context_num)
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
 		rc = (*(ops[i].slurmd_batch_request))(req);
@@ -218,6 +221,9 @@ extern int task_g_slurmd_launch_request(launch_tasks_request_msg_t *req,
 
 	xassert(g_task_context_num >= 0);
 
+	if (!g_task_context_num)
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
 		rc = (*(ops[i].slurmd_launch_request)) (req, node_id, err_msg);
@@ -243,6 +249,9 @@ extern int task_g_slurmd_suspend_job(uint32_t job_id)
 
 	xassert(g_task_context_num >= 0);
 
+	if (!g_task_context_num)
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
 		rc = (*(ops[i].slurmd_suspend_job))(job_id);
@@ -267,6 +276,9 @@ extern int task_g_slurmd_resume_job(uint32_t job_id)
 	int i, rc = SLURM_SUCCESS;
 
 	xassert(g_task_context_num >= 0);
+
+	if (!g_task_context_num)
+		return SLURM_SUCCESS;
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
@@ -294,6 +306,9 @@ extern int task_g_pre_setuid(stepd_step_rec_t *step)
 
 	xassert(g_task_context_num >= 0);
 
+	if (!g_task_context_num)
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
 		rc = (*(ops[i].pre_setuid))(step);
@@ -319,6 +334,9 @@ extern int task_g_pre_launch_priv(stepd_step_rec_t *step, uint32_t node_tid)
 
 	xassert(g_task_context_num >= 0);
 
+	if (!g_task_context_num)
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
 		rc = (*(ops[i].pre_launch_priv))(step, node_tid);
@@ -343,6 +361,9 @@ extern int task_g_pre_launch(stepd_step_rec_t *step)
 	int i, rc = SLURM_SUCCESS;
 
 	xassert(g_task_context_num >= 0);
+
+	if (!g_task_context_num)
+		return SLURM_SUCCESS;
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
@@ -370,6 +391,9 @@ extern int task_g_post_term(stepd_step_rec_t *step,
 
 	xassert(g_task_context_num >= 0);
 
+	if (!g_task_context_num)
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
 		rc = (*(ops[i].post_term))(step, task);
@@ -395,6 +419,9 @@ extern int task_g_post_step(stepd_step_rec_t *step)
 
 	xassert(g_task_context_num >= 0);
 
+	if (!g_task_context_num)
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {
 		rc = (*(ops[i].post_step))(step);
@@ -419,6 +446,9 @@ extern int task_g_add_pid(pid_t pid)
 	int i, rc = SLURM_SUCCESS;
 
 	xassert(g_task_context_num >= 0);
+
+	if (!g_task_context_num)
+		return SLURM_SUCCESS;
 
 	slurm_mutex_lock( &g_task_context_lock );
 	for (i = 0; i < g_task_context_num; i++) {

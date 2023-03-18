@@ -157,7 +157,6 @@ typedef struct node_record node_record_t;
 #define DEFAULT_SUSPEND_RATE        60
 #define DEFAULT_SUSPEND_TIME        0
 #define DEFAULT_SUSPEND_TIMEOUT     30
-#define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TCP_TIMEOUT         2
 #define DEFAULT_TMP_FS              "/tmp"
 #if defined HAVE_3D
