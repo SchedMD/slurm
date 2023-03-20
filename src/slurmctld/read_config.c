@@ -308,6 +308,14 @@ static void _add_nodes_with_feature(hostlist_t hl, char *feature)
 	}
 }
 
+static void _add_all_nodes_to_hostlist(hostlist_t hl)
+{
+	node_record_t *node_ptr;
+
+	for (int i = 0; (node_ptr = next_node(&i)); i++)
+		hostlist_push_host(hl, node_ptr->name);
+}
+
 extern hostlist_t nodespec_to_hostlist(const char *nodes,
 				       bool uniq,
 				       char **nodesets)
@@ -315,7 +323,6 @@ extern hostlist_t nodespec_to_hostlist(const char *nodes,
 	int count;
 	slurm_conf_nodeset_t *ptr, **ptr_array;
 	hostlist_t hl;
-	node_record_t *node_ptr;
 
 	if (nodesets)
 		xfree(*nodesets);
@@ -325,8 +332,7 @@ extern hostlist_t nodespec_to_hostlist(const char *nodes,
 			error("%s: hostlist_create() error for %s", __func__, nodes);
 			return NULL;
 		}
-		for (int i = 0; (node_ptr = next_node(&i)); i++)
-			hostlist_push_host(hl, node_ptr->name);
+		_add_all_nodes_to_hostlist(hl);
 		return hl;
 	} else if (!(hl = hostlist_create(nodes))) {
 		error("%s: hostlist_create() error for %s", __func__, nodes);
@@ -354,8 +360,7 @@ extern hostlist_t nodespec_to_hostlist(const char *nodes,
 
 			/* Handle keywords for Nodes= in a NodeSet */
 			if (!xstrcasecmp(ptr->nodes, "ALL")) {
-				for (int i = 0; (node_ptr = next_node(&i)); i++)
-					hostlist_push_host(hl, node_ptr->name);
+				_add_all_nodes_to_hostlist(hl);
 			} else if (ptr->nodes) {
 				hostlist_push(hl, ptr->nodes);
 			}
