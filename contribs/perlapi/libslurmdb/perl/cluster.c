@@ -106,7 +106,6 @@ hv_to_cluster_cond(HV* hv, slurmdb_cluster_cond_t* cluster_cond)
     FETCH_FIELD(hv, cluster_cond, with_usage,     uint16_t, FALSE);
 
     FETCH_LIST_FIELD(hv, cluster_cond, cluster_list);
-    FETCH_LIST_FIELD(hv, cluster_cond, plugin_id_select_list);
     FETCH_LIST_FIELD(hv, cluster_cond, rpc_version_list);
 
     return 0;
