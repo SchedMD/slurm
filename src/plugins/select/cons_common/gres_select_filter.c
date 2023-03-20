@@ -901,7 +901,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * spread them out so that every socket has some cores
 		 * available to use with the nearby GRES that we do need.
 		 */
-		while (!req_sock_cnt && (avail_cores_tot > req_cores)) {
+		while (req_sock_cnt && (avail_cores_tot > req_cores)) {
 			int full_socket = -1;
 			for (int s = 0; s < sockets; s++) {
 				if (avail_cores_tot == req_cores)
