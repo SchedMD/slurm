@@ -1134,7 +1134,7 @@ extern void cleanup_container(stepd_step_rec_t *step)
 			char *jconfig = NULL;
 
 			path = _generate_spooldir(step, step->task[i]);
-			xstrfmtcat(jconfig, "%s/config.json", c->spool_dir);
+			xstrfmtcat(jconfig, "%s/config.json", path);
 
 			if ((unlink(jconfig) < 0) && (errno != ENOENT))
 				error("unlink(%s): %m", jconfig);
