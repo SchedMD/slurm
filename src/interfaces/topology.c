@@ -178,6 +178,7 @@ extern int slurm_topo_get_node_addr(char* node_name,
 
 		*addr = xstrdup(node_name);
 		*pattern = xstrdup("node");
+		return SLURM_SUCCESS;
 	}
 
 	return (*(ops.get_node_addr))(node_name,addr,pattern);
