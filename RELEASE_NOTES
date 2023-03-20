@@ -20,6 +20,8 @@ prior to 23.11.
 
 HIGHLIGHTS
 ==========
+ -- Remove 'none' plugins for all but auth and cred. scontrol show config
+    will report (null) now.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- cli_filter/lua - return nil for unset time options rather than the string
     "2982616-04:14:00" (which is the internal macro "NO_VAL" represented as
     time string).
+ -- Remove 'none' plugins for all but auth and cred. scontrol show config
+    will report (null) now.
 
 * Changes in Slurm 23.02.1
 ==========================
