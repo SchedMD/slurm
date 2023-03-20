@@ -1710,6 +1710,38 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 
 	/*
+	 * Load node state which includes dynamic nodes so that dynamic nodes
+	 * can be sorted and included in topology.
+	 */
+	if (reconfig) {		/* Preserve state from memory */
+		if (old_node_table_ptr) {
+			info("restoring original state of nodes");
+			_set_features(old_node_table_ptr, old_node_record_count,
+				      recover);
+			rc = _restore_node_state(recover, old_node_table_ptr,
+						 old_node_record_count);
+			error_code = MAX(error_code, rc);  /* not fatal */
+
+			_preserve_dynamic_nodes(old_node_table_ptr,
+						old_node_record_count,
+						old_config_list);
+		}
+	} else if (recover == 0) {	/* Build everything from slurm.conf */
+		_set_features(node_record_table_ptr, node_record_count,
+			      recover);
+	} else if (recover == 1) {	/* Load job & node state files */
+		(void) load_all_node_state(true);
+		_set_features(node_record_table_ptr, node_record_count,
+			      recover);
+		(void) load_all_front_end_state(true);
+	} else if (recover > 1) {	/* Load node, part & job state files */
+		(void) load_all_node_state(false);
+		_set_features(old_node_table_ptr, old_node_record_count,
+			      recover);
+		(void) load_all_front_end_state(false);
+	}
+
+	/*
 	 * Node reordering may be done by the topology plugin.
 	 * Reordering the table must be done before hashing the
 	 * nodes, and before any position-relative bitmaps are created.
@@ -1734,18 +1766,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	 * A reconfig always imply load the state from slurm.conf
 	 */
 	if (reconfig) {		/* Preserve state from memory */
-		if (old_node_table_ptr) {
-			info("restoring original state of nodes");
-			_set_features(old_node_table_ptr, old_node_record_count,
-				      recover);
-			rc = _restore_node_state(recover, old_node_table_ptr,
-						 old_node_record_count);
-			error_code = MAX(error_code, rc);  /* not fatal */
-
-			_preserve_dynamic_nodes(old_node_table_ptr,
-						old_node_record_count,
-						old_config_list);
-		}
 		if (old_part_list && ((recover > 1) ||
 		    (slurm_conf.reconfig_flags & RECONFIG_KEEP_PART_INFO))) {
 			info("restoring original partition state");
@@ -1778,22 +1798,12 @@ int read_slurm_conf(int recover, bool reconfig)
 		reset_first_job_id();
 		(void) sched_g_reconfig();
 	} else if (recover == 0) {	/* Build everything from slurm.conf */
-		_set_features(node_record_table_ptr, node_record_count,
-			      recover);
 		load_last_job_id();
 		reset_first_job_id();
 		(void) sched_g_reconfig();
 	} else if (recover == 1) {	/* Load job & node state files */
-		(void) load_all_node_state(true);
-		_set_features(node_record_table_ptr, node_record_count,
-			      recover);
-		(void) load_all_front_end_state(true);
 		load_job_ret = load_all_job_state();
 	} else if (recover > 1) {	/* Load node, part & job state files */
-		(void) load_all_node_state(false);
-		_set_features(old_node_table_ptr, old_node_record_count,
-			      recover);
-		(void) load_all_front_end_state(false);
 		(void) load_all_part_state();
 		load_job_ret = load_all_job_state();
 	}
