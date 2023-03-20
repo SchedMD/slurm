@@ -60,6 +60,9 @@ documents those changes that are of interest to users and administrators.
     rejected for job submission.
  -- data_parser/v0.0.39 - fix regression where "memory_per_cpu" would be
     rejected for job submission.
+ -- slurmctld - add an assert to check for magic number presence before deleting
+    a partition record and clear the magic afterwards to better diagnose
+    potential memory problems.
 
 * Changes in Slurm 23.02.0
 ==========================
