@@ -50,6 +50,8 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/interfaces/gres.h"
+#include "src/interfaces/select.h"
+
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
@@ -101,9 +103,8 @@ int main(int argc, char *argv[])
 
 	slurm_init(NULL);
 
-	rc = gres_init();
-	if (rc)
-		fatal("failure: gres_init: %s", slurm_strerror(rc));
+	if (select_g_init(1) != SLURM_SUCCESS)
+		fatal("failed to initialize node selection plugin");
 
 	/*
 	 * Logic normally executed by slurmctld daemon

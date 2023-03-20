@@ -669,7 +669,6 @@ typedef struct {
 	List federation_list; /* list of char */
 	uint32_t flags;
 	List format_list; 	/* list of char * */
-	List plugin_id_select_list; /* list of char * */
 	List rpc_version_list; /* list of char * */
 	time_t usage_end;
 	time_t usage_start;
@@ -709,7 +708,7 @@ struct slurmdb_cluster_rec {
 	pthread_mutex_t lock; /* For convenience only. DOESN"T GET PACKED */
 	char *name;
 	char *nodes;
-	uint32_t plugin_id_select; /* id of the select plugin */
+	uint32_t plugin_id_select; /* Remove 2 versions after 23.02 */
 	slurmdb_assoc_rec_t *root_assoc; /* root assoc for
 						* cluster */
 	uint16_t rpc_version; /* rpc version this cluster is running */

@@ -58,9 +58,6 @@ extern void slurm_client_init_plugins(void)
 	if (slurm_acct_storage_init() != SLURM_SUCCESS)
 		fatal("failed to initialize the accounting storage plugin");
 
-	if (select_g_init(0) != SLURM_SUCCESS)
-		fatal("failed to initialize node selection plugin");
-
 	if (cli_filter_init() != SLURM_SUCCESS)
 		fatal("failed to initialize cli_filter plugin");
 

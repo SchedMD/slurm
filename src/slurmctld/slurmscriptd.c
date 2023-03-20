@@ -1493,14 +1493,7 @@ extern int slurmscriptd_init(int argc, char **argv)
 			failed_plugin = "burst_buffer";
 			ack = SLURM_ERROR;
 		}
-		/*
-		 * Required by burst buffer plugin - specifically for
-		 * unpacking job_info in _run_bb_script()
-		 */
-		if (select_g_init(0) != SLURM_SUCCESS) {
-			failed_plugin = "select";
-			ack = SLURM_ERROR;
-		}
+
 		i = write(slurmscriptd_writefd, &ack, sizeof(int));
 		if (i != sizeof(int))
 			fatal("%s: Failed to send initialization code to slurmctld",

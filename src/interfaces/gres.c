@@ -738,7 +738,7 @@ fini:
 		select_plugin_type = NO_VAL;	/* error */
 	}
 	if (have_shared && running_in_slurmctld() &&
-	    (select_plugin_type != SELECT_TYPE_CONS_TRES)) {
+	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES)) {
 		fatal("Use of shared gres requires the use of select/cons_tres");
 	}
 
@@ -5891,6 +5891,10 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	uint64_t cnt = 0;
 	ListIterator iter;
 
+	if (tres_per_task && running_in_slurmctld() &&
+	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES))
+		return ESLURM_UNSUPPORTED_GRES;
+
 	if (!cpus_per_tres && !tres_per_job && !tres_per_node &&
 	    !tres_per_socket && !tres_per_task && !mem_per_tres &&
 	    !ntasks_per_tres)
@@ -5909,11 +5913,6 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	}
 
 	xassert(gres_context_cnt >= 0);
-
-	if ((select_plugin_type != SELECT_TYPE_CONS_TRES) &&
-	    (cpus_per_tres || tres_per_job || tres_per_socket ||
-	     tres_per_task || mem_per_tres))
-		return ESLURM_UNSUPPORTED_GRES;
 
 	/*
 	 * Clear fields as requested by job update (i.e. input value is "")
@@ -6192,7 +6191,7 @@ extern int gres_job_revalidate(List gres_list)
 	ListIterator iter;
 	int rc = SLURM_SUCCESS;
 
-	if (!gres_list || (select_plugin_type == SELECT_TYPE_CONS_TRES))
+	if (!gres_list || (slurm_select_cr_type() == SELECT_TYPE_CONS_TRES))
 		return SLURM_SUCCESS;
 
 	iter = list_iterator_create(gres_list);

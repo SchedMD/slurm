@@ -84,7 +84,6 @@
 #include "src/interfaces/prep.h"
 #include "src/common/read_config.h"
 #include "src/common/reverse_tree.h"
-#include "src/interfaces/select.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/acct_gather_energy.h"

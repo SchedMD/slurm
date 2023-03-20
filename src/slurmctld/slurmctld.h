@@ -724,14 +724,6 @@ struct job_record {
 					 * by the job, decremented while job is
 					 * completing */
 	char *cpus_per_tres;		/* semicolon delimited list of TRES=# values */
-	uint16_t cr_enabled;            /* specify if Consumable Resources
-					 * is enabled. Needed since CR deals
-					 * with a finer granularity in its
-					 * node/cpu scheduling (available cpus
-					 * instead of available nodes) than the
-					 * linear plugin
-					 * 0 if cr is NOT enabled,
-					 * 1 if cr is enabled */
 	uint32_t db_flags;              /* Flags to send to the database
 					 * record */
 	uint64_t db_index;              /* used only for database plugins */
@@ -1087,9 +1079,6 @@ enum select_plugindata_info {
 			      * BlueGene support */
 	SELECT_CONFIG_INFO,  /* data-> List get .conf info from select
 			      * plugin */
-	SELECT_SINGLE_JOB_TEST	/* data-> uint16 1 if one select_g_job_test()
-				 * call per job, node weights in node data
-				 * structure, 0 otherwise, for cons_tres */
 };
 #define SELECT_TYPE_CONS_RES	1
 #define SELECT_TYPE_CONS_TRES	2

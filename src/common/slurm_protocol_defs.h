@@ -1014,16 +1014,6 @@ typedef struct control_status_msg {
 	time_t control_time;	/* Time we became primary slurmctld (or 0) */
 } control_status_msg_t;
 
-/*
- * Note: We include the node list here for reliable cleanup on XCPU systems.
- *
- * Note: We include select_jobinfo here in addition to the job launch
- * RPC in order to ensure reliable clean-up of a BlueGene partition in
- * the event of some launch failure or race condition preventing slurmd
- * from getting the MPIRUN_PARTITION at that time. It is needed for
- * the job epilog.
- */
-
 #define SIG_OOM		253	/* Dummy signal value for out of memory
 				 * (OOM) notification. Exit status reported as
 				 * 0:125 (0x80 is the signal flag and
@@ -1049,7 +1039,7 @@ typedef struct kill_job_msg {
 	uint32_t job_state;
 	uint32_t job_uid;
 	uint32_t job_gid;
-	char *nodes;
+	char *nodes; /* Used for reliable cleanup on XCPU systems. */
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
 	time_t   start_time;	/* time of job start, track job requeue */
@@ -1089,7 +1079,6 @@ typedef struct prolog_launch_msg {
 	uint32_t nnodes;			/* count of nodes, passed via cred */
 	char *nodes;			/* list of nodes allocated to job_step */
 	char *partition;		/* partition the job is running in */
-	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
 	char **spank_job_env;		/* SPANK job environment variables */
 	uint32_t spank_job_env_size;	/* size of spank_job_env */
 	char *std_err;			/* pathname of stderr */
@@ -1977,6 +1966,13 @@ extern int slurm_get_rep_count_inx(
 extern int slurm_get_next_tres(
 	char *tres_type, char *in_val, char **name_ptr, char **type_ptr,
 	uint64_t *cnt, char **save_ptr);
+
+/*
+ * Return cached select cons res type.
+ *
+ * Returns SELECT_TYPE_CONS_TRES, SELECT_TYPE_CONS_RES or 0 (linear).
+ */
+extern uint32_t slurm_select_cr_type(void);
 
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\

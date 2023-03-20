@@ -63,7 +63,6 @@
 #include "src/interfaces/gres.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/select.h"
 #include "src/interfaces/auth.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_time.h"
@@ -678,7 +677,6 @@ relinquish:
 	}
 
 #ifdef MEMORY_LEAK_DEBUG
-	select_g_fini();
 	slurm_reset_all_options(&opt, false);
 	slurm_auth_fini();
 	slurm_conf_destroy();
@@ -699,12 +697,11 @@ static int _proc_alloc(resource_allocation_response_msg_t *alloc)
 		slurm_setup_remote_working_cluster(alloc);
 
 		/* set env for srun's to find the right cluster */
-		setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d:%d",
+		setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
 			working_cluster_rec->name,
 			working_cluster_rec->control_host,
 			working_cluster_rec->control_port,
-			working_cluster_rec->rpc_version,
-			select_get_plugin_id());
+			working_cluster_rec->rpc_version);
 	}
 
 	if (!_wait_nodes_ready(alloc)) {

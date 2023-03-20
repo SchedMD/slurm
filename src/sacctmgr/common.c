@@ -647,12 +647,6 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Partition");
 		field->len = 10;
 		field->print_routine = print_fields_str;
-	} else if (!xstrncasecmp("PluginIDSelect", object,
-				 MAX(command_len, 2))) {
-		field->type = PRINT_SELECT;
-		field->name = xstrdup("PluginIDSelect");
-		field->len = 14;
-		field->print_routine = print_fields_uint;
 	} else if (!xstrncasecmp("PreemptMode", object, MAX(command_len, 8))) {
 		field->type = PRINT_PREEM;
 		field->name = xstrdup("PreemptMode");

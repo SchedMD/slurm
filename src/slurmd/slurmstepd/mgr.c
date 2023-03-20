@@ -102,7 +102,6 @@
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
 #include "src/interfaces/proctrack.h"
-#include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
 

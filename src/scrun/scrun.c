@@ -632,9 +632,6 @@ extern int main(int argc, char **argv)
 	if ((rc = hash_g_init()))
 		fatal("%s: Unable to load hash plugins: %s", __func__,
 		      slurm_strerror(rc));
-	if ((rc = select_g_init(false)))
-		fatal("%s: Unable to select plugins: %s", __func__,
-		      slurm_strerror(rc));
 	if ((rc = gres_init()))
 		fatal("%s: Unable to GRES plugins: %s", __func__,
 		      slurm_strerror(rc));

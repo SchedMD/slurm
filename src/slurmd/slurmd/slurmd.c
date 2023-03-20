@@ -2004,8 +2004,6 @@ _slurmd_init(void)
 	slurm_conf_init(conf->conffile);
 	init_node_conf();
 
-	if (select_g_init(1) != SLURM_SUCCESS)
-		return SLURM_ERROR;
 	if (conf->print_gres)
 		slurm_conf.debug_flags = DEBUG_FLAG_GRES;
 	if (gres_init() != SLURM_SUCCESS)

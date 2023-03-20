@@ -239,7 +239,6 @@ int srun(int ac, char **av)
 
 #ifdef MEMORY_LEAK_DEBUG
 	mpi_fini();
-	select_g_fini();
 	switch_fini();
 	slurm_reset_all_options(&opt, false);
 	slurm_auth_fini();
@@ -920,12 +919,12 @@ static void _pty_restore(void)
 
 static void _setup_env_working_cluster(void)
 {
-	char *working_env, *addr_ptr, *port_ptr, *rpc_ptr, *select_ptr;
+	char *working_env, *addr_ptr, *port_ptr, *rpc_ptr;
 
 	if ((working_env = xstrdup(getenv("SLURM_WORKING_CLUSTER"))) == NULL)
 		return;
 
-	/* Format is cluster_name:address:port:rpc[:plugin_id_select] */
+	/* Format is cluster_name:address:port:rpc */
 	if (!(addr_ptr = strchr(working_env,  ':')) ||
 	    !(port_ptr = strchr(addr_ptr + 1, ':')) ||
 	    !(rpc_ptr  = strchr(port_ptr + 1, ':'))) {
@@ -938,9 +937,6 @@ static void _setup_env_working_cluster(void)
 	*port_ptr++ = '\0';
 	*rpc_ptr++  = '\0';
 
-	if ((select_ptr = strchr(rpc_ptr, ':')))
-		*select_ptr++ = '\0';
-
 	if (xstrcmp(slurm_conf.cluster_name, working_env)) {
 		working_cluster_rec = xmalloc(sizeof(slurmdb_cluster_rec_t));
 		slurmdb_init_cluster_rec(working_cluster_rec, false);
@@ -952,11 +948,6 @@ static void _setup_env_working_cluster(void)
 		slurm_set_addr(&working_cluster_rec->control_addr,
 			       working_cluster_rec->control_port,
 			       working_cluster_rec->control_host);
-
-		if (select_ptr)
-			working_cluster_rec->plugin_id_select =
-				select_get_plugin_id_pos(strtol(select_ptr,
-								NULL, 10));
 	}
 	xfree(working_env);
 	unsetenv("SLURM_WORKING_CLUSTER");

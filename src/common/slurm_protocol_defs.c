@@ -6921,3 +6921,23 @@ fini:	if (rc != SLURM_SUCCESS) {
 
 	return rc;
 }
+
+extern uint32_t slurm_select_cr_type(void)
+{
+	static bool cr_set = false;
+	static uint32_t cr_type = 0;
+
+	if (!cr_set) {
+		/*
+		 * Call this instead of select_get_plugin_id(). Here we are
+		 * looking for the underlying id instead of actual id, meaning
+		 * we want SELECT_TYPE_CONS_TRES not
+		 * SELECT_PLUGIN_CRAY_CONS_TRES.
+		 */
+		(void) select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
+						     &cr_type);
+		cr_set = true;
+	}
+
+	return cr_type;
+}

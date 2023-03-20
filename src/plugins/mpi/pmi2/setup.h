@@ -47,6 +47,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/pack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_opt.h"
 #include "src/interfaces/mpi.h"
 #include "src/common/xstring.h"
