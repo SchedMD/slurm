@@ -298,9 +298,9 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->bcast_parameters = xstrdup(conf->bcast_parameters);
 
 
-	if (strstr(conf->job_acct_gather_type, "cgroup") ||
-	    strstr(conf->proctrack_type, "cgroup") ||
-	    strstr(conf->task_plugin, "cgroup"))
+	if (xstrstr(conf->job_acct_gather_type, "cgroup") ||
+	    xstrstr(conf->proctrack_type, "cgroup") ||
+	    xstrstr(conf->task_plugin, "cgroup"))
 		conf_ptr->cgroup_conf = cgroup_get_conf_list();
 
 	conf_ptr->cli_filter_plugins  = xstrdup(conf->cli_filter_plugins);
