@@ -58,6 +58,8 @@ documents those changes that are of interest to users and administrators.
     lib path.
  -- data_parser/v0.0.39 - fix regression where "memory_per_node" would be
     rejected for job submission.
+ -- data_parser/v0.0.39 - fix regression where "memory_per_cpu" would be
+    rejected for job submission.
 
 * Changes in Slurm 23.02.0
 ==========================
