@@ -135,15 +135,6 @@ static int _get_avail_cores_on_node(int node_inx, bitstr_t **exc_bitmap)
 	return tot_cores - exc_cnt;
 }
 
-extern char *common_node_state_str(uint16_t node_state)
-{
-	if (node_state >= NODE_CR_RESERVED)
-		return "reserved";	/* Exclusive allocation */
-	if (node_state >= NODE_CR_ONE_ROW)
-		return "one_row";	/* Dedicated core for this partition */
-	return "available";		/* Idle or in-use (shared) */
-}
-
 static void _dump_job_res(struct job_resources *job)
 {
 	char str[64];
@@ -154,562 +145,6 @@ static void _dump_job_res(struct job_resources *job)
 		sprintf(str, "[no core_bitmap]");
 	info("DEBUG: Dump job_resources: nhosts %u core_bitmap %s",
 	     job->nhosts, str);
-}
-
-static bool _check_ntasks_per_sock(uint16_t core, uint16_t socket,
-				   uint16_t threads_per_core, uint16_t cps,
-				   uint16_t *cpu_cnt, bitstr_t * core_map)
-{
-	if (!cpu_cnt[socket]) {	/* Start use of next socket */
-		cpu_cnt[socket] = threads_per_core;
-	} else {	/* Continued use of same socket */
-		if (cpu_cnt[socket] >= cps) {
-			/* do not allocate this core */
-			bit_clear(core_map, core);
-			return true;
-		}
-		cpu_cnt[socket] += threads_per_core;
-	}
-	return false;
-}
-
-static void _count_used_cpus(uint16_t threads_per_core, uint16_t cpus_per_task,
-			     uint16_t ntasks_per_core, bool use_tpc,
-			     int *remain_cpt, uint16_t *avail_cpus,
-			     uint16_t *cpu_count)
-{
-	if (*avail_cpus >= threads_per_core) {
-		int used;
-		if (use_tpc) {
-			used = threads_per_core;
-		} else if ((ntasks_per_core == 1) &&
-			   (cpus_per_task > threads_per_core)) {
-			used = MIN(*remain_cpt, threads_per_core);
-		} else
-			used = threads_per_core;
-		*avail_cpus -= used;
-		*cpu_count  += used;
-		if (*remain_cpt <= used)
-			*remain_cpt = cpus_per_task;
-		else
-			*remain_cpt -= used;
-	} else {
-		*cpu_count += *avail_cpus;
-		*avail_cpus = 0;
-	}
-}
-/*
- * _allocate_sc - Given the job requirements, determine which CPUs/cores
- *                from the given node can be allocated (if any) to this
- *                job. Returns structure identifying the usable resources and
- *                a bitmap of the available cores.
- *
- * IN job_ptr       - pointer to job requirements
- * IN/OUT core_map  - core_bitmap of available cores on this node
- * IN part_core_map - bitmap of cores already allocated on this partition/node
- * IN node_i        - index of node to be evaluated
- * IN/OUT cpu_alloc_size - minimum allocation size, in CPUs
- * IN entire_sockets_only - if true, allocate cores only on sockets that
- *                          have no other allocated cores.
- * IN req_sock_map - OPTIONAL bitmap of required sockets
- * RET resource availability structure, call common_free_avail_res() to free
- */
-static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
-				 bitstr_t *part_core_map, const uint32_t node_i,
-				 int *cpu_alloc_size, bool entire_sockets_only,
-				 bitstr_t *req_sock_map)
-{
-	uint16_t cpu_count = 0, part_cpu_limit = INFINITE16;
-	uint16_t cps, avail_cpus = 0, num_tasks = 0;
-	uint16_t req_sock_cpus = 0;
-	uint32_t c;
-	uint32_t core_begin;
-	uint32_t core_end;
-	job_details_t *details_ptr = job_ptr->details;
-	uint16_t cpus_per_task = details_ptr->cpus_per_task;
-	uint16_t free_core_count = 0, spec_threads = 0;
-	uint16_t i, j;
-	node_record_t *node_ptr = node_record_table_ptr[node_i];
-	uint16_t sockets = node_ptr->tot_sockets;
-	uint16_t cores_per_socket = node_ptr->cores;
-	uint16_t threads_per_core = node_ptr->tpc;
-	uint16_t min_cores = 1, min_sockets = 1, ntasks_per_socket = 0;
-	uint16_t ncpus_per_core = INFINITE16;	/* Usable CPUs per core */
-	uint16_t ntasks_per_core = INFINITE16;
-	uint32_t free_cpu_count = 0, used_cpu_count = 0;
-	int tmp_cpt = 0; /* cpus_per_task */
-	uint16_t free_cores[sockets];
-	uint16_t used_cores[sockets];
-	uint32_t used_cpu_array[sockets];
-	uint16_t cpu_cnt[sockets];
-	uint16_t max_cpu_per_req_sock = INFINITE16;
-	avail_res_t *avail_res = xmalloc(sizeof(avail_res_t));
-	bitstr_t *tmp_core = NULL;
-	bool use_tpc = false;
-	uint32_t socket_begin;
-	uint32_t socket_end;
-
-
-	if (is_cons_tres) {
-		core_begin = 0;
-		core_end = node_ptr->tot_cores;
-	} else {
-		core_begin = cr_get_coremap_offset(node_i);
-		core_end = cr_get_coremap_offset(node_i + 1);
-	}
-
-	memset(free_cores, 0, sockets * sizeof(uint16_t));
-	memset(used_cores, 0, sockets * sizeof(uint16_t));
-	memset(used_cpu_array, 0, sockets * sizeof(uint32_t));
-	memset(cpu_cnt, 0, sockets * sizeof(uint16_t));
-
-	if (entire_sockets_only && details_ptr->whole_node &&
-	    (details_ptr->core_spec != NO_VAL16)) {
-		/* Ignore specialized cores when allocating "entire" socket */
-		entire_sockets_only = false;
-	}
-	if (details_ptr->mc_ptr) {
-		uint32_t threads_per_socket;
-		multi_core_data_t *mc_ptr = details_ptr->mc_ptr;
-		if (mc_ptr->cores_per_socket != NO_VAL16) {
-			min_cores = mc_ptr->cores_per_socket;
-		}
-		if (mc_ptr->sockets_per_node != NO_VAL16) {
-			min_sockets = mc_ptr->sockets_per_node;
-		}
-		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
-		    (mc_ptr->ntasks_per_core)) {
-			ntasks_per_core = mc_ptr->ntasks_per_core;
-			ncpus_per_core = MIN(threads_per_core,
-					     (ntasks_per_core * cpus_per_task));
-		}
-		if ((mc_ptr->threads_per_core != NO_VAL16) &&
-		    (mc_ptr->threads_per_core <  ncpus_per_core)) {
-			ncpus_per_core = mc_ptr->threads_per_core;
-		}
-		*cpu_alloc_size = MIN(*cpu_alloc_size, ncpus_per_core);
-		ntasks_per_socket = mc_ptr->ntasks_per_socket;
-
-		if ((ncpus_per_core != INFINITE16) &&
-		    (ncpus_per_core > threads_per_core)) {
-			goto fini;
-		}
-		threads_per_socket = threads_per_core * cores_per_socket;
-		if ((ntasks_per_socket != INFINITE16) &&
-		    (ntasks_per_socket > threads_per_socket)) {
-			goto fini;
-		}
-	}
-
-	/*
-	 * These are the job parameters that we must respect:
-	 *
-	 *   details_ptr->mc_ptr->cores_per_socket (cr_core|cr_socket)
-	 *	- min # of cores per socket to allocate to this job
-	 *   details_ptr->mc_ptr->sockets_per_node (cr_core|cr_socket)
-	 *	- min # of sockets per node to allocate to this job
-	 *   details_ptr->mc_ptr->ntasks_per_core (cr_core|cr_socket)
-	 *	- number of tasks to launch per core
-	 *   details_ptr->mc_ptr->ntasks_per_socket (cr_core|cr_socket)
-	 *	- number of tasks to launch per socket
-	 *
-	 *   details_ptr->ntasks_per_node (all cr_types)
-	 *	- total number of tasks to launch on this node
-	 *   details_ptr->cpus_per_task (all cr_types)
-	 *	- number of cpus to allocate per task
-	 *
-	 * These are the hardware constraints:
-	 *   cpus = sockets * cores_per_socket * threads_per_core
-	 *
-	 * These are the cores/sockets that are available: core_map
-	 *
-	 * NOTE: currently we only allocate at the socket level, the core
-	 *       level, or the cpu level. When hyperthreading is enabled
-	 *       in the BIOS, then there can be more than one thread/cpu
-	 *       per physical core.
-	 *
-	 * PROCEDURE:
-	 *
-	 * Step 1: Determine the current usage data: used_cores[],
-	 *         used_core_count, free_cores[], free_core_count
-	 *
-	 * Step 2: For core-level and socket-level: apply sockets_per_node
-	 *         and cores_per_socket to the "free" cores.
-	 *
-	 * Step 3: Compute task-related data: ncpus_per_core,
-	 *         ntasks_per_socket, ntasks_per_node and cpus_per_task
-	 *         and determine the number of tasks to run on this node
-	 *
-	 * Step 4: Mark the allocated resources in the job_cores bitmap
-	 *         and return "num_tasks" from Step 3.
-	 *
-	 *
-	 * For socket and core counts, start by assuming that all available
-	 * resources will be given to the job. Check min_* to ensure that
-	 * there's enough resources. Reduce the resource count to match max_*
-	 * (if necessary). Also reduce resource count (if necessary) to
-	 * match ntasks_per_resource.
-	 */
-
-	/*
-	 * Step 1: create and compute core-count-per-socket
-	 * arrays and total core counts
-	 */
-	if (part_core_map) {
-		tmp_core = bit_copy(part_core_map);
-		bit_and_not(tmp_core, core_map);
-	}
-
-	socket_begin = core_begin;
-	socket_end = core_begin + cores_per_socket;
-	for (i = 0; i < sockets; i++) {
-		free_cores[i] = bit_set_count_range(core_map, socket_begin,
-						    socket_end);
-		free_core_count += free_cores[i];
-		if (!tmp_core) {
-			used_cores[i] += (cores_per_socket - free_cores[i]);
-		} else {
-			used_cores[i] = bit_set_count_range(tmp_core,
-							    socket_begin,
-							    socket_end);
-			used_cpu_array[i] = used_cores[i];
-		}
-
-		socket_begin = socket_end;
-		socket_end += cores_per_socket;
-		/*
-		 * if a socket is already in use and entire_sockets_only is
-		 * enabled or used_cpus reached MaxCPUsPerSocket partition limit
-		 * the socket cannot be used by this job
-		 */
-		if ((entire_sockets_only && used_cores[i]) ||
-		    ((used_cores[i] * threads_per_core) >=
-		     job_ptr->part_ptr->max_cpus_per_socket)) {
-			log_flag(SELECT_TYPE, "MaxCpusPerSocket: %u, CPUs already used on socket[%d]: %u - won't use the socket.",
-				 job_ptr->part_ptr->max_cpus_per_socket,
-				 i,
-				 used_cpu_array[i]);
-			free_core_count -= free_cores[i];
-			used_cores[i] += free_cores[i];
-			free_cores[i] = 0;
-		}
-		free_cpu_count += free_cores[i] * threads_per_core;
-		if (used_cpu_array[i])
-			used_cpu_count += used_cores[i] * threads_per_core;
-	}
-	avail_res->max_cpus = free_cpu_count;
-	FREE_NULL_BITMAP(tmp_core);
-
-	/* Enforce partition CPU limit, but do not pick specific cores yet */
-	if ((job_ptr->part_ptr->max_cpus_per_node != INFINITE) &&
-	    (free_cpu_count + used_cpu_count >
-	     job_ptr->part_ptr->max_cpus_per_node)) {
-
-		if (job_ptr->details->whole_node) {
-			log_flag(SELECT_TYPE, "Total cpu count greater than max_cpus_per_node on exclusive job. (%d > %d)",
-				 free_cpu_count + used_cpu_count,
-				 job_ptr->part_ptr->max_cpus_per_node);
-			num_tasks = 0;
-			goto fini;
-		}
-
-		if (is_cons_tres) {
-			if (used_cpu_count >=
-			    job_ptr->part_ptr->max_cpus_per_node) {
-				/* no available CPUs on this node */
-				num_tasks = 0;
-				goto fini;
-			}
-			part_cpu_limit = job_ptr->part_ptr->max_cpus_per_node -
-				used_cpu_count;
-			if ((part_cpu_limit == 1) &&
-			    (((ntasks_per_core != INFINITE16) &&
-			      (ntasks_per_core > part_cpu_limit)) ||
-			     ((ntasks_per_socket != INFINITE16) &&
-			      (ntasks_per_socket > part_cpu_limit)) ||
-			     ((ncpus_per_core != INFINITE16) &&
-			      (ncpus_per_core > part_cpu_limit)) ||
-			     (cpus_per_task > part_cpu_limit))) {
-				/* insufficient available CPUs on this node */
-				num_tasks = 0;
-				goto fini;
-			}
-		} else {
-			int excess = free_cpu_count + used_cpu_count -
-				job_ptr->part_ptr->max_cpus_per_node;
-			int min_excess_cores = min_cores;
-			int found_cores;
-			excess = (excess + threads_per_core - 1) /
-				threads_per_core;
-			while (excess > 0) {
-				int min_free_inx = -1;
-				for (i = 0; i < sockets; i++) {
-					if (free_cores[i] == 0)
-						continue;
-					if (((min_excess_cores > 1) ||
-					     (min_sockets > 1)) &&
-					    (free_cores[i] <= min_excess_cores))
-						continue;
-					if ((min_free_inx == -1) ||
-					    (free_cores[i] <
-					     free_cores[min_free_inx]))
-						min_free_inx = i;
-				}
-				if (min_free_inx == -1) {
-					if (min_excess_cores) {
-						min_excess_cores = 0;
-						continue;
-					}
-					break;
-				}
-				if (free_cores[min_free_inx] < excess)
-					found_cores = free_cores[min_free_inx];
-				else
-					found_cores = excess;
-				if (min_excess_cores  > 1 &&
-				    ((free_cores[min_free_inx] - found_cores) <
-				     min_excess_cores)) {
-					found_cores = free_cores[min_free_inx] -
-						min_excess_cores;
-				}
-				free_core_count -= found_cores;
-				free_cpu_count -= (found_cores *
-						   threads_per_core);
-				free_cores[min_free_inx] -= found_cores;
-				excess -= found_cores;
-			}
-		}
-	}
-
-	/* Step 2: check min_cores per socket and min_sockets per node */
-	j = 0;
-	for (i = 0; i < sockets; i++) {
-		if (free_cores[i] < min_cores) {
-			/* cannot use this socket */
-			free_core_count -= free_cores[i];
-			free_cores[i] = 0;
-			continue;
-		}
-		/* count this socket as usable */
-		j++;
-	}
-	if (j < min_sockets) {
-		/* cannot use this node */
-		num_tasks = 0;
-		goto fini;
-	}
-
-	if (free_core_count < 1) {
-		/* no available resources on this node */
-		num_tasks = 0;
-		goto fini;
-	}
-
-	/*
-	 * Step 3: Compute task-related data:
-	 *         ntasks_per_socket, ntasks_per_node and cpus_per_task
-	 *         to determine the number of tasks to run on this node
-	 *
-	 * Note: cpus_per_task and ncpus_per_core need to play nice
-	 *       2 tasks_per_core vs. 2 cpus_per_task
-	 */
-	avail_cpus = 0;
-	num_tasks = 0;
-	threads_per_core = common_cpus_per_core(details_ptr, node_i);
-
-	/* Are enough CPUs available compared with required ones? */
-	if ((free_core_count * threads_per_core) < details_ptr->pn_min_cpus) {
-		num_tasks = 0;
-		goto fini;
-	}
-
-	for (i = 0; i < sockets; i++) {
-		uint16_t tmp = free_cores[i] * threads_per_core;
-		if (req_sock_map && bit_test(req_sock_map, i)) {
-			if (tmp == 0) {
-				/* no available resources on required socket */
-				num_tasks = 0;
-				goto fini;
-			}
-			req_sock_cpus += tmp;
-		}
-		avail_cpus += tmp;
-		if (ntasks_per_socket)
-			num_tasks += MIN(tmp, ntasks_per_socket);
-		else
-			num_tasks += tmp;
-	}
-
-	/*
-	 * If job requested exclusive rights to the node don't do the min
-	 * here since it will make it so we don't allocate the entire node.
-	 * Don't min num_tasks if cpus_per_tres given, since number of
-	 * CPUs in that case is not determined by tasks.
-	 */
-	if (details_ptr->ntasks_per_node && details_ptr->share_res &&
-	    !job_ptr->cpus_per_tres)
-		num_tasks = MIN(num_tasks, details_ptr->ntasks_per_node);
-
-	/*
-	 * If there's an auto adjustment then use the max between the required
-	 * CPUs according to required task number, or to the autoadjustment.
-	 */
-	if (details_ptr->pn_min_cpus > details_ptr->orig_pn_min_cpus) {
-		avail_cpus = MAX(details_ptr->pn_min_cpus, avail_cpus);
-	}
-
-	if ((details_ptr->ntasks_per_node &&
-	     (num_tasks < details_ptr->ntasks_per_node) &&
-	     (details_ptr->overcommit == 0)) ||
-	    (details_ptr->pn_min_cpus &&
-	     (avail_cpus < details_ptr->pn_min_cpus))) {
-		/* insufficient resources on this node */
-		num_tasks = 0;
-		goto fini;
-	}
-
-	/*
-	 * Step 4 - make sure that ntasks_per_socket is enforced when
-	 *          allocating cores
-	 */
-	if ((ntasks_per_socket != INFINITE16) &&
-	    (ntasks_per_socket >= 1)) {
-		cps = ntasks_per_socket;
-		if (cpus_per_task > 1)
-			cps *= cpus_per_task;
-	} else
-		cps = cores_per_socket * threads_per_core;
-
-	tmp_cpt = cpus_per_task;
-	if (req_sock_map) {
-		i = 0;
-		tmp_core = bit_alloc(bit_size(core_map));
-		if (req_sock_cpus > avail_cpus) {
-			max_cpu_per_req_sock = avail_cpus /
-					       bit_set_count(req_sock_map);
-		}
-	} else {
-		i = sockets;
-	}
-
-	if (is_cons_tres &&
-	    (slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
-	    (details_ptr->min_gres_cpu > 0)) {
-		use_tpc = true;
-	}
-	for ( ; ((i < sockets) && (avail_cpus > 0)); i++) {
-		if (bit_test(req_sock_map, i)) {
-			for (j = 0; j < cores_per_socket &&
-				    free_cores[i]; j++) {
-				c = (i * cores_per_socket) + j;
-				if (!bit_test(core_map, c))
-					continue;
-				/*
-				 * this socket has free cores, but make sure we don't
-				 * use more than are needed for ntasks_per_socket
-				 */
-				if (_check_ntasks_per_sock(c, i,
-							   threads_per_core,
-							   cps, cpu_cnt,
-							   core_map)) {
-					continue;
-				}
-				free_cores[i]--;
-				/*
-				 * we have to ensure that cpu_count is not bigger than
-				 * avail_cpus due to hyperthreading or this would break
-				 * the selection logic providing more CPUs than allowed
-				 * after task-related data processing of stage 3
-				 */
-				_count_used_cpus(threads_per_core,
-						 cpus_per_task, ntasks_per_core,
-						 use_tpc, &tmp_cpt, &avail_cpus,
-						 &cpu_count);
-
-				bit_set(tmp_core, c);
-				if (cpu_cnt[i] > max_cpu_per_req_sock)
-					break;
-			}
-		}
-	}
-	for (c = core_begin; c < core_end ; c++) {
-		if (!bit_test(core_map, c) || (tmp_core &&
-					       bit_test(tmp_core, c)))
-			continue;
-
-		/* Socket index */
-		i = (uint16_t) ((c - core_begin) / cores_per_socket);
-		if (free_cores[i] > 0 && (avail_cpus > 0)) {
-			/*
-			 * this socket has free cores, but make sure we don't
-			 * use more than are needed for ntasks_per_socket
-			 */
-			if (_check_ntasks_per_sock(c, i, threads_per_core, cps,
-						   cpu_cnt, core_map))
-				continue;
-
-			free_cores[i]--;
-			/*
-			 * we have to ensure that cpu_count is not bigger than
-			 * avail_cpus due to hyperthreading or this would break
-			 * the selection logic providing more CPUs than allowed
-			 * after task-related data processing of stage 3
-			 */
-			_count_used_cpus(threads_per_core, cpus_per_task,
-				         ntasks_per_core, use_tpc, &tmp_cpt,
-					 &avail_cpus, &cpu_count);
-		} else
-			bit_clear(core_map, c);
-	}
-
-fini:
-	/* if num_tasks == 0 then clear all bits on this node */
-	if (num_tasks == 0) {
-		bit_nclear(core_map, core_begin, core_end-1);
-		cpu_count = 0;
-	}
-
-	if ((details_ptr->core_spec != NO_VAL16) &&
-	    (details_ptr->core_spec & CORE_SPEC_THREAD) &&
-	    ((node_ptr->threads == 1) ||
-	     (node_ptr->threads == node_ptr->tpc))) {
-		/*
-		 * NOTE: Currently does not support the situation when Slurm
-		 * allocates by core, the thread specialization count occupies
-		 * a full core
-		 */
-		c = details_ptr->core_spec & (~CORE_SPEC_THREAD);
-		if (((cpu_count + c) <= node_ptr->cpus))
-			;
-		else if (cpu_count > c)
-			spec_threads = c;
-		else
-			spec_threads = cpu_count;
-	}
-	cpu_count -= spec_threads;
-
-	avail_res->avail_cpus = MIN(cpu_count, part_cpu_limit);
-
-	if (is_cons_tres) {
-		avail_res->min_cpus = *cpu_alloc_size;
-		avail_res->avail_cores_per_sock =
-			xcalloc(sockets, sizeof(uint16_t));
-		socket_begin = core_begin;
-		socket_end = core_begin + cores_per_socket;
-		for (i = 0; i < sockets; i++) {
-			avail_res->avail_cores_per_sock[i] =
-				bit_set_count_range(core_map, socket_begin,
-						    socket_end);
-			socket_begin = socket_end;
-			socket_end += cores_per_socket;
-		}
-		avail_res->sock_cnt = sockets;
-		avail_res->spec_threads = spec_threads;
-		avail_res->tpc = node_ptr->tpc;
-	}
-	FREE_NULL_BITMAP(tmp_core);
-
-	return avail_res;
 }
 
 /*
@@ -749,7 +184,7 @@ static void _check_allocatable_sockets(node_record_t *node_ptr)
  * (either global or per partition list)
  * Returns NO_VAL64 if configuration parameter not set
  */
-extern uint64_t common_get_def_cpu_per_gpu(List job_defaults_list)
+extern uint64_t cons_helpers_get_def_cpu_per_gpu(List job_defaults_list)
 {
 	uint64_t cpu_per_gpu = NO_VAL64;
 	ListIterator iter;
@@ -775,7 +210,7 @@ extern uint64_t common_get_def_cpu_per_gpu(List job_defaults_list)
  * (either global or per partition list)
  * Returns NO_VAL64 if configuration parameter not set
  */
-extern uint64_t common_get_def_mem_per_gpu(List job_defaults_list)
+extern uint64_t cons_helpers_get_def_mem_per_gpu(List job_defaults_list)
 {
 	uint64_t mem_per_gpu = NO_VAL64;
 	ListIterator iter;
@@ -796,21 +231,11 @@ extern uint64_t common_get_def_mem_per_gpu(List job_defaults_list)
 	return mem_per_gpu;
 }
 
-extern void common_free_avail_res(avail_res_t *avail_res)
-{
-	if (!avail_res)
-		return;
-
-	xfree(avail_res->avail_cores_per_sock);
-	FREE_NULL_LIST(avail_res->sock_gres_list);
-	xfree(avail_res);
-}
-
 /*
  * Return the number of usable logical processors by a given job on
  * some specified node. Returns INFINITE16 if no limit.
  */
-extern uint16_t common_cpus_per_core(job_details_t *details, int node_inx)
+extern uint16_t cons_helpers_cpus_per_core(job_details_t *details, int node_inx)
 {
 	uint16_t ncpus_per_core = INFINITE16;	/* Usable CPUs per core */
 	uint16_t threads_per_core = node_record_table_ptr[node_inx]->tpc;
@@ -841,46 +266,13 @@ extern uint16_t common_cpus_per_core(job_details_t *details, int node_inx)
 	return threads_per_core;
 }
 
-extern void common_init(void)
-{
-	if (xstrcasestr(slurm_conf.topology_param, "dragonfly"))
-		have_dragonfly = true;
-	if (xstrcasestr(slurm_conf.topology_param, "TopoOptional"))
-		topo_optional = true;
-
-	if (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)
-		gang_mode = true;
-	else
-		gang_mode = false;
-
-	if (plugin_id == SELECT_PLUGIN_CONS_TRES)
-		is_cons_tres = true;
-
-	verbose("%s loaded", plugin_type);
-
-}
-
-extern void common_fini(void)
-{
-	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("%s shutting down ...", plugin_type);
-	else
-		verbose("%s shutting down ...", plugin_type);
-
-	node_data_destroy(select_node_usage);
-	select_node_usage = NULL;
-	part_data_destroy_res(select_part_record);
-	select_part_record = NULL;
-	cr_fini_global_core_data();
-}
-
 /*
  * Bit a core bitmap array of available cores
  * node_bitmap IN - Nodes available for use
  * core_spec IN - Specialized core specification, NO_VAL16 if none
  * RET core bitmap array, one per node. Use free_core_array() to release memory
  */
-extern bitstr_t **common_mark_avail_cores(
+extern bitstr_t **cons_helpers_mark_avail_cores(
 	bitstr_t *node_bitmap, uint16_t core_spec)
 {
 	bitstr_t **avail_cores;
@@ -994,47 +386,6 @@ extern bitstr_t **common_mark_avail_cores(
 	}
 
 	return avail_cores;
-}
-
-/*
- * common_allocate - Given the job requirements, determine which resources
- *                   from the given node can be allocated (if any) to this
- *                   job. Returns the number of cpus that can be used by
- *                   this node AND a bitmap of the selected cores|sockets.
- *
- * IN job_ptr       - pointer to job requirements
- * IN/OUT core_map  - core_bitmap of available cores on this node
- * IN part_core_map - bitmap of cores already allocated on this partition/node
- * IN node_i        - index of node to be evaluated
- * OUT cpu_alloc_size - minimum allocation size, in CPUs
- * IN req_sock_map - OPTIONAL bitmap of required sockets
- * IN cr_type - Consumable Resource setting
- * RET resource availability structure, call _free_avail_res() to free
- */
-extern avail_res_t *common_allocate(job_record_t *job_ptr,
-				    bitstr_t *core_map,
-				    bitstr_t *part_core_map,
-				    const uint32_t node_i,
-				    int *cpu_alloc_size,
-				    bitstr_t *req_sock_map,
-				    uint16_t cr_type)
-{
-	bool alloc_sockets;
-
-	if (cr_type & CR_SOCKET) {
-		/* cpu_alloc_size = CPUs per socket */
-		alloc_sockets = true;
-		*cpu_alloc_size = node_record_table_ptr[node_i]->cores *
-			node_record_table_ptr[node_i]->tpc;
-	} else {
-		/* cpu_alloc_size = # of CPUs per core || 1 individual CPU */
-		alloc_sockets = false;
-		*cpu_alloc_size = (cr_type & CR_CORE) ?
-			node_record_table_ptr[node_i]->tpc : 1;
-	}
-
-	return _allocate_sc(job_ptr, core_map, part_core_map, node_i,
-			    cpu_alloc_size, alloc_sockets, req_sock_map);
 }
 
 extern int select_p_state_save(char *dir_name)
@@ -2001,9 +1352,9 @@ extern int select_p_reconfigure(void)
 		def_cpu_per_gpu = 0;
 		def_mem_per_gpu = 0;
 		if (slurm_conf.job_defaults_list) {
-			def_cpu_per_gpu = common_get_def_cpu_per_gpu(
+			def_cpu_per_gpu = cons_helpers_get_def_cpu_per_gpu(
 				slurm_conf.job_defaults_list);
-			def_mem_per_gpu = common_get_def_mem_per_gpu(
+			def_mem_per_gpu = cons_helpers_get_def_mem_per_gpu(
 				slurm_conf.job_defaults_list);
 		}
 	}
@@ -2147,7 +1498,7 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 			bit_copy(switch_record_table[i].node_bitmap);
 		bit_and(switches_bitmap[i], avail_node_bitmap);
 		switches_node_cnt[i] = bit_set_count(switches_bitmap[i]);
-		switches_core_bitmap[i] = common_mark_avail_cores(
+		switches_core_bitmap[i] = cons_helpers_mark_avail_cores(
 			switches_bitmap[i], NO_VAL16);
 		if (exc_core_bitmap) {
 			core_array_and_not(switches_core_bitmap[i],

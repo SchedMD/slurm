@@ -113,29 +113,23 @@ extern uint16_t priority_flags;
 extern bool     spec_cores_first;
 extern bool     topo_optional;
 
-extern char *common_node_state_str(uint16_t node_state);
-
 /*
  * Get configured DefCpuPerGPU information from a list
  * (either global or per partition list)
  * Returns NO_VAL64 if configuration parameter not set
  */
-extern uint64_t common_get_def_cpu_per_gpu(List job_defaults_list);
+extern uint64_t cons_helpers_get_def_cpu_per_gpu(List job_defaults_list);
 
 /*
  * Get configured DefMemPerGPU information from a list
  * (either global or per partition list)
  * Returns NO_VAL64 if configuration parameter not set
  */
-extern uint64_t common_get_def_mem_per_gpu(List job_defaults_list);
-
-extern void common_free_avail_res(avail_res_t *avail_res);
+extern uint64_t cons_helpers_get_def_mem_per_gpu(List job_defaults_list);
 
 /* Determine how many cpus per core we can use */
-extern uint16_t common_cpus_per_core(job_details_t *details, int node_inx);
-
-extern void common_init(void);
-extern void common_fini(void);
+extern uint16_t cons_helpers_cpus_per_core(
+	job_details_t *details, int node_inx);
 
 /*
  * Bit a core bitmap array of available cores
@@ -143,30 +137,7 @@ extern void common_fini(void);
  * core_spec IN - Specialized core specification, NO_VAL16 if none
  * RET core bitmap array, one per node. Use free_core_array() to release memory
  */
-extern bitstr_t **common_mark_avail_cores(
+extern bitstr_t **cons_helpers_mark_avail_cores(
 	bitstr_t *node_bitmap, uint16_t core_spec);
-
-/*
- * common_allocate - Given the job requirements, determine which resources
- *                   from the given node can be allocated (if any) to this
- *                   job. Returns the number of cpus that can be used by
- *                   this node AND a bitmap of the selected cores|sockets.
- *
- * IN job_ptr       - pointer to job requirements
- * IN/OUT core_map  - core_bitmap of available cores on this node
- * IN part_core_map - bitmap of cores already allocated on this partition/node
- * IN node_i        - index of node to be evaluated
- * OUT cpu_alloc_size - minimum allocation size, in CPUs
- * IN req_sock_map - OPTIONAL bitmap of required sockets
- * IN cr_type - Consumable Resource setting
- * RET resource availability structure, call _free_avail_res() to free
- */
-extern avail_res_t *common_allocate(job_record_t *job_ptr,
-				    bitstr_t *core_map,
-				    bitstr_t *part_core_map,
-				    const uint32_t node_i,
-				    int *cpu_alloc_size,
-				    bitstr_t *req_sock_map,
-				    uint16_t cr_type);
 
 #endif /* _CONS_HELPERS_H */

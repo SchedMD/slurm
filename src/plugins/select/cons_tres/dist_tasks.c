@@ -336,8 +336,8 @@ static int _set_task_dist(job_record_t *job_ptr, const uint16_t cr_type)
 	/*
 	 * If we are asking for less threads per core than there are on the node
 	 * we need to adjust for that for accounting.
-	 * This will be reversed for getting the correct memory in cons_common.c
-	 * _job_test() look for 'save_mem & MEM_PER_CPU'.
+	 * This will be reversed for getting the correct memory in
+	 * cons_helpers.c  _job_test() look for 'save_mem & MEM_PER_CPU'.
 	 */
 	if (job_ptr->job_resrcs &&
 	    (job_ptr->details->mc_ptr->threads_per_core != NO_VAL16) &&
@@ -554,7 +554,7 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 		}
 
 		cpus = job_res->cpus[i];
-		vpus = common_cpus_per_core(job_ptr->details, n);
+		vpus = cons_helpers_cpus_per_core(job_ptr->details, n);
 
 		/* compute still required cores on the node */
 		req_cores = cpus / vpus;
@@ -933,7 +933,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 	     (node_ptr = next_node_bitmap(job_res->node_bitmap, &n)); n++) {
 		sockets = node_ptr->tot_sockets;
 		cps     = node_ptr->cores;
-		vpus    = common_cpus_per_core(job_ptr->details, n);
+		vpus    = cons_helpers_cpus_per_core(job_ptr->details, n);
 
 		log_flag(SELECT_TYPE, "%pJ node %s vpus %u cpus %u",
 			 job_ptr, node_ptr->name, vpus, job_res->cpus[i]);

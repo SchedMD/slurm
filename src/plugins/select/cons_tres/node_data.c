@@ -39,6 +39,15 @@
 
 node_use_record_t *select_node_usage  = NULL;
 
+static char *_node_state_str(uint16_t node_state)
+{
+	if (node_state >= NODE_CR_RESERVED)
+		return "reserved";	/* Exclusive allocation */
+	if (node_state >= NODE_CR_ONE_ROW)
+		return "one_row";	/* Dedicated core for this partition */
+	return "available";		/* Idle or in-use (shared) */
+}
+
 /* Delete the given select_node_usage array */
 extern void node_data_destroy(node_use_record_t *node_usage)
 {
@@ -74,7 +83,7 @@ extern void node_data_dump(void)
 		     node_ptr->tpc,
 		     node_ptr->real_memory,
 		     select_node_usage[node_ptr->index].alloc_memory,
-		     common_node_state_str(
+		     _node_state_str(
 			     select_node_usage[node_ptr->index].node_state),
 		     select_node_usage[node_ptr->index].node_state);
 

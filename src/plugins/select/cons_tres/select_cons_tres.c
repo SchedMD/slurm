@@ -90,7 +90,7 @@ const uint16_t nodeinfo_magic = 0x8a5d;
 static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **avail_cores)
 {
 	bitstr_t **avail_core_map =
-		common_mark_avail_cores(node_bitmap, NO_VAL16);
+		cons_helpers_mark_avail_cores(node_bitmap, NO_VAL16);
 
 	xassert(avail_cores);
 
@@ -415,7 +415,20 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
  */
 extern int init(void)
 {
-	common_init();
+	if (xstrcasestr(slurm_conf.topology_param, "dragonfly"))
+		have_dragonfly = true;
+	if (xstrcasestr(slurm_conf.topology_param, "TopoOptional"))
+		topo_optional = true;
+
+	if (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)
+		gang_mode = true;
+	else
+		gang_mode = false;
+
+	if (plugin_id == SELECT_PLUGIN_CONS_TRES)
+		is_cons_tres = true;
+
+	verbose("%s loaded", plugin_type);
 
 	cons_common_callbacks.can_job_run_on_node = can_job_run_on_node;
 	cons_common_callbacks.choose_nodes = choose_nodes;
@@ -429,7 +442,16 @@ extern int init(void)
 
 extern int fini(void)
 {
-	common_fini();
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		info("%s shutting down ...", plugin_type);
+	else
+		verbose("%s shutting down ...", plugin_type);
+
+	node_data_destroy(select_node_usage);
+	select_node_usage = NULL;
+	part_data_destroy_res(select_part_record);
+	select_part_record = NULL;
+	cr_fini_global_core_data();
 
 	return SLURM_SUCCESS;
 }
