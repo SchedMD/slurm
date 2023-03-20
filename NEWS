@@ -36,6 +36,9 @@ documents those changes that are of interest to users and administrators.
     the --parsable option.
  -- data_parser/v0.0.39 - fix segfault when default qos is not set.
  -- Fix regression in 22.05.0rc1 that broke Nodes=ALL in a NodeSet.
+ -- openapi/v0.0.39 - fix jobs submitted via slurmrestd being allocated fewer
+    CPUs than tasks when requesting multiple tasks.
+
 
 * Changes in Slurm 23.02.0
 ==========================
