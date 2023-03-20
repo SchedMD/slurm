@@ -204,36 +204,35 @@ if {$part_cores == 0} {
 #
 set user_name [get_my_user_name]
 
-set cons_res_actived 0
+set cons_tres_actived 0
 if {$def_oversubscribe_force == 0} {
-	if {[check_config_select "cons_res"] ||
-	    [check_config_select "cons_tres"]} {
-		set cons_res_actived 1
+	if {[check_config_select "cons_tres"]} {
+		set cons_tres_actived 1
 	}
 }
 set exclusive [default_part_exclusive]
-if {$cons_res_actived == 1} {
+if {$cons_tres_actived == 1} {
 	inc3_11_1
 } else {
-	subskip "TEST 3.11.1 skipped because it needs cons_res"
+	subskip "TEST 3.11.1 skipped because it needs cons_tres"
 }
 inc3_11_2
 inc3_11_3
 inc3_11_4
 inc3_11_5
 inc3_11_6
-if {$cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0} {
+if {$cons_tres_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0} {
 	inc3_11_7
 	inc3_11_8
 } else {
-	subskip "TEST 3.11.7 skipped because it needs cons_res and other conditions ($cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0)"
-	subskip "TEST 3.11.8 skipped because it needs cons_res and other conditions ($cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0)"
+	subskip "TEST 3.11.7 skipped because it needs cons_tres and other conditions ($cons_tres_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0)"
+	subskip "TEST 3.11.8 skipped because it needs cons_tres and other conditions ($cons_tres_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0)"
 
 }
-if {$cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0 && $heterogeneous == 0} {
+if {$cons_tres_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0 && $heterogeneous == 0} {
 	inc3_11_9
 } else {
-	subskip "TEST 3.11.9 skipped because it needs cons_res and other conditions ($cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0 && $heterogeneous == 0)"
+	subskip "TEST 3.11.9 skipped because it needs cons_tres and other conditions ($cons_tres_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0 && $heterogeneous == 0)"
 }
 inc3_11_10
 inc3_11_11

@@ -47,8 +47,8 @@ gang scheduling:
 <LI>
 <B>SelectType</B>: The Slurm gang scheduler supports
 nodes allocated by the <I>select/linear</I> plugin,
-socket/core/CPU resources allocated by the <I>select/cons_res</I> and
-<I>select/cons_tres</I> plugins, or <I>select/cray_aries</I> for Cray XC
+socket/core/CPU resources allocated by the
+<I>select/cons_tres</I> plugin, or <I>select/cray_aries</I> for Cray XC
 systems without ALPS.
 </LI>
 <LI>
@@ -58,7 +58,7 @@ should be configured to track the amount of memory used by each job to ensure
 that memory page swapping does not occur.
 When <I>select/linear</I> is chosen, we recommend setting
 <I>SelectTypeParameters=CR_Memory</I>.
-When <I>select/cons_res</I> or <I>select/cons_tres</I> are chosen, we recommend
+When <I>select/cons_tres</I> is chosen, we recommend
 including Memory as a resource
 (e.g. <I>SelectTypeParameters=CR_Core_Memory</I>).
 </LI>
@@ -347,7 +347,7 @@ Normal backfill algorithms check <U>all</U> jobs in the wait queue.
 <P>
 The following two examples illustrate the primary difference between
 <I>CR_CPU</I> and <I>CR_Core</I> when consumable resource selection is enabled
-(<I>select/cons_res</I>).
+(<I>select/cons_tres</I>).
 </P>
 <P>
 When <I>CR_CPU</I> (or <I>CR_CPU_Memory</I>) is configured then the selector
@@ -378,7 +378,7 @@ PARTITION AVAIL  TIMELIMIT NODES  STATE NODELIST
 active*      up   infinite     5   idle n[12-16]
 
 [user@n16 load]$ <B>scontrol show config | grep Select</B>
-SelectType              = select/cons_res
+SelectType              = select/cons_tres
 SelectTypeParameters    = CR_CORE_MEMORY
 
 [user@n16 load]$ <B>sinfo -o "%20N %5D %5c %5z"</B>
@@ -446,7 +446,7 @@ PARTITION AVAIL  TIMELIMIT NODES  STATE NODELIST
 active*      up   infinite     5   idle n[12-16]
 
 [user@n16 load]$ <B>scontrol show config | grep Select</B>
-SelectType              = select/cons_res
+SelectType              = select/cons_tres
 SelectTypeParameters    = CR_CPU_MEMORY
 
 [user@n16 load]$ <B>sinfo -o "%20N %5D %5c %5z"</B>

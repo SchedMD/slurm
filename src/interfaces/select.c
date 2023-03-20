@@ -108,11 +108,9 @@ typedef struct {
 } plugin_id_name;
 
 const plugin_id_name plugin_ids[] = {
-	{ SELECT_PLUGIN_CONS_RES, "cons_res" },
 	{ SELECT_PLUGIN_LINEAR, "linear" },
 	{ SELECT_PLUGIN_SERIAL, "serial" },
 	{ SELECT_PLUGIN_CRAY_LINEAR, "cray_aries+linear" },
-	{ SELECT_PLUGIN_CRAY_CONS_RES, "cray_aries+cons_res" },
 	{ SELECT_PLUGIN_CONS_TRES, "cons_tres" },
 	{ SELECT_PLUGIN_CRAY_CONS_TRES, "cray_aries+cons_tres" },
 };
@@ -287,7 +285,7 @@ fini:	slurm_mutex_unlock(&select_context_lock);
 extern int select_get_plugin_id_pos(uint32_t plugin_id)
 {
 	int i;
-	static bool cray_other_cons_res = false;
+	static bool cray_other_cons_tres = false;
 
 	xassert(select_context_cnt >= 0);
 again:
@@ -300,48 +298,34 @@ again:
 		 * Put on the extra Cray select plugins that do not get
 		 * generated automatically.
 		 */
-		if (!cray_other_cons_res &&
-		    ((plugin_id == SELECT_PLUGIN_CRAY_CONS_RES)  ||
-		     (plugin_id == SELECT_PLUGIN_CRAY_CONS_TRES) ||
+		if (!cray_other_cons_tres &&
+		    ((plugin_id == SELECT_PLUGIN_CRAY_CONS_TRES) ||
 		     (plugin_id == SELECT_PLUGIN_CRAY_LINEAR))) {
 			char *type = "select", *name = "select/cray_aries";
 			uint16_t save_params = slurm_conf.select_type_param;
-			uint16_t params[2];
-			int cray_plugin_id[2], cray_offset;
+			uint16_t params;
+			int cray_plugin_id;
 
-			cray_other_cons_res = true;
+			cray_other_cons_tres = true;
 
 			if (plugin_id == SELECT_PLUGIN_CRAY_LINEAR) {
-				params[0] = save_params & ~CR_OTHER_CONS_RES;
-				cray_plugin_id[0] = SELECT_PLUGIN_CRAY_CONS_RES;
-				params[1] = save_params & ~CR_OTHER_CONS_TRES;
-				cray_plugin_id[1] = SELECT_PLUGIN_CRAY_CONS_TRES;
-			} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES) {
-				params[0] = save_params | CR_OTHER_CONS_RES;
-				cray_plugin_id[0] = SELECT_PLUGIN_CRAY_LINEAR;
-				params[1] = save_params & ~CR_OTHER_CONS_RES;
-				cray_plugin_id[1] = SELECT_PLUGIN_CRAY_CONS_TRES;
+				params = save_params & ~CR_OTHER_CONS_TRES;
+				cray_plugin_id = SELECT_PLUGIN_CRAY_CONS_TRES;
 			} else {	/* SELECT_PLUGIN_CRAY_CONS_TRES */
-				params[0] = save_params | CR_OTHER_CONS_TRES;
-				cray_plugin_id[0] = SELECT_PLUGIN_CRAY_LINEAR;
-				params[1] = save_params & ~CR_OTHER_CONS_RES;
-				cray_plugin_id[1] = SELECT_PLUGIN_CRAY_CONS_RES;
+				params = save_params | CR_OTHER_CONS_TRES;
+				cray_plugin_id = SELECT_PLUGIN_CRAY_LINEAR;
 			}
 
-			for (cray_offset = 0; cray_offset < 2; cray_offset++) {
-				for (i = 0; i < select_context_cnt; i++) {
-					if (*(ops[i].plugin_id) ==
-					    cray_plugin_id[cray_offset])
-						break;
-				}
-				if (i < select_context_cnt)
-					break;	/* Found match */
+			for (i = 0; i < select_context_cnt; i++) {
+				if (*(ops[i].plugin_id) == cray_plugin_id)
+					break;
 			}
+
 			if (i >= select_context_cnt)
 				goto end_it;	/* No match */
 
 			slurm_mutex_lock(&select_context_lock);
-			slurm_conf.select_type_param = params[cray_offset];
+			slurm_conf.select_type_param = params;
 			plugin_context_destroy(select_context[i]);
 			select_context[i] =
 				plugin_context_create(type, name,
@@ -419,11 +403,6 @@ extern char *select_type_param_string(uint16_t select_type_param)
 	else if (select_type_param & CR_MEMORY)
 		strcat(select_str, "CR_MEMORY");
 
-	if (select_type_param & CR_OTHER_CONS_RES) {
-		if (select_str[0])
-			strcat(select_str, ",");
-		strcat(select_str, "OTHER_CONS_RES");
-	}
 	if (select_type_param & CR_OTHER_CONS_TRES) {
 		if (select_str[0])
 			strcat(select_str, ",");

@@ -22,6 +22,8 @@ HIGHLIGHTS
 ==========
  -- Remove 'none' plugins for all but auth and cred. scontrol show config
     will report (null) now.
+ -- Removed select/cons_res. Please update your configuration to
+    select/cons_tres.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

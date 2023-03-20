@@ -226,7 +226,7 @@ resources from the cloud by using the "--constraint" option.
 
 <pre>
 # Excerpt of slurm.conf
-SelectType=select/cons_res
+SelectType=select/cons_tres
 SelectTypeParameters=CR_CORE_Memory
 
 SuspendProgram=/usr/sbin/slurm_suspend

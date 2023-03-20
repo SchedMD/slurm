@@ -31,8 +31,8 @@ There are several important configuration parameters relating to preemption:
 <LI>
 <B>SelectType</B>: Slurm job preemption logic supports
 nodes allocated by the <I>select/linear</I> plugin,
-socket/core/CPU resources allocated by the <I>select/cons_res</I> and
-<I>select/cons_tres</I>  plugins, or <I>select/cray_aries</I> for Cray XC
+socket/core/CPU resources allocated by the
+<I>select/cons_tres</I> plugin, or <I>select/cray_aries</I> for Cray XC
 systems without ALPS.
 </LI>
 <LI>
@@ -42,7 +42,7 @@ plugin should be configured to track the amount of memory used by each job to
 ensure that memory page swapping does not occur.
 When <I>select/linear</I> is chosen, we recommend setting
 <I>SelectTypeParameter=CR_Memory</I>.
-When <I>select/cons_res</I> or <I>select/cons_tres</I> are chosen, we recommend
+When <I>select/cons_tres</I> is chosen, we recommend
 including Memory as a resource (e.g. <I>SelectTypeParameter=CR_Core_Memory</I>).
 <BR>
 <B>NOTE:</B> Unless <I>PreemptMode=SUSPEND,GANG</I> these memory management
@@ -161,8 +161,8 @@ from lower PriorityTier partitions. This is not compatible with
 Service (QOS) specifications in the Slurm database. This option is not
 compatible with <I>PreemptMode=OFF</I>. A configuration of
 <I>PreemptMode=SUSPEND</I> is only supported by the
-<I>SelectType=select/cons_res</I> and <I>SelectType=select/cons_tres</I>
-plugins.
+<I>SelectType=select/cons_tres</I>
+plugin.
 See the <a href="sacctmgr.html">sacctmgr man page</a> to configure the options
 of <I>preempt/qos</I>.</LI>
 </UL>

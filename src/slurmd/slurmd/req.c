@@ -1164,7 +1164,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		if (cpu_log)
 			log_flag(CPU_BIND, "====================");
 		if (step_cpus == 0) {
-			error("cons_res: zero processors allocated to step");
+			error("Zero processors allocated to step");
 			step_cpus = 1;
 		}
 		/* NOTE: step_cpus is the count of allocated resources
@@ -1186,7 +1186,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		if (tasks_to_launch > step_cpus) {
 			/* This is expected with the --overcommit option
 			 * or hyperthreads */
-			debug("cons_res: More than one tasks per logical processor (%d > %u) on host [%ps %u %s]",
+			debug("More than one tasks per logical processor (%d > %u) on host [%ps %u %s]",
 			      tasks_to_launch, step_cpus, &arg->step_id,
 			      arg->uid, arg->step_hostlist);
 		}

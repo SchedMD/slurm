@@ -956,11 +956,12 @@ _read_config(void)
 	path_pubkey = xstrdup(cf->job_credential_public_certificate);
 
 #ifndef HAVE_FRONT_END
-	if (!xstrcmp(cf->select_type, "select/cons_res") ||
-	    !xstrcmp(cf->select_type, "select/cons_tres"))
-		cr_flag = true;
-	if (!xstrcmp(cf->select_type, "select/cray_aries") &&
-	    ((cf->select_type_param & CR_OTHER_CONS_RES) ||
+	/*
+	 * We can't call slurm_select_cr_type() because we don't load the select
+	 * plugin here.
+	 */
+	if (!xstrcmp(cf->select_type, "select/cons_tres") ||
+	    (!xstrcmp(cf->select_type, "select/cray_aries") &&
 	     (cf->select_type_param & CR_OTHER_CONS_TRES)))
 		cr_flag = true;
 

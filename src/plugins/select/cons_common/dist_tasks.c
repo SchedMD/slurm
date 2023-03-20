@@ -1066,7 +1066,6 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 			if (prev_cpus != cpus)
 				 continue;
 
-			/* FIXME: verify this isn't needed for cons_res */
 			if (is_cons_tres && job_ptr->details->overcommit) {
 				/* We've got all the CPUs that we need */
 				break;

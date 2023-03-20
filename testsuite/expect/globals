@@ -3277,7 +3277,7 @@ proc get_select_type_params { {partition ""} } {
 #
 # DESCRIPTION
 #	Determine if SelectType is equivalent to the passed one by also
-#	checking other_cons_res and other_cons_tres on SelectTypeParameters
+#	checking other_cons_tres on SelectTypeParameters
 #	in case that select/cray_aries is configured.
 #
 # ARGUMENTS
@@ -3298,12 +3298,7 @@ proc check_config_select { type } {
 	}
 	if {$select_type eq "select/cray_aries"} {
 		if {$type eq "linear" &&
-		    ![param_contains $select_type_parameters "other_cons_res"] &&
 		    ![param_contains $select_type_parameters "other_cons_tres"]} {
-			return true
-		}
-		if {$type eq "cons_res" &&
-		    [param_contains $select_type_parameters "other_cons_res"]} {
 			return true
 		}
 		if {$type eq "cons_tres" &&

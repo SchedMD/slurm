@@ -363,9 +363,8 @@ jobs in higher priority queues.</li>
 <p>The resource selection mechanism used by Slurm is controlled by the
 <b>SelectType</b> configuration parameter.
 If you want to execute multiple jobs per node, but track and manage allocation
-of the processors, memory and other resources, the <i>cons_res</i> (consumable
-resources) or <i>cons_tres</i> (consumable trackable resources) plugins are
-recommended.
+of the processors, memory and other resources, the <i>cons_tres</i> (consumable
+trackable resources) plugin is recommended.
 For more information, please see
 <a href="cons_res.html">Consumable Resources in Slurm</a>.</p>
 

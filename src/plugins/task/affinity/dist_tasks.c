@@ -549,7 +549,7 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
 
 	/*
 	 * FIXME: I'm worried about core_bitmap with CPU_BIND_TO_SOCKETS &
-	 * max_cores - does select/cons_res plugin allocate whole
+	 * max_cores - does select/cons_tres plugin allocate whole
 	 * socket??? Maybe not. Check srun man page.
 	 */
 

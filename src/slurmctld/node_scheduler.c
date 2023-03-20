@@ -743,7 +743,7 @@ extern bitstr_t *build_active_feature_bitmap2(char *reboot_features)
  * The followed table details the node SHARED state for the various scenarios
  *
  *					part=	part=	part=	part=
- *	cons_res	user_request	EXCLUS	NO	YES	FORCE
+ *	cons_tres	user_request	EXCLUS	NO	YES	FORCE
  *	--------	------------	------	-----	-----	-----
  *	no		default		whole	whole	whole	whole/O
  *	no		exclusive	whole	whole	whole	whole/O

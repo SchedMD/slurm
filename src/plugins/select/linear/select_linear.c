@@ -1588,7 +1588,7 @@ fini:
 /*
  * _job_test_dfly - A dragonfly topology aware version of _job_test()
  * NOTE: The logic here is almost identical to that of _eval_nodes_dfly() in
- *       select/cons_res/job_test.c. Any bug found here is probably also there.
+ *       select/cons_tres/job_test.c. Any bug found here is probably also there.
  */
 static int _job_test_dfly(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
@@ -1884,7 +1884,7 @@ fini:	if (rc == SLURM_SUCCESS) {
 /*
  * _job_test_topo - A topology aware version of _job_test()
  * NOTE: The logic here is almost identical to that of _eval_nodes_topo() in
- *       select/cons_res/job_test.c. Any bug found here is probably also there.
+ *       select/cons_tres/job_test.c. Any bug found here is probably also there.
  */
 static int _job_test_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,

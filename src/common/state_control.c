@@ -322,7 +322,7 @@ extern int state_control_parse_resv_tres(char *val,
 	}
 
 	if (tres_corecnt && tres_corecnt[0] != '\0') {
-		/* only have this on a cons_res machine */
+		/* only have this on a cons_tres machine */
 		ret = state_control_parse_resv_corecnt(resv_msg_ptr,
 						       tres_corecnt,
 						       res_free_flags, true,

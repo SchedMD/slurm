@@ -273,14 +273,6 @@ static uint32_t _socks_per_node(job_record_t *job_ptr)
 	if (!job_ptr->details)
 		return s_p_n;
 
-	/*
-	 * FIXME: This was removed in cons_tres commit e82b9f17a23adf0, I am
-	 * wondering if it is actually needed in cons_res.
-	 */
-	if (!is_cons_tres && ((job_ptr->gres_list_req == NULL) ||
-			      ((job_ptr->bit_flags & GRES_ENFORCE_BIND) == 0)))
-		return s_p_n;
-
 	cpu_cnt = job_ptr->details->num_tasks * job_ptr->details->cpus_per_task;
 	cpu_cnt = MAX(job_ptr->details->min_cpus, cpu_cnt);
 	min_nodes = MAX(job_ptr->details->min_nodes, 1);
@@ -346,13 +338,6 @@ static avail_res_t **_get_res_avail(job_record_t *job_ptr,
 					s_p_n, node_usage,
 					cr_type, test_only, will_run,
 					part_core_map);
-		/*
-		 * FIXME: This is a hack to make cons_res more bullet proof as
-		 * there are places that don't always behave correctly with a
-		 * sparce array.
-		 */
-		if (!is_cons_tres && !avail_res_array[i])
-			avail_res_array[i] = xmalloc(sizeof(avail_res_t));
 	}
 
 	return avail_res_array;

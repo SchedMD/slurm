@@ -40,26 +40,6 @@
 #include "src/interfaces/gres.h"
 
 /*
- * Clear the core_bitmap for cores which are not usable by this job (i.e. for
- *	cores which are already bound to other jobs or lack GRES) only for
- *	cons_res.
- * IN job_gres_list - job's gres_list built by gres_job_state_validate()
- * IN node_gres_list - node's gres_list built by
- *                     gres_node_config_validate()
- * IN use_total_gres - if set then consider all GRES resources as available,
- *		       and none are committed to running jobs
- * IN/OUT core_bitmap - Identification of available cores
- *                      (NULL if no restriction)
- * IN core_start_bit - index into core_bitmap for this node's first cores
- * IN core_end_bit - index into core_bitmap for this node's last cores
- */
-extern void gres_select_filter_cons_res(List job_gres_list, List node_gres_list,
-					bool use_total_gres,
-					bitstr_t *core_bitmap,
-					int core_start_bit, int core_end_bit,
-					char *node_name);
-
-/*
  * Determine which GRES can be used on this node given the available cores.
  *	Filter out unusable GRES.
  * IN sock_gres_list - list of sock_gres_t entries built by

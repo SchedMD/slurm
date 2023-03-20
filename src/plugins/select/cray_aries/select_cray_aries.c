@@ -890,9 +890,7 @@ extern int init ( void )
 	 */
 	other_select_type_param = slurm_conf.select_type_param;
 
-	if (other_select_type_param & CR_OTHER_CONS_RES)
-		plugin_id = SELECT_PLUGIN_CRAY_CONS_RES;
-	else if (other_select_type_param & CR_OTHER_CONS_TRES)
+	if (other_select_type_param & CR_OTHER_CONS_TRES)
 		plugin_id = SELECT_PLUGIN_CRAY_CONS_TRES;
 	else
 		plugin_id = SELECT_PLUGIN_CRAY_LINEAR;

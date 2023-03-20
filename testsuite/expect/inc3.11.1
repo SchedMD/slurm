@@ -33,7 +33,7 @@
 ############################################################################
 
 proc inc3_11_1 {} {
-	global cons_res_actived def_node def_node_name
+	global cons_tres_actived def_node def_node_name
 	global def_partition
 	global part_cores part_node part_node_cnt part_node_cores
 	global user_name
@@ -64,7 +64,7 @@ proc inc3_11_1 {} {
 	{StartTime=now   Duration=5   Nodes=$def_node_name\[1\-2\] CoreCnt=1  User=$user_name}
 "
 	#{StartTime=now   Duration=5   Nodes=$def_node   Account=badaccountname}
-	if {$cons_res_actived == 1} {
+	if {$cons_tres_actived == 1} {
 		set corecnt [ expr $part_node_cores + 1 ]
 		set more_badtests "StartTime=now Duration=5 Nodes=$part_node CoreCnt=$corecnt User=$user_name"
 		lappend badtests $more_badtests
@@ -94,7 +94,7 @@ proc inc3_11_1 {} {
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=Maint Flags=ignore_jobs}
 "
 	#{StartTime=now   Duration=5   NodeCnt=10 CoreCnt=11  User=$user_name}
-	if {$cons_res_actived == 1 && $heterogeneous == 0} {
+	if {$cons_tres_actived == 1 && $heterogeneous == 0} {
 		set more_goodtests "StartTime=now Duration=5 NodeCnt=$part_node_cnt CoreCnt=$corecnt User=$user_name"
 		lappend goodtests $more_goodtests
 	}

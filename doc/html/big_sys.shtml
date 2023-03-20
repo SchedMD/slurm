@@ -98,7 +98,7 @@ be set quite high for memory size, open file count and stack size.</p>
 for smaller clusters, the overhead of keeping track of the individual
 processors and memory within each node adds significant overhead.
 For best scalability, allocate whole nodes using <i>select/linear</i>
-and avoid <i>select/cons_res</i>.</p>
+and avoid <i>select/cons_tres</i>.</p>
 
 <h2 id="acct_gather">Job Accounting Gather Plugin (JobAcctGatherType)
 <a class="slurm_link" href="#acct_gather"></a>

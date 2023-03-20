@@ -56,25 +56,7 @@ static bitstr_t *_create_core_bitmap(int node_inx)
 	if (!node_record_table_ptr[node_inx])
 		return NULL;
 
-	if (is_cons_tres)
-		return bit_alloc(node_record_table_ptr[node_inx]->tot_cores);
-	else {
-		/*
-		 * For cons_res we need the whole system size instead of per
-		 * node.
-		 */
-		static uint32_t sys_core_size = NO_VAL;
-
-		xassert(!node_inx);
-
-		if (sys_core_size == NO_VAL) {
-			node_record_t *node_ptr;
-			sys_core_size = 0;
-			for (int i = 0; (node_ptr = next_node(&i)); i++)
-				sys_core_size += node_ptr->tot_cores;
-		}
-		return bit_alloc(sys_core_size);
-	}
+	return bit_alloc(node_record_table_ptr[node_inx]->tot_cores);
 }
 
 /*

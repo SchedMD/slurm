@@ -14,7 +14,7 @@ allowed_cpu_list = []
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_auto_config("wants to set CPUSpecList on a node")
-    atf.require_config_parameter('SelectType', 'select/cons_res')
+    atf.require_config_parameter('SelectType', 'select/cons_tres')
     atf.require_config_parameter('TaskPlugin', 'task/affinity')
     atf.require_config_parameter('AllowSpecResourcesUsage', '1')
     atf.require_nodes(1, [('Cores', 2)])
