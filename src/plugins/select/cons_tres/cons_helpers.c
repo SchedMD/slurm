@@ -1,8 +1,8 @@
 /*****************************************************************************\
- *  cons_common.c - Common function interface for the select/cons_* plugins
+ *  cons_helpers.c - Helper functions for the select/cons_tres plugin
  *****************************************************************************
- *  Copyright (C) 2019 SchedMD LLC
- *  Derived in large part from select/cons_[res|tres] plugins
+ *  Copyright (C) SchedMD LLC
+ *  Derived in large part from select/cons_tres plugin
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -38,7 +38,7 @@
 
 #include "src/common/slurm_xlator.h"
 
-#include "cons_common.h"
+#include "select_cons_tres.h"
 
 #include "src/common/assoc_mgr.h"
 #include "src/interfaces/select.h"

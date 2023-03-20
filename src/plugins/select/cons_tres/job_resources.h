@@ -38,7 +38,7 @@
 #ifndef _CONS_COMMON_JOB_RES_H
 #define _CONS_COMMON_JOB_RES_H
 
-#include "cons_common.h"
+#include "cons_helpers.h"
 
 #include "src/common/bitstring.h"
 #include "src/common/job_resources.h"

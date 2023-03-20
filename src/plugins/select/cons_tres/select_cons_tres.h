@@ -61,8 +61,13 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
-#include "../cons_common/cons_common.h"
+#include "core_array.h"
+#include "node_data.h"
+#include "part_data.h"
+#include "job_resources.h"
 
-/* Global variables */
+#include "cons_helpers.h"
+
+#include "job_test.h"
 
 #endif /* !_CONS_TRES_H */

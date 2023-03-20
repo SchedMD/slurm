@@ -9,13 +9,16 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = select_cons_tres.la
 
 # Trackable RESources selection plugin.
-select_cons_tres_la_SOURCES =	dist_tasks.c dist_tasks.h	\
-				gres_sched.c gres_sched.h	\
-				job_test.c job_test.h		\
-				select_cons_tres.c select_cons_tres.h
+select_cons_tres_la_SOURCES = \
+	cons_helpers.c cons_helpers.h \
+	core_array.c core_array.h \
+	dist_tasks.c dist_tasks.h \
+	gres_sched.c gres_sched.h \
+	gres_select_filter.c gres_select_filter.h \
+	gres_select_util.c gres_select_util.h \
+	job_resources.c job_resources.h \
+	job_test.c job_test.h \
+	node_data.c node_data.h \
+	part_data.c part_data.h \
+	select_cons_tres.c select_cons_tres.h
 select_cons_tres_la_LDFLAGS = $(PLUGIN_FLAGS)
-select_cons_tres_la_LIBADD = ../cons_common/libcons_common.la
-
-force:
-$(select_cons_tres_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`

@@ -1,8 +1,8 @@
 /*****************************************************************************\
- *  cons_common.h - Common function interface for the select/cons_* plugins
+ *  cons_helpers.h - Helper functions for the select/cons_tres plugin
  *****************************************************************************
- *  Copyright (C) 2019 SchedMD LLC
- *  Derived in large part from select/cons_[res|tres] plugins
+ *  Copyright (C) SchedMD LLC
+ *  Derived in large part from select/cons_tres plugins
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -34,14 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CONS_COMMON_H
-#define _CONS_COMMON_H
-
-#include "core_array.h"
-#include "job_test.h"
-#include "node_data.h"
-#include "part_data.h"
-#include "job_resources.h"
+#ifndef _CONS_HELPERS_H
+#define _CONS_HELPERS_H
 
 #include "src/interfaces/gres.h"
 #include "src/slurmctld/slurmctld.h"
@@ -102,7 +96,7 @@ typedef struct {
 	void (*spec_core_filter)(bitstr_t *node_bitmap, bitstr_t **avail_cores);
 } cons_common_callbacks_t;
 
-/* Global common variables */
+/* Global variables */
 extern bool     backfill_busy_nodes;
 extern int      bf_window_scale;
 extern cons_common_callbacks_t cons_common_callbacks;
@@ -175,4 +169,4 @@ extern avail_res_t *common_allocate(job_record_t *job_ptr,
 				    bitstr_t *req_sock_map,
 				    uint16_t cr_type);
 
-#endif /* _CONS_COMMON_H */
+#endif /* _CONS_HELPERS_H */
