@@ -1360,6 +1360,7 @@ def submit_job(sbatch_args="--wrap \"sleep 60\"", **run_command_kwargs):
 
     if match := re.search(r'Submitted \S+ job (\d+)', output):
         job_id = int(match.group(1))
+        properties['submitted-jobs'].append(job_id)
         return job_id
     else:
         return 0
@@ -2467,6 +2468,7 @@ else:
         if match := re.search(rf"^\s*(?i:SlurmUser)\s*=\s*(.*)$", line):
             properties['slurm-user'] = match.group(1)
 
+properties['submitted-jobs'] = []
 properties['test-user'] = pwd.getpwuid(os.getuid()).pw_name
 properties['auto-config'] = False
 
