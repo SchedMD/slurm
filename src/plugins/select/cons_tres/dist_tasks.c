@@ -1195,9 +1195,9 @@ static int _at_tpn_limit(const uint32_t n, const job_record_t *job_ptr,
  *			offset based upon bits set in
  *			job_ptr->job_resrcs->node_bitmap
  */
-extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
-				  uint32_t *gres_task_limit,
-				  uint32_t *gres_min_cpus)
+static int _dist_tasks_compute_c_b(job_record_t *job_ptr,
+				   uint32_t *gres_task_limit,
+				   uint32_t *gres_min_cpus)
 {
 	bool over_subscribe = false;
 	bool do_gres_min_cpus = false;
@@ -1424,8 +1424,6 @@ extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 	int error_code;
 	bool one_task_per_node = false;
 
-	xassert(*cons_common_callbacks.dist_tasks_compute_c_b);
-
 	/*
 	 * Zero size jobs are supported for the creation and deletion of
 	 * persistent burst buffers.
@@ -1472,7 +1470,7 @@ extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 			return error_code;
 	} else {
 		/* Perform cyclic distribution on the job_resources_t struct */
-		error_code = (*cons_common_callbacks.dist_tasks_compute_c_b)(
+		error_code = _dist_tasks_compute_c_b(
 			job_ptr, gres_task_limit, gres_min_cpus);
 		if (error_code != SLURM_SUCCESS)
 			return error_code;

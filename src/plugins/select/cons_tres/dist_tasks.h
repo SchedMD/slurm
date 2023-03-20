@@ -94,29 +94,4 @@ extern void dist_tasks_gres_min_cpus(job_record_t *job_ptr,
 				     uint16_t *avail_cpus,
 				     uint32_t *gres_min_cpus);
 
-/*
- * dist_tasks_compute_c_b - compute the number of tasks on each
- * of the node for the cyclic and block distribution. We need to do
- * this in the case of consumable resources so that we have an exact
- * count for the needed hardware resources which will be used later to
- * update the different used resources per node structures.
- *
- * The most common case is when we have more resources than needed. In
- * that case we just "take" what we need and "release" the remaining
- * resources for other jobs. In the case where we oversubscribe the
- * processing units (PUs) we keep the initial set of resources.
- *
- * IN/OUT job_ptr - pointer to job being scheduled. The per-node
- *                  job_res->cpus array is recomputed here.
- * IN gres_task_limit - array of task limits based upon job's GRES specification
- *			offset based upon bits set in
- *			job_ptr->job_resrcs->node_bitmap
- * IN gres_min_cpus - array of minimum required CPUs based upon job's GRES
- * 		      specification, offset based upon bits set in
- * 		      job_ptr->job_resrcs->node_bitmap
- */
-extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
-				  uint32_t *gres_task_limit,
-				  uint32_t *gres_min_cpus);
-
 #endif /* !_CONS_TRES_DIST_TASKS_H */

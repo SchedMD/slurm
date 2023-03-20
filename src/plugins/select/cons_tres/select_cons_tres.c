@@ -55,6 +55,53 @@
 #define _DEBUG 0	/* Enables module specific debugging */
 #define NODEINFO_MAGIC 0x8a5d
 
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+extern slurm_conf_t slurm_conf __attribute__((weak_import));
+extern node_record_t **node_record_table_ptr __attribute__((weak_import));
+extern List part_list __attribute__((weak_import));
+extern List job_list __attribute__((weak_import));
+extern int node_record_count __attribute__((weak_import));
+extern time_t last_node_update __attribute__((weak_import));
+extern switch_record_t *switch_record_table __attribute__((weak_import));
+extern int switch_record_cnt __attribute__((weak_import));
+extern bitstr_t *avail_node_bitmap __attribute__((weak_import));
+extern int slurmctld_tres_cnt __attribute__((weak_import));
+extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
+extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
+extern list_t *cluster_license_list __attribute__((weak_import));
+#else
+slurm_conf_t slurm_conf;
+node_record_t **node_record_table_ptr;
+List part_list;
+List job_list;
+int node_record_count;
+time_t last_node_update;
+switch_record_t *switch_record_table;
+int switch_record_cnt;
+bitstr_t *avail_node_bitmap;
+int slurmctld_tres_cnt = 0;
+slurmctld_config_t slurmctld_config;
+bitstr_t *idle_node_bitmap;
+list_t *cluster_license_list;
+#endif
+
+/* init common global variables */
+bool     backfill_busy_nodes  = false;
+int      bf_window_scale      = 0;
+int      core_array_size      = 1;
+bool     gang_mode            = false;
+bool     have_dragonfly       = false;
+bool     is_cons_tres         = false;
+bool     pack_serial_at_end   = false;
+bool     preempt_by_part      = false;
+bool     preempt_by_qos       = false;
+bool     spec_cores_first     = false;
+bool     topo_optional        = false;
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -515,13 +562,6 @@ extern int init(void)
 		is_cons_tres = true;
 
 	verbose("%s loaded", plugin_type);
-
-	cons_common_callbacks.can_job_run_on_node = can_job_run_on_node;
-	cons_common_callbacks.choose_nodes = choose_nodes;
-	cons_common_callbacks.dist_tasks_compute_c_b = dist_tasks_compute_c_b;
-	cons_common_callbacks.pick_first_cores = _pick_first_cores;
-	cons_common_callbacks.sequential_pick = _sequential_pick;
-	cons_common_callbacks.spec_core_filter = _spec_core_filter;
 
 	return SLURM_SUCCESS;
 }
@@ -1645,13 +1685,12 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 		 */
 		if (!exc_core_bitmap)
 			exc_core_bitmap = build_core_array();
-		(*cons_common_callbacks.spec_core_filter)(
-			avail_node_bitmap, exc_core_bitmap);
+		_spec_core_filter(avail_node_bitmap, exc_core_bitmap);
 	}
 
 	if ((resv_desc_ptr->flags & RESERVE_FLAG_FIRST_CORES) && core_cnt) {
 		/* Reservation request with "Flags=first_cores CoreCnt=#" */
-		avail_nodes_bitmap = (*cons_common_callbacks.pick_first_cores)(
+		avail_nodes_bitmap = _pick_first_cores(
 			avail_node_bitmap,
 			node_cnt, core_cnt,
 			&exc_core_bitmap);
@@ -1666,7 +1705,7 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	/* When reservation includes a nodelist we use _sequential_pick code */
 	if (!switch_record_cnt || !switch_record_table || !node_cnt)  {
 		/* Reservation request with "Nodes=* [CoreCnt=#]" */
-		avail_nodes_bitmap = (*cons_common_callbacks.sequential_pick)(
+		avail_nodes_bitmap = _sequential_pick(
 			avail_node_bitmap,
 			node_cnt, core_cnt,
 			&exc_core_bitmap);

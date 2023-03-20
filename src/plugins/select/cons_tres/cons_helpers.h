@@ -66,53 +66,6 @@ struct select_nodeinfo {
 	double    tres_alloc_weighted;	/* weighted number of tres allocated. */
 };
 
-typedef struct {
-	avail_res_t *(*can_job_run_on_node)(job_record_t *job_ptr,
-					    bitstr_t **core_map,
-					    const uint32_t node_i,
-					    uint32_t s_p_n,
-					    node_use_record_t *node_usage,
-					    uint16_t cr_type,
-					    bool test_only, bool will_run,
-					    bitstr_t **part_core_map);
-	int (*choose_nodes)(job_record_t *job_ptr, bitstr_t *node_map,
-			    bitstr_t **avail_core, uint32_t min_nodes,
-			    uint32_t max_nodes, uint32_t req_nodes,
-			    avail_res_t **avail_res_array, uint16_t cr_type,
-			    bool prefer_alloc_nodes,
-			    gres_mc_data_t *tres_mc_ptr);
-	int (*dist_tasks_compute_c_b)(job_record_t *job_ptr,
-				      uint32_t *gres_task_limit,
-				      uint32_t *gres_min_cpus);
-	bitstr_t **(*mark_avail_cores)(bitstr_t *node_map, uint16_t core_spec);
-	bitstr_t *(*pick_first_cores)(bitstr_t *avail_node_bitmap,
-				      uint32_t node_cnt,
-				      uint32_t *core_cnt,
-				      bitstr_t ***exc_cores);
-	bitstr_t *(*sequential_pick)(bitstr_t *avail_node_bitmap,
-				     uint32_t node_cnt,
-				     uint32_t *core_cnt,
-				     bitstr_t ***exc_cores);
-	void (*spec_core_filter)(bitstr_t *node_bitmap, bitstr_t **avail_cores);
-} cons_common_callbacks_t;
-
-/* Global variables */
-extern bool     backfill_busy_nodes;
-extern int      bf_window_scale;
-extern cons_common_callbacks_t cons_common_callbacks;
-extern int      core_array_size;
-extern bool     gang_mode;
-extern bool     have_dragonfly;
-extern bool     is_cons_tres;
-extern const uint16_t nodeinfo_magic;
-extern bool     pack_serial_at_end;
-extern const uint32_t plugin_id;
-extern bool     preempt_by_part;
-extern bool     preempt_by_qos;
-extern uint16_t priority_flags;
-extern bool     spec_cores_first;
-extern bool     topo_optional;
-
 /*
  * Get configured DefCpuPerGPU information from a list
  * (either global or per partition list)

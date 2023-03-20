@@ -70,4 +70,20 @@
 
 #include "job_test.h"
 
+/* Global variables */
+extern bool     backfill_busy_nodes;
+extern int      bf_window_scale;
+extern int      core_array_size;
+extern bool     gang_mode;
+extern bool     have_dragonfly;
+extern bool     is_cons_tres;
+extern const uint16_t nodeinfo_magic;
+extern bool     pack_serial_at_end;
+extern const uint32_t plugin_id;
+extern bool     preempt_by_part;
+extern bool     preempt_by_qos;
+extern uint16_t priority_flags;
+extern bool     spec_cores_first;
+extern bool     topo_optional;
+
 #endif /* !_CONS_TRES_H */
