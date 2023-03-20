@@ -3208,7 +3208,73 @@ static int DUMP_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
 	return DUMP(UINT64_NO_VAL, cpu_mem, dst, args);
 }
 
-PARSE_DISABLED(JOB_MEM_PER_NODE)
+static int PARSE_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
+					data_t *src, args_t *args,
+					data_t *parent_path)
+{
+	int rc;
+	uint64_t *mem = obj;
+	uint64_t node_mem = NO_VAL64;
+
+	if (data_get_type(src) == DATA_TYPE_NULL) {
+		*mem = NO_VAL64;
+		return SLURM_SUCCESS;
+	}
+
+	if (data_get_type(src) == DATA_TYPE_INT_64) {
+		if ((rc = PARSE(UINT64_NO_VAL, node_mem, src, parent_path,
+				args))) {
+			/* error already logged */
+			return rc;
+		}
+	} else {
+		char *str = NULL;
+
+		if ((rc = data_get_string_converted(src, &str))) {
+			char *path = NULL;
+			rc = on_error(PARSING, parser->type, args, rc,
+				      set_source_path(&path, parent_path),
+				      __func__, "string expected but got %s",
+				      data_type_to_string(data_get_type(src)));
+			xfree(path);
+			return rc;
+		}
+
+		if ((node_mem = str_to_mbytes(str)) == NO_VAL64) {
+			char *path = NULL;
+			rc = on_error(PARSING, parser->type, args, rc,
+				      set_source_path(&path, parent_path),
+				      __func__,
+				      "Invalid formatted memory size: %s", str);
+			xfree(path);
+			xfree(str);
+			return rc;
+		}
+
+		xfree(str);
+	}
+
+	if (node_mem == NO_VAL64) {
+		*mem = NO_VAL64;
+	} else if (node_mem == INFINITE64) {
+		*mem = 0; /* 0 acts as infinity */
+	} else if (node_mem >= MEM_PER_CPU) {
+		/* memory size overflowed */
+		char *path = NULL;
+		rc = on_error(PARSING, parser->type, args,
+			      ESLURM_INVALID_TASK_MEMORY,
+			      set_source_path(&path, parent_path),
+			      __func__,
+			      "Memory value %"PRIu64" equal or larger than %"PRIu64,
+			      node_mem, MEM_PER_CPU);
+		xfree(path);
+		return rc;
+	} else {
+		*mem = node_mem;
+	}
+
+	return rc;
+}
 
 static int DUMP_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
 				       data_t *dst, args_t *args)
