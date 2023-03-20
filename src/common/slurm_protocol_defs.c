@@ -6929,6 +6929,17 @@ extern uint32_t slurm_select_cr_type(void)
 
 	if (!cr_set) {
 		/*
+		 * Only use in the controller. Currently, only the controller
+		 * and the node_info api load in the select plugin. The slurmd
+		 * doesn't load in the select plugin, but both the controller
+		 * and the slurmd read in interfaces/gres.c which use this
+		 * function. The slurmd is already protected by
+		 * running_in_slurmctld() but we add this assert to guard
+		 * against places that aren't loading in the select plugin.
+		 */
+		xassert(running_in_slurmctld());
+
+		/*
 		 * Call this instead of select_get_plugin_id(). Here we are
 		 * looking for the underlying id instead of actual id, meaning
 		 * we want SELECT_TYPE_CONS_TRES not
