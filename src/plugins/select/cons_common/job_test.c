@@ -2318,6 +2318,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 
 		part_data_destroy_res(future_part);
 		node_data_destroy(future_usage);
+		FREE_NULL_LIST(future_license_list);
 	}
 	FREE_NULL_BITMAP(orig_node_map);
 	FREE_NULL_BITMAP(save_node_map);
