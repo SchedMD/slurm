@@ -244,7 +244,6 @@ static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static List gres_conf_list = NULL;
 static uint32_t gpu_plugin_id = NO_VAL;
 static volatile uint32_t autodetect_flags = GRES_AUTODETECT_UNSET;
-static uint32_t select_plugin_type = NO_VAL;
 static buf_t *gres_context_buf = NULL;
 static buf_t *gres_conf_buf = NULL;
 static bool reset_prev = true;
@@ -732,11 +731,6 @@ extern int gres_init(void)
 	}
 
 fini:
-	if ((select_plugin_type == NO_VAL) &&
-	    (select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
-					   &select_plugin_type) != SLURM_SUCCESS)) {
-		select_plugin_type = NO_VAL;	/* error */
-	}
 	if (have_shared && running_in_slurmctld() &&
 	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES)) {
 		fatal("Use of shared gres requires the use of select/cons_tres");
