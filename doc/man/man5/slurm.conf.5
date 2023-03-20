@@ -2689,7 +2689,8 @@ The preempted job will be cancelled.
 .TP
 \fBGANG\fR
 Enables gang scheduling (time slicing) of jobs in the same partition, and
-allows the resuming of suspended jobs.
+allows the resuming of suspended jobs. In order to use gang scheduling, the
+\fBGANG\fR option must be specified at the cluster level.
 
 \fBNOTE:\fR
 Gang scheduling is performed independently for each partition, so
