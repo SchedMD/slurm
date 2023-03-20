@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- sacct - Avoid truncating time strings when using SLURM_TIME_FORMAT with
     the --parsable option.
  -- data_parser/v0.0.39 - fix segfault when default qos is not set.
+ -- Fix regression in 22.05.0rc1 that broke Nodes=ALL in a NodeSet.
 
 * Changes in Slurm 23.02.0
 ==========================
