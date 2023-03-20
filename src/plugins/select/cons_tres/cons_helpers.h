@@ -40,32 +40,6 @@
 #include "src/interfaces/gres.h"
 #include "src/slurmctld/slurmctld.h"
 
-typedef struct avail_res {	/* Per-node resource availability */
-	uint16_t avail_cpus;	/* Count of available CPUs for this job
-				   limited by options like --ntasks-per-node */
-	uint16_t avail_gpus;	/* Count of available GPUs */
-	uint16_t avail_res_cnt;	/* Count of available CPUs + GPUs */
-	uint16_t *avail_cores_per_sock;	/* Per-socket available core count */
-	uint32_t gres_min_cores; /* Minimum number of cores to satisfy GRES
-				    constraints */
-	uint16_t max_cpus;	/* Maximum available CPUs on the node */
-	uint16_t min_cpus;	/* Minimum allocated CPUs */
-	uint16_t sock_cnt;	/* Number of sockets on this node */
-	List sock_gres_list;	/* Per-socket GRES availability, sock_gres_t */
-	uint16_t spec_threads;	/* Specialized threads to be reserved */
-	uint16_t tpc;		/* Threads/cpus per core */
-} avail_res_t;
-
-struct select_nodeinfo {
-	uint16_t magic;		/* magic number */
-	uint16_t alloc_cpus;
-	uint64_t alloc_memory;
-	uint64_t *tres_alloc_cnt;	/* array of tres counts allocated.
-					   NOT PACKED */
-	char     *tres_alloc_fmt_str;	/* formatted str of allocated tres */
-	double    tres_alloc_weighted;	/* weighted number of tres allocated. */
-};
-
 /*
  * Get configured DefCpuPerGPU information from a list
  * (either global or per partition list)
