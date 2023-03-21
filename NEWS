@@ -56,6 +56,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix a job being scheduled on nodes that do not match a feature request that
     uses parentheses inside of brackets and requests additional features outside
     of brackets, for example: "feat1&[feat2|(feat3|feat4)]".
+ -- Fix regression in 23.02.0rc1 which made --gres-flags=enforce-binding no
+    longer enforce optimal core-gpu job placement.
 
 * Changes in Slurm 23.02.0
 ==========================
