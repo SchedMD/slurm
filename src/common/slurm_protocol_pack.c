@@ -7529,22 +7529,18 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_node_info_request_msg(node_info_request_msg_t * msg, buf_t *buffer,
-			    uint16_t protocol_version)
+static void _pack_node_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	node_info_request_msg_t *msg = smsg->data;
+
 	pack_time(msg->last_update, buffer);
 	pack16(msg->show_flags, buffer);
 }
 
-static int
-_unpack_node_info_request_msg(node_info_request_msg_t ** msg, buf_t *buffer,
-			      uint16_t protocol_version)
+static int _unpack_node_info_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	node_info_request_msg_t* node_info;
-
-	node_info = xmalloc(sizeof(node_info_request_msg_t));
-	*msg = node_info;
+	node_info_request_msg_t *node_info = xmalloc(sizeof(*node_info));
+	smsg->data = node_info;
 
 	safe_unpack_time(&node_info->last_update, buffer);
 	safe_unpack16(&node_info->show_flags, buffer);
@@ -7552,7 +7548,7 @@ _unpack_node_info_request_msg(node_info_request_msg_t ** msg, buf_t *buffer,
 
 unpack_error:
 	slurm_free_node_info_request_msg(node_info);
-	*msg = NULL;
+	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -10442,9 +10438,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		_pack_buffer_msg(msg, buffer);
 		break;
 	case REQUEST_NODE_INFO:
-		_pack_node_info_request_msg((node_info_request_msg_t *)
-					    msg->data, buffer,
-					    msg->protocol_version);
+		_pack_node_info_request_msg(msg, buffer);
 		break;
 	case REQUEST_NODE_INFO_SINGLE:
 		_pack_node_info_single_msg((node_info_single_msg_t *)
@@ -11051,9 +11045,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 
 	switch (msg->msg_type) {
 	case REQUEST_NODE_INFO:
-		rc = _unpack_node_info_request_msg((node_info_request_msg_t **)
-						   & (msg->data), buffer,
-						   msg->protocol_version);
+		rc = _unpack_node_info_request_msg(msg, buffer);
 		break;
 	case REQUEST_NODE_INFO_SINGLE:
 		rc = _unpack_node_info_single_msg((node_info_single_msg_t **)
