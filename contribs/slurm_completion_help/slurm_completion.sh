@@ -231,7 +231,7 @@ function __slurm_compreply_count() {
 		;;
 	*:+([[:digit:]]))
 		__slurm_log_debug "$(__func__): found count spec"
-		__slurm_compreply_list "$cur"
+		__slurm_comp "${curitem[*]}" "${prefix-}" "${curitem}" "${suffix-}" ""
 		;;
 	*)
 		__slurm_log_debug "$(__func__): expect item spec"
