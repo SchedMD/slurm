@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
     specification.
  -- scrontab - don't update the cron job tasks if the whole crontab file is
     left untouched after opening it with "scrontab -e".
+ -- mpi/pmix - avoid crashing when running PMIx v5.0 branch with shmem support.
 
 * Changes in Slurm 23.02.1
 ==========================

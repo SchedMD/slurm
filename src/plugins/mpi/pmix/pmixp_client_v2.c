@@ -232,9 +232,6 @@ int pmixp_lib_init(void)
 {
 	pmix_info_t *kvp = NULL;
 	pmix_status_t rc;
-	uint32_t jobuid = pmixp_info_jobuid();
-
-	PMIXP_KVP_ADD(kvp, PMIX_USERID, &jobuid, PMIX_UINT32);
 
 #ifdef PMIX_SERVER_TMPDIR
 	PMIXP_KVP_ADD(kvp, PMIX_SERVER_TMPDIR,
