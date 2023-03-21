@@ -109,8 +109,7 @@ extern uint16_t cons_helpers_cpus_per_core(job_details_t *details, int node_inx)
 	uint16_t ncpus_per_core = INFINITE16;	/* Usable CPUs per core */
 	uint16_t threads_per_core = node_record_table_ptr[node_inx]->tpc;
 
-	if (is_cons_tres &&
-	    (slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
+	if ((slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
 	    (details->min_gres_cpu > 0)) {
 		/* May override default of 1 CPU per core */
 		return node_record_table_ptr[node_inx]->tpc;
@@ -154,14 +153,7 @@ extern bitstr_t **cons_helpers_mark_avail_cores(
 	uint16_t use_spec_cores = slurm_conf.conf_flags & CTL_CONF_ASRU;
 	uint32_t coff;
 
-	if (is_cons_tres) {
-		avail_cores = build_core_array();
-	} else {
-		core_map = bit_alloc(
-			cr_get_coremap_offset(bit_size(node_bitmap)));
-		avail_cores = build_core_array();
-		*avail_cores = core_map;
-	}
+	avail_cores = build_core_array();
 
 	if ((core_spec != NO_VAL16) &&
 	    (core_spec & CORE_SPEC_THREAD)) {	/* Reserving threads */
@@ -170,15 +162,10 @@ extern bitstr_t **cons_helpers_mark_avail_cores(
 	}
 
 	for (int n = 0; (node_ptr = next_node_bitmap(node_bitmap, &n)); n++) {
-		if (is_cons_tres) {
-			c    = 0;
-			coff = node_ptr->tot_cores;
-			avail_cores[n] = bit_alloc(node_ptr->tot_cores);
-			core_map = avail_cores[n];
-		} else {
-			c    = cr_get_coremap_offset(n);
-			coff = cr_get_coremap_offset(n+1);
-		}
+		c    = 0;
+		coff = node_ptr->tot_cores;
+		avail_cores[n] = bit_alloc(node_ptr->tot_cores);
+		core_map = avail_cores[n];
 
 		if ((core_spec != NO_VAL16) &&
 		    (core_spec >= node_ptr->tot_cores)) {

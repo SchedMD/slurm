@@ -238,12 +238,6 @@ extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
 	}
 #endif
 
-	if (!is_cons_tres) {
-		core_bitmap = *core_array;
-		*core_array = NULL;
-		return core_bitmap;
-	}
-
 	core_bitmap = bit_alloc(cr_get_coremap_offset(node_record_count));
 	for (i = 0; i < core_array_size; i++) {
 		if (!core_array[i])
@@ -284,11 +278,6 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 		return core_array;
 
 	core_array = build_core_array();
-
-	if (!is_cons_tres) {
-		*core_array = bit_copy(core_bitmap);
-		return core_array;
-	}
 
 	i_last = bit_fls(core_bitmap);
 

@@ -100,15 +100,9 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 	     i++) {
 		cores_per_node = node_ptr->tot_cores;
 
-		if (is_cons_tres) {
-			core_begin = 0;
-			core_end = node_record_table_ptr[i]->tot_cores;
-			use_core_array = core_array[i];
-		} else {
-			core_begin = cr_get_coremap_offset(i);
-			core_end = cr_get_coremap_offset(i+1);
-			use_core_array = core_array[0];
-		}
+		core_begin = 0;
+		core_end = node_record_table_ptr[i]->tot_cores;
+		use_core_array = core_array[i];
 
 		/*
 		 * This segment properly handles the core counts when whole
@@ -135,15 +129,8 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 				r_ptr->row_set_count -= (core_end - core_begin);
 				break;
 			case HANDLE_JOB_RES_TEST:
-				if (is_cons_tres) {
-					if (bit_ffs(use_core_array) != -1)
-						return 0;
-				} else {
-					for (c = 0; c < cores_per_node; c++)
-						if (bit_test(use_core_array,
-							     core_begin + c))
-							return 0;
-				}
+				if (bit_ffs(use_core_array) != -1)
+					return 0;
 				break;
 			}
 			continue;	/* Move to next node */

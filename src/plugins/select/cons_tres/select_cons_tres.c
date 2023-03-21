@@ -95,7 +95,6 @@ int      bf_window_scale      = 0;
 int      core_array_size      = 1;
 bool     gang_mode            = false;
 bool     have_dragonfly       = false;
-bool     is_cons_tres         = false;
 bool     pack_serial_at_end   = false;
 bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
@@ -495,16 +494,9 @@ static int _get_avail_cores_on_node(int node_inx, bitstr_t **exc_bitmap)
 	if (!exc_bitmap)
 		return tot_cores;
 
-	if (is_cons_tres) {
-		if (exc_bitmap[node_inx])
-			exc_cnt += bit_set_count(exc_bitmap[node_inx]);
-	} else if (*exc_bitmap) {
-		int coff = cr_get_coremap_offset(node_inx);
-		for (int i = 0; i < tot_cores; i++) {
-			if (bit_test(*exc_bitmap, coff + i))
-				exc_cnt++;
-		}
-	}
+	if (exc_bitmap[node_inx])
+		exc_cnt += bit_set_count(exc_bitmap[node_inx]);
+
 	return tot_cores - exc_cnt;
 }
 
@@ -567,9 +559,6 @@ extern int init(void)
 		gang_mode = true;
 	else
 		gang_mode = false;
-
-	if (plugin_id == SELECT_PLUGIN_CONS_TRES)
-		is_cons_tres = true;
 
 	verbose("%s loaded", plugin_type);
 
@@ -711,8 +700,7 @@ extern int select_p_node_init()
 
 	node_data_destroy(select_node_usage);
 
-	if (is_cons_tres)
-		core_array_size = node_record_count;
+	core_array_size = node_record_count;
 
 	select_node_usage  = xcalloc(node_record_count,
 				     sizeof(node_use_record_t));
@@ -863,19 +851,15 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 		return SLURM_ERROR;
 	}
 
-	if (is_cons_tres) {
-		if (to_job_ptr->gres_list_req) {
-			/* Can't reset gres/mps fields today */
-			error("%pJ has allocated GRES",
-			      to_job_ptr);
-			return SLURM_ERROR;
-		}
-		if (from_job_ptr->gres_list_req) {
-			/* Can't reset gres/mps fields today */
-			error("%pJ has allocated GRES",
-			      from_job_ptr);
-			return SLURM_ERROR;
-		}
+	if (to_job_ptr->gres_list_req) {
+		/* Can't reset gres/mps fields today */
+		error("%pJ has allocated GRES", to_job_ptr);
+		return SLURM_ERROR;
+	}
+	if (from_job_ptr->gres_list_req) {
+		/* Can't reset gres/mps fields today */
+		error("%pJ has allocated GRES", from_job_ptr);
+		return SLURM_ERROR;
 	}
 
 	(void) job_res_rm_job(select_part_record, select_node_usage, NULL,
@@ -1379,26 +1363,12 @@ extern int select_p_select_nodeinfo_set_all(void)
 			continue;
 		}
 
-		if (is_cons_tres) {
-			if (alloc_core_bitmap && alloc_core_bitmap[n])
-				alloc_cores = bit_set_count(
-					alloc_core_bitmap[n]);
-			else
-				alloc_cores = 0;
+		if (alloc_core_bitmap && alloc_core_bitmap[n])
+			alloc_cores = bit_set_count(alloc_core_bitmap[n]);
+		else
+			alloc_cores = 0;
 
-			total_node_cores = node_ptr->tot_cores;
-		} else {
-			int start = cr_get_coremap_offset(n);
-			int end = cr_get_coremap_offset(n + 1);
-			if (alloc_core_bitmap)
-				alloc_cores = bit_set_count_range(
-					*alloc_core_bitmap,
-					start, end);
-			else
-				alloc_cores = 0;
-
-			total_node_cores = end - start;
-		}
+		total_node_cores = node_ptr->tot_cores;
 		efctv_node_cores = total_node_cores - node_ptr->core_spec_cnt;
 
 		/*
@@ -1594,8 +1564,7 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 
 	switch (info) {
 	case SELECT_CR_PLUGIN:
-		*tmp_32 = is_cons_tres ?
-			SELECT_TYPE_CONS_TRES : SELECT_TYPE_CONS_RES;
+		*tmp_32 = SELECT_TYPE_CONS_TRES;
 		break;
 	case SELECT_CONFIG_INFO:
 		*tmp_list = NULL;
@@ -1616,15 +1585,13 @@ extern int select_p_reconfigure(void)
 
 	info("%s: reconfigure", plugin_type);
 
-	if (is_cons_tres) {
-		def_cpu_per_gpu = 0;
-		def_mem_per_gpu = 0;
-		if (slurm_conf.job_defaults_list) {
-			def_cpu_per_gpu = cons_helpers_get_def_cpu_per_gpu(
-				slurm_conf.job_defaults_list);
-			def_mem_per_gpu = cons_helpers_get_def_mem_per_gpu(
-				slurm_conf.job_defaults_list);
-		}
+	def_cpu_per_gpu = 0;
+	def_mem_per_gpu = 0;
+	if (slurm_conf.job_defaults_list) {
+		def_cpu_per_gpu = cons_helpers_get_def_cpu_per_gpu(
+			slurm_conf.job_defaults_list);
+		def_mem_per_gpu = cons_helpers_get_def_mem_per_gpu(
+			slurm_conf.job_defaults_list);
 	}
 
 	rc = select_p_node_init();
@@ -1982,23 +1949,13 @@ fini:	for (i = 0; i < switch_record_cnt; i++) {
 
 			avail_cores_in_node = 0;
 
-			if (!is_cons_tres) {
-				use_exc_bitmap = *exc_core_bitmap;
-				coff = cr_get_coremap_offset(inx);
-				if (!*picked_core_bitmap)
-					*picked_core_bitmap = bit_alloc(
-						bit_size(use_exc_bitmap));
-				use_picked_bitmap = *picked_core_bitmap;
-			} else {
-				use_exc_bitmap = exc_core_bitmap[inx];
-				coff = 0;
-				if (!picked_core_bitmap[inx]) {
-					picked_core_bitmap[inx] = bit_alloc(
-						node_record_table_ptr[inx]->
-						tot_cores);
-				}
-				use_picked_bitmap = picked_core_bitmap[inx];
+			use_exc_bitmap = exc_core_bitmap[inx];
+			coff = 0;
+			if (!picked_core_bitmap[inx]) {
+				picked_core_bitmap[inx] = bit_alloc(
+					node_record_table_ptr[inx]->tot_cores);
 			}
+			use_picked_bitmap = picked_core_bitmap[inx];
 
 			for (int i = 0;
 			     i < node_record_table_ptr[inx]->tot_cores;

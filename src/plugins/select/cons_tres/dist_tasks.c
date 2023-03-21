@@ -175,15 +175,9 @@ static void _clear_spec_cores(job_record_t *job_ptr,
 	     (node_ptr = next_node_bitmap(job_res->node_bitmap, &i)); i++) {
 		job_res->cpus[++alloc_node] = 0;
 
-		if (is_cons_tres) {
-			first_core = 0;
-			last_core  = node_ptr->tot_cores;
-			use_core_array = core_array[i];
-		} else {
-			first_core = cr_get_coremap_offset(i);
-			last_core  = cr_get_coremap_offset(i + 1);
-			use_core_array = *core_array;
-		}
+		first_core = 0;
+		last_core = node_ptr->tot_cores;
+		use_core_array = core_array[i];
 
 		for (c = first_core; c < last_core; c++) {
 			alloc_core++;
@@ -211,10 +205,6 @@ static int _set_task_dist_internal(job_record_t *job_ptr)
 	bool log_over_subscribe = true;
 	char *err_msg = NULL;
 	int plane_size = 1;
-
-	if (!is_cons_tres
-	    || !job_ptr->tres_per_task)	/* Task layout for GRES not required */
-		return SLURM_SUCCESS;
 
 	if (!job_res)
 		err_msg = "job_res is NULL";
@@ -393,9 +383,6 @@ static int _compute_plane_dist(job_record_t *job_ptr,
 		return SLURM_ERROR;
 	}
 
-	if (!is_cons_tres)
-		test_tres_tasks = false;
-
 	job_res->cpus = xcalloc(job_res->nhosts, sizeof(uint16_t));
 	job_res->tasks_per_node = xcalloc(job_res->nhosts, sizeof(uint16_t));
 	if (job_ptr->details->overcommit)
@@ -416,7 +403,7 @@ static int _compute_plane_dist(job_record_t *job_ptr,
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
 			bool more_tres_tasks = false;
 			for (p = 0; p < plane_size && (tid < maxtasks); p++) {
-				if (is_cons_tres && test_tres_tasks &&
+				if (test_tres_tasks &&
 				    !dist_tasks_tres_tasks_avail(
 					    gres_task_limit, job_res, n))
 					continue;
@@ -444,7 +431,7 @@ static int _compute_plane_dist(job_record_t *job_ptr,
 		if (!space_remaining)
 			over_subscribe = true;
 	}
-	if (is_cons_tres && do_gres_min_cpus)
+	if (do_gres_min_cpus)
 		dist_tasks_gres_min_cpus(job_ptr, avail_cpus, gres_min_cpus);
 	xfree(avail_cpus);
 	return SLURM_SUCCESS;
@@ -1064,7 +1051,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 			if (prev_cpus != cpus)
 				 continue;
 
-			if (is_cons_tres && job_ptr->details->overcommit) {
+			if (job_ptr->details->overcommit) {
 				/* We've got all the CPUs that we need */
 				break;
 			}
