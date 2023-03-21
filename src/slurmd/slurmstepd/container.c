@@ -587,15 +587,14 @@ static char *_generate_spooldir(stepd_step_rec_t *step,
 		path = _generate_pattern(oci_conf->container_path, step, id,
 					 argv);
 	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
-		xstrfmtcat(path, "%s/oci-job%05u-batch/task-%05u/",
-			   conf->spooldir, step->step_id.job_id, id);
+		path = _generate_pattern("%m/oci-job%j-batch/task-%t/", step,
+					 id, argv);
 	} else if (step->step_id.step_id == SLURM_INTERACTIVE_STEP) {
-		xstrfmtcat(path, "%s/oci-job%05u-interactive/task-%05u/",
-			   conf->spooldir, step->step_id.job_id, id);
+		path = _generate_pattern("%m/oci-job%j-interactive/task-%t/",
+					 step, id, argv);
 	} else {
-		xstrfmtcat(path, "%s/oci-job%05u-%05u/task-%05u/",
-			   conf->spooldir, step->step_id.job_id,
-			   step->step_id.step_id, id);
+		path = _generate_pattern("%m/oci-job%j-%s/task-%t/", step, id,
+					 argv);
 	}
 
 	return path;

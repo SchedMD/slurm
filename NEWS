@@ -80,6 +80,7 @@ documents those changes that are of interest to users and administrators.
     internal Slurm API calls.
  -- oci.conf - Populate %m pattern with ContainerPath or SlurmdSpoolDir if
     ContainerPath is not configured.
+ -- Removed zero padding for numeric values in container spool directory names.
 
 * Changes in Slurm 23.02.1
 ==========================
