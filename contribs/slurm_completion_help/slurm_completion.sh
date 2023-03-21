@@ -229,7 +229,7 @@ function __slurm_compreply_count() {
 	*:)
 		__slurm_log_debug "$(__func__): expect count spec"
 		;;
-	*:+([0-9]))
+	*:+([[:digit:]]))
 		__slurm_log_debug "$(__func__): found count spec"
 		__slurm_compreply_list "$cur"
 		;;
