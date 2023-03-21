@@ -204,12 +204,19 @@ static bool _config_tcs(const char *token, char *arg, uint32_t *tcs_out)
 	char *save_ptr = NULL, *tcs = NULL, *tc;
 	uint32_t tcbits = 0;
 	int i;
+	const char prefix[] = "TC_";
+	const size_t prefix_siz = sizeof(prefix) - 1;
 
 	if (!arg)
 		goto err;
 	tcs = xstrdup(arg);
 	for (tc = strtok_r(tcs, ":", &save_ptr); tc;
 		tc = strtok_r(NULL, ":", &save_ptr)) {
+
+		/* Skip optional TC_ prefix */
+		if (!xstrncasecmp(tc, prefix, prefix_siz))
+			tc += prefix_siz;
+
 		for (i = 0; i < num_classes; i++) {
 			if (!xstrcasecmp(tc, classes[i].label)) {
 				tcbits |= classes[i].bit;
