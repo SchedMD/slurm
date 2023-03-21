@@ -4005,7 +4005,7 @@ function __scontrol_update_reservationname() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	case "${prev}" in
-	account?(s)) __slurm_compreply "$(__slurm_accounts)" ;;
+	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	burstbuffer?(s)) __slurm_compreply_list "$(__slurm_burstbuffers)" ;;
 	feature?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	flag?(s)) __slurm_compreply_list "${flags[*]}" ;;
@@ -4014,7 +4014,7 @@ function __scontrol_update_reservationname() {
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	partition?(s)) __slurm_compreply "$(__slurm_partitions)" ;;
 	reservationname?(s)) __slurm_compreply "$(__slurm_reservations)" ;;
-	user?(s)) __slurm_compreply "$(__slurm_users)" ;;
+	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
 		[[ $split == "true" ]] && return
 		__slurm_compreply_param "${parameters[*]}"
