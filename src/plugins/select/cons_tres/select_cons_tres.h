@@ -75,7 +75,6 @@ extern bool     backfill_busy_nodes;
 extern int      bf_window_scale;
 extern bool     gang_mode;
 extern bool     have_dragonfly;
-extern const uint16_t nodeinfo_magic;
 extern bool     pack_serial_at_end;
 extern const uint32_t plugin_id;
 extern bool     preempt_by_part;
