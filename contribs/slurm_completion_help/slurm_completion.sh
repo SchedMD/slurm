@@ -205,12 +205,15 @@ function __slurm_comp() {
 
 # Slurm completion helper for count notation
 # Example:
+#     BB      = name[[:type]:count][,name[[:type]:count]...]
 #     GRES    = name[[:type]:count][,name[[:type]:count]...]
 #     LICENSE = license[@db][:count][,license[@db][:count]...]
 #
 # $1: list of items for completion
+# $2: list of units to suffix the count with (optional)
 function __slurm_compreply_count() {
 	local options="$1"
+	local units="$2"
 	local prefix=""
 	local suffix=","
 	local curlist="${cur%"$suffix"*}"
@@ -229,9 +232,21 @@ function __slurm_compreply_count() {
 	*:)
 		__slurm_log_debug "$(__func__): expect count spec"
 		;;
+	*:+([[:digit:]])+([[:alpha:]]))
+		__slurm_log_debug "$(__func__): found count unit spec"
+		local item=""
+		item="$(echo "$curitem" | sed -E "s/[[:alpha:]]+$//g")"
+		options="$(compgen -P "${item}" -W "${units[*]}")"
+		__slurm_comp "${options[*]}" "${prefix-}" "${curitem}" "${suffix-}" ""
+		;;
 	*:+([[:digit:]]))
 		__slurm_log_debug "$(__func__): found count spec"
-		__slurm_comp "${curitem[*]}" "${prefix-}" "${curitem}" "${suffix-}" ""
+		if [[ -n $units ]]; then
+			options="$(compgen -P "${curitem}" -W "${units[*]}")"
+			__slurm_comp "${options[*]}" "${prefix-}" "${curitem}" "${suffix-}" ""
+		else
+			__slurm_comp "${curitem[*]}" "${prefix-}" "${curitem}" "${suffix-}" ""
+		fi
 		;;
 	*)
 		__slurm_log_debug "$(__func__): expect item spec"
@@ -659,6 +674,17 @@ function __slurm_accounts() {
 	__slurm_func_wrapper "$cmd"
 }
 
+# Slurm helper function to get burst buffer list
+#
+# RET: space delimited list
+function __slurm_burstbuffers() {
+	__slurm_comp_slurm_value || return
+	__slurm_ctld_status || return
+
+	local cmd="scontrol -o show burstbuffer | grep -E -o 'Name=\S+' | cut -d= -f2 | tr ',' '\n'"
+	__slurm_func_wrapper "$cmd"
+}
+
 # Slurm helper function to get associations list
 #
 # RET: space delimited list
@@ -1022,6 +1048,30 @@ function __slurm_tres() {
 
 	local cmd="scontrol -o show config | grep 'AccountingStorageTRES' | cut -d= -f2 | tr -d '[:space:]' | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
+}
+
+function __slurm_units() {
+	local units=(
+		"K"
+		"KB"
+		"KiB"
+		"M"
+		"MB"
+		"MiB"
+		"G"
+		"GB"
+		"GiB"
+		"T"
+		"TB"
+		"TiB"
+		"P"
+		"PB"
+		"PiB"
+	)
+	local output="${units[*]}"
+
+	__slurm_log_trace "$(__func__): output='$output'"
+	echo "${output}"
 }
 
 # Slurm helper function to get user list
@@ -3767,7 +3817,6 @@ function __scontrol_update_jobid() {
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply "$(__slurm_accounts)" ;;
-	burstbuffer?(s)) __slurm_compreply_list "$(__slurm_burstbuffers)" ;;
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	clusterfeature?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	contiguous) __slurm_compreply "$(__slurm_boolean)" ;;
@@ -4006,7 +4055,7 @@ function __scontrol_update_reservationname() {
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
-	burstbuffer?(s)) __slurm_compreply_list "$(__slurm_burstbuffers)" ;;
+	burstbuffer?(s)) __slurm_compreply_count "$(__slurm_burstbuffers)" "$(__slurm_units)" ;;
 	feature?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	flag?(s)) __slurm_compreply_list "${flags[*]}" ;;
 	group?(s)) __slurm_compreply_list "$(__slurm_linux_groups)" ;;
