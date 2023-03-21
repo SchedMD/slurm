@@ -78,7 +78,6 @@ extern bool     have_dragonfly;
 extern bool     pack_serial_at_end;
 extern bool     preempt_by_part;
 extern bool     preempt_by_qos;
-extern uint16_t priority_flags;
 extern bool     spec_cores_first;
 extern bool     topo_optional;
 
