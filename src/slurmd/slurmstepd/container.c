@@ -1217,6 +1217,9 @@ extern void cleanup_container(stepd_step_rec_t *step)
 		xfree(envfile);
 	}
 
+	if (rmdir(c->spool_dir) && (errno != ENOENT))
+		error("rmdir(%s): %m", c->spool_dir);
+
 done:
 	FREE_NULL_OCI_CONF(oci_conf);
 }
