@@ -455,9 +455,6 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
-
 	slurm_mutex_lock(&profile_running_mutex);
 	if (acct_gather_profile_running) {
 		slurm_mutex_unlock(&profile_running_mutex);
@@ -467,7 +464,10 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 	acct_gather_profile_running = true;
 	slurm_mutex_unlock(&profile_running_mutex);
 
-	(*(ops.get))(ACCT_GATHER_PROFILE_RUNNING, &profile);
+	if (plugin_inited == PLUGIN_NOOP)
+		profile = ACCT_GATHER_PROFILE_NONE;
+	else
+		(*(ops.get))(ACCT_GATHER_PROFILE_RUNNING, &profile);
 	xassert(profile != ACCT_GATHER_PROFILE_NOT_SET);
 
 	for (i=0; i < PROFILE_CNT; i++) {
@@ -604,8 +604,18 @@ extern int acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
-	if (plugin_inited == PLUGIN_NOOP)
+	if (plugin_inited == PLUGIN_NOOP) {
+		uint32_t *uint32 = (uint32_t *) data;
+		switch (info_type) {
+		case ACCT_GATHER_PROFILE_DEFAULT:
+		case ACCT_GATHER_PROFILE_RUNNING:
+			*uint32 = ACCT_GATHER_PROFILE_NONE;
+			break;
+		default:
+			break;
+		}
 		return SLURM_SUCCESS;
+	}
 
 	(*(ops.get))(info_type, data);
 	return SLURM_SUCCESS;
@@ -727,7 +737,7 @@ extern bool acct_gather_profile_g_is_active(uint32_t type)
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+		return false;
 
 	return (*(ops.is_active))(type);
 }
