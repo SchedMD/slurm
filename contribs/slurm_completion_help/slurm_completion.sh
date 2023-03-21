@@ -543,6 +543,9 @@ function __slurm_compinit() {
 	__slurm_log_info "$(__func__): SLURM_COMP_VALUE='${SLURM_COMP_VALUE}'"
 	__slurm_log_info "$(__func__): SLURM_COMP_HOSTLIST='${SLURM_COMP_HOSTLIST}'"
 
+	# Ensure case sensative case matching
+	shopt -u nocasematch
+
 	__slurm_init_completion || return 1
 
 	return 0
