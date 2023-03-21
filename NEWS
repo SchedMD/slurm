@@ -39,7 +39,6 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.39 - fix jobs submitted via slurmrestd being allocated fewer
     CPUs than tasks when requesting multiple tasks.
 
-
 * Changes in Slurm 23.02.0
 ==========================
  -- scrun - Install into /bin instead of /sbin, which also ensures it is
