@@ -4685,6 +4685,7 @@ static int _feature_string2list(char *features, char *debug_str,
 				goto fini;
 			}
 			feat = xmalloc(sizeof(job_feature_t));
+			feat->bracket = bracket;
 			feat->name = xstrdup(feature);
 			feat->changeable = node_features_g_changeable_feature(
 				feature);
@@ -4715,6 +4716,7 @@ static int _feature_string2list(char *features, char *debug_str,
 			changeable = node_features_g_changeable_feature(
 				feature);
 			feat = xmalloc(sizeof(job_feature_t));
+			feat->bracket = bracket;
 			feat->name = xstrdup(feature);
 			feat->changeable = changeable;
 			feat->count = count;
@@ -4786,6 +4788,7 @@ static int _feature_string2list(char *features, char *debug_str,
 		} else if (tmp_requested[i] == '\0') {
 			if (feature) {
 				feat = xmalloc(sizeof(job_feature_t));
+				feat->bracket = bracket;
 				feat->name = xstrdup(feature);
 				feat->changeable = node_features_g_changeable_feature(
 					feature);

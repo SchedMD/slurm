@@ -500,9 +500,9 @@ static void _log_feature_nodes(job_feature_t  *job_feat_ptr)
 	}
 	tmp1 = bitmap2node_name(job_feat_ptr->node_bitmap_active);
 	tmp2 = bitmap2node_name(job_feat_ptr->node_bitmap_avail);
-	log_flag(NODE_FEATURES, "%s: FEAT:%s COUNT:%u PAREN:%d OP:%s ACTIVE:%s AVAIL:%s",
+	log_flag(NODE_FEATURES, "%s: FEAT:%s COUNT:%u BRACKET:%u PAREN:%d OP:%s ACTIVE:%s AVAIL:%s",
 	     __func__, job_feat_ptr->name, job_feat_ptr->count,
-	     job_feat_ptr->paren, tmp3, tmp1, tmp2);
+	     job_feat_ptr->bracket, job_feat_ptr->paren, tmp3, tmp1, tmp2);
 	xfree(tmp1);
 	xfree(tmp2);
 	xfree(tmp4);
@@ -3193,7 +3193,23 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 	while ((job_feat_ptr = list_next(job_feat_iter))) {
 		if (last_paren_cnt < job_feat_ptr->paren) {
 			/* Start of expression in parenthesis */
-			last_paren_op = last_op;
+			/*
+			 * If this pair of parentheses is inside of brackets,
+			 * then this is XAND or MOR. Set last_paren_op to
+			 * avoid incorrectly doing bit_and() or bit_or() at the
+			 * end of parentheses. This only matters if the
+			 * parentheses are the first thing inside of brackets,
+			 * in which case last_op is AND or OR depending on what
+			 * (if anything) came before the brackets. If the
+			 * parentheses are not the first thing inside of
+			 * brackets then last_op is XAND or MOR.
+			 */
+			if (job_feat_ptr->bracket &&
+			    (last_op != FEATURE_OP_XAND) &&
+			    (last_op != FEATURE_OP_MOR))
+				last_paren_op = FEATURE_OP_XAND;
+			else
+				last_paren_op = last_op;
 			last_op = FEATURE_OP_AND;
 			if (paren_bitmap) {
 				if (job_ptr->job_id) {
@@ -3247,7 +3263,6 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 				bit_or(feature_bitmap, work_bitmap);
 			} else {	/* FEATURE_OP_MOR or FEATURE_OP_XAND */
 				*has_mor = true;
-				bit_or(feature_bitmap, work_bitmap);
 			}
 			FREE_NULL_BITMAP(paren_bitmap);
 			work_bitmap = feature_bitmap;
@@ -4203,6 +4218,20 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 				active_node_bitmap = bit_copy(paren_node_bitmap);
 			last_paren = job_feat_ptr->paren;
 			paren_op = job_feat_ptr->op_code;
+			/*
+			 * If this pair of parentheses is inside of brackets,
+			 * then this is XAND or MOR. Set last_op so that the
+			 * features in parentheses are considered as XAND or
+			 * MOR and are evaluated in the if at the bottom of this
+			 * loop. This only matters if the parentheses are the
+			 * first thing inside of brackets because last_op is
+			 * initialized to AND.
+			 */
+			if (job_feat_ptr->bracket &&
+			    (last_op != FEATURE_OP_XAND) &&
+			    (last_op != FEATURE_OP_MOR))
+				last_op = FEATURE_OP_XAND;
+
 			while ((job_feat_ptr = list_next(feat_iter))) {
 				if ((paren_op == FEATURE_OP_AND) &&
 				     can_reboot) {

@@ -55,6 +55,7 @@
 
 typedef struct {
 	char *name;			/* name of feature */
+	uint16_t bracket;		/* count of enclosing brackets. */
 	bool changeable;		/* return value of
 					 * node_features_g_changeable_feature */
 	uint16_t count;			/* count of nodes with this feature */

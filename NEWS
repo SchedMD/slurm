@@ -50,6 +50,12 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 22.05.0rc1 that broke Nodes=ALL in a NodeSet.
  -- openapi/v0.0.39 - fix jobs submitted via slurmrestd being allocated fewer
     CPUs than tasks when requesting multiple tasks.
+ -- Fix job not being scheduled on valid nodes and potentially being rejected
+    when using parentheses at the beginning of square brackets in a feature
+    request, for example: "feat1&[(feat2|feat3)]".
+ -- Fix a job being scheduled on nodes that do not match a feature request that
+    uses parentheses inside of brackets and requests additional features outside
+    of brackets, for example: "feat1&[feat2|(feat3|feat4)]".
 
 * Changes in Slurm 23.02.0
 ==========================
