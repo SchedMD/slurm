@@ -90,7 +90,7 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 		core_array = build_core_array();
 		r_ptr->row_bitmap = core_array;
 		r_ptr->row_set_count = 0;
-		for (int i = 0; i < core_array_size; i++)
+		for (int i = 0; i < node_record_count; i++)
 			core_array[i] = _create_core_bitmap(i);
 	} else
 		core_array = r_ptr->row_bitmap;

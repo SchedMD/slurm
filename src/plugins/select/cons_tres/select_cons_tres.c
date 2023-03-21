@@ -92,7 +92,6 @@ list_t *cluster_license_list;
 /* init common global variables */
 bool     backfill_busy_nodes  = false;
 int      bf_window_scale      = 0;
-int      core_array_size      = 1;
 bool     gang_mode            = false;
 bool     have_dragonfly       = false;
 bool     pack_serial_at_end   = false;
@@ -699,8 +698,6 @@ extern int select_p_node_init()
 	cr_init_global_core_data(node_record_table_ptr, node_record_count);
 
 	node_data_destroy(select_node_usage);
-
-	core_array_size = node_record_count;
 
 	select_node_usage  = xcalloc(node_record_count,
 				     sizeof(node_use_record_t));

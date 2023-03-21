@@ -42,9 +42,9 @@
  */
 extern bitstr_t **build_core_array(void)
 {
-	xassert(core_array_size);
+	xassert(node_record_count);
 
-	return xcalloc(core_array_size, sizeof(bitstr_t *));
+	return xcalloc(node_record_count, sizeof(bitstr_t *));
 }
 
 /* Clear all elements of an array of bitmaps, one per node */
@@ -54,7 +54,7 @@ extern void clear_core_array(bitstr_t **core_array)
 
 	if (!core_array)
 		return;
-	for (n = 0; n < core_array_size; n++) {
+	for (n = 0; n < node_record_count; n++) {
 		if (core_array[n])
 			bit_clear_all(core_array[n]);
 	}
@@ -70,8 +70,8 @@ extern bitstr_t **copy_core_array(bitstr_t **core_array)
 	int n;
 
 	if (core_array) {
-		core_array2 = xmalloc(sizeof(bitstr_t *) * core_array_size);
-		for (n = 0; n < core_array_size; n++) {
+		core_array2 = xmalloc(sizeof(bitstr_t *) * node_record_count);
+		for (n = 0; n < node_record_count; n++) {
 			if (core_array[n])
 				core_array2[n] = bit_copy(core_array[n]);
 		}
@@ -88,7 +88,7 @@ extern int count_core_array_set(bitstr_t **core_array)
 
 	if (!core_array)
 		return count;
-	for (n = 0; n < core_array_size; n++) {
+	for (n = 0; n < node_record_count; n++) {
 		if (core_array[n])
 			count += bit_set_count(core_array[n]);
 	}
@@ -102,7 +102,7 @@ extern void core_array_not(bitstr_t **core_array)
 {
 	if (!core_array)
 		return;
-	for (int n = 0; n < core_array_size; n++) {
+	for (int n = 0; n < node_record_count; n++) {
 		if (core_array[n])
 			bit_not(core_array[n]);
 	}
@@ -115,7 +115,7 @@ extern void core_array_not(bitstr_t **core_array)
 extern void core_array_and(bitstr_t **core_array1, bitstr_t **core_array2)
 {
 	int n, s1, s2;
-	for (n = 0; n < core_array_size; n++) {
+	for (n = 0; n < node_record_count; n++) {
 		if (core_array1[n] && core_array2[n]) {
 			s1 = bit_size(core_array1[n]);
 			s2 = bit_size(core_array2[n]);
@@ -136,7 +136,7 @@ extern void core_array_and(bitstr_t **core_array1, bitstr_t **core_array2)
 extern void core_array_and_not(bitstr_t **core_array1, bitstr_t **core_array2)
 {
 	int n, s1, s2;
-	for (n = 0; n < core_array_size; n++) {
+	for (n = 0; n < node_record_count; n++) {
 		if (core_array1[n] && core_array2[n]) {
 			s1 = bit_size(core_array1[n]);
 			s2 = bit_size(core_array2[n]);
@@ -155,7 +155,7 @@ extern void core_array_and_not(bitstr_t **core_array1, bitstr_t **core_array2)
 extern void core_array_or(bitstr_t **core_array1, bitstr_t **core_array2)
 {
 	int n, s1, s2;
-	for (n = 0; n < core_array_size; n++) {
+	for (n = 0; n < node_record_count; n++) {
 		if (core_array1[n] && core_array2[n]) {
 			s1 = bit_size(core_array1[n]);
 			s2 = bit_size(core_array2[n]);
@@ -176,7 +176,7 @@ extern void free_core_array(bitstr_t ***core_array)
 	int n;
 
 	if (core_array2) {
-		for (n = 0; n < core_array_size; n++)
+		for (n = 0; n < node_record_count; n++)
 			FREE_NULL_BITMAP(core_array2[n]);
 		xfree(core_array2);
 		*core_array = NULL;
@@ -203,7 +203,7 @@ extern void core_array_log(char *loc, bitstr_t *node_map, bitstr_t **core_map)
 		char *core_list = NULL;
 		char *sep = "";
 
-		for (int i = 0; i < core_array_size; i++) {
+		for (int i = 0; i < node_record_count; i++) {
 			if (!core_map[i] || (bit_ffs(core_map[i]) == -1))
 				continue;
 			bit_fmt(tmp, sizeof(tmp), core_map[i]);
@@ -229,7 +229,7 @@ extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
 		return core_bitmap;
 
 #if _DEBUG
-	for (i = 0; i < core_array_size; i++) {
+	for (i = 0; i < node_record_count; i++) {
 		if (!core_array[i])
 			continue;
 		bit_fmt(tmp, sizeof(tmp), core_array[i]);
@@ -239,7 +239,7 @@ extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
 #endif
 
 	core_bitmap = bit_alloc(cr_get_coremap_offset(node_record_count));
-	for (i = 0; i < core_array_size; i++) {
+	for (i = 0; i < node_record_count; i++) {
 		if (!core_array[i])
 			continue;
 		core_offset = cr_get_coremap_offset(i);
@@ -310,7 +310,7 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 	}
 
 #if _DEBUG
-	for (i = 0; i < core_array_size; i++) {
+	for (i = 0; i < node_record_count; i++) {
 		if (!core_array[i])
 			continue;
 		bit_fmt(tmp, sizeof(tmp), core_array[i]);

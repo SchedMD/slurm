@@ -401,7 +401,7 @@ extern void part_data_dump_res(part_res_record_t *p_ptr)
 	info("part:%s rows:%u prio:%u ", p_ptr->part_ptr->name, p_ptr->num_rows,
 	     p_ptr->part_ptr->priority_tier);
 
-	xassert(core_array_size);
+	xassert(node_record_count);
 
 	if (!p_ptr->row)
 		return;
@@ -414,7 +414,7 @@ extern void part_data_dump_res(part_res_record_t *p_ptr)
 		if (!p_ptr->row[r].row_bitmap)
 			continue;
 
-		for (n = 0; n < core_array_size; n++) {
+		for (n = 0; n < node_record_count; n++) {
 			if (!p_ptr->row[r].row_bitmap[n] ||
 			    !bit_set_count(p_ptr->row[r].row_bitmap[n]))
 				continue;
@@ -497,7 +497,7 @@ extern part_row_data_t *part_data_dup_row(part_row_data_t *orig_row,
 		new_row[i].job_list_size = orig_row[i].job_list_size;
 		if (orig_row[i].row_bitmap) {
 			new_row[i].row_bitmap = build_core_array();
-			for (n = 0; n < core_array_size; n++) {
+			for (n = 0; n < node_record_count; n++) {
 				if (!orig_row[i].row_bitmap[n])
 					continue;
 				new_row[i].row_bitmap[n] =

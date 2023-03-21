@@ -73,7 +73,6 @@
 /* Global variables */
 extern bool     backfill_busy_nodes;
 extern int      bf_window_scale;
-extern int      core_array_size;
 extern bool     gang_mode;
 extern bool     have_dragonfly;
 extern const uint16_t nodeinfo_magic;
