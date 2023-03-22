@@ -884,11 +884,11 @@ def require_config_parameter(parameter_name, parameter_value, condition=None, so
     Args:
         parameter_name (string): The parameter name.
         parameter_value (string): The target parameter value.
-        source (string): Name of the config file without the .conf prefix.
         condition (callable): If there is a range of acceptable values, a
             condition can be specified to test whether the current parameter
             value is sufficient. If not, the target parameter_value will be
             used (or the test will be skipped in the case of local-config mode).
+        source (string): Name of the config file without the .conf prefix.
 
     Note:
         When requiring a complex parameter (one which may be repeated and has
