@@ -557,7 +557,7 @@ static int _generate_container_paths(stepd_step_rec_t *step)
 		c->mount_spool_dir = xstrdup("/var/run/slurm/");
 	}
 
-	xassert(!c->spool_dir);
+	xfree(c->spool_dir);
 	c->spool_dir = _generate_spooldir(step, NULL);
 
 	if ((rc = _mkpath(c->spool_dir, step->uid, step->gid)))
