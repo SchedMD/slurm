@@ -199,7 +199,7 @@ const int num_classes = sizeof(classes) / sizeof(classes[0]);
  * Parse the Slingshot traffic classes token, with format
  * "tcs=<class1>:<class2>[:...]
  */
-static bool _config_tcs(const char *token, char *arg)
+static bool _config_tcs(const char *token, char *arg, uint32_t *tcs_out)
 {
 	char *save_ptr = NULL, *tcs = NULL, *tc;
 	uint32_t tcbits = 0;
@@ -222,7 +222,7 @@ static bool _config_tcs(const char *token, char *arg)
 	if (tcbits == 0)
 		goto err;
 
-	slingshot_config.tcs = tcbits;
+	*tcs_out = tcbits;
 	log_flag(SWITCH, "[token=%s]: tcs %#x", token, tcbits);
 	xfree(tcs);
 	return true;
@@ -592,7 +592,7 @@ extern bool slingshot_setup_config(const char *switch_params)
 			if (!_setup_vni_table(vni_min, vni_max))
 				goto err;
 		} else if (!xstrncasecmp(token, tcs, size_tcs)) {
-			if (!_config_tcs(token, arg))
+			if (!_config_tcs(token, arg, &slingshot_config.tcs))
 				goto err;
 		} else if (!xstrncasecmp(token, job_vni, size_job_vni)) {
 			if (!_config_job_vni(token, arg))
@@ -831,21 +831,112 @@ err:
 }
 
 /*
- * Set up passed-in slingshot_jobinfo_t based on values in srun --network
- * parameters.  Return true on successful parsing, false otherwise.
+ * Parse a single comma-separated part of the --network option
+ *
+ *   depth: value to be used for threads-per-rank
+ *   job_vni: allocate a job VNI for this job
+ *   single_node_vni: allocate a VNI for this job even if single-node
+ *   no_vni: _don't_ allocate a VNI for this job even if multi-node
+ *   {no_}adjust_limits: {don't} adjust resource limit reservations
+ *     by subtracting system service reserved/used values
+ *   tcs: set of traffic classes (job only)
+ *   def_<NIC_resource>: default per-thread value for resource
+ *   res_<NIC_resource>: reserved value for resource
+ *   max_<NIC_resource>: maximum value for resource
+ */
+static bool _parse_network_token(const char *token, bool is_job,
+				 slingshot_jobinfo_t *job,
+				 bool *job_vni, bool *single_node_vni,
+				 bool *no_vni)
+{
+	char depth_str[] = "depth";
+	size_t depth_siz = sizeof(depth_str) - 1;
+	char job_vni_str[] = "job_vni";
+	size_t job_vni_siz = sizeof(job_vni_str) - 1;
+	char single_node_vni_str[] = "single_node_vni";
+	size_t single_node_vni_siz = sizeof(single_node_vni_str) - 1;
+	char no_vni_str[] = "no_vni";
+	size_t no_vni_siz = sizeof(no_vni_str) - 1;
+	char adjust_limits_str[] = "adjust_limits";
+	size_t adjust_limits_siz = sizeof(adjust_limits_str) - 1;
+	char no_adjust_limits_str[] = "no_adjust_limits";
+	size_t no_adjust_limits_siz = sizeof(no_adjust_limits_str) - 1;
+	char tcs_str[] = "tcs";
+	size_t tcs_siz = sizeof(tcs_str) - 1;
+
+	char *arg = xstrchr(token, '=');
+	if (arg != NULL)
+		arg++;
+
+	if (!xstrncmp(token, depth_str, depth_siz)) {
+		if ((job->depth = _setup_depth(token)) == 0)
+			return false;
+	} else if (!xstrncmp(token, job_vni_str, job_vni_siz)) {
+		if (token[job_vni_siz] != '\0') {
+			error("Invalid job_vni token '%s'", token);
+			return false;
+		} else if (slingshot_config.job_vni == SLINGSHOT_JOB_VNI_NONE) {
+			error("Job VNI requested by user, but 'job_vni=<all|user>' not set in SwitchParameters");
+			return false;
+		} else {
+			*job_vni = true;
+		}
+	} else if (!xstrncmp(token, single_node_vni_str, single_node_vni_siz)) {
+		if (token[single_node_vni_siz] != '\0') {
+			error("Invalid single_node_vni token '%s'", token);
+			return false;
+		} else if (slingshot_config.single_node_vni ==
+			   SLINGSHOT_SN_VNI_NONE) {
+			error("Single-node VNI requested by user, but 'single_node_vni=<all|user>' not set in SwitchParameters");
+			return false;
+		} else {
+			*single_node_vni = true;
+		}
+	} else if (!xstrncmp(token, no_vni_str, no_vni_siz)) {
+		if (token[no_vni_siz] != '\0') {
+			error("Invalid no_vni token '%s'", token);
+			return false;
+		} else {
+			*no_vni = true;
+		}
+	} else if (!xstrncmp(token, adjust_limits_str, adjust_limits_siz)) {
+		job->flags |= SLINGSHOT_FLAGS_ADJUST_LIMITS;
+	} else if (!xstrncmp(token, no_adjust_limits_str,
+			     no_adjust_limits_siz)) {
+		job->flags &= ~(SLINGSHOT_FLAGS_ADJUST_LIMITS);
+	} else if (!xstrncmp(token, tcs_str, tcs_siz)) {
+		if (is_job)
+			return _config_tcs(token, arg, &job->tcs);
+	} else if (!_config_limits(token, &job->limits)) {
+		return false;
+	}
+
+	return true;
+}
+
+/*
+ * Set up passed-in slingshot_jobinfo_t based on values in srun/sbatch/salloc
+ * --network parameters.  Return true on successful parsing, false otherwise.
  */
 static bool _setup_network_params(const char *network_params,
+				  const char *job_network_params,
 				  slingshot_jobinfo_t *job,
 				  bool *job_vni,
-				  bool *single_node_vni)
+				  bool *single_node_vni,
+				  bool *no_vni)
 {
 	char *params = NULL, *token, *save_ptr = NULL;
 
-	log_flag(SWITCH, "network_params=%s", network_params);
+	log_flag(SWITCH, "job_network_params=%s network_params=%s",
+		 job_network_params, network_params);
 
-	/* First, copy limits and flags from slingshot_config to job */
+	/* First, copy limits, tcs, and flags from slingshot_config to job */
 	job->limits = slingshot_config.limits;
+	job->tcs = slingshot_config.tcs;
 	job->flags = slingshot_config.flags;
+
+	/* no_vni disabled by default */
+	*no_vni = false;
 
 	/* Then get configured job VNI setting */
 	if (slingshot_config.job_vni == SLINGSHOT_JOB_VNI_ALL)
@@ -859,71 +950,33 @@ static bool _setup_network_params(const char *network_params,
 	else
 		*single_node_vni = false;
 
-	/*
-	 * Handle srun --network argument values (separated by commas):
-	 *
-	 *   depth: value to be used for threads-per-rank
-	 *   job_vni: allocate a job VNI for this job
-	 *   single_node_vni: allocate a VNI for this job even if single-node
-	 *   {no_}adjust_limits: {don't} adjust resource limit reservations
-	 *     by subtracting system service reserved/used values
-	 *   def_<NIC_resource>: default per-thread value for resource
-	 *   res_<NIC_resource>: reserved value for resource
-	 *   max_<NIC_resource>: maximum value for resource
-	 */
-	if (!network_params)
-		return true;
+	/* Handle sbatch/salloc --network argument values */
+	if (job_network_params) {
+		params = xstrdup(job_network_params);
+		for (token = strtok_r(params, ",", &save_ptr); token;
+			token = strtok_r(NULL, ",", &save_ptr)) {
+			if (!_parse_network_token(token, true, job, job_vni,
+						  single_node_vni, no_vni))
+				goto err;
+		}
+		xfree(params);
+	}
 
-	params = xstrdup(network_params);
-	char depth_str[] = "depth";
-	size_t depth_siz = sizeof(depth_str) - 1;
-	char job_vni_str[] = "job_vni";
-	size_t job_vni_siz = sizeof(job_vni_str) - 1;
-	char single_node_vni_str[] = "single_node_vni";
-	size_t single_node_vni_siz = sizeof(single_node_vni_str) - 1;
-	char adjust_limits_str[] = "adjust_limits";
-	size_t adjust_limits_siz = sizeof(adjust_limits_str) - 1;
-	char no_adjust_limits_str[] = "no_adjust_limits";
-	size_t no_adjust_limits_siz = sizeof(no_adjust_limits_str) - 1;
-	for (token = strtok_r(params, ",", &save_ptr); token;
-		token = strtok_r(NULL, ",", &save_ptr)) {
-		if (!xstrncmp(token, depth_str, depth_siz)) {
-			if ((job->depth = _setup_depth(token)) == 0)
+	/* Handle srun --network argument values */
+	if (network_params) {
+		params = xstrdup(network_params);
+		for (token = strtok_r(params, ",", &save_ptr); token;
+			token = strtok_r(NULL, ",", &save_ptr)) {
+			if (!_parse_network_token(token, false, job, job_vni,
+						  single_node_vni, no_vni))
 				goto err;
-		} else if (!xstrncmp(token, job_vni_str, job_vni_siz)) {
-			if (token[job_vni_siz] != '\0') {
-				error("Invalid job VNI token '%s'", token);
-				goto err;
-			} else if (slingshot_config.job_vni ==
-				   SLINGSHOT_JOB_VNI_NONE) {
-				error("Job VNI requested by user, but 'job_vni=<all|user>' not set in SwitchParameters");
-				goto err;
-			} else
-				*job_vni = true;
-		} else if (!xstrncmp(token, single_node_vni_str,
-				     single_node_vni_siz)) {
-			if (token[single_node_vni_siz] != '\0') {
-				error("Invalid single-node VNI token '%s'", token);
-				goto err;
-			} else if (slingshot_config.single_node_vni ==
-				   SLINGSHOT_SN_VNI_NONE) {
-				error("Single-node VNI requested by user, but 'single_node_vni=<all|user>' not set in SwitchParameters");
-				goto err;
-			} else
-				*single_node_vni = true;
-		} else if (!xstrncmp(token, adjust_limits_str,
-				     adjust_limits_siz)) {
-			job->flags |= SLINGSHOT_FLAGS_ADJUST_LIMITS;
-		} else if (!xstrncmp(token, no_adjust_limits_str,
-				     no_adjust_limits_siz)) {
-			job->flags &= ~(SLINGSHOT_FLAGS_ADJUST_LIMITS);
-		} else if (!_config_limits(token, &job->limits))
-			goto err;
+		}
+		xfree(params);
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH)
 		_print_limits(&job->limits);
-	xfree(params);
+
 	return true;
 err:
 	xfree(params);
@@ -939,31 +992,33 @@ err:
  */
 extern bool slingshot_setup_job_step(slingshot_jobinfo_t *job, int node_cnt,
 				     uint32_t job_id,
-				     const char *network_params)
+				     const char *network_params,
+				     const char *job_network_params)
 {
 	int alloc_vnis = 0;
 	uint16_t vni = 0, job_vni = 0;
-	bool alloc_job_vni, alloc_single_node_vni;
+	bool alloc_job_vni, alloc_single_node_vni, no_vni;
 
 	/*
-	 * If --network specified, add any depth/limits/job_vni settings
+	 * If --network specified, add any depth, limits,
+	 * {job,single_node,no}_vni settings
 	 * Copy configured Slingshot limits to job, add any --network settings
 	 */
-	job->limits = slingshot_config.limits;
-	if (!_setup_network_params(network_params, job, &alloc_job_vni,
-				   &alloc_single_node_vni))
+	if (!_setup_network_params(network_params, job_network_params, job,
+				   &alloc_job_vni, &alloc_single_node_vni,
+				   &no_vni))
 		goto err;
 
 	/*
-	 * VNIs and traffic classes are not allocated for single-node jobs,
+	 * VNIs and traffic classes are not allocated if:
+	 * --network=no_vni is set, or single-node jobs,
 	 * unless 'single_node_vni=all' is set in the configuration,
 	 * or 'single_node_vni=user' is set in the configuration and
 	 *    'srun --network=single_node_vni' is used
 	 */
 	job->num_vnis = 0;
-	if ((node_cnt > 1) || alloc_single_node_vni) {
+	if (!no_vni && ((node_cnt > 1) || alloc_single_node_vni)) {
 		alloc_vnis++;
-		job->tcs = slingshot_config.tcs;
 	}
 	if (alloc_vnis > 0 && alloc_job_vni)
 		alloc_vnis++;

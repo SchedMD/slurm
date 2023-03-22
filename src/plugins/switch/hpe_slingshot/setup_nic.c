@@ -192,11 +192,11 @@ static bool _adjust_dev_limits(int dev, struct cxil_devinfo *devinfo)
 		_adjust_limit(CXI_RSRC_TYPE_CT, dev, svc, lim,
 			      usage.in_use, &devinfo->num_cts);
 		_adjust_limit(CXI_RSRC_TYPE_LE, dev, svc, lim,
-			      usage.in_use, &devinfo->num_acs);
+			      usage.in_use, &devinfo->num_les);
 		_adjust_limit(CXI_RSRC_TYPE_TLE, dev, svc, lim,
 			      usage.in_use, &devinfo->num_tles);
 		_adjust_limit(CXI_RSRC_TYPE_AC, dev, svc, lim,
-			      usage.in_use, &devinfo->num_les);
+			      usage.in_use, &devinfo->num_acs);
 	}
 	log_flag(SWITCH, "CXI services=%d system=%d user=%d",
 		 list->count, num_system_svc, num_svc);
@@ -292,14 +292,10 @@ static void _create_cxi_descriptor(struct cxi_svc_desc *desc,
 
 	memset(desc, 0, sizeof(*desc));
 
-#ifdef CXI_SVC_MEMBER_UID
 	desc->restricted_members = true;
 	desc->members[0].type = CXI_SVC_MEMBER_UID;
 	desc->members[0].svc_member.uid = uid;
 	desc->members[1].type = CXI_SVC_MEMBER_IGNORE;
-#else
-	desc->restricted_members = false;
-#endif
 
 	/* Set up VNI */
 	if (job->num_vnis > 0) {
@@ -649,6 +645,29 @@ out:
 }
 
 /*
+ * Attempt to destroy a CXI service; retry a few times on EBUSY
+ */
+static bool _destroy_cxi_service(struct cxil_dev *dev, const char *devname,
+				 int svc_id)
+{
+	int i, rc;
+
+	for (i = 0; i < SLINGSHOT_CXI_DESTROY_RETRIES; i++) {
+		debug("Destroying CXI SVC ID %d on NIC %s (retry %d)",
+		      svc_id, devname, i);
+		rc = cxil_destroy_svc_p(dev, svc_id);
+		if (rc == 0)
+			return true;
+		error("Failed to destroy CXI Service ID %d (%s): %s",
+		      svc_id, devname, strerror(-rc));
+		if (rc != -EBUSY)
+			break;
+		sleep(1);
+	}
+	return false;
+}
+
+/*
  * In the daemon, when the shepherd for an App terminates, free any CXI
  * Services we have allocated for it
  */
@@ -678,15 +697,9 @@ extern bool slingshot_destroy_services(slingshot_jobinfo_t *job,
 			continue;
 		}
 
-		debug("Destroying CXI SVC ID %d on NIC %s",
-			svc_id, devname);
-
-		int rc = cxil_destroy_svc_p(dev, svc_id);
-		if (rc) {
-			error("Failed to destroy CXI Service ID %d (%s): %s",
-			      svc_id, devname, strerror(-rc));
+		/* Try to destroy service (with retries) */
+		if (!_destroy_cxi_service(dev, devname, svc_id))
 			retval = false;
-		}
 	}
 
 	xfree(job->profiles);

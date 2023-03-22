@@ -77,6 +77,9 @@
 /* Format for VNI "PIDs" job file name */
 #define SLINGSHOT_VNI_PIDS_FMT "%s/vni_pids.%u" /* <spooldir>, <job_id> */
 
+/* Number of retries for destroying CXI services */
+#define SLINGSHOT_CXI_DESTROY_RETRIES 5
+
 /*
  * Values/directories/filenames for jackaloped BASIC/OAUTH authentication
  */
@@ -117,8 +120,8 @@ typedef struct slingshot_state {
 /* Max NIC resources per application */
 #define SLINGSHOT_TXQ_MAX     1024    /* Max transmit command queues */
 #define SLINGSHOT_TGQ_MAX     512     /* Max target command queues */
-#define SLINGSHOT_EQ_MAX      1023    /* Max event queues */
-#define SLINGSHOT_CT_MAX      1023    /* Max counters */
+#define SLINGSHOT_EQ_MAX      2047    /* Max event queues */
+#define SLINGSHOT_CT_MAX      2047    /* Max counters */
 #define SLINGSHOT_TLE_MAX     2048    /* Max trigger list entries */
 #define SLINGSHOT_PTE_MAX     2048    /* Max portal table entries */
 #define SLINGSHOT_LE_MAX      16384   /* Max list entries */
@@ -261,7 +264,8 @@ extern void remove_slingshot_apinfo(const stepd_step_rec_t *step);
 extern void slingshot_free_config(void);
 extern bool slingshot_setup_config(const char *switch_params);
 extern bool slingshot_setup_job_step(slingshot_jobinfo_t *job, int node_cnt,
-	uint32_t job_id, const char *network_params);
+	uint32_t job_id, const char *network_params,
+	const char *job_network_params);
 extern void slingshot_free_job_step(slingshot_jobinfo_t *job);
 extern void slingshot_free_job(uint32_t job_id);
 /* instant_on.c */
