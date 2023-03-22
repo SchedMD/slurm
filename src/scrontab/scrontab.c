@@ -43,6 +43,7 @@
 
 #include "src/common/bitstring.h"
 #include "src/interfaces/cli_filter.h"
+#include "src/interfaces/hash.h"
 #include "src/common/cron.h"
 #include "src/common/env.h"
 #include "src/common/fetch_config.h"
@@ -407,8 +408,22 @@ static void _edit_and_update_crontab(char *crontab)
 	crontab_update_response_msg_t *response;
 
 edit:
-	if (edit_only)
+	if (edit_only) {
+		slurm_hash_t before = { 0 }, after = { 0 };
+		int before_len, after_len;
+
+		before_len = hash_g_compute(crontab, strlen(crontab), NULL, 0,
+					   &before);
 		_edit_crontab(&crontab);
+		after_len = hash_g_compute(crontab, strlen(crontab), NULL, 0,
+					   &after);
+		if ((before_len == after_len) &&
+		    (!memcmp(before.hash, after.hash, before_len))) {
+			info("No modification made");
+			xfree(crontab);
+			return;
+		}
+	}
 
 	jobs = list_create((ListDelF) slurm_free_job_desc_msg);
 	env_vars = list_create(destroy_config_key_pair);
