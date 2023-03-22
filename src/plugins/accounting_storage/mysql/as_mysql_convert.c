@@ -98,14 +98,6 @@ static int _convert_clus_res_table_pre(mysql_conn_t *mysql_conn)
 	return rc;
 }
 
-static int _convert_usage_table_pre(mysql_conn_t *mysql_conn,
-				    char *cluster_name)
-{
-	int rc = SLURM_SUCCESS;
-
-	return rc;
-}
-
 static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
@@ -290,10 +282,6 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 		 * as_mysql_convert_alter_query instead of mysql_db_query to be
 		 * able to detect a previous failed conversion.
 		 */
-		info("pre-converting usage table for %s", cluster_name);
-		if ((rc = _convert_usage_table_pre(mysql_conn, cluster_name)
-		     != SLURM_SUCCESS))
-			break;
 		info("pre-converting job table for %s", cluster_name);
 		if ((rc = _convert_job_table_pre(mysql_conn, cluster_name)
 		     != SLURM_SUCCESS))
