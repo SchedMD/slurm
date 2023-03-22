@@ -571,6 +571,25 @@ static int _generate_container_paths(stepd_step_rec_t *step)
 	return rc;
 }
 
+static bool _pattern_has_taskid(const char *pattern)
+{
+	const char *p = pattern;
+
+	while (*p) {
+		if (!(p = xstrchr(p, '%')))
+			break;
+
+		if ((p[1] == '%') && (p[2] != '\0'))
+			p += 2;
+		else if (p[1] == 't')
+			return true;
+		else
+			p++;
+	}
+
+	return false;
+}
+
 static char *_generate_spooldir(stepd_step_rec_t *step,
 				stepd_step_task_info_t *task)
 {
@@ -590,9 +609,44 @@ static char *_generate_spooldir(stepd_step_rec_t *step,
 	if (task) {
 		id = task->id;
 		argv = task->argv;
+	} else {
+		char *start, *end, *next;
+
+		/* trim pattern at first taskid replacement */
+
+		if (pattern[0] == '/')
+			next = pattern + 1;
+		else
+			next = pattern;
+
+		while (next) {
+			char term;
+
+			start = next;
+
+			if (!(end = xstrchr(next, '/'))) {
+				end = start + strlen(start);
+				next = NULL;
+			} else {
+				next = end + 1;
+			}
+
+			term = end[1];
+			end[1] = '\0';
+
+			if (_pattern_has_taskid(start)) {
+				/* cut pattern at this directory */
+				*start = '\0';
+				break;
+			}
+
+			end[1] = term;
+		}
 	}
 
+	xassert((id != -1) || !xstrstr(pattern, "%t"));
 	path = _generate_pattern(pattern, step, id, argv);
+	debug3("%s: task:%d pattern:%s path:%s", __func__, id, pattern, path);
 
 	return path;
 }
