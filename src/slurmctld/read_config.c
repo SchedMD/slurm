@@ -108,7 +108,6 @@ static void _add_config_feature(List feature_list, char *feature,
 static void _add_config_feature_inx(List feature_list, char *feature,
 				    int node_inx);
 static void _build_bitmaps(void);
-static void _build_bitmaps_pre_select(void);
 static int  _compare_hostnames(node_record_t **old_node_table,
 			       int old_node_count, node_record_t **node_table,
 			       int node_count);
@@ -394,14 +393,9 @@ static void _init_bitmaps(void)
 	rs_node_bitmap = bit_alloc(node_record_count);
 }
 
-/*
- * _build_bitmaps_pre_select - recover some state for jobs and nodes prior to
- *	calling the select_* functions
- */
-static void _build_bitmaps_pre_select(void)
+static void _build_part_bitmaps(void)
 {
 	part_record_t *part_ptr;
-	node_record_t *node_ptr;
 	ListIterator part_iterator;
 
 	/* scan partition table and identify nodes in each */
@@ -412,6 +406,11 @@ static void _build_bitmaps_pre_select(void)
 					part_ptr->name);
 	}
 	list_iterator_destroy(part_iterator);
+}
+
+static void _build_node_config_bitmaps(void)
+{
+	node_record_t *node_ptr;
 
 	/* initialize the configuration bitmaps */
 	list_for_each(config_list, _reset_node_bitmaps, NULL);
@@ -421,8 +420,6 @@ static void _build_bitmaps_pre_select(void)
 			bit_set(node_ptr->config_ptr->node_bitmap,
 				node_ptr->index);
 	}
-
-	return;
 }
 
 static int _reset_node_bitmaps(void *x, void *arg)
@@ -1809,7 +1806,9 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 
 	_sync_part_prio();
-	_build_bitmaps_pre_select();
+	_build_node_config_bitmaps();
+	_build_part_bitmaps();
+
 	if ((select_g_node_init() != SLURM_SUCCESS) ||
 	    (select_g_state_restore(state_save_dir) != SLURM_SUCCESS) ||
 	    (select_g_job_init(job_list) != SLURM_SUCCESS)) {
@@ -1887,7 +1886,7 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	/*
 	 * Must be at after nodes and partitons (e.g.
-	 * _build_bitmaps_pre_select()) have been created and before
+	 * _build_part_bitmaps()) have been created and before
 	 * _sync_nodes_to_comp_job().
 	 */
 	if (!test_config)
