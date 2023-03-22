@@ -1805,9 +1805,34 @@ int read_slurm_conf(int recover, bool reconfig)
 		load_job_ret = load_all_job_state();
 	}
 
-	_sync_part_prio();
+	/* NOTE: Run restore_node_features before _restore_job_accounting */
+	restore_node_features(recover);
+
+	if ((node_features_g_count() > 0) &&
+	    (node_features_g_get_node(NULL) != SLURM_SUCCESS)) {
+		error("failed to initialize node features");
+		test_config_rc = 1;
+	}
+
+	/*
+	 * _build_bitmaps() must follow node_features_g_get_node() and
+	 * precede build_features_list_*()
+	 */
+	_build_bitmaps();
+	/*
+	 * _build_node_config_bitmaps() must be called before
+	 * build_features_list_*()
+	 */
 	_build_node_config_bitmaps();
-	_build_part_bitmaps();
+
+	/* Active and available features can be different on -R */
+	if ((node_features_g_count() == 0) && (recover != 2))
+		build_feature_list_eq();
+	else
+		build_feature_list_ne();
+
+	_sync_part_prio();
+	_build_part_bitmaps(); /* Must be called after build_feature_list_*() */
 
 	if ((select_g_node_init() != SLURM_SUCCESS) ||
 	    (select_g_state_restore(state_save_dir) != SLURM_SUCCESS) ||
@@ -1862,27 +1887,6 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	init_requeue_policy();
 	init_depend_policy();
-
-	/* NOTE: Run restore_node_features before _restore_job_accounting */
-	restore_node_features(recover);
-
-	if ((node_features_g_count() > 0) &&
-	    (node_features_g_get_node(NULL) != SLURM_SUCCESS)) {
-		error("failed to initialize node features");
-		test_config_rc = 1;
-	}
-
-	/*
-	 * _build_bitmaps() must follow node_features_g_get_node() and
-	 * preceed build_features_list_*()
-	 */
-	_build_bitmaps();
-
-	/* Active and available features can be different on -R */
-	if ((node_features_g_count() == 0) && (recover != 2))
-		build_feature_list_eq();
-	else
-		build_feature_list_ne();
 
 	/*
 	 * Must be at after nodes and partitons (e.g.
