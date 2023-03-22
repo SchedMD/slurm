@@ -159,8 +159,12 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 					     step->step_id.job_id);
 				break;
 			case 'm':
-				xstrfmtcatat(buffer, &offset, "%s",
-					     c->spool_dir);
+				if (c->spool_dir)
+					xstrfmtcatat(buffer, &offset, "%s",
+						     c->spool_dir);
+				else
+					xstrfmtcatat(buffer, &offset, "%s",
+						     conf->spooldir);
 				break;
 			case 'n':
 				xstrfmtcatat(buffer, &offset, "%s",
