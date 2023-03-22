@@ -119,8 +119,10 @@ def module_teardown():
         if atf.properties['accounting-database-modified']:
             atf.restore_accounting_database()
 
+    else:
+        atf.cancel_jobs(atf.properties['submitted-jobs'])
+
     # Restore the prior environment
-    atf.cancel_jobs(atf.properties['submitted-jobs'])
     os.environ.clear()
     os.environ.update(atf.properties['orig-environment'])
 
