@@ -136,6 +136,8 @@ static void *_libpmix_open(void)
 	xstrfmtcat(full_path, "%s/", PMIXP_V3_LIBPATH);
 #elif defined PMIXP_V4_LIBPATH
 	xstrfmtcat(full_path, "%s/", PMIXP_V4_LIBPATH);
+#elif defined PMIXP_V5_LIBPATH
+	xstrfmtcat(full_path, "%s/", PMIXP_V5_LIBPATH);
 #endif
 	xstrfmtcat(full_path, "libpmix.so");
 
