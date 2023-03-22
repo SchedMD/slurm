@@ -1164,7 +1164,6 @@ extern void container_run(stepd_step_rec_t *step,
 extern void cleanup_container(stepd_step_rec_t *step)
 {
 	step_container_t *c = step->container;
-	char *path;
 
 	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
@@ -1175,7 +1174,6 @@ extern void cleanup_container(stepd_step_rec_t *step)
 	}
 
 	/* cleanup may be called without ever setting up container */
-	_generate_patterns(step, NULL);
 
 	_kill_container();
 
@@ -1187,18 +1185,24 @@ extern void cleanup_container(stepd_step_rec_t *step)
 		for (int i = 0; i < step->node_tasks; i++) {
 			char *jconfig = NULL;
 
-			path = _generate_spooldir(step, step->task[i]);
-			xstrfmtcat(jconfig, "%s/config.json", path);
+			xfree(c->spool_dir);
+			c->spool_dir = _generate_spooldir(step, step->task[i]);
+			_generate_patterns(step, step->task[i]);
+			xstrfmtcat(jconfig, "%s/config.json", c->spool_dir);
 
 			if ((unlink(jconfig) < 0) && (errno != ENOENT))
 				error("unlink(%s): %m", jconfig);
 			xfree(jconfig);
 
-			if (rmdir(path) && (errno != ENOENT))
-				error("rmdir(%s): %m", path);
-			xfree(path);
+			if (rmdir(c->spool_dir) && (errno != ENOENT))
+				error("rmdir(%s): %m", c->spool_dir);
+			xfree(c->spool_dir);
 		}
 	}
+
+	/* swap to non-task spool_dir */
+	xfree(c->spool_dir);
+	c->spool_dir = _generate_spooldir(step, NULL);
 
 	if (oci_conf->create_env_file) {
 		char *envfile = NULL;
