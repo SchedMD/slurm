@@ -2056,7 +2056,7 @@ used to request using Network Performance Counters.
 Only one value per request is valid.
 All options are case in\-sensitive.
 In this configuration supported values include:
-
+.IP
 .RS
 .TP 6
 \fBsystem\fR
@@ -2074,9 +2074,9 @@ will be marked in use for the job allocation.  If the job does not
 fill up the entire blade(s) allocated to the job those blade(s) are not
 able to be used by other jobs using NPC, if idle their state will appear as
 PerfCnts.  These nodes are still available for other jobs not using NPC.
+.RE
 .IP
 
-.LP
 In all cases the job allocation request \fBmust specify the
 \-\-exclusive option\fR and the step cannot specify the \fB\-\-overlap\fR
 option. Otherwise the request will be denied.
@@ -2091,9 +2091,8 @@ between job steps in a job). It also can be used to override the default
 network resources allocated for the job step. Multiple values may be specified
 in a comma-separated list.
 .IP
-
-.RS 4
-.TP
+.RS
+.TP 6
 \fBtcs\fR=<\fIclass1\fR>[:<\fIclass2\fR>]...
 Set of traffic classes to configure for applications.
 Supported traffic classes are DEDICATED_ACCESS, LOW_LATENCY, BULK_DATA, and
@@ -2156,15 +2155,13 @@ Maximum per-node limit for this resource.
 \fBdepth\fR=<\fIdepth\fR>
 Multiplier for per-CPU resource allocation.
 Default is the number of reserved CPUs on the node.
-.IP
 .RE
+.IP
 
-.LP
 The resources that may be requested are:
 .IP
-
-.RS 4
-.TP
+.RS
+.TP 6
 \fBtxqs\fR
 Transmit command queues. The default is 2 per-CPU, maximum 1024 per-node.
 .IP
@@ -2205,9 +2202,7 @@ Addressing contexts. The default is 4 per-CPU, maximum 1022 per-node.
 .RE
 .IP
 
-.LP
 This option applies to job and step allocations.
-.RE
 .IP
 
 .TP
