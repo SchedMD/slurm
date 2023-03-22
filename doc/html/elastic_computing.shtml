@@ -544,20 +544,20 @@ debug*      up    infinite     1    drng!  c1-compute-0-0
 debug*      up    infinite    99    idle~  c1-compute-0-[1-99]
 </pre>
 
-<h3 id="nodefeatures"><strong>NodeFeaturesPlugin and Cloud Nodes</strong>
+<h3 id="nodefeatures"><strong>NodeFeaturesPlugins and Cloud Nodes</strong>
 <a class="slurm_link" href="#nodefeatures"></a>
 </h3>
 <p>
-Features defined by a
-<a href="slurm.conf.html#OPT_NodeFeaturesPlugins">NodeFeaturesPlugin</a>
+Features defined by
+<a href="slurm.conf.html#OPT_NodeFeaturesPlugins">NodeFeaturesPlugins</a>
 and attached to a cloud node in the <b>slurm.conf</b>, will be available but
-not active when the node is powered down. If a job requests NodeFeaturesPlugin
+not active when the node is powered down. If a job requests NodeFeaturesPlugins
 features, the controller will allocate nodes that are powered down and have the
 features as available. At allocation, the features will be made active. A cloud
 node will remain with the active features until the node is powered down (i.e.
 the node can't be rebooted to get other features until the node is powered
-down). When the node is powered down, the active NodeaFeaturesPlugin features
-are cleared. Any non-NodeFeaturesPlugin features are active by default and can
+down). When the node is powered down, the active NodeFeaturesPlugins features
+are cleared. Any non-NodeFeaturesPlugins features are active by default and can
 be used as a label.
 </p>
 
@@ -565,7 +565,7 @@ be used as a label.
 Example:
 <pre>
 slurm.conf:
-NodeFeaturesPlugin=node_features/helpers
+NodeFeaturesPlugins=node_features/helpers
 
 NodeName=cloud[1-5] ... State=CLOUD Feature=f1,f2,l1
 NodeName=cloud[6-10] ... State=CLOUD Feature=f3,f4,l2
@@ -585,6 +585,6 @@ controller.
 Features l1 and l2 will always be active and can be used as selectable labels.
 </p>
 
-<p style="text-align:center;">Last modified 23 January 2023</p>
+<p style="text-align:center;">Last modified 22 March 2023</p>
 
 <!--#include virtual="footer.txt"-->
