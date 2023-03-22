@@ -574,28 +574,25 @@ static int _generate_container_paths(stepd_step_rec_t *step)
 static char *_generate_spooldir(stepd_step_rec_t *step,
 				stepd_step_task_info_t *task)
 {
-	char *path = NULL;
 	int id = -1;
-	char **argv = NULL;
+	char **argv = NULL, *pattern, *path;
+
+	if (oci_conf->container_path) {
+		pattern = oci_conf->container_path;
+	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
+		pattern = "%m/oci-job%j-batch/task-%t/";
+	} else if (step->step_id.step_id == SLURM_INTERACTIVE_STEP) {
+		pattern = "%m/oci-job%j-interactive/task-%t/";
+	} else {
+		pattern = "%m/oci-job%j-%s/task-%t/";
+	}
 
 	if (task) {
 		id = task->id;
 		argv = task->argv;
 	}
 
-	if (oci_conf->container_path) {
-		path = _generate_pattern(oci_conf->container_path, step, id,
-					 argv);
-	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
-		path = _generate_pattern("%m/oci-job%j-batch/task-%t/", step,
-					 id, argv);
-	} else if (step->step_id.step_id == SLURM_INTERACTIVE_STEP) {
-		path = _generate_pattern("%m/oci-job%j-interactive/task-%t/",
-					 step, id, argv);
-	} else {
-		path = _generate_pattern("%m/oci-job%j-%s/task-%t/", step, id,
-					 argv);
-	}
+	path = _generate_pattern(pattern, step, id, argv);
 
 	return path;
 }
