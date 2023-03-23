@@ -2782,6 +2782,7 @@ static int _unpack_job_step_create_request_msg(
 		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
 		safe_unpack32(&tmp_ptr->time_limit, buffer);
 		safe_unpack16(&tmp_ptr->threads_per_core, buffer);
+		tmp_ptr->ntasks_per_core = INFINITE16;
 
 		safe_unpack16(&tmp_ptr->relative, buffer);
 		safe_unpack32(&tmp_ptr->task_dist, buffer);
