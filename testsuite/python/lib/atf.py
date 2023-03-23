@@ -1493,6 +1493,7 @@ def alloc_job_id(salloc_args, **run_command_kwargs):
     results = run_command(f"salloc {salloc_args}", **run_command_kwargs)
     if match := re.search(r'Granted job allocation (\d+)', results['stderr']):
         job_id = int(match.group(1))
+        properties['submitted-jobs'].append(job_id)
         return job_id
     else:
         return 0
