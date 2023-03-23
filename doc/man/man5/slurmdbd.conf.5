@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "February 2023" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "March 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -214,7 +214,7 @@ speeds up inserts into the database dramatically.  If you are running a very
 high throughput of jobs you should consider setting this.  In testing, 1 second
 improves the slurmdbd performance dramatically and reduces overhead.  There is
 a small probability of data loss though since this creates a window in which
-if the slurmdbd seg faults or exits abnormally for any reason the data not
+if the slurmdbd exits abnormally for any reason the data not
 committed could be lost.  While this situation should be very rare,
 it does present an extremely small risk, but may be the only way to run in
 extremely heavy environments.  In all honesty, the risk is quite low, but still
