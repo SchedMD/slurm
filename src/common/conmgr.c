@@ -385,6 +385,7 @@ extern void free_con_mgr(con_mgr_t *mgr)
 	 */
 	FREE_NULL_LIST(mgr->connections);
 	FREE_NULL_LIST(mgr->listen);
+	FREE_NULL_LIST(mgr->complete);
 
 	if (mgr->delayed_work) {
 		FREE_NULL_LIST(mgr->delayed_work);
