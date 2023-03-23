@@ -949,6 +949,10 @@ static void _list_delete_part(void *part_entry)
 	int i, j, k;
 
 	part_ptr = (part_record_t *) part_entry;
+
+	xassert(part_ptr->magic == PART_MAGIC);
+	part_ptr->magic = ~PART_MAGIC;
+
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		for (j=0; j<node_ptr->part_cnt; j++) {
 			if (node_ptr->part_pptr[j] != part_ptr)
