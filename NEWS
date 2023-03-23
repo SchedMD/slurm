@@ -64,6 +64,7 @@ documents those changes that are of interest to users and administrators.
     a partition record and clear the magic afterwards to better diagnose
     potential memory problems.
  -- Clean up OCI containers task directories correctly.
+ -- slurm.spec - add "--with jwt" option.
 
 * Changes in Slurm 23.02.0
 ==========================
