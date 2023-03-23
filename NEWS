@@ -69,6 +69,9 @@ documents those changes that are of interest to users and administrators.
  -- Prevent a slurmstepd crash when the I/O subsystem has hung.
  -- common/conmgr - fix memory leak of complete connection list.
  -- data_parser/v0.0.39 - fix memory leak when parsing every field in a struct.
+ -- job_container/tmpfs - avoid printing extraneous error messages when running
+    a spank plugin that implements slurm_spank_job_prolog() or
+    slurm_spank_job_epilog().
 
 * Changes in Slurm 23.02.0
 ==========================
