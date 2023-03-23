@@ -1499,15 +1499,9 @@ void slurm_debug5(const char *fmt, ...)
 	LOG_MACRO(LOG_LEVEL_DEBUG5, false, fmt);
 }
 
-int sched_error(const char *fmt, ...)
+void sched_error(const char *fmt, ...)
 {
 	LOG_MACRO(LOG_LEVEL_ERROR, true, fmt);
-
-	/*
-	 *  Return SLURM_ERROR so calling functions can
-	 *    do "return error (...);"
-	 */
-	return SLURM_ERROR;
 }
 
 void sched_info(const char *fmt, ...)

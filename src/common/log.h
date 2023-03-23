@@ -375,7 +375,7 @@ extern const char plugin_type[];
  * Like above logging messages, but prepend "sched: " to the log entry
  * and route the message into the sched_log if enabled.
  */
-int	sched_error(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void sched_error(const char *, ...) __attribute__((format(printf, 1, 2)));
 void	sched_info(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	sched_verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 #define sched_debug(fmt, ...)						\
