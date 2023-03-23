@@ -216,7 +216,7 @@ static int _open_dcmi_context(void)
 {
 	int ret;
 
-	if (!dcmi_cnt)
+	if (!dcmi_cnt || ipmi_dcmi_ctx)
 		return SLURM_SUCCESS;
 
 	ipmi_dcmi_ctx = ipmi_ctx_create();
@@ -745,6 +745,11 @@ static int _thread_init(void)
 	static bool first_init = SLURM_ERROR;
 	int rc = SLURM_SUCCESS;
 	uint16_t i;
+
+	if (!first && (_open_dcmi_context() != SLURM_SUCCESS)) {
+		error("Cannot open dcmi context for this thread.");
+		return SLURM_ERROR;
+	}
 
 	if (!first && ipmi_ctx)
 		return first_init;
