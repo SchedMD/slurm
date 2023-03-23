@@ -162,7 +162,7 @@ static int _foreach_env_annotation(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _script_env(const resource_allocation_response_msg_t *alloc)
+static void _script_env(void)
 {
 	xassert(state.locked);
 
@@ -452,8 +452,8 @@ extern void check_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 		/* job failed! */
 		if (get_log_level() >= LOG_LEVEL_DEBUG) {
 			read_lock_state();
-			debug("%s: JobId=%d failed. Bailing on checking for nodes.",
-			      __func__, state.jobid);
+			debug("%s: JobId=%d failed. Bailing on checking for nodes: %s",
+			      __func__, state.jobid, slurm_strerror(rc));
 			unlock_state();
 		}
 		stop_anchor(ESLURM_ALREADY_DONE);
@@ -476,10 +476,7 @@ extern void check_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 	}
 }
 
-extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
-			   con_mgr_work_type_t type,
-			   con_mgr_work_status_t status, const char *tag,
-			   void *arg)
+static void _alloc_job(con_mgr_t *conmgr)
 {
 	int rc;
 	resource_allocation_response_msg_t *alloc = NULL;
@@ -490,7 +487,6 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 	char *opt_string = NULL;
 	struct option *spanked = slurm_option_table_create(&opt, &opt_string);
 	job_desc_msg_t *desc;
-	job_info_msg_t *jobs = NULL;
 
 	slurm_reset_all_options(&opt, true);
 
@@ -542,7 +538,6 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 		      __func__, slurm_strerror(alloc->error_code));
 
 		stop_anchor(alloc->error_code);
-		return;
 	}
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG) {
@@ -555,23 +550,6 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 		xfree(user);
 		xfree(group);
 	}
-
-	/* alloc response is too sparse. get full job info */
-	rc = slurm_load_job(&jobs, alloc->job_id, 0);
-	if (rc || !jobs || (jobs->record_count <= 0)) {
-		/* job not found or already died ? */
-		if ((rc == SLURM_ERROR) && errno)
-			rc = errno;
-
-		error("%s: unable to find JobId=%u after allocation: %s",
-		      __func__, alloc->job_id, slurm_strerror(rc));
-
-		stop_anchor(rc);
-		return;
-	}
-
-	/* grab the first job */
-	xassert(jobs->job_array->job_id == alloc->job_id);
 
 	write_lock_state();
 	state.jobid = alloc->job_id;
@@ -602,7 +580,79 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 	xassert(state.group_id != SLURM_AUTH_NOBODY);
 
 	env_array_for_job(&state.job_env, alloc, desc, -1);
-	_script_env(alloc);
+	unlock_state();
+
+	slurm_free_job_desc_msg(desc);
+	slurm_free_resource_allocation_response_msg(alloc);
+}
+
+extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
+			   con_mgr_work_type_t type,
+			   con_mgr_work_status_t status, const char *tag,
+			   void *arg)
+{
+	int rc;
+	job_info_msg_t *jobs = NULL;
+	int job_id;
+	char *job_id_str = getenv("SLURM_JOB_ID");
+	bool existing_allocation = false;
+
+	if (job_id_str && job_id_str[0]) {
+		extern char **environ;
+		slurm_selected_step_t id = {0};
+
+		if ((rc = unfmt_job_id_string(job_id_str, &id))) {
+			fatal("%s: invalid SLURM_JOB_ID=%s: %s",
+			      __func__, job_id_str, slurm_strerror(rc));
+			return;
+		}
+
+		write_lock_state();
+		state.jobid = job_id = id.step_id.job_id;
+		state.existing_allocation = existing_allocation = true;
+
+		/* scrape SLURM_* from calling env */
+		state.job_env = env_array_create();
+		env_array_merge_slurm(&state.job_env, (const char **) environ);
+		unlock_state();
+
+		debug("Running under existing JobId=%u", job_id);
+	} else {
+		_alloc_job(conmgr);
+
+		read_lock_state();
+		job_id = state.jobid;
+		unlock_state();
+	}
+
+	/* alloc response is too sparse. get full job info */
+	rc = slurm_load_job(&jobs, job_id, 0);
+	if (rc || !jobs || (jobs->record_count <= 0)) {
+		/* job not found or already died ? */
+		if ((rc == SLURM_ERROR) && errno)
+			rc = errno;
+
+		error("%s: unable to find JobId=%u: %s",
+		      __func__, job_id, slurm_strerror(rc));
+
+		stop_anchor(rc);
+		return;
+	}
+
+	/* grab the first job */
+	xassert(jobs->job_array->job_id == job_id);
+
+	write_lock_state();
+	if (existing_allocation) {
+		xassert(state.user_id == getuid());
+		state.user_id = jobs->job_array->user_id;
+		xassert(state.user_id != SLURM_AUTH_NOBODY);
+
+		xassert(state.group_id == getgid());
+		state.group_id = jobs->job_array->group_id;
+		xassert(state.group_id != SLURM_AUTH_NOBODY);
+	}
+	_script_env();
 	unlock_state();
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG) {
@@ -611,14 +661,21 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 			for (int i = 0; state.job_env[i]; i++)
 				debug("Job env[%d]=%s", i, state.job_env[i]);
 		else
-			debug("allocation did not provide an environment");
+			debug("JobId=%u did not provide an environment",
+			      job_id);
 		unlock_state();
 	}
 
-	slurm_free_job_desc_msg(desc);
-	slurm_free_resource_allocation_response_msg(alloc);
 	slurm_free_job_info_msg(jobs);
 
-	con_mgr_add_delayed_work(conmgr, NULL, check_allocation, 0, 1, NULL,
-				 "check_allocation");
+	if (existing_allocation) {
+		if ((rc = _stage_in()))
+			stop_anchor(rc);
+		else
+			con_mgr_add_work(conmgr, NULL, on_allocation,
+					 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
+	} else {
+		con_mgr_add_delayed_work(conmgr, NULL, check_allocation, 0, 1,
+					 NULL, "check_allocation");
+	}
 }

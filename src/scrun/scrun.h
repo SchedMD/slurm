@@ -72,6 +72,7 @@ typedef struct {
 	struct winsize tty_size; /* size props of calling terminal */
 	char *pid_file; /* full path for pid file */
 	int pid_file_fd; /* file descriptor for pid file */
+	bool existing_allocation; /* running an existing job allocation */
 	uint32_t jobid; /* assigned jobID */
 	bool job_completed; /* has job been completed */
 	bool staged_out; /* stage out done */
