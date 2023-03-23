@@ -229,7 +229,9 @@ typedef struct {
 			       * used when a new client attaches
 			       */
 
-	pthread_t      ioid;  /* pthread id of IO thread                    */
+	bool io_running;		/* I/O thread running */
+	pthread_cond_t io_cond;		/* I/O thread state conditional */
+	pthread_mutex_t io_mutex;	/* I/O thread state mutex */
 	pthread_t      msgid; /* pthread id of message thread               */
 	eio_handle_t  *msg_handle; /* eio handle for the message thread     */
 

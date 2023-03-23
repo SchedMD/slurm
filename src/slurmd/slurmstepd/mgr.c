@@ -2350,28 +2350,6 @@ _wait_for_all_tasks(stepd_step_rec_t *step)
 	}
 }
 
-static void *_kill_thr(void *args)
-{
-	kill_thread_t *kt = ( kill_thread_t *) args;
-	unsigned int pause = kt->secs;
-	do {
-		pause = sleep(pause);
-	} while (pause > 0);
-	pthread_cancel(kt->thread_id);
-	xfree(kt);
-	return NULL;
-}
-
-static void _delay_kill_thread(pthread_t thread_id, int secs)
-{
-	kill_thread_t *kt = xmalloc(sizeof(kill_thread_t));
-
-	kt->thread_id = thread_id;
-	kt->secs = secs;
-
-	slurm_thread_create_detached(NULL, _kill_thr, kt);
-}
-
 /*
  * Wait for IO
  */
@@ -2381,14 +2359,22 @@ _wait_for_io(stepd_step_rec_t *step)
 	debug("Waiting for IO");
 	io_close_all(step);
 
-	/*
-	 * Wait until IO thread exits or kill it after 300 seconds
-	 */
-	if (step->ioid) {
-		_delay_kill_thread(step->ioid, 300);
-		pthread_join(step->ioid, NULL);
-	} else
-		info("_wait_for_io: ioid==0");
+	slurm_mutex_lock(&step->io_mutex);
+	if (step->io_running) {
+		/*
+		 * Give the I/O thread up to 300 seconds to cleanup before
+		 * continuing with shutdown. Note that it is *not* safe to
+		 * try to kill that thread if it's still running - it could
+		 * be holding some internal locks which could lead to deadlock
+		 * on step teardown, which is infinitely worse than letting
+		 * that thread attempt to continue as we quickly head towards
+		 * the process exiting anyways.
+		 */
+		struct timespec ts = { 0, 0 };
+		ts.tv_sec = time(NULL) + 300;
+		slurm_cond_timedwait(&step->io_cond, &step->io_mutex, &ts);
+	}
+	slurm_mutex_unlock(&step->io_mutex);
 
 	/* Close any files for stdout/stderr opened by the stepd */
 	io_close_local_fds(step);
