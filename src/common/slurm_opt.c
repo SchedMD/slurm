@@ -6047,38 +6047,9 @@ static void _validate_share_options(slurm_opt_t *opt)
 	}
 }
 
-static bool _get_gpus_per_task(char *in_val, uint64_t *cnt,
-			       char **save_ptr, int *rc)
-{
-	char *name = NULL, *type = NULL;
-	uint64_t value = 0;
-
-	xassert(save_ptr);
-	*rc = slurm_get_next_tres("gres:", in_val, &name, &type,
-				  &value, save_ptr);
-	xfree(type);
-
-	if (*rc != SLURM_SUCCESS) {
-		*save_ptr = NULL;
-		xfree(name);
-		return false;
-	}
-
-	if (!xstrcasecmp(name, "gpu"))
-		*cnt += value;
-	xfree(name);
-
-	if (!*save_ptr)
-		return false;
-	else
-		return true;
-}
-
 static void _validate_tres_per_task(slurm_opt_t *opt)
 {
-	char *cpu_per_task_ptr = NULL, *save_ptr = NULL;
-	int rc = SLURM_SUCCESS;
-	uint64_t cnt = 0;
+	char *cpu_per_task_ptr = NULL;
 	static uint32_t select_plugin_type = NO_VAL;
 
 	if ((select_plugin_type == NO_VAL) &&
@@ -6121,17 +6092,12 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 		fatal("Invalid TRES for --tres-per-task: bb");
 	}
 
-	cnt = 0;
-	while (_get_gpus_per_task(opt->tres_per_task, &cnt, &save_ptr, &rc)) {
-	}
-
-	if (rc != SLURM_SUCCESS)
-		fatal("Invalid --tres-per-task counts %s", opt->tres_per_task);
-
-	if (cnt) {
-		xfree(opt->gpus_per_task);
-		opt->gpus_per_task = xstrdup_printf("%"PRIu64, cnt);
-	}
+	/*
+	 * FIXME: "gpu:" is not a perfect test. --tres-per-task=gpu is
+	 * also permitted and would not trigger this check.
+	 */
+	if (xstrcasestr(opt->tres_per_task, "gpu:") && opt->gpus_per_task)
+		fatal("You can not have --tres-per-task=gres:gpu: and --gpus-per-task please use one or the other");
 
 	/* See if cpus-per-task was set with tres-per-task */
 	cpu_per_task_ptr = xstrcasestr(opt->tres_per_task, "cpu:");
