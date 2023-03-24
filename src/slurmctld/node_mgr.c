@@ -5067,6 +5067,8 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	if ((state_val == NODE_STATE_DOWN) ||
 	    (state_val & NODE_STATE_DRAIN)) {
 		time_t now = time(NULL);
+		if (conf_node && conf_node->reason)
+			set_node_reason(node_ptr, conf_node->reason, now);
 		_make_node_down(node_ptr, now);
 		node_ptr->node_state = state_val;
 	} else
