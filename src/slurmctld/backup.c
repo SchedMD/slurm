@@ -417,9 +417,11 @@ static int _background_process_msg(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	bool send_rc = true;
 
-	if (!msg->auth_uid_set)
-		fatal("%s: received message without previously validated auth",
+	if (!msg->auth_uid_set) {
+		error("%s: received message without previously validated auth",
 		      __func__);
+		return SLURM_ERROR;
+	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		char *p = rpc_num2string(msg->msg_type);
