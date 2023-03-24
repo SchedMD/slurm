@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     state is DOWN or DRAIN.
  -- Fix slurmd running tasks before RPC Prolog is run.
  -- Fix slurmd deadlock iff the controller were to give a bad alias_list.
+ -- slurmrestd - correctly process job submission field "exclusive" with boolean
+    True or False.
 
 * Changes in Slurm 23.02.1
 ==========================

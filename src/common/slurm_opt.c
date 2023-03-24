@@ -1626,6 +1626,20 @@ static int arg_set_data_exclusive(slurm_opt_t *opt, const data_t *arg,
 	int rc;
 	char *str = NULL;
 
+	if (data_get_type(arg) == DATA_TYPE_BOOL) {
+		if (data_get_bool(arg)) {
+			if (opt->srun_opt) {
+				opt->srun_opt->exclusive = true;
+				opt->srun_opt->exact = true;
+			}
+			opt->shared = JOB_SHARED_NONE;
+		} else {
+			opt->shared = JOB_SHARED_OK;
+		}
+
+		return SLURM_SUCCESS;
+	}
+
 	if ((rc = data_get_string_converted(arg, &str)))
 		ADD_DATA_ERROR("Unable to read string", rc);
 	else {
