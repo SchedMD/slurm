@@ -66,6 +66,12 @@ Cray ALPS computers) or when the \fB\-\-clusters\fR option is used.
 .IP
 
 .TP
+\fB\-c\fR, \fB\-\-cron\fR
+Confirm request to cancel a job submitted by scrontab.  This option only has
+effect with the "explicit_scancel" option is set in \fBScronParameters\fR.
+.IP
+
+.TP
 \fB\-f\fR, \fB\-\-full\fR
 By default, signals other than SIGKILL are not sent to the batch step (the shell
 script). With this option \fBscancel\fR also signals the batch script and its
@@ -238,6 +244,11 @@ environment variables, along with their corresponding options, are listed below.
 .TP
 \fBSCANCEL_CTLD\fR
 \fB\-\-ctld\fR
+.IP
+
+.TP
+\fBSCANCEL_CRON\fR
+\fB\-c, \-\-cron\fR
 .IP
 
 .TP

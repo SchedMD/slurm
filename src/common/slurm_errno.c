@@ -316,6 +316,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Cannot modify scrontab jobs through scontrol"	},
 	{ ERRTAB_ENTRY(ESLURM_INVALID_JOB_CONTAINER_CHANGE),
 	  "JobContainerType change requires restart of all Slurm daemons and commands to take effect" },
+	{ ERRTAB_ENTRY(ESLURM_CANNOT_CANCEL_CRON_JOB),
+	  "Cannot cancel scrontab jobs without --cron flag."	},
 	{ ERRTAB_ENTRY(ESLURM_INVALID_MCS_LABEL),
 	  "Invalid mcs_label specified"				},
 	{ ERRTAB_ENTRY(ESLURM_BURST_BUFFER_WAIT),

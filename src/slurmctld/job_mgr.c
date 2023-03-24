@@ -5433,6 +5433,16 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 	if (job_ptr->bit_flags & CRON_JOB) {
 		cron_entry_t *entry =
 			(cron_entry_t *) job_ptr->details->crontab_entry;
+		/*
+		 * The KILL_NO_CRON flag being set here is indicating that the
+		 * user has NOT specifically requested killing scrontab jobs. To
+		 * avoid interfering with other possible ways of killing jobs,
+		 * the KILL_NO_CRON flag being unset must mean that killing cron
+		 * jobs is permitted.
+		 */
+		if (xstrcasestr(slurm_conf.scron_params, "explicit_scancel") &&
+		    (flags & KILL_NO_CRON))
+			return ESLURM_CANNOT_CANCEL_CRON_JOB;
 		job_ptr->bit_flags |= ~CRON_JOB;
 		error("cancelling cron job, lines %u %u",
 		      entry->line_start, entry->line_end);
