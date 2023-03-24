@@ -292,9 +292,11 @@ slurmd_req(slurm_msg_t *msg)
 		return;
 	}
 
-	if (!msg->auth_uid_set)
-		fatal("%s: received message without previously validated auth",
+	if (!msg->auth_uid_set) {
+		error("%s: received message without previously validated auth",
 		      __func__);
+		return;
+	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		char *p = rpc_num2string(msg->msg_type);
