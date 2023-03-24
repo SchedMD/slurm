@@ -1791,6 +1791,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&tmp_ptr->grace_time, buffer);
 
 		safe_unpack32(&tmp_ptr->max_cpus_per_node, buffer);
+		tmp_ptr->max_cpus_per_socket = NO_VAL;
 		safe_unpack64(&tmp_ptr->max_mem_per_cpu, buffer);
 		safe_unpack32(&tmp_ptr->max_nodes, buffer);
 		safe_unpack16(&tmp_ptr->max_share, buffer);
