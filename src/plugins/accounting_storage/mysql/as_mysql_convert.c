@@ -283,12 +283,12 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 		 * able to detect a previous failed conversion.
 		 */
 		info("pre-converting job table for %s", cluster_name);
-		if ((rc = _convert_job_table_pre(mysql_conn, cluster_name)
-		     != SLURM_SUCCESS))
+		if ((rc = _convert_job_table_pre(mysql_conn, cluster_name))
+		     != SLURM_SUCCESS)
 			break;
 		info("pre-converting step table for %s", cluster_name);
-		if ((rc = _convert_step_table_pre(mysql_conn, cluster_name)
-		     != SLURM_SUCCESS))
+		if ((rc = _convert_step_table_pre(mysql_conn, cluster_name))
+		     != SLURM_SUCCESS)
 			break;
 	}
 	list_iterator_destroy(itr);
