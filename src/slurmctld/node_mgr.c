@@ -5066,7 +5066,8 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	/* Handle DOWN and DRAIN, otherwise make the node idle */
 	if ((state_val == NODE_STATE_DOWN) ||
 	    (state_val & NODE_STATE_DRAIN)) {
-		_make_node_down(node_ptr, time(NULL));
+		time_t now = time(NULL);
+		_make_node_down(node_ptr, now);
 		node_ptr->node_state = state_val;
 	} else
 		make_node_idle(node_ptr, NULL);
