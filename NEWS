@@ -73,6 +73,7 @@ documents those changes that are of interest to users and administrators.
     a spank plugin that implements slurm_spank_job_prolog() or
     slurm_spank_job_epilog().
  -- Fix srun < 23.02 always getting an "exact" core allocation.
+ -- Prevent scontrol < 23.02 from setting MaxCPUsPerSocket to 0.
 
 * Changes in Slurm 23.02.0
 ==========================
