@@ -265,7 +265,7 @@ static void _job_post_het_submit(ctxt_t *ctxt, data_t *djobs,
 				 const char *script)
 {
 	submit_response_msg_t *resp = NULL;
-	list_t *jobs = NULL;
+	list_t *jobs = list_create((ListDelF) slurm_free_job_desc_msg);
 
 	data_set_string(data_list_append(ctxt->parent_path), "jobs");
 

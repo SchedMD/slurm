@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     backed files permissions to be incorrect.
  -- api/submit - fix memory leaks when submission of batch regular jobs or batch
     HetJobs fails (response data is a return code).
+ -- openapi/v0.0.39 - fix memory leak in _job_post_het_submit().
 
 * Changes in Slurm 23.02.2
 ==========================
