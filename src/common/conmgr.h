@@ -251,6 +251,8 @@ struct con_mgr_fd_s {
  */
 struct con_mgr_s {
 	int magic;
+	/* Max number of connections at any one time allowed */
+	int max_connections;
 	/*
 	 * list of all connections to process
 	 * type: con_mgr_fd_t
@@ -315,10 +317,12 @@ struct con_mgr_s {
  * create and init a connection manager
  * only call once!
  * IN thread_count - number of threads to create
+ * IN max_connections - max number of connections
  * IN callbacks - struct containing function pointers
  * RET SLURM_SUCCESS or error
  */
-extern con_mgr_t *init_con_mgr(int thread_count, con_mgr_callbacks_t callbacks);
+extern con_mgr_t *init_con_mgr(int thread_count, int max_connections,
+			       con_mgr_callbacks_t callbacks);
 extern void free_con_mgr(con_mgr_t *mgr);
 
 /*

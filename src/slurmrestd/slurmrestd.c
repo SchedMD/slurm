@@ -75,6 +75,8 @@
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
 
+#define MAX_OPEN_CONNECTIONS 124
+
 decl_static_data(usage_txt);
 
 typedef struct {
@@ -436,6 +438,7 @@ int main(int argc, char **argv)
 		fatal("Unable to initialize serializers");
 
 	if (!(conmgr = init_con_mgr((run_mode.listen ? thread_count : 1),
+				    MAX_OPEN_CONNECTIONS,
 				    callbacks)))
 		fatal("Unable to initialize connection manager");
 

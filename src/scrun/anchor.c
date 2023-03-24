@@ -73,6 +73,7 @@
 #include "scrun.h"
 
 #define CONMGR_THREADS 4
+#define MAX_OPEN_CONNECTIONS 124
 
 static con_mgr_t *conmgr = NULL;
 
@@ -1601,7 +1602,8 @@ extern int spawn_anchor(void)
 	else if (state.requested_terminal)
 		_open_pty();
 
-	if (!(conmgr = init_con_mgr(CONMGR_THREADS, callbacks)))
+	if (!(conmgr = init_con_mgr(CONMGR_THREADS, MAX_OPEN_CONNECTIONS,
+				    callbacks)))
 		fatal("%s: unable to initialize RPC manager", __func__);
 
 	/* scrun anchor process */
