@@ -1,4 +1,4 @@
-.TH slurmrestd "8" "Slurm REST Daemon" "December 2022" "Slurm REST Daemon"
+.TH slurmrestd "8" "Slurm REST Daemon" "March 2023" "Slurm REST Daemon"
 
 .SH "NAME"
 slurmrestd \- Interface to Slurm via REST API.
@@ -87,6 +87,25 @@ Help; print a brief summary of command options.
 .IP
 
 .TP
+\fB\-\-max\-connections <count>\fR
+Set the maximum number of connections to process at any one time. This is
+independent of the number of connections that can connect to slurmrestd at any
+one time. The kernel allows any number of connections to be pending for
+processing at any one time when SYN cookies are active.
+.RS
+.TP
+\fBCaution\fR:
+Each connection could cause one RPC to the controller daemons, leading to
+potential overloading of the controller. Each connection can also hold memory
+for the duration of the life of the connection. Having too many connections
+processing at once could use considerably more memory. Process limits
+(\fBulimit\fR(3)) may require adjustment when this value is increased.
+.TP
+Default: 124
+.RE
+.IP
+
+.TP
 \fB\-s <OpenAPI plugins to load>\fR
 Comma\-delimited list of OpenAPI plugins.
 Set to "list" to dump a list of the possible plugins to load.
@@ -151,6 +170,12 @@ Set debug level explicitly. Valid values are 1\-10. See \fB\-v\fR
 .TP
 \fBSLURMRESTD_LISTEN\fR
 Comma\-delimited list of host:port pairs or unix sockets to listen on.
+.IP
+
+.TP
+\fBSLURMRESTD_MAX_CONNECTIONS\fR
+Set the maximum number of connections to process at any one time. See
+\fB\-\-max\-connections\fR
 .IP
 
 .TP

@@ -75,6 +75,8 @@
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
 
+#define OPT_LONG_MAX_CON 0x100
+
 decl_static_data(usage_txt);
 
 typedef struct {
@@ -122,6 +124,16 @@ static void _sigpipe_handler(int signum)
 	debug5("%s: received SIGPIPE", __func__);
 }
 
+static void _set_max_connections(const char *buffer)
+{
+	max_connections = slurm_atoul(buffer);
+
+	if (max_connections < 1)
+		fatal("Invalid max connection count: %s", buffer);
+
+	debug3("%s: setting max_connections=%d", __func__, max_connections);
+}
+
 static void _parse_env(void)
 {
 	char *buffer = NULL;
@@ -150,6 +162,9 @@ static void _parse_env(void)
 		xfree(rest_auth);
 		rest_auth = xstrdup(buffer);
 	}
+
+	if ((buffer = getenv("SLURMRESTD_MAX_CONNECTIONS")))
+		_set_max_connections(buffer);
 
 	if ((buffer = getenv("SLURMRESTD_OPENAPI_PLUGINS")) != NULL) {
 		xfree(oas_specs);
@@ -261,6 +276,7 @@ static void _parse_commandline(int argc, char **argv)
 {
 	static const struct option long_options[] = {
 		{ "help", no_argument, NULL, 'h' },
+		{ "max-connections", required_argument, NULL, OPT_LONG_MAX_CON },
 		{ NULL, 0, NULL, 0 }
 	};
 	int c = 0, option_index = 0;
@@ -303,6 +319,9 @@ static void _parse_commandline(int argc, char **argv)
 		case 'V':
 			print_slurm_version();
 			exit(0);
+			break;
+		case OPT_LONG_MAX_CON:
+			_set_max_connections(optarg);
 			break;
 		default:
 			_usage();

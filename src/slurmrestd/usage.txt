@@ -5,6 +5,8 @@ Usage: slurmrestd [OPTIONS] [host:port]...
 		Use specified file for slurmctld configuration
 	-h, --help
 		Print this help message.
+	--max-connections <count>
+		Set max count of connections to process.
 	-s <OpenAPI plugins to load>
 		CSV list of OpenAPI plugins.
 	-t <thread count>
