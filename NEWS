@@ -85,6 +85,7 @@ documents those changes that are of interest to users and administrators.
  -- job_container/tmpfs - avoid printing extraneous error messages when running
     a spank plugin that implements slurm_spank_job_prolog() or
     slurm_spank_job_epilog().
+ -- Fix srun < 23.02 always getting an "exact" core allocation.
 
 * Changes in Slurm 23.02.0
 ==========================
