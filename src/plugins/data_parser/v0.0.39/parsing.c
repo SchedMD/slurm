@@ -609,7 +609,7 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 		 (uintptr_t) parser, rc, slurm_strerror(rc));
 
 cleanup:
-	xfree(ppath);
+	FREE_NULL_DATA(ppath);
 	xfree(path);
 	return rc;
 }
