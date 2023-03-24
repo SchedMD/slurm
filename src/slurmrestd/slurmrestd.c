@@ -38,6 +38,7 @@
 
 #define _GNU_SOURCE
 
+#include <getopt.h>
 #include <grp.h>
 #include <limits.h>
 #include <netdb.h>
@@ -256,10 +257,16 @@ static void _usage(void)
  */
 static void _parse_commandline(int argc, char **argv)
 {
-	int c = 0;
+	static const struct option long_options[] = {
+		{ "help", no_argument, NULL, 'h' },
+		{ NULL, 0, NULL, 0 }
+	};
+	int c = 0, option_index = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "a:f:g:hs:t:u:vV")) != -1) {
+
+	while ((c = getopt_long(argc, argv, "a:f:g:hs:t:u:vV", long_options,
+				&option_index)) != -1) {
 		switch (c) {
 		case 'a':
 			xfree(rest_auth);
