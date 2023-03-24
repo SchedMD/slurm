@@ -219,6 +219,10 @@ COMMAND CHANGES (see man pages for details)
     option.
  -- salloc/sbatch/srun - add user requestible single node vnis with the
     '--network=single_node_vni' option.
+ -- sinfo - The '--json' and '--yaml' output format has been changed to include
+    the same information that could provided by regular text output. The prior
+    formatted output can now be queried via 'scontrol show nodes --json' or
+    'scontrol show nodes --yaml'.
 
 API CHANGES
 ===========
