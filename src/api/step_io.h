@@ -145,7 +145,7 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
  */
 void client_io_handler_abort(client_io_t *cio);
 
-int client_io_handler_finish(client_io_t *cio);
+extern void client_io_handler_finish(client_io_t *cio);
 
 void client_io_handler_destroy(client_io_t *cio);
 

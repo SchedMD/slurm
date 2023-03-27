@@ -1180,11 +1180,10 @@ static void _delay_kill_thread(pthread_t thread_id, int secs)
 	slurm_thread_create_detached(NULL, _kill_thr, kt);
 }
 
-int
-client_io_handler_finish(client_io_t *cio)
+extern void client_io_handler_finish(client_io_t *cio)
 {
 	if (cio == NULL)
-		return SLURM_SUCCESS;
+		return;
 
 	eio_signal_shutdown(cio->eio);
 	/* Make the thread timeout consistent with
@@ -1193,10 +1192,8 @@ client_io_handler_finish(client_io_t *cio)
 	_delay_kill_thread(cio->ioid, 180);
 	if (pthread_join(cio->ioid, NULL) < 0) {
 		error("Waiting for client io pthread: %m");
-		return SLURM_ERROR;
+		return;
 	}
-
-	return SLURM_SUCCESS;
 }
 
 void
