@@ -245,7 +245,9 @@ extern int sacctmgr_list_stats(int argc, char **argv)
 	time_t now = time(NULL);
 	int type;
 
+	notice_thread_init();
 	error_code = slurmdb_get_stats(db_conn, &stats_rec);
+	notice_thread_fini();
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
