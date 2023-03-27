@@ -2550,7 +2550,7 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t *ctx,
 
 		if (!cache_match_found) {
 			error("sbcast_cred verify: signature not in cache");
-			if (SLURM_DIFFTIME(now, cred_restart_time) > 60)
+			if ((now - cred_restart_time) > 60)
 				return NULL;	/* restarted >60 secs ago */
 			buffer = init_buf(4096);
 			_pack_sbcast_cred(sbcast_cred, buffer,
