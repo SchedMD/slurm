@@ -775,8 +775,8 @@ typedef struct shutdown_msg {
 
 typedef enum {
 	SLURMCTLD_SHUTDOWN_ALL = 0,	/* all slurm daemons are shutdown */
-	SLURMCTLD_SHUTDOWN_ABORT,	/* slurmctld only and generate core */
-	SLURMCTLD_SHUTDOWN_CTLD,	/* slurmctld only (no core file) */
+	/* = 1 can be reused two versions after 23.11 */
+	SLURMCTLD_SHUTDOWN_CTLD = 2,	/* slurmctld only (no core file) */
 } slurmctld_shutdown_type_t;
 
 typedef struct last_update_msg {

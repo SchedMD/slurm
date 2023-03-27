@@ -3335,8 +3335,6 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 	/* do RPC call */
 	if (error_code)
 		;
-	else if (options == SLURMCTLD_SHUTDOWN_ABORT)
-		info("performing immediate shutdown without state save");
 	else if (slurmctld_config.shutdown_time)
 		debug2("shutdown RPC issued when already in progress");
 	else {
@@ -3391,10 +3389,6 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t *msg)
 	}
 
 	slurm_send_rc_msg(msg, error_code);
-	if ((error_code == SLURM_SUCCESS) &&
-	    (options == SLURMCTLD_SHUTDOWN_ABORT) &&
-	    (slurmctld_config.thread_id_sig))
-		pthread_kill(slurmctld_config.thread_id_sig, SIGABRT);
 }
 
 static int _foreach_step_match_containerid(void *x, void *arg)
