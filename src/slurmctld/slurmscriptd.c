@@ -1010,7 +1010,7 @@ static int _msg_accept(eio_obj_t *obj, List objs)
 		req_args = xmalloc(sizeof *req_args);
 		req_args->req = req;
 		req_args->buffer = buffer;
-		slurm_thread_create_detached(NULL, _handle_accept, req_args);
+		slurm_thread_create_detached(_handle_accept, req_args);
 
 		/*
 		 * xmalloc()'d data will be xfree()'d by _handle_accept()

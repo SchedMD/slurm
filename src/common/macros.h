@@ -324,24 +324,15 @@
 	} while (0)
 
 /*
- * If the id is NULL then the thread_id will be discarded without needing
- * to create a local pthread_t object first.
- *
- * This is only made available for detached threads - if you're creating
- * an attached thread that you don't need to keep the id of, then you
- * should really be making it detached.
- *
- * The ternary operator that makes that work is intentionally overwrought
- * to avoid compiler warnings about it always resolving to true, since
- * this is a macro and the optimization pass will realize that a variable
- * in the local scope will always have a non-zero memory address.
+ * Both the thread and attr arguments are intentionally omitted. There
+ * is basically nothing safe you can do with a detached thread's id,
+ * so this macro intentionally prevents you from capturing it.
  */
-#define slurm_thread_create_detached(id, func, arg)			\
+#define slurm_thread_create_detached(func, arg)				\
 	do {								\
-		pthread_t *id_ptr, id_local;				\
+		pthread_t id_local;					\
 		pthread_attr_t attr;					\
 		int err;						\
-		id_ptr = (id != (pthread_t *) NULL) ? id : &id_local;	\
 		slurm_attr_init(&attr);					\
 		err = pthread_attr_setdetachstate(&attr,		\
 						  PTHREAD_CREATE_DETACHED); \
@@ -350,7 +341,7 @@
 			fatal("%s: pthread_attr_setdetachstate %m",	\
 			      __func__);				\
 		}							\
-		err = pthread_create(id_ptr, &attr, func, arg);		\
+		err = pthread_create(&id_local, &attr, func, arg);	\
 		if (err) {						\
 			errno = err;					\
 			fatal("%s: pthread_create error %m", __func__);	\

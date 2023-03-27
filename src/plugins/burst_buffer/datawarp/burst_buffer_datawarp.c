@@ -1313,7 +1313,7 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	stage_args->args1   = setup_argv;
 	stage_args->args2   = data_in_argv;
 
-	slurm_thread_create_detached(NULL, _start_stage_in, stage_args);
+	slurm_thread_create_detached(_start_stage_in, stage_args);
 
 	xfree(hash_dir);
 	xfree(job_dir);
@@ -1636,7 +1636,7 @@ static int _queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
 	stage_args->job_id  = bb_job->job_id;
 	stage_args->user_id = bb_job->user_id;
 
-	slurm_thread_create_detached(NULL, _start_stage_out, stage_args);
+	slurm_thread_create_detached(_start_stage_out, stage_args);
 
 	xfree(hash_dir);
 	xfree(job_dir);
@@ -1887,7 +1887,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 	teardown_args->user_id = user_id;
 	teardown_args->args1   = teardown_argv;
 
-	slurm_thread_create_detached(NULL, _start_teardown, teardown_args);
+	slurm_thread_create_detached(_start_teardown, teardown_args);
 
 	xfree(hash_dir);
 	xfree(job_script);
@@ -3635,8 +3635,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 			job_ptr->job_state |= JOB_CONFIGURING;
 		}
 
-		slurm_thread_create_detached(NULL, _start_pre_run,
-					     pre_run_args);
+		slurm_thread_create_detached(_start_pre_run, pre_run_args);
 	}
 
 fini:
@@ -4086,7 +4085,7 @@ static int _create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 			create_args->type = xstrdup(buf_ptr->type);
 			create_args->user_id = job_ptr->user_id;
 
-			slurm_thread_create_detached(NULL, _create_persistent,
+			slurm_thread_create_detached(_create_persistent,
 						     create_args);
 		} else if ((buf_ptr->flags == BB_FLAG_BB_OP) &&
 			   buf_ptr->destroy && job_ready) {
@@ -4128,7 +4127,7 @@ static int _create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 			create_args->name = xstrdup(buf_ptr->name);
 			create_args->user_id = job_ptr->user_id;
 
-			slurm_thread_create_detached(NULL, _destroy_persistent,
+			slurm_thread_create_detached(_destroy_persistent,
 						     create_args);
 		} else if ((buf_ptr->flags == BB_FLAG_BB_OP) &&
 			   buf_ptr->destroy) {

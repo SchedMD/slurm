@@ -1461,7 +1461,7 @@ extern void agent_init(void)
 		return;
 	}
 
-	slurm_thread_create_detached(NULL, _agent_init, NULL);
+	slurm_thread_create_detached(_agent_init, NULL);
 	pending_thread_running = true;
 	slurm_mutex_unlock(&pending_mutex);
 }
@@ -1707,7 +1707,7 @@ next:
 		if (agent_arg_ptr) {
 			debug2("Spawning RPC agent for msg_type %s",
 			       rpc_num2string(agent_arg_ptr->msg_type));
-			slurm_thread_create_detached(NULL, agent, agent_arg_ptr);
+			slurm_thread_create_detached(agent, agent_arg_ptr);
 			agent_started++;
 		} else
 			error("agent_retry found record with no agent_args");
@@ -1728,7 +1728,7 @@ next:
 
 			mail_thread_cnt++;
 			agent_thread_cnt++;
-			slurm_thread_create_detached(NULL, _mail_proc, mi);
+			slurm_thread_create_detached(_mail_proc, mi);
 		}
 		slurm_mutex_unlock(&mail_mutex);
 		slurm_mutex_unlock(&agent_cnt_mutex);
@@ -1755,7 +1755,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 
 	if (agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) {
 		/* execute now */
-		slurm_thread_create_detached(NULL, agent, agent_arg_ptr);
+		slurm_thread_create_detached(agent, agent_arg_ptr);
 		/* give agent a chance to start */
 		usleep(10000);
 		return;

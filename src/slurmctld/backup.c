@@ -153,7 +153,7 @@ void run_backup(void)
 	slurm_thread_create(&slurmctld_config.thread_id_sig,
 			    _background_signal_hand, NULL);
 
-	slurm_thread_create_detached(NULL, _trigger_slurmctld_event, NULL);
+	slurm_thread_create_detached(_trigger_slurmctld_event, NULL);
 
 	for (i = 0; ((i < 5) && (slurmctld_config.shutdown_time == 0)); i++) {
 		sleep(1);       /* Give the primary slurmctld set-up time */
@@ -709,7 +709,7 @@ static int _shutdown_primary_controller(int wait_time)
 		 */
 		if (i < backup_inx)
 			shutdown_arg->shutdown = true;
-		slurm_thread_create_detached(NULL, _shutdown_controller,
+		slurm_thread_create_detached(_shutdown_controller,
 					     shutdown_arg);
 		slurm_mutex_lock(&shutdown_mutex);
 		shutdown_thread_cnt++;

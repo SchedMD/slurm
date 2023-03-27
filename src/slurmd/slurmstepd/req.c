@@ -407,7 +407,7 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 	param = xmalloc(sizeof(struct request_params));
 	param->fd = fd;
 	param->step = step;
-	slurm_thread_create_detached(NULL, _handle_accept, param);
+	slurm_thread_create_detached(_handle_accept, param);
 
 	debug3("Leaving _msg_socket_accept");
 	return SLURM_SUCCESS;
@@ -1233,7 +1233,7 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *step, pid_t pid)
 		set_user_limits(step, pid);
 
 	/* spawn a thread that will wait on the pid given */
-	slurm_thread_create_detached(NULL, _wait_extern_pid, extern_pid);
+	slurm_thread_create_detached(_wait_extern_pid, extern_pid);
 
 	return SLURM_SUCCESS;
 }

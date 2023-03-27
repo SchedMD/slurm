@@ -149,7 +149,7 @@ static void *_track_script_rec_cleanup(void *arg)
 
 static void _make_cleanup_thread(track_script_rec_t *r)
 {
-	slurm_thread_create_detached(NULL, _track_script_rec_cleanup, r);
+	slurm_thread_create_detached(_track_script_rec_cleanup, r);
 }
 
 static int _flush_job(void *r, void *x)

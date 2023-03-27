@@ -944,7 +944,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
 		 * fashion buys a bunch on systems with lots
 		 * (millions) of jobs.
 		 */
-		slurm_thread_create_detached(NULL, _cluster_rollup_usage,
+		slurm_thread_create_detached(_cluster_rollup_usage,
 					     local_rollup);
 		roll_started++;
 	}

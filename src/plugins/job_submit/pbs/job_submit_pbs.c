@@ -231,7 +231,7 @@ static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
 			new_dep = NULL;
 			_decr_depend_cnt(job_ptr);
 
-			slurm_thread_create_detached(NULL, _dep_agent, job_ptr);
+			slurm_thread_create_detached(_dep_agent, job_ptr);
 		}
 		tok = strtok_r(NULL, ":", &last_ptr);
 	}

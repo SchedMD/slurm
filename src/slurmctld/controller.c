@@ -1438,7 +1438,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 			slurmctld_diag_stats.proc_req_raw++;
 			_service_connection(newsockfd);
 		} else {
-			slurm_thread_create_detached(NULL, _service_connection,
+			slurm_thread_create_detached(_service_connection,
 						     newsockfd);
 		}
 	}
@@ -2959,7 +2959,7 @@ static int _shutdown_backup_controller(void)
 		 */
 		if (i < backup_inx)
 			shutdown_arg->shutdown = true;
-		slurm_thread_create_detached(NULL, _shutdown_bu_thread,
+		slurm_thread_create_detached(_shutdown_bu_thread,
 					     shutdown_arg);
 		slurm_mutex_lock(&bu_mutex);
 		bu_thread_cnt++;
@@ -3785,7 +3785,7 @@ static void _run_primary_prog(bool primary_on)
 	wait_arg = xmalloc(sizeof(primary_thread_arg_t));
 	wait_arg->cpid = cpid;
 	wait_arg->prog_type = xstrdup(prog_type);
-	slurm_thread_create_detached(NULL, _wait_primary_prog, wait_arg);
+	slurm_thread_create_detached(_wait_primary_prog, wait_arg);
 }
 
 static int _init_dep_job_ptr(void *object, void *arg)

@@ -399,7 +399,7 @@ main (int argc, char **argv)
 
 	run_script_health_check();
 
-	slurm_thread_create_detached(NULL, _registration_engine, NULL);
+	slurm_thread_create_detached(_registration_engine, NULL);
 
 	_msg_engine();
 
@@ -592,7 +592,7 @@ static void _handle_connection(int fd, slurm_addr_t *cli)
 	arg->cli_addr = cli;
 
 	_increment_thd_count();
-	slurm_thread_create_detached(NULL, _service_connection, arg);
+	slurm_thread_create_detached(_service_connection, arg);
 }
 
 static void *

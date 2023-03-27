@@ -902,7 +902,7 @@ _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 	win_info->task   = task;
 	win_info->step    = step;
 	win_info->pty_fd = pty_fd;
-	slurm_thread_create_detached(NULL, _window_manager, win_info);
+	slurm_thread_create_detached(_window_manager, win_info);
 }
 #endif
 
@@ -1190,7 +1190,7 @@ io_init_tasks_stdio(stepd_step_rec_t *step)
 extern void io_thread_start(stepd_step_rec_t *step)
 {
 	slurm_mutex_lock(&step->io_mutex);
-	slurm_thread_create_detached(NULL, _io_thr, step);
+	slurm_thread_create_detached(_io_thr, step);
 	step->io_running = true;
 	slurm_mutex_unlock(&step->io_mutex);
 }

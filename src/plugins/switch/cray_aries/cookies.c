@@ -88,7 +88,7 @@ extern int start_lease_extender(void)
 	if (!running_in_slurmctld())
 		return SLURM_SUCCESS;
 
-	slurm_thread_create_detached(NULL, _lease_extender, NULL);
+	slurm_thread_create_detached(_lease_extender, NULL);
 
 	return SLURM_SUCCESS;
 }

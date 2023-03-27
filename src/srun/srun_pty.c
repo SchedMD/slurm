@@ -112,7 +112,7 @@ void pty_thread_create(srun_job_t *job)
 	job->pty_port = slurm_get_port(&pty_addr);
 	debug2("initialized job control port %hu", job->pty_port);
 
-	slurm_thread_create_detached(NULL, _pty_thread, job);
+	slurm_thread_create_detached(_pty_thread, job);
 }
 
 static void  _handle_sigwinch(int sig)

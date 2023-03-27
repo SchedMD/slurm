@@ -132,7 +132,7 @@ static void _kvs_xmit_tasks(void)
 	}
 
 	/* Spawn a pthread to transmit it */
-	slurm_thread_create_detached(NULL, _agent, args);
+	slurm_thread_create_detached(_agent, args);
 }
 
 static void *_msg_thread(void *x)
@@ -254,8 +254,7 @@ static void *_agent(void *x)
 			 * one pthread. */
 			_msg_thread((void *) msg_args);
 		} else {
-			slurm_thread_create_detached(NULL, _msg_thread,
-						     msg_args);
+			slurm_thread_create_detached(_msg_thread, msg_args);
 		}
 	}
 

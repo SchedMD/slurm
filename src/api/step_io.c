@@ -1177,7 +1177,7 @@ static void _delay_kill_thread(pthread_t thread_id, int secs)
 
 	kt->thread_id = thread_id;
 	kt->secs = secs;
-	slurm_thread_create_detached(NULL, _kill_thr, kt);
+	slurm_thread_create_detached(_kill_thr, kt);
 }
 
 extern void client_io_handler_finish(client_io_t *cio)

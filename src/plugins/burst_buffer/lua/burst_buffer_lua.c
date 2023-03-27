@@ -1701,7 +1701,7 @@ static void _queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
 	stage_out_args->gid = job_ptr->group_id;
 	stage_out_args->job_script = bb_handle_job_script(job_ptr, bb_job);
 
-	slurm_thread_create_detached(NULL, _start_stage_out, stage_out_args);
+	slurm_thread_create_detached(_start_stage_out, stage_out_args);
 }
 
 static void _pre_queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
@@ -3142,7 +3142,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry,
 	teardown_args->job_script = job_script;
 	teardown_args->hurry = hurry;
 
-	slurm_thread_create_detached(NULL, _start_teardown, teardown_args);
+	slurm_thread_create_detached(_start_teardown, teardown_args);
 
 	xfree(hash_dir);
 }
@@ -3439,7 +3439,7 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 		     &bb_state, true);
 
 	stage_in_cnt++;
-	slurm_thread_create_detached(NULL, _start_stage_in, stage_in_args);
+	slurm_thread_create_detached(_start_stage_in, stage_in_args);
 
 	xfree(hash_dir);
 	xfree(job_dir);
@@ -3914,7 +3914,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 		job_ptr->job_state |= JOB_CONFIGURING;
 	}
 
-	slurm_thread_create_detached(NULL, _start_pre_run, pre_run_args);
+	slurm_thread_create_detached(_start_pre_run, pre_run_args);
 
 fini:
 	xfree(job_script);

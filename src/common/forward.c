@@ -522,7 +522,7 @@ static void _start_msg_tree_internal(hostlist_t hl, hostlist_t* sp_hl,
 		(*fwd_tree->p_thr_count)++;
 		slurm_mutex_unlock(fwd_tree->tree_mutex);
 
-		slurm_thread_create_detached(NULL, _fwd_tree_thread, fwd_tree);
+		slurm_thread_create_detached(_fwd_tree_thread, fwd_tree);
 	}
 }
 
@@ -568,7 +568,7 @@ static void _forward_msg_internal(hostlist_t hl, hostlist_t* sp_hl,
 
 		forward_init(&fwd_msg->header.forward);
 		fwd_msg->header.forward.nodelist = buf;
-		slurm_thread_create_detached(NULL, _forward_thread, fwd_msg);
+		slurm_thread_create_detached(_forward_thread, fwd_msg);
 	}
 }
 

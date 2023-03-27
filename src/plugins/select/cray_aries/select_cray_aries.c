@@ -1220,8 +1220,7 @@ extern int select_p_job_init(List job_list)
 					debug("CCM %pJ recovery rerun prologue",
 					      job_ptr);
 					job_ptr->job_state |= JOB_CONFIGURING;
-					slurm_thread_create_detached(NULL,
-								     ccm_begin,
+					slurm_thread_create_detached(ccm_begin,
 								     job_ptr);
 				}
 			}
@@ -1512,7 +1511,7 @@ extern int select_p_job_begin(job_record_t *job_ptr)
 				debug("CCM %pJ setting JOB_CONFIGURING",
 				      job_ptr);
 				job_ptr->job_state |= JOB_CONFIGURING;
-				slurm_thread_create_detached(NULL, ccm_begin,
+				slurm_thread_create_detached(ccm_begin,
 							     job_ptr);
 			}
 		}
@@ -1554,7 +1553,7 @@ extern int select_p_job_fini(job_record_t *job_ptr)
 	/* Create a thread to run the CCM epilog for a CCM partition */
 	if (ccm_config.ccm_enabled) {
 		if (ccm_check_partitions(job_ptr)) {
-			slurm_thread_create_detached(NULL, ccm_fini, job_ptr);
+			slurm_thread_create_detached(ccm_fini, job_ptr);
 		}
 	}
 #endif
