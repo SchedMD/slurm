@@ -349,9 +349,9 @@ void *agent(void *args)
 		 */
 		task_specific_ptr = _make_task_data(agent_info_ptr, i);
 
-		slurm_thread_create_detached(&thread_ptr[i].thread,
-					     _thread_per_group_rpc,
-					     task_specific_ptr);
+		slurm_thread_create(&thread_ptr[i].thread,
+				    _thread_per_group_rpc,
+				    task_specific_ptr);
 		agent_info_ptr->threads_active++;
 		slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 	}
@@ -368,6 +368,8 @@ void *agent(void *args)
 		slurm_cond_wait(&agent_info_ptr->thread_cond,
 				&agent_info_ptr->thread_mutex);
 	}
+	for (i = 0; i < agent_info_ptr->thread_count; i++)
+		pthread_join(thread_ptr[i].thread, NULL);
 	slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 
 	log_flag(AGENT, "%s: end agent thread_count:%d threads_active:%d retry:%c get_reply:%c msg_type:%s protocol_version:%hu",
