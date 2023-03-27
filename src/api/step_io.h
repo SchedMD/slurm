@@ -108,7 +108,7 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 				      bool label, uint32_t het_job_offset,
 				      uint32_t het_job_task_offset);
 
-int client_io_handler_start(client_io_t *cio);
+extern void client_io_handler_start(client_io_t *cio);
 
 /*
  * Tell the client IO handler that a set of remote nodes are now considered

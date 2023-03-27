@@ -1150,16 +1150,13 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 	return cio;
 }
 
-int
-client_io_handler_start(client_io_t *cio)
+extern void client_io_handler_start(client_io_t *cio)
 {
 	xsignal(SIGTTIN, SIG_IGN);
 
 	slurm_thread_create(&cio->ioid, _io_thr_internal, cio);
 
 	debug("Started IO server thread (%lu)", (unsigned long) cio->ioid);
-
-	return SLURM_SUCCESS;
 }
 
 static void *_kill_thr(void *args)

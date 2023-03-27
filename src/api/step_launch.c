@@ -381,10 +381,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	 */
 	ctx->launch_state->io->sls = ctx->launch_state;
 
-	if (client_io_handler_start(ctx->launch_state->io) != SLURM_SUCCESS) {
-		rc = SLURM_ERROR;
-		goto fail1;
-	}
+	client_io_handler_start(ctx->launch_state->io);
+
 	launch.num_io_port = ctx->launch_state->io->num_listen;
 	launch.io_port = xcalloc(launch.num_io_port, sizeof(uint16_t));
 	memcpy(launch.io_port, ctx->launch_state->io->listenport,
@@ -579,10 +577,8 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	 */
 	ctx->launch_state->io->sls = ctx->launch_state;
 
-	if (client_io_handler_start(ctx->launch_state->io) != SLURM_SUCCESS) {
-		rc = SLURM_ERROR;
-		goto fail1;
-	}
+	client_io_handler_start(ctx->launch_state->io);
+
 	launch.num_io_port = ctx->launch_state->io->num_listen;
 	launch.io_port = xcalloc(launch.num_io_port, sizeof(uint16_t));
 	memcpy(launch.io_port, ctx->launch_state->io->listenport,
