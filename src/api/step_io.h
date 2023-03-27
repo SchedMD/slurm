@@ -53,7 +53,10 @@ typedef struct {
 	uint32_t io_key_len;
 
 	/* internal variables */
-	pthread_t ioid;		/* stdio thread id 		  */
+	bool io_running;		/* I/O thread running */
+	pthread_cond_t io_cond;         /* I/O thread state conditional */
+	pthread_mutex_t io_mutex;       /* I/O thread state mutex */
+
 	int num_listen;		/* Number of stdio listen sockets */
 	int *listensock;	/* Array of stdio listen sockets  */
 	uint16_t *listenport;	/* Array of stdio listen port numbers */
@@ -93,7 +96,6 @@ typedef struct {
 	struct step_launch_state *sls; /* Used to notify the main thread of an
 				       I/O problem.  */
 } client_io_t;
-
 
 /*
  * IN cred - cred need not be a real job credential, it may be a "fake"

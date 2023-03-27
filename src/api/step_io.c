@@ -813,6 +813,11 @@ _io_thr_internal(void *cio_arg)
 	/* start the eio engine */
 	eio_handle_mainloop(cio->eio);
 
+	slurm_mutex_lock(&cio->io_mutex);
+	cio->io_running = false;
+	slurm_cond_broadcast(&cio->io_cond);
+	slurm_mutex_unlock(&cio->io_mutex);
+
 	debug("IO thread exiting");
 
 	return NULL;
@@ -1154,30 +1159,12 @@ extern void client_io_handler_start(client_io_t *cio)
 {
 	xsignal(SIGTTIN, SIG_IGN);
 
-	slurm_thread_create(&cio->ioid, _io_thr_internal, cio);
+	slurm_mutex_lock(&cio->io_mutex);
+	slurm_thread_create_detached(_io_thr_internal, cio);
+	cio->io_running = true;
+	slurm_mutex_unlock(&cio->io_mutex);
 
-	debug("Started IO server thread (%lu)", (unsigned long) cio->ioid);
-}
-
-static void *_kill_thr(void *args)
-{
-	kill_thread_t *kt = ( kill_thread_t *) args;
-	unsigned int pause = kt->secs;
-	do {
-		pause = sleep(pause);
-	} while (pause > 0);
-	pthread_cancel(kt->thread_id);
-	xfree(kt);
-	return NULL;
-}
-
-static void _delay_kill_thread(pthread_t thread_id, int secs)
-{
-	kill_thread_t *kt = xmalloc(sizeof(kill_thread_t));
-
-	kt->thread_id = thread_id;
-	kt->secs = secs;
-	slurm_thread_create_detached(_kill_thr, kt);
+	debug("Started IO server thread");
 }
 
 extern void client_io_handler_finish(client_io_t *cio)
@@ -1186,14 +1173,21 @@ extern void client_io_handler_finish(client_io_t *cio)
 		return;
 
 	eio_signal_shutdown(cio->eio);
-	/* Make the thread timeout consistent with
-	 * EIO_SHUTDOWN_WAIT
-	 */
-	_delay_kill_thread(cio->ioid, 180);
-	if (pthread_join(cio->ioid, NULL) < 0) {
-		error("Waiting for client io pthread: %m");
-		return;
+
+	slurm_mutex_lock(&cio->io_mutex);
+	if (cio->io_running) {
+		struct timespec ts = { 0, 0 };
+
+		/*
+		 * FIXME: a comment here stated "Make the thread timeout
+		 * consistent with EIO_SHUTDOWN_WAIT", but this 180 second
+		 * value is not DEFAULT_EIO_SHUTDOWN_WAIT.
+		 */
+		ts.tv_sec = time(NULL) + 180;
+
+		slurm_cond_timedwait(&cio->io_cond, &cio->io_mutex, &ts);
 	}
+	slurm_mutex_unlock(&cio->io_mutex);
 }
 
 void
