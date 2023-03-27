@@ -1694,7 +1694,6 @@ fini:
 static void _queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
 {
 	stage_out_args_t *stage_out_args;
-	pthread_t tid;
 
 	stage_out_args = xmalloc(sizeof *stage_out_args);
 	stage_out_args->job_id = bb_job->job_id;
@@ -1702,7 +1701,7 @@ static void _queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
 	stage_out_args->gid = job_ptr->group_id;
 	stage_out_args->job_script = bb_handle_job_script(job_ptr, bb_job);
 
-	slurm_thread_create_detached(&tid, _start_stage_out, stage_out_args);
+	slurm_thread_create_detached(NULL, _start_stage_out, stage_out_args);
 }
 
 static void _pre_queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)
@@ -3118,7 +3117,6 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry,
 	int hash_inx = job_id % 10;
 	struct stat buf;
 	teardown_args_t *teardown_args;
-	pthread_t tid;
 
 	xstrfmtcat(hash_dir, "%s/hash.%d",
 		   slurm_conf.state_save_location, hash_inx);
@@ -3144,7 +3142,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry,
 	teardown_args->job_script = job_script;
 	teardown_args->hurry = hurry;
 
-	slurm_thread_create_detached(&tid, _start_teardown, teardown_args);
+	slurm_thread_create_detached(NULL, _start_teardown, teardown_args);
 
 	xfree(hash_dir);
 }
@@ -3407,7 +3405,6 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	int hash_inx = job_ptr->job_id % 10;
 	stage_in_args_t *stage_in_args;
 	bb_alloc_t *bb_alloc = NULL;
-	pthread_t tid;
 
 	xstrfmtcat(hash_dir, "%s/hash.%d",
 		   slurm_conf.state_save_location, hash_inx);
@@ -3442,7 +3439,7 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 		     &bb_state, true);
 
 	stage_in_cnt++;
-	slurm_thread_create_detached(&tid, _start_stage_in, stage_in_args);
+	slurm_thread_create_detached(NULL, _start_stage_in, stage_in_args);
 
 	xfree(hash_dir);
 	xfree(job_dir);
@@ -3820,7 +3817,6 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	int rc = SLURM_SUCCESS;
 	uint32_t argc;
 	char **argv;
-	pthread_t tid;
 	bb_job_t *bb_job;
 	pre_run_args_t *pre_run_args;
 	run_lua_args_t run_lua_args;
@@ -3918,7 +3914,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 		job_ptr->job_state |= JOB_CONFIGURING;
 	}
 
-	slurm_thread_create_detached(&tid, _start_pre_run, pre_run_args);
+	slurm_thread_create_detached(NULL, _start_pre_run, pre_run_args);
 
 fini:
 	xfree(job_script);
