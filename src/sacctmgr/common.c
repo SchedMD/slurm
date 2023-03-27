@@ -39,6 +39,7 @@
 \*****************************************************************************/
 
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/common/macros.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/interfaces/auth.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -46,12 +47,23 @@
 #include <unistd.h>
 #include <termios.h>
 
-static pthread_t lock_warning_thread;
+static bool warn_needed = false;
+static pthread_mutex_t warn_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t warn_cond = PTHREAD_COND_INITIALIZER;
 
 static void *_print_lock_warn(void *no_data)
 {
-	sleep(5);
-	printf(" Database is busy or waiting for lock from other user.\n");
+	struct timespec ts = { 0, 0 };
+	ts.tv_sec = time(NULL) + 5;
+
+	slurm_mutex_lock(&warn_mutex);
+	if (warn_needed) {
+		slurm_cond_timedwait(&warn_cond, &warn_mutex, &ts);
+		if (warn_needed)
+			printf(" Database is busy or waiting for lock from other user.\n");
+		warn_needed = false;
+	}
+	slurm_mutex_unlock(&warn_mutex);
 
 	return NULL;
 }
@@ -821,13 +833,18 @@ static print_field_t *_get_print_field(char *object)
 
 extern void notice_thread_init(void)
 {
-	slurm_thread_create_detached(&lock_warning_thread,
-				     _print_lock_warn, NULL);
+	slurm_mutex_lock(&warn_mutex);
+	warn_needed = true;
+	slurm_thread_create_detached(NULL, _print_lock_warn, NULL);
+	slurm_mutex_unlock(&warn_mutex);
 }
 
 extern void notice_thread_fini(void)
 {
-	pthread_cancel(lock_warning_thread);
+	slurm_mutex_lock(&warn_mutex);
+	warn_needed = false;
+	slurm_cond_broadcast(&warn_cond);
+	slurm_mutex_unlock(&warn_mutex);
 }
 
 extern int commit_check(char *warning)
