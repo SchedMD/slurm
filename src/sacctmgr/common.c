@@ -819,13 +819,13 @@ static print_field_t *_get_print_field(char *object)
 	return field;
 }
 
-extern void notice_thread_init()
+extern void notice_thread_init(void)
 {
 	slurm_thread_create_detached(&lock_warning_thread,
 				     _print_lock_warn, NULL);
 }
 
-extern void notice_thread_fini()
+extern void notice_thread_fini(void)
 {
 	pthread_cancel(lock_warning_thread);
 }

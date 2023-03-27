@@ -291,8 +291,8 @@ extern int sacctmgr_archive_load(int argc, char **argv);
 /* common.c */
 extern int parse_option_end(char *option);
 extern char *strip_quotes(char *option, int *increased, bool make_lower);
-extern void notice_thread_init();
-extern void notice_thread_fini();
+extern void notice_thread_init(void);
+extern void notice_thread_fini(void);
 extern int commit_check(char *warning);
 extern int get_uint(char *in_value, uint32_t *out_value, char *type);
 extern int get_uint16(char *in_value, uint16_t *out_value, char *type);
