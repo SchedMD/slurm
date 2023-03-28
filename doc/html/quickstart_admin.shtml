@@ -650,9 +650,9 @@ Changes in the RPCs (remote procedure calls) and state files will only be made
 if the major release number changes, which typically happens about every nine
 months. A list of most recent major Slurm releases is shown below.</p>
 <ul>
-<li>20.11.x (Released November 2020)</li>
 <li>21.08.x (Released August 2021)</li>
 <li>22.05.x (Released May 2022)</li>
+<li>23.02.x (Released February 2023)</li>
 </ul>
 
 <p>If the SlurmDBD daemon is used, it must be at the same or higher major
@@ -698,14 +698,14 @@ although rolling upgrades are also possible (i.e. upgrading the head node(s)
 first then upgrading the compute and login nodes later at various times).
 Also see the note above about reverse compatibility.</p>
 
-<p>Almost every new major release of Slurm (e.g. 20.11.x to 21.08.x)
+<p>Almost every new major release of Slurm (e.g. 22.05.x to 23.02.x)
 involves changes to the state files with new data structures, new options, etc.
 Slurm permits upgrades to a new major release from the past two major releases,
-which happen every nine months (e.g. 20.11.x or 21.08.x to 22.05.x) without loss of
+which happen every nine months (e.g. 21.08.x or 22.05.x to 23.02.x) without loss of
 jobs or other state information.
 State information from older versions will not be recognized and will be
 discarded, resulting in loss of all running and pending jobs.
-State files are <b>not</b> recognized when downgrading (e.g. from 21.08.x to 20.11.x)
+State files are <b>not</b> recognized when downgrading (e.g. from 23.02.x to 22.05.x)
 and will be discarded, resulting in loss of all running and pending jobs.
 For this reason, creating backup copies of state files (as described below)
 can be of value.
@@ -762,8 +762,8 @@ of its ELF files with 'ldd' and grep for 'slurm'. If you see a versioned
 recompiled.</p>
 
 <p>Slurm daemons will support RPCs and state files from the two previous major
-releases (e.g. a version 22.05.x SlurmDBD will support slurmctld daemons and
-commands with a version of 22.05.x, 21.08.x or 20.11.x).
+releases (e.g. a version 23.02.x SlurmDBD will support slurmctld daemons and
+commands with a version of 23.02.x, 22.05.x or 21.08.x).
 This means that upgrading at least once each year is recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
 Changes in the maintenance release number generally only include bug fixes,
@@ -841,6 +841,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 14 Jul 2022</p>
+<p style="text-align:center;">Last modified 28 March 2023</p>
 
 <!--#include virtual="footer.txt"-->
