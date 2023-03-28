@@ -49,6 +49,7 @@
 #include "src/common/pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
 
@@ -255,6 +256,7 @@ extern job_resources_t *copy_job_resources(job_resources_t *job_resrcs_ptr)
 
 	xassert(job_resrcs_ptr);
 	new_layout->nhosts = job_resrcs_ptr->nhosts;
+	new_layout->nodes = xstrdup(job_resrcs_ptr->nodes);
 	new_layout->ncpus = job_resrcs_ptr->ncpus;
 	new_layout->node_req = job_resrcs_ptr->node_req;
 	new_layout->whole_node = job_resrcs_ptr->whole_node;
