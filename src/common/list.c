@@ -43,11 +43,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "list.h"
-#include "log.h"
-#include "macros.h"
-#include "xassert.h"
-#include "xmalloc.h"
+#include "src/common/list.h"
+#include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
