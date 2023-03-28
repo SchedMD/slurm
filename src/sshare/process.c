@@ -36,9 +36,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <math.h>
+
 #include "src/interfaces/priority.h"
 #include "src/sshare/sshare.h"
-#include <math.h>
 
 int long_flag;		/* exceeds 80 character limit with more info */
 char **tres_names = NULL;

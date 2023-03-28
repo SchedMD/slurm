@@ -60,10 +60,10 @@
 #include "slurm/slurm.h"
 
 #include "src/common/parse_time.h"
-#include "src/interfaces/accounting_storage.h"
-#include "src/common/xstring.h"
 #include "src/common/print_fields.h"
 #include "src/common/slurmdb_defs.h"
+#include "src/common/xstring.h"
+#include "src/interfaces/accounting_storage.h"
 
 #define	MAX_INPUT_FIELDS 128
 

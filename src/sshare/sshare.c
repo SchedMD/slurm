@@ -37,11 +37,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/interfaces/priority.h"
-#include "src/sshare/sshare.h"
-#include "src/common/proc_args.h"
 #include <grp.h>
 
+#include "src/common/proc_args.h"
+#include "src/interfaces/priority.h"
+#include "src/sshare/sshare.h"
 
 #define OPT_LONG_HELP  0x100
 #define OPT_LONG_USAGE 0x101
