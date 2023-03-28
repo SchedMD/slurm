@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 		fflush(stdout);
 		sleep(1);
 		now = time(NULL);
-		if (difftime(now, last) > 2)
+		if (now > last + 2)
 			fprintf(stdout, "JobSuspended\n");
 		last = now;
 	}

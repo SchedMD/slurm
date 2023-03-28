@@ -110,7 +110,7 @@ main (int argc, char **argv)
 		close(fd);
 	}
 
-	sleep_time -= difftime(time(NULL), time_start);
+	sleep_time -= (time(NULL) - time_start);
 	sleep(sleep_time);
 	if (mem)
 		free(mem);
