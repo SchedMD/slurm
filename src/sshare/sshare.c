@@ -37,6 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/interfaces/priority.h"
 #include "src/sshare/sshare.h"
 #include "src/common/proc_args.h"
 #include <grp.h>
@@ -100,6 +101,8 @@ int main (int argc, char **argv)
 	verbosity         = 0;
 	memset(&req_msg, 0, sizeof(shares_request_msg_t));
 	slurm_init(NULL);
+	if (priority_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize priority plugin");
 	log_init("sshare", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	while ((opt_char = getopt_long(argc, argv, "aA:ehlM:no:pPqUu:t:vVm",

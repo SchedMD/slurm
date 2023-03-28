@@ -16,6 +16,9 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.02.2
 ==========================
+ -- Fix regression introduced with the migration to interfaces which caused
+    sshare to core dump. Sshare now initialized the priority context correctly
+    when calculating with PriorityFlags=NO_FAIR_TREE.
 
 * Changes in Slurm 23.02.1
 ==========================
