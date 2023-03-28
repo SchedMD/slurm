@@ -83,17 +83,16 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 	uint32_t flags = slurm_conf.priority_flags;
 	int rc = SLURM_SUCCESS, i;
 	assoc_shares_object_t *share = NULL;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
+	list_itr_t *itr = NULL, *itr2 = NULL;
 	char *object = NULL;
 	char *print_acct = NULL;
-	List tree_list = NULL;
+	list_t *tree_list = NULL;
 	char *tmp_char = NULL;
 
 	int field_count = 0;
 
-	List format_list;
-	List print_fields_list; /* types are of print_field_t */
+	list_t *format_list;
+	list_t *print_fields_list; /* types are of print_field_t */
 
 	if (!resp)
 		return SLURM_ERROR;

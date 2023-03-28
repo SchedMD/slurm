@@ -49,7 +49,7 @@
 
 static int      _get_info(shares_request_msg_t *shares_req,
 			  shares_response_msg_t **shares_resp);
-static int      _addto_name_char_list(List char_list, char *names, bool gid);
+static int _addto_name_char_list(list_t *char_list, char *names, bool gid);
 static int 	_single_cluster(shares_request_msg_t *req_msg);
 static int 	_multi_cluster(shares_request_msg_t *req_msg);
 static char *   _convert_to_name(uint32_t id, bool is_gid);
@@ -61,7 +61,7 @@ int exit_code;		/* sshare's exit code, =1 on any error at any time */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int verbosity;		/* count of -v options */
 uint32_t my_uid = 0;
-List clusters = NULL;
+list_t *clusters = NULL;
 uint16_t options = 0;
 
 int main (int argc, char **argv)
@@ -210,7 +210,7 @@ int main (int argc, char **argv)
 	} else if (verbosity && req_msg.user_list
 	    && list_count(req_msg.user_list)) {
 		fprintf(stderr, "Users requested:\n");
-		ListIterator itr = list_iterator_create(req_msg.user_list);
+		list_itr_t *itr = list_iterator_create(req_msg.user_list);
 		while ((temp = list_next(itr)))
 			fprintf(stderr, "\t: %s\n", temp);
 		list_iterator_destroy(itr);
@@ -230,7 +230,7 @@ int main (int argc, char **argv)
 	}
 
 	if (verbosity && req_msg.acct_list && list_count(req_msg.acct_list)) {
-		ListIterator itr = list_iterator_create(req_msg.acct_list);
+		list_itr_t *itr = list_iterator_create(req_msg.acct_list);
 		fprintf(stderr, "Accounts requested:\n");
 		while ((temp = list_next(itr)))
 			fprintf(stderr, "\t: %s\n", temp);
@@ -269,7 +269,7 @@ static int _single_cluster(shares_request_msg_t *req_msg)
 
 static int _multi_cluster(shares_request_msg_t *req_msg)
 {
-	ListIterator itr;
+	list_itr_t *itr;
 	bool first = true;
 	int rc = 0, rc2;
 
@@ -326,7 +326,8 @@ static int _get_info(shares_request_msg_t *shares_req,
 }
 
 /* returns number of objects added to list */
-static int _addto_name_char_list_internal(List char_list, char *name, void *x)
+static int _addto_name_char_list_internal(list_t *char_list, char *name,
+					  void *x)
 {
 	char *tmp_name = NULL;
 	bool gid = *(bool *)x;
@@ -347,7 +348,7 @@ static int _addto_name_char_list_internal(List char_list, char *name, void *x)
 }
 
 /* returns number of objects added to list */
-static int _addto_name_char_list(List char_list, char *names, bool gid)
+static int _addto_name_char_list(list_t *char_list, char *names, bool gid)
 {
 	if (!char_list) {
 		error("No list was given to fill in");
