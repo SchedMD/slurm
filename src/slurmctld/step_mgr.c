@@ -2772,6 +2772,9 @@ static int _calc_cpus_per_task(job_step_create_request_msg_t *step_specs,
 	int cpus_per_task = 0, i;
 	int num_tasks;
 
+	if (step_specs->cpus_per_tres)
+		return 0;
+
 	if ((step_specs->cpu_count == 0) ||
 	    (step_specs->cpu_count % step_specs->num_tasks))
 		return cpus_per_task;
