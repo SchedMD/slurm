@@ -351,10 +351,10 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!external_cluster) {
 			/* Add root account */
 			xstrfmtcat(query,
-				   "insert into \"%s_%s\" (%s, lft, rgt) "
-				   "values (%s, 1, 2) "
+				   "insert into \"%s_%s\" (%s, lft, rgt, lineage) "
+				   "values (%s, 1, 2, '/') "
 				   "on duplicate key update deleted=0, "
-				   "id_assoc=LAST_INSERT_ID(id_assoc)%s;",
+				   "id_assoc=LAST_INSERT_ID(id_assoc), lineage=VALUES(lineage)%s;",
 				   object->name, assoc_table, cols,
 				   vals,
 				   extra);

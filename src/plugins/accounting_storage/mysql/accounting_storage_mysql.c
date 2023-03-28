@@ -920,6 +920,75 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"UNTIL @qos != '' || @my_acct = '' END REPEAT; "
 		"select REPLACE(CONCAT(@qos, @delta_qos), ',,', ','); "
 		"END;";
+	char *get_lineage =
+		"drop procedure if exists get_lineage;"
+		"create procedure get_lineage(in acct_in tinytext, in my_table tinytext, out path text) "
+		"begin "
+		"set @acct = '';"
+		"set max_sp_recursion_depth = 100;"
+		"set @s = concat('select @acct := parent_acct from ', my_table, ' where user=\\\'\\\' and acct=\\\'', acct_in, '\\\';');"
+		"prepare query from @s;"
+		"execute query;"
+		"deallocate prepare query;"
+		"if @acct!='' and @acct!='root' then "
+		"call get_lineage(@acct, my_table, path);"
+		"else "
+		"set path = '/';"
+		"end if;"
+		"if acct_in!='root' then "
+		"set path = CONCAT(path, acct_in, '/');"
+		"end if;"
+
+		"end;"
+		"drop procedure if exists set_lineage;"
+		"create procedure set_lineage(in assoc_id_in int unsigned, in acct_in tinytext, in user_in tinytext, in my_table tinytext) "
+		"begin "
+		"set @lineage = '';"
+		"call get_lineage(acct_in, my_table, @lineage);"
+		"if user_in is not null && user_in!='' then "
+		"set @lineage = CONCAT(@lineage, '0-', user_in, '/');"
+		"end if;"
+		"set @s = concat('update ', my_table, ' set mod_time=NOW(), lineage=@lineage where id_assoc=', assoc_id_in, ';');"
+		"prepare query from @s;"
+		"execute query;"
+		"select @lineage;"
+		"end;";
+		/* "drop procedure if exists get_lineage;" */
+		/* "create procedure get_lineage(in assoc_id_in int, in my_table tinytext, out path text) " */
+		/* "begin " */
+		/* "declare temppath text;" */
+		/* "declare usename tinytext;" */
+		/* "set @acct = '';" */
+		/* "set @user = '';" */
+		/* "set @id_par = 0;" */
+		/* "set max_sp_recursion_depth = 255;" */
+		/* "set @s = concat('select @acct := acct, @user := user, @id_par := id_parent from ', my_table, ' where id_assoc=', assoc_id_in, ';');" */
+		/* "prepare query from @s;" */
+		/* "execute query;" */
+		/* "deallocate prepare query;" */
+		/* "if @user!='' then " */
+		/* "set usename = CONCAT('0-', @user); " */
+		/* "else " */
+		/* "set usename = @acct;" */
+		/* "end if;" */
+		/* "if @id_par=0 then " */
+		/* "set path = CONCAT('/');" */
+		/* "else " */
+		/* "call get_lineage(@id_par, my_table, temppath);" */
+		/* "set path = CONCAT(temppath, usename, '/');" */
+		/* "end if;" */
+		/* "end;" */
+		/* "drop procedure if exists set_lineage;" */
+		/* "create procedure set_lineage(assoc_id_in INT, in my_table tinytext)" */
+		/* "begin " */
+		/* "set @lineage = '';" */
+		/* "call get_lineage(assoc_id_in, my_table, @lineage);" */
+		/* "set @s = concat('update ', my_table, ' set lineage=@lineage where id_assoc=', assoc_id_in, ';');" */
+		/* "prepare query from @s;" */
+		/* "execute query;" */
+		/* "deallocate prepare query;" */
+		/* "end;"; */
+
 	char *query = NULL;
 	time_t now = time(NULL);
 	char *cluster_name = NULL;
@@ -1069,6 +1138,11 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 		return rc;
 	}
+
+	/* this needs to be created before post_create is called */
+	rc2 = mysql_db_query(mysql_conn, get_lineage);
+	if (rc2 != SLURM_SUCCESS)
+		rc = rc2;
 
 	rc = as_mysql_convert_tables_post_create(mysql_conn);
 
@@ -1294,6 +1368,8 @@ extern int create_cluster_assoc_table(
 		{ "acct", "tinytext not null" },
 		{ "partition", "tinytext not null default ''" },
 		{ "parent_acct", "tinytext not null default ''" },
+		{ "id_parent", "int unsigned not null" },
+		{ "lineage", "text" },
 		{ "lft", "int not null" },
 		{ "rgt", "int not null" },
 		{ "shares", "int default 1 not null" },

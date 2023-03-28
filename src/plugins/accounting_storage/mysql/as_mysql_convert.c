@@ -44,8 +44,9 @@
  * NOTE: 11 was the first version of 22.05.
  * NOTE: 12 was the second version of 22.05.
  * NOTE: 13 was the first version of 23.02.
+ * NOTE: 14 was the first version of 23.11.
  */
-#define CONVERT_VERSION 13
+#define CONVERT_VERSION 14
 
 #define MIN_CONVERT_VERSION 11
 
@@ -296,11 +297,89 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 	return rc;
 }
 
+static int _convert_assoc_table_post(mysql_conn_t *mysql_conn,
+				     char *cluster_name)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (db_curr_ver < 14) {
+		MYSQL_ROW row;
+		MYSQL_RES *result = NULL;
+		char *insert_pos = NULL;
+		char *table_name = xstrdup_printf("\"%s_%s\"",
+						  cluster_name, assoc_table);;
+		/* fill in the id_parent */
+		char *query = xstrdup_printf(
+			"update %s as t1 inner join %s as t2 on t1.acct=t2.acct and t1.user!='' and t1.id_assoc!=t2.id_assoc set t1.id_parent=t2.id_assoc;",
+			table_name, table_name);
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
+			goto endit;
+		xfree(query);
+		query = xstrdup_printf(
+			"update %s as t1 inner join %s as t2 on t1.parent_acct=t2.acct and t1.parent_acct!='' and t2.user='' set t1.id_parent=t2.id_assoc;",
+			table_name, table_name);
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
+			goto endit;
+		xfree(query);
+
+		/*
+		 * Now set the lineage for the associations.
+		 * It would be nice to be able to call a function here to do the
+		 * set, but MySQL/MariaDB does not allow dynamic SQL. Since the
+		 * update would require the cluster name to set set the table
+		 * correctly we can do this in a function.
+		 *
+		 * I also though about having a different function per cluster
+		 * and just call that instead, but the problem there is you
+		 * can't have a '-' in a function name which makes clusters like
+		 * 'smd-server' not able to create a valid function name
+		 * (get_lineage_smd-server() is not valid).
+		 *
+		 * So this is the best I could figure out at the moment.
+		 */
+		query = xstrdup_printf("select id_assoc, acct, user from %s", table_name);
+		if (!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
+			xfree(query);
+			rc = SLURM_ERROR;
+			goto endit;
+		}
+		xfree(query);
+		while ((row = mysql_fetch_row(result))) {
+			xstrfmtcatat(query, &insert_pos,
+				     "call set_lineage(%s, '%s', '%s', '%s');",
+				     row[0], row[1], row[2], table_name);
+		}
+		mysql_free_result(result);
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
+		if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
+			goto endit;
+	endit:
+		xfree(query);
+		xfree(table_name);
+	}
+
+	return rc;
+}
+
+static int _foreach_post_create(void *x, void *arg)
+{
+	char *cluster_name = x;
+	mysql_conn_t *mysql_conn = arg;
+	int rc;
+
+	info("post-converting assoc table for %s", cluster_name);
+	if ((rc = _convert_assoc_table_post(mysql_conn, cluster_name)) !=
+	     SLURM_SUCCESS)
+		return rc;
+
+	return SLURM_SUCCESS;
+}
+
 extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn)
 {
 	int rc = SLURM_SUCCESS;
-	/* ListIterator itr; */
-	/* char *cluster_name; */
 
 	xassert(as_mysql_total_cluster_list);
 
@@ -325,12 +404,11 @@ extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn)
 	}
 
 	/* make it up to date */
-	/* itr = list_iterator_create(as_mysql_total_cluster_list); */
-	/* while ((cluster_name = list_next(itr))) { */
-	/* } */
-	/* list_iterator_destroy(itr); */
+	if (list_for_each_ro(as_mysql_total_cluster_list,
+			     _foreach_post_create, mysql_conn) < 0)
+		return SLURM_ERROR;
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 extern int as_mysql_convert_non_cluster_tables_post_create(

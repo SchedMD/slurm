@@ -75,6 +75,8 @@ char *assoc_req_inx[] = {
 	"delta_qos",
 	"is_def",
 	"deleted",
+	"id_parent",
+	"lineage",
 };
 enum {
 	ASSOC_REQ_ID,
@@ -108,6 +110,8 @@ enum {
 	ASSOC_REQ_DELTA_QOS,
 	ASSOC_REQ_DEFAULT,
 	ASSOC_REQ_DELETED,
+	ASSOC_REQ_ID_PAR,
+	ASSOC_REQ_LINEAGE,
 	ASSOC_REQ_COUNT
 };
 
@@ -879,6 +883,37 @@ end_it:
 	return SLURM_SUCCESS;
 }
 
+static char *_set_lineage(mysql_conn_t *mysql_conn,
+			  uint32_t id, char *acct, char *user, char *cluster)
+{
+	char *lineage = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *query = xstrdup_printf(
+		"call set_lineage(%u, '%s', '%s', '\"%s_%s\"');",
+		id, acct, user, cluster, assoc_table);
+
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
+	result = mysql_db_query_ret(mysql_conn, query, 1);
+	xfree(query);
+	if (!result) {
+		error("Problem setting lineage");
+		goto end_it;
+	}
+
+	if (!(row = mysql_fetch_row(result))) {
+		error("No lineage returned");
+		mysql_free_result(result);
+		goto end_it;
+	}
+
+	lineage = xstrdup(row[0]);
+	mysql_free_result(result);
+
+end_it:
+	return lineage;
+}
+
 /* Used to get all the users inside a lft and rgt set.  This is just
  * to send the user all the associations that are being modified from
  * a previous change to it's parent.
@@ -1207,8 +1242,7 @@ static char *_setup_assoc_table_query(slurmdb_assoc_cond_t *assoc_cond,
 				      char *filters, char *end)
 {
 	char *query;
-	char *more_fields = NULL, *selection_target = NULL, *qos_filter = NULL,
-	     *with_sub_accts_str = NULL;
+	char *more_fields = NULL, *selection_target = NULL, *qos_filter = NULL;
 
 	if (assoc_cond && assoc_cond->qos_list &&
 	    list_count(assoc_cond->qos_list))
@@ -1221,28 +1255,13 @@ static char *_setup_assoc_table_query(slurmdb_assoc_cond_t *assoc_cond,
 		xstrcat(qos_filter, "");
 	}
 
-	/*
-	 * If we are looking for with_sub_accts, another join after the qos
-	 * subquery is necessary, as filtering the parents during it would
-	 * remove some inherited qos values.
-	 */
-	if (assoc_cond && assoc_cond->with_sub_accts)
-		xstrfmtcat(with_sub_accts_str,
-			   " join \"%s_%s\" as t2 on "
-			   "(t1.lft between t2.lft and t2.rgt)",
-			   cluster_name, assoc_table);
-	else
-		xstrcat(with_sub_accts_str, "");
-
-	query = xstrdup_printf("select distinct %s%s from %s as t1"
-			       "%s where%s%s%s",
+	query = xstrdup_printf("select distinct %s%s from %s as t1 where%s%s%s",
 			       fields, more_fields, selection_target,
-			       with_sub_accts_str, filters, qos_filter, end);
+			       filters, qos_filter, end);
 
 	xfree(more_fields);
 	xfree(selection_target);
 	xfree(qos_filter);
-	xfree(with_sub_accts_str);
 
 	return query;
 }
@@ -1281,7 +1300,14 @@ static int _setup_assoc_cond_limits(slurmdb_assoc_cond_t *assoc_cond,
 		while ((object = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "%s.acct='%s'", prefix, object);
+			if (assoc_cond->with_sub_accts) {
+				xstrfmtcat(*extra,
+					   "%s.lineage like '%%/%s/%%'",
+					   prefix, object);
+			} else {
+				xstrfmtcat(*extra, "%s.acct='%s'",
+					   prefix, object);
+			}
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -2099,7 +2125,7 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	}
 	//START_TIMER;
 	query = _setup_assoc_table_query(assoc_cond, cluster_name, fields,
-					 extra, " order by lft;");
+					 extra, " order by lineage;");
 	xfree(extra);
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
@@ -2171,10 +2197,15 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		if (row[ASSOC_REQ_GTRM][0])
 			assoc->grp_tres_run_mins = xstrdup(row[ASSOC_REQ_GTRM]);
 
+		assoc->parent_id = slurm_atoul(row[ASSOC_REQ_ID_PAR]);
+		assoc->lineage = xstrdup(row[ASSOC_REQ_LINEAGE]);
+
 		parent_acct = row[ASSOC_REQ_ACCT];
+
 		if (!without_parent_info
 		    && row[ASSOC_REQ_PARENT][0]) {
 			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
+			assoc->parent_id = slurm_atoul(row[ASSOC_REQ_ID_PAR]);
 			parent_acct = row[ASSOC_REQ_PARENT];
 		} else if (!assoc->user) {
 			/* This is the root association so we have no
@@ -2684,6 +2715,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *parent = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
+	char *my_lineage = NULL;
 	int assoc_id = 0;
 	int incr = 0, my_left = 0, my_par_id = 0;
 	int moved_parent = 0;
@@ -2696,6 +2728,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurmdb_update_object_t *update_object = NULL;
 	List assoc_list_tmp = NULL;
 	bool acct_added = false;
+	uint32_t rpc_version = 0;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -2829,8 +2862,11 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (!list_find_first(local_cluster_list,
 				     slurm_find_char_in_list,
-				     object->cluster))
+				     object->cluster)) {
 			list_append(local_cluster_list, object->cluster);
+			rpc_version = get_cluster_version(mysql_conn,
+							  object->cluster);
+		}
 
 		if (object->parent_acct) {
 			parent = object->parent_acct;
@@ -2898,7 +2934,12 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		assoc_id = 0;
-		if ((rc = _handle_pre_add_lft(
+
+		if (rpc_version >= SLURM_23_11_PROTOCOL_VERSION) {
+			xstrfmtcat(query,
+				   "insert into \"%s_%s\" (%s) values (%s) on duplicate key update deleted=0%s;",
+				   object->cluster, assoc_table, cols, vals, extra);
+		} else if ((rc = _handle_pre_add_lft(
 			     mysql_conn, uid, now, object,
 			     cols, vals, extra, update,
 			     parent, &moved_parent,
@@ -2953,14 +2994,23 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 				last_parent = parent;
 				last_cluster = object->cluster;
+				xfree(my_lineage);
 			}
 		}
 
+		object->lineage = _set_lineage(mysql_conn,
+					       object->id,
+					       object->acct,
+					       object->user,
+					       object->cluster);
+
+		/* This could be grabbed from _set_assoc_limits_for_add() */
 		object->parent_id = my_par_id;
 
 		if (!moved_parent) {
 			_set_assoc_limits_for_add(mysql_conn, object);
-			if (object->lft == NO_VAL)
+			if ((rpc_version <= SLURM_23_02_PROTOCOL_VERSION) &&
+			    (object->lft == NO_VAL))
 				_set_assoc_lft_rgt(mysql_conn, object);
 		}
 
@@ -3005,7 +3055,12 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (rc != SLURM_SUCCESS)
 		goto end_it;
 
-	rc = _handle_post_add_lft(mysql_conn, old_cluster, incr, my_left);
+	if (rpc_version <= SLURM_23_02_PROTOCOL_VERSION) {
+		rc = _handle_post_add_lft(mysql_conn, old_cluster,
+					  incr, my_left);
+		if (rc != SLURM_SUCCESS)
+			goto end_it;
+	}
 
 	/* Since we are already removed all the items from assoc_list
 	 * we need to work off the update_list from here on out.
@@ -3027,7 +3082,8 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (assoc_list_tmp) {
 		ListIterator itr2 = list_iterator_create(assoc_list_tmp);
 
-		if (!moved_parent) {
+		if ((rpc_version <= SLURM_23_02_PROTOCOL_VERSION) &&
+		    !moved_parent) {
 			char *cluster_name;
 
 			itr = list_iterator_create(local_cluster_list);
@@ -3209,9 +3265,6 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 is_same_user:
 
-	if (assoc_cond->with_sub_accts)
-		prefix = "t2";
-
 	(void) _setup_assoc_cond_limits(assoc_cond, prefix, &extra);
 
 	/* This needs to be here to make sure we only modify the
@@ -3352,9 +3405,6 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			return NULL;
 		}
 	}
-
-	if (assoc_cond->with_sub_accts)
-		prefix = "t2";
 
 	(void)_setup_assoc_cond_limits(assoc_cond, prefix, &extra);
 
@@ -3506,9 +3556,6 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 			return NULL;
 		}
 	}
-
-	if (assoc_cond->with_sub_accts)
-		prefix = "t2";
 
 	(void) _setup_assoc_cond_limits(assoc_cond, prefix, &extra);
 
