@@ -2471,6 +2471,173 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * 2 versions after 23.11 the lft/rgt's can be removed along with this function.
+ */
+static int _handle_post_add_lft(mysql_conn_t *mysql_conn,
+				char *old_cluster, int incr, int my_left)
+{
+	int rc = SLURM_SUCCESS;
+	if (incr) {
+		char *up_query = xstrdup_printf(
+			"UPDATE \"%s_%s\" SET rgt = rgt+%d "
+			"WHERE rgt > %d && deleted < 2;"
+			"UPDATE \"%s_%s\" SET lft = lft+%d "
+			"WHERE lft > %d "
+			"&& deleted < 2;"
+			"UPDATE \"%s_%s\" SET deleted = 0 "
+			"WHERE deleted = 2;",
+			old_cluster, assoc_table, incr,
+			my_left,
+			old_cluster, assoc_table, incr,
+			my_left,
+			old_cluster, assoc_table);
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", up_query);
+		rc = mysql_db_query(mysql_conn, up_query);
+		xfree(up_query);
+		if (rc != SLURM_SUCCESS)
+			error("Couldn't do update");
+	}
+
+	return rc;
+}
+
+/*
+ * 2 versions after 23.11 the lft/rgt's can be removed along with this function.
+ */
+static int _handle_pre_add_lft(mysql_conn_t *mysql_conn, uint32_t uid,
+			       time_t now,
+			       slurmdb_assoc_rec_t *object,
+			       char *cols, char *vals, char *extra,
+			       char *update, char *parent,
+			       int *moved_parent,
+			       char **old_parent,
+			       char **old_cluster,
+			       int *assoc_id, int *incr, int *my_left,
+			       char **query_out)
+{
+	char *tmp_char = NULL, *query = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+
+	xstrcat(tmp_char, aassoc_req_inx[0]);
+	for (int i=1; i<AASSOC_COUNT; i++)
+		xstrfmtcat(tmp_char, ", %s", aassoc_req_inx[i]);
+	xstrfmtcat(query,
+		   "select distinct %s from \"%s_%s\" %s order by lft FOR UPDATE;",
+		   tmp_char, object->cluster, assoc_table, update);
+	xfree(tmp_char);
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		xfree(query);
+		error("couldn't query the database");
+		return -1;
+	}
+	xfree(query);
+
+	if (!(row = mysql_fetch_row(result))) {
+		/* This code speeds up the add process quite a bit
+		 * here we are only doing an update when we are done
+		 * adding to a specific group (cluster/account) other
+		 * than that we are adding right behind what we were
+		 * so just total them up and then do one update
+		 * instead of the slow ones that require an update
+		 * every time.  There is a incr check outside of the
+		 * loop to catch everything on the last spin of the
+		 * while.
+		 */
+		if (!*old_parent || !*old_cluster ||
+		    xstrcasecmp(parent, *old_parent) ||
+		    xstrcasecmp(object->cluster, *old_cluster)) {
+			char *sel_query;
+			MYSQL_RES *sel_result = NULL;
+			int rc = _handle_post_add_lft(mysql_conn, *old_cluster,
+						      *incr, *my_left);
+			xfree(*old_parent);
+			xfree(*old_cluster);
+			(*incr) = 0;
+			if (rc != SLURM_SUCCESS)
+				return rc;
+
+			*old_parent = xstrdup(parent);
+			*old_cluster = xstrdup(object->cluster);
+
+			sel_query = xstrdup_printf(
+				"SELECT lft FROM \"%s_%s\" WHERE acct = '%s' and user = '' order by lft;",
+				object->cluster, assoc_table, parent);
+
+			DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+				 "query\n%s", sel_query);
+			if (!(sel_result = mysql_db_query_ret(
+				      mysql_conn, sel_query, 0))) {
+				xfree(sel_query);
+				return -1;
+			}
+
+			if (!(row = mysql_fetch_row(sel_result))) {
+				error("Couldn't get left from query\n%s",
+				      sel_query);
+				mysql_free_result(sel_result);
+				xfree(sel_query);
+				return -1;
+			}
+			xfree(sel_query);
+
+			*my_left = slurm_atoul(row[0]);
+			mysql_free_result(sel_result);
+			//info("left is %d", *my_left);
+		}
+		(*incr) += 2;
+		xstrfmtcat(*query_out,
+			   "insert into \"%s_%s\" (%s, lft, rgt, deleted) values (%s, %d, %d, 2);",
+			   object->cluster, assoc_table, cols,
+			   vals, (*my_left)+((*incr)-1), (*my_left)+(*incr));
+	} else if (!slurm_atoul(row[AASSOC_DELETED])) {
+		/* We don't need to do anything here */
+		debug("This account %s was added already",
+		      object->acct);
+		mysql_free_result(result);
+		return 1;
+	} else {
+		uint32_t lft = slurm_atoul(row[AASSOC_LFT]);
+		uint32_t rgt = slurm_atoul(row[AASSOC_RGT]);
+
+		/* If it was once deleted we have kept the lft
+		 * and rgt's constant while it was deleted and
+		 * so we can just unset the deleted flag,
+		 * check for the parent and move if needed.
+		 */
+		*assoc_id = slurm_atoul(row[AASSOC_ID]);
+		if (object->parent_acct &&
+		    xstrcasecmp(object->parent_acct, row[AASSOC_PACCT])) {
+
+			/* We need to move the parent! */
+			if (_move_parent(mysql_conn, uid,
+					 &lft, &rgt,
+					 object->cluster,
+					 row[AASSOC_ID],
+					 row[AASSOC_PACCT],
+					 object->parent_acct, now) ==
+			    SLURM_ERROR) {
+				mysql_free_result(result);
+				return 1;
+			}
+			*moved_parent = 1;
+		} else {
+			object->lft = lft;
+			object->rgt = rgt;
+		}
+
+		xstrfmtcat(*query_out,
+			   "update \"%s_%s\" set deleted=0, id_assoc=LAST_INSERT_ID(id_assoc)%s %s;",
+			   object->cluster, assoc_table,
+			   extra, update);
+	}
+	mysql_free_result(result);
+
+	return 0;
+}
+
 extern int as_mysql_get_modified_lfts(mysql_conn_t *mysql_conn,
 				      char *cluster_name, uint32_t start_lft)
 {
@@ -2511,19 +2678,16 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
-	int i=0;
 	slurmdb_assoc_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *txn_query = NULL;
 	char *extra = NULL, *query = NULL, *update = NULL, *tmp_extra = NULL;
 	char *parent = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	char *tmp_char = NULL;
 	int assoc_id = 0;
 	int incr = 0, my_left = 0, my_par_id = 0;
 	int moved_parent = 0;
 	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
 	char *old_parent = NULL, *old_cluster = NULL;
 	char *last_parent = NULL, *last_cluster = NULL;
 	List local_cluster_list = NULL;
@@ -2733,197 +2897,24 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 		}
 
-
-		xstrcat(tmp_char, aassoc_req_inx[0]);
-		for(i=1; i<AASSOC_COUNT; i++)
-			xstrfmtcat(tmp_char, ", %s", aassoc_req_inx[i]);
-
-		xstrfmtcat(query,
-			   "select distinct %s from \"%s_%s\" %s order by lft "
-			   "FOR UPDATE;",
-			   tmp_char, object->cluster, assoc_table, update);
-		xfree(tmp_char);
-		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-		if (!(result = mysql_db_query_ret(
-			      mysql_conn, query, 0))) {
-			xfree(query);
-			xfree(cols);
-			xfree(vals);
-			xfree(extra);
-			xfree(update);
-			error("couldn't query the database");
-			rc = SLURM_ERROR;
-			break;
-		}
-		xfree(query);
-
 		assoc_id = 0;
-		if (!(row = mysql_fetch_row(result))) {
-			/* This code speeds up the add process quite a bit
-			 * here we are only doing an update when we are done
-			 * adding to a specific group (cluster/account) other
-			 * than that we are adding right behind what we were
-			 * so just total them up and then do one update
-			 * instead of the slow ones that require an update
-			 * every time.  There is a incr check outside of the
-			 * loop to catch everything on the last spin of the
-			 * while.
-			 */
-			if (!old_parent || !old_cluster
-			    || xstrcasecmp(parent, old_parent)
-			    || xstrcasecmp(object->cluster, old_cluster)) {
-				char *sel_query = xstrdup_printf(
-					"SELECT lft FROM \"%s_%s\" WHERE "
-					"acct = '%s' and user = '' "
-					"order by lft;",
-					object->cluster, assoc_table,
-					parent);
-				MYSQL_RES *sel_result = NULL;
-
-				if (incr) {
-					char *up_query = xstrdup_printf(
-						"UPDATE \"%s_%s\" SET "
-						"rgt = rgt+%d "
-						"WHERE rgt > %d && deleted < 2;"
-						"UPDATE \"%s_%s\" SET "
-						"lft = lft+%d "
-						"WHERE lft > %d "
-						"&& deleted < 2;"
-						"UPDATE \"%s_%s\" SET "
-						"deleted = 0 "
-						"WHERE deleted = 2;",
-						old_cluster, assoc_table,
-						incr, my_left,
-						old_cluster, assoc_table,
-						incr, my_left,
-						old_cluster, assoc_table);
-					DB_DEBUG(DB_ASSOC, mysql_conn->conn,
-					         "query\n%s", up_query);
-					rc = mysql_db_query(
-						mysql_conn,
-						up_query);
-					xfree(up_query);
-					if (rc != SLURM_SUCCESS) {
-						error("Couldn't do update");
-						xfree(cols);
-						xfree(vals);
-						xfree(update);
-						xfree(extra);
-						xfree(sel_query);
-						break;
-					}
-				}
-
-				DB_DEBUG(DB_ASSOC, mysql_conn->conn,
-				         "query\n%s", sel_query);
-				if (!(sel_result = mysql_db_query_ret(
-					      mysql_conn,
-					      sel_query, 0))) {
-					xfree(cols);
-					xfree(vals);
-					xfree(update);
-					xfree(extra);
-					xfree(sel_query);
-					rc = SLURM_ERROR;
+		if ((rc = _handle_pre_add_lft(
+			     mysql_conn, uid, now, object,
+			     cols, vals, extra, update,
+			     parent, &moved_parent,
+			     &old_parent, &old_cluster,
+			     &assoc_id, &incr, &my_left, &query))) {
+			if (rc) {
+				xfree(cols);
+				xfree(vals);
+				xfree(extra);
+				xfree(update);
+				if (rc == -1)
 					break;
-				}
-
-				if (!(row = mysql_fetch_row(sel_result))) {
-					error("Couldn't get left from "
-					      "query\n%s",
-					      sel_query);
-					mysql_free_result(sel_result);
-					xfree(cols);
-					xfree(vals);
-					xfree(update);
-					xfree(extra);
-					xfree(sel_query);
-					rc = SLURM_ERROR;
-					break;
-				}
-				xfree(sel_query);
-
-				my_left = slurm_atoul(row[0]);
-				mysql_free_result(sel_result);
-				//info("left is %d", my_left);
-				old_parent = parent;
-				old_cluster = object->cluster;
-				incr = 0;
-			}
-			incr += 2;
-			xstrfmtcat(query,
-				   "insert into \"%s_%s\" "
-				   "(%s, lft, rgt, deleted) "
-				   "values (%s, %d, %d, 2);",
-				   object->cluster, assoc_table, cols,
-				   vals, my_left+(incr-1), my_left+incr);
-
-			/* definitely works but slow */
-/* 			xstrfmtcat(query, */
-/* 				   "SELECT @myLeft := lft FROM %s WHERE " */
-/* 				   "acct = '%s' " */
-/* 				   "and cluster = '%s' and user = '';", */
-/* 				   assoc_table, */
-/* 				   parent, */
-/* 				   object->cluster); */
-/* 			xstrfmtcat(query, */
-/* 				   "UPDATE %s SET rgt = rgt+2 " */
-/* 				   "WHERE rgt > @myLeft;" */
-/* 				   "UPDATE %s SET lft = lft+2 " */
-/* 				   "WHERE lft > @myLeft;", */
-/* 				   assoc_table, */
-/* 				   assoc_table); */
-/* 			xstrfmtcat(query, */
-/* 				   "insert into %s (%s, lft, rgt) " */
-/* 				   "values (%s, @myLeft+1, @myLeft+2);", */
-/* 				   assoc_table, cols, */
-/* 				   vals); */
-		} else if (!slurm_atoul(row[AASSOC_DELETED])) {
-			/* We don't need to do anything here */
-			debug("This account %s was added already",
-			      object->acct);
-			xfree(cols);
-			xfree(vals);
-			xfree(update);
-			mysql_free_result(result);
-			xfree(extra);
-			continue;
-		} else {
-			uint32_t lft = slurm_atoul(row[AASSOC_LFT]);
-			uint32_t rgt = slurm_atoul(row[AASSOC_RGT]);
-
-			/* If it was once deleted we have kept the lft
-			 * and rgt's consant while it was deleted and
-			 * so we can just unset the deleted flag,
-			 * check for the parent and move if needed.
-			 */
-			assoc_id = slurm_atoul(row[AASSOC_ID]);
-			if (object->parent_acct
-			    && xstrcasecmp(object->parent_acct,
-					   row[AASSOC_PACCT])) {
-
-				/* We need to move the parent! */
-				if (_move_parent(mysql_conn, uid,
-						 &lft, &rgt,
-						 object->cluster,
-						 row[AASSOC_ID],
-						 row[AASSOC_PACCT],
-						 object->parent_acct, now)
-				    == SLURM_ERROR)
+				else if (rc == 1)
 					continue;
-				moved_parent = 1;
-			} else {
-				object->lft = lft;
-				object->rgt = rgt;
 			}
-
-			xstrfmtcat(query,
-				   "update \"%s_%s\" set deleted=0, "
-				   "id_assoc=LAST_INSERT_ID(id_assoc)%s %s;",
-				   object->cluster, assoc_table,
-				   extra, update);
 		}
-		mysql_free_result(result);
 
 		xfree(cols);
 		xfree(vals);
@@ -2964,6 +2955,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				last_cluster = object->cluster;
 			}
 		}
+
 		object->parent_id = my_par_id;
 
 		if (!moved_parent) {
@@ -3013,27 +3005,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (rc != SLURM_SUCCESS)
 		goto end_it;
 
-	if (incr) {
-		char *up_query = xstrdup_printf(
-			"UPDATE \"%s_%s\" SET rgt = rgt+%d "
-			"WHERE rgt > %d && deleted < 2;"
-			"UPDATE \"%s_%s\" SET lft = lft+%d "
-			"WHERE lft > %d "
-			"&& deleted < 2;"
-			"UPDATE \"%s_%s\" SET deleted = 0 "
-			"WHERE deleted = 2;",
-			old_cluster, assoc_table, incr,
-			my_left,
-			old_cluster, assoc_table, incr,
-			my_left,
-			old_cluster, assoc_table);
-		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", up_query);
-		rc = mysql_db_query(mysql_conn, up_query);
-		xfree(up_query);
-		if (rc != SLURM_SUCCESS)
-			error("Couldn't do update 2");
-
-	}
+	rc = _handle_post_add_lft(mysql_conn, old_cluster, incr, my_left);
 
 	/* Since we are already removed all the items from assoc_list
 	 * we need to work off the update_list from here on out.
