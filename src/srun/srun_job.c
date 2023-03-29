@@ -1161,8 +1161,7 @@ static void _copy_job_resp(List job_resp_list, int count)
 	}
 }
 
-extern void create_srun_job(void **p_job, bool *got_alloc,
-			    bool slurm_started, bool handle_signals)
+extern void create_srun_job(void **p_job, bool *got_alloc, bool handle_signals)
 {
 	resource_allocation_response_msg_t *resp;
 	List job_resp_list = NULL, srun_job_list = NULL;
@@ -1504,13 +1503,11 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	if (_become_user () < 0)
 		fatal("Unable to assume uid=%u", opt.uid);
 
-	if (!slurm_started) {
-		/*
-		 * Spawn process to ensure clean-up of job and/or step
-		 * on abnormal termination
-		 */
-		shepherd_fd = _shepherd_spawn(job, srun_job_list, *got_alloc);
-	}
+	/*
+	 * Spawn process to ensure clean-up of job and/or step
+	 * on abnormal termination
+	 */
+	shepherd_fd = _shepherd_spawn(job, srun_job_list, *got_alloc);
 
 	if (opt_list)
 		*p_job = (void *) srun_job_list;

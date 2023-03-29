@@ -187,9 +187,9 @@ int srun(int ac, char **av)
 	if (opt_list) {
 		if (!_enable_het_job_steps())
 			fatal("Job steps that span multiple components of a heterogeneous job are not currently supported");
-		create_srun_job((void **) &srun_job_list, &got_alloc, 0, 1);
+		create_srun_job((void **) &srun_job_list, &got_alloc, 1);
 	} else
-		create_srun_job((void **) &job, &got_alloc, 0, 1);
+		create_srun_job((void **) &job, &got_alloc, 1);
 
 	/*
 	 * Detect is process is in non-matching user namespace or UIDs

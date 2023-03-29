@@ -155,8 +155,7 @@ extern srun_job_t *job_create_allocation(
 extern void init_srun(int argc, char **argv, log_options_t *logopt,
 		      bool handle_signals);
 
-extern void create_srun_job(void **p_job, bool *got_alloc,
-			    bool slurm_started, bool handle_signals);
+extern void create_srun_job(void **p_job, bool *got_alloc, bool handle_signals);
 
 extern void pre_launch_srun_job(srun_job_t *job, slurm_opt_t *opt_local);
 
