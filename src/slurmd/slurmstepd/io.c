@@ -912,7 +912,7 @@ _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 
 /*
  * This function sets the close-on-exec flag on all opened file descriptors.
- * io_dup_stdio will will remove the close-on-exec flags for just one task's
+ * io_dup_stdio will remove the close-on-exec flags for just one task's
  * file descriptors.
  */
 static int
