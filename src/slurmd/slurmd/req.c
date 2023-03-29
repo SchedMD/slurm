@@ -939,6 +939,29 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id_in,
 
 	*envc = envcount(*env);
 }
+/*
+ * IN cred_hostlist the job credential host_list where to extract this node
+ * host_index
+ * RET The node host_index in relation to the argument cred_hostlist or -1 in
+ * case of error
+ */
+static int _get_host_index(char *cred_hostlist)
+{
+#ifdef HAVE_FRONT_END
+	return 0; /* It is always 0 for front end systems */
+#endif
+	hostlist_t hl;
+	int host_index;
+	if (!(hl = hostlist_create(cred_hostlist))) {
+		error("Unable to parse credential hostlist: '%s'",
+		      cred_hostlist);
+		return -1;
+	}
+	host_index = hostlist_find(hl, conf->node_name);
+	hostlist_destroy(hl);
+
+	return host_index;
+}
 
 /*
  * The job(step) credential is the only place to get a definitive
@@ -1041,26 +1064,12 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		bool cpu_log = slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND;
 		bool setup_x11 = false;
 
-#ifdef HAVE_FRONT_END
-		host_index = 0;	/* It is always 0 for front end systems */
-#else
-		hostlist_t j_hset;
-		/* Determine the CPU count based upon this node's index into
-		 * the _job's_ allocation (job's hostlist and core_bitmap) */
-		if (!(j_hset = hostlist_create(arg->job_hostlist))) {
-			error("Unable to parse credential hostlist: `%s'",
-			      arg->job_hostlist);
-			goto fail;
-		}
-		host_index = hostlist_find(j_hset, conf->node_name);
-		hostlist_destroy(j_hset);
-
+		host_index = _get_host_index(arg->job_hostlist);
 		if ((host_index < 0) || (host_index >= arg->job_nhosts)) {
 			error("job cr credential invalid host_index %d for job %u",
 			      host_index, arg->step_id.job_id);
 			goto fail;
 		}
-#endif
 
 		/*
 		 * handle the x11 flag bit here since we have access to the
