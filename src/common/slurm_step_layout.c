@@ -306,6 +306,8 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 				     step_layout->tasks[i],
 				     buffer);
 		}
+		pack16_array(step_layout->cpus_per_task, step_layout->node_cnt,
+			     buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (step_layout)
 			i = 1;
@@ -335,7 +337,7 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, buf_t *buffer,
 				    uint16_t protocol_version)
 {
 	uint16_t uint16_tmp;
-	uint32_t num_tids;
+	uint32_t num_tids, uint32_tmp;
 	slurm_step_layout_t *step_layout = NULL;
 	int i;
 
@@ -364,6 +366,8 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, buf_t *buffer,
 					    buffer);
 			step_layout->tasks[i] = num_tids;
 		}
+		safe_unpack16_array(&step_layout->cpus_per_task, &uint32_tmp,
+				    buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&uint16_tmp, buffer);
 		if (!uint16_tmp)

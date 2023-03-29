@@ -1935,6 +1935,12 @@ typedef struct {
 } slurm_step_layout_req_t;
 
 typedef struct slurm_step_layout {
+	/*
+	 * cpus_per_task - Array of the length "node_cnt", the same length as
+	 * tasks. Each element of the array is the number of cpus per task
+	 * assigned to the corresponding node.
+	 */
+	uint16_t *cpus_per_task;
 	char *front_end;	/* If a front-end architecture, the name of
 				 * of the node running all tasks,
 				 * NULL otherwise */
