@@ -347,6 +347,8 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	job_details_t *details_ptr = job_ptr->details;
 	node_record_t *node_ptr = node_record_table_ptr[node_inx];
 
+	xassert(mc_ptr->cpus_per_task);
+
 	rem_nodes = MIN(rem_nodes, 1);	/* If range of node counts */
 	if (mc_ptr->ntasks_per_node) {
 		min_tasks_this_node = mc_ptr->ntasks_per_node;
@@ -399,8 +401,7 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 		max_tasks_this_node = NO_VAL;
 	}
 	/* Determine how many tasks can be started on this node */
-	if (mc_ptr->cpus_per_task &&
-	    (!details_ptr || !details_ptr->overcommit)) {
+	if ((!details_ptr || !details_ptr->overcommit)) {
 		alloc_tasks = avail_res_array[node_inx]->avail_cpus /
 			      mc_ptr->cpus_per_task;
 		if (alloc_tasks < min_tasks_this_node)
@@ -3219,6 +3220,13 @@ static gres_mc_data_t *_build_gres_mc_data(job_record_t *job_ptr)
 	tres_mc_ptr = xmalloc(sizeof(gres_mc_data_t));
 	tres_mc_ptr->cpus_per_task =
 		_valid_uint16(job_ptr->details->cpus_per_task);
+	/*
+	 * _copy_job_desc_to_job_record() sets job_ptr->details->cpus_per_task
+	 * to 1 if unset or NO_VAL16; INFINITE16 is invalid. Therefore,
+	 * tres_mc_ptr->cpus_per_task should always be non-zero.
+	 */
+	xassert(tres_mc_ptr->cpus_per_task);
+
 	tres_mc_ptr->ntasks_per_job = job_ptr->details->num_tasks;
 	tres_mc_ptr->ntasks_per_node =
 		_valid_uint16(job_ptr->details->ntasks_per_node);

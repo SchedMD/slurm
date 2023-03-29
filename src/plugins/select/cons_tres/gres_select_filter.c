@@ -360,6 +360,9 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 	int *socket_index; /* Socket indexes */
 	uint16_t *avail_cores_per_sock;
 	bool has_cpus_per_gres = false;
+	int removed_tasks, efctv_cpt;
+
+	xassert(mc_ptr->cpus_per_task);
 
 	*min_cores_this_node = NO_VAL;
 
@@ -444,7 +447,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		}
 
 		min_core_cnt = MAX(*min_tasks_this_node, 1) *
-			MAX(mc_ptr->cpus_per_task, 1);
+			mc_ptr->cpus_per_task;
 		min_core_cnt = (min_core_cnt + cpus_per_core - 1) /
 			cpus_per_core;
 
@@ -662,41 +665,39 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * by cpus_per_core
 		 */
 		req_cores = *max_tasks_this_node;
-		if (mc_ptr->cpus_per_task) {
-			int removed_tasks = 0;
-			int efctv_cpt = mc_ptr->cpus_per_task;
+		removed_tasks = 0;
+		efctv_cpt = mc_ptr->cpus_per_task;
 
-			if ((mc_ptr->ntasks_per_core == 1) &&
-			    (efctv_cpt % threads_per_core)) {
-				efctv_cpt /= threads_per_core;
-				efctv_cpt++;
-				efctv_cpt *= threads_per_core;
+		if ((mc_ptr->ntasks_per_core == 1) &&
+		    (efctv_cpt % threads_per_core)) {
+			efctv_cpt /= threads_per_core;
+			efctv_cpt++;
+			efctv_cpt *= threads_per_core;
+		}
+
+		req_cores *= efctv_cpt;
+
+		while (*max_tasks_this_node >= *min_tasks_this_node) {
+			/* round up by full threads per core */
+			req_cores += threads_per_core - 1;
+			req_cores /= threads_per_core;
+			if (req_cores <= avail_cores_tot) {
+				if (removed_tasks)
+					log_flag(SELECT_TYPE, "Node %s: settings required_cores=%d by max_tasks_this_node=%u(reduced=%d) cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",
+						 node_name,
+						 req_cores,
+						 *max_tasks_this_node,
+						 removed_tasks,
+						 mc_ptr->cpus_per_task,
+						 cpus_per_core,
+						 mc_ptr->
+						 threads_per_core);
+				break;
 			}
-
+			removed_tasks++;
+			(*max_tasks_this_node)--;
+			req_cores = *max_tasks_this_node;
 			req_cores *= efctv_cpt;
-
-			while (*max_tasks_this_node >= *min_tasks_this_node) {
-				/* round up by full threads per core */
-				req_cores += threads_per_core - 1;
-				req_cores /= threads_per_core;
-				if (req_cores <= avail_cores_tot) {
-					if (removed_tasks)
-						log_flag(SELECT_TYPE, "Node %s: settings required_cores=%d by max_tasks_this_node=%u(reduced=%d) cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",
-							 node_name,
-							 req_cores,
-							 *max_tasks_this_node,
-							 removed_tasks,
-							 mc_ptr->cpus_per_task,
-							 cpus_per_core,
-							 mc_ptr->
-							 threads_per_core);
-					break;
-				}
-				removed_tasks++;
-				(*max_tasks_this_node)--;
-				req_cores = *max_tasks_this_node;
-				req_cores *= efctv_cpt;
-			}
 		}
 		if (cpus_per_gres) {
 			int i;
@@ -1945,10 +1946,8 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 				rem_tasks--;
 				continue;
 			}
-			if (tres_mc_ptr->cpus_per_task)
-				cpus_per_task = tres_mc_ptr->cpus_per_task;
-			else
-				cpus_per_task = 1;
+			xassert(tres_mc_ptr->cpus_per_task);
+			cpus_per_task = tres_mc_ptr->cpus_per_task;
 			task_per_node_limit = cpus_per_node / cpus_per_task;
 		}
 		core_offset = get_job_resources_offset(job_res, job_node_inx++,
