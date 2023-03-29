@@ -287,7 +287,26 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 {
 	uint32_t i = 0;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		if (step_layout)
+			i = 1;
+
+		pack16(i, buffer);
+		if (!i)
+			return;
+		packstr(step_layout->front_end, buffer);
+		packstr(step_layout->node_list, buffer);
+		pack32(step_layout->node_cnt, buffer);
+		pack16(step_layout->start_protocol_ver, buffer);
+		pack32(step_layout->task_cnt, buffer);
+		pack32(step_layout->task_dist, buffer);
+
+		for (i = 0; i < step_layout->node_cnt; i++) {
+			pack32_array(step_layout->tids[i],
+				     step_layout->tasks[i],
+				     buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (step_layout)
 			i = 1;
 
@@ -320,7 +339,32 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, buf_t *buffer,
 	slurm_step_layout_t *step_layout = NULL;
 	int i;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		safe_unpack16(&uint16_tmp, buffer);
+		if (!uint16_tmp)
+			return SLURM_SUCCESS;
+
+		step_layout = xmalloc(sizeof(slurm_step_layout_t));
+		*layout = step_layout;
+
+		safe_unpackstr(&step_layout->front_end, buffer);
+		safe_unpackstr(&step_layout->node_list, buffer);
+		safe_unpack32(&step_layout->node_cnt, buffer);
+		safe_unpack16(&step_layout->start_protocol_ver, buffer);
+		safe_unpack32(&step_layout->task_cnt, buffer);
+		safe_unpack32(&step_layout->task_dist, buffer);
+
+		safe_xcalloc(step_layout->tasks, step_layout->node_cnt,
+			     sizeof(uint32_t));
+		safe_xcalloc(step_layout->tids, step_layout->node_cnt,
+			     sizeof(uint32_t *));
+		for (i = 0; i < step_layout->node_cnt; i++) {
+			safe_unpack32_array(&(step_layout->tids[i]),
+					    &num_tids,
+					    buffer);
+			step_layout->tasks[i] = num_tids;
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&uint16_tmp, buffer);
 		if (!uint16_tmp)
 			return SLURM_SUCCESS;
