@@ -408,7 +408,7 @@ static void _edit_and_update_crontab(char *crontab)
 	crontab_update_response_msg_t *response;
 
 edit:
-	if (edit_only) {
+	if (edit_only && crontab) {
 		slurm_hash_t before = { 0 }, after = { 0 };
 		int before_len, after_len;
 
@@ -423,6 +423,8 @@ edit:
 			xfree(crontab);
 			return;
 		}
+	} else if (edit_only) {
+		_edit_crontab(&crontab);
 	}
 
 	jobs = list_create((ListDelF) slurm_free_job_desc_msg);
