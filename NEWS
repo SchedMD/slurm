@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
  -- For the select/cons_tres plugin, improve the best effort GPU to core
     binding, for requests with per job task count (-n) and GPU (--gpus)
     specification.
+ -- scrontab - don't update the cron job tasks if the whole crontab file is
+    left untouched after opening it with "scrontab -e".
 
 * Changes in Slurm 23.02.1
 ==========================
