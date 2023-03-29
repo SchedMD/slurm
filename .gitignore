@@ -66,6 +66,7 @@ autom4te.cache
 /src/strigger/strigger
 /src/sview/sview
 /testsuite/testsuite.conf
+/testsuite/testsuite.conf.sample
 /testsuite/expect/globals.*
 !/testsuite/expect/globals.local.sample.in
 /testsuite/expect/*.log*
