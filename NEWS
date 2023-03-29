@@ -17,14 +17,15 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 23.02.2
 ==========================
  -- Fix regression introduced with the migration to interfaces which caused
-    sshare to core dump. Sshare now initialized the priority context correctly
-    when calculating with PriorityFlags=NO_FAIR_TREE.
+    sshare to core dump. Sshare now initialized the priority context correctly
+    when calculating with PriorityFlags=NO_FAIR_TREE.
  -- Fix IPMI DCMI sensor initialization.
  -- For the select/cons_tres plugin, improve the best effort GPU to core
     binding, for requests with per job task count (-n) and GPU (--gpus)
     specification.
  -- scrontab - don't update the cron job tasks if the whole crontab file is
     left untouched after opening it with "scrontab -e".
+ -- mpi/pmix - avoid crashing when running PMIx v5.0 branch with shmem support.
 
 * Changes in Slurm 23.02.1
 ==========================

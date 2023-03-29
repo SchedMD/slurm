@@ -153,6 +153,16 @@ static void _set_tmpdirs(List lresp)
 	list_append(lresp, kvp);
 }
 
+static void _set_euid(list_t *lresp)
+{
+	pmix_info_t *kvp;
+
+	uid_t uid = pmixp_info_jobuid();
+
+	PMIXP_KVP_CREATE(kvp, PMIX_USERID, &uid, PMIX_UINT32);
+	list_append(lresp, kvp);
+}
+
 /*
  * information about relative ranks as assigned by the RM
  */
@@ -640,6 +650,8 @@ extern int pmixp_libpmix_job_set(void)
 	_set_sizeinfo(lresp);
 
 	_set_topology(lresp);
+
+	_set_euid(lresp);
 
 	if (SLURM_SUCCESS != _set_mapsinfo(lresp)) {
 		FREE_NULL_LIST(lresp);
