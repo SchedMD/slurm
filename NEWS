@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
  -- auth/jwt - Fix memory leak in slurmctld with 'scontrol token'.
  -- Fix shared gres (shard/mps) leak when using --tres-per-task
  -- Fix sacctmgr segfault when listing accounts with coordinators.
+ -- slurmrestd - improve error logging when client connections experience
+    polling errors.
 
 * Changes in Slurm 23.02.1
 ==========================

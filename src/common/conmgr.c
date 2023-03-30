@@ -1088,23 +1088,20 @@ extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr,
 static void _handle_poll_event_error(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 				     short revents)
 {
-	if (revents & POLLNVAL) {
-		error("%s: [%s] connection invalid", __func__, con->name);
-	}
-	if (revents & POLLERR) {
-		int err = SLURM_ERROR;
-		int rc;
+	int err = SLURM_ERROR;
+	int rc;
 
-		if (con->is_socket) {
-			/* connection may have got RST */
-			if ((rc = fd_get_socket_error(con->input_fd, &err))) {
-				error("%s: [%s] poll error: fd_get_socket_error failed %s",
-				      __func__, con->name, slurm_strerror(rc));
-			} else {
-				error("%s: [%s] poll error: %s",
-				      __func__, con->name, slurm_strerror(err));
-			}
-		}
+	if (revents & POLLNVAL) {
+		error("%s: [%s] %sconnection invalid",
+		      __func__, (con->is_listen ? "listening " : ""),
+		      con->name);
+	} else if (con->is_socket && (rc = fd_get_socket_error(fd, &err))) {
+		/* connection may have got RST */
+		error("%s: [%s] poll error: fd_get_socket_error() failed %s",
+		      __func__, con->name, slurm_strerror(rc));
+	} else {
+		error("%s: [%s] poll error: %s",
+		      __func__, con->name, slurm_strerror(err));
 	}
 
 	_close_con(true, con);
