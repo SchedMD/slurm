@@ -1085,16 +1085,9 @@ extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr,
 	return SLURM_SUCCESS;
 }
 
-/*
- * Event on a processing socket.
- * mgr must be locked.
- */
-static void _handle_poll_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
-			       short revents)
+static void _handle_poll_event_error(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
+				     short revents)
 {
-	con->can_read = false;
-	con->can_write = false;
-
 	if (revents & POLLNVAL) {
 		error("%s: [%s] connection invalid", __func__, con->name);
 		_close_con(true, con);
@@ -1117,6 +1110,22 @@ static void _handle_poll_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 
 
 		_close_con(true, con);
+		return;
+	}
+}
+
+/*
+ * Event on a processing socket.
+ * mgr must be locked.
+ */
+static void _handle_poll_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
+			       short revents)
+{
+	con->can_read = false;
+	con->can_write = false;
+
+	if ((revents & POLLNVAL) || (revents & POLLERR)) {
+		_handle_poll_event_error(mgr, fd, con, revents);
 		return;
 	}
 
