@@ -14944,10 +14944,9 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
  * validate_jobs_on_node - validate that any jobs that should be on the node
  *	are actually running, if not clean up the job records and/or node
  *	records.
- * IN reg_msg - node registration message
+ * IN slurm_msg - contains the node registration message
  */
-extern void
-validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
+extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 {
 	int i, jobs_on_node;
 	node_record_t *node_ptr;
@@ -14955,12 +14954,21 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 	step_record_t *step_ptr;
 	time_t now = time(NULL);
 
+	slurm_node_registration_status_msg_t *reg_msg = slurm_msg->data;
+
 	node_ptr = find_node_record(reg_msg->node_name);
 	if (node_ptr == NULL) {
 		error("slurmd registered on unknown node %s",
 		      reg_msg->node_name);
 		return;
 	}
+
+	/*
+	 * Set protocol_version now because abort_job_on_node() needs to know
+	 * the node's correct version. validate_node_specs() sets it but that's
+	 * too late.
+	 */
+	node_ptr->protocol_version = slurm_msg->protocol_version;
 
 	if (reg_msg->energy)
 		memcpy(node_ptr->energy, reg_msg->energy,

@@ -2641,9 +2641,9 @@ extern int validate_job_create_req(job_desc_msg_t *job_desc, uid_t submit_uid,
  *	are actually running, if not clean up the job records and/or node
  *	records.
  *
- * IN reg_msg - node registration message
+ * IN slurm_msg - contains the node registration message
  */
-extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg);
+extern void validate_jobs_on_node(slurm_msg_t *slurm_msg);
 
 /*
  * validate_node_specs - validate the node's specifications as valid,

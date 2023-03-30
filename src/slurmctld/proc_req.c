@@ -2857,7 +2857,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 							  msg->protocol_version,
 							  &newly_up);
 #else
-		validate_jobs_on_node(node_reg_stat_msg);
+		validate_jobs_on_node(msg);
 		error_code = validate_node_specs(msg, &newly_up);
 #endif
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
