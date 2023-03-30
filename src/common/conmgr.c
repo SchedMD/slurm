@@ -1090,8 +1090,6 @@ static void _handle_poll_event_error(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 {
 	if (revents & POLLNVAL) {
 		error("%s: [%s] connection invalid", __func__, con->name);
-		_close_con(true, con);
-		return;
 	}
 	if (revents & POLLERR) {
 		int err = SLURM_ERROR;
@@ -1107,11 +1105,9 @@ static void _handle_poll_event_error(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 				      __func__, con->name, slurm_strerror(err));
 			}
 		}
-
-
-		_close_con(true, con);
-		return;
 	}
+
+	_close_con(true, con);
 }
 
 /*
