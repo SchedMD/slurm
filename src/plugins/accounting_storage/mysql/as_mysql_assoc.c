@@ -611,11 +611,11 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
  * should work either way in the tree.  (i.e. move child to be parent
  * of current parent, and parent to be child of child.)
  */
-static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
-			uint32_t *lft, uint32_t *rgt,
-			char *cluster,
-			char *id, char *old_parent, char *new_parent,
-			time_t now)
+static int _move_parent_legacy(mysql_conn_t *mysql_conn, uid_t uid,
+			       uint32_t *lft, uint32_t *rgt,
+			       char *cluster,
+			       char *id, char *old_parent, char *new_parent,
+			       time_t now)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -682,6 +682,17 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	mysql_free_result(result);
 
 	return rc;
+}
+
+static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
+			uint32_t *lft, uint32_t *rgt,
+			char *cluster,
+			char *id, char *old_parent, char *new_parent,
+			time_t now)
+{
+	return _move_parent_legacy(mysql_conn, uid, lft, rgt,
+				   cluster, id, old_parent,
+				   new_parent, now);
 }
 
 static uint32_t _get_parent_id(
