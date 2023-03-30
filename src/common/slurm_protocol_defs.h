@@ -960,7 +960,6 @@ typedef struct launch_tasks_request_msg {
 	uint32_t spank_job_env_size;
 	dynamic_plugin_data_t *select_jobinfo; /* select context, opaque data */
 	char *alias_list;	/* node name/address/hostname aliases */
-	char *partition;	/* partition that job is running in */
 
 	/* only filled out if step is SLURM_EXTERN_CONT */
 	uint16_t x11;			/* X11 forwarding setup flags */
@@ -1079,7 +1078,6 @@ typedef struct prolog_launch_msg {
 	uint64_t job_mem_limit;		/* job's memory limit, passed via cred */
 	uint32_t nnodes;			/* count of nodes, passed via cred */
 	char *nodes;			/* list of nodes allocated to job_step */
-	char *partition;		/* partition the job is running in */
 	char **spank_job_env;		/* SPANK job environment variables */
 	uint32_t spank_job_env_size;	/* size of spank_job_env */
 	uint32_t uid;

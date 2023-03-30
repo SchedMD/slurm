@@ -2152,7 +2152,6 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->het_job_id		= req->het_job_id;
 	launch_req->het_job_nnodes	= NO_VAL;
 
-	launch_req->partition		= req->partition;
 	launch_req->spank_job_env_size	= req->spank_job_env_size;
 	launch_req->spank_job_env	= req->spank_job_env;
 	launch_req->step_mem_lim	= req->job_mem_limit;

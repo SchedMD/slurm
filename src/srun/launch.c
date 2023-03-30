@@ -1329,7 +1329,6 @@ extern int launch_g_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.het_job_tids = job->het_job_tids;
 	launch_params.het_job_tid_offsets = job->het_job_tid_offsets;
 	launch_params.het_job_node_list = job->het_job_node_list;
-	launch_params.partition = job->partition;
 	launch_params.profile = opt_local->profile;
 	launch_params.task_prolog = srun_opt->task_prolog;
 	launch_params.task_epilog = srun_opt->task_epilog;

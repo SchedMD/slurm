@@ -1388,7 +1388,6 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 		xfree(msg->alias_list);
 		FREE_NULL_LIST(msg->job_gres_prep);
 		xfree(msg->nodes);
-		xfree(msg->partition);
 		xfree(msg->work_dir);
 		xfree(msg->user_name);
 
@@ -1821,8 +1820,6 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->task_prolog);
 	xfree(msg->task_epilog);
 	xfree(msg->complete_nodelist);
-
-	xfree(msg->partition);
 
 	if (msg->switch_job)
 		switch_g_free_jobinfo(msg->switch_job);
