@@ -2106,6 +2106,7 @@ typedef struct {
 	uint16_t max_cores;
 	uint16_t max_threads;
 	uint16_t cpus_per_task;
+	uint16_t *cpus_per_task_array; /* Per node array of cpus per task */
 	uint16_t threads_per_core;
 	uint32_t task_dist;
 	bool preserve_env;
