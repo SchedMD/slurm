@@ -7069,14 +7069,14 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_prolog_launch_msg(prolog_launch_msg_t *msg,
-				    buf_t *buffer,
-				    uint16_t protocol_version)
+static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	prolog_launch_msg_t *msg = smsg->data;
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		gres_prep_pack(msg->job_gres_prep, buffer, protocol_version);
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		gres_prep_pack(msg->job_gres_prep, buffer,
+			       smsg->protocol_version);
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->uid, buffer);
@@ -7097,24 +7097,19 @@ static void _pack_prolog_launch_msg(prolog_launch_msg_t *msg,
 
 		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
 			      buffer);
-		slurm_cred_pack(msg->cred, buffer, protocol_version);
+		slurm_cred_pack(msg->cred, buffer, smsg->protocol_version);
 		packstr(msg->user_name, buffer);
 	}
 }
 
-static int _unpack_prolog_launch_msg(prolog_launch_msg_t **msg,
-				     buf_t *buffer,
-				     uint16_t protocol_version)
+static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	prolog_launch_msg_t *launch_msg_ptr;
+	prolog_launch_msg_t *launch_msg_ptr = xmalloc(sizeof(*launch_msg_ptr));
+	smsg->data = launch_msg_ptr;
 
-	xassert(msg);
-	launch_msg_ptr = xmalloc(sizeof(prolog_launch_msg_t));
-	*msg = launch_msg_ptr;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (gres_prep_unpack(&launch_msg_ptr->job_gres_prep,
-				     buffer, protocol_version))
+				     buffer, smsg->protocol_version))
 			goto unpack_error;
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
@@ -7138,7 +7133,7 @@ static int _unpack_prolog_launch_msg(prolog_launch_msg_t **msg,
 				     &launch_msg_ptr->spank_job_env_size,
 				     buffer);
 		if (!(launch_msg_ptr->cred = slurm_cred_unpack(buffer,
-							       protocol_version)))
+							       smsg->protocol_version)))
 			goto unpack_error;
 
 		safe_unpackstr(&launch_msg_ptr->user_name, buffer);
@@ -7148,7 +7143,7 @@ static int _unpack_prolog_launch_msg(prolog_launch_msg_t **msg,
 
 unpack_error:
 	slurm_free_prolog_launch_msg(launch_msg_ptr);
-	*msg = NULL;
+	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -10730,8 +10725,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 					   msg->protocol_version);
 		break;
 	case REQUEST_LAUNCH_PROLOG:
-		_pack_prolog_launch_msg((prolog_launch_msg_t *)
-					msg->data, buffer, msg->protocol_version);
+		_pack_prolog_launch_msg(msg, buffer);
 		break;
 	case RESPONSE_CONTAINER_PTY:
 	case RESPONSE_CONTAINER_KILL:
@@ -11377,9 +11371,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 						  msg->protocol_version);
 		break;
 	case REQUEST_LAUNCH_PROLOG:
-		rc = _unpack_prolog_launch_msg((prolog_launch_msg_t **)
-					       & (msg->data),
-					       buffer, msg->protocol_version);
+		rc = _unpack_prolog_launch_msg(msg, buffer);
 		break;
 	case RESPONSE_CONTAINER_PTY:
 	case RESPONSE_CONTAINER_KILL:
