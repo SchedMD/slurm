@@ -412,7 +412,7 @@ static int _get_jobid_uid_gid_from_env(uint32_t *jobid, uid_t *uid, gid_t *gid)
 	return SLURM_SUCCESS;
 }
 
-static int _handle_spank_mode (int argc, char **argv)
+static int _handle_spank_mode(int argc, char **argv)
 {
 	char *prefix = NULL;
 	const char *mode = argv[2];
@@ -441,8 +441,8 @@ static int _handle_spank_mode (int argc, char **argv)
 	 *   This could happen if slurmstepd is run standalone for
 	 *   testing.
 	 */
-	conf = _read_slurmd_conf_lite (STDIN_FILENO);
-	close (STDIN_FILENO);
+	conf = _read_slurmd_conf_lite(STDIN_FILENO);
+	close(STDIN_FILENO);
 
 	if (_get_jobid_uid_gid_from_env(&jobid, &uid, &gid))
 		return error("spank environment invalid");
@@ -450,42 +450,41 @@ static int _handle_spank_mode (int argc, char **argv)
 	debug("Running spank/%s for jobid [%u] uid [%u] gid [%u]",
 	      mode, jobid, uid, gid);
 
-	if (xstrcmp (mode, "prolog") == 0) {
+	if (!xstrcmp(mode, "prolog")) {
 		if (spank_job_prolog(jobid, uid, gid) < 0)
-			return (-1);
-	}
-	else if (xstrcmp (mode, "epilog") == 0) {
+			return -1;
+	} else if (!xstrcmp(mode, "epilog")) {
 		if (spank_job_epilog(jobid, uid, gid) < 0)
-			return (-1);
+			return -1;
+	} else {
+		error("Invalid mode %s specified!", mode);
+		return -1;
 	}
-	else {
-		error ("Invalid mode %s specified!", mode);
-		return (-1);
-	}
-	return (0);
+
+	return 0;
 }
 
 /*
  *  Process special "modes" of slurmstepd passed as cmdline arguments.
  */
-static int _process_cmdline (int argc, char **argv)
+static int _process_cmdline(int argc, char **argv)
 {
-	if ((argc == 2) && (xstrcmp(argv[1], "getenv") == 0)) {
+	if ((argc == 2) && !xstrcmp(argv[1], "getenv")) {
 		print_rlimits();
 		_dump_user_env();
 		exit(0);
 	}
-	if ((argc == 2) && (xstrcmp(argv[1], "infinity") == 0)) {
+	if ((argc == 2) && !xstrcmp(argv[1], "infinity")) {
 		set_oom_adj(-1000);
 		(void) poll(NULL, 0, -1);
 		exit(0);
 	}
-	if ((argc == 3) && (xstrcmp(argv[1], "spank") == 0)) {
+	if ((argc == 3) && !xstrcmp(argv[1], "spank")) {
 		if (_handle_spank_mode(argc, argv) < 0)
-			exit (1);
-		exit (0);
+			exit(1);
+		exit(0);
 	}
-	return (0);
+	return 0;
 }
 
 
