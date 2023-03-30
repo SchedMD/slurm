@@ -1104,6 +1104,24 @@ static void _handle_poll_event_error(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 		      __func__, con->name, slurm_strerror(err));
 	}
 
+	/*
+	 * Socket must not continue to be considered valid to avoid a
+	 * infinite calls to poll() which will immidiatly fail. Close
+	 * the relavent file descriptor and remove from connection.
+	 */
+	if (close(fd)) {
+		log_flag(NET, "%s: [%s] input_fd=%d output_fd=%d calling close(%d) failed after poll() returned %s%s%s: %m",
+			 __func__, con->name, con->input_fd, con->output_fd, fd,
+			 ((revents & POLLNVAL) ? "POLLNVAL" : ""),
+			 ((revents & POLLNVAL) && (revents & POLLERR) ? "&" : ""),
+			 ((revents & POLLERR) ? "POLLERR" : ""));
+	}
+
+	if (con->input_fd == fd)
+		con->input_fd = -1;
+	if (con->output_fd == fd)
+		con->output_fd = -1;
+
 	_close_con(true, con);
 }
 
