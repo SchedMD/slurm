@@ -1389,8 +1389,6 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 		FREE_NULL_LIST(msg->job_gres_prep);
 		xfree(msg->nodes);
 		xfree(msg->partition);
-		xfree(msg->std_err);
-		xfree(msg->std_out);
 		xfree(msg->work_dir);
 		xfree(msg->user_name);
 

@@ -3030,8 +3030,6 @@ extern void launch_prolog(job_record_t *job_ptr)
 	prolog_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
 	prolog_msg_ptr->nodes = xstrdup(job_ptr->nodes);
 	prolog_msg_ptr->partition = xstrdup(job_ptr->partition);
-	prolog_msg_ptr->std_err = xstrdup(job_ptr->details->std_err);
-	prolog_msg_ptr->std_out = xstrdup(job_ptr->details->std_out);
 	prolog_msg_ptr->work_dir = xstrdup(job_ptr->details->work_dir);
 	prolog_msg_ptr->x11 = job_ptr->details->x11;
 	if (prolog_msg_ptr->x11) {

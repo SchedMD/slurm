@@ -7084,8 +7084,6 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 		packstr(msg->alias_list, buffer);
 		packstr(msg->nodes, buffer);
-		packstr(msg->std_err, buffer);
-		packstr(msg->std_out, buffer);
 		packstr(msg->work_dir, buffer);
 
 		pack16(msg->x11, buffer);
@@ -7109,8 +7107,8 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 		packstr(msg->alias_list, buffer);
 		packstr(msg->nodes, buffer);
-		packstr(msg->std_err, buffer);
-		packstr(msg->std_out, buffer);
+		packnull(buffer);
+		packnull(buffer);
 		packstr(msg->work_dir, buffer);
 
 		pack16(msg->x11, buffer);
@@ -7143,8 +7141,6 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 		safe_unpackstr(&msg->alias_list, buffer);
 		safe_unpackstr(&msg->nodes, buffer);
-		safe_unpackstr(&msg->std_err, buffer);
-		safe_unpackstr(&msg->std_out, buffer);
 		safe_unpackstr(&msg->work_dir, buffer);
 
 		safe_unpack16(&msg->x11, buffer);
@@ -7163,6 +7159,7 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 		safe_unpackstr(&msg->user_name, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *tmp_char;
 		if (gres_prep_unpack(&msg->job_gres_prep, buffer,
 				     smsg->protocol_version))
 			goto unpack_error;
@@ -7173,8 +7170,10 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 		safe_unpackstr(&msg->alias_list, buffer);
 		safe_unpackstr(&msg->nodes, buffer);
-		safe_unpackstr(&msg->std_err, buffer);
-		safe_unpackstr(&msg->std_out, buffer);
+		safe_unpackstr(&tmp_char, buffer); /* was std_err */
+		xfree(tmp_char);
+		safe_unpackstr(&tmp_char, buffer); /* was std_out */
+		xfree(tmp_char);
 		safe_unpackstr(&msg->work_dir, buffer);
 
 		safe_unpack16(&msg->x11, buffer);

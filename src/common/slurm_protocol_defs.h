@@ -1082,8 +1082,6 @@ typedef struct prolog_launch_msg {
 	char *partition;		/* partition the job is running in */
 	char **spank_job_env;		/* SPANK job environment variables */
 	uint32_t spank_job_env_size;	/* size of spank_job_env */
-	char *std_err;			/* pathname of stderr */
-	char *std_out;			/* pathname of stdout */
 	uint32_t uid;
 	char *user_name;		/* job's user name */
 	char *work_dir;			/* full pathname of working directory */
