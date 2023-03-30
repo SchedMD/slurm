@@ -1451,7 +1451,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 					 het_job_offset + 1);
 			}
 		} else {
-			if (!(resp = allocate_nodes(1, &opt)))
+			if (!(resp = allocate_nodes(&opt)))
 				exit(error_exit);
 			*got_alloc = true;
 			my_job_id = resp->job_id;

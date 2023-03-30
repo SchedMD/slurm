@@ -54,8 +54,8 @@ extern uint16_t slurmctld_comm_port;
  * Returns a pointer to a resource_allocation_response_msg which must
  * be freed with slurm_free_resource_allocation_response_msg()
  */
-extern resource_allocation_response_msg_t *
-	allocate_nodes(bool handle_signals, slurm_opt_t *opt_local);
+extern resource_allocation_response_msg_t *allocate_nodes(
+	slurm_opt_t *opt_local);
 
 /*
  * Allocate nodes for heterogeneous job from the slurm controller --

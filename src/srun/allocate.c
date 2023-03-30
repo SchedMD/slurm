@@ -357,9 +357,8 @@ extern int allocate_test(void)
  * Returns a pointer to a resource_allocation_response_msg which must
  * be freed with slurm_free_resource_allocation_response_msg()
  */
-extern resource_allocation_response_msg_t *
-	allocate_nodes(bool handle_signals, slurm_opt_t *opt_local)
-
+extern resource_allocation_response_msg_t *allocate_nodes(
+	slurm_opt_t *opt_local)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	resource_allocation_response_msg_t *resp = NULL;
@@ -396,11 +395,9 @@ extern resource_allocation_response_msg_t *
 
 	/* NOTE: Do not process signals in separate pthread. The signal will
 	 * cause slurm_allocate_resources_blocking() to exit immediately. */
-	if (handle_signals) {
-		xsignal_unblock(sig_array);
-		for (i = 0; sig_array[i]; i++)
-			xsignal(sig_array[i], _signal_while_allocating);
-	}
+	xsignal_unblock(sig_array);
+	for (i = 0; sig_array[i]; i++)
+		xsignal(sig_array[i], _signal_while_allocating);
 
 	while (!resp) {
 		resp = slurm_allocate_resources_blocking(j,
@@ -461,8 +458,7 @@ extern resource_allocation_response_msg_t *
 		goto relinquish;
 	}
 
-	if (handle_signals)
-		xsignal_block(sig_array);
+	xsignal_block(sig_array);
 
 	job_desc_msg_destroy(j);
 
