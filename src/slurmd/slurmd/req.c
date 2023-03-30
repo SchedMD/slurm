@@ -1510,6 +1510,14 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #ifndef HAVE_FRONT_END
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->step_id.job_id);
+
+	if (!(req->flags & LAUNCH_NO_ALLOC))
+		errnum = _wait_for_request_launch_prolog(req->step_id.job_id,
+							 &first_job_run);
+	if (errnum != SLURM_SUCCESS) {
+		slurm_mutex_unlock(&prolog_mutex);
+		goto done;
+	}
 #endif
 	if (_check_job_credential(req, msg->auth_uid, req_gid, node_id,
 				  &step_hset, msg->protocol_version,
@@ -1525,6 +1533,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	if (_set_node_alias(req)) {
 		errnum = ESLURM_INVALID_NODE_NAME;
+		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
 	}
 
@@ -1535,14 +1544,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 #ifndef HAVE_FRONT_END
-	if (!(req->flags & LAUNCH_NO_ALLOC))
-		errnum = _wait_for_request_launch_prolog(req->step_id.job_id,
-							 &first_job_run);
-	if (errnum != SLURM_SUCCESS) {
-		slurm_mutex_unlock(&prolog_mutex);
-		goto done;
-	}
-
 	if (first_job_run) {
 		int rc;
 		job_env_t job_env;
