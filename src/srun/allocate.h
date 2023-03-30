@@ -65,7 +65,7 @@ extern resource_allocation_response_msg_t *allocate_nodes(
  * Returns a pointer to a resource_allocation_response_msg which must
  * be freed with slurm_free_resource_allocation_response_msg()
  */
-List allocate_het_job_nodes(bool handle_signals);
+list_t *allocate_het_job_nodes(void);
 
 /* dummy function to handle all signals we want to ignore */
 void ignore_signal(int signo);

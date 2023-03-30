@@ -1413,7 +1413,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 			setenvfs("SLURM_JOB_NAME=%s", opt.argv[0]);
 
 		if (opt_list) {
-			job_resp_list = allocate_het_job_nodes(1);
+			job_resp_list = allocate_het_job_nodes();
 			if (!job_resp_list)
 				exit(error_exit);
 			srun_job_list = list_create(NULL);

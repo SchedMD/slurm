@@ -490,7 +490,7 @@ static int _copy_other_port(void *x, void *arg)
  * Returns a pointer to a resource_allocation_response_msg which must
  * be freed with slurm_free_resource_allocation_response_msg()
  */
-List allocate_het_job_nodes(bool handle_signals)
+list_t *allocate_het_job_nodes(void)
 {
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j, *first_job = NULL;
@@ -553,11 +553,9 @@ List allocate_het_job_nodes(bool handle_signals)
 
 	/* NOTE: Do not process signals in separate pthread. The signal will
 	 * cause slurm_allocate_resources_blocking() to exit immediately. */
-	if (handle_signals) {
-		xsignal_unblock(sig_array);
-		for (i = 0; sig_array[i]; i++)
-			xsignal(sig_array[i], _signal_while_allocating);
-	}
+	xsignal_unblock(sig_array);
+	for (i = 0; sig_array[i]; i++)
+		xsignal(sig_array[i], _signal_while_allocating);
 
 	is_het_job = true;
 
@@ -637,8 +635,7 @@ List allocate_het_job_nodes(bool handle_signals)
 		goto relinquish;
 	}
 
-	if (handle_signals)
-		xsignal_block(sig_array);
+	xsignal_block(sig_array);
 
 	return job_resp_list;
 
