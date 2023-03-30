@@ -7104,45 +7104,45 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	prolog_launch_msg_t *launch_msg_ptr = xmalloc(sizeof(*launch_msg_ptr));
-	smsg->data = launch_msg_ptr;
+	prolog_launch_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (gres_prep_unpack(&launch_msg_ptr->job_gres_prep,
-				     buffer, smsg->protocol_version))
+		if (gres_prep_unpack(&msg->job_gres_prep, buffer,
+				     smsg->protocol_version))
 			goto unpack_error;
-		safe_unpack32(&launch_msg_ptr->job_id, buffer);
-		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
-		safe_unpack32(&launch_msg_ptr->uid, buffer);
-		safe_unpack32(&launch_msg_ptr->gid, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->het_job_id, buffer);
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpack32(&msg->gid, buffer);
 
-		safe_unpackstr(&launch_msg_ptr->alias_list, buffer);
-		safe_unpackstr(&launch_msg_ptr->nodes, buffer);
-		safe_unpackstr(&launch_msg_ptr->std_err, buffer);
-		safe_unpackstr(&launch_msg_ptr->std_out, buffer);
-		safe_unpackstr(&launch_msg_ptr->work_dir, buffer);
+		safe_unpackstr(&msg->alias_list, buffer);
+		safe_unpackstr(&msg->nodes, buffer);
+		safe_unpackstr(&msg->std_err, buffer);
+		safe_unpackstr(&msg->std_out, buffer);
+		safe_unpackstr(&msg->work_dir, buffer);
 
-		safe_unpack16(&launch_msg_ptr->x11, buffer);
-		safe_unpackstr(&launch_msg_ptr->x11_alloc_host, buffer);
-		safe_unpack16(&launch_msg_ptr->x11_alloc_port, buffer);
-		safe_unpackstr(&launch_msg_ptr->x11_magic_cookie, buffer);
-		safe_unpackstr(&launch_msg_ptr->x11_target, buffer);
-		safe_unpack16(&launch_msg_ptr->x11_target_port, buffer);
+		safe_unpack16(&msg->x11, buffer);
+		safe_unpackstr(&msg->x11_alloc_host, buffer);
+		safe_unpack16(&msg->x11_alloc_port, buffer);
+		safe_unpackstr(&msg->x11_magic_cookie, buffer);
+		safe_unpackstr(&msg->x11_target, buffer);
+		safe_unpack16(&msg->x11_target_port, buffer);
 
-		safe_unpackstr_array(&launch_msg_ptr->spank_job_env,
-				     &launch_msg_ptr->spank_job_env_size,
+		safe_unpackstr_array(&msg->spank_job_env,
+				     &msg->spank_job_env_size,
 				     buffer);
-		if (!(launch_msg_ptr->cred = slurm_cred_unpack(buffer,
-							       smsg->protocol_version)))
+		if (!(msg->cred = slurm_cred_unpack(buffer,
+						    smsg->protocol_version)))
 			goto unpack_error;
 
-		safe_unpackstr(&launch_msg_ptr->user_name, buffer);
+		safe_unpackstr(&msg->user_name, buffer);
 	}
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_prolog_launch_msg(launch_msg_ptr);
+	slurm_free_prolog_launch_msg(msg);
 	smsg->data = NULL;
 	return SLURM_ERROR;
 }
