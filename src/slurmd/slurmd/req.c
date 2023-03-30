@@ -1577,7 +1577,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.step_id = req->step_id.step_id;
 		job_env.node_list = req->complete_nodelist;
 		job_env.het_job_id = req->het_job_id;
-		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.work_dir = req->cwd;
@@ -2323,7 +2322,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.node_aliases = req->alias_list;
 		job_env.node_list = req->nodes;
 		job_env.het_job_id = req->het_job_id;
-		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.work_dir = req->work_dir;
