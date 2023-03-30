@@ -288,6 +288,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow for jobs that request a newly configured gres type to be queued
     even when the needed slurmds have not yet registered.
  -- Kill recovered jobs that require unconfigured gres types.
+ -- If keepalives are configured, enable them on all persistent connections.
 
 * Changes in Slurm 23.02.7
 ==========================

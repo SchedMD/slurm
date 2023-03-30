@@ -69,8 +69,6 @@ extern void run_dbd_backup(void)
 	slurmdbd_conn.flags |= PERSIST_FLAG_SUPPRESS_ERR;
 
 	slurm_persist_conn_open_without_init(&slurmdbd_conn);
-	if (slurmdbd_conn.fd > 0)
-		net_set_keep_alive(slurmdbd_conn.fd);
 
 	/* repeatedly ping Primary */
 	while (!shutdown_time) {

@@ -47,6 +47,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/fd.h"
 #include "src/common/macros.h"
+#include "src/common/net.h"
 #include "src/interfaces/auth.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdbd_defs.h"
@@ -573,6 +574,7 @@ extern int slurm_persist_conn_open_without_init(
 		return SLURM_ERROR;
 	}
 	fd_set_nonblocking(persist_conn->fd);
+	net_set_keep_alive(persist_conn->fd);
 
 	return SLURM_SUCCESS;
 }
