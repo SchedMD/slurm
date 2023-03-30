@@ -1410,6 +1410,8 @@ extern int launch_g_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		launch_params.cpus_per_task	= opt_local->cpus_per_task;
 	else
 		launch_params.cpus_per_task	= 1;
+	launch_params.cpus_per_task_array =
+		job->step_ctx->step_resp->step_layout->cpus_per_task;
 	launch_params.threads_per_core   = opt_local->threads_per_core;
 	launch_params.cpu_freq_min       = opt_local->cpu_freq_min;
 	launch_params.cpu_freq_max       = opt_local->cpu_freq_max;

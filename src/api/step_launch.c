@@ -325,6 +325,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	if (params->multi_prog)
 		launch.flags	|= LAUNCH_MULTI_PROG;
 	launch.cpus_per_task	= params->cpus_per_task;
+	launch.cpus_per_task_array = params->cpus_per_task_array;
 	launch.tres_per_task	= ctx->step_req->tres_per_task;
 
 	launch.threads_per_core	= params->threads_per_core;
@@ -532,6 +533,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	if (params->multi_prog)
 		launch.flags |= LAUNCH_MULTI_PROG;
 	launch.cpus_per_task	= params->cpus_per_task;
+	launch.cpus_per_task_array = params->cpus_per_task_array;
 	launch.task_dist	= params->task_dist;
 	if (params->pty)
 		launch.flags |= LAUNCH_PTY;
