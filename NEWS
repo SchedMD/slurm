@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - improve handling of sockets in different states of shutdown to
     avoid infinite poll() loop causing a thread to max CPU usage until process
     is killed.
+ -- slurmrestd - avoid possible segfault caused by race condition of already
+    completed connections.
 
 * Changes in Slurm 23.02.1
 ==========================

@@ -1832,6 +1832,30 @@ watch:
 
 	work = false;
 
+	if (!list_is_empty(mgr->complete)) {
+		if (mgr->listen_active || mgr->poll_active) {
+			/*
+			 * Must wait for all poll() calls to complete or
+			 * there may be a use after free of a connection.
+			 *
+			 * Send signal to break out of any active poll()s.
+			 */
+			_signal_change(mgr, true);
+		} else {
+			con_mgr_fd_t *con;
+
+			/*
+			 * Memory cleanup of connections can be done entirely
+			 * independently as there should be nothing left in
+			 * conmgr that references the connection.
+			 */
+
+			while ((con = list_pop(mgr->complete)))
+				_queue_func(true, mgr, _connection_fd_delete,
+					    con, "_connection_fd_delete");
+		}
+	}
+
 	/* start listen thread if needed */
 	if (!list_is_empty(mgr->listen)) {
 		if (!listen_args) {
@@ -1883,14 +1907,6 @@ watch:
 			log_flag(NET, "%s: poll active already", __func__);
 
 		work = true;
-	}
-
-	if (!list_is_empty(mgr->complete)) {
-		con_mgr_fd_t *con;
-
-		while ((con = list_pop(mgr->complete)))
-			_queue_func(true, mgr, _connection_fd_delete, con,
-				    "_connection_fd_delete");
 	}
 
 	if (work) {
