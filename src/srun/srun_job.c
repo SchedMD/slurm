@@ -1161,7 +1161,7 @@ static void _copy_job_resp(List job_resp_list, int count)
 	}
 }
 
-extern void create_srun_job(void **p_job, bool *got_alloc, bool handle_signals)
+extern void create_srun_job(void **p_job, bool *got_alloc)
 {
 	resource_allocation_response_msg_t *resp;
 	List job_resp_list = NULL, srun_job_list = NULL;
@@ -1413,7 +1413,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc, bool handle_signals)
 			setenvfs("SLURM_JOB_NAME=%s", opt.argv[0]);
 
 		if (opt_list) {
-			job_resp_list = allocate_het_job_nodes(handle_signals);
+			job_resp_list = allocate_het_job_nodes(1);
 			if (!job_resp_list)
 				exit(error_exit);
 			srun_job_list = list_create(NULL);
@@ -1451,7 +1451,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc, bool handle_signals)
 					 het_job_offset + 1);
 			}
 		} else {
-			if (!(resp = allocate_nodes(handle_signals, &opt)))
+			if (!(resp = allocate_nodes(1, &opt)))
 				exit(error_exit);
 			*got_alloc = true;
 			my_job_id = resp->job_id;
