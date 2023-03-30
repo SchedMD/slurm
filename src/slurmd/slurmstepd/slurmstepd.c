@@ -96,7 +96,7 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
 #ifdef MEMORY_LEAK_DEBUG
 static void _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc);
 #endif
-static int _process_cmdline (int argc, char **argv);
+static void _process_cmdline(int argc, char **argv);
 
 static pthread_mutex_t cleanup_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool cleanup = false;
@@ -124,8 +124,7 @@ main (int argc, char **argv)
 	stepd_step_rec_t *step;
 	int rc = 0;
 
-	if (_process_cmdline (argc, argv) < 0)
-		fatal ("Error in slurmstepd command line");
+	_process_cmdline(argc, argv);
 
 	run_command_init();
 
@@ -467,7 +466,7 @@ static int _handle_spank_mode(int argc, char **argv)
 /*
  *  Process special "modes" of slurmstepd passed as cmdline arguments.
  */
-static int _process_cmdline(int argc, char **argv)
+static void _process_cmdline(int argc, char **argv)
 {
 	if ((argc == 2) && !xstrcmp(argv[1], "getenv")) {
 		print_rlimits();
@@ -484,9 +483,7 @@ static int _process_cmdline(int argc, char **argv)
 			exit(1);
 		exit(0);
 	}
-	return 0;
 }
-
 
 static void
 _send_ok_to_slurmd(int sock)
