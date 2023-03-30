@@ -4874,6 +4874,8 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	slurm_addr_t addr;
 	char *comm_name = NULL;
 	int state_val = NODE_STATE_UNKNOWN;
+	s_p_hashtbl_t *node_hashtbl = NULL;
+	slurm_conf_node_t *conf_node = NULL;
 	slurm_node_registration_status_msg_t *reg_msg = msg->data;
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
@@ -4886,9 +4888,6 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	}
 
 	if (reg_msg->dynamic_conf) {
-		slurm_conf_node_t *conf_node;
-		s_p_hashtbl_t *node_hashtbl = NULL;
-
 		if (!(conf_node =
 		      slurm_conf_parse_nodeline(reg_msg->dynamic_conf,
 						&node_hashtbl))) {
@@ -4902,8 +4901,6 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 		if (conf_node->state)
 			state_val = state_str2int(conf_node->state,
 						  conf_node->nodenames);
-
-		s_p_hashtbl_destroy(node_hashtbl);
 	} else {
 		config_ptr = create_config_record();
 		config_ptr->boards = reg_msg->boards;
@@ -4946,7 +4943,10 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	/* Handle DOWN and DRAIN, otherwise make the node idle */
 	if ((state_val == NODE_STATE_DOWN) ||
 	    (state_val & NODE_STATE_DRAIN)) {
-		_make_node_down(node_ptr, time(NULL));
+		time_t now = time(NULL);
+		if (conf_node && conf_node->reason)
+			set_node_reason(node_ptr, conf_node->reason, now);
+		_make_node_down(node_ptr, now);
 		node_ptr->node_state = state_val;
 	} else
 		make_node_idle(node_ptr, NULL);
@@ -4958,6 +4958,8 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	power_save_set_timeouts(NULL);
 	power_save_exc_setup();
 	select_g_reconfigure();
+
+	s_p_hashtbl_destroy(node_hashtbl);
 
 	return SLURM_SUCCESS;
 }
