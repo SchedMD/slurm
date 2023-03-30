@@ -504,8 +504,8 @@ scontrol_create_res(int argc, char **argv)
 	if (!new_res_name) {
 		exit_code = 1;
 		slurm_perror("Error creating the reservation");
-		if ((errno == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) ||
-		    (errno == ESLURM_NODES_BUSY))
+		if (((errno == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) ||
+		     (errno == ESLURM_NODES_BUSY)) && !resv_msg.node_list)
 			printf("Note, unless nodes are directly requested a reservation must exist in a single partition.\n"
 			       "If no partition is requested the default partition is assumed.\n");
 		ret = slurm_get_errno();
