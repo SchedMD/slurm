@@ -2954,6 +2954,31 @@ extern int get_cluster_dims(mysql_conn_t *mysql_conn, char *cluster_name,
 	return SLURM_SUCCESS;
 }
 
+extern uint32_t get_cluster_version(mysql_conn_t *mysql_conn,
+				    char *cluster_name)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	uint32_t rpc_version = 0;
+
+	char *query = xstrdup_printf(
+		"select rpc_version from %s where name='%s' where deleted=0",
+		cluster_table, cluster_name);
+
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+
+	if (!result)
+		return rpc_version;
+
+	if ((row = mysql_fetch_row(result)))
+		rpc_version = slurm_atoul(row[0]);
+
+	mysql_free_result(result);
+
+	return rpc_version;
+}
+
 extern void *acct_storage_p_get_connection(
 	int conn_num, uint16_t *persist_conn_flags,
 	bool rollback, char *cluster_name)
