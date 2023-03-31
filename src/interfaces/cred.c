@@ -242,9 +242,6 @@ static bool _credential_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 static int _cred_sign(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 static void _cred_verify_signature(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 
-static int _slurm_cred_init(void);
-static int _slurm_cred_fini(void);
-
 static job_state_t *_job_state_unpack_one(buf_t *buffer);
 static cred_state_t *_cred_state_unpack_one(buf_t *buffer);
 
@@ -255,7 +252,8 @@ static void _job_state_pack(slurm_cred_ctx_t *ctx, buf_t *buffer);
 static void _cred_state_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer);
 static void _cred_state_pack(slurm_cred_ctx_t *ctx, buf_t *buffer);
 
-static int _slurm_cred_init(void)
+/* Initialize the plugin. */
+extern int cred_g_init(void)
 {
 	char *tok;
 	char    *plugin_type = "cred";
@@ -299,16 +297,8 @@ done:
 	return(retval);
 }
 
-/* Initialize the plugin. */
-extern int cred_g_init(void)
-{
-	if (_slurm_cred_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
-}
-
-static int _slurm_cred_fini(void)
+/* Terminate the plugin and release all memory. */
+extern int cred_g_fini(void)
 {
 	int rc;
 
@@ -380,15 +370,6 @@ static void _release_cred_gids(slurm_cred_arg_t *arg)
 		xfree(arg->gr_names);
 	}
 	arg->ngids = 0;
-}
-
-/* Terminate the plugin and release all memory. */
-extern int cred_g_fini(void)
-{
-	if (_slurm_cred_fini() < 0)
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
 }
 
 extern slurm_cred_ctx_t *slurm_cred_creator_ctx_create(const char *path)
