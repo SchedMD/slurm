@@ -9760,8 +9760,7 @@ extern void gres_g_send_stepd(int fd, slurm_msg_t *msg)
 		step_id = SLURM_BATCH_SCRIPT;
 		cred = job->cred;
 	} else {
-		launch_tasks_request_msg_t *job =
-			(launch_tasks_request_msg_t *)msg->data;
+		launch_tasks_request_msg_t *job = msg->data;
 		step_id = job->step_id.step_id;
 		cred = job->cred;
 	}
