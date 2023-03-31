@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
  -- Removed select/cons_res. Please update your configuration to
     select/cons_tres.
  -- mpi/pmix - When aborted with status 0, avoid marking job/step as failed.
+ -- Fixed typo on "initialized" for the description of ESLURM_PLUGIN_NOT_LOADED.
 
 * Changes in Slurm 23.02.2
 ==========================

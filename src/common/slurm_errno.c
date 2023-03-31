@@ -582,7 +582,7 @@ slurm_errtab_t slurm_errtab[] = {
 	{ ERRTAB_ENTRY(ESLURM_PLUGIN_INCOMPLETE),
 	  "Plugin missing required symbol or function"		},
 	{ ERRTAB_ENTRY(ESLURM_PLUGIN_NOT_LOADED),
-	  "Required plugin type not loaded or initalized"	},
+	  "Required plugin type not loaded or initialized"	},
 
 	/* REST errors */
 	{ ERRTAB_ENTRY(ESLURM_REST_INVALID_QUERY),

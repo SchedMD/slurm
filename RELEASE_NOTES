@@ -37,3 +37,4 @@ API CHANGES
     "2982616-04:14:00" (which is the internal macro "NO_VAL" represented as
     time string).
  -- "flags" argument was added to slurm_kill_job_step().
+ -- Fixed typo on "initialized" for the description of ESLURM_PLUGIN_NOT_LOADED.
