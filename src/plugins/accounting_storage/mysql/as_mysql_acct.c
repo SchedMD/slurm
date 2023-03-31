@@ -492,19 +492,15 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	rc = 0;
 	ret_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
-		if (!rc) {
-			xstrfmtcat(name_char, "name='%s'", object);
-			xstrfmtcat(assoc_char, "t2.acct='%s'", object);
-			rc = 1;
-		} else  {
-			xstrfmtcat(name_char, " || name='%s'", object);
-			xstrfmtcat(assoc_char, " || t2.acct='%s'", object);
-		}
+
+		xstrfmtcat(name_char, "%sname='%s'",
+			   name_char ? " || " : "", object);
+		xstrfmtcat(assoc_char, "%st2.acct='%s'",
+			   assoc_char ? " || " : "", object);
 	}
 	mysql_free_result(result);
 
