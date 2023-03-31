@@ -170,6 +170,7 @@ static char *massoc_req_inx[] = {
 	"max_tres_run_mins",
 	"max_tres_pj",
 	"max_tres_pn",
+	"lineage",
 };
 
 enum {
@@ -188,6 +189,7 @@ enum {
 	MASSOC_MTRM,
 	MASSOC_MTPJ,
 	MASSOC_MTPN,
+	MASSOC_LINEAGE,
 	MASSOC_COUNT
 };
 
@@ -692,11 +694,28 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 			uint32_t *lft, uint32_t *rgt,
 			char *cluster,
 			char *id, char *old_parent, char *new_parent,
-			time_t now)
+			time_t now, uint32_t rpc_version)
 {
-	return _move_parent_legacy(mysql_conn, uid, lft, rgt,
-				   cluster, id, old_parent,
-				   new_parent, now);
+	char *query = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (rpc_version <= SLURM_23_02_PROTOCOL_VERSION) {
+		rc = _move_parent_legacy(mysql_conn, uid, lft, rgt,
+					 cluster, id, old_parent,
+					 new_parent, now);
+	} else {
+		/*
+		 * Alter the account association that moved parents
+		 * (the id sent in)
+		 */
+		query = xstrdup_printf(
+			"update \"%s_%s\" set parent_acct='%s' where id_assoc=%s;",
+			cluster, assoc_table, new_parent, id);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+	}
+
+	return rc;
 }
 
 static uint32_t _get_parent_id(
@@ -914,20 +933,21 @@ end_it:
 	return lineage;
 }
 
-/* Used to get all the users inside a lft and rgt set.  This is just
+/*
+ * Used to get all the users in a lineage.  This is just
  * to send the user all the associations that are being modified from
  * a previous change to it's parent.
  */
 static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			       slurmdb_assoc_rec_t *assoc,
 			       char *acct,
-			       uint32_t lft, uint32_t rgt,
+			       char *lineage,
 			       List ret_list, int moved_parent)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *query = NULL, *object = NULL;
-	int i;
+	int i, rc = SLURM_SUCCESS;
 	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE | TRES_STR_FLAG_NO_NULL;
 
 	char *assoc_inx[] = {
@@ -948,8 +968,6 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"def_qos_id",
 		"qos",
 		"delta_qos",
-		"lft",
-		"rgt"
 	};
 
 	enum {
@@ -970,34 +988,25 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		ASSOC_DEF_QOS,
 		ASSOC_QOS,
 		ASSOC_DELTA_QOS,
-		ASSOC_LFT,
-		ASSOC_RGT,
 		ASSOC_COUNT
 	};
 
 	xassert(assoc);
 	xassert(assoc->cluster);
 
-	if (!ret_list || !acct)
+	if (!ret_list || !lineage)
 		return SLURM_ERROR;
 
 	xstrcat(object, assoc_inx[0]);
-	for(i=1; i<ASSOC_COUNT; i++)
+	for (i=1; i<ASSOC_COUNT; i++)
 		xstrfmtcat(object, ", %s", assoc_inx[i]);
 
 	/* We want all the sub accounts and user accounts */
-	query = xstrdup_printf("select distinct %s from \"%s_%s\" "
-			       "where deleted=0 "
-			       "&& lft between %d and %d && "
-			       "((user = '' && parent_acct = '%s') || "
-			       "(user != '' && acct = '%s')) "
-			       "order by lft;",
-			       object, assoc->cluster, assoc_table,
-			       lft, rgt, acct, acct);
+	query = xstrdup_printf("select distinct %s from \"%s_%s\" where deleted=0 && id_assoc!=%u && lineage like '%s%%' && ((user = '' && parent_acct = '%s') || (user != '' && acct = '%s')) order by lineage;",
+			       object, assoc->cluster, assoc_table, assoc->id, lineage, acct, acct);
 	xfree(object);
-	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-	if (!(result =
-	      mysql_db_query_ret(mysql_conn, query, 0))) {
+
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -1137,24 +1146,19 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			}
 		}
 
+		if (moved_parent) {
+			/*
+			 * Now set lineage on all of the associations related
+			 * set_lineage() sets mod_time as well.
+			 */
+			mod_assoc->lineage = _set_lineage(
+				mysql_conn, mod_assoc->id, row[ASSOC_ACCT],
+				row[ASSOC_USER], assoc->cluster);
+			modified = 1;
+		}
+
 		/* We only want to add those that are modified here */
 		if (modified) {
-			/* Since we aren't really changing this non
-			 * user association we don't want to send it.
-			 */
-			if (!row[ASSOC_USER][0]) {
-				/* This is a sub account so run it
-				 * through as if it is a parent.
-				 */
-				_modify_unset_users(mysql_conn,
-						    mod_assoc,
-						    row[ASSOC_ACCT],
-						    slurm_atoul(row[ASSOC_LFT]),
-						    slurm_atoul(row[ASSOC_RGT]),
-						    ret_list, moved_parent);
-				slurmdb_destroy_assoc_rec(mod_assoc);
-				continue;
-			}
 			/* We do want to send all user accounts though */
 			mod_assoc->shares_raw = NO_VAL;
 			if (row[ASSOC_PART][0]) {
@@ -1170,29 +1174,23 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 					row[ASSOC_ACCT],
 					row[ASSOC_USER]);
 			}
-
 			list_append(ret_list, object);
 			object = NULL;
 
-			if (moved_parent)
+			if (addto_update_list(mysql_conn->update_list,
+					      SLURMDB_MODIFY_ASSOC,
+					      mod_assoc)
+			    != SLURM_SUCCESS) {
 				slurmdb_destroy_assoc_rec(mod_assoc);
-			else
-				if (addto_update_list(mysql_conn->update_list,
-						      SLURMDB_MODIFY_ASSOC,
-						      mod_assoc)
-				    != SLURM_SUCCESS) {
-					slurmdb_destroy_assoc_rec(
-						mod_assoc);
-					error("couldn't add to "
-					      "the update list");
-				}
+				error("couldn't add to the update list");
+			}
 		} else
 			slurmdb_destroy_assoc_rec(mod_assoc);
 
 	}
 	mysql_free_result(result);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /* sets fields for the assoc query when there is a qos condition*/
@@ -1415,6 +1413,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	char *query = NULL, *vals = NULL, *object = NULL, *name_char = NULL;
 	char *reset_query = NULL;
 	time_t now = time(NULL);
+	uint32_t rpc_version = 0;
 
 	xassert(result);
 
@@ -1423,6 +1422,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 	vals = xstrdup(sent_vals);
 
+	rpc_version = get_cluster_version(mysql_conn, cluster_name);
 	while ((row = mysql_fetch_row(result))) {
 		MYSQL_RES *result2 = NULL;
 		slurmdb_assoc_rec_t *mod_assoc = NULL, alt_assoc;
@@ -1534,21 +1534,26 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					error("You can't make an account be a "
 					      "child of it's self");
 					continue;
+				} else if (!xstrcasecmp(row[MASSOC_PACCT],
+							assoc->parent_acct)) {
+					DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+						 "Trying to move association to the same parent? Nothing to do.");
+					continue;
 				}
+
 				rc = _move_parent(mysql_conn, user->uid,
 						  &lft, &rgt,
 						  cluster_name,
 						  row[MASSOC_ID],
 						  row[MASSOC_PACCT],
 						  assoc->parent_acct,
-						  now);
+						  now, rpc_version);
 
 				if ((rc == ESLURM_INVALID_PARENT_ACCOUNT)
 				    || (rc == ESLURM_SAME_PARENT_ACCOUNT)) {
 					continue;
 				} else if (rc != SLURM_SUCCESS)
 					break;
-
 				moved_parent = 1;
 			}
 			if (row[MASSOC_PACCT][0]) {
@@ -1647,6 +1652,11 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		slurmdb_init_assoc_rec(mod_assoc, 0);
 		mod_assoc->id = slurm_atoul(row[MASSOC_ID]);
 		mod_assoc->cluster = xstrdup(cluster_name);
+		if (moved_parent) {
+			mod_assoc->lineage = _set_lineage(
+				mysql_conn, mod_assoc->id, row[MASSOC_ACCT],
+				row[MASSOC_USER], cluster_name);
+		}
 
 		if (alt_assoc.def_qos_id != NO_VAL)
 			mod_assoc->def_qos_id = alt_assoc.def_qos_id;
@@ -1803,7 +1813,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			_modify_unset_users(mysql_conn,
 					    mod_assoc,
 					    row[MASSOC_ACCT],
-					    lft, rgt,
+					    row[MASSOC_LINEAGE],
 					    ret_list,
 					    moved_parent);
 		} else if ((assoc->is_def == 1) && row[MASSOC_USER][0]) {
@@ -1826,7 +1836,9 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			}
 		}
 
-		if (!vals || !vals[0] || moved_parent)
+		if (!vals || !vals[0] ||
+		    ((rpc_version <= SLURM_23_02_PROTOCOL_VERSION) &&
+		     moved_parent))
 			slurmdb_destroy_assoc_rec(mod_assoc);
 		else if (addto_update_list(mysql_conn->update_list,
 					   SLURMDB_MODIFY_ASSOC,
@@ -1860,7 +1872,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		}
 	}
 
-	if (moved_parent) {
+	if ((rpc_version <= SLURM_23_02_PROTOCOL_VERSION) && moved_parent) {
 		List local_assoc_list = NULL;
 		slurmdb_assoc_cond_t local_assoc_cond;
 		/* now we need to send the update of the new parents and
@@ -2645,12 +2657,13 @@ static int _handle_pre_add_lft(mysql_conn_t *mysql_conn, uint32_t uid,
 		    xstrcasecmp(object->parent_acct, row[AASSOC_PACCT])) {
 
 			/* We need to move the parent! */
-			if (_move_parent(mysql_conn, uid,
-					 &lft, &rgt,
-					 object->cluster,
-					 row[AASSOC_ID],
-					 row[AASSOC_PACCT],
-					 object->parent_acct, now) ==
+			if (_move_parent_legacy(mysql_conn, uid,
+						&lft, &rgt,
+						object->cluster,
+						row[AASSOC_ID],
+						row[AASSOC_PACCT],
+						object->parent_acct,
+						now) ==
 			    SLURM_ERROR) {
 				mysql_free_result(result);
 				return 1;
@@ -3326,7 +3339,7 @@ is_same_user:
 	while ((cluster_name = list_next(itr))) {
 		query = _setup_assoc_table_query(assoc_cond, cluster_name,
 						 object, extra,
-						 " ORDER BY lft FOR UPDATE;");
+						 " ORDER BY lineage FOR UPDATE;");
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {

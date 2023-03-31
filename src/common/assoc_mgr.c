@@ -3829,8 +3829,10 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				rec->grp_wall = object->grp_wall;
 			}
 
-			if (object->lft != NO_VAL) {
-				rec->lft = object->lft;
+			if (object->lineage) {
+				xfree(rec->lineage);
+				rec->lineage = object->lineage;
+				object->lineage = NULL;
 				resort = 1;
 			}
 
