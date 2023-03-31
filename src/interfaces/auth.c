@@ -37,10 +37,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <pthread.h>
 
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
