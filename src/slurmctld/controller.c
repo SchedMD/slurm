@@ -538,7 +538,7 @@ int main(int argc, char **argv)
 			fatal("failed to initialize gres plugin");
 		}
 	}
-	if (slurm_preempt_init() != SLURM_SUCCESS) {
+	if (preempt_g_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize preempt plugin");
 			test_config_rc = 1;
@@ -978,7 +978,7 @@ int main(int argc, char **argv)
 	gres_fini();
 	job_submit_g_fini(false);
 	prep_g_fini();
-	slurm_preempt_fini();
+	preempt_g_fini();
 	jobacct_gather_fini();
 	acct_gather_conf_destroy();
 	select_g_fini();

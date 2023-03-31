@@ -221,7 +221,7 @@ static int _sort_by_youngest(void *x, void *y)
 	return rc;
 }
 
-extern int slurm_preempt_init(void)
+extern int preempt_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "preempt", *temp_str;
@@ -263,7 +263,7 @@ done:
 	return retval;
 }
 
-extern int slurm_preempt_fini(void)
+extern int preempt_g_fini(void)
 {
 	int rc = SLURM_SUCCESS;
 

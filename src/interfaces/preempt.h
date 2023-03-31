@@ -56,14 +56,14 @@ typedef enum {
  *
  * Returns a Slurm errno.
  */
-int slurm_preempt_init(void);
+int preempt_g_init(void);
 
 /*
  * Terminate the preemption plugin.
  *
  * Returns a Slurm errno.
  */
-extern int slurm_preempt_fini(void);
+extern int preempt_g_fini(void);
 
 /*
  * slurm_find_preemptable_jobs - Given a pointer to a pending job, return list

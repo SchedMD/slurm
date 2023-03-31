@@ -1962,8 +1962,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (xstrcmp(old_preempt_type, slurm_conf.preempt_type)) {
 		info("Changing PreemptType from %s to %s",
 		     old_preempt_type, slurm_conf.preempt_type);
-		(void) slurm_preempt_fini();
-		if (slurm_preempt_init() != SLURM_SUCCESS) {
+		(void) preempt_g_fini();
+		if (preempt_g_init() != SLURM_SUCCESS) {
 			if (test_config) {
 				error("failed to initialize preempt plugin");
 				test_config_rc = 1;
