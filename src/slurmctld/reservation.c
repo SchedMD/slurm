@@ -3039,6 +3039,38 @@ extern void resv_fini(void)
 	FREE_NULL_LIST(resv_list);
 }
 
+static int _validate_reservation_access_update(void *x, void *y)
+{
+	bool job_use_reservation = false;
+	job_record_t *job_ptr = (job_record_t *) x;
+	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) y;
+
+	if (job_ptr->resv_name == NULL)
+		return 0;
+
+	if (IS_JOB_RUNNING(job_ptr) && !xstrcmp(job_ptr->resv_name,
+						resv_ptr->name)) {
+		job_use_reservation = true;
+	} else if (IS_JOB_PENDING(job_ptr) && job_ptr->resv_list &&
+		   list_find_first(job_ptr->resv_list, _find_resv_name,
+				   resv_ptr->name)) {
+		job_use_reservation = true;
+	} else if (IS_JOB_PENDING(job_ptr) &&
+		   !xstrcmp(job_ptr->resv_name, resv_ptr->name)) {
+		job_use_reservation = true;
+	}
+
+	if (!job_use_reservation)
+		return 0;
+
+	if (!_valid_job_access_resv(job_ptr, resv_ptr, false)) {
+		info("Rejecting update of reservation %s, because it's in use by %pJ",
+		     resv_ptr->name, job_ptr);
+		return 1;
+	}
+	return 0;
+}
+
 /* Update an exiting resource reservation */
 extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 {
@@ -3048,6 +3080,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	int error_code = SLURM_SUCCESS, i, rc;
 	bool skip_it = false;
 	bool append_magnetic_resv = false, remove_magnetic_resv = false;
+	job_record_t *job_ptr;
 
 	_create_resv_lists(false);
 	_dump_resv_req(resv_desc_ptr, "update_resv");
@@ -3577,6 +3610,24 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	/* This needs to be after checks for both account and user changes */
 	if ((error_code = _set_assoc_list(resv_ptr)) != SLURM_SUCCESS)
 		goto update_failure;
+
+	/*
+	 * Verify if we have pending or running jobs using the reservation,
+	 * that lose access to the reservation by the update.
+	 * Reject reservation update if pending job requested it or running job
+	 * makes use of it.
+	 * This has to happen after _set_assoc_list
+	 */
+	if ((job_ptr = list_find_first(job_list,
+				       _validate_reservation_access_update,
+				       resv_ptr))) {
+		if (err_msg)
+			xstrfmtcat(*err_msg,
+				   "Reservation update rejected because of JobId=%u",
+				   job_ptr->job_id);
+		error_code = ESLURM_RESERVATION_BUSY;
+		goto update_failure;
+	}
 
 	/*
 	 * A reservation without nodes/cores should only be possible if the flag

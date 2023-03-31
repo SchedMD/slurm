@@ -94,6 +94,8 @@ documents those changes that are of interest to users and administrators.
     characters will now get rejected. This is expected to be only be notable
     with job submission against v0.0.38 versioned endpoints with malformed job
     requests.
+ -- Reject reservation update if it will result in previously submitted
+    jobs losing access to the reservation.
 
 * Changes in Slurm 23.02.4
 ==========================

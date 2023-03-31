@@ -79,6 +79,8 @@ COMMAND CHANGES (see man pages for details)
  -- sbatch - removed --export-file option (used with defunct Moab integration).
  -- Define SPANK options environment variables when --export=[NIL|NONE] is
     specified.
+ -- Reject reservation update if it will result in previously submitted
+    jobs losing access to the reservation.
 
 API CHANGES
 ===========
