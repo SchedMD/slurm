@@ -456,7 +456,7 @@ extern int gres_c_s_init_share_devices(List gres_conf_list,
 		FREE_NULL_LIST(*share_devices);
 	}
 
-	log_flag(GRES, "Initalized gres.conf list");
+	log_flag(GRES, "Initialized gres.conf list");
 	print_gres_list(gres_conf_list, log_lvl);
 
 	/*
