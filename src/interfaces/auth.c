@@ -284,7 +284,7 @@ done:
  * The cast through cred_wrapper_t then gives us convenient access
  * to that auth_index value.
  */
-int slurm_auth_index(void *cred)
+extern int auth_index(void *cred)
 {
 	cred_wrapper_t *wrapper = (cred_wrapper_t *) cred;
 

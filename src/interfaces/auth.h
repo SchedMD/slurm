@@ -78,7 +78,7 @@ extern int auth_g_fini(void);
  * Retrieve the auth_index corresponding to the authentication
  * plugin used to create a given credential.
  */
-extern int slurm_auth_index(void *cred);
+extern int auth_index(void *cred);
 
 /*
  * Check if plugin type corresponding to the authentication

@@ -1069,7 +1069,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	msg->auth_index = slurm_auth_index(auth_cred);
+	msg->auth_index = auth_index(auth_cred);
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = auth_g_verify(auth_cred, _global_auth_key());
 	} else {
@@ -1360,7 +1360,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	msg.auth_index = slurm_auth_index(auth_cred);
+	msg.auth_index = auth_index(auth_cred);
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = auth_g_verify(auth_cred, _global_auth_key());
 	} else {
@@ -1789,7 +1789,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	msg->auth_index = slurm_auth_index(auth_cred);
+	msg->auth_index = auth_index(auth_cred);
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = auth_g_verify(auth_cred, _global_auth_key());
 	} else {
