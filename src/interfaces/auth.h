@@ -67,7 +67,7 @@
  * auth_type IN: authentication mechanism (e.g. "auth/munge") or
  *	NULL to use slurm_conf.auth_type
  */
-extern int slurm_auth_init(char *auth_type);
+extern int auth_g_init(char *auth_type);
 
 /*
  * Destroy global context, free memory.

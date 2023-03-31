@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 	 * slurm_acct_storage_init() could take a long time to finish if running
 	 * for the first time after an upgrade.
 	 */
-	if (slurm_auth_init(NULL) != SLURM_SUCCESS) {
+	if (auth_g_init(NULL) != SLURM_SUCCESS) {
 		fatal("Unable to initialize authentication plugins");
 	}
 	if (hash_g_init() != SLURM_SUCCESS) {

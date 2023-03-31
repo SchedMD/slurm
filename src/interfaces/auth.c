@@ -171,7 +171,7 @@ extern bool auth_is_plugin_type_inited(int plugin_id)
 	return false;
 }
 
-extern int slurm_auth_init(char *auth_type)
+extern int auth_g_init(char *auth_type)
 {
 	int retval = SLURM_SUCCESS;
 	char *auth_alt_types = NULL, *list = NULL;

@@ -3518,7 +3518,7 @@ extern int slurm_conf_init_load(const char *file_name, bool load_auth)
 	xfree(config_file);
 
 	if (load_auth) {
-		if (slurm_auth_init(NULL) != SLURM_SUCCESS)
+		if (auth_g_init(NULL) != SLURM_SUCCESS)
 			fatal("failed to initialize auth plugin");
 
 		if (hash_g_init() != SLURM_SUCCESS)
