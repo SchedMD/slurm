@@ -139,7 +139,7 @@ int sattach(int argc, char **argv)
 		log_alter(logopt, 0, NULL);
 	}
 
-	if (slurm_cred_init() != SLURM_SUCCESS) {
+	if (cred_g_init() != SLURM_SUCCESS) {
 		error("failed to initialize cred plugin");
 		exit(error_exit);
 	}

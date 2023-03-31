@@ -459,7 +459,7 @@ int main(int argc, char **argv)
 		fatal("getnodename error %s", slurm_strerror(error_code));
 
 	/* init job credential stuff */
-	if (slurm_cred_init() != SLURM_SUCCESS) {
+	if (cred_g_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize cred plugin");
 			test_config_rc = 1;
@@ -994,7 +994,7 @@ int main(int argc, char **argv)
 	license_free();
 	FREE_NULL_LIST(slurmctld_config.acct_update_list);
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
-	slurm_cred_fini();	/* must be after ctx_destroy */
+	cred_g_fini();	/* must be after ctx_destroy */
 	slurm_conf_destroy();
 	cluster_rec_free();
 	track_script_fini();

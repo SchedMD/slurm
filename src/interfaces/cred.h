@@ -220,10 +220,10 @@ typedef struct {
 } slurm_cred_arg_t;
 
 /* Initialize the plugin. */
-int slurm_cred_init(void);
+extern int cred_g_init(void);
 
 /* Terminate the plugin and release all memory. */
-int slurm_cred_fini(void);
+extern int cred_g_fini(void);
 
 /*
  * Create a slurm credential using the values in `arg.'

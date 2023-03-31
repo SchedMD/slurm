@@ -425,7 +425,7 @@ main (int argc, char **argv)
 	run_command_shutdown();
 	_slurmd_fini();
 	_destroy_conf();
-	slurm_cred_fini();	/* must be after _destroy_conf() */
+	cred_g_fini();	/* must be after _destroy_conf() */
 	group_cache_purge();
 	file_bcast_purge();
 
@@ -2104,7 +2104,7 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	if (spank_slurmd_init() < 0)
 		return SLURM_ERROR;
-	if (slurm_cred_init() != SLURM_SUCCESS)
+	if (cred_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	if (getrlimit(RLIMIT_CPU, &rlim) == 0) {

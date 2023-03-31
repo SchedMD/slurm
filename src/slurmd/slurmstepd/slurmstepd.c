@@ -699,7 +699,7 @@ _init_from_slurmd(int sock, char **argv,
 	    (slurmd_task_init() != SLURM_SUCCESS) ||
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
-	    (slurm_cred_init() != SLURM_SUCCESS) ||
+	    (cred_g_init() != SLURM_SUCCESS) ||
 	    (job_container_init() != SLURM_SUCCESS))
 		fatal("Couldn't load all plugins");
 

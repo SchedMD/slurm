@@ -300,7 +300,7 @@ done:
 }
 
 /* Initialize the plugin. */
-extern int slurm_cred_init(void)
+extern int cred_g_init(void)
 {
 	if (_slurm_cred_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
@@ -383,7 +383,7 @@ static void _release_cred_gids(slurm_cred_arg_t *arg)
 }
 
 /* Terminate the plugin and release all memory. */
-extern int slurm_cred_fini(void)
+extern int cred_g_fini(void)
 {
 	if (_slurm_cred_fini() < 0)
 		return SLURM_ERROR;
