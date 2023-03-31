@@ -2676,7 +2676,13 @@ extern int as_mysql_get_modified_lfts(mysql_conn_t *mysql_conn,
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	char *query = xstrdup_printf(
+	char *query;
+
+	if (get_cluster_version(mysql_conn, cluster_name) >=
+	    SLURM_23_11_PROTOCOL_VERSION)
+		return SLURM_SUCCESS;
+
+	query = xstrdup_printf(
 		"select id_assoc, lft from \"%s_%s\" where lft > %u "
 		"&& deleted = 0",
 		cluster_name, assoc_table, start_lft);
@@ -3427,8 +3433,8 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
 		query = _setup_assoc_table_query(assoc_cond, cluster_name,
-						 "t1.lft, t1.rgt", extra,
-						 " ORDER BY lft FOR UPDATE;");
+						 "t1.lineage", extra,
+						 " ORDER BY lineage;");
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
@@ -3448,19 +3454,15 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		while ((row = mysql_fetch_row(result))) {
-			if (name_char)
-				xstrfmtcat(name_char,
-					   " || lft between %s and %s",
-					   row[0], row[1]);
-			else
-				xstrfmtcat(name_char, "lft between %s and %s",
-					   row[0], row[1]);
+			xstrfmtcat(name_char,
+				   "%slineage like '%s%%'",
+				   name_char ? " || " : "", row[0]);
 		}
 		mysql_free_result(result);
 
 		query = xstrdup_printf("select distinct %s "
 				       "from \"%s_%s\" where (%s) "
-				       "and deleted = 0 order by lft;",
+				       "and deleted = 0 order by lineage;",
 				       object,
 				       cluster_name, assoc_table, name_char);
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);

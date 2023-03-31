@@ -374,9 +374,9 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	 * enum above in the global settings */
 	static char *jassoc_req_inx[] = {
 		"t0.id_job",
-		"t1.acct",
-		"t1.user",
-		"t1.partition"
+		"t2.acct",
+		"t2.user",
+		"t2.partition"
 	};
 	if (ret_list) {
 		xstrcat(object, jassoc_req_inx[0]);
@@ -386,24 +386,17 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 		query = xstrdup_printf(
 			"select distinct %s "
 			"from \"%s_%s\" as t0, "
-			"\"%s_%s\" as t1, \"%s_%s\" as t2 "
-			"where t1.lft between "
-			"t2.lft and t2.rgt && (%s) "
-			"and t0.id_assoc=t1.id_assoc "
+			"\"%s_%s\" as t2 "
+			"where (%s) "
+			"and t0.id_assoc=t2.id_assoc "
 			"and t0.time_end=0 && t0.state<%d;",
 			object, cluster_name, job_table,
-			cluster_name, assoc_table,
 			cluster_name, assoc_table,
 			assoc_char, JOB_COMPLETE);
 		xfree(object);
 	} else {
 		query = xstrdup_printf(
-			"select t0.id_assoc from \"%s_%s\" as t2 STRAIGHT_JOIN "
-			"\"%s_%s\" as t1 STRAIGHT_JOIN \"%s_%s\" as t0 "
-			"where t1.lft between "
-			"t2.lft and t2.rgt && (%s) "
-			"and t0.id_assoc=t1.id_assoc limit 1;",
-			cluster_name, assoc_table,
+			"select t0.id_assoc from \"%s_%s\" as t2 STRAIGHT_JOIN \"%s_%s\" as t0 where (%s) and t0.id_assoc=t2.id_assoc limit 1;",
 			cluster_name, assoc_table,
 			cluster_name, job_table,
 			assoc_char);
@@ -2329,7 +2322,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	bool has_jobs = false;
 	char *tmp_name_char = NULL;
 	bool cluster_centric = true;
-	uint32_t smallest_lft = 0xFFFFFFFF;
+	uint32_t rpc_version;
 
 	/* figure out which tables we need to append the cluster name to */
 	if ((table == cluster_table) || (table == acct_coord_table)
@@ -2504,15 +2497,13 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			return SLURM_ERROR;
 		}
 
-		/* If we are doing this on an assoc_table we have
-		   already done this, so don't */
-		query = xstrdup_printf("select distinct t1.id_assoc "
-				       "from \"%s_%s\" as t1, \"%s_%s\" as t2 "
-				       "where (%s) && t1.lft between "
-				       "t2.lft and t2.rgt && t1.deleted=0 "
-				       "&& t2.deleted=0;",
-				       cluster_name, assoc_table,
-				       cluster_name, assoc_table, assoc_char);
+		/*
+		 * If we are doing this on an assoc_table we have
+		 * already done this, so don't
+		 */
+		query = xstrdup_printf(
+			"select distinct t2.id_assoc from \"%s_%s\" as t2 where %s && t2.deleted=0;",
+			cluster_name, assoc_table, assoc_char);
 
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
@@ -2582,84 +2573,102 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if (has_jobs)
 		goto just_update;
 
-	/* remove completely all the associations for this added in the last
+	/*
+	 * Remove completely all the associations for this added in the last
 	 * day, since they are most likely nothing we really wanted in
 	 * the first place.
 	 */
-	query = xstrdup_printf("select id_assoc from \"%s_%s\" as t1 where "
-			       "creation_time>%ld && (%s);",
-			       cluster_name, assoc_table,
-			       day_old, loc_assoc_char);
+	rpc_version = get_cluster_version(mysql_conn, cluster_name);
+	if (rpc_version <= SLURM_23_02_PROTOCOL_VERSION) {
+		uint32_t smallest_lft = 0xFFFFFFFF;
 
-	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-	if (!(result = mysql_db_query_ret(
-		      mysql_conn, query, 0))) {
-		xfree(query);
-		reset_mysql_conn(mysql_conn);
-		return SLURM_ERROR;
-	}
-	xfree(query);
+		query = xstrdup_printf("select id_assoc from \"%s_%s\" as t1 where "
+				       "creation_time>%ld && (%s);",
+				       cluster_name, assoc_table,
+				       day_old, loc_assoc_char);
 
-	while ((row = mysql_fetch_row(result))) {
-		MYSQL_RES *result2 = NULL;
-		MYSQL_ROW row2;
-		uint32_t lft;
-
-		/* we have to do this one at a time since the lft's and rgt's
-		   change. If you think you need to remove this make
-		   sure your new way can handle changing lft and rgt's
-		   in the association. */
-		xstrfmtcat(query,
-			   "SELECT lft, rgt, (rgt - lft + 1) "
-			   "FROM \"%s_%s\" WHERE id_assoc = %s;",
-			   cluster_name, assoc_table, row[0]);
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-		if (!(result2 = mysql_db_query_ret(
+		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(query);
-			rc = SLURM_ERROR;
-			break;
+			reset_mysql_conn(mysql_conn);
+			return SLURM_ERROR;
 		}
 		xfree(query);
-		if (!(row2 = mysql_fetch_row(result2))) {
+
+		while ((row = mysql_fetch_row(result))) {
+			MYSQL_RES *result2 = NULL;
+			MYSQL_ROW row2;
+			uint32_t lft;
+
+			/* we have to do this one at a time since the lft's and rgt's
+			   change. If you think you need to remove this make
+			   sure your new way can handle changing lft and rgt's
+			   in the association. */
+			xstrfmtcat(query,
+				   "SELECT lft, rgt, (rgt - lft + 1) "
+				   "FROM \"%s_%s\" WHERE id_assoc = %s;",
+				   cluster_name, assoc_table, row[0]);
+			DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+				 "query\n%s", query);
+			if (!(result2 = mysql_db_query_ret(
+				      mysql_conn, query, 0))) {
+				xfree(query);
+				rc = SLURM_ERROR;
+				break;
+			}
+			xfree(query);
+			if (!(row2 = mysql_fetch_row(result2))) {
+				mysql_free_result(result2);
+				continue;
+			}
+
+			xstrfmtcat(query,
+				   "delete quick from \"%s_%s\" where "
+				   "lft between %s AND %s;",
+				   cluster_name, assoc_table, row2[0], row2[1]);
+
+			xstrfmtcat(query,
+				   "UPDATE \"%s_%s\" SET rgt = rgt - %s WHERE rgt > %s;"
+				   "UPDATE \"%s_%s\" SET "
+				   "lft = lft - %s WHERE lft > %s;",
+				   cluster_name, assoc_table, row2[2], row2[1],
+				   cluster_name, assoc_table, row2[2], row2[1]);
+
+			lft = slurm_atoul(row2[0]);
+			if (lft < smallest_lft)
+				smallest_lft = lft;
+
 			mysql_free_result(result2);
-			continue;
+
+			DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+				 "query\n%s", query);
+			rc = mysql_db_query(mysql_conn, query);
+			xfree(query);
+			if (rc != SLURM_SUCCESS) {
+				error("couldn't remove assoc");
+				break;
+			}
 		}
+		mysql_free_result(result);
 
-		xstrfmtcat(query,
-			   "delete quick from \"%s_%s\" where "
-			   "lft between %s AND %s;",
-			   cluster_name, assoc_table, row2[0], row2[1]);
-
-		xstrfmtcat(query,
-			   "UPDATE \"%s_%s\" SET rgt = rgt - %s WHERE rgt > %s;"
-			   "UPDATE \"%s_%s\" SET "
-			   "lft = lft - %s WHERE lft > %s;",
-			   cluster_name, assoc_table, row2[2], row2[1],
-			   cluster_name, assoc_table, row2[2], row2[1]);
-
-		lft = slurm_atoul(row2[0]);
-		if (lft < smallest_lft)
-			smallest_lft = lft;
-
-		mysql_free_result(result2);
+		/* This already happened before, but we need to run it again
+		   since the first time we ran it we didn't know if we were
+		   going to remove the above associations.
+		*/
+		if (rc == SLURM_SUCCESS)
+			rc = as_mysql_get_modified_lfts(mysql_conn,
+							cluster_name,
+							smallest_lft);
+	} else {
+		query = xstrdup_printf("delete quick from \"%s_%s\" where creation_time>%ld && (%s);",
+				       cluster_name, assoc_table,
+				       day_old, loc_assoc_char);
 
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
-		if (rc != SLURM_SUCCESS) {
-			error("couldn't remove assoc");
-			break;
-		}
 	}
-	mysql_free_result(result);
-	/* This already happened before, but we need to run it again
-	   since the first time we ran it we didn't know if we were
-	   going to remove the above associations.
-	*/
-	if (rc == SLURM_SUCCESS)
-		rc = as_mysql_get_modified_lfts(mysql_conn,
-						cluster_name, smallest_lft);
 
 	if (rc == SLURM_ERROR) {
 		reset_mysql_conn(mysql_conn);

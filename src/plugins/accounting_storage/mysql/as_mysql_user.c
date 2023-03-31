@@ -997,7 +997,7 @@ no_user_table:
 			   name_char ? " || " : "", object);
 		xstrfmtcat(user_char, "%suser='%s'",
 			   user_char ? " || " : "", object);
-		xstrfmtcat(assoc_char, "%st2.user='%s'",
+		xstrfmtcat(assoc_char, "%st2.lineage like '%%/0-%s/%%'",
 			   assoc_char ? " || " : "", object);
 
 		user_rec->name = xstrdup(object);
@@ -1055,8 +1055,8 @@ no_user_table:
 	}
 
 	query = xstrdup_printf(
-		"update %s as t2 set deleted=1, mod_time=%ld where %s",
-		acct_coord_table, (long)now, assoc_char);
+		"update %s set deleted=1, mod_time=%ld where %s",
+		acct_coord_table, (long)now, user_char);
 	xfree(assoc_char);
 
 	rc = mysql_db_query(mysql_conn, query);

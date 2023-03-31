@@ -784,7 +784,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(query);
 
-	assoc_char = xstrdup_printf("t2.acct='root'");
+	assoc_char = xstrdup_printf("t2.lineage like '/%%'");
 
 	user_name = uid_to_string((uid_t) uid);
 	while ((row = mysql_fetch_row(result))) {
