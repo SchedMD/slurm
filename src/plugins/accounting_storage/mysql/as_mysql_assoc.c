@@ -3703,7 +3703,7 @@ extern int as_mysql_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 		}
 
 		info("Redoing the hierarchy in a temporary table");
-		if (as_mysql_add_assocs(mysql_conn, uid, assoc_list) !=
+		if ((rc = as_mysql_add_assocs(mysql_conn, uid, assoc_list)) !=
 		    SLURM_SUCCESS)
 			goto endit;
 
@@ -3767,12 +3767,11 @@ extern int as_mysql_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 		/* Get rid of the temporary table. */
 		query = xstrdup_printf("drop table \"%s_%s\";",
 				       tmp_cluster_name, assoc_table);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-		if (rc != SLURM_SUCCESS) {
-			error("problem with update query");
+		if (mysql_db_query(mysql_conn, query) != SLURM_SUCCESS) {
+			error("problem with drop table");
 			rc = SLURM_ERROR;
 		}
+		xfree(query);
 		END_TIMER;
 		info("resetting took %s", TIME_STR);
 	}
