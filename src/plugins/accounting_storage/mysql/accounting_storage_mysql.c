@@ -2962,7 +2962,7 @@ extern uint32_t get_cluster_version(mysql_conn_t *mysql_conn,
 	uint32_t rpc_version = 0;
 
 	char *query = xstrdup_printf(
-		"select rpc_version from %s where name='%s' where deleted=0",
+		"select rpc_version from %s where name='%s' && deleted=0",
 		cluster_table, cluster_name);
 
 	result = mysql_db_query_ret(mysql_conn, query, 0);

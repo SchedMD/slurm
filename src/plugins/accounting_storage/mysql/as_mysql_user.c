@@ -993,15 +993,12 @@ no_user_table:
 		user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
 		list_append(assoc_cond.user_list, object);
 
-		if (name_char) {
-			xstrfmtcat(name_char, " || name='%s'", object);
-			xstrfmtcat(user_char, " || user='%s'", object);
-			xstrfmtcat(assoc_char, " || t2.user='%s'", object);
-		} else {
-			xstrfmtcat(name_char, "name='%s'", object);
-			xstrfmtcat(user_char, "user='%s'", object);
-			xstrfmtcat(assoc_char, "t2.user='%s'", object);
-		}
+		xstrfmtcat(name_char, "%sname='%s'",
+			   name_char ? " || " : "", object);
+		xstrfmtcat(user_char, "%suser='%s'",
+			   user_char ? " || " : "", object);
+		xstrfmtcat(assoc_char, "%st2.user='%s'",
+			   assoc_char ? " || " : "", object);
 
 		user_rec->name = xstrdup(object);
 		if (addto_update_list(mysql_conn->update_list,
