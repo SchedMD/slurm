@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 
 #if MEMORY_LEAK_DEBUG
 	data_fini();
-	slurm_auth_fini();
+	auth_g_fini();
 	slurm_conf_destroy();
 	log_fini();
 #endif

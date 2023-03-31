@@ -983,7 +983,7 @@ int main(int argc, char **argv)
 	acct_gather_conf_destroy();
 	select_g_fini();
 	topology_g_fini();
-	slurm_auth_fini();
+	auth_g_fini();
 	switch_fini();
 	route_fini();
 	site_factor_g_fini();

@@ -72,7 +72,7 @@ extern int auth_g_init(char *auth_type);
 /*
  * Destroy global context, free memory.
  */
-extern int slurm_auth_fini(void);
+extern int auth_g_fini(void);
 
 /*
  * Retrieve the auth_index corresponding to the authentication

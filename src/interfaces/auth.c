@@ -246,7 +246,7 @@ done:
 }
 
 /* Release all global memory associated with the plugin */
-extern int slurm_auth_fini(void)
+extern int auth_g_fini(void)
 {
 	int i, rc = SLURM_SUCCESS, rc2;
 

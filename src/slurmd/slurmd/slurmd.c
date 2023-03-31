@@ -2210,7 +2210,7 @@ _slurmd_fini(void)
 	slurmd_task_fini();
 	slurm_conf_destroy();
 	slurm_proctrack_fini();
-	slurm_auth_fini();
+	auth_g_fini();
 	node_fini2();
 	gres_fini();
 	prep_g_fini();

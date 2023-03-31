@@ -323,7 +323,7 @@ end_it:
 
 	assoc_mgr_fini(0);
 	slurm_acct_storage_fini();
-	slurm_auth_fini();
+	auth_g_fini();
 	log_fini();
 	free_slurmdbd_conf();
 	slurm_mutex_lock(&rpc_mutex);

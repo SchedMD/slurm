@@ -682,7 +682,7 @@ extern int main(int argc, char **argv)
 	FREE_NULL_OCI_CONF(oci_conf);
 	xfree(slurm_conf_filename);
 	xfree(command_argv);
-	slurm_auth_fini();
+	auth_g_fini();
 	fini_setproctitle();
 	data_fini();
 	gres_fini();
