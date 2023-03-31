@@ -50,6 +50,8 @@ documents those changes that are of interest to users and administrators.
     "allow_ecores" is not set in SlurmdParameters.
  -- Fix regression from 23.02.0rc1 causing a FrontEnd slurmd to assert fail on
     startup and don't be configured with the appropriate port.
+ -- Fix dynamic nodes not being sorted and not being included in topology,
+    which resulted in suboptimal dynamic node selection for jobs.
 
 * Changes in Slurm 23.02.1
 ==========================
