@@ -76,10 +76,10 @@ typedef struct {
 	int		(*thread_config) (const char *token, const char *username);
 	void		(*thread_clear) (void);
 	char *		(*token_generate) (const char *username, int lifespan);
-} slurm_auth_ops_t;
+} auth_ops_t;
 /*
  * These strings must be kept in the same order as the fields
- * declared for slurm_auth_ops_t.
+ * declared for auth_ops_t.
  */
 static const char *syms[] = {
 	"plugin_id",
@@ -114,7 +114,7 @@ auth_plugin_types_t auth_plugin_types[] = {
  * A global authentication context.  "Global" in the sense that there's
  * only one, with static bindings.  We don't export it.
  */
-static slurm_auth_ops_t *ops = NULL;
+static auth_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static int g_context_num = -1;
 static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
@@ -208,7 +208,7 @@ extern int auth_g_init(void)
 	 * be comma separated, vs. AuthType which can have only one value.
 	 */
 	while (type) {
-		xrecalloc(ops, g_context_num + 1, sizeof(slurm_auth_ops_t));
+		xrecalloc(ops, g_context_num + 1, sizeof(auth_ops_t));
 		xrecalloc(g_context, g_context_num + 1,
 			  sizeof(plugin_context_t));
 
