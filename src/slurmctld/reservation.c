@@ -222,7 +222,8 @@ static int _update_job_resv_list_str(void *x, void *arg);
 static int _update_resv_pend_cnt(void *x, void *arg);
 static void _validate_all_reservations(void);
 static int  _valid_job_access_resv(job_record_t *job_ptr,
-				   slurmctld_resv_t *resv_ptr);
+				   slurmctld_resv_t *resv_ptr,
+				   bool show_security_violation_error);
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 static void _validate_node_choice(slurmctld_resv_t *resv_ptr);
 static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
@@ -541,7 +542,7 @@ static int _queue_magnetic_resv(void *x, void *key)
 	xassert(resv_ptr->magic == RESV_MAGIC);
 
 	if (!(resv_ptr->flags & RESERVE_FLAG_MAGNETIC) ||
-	    (_valid_job_access_resv(job_queue_req->job_ptr, resv_ptr) !=
+	    (_valid_job_access_resv(job_queue_req->job_ptr, resv_ptr, false) !=
 	     SLURM_SUCCESS))
 		return 0;
 
@@ -4526,7 +4527,7 @@ unpack_error:
 static int _validate_job_resv_internal(job_record_t *job_ptr,
 				      slurmctld_resv_t *resv_ptr)
 {
-	int rc = _valid_job_access_resv(job_ptr, resv_ptr);
+	int rc = _valid_job_access_resv(job_ptr, resv_ptr, true);
 
 	if (rc == SLURM_SUCCESS) {
 		if ((resv_ptr->flags & RESERVE_FLAG_PURGE_COMP)
@@ -5645,7 +5646,8 @@ fini:	FREE_NULL_BITMAP(orig_bitmap);
 /* Determine if a job has access to a reservation
  * RET SLURM_SUCCESS if true, some error code otherwise */
 static int _valid_job_access_resv(job_record_t *job_ptr,
-				  slurmctld_resv_t *resv_ptr)
+				  slurmctld_resv_t *resv_ptr,
+				  bool show_security_violation_error)
 {
 	bool account_good = false, user_good = false;
 	int i;
@@ -5761,11 +5763,7 @@ no_assocs:	if ((resv_ptr->user_cnt == 0) ||
 	}
 
 end_it:
-	/*
-	 * If we are trying to run in a magnetic reservation
-	 * (the job didn't request it), don't print a security error.
-	 */
-	if (job_ptr->resv_name)
+	if (show_security_violation_error)
 		info("Security violation, uid=%u account=%s attempt to use reservation %s",
 		     job_ptr->user_id, job_ptr->account, resv_ptr->name);
 
@@ -5793,7 +5791,7 @@ extern int job_test_resv_now(job_record_t *job_ptr)
 	}
 	resv_ptr = job_ptr->resv_ptr;
 
-	rc = _valid_job_access_resv(job_ptr, resv_ptr);
+	rc = _valid_job_access_resv(job_ptr, resv_ptr, true);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
@@ -6442,7 +6440,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		}
 		resv_ptr = job_ptr->resv_ptr;
 
-		rc2 = _valid_job_access_resv(job_ptr, resv_ptr);
+		rc2 = _valid_job_access_resv(job_ptr, resv_ptr, true);
 		if (rc2 != SLURM_SUCCESS)
 			return rc2;
 		/*
