@@ -171,7 +171,7 @@ extern bool auth_is_plugin_type_inited(int plugin_id)
 	return false;
 }
 
-extern int auth_g_init(char *auth_type)
+extern int auth_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *auth_alt_types = NULL, *list = NULL;
@@ -188,9 +188,6 @@ extern int auth_g_init(char *auth_type)
 		xfree(slurm_conf.authtype);
 		slurm_conf.authtype = xstrdup(
 			auth_get_plugin_name(AUTH_PLUGIN_JWT));
-	} else if (auth_type) {
-		xfree(slurm_conf.authtype);
-		slurm_conf.authtype = xstrdup(auth_type);
 	}
 
 	type = slurm_conf.authtype;
