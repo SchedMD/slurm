@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
     order to better honor SchedulerParameters=jobs_per_user_per_hour=#.
  -- Load the user environment into a private pid namespace to avoid user scripts
     leaving background processes on a node.
+ -- scontrol show assoc_mgr will display Lineage instead of Lft for
+    associations.
 
 * Changes in Slurm 23.02.3
 ==========================

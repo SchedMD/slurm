@@ -43,6 +43,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+ -- scontrol show assoc_mgr will display Lineage instead of Lft for
+    associations.
 
 API CHANGES
 ===========
