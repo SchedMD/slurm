@@ -203,6 +203,7 @@ script for Slurm?</a></li>
     find plugin: serializer/json"?</a></li>
 <li><a href="#epel">Why am I being offered an automatic update for Slurm?</a></li>
 <li><a href="#cgroupv2">How to convert my nodes to Control Group v2?</a></li>
+<li><a href="#write_to_job_stdout">Is it possible to write to user stdout?</a></li>
 </ul>
 
 <h2>For Management</h2>
@@ -2378,6 +2379,30 @@ need to be stopped.</li>
 <p>Read the Slurm <a href="cgroups.html">Cgroups documentation</a> for more details.</p>
 </p>
 
-<p style="text-align:center;">Last modified 24 Feburary 2023</p>
+<a id="write_to_job_stdout"><b>Is it possible to write to user stdout?</b></a>
+<br>
+<p>The way user I/O is handled by Slurm makes it impossible to write to the
+user process as an admin after the user process is executed (execve is called).
+This happens right after the call to
+<a href="prolog_epilog.html">TaskProlog</a>, which is the last moment we can
+write to the stdout of the user process. Slurm assumes that this file
+descriptor is only owned by the user process while running. The file descriptor
+is opened as specified and passed to the task so it makes use of the file
+descriptor directly. Slumstepd is able to log error messages to the error file
+by duplicating the standard error of the process.</p>
+
+<p>It is possible to write to standard error from SPANK plugins, but this
+can't be used to append a job summary, since the file descriptors are opened
+with a close-on-exec flag and are closed by the operating system right after
+the user process completes. In theory, a central place that could be used to
+prepare some kind of job summary is EpilogSlurmctld. However, using it to
+write to a file where user output is stored may be problematic. The script is
+running as SlurmUser, so intensive validation of the file name may be required
+(e.g. to prevent users from specifying something like /etc/passwd as the
+output file). It's also possible that a job could have multiple output files
+(see <a href=srun.html#OPT_filename-pattern>filename pattern</a> in the srun
+man page).</p>
+
+<p style="text-align:center;">Last modified 04 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
