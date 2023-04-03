@@ -1086,7 +1086,7 @@ static int _post_assoc_list(void)
 
 	_calculate_assoc_norm_priorities(true);
 
-	slurmdb_sort_hierarchical_assoc_list(assoc_mgr_assoc_list, true);
+	slurmdb_sort_hierarchical_assoc_list(assoc_mgr_assoc_list);
 
 	//END_TIMER2("load_associations");
 	return SLURM_SUCCESS;
@@ -4118,8 +4118,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 	 */
 	if (parents_changed) {
 		g_user_assoc_count = 0;
-		slurmdb_sort_hierarchical_assoc_list(
-			assoc_mgr_assoc_list, true);
+		slurmdb_sort_hierarchical_assoc_list(assoc_mgr_assoc_list);
 
 		itr = list_iterator_create(assoc_mgr_assoc_list);
 		/* flush the children lists */
@@ -4208,8 +4207,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 		}
 		list_iterator_destroy(itr);
 	} else if (resort)
-		slurmdb_sort_hierarchical_assoc_list(
-			assoc_mgr_assoc_list, true);
+		slurmdb_sort_hierarchical_assoc_list(assoc_mgr_assoc_list);
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);

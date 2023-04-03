@@ -132,6 +132,7 @@ int _setup_assoc_list(void)
 	/* assoc->lft = 1; */
 	/* assoc->rgt = 28; */
 	assoc->acct = xstrdup("root");
+	assoc->lineage = xstrdup("/");
 	list_append(update.objects, assoc);
 
 	/* sub of root id 1 */
@@ -144,6 +145,7 @@ int _setup_assoc_list(void)
 	/* assoc->lft = 2; */
 	/* assoc->rgt = 13; */
 	assoc->acct = xstrdup("AccountA");
+	assoc->lineage = xstrdup("/AccountA/");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountA id 2 */
@@ -156,6 +158,7 @@ int _setup_assoc_list(void)
 	assoc->parent_id = 2;
 	assoc->shares_raw = 30;
 	assoc->acct = xstrdup("AccountB");
+	assoc->lineage = xstrdup("/AccountA/AccountB/");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountB id 21 */
@@ -170,6 +173,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 20;
 	assoc->acct = xstrdup("AccountB");
 	assoc->user = xstrdup("User1");
+	assoc->lineage = xstrdup("/AccountA/AccountB/0-User1");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountA id 2 */
@@ -182,6 +186,7 @@ int _setup_assoc_list(void)
 	assoc->parent_id = 2;
 	assoc->shares_raw = 10;
 	assoc->acct = xstrdup("AccountC");
+	assoc->lineage = xstrdup("/AccountA/AccountC/");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountC id 22 */
@@ -196,6 +201,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 25;
 	assoc->acct = xstrdup("AccountC");
 	assoc->user = xstrdup("User2");
+	assoc->lineage = xstrdup("/AccountA/AccountC/0-User2");
 	list_append(update.objects, assoc);
 
 	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
@@ -209,6 +215,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 0;
 	assoc->acct = xstrdup("AccountC");
 	assoc->user = xstrdup("User3");
+	assoc->lineage = xstrdup("/AccountA/AccountC/0-User3/");
 	list_append(update.objects, assoc);
 
 	/* sub of root id 1 */
@@ -221,6 +228,7 @@ int _setup_assoc_list(void)
 	assoc->parent_id = 1;
 	assoc->shares_raw = 60;
 	assoc->acct = xstrdup("AccountD");
+	assoc->lineage = xstrdup("/AccountD/");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountD id 3 */
@@ -233,6 +241,7 @@ int _setup_assoc_list(void)
 	assoc->parent_id = 3;
 	assoc->shares_raw = 25;
 	assoc->acct = xstrdup("AccountE");
+	assoc->lineage = xstrdup("/AccountD/AccountE/");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountE id 31 */
@@ -247,6 +256,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 25;
 	assoc->acct = xstrdup("AccountE");
 	assoc->user = xstrdup("User4");
+	assoc->lineage = xstrdup("/AccountD/AccountE/0-User4/");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountD id 3 */
@@ -259,6 +269,7 @@ int _setup_assoc_list(void)
 	assoc->parent_id = 3;
 	assoc->shares_raw = 35;
 	assoc->acct = xstrdup("AccountF");
+	assoc->lineage = xstrdup("/AccountD/AccountF/");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountF id 32 */
@@ -273,6 +284,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 0;
 	assoc->acct = xstrdup("AccountF");
 	assoc->user = xstrdup("User5");
+	assoc->lineage = xstrdup("/AccountD/AccountF/0-User5/");
 	list_append(update.objects, assoc);
 
 	/* sub of root id 1 */
@@ -285,6 +297,7 @@ int _setup_assoc_list(void)
 	assoc->parent_id = 1;
 	assoc->shares_raw = 0;
 	assoc->acct = xstrdup("AccountG");
+	assoc->lineage = xstrdup("/AccountG/");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountG id 4 */
@@ -299,6 +312,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 30;
 	assoc->acct = xstrdup("AccountG");
 	assoc->user = xstrdup("User6");
+	assoc->lineage = xstrdup("/AccountG/0-User6/");
 	list_append(update.objects, assoc);
 
 	/* Check for proper handling of Fairshare=parent */
@@ -313,6 +327,7 @@ int _setup_assoc_list(void)
 	assoc->parent_id = 1;
 	assoc->shares_raw = 50;
 	assoc->acct = xstrdup("AccountH");
+	assoc->lineage = xstrdup("/AccountH/");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountH id 5 */
@@ -326,6 +341,7 @@ int _setup_assoc_list(void)
 	assoc->shares_raw = SLURMDB_FS_USE_PARENT;
 	assoc->usage->usage_raw = 35;
 	assoc->acct = xstrdup("AccountHTA");
+	assoc->lineage = xstrdup("/AccountH/AccountHTA/");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountHTA id 51 */
@@ -340,6 +356,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 10;
 	assoc->acct = xstrdup("AccountHTA");
 	assoc->user = xstrdup("UHTAStd1");
+	assoc->lineage = xstrdup("/AccountH/AccountHTA/0-UHTAStd1");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountHTA id 51 */
@@ -354,6 +371,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 10;
 	assoc->acct = xstrdup("AccountHTA");
 	assoc->user = xstrdup("UHTAStd2");
+	assoc->lineage = xstrdup("/AccountH/AccountHTA/0-UHTAStd2");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountHTA id 51 */
@@ -368,6 +386,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 25;
 	assoc->acct = xstrdup("AccountHTA");
 	assoc->user = xstrdup("UHTAStd3");
+	assoc->lineage = xstrdup("/AccountH/AccountHTA/0-UHTAStd3");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountH id 5 */
@@ -382,6 +401,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 20;
 	assoc->acct = xstrdup("AccountH");
 	assoc->user = xstrdup("UHRA1");
+	assoc->lineage = xstrdup("/AccountH/0-UHRA1");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountH id 5 */
@@ -396,6 +416,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 20;
 	assoc->acct = xstrdup("AccountH");
 	assoc->user = xstrdup("UHRA2");
+	assoc->lineage = xstrdup("/AccountH/0-UHRA2");
 	list_append(update.objects, assoc);
 
 	/* sub of AccountH id 5 */
@@ -410,6 +431,7 @@ int _setup_assoc_list(void)
 	assoc->usage->usage_raw = 25;
 	assoc->acct = xstrdup("AccountH");
 	assoc->user = xstrdup("UHRA3");
+	assoc->lineage = xstrdup("/AccountH/0-UHRA3");
 	list_append(update.objects, assoc);
 
 	if (assoc_mgr_update_assocs(&update, false))

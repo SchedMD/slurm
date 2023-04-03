@@ -219,6 +219,24 @@ static int _sort_assoc_by_lft_dec(void *v1, void *v2)
 	return -1;
 }
 
+/*
+ * Comparator used for sorting immediate children of acct_hierarchical_recs by
+ * lineage
+ *
+ * returns: -1 assoc_a < assoc_b   0: assoc_a == assoc_b   1: assoc_a > assoc_b
+ *
+ */
+static int _sort_assoc_by_lineage_asc(void *v1, void *v2)
+{
+	slurmdb_assoc_rec_t *assoc_a = *(slurmdb_assoc_rec_t **)v1;
+	slurmdb_assoc_rec_t *assoc_b = *(slurmdb_assoc_rec_t **)v2;
+	int diff = slurm_sort_char_list_asc(&assoc_a->cluster,
+					    &assoc_b->cluster);
+	if (diff)
+		return diff;
+	return slurm_sort_char_list_asc(&assoc_a->lineage, &assoc_b->lineage);
+}
+
 static int _sort_slurmdb_hierarchical_rec_list(
 	List slurmdb_hierarchical_rec_list)
 {
@@ -2116,28 +2134,9 @@ extern List slurmdb_get_hierarchical_sorted_assoc_list(
 }
 
 /* This reorders the list into a alphabetical hierarchy. */
-extern void slurmdb_sort_hierarchical_assoc_list(
-	List assoc_list, bool use_lft)
+extern void slurmdb_sort_hierarchical_assoc_list(List assoc_list)
 {
-	List slurmdb_hierarchical_rec_list;
-
-	if (use_lft)
-		slurmdb_hierarchical_rec_list =
-			slurmdb_get_acct_hierarchical_rec_list(assoc_list);
-	else
-		slurmdb_hierarchical_rec_list =
-			slurmdb_get_acct_hierarchical_rec_list_no_lft(
-				assoc_list);
-
-	/* Clear all the pointers out of the list without freeing the
-	   memory since we will just add them back in later.
-	*/
-	while (list_pop(assoc_list)) {
-	}
-
-	_append_hierarchical_children_ret_list(assoc_list,
-					       slurmdb_hierarchical_rec_list);
-	FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
+	(void) list_sort(assoc_list, (ListCmpF)_sort_assoc_by_lineage_asc);
 }
 
 /* Build a hierarchical list using only association id's along with

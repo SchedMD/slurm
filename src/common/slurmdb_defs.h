@@ -149,7 +149,7 @@ extern List slurmdb_get_acct_hierarchical_rec_list_no_lft(List assoc_list);
 /* This reorders the list into a alphabetical hierarchy.
    IN/OUT: assoc_list
  */
-extern void slurmdb_sort_hierarchical_assoc_list(List assoc_list, bool use_lft);
+extern void slurmdb_sort_hierarchical_assoc_list(List assoc_list);
 
 /* IN/OUT: tree_list a list of slurmdb_print_tree_t's */
 extern char *slurmdb_tree_name_get(char *name, char *parent, List tree_list);

@@ -3684,7 +3684,7 @@ extern int as_mysql_reset_lft_rgt(mysql_conn_t *mysql_conn, uid_t uid,
 			continue;
 		}
 
-		slurmdb_sort_hierarchical_assoc_list(assoc_list, false);
+		slurmdb_sort_hierarchical_assoc_list(assoc_list);
 		info("Got current associations for cluster %s", cluster_name);
 		/* Set the cluster name to the tmp name and remove qos */
 		assoc_itr = list_iterator_create(assoc_list);
