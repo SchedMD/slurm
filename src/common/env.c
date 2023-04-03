@@ -39,14 +39,17 @@
 
 #include "config.h"
 
+#define _GNU_SOURCE /* For clone */
 #include <fcntl.h>
 #include <limits.h>
 #include <poll.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -91,6 +94,15 @@ strong_alias(env_unset_environment,	slurm_env_unset_environment);
 #define ENV_BUFSIZE (256 * 1024)
 #define MAX_ENV_STRLEN (32 * 4096)	/* Needed for CPU_BIND and MEM_BIND on
 					 * SGI systems with huge CPU counts */
+
+#define STACK_SIZE (1024 * 1024) /* For clone() syscall. */
+
+typedef struct {
+	char *cmdstr;
+	int *fildes;
+	int mode;
+	const char *username;
+} child_args_t;
 
 /*
  *  Return pointer to `name' entry in environment if found, or
@@ -2069,6 +2081,68 @@ static char **_load_env_cache(const char *username)
 	return env;
 }
 
+static int _child_fn(void *arg)
+{
+	char **tmp_env = NULL;
+	int devnull;
+	child_args_t *child_args = arg;
+	char *cmdstr;
+	const char *username;
+
+	username = child_args->username;
+	cmdstr = child_args->cmdstr;
+	tmp_env = env_array_create();
+	env_array_overwrite(&tmp_env, "ENVIRONMENT", "BATCH");
+
+	if ((devnull = open("/dev/null", O_RDONLY)) == -1)
+		error("%s: open(/dev/null): %m", __func__);
+
+	dup2(devnull, STDIN_FILENO);
+	dup2(child_args->fildes[1], STDOUT_FILENO);
+	dup2(devnull, STDERR_FILENO);
+	closeall(3);
+
+	if (child_args->mode == 1)
+		execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
+	else if (child_args->mode == 2)
+		execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
+	else {	/* Default system configuration */
+#ifdef LOAD_ENV_NO_LOGIN
+		execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
+#else
+		execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
+#endif
+	}
+	if (devnull >= 0)	/* Avoid Coverity resource leak notification */
+		(void) close(devnull);
+
+	_exit(1);
+}
+
+#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__NetBSD__)
+static int _clone_env_child(child_args_t *child_args)
+{
+	char *child_stack;
+	child_stack = mmap(NULL, STACK_SIZE, PROT_READ | PROT_WRITE,
+			   MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
+	if (child_stack == MAP_FAILED) {
+		error("Cannot allocate stack for child: %m");
+		return -1;
+	}
+	/*
+	 * In Linux (since 2.6.24), use CLONE_NEWPID to clone the child into a
+	 * new pid namespace. We are not into a job cgroup so we want to be
+	 * able to terminate any possible background process, specially because
+	 * we're using sudo here and running some user scripts (e.g. .bashrc).
+	 *
+	 * Killing the 'child' pid will kill all the namespace, since in the
+	 * namespace, this 'child' is pid 1.
+	 */
+	return clone(_child_fn, child_stack + STACK_SIZE,
+		     (SIGCHLD|CLONE_NEWPID), child_args);
+}
+#endif
+
 /*
  * Return an array of strings representing the specified user's default
  * environment variables following a two-prongged approach.
@@ -2098,6 +2172,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	int fildes[2], found, fval, len, rc, timeleft;
 	int buf_read, buf_rem, config_timeout;
 	pid_t child;
+	child_args_t child_args = {0};
 	struct timeval begin, now;
 	struct pollfd ufds;
 	struct stat buf;
@@ -2135,41 +2210,25 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		return NULL;
 	}
 
+	child_args.mode = mode;
+	child_args.fildes = fildes;
+	child_args.username = username;
+	child_args.cmdstr = cmdstr;
+
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 	child = fork();
 	if (child == -1) {
 		fatal("fork: %m");
 		return NULL;
 	}
-	if (child == 0) {
-		char **tmp_env = NULL;
-		int devnull;
-		tmp_env = env_array_create();
-		env_array_overwrite(&tmp_env, "ENVIRONMENT", "BATCH");
-		setpgid(0, 0);
-
-		if ((devnull = open("/dev/null", O_RDONLY)) == -1)
-			error("%s: open(/dev/null): %m", __func__);
-		dup2(devnull, STDIN_FILENO);
-		dup2(fildes[1], STDOUT_FILENO);
-		dup2(devnull, STDERR_FILENO);
-		closeall(3);
-
-		if      (mode == 1)
-			execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
-		else if (mode == 2)
-			execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
-		else {	/* Default system configuration */
-#ifdef LOAD_ENV_NO_LOGIN
-			execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
+	if (child == 0)
+		_child_fn(&child_args);
 #else
-			execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
-#endif
-		}
-		if (devnull >= 0)	/* Avoid Coverity resource leak notification */
-			(void) close(devnull);
-		_exit(1);
+	if ((child = _clone_env_child(&child_args)) == -1) {
+		fatal("clone: %m");
+		return NULL;
 	}
-
+#endif
 	close(fildes[1]);
 	if ((fval = fcntl(fildes[0], F_GETFL, 0)) < 0)
 		error("fcntl(F_GETFL) failed: %m");

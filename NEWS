@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     time between SIGTSTP and SIGSTOP signals when suspending jobs.
  -- job_submit/throttle - improve reset of submitted job counts per user in
     order to better honor SchedulerParameters=jobs_per_user_per_hour=#.
+ -- Load the user environment into a private pid namespace to avoid user scripts
+    leaving background processes on a node.
 
 * Changes in Slurm 23.02.3
 ==========================
