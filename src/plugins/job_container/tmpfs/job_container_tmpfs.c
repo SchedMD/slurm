@@ -710,7 +710,9 @@ exit2:
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
-		umount2(job_mount, MNT_DETACH);
+		if (umount2(job_mount, MNT_DETACH))
+			error("%s: umount2 %s failed: %m",
+			      __func__, job_mount);
 		rmdir(job_mount);
 	}
 
