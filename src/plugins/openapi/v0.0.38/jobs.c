@@ -367,7 +367,9 @@ static int _fill_job_desc_from_opts(slurm_opt_t *opt, job_desc_msg_t *desc)
 	desc->group_id = NO_VAL;
 
 	desc->argc     = sbopt->script_argc;
-	desc->argv     = sbopt->script_argv;
+	desc->argv = xcalloc(sbopt->script_argc, sizeof(*desc->argv));
+	for (int i = 0; i < sbopt->script_argc; i++)
+		desc->argv[i] = xstrdup(sbopt->script_argv[i]);
 	desc->std_err  = xstrdup(opt->efname);
 	desc->std_in   = xstrdup(opt->ifname);
 	desc->std_out  = xstrdup(opt->ofname);
