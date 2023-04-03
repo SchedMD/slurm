@@ -175,7 +175,7 @@ static int _sort_children_list(void *v1, void *v2)
 	assoc_b = *(slurmdb_hierarchical_rec_t    **)v2;
 
 	/* Since all these associations are on the same level we don't
-	 * have to check the lfts
+	 * have to check the lineage
 	 */
 
 	/* check to see if this is a user association or an account.
@@ -196,27 +196,6 @@ static int _sort_children_list(void *v1, void *v2)
 
 	return 0;
 
-}
-
-/*
- * Comparator used for sorting immediate children of acct_hierarchical_recs
- *
- * returns: -1 assoc_a < assoc_b   0: assoc_a == assoc_b   1: assoc_a > assoc_b
- *
- */
-static int _sort_assoc_by_lft_dec(void *v1, void *v2)
-{
-	slurmdb_assoc_rec_t *assoc_a;
-	slurmdb_assoc_rec_t *assoc_b;
-
-	assoc_a = *(slurmdb_assoc_rec_t **)v1;
-	assoc_b = *(slurmdb_assoc_rec_t **)v2;
-
-	if (assoc_a->lft == assoc_b->lft)
-		return 0;
-	if (assoc_a->lft > assoc_b->lft)
-		return 1;
-	return -1;
 }
 
 /*
@@ -2185,10 +2164,10 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 	ListIterator itr;
 
 	/*
-	 * The list should already be sorted by lfts, do it anyway
+	 * The list should already be sorted by lineage, do it anyway
 	 * just to make sure it is correct.
 	 */
-	list_sort(assoc_list, (ListCmpF)_sort_assoc_by_lft_dec);
+	slurmdb_sort_hierarchical_assoc_list(assoc_list);
 	itr = list_iterator_create(assoc_list);
 
 	while((assoc = list_next(itr))) {
