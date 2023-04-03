@@ -647,9 +647,12 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		 * mounts inside the job, they will only see their job mount
 		 * but not the basepath mount.
 		 */
-		rc = _clean_job_basepath(job_id);
+		if (jc_conf->shared)
+			rc = _clean_job_basepath(job_id);
+		else
+			rc = umount2(job_mount, MNT_DETACH);
 		if (rc) {
-			error("%s: failed to clean job mounts: %m", __func__);
+			error("%s: failed to clean job mount(s): %m", __func__);
 			goto child_exit;
 		}
 	child_exit:
