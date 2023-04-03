@@ -4698,6 +4698,7 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_parse(TRES_STR, grp_tres_run_mins, "max/tres/group/active", NULL),
 	add_skip(id),
 	add_parse(BOOL16, is_def, "is_default", NULL),
+	add_parse(STRING, lineage, "lineage", "Complete path up the hierarchy to the root association"),
 	add_parse(UINT32, max_jobs, "max/jobs/active", NULL),
 	add_parse(UINT32, max_jobs_accrue, "max/jobs/accruing", NULL),
 	add_parse(UINT32, max_submit_jobs, "max/jobs/total", NULL),

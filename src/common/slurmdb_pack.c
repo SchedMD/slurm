@@ -1156,6 +1156,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 			packnull(buffer);
 			packnull(buffer);
 			packnull(buffer);
+			packnull(buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -1204,6 +1205,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		pack16(object->is_def, buffer);
 		pack32(object->lft, buffer);
 
+		packstr(object->lineage, buffer);
 		packstr(object->max_tres_mins_pj, buffer);
 		packstr(object->max_tres_run_mins, buffer);
 		packstr(object->max_tres_pj, buffer);
@@ -1478,6 +1480,8 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpack16(&object_ptr->is_def, buffer);
 		safe_unpack32(&object_ptr->lft, buffer);
 
+		safe_unpackstr_xmalloc(&object_ptr->lineage,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->max_tres_mins_pj,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->max_tres_run_mins,

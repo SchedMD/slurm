@@ -2566,6 +2566,9 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 	assoc->lft             = ret_assoc->lft;
 
+	if (!assoc->lineage)
+		assoc->lineage = ret_assoc->lineage;
+
 	if (!assoc->max_tres_mins_pj)
 		assoc->max_tres_mins_pj = ret_assoc->max_tres_mins_pj;
 	if (!assoc->max_tres_run_mins)

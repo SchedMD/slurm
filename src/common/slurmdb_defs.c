@@ -884,6 +884,7 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		xfree(assoc->grp_tres_mins_ctld);
 		xfree(assoc->grp_tres_run_mins);
 		xfree(assoc->grp_tres_run_mins_ctld);
+		xfree(assoc->lineage);
 		xfree(assoc->max_tres_mins_pj);
 		xfree(assoc->max_tres_mins_ctld);
 		xfree(assoc->max_tres_run_mins);

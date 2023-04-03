@@ -528,7 +528,8 @@ typedef struct slurmdb_assoc_rec {
 	uint32_t lft;		   /* lft used for grouping sub
 				    * associations and jobs as a left
 				    * most container used with rgt */
-
+	char *lineage;		   /* Complete path up the hierarchy to the root
+				    * association */
 	uint32_t max_jobs;	   /* max number of jobs this
 				    * association can run at one time */
 	uint32_t max_jobs_accrue;  /* max number of jobs this association can
