@@ -553,29 +553,6 @@ static int _set_qos_bit_from_string(bitstr_t *valid_qos, char *name)
 	return SLURM_SUCCESS;
 }
 
-static void _add_arch_rec(slurmdb_assoc_rec_t *assoc_rec,
-			  List arch_rec_list, xhash_t *all_parents)
-{
-	slurmdb_hierarchical_rec_t *arch_rec =
-		xmalloc(sizeof(slurmdb_hierarchical_rec_t));
-
-	arch_rec->children =
-		list_create(slurmdb_destroy_hierarchical_rec);
-	arch_rec->assoc = assoc_rec;
-
-	if (!assoc_rec->parent_id)
-		arch_rec->sort_name = assoc_rec->cluster;
-	else if (assoc_rec->user)
-		arch_rec->sort_name = assoc_rec->user;
-	else
-		arch_rec->sort_name = assoc_rec->acct;
-
-	assoc_rec->rgt = 0;
-	list_append(arch_rec_list, arch_rec);
-	if (!assoc_rec->user) /* Users are never parent assocs */
-		xhash_add(all_parents, arch_rec);
-}
-
 static char *_create_hash_rec_id(slurmdb_assoc_rec_t *assoc, bool parent)
 {
 	/*
@@ -597,52 +574,6 @@ static void _arch_hash_rec_id(void *item, const char **key, uint32_t *key_len)
 	arch_rec->key = _create_hash_rec_id(arch_rec->assoc, false);
 	*key = arch_rec->key;
 	*key_len = strlen(*key);
-}
-
-static void _find_create_parent(slurmdb_assoc_rec_t *assoc_rec, List assoc_list,
-				List arch_rec_list, xhash_t *all_parents)
-{
-	slurmdb_assoc_rec_t *par_assoc_rec = NULL;
-	slurmdb_hierarchical_rec_t *par_arch_rec = NULL;
-
-	if (assoc_rec->parent_id) {
-		char *key = _create_hash_rec_id(assoc_rec, true);
-		par_arch_rec = xhash_get(all_parents, key, strlen(key));
-		if (par_arch_rec) {
-			_add_arch_rec(assoc_rec, par_arch_rec->children,
-				      all_parents);
-			xfree(key);
-			return;
-		}
-
-		if (!(par_assoc_rec = list_find_first(
-			      assoc_list, slurmdb_find_assoc_in_list,
-			      &assoc_rec->parent_id))) {
-
-			/* This means we weren't starting at root */
-			_add_arch_rec(assoc_rec, arch_rec_list,
-				      all_parents);
-			xfree(key);
-			return;
-		}
-
-		_find_create_parent(par_assoc_rec, assoc_list, arch_rec_list,
-				    all_parents);
-
-		/* Now that it has been added lets try again */
-		par_arch_rec = xhash_get(all_parents, key, strlen(key));
-		xfree(key);
-		if (par_arch_rec) {
-			_add_arch_rec(assoc_rec, par_arch_rec->children,
-				      all_parents);
-			return;
-		}
-		error("%s: no parent found, this should never happen",
-		      __func__);
-	} else
-		_add_arch_rec(assoc_rec, arch_rec_list, all_parents);
-
-	return;
 }
 
 extern slurmdb_job_rec_t *slurmdb_create_job_rec()
@@ -2092,18 +2023,13 @@ extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level)
 /* This reorders the list into a alphabetical hierarchy returned in a
  * separate list. The original list is not affected. */
 extern List slurmdb_get_hierarchical_sorted_assoc_list(
-	List assoc_list, bool use_lft)
+	List assoc_list)
 {
 	List slurmdb_hierarchical_rec_list;
 	List ret_list = list_create(NULL);
 
-	if (use_lft)
-		slurmdb_hierarchical_rec_list =
-			slurmdb_get_acct_hierarchical_rec_list(assoc_list);
-	else
-		slurmdb_hierarchical_rec_list =
-			slurmdb_get_acct_hierarchical_rec_list_no_lft(
-				assoc_list);
+	slurmdb_hierarchical_rec_list =
+		slurmdb_get_acct_hierarchical_rec_list(assoc_list);
 
 	_append_hierarchical_children_ret_list(ret_list,
 					       slurmdb_hierarchical_rec_list);
@@ -2116,38 +2042,6 @@ extern List slurmdb_get_hierarchical_sorted_assoc_list(
 extern void slurmdb_sort_hierarchical_assoc_list(List assoc_list)
 {
 	(void) list_sort(assoc_list, (ListCmpF)_sort_assoc_by_lineage_asc);
-}
-
-/* Build a hierarchical list using only association id's along with
- * parent id's.  This method is slower than the non _no_lft function
- * below, but it is needed if the lft and rgt's ever get messed up.
- * Each association in here will result in a 0 rgt afterwards.
- */
-extern List slurmdb_get_acct_hierarchical_rec_list_no_lft(List assoc_list)
-{
-	slurmdb_assoc_rec_t *assoc = NULL;
-	xhash_t *all_parents = xhash_init(_arch_hash_rec_id, NULL);
-	List arch_rec_list = list_create(slurmdb_destroy_hierarchical_rec);
-	ListIterator itr;
-	/* DEF_TIMERS; */
-	/* START_TIMER; */
-
-	itr = list_iterator_create(assoc_list);
-	while ((assoc = list_next(itr))) {
-		if (assoc->rgt == 0) // already processed
-			continue;
-
-		_find_create_parent(assoc, assoc_list,
-				    arch_rec_list, all_parents);
-	}
-	list_iterator_destroy(itr);
-	/* END_TIMER; */
-	/* info("took %s", TIME_STR); */
-	xhash_free(all_parents);
-//	info("got %d", list_count(arch_rec_list));
-	_sort_slurmdb_hierarchical_rec_list(arch_rec_list);
-
-	return arch_rec_list;
 }
 
 extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)

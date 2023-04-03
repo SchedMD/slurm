@@ -141,10 +141,8 @@ extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level);
 /* The next three functions have pointers to assoc_list so do not
  * destroy assoc_list before using the list returned from this function.
  */
-extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list,
-						       bool use_lft);
+extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list);
 extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list);
-extern List slurmdb_get_acct_hierarchical_rec_list_no_lft(List assoc_list);
 
 /* This reorders the list into a alphabetical hierarchy.
    IN/OUT: assoc_list
