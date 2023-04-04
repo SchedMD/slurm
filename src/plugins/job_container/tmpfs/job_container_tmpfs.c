@@ -713,7 +713,8 @@ exit2:
 		if (umount2(job_mount, MNT_DETACH))
 			error("%s: umount2 %s failed: %m",
 			      __func__, job_mount);
-		rmdir(job_mount);
+		if (rmdir(job_mount))
+			error("rmdir %s failed: %m", job_mount);
 	}
 
 end_it:
@@ -865,7 +866,8 @@ static int _delete_ns(uint32_t job_id)
 
 	if (umount2(job_mount, MNT_DETACH))
 		debug2("umount2: %s failed: %m", job_mount);
-	rmdir(job_mount);
+	if (rmdir(job_mount))
+		error("rmdir %s failed: %m", job_mount);
 
 	xfree(job_mount);
 	xfree(ns_holder);
