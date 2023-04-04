@@ -667,9 +667,9 @@ static int _parse_jlope_node_json(slingshot_jobinfo_t *job,
 	}
 
 	for (int i = 0; i < macs_siz; i++) {
-		const char *mac = json_object_to_json_string(
+		const char *mac = json_object_get_string(
 					json_object_array_get_idx(macs, i));
-		const char *dev = json_object_to_json_string(
+		const char *dev = json_object_get_string(
 					json_object_array_get_idx(devs, i));
 		int numa = json_object_get_int(
 					json_object_array_get_idx(numas, i));

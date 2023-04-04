@@ -54,6 +54,8 @@ documents those changes that are of interest to users and administrators.
  -- Correctly send assoc_mgr lock to mcs plugin.
  -- Fix regression in 23.02 leading to error() messages being sent at INFO
     instead of ERR in syslog.
+ -- switch/hpe_slingshot - Fix bad instant-on data due to incorrect parsing of
+    data from jackaloped.
 
 * Changes in Slurm 23.02.2
 ==========================
