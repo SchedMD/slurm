@@ -1213,15 +1213,17 @@ static void _setup_assoc_cond_qos(slurmdb_assoc_cond_t *assoc_cond,
 		   "t2.qos as inherited_qos_list, "
 		   "t2.delta_qos as inherited_delta_qos_list "
 		   "from \"%s_%s\" as t1 "
-		   "join \"%s_%s\" as t2 on (t1.lft between t2.lft and t2.rgt) "
-		   "join \"%s_%s\" as t3 on (t1.lft between t3.lft and t3.rgt) "
-		   "and (t2.lft not between t3.lft+1 and t3.rgt-1) "
-		   "group by t1.lft, t2.lft "
+		   "join \"%s_%s\" as t2 "
+		   "on t1.lineage like CONCAT(t2.lineage, '%%') "
+		   "join \"%s_%s\" as t3 "
+		   "on t1.lineage like CONCAT(t3.lineage, '%%') "
+		   "and t2.lineage not like CONCAT(t3.lineage, '_%%') "
+		   "group by t1.id_assoc, t2.id_assoc "
 		   "having t2.qos=group_concat(t3.qos separator ''))",
 		   cluster_name, assoc_table, cluster_name, assoc_table,
 		   cluster_name, assoc_table);
 
-	xstrfmtcat(*qos_filter, " group by lft having ");
+	xstrfmtcat(*qos_filter, " group by id_assoc having ");
 
 	itr = list_iterator_create(assoc_cond->qos_list);
 	while ((object = list_next(itr))) {
