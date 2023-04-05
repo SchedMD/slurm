@@ -681,6 +681,11 @@ char *auth_p_token_generate(const char *username, int lifespan)
 		goto fail;
 	}
 	xtoken = xstrdup(token);
+	/*
+	 * Ideally this would be jwt_free_str() instead of free(),
+	 * but that function doesn't exist in older versions of libjwt.
+	 */
+	free(token);
 
 	jwt_free(jwt);
 
