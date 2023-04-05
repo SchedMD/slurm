@@ -1182,9 +1182,9 @@ static void _setup_assoc_cond_qos(slurmdb_assoc_cond_t *assoc_cond,
 		if (set)
 			xstrcat(*qos_filter, "or ");
 		xstrfmtcat(*qos_filter,
-			   "((i_qos regexp '%s' or "
-			   "i_delta_qos regexp '\\\\+%s') and "
-			   "i_delta_qos not regexp '-%s(?!,+\\\\+%s)') ",
+			   "((i_qos regexp ',%s,' or "
+			   "i_delta_qos regexp ',\\\\+%s,') and "
+			   "i_delta_qos not regexp ',-%s,(?!.*,\\\\+%s,)') ",
 			   object, object, object, object);
 		set = 1;
 	}
