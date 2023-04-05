@@ -8036,14 +8036,14 @@ extern void gres_step_list_delete(void *list_element)
  * rc OUT - unchanged or an error code
  * RET gres - step record to set value in, found or created by this function
  */
-static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
-					      List gres_list, char **save_ptr,
-					      int *rc)
+static gres_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
+					 List gres_list, char **save_ptr,
+					 int *rc)
 {
 	static char *prev_save_ptr = NULL;
 	int context_inx = NO_VAL, my_rc = SLURM_SUCCESS;
 	gres_step_state_t *gres_ss = NULL;
-	gres_state_t *gres_state_step;
+	gres_state_t *gres_state_step = NULL;
 	gres_key_t step_search_key;
 	char *type = NULL, *name = NULL;
 
@@ -8101,7 +8101,7 @@ fini:	xfree(name);
 		*rc = my_rc;
 	}
 	*save_ptr = prev_save_ptr;
-	return gres_ss;
+	return gres_state_step;
 }
 
 /*
@@ -8255,6 +8255,7 @@ static int _handle_ntasks_per_tres_step(List new_step_list,
 					uint32_t *num_tasks,
 					uint32_t *cpu_count)
 {
+	gres_state_t *gres_state_step;
 	gres_step_state_t *gres_ss;
 	uint64_t cnt = 0;
 	int rc = SLURM_SUCCESS;
@@ -8275,10 +8276,11 @@ static int _handle_ntasks_per_tres_step(List new_step_list,
 				 __func__, *num_tasks, ntasks_per_tres);
 			return ESLURM_INVALID_GRES;
 		}
-		while ((gres_ss =
+		while ((gres_state_step =
 			_get_next_step_gres(in_val, &cnt,
 					    new_step_list,
 					    &save_ptr, &rc))) {
+			gres_ss = gres_state_step->gres_data;
 			/* Simulate a tres_per_job specification */
 			gres_ss->gres_per_step = cnt;
 			gres_ss->ntasks_per_gres = ntasks_per_tres;
@@ -8324,6 +8326,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 {
 	int rc = SLURM_SUCCESS;
 	gres_step_state_t *gres_ss;
+	gres_state_t *gres_state_step;
 	List new_step_list;
 	uint64_t cnt = 0;
 
@@ -8336,18 +8339,22 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	new_step_list = list_create(gres_step_list_delete);
 	if (cpus_per_tres) {
 		char *in_val = cpus_per_tres, *save_ptr = NULL;
-		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
-						      new_step_list,
-						      &save_ptr, &rc))) {
+		while ((gres_state_step = _get_next_step_gres(
+						in_val, &cnt,
+						new_step_list,
+						&save_ptr, &rc))) {
+			gres_ss = gres_state_step->gres_data;
 			gres_ss->cpus_per_gres = cnt;
 			in_val = NULL;
 		}
 	}
 	if (tres_per_step) {
 		char *in_val = tres_per_step, *save_ptr = NULL;
-		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
-						      new_step_list,
-						      &save_ptr, &rc))) {
+		while ((gres_state_step = _get_next_step_gres(
+						in_val, &cnt,
+						new_step_list,
+						&save_ptr, &rc))) {
+			gres_ss = gres_state_step->gres_data;
 			gres_ss->gres_per_step = cnt;
 			in_val = NULL;
 			gres_ss->total_gres =
@@ -8356,9 +8363,11 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	}
 	if (tres_per_node) {
 		char *in_val = tres_per_node, *save_ptr = NULL;
-		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
-						      new_step_list,
-						      &save_ptr, &rc))) {
+		while ((gres_state_step = _get_next_step_gres(
+						in_val, &cnt,
+						new_step_list,
+						&save_ptr, &rc))) {
+			gres_ss = gres_state_step->gres_data;
 			gres_ss->gres_per_node = cnt;
 			in_val = NULL;
 			gres_ss->total_gres =
@@ -8367,9 +8376,11 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	}
 	if (tres_per_socket) {
 		char *in_val = tres_per_socket, *save_ptr = NULL;
-		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
-						      new_step_list,
-						      &save_ptr, &rc))) {
+		while ((gres_state_step = _get_next_step_gres(
+						in_val, &cnt,
+						new_step_list,
+						&save_ptr, &rc))) {
+			gres_ss = gres_state_step->gres_data;
 			gres_ss->gres_per_socket = cnt;
 			in_val = NULL;
 			// TODO: What is sockets_per_node and ntasks_per_socket?
@@ -8386,9 +8397,11 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	}
 	if (tres_per_task) {
 		char *in_val = tres_per_task, *save_ptr = NULL;
-		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
-						      new_step_list,
-						      &save_ptr, &rc))) {
+		while ((gres_state_step = _get_next_step_gres(
+						in_val, &cnt,
+						new_step_list,
+						&save_ptr, &rc))) {
+			gres_ss = gres_state_step->gres_data;
 			gres_ss->gres_per_task = cnt;
 			in_val = NULL;
 			if (*num_tasks != NO_VAL)
@@ -8399,9 +8412,11 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	}
 	if (mem_per_tres) {
 		char *in_val = mem_per_tres, *save_ptr = NULL;
-		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
-						      new_step_list,
-						      &save_ptr, &rc))) {
+		while ((gres_state_step = _get_next_step_gres(
+						in_val, &cnt,
+						new_step_list,
+						&save_ptr, &rc))) {
+			gres_ss = gres_state_step->gres_data;
 			gres_ss->mem_per_gres = cnt;
 			in_val = NULL;
 		}
