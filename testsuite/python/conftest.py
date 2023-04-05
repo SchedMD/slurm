@@ -5,7 +5,6 @@ import inspect
 import logging
 import os
 import pathlib
-from py.io import TerminalWriter
 import pwd
 import pytest
 import _pytest
@@ -31,6 +30,14 @@ def pytest_addoption(parser):
 
 
 def color_log_level(level, **color_kwargs):
+    # Adapted from depricated py.io TerminalWriter source
+    # https://py.readthedocs.io/en/latest/_modules/py/_io/terminalwriter.html
+    _esctable = dict(black=30, red=31, green=32, yellow=33,
+        blue=34, purple=35, cyan=36, white=37,
+        Black=40, Red=41, Green=42, Yellow=43,
+        Blue=44, Purple=45, Cyan=46, White=47,
+        bold=1, light=2, blink=5, invert=7)
+
     for handler in logging.getLogger().handlers:
         if isinstance(handler, _pytest.logging.LogCaptureHandler):
             formatter = handler.formatter
@@ -39,9 +46,17 @@ def color_log_level(level, **color_kwargs):
                 formatted_levelname = levelname_fmt % {
                     'levelname': logging.getLevelName(level)
                 }
-                colorized_formatted_levelname = TerminalWriter().markup(
-                    formatted_levelname, **color_kwargs
+
+                esc = []
+                for option in color_kwargs:
+                    esc.append(_esctable[option])
+
+                colorized_formatted_levelname = (
+                    ''.join(['\x1b[%sm' % cod for cod in esc])
+                    + formatted_levelname
+                    + '\x1b[0m'
                 )
+
                 formatter._level_to_fmt_mapping[level] = formatter.LEVELNAME_FMT_REGEX.sub(
                     colorized_formatted_levelname, formatter._fmt
                 )
