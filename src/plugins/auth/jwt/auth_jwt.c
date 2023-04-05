@@ -489,7 +489,7 @@ fail:
 
 uid_t auth_p_get_uid(auth_token_t *cred)
 {
-	if (cred == NULL || !cred->verified) {
+	if (!cred || !cred->verified) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_AUTH_NOBODY;
 	}
@@ -515,7 +515,7 @@ gid_t auth_p_get_gid(auth_token_t *cred)
 {
 	uid_t uid;
 
-	if (cred == NULL || !cred->verified) {
+	if (!cred || !cred->verified) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_AUTH_NOBODY;
 	}
@@ -544,7 +544,7 @@ gid_t auth_p_get_gid(auth_token_t *cred)
 
 char *auth_p_get_host(auth_token_t *cred)
 {
-	if (cred == NULL) {
+	if (!cred) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return NULL;
 	}
@@ -555,7 +555,7 @@ char *auth_p_get_host(auth_token_t *cred)
 
 extern int auth_p_get_data(auth_token_t *cred, char **data, uint32_t *len)
 {
-	if (cred == NULL) {
+	if (!cred) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_ERROR;
 	}
@@ -569,7 +569,7 @@ int auth_p_pack(auth_token_t *cred, buf_t *buf, uint16_t protocol_version)
 {
 	char *pack_this = (thread_token) ? thread_token : token;
 
-	if (buf == NULL) {
+	if (!buf) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_ERROR;
 	}
