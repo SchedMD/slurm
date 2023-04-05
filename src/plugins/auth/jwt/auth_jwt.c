@@ -103,12 +103,12 @@ typedef struct {
 	char *username;
 } auth_token_t;
 
-data_t *jwks = NULL;
-buf_t *key = NULL;
-char *token = NULL;
+static data_t *jwks = NULL;
+static buf_t *key = NULL;
+static char *token = NULL;
 static char *claim_field = NULL;
-__thread char *thread_token = NULL;
-__thread char *thread_username = NULL;
+static __thread char *thread_token = NULL;
+static __thread char *thread_username = NULL;
 
 /*
  * This plugin behaves differently than the others in that it needs to operate
@@ -291,7 +291,8 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-auth_token_t *auth_p_create(char *auth_info, uid_t r_uid, void *data, int dlen)
+extern auth_token_t *auth_p_create(char *auth_info, uid_t r_uid, void *data,
+				   int dlen)
 {
 	return xmalloc(sizeof(auth_token_t));
 }
@@ -312,7 +313,7 @@ typedef struct {
 	jwt_t **jwt;
 } foreach_rs256_args_t;
 
-data_for_each_cmd_t _verify_rs256_jwt(data_t *d, void *arg)
+static data_for_each_cmd_t _verify_rs256_jwt(data_t *d, void *arg)
 {
 	char *alg, *kid, *key;
 	int len;
@@ -351,7 +352,7 @@ data_for_each_cmd_t _verify_rs256_jwt(data_t *d, void *arg)
  *
  * Return SLURM_SUCCESS if the credential is in order and valid.
  */
-int auth_p_verify(auth_token_t *cred, char *auth_info)
+extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 {
 	int rc;
 	const char *alg;
@@ -487,7 +488,7 @@ fail:
 	return SLURM_ERROR;
 }
 
-uid_t auth_p_get_uid(auth_token_t *cred)
+extern uid_t auth_p_get_uid(auth_token_t *cred)
 {
 	if (!cred || !cred->verified) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
@@ -511,7 +512,7 @@ uid_t auth_p_get_uid(auth_token_t *cred)
 	return cred->uid;
 }
 
-gid_t auth_p_get_gid(auth_token_t *cred)
+extern gid_t auth_p_get_gid(auth_token_t *cred)
 {
 	uid_t uid;
 
@@ -542,7 +543,7 @@ gid_t auth_p_get_gid(auth_token_t *cred)
 	return cred->gid;
 }
 
-char *auth_p_get_host(auth_token_t *cred)
+extern char *auth_p_get_host(auth_token_t *cred)
 {
 	if (!cred) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
@@ -565,7 +566,8 @@ extern int auth_p_get_data(auth_token_t *cred, char **data, uint32_t *len)
 	return SLURM_SUCCESS;
 }
 
-int auth_p_pack(auth_token_t *cred, buf_t *buf, uint16_t protocol_version)
+extern int auth_p_pack(auth_token_t *cred, buf_t *buf,
+		       uint16_t protocol_version)
 {
 	char *pack_this = (thread_token) ? thread_token : token;
 
@@ -586,7 +588,7 @@ int auth_p_pack(auth_token_t *cred, buf_t *buf, uint16_t protocol_version)
 	return SLURM_SUCCESS;
 }
 
-auth_token_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
+extern auth_token_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	auth_token_t *cred = NULL;
 	uint32_t uint32_tmp;
@@ -616,7 +618,7 @@ unpack_error:
 	return NULL;
 }
 
-int auth_p_thread_config(const char *token, const char *username)
+extern int auth_p_thread_config(const char *token, const char *username)
 {
 	xfree(thread_token);
 	xfree(thread_username);
@@ -627,13 +629,13 @@ int auth_p_thread_config(const char *token, const char *username)
 	return SLURM_SUCCESS;
 }
 
-void auth_p_thread_clear(void)
+extern void auth_p_thread_clear(void)
 {
 	xfree(thread_token);
 	xfree(thread_username);
 }
 
-char *auth_p_token_generate(const char *username, int lifespan)
+extern char *auth_p_token_generate(const char *username, int lifespan)
 {
 	jwt_alg_t opt_alg = JWT_ALG_HS256;
 	time_t now = time(NULL);
