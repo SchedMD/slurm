@@ -213,9 +213,11 @@ slurm_addr_t *_srun_set_addr(step_record_t *step_ptr)
 	char *nodeaddr;
 	slurm_addr_t *addr = xmalloc(sizeof(*addr));
 
-	nodeaddr = slurm_conf_get_nodeaddr(step_ptr->host);
-	slurm_set_addr(addr, step_ptr->port, nodeaddr);
-	xfree(nodeaddr);
+	if ((nodeaddr = slurm_conf_get_nodeaddr(step_ptr->host))) {
+		slurm_set_addr(addr, step_ptr->port, nodeaddr);
+		xfree(nodeaddr);
+	} else
+		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 
 	return addr;
 }

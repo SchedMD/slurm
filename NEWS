@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.[36-38] - avoid possible crash from jobs submitted with argv.
  -- openapi/v0.0.[36-38] - avoid possible crash from rejected jobs submitted
     with batch_features.
+ -- srun - fix regression in 22.05.7 that prevented slurmctld from connecting
+    to an srun running outside of a compute node.
 
 * Changes in Slurm 22.05.8
 ==========================
