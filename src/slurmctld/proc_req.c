@@ -6882,7 +6882,7 @@ void slurmctld_req(slurm_msg_t *msg)
 		END_TIMER;
 		record_rpc_stats(msg, DELTA_TIMER);
 	} else {
-		error("invalid RPC msg_type=%u", msg->msg_type);
+		error("invalid RPC msg_type=%s", rpc_num2string(msg->msg_type));
 		slurm_send_rc_msg(msg, EINVAL);
 	}
 }

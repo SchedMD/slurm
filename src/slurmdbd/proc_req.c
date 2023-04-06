@@ -3532,8 +3532,9 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		break;
 	default:
 		comment = "Invalid RPC";
-		error("CONN:%d %s msg_type=%d",
-		      slurmdbd_conn->conn->fd, comment, msg->msg_type);
+		error("CONN:%d %s msg_type=%s",
+		      slurmdbd_conn->conn->fd, comment,
+		      rpc_num2string(msg->msg_type));
 		rc = EINVAL;
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 							rc, comment, 0);

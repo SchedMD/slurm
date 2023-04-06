@@ -360,8 +360,8 @@ void *agent(void *args)
 	pthread_join(thread_wdog, NULL);
 	delay = (int) difftime(time(NULL), begin_time);
 	if (delay > (slurm_conf.msg_timeout * 2)) {
-		info("agent msg_type=%u ran for %d seconds",
-			agent_arg_ptr->msg_type,  delay);
+		info("agent msg_type=%s ran for %d seconds",
+		     rpc_num2string(agent_arg_ptr->msg_type),  delay);
 	}
 	slurm_mutex_lock(&agent_info_ptr->thread_mutex);
 	while (agent_info_ptr->threads_active != 0) {
@@ -1379,8 +1379,8 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 			count, j);
 		agent_arg_ptr->node_count = j;
 	}
-	debug2("Queue RPC msg_type=%u, nodes=%d for retry",
-	       agent_arg_ptr->msg_type, j);
+	debug2("Queue RPC msg_type=%s, nodes=%d for retry",
+	       rpc_num2string(agent_arg_ptr->msg_type), j);
 
 	/* add the requeust to a list */
 	queued_req_ptr = xmalloc(sizeof(queued_request_t));
@@ -1587,8 +1587,9 @@ static void _agent_defer(void)
 				 REQUEST_SIGNAL_TASKS)
 				rc = _signal_defer(queued_req_ptr);
 			else
-				fatal("%s: Invalid message type (%u)",
-				      __func__, agent_arg_ptr->msg_type);
+				fatal("%s: Invalid message type (%s)",
+				      __func__,
+				      rpc_num2string(agent_arg_ptr->msg_type));
 
 			if (rc == -1) {   /* abort request */
 				_purge_agent_args(

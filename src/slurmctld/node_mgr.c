@@ -4117,7 +4117,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		hostlist_destroy(kill_agent_args->hostlist);
 		xfree (kill_agent_args);
 	} else {
-		debug ("Spawning agent msg_type=%d", msg_type);
+		debug ("Spawning agent msg_type=%s", rpc_num2string(msg_type));
 		set_agent_arg_r_uid(kill_agent_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(kill_agent_args);
 	}
@@ -4197,7 +4197,8 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 		slurm_free_config_response_msg(curr_config);
 		xfree(curr_args);
 	} else {
-		debug("Spawning agent msg_type=%d", curr_args->msg_type);
+		debug("Spawning agent msg_type=%s",
+		      rpc_num2string(curr_args->msg_type));
 		set_agent_arg_r_uid(curr_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(curr_args);
 	}
@@ -4207,7 +4208,8 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 		slurm_free_config_response_msg(prev_config);
 		xfree(prev_args);
 	} else {
-		debug("Spawning agent msg_type=%d", prev_args->msg_type);
+		debug("Spawning agent msg_type=%s",
+		      rpc_num2string(prev_args->msg_type));
 		set_agent_arg_r_uid(prev_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(prev_args);
 	}
@@ -4217,7 +4219,8 @@ void push_reconfig_to_slurmd(char **slurmd_config_files)
 		slurm_free_config_response_msg(old_config);
 		xfree(old_args);
 	} else {
-		debug("Spawning agent msg_type=%d", old_args->msg_type);
+		debug("Spawning agent msg_type=%s",
+		      rpc_num2string(old_args->msg_type));
 		set_agent_arg_r_uid(old_args, SLURM_AUTH_UID_ANY);
 		agent_queue_request(old_args);
 	}

@@ -318,7 +318,8 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 		auth_g_destroy(msg_rcv.auth_cred);
 
 	if (msg_rcv.msg_type != PMI_KVS_GET_RESP) {
-		error("slurm_get_kvs_comm_set msg_type=%d", msg_rcv.msg_type);
+		error("slurm_get_kvs_comm_set msg_type=%s",
+		      rpc_num2string(msg_rcv.msg_type));
 		close(srun_fd);
 		return SLURM_UNEXPECTED_MSG_ERROR;
 	}

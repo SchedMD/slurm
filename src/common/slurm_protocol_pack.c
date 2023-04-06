@@ -8820,8 +8820,8 @@ _unpack_ret_list(List *ret_list,
 
 unpack_error:
 	if (ret_data_info && ret_data_info->type) {
-		error("_unpack_ret_list: message type %u, record %d of %u",
-		      ret_data_info->type, i, size_val);
+		error("_unpack_ret_list: message type %s, record %d of %u",
+		      rpc_num2string(ret_data_info->type), i, size_val);
 	}
 	FREE_NULL_LIST(*ret_list);
 	*ret_list = NULL;
@@ -11469,8 +11469,9 @@ int
 pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 {
 	if (msg->protocol_version < SLURM_MIN_PROTOCOL_VERSION) {
-		error("%s: Invalid message version=%hu, type:%hu",
-		      __func__, msg->protocol_version, msg->msg_type);
+		error("%s: Invalid message version=%hu, type:%s",
+		      __func__, msg->protocol_version,
+		      rpc_num2string(msg->msg_type));
 		return SLURM_ERROR;
 	}
 
@@ -12085,8 +12086,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	msg->data = NULL;	/* Initialize to no data for now */
 
 	if (msg->protocol_version < SLURM_MIN_PROTOCOL_VERSION) {
-		error("%s: Invalid message version=%hu, type:%hu",
-		      __func__, msg->protocol_version, msg->msg_type);
+		error("%s: Invalid message version=%hu, type:%s",
+		      __func__, msg->protocol_version,
+		      rpc_num2string(msg->msg_type));
 		return SLURM_ERROR;
 	}
 

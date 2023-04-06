@@ -1187,8 +1187,8 @@ _handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp)
 	} else if (msg->msg_type == SRUN_JOB_COMPLETE) {
 		info("Job has been cancelled");
 	} else {
-		error("%s: received spurious message type: %u",
-		      __func__, msg->msg_type);
+		error("%s: received spurious message type: %s",
+		      __func__, rpc_num2string(msg->msg_type));
 	}
 	return rc;
 }

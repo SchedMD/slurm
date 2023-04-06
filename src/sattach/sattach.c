@@ -597,8 +597,8 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 		/* FIXME - does nothing yet */
 		break;
 	default:
-		error("received spurious message type: %d",
-		      msg->msg_type);
+		error("received spurious message type: %s",
+		      rpc_num2string(msg->msg_type));
 		break;
 	}
 	return;

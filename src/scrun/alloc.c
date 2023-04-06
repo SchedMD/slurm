@@ -328,8 +328,8 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	}
 	default:
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
-		error("%s:[%s] received spurious srun message type: %u",
-		      __func__, con->name, msg->msg_type);
+		error("%s:[%s] received spurious srun message type: %s",
+		      __func__, con->name, rpc_num2string(msg->msg_type));
 	}
 
 	return rc;

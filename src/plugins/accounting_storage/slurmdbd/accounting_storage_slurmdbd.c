@@ -3443,8 +3443,8 @@ extern void acct_storage_p_send_all(void *db_conn, time_t event_time,
 		(void) send_nodes_to_accounting(event_time);
 		break;
 	default:
-		error("%s: unknown message type of %d given",
-		      __func__, msg_type);
+		error("%s: unknown message type of %s given",
+		      __func__, rpc_num2string(msg_type));
 		xassert(0);
 	}
 }

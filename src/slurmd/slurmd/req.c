@@ -1708,8 +1708,8 @@ done:
 	FREE_NULL_HOSTLIST(step_hset);
 
 	if (slurm_send_rc_err_msg(msg, errnum, errmsg) < 0) {
-		error("%s: unable to send return code to address:port=%pA msg_type=%u: %m",
-		      __func__, &msg->address, msg->msg_type);
+		error("%s: unable to send return code to address:port=%pA msg_type=%s: %m",
+		      __func__, &msg->address, rpc_num2string(msg->msg_type));
 
 		/*
 		 * Rewind credential so that srun may perform retry
