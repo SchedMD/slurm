@@ -194,7 +194,7 @@ export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/:$PKG_CONFIG_PATH</pre>
 	<p><a href="rest.html">slurmrestd</a> requires libhttp_parser
 	(>=v2.6.0). Instructions for the build are as follows:</p>
 	<pre>
-git clone --depth 1 --single-branch -b v2.9.4 https://github.com/nodejs/http-parser.git http_parser-c
+git clone --depth 1 --single-branch -b v2.9.4 https://github.com/nodejs/http-parser.git http_parser
 cd http_parser
 make
 sudo make install</pre>
@@ -241,6 +241,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 24 March 2022</p>
+<p style="text-align:center;">Last modified 06 April 2023</p>
 
 <!--#include virtual="footer.txt"-->
