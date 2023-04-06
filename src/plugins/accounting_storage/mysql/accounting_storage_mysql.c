@@ -2765,6 +2765,8 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 	const uint64_t logfile_size = 67108864;
 	const char lockwait_var[] = "innodb_lock_wait_timeout";
 	const uint64_t lockwait_timeout = 900;
+	const char allowed_packet_var[] = "max_allowed_packet";
+	const uint64_t allowed_packet = 16777216;
 
 	uint64_t value;
 	bool recommended_values = true;
@@ -2792,6 +2794,14 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 	if (value < (lockwait_timeout / 2)) {
 		recommended_values = false;
 		xstrfmtcat(error_msg, " %s", lockwait_var);
+	}
+
+	if (_get_database_variable(mysql_conn, allowed_packet_var, &value))
+		goto error;
+	debug2("%s: %"PRIu64, allowed_packet_var, value);
+	if (value < allowed_packet) {
+		recommended_values = false;
+		xstrfmtcat(error_msg, " %s", allowed_packet_var);
 	}
 
 	if (!recommended_values) {
