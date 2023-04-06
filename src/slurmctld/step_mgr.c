@@ -2222,7 +2222,7 @@ static bool _use_one_thread_per_core(step_record_t *step_ptr)
 }
 
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
-static int _step_alloc_lps(step_record_t *step_ptr)
+static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
@@ -2248,6 +2248,8 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 
 	if (!bit_set_count(job_resrcs_ptr->node_bitmap))
 		return rc;
+
+	xfree(*err_msg);
 
 	if (step_ptr->threads_per_core &&
 	    (step_ptr->threads_per_core != NO_VAL16))
@@ -3613,7 +3615,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	if (tmp_step_layout_used)
 		xfree(step_layout->node_list);
 
-	if ((ret_code = _step_alloc_lps(step_ptr))) {
+	if ((ret_code = _step_alloc_lps(step_ptr, err_msg))) {
 		delete_step_record(job_ptr, step_ptr);
 		return ret_code;
 	}
