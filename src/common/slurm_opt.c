@@ -1643,13 +1643,15 @@ static int arg_set_data_exclusive(slurm_opt_t *opt, const data_t *arg,
 	if ((rc = data_get_string_converted(arg, &str)))
 		ADD_DATA_ERROR("Unable to read string", rc);
 	else {
-		if (!str || !xstrcasecmp(str, "exclusive")) {
+		if (!str || !xstrcasecmp(str, "exclusive") ||
+		    !xstrcasecmp(str, "true")) {
 			if (opt->srun_opt) {
 				opt->srun_opt->exclusive = true;
 				opt->srun_opt->exact = true;
 			}
 			opt->shared = JOB_SHARED_NONE;
-		} else if (!xstrcasecmp(str, "oversubscribe")) {
+		} else if (!xstrcasecmp(str, "oversubscribe") ||
+			   !xstrcasecmp(str, "false")) {
 			opt->shared = JOB_SHARED_OK;
 		} else if (!xstrcasecmp(str, "user")) {
 			opt->shared = JOB_SHARED_USER;
