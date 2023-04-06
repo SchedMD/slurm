@@ -286,9 +286,8 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
  * IN: acct - name of account
  * RET: true or false
  */
-extern bool assoc_mgr_is_user_acct_coord_user_rec(void *db_conn,
-                                                 slurmdb_user_rec_t *user,
-                                                 char *acct_name);
+extern bool assoc_mgr_is_user_acct_coord_user_rec(slurmdb_user_rec_t *user,
+						  char *acct_name);
 
 /*
  * get the share information from the association list

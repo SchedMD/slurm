@@ -3112,8 +3112,7 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 	return false;
 }
 
-extern bool assoc_mgr_is_user_acct_coord_user_rec(void *db_conn,
-						  slurmdb_user_rec_t *user,
+extern bool assoc_mgr_is_user_acct_coord_user_rec(slurmdb_user_rec_t *user,
 						  char *acct_name)
 {
 	if (!acct_name)
