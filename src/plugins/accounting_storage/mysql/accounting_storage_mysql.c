@@ -2761,7 +2761,7 @@ static void _check_mysql_concat_is_sane(mysql_conn_t *mysql_conn)
 static int _check_database_variables(mysql_conn_t *mysql_conn)
 {
 	const char buffer_var[] = "innodb_buffer_pool_size";
-	const uint64_t buffer_size = 1073741824;
+	const uint64_t buffer_size = 4294967296;
 	const char logfile_var[] = "innodb_log_file_size";
 	const uint64_t logfile_size = 67108864;
 	const char lockwait_var[] = "innodb_lock_wait_timeout";
