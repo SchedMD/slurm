@@ -1011,16 +1011,16 @@ static int _get_ncpus(slurm_cred_arg_t *cred, int host_index,
 	for (i = 0; hi; i++) {
 		if (hi > cred->sock_core_rep_count[i]) {
 			i_first_bit += cred->sockets_per_node[i] *
-				       cred->cores_per_socket[i] *
-				       cred->sock_core_rep_count[i];
+				cred->cores_per_socket[i] *
+				cred->sock_core_rep_count[i];
 			hi -= cred->sock_core_rep_count[i];
 		} else {
 			i_first_bit += cred->sockets_per_node[i] *
-				       cred->cores_per_socket[i] *
-				       (hi - 1);
+				cred->cores_per_socket[i] *
+				(hi - 1);
 			i_last_bit = i_first_bit +
-				     cred->sockets_per_node[i] *
-				     cred->cores_per_socket[i];
+				cred->sockets_per_node[i] *
+				cred->cores_per_socket[i];
 			break;
 		}
 	}
