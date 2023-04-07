@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "March 2023" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "April 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2700,7 +2700,8 @@ On the other hand, if you want to use \fBPreemptType=preempt/partition_prio\fR
 to allow jobs from higher PriorityTier partitions to Suspend jobs from lower
 PriorityTier partitions you will need overlapping partitions, and
 \fBPreemptMode=SUSPEND,GANG\fR to use the Gang scheduler to resume the suspended
-jobs(s).
+jobs(s). You must configure the partition's \fIOverSubscribe\fR setting to
+\fIFORCE\fR for all partitions in which time\-slicing is to take place.
 In any case, time\-slicing won't happen between jobs on different partitions.
 
 \fBNOTE:\fR

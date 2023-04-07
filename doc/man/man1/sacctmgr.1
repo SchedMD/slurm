@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "March 2023" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "April 2023" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -1792,6 +1792,8 @@ The preempted job will be cancelled.
 \fBGANG\fR
 Enables gang scheduling (time slicing) of jobs in the same partition, and
 allows the resuming of suspended jobs.
+Configure the \fIOverSubscribe\fR setting to \fIFORCE\fR for all partitions
+in which time\-slicing is to take place.
 Gang scheduling is performed independently for each partition, so
 if you only want time\-slicing by \fBOverSubscribe\fR, without any preemption,
 then configuring partitions with overlapping nodes is not recommended.
