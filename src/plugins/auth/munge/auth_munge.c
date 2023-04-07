@@ -147,7 +147,10 @@ int init(void)
 		uid_t uid = getuid() + 1;
 
 		cred = auth_p_create(slurm_conf.authinfo, uid, NULL, 0);
-		if (!_decode_cred(cred, socket, true)) {
+		if (!cred) {
+			error("Failed to create MUNGE Credential");
+			rc = SLURM_ERROR;
+		} else if (!_decode_cred(cred, socket, true)) {
 			error("MUNGE allows root to decode any credential");
 			rc = SLURM_ERROR;
 		}
