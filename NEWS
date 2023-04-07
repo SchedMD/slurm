@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
     True or False.
  -- slurmrestd - correctly process job submission field "exclusive" with strings
     "true" or "false".
+ -- slurmctld/step_mgr - prevent non-allocatable steps from decrementing values
+    that weren't previously incremented when trying to allocate them.
 
 * Changes in Slurm 23.02.1
 ==========================

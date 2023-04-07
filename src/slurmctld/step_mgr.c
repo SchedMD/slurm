@@ -2226,7 +2226,9 @@ static bool _use_one_thread_per_core(step_record_t *step_ptr)
 static int _step_alloc_lps(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
-	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
+	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs,
+		*job_resrcs_ptr_bk = NULL;
+	list_t *job_gres_list_ptr_bk = NULL;
 	node_record_t *node_ptr;
 	int cpus_alloc, cpus_alloc_mem, cpu_array_inx = 0;
 	int job_node_inx = -1, step_node_inx = -1, node_cnt = 0;
@@ -2248,6 +2250,15 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 
 	if (!bit_set_count(job_resrcs_ptr->node_bitmap))
 		return rc;
+
+	/*
+	 * Hold a copy of the original state for resources and GRES.
+	 * We need those if we can't allocate a new step, and the original
+	 * values need to be restored
+	 */
+	job_resrcs_ptr_bk = copy_job_resources(job_resrcs_ptr);
+	job_gres_list_ptr_bk =
+		gres_job_state_list_dup(job_ptr->gres_list_alloc);
 
 	if (step_ptr->threads_per_core &&
 	    (step_ptr->threads_per_core != NO_VAL16))
@@ -2530,8 +2541,34 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	gres_step_state_log(step_ptr->gres_list_alloc, job_ptr->job_id,
 			    step_ptr->step_id.step_id);
 
-	if (rc != SLURM_SUCCESS)
-		_step_dealloc_lps(step_ptr);
+	if (rc != SLURM_SUCCESS) {
+		/*
+		 * We can't allocate a new step, so we need to recover the
+		 * original values.
+		 *
+		 * As the step we wanted to allocate broke the loop above at
+		 * some point, because there's not enough resources, the current
+		 * state can be in a mixture of already counted/assigned and
+		 * some others don't.
+		 *
+		 * So we can't just blindly call _step_dealloc_lps, because this
+		 * function deallocates all the resources the step was wanting
+		 * to allocate. This can cause problems when other simultaneous
+		 * running steps reach their end and call _step_dealloc_lps too.
+		 * Those will try to decrement their resources, but the state
+		 * may be erroneous after the aforementioned situation.
+		 *
+		 * We can get rid of such issue just by copying back the
+		 * original structures.
+		 */
+		free_job_resources(&job_resrcs_ptr);
+		FREE_NULL_LIST(job_ptr->gres_list_alloc);
+		job_ptr->job_resrcs = job_resrcs_ptr_bk;
+		job_ptr->gres_list_alloc = job_gres_list_ptr_bk;
+	} else {
+		free_job_resources(&job_resrcs_ptr_bk);
+		FREE_NULL_LIST(job_gres_list_ptr_bk);
+	}
 
 	return rc;
 }
