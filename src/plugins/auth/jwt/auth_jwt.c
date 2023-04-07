@@ -124,9 +124,6 @@ static __thread char *thread_username = NULL;
  *		requestor for a given username and duration.
  */
 
-static const char *jwt_key_field = "jwt_key=";
-static const char *jwks_key_field = "jwks=";
-
 static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 {
 	char *alg, *kid, *n, *e, *key, *x5c, *kty;
@@ -166,10 +163,10 @@ static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 
 static void _init_jwks(void)
 {
-	char *begin, *start, *end, *key_file;
+	char *key_file;
 	buf_t *buf;
 
-	if (!(begin = xstrstr(slurm_conf.authalt_params, jwks_key_field)))
+	if (!(key_file = conf_get_opt_str(slurm_conf.authalt_params, "jwks=")))
 		return;
 
 	if (data_init())
@@ -177,12 +174,6 @@ static void _init_jwks(void)
 
 	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
 		fatal("%s: serializer_g_init() failed", __func__);
-
-	start = begin + strlen(jwks_key_field);
-	if ((end = xstrstr(start, ",")))
-		key_file = xstrndup(start, (end - start));
-	else
-		key_file = xstrdup(start);
 
 	debug("loading jwks file `%s`", key_file);
 	if (!(buf = create_mmap_buf(key_file))) {
@@ -205,17 +196,9 @@ static void _init_jwks(void)
 
 static void _init_hs256(void)
 {
-	char *begin, *key_file = NULL;
+	char *key_file;
 
-	if ((begin = xstrstr(slurm_conf.authalt_params, jwt_key_field))) {
-		char *start = begin + strlen(jwt_key_field);
-		char *end = NULL;
-
-		if ((end = xstrstr(start, ",")))
-			key_file = xstrndup(start, (end - start));
-		else
-			key_file = xstrdup(start);
-	}
+	key_file = conf_get_opt_str(slurm_conf.authalt_params, "jwt=");
 
 	/*
 	 * If jwks was loaded, and jwt is not explicitly configured, skip setup.
