@@ -179,7 +179,6 @@ static int  _slurmd_job_log_init(stepd_step_rec_t *step);
 static void _wait_for_io(stepd_step_rec_t *step);
 static int  _send_exit_msg(stepd_step_rec_t *step, uint32_t *tid, int n,
 			   int status);
-static void _set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state);
 static void _wait_for_all_tasks(stepd_step_rec_t *step);
 static int  _wait_for_any_task(stepd_step_rec_t *step, bool waitflag);
 
@@ -895,7 +894,7 @@ extern void stepd_send_step_complete_msgs(stepd_step_rec_t *step)
 	slurm_mutex_unlock(&step_complete.lock);
 }
 
-static void _set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state)
+extern void set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state)
 {
 	slurm_mutex_lock(&step->state_mutex);
 	step->state = new_state;
@@ -1110,7 +1109,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 		}
 
 		if (rc != SLURM_SUCCESS) {
-			_set_job_state(step, SLURMSTEPD_STEP_ENDING);
+			set_job_state(step, SLURMSTEPD_STEP_ENDING);
 			close_slurmd_conn();
 			goto fail1;
 		}
@@ -1133,7 +1132,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 		_exit(0);
 	} else if (pid < 0) {
 		error("fork: %m");
-		_set_job_state(step, SLURMSTEPD_STEP_ENDING);
+		set_job_state(step, SLURMSTEPD_STEP_ENDING);
 		rc = SLURM_ERROR;
 		/* let the slurmd know we actually are done with the setup */
 		close_slurmd_conn();
@@ -1159,7 +1158,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	jobacct_gather_add_task(pid, &jobacct_id, 1);
 	container_g_add_cont(jobid, step->cont_id);
 
-	_set_job_state(step, SLURMSTEPD_STEP_RUNNING);
+	set_job_state(step, SLURMSTEPD_STEP_RUNNING);
 	if (!slurm_conf.job_acct_gather_freq)
 		jobacct_gather_stat_task(0, true);
 
@@ -1190,7 +1189,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	/* Call the other plugins to clean up
 	 * the cgroup hierarchy.
 	 */
-	_set_job_state(step, SLURMSTEPD_STEP_ENDING);
+	set_job_state(step, SLURMSTEPD_STEP_ENDING);
 	step_terminate_monitor_start(step);
 	proctrack_g_signal(step->cont_id, SIGKILL);
 	proctrack_g_wait(step->cont_id);
@@ -1234,7 +1233,7 @@ fail1:
 		error("spank_fini failed");
 	debug2("%s: After call to spank_fini()", __func__);
 
-	_set_job_state(step, SLURMSTEPD_STEP_ENDING);
+	set_job_state(step, SLURMSTEPD_STEP_ENDING);
 
 	if (step_complete.rank > -1)
 		stepd_wait_for_children_slurmstepd(step);
@@ -1392,7 +1391,7 @@ job_manager(stepd_step_rec_t *step)
 
 	/* Send step launch response with list of pids */
 	_send_launch_resp(step, 0);
-	_set_job_state(step, SLURMSTEPD_STEP_RUNNING);
+	set_job_state(step, SLURMSTEPD_STEP_RUNNING);
 
 #ifdef PR_SET_DUMPABLE
 	/* RHEL6 requires setting "dumpable" flag AGAIN; after euid changes */
@@ -1407,7 +1406,7 @@ job_manager(stepd_step_rec_t *step)
 	_wait_for_all_tasks(step);
 	acct_gather_profile_endpoll();
 	acct_gather_profile_g_node_step_end();
-	_set_job_state(step, SLURMSTEPD_STEP_ENDING);
+	set_job_state(step, SLURMSTEPD_STEP_ENDING);
 
 fail3:
 	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
@@ -1427,7 +1426,7 @@ fail2:
 	 * terminated before the switch window can be released by
 	 * switch_g_job_postfini().
 	 */
-	_set_job_state(step, SLURMSTEPD_STEP_ENDING);
+	set_job_state(step, SLURMSTEPD_STEP_ENDING);
 	step_terminate_monitor_start(step);
 	if (step->cont_id != 0) {
 		proctrack_g_signal(step->cont_id, SIGKILL);
@@ -1504,7 +1503,7 @@ fail1:
 	/* If interactive job startup was abnormal,
 	 * be sure to notify client.
 	 */
-	_set_job_state(step, SLURMSTEPD_STEP_ENDING);
+	set_job_state(step, SLURMSTEPD_STEP_ENDING);
 	if (rc != 0) {
 		error("%s: exiting abnormally: %s",
 		      __func__, slurm_strerror(rc));

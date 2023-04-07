@@ -84,5 +84,6 @@ int job_manager(stepd_step_rec_t *step);
  */
 extern void init_initgroups(int);
 
+extern void set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state);
 
 #endif
