@@ -964,6 +964,107 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id_in,
 
 	*envc = envcount(*env);
 }
+/*
+ * IN cred_hostlist the job credential host_list where to extract this node
+ * host_index
+ * RET The node host_index in relation to the argument cred_hostlist or -1 in
+ * case of error
+ */
+static int _get_host_index(char *cred_hostlist)
+{
+#ifdef HAVE_FRONT_END
+	return 0; /* It is always 0 for front end systems */
+#endif
+	hostlist_t hl;
+	int host_index;
+	if (!(hl = hostlist_create(cred_hostlist))) {
+		error("Unable to parse credential hostlist: '%s'",
+		      cred_hostlist);
+		return -1;
+	}
+	host_index = hostlist_find(hl, conf->node_name);
+	hostlist_destroy(hl);
+
+	return host_index;
+}
+
+/*
+ * IN cred the job credential from where to extract the memory
+ * IN host_index used to get the sockets&core from the cred. If -1 is passed,
+ * it is searched in the cred->hostlist based on conf->node_name.
+ * OUT step_cpus the number of cpus used by the step
+ * RET SLURM_SUCCESS on success SLURM_ERROR else
+ */
+static int _get_ncpus(slurm_cred_arg_t *cred, int host_index,
+		      uint32_t *step_cpus)
+{
+	uint32_t hi, i, j, i_first_bit = 0, i_last_bit = 0;
+	bool cpu_log = slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND;
+
+	if (host_index == -1) {
+		host_index = _get_host_index(cred->job_hostlist);
+
+		if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
+			error("job cr credential invalid host_index %d for job %u",
+			      host_index, cred->step_id.job_id);
+			return SLURM_ERROR;
+		}
+	}
+	*step_cpus = 0;
+	hi = host_index + 1;	/* change from 0-origin to 1-origin */
+	for (i = 0; hi; i++) {
+		if (hi > cred->sock_core_rep_count[i]) {
+			i_first_bit += cred->sockets_per_node[i] *
+				       cred->cores_per_socket[i] *
+				       cred->sock_core_rep_count[i];
+			hi -= cred->sock_core_rep_count[i];
+		} else {
+			i_first_bit += cred->sockets_per_node[i] *
+				       cred->cores_per_socket[i] *
+				       (hi - 1);
+			i_last_bit = i_first_bit +
+				     cred->sockets_per_node[i] *
+				     cred->cores_per_socket[i];
+			break;
+		}
+	}
+	/* Now count the allocated processors */
+	for (i = i_first_bit, j = 0; i < i_last_bit; i++, j++) {
+		char *who_has = NULL;
+		if (bit_test(cred->job_core_bitmap, i)) {
+			who_has = "Job";
+		}
+		if (bit_test(cred->step_core_bitmap, i)) {
+			(*step_cpus)++;
+			who_has = "Step";
+		}
+		if (cpu_log && who_has) {
+			log_flag(CPU_BIND, "JobNode[%u] CPU[%u] %s alloc",
+				 host_index, j, who_has);
+		}
+	}
+	if (cpu_log)
+		log_flag(CPU_BIND, "====================");
+	if (*step_cpus == 0) {
+		error("cons_res: zero processors allocated to step");
+		*step_cpus = 1;
+	}
+	/* NOTE: step_cpus is the count of allocated resources
+	 * (typically cores). Convert to CPU count as needed */
+	if (i_last_bit <= i_first_bit)
+		error("step credential has no CPUs selected");
+	else {
+		i = conf->cpus / (i_last_bit - i_first_bit);
+		if (i > 1) {
+			if (cpu_log)
+				log_flag(CPU_BIND, "Scaling CPU count by factor of %d (%u/(%u-%u))",
+					 i, conf->cpus, i_last_bit,
+					 i_first_bit);
+			*step_cpus *= i;
+		}
+	}
+	return SLURM_SUCCESS;
+}
 
 /*
  * The job(step) credential is the only place to get a definitive
@@ -1082,30 +1183,14 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	}
 
 	if ((arg->job_nhosts > 0) && (tasks_to_launch > 0)) {
-		uint32_t hi, i, i_first_bit=0, i_last_bit=0, j;
-		bool cpu_log = slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND;
 		bool setup_x11 = false;
 
-#ifdef HAVE_FRONT_END
-		host_index = 0;	/* It is always 0 for front end systems */
-#else
-		hostlist_t j_hset;
-		/* Determine the CPU count based upon this node's index into
-		 * the _job's_ allocation (job's hostlist and core_bitmap) */
-		if (!(j_hset = hostlist_create(arg->job_hostlist))) {
-			error("Unable to parse credential hostlist: `%s'",
-			      arg->job_hostlist);
-			goto fail;
-		}
-		host_index = hostlist_find(j_hset, conf->node_name);
-		hostlist_destroy(j_hset);
-
+		host_index = _get_host_index(arg->job_hostlist);
 		if ((host_index < 0) || (host_index >= arg->job_nhosts)) {
 			error("job cr credential invalid host_index %d for job %u",
 			      host_index, arg->step_id.job_id);
 			goto fail;
 		}
-#endif
 
 		/*
 		 * handle the x11 flag bit here since we have access to the
@@ -1136,60 +1221,8 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		else
 			req->x11 = 0;
 
-		hi = host_index + 1;	/* change from 0-origin to 1-origin */
-		for (i=0; hi; i++) {
-			if (hi > arg->sock_core_rep_count[i]) {
-				i_first_bit += arg->sockets_per_node[i] *
-					arg->cores_per_socket[i] *
-					arg->sock_core_rep_count[i];
-				hi -= arg->sock_core_rep_count[i];
-			} else {
-				i_first_bit += arg->sockets_per_node[i] *
-					arg->cores_per_socket[i] *
-					(hi - 1);
-				i_last_bit = i_first_bit +
-					arg->sockets_per_node[i] *
-					arg->cores_per_socket[i];
-				break;
-			}
-		}
-		/* Now count the allocated processors */
-		for (i=i_first_bit, j=0; i<i_last_bit; i++, j++) {
-			char *who_has = NULL;
-			if (bit_test(arg->job_core_bitmap, i)) {
-				who_has = "Job";
-			}
-			if (bit_test(arg->step_core_bitmap, i)) {
-				step_cpus++;
-				who_has = "Step";
-			}
-			if (cpu_log && who_has) {
-				log_flag(CPU_BIND, "JobNode[%u] CPU[%u] %s alloc",
-					 host_index, j, who_has);
-			}
-		}
-		if (cpu_log)
-			log_flag(CPU_BIND, "====================");
-		if (step_cpus == 0) {
-			error("cons_res: zero processors allocated to step");
-			step_cpus = 1;
-		}
-		/* NOTE: step_cpus is the count of allocated resources
-		 * (typically cores). Convert to CPU count as needed */
-		if (i_last_bit <= i_first_bit)
-			error("step credential has no CPUs selected");
-		else {
-			i = conf->cpus / (i_last_bit - i_first_bit);
-			if (i > 1) {
-				if (cpu_log)
-					log_flag(CPU_BIND, "Scaling CPU count by factor of %d (%u/(%u-%u))",
-						 i,
-						 conf->cpus,
-						 i_last_bit,
-						 i_first_bit);
-				step_cpus *= i;
-			}
-		}
+		if (_get_ncpus(arg, host_index, &step_cpus))
+			goto fail;
 		if (tasks_to_launch > step_cpus) {
 			/* This is expected with the --overcommit option
 			 * or hyperthreads */

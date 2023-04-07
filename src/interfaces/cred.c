@@ -1110,7 +1110,7 @@ void format_core_allocs(slurm_cred_t *credential, char *node_name,
 			bit_set(step_core_bitmap, j);
 	}
 
-	/* Scale CPU count, same as slurmd/req.c:_check_job_credential() */
+	/* Scale CPU count, same as slurmd/req.c:_get_ncpus() */
 	if (i_last_bit <= i_first_bit)
 		error("step credential has no CPUs selected");
 	else {
