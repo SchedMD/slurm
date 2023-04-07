@@ -475,24 +475,19 @@ bool slurm_with_slurmdbd(void)
  */
 extern char *slurm_auth_opts_to_socket(char *opts)
 {
-	char *socket = NULL, *sep, *tmp;
+	char *socket = NULL;
 
 	if (!opts)
 		return NULL;
 
-	tmp = strstr(opts, "socket=");
-	if (tmp) {
-		/* New format */
-		socket = xstrdup(tmp + 7);
-		sep = strchr(socket, ',');
-		if (sep)
-			sep[0] = '\0';
-	} else if (strchr(opts, '=')) {
-		/* New format, but socket not specified */
-		;
-	} else {
-		/* Old format */
+	socket = conf_get_opt_str(opts, "socket=");
+	if (!socket) {
+		/* old format */
 		socket = xstrdup(opts);
+	} else {
+		/* New format, but socket not specified */
+		if (!strlen(socket))
+			xfree(socket);
 	}
 
 	return socket;
