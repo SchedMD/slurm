@@ -3010,6 +3010,15 @@ static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
 	}
 }
 
+static int _test_step_desc_fields(job_step_create_request_msg_t *step_specs)
+{
+	if (_test_strlen(step_specs->host, "host", 1024) ||
+	    _test_strlen(step_specs->name, "name", 1024) ||
+	    _test_strlen(step_specs->network, "network", 1024))
+		return ESLURM_PATHNAME_TOO_LONG;
+	return SLURM_SUCCESS;
+}
+
 extern int step_create(job_step_create_request_msg_t *step_specs,
 		       step_record_t** new_step_record,
 		       uint16_t protocol_version, char **err_msg)
@@ -3155,10 +3164,8 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	    !valid_tres_cnt(step_specs->tres_per_task))
 		return ESLURM_INVALID_TRES;
 
-	if (_test_strlen(step_specs->host, "host", 1024)		||
-	    _test_strlen(step_specs->name, "name", 1024)		||
-	    _test_strlen(step_specs->network, "network", 1024))
-		return ESLURM_PATHNAME_TOO_LONG;
+	if ((ret_code = _test_step_desc_fields(step_specs)) != SLURM_SUCCESS)
+		return ret_code;
 
 	if (job_ptr->next_step_id >= slurm_conf.max_step_cnt)
 		return ESLURM_STEP_LIMIT;
