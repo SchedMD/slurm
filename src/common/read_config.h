@@ -169,6 +169,8 @@ typedef struct node_record node_record_t;
 #define DEFAULT_UNKILLABLE_TIMEOUT  60 /* seconds */
 #define DEFAULT_BATCH_SCRIPT_LIMIT (4 * 1024 * 1024) /* 4MB */
 #define MAX_BATCH_SCRIPT_SIZE (512 * 1024 * 1024) /* 512MB */
+#define DEFAULT_MAX_SUBMIT_LINE_SIZE (1024 * 1024) /* 1MB */
+#define MAX_MAX_SUBMIT_LINE_SIZE (2 * 1024 * 1024) /* 2MB */
 
 /* MAX_TASKS_PER_NODE is defined in slurm.h
  */

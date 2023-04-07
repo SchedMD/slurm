@@ -29,6 +29,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
  -- Removed JobCredentialPrivateKey and JobCredentialPublicCertificate
     parameters.
+ -- Added max_submit_line_size to SchedulerParameters.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
