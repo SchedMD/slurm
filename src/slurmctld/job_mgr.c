@@ -7706,6 +7706,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 {
 	static time_t sched_update = 0;
 	static int max_script = DEFAULT_BATCH_SCRIPT_LIMIT;
+	static int max_submit_line = DEFAULT_MAX_SUBMIT_LINE_SIZE;
 
 	if (sched_update != slurm_conf.last_update) {
 		char *tmp_ptr;
@@ -7716,6 +7717,13 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 			max_script = atoi(tmp_ptr + 16);
 		} else {
 			max_script = DEFAULT_BATCH_SCRIPT_LIMIT;
+		}
+
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+		                           "max_submit_line_size="))) {
+			max_submit_line = atoi(tmp_ptr + 16);
+		} else {
+			max_submit_line = DEFAULT_MAX_SUBMIT_LINE_SIZE;
 		}
 	}
 
@@ -7746,7 +7754,8 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->std_err, "std_err", PATH_MAX)	||
 	    _test_strlen(job_desc->std_in, "std_in", PATH_MAX)		||
 	    _test_strlen(job_desc->std_out, "std_out", PATH_MAX)	||
-	    _test_strlen(job_desc->submit_line, "submit_line", 1024*1024) ||
+	    _test_strlen(job_desc->submit_line, "submit_line",
+			 max_submit_line) ||
 	    _test_strlen(job_desc->tres_bind, "tres_bind", 1024)	||
 	    _test_strlen(job_desc->tres_freq, "tres_freq", 1024)	||
 	    _test_strlen(job_desc->tres_per_job, "tres_per_job", 1024)	||

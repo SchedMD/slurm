@@ -3012,9 +3012,26 @@ static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
 
 static int _test_step_desc_fields(job_step_create_request_msg_t *step_specs)
 {
+	static time_t sched_update = 0;
+	static int max_submit_line = DEFAULT_MAX_SUBMIT_LINE_SIZE;
+
+	if (sched_update != slurm_conf.last_update) {
+		char *tmp_ptr;
+		sched_update = slurm_conf.last_update;
+
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+		                           "max_submit_line_size="))) {
+			max_submit_line = atoi(tmp_ptr + 16);
+		} else {
+			max_submit_line = DEFAULT_MAX_SUBMIT_LINE_SIZE;
+		}
+	}
+
 	if (_test_strlen(step_specs->host, "host", 1024) ||
 	    _test_strlen(step_specs->name, "name", 1024) ||
-	    _test_strlen(step_specs->network, "network", 1024))
+	    _test_strlen(step_specs->network, "network", 1024) ||
+	    _test_strlen(step_specs->submit_line, "submit_line",
+			 max_submit_line))
 		return ESLURM_PATHNAME_TOO_LONG;
 	return SLURM_SUCCESS;
 }
