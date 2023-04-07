@@ -7704,14 +7704,18 @@ static bool _valid_array_inx(job_desc_msg_t *job_desc)
  * a denial of service attack due to memory demands by the slurmctld */
 static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 {
-	static int max_script = -1;
+	static time_t sched_update = 0;
+	static int max_script = DEFAULT_BATCH_SCRIPT_LIMIT;
 
-	if (max_script == -1) {
+	if (sched_update != slurm_conf.last_update) {
 		char *tmp_ptr;
-		max_script = DEFAULT_BATCH_SCRIPT_LIMIT;
+		sched_update = slurm_conf.last_update;
+
 		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 		                           "max_script_size="))) {
 			max_script = atoi(tmp_ptr + 16);
+		} else {
+			max_script = DEFAULT_BATCH_SCRIPT_LIMIT;
 		}
 	}
 
