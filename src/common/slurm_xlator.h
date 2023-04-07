@@ -334,6 +334,7 @@
 #define destroy_config_key_pair	slurm_destroy_config_key_pair
 #define get_extra_conf_path	slurm_get_extra_conf_path
 #define sort_key_pairs		slurm_sort_key_pairs
+#define conf_get_opt_str	slurm_conf_get_opt_str
 
 /* run_in_daemon.[ch] functions */
 #define run_in_daemon           slurm_run_in_daemon

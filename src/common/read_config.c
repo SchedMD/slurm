@@ -99,6 +99,7 @@ strong_alias(destroy_config_plugin_params, slurm_destroy_config_plugin_params);
 strong_alias(destroy_config_key_pair, slurm_destroy_config_key_pair);
 strong_alias(get_extra_conf_path, slurm_get_extra_conf_path);
 strong_alias(sort_key_pairs, slurm_sort_key_pairs);
+strong_alias(conf_get_opt_str, slurm_conf_get_opt_str);
 
 /*
  * Instantiation of the "extern slurm_conf_t slurm_conf" and
@@ -6502,3 +6503,29 @@ extern uint16_t slurm_conf_get_frontend_port(char *node_hostname)
 	return port;
 }
 #endif
+
+extern char *conf_get_opt_str(const char *opts, const char *arg)
+{
+	char *str, *last = NULL, *ret = NULL, *tok;
+	int len;
+
+	if (!opts || !opts[0])
+		return NULL;
+
+	len = strlen(arg);
+	str = xstrdup(opts);
+
+	tok = strtok_r(str, ",", &last);
+	while (tok) {
+		if (!xstrncmp(tok, arg, len)) {
+			if (*(tok + len))
+				ret = xstrdup(tok + len);
+			break;
+		}
+		tok = strtok_r(NULL, ",", &last);
+	}
+
+	xfree(str);
+
+	return ret;
+}

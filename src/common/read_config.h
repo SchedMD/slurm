@@ -695,4 +695,15 @@ extern void slurm_conf_remove_node(char *node_name);
 extern uint16_t slurm_conf_get_frontend_port(char *node_hostname);
 #endif
 
+/*
+ * Get substring from a csv-style string.
+ *
+ * IN opts - csv-style string to be parsed
+ * IN arg - the search string + delimiter between option and its value
+ * 	(EG: "planet=")
+ *
+ * RET xmalloc()'d string after the delimiter, and before next ","
+ */
+extern char *conf_get_opt_str(const char *opts, const char *arg);
+
 #endif /* !_READ_CONFIG_H */
