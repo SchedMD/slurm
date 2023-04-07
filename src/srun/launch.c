@@ -893,7 +893,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 				     step_req->ntasks_per_tres,
 				     step_req->min_nodes,
 				     &tmp_gres_list,
-				     NULL, job->step_id.job_id,
+				     job->step_id.job_id,
 				     NO_VAL, &step_req->num_tasks,
 				     &step_req->cpu_count, NULL);
 	FREE_NULL_LIST(tmp_gres_list);

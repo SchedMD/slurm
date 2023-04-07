@@ -882,7 +882,6 @@ extern void gres_job_state_log(List gres_list, uint32_t job_id);
  * Given a step's requested gres configuration, validate it and build gres list
  * IN *tres* - step's request's gres input string
  * OUT step_gres_list - List of Gres records for this step to track usage
- * IN job_gres_list_req - List of requested gres for this job
  * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
@@ -895,7 +894,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 				    uint16_t ntasks_per_tres,
 				    uint32_t step_min_nodes,
 				    List *step_gres_list,
-				    List job_gres_list_req, uint32_t job_id,
+				    uint32_t job_id,
 				    uint32_t step_id,
 				    uint32_t *num_tasks,
 				    uint32_t *cpu_count, char **err_msg);

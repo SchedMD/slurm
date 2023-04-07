@@ -8111,152 +8111,6 @@ fini:	xfree(name);
 	return gres_ss;
 }
 
-/*
- * Test that the step does not request more GRES than what the job requested.
- * This function does *not* check the step's requested GRES against the job's
- * allocated GRES. The job may be allocated more GRES than what it requested
- * (for example, when --exclusive is used the job is allocated all the GRES
- * on the node), but that's okay. We check the step request against the job's
- * allocated GRES in gres_step_test().
- */
-static void _validate_step_counts(List step_gres_list, List job_gres_list_req,
-				  uint32_t step_min_nodes, int *rc,
-				  char **err_msg)
-{
-	ListIterator iter;
-	gres_state_t *gres_state_job, *gres_state_step;
-	gres_job_state_t *gres_js;
-	gres_step_state_t *gres_ss;
-	gres_key_t job_search_key;
-	uint16_t cpus_per_gres;
-	char *msg = NULL;
-
-	if (!step_gres_list || (list_count(step_gres_list) == 0))
-		return;
-	if (!job_gres_list_req  || (list_count(job_gres_list_req)  == 0)) {
-		if (err_msg) {
-			xfree(*err_msg);
-			xstrfmtcat(*err_msg, "Step requested GRES but job doesn't have GRES");
-		}
-		*rc = ESLURM_INVALID_GRES;
-		return;
-	}
-
-	iter = list_iterator_create(step_gres_list);
-	while ((gres_state_step = (gres_state_t *) list_next(iter))) {
-		gres_ss = (gres_step_state_t *) gres_state_step->gres_data;
-		job_search_key.config_flags = gres_state_step->config_flags;
-		job_search_key.plugin_id = gres_state_step->plugin_id;
-		job_search_key.type_id = gres_ss->type_id;
-
-		gres_state_job = list_find_first(job_gres_list_req,
-						 gres_find_job_by_key,
-						 &job_search_key);
-		if (!gres_state_job || !gres_state_job->gres_data) {
-			xstrfmtcat(msg, "Step requested GRES (%s:%s) not found in the job",
-				   gres_state_step->gres_name,
-				   gres_ss->type_name);
-			*rc = ESLURM_INVALID_GRES;
-			break;
-		}
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		if (gres_js->cpus_per_gres)
-			cpus_per_gres = gres_js->cpus_per_gres;
-		else
-			cpus_per_gres = gres_js->def_cpus_per_gres;
-		if (cpus_per_gres && gres_ss->cpus_per_gres &&
-		    (cpus_per_gres < gres_ss->cpus_per_gres)) {
-			xstrfmtcat(msg, "Step requested cpus_per_gres=%u is more than the job's cpu_per_gres=%u",
-				   gres_ss->cpus_per_gres,
-				   cpus_per_gres);
-			*rc = ESLURM_INVALID_GRES;
-			break;
-		}
-		if (gres_ss->gres_per_step) {
-			/*
-			 * This isn't a perfect check because step_min_nodes
-			 * isn't always set by this point, but if it is set
-			 * then we can check that the number of gres requested
-			 * for the step is at least the number of nodes in
-			 * the step.
-			 */
-			if (step_min_nodes &&
-			    (gres_ss->gres_per_step < step_min_nodes)) {
-				xstrfmtcat(msg, "Step requested gres=%s:%"PRIu64" is less than the requested min nodes=%u",
-					   gres_state_step->gres_name,
-					   gres_ss->gres_per_step,
-					   step_min_nodes);
-				*rc = ESLURM_INVALID_GRES;
-				break;
-			}
-			if (gres_js->gres_per_job &&
-			    (gres_js->gres_per_job <
-			     gres_ss->gres_per_step)) {
-				xstrfmtcat(msg, "Step requested gres=%s:%"PRIu64" is more than the job's gres=%s:%"PRIu64,
-					   gres_state_step->gres_name,
-					   gres_ss->gres_per_step,
-					   gres_state_job->gres_name,
-					   gres_js->gres_per_job);
-				*rc = ESLURM_INVALID_GRES;
-				break;
-			}
-		}
-		if (gres_js->gres_per_node &&
-		    gres_ss->gres_per_node &&
-		    (gres_js->gres_per_node <
-		     gres_ss->gres_per_node)) {
-			xstrfmtcat(msg, "Step requested gres_per_node=%s:%s%s%"PRIu64" is more than the job's gres_per_node=%s:%s%s%"PRIu64,
-				   gres_state_step->gres_name,
-				   gres_ss->type_name ? gres_ss->type_name : "",
-				   gres_ss->type_name ? ":" : "",
-				   gres_ss->gres_per_node,
-				   gres_state_job->gres_name,
-				   gres_js->type_name ? gres_js->type_name : "",
-				   gres_js->type_name ? ":" : "",
-				   gres_js->gres_per_node);
-			*rc = ESLURM_INVALID_GRES;
-			break;
-		}
-		if (gres_js->gres_per_socket &&
-		    gres_ss->gres_per_socket &&
-		    (gres_js->gres_per_socket <
-		     gres_ss->gres_per_socket)) {
-			xstrfmtcat(msg, "Step requested gres_per_socket=%s:%"PRIu64" is more than the job's gres_per_socket=%s:%"PRIu64,
-				   gres_state_step->gres_name,
-				   gres_ss->gres_per_socket,
-				   gres_state_job->gres_name,
-				   gres_js->gres_per_socket);
-			*rc = ESLURM_INVALID_GRES;
-			break;
-		}
-		if (gres_js->gres_per_task &&
-		    gres_ss->gres_per_task &&
-		    (gres_js->gres_per_task <
-		     gres_ss->gres_per_task)) {
-			xstrfmtcat(msg, "Step requested gres_per_task=%s:%"PRIu64" is more than the job's gres_per_task=%s:%"PRIu64,
-				   gres_state_step->gres_name,
-				   gres_ss->gres_per_task,
-				   gres_state_job->gres_name,
-				   gres_js->gres_per_task);
-			*rc = ESLURM_INVALID_GRES;
-			break;
-		}
-
-	}
-	list_iterator_destroy(iter);
-
-	if (msg) {
-		if (err_msg) {
-			xfree(*err_msg);
-			*err_msg = msg;
-		} else {
-			error("%s", msg);
-			xfree(msg);
-		}
-	}
-}
-
-
 static int _handle_ntasks_per_tres_step(List new_step_list,
 					uint16_t ntasks_per_tres,
 					uint32_t *num_tasks,
@@ -8324,7 +8178,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 				    uint16_t ntasks_per_tres,
 				    uint32_t step_min_nodes,
 				    List *step_gres_list,
-				    List job_gres_list_req, uint32_t job_id,
+				    uint32_t job_id,
 				    uint32_t step_id,
 				    uint32_t *num_tasks,
 				    uint32_t *cpu_count, char **err_msg)
@@ -8423,10 +8277,6 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	if (list_count(new_step_list) == 0) {
 		FREE_NULL_LIST(new_step_list);
 	} else {
-		/*
-		 * If called from a client we don't have a job_gres_list_req so
-		 * don't check against that.
-		 */
 		if (rc == SLURM_SUCCESS) {
 			bool overlap_merge = false;
 			int over_count = 0;
@@ -8449,10 +8299,6 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 							 0);
 			xfree(over_list);
 		}
-		if (rc == SLURM_SUCCESS && running_in_slurmctld())
-			_validate_step_counts(new_step_list, job_gres_list_req,
-					      step_min_nodes, &rc, err_msg);
-
 		if (rc == SLURM_SUCCESS)
 			*step_gres_list = new_step_list;
 		else
