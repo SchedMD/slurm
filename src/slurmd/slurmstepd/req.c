@@ -946,6 +946,8 @@ _handle_terminate(int fd, stepd_step_rec_t *step, uid_t uid)
 	}
 	slurm_mutex_unlock(&suspend_mutex);
 
+	set_job_state(step, SLURMSTEPD_STEP_CANCELLED);
+
 done:
 	/* Send the return code and errnum */
 	safe_write(fd, &rc, sizeof(int));
