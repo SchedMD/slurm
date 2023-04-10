@@ -161,6 +161,19 @@ static bool _is_user_min_admin_level(void *db_conn, uid_t uid,
 	return is_admin;
 }
 
+extern bool _is_user_any_coord_internal(void *db_conn, slurmdb_user_rec_t *user,
+					bool locked)
+{
+	xassert(user);
+	if (assoc_mgr_fill_in_user(db_conn, user, 1, NULL, locked) !=
+	    SLURM_SUCCESS) {
+		error("couldn't get information for this user %s(%d)",
+		      user->name, user->uid);
+		return 0;
+	}
+	return (user->coord_accts && list_count(user->coord_accts));
+}
+
 /*
  * addto_update_list - add object updated to list
  * IN/OUT update_list: list of updated objects
@@ -616,14 +629,7 @@ extern bool is_user_coord(slurmdb_user_rec_t *user, char *account)
 
 extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
 {
-	xassert(user);
-	if (assoc_mgr_fill_in_user(db_conn, user, 1, NULL, false)
-	    != SLURM_SUCCESS) {
-		error("couldn't get information for this user %s(%d)",
-		      user->name, user->uid);
-		return 0;
-	}
-	return (user->coord_accts && list_count(user->coord_accts));
+	return _is_user_any_coord_internal(db_conn, user, false);
 }
 
 /*
