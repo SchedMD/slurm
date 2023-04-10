@@ -689,7 +689,7 @@ extern int sacctmgr_list_account(int argc, char **argv)
 					case PRINT_COORDS:
 						field->print_routine(
 							field,
-							acct->coordinators,
+							&acct->coordinators,
 							(curr_inx ==
 							 field_count));
 						break;
@@ -742,7 +742,7 @@ extern int sacctmgr_list_account(int argc, char **argv)
 				case PRINT_COORDS:
 					field->print_routine(
 						field,
-						acct->coordinators,
+						&acct->coordinators,
 						(curr_inx ==
 						 field_count));
 					break;
