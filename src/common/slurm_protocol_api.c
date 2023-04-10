@@ -2946,11 +2946,12 @@ extern int *set_span(int total,  uint16_t tree_width)
 	if (tree_width == 0)
 		tree_width = slurm_conf.tree_width;
 
-	span = xcalloc(tree_width, sizeof(int));
 	//info("span count = %d", tree_width);
 	if (total <= tree_width) {
 		return span;
 	}
+
+	span = xcalloc(tree_width, sizeof(int));
 
 	while (left > 0) {
 		for (i = 0; i < tree_width; i++) {
