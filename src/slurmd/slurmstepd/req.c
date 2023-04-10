@@ -833,6 +833,9 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 	}
 	slurm_mutex_unlock(&suspend_mutex);
 
+	if ((sig == SIGTERM) || (sig == SIGKILL))
+		set_job_state(step, SLURMSTEPD_STEP_CANCELLED);
+
 done:
 	xfree(details);
 
