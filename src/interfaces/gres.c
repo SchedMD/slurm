@@ -6393,6 +6393,7 @@ static gres_job_state_t *_job_state_dup_common(gres_job_state_t *gres_js)
 	new_gres_js->cpus_per_gres = gres_js->cpus_per_gres;
 	new_gres_js->def_cpus_per_gres = gres_js->def_cpus_per_gres;
 	new_gres_js->def_mem_per_gres = gres_js->def_mem_per_gres;
+	new_gres_js->flags = gres_js->flags;
 	new_gres_js->gres_per_job = gres_js->gres_per_job;
 	new_gres_js->gres_per_node = gres_js->gres_per_node;
 	new_gres_js->gres_per_socket = gres_js->gres_per_socket;
@@ -6426,6 +6427,15 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 		memcpy(new_gres_js->gres_cnt_node_alloc,
 		       gres_js->gres_cnt_node_alloc, i);
 	}
+	if (gres_js->gres_cnt_step_alloc) {
+		new_gres_js->gres_cnt_step_alloc = xcalloc(
+			gres_js->node_cnt,
+			sizeof(*new_gres_js->gres_cnt_step_alloc));
+		memcpy(new_gres_js->gres_cnt_step_alloc,
+		       gres_js->gres_cnt_step_alloc,
+		       (sizeof(*new_gres_js->gres_cnt_step_alloc) *
+			gres_js->node_cnt));
+	}
 	if (gres_js->gres_bit_alloc) {
 		new_gres_js->gres_bit_alloc = xcalloc(gres_js->node_cnt,
 						      sizeof(bitstr_t *));
@@ -6434,6 +6444,16 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 				continue;
 			new_gres_js->gres_bit_alloc[i] =
 				bit_copy(gres_js->gres_bit_alloc[i]);
+		}
+	}
+	if (gres_js->gres_bit_step_alloc) {
+		new_gres_js->gres_bit_step_alloc = xcalloc(gres_js->node_cnt,
+							   sizeof(bitstr_t *));
+		for (i = 0; i < gres_js->node_cnt; i++) {
+			if (!gres_js->gres_bit_step_alloc[i])
+				continue;
+			new_gres_js->gres_bit_step_alloc[i] =
+				bit_copy(gres_js->gres_bit_step_alloc[i]);
 		}
 	}
 
