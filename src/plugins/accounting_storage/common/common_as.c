@@ -632,6 +632,11 @@ extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
 	return _is_user_any_coord_internal(db_conn, user, false);
 }
 
+extern bool is_user_any_coord_locked(void *db_conn, slurmdb_user_rec_t *user)
+{
+	return _is_user_any_coord_internal(db_conn, user, true);
+}
+
 /*
  * acct_get_db_name - get database name of accounting storage
  * RET: database name, should be free-ed by caller

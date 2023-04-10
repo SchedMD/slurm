@@ -68,6 +68,8 @@ extern bool is_user_min_admin_level_locked(void *db_conn, uid_t uid,
  */
 extern bool is_user_coord(slurmdb_user_rec_t *user, char *account);
 
+extern bool is_user_any_coord_locked(void *db_conn, slurmdb_user_rec_t *user);
+
 /*
  * is_user_any_coord - is the user coord of any account
  *
