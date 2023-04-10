@@ -568,7 +568,7 @@ extern int get_data(void)
 extern void parse_command_line(int argc, char **argv)
 {
 	extern int optind;
-	int c, i, optionIndex = 0;
+	int c, i, option_index = 0;
 	char *end = NULL, *start = NULL;
 	slurm_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
@@ -662,7 +662,7 @@ extern void parse_command_line(int argc, char **argv)
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
 				"aA:bBcC:DeE:f:F:g:hi:I:j:k:K:lLM:nN:o:pPq:r:s:S:Ttu:UvVW:x:X",
-				long_options, &optionIndex);
+				long_options, &option_index);
 		if (c == -1)
 			break;
 		switch (c) {

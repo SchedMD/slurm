@@ -183,7 +183,7 @@ int decode_state_char(char *state)
 void parse_command_line(int argc, char **argv)
 {
 	extern int optind;
-	int c, i, optionIndex = 0;
+	int c, i, option_index = 0;
 	char *end = NULL, *start = NULL;
 	slurm_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
@@ -215,7 +215,7 @@ void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv, "aehij:no:pPvV",
-				long_options, &optionIndex);
+				long_options, &option_index);
 		if (c == -1)
 			break;
 		switch (c) {

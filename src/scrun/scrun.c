@@ -136,7 +136,7 @@ static void _parse_create(int argc, char **argv)
 		{ "pid-file", required_argument, NULL, OPT_LONG_PID_FILE },
 		{ NULL, 0, NULL, 0 }
 	};
-	int optionIndex = 0;
+	int option_index = 0;
 	int c = 0;
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG2) {
@@ -145,7 +145,7 @@ static void _parse_create(int argc, char **argv)
 	}
 
 	while ((c = getopt_long(argc, argv, "b:", long_options,
-				&optionIndex)) != -1) {
+				&option_index)) != -1) {
 		switch (c) {
 		case OPT_LONG_BUNDLE:
 		case 'b':
@@ -255,7 +255,7 @@ static void _parse_delete(int argc, char **argv)
 		{ "force", no_argument, NULL, OPT_LONG_FORCE },
 		{ NULL, 0, NULL, 0 }
 	};
-	int optionIndex = 0;
+	int option_index = 0;
 	int c = 0;
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG2) {
@@ -263,7 +263,7 @@ static void _parse_delete(int argc, char **argv)
 			debug2("delete arg[%d]=%s", i, argv[i]);
 	}
 
-	while ((c = getopt_long(argc, argv, "f", long_options, &optionIndex)) !=
+	while ((c = getopt_long(argc, argv, "f", long_options, &option_index)) !=
 	       -1) {
 		switch (c) {
 		case OPT_LONG_FORCE:
@@ -466,7 +466,7 @@ static int _parse_commandline(int argc, char **argv)
 		{ "version", no_argument, NULL, OPT_LONG_VERSION },
 		{ NULL, 0, NULL, 0 }
 	};
-	int optionIndex = 0;
+	int option_index = 0;
 	int c = 0;
 	int index;
 
@@ -476,7 +476,7 @@ static int _parse_commandline(int argc, char **argv)
 
 	optind = 0;
 	while ((c = getopt_long(argc, argv, "f:vV?", long_options,
-				&optionIndex)) != -1) {
+				&option_index)) != -1) {
 		switch (c) {
 		case OPT_LONG_CGROUP_MANAGER:
 			info("WARNING: ignoring --cgroup-manager argument");
