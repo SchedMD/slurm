@@ -132,6 +132,35 @@ static void _dump_slurmdb_res_records(List res_list)
 	list_iterator_destroy(itr);
 }
 
+static bool _is_user_min_admin_level(void *db_conn, uid_t uid,
+				     slurmdb_admin_level_t min_level,
+				     bool locked)
+{
+	bool is_admin = 1;
+
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
+	/*
+	 * We have to check the authentication here in the
+	 * plugin since we don't know what accounts are being
+	 * referenced until after the query.
+	 */
+	if ((uid != slurm_conf.slurm_user_id && uid != 0)) {
+		slurmdb_admin_level_t level;
+		if (locked)
+			level = assoc_mgr_get_admin_level_locked(db_conn, uid);
+		else
+			level = assoc_mgr_get_admin_level(db_conn, uid);
+
+		if (level < min_level)
+			is_admin = false;
+	}
+
+	return is_admin;
+}
+
 /*
  * addto_update_list - add object updated to list
  * IN/OUT update_list: list of updated objects
@@ -556,24 +585,7 @@ extern void merge_delta_qos_list(List qos_list, List delta_qos_list)
 extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 				    slurmdb_admin_level_t min_level)
 {
-	bool is_admin = 1;
-	/* This only works when running though the slurmdbd.
-	 * THERE IS NO AUTHENTICATION WHEN RUNNNING OUT OF THE
-	 * SLURMDBD!
-	 */
-#ifndef NDEBUG
-	if (drop_priv)
-		return false;
-#endif
-	/* We have to check the authentication here in the
-	 * plugin since we don't know what accounts are being
-	 * referenced until after the query.
-	 */
-	if ((uid != slurm_conf.slurm_user_id && uid != 0) &&
-	    assoc_mgr_get_admin_level(db_conn, uid) < min_level)
-		is_admin = false;
-
-	return is_admin;
+	return _is_user_min_admin_level(db_conn, uid, min_level, false);
 }
 
 extern bool is_user_coord(slurmdb_user_rec_t *user, char *account)
