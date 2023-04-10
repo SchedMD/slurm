@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
     "true" or "false".
  -- slurmctld/step_mgr - prevent non-allocatable steps from decrementing values
     that weren't previously incremented when trying to allocate them.
+ -- auth/jwt - Fix memory leak in slurmctld with 'scontrol token'.
 
 * Changes in Slurm 23.02.1
 ==========================
