@@ -1203,6 +1203,17 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 			len = MIN(len, i);
 			/* proceed with request, make best effort */
 		}
+		if (gres_ns->gres_cnt_alloc >=
+		    gres_js->gres_cnt_node_alloc[node_offset]) {
+			gres_ns->gres_cnt_alloc -=
+				gres_js->gres_cnt_node_alloc[node_offset];
+		} else {
+			error("gres/%s: job %u dealloc node %s GRES count underflow (%"PRIu64" < %"PRIu64")",
+			      gres_name, job_id, node_name,
+			      gres_ns->gres_cnt_alloc,
+			      gres_js->gres_cnt_node_alloc[node_offset]);
+			gres_ns->gres_cnt_alloc = 0;
+		}
 		for (i = 0; i < len; i++) {
 			if (!bit_test(gres_js->gres_bit_alloc[node_offset],
 				      i)) {
@@ -1210,15 +1221,6 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 			}
 			bit_clear(gres_ns->gres_bit_alloc, i);
 
-			if (gres_ns->gres_cnt_alloc >= gres_per_bit) {
-				gres_ns->gres_cnt_alloc -= gres_per_bit;
-			} else {
-				error("gres/%s: job %u dealloc node %s GRES count underflow (%"PRIu64" < %"PRIu64")",
-				      gres_name, job_id, node_name,
-				      gres_ns->gres_cnt_alloc,
-				      gres_per_bit);
-				gres_ns->gres_cnt_alloc = 0;
-			}
 		}
 	} else if (gres_js->gres_cnt_node_alloc) {
 		gres_cnt = gres_js->gres_cnt_node_alloc[node_offset];

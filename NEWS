@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld/step_mgr - prevent non-allocatable steps from decrementing values
     that weren't previously incremented when trying to allocate them.
  -- auth/jwt - Fix memory leak in slurmctld with 'scontrol token'.
+ -- Fix shared gres (shard/mps) leak when using --tres-per-task
 
 * Changes in Slurm 23.02.1
 ==========================
