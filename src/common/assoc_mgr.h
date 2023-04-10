@@ -272,6 +272,14 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 						       uint32_t uid);
 
 /*
+ * Get admin_level of uid where USER_LOCK is already in READ_LOCK.
+ * IN: uid - uid of user to check admin_level of.
+ * RET: admin level SLURMDB_ADMIN_NOTSET on error
+ */
+extern slurmdb_admin_level_t assoc_mgr_get_admin_level_locked(void *db_conn,
+							      uint32_t uid);
+
+/*
  * see if user is coordinator of given acct
  * IN: uid - uid of user to check.
  * IN: acct - name of account

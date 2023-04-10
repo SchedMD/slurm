@@ -2198,6 +2198,9 @@ static slurmdb_admin_level_t _get_admin_level_internal(void *db_conn,
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
+
+	xassert(verify_assoc_lock(USER_LOCK, READ_LOCK));
+
 	if (!assoc_mgr_user_list) {
 		if (!locked)
 			assoc_mgr_unlock(&locks);
@@ -3075,6 +3078,12 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 						       uint32_t uid)
 {
 	return _get_admin_level_internal(db_conn, uid, false);
+}
+
+extern slurmdb_admin_level_t assoc_mgr_get_admin_level_locked(void *db_conn,
+							      uint32_t uid)
+{
+	return _get_admin_level_internal(db_conn, uid, true);
 }
 
 extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
