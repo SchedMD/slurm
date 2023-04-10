@@ -588,6 +588,12 @@ extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 	return _is_user_min_admin_level(db_conn, uid, min_level, false);
 }
 
+extern bool is_user_min_admin_level_locked(void *db_conn, uid_t uid,
+					   slurmdb_admin_level_t min_level)
+{
+	return _is_user_min_admin_level(db_conn, uid, min_level, true);
+}
+
 extern bool is_user_coord(slurmdb_user_rec_t *user, char *account)
 {
 	ListIterator itr;

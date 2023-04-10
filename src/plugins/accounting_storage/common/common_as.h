@@ -56,6 +56,8 @@ extern void merge_delta_qos_list(List qos_list, List delta_qos_list);
 
 extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 				    slurmdb_admin_level_t min_level);
+extern bool is_user_min_admin_level_locked(void *db_conn, uid_t uid,
+					   slurmdb_admin_level_t min_level);
 
 /*
  * is_user_coord - whether user is coord of account
