@@ -769,9 +769,11 @@ This option applies to job and step allocations.
 
 .TP
 \fB\-\-cpus\-per\-gpu\fR=<\fIncpus\fR>
-Advise Slurm that ensuing job steps will require \fIncpus\fR processors per
-allocated GPU.
+Request that \fIncpus\fR processors be allocated per allocated GPU.
+This option implies \-\-exact.
 Not compatible with the \fB\-\-cpus\-per\-task\fR option.
+
+This option applies to job and step allocations.
 .IP
 
 .TP

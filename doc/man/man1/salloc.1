@@ -523,8 +523,8 @@ accounting information will be present.
 
 .TP
 \fB\-\-cpus\-per\-gpu\fR=<\fIncpus\fR>
-Advise Slurm that ensuing job steps will require \fIncpus\fR processors per
-allocated GPU.
+Request that \fIncpus\fR processors be allocated per allocated GPU.
+Steps inheriting this value will imply \-\-exact.
 Not compatible with the \fB\-\-cpus\-per\-task\fR option.
 .IP
 
