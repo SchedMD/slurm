@@ -2184,6 +2184,37 @@ static bool _clear_locks(assoc_mgr_lock_t *lock_levels)
 	return true;
 }
 
+static slurmdb_admin_level_t _get_admin_level_internal(void *db_conn,
+						       uint32_t uid,
+						       bool locked)
+{
+	assoc_mgr_lock_t locks = { .user = READ_LOCK };
+	slurmdb_user_rec_t *found_user = NULL;
+	slurmdb_admin_level_t level = SLURMDB_ADMIN_NOTSET;
+
+	if (!assoc_mgr_user_list)
+		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
+			return SLURMDB_ADMIN_NOTSET;
+
+	if (!locked)
+		assoc_mgr_lock(&locks);
+	if (!assoc_mgr_user_list) {
+		if (!locked)
+			assoc_mgr_unlock(&locks);
+		return SLURMDB_ADMIN_NOTSET;
+	}
+
+	found_user = list_find_first(assoc_mgr_user_list, _list_find_uid, &uid);
+
+	if (found_user)
+		level = found_user->admin_level;
+
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+
+	return level;
+}
+
 extern bool verify_assoc_lock(assoc_mgr_lock_datatype_t datatype,
 			      lock_level_t level)
 {
@@ -3043,28 +3074,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 						       uint32_t uid)
 {
-	assoc_mgr_lock_t locks = { .user = READ_LOCK };
-	slurmdb_user_rec_t *found_user = NULL;
-	slurmdb_admin_level_t level = SLURMDB_ADMIN_NOTSET;
-
-	if (!assoc_mgr_user_list)
-		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
-			return SLURMDB_ADMIN_NOTSET;
-
-	assoc_mgr_lock(&locks);
-	if (!assoc_mgr_user_list) {
-		assoc_mgr_unlock(&locks);
-		return SLURMDB_ADMIN_NOTSET;
-	}
-
-	found_user = list_find_first(assoc_mgr_user_list, _list_find_uid, &uid);
-
-	if (found_user)
-		level = found_user->admin_level;
-
-	assoc_mgr_unlock(&locks);
-
-	return level;
+	return _get_admin_level_internal(db_conn, uid, false);
 }
 
 extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
