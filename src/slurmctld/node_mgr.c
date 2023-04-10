@@ -5097,6 +5097,26 @@ static void _remove_node_from_features(node_record_t *node_ptr)
 }
 
 /*
+ * Remove from all global bitmaps
+ *
+ * Sync with bitmaps in _init_bitmaps()
+ */
+static void _remove_node_from_all_bitmaps(node_record_t *node_ptr)
+{
+	bit_clear(avail_node_bitmap, node_ptr->index);
+	bit_clear(bf_ignore_node_bitmap, node_ptr->index);
+	bit_clear(booting_node_bitmap, node_ptr->index);
+	bit_clear(cg_node_bitmap, node_ptr->index);
+	bit_clear(cloud_node_bitmap, node_ptr->index);
+	bit_clear(future_node_bitmap, node_ptr->index);
+	bit_clear(idle_node_bitmap, node_ptr->index);
+	bit_clear(power_node_bitmap, node_ptr->index);
+	bit_clear(rs_node_bitmap, node_ptr->index);
+	bit_clear(share_node_bitmap, node_ptr->index);
+	bit_clear(up_node_bitmap, node_ptr->index);
+}
+
+/*
  * Has to be in slurmctld code for locking.
  */
 static int _delete_node(char *name)
@@ -5120,11 +5140,7 @@ static int _delete_node(char *name)
 		return ESLURM_NODES_BUSY;
 	}
 
-	bit_clear(idle_node_bitmap, node_ptr->index);
-	bit_clear(avail_node_bitmap, node_ptr->index);
-	bit_clear(cloud_node_bitmap, node_ptr->index);
-	bit_clear(future_node_bitmap, node_ptr->index);
-
+	_remove_node_from_all_bitmaps(node_ptr);
 	_remove_node_from_features(node_ptr);
 	gres_node_remove(node_ptr);
 
