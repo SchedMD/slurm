@@ -1170,7 +1170,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	ListIterator opt_iter, resp_iter;
 	srun_job_t *job = NULL;
 	int i, max_list_offset, max_het_job_offset, het_job_offset = -1,
-		het_step_offset = 0;
+		het_step_offset = -1;
 	uint32_t my_job_id = 0, het_job_id = 0;
 	char *het_job_nodelist = NULL;
 	bool begin_error_logged = false;
@@ -1241,6 +1241,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 				max_het_job_offset = max_list_offset;
 				local_het_step = true;
 			}
+			if (list_count(opt_list) > 1)
+				het_step_offset = 0;
 		}
 		srun_job_list = list_create(NULL);
 		used_resp_list = list_create(NULL);
