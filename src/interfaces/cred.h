@@ -149,15 +149,23 @@ typedef struct {
 	bool verified;		/* credential has been verified successfully */
 } slurm_cred_t;
 
-/*
- * The incomplete slurm_cred_t type is also defined in slurm_protocol_defs.h
- * so check to ensure that this header has not been included after
- * slurm_protocol_defs.h:
- */
-#ifndef __sbcast_cred_t_defined
-#  define  __sbcast_cred_t_defined
-   typedef struct sbcast_cred *sbcast_cred_t;		/* opaque data type */
-#endif
+typedef struct sbcast_cred {
+	time_t ctime;		/* Time that the cred was created	*/
+	time_t expiration;	/* Time at which cred is no longer good	*/
+	uint32_t jobid;		/* Slurm job id for this credential	*/
+	uint32_t het_job_id;	/* Slurm hetjob leader id for the job	*/
+	uint32_t step_id;	/* StepId				*/
+	uint32_t uid;		/* user for which this cred is valid	*/
+	uint32_t gid;		/* user's primary group id		*/
+	char *user_name;	/* user_name as a string		*/
+	uint32_t ngids;		/* number of extended group ids sent in
+				 * credential. if 0, these will need to
+				 * be fetched locally instead.		*/
+	uint32_t *gids;		/* extended group ids for user		*/
+	char *nodes;		/* nodes for which credential is valid	*/
+	char *signature;	/* credential signature			*/
+	uint32_t siglen;	/* signature length in bytes		*/
+} sbcast_cred_t;
 
 /*
  * The slurm_cred_ctx_t incomplete type
