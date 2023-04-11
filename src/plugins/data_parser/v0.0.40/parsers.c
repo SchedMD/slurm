@@ -349,14 +349,15 @@ extern void check_parser_funcname(const parser_t *const parser,
 		xassert(!parser->obj_openapi);
 
 		switch (linked->model) {
-		case PARSER_MODEL_ARRAY:
 		case PARSER_MODEL_SIMPLE:
+			xassert(parser->field_name && parser->field_name[0]);
+			/* fall through */
+		case PARSER_MODEL_ARRAY:
 		case PARSER_MODEL_FLAG_ARRAY:
 		case PARSER_MODEL_LIST:
 		case PARSER_MODEL_PTR:
 		case PARSER_MODEL_NT_ARRAY:
 		case PARSER_MODEL_NT_PTR_ARRAY:
-			xassert(parser->field_name && parser->field_name[0]);
 			/* linked parsers must always be the same size */
 			xassert(parser->size ==
 				find_parser_by_type(parser->type)->size);
