@@ -144,25 +144,6 @@ struct slurm_cred_context {
 	time_t exkey_exp;	/* Old key expiration time		*/
 };
 
-
-/*
- * Completion of slurm job credential type, slurm_cred_t:
- */
-#define CRED_MAGIC 0x0b0b0b
-struct slurm_job_credential {
-	int magic;
-	pthread_rwlock_t mutex;
-	buf_t *buffer;		/* packed representation of credential */
-	uint16_t buf_version;	/* version buffer was generated with */
-
-	slurm_cred_arg_t *arg;	/* fields */
-
-	time_t ctime;		/* time of credential creation */
-	char *signature;	/* credential signature */
-	uint32_t siglen;	/* signature length in bytes */
-	bool verified;		/* credential has been verified successfully */
-};
-
 typedef struct {
 	void *(*cred_read_private_key)	(const char *path);
 	void *(*cred_read_public_key)	(const char *path);

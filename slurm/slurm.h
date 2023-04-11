@@ -70,11 +70,6 @@ typedef struct sockaddr_storage slurm_addr_t;
 typedef struct slurmdb_cluster_rec slurmdb_cluster_rec_t;
 #endif
 
-#ifndef __slurm_cred_t_defined
-#  define __slurm_cred_t_defined
-typedef struct slurm_job_credential slurm_cred_t;
-#endif
-
 /* Define switch_jobinfo_t below to avoid including extraneous slurm headers */
 #ifndef __switch_jobinfo_t_defined
 #  define  __switch_jobinfo_t_defined

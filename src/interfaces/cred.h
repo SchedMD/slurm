@@ -134,15 +134,20 @@ typedef struct {
 	list_t *step_gres_list;		/* GRES allocated to STEP */
 } slurm_cred_arg_t;
 
-/*
- * The incomplete slurm_cred_t type is also defined in slurm.h for
- * users of the api, so check to ensure that this header has not been
- * included after slurm.h:
- */
-#ifndef __slurm_cred_t_defined
-#  define __slurm_cred_t_defined
-   typedef struct slurm_job_credential slurm_cred_t;
-#endif
+#define CRED_MAGIC 0x0b0b0b
+typedef struct {
+	int magic;
+	pthread_rwlock_t mutex;
+	buf_t *buffer;		/* packed representation of credential */
+	uint16_t buf_version;	/* version buffer was generated with */
+
+	slurm_cred_arg_t *arg;	/* fields */
+
+	time_t ctime;		/* time of credential creation */
+	char *signature;	/* credential signature */
+	uint32_t siglen;	/* signature length in bytes */
+	bool verified;		/* credential has been verified successfully */
+} slurm_cred_t;
 
 /*
  * The incomplete slurm_cred_t type is also defined in slurm_protocol_defs.h
