@@ -345,7 +345,7 @@ extern void auth_g_destroy(void *cred)
 	(*(ops[wrap->index].destroy))(cred);
 }
 
-int auth_g_verify(void *cred, char *auth_info)
+extern int auth_g_verify(void *cred, char *auth_info)
 {
 	int rc = SLURM_ERROR;
 	cred_wrapper_t *wrap = cred;
@@ -362,7 +362,7 @@ int auth_g_verify(void *cred, char *auth_info)
 	return rc;
 }
 
-uid_t auth_g_get_uid(void *cred)
+extern uid_t auth_g_get_uid(void *cred)
 {
 	cred_wrapper_t *wrap = cred;
 	uid_t uid = SLURM_AUTH_NOBODY;
@@ -379,7 +379,7 @@ uid_t auth_g_get_uid(void *cred)
 	return uid;
 }
 
-gid_t auth_g_get_gid(void *cred)
+extern gid_t auth_g_get_gid(void *cred)
 {
 	cred_wrapper_t *wrap = cred;
 	gid_t gid = SLURM_AUTH_NOBODY;
@@ -396,7 +396,7 @@ gid_t auth_g_get_gid(void *cred)
 	return gid;
 }
 
-char *auth_g_get_host(void *cred)
+extern char *auth_g_get_host(void *cred)
 {
 	cred_wrapper_t *wrap = cred;
 	char *host = NULL;
@@ -430,7 +430,7 @@ extern int auth_g_get_data(void *cred, char **data, uint32_t *len)
 	return rc;
 }
 
-int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version)
+extern int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version)
 {
 	cred_wrapper_t *wrap = cred;
 
@@ -449,7 +449,7 @@ int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version)
 	}
 }
 
-void *auth_g_unpack(buf_t *buf, uint16_t protocol_version)
+extern void *auth_g_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	uint32_t plugin_id = 0;
 	cred_wrapper_t *cred;
@@ -483,7 +483,7 @@ unpack_error:
 	return NULL;
 }
 
-int auth_g_thread_config(const char *token, const char *username)
+extern int auth_g_thread_config(const char *token, const char *username)
 {
 	int rc = SLURM_SUCCESS;
 	xassert(g_context_num > 0);
@@ -495,7 +495,7 @@ int auth_g_thread_config(const char *token, const char *username)
 	return rc;
 }
 
-void auth_g_thread_clear(void)
+extern void auth_g_thread_clear(void)
 {
 	xassert(g_context_num > 0);
 
@@ -504,8 +504,8 @@ void auth_g_thread_clear(void)
 	slurm_rwlock_unlock(&context_lock);
 }
 
-char *auth_g_token_generate(int plugin_id, const char *username,
-			    int lifespan)
+extern char *auth_g_token_generate(int plugin_id, const char *username,
+				   int lifespan)
 {
 	char *token = NULL;
 	xassert(g_context_num > 0);
