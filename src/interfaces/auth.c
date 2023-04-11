@@ -282,7 +282,7 @@ done:
  */
 extern int auth_index(void *cred)
 {
-	cred_wrapper_t *wrapper = (cred_wrapper_t *) cred;
+	cred_wrapper_t *wrapper = cred;
 
 	if (wrapper)
 		return wrapper->index;
@@ -335,7 +335,7 @@ void *auth_g_create(int index, char *auth_info, uid_t r_uid,
 
 extern void auth_g_destroy(void *cred)
 {
-	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+	cred_wrapper_t *wrap = cred;
 
 	xassert(g_context_num > 0);
 
@@ -348,7 +348,7 @@ extern void auth_g_destroy(void *cred)
 int auth_g_verify(void *cred, char *auth_info)
 {
 	int rc = SLURM_ERROR;
-	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+	cred_wrapper_t *wrap = cred;
 
 	xassert(g_context_num > 0);
 
@@ -364,7 +364,7 @@ int auth_g_verify(void *cred, char *auth_info)
 
 uid_t auth_g_get_uid(void *cred)
 {
-	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+	cred_wrapper_t *wrap = cred;
 	uid_t uid = SLURM_AUTH_NOBODY;
 
 	xassert(g_context_num > 0);
@@ -381,7 +381,7 @@ uid_t auth_g_get_uid(void *cred)
 
 gid_t auth_g_get_gid(void *cred)
 {
-	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+	cred_wrapper_t *wrap = cred;
 	gid_t gid = SLURM_AUTH_NOBODY;
 
 	xassert(g_context_num > 0);
@@ -398,7 +398,7 @@ gid_t auth_g_get_gid(void *cred)
 
 char *auth_g_get_host(void *cred)
 {
-	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+	cred_wrapper_t *wrap = cred;
 	char *host = NULL;
 
 	xassert(g_context_num > 0);
@@ -432,7 +432,7 @@ extern int auth_g_get_data(void *cred, char **data, uint32_t *len)
 
 int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version)
 {
-	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+	cred_wrapper_t *wrap = cred;
 
 	xassert(g_context_num > 0);
 
