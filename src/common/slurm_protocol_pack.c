@@ -67,6 +67,7 @@
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/mpi.h"
 #include "src/interfaces/power.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
@@ -6434,7 +6435,10 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack32(msg->het_job_step_cnt, buffer);
 		pack32(msg->het_job_task_offset, buffer);
 		packstr(msg->het_job_node_list, buffer);
-		pack32(msg->mpi_plugin_id, buffer);
+		if (msg->mpi_plugin_id == NO_VAL)
+			pack32(MPI_PLUGIN_NONE, buffer);
+		else
+			pack32(msg->mpi_plugin_id, buffer);
 		pack32(msg->ntasks, buffer);
 		pack16(msg->ntasks_per_board, buffer);
 		pack16(msg->ntasks_per_core, buffer);
@@ -6532,7 +6536,10 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack32(msg->het_job_step_cnt, buffer);
 		pack32(msg->het_job_task_offset, buffer);
 		packstr(msg->het_job_node_list, buffer);
-		pack32(msg->mpi_plugin_id, buffer);
+		if (msg->mpi_plugin_id == NO_VAL)
+			pack32(MPI_PLUGIN_NONE, buffer);
+		else
+			pack32(msg->mpi_plugin_id, buffer);
 		pack32(msg->ntasks, buffer);
 		pack16(msg->ntasks_per_board, buffer);
 		pack16(msg->ntasks_per_core, buffer);
@@ -6800,6 +6807,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack32(&msg->het_job_task_offset, buffer);
 		safe_unpackstr(&msg->het_job_node_list, buffer);
 		safe_unpack32(&msg->mpi_plugin_id, buffer);
+		if (msg->mpi_plugin_id == MPI_PLUGIN_NONE)
+			msg->mpi_plugin_id = NO_VAL;
 		safe_unpack32(&msg->ntasks, buffer);
 		safe_unpack16(&msg->ntasks_per_board, buffer);
 		safe_unpack16(&msg->ntasks_per_core, buffer);
@@ -6940,6 +6949,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack32(&msg->het_job_task_offset, buffer);
 		safe_unpackstr(&msg->het_job_node_list, buffer);
 		safe_unpack32(&msg->mpi_plugin_id, buffer);
+		if (msg->mpi_plugin_id == MPI_PLUGIN_NONE)
+			msg->mpi_plugin_id = NO_VAL;
 		safe_unpack32(&msg->ntasks, buffer);
 		safe_unpack16(&msg->ntasks_per_board, buffer);
 		safe_unpack16(&msg->ntasks_per_core, buffer);
