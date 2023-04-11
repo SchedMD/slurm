@@ -446,6 +446,5 @@ extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, uint16_t protocol_version);
 extern void print_sbcast_cred(sbcast_cred_t *sbcast_cred);
 extern void sbcast_cred_arg_free(sbcast_cred_arg_t *arg);
-extern bool slurm_cred_send_gids_enabled(void);
 
 #endif  /* _HAVE_SLURM_CREDS_H */
