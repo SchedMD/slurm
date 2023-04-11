@@ -359,8 +359,8 @@ extern void check_parser_funcname(const parser_t *const parser,
 		case PARSER_MODEL_NT_ARRAY:
 		case PARSER_MODEL_NT_PTR_ARRAY:
 			/* linked parsers must always be the same size */
-			xassert(parser->size ==
-				find_parser_by_type(parser->type)->size);
+			xassert((parser->size == NO_VAL) ||
+				(parser->size == linked->size));
 			xassert((parser->ptr_offset < NO_VAL) ||
 				(parser->ptr_offset >= 0));
 			break;
