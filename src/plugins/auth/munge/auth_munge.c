@@ -190,7 +190,8 @@ auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data, int dlen)
 		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
 		xfree(socket);
 		if (rc != EMUNGE_SUCCESS) {
-			error("munge_ctx_set failure");
+			error("Failed to set MUNGE socket: %s",
+			      munge_ctx_strerror(ctx));
 			munge_ctx_destroy(ctx);
 			return NULL;
 		}
@@ -198,7 +199,8 @@ auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data, int dlen)
 
 	rc = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION, r_uid);
 	if (rc != EMUNGE_SUCCESS) {
-		error("munge_ctx_set failure");
+		error("Failed to set uid restriction: %s",
+		      munge_ctx_strerror(ctx));
 		munge_ctx_destroy(ctx);
 		return NULL;
 	}
