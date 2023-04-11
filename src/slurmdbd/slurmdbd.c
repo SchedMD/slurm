@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 
 	/*
 	 * Do plugin init's after _init_pidfile so systemd is happy as
-	 * slurm_acct_storage_init() could take a long time to finish if running
+	 * acct_storage_g_init() could take a long time to finish if running
 	 * for the first time after an upgrade.
 	 */
 	if (auth_g_init() != SLURM_SUCCESS) {
@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 	if (hash_g_init() != SLURM_SUCCESS) {
 		fatal("failed to initialize hash plugin");
 	}
-	if (slurm_acct_storage_init() != SLURM_SUCCESS) {
+	if (acct_storage_g_init() != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s accounting storage plugin",
 		      slurm_conf.accounting_storage_type);
 	}

@@ -314,7 +314,7 @@ extern int jobacct_storage_job_start_direct(void *db_conn,
 /*
  * Initialize context for acct_storage plugin
  */
-extern int slurm_acct_storage_init(void)
+extern int acct_storage_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "accounting_storage";
@@ -509,7 +509,7 @@ extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
 extern int acct_storage_g_add_reservation(void *db_conn,
 					  slurmdb_reservation_rec_t *resv)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (acct_storage_g_init() < 0)
 		return NO_VAL;
 	return (*(ops.add_reservation))(db_conn, resv);
 }
@@ -628,7 +628,7 @@ extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
 extern int acct_storage_g_modify_reservation(void *db_conn,
 					     slurmdb_reservation_rec_t *resv)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (acct_storage_g_init() < 0)
 		return NO_VAL;
 	return (*(ops.modify_reservation))(db_conn, resv);
 }
@@ -738,7 +738,7 @@ extern List acct_storage_g_remove_wckeys(void *db_conn, uint32_t uid,
 extern int acct_storage_g_remove_reservation(void *db_conn,
 					     slurmdb_reservation_rec_t *resv)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (acct_storage_g_init() < 0)
 		return NO_VAL;
 	return (*(ops.remove_reservation))(db_conn, resv);
 }

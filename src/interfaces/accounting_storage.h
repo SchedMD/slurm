@@ -57,7 +57,7 @@ typedef enum {
 
 extern uid_t db_api_uid;
 
-extern int slurm_acct_storage_init(void); /* load the plugin */
+extern int acct_storage_g_init(void); /* load the plugin */
 extern int acct_storage_g_fini(void); /* unload the plugin */
 
 /*

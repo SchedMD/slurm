@@ -1054,7 +1054,7 @@ extern void parse_command_line(int argc, char **argv)
 			exit(1);
 		}
 	} else {
-		if (slurm_acct_storage_init() != SLURM_SUCCESS) {
+		if (acct_storage_g_init() != SLURM_SUCCESS) {
 			fprintf(stderr, "Slurm unable to initialize storage plugin\n");
 			exit(1);
 		}

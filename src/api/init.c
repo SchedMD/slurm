@@ -55,7 +55,7 @@ extern void slurm_fini(void)
 
 extern void slurm_client_init_plugins(void)
 {
-	if (slurm_acct_storage_init() != SLURM_SUCCESS)
+	if (acct_storage_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize the accounting storage plugin");
 
 	if (cli_filter_init() != SLURM_SUCCESS)
