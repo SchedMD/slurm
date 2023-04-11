@@ -60,6 +60,81 @@
 #define DEFAULT_EXPIRATION_WINDOW 120
 
 /*
+ * Container for Slurm credential create/fetch/verify arguments
+ *
+ * The core_bitmap, cores_per_socket, sockets_per_node, and
+ * sock_core_rep_count is based upon the nodes allocated to the
+ * JOB, but the bits set in core_bitmap are those cores allocated
+ * to this STEP.
+ */
+typedef struct {
+	slurm_step_id_t step_id;
+	uid_t uid; /* user for which the cred is valid */
+	gid_t gid; /* user's primary group id */
+	/*
+	 * These are only used in certain conditions and should not be supplied
+	 * when creating a new credential.  They are defined here so the values
+	 * can be fetched from the credential.
+	 */
+	char *pw_name; /* user_name as a string */
+	char *pw_gecos; /* user information */
+	char *pw_dir; /* home directory */
+	char *pw_shell; /* user program */
+	int ngids; /* number of extended group ids */
+	gid_t *gids; /* extended group ids for user */
+	char **gr_names; /* array of group names matching gids */
+
+	/* job_core_bitmap and step_core_bitmap cover the same set of nodes,
+	 * namely the set of nodes allocated to the job. The core and socket
+	 * information below applies to job_core_bitmap AND step_core_bitmap */
+	uint16_t core_array_size;	/* core/socket array size */
+	uint16_t *cores_per_socket;	/* Used for job/step_core_bitmaps */
+	uint16_t *sockets_per_node;	/* Used for job/step_core_bitmaps */
+	uint32_t *sock_core_rep_count;	/* Used for job/step_core_bitmaps */
+
+	uint32_t cpu_array_count;
+	uint16_t *cpu_array;
+	uint32_t *cpu_array_reps;
+
+	/* JOB specific info */
+	char *job_account;		/* account */
+	char *job_alias_list;		/* node name to address aliases */
+	char *job_comment;		/* comment */
+	char *job_constraints;		/* constraints in job allocation */
+	bitstr_t *job_core_bitmap;	/* cores allocated to JOB */
+	uint16_t job_core_spec;		/* count of specialized cores */
+	time_t job_end_time;            /* UNIX timestamp for job end time */
+	char *job_extra;		/* Extra - arbitrary string */
+	char *job_hostlist;		/* list of nodes allocated to JOB */
+	char *job_licenses;		/* Licenses allocated to job */
+	uint64_t *job_mem_alloc;	/* Per node allocated mem in rep.cnt. */
+	uint32_t *job_mem_alloc_rep_count;
+	uint32_t job_mem_alloc_size;	/* Size of memory arrays above */
+	uint32_t job_nhosts;		/* count of nodes allocated to JOB */
+	uint32_t job_ntasks;
+	uint16_t job_oversubscribe;	/* shared/oversubscribe status */
+	List job_gres_list;		/* Generic resources allocated to JOB */
+	char *job_partition;		/* partition */
+	char *job_reservation;		/* Reservation, if applicable */
+	uint16_t job_restart_cnt;	/* restart count */
+	time_t job_start_time;          /* UNIX timestamp for job start time */
+	char *job_std_err;
+	char *job_std_in;
+	char *job_std_out;
+	uint16_t x11;			/* x11 flag set on job */
+
+	char *selinux_context;
+
+	/* STEP specific info */
+	bitstr_t *step_core_bitmap;	/* cores allocated to STEP */
+	char *step_hostlist;		/* list of nodes allocated to STEP */
+	uint64_t *step_mem_alloc;	/* Per node allocated mem in rep.cnt. */
+	uint32_t *step_mem_alloc_rep_count;
+	uint32_t step_mem_alloc_size;	/* Size of memory arrays above */
+	list_t *step_gres_list;		/* GRES allocated to STEP */
+} slurm_cred_arg_t;
+
+/*
  * The incomplete slurm_cred_t type is also defined in slurm.h for
  * users of the api, so check to ensure that this header has not been
  * included after slurm.h:
@@ -137,83 +212,6 @@ void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx);
  */
 int slurm_cred_ctx_pack(slurm_cred_ctx_t *ctx, buf_t *buffer);
 int slurm_cred_ctx_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer);
-
-
-/*
- * Container for Slurm credential create/fetch/verify arguments
- *
- * The core_bitmap, cores_per_socket, sockets_per_node, and
- * sock_core_rep_count is based upon the nodes allocated to the
- * JOB, but the bits set in core_bitmap are those cores allocated
- * to this STEP
- */
-typedef struct {
-	slurm_step_id_t step_id;
-	uid_t uid; /* user for which the cred is valid */
-	gid_t gid; /* user's primary group id */
-	/*
-	 * These are only used in certain conditions and should not be supplied
-	 * when creating a new credential.  They are defined here so the values
-	 * can be fetched from the credential.
-	 */
-	char *pw_name; /* user_name as a string */
-	char *pw_gecos; /* user information */
-	char *pw_dir; /* home directory */
-	char *pw_shell; /* user program */
-	int ngids; /* number of extended group ids */
-	gid_t *gids; /* extended group ids for user */
-	char **gr_names; /* array of group names matching gids */
-
-	/* job_core_bitmap and step_core_bitmap cover the same set of nodes,
-	 * namely the set of nodes allocated to the job. The core and socket
-	 * information below applies to job_core_bitmap AND step_core_bitmap */
-	uint16_t core_array_size;	/* core/socket array size */
-	uint16_t *cores_per_socket;	/* Used for job/step_core_bitmaps */
-	uint16_t *sockets_per_node;	/* Used for job/step_core_bitmaps */
-	uint32_t *sock_core_rep_count;	/* Used for job/step_core_bitmaps */
-
-	uint32_t cpu_array_count;
-	uint16_t *cpu_array;
-	uint32_t *cpu_array_reps;
-
-	/* JOB specific info */
-	char *job_account;		/* account */
-	char *job_alias_list;		/* node name to address aliases */
-	char *job_comment;		/* comment */
-	char     *job_constraints;	/* constraints in job allocation */
-	bitstr_t *job_core_bitmap;	/* cores allocated to JOB */
-	uint16_t  job_core_spec;	/* count of specialized cores */
-	time_t job_end_time;            /* UNIX timestamp for job end time */
-	char *job_extra;		/* Extra - arbitrary string */
-	char     *job_hostlist;		/* list of nodes allocated to JOB */
-	char *job_licenses;		/* Licenses allocated to job */
-	uint64_t *job_mem_alloc;	/* Per node allocated mem in rep.cnt. */
-	uint32_t *job_mem_alloc_rep_count;
-	uint32_t job_mem_alloc_size;	/* Size of memory arrays above */
-	uint32_t  job_nhosts;		/* count of nodes allocated to JOB */
-	uint32_t job_ntasks;
-	uint16_t job_oversubscribe;	/* shared/oversubscribe status */
-	List job_gres_list;		/* Generic resources allocated to JOB */
-	char *job_partition;		/* partition */
-	char *job_reservation;		/* Reservation, if applicable */
-	uint16_t job_restart_cnt;	/* restart count */
-	time_t job_start_time;          /* UNIX timestamp for job start time */
-	char *job_std_err;
-	char *job_std_in;
-	char *job_std_out;
-	uint16_t  x11;			/* x11 flag set on job */
-
-	char *selinux_context;
-
-	/* STEP specific info */
-	bitstr_t *step_core_bitmap;	/* cores allocated to STEP */
-	char     *step_hostlist;	/* list of nodes allocated to STEP */
-	uint64_t *step_mem_alloc;	/* Per node allocated mem in rep.cnt. */
-	uint32_t *step_mem_alloc_rep_count;
-	uint32_t step_mem_alloc_size;	/* Size of memory arrays above */
-
-	List step_gres_list;		/* Generic resources allocated to STEP */
-} slurm_cred_arg_t;
 
 /* Initialize the plugin. */
 extern int cred_g_init(void);
