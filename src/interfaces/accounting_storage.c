@@ -352,7 +352,6 @@ extern int acct_storage_g_fini(void)
 
 	slurm_rwlock_wrlock(&plugin_context_lock);
 	if (plugin_context) {
-		//(*(ops.acct_storage_fini))();
 		rc = plugin_context_destroy(plugin_context);
 		plugin_context = NULL;
 	}
