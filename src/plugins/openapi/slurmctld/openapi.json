@@ -40,7 +40,7 @@
     }
   ],
   "paths": {
-    "/slurm/v0.0.40/diag/": {
+    "/slurm/{data_parser}/diag/": {
       "get": {
         "tags": [
           "slurm"
@@ -81,7 +81,7 @@
         }
       }
     },
-    "/slurm/v0.0.40/licenses/": {
+    "/slurm/{data_parser}/licenses/": {
       "get": {
         "tags": [
           "slurm"
@@ -110,7 +110,7 @@
         }
       }
     },
-    "/slurm/v0.0.40/ping/": {
+    "/slurm/{data_parser}/ping/": {
       "get": {
         "tags": [
           "slurm"
@@ -151,7 +151,7 @@
         }
       }
     },
-    "/slurm/v0.0.40/jobs/": {
+    "/slurm/{data_parser}/jobs/": {
       "get": {
         "tags": [
           "slurm"
@@ -206,7 +206,7 @@
         }
       }
     },
-    "/slurm/v0.0.40/job/{job_id}": {
+    "/slurm/{data_parser}/job/{job_id}": {
       "get": {
         "tags": [
           "slurm"
@@ -397,7 +397,7 @@
         }
       }
     },
-    "/slurm/v0.0.40/job/submit": {
+    "/slurm/{data_parser}/job/submit": {
       "post": {
         "tags": [
           "slurm"
@@ -454,7 +454,7 @@
         }
       }
     },
-    "/slurm/v0.0.40/nodes/": {
+    "/slurm/{data_parser}/nodes/": {
       "get": {
         "tags": [
           "slurm"
@@ -509,7 +509,7 @@
         }
       }
     },
-    "/slurm/v0.0.40/node/{node_name}": {
+    "/slurm/{data_parser}/node/{node_name}": {
       "get": {
         "tags": [
           "slurm"
@@ -683,7 +683,7 @@
         }
       }
     },
-    "/slurm/v0.0.40/partitions/": {
+    "/slurm/{data_parser}/partitions/": {
       "get": {
         "tags": [
           "slurm"
@@ -738,7 +738,7 @@
         }
       }
     },
-    "/slurm/v0.0.40/partition/{partition_name}": {
+    "/slurm/{data_parser}/partition/{partition_name}": {
       "get": {
         "tags": [
           "slurm"
@@ -804,7 +804,7 @@
         }
       }
     },
-    "/slurm/v0.0.40/reservations/": {
+    "/slurm/{data_parser}/reservations/": {
       "get": {
         "tags": [
           "slurm"
@@ -859,7 +859,7 @@
         }
       }
     },
-    "/slurm/v0.0.40/reservation/{reservation_name}": {
+    "/slurm/{data_parser}/reservation/{reservation_name}": {
       "get": {
         "tags": [
           "slurm"
