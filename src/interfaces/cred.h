@@ -113,7 +113,7 @@ typedef struct {
 	uint32_t job_nhosts;		/* count of nodes allocated to JOB */
 	uint32_t job_ntasks;
 	uint16_t job_oversubscribe;	/* shared/oversubscribe status */
-	List job_gres_list;		/* Generic resources allocated to JOB */
+	list_t *job_gres_list;		/* Generic resources allocated to JOB */
 	char *job_partition;		/* partition */
 	char *job_reservation;		/* Reservation, if applicable */
 	uint16_t job_restart_cnt;	/* restart count */
@@ -417,7 +417,7 @@ extern void format_core_allocs(slurm_cred_t *cred,
  * NOTE: Caller must destroy the returned lists
  */
 extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
-			  List *job_gres_list, List *step_gres_list);
+			  list_t **job_gres_list, list_t **step_gres_list);
 
 /*
  * Print a slurm job credential using the info() call
