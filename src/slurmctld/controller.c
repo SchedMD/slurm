@@ -887,7 +887,7 @@ int main(int argc, char **argv)
 
 		/* Save any pending state save RPCs */
 		acct_storage_g_close_connection(&acct_db_conn);
-		slurm_acct_storage_fini();
+		acct_storage_g_fini();
 
 		slurm_persist_conn_recv_server_fini();
 		/*

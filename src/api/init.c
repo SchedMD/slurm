@@ -70,5 +70,5 @@ extern void slurm_client_fini_plugins(void)
 	gres_fini();
 	cli_filter_fini();
 	select_g_fini();
-	slurm_acct_storage_fini();
+	acct_storage_g_fini();
 }

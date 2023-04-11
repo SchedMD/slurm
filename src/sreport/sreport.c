@@ -269,7 +269,7 @@ main (int argc, char **argv)
 	xfree(cluster_flag);
 
 	slurmdb_connection_close(&db_conn);
-	slurm_acct_storage_fini();
+	acct_storage_g_fini();
 	exit(exit_code);
 }
 

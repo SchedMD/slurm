@@ -346,7 +346,7 @@ done:
 	return retval;
 }
 
-extern int slurm_acct_storage_fini(void)
+extern int acct_storage_g_fini(void)
 {
 	int rc = SLURM_SUCCESS;
 

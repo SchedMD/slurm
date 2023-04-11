@@ -322,7 +322,7 @@ end_it:
 	}
 
 	assoc_mgr_fini(0);
-	slurm_acct_storage_fini();
+	acct_storage_g_fini();
 	auth_g_fini();
 	log_fini();
 	free_slurmdbd_conf();

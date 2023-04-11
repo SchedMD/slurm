@@ -261,7 +261,7 @@ int main(int argc, char **argv)
 	if (local_exit_code)
 		exit_code = local_exit_code;
 	slurmdb_connection_close(&db_conn);
-	slurm_acct_storage_fini();
+	acct_storage_g_fini();
 	FREE_NULL_LIST(g_qos_list);
 	FREE_NULL_LIST(g_res_list);
 	FREE_NULL_LIST(g_tres_list);
