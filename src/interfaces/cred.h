@@ -115,11 +115,7 @@ slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(const char *pubkey);
  * Set and get credential context options
  *
  */
-typedef enum {
-	SLURM_CRED_OPT_EXPIRY_WINDOW /* expiration time of creds (int );  */
-} slurm_cred_opt_t;
-
-int slurm_cred_ctx_get(slurm_cred_ctx_t *ctx, slurm_cred_opt_t opt, ...);
+extern int cred_ctx_lifetime(slurm_cred_ctx_t *ctx);
 
 /*
  * Update the context's current key.

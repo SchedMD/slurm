@@ -452,35 +452,19 @@ extern void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx)
 	return;
 }
 
-extern int slurm_cred_ctx_get(slurm_cred_ctx_t *ctx, slurm_cred_opt_t opt, ...)
+extern int cred_ctx_lifetime(slurm_cred_ctx_t *ctx)
 {
-	int rc = SLURM_SUCCESS;
-	va_list ap;
-	int *intp;
+	int lifespan;
 
 	xassert(ctx != NULL);
-
-	va_start(ap, opt);
 
 	slurm_mutex_lock(&ctx->mutex);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 
-	switch (opt) {
-	case SLURM_CRED_OPT_EXPIRY_WINDOW:
-		intp  = va_arg(ap, int *);
-		*intp = ctx->expiry_window;
-		break;
-	default:
-		slurm_seterrno(EINVAL);
-		rc = SLURM_ERROR;
-		break;
-	}
-
+	lifespan = ctx->expiry_window;
 	slurm_mutex_unlock(&ctx->mutex);
 
-	va_end(ap);
-
-	return rc;
+	return lifespan;
 }
 
 extern int slurm_cred_ctx_key_update(slurm_cred_ctx_t *ctx, const char *path)
