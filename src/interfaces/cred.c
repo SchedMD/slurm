@@ -48,16 +48,14 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/bitstring.h"
-#include "src/interfaces/gres.h"
-#include "src/common/io_hdr.h"
 #include "src/common/group_cache.h"
+#include "src/common/io_hdr.h"
 #include "src/common/job_resources.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
-#include "src/interfaces/cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_time.h"
@@ -65,6 +63,8 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/cred.h"
+#include "src/interfaces/gres.h"
 
 #ifndef __sbcast_cred_t_defined
 #  define  __sbcast_cred_t_defined
