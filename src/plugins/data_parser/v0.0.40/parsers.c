@@ -6110,6 +6110,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_RESP)[] = {                          
 		add_parser(openapi_resp_single_t, mtype, false, response, 0, path, desc), \
 	}
 
+add_openapi_response_single(OPENAPI_DIAG_RESP, STATS_MSG_PTR, "statistics", "statistics");
+
 #undef add_parser
 #undef add_parser_skip
 #undef add_complex_parser
@@ -6518,6 +6520,7 @@ static const parser_t parsers[] = {
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
+	addoar(OPENAPI_DIAG_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),

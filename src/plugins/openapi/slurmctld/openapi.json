@@ -53,12 +53,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_diag"
+                  "$ref": "DATA_PARSER_OPENAPI_DIAG_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_diag"
+                  "$ref": "DATA_PARSER_OPENAPI_DIAG_RESP"
                 }
               }
             }
@@ -68,12 +68,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1000,23 +1000,6 @@
       }
     },
     "schemas": {
-      "v0.0.40_diag": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "statistics": {
-            "$ref": "DATA_PARSER_STATS_MSG"
-          }
-        }
-      },
       "v0.0.40_licenses_info": {
         "type": "object",
         "properties": {
@@ -1031,57 +1014,6 @@
           },
           "licenses": {
             "$ref": "DATA_PARSER_LICENSES"
-          }
-        }
-      },
-      "v0.0.40_pings": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "pings": {
-            "$ref": "DATA_PARSER_CONTROLLER_PING_ARRAY"
-          }
-        }
-      },
-      "v0.0.40_partitions_response": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "partitions": {
-            "$ref": "DATA_PARSER_PARTITION_INFO_ARRAY"
-          }
-        }
-      },
-      "v0.0.40_reservations_response": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "reservations": {
-            "$ref": "DATA_PARSER_RESERVATION_INFO_ARRAY"
           }
         }
       },
@@ -1151,66 +1083,6 @@
         },
         "type": "object"
       },
-      "v0.0.40_job_update_response": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "results": {
-            "$ref": "DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_PTR"
-          }
-        }
-      },
-      "v0.0.40_job_submission_response": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "job_id": {
-            "description": "new job ID",
-            "type": "integer"
-          },
-          "step_id": {
-            "description": "new job step ID",
-            "type": "string"
-          },
-          "job_submit_user_msg": {
-            "description": "Message to user from job_submit plugin",
-            "type": "string"
-          }
-        }
-      },
-      "v0.0.40_jobs_response": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "jobs": {
-            "$ref": "DATA_PARSER_JOB_INFO_MSG"
-          }
-        }
-      },
       "v0.0.40_job_submission": {
         "properties": {
           "script": {
@@ -1222,23 +1094,6 @@
           },
           "jobs": {
             "$ref": "DATA_PARSER_JOB_DESC_MSG_LIST"
-          }
-        }
-      },
-      "v0.0.40_nodes_response": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "nodes": {
-            "$ref": "DATA_PARSER_NODES"
           }
         }
       },
@@ -1284,6 +1139,134 @@
                 "description": "version specifier"
               }
             }
+          }
+        }
+      },
+      "v0.0.40_reservations_response": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.40_meta"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/v0.0.40_errors"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/v0.0.40_warnings"
+          },
+          "reservations": {
+            "$ref": "DATA_PARSER_RESERVATION_INFO_ARRAY"
+          }
+        }
+      },
+      "v0.0.40_pings": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.40_meta"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/v0.0.40_errors"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/v0.0.40_warnings"
+          },
+          "pings": {
+            "$ref": "DATA_PARSER_CONTROLLER_PING_ARRAY"
+          }
+        }
+      },
+      "v0.0.40_partitions_response": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.40_meta"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/v0.0.40_errors"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/v0.0.40_warnings"
+          },
+          "partitions": {
+            "$ref": "DATA_PARSER_PARTITION_INFO_ARRAY"
+          }
+        }
+      },
+      "v0.0.40_nodes_response": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.40_meta"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/v0.0.40_errors"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/v0.0.40_warnings"
+          },
+          "nodes": {
+            "$ref": "DATA_PARSER_NODES"
+          }
+        }
+      },
+      "v0.0.40_jobs_response": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.40_meta"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/v0.0.40_errors"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/v0.0.40_warnings"
+          },
+          "jobs": {
+            "$ref": "DATA_PARSER_JOB_INFO_MSG"
+          }
+        }
+      },
+      "v0.0.40_job_update_response": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.40_meta"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/v0.0.40_errors"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/v0.0.40_warnings"
+          },
+          "results": {
+            "$ref": "DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_PTR"
+          }
+        }
+      },
+      "v0.0.40_job_submission_response": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/v0.0.40_meta"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/v0.0.40_errors"
+          },
+          "warnings": {
+            "$ref": "#/components/schemas/v0.0.40_warnings"
+          },
+          "job_id": {
+            "description": "new job ID",
+            "type": "integer"
+          },
+          "step_id": {
+            "description": "new job step ID",
+            "type": "string"
+          },
+          "job_submit_user_msg": {
+            "description": "Message to user from job_submit plugin",
+            "type": "string"
           }
         }
       }

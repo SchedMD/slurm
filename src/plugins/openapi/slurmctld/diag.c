@@ -61,13 +61,13 @@ static int _op_handler_diag(const char *context_id,
 		stats_info_request_msg_t req = {
 			.command_id = STAT_COMMAND_GET,
 		};
-		data_t *dstats = data_key_set(resp, "statistics");
 
 		if ((rc = slurm_get_statistics(&stats, &req)))
 			resp_error(ctxt, rc, __func__,
 				   "slurm_get_statistics() failed to get slurmctld statistics");
 		else
-			DATA_DUMP(ctxt->parser, STATS_MSG, *stats, dstats);
+			DUMP_OPENAPI_RESP_SINGLE(OPENAPI_DIAG_RESP, stats,
+						 ctxt);
 
 		slurm_free_stats_response_msg(stats);
 	}
