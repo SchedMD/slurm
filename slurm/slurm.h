@@ -3125,7 +3125,7 @@ typedef struct partition_info update_part_msg_t;
 typedef struct job_sbcast_cred_msg {
 	uint32_t      job_id;		/* assigned job id */
 	char         *node_list;	/* assigned list of nodes */
-	sbcast_cred_t *sbcast_cred;	/* opaque data structure */
+	void *sbcast_cred;		/* opaque data structure */
 } job_sbcast_cred_msg_t;
 
 typedef struct {
