@@ -1085,6 +1085,46 @@ extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr,
 	return SLURM_SUCCESS;
 }
 
+static void _handle_poll_event_error(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
+				     short revents)
+{
+	int err = SLURM_ERROR;
+	int rc;
+
+	if (revents & POLLNVAL) {
+		error("%s: [%s] %sconnection invalid",
+		      __func__, (con->is_listen ? "listening " : ""),
+		      con->name);
+	} else if (con->is_socket && (rc = fd_get_socket_error(fd, &err))) {
+		/* connection may have got RST */
+		error("%s: [%s] poll error: fd_get_socket_error() failed %s",
+		      __func__, con->name, slurm_strerror(rc));
+	} else {
+		error("%s: [%s] poll error: %s",
+		      __func__, con->name, slurm_strerror(err));
+	}
+
+	/*
+	 * Socket must not continue to be considered valid to avoid a
+	 * infinite calls to poll() which will immidiatly fail. Close
+	 * the relavent file descriptor and remove from connection.
+	 */
+	if (close(fd)) {
+		log_flag(NET, "%s: [%s] input_fd=%d output_fd=%d calling close(%d) failed after poll() returned %s%s%s: %m",
+			 __func__, con->name, con->input_fd, con->output_fd, fd,
+			 ((revents & POLLNVAL) ? "POLLNVAL" : ""),
+			 ((revents & POLLNVAL) && (revents & POLLERR) ? "&" : ""),
+			 ((revents & POLLERR) ? "POLLERR" : ""));
+	}
+
+	if (con->input_fd == fd)
+		con->input_fd = -1;
+	if (con->output_fd == fd)
+		con->output_fd = -1;
+
+	_close_con(true, con);
+}
+
 /*
  * Event on a processing socket.
  * mgr must be locked.
@@ -1095,28 +1135,8 @@ static void _handle_poll_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 	con->can_read = false;
 	con->can_write = false;
 
-	if (revents & POLLNVAL) {
-		error("%s: [%s] connection invalid", __func__, con->name);
-		_close_con(true, con);
-		return;
-	}
-	if (revents & POLLERR) {
-		int err = SLURM_ERROR;
-		int rc;
-
-		if (con->is_socket) {
-			/* connection may have got RST */
-			if ((rc = fd_get_socket_error(con->input_fd, &err))) {
-				error("%s: [%s] poll error: fd_get_socket_error failed %s",
-				      __func__, con->name, slurm_strerror(rc));
-			} else {
-				error("%s: [%s] poll error: %s",
-				      __func__, con->name, slurm_strerror(err));
-			}
-		}
-
-
-		_close_con(true, con);
+	if ((revents & POLLNVAL) || (revents & POLLERR)) {
+		_handle_poll_event_error(mgr, fd, con, revents);
 		return;
 	}
 
@@ -1812,6 +1832,30 @@ watch:
 
 	work = false;
 
+	if (!list_is_empty(mgr->complete)) {
+		if (mgr->listen_active || mgr->poll_active) {
+			/*
+			 * Must wait for all poll() calls to complete or
+			 * there may be a use after free of a connection.
+			 *
+			 * Send signal to break out of any active poll()s.
+			 */
+			_signal_change(mgr, true);
+		} else {
+			con_mgr_fd_t *con;
+
+			/*
+			 * Memory cleanup of connections can be done entirely
+			 * independently as there should be nothing left in
+			 * conmgr that references the connection.
+			 */
+
+			while ((con = list_pop(mgr->complete)))
+				_queue_func(true, mgr, _connection_fd_delete,
+					    con, "_connection_fd_delete");
+		}
+	}
+
 	/* start listen thread if needed */
 	if (!list_is_empty(mgr->listen)) {
 		if (!listen_args) {
@@ -1863,14 +1907,6 @@ watch:
 			log_flag(NET, "%s: poll active already", __func__);
 
 		work = true;
-	}
-
-	if (!list_is_empty(mgr->complete)) {
-		con_mgr_fd_t *con;
-
-		while ((con = list_pop(mgr->complete)))
-			_queue_func(true, mgr, _connection_fd_delete, con,
-				    "_connection_fd_delete");
 	}
 
 	if (work) {
