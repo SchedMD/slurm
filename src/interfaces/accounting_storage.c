@@ -381,7 +381,6 @@ extern int acct_storage_g_close_connection(void **db_conn)
 		return SLURM_SUCCESS;
 
 	return (*(ops.close_conn))(db_conn);
-
 }
 
 extern int acct_storage_g_commit(void *db_conn, bool commit)
@@ -392,7 +391,6 @@ extern int acct_storage_g_commit(void *db_conn, bool commit)
 		return SLURM_SUCCESS;
 
 	return (*(ops.commit))(db_conn, commit);
-
 }
 
 extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
@@ -932,7 +930,6 @@ extern int acct_storage_g_fix_runaway_jobs(void *db_conn,
 		return SLURM_SUCCESS;
 
 	return (*(ops.fix_runaway_jobs))(db_conn, uid, jobs);
-
 }
 
 extern int clusteracct_storage_g_node_down(void *db_conn,
@@ -976,7 +973,6 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 	return (*(ops.node_up))(db_conn, node_ptr, event_time);
 }
 
-
 extern int clusteracct_storage_g_cluster_tres(void *db_conn,
 					      char *cluster_nodes,
 					      char *tres_str_in,
@@ -991,7 +987,6 @@ extern int clusteracct_storage_g_cluster_tres(void *db_conn,
 	return (*(ops.cluster_tres))(db_conn, cluster_nodes,
 				     tres_str_in, event_time, rpc_version);
 }
-
 
 extern int clusteracct_storage_g_register_ctld(void *db_conn, uint16_t port)
 {
@@ -1204,7 +1199,6 @@ extern int jobacct_storage_g_archive_load(void *db_conn,
 		return SLURM_SUCCESS;
 
 	return (*(ops.archive_load))(db_conn, arch_rec);
-
 }
 
 /*
@@ -1316,7 +1310,6 @@ extern int acct_storage_g_get_data(void *db_conn, acct_storage_info_t dinfo,
 	return (*(ops.get_data))(db_conn, dinfo, data);
 }
 
-
 /*
  * Send all relavant information to the DBD.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
@@ -1344,5 +1337,4 @@ extern int acct_storage_g_shutdown(void *db_conn)
 		return SLURM_SUCCESS;
 
 	return (*(ops.shutdown))(db_conn);
-
 }
