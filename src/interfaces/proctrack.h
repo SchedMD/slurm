@@ -51,14 +51,14 @@ extern bool proctrack_forked;
  *
  * Returns a Slurm errno.
  */
-extern int slurm_proctrack_init(void);
+extern int proctrack_g_init(void);
 
 /*
  * Terminate the process tracking plugin, free memory.
  *
  * Returns a Slurm errno.
  */
-extern int slurm_proctrack_fini(void);
+extern int proctrack_g_fini(void);
 
 /*
  **************************************************************************

@@ -695,7 +695,7 @@ _init_from_slurmd(int sock, char **argv,
 	    (hash_g_init() != SLURM_SUCCESS) ||
 	    (acct_gather_conf_init() != SLURM_SUCCESS) ||
 	    (core_spec_g_init() != SLURM_SUCCESS) ||
-	    (slurm_proctrack_init() != SLURM_SUCCESS) ||
+	    (proctrack_g_init() != SLURM_SUCCESS) ||
 	    (slurmd_task_init() != SLURM_SUCCESS) ||
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||

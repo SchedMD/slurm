@@ -2098,7 +2098,7 @@ _slurmd_init(void)
 
 	_print_conf();
 
-	if (slurm_proctrack_init() != SLURM_SUCCESS)
+	if (proctrack_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (slurmd_task_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
@@ -2209,7 +2209,7 @@ _slurmd_fini(void)
 	switch_fini();
 	slurmd_task_fini();
 	slurm_conf_destroy();
-	slurm_proctrack_fini();
+	proctrack_g_fini();
 	auth_g_fini();
 	node_fini2();
 	gres_fini();

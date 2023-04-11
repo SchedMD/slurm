@@ -101,7 +101,7 @@ static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
  * The proctrack plugin can only be changed by restarting slurmd
  * without preserving state (-c option).
  */
-extern int slurm_proctrack_init(void)
+extern int proctrack_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "proctrack";
@@ -127,7 +127,7 @@ done:
 	return retval;
 }
 
-extern int slurm_proctrack_fini(void)
+extern int proctrack_g_fini(void)
 {
 	int rc;
 
