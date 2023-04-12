@@ -144,6 +144,7 @@ typedef enum {
 	DATA_PARSER_SINFO_DATA, /* sinfo_data_t */
 	DATA_PARSER_SINFO_DATA_LIST, /* list of sinfo_data_t* */
 	DATA_PARSER_STATS_MSG, /* stats_info_response_msg_t */
+	DATA_PARSER_STATS_MSG_PTR, /* stats_info_response_msg_t* */
 	DATA_PARSER_STATS_MSG_CYCLE_MEAN, /* stats_info_response_msg_t-> computed value */
 	DATA_PARSER_STATS_MSG_CYCLE_MEAN_DEPTH, /* stats_info_response_msg_t-> computed value */
 	DATA_PARSER_STATS_MSG_CYCLE_PER_MIN, /* stats_info_response_msg_t-> computed value */
