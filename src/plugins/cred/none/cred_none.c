@@ -99,13 +99,7 @@ extern void cred_p_destroy_key(void *key)
 	return;
 }
 
-extern void *cred_p_read_private_key(const char *path)
-{
-	static char *ctx = "null crypto context";
-	return (void *) ctx;
-}
-
-extern void *cred_p_read_public_key(const char *path)
+extern void *cred_p_ctx_create(const char *path)
 {
 	static char *ctx = "null crypto context";
 	return (void *) ctx;
