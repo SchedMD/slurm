@@ -3672,8 +3672,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->job_comp_user, buffer);
 		packstr(build_ptr->job_container_plugin, buffer);
 
-		packstr(build_ptr->job_credential_private_key, buffer);
-		packstr(build_ptr->job_credential_public_certificate, buffer);
 		(void) slurm_pack_list(build_ptr->job_defaults_list,
 				       job_defaults_pack, buffer,
 				       protocol_version);
@@ -3967,8 +3965,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->job_comp_user, buffer);
 		packstr(build_ptr->job_container_plugin, buffer);
 
-		packstr(build_ptr->job_credential_private_key, buffer);
-		packstr(build_ptr->job_credential_public_certificate, buffer);
+		packnull(buffer);
+		packnull(buffer);
 		(void) slurm_pack_list(build_ptr->job_defaults_list,
 				       job_defaults_pack, buffer,
 				       protocol_version);
@@ -4262,8 +4260,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->job_comp_user, buffer);
 		packstr(build_ptr->job_container_plugin, buffer);
 
-		packstr(build_ptr->job_credential_private_key, buffer);
-		packstr(build_ptr->job_credential_public_certificate, buffer);
+		packnull(buffer);
+		packnull(buffer);
 		(void)slurm_pack_list(build_ptr->job_defaults_list,
 		                      job_defaults_pack, buffer,
 		                      protocol_version);
@@ -4555,9 +4553,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->job_comp_user, buffer);
 		safe_unpackstr(&build_ptr->job_container_plugin, buffer);
 
-		safe_unpackstr(&build_ptr->job_credential_private_key, buffer);
-		safe_unpackstr(&build_ptr->job_credential_public_certificate,
-		               buffer);
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
 		                      job_defaults_unpack, xfree_ptr,
 		                      buffer,protocol_version) != SLURM_SUCCESS)
@@ -4740,6 +4735,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->wait_time, buffer);
 		safe_unpackstr(&build_ptr->x11_params, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		char *tmp_char;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -4846,9 +4842,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->job_comp_user, buffer);
 		safe_unpackstr(&build_ptr->job_container_plugin, buffer);
 
-		safe_unpackstr(&build_ptr->job_credential_private_key, buffer);
-		safe_unpackstr(&build_ptr->job_credential_public_certificate,
-		               buffer);
+		safe_unpackstr(&tmp_char, buffer);
+		xfree(tmp_char);
+		safe_unpackstr(&tmp_char, buffer);
+		xfree(tmp_char);
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
 		                      job_defaults_unpack, xfree_ptr,
 		                      buffer,protocol_version) != SLURM_SUCCESS)
@@ -5136,9 +5133,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr(&build_ptr->job_comp_user, buffer);
 		safe_unpackstr(&build_ptr->job_container_plugin, buffer);
 
-		safe_unpackstr(&build_ptr->job_credential_private_key, buffer);
-		safe_unpackstr(&build_ptr->job_credential_public_certificate,
-			       buffer);
+		safe_unpackstr(&tmp_char, buffer);
+		xfree(tmp_char);
+		safe_unpackstr(&tmp_char, buffer);
+		xfree(tmp_char);
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
 		                      job_defaults_unpack, xfree_ptr,
 		                      buffer,protocol_version) != SLURM_SUCCESS)
