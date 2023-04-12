@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 22.05.0rc1 that broke Nodes=ALL in a NodeSet.
  -- Fix incorrect memory constraint when receiving a job from 20.11 that uses
     cpu count for memory calculation.
+ -- openapi/v0.0.[36-38] - avoid possible crash from jobs submitted with argv.
 
 * Changes in Slurm 22.05.8
 ==========================
