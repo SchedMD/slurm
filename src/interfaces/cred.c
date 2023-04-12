@@ -118,7 +118,7 @@ struct slurm_cred_context {
 };
 
 typedef struct {
-	void *(*cred_ctx_create)	(const char *path);
+	void *(*cred_ctx_create)	(void);
 	void  (*cred_destroy_key)	(void *key);
 	int   (*cred_sign)		(void *key, char *buffer,
 					 int buf_size, char **sig_pp,
@@ -335,7 +335,7 @@ extern slurm_cred_ctx_t *slurm_cred_creator_ctx_create(const char *path)
 
 	ctx->type = SLURM_CRED_CREATOR;
 
-	ctx->key = (*(ops.cred_ctx_create))(path);
+	ctx->key = (*(ops.cred_ctx_create))();
 	if (!ctx->key)
 		goto fail;
 
@@ -360,7 +360,7 @@ extern slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(const char *path)
 
 	ctx->type = SLURM_CRED_VERIFIER;
 
-	ctx->key = (*(ops.cred_ctx_create))(path);
+	ctx->key = (*(ops.cred_ctx_create))();
 	if (!ctx->key)
 		goto fail;
 
@@ -1544,7 +1544,7 @@ static int _ctx_update_private_key(slurm_cred_ctx_t *ctx, const char *path)
 
 	xassert(ctx != NULL);
 
-	pk = (*(ops.cred_ctx_create))(path);
+	pk = (*(ops.cred_ctx_create))();
 	if (!pk)
 		return SLURM_ERROR;
 
@@ -1569,7 +1569,7 @@ static int _ctx_update_public_key(slurm_cred_ctx_t *ctx, const char *path)
 	void *pk   = NULL;
 
 	xassert(ctx != NULL);
-	pk = (*(ops.cred_ctx_create))(path);
+	pk = (*(ops.cred_ctx_create))();
 	if (!pk)
 		return SLURM_ERROR;
 

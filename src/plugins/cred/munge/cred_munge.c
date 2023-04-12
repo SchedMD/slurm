@@ -128,7 +128,7 @@ extern void cred_p_destroy_key(void *key)
 	return;
 }
 
-extern void *cred_p_ctx_create(const char *path)
+extern void *cred_p_ctx_create(void)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
