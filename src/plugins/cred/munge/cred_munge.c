@@ -152,8 +152,15 @@ extern void *cred_p_ctx_create(void)
 	}
 
 	auth_ttl = slurm_get_auth_ttl();
-	if (auth_ttl)
-		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
+	if (auth_ttl) {
+		rc = munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
+		if (rc != EMUNGE_SUCCESS) {
+			error("Failed to set MUNGE ttl: %s",
+			      munge_ctx_strerror(ctx));
+			munge_ctx_destroy(ctx);
+			return NULL;
+		}
+	}
 
 	/*
 	 * Only allow slurmd_user (usually root) to decode job

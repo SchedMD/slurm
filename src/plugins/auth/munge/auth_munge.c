@@ -204,8 +204,15 @@ auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data, int dlen)
 	}
 
 	auth_ttl = slurm_get_auth_ttl();
-	if (auth_ttl)
-		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
+	if (auth_ttl) {
+		rc = munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
+		if (rc != EMUNGE_SUCCESS) {
+			error("Failed to set MUNGE ttl: %s",
+			      munge_ctx_strerror(ctx));
+			munge_ctx_destroy(ctx);
+			return NULL;
+		}
+	}
 
 	cred = xmalloc(sizeof(*cred));
 	cred->magic = MUNGE_MAGIC;
