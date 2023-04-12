@@ -612,7 +612,7 @@ _service_connection(void *arg)
 		 * to are taken care of and sent back. This way the control
 		 * also has a better idea what happened to us
 		 */
-		if (msg->auth_uid_set)
+		if (msg->auth_ids_set)
 			slurm_send_rc_msg(msg, rc);
 		else {
 			debug("%s: incomplete message", __func__);

@@ -536,11 +536,12 @@ typedef struct slurm_msg {
 				 * plugin used to connect to us originally.
 				 */
 	uid_t auth_uid;		/* NEVER PACK. Authenticated uid from auth
-				 * credential. Only valid if auth_uid_set is
+				 * credential. Only valid if auth_ids_set is
 				 * true. Set to SLURM_AUTH_NOBODY if not set
 				 * yet.
 				 */
-	bool auth_uid_set;	/* NEVER PACK. True when auth_uid has been set.
+	bool auth_ids_set;	/* NEVER PACK. True when auth_uid and auth_gid
+				 * have been set.
 				 * This is a safety measure against handling
 				 * a slurm_msg_t that has been xmalloc()'d but
 				 * slurm_msg_t_init() was not called since

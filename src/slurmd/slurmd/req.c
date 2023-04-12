@@ -292,7 +292,7 @@ slurmd_req(slurm_msg_t *msg)
 		return;
 	}
 
-	if (!msg->auth_uid_set) {
+	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",
 		      __func__);
 		return;

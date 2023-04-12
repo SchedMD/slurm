@@ -406,7 +406,7 @@ static int _background_process_msg(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	bool send_rc = true;
 
-	if (!msg->auth_uid_set) {
+	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",
 		      __func__);
 		return SLURM_ERROR;

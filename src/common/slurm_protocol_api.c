@@ -1090,7 +1090,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 	}
 
 	msg->auth_uid = auth_g_get_uid(auth_cred);
-	msg->auth_uid_set = true;
+	msg->auth_ids_set = true;
 
 skip_auth:
 	/*
@@ -1381,7 +1381,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	}
 
 	msg.auth_uid = auth_g_get_uid(auth_cred);
-	msg.auth_uid_set = true;
+	msg.auth_ids_set = true;
 
 skip_auth:
 
@@ -1810,7 +1810,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	}
 
 	msg->auth_uid = auth_g_get_uid(auth_cred);
-	msg->auth_uid_set = true;
+	msg->auth_ids_set = true;
 
 	/*
 	 * Unpack message body
@@ -2206,7 +2206,7 @@ extern void response_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
 	 * but we're stuck doing that on older protocol versions for
 	 * backwards-compatibility.
 	 */
-	if (!msg->auth_uid_set)
+	if (!msg->auth_ids_set)
 		slurm_msg_set_r_uid(resp_msg, SLURM_AUTH_NOBODY);
 	else if ((msg->auth_uid != slurm_conf.slurm_user_id) &&
 		 (msg->auth_uid != slurm_conf.slurmd_user_id))

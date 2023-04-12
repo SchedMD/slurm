@@ -2366,7 +2366,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 
 	START_TIMER;
 
-	xassert(msg->auth_uid_set);
+	xassert(msg->auth_ids_set);
 
 	if (req_step_msg->user_id == SLURM_AUTH_NOBODY) {
 		req_step_msg->user_id = msg->auth_uid;
@@ -3467,10 +3467,10 @@ static void _slurm_rpc_step_by_container_id(slurm_msg_t *msg)
 	int rc = SLURM_UNEXPECTED_MSG_ERROR;
 
 	log_flag(PROTOCOL, "%s: got REQUEST_STEP_BY_CONTAINER_ID from %s auth_uid=%u flags=0x%x uid=%u container_id=%s",
-		 __func__, (msg->auth_uid_set ? "validated" : "suspect"),
+		 __func__, (msg->auth_ids_set ? "validated" : "suspect"),
 		 msg->auth_uid, req->show_flags, req->uid, req->container_id);
 
-	if (!msg->auth_uid_set) {
+	if (!msg->auth_ids_set) {
 		/* this should never happen? */
 		rc = ESLURM_AUTH_CRED_INVALID;
 	} else if (!req->container_id || !req->container_id[0]) {
@@ -6005,7 +6005,7 @@ static int _process_persist_conn(void *arg,
 
 	msg.auth_cred = persist_conn->auth_cred;
 	msg.auth_uid = *uid;
-	msg.auth_uid_set = true;
+	msg.auth_ids_set = true;
 
 	msg.conn = persist_conn;
 	msg.conn_fd = persist_conn->fd;
@@ -6851,7 +6851,7 @@ void slurmctld_req(slurm_msg_t *msg)
 		drop_priv = true;
 #endif
 
-	if (!msg->auth_uid_set) {
+	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",
 		      __func__);
 		return;

@@ -1353,7 +1353,7 @@ static int _on_connection_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	 * the root user. We must check against the job user instead of
 	 * getuid().
 	 */
-	if (!msg->auth_uid_set) {
+	if (!msg->auth_ids_set) {
 		error("%s: [%s] rejecting %s RPC with missing user auth",
 		      __func__, con->name, rpc_num2string(msg->msg_type));
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
