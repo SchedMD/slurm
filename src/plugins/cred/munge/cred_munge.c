@@ -128,7 +128,7 @@ extern void cred_p_destroy_key(void *key)
 	return;
 }
 
-static void *_munge_ctx_setup(bool creator)
+static void *_munge_ctx_setup(void)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
@@ -155,22 +155,20 @@ static void *_munge_ctx_setup(bool creator)
 	if (auth_ttl)
 		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
 
-	if (creator) {
-		/*
-		 * Only allow slurmd_user (usually root) to decode job
-		 * credentials created by slurmctld. This provides a slight
-		 * layer of extra security, as non-privileged users cannot
-		 * get at the contents of job credentials.
-		 */
-		err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
-				    slurm_conf.slurmd_user_id);
+	/*
+	 * Only allow slurmd_user (usually root) to decode job
+	 * credentials created by slurmctld. This provides a slight
+	 * layer of extra security, as non-privileged users cannot
+	 * get at the contents of job credentials.
+	 */
+	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
+			    slurm_conf.slurmd_user_id);
 
-		if (err != EMUNGE_SUCCESS) {
-			error("Unable to set uid restriction on munge credentials: %s",
-			      munge_ctx_strerror(ctx));
-			munge_ctx_destroy(ctx);
-			return NULL;
-		}
+	if (err != EMUNGE_SUCCESS) {
+		error("Unable to set uid restriction on munge credentials: %s",
+		      munge_ctx_strerror(ctx));
+		munge_ctx_destroy(ctx);
+		return NULL;
 	}
 
 	return (void *) ctx;
@@ -178,12 +176,12 @@ static void *_munge_ctx_setup(bool creator)
 
 extern void *cred_p_read_private_key(const char *path)
 {
-	return _munge_ctx_setup(true);
+	return _munge_ctx_setup();
 }
 
 extern void *cred_p_read_public_key(const char *path)
 {
-	return _munge_ctx_setup(false);
+	return _munge_ctx_setup();
 }
 
 extern const char *cred_p_str_error(int errnum)
