@@ -27,6 +27,8 @@ HIGHLIGHTS
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
+ -- Removed JobCredentialPrivateKey and JobCredentialPublicCertificate
+    parameters.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

@@ -2886,8 +2886,6 @@ typedef struct {
 	char *job_comp_type;	/* job completion storage type */
 	char *job_comp_user;	/* job completion storage user */
 	char *job_container_plugin; /* job container plugin type */
-	char *job_credential_private_key;	/* path to private key */
-	char *job_credential_public_certificate;/* path to public certificate*/
 	list_t *job_defaults_list; /* list of job_defaults_t elements */
 	uint16_t job_file_append; /* if set, append to stdout/err file */
 	uint16_t job_requeue;	/* If set, jobs get requeued on node failre */

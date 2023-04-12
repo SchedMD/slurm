@@ -300,8 +300,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobCompType", S_P_STRING},
 	{"JobContainerType", S_P_STRING},
 	{"JobCompUser", S_P_STRING},
-	{"JobCredentialPrivateKey", S_P_STRING},
-	{"JobCredentialPublicCertificate", S_P_STRING},
+	{"JobCredentialPrivateKey", S_P_STRING, _defunct_option},
+	{"JobCredentialPublicCertificate", S_P_STRING, _defunct_option},
 	{"JobFileAppend", S_P_UINT16},
 	{"JobRequeue", S_P_UINT16},
 	{"JobSubmitPlugins", S_P_STRING},
@@ -2873,8 +2873,6 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_comp_user);
 	xfree (ctl_conf_ptr->job_container_plugin);
-	xfree (ctl_conf_ptr->job_credential_private_key);
-	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	FREE_NULL_LIST(ctl_conf_ptr->job_defaults_list);
 	xfree (ctl_conf_ptr->job_submit_plugins);
 	xfree (ctl_conf_ptr->launch_params);
@@ -3031,8 +3029,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_comp_user);
 	xfree (ctl_conf_ptr->job_container_plugin);
-	xfree (ctl_conf_ptr->job_credential_private_key);
-	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	FREE_NULL_LIST(ctl_conf_ptr->job_defaults_list);
 	ctl_conf_ptr->job_file_append		= NO_VAL16;
 	ctl_conf_ptr->job_requeue		= NO_VAL16;
@@ -4041,12 +4037,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	    s_p_get_string(&conf->bcast_parameters, "SbcastParameters",
 			   hashtbl) && running_in_slurmctld())
 		error("SbcastParameters has been renamed to BcastParameters. Please update your configuration.");
-
-
-	(void) s_p_get_string(&conf->job_credential_private_key,
-			     "JobCredentialPrivateKey", hashtbl);
-	(void) s_p_get_string(&conf->job_credential_public_certificate,
-			      "JobCredentialPublicCertificate", hashtbl);
 
 	(void) s_p_get_string(&conf->authalttypes, "AuthAltTypes", hashtbl);
 	(void) s_p_get_string(&conf->authalt_params, "AuthAltParameters", hashtbl);

@@ -954,18 +954,6 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("JobCredentialPrivateKey");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->
-				  job_credential_private_key);
-	list_append(ret_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("JobCredentialPublicCertificate");
-	key_pair->value = xstrdup(
-		slurm_ctl_conf_ptr->job_credential_public_certificate);
-	list_append(ret_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("JobDefaults");
 	key_pair->value =
 		job_defaults_str(slurm_ctl_conf_ptr->job_defaults_list);

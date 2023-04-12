@@ -937,7 +937,6 @@ static void
 _read_config(void)
 {
 	char *bcast_address;
-	char *path_pubkey = NULL;
 	slurm_conf_t *cf = NULL;
 	int cc;
 	bool cgroup_mem_confinement = false;
@@ -952,8 +951,6 @@ _read_config(void)
 
 	if (conf->conffile == NULL)
 		conf->conffile = xstrdup(cf->slurm_conf);
-
-	path_pubkey = xstrdup(cf->job_credential_public_certificate);
 
 #ifndef HAVE_FRONT_END
 	/*
@@ -1173,7 +1170,6 @@ _read_config(void)
 			      conf->hostname));
 
 	get_tmp_disk(&conf->tmp_disk_space, conf->tmp_fs);
-	_free_and_set(conf->pubkey,   path_pubkey);
 
 	conf->syslog_debug = cf->slurmd_syslog_debug;
 
