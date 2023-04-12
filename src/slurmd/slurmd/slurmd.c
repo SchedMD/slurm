@@ -1246,7 +1246,7 @@ _reconfigure(void)
 	/*
 	 * Make best effort at changing to new public key
 	 */
-	slurm_cred_ctx_key_update(conf->vctx, conf->pubkey);
+	slurm_cred_ctx_key_update(conf->vctx);
 
 	/*
 	 * Purge the username -> grouplist cache.
@@ -2126,7 +2126,7 @@ _slurmd_init(void)
 	/*
 	 * Create a context for verifying slurm job credentials
 	 */
-	if (!(conf->vctx = slurm_cred_verifier_ctx_create(conf->pubkey)))
+	if (!(conf->vctx = slurm_cred_verifier_ctx_create()))
 		return SLURM_ERROR;
 
 	if (conf->cleanstart) {

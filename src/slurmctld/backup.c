@@ -331,8 +331,7 @@ static void *_background_signal_hand(void *no_data)
  */
 static void _update_cred_key(void)
 {
-	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx,
-	                          slurm_conf.job_credential_private_key);
+	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx);
 }
 
 static void _sig_handler(int signal)

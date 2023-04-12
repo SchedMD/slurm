@@ -170,8 +170,8 @@ static slurm_cred_ctx_t *verifier_ctx = NULL;
 static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void);
 static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg);
 
-static int  _ctx_update_private_key(slurm_cred_ctx_t *ctx, const char *path);
-static int  _ctx_update_public_key(slurm_cred_ctx_t *ctx, const char *path);
+static int  _ctx_update_private_key(slurm_cred_ctx_t *ctx);
+static int  _ctx_update_public_key(slurm_cred_ctx_t *ctx);
 static bool _exkey_is_valid(slurm_cred_ctx_t *ctx);
 
 static cred_state_t * _cred_state_create(slurm_cred_ctx_t *ctx,
@@ -324,7 +324,7 @@ static void _release_cred_gids(slurm_cred_arg_t *arg)
 	arg->ngids = 0;
 }
 
-extern slurm_cred_ctx_t *slurm_cred_creator_ctx_create(const char *path)
+extern slurm_cred_ctx_t *slurm_cred_creator_ctx_create(void)
 {
 	slurm_cred_ctx_t *ctx = NULL;
 
@@ -345,11 +345,10 @@ extern slurm_cred_ctx_t *slurm_cred_creator_ctx_create(const char *path)
 fail:
 	slurm_mutex_unlock(&ctx->mutex);
 	slurm_cred_ctx_destroy(ctx);
-	error("Can not open data encryption key file %s", path);
 	return NULL;
 }
 
-extern slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(const char *path)
+extern slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(void)
 {
 	slurm_cred_ctx_t *ctx = NULL;
 
@@ -374,7 +373,6 @@ extern slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(const char *path)
 fail:
 	slurm_mutex_unlock(&ctx->mutex);
 	slurm_cred_ctx_destroy(ctx);
-	error("Can not open data encryption key file %s", path);
 	return NULL;
 }
 
@@ -419,14 +417,14 @@ extern int cred_ctx_lifetime(slurm_cred_ctx_t *ctx)
 	return lifespan;
 }
 
-extern int slurm_cred_ctx_key_update(slurm_cred_ctx_t *ctx, const char *path)
+extern int slurm_cred_ctx_key_update(slurm_cred_ctx_t *ctx)
 {
 	xassert(g_context);
 
 	if (ctx->type == SLURM_CRED_CREATOR)
-		return _ctx_update_private_key(ctx, path);
+		return _ctx_update_private_key(ctx);
 	else
-		return _ctx_update_public_key(ctx, path);
+		return _ctx_update_public_key(ctx);
 }
 
 extern slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx,
@@ -504,7 +502,7 @@ extern slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg)
 	 */
 	enable_send_gids = true;
 
-	ctx = slurm_cred_creator_ctx_create(NULL);
+	ctx = slurm_cred_creator_ctx_create();
 	cred = slurm_cred_create(ctx, arg, true, SLURM_PROTOCOL_VERSION);
 	slurm_cred_ctx_destroy(ctx);
 
@@ -1537,7 +1535,7 @@ static void _verifier_ctx_init(slurm_cred_ctx_t *ctx)
 }
 
 
-static int _ctx_update_private_key(slurm_cred_ctx_t *ctx, const char *path)
+static int _ctx_update_private_key(slurm_cred_ctx_t *ctx)
 {
 	void *pk   = NULL;
 	void *tmpk = NULL;
@@ -1564,7 +1562,7 @@ static int _ctx_update_private_key(slurm_cred_ctx_t *ctx, const char *path)
 }
 
 
-static int _ctx_update_public_key(slurm_cred_ctx_t *ctx, const char *path)
+static int _ctx_update_public_key(slurm_cred_ctx_t *ctx)
 {
 	void *pk   = NULL;
 

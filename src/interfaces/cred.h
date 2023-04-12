@@ -182,22 +182,18 @@ typedef enum {
 /*
  * Initialize current process for slurm credential creation.
  *
- * `privkey' contains the absolute path to the slurmctld private
- * key, which needs to be readable by the current process.
- *
  * Returns 0 for success, -1 on failure and sets errno to reason.
  *
  *
  */
-slurm_cred_ctx_t *slurm_cred_creator_ctx_create(const char *privkey);
+slurm_cred_ctx_t *slurm_cred_creator_ctx_create(void);
 
 /*
  * Initialize current process for slurm credential verification.
- * `pubkey' contains the absolute path to the slurmctld public key.
  *
  * Returns 0 for success, -1 on failure.
  */
-slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(const char *pubkey);
+slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(void);
 
 /*
  * Set and get credential context options
@@ -208,8 +204,7 @@ extern int cred_ctx_lifetime(slurm_cred_ctx_t *ctx);
 /*
  * Update the context's current key.
  */
-int slurm_cred_ctx_key_update(slurm_cred_ctx_t *ctx, const char *keypath);
-
+extern int slurm_cred_ctx_key_update(slurm_cred_ctx_t *ctx);
 
 /*
  * Destroy a credential context, freeing associated memory.

@@ -467,16 +467,13 @@ int main(int argc, char **argv)
 			fatal("failed to initialize cred plugin");
 		}
 	}
-	slurmctld_config.cred_ctx = slurm_cred_creator_ctx_create(
-		slurm_conf.job_credential_private_key);
+	slurmctld_config.cred_ctx = slurm_cred_creator_ctx_create();
 	if (!slurmctld_config.cred_ctx) {
 		if (test_config) {
-			error("slurm_cred_creator_ctx_create(%s): %m",
-			      slurm_conf.job_credential_private_key);
+			error("slurm_cred_creator_ctx_create: %m");
 			test_config_rc = 1;
 		} else {
-			fatal("slurm_cred_creator_ctx_create(%s): %m",
-			      slurm_conf.job_credential_private_key);
+			fatal("slurm_cred_creator_ctx_create: %m");
 		}
 	}
 
@@ -2980,8 +2977,7 @@ static void _update_cred_key(void)
 {
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
-	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx,
-	                          slurm_conf.job_credential_private_key);
+	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx);
 }
 
 /*
