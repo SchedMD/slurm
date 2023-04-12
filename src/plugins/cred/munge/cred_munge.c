@@ -145,7 +145,8 @@ extern void *cred_p_ctx_create(void)
 		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
 		xfree(socket);
 		if (rc != EMUNGE_SUCCESS) {
-			error("munge_ctx_set failure");
+			error("Failed to set MUNGE socket: %s",
+			      munge_ctx_strerror(ctx));
 			munge_ctx_destroy(ctx);
 			return NULL;
 		}
