@@ -6438,3 +6438,28 @@ extern void slurm_conf_remove_node(char *node_name)
 	_internal_conf_remove_node(node_name);
 	slurm_conf_unlock();
 }
+
+#ifdef HAVE_FRONT_END
+extern uint16_t slurm_conf_get_frontend_port(char *node_hostname)
+{
+	uint16_t port = 0;
+	slurm_conf_frontend_t *front_end_ptr = NULL;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+
+	if (!front_end_list) {
+		debug("front_end_list is NULL");
+	} else if ((front_end_ptr = list_find_first(front_end_list,
+						    _list_find_frontend,
+						    node_hostname))) {
+		if (front_end_ptr->port)
+			port = front_end_ptr->port;
+		else
+			port = conf_ptr->slurmd_port;
+	}
+	slurm_conf_unlock();
+
+	return port;
+}
+#endif

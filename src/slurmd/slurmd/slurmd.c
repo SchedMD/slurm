@@ -1016,6 +1016,8 @@ _read_config(void)
 	conf->core_spec_cnt = node_ptr->core_spec_cnt;
 	conf->cpu_spec_list = xstrdup(node_ptr->cpu_spec_list);
 	conf->mem_spec_limit = node_ptr->mem_spec_limit;
+#else
+	conf->port = slurm_conf_get_frontend_port(conf->node_name);
 #endif
 
 	/* store hardware properties in slurmd_config */
