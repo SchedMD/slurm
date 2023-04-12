@@ -1035,7 +1035,6 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	gid_t gid = auth_g_get_gid(msg->auth_cred);
 	uint32_t job_uid = NO_VAL;
 	job_record_t *job_ptr, *first_job_ptr = NULL;
 	char *err_msg = NULL, **job_submit_user_msg = NULL;
@@ -1098,7 +1097,8 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 			job_uid = job_desc_msg->user_id;
 
 		if ((error_code = _valid_id("REQUEST_HET_JOB_ALLOCATION",
-					    job_desc_msg, msg->auth_uid, gid,
+					    job_desc_msg, msg->auth_uid,
+					    msg->auth_gid,
 					    msg->protocol_version))) {
 			break;
 		}
@@ -1311,7 +1311,6 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	gid_t gid = auth_g_get_gid(msg->auth_cred);
 	int immediate = job_desc_msg->immediate;
 	bool do_unlock = false;
 	bool reject_job = false;
@@ -1329,7 +1328,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 	}
 
 	if ((error_code = _valid_id("REQUEST_RESOURCE_ALLOCATION", job_desc_msg,
-				    msg->auth_uid, gid,
+				    msg->auth_uid, msg->auth_gid,
 				    msg->protocol_version))) {
 		reject_job = true;
 		goto send_msg;
@@ -2583,7 +2582,6 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 	/* Locks: Read config, write job, write node, read partition, read fed*/
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	gid_t gid = auth_g_get_gid(msg->auth_cred);
 	slurm_addr_t resp_addr;
 	will_run_response_msg_t *resp = NULL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
@@ -2596,7 +2594,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 
 	START_TIMER;
 	if ((error_code = _valid_id("REQUEST_JOB_WILL_RUN", job_desc_msg,
-				    msg->auth_uid, gid, msg->protocol_version)))
+				    msg->auth_uid, msg->auth_gid,
+				    msg->protocol_version)))
 		goto send_reply;
 
 	_set_hostname(msg, &job_desc_msg->alloc_node);
@@ -3660,7 +3659,6 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	 * federation */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	gid_t gid = auth_g_get_gid(msg->auth_cred);
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
 
@@ -3673,7 +3671,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	}
 
 	if ((error_code = _valid_id("REQUEST_SUBMIT_BATCH_JOB", job_desc_msg,
-				    msg->auth_uid, gid,
+				    msg->auth_uid, msg->auth_gid,
 				    msg->protocol_version))) {
 		reject_job = true;
 		goto send_msg;
@@ -3822,7 +3820,6 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	list_t *job_req_list = msg->data;
-	gid_t gid = auth_g_get_gid(msg->auth_cred);
 	uint32_t job_uid = NO_VAL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
@@ -3874,7 +3871,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			job_uid = job_desc_msg->user_id;
 
 		if ((error_code = _valid_id("REQUEST_SUBMIT_BATCH_JOB",
-					    job_desc_msg, msg->auth_uid, gid,
+					    job_desc_msg, msg->auth_uid,
+					    msg->auth_gid,
 					    msg->protocol_version))) {
 			reject_job = true;
 			break;
@@ -5101,7 +5099,6 @@ static void _slurm_rpc_trigger_get(slurm_msg_t *msg)
 static void _slurm_rpc_trigger_set(slurm_msg_t *msg)
 {
 	int rc;
-	gid_t gid = auth_g_get_gid(msg->auth_cred);
 	trigger_info_msg_t *trigger_ptr = msg->data;
 	bool allow_user_triggers = xstrcasestr(slurm_conf.slurmctld_params,
 	                                       "allow_user_triggers");
@@ -5109,7 +5106,7 @@ static void _slurm_rpc_trigger_set(slurm_msg_t *msg)
 
 	START_TIMER;
 	if (validate_slurm_user(msg->auth_uid) || allow_user_triggers) {
-		rc = trigger_set(msg->auth_uid, gid, trigger_ptr);
+		rc = trigger_set(msg->auth_uid, msg->auth_gid, trigger_ptr);
 	} else {
 		rc = ESLURM_ACCESS_DENIED;
 		error("Security violation, REQUEST_TRIGGER_SET RPC from uid=%u",
@@ -5782,18 +5779,15 @@ static void _pack_rpc_stats(char **buffer_ptr, int *buffer_size,
 
 static void _slurm_rpc_burst_buffer_status(slurm_msg_t *msg)
 {
-	uid_t auth_gid;
 	slurm_msg_t response_msg;
 	bb_status_resp_msg_t status_resp_msg;
 	bb_status_req_msg_t *status_req_msg = msg->data;
-
-	auth_gid = auth_g_get_gid(msg->auth_cred);
 
 	memset(&status_resp_msg, 0, sizeof(status_resp_msg));
 	status_resp_msg.status_resp = bb_g_get_status(status_req_msg->argc,
 						      status_req_msg->argv,
 						      msg->auth_uid,
-						      auth_gid);
+						      msg->auth_gid);
 	response_init(&response_msg, msg, RESPONSE_BURST_BUFFER_STATUS,
 		      &status_resp_msg);
 	if (status_resp_msg.status_resp)
@@ -6436,7 +6430,6 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 	/* probably need to mirror _slurm_rpc_dump_batch_script() */
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	gid_t gid = auth_g_get_gid(msg->auth_cred);
 
 	START_TIMER;
 	debug3("Processing RPC details: REQUEST_UPDATE_CRONTAB for uid=%u",
@@ -6456,7 +6449,8 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 
 	lock_slurmctld(job_write_lock);
 
-	if (((req_msg->uid != msg->auth_uid) || (req_msg->gid != gid)) &&
+	if (((req_msg->uid != msg->auth_uid) ||
+	     (req_msg->gid != msg->auth_gid)) &&
 	    !validate_slurm_user(msg->auth_uid)) {
 		resp_msg->return_code = ESLURM_USER_ID_MISSING;
 	}

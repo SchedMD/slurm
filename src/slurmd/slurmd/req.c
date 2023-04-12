@@ -1473,7 +1473,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	int      errnum = SLURM_SUCCESS;
 	uint16_t port;
 	char     host[HOST_NAME_MAX];
-	gid_t req_gid = auth_g_get_gid(msg->auth_cred);
 	launch_tasks_request_msg_t *req = msg->data;
 	bool     super_user = false;
 	bool     mem_sort = false;
@@ -1553,7 +1552,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 #endif
-	if (_check_job_credential(req, msg->auth_uid, req_gid, node_id,
+	if (_check_job_credential(req, msg->auth_uid, msg->auth_gid, node_id,
 				  &step_hset, msg->protocol_version,
 				  super_user) < 0) {
 		errnum = errno;
@@ -4275,7 +4274,7 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 	file_bcast_info_t key;
 
 	key.uid = msg->auth_uid;
-	key.gid = auth_g_get_gid(msg->auth_cred);
+	key.gid = msg->auth_gid;
 
 	cred_arg = _valid_sbcast_cred(req, key.uid, key.gid,
 				      msg->protocol_version);
@@ -6182,7 +6181,6 @@ _rpc_forward_data(slurm_msg_t *msg)
 	uint32_t req_uid = msg->auth_uid;
 	char *tmp_addr = req->address;
 	int fd = -1, rc = 0;
-	gid_t req_gid = auth_g_get_gid(msg->auth_cred);
 
 	/*
 	 * Make sure we adjust for the spool dir coming in on the address to
@@ -6196,7 +6194,7 @@ _rpc_forward_data(slurm_msg_t *msg)
 	debug3("Entering _rpc_forward_data, address: %s, len: %u",
 	       req->address, req->len);
 
-	rc = _connect_as_other(req->address, req_uid, req_gid, &fd);
+	rc = _connect_as_other(req->address, req_uid, msg->auth_gid, &fd);
 
 	if ((rc < 0) || (fd < 0)) {
 		rc = errno;
