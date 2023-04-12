@@ -307,7 +307,7 @@ int auth_p_verify(auth_credential_t *c, char *opts)
  * Obtain the Linux UID from the credential.
  * auth_p_verify() must be called first.
  */
-uid_t auth_p_get_uid(auth_credential_t *cred)
+extern void auth_p_get_ids(auth_credential_t *cred, uid_t *uid, gid_t *gid)
 {
 	if (!cred || !cred->verified) {
 		/*
@@ -315,36 +315,16 @@ uid_t auth_p_get_uid(auth_credential_t *cred)
 		 * the calling path did not verify the credential first.
 		 */
 		xassert(!cred);
-		slurm_seterrno(ESLURM_AUTH_BADARG);
-		return SLURM_AUTH_NOBODY;
+		*uid = SLURM_AUTH_NOBODY;
+		*gid = SLURM_AUTH_NOBODY;
+		return;
 	}
 
 	xassert(cred->magic == MUNGE_MAGIC);
 
-	return cred->uid;
+	*uid = cred->uid;
+	*gid = cred->gid;
 }
-
-/*
- * Obtain the Linux GID from the credential.
- * auth_p_verify() must be called first.
- */
-gid_t auth_p_get_gid(auth_credential_t *cred)
-{
-	if (!cred || !cred->verified) {
-		/*
-		 * This xassert will trigger on a development build if
-		 * the calling path did not verify the credential first.
-		 */
-		xassert(!cred);
-		slurm_seterrno(ESLURM_AUTH_BADARG);
-		return SLURM_AUTH_NOBODY;
-	}
-
-	xassert(cred->magic == MUNGE_MAGIC);
-
-	return cred->gid;
-}
-
 
 /*
  * Obtain the Host addr from where the credential originated.

@@ -180,32 +180,16 @@ int auth_p_verify(auth_credential_t *cred, char *auth_info)
 	return SLURM_SUCCESS;
 }
 
-/*
- * Obtain the Linux UID from the credential.  The accuracy of this data
- * is not assured until auth_p_verify() has been called for it.
- */
-uid_t auth_p_get_uid(auth_credential_t *cred)
+extern void auth_p_get_ids(auth_credential_t *cred, uid_t *uid, gid_t *gid)
 {
 	if (!cred) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
-		return SLURM_AUTH_NOBODY;
+		*uid = SLURM_AUTH_NOBODY;
+		*gid = SLURM_AUTH_NOBODY;
+		return;
 	}
 
-	return cred->uid;
-}
-
-/*
- * Obtain the Linux GID from the credential.
- * See auth_p_get_uid() above for details on correct behavior.
- */
-gid_t auth_p_get_gid(auth_credential_t *cred)
-{
-	if (!cred) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
-		return SLURM_AUTH_NOBODY;
-	}
-
-	return cred->gid;
+	*uid = cred->uid;
+	*gid = cred->gid;
 }
 
 /*
