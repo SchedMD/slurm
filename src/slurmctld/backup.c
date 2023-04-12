@@ -77,7 +77,6 @@ static void *       _background_signal_hand(void *no_data);
 static void         _backup_reconfig(void);
 static int          _shutdown_primary_controller(int wait_time);
 static void *       _trigger_slurmctld_event(void *arg);
-inline static void  _update_cred_key(void);
 
 typedef struct ping_struct {
 	int backup_inx;
@@ -304,7 +303,7 @@ static void *_background_signal_hand(void *no_data)
 			lock_slurmctld(config_write_lock);
 			_backup_reconfig();
 			/* Leave config lock set through this */
-			_update_cred_key();
+			slurm_cred_ctx_key_update(slurmctld_config.cred_ctx);
 			unlock_slurmctld(config_write_lock);
 			break;
 		case SIGABRT:   /* abort */
@@ -323,15 +322,6 @@ static void *_background_signal_hand(void *no_data)
 		}
 	}
 	return NULL;
-}
-
-/*
- * Reset the job credential key based upon configuration parameters.
- * slurm_conf is locked on entry.
- */
-static void _update_cred_key(void)
-{
-	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx);
 }
 
 static void _sig_handler(int signal)
