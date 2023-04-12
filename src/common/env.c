@@ -956,6 +956,7 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_JOBID
  *	SLURM_NNODES
  *	SLURM_NODELIST
+ *	SLURM_NPROCS
  *	SLURM_TASKS_PER_NODE
  */
 extern int env_array_for_job(char ***dest,
