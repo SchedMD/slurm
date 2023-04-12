@@ -126,7 +126,6 @@ typedef struct slurmd_config {
 	uint32_t     syslog_debug;	/* send output to both logfile and
 					 * syslog */
 	char         *spooldir;		/* SlurmdSpoolDir		   */
-	char         *pubkey;		/* location of job cred public key */
 	char         *stepd_loc;	/* slurmstepd path                 */
 	uint16_t      port;		/* local slurmd port               */
 	int           lfd;		/* slurmd listen file descriptor   */

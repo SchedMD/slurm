@@ -1350,7 +1350,6 @@ _print_conf(void)
 	debug3("Port        = %u",       conf->port);
 	debug3("Prolog      = `%s'",     cf->prolog);
 	debug3("TmpFS       = `%s'",     conf->tmp_fs);
-	debug3("Public Cert = `%s'",     conf->pubkey);
 	debug3("Slurmstepd  = `%s'",     conf->stepd_loc);
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
 	debug3("Syslog Debug  = %d",     cf->slurmd_syslog_debug);
@@ -1422,7 +1421,6 @@ _destroy_conf(void)
 		xfree(conf->node_topo_addr);
 		xfree(conf->node_topo_pattern);
 		xfree(conf->pidfile);
-		xfree(conf->pubkey);
 		xfree(conf->spooldir);
 		xfree(conf->stepd_loc);
 		xfree(conf->tmp_fs);
