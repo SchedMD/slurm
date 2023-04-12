@@ -1089,8 +1089,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		goto total_return;
 	}
 
-	msg->auth_uid = auth_g_get_uid(auth_cred);
-	msg->auth_gid = auth_g_get_gid(auth_cred);
+	auth_g_get_ids(auth_cred, &msg->auth_uid, &msg->auth_gid);
 	msg->auth_ids_set = true;
 
 skip_auth:
@@ -1381,8 +1380,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		goto total_return;
 	}
 
-	msg.auth_uid = auth_g_get_uid(auth_cred);
-	msg.auth_gid = auth_g_get_gid(auth_cred);
+	auth_g_get_ids(auth_cred, &msg.auth_uid, &msg.auth_gid);
 	msg.auth_ids_set = true;
 
 skip_auth:
@@ -1811,8 +1809,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		goto total_return;
 	}
 
-	msg->auth_uid = auth_g_get_uid(auth_cred);
-	msg->auth_gid = auth_g_get_gid(auth_cred);
+	auth_g_get_ids(auth_cred, &msg->auth_uid, &msg->auth_gid);
 	msg->auth_ids_set = true;
 
 	/*

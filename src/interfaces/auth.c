@@ -360,6 +360,23 @@ extern int auth_g_verify(void *cred, char *auth_info)
 	return rc;
 }
 
+extern void auth_g_get_ids(void *cred, uid_t *uid, gid_t *gid)
+{
+	cred_wrapper_t *wrap = cred;
+
+	xassert(g_context_num > 0);
+
+	*uid = SLURM_AUTH_NOBODY;
+	*gid = SLURM_AUTH_NOBODY;
+
+	if (!wrap)
+		return;
+
+	slurm_rwlock_rdlock(&context_lock);
+	(*(ops[wrap->index].get_ids))(cred, uid, gid);
+	slurm_rwlock_unlock(&context_lock);
+}
+
 extern uid_t auth_g_get_uid(void *cred)
 {
 	cred_wrapper_t *wrap = cred;
@@ -376,24 +393,6 @@ extern uid_t auth_g_get_uid(void *cred)
 	slurm_rwlock_unlock(&context_lock);
 
 	return uid;
-}
-
-extern gid_t auth_g_get_gid(void *cred)
-{
-	cred_wrapper_t *wrap = cred;
-	uid_t uid = SLURM_AUTH_NOBODY;
-	gid_t gid = SLURM_AUTH_NOBODY;
-
-	xassert(g_context_num > 0);
-
-	if (!wrap)
-		return SLURM_AUTH_NOBODY;
-
-	slurm_rwlock_rdlock(&context_lock);
-	(*(ops[wrap->index].get_ids))(cred, &uid, &gid);
-	slurm_rwlock_unlock(&context_lock);
-
-	return gid;
 }
 
 extern char *auth_g_get_host(void *cred)
