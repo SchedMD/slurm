@@ -1878,6 +1878,33 @@ static void SPEC_FUNC(INT64_NO_VAL)(const parser_t *const parser, args_t *args,
 	return SPEC_FUNC(UINT64_NO_VAL)(parser, args, spec, dst);
 }
 
+static int PARSE_FUNC(INT32)(const parser_t *const parser, void *obj,
+			     data_t *str, args_t *args, data_t *parent_path)
+{
+	int32_t *dst = obj;
+	int rc;
+	int64_t num;
+
+	/* data_t already handles the parsing of signed */
+	if ((rc = PARSE_FUNC(INT64)(parser, &num, str, args, parent_path)))
+		return rc;
+
+	if ((num > INT32_MAX) || (num > INT32_MIN))
+		return EINVAL;
+
+	*dst = num;
+	return rc;
+}
+
+static int DUMP_FUNC(INT32)(const parser_t *const parser, void *obj,
+				   data_t *dst, args_t *args)
+{
+	int32_t *src = obj;
+	int64_t src64 = *src;
+
+	return DUMP_FUNC(INT64)(parser, &src64, dst, args);
+}
+
 static int PARSE_FUNC(UINT16)(const parser_t *const parser, void *obj,
 			      data_t *str, args_t *args, data_t *parent_path)
 {
@@ -6260,6 +6287,7 @@ static const parser_t parsers[] = {
 	addpss(UINT64_NO_VAL, uint64_t, NEED_NONE, OBJECT, NULL),
 	addps(UINT16, uint16_t, NEED_NONE, INT32, NULL),
 	addpss(UINT16_NO_VAL, uint16_t, NEED_NONE, OBJECT, NULL),
+	addps(INT32, int32_t, NEED_NONE, INT32, NULL),
 	addps(INT64, int64_t, NEED_NONE, INT64, NULL),
 	addpss(INT64_NO_VAL, int64_t, NEED_NONE, OBJECT, NULL),
 	addps(FLOAT128, long double, NEED_NONE, NUMBER, NULL),
