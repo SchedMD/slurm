@@ -496,7 +496,9 @@ static int _defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
 			  const char *line, char **leftover)
 {
-	error("The option \"%s\" is defunct, see man slurm.conf.", key);
+	if (running_in_daemon())
+		error("The option \"%s\" is defunct, please remove it from slurm.conf.",
+		      key);
 	return 0;
 }
 
