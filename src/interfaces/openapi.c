@@ -739,7 +739,7 @@ extern int register_path_tag(openapi_t *oas, const char *str_path)
 	args.entries = entries;
 	args.path = path;
 	if (data_dict_for_each_const(spec_entry, _populate_methods, &args) < 0)
-		fatal_abort("%s: failed", __func__);
+		fatal("%s: _populate_methods() failed", __func__);
 
 	list_append(oas->paths, path);
 
