@@ -2427,6 +2427,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "QOSMinBilling";
 	case WAIT_RESV_DELETED:
 		return "ReservationDeleted";
+	case WAIT_RESV_INVALID:
+		return "ReservationInvalid";
 	default:
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;
@@ -2830,6 +2832,8 @@ extern enum job_state_reason job_reason_num(char *reason)
 		return WAIT_QOS_MIN_BILLING;
 	if (!xstrcasecmp(reason, "ReservationDeleted"))
 		return WAIT_RESV_DELETED;
+	if (!xstrcasecmp(reason, "ReservationInvalid"))
+		return WAIT_RESV_INVALID;
 
 	return NO_VAL;
 }

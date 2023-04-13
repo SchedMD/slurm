@@ -602,7 +602,8 @@ enum job_state_reason {
 	WAIT_QOS_MAX_BILLING_PER_ACCT,      /* MaxTRESPerAcct    */
 	WAIT_QOS_MIN_BILLING,               /* MinTRESPerJob     */
 
-	WAIT_RESV_DELETED	      /* Reservation was deleted */
+	WAIT_RESV_DELETED,	      /* Reservation was deleted */
+	WAIT_RESV_INVALID
 };
 
 enum job_acct_types {
