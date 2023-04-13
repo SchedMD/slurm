@@ -625,6 +625,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Request matched more than one object to query. Request is limited to query of a single matching object."},
 	{ ERRTAB_ENTRY(ESLURM_DATA_PARSE_NOTHING),
 	  "Request to parse empty string rejected"},
+	{ ERRTAB_ENTRY(ESLURM_DATA_INVALID_PARSER),
+	  "Invalid parser requested"},
 
 	/* container  errors */
 	{ ERRTAB_ENTRY(ESLURM_CONTAINER_NOT_CONFIGURED),
