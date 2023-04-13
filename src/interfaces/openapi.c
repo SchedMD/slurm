@@ -116,6 +116,7 @@ typedef struct {
 	data_t *params;
 	http_request_method_t method;
 	entry_t *entry;
+	int tag;
 } match_path_from_data_t;
 
 typedef struct {
@@ -864,12 +865,27 @@ static data_for_each_cmd_t _match_path(const data_t *data, void *y)
 
 static int _match_path_from_data(void *x, void *key)
 {
+	char *str_path = NULL;
 	match_path_from_data_t *args = key;
 	path_t *path = x;
 	entry_method_t *method;
 
+	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
+		serialize_g_data_to_string(&str_path, NULL, args->dpath,
+					   MIME_TYPE_JSON, SER_FLAGS_COMPACT);
+	}
+
 	args->path = path;
 	for (method = path->methods; method->entries; method++) {
+		if (args->method != method->method) {
+			debug5("%s: method skip for tag %d[%s != %s] to %s(0x%"PRIXPTR")",
+			       __func__, args->path->tag,
+			       get_http_method_string(args->method),
+			       get_http_method_string(method->method),
+			       str_path, (uintptr_t) args->dpath);
+			continue;
+		}
+
 		args->entry = method->entries;
 		data_list_for_each_const(args->dpath, _match_path, args);
 
@@ -877,49 +893,41 @@ static int _match_path_from_data(void *x, void *key)
 			break;
 	}
 
-	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
-		char *str_path = NULL;
+	if (args->matched)
+		debug5("%s: match successful for tag %d to %s(0x%"PRIXPTR")",
+		       __func__, args->path->tag, str_path,
+		       (uintptr_t) args->dpath);
+	else
+		debug5("%s: match failed for tag %d to %s(0x%"PRIXPTR")",
+		       __func__, args->path->tag, str_path,
+		       (uintptr_t) args->dpath);
 
-		serialize_g_data_to_string(&str_path, NULL, args->dpath,
-					   MIME_TYPE_JSON, SER_FLAGS_COMPACT);
+	xfree(str_path);
 
-		if (args->matched)
-			debug5("%s: match successful for tag %d to %s(0x%"PRIXPTR")",
-			       __func__, args->path->tag, str_path,
-			       (uintptr_t) args->dpath);
-		else
-			debug5("%s: match failed for tag %d to %s(0x%"PRIXPTR")",
-			       __func__, args->path->tag, str_path,
-			       (uintptr_t) args->dpath);
-		xfree(str_path);
+	if (args->matched) {
+		args->tag = path->tag;
+		return 1;
+	} else {
+		return 0;
 	}
-
-	return (args->matched ? 1 : 0);
 }
 
 extern int find_path_tag(openapi_t *oas, const data_t *dpath, data_t *params,
 			 http_request_method_t method)
 {
-	path_t *path;
 	match_path_from_data_t args = {
 		.params = params,
 		.dpath = dpath,
+		.method = method,
+		.tag = -1,
 	};
 
 	xassert(oas->magic == MAGIC_OAS);
 	xassert(data_get_type(params) == DATA_TYPE_DICT);
 
-	path = list_find_first(oas->paths, _match_path_from_data, &args);
-	if (!path)
-		return -1;
+	(void) list_find_first(oas->paths, _match_path_from_data, &args);
 
-	/* Make sure the path tag actually contains the method requested */
-	for (entry_method_t *em = path->methods; em->entries; em++) {
-		if (em->method == method)
-			return path->tag;
-	}
-
-	return -2;
+	return args.tag;
 }
 
 static void _oas_plugrack_foreach(const char *full_type, const char *fq_path,
