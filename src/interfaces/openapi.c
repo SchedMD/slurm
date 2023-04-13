@@ -100,6 +100,7 @@ typedef struct {
 	entry_method_t *method;
 	entry_t *entries;
 	path_t *path;
+	const char *str_path;
 } populate_methods_t;
 
 typedef struct {
@@ -695,9 +696,9 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG5)
 		for (entry = method->entries; entry->type; entry++) {
-			debug5("%s: add path entry: method=%s tag=%d entry=%s name=%s parameter=%s entry_type=%s",
-			       __func__, key, args->path->tag, entry->entry,
-			       entry->name,
+			debug5("%s: add path %s entry: method=%s tag=%d entry=%s name=%s parameter=%s entry_type=%s",
+			       __func__, args->str_path, key, args->path->tag,
+			       entry->entry, entry->name,
 			       openapi_type_to_string(entry->parameter),
 			       _get_entry_type_string(entry->type));
 		}
@@ -710,7 +711,9 @@ extern int register_path_tag(openapi_t *oas, const char *str_path)
 	int rc = -1;
 	path_t *path = NULL;
 	const data_t *spec_entry;
-	populate_methods_t args = {0};
+	populate_methods_t args = {
+		.str_path = str_path,
+	};
 	entry_t *entries = _parse_openapi_path(str_path);
 
 	if (!entries)
