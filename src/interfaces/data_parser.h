@@ -220,6 +220,7 @@ typedef enum {
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_PTR, /* job_array_resp_msg_t * */
 	DATA_PARSER_ERROR, /* int -> slurm_strerror() */
 	DATA_PARSER_JOB_SUBMIT_RESPONSE_MSG, /* submit_response_msg_t */
+	DATA_PARSER_JOB_SUBMIT_RESPONSE_MSG_PTR, /* submit_response_msg_t* */
 	DATA_PARSER_JOB_DESC_MSG, /* job_desc_msg_t */
 	DATA_PARSER_JOB_DESC_MSG_ARGV, /* job_desc_msg_t->argv+argc */
 	DATA_PARSER_JOB_DESC_MSG_CPU_FREQ, /* job_desc_msg_t->cpu_freq* */

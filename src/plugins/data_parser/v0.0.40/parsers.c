@@ -6398,6 +6398,7 @@ static const parser_t parsers[] = {
 	addpp(STATS_MSG_PTR, stats_info_response_msg_t *, STATS_MSG),
 	addpp(LICENSES_PTR, license_info_msg_t *, LICENSES),
 	addpp(JOB_INFO_MSG_PTR, job_info_msg_t *, JOB_INFO_MSG),
+	addpp(JOB_SUBMIT_RESPONSE_MSG_PTR, submit_response_msg_t *, JOB_SUBMIT_RESPONSE_MSG),
 
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t),
