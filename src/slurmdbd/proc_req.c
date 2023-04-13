@@ -233,8 +233,9 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 #endif
 
 	debug("REQUEST_PERSIST_INIT: CLUSTER:%s VERSION:%u UID:%u IP:%s CONN:%d",
-	      init_msg->cluster_name, init_msg->version, init_msg->uid,
-	      slurmdbd_conn->conn->rem_host, slurmdbd_conn->conn->fd);
+	      init_msg->cluster_name, init_msg->version,
+	      slurmdbd_conn->conn->auth_uid, slurmdbd_conn->conn->rem_host,
+	      slurmdbd_conn->conn->fd);
 
 	slurmdbd_conn->conn->cluster_name = xstrdup(init_msg->cluster_name);
 
