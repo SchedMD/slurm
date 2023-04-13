@@ -176,6 +176,7 @@ typedef enum {
 	DATA_PARSER_LICENSES_PTR, /* license_info_msg_t* */
 	DATA_PARSER_LICENSE, /* slurm_license_info_t */
 	DATA_PARSER_JOB_INFO_MSG, /* job_info_msg_t */
+	DATA_PARSER_JOB_INFO_MSG_PTR, /* job_info_msg_t* */
 	DATA_PARSER_JOB_INFO, /* slurm_job_info_t */
 	DATA_PARSER_JOB_INFO_STDIN, /* slurm_job_info_t->stdin (handles % replacements) */
 	DATA_PARSER_JOB_INFO_STDOUT, /* slurm_job_info_t->stdout (handles % replacements) */
