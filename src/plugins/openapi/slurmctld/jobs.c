@@ -86,8 +86,7 @@ static int _op_handler_jobs(const char *context_id,
 		goto cleanup;
 	}
 
-	DATA_DUMP(ctxt->parser, JOB_INFO_MSG, *job_info_ptr,
-		  data_key_set(resp, "jobs"));
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOB_INFO_RESP, job_info_ptr, ctxt);
 
 cleanup:
 	slurm_free_job_info_msg(job_info_ptr);
@@ -120,8 +119,8 @@ static void _handle_job_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 
 		xfree(id);
 	} else {
-		DATA_DUMP(ctxt->parser, JOB_INFO_MSG, *job_info_ptr,
-			  data_key_set(ctxt->resp, "jobs"));
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOB_INFO_RESP, job_info_ptr,
+					 ctxt);
 	}
 
 	slurm_free_job_info_msg(job_info_ptr);

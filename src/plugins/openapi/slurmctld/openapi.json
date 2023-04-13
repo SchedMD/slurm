@@ -190,12 +190,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_jobs_response"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_INFO_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_jobs_response"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_INFO_RESP"
                 }
               }
             }
@@ -205,12 +205,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_INFO_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_INFO_RESP"
                 }
               }
             }
@@ -244,18 +244,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_jobs_response"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_INFO_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_jobs_response"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_INFO_RESP"
                 }
               }
             }
           },
           "default": {
-            "description": "job matching JobId not found"
+            "description": "job matching JobId not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_INFO_RESP"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_INFO_RESP"
+                }
+              }
+            }
           }
         }
       },
@@ -1185,23 +1197,6 @@
           },
           "nodes": {
             "$ref": "DATA_PARSER_NODES"
-          }
-        }
-      },
-      "v0.0.40_jobs_response": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "jobs": {
-            "$ref": "DATA_PARSER_JOB_INFO_MSG"
           }
         }
       },
