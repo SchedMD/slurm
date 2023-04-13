@@ -643,7 +643,7 @@ static int _load_gres()
 	node_record_t *node_rec;
 	List gres_list = NULL;
 
-	node_rec = find_node_record(conf->node_name);
+	node_rec = find_node_record2(conf->node_name);
 	if (node_rec && node_rec->config_ptr) {
 		(void) gres_init_node_config(node_rec->config_ptr->gres,
 					     &gres_list);
