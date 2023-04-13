@@ -217,7 +217,7 @@ static void _persist_free_msg_members(slurm_persist_conn_t *persist_conn,
 static int _process_service_connection(
 	slurm_persist_conn_t *persist_conn, void *arg)
 {
-	uint32_t nw_size = 0, msg_size = 0, uid = NO_VAL;
+	uint32_t nw_size = 0, msg_size = 0;
 	char *msg_char = NULL;
 	ssize_t msg_read = 0, offset = 0;
 	bool first = true, fini = false;
@@ -275,8 +275,8 @@ static int _process_service_connection(
 				&buffer, first);
 
 			if (rc == SLURM_SUCCESS) {
-				rc = (persist_conn->callback_proc)(
-					arg, &msg, &buffer, &uid);
+				rc = (persist_conn->callback_proc)(arg, &msg,
+								   &buffer);
 				_persist_free_msg_members(persist_conn, &msg);
 				if (rc != SLURM_SUCCESS &&
 				    rc != ACCOUNTING_FIRST_REG &&

@@ -2981,7 +2981,7 @@ static int _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			size_buf(req_buf), &ret_buf, 0);
 
 		if (rc == SLURM_SUCCESS) {
-			rc = proc_req(slurmdbd_conn, &sub_msg, &ret_buf, uid);
+			rc = proc_req(slurmdbd_conn, &sub_msg, &ret_buf);
 			slurmdbd_free_msg(&sub_msg);
 		}
 
@@ -3244,16 +3244,21 @@ static int _shutdown(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
  * buffer OUT - outgoing response, must be freed by caller
  * uid IN/OUT - user ID who initiated the RPC
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer,
-		    uint32_t *uid)
+extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 {
 	slurmdbd_conn_t *slurmdbd_conn = conn;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 	slurmdb_rpc_obj_t *rpc_obj;
+	uint32_t uid_local = slurmdbd_conn->conn->auth_uid;
+	uint32_t *uid = &uid_local;
 
 	DEF_TIMERS;
 	START_TIMER;
+
+	if (!slurmdbd_conn->conn->auth_ids_set)
+		fatal("%s: auth_ids_set is false, this should never happen",
+		      __func__);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		char *p = slurmdbd_msg_type_2_str(msg->msg_type, 1);

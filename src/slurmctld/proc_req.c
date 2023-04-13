@@ -5989,15 +5989,11 @@ static void _slurm_rpc_assoc_mgr_info(slurm_msg_t *msg)
 }
 
 /* Take a persist_msg_t and handle it like a normal slurm_msg_t */
-static int _process_persist_conn(void *arg,
-				 persist_msg_t *persist_msg,
-				 buf_t **out_buffer, uint32_t *uid)
+static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
+				 buf_t **out_buffer)
 {
 	slurm_msg_t msg;
 	slurm_persist_conn_t *persist_conn = arg;
-
-	if (*uid == NO_VAL)
-		*uid = auth_g_get_uid(persist_conn->auth_cred);
 
 	*out_buffer = NULL;
 
