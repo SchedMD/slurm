@@ -202,6 +202,7 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
 	memset(msg, 0, sizeof(slurm_msg_t));
 
 	msg->auth_uid = SLURM_AUTH_NOBODY;
+	msg->auth_gid = SLURM_AUTH_NOBODY;
 	msg->conn_fd = -1;
 	msg->msg_type = NO_VAL16;
 	msg->protocol_version = NO_VAL16;

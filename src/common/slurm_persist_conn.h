@@ -69,6 +69,7 @@ typedef struct {
 typedef struct {
 	void *auth_cred;
 	uid_t auth_uid;
+	gid_t auth_gid;
 	bool auth_ids_set;
 	int (*callback_proc)(void *arg, persist_msg_t *msg, buf_t **out_buffer);
 	void (*callback_fini)(void *arg);

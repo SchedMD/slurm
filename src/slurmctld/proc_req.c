@@ -6001,6 +6001,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 
 	msg.auth_cred = persist_conn->auth_cred;
 	msg.auth_uid = persist_conn->auth_uid;
+	msg.auth_gid = persist_conn->auth_gid;
 	msg.auth_ids_set = persist_conn->auth_ids_set;
 
 	msg.conn = persist_conn;

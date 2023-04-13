@@ -540,6 +540,11 @@ typedef struct slurm_msg {
 				 * true. Set to SLURM_AUTH_NOBODY if not set
 				 * yet.
 				 */
+	gid_t auth_gid;		/* NEVER PACK. Authenticated uid from auth
+				 * credential. Only valid if auth_ids_set is
+				 * true. Set to SLURM_AUTH_NOBODY if not set
+				 * yet.
+				 */
 	bool auth_ids_set;	/* NEVER PACK. True when auth_uid and auth_gid
 				 * have been set.
 				 * This is a safety measure against handling
