@@ -100,6 +100,9 @@ extern int data_parser_g_parse(data_parser_t *parser, data_parser_type_t type,
 	DEF_TIMERS;
 	int rc;
 
+	if (!parser)
+		return ESLURM_DATA_INVALID_PARSER;
+
 	if (!src || (data_get_type(src) == DATA_TYPE_NONE))
 		return ESLURM_DATA_PARSE_NOTHING;
 
@@ -126,7 +129,7 @@ extern int data_parser_g_dump(data_parser_t *parser, data_parser_type_t type,
 	const parse_funcs_t *funcs;
 
 	if (!parser)
-		return EINVAL;
+		return ESLURM_DATA_INVALID_PARSER;
 
 	funcs = plugins->functions[parser->plugin_offset];
 
@@ -263,7 +266,12 @@ extern int data_parser_g_assign(data_parser_t *parser,
 {
 	int rc;
 	DEF_TIMERS;
-	const parse_funcs_t *funcs = plugins->functions[parser->plugin_offset];
+	const parse_funcs_t *funcs;
+
+	if (!parser)
+		return ESLURM_DATA_INVALID_PARSER;
+
+	funcs = plugins->functions[parser->plugin_offset];
 
 	xassert(parser);
 	xassert(plugins);
@@ -380,7 +388,7 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 				  SLURM_DATA_PARSER_VERSION, NULL, false);
 
 	if (!parser) {
-		rc = ESLURM_NOT_SUPPORTED;
+		rc = ESLURM_DATA_INVALID_PARSER;
 		goto cleanup;
 	}
 
@@ -404,7 +412,12 @@ extern int data_parser_g_specify(data_parser_t *parser, data_t *dst)
 {
 	int rc;
 	DEF_TIMERS;
-	const parse_funcs_t *funcs = plugins->functions[parser->plugin_offset];
+	const parse_funcs_t *funcs;
+
+	if (!parser)
+		return ESLURM_DATA_INVALID_PARSER;
+
+	funcs = plugins->functions[parser->plugin_offset];
 
 	xassert(parser);
 	xassert(plugins);
