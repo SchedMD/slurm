@@ -3260,10 +3260,12 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer,
 		if (slurmdbd_conn->conn->cluster_name) {
 			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
 			     __func__, p, slurmdbd_conn->conn->cluster_name,
-			     slurmdbd_conn->conn->rem_host, *uid);
+			     slurmdbd_conn->conn->rem_host,
+			     slurmdbd_conn->conn->auth_uid);
 		} else {
 			info("%s: received opcode %s from %s uid %u",
-			     __func__, p, slurmdbd_conn->conn->rem_host, *uid);
+			     __func__, p, slurmdbd_conn->conn->rem_host,
+			     slurmdbd_conn->conn->auth_uid);
 		}
 	}
 
