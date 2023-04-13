@@ -894,12 +894,14 @@ static int _match_path_from_data(void *x, void *key)
 	}
 
 	if (args->matched)
-		debug5("%s: match successful for tag %d to %s(0x%"PRIXPTR")",
-		       __func__, args->path->tag, str_path,
+		debug5("%s: match successful for tag %d[%s] to %s(0x%"PRIXPTR")",
+		       __func__, args->path->tag,
+		       get_http_method_string(args->method), str_path,
 		       (uintptr_t) args->dpath);
 	else
-		debug5("%s: match failed for tag %d to %s(0x%"PRIXPTR")",
-		       __func__, args->path->tag, str_path,
+		debug5("%s: match failed for tag %d[%s] to %s(0x%"PRIXPTR")",
+		       __func__, args->path->tag,
+		       get_http_method_string(args->method), str_path,
 		       (uintptr_t) args->dpath);
 
 	xfree(str_path);
