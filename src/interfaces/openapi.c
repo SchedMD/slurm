@@ -401,21 +401,23 @@ static int _print_path_tag_methods(void *x, void *arg)
 {
 	path_t *path = (path_t *) x;
 	int *tag = (int *) arg;
-	char *methods_str = NULL;
 
 	if (path->tag != *tag)
 		return 0;
 
-	for (entry_method_t *em = path->methods; em->entries; em++)
-		xstrfmtcat(methods_str, "%s%s (%d)", methods_str ? ", " : "",
-			   get_http_method_string(em->method), em->method);
-
-	if (methods_str)
-		debug4("%s:    methods: %s", __func__, methods_str);
-	else
-		debug4("%s:    no methods found in path tag %d",
+	if (!path->methods->entries)
+		debug4("%s: no methods found in path tag %d",
 		       __func__, path->tag);
-	xfree(methods_str);
+
+	for (entry_method_t *em = path->methods; em->entries; em++) {
+		char *path_str = _entry_to_string(em->entries);
+
+		debug4("%s: path tag %d entry: %s %s",
+		       __func__, path->tag, get_http_method_string(em->method),
+		       path_str);
+
+		xfree(path_str);
+	}
 
 	/*
 	 * We found the (unique) tag, so return -1 to exit early. The item's
