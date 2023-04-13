@@ -461,7 +461,9 @@ static int _op_handler_submit_job(const char *context_id,
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
 
-	if (method == HTTP_REQUEST_POST) {
+	if (ctxt->rc) {
+		/* do nothing - already errored */
+	} else if (method == HTTP_REQUEST_POST) {
 		_job_post(ctxt, NULL);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
