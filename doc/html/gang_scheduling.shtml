@@ -307,7 +307,7 @@ JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    10    active  myload  user  R  1:13     2 n[15-16]
    11    active  myload  user  S  0:30     3 n[12-14]
 </PRE>
-</P>
+
 <P>
 The next example displays "local backfilling":
 </P>
