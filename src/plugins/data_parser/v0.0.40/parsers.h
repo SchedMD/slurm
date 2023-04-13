@@ -114,6 +114,7 @@ typedef struct parser_s {
 
 	/* Pointer model properties ----------------------------------------- */
 	type_t pointer_type;
+	bool allow_null_pointer; /* leave destination as null type when source pointer is NULL while dumping */
 
 	/* NULL terminated array of pointers model properties --------------- */
 	type_t array_type;

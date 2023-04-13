@@ -960,7 +960,9 @@ static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 	void **ptr = src;
 
 	if (!*ptr) {
-		if ((pt->model == PARSER_MODEL_ARRAY) ||
+		if (parser->allow_null_pointer) {
+			xassert(data_get_type(dst) == DATA_TYPE_NULL);
+		} else if ((pt->model == PARSER_MODEL_ARRAY) ||
 		    (pt->obj_openapi == OPENAPI_FORMAT_OBJECT)) {
 			/*
 			 * OpenAPI clients can't handle a null instead of an

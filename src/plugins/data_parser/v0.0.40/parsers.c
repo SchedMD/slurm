@@ -6049,6 +6049,21 @@ static const parser_t PARSER_ARRAY(UPDATE_NODE_MSG)[] = {
 		.needs = NEED_NONE,                                            \
 		.ptr_offset = NO_VAL,                                          \
 		.pointer_type = DATA_PARSER_##typep,                           \
+		.allow_null_pointer = false,                                   \
+	}
+/* add parser for a pointer - allowing NULL */
+#define addppn(typev, typet, typep)                                            \
+	{                                                                      \
+		.magic = MAGIC_PARSER,                                         \
+		.model = PARSER_MODEL_PTR,                                     \
+		.type = DATA_PARSER_##typev,                                   \
+		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
+		.obj_type_string = XSTRINGIFY(typet),                          \
+		.size = sizeof(typet),                                         \
+		.needs = NEED_NONE,                                            \
+		.ptr_offset = NO_VAL,                                          \
+		.pointer_type = DATA_PARSER_##typep,                           \
+		.allow_null_pointer = true,                                    \
 	}
 /* add parser for NULL terminated array of (sequential) objects */
 #define addnt(typev, typea)                                                    \
