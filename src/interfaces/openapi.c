@@ -200,6 +200,8 @@ typedef struct {
 	char *at;
 } merge_path_strings_t;
 
+static char *_entry_to_string(entry_t *entry);
+
 extern const char *openapi_type_format_to_format_string(
 	openapi_type_format_t format)
 {
@@ -863,26 +865,58 @@ static data_for_each_cmd_t _match_path(const data_t *data, void *y)
 	return DATA_FOR_EACH_CONT;
 }
 
+static char *_entry_to_string(entry_t *entry)
+{
+	char *path = NULL;
+	data_t *d = data_set_list(data_new());
+
+	for (; entry->type; entry++) {
+		switch (entry->type) {
+		case OPENAPI_PATH_ENTRY_MATCH_STRING:
+			data_set_string(data_list_append(d), entry->entry);
+			break;
+		case OPENAPI_PATH_ENTRY_MATCH_PARAMETER:
+			data_set_string_fmt(data_list_append(d), "{%s}",
+					    entry->name);
+			break;
+		case OPENAPI_PATH_ENTRY_UNKNOWN:
+		case OPENAPI_PATH_ENTRY_MAX:
+			fatal_abort("invalid entry type");
+		}
+	}
+
+	serialize_g_data_to_string(&path, NULL, d, MIME_TYPE_JSON,
+				   SER_FLAGS_COMPACT);
+
+	FREE_NULL_DATA(d);
+	return path;
+}
+
 static int _match_path_from_data(void *x, void *key)
 {
-	char *str_path = NULL;
+	char *dst_path = NULL, *src_path = NULL;
 	match_path_from_data_t *args = key;
 	path_t *path = x;
 	entry_method_t *method;
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
-		serialize_g_data_to_string(&str_path, NULL, args->dpath,
+		serialize_g_data_to_string(&dst_path, NULL, args->dpath,
 					   MIME_TYPE_JSON, SER_FLAGS_COMPACT);
 	}
 
 	args->path = path;
 	for (method = path->methods; method->entries; method++) {
+		if (get_log_level() >= LOG_LEVEL_DEBUG5) {
+			xfree(src_path);
+			src_path = _entry_to_string(method->entries);
+		}
+
 		if (args->method != method->method) {
-			debug5("%s: method skip for tag %d[%s != %s] to %s(0x%"PRIXPTR")",
-			       __func__, args->path->tag,
+			debug5("%s: method skip for %s(%d, %s != %s) to %s(0x%"PRIXPTR")",
+			       __func__, src_path, args->path->tag,
 			       get_http_method_string(args->method),
 			       get_http_method_string(method->method),
-			       str_path, (uintptr_t) args->dpath);
+			       dst_path, (uintptr_t) args->dpath);
 			continue;
 		}
 
@@ -894,17 +928,18 @@ static int _match_path_from_data(void *x, void *key)
 	}
 
 	if (args->matched)
-		debug5("%s: match successful for tag %d[%s] to %s(0x%"PRIXPTR")",
-		       __func__, args->path->tag,
-		       get_http_method_string(args->method), str_path,
+		debug5("%s: match successful for %s(%d, %s) to %s(0x%"PRIXPTR")",
+		       __func__, src_path, args->path->tag,
+		       get_http_method_string(args->method), dst_path,
 		       (uintptr_t) args->dpath);
 	else
-		debug5("%s: match failed for tag %d[%s] to %s(0x%"PRIXPTR")",
-		       __func__, args->path->tag,
-		       get_http_method_string(args->method), str_path,
+		debug5("%s: match failed for %s(%d, %s) to %s(0x%"PRIXPTR")",
+		       __func__, src_path, args->path->tag,
+		       get_http_method_string(args->method), dst_path,
 		       (uintptr_t) args->dpath);
 
-	xfree(str_path);
+	xfree(src_path);
+	xfree(dst_path);
 
 	if (args->matched) {
 		args->tag = path->tag;
