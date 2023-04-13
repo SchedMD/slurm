@@ -614,7 +614,8 @@ static data_for_each_cmd_t _populate_parameters(const data_t *data, void *arg)
 
 	if (!dname || !(key = data_get_string_const(dname)) || !key[0]) {
 		/* parameter doesn't have a name! */
-		return DATA_FOR_EACH_FAIL;
+		fatal("%s: path %s parameter has invalid name",
+		      __func__, args->str_path);
 	}
 
 	for (entry = args->entries; entry->type; entry++)
