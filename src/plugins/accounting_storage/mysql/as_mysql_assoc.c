@@ -264,17 +264,13 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 {
 	time_t now = time(NULL);
 	int rc = SLURM_SUCCESS;
-
-	xassert(query);
+	char *reset_query = NULL;
+	char **use_query = NULL;
 
 	if ((assoc->is_def != 1) || !assoc->cluster
 	    || !assoc->acct || !assoc->user)
 		return SLURM_ERROR;
 
-	xstrfmtcat(*query, "update \"%s_%s\" set is_def=0, mod_time=%ld "
-		   "where (user='%s' && acct!='%s' && is_def=1);",
-		   assoc->cluster, assoc_table, (long)now,
-		   assoc->user, assoc->acct);
 	if (add_to_update) {
 		char *sel_query = NULL;
 		MYSQL_RES *result = NULL;
@@ -316,6 +312,19 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 			}
 		}
 		mysql_free_result(result);
+	}
+
+	use_query = query ? query : &reset_query;
+	xstrfmtcat(*use_query,
+		   "update \"%s_%s\" set is_def=0, mod_time=%ld where (user='%s' && acct!='%s' && is_def=1);",
+		   assoc->cluster, assoc_table, (long)now,
+		   assoc->user, assoc->acct);
+	if (reset_query) {
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", reset_query);
+		if ((rc = mysql_db_query(mysql_conn, reset_query)) !=
+		    SLURM_SUCCESS)
+			error("Couldn't reset default assocs");
+		xfree(reset_query);
 	}
 end_it:
 	return rc;
