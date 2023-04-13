@@ -66,7 +66,7 @@
 /* Local functions */
 static bool  _validate_slurm_user(uint32_t uid);
 static bool _validate_super_user(slurmdbd_conn_t *dbd_conn);
-static bool  _validate_operator(uint32_t uid, slurmdbd_conn_t *slurmdbd_conn);
+static bool _validate_operator(slurmdbd_conn_t *dbd_conn);
 static int   _find_rpc_obj_in_list(void *x, void *key);
 static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 			       dbd_job_start_msg_t *job_start_msg,
@@ -123,8 +123,9 @@ static bool _validate_super_user(slurmdbd_conn_t *dbd_conn)
  * _validate_operator - validate that the uid is authorized at the
  *      root, SlurmUser, or SLURMDB_ADMIN_OPERATOR level
  */
-static bool _validate_operator(uint32_t uid, slurmdbd_conn_t *dbd_conn)
+static bool _validate_operator(slurmdbd_conn_t *dbd_conn)
 {
+	uint32_t uid = dbd_conn->conn->auth_uid;
 #ifndef NDEBUG
 	if (drop_priv)
 		return false;
@@ -310,7 +311,7 @@ static int _fix_runaway_jobs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	if (!_validate_operator(*uid, slurmdbd_conn))
+	if (!_validate_operator(slurmdbd_conn))
 		rc = ESLURM_ACCESS_DENIED;
 	else
 		rc = acct_storage_g_fix_runaway_jobs(
@@ -386,7 +387,7 @@ static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	debug2("DBD_ADD_ASSOCS: called in CONN %d", slurmdbd_conn->conn->fd);
 
-	if (!_validate_operator(*uid, slurmdbd_conn)) {
+	if (!_validate_operator(slurmdbd_conn)) {
 		ListIterator itr = NULL;
 		ListIterator itr2 = NULL;
 		slurmdb_user_rec_t user;
@@ -963,7 +964,7 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	/* fail early if requesting runaways and not super user */
 	if ((job_cond->flags & JOBCOND_FLAG_RUNAWAY) &&
-	    !_validate_operator(*uid, slurmdbd_conn)) {
+	    !_validate_operator(slurmdbd_conn)) {
 		debug("Rejecting query of runaways from uid %u", *uid);
 		*out_buffer = slurm_persist_make_rc_msg(
 			slurmdbd_conn->conn,
@@ -973,7 +974,7 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		return SLURM_ERROR;
 	}
 	/* fail early if too wide a query */
-	if (!job_cond->step_list && !_validate_operator(*uid, slurmdbd_conn)
+	if (!job_cond->step_list && !_validate_operator(slurmdbd_conn)
 	    && (slurmdbd_conf->max_time_range != INFINITE)) {
 		time_t start, end;
 
@@ -1267,7 +1268,7 @@ static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	/* We have to check this here, and not in the plugin.  There
 	 * are places in the plugin that a non-admin can call this and
 	 * it be ok. */
-	if (!_validate_operator(*uid, slurmdbd_conn)) {
+	if (!_validate_operator(slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
@@ -1953,7 +1954,7 @@ static int _modify_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	user_cond = (slurmdb_user_cond_t *)get_msg->cond;
 	user_rec = (slurmdb_user_rec_t *)get_msg->rec;
 
-	if (!_validate_operator(*uid, slurmdbd_conn)) {
+	if (!_validate_operator(slurmdbd_conn)) {
 		if (user_cond && user_cond->assoc_cond
 		    && user_cond->assoc_cond->user_list
 		    && (list_count(user_cond->assoc_cond->user_list) == 1)) {
@@ -2881,7 +2882,7 @@ static int _roll_usage(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	info("DBD_ROLL_USAGE: called in CONN %d", slurmdbd_conn->conn->fd);
 
-	if (!_validate_operator(*uid, slurmdbd_conn)) {
+	if (!_validate_operator(slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
 		rc = ESLURM_ACCESS_DENIED;
