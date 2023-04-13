@@ -693,7 +693,7 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG5)
 		for (entry = method->entries; entry->type; entry++) {
-			debug5("%s: add method:%s for path tag:%d entry:%s name:%s parameter:%s entry_type:%s",
+			debug5("%s: add path entry: method=%s tag=%d entry=%s name=%s parameter=%s entry_type=%s",
 			       __func__, key, args->path->tag, entry->entry,
 			       entry->name,
 			       openapi_type_to_string(entry->parameter),
