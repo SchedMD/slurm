@@ -101,6 +101,7 @@ typedef struct {
 	entry_t *entries;
 	path_t *path;
 	const char *str_path;
+	data_t *spec;
 } populate_methods_t;
 
 typedef struct {
@@ -279,6 +280,21 @@ static const char *_get_entry_type_string(entry_type_t type)
 	default:
 		return "invalid";
 	}
+}
+
+static const data_t *_resolve_ref(const data_t *spec, const data_t *dref)
+{
+	const char *ref;
+
+	if (!dref)
+		return NULL;
+
+	ref = data_get_string_const(dref);
+
+	if (ref[0] == '#')
+		ref = &ref[1];
+
+	return data_resolve_dict_path_const(spec, ref);
 }
 
 static void _free_entry_list(entry_t *entry, int tag,
@@ -574,7 +590,8 @@ static data_for_each_cmd_t _match_server_path_string(const data_t *data,
 	return rc;
 }
 
-static const data_t *_find_spec_path(openapi_t *oas, const char *str_path)
+static const data_t *_find_spec_path(openapi_t *oas, const char *str_path,
+				     data_t **spec)
 {
 	match_path_string_t args = {0};
 	data_t *path = parse_url_path(str_path, true, true);
@@ -597,8 +614,10 @@ static const data_t *_find_spec_path(openapi_t *oas, const char *str_path)
 
 		args.path_list = NULL;
 
-		if (args.found)
+		if (args.found) {
+			*spec = oas->spec[i];
 			break;
+		}
 	}
 
 	FREE_NULL_DATA(path);
@@ -610,7 +629,12 @@ static data_for_each_cmd_t _populate_parameters(const data_t *data, void *arg)
 	populate_methods_t *args = arg;
 	entry_t *entry;
 	const char *key = NULL;
-	const data_t *dname = data_key_get_const(data, "name");
+	const data_t *dname, *dref;
+
+	if ((dref = data_key_get_const(data, "$ref")))
+		data = _resolve_ref(args->spec, dref);
+
+	dname = data_key_get_const(data, "name");
 
 	if (!dname || !(key = data_get_string_const(dname)) || !key[0]) {
 		/* parameter doesn't have a name! */
@@ -724,7 +748,7 @@ extern int register_path_tag(openapi_t *oas, const char *str_path)
 	if (!entries)
 		goto cleanup;
 
-	spec_entry = _find_spec_path(oas, str_path);
+	spec_entry = _find_spec_path(oas, str_path, &args.spec);
 	if (!spec_entry)
 		goto cleanup;
 
