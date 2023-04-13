@@ -1043,7 +1043,7 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 	check_parser(parser);
 	verify_parser_sliced(parser);
 
-	if (parser->ptr_offset != NO_VAL)
+	if ((parser->ptr_offset != NO_VAL) && src)
 		src += parser->ptr_offset;
 
 	/*
