@@ -651,14 +651,15 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 	http_request_method_t method_type = get_http_method(key);
 
 	if (method_type == HTTP_REQUEST_INVALID)
-		/* Ignore none HTTP method dictionary keys */
-		return DATA_FOR_EACH_CONT;
+		fatal("%s: path %s has invalid HTTP method %s",
+		      __func__, args->str_path, key);
 
 	method->method = method_type;
 
 	if (data_get_type(data) != DATA_TYPE_DICT)
-		fatal("%s: unexpected data type %s instead of dictionary",
-		      __func__, data_type_to_string(data_get_type(data)));
+		fatal("%s: path %s has unexpected data type %s instead of dictionary",
+		      __func__, args->str_path,
+		      data_type_to_string(data_get_type(data)));
 
 	for (entry = args->entries; entry->type; entry++)
 		count++;
@@ -687,9 +688,12 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 		return DATA_FOR_EACH_CONT;
 	}
 	if (data_get_type(para) != DATA_TYPE_LIST)
-		return DATA_FOR_EACH_FAIL;
+		fatal("%s: path %s parameters field is unexpected type %s",
+		      __func__, args->str_path,
+		      data_type_to_string(data_get_type(para)));
 	if (data_list_for_each_const(para, _populate_parameters, &nargs) < 0)
-		return DATA_FOR_EACH_FAIL;
+		fatal("%s: path %s parameters failed parsing",
+		      __func__, args->str_path);
 
 	/* increment to next method entry */
 	args->method++;
