@@ -123,12 +123,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_pings"
+                  "$ref": "DATA_PARSER_OPENAPI_PING_ARRAY_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_pings"
+                  "$ref": "DATA_PARSER_OPENAPI_PING_ARRAY_RESP"
                 }
               }
             }
@@ -138,12 +138,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1156,23 +1156,6 @@
           },
           "reservations": {
             "$ref": "DATA_PARSER_RESERVATION_INFO_ARRAY"
-          }
-        }
-      },
-      "v0.0.40_pings": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "pings": {
-            "$ref": "DATA_PARSER_CONTROLLER_PING_ARRAY"
           }
         }
       },

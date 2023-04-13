@@ -159,6 +159,7 @@ typedef enum {
 	DATA_PARSER_STATS_MSG_RPCS_BY_USER, /* stats_info_response_msg_t-> computed bool */
 	DATA_PARSER_CONTROLLER_PING, /* controller_ping_t */
 	DATA_PARSER_CONTROLLER_PING_ARRAY, /* controller_ping_t (NULL terminated array) */
+	DATA_PARSER_OPENAPI_PING_ARRAY_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_CONTROLLER_PING_MODE, /* char * - verbose controller mode */
 	DATA_PARSER_CONTROLLER_PING_RESULT, /* bool - "UP" or "DOWN" */
 	DATA_PARSER_NODE, /* node_info_t */

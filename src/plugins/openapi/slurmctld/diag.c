@@ -89,8 +89,7 @@ static int _op_handler_ping(const char *context_id,
 	} else {
 		controller_ping_t *pings = ping_all_controllers();
 
-		DATA_DUMP(ctxt->parser, CONTROLLER_PING_ARRAY, pings,
-			  data_key_set(resp, "pings"));
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_PING_ARRAY_RESP, pings, ctxt);
 
 		xfree(pings);
 	}
