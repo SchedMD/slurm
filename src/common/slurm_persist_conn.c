@@ -241,14 +241,15 @@ static int _process_service_connection(
 			break;
 		if (msg_read != sizeof(nw_size)) {
 			error("Could not read msg_size from connection %d(%s) uid(%u)",
-			      persist_conn->fd, persist_conn->rem_host, uid);
+			      persist_conn->fd, persist_conn->rem_host,
+			      persist_conn->auth_uid);
 			break;
 		}
 		msg_size = ntohl(nw_size);
 		if ((msg_size < 2) || (msg_size > MAX_MSG_SIZE)) {
 			error("Invalid msg_size (%u) from connection %d(%s) uid(%u)",
 			      msg_size, persist_conn->fd,
-			      persist_conn->rem_host, uid);
+			      persist_conn->rem_host, persist_conn->auth_uid);
 			break;
 		}
 
@@ -283,7 +284,8 @@ static int _process_service_connection(
 				    rc != ACCOUNTING_NODES_CHANGE_DB) {
 					error("Processing last message from connection %d(%s) uid(%u)",
 					      persist_conn->fd,
-					      persist_conn->rem_host, uid);
+					      persist_conn->rem_host,
+					      persist_conn->auth_uid);
 					if (rc == ESLURM_ACCESS_DENIED ||
 					    rc == SLURM_PROTOCOL_VERSION_ERROR)
 						fini = true;
@@ -308,7 +310,8 @@ static int _process_service_connection(
 					log_flag(NET, "%s: Problem sending response to connection host:%s fd:%d uid:%u",
 						 __func__,
 						 persist_conn->rem_host,
-						 persist_conn->fd, uid);
+						 persist_conn->fd,
+						 persist_conn->auth_uid);
 				fini = true;
 			}
 			FREE_NULL_BUFFER(buffer);
@@ -316,7 +319,8 @@ static int _process_service_connection(
 	}
 
 	log_flag(NET, "%s: Closed connection host:%s fd:%d uid:%u",
-		 __func__, persist_conn->rem_host, persist_conn->fd, uid);
+		 __func__, persist_conn->rem_host, persist_conn->fd,
+		 persist_conn->auth_uid);
 
 	return rc;
 }
