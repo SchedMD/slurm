@@ -45,8 +45,8 @@
 typedef struct {
 	int magic; /* MAGIC_CTXT */
 	int rc;
-	data_t *errors;
-	data_t *warnings;
+	list_t *errors;
+	list_t *warnings;
 	data_parser_t *parser;
 	const char *id; /* string identifying client (usually IP) */
 	void *db_conn;
@@ -120,5 +120,13 @@ extern void destroy_op_jobs(void);
 extern void destroy_op_nodes(void);
 extern void destroy_op_partitions(void);
 extern void destroy_op_reservations(void);
+
+#define DUMP_OPENAPI_RESP_SINGLE(mtype, src, context_ptr)                    \
+do {                                                                         \
+	openapi_resp_single_t openapi_response = {                           \
+		.response = src,                                             \
+	};                                                                   \
+	DATA_DUMP(context_ptr->parser, mtype, openapi_response, ctxt->resp); \
+} while (false)
 
 #endif

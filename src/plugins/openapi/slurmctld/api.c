@@ -128,7 +128,6 @@ extern ctxt_t *init_connection(const char *context_id,
 			       http_request_method_t method, data_t *parameters,
 			       data_t *query, int tag, data_t *resp, void *auth)
 {
-	data_t *plugin, *slurm, *slurmv, *meta, *errors, *warn, *client;
 	data_t *data_parser;
 	ctxt_t *ctxt = xmalloc(sizeof(*ctxt));
 
@@ -141,34 +140,8 @@ extern ctxt_t *init_connection(const char *context_id,
 	ctxt->resp = resp;
 	ctxt->parent_path = data_set_list(data_new());
 
-	if (data_get_type(resp) != DATA_TYPE_DICT)
-		data_set_dict(resp);
-
-	meta = data_set_dict(data_key_set(resp, "meta"));
-	plugin = data_set_dict(data_key_set(meta, "plugin"));
-	client = data_set_dict(data_key_set(meta, "client"));
-	slurm = data_set_dict(data_key_set(meta, "Slurm"));
-	slurmv = data_set_dict(data_key_set(slurm, "version"));
-	errors = data_set_list(data_key_set(resp, "errors"));
-	warn = data_set_list(data_key_set(resp, "warnings"));
-
-	data_set_string(data_key_set(slurm, "release"), SLURM_VERSION_STRING);
-	(void) data_convert_type(data_set_string(data_key_set(slurmv, "major"),
-						 SLURM_MAJOR),
-				 DATA_TYPE_INT_64);
-	(void) data_convert_type(data_set_string(data_key_set(slurmv, "micro"),
-						 SLURM_MICRO),
-				 DATA_TYPE_INT_64);
-	(void) data_convert_type(data_set_string(data_key_set(slurmv, "minor"),
-						 SLURM_MINOR),
-				 DATA_TYPE_INT_64);
-
-	data_set_string(data_key_set(plugin, "type"), plugin_type);
-	data_set_string(data_key_set(plugin, "name"), plugin_name);
-	data_set_string(data_key_set(client, "source"), context_id);
-
-	ctxt->errors = errors;
-	ctxt->warnings = warn;
+	ctxt->errors = list_create(free_openapi_resp_error);
+	ctxt->warnings = list_create(free_openapi_resp_warning);
 
 	if (!ctxt->db_conn)
 		resp_error(ctxt, ESLURM_DB_CONNECTION, __func__,
@@ -182,9 +155,6 @@ extern ctxt_t *init_connection(const char *context_id,
 			if ((ctxt->parser = data_parser_g_new(
 				_on_error, _on_error, _on_error, ctxt, _on_warn,
 				_on_warn, _on_warn, ctxt, p, NULL, true))) {
-				data_set_string(
-					data_key_set(plugin, "data_parser"),
-					data_parser_get_plugin(ctxt->parser));
 			} else {
 				ctxt->rc = SLURM_PLUGIN_NAME_INVALID;
 			}
@@ -215,13 +185,63 @@ extern ctxt_t *init_connection(const char *context_id,
 
 extern int fini_connection(ctxt_t *ctxt)
 {
+	data_t *errors, *warnings, *meta;
 	int rc;
+	const openapi_resp_meta_t query_meta = {
+		.plugin = {
+			/*
+			 * Compiler wants field to be const even though entire
+			 * object is const requiring casting.
+			 */
+			.type = (char *) plugin_type,
+			.name = (char *) plugin_name,
+			.data_parser = (ctxt->parser ?
+				(char *) data_parser_get_plugin(ctxt->parser) :
+				NULL),
+		},
+		.client = {
+			.source = (char *) ctxt->id,
+		},
+		.slurm = {
+			.version = {
+				.major = SLURM_MAJOR,
+				.micro = SLURM_MICRO,
+				.minor = SLURM_MINOR,
+			},
+			.release = SLURM_VERSION_STRING,
+		}
+	};
 
-	xassert(ctxt);
+	if (data_get_type(ctxt->resp) == DATA_TYPE_NULL)
+		data_set_dict(ctxt->resp);
+
+	/* need to populate meta, errors and warnings */
+
+	errors = data_key_set(ctxt->resp,
+			      OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME);
+	warnings = data_key_set(ctxt->resp,
+				OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME);
+	meta = data_key_set(ctxt->resp, OPENAPI_RESP_STRUCT_META_FIELD_NAME);
+
+	/* none of the fields should be populated */
+	xassert((data_get_type(errors) == DATA_TYPE_NULL));
+	xassert((data_get_type(warnings) == DATA_TYPE_NULL));
+	xassert((data_get_type(meta) == DATA_TYPE_NULL));
+
+	{
+		/* cast to remove const */
+		void *ptr = (void *) &query_meta;
+		DATA_DUMP(ctxt->parser, OPENAPI_META_PTR, ptr, meta);
+	}
+	DATA_DUMP(ctxt->parser, OPENAPI_ERRORS, ctxt->errors, errors);
+	DATA_DUMP(ctxt->parser, OPENAPI_WARNINGS, ctxt->warnings, warnings);
+
 	xassert(ctxt->magic == MAGIC_CTXT);
 
 	rc = ctxt->rc;
 
+	FREE_NULL_LIST(ctxt->errors);
+	FREE_NULL_LIST(ctxt->warnings);
 	FREE_NULL_DATA_PARSER(ctxt->parser);
 	FREE_NULL_DATA(ctxt->parent_path);
 	ctxt->magic = ~MAGIC_CTXT;
@@ -234,7 +254,7 @@ __attribute__((format(printf, 4, 5)))
 extern int resp_error(ctxt_t *ctxt, int error_code, const char *source,
 		      const char *why, ...)
 {
-	data_t *e;
+	openapi_resp_error_t *e;
 
 	xassert(ctxt->magic == MAGIC_CTXT);
 	xassert(ctxt->errors);
@@ -242,7 +262,7 @@ extern int resp_error(ctxt_t *ctxt, int error_code, const char *source,
 	if (!ctxt->errors)
 		return error_code;
 
-	e = data_set_dict(data_list_append(ctxt->errors));
+	e = xmalloc(sizeof(*e));
 
 	if (why) {
 		va_list ap;
@@ -257,20 +277,20 @@ extern int resp_error(ctxt_t *ctxt, int error_code, const char *source,
 		      data_parser_get_plugin(ctxt->parser), error_code,
 		      slurm_strerror(error_code), str);
 
-		data_set_string_own(data_key_set(e, "description"), str);
+		e->description = str;
 	}
 
 	if (error_code) {
-		data_set_int(data_key_set(e, "error_number"), error_code);
-		data_set_string(data_key_set(e, "error"),
-				slurm_strerror(error_code));
+		e->num = error_code;
 
 		if (!ctxt->rc)
 			ctxt->rc = error_code;
 	}
 
 	if (source)
-		data_set_string(data_key_set(e, "source"), source);
+		e->source = xstrdup(source);
+
+	list_append(ctxt->errors, e);
 
 	return error_code;
 }
@@ -278,7 +298,7 @@ extern int resp_error(ctxt_t *ctxt, int error_code, const char *source,
 __attribute__((format(printf, 3, 4)))
 extern void resp_warn(ctxt_t *ctxt, const char *source, const char *why, ...)
 {
-	data_t *w;
+	openapi_resp_warning_t *w;
 
 	xassert(ctxt->magic == MAGIC_CTXT);
 	xassert(ctxt->warnings);
@@ -286,7 +306,7 @@ extern void resp_warn(ctxt_t *ctxt, const char *source, const char *why, ...)
 	if (!ctxt->warnings)
 		return;
 
-	w = data_set_dict(data_list_append(ctxt->warnings));
+	w = xmalloc(sizeof(*w));
 
 	if (why) {
 		va_list ap;
@@ -300,11 +320,11 @@ extern void resp_warn(ctxt_t *ctxt, const char *source, const char *why, ...)
 		      (source ? source : __func__), ctxt->id,
 		      data_parser_get_plugin(ctxt->parser), str);
 
-		data_set_string_own(data_key_set(w, "description"), str);
+		w->description = str;
 	}
 
 	if (source)
-		data_set_string(data_key_set(w, "source"), source);
+		w->source = xstrdup(source);
 }
 
 extern char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
