@@ -92,8 +92,7 @@ typedef struct {
 
 	bool verified;
 	bool cannot_verify;
-	bool uid_set;
-	bool gid_set;
+	bool ids_set;
 
 	uid_t uid;
 	gid_t gid;
@@ -115,8 +114,7 @@ static __thread char *thread_username = NULL;
  * asynchronously. If we're running in one of the daemons, it's presumed that
  * we're receiving tokens but do not need to generate them as part of our
  * responses. In the client commands, responses are not validated, although
- * for safety the auth_p_get_uid()/auth_p_get_gid() calls are set to
- * fatal.
+ * for safety the auth_p_get_ids call is set to fatal.
  *
  * This plugin does implement a few calls that are unique to its operation:
  *	auth_p_thread_config() - used to set a different token specific to
@@ -488,59 +486,34 @@ fail:
 	return SLURM_ERROR;
 }
 
-extern uid_t auth_p_get_uid(auth_token_t *cred)
+extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
 {
-	if (!cred || !cred->verified) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
-		return SLURM_AUTH_NOBODY;
-	}
+	*uid = SLURM_AUTH_NOBODY;
+	*gid = SLURM_AUTH_NOBODY;
+
+	if (!cred || !cred->verified)
+		return;
 
 	if (cred->cannot_verify)
 		fatal("%s: asked for uid for an unverifiable token, this should never happen",
 		      __func__);
 
-	if (cred->uid_set)
-		return cred->uid;
-
-	if (uid_from_string(cred->username, &cred->uid)) {
-		slurm_seterrno(ESLURM_USER_ID_MISSING);
-		return SLURM_AUTH_NOBODY;
+	if (cred->ids_set) {
+		*uid = cred->uid;
+		*gid = cred->gid;
+		return;
 	}
 
-	cred->uid_set = true;
+	if (uid_from_string(cred->username, &cred->uid))
+		return;
 
-	return cred->uid;
-}
+	if (((cred->gid = gid_from_uid(cred->uid)) == (gid_t) -1))
+		return;
 
-extern gid_t auth_p_get_gid(auth_token_t *cred)
-{
-	uid_t uid;
+	cred->ids_set = true;
 
-	if (!cred || !cred->verified) {
-		slurm_seterrno(ESLURM_AUTH_BADARG);
-		return SLURM_AUTH_NOBODY;
-	}
-
-	if (cred->cannot_verify)
-		fatal("%s: asked for gid for an unverifiable token, this should never happen",
-		      __func__);
-
-	if (cred->gid_set)
-		return cred->gid;
-
-	if ((uid = auth_p_get_uid(cred)) == SLURM_AUTH_NOBODY) {
-		slurm_seterrno(ESLURM_USER_ID_MISSING);
-		return SLURM_AUTH_NOBODY;
-	}
-
-	if (((cred->gid = gid_from_uid(uid)) == (gid_t) -1)) {
-		slurm_seterrno(ESLURM_USER_ID_MISSING);
-		return SLURM_AUTH_NOBODY;
-	}
-
-	cred->gid_set = true;
-
-	return cred->gid;
+	*uid = cred->uid;
+	*gid = cred->gid;
 }
 
 extern char *auth_p_get_host(auth_token_t *cred)
