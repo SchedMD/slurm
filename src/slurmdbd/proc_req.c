@@ -65,7 +65,7 @@
 
 /* Local functions */
 static bool  _validate_slurm_user(uint32_t uid);
-static bool  _validate_super_user(uint32_t uid, slurmdbd_conn_t *slurmdbd_conn);
+static bool _validate_super_user(slurmdbd_conn_t *dbd_conn);
 static bool  _validate_operator(uint32_t uid, slurmdbd_conn_t *slurmdbd_conn);
 static int   _find_rpc_obj_in_list(void *x, void *key);
 static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
@@ -105,8 +105,9 @@ static bool _validate_slurm_user(uint32_t uid)
  * _validate_super_user - validate that the uid is authorized at the
  *      root, SlurmUser, or SLURMDB_ADMIN_SUPER_USER level
  */
-static bool _validate_super_user(uint32_t uid, slurmdbd_conn_t *dbd_conn)
+static bool _validate_super_user(slurmdbd_conn_t *dbd_conn)
 {
+	uint32_t uid = dbd_conn->conn->auth_uid;
 #ifndef NDEBUG
 	if (drop_priv)
 		return false;
@@ -601,7 +602,7 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	debug2("DBD_ARCHIVE_DUMP: called in CONN %d", slurmdbd_conn->conn->fd);
 
-	if (!_validate_super_user(*uid, slurmdbd_conn)) {
+	if (!_validate_super_user(slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
 		rc = ESLURM_ACCESS_DENIED;
@@ -653,7 +654,7 @@ static int _archive_load(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	debug2("DBD_ARCHIVE_LOAD: called in CONN %d", slurmdbd_conn->conn->fd);
 
-	if (!_validate_super_user(*uid, slurmdbd_conn)) {
+	if (!_validate_super_user(slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
 		rc = ESLURM_ACCESS_DENIED;
@@ -1997,7 +1998,7 @@ is_same_user:
 	}
 
 	if ((user_rec->admin_level != SLURMDB_ADMIN_NOTSET) &&
-	    !_validate_super_user(*uid, slurmdbd_conn)) {
+	    !_validate_super_user(slurmdbd_conn)) {
 		comment = "You must be a super user to modify a users admin level";
 		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(
@@ -2280,7 +2281,7 @@ static int _reconfig(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (!_validate_super_user(*uid, slurmdbd_conn)) {
+	if (!_validate_super_user(slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
@@ -3165,7 +3166,7 @@ static int _get_stats(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (!_validate_super_user(*uid, slurmdbd_conn)) {
+	if (!_validate_super_user(slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
@@ -3192,7 +3193,7 @@ static int _clear_stats(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (!_validate_super_user(*uid, slurmdbd_conn)) {
+	if (!_validate_super_user(slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(
@@ -3218,7 +3219,7 @@ static int _shutdown(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
-	if (!_validate_super_user(*uid, slurmdbd_conn)) {
+	if (!_validate_super_user(slurmdbd_conn)) {
 		comment = "Your user doesn't have privilege to perform this action";
 		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
