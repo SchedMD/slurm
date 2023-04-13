@@ -699,6 +699,8 @@ extern void slurm_persist_conn_members_destroy(
 	if (persist_conn->auth_cred) {
 		auth_g_destroy(persist_conn->auth_cred);
 		persist_conn->auth_cred = NULL;
+		persist_conn->auth_uid = SLURM_AUTH_NOBODY;
+		persist_conn->auth_ids_set = false;
 	}
 	xfree(persist_conn->cluster_name);
 	xfree(persist_conn->rem_host);
@@ -1074,6 +1076,8 @@ extern int slurm_persist_msg_unpack(slurm_persist_conn_t *persist_conn,
 			auth_g_destroy(persist_conn->auth_cred);
 
 		persist_conn->auth_cred = msg->auth_cred;
+		persist_conn->auth_uid = msg->auth_uid;
+		persist_conn->auth_ids_set = msg->auth_ids_set;
 		msg->auth_cred = NULL;
 	}
 
