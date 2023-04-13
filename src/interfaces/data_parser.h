@@ -173,6 +173,7 @@ typedef enum {
 	DATA_PARSER_NODE_SELECT_TRES_WEIGHTED, /* node_info_t->select_nodeinfo  */
 	DATA_PARSER_UPDATE_NODE_MSG, /* update_node_msg_t */
 	DATA_PARSER_LICENSES, /* license_info_msg_t */
+	DATA_PARSER_LICENSES_PTR, /* license_info_msg_t* */
 	DATA_PARSER_LICENSE, /* slurm_license_info_t */
 	DATA_PARSER_JOB_INFO_MSG, /* job_info_msg_t */
 	DATA_PARSER_JOB_INFO, /* slurm_job_info_t */
