@@ -37,7 +37,20 @@
 #ifndef OPENAPI_SLURMCTLD_STRUCTS
 #define OPENAPI_SLURMCTLD_STRUCTS
 
+#include "slurm/slurm.h"
+
 #include "src/common/data.h"
 #include "src/interfaces/data_parser.h"
+#include "src/interfaces/openapi.h"
+
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	job_array_resp_msg_t *results;
+	char *job_id;
+	char *step_id;
+	char *job_submit_user_msg;
+} job_post_response_t;
 
 #endif

@@ -47,6 +47,7 @@
 #include "src/slurmrestd/operations.h"
 
 #include "api.h"
+#include "structs.h"
 
 static int _op_handler_jobs(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
@@ -157,7 +158,6 @@ static void _job_post_update(ctxt_t *ctxt, data_t *djob, const char *script,
 {
 	job_array_resp_msg_t *resp = NULL;
 	job_desc_msg_t *job = xmalloc(sizeof(*job));
-	data_t *results = data_key_set(ctxt->resp, "results");
 
 	slurm_init_job_desc_msg(job);
 
@@ -184,19 +184,15 @@ static void _job_post_update(ctxt_t *ctxt, data_t *djob, const char *script,
 		goto cleanup;
 	}
 
-	DATA_DUMP(ctxt->parser, JOB_ARRAY_RESPONSE_MSG_PTR, resp, results);
-
-	if (resp && resp->job_array_count) {
-		/*
-		 * Success may not give a resp ptr.
-		 * TODO: backwards compatibility output.
-		 */
-		DATA_DUMP(ctxt->parser, STRING, resp->job_array_id[0],
-			  data_key_set(ctxt->resp, "job_id"));
-		/* msg does not provide the step_id cleanly */
-		data_key_set(ctxt->resp, "step_id");
-		/* msg not provided for updates */
-		data_key_set(ctxt->resp, "job_submit_user_msg");
+	if (resp) {
+		job_post_response_t r = {
+			.results = resp,
+			.job_id = resp->job_array_id[0],
+			.step_id = NULL, /* not provided by RPC */
+			.job_submit_user_msg = NULL, /* not provided by RPC */
+		};
+		DATA_DUMP(ctxt->parser, OPENAPI_JOB_POST_RESPONSE, r,
+			  ctxt->resp);
 	}
 
 cleanup:

@@ -68,6 +68,7 @@
 #include "slurmdb_helpers.h"
 
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
+#include "src/plugins/openapi/slurmctld/structs.h"
 
 #define MAGIC_FOREACH_CSV_LIST 0x8891be2b
 #define MAGIC_FOREACH_LIST 0xaefa2af3
@@ -6115,6 +6116,19 @@ add_openapi_response_single(OPENAPI_PING_ARRAY_RESP, CONTROLLER_PING_ARRAY, "pin
 add_openapi_response_single(OPENAPI_LICENSES_RESP, LICENSES_PTR, "licenses", "licenses");
 add_openapi_response_single(OPENAPI_JOB_INFO_RESP, JOB_INFO_MSG_PTR, "jobs", "jobs");
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(job_post_response_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
+	add_openapi_response_meta(job_post_response_t),
+	add_openapi_response_errors(job_post_response_t),
+	add_openapi_response_warnings(job_post_response_t),
+	add_parse(JOB_ARRAY_RESPONSE_MSG_PTR, results, "results", "Job update results"),
+	add_parse(STRING, job_id, "job_id", "first updated JobId - backwards compatibility - use results instead"),
+	add_parse(STRING, step_id, "step_id", "first updated StepID - backwards compatibility - use results instead"),
+	add_parse(STRING, job_submit_user_msg, "job_submit_user_msg", "job submision user message - backwards compatibility - use results instead"),
+};
+#undef add_parse
+
 #undef add_parser
 #undef add_parser_skip
 #undef add_complex_parser
@@ -6527,6 +6541,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_PING_ARRAY_RESP),
 	addoar(OPENAPI_LICENSES_RESP),
 	addoar(OPENAPI_JOB_INFO_RESP),
+	addpa(OPENAPI_JOB_POST_RESPONSE, job_post_response_t),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
