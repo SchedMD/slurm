@@ -433,12 +433,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/v0.0.40_job_submission"
+                "$ref": "DATA_PARSER_OPENAPI_JOB_SUBMIT_RESPONSE"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "#/components/schemas/v0.0.40_job_submission"
+                "$ref": "DATA_PARSER_OPENAPI_JOB_SUBMIT_RESPONSE"
               }
             }
           },
@@ -450,12 +450,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_job_submission_response"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_SUBMIT_RESPONSE"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_job_submission_response"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_SUBMIT_RESPONSE"
                 }
               }
             }
@@ -465,12 +465,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_SUBMIT_RESPONSE"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_SUBMIT_RESPONSE"
                 }
               }
             }
@@ -1090,20 +1090,6 @@
         },
         "type": "object"
       },
-      "v0.0.40_job_submission": {
-        "properties": {
-          "script": {
-            "type": "string",
-            "description": "Executable script (full contents) to run in batch step for all job components"
-          },
-          "job": {
-            "$ref": "DATA_PARSER_JOB_DESC_MSG"
-          },
-          "jobs": {
-            "$ref": "DATA_PARSER_JOB_DESC_MSG_LIST"
-          }
-        }
-      },
       "v0.0.40_meta": {
         "type": "object",
         "properties": {
@@ -1197,32 +1183,6 @@
           },
           "nodes": {
             "$ref": "DATA_PARSER_NODES"
-          }
-        }
-      },
-      "v0.0.40_job_submission_response": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "job_id": {
-            "description": "new job ID",
-            "type": "integer"
-          },
-          "step_id": {
-            "description": "new job step ID",
-            "type": "string"
-          },
-          "job_submit_user_msg": {
-            "description": "Message to user from job_submit plugin",
-            "type": "string"
           }
         }
       }

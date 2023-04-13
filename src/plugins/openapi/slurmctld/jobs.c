@@ -246,16 +246,16 @@ static void _job_post_submit(ctxt_t *ctxt, data_t *djob, const char *script)
 	       __func__, ctxt->id, resp->job_id, resp->step_id,
 	       resp->error_code, resp->job_submit_user_msg);
 
-	DATA_DUMP(ctxt->parser, JOB_SUBMIT_RESPONSE_MSG, *resp,
-		  data_key_set(ctxt->resp, "result"));
-
-	/* TODO: backwards compatibility output */
-	DATA_DUMP(ctxt->parser, UINT32, resp->job_id,
-		  data_key_set(ctxt->resp, "job_id"));
-	DATA_DUMP(ctxt->parser, STEP_ID, resp->step_id,
-		  data_key_set(ctxt->resp, "step_id"));
-	DATA_DUMP(ctxt->parser, STRING, resp->job_submit_user_msg,
-		  data_key_set(ctxt->resp, "job_submit_user_msg"));
+	if (resp) {
+		job_submit_response_t r = {
+			.result = resp,
+			.job_id = resp->job_id,
+			.step_id = resp->step_id,
+			.job_submit_user_msg = resp->job_submit_user_msg,
+		};
+		DATA_DUMP(ctxt->parser, OPENAPI_JOB_SUBMIT_RESPONSE, r,
+			  ctxt->resp);
+	}
 
 	_job_submit_rc(ctxt, resp, "slurm_submit_batch_job()");
 
@@ -306,16 +306,16 @@ static void _job_post_het_submit(ctxt_t *ctxt, data_t *djobs,
 	       __func__, ctxt->id, resp->job_id, resp->step_id,
 	       resp->error_code, resp->job_submit_user_msg);
 
-	DATA_DUMP(ctxt->parser, JOB_SUBMIT_RESPONSE_MSG, *resp,
-		  data_key_set(ctxt->resp, "result"));
-
-	/* TODO: backwards compatibility output */
-	DATA_DUMP(ctxt->parser, UINT32, resp->job_id,
-		  data_key_set(ctxt->resp, "job_id"));
-	DATA_DUMP(ctxt->parser, UINT32, resp->step_id,
-		  data_key_set(ctxt->resp, "step_id"));
-	DATA_DUMP(ctxt->parser, STRING, resp->job_submit_user_msg,
-		  data_key_set(ctxt->resp, "job_submit_user_msg"));
+	if (resp) {
+		job_submit_response_t r = {
+			.result = resp,
+			.job_id = resp->job_id,
+			.step_id = resp->step_id,
+			.job_submit_user_msg = resp->job_submit_user_msg,
+		};
+		DATA_DUMP(ctxt->parser, OPENAPI_JOB_SUBMIT_RESPONSE, r,
+			  ctxt->resp);
+	}
 
 	_job_submit_rc(ctxt, resp, "slurm_submit_batch_het_job()");
 
