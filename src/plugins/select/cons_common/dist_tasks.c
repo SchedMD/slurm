@@ -1339,9 +1339,9 @@ extern void dist_tasks_gres_min_cpus(job_record_t *job_ptr,
 			 * as we can.
 			 */
 			if (avail_cpus[n] < gres_min_cpus[n]) {
-				error("%pJ: gres_min_cpus=%u is greater than avail_cpus=%u for node %u",
-				      job_ptr, gres_min_cpus[n],
-				      avail_cpus[n], n);
+				log_flag(SELECT_TYPE, "%pJ: gres_min_cpus=%u is greater than avail_cpus=%u for node %u",
+					 job_ptr, gres_min_cpus[n],
+					 avail_cpus[n], n);
 				job_res->cpus[n] = avail_cpus[n];
 			} else {
 				log_flag(SELECT_TYPE, "%pJ: Setting job_res->cpus to gres_min_cpus (%u) for node %u",
