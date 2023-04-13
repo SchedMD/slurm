@@ -116,8 +116,7 @@ static int _op_handler_licenses(const char *context_id,
 		resp_error(ctxt, rc, __func__,
 			   "slurm_load_licenses() was unable to load licenses");
 	else
-		DATA_DUMP(ctxt->parser, LICENSES, *msg,
-			  data_key_set(resp, "licenses"));
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_LICENSES_RESP, msg, ctxt);
 
 	slurm_free_license_info_msg(msg);
 	return fini_connection(ctxt);

@@ -94,18 +94,30 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_licenses_info"
+                  "$ref": "DATA_PARSER_OPENAPI_LICENSES_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_licenses_info"
+                  "$ref": "DATA_PARSER_OPENAPI_LICENSES_RESP"
                 }
               }
             }
           },
           "default": {
-            "description": "unable to request licenses"
+            "description": "unable to request licenses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                }
+              }
+            }
           }
         }
       }
@@ -1000,23 +1012,6 @@
       }
     },
     "schemas": {
-      "v0.0.40_licenses_info": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "licenses": {
-            "$ref": "DATA_PARSER_LICENSES"
-          }
-        }
-      },
       "status": {
         "type": "object",
         "properties": {
