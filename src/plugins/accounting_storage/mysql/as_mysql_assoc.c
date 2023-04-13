@@ -2581,7 +2581,7 @@ static int _handle_pre_add_lft(mysql_conn_t *mysql_conn, uint32_t uid,
 			       slurmdb_assoc_rec_t *object,
 			       char *cols, char *vals, char *extra,
 			       char *update, char *parent,
-			       int *moved_parent,
+			       bool *moved_parent,
 			       char **old_parent,
 			       char **old_cluster,
 			       uint32_t *assoc_id, int *incr, int *my_left,
@@ -2765,7 +2765,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *my_lineage = NULL;
 	uint32_t assoc_id = 0;
 	int incr = 0, my_left = 0, my_par_id = 0;
-	int moved_parent = 0;
+	bool moved_parent = 0;
 	MYSQL_RES *result = NULL;
 	char *old_parent = NULL, *old_cluster = NULL;
 	char *last_parent = NULL, *last_cluster = NULL;
