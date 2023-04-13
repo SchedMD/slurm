@@ -2584,7 +2584,7 @@ static int _handle_pre_add_lft(mysql_conn_t *mysql_conn, uint32_t uid,
 			       int *moved_parent,
 			       char **old_parent,
 			       char **old_cluster,
-			       int *assoc_id, int *incr, int *my_left,
+			       uint32_t *assoc_id, int *incr, int *my_left,
 			       char **query_out)
 {
 	char *tmp_char = NULL, *query = NULL;
@@ -2763,7 +2763,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	char *my_lineage = NULL;
-	int assoc_id = 0;
+	uint32_t assoc_id = 0;
 	int incr = 0, my_left = 0, my_par_id = 0;
 	int moved_parent = 0;
 	MYSQL_RES *result = NULL;
