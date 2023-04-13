@@ -219,12 +219,9 @@ static char * _replace_double_quotes(char *option)
 }
 
 static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
-			    persist_init_req_msg_t *init_msg,
-			    uint32_t *uid)
+			    persist_init_req_msg_t *init_msg)
 {
 	int rc = SLURM_SUCCESS;
-
-	*uid = init_msg->uid;
 
 #if HAVE_SYS_PRCTL_H
 	{
@@ -271,8 +268,9 @@ static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 #endif
 
 	req_msg->uid = auth_g_get_uid(slurmdbd_conn->conn->auth_cred);
+	*uid = req_msg->uid;
 
-	rc = _handle_init_msg(slurmdbd_conn, req_msg, uid);
+	rc = _handle_init_msg(slurmdbd_conn, req_msg);
 
 	if (rc != SLURM_SUCCESS)
 		comment = slurm_strerror(rc);
