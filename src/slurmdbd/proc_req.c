@@ -3529,9 +3529,9 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 
 	if (!(rpc_obj = list_find_first(rpc_stats.user_list,
 					_find_rpc_obj_in_list,
-					uid))) {
+					&slurmdbd_conn->conn->auth_uid))) {
 		rpc_obj = xmalloc(sizeof(slurmdb_rpc_obj_t));
-		rpc_obj->id = *uid;
+		rpc_obj->id = slurmdbd_conn->conn->auth_uid;
 		list_append(rpc_stats.user_list, rpc_obj);
 	}
 	rpc_obj->cnt++;
