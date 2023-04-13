@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
     is killed.
  -- slurmrestd - avoid possible segfault caused by race condition of already
     completed connections.
+ -- mpi/cray_shasta - Fix PMI shared secret for hetjobs.
 
 * Changes in Slurm 23.02.1
 ==========================

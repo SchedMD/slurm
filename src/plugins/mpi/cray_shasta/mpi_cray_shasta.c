@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  mpi_cray_shasta.c - Cray Shasta MPI plugin
  *****************************************************************************
- *  Copyright 2019,2022 Hewlett Packard Enterprise Development LP
+ *  Copyright 2019,2022-2023 Hewlett Packard Enterprise Development LP
  *  Written by David Gloe <dgloe@cray.com>
  *
  *  This file is part of Slurm, a resource management program.
@@ -297,7 +297,10 @@ extern mpi_plugin_client_state_t *
 mpi_p_client_prelaunch(const mpi_step_info_t *mpi_step, char ***env)
 {
 #ifdef HAVE_GETRANDOM
-	uint64_t shared_secret = 0;
+	static uint64_t shared_secret = 0;
+	static pthread_mutex_t shared_secret_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+	slurm_mutex_lock(&shared_secret_mutex);
 
 	/*
 	 * Get a non-zero pseudo-random value. getrandom() is guaranteed to
@@ -306,14 +309,19 @@ mpi_p_client_prelaunch(const mpi_step_info_t *mpi_step, char ***env)
 	 * getrandom() system call. getrandom() should be present on all
 	 * supported cray systems.
 	 */
-	if (getrandom(&shared_secret, sizeof(shared_secret), 0) < 0) {
+
+	if (!shared_secret &&
+	    getrandom(&shared_secret, sizeof(shared_secret), 0) < 0) {
 		error("%s: getrandom() failed: %m", __func__);
+		slurm_mutex_unlock(&shared_secret_mutex);
 		return NULL;
 	}
 
 	/* Set PMI_SHARED_SECRET for PMI authentication */
 	env_array_overwrite_fmt(env, PMI_SHARED_SECRET_ENV, "%"PRIu64,
 				shared_secret);
+
+	slurm_mutex_unlock(&shared_secret_mutex);
 #endif
 	/* only return NULL on error */
 	return (void *)0xdeadbeef;
