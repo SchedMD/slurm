@@ -214,6 +214,7 @@ typedef enum {
 	DATA_PARSER_RESERVATION_INFO, /* reserve_info_t */
 	DATA_PARSER_RESERVATION_FLAGS, /* uint64_t & RESERVE_FLAG_* */
 	DATA_PARSER_RESERVATION_INFO_MSG, /* reserve_info_msg_t */
+	DATA_PARSER_RESERVATION_INFO_MSG_PTR, /* reserve_info_msg_t* */
 	DATA_PARSER_RESERVATION_CORE_SPEC, /* resv_core_spec_t */
 	DATA_PARSER_RESERVATION_INFO_CORE_SPEC, /* reserve_info_t->core_spec+core_spec_cnt */
 	DATA_PARSER_RESERVATION_INFO_ARRAY, /* reserve_info_t** */
