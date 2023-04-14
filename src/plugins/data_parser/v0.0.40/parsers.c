@@ -6085,6 +6085,15 @@ static const parser_t PARSER_ARRAY(OPENAPI_WARNING)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(job_submit_request_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(JOB_SUBMIT_REQ)[] = {
+	add_parse(STRING, script, "script", "batch job script"),
+	add_parse(JOB_DESC_MSG_LIST, jobs, "jobs", "HetJob description"),
+	add_parse(JOB_DESC_MSG_PTR, job, "job", "Job description"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -6547,6 +6556,7 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_META, openapi_resp_meta_t),
 	addpa(OPENAPI_ERROR, openapi_resp_error_t),
 	addpa(OPENAPI_WARNING, openapi_resp_warning_t),
+	addpa(JOB_SUBMIT_REQ, job_submit_request_t),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),

@@ -153,24 +153,10 @@ static void _handle_job_delete(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	}
 }
 
-static void _job_post_update(ctxt_t *ctxt, data_t *djob, const char *script,
+static void _job_post_update(ctxt_t *ctxt, job_desc_msg_t *job, char *script,
 			     slurm_selected_step_t *job_id)
 {
 	job_array_resp_msg_t *resp = NULL;
-	job_desc_msg_t *job = xmalloc(sizeof(*job));
-
-	slurm_init_job_desc_msg(job);
-
-	data_set_string(data_list_append(ctxt->parent_path), "job");
-
-	if (DATA_PARSE(ctxt->parser, JOB_DESC_MSG, *job, djob,
-		       ctxt->parent_path))
-		goto cleanup;
-
-	if (script) {
-		xfree(job->script);
-		job->script = xstrdup(script);
-	}
 
 	if (job_id->step_id.job_id != NO_VAL)
 		job->job_id = job_id->step_id.job_id;
@@ -182,9 +168,7 @@ static void _job_post_update(ctxt_t *ctxt, data_t *djob, const char *script,
 		resp_error(ctxt, errno, "slurm_update_job2()",
 			   "Job update requested failed");
 		goto cleanup;
-	}
-
-	if (resp) {
+	} else if (resp) {
 		job_post_response_t r = {
 			.results = resp,
 			.job_id = resp->job_array_id[0],
@@ -197,7 +181,6 @@ static void _job_post_update(ctxt_t *ctxt, data_t *djob, const char *script,
 
 cleanup:
 	slurm_free_job_array_resp(resp);
-	slurm_free_job_desc_msg(job);
 }
 
 static void _job_submit_rc(ctxt_t *ctxt, submit_response_msg_t *resp,
@@ -218,18 +201,9 @@ static void _job_submit_rc(ctxt_t *ctxt, submit_response_msg_t *resp,
 	resp_error(ctxt, rc, src, NULL);
 }
 
-static void _job_post_submit(ctxt_t *ctxt, data_t *djob, const char *script)
+static void _job_post_submit(ctxt_t *ctxt, job_desc_msg_t *job, char *script)
 {
 	submit_response_msg_t *resp = NULL;
-	job_desc_msg_t *job = xmalloc(sizeof(*job));
-
-	slurm_init_job_desc_msg(job);
-
-	data_set_string(data_list_append(ctxt->parent_path), "job");
-
-	if (DATA_PARSE(ctxt->parser, JOB_DESC_MSG, *job, djob,
-		       ctxt->parent_path))
-		goto cleanup;
 
 	if (script) {
 		xfree(job->script);
@@ -261,20 +235,11 @@ static void _job_post_submit(ctxt_t *ctxt, data_t *djob, const char *script)
 
 cleanup:
 	slurm_free_submit_response_response_msg(resp);
-	slurm_free_job_desc_msg(job);
 }
 
-static void _job_post_het_submit(ctxt_t *ctxt, data_t *djobs,
-				 const char *script)
+static void _job_post_het_submit(ctxt_t *ctxt, list_t *jobs, char *script)
 {
 	submit_response_msg_t *resp = NULL;
-	list_t *jobs = NULL;
-
-	data_set_string(data_list_append(ctxt->parent_path), "jobs");
-
-	if (DATA_PARSE(ctxt->parser, JOB_DESC_MSG_LIST, jobs, djobs,
-		       ctxt->parent_path))
-		goto cleanup;
 
 	if (!jobs || !list_count(jobs)) {
 		resp_error(ctxt, errno, __func__,
@@ -321,13 +286,11 @@ static void _job_post_het_submit(ctxt_t *ctxt, data_t *djobs,
 
 cleanup:
 	slurm_free_submit_response_response_msg(resp);
-	FREE_NULL_LIST(jobs);
 }
 
 static void _job_post(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 {
-	data_t *djobs, *djob, *dscript;
-	const char *script = NULL;
+	job_submit_request_t req = {0};
 
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_NET_RAW) && ctxt->query) {
 		char *buffer = NULL;
@@ -346,18 +309,12 @@ static void _job_post(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 			   "unexpected empty query for job");
 		return;
 	}
-	if (data_get_type(ctxt->query) != DATA_TYPE_DICT) {
-		resp_error(ctxt, ESLURM_DATA_EXPECTED_DICT, __func__,
-			   "Job query must be a dictionary");
+
+	if (DATA_PARSE(ctxt->parser, JOB_SUBMIT_REQ, req, ctxt->query,
+		       ctxt->parent_path))
 		return;
-	}
 
-	/* TODO: script is backwards compatibility only */
-	dscript = data_key_get(ctxt->query, "script");
-	djob = data_key_get(ctxt->query, "job");
-	djobs = data_key_get(ctxt->query, "jobs");
-
-	if (dscript && (!(script = data_get_string(dscript)) || !script[0])) {
+	if (!req.script || !req.script[0]) {
 		if (!job_id || (job_id->step_id.job_id == NO_VAL))
 			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 				   "Populated \"script\" field is required for job submission");
@@ -365,41 +322,38 @@ static void _job_post(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 				   "Populated \"script\" field is required for JobId=%u update",
 				   job_id->step_id.job_id);
-
 		return;
 	}
-	if (djob && djobs) {
+	if (req.job && req.jobs) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Specify only one \"job\" or \"jobs\" fields but never both");
 		return;
 	}
-	if (!djob && !djobs) {
+	if (!req.job && !req.jobs) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Specifing either \"job\" or \"jobs\" fields are required to job %s",
 			   (!job_id || (job_id->step_id.job_id == NO_VAL) ?
 			    " update" : "submission"));
 		return;
 	}
-	if (job_id && djobs) {
+	if (job_id && req.jobs) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Specify only \"job\" field for updating an existing job");
 		return;
 	}
 
-	if (djob) {
-		if (data_get_type(djob) != DATA_TYPE_DICT) {
-			resp_error(ctxt, ESLURM_DATA_EXPECTED_DICT, __func__,
-				   "\"job\" field must be a dictionary with job properties");
-			return;
-		}
-
+	if (req.job) {
 		if (job_id)
-			_job_post_update(ctxt, djob, script, job_id);
+			_job_post_update(ctxt, req.job, req.script, job_id);
 		else
-			_job_post_submit(ctxt, djob, script);
+			_job_post_submit(ctxt, req.job, req.script);
 	} else {
-		_job_post_het_submit(ctxt, djobs, script);
+		_job_post_het_submit(ctxt, req.jobs, req.script);
 	}
+
+	slurm_free_job_desc_msg(req.job);
+	FREE_NULL_LIST(req.jobs);
+	xfree(req.script);
 }
 
 static int _op_handler_job(const char *context_id, http_request_method_t method,

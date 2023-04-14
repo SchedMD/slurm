@@ -63,4 +63,10 @@ typedef struct {
 	char *job_submit_user_msg;
 } job_submit_response_t;
 
+typedef struct {
+	char *script;
+	job_desc_msg_t *job;
+	list_t *jobs; /* list of job_desc_msg_t* */
+} job_submit_request_t;
+
 #endif

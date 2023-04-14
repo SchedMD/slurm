@@ -295,12 +295,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "DATA_PARSER_UPDATE_NODE_MSG"
+                "$ref": "DATA_PARSER_JOB_SUBMIT_REQ"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "DATA_PARSER_UPDATE_NODE_MSG"
+                "$ref": "DATA_PARSER_JOB_SUBMIT_REQ"
               }
             }
           },
