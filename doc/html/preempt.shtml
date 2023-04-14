@@ -111,7 +111,8 @@ scheduling. It is only compatible with <I>PreemptType=preempt/none</I>.
 </LI>
 <LI>
 <I>GANG</I>: Enables gang scheduling (time slicing) of jobs in the same
-partition, and allows the resuming of suspended jobs.
+partition, and allows the resuming of suspended jobs. In order to use gang
+scheduling, the \fBGANG\fR option must be specified at the cluster level.
 <BR>
 <B>NOTE</B>: Gang scheduling is performed independently for each partition, so
 if you only want time-slicing by <I>OverSubscribe</I>, without any preemption,
@@ -174,7 +175,7 @@ is set to <i>REQUEUE</i> or <i>CANCEL</i>. It is specified as a time string:
 A time of -1 disables the option, equivalent to 0. Acceptable time formats
 include "minutes", "minutes:seconds", "hours:minutes:seconds", "days\-hours",
 "days\-hours:minutes", and "days\-hours:minutes:seconds".
-PreemptEligibleTime is shown in the output of "scontrol show job &ltjob id&gt"
+PreemptEligibleTime is shown in the output of "scontrol show job &lt;job id&gt;"
 </LI>
 <LI>
 <B>PriorityTier</B>: Configure the partition's <I>PriorityTier</I> setting
@@ -530,6 +531,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 27 January 2023</p>
+<p style="text-align:center;">Last modified 07 April 2023</p>
 
 <!--#include virtual="footer.txt"-->

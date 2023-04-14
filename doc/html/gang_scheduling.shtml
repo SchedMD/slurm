@@ -88,6 +88,8 @@ adversely affecting other jobs sharing the same resources.
 <B>PreemptMode</B>: set the <I>GANG</I> option.
 See the <I>slurm.conf</I> manpage for other options that may be specified to
 enable job <a href="preempt.html">preemption</a> in addition to GANG.
+In order to use gang scheduling, the \fBGANG\fR option must be specified at
+the cluster level.
 <BR>
 NOTE: Gang scheduling is performed independently for each partition, so
 if you only want time-slicing by <I>OverSubscribe</I>, without any preemption,
@@ -305,7 +307,7 @@ JOBID PARTITION    NAME  USER ST  TIME NODES NODELIST
    10    active  myload  user  R  1:13     2 n[15-16]
    11    active  myload  user  S  0:30     3 n[12-14]
 </PRE>
-</P>
+
 <P>
 The next example displays "local backfilling":
 </P>
@@ -529,6 +531,6 @@ Use of the scancel command to send SIGSTOP and SIGCONT signals would stop a
 job without releasing its CPUs for allocation to other jobs and would be a
 preferable mechanism in many cases.</P>
 
-<p style="text-align:center;">Last modified 9 June 2021</p>
+<p style="text-align:center;">Last modified 07 April 2023</p>
 
 <!--#include virtual="footer.txt"-->
