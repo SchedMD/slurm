@@ -70,7 +70,6 @@ extern int _op_handler_partitions(const char *context_id,
 	time_t update_time = 0;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
-	data_t *dpart = data_key_set(resp, "partitions");
 
 	if (ctxt->rc)
 		goto done;
@@ -103,26 +102,32 @@ extern int _op_handler_partitions(const char *context_id,
 	}
 
 	if (part_info_ptr && name) {
-		partition_info_t *parts[2] = { 0 };
+		partition_info_t *part = NULL;
 
 		for (int i = 0; !rc && i < part_info_ptr->record_count; i++) {
 			if (!xstrcasecmp(name, part_info_ptr->partition_array[i]
 						       .name)) {
-				parts[0] = &part_info_ptr->partition_array[i];
+				part = &part_info_ptr->partition_array[i];
 				break;
 			}
 		}
 
-		if (!parts[0]) {
+		if (!part) {
 			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 				   "Unable to find partition %s", name);
 		} else {
-			partition_info_t **p = parts;
-			DATA_DUMP(ctxt->parser, PARTITION_INFO_ARRAY, p, dpart);
+			partition_info_msg_t p = {
+				.last_update = part_info_ptr->last_update,
+				.record_count = 1,
+				.partition_array = part,
+			};
+
+			DUMP_OPENAPI_RESP_SINGLE(OPENAPI_PARTITION_RESP, &p,
+						 ctxt);
 		}
 	} else {
-		DATA_DUMP(ctxt->parser, PARTITION_INFO_MSG, *part_info_ptr,
-			  dpart);
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_PARTITION_RESP, part_info_ptr,
+					 ctxt);
 	}
 
 done:
