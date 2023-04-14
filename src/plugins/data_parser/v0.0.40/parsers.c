@@ -6126,6 +6126,7 @@ add_openapi_response_single(OPENAPI_LICENSES_RESP, LICENSES_PTR, "licenses", "li
 add_openapi_response_single(OPENAPI_JOB_INFO_RESP, JOB_INFO_MSG_PTR, "jobs", "jobs");
 add_openapi_response_single(OPENAPI_NODES_RESP, NODES_PTR, "nodes", "nodes");
 add_openapi_response_single(OPENAPI_PARTITION_RESP, PARTITION_INFO_MSG_PTR, "partitions", "partitions");
+add_openapi_response_single(OPENAPI_RESERVATION_RESP, RESERVATION_INFO_MSG_PTR, "reservations", "reservations");
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_post_response_t, mtype, false, field, 0, path, desc)
@@ -6570,6 +6571,7 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_JOB_SUBMIT_RESPONSE, job_submit_response_t),
 	addoar(OPENAPI_NODES_RESP),
 	addoar(OPENAPI_PARTITION_RESP),
+	addoar(OPENAPI_RESERVATION_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),

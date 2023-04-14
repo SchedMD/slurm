@@ -60,7 +60,6 @@ extern int _op_handler_reservations(const char *context_id,
 	char *name = NULL;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
-	data_t *dres = data_key_set(resp, "reservations");
 
 	if (ctxt->rc)
 		goto done;
@@ -101,28 +100,32 @@ extern int _op_handler_reservations(const char *context_id,
 	}
 
 	if (res_info_ptr && name) {
-		reserve_info_t *res[2] = { 0 };
+		reserve_info_t *res = NULL;
 
 		for (int i = 0; !rc && i < res_info_ptr->record_count; i++) {
 			if (!xstrcasecmp(name,
 					 res_info_ptr->reservation_array[i]
 						 .name)) {
-				res[0] = &res_info_ptr->reservation_array[i];
+				res = &res_info_ptr->reservation_array[i];
 				break;
 			}
 		}
 
-		if (!res[0]) {
+		if (!res) {
 			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 				   "Unable to find reservation %s", name);
 		} else {
-			reserve_info_t **r = res;
-			DATA_DUMP(ctxt->parser, RESERVATION_INFO_ARRAY, r,
-				  dres);
+			reserve_info_msg_t r = {
+				.last_update = res_info_ptr->last_update,
+				.record_count = 1,
+				.reservation_array = res,
+			};
+			DUMP_OPENAPI_RESP_SINGLE(OPENAPI_RESERVATION_RESP, &r,
+						 ctxt);
 		}
 	} else {
-		DATA_DUMP(ctxt->parser, RESERVATION_INFO_MSG, *res_info_ptr,
-			  dres);
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_RESERVATION_RESP, res_info_ptr,
+					 ctxt);
 	}
 
 done:

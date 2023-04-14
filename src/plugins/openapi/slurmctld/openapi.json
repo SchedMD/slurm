@@ -855,12 +855,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_reservations_response"
+                  "$ref": "DATA_PARSER_OPENAPI_RESERVATION_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_reservations_response"
+                  "$ref": "DATA_PARSER_OPENAPI_RESERVATION_RESP"
                 }
               }
             }
@@ -870,12 +870,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESERVATION_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESERVATION_RESP"
                 }
               }
             }
@@ -921,12 +921,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_reservations_response"
+                  "$ref": "DATA_PARSER_OPENAPI_RESERVATION_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_reservations_response"
+                  "$ref": "DATA_PARSER_OPENAPI_RESERVATION_RESP"
                 }
               }
             }
@@ -936,12 +936,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESERVATION_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESERVATION_RESP"
                 }
               }
             }
@@ -1132,23 +1132,6 @@
                 "description": "version specifier"
               }
             }
-          }
-        }
-      },
-      "v0.0.40_reservations_response": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "reservations": {
-            "$ref": "DATA_PARSER_RESERVATION_INFO_ARRAY"
           }
         }
       }
