@@ -99,7 +99,6 @@ static void _dump_nodes(ctxt_t *ctxt, char *name)
 {
 	time_t update_time = 0;
 	node_info_msg_t *node_info_ptr = NULL;
-	data_t *dnodes = data_key_set(ctxt->resp, "nodes");
 
 	if (!name) {
 		if (get_date_param(ctxt->query, "update_time", &update_time))
@@ -135,8 +134,9 @@ static void _dump_nodes(ctxt_t *ctxt, char *name)
 		slurm_free_partition_info_msg(part_info_ptr);
 	}
 
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_NODES_RESP, node_info_ptr, ctxt);
+
 done:
-	DATA_DUMP(ctxt->parser, NODES_PTR, node_info_ptr, dnodes);
 	slurm_free_node_info_msg(node_info_ptr);
 }
 

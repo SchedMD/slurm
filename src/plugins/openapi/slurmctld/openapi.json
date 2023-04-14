@@ -505,12 +505,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_nodes_response"
+                  "$ref": "DATA_PARSER_OPENAPI_NODES_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_nodes_response"
+                  "$ref": "DATA_PARSER_OPENAPI_NODES_RESP"
                 }
               }
             }
@@ -520,12 +520,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_NODES_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_NODES_RESP"
                 }
               }
             }
@@ -559,12 +559,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_nodes_response"
+                  "$ref": "DATA_PARSER_OPENAPI_NODES_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/v0.0.40_nodes_response"
+                  "$ref": "DATA_PARSER_OPENAPI_NODES_RESP"
                 }
               }
             }
@@ -574,12 +574,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_NODES_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_NODES_RESP"
                 }
               }
             }
@@ -1166,23 +1166,6 @@
           },
           "partitions": {
             "$ref": "DATA_PARSER_PARTITION_INFO_ARRAY"
-          }
-        }
-      },
-      "v0.0.40_nodes_response": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/v0.0.40_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/v0.0.40_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/v0.0.40_warnings"
-          },
-          "nodes": {
-            "$ref": "DATA_PARSER_NODES"
           }
         }
       }
