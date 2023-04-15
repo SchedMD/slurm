@@ -673,9 +673,12 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 	const data_t *para;
 	int count = 0;
 	entry_t *entry;
-	http_request_method_t method_type = get_http_method(key);
+	http_request_method_t method_type;
 
-	if (method_type == HTTP_REQUEST_INVALID)
+	if (!xstrcasecmp(key, "servers"))
+		return DATA_FOR_EACH_CONT;
+
+	if ((method_type = get_http_method(key)) == HTTP_REQUEST_INVALID)
 		fatal("%s: path %s has invalid HTTP method %s",
 		      __func__, args->str_path, key);
 
