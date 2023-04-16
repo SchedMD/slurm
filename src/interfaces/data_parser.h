@@ -278,7 +278,7 @@ typedef struct data_parser_s data_parser_t;
  * IN listf - list function if plugin_type = "list"
  * IN skip_loading - skip any calls related to loading the plugins
  * RET parser ptr
- * 	Must be freed by call to data_parser_free()
+ * 	Must be freed by call to data_parser_g_free()
  */
 extern data_parser_t *data_parser_g_new(data_parser_on_error_t on_parse_error,
 					data_parser_on_error_t on_dump_error,
