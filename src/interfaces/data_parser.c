@@ -173,6 +173,11 @@ static data_parser_t *_new_parser(data_parser_on_error_t on_parse_error,
 				 on_query_warn, warn_arg);
 	END_TIMER2(__func__);
 
+	slurm_mutex_lock(&init_mutex);
+	xassert(active_parsers >= 0);
+	active_parsers++;
+	slurm_mutex_unlock(&init_mutex);
+
 	return parser;
 }
 
@@ -185,7 +190,6 @@ static int _load_plugins(const char *plugin_type, plugrack_foreach_t listf,
 		return rc;
 
 	slurm_mutex_lock(&init_mutex);
-	xassert(active_parsers >= 0);
 
 	xassert(sizeof(parse_funcs_t) ==
 		(sizeof(void *) * ARRAY_SIZE(parse_syms)));
@@ -194,7 +198,6 @@ static int _load_plugins(const char *plugin_type, plugrack_foreach_t listf,
 			  parse_syms, ARRAY_SIZE(parse_syms));
 	xassert(rc || plugins);
 
-	active_parsers++;
 	slurm_mutex_unlock(&init_mutex);
 
 	return rc;
