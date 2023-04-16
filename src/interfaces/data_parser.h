@@ -291,6 +291,36 @@ extern data_parser_t *data_parser_g_new(data_parser_on_error_t on_parse_error,
 					plugrack_foreach_t listf,
 					bool skip_loading);
 
+/*
+ * Initialize a new data parser for all plugins found
+ *
+ * IN on_parse_error - callback when an parsing error is encountered
+ * 	ptr must remain valid until free called.
+ * IN on_dump_error - callback when an parsing error is encountered
+ * 	ptr must remain valid until free called.
+ * IN on_error_arg - ptr to pass to on_error function (not modified)
+ * 	ptr must remain valid until free called.
+ * IN on_parse_warn - callback when an parsing warning is encountered
+ * 	ptr must remain valid until free called.
+ * IN on_dump_warn - callback when an parsing warning is encountered
+ * 	ptr must remain valid until free called.
+ * IN on_warn_arg - ptr to pass to on_warn function (not modified)
+ * 	ptr must remain valid until free called.
+ * IN skip_loading - skip any calls related to loading the plugins
+ * RET NULL terminated parser array ptr
+ * 	Must be freed by call to data_parser_g_array_free()
+ */
+extern data_parser_t **data_parser_g_new_array(
+	data_parser_on_error_t on_parse_error,
+	data_parser_on_error_t on_dump_error,
+	data_parser_on_error_t on_query_error,
+	void *error_arg,
+	data_parser_on_warn_t on_parse_warn,
+	data_parser_on_warn_t on_dump_warn,
+	data_parser_on_warn_t on_query_warn,
+	void *warn_arg,
+	bool skip_loading);
+
 typedef enum {
 	DATA_PARSER_ATTR_INVALID = 0,
 	DATA_PARSER_ATTR_DBCONN_PTR, /* return of slurmdb_connection_get() - will not xfree */
@@ -329,6 +359,18 @@ extern void data_parser_g_free(data_parser_t *parser, bool skip_unloading);
 		if (_X)                               \
 			data_parser_g_free(_X, true); \
 		_X = NULL;                            \
+	} while (0)
+
+/*
+ * Free NULL terminated array of parsers
+ */
+extern void data_parser_g_array_free(data_parser_t **ptr, bool skip_unloading);
+
+#define FREE_NULL_DATA_PARSER_ARRAY(_X, SKIP_UNLOAD)               \
+	do {                                                       \
+		if (_X)                                            \
+			data_parser_g_array_free(_X, SKIP_UNLOAD); \
+		_X = NULL;                                         \
 	} while (0)
 
 /*

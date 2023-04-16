@@ -240,6 +240,38 @@ extern data_parser_t *data_parser_g_new(data_parser_on_error_t on_parse_error,
 			   on_query_warn, warn_arg, i);
 }
 
+extern data_parser_t **data_parser_g_new_array(
+	data_parser_on_error_t on_parse_error,
+	data_parser_on_error_t on_dump_error,
+	data_parser_on_error_t on_query_error,
+	void *error_arg,
+	data_parser_on_warn_t on_parse_warn,
+	data_parser_on_warn_t on_dump_warn,
+	data_parser_on_warn_t on_query_warn,
+	void *warn_arg,
+	bool skip_loading)
+{
+	int rc;
+	data_parser_t **parsers;
+
+	if ((rc = _load_plugins(NULL, NULL, skip_loading))) {
+		error("%s: failure loading plugins: %s",
+		      __func__, slurm_strerror(rc));
+		return NULL;
+	}
+
+	parsers = xcalloc((plugins->count + 1), sizeof(*parsers));
+
+	for (int i = 0; i < plugins->count; i++) {
+		parsers[i] = _new_parser(on_parse_error, on_dump_error,
+					 on_query_error, error_arg,
+					 on_parse_warn, on_dump_warn,
+					 on_query_warn, warn_arg, i);
+	}
+
+	return parsers;
+}
+
 extern const char *data_parser_get_plugin(data_parser_t *parser)
 {
 	xassert(!parser || parser->magic == PARSE_MAGIC);
@@ -285,6 +317,17 @@ extern void data_parser_g_free(data_parser_t *parser, bool skip_unloading)
 	if (!skip_unloading && !active_parsers)
 		FREE_NULL_PLUGINS(plugins);
 	slurm_mutex_unlock(&init_mutex);
+}
+
+extern void data_parser_g_array_free(data_parser_t **ptr, bool skip_unloading)
+{
+	if (!ptr)
+		return;
+
+	for (int i = 0; ptr[i]; i++)
+		data_parser_g_free(ptr[i], skip_unloading);
+
+	xfree(ptr);
 }
 
 extern int data_parser_g_assign(data_parser_t *parser,
