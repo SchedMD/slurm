@@ -176,6 +176,30 @@ static data_parser_t *_new_parser(data_parser_on_error_t on_parse_error,
 	return parser;
 }
 
+static int _load_plugins(const char *plugin_type, plugrack_foreach_t listf,
+			 bool skip_loading)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (skip_loading)
+		return rc;
+
+	slurm_mutex_lock(&init_mutex);
+	xassert(active_parsers >= 0);
+
+	xassert(sizeof(parse_funcs_t) ==
+		(sizeof(void *) * ARRAY_SIZE(parse_syms)));
+
+	rc = load_plugins(&plugins, PARSE_MAJOR_TYPE, plugin_type, listf,
+			  parse_syms, ARRAY_SIZE(parse_syms));
+	xassert(rc || plugins);
+
+	active_parsers++;
+	slurm_mutex_unlock(&init_mutex);
+
+	return rc;
+}
+
 extern data_parser_t *data_parser_g_new(data_parser_on_error_t on_parse_error,
 					data_parser_on_error_t on_dump_error,
 					data_parser_on_error_t on_query_error,
@@ -187,22 +211,9 @@ extern data_parser_t *data_parser_g_new(data_parser_on_error_t on_parse_error,
 					plugrack_foreach_t listf,
 					bool skip_loading)
 {
-	int rc = SLURM_SUCCESS, i;
+	int rc, i;
 
-	slurm_mutex_lock(&init_mutex);
-	xassert(active_parsers >= 0);
-
-	xassert(sizeof(parse_funcs_t) ==
-		sizeof(void *) * ARRAY_SIZE(parse_syms));
-
-	if (!skip_loading) {
-		rc = load_plugins(&plugins, PARSE_MAJOR_TYPE, plugin_type,
-				  listf, parse_syms, ARRAY_SIZE(parse_syms));
-		xassert(rc || plugins);
-	}
-
-	active_parsers++;
-	slurm_mutex_unlock(&init_mutex);
+	rc = _load_plugins(plugin_type, listf, skip_loading);
 
 	if (rc) {
 		error("%s: failure loading plugins: %s",
