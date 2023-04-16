@@ -42,6 +42,7 @@
 #include "src/common/xstring.h"
 
 #include "api.h"
+#include "events.h"
 #include "parsers.h"
 #include "parsing.h"
 
@@ -87,8 +88,15 @@ extern int data_parser_p_dump(args_t *args, data_parser_type_t type, void *src,
 	xassert(src_bytes > 0);
 	xassert(dst && (data_get_type(dst) == DATA_TYPE_NULL));
 
-	if (!parser)
-		fatal("%s: invalid data parser type:0x%x", __func__, type);
+	if (!parser) {
+		int rc;
+		char *path = NULL;
+		rc = on_error(DUMPING, type, args, ESLURM_DATA_INVALID_PARSER,
+			      NULL, __func__,
+			      "Invalid or unsupported dumping requested. Output may be incomplete.");
+		xfree(path);
+		return rc;
+	}
 
 	return dump(src, src_bytes, parser, dst, args);
 }
@@ -106,8 +114,15 @@ extern int data_parser_p_parse(args_t *args, data_parser_type_t type, void *dst,
 	xassert(src && (data_get_type(src) != DATA_TYPE_NONE));
 	xassert(dst_bytes > 0);
 
-	if (!parser)
-		fatal("%s: invalid data parser type:0x%x", __func__, type);
+	if (!parser) {
+		int rc;
+		char *path = NULL;
+		rc = on_error(PARSING, type, args, ESLURM_DATA_INVALID_PARSER,
+			      set_source_path(&path, parent_path), __func__,
+			      "Invalid or unsupported parsing requested. Input may not be fully parsed.");
+		xfree(path);
+		return rc;
+	}
 
 	return parse(dst, dst_bytes, parser, src, args, parent_path);
 }

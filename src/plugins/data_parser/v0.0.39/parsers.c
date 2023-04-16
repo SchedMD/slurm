@@ -6456,7 +6456,7 @@ extern const parser_t *const find_parser_by_type(type_t type)
 		if (parsers[i].type == type)
 			return &parsers[i];
 
-	fatal_abort("%s: failed to find parser with type %u", __func__, type);
+	return NULL;
 }
 
 extern void parsers_init()
