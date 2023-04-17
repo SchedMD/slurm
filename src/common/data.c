@@ -1845,9 +1845,6 @@ extern const data_t *data_resolve_dict_path_const(const data_t *data,
 	while (token && found) {
 		xstrtrim(token);
 
-		if (data_get_type(found) != DATA_TYPE_DICT)
-			found = NULL;
-
 		if (!(found = data_key_get_const(found, token)))
 			break;
 
