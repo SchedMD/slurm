@@ -1887,8 +1887,10 @@ extern data_t *data_define_dict_path(data_t *data, const char *path)
 
 		if (data_get_type(found) == DATA_TYPE_NULL)
 			data_set_dict(found);
-		else if (data_get_type(found) != DATA_TYPE_DICT)
+		else if (data_get_type(found) != DATA_TYPE_DICT) {
 			found = NULL;
+			break;
+		}
 
 		if (found) {
 			found = data_key_set(found, token);
