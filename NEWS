@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix double counting suspended job counts on nodes when reconfiguring, which
     prevented nodes with suspended jobs from being powered down or rebooted
     once the jobs completed.
+ -- Fix backfill not scheduling jobs submitted with --prefer and --constraint
+    properly.
 
 * Changes in Slurm 23.02.2
 ==========================
