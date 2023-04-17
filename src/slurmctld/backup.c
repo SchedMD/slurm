@@ -428,9 +428,8 @@ static int _background_process_msg(slurm_msg_t *msg)
 
 	if (msg->msg_type != REQUEST_PING) {
 		bool super_user = false;
-		uid_t uid = auth_g_get_uid(msg->auth_cred);
 
-		if (validate_slurm_user(uid))
+		if (validate_slurm_user(msg->auth_uid))
 			super_user = true;
 
 		if (super_user && (msg->msg_type == REQUEST_SHUTDOWN)) {
