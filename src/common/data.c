@@ -1848,10 +1848,10 @@ extern const data_t *data_resolve_dict_path_const(const data_t *data,
 		if (data_get_type(found) != DATA_TYPE_DICT)
 			found = NULL;
 
-		if (found) {
-			found = data_key_get_const(found, token);
-			token = strtok_r(NULL, "/", &save_ptr);
-		}
+		if (!(found = data_key_get_const(found, token)))
+			break;
+
+		token = strtok_r(NULL, "/", &save_ptr);
 	}
 	xfree(str);
 
