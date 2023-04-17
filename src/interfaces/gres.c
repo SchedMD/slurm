@@ -9361,7 +9361,7 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 		error("Bind request %s does not specify any devices within the allocation for task %d. Binding to the first device in the allocation instead.",
 		      tres_bind->request, proc_id);
 		if (!get_devices && gres_use_local_device_index())
-			bit_set(usable_gres,0);
+			bit_set(usable_gres, 0);
 		else
 			bit_set(usable_gres, bit_ffs(gres_bit_alloc));
 
