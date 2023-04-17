@@ -135,7 +135,20 @@ extern void on_warn(parse_op_t op, data_parser_type_t type, args_t *args,
 	xassert((op != PARSING) ||
 		(source && (source[0] == OPENAPI_PATH_REL[0]) &&
 		 (source[1] == OPENAPI_PATH_SEP[0])));
-	args->on_parse_warn(args->warn_arg, type, source, "%s", str);
+
+	switch (op) {
+	case PARSING:
+		args->on_parse_warn(args->warn_arg, type, source, "%s", str);
+		break;
+	case DUMPING:
+		args->on_dump_warn(args->warn_arg, type, source, "%s", str);
+		break;
+	case QUERYING:
+		args->on_query_warn(args->warn_arg, type, source, "%s", str);
+		break;
+	case PARSE_INVALID:
+		fatal_abort("%s: invalid op should never be called", __func__);
+	}
 
 	debug2("%s->%s->%s type=%s why=%s", caller, source, __func__,
 	       parser->type_string, str);
