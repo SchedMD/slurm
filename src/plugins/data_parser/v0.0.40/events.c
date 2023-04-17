@@ -58,7 +58,7 @@ extern int on_error(parse_op_t op, data_parser_type_t type, args_t *args,
 
 	xassert(type > DATA_PARSER_TYPE_INVALID);
 	xassert(type < DATA_PARSER_TYPE_MAX);
-	xassert(parser && (parser->type == type));
+	xassert(!parser || (parser->type == type));
 	xassert(args);
 	xassert(error_code != SLURM_SUCCESS);
 	xassert(caller && caller[0]);
@@ -96,7 +96,8 @@ extern int on_error(parse_op_t op, data_parser_type_t type, args_t *args,
 
 	debug2("%s->%s->%s continue=%c type=%s return_code[%u]=%s why=%s",
 	       caller, source, __func__, (cont ? 'T' : 'F'),
-	       parser->type_string, error_code, slurm_strerror(error_code),
+	       (parser ? parser->type_string : "UNKNOWN"),
+	       error_code, slurm_strerror(error_code),
 	       str);
 
 	/* never clobber errno */
