@@ -1804,6 +1804,11 @@ extern data_t *data_resolve_dict_path(data_t *data, const char *path)
 	while (token && found) {
 		xstrtrim(token);
 
+		if (!found || (data_get_type(found) != DATA_TYPE_DICT)) {
+			found = NULL;
+			break;
+		}
+
 		if (!(found = data_key_get(found, token)))
 			break;
 
