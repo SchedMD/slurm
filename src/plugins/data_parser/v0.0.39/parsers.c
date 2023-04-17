@@ -3938,7 +3938,7 @@ static int PARSE_FUNC(JOB_DESC_MSG_ARGV)(const parser_t *const parser,
 	}
 
 	rc = PARSE(STRING_ARRAY, job->argv, src, parent_path, args);
-	job->argc = envcount(job->environment);
+	job->argc = envcount(job->argv);
 
 	return rc;
 }
