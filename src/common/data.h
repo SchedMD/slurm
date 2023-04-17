@@ -679,4 +679,14 @@ extern int data_retrieve_dict_path_int(const data_t *data, const char *path,
  */
 extern data_t *data_copy(data_t *dest, const data_t *src);
 
+/*
+ * Move entire data tree from src to dest.
+ * src will be changed to being DATA_TYPE_NULL.
+ *
+ * IN dest destination data to overwrite
+ * IN src source data to move and set as DATA_TYPE_NULL
+ * RET ptr to dest or NULL on error
+ */
+extern data_t *data_move(data_t *dest, data_t *src);
+
 #endif /* _DATA_H */

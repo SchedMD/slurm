@@ -1969,6 +1969,28 @@ data_t *data_copy(data_t *dest, const data_t *src)
 	}
 }
 
+extern data_t *data_move(data_t *dest, data_t *src)
+{
+	if (!src)
+		return NULL;
+
+	if (!dest)
+		dest = data_new();
+
+	_check_magic(src);
+	_check_magic(dest);
+
+	log_flag(DATA, "%s: move data (0x%"PRIXPTR") to (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) src, (uintptr_t) dest);
+
+	memmove(&dest->data, &src->data, sizeof(src->data));
+	dest->type = src->type;
+	src->type = DATA_TYPE_NULL;
+	xassert((memset(&src->data, 0, sizeof(src->data))));
+
+	return dest;
+}
+
 extern int data_retrieve_dict_path_string(const data_t *data, const char *path,
 					  char **ptr_buffer)
 {
