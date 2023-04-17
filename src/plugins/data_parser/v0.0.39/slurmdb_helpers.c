@@ -330,7 +330,6 @@ extern int compare_assoc(const slurmdb_assoc_rec_t *x,
 
 	_match(acct, x, y);
 	_match(cluster, x, y);
-	_match(cluster, x, y);
 	_match(partition, x, y);
 	_match(user, x, y);
 
