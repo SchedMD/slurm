@@ -56,7 +56,6 @@ extern int on_error(parse_op_t op, data_parser_type_t type, args_t *args,
 	bool cont;
 	int errno_backup = errno;
 
-	xassert((op == PARSING) || (op == DUMPING) || (op == QUERYING));
 	xassert(type > DATA_PARSER_TYPE_INVALID);
 	xassert(type < DATA_PARSER_TYPE_MAX);
 	xassert(parser && (parser->type == type));
@@ -77,8 +76,23 @@ extern int on_error(parse_op_t op, data_parser_type_t type, args_t *args,
 	xassert((op != PARSING) ||
 		(source && (source[0] == OPENAPI_PATH_REL[0]) &&
 		 (source[1] == OPENAPI_PATH_SEP[0])));
-	cont = args->on_parse_error(args->error_arg, type, error_code,
-				    source, "%s", str);
+
+	switch (op) {
+	case PARSING:
+		cont = args->on_parse_error(args->error_arg, type, error_code,
+					    source, "%s", str);
+		break;
+	case DUMPING:
+		cont = args->on_dump_error(args->error_arg, type, error_code,
+					   source, "%s", str);
+		break;
+	case QUERYING:
+		cont = args->on_query_error(args->error_arg, type, error_code,
+					    source, "%s", str);
+		break;
+	case PARSE_INVALID:
+		fatal_abort("%s: invalid op should never be called", __func__);
+	}
 
 	debug2("%s->%s->%s continue=%c type=%s return_code[%u]=%s why=%s",
 	       caller, source, __func__, (cont ? 'T' : 'F'),
