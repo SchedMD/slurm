@@ -325,8 +325,14 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 extern int compare_assoc(const slurmdb_assoc_rec_t *x,
 			 const slurmdb_assoc_rec_t *y)
 {
-	if ((y->id > 0) && (y->id == x->id))
+	if ((y->id > 0) && (y->id == x->id)) {
+		/*
+		 * Always match cluster because multiple clusters may have
+		 * different associations with the same id.
+		 */
+		_match(cluster, x, y);
 		return 1;
+	}
 
 	_match(acct, x, y);
 	_match(cluster, x, y);
