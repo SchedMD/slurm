@@ -1036,7 +1036,7 @@ static int _schedule(bool full_queue)
 	job_record_t *reject_array_job = NULL;
 	part_record_t *reject_array_part = NULL;
 	slurmctld_resv_t *reject_array_resv = NULL;
-	List reject_array_features = NULL;
+	bool reject_array_use_prefer = false;
 	bool use_prefer;
 	bool fail_by_part, wait_on_resv;
 	uint32_t deadline_time_limit, save_time_limit = 0;
@@ -1519,8 +1519,7 @@ next_task:
 				job_ptr->array_job_id) &&
 			    (reject_array_part == part_ptr) &&
 			    (reject_array_resv == job_ptr->resv_ptr) &&
-			    (reject_array_features ==
-			     job_ptr->details->feature_list_use))
+			    (reject_array_use_prefer == use_prefer))
 				continue;  /* already rejected array element */
 
 
@@ -1528,8 +1527,7 @@ next_task:
 			reject_array_job = job_ptr;
 			reject_array_part = part_ptr;
 			reject_array_resv = job_ptr->resv_ptr;
-			reject_array_features =
-				job_ptr->details->feature_list_use;
+			reject_array_use_prefer = use_prefer;
 
 			if (!job_array_start_test(job_ptr))
 				continue;
@@ -1815,7 +1813,6 @@ skip_start:
 				reject_array_job = NULL;
 				reject_array_part = NULL;
 				reject_array_resv = NULL;
-				reject_array_features = NULL;
 			}
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
 				     job_ptr,
@@ -1865,7 +1862,6 @@ skip_start:
 			reject_array_job = NULL;
 			reject_array_part = NULL;
 			reject_array_resv = NULL;
-			reject_array_features = NULL;
 
 			sched_info("Allocate %pJ NodeList=%s #CPUs=%u Partition=%s",
 				   job_ptr, job_ptr->nodes,
