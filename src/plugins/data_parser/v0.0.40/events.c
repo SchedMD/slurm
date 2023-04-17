@@ -119,7 +119,7 @@ extern void on_warn(parse_op_t op, data_parser_type_t type, args_t *args,
 	xassert((op == PARSING) || (op == DUMPING) || (op == QUERYING));
 	xassert(type > DATA_PARSER_TYPE_INVALID);
 	xassert(type < DATA_PARSER_TYPE_MAX);
-	xassert(parser && (parser->type == type));
+	xassert(!parser || (parser->type == type));
 	xassert(args);
 	xassert(caller && caller[0]);
 	xassert(why && why[0]);
@@ -152,7 +152,7 @@ extern void on_warn(parse_op_t op, data_parser_type_t type, args_t *args,
 	}
 
 	debug2("%s->%s->%s type=%s why=%s", caller, source, __func__,
-	       parser->type_string, str);
+	       (parser ? parser->type_string : "UNKNOWN"), str);
 
 	/* never clobber errno */
 	errno = errno_backup;
