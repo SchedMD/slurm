@@ -1807,10 +1807,10 @@ extern data_t *data_resolve_dict_path(data_t *data, const char *path)
 		if (data_get_type(found) != DATA_TYPE_DICT)
 			found = NULL;
 
-		if (found) {
-			found = data_key_get(found, token);
-			token = strtok_r(NULL, "/", &save_ptr);
-		}
+		if (!(found = data_key_get(found, token)))
+			break;
+
+		token = strtok_r(NULL, "/", &save_ptr);
 	}
 	xfree(str);
 
