@@ -503,8 +503,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	if (step_hset == NULL) {
 		bool send_error = false;
 		if (type == LAUNCH_TASKS) {
-			launch_tasks_request_msg_t *launch_req;
-			launch_req = (launch_tasks_request_msg_t *) req;
+			launch_tasks_request_msg_t *launch_req = req;
 			if (launch_req->step_id.step_id != SLURM_EXTERN_CONT)
 				send_error = true;
 		}
