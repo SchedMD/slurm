@@ -233,7 +233,17 @@ extern int fini_connection(ctxt_t *ctxt)
 		void *ptr = (void *) &query_meta;
 		DATA_DUMP(ctxt->parser, OPENAPI_META_PTR, ptr, meta);
 	}
-	DATA_DUMP(ctxt->parser, OPENAPI_ERRORS, ctxt->errors, errors);
+	if ((rc = DATA_DUMP(ctxt->parser, OPENAPI_ERRORS, ctxt->errors, errors))) {
+		/* data_parser doesn't support OPENAPI_ERRORS parser */
+		data_t *e =
+			data_set_dict(data_list_append(data_set_list(errors)));
+		data_set_string(data_key_set(e, "description"),
+				"Requested data_parser plugin does not support OpenAPI plugin");
+		data_set_int(data_key_set(e, "error_number"),
+			     ESLURM_NOT_SUPPORTED);
+		data_set_string(data_key_set(e, "error"),
+				slurm_strerror(ESLURM_NOT_SUPPORTED));
+	}
 	DATA_DUMP(ctxt->parser, OPENAPI_WARNINGS, ctxt->warnings, warnings);
 
 	xassert(ctxt->magic == MAGIC_CTXT);
