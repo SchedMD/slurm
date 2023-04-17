@@ -8948,9 +8948,15 @@ static int _assign_gres_to_task(cpu_set_t *task_cpu_set, int ntasks_per_gres,
 			best_slot = bit_ffs_from_bit(gres_slots, start);
 	}
 	list_iterator_destroy(iter);
-	bit_clear(gres_slots, best_slot);
 	FREE_NULL_BITMAP(task_cpus_bitmap);
-	return (best_slot / ntasks_per_gres);
+
+	if (best_slot != -1) {
+		bit_clear(gres_slots, best_slot);
+		return (best_slot / ntasks_per_gres);
+	} else {
+		log_flag(GRES, "%s Can't find free slot", __func__);
+		return -1;
+	}
 }
 
 /*
@@ -9007,6 +9013,14 @@ static bitstr_t *_get_single_usable_gres(int context_inx,
 
 	/* Return a bitmap with this as the only usable GRES */
 	usable_gres = bit_alloc(bit_size(gres_bit_alloc));
+	if (idx < 0) {
+		int n;
+		error("%s Can't find free slot for local_proc_id = %d, continue using block distribution",
+		     __func__, local_proc_id);
+		n = local_proc_id % gres_count;
+		idx = bit_get_bit_num(gres_bit_alloc, n);
+	}
+
 	bit_set(usable_gres, idx);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES){
