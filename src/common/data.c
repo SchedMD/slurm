@@ -1892,10 +1892,10 @@ extern data_t *data_define_dict_path(data_t *data, const char *path)
 			break;
 		}
 
-		if (found) {
-			found = data_key_set(found, token);
-			token = strtok_r(NULL, "/", &save_ptr);
-		}
+		if (!(found = data_key_set(found, token)))
+			break;
+
+		token = strtok_r(NULL, "/", &save_ptr);
 	}
 	xfree(str);
 
