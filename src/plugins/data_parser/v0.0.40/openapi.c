@@ -55,6 +55,8 @@ typedef struct {
 	args_t *args;
 	const parser_t *parsers;
 	int parser_count;
+	data_t *paths; /* existing paths in OAS */
+	data_t *new_paths; /* newly populated paths */
 	data_t *schemas;
 	data_t *spec;
 } spec_args_t;
@@ -424,6 +426,49 @@ static void _replace_refs(data_t *data, spec_args_t *sargs)
 		(void) data_list_for_each(data, _convert_list_entry, sargs);
 }
 
+static data_for_each_cmd_t _foreach_path(const char *key, data_t *data,
+					 void *arg)
+{
+	char *param, *start, *end, *replaced;
+	spec_args_t *args = arg;
+	data_t *n;
+
+	param = xstrdup(key);
+
+	if (!(start = xstrstr(param, OPENAPI_DATA_PARSER_PARAM))) {
+		xfree(param);
+		return DATA_FOR_EACH_CONT;
+	}
+
+	*start = '\0';
+	end = start + strlen(OPENAPI_DATA_PARSER_PARAM);
+	replaced = xstrdup_printf("%s%s%s", param, XSTRINGIFY(DATA_VERSION),
+				  end);
+	xfree(param);
+
+	if (!args->new_paths)
+		args->new_paths = data_set_dict(data_new());
+
+	n = data_key_set(args->new_paths, replaced);
+	xfree(replaced);
+
+	data_copy(n, data);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static data_for_each_cmd_t _foreach_join_path(const char *key, data_t *data,
+					      void *arg)
+{
+	spec_args_t *args = arg;
+	data_t *path = data_key_set(args->paths, key);
+
+	data_move(path, data);
+	_replace_refs(path, args);
+
+	return DATA_FOR_EACH_CONT;
+}
+
 extern int data_parser_p_specify(args_t *args, data_t *spec)
 {
 	spec_args_t sargs = {
@@ -438,13 +483,17 @@ extern int data_parser_p_specify(args_t *args, data_t *spec)
 		return error("OpenAPI specification invalid");
 
 	sargs.schemas = data_resolve_dict_path(spec, OPENAPI_SCHEMAS_PATH);
+	sargs.paths = data_resolve_dict_path(spec, OPENAPI_PATHS_PATH);
 
 	if (!sargs.schemas || (data_get_type(sargs.schemas) != DATA_TYPE_DICT))
 		return error("%s not found or invalid type",
 			     OPENAPI_SCHEMAS_PATH);
 
 	get_parsers(&sargs.parsers, &sargs.parser_count);
-	_replace_refs(spec, &sargs);
+
+	(void) data_dict_for_each(sargs.paths, _foreach_path, &sargs);
+	(void) data_dict_for_each(sargs.new_paths, _foreach_join_path, &sargs);
+	FREE_NULL_DATA(sargs.new_paths);
 
 	return SLURM_SUCCESS;
 }
