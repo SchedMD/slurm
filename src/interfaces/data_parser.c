@@ -282,6 +282,27 @@ extern const char *data_parser_get_plugin(data_parser_t *parser)
 		return NULL;
 }
 
+extern const char *data_parser_get_plugin_version(data_parser_t *parser)
+{
+	static const char prefix[] = PARSE_MAJOR_TYPE "/";
+
+	xassert(!parser || parser->magic == PARSE_MAGIC);
+
+	if (!parser)
+		return NULL;
+
+#ifndef NDEBUG
+	/* catch if the prefix ever changes in an unexpected way */
+	const char *type, *match;
+	type = data_parser_get_plugin(parser);
+	xassert(type);
+	match = xstrstr(type, prefix);
+	xassert(match);
+#endif
+
+	return parser->plugin_type + strlen(prefix);
+}
+
 extern void data_parser_g_free(data_parser_t *parser, bool skip_unloading)
 {
 	DEF_TIMERS;

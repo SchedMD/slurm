@@ -347,6 +347,12 @@ extern int data_parser_g_assign(data_parser_t *parser,
 extern const char *data_parser_get_plugin(data_parser_t *parser);
 
 /*
+ * Get Plugin type as string stripping "data_parser/".
+ * String is valid for the life of the parser.
+ */
+extern const char *data_parser_get_plugin_version(data_parser_t *parser);
+
+/*
  * Free data parser instance
  * IN parser - parser to free
  * IN skip_unloading - skip unloading plugins
