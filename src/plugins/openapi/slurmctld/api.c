@@ -87,6 +87,15 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 static data_parser_t **parsers = NULL;
 static pthread_mutex_t parsers_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+typedef struct {
+	data_parser_t *parser;
+	char *path;
+} handler_t;
+
+/* map parser to every bound URL */
+static handler_t *handlers = NULL;
+static int handler_count = 0;
+
 decl_static_data(openapi_json);
 
 static bool _on_error(void *arg, data_parser_type_t type, int error_code,
@@ -129,7 +138,6 @@ extern ctxt_t *init_connection(const char *context_id,
 			       http_request_method_t method, data_t *parameters,
 			       data_t *query, int tag, data_t *resp, void *auth)
 {
-	data_t *data_parser;
 	ctxt_t *ctxt = xmalloc(sizeof(*ctxt));
 
 	ctxt->magic = MAGIC_CTXT;
@@ -148,30 +156,20 @@ extern ctxt_t *init_connection(const char *context_id,
 		resp_error(ctxt, ESLURM_DB_CONNECTION, __func__,
 			   "openapi_get_db_conn() failed to open slurmdb connection");
 
-	if ((data_parser = data_key_get(parameters, "data_parser"))) {
-		if (data_get_type(data_parser) == DATA_TYPE_STRING) {
-			char *p = xstrdup_printf("data_parser/%s",
-						 data_get_string(data_parser));
+	if ((tag >= handler_count) || (tag < 0))
+		fatal("%s: invalid tag %d", __func__, tag);
 
-			if ((ctxt->parser = data_parser_g_new(
-				_on_error, _on_error, _on_error, ctxt, _on_warn,
-				_on_warn, _on_warn, ctxt, p, NULL, true))) {
-			} else {
-				ctxt->rc = SLURM_PLUGIN_NAME_INVALID;
-			}
+	debug("%s: [%s] %s %s using %s",
+	      __func__, context_id, get_http_method_string(method),
+	      handlers[tag].path,
+	      data_parser_get_plugin(handlers[tag].parser));
 
-			xfree(p);
-		} else {
-			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-				   "data_parser parameter must be a string");
-		}
-	} else {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "data_parser parameter not found");
+	if ((ctxt->parser = data_parser_g_new(_on_error, _on_error, _on_error,
+		ctxt, _on_warn, _on_warn, _on_warn, ctxt,
+		data_parser_get_plugin(handlers[tag].parser), NULL, true))) {
+	} else if (!ctxt->rc) {
+		ctxt->rc = SLURM_PLUGIN_NAME_INVALID;
 	}
-
-	if (!ctxt->parser)
-		xassert(ctxt->rc);
 
 	if (ctxt->parser && ctxt->db_conn) {
 		xassert(!ctxt->rc);
@@ -438,6 +436,35 @@ extern data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 	return spec;
 }
 
+extern void bind_handler(const char *str_path, openapi_handler_t callback)
+{
+	int handler;
+
+	slurm_mutex_lock(&parsers_mutex);
+	for (int i = 0; parsers[i]; i++) {
+		char *path = xstrdup(str_path);
+
+		handler = handler_count;
+		if (!handlers) {
+			xassert(handler_count == 0);
+			handler_count = 1;
+			handlers = xcalloc(handler_count, sizeof(*handlers));
+		} else {
+			handler_count++;
+			xrecalloc(handlers, handler_count, sizeof(*handlers));
+		}
+
+		xstrsubstitute(path, OPENAPI_DATA_PARSER_PARAM,
+			       data_parser_get_plugin_version(parsers[i]));
+
+		(void) bind_operation_handler(path, callback, handler);
+
+		handlers[handler].parser = parsers[i];
+		handlers[handler].path = path;
+	}
+	slurm_mutex_unlock(&parsers_mutex);
+}
+
 extern void slurm_openapi_p_init(void)
 {
 	_init_parsers();
@@ -458,6 +485,8 @@ extern void slurm_openapi_p_fini(void)
 	destroy_op_reservations();
 
 	slurm_mutex_lock(&parsers_mutex);
+	xfree(handlers);
+	handler_count = 0;
 	FREE_NULL_DATA_PARSER_ARRAY(parsers, true);
 	slurm_mutex_unlock(&parsers_mutex);
 }

@@ -129,4 +129,7 @@ do {                                                                         \
 	DATA_DUMP(context_ptr->parser, mtype, openapi_response, ctxt->resp); \
 } while (false)
 
+/* register handler against each parser */
+extern void bind_handler(const char *str_path, openapi_handler_t callback);
+
 #endif
