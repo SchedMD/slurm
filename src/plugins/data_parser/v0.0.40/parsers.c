@@ -6087,6 +6087,16 @@ static const parser_t PARSER_ARRAY(OPENAPI_WARNING)[] = {
 #define add_openapi_response_warnings(rtype) \
 	add_parser(rtype, OPENAPI_WARNINGS_PTR, false, warnings, 0, OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME , "Query warnings")
 
+/*
+ * Generic response when there is only possiblity of warnings/errors
+ * and HTTP status code.
+ */
+static const parser_t PARSER_ARRAY(OPENAPI_RESP)[] = {                            \
+	add_openapi_response_meta(openapi_resp_single_t),                         \
+	add_openapi_response_errors(openapi_resp_single_t),                       \
+	add_openapi_response_warnings(openapi_resp_single_t),                     \
+};
+
 /* add parser array for an OpenAPI response with a single field */
 #define add_openapi_response_single(stype, mtype, path, desc)                             \
 	static const parser_t PARSER_ARRAY(stype)[] = {                                   \
@@ -6501,6 +6511,9 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_META, openapi_resp_meta_t),
 	addpa(OPENAPI_ERROR, openapi_resp_error_t),
 	addpa(OPENAPI_WARNING, openapi_resp_warning_t),
+
+	/* OpenAPI responses */
+	addoar(OPENAPI_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
