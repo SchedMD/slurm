@@ -1359,9 +1359,6 @@ hostlist_t *_hostlist_create(const char *hostlist, char *sep, char *r_op,
 
 	hostlist_t *new = hostlist_new();
 
-	if (hostlist == NULL)
-		return new;
-
 	if (dims > 1)
 		fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not "
 		      "work on multi-dimensional systems!!!!");
@@ -1851,8 +1848,7 @@ hostlist_t *hostlist_copy(hostlist_t *hl)
 		return NULL;
 
 	LOCK_HOSTLIST(hl);
-	if (!(new = hostlist_new()))
-		goto done;
+	new = hostlist_new();
 
 	new->nranges = hl->nranges;
 	new->nhosts = hl->nhosts;
@@ -1862,7 +1858,6 @@ hostlist_t *hostlist_copy(hostlist_t *hl)
 	for (i = 0; i < hl->nranges; i++)
 		new->hr[i] = hostrange_copy(hl->hr[i]);
 
-done:
 	UNLOCK_HOSTLIST(hl);
 	return new;
 }
@@ -1891,8 +1886,6 @@ int hostlist_push(hostlist_t *hl, const char *hosts)
 	if (!hosts || !hl)
 		return 0;
 	new = hostlist_create(hosts);
-	if (!new)
-		return 0;
 	LOCK_HOSTLIST(new);
 	retval = new->nhosts;
 	UNLOCK_HOSTLIST(new);
@@ -2045,10 +2038,12 @@ char *hostlist_pop_range(hostlist_t *hl)
 	if (!hl)
 		return NULL;
 	LOCK_HOSTLIST(hl);
-	if (hl->nranges < 1 || !(hltmp = hostlist_new())) {
+	if (hl->nranges < 1) {
 		UNLOCK_HOSTLIST(hl);
 		return NULL;
 	}
+
+	hltmp = hostlist_new();
 
 	i = hl->nranges - 2;
 	tail = hl->hr[hl->nranges - 1];
