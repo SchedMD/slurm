@@ -400,7 +400,7 @@ extern data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 	int i = 0;
 	data_t *spec = NULL, *paths;
 
-	*flags |= OAS_FLAG_MANGLE_OPID;
+	*flags |= OAS_FLAG_SET_OPID;
 
 	static_ref_json_to_data_t(spec, openapi_json);
 
