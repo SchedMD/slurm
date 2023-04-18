@@ -109,7 +109,7 @@ static int _step_signal(int signal)
 	return rc;
 }
 
-static char *_hostset_to_string(hostset_t hs)
+static char *_hostset_to_string(xhostset_t *hs)
 {
 	size_t n = 1024;
 	size_t maxsize = 1024 * 64;
@@ -136,7 +136,7 @@ static char *_task_ids_to_host_list(int ntasks, uint32_t *taskids,
 				    srun_job_t *my_srun_job)
 {
 	int i, task_cnt = 0;
-	hostset_t hs;
+	xhostset_t *hs;
 	char *hosts;
 	slurm_step_layout_t *sl;
 

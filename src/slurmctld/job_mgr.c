@@ -18279,7 +18279,7 @@ extern void init_requeue_policy(void)
  */
 static bitstr_t *_make_requeue_array(char *conf_buf)
 {
-	hostset_t hs;
+	xhostset_t *hs;
 	bitstr_t *bs = NULL;
 	char *tok = NULL, *end_ptr = NULL;
 	long val;
@@ -18958,7 +18958,7 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 		if ((job_ptr->het_job_offset == 0) && job_ptr->het_job_list) {
 			job_record_t *het_job = NULL;
 			ListIterator iter;
-			hostset_t hs = NULL;
+			xhostset_t *hs = NULL;
 			iter = list_iterator_create(job_ptr->het_job_list);
 			while ((het_job = list_next(iter))) {
 				if (job_ptr->het_job_id !=

@@ -244,7 +244,7 @@ extern void	scontrol_print_topo (char *node_list)
 {
 	static topo_info_response_msg_t *topo_info_msg = NULL;
 	int i, match, match_cnt = 0;
-	hostset_t hs;
+	xhostset_t *hs;
 
 	if ((topo_info_msg == NULL) &&
 	    slurm_load_topo(&topo_info_msg)) {

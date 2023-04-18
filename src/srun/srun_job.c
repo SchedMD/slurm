@@ -927,7 +927,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			 * Merge numeric values into single range
 			 * (e.g. "10-12,13-15,16-18" -> "10-18")
 			 */
-			hostset_t hs;
+			xhostset_t *hs;
 			char *tmp = NULL, *sep;
 			xstrfmtcat(tmp, "[%s]", resv_ports);
 			hs = hostset_create(tmp);
@@ -1021,7 +1021,7 @@ static char *_compress_het_job_nodelist(List used_resp_list)
 	ListIterator resp_iter;
 	char *aliases = NULL, *save_ptr = NULL, *tok, *tmp;
 	char *het_job_nodelist = NULL, *node_name;
-	hostset_t hs;
+	xhostset_t *hs;
 	int cnt, i, j, k;
 	uint16_t *cpus;
 	uint32_t *reps, cpu_inx;

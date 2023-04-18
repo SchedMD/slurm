@@ -375,7 +375,7 @@ extern int load_all_node_state ( bool state_only )
 	time_t time_stamp, now = time(NULL);
 	buf_t *buffer;
 	char *ver_str = NULL;
-	hostset_t hs = NULL;
+	xhostset_t *hs = NULL;
 	hostlist_t down_nodes = NULL;
 	bool power_save_mode = false;
 	uint16_t protocol_version = NO_VAL16;

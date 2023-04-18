@@ -66,7 +66,7 @@ typedef struct load_step_resp_struct {
 
 static int _nodes_in_list(char *node_list)
 {
-	hostset_t host_set = hostset_create(node_list);
+	xhostset_t *host_set = hostset_create(node_list);
 	int count = hostset_count(host_set);
 	hostset_destroy(host_set);
 	return count;

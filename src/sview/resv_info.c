@@ -1276,7 +1276,7 @@ extern void specific_info_resv(popup_info_t *popup_win)
 	List send_resv_list = NULL;
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
 	int j=0;
-	hostset_t hostset = NULL;
+	xhostset_t *hostset = NULL;
 	ListIterator itr = NULL;
 
 	if (!spec_info->display_widget) {

@@ -664,7 +664,7 @@ static void _build_full_nid_string(void)
 	slurmctld_lock_t read_node_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	node_record_t *node_ptr;
-	hostset_t hs = NULL;
+	xhostset_t *hs = NULL;
 	char *sep, *tmp_str;
 	int i;
 

@@ -4028,7 +4028,7 @@ static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
 					     uint16_t protocol_version)
 {
 	sbcast_cred_arg_t *arg;
-	hostset_t hset = NULL;
+	xhostset_t *hset = NULL;
 
 	arg = extract_sbcast_cred(conf->vctx, req->cred, req->block_no,
 				  req->flags, protocol_version);
@@ -5589,7 +5589,7 @@ static void _sync_messages_kill(kill_job_msg_t *req)
 {
 	int host_cnt, host_inx;
 	char *host;
-	hostset_t hosts;
+	xhostset_t *hosts;
 
 	hosts = hostset_create(req->nodes);
 	host_cnt = hostset_count(hosts);

@@ -328,7 +328,7 @@ static hostlist_iterator_t hostlist_iterator_new(void);
 static void               _iterator_advance(hostlist_iterator_t);
 static void               _iterator_advance_range(hostlist_iterator_t);
 
-static int hostset_find_host(hostset_t, const char *);
+static int hostset_find_host(xhostset_t *, const char *);
 
 /* ------[ macros ]------ */
 
@@ -3236,7 +3236,7 @@ hostlist_iterator_t hostlist_iterator_create(hostlist_t hl)
 	return i;
 }
 
-hostlist_iterator_t hostset_iterator_create(hostset_t set)
+hostlist_iterator_t hostset_iterator_create(xhostset_t *set)
 {
 	return hostlist_iterator_create(set->hl);
 }
@@ -3410,11 +3410,11 @@ int hostlist_remove(hostlist_iterator_t i)
 
 /* ----[ hostset functions ]---- */
 
-hostset_t hostset_create(const char *hostlist)
+xhostset_t *hostset_create(const char *hostlist)
 {
-	hostset_t new;
+	xhostset_t *new;
 
-	if (!(new = (hostset_t) malloc(sizeof(*new)))) {
+	if (!(new = malloc(sizeof(*new)))) {
 		out_of_memory("hostset_create");
 		return NULL;
 	}
@@ -3428,10 +3428,10 @@ hostset_t hostset_create(const char *hostlist)
 	return new;
 }
 
-hostset_t hostset_copy(const hostset_t set)
+xhostset_t *hostset_copy(const xhostset_t *set)
 {
-	hostset_t new;
-	if (!(new = (hostset_t) malloc(sizeof(*new))))
+	xhostset_t *new;
+	if (!(new = malloc(sizeof(*new))))
 		goto error1;
 
 	if (!(new->hl = hostlist_copy(set->hl)))
@@ -3445,7 +3445,7 @@ error1:
 	return NULL;
 }
 
-void hostset_destroy(hostset_t set)
+void hostset_destroy(xhostset_t *set)
 {
 	if (set == NULL)
 		return;
@@ -3457,7 +3457,7 @@ void hostset_destroy(hostset_t set)
  * Assumes that the set->hl lock is already held
  * Updates hl->nhosts
  */
-static int hostset_insert_range(hostset_t set, hostrange_t *hr)
+static int hostset_insert_range(xhostset_t *set, hostrange_t *hr)
 {
 	int i = 0;
 	int inserted = 0;
@@ -3509,7 +3509,7 @@ static int hostset_insert_range(hostset_t set, hostrange_t *hr)
 	return nhosts - ndups;
 }
 
-int hostset_insert(hostset_t set, const char *hosts)
+int hostset_insert(xhostset_t *set, const char *hosts)
 {
 	int i, n = 0;
 	hostlist_t hl = hostlist_create(hosts);
@@ -3528,7 +3528,7 @@ int hostset_insert(hostset_t set, const char *hosts)
 
 /* linear search through N ranges for hostname "host"
  * */
-static int hostset_find_host(hostset_t set, const char *host)
+static int hostset_find_host(xhostset_t *set, const char *host)
 {
 	int i;
 	int retval = 0;
@@ -3552,7 +3552,7 @@ done:
 	return retval;
 }
 
-int hostset_intersects(hostset_t set, const char *hosts)
+int hostset_intersects(xhostset_t *set, const char *hosts)
 {
 	int retval = 0;
 	hostlist_t hl;
@@ -3573,7 +3573,7 @@ int hostset_intersects(hostset_t set, const char *hosts)
 	return retval;
 }
 
-int hostset_within(hostset_t set, const char *hosts)
+int hostset_within(xhostset_t *set, const char *hosts)
 {
 	int nhosts, nfound;
 	hostlist_t hl;
@@ -3596,67 +3596,67 @@ int hostset_within(hostset_t set, const char *hosts)
 	return (nhosts == nfound);
 }
 
-int hostset_delete(hostset_t set, const char *hosts)
+int hostset_delete(xhostset_t *set, const char *hosts)
 {
 	return hostlist_delete(set->hl, hosts);
 }
 
-int hostset_delete_host(hostset_t set, const char *hostname)
+int hostset_delete_host(xhostset_t *set, const char *hostname)
 {
 	return hostlist_delete_host(set->hl, hostname);
 }
 
-char *hostset_shift(hostset_t set)
+char *hostset_shift(xhostset_t *set)
 {
 	return hostlist_shift(set->hl);
 }
 
-char *hostset_pop(hostset_t set)
+char *hostset_pop(xhostset_t *set)
 {
 	return hostlist_pop(set->hl);
 }
 
-char *hostset_shift_range(hostset_t set)
+char *hostset_shift_range(xhostset_t *set)
 {
 	return hostlist_shift_range(set->hl);
 }
 
-char *hostset_pop_range(hostset_t set)
+char *hostset_pop_range(xhostset_t *set)
 {
 	return hostlist_pop_range(set->hl);
 }
 
-int hostset_count(hostset_t set)
+int hostset_count(xhostset_t *set)
 {
 	return hostlist_count(set->hl);
 }
 
-ssize_t hostset_ranged_string(hostset_t set, size_t n, char *buf)
+ssize_t hostset_ranged_string(xhostset_t *set, size_t n, char *buf)
 {
 	return hostlist_ranged_string(set->hl, n, buf);
 }
 
-ssize_t hostset_deranged_string(hostset_t set, size_t n, char *buf)
+ssize_t hostset_deranged_string(xhostset_t *set, size_t n, char *buf)
 {
 	return hostlist_deranged_string(set->hl, n, buf);
 }
 
-char *hostset_deranged_string_xmalloc(hostset_t set)
+char *hostset_deranged_string_xmalloc(xhostset_t *set)
 {
 	return hostlist_deranged_string_xmalloc(set->hl);
 }
 
-char *hostset_ranged_string_xmalloc(hostset_t set)
+char *hostset_ranged_string_xmalloc(xhostset_t *set)
 {
 	return hostlist_ranged_string_xmalloc(set->hl);
 }
 
-char * hostset_nth(hostset_t set, int n)
+char *hostset_nth(xhostset_t *set, int n)
 {
 	return hostlist_nth(set->hl, n);
 }
 
-int hostset_find(hostset_t set, const char *hostname)
+int hostset_find(xhostset_t *set, const char *hostname)
 {
 	return hostlist_find(set->hl, hostname);
 }

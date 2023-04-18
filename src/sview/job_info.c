@@ -1175,7 +1175,7 @@ static GtkWidget *_admin_full_edit_job(job_desc_msg_t *job_msg,
 
 static int _nodes_in_list(char *node_list)
 {
-	hostset_t host_set = hostset_create(node_list);
+	xhostset_t *host_set = hostset_create(node_list);
 	int count = hostset_count(host_set);
 	hostset_destroy(host_set);
 	return count;
@@ -3931,7 +3931,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 	job_info_t *job_ptr = NULL;
 	ListIterator itr = NULL;
 	char *uname = NULL;
-	hostset_t hostset = NULL;
+	xhostset_t *hostset = NULL;
 	int name_diff;
 	int top_node_inx, array_size, *color_inx;
 	bool *color_set_flag;
