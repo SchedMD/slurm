@@ -141,6 +141,11 @@ scheduling multiple jobs simultaneously may be possible.
 This option may improve system responsiveness when large numbers of jobs
 (many hundreds) are submitted at the same time, but it will delay the
 initiation time of individual jobs.</li>
+<li>Setting the <b>defer_batch</b> option is similar to the <b>defer</b>
+option, as explained above. The difference is that <b>defer_batch</b> will
+allow interactive jobs to be started immediately, but jobs submitted with
+sbatch will be deferred to allow multiple jobs to accumulate and be scheduled
+at once.</li>
 <li><b>sched_min_interval</b> is yet another configuration parameter to control
 how frequently the scheduling logic runs. It can still be triggered on each
 job submit, job termination, or other state change which could permit a new
@@ -200,6 +205,15 @@ More detailed logging will decrease system throughput. Set to <i>error</i> or
 <i>info</i> for regular operations with high throughput workload.</li>
 <li><b>SlurmdLogFile</b>:
 Writing to local storage is recommended.</li>
+<li>The ability to do RPC rate limiting on a per-user basis is a new feature
+with 23.02. It acts as a virtual bucket of tokens that users consume with
+Remote Procedure Calls. This allows users to submit a large number of requests
+in a short period of time, but not a sustained high rate of requests that
+would add stress to the scheduler. You can define the maximum number of tokens
+with <b>rl_bucket_size</b>, the rate at which new tokens are added with
+<b>rl_refill_rate</b>, the frequency with which tokens are refilled with
+<b>rl_refill_period</b> and the number of entities to track with
+<b>rl_table_size</b>. It is enabled with <b>rl_enable</b>.</li>
 <li><b>Other</b>: Configure logging, accounting and other overhead to a minimum
 appropriate for your environment.</li>
 </ul>
@@ -210,7 +224,11 @@ appropriate for your environment.</li>
 
 <p>Turning accounting off provides a minimal improvement in performance.
   If using SlurmDBD increased speedup can be achieved by setting the CommitDelay
-  option in the <a href=slurmdbd.conf.html>slurmdbd.conf</a></p>
+  option in the <a href=slurmdbd.conf.html>slurmdbd.conf</a> to introduce a
+  delay between the time slurmdbd receives a connection from slurmctld and
+  when it commits the information to the database. This allows multiple
+  requests to be accumulated and reduces the number of commit requests
+  to the database.</p>
 
 <p>You might also consider setting the '<i>Purge*</i>' options in your
   slurmdbd.conf to clear out old Data.  A Typical configuration would
@@ -226,6 +244,6 @@ appropriate for your environment.</li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 09 March 2023</p>
+<p style="text-align:center;">Last modified 18 April 2023</p>
 
 <!--#include virtual="footer.txt"-->
