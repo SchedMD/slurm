@@ -137,7 +137,7 @@ static config_response_msg_t *config_for_clients = NULL;
 static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
 
-static void         _create_het_job_id_set(xhostset_t *jobid_hostset,
+static void         _create_het_job_id_set(hostset_t *jobid_hostset,
 					    uint32_t het_job_offset,
 					    char **het_job_id_set);
 static void         _fill_ctld_conf(slurm_conf_t * build_ptr);
@@ -1001,7 +1001,7 @@ static void _exclude_het_job_nodes(List job_req_list)
  * het_job_id_set OUT - allocated in the function and must be xfreed
  *                       be the caller.
  */
-static void _create_het_job_id_set(xhostset_t *jobid_hostset,
+static void _create_het_job_id_set(hostset_t *jobid_hostset,
 				    uint32_t het_job_offset,
 				    char **het_job_id_set)
 {
@@ -1041,7 +1041,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 	ListIterator iter;
 	List submit_job_list = NULL;
 	uint32_t het_job_id = 0, het_job_offset = 0;
-	xhostset_t *jobid_hostset = NULL;
+	hostset_t *jobid_hostset = NULL;
 	char tmp_str[32];
 	List resp = NULL;
 	slurm_addr_t resp_addr;
@@ -3824,7 +3824,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
 	List submit_job_list = NULL;
-	xhostset_t *jobid_hostset = NULL;
+	hostset_t *jobid_hostset = NULL;
 	char tmp_str[32];
 	char *het_job_id_set = NULL;
 
@@ -5313,7 +5313,7 @@ static char *_update_hostset_from_mode(char *update_str,
 		if (*update_str)
 			new_str = xstrdup(update_str);
 	} else {
-		xhostset_t *current_hostset = hostset_create(current_str);
+		hostset_t *current_hostset = hostset_create(current_str);
 		if (mode == UPDATE_ADD) {
 			hostset_insert(current_hostset, update_str);
 		} else if (mode == UPDATE_REMOVE) {

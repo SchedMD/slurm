@@ -728,7 +728,7 @@ extern int slurm_sort_char_list_desc(void *v1, void *v2)
 extern char *slurm_sort_node_list_str(char *node_list)
 {
 	char *sorted_node_list;
-	xhostset_t *hs;
+	hostset_t *hs;
 
 	hs = hostset_create(node_list);
 	sorted_node_list = hostset_ranged_string_xmalloc(hs);

@@ -2224,7 +2224,7 @@ Usage: squeue [OPTIONS]\n\
 static void _filter_nodes(void)
 {
 	char *name = NULL, *nodename = NULL;
-	xhostset_t *nodenames = hostset_create(NULL);
+	hostset_t *nodenames = hostset_create(NULL);
 	List clusters_nodes = NULL;
 
 	/* Retrieve node_info from controllers */

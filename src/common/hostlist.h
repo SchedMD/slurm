@@ -84,7 +84,7 @@
  *    (Note: sort occurs first on alphanumeric prefix -- where prefix
  *     matches, numeric suffixes will be sorted *by value*)
  */
-typedef struct hostset xhostset_t;
+typedef struct hostset hostset_t;
 
 /* The hostlist iterator type (may be used with a hostset as well)
  * used for non-destructive access to hostlist members.
@@ -415,7 +415,7 @@ hostlist_iterator_t hostlist_iterator_create(hostlist_t hl);
  * Same as hostlist_iterator_create(), but creates a hostlist_iterator
  * from a hostset.
  */
-hostlist_iterator_t hostset_iterator_create(xhostset_t *set);
+hostlist_iterator_t hostset_iterator_create(hostset_t *set);
 
 /* hostlist_iterator_destroy():
  *
@@ -466,17 +466,17 @@ int hostlist_remove(hostlist_iterator_t i);
  * Create a new hostset object from a string representation of a list of
  * hosts. See hostlist_create() for valid hostlist forms.
  */
-xhostset_t *hostset_create(const char *hostlist);
+hostset_t *hostset_create(const char *hostlist);
 
 /* hostset_copy():
  *
  * Copy a hostset object. Returned set must be freed with hostset_destroy().
  */
-xhostset_t *hostset_copy(const xhostset_t *set);
+hostset_t *hostset_copy(const hostset_t *set);
 
 /* hostset_destroy():
  */
-void hostset_destroy(xhostset_t *set);
+void hostset_destroy(hostset_t *set);
 
 /* hostset_insert():
  * Add a host or list of hosts into hostset "set."
@@ -484,45 +484,45 @@ void hostset_destroy(xhostset_t *set);
  * Returns number of hosts successfully added to "set"
  * (insertion of a duplicate is not considered successful)
  */
-int hostset_insert(xhostset_t *set, const char *hosts);
+int hostset_insert(hostset_t *set, const char *hosts);
 
 /* hostset_delete():
  * Delete a host or list of hosts from hostset "set."
  * Returns number of hosts deleted from set.
  */
-int hostset_delete(xhostset_t *set, const char *hosts);
+int hostset_delete(hostset_t *set, const char *hosts);
 
 /* hostset_intersects():
  * Return 1 if any of the hosts specified by "hosts" are within the hostset "set"
  * Return 0 if all host in "hosts" is not in the hostset "set"
  */
-int hostset_intersects(xhostset_t *set, const char *hosts);
+int hostset_intersects(hostset_t *set, const char *hosts);
 
 /* hostset_within():
  * Return 1 if all hosts specified by "hosts" are within the hostset "set"
  * Retrun 0 if every host in "hosts" is not in the hostset "set"
  */
-int hostset_within(xhostset_t *set, const char *hosts);
+int hostset_within(hostset_t *set, const char *hosts);
 
 /* hostset_shift():
  * hostset equivalent to hostlist_shift()
  */
-char *hostset_shift(xhostset_t *set);
+char *hostset_shift(hostset_t *set);
 
 /* hostset_pop():
  * hostset equivalent to hostlist_pop()
  */
-char *hostset_pop(xhostset_t *set);
+char *hostset_pop(hostset_t *set);
 
 /* hostset_shift_range():
  * hostset eqivalent to hostlist_shift_range()
  */
-char *hostset_shift_range(xhostset_t *set);
+char *hostset_shift_range(hostset_t *set);
 
 /* hostset_count():
  * Count the number of hosts currently in hostset
  */
-int hostset_count(xhostset_t *set);
+int hostset_count(hostset_t *set);
 
 /* hostset_find():
  *
@@ -531,29 +531,29 @@ int hostset_count(xhostset_t *set);
  *
  * Returns -1 if host is not found.
  */
-int hostset_find(xhostset_t *set, const char *hostname);
+int hostset_find(hostset_t *set, const char *hostname);
 
 /*
  * Return n-th element from hostset
  * Release memory using free()
  */
-char *hostset_nth(xhostset_t *set, int n);
+char *hostset_nth(hostset_t *set, int n);
 
 /* hostset_ranged_string():
  * hostset equivalent to hostlist_ranged_string();
  */
-ssize_t hostset_ranged_string(xhostset_t *set, size_t n, char *buf);
+ssize_t hostset_ranged_string(hostset_t *set, size_t n, char *buf);
 
 /*
  * hostset equivalent to hostlist_deranged_string_xmalloc()
  * Caller must use xfree() to release memory
  */
-char *hostset_deranged_string_xmalloc(xhostset_t *set);
+char *hostset_deranged_string_xmalloc(hostset_t *set);
 
 /*
  * hostset equivalent to hostlist_ranged_string_xmalloc()
  * Caller must use xfree() to release memory
  */
-char *hostset_ranged_string_xmalloc(xhostset_t *set);
+char *hostset_ranged_string_xmalloc(hostset_t *set);
 
 #endif /* !_HOSTLIST_H */

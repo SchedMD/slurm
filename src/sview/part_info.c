@@ -2672,7 +2672,7 @@ extern void specific_info_part(popup_info_t *popup_win)
 	sview_part_info_t *sview_part_info_ptr = NULL;
 	partition_info_t *part_ptr = NULL;
 	ListIterator itr = NULL;
-	xhostset_t *hostset = NULL;
+	hostset_t *hostset = NULL;
 
 	if (!spec_info->display_widget)
 		setup_popup_info(popup_win, display_data_part, SORTID_CNT);

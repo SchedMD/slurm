@@ -1095,7 +1095,7 @@ static void _validate_het_jobs(void)
 {
 	ListIterator job_iterator;
 	job_record_t *job_ptr, *het_job_ptr;
-	xhostset_t *hs;
+	hostset_t *hs;
 	char *job_id_str;
 	uint32_t job_id;
 	bool het_job_valid;
@@ -2511,7 +2511,7 @@ static int _restore_node_state(int recover,
 {
 	node_record_t *node_ptr, *old_node_ptr;
 	int i, rc = SLURM_SUCCESS;
-	xhostset_t *hs = NULL;
+	hostset_t *hs = NULL;
 	bool power_save_mode = false;
 
 	if (slurm_conf.suspend_program && slurm_conf.resume_program)
@@ -3455,8 +3455,8 @@ static int _compare_hostnames(node_record_t **old_node_table,
 	int cc;
 	char *old_ranged;
 	char *ranged;
-	xhostset_t *old_set;
-	xhostset_t *set;
+	hostset_t *old_set;
+	hostset_t *set;
 
 	/*
 	 * Don't compare old DYNAMIC_NORM nodes because they don't rely on

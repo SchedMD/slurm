@@ -612,7 +612,7 @@ extern int slurm_het_job_will_run(List job_req_list)
 	ListIterator iter, itr;
 	time_t first_start = (time_t) 0;
 	uint32_t first_job_id = 0, tot_proc_count = 0, *job_id_ptr;
-	xhostset_t *hs = NULL;
+	hostset_t *hs = NULL;
 	char *job_list = NULL;
 
 	if (!job_req_list || (list_count(job_req_list) == 0)) {

@@ -88,7 +88,7 @@ struct squeue_parameters {
 	char* jobs;
 	char *mimetype; /* --yaml or --json */
 	char* names;
-	xhostset_t *nodes;
+	hostset_t *nodes;
 	char* licenses;
 	char* partitions;
 	char* qoss;

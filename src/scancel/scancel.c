@@ -370,7 +370,7 @@ static void _filter_job_records(void)
 				}
 			}
 
-			xhostset_t *hs = hostset_create(job_ptr->nodes);
+			hostset_t *hs = hostset_create(job_ptr->nodes);
 			if (!hostset_intersects(hs, opt.nodelist)) {
 				job_ptr->job_id = 0;
 				hostset_destroy(hs);

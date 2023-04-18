@@ -43,10 +43,10 @@
 /* these are not in slurm.h */
 char *slurm_hostlist_nth(hostlist_t, int);
 int slurm_hostlist_delete_nth(hostlist_t, int);
-char *slurm_hostset_nth(xhostset_t *, int);
-xhostset_t *slurm_hostset_create(const char*);
-void slurm_hostset_destroy(xhostset_t *);
-int slurm_hostset_count(xhostset_t *);
+char *slurm_hostset_nth(hostset_t *, int);
+hostset_t *slurm_hostset_create(const char*);
+void slurm_hostset_destroy(hostset_t *);
+int slurm_hostset_count(hostset_t *);
 
 #ifndef NDEBUG
 /* note: only works in CK_FORK mode */
@@ -122,7 +122,7 @@ END_TEST
 
 START_TEST(hostset_nth_check)
 {
-	xhostset_t *hs;
+	hostset_t *hs;
 	char *p;
 	int n;
 
