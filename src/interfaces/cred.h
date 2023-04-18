@@ -181,17 +181,11 @@ typedef enum {
 
 /*
  * Initialize current process for slurm credential creation.
- *
- * Returns 0 for success, -1 on failure and sets errno to reason.
- *
- *
  */
 slurm_cred_ctx_t *slurm_cred_creator_ctx_create(void);
 
 /*
  * Initialize current process for slurm credential verification.
- *
- * Returns 0 for success, -1 on failure.
  */
 slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(void);
 
