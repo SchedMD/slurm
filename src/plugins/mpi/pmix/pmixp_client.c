@@ -410,9 +410,9 @@ static int _set_mapsinfo(List lresp)
 	int count = hostlist_count(hl);
 	uint32_t *node2tasks = NULL, *cur_task = NULL;
 
-	input = hostlist_deranged_string_malloc(hl);
+	input = hostlist_deranged_string_xmalloc(hl);
 	rc = PMIx_generate_regex(input, &regexp);
-	free(input);
+	xfree(input);
 	if (PMIX_SUCCESS != rc) {
 		return SLURM_ERROR;
 	}
