@@ -324,9 +324,9 @@ static void        hostlist_shift_iterators(hostlist_t, int, int, int);
 static int        _attempt_range_join(hostlist_t, int);
 static int        _is_bracket_needed(hostlist_t, int);
 
-static xhostlist_iterator_t *hostlist_iterator_new(void);
-static void _iterator_advance(xhostlist_iterator_t *);
-static void _iterator_advance_range(xhostlist_iterator_t *);
+static hostlist_iterator_t *hostlist_iterator_new(void);
+static void _iterator_advance(hostlist_iterator_t *);
+static void _iterator_advance_range(hostlist_iterator_t *);
 
 static int hostset_find_host(hostset_t *, const char *);
 
@@ -1285,7 +1285,7 @@ static int hostlist_insert_range(hostlist_t hl, hostrange_t *hr, int n)
 {
 	int i;
 	hostrange_t *tmp;
-	xhostlist_iterator_t *hli;
+	hostlist_iterator_t *hli;
 
 	xassert(hl && hr);
 	xassert(hl->magic == HOSTLIST_MAGIC);
@@ -1816,14 +1816,14 @@ error:
  * destroy hostlist iterator
  * requires hostlist mutex to be locked
  */
-static void _hostlist_iterator_destroy(xhostlist_iterator_t *i)
+static void _hostlist_iterator_destroy(hostlist_iterator_t *i)
 {
 	if (!i)
 		return;
 
 	xassert(i->magic == HOSTLIST_ITR_MAGIC);
 
-	for (xhostlist_iterator_t **pi = &i->hl->ilist; *pi; pi = &(*pi)->next) {
+	for (hostlist_iterator_t **pi = &i->hl->ilist; *pi; pi = &(*pi)->next) {
 		xassert((*pi)->magic == HOSTLIST_ITR_MAGIC);
 		if (*pi == i) {
 			*pi = (*pi)->next;
@@ -1985,7 +1985,7 @@ char *hostlist_pop(hostlist_t hl)
 static void
 hostlist_shift_iterators(hostlist_t hl, int idx, int depth, int n)
 {
-	xhostlist_iterator_t *i;
+	hostlist_iterator_t *i;
 	if (!hl) {
 		error("%s: no hostlist given", __func__);
 		return;
@@ -2352,7 +2352,7 @@ int _cmp(const void *hr1, const void *hr2)
 
 void hostlist_sort(hostlist_t hl)
 {
-	xhostlist_iterator_t *i;
+	hostlist_iterator_t *i;
 	LOCK_HOSTLIST(hl);
 
 	if (hl->nranges <= 1) {
@@ -2470,7 +2470,7 @@ static int _attempt_range_join(hostlist_t hl, int loc)
 void hostlist_uniq(hostlist_t hl)
 {
 	int i = 1;
-	xhostlist_iterator_t *hli;
+	hostlist_iterator_t *hli;
 	LOCK_HOSTLIST(hl);
 	if (hl->nranges <= 1) {
 		UNLOCK_HOSTLIST(hl);
@@ -3206,9 +3206,9 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 
 /* ----[ hostlist iterator functions ]---- */
 
-static xhostlist_iterator_t *hostlist_iterator_new(void)
+static hostlist_iterator_t *hostlist_iterator_new(void)
 {
-	xhostlist_iterator_t *i = malloc(sizeof(*i));
+	hostlist_iterator_t *i = malloc(sizeof(*i));
 	if (!i)
 		out_of_memory("hostlist_iterator_new");
 	i->magic = HOSTLIST_ITR_MAGIC;
@@ -3220,9 +3220,9 @@ static xhostlist_iterator_t *hostlist_iterator_new(void)
 	return i;
 }
 
-xhostlist_iterator_t *hostlist_iterator_create(hostlist_t hl)
+hostlist_iterator_t *hostlist_iterator_create(hostlist_t hl)
 {
-	xhostlist_iterator_t *i;
+	hostlist_iterator_t *i;
 
 	if (!(i = hostlist_iterator_new()))
 		out_of_memory("hostlist_iterator_create");
@@ -3236,12 +3236,12 @@ xhostlist_iterator_t *hostlist_iterator_create(hostlist_t hl)
 	return i;
 }
 
-xhostlist_iterator_t *hostset_iterator_create(hostset_t *set)
+hostlist_iterator_t *hostset_iterator_create(hostset_t *set)
 {
 	return hostlist_iterator_create(set->hl);
 }
 
-void hostlist_iterator_reset(xhostlist_iterator_t *i)
+void hostlist_iterator_reset(hostlist_iterator_t *i)
 {
 	xassert(i);
 	xassert(i->magic == HOSTLIST_ITR_MAGIC);
@@ -3251,7 +3251,7 @@ void hostlist_iterator_reset(xhostlist_iterator_t *i)
 	return;
 }
 
-void hostlist_iterator_destroy(xhostlist_iterator_t *i)
+void hostlist_iterator_destroy(hostlist_iterator_t *i)
 {
 	hostlist_t hl;
 	if (i == NULL)
@@ -3263,7 +3263,7 @@ void hostlist_iterator_destroy(xhostlist_iterator_t *i)
 	UNLOCK_HOSTLIST(hl);
 }
 
-static void _iterator_advance(xhostlist_iterator_t *i)
+static void _iterator_advance(hostlist_iterator_t *i)
 {
 	xassert(i);
 	xassert(i->magic == HOSTLIST_ITR_MAGIC);
@@ -3281,7 +3281,7 @@ static void _iterator_advance(xhostlist_iterator_t *i)
  * i.e. advance iterator past all range objects that could be represented
  * in on bracketed hostlist.
  */
-static void _iterator_advance_range(xhostlist_iterator_t *i)
+static void _iterator_advance_range(hostlist_iterator_t *i)
 {
 	int nr, j;
 	hostrange_t **hr;
@@ -3299,7 +3299,7 @@ static void _iterator_advance_range(xhostlist_iterator_t *i)
 	}
 }
 
-char *hostlist_next_dims(xhostlist_iterator_t *i, int dims)
+char *hostlist_next_dims(hostlist_iterator_t *i, int dims)
 {
 	char buf[HOST_NAME_MAX + 16];
 	const int size = sizeof(buf);
@@ -3344,14 +3344,14 @@ no_next:
 	return NULL;
 }
 
-char *hostlist_next(xhostlist_iterator_t *i)
+char *hostlist_next(hostlist_iterator_t *i)
 {
 	int dims = slurmdb_setup_cluster_name_dims();
 
 	return hostlist_next_dims(i, dims);
 }
 
-char *hostlist_next_range(xhostlist_iterator_t *i)
+char *hostlist_next_range(hostlist_iterator_t *i)
 {
 	int j, buf_size;
 	char *buf;
@@ -3382,7 +3382,7 @@ char *hostlist_next_range(xhostlist_iterator_t *i)
 	return buf;
 }
 
-int hostlist_remove(xhostlist_iterator_t *i)
+int hostlist_remove(hostlist_iterator_t *i)
 {
 	hostrange_t *new;
 

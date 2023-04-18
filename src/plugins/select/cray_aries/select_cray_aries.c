@@ -424,7 +424,7 @@ static void _initialize_event(alpsc_ev_app_t *event, step_record_t *step_ptr,
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	hostlist_t hl = NULL;
-	xhostlist_iterator_t *hlit;
+	hostlist_iterator_t *hlit;
 	char *node;
 	int rv;
 	uint32_t jobid;

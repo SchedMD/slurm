@@ -279,7 +279,7 @@ static void _find_child_switches(int sw)
 {
 	int i;
 	int cldx; /* index into array of child switches */
-	xhostlist_iterator_t *hi;
+	hostlist_iterator_t *hi;
 	hostlist_t swlist;
 	char *swname;
 

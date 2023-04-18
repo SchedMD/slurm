@@ -2356,7 +2356,7 @@ static int _foreach_step(void *x, void *arg)
 		char *host;
 		data_t *d = data_set_list(
 			data_define_dict_path(dstep, "nodes/list"));
-		xhostlist_iterator_t *itr = hostlist_iterator_create(host_list);
+		hostlist_iterator_t *itr = hostlist_iterator_create(host_list);
 
 		while ((host = hostlist_next(itr))) {
 			data_set_string(data_list_append(d), host);

@@ -235,7 +235,7 @@ extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
 				    slurm_step_layout_t *step_layout2)
 {
 	hostlist_t hl, hl2;
-	xhostlist_iterator_t *host_itr;
+	hostlist_iterator_t *host_itr;
 	int new_pos = 0, node_task_cnt;
 	char *host;
 
@@ -522,7 +522,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 				 const char *arbitrary_nodes)
 {
 	int i=0, j, taskid = 0, task_cnt=0;
-	xhostlist_iterator_t *itr = NULL, *itr_task = NULL;
+	hostlist_iterator_t *itr = NULL, *itr_task = NULL;
 	char *host = NULL;
 
 	hostlist_t job_alloc_hosts = NULL;

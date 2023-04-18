@@ -1704,7 +1704,7 @@ extern void specific_info_node(popup_info_t *popup_win)
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	node_info_t *node_ptr = NULL;
 	hostlist_t hostlist = NULL;
-	xhostlist_iterator_t *host_itr = NULL;
+	hostlist_iterator_t *host_itr = NULL;
 	int i = -1, sort_key;
 	sview_search_info_t *search_info = spec_info->search_info;
 

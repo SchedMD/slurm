@@ -2673,7 +2673,7 @@ extern char *acct_storage_p_node_inx(void *db_conn, char *nodes)
 	char *host, *ret_str;
 	hostlist_t node_hl;
 	bitstr_t *node_bitmap;
-	xhostlist_iterator_t *h_itr;
+	hostlist_iterator_t *h_itr;
 
 	if (!nodes || !cluster_hl)
 		return NULL;

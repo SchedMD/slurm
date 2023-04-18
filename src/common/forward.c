@@ -273,7 +273,7 @@ void *_forward_thread(void *arg)
 			ListIterator itr = NULL;
 			char *tmp = NULL;
 			int first_node_found = 0;
-			xhostlist_iterator_t *host_itr
+			hostlist_iterator_t *host_itr
 				= hostlist_iterator_create(hl);
 			error("We shouldn't be here.  We forwarded to %d "
 			      "but only got %d back",
