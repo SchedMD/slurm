@@ -1831,7 +1831,7 @@ static void _hostlist_iterator_destroy(hostlist_iterator_t *i)
 		}
 	}
 
-	free(i);
+	xfree(i);
 }
 
 hostlist_t hostlist_create_dims(const char *str, int dims)
@@ -3208,24 +3208,21 @@ ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 
 static hostlist_iterator_t *hostlist_iterator_new(void)
 {
-	hostlist_iterator_t *i = malloc(sizeof(*i));
-	if (!i)
-		out_of_memory("hostlist_iterator_new");
+	hostlist_iterator_t *i = xmalloc(sizeof(*i));
+
 	i->magic = HOSTLIST_ITR_MAGIC;
 	i->hl = NULL;
 	i->hr = NULL;
 	i->idx = 0;
 	i->depth = -1;
 	i->next = i;
+
 	return i;
 }
 
 hostlist_iterator_t *hostlist_iterator_create(hostlist_t hl)
 {
-	hostlist_iterator_t *i;
-
-	if (!(i = hostlist_iterator_new()))
-		out_of_memory("hostlist_iterator_create");
+	hostlist_iterator_t *i = hostlist_iterator_new();
 
 	LOCK_HOSTLIST(hl);
 	i->hl = hl;
