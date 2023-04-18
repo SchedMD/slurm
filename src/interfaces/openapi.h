@@ -190,6 +190,12 @@ extern openapi_type_format_t openapi_data_type_to_type_format(data_type_t type);
 #define OPENAPI_PATH_REL "#"
 
 /*
+ * Path to where all schemas are held in openapi.json
+ */
+#define OPENAPI_SCHEMAS_PATH \
+	OPENAPI_PATH_SEP"components"OPENAPI_PATH_SEP"schemas"OPENAPI_PATH_SEP
+
+/*
  * Generate formated path string from relative path
  * IN/OUT str_ptr - ptr to path string to set/replace
  * IN relative_path - data list with each component of relative path
