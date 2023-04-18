@@ -143,6 +143,7 @@ typedef struct {
 	char *operation;
 	char *at;
 	char *path;
+	merge_path_t *merge_args;
 } id_merge_path_t;
 
 struct openapi_s {
@@ -1281,35 +1282,58 @@ data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
 data_for_each_cmd_t _differentiate_path_operationId(const char *key,
 						    data_t *data, void *arg)
 {
-	data_t *merge[3] = { 0 }, *merged = NULL;
+	data_t *merge[4] = {0}, *merged = NULL;
 	id_merge_path_t *args = arg;
-	data_t *op;
+	data_t *op = NULL;
 
 	if (data_get_type(data) != DATA_TYPE_DICT)
 		return DATA_FOR_EACH_CONT;
 
-	if (!(op = data_key_get(data, "operationId"))) {
-		debug2("%s: [%s %s] unexpected missing operationId",
-		      __func__, key, args->path);
-		return DATA_FOR_EACH_CONT;
+	if (args->merge_args->flags & OAS_FLAG_MANGLE_OPID) {
+		if (!(op = data_key_get(data, "operationId"))) {
+			debug2("%s: [%s %s] unexpected missing operationId",
+			       __func__, key, args->path);
+			return DATA_FOR_EACH_CONT;
+		}
+
+		/* force operationId to be a string */
+		if (data_convert_type(op, DATA_TYPE_STRING) !=
+		    DATA_TYPE_STRING) {
+			error("%s: [%s %s] unexpected type for operationId: %s",
+			      __func__, key, args->path,
+			      data_type_to_string(data_get_type(op)));
+			return DATA_FOR_EACH_FAIL;
+		}
+
+		merge[0] = args->server_path;
+		merge[1] =
+			parse_url_path(data_get_string_const(op), false, true);
+	} else if (args->merge_args->flags & OAS_FLAG_SET_OPID) {
+		op = data_key_set(data, "operationId");
+
+		merge[0] = data_set_string(data_new(), key);
+		merge[1] = args->server_path;
+		merge[2] = parse_url_path(args->path, false, true);
 	}
 
-	/* force operationId to be a string */
-	if (data_convert_type(op, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
-		error("%s: [%s %s] unexpected type for operationId: %s",
-		      __func__, key, args->path,
-		      data_type_to_string(data_get_type(op)));
-		return DATA_FOR_EACH_FAIL;
-	}
-
-	merge[0] = args->server_path;
-	merge[1] = parse_url_path(data_get_string_const(op), false, true);
-	merged = data_list_join((const data_t **)merge, true);
-	FREE_NULL_DATA(merge[1]);
+	merged = data_list_join((const data_t **) merge, true);
 	if (data_list_for_each(merged, _merge_operationId_strings, args) < 0) {
 		FREE_NULL_DATA(merged);
 		return DATA_FOR_EACH_FAIL;
 	}
+
+	if (args->merge_args->flags & OAS_FLAG_MANGLE_OPID) {
+		xfree(merge[1]);
+	} else if (args->merge_args->flags & OAS_FLAG_SET_OPID) {
+		xfree(merge[0]);
+		xfree(merge[2]);
+	}
+
+	debug5("%s: [%s %s] setting OperationId %s -> %s",
+	       __func__, key, args->path, (op && (data_get_type(op) ==
+					    DATA_TYPE_STRING) ?
+					   data_get_string(op) : "\"\""),
+	       args->operation);
 
 	data_set_string_own(op, args->operation);
 	args->operation = NULL;
@@ -1342,7 +1366,9 @@ data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 	data_t *e, *servers;
 	data_t *merge[3] = { 0 }, *merged = NULL;
 	data_for_each_cmd_t rc = DATA_FOR_EACH_CONT;
-	id_merge_path_t id_merge = { 0 };
+	id_merge_path_t id_merge = {
+		.merge_args = args,
+	};
 	bool free_0 = false; /* free merge[0] ? */
 	char *path = NULL;
 
@@ -1390,9 +1416,9 @@ data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 	data_set_dict(e);
 	(void) data_copy(e, data);
 
-	if ((args->flags & OAS_FLAG_MANGLE_OPID) &&
-	    data_dict_for_each(e, _differentiate_path_operationId,
-			       &id_merge) < 0) {
+	if ((args->flags & (OAS_FLAG_SET_OPID | OAS_FLAG_MANGLE_OPID)) &&
+	    data_dict_for_each(e, _differentiate_path_operationId, &id_merge) <
+		    0) {
 		rc = DATA_FOR_EACH_FAIL;
 		goto cleanup;
 	}
