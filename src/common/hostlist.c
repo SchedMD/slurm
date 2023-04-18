@@ -97,8 +97,6 @@ strong_alias(hostlist_push_list,	slurm_hostlist_push_list);
 strong_alias(hostlist_ranged_string_dims,
 	                                slurm_hostlist_ranged_string_dims);
 strong_alias(hostlist_ranged_string,	slurm_hostlist_ranged_string);
-strong_alias(hostlist_ranged_string_malloc,
-					slurm_hostlist_ranged_string_malloc);
 strong_alias(hostlist_ranged_string_xmalloc_dims,
 	     slurm_hostlist_ranged_string_xmalloc_dims);
 strong_alias(hostlist_ranged_string_xmalloc,

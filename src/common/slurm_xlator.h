@@ -156,8 +156,6 @@
 #define hostlist_ranged_string_dims \
 				slurm_hostlist_ranged_string_dims
 #define	hostlist_ranged_string	slurm_hostlist_ranged_string
-#define	hostlist_ranged_string_malloc \
-				slurm_hostlist_ranged_string_malloc
 #define	hostlist_ranged_string_xmalloc_dims \
 				slurm_hostlist_ranged_string_xmalloc_dims
 #define	hostlist_ranged_string_xmalloc \

@@ -1297,14 +1297,6 @@ extern int slurm_hostlist_push_host(hostlist_t *hl, const char *host);
  */
 extern ssize_t slurm_hostlist_ranged_string(hostlist_t *hl, size_t n, char *buf);
 
-/* slurm_hostlist_ranged_string_malloc():
- *
- * Return the string representation of the hostlist hl.
- *
- * The result must be released using free();
- */
-extern char *slurm_hostlist_ranged_string_malloc(hostlist_t *hl);
-
 /* hostlist_ranged_string_xmalloc():
  *
  * Wrapper of hostlist_ranged_string(), with result buffer dynamically
