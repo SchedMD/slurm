@@ -135,8 +135,6 @@
 #define	hostlist_deranged_string_dims \
 				slurm_hostlist_deranged_string_dims
 #define	hostlist_deranged_string slurm_hostlist_deranged_string
-#define	hostlist_deranged_string_malloc \
-				slurm_hostlist_deranged_string_malloc
 #define	hostlist_deranged_string_xmalloc_dims \
 				slurm_hostlist_deranged_string_xmalloc_dims
 #define	hostlist_deranged_string_xmalloc \

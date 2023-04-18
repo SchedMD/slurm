@@ -381,11 +381,6 @@ ssize_t hostlist_deranged_string_dims(hostlist_t *hl, size_t n, char *buf,
 ssize_t hostlist_deranged_string(hostlist_t *hl, size_t n, char *buf);
 
 /* Variant of hostlist_deranged_string().
- * Returns the buffer which must be released using free() or NULL on failure.
- */
-char *hostlist_deranged_string_malloc(hostlist_t *hl);
-
-/* Variant of hostlist_deranged_string().
  * Returns the buffer which must be released using xfree().
  */
 char *hostlist_deranged_string_xmalloc_dims(hostlist_t *hl, int dims);

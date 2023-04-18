@@ -76,8 +76,6 @@ strong_alias(hostlist_delete_nth,	slurm_hostlist_delete_nth);
 strong_alias(hostlist_deranged_string_dims,
 	                                slurm_hostlist_deranged_string_dims);
 strong_alias(hostlist_deranged_string,	slurm_hostlist_deranged_string);
-strong_alias(hostlist_deranged_string_malloc,
-					slurm_hostlist_deranged_string_malloc);
 strong_alias(hostlist_deranged_string_xmalloc_dims,
 	     slurm_hostlist_deranged_string_xmalloc_dims);
 strong_alias(hostlist_deranged_string_xmalloc,
@@ -2436,19 +2434,6 @@ void hostlist_uniq(hostlist_t *hl)
 		hostlist_iterator_reset(hli);
 
 	UNLOCK_HOSTLIST(hl);
-}
-
-char *hostlist_deranged_string_malloc(hostlist_t *hl)
-{
-	int buf_size = 8192;
-	char *buf = malloc(buf_size);
-	while (buf && (hostlist_deranged_string(hl, buf_size, buf) < 0)) {
-		buf_size *= 2;
-		buf = realloc(buf, buf_size);
-	}
-	if (buf == NULL)
-		out_of_memory("hostlist_deranged_string_malloc");
-	return buf;
 }
 
 char *hostlist_deranged_string_xmalloc_dims(hostlist_t *hl, int dims)
