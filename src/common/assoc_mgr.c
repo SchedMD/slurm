@@ -794,15 +794,15 @@ static slurmdb_assoc_rec_t* _find_assoc_parent(
 	}
 
 	if (parent)
-		debug2("assoc %u(%s, %s) has %s parent of %u(%s, %s)",
+		debug2("assoc %u(%s, %s) has %s parent of %u(%s, %s) %s",
 		       assoc->id, assoc->acct, assoc->user,
 		       direct ? "direct" : "fs",
-		       parent->id, parent->acct, parent->user);
+		       parent->id, parent->acct, parent->user, assoc->lineage);
 	else
 		debug2("assoc %u(%s, %s) doesn't have a %s "
-		       "parent (probably root)",
+		       "parent (probably root) %s",
 		       assoc->id, assoc->acct, assoc->user,
-		       direct ? "direct" : "fs");
+		       direct ? "direct" : "fs", assoc->lineage);
 
 	return parent;
 }
