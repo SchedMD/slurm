@@ -165,7 +165,7 @@ that must complete before the job starts execution<br />
 int prep_p_epilog_slurmctld(job_record_t *job_ptr, bool *async)
 </p>
 <p style="margin-left:.2in"><b>Description</b>:<br />
-Called within the slurmctld before a job launches.
+Called within the slurmctld as a job is terminating.
 <p style="margin-left:.2in"><b>Arguments</b>: <br />
 <span class="commandline">job_ptr</span>
 (input) raw job record<br />
@@ -177,6 +177,6 @@ that must complete before the job is marked complete<br />
 <span class="commandline">SLURM_ERROR</span> on failure, will cause job failure.
 </p>
 
-<p style="text-align:center;">Last modified 22 April 2020</p>
+<p style="text-align:center;">Last modified 18 April 2023</p>
 
 <!--#include virtual="footer.txt"-->
