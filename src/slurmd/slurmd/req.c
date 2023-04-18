@@ -209,7 +209,7 @@ static bool _pause_for_job_completion(uint32_t jobid, char *nodes,
 static bool _slurm_authorized_user(uid_t uid);
 static void _sync_messages_kill(kill_job_msg_t *req);
 static int  _waiter_init (uint32_t jobid);
-static int  _waiter_complete (uint32_t jobid);
+static void _waiter_complete(uint32_t jobid);
 
 static bool _steps_completed_now(uint32_t jobid);
 static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
@@ -5697,16 +5697,12 @@ static int _waiter_init (uint32_t jobid)
 	return rc;
 }
 
-static int _waiter_complete (uint32_t jobid)
+static void _waiter_complete(uint32_t jobid)
 {
-	int rc = 0;
-
 	slurm_mutex_lock(&waiter_mutex);
 	if (waiters)
-		rc = list_delete_all(waiters, _find_waiter, &jobid);
+		list_delete_all(waiters, _find_waiter, &jobid);
 	slurm_mutex_unlock(&waiter_mutex);
-
-	return rc;
 }
 
 /*
