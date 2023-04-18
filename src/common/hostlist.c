@@ -1183,16 +1183,10 @@ static hostlist_t *hostlist_new(void)
  */
 static int hostlist_resize(hostlist_t *hl, size_t newsize)
 {
-	int i;
-	size_t oldsize;
 	xassert(hl);
 	xassert(hl->magic == HOSTLIST_MAGIC);
-	oldsize = hl->size;
 	hl->size = newsize;
 	xrecalloc(hl->hr, hl->size, sizeof(hostrange_t *));
-
-	for (i = oldsize; i < newsize; i++)
-		hl->hr[i] = NULL;
 
 	return 1;
 }
