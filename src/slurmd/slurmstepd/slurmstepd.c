@@ -87,7 +87,6 @@
 static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 			     slurm_addr_t **_self, slurm_msg_t **_msg);
 
-static void _dump_user_env(void);
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock);
 static void _got_ack_from_slurmd(int);
@@ -470,7 +469,8 @@ static void _process_cmdline(int argc, char **argv)
 {
 	if ((argc == 2) && !xstrcmp(argv[1], "getenv")) {
 		print_rlimits();
-		_dump_user_env();
+		for (int i = 0; environ[i]; i++)
+			printf("%s\n", environ[i]);
 		exit(0);
 	}
 	if ((argc == 2) && !xstrcmp(argv[1], "infinity")) {
@@ -872,11 +872,3 @@ _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc)
 	jobacctinfo_destroy(step_complete.jobacct);
 }
 #endif
-
-static void _dump_user_env(void)
-{
-	int i;
-
-	for (i=0; environ[i]; i++)
-		printf("%s\n",environ[i]);
-}
