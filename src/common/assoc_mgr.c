@@ -166,7 +166,8 @@ static bool _remove_from_assoc_list(slurmdb_assoc_rec_t *assoc)
 	return assoc_ptr ? 1 : 0;
 }
 
-static slurmdb_assoc_rec_t *_find_assoc_rec_id(uint32_t assoc_id)
+static slurmdb_assoc_rec_t *_find_assoc_rec_id(uint32_t assoc_id,
+					       char *cluster_name)
 {
 	slurmdb_assoc_rec_t *assoc;
 
@@ -178,7 +179,9 @@ static slurmdb_assoc_rec_t *_find_assoc_rec_id(uint32_t assoc_id)
 	assoc =	assoc_hash_id[ASSOC_HASH_ID_INX(assoc_id)];
 
 	while (assoc) {
-		if (assoc->id == assoc_id)
+		if ((!slurmdbd_conf ||
+		     !xstrcmp(cluster_name, assoc->cluster)) &&
+		    (assoc->id == assoc_id))
 			return assoc;
 		assoc = assoc->assoc_next_id;
 	}
@@ -207,8 +210,8 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 	int inx;
 
 	/* We can only use _find_assoc_rec_id if we are not on the slurmdbd */
-	if (assoc->id && !slurmdbd_conf)
-		return _find_assoc_rec_id(assoc->id);
+	if (assoc->id)
+		return _find_assoc_rec_id(assoc->id, assoc->cluster);
 
 	if (!assoc_hash) {
 		debug2("%s: no associations added yet", __func__);
@@ -218,7 +221,6 @@ static slurmdb_assoc_rec_t *_find_assoc_rec(
 
 	inx = _assoc_hash_index(assoc);
 	assoc_ptr = assoc_hash[inx];
-
 	while (assoc_ptr) {
 		if ((!assoc->user && (assoc->uid == NO_VAL))
 		    && (assoc_ptr->user || (assoc_ptr->uid != NO_VAL))) {
@@ -778,7 +780,8 @@ static slurmdb_assoc_rec_t* _find_assoc_parent(
 			break;
 
 		prev_parent = parent;
-		if (!(parent = _find_assoc_rec_id(prev_parent->parent_id))) {
+		if (!(parent = _find_assoc_rec_id(prev_parent->parent_id,
+						  prev_parent->cluster))) {
 			error("Can't find parent id %u for assoc %u, "
 			      "this should never happen.",
 			      prev_parent->parent_id, prev_parent->id);
@@ -1829,7 +1832,8 @@ static int _refresh_assoc_mgr_assoc_list(void *db_conn, int enforce)
 		if (!curr_assoc->leaf_usage)
 			continue;
 
-		if (!(assoc = _find_assoc_rec_id(curr_assoc->id)))
+		if (!(assoc = _find_assoc_rec_id(curr_assoc->id,
+						 curr_assoc->cluster)))
 			continue;
 
 		while (assoc) {
@@ -5195,7 +5199,13 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 		return SLURM_SUCCESS;
 	}
 
-	found_assoc = _find_assoc_rec_id(assoc_id);
+	/*
+	 * NULL is fine for cluster_name here as this is only called in the
+	 * slurmctld where it doesn't matter.  If this changes this will also
+	 * have to change.
+	 */
+	xassert(!slurmdbd_conf);
+	found_assoc = _find_assoc_rec_id(assoc_id, NULL);
 	assoc_mgr_unlock(&locks);
 
 	if (found_assoc || !(enforce & ACCOUNTING_ENFORCE_ASSOCS))
@@ -5790,7 +5800,13 @@ extern int load_assoc_usage(void)
 		safe_unpackstr_xmalloc(&tmp_str, &tmp32, buffer);
 		safe_unpack32(&grp_used_wall, buffer);
 
-		assoc = _find_assoc_rec_id(assoc_id);
+		/*
+		 * NULL is fine for cluster_name here as this is only called in
+		 * the slurmctld where it doesn't matter.  If this changes this
+		 * will also have to change.
+		 */
+		xassert(!slurmdbd_conf);
+		assoc = _find_assoc_rec_id(assoc_id, NULL);
 
 		/* We want to do this all the way up to and including
 		   root.  This way we can keep track of how much usage
