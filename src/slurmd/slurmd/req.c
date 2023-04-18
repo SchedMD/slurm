@@ -5659,28 +5659,21 @@ _slurm_authorized_user(uid_t uid)
 	return ((uid == (uid_t) 0) || (uid == slurm_conf.slurm_user_id));
 }
 
-
-struct waiter {
-	uint32_t jobid;
-};
-
-
-static struct waiter *
-_waiter_create(uint32_t jobid)
+static uint32_t *_waiter_create(uint32_t jobid)
 {
-	struct waiter *wp = xmalloc(sizeof(struct waiter));
+	uint32_t *wp = xmalloc(sizeof(*wp));
 
-	wp->jobid = jobid;
+	*wp = jobid;
 
 	return wp;
 }
 
 static int _find_waiter(void *x, void *y)
 {
-	struct waiter *w = (struct waiter *)x;
+	uint32_t *w = x;
 	uint32_t *jp = (uint32_t *)y;
 
-	return (w->jobid == *jp);
+	return (*w == *jp);
 }
 
 static int _waiter_init (uint32_t jobid)
