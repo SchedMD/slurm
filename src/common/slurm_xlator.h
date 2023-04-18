@@ -148,7 +148,6 @@
 #define	hostlist_next_range	slurm_hostlist_next_range
 #define	hostlist_nth		slurm_hostlist_nth
 #define	hostlist_pop            slurm_hostlist_pop
-#define	hostlist_pop_range      slurm_hostlist_pop_range
 #define	hostlist_push		slurm_hostlist_push
 #define	hostlist_push_host_dims	slurm_hostlist_push_host_dims
 #define	hostlist_push_host	slurm_hostlist_push_host

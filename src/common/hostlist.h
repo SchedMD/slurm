@@ -222,17 +222,6 @@ char *hostlist_shift(hostlist_t *hl);
  */
 int hostlist_cmp_first(hostlist_t *hl1, hostlist_t *hl2);
 
-/* hostlist_pop_range():
- *
- * Pop the last bracketed list of hosts of the hostlist hl.
- * Returns the string representation in bracketed list form.
- * All hosts associated with the returned list are removed
- * from hl.
- *
- * Caller is responsible for freeing returned memory
- */
-char *hostlist_pop_range(hostlist_t *hl);
-
 /* hostlist_shift_range():
  *
  * Shift the first bracketed hostlist (improperly: range) off the

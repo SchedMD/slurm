@@ -89,7 +89,6 @@ strong_alias(hostlist_next,		slurm_hostlist_next);
 strong_alias(hostlist_next_range,	slurm_hostlist_next_range);
 strong_alias(hostlist_nth,		slurm_hostlist_nth);
 strong_alias(hostlist_pop,		slurm_hostlist_pop);
-strong_alias(hostlist_pop_range,	slurm_hostlist_pop_range);
 strong_alias(hostlist_push,		slurm_hostlist_push);
 strong_alias(hostlist_push_host_dims,	slurm_hostlist_push_host_dims);
 strong_alias(hostlist_push_host,	slurm_hostlist_push_host);
@@ -1984,43 +1983,6 @@ char *hostlist_shift(hostlist_t *hl)
 	return hostlist_shift_dims(hl, 0);
 }
 
-
-char *hostlist_pop_range(hostlist_t *hl)
-{
-	int i;
-	char *buf;
-	hostlist_t *hltmp;
-	hostrange_t *tail;
-
-	if (!hl)
-		return NULL;
-	LOCK_HOSTLIST(hl);
-	if (hl->nranges < 1) {
-		UNLOCK_HOSTLIST(hl);
-		return NULL;
-	}
-
-	hltmp = hostlist_new();
-
-	i = hl->nranges - 2;
-	tail = hl->hr[hl->nranges - 1];
-	while (i >= 0 && hostrange_within_range(tail, hl->hr[i]))
-		i--;
-
-	for (i++; i < hl->nranges; i++) {
-		hostlist_push_range(hltmp, hl->hr[i]);
-		hostrange_destroy(hl->hr[i]);
-		hl->hr[i] = NULL;
-	}
-	hl->nhosts -= hltmp->nhosts;
-	hl->nranges -= hltmp->nranges;
-
-	UNLOCK_HOSTLIST(hl);
-	buf = hostlist_ranged_string_malloc(hltmp);
-	hostlist_destroy(hltmp);
-	return buf;
-}
-
 char *hostlist_shift_range(hostlist_t *hl)
 {
 	int i;
@@ -3505,11 +3467,6 @@ char *hostset_pop(hostset_t *set)
 char *hostset_shift_range(hostset_t *set)
 {
 	return hostlist_shift_range(set->hl);
-}
-
-char *hostset_pop_range(hostset_t *set)
-{
-	return hostlist_pop_range(set->hl);
 }
 
 int hostset_count(hostset_t *set)
