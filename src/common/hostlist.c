@@ -3361,15 +3361,10 @@ int hostlist_remove(hostlist_iterator_t *i)
 
 hostset_t *hostset_create(const char *hostlist)
 {
-	hostset_t *new;
-
-	if (!(new = malloc(sizeof(*new)))) {
-		out_of_memory("hostset_create");
-		return NULL;
-	}
+	hostset_t *new = xmalloc(sizeof(*new));
 
 	if (!(new->hl = hostlist_create(hostlist))) {
-		free(new);
+		xfree(new);
 		return NULL;
 	}
 
@@ -3379,9 +3374,7 @@ hostset_t *hostset_create(const char *hostlist)
 
 hostset_t *hostset_copy(const hostset_t *set)
 {
-	hostset_t *new;
-	if (!(new = malloc(sizeof(*new))))
-		goto error1;
+	hostset_t *new = xmalloc(sizeof(*new));
 
 	if (!(new->hl = hostlist_copy(set->hl)))
 		goto error2;
@@ -3389,7 +3382,6 @@ hostset_t *hostset_copy(const hostset_t *set)
 	return new;
 error2:
 	free(new);
-error1:
 	out_of_memory("hostset_copy");
 	return NULL;
 }
@@ -3399,7 +3391,7 @@ void hostset_destroy(hostset_t *set)
 	if (set == NULL)
 		return;
 	hostlist_destroy(set->hl);
-	free(set);
+	xfree(set);
 }
 
 /* inserts a single range object into a hostset
