@@ -309,7 +309,7 @@ static size_t hostrange_numstr(hostrange_t *, size_t, char *, int);
 
 static hostlist_t *hostlist_new(void);
 static hostlist_t *_hostlist_create_bracketed(const char *, char *, char *, int);
-static int hostlist_resize(hostlist_t *, size_t);
+static void hostlist_resize(hostlist_t *, size_t);
 static int hostlist_expand(hostlist_t *);
 static int hostlist_push_range(hostlist_t *, hostrange_t *);
 static int hostlist_push_hr(hostlist_t *, char *, unsigned long, unsigned long, int);
@@ -1176,19 +1176,14 @@ static hostlist_t *hostlist_new(void)
 
 /* Resize the internal array used to store the list of hostrange objects.
  *
- * returns 1 for a successful resize,
- *         0 if call to _realloc fails
- *
  * It is assumed that the caller has the hostlist hl locked
  */
-static int hostlist_resize(hostlist_t *hl, size_t newsize)
+static void hostlist_resize(hostlist_t *hl, size_t newsize)
 {
 	xassert(hl);
 	xassert(hl->magic == HOSTLIST_MAGIC);
 	hl->size = newsize;
 	xrecalloc(hl->hr, hl->size, sizeof(hostrange_t *));
-
-	return 1;
 }
 
 /* Resize hostlist by one HOSTLIST_CHUNK
@@ -1196,10 +1191,9 @@ static int hostlist_resize(hostlist_t *hl, size_t newsize)
  */
 static int hostlist_expand(hostlist_t *hl)
 {
-	if (!hostlist_resize(hl, hl->size + HOSTLIST_CHUNK))
-		return 0;
-	else
-		return 1;
+	hostlist_resize(hl, hl->size + HOSTLIST_CHUNK);
+
+	return 1;
 }
 
 /* Push a hostrange object onto hostlist hl
