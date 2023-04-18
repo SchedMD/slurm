@@ -521,9 +521,7 @@ static hostname_t *hostname_create_dims(const char *hostname, int dims)
 	hn->num = strtoul(hn->suffix, &p, hostlist_base);
 
 	if (*p == '\0') {
-		hn->prefix = xmalloc(idx + 2);
-		memcpy(hn->prefix, hostname, idx + 1);
-		hn->prefix[idx + 1] = '\0';
+		hn->prefix = xstrndup(hostname, (idx + 1));
 	} else {
 		hn->prefix = xstrdup(hostname);
 		hn->suffix = NULL;
