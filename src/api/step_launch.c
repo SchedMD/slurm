@@ -818,7 +818,7 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	int node_id, j, num_tasks;
 	slurm_msg_t req;
 	signal_tasks_msg_t msg;
-	xhostlist_t *hl;
+	hostlist_t *hl;
 	char *name = NULL;
 	List ret_list = NULL;
 	ListIterator itr;
@@ -1283,7 +1283,7 @@ static void
 _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 {
 	srun_node_fail_msg_t *nf = fail_msg->data;
-	xhostlist_t *fail_nodes, *all_nodes;
+	hostlist_t *fail_nodes, *all_nodes;
 	hostlist_iterator_t *fail_itr;
 	int num_node_ids;
 	int *node_ids;
@@ -1358,7 +1358,7 @@ static void
 _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 {
 	srun_step_missing_msg_t *step_missing = missing_msg->data;
-	xhostlist_t *fail_nodes, *all_nodes;
+	hostlist_t *fail_nodes, *all_nodes;
 	hostlist_iterator_t *fail_itr;
 	char *node;
 	int num_node_ids;
@@ -1632,7 +1632,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	debug("Entering _launch_tasks");
 	if (ctx->verbose_level) {
 		char *name = NULL;
-		xhostlist_t *hl = hostlist_create(nodelist);
+		hostlist_t *hl = hostlist_create(nodelist);
 		int i = 0;
 		while ((name = hostlist_shift(hl))) {
 			_print_launch_msg(launch_msg, name, i++);
@@ -1734,7 +1734,7 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 {
 	int i;
 	char *tmp_str = NULL, *task_list = NULL;
-	xhostlist_t *hl = hostlist_create(NULL);
+	hostlist_t *hl = hostlist_create(NULL);
 
 	for (i=0; i<msg->tasks_to_launch[nodeid]; i++) {
 		xstrfmtcat(tmp_str, "%u", msg->global_task_ids[nodeid][i]);

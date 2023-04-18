@@ -376,7 +376,7 @@ extern int load_all_node_state ( bool state_only )
 	buf_t *buffer;
 	char *ver_str = NULL;
 	hostset_t *hs = NULL;
-	xhostlist_t *down_nodes = NULL;
+	hostlist_t *down_nodes = NULL;
 	bool power_save_mode = false;
 	uint16_t protocol_version = NO_VAL16;
 
@@ -1528,7 +1528,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	int error_code = 0, node_cnt;
 	node_record_t *node_ptr = NULL;
 	char *this_node_name = NULL, *tmp_feature, *orig_features_act = NULL;
-	xhostlist_t *host_list, *hostaddr_list = NULL, *hostname_list = NULL;
+	hostlist_t *host_list, *hostaddr_list = NULL, *hostname_list = NULL;
 	uint32_t base_state = 0, node_flags, state_val, resume_after = NO_VAL;
 	time_t now = time(NULL);
 	bool uniq = true;
@@ -2666,7 +2666,7 @@ extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 	int error_code = SLURM_SUCCESS;
 	node_record_t *node_ptr;
 	char  *this_node_name ;
-	xhostlist_t *host_list;
+	hostlist_t *host_list;
 
 	if ((nodes == NULL) || (nodes[0] == '\0')) {
 		error ("drain_nodes: invalid node name  %s", nodes);
@@ -3425,7 +3425,7 @@ extern int validate_nodes_via_front_end(
 	node_record_t *node_ptr = NULL;
 	time_t now = time(NULL);
 	ListIterator job_iterator;
-	xhostlist_t *reg_hostlist = NULL;
+	hostlist_t *reg_hostlist = NULL;
 	char *host_str = NULL, *reason_down = NULL;
 	uint32_t node_flags;
 	front_end_record_t *front_end_ptr;
@@ -3930,7 +3930,7 @@ extern void node_no_resp_msg(void)
 	int i;
 	node_record_t *node_ptr;
 	char *host_str = NULL;
-	xhostlist_t *no_resp_hostlist = NULL;
+	hostlist_t *no_resp_hostlist = NULL;
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!node_ptr->not_responding ||
@@ -4672,7 +4672,7 @@ extern void check_node_timers()
 	uint16_t resume_timeout = slurm_conf.resume_timeout;
 	static bool power_save_on = false;
 	static time_t sched_update = 0;
-	xhostlist_t *resume_hostlist = NULL;
+	hostlist_t *resume_hostlist = NULL;
 
 	if (sched_update != slurm_conf.last_update) {
 		power_save_on = power_save_test();
@@ -5108,10 +5108,10 @@ static int _delete_node(char *name)
 extern int delete_nodes(char *names, char **err_msg)
 {
 	char *node_name;
-	xhostlist_t *to_delete;
+	hostlist_t *to_delete;
 	bool one_success = false;
 	int ret_rc = SLURM_SUCCESS;
-	xhostlist_t *error_hostlist = NULL;
+	hostlist_t *error_hostlist = NULL;
 
 	xassert(err_msg);
 

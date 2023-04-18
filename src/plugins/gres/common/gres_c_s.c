@@ -272,7 +272,7 @@ static List _build_sharing_list(List gres_list, char *sharing_name)
 	ListIterator itr;
 	gres_slurmd_conf_t *gres_slurmd_conf, *sharing_record;
 	List sharing_list;
-	xhostlist_t *hl;
+	hostlist_t *hl;
 	char *f_name;
 	bool log_fname = true;
 
@@ -339,7 +339,7 @@ static List _build_shared_list(List gres_list, char *shared_name)
 	ListIterator itr;
 	gres_slurmd_conf_t *gres_slurmd_conf, *shared_record;
 	List shared_list;
-	xhostlist_t *hl;
+	hostlist_t *hl;
 	char *f_name;
 	uint64_t count_per_file;
 	int shared_no_file_recs = 0, shared_file_recs = 0;

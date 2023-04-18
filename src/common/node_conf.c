@@ -188,9 +188,9 @@ static void _node_record_hash_identity (void* item, const char** key,
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-xhostlist_t *bitmap2hostlist(bitstr_t *bitmap)
+hostlist_t *bitmap2hostlist(bitstr_t *bitmap)
 {
-	xhostlist_t *hl;
+	hostlist_t *hl;
 	node_record_t *node_ptr;
 
 	if (bitmap == NULL)
@@ -216,7 +216,7 @@ xhostlist_t *bitmap2hostlist(bitstr_t *bitmap)
  */
 char * bitmap2node_name_sortable (bitstr_t *bitmap, bool sort)
 {
-	xhostlist_t *hl;
+	hostlist_t *hl;
 	char *buf;
 
 	hl = bitmap2hostlist (bitmap);
@@ -275,7 +275,7 @@ extern void build_all_frontend_info (bool is_slurmd_context)
 		fatal("No FrontendName information available!");
 
 	for (i = 0; i < count; i++) {
-		xhostlist_t *hl_name, *hl_addr;
+		hostlist_t *hl_name, *hl_addr;
 		char *fe_name, *fe_addr;
 
 		fe_line = ptr_array[i];
@@ -540,11 +540,11 @@ extern void expand_nodeline_info(slurm_conf_node_t *node_ptr, config_record_t
 				       slurm_conf_node_t *node_ptr,
 				       config_record_t *config_ptr))
 {
-	xhostlist_t *address_list = NULL;
-	xhostlist_t *alias_list = NULL;
-	xhostlist_t *bcast_list = NULL;
-	xhostlist_t *hostname_list = NULL;
-	xhostlist_t *port_list = NULL;
+	hostlist_t *address_list = NULL;
+	hostlist_t *alias_list = NULL;
+	hostlist_t *bcast_list = NULL;
+	hostlist_t *hostname_list = NULL;
+	hostlist_t *port_list = NULL;
 	char *address = NULL;
 	char *alias = NULL;
 	char *bcast_address = NULL;
@@ -1144,7 +1144,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 	int rc = SLURM_SUCCESS;
 	char *this_node_name;
 	bitstr_t *my_bitmap;
-	xhostlist_t *host_list;
+	hostlist_t *host_list;
 
 	my_bitmap = (bitstr_t *) bit_alloc (node_record_count);
 	*bitmap = my_bitmap;
@@ -1187,7 +1187,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
  * OUT bitmap     - set to bitmap, may not have all bits set on error
  * RET 0 if no error, otherwise EINVAL
  */
-extern int hostlist2bitmap(xhostlist_t *hl, bool best_effort, bitstr_t **bitmap)
+extern int hostlist2bitmap(hostlist_t *hl, bool best_effort, bitstr_t **bitmap)
 {
 	int rc = SLURM_SUCCESS;
 	bitstr_t *my_bitmap;
@@ -1434,7 +1434,7 @@ extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, int cpus_per_task,
 
 extern char *find_hostname(uint32_t pos, char *hosts)
 {
-	xhostlist_t *hostlist = NULL;
+	hostlist_t *hostlist = NULL;
 	char *temp = NULL, *host = NULL;
 
 	if (!hosts || (pos == NO_VAL) || (pos == INFINITE))

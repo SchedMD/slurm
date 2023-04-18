@@ -133,7 +133,7 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 {
 	node_info_msg_t *node_info_ptr = NULL;
 	partition_info_msg_t *part_info_ptr = NULL;
-	xhostlist_t *host_list = NULL;
+	hostlist_t *host_list = NULL;
 	int error_code;
 	uint16_t show_flags = 0;
 
@@ -382,7 +382,7 @@ scontrol_print_front_end_list(char *node_list)
 {
 	front_end_info_msg_t *front_end_info_ptr = NULL;
 	int error_code;
-	xhostlist_t *host_list;
+	hostlist_t *host_list;
 	char *this_node_name;
 
 	error_code = scontrol_load_front_end(&front_end_info_ptr);

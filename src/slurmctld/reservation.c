@@ -2492,7 +2492,7 @@ static bitstr_t *_get_update_node_bitmap(slurmctld_resv_t *resv_ptr,
 	char *last = NULL, *tmp, *tok, *node_name;
 	node_record_t *node_ptr;
 	bitstr_t *node_bitmap = NULL;
-	xhostlist_t *hl = NULL;
+	hostlist_t *hl = NULL;
 
 	tmp = xstrdup(node_list);
 	tok = strtok_r(tmp, ",", &last);

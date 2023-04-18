@@ -109,7 +109,7 @@ typedef struct allocation_info {
 typedef struct het_job_resp_struct {
 	char **alias_list;
 	uint16_t *cpu_cnt;
-	xhostlist_t *host_list;
+	hostlist_t *host_list;
 	uint32_t node_cnt;
 } het_job_resp_struct_t;
 
@@ -168,7 +168,7 @@ job_create_noalloc(void)
 	uint16_t cpn[1];
 	uint32_t cpu_count_reps[1];
 	slurm_opt_t *opt_local = &opt;
-	xhostlist_t *hl = hostlist_create(opt_local->nodelist);
+	hostlist_t *hl = hostlist_create(opt_local->nodelist);
 
 	if (!hl) {
 		error("Invalid node list `%s' specified", opt_local->nodelist);
@@ -281,7 +281,7 @@ extern srun_job_t *job_step_create_allocation(
 	uint32_t job_id = resp->job_id;
 	srun_job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(allocation_info_t));
-	xhostlist_t *hl = NULL;
+	hostlist_t *hl = NULL;
 	char *buf = NULL;
 	int count = 0;
 	uint32_t alloc_count = 0;
@@ -305,8 +305,8 @@ extern srun_job_t *job_step_create_allocation(
 
 	/* exclude is handled elsewhere for het steps */
 	if (!local_het_step && opt_local->exclude) {
-		xhostlist_t *exc_hl = hostlist_create(opt_local->exclude);
-		xhostlist_t *inc_hl = NULL;
+		hostlist_t *exc_hl = hostlist_create(opt_local->exclude);
+		hostlist_t *inc_hl = NULL;
 		char *node_name = NULL;
 
 		hl = hostlist_create(ai->nodelist);
@@ -372,7 +372,7 @@ extern srun_job_t *job_step_create_allocation(
 			if (count < ai->nnodes) {
 				/* add more nodes to get correct number for
 				   allocation */
-				xhostlist_t *tmp_hl = hostlist_copy(hl);
+				hostlist_t *tmp_hl = hostlist_copy(hl);
 				int i = 0;
 				int diff = ai->nnodes - count;
 				buf = hostlist_ranged_string_xmalloc(inc_hl);
@@ -782,9 +782,9 @@ static void _set_step_opts(slurm_opt_t *opt_local)
 }
 
 static int _handle_het_step_exclude(srun_job_t *job, slurm_opt_t *opt_local,
-				    xhostlist_t *exclude_hl_in)
+				    hostlist_t *exclude_hl_in)
 {
-	xhostlist_t *exclude_hl, *allocation_hl;
+	hostlist_t *exclude_hl, *allocation_hl;
 	int rc = SLURM_SUCCESS;
 
 	if (!exclude_hl_in || !hostlist_count(exclude_hl_in))
@@ -812,7 +812,7 @@ static int _handle_het_step_exclude(srun_job_t *job, slurm_opt_t *opt_local,
 
 	if (opt_local->nodelist) {
 		char *node_name = NULL;
-		xhostlist_t *inc_hl = hostlist_create(opt_local->nodelist);
+		hostlist_t *inc_hl = hostlist_create(opt_local->nodelist);
 		while ((node_name = hostlist_shift(exclude_hl))) {
 			if (hostlist_find(inc_hl, node_name) >= 0) {
 				error("Requested nodelist %s overlaps with excluded %s.",
@@ -852,7 +852,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 	int rc = 0;
 
 	if (srun_job_list) {
-		xhostlist_t *exclude_hl = NULL;
+		hostlist_t *exclude_hl = NULL;
 
 		if (local_het_step)
 			exclude_hl = hostlist_create(NULL);
@@ -1731,7 +1731,7 @@ static char *
 _normalize_hostlist(const char *hostlist)
 {
 	char *buf = NULL;
-	xhostlist_t *hl = hostlist_create(hostlist);
+	hostlist_t *hl = hostlist_create(hostlist);
 
 	if (hl)	{
 		buf = hostlist_ranged_string_xmalloc(hl);

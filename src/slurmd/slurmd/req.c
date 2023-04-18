@@ -470,7 +470,7 @@ rwfail:
 static int
 _send_slurmstepd_init(int fd, int type, void *req,
 		      slurm_addr_t *cli, slurm_addr_t *self,
-		      xhostlist_t *step_hset, uint16_t protocol_version)
+		      hostlist_t *step_hset, uint16_t protocol_version)
 {
 	int len = 0;
 	buf_t *buffer = NULL;
@@ -677,7 +677,7 @@ rwfail:
 static int
 _forkexec_slurmstepd(uint16_t type, void *req,
 		     slurm_addr_t *cli, slurm_addr_t *self,
-		     xhostlist_t *step_hset, uint16_t protocol_version)
+		     hostlist_t *step_hset, uint16_t protocol_version)
 {
 	pid_t pid;
 	int to_stepd[2] = {-1, -1};
@@ -970,7 +970,7 @@ static int _get_host_index(char *cred_hostlist)
 #ifdef HAVE_FRONT_END
 	return 0; /* It is always 0 for front end systems */
 #endif
-	xhostlist_t *hl;
+	hostlist_t *hl;
 	int host_index;
 	if (!(hl = hostlist_create(cred_hostlist))) {
 		error("Unable to parse credential hostlist: '%s'",
@@ -1069,12 +1069,12 @@ static int _get_ncpus(slurm_cred_arg_t *cred, int host_index,
  */
 static int _check_job_credential(launch_tasks_request_msg_t *req,
 				 uid_t auth_uid, gid_t auth_gid,
-				 int node_id, xhostlist_t **step_hset,
+				 int node_id, hostlist_t **step_hset,
 				 uint16_t protocol_version,
 				 bool super_user)
 {
 	slurm_cred_arg_t *arg;
-	xhostlist_t *s_hset = NULL;
+	hostlist_t *s_hset = NULL;
 	int		host_index = -1;
 	slurm_cred_t    *cred = req->cred;
 	uint32_t	jobid = req->step_id.job_id;
@@ -1481,7 +1481,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	slurm_addr_t self;
 	slurm_addr_t *cli = &msg->orig_addr;
-	xhostlist_t *step_hset = NULL;
+	hostlist_t *step_hset = NULL;
 	job_mem_limits_t *job_limits_ptr;
 	int node_id = 0;
 	bitstr_t *numa_bitmap = NULL;
@@ -2201,7 +2201,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 #ifdef HAVE_FRONT_END
 		host_index = 0;	/* It is always 0 for front end systems */
 #else
-		xhostlist_t *j_hset;
+		hostlist_t *j_hset;
 		/*
 		 * Determine need to setup X11 based upon this node's index into
 		 * the _job's_ allocation
@@ -2263,7 +2263,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		 * silently terminate.
 		 */
 	} else {
-		xhostlist_t *step_hset = hostlist_create(req->nodes);
+		hostlist_t *step_hset = hostlist_create(req->nodes);
 		int rc;
 
 		debug3("%s: call to _forkexec_slurmstepd", __func__);

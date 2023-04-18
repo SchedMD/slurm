@@ -110,7 +110,7 @@ fail:	xfree(local_job_str);
 /* Get the next job ID from local variables set up by _is_job_id() */
 static char *_next_job_id(void)
 {
-	static xhostlist_t *hl = NULL;
+	static hostlist_t *hl = NULL;
 	static char *save_ptr = NULL;
 	static char *next_job_id = NULL;
 	static char *task_id_spec = NULL;

@@ -65,9 +65,9 @@ typedef struct {
 	char *nodes;
 	int pos;
 	List step_list;
-	xhostlist_t *task_hl;
+	hostlist_t *task_hl;
 	char *task_hl_str;
-	xhostlist_t *task_pending_hl;
+	hostlist_t *task_pending_hl;
 	char *task_pending_hl_str;
 	List task_list;
 	List task_pending_list;

@@ -59,8 +59,8 @@ strong_alias(route_split_hostlist_treewidth,
 	     slurm_route_split_hostlist_treewidth);
 
 typedef struct slurm_route_ops {
-	int  (*split_hostlist)    (xhostlist_t *hl,
-				   xhostlist_t ***sp_hl,
+	int  (*split_hostlist)    (hostlist_t *hl,
+				   hostlist_t ***sp_hl,
 				   int* count, uint16_t tree_width);
 	int  (*reconfigure)       (void);
 } slurm_route_ops_t;
@@ -121,20 +121,20 @@ extern int route_fini(void)
  * route_g_split_hostlist - logic to split an input hostlist into
  *                          a set of hostlists to forward to.
  *
- * IN: hl        - xhostlist_t *   - list of every node to send message to
+ * IN: hl        - hostlist_t *   - list of every node to send message to
  *                                  will be empty on return which is same
  *                                  behavior as similar code replaced in
  *                                  forward.c
- * OUT: sp_hl    - xhostlist_t *** - the array of hostlists that will be malloced
+ * OUT: sp_hl    - hostlist_t *** - the array of hostlists that will be malloced
  * OUT: count    - int *          - the count of created hostlists
  * RET: SLURM_SUCCESS - int
  *
  * Note: created hostlist will have to be freed independently using
  *       hostlist_destroy by the caller.
- * Note: the xhostlist_t array will have to be xfree.
+ * Note: the hostlist_t array will have to be xfree.
  */
-extern int route_g_split_hostlist(xhostlist_t *hl,
-				  xhostlist_t ***sp_hl,
+extern int route_g_split_hostlist(hostlist_t *hl,
+				  hostlist_t ***sp_hl,
 				  int* count, uint16_t tree_width)
 {
 	int rc;
@@ -194,20 +194,20 @@ extern int route_g_reconfigure(void)
  * where the topology version also needs to split the message list based
  * on TreeWidth.
  *
- * IN: hl        - xhostlist_t *   - list of every node to send message to
+ * IN: hl        - hostlist_t *   - list of every node to send message to
  *                                  will be empty on return which is same
  *                                  behavior as similar code replaced in
  *                                  forward.c
- * OUT: sp_hl    - xhostlist_t *** - the array of hostlists that will be malloced
+ * OUT: sp_hl    - hostlist_t *** - the array of hostlists that will be malloced
  * OUT: count    - int *          - the count of created hostlists
  * RET: SLURM_SUCCESS - int
  *
  * Note: created hostlist will have to be freed independently using
  *       hostlist_destroy by the caller.
- * Note: the xhostlist_t array will have to be xfree.
+ * Note: the hostlist_t array will have to be xfree.
  */
-extern int route_split_hostlist_treewidth(xhostlist_t *hl,
-					  xhostlist_t ***sp_hl,
+extern int route_split_hostlist_treewidth(hostlist_t *hl,
+					  hostlist_t ***sp_hl,
 					  int* count, uint16_t tree_width)
 {
 	int host_count;
@@ -222,7 +222,7 @@ extern int route_split_hostlist_treewidth(xhostlist_t *hl,
 
 	host_count = hostlist_count(hl);
 	span = set_span(host_count, tree_width);
-	*sp_hl = xcalloc(MIN(tree_width, host_count), sizeof(xhostlist_t *));
+	*sp_hl = xcalloc(MIN(tree_width, host_count), sizeof(hostlist_t *));
 
 	while ((name = hostlist_shift(hl))) {
 		(*sp_hl)[nhl] = hostlist_create(name);

@@ -125,7 +125,7 @@ static time_t plugin_shutdown = 0;
 static char *cluster_nodes = NULL; /* Protected by node write lock */
 static char *cluster_tres = NULL; /* Protected by node write lock */
 
-static xhostlist_t *cluster_hl = NULL;
+static hostlist_t *cluster_hl = NULL;
 static pthread_mutex_t cluster_hl_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr);
@@ -2671,7 +2671,7 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 extern char *acct_storage_p_node_inx(void *db_conn, char *nodes)
 {
 	char *host, *ret_str;
-	xhostlist_t *node_hl;
+	hostlist_t *node_hl;
 	bitstr_t *node_bitmap;
 	hostlist_iterator_t *h_itr;
 

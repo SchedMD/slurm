@@ -421,7 +421,7 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 	itr = list_iterator_create(gres_list_conf);
 	while ((gres_slurmd_conf = list_next(itr))) {
 		int i;
-		xhostlist_t *hl;
+		hostlist_t *hl;
 		char *hl_name, *tmp_file;
 		int count = gres_slurmd_conf->count;
 

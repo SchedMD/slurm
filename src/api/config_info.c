@@ -118,7 +118,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	partition_info_t *p = NULL;
 	struct records {
 	  char *rec;
-	  xhostlist_t *hostlist;
+	  hostlist_t *hostlist;
 	  struct records *next;
 	} *rp = NULL;
 	struct records *crp;
@@ -167,7 +167,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	 * all fields associated with a node (but do not include the node
 	 * name itself). Search for duplicate tmp_str records as we process
 	 * each node entry so not to have duplicates. Associate each node
-	 * name that has equal tmp_str records and create a xhostlist_t string
+	 * name that has equal tmp_str records and create a hostlist_t string
 	 * for that record. */
 	for (i = 0; i < node_info_ptr->record_count; i++) {
 		if (node_info_ptr->node_array[i].name == NULL)

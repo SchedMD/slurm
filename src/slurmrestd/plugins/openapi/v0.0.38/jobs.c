@@ -639,7 +639,7 @@ static void _dump_node_res(data_t *dnodes, job_resources_t *j,
 /* log_job_resources() used as an example */
 static void _dump_nodes_res(data_t *dnodes, job_resources_t *j)
 {
-	xhostlist_t *hl = NULL;
+	hostlist_t *hl = NULL;
 	size_t bit_inx = 0;
 	size_t array_size;
 	size_t sock_inx = 0, sock_reps = 0;

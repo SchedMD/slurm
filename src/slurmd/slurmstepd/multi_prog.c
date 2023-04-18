@@ -330,7 +330,7 @@ extern void multi_prog_parse(stepd_step_rec_t *step, uint32_t **gtid)
 	bool last_line_break = false, line_break = false;
 	char *last_rank_spec = NULL;
 	int args_len, line_len;
-	xhostlist_t *hl;
+	hostlist_t *hl;
 	uint32_t jobid;
 
 	tmp_args = xmalloc(sizeof(char *) * step->ntasks);

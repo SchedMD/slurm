@@ -1011,7 +1011,7 @@ extern void select_admin_front_end(GtkTreeModel *model, GtkTreeIter *iter,
 {
 	if (treeview) {
 		char *node_list;
-		xhostlist_t *hl = NULL;
+		hostlist_t *hl = NULL;
 		front_end_user_data_t user_data;
 
 		memset(&user_data, 0, sizeof(front_end_user_data_t));

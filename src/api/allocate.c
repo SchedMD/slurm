@@ -953,7 +953,7 @@ char *slurm_read_hostfile(const char *filename, int n)
 	int i, j;
 	int line_size;
 	int line_num = 0;
-	xhostlist_t *hostlist = NULL;
+	hostlist_t *hostlist = NULL;
 	char *nodelist = NULL, *end_part = NULL;
 	char *asterisk, *tmp_text = NULL, *save_ptr = NULL, *host_name;
 	int total_file_len = 0;

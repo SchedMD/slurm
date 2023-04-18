@@ -2757,7 +2757,7 @@ void slurm_send_msg_maybe(slurm_msg_t *req)
 List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout)
 {
 	List ret_list = NULL;
-	xhostlist_t *hl = NULL;
+	hostlist_t *hl = NULL;
 
 	if (!running_in_daemon()) {
 		/*
@@ -3017,7 +3017,7 @@ extern void slurm_msg_set_r_uid(slurm_msg_t *msg, uid_t r_uid)
 
 extern char *nodelist_nth_host(const char *nodelist, int inx)
 {
-	xhostlist_t *hl = hostlist_create(nodelist);
+	hostlist_t *hl = hostlist_create(nodelist);
 	char *name = hostlist_nth(hl, inx);
 	hostlist_destroy(hl);
 	return name;
@@ -3025,7 +3025,7 @@ extern char *nodelist_nth_host(const char *nodelist, int inx)
 
 extern int nodelist_find(const char *nodelist, const char *name)
 {
-	xhostlist_t *hl = hostlist_create(nodelist);
+	hostlist_t *hl = hostlist_create(nodelist);
 	int id = hostlist_find(hl, name);
 	hostlist_destroy(hl);
 	return id;
@@ -3186,7 +3186,7 @@ extern int slurm_forward_data(
 	ret_data_info_t *ret_data_info = NULL;
 	slurm_msg_t msg;
 	forward_data_msg_t req;
-	xhostlist_t *hl = NULL;
+	hostlist_t *hl = NULL;
 	bool redo_nodelist = false;
 	slurm_msg_t_init(&msg);
 

@@ -159,7 +159,7 @@ static int pmix_stepd_width = 16;
 static int pmix_stepd_children = 0;
 
 /* we allocate a hostlist in init and destroy it in finalize */
-static xhostlist_t *pmix_stepd_hostlist = NULL;
+static hostlist_t *pmix_stepd_hostlist = NULL;
 
 /* return rank of our parent in stepd tree,
  * returns -1 if we're the root */

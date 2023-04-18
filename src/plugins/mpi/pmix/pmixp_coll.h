@@ -92,7 +92,7 @@ pmixp_coll_cperf_mode2str(pmixp_coll_cperf_mode_t mode) {
 }
 
 int pmixp_hostset_from_ranges(const pmix_proc_t *procs, size_t nprocs,
-			      xhostlist_t **hl_out);
+			      hostlist_t **hl_out);
 
 /* PMIx Tree collective */
 typedef enum {
@@ -166,7 +166,7 @@ typedef struct {
 	char *root_host;
 	int root_peerid;
 	int chldrn_cnt;
-	xhostlist_t *all_chldrn_hl;
+	hostlist_t *all_chldrn_hl;
 	char *chldrn_str;
 	int *chldrn_ids;
 
@@ -273,7 +273,7 @@ typedef struct pmixp_coll_s {
 	int my_peerid;
 	int peers_cnt;
 #ifdef PMIXP_COLL_DEBUG
-	xhostlist_t *peers_hl;
+	hostlist_t *peers_hl;
 #endif
 
 	/* libpmix callback data */
@@ -291,7 +291,7 @@ typedef struct pmixp_coll_s {
 } pmixp_coll_t;
 
 /* tree coll functions*/
-int pmixp_coll_tree_init(pmixp_coll_t *coll, xhostlist_t **hl);
+int pmixp_coll_tree_init(pmixp_coll_t *coll, hostlist_t **hl);
 void pmixp_coll_tree_free(pmixp_coll_tree_t *tree);
 
 pmixp_coll_t *pmixp_coll_tree_from_cbdata(void *cbdata);
@@ -312,7 +312,7 @@ void pmixp_coll_tree_reset_if_to(pmixp_coll_t *coll, time_t ts);
 int pmixp_coll_check(pmixp_coll_t *coll, uint32_t seq);
 
 /* ring coll functions */
-int pmixp_coll_ring_init(pmixp_coll_t *coll, xhostlist_t **hl);
+int pmixp_coll_ring_init(pmixp_coll_t *coll, hostlist_t **hl);
 void pmixp_coll_ring_free(pmixp_coll_ring_t *coll_ring);
 int pmixp_coll_ring_check(pmixp_coll_t  *coll, pmixp_coll_ring_msg_hdr_t *hdr);
 int pmixp_coll_ring_local(pmixp_coll_t  *coll, char *data, size_t size,

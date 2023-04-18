@@ -300,7 +300,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	agent_arg_t *agent_args = NULL;
 	int down_node_cnt = 0;
 	node_record_t *node_ptr;
-	xhostlist_t *hostlist = NULL;
+	hostlist_t *hostlist = NULL;
 	uint16_t use_protocol_version = 0;
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
@@ -4021,7 +4021,7 @@ static int _nodes_in_sets(bitstr_t *req_bitmap,
  */
 extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
 {
-	xhostlist_t *host_list = NULL;
+	hostlist_t *host_list = NULL;
 	node_record_t *node_ptr;
 	char *this_node_name;
 	int node_inx = 0;
@@ -4328,7 +4328,7 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 extern void re_kill_job(job_record_t *job_ptr)
 {
 	agent_arg_t *agent_args;
-	xhostlist_t *kill_hostlist;
+	hostlist_t *kill_hostlist;
 	char *host_str = NULL;
 	static uint32_t last_job_id = 0;
 	node_record_t *node_ptr;

@@ -197,7 +197,7 @@ static void _reset_coll(pmixp_coll_t *coll)
 /*
  * Based on ideas provided by Hongjia Cao <hjcao@nudt.edu.cn> in PMI2 plugin
  */
-int pmixp_coll_tree_init(pmixp_coll_t *coll, xhostlist_t **hl)
+int pmixp_coll_tree_init(pmixp_coll_t *coll, hostlist_t **hl)
 {
 	int max_depth, width, depth, i;
 	char *p;
@@ -1350,7 +1350,7 @@ void pmixp_coll_tree_log(pmixp_coll_t *coll)
 	}
 	if (tree->chldrn_cnt) {
 		char *done_contrib = NULL, *wait_contrib = NULL;
-		xhostlist_t *hl_done_contrib = NULL,
+		hostlist_t *hl_done_contrib = NULL,
 			*hl_wait_contrib = NULL, **tmp_list;
 
 		PMIXP_ERROR("child contribs [%d]:", tree->chldrn_cnt);

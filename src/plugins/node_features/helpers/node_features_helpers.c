@@ -331,7 +331,7 @@ static int _parse_feature_node(void **data, slurm_parser_enum_t type, const char
 
 	if (!running_in_slurmctld() && conf->node_name && name) {
 		bool match = false;
-		xhostlist_t *hl;
+		hostlist_t *hl;
 		hl = hostlist_create(name);
 		if (hl) {
 			match = (hostlist_find(hl, conf->node_name) >= 0);

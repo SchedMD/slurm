@@ -231,7 +231,7 @@ char * bitmap2node_name (bitstr_t *bitmap);
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-xhostlist_t *bitmap2hostlist(bitstr_t *bitmap);
+hostlist_t *bitmap2hostlist(bitstr_t *bitmap);
 
 /*
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
@@ -375,7 +375,7 @@ extern node_record_t *find_node_record_no_alias(char *name);
  * OUT bitmap     - set to bitmap, may not have all bits set on error
  * RET 0 if no error, otherwise EINVAL
  */
-extern int hostlist2bitmap(xhostlist_t *hl, bool best_effort, bitstr_t **bitmap);
+extern int hostlist2bitmap(hostlist_t *hl, bool best_effort, bitstr_t **bitmap);
 
 /*
  * init_node_conf - initialize the node configuration tables and values.

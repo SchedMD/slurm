@@ -1703,7 +1703,7 @@ extern void specific_info_node(popup_info_t *popup_win)
 	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	node_info_t *node_ptr = NULL;
-	xhostlist_t *hostlist = NULL;
+	hostlist_t *hostlist = NULL;
 	hostlist_iterator_t *host_itr = NULL;
 	int i = -1, sort_key;
 	sview_search_info_t *search_info = spec_info->search_info;
@@ -2034,7 +2034,7 @@ extern void select_admin_nodes(GtkTreeModel *model,
 {
 	if (treeview) {
 		char *old_value = NULL;
-		xhostlist_t *hl = NULL;
+		hostlist_t *hl = NULL;
 		process_node_t process_node;
 		memset(&process_node, 0, sizeof(process_node_t));
 		if (node_col == NO_VAL)

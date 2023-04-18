@@ -671,7 +671,7 @@ static bool _opt_verify(void)
 {
 	bool verified = true;
 	char *dist = NULL;
-	xhostlist_t *hl = NULL;
+	hostlist_t *hl = NULL;
 	int hl_cnt = 0;
 
 	validate_options_salloc_sbatch_srun(&opt);

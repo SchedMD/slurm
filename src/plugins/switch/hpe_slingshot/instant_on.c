@@ -581,7 +581,7 @@ extern void slingshot_fini_instant_on(void)
  */
 static json_object *_node_list_to_json_array(char *node_list, uint32_t node_cnt)
 {
-	xhostlist_t *hl = NULL;
+	hostlist_t *hl = NULL;
 	json_object *host_array = NULL;
 	char *host;
 	int ents;

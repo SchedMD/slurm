@@ -397,7 +397,7 @@ static void _get_capabilities(void)
 	json_object *j_obj;
 	json_object_iter iter;
 	node_record_t *node_ptr;
-	xhostlist_t *hl = NULL;
+	hostlist_t *hl = NULL;
 	DEF_TIMERS;
 
 	script_argv[0] = capmc_path;

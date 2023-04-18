@@ -7911,7 +7911,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 
 	/* Basic validation of some parameters */
 	if (job_desc->req_nodes) {
-		xhostlist_t *hl;
+		hostlist_t *hl;
 		uint32_t host_cnt;
 		hl = hostlist_create(job_desc->req_nodes);
 		if (hl == NULL) {
@@ -8717,7 +8717,7 @@ static char *_copy_nodelist_no_dup(char *node_list)
 {
 	char *buf;
 
-	xhostlist_t *hl = hostlist_create(node_list);
+	hostlist_t *hl = hostlist_create(node_list);
 	if (hl == NULL)
 		return NULL;
 	hostlist_uniq(hl);

@@ -464,7 +464,7 @@ static int _sort_step_by_node_list(void *void1, void *void2)
 static int _sort_by_node_list(char *nodes1, char *nodes2)
 {
 	int diff = 0;
-	xhostlist_t *hostlist1, *hostlist2;
+	hostlist_t *hostlist1, *hostlist2;
 #if	PURE_ALPHA_SORT
 	char *val1, *val2;
 	char *ptr1, *ptr2;

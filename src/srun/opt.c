@@ -682,7 +682,7 @@ static bitstr_t *_get_het_group(const int argc, char **argv,
 	int i, opt_char, option_index = 0;
 	char *tmp = NULL;
 	bitstr_t *het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
-	xhostlist_t *hl;
+	hostlist_t *hl;
 	char *opt_string = NULL;
 	struct option *optz = slurm_option_table_create(&opt, &opt_string);
 
@@ -900,7 +900,7 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 static bool _opt_verify(void)
 {
 	bool verified = true;
-	xhostlist_t *hl = NULL;
+	hostlist_t *hl = NULL;
 	int hl_cnt = 0;
 	bool mpack_reset_nodes = false;
 
@@ -1088,7 +1088,7 @@ static bool _opt_verify(void)
 	/* set proc and node counts based on the arbitrary list of nodes */
 	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
 	   && (!opt.nodes_set || !opt.ntasks_set)) {
-		xhostlist_t *hl = hostlist_create(opt.nodelist);
+		hostlist_t *hl = hostlist_create(opt.nodelist);
 		if (!opt.ntasks_set) {
 			opt.ntasks_set = true;
 			opt.ntasks = hostlist_count(hl);

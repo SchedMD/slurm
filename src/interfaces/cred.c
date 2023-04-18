@@ -911,7 +911,7 @@ extern void format_core_allocs(slurm_cred_t *credential, char *node_name,
 {
 	slurm_cred_arg_t *cred = credential->arg;
 	bitstr_t	*job_core_bitmap, *step_core_bitmap;
-	xhostlist_t *hset = NULL;
+	hostlist_t *hset = NULL;
 	int		host_index = -1;
 	uint32_t	i, j, i_first_bit=0, i_last_bit=0;
 
@@ -993,7 +993,7 @@ extern void get_cred_gres(slurm_cred_t *credential, char *node_name,
 			  list_t **job_gres_list, list_t **step_gres_list)
 {
 	slurm_cred_arg_t *cred = credential->arg;
-	xhostlist_t *hset = NULL;
+	hostlist_t *hset = NULL;
 	int		host_index = -1;
 
 	xassert(cred);

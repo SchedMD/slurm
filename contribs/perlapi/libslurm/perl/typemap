@@ -11,7 +11,7 @@ log_facility_t		T_UV
 
 slurm_t			T_SLURM
 bitstr_t *		T_PTROBJ_SLURM
-xhostlist_t *		T_PTROBJ_SLURM
+hostlist_t *		T_PTROBJ_SLURM
 slurm_step_ctx_t * 	T_PTROBJ_SLURM
 List			T_PTROBJ_SLURM
 ListIterator		T_PTROBJ_SLURM

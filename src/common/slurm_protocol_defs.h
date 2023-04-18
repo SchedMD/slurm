@@ -1852,7 +1852,7 @@ extern void  accounting_enforce_string(uint16_t enforce,
  * IN - nodelist - generate hl from list if hl is NULL
  * RET - nid list, needs to be xfreed.
  */
-extern char *cray_nodelist2nids(xhostlist_t *hl_in, char *nodelist);
+extern char *cray_nodelist2nids(hostlist_t *hl_in, char *nodelist);
 
 /* Validate SPANK specified job environment does not contain any invalid
  * names. Log failures using info() */

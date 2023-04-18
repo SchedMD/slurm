@@ -117,7 +117,7 @@ static void _free_switch_record_table(void);
 static int  _get_switch_inx(const char *name);
 static void _log_switches(void);
 static int  _node_name2bitmap(char *node_names, bitstr_t **bitmap,
-			      xhostlist_t **invalid_hostlist);
+			      hostlist_t **invalid_hostlist);
 static int  _parse_switches(void **dest, slurm_parser_enum_t type,
 			    const char *key, const char *value,
 			    const char *line, char **leftover);
@@ -209,7 +209,7 @@ extern bool topo_generate_node_ranking(void)
 extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 {
 	node_record_t *node_ptr;
-	xhostlist_t *sl = NULL;
+	hostlist_t *sl = NULL;
 
 	int s_max_level = 0;
 	int i, j;
@@ -280,7 +280,7 @@ static void _find_child_switches(int sw)
 	int i;
 	int cldx; /* index into array of child switches */
 	hostlist_iterator_t *hi;
-	xhostlist_t *swlist;
+	hostlist_t *swlist;
 	char *swname;
 
 	swlist = hostlist_create(switch_record_table[sw].switches);
@@ -353,7 +353,7 @@ static void _validate_switches(void)
 	slurm_conf_switches_t *ptr, **ptr_array;
 	int depth, i, j, node_count;
 	switch_record_t *switch_ptr, *prior_ptr;
-	xhostlist_t *hl, *invalid_hl = NULL;
+	hostlist_t *hl, *invalid_hl = NULL;
 	char *child, *buf;
 	bool  have_root = false;
 	bitstr_t *multi_homed_bitmap = NULL;	/* nodes on >1 leaf switch */
@@ -725,11 +725,11 @@ static void _destroy_switches(void *ptr)
  *       to free memory when variables are no longer required
  */
 static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
-			     xhostlist_t **invalid_hostlist)
+			     hostlist_t **invalid_hostlist)
 {
 	char *this_node_name;
 	bitstr_t *my_bitmap;
-	xhostlist_t *host_list;
+	hostlist_t *host_list;
 
 	my_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	*bitmap = my_bitmap;

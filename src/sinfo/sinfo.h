@@ -109,9 +109,9 @@ typedef struct {
 	uint32_t reason_uid;
 	char *version;
 
-	xhostlist_t *hostnames;
-	xhostlist_t *node_addr;
-	xhostlist_t *nodes;
+	hostlist_t *hostnames;
+	hostlist_t *node_addr;
+	hostlist_t *nodes;
 
 	/* part_info contains partition, avail, max_time, job_size,
 	 * root, share/oversubscribe, groups, priority */

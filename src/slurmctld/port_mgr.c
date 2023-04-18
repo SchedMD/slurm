@@ -81,7 +81,7 @@ static void _rebuild_port_array(step_record_t *step_ptr)
 {
 	int i;
 	char *tmp_char;
-	xhostlist_t *hl;
+	hostlist_t *hl;
 
 	tmp_char = xstrdup_printf("[%s]", step_ptr->resv_ports);
 	hl = hostlist_create(tmp_char);
@@ -219,7 +219,7 @@ extern int resv_port_alloc(step_record_t *step_ptr)
 	int i, port_inx;
 	int *port_array = NULL;
 	char port_str[16];
-	xhostlist_t *hl;
+	hostlist_t *hl;
 	static int last_port_alloc = 0;
 	static int dims = -1;
 

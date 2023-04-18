@@ -83,7 +83,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 	step_layout->task_dist = step_layout_req->task_dist;
 	if ((step_layout->task_dist & SLURM_DIST_STATE_BASE)
 	    == SLURM_DIST_ARBITRARY) {
-		xhostlist_t *hl = NULL;
+		hostlist_t *hl = NULL;
 		char *buf = NULL;
 		/* set the node list for the task layout later if user
 		 * supplied could be different that the job allocation */
@@ -234,7 +234,7 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
 				    slurm_step_layout_t *step_layout2)
 {
-	xhostlist_t *hl, *hl2;
+	hostlist_t *hl, *hl2;
 	hostlist_iterator_t *host_itr;
 	int new_pos = 0, node_task_cnt;
 	char *host;
@@ -407,7 +407,7 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 {
 	int cpu_cnt = 0, cpu_inx = 0, cpu_task_cnt = 0, cpu_task_inx = 0, i;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	xhostlist_t *hl;
+	hostlist_t *hl;
 
 	uint16_t cpus[step_layout->node_cnt];
 	uint16_t cpus_per_task[1];
@@ -451,7 +451,7 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 		return SLURM_ERROR;
 	}
 
-	/* xhostlist_t *hl = hostlist_create(step_layout->node_list); */
+	/* hostlist_t *hl = hostlist_create(step_layout->node_list); */
 	for (i=0; i<step_layout->node_cnt; i++) {
 		/* char *name = hostlist_shift(hl); */
 		/* if (!name) { */
@@ -525,8 +525,8 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	hostlist_iterator_t *itr = NULL, *itr_task = NULL;
 	char *host = NULL;
 
-	xhostlist_t *job_alloc_hosts = NULL;
-	xhostlist_t *step_alloc_hosts = NULL;
+	hostlist_t *job_alloc_hosts = NULL;
+	hostlist_t *step_alloc_hosts = NULL;
 
 	int step_inx = 0, step_hosts_cnt = 0;
 	node_record_t **step_hosts_ptrs = NULL;

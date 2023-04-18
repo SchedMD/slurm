@@ -179,10 +179,10 @@ int _measure_api(char* measure_case)
 	int i,j,et;
 	int hl_count = 0;
 	char* nodes;
-	xhostlist_t *hl;
+	hostlist_t *hl;
 	DEF_TIMERS;
 
-	xhostlist_t **sp_hl;
+	hostlist_t **sp_hl;
 	nodes = measure_case;
 	hl = hostlist_create(nodes);
 	START_TIMER;
@@ -209,7 +209,7 @@ void _print_test(char** testcase, int lines)
 	}
 }
 
-void _print_results(xhostlist_t **hll, int hl_count)
+void _print_results(hostlist_t **hll, int hl_count)
 {
 	int i;
 	char *list;
@@ -224,13 +224,13 @@ void _print_results(xhostlist_t **hll, int hl_count)
 int _run_test(char** testcase, int lines)
 {
 	int i, rc;
-	xhostlist_t **hll = NULL;
+	hostlist_t **hll = NULL;
 	int hl_count = 0;
 	int level;
 	char *list;
 	char *nodes;
 	nodes = testcase[0];
-	xhostlist_t *hl = hostlist_create(nodes);
+	hostlist_t *hl = hostlist_create(nodes);
 	if (route_g_split_hostlist(hl, &hll, &hl_count, 0)) {
 		info("Unable to split forward hostlist");
 		_print_test(testcase,lines);

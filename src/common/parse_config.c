@@ -1615,7 +1615,7 @@ static int _parse_expline_doexpand(s_p_hashtbl_t** tables,
 				   int tables_count,
 				   s_p_values_t* item)
 {
-	xhostlist_t *item_hl, *sub_item_hl;
+	hostlist_t *item_hl, *sub_item_hl;
 	int item_count, i;
 	int j, items_per_record, items_idx = 0;
 	char* item_str = NULL;
@@ -1737,7 +1737,7 @@ int s_p_parse_line_expanded(const s_p_hashtbl_t *hashtbl,
 	s_p_hashtbl_t* strtbl = NULL;
 	s_p_hashtbl_t** tables = NULL;
 	int tables_count = 0;
-	xhostlist_t *value_hl = NULL;
+	hostlist_t *value_hl = NULL;
 	char* value_str = NULL;
 	s_p_values_t* attr = NULL;
 

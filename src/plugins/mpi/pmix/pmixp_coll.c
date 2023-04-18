@@ -111,14 +111,14 @@ inline int pmixp_coll_check(pmixp_coll_t *coll, uint32_t seq)
 }
 
 int pmixp_hostset_from_ranges(const pmix_proc_t *procs, size_t nprocs,
-			      xhostlist_t **hl_out)
+			      hostlist_t **hl_out)
 {
 	int i;
-	xhostlist_t *hl = hostlist_create("");
+	hostlist_t *hl = hostlist_create("");
 	pmixp_namespace_t *nsptr = NULL;
 	for (i = 0; i < nprocs; i++) {
 		char *node = NULL;
-		xhostlist_t *tmp;
+		hostlist_t *tmp;
 		nsptr = pmixp_nspaces_find(procs[i].nspace);
 		if (NULL == nsptr) {
 			goto err_exit;
@@ -172,7 +172,7 @@ int pmixp_coll_init(pmixp_coll_t *coll, pmixp_coll_type_t type,
 		    const pmix_proc_t *procs, size_t nprocs)
 {
 	int rc = SLURM_SUCCESS;
-	xhostlist_t *hl;
+	hostlist_t *hl;
 
 	coll->seq = 0;
 #ifndef NDEBUG

@@ -44,7 +44,7 @@
 #include "as_mysql_jobacct_process.h"
 
 typedef struct {
-	xhostlist_t *hl;
+	hostlist_t *hl;
 	time_t start;
 	time_t end;
 	bitstr_t *asked_bitmap;
@@ -1171,7 +1171,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	xhostlist_t *temp_hl = NULL;
+	hostlist_t *temp_hl = NULL;
 	hostlist_iterator_t *h_itr = NULL;
 	char *query = NULL;
 	int dims = 0;

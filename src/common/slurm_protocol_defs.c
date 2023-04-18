@@ -462,7 +462,7 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 	bool first_brack = false;
 	char *this_node_name;
 	char *tmp_this_node_name;
-	xhostlist_t *host_list;
+	hostlist_t *host_list;
 
 	if (!char_list) {
 		error("No list was given to fill in");
@@ -4486,9 +4486,9 @@ extern void accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 		strcat(str, "none");
 }
 
-extern char *cray_nodelist2nids(xhostlist_t *hl_in, char *nodelist)
+extern char *cray_nodelist2nids(hostlist_t *hl_in, char *nodelist)
 {
-	xhostlist_t *hl = hl_in;
+	hostlist_t *hl = hl_in;
 	char *nids = NULL, *node_name, *sep = "";
 	int i, nid;
 	int nid_begin = -1, nid_end = -1;

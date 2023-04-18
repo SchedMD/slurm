@@ -44,7 +44,7 @@ typedef struct {
 	uint32_t disk_total;
 	char *features;
 	char *features_act;
-	xhostlist_t *hl;
+	hostlist_t *hl;
 	uint64_t mem_total;
 	uint32_t node_cnt;
 	uint32_t node_alloc_cnt;
