@@ -46,8 +46,7 @@
 #include "parsing.h"
 
 #define MAGIC_SPEC_ARGS 0xa891beab
-#define SCHEMAS_PATH OPENAPI_PATH_SEP "components" OPENAPI_PATH_SEP "schemas" OPENAPI_PATH_SEP
-#define REF_PATH OPENAPI_PATH_REL SCHEMAS_PATH
+#define REF_PATH OPENAPI_PATH_REL OPENAPI_SCHEMAS_PATH
 #define TYPE_PREFIX "DATA_PARSER_"
 #define KEY_PREFIX XSTRINGIFY(DATA_VERSION) "_"
 
@@ -254,7 +253,7 @@ extern void set_openapi_parse_ref(data_t *obj, const parser_t *parser,
 	xassert(parser->magic == MAGIC_PARSER);
 	xassert(args->magic == MAGIC_ARGS);
 
-	sargs.schemas = data_resolve_dict_path(spec, SCHEMAS_PATH);
+	sargs.schemas = data_resolve_dict_path(spec, OPENAPI_SCHEMAS_PATH);
 
 	_set_ref(obj, parser, &sargs);
 }
@@ -438,10 +437,11 @@ extern int data_parser_p_specify(args_t *args, data_t *spec)
 	if (!spec || (data_get_type(spec) != DATA_TYPE_DICT))
 		return error("OpenAPI specification invalid");
 
-	sargs.schemas = data_resolve_dict_path(spec, SCHEMAS_PATH);
+	sargs.schemas = data_resolve_dict_path(spec, OPENAPI_SCHEMAS_PATH);
 
 	if (!sargs.schemas || (data_get_type(sargs.schemas) != DATA_TYPE_DICT))
-		return error("%s not found or invalid type", SCHEMAS_PATH);
+		return error("%s not found or invalid type",
+			     OPENAPI_SCHEMAS_PATH);
 
 	get_parsers(&sargs.parsers, &sargs.parser_count);
 	_replace_refs(spec, &sargs);
