@@ -496,8 +496,7 @@ static hostname_t *hostname_create_dims(const char *hostname, int dims)
 		dims = slurmdb_setup_cluster_name_dims();
 	hostlist_base = hostlist_get_base(dims);
 
-	if (!(hn = malloc(sizeof(*hn))))
-  		out_of_memory("hostname create");
+	hn = xmalloc(sizeof(*hn));
 
 	idx = host_prefix_end(hostname, dims);
 
@@ -562,7 +561,7 @@ static void hostname_destroy(hostname_t *hn)
 		free(hn->hostname);
 	if (hn->prefix)
 		free(hn->prefix);
-	free(hn);
+	xfree(hn);
 }
 
 /* return true if the hostname has a valid numeric suffix
