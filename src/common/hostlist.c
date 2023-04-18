@@ -1994,7 +1994,7 @@ char *hostlist_pop(hostlist_t hl)
 {
 	char *host = NULL;
 	if (!hl) {
-		error("hostlist_pop: no hostlist given");
+		error("%s: no hostlist given", __func__);
 		return NULL;
 	}
 
@@ -2019,7 +2019,7 @@ hostlist_shift_iterators(hostlist_t hl, int idx, int depth, int n)
 {
 	hostlist_iterator_t i;
 	if (!hl) {
-		error("hostlist_shift_iterators: no hostlist given");
+		error("%s: no hostlist given", __func__);
 		return;
 	}
 	for (i = hl->ilist; i; i = i->next) {
@@ -2042,7 +2042,7 @@ char *hostlist_shift_dims(hostlist_t hl, int dims)
 	char *host = NULL;
 
 	if (!hl){
-		error("hostlist_shift: no hostlist given");
+		error("%s: no hostlist given", __func__);
 		return NULL;
 	}
 
