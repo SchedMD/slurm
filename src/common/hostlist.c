@@ -591,10 +591,7 @@ static int hostname_suffix_width(hostname_t *hn)
  */
 static hostrange_t *hostrange_new(void)
 {
-	hostrange_t *new = malloc(sizeof(*new));
-	if (!new)
-		out_of_memory("hostrange create");
-	return new;
+	return xmalloc(sizeof(hostrange_t));
 }
 
 /* Create a hostrange_t containing a single host without a valid suffix
@@ -606,8 +603,7 @@ static hostrange_t *hostrange_create_single(const char *prefix)
 
 	xassert(prefix);
 
-	if ((new = hostrange_new()) == NULL)
-		goto error1;
+	new = hostrange_new();
 
 	if ((new->prefix = strdup(prefix)) == NULL)
 		goto error2;
@@ -620,8 +616,7 @@ static hostrange_t *hostrange_create_single(const char *prefix)
 	return new;
 
 error2:
-	free(new);
-error1:
+	xfree(new);
 	out_of_memory("hostrange create single");
 }
 
@@ -635,8 +630,7 @@ static hostrange_t *hostrange_create(char *prefix, unsigned long lo,
 
 	xassert(prefix);
 
-	if ((new = hostrange_new()) == NULL)
-		goto error1;
+	new = hostrange_new();
 
 	if ((new->prefix = strdup(prefix)) == NULL)
 		goto error2;
@@ -650,8 +644,7 @@ static hostrange_t *hostrange_create(char *prefix, unsigned long lo,
 	return new;
 
 error2:
-	free(new);
-error1:
+	xfree(new);
 	out_of_memory("hostrange create");
 }
 
@@ -689,7 +682,7 @@ static void hostrange_destroy(hostrange_t *hr)
 		return;
 	if (hr->prefix)
 		free(hr->prefix);
-	free(hr);
+	xfree(hr);
 }
 
 /* hostrange_delete_host() deletes a specific host from the range.
