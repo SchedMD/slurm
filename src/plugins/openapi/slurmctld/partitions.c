@@ -54,15 +54,50 @@
 
 #include "api.h"
 
-typedef enum {
-	URL_TAG_PARTITION = 392,
-	URL_TAG_PARTITIONS = 12891
-} url_tag_t;
-
 extern int _op_handler_partitions(const char *context_id,
 				  http_request_method_t method,
 				  data_t *parameters, data_t *query, int tag,
 				  data_t *resp, void *auth)
+{
+	int rc;
+	partition_info_msg_t *part_info_ptr = NULL;
+	time_t update_time = 0;
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
+
+	if (ctxt->rc)
+		goto done;
+
+	if (method != HTTP_REQUEST_GET) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
+		goto done;
+	}
+
+	if ((rc = get_date_param(query, "update_time", &update_time)))
+		goto done;
+
+	errno = 0;
+	if ((rc = slurm_load_partitions(update_time, &part_info_ptr,
+					SHOW_ALL))) {
+		if ((rc == SLURM_ERROR) && errno)
+			rc = errno;
+
+		goto done;
+	}
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_PARTITION_RESP, part_info_ptr, ctxt);
+
+done:
+	slurm_free_partition_info_msg(part_info_ptr);
+	return fini_connection(ctxt);
+}
+
+extern int _op_handler_partition(const char *context_id,
+				 http_request_method_t method,
+				 data_t *parameters, data_t *query, int tag,
+				 data_t *resp, void *auth)
 {
 	int rc;
 	const char *name = NULL;
@@ -84,8 +119,7 @@ extern int _op_handler_partitions(const char *context_id,
 	if ((rc = get_date_param(query, "update_time", &update_time)))
 		goto done;
 
-	if ((tag == URL_TAG_PARTITION) &&
-	    !(name = get_str_param("partition_name", ctxt))) {
+	if (!(name = get_str_param("partition_name", ctxt))) {
 		resp_error(
 			ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			"partition_name must be provided for singular partition query");
@@ -101,7 +135,7 @@ extern int _op_handler_partitions(const char *context_id,
 		goto done;
 	}
 
-	if (part_info_ptr && name) {
+	if (part_info_ptr) {
 		partition_info_t *part = NULL;
 
 		for (int i = 0; !rc && i < part_info_ptr->record_count; i++) {
@@ -125,9 +159,6 @@ extern int _op_handler_partitions(const char *context_id,
 			DUMP_OPENAPI_RESP_SINGLE(OPENAPI_PARTITION_RESP, &p,
 						 ctxt);
 		}
-	} else {
-		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_PARTITION_RESP, part_info_ptr,
-					 ctxt);
 	}
 
 done:
@@ -138,9 +169,9 @@ done:
 extern void init_op_partitions(void)
 {
 	bind_operation_handler("/slurm/{data_parser}/partitions/",
-			       _op_handler_partitions, URL_TAG_PARTITIONS);
+			       _op_handler_partitions, 0);
 	bind_operation_handler("/slurm/{data_parser}/partition/{partition_name}",
-			       _op_handler_partitions, URL_TAG_PARTITION);
+			       _op_handler_partition, 0);
 }
 
 extern void destroy_op_partitions(void)
