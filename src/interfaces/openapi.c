@@ -142,6 +142,7 @@ typedef struct {
 	data_t *server_path;
 	char *operation;
 	char *at;
+	char *path;
 } id_merge_path_t;
 
 struct openapi_s {
@@ -1288,15 +1289,16 @@ data_for_each_cmd_t _differentiate_path_operationId(const char *key,
 		return DATA_FOR_EACH_CONT;
 
 	if (!(op = data_key_get(data, "operationId"))) {
-		debug2("%s: unexpected missing operationId",
-		      __func__);
+		debug2("%s: [%s %s] unexpected missing operationId",
+		      __func__, key, args->path);
 		return DATA_FOR_EACH_CONT;
 	}
 
 	/* force operationId to be a string */
 	if (data_convert_type(op, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
-		error("%s: unexpected type for operationId: %s",
-		      __func__, data_type_to_string(data_get_type(op)));
+		error("%s: [%s %s] unexpected type for operationId: %s",
+		      __func__, key, args->path,
+		      data_type_to_string(data_get_type(op)));
 		return DATA_FOR_EACH_FAIL;
 	}
 
@@ -1373,6 +1375,8 @@ data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 		rc = DATA_FOR_EACH_FAIL;
 		goto cleanup;
 	}
+
+	id_merge.path = path;
 
 	e = data_key_set(args->paths, path);
 	if (data_get_type(e) != DATA_TYPE_NULL) {
