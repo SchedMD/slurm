@@ -196,6 +196,16 @@ extern openapi_type_format_t openapi_data_type_to_type_format(data_type_t type);
 	OPENAPI_PATH_SEP"components"OPENAPI_PATH_SEP"schemas"OPENAPI_PATH_SEP
 
 /*
+ * Path to where all URL paths are held in openapi.json.
+ */
+#define OPENAPI_PATHS_PATH OPENAPI_PATH_SEP"paths"
+
+/*
+ * Common parameter name for substitution of data_parser plugin in #/paths/
+ */
+#define OPENAPI_DATA_PARSER_PARAM "{data_parser}"
+
+/*
  * Generate formated path string from relative path
  * IN/OUT str_ptr - ptr to path string to set/replace
  * IN relative_path - data list with each component of relative path
