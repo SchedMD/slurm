@@ -270,6 +270,9 @@ extern void _set_ref(data_t *obj, const parser_t *parser, spec_args_t *sargs)
 		return;
 	}
 
+	if (parser->pointer_type)
+		parser = find_parser_by_type(parser->pointer_type);
+
 	data_set_string_own(data_key_set(data_set_dict(obj), "$ref"),
 			    _get_parser_path(parser));
 
