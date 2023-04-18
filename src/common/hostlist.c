@@ -677,8 +677,7 @@ static hostrange_t *hostrange_delete_host(hostrange_t *hr, unsigned long n)
 	else if (n == hr->hi)
 		hr->hi--;
 	else {
-		if (!(new = hostrange_copy(hr)))
-			out_of_memory("hostrange copy");
+		new = hostrange_copy(hr);
 		hr->hi = n - 1;
 		new->lo = n + 1;
 	}
@@ -919,8 +918,7 @@ static hostrange_t *hostrange_intersect(hostrange_t *h1, hostrange_t *h2)
 	    && (hostrange_prefix_cmp(h1, h2) == 0)
 	    && (hostrange_width_combine(h1, h2))) {
 
-		if (!(new = hostrange_copy(h1)))
-			return NULL;
+		new = hostrange_copy(h1);
 		new->lo = h2->lo;
 		new->hi = h2->hi < h1->hi ? h2->hi : h1->hi;
 	}
@@ -1234,8 +1232,6 @@ static int hostlist_push_range(hostlist_t *hl, hostrange_t *hr)
 		tail->hi = hr->hi;
 	} else {
 		hostrange_t *new = hostrange_copy(hr);
-		if (new == NULL)
-			goto error;
 		hl->hr[hl->nranges++] = new;
 	}
 
