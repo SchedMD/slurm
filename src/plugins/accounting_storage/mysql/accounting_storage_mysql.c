@@ -3276,6 +3276,13 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_add_accts(mysql_conn, uid, acct_list);
 }
 
+extern char *acct_storage_p_add_accts_cond(void *mysql_conn, uint32_t uid,
+					   slurmdb_add_assoc_cond_t *add_assoc,
+					   slurmdb_account_rec_t *acct)
+{
+	return as_mysql_add_accts_cond(mysql_conn, uid, add_assoc, acct);
+}
+
 extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				       List cluster_list)
 {

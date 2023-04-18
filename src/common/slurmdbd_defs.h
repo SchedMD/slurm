@@ -155,6 +155,8 @@ typedef enum {
 	DBD_JOB_HEAVY,         /* Send job script/env  		*/
 	DBD_GOT_JOB_ENV,	/* Loading env hash table*/
 	DBD_GOT_JOB_SCRIPT,	/* Loadung bash script hash table*/
+	DBD_ADD_ACCOUNTS_COND,  /* Add new account to the mix with acct_rec and
+				 * add_assoc_cond */
 
 	SLURM_PERSIST_INIT = 6500, /* So we don't use the
 				    * REQUEST_PERSIST_INIT also used here.

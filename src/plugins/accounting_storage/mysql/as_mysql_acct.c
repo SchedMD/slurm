@@ -259,6 +259,13 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	return rc;
 }
 
+extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn, uint32_t uid,
+				     slurmdb_add_assoc_cond_t *add_assoc,
+				     slurmdb_account_rec_t *acct)
+{
+	return NULL;
+}
+
 extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 				  slurmdb_account_cond_t *acct_cond,
 				  slurmdb_account_rec_t *acct)

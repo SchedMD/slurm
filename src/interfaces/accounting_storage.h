@@ -117,6 +117,19 @@ extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
 				       List acct_list);
 
 /*
+ * add accounts to accounting system
+ * IN: slurmdb_add_assoc_cond_t *assoc_cond with cluster (optional) and acct
+ *     lists filled in along with any limits in the assoc rec.
+ * IN: slurmdb_account_rec_t *
+ * RET: Return char * to print out of what was added or NULL and errno set on
+ *      error.
+ */
+extern char *acct_storage_g_add_accounts_cond(
+	void *db_conn, uint32_t uid,
+	slurmdb_add_assoc_cond_t *add_assoc,
+	slurmdb_account_rec_t *acct);
+
+/*
  * add clusters to accounting system
  * IN:  cluster_list List of slurmdb_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else

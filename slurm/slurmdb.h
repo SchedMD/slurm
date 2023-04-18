@@ -1400,6 +1400,18 @@ extern slurmdb_cluster_rec_t *working_cluster_rec;
 extern int slurmdb_accounts_add(void *db_conn, List acct_list);
 
 /*
+ * add accounts to accounting system
+ * IN: slurmdb_add_assoc_cond_t *assoc_cond with cluster (optional) and acct
+ *     lists filled in along with any limits in the assoc rec.
+ * IN: slurmdb_account_rec_t *
+ * RET: Return char * to print out of what was added or NULL and errno set on
+ *      error.
+ */
+extern char *slurmdb_accounts_add_cond(void *db_conn,
+				       slurmdb_add_assoc_cond_t *add_assoc,
+				       slurmdb_account_rec_t *acct);
+
+/*
  * get info from the storage
  * IN:  slurmdb_account_cond_t *
  * IN:  params void *
@@ -2057,6 +2069,18 @@ extern int slurmdb_usage_roll(void *db_conn,
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int slurmdb_users_add(void *db_conn, List user_list);
+
+/*
+ * add users to accounting system
+ * IN:  slurmdb_user_rec_t *user
+ * IN:  slurmdb_assoc_cond_t *assoc_cond
+ * IN:  slurmdb_assoc_rec_t *assoc
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern List slurmdb_users_add_conn(void *db_conn,
+				   slurmdb_user_rec_t *user,
+				   slurmdb_assoc_cond_t *assoc_cond,
+				   slurmdb_assoc_rec_t *assoc);
 
 /*
  * get info from the storage
