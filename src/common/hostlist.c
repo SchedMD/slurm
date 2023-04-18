@@ -1162,9 +1162,7 @@ static hostlist_t *hostlist_new(void)
 	new->magic = HOSTLIST_MAGIC;
 	slurm_mutex_init(&new->mutex);
 
-	new->hr = malloc(HOSTLIST_CHUNK * sizeof(hostrange_t *));
-	if (!new->hr)
-		goto fail2;
+	new->hr = xcalloc(HOSTLIST_CHUNK, sizeof(hostrange_t *));
 
 	/* set entries in hostrange array to NULL */
 	for (i = 0; i < HOSTLIST_CHUNK; i++)
@@ -1175,10 +1173,6 @@ static hostlist_t *hostlist_new(void)
 	new->nhosts = 0;
 	new->ilist = NULL;
 	return new;
-
-fail2:
-	free(new);
-	out_of_memory("hostlist_new");
 }
 
 
@@ -1197,9 +1191,7 @@ static int hostlist_resize(hostlist_t *hl, size_t newsize)
 	xassert(hl->magic == HOSTLIST_MAGIC);
 	oldsize = hl->size;
 	hl->size = newsize;
-	hl->hr = realloc((void *) hl->hr, hl->size*sizeof(hostrange_t *));
-	if (!(hl->hr))
-		return 0;
+	xrecalloc(hl->hr, hl->size, sizeof(hostrange_t *));
 
 	for (i = oldsize; i < newsize; i++)
 		hl->hr[i] = NULL;
@@ -1869,7 +1861,7 @@ void hostlist_destroy(hostlist_t *hl)
 		_hostlist_iterator_destroy(hl->ilist);
 	for (i = 0; i < hl->nranges; i++)
 		hostrange_destroy(hl->hr[i]);
-	free(hl->hr);
+	xfree(hl->hr);
 	UNLOCK_HOSTLIST(hl);
 	slurm_mutex_destroy(&hl->mutex);
 	xfree(hl);
