@@ -679,12 +679,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -694,12 +694,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
