@@ -57,7 +57,9 @@ typedef struct {
 	const parser_t *parsers;
 	int parser_count;
 	data_t *schemas;
+	data_t *paths;
 	data_t *spec;
+	bool skip;
 } spec_args_t;
 
 static void _add_parser(const parser_t *parser, spec_args_t *sargs);
@@ -425,6 +427,22 @@ static void _replace_refs(data_t *data, spec_args_t *sargs)
 		(void) data_list_for_each(data, _convert_list_entry, sargs);
 }
 
+static data_for_each_cmd_t _foreach_check_skip(const char *key, data_t *data,
+					       void *arg)
+{
+	spec_args_t *sargs = arg;
+
+	xassert(sargs->magic == MAGIC_SPEC_ARGS);
+	xassert(sargs->args->magic == MAGIC_ARGS);
+
+	if (xstrstr(key, OPENAPI_DATA_PARSER_PARAM)) {
+		sargs->skip = true;
+		return DATA_FOR_EACH_STOP;
+	}
+
+	return DATA_FOR_EACH_CONT;
+}
+
 extern int data_parser_p_specify(args_t *args, data_t *spec)
 {
 	spec_args_t sargs = {
@@ -439,6 +457,14 @@ extern int data_parser_p_specify(args_t *args, data_t *spec)
 		return error("OpenAPI specification invalid");
 
 	sargs.schemas = data_resolve_dict_path(spec, SCHEMAS_PATH);
+	sargs.paths = data_resolve_dict_path(spec, OPENAPI_PATHS_PATH);
+
+	(void) data_dict_for_each(sargs.paths, _foreach_check_skip, &sargs);
+
+	if (sargs.skip) {
+		debug("%s: skipping", __func__);
+		return ESLURM_NOT_SUPPORTED;
+	}
 
 	if (!sargs.schemas || (data_get_type(sargs.schemas) != DATA_TYPE_DICT))
 		return error("%s not found or invalid type", SCHEMAS_PATH);
