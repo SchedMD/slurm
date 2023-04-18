@@ -605,8 +605,7 @@ static hostrange_t *hostrange_create_single(const char *prefix)
 
 	new = hostrange_new();
 
-	if ((new->prefix = strdup(prefix)) == NULL)
-		goto error2;
+	new->prefix = xstrdup(prefix);
 
 	new->singlehost = 1;
 	new->lo = 0L;
@@ -614,10 +613,6 @@ static hostrange_t *hostrange_create_single(const char *prefix)
 	new->width = 0;
 
 	return new;
-
-error2:
-	xfree(new);
-	out_of_memory("hostrange create single");
 }
 
 
@@ -632,8 +627,7 @@ static hostrange_t *hostrange_create(char *prefix, unsigned long lo,
 
 	new = hostrange_new();
 
-	if ((new->prefix = strdup(prefix)) == NULL)
-		goto error2;
+	new->prefix = xstrdup(prefix);
 
 	new->lo = lo;
 	new->hi = hi;
@@ -642,10 +636,6 @@ static hostrange_t *hostrange_create(char *prefix, unsigned long lo,
 	new->singlehost = 0;
 
 	return new;
-
-error2:
-	xfree(new);
-	out_of_memory("hostrange create");
 }
 
 
@@ -680,8 +670,7 @@ static void hostrange_destroy(hostrange_t *hr)
 {
 	if (hr == NULL)
 		return;
-	if (hr->prefix)
-		free(hr->prefix);
+	xfree(hr->prefix);
 	xfree(hr);
 }
 
