@@ -236,7 +236,7 @@ static bool _requeue_setup_env_fail(void);
 /*
  *  List of threads waiting for jobs to complete
  */
-static List waiters;
+static list_t *waiters = NULL;
 
 static time_t startup = 0;		/* daemon startup time */
 static time_t last_slurmctld_msg = 0;
