@@ -498,10 +498,7 @@ static hostname_t *hostname_create_dims(const char *hostname, int dims)
 
 	idx = host_prefix_end(hostname, dims);
 
-	if (!(hn->hostname = strdup(hostname))) {
-		free(hn);
-		out_of_memory("hostname create");
-	}
+	hn->hostname = xstrdup(hostname);
 
 	hn->num = 0;
 	hn->prefix = NULL;
@@ -544,8 +541,7 @@ static void hostname_destroy(hostname_t *hn)
 	if (hn == NULL)
 		return;
 	hn->suffix = NULL;
-	if (hn->hostname)
-		free(hn->hostname);
+	xfree(hn->hostname);
 	xfree(hn->prefix);
 	xfree(hn);
 }
