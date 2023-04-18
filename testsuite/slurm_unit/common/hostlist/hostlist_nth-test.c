@@ -41,9 +41,9 @@
 #include "src/common/hostlist.h"
 
 /* these are not in slurm.h */
-char *slurm_hostlist_nth(hostlist_t, int);
-int slurm_hostlist_delete_nth(hostlist_t, int);
-char *slurm_hostset_nth(hostset_t *, int);
+char *slurm_hostlist_nth(xhostlist_t *, int);
+int slurm_hostlist_delete_nth(xhostlist_t *, int);
+char *slurm_hostset_nth(xhostset_t **, int);
 hostset_t *slurm_hostset_create(const char*);
 void slurm_hostset_destroy(hostset_t *);
 int slurm_hostset_count(hostset_t *);
@@ -52,7 +52,7 @@ int slurm_hostset_count(hostset_t *);
 /* note: only works in CK_FORK mode */
 START_TEST(hostlist_nth_lo_assert_check)
 {
-	hostlist_t hl = slurm_hostlist_create("host1,host2");
+	xhostlist_t *hl = slurm_hostlist_create("host1,host2");
 	ck_assert_ptr_ne(hl, NULL);
 
 	/* expect SIGABRT */
@@ -64,7 +64,7 @@ END_TEST
 /* note: only works in CK_FORK mode */
 START_TEST(hostlist_delete_nth_hi_assert_check)
 {
-	hostlist_t hl = slurm_hostlist_create("host1,host2");
+	xhostlist_t *hl = slurm_hostlist_create("host1,host2");
 	ck_assert_ptr_ne(hl, NULL);
 
 	/* expect SIGABRT */
@@ -76,7 +76,7 @@ END_TEST
 
 START_TEST(hostlist_nth_check)
 {
-	hostlist_t hl = NULL;
+	xhostlist_t *hl = NULL;
 	char *p;
 	int n;
 

@@ -139,7 +139,7 @@ extern int fini(void)
  * IN/OUT count - position in sp_hl array
  */
 static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
-				   int *msg_count, hostlist_t **sp_hl,
+				   int *msg_count, xhostlist_t ***sp_hl,
 				   int *count)
 {
 	int lst_count = 0, sw_count;
@@ -187,18 +187,17 @@ static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
  * route_p_split_hostlist - logic to split an input hostlist into
  *                           a set of hostlists to forward to.
  *
- * IN: hl        - hostlist_t   - list of every node to send message to
- *                                will be empty on return;
- * OUT: sp_hl    - hostlist_t** - the array of hostlists that will be malloced
- * OUT: count    - int*         - the count of created hostlists
+ * IN: hl        - xhostlist_t *   - list of every node to send message to
+ *                                  will be empty on return;
+ * OUT: sp_hl    - xhostlist_t *** - the array of hostlists that will be malloced
+ * OUT: count    - int *          - the count of created hostlists
  * RET: SLURM_SUCCESS - int
  *
  * Note: created hostlist will have to be freed independently using
  *       hostlist_destroy by the caller.
- * Note: the hostlist_t array will have to be xfree.
+ * Note: the xhostlist_t array will have to be xfree.
  */
-extern int route_p_split_hostlist(hostlist_t hl,
-				  hostlist_t** sp_hl,
+extern int route_p_split_hostlist(xhostlist_t *hl, xhostlist_t ***sp_hl,
 				  int* count, uint16_t tree_width)
 {
 	int i, j, k, msg_count, switch_count;
@@ -294,7 +293,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		return route_split_hostlist_treewidth(hl, sp_hl, count,
 						      tree_width);
 	}
-	*sp_hl = xcalloc(switch_record_cnt, sizeof(hostlist_t));
+	*sp_hl = xcalloc(switch_record_cnt, sizeof(xhostlist_t *));
 	msg_count = hostlist_count(hl);
 	*count = 0;
 	for (j = s_first; j <= s_last; j++) {
@@ -316,7 +315,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 			      buf);
 			xfree(buf);
 		}
-		new_size += msg_count * sizeof(hostlist_t);
+		new_size += msg_count * sizeof(xhostlist_t *);
 		xrealloc(*sp_hl, new_size);
 
 		for (j = 0; (node_ptr = next_node_bitmap(nodes_bitmap, &j));

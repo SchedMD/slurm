@@ -90,14 +90,14 @@ extern int forward_msg(forward_struct_t *forward_struct,
  *                   accumulate the return codes from processes getting the
  *                   forwarded message
  *
- * IN: hl          - hostlist_t   - list of every node to send message to
+ * IN: hl          - xhostlist_t   - list of every node to send message to
  * IN: msg         - slurm_msg_t  - message to send.
  * IN: timeout     - int          - how long to wait in milliseconds.
  * RET List 	   - List containing the responses of the children
  *		     (if any) we forwarded the message to. List
  *		     containing type (ret_data_info_t).
  */
-extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout);
+extern List start_msg_tree(xhostlist_t *hl, slurm_msg_t *msg, int timeout);
 
 /*
  * mark_as_failed_forward- mark a node as failed and add it to "ret_list"

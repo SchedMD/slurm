@@ -6358,7 +6358,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	 * simplify the job allocation nodelist, not laying out tasks until step
 	 */
 	if (opt_local->nodelist) {
-		hostlist_t hl = hostlist_create(opt_local->nodelist);
+		xhostlist_t *hl = hostlist_create(opt_local->nodelist);
 		xfree(opt_local->nodelist);
 		opt_local->nodelist = hostlist_ranged_string_xmalloc(hl);
 		hostlist_uniq(hl);

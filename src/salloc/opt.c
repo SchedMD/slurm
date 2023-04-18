@@ -395,7 +395,7 @@ static void _salloc_default_command(int *argcp, char **argvp[])
 static bool _opt_verify(void)
 {
 	bool verified = true;
-	hostlist_t hl = NULL;
+	xhostlist_t *hl = NULL;
 	int hl_cnt = 0;
 
 	validate_options_salloc_sbatch_srun(&opt);

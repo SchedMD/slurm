@@ -175,7 +175,7 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 	char *this_node_name;
 	bitstr_t *old_bitmap;
 	node_record_t *node_ptr;
-	hostlist_t host_list, missing_hostlist = NULL;
+	xhostlist_t *host_list, *missing_hostlist = NULL;
 	int i;
 
 	part_ptr->total_cpus = 0;
@@ -260,7 +260,7 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 		 * Remove missing node from partition nodes so we don't keep
 		 * trying to remove them.
 		 */
-		hostlist_t hl;
+		xhostlist_t *hl;
 		char *missing_nodes;
 
 		hl = hostlist_create(part_ptr->orig_nodes);
@@ -2023,7 +2023,7 @@ extern int validate_alloc_node(part_record_t *part_ptr, char *alloc_node)
  	if (alloc_node == NULL)
 		return 0;	/* if no allocating node deny */
 
- 	hostlist_t hl = hostlist_create(part_ptr->allow_alloc_nodes);
+	xhostlist_t *hl = hostlist_create(part_ptr->allow_alloc_nodes);
  	status=hostlist_find(hl,alloc_node);
  	hostlist_destroy(hl);
 

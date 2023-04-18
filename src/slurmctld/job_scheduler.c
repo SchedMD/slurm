@@ -4307,7 +4307,7 @@ static void _send_reboot_msg(bitstr_t *node_bitmap, char *features,
 {
 	agent_arg_t *reboot_agent_args = NULL;
 	reboot_msg_t *reboot_msg;
-	hostlist_t hostlist;
+	xhostlist_t *hostlist;
 
 	reboot_agent_args = xmalloc(sizeof(agent_arg_t));
 	reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;

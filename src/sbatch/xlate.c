@@ -454,7 +454,7 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 	char *temp = NULL;
 	int ppn = 0;
 	int node_cnt = 0;
-	hostlist_t hl = hostlist_create(NULL);
+	xhostlist_t *hl = hostlist_create(NULL);
 
 	while (node_opts[i]) {
 		if (!xstrncmp(node_opts+i, "gpus=", 5)) {

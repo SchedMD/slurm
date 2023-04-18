@@ -600,7 +600,7 @@ extern int build_nodes_bitmap(char *node_names, bitstr_t **bitmap)
 {
 	char *this_node_name;
 	bitstr_t *my_bitmap;
-	hostlist_t host_list;
+	xhostlist_t *host_list;
 	int node_inx = -1;
 
 	if (TOPO_DEBUG)

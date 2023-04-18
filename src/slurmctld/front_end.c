@@ -286,7 +286,7 @@ extern int update_front_end(update_front_end_msg_t *msg_ptr, uid_t auth_uid)
 {
 #ifdef HAVE_FRONT_END
 	char  *this_node_name = NULL;
-	hostlist_t host_list;
+	xhostlist_t *host_list;
 	front_end_record_t *front_end_ptr;
 	int i, rc = SLURM_SUCCESS;
 	time_t now = time(NULL);

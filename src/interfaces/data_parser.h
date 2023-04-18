@@ -204,8 +204,8 @@ typedef enum {
 	DATA_PARSER_JOB_SHARED, /* uint16_t - JOB_SHARED_* */
 	DATA_PARSER_ALLOCATED_CORES, /* uint32_t if slurm_conf.select_type_param & (CR_CORE|CR_SOCKET) */
 	DATA_PARSER_ALLOCATED_CPUS, /* uint32_t if slurm_conf.select_type_param & CR_CPU */
-	DATA_PARSER_HOSTLIST, /* hostlist_t */
-	DATA_PARSER_HOSTLIST_STRING, /* char * - acts like hostlist_t */
+	DATA_PARSER_HOSTLIST, /* xhostlist_t* */
+	DATA_PARSER_HOSTLIST_STRING, /* char * - acts like xhostlist_t* */
 	DATA_PARSER_POWER_FLAGS, /* uint8_t & SLURM_POWER_FLAGS_* */
 	DATA_PARSER_PARTITION_INFO, /* partition_info_t */
 	DATA_PARSER_PARTITION_INFO_PTR, /* partition_info_t* */

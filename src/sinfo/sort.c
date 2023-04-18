@@ -512,8 +512,8 @@ static int _sort_by_nodelist_nodeaddr_hostnames(void *void1, void *void2,
 	int diff = 0;
 	sinfo_data_t *sinfo1;
 	sinfo_data_t *sinfo2;
-	hostlist_t hl1 = NULL;
-	hostlist_t hl2 = NULL;
+	xhostlist_t *hl1 = NULL;
+	xhostlist_t *hl2 = NULL;
 #if	PURE_ALPHA_SORT
 	char *val1, *val2;
 	char *ptr1, *ptr2;

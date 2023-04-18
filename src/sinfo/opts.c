@@ -90,7 +90,7 @@ extern void parse_command_line(int argc, char **argv)
 	char *env_val = NULL;
 	int opt_char;
 	int option_index;
-	hostlist_t host_list;
+	xhostlist_t *host_list;
 	bool long_form = false;
 	bool opt_a_set = false, opt_p_set = false;
 	bool env_a_set = false, env_p_set = false;

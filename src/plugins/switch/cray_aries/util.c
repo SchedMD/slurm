@@ -254,7 +254,7 @@ int list_str_to_array(char *list, int *cnt, int32_t **numbers)
 {
 
 	int32_t *item_ptr = NULL;
-	hostlist_t hl;
+	xhostlist_t *hl;
 	int i, ret = 0;
 	char *str, *cptr = NULL;
 

@@ -475,7 +475,7 @@ pmixp_coll_ring_ctx_t *pmixp_coll_ring_ctx_select(pmixp_coll_t *coll,
 	return ret;
 }
 
-int pmixp_coll_ring_init(pmixp_coll_t *coll, hostlist_t *hl)
+int pmixp_coll_ring_init(pmixp_coll_t *coll, xhostlist_t **hl)
 {
 #ifdef PMIXP_COLL_DEBUG
 	PMIXP_DEBUG("called");
@@ -781,8 +781,8 @@ void pmixp_coll_ring_log(pmixp_coll_t *coll)
 		if (coll_ctx->in_use) {
 			int id;
 			char *done_contrib = NULL, *wait_contrib = NULL;
-			hostlist_t hl_done_contrib = NULL,
-				hl_wait_contrib = NULL, *tmp_list;
+			xhostlist_t *hl_done_contrib = NULL,
+				*hl_wait_contrib = NULL, **tmp_list;
 
 			PMIXP_ERROR("\t seq=%d contribs: loc=%d/prev=%d/fwd=%d",
 				    coll_ctx->seq, coll_ctx->contrib_local,

@@ -3496,7 +3496,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		jobid = job_ptr->het_job_id;
 		if (!het_step_ptr || !het_step_ptr->switch_job) {
 			job_record_t *het_job_comp_ptr;
-			hostlist_t hl = hostlist_create(NULL);
+			xhostlist_t *hl = hostlist_create(NULL);
 			ListIterator itr;
 
 			/* Now let's get the real het_job_ptr */

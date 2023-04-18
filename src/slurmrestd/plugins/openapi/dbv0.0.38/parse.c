@@ -2069,7 +2069,7 @@ typedef struct {
 	tres_explode_type_t type;
 	slurmdb_tres_nct_rec_t *tres_nct;
 	int tres_nct_count;
-	hostlist_t host_list;
+	xhostlist_t *host_list;
 } foreach_list_per_tres_type_nct_t;
 
 static int _foreach_list_per_tres_type_nct(void *x, void *arg)
@@ -2345,7 +2345,7 @@ static int _foreach_step(void *x, void *arg)
 
 	xassert(args->magic == MAGIC_FOREACH_STEP);
 
-	hostlist_t host_list = hostlist_create(step->nodes);
+	xhostlist_t *host_list = hostlist_create(step->nodes);
 	if (!host_list) {
 		trc = -1;
 		goto cleanup;

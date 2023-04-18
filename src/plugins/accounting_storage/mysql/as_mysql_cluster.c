@@ -1187,7 +1187,7 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (event_cond->node_list) {
 		int dims = 0;
-		hostlist_t temp_hl = NULL;
+		xhostlist_t *temp_hl = NULL;
 
 		if (get_cluster_dims(mysql_conn,
 				     (char *)list_peek(event_cond->cluster_list),

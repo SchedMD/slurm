@@ -2270,8 +2270,8 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 
 static int _register_front_ends(slurm_conf_frontend_t *front_end_ptr)
 {
-	hostlist_t hostname_list = NULL;
-	hostlist_t address_list = NULL;
+	xhostlist_t *hostname_list = NULL;
+	xhostlist_t *address_list = NULL;
 	char *hostname = NULL;
 	char *address = NULL;
 	int error_code = SLURM_SUCCESS;
@@ -6387,7 +6387,7 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 					 slurm_addr_t *node_addrs)
 {
 	char *hostname       = NULL;
-	hostlist_t host_list = NULL;
+	xhostlist_t *host_list = NULL;
 	int i = 0;
 
 	xassert(node_list);

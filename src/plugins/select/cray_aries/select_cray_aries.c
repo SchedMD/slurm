@@ -423,7 +423,7 @@ static void _initialize_event(alpsc_ev_app_t *event, step_record_t *step_ptr,
 			      alpsc_ev_app_state_e state)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
-	hostlist_t hl = NULL;
+	xhostlist_t *hl = NULL;
 	hostlist_iterator_t *hlit;
 	char *node;
 	int rv;

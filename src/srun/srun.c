@@ -314,7 +314,7 @@ relaunch:
 static void _reorder_het_job_recs(char **in_node_list, uint16_t **in_task_cnts,
 			       uint32_t ***in_tids, int total_nnodes)
 {
-	hostlist_t in_hl, out_hl;
+	xhostlist_t *in_hl, *out_hl;
 	uint16_t *out_task_cnts = NULL;
 	uint32_t **out_tids = NULL;
 	char *hostname;

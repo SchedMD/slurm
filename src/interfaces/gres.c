@@ -1054,7 +1054,7 @@ static void _my_stat(char *file_name)
 static int _validate_file(char *filenames, char *gres_name)
 {
 	char *one_name;
-	hostlist_t hl;
+	xhostlist_t *hl;
 	int file_count = 0;
 
 	if (!(hl = hostlist_create(filenames)))
@@ -1534,7 +1534,7 @@ static int _parse_gres_config_node(void **dest, slurm_parser_enum_t type,
 
 	if (gres_node_name && value) {
 		bool match = false;
-		hostlist_t hl;
+		xhostlist_t *hl;
 		hl = hostlist_create(value);
 		if (hl) {
 			match = (hostlist_find(hl, gres_node_name) >= 0);
@@ -1893,7 +1893,7 @@ static void _set_file_subset(gres_slurmd_conf_t *gres_slurmd_conf,
 			     uint64_t new_count)
 {
 	/* Convert file to hostrange */
-	hostlist_t hl = hostlist_create(gres_slurmd_conf->file);
+	xhostlist_t *hl = hostlist_create(gres_slurmd_conf->file);
 	unsigned long old_count = hostlist_count(hl);
 
 	if (new_count >= old_count) {
@@ -2393,7 +2393,7 @@ extern int gres_node_config_load(List gres_conf_list,
 	names_list = list_create(_free_name_list);
 	itr = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(itr))) {
-		hostlist_t hl;
+		xhostlist_t *hl;
 		char *one_name;
 
 		if (!(gres_slurmd_conf->config_flags & GRES_CONF_HAS_FILE) ||
@@ -10241,7 +10241,7 @@ extern void add_gres_to_list(List gres_list,
 	gres_slurmd_conf->config_flags = gres_slurmd_conf_in->config_flags;
 
 	if (gres_slurmd_conf_in->file) {
-		hostlist_t hl = hostlist_create(gres_slurmd_conf_in->file);
+		xhostlist_t *hl = hostlist_create(gres_slurmd_conf_in->file);
 		gres_slurmd_conf->config_flags |= GRES_CONF_HAS_FILE;
 		if (hostlist_count(hl) > 1)
 			gres_slurmd_conf->config_flags |= GRES_CONF_HAS_MULT;

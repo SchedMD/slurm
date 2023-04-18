@@ -2213,7 +2213,7 @@ static int _update_node_state(char *node_list, bool set_locks)
 	int mcdram_cap_cnt = 0, mcdram_cfg_cnt = 0, mcdram_cfg2_cnt = 0;
 	int numa_cap_cnt = 0, numa_cfg_cnt = 0, numa_cfg2_cnt = 0;
 	node_record_t *node_ptr;
-	hostlist_t host_list;
+	xhostlist_t *host_list;
 	char *node_name;
 
 	slurm_mutex_lock(&config_mutex);

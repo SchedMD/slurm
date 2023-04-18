@@ -200,7 +200,7 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 {
 	int i, c_offset = 0;
 	node_info_t *node_info;
-	hostlist_t comp_nodes, down_nodes;
+	xhostlist_t *comp_nodes, *down_nodes;
 	char *node_buf;
 	char time_str[256];
 	time_t completing_time = 0;
@@ -926,7 +926,7 @@ extern void scontrol_gethost(const char *stepd_node, const char *node_name)
 extern void
 scontrol_print_hosts (char * node_list)
 {
-	hostlist_t hl;
+	xhostlist_t *hl;
 	char *host;
 
 	if (!node_list) {
@@ -974,7 +974,7 @@ extern int scontrol_encode_hostlist(char *arg_hostlist, bool sorted)
 	char *io_buf = NULL, *tmp_list, *ranged_string, *hostlist;
 	int buf_size = 1024 * 1024;
 	int data_read = 0;
-	hostlist_t hl;
+	xhostlist_t *hl;
 
 	if (!arg_hostlist) {
 		fprintf(stderr, "Hostlist is NULL\n");

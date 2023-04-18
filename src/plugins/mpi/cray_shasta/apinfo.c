@@ -77,7 +77,7 @@ static void _multi_prog_parse(const stepd_step_rec_t *step, int *ncmds,
 	char *line = NULL, *local_data = NULL;
 	char *end_ptr = NULL, *save_ptr = NULL, *tmp_str = NULL;
 	char *rank_spec = NULL, *p = NULL, *one_rank = NULL;
-	hostlist_t hl;
+	xhostlist_t *hl;
 	uint32_t *offsets = NULL;
 
 	offsets = xcalloc(step->ntasks, sizeof(uint32_t));
@@ -492,7 +492,7 @@ static int _open_apinfo(const stepd_step_rec_t *step)
  */
 static int _write_pals_nodes(int fd, char *nodelist)
 {
-	hostlist_t hl;
+	xhostlist_t *hl;
 	char *host;
 	pals_node_t node;
 

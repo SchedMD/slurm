@@ -592,7 +592,7 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 				break;
 			case PRINT_NODECNT:
 			{
-				hostlist_t hl = hostlist_create(cluster->nodes);
+				xhostlist_t *hl = hostlist_create(cluster->nodes);
 				int cnt = 0;
 				if (hl) {
 					cnt = hostlist_count(hl);

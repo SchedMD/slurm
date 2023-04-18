@@ -62,14 +62,14 @@ typedef struct {
 	slurm_msg_t *orig_msg;
 	List ret_list;
 	int timeout;
-	hostlist_t tree_hl;
+	xhostlist_t *tree_hl;
 	pthread_mutex_t *tree_mutex;
 } fwd_tree_t;
 
-static void _start_msg_tree_internal(hostlist_t hl, hostlist_t* sp_hl,
+static void _start_msg_tree_internal(xhostlist_t *hl, xhostlist_t **sp_hl,
 				     fwd_tree_t *fwd_tree_in,
 				     int hl_count);
-static void _forward_msg_internal(hostlist_t hl, hostlist_t* sp_hl,
+static void _forward_msg_internal(xhostlist_t *hl, xhostlist_t **sp_hl,
 				  forward_struct_t *fwd_struct,
 				  header_t *header, int timeout,
 				  int hl_count);
@@ -101,7 +101,7 @@ void *_forward_thread(void *arg)
 	int fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
-	hostlist_t hl = hostlist_create(fwd_msg->header.forward.nodelist);
+	xhostlist_t *hl = hostlist_create(fwd_msg->header.forward.nodelist);
 	slurm_addr_t addr;
 	char *buf = NULL;
 	int steps = 0;
@@ -476,7 +476,7 @@ void *_fwd_tree_thread(void *arg)
 	return NULL;
 }
 
-static void _start_msg_tree_internal(hostlist_t hl, hostlist_t* sp_hl,
+static void _start_msg_tree_internal(xhostlist_t *hl, xhostlist_t **sp_hl,
 				     fwd_tree_t *fwd_tree_in,
 				     int hl_count)
 {
@@ -525,7 +525,7 @@ static void _start_msg_tree_internal(hostlist_t hl, hostlist_t* sp_hl,
 	}
 }
 
-static void _forward_msg_internal(hostlist_t hl, hostlist_t* sp_hl,
+static void _forward_msg_internal(xhostlist_t *hl, xhostlist_t **sp_hl,
 				  forward_struct_t *fwd_struct,
 				  header_t *header, int timeout,
 				  int hl_count)
@@ -596,8 +596,8 @@ extern void forward_init(forward_t *forward)
  */
 extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 {
-	hostlist_t hl = NULL;
-	hostlist_t* sp_hl;
+	xhostlist_t *hl = NULL;
+	xhostlist_t **sp_hl;
 	int hl_count = 0;
 
 	if (!forward_struct->ret_list) {
@@ -627,14 +627,14 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
  *                   accumulate the return codes from processes getting the
  *                   forwarded message
  *
- * IN: hl          - hostlist_t   - list of every node to send message to
+ * IN: hl          - xhostlist_t   - list of every node to send message to
  * IN: msg         - slurm_msg_t  - message to send.
  * IN: timeout     - int          - how long to wait in milliseconds.
  * RET List 	   - List containing the responses of the children
  *		     (if any) we forwarded the message to. List
  *		     containing type (ret_data_info_t).
  */
-extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
+extern List start_msg_tree(xhostlist_t *hl, slurm_msg_t *msg, int timeout)
 {
 	fwd_tree_t fwd_tree;
 	pthread_mutex_t tree_mutex;
@@ -643,7 +643,7 @@ extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 	List ret_list = NULL;
 	int thr_count = 0;
 	int host_count = 0;
-	hostlist_t* sp_hl;
+	xhostlist_t **sp_hl;
 	int hl_count = 0;
 
 	xassert(hl);

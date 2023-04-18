@@ -1204,7 +1204,7 @@ extern void slurm_client_fini_plugins(void);
  */
 #ifndef   __hostlist_t_defined
 #  define __hostlist_t_defined
-typedef struct hostlist * hostlist_t;
+typedef struct hostlist xhostlist_t;
 #endif
 
 /*
@@ -1239,20 +1239,20 @@ typedef struct hostlist * hostlist_t;
  * The returned hostlist must be freed with hostlist_destroy()
  *
  */
-extern hostlist_t slurm_hostlist_create(const char *hostlist);
+extern xhostlist_t *slurm_hostlist_create(const char *hostlist);
 
 /* slurm_hostlist_count():
  *
  * Return the number of hosts in hostlist hl.
  */
-extern int slurm_hostlist_count(hostlist_t hl);
+extern int slurm_hostlist_count(xhostlist_t *hl);
 
 /*
  * slurm_hostlist_destroy():
  *
  * Destroy a hostlist object. Frees all memory allocated to the hostlist.
  */
-extern void slurm_hostlist_destroy(hostlist_t hl);
+extern void slurm_hostlist_destroy(xhostlist_t *hl);
 
 /* slurm_hostlist_find():
  *
@@ -1261,7 +1261,7 @@ extern void slurm_hostlist_destroy(hostlist_t hl);
  *
  * Returns -1 if host is not found.
  */
-extern int slurm_hostlist_find(hostlist_t hl, const char *hostname);
+extern int slurm_hostlist_find(xhostlist_t *hl, const char *hostname);
 
 /* slurm_hostlist_push():
  *
@@ -1272,7 +1272,7 @@ extern int slurm_hostlist_find(hostlist_t hl, const char *hostname);
  * Returns the number of hostnames inserted into the list,
  * or 0 on failure.
  */
-extern int slurm_hostlist_push(hostlist_t hl, const char *hosts);
+extern int slurm_hostlist_push(xhostlist_t *hl, const char *hosts);
 
 /* slurm_hostlist_push_host():
  *
@@ -1282,7 +1282,7 @@ extern int slurm_hostlist_push(hostlist_t hl, const char *hosts);
  *
  * return value is 1 for success, 0 for failure.
  */
-extern int slurm_hostlist_push_host(hostlist_t hl, const char *host);
+extern int slurm_hostlist_push_host(xhostlist_t *hl, const char *host);
 
 /* slurm_hostlist_ranged_string():
  *
@@ -1295,7 +1295,7 @@ extern int slurm_hostlist_push_host(hostlist_t hl, const char *host);
  * slurm_hostlist_ranged_string() will write a bracketed hostlist representation
  * where possible.
  */
-extern ssize_t slurm_hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
+extern ssize_t slurm_hostlist_ranged_string(xhostlist_t *hl, size_t n, char *buf);
 
 /* slurm_hostlist_ranged_string_malloc():
  *
@@ -1303,7 +1303,7 @@ extern ssize_t slurm_hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
  *
  * The result must be released using free();
  */
-extern char *slurm_hostlist_ranged_string_malloc(hostlist_t hl);
+extern char *slurm_hostlist_ranged_string_malloc(xhostlist_t *hl);
 
 /* hostlist_ranged_string_xmalloc():
  *
@@ -1313,7 +1313,7 @@ extern char *slurm_hostlist_ranged_string_malloc(hostlist_t hl);
  *
  * Caller should free the result string using xfree().
  */
-extern char *slurm_hostlist_ranged_string_xmalloc(hostlist_t hl);
+extern char *slurm_hostlist_ranged_string_xmalloc(xhostlist_t *hl);
 
 /*
  * slurm_hostlist_shift():
@@ -1324,14 +1324,14 @@ extern char *slurm_hostlist_ranged_string_xmalloc(hostlist_t hl);
  *
  * Note: Caller is responsible for freeing the returned memory.
  */
-extern char *slurm_hostlist_shift(hostlist_t hl);
+extern char *slurm_hostlist_shift(xhostlist_t *hl);
 
 /* slurm_hostlist_uniq():
  *
  * Sort the hostlist hl and remove duplicate entries.
  *
  */
-extern void slurm_hostlist_uniq(hostlist_t hl);
+extern void slurm_hostlist_uniq(xhostlist_t *hl);
 
 /*****************************************************************************\
  *      SLURM LIST FUNCTIONS

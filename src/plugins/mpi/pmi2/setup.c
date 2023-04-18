@@ -205,7 +205,7 @@ _setup_stepd_job_info(const stepd_step_rec_t *step, char ***env)
 static int
 _setup_stepd_tree_info(char ***env)
 {
-	hostlist_t hl;
+	xhostlist_t *hl;
 	char *srun_host;
 	uint16_t port;
 	char *p;

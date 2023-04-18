@@ -7,7 +7,7 @@
 $slurm_perl_api::class_map = {
 	"slurm_t" 			=> "Slurm",
 	"bitstr_tPtr"		 	=> "Slurm::Bitstr",
-	"hostlist_t" 			=> "Slurm::Hostlist",
+	"xhostlist_tPtr" 		=> "Slurm::Hostlist",
 	"List" 				=> "Slurm::List",
 	"ListIterator"			=> "Slurm::ListIterator",
 

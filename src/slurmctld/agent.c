@@ -139,7 +139,7 @@ typedef struct thd {
 					 * upon termination */
 	slurm_addr_t *addr;		/* specific addr to send to
 					 * will not do nodelist if set */
-	hostlist_t nodelist;		/* list of nodes to send to */
+	xhostlist_t *nodelist;		/* list of nodes to send to */
 	char *nodename;			/* node to send to */
 	List ret_list;
 } thd_t;

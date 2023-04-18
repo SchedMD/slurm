@@ -265,7 +265,7 @@ static void _sort_node_record_table_ptr(void)
 #endif
 }
 
-static void _add_nodes_with_feature(hostlist_t hl, char *feature)
+static void _add_nodes_with_feature(xhostlist_t *hl, char *feature)
 {
 	if (avail_feature_list) {
 		char *feature_nodes;
@@ -307,7 +307,7 @@ static void _add_nodes_with_feature(hostlist_t hl, char *feature)
 	}
 }
 
-static void _add_all_nodes_to_hostlist(hostlist_t hl)
+static void _add_all_nodes_to_hostlist(xhostlist_t *hl)
 {
 	node_record_t *node_ptr;
 
@@ -315,13 +315,12 @@ static void _add_all_nodes_to_hostlist(hostlist_t hl)
 		hostlist_push_host(hl, node_ptr->name);
 }
 
-extern hostlist_t nodespec_to_hostlist(const char *nodes,
-				       bool uniq,
-				       char **nodesets)
+extern xhostlist_t *nodespec_to_hostlist(const char *nodes, bool uniq,
+					char **nodesets)
 {
 	int count;
 	slurm_conf_nodeset_t *ptr, **ptr_array;
-	hostlist_t hl;
+	xhostlist_t *hl;
 
 	if (nodesets)
 		xfree(*nodesets);
@@ -625,7 +624,7 @@ static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
 {
 	int error_code = 0;
 	node_record_t *node_rec = NULL;
-	hostlist_t alias_list = NULL;
+	xhostlist_t *alias_list = NULL;
 	char *alias = NULL;
 	int state_val = NODE_STATE_DOWN;
 

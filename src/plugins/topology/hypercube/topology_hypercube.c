@@ -140,7 +140,7 @@ static int  _parse_switches(void **dest, slurm_parser_enum_t type,
 				const char *key, const char *value,
 				const char *line, char **leftover);
 static int  _node_name2bitmap(char *node_names, bitstr_t **bitmap,
-				  hostlist_t *invalid_hostlist);
+			      xhostlist_t **invalid_hostlist);
 static int _parse_connected_nodes(switch_data *sw_record);
 static void _update_switch_connections(void);
 static int _parse_connected_switches(switch_data *sw_record);
@@ -292,7 +292,7 @@ static void _validate_switches(void)
 	slurm_conf_switches_t *ptr, **ptr_array;
 	int i, j;
 	switch_data *switch_ptr, *prior_ptr;
-	hostlist_t invalid_hl = NULL;
+	xhostlist_t *invalid_hl = NULL;
 
 	_free_switch_data_table();
 
@@ -438,11 +438,11 @@ static int  _parse_switches(void **dest, slurm_parser_enum_t type,
  * NOTE: call FREE_NULL_BITMAP(bitmap) and hostlist_destroy(invalid_hostlist)
  *       to free memory when variables are no longer required	*/
 static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
-			     hostlist_t *invalid_hostlist)
+			     xhostlist_t **invalid_hostlist)
 {
 	char *this_node_name;
 	bitstr_t *my_bitmap;
-	hostlist_t host_list;
+	xhostlist_t *host_list;
 
 	my_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	*bitmap = my_bitmap;

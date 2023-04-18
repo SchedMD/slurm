@@ -120,7 +120,7 @@ typedef struct {
 	tres_explode_type_t type;
 	slurmdb_tres_nct_rec_t *tres_nct;
 	int tres_nct_count;
-	hostlist_t host_list;
+	xhostlist_t *host_list;
 	args_t *args;
 	const parser_t *const parser;
 } foreach_list_per_tres_type_nct_t;
@@ -155,7 +155,7 @@ typedef struct {
 	int magic; /* MAGIC_FOREACH_HOSTLIST */
 	const parser_t *const parser;
 	args_t *args;
-	hostlist_t host_list;
+	xhostlist_t *host_list;
 	data_t *parent_path;
 } foreach_hostlist_parse_t;
 
@@ -2263,7 +2263,7 @@ static int DUMP_FUNC(STEP_NODES)(const parser_t *const parser, void *src,
 {
 	int rc;
 	slurmdb_step_rec_t *step = src;
-	hostlist_t host_list;
+	xhostlist_t *host_list;
 
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->magic == MAGIC_ARGS);
@@ -3471,7 +3471,7 @@ static int DUMP_FUNC(JOB_RES_NODES)(const parser_t *const parser, void *obj,
 				    data_t *dst, args_t *args)
 {
 	job_resources_t *j = obj;
-	hostlist_t hl = NULL;
+	xhostlist_t *hl = NULL;
 	size_t bit_inx = 0;
 	size_t array_size;
 	size_t sock_inx = 0, sock_reps = 0;
@@ -3644,8 +3644,8 @@ static int PARSE_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
 	int rc = SLURM_SUCCESS;
-	hostlist_t *host_list_ptr = obj;
-	hostlist_t host_list = NULL;
+	xhostlist_t **host_list_ptr = obj;
+	xhostlist_t *host_list = NULL;
 	char *path = NULL;
 
 	xassert(args->magic == MAGIC_ARGS);
@@ -3705,8 +3705,8 @@ static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
 {
 	int rc = SLURM_SUCCESS;
-	hostlist_t *host_list_ptr = obj;
-	hostlist_t host_list = *host_list_ptr;
+	xhostlist_t **host_list_ptr = obj;
+	xhostlist_t *host_list = *host_list_ptr;
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
@@ -3734,7 +3734,7 @@ static int PARSE_FUNC(HOSTLIST_STRING)(const parser_t *const parser, void *obj,
 {
 	int rc;
 	char **host_list_str = obj;
-	hostlist_t host_list = NULL;
+	xhostlist_t *host_list = NULL;
 
 	xassert(args->magic == MAGIC_ARGS);
 
@@ -3755,7 +3755,7 @@ static int DUMP_FUNC(HOSTLIST_STRING)(const parser_t *const parser, void *obj,
 	int rc;
 	char **host_list_ptr = obj;
 	char *host_list_str = *host_list_ptr;
-	hostlist_t host_list;
+	xhostlist_t *host_list;
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
@@ -6282,7 +6282,7 @@ static const parser_t parsers[] = {
 	addps(ALLOCATED_CPUS, uint32_t, NEED_NONE, INT32, NULL),
 	addps(CONTROLLER_PING_MODE, int, NEED_NONE, STRING, NULL),
 	addps(CONTROLLER_PING_RESULT, bool, NEED_NONE, STRING, NULL),
-	addpsa(HOSTLIST, STRING, hostlist_t, NEED_NONE, NULL),
+	addpsa(HOSTLIST, STRING, xhostlist_t *, NEED_NONE, NULL),
 	addpsa(HOSTLIST_STRING, STRING, char *, NEED_NONE, NULL),
 	addps(CPU_FREQ_FLAGS, uint32_t, NEED_NONE, STRING, NULL),
 	addps(ERROR, int, NEED_NONE, STRING, NULL),

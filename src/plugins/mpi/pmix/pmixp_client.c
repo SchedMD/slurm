@@ -405,7 +405,7 @@ static int _set_mapsinfo(List lresp)
 	pmix_info_t *kvp;
 	char *regexp, *input, *map = NULL, *pos = NULL;
 	pmixp_namespace_t *nsptr = pmixp_nspaces_local();
-	hostlist_t hl = nsptr->hl;
+	xhostlist_t *hl = nsptr->hl;
 	int rc, i, j;
 	int count = hostlist_count(hl);
 	uint32_t *node2tasks = NULL, *cur_task = NULL;

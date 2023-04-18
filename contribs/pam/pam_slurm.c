@@ -236,7 +236,7 @@ _parse_args(struct _options *opts, int argc, const char **argv)
 static int
 _hostrange_member(char *hostname, char *str)
 {
-	hostlist_t hl;
+	xhostlist_t *hl;
 	int found_host;
 
 	if (!*hostname || !*str)

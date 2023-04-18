@@ -258,7 +258,7 @@ _nodeid_from_layout(slurm_step_layout_t *layout, uint32_t taskid)
 
 static void print_layout_info(slurm_step_layout_t *layout)
 {
-	hostlist_t nl;
+	xhostlist_t *nl;
 	int i, j;
 
 	printf("Job step layout:\n");

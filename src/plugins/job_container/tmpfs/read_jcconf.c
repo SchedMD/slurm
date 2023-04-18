@@ -134,7 +134,7 @@ static int _parse_jc_conf(void **dest, slurm_parser_enum_t type,
 {
 	if (value) {
 		bool match = false;
-		hostlist_t hl = hostlist_create(value);
+		xhostlist_t *hl = hostlist_create(value);
 		if (hl) {
 			match = (hostlist_find(hl, conf->node_name) >= 0);
 			hostlist_destroy(hl);

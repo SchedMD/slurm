@@ -199,7 +199,7 @@ static void _free_ccm_info(ccm_info_t *ccm_info)
  */
 static int * _ccm_convert_nodelist(char *nodelist, int *nid_cnt)
 {
-	hostlist_t hl;
+	xhostlist_t *hl;
 	int i, cnt = -1, *nid_array = NULL;
 	char *nidname, *nidstr = NULL;
 
