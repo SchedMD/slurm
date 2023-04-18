@@ -310,7 +310,7 @@ static size_t hostrange_numstr(hostrange_t *, size_t, char *, int);
 static hostlist_t *hostlist_new(void);
 static hostlist_t *_hostlist_create_bracketed(const char *, char *, char *, int);
 static void hostlist_resize(hostlist_t *, size_t);
-static int hostlist_expand(hostlist_t *);
+static void hostlist_expand(hostlist_t *);
 static int hostlist_push_range(hostlist_t *, hostrange_t *);
 static int hostlist_push_hr(hostlist_t *, char *, unsigned long, unsigned long, int);
 static int hostlist_insert_range(hostlist_t *, hostrange_t *, int);
@@ -1189,16 +1189,13 @@ static void hostlist_resize(hostlist_t *hl, size_t newsize)
 /* Resize hostlist by one HOSTLIST_CHUNK
  * Assumes that hostlist hl is locked by caller
  */
-static int hostlist_expand(hostlist_t *hl)
+static void hostlist_expand(hostlist_t *hl)
 {
 	hostlist_resize(hl, hl->size + HOSTLIST_CHUNK);
-
-	return 1;
 }
 
 /* Push a hostrange object onto hostlist hl
  * Returns the number of hosts successfully pushed onto hl
- * or -1 if there was an error allocating memory
  */
 static int hostlist_push_range(hostlist_t *hl, hostrange_t *hr)
 {
@@ -1210,8 +1207,8 @@ static int hostlist_push_range(hostlist_t *hl, hostrange_t *hr)
 
 	tail = (hl->nranges > 0) ? hl->hr[hl->nranges-1] : hl->hr[0];
 
-	if (hl->size == hl->nranges && !hostlist_expand(hl))
-		goto error;
+	if (hl->size == hl->nranges)
+		hostlist_expand(hl);
 
 	if (hl->nranges > 0
 	    && tail->hi == hr->lo - 1
@@ -1228,10 +1225,6 @@ static int hostlist_push_range(hostlist_t *hl, hostrange_t *hr)
 	UNLOCK_HOSTLIST(hl);
 
 	return retval;
-
-error:
-	UNLOCK_HOSTLIST(hl);
-	return -1;
 }
 
 
@@ -1263,8 +1256,8 @@ static int hostlist_insert_range(hostlist_t *hl, hostrange_t *hr, int n)
 	if (n > hl->nranges)
 		return 0;
 
-	if (hl->size == hl->nranges && !hostlist_expand(hl))
-		return 0;
+	if (hl->size == hl->nranges)
+		hostlist_expand(hl);
 
 	/* copy new hostrange into slot "n" in array */
 	tmp = hl->hr[n];
@@ -3423,8 +3416,8 @@ static int hostset_insert_range(hostset_t *set, hostrange_t *hr)
 
 	hl = set->hl;
 
-	if (hl->size == hl->nranges && !hostlist_expand(hl))
-		return 0;
+	if (hl->size == hl->nranges)
+		hostlist_expand(hl);
 
 	nhosts = hostrange_count(hr);
 
