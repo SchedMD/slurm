@@ -1502,8 +1502,8 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 	buf_t *buffer;
 
 	if (rpc_version < SLURM_MIN_PROTOCOL_VERSION) {
-		error("slurmdbd: Invalid message version=%hu, type:%hu",
-		      rpc_version, req->msg_type);
+		error("slurmdbd: Invalid message version=%hu, type:%s",
+		      rpc_version, slurmdbd_msg_type_2_str(req->msg_type,true));
 		return NULL;
 	}
 
@@ -1698,8 +1698,9 @@ extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
 	safe_unpack16(&resp->msg_type, buffer);
 
 	if (rpc_version < SLURM_MIN_PROTOCOL_VERSION) {
-		error("slurmdbd: Invalid message version=%hu, type:%hu",
-		      rpc_version, resp->msg_type);
+		error("slurmdbd: Invalid message version=%hu, type:%s",
+		      rpc_version,
+		      slurmdbd_msg_type_2_str(resp->msg_type, true));
 		return SLURM_ERROR;
 	}
 

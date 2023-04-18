@@ -133,7 +133,8 @@ static int _unpack_return_code(uint16_t rpc_version, buf_t *buffer)
 		slurm_persist_free_rc_msg(msg);
 		break;
 	default:
-		error("bad message type %d != PERSIST_RC", msg_type);
+		error("bad message type %s != PERSIST_RC",
+		      slurmdbd_msg_type_2_str(msg_type, true));
 	}
 
 	return rc;
@@ -232,7 +233,8 @@ static int _handle_mult_rc_ret(void)
 			error("unpack message error");
 		break;
 	default:
-		error("bad message type %d != PERSIST_RC", msg_type);
+		error("bad message type %s != PERSIST_RC",
+		      slurmdbd_msg_type_2_str(msg_type, true));
 	}
 
 unpack_error:
