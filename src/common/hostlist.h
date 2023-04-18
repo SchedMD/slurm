@@ -233,16 +233,6 @@ int hostlist_cmp_first(hostlist_t *hl1, hostlist_t *hl2);
  */
 char *hostlist_pop_range(hostlist_t *hl);
 
-/* hostlist_pop_range_values():
- *
- * Pop the last range of hosts of the hostlist hl and fill in lo and hi with the
- * values of the range.
- * Returns 0 if no ranges exist 1 otherwise.
- * The range associated with the returned lo and hi is removed from hl.
- */
-int hostlist_pop_range_values(hostlist_t *hl, unsigned long *lo,
-			      unsigned long *hi);
-
 /* hostlist_shift_range():
  *
  * Shift the first bracketed hostlist (improperly: range) off the
