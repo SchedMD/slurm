@@ -595,6 +595,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	step->cpu_bind = xstrdup(msg->cpu_bind);
 	step->envtp->mem_bind_type = 0;
 	step->envtp->mem_bind = NULL;
+	step->envtp->overcommit = msg->overcommit;
 	step->envtp->restart_cnt = msg->restart_cnt;
 
 	if (msg->cpus_per_node)

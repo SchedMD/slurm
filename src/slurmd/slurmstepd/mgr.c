@@ -415,12 +415,7 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 	if (_make_batch_script(msg, step))
 		goto cleanup;
 
-	/* this is the new way of setting environment variables */
 	env_array_for_batch_job(&step->env, msg, conf->node_name);
-
-	/* this is the old way of setting environment variables (but
-	 * needed) */
-	step->envtp->overcommit = msg->overcommit;
 
 	return step;
 
