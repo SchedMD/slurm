@@ -192,10 +192,8 @@ done:
 
 extern void init_op_nodes(void)
 {
-	bind_operation_handler("/slurm/{data_parser}/nodes/", _op_handler_nodes,
-			       0);
-	bind_operation_handler("/slurm/{data_parser}/node/{node_name}",
-			       _op_handler_node, 0);
+	bind_handler("/slurm/{data_parser}/nodes/", _op_handler_nodes);
+	bind_handler("/slurm/{data_parser}/node/{node_name}", _op_handler_node);
 }
 
 extern void destroy_op_nodes(void)

@@ -162,10 +162,10 @@ done:
 
 extern void init_op_reservations(void)
 {
-	bind_operation_handler("/slurm/{data_parser}/reservations/",
-			       _op_handler_reservations, 0);
-	bind_operation_handler("/slurm/{data_parser}/reservation/{reservation_name}",
-			       _op_handler_reservations, 0);
+	bind_handler("/slurm/{data_parser}/reservations/",
+		     _op_handler_reservations);
+	bind_handler("/slurm/{data_parser}/reservation/{reservation_name}",
+		     _op_handler_reservation);
 }
 
 extern void destroy_op_reservations(void)

@@ -168,10 +168,10 @@ done:
 
 extern void init_op_partitions(void)
 {
-	bind_operation_handler("/slurm/{data_parser}/partitions/",
-			       _op_handler_partitions, 0);
-	bind_operation_handler("/slurm/{data_parser}/partition/{partition_name}",
-			       _op_handler_partition, 0);
+	bind_handler("/slurm/{data_parser}/partitions/",
+		     _op_handler_partitions);
+	bind_handler("/slurm/{data_parser}/partition/{partition_name}",
+		     _op_handler_partition);
 }
 
 extern void destroy_op_partitions(void)
