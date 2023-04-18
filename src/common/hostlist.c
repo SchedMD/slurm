@@ -509,10 +509,7 @@ static hostname_t *hostname_create_dims(const char *hostname, int dims)
 	hn->prefix = NULL;
 	hn->suffix = NULL;
 	if (idx == (strlen(hostname) - 1)) {
-		if ((hn->prefix = strdup(hostname)) == NULL) {
-			hostname_destroy(hn);
-			out_of_memory("hostname prefix create");
-		}
+		hn->prefix = xstrdup(hostname);
 		return hn;
 	}
 
@@ -524,17 +521,11 @@ static hostname_t *hostname_create_dims(const char *hostname, int dims)
 	hn->num = strtoul(hn->suffix, &p, hostlist_base);
 
 	if (*p == '\0') {
-		if (!(hn->prefix = malloc((idx + 2)))) {
-			hostname_destroy(hn);
-			out_of_memory("hostname prefix create");
-		}
+		hn->prefix = xmalloc(idx + 2);
 		memcpy(hn->prefix, hostname, idx + 1);
 		hn->prefix[idx + 1] = '\0';
 	} else {
-		if (!(hn->prefix = strdup(hostname))) {
-			hostname_destroy(hn);
-			out_of_memory("hostname prefix create");
-		}
+		hn->prefix = xstrdup(hostname);
 		hn->suffix = NULL;
 	}
 
@@ -559,8 +550,7 @@ static void hostname_destroy(hostname_t *hn)
 	hn->suffix = NULL;
 	if (hn->hostname)
 		free(hn->hostname);
-	if (hn->prefix)
-		free(hn->prefix);
+	xfree(hn->prefix);
 	xfree(hn);
 }
 
@@ -1010,8 +1000,7 @@ static int hostrange_hn_within(hostrange_t *hr, hostname_t *hn, int dims)
 		if (ldiff > 0 && (strlen(hn->suffix) >= ldiff)) {
 			/* Tack on ldiff of the hostname's suffix to
 			 * that of it's prefix */
-			hn->prefix = realloc(hn->prefix, len2+ldiff+1);
-			strncat(hn->prefix, hn->suffix, ldiff);
+			xstrncat(hn->prefix, hn->suffix, ldiff);
 		} else if (ldiff < 0) {
 			/* strip off the ldiff here */
 			hn->prefix[len2+ldiff] = '\0';
