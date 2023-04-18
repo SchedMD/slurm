@@ -386,10 +386,21 @@ static void _init_parsers()
 	slurm_mutex_unlock(&parsers_mutex);
 }
 
+static data_for_each_cmd_t _foreach_remove_template(const char *key,
+						    data_t *data, void *arg)
+{
+	/* remove every path with {data_parser} */
+
+	if (!xstrstr(key, OPENAPI_DATA_PARSER_PARAM))
+		return DATA_FOR_EACH_CONT;
+	else
+		return DATA_FOR_EACH_DELETE;
+}
+
 extern data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 {
 	int i = 0;
-	data_t *spec = NULL;
+	data_t *spec = NULL, *paths;
 
 	*flags |= OAS_FLAG_MANGLE_OPID;
 
@@ -419,6 +430,10 @@ extern data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 	}
 
 	slurm_mutex_unlock(&parsers_mutex);
+
+	/* scrub the paths with {data_parser} */
+	paths = data_resolve_dict_path(spec, OPENAPI_PATHS_PATH);
+	(void) data_dict_for_each(paths, _foreach_remove_template, NULL);
 
 	return spec;
 }
