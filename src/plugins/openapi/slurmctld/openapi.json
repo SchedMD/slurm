@@ -64,7 +64,7 @@
             }
           },
           "default": {
-            "description": "unable to request ping test",
+            "description": "unable to request diagnostics",
             "content": {
               "application/json": {
                 "schema": {
