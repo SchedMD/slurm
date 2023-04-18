@@ -222,18 +222,6 @@ char *hostlist_shift(hostlist_t *hl);
  */
 int hostlist_cmp_first(hostlist_t *hl1, hostlist_t *hl2);
 
-/* hostlist_shift_range():
- *
- * Shift the first bracketed hostlist (improperly: range) off the
- * hostlist hl. Returns the string representation in bracketed list
- * form. All hosts associated with the list are removed from the
- * hostlist.
- *
- * Caller is responsible for freeing returned memory.
- */
-char *hostlist_shift_range(hostlist_t *hl);
-
-
 /* hostlist_find():
  *
  * Searches hostlist hl for the first host matching hostname
@@ -486,11 +474,6 @@ char *hostset_shift(hostset_t *set);
  * hostset equivalent to hostlist_pop()
  */
 char *hostset_pop(hostset_t *set);
-
-/* hostset_shift_range():
- * hostset eqivalent to hostlist_shift_range()
- */
-char *hostset_shift_range(hostset_t *set);
 
 /* hostset_count():
  * Count the number of hosts currently in hostset

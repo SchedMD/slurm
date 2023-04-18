@@ -162,7 +162,6 @@
 #define	hostlist_remove		slurm_hostlist_remove
 #define	hostlist_shift		slurm_hostlist_shift
 #define	hostlist_shift_dims	slurm_hostlist_shift_dims
-#define	hostlist_shift_range	slurm_hostlist_shift_range
 #define	hostlist_sort		slurm_hostlist_sort
 #define	hostlist_cmp_first	slurm_hostlist_cmp_first
 #define	hostlist_uniq		slurm_hostlist_uniq
@@ -178,7 +177,6 @@
 #define hostset_ranged_string_xmalloc \
 				slurm_hostset_ranged_string_xmalloc
 #define	hostset_shift		slurm_hostset_shift
-#define	hostset_shift_range	slurm_hostset_shift_range
 #define	hostset_within		slurm_hostset_within
 #define	hostset_nth		slurm_hostset_nth
 

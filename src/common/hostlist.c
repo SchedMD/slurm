@@ -103,7 +103,6 @@ strong_alias(hostlist_ranged_string_xmalloc,
 strong_alias(hostlist_remove,		slurm_hostlist_remove);
 strong_alias(hostlist_shift,		slurm_hostlist_shift);
 strong_alias(hostlist_shift_dims,	slurm_hostlist_shift_dims);
-strong_alias(hostlist_shift_range,	slurm_hostlist_shift_range);
 strong_alias(hostlist_sort,		slurm_hostlist_sort);
 strong_alias(hostlist_cmp_first,	slurm_hostlist_cmp_first);
 strong_alias(hostlist_uniq,		slurm_hostlist_uniq);
@@ -115,7 +114,6 @@ strong_alias(hostset_destroy,		slurm_hostset_destroy);
 strong_alias(hostset_find,		slurm_hostset_find);
 strong_alias(hostset_insert,		slurm_hostset_insert);
 strong_alias(hostset_shift,		slurm_hostset_shift);
-strong_alias(hostset_shift_range,	slurm_hostset_shift_range);
 strong_alias(hostset_within,		slurm_hostset_within);
 strong_alias(hostset_nth,		slurm_hostset_nth);
 
@@ -1983,50 +1981,6 @@ char *hostlist_shift(hostlist_t *hl)
 	return hostlist_shift_dims(hl, 0);
 }
 
-char *hostlist_shift_range(hostlist_t *hl)
-{
-	int i;
-	char *buf;
-	hostlist_t *hltmp;
-
-	if (!hl)
-		return NULL;
-
-	hltmp = hostlist_new();
-
-	LOCK_HOSTLIST(hl);
-
-	if (hl->nranges == 0) {
-		hostlist_destroy(hltmp);
-		UNLOCK_HOSTLIST(hl);
-		return NULL;
-	}
-
-	i = 0;
-	do {
-		hostlist_push_range(hltmp, hl->hr[i]);
-		hostrange_destroy(hl->hr[i]);
-	} while ( (++i < hl->nranges)
-		  && hostrange_within_range(hltmp->hr[0], hl->hr[i]) );
-
-	hostlist_shift_iterators(hl, i, 0, hltmp->nranges);
-
-	/* shift rest of ranges back in hl */
-	for (; i < hl->nranges; i++) {
-		hl->hr[i - hltmp->nranges] = hl->hr[i];
-		hl->hr[i] = NULL;
-	}
-	hl->nhosts -= hltmp->nhosts;
-	hl->nranges -= hltmp->nranges;
-
-	UNLOCK_HOSTLIST(hl);
-
-	buf = hostlist_ranged_string_malloc(hltmp);
-	hostlist_destroy(hltmp);
-
-	return buf;
-}
-
 /* XXX: Note: efficiency improvements needed */
 int hostlist_delete(hostlist_t *hl, const char *hosts)
 {
@@ -3462,11 +3416,6 @@ char *hostset_shift(hostset_t *set)
 char *hostset_pop(hostset_t *set)
 {
 	return hostlist_pop(set->hl);
-}
-
-char *hostset_shift_range(hostset_t *set)
-{
-	return hostlist_shift_range(set->hl);
 }
 
 int hostset_count(hostset_t *set)
