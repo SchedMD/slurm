@@ -153,8 +153,7 @@ static void _handle_job_delete(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	}
 }
 
-static void _job_post_update(ctxt_t *ctxt, data_t *djob, const char *script,
-			     slurm_selected_step_t *job_id)
+static void _job_post_update(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 {
 	job_array_resp_msg_t *resp = NULL;
 	job_desc_msg_t *job = xmalloc(sizeof(*job));
@@ -162,16 +161,9 @@ static void _job_post_update(ctxt_t *ctxt, data_t *djob, const char *script,
 
 	slurm_init_job_desc_msg(job);
 
-	data_set_string(data_list_append(ctxt->parent_path), "job");
-
-	if (DATA_PARSE(ctxt->parser, JOB_DESC_MSG, *job, djob,
+	if (DATA_PARSE(ctxt->parser, JOB_DESC_MSG, *job, ctxt->query,
 		       ctxt->parent_path))
 		goto cleanup;
-
-	if (script) {
-		xfree(job->script);
-		job->script = xstrdup(script);
-	}
 
 	if (job_id->step_id.job_id != NO_VAL)
 		job->job_id = job_id->step_id.job_id;
@@ -329,7 +321,7 @@ cleanup:
 	FREE_NULL_LIST(jobs);
 }
 
-static void _job_post(ctxt_t *ctxt, slurm_selected_step_t *job_id)
+static void _job_submit_post(ctxt_t *ctxt)
 {
 	data_t *djobs, *djob, *dscript;
 	const char *script = NULL;
@@ -363,14 +355,8 @@ static void _job_post(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	djobs = data_key_get(ctxt->query, "jobs");
 
 	if (dscript && (!(script = data_get_string(dscript)) || !script[0])) {
-		if (!job_id || (job_id->step_id.job_id == NO_VAL))
-			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-				   "Populated \"script\" field is required for job submission");
-		else
-			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-				   "Populated \"script\" field is required for JobId=%u update",
-				   job_id->step_id.job_id);
-
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Populated \"script\" field is required for job submission");
 		return;
 	}
 	if (djob && djobs) {
@@ -380,14 +366,7 @@ static void _job_post(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	}
 	if (!djob && !djobs) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Specifing either \"job\" or \"jobs\" fields are required to job %s",
-			   (!job_id || (job_id->step_id.job_id == NO_VAL) ?
-			    " update" : "submission"));
-		return;
-	}
-	if (job_id && djobs) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Specify only \"job\" field for updating an existing job");
+			   "Specifying either \"job\" or \"jobs\" fields are required to submit a new job");
 		return;
 	}
 
@@ -398,10 +377,7 @@ static void _job_post(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 			return;
 		}
 
-		if (job_id)
-			_job_post_update(ctxt, djob, script, job_id);
-		else
-			_job_post_submit(ctxt, djob, script);
+		_job_post_submit(ctxt, djob, script);
 	} else {
 		_job_post_het_submit(ctxt, djobs, script);
 	}
@@ -442,7 +418,7 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 	} else if (method == HTTP_REQUEST_DELETE) {
 		_handle_job_delete(ctxt, &job_id);
 	} else if (method == HTTP_REQUEST_POST) {
-		_job_post(ctxt, &job_id);
+		_job_post_update(ctxt, &job_id);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
@@ -462,7 +438,7 @@ static int _op_handler_submit_job(const char *context_id,
 				       tag, resp, auth);
 
 	if (method == HTTP_REQUEST_POST) {
-		_job_post(ctxt, NULL);
+		_job_submit_post(ctxt);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
