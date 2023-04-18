@@ -570,7 +570,6 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 				      slurm_conf.job_acct_gather_freq);
 
 	step->open_mode  = msg->open_mode;
-	step->overcommit = (bool) msg->overcommit;
 
 	step->cwd     = xstrdup(msg->work_dir);
 
