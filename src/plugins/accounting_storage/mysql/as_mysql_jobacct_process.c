@@ -1172,7 +1172,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	hostlist_t temp_hl = NULL;
-	hostlist_iterator_t h_itr = NULL;
+	xhostlist_iterator_t *h_itr = NULL;
 	char *query = NULL;
 	int dims = 0;
 

@@ -90,7 +90,7 @@ typedef struct hostset hostset_t;
  * used for non-destructive access to hostlist members.
  *
  */
-typedef struct hostlist_iterator * hostlist_iterator_t;
+typedef struct hostlist_iterator xhostlist_iterator_t;
 
 /* ----[ hostlist_t functions: ]---- */
 
@@ -408,26 +408,26 @@ int hostlist_nranges(hostlist_t hl);
  * Creates and returns a hostlist iterator used for non destructive
  * access to a hostlist or hostset. Returns NULL on failure.
  */
-hostlist_iterator_t hostlist_iterator_create(hostlist_t hl);
+xhostlist_iterator_t *hostlist_iterator_create(hostlist_t hl);
 
 /* hostset_iterator_create():
  *
  * Same as hostlist_iterator_create(), but creates a hostlist_iterator
  * from a hostset.
  */
-hostlist_iterator_t hostset_iterator_create(hostset_t *set);
+xhostlist_iterator_t *hostset_iterator_create(hostset_t *set);
 
 /* hostlist_iterator_destroy():
  *
  * Destroys a hostlist iterator.
  */
-void hostlist_iterator_destroy(hostlist_iterator_t i);
+void hostlist_iterator_destroy(xhostlist_iterator_t *i);
 
 /* hostlist_iterator_reset():
  *
  * Reset an iterator to the beginning of the list.
  */
-void hostlist_iterator_reset(hostlist_iterator_t i);
+void hostlist_iterator_reset(xhostlist_iterator_t *i);
 
 /* hostlist_next():
  *
@@ -436,8 +436,8 @@ void hostlist_iterator_reset(hostlist_iterator_t i);
  *
  * The caller is responsible for freeing the returned memory.
  */
-char * hostlist_next_dims(hostlist_iterator_t i, int dims);
-char * hostlist_next(hostlist_iterator_t i);
+char *hostlist_next_dims(xhostlist_iterator_t *i, int dims);
+char *hostlist_next(xhostlist_iterator_t *i);
 
 
 /* hostlist_next_range():
@@ -448,7 +448,7 @@ char * hostlist_next(hostlist_iterator_t i);
  * The caller is responsible for freeing the returned memory.
  *
  */
-char * hostlist_next_range(hostlist_iterator_t i);
+char *hostlist_next_range(xhostlist_iterator_t *i);
 
 
 /* hostlist_remove():
@@ -456,7 +456,7 @@ char * hostlist_next_range(hostlist_iterator_t i);
  *
  * Returns 1 for success, 0 for failure.
  */
-int hostlist_remove(hostlist_iterator_t i);
+int hostlist_remove(xhostlist_iterator_t *i);
 
 
 /* ----[ hostset operations ]---- */

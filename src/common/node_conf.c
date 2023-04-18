@@ -1192,7 +1192,7 @@ extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap)
 	int rc = SLURM_SUCCESS;
 	bitstr_t *my_bitmap;
 	char *name;
-	hostlist_iterator_t hi;
+	xhostlist_iterator_t *hi;
 
 	FREE_NULL_BITMAP(*bitmap);
 	my_bitmap = (bitstr_t *) bit_alloc (node_record_count);

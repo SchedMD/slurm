@@ -3744,7 +3744,7 @@ static int DUMP_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 
 	if (hostlist_count(host_list)) {
 		char *host;
-		hostlist_iterator_t itr = hostlist_iterator_create(host_list);
+		xhostlist_iterator_t *itr = hostlist_iterator_create(host_list);
 
 		while ((host = hostlist_next(itr))) {
 			data_set_string(data_list_append(dst), host);

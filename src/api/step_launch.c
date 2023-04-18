@@ -1284,7 +1284,7 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 {
 	srun_node_fail_msg_t *nf = fail_msg->data;
 	hostlist_t fail_nodes, all_nodes;
-	hostlist_iterator_t fail_itr;
+	xhostlist_iterator_t *fail_itr;
 	int num_node_ids;
 	int *node_ids;
 	int i, j;
@@ -1359,7 +1359,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 {
 	srun_step_missing_msg_t *step_missing = missing_msg->data;
 	hostlist_t fail_nodes, all_nodes;
-	hostlist_iterator_t fail_itr;
+	xhostlist_iterator_t *fail_itr;
 	char *node;
 	int num_node_ids;
 	int i, j;
