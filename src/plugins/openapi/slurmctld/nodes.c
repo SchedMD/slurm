@@ -46,11 +46,6 @@
 
 #include "api.h"
 
-typedef enum {
-	URL_TAG_NODE = 328382,
-	URL_TAG_NODES = 21389,
-} url_tag_t;
-
 static void _delete_node(ctxt_t *ctxt, char *name)
 {
 	update_node_msg_t *node_msg = xmalloc(sizeof(*node_msg));
@@ -146,28 +141,47 @@ static int _op_handler_nodes(const char *context_id,
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
+
+	if (ctxt->rc)
+		goto done;
+
+	if (method == HTTP_REQUEST_GET) {
+		_dump_nodes(ctxt, NULL);
+	} else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
+	}
+
+done:
+	return fini_connection(ctxt);
+}
+
+static int _op_handler_node(const char *context_id,
+			    http_request_method_t method, data_t *parameters,
+			    data_t *query, int tag, data_t *resp, void *auth)
+{
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
+	data_t *node_name = data_key_get(parameters, "node_name");
 	char *name = NULL;
 
 	if (ctxt->rc)
 		goto done;
 
-	if (tag == URL_TAG_NODE) {
-		data_t *node_name = data_key_get(parameters, "node_name");
-
-		if (!node_name || data_get_string_converted(node_name, &name)) {
-			resp_error(
-				ctxt, ESLURM_INVALID_NODE_NAME, __func__,
-				"Expected string for node name but got %s",
-				data_type_to_string(data_get_type(node_name)));
-			goto done;
-		}
+	if (!node_name || data_get_string_converted(node_name, &name)) {
+		resp_error(
+			ctxt, ESLURM_INVALID_NODE_NAME, __func__,
+			"Expected string for node name but got %s",
+			data_type_to_string(data_get_type(node_name)));
+		goto done;
 	}
 
 	if (method == HTTP_REQUEST_GET) {
 		_dump_nodes(ctxt, name);
-	} else if ((method == HTTP_REQUEST_DELETE) && (tag == URL_TAG_NODE)) {
+	} else if (method == HTTP_REQUEST_DELETE) {
 		_delete_node(ctxt, name);
-	} else if ((method == HTTP_REQUEST_POST) && (tag == URL_TAG_NODE)) {
+	} else if (method == HTTP_REQUEST_POST) {
 		_update_node(ctxt, name);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
@@ -183,9 +197,9 @@ done:
 extern void init_op_nodes(void)
 {
 	bind_operation_handler("/slurm/{data_parser}/nodes/", _op_handler_nodes,
-			       URL_TAG_NODES);
+			       0);
 	bind_operation_handler("/slurm/{data_parser}/node/{node_name}",
-			       _op_handler_nodes, URL_TAG_NODE);
+			       _op_handler_node, 0);
 }
 
 extern void destroy_op_nodes(void)
