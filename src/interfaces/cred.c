@@ -171,7 +171,6 @@ static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void);
 static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg);
 
 static int  _ctx_update_private_key(slurm_cred_ctx_t *ctx);
-static int  _ctx_update_public_key(slurm_cred_ctx_t *ctx);
 static bool _exkey_is_valid(slurm_cred_ctx_t *ctx);
 
 static cred_state_t * _cred_state_create(slurm_cred_ctx_t *ctx,
@@ -421,10 +420,7 @@ extern int slurm_cred_ctx_key_update(slurm_cred_ctx_t *ctx)
 {
 	xassert(g_context);
 
-	if (ctx->type == SLURM_CRED_CREATOR)
-		return _ctx_update_private_key(ctx);
-	else
-		return _ctx_update_public_key(ctx);
+	return _ctx_update_private_key(ctx);
 }
 
 extern slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx,
@@ -1558,37 +1554,6 @@ static int _ctx_update_private_key(slurm_cred_ctx_t *ctx)
 
 	(*(ops.cred_destroy_key))(tmpk);
 
-	return SLURM_SUCCESS;
-}
-
-
-static int _ctx_update_public_key(slurm_cred_ctx_t *ctx)
-{
-	void *pk   = NULL;
-
-	xassert(ctx != NULL);
-	pk = (*(ops.cred_ctx_create))();
-	if (!pk)
-		return SLURM_ERROR;
-
-	slurm_mutex_lock(&ctx->mutex);
-
-	xassert(ctx->magic == CRED_CTX_MAGIC);
-	xassert(ctx->type  == SLURM_CRED_VERIFIER);
-
-	if (ctx->exkey)
-		(*(ops.cred_destroy_key))(ctx->exkey);
-
-	ctx->exkey = ctx->key;
-	ctx->key   = pk;
-
-	/*
-	 * exkey expires in expiry_window seconds plus one minute.
-	 * This should be long enough to capture any keys in-flight.
-	 */
-	ctx->exkey_exp = time(NULL) + ctx->expiry_window + 60;
-
-	slurm_mutex_unlock(&ctx->mutex);
 	return SLURM_SUCCESS;
 }
 
