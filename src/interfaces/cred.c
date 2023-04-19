@@ -112,9 +112,6 @@ struct slurm_cred_context {
 	list_t *state_list;	/* List of cred states (for verifier)	*/
 
 	int expiry_window;	/* expiration window for cached creds	*/
-
-	void *exkey;		/* Old public key if key is updated	*/
-	time_t exkey_exp;	/* Old key expiration time		*/
 };
 
 typedef struct {
@@ -171,7 +168,6 @@ static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void);
 static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg);
 
 static int  _ctx_update_private_key(slurm_cred_ctx_t *ctx);
-static bool _exkey_is_valid(slurm_cred_ctx_t *ctx);
 
 static cred_state_t * _cred_state_create(slurm_cred_ctx_t *ctx,
 					 slurm_cred_t *c);
@@ -385,8 +381,6 @@ extern void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx)
 	slurm_mutex_lock(&ctx->mutex);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 
-	if (ctx->exkey)
-		(*(ops.cred_destroy_key))(ctx->exkey);
 	if (ctx->key)
 		(*(ops.cred_destroy_key))(ctx->key);
 	FREE_NULL_LIST(ctx->job_list);
@@ -1557,23 +1551,6 @@ static int _ctx_update_private_key(slurm_cred_ctx_t *ctx)
 	return SLURM_SUCCESS;
 }
 
-
-static bool _exkey_is_valid(slurm_cred_ctx_t *ctx)
-{
-	if (!ctx->exkey)
-		return false;
-
-	if (time(NULL) > ctx->exkey_exp) {
-		debug2("old job credential key slurmd expired");
-		(*(ops.cred_destroy_key))(ctx->exkey);
-		ctx->exkey = NULL;
-		return false;
-	}
-
-	return true;
-}
-
-
 static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void)
 {
 	slurm_cred_ctx_t *ctx = xmalloc(sizeof(*ctx));
@@ -1583,7 +1560,6 @@ static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void)
 
 	ctx->magic = CRED_CTX_MAGIC;
 	ctx->expiry_window = cred_expire;
-	ctx->exkey_exp     = (time_t) -1;
 
 	return ctx;
 }
@@ -1637,11 +1613,6 @@ static void _cred_verify_signature(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 	rc = (*(ops.cred_verify_sign))(ctx->key, start, len,
 				       cred->signature,
 				       cred->siglen);
-	if (rc && _exkey_is_valid(ctx)) {
-		rc = (*(ops.cred_verify_sign))(ctx->exkey, start, len,
-					       cred->signature,
-					       cred->siglen);
-	}
 
 	if (rc) {
 		error("Credential signature check: %s",
