@@ -1240,11 +1240,6 @@ _reconfigure(void)
 	_print_conf();
 
 	/*
-	 * Make best effort at changing to new public key
-	 */
-	slurm_cred_ctx_key_update(conf->vctx);
-
-	/*
 	 * Purge the username -> grouplist cache.
 	 */
 	group_cache_purge();

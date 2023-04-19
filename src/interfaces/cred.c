@@ -167,8 +167,6 @@ static slurm_cred_ctx_t *verifier_ctx = NULL;
 static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void);
 static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg);
 
-static int  _ctx_update_private_key(slurm_cred_ctx_t *ctx);
-
 static cred_state_t * _cred_state_create(slurm_cred_ctx_t *ctx,
 					 slurm_cred_t *c);
 static job_state_t  * _job_state_create(uint32_t jobid);
@@ -408,13 +406,6 @@ extern int cred_ctx_lifetime(slurm_cred_ctx_t *ctx)
 	slurm_mutex_unlock(&ctx->mutex);
 
 	return lifespan;
-}
-
-extern int slurm_cred_ctx_key_update(slurm_cred_ctx_t *ctx)
-{
-	xassert(g_context);
-
-	return _ctx_update_private_key(ctx);
 }
 
 extern slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx,
@@ -1522,33 +1513,6 @@ static void _verifier_ctx_init(slurm_cred_ctx_t *ctx)
 	ctx->state_list = list_create(xfree_ptr);
 
 	return;
-}
-
-
-static int _ctx_update_private_key(slurm_cred_ctx_t *ctx)
-{
-	void *pk   = NULL;
-	void *tmpk = NULL;
-
-	xassert(ctx != NULL);
-
-	pk = (*(ops.cred_ctx_create))();
-	if (!pk)
-		return SLURM_ERROR;
-
-	slurm_mutex_lock(&ctx->mutex);
-
-	xassert(ctx->magic == CRED_CTX_MAGIC);
-	xassert(ctx->type  == SLURM_CRED_CREATOR);
-
-	tmpk = ctx->key;
-	ctx->key = pk;
-
-	slurm_mutex_unlock(&ctx->mutex);
-
-	(*(ops.cred_destroy_key))(tmpk);
-
-	return SLURM_SUCCESS;
 }
 
 static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void)

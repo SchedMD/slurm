@@ -262,7 +262,6 @@ static void *       _slurmctld_rpc_mgr(void *no_data);
 static void *       _slurmctld_signal_hand(void *no_data);
 static void         _test_thread_limit(void);
 static void         _update_assoc(slurmdb_assoc_rec_t *rec);
-inline static void  _update_cred_key(void);
 static void         _update_diag_job_state_counts(void);
 static void         _update_cluster_tres(void);
 static void         _update_nice(void);
@@ -1189,7 +1188,6 @@ extern int reconfigure_slurm(void)
 	if (rc != SLURM_SUCCESS)
 		error("read_slurm_conf: %s", slurm_strerror(rc));
 	else {
-		_update_cred_key();
 		set_slurmctld_state_loc();
 		if (config_for_slurmd) {
 			configless_update();
@@ -2970,14 +2968,6 @@ static int _shutdown_backup_controller(void)
 	slurm_mutex_unlock(&bu_mutex);
 
 	return bu_rc;
-}
-
-/* Reset the job credential key based upon configuration parameters */
-static void _update_cred_key(void)
-{
-	xassert(verify_lock(CONF_LOCK, READ_LOCK));
-
-	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx);
 }
 
 /*

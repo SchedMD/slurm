@@ -302,8 +302,6 @@ static void *_background_signal_hand(void *no_data)
 			 */
 			lock_slurmctld(config_write_lock);
 			_backup_reconfig();
-			/* Leave config lock set through this */
-			slurm_cred_ctx_key_update(slurmctld_config.cred_ctx);
 			unlock_slurmctld(config_write_lock);
 			break;
 		case SIGABRT:   /* abort */

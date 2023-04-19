@@ -196,11 +196,6 @@ slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(void);
 extern int cred_ctx_lifetime(slurm_cred_ctx_t *ctx);
 
 /*
- * Update the context's current key.
- */
-extern int slurm_cred_ctx_key_update(slurm_cred_ctx_t *ctx);
-
-/*
  * Destroy a credential context, freeing associated memory.
  */
 void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx);
