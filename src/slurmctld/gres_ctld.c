@@ -401,7 +401,12 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		if (job_mod) {
 			gres_ns->gres_cnt_alloc =
 				bit_set_count(gres_ns->gres_bit_alloc);
-			gres_ns->gres_cnt_alloc *= gres_per_bit;
+			if (shared_gres &&
+			    (bit_size(gres_ns->gres_bit_alloc) !=
+			     gres_ns->gres_cnt_avail))
+				gres_ns->gres_cnt_alloc *=
+					(gres_ns->gres_cnt_avail /
+					 bit_size(gres_ns->gres_bit_alloc));
 		} else {
 			gres_ns->gres_cnt_alloc += gres_cnt;
 		}
