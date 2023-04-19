@@ -1285,6 +1285,32 @@ extern void slurmdb_destroy_archive_cond(void *object)
 	}
 }
 
+extern void slurmdb_free_add_assoc_cond_members(
+	slurmdb_add_assoc_cond_t *add_assoc)
+{
+	if (!add_assoc)
+		return;
+
+	FREE_NULL_LIST(add_assoc->acct_list);
+	slurmdb_free_assoc_rec_members(&add_assoc->assoc);
+	FREE_NULL_LIST(add_assoc->cluster_list);
+	xfree(add_assoc->default_acct);
+	FREE_NULL_LIST(add_assoc->partition_list);
+	FREE_NULL_LIST(add_assoc->user_list);
+	FREE_NULL_LIST(add_assoc->wckey_list);
+}
+
+extern void slurmdb_destroy_add_assoc_cond(void *object)
+{
+	slurmdb_add_assoc_cond_t *add_assoc = object;
+
+	if (!add_assoc)
+		return;
+
+	slurmdb_free_add_assoc_cond_members(add_assoc);
+	xfree(add_assoc);
+}
+
 extern void slurmdb_destroy_update_object(void *object)
 {
 	slurmdb_update_object_t *slurmdb_update =
@@ -1599,6 +1625,18 @@ extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey, bool free_it)
 		_free_wckey_rec_members(wckey);
 	memset(wckey, 0, sizeof(slurmdb_wckey_rec_t));
 	wckey->is_def = NO_VAL16;
+}
+
+extern void slurmdb_init_add_assoc_cond(slurmdb_add_assoc_cond_t *add_assoc,
+					bool free_it)
+{
+	if (!add_assoc)
+		return;
+
+	if (free_it)
+		slurmdb_free_add_assoc_cond_members(add_assoc);
+	memset(add_assoc, 0, sizeof(*add_assoc));
+	slurmdb_init_assoc_rec(&add_assoc->assoc, free_it);
 }
 
 extern void slurmdb_init_tres_cond(slurmdb_tres_cond_t *tres,

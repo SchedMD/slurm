@@ -593,6 +593,19 @@ typedef struct slurmdb_assoc_rec {
 				       */
 } slurmdb_assoc_rec_t;
 
+typedef struct {
+	list_t *acct_list;	/* list of char * */
+	slurmdb_assoc_rec_t assoc; /* filled with limits for associations
+				      to be added. */
+	list_t *cluster_list; /* list of char * */
+
+	char *default_acct; /* default account name (DON'T PACK) */
+
+	list_t *partition_list; /* list of char * */
+	list_t *user_list;	/* list of char * */
+	list_t *wckey_list;	/* list of char * */
+} slurmdb_add_assoc_cond_t;
+
 struct slurmdb_assoc_usage {
 	uint32_t accrue_cnt;    /* Count of how many jobs I have accuring prio
 				 * (DON'T PACK for state file) */
@@ -1857,6 +1870,9 @@ extern void slurmdb_destroy_res_cond(void *object);
 extern void slurmdb_destroy_txn_cond(void *object);
 extern void slurmdb_destroy_wckey_cond(void *object);
 extern void slurmdb_destroy_archive_cond(void *object);
+extern void slurmdb_free_add_assoc_cond_members(
+	slurmdb_add_assoc_cond_t *add_assoc);
+extern void slurmdb_destroy_add_assoc_cond(void *object);
 
 extern void slurmdb_destroy_update_object(void *object);
 extern void slurmdb_destroy_used_limits(void *object);
@@ -1889,6 +1905,8 @@ extern void slurmdb_init_res_rec(slurmdb_res_rec_t *res,
 				 bool free_it);
 extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey,
 				   bool free_it);
+extern void slurmdb_init_add_assoc_cond(slurmdb_add_assoc_cond_t *add_assoc,
+					bool free_it);
 extern void slurmdb_init_tres_cond(slurmdb_tres_cond_t *tres,
 				   bool free_it);
 extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
