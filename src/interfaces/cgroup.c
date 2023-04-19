@@ -459,6 +459,7 @@ static void _read_slurm_cgroup_conf(void)
 /* Autodetect logic inspired from systemd source code */
 extern char *autodetect_cgroup_version(void)
 {
+#ifdef WITH_CGROUP
 	struct statfs fs;
 	int cgroup_ver = -1;
 
@@ -508,6 +509,8 @@ extern char *autodetect_cgroup_version(void)
 		error("unsupported cgroup version %d", cgroup_ver);
 		break;
 	}
+#endif
+
 	return NULL;
 }
 
