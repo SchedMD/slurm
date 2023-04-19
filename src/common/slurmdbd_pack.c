@@ -815,6 +815,10 @@ static void _pack_modify_msg(dbd_modify_msg_t *msg, uint16_t rpc_version,
 		my_cond = slurmdb_pack_add_assoc_cond;
 		my_rec = slurmdb_pack_account_rec;
 		break;
+	case DBD_ADD_USERS_COND:
+		my_cond = slurmdb_pack_add_assoc_cond;
+		my_rec = slurmdb_pack_user_rec;
+		break;
 	default:
 		fatal("Unknown pack type");
 		return;
@@ -869,6 +873,10 @@ static int _unpack_modify_msg(dbd_modify_msg_t **msg, uint16_t rpc_version,
 	case DBD_ADD_ACCOUNTS_COND:
 		my_cond = slurmdb_unpack_add_assoc_cond;
 		my_rec = slurmdb_unpack_account_rec;
+		break;
+	case DBD_ADD_USERS_COND:
+		my_cond = slurmdb_unpack_add_assoc_cond;
+		my_rec = slurmdb_unpack_user_rec;
 		break;
 	default:
 		fatal("%s: Unknown unpack type", __func__);
@@ -1643,6 +1651,7 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 	case DBD_MODIFY_RES:
 	case DBD_MODIFY_USERS:
 	case DBD_ADD_ACCOUNTS_COND:
+	case DBD_ADD_USERS_COND:
 		_pack_modify_msg(
 			(dbd_modify_msg_t *)req->data, rpc_version,
 			req->msg_type, buffer);
@@ -1852,6 +1861,7 @@ extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
 	case DBD_MODIFY_RES:
 	case DBD_MODIFY_USERS:
 	case DBD_ADD_ACCOUNTS_COND:
+	case DBD_ADD_USERS_COND:
 		rc = _unpack_modify_msg(
 			(dbd_modify_msg_t **)&resp->data,
 			rpc_version,

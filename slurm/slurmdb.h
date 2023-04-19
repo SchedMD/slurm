@@ -2072,6 +2072,18 @@ extern int slurmdb_users_add(void *db_conn, List user_list);
 
 /*
  * add users to accounting system
+ * IN: slurmdb_add_assoc_cond_t *assoc_cond with cluster (optional) acct
+ *     and user lists filled in along with any limits in the assoc rec.
+ * IN: slurmdb_user_rec_t *
+ * RET: Return char * to print out of what was added or NULL and errno set on
+ *      error.
+ */
+extern char *slurmdb_users_add_cond(void *db_conn,
+				    slurmdb_add_assoc_cond_t *add_assoc,
+				    slurmdb_user_rec_t *user);
+
+/*
+ * add users to accounting system
  * IN:  slurmdb_user_rec_t *user
  * IN:  slurmdb_assoc_cond_t *assoc_cond
  * IN:  slurmdb_assoc_rec_t *assoc

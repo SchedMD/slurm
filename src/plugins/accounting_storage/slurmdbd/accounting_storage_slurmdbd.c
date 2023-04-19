@@ -717,6 +717,32 @@ extern int acct_storage_p_add_users(void *db_conn, uint32_t uid,
 	return rc;
 }
 
+extern char *acct_storage_p_add_users_cond(void *db_conn, uint32_t uid,
+					   slurmdb_add_assoc_cond_t *add_assoc,
+					   slurmdb_user_rec_t *user)
+{
+	persist_msg_t req = {0};
+	dbd_modify_msg_t msg;
+	char *ret_str = NULL;
+	int rc, resp_code = SLURM_SUCCESS;
+
+	memset(&msg, 0, sizeof(msg));
+	msg.cond = add_assoc;
+	msg.rec = user;
+
+	req.msg_type = DBD_ADD_USERS_COND;
+	req.conn = db_conn;
+	req.data = &msg;
+	rc = dbd_conn_send_recv_rc_comment_msg(SLURM_PROTOCOL_VERSION,
+					       &req, &resp_code, &ret_str);
+
+	if (resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	errno = rc;
+	return ret_str;
+}
+
 extern int acct_storage_p_add_coord(void *db_conn, uint32_t uid,
 				    List acct_list,
 				    slurmdb_user_cond_t *user_cond)

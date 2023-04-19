@@ -612,6 +612,58 @@ static int _add_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	return rc;
 }
 
+static int _add_users_cond(slurmdbd_conn_t *slurmdbd_conn,
+			   persist_msg_t *msg,
+			   buf_t **out_buffer)
+{
+	int rc = SLURM_SUCCESS;
+	dbd_modify_msg_t *modify_msg = msg->data;
+	char *comment = NULL;
+	bool free_comment = true;
+
+	debug2("DBD_ADD_USERS_COND: called in CONN %d",
+	       slurmdbd_conn->conn->fd);
+
+	/*
+	 * All authentication needs to be done inside the plugin since we are
+	 * unable to know what users this request is talking about
+	 * until we process it through the database.
+	 */
+
+	if (!(comment = acct_storage_g_add_users_cond(
+		      slurmdbd_conn->db_conn,
+		      slurmdbd_conn->conn->auth_uid,
+		      modify_msg->cond,
+		      modify_msg->rec))) {
+		free_comment = false;
+		if (errno == ESLURM_ACCESS_DENIED) {
+			comment = "Your user doesn't have privilege to perform this action\n";
+			rc = ESLURM_ACCESS_DENIED;
+		} else if (errno == SLURM_ERROR) {
+			comment = "Something was wrong with your query\n";
+			rc = SLURM_ERROR;
+		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action\n";
+			rc = errno;
+		} else if (errno == ESLURM_DB_CONNECTION) {
+			comment = slurm_strerror(errno);
+			rc = errno;
+		} else {
+			rc = errno;
+			if (!(comment = slurm_strerror(errno)))
+				comment = "Unknown issue\n";
+		}
+		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
+	}
+
+	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
+						rc, comment,
+						DBD_ADD_USERS_COND);
+	if (free_comment)
+		xfree(comment);
+	return rc;
+}
+
 static int _add_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		       buf_t **out_buffer)
 {
@@ -3402,6 +3454,9 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		break;
 	case DBD_ADD_USERS:
 		rc = _add_users(slurmdbd_conn, msg, out_buffer);
+		break;
+	case DBD_ADD_USERS_COND:
+		rc = _add_users_cond(slurmdbd_conn, msg, out_buffer);
 		break;
 	case DBD_ADD_WCKEYS:
 		rc = _add_wckeys(slurmdbd_conn, msg, out_buffer);
