@@ -1815,6 +1815,7 @@ extern void slurmdb_destroy_assoc_usage(void *object);
 extern void slurmdb_destroy_bf_usage(void *object);
 extern void slurmdb_destroy_bf_usage_members(void *object);
 extern void slurmdb_destroy_qos_usage(void *object);
+extern void slurmdb_free_user_rec_members(slurmdb_user_rec_t *slurmdb_user);
 extern void slurmdb_destroy_user_rec(void *object);
 extern void slurmdb_destroy_account_rec(void *object);
 extern void slurmdb_destroy_coord_rec(void *object);

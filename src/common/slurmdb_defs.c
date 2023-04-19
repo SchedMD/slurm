@@ -698,22 +698,30 @@ extern void slurmdb_destroy_qos_usage(void *object)
 	}
 }
 
+extern void slurmdb_free_user_rec_members(slurmdb_user_rec_t *slurmdb_user)
+{
+	if (!slurmdb_user)
+		return;
+
+	FREE_NULL_LIST(slurmdb_user->assoc_list);
+	FREE_NULL_LIST(slurmdb_user->coord_accts);
+	xfree(slurmdb_user->default_acct);
+	xfree(slurmdb_user->default_wckey);
+	xfree(slurmdb_user->name);
+	xfree(slurmdb_user->old_name);
+	FREE_NULL_LIST(slurmdb_user->wckey_list);
+	slurmdb_destroy_bf_usage(slurmdb_user->bf_usage);
+}
 
 extern void slurmdb_destroy_user_rec(void *object)
 {
 	slurmdb_user_rec_t *slurmdb_user = (slurmdb_user_rec_t *)object;
 
-	if (slurmdb_user) {
-		FREE_NULL_LIST(slurmdb_user->assoc_list);
-		FREE_NULL_LIST(slurmdb_user->coord_accts);
-		xfree(slurmdb_user->default_acct);
-		xfree(slurmdb_user->default_wckey);
-		xfree(slurmdb_user->name);
-		xfree(slurmdb_user->old_name);
-		FREE_NULL_LIST(slurmdb_user->wckey_list);
-		slurmdb_destroy_bf_usage(slurmdb_user->bf_usage);
-		xfree(slurmdb_user);
-	}
+	if (!slurmdb_user)
+		return;
+
+	slurmdb_free_user_rec_members(slurmdb_user);
+	xfree(slurmdb_user);
 }
 
 extern void slurmdb_destroy_account_rec(void *object)
