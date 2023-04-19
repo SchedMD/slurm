@@ -88,6 +88,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@WITH_CGROUP_TRUE@am__append_1 = cgroup
 subdir = src/plugins
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -199,7 +200,13 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = $(SUBDIRS)
+DIST_SUBDIRS = accounting_storage acct_gather_energy \
+	acct_gather_profile acct_gather_interconnect \
+	acct_gather_filesystem auth burst_buffer cli_filter core_spec \
+	cred data_parser ext_sensors gpu gres hash jobacct_gather \
+	jobcomp job_container job_submit mcs mpi node_features openapi \
+	power preempt prep priority proctrack route sched select \
+	serializer site_factor switch task topology cgroup
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -465,45 +472,13 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = \
-	accounting_storage	\
-	acct_gather_energy	\
-	acct_gather_profile	\
-	acct_gather_interconnect\
-	acct_gather_filesystem  \
-	auth			\
-	burst_buffer		\
-	cgroup			\
-	cli_filter		\
-	core_spec		\
-	cred			\
-	data_parser		\
-	ext_sensors		\
-	gpu			\
-	gres			\
-	hash			\
-	jobacct_gather		\
-	jobcomp			\
-	job_container		\
-	job_submit		\
-	mcs			\
-	mpi			\
-	node_features		\
-	openapi			\
-	power			\
-	preempt			\
-	prep			\
-	priority		\
-	proctrack		\
-	route			\
-	sched			\
-	select			\
-	serializer		\
-	site_factor		\
-	switch			\
-	task			\
-	topology
-
+SUBDIRS = accounting_storage acct_gather_energy acct_gather_profile \
+	acct_gather_interconnect acct_gather_filesystem auth \
+	burst_buffer cli_filter core_spec cred data_parser ext_sensors \
+	gpu gres hash jobacct_gather jobcomp job_container job_submit \
+	mcs mpi node_features openapi power preempt prep priority \
+	proctrack route sched select serializer site_factor switch \
+	task topology $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:

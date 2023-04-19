@@ -6,7 +6,6 @@ SUBDIRS = \
 	acct_gather_filesystem  \
 	auth			\
 	burst_buffer		\
-	cgroup			\
 	cli_filter		\
 	core_spec		\
 	cred			\
@@ -36,3 +35,7 @@ SUBDIRS = \
 	switch			\
 	task			\
 	topology
+
+if WITH_CGROUP
+SUBDIRS += cgroup
+endif
