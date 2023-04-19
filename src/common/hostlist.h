@@ -400,18 +400,6 @@ void hostlist_iterator_reset(hostlist_iterator_t *i);
 char *hostlist_next_dims(hostlist_iterator_t *i, int dims);
 char *hostlist_next(hostlist_iterator_t *i);
 
-
-/* hostlist_next_range():
- *
- * Returns the next bracketed hostlist or NULL if the iterator i is
- * at the end of the list.
- *
- * The caller is responsible for freeing the returned memory.
- *
- */
-char *hostlist_next_range(hostlist_iterator_t *i);
-
-
 /* hostlist_remove():
  * Removes the last host returned by hostlist iterator i
  *

@@ -86,7 +86,6 @@ strong_alias(hostlist_iterator_create,	slurm_hostlist_iterator_create);
 strong_alias(hostlist_iterator_destroy,	slurm_hostlist_iterator_destroy);
 strong_alias(hostlist_iterator_reset,	slurm_hostlist_iterator_reset);
 strong_alias(hostlist_next,		slurm_hostlist_next);
-strong_alias(hostlist_next_range,	slurm_hostlist_next_range);
 strong_alias(hostlist_nth,		slurm_hostlist_nth);
 strong_alias(hostlist_pop,		slurm_hostlist_pop);
 strong_alias(hostlist_push,		slurm_hostlist_push);
@@ -317,7 +316,6 @@ static int _is_bracket_needed(hostlist_t *, int);
 
 static hostlist_iterator_t *hostlist_iterator_new(void);
 static void _iterator_advance(hostlist_iterator_t *);
-static void _iterator_advance_range(hostlist_iterator_t *);
 
 static int hostset_find_host(hostset_t *, const char *);
 
@@ -3087,28 +3085,6 @@ static void _iterator_advance(hostlist_iterator_t *i)
 	}
 }
 
-/* advance iterator to end of current range (meaning within "[" "]")
- * i.e. advance iterator past all range objects that could be represented
- * in on bracketed hostlist.
- */
-static void _iterator_advance_range(hostlist_iterator_t *i)
-{
-	int nr, j;
-	hostrange_t **hr;
-	xassert(i);
-	xassert(i->magic == HOSTLIST_ITR_MAGIC);
-
-	nr = i->hl->nranges;
-	hr = i->hl->hr;
-	j = i->idx;
-	if (++i->depth > 0) {
-		while (++j < nr && hostrange_within_range(i->hr, hr[j])) {;}
-		i->idx = j;
-		i->hr = i->hl->hr[i->idx];
-		i->depth = 0;
-	}
-}
-
 char *hostlist_next_dims(hostlist_iterator_t *i, int dims)
 {
 	char buf[HOST_NAME_MAX + 16];
@@ -3159,37 +3135,6 @@ char *hostlist_next(hostlist_iterator_t *i)
 	int dims = slurmdb_setup_cluster_name_dims();
 
 	return hostlist_next_dims(i, dims);
-}
-
-char *hostlist_next_range(hostlist_iterator_t *i)
-{
-	int j, buf_size;
-	char *buf;
-
-	xassert(i);
-	xassert(i->magic == HOSTLIST_ITR_MAGIC);
-	LOCK_HOSTLIST(i->hl);
-
-	_iterator_advance_range(i);
-
-	if (i->idx > i->hl->nranges - 1) {
-		UNLOCK_HOSTLIST(i->hl);
-		return NULL;
-	}
-
-	j = i->idx;
-	buf_size = 8192;
-	buf = malloc(buf_size);
-	if (buf &&
-	    (_get_bracketed_list(i->hl, &j, buf_size, buf, 1) == buf_size)) {
-		buf_size *= 2;
-		buf = realloc(buf, buf_size);
-	}
-	if (!buf)
-		out_of_memory("hostlist_iterator_create");
-	UNLOCK_HOSTLIST(i->hl);
-
-	return buf;
 }
 
 int hostlist_remove(hostlist_iterator_t *i)

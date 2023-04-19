@@ -145,7 +145,6 @@
 #define	hostlist_iterator_destroy slurm_hostlist_iterator_destroy
 #define	hostlist_iterator_reset	slurm_hostlist_iterator_reset
 #define	hostlist_next		slurm_hostlist_next
-#define	hostlist_next_range	slurm_hostlist_next_range
 #define	hostlist_nth		slurm_hostlist_nth
 #define	hostlist_pop            slurm_hostlist_pop
 #define	hostlist_push		slurm_hostlist_push
