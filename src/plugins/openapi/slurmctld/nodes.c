@@ -163,17 +163,14 @@ static int _op_handler_node(const char *context_id,
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
-	data_t *node_name = data_key_get(parameters, "node_name");
-	char *name = NULL;
+	char *name;
 
 	if (ctxt->rc)
 		goto done;
 
-	if (!node_name || data_get_string_converted(node_name, &name)) {
-		resp_error(
-			ctxt, ESLURM_INVALID_NODE_NAME, __func__,
-			"Expected string for node name but got %s",
-			data_type_to_string(data_get_type(node_name)));
+	if (!(name = get_str_param("node_name", ctxt))) {
+		resp_error(ctxt, ESLURM_INVALID_NODE_NAME, __func__,
+			   "Node name is requied for singular query");
 		goto done;
 	}
 
@@ -190,7 +187,6 @@ static int _op_handler_node(const char *context_id,
 	}
 
 done:
-	xfree(name);
 	return fini_connection(ctxt);
 }
 
