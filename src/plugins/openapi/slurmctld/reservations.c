@@ -44,11 +44,6 @@
 
 #include "api.h"
 
-typedef enum {
-	URL_TAG_RESERVATION = 192981,
-	URL_TAG_RESERVATIONS = 1899428,
-} url_tag_t;
-
 extern int _op_handler_reservations(const char *context_id,
 				    http_request_method_t method,
 				    data_t *parameters, data_t *query, int tag,
@@ -56,6 +51,49 @@ extern int _op_handler_reservations(const char *context_id,
 {
 	int rc;
 	reserve_info_msg_t *res_info_ptr = NULL;
+	time_t update_time = 0;
+	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
+				       tag, resp, auth);
+
+	if (ctxt->rc)
+		goto done;
+
+	if (method != HTTP_REQUEST_GET) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(method));
+		goto done;
+	}
+
+	if ((rc = get_date_param(query, "update_time", &update_time)))
+		goto done;
+
+	errno = 0;
+	if ((rc = slurm_load_reservations(update_time, &res_info_ptr))) {
+		if (rc == SLURM_ERROR)
+			rc = errno;
+
+		resp_error(ctxt, rc, "slurm_load_reservations()",
+			   "Unable to query reservations");
+
+		goto done;
+	}
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_RESERVATION_RESP, res_info_ptr, ctxt);
+
+done:
+	slurm_free_reservation_info_msg(res_info_ptr);
+	return fini_connection(ctxt);
+}
+
+extern int _op_handler_reservation(const char *context_id,
+				   http_request_method_t method,
+				   data_t *parameters, data_t *query, int tag,
+				   data_t *resp, void *auth)
+{
+	int rc;
+	reserve_info_msg_t *res_info_ptr = NULL;
+	reserve_info_t *res = NULL;
 	time_t update_time = 0;
 	char *name = NULL;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
@@ -74,8 +112,7 @@ extern int _op_handler_reservations(const char *context_id,
 	if ((rc = get_date_param(query, "update_time", &update_time)))
 		goto done;
 
-	if ((tag == URL_TAG_RESERVATION) &&
-	    !(name = get_str_param("reservation_name", ctxt))) {
+	if (!(name = get_str_param("reservation_name", ctxt))) {
 		resp_error(ctxt, ESLURM_RESERVATION_INVALID, __func__,
 			   "Reservation name is requied for singular query");
 		goto done;
@@ -92,40 +129,30 @@ extern int _op_handler_reservations(const char *context_id,
 		goto done;
 	}
 
-	if ((tag == URL_TAG_RESERVATION) &&
-	    (!res_info_ptr || (res_info_ptr->record_count == 0))) {
+	if (!res_info_ptr || (res_info_ptr->record_count == 0)) {
 		resp_error(ctxt, ESLURM_RESERVATION_INVALID, __func__,
 			   "Unable to query reservation %s", name);
 		goto done;
 	}
 
-	if (res_info_ptr && name) {
-		reserve_info_t *res = NULL;
-
-		for (int i = 0; !rc && i < res_info_ptr->record_count; i++) {
-			if (!xstrcasecmp(name,
-					 res_info_ptr->reservation_array[i]
-						 .name)) {
-				res = &res_info_ptr->reservation_array[i];
-				break;
-			}
+	for (int i = 0; !rc && i < res_info_ptr->record_count; i++) {
+		if (!xstrcasecmp(name,
+				 res_info_ptr->reservation_array[i].name)) {
+			res = &res_info_ptr->reservation_array[i];
+			break;
 		}
+	}
 
-		if (!res) {
-			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-				   "Unable to find reservation %s", name);
-		} else {
-			reserve_info_msg_t r = {
-				.last_update = res_info_ptr->last_update,
-				.record_count = 1,
-				.reservation_array = res,
-			};
-			DUMP_OPENAPI_RESP_SINGLE(OPENAPI_RESERVATION_RESP, &r,
-						 ctxt);
-		}
+	if (!res) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unable to find reservation %s", name);
 	} else {
-		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_RESERVATION_RESP, res_info_ptr,
-					 ctxt);
+		reserve_info_msg_t r = {
+			.last_update = res_info_ptr->last_update,
+			.record_count = 1,
+			.reservation_array = res,
+		};
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_RESERVATION_RESP, &r, ctxt);
 	}
 
 done:
@@ -136,9 +163,9 @@ done:
 extern void init_op_reservations(void)
 {
 	bind_operation_handler("/slurm/{data_parser}/reservations/",
-			       _op_handler_reservations, URL_TAG_RESERVATIONS);
+			       _op_handler_reservations, 0);
 	bind_operation_handler("/slurm/{data_parser}/reservation/{reservation_name}",
-			       _op_handler_reservations, URL_TAG_RESERVATION);
+			       _op_handler_reservations, 0);
 }
 
 extern void destroy_op_reservations(void)
