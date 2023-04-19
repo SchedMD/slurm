@@ -446,6 +446,9 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 
 /*
  * Populate OpenAPI schema for each parser
+ * IN parser - parser to add schemas from
+ * IN/OUT dst - OpenAPI specification to populate
+ * RET SLURM_SUCCESS or ESLURM_NOT_SUPPORTED (to skip) or error
  */
 extern int data_parser_g_specify(data_parser_t *parser, data_t *dst);
 
