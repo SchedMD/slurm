@@ -9604,7 +9604,10 @@ static void _pack_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg,
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		pack32(msg->cpu_load, buffer);
+		pack64(msg->free_mem, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->cpu_load, buffer);
 		pack64(msg->free_mem, buffer);
 	}
@@ -9619,7 +9622,10 @@ static int _unpack_ping_slurmd_resp(ping_slurmd_resp_msg_t **msg_ptr,
 	msg = xmalloc(sizeof(ping_slurmd_resp_msg_t));
 	*msg_ptr = msg;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->cpu_load, buffer);
+		safe_unpack64(&msg->free_mem, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->cpu_load, buffer);
 		safe_unpack64(&msg->free_mem, buffer);
 	}
