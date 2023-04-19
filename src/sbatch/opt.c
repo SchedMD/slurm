@@ -925,8 +925,7 @@ static bool _opt_verify(void)
 	if (opt.threads_per_core != NO_VAL)
 		het_job_env.threads_per_core = opt.threads_per_core;
 
-	if (hl)
-		hostlist_destroy(hl);
+	FREE_NULL_HOSTLIST(hl);
 
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");

@@ -1213,8 +1213,7 @@ static bool _opt_verify(void)
 
 		/* massage the numbers */
 		if (opt.nodelist) {
-			if (hl)	/* possibly built above */
-				hostlist_destroy(hl);
+			FREE_NULL_HOSTLIST(hl);
 			hl = hostlist_create(opt.nodelist);
 			if (!hl) {
 				error("memory allocation failure");
@@ -1291,8 +1290,7 @@ static bool _opt_verify(void)
 		opt.ntasks_set = 1;
 	}
 
-	if (hl)
-		hostlist_destroy(hl);
+	FREE_NULL_HOSTLIST(hl);
 
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");

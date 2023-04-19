@@ -1803,8 +1803,7 @@ int s_p_parse_line_expanded(const s_p_hashtbl_t *hashtbl,
 cleanup:
 	if (value_str)
 		free(value_str);
-	if (value_hl)
-		hostlist_destroy(value_hl);
+	FREE_NULL_HOSTLIST(value_hl);
 	s_p_hashtbl_destroy(strtbl);
 
 	if (status == SLURM_ERROR && tables) {

@@ -339,9 +339,7 @@ int pmix_ring_finalize()
 	}
 
 	/* free host list */
-	if (pmix_stepd_hostlist != NULL) {
-		hostlist_destroy(pmix_stepd_hostlist);
-        }
+	FREE_NULL_HOSTLIST(pmix_stepd_hostlist);
 
 	return rc;
 }

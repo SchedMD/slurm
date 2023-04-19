@@ -1655,8 +1655,7 @@ static void _destroy_part_sub(void *object)
 		xfree(sview_part_sub->features);
 		xfree(sview_part_sub->features_act);
 		xfree(sview_part_sub->reason);
-		if (sview_part_sub->hl)
-			hostlist_destroy(sview_part_sub->hl);
+		FREE_NULL_HOSTLIST(sview_part_sub->hl);
 		FREE_NULL_LIST(sview_part_sub->node_ptr_list);
 		xfree(sview_part_sub);
 	}

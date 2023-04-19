@@ -606,8 +606,7 @@ static bool _opt_verify(void)
 		}
 	}
 
-	if (hl)
-		hostlist_destroy(hl);
+	FREE_NULL_HOSTLIST(hl);
 
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");

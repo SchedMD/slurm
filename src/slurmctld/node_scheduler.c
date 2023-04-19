@@ -4433,8 +4433,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 #endif
 
 	if (agent_args->node_count == 0) {
-		if (agent_args->hostlist)
-			hostlist_destroy(agent_args->hostlist);
+		FREE_NULL_HOSTLIST(agent_args->hostlist);
 		xfree(agent_args);
 		hostlist_destroy(kill_hostlist);
 		return;

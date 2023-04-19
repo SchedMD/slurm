@@ -1245,8 +1245,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	return SLURM_SUCCESS;
 
 fail:
-	if (s_hset)
-		hostlist_destroy(s_hset);
+	FREE_NULL_HOSTLIST(s_hset);
 	*step_hset = NULL;
 	slurm_cred_unlock_args(cred);
 	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
@@ -1706,8 +1705,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	_launch_complete_add(req->step_id.job_id, false);
 
 done:
-	if (step_hset)
-		hostlist_destroy(step_hset);
+	FREE_NULL_HOSTLIST(step_hset);
 
 	if (slurm_send_rc_err_msg(msg, errnum, errmsg) < 0) {
 		error("%s: unable to send return code to address:port=%pA msg_type=%u: %m",
@@ -2282,8 +2280,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 			    rc);
 		}
 
-		if (step_hset)
-			hostlist_destroy(step_hset);
+		FREE_NULL_HOSTLIST(step_hset);
 	}
 
 	for (i = 0; i < req->nnodes; i++)

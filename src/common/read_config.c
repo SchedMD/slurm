@@ -2310,10 +2310,8 @@ static int _register_front_ends(slurm_conf_frontend_t *front_end_ptr)
 
 	/* free allocated storage */
 cleanup:
-	if (hostname_list)
-		hostlist_destroy(hostname_list);
-	if (address_list)
-		hostlist_destroy(address_list);
+	FREE_NULL_HOSTLIST(hostname_list);
+	FREE_NULL_HOSTLIST(address_list);
 	return error_code;
 }
 

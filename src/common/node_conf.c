@@ -673,16 +673,11 @@ extern void expand_nodeline_info(slurm_conf_node_t *node_ptr, config_record_t
 		free(hostname);
 	if (port_str)
 		free(port_str);
-	if (address_list)
-		hostlist_destroy(address_list);
-	if (alias_list)
-		hostlist_destroy(alias_list);
-	if (bcast_list)
-		hostlist_destroy(bcast_list);
-	if (hostname_list)
-		hostlist_destroy(hostname_list);
-	if (port_list)
-		hostlist_destroy(port_list);
+	FREE_NULL_HOSTLIST(address_list);
+	FREE_NULL_HOSTLIST(alias_list);
+	FREE_NULL_HOSTLIST(bcast_list);
+	FREE_NULL_HOSTLIST(hostname_list);
+	FREE_NULL_HOSTLIST(port_list);
 }
 
 /*

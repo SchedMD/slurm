@@ -77,8 +77,7 @@ static void _forward_msg_internal(hostlist_t hl, hostlist_t* sp_hl,
 void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
 {
 	if (fwd_tree) {
-		if (fwd_tree->tree_hl)
-			hostlist_destroy(fwd_tree->tree_hl);
+		FREE_NULL_HOSTLIST(fwd_tree->tree_hl);
 
 		/*
 		 * Lock and decrease thread counter, start_msg_tree is waiting
