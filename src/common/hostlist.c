@@ -105,7 +105,6 @@ strong_alias(hostlist_shift_dims,	slurm_hostlist_shift_dims);
 strong_alias(hostlist_sort,		slurm_hostlist_sort);
 strong_alias(hostlist_cmp_first,	slurm_hostlist_cmp_first);
 strong_alias(hostlist_uniq,		slurm_hostlist_uniq);
-strong_alias(hostset_copy,		slurm_hostset_copy);
 strong_alias(hostset_count,		slurm_hostset_count);
 strong_alias(hostset_create,		slurm_hostset_create);
 strong_alias(hostset_delete,		slurm_hostset_delete);
@@ -3176,20 +3175,6 @@ hostset_t *hostset_create(const char *hostlist)
 
 	hostlist_uniq(new->hl);
 	return new;
-}
-
-hostset_t *hostset_copy(const hostset_t *set)
-{
-	hostset_t *new = xmalloc(sizeof(*new));
-
-	if (!(new->hl = hostlist_copy(set->hl)))
-		goto error2;
-
-	return new;
-error2:
-	free(new);
-	out_of_memory("hostset_copy");
-	return NULL;
 }
 
 void hostset_destroy(hostset_t *set)

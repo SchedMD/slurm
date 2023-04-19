@@ -417,12 +417,6 @@ int hostlist_remove(hostlist_iterator_t *i);
  */
 hostset_t *hostset_create(const char *hostlist);
 
-/* hostset_copy():
- *
- * Copy a hostset object. Returned set must be freed with hostset_destroy().
- */
-hostset_t *hostset_copy(const hostset_t *set);
-
 /* hostset_destroy():
  */
 void hostset_destroy(hostset_t *set);

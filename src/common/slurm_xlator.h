@@ -164,7 +164,6 @@
 #define	hostlist_sort		slurm_hostlist_sort
 #define	hostlist_cmp_first	slurm_hostlist_cmp_first
 #define	hostlist_uniq		slurm_hostlist_uniq
-#define	hostset_copy		slurm_hostset_copy
 #define	hostset_count		slurm_hostset_count
 #define	hostset_create		slurm_hostset_create
 #define	hostset_delete		slurm_hostset_delete
