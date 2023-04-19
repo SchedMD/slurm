@@ -740,6 +740,8 @@ WITH_BPF_TRUE
 BPF_CPPFLAGS
 WITH_CGROUP_FALSE
 WITH_CGROUP_TRUE
+LINUX_BUILD_FALSE
+LINUX_BUILD_TRUE
 WITH_RDKAFKA_FALSE
 WITH_RDKAFKA_TRUE
 RDKAFKA_LDFLAGS
@@ -24834,6 +24836,14 @@ fi
     ;;
   esac
    if test x$with_cgroup = xyes; then
+  LINUX_BUILD_TRUE=
+  LINUX_BUILD_FALSE='#'
+else
+  LINUX_BUILD_TRUE='#'
+  LINUX_BUILD_FALSE=
+fi
+
+   if test x$with_cgroup = xyes; then
   WITH_CGROUP_TRUE=
   WITH_CGROUP_FALSE='#'
 else
@@ -28345,6 +28355,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_RDKAFKA_TRUE}" && test -z "${WITH_RDKAFKA_FALSE}"; then
   as_fn_error $? "conditional \"WITH_RDKAFKA\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${LINUX_BUILD_TRUE}" && test -z "${LINUX_BUILD_FALSE}"; then
+  as_fn_error $? "conditional \"LINUX_BUILD\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_CGROUP_TRUE}" && test -z "${WITH_CGROUP_FALSE}"; then

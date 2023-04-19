@@ -20,6 +20,7 @@ AC_DEFUN([X_AC_CGROUP],
     with_cgroup=yes
     ;;
   esac
+  AM_CONDITIONAL(LINUX_BUILD, test x$with_cgroup = xyes)
   AM_CONDITIONAL(WITH_CGROUP, test x$with_cgroup = xyes)
   if test x$with_cgroup = xyes; then
     AC_DEFINE(WITH_CGROUP, 1, [Building with Linux cgroup support])
