@@ -786,7 +786,6 @@ static bool _oneapi_read_cpu_affinity_list(const char *file,
 					   unsigned int size)
 {
 	char line[CPU_LINE_SIZE] = {'\0'};
-	char buf[CPU_LINE_SIZE] = {'\0'};
 	char *save_ptr = line, *tok = NULL;
 	int min_cpu = -1, max_cpu = -1;
 	FILE *fp = NULL;
@@ -808,10 +807,8 @@ static bool _oneapi_read_cpu_affinity_list(const char *file,
 			debug2("tok is :%s", tok);
 			pos = strcspn(tok, "-");
 			if (pos > 0 && pos < strlen(tok)) {
-				strlcpy(buf, tok, pos);
-				min_cpu = atoi(buf);
-				strlcpy(buf, tok + pos + 1, sizeof(buf));
-				max_cpu = atoi(buf);
+				min_cpu = atoi(tok);
+				max_cpu = atoi(tok + pos + 1);
 			} else if (pos > 0 && pos == strlen(tok)) {
 				max_cpu = min_cpu = atoi(tok);
 			} else {

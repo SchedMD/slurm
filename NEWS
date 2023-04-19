@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - avoid possible segfault caused by race condition of already
     completed connections.
  -- mpi/cray_shasta - Fix PMI shared secret for hetjobs.
+ -- gpu/oneapi - Fix CPU affinity handling.
 
 * Changes in Slurm 23.02.1
 ==========================
