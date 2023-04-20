@@ -1698,8 +1698,8 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 	unsigned int device_count = 0;
 
 	if ((gpuutil_pos == -1) || (gpumem_pos == -1)) {
-		error("no gpu utilization TRES! This should never happen");
-		return SLURM_ERROR;
+		debug2("%s: We are not tracking TRES gpuutil/gpumem", __func__);
+		return SLURM_SUCCESS;
 	}
 	_nvml_init();
 	gpu_p_get_device_count(&device_count);
