@@ -151,34 +151,56 @@ def llnl_references(line):
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
+        manStr = '<A HREF="/man/man2html?8+logrotate">logrotate</A>'
+        htmlStr = 'logrotate'
+        lineFix = line.replace(manStr,htmlStr)
+        if lineFix != line:
+            return lineFix
+        manStr = '<A HREF="/cgi-bin/man/man2html?7+path_resolution">path_resolution</A>'
+        htmlStr = 'path_resolution'
+        lineFix = line.replace(manStr,htmlStr)
+        if lineFix != line:
+            return lineFix
+        manStr = '<A HREF="/man/man2html?7+path_resolution">path_resolution</A>'
+        htmlStr = 'path_resolution'
+        lineFix = line.replace(manStr,htmlStr)
+        if lineFix != line:
+            return lineFix
         return line
 
 def relative_reference(lineIn):
-    fullRef = "/cgi-bin/man/man2html"
-    lenRef = len(fullRef)
+    lineOt = ""
     refAnchor="<A HREF=";
     lenRefAnchor = len(refAnchor)
-    lineOt = ""
-    cursor = 0
 
-    posHREF = lineIn.find(fullRef,cursor)
-    if posHREF == -1:
-        return lineIn
-    if lineIn[posHREF+lenRef] != "?":
-        pos = lineIn.find("Return to Main Contents",cursor)
-        if pos != -1:
-            return ""
-        return "<i>man2html</i> "
-    while posHREF != -1:
-        posRefAnchor = lineIn.find(refAnchor,cursor)
-        lineOt = lineOt + lineIn[cursor:posRefAnchor+lenRefAnchor]
-        cursor = posHREF + lenRef + 3
-        lineOt = lineOt + '"'
-        posQuote = lineIn.find('"',cursor)
-        lineOt = lineOt + lineIn[cursor:posQuote] + ".html"
-        cursor = posQuote
+    for fullRef in ["/cgi-bin/man/man2html", "/man/man2html"]:
+        lenRef = len(fullRef)
+        lineOt = ""
+        cursor = 0
+
         posHREF = lineIn.find(fullRef,cursor)
-    lineOt = lineOt + lineIn[cursor:]
+        if posHREF == -1:
+            continue
+        if lineIn[posHREF+lenRef] != "?":
+            pos = lineIn.find("Return to Main Contents",cursor)
+            if pos != -1:
+                return ""
+            return "<i>man2html</i> "
+        while posHREF != -1:
+            posRefAnchor = lineIn.find(refAnchor,cursor)
+            lineOt = lineOt + lineIn[cursor:posRefAnchor+lenRefAnchor]
+            cursor = posHREF + lenRef + 3
+            lineOt = lineOt + '"'
+            posQuote = lineIn.find('"',cursor)
+            lineOt = lineOt + lineIn[cursor:posQuote] + ".html"
+            cursor = posQuote
+            posHREF = lineIn.find(fullRef,cursor)
+        lineOt = lineOt + lineIn[cursor:]
+        if lineOt != lineIn:
+            break;
+
+    if lineOt == "":
+        return lineIn
     return lineOt
 
 
