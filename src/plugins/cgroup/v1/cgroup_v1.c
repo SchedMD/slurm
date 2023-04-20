@@ -1084,19 +1084,6 @@ extern int cgroup_p_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
  * Code based on linux tools/cgroup/cgroup_event_listener.c with adapted
  * modifications for Slurm logic and needs.
  */
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
-extern int cgroup_p_step_start_oom_mgr(void)
-{
-	log_flag(CGROUP, "OOM not available on FreeBSD, NetBSD, or macOS");
-	return SLURM_SUCCESS;
-}
-
-extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
-{
-	log_flag(CGROUP, "OOM not available on FreeBSD, NetBSD, or macOS");
-	return NULL;
-}
-#else
 static int _read_fd(int fd, uint64_t *buf)
 {
 	int rc = SLURM_ERROR;
@@ -1440,7 +1427,6 @@ fail_oom_results:
 
 	return results;
 }
-#endif
 
 /***************************************
  ***** CGROUP TASK FUNCTIONS *****

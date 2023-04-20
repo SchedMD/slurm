@@ -39,6 +39,7 @@
 
 #define _GNU_SOURCE		/* For POLLRDHUP, O_CLOEXEC on older glibc */
 #include <poll.h>
+#include <sys/eventfd.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -55,17 +56,6 @@
 #include "src/plugins/cgroup/common/cgroup_common.h"
 
 #include "xcgroup.h"
-
-// http://lists.debian.org/debian-boot/2012/04/msg00047.html
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
-#define POLLRDHUP POLLHUP
-#define	MS_NOSUID MNT_NOSUID
-#define	MS_NOEXEC MNT_NOEXEC
-#define	MS_NODEV 0
-#define	umount(d) unmount(d, 0)
-#else
-#include <sys/eventfd.h>
-#endif
 
 #define MAX_MOVE_WAIT 1000 /* Miliseconds */
 
