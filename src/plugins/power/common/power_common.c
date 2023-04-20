@@ -43,6 +43,7 @@
 #define _GNU_SOURCE	/* For POLLRDHUP */
 #include <fcntl.h>
 #include <poll.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -50,7 +51,6 @@
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define POLLRDHUP POLLHUP
-#include <signal.h>
 #endif
 
 #include "slurm/slurm.h"
