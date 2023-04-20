@@ -111,9 +111,9 @@ bitstr_t *cloud_node_bitmap = NULL;	/* bitmap of cloud nodes */
 bitstr_t *future_node_bitmap = NULL;	/* bitmap of FUTURE nodes */
 bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
 bitstr_t *power_node_bitmap = NULL;	/* bitmap of powered down nodes */
+bitstr_t *rs_node_bitmap    = NULL; 	/* bitmap of resuming nodes */
 bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
 bitstr_t *up_node_bitmap    = NULL;  	/* bitmap of non-down nodes */
-bitstr_t *rs_node_bitmap    = NULL; 	/* bitmap of resuming nodes */
 
 static void 	_dump_node_state(node_record_t *dump_node_ptr, buf_t *buffer);
 static void	_drain_node(node_record_t *node_ptr, char *reason,

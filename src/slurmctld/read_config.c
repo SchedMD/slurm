@@ -383,9 +383,9 @@ static void _init_bitmaps(void)
 	FREE_NULL_BITMAP(future_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(power_node_bitmap);
+	FREE_NULL_BITMAP(rs_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
-	FREE_NULL_BITMAP(rs_node_bitmap);
 	avail_node_bitmap = bit_alloc(node_record_count);
 	bf_ignore_node_bitmap = bit_alloc(node_record_count);
 	booting_node_bitmap = bit_alloc(node_record_count);
@@ -394,9 +394,9 @@ static void _init_bitmaps(void)
 	future_node_bitmap = bit_alloc(node_record_count);
 	idle_node_bitmap = bit_alloc(node_record_count);
 	power_node_bitmap = bit_alloc(node_record_count);
+	rs_node_bitmap = bit_alloc(node_record_count);
 	share_node_bitmap = bit_alloc(node_record_count);
 	up_node_bitmap = bit_alloc(node_record_count);
-	rs_node_bitmap = bit_alloc(node_record_count);
 }
 
 /*
