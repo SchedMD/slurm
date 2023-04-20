@@ -475,9 +475,9 @@ were correctly detected on your system.</p>
 </tr>
 <tr>
 <td>eBPF</td>
-<td>include/linux/ebpf.h</td>
+<td>include/linux/bpf.h</td>
 <td>kernel-headers</td>
-<td>--with-ebpf=</td>
+<td>--with-bpf=</td>
 <td>Constrain devices to a job/step/task</td>
 </tr>
 <tr>
