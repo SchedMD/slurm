@@ -36,7 +36,7 @@
 
 #include "config.h"
 
-#define _GNU_SOURCE	/* For POLLRDHUP */
+#define _GNU_SOURCE
 #include <ctype.h>
 #include <poll.h>
 #include <stdlib.h>
