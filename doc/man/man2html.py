@@ -156,6 +156,16 @@ def llnl_references(line):
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
+        manStr = '<A HREF="/cgi-bin/man/man2html?7+path_resolution">path_resolution</A>'
+        htmlStr = 'path_resolution'
+        lineFix = line.replace(manStr,htmlStr)
+        if lineFix != line:
+            return lineFix
+        manStr = '<A HREF="/man/man2html?7+path_resolution">path_resolution</A>'
+        htmlStr = 'path_resolution'
+        lineFix = line.replace(manStr,htmlStr)
+        if lineFix != line:
+            return lineFix
         return line
 
 def relative_reference(lineIn):
