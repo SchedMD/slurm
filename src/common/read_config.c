@@ -4576,20 +4576,31 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	}
 
 	if (!s_p_get_string(&conf->accounting_storage_tres,
-			    "AccountingStorageTRES", hashtbl))
+			    "AccountingStorageTRES", hashtbl)) {
+		/* Set to default accounting tres fields */
 		conf->accounting_storage_tres =
 			xstrdup(DEFAULT_ACCOUNTING_TRES);
-	else
-		xstrfmtcat(conf->accounting_storage_tres,
-			   ",%s", DEFAULT_ACCOUNTING_TRES);
+	} else {
+		List tres_list = list_create(xfree_ptr);
 
-	/*
-	 * If we are tracking gres/gpu also add the usage tres to the mix
-	 */
-	if (xstrcasestr(conf->accounting_storage_tres, "gres/gpu"))
-		xstrcat(conf->accounting_storage_tres,
-			",gres/gpuutil,gres/gpumem");
+		slurm_addto_char_list(tres_list, DEFAULT_ACCOUNTING_TRES);
+		slurm_addto_char_list(tres_list, conf->accounting_storage_tres);
 
+		/*
+		 * If we are tracking gres/gpu, also add the usage tres to the
+		 * mix.
+		 */
+		if (list_find_first(tres_list, slurm_find_char_in_list,
+				    "gres/gpu")) {
+			slurm_addto_char_list(tres_list,
+					      "gres/gpumem,gres/gpuutil");
+		}
+
+		xfree(conf->accounting_storage_tres);
+		conf->accounting_storage_tres =
+			slurm_char_list_to_xstr(tres_list);
+		FREE_NULL_LIST(tres_list);
+	}
 
 	if (s_p_get_string(&temp_str, "AccountingStorageEnforce", hashtbl)) {
 		if (_validate_accounting_storage_enforce(temp_str, conf) !=
