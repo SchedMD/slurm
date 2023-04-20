@@ -47,7 +47,7 @@
 #include <unistd.h>
 #include <inttypes.h>		/* for uint16_t, uint32_t definitions */
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#ifndef POLLRDHUP
 #define POLLRDHUP POLLHUP
 #endif
 

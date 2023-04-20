@@ -73,7 +73,7 @@
 #define MAX_POLL_WAIT 500 /* in milliseconds */
 #define MAX_SHUTDOWN_DELAY 10
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#ifndef POLLRDHUP
 #define POLLRDHUP POLLHUP
 #endif
 
