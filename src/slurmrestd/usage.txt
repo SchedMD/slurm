@@ -3,8 +3,10 @@ Usage: slurmrestd [OPTIONS] [host:port]...
 		List of authentication types to accept.
 	-f file
 		Use specified file for slurmctld configuration
-	-h
+	-h, --help
 		Print this help message.
+	--max-connections <count>
+		Set max count of connections to process.
 	-s <OpenAPI plugins to load>
 		CSV list of OpenAPI plugins.
 	-t <thread count>

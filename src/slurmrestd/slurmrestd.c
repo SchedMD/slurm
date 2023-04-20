@@ -38,6 +38,7 @@
 
 #define _GNU_SOURCE
 
+#include <getopt.h>
 #include <grp.h>
 #include <limits.h>
 #include <netdb.h>
@@ -77,6 +78,8 @@
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
 
+#define OPT_LONG_MAX_CON 0x100
+
 decl_static_data(usage_txt);
 
 typedef struct {
@@ -97,6 +100,8 @@ static List socket_listen = NULL;
 static char *slurm_conf_filename = NULL;
 /* Number of requested threads */
 static int thread_count = 20;
+/* Max number of connections */
+static int max_connections = 124;
 /* User to become once loaded */
 static uid_t uid = 0;
 static gid_t gid = 0;
@@ -120,6 +125,16 @@ extern void free_parse_host_port(parsed_host_port_t *parsed);
 static void _sigpipe_handler(int signum)
 {
 	debug5("%s: received SIGPIPE", __func__);
+}
+
+static void _set_max_connections(const char *buffer)
+{
+	max_connections = slurm_atoul(buffer);
+
+	if (max_connections < 1)
+		fatal("Invalid max connection count: %s", buffer);
+
+	debug3("%s: setting max_connections=%d", __func__, max_connections);
 }
 
 static void _parse_env(void)
@@ -150,6 +165,9 @@ static void _parse_env(void)
 		xfree(rest_auth);
 		rest_auth = xstrdup(buffer);
 	}
+
+	if ((buffer = getenv("SLURMRESTD_MAX_CONNECTIONS")))
+		_set_max_connections(buffer);
 
 	if ((buffer = getenv("SLURMRESTD_OPENAPI_PLUGINS")) != NULL) {
 		xfree(oas_specs);
@@ -259,10 +277,17 @@ static void _usage(void)
  */
 static void _parse_commandline(int argc, char **argv)
 {
-	int c = 0;
+	static const struct option long_options[] = {
+		{ "help", no_argument, NULL, 'h' },
+		{ "max-connections", required_argument, NULL, OPT_LONG_MAX_CON },
+		{ NULL, 0, NULL, 0 }
+	};
+	int c = 0, option_index = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "a:f:g:hs:t:u:vV")) != -1) {
+
+	while ((c = getopt_long(argc, argv, "a:f:g:hs:t:u:vV", long_options,
+				&option_index)) != -1) {
 		switch (c) {
 		case 'a':
 			xfree(rest_auth);
@@ -297,6 +322,9 @@ static void _parse_commandline(int argc, char **argv)
 		case 'V':
 			print_slurm_version();
 			exit(0);
+			break;
+		case OPT_LONG_MAX_CON:
+			_set_max_connections(optarg);
 			break;
 		default:
 			_usage();
@@ -434,7 +462,7 @@ int main(int argc, char **argv)
 		fatal("Unable to initialize serializers");
 
 	if (!(conmgr = init_con_mgr((run_mode.listen ? thread_count : 1),
-				    callbacks)))
+				    max_connections, callbacks)))
 		fatal("Unable to initialize connection manager");
 
 	if (init_operations())

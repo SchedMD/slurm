@@ -52,6 +52,7 @@ documents those changes that are of interest to users and administrators.
  -- gpu/oneapi - Fix CPU affinity handling.
  -- Fix dynamic nodes powering up when already up after adding/deleting nodes
     when using power_save logic.
+ -- slurmrestd - Add support for setting max connections.
 
 * Changes in Slurm 23.02.1
 ==========================

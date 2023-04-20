@@ -78,7 +78,6 @@
 #define MAGIC_DEFERRED_FUNC 0xA230403A
 /* Default buffer to 1 page */
 #define BUFFER_START_SIZE 4096
-#define MAX_OPEN_CONNECTIONS 124
 
 /*
  * there can only be 1 SIGNAL handler, so we are using a mutex to protect
@@ -260,11 +259,13 @@ try_again:
 	}
 }
 
-extern con_mgr_t *init_con_mgr(int thread_count, con_mgr_callbacks_t callbacks)
+extern con_mgr_t *init_con_mgr(int thread_count, int max_connections,
+			       con_mgr_callbacks_t callbacks)
 {
 	con_mgr_t *mgr = xmalloc(sizeof(*mgr));
 
 	mgr->magic = MAGIC_CON_MGR;
+	mgr->max_connections = max_connections;
 	mgr->connections = list_create(NULL);
 	mgr->listen = list_create(NULL);
 	mgr->complete = list_create(NULL);
@@ -1869,9 +1870,9 @@ watch:
 
 		if (!mgr->listen_active) {
 			/* only try to listen if number connections is below limit */
-			if (count >= MAX_OPEN_CONNECTIONS)
+			if (count >= mgr->max_connections)
 				log_flag(NET, "%s: deferring accepting new connections until count is below max: %u/%u",
-					 __func__, count, MAX_OPEN_CONNECTIONS);
+					 __func__, count, mgr->max_connections);
 			else { /* request a listen thread to run */
 				log_flag(NET, "%s: queuing up listen", __func__);
 				mgr->listen_active = true;
