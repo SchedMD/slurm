@@ -46,6 +46,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - correct miscalculation of job argument count that could cause
     memory leak when job submission fails.
  -- slurmdbd - add warning on startup if max_allowed_packet is too small.
+ -- gpu/nvml - Remove E-cores from NVML's cpu affinity bitmap when
+    "allow_ecores" is not set in SlurmdParameters.
 
 * Changes in Slurm 23.02.1
 ==========================
