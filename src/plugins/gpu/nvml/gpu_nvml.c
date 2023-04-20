@@ -1807,7 +1807,7 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 			}
 		}
 
-		for (int j = gcnt; j < ccnt; j++) {
+		for (int j = 0; j < (gcnt + ccnt); j++) {
 			if (proc_info[j].pid != pid)
 				continue;
 			/* Store MB usedGpuMemory is in bytes */
