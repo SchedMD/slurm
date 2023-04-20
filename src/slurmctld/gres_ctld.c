@@ -1232,7 +1232,8 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 	} else if (gres_js->gres_cnt_node_alloc) {
 		gres_cnt = gres_js->gres_cnt_node_alloc[node_offset];
 	} else {
-		gres_cnt = gres_js->gres_per_node;
+		error("gres/%s: job %u node %s no gres allocation recorded.",
+		      gres_name, job_id, node_name);
 	}
 	if (gres_cnt && (gres_ns->gres_cnt_alloc >= gres_cnt))
 		gres_ns->gres_cnt_alloc -= gres_cnt;
