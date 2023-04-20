@@ -88,6 +88,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@LINUX_BUILD_TRUE@am__append_1 = cray pam_slurm_adopt
 subdir = contribs
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -199,7 +200,8 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = $(SUBDIRS)
+DIST_SUBDIRS = lua nss_slurm openlava pam perlapi pmi pmi2 seff \
+	sgather sgi sjobexit torque cray pam_slurm_adopt
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -465,7 +467,8 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = cray lua nss_slurm openlava pam pam_slurm_adopt perlapi pmi pmi2 seff sgather sgi sjobexit torque
+SUBDIRS = lua nss_slurm openlava pam perlapi pmi pmi2 seff sgather sgi \
+	sjobexit torque $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:
