@@ -96,12 +96,14 @@ extern int data_parser_g_parse(data_parser_t *parser, data_parser_type_t type,
 			       void *dst, ssize_t dst_bytes, data_t *src,
 			       data_t *parent_path)
 {
-	const parse_funcs_t *funcs = plugins->functions[parser->plugin_offset];
+	const parse_funcs_t *funcs;
 	DEF_TIMERS;
 	int rc;
 
 	if (!parser)
 		return ESLURM_DATA_INVALID_PARSER;
+
+	funcs = plugins->functions[parser->plugin_offset];
 
 	if (!src || (data_get_type(src) == DATA_TYPE_NONE))
 		return ESLURM_DATA_PARSE_NOTHING;
