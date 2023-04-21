@@ -69,6 +69,12 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where requeued jobs had bad gres allocations leading to gres not
     being deallocated at the end of the job, preventing other jobs from using
     those resources.
+ -- Fix regression in 23.02.0rc1 which caused incorrect values for
+    SLURM_TASKS_PER_NODE when the job requests --ntasks-per-node and --exclusive
+    or --ntasks-per-core=1 (or CR_ONE_TASK_PER_CORE) and without requesting
+    --ntasks. SLURM_TASKS_PER_NODE is used by mpirun, so this regression
+    caused mpirun to launch the wrong number of tasks and to sometimes fail to
+    launch tasks.
 
 * Changes in Slurm 23.02.1
 ==========================

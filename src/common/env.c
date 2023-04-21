@@ -1049,6 +1049,23 @@ extern int env_array_for_job(char ***dest,
 				    alloc->node_list);
 
 	/*
+	 * --ntasks-per-node no-longer sets num_tasks implicitly, so we need
+	 * need to calculate num_tasks here to make sure the environment
+	 * variable is correct.
+	 *
+	 * --ntasks-per-tres still implicitly sets ntasks.
+	 * --ntasks-per-socket requires --ntasks in order to work.
+	 * So neither need to be accounted for here.
+	 *
+	 * SLURM_TASKS_PER_NODE is used by mpirun so it must be set correctly.
+	 */
+	if ((step_layout_req.num_tasks == NO_VAL) &&
+	    desc->ntasks_per_node && (desc->ntasks_per_node != NO_VAL16)) {
+		step_layout_req.num_tasks =
+			desc->ntasks_per_node * alloc->node_cnt;
+	}
+
+	/*
 	 * If we know how many tasks we are going to do then we set
 	 * SLURM_TASKS_PER_NODE. If no tasks were given we can figure it out
 	 * here by totalling up the number of tasks each node can hold (which is
@@ -1225,6 +1242,27 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	 */
 	for (i = 0; i < batch->num_cpu_groups; i++) {
 		step_layout_req.num_hosts += batch->cpu_count_reps[i];
+	}
+
+	/*
+	 * --ntasks-per-node no-longer sets num_tasks implicitly, so we need
+	 * need to calculate num_tasks here to make sure the environment
+	 * variable is correct.
+	 *
+	 * --ntasks-per-tres still implicitly sets ntasks.
+	 * --ntasks-per-socket requires --ntasks in order to work.
+	 * So neither need to be accounted for here.
+	 *
+	 * SLURM_TASKS_PER_NODE is used by mpirun so it must be set correctly.
+	 */
+	if (!step_layout_req.num_tasks) {
+		char *tmp_env_ntasks_per_node =
+			getenvp(batch->environment, "SLURM_NTASKS_PER_NODE");
+		if (tmp_env_ntasks_per_node) {
+			step_layout_req.num_tasks =
+				atoi(tmp_env_ntasks_per_node) *
+				step_layout_req.num_hosts;
+		}
 	}
 
 	env_array_overwrite_fmt(dest, "SLURM_CLUSTER_NAME", "%s",
