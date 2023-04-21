@@ -1170,3 +1170,43 @@ extern int mysql_db_create_table(mysql_conn_t *mysql_conn, char *table_name,
 		mysql_conn, table_name, first_field, ending);
 	return rc;
 }
+
+extern int mysql_db_get_var_u64(mysql_conn_t *mysql_conn,
+	    			 const char *variable_name,
+			    	 uint64_t *value)
+{
+	MYSQL_ROW row = NULL;
+	MYSQL_RES *result = NULL;
+	char *err_check = NULL;
+	char *query;
+
+	query = xstrdup_printf("show variables like \'%s\';",
+			       variable_name);
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	if (!result) {
+		error("%s: null result from query `%s`", __func__, query);
+		xfree(query);
+		return SLURM_ERROR;
+	}
+
+	if (mysql_num_rows(result) != 1) {
+		error("%s: invalid results from query `%s`", __func__, query);
+		xfree(query);
+		mysql_free_result(result);
+		return SLURM_ERROR;
+	}
+
+	xfree(query);
+
+	row = mysql_fetch_row(result);
+	*value = (uint64_t) strtoll(row[1], &err_check, 10);
+
+	if (*err_check) {
+		error("%s: error parsing string to int `%s`", __func__, row[1]);
+		mysql_free_result(result);
+		return SLURM_ERROR;
+	}
+	mysql_free_result(result);
+
+	return SLURM_SUCCESS;
+}

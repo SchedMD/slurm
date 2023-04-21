@@ -2719,45 +2719,6 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
 		xfree(*out);
 }
 
-static int _get_database_variable(mysql_conn_t *mysql_conn,
-				  const char *variable_name, uint64_t *value)
-{
-	MYSQL_ROW row = NULL;
-	MYSQL_RES *result = NULL;
-	char *err_check = NULL;
-	char *query;
-
-	query = xstrdup_printf("show variables like \'%s\';",
-			       variable_name);
-	result = mysql_db_query_ret(mysql_conn, query, 0);
-	if (!result) {
-		error("%s: null result from query `%s`", __func__, query);
-		xfree(query);
-		return SLURM_ERROR;
-	}
-
-	if (mysql_num_rows(result) != 1) {
-		error("%s: invalid results from query `%s`", __func__, query);
-		xfree(query);
-		mysql_free_result(result);
-		return SLURM_ERROR;
-	}
-
-	xfree(query);
-
-	row = mysql_fetch_row(result);
-	*value = (uint64_t) strtoll(row[1], &err_check, 10);
-
-	if (*err_check) {
-		error("%s: error parsing string to int `%s`", __func__, row[1]);
-		mysql_free_result(result);
-		return SLURM_ERROR;
-	}
-	mysql_free_result(result);
-
-	return SLURM_SUCCESS;
-}
-
 /*
  * MySQL version 5.6.48 and 5.7.30 introduced a regression in the
  * implementation of CONCAT() that will lead to incorrect NULL values.
@@ -2809,7 +2770,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 	bool recommended_values = true;
 	char *error_msg = xstrdup("Database settings not recommended values:");
 
-	if (_get_database_variable(mysql_conn, buffer_var, &value))
+	if (mysql_db_get_var_u64(mysql_conn, buffer_var, &value))
 		goto error;
 	debug2("%s: %"PRIu64, buffer_var, value);
 	if (value < (buffer_size / 2)) {
@@ -2817,7 +2778,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 		xstrfmtcat(error_msg, " %s", buffer_var);
 	}
 
-	if (_get_database_variable(mysql_conn, logfile_var, &value))
+	if (mysql_db_get_var_u64(mysql_conn, logfile_var, &value))
 		goto error;
 	debug2("%s: %"PRIu64, logfile_var, value);
 	if (value < (logfile_size / 2)) {
@@ -2825,7 +2786,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 		xstrfmtcat(error_msg, " %s", logfile_var);
 	}
 
-	if (_get_database_variable(mysql_conn, lockwait_var, &value))
+	if (mysql_db_get_var_u64(mysql_conn, lockwait_var, &value))
 		goto error;
 	debug2("%s: %"PRIu64, lockwait_var, value);
 	if (value < (lockwait_timeout / 2)) {
@@ -2833,7 +2794,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 		xstrfmtcat(error_msg, " %s", lockwait_var);
 	}
 
-	if (_get_database_variable(mysql_conn, allowed_packet_var, &value))
+	if (mysql_db_get_var_u64(mysql_conn, allowed_packet_var, &value))
 		goto error;
 	debug2("%s: %"PRIu64, allowed_packet_var, value);
 	if (value < allowed_packet) {
