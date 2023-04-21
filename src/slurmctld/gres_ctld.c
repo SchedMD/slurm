@@ -192,7 +192,7 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 	int j, sz1, sz2;
 	int64_t gres_cnt, i;
 	gres_job_state_t  *gres_js_alloc;
-	bitstr_t *alloc_core_bitmap = NULL;
+	bitstr_t *alloc_core_bitmap = NULL, *left_over_bits = NULL;
 	uint64_t gres_per_bit = 1;
 	bool log_cnt_err = true;
 	char *log_type;
@@ -200,7 +200,6 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 	bool use_busy_dev = gres_use_busy_dev(gres_state_node, 0);
 	uint64_t pre_alloc_gres_cnt;
 	uint64_t *pre_alloc_type_cnt = NULL;
-	bitoff_t last_gres_bit = -1;
 
 	/*
 	 * Validate data structures. Either job_gres_data->node_cnt and
@@ -652,6 +651,8 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 	 * Here we fill job_gres_list_alloc with
 	 * one entry for each type of gres separately
 	 */
+	if (gres_js->gres_bit_alloc && gres_js->gres_bit_alloc[node_offset])
+		left_over_bits = bit_copy(gres_js->gres_bit_alloc[node_offset]);
 	for (j = 0; j < gres_ns->type_cnt; j++) {
 		if (gres_js->type_id &&
 		    gres_js->type_id != gres_ns->type_id[j])
@@ -685,23 +686,14 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 
 		if (gres_js->gres_bit_alloc &&
 		    gres_js->gres_bit_alloc[node_offset]) {
-			bitstr_t *left_over_bits;
-			left_over_bits = bit_copy(
-				gres_js->gres_bit_alloc[node_offset]);
-			if (last_gres_bit >= 0)
-				bit_nclear(left_over_bits, (bitoff_t)0,
-					   last_gres_bit);
+			gres_cnt /= gres_per_bit;
 			gres_js_alloc->gres_bit_alloc[node_offset] =
-				bit_pick_cnt(left_over_bits,
-					     gres_cnt / gres_per_bit);
-			FREE_NULL_BITMAP(left_over_bits);
-			if (gres_cnt &&
-			    gres_js_alloc->gres_bit_alloc[node_offset])
-				last_gres_bit = bit_fls(
-					gres_js_alloc->
-					gres_bit_alloc[node_offset]);
+				bit_pick_cnt(left_over_bits, gres_cnt);
+			bit_and_not(left_over_bits,
+				    gres_js_alloc->gres_bit_alloc[node_offset]);
 		}
 	}
+	FREE_NULL_BITMAP(left_over_bits);
 	/* Also track non typed node gres */
 	if (gres_ns->type_cnt == 0) {
 		gres_js_alloc = _get_job_alloc_gres_ptr(
