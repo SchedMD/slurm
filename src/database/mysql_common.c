@@ -1226,3 +1226,61 @@ extern int mysql_db_get_var_u64(mysql_conn_t *mysql_conn,
 
 	return SLURM_SUCCESS;
 }
+
+extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn)
+{
+	int rc = SLURM_SUCCESS;
+	char *query;
+	uint64_t wsrep_on, wsrep_max_ws_size, fragment_size;
+
+	/* if this errors, assume wsrep_on doesn't exist, so must be disabled */
+	if (mysql_db_get_var_u64(mysql_conn, "wsrep_on", &wsrep_on))
+		wsrep_on = 0;
+
+	debug2("wsrep_on=%lu", wsrep_on);
+
+	if (!wsrep_on)
+		return;
+
+	/*
+	 * wsrep_max_ws_size represents the maximum write set size in bytes.
+	 * The fragment cannot exceed this value.
+	 */
+	rc = mysql_db_get_var_u64(mysql_conn, "wsrep_max_ws_size",
+			          &wsrep_max_ws_size);
+	if (rc) {
+		error("Failed to get wsrep_max_ws_size");
+		return;
+	}
+
+	/*
+	 * Force the wsrep_trx_fragment_unit to bytes. The default may change
+	 * in the future, or may have been set by the site, so don't rely on it
+	 * being a specific value.
+	 */
+	query = xstrdup("SET @@SESSION.wsrep_trx_fragment_unit=\'bytes\';");
+	rc = _mysql_query_internal(mysql_conn->db_conn, query);
+	xfree(query);
+	if (rc) {
+		error("Unable to set wsrep_trx_fragment_unit.");
+		return;
+	}
+
+	/*
+	 * Set the fragment size to 128MiB, or wsrep_max_ws_size if it has been
+	 * set below that. Simply setting it to the max size does not strictly
+	 * result in the best performance.
+	 */
+	fragment_size = MIN(wsrep_max_ws_size, 134217700);
+	query = xstrdup_printf("SET @@SESSION.wsrep_trx_fragment_size=%"PRIu64";",
+			       fragment_size);
+	rc = _mysql_query_internal(mysql_conn->db_conn, query);
+	xfree(query);
+	if (rc)
+		error("Failed to set wsrep_trx_fragment_size");
+	else
+		debug2("set wsrep_trx_fragment_size=%"PRIu64" bytes",
+		       fragment_size);
+
+	return;
+}

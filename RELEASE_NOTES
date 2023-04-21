@@ -42,6 +42,7 @@ HIGHLIGHTS
     (srun --external-launcher), srun can read this env variable from within
     an allocation again, so even if -c1 is set, mpirun will run and won't be
     bound to a single cpu.
+ -- Enable streaming replication for Galera 4 during upgrades.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

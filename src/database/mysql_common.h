@@ -112,4 +112,5 @@ extern int mysql_db_get_var_str(mysql_conn_t *mysql_conn,
 extern int mysql_db_get_var_u64(mysql_conn_t *mysql_conn,
 	    			 const char *variable_name,
 			    	 uint64_t *value);
+extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn);
 #endif

@@ -271,6 +271,15 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 		return SLURM_ERROR;
 	}
 
+	/*
+	 * At this point, its clear an upgrade is being performed.
+	 * Setup the galera cluster specific options if applicable.
+	 *
+	 * If this fails for whatever reason, it does not mean that the upgrade
+	 * will fail, but it might.
+	 */
+	mysql_db_enable_streaming_replication(mysql_conn);
+
 	info("pre-converting cluster resource table");
 	if ((rc = _convert_clus_res_table_pre(mysql_conn)) != SLURM_SUCCESS)
 		return rc;
