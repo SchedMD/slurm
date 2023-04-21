@@ -1188,6 +1188,7 @@ data_for_each_cmd_t _merge_schema(const char *key, data_t *data, void *arg)
 		return DATA_FOR_EACH_FAIL;
 	}
 
+	xassert(cs && (data_get_type(cs) != DATA_TYPE_DICT));
 	e = data_key_set(cs, key);
 
 	if (data_get_type(e) != DATA_TYPE_NULL)
