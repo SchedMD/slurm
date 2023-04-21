@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "June 2024" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "July 2024" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -6249,10 +6249,13 @@ The default value is 1.
 .TP
 \fBCpuBind\fR
 If a job step request does not specify an option to control how tasks are bound
-to allocated CPUs (\-\-cpu\-bind) and all nodes allocated to the job have the same
-\fBCpuBind\fR option the node \fBCpuBind\fR option will control how tasks are
-bound to allocated resources. Supported values for \fBCpuBind\fR are "none",
-"socket", "ldom" (NUMA), "core" and "thread".
+to allocated CPUs (by using \-\-cpu\-bind) and all nodes allocated to the job
+have the same \fBCpuBind\fR option, the node \fBCpuBind\fR option will control
+how tasks are bound to allocated resources. Partition definitions are used next
+if the node definition(s) can't be used, followed by \fBTaskPluginParam\fR as a
+last resort, with the default being no binding. Supported values for
+CpuBind are \fBnone\fR, \fBsocket\fR, \fBldom\fR (NUMA), \fBcore\fR and
+\fBthread\fR.
 .IP
 
 .TP
@@ -6811,11 +6814,12 @@ is "DRAIN" or "INACTIVE."
 .TP
 \fBCpuBind\fR
 If a job step request does not specify an option to control how tasks are bound
-to allocated CPUs (\-\-cpu\-bind) and all nodes allocated to the job do not have
-the same \fBCpuBind\fR option the node. Then the partition's \fBCpuBind\fR
-option will control how tasks are bound to allocated resources.
-Supported values for\fBCpuBind\fR are "none", "socket", "ldom" (NUMA),
-"core" and "thread".
+to allocated CPUs (by using \-\-cpu\-bind) and all nodes allocated to the job
+do not have the same \fBCpuBind\fR option for the node, then the partition's
+\fBCpuBind\fR option will control how tasks are bound to allocated resources.
+The \fBTaskPluginParam\fR will be used as a last resort, with the default being
+no binding. Supported values for CpuBind are \fBnone\fR, \fBsocket\fR,
+\fBldom\fR (NUMA), \fBcore\fR and \fBthread\fR.
 .IP
 
 .TP
