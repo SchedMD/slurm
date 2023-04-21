@@ -1180,8 +1180,7 @@ extern int mysql_db_get_var_u64(mysql_conn_t *mysql_conn,
 	char *err_check = NULL;
 	char *query;
 
-	query = xstrdup_printf("show variables like \'%s\';",
-			       variable_name);
+	query = xstrdup_printf("select @@%s;", variable_name);
 	result = mysql_db_query_ret(mysql_conn, query, 0);
 	if (!result) {
 		error("%s: null result from query `%s`", __func__, query);
@@ -1199,7 +1198,7 @@ extern int mysql_db_get_var_u64(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	row = mysql_fetch_row(result);
-	*value = strtoull(row[1], &err_check, 10);
+	*value = strtoull(row[0], &err_check, 10);
 
 	if (*err_check) {
 		error("%s: error parsing string to int `%s`", __func__, row[1]);
