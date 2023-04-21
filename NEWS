@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix dynamic nodes powering up when already up after adding/deleting nodes
     when using power_save logic.
  -- slurmrestd - Add support for setting max connections.
+ -- data_parser/v0.0.39 - fix sacct --json matching associations from a
+    different cluster.
 
 * Changes in Slurm 23.02.1
 ==========================
