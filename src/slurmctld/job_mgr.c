@@ -13365,8 +13365,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		 * required for the job, translate this into an exclusion of
 		 * all nodes except those requested.
 		 */
-		if (bit_set_count(detail_ptr->req_node_bitmap) >
-		    job_desc->min_nodes) {
+		if (detail_ptr->req_node_bitmap &&
+		    (bit_set_count(detail_ptr->req_node_bitmap) >
+		     job_desc->min_nodes)) {
 			if (!detail_ptr->exc_node_bitmap)
 				detail_ptr->exc_node_bitmap =
 					bit_alloc(node_record_count);

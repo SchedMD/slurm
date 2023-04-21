@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Add support for setting max connections.
  -- data_parser/v0.0.39 - fix sacct --json matching associations from a
     different cluster.
+ -- Fix segfault when clearing reqnodelist of a pending job.
 
 * Changes in Slurm 23.02.1
 ==========================
