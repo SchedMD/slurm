@@ -40,6 +40,19 @@
 #include "as_mysql_user.h"
 #include "as_mysql_wckey.h"
 
+typedef struct {
+	mysql_conn_t *mysql_conn;
+	time_t now;
+	int rc;
+	bool ret_str_err;
+	char *ret_str;
+	char *ret_str_pos;
+	char *txn_query;
+	char *txn_query_pos;
+	slurmdb_user_rec_t *user_in;
+	char *user_name;
+} add_user_cond_t;
+
 static int _change_user_name(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 {
 	int rc = SLURM_SUCCESS;
@@ -262,6 +275,95 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_add_user(void *x, void *arg)
+{
+	char *name = x;
+	add_user_cond_t *add_user_cond = arg;
+	slurmdb_user_rec_t *object, check_object;
+	char *extra, *tmp_extra;
+	int rc;
+	char *query;
+
+	/* Check to see if it is already in the assoc_mgr */
+	memset(&check_object, 0, sizeof(check_object));
+	check_object.name = x;
+	check_object.uid = NO_VAL;
+
+	rc = assoc_mgr_fill_in_user(add_user_cond->mysql_conn,
+				    &check_object,
+				    ACCOUNTING_ENFORCE_ASSOCS, NULL, false);
+	if (rc == SLURM_SUCCESS) {
+		debug2("User %s is already here, not adding again.",
+		       check_object.name);
+		return 0;
+	}
+
+	/* Else, add it */
+	object = xmalloc(sizeof(*object));
+	object->name = xstrdup(x);
+	object->admin_level = add_user_cond->user_in->admin_level;
+
+	query = xstrdup_printf(
+		"insert into %s (creation_time, mod_time, name, admin_level) values (%ld, %ld, '%s', %u) on duplicate key update deleted=0, mod_time=VALUES(mod_time), admin_level=VALUES(admin_level);",
+		user_table, add_user_cond->now, add_user_cond->now,
+		object->name, object->admin_level);
+
+	DB_DEBUG(DB_ASSOC, add_user_cond->mysql_conn->conn, "query:\n%s",
+		 query);
+	add_user_cond->rc = mysql_db_query(add_user_cond->mysql_conn, query);
+	xfree(query);
+	if (add_user_cond->rc != SLURM_SUCCESS) {
+		add_user_cond->rc = ESLURM_BAD_SQL;
+		add_user_cond->ret_str_err = true;
+		xfree(add_user_cond->ret_str);
+		add_user_cond->ret_str = xstrdup_printf(
+			"Couldn't add user %s: %s",
+			object->name, slurm_strerror(add_user_cond->rc));
+		slurmdb_destroy_user_rec(object);
+		error("%s", add_user_cond->ret_str);
+		return -1;
+	}
+
+	extra = xstrdup_printf("admin_level=%u", object->admin_level);
+	tmp_extra = slurm_add_slash_to_quotes(extra);
+
+	if (!add_user_cond->txn_query)
+		xstrfmtcatat(add_user_cond->txn_query,
+			     &add_user_cond->txn_query_pos,
+			     "insert into %s (timestamp, action, name, actor, info) values ",
+			     txn_table);
+	else
+		xstrcatat(add_user_cond->txn_query,
+			  &add_user_cond->txn_query_pos,
+			  ", ");
+
+	xstrfmtcatat(add_user_cond->txn_query,
+		     &add_user_cond->txn_query_pos,
+		     "(%ld, %u, '%s', '%s', '%s')",
+		     add_user_cond->now, DBD_ADD_USERS, name,
+		     add_user_cond->user_name, tmp_extra);
+	xfree(tmp_extra);
+	xfree(extra);
+
+	if (addto_update_list(add_user_cond->mysql_conn->update_list,
+			      SLURMDB_ADD_USER,
+			      object) == SLURM_SUCCESS) {
+		if (!add_user_cond->ret_str)
+			xstrcatat(add_user_cond->ret_str,
+				  &add_user_cond->ret_str_pos,
+				  " Adding User(s)\n");
+
+		xstrfmtcatat(add_user_cond->ret_str,
+			     &add_user_cond->ret_str_pos,
+			     "  %s\n", object->name);
+		object = NULL;
+	}
+
+	slurmdb_destroy_user_rec(object);
+
+	return 0;
+}
+
 extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			      List user_list)
 {
@@ -455,7 +557,164 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 				     slurmdb_add_assoc_cond_t *add_assoc,
 				     slurmdb_user_rec_t *user)
 {
-	return NULL;
+	add_user_cond_t add_user_cond;
+	char *ret_str = NULL;
+	bool admin_set = false;
+	int rc;
+
+	if (check_connection(mysql_conn) != SLURM_SUCCESS) {
+		errno = ESLURM_DB_CONNECTION;
+		return NULL;
+	}
+
+	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+		slurmdb_user_rec_t user;
+
+		memset(&user, 0, sizeof(slurmdb_user_rec_t));
+		user.uid = uid;
+
+		if (!is_user_any_coord(mysql_conn, &user)) {
+			ret_str = xstrdup("Only admins/operators/coordinators can add accounts");
+			error("%s", ret_str);
+			errno = ESLURM_ACCESS_DENIED;
+			return ret_str;
+		}
+		/*
+		 * If the user is a coord of any acct they can add
+		 * accounts they are only able to make associations to
+		 * these accounts if they are coordinators of the
+		 * parent they are trying to add to
+		 */
+	}
+
+	if (user->coord_accts) {
+		ret_str = xstrdup_printf("Adding coordinators with users is not supported, use as_mysql_add_coord() separately instead.");
+		error("%s", ret_str);
+		errno = SLURM_ERROR;
+		return ret_str;
+	}
+
+
+	if (user->admin_level == SLURMDB_ADMIN_NOTSET)
+		user->admin_level = SLURMDB_ADMIN_NONE;
+	else
+		admin_set = true;
+
+	memset(&add_user_cond, 0, sizeof(add_user_cond));
+	add_user_cond.user_in = user;
+	add_user_cond.mysql_conn = mysql_conn;
+	add_user_cond.now = time(NULL);
+	add_user_cond.user_name = uid_to_string((uid_t) uid);
+
+	/* First add the accounts to the user_table. */
+	if (list_for_each_ro(add_assoc->user_list, _foreach_add_user,
+			     &add_user_cond) < 0) {
+		xfree(add_user_cond.ret_str);
+		xfree(add_user_cond.txn_query);
+		xfree(add_user_cond.user_name);
+		errno = add_user_cond.rc;
+		return NULL;
+	}
+
+	if (add_user_cond.txn_query) {
+		/* Success means we add the defaults to the string */
+		xstrcatat(add_user_cond.ret_str,
+			  &add_user_cond.ret_str_pos,
+			  " Settings\n");
+		if (user->default_acct)
+			xstrfmtcatat(add_user_cond.ret_str,
+				     &add_user_cond.ret_str_pos,
+				     "  Default Account = %s\n",
+				     user->default_acct);
+		if (user->default_wckey)
+			xstrfmtcatat(add_user_cond.ret_str,
+				     &add_user_cond.ret_str_pos,
+				     "  Default WCKey   = %s\n",
+				     user->default_wckey);
+		if (admin_set)
+			xstrfmtcatat(add_user_cond.ret_str,
+				     &add_user_cond.ret_str_pos,
+				     "  Admin Level     = %s\n",
+				     slurmdb_admin_level_str(
+					     user->admin_level));
+
+		xstrcatat(add_user_cond.txn_query,
+			  &add_user_cond.txn_query_pos,
+			  ";");
+		rc = mysql_db_query(mysql_conn, add_user_cond.txn_query);
+		xfree(add_user_cond.txn_query);
+		if (rc != SLURM_SUCCESS) {
+			error("Couldn't add txn");
+			rc = SLURM_SUCCESS;
+		}
+	}
+
+	if (add_assoc->acct_list) {
+		/* Now add the associations */
+		add_assoc->default_acct = user->default_acct;
+		ret_str = as_mysql_add_assocs_cond(mysql_conn, uid, add_assoc);
+		rc = errno;
+		add_assoc->default_acct = NULL;
+
+		if (rc == SLURM_NO_CHANGE_IN_DATA) {
+			if (add_user_cond.ret_str)
+				rc = SLURM_SUCCESS;
+		}
+
+		if (rc != SLURM_SUCCESS) {
+			reset_mysql_conn(mysql_conn);
+			if (!add_user_cond.ret_str_err)
+				xfree(add_user_cond.ret_str);
+			else
+				xfree(ret_str);
+			errno = rc;
+			return add_user_cond.ret_str ?
+				add_user_cond.ret_str : ret_str;
+		}
+
+		if (ret_str) {
+			xstrcatat(add_user_cond.ret_str,
+				  &add_user_cond.ret_str_pos,
+				  ret_str);
+			xfree(ret_str);
+		}
+	}
+
+	if (add_assoc->wckey_list) {
+		ret_str = as_mysql_add_wckeys_cond(
+			mysql_conn, uid, add_assoc, user);
+		rc = errno;
+
+		if (rc != SLURM_SUCCESS) {
+			reset_mysql_conn(mysql_conn);
+			if (!add_user_cond.ret_str_err)
+				xfree(add_user_cond.ret_str);
+			else
+				xfree(ret_str);
+			errno = rc;
+			return add_user_cond.ret_str ?
+				add_user_cond.ret_str : ret_str;
+		}
+
+		if (ret_str) {
+			xstrcatat(add_user_cond.ret_str,
+				  &add_user_cond.ret_str_pos,
+				  ret_str);
+			xfree(ret_str);
+		}
+	}
+
+	xfree(add_user_cond.txn_query);
+	xfree(add_user_cond.user_name);
+
+	if (!add_user_cond.ret_str) {
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "didn't affect anything");
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		return NULL;
+	}
+
+	errno = SLURM_SUCCESS;
+	return add_user_cond.ret_str;
 }
 
 extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
