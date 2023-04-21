@@ -73,6 +73,9 @@ we would also include gres/gpu for accounting gpus in requests like
 <pre>AccountingStorageTRES=gres/gpu,gres/gpu:tesla</pre>
 </li>
 
+<p><b>NOTE:</b> Setting gres/gpu will also set gres/gpumem and gres/gpuutil.
+</p>
+
 <li><b>PriorityWeightTRES</b>
 <p>A comma separated list of TRES Types and weights that sets the
   degree that each TRES Type contributes to the job's priority.</p>

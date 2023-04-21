@@ -199,6 +199,8 @@ its resource allocation will be accounted for as either "gres/gpu:tesla" or
 allocated to the job and the GPUs allocated to the job could be heterogeneous.
 In an environment containing various GPU types, use of a job_submit plugin
 may be desired in order to force jobs to explicitly specify some GPU type.
+
+\fBNOTE\fR: Setting gres/gpu will also set gres/gpumem and gres/gpuutil.
 .IP
 
 .TP
