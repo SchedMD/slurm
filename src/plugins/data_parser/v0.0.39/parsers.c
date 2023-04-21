@@ -785,7 +785,7 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
 	int rc = SLURM_SUCCESS;
-	uint32_t *associd = obj;
+	slurmdb_job_rec_t *job = obj;
 	slurmdb_assoc_rec_t *assoc = xmalloc(sizeof(*assoc));
 	slurmdb_init_assoc_rec(assoc, false);
 
@@ -800,7 +800,7 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 					(ListFindF) compare_assoc, assoc);
 
 		if (match)
-			*associd = match->id;
+			job->associd = match->id;
 		else
 			rc = ESLURM_REST_EMPTY_RESULT;
 	}
@@ -813,16 +813,20 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
 {
-	uint32_t *associd = obj;
+	slurmdb_job_rec_t *job = obj;
 	slurmdb_assoc_rec_t *assoc = NULL;
+	slurmdb_assoc_rec_t assoc_key = {
+		.cluster = job->cluster, .id = job->associd
+	};
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->assoc_list);
 
-	if (!*associd || (*associd == NO_VAL) ||
+	if (!job->associd || (job->associd == NO_VAL) ||
 	    !(assoc = list_find_first(args->assoc_list,
-				      slurmdb_find_assoc_in_list, associd))) {
+				      (ListFindF) compare_assoc,
+				      &assoc_key))) {
 		/*
 		 * The association is either invalid or unknown or deleted.
 		 * Since this is coming from Slurm internally, issue a warning
@@ -831,7 +835,7 @@ static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 		 */
 		on_warn(DUMPING, parser->type, args, NULL, __func__,
 			"unknown association with id#%u. Unable to dump assocation.",
-			*associd);
+			job->associd);
 		data_set_dict(dst);
 		return SLURM_SUCCESS;
 	} else {
@@ -4621,7 +4625,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(UINT32, array_max_tasks, "array/limits/max/running/tasks", NULL),
 	add_parse(UINT32_NO_VAL, array_task_id, "array/task_id", NULL),
 	add_parse(STRING, array_task_str, "array/task", NULL),
-	add_parse(ASSOC_ID, associd, "association", NULL),
+	add_complex_parser(slurmdb_job_rec_t, ASSOC_ID, false, "association", NULL),
 	add_parse(STRING, blockid, "block", NULL),
 	add_parse(STRING, cluster, "cluster", NULL),
 	add_parse(STRING, constraints, "constraints", NULL),
@@ -6256,7 +6260,6 @@ static const parser_t parsers[] = {
 	addps(QOS_ID, uint32_t, NEED_QOS, STRING, NULL),
 	addpsa(QOS_STRING_ID_LIST, STRING, List, NEED_NONE, "List of QOS names"),
 	addpss(JOB_EXIT_CODE, int32_t, NEED_NONE, OBJECT, NULL),
-	addpsp(ASSOC_ID, ASSOC_SHORT_PTR, uint32_t, NEED_ASSOC, NULL),
 	addps(RPC_ID, slurmdbd_msg_type_t, NEED_NONE, STRING, NULL),
 	addps(SELECT_PLUGIN_ID, int, NEED_NONE, STRING, NULL),
 	addps(TASK_DISTRIBUTION, uint32_t, NEED_NONE, STRING, NULL),
@@ -6291,6 +6294,7 @@ static const parser_t parsers[] = {
 	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL),
 
 	/* Complex type parsers */
+	addpcp(ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
 	addpca(QOS_PREEMPT_LIST, STRING, slurmdb_qos_rec_t, NEED_QOS, NULL),
 	addpcp(STEP_NODES, HOSTLIST, slurmdb_step_rec_t, NEED_TRES, NULL),
 	addpca(STEP_TRES_REQ_MAX, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
