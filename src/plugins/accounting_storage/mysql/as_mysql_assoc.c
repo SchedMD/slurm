@@ -743,10 +743,10 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 	return rc;
 }
 
-static uint32_t _get_parent_id(
-	mysql_conn_t *mysql_conn, char *parent, char *cluster)
+static int _get_parent_id(
+	mysql_conn_t *mysql_conn, char *parent, char *cluster,
+	uint32_t *parent_id, char **lineage)
 {
-	uint32_t parent_id = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *query = NULL;
@@ -754,7 +754,7 @@ static uint32_t _get_parent_id(
 	xassert(parent);
 	xassert(cluster);
 
-	query = xstrdup_printf("select id_assoc from \"%s_%s\" where user='' "
+	query = xstrdup_printf("select id_assoc, lineage from \"%s_%s\" where user='' "
 			       "and deleted = 0 and acct='%s';",
 			       cluster, assoc_table, parent);
 	debug4("%d(%s:%d) query\n%s",
@@ -762,19 +762,21 @@ static uint32_t _get_parent_id(
 
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
 		xfree(query);
-		return 0;
+		return SLURM_ERROR;
 	}
 	xfree(query);
 
 	if ((row = mysql_fetch_row(result))) {
 		if (row[0])
-			parent_id = slurm_atoul(row[0]);
+			*parent_id = slurm_atoul(row[0]);
+		if (lineage && row[1])
+			*lineage = xstrdup(row[1]);
 	} else
 		error("no association for parent %s on cluster %s",
 		      parent, cluster);
 	mysql_free_result(result);
 
-	return parent_id;
+	return SLURM_SUCCESS;
 }
 
 static int _set_assoc_lft_rgt(
@@ -2762,9 +2764,10 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *parent = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	char *my_lineage = NULL;
+	char *my_par_lineage = NULL;
+	uint32_t my_par_id = 0;
 	uint32_t assoc_id = 0;
-	int incr = 0, my_left = 0, my_par_id = 0;
+	int incr = 0, my_left = 0;
 	bool moved_parent = 0;
 	MYSQL_RES *result = NULL;
 	char *old_parent = NULL, *old_cluster = NULL;
@@ -2923,6 +2926,36 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			parent = "root";
 		}
 
+		if ((!last_parent || !last_cluster ||
+		     xstrcmp(parent, last_parent) ||
+		     xstrcmp(object->cluster, last_cluster))) {
+			xfree(my_par_lineage);
+			if ((rc = _get_parent_id(mysql_conn,
+						 parent,
+						 object->cluster,
+						 &my_par_id,
+						 &my_par_lineage)) !=
+			    SLURM_SUCCESS) {
+				rc = ESLURM_INVALID_PARENT_ACCOUNT;
+				break;
+			}
+			last_parent = parent;
+			last_cluster = object->cluster;
+
+		}
+
+		object->parent_id = my_par_id;
+		if (object->user) {
+			object->lineage = xstrdup_printf(
+				"%s0-%s/", my_par_lineage, object->user);
+			if (object->partition)
+				xstrfmtcat(object->lineage, "%s/",
+					   object->partition);
+		} else {
+			object->lineage = xstrdup_printf(
+				"%s%s/", my_par_lineage, object->acct);
+		}
+
 		xstrcat(cols, "creation_time, mod_time, acct");
 		xstrfmtcat(vals, "%ld, %ld, '%s'",
 			   now, now, object->acct);
@@ -2966,6 +2999,18 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(vals, ", '%u'", object->id);
 			xstrfmtcat(update, " && id_assoc='%u'", object->id);
 			xstrfmtcat(extra, ", id_assoc='%u'", object->id);
+		}
+
+		if (object->parent_id) {
+			xstrcat(cols, ", id_parent");
+			xstrfmtcat(vals, ", %d", object->parent_id);
+			xstrfmtcat(extra, ", id_parent='%d'", object->parent_id);
+		}
+
+		if (object->lineage) {
+			xstrcat(cols, ", lineage");
+			xstrfmtcat(vals, ", '%s'", object->lineage);
+			xstrfmtcat(extra, ", lineage='%s'", object->lineage);
 		}
 
 		if ((rc = setup_assoc_limits(object, &cols, &vals, &extra,
@@ -3026,34 +3071,6 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		object->id = assoc_id;
 
-		/* get the parent id only if we haven't moved the
-		 * parent since we get the total list if that has
-		 * happened */
-		if (!moved_parent &&
-		    (!last_parent || !last_cluster
-		     || xstrcmp(parent, last_parent)
-		     || xstrcmp(object->cluster, last_cluster))) {
-			uint32_t tmp32 = 0;
-			if ((tmp32 = _get_parent_id(mysql_conn,
-						    parent,
-						    object->cluster))) {
-				my_par_id = tmp32;
-
-				last_parent = parent;
-				last_cluster = object->cluster;
-				xfree(my_lineage);
-			}
-		}
-
-		object->lineage = _set_lineage(mysql_conn,
-					       object->id,
-					       object->acct,
-					       object->user,
-					       object->cluster);
-
-		/* This could be grabbed from _set_assoc_limits_for_add() */
-		object->parent_id = my_par_id;
-
 		if (!moved_parent) {
 			_set_assoc_limits_for_add(mysql_conn, object);
 			if ((rpc_version <= SLURM_23_02_PROTOCOL_VERSION) &&
@@ -3098,6 +3115,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	list_iterator_destroy(itr);
 	xfree(user_name);
+	xfree(my_par_lineage);
 
 	if (rc != SLURM_SUCCESS)
 		goto end_it;
