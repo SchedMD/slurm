@@ -1919,6 +1919,25 @@ static int _setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			assoc->priority = INFINITE;
 		if (assoc->def_qos_id == NO_VAL)
 			assoc->def_qos_id = INFINITE;
+
+		/* Below should never be set, but clearing just to be safe */
+		FREE_NULL_LIST(assoc->accounting_list);
+
+		xfree(assoc->grp_tres_ctld);
+		xfree(assoc->grp_tres_mins_ctld);
+		xfree(assoc->grp_tres_run_mins_ctld);
+		xfree(assoc->max_tres_mins_ctld);
+		xfree(assoc->max_tres_run_mins_ctld);
+		xfree(assoc->max_tres_ctld);
+		xfree(assoc->max_tres_pn_ctld);
+
+		if (assoc->leaf_usage != assoc->usage)
+			slurmdb_destroy_assoc_usage(assoc->leaf_usage);
+		assoc->leaf_usage = NULL;
+
+		slurmdb_destroy_assoc_usage(assoc->usage);
+		assoc->user_rec = NULL;
+		slurmdb_destroy_bf_usage(assoc->bf_usage);
 	}
 
 	if (assoc->shares_raw == INFINITE) {
