@@ -2323,6 +2323,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	char *tmp_name_char = NULL;
 	bool cluster_centric = true;
 	uint32_t rpc_version;
+	uint32_t smallest_lft = 0xFFFFFFFF;
 
 	/* figure out which tables we need to append the cluster name to */
 	if ((table == cluster_table) || (table == acct_coord_table)
@@ -2580,8 +2581,6 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	 */
 	rpc_version = get_cluster_version(mysql_conn, cluster_name);
 	if (rpc_version <= SLURM_23_02_PROTOCOL_VERSION) {
-		uint32_t smallest_lft = 0xFFFFFFFF;
-
 		query = xstrdup_printf("select id_assoc from \"%s_%s\" as t1 where "
 				       "creation_time>%ld && (%s);",
 				       cluster_name, assoc_table,
@@ -2652,14 +2651,6 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 		}
 		mysql_free_result(result);
 
-		/* This already happened before, but we need to run it again
-		   since the first time we ran it we didn't know if we were
-		   going to remove the above associations.
-		*/
-		if (rc == SLURM_SUCCESS)
-			rc = as_mysql_get_modified_lfts(mysql_conn,
-							cluster_name,
-							smallest_lft);
 	} else {
 		query = xstrdup_printf("delete quick from \"%s_%s\" where creation_time>%ld && (%s);",
 				       cluster_name, assoc_table,
@@ -2712,6 +2703,19 @@ just_update:
 	xfree(query);
 	if (rc != SLURM_SUCCESS) {
 		reset_mysql_conn(mysql_conn);
+	}
+
+	/* This already happened before, but we need to run it again
+	   since the first time we ran it we didn't know if we were
+	   going to remove the above associations.
+	*/
+	if ((rc == SLURM_SUCCESS) && (smallest_lft != 0xFFFFFFFF)) {
+		rc = as_mysql_get_modified_lfts(mysql_conn,
+						cluster_name,
+						smallest_lft);
+		if (rc != SLURM_SUCCESS) {
+			reset_mysql_conn(mysql_conn);
+		}
 	}
 
 	return rc;
