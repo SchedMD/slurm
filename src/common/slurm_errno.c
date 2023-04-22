@@ -555,6 +555,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Database connection reference is invalid"		},
 	{ ERRTAB_ENTRY(ESLURM_NO_REMOVE_DEFAULT_ACCOUNT),
 	  "You can not remove the default account of a user"	},
+	{ ERRTAB_ENTRY(ESLURM_BAD_SQL),
+	  "There is something internally wrong with the SQL needed for this. Please consult the slurmdbd log for more info."                    },
 
 	/* Federation Errors */
 	{ ERRTAB_ENTRY(ESLURM_FED_CLUSTER_MAX_CNT),
