@@ -4104,6 +4104,83 @@ function __scontrol_update_stepid() {
 	esac
 }
 
+# completion handler for: scontrol update suspendexcnodes=*
+function __scontrol_update_suspendexcnodes() {
+	local parameters=(
+		"suspendexcnodes="   # meta
+		"suspendexcnodes\+=" # meta
+		"suspendexcnodes\-=" # meta
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev}" in
+	suspendexcnode?(s)?(+|-)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	*)
+		[[ $split == "true" ]] && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
+}
+
+# completion handler for: scontrol update suspendexcparts=*
+function __scontrol_update_suspendexcparts() {
+	local parameters=(
+		"suspendexcparts="   # meta
+		"suspendexcparts\+=" # meta
+		"suspendexcnodes\-=" # meta
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev}" in
+	suspendexcpart?(s)?(+|-)) __slurm_compreply_list "$(__slurm_partitions)" ;;
+	*)
+		[[ $split == "true" ]] && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
+}
+
+# completion handler for: scontrol update suspendexcstates=*
+function __scontrol_update_suspendexcstates() {
+	local parameters=(
+		"suspendexcstates="   # meta
+		"suspendexcstates\+=" # meta
+		"suspendexcstates\-=" # meta
+	)
+	local states=(
+		"CLOUD"
+		"DOWN"
+		"DRAIN"
+		"DYNAMIC_FUTURE"
+		"DYNAMIC_NORM"
+		"FAIL"
+		"INVALID_REG"
+		"MAINTENANCE"
+		"NOT_RESPONDING"
+		"PERFCTRS"
+		"PLANNED"
+		"RESERVED"
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev}" in
+	suspendexcstate?(s)?(+|-)) __slurm_compreply_list "${states[*],,}" ;;
+	*)
+		[[ $split == "true" ]] && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
+}
+
 # completion handler for: scontrol update *
 function __scontrol_update() {
 	local parameters=(
@@ -4113,6 +4190,15 @@ function __scontrol_update() {
 		"partitionname="
 		"reservationname="
 		"stepid="
+		"suspendexcnodes="
+		"suspendexcnodes\+="
+		"suspendexcnodes\-="
+		"suspendexcparts="
+		"suspendexcparts\+="
+		"suspendexcparts\-="
+		"suspendexcstates="
+		"suspendexcstates\+="
+		"suspendexcstates\-="
 	)
 	local param
 	param="$(__slurm_find_param "${parameters[*]}")"
