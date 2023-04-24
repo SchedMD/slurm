@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "April 2023" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "May 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -7129,16 +7129,28 @@ default values and not a reinitialize the default values.
 
 .TP
 \fBPowerDownOnIdle\fR
-If set to "YES", then nodes allocated from this partition will immediately be
-requested to power down upon becoming IDLE. A power down request prevents
-further scheduling to the node until it has been put into power save mode by
-\fBSuspendProgram\fR.
-
-\fBNOTE:\fR
-This option requires power_save to be enabled to function. Otherwise it will be
-ignored, as if set to "NO", until power_save is enabled.
+If set to "YES" and power saving is enabled for the partition, then nodes
+allocated from this partition will be requested to power down after being
+allocated at least one job.
+These nodes will not power down until they transition from COMPLETING to IDLE.
+If set to "NO" then power saving will operate as configured for the partition.
+The default value is "NO".
 See <https://slurm.schedmd.com/power_save.html> and
 <https://slurm.schedmd.com/elastic_computing.html> for more details.
+
+\fBNOTE:\fR
+The following will cause a transition from COMPLETING to IDLE:
+.br
+Completing all running jobs without additional jobs being allocated.
+.br
+ExclusiveUser=YES and after all running jobs complete but before another user's
+job is allocated.
+.br
+OverSubscribe=EXCLUSIVE and after the running job completes but before another
+job is allocated.
+
+\fBNOTE\fR:
+Nodes are still subject to powering down when being IDLE for \fBSuspendTime\fR.
 
 Also see \fBSuspendTime\fR.
 .IP
