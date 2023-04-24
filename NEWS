@@ -56,6 +56,9 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.39 - fix sacct --json matching associations from a
     different cluster.
  -- Fix segfault when clearing reqnodelist of a pending job.
+ -- Fix memory leak of argv when submitting jobs via slurmrestd or CLI commands.
+ -- slurmrestd - correct miscalculation of job argument count that could cause
+    memory leak when job submission fails.
 
 * Changes in Slurm 23.02.1
 ==========================

@@ -627,6 +627,8 @@ static char *arg_get_argv(slurm_opt_t *opt)
 }
 static void arg_reset_argv(slurm_opt_t *opt)
 {
+	for (int i = 0; i < opt->argc; i++)
+		xfree(opt->argv[i]);
 	xfree(opt->argv);
 	opt->argc = 0;
 }
