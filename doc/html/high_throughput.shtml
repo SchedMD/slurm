@@ -125,7 +125,7 @@ seconds if possible. Use of accounting records for older jobs can increase
 the job throughput rate compared with retaining old jobs in the memory of
 the slurmctld daemon.</li>
 <li><b>PriorityType</b>:
-The <i>priority/builtin</i> is considerably faster than other options, but
+The <i>priority/basic</i> is considerably faster than other options, but
 schedules jobs only on a First In First Out (FIFO) basis.</li>
 <li><b>SchedulerParameters</b>:
 Many scheduling parameters are available.
