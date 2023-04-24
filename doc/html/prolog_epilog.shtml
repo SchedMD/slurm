@@ -307,6 +307,9 @@ allocation.  This Prolog behavior can be changed by the
 PrologFlags parameter.  The Epilog, on the other hand, always
 runs on every node of an allocation when the allocation is released.</p>
 
+<p>If multilple prolog and/or epilog sripts are specified,
+(e.g. "/etc/slurm/prolog.d/*") they run in reverse order.</p>
+
 <p>Prolog and Epilog scripts should be designed to be as short as possible
 and should not call Slurm commands (e.g. squeue, scontrol, sacctmgr, etc).
 Long running scripts can cause scheduling problems when jobs take a long time
@@ -728,6 +731,6 @@ canceled.</p>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 6 February 2023</p>
+<p style="text-align:center;">Last modified 25 April 2023</p>
 
 <!--#include virtual="footer.txt"-->
