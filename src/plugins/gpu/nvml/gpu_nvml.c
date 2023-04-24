@@ -1297,6 +1297,7 @@ static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_minor,
  */
 static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 {
+	bitstr_t *enabled_cpus_bits = NULL;
 	unsigned int i;
 	unsigned int device_count = 0;
 	List gres_list_system = list_create(destroy_gres_slurmd_conf);
@@ -1337,6 +1338,13 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		memset(&pci_info, 0, sizeof(pci_info));
 		_nvml_get_device_pci_info(&device, &pci_info);
 		device_lut[i] = xstrdup(pci_info.busId);
+	}
+
+	if (!xstrcasestr(slurm_conf.slurmd_params, "allow_ecores")) {
+		enabled_cpus_bits = bit_alloc(MAX_CPUS);
+		for (i = 0; i < conf->block_map_size; i++) {
+			bit_set(enabled_cpus_bits, conf->block_map[i]);
+		}
 	}
 
 	/*
@@ -1385,6 +1393,15 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		gres_slurmd_conf.cpus_bitmap = bit_alloc(MAX_CPUS);
 		_set_cpu_set_bitstr(gres_slurmd_conf.cpus_bitmap,
 				    cpu_set, CPU_SET_SIZE);
+
+		if (enabled_cpus_bits) {
+			/*
+			 * Mask out E-cores that may be included from nvml's cpu
+			 * affinity bitstring.
+			 */
+			bit_and(gres_slurmd_conf.cpus_bitmap,
+				enabled_cpus_bits);
+		}
 
 		// Convert from bitstr_t to cpu range str
 		cpu_aff_mac_range = bit_fmt_full(gres_slurmd_conf.cpus_bitmap);
@@ -1503,6 +1520,8 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		xfree(device_file);
 		xfree(nvlinks);
 	}
+
+	FREE_NULL_BITMAP(enabled_cpus_bits);
 
 	/*
 	 * Free lookup table
