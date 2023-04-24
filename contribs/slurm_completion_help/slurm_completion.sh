@@ -4019,6 +4019,7 @@ function __scontrol_update_reservationname() {
 		"nodecnt="
 		"nodes="
 		"partition="
+		"reservation"      # meta
 		"reservationname=" # meta
 		"skip"
 		"starttime="
