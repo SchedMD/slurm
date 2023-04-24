@@ -59,6 +59,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leak of argv when submitting jobs via slurmrestd or CLI commands.
  -- slurmrestd - correct miscalculation of job argument count that could cause
     memory leak when job submission fails.
+ -- slurmdbd - add warning on startup if max_allowed_packet is too small.
 
 * Changes in Slurm 23.02.1
 ==========================

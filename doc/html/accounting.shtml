@@ -269,6 +269,11 @@ database schema or when purging old records. We recommend assigning a
 significant portion of the system memory to this, keeping in mind the other
 resource requirements on the machine running MySQL/MariaDB, somewhere between
 5 and 50 percent of the available memory.
+When using <b>AccountingStoreFlags=job_env,job_script</b> or older SQL servers,
+it is also important to check the value of <i>max_allowed_packet</i>.  When the
+packet size is too small and a large job script is used, the SQL server may
+reject the sql query as being too large.  This value should be at least 16MB,
+and must be larger than the value of <b>max_script_size</b>.
 Setting <i>innodb_lock_wait_timeout</i> and
 <i>innodb_log_file_size</i> to
 larger values than the default is also recommended.</p>
@@ -292,6 +297,7 @@ $cat my.cnf
 <i>innodb_buffer_pool_size=4096M</i>
 <i>innodb_log_file_size=64M</i>
 <i>innodb_lock_wait_timeout=900</i>
+<i>max_allowed_packet=16M</i>
 ...
 </pre>
 
