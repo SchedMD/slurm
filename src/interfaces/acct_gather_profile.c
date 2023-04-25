@@ -153,7 +153,8 @@ static void *_timer_thread(void *args)
 	abs.tv_sec = tvnow.tv_sec;
 	abs.tv_nsec = tvnow.tv_usec * 1000;
 
-	while ((plugin_inited == PLUGIN_INITED) && acct_gather_profile_test()) {
+	while ((plugin_inited != PLUGIN_NOT_INITED) &&
+	       acct_gather_profile_test()) {
 		slurm_mutex_lock(&g_context_lock);
 		now = time(NULL);
 
