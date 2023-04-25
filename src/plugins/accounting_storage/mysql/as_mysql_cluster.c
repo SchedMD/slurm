@@ -200,7 +200,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_cluster_rec_t *object = NULL;
-	char *cols = NULL, *vals = NULL, *extra = NULL,
+	char *extra = NULL,
 		*query = NULL, *tmp_extra = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
@@ -260,24 +260,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		int fed_id = 0;
 		uint16_t fed_state = CLUSTER_FED_STATE_NA;
 		char *features = NULL;
-		xstrcat(cols, "creation_time, mod_time, acct");
-		xstrfmtcat(vals, "%ld, %ld, 'root'", now, now);
-		xstrfmtcat(extra, ", mod_time=%ld", now);
-		if (object->root_assoc) {
-			rc = setup_assoc_limits(object->root_assoc, &cols,
-						&vals, &extra,
-						QOS_LEVEL_SET, 1);
-			if (rc) {
-				xfree(extra);
-				xfree(cols);
-				xfree(vals);
-				added=0;
-				error("%s: Failed, setup_assoc_limits functions returned error",
-				      __func__);
-				goto end_it;
-
-			}
-		}
 
 		if (object->fed.name) {
 			has_feds = 1;
@@ -288,9 +270,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			if (rc) {
 				error("failed to get cluster id for "
 				      "federation");
-				xfree(extra);
-				xfree(cols);
-				xfree(vals);
 				added=0;
 				goto end_it;
 			}
@@ -329,9 +308,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add cluster %s", object->name);
-			xfree(extra);
-			xfree(cols);
-			xfree(vals);
 			xfree(features);
 			added=0;
 			break;
@@ -341,14 +317,30 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (!affect_rows) {
 			debug2("nothing changed %d", affect_rows);
-			xfree(extra);
-			xfree(cols);
-			xfree(vals);
 			xfree(features);
 			continue;
 		}
 
 		if (!external_cluster) {
+			char *cols = NULL, *vals = NULL;
+			xstrcat(cols, "creation_time, mod_time, acct");
+			xstrfmtcat(vals, "%ld, %ld, 'root'", now, now);
+			xstrfmtcat(extra, ", mod_time=%ld", now);
+			if (object->root_assoc) {
+				rc = setup_assoc_limits(object->root_assoc,
+							&cols, &vals, &extra,
+							QOS_LEVEL_SET, 1);
+				if (rc) {
+					xfree(extra);
+					xfree(cols);
+					xfree(vals);
+					added=0;
+					error("%s: Failed, setup_assoc_limits functions returned error",
+					      __func__);
+					break;
+				}
+			}
+
 			/* Add root account */
 			xstrfmtcat(query,
 				   "insert into \"%s_%s\" (%s, lft, rgt, lineage) "
@@ -372,9 +364,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				added=0;
 				break;
 			}
-		} else {
-			xfree(cols);
-			xfree(vals);
 		}
 
 		/* Build up extra with cluster specfic values for txn table */
