@@ -37,8 +37,10 @@
 #include "src/common/read_config.h"
 
 #include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/auth.h"
 #include "src/interfaces/cli_filter.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/hash.h"
 #include "src/interfaces/select.h"
 
 extern void slurm_init(const char *conf)
@@ -55,6 +57,12 @@ extern void slurm_fini(void)
 
 extern void slurm_client_init_plugins(void)
 {
+	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
+		fatal("failed to initialize auth plugin");
+
+	if (hash_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize hash plugin");
+
 	if (slurm_acct_storage_init() != SLURM_SUCCESS)
 		fatal("failed to initialize the accounting storage plugin");
 
