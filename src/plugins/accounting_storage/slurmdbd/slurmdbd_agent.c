@@ -863,12 +863,6 @@ extern int slurmdbd_agent_send_recv(uint16_t rpc_version,
 
 	xassert(req);
 	xassert(resp);
-	xassert(slurmdbd_conn);
-
-	if (req->conn && (req->conn != slurmdbd_conn))
-		error("We are overriding the connection!!!!!");
-
-	req->conn = slurmdbd_conn;
 
 	/*
 	 * To make sure we can get this to send instead of the agent
@@ -877,6 +871,12 @@ extern int slurmdbd_agent_send_recv(uint16_t rpc_version,
 	 */
 	halt_agent = 1;
 	slurm_mutex_lock(&slurmdbd_lock);
+	xassert(slurmdbd_conn);
+	if (req->conn && (req->conn != slurmdbd_conn))
+		error("We are overriding the connection!!!!!");
+
+	req->conn = slurmdbd_conn;
+
 	halt_agent = 0;
 
 	rc = dbd_conn_send_recv_direct(rpc_version, req, resp);
