@@ -323,6 +323,9 @@ extern int slurm_acct_storage_init(void)
 	if (plugin_context)
 		goto done;
 
+	if (!slurm_conf.accounting_storage_type)
+		goto done;
+
 	plugin_context = plugin_context_create(
 		plugin_type, slurm_conf.accounting_storage_type, (void **)&ops,
 		syms, sizeof(syms));
