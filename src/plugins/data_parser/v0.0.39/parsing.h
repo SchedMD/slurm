@@ -38,7 +38,7 @@
 #define DATA_PARSER_PARSING
 
 #include "src/interfaces/data_parser.h"
-#include "src/interfaces/openapi.h"
+#include "src/slurmrestd/openapi.h"
 #include "api.h"
 #include "parsers.h"
 

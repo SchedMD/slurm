@@ -204,9 +204,9 @@ DIST_SUBDIRS = accounting_storage acct_gather_energy \
 	acct_gather_profile acct_gather_interconnect \
 	acct_gather_filesystem auth burst_buffer cli_filter core_spec \
 	cred data_parser ext_sensors gpu gres hash jobacct_gather \
-	jobcomp job_container job_submit mcs mpi node_features openapi \
-	power preempt prep priority proctrack route sched select \
-	serializer site_factor switch task topology cgroup
+	jobcomp job_container job_submit mcs mpi node_features power \
+	preempt prep priority proctrack route sched select serializer \
+	site_factor switch task topology cgroup
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -476,9 +476,9 @@ SUBDIRS = accounting_storage acct_gather_energy acct_gather_profile \
 	acct_gather_interconnect acct_gather_filesystem auth \
 	burst_buffer cli_filter core_spec cred data_parser ext_sensors \
 	gpu gres hash jobacct_gather jobcomp job_container job_submit \
-	mcs mpi node_features openapi power preempt prep priority \
-	proctrack route sched select serializer site_factor switch \
-	task topology $(am__append_1)
+	mcs mpi node_features power preempt prep priority proctrack \
+	route sched select serializer site_factor switch task topology \
+	$(am__append_1)
 all: all-recursive
 
 .SUFFIXES:

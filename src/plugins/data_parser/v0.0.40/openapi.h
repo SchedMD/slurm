@@ -39,7 +39,7 @@
 
 #include "parsers.h"
 #include "src/interfaces/data_parser.h"
-#include "src/interfaces/openapi.h"
+#include "src/slurmrestd/openapi.h"
 
 /*
  * Populate OpenAPI specification field with reference to parser

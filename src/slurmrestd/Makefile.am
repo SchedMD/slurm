@@ -9,6 +9,7 @@ SRCS = \
 	http.c http.h \
 	operations.c operations.h \
 	slurmrestd.c \
+	openapi.h openapi.c \
 	rest_auth.h rest_auth.c
 
 if WITH_SLURMRESTD

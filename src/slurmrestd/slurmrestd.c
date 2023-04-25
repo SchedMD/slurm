@@ -70,11 +70,11 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/openapi.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
 
 #include "src/slurmrestd/http.h"
+#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
 

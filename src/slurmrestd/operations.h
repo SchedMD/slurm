@@ -38,8 +38,8 @@
 #define SLURMRESTD_OPERATIONS_H
 
 #include "src/common/data.h"
-#include "src/interfaces/openapi.h"
 #include "src/slurmrestd/http.h"
+#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/rest_auth.h"
 
 extern openapi_t *openapi_state;

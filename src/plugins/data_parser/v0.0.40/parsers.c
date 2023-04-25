@@ -68,7 +68,7 @@
 #include "slurmdb_helpers.h"
 
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
-#include "src/plugins/openapi/slurmctld/structs.h"
+#include "src/slurmrestd/plugins/openapi/slurmctld/structs.h"
 
 #define MAGIC_FOREACH_CSV_LIST 0x8891be2b
 #define MAGIC_FOREACH_LIST 0xaefa2af3

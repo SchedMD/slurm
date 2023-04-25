@@ -39,7 +39,7 @@
 
 #include "api.h"
 #include "src/interfaces/data_parser.h"
-#include "src/interfaces/openapi.h"
+#include "src/slurmrestd/openapi.h"
 
 typedef data_parser_type_t type_t;
 typedef struct parser_s parser_t;
