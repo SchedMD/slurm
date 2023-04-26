@@ -643,7 +643,7 @@ static int _load_gres()
 	node_record_t *node_rec;
 	List gres_list = NULL;
 
-	node_rec = find_node_record(conf->node_name);
+	node_rec = find_node_record2(conf->node_name);
 	if (node_rec && node_rec->config_ptr) {
 		(void) gres_init_node_config(node_rec->config_ptr->gres,
 					     &gres_list);
@@ -940,8 +940,8 @@ _read_config(void)
 	slurm_conf_t *cf = NULL;
 	int cc;
 	bool cgroup_mem_confinement = false;
-	node_record_t *node_ptr;
 #ifndef HAVE_FRONT_END
+	node_record_t *node_ptr;
 	bool cr_flag = false, gang_flag = false;
 	bool config_overrides = false;
 #endif
@@ -996,6 +996,7 @@ _read_config(void)
 			conf->node_name,
 			conf->hostname);
 
+#ifndef HAVE_FRONT_END
 	node_ptr = find_node_record(conf->node_name);
 	xassert(node_ptr);
 
@@ -1013,6 +1014,9 @@ _read_config(void)
 	conf->core_spec_cnt = node_ptr->core_spec_cnt;
 	conf->cpu_spec_list = xstrdup(node_ptr->cpu_spec_list);
 	conf->mem_spec_limit = node_ptr->mem_spec_limit;
+#else
+	conf->port = slurm_conf_get_frontend_port(conf->node_name);
+#endif
 
 	/* store hardware properties in slurmd_config */
 	xfree(conf->block_map);
@@ -1143,6 +1147,9 @@ _read_config(void)
 	}
 #endif
 
+#ifdef HAVE_FRONT_END
+	get_memory(&conf->conf_memory_size);
+#else
 	/*
 	 * Set the node's configured 'RealMemory' as conf_memory_size as
 	 * slurmd_conf_t->real_memory is set to the actual physical memory. We
@@ -1153,6 +1160,7 @@ _read_config(void)
 	 * memory cgroup.
 	 */
 	conf->conf_memory_size = node_ptr->real_memory;
+#endif
 
 	get_memory(&conf->physical_memory_size);
 	get_up_time(&conf->up_time);
