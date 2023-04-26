@@ -368,6 +368,36 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				added=0;
 				break;
 			}
+
+			/*
+			 * Add this base association to the update
+			 * list. This cannot be done with
+			 * as_mysql_add_assocs() as it uses this assoc
+			 * to set things up. Since it isn't there yet it
+			 * won't work.
+			 */
+
+			xfree(object->root_assoc->cluster);
+			object->root_assoc->cluster = xstrdup(object->name);
+			xfree(object->root_assoc->acct);
+			object->root_assoc->acct = xstrdup("root");
+			xfree(object->root_assoc->user);
+			object->root_assoc->id =
+				mysql_insert_id(mysql_conn->db_conn);
+			object->root_assoc->lft = 1;
+			object->root_assoc->rgt = 2;
+			xfree(object->root_assoc->lineage);
+			object->root_assoc->lineage = xstrdup("/");
+			if (addto_update_list(mysql_conn->update_list,
+					      SLURMDB_ADD_ASSOC,
+					      object->root_assoc) !=
+			    SLURM_SUCCESS) {
+				xfree(extra);
+				xfree(features);
+				added=0;
+				break;
+			}
+			object->root_assoc = NULL;
 		}
 
 		/* Build up extra with cluster specfic values for txn table */
