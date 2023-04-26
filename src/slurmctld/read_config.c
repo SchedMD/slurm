@@ -108,7 +108,6 @@ static void _add_config_feature(List feature_list, char *feature,
 static void _add_config_feature_inx(List feature_list, char *feature,
 				    int node_inx);
 static void _build_bitmaps(void);
-static void _build_bitmaps_pre_select(void);
 static int  _compare_hostnames(node_record_t **old_node_table,
 			       int old_node_count, node_record_t **node_table,
 			       int node_count);
@@ -394,14 +393,9 @@ static void _init_bitmaps(void)
 	rs_node_bitmap = bit_alloc(node_record_count);
 }
 
-/*
- * _build_bitmaps_pre_select - recover some state for jobs and nodes prior to
- *	calling the select_* functions
- */
-static void _build_bitmaps_pre_select(void)
+static void _build_part_bitmaps(void)
 {
 	part_record_t *part_ptr;
-	node_record_t *node_ptr;
 	ListIterator part_iterator;
 
 	/* scan partition table and identify nodes in each */
@@ -412,6 +406,11 @@ static void _build_bitmaps_pre_select(void)
 					part_ptr->name);
 	}
 	list_iterator_destroy(part_iterator);
+}
+
+static void _build_node_config_bitmaps(void)
+{
+	node_record_t *node_ptr;
 
 	/* initialize the configuration bitmaps */
 	list_for_each(config_list, _reset_node_bitmaps, NULL);
@@ -421,8 +420,6 @@ static void _build_bitmaps_pre_select(void)
 			bit_set(node_ptr->config_ptr->node_bitmap,
 				node_ptr->index);
 	}
-
-	return;
 }
 
 static int _reset_node_bitmaps(void *x, void *arg)
@@ -1710,6 +1707,38 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 
 	/*
+	 * Load node state which includes dynamic nodes so that dynamic nodes
+	 * can be sorted and included in topology.
+	 */
+	if (reconfig) {		/* Preserve state from memory */
+		if (old_node_table_ptr) {
+			info("restoring original state of nodes");
+			_set_features(old_node_table_ptr, old_node_record_count,
+				      recover);
+			rc = _restore_node_state(recover, old_node_table_ptr,
+						 old_node_record_count);
+			error_code = MAX(error_code, rc);  /* not fatal */
+
+			_preserve_dynamic_nodes(old_node_table_ptr,
+						old_node_record_count,
+						old_config_list);
+		}
+	} else if (recover == 0) {	/* Build everything from slurm.conf */
+		_set_features(node_record_table_ptr, node_record_count,
+			      recover);
+	} else if (recover == 1) {	/* Load job & node state files */
+		(void) load_all_node_state(true);
+		_set_features(node_record_table_ptr, node_record_count,
+			      recover);
+		(void) load_all_front_end_state(true);
+	} else if (recover > 1) {	/* Load node, part & job state files */
+		(void) load_all_node_state(false);
+		_set_features(old_node_table_ptr, old_node_record_count,
+			      recover);
+		(void) load_all_front_end_state(false);
+	}
+
+	/*
 	 * Node reordering may be done by the topology plugin.
 	 * Reordering the table must be done before hashing the
 	 * nodes, and before any position-relative bitmaps are created.
@@ -1734,18 +1763,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	 * A reconfig always imply load the state from slurm.conf
 	 */
 	if (reconfig) {		/* Preserve state from memory */
-		if (old_node_table_ptr) {
-			info("restoring original state of nodes");
-			_set_features(old_node_table_ptr, old_node_record_count,
-				      recover);
-			rc = _restore_node_state(recover, old_node_table_ptr,
-						 old_node_record_count);
-			error_code = MAX(error_code, rc);  /* not fatal */
-
-			_preserve_dynamic_nodes(old_node_table_ptr,
-						old_node_record_count,
-						old_config_list);
-		}
 		if (old_part_list && ((recover > 1) ||
 		    (slurm_conf.reconfig_flags & RECONFIG_KEEP_PART_INFO))) {
 			info("restoring original partition state");
@@ -1778,28 +1795,45 @@ int read_slurm_conf(int recover, bool reconfig)
 		reset_first_job_id();
 		(void) sched_g_reconfig();
 	} else if (recover == 0) {	/* Build everything from slurm.conf */
-		_set_features(node_record_table_ptr, node_record_count,
-			      recover);
 		load_last_job_id();
 		reset_first_job_id();
 		(void) sched_g_reconfig();
 	} else if (recover == 1) {	/* Load job & node state files */
-		(void) load_all_node_state(true);
-		_set_features(node_record_table_ptr, node_record_count,
-			      recover);
-		(void) load_all_front_end_state(true);
 		load_job_ret = load_all_job_state();
 	} else if (recover > 1) {	/* Load node, part & job state files */
-		(void) load_all_node_state(false);
-		_set_features(old_node_table_ptr, old_node_record_count,
-			      recover);
-		(void) load_all_front_end_state(false);
 		(void) load_all_part_state();
 		load_job_ret = load_all_job_state();
 	}
 
+	/* NOTE: Run restore_node_features before _restore_job_accounting */
+	restore_node_features(recover);
+
+	if ((node_features_g_count() > 0) &&
+	    (node_features_g_get_node(NULL) != SLURM_SUCCESS)) {
+		error("failed to initialize node features");
+		test_config_rc = 1;
+	}
+
+	/*
+	 * _build_bitmaps() must follow node_features_g_get_node() and
+	 * precede build_features_list_*()
+	 */
+	_build_bitmaps();
+	/*
+	 * _build_node_config_bitmaps() must be called before
+	 * build_features_list_*()
+	 */
+	_build_node_config_bitmaps();
+
+	/* Active and available features can be different on -R */
+	if ((node_features_g_count() == 0) && (recover != 2))
+		build_feature_list_eq();
+	else
+		build_feature_list_ne();
+
 	_sync_part_prio();
-	_build_bitmaps_pre_select();
+	_build_part_bitmaps(); /* Must be called after build_feature_list_*() */
+
 	if ((select_g_node_init() != SLURM_SUCCESS) ||
 	    (select_g_state_restore(state_save_dir) != SLURM_SUCCESS) ||
 	    (select_g_job_init(job_list) != SLURM_SUCCESS)) {
@@ -1854,30 +1888,9 @@ int read_slurm_conf(int recover, bool reconfig)
 	init_requeue_policy();
 	init_depend_policy();
 
-	/* NOTE: Run restore_node_features before _restore_job_accounting */
-	restore_node_features(recover);
-
-	if ((node_features_g_count() > 0) &&
-	    (node_features_g_get_node(NULL) != SLURM_SUCCESS)) {
-		error("failed to initialize node features");
-		test_config_rc = 1;
-	}
-
-	/*
-	 * _build_bitmaps() must follow node_features_g_get_node() and
-	 * preceed build_features_list_*()
-	 */
-	_build_bitmaps();
-
-	/* Active and available features can be different on -R */
-	if ((node_features_g_count() == 0) && (recover != 2))
-		build_feature_list_eq();
-	else
-		build_feature_list_ne();
-
 	/*
 	 * Must be at after nodes and partitons (e.g.
-	 * _build_bitmaps_pre_select()) have been created and before
+	 * _build_part_bitmaps()) have been created and before
 	 * _sync_nodes_to_comp_job().
 	 */
 	if (!test_config)

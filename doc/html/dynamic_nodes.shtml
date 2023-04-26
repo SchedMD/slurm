@@ -146,15 +146,24 @@ of a reservation.
 <h2 id="LIMITATIONS">Limitations
 <a class="slurm_link" href="#limitations"></a>
 </h2>
-<p>The following are not supported with dynamic nodes:
+<p>
 <ol>
 <li>
-Topology Plugins
+When dynamic nodes are added to Slurm they will potentially be alphabetically
+out of order internally &mdash; leading to suboptimal job allocations if node
+names represent topology of the nodes &mdash; until a reconfigure or a restart
+is performed. If using a <a href="topology.html">Topology Plugin</a>, the
+topology will also be out of date until a reconfigure/restart is performed.
+</li>
+<li>
+The <a href="slurm.conf.html#OPT_route/topology">route/toplogy</a> plugin is
+not supported since dynamic nodes require that the Fanout/Treewidth be
+disabled.
 </li>
 </ol>
 </p>
 
 
-<p style="text-align:center;">Last modified 26 May 2022</p>
+<p style="text-align:center;">Last modified 10 April 2023</p>
 
 <!--#include virtual="footer.txt"-->
