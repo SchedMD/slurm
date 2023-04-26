@@ -473,7 +473,7 @@ static int _make_sure_user_has_default_internal(
 
 	/* check if the row is default */
 	row = mysql_fetch_row(result);
-	if (!row[0]) {
+	if (!row || !row[0]) {
 		error("User '%s' doesn't have a default like you would expect on cluster '%s'.",
 		      user, cluster);
 		/* default found, continue */
