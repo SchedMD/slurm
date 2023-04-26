@@ -70,11 +70,12 @@ typedef struct {
  * IN query - data list of client supplied HTTP querys
  * IN tag - callback assigned tag
  * IN auth - auth ptr reference
+ * IN parser - assigned operation parser
  */
 extern ctxt_t *init_connection(const char *context_id,
 			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp,
-			       void *auth);
+			       data_t *query, int tag, data_t *resp, void *auth,
+			       data_parser_t *parser);
 
 /* provides RC for connection and releases connection context */
 extern int fini_connection(ctxt_t *ctxt);

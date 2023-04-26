@@ -54,7 +54,7 @@ extern int _op_handler_reservations(const char *context_id,
 	reserve_info_msg_t *res_info_ptr = NULL;
 	time_t update_time = 0;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
+				       tag, resp, auth, parser);
 
 	if (ctxt->rc)
 		goto done;
@@ -99,7 +99,7 @@ extern int _op_handler_reservation(const char *context_id,
 	time_t update_time = 0;
 	char *name = NULL;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
+				       tag, resp, auth, parser);
 
 	if (ctxt->rc)
 		goto done;

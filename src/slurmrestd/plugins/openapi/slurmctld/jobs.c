@@ -55,7 +55,7 @@ static int _op_handler_jobs(const char *context_id,
 			    data_parser_t *parser)
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
+				       tag, resp, auth, parser);
 	time_t update_time = 0; /* default to unix epoch */
 	job_info_msg_t *job_info_ptr = NULL;
 	int rc;
@@ -365,7 +365,7 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 	slurm_selected_step_t job_id;
 	char *job_id_str;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
+				       tag, resp, auth, parser);
 
 	if (ctxt->rc)
 		goto done;
@@ -410,7 +410,7 @@ static int _op_handler_submit_job(const char *context_id,
 				  data_parser_t *parser)
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
+				       tag, resp, auth, parser);
 
 	if (ctxt->rc) {
 		/* do nothing - already errored */

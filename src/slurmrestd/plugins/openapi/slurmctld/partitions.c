@@ -64,7 +64,7 @@ extern int _op_handler_partitions(const char *context_id,
 	partition_info_msg_t *part_info_ptr = NULL;
 	time_t update_time = 0;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
+				       tag, resp, auth, parser);
 
 	if (ctxt->rc)
 		goto done;
@@ -106,7 +106,7 @@ extern int _op_handler_partition(const char *context_id,
 	partition_info_msg_t *part_info_ptr = NULL;
 	time_t update_time = 0;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
+				       tag, resp, auth, parser);
 
 	if (ctxt->rc)
 		goto done;

@@ -141,7 +141,7 @@ static int _op_handler_nodes(const char *context_id,
 			     data_parser_t *parser)
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
+				       tag, resp, auth, parser);
 
 	if (ctxt->rc)
 		goto done;
@@ -164,7 +164,7 @@ static int _op_handler_node(const char *context_id,
 			    data_parser_t *parser)
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
+				       tag, resp, auth, parser);
 	char *name;
 
 	if (ctxt->rc)

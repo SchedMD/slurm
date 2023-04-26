@@ -51,7 +51,7 @@ static int _op_handler_diag(const char *context_id,
 {
 	int rc;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
+				       tag, resp, auth, parser);
 
 	if (method != HTTP_REQUEST_GET) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
@@ -82,7 +82,7 @@ static int _op_handler_ping(const char *context_id,
 			    data_parser_t *parser)
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
+				       tag, resp, auth, parser);
 
 	if (method != HTTP_REQUEST_GET) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
@@ -108,7 +108,7 @@ static int _op_handler_licenses(const char *context_id,
 	int rc;
 	license_info_msg_t *msg = NULL;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
+				       tag, resp, auth, parser);
 
 	if (method != HTTP_REQUEST_GET)
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
