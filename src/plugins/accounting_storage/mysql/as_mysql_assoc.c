@@ -409,7 +409,7 @@ static int _make_sure_user_has_default_internal(
 
 	query = xstrdup_printf(
 		"select distinct is_def, acct from "
-		"\"%s_%s\" where user='%s' and deleted=0 "
+		"\"%s_%s\" where user='%s' and deleted!=1 "
 		"ORDER BY is_def desc, creation_time desc "
 		"LIMIT 1;",
 		cluster, assoc_table, user);
@@ -459,7 +459,7 @@ static int _make_sure_user_has_default_internal(
 	 * the update_list.
 	 */
 	query = xstrdup_printf(
-		"select id_assoc from \"%s_%s\" where user='%s' and is_def=1 and deleted=0 LIMIT 1;",
+		"select id_assoc from \"%s_%s\" where user='%s' and is_def=1 and deleted!=1 LIMIT 1;",
 		cluster, assoc_table, user);
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s",
 		 query);
@@ -755,7 +755,7 @@ static int _get_parent_id(
 	xassert(cluster);
 
 	query = xstrdup_printf("select id_assoc, lineage from \"%s_%s\" where user='' "
-			       "and deleted = 0 and acct='%s';",
+			       "and deleted!=1 and acct='%s';",
 			       cluster, assoc_table, parent);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -1029,7 +1029,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		xstrfmtcat(object, ", %s", assoc_inx[i]);
 
 	/* We want all the sub accounts and user accounts */
-	query = xstrdup_printf("select distinct %s from \"%s_%s\" where deleted=0 && id_assoc!=%u && lineage like '%s%%' && ((user = '' && parent_acct = '%s') || (user != '' && acct = '%s')) order by lineage;",
+	query = xstrdup_printf("select distinct %s from \"%s_%s\" where deleted!=1 && id_assoc!=%u && lineage like '%s%%' && ((user = '' && parent_acct = '%s') || (user != '' && acct = '%s')) order by lineage;",
 			       object, assoc->cluster, assoc_table, assoc->id, lineage, acct, acct);
 	xfree(object);
 
@@ -2855,7 +2855,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			/* Check if there is already a default account. */
 			xstrfmtcat(query, "select id_assoc from \"%s_%s\" "
 				   "where user='%s' && acct!='%s' && is_def=1 "
-				   "&& deleted=0;",
+				   "&& deleted!=1;",
 				   object->cluster, assoc_table,
 				   object->user, object->acct);
 			DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s",
