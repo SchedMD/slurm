@@ -1879,10 +1879,10 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	return rc;
 }
 
-extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
-			      char **cols, char **vals,
-			      char **extra, qos_level_t qos_level,
-			      bool for_add)
+static int _setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
+			       char **cols, char **vals,
+			       char **extra, qos_level_t qos_level,
+			       bool for_add, bool locked)
 {
 	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE |
 		TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_SIMPLE |
@@ -2067,13 +2067,16 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		assoc_mgr_lock_t locks = {
 			.qos = READ_LOCK,
 		};
-		assoc_mgr_lock(&locks);
+		if (!locked)
+			assoc_mgr_lock(&locks);
 		if (!list_find_first(assoc_mgr_qos_list,
 		    slurmdb_find_qos_in_list, &(assoc->def_qos_id))) {
-			assoc_mgr_unlock(&locks);
+			if (!locked)
+				assoc_mgr_unlock(&locks);
 			return ESLURM_INVALID_QOS;
 		}
-		assoc_mgr_unlock(&locks);
+		if (!locked)
+			assoc_mgr_unlock(&locks);
 		xstrcat(*cols, ", def_qos_id");
 		xstrfmtcat(*vals, ", %u", assoc->def_qos_id);
 		xstrfmtcat(*extra, ", def_qos_id=%u", assoc->def_qos_id);
@@ -2231,6 +2234,24 @@ end_modify:
 
 	return SLURM_SUCCESS;
 
+}
+
+extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
+			      char **cols, char **vals,
+			      char **extra, qos_level_t qos_level,
+			      bool for_add)
+{
+	return _setup_assoc_limits(
+		assoc, cols, vals, extra, qos_level, for_add, false);
+}
+
+extern int setup_assoc_limits_locked(slurmdb_assoc_rec_t *assoc,
+				     char **cols, char **vals,
+				     char **extra, qos_level_t qos_level,
+				     bool for_add)
+{
+	return _setup_assoc_limits(
+		assoc, cols, vals, extra, qos_level, for_add, true);
 }
 
 /* This is called by most modify functions to alter the table and
