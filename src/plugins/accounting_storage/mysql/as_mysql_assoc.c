@@ -266,6 +266,7 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *reset_query = NULL;
 	char **use_query = NULL;
+	bool run_update = false;
 
 	if ((assoc->is_def != 1) || !assoc->cluster
 	    || !assoc->acct || !assoc->user)
@@ -310,21 +311,25 @@ static int _reset_default_assoc(mysql_conn_t *mysql_conn,
 				rc = SLURM_ERROR;
 				break;
 			}
+			run_update = true;
 		}
 		mysql_free_result(result);
-	}
+	} else
+		run_update = true;
 
-	use_query = query ? query : &reset_query;
-	xstrfmtcat(*use_query,
-		   "update \"%s_%s\" set is_def=0, mod_time=%ld where (user='%s' && acct!='%s' && is_def=1);",
-		   assoc->cluster, assoc_table, (long)now,
-		   assoc->user, assoc->acct);
-	if (reset_query) {
-		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", reset_query);
-		if ((rc = mysql_db_query(mysql_conn, reset_query)) !=
-		    SLURM_SUCCESS)
-			error("Couldn't reset default assocs");
-		xfree(reset_query);
+	if (run_update) {
+		use_query = query ? query : &reset_query;
+		xstrfmtcat(*use_query,
+			   "update \"%s_%s\" set is_def=0, mod_time=%ld where (user='%s' && acct!='%s' && is_def=1);",
+			   assoc->cluster, assoc_table, (long)now,
+			   assoc->user, assoc->acct);
+		if (reset_query) {
+			DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", reset_query);
+			if ((rc = mysql_db_query(mysql_conn, reset_query)) !=
+			    SLURM_SUCCESS)
+				error("Couldn't reset default assocs");
+			xfree(reset_query);
+		}
 	}
 end_it:
 	return rc;
