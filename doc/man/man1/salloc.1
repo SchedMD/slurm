@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "March 2023" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "April 2023" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -1099,9 +1099,10 @@ can be overridden with an explicit \-\-gpu\-bind specification.
 .TP
 \fB\-\-gres\fR=<\fIlist\fR>
 Specifies a comma\-delimited list of generic consumable resources.
-The format of each entry on the list is "name[[:type]:count]".
-The name is that of the consumable resource.
-The count is the number of those resources with a default value of 1.
+The format for each entry in the list is "name[[:type]:count]".
+The \fIname\fR is the type of consumable resource (e.g. gpu).
+The \fItype\fR is an optional classification for the resource (e.g. a100).
+The \fIcount\fR is the number of those resources with a default value of 1.
 The count can have a suffix of
 "k" or "K" (multiple of 1024),
 "m" or "M" (multiple of 1024 x 1024),
@@ -2119,9 +2120,13 @@ Different units can be specified using the suffix [K|M|G|T].
 \fB\-\-tres\-per\-task\fR=<\fIlist\fR>
 Specifies a comma\-delimited list of trackable resources required for the job on
 each task to be spawned in the job's resource allocation.
-The format of each entry on the list is "name[[:type]:count]".
-The name is that of the trackable resource.
-The count is the number of those resources with a default value of 1.
+The format for each entry in the list is "trestype:[tresname:]count".
+The \fItrestype\fR is the type of trackable resource requested (e.g. cpu, gres,
+license, etc).
+The \fItresname\fR is the name of the trackable resource, as can be seen with
+\fIsacctmgr show tres\fR. This is required when it exists for tres types such
+as gres, license, etc. (e.g. gpu, gpu:a100).
+The \fIcount\fR is the number of those resources.
 .br
 The count can have a suffix of
 .br
@@ -2135,6 +2140,13 @@ The count can have a suffix of
 .br
 "p" or "P" (multiple of 1024 x 1024 x 1024 x 1024 x 1024).
 .br
+Examples:
+.nf
+\-\-tres\-per\-task=cpu:4
+\-\-tres\-per\-task=cpu:8,license:ansys:1
+\-\-tres\-per\-task=gres:gpu:1
+\-\-tres\-per\-task=gres:gpu:a100:2
+.fi
 The specified resources will be allocated to the job on each node.
 The available trackable resources are configurable by the system
 administrator.
