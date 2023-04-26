@@ -68,7 +68,8 @@ typedef int (*openapi_handler_t)(
 	data_t *query, /* query sent by client */
 	int tag, /* tag associated with path */
 	data_t *resp, /* data to populate with response */
-	void *auth /* authentication context */
+	void *auth, /* authentication context */
+	data_parser_t *parser /* assigned data_parser or NULL */
 );
 
 typedef enum {

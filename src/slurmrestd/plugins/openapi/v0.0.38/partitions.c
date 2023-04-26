@@ -206,8 +206,8 @@ static int _dump_part(data_t *p, partition_info_t *part)
 
 static int _op_handler_partitions(const char *context_id,
 				  http_request_method_t method,
-				  data_t *parameters, data_t *query,
-				  int tag, data_t *d, void *auth)
+				  data_t *parameters, data_t *query, int tag,
+				  data_t *d, void *auth, data_parser_t *parser)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(d);

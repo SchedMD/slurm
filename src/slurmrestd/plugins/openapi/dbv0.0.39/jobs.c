@@ -543,7 +543,7 @@ static void _dump_jobs(ctxt_t *ctxt, slurmdb_job_cond_t *job_cond)
 /* based on get_data() in sacct/options.c */
 extern int op_handler_jobs(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth)
+			   data_t *resp, void *auth, data_parser_t *parser)
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
@@ -582,7 +582,7 @@ extern int op_handler_jobs(const char *context_id, http_request_method_t method,
 /* based on get_data() in sacct/options.c */
 static int _op_handler_job(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth)
+			   data_t *resp, void *auth, data_parser_t *parser)
 {
 	char *jobid;
 	slurmdb_job_cond_t job_cond = {

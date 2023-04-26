@@ -282,9 +282,9 @@ static int _delete_account(data_t *resp, void *auth, char *account)
 }
 
 extern int op_handler_account(const char *context_id,
-			      http_request_method_t method,
-			      data_t *parameters, data_t *query, int tag,
-			      data_t *resp, void *auth)
+			      http_request_method_t method, data_t *parameters,
+			      data_t *query, int tag, data_t *resp, void *auth,
+			      data_parser_t *parser)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -325,7 +325,8 @@ extern int op_handler_account(const char *context_id,
 /* based on sacctmgr_list_account() */
 extern int op_handler_accounts(const char *context_id,
 			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp, void *auth)
+			       data_t *query, int tag, data_t *resp, void *auth,
+			       data_parser_t *parser)
 {
 	data_t *errors = populate_response_format(resp);
 	if (method == HTTP_REQUEST_GET) {

@@ -465,7 +465,8 @@ cleanup:
 static int op_handler_association(const char *context_id,
 				  http_request_method_t method,
 				  data_t *parameters, data_t *query, int tag,
-				  data_t *resp, void *auth)
+				  data_t *resp, void *auth,
+				  data_parser_t *parser)
 {
 	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
@@ -490,7 +491,8 @@ static int op_handler_association(const char *context_id,
 extern int op_handler_associations(const char *context_id,
 				   http_request_method_t method,
 				   data_t *parameters, data_t *query, int tag,
-				   data_t *resp, void *auth)
+				   data_t *resp, void *auth,
+				   data_parser_t *parser)
 {
 	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,

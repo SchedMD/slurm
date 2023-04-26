@@ -47,7 +47,8 @@
 extern int _op_handler_reservations(const char *context_id,
 				    http_request_method_t method,
 				    data_t *parameters, data_t *query, int tag,
-				    data_t *resp, void *auth)
+				    data_t *resp, void *auth,
+				    data_parser_t *parser)
 {
 	int rc;
 	reserve_info_msg_t *res_info_ptr = NULL;
@@ -89,7 +90,8 @@ done:
 extern int _op_handler_reservation(const char *context_id,
 				   http_request_method_t method,
 				   data_t *parameters, data_t *query, int tag,
-				   data_t *resp, void *auth)
+				   data_t *resp, void *auth,
+				   data_parser_t *parser)
 {
 	int rc;
 	reserve_info_msg_t *res_info_ptr = NULL;

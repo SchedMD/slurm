@@ -1051,7 +1051,8 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 
 static int _op_handler_jobs(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *resp, void *auth)
+			    data_t *query, int tag, data_t *resp, void *auth,
+			    data_parser_t *parser)
 {
 	int rc = SLURM_SUCCESS;
 	job_info_msg_t *job_info_ptr = NULL;
@@ -1201,7 +1202,7 @@ static int _handle_job_post(const char *context_id,
 
 static int _op_handler_job(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth)
+			   data_t *resp, void *auth, data_parser_t *parser)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *data_jobid;
@@ -1278,7 +1279,8 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 static int _op_handler_submit_job_post(const char *context_id,
 				       http_request_method_t method,
 				       data_t *parameters, data_t *query,
-				       int tag, data_t *d, data_t *errors)
+				       int tag, data_t *d, data_t *errors,
+				       data_parser_t *parser)
 {
 	int rc = SLURM_SUCCESS;
 	submit_response_msg_t *resp = NULL;
@@ -1408,8 +1410,9 @@ finish:
 
 static int _op_handler_submit_job(const char *context_id,
 				  http_request_method_t method,
-				  data_t *parameters, data_t *query,
-				  int tag, data_t *resp, void *auth)
+				  data_t *parameters, data_t *query, int tag,
+				  data_t *resp, void *auth,
+				  data_parser_t *parser)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -1419,7 +1422,8 @@ static int _op_handler_submit_job(const char *context_id,
 
 	if (tag == URL_TAG_JOB_SUBMIT && method == HTTP_REQUEST_POST)
 		rc = _op_handler_submit_job_post(context_id, method, parameters,
-						 query, tag, resp, errors);
+						 query, tag, resp, errors,
+						 NULL);
 	else {
 		data_t *errord = data_list_append(errors);
 		data_set_dict(errord);

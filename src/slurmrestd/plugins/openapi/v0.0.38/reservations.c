@@ -139,7 +139,8 @@ static int _dump_res(data_t *p, reserve_info_t *res)
 static int _op_handler_reservations(const char *context_id,
 				    http_request_method_t method,
 				    data_t *parameters, data_t *query, int tag,
-				    data_t *d, void *auth)
+				    data_t *d, void *auth,
+				    data_parser_t *parser)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(d);

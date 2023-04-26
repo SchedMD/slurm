@@ -477,7 +477,8 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 
 static int _call_handler(on_http_request_args_t *args, data_t *params,
 			 data_t *query, openapi_handler_t callback,
-			 int callback_tag, const char *write_mime)
+			 int callback_tag, const char *write_mime,
+			 data_parser_t *parser)
 {
 	int rc;
 	data_t *resp = data_new();
@@ -489,7 +490,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	       callback_tag, args->path);
 
 	rc = callback(args->context->con->name, args->method, params, query,
-		      callback_tag, resp, args->context->auth);
+		      callback_tag, resp, args->context->auth, parser);
 
 	/*
 	 * Clear auth context after callback is complete. Client has to provide
@@ -575,6 +576,7 @@ extern int operations_router(on_http_request_args_t *args)
 	int callback_tag;
 	const char *read_mime = NULL;
 	const char *write_mime = NULL;
+	data_parser_t *parser = NULL;
 
 	info("%s: [%s] %s %s",
 	     __func__, args->context->con->name,
@@ -607,11 +609,13 @@ extern int operations_router(on_http_request_args_t *args)
 	/* clone over the callback info to release lock */
 	callback = path->callback;
 	callback_tag = path->callback_tag;
+	parser = path->parser;
 	slurm_rwlock_unlock(&paths_lock);
 
-	debug5("%s: [%s] found callback handler: (0x%"PRIXPTR") callback_tag %d for path: %s",
+	debug5("%s: [%s] found callback handler: (0x%"PRIXPTR") callback_tag=%d path=%s parser=%s",
 	       __func__, args->context->con->name, (uintptr_t) callback,
-	       callback_tag, args->path);
+	       callback_tag, args->path,
+	       (parser ? data_parser_get_plugin(parser) : ""));
 
 	if ((rc = _resolve_mime(args, &read_mime, &write_mime)))
 		goto cleanup;
@@ -620,7 +624,7 @@ extern int operations_router(on_http_request_args_t *args)
 		goto cleanup;
 
 	rc = _call_handler(args, params, query, callback, callback_tag,
-			   write_mime);
+			   write_mime, parser);
 
 cleanup:
 	FREE_NULL_DATA(query);

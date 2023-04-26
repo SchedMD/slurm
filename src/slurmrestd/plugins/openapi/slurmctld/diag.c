@@ -46,7 +46,8 @@
 
 static int _op_handler_diag(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *resp, void *auth)
+			    data_t *query, int tag, data_t *resp, void *auth,
+			    data_parser_t *parser)
 {
 	int rc;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
@@ -77,7 +78,8 @@ static int _op_handler_diag(const char *context_id,
 
 static int _op_handler_ping(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *resp, void *auth)
+			    data_t *query, int tag, data_t *resp, void *auth,
+			    data_parser_t *parser)
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
@@ -101,7 +103,7 @@ static int _op_handler_ping(const char *context_id,
 static int _op_handler_licenses(const char *context_id,
 				http_request_method_t method,
 				data_t *parameters, data_t *query, int tag,
-				data_t *resp, void *auth)
+				data_t *resp, void *auth, data_parser_t *parser)
 {
 	int rc;
 	license_info_msg_t *msg = NULL;

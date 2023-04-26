@@ -226,21 +226,22 @@ extern void destroy_op_associations(void);
 extern int op_handler_associations(const char *context_id,
 				   http_request_method_t method,
 				   data_t *parameters, data_t *query, int tag,
-				   data_t *resp, void *auth);
+				   data_t *resp, void *auth,
+				   data_parser_t *parser);
 
 extern void init_op_accounts(void);
 extern void destroy_op_accounts(void);
 extern int op_handler_accounts(const char *context_id,
 			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp,
-			       void *auth);
+			       data_t *query, int tag, data_t *resp, void *auth,
+			       data_parser_t *parser);
 
 extern void init_op_cluster(void);
 extern void destroy_op_cluster(void);
 extern int op_handler_clusters(const char *context_id,
 			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp,
-			       void *auth);
+			       data_t *query, int tag, data_t *resp, void *auth,
+			       data_parser_t *parser);
 
 extern void init_op_config(void);
 extern void destroy_op_config(void);
@@ -252,32 +253,33 @@ extern void init_op_job(void);
 extern void destroy_op_job(void);
 extern int op_handler_jobs(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth);
+			   data_t *resp, void *auth, data_parser_t *parser);
 
 extern void init_op_tres(void);
 extern void destroy_op_tres(void);
 extern int op_handler_tres(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth);
+			   data_t *resp, void *auth, data_parser_t *parser);
 
 extern void init_op_users(void);
 extern void destroy_op_users(void);
 extern int op_handler_users(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *resp, void *auth);
+			    data_t *query, int tag, data_t *resp, void *auth,
+			    data_parser_t *parser);
 
 extern void init_op_wckeys(void);
 extern void destroy_op_wckeys(void);
 extern int op_handler_wckeys(const char *context_id,
-			     http_request_method_t method,
-			     data_t *parameters, data_t *query, int tag,
-			     data_t *resp, void *auth);
+			     http_request_method_t method, data_t *parameters,
+			     data_t *query, int tag, data_t *resp, void *auth,
+			     data_parser_t *parser);
 
 extern void init_op_qos(void);
 extern void destroy_op_qos(void);
 extern int op_handler_qos(const char *context_id, http_request_method_t method,
 			  data_t *parameters, data_t *query, int tag,
-			  data_t *resp, void *auth);
+			  data_t *resp, void *auth, data_parser_t *parser);
 
 extern int username_to_uid(void *x, void *arg);
 extern int groupname_to_gid(void *x, void *arg);

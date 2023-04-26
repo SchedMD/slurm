@@ -60,7 +60,8 @@ typedef enum {
 
 static int _op_handler_diag(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *p, void *auth)
+			    data_t *query, int tag, data_t *p, void *auth,
+			    data_parser_t *parser)
 {
 	int rc;
 	stats_info_response_msg_t *resp = NULL;
@@ -227,7 +228,7 @@ cleanup:
 static int _op_handler_ping(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
 			    data_t *query, int tag, data_t *resp_ptr,
-			    void *auth)
+			    void *auth, data_parser_t *parser)
 {
 	//based on _print_ping() from scontrol
 	int rc = SLURM_SUCCESS;
@@ -281,7 +282,8 @@ static int _op_handler_ping(const char *context_id,
 static int _op_handler_licenses(const char *context_id,
 				http_request_method_t method,
 				data_t *parameters, data_t *query, int tag,
-				data_t *resp_ptr, void *auth)
+				data_t *resp_ptr, void *auth,
+				data_parser_t *parser)
 {
 	int rc;
 	license_info_msg_t *msg;

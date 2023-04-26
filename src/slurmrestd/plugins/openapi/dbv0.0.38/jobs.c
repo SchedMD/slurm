@@ -538,7 +538,7 @@ static int _dump_jobs(const char *context_id, http_request_method_t method,
 /* based on get_data() in sacct/options.c */
 extern int op_handler_jobs(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth)
+			   data_t *resp, void *auth, data_parser_t *parser)
 {
 	data_t *errors = populate_response_format(resp);
 
@@ -569,7 +569,7 @@ extern int op_handler_jobs(const char *context_id, http_request_method_t method,
 /* based on get_data() in sacct/options.c */
 static int _op_handler_job(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth)
+			   data_t *resp, void *auth, data_parser_t *parser)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);

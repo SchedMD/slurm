@@ -51,7 +51,8 @@
 
 static int _op_handler_jobs(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *resp, void *auth)
+			    data_t *query, int tag, data_t *resp, void *auth,
+			    data_parser_t *parser)
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
@@ -386,7 +387,7 @@ static void _job_submit_post(ctxt_t *ctxt)
 
 static int _op_handler_job(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth)
+			   data_t *resp, void *auth, data_parser_t *parser)
 {
 	int rc;
 	slurm_selected_step_t job_id;
@@ -432,8 +433,9 @@ done:
 
 static int _op_handler_submit_job(const char *context_id,
 				  http_request_method_t method,
-				  data_t *parameters, data_t *query,
-				  int tag, data_t *resp, void *auth)
+				  data_t *parameters, data_t *query, int tag,
+				  data_t *resp, void *auth,
+				  data_parser_t *parser)
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);

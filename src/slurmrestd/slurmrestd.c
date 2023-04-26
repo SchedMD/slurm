@@ -429,7 +429,8 @@ static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 
 static int _op_handler_openapi(const char *context_id,
 			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp, void *auth)
+			       data_t *query, int tag, data_t *resp, void *auth,
+			       data_parser_t *parser)
 {
 	return get_openapi_specification(openapi_state, resp);
 }

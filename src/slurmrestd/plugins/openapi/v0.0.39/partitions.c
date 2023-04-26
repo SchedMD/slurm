@@ -61,7 +61,8 @@ typedef enum {
 extern int _op_handler_partitions(const char *context_id,
 				  http_request_method_t method,
 				  data_t *parameters, data_t *query, int tag,
-				  data_t *resp, void *auth)
+				  data_t *resp, void *auth,
+				  data_parser_t *parser)
 {
 	int rc;
 	const char *name = NULL;
