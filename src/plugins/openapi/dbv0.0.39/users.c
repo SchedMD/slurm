@@ -123,6 +123,17 @@ static void _dump_users(ctxt_t *ctxt, char *user_name,
 	user_cond->assoc_cond = NULL;
 }
 
+static int _match_account_name(void *x, void *key)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	char *name = key;
+
+	xassert(name && name[0]);
+	xassert(assoc->acct && assoc->acct[0]);
+
+	return !xstrcmp(assoc->acct, name);
+}
+
 static int _match_wckey_name(void *x, void *key)
 {
 	slurmdb_wckey_rec_t *wckey = x;
@@ -136,7 +147,7 @@ static int _match_wckey_name(void *x, void *key)
 
 static int _foreach_update_user(void *x, void *arg)
 {
-	slurmdb_user_rec_t *user = x;
+	slurmdb_user_rec_t *user = x, *dbuser = NULL;
 	ctxt_t *ctxt = arg;
 	list_t *user_list = NULL;
 	bool modify;
@@ -147,6 +158,8 @@ static int _foreach_update_user(void *x, void *arg)
 	};
 
 	assoc_cond.user_list = list_create(NULL);
+	if (user->default_acct && user->default_acct[0])
+		user_cond.with_assocs = true;
 
 	if (user->old_name && !user->old_name[0]) {
 		/*
@@ -217,6 +230,23 @@ static int _foreach_update_user(void *x, void *arg)
 		resp_warn(ctxt, __func__, "User %s coordinators list ignored. They must be set via the coordinators or accounts end point.",
 			  user->name);
 		FREE_NULL_LIST(user->coord_accts);
+	}
+
+	if (user->default_acct && user->default_acct[0]) {
+		if (modify)
+			dbuser = list_peek(user_list);
+
+		if (!modify || (dbuser && !dbuser->assoc_list)) {
+			resp_warn(ctxt, __func__, "User %s default account of %s was ignored. It can only be set if the user has accounts already associated.",
+				  user->name, user->default_acct);
+			xfree(user->default_acct);
+		} else if (!list_find_first_ro(dbuser->assoc_list,
+					       _match_account_name,
+					       user->default_acct)) {
+			resp_warn(ctxt, __func__, "User %s default account of %s was ignored. It can only be set if the user has this account already associated.",
+				  user->name, user->default_acct);
+			xfree(user->default_acct);
+		}
 	}
 
 	if (user->default_wckey && user->default_wckey[0]) {
