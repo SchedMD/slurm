@@ -8966,9 +8966,10 @@ static bitstr_t *_get_single_usable_gres(int context_inx,
 	int idx = 0;
 	bitstr_t *usable_gres = NULL;
 	bitstr_t *gres_slots = NULL;
+	int32_t gres_count = bit_set_count(gres_bit_alloc);
 
 	/* No need to select gres if there is only 1 to use */
-	if (bit_set_count(gres_bit_alloc) <= 1) {
+	if (gres_count <= 1) {
 		log_flag(GRES, "%s: (task %d) No need to select single gres since count is 0 or 1",
 			 __func__, local_proc_id);
 		return bit_copy(gres_bit_alloc);;
