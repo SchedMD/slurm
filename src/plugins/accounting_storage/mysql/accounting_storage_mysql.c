@@ -2080,6 +2080,17 @@ static int _setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*cols, ", def_qos_id");
 		xstrfmtcat(*vals, ", %u", assoc->def_qos_id);
 		xstrfmtcat(*extra, ", def_qos_id=%u", assoc->def_qos_id);
+		if (qos_level == QOS_LEVEL_SET)	{
+			char *qos_list_str = NULL;
+			if (default_qos_str && !assoc->qos_list)
+				qos_list_str = xstrdup(default_qos_str);
+			xstrfmtcat(qos_list_str, ",%u", assoc->def_qos_id);
+			if (!assoc->qos_list)
+				assoc->qos_list = list_create(xfree_ptr);
+			slurm_addto_char_list(assoc->qos_list,
+					      qos_list_str);
+			xfree(qos_list_str);
+		}
 	}
 
 	if (assoc->comment) {
