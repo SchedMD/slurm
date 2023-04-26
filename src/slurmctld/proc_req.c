@@ -6053,6 +6053,10 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 
 	persist_conn = xmalloc(sizeof(slurm_persist_conn_t));
 
+	persist_conn->auth_uid = msg->auth_uid;
+	persist_conn->auth_gid = msg->auth_gid;
+	persist_conn->auth_ids_set = msg->auth_ids_set;
+
 	persist_conn->auth_cred = msg->auth_cred;
 	msg->auth_cred = NULL;
 
