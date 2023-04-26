@@ -48,6 +48,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmdbd - add warning on startup if max_allowed_packet is too small.
  -- gpu/nvml - Remove E-cores from NVML's cpu affinity bitmap when
     "allow_ecores" is not set in SlurmdParameters.
+ -- Fix regression from 23.02.0rc1 causing a FrontEnd slurmd to assert fail on
+    startup and don't be configured with the appropriate port.
 
 * Changes in Slurm 23.02.1
 ==========================
