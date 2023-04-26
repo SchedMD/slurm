@@ -236,9 +236,9 @@ proc cleanup {} {
 	archive_load $sql_rem_clus1
 	archive_load $sql_rem_clus2
 
+	remove_cluster $clusters
 	remove_user    $clusters $accounts $users
 	remove_acct    "" $accounts
-	remove_cluster $clusters
 
 	exec $bin_rm -f $sql_in_clus1 $sql_in_clus2 $sql_rem_clus1 $sql_rem_clus2
 }
@@ -260,9 +260,11 @@ set user_req(wckey)   $wckeys
 #
 # Remove previous test clusters, accounts and users
 #
-remove_user    $clusters $accounts $users
-remove_acct    "" $accounts
-remove_cluster $clusters
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
 
 # Add cluster
 if [add_cluster $cluster1 [array get clus_req]] {

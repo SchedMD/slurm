@@ -68,6 +68,7 @@ if {[get_admin_level] ne "Administrator"} {
 
 set accounting_storage_type [get_config_param "AccountingStorageType"]
 
+cleanup
 
 #
 # Identify the user and his current default account

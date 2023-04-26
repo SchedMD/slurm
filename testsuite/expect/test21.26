@@ -91,6 +91,12 @@ proc cleanup {} {
 	remove_qos "$qos1"
 }
 
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
+
 #
 # Add a test cluster for testing
 #

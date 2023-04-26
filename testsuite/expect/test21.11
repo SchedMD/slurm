@@ -81,19 +81,18 @@ if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
-# Make sure we have a clean system and permission to do this work
-remove_acct "" "$ta1,$ta2"
-remove_cluster "$tc1,$tc2"
-if {$access_err != 0} {
-	skip "Not authorized to perform this test"
-}
-
 proc cleanup {} {
 	global sacctmgr ta1 ta2 tc1 tc2 acct
 
 	run_command "$sacctmgr -i delete account $ta1,$ta2"
 	run_command "$sacctmgr -i delete cluster $tc1,$tc2"
 	run_command "$sacctmgr -i delete qos $acct(DefaultQos)"
+}
+
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
 }
 
 #

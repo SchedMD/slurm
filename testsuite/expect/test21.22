@@ -197,57 +197,6 @@ if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
-run_command "$bin_rm -f delete $file_in $file_in2 $file_in3"
-
-#
-# Build input script file - to create original associations
-#
-exec echo "$clu - '$tc1':$class=$class1:$fs=$fs6:$gm=$gm6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$gw=$gw6:$mm=$mm6:$mc=$mc6:$mj=$mj6:$mn=$mn6:$ms=$ms6:$mw=$mw6:$qs=$qs1"     >>$file_in
-exec echo "$par - '$roo'"     >>$file_in
-exec echo "$acc - '$ta1':$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"     >>$file_in
-exec echo "$acc - '$ta2':$dsc=$ds2:$org=$or2:$fs=$fs4:$gm=$gm4:$gc=$gc4:$gj=$gj4:$gn=$gn4:$gs=$gs4:$gw=$gw4:$mm=$mm4:$mc=$mc4:$mj=$mj4:$mn=$mn4:$ms=$ms4:$mw=$mw4:$qs=$qs1"     >>$file_in
-exec echo "$par - '$ta1'"     >>$file_in
-exec echo "$acc - '$ta3':$dsc=$ds3:$org=$or3:$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"     >>$file_in
-exec echo "$par - '$ta2'"     >>$file_in
-exec echo "$usr - '$tu1':$coo=$ta2:$dac=$ta2:$fs=$fs1:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1:$al=$alo"     >>$file_in
-exec echo "$par - '$ta3'"     >>$file_in
-exec echo "$usr - '$tu2':$coo=$ta3:$dac=$ta3:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$mn=$mn1:$ms=$ms1:$mw=$mw1:$qs=$qs1:$al=$ala"     >>$file_in
-
-#
-# Second input file - to modify and add associations to the original
-#
-exec echo "$clu - '$tc1':$class=$class2"     >>$file_in2
-exec echo "$par - '$roo'"     >>$file_in2
-exec echo "$acc - '$ta1'"     >>$file_in2
-exec echo "$acc - '$ta3':$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"     >>$file_in2
-exec echo "$par - '$ta1'"     >>$file_in2
-exec echo "$acc - '$ta2'"     >>$file_in2
-exec echo "$par - '$ta2'"     >>$file_in2
-exec echo "$usr - '$tu3':$coo=$ta1,$ta2,$ta3:$dac=$ta2:$fs=$fs2:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1:$al=$ala"     >>$file_in2
-exec echo "$par - '$ta3'"     >>$file_in2
-exec echo "$usr - '$tu2':$dac=$ta3:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1:$al=$alo"     >>$file_in2
-exec echo "$usr - '$tu3':$dac=$ta3:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"     >>$file_in2
-exec echo "$par - '$ta1'"     >>$file_in2
-exec echo "$usr - '$tu3':$dac=$ta1:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$mn=$mn1:$ms=$ms1:$mw=$mw1:$qs=$qs1"     >>$file_in2
-
-#
-# Third input file - to replace all previous
-#
-exec echo "$clu - '$tc1':$class=$class3:$fs=$fs6:$gm=$gm6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$gw=$gw6:$mm=$mm6:$mc=$mc6:$mj=$mj6:$mn=$mn6:$ms=$ms6:$mw=$mw6:$qs=$qs1"    >>$file_in3
-exec echo "$par - '$roo'"    >>$file_in3
-exec echo "$acc - '$ta1':$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"    >>$file_in3
-exec echo "$acc - '$ta3':$dsc=$ds3:$org=$or3:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"    >>$file_in3
-exec echo "$par - '$ta1'"    >>$file_in3
-exec echo "$acc - '$ta3':$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"    >>$file_in3
-exec echo "$acc - '$ta2':$dsc=$ds2:$org=$or2:$fs=$fs4:$gm=$gm4:$gc=$gc4:$gj=$gj4:$gn=$gn4:$gs=$gs4:$gw=$gw4:$mm=$mm4:$mc=$mc4:$mj=$mj4:$mn=$mn4:$ms=$ms4:$mw=$mw4:$qs=$qs1:$al=$alo"    >>$file_in3
-exec echo "$usr - '$tu3':$coo=$ta1,$ta2,$ta3:$dac=$ta1:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$mn=$mn1:$ms=$ms1:$mw=$mw1:$qs=$qs1:$al=$ala"     >>$file_in3
-exec echo "$par - '$ta2'"    >>$file_in3
-exec echo "$usr - '$tu1':$coo=$ta2:$dac=$ta2:$fs=$fs1:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1:$al=$alo"    >>$file_in3
-exec echo "$usr - '$tu3':$dac=$ta2:$fs=$fs2:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1"    >>$file_in3
-exec echo "$par - '$ta3'"    >>$file_in3
-exec echo "$usr - '$tu2':$coo=$ta3:$dac=$ta3:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"    >>$file_in3
-exec echo "$usr - '$tu3':$dac=$ta3:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"    >>$file_in3
-
 #
 # Use sacctmgr to remove the test cluster
 #
@@ -448,10 +397,59 @@ proc cleanup {} {
 }
 
 # Make sure we have a clean system and permission to do this work
-_remove_cluster "$tc1"
+cleanup
 if {$access_err != 0} {
 	skip "Not authorized to perform this test"
 }
+
+#
+# Build input script file - to create original associations
+#
+exec echo "$clu - '$tc1':$class=$class1:$fs=$fs6:$gm=$gm6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$gw=$gw6:$mm=$mm6:$mc=$mc6:$mj=$mj6:$mn=$mn6:$ms=$ms6:$mw=$mw6:$qs=$qs1"     >>$file_in
+exec echo "$par - '$roo'"     >>$file_in
+exec echo "$acc - '$ta1':$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"     >>$file_in
+exec echo "$acc - '$ta2':$dsc=$ds2:$org=$or2:$fs=$fs4:$gm=$gm4:$gc=$gc4:$gj=$gj4:$gn=$gn4:$gs=$gs4:$gw=$gw4:$mm=$mm4:$mc=$mc4:$mj=$mj4:$mn=$mn4:$ms=$ms4:$mw=$mw4:$qs=$qs1"     >>$file_in
+exec echo "$par - '$ta1'"     >>$file_in
+exec echo "$acc - '$ta3':$dsc=$ds3:$org=$or3:$fs=$fs3:$gm=$gm3:$gc=$gc3:$gj=$gj3:$gn=$gn3:$gs=$gs3:$gw=$gw3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"     >>$file_in
+exec echo "$par - '$ta2'"     >>$file_in
+exec echo "$usr - '$tu1':$coo=$ta2:$dac=$ta2:$fs=$fs1:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1:$al=$alo"     >>$file_in
+exec echo "$par - '$ta3'"     >>$file_in
+exec echo "$usr - '$tu2':$coo=$ta3:$dac=$ta3:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$mn=$mn1:$ms=$ms1:$mw=$mw1:$qs=$qs1:$al=$ala"     >>$file_in
+
+#
+# Second input file - to modify and add associations to the original
+#
+exec echo "$clu - '$tc1':$class=$class2"     >>$file_in2
+exec echo "$par - '$roo'"     >>$file_in2
+exec echo "$acc - '$ta1'"     >>$file_in2
+exec echo "$acc - '$ta3':$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"     >>$file_in2
+exec echo "$par - '$ta1'"     >>$file_in2
+exec echo "$acc - '$ta2'"     >>$file_in2
+exec echo "$par - '$ta2'"     >>$file_in2
+exec echo "$usr - '$tu3':$coo=$ta1,$ta2,$ta3:$dac=$ta2:$fs=$fs2:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1:$al=$ala"     >>$file_in2
+exec echo "$par - '$ta3'"     >>$file_in2
+exec echo "$usr - '$tu2':$dac=$ta3:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1:$al=$alo"     >>$file_in2
+exec echo "$usr - '$tu3':$dac=$ta3:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"     >>$file_in2
+exec echo "$par - '$ta1'"     >>$file_in2
+exec echo "$usr - '$tu3':$dac=$ta1:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$mn=$mn1:$ms=$ms1:$mw=$mw1:$qs=$qs1"     >>$file_in2
+
+#
+# Third input file - to replace all previous
+#
+exec echo "$clu - '$tc1':$class=$class3:$fs=$fs6:$gm=$gm6:$gc=$gc6:$gj=$gj6:$gn=$gn6:$gs=$gs6:$gw=$gw6:$mm=$mm6:$mc=$mc6:$mj=$mj6:$mn=$mn6:$ms=$ms6:$mw=$mw6:$qs=$qs1"    >>$file_in3
+exec echo "$par - '$roo'"    >>$file_in3
+exec echo "$acc - '$ta1':$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"    >>$file_in3
+exec echo "$acc - '$ta3':$dsc=$ds3:$org=$or3:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"    >>$file_in3
+exec echo "$par - '$ta1'"    >>$file_in3
+exec echo "$acc - '$ta3':$dsc=$ds1:$org=$or1:$fs=$fs5:$gm=$gm5:$gc=$gc5:$gj=$gj5:$gn=$gn5:$gs=$gs5:$gw=$gw5:$mm=$mm5:$mc=$mc5:$mj=$mj5:$mn=$mn5:$ms=$ms5:$mw=$mw5:$qs=$qs1"    >>$file_in3
+exec echo "$acc - '$ta2':$dsc=$ds2:$org=$or2:$fs=$fs4:$gm=$gm4:$gc=$gc4:$gj=$gj4:$gn=$gn4:$gs=$gs4:$gw=$gw4:$mm=$mm4:$mc=$mc4:$mj=$mj4:$mn=$mn4:$ms=$ms4:$mw=$mw4:$qs=$qs1:$al=$alo"    >>$file_in3
+exec echo "$usr - '$tu3':$coo=$ta1,$ta2,$ta3:$dac=$ta1:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1:$mn=$mn1:$ms=$ms1:$mw=$mw1:$qs=$qs1:$al=$ala"     >>$file_in3
+exec echo "$par - '$ta2'"    >>$file_in3
+exec echo "$usr - '$tu1':$coo=$ta2:$dac=$ta2:$fs=$fs1:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1:$al=$alo"    >>$file_in3
+exec echo "$usr - '$tu3':$dac=$ta2:$fs=$fs2:$mm=$mm2:$mc=$mc2:$mj=$mj2:$mn=$mn2:$ms=$ms2:$mw=$mw2:$qs=$qs1"    >>$file_in3
+exec echo "$par - '$ta3'"    >>$file_in3
+exec echo "$usr - '$tu2':$coo=$ta3:$dac=$ta3:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"    >>$file_in3
+exec echo "$usr - '$tu3':$dac=$ta3:$fs=$fs3:$mm=$mm3:$mc=$mc3:$mj=$mj3:$mn=$mn3:$ms=$ms3:$mw=$mw3:$qs=$qs1"    >>$file_in3
 
 set matches 0
 spawn $sacctmgr -i load $file_in

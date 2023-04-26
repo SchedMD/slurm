@@ -67,16 +67,16 @@ if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
-# verify a clean QOS entity and permission to do this work
-remove_qos "$qos_name"
-if {$access_err != 0} {
-	skip "Not authorized to perform this test"
-}
-
 proc cleanup {} {
 	global qos_name
 
 	remove_qos "$qos_name"
+}
+
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
 }
 
 # Add qos

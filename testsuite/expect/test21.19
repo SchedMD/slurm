@@ -111,18 +111,18 @@ if { [get_config_param -dbd "AllowNoDefAcct"] eq "Yes" } {
 	set def_acct $nm1
 }
 
-# Make sure we have a clean system and permission to do this work
-remove_cluster "$tc1,$tc2,$tc3"
-if {$access_err != 0} {
-	skip "Not authorized to perform this test"
-}
-
 proc cleanup {} {
 	global nm1 nm2 nm3 tc1 tc2 tc3 us1 us2 us3
 
 	remove_user "" "" "$us1,$us2,$us3"
 	remove_acct "" "$nm1,$nm2,$nm3"
 	remove_cluster "$tc1,$tc2,$tc3"
+}
+
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
 }
 
 # Add cluster

@@ -90,6 +90,12 @@ proc cleanup { } {
 	remove_cluster $test_cluster
 }
 
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
+
 set added 0
 spawn $sacctmgr add -i cluster $test_cluster
 expect {

@@ -259,11 +259,8 @@ proc cleanup {} {
 	}
 }
 
-# Remove any vestigial accounts or qos
-run_command -none "$sacctmgr -i delete qos $qostest"
-
-# Delete account
-run_command -none "$sacctmgr -i  delete account $acct"
+# Make sure we have a clean system
+cleanup
 
 # Gets user
 set user_name [get_my_user_name]

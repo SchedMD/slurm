@@ -108,8 +108,7 @@ proc cleanup {} {
 	remove_qos "$dqos1"
 }
 
-# Make sure we have a clean system and permission to do this work
-remove_cluster "$tc1,$tc2,$tc3"
+cleanup
 if {$access_err != 0} {
 	skip "Not authorized to perform this test"
 }

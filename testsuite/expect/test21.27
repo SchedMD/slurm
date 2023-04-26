@@ -68,6 +68,12 @@ proc cleanup {} {
 	remove_cluster $tc2
 }
 
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
+}
+
 #
 # Build test associations
 #

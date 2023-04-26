@@ -84,6 +84,8 @@ proc cleanup {} {
 	run_command "$sacctmgr -i delete qos $cluster(DefaultQos) $mod_cluster(DefaultQos)"
 }
 
+cleanup
+
 #
 # Create tmp QOS
 #

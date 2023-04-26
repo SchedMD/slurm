@@ -109,9 +109,8 @@ proc cleanup {} {
 	remove_cluster $tc2
 }
 
-# Verify a clean system and permission to do this work
-remove_cluster "$tc2"
-remove_res "$sr1"
+# Make sure we have a clean system and permission to do this work
+cleanup
 if {$access_err != 0} {
 	skip "Not authorized to perform this test"
 }
