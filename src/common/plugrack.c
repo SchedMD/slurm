@@ -639,8 +639,10 @@ extern void unload_plugins(plugins_t *plugins)
 	}
 
 	for (size_t i = 0; i < plugins->count; i++) {
-		xfree(plugins->functions[i]);
-		xfree(plugins->types[i]);
+		if (plugins->functions)
+			xfree(plugins->functions[i]);
+		if (plugins->types)
+			xfree(plugins->types[i]);
 	}
 
 	xfree(plugins->functions);
