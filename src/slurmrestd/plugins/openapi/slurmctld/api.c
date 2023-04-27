@@ -379,7 +379,8 @@ static void _init_parsers()
 
 	if (!parsers)
 		parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL, NULL,
-						  NULL, NULL, NULL, false);
+						  NULL, NULL, NULL, NULL, NULL,
+						  false);
 
 	slurm_mutex_unlock(&parsers_mutex);
 }

@@ -274,17 +274,20 @@ extern data_parser_t **data_parser_g_new_array(
 	data_parser_on_warn_t on_dump_warn,
 	data_parser_on_warn_t on_query_warn,
 	void *warn_arg,
+	const char *plugin_type,
+	plugrack_foreach_t listf,
 	bool skip_loading)
 {
 	int rc;
 	data_parser_t **parsers;
 
-	if ((rc = _load_plugins(NULL, NULL, skip_loading))) {
+	if ((rc = _load_plugins(plugin_type, listf, skip_loading))) {
 		error("%s: failure loading plugins: %s",
 		      __func__, slurm_strerror(rc));
 		return NULL;
 	}
 
+	/* always allocate for all possible plugins */
 	parsers = xcalloc((plugins->count + 1), sizeof(*parsers));
 
 	for (int i = 0; i < plugins->count; i++) {

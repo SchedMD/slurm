@@ -336,6 +336,8 @@ extern data_parser_t *data_parser_g_new(data_parser_on_error_t on_parse_error,
  * 	ptr must remain valid until free called.
  * IN on_warn_arg - ptr to pass to on_warn function (not modified)
  * 	ptr must remain valid until free called.
+ * IN plugin_type - CSV of plugin_types of data_parser plugin to load/use
+ * IN listf - list function if plugin_type = "list"
  * IN skip_loading - skip any calls related to loading the plugins
  * RET NULL terminated parser array ptr
  * 	Must be freed by call to data_parser_g_array_free()
@@ -349,6 +351,8 @@ extern data_parser_t **data_parser_g_new_array(
 	data_parser_on_warn_t on_dump_warn,
 	data_parser_on_warn_t on_query_warn,
 	void *warn_arg,
+	const char *plugin_type,
+	plugrack_foreach_t listf,
 	bool skip_loading);
 
 typedef enum {
