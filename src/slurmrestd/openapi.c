@@ -929,6 +929,40 @@ static void _oas_plugrack_foreach(const char *full_type, const char *fq_path,
 	       __func__, full_type, fq_path);
 }
 
+static data_for_each_cmd_t _foreach_remove_template(const char *key,
+						    data_t *data, void *arg)
+{
+	/* remove every path with {data_parser} */
+
+	if (!xstrstr(key, OPENAPI_DATA_PARSER_PARAM))
+		return DATA_FOR_EACH_CONT;
+	else
+		return DATA_FOR_EACH_DELETE;
+}
+
+static int _apply_data_parser_specs(openapi_t *oas, int plugin_id)
+{
+	data_parser_t **parsers = oas->parsers;
+	data_t *paths, *spec = oas->spec[plugin_id];
+
+	for (int i = 0; parsers[i]; i++) {
+		int rc;
+
+		if ((rc = data_parser_g_specify(parsers[i], spec)) &&
+		    (rc != ESLURM_NOT_SUPPORTED)) {
+			error("%s: parser specification failed: %s",
+			      __func__, slurm_strerror(rc));
+			return rc;
+		}
+	}
+
+	/* scrub the paths with {data_parser} */
+	paths = data_resolve_dict_path(spec, OPENAPI_PATHS_PATH);
+	(void) data_dict_for_each(paths, _foreach_remove_template, NULL);
+
+	return SLURM_SUCCESS;
+}
+
 extern int init_openapi(openapi_t **oas, const char *plugins,
 			plugrack_foreach_t listf, data_parser_t **parsers)
 {
@@ -1030,6 +1064,9 @@ extern int init_openapi(openapi_t **oas, const char *plugins,
 
 		debug2("%s: loaded plugin %s with flags 0x%"PRIx64,
 		       __func__, t->plugin_types[i], flags);
+
+		if (flags & OAS_FLAG_SET_DATA_PARSER_SPEC)
+			_apply_data_parser_specs(t, t->context_cnt);
 
 		t->context_cnt++;
 	}

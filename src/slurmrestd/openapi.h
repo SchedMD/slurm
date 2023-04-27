@@ -75,6 +75,8 @@ typedef enum {
 	OAS_FLAG_NONE = 0,
 	OAS_FLAG_MANGLE_OPID = SLURM_BIT(0), /* mangle operationid */
 	OAS_FLAG_SET_OPID = SLURM_BIT(1), /* set every operationid */
+	/* Apply data_parser_g_specify() by all parsers and cleanup templates */
+	OAS_FLAG_SET_DATA_PARSER_SPEC = SLURM_BIT(2),
 	OAS_FLAG_MAX = SLURM_BIT(63) /* place holder */
 } openapi_spec_flags_t;
 
