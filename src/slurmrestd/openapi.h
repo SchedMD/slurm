@@ -42,8 +42,6 @@
 #ifndef SLURMRESTD_OPENAPI_H
 #define SLURMRESTD_OPENAPI_H
 
-#include "slurm/slurm.h"
-
 #include "src/common/data.h"
 #include "src/common/http.h"
 #include "src/common/list.h"
