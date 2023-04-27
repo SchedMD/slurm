@@ -218,7 +218,7 @@ extern data_parser_t *data_parser_g_new(data_parser_on_error_t on_parse_error,
 					plugrack_foreach_t listf,
 					bool skip_loading)
 {
-	int rc, i;
+	int rc, found = -1;
 
 	rc = _load_plugins(plugin_type, listf, skip_loading);
 
@@ -228,20 +228,41 @@ extern data_parser_t *data_parser_g_new(data_parser_on_error_t on_parse_error,
 		return NULL;
 	}
 
-	//TODO: better matching and checks
-	for (i = 0; plugin_type && (i < plugins->count); i++) {
-		if (!xstrcasecmp(plugin_type, plugins->types[i]))
+	for (int i = 0; plugin_type && (i < plugins->count); i++) {
+		if (plugin_type == plugins->types[i]) {
+			found = i;
 			break;
+		}
 	}
 
-	if (i == plugins->count) {
+	if (found < 0) {
+		for (int i = 0; plugin_type && (i < plugins->count); i++) {
+			if (!xstrcasecmp(plugin_type, plugins->types[i])) {
+				found = i;
+				break;
+			}
+		}
+	}
+
+	if (found < 0) {
+		for (int i = 0; plugin_type && (i < plugins->count); i++) {
+			if (!xstrcasecmp(plugin_type,
+					 _get_plugin_version(
+						plugins->types[i]))) {
+				found = i;
+				break;
+			}
+		}
+	}
+
+	if (found < 0) {
 		error("%s: plugin %s not found", __func__, plugin_type);
 		return NULL;
 	}
 
 	return _new_parser(on_parse_error, on_dump_error, on_query_error,
 			   error_arg, on_parse_warn, on_dump_warn,
-			   on_query_warn, warn_arg, i);
+			   on_query_warn, warn_arg, found);
 }
 
 extern data_parser_t **data_parser_g_new_array(
