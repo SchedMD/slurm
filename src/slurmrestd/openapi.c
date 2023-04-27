@@ -160,6 +160,8 @@ struct openapi_s {
 	char **plugin_types;
 	size_t plugin_count;
 	plugrack_t *rack;
+
+	data_parser_t **parsers; /* symlink to parser array */
 };
 
 static char *_entry_to_string(entry_t *entry);
@@ -918,7 +920,7 @@ static void _oas_plugrack_foreach(const char *full_type, const char *fq_path,
 }
 
 extern int init_openapi(openapi_t **oas, const char *plugins,
-			plugrack_foreach_t listf)
+			plugrack_foreach_t listf, data_parser_t **parsers)
 {
 
 	openapi_t *t = NULL;
@@ -937,6 +939,7 @@ extern int init_openapi(openapi_t **oas, const char *plugins,
 	*oas = t = xmalloc(sizeof(*t));
 	t->magic = MAGIC_OAS;
 	t->paths = list_create(_list_delete_path_t);
+	t->parsers = parsers;
 
 	t->rack = plugrack_create("openapi");
 	plugrack_read_dir(t->rack, slurm_conf.plugindir);

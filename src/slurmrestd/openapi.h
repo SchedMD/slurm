@@ -50,6 +50,8 @@
 #include "src/common/openapi.h"
 #include "src/common/plugrack.h"
 
+#include "src/interfaces/data_parser.h"
+
 /*
  * Opaque type for tracking state
  */
@@ -120,10 +122,12 @@ extern void print_path_tag_methods(openapi_t *oas, int tag);
  * IN plugins - comma delimited list of plugins or "list"
  * 	pass NULL to load all found or "" to load none of them
  * IN listf - function to call if plugins="list" (may be NULL)
+ * IN parsers - array of loaded data_parsers
  * RET SLURM_SUCCESS or error
  */
 extern int init_openapi(openapi_t **oas, const char *plugins,
-			plugrack_foreach_t listf);
+			plugrack_foreach_t listf,
+			data_parser_t **parsers);
 
 /*
  * Free openapi
