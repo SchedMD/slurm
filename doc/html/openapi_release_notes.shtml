@@ -41,6 +41,7 @@ but are also used to generate JSON or YAML output for multiple CLI commands.</p>
 <a href="https://stedolan.github.io/jq/">jq</a>. Make sure to always place the
 paths in a single quote string to avoid shell replacements.</p>
 
+<!--#include virtual="openapi_release_notes/slurm-23.02.2.html"-->
 <!--#include virtual="openapi_release_notes/slurm-23.02.0.html"-->
 <!--#include virtual="openapi_release_notes/slurm-22.05.8.html"-->
 <!--#include virtual="openapi_release_notes/slurm-22.05.7.html"-->

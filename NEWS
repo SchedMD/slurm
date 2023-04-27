@@ -71,6 +71,8 @@ documents those changes that are of interest to users and administrators.
     edge-cases using the PMIx plugin.
  -- Fix issue with PMIx HetJob requests where certain use-cases would end up
     with communication errors due to incorrect PMIx hostname info setup.
+ -- openapi/v0.0.39 - revert regression in job update requests to accept job
+    description for changes instead of requiring job description in "job" field.
 
 * Changes in Slurm 23.02.1
 ==========================
