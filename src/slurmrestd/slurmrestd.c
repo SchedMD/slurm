@@ -70,6 +70,7 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/data_parser.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
 
@@ -117,6 +118,8 @@ static size_t auth_plugin_count = 0;
 static plugrack_t *auth_rack = NULL;
 
 static char *oas_specs = NULL;
+static char *data_parser_plugins = NULL;
+static data_parser_t **parsers = NULL;
 static bool unshare_sysv = true;
 static bool unshare_files = true;
 static bool check_user = true;
@@ -176,6 +179,11 @@ static void _parse_env(void)
 	if ((buffer = getenv("SLURMRESTD_OPENAPI_PLUGINS")) != NULL) {
 		xfree(oas_specs);
 		oas_specs = xstrdup(buffer);
+	}
+
+	if ((buffer = getenv("SLURMRESTD_DATA_PARSER_PLUGINS")) != NULL) {
+		xfree(data_parser_plugins);
+		data_parser_plugins = xstrdup(buffer);
 	}
 
 	if ((buffer = getenv("SLURMRESTD_SECURITY"))) {
@@ -290,12 +298,16 @@ static void _parse_commandline(int argc, char **argv)
 
 	opterr = 0;
 
-	while ((c = getopt_long(argc, argv, "a:f:g:hs:t:u:vV", long_options,
+	while ((c = getopt_long(argc, argv, "a:d:f:g:hs:t:u:vV", long_options,
 				&option_index)) != -1) {
 		switch (c) {
 		case 'a':
 			xfree(rest_auth);
 			rest_auth = xstrdup(optarg);
+			break;
+		case 'd':
+			xfree(data_parser_plugins);
+			data_parser_plugins = xstrdup(optarg);
 			break;
 		case 'f':
 			xfree(slurm_conf_filename);
@@ -521,6 +533,22 @@ int main(int argc, char **argv)
 	if (init_rest_auth(become_user, auth_plugin_handles, auth_plugin_count))
 		fatal("Unable to initialize rest authentication");
 
+	if (data_parser_plugins && !xstrcasecmp(data_parser_plugins, "list")) {
+		info("Possible data_parser plugins:");
+		parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL,
+						  NULL, NULL, NULL, NULL,
+						  data_parser_plugins,
+						  _plugrack_foreach_list,
+						  false);
+		exit(SLURM_SUCCESS);
+	} else if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL,
+						       NULL, NULL, NULL, NULL,
+						       data_parser_plugins,
+						       NULL, false))) {
+		fatal("Unable to initialize data_parser plugins");
+	}
+	xfree(data_parser_plugins);
+
 	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
 		info("Possible OpenAPI plugins:");
 		exit(init_openapi(&openapi_state, oas_specs,
@@ -589,7 +617,7 @@ int main(int argc, char **argv)
 	destroy_openapi(openapi_state);
 	openapi_state = NULL;
 	free_con_mgr(conmgr);
-
+	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
 	serializer_g_fini();
 	data_fini();
 	for (size_t i = 0; i < auth_plugin_count; i++) {
