@@ -627,6 +627,9 @@ cleanup:
 
 extern void unload_plugins(plugins_t *plugins)
 {
+	if (!plugins)
+		return;
+
 	if (plugins->rack) {
 		for (size_t i = 0; i < plugins->count; i++)
 			plugrack_release_by_type(plugins->rack,
