@@ -189,7 +189,12 @@ int pmixp_coll_init(pmixp_coll_t *coll, pmixp_coll_type_t type,
 		rc = SLURM_ERROR;
 		goto exit;
 	}
-	coll->peers_cnt = hostlist_count(hl);
+	if ((coll->peers_cnt = hostlist_count(hl)) <= 0) {
+		PMIXP_ERROR("No peers found");
+		hostlist_destroy(hl);
+		rc = SLURM_ERROR;
+		goto exit;
+	}
 	coll->my_peerid = hostlist_find(hl, pmixp_info_hostname());
 #ifdef PMIXP_COLL_DEBUG
 	/* if we debug collectives - store a copy of a full

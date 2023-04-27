@@ -188,7 +188,9 @@ int pmixp_info_set(const stepd_step_rec_t *step, char ***env)
 		info("GTIDS[%d]:%u", i, _pmixp_job_info.gtids[i]);
 #endif
 
-	/* Setup hostnames and job-wide info */
+	_pmixp_job_info.hostname = xstrdup(step->node_name);
+
+	/* Setup job-wide info */
 	if ((rc = _resources_set(env))) {
 		return rc;
 	}
@@ -315,12 +317,12 @@ static int _resources_set(char ***env)
 	else
 		_pmixp_job_info.abort_agent_port = -1;
 
-	/* Initialize all memory pointers that would be allocated to NULL
+	/*
+	 * Initialize all memory pointers
 	 * So in case of error exit we will know what to xfree
 	 */
 	_pmixp_job_info.job_hl = hostlist_create("");
 	_pmixp_job_info.step_hl = hostlist_create("");
-	_pmixp_job_info.hostname = NULL;
 
 	/* Save step host list */
 	p = getenvp(*env, PMIXP_STEP_NODES_ENV);
@@ -330,11 +332,6 @@ static int _resources_set(char ***env)
 		goto err_exit;
 	}
 	hostlist_push(_pmixp_job_info.step_hl, p);
-
-	/* Extract our node name */
-	p = hostlist_nth(_pmixp_job_info.step_hl, _pmixp_job_info.node_id);
-	_pmixp_job_info.hostname = xstrdup(p);
-	free(p);
 
 	/* Determine job-wide node id and job-wide node count */
 	p = getenvp(*env, PMIXP_JOB_NODES_ENV);

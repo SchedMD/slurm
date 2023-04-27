@@ -67,6 +67,10 @@ documents those changes that are of interest to users and administrators.
     startup and don't be configured with the appropriate port.
  -- Fix dynamic nodes not being sorted and not being included in topology,
     which resulted in suboptimal dynamic node selection for jobs.
+ -- Fix slurmstepd crash due to potential division by zero (SIGFPE) in certain
+    edge-cases using the PMIx plugin.
+ -- Fix issue with PMIx HetJob requests where certain use-cases would end up
+    with communication errors due to incorrect PMIx hostname info setup.
 
 * Changes in Slurm 23.02.1
 ==========================
