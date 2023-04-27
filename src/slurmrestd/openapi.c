@@ -1069,7 +1069,8 @@ extern void destroy_openapi(openapi_t *oas)
 	xfree(oas);
 }
 
-data_for_each_cmd_t _merge_schema(const char *key, data_t *data, void *arg)
+static data_for_each_cmd_t _merge_schema(const char *key, data_t *data,
+					 void *arg)
 {
 	data_t *cs = arg;
 	data_t *e;
@@ -1093,7 +1094,7 @@ data_for_each_cmd_t _merge_schema(const char *key, data_t *data, void *arg)
 }
 
 /* find matching value of name in list of dictionary with "name" entry */
-data_for_each_cmd_t _list_find_dict_name(data_t *data, void *arg)
+static data_for_each_cmd_t _list_find_dict_name(data_t *data, void *arg)
 {
 	list_find_dict_name_t *args = arg;
 	data_t *name;
@@ -1115,7 +1116,7 @@ data_for_each_cmd_t _list_find_dict_name(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-data_for_each_cmd_t _merge_tag(data_t *data, void *arg)
+static data_for_each_cmd_t _merge_tag(data_t *data, void *arg)
 {
 	data_t *tags = arg;
 	data_t *name, *desc, *e;
@@ -1147,7 +1148,7 @@ data_for_each_cmd_t _merge_tag(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
+static data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
 {
 	id_merge_path_t *args = arg;
 	char *p;
@@ -1172,8 +1173,9 @@ data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
  * Merge plugin id with operationIds in paths.
  * All operationIds must be globaly unique.
  */
-data_for_each_cmd_t _differentiate_path_operationId(const char *key,
-						    data_t *data, void *arg)
+static data_for_each_cmd_t _differentiate_path_operationId(const char *key,
+							   data_t *data,
+							   void *arg)
 {
 	data_t *merge[4] = {0}, *merged = NULL;
 	id_merge_path_t *args = arg;
@@ -1235,7 +1237,7 @@ data_for_each_cmd_t _differentiate_path_operationId(const char *key,
 	return DATA_FOR_EACH_CONT;
 }
 
-data_for_each_cmd_t _find_first_server(data_t *data, void *arg)
+static data_for_each_cmd_t _find_first_server(data_t *data, void *arg)
 {
 	data_t **srv = arg;
 	data_t *url;
@@ -1253,7 +1255,7 @@ data_for_each_cmd_t _find_first_server(data_t *data, void *arg)
 	return DATA_FOR_EACH_FAIL;
 }
 
-data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
+static data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 {
 	merge_path_t *args = arg;
 	data_t *e, *servers;
@@ -1326,7 +1328,7 @@ cleanup:
 	return rc;
 }
 
-data_for_each_cmd_t _merge_path_server(data_t *data, void *arg)
+static data_for_each_cmd_t _merge_path_server(data_t *data, void *arg)
 {
 	merge_path_server_t *args = arg;
 	merge_path_t p_args = {
