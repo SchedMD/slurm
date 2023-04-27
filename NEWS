@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- mpi/pmix - When aborted with status 0, avoid marking job/step as failed.
  -- Fixed typo on "initialized" for the description of ESLURM_PLUGIN_NOT_LOADED.
  -- Added max_submit_line_size to SchedulerParameters.
+ -- Change TreeWidth default from 50 to 16.
 
 * Changes in Slurm 23.02.2
 ==========================

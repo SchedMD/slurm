@@ -24,6 +24,7 @@ HIGHLIGHTS
     will report (null) now.
  -- Removed select/cons_res. Please update your configuration to
     select/cons_tres.
+ -- Change TreeWidth default from 50 to 16.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

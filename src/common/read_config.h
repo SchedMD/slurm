@@ -165,7 +165,7 @@ typedef struct node_record node_record_t;
 #  define DEFAULT_TOPOLOGY_PLUGIN     "topology/none"
 #endif
 #define DEFAULT_WAIT_TIME           0
-#  define DEFAULT_TREE_WIDTH        50
+#define DEFAULT_TREE_WIDTH	    16
 #define DEFAULT_UNKILLABLE_TIMEOUT  60 /* seconds */
 #define DEFAULT_BATCH_SCRIPT_LIMIT (4 * 1024 * 1024) /* 4MB */
 #define MAX_BATCH_SCRIPT_SIZE (512 * 1024 * 1024) /* 512MB */
