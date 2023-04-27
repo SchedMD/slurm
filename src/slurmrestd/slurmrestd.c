@@ -117,10 +117,10 @@ static size_t auth_plugin_count = 0;
 static plugrack_t *auth_rack = NULL;
 
 static char *oas_specs = NULL;
-bool unshare_sysv = true;
-bool unshare_files = true;
-bool check_user = true;
-bool become_user = false;
+static bool unshare_sysv = true;
+static bool unshare_files = true;
+static bool check_user = true;
+static bool become_user = false;
 
 extern parsed_host_port_t *parse_host_port(const char *str);
 extern void free_parse_host_port(parsed_host_port_t *parsed);
