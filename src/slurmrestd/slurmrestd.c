@@ -483,9 +483,6 @@ int main(int argc, char **argv)
 				    max_connections, callbacks)))
 		fatal("Unable to initialize connection manager");
 
-	if (init_operations())
-		fatal("Unable to initialize operations structures");
-
 	auth_rack = plugrack_create("rest_auth");
 	plugrack_read_dir(auth_rack, slurm_conf.plugindir);
 
@@ -548,6 +545,9 @@ int main(int argc, char **argv)
 		fatal("Unable to initialize data_parser plugins");
 	}
 	xfree(data_parser_plugins);
+
+	if (init_operations(parsers))
+		fatal("Unable to initialize operations structures");
 
 	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
 		info("Possible OpenAPI plugins:");

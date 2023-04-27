@@ -48,7 +48,7 @@ extern openapi_t *openapi_state;
  * setup locks.
  * only call once!
  */
-extern int init_operations(void);
+extern int init_operations(data_parser_t **parsers);
 extern void destroy_operations(void);
 
 /*

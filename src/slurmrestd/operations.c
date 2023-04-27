@@ -53,6 +53,7 @@
 openapi_t *openapi_state = NULL;
 static pthread_rwlock_t paths_lock = PTHREAD_RWLOCK_INITIALIZER;
 static List paths = NULL;
+static data_parser_t **parsers; /* symlink to parser array */
 
 #define MAGIC 0xDFFEAAAE
 #define MAGIC_HEADER_ACCEPT 0xDF9EAABE
@@ -65,6 +66,8 @@ typedef struct {
 	openapi_handler_t callback;
 	/* tag to hand to handler */
 	int callback_tag;
+	/* assigned parser */
+	data_parser_t *parser;
 } path_t;
 
 typedef struct {
@@ -93,7 +96,7 @@ static void _free_path(void *x)
 	xfree(path);
 }
 
-extern int init_operations(void)
+extern int init_operations(data_parser_t **init_parsers)
 {
 	slurm_rwlock_wrlock(&paths_lock);
 
@@ -101,6 +104,7 @@ extern int init_operations(void)
 		fatal_abort("%s called twice", __func__);
 
 	paths = list_create(_free_path);
+	parsers = init_parsers;
 
 	slurm_rwlock_unlock(&paths_lock);
 
@@ -112,6 +116,7 @@ extern void destroy_operations(void)
 	slurm_rwlock_wrlock(&paths_lock);
 
 	FREE_NULL_LIST(paths);
+	parsers = NULL;
 
 	slurm_rwlock_unlock(&paths_lock);
 }
@@ -130,7 +135,7 @@ static int _match_path_key(void *x, void *ptr)
 }
 
 static int _bind(const char *str_path, openapi_handler_t callback,
-		 int callback_tag)
+		 int callback_tag, data_parser_t *parser)
 {
 	int path_tag;
 	path_t *path;
@@ -156,6 +161,7 @@ static int _bind(const char *str_path, openapi_handler_t callback,
 	path = xmalloc(sizeof(*path));
 	path->magic = MAGIC;
 	path->tag = path_tag;
+	path->parser = parser;
 	list_append(paths, path);
 
 exists:
@@ -170,7 +176,26 @@ exists:
 extern int bind_operation_handler(const char *str_path,
 				  openapi_handler_t callback, int callback_tag)
 {
-	return _bind(str_path, callback, callback_tag);
+	int rc;
+
+	if (!xstrstr(str_path, OPENAPI_DATA_PARSER_PARAM))
+		return _bind(str_path, callback, callback_tag, NULL);
+
+	for (int i = 0; parsers[i]; i++) {
+		char *path = xstrdup(str_path);
+
+		xstrsubstitute(path, OPENAPI_DATA_PARSER_PARAM,
+			       data_parser_get_plugin_version(parsers[i]));
+
+		rc = _bind(path, callback, callback_tag, parsers[i]);
+
+		xfree(path);
+
+		if (rc)
+			return rc;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 static int _rm_path_callback(void *x, void *ptr)
