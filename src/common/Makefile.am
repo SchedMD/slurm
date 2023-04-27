@@ -64,6 +64,8 @@ libcommon_la_SOURCES =				\
 	node_conf.h				\
 	oci_config.c				\
 	oci_config.h				\
+	openapi.c				\
+	openapi.h				\
 	optz.c					\
 	optz.h					\
 	pack.c					\
