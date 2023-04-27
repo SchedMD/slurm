@@ -39,8 +39,8 @@
  * 	https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md
  */
 
-#ifndef SLURM_OPENAPI_H
-#define SLURM_OPENAPI_H
+#ifndef SLURMRESTD_OPENAPI_H
+#define SLURMRESTD_OPENAPI_H
 
 #include "slurm/slurm.h"
 
@@ -283,4 +283,4 @@ typedef struct {
 	void *response;
 } openapi_resp_single_t;
 
-#endif /* SLURM_OPENAPI_H */
+#endif /* SLURMRESTD_OPENAPI_H */
