@@ -92,6 +92,8 @@ static plugins_t *plugins = NULL;
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int active_parsers = 0;
 
+static const char *_get_plugin_version(const char *plugin_type);
+
 extern int data_parser_g_parse(data_parser_t *parser, data_parser_type_t type,
 			       void *dst, ssize_t dst_bytes, data_t *src,
 			       data_t *parent_path)
@@ -284,25 +286,29 @@ extern const char *data_parser_get_plugin(data_parser_t *parser)
 		return NULL;
 }
 
-extern const char *data_parser_get_plugin_version(data_parser_t *parser)
+static const char *_get_plugin_version(const char *plugin_type)
 {
 	static const char prefix[] = PARSE_MAJOR_TYPE "/";
 
+#ifndef NDEBUG
+	/* catch if the prefix ever changes in an unexpected way */
+	const char *match;
+	xassert(plugin_type);
+	match = xstrstr(plugin_type, prefix);
+	xassert(match);
+#endif
+
+	return plugin_type + strlen(prefix);
+}
+
+extern const char *data_parser_get_plugin_version(data_parser_t *parser)
+{
 	xassert(!parser || parser->magic == PARSE_MAGIC);
 
 	if (!parser)
 		return NULL;
 
-#ifndef NDEBUG
-	/* catch if the prefix ever changes in an unexpected way */
-	const char *type, *match;
-	type = data_parser_get_plugin(parser);
-	xassert(type);
-	match = xstrstr(type, prefix);
-	xassert(match);
-#endif
-
-	return parser->plugin_type + strlen(prefix);
+	return _get_plugin_version(parser->plugin_type);
 }
 
 extern void data_parser_g_free(data_parser_t *parser, bool skip_unloading)
