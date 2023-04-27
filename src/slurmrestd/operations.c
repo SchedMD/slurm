@@ -129,8 +129,8 @@ static int _match_path_key(void *x, void *ptr)
 		return 0;
 }
 
-extern int bind_operation_handler(const char *str_path,
-				  openapi_handler_t callback, int callback_tag)
+static int _bind(const char *str_path, openapi_handler_t callback,
+		 int callback_tag)
 {
 	int path_tag;
 	path_t *path;
@@ -165,6 +165,12 @@ exists:
 	slurm_rwlock_unlock(&paths_lock);
 
 	return SLURM_SUCCESS;
+}
+
+extern int bind_operation_handler(const char *str_path,
+				  openapi_handler_t callback, int callback_tag)
+{
+	return _bind(str_path, callback, callback_tag);
 }
 
 static int _rm_path_callback(void *x, void *ptr)
