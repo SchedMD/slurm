@@ -566,7 +566,7 @@ extern int load_plugins(plugins_t **plugins_ptr, const char *major_type,
 				otype = type;
 
 			ntype = xstrdup_printf("%s/%s", major_type, otype);
-			_plugrack_foreach(type, NULL, PLUGIN_INVALID_HANDLE,
+			_plugrack_foreach(ntype, NULL, PLUGIN_INVALID_HANDLE,
 					  plugins);
 			xfree(ntype);
 
