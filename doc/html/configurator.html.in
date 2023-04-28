@@ -386,7 +386,7 @@ Number of logical threads in a single physical core.
 <P>
 <input type="text" name="memory" value=""> <B>RealMemory</B>: Amount
 of real memory. This parameter is required when specifying Memory as a
-consumable resource with the select/cons_res plug-in. See below
+consumable resource with the select/cons_tres plug-in. See below
 under Resource Selection.
 <P>
 
@@ -488,8 +488,6 @@ Select one value for <B>SelectType</B>:<BR>
 <input type="radio" name="select_type" value="cons_tres" checked>
 <b>cons_tres</b>: Allocate individual processors, memory, GPUs, and other
 trackable resources<br />
-<input type="radio" name="select_type" value="cons_res">
-<B>Cons_res</B>: Allocate individual processors and memory<BR>
 <input type="radio" name="select_type" value="cray_aries">
 <B>Cray XC</B>: Cray XC systems running native Slurm without ALPS<BR>
 <input type="radio" name="select_type" value="linear">
