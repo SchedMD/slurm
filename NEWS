@@ -80,6 +80,8 @@ documents those changes that are of interest to users and administrators.
     when not required.  This prevents unhelpful, and possibly misleading, debug2
     messages when not using the new "shared" mode.
  -- gpu/nvml - Fix gpu usage when graphics processes are running on the gpu.
+ -- slurmrestd - fix regression where "exclusive" field was removed from job
+    descriptions and submissions.
 
 * Changes in Slurm 23.02.1
 ==========================
