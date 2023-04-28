@@ -152,7 +152,7 @@ The default value is <b>NO</b>.</li>
 <p>Note that <i>SuspendProgram</i> and <i>ResumeProgram</i> execute as
 <i>SlurmUser</i> on the node where the <i>slurmctld</i> daemon runs
 (primary and backup server nodes).
-Use of <i>sudo</i> may be required for <i>SlurmUser</i>to power down
+Use of <i>sudo</i> may be required for <i>SlurmUser</i> to power down
 and restart nodes.
 If you need to convert Slurm's hostlist expression into individual node
 names, the <i>scontrol show hostnames</i> command may prove useful.
