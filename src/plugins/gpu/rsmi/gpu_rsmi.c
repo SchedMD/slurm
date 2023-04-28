@@ -1025,8 +1025,8 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 	rsmi_status_t rc;
 
 	if ((gpuutil_pos == -1) || (gpumem_pos == -1)) {
-		error("no gpu utilization TRES! This should never happen");
-		return SLURM_ERROR;
+		debug2("%s: We are not tracking TRES gpuutil/gpumem", __func__);
+		return SLURM_SUCCESS;
 	}
 
 	rc = rsmi_compute_process_info_by_pid_get(pid, &proc);
