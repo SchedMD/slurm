@@ -147,4 +147,49 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp);
  */
 extern void *openapi_get_db_conn(void *ctxt);
 
+typedef struct {
+	int rc;
+	list_t *errors;
+	list_t *warnings;
+	data_parser_t *parser;
+	const char *id; /* string identifying client (usually IP) */
+	void *db_conn;
+	http_request_method_t method;
+	data_t *parameters;
+	data_t *query;
+	data_t *resp;
+	data_t *parent_path;
+	int tag;
+} openapi_ctxt_t;
+
+/*
+ * Callback from openapi caller.
+ * RET SLURM_SUCCESS or error to kill the connection
+ */
+typedef int (*openapi_ctxt_handler_t)(openapi_ctxt_t *ctxt);
+
+/* Wraps ctxt callback to apply standardised response schema */
+extern int wrap_openapi_ctxt_callback(const char *context_id,
+				      http_request_method_t method,
+				      data_t *parameters, data_t *query,
+				      int tag, data_t *resp, void *auth,
+				      data_parser_t *parser,
+				      openapi_ctxt_handler_t callback,
+				      const openapi_resp_meta_t *meta);
+
+/*
+ * Add a response error
+ * IN ctxt - connection context
+ * IN why - description of error or NULL
+ * IN error_code - Error number
+ * IN source - Where the error was generated
+ * RET value of error_code
+ */
+extern int openapi_resp_error(openapi_ctxt_t *ctxt, int error_code,
+			      const char *source, const char *why, ...)
+	__attribute__((format(printf, 4, 5)));
+extern void openapi_resp_warn(openapi_ctxt_t *ctxt, const char *source,
+			      const char *why, ...)
+	__attribute__((format(printf, 3, 4)));
+
 #endif /* SLURMRESTD_OPENAPI_H */

@@ -1522,3 +1522,204 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 	 */
 	return SLURM_SUCCESS;
 }
+
+static bool _on_error(void *arg, data_parser_type_t type, int error_code,
+		      const char *source, const char *why, ...)
+{
+	va_list ap;
+	char *str;
+	openapi_ctxt_t *ctxt = arg;
+
+	va_start(ap, why);
+	str = vxstrfmt(why, ap);
+	va_end(ap);
+
+	openapi_resp_error(ctxt, error_code, source, "%s", str);
+
+	return false;
+}
+
+static void _on_warn(void *arg, data_parser_type_t type, const char *source,
+		     const char *why, ...)
+{
+	va_list ap;
+	char *str;
+	openapi_ctxt_t *ctxt = arg;
+
+	va_start(ap, why);
+	str = vxstrfmt(why, ap);
+	va_end(ap);
+
+	openapi_resp_warn(ctxt, source, "%s", str);
+
+	xfree(str);
+}
+
+extern int openapi_resp_error(openapi_ctxt_t *ctxt, int error_code,
+			      const char *source, const char *why, ...)
+{
+	openapi_resp_error_t *e;
+
+	xassert(ctxt->errors);
+
+	if (!ctxt->errors)
+		return error_code;
+
+	e = xmalloc(sizeof(*e));
+
+	if (why) {
+		va_list ap;
+		char *str;
+
+		va_start(ap, why);
+		str = vxstrfmt(why, ap);
+		va_end(ap);
+
+		error("%s: [%s] parser=%s rc[%d]=%s -> %s",
+		      (source ? source : __func__), ctxt->id,
+		      data_parser_get_plugin(ctxt->parser), error_code,
+		      slurm_strerror(error_code), str);
+
+		e->description = str;
+	}
+
+	if (error_code) {
+		e->num = error_code;
+
+		if (!ctxt->rc)
+			ctxt->rc = error_code;
+	}
+
+	if (source)
+		e->source = xstrdup(source);
+
+	list_append(ctxt->errors, e);
+
+	return error_code;
+}
+
+extern void openapi_resp_warn(openapi_ctxt_t *ctxt, const char *source,
+			      const char *why, ...)
+{
+	openapi_resp_warning_t *w;
+
+	xassert(ctxt->warnings);
+
+	if (!ctxt->warnings)
+		return;
+
+	w = xmalloc(sizeof(*w));
+
+	if (why) {
+		va_list ap;
+		char *str;
+
+		va_start(ap, why);
+		str = vxstrfmt(why, ap);
+		va_end(ap);
+
+		debug("%s: [%s] parser=%s WARNING: %s",
+		      (source ? source : __func__), ctxt->id,
+		      data_parser_get_plugin(ctxt->parser), str);
+
+		w->description = str;
+	}
+
+	if (source)
+		w->source = xstrdup(source);
+
+	list_append(ctxt->warnings, w);
+}
+
+extern int wrap_openapi_ctxt_callback(const char *context_id,
+				      http_request_method_t method,
+				      data_t *parameters, data_t *query,
+				      int tag, data_t *resp, void *auth,
+				      data_parser_t *parser,
+				      openapi_ctxt_handler_t callback,
+				      const openapi_resp_meta_t *plugin_meta)
+{
+	int rc;
+	data_t *errors, *warnings, *meta;
+	openapi_ctxt_t ctxt = {
+		.id = context_id,
+		.method = method,
+		.parameters = parameters,
+		.query = query,
+		.resp = resp,
+		.tag = tag,
+	};
+	openapi_resp_meta_t query_meta = *plugin_meta;
+
+	query_meta.plugin.data_parser = (char *) data_parser_get_plugin(parser);
+	query_meta.client.source = (char *) context_id;
+
+	ctxt.parent_path = data_set_list(data_new());
+	ctxt.errors = list_create(free_openapi_resp_error);
+	ctxt.warnings = list_create(free_openapi_resp_warning);
+	ctxt.parser = data_parser_g_new(_on_error, _on_error, _on_error, &ctxt,
+					_on_warn, _on_warn, _on_warn, &ctxt,
+					data_parser_get_plugin(parser), NULL,
+					true);
+
+	debug("%s: [%s] %s using %s",
+	      __func__, context_id, get_http_method_string(method),
+	      data_parser_get_plugin(ctxt.parser));
+
+	if (!(ctxt.db_conn = openapi_get_db_conn(auth))) {
+		openapi_resp_error(&ctxt, (rc = ESLURM_DB_CONNECTION), __func__,
+				   "openapi_get_db_conn() failed to open slurmdb connection");
+	} else {
+		rc = data_parser_g_assign(ctxt.parser,
+					  DATA_PARSER_ATTR_DBCONN_PTR,
+					  ctxt.db_conn);
+	}
+
+	if (!rc)
+		rc = callback(&ctxt);
+
+	if (data_get_type(ctxt.resp) == DATA_TYPE_NULL)
+		data_set_dict(ctxt.resp);
+
+	/* need to populate meta, errors and warnings */
+
+	errors = data_key_set(ctxt.resp, OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME);
+	warnings = data_key_set(ctxt.resp,
+				OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME);
+	meta = data_key_set(ctxt.resp, OPENAPI_RESP_STRUCT_META_FIELD_NAME);
+
+	/* none of the fields should be populated */
+	xassert((data_get_type(errors) == DATA_TYPE_NULL));
+	xassert((data_get_type(warnings) == DATA_TYPE_NULL));
+	xassert((data_get_type(meta) == DATA_TYPE_NULL));
+
+	{
+		/* cast to remove const */
+		void *ptr = (void *) &query_meta;
+		DATA_DUMP(ctxt.parser, OPENAPI_META_PTR, ptr, meta);
+	}
+
+	if ((rc = DATA_DUMP(ctxt.parser, OPENAPI_ERRORS, ctxt.errors,
+			    errors))) {
+		/* data_parser doesn't support OPENAPI_ERRORS parser */
+		data_t *e =
+			data_set_dict(data_list_append(data_set_list(errors)));
+		data_set_string(data_key_set(e, "description"),
+				"Requested data_parser plugin does not support OpenAPI plugin");
+		data_set_int(data_key_set(e, "error_number"),
+			     ESLURM_NOT_SUPPORTED);
+		data_set_string(data_key_set(e, "error"),
+				slurm_strerror(ESLURM_NOT_SUPPORTED));
+	}
+	DATA_DUMP(ctxt.parser, OPENAPI_WARNINGS, ctxt.warnings, warnings);
+
+	if (!rc)
+		rc = ctxt.rc;
+
+	FREE_NULL_LIST(ctxt.errors);
+	FREE_NULL_LIST(ctxt.warnings);
+	FREE_NULL_DATA_PARSER(ctxt.parser);
+	FREE_NULL_DATA(ctxt.parent_path);
+
+	return rc;
+}

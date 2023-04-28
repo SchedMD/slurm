@@ -74,6 +74,20 @@ extern int bind_operation_handler(const char *path, openapi_handler_t callback,
 				  int tag);
 
 /*
+ * Bind callback handler for a given URL pattern.
+ * Same rules as bind_operation_handler() but handles populating response and
+ * tracking warnings and errors.
+ *
+ * IN path - url path to match - must include {data_parser}
+ * IN callback - handler function for callback
+ * IN tag - arbitrary tag passed to handler when path matched
+ * RET SLURM_SUCCESS or error
+ */
+extern int bind_operation_ctxt_handler(const char *path,
+				       openapi_ctxt_handler_t callback, int tag,
+				       const openapi_resp_meta_t *meta);
+
+/*
  * Unbind a given callback handler from all paths
  * IN path path to remove
  * RET SLURM_SUCCESS or error

@@ -64,6 +64,10 @@ typedef struct {
 	int tag;
 	/* handler's callback to call on match */
 	openapi_handler_t callback;
+	/* handler's ctxt callback to call on match */
+	openapi_ctxt_handler_t ctxt_callback;
+	/* meta info from plugin */
+	const openapi_resp_meta_t *meta;
 	/* tag to hand to handler */
 	int callback_tag;
 	/* assigned parser */
@@ -80,7 +84,8 @@ static void _check_path_magic(const path_t *path)
 {
 	xassert(path->magic == MAGIC);
 	xassert(path->tag >= 0);
-	xassert(path->callback);
+	xassert(path->callback || path->ctxt_callback);
+	xassert(!(path->callback && path->ctxt_callback));
 }
 
 static void _free_path(void *x)
@@ -135,7 +140,8 @@ static int _match_path_key(void *x, void *ptr)
 }
 
 static int _bind(const char *str_path, openapi_handler_t callback,
-		 int callback_tag, data_parser_t *parser)
+		 openapi_ctxt_handler_t ctxt_callback, int callback_tag,
+		 data_parser_t *parser, const openapi_resp_meta_t *meta)
 {
 	int path_tag;
 	path_t *path;
@@ -166,6 +172,8 @@ static int _bind(const char *str_path, openapi_handler_t callback,
 
 exists:
 	path->callback = callback;
+	path->ctxt_callback = ctxt_callback;
+	path->meta = meta;
 	path->callback_tag = callback_tag;
 
 	slurm_rwlock_unlock(&paths_lock);
@@ -179,7 +187,8 @@ extern int bind_operation_handler(const char *str_path,
 	int rc;
 
 	if (!xstrstr(str_path, OPENAPI_DATA_PARSER_PARAM))
-		return _bind(str_path, callback, callback_tag, NULL);
+		return _bind(str_path, callback, NULL, callback_tag, NULL,
+			     NULL);
 
 	for (int i = 0; parsers[i]; i++) {
 		char *path = xstrdup(str_path);
@@ -187,7 +196,33 @@ extern int bind_operation_handler(const char *str_path,
 		xstrsubstitute(path, OPENAPI_DATA_PARSER_PARAM,
 			       data_parser_get_plugin_version(parsers[i]));
 
-		rc = _bind(path, callback, callback_tag, parsers[i]);
+		rc = _bind(path, callback, NULL, callback_tag, parsers[i],
+			   NULL);
+
+		xfree(path);
+
+		if (rc)
+			return rc;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int bind_operation_ctxt_handler(const char *str_path,
+				       openapi_ctxt_handler_t callback, int tag,
+				       const openapi_resp_meta_t *meta)
+{
+	int rc;
+
+	xassert(xstrstr(str_path, OPENAPI_DATA_PARSER_PARAM));
+
+	for (int i = 0; parsers[i]; i++) {
+		char *path = xstrdup(str_path);
+
+		xstrsubstitute(path, OPENAPI_DATA_PARSER_PARAM,
+			       data_parser_get_plugin_version(parsers[i]));
+
+		rc = _bind(path, NULL, callback, tag, parsers[i], meta);
 
 		xfree(path);
 
@@ -477,20 +512,36 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 
 static int _call_handler(on_http_request_args_t *args, data_t *params,
 			 data_t *query, openapi_handler_t callback,
-			 int callback_tag, const char *write_mime,
-			 data_parser_t *parser)
+			 openapi_ctxt_handler_t ctxt_callback, int callback_tag,
+			 const char *write_mime, data_parser_t *parser,
+			 const openapi_resp_meta_t *meta)
 {
 	int rc;
 	data_t *resp = data_new();
 	char *body = NULL;
 	http_status_code_t e;
 
-	debug3("%s: [%s] BEGIN: calling handler: 0x%"PRIXPTR"[%d] for path: %s",
-	       __func__, args->context->con->name, (uintptr_t) callback,
-	       callback_tag, args->path);
+	if (callback) {
+		xassert(!ctxt_callback);
+		debug3("%s: [%s] BEGIN: calling handler: 0x%"PRIXPTR"[%d] for path: %s",
+		       __func__, args->context->con->name, (uintptr_t) callback,
+		       callback_tag, args->path);
 
-	rc = callback(args->context->con->name, args->method, params, query,
-		      callback_tag, resp, args->context->auth, parser);
+		rc = callback(args->context->con->name, args->method, params,
+			      query, callback_tag, resp, args->context->auth,
+			      parser);
+	} else {
+		xassert(ctxt_callback);
+		debug3("%s: [%s] BEGIN: calling ctxt handler: 0x%"PRIXPTR"[%d] for path: %s",
+		       __func__, args->context->con->name,
+		       (uintptr_t) ctxt_callback, callback_tag, args->path);
+
+		rc = wrap_openapi_ctxt_callback(args->context->con->name,
+						args->method, params, query,
+						callback_tag, resp,
+						args->context->auth, parser,
+						ctxt_callback, meta);
+	}
 
 	/*
 	 * Clear auth context after callback is complete. Client has to provide
@@ -623,8 +674,8 @@ extern int operations_router(on_http_request_args_t *args)
 	if ((rc = _get_query(args, &query, read_mime)))
 		goto cleanup;
 
-	rc = _call_handler(args, params, query, callback, callback_tag,
-			   write_mime, parser);
+	rc = _call_handler(args, params, query, callback, path->ctxt_callback,
+			   callback_tag, write_mime, parser, path->meta);
 
 cleanup:
 	FREE_NULL_DATA(query);
