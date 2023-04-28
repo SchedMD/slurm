@@ -82,6 +82,9 @@ documents those changes that are of interest to users and administrators.
  -- gpu/nvml - Fix gpu usage when graphics processes are running on the gpu.
  -- slurmrestd - fix regression where "exclusive" field was removed from job
     descriptions and submissions.
+ -- Fix issue where requeued jobs had bad gres allocations leading to gres not
+    being deallocated at the end of the job, preventing other jobs from using
+    those resources.
 
 * Changes in Slurm 23.02.1
 ==========================
