@@ -76,6 +76,9 @@ documents those changes that are of interest to users and administrators.
     description for changes instead of requiring job description in "job" field.
  -- Fix regression in 23.02.0rc1 that caused a step to crash with a bad
     --gpu-bind=single request.
+ -- job_container/tmpfs - skip more in-depth attempt to clean up the base path
+    when not required.  This prevents unhelpful, and possibly misleading, debug2
+    messages when not using the new "shared" mode.
 
 * Changes in Slurm 23.02.1
 ==========================
