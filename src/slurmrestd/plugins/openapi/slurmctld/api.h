@@ -39,60 +39,14 @@
 
 #include "src/common/data.h"
 #include "src/interfaces/data_parser.h"
+#include "src/slurmrestd/openapi.h"
 
-#define MAGIC_CTXT 0xafbb0fae
+typedef openapi_ctxt_t ctxt_t;
 
-typedef struct {
-	int magic; /* MAGIC_CTXT */
-	int rc;
-	list_t *errors;
-	list_t *warnings;
-	data_parser_t *parser;
-	const char *id; /* string identifying client (usually IP) */
-	void *db_conn;
-	http_request_method_t method;
-	data_t *parameters;
-	data_t *query;
-	data_t *resp;
-	data_t *parent_path;
-} ctxt_t;
-
-/*
- * Initiate connection context.
- *
- * This function is expected to be called in the callback handlers from
- * operations router. It will setup everything required for handling the client
- * request including tracking errors and warnings.
- *
- * IN context_id - string ident for client
- * IN method - HTTP method of request
- * IN parameters - data list of client supplied HTTP parameters
- * IN query - data list of client supplied HTTP querys
- * IN tag - callback assigned tag
- * IN auth - auth ptr reference
- * IN parser - assigned operation parser
- */
-extern ctxt_t *init_connection(const char *context_id,
-			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp, void *auth,
-			       data_parser_t *parser);
-
-/* provides RC for connection and releases connection context */
-extern int fini_connection(ctxt_t *ctxt);
-
-/*
- * Add a response error
- * IN ctxt - connection context
- * IN why - description of error or NULL
- * IN error_code - Error number
- * IN source - Where the error was generated
- * RET value of error_code
- */
-extern int resp_error(ctxt_t *ctxt, int error_code, const char *source,
-		      const char *why, ...)
-	__attribute__((format(printf, 4, 5)));
-extern void resp_warn(ctxt_t *ctxt, const char *source, const char *why, ...)
-	__attribute__((format(printf, 3, 4)));
+#define resp_error(ctxt, error_code, source, why, ...) \
+	openapi_resp_error(ctxt, error_code, source, why, ##__VA_ARGS__)
+#define resp_warn(ctxt, source, why, ...) \
+	openapi_resp_warn(ctxt, source, why, ##__VA_ARGS__)
 
 /* ------------ handlers for user requests --------------- */
 
@@ -131,6 +85,6 @@ do {                                                                         \
 } while (false)
 
 /* register handler against each parser */
-extern void bind_handler(const char *str_path, openapi_handler_t callback);
+extern void bind_handler(const char *str_path, openapi_ctxt_handler_t callback);
 
 #endif

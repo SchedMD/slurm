@@ -49,27 +49,22 @@
 #include "api.h"
 #include "structs.h"
 
-static int _op_handler_jobs(const char *context_id,
-			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *resp, void *auth,
-			    data_parser_t *parser)
+static int _op_handler_jobs(openapi_ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth, parser);
 	time_t update_time = 0; /* default to unix epoch */
 	job_info_msg_t *job_info_ptr = NULL;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	debug4("%s: jobs handler called by %s", __func__, ctxt->id);
 
-	if (method != HTTP_REQUEST_GET) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+	if (ctxt->method != HTTP_REQUEST_GET) {
+		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 		goto cleanup;
 	}
 
-	if ((rc = get_date_param(query, "update_time", &update_time))) {
+	if ((rc = get_date_param(ctxt->query, "update_time", &update_time))) {
 		resp_error(ctxt, rc, __func__,
 			   "Unable to parse \"update_time\" field");
 		goto cleanup;
@@ -79,6 +74,7 @@ static int _op_handler_jobs(const char *context_id,
 			     SHOW_ALL | SHOW_DETAIL);
 
 	if (rc == SLURM_NO_CHANGE_IN_DATA) {
+		rc = SLURM_SUCCESS;
 		resp_warn(ctxt, __func__,
 			  "No job changes since update_time=%ld",
 			  update_time);
@@ -92,7 +88,7 @@ static int _op_handler_jobs(const char *context_id,
 
 cleanup:
 	slurm_free_job_info_msg(job_info_ptr);
-	return fini_connection(ctxt);
+	return rc;
 }
 
 static void _handle_job_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
@@ -357,18 +353,11 @@ static void _job_post(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	xfree(req.script);
 }
 
-static int _op_handler_job(const char *context_id, http_request_method_t method,
-			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth, data_parser_t *parser)
+static int _op_handler_job(openapi_ctxt_t *ctxt)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	slurm_selected_step_t job_id;
 	char *job_id_str;
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth, parser);
-
-	if (ctxt->rc)
-		goto done;
 
 	if (!(job_id_str = get_str_param("job_id", ctxt)))
 		goto done;
@@ -381,48 +370,39 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 
 	if ((job_id.step_id.job_id == NO_VAL) || (job_id.step_id.job_id <= 0)
 	    || (job_id.step_id.job_id >= MAX_JOB_ID)) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Invalid JobID=%u rejected",
-			   job_id.step_id.job_id);
+		rc = resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				"Invalid JobID=%u rejected",
+				job_id.step_id.job_id);
 		goto done;
 	}
 
-	if (method == HTTP_REQUEST_GET) {
+	if (ctxt->method == HTTP_REQUEST_GET) {
 		_handle_job_get(ctxt, &job_id);
-	} else if (method == HTTP_REQUEST_DELETE) {
+	} else if (ctxt->method == HTTP_REQUEST_DELETE) {
 		_handle_job_delete(ctxt, &job_id);
-	} else if (method == HTTP_REQUEST_POST) {
+	} else if (ctxt->method == HTTP_REQUEST_POST) {
 		_job_post(ctxt, &job_id);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
 done:
-	return fini_connection(ctxt);
+	return rc;
 }
 
-static int _op_handler_submit_job(const char *context_id,
-				  http_request_method_t method,
-				  data_t *parameters, data_t *query, int tag,
-				  data_t *resp, void *auth,
-				  data_parser_t *parser)
+static int _op_handler_submit_job(openapi_ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth, parser);
-
-	if (ctxt->rc) {
-		/* do nothing - already errored */
-	} else if (method == HTTP_REQUEST_POST) {
+	if (ctxt->method == HTTP_REQUEST_POST) {
 		_job_post(ctxt, NULL);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
-	return fini_connection(ctxt);
+	return ctxt->rc;
 }
 
 extern void init_op_jobs(void)
@@ -434,7 +414,7 @@ extern void init_op_jobs(void)
 
 extern void destroy_op_jobs(void)
 {
-	unbind_operation_handler(_op_handler_submit_job);
-	unbind_operation_handler(_op_handler_job);
-	unbind_operation_handler(_op_handler_jobs);
+	unbind_operation_ctxt_handler(_op_handler_submit_job);
+	unbind_operation_ctxt_handler(_op_handler_job);
+	unbind_operation_ctxt_handler(_op_handler_jobs);
 }

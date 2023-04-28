@@ -135,40 +135,24 @@ done:
 	slurm_free_node_info_msg(node_info_ptr);
 }
 
-static int _op_handler_nodes(const char *context_id,
-			     http_request_method_t method, data_t *parameters,
-			     data_t *query, int tag, data_t *resp, void *auth,
-			     data_parser_t *parser)
+static int _op_handler_nodes(openapi_ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth, parser);
+	int rc = SLURM_SUCCESS;
 
-	if (ctxt->rc)
-		goto done;
-
-	if (method == HTTP_REQUEST_GET) {
+	if (ctxt->method == HTTP_REQUEST_GET) {
 		_dump_nodes(ctxt, NULL);
 	} else {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+		rc = resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				"Unsupported HTTP method requested: %s",
+				get_http_method_string(ctxt->method));
 	}
 
-done:
-	return fini_connection(ctxt);
+	return rc;
 }
 
-static int _op_handler_node(const char *context_id,
-			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *resp, void *auth,
-			    data_parser_t *parser)
+static int _op_handler_node(openapi_ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth, parser);
 	char *name;
-
-	if (ctxt->rc)
-		goto done;
 
 	if (!(name = get_str_param("node_name", ctxt))) {
 		resp_error(ctxt, ESLURM_INVALID_NODE_NAME, __func__,
@@ -176,20 +160,20 @@ static int _op_handler_node(const char *context_id,
 		goto done;
 	}
 
-	if (method == HTTP_REQUEST_GET) {
+	if (ctxt->method == HTTP_REQUEST_GET) {
 		_dump_nodes(ctxt, name);
-	} else if (method == HTTP_REQUEST_DELETE) {
+	} else if (ctxt->method == HTTP_REQUEST_DELETE) {
 		_delete_node(ctxt, name);
-	} else if (method == HTTP_REQUEST_POST) {
+	} else if (ctxt->method == HTTP_REQUEST_POST) {
 		_update_node(ctxt, name);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
 done:
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
 extern void init_op_nodes(void)
@@ -200,5 +184,5 @@ extern void init_op_nodes(void)
 
 extern void destroy_op_nodes(void)
 {
-	unbind_operation_handler(_op_handler_nodes);
+	unbind_operation_ctxt_handler(_op_handler_nodes);
 }

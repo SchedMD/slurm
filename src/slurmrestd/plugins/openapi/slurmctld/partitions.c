@@ -54,29 +54,20 @@
 
 #include "api.h"
 
-extern int _op_handler_partitions(const char *context_id,
-				  http_request_method_t method,
-				  data_t *parameters, data_t *query, int tag,
-				  data_t *resp, void *auth,
-				  data_parser_t *parser)
+extern int _op_handler_partitions(openapi_ctxt_t *ctxt)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	partition_info_msg_t *part_info_ptr = NULL;
 	time_t update_time = 0;
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth, parser);
 
-	if (ctxt->rc)
-		goto done;
-
-	if (method != HTTP_REQUEST_GET) {
+	if (ctxt->method != HTTP_REQUEST_GET) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 		goto done;
 	}
 
-	if ((rc = get_date_param(query, "update_time", &update_time)))
+	if ((rc = get_date_param(ctxt->query, "update_time", &update_time)))
 		goto done;
 
 	errno = 0;
@@ -92,33 +83,24 @@ extern int _op_handler_partitions(const char *context_id,
 
 done:
 	slurm_free_partition_info_msg(part_info_ptr);
-	return fini_connection(ctxt);
+	return rc;
 }
 
-extern int _op_handler_partition(const char *context_id,
-				 http_request_method_t method,
-				 data_t *parameters, data_t *query, int tag,
-				 data_t *resp, void *auth,
-				 data_parser_t *parser)
+extern int _op_handler_partition(openapi_ctxt_t *ctxt)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	const char *name = NULL;
 	partition_info_msg_t *part_info_ptr = NULL;
 	time_t update_time = 0;
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth, parser);
 
-	if (ctxt->rc)
-		goto done;
-
-	if (method != HTTP_REQUEST_GET) {
+	if (ctxt->method != HTTP_REQUEST_GET) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 		goto done;
 	}
 
-	if ((rc = get_date_param(query, "update_time", &update_time)))
+	if ((rc = get_date_param(ctxt->query, "update_time", &update_time)))
 		goto done;
 
 	if (!(name = get_str_param("partition_name", ctxt))) {
@@ -165,7 +147,7 @@ extern int _op_handler_partition(const char *context_id,
 
 done:
 	slurm_free_partition_info_msg(part_info_ptr);
-	return fini_connection(ctxt);
+	return rc;
 }
 
 extern void init_op_partitions(void)
@@ -178,5 +160,5 @@ extern void init_op_partitions(void)
 
 extern void destroy_op_partitions(void)
 {
-	unbind_operation_handler(_op_handler_partitions);
+	unbind_operation_ctxt_handler(_op_handler_partitions);
 }

@@ -44,19 +44,14 @@
 
 #include "api.h"
 
-static int _op_handler_diag(const char *context_id,
-			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *resp, void *auth,
-			    data_parser_t *parser)
+static int _op_handler_diag(openapi_ctxt_t *ctxt)
 {
-	int rc;
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth, parser);
+	int rc = SLURM_SUCCESS;
 
-	if (method != HTTP_REQUEST_GET) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+	if (ctxt->method != HTTP_REQUEST_GET) {
+		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	} else {
 		stats_info_response_msg_t *stats = NULL;
 		stats_info_request_msg_t req = {
@@ -73,21 +68,17 @@ static int _op_handler_diag(const char *context_id,
 		slurm_free_stats_response_msg(stats);
 	}
 
-	return fini_connection(ctxt);
+	return rc;
 }
 
-static int _op_handler_ping(const char *context_id,
-			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *resp, void *auth,
-			    data_parser_t *parser)
+static int _op_handler_ping(openapi_ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth, parser);
+	int rc = SLURM_SUCCESS;
 
-	if (method != HTTP_REQUEST_GET) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+	if (ctxt->method != HTTP_REQUEST_GET) {
+		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	} else {
 		controller_ping_t *pings = ping_all_controllers();
 
@@ -96,24 +87,19 @@ static int _op_handler_ping(const char *context_id,
 		xfree(pings);
 	}
 
-	return fini_connection(ctxt);
+	return rc;
 }
 
 /* based on _print_license_info() from scontrol */
-static int _op_handler_licenses(const char *context_id,
-				http_request_method_t method,
-				data_t *parameters, data_t *query, int tag,
-				data_t *resp, void *auth, data_parser_t *parser)
+static int _op_handler_licenses(openapi_ctxt_t *ctxt)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	license_info_msg_t *msg = NULL;
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth, parser);
 
-	if (method != HTTP_REQUEST_GET)
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+	if (ctxt->method != HTTP_REQUEST_GET)
+		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	else if ((rc = slurm_load_licenses(0, &msg, 0)))
 		resp_error(ctxt, rc, __func__,
 			   "slurm_load_licenses() was unable to load licenses");
@@ -121,7 +107,7 @@ static int _op_handler_licenses(const char *context_id,
 		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_LICENSES_RESP, msg, ctxt);
 
 	slurm_free_license_info_msg(msg);
-	return fini_connection(ctxt);
+	return rc;
 }
 
 extern void init_op_diag(void)
@@ -133,7 +119,7 @@ extern void init_op_diag(void)
 
 extern void destroy_op_diag(void)
 {
-	unbind_operation_handler(_op_handler_diag);
-	unbind_operation_handler(_op_handler_ping);
-	unbind_operation_handler(_op_handler_licenses);
+	unbind_operation_ctxt_handler(_op_handler_diag);
+	unbind_operation_ctxt_handler(_op_handler_ping);
+	unbind_operation_ctxt_handler(_op_handler_licenses);
 }
