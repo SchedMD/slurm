@@ -43,7 +43,7 @@
 /* these are not in slurm.h */
 char *slurm_hostlist_nth(hostlist_t *, int);
 int slurm_hostlist_delete_nth(hostlist_t *, int);
-char *slurm_hostset_nth(hostset_t **, int);
+char *slurm_hostset_nth(hostset_t *, int);
 hostset_t *slurm_hostset_create(const char*);
 void slurm_hostset_destroy(hostset_t *);
 int slurm_hostset_count(hostset_t *);
