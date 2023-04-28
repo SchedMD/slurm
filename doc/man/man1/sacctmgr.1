@@ -351,7 +351,7 @@ Workload  Characterization  Key. An arbitrary  string  for  grouping orthogonal 
 .IP
 
 .SH "GENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES"
-\fBNOTE:\fR The group limits (GrpJobs, GrpTRES, etc.) are tested when a job is
+\fBNOTE\fR: The group limits (GrpJobs, GrpTRES, etc.) are tested when a job is
 being considered for being allocated resources.
 If starting a job would cause any of its group limit to be exceeded,
 that job will not be considered for scheduling even if that job might preempt
@@ -1452,7 +1452,7 @@ The \fBsacct\fR command is the exclusive command to display job
 records from the Slurm database.
 
 .SH "SPECIFICATIONS FOR QOS"
-\fBNOTE:\fR The group limits (GrpJobs, GrpNodes, etc.) are tested when a job is
+\fBNOTE\fR: The group limits (GrpJobs, GrpNodes, etc.) are tested when a job is
 being considered for being allocated resources.
 If starting a job would cause any of its group limit to be exceeded,
 that job will not be considered for scheduling even if that job might preempt
@@ -1758,7 +1758,7 @@ the two options comma separated (e.g. \fBPreemptMode=SUSPEND,GANG\fR).
 See <https://slurm.schedmd.com/preempt.html> and
 <https://slurm.schedmd.com/gang_scheduling.html> for more details.
 
-\fBNOTE:\fR
+\fBNOTE\fR:
 For performance reasons, the backfill scheduler reserves whole nodes for jobs,
 not partial nodes. If during backfill scheduling a job preempts one or more
 other jobs, the whole nodes for those preempted jobs are reserved for the
@@ -1767,7 +1767,7 @@ These reserved nodes aren't available to other jobs during that backfill
 cycle, even if the other jobs could fit on the nodes. Therefore, jobs may
 preempt more resources during a single backfill iteration than they requested.
 .br
-\fBNOTE:\fR
+\fBNOTE\fR:
 For heterogeneous job to be considered for preemption all components
 must be eligible for preemption. When a heterogeneous job is to be preempted
 the first identified component of the job with the highest order PreemptMode
@@ -1799,7 +1799,7 @@ if you only want time\-slicing by \fBOverSubscribe\fR, without any preemption,
 then configuring partitions with overlapping nodes is not recommended.
 Time\-slicing won't happen between jobs on different partitions.
 
-\fBNOTE:\fR
+\fBNOTE\fR:
 Heterogeneous jobs are excluded from GANG scheduling operations.
 .IP
 
@@ -1824,7 +1824,7 @@ the Gang scheduler (time\-slicing). If not (i.e. if the preemptees and preemptor
 are on different partitions) then the preempted jobs will remain suspended until
 the preemptor ends.
 
-\fBNOTE:\fR Suspended jobs will not release GRES. Higher priority jobs will not
+\fBNOTE\fR: Suspended jobs will not release GRES. Higher priority jobs will not
 be able to preempt to gain access to GRES.
 .IP
 
@@ -3151,7 +3151,7 @@ variable takes precedence over the setting in the slurm.conf.
 .IP
 
 .SH "EXAMPLES"
-\fBNOTE:\fR There is an order to set up accounting associations.
+\fBNOTE\fR: There is an order to set up accounting associations.
 You must define clusters before you add accounts and you must add accounts
 before you can add users.
 
