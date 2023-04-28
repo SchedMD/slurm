@@ -58,6 +58,8 @@ documents those changes that are of interest to users and administrators.
     with communication errors due to incorrect PMIx hostname info setup.
  -- openapi/v0.0.39 - revert regression in job update requests to accept job
     description for changes instead of requiring job description in "job" field.
+ -- Fix regression in 23.02.0rc1 that caused a step to crash with a bad
+    --gpu-bind=single request.
 
 * Changes in Slurm 23.02.1
 ==========================
