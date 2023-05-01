@@ -3513,14 +3513,6 @@ extern int slurm_conf_init_load(const char *file_name, bool load_auth)
 	slurm_mutex_unlock(&conf_lock);
 	xfree(config_file);
 
-	if (load_auth) {
-		if (auth_g_init() != SLURM_SUCCESS)
-			fatal("failed to initialize auth plugin");
-
-		if (hash_g_init() != SLURM_SUCCESS)
-			fatal("failed to initialize hash plugin");
-	}
-
 	return SLURM_SUCCESS;
 }
 
