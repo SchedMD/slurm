@@ -785,9 +785,8 @@ int main(void)
 	}
 
 	/* Do not load any plugins, we are only testing slurm_opt */
-	if (slurm_conf_init_load(slurm_unit_conf_filename, false) !=
-	    SLURM_SUCCESS) {
-		error("slurm_conf_init_load() failed");
+	if (slurm_conf_init(slurm_unit_conf_filename) != SLURM_SUCCESS) {
+		error("slurm_conf_init() failed");
 		return EXIT_FAILURE;
 	}
 

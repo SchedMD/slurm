@@ -3457,7 +3457,7 @@ extern void slurm_conf_init_stepd(void)
 	conf_initialized = true;
 }
 
-extern int slurm_conf_init_load(const char *file_name, bool load_auth)
+extern int slurm_conf_init(const char *file_name)
 {
 	char *config_file;
 	int memfd = -1;
@@ -3514,11 +3514,6 @@ extern int slurm_conf_init_load(const char *file_name, bool load_auth)
 	xfree(config_file);
 
 	return SLURM_SUCCESS;
-}
-
-extern int slurm_conf_init(const char *file_name)
-{
-	return slurm_conf_init_load(file_name, true);
 }
 
 static int _internal_reinit(const char *file_name)
