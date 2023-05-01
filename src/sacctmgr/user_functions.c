@@ -1392,25 +1392,13 @@ assoc_start:
 
 		if (ret_list && list_count(ret_list)) {
 			char *object = NULL;
-			ListIterator itr;
-			set = 1;
-
-			if (assoc->def_qos_id != NO_VAL)
-				set = sacctmgr_check_default_qos(
-					     assoc->def_qos_id,
-					     user_cond->assoc_cond);
-			else if (assoc->qos_list)
-				set = sacctmgr_check_default_qos(
-					     -1, user_cond->assoc_cond);
-
-			if (set) {
-				itr = list_iterator_create(ret_list);
-				printf(" Modified user associations...\n");
-				while((object = list_next(itr))) {
-					printf("  %s\n", object);
-				}
-				list_iterator_destroy(itr);
+			ListIterator itr = list_iterator_create(ret_list);
+			printf(" Modified user associations...\n");
+			while((object = list_next(itr))) {
+				printf("  %s\n", object);
 			}
+			list_iterator_destroy(itr);
+			set = 1;
 		} else if (ret_list) {
 			printf(" Nothing modified\n");
 			rc = SLURM_ERROR;

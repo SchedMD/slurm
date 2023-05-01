@@ -230,9 +230,6 @@ extern bool user_case_norm;
 extern bool tree_display;
 extern bool have_db_conn;
 
-extern bool sacctmgr_check_default_qos(uint32_t qos_id,
-				       slurmdb_assoc_cond_t *assoc_cond);
-
 extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
 					 char *type, char *value,
 					 int command_len, int option);

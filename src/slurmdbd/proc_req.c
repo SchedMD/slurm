@@ -1794,7 +1794,10 @@ static int _modify_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 	if (!(list_msg.my_list = acct_storage_g_modify_assocs(
 		      slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
-		      get_msg->cond, get_msg->rec))) {
+		      get_msg->cond, get_msg->rec)) ||
+	    (errno != SLURM_SUCCESS)) {
+		error("CONN:%d %s", slurmdbd_conn->conn->fd,
+		      slurm_strerror(errno));
 		if (errno == ESLURM_ACCESS_DENIED) {
 			comment = "Your user doesn't have privilege to perform this action";
 			rc = ESLURM_ACCESS_DENIED;
@@ -1807,15 +1810,20 @@ static int _modify_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
 			rc = errno;
+		} else if (list_msg.my_list && list_count(list_msg.my_list) &&
+			   (errno == ESLURM_NO_REMOVE_DEFAULT_QOS)) {
+			rc = errno;
+			comment = list_peek(list_msg.my_list);
 		} else {
 			rc = errno;
 			if (!(comment = slurm_strerror(errno)))
 				comment = "Unknown issue";
 		}
-		error("CONN:%d %s", slurmdbd_conn->conn->fd, comment);
+
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 							rc, comment,
 							DBD_MODIFY_ASSOCS);
+		FREE_NULL_LIST(list_msg.my_list);
 		return rc;
 	}
 

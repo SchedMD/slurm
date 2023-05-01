@@ -69,6 +69,12 @@ typedef struct {
 	char *vals;
 } add_assoc_cond_t;
 
+typedef struct {
+	uint32_t check_qos;
+	char *ret_str;
+	char *ret_str_pos;
+} mod_def_qos_t;
+
 /* if this changes you will need to edit the corresponding enum */
 char *assoc_req_inx[] = {
 	"id_assoc",
@@ -1420,7 +1426,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					 slurmdb_user_rec_t *user,
 					 char *cluster_name, char *sent_vals,
 					 bool is_admin, bool same_user,
-					 List ret_list)
+					 List ret_list,
+					 slurmdb_assoc_cond_t *qos_assoc_cond)
 {
 	ListIterator itr = NULL;
 	MYSQL_ROW row;
@@ -1826,6 +1833,21 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			set_qos_vals = 1;
 		}
 
+		if ((assoc->qos_list ||
+		     (assoc->def_qos_id && (assoc->def_qos_id != NO_VAL)))) {
+			if (!qos_assoc_cond->acct_list)
+				qos_assoc_cond->acct_list =
+					list_create(xfree_ptr);
+			slurm_addto_char_list(qos_assoc_cond->acct_list,
+					      row[MASSOC_ACCT]);
+			if (row[MASSOC_USER][0]) {
+				if (!qos_assoc_cond->user_list)
+					qos_assoc_cond->user_list =
+						list_create(xfree_ptr);
+				slurm_addto_char_list(qos_assoc_cond->user_list,
+						      row[MASSOC_USER]);
+			}
+		}
 
 		if (account_type) {
 			_modify_unset_users(mysql_conn,
@@ -3425,6 +3447,71 @@ static int _foreach_is_coord(void *x, void *arg)
 	return 0;
 }
 
+static int _find_qos_id(void *x, void *arg)
+{
+	char *qos = x;
+	mod_def_qos_t *mod_def_qos = arg;
+
+	if (qos[0] == '-')
+		return 0;
+	else if (qos[0] == '+')
+		qos++;
+	/* info("looking for %u ?= %s", mod_def_qos->check_qos, qos); */
+	if (mod_def_qos->check_qos == slurm_atoul(qos))
+		return 1;
+	return 0;
+}
+
+static int _foreach_check_default_qos(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	mod_def_qos_t *mod_def_qos = arg;
+	bool found = false;
+
+	/*
+	 * If def_qos_id is 0 (give me the first one on this list) or
+	 * NO_VAL (not changed) just return.
+	 */
+	if (!assoc->def_qos_id || (assoc->def_qos_id == NO_VAL))
+		return 0;
+
+	if (assoc->qos_list) {
+		mod_def_qos->check_qos = assoc->def_qos_id;
+		if (list_find_first(assoc->qos_list, _find_qos_id, mod_def_qos))
+			found = true;
+	}
+
+	if (!found) {
+		char *name = slurmdb_qos_str(assoc_mgr_qos_list,
+					     assoc->def_qos_id);
+		if (!mod_def_qos->ret_str)
+			xstrcatat(mod_def_qos->ret_str,
+				  &mod_def_qos->ret_str_pos,
+				  "\n These associations don't have access to their default qos.\n Please give them access before they the default can be set to this.\n");
+		xstrfmtcatat(mod_def_qos->ret_str,
+			     &mod_def_qos->ret_str_pos,
+			     "  DefQOS = %-10s C = %-10s A = %-20s",
+			     name, assoc->cluster, assoc->acct);
+
+		if (assoc->user) {
+			xstrfmtcatat(mod_def_qos->ret_str,
+				     &mod_def_qos->ret_str_pos,
+				     " U = %-9s",
+				     assoc->user);
+			if (assoc->partition)
+				xstrfmtcatat(mod_def_qos->ret_str,
+					     &mod_def_qos->ret_str_pos,
+					     " P = %s",
+					     assoc->partition);
+		}
+		xstrcatat(mod_def_qos->ret_str,
+			  &mod_def_qos->ret_str_pos,
+			  "\n");
+	}
+
+	return 0;
+}
+
 extern int as_mysql_get_modified_lfts(mysql_conn_t *mysql_conn,
 				      char *cluster_name, uint32_t start_lft)
 {
@@ -3919,6 +4006,7 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *prefix = "t1";
 	List use_cluster_list = NULL;
 	bool locked = false;
+	slurmdb_assoc_cond_t qos_assoc_cond;
 
 	if (!assoc_cond || !assoc) {
 		error("we need something to change");
@@ -4015,6 +4103,7 @@ is_same_user:
 		locked = true;
 	}
 
+	memset(&qos_assoc_cond, 0, sizeof(qos_assoc_cond));
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
 		query = _setup_assoc_table_query(assoc_cond, cluster_name,
@@ -4035,7 +4124,8 @@ is_same_user:
 		rc = _process_modify_assoc_results(mysql_conn, result, assoc,
 						   &user, cluster_name, vals,
 						   is_admin, same_user,
-						   ret_list);
+						   ret_list,
+						   &qos_assoc_cond);
 		mysql_free_result(result);
 
 		if ((rc == ESLURM_INVALID_PARENT_ACCOUNT)
@@ -4046,8 +4136,41 @@ is_same_user:
 			ret_list = NULL;
 			break;
 		}
+
+		if (qos_assoc_cond.acct_list) {
+			if (!qos_assoc_cond.cluster_list)
+				qos_assoc_cond.cluster_list =
+					list_create(NULL);
+			list_append(qos_assoc_cond.cluster_list,
+				    cluster_name);
+		}
 	}
 	list_iterator_destroy(itr);
+
+	if (ret_list && qos_assoc_cond.cluster_list) {
+		List local_assoc_list = as_mysql_get_assocs(
+			mysql_conn, uid, &qos_assoc_cond);
+
+		if (local_assoc_list) {
+			mod_def_qos_t mod_def_qos;
+			memset(&mod_def_qos, 0, sizeof(mod_def_qos));
+			list_for_each(local_assoc_list,
+				      _foreach_check_default_qos,
+				      &mod_def_qos);
+			FREE_NULL_LIST(local_assoc_list);
+			if (mod_def_qos.ret_str) {
+				list_flush(ret_list);
+				list_append(ret_list, mod_def_qos.ret_str);
+				mod_def_qos.ret_str = NULL;
+				rc = ESLURM_NO_REMOVE_DEFAULT_QOS;
+				reset_mysql_conn(mysql_conn);
+			}
+		}
+	}
+	FREE_NULL_LIST(qos_assoc_cond.cluster_list);
+	FREE_NULL_LIST(qos_assoc_cond.acct_list);
+	FREE_NULL_LIST(qos_assoc_cond.user_list);
+
 	if (locked) {
 		FREE_NULL_LIST(use_cluster_list);
 		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
@@ -4067,6 +4190,7 @@ is_same_user:
 		return ret_list;
 	}
 
+	errno = rc;
 	return ret_list;
 }
 
