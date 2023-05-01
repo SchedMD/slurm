@@ -433,6 +433,23 @@ typedef struct {
 
 } slurm_opt_t;
 
+/*
+ * Parse a tres request and return the sum of the requested counts for a
+ * particular tres.
+ *
+ * IN in_val - The tres request of the format: "name[[:type]:count]". This can
+ *             be a comma-delimited list.
+ * IN tres_name - name of the tres to sum
+ * OUT cnt - total count
+ * IN/OUT save_ptr - pointer to make this function reentrant
+ * OUT rc - SLURM_SUCCESS if successful, an error code otherwise
+ *
+ * RET - true if there are additional values to parse, false if the whole string
+ *       has been parsed
+ */
+extern bool slurm_option_get_tres_per_tres(
+	char *in_val, char *tres_name, uint64_t *cnt, char **save_ptr, int *rc);
+
 extern struct option *slurm_option_table_create(slurm_opt_t *opt,
 						char **opt_string);
 extern void slurm_option_table_destroy(struct option *optz);

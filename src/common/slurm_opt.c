@@ -6068,8 +6068,8 @@ static void _validate_share_options(slurm_opt_t *opt)
 	}
 }
 
-static bool _get_gpus_per_task(char *in_val, uint64_t *cnt,
-			       char **save_ptr, int *rc)
+extern bool slurm_option_get_tres_per_tres(
+	char *in_val, char *tres_name, uint64_t *cnt, char **save_ptr, int *rc)
 {
 	char *name = NULL, *type = NULL;
 	uint64_t value = 0;
@@ -6085,7 +6085,7 @@ static bool _get_gpus_per_task(char *in_val, uint64_t *cnt,
 		return false;
 	}
 
-	if (!xstrcasecmp(name, "gpu"))
+	if (!xstrcasecmp(name, tres_name))
 		*cnt += value;
 	xfree(name);
 
@@ -6128,7 +6128,8 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 	}
 
 	cnt = 0;
-	while (_get_gpus_per_task(opt->tres_per_task, &cnt, &save_ptr, &rc)) {
+	while (slurm_option_get_tres_per_tres(
+		       opt->tres_per_task, "gpu", &cnt, &save_ptr, &rc)) {
 	}
 
 	if (rc != SLURM_SUCCESS)
