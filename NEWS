@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid possible slurmctld segfault caused by race condition with already
     completed slurmdbd_conn connections.
  -- Slurmdbd.conf checks included conf files for 0600 permissions
+ -- slurmrestd - fix regression "oversubscribe" fields were removed from job
+    descriptions and submissions from v0.0.39 end points.
 
 * Changes in Slurm 23.02.2
 ==========================
