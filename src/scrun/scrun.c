@@ -626,12 +626,7 @@ extern int main(int argc, char **argv)
 	_parse_env();
 	argv_offset = _parse_commandline(argc, argv) - 1;
 
-	if ((rc = slurm_conf_init(slurm_conf_filename)))
-		fatal("%s: Unable to load Slurm configuration: %s", __func__,
-		      slurm_strerror(rc));
-	if ((rc = hash_g_init()))
-		fatal("%s: Unable to load hash plugins: %s", __func__,
-		      slurm_strerror(rc));
+	slurm_init(slurm_conf_filename);
 	if ((rc = gres_init()))
 		fatal("%s: Unable to GRES plugins: %s", __func__,
 		      slurm_strerror(rc));

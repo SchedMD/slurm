@@ -316,7 +316,7 @@ static void _init_minimal_conf_server_config(List controllers)
 		fatal("%s: could not write temporary config", __func__);
 	xfree(conf);
 
-	slurm_conf_init(filename);
+	slurm_init(filename);
 
 	close(fd);
 	xfree(filename);
