@@ -358,7 +358,6 @@ extern void close_tab(GtkWidget *widget, GdkEventButton *event,
 extern void create_config_popup(GtkAction *action, gpointer user_data);
 extern void create_create_popup(GtkAction *action, gpointer user_data);
 extern void create_dbconfig_popup(GtkAction *action, gpointer user_data);
-extern void create_daemon_popup(GtkAction *action, gpointer user_data);
 extern void create_search_popup(GtkAction *action, gpointer user_data);
 extern void change_refresh_popup(GtkAction *action, gpointer user_data);
 extern void change_grid_popup(GtkAction *action, gpointer user_data);
