@@ -212,7 +212,6 @@ extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 		if (run_in_slurmctld)
 			fatal_abort("%s: Somehow we have 0 for switch_record_cnt and we are here in the slurmctld.  This should never happen.", __func__);
 		/* configs have not already been processed */
-		slurm_conf_init(NULL);
 		init_node_conf();
 		build_all_nodeline_info(false, 0);
 		rehash_node();
