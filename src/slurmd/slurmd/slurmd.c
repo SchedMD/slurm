@@ -101,6 +101,7 @@
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/hash.h"
 #include "src/interfaces/job_container.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mcs.h"
@@ -2100,6 +2101,10 @@ _slurmd_init(void)
 	if (slurmd_task_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (spank_slurmd_init() < 0)
+		return SLURM_ERROR;
+	if (auth_g_init() != SLURM_SUCCESS)
+		return SLURM_ERROR;
+	if (hash_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (cred_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
