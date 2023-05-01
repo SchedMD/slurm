@@ -92,6 +92,8 @@ documents those changes that are of interest to users and administrators.
     caused mpirun to launch the wrong number of tasks and to sometimes fail to
     launch tasks.
  -- Prevent jobs running on shards from being canceled on slurmctld restart.
+ -- Fix SPANK prolog and epilog hooks that rely on slurm_init() for access to
+    internal Slurm API calls.
 
 * Changes in Slurm 23.02.1
 ==========================
