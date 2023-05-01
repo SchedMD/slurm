@@ -564,7 +564,6 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 
 	if (!running_in_daemon()) {
 		/* running in salloc - init node records */
-		slurm_conf_init(NULL);
 		init_node_conf();
 		build_all_nodeline_info(false, 0);
 		rehash_node();
