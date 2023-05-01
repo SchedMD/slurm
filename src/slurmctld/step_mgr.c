@@ -2228,6 +2228,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	node_record_t *node_ptr;
+	slurm_step_layout_t *step_layout = step_ptr->step_layout;
 	int cpus_alloc, cpus_alloc_mem, cpu_array_inx = 0;
 	int job_node_inx = -1, step_node_inx = -1, node_cnt = 0;
 	bool first_step_node = true, pick_step_cores = true;
@@ -2243,7 +2244,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	xassert(job_resrcs_ptr->cpus);
 	xassert(job_resrcs_ptr->cpus_used);
 
-	if (step_ptr->step_layout == NULL)	/* batch step */
+	if (!step_layout) /* batch step */
 		return rc;
 
 	if (!bit_set_count(job_resrcs_ptr->node_bitmap))
@@ -2292,6 +2293,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	     i++) {
 		uint64_t gres_step_node_mem_alloc = 0;
 		uint16_t vpus, avail_cpus_per_core, alloc_cpus_per_core;
+		uint16_t task_cnt;
 		bitstr_t *unused_core_bitmap;
 		job_node_inx++;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
@@ -2299,6 +2301,8 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("%s: node index bad", __func__);
+
+		task_cnt = step_layout->tasks[step_node_inx];
 
 		/*
 		 * NOTE: The --overcommit option can result in
@@ -2332,8 +2336,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 					  &step_ptr->gres_list_alloc,
 					  job_ptr->gres_list_alloc,
 					  job_node_inx, first_step_node,
-					  step_ptr->step_layout->
-					  tasks[step_node_inx],
+					  task_cnt,
 					  rem_nodes, job_ptr->job_id,
 					  step_ptr->step_id.step_id,
 					  !(step_ptr->flags &
@@ -2394,9 +2397,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 				cpus_alloc_mem *= req_tpc;
 			}
 		} else {
-			cpus_alloc =
-				step_ptr->step_layout->tasks[step_node_inx] *
-				cpus_per_task;
+			cpus_alloc = task_cnt * cpus_per_task;
 
 			/*
 			 * If we are requesting all the memory in the job
@@ -2510,8 +2511,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			}
 			if ((rc = _pick_step_cores(step_ptr, job_resrcs_ptr,
 						   job_node_inx,
-						   step_ptr->step_layout->
-						   tasks[step_node_inx],
+						   task_cnt,
 						   cpus_per_core, i,
 						   ntasks_per_core))) {
 				log_flag(STEPS, "unable to pick step cores for job node %d (%s): %s",
@@ -2538,7 +2538,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 				 job_resrcs_ptr->cpus_used[job_node_inx],
 				 job_resrcs_ptr->cpus[job_node_inx]);
 
-		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
+		if (step_node_inx == (step_layout->node_cnt - 1))
 			break;
 	}
 	gres_step_state_log(step_ptr->gres_list_req, job_ptr->job_id,
