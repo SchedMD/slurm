@@ -2721,6 +2721,8 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	for (int i = 0;
 	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
 	     i++) {
+		int gres_cpus_alloc = 0;
+
 		job_node_inx++;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
@@ -2730,12 +2732,15 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 
 		/*
 		 * We need to free GRES structures regardless of overlap.
+		 * Also, if cpus_per_gres was requested, get total cpus
+		 * allocated for gres (cpus_per_gres * gres_alloc count)
 		 */
 		gres_ctld_step_dealloc(step_ptr->gres_list_alloc,
 				       job_ptr->gres_list_alloc, job_ptr->job_id,
 				       step_ptr->step_id.step_id,
 				       job_node_inx,
-				       !(step_ptr->flags & SSF_OVERLAP_FORCE));
+				       !(step_ptr->flags & SSF_OVERLAP_FORCE),
+				       &gres_cpus_alloc);
 
 		if (step_ptr->flags & SSF_OVERLAP_FORCE) {
 			log_flag(STEPS, "step dealloc on job node %d (%s); did not count against job allocation",
@@ -2754,12 +2759,44 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		if (step_ptr->flags & SSF_WHOLE)
 			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
 		else {
-			uint16_t cpus_per_task = step_ptr->cpus_per_task;
+			slurm_step_layout_t *step_layout =
+				step_ptr->step_layout;
+			uint16_t *cpt_array = step_layout->cpus_per_task;
+			uint16_t *tasks = step_layout->tasks;
+			uint16_t cpus_per_task;
 			uint16_t vpus = node_ptr->tpc;
 
-			cpus_alloc =
-				step_ptr->step_layout->tasks[step_node_inx] *
-				cpus_per_task;
+			if (step_ptr->start_protocol_ver >=
+			    SLURM_23_11_PROTOCOL_VERSION) {
+				xassert (cpt_array);
+
+				cpus_per_task = cpt_array[step_node_inx];
+			} else
+				cpus_per_task = step_ptr->cpus_per_task;
+
+			/*
+			 * gres_cpus_alloc being set is new in 23.11, so we
+			 * only want to use this logic if it was set at step
+			 * allocation time, which means only for steps started
+			 * with 23.11.
+			 */
+			if (gres_cpus_alloc &&
+			    (step_ptr->start_protocol_ver >=
+			     SLURM_23_11_PROTOCOL_VERSION)) {
+				/*
+				 * allocated cpus may be modified if
+				 * ntasks_per_core was requested: use the same
+				 * logic here as in _step_alloc_lps().
+				 */
+				if (step_ptr->ntasks_per_core != NO_VAL16)
+					cpus_alloc =
+						tasks[step_node_inx] *
+						cpus_per_task;
+				else
+					cpus_alloc = gres_cpus_alloc;
+			} else
+				cpus_alloc =
+					tasks[step_node_inx] * cpus_per_task;
 
 			/*
 			 * If we are doing threads per core we need the whole

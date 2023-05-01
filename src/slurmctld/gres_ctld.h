@@ -269,13 +269,16 @@ extern int gres_ctld_step_alloc(List step_gres_list,
  * IN node_offset - job's zero-origin index to the node of interest
  * IN decr_job_alloc - whether or not to decrement the step allocation from the
  *                     job allocation.
+ * OUT total_gres_cpu_cnt - sum of cpus_per_gres * allocated gres. It is used
+ *                          to know how many cpus were allocated to the step.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_step_dealloc(List step_gres_list_alloc,
 				  List job_gres_list,
 				  uint32_t job_id, uint32_t step_id,
 				  int node_offset,
-				  bool decr_job_alloc);
+				  bool decr_job_alloc,
+				  int *total_gres_cpu_cnt);
 
 /*
  * A job allocation size has changed. Update the job step gres information

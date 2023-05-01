@@ -339,7 +339,7 @@ typedef struct gres_step_state {
 	uint16_t flags;			/* GRES_CONF_HAS_FILE, etc. */
 
 	/* Count of required GRES resources plus associated CPUs and memory */
-	uint16_t cpus_per_gres;
+	uint16_t cpus_per_gres; /* Also in allocated resource details */
 	uint64_t gres_per_step;
 	uint64_t gres_per_node;
 	uint64_t gres_per_socket;
