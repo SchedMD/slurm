@@ -557,6 +557,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "You can not remove the default account of a user"	},
 	{ ERRTAB_ENTRY(ESLURM_BAD_SQL),
 	  "There is something internally wrong with the SQL needed for this. Please consult the slurmdbd log for more info."                    },
+	{ ERRTAB_ENTRY(ESLURM_NO_REMOVE_DEFAULT_QOS),
+	  "This request would make it so some associations would not have access to their default qos."                                         },
 
 	/* Federation Errors */
 	{ ERRTAB_ENTRY(ESLURM_FED_CLUSTER_MAX_CNT),
