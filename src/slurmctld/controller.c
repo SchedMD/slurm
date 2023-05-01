@@ -985,6 +985,7 @@ int main(int argc, char **argv)
 	select_g_fini();
 	topology_g_fini();
 	auth_g_fini();
+	hash_g_fini();
 	switch_fini();
 	route_fini();
 	site_factor_g_fini();

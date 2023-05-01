@@ -2213,6 +2213,7 @@ _slurmd_fini(void)
 	slurm_conf_destroy();
 	proctrack_g_fini();
 	auth_g_fini();
+	hash_g_fini();
 	node_fini2();
 	gres_fini();
 	prep_g_fini();

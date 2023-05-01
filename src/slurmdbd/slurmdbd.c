@@ -324,6 +324,7 @@ end_it:
 	assoc_mgr_fini(0);
 	acct_storage_g_fini();
 	auth_g_fini();
+	hash_g_fini();
 	log_fini();
 	free_slurmdbd_conf();
 	slurm_mutex_lock(&rpc_mutex);
