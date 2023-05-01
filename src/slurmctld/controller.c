@@ -85,6 +85,7 @@
 #include "src/interfaces/cgroup.h"
 #include "src/interfaces/ext_sensors.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/hash.h"
 #include "src/interfaces/job_submit.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/jobcomp.h"
@@ -310,6 +311,10 @@ int main(int argc, char **argv)
 		if (!(conf_file = getenv("SLURM_CONF")))
 			conf_file = default_slurm_config_file;
 	slurm_conf_init(conf_file);
+	if (auth_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize auth plugin");
+	if (hash_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize hash plugin");
 
 	lock_slurmctld(config_write_lock);
 	update_logging();
