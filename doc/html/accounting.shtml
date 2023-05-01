@@ -12,6 +12,7 @@
 <a href="#slurmdbd-configuration">SlurmDBD Configuration</a><br>
 <a style="margin-left: 20px" href="#slurmdbd-archive-purge">  SlurmDBD Archive and Purge</a><br>
 <a href="#mysql-configuration">MySQL Configuration</a><br>
+<a href="#archive">Archive Server</a><br>
 <a href="#tools">Tools</a><br>
 <a href="#database-configuration">Database Configuration</a><br>
 <a href="#cluster-options">Cluster Options</a><br>
@@ -653,6 +654,37 @@ information.  Starting the SlurmDBD in daemon mode with the '-D' option can
 also help in debugging so you don't have to go to the log to find the
 problem.</p>
 
+<h2 id="archive">Archive Server<a class="slurm_link" href="#archive"></a></h2>
+
+<p>If ongoing access to Archived/Purged data is required at your site, it is
+possible to create an archive instance of slurmdbd.  Data previously archived
+and purged from the production database can be loaded into the archive server,
+keeping the production database at a manageable size while making sure old
+records are still accessible.</p>
+
+<p>The archive instance of slurmdbd should not be able to communicate with the
+production server. Ideally they would have separate instances of MySQL/MariaDB
+that they use to store their data. The Slurm controller (slurmctld) should
+never communicate with the archive slurmdbd.</p>
+
+<p>When configuring an archive server, there are certain database entries
+that need to match the production server in order for the archived information
+to show up correctly. In order to make sure the unique identifiers match,
+mysqldump should be used to export the Association, QOS and TRES information.
+The command to export these tables should look like this, with the appropriate
+values substituted for &lt;slurm_user&gt;, &lt;db_name&gt;, and
+&lt;cluster&gt;:</p>
+<pre>
+mysqldump -u &lt;slurm_user&gt; -p &lt;db_name&gt; &lt;cluster&gt;_assoc_table qos_table tres_table &gt; slurm.sql
+</pre>
+
+<p>While mysqldump should be used to transfer the information from these tables,
+it should not be used to transfer information that will be generated with the
+Archive/Purge process. If mysqldump is used to try to get the desired
+information, there will likely be a slight difference and when trying to load
+archive files later there will either be a gap in records or duplicate
+records that prevent the archive file from loading correctly.</p>
+
 <h2 id="tools">Tools<a class="slurm_link" href="#tools"></a></h2>
 
 <p>There are a few tools available to work with accounting data,
@@ -884,7 +916,7 @@ completely. This is meant to clean up after typographical errors.
 Removing user associations or accounts, however, will cause slurmctld to lose
 track of usage data for that user/account.</p>
 
-<p style="text-align:center;">Last modified 26 December 2022</p>
+<p style="text-align:center;">Last modified 01 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
 
