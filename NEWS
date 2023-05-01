@@ -91,6 +91,7 @@ documents those changes that are of interest to users and administrators.
     --ntasks. SLURM_TASKS_PER_NODE is used by mpirun, so this regression
     caused mpirun to launch the wrong number of tasks and to sometimes fail to
     launch tasks.
+ -- Prevent jobs running on shards from being canceled on slurmctld restart.
 
 * Changes in Slurm 23.02.1
 ==========================

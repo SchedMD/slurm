@@ -4555,6 +4555,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
 		uint32_t tmp_uint32;
+		uint32_t full_config_flags = 0;
 		slurm_gres_context_t *gres_ctx;
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
@@ -4625,6 +4626,9 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 				bit_alloc(gres_bitmap_size);
 		}
 
+		/* We don't want to lose flags from gres_ctx */
+		full_config_flags = gres_ctx->config_flags;
+
 		/*
 		 * Flag this as flags read from state so we only use them until
 		 * the node checks in.
@@ -4635,6 +4639,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 			gres_ctx, GRES_STATE_SRC_CONTEXT_PTR,
 			GRES_STATE_TYPE_NODE, gres_ns);
 		list_append(*gres_list, gres_state_node);
+		gres_ctx->config_flags |= full_config_flags;
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
