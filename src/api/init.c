@@ -79,4 +79,6 @@ extern void slurm_client_fini_plugins(void)
 	cli_filter_fini();
 	select_g_fini();
 	acct_storage_g_fini();
+	hash_g_fini();
+	auth_g_fini();
 }
