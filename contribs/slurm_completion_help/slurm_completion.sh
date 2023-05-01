@@ -205,12 +205,15 @@ function __slurm_comp() {
 
 # Slurm completion helper for count notation
 # Example:
+#     BB      = name[[:type]:count][,name[[:type]:count]...]
 #     GRES    = name[[:type]:count][,name[[:type]:count]...]
 #     LICENSE = license[@db][:count][,license[@db][:count]...]
 #
 # $1: list of items for completion
+# $2: list of units to suffix the count with (optional)
 function __slurm_compreply_count() {
 	local options="$1"
+	local units="$2"
 	local prefix=""
 	local suffix=","
 	local curlist="${cur%"$suffix"*}"
@@ -229,9 +232,21 @@ function __slurm_compreply_count() {
 	*:)
 		__slurm_log_debug "$(__func__): expect count spec"
 		;;
-	*:+([0-9]))
+	*:+([[:digit:]])+([[:alpha:]]))
+		__slurm_log_debug "$(__func__): found count unit spec"
+		local item=""
+		item="$(echo "$curitem" | sed -E "s/[[:alpha:]]+$//g")"
+		options="$(compgen -P "${item}" -W "${units[*]}")"
+		__slurm_comp "${options[*]}" "${prefix-}" "${curitem}" "${suffix-}" ""
+		;;
+	*:+([[:digit:]]))
 		__slurm_log_debug "$(__func__): found count spec"
-		__slurm_compreply_list "$cur"
+		if [[ -n $units ]]; then
+			options="$(compgen -P "${curitem}" -W "${units[*]}")"
+			__slurm_comp "${options[*]}" "${prefix-}" "${curitem}" "${suffix-}" ""
+		else
+			__slurm_comp "${curitem[*]}" "${prefix-}" "${curitem}" "${suffix-}" ""
+		fi
 		;;
 	*)
 		__slurm_log_debug "$(__func__): expect item spec"
@@ -543,6 +558,9 @@ function __slurm_compinit() {
 	__slurm_log_info "$(__func__): SLURM_COMP_VALUE='${SLURM_COMP_VALUE}'"
 	__slurm_log_info "$(__func__): SLURM_COMP_HOSTLIST='${SLURM_COMP_HOSTLIST}'"
 
+	# Ensure case sensative case matching
+	shopt -u nocasematch
+
 	__slurm_init_completion || return 1
 
 	return 0
@@ -653,6 +671,17 @@ function __slurm_accounts() {
 	__slurm_dbd_status || return
 
 	local cmd="sacctmgr -Pn list accounts format=account"
+	__slurm_func_wrapper "$cmd"
+}
+
+# Slurm helper function to get burst buffer list
+#
+# RET: space delimited list
+function __slurm_burstbuffers() {
+	__slurm_comp_slurm_value || return
+	__slurm_ctld_status || return
+
+	local cmd="scontrol -o show burstbuffer | grep -E -o 'Name=\S+' | cut -d= -f2 | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
 }
 
@@ -1019,6 +1048,30 @@ function __slurm_tres() {
 
 	local cmd="scontrol -o show config | grep 'AccountingStorageTRES' | cut -d= -f2 | tr -d '[:space:]' | tr ',' '\n'"
 	__slurm_func_wrapper "$cmd"
+}
+
+function __slurm_units() {
+	local units=(
+		"K"
+		"KB"
+		"KiB"
+		"M"
+		"MB"
+		"MiB"
+		"G"
+		"GB"
+		"GiB"
+		"T"
+		"TB"
+		"TiB"
+		"P"
+		"PB"
+		"PiB"
+	)
+	local output="${units[*]}"
+
+	__slurm_log_trace "$(__func__): output='$output'"
+	echo "${output}"
 }
 
 # Slurm helper function to get user list
@@ -3422,7 +3475,7 @@ function __scontrol_setdebug() {
 	esac
 }
 
-# completion handler for: scontrol setdebugflags *
+# completion handler for: scontrol setdebugflags * [key=val]...
 function __scontrol_setdebugflags() {
 	local debug_flags=(
 		"accrue"
@@ -3466,10 +3519,22 @@ function __scontrol_setdebugflags() {
 		"workqueue"
 	)
 	local _debug_flags=()
-	_debug_flags+=("$(compgen -P "+" -W "${debug_flags[*]}")")
-	_debug_flags+=("$(compgen -P "-" -W "${debug_flags[*]}")")
+	local parameters=(
+		"nodes="
+	)
 
-	__slurm_compreply "${_debug_flags[*]}"
+	case "${prev}" in
+	setdebugflag?(s))
+		_debug_flags+=("$(compgen -P "+" -W "${debug_flags[*]}")")
+		_debug_flags+=("$(compgen -P "-" -W "${debug_flags[*]}")")
+		__slurm_compreply_list "${_debug_flags[*]}"
+		;;
+	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	*)
+		[[ $split == "true" ]] && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
 }
 
 # completion handler for: scontrol show assoc_mgr *
@@ -3764,7 +3829,6 @@ function __scontrol_update_jobid() {
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply "$(__slurm_accounts)" ;;
-	burstbuffer?(s)) __slurm_compreply_list "$(__slurm_burstbuffers)" ;;
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	clusterfeature?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	contiguous) __slurm_compreply "$(__slurm_boolean)" ;;
@@ -3967,6 +4031,7 @@ function __scontrol_update_reservationname() {
 		"nodecnt="
 		"nodes="
 		"partition="
+		"reservation"      # meta
 		"reservationname=" # meta
 		"skip"
 		"starttime="
@@ -4002,8 +4067,8 @@ function __scontrol_update_reservationname() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	case "${prev}" in
-	account?(s)) __slurm_compreply "$(__slurm_accounts)" ;;
-	burstbuffer?(s)) __slurm_compreply_list "$(__slurm_burstbuffers)" ;;
+	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
+	burstbuffer?(s)) __slurm_compreply_count "$(__slurm_burstbuffers)" "$(__slurm_units)" ;;
 	feature?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	flag?(s)) __slurm_compreply_list "${flags[*]}" ;;
 	group?(s)) __slurm_compreply_list "$(__slurm_linux_groups)" ;;
@@ -4011,7 +4076,7 @@ function __scontrol_update_reservationname() {
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	partition?(s)) __slurm_compreply "$(__slurm_partitions)" ;;
 	reservationname?(s)) __slurm_compreply "$(__slurm_reservations)" ;;
-	user?(s)) __slurm_compreply "$(__slurm_users)" ;;
+	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
 		[[ $split == "true" ]] && return
 		__slurm_compreply_param "${parameters[*]}"
@@ -4039,6 +4104,83 @@ function __scontrol_update_stepid() {
 	esac
 }
 
+# completion handler for: scontrol update suspendexcnodes=*
+function __scontrol_update_suspendexcnodes() {
+	local parameters=(
+		"suspendexcnodes="   # meta
+		"suspendexcnodes\+=" # meta
+		"suspendexcnodes\-=" # meta
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev}" in
+	suspendexcnode?(s)?(+|-)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	*)
+		[[ $split == "true" ]] && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
+}
+
+# completion handler for: scontrol update suspendexcparts=*
+function __scontrol_update_suspendexcparts() {
+	local parameters=(
+		"suspendexcparts="   # meta
+		"suspendexcparts\+=" # meta
+		"suspendexcnodes\-=" # meta
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev}" in
+	suspendexcpart?(s)?(+|-)) __slurm_compreply_list "$(__slurm_partitions)" ;;
+	*)
+		[[ $split == "true" ]] && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
+}
+
+# completion handler for: scontrol update suspendexcstates=*
+function __scontrol_update_suspendexcstates() {
+	local parameters=(
+		"suspendexcstates="   # meta
+		"suspendexcstates\+=" # meta
+		"suspendexcstates\-=" # meta
+	)
+	local states=(
+		"CLOUD"
+		"DOWN"
+		"DRAIN"
+		"DYNAMIC_FUTURE"
+		"DYNAMIC_NORM"
+		"FAIL"
+		"INVALID_REG"
+		"MAINTENANCE"
+		"NOT_RESPONDING"
+		"PERFCTRS"
+		"PLANNED"
+		"RESERVED"
+	)
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	case "${prev}" in
+	suspendexcstate?(s)?(+|-)) __slurm_compreply_list "${states[*],,}" ;;
+	*)
+		[[ $split == "true" ]] && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
+}
+
 # completion handler for: scontrol update *
 function __scontrol_update() {
 	local parameters=(
@@ -4048,6 +4190,15 @@ function __scontrol_update() {
 		"partitionname="
 		"reservationname="
 		"stepid="
+		"suspendexcnodes="
+		"suspendexcnodes\+="
+		"suspendexcnodes\-="
+		"suspendexcparts="
+		"suspendexcparts\+="
+		"suspendexcparts\-="
+		"suspendexcstates="
+		"suspendexcstates\+="
+		"suspendexcstates\-="
 	)
 	local param
 	param="$(__slurm_find_param "${parameters[*]}")"
@@ -4526,7 +4677,6 @@ function _squeue() {
 		"resvport"
 		"schednodes"
 		"sct"
-		"selectjobinfo"
 		"siblingsactive"
 		"siblingsactiveraw"
 		"siblingsviable"
