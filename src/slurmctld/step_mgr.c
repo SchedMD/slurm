@@ -2043,6 +2043,8 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	bool use_all_cores;
 	bitstr_t *all_gres_core_bitmap = NULL, *any_gres_core_bitmap = NULL;
 
+	xassert(task_cnt);
+
 	if (!step_ptr->core_bitmap_job)
 		step_ptr->core_bitmap_job =
 			bit_alloc(bit_size(job_resrcs_ptr->core_bitmap));
@@ -2121,10 +2123,7 @@ static int _pick_step_cores(step_record_t *step_ptr,
 				job_resrcs_ptr->core_bitmap);
 		}
 	}
-	if (task_cnt)
-		cores_per_task = core_cnt / task_cnt;
-	else
-		cores_per_task = core_cnt;
+	cores_per_task = core_cnt / task_cnt;
 	/* select idle cores that fit all gres binding first */
 	if (_handle_core_select(step_ptr, job_resrcs_ptr,
 				all_gres_core_bitmap, job_node_inx,
@@ -2302,7 +2301,18 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("%s: node index bad", __func__);
 
-		task_cnt = step_layout->tasks[step_node_inx];
+		if (!(task_cnt = step_layout->tasks[step_node_inx])) {
+			/* This should have been caught earlier */
+			error("Bad step layout: no tasks placed on node %d (%s)\n",
+			      job_node_inx,
+			      node_ptr->name);
+			final_rc = ESLURM_BAD_TASK_COUNT;
+			/*
+			 * Finish allocating resources to all nodes to avoid
+			 * underflow errors in _step_alloc_lps
+			 */
+			continue;
+		}
 
 		/*
 		 * NOTE: The --overcommit option can result in
@@ -2667,6 +2677,13 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 				 node_ptr->name);
 			continue; /* Next node */
 		}
+
+		/*
+		 * If zero tasks, then _step_alloc_lps() error'd and did not
+		 * allocate any resources, so we should not deallocate anything.
+		 */
+		if (!step_ptr->step_layout->tasks[step_node_inx])
+			continue;
 
 		if (step_ptr->flags & SSF_WHOLE)
 			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
