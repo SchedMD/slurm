@@ -2226,16 +2226,14 @@ static bool _use_one_thread_per_core(step_record_t *step_ptr)
 static int _step_alloc_lps(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
-	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs,
-		*job_resrcs_ptr_bk = NULL;
-	list_t *job_gres_list_ptr_bk = NULL;
+	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	node_record_t *node_ptr;
 	int cpus_alloc, cpus_alloc_mem, cpu_array_inx = 0;
 	int job_node_inx = -1, step_node_inx = -1, node_cnt = 0;
 	bool first_step_node = true, pick_step_cores = true;
 	bool all_job_mem = false;
 	uint32_t rem_nodes;
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, final_rc = SLURM_SUCCESS;
 	uint16_t req_tpc = NO_VAL16;
 	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 	uint16_t cpus_per_task = step_ptr->cpus_per_task;
@@ -2250,15 +2248,6 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 
 	if (!bit_set_count(job_resrcs_ptr->node_bitmap))
 		return rc;
-
-	/*
-	 * Hold a copy of the original state for resources and GRES.
-	 * We need those if we can't allocate a new step, and the original
-	 * values need to be restored
-	 */
-	job_resrcs_ptr_bk = copy_job_resources(job_resrcs_ptr);
-	job_gres_list_ptr_bk =
-		gres_job_state_list_dup(job_ptr->gres_list_alloc);
 
 	if (step_ptr->threads_per_core &&
 	    (step_ptr->threads_per_core != NO_VAL16))
@@ -2439,7 +2428,9 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 				 job_node_inx,
 				 node_ptr->name,
 				 slurm_strerror(rc));
-			break;
+			final_rc = rc;
+			/* Finish allocating resources to all nodes */
+			continue;
 		}
 		first_step_node = false;
 		rem_nodes--;
@@ -2512,7 +2503,9 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 					 job_node_inx,
 					 node_ptr->name,
 					 slurm_strerror(rc));
-				break;
+				final_rc = rc;
+				/* Finish allocating resources to all nodes */
+				continue;
 			}
 		}
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND)
@@ -2541,36 +2534,18 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	gres_step_state_log(step_ptr->gres_list_alloc, job_ptr->job_id,
 			    step_ptr->step_id.step_id);
 
-	if (rc != SLURM_SUCCESS) {
-		/*
-		 * We can't allocate a new step, so we need to recover the
-		 * original values.
-		 *
-		 * As the step we wanted to allocate broke the loop above at
-		 * some point, because there's not enough resources, the current
-		 * state can be in a mixture of already counted/assigned and
-		 * some others don't.
-		 *
-		 * So we can't just blindly call _step_dealloc_lps, because this
-		 * function deallocates all the resources the step was wanting
-		 * to allocate. This can cause problems when other simultaneous
-		 * running steps reach their end and call _step_dealloc_lps too.
-		 * Those will try to decrement their resources, but the state
-		 * may be erroneous after the aforementioned situation.
-		 *
-		 * We can get rid of such issue just by copying back the
-		 * original structures.
-		 */
-		free_job_resources(&job_resrcs_ptr);
-		FREE_NULL_LIST(job_ptr->gres_list_alloc);
-		job_ptr->job_resrcs = job_resrcs_ptr_bk;
-		job_ptr->gres_list_alloc = job_gres_list_ptr_bk;
-	} else {
-		free_job_resources(&job_resrcs_ptr_bk);
-		FREE_NULL_LIST(job_gres_list_ptr_bk);
-	}
+	/*
+	 * If we failed to allocate resources on at least one of the nodes, we
+	 * need to deallocate resources.
+	 * Creating a backup of the resources then restoring in case of an
+	 * error does not work - this method leaves cpus allocated to the node
+	 * after the job completes. Instead, we try to allocate resources on
+	 * all nodes in the job even if one of the nodes resulted in a failure.
+	 */
+	if (final_rc != SLURM_SUCCESS)
+		_step_dealloc_lps(step_ptr);
 
-	return rc;
+	return final_rc;
 }
 
 /* Dump a job step's CPU binding information.
