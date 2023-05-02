@@ -1723,3 +1723,83 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 
 	return rc;
 }
+
+extern data_t *openapi_get_param(openapi_ctxt_t *ctxt, bool required,
+				 const char *name, const char *caller)
+{
+	data_t *dbuf = NULL;
+
+	if ((!ctxt->parameters ||
+	     !(dbuf = data_key_get(ctxt->parameters, name))) &&
+	    required) {
+		openapi_resp_error(ctxt, ESLURM_DATA_PATH_NOT_FOUND, caller,
+				   "Required parameter \"%s\" not found", name);
+	}
+
+	return dbuf;
+}
+
+extern char *openapi_get_str_param(openapi_ctxt_t *ctxt, bool required,
+				   const char *name, const char *caller)
+{
+	char *str = NULL;
+	data_t *dbuf = openapi_get_param(ctxt, required, name, caller);
+
+	if (!dbuf)
+		return NULL;
+
+	if (data_convert_type(dbuf, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
+		if (required)
+			openapi_resp_error(ctxt, ESLURM_DATA_CONV_FAILED,
+					   caller,
+					   "Rejecting required parameter \"%s\" provided with format %s which was unable to be converted to string.",
+					   name, data_type_to_string(
+						data_get_type(dbuf)));
+		else
+			openapi_resp_warn(ctxt, caller,
+					  "Ignoring parameter \"%s\" provided with format %s which was unable to be converted to string.",
+					  name, data_type_to_string(
+						data_get_type(dbuf)));
+	} else if (!(str = data_get_string(dbuf)) || !str[0]) {
+		if (required)
+			openapi_resp_error(ctxt, ESLURM_DATA_PARSE_NOTHING,
+					   caller, "Rejecting empty required parameter \"%s\"",
+					   name);
+		else
+			openapi_resp_warn(ctxt, caller,
+					  "Ignoring empty parameter \"%s\"",
+					  name);
+
+		str = NULL;
+	}
+
+	return str;
+}
+
+extern int openapi_get_date_param(openapi_ctxt_t *ctxt, bool required,
+				  const char *name, time_t *time_ptr,
+				  const char *caller)
+{
+	int rc;
+	time_t t;
+	data_t *dbuf = openapi_get_param(ctxt, required, name, caller);
+
+	if (!dbuf)
+		return ESLURM_REST_EMPTY_RESULT;
+
+	rc = DATA_PARSE(ctxt->parser, TIMESTAMP, t, dbuf, ctxt->parent_path);
+
+	if (!rc) {
+		*time_ptr = t;
+	} else if (required) {
+		openapi_resp_error(ctxt, ESLURM_DATA_CONV_FAILED,
+				   caller, "Rejecting invalid required timestamp parameter \"%s\"",
+				   name);
+	} else {
+		openapi_resp_warn(ctxt, caller,
+				  "Ignoring invalid timestamp parameter \"%s\"",
+				  name);
+	}
+
+	return rc;
+}
