@@ -228,6 +228,7 @@ documents those changes that are of interest to users and administrators.
     --gpu-freq was not explicitly set by the job step.
  -- Update database index for usage tables used for archive and purge.
  -- Fix configure script on FreeBSD.
+ -- sacctmgr - Fix segfault when printing empty tres.
 
 * Changes in Slurm 23.02.0rc1
 =============================
