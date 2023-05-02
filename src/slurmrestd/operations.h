@@ -75,7 +75,6 @@ extern int bind_operation_handler(const char *path, openapi_handler_t callback,
 
 /*
  * Unbind a given callback handler from all paths
- * WARNING: NOT YET IMPLEMENTED
  * IN path path to remove
  * RET SLURM_SUCCESS or error
  */
