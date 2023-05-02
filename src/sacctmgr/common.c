@@ -1561,11 +1561,10 @@ extern void sacctmgr_print_coord_list(
 	ListIterator itr = NULL;
 	char *print_this = NULL;
 	List value = NULL;
+	slurmdb_coord_rec_t *object = NULL;
 
 	if (input)
 		value = *(List *)input;
-
-	slurmdb_coord_rec_t *object = NULL;
 
 	if (!value || !list_count(value)) {
 		if (print_fields_parsable_print)
