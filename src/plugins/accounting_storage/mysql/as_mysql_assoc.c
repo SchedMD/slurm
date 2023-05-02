@@ -1160,34 +1160,34 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 
 		/* We only want to add those that are modified here */
 		if (modified) {
-			/* We do want to send all user accounts though */
-			mod_assoc->shares_raw = NO_VAL;
-			if (row[ASSOC_PART][0]) {
-				// see if there is a partition name
-				object = xstrdup_printf(
-					"C = %-10s A = %-20s U = %-9s P = %s",
-					assoc->cluster, row[ASSOC_ACCT],
-					row[ASSOC_USER], row[ASSOC_PART]);
-			} else {
-				object = xstrdup_printf(
-					"C = %-10s A = %-20s U = %-9s",
-					assoc->cluster,
-					row[ASSOC_ACCT],
-					row[ASSOC_USER]);
+			char *object_pos = NULL;
+			xstrfmtcatat(object, &object_pos,
+				     "C = %-10s A = %-20s",
+				     assoc->cluster, row[ASSOC_ACCT]);
+
+			if (row[ASSOC_USER][0]) {
+				/* Only send modified user associations */
+				mod_assoc->shares_raw = NO_VAL;
+				xstrfmtcatat(object, &object_pos,
+					     " U = %-9s",
+					     row[ASSOC_USER]);
+				if (row[ASSOC_PART][0])
+					xstrfmtcatat(object, &object_pos,
+						     " P = %s",
+						     row[ASSOC_PART]);
+				if (addto_update_list(mysql_conn->update_list,
+						      SLURMDB_MODIFY_ASSOC,
+						      mod_assoc) !=
+				    SLURM_SUCCESS) {
+					error("couldn't add to the update list");
+				} else
+					mod_assoc = NULL;
 			}
 			list_append(ret_list, object);
 			object = NULL;
 
-			if (addto_update_list(mysql_conn->update_list,
-					      SLURMDB_MODIFY_ASSOC,
-					      mod_assoc)
-			    != SLURM_SUCCESS) {
-				slurmdb_destroy_assoc_rec(mod_assoc);
-				error("couldn't add to the update list");
-			}
-		} else
-			slurmdb_destroy_assoc_rec(mod_assoc);
-
+		}
+		slurmdb_destroy_assoc_rec(mod_assoc);
 	}
 	mysql_free_result(result);
 
