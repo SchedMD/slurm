@@ -1560,7 +1560,10 @@ extern void sacctmgr_print_coord_list(
 	int abs_len = abs(field->len);
 	ListIterator itr = NULL;
 	char *print_this = NULL;
-	List value = *(List *)input;
+	List value = NULL;
+
+	if (input)
+		value = *(List *)input;
 
 	slurmdb_coord_rec_t *object = NULL;
 
