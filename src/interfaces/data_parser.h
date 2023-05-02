@@ -262,6 +262,8 @@ typedef enum {
 	DATA_PARSER_OPENAPI_WARNINGS, /* list_t of openapi_resp_warning_t* */
 	DATA_PARSER_OPENAPI_WARNINGS_PTR, /* ptr to list_t of openapi_resp_warning_t* */
 	DATA_PARSER_OPENAPI_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_TIMESTAMP, /* time_t */
+	DATA_PARSER_TIMESTAMP_NO_VAL, /* time_t */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

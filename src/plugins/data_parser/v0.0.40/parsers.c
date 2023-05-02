@@ -46,6 +46,7 @@
 #include "src/common/data.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
+#include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
@@ -4435,6 +4436,135 @@ static int DUMP_FUNC(JOB_INFO_STDERR)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+static int _parse_timestamp(const parser_t *const parser, time_t *time_ptr,
+			    data_t *src, args_t *args, data_t *parent_path)
+{
+	int rc;
+	time_t t;
+
+	/* make sure NO_VAL64 is correct value here */
+	xassert(sizeof(t) == sizeof(uint64_t));
+
+	if (!src) {
+		*time_ptr = NO_VAL64;
+		return SLURM_SUCCESS;
+	}
+
+	switch (data_get_type(src)) {
+	case DATA_TYPE_NULL:
+		*time_ptr = NO_VAL64;
+		return SLURM_SUCCESS;
+	case DATA_TYPE_FLOAT:
+		if (isnan(data_get_float(src)) || isinf(data_get_float(src))) {
+			*time_ptr = NO_VAL64;
+			return SLURM_SUCCESS;
+		}
+
+		if (data_convert_type(src, DATA_TYPE_INT_64) !=
+		    DATA_TYPE_INT_64) {
+			char *path = NULL;
+			rc = ESLURM_DATA_CONV_FAILED;
+			on_error(PARSING, parser->type, args, rc,
+				 set_source_path(&path, parent_path),
+				 __func__, "Conversion of %s to %s failed",
+				 data_type_to_string(DATA_TYPE_FLOAT),
+				 data_type_to_string(DATA_TYPE_INT_64));
+			xfree(path);
+			return rc;
+		}
+		/* fall-through */
+	case DATA_TYPE_INT_64:
+	{
+		int64_t it = data_get_int(src);
+		*time_ptr = it;
+		return SLURM_SUCCESS;
+	}
+	case DATA_TYPE_STRING:
+		if (!(t = parse_time(data_get_string(src), 0))) {
+			char *path = NULL;
+			rc = ESLURM_DATA_CONV_FAILED;
+			on_error(PARSING, parser->type, args, rc,
+				 set_source_path(&path, parent_path),
+				 __func__, "Parsing of %s for timestamp failed",
+				 data_get_string(src));
+			xfree(path);
+			return rc;
+		}
+
+		*time_ptr = t;
+		return SLURM_SUCCESS;
+	case DATA_TYPE_BOOL:
+	case DATA_TYPE_LIST:
+	case DATA_TYPE_DICT:
+		/* no clear way to parse/convert */
+		break;
+	case DATA_TYPE_NONE:
+	case DATA_TYPE_MAX:
+		return ESLURM_DATA_CONV_FAILED;
+	}
+
+	/* see if UINT64_NO_VAL can parse it */
+	if (!(rc = PARSE(UINT64_NO_VAL, t, src, parent_path, args)))
+		*time_ptr = t;
+
+	return rc;
+}
+
+static int PARSE_FUNC(TIMESTAMP)(const parser_t *const parser, void *obj,
+				 data_t *src, args_t *args, data_t *parent_path)
+{
+	int rc;
+	time_t t, *time_ptr = obj;
+
+	if ((rc = _parse_timestamp(parser, &t, src, args, parent_path)))
+		return rc;
+
+	if (t == NO_VAL64) {
+		char *path = NULL;
+		rc = ESLURM_DATA_CONV_FAILED;
+		on_error(PARSING, parser->type, args, rc,
+			 set_source_path(&path, parent_path),
+			 __func__, "Invalid or unset timestamp value");
+		xfree(path);
+		return rc;
+	}
+
+	*time_ptr = t;
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(TIMESTAMP)(const parser_t *const parser, void *obj,
+				data_t *dst, args_t *args)
+{
+	time_t *time_ptr = obj;
+	uint64_t t = *time_ptr;
+
+	return DUMP(UINT64, t, dst, args);
+}
+
+static int PARSE_FUNC(TIMESTAMP_NO_VAL)(const parser_t *const parser, void *obj,
+					data_t *src, args_t *args,
+					data_t *parent_path)
+{
+	int rc;
+	time_t t, *time_ptr = obj;
+
+	if ((rc = _parse_timestamp(parser, &t, src, args, parent_path)))
+		return rc;
+
+	*time_ptr = t;
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(TIMESTAMP_NO_VAL)(const parser_t *const parser, void *obj,
+				       data_t *dst, args_t *args)
+{
+	time_t *time_ptr = obj;
+	uint64_t t = *time_ptr;
+
+	return DUMP(UINT64_NO_VAL, t, dst, args);
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -6446,6 +6576,8 @@ static const parser_t parsers[] = {
 	addps(BITSTR, bitstr_t, NEED_NONE, STRING, NULL),
 	addpss(JOB_ARRAY_RESPONSE_MSG, job_array_resp_msg_t, NEED_NONE, ARRAY, NULL),
 	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL),
+	addpsp(TIMESTAMP, UINT64, time_t, NEED_NONE, NULL),
+	addpsp(TIMESTAMP_NO_VAL, UINT64_NO_VAL, time_t, NEED_NONE, NULL),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
