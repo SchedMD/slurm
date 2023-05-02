@@ -1571,7 +1571,10 @@ extern void sacctmgr_print_coord_list(
 	int abs_len = abs(field->len);
 	ListIterator itr = NULL;
 	char *print_this = NULL;
-	List value = *(List *)input;
+	List value = NULL;
+
+	if (input)
+		value = *(List *)input;
 
 	slurmdb_coord_rec_t *object = NULL;
 
@@ -1614,7 +1617,10 @@ extern void sacctmgr_print_tres(print_field_t *field, void *input, int last)
 {
 	int abs_len = abs(field->len);
 	char *print_this;
-	char *value = *(char **)input;
+	char *value = NULL;
+
+	if (input)
+		value = *(char **) input;
 
 	sacctmgr_initialize_g_tres_list();
 

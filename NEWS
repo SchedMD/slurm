@@ -99,6 +99,7 @@ documents those changes that are of interest to users and administrators.
  -- Removed zero padding for numeric values in container spool directory names.
  -- Avoid creating an unused task-4294967295 directory in container spooldir.
  -- Cleanup container step directories at step completion.
+ -- sacctmgr - Fix segfault when printing empty tres.
 
 * Changes in Slurm 23.02.1
 ==========================
