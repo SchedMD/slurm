@@ -2208,7 +2208,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	bool first_step_node = true, pick_step_cores = true;
 	bool all_job_mem = false;
 	uint32_t rem_nodes;
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, final_rc = SLURM_SUCCESS;
 	uint16_t req_tpc = NO_VAL16;
 	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 	uint16_t cpus_per_task = step_ptr->cpus_per_task;
@@ -2403,7 +2403,9 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 				 job_node_inx,
 				 node_ptr->name,
 				 slurm_strerror(rc));
-			break;
+			final_rc = rc;
+			/* Finish allocating resources to all nodes */
+			continue;
 		}
 		first_step_node = false;
 		rem_nodes--;
@@ -2476,7 +2478,9 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 					 job_node_inx,
 					 node_ptr->name,
 					 slurm_strerror(rc));
-				break;
+				final_rc = rc;
+				/* Finish allocating resources to all nodes */
+				continue;
 			}
 		}
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND)
@@ -2505,10 +2509,18 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	gres_step_state_log(step_ptr->gres_list_alloc, job_ptr->job_id,
 			    step_ptr->step_id.step_id);
 
-	if (rc != SLURM_SUCCESS)
+	/*
+	 * If we failed to allocate resources on at least one of the nodes, we
+	 * need to deallocate resources.
+	 * Creating a backup of the resources then restoring in case of an
+	 * error does not work - this method leaves cpus allocated to the node
+	 * after the job completes. Instead, we try to allocate resources on
+	 * all nodes in the job even if one of the nodes resulted in a failure.
+	 */
+	if (final_rc != SLURM_SUCCESS)
 		_step_dealloc_lps(step_ptr);
 
-	return rc;
+	return final_rc;
 }
 
 /* Dump a job step's CPU binding information.
