@@ -94,6 +94,11 @@ documents those changes that are of interest to users and administrators.
  -- Prevent jobs running on shards from being canceled on slurmctld restart.
  -- Fix SPANK prolog and epilog hooks that rely on slurm_init() for access to
     internal Slurm API calls.
+ -- oci.conf - Populate %m pattern with ContainerPath or SlurmdSpoolDir if
+    ContainerPath is not configured.
+ -- Removed zero padding for numeric values in container spool directory names.
+ -- Avoid creating an unused task-4294967295 directory in container spooldir.
+ -- Cleanup container step directories at step completion.
 
 * Changes in Slurm 23.02.1
 ==========================

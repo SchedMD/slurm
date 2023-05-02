@@ -233,7 +233,9 @@ Replace as numeric job id.
 
 .TP
 \fB%m\fR
-Replace as spool directory of container as patterned by \fBContainerPath\fR.
+Replace as spool directory of container as patterned by \fBContainerPath\fR. If
+\fBContainerPath\fR is not configured or \fBContainerPath\fR contains \fB%m\fR,
+then replace with \fBSlurmdSpoolDir\fR from \fBslurm.conf\fR(5).
 .IP
 
 .TP

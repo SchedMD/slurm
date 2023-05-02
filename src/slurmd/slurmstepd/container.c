@@ -159,8 +159,12 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
 					     step->step_id.job_id);
 				break;
 			case 'm':
-				xstrfmtcatat(buffer, &offset, "%s",
-					     c->spool_dir);
+				if (c->spool_dir)
+					xstrfmtcatat(buffer, &offset, "%s",
+						     c->spool_dir);
+				else
+					xstrfmtcatat(buffer, &offset, "%s",
+						     conf->spooldir);
 				break;
 			case 'n':
 				xstrfmtcatat(buffer, &offset, "%s",
@@ -557,7 +561,7 @@ static int _generate_container_paths(stepd_step_rec_t *step)
 		c->mount_spool_dir = xstrdup("/var/run/slurm/");
 	}
 
-	xassert(!c->spool_dir);
+	xfree(c->spool_dir);
 	c->spool_dir = _generate_spooldir(step, NULL);
 
 	if ((rc = _mkpath(c->spool_dir, step->uid, step->gid)))
@@ -567,32 +571,82 @@ static int _generate_container_paths(stepd_step_rec_t *step)
 	return rc;
 }
 
+static bool _pattern_has_taskid(const char *pattern)
+{
+	const char *p = pattern;
+
+	while (*p) {
+		if (!(p = xstrchr(p, '%')))
+			break;
+
+		if ((p[1] == '%') && (p[2] != '\0'))
+			p += 2;
+		else if (p[1] == 't')
+			return true;
+		else
+			p++;
+	}
+
+	return false;
+}
+
 static char *_generate_spooldir(stepd_step_rec_t *step,
 				stepd_step_task_info_t *task)
 {
-	char *path = NULL;
 	int id = -1;
-	char **argv = NULL;
+	char **argv = NULL, *pattern, *path;
+
+	if (oci_conf->container_path) {
+		pattern = oci_conf->container_path;
+	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
+		pattern = "%m/oci-job%j-batch/task-%t/";
+	} else if (step->step_id.step_id == SLURM_INTERACTIVE_STEP) {
+		pattern = "%m/oci-job%j-interactive/task-%t/";
+	} else {
+		pattern = "%m/oci-job%j-%s/task-%t/";
+	}
 
 	if (task) {
 		id = task->id;
 		argv = task->argv;
+	} else {
+		char *start, *end, *next;
+
+		/* trim pattern at first taskid replacement */
+
+		if (pattern[0] == '/')
+			next = pattern + 1;
+		else
+			next = pattern;
+
+		while (next) {
+			char term;
+
+			start = next;
+
+			if (!(end = xstrchr(next, '/'))) {
+				end = start + strlen(start);
+				next = NULL;
+			} else {
+				next = end + 1;
+			}
+
+			term = end[1];
+			end[1] = '\0';
+
+			if (_pattern_has_taskid(start)) {
+				/* cut pattern at this directory */
+				*start = '\0';
+				break;
+			}
+
+			end[1] = term;
+		}
 	}
 
-	if (oci_conf->container_path) {
-		path = _generate_pattern(oci_conf->container_path, step, id,
-					 argv);
-	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
-		xstrfmtcat(path, "%s/oci-job%05u-batch/task-%05u/",
-			   conf->spooldir, step->step_id.job_id, id);
-	} else if (step->step_id.step_id == SLURM_INTERACTIVE_STEP) {
-		xstrfmtcat(path, "%s/oci-job%05u-interactive/task-%05u/",
-			   conf->spooldir, step->step_id.job_id, id);
-	} else {
-		xstrfmtcat(path, "%s/oci-job%05u-%05u/task-%05u/",
-			   conf->spooldir, step->step_id.job_id,
-			   step->step_id.step_id, id);
-	}
+	xassert((id != -1) || !xstrstr(pattern, "%t"));
+	path = _generate_pattern(pattern, step, id, argv);
+	debug3("%s: task:%d pattern:%s path:%s", __func__, id, pattern, path);
 
 	return path;
 }
@@ -1110,7 +1164,6 @@ extern void container_run(stepd_step_rec_t *step,
 extern void cleanup_container(stepd_step_rec_t *step)
 {
 	step_container_t *c = step->container;
-	char *path;
 
 	xassert(c->magic == STEP_CONTAINER_MAGIC);
 
@@ -1121,7 +1174,6 @@ extern void cleanup_container(stepd_step_rec_t *step)
 	}
 
 	/* cleanup may be called without ever setting up container */
-	_generate_patterns(step, NULL);
 
 	_kill_container();
 
@@ -1133,18 +1185,24 @@ extern void cleanup_container(stepd_step_rec_t *step)
 		for (int i = 0; i < step->node_tasks; i++) {
 			char *jconfig = NULL;
 
-			path = _generate_spooldir(step, step->task[i]);
-			xstrfmtcat(jconfig, "%s/config.json", path);
+			xfree(c->spool_dir);
+			c->spool_dir = _generate_spooldir(step, step->task[i]);
+			_generate_patterns(step, step->task[i]);
+			xstrfmtcat(jconfig, "%s/config.json", c->spool_dir);
 
 			if ((unlink(jconfig) < 0) && (errno != ENOENT))
 				error("unlink(%s): %m", jconfig);
 			xfree(jconfig);
 
-			if (rmdir(path) && (errno != ENOENT))
-				error("rmdir(%s): %m", path);
-			xfree(path);
+			if (rmdir(c->spool_dir) && (errno != ENOENT))
+				error("rmdir(%s): %m", c->spool_dir);
+			xfree(c->spool_dir);
 		}
 	}
+
+	/* swap to non-task spool_dir */
+	xfree(c->spool_dir);
+	c->spool_dir = _generate_spooldir(step, NULL);
 
 	if (oci_conf->create_env_file) {
 		char *envfile = NULL;
@@ -1158,6 +1216,9 @@ extern void cleanup_container(stepd_step_rec_t *step)
 
 		xfree(envfile);
 	}
+
+	if (rmdir(c->spool_dir) && (errno != ENOENT))
+		error("rmdir(%s): %m", c->spool_dir);
 
 done:
 	FREE_NULL_OCI_CONF(oci_conf);
