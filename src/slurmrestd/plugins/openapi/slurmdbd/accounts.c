@@ -57,15 +57,8 @@
 #include "src/slurmrestd/operations.h"
 #include "api.h"
 
-#define MAGIC_FOREACH_ACCOUNT 0xaefefef0
 #define MAGIC_FOREACH_SEARCH 0xaefef9fa
 #define MAGIC_FOREACH_COORD 0xabfbf9fa
-
-typedef struct {
-	int magic; /* MAGIC_FOREACH_ACCOUNT */
-	ctxt_t *ctxt;
-	data_t *accts;
-} foreach_account_t;
 
 typedef struct {
 	int magic; /* MAGIC_FOREACH_SEARCH */
@@ -128,33 +121,15 @@ static int _parse_other_params(ctxt_t *ctxt, slurmdb_account_cond_t *cond)
 		return SLURM_SUCCESS;
 }
 
-static int _foreach_account(void *x, void *arg)
-{
-	slurmdb_account_rec_t *acct = x;
-	foreach_account_t *args = arg;
-
-	xassert(args->magic == MAGIC_FOREACH_ACCOUNT);
-
-	DATA_DUMP(args->ctxt->parser, ACCOUNT, *acct,
-		  data_list_append(args->accts));
-
-	return (!args->ctxt->rc ? SLURM_SUCCESS : SLURM_ERROR);
-}
-
 /* based on sacctmgr_list_account() */
 static void _dump_accounts(ctxt_t *ctxt, slurmdb_account_cond_t *acct_cond)
 {
-	foreach_account_t args = {
-		.magic = MAGIC_FOREACH_ACCOUNT,
-		.ctxt = ctxt,
-	};
 	List acct_list = NULL;
-
-	args.accts = data_set_list(data_key_set(ctxt->resp, "accounts"));
 
 	if (!db_query_list(ctxt, &acct_list, slurmdb_accounts_get, acct_cond) &&
 	    acct_list)
-		list_for_each(acct_list, _foreach_account, &args);
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_ACCOUNTS_RESP, acct_list,
+					 ctxt);
 
 	FREE_NULL_LIST(acct_list);
 }
@@ -362,19 +337,8 @@ cleanup:
 	FREE_NULL_DATA(parent_path);
 }
 
-static int _foreach_delete_acct(void *x, void *arg)
-{
-	char *acct = x;
-	data_t *accts = arg;
-
-	data_set_string(data_list_append(accts), acct);
-
-	return DATA_FOR_EACH_CONT;
-}
-
 static void _delete_account(ctxt_t *ctxt, char *account)
 {
-	data_t *dremoved;
 	List removed = NULL;
 	slurmdb_assoc_cond_t assoc_cond = {
 		.acct_list = list_create(NULL),
@@ -389,9 +353,9 @@ static void _delete_account(ctxt_t *ctxt, char *account)
 	if (db_query_list(ctxt, &removed, slurmdb_accounts_remove, &acct_cond))
 		goto cleanup;
 
-	dremoved = data_set_list(data_key_set(ctxt->resp, "removed_accounts"));
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_ACCOUNTS_REMOVED_RESP, removed, ctxt);
 
-	if (list_for_each(removed, _foreach_delete_acct, dremoved) >= 0)
+	if (!list_is_empty(removed))
 		db_query_commit(ctxt);
 
 cleanup:

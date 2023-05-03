@@ -61,6 +61,8 @@ typedef enum {
 	DATA_PARSER_BOOL16_NO_VAL, /* uint16_t - false if NO_VAL16 */
 	DATA_PARSER_CSV_STRING, /* char * - comma delimited list stored as a string */
 	DATA_PARSER_CSV_STRING_LIST, /* list_t of char* - comma delimited list stored as a list_t* */
+	DATA_PARSER_OPENAPI_ACCOUNTS_REMOVED_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_ACCOUNTS_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_ACCOUNT_LIST, /* list of slurmdb_account_rec_t* */
 	DATA_PARSER_ACCOUNT, /* slurmdb_account_rec_t */
 	DATA_PARSER_ACCOUNT_FLAGS, /* slurmdb_account_rec_t->flags & SLURMDB_ACCT_FLAG_* */

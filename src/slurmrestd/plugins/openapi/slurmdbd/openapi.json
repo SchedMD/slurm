@@ -1562,12 +1562,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_REMOVED_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_REMOVED_RESP"
                 }
               }
             },
@@ -1614,12 +1614,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_account_info"
+                  "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_account_info"
+                  "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_RESP"
                 }
               }
             },
@@ -1701,12 +1701,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_account_info"
+                  "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_account_info"
+                  "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_RESP"
                 }
               }
             },
@@ -1773,12 +1773,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_account_info"
+                "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_RESP"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_account_info"
+                "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_RESP"
               }
             }
           },
@@ -2254,23 +2254,6 @@
           },
           "statistics": {
             "$ref": "DATA_PARSER_STATS_REC_PTR"
-          }
-        }
-      },
-      "dbv0.0.39_account_info": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/dbv0.0.39_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/dbv0.0.39_warnings"
-          },
-          "accounts": {
-            "$ref": "DATA_PARSER_ACCOUNT_LIST"
           }
         }
       },

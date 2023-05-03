@@ -6441,6 +6441,8 @@ add_openapi_response_single(OPENAPI_JOB_INFO_RESP, JOB_INFO_MSG_PTR, "jobs", "jo
 add_openapi_response_single(OPENAPI_NODES_RESP, NODES_PTR, "nodes", "nodes");
 add_openapi_response_single(OPENAPI_PARTITION_RESP, PARTITION_INFO_MSG_PTR, "partitions", "partitions");
 add_openapi_response_single(OPENAPI_RESERVATION_RESP, RESERVATION_INFO_MSG_PTR, "reservations", "reservations");
+add_openapi_response_single(OPENAPI_ACCOUNTS_RESP, ACCOUNT_LIST, "accounts", "accounts");
+add_openapi_response_single(OPENAPI_ACCOUNTS_REMOVED_RESP, STRING_LIST, "removed_accounts", "removed_accounts");
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_post_response_t, mtype, false, field, 0, path, desc)
@@ -6889,6 +6891,8 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_NODES_RESP),
 	addoar(OPENAPI_PARTITION_RESP),
 	addoar(OPENAPI_RESERVATION_RESP),
+	addoar(OPENAPI_ACCOUNTS_RESP),
+	addoar(OPENAPI_ACCOUNTS_REMOVED_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
