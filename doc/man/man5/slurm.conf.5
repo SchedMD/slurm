@@ -2754,6 +2754,20 @@ The logic to support this option is only available in the select/cons_tres plugi
 .IP
 
 .TP
+\fBsuspend_grace_time\fR
+Specifies, in units of seconds, the preemption grace time when using
+\fBPreemptMode=SUSPEND\fR.
+When a job is suspended, the SIGTSTP signal will be sent, and then after waiting
+the specified suspend grace time, the SIGSTOP signal will be sent.
+The default value is 2 seconds.
+.br
+\fBNOTE\fR: This parameter is only used when \fBPreemptMode=SUSPEND\fR is
+configured or when suspending jobs with scontrol suspend.
+For setting the preemption grace time when using other preemption modes,
+see \fBGraceTime\fR.
+.IP
+
+.TP
 \fByoungest_first\fR
 If set, then the preemption sorting algorithm will be changed to sort by the
 job start times to favor preempting younger jobs over older. (Requires
