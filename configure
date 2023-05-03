@@ -20271,7 +20271,7 @@ printf "%s\n" "static" >&6; };
 printf "%s\n" "shared" >&6; };
   fi
 
-  LIB_SLURM+=" -export-dynamic"
+  LIB_SLURM="$LIB_SLURM -export-dynamic"
 
 
 

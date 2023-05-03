@@ -126,7 +126,7 @@ AC_DEFUN([X_AC_LIBSLURM], [
     AC_MSG_RESULT([shared]);
   fi
 
-  LIB_SLURM+=" -export-dynamic"
+  LIB_SLURM="$LIB_SLURM -export-dynamic"
 
   AC_SUBST(LIB_SLURM)
   AC_SUBST(LIB_SLURM_BUILD)
