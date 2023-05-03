@@ -526,43 +526,6 @@ static int _make_sure_user_has_default_internal(
 	return SLURM_SUCCESS;
 }
 
-/* This needs to happen to make since 2.1 code doesn't have enough
- * smarts to figure out it isn't adding a default account if just
- * adding an association to the mix.
- */
-static int _make_sure_users_have_default(
-	mysql_conn_t *mysql_conn, List user_list, List cluster_list)
-{
-	char *cluster = NULL, *user = NULL;
-	ListIterator itr = NULL, clus_itr = NULL;
-	int rc = SLURM_SUCCESS;
-
-	if (slurmdbd_conf->flags & DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT)
-		return rc;
-
-	if (!user_list)
-		return SLURM_SUCCESS;
-
-	clus_itr = list_iterator_create(cluster_list);
-	itr = list_iterator_create(user_list);
-
-	while ((user = list_next(itr))) {
-		while ((cluster = list_next(clus_itr))) {
-			if ((rc = _make_sure_user_has_default_internal(
-				     mysql_conn, user, cluster)) !=
-			    SLURM_SUCCESS)
-				break;
-		}
-		if (rc != SLURM_SUCCESS)
-			break;
-		list_iterator_reset(clus_itr);
-	}
-	list_iterator_destroy(itr);
-	list_iterator_destroy(clus_itr);
-
-	return rc;
-}
-
 /* This should take care of all the lft and rgts when you move an
  * account.  This handles deleted associations also.
  */
@@ -3509,26 +3472,12 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_assoc_rec_t *object = NULL;
-	char *cols = NULL, *vals = NULL, *txn_query = NULL;
-	char *extra = NULL, *query = NULL, *update = NULL, *tmp_extra = NULL;
 	char *parent = NULL;
-	time_t now = time(NULL);
-	char *user_name = NULL;
 	char *my_par_lineage = NULL;
 	uint32_t my_par_id = 0;
-	uint32_t assoc_id = 0;
-	int incr = 0, my_left = 0;
-	bool moved_parent = 0;
-	MYSQL_RES *result = NULL;
-	char *old_parent = NULL, *old_cluster = NULL;
 	char *last_parent = NULL, *last_cluster = NULL;
-	List local_cluster_list = NULL;
-	List added_user_list = NULL;
-	bool is_coord = false;
-	slurmdb_update_object_t *update_object = NULL;
-	List assoc_list_tmp = NULL;
-	bool acct_added = false;
-	uint32_t rpc_version = 0;
+	add_assoc_cond_t add_assoc_cond;
+	slurmdb_add_assoc_cond_t add_assoc;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
@@ -3537,6 +3486,11 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		error("%s: Trying to add empty assoc list", __func__);
 		return ESLURM_EMPTY_LIST;
 	}
+
+	memset(&add_assoc_cond, 0, sizeof(add_assoc_cond));
+	memset(&add_assoc, 0, sizeof(add_assoc));
+	add_assoc_cond.add_assoc = &add_assoc;
+	add_assoc_cond.mysql_conn = mysql_conn;
 
 	if (!is_user_min_admin_level(mysql_conn, uid,
 				     SLURMDB_ADMIN_OPERATOR)) {
@@ -3578,11 +3532,12 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			      user.name, user.uid);
 			return ESLURM_ACCESS_DENIED;
 		}
-		is_coord = true;
+		add_assoc_cond.is_coord = true;
 	}
 
-	local_cluster_list = list_create(NULL);
-	user_name = uid_to_string((uid_t) uid);
+	add_assoc_cond.uid = uid;
+	add_assoc_cond.user_name = uid_to_string((uid_t) uid);
+
 	/* these need to be in a specific order */
 	list_sort(assoc_list, (ListCmpF)_assoc_sort_cluster);
 
@@ -3595,43 +3550,10 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		/*
-		 * If the user issuing the command is a coordinator,
-		 * do not allow changing the default account
-		 */
-		if (is_coord && (object->is_def == 1)) {
-			char *query = NULL;
-			int has_def_acct = 0;
-			/* Check if there is already a default account. */
-			xstrfmtcat(query, "select id_assoc from \"%s_%s\" "
-				   "where user='%s' && acct!='%s' && is_def=1 "
-				   "&& deleted!=1;",
-				   object->cluster, assoc_table,
-				   object->user, object->acct);
-			DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s",
-			         query);
-			if (!(result = mysql_db_query_ret(mysql_conn,
-							  query, 1))) {
-				xfree(query);
-				rc = SLURM_ERROR;
-				break;
-			}
-
-			xfree(query);
-			has_def_acct = mysql_num_rows(result);
-			mysql_free_result(result);
-
-			if (has_def_acct) {
-				debug("Coordinator %s(%d) tried to change the default account of user %s to account %s.  This is only allowed on initial user creation. Ignoring default account.",
-				      user_name, uid, object->user,
-				      object->acct);
-				object->is_def = 0;
-			}
-		}
-
-		if (is_coord && _check_coord_qos(mysql_conn, object->cluster,
-						 object->acct, user_name,
-						 object->qos_list)
+		if (add_assoc_cond.is_coord &&
+		    _check_coord_qos(mysql_conn, object->cluster,
+				     object->acct, add_assoc_cond.user_name,
+				     object->qos_list)
 		    == SLURM_ERROR) {
 			assoc_mgr_lock_t locks = {
 				NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
@@ -3646,26 +3568,57 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			      "access to all the qos requested (%s), "
 			      "so they can't add to account "
 			      "%s with it.",
-			      user_name, uid, requested_qos,
+			      add_assoc_cond.user_name, uid, requested_qos,
 			      object->acct);
 			xfree(requested_qos);
 			rc = ESLURM_ACCESS_DENIED;
 			break;
 		}
 
-		/* When adding if this isn't a default might as well
-		   force it to be 0 to avoid confusion since
-		   uninitialized it is NO_VAL.
-		*/
-		if (object->is_def != 1)
-			object->is_def = 0;
+		if (xstrcmp(object->cluster, last_cluster)) {
+			if (last_cluster) {
+				_post_add_assoc_cond_cluster(
+					&add_assoc_cond);
+				xfree(add_assoc.assoc.cluster);
+				FREE_NULL_LIST(add_assoc.user_list);
+				if (add_assoc_cond.rc != SLURM_SUCCESS) {
+					rc = add_assoc_cond.rc;
+					break;
+				}
+			}
+			/*
+			 * We can't just add the pointer here, we have to copy
+			 * the string or we could hit invalid reads afterwards
+			 * when we call _post_add_assoc_cond_cluster() ->
+			 * _check_defaults().
+			 */
+			add_assoc.assoc.cluster = xstrdup(object->cluster);
+			add_assoc_cond.incr = 0;
+			add_assoc_cond.my_left = 0;
+			xfree(add_assoc_cond.old_parent);
+			xfree(add_assoc_cond.old_cluster);
 
-		if (!list_find_first(local_cluster_list,
-				     slurm_find_char_in_list,
-				     object->cluster)) {
-			list_append(local_cluster_list, object->cluster);
-			rpc_version = get_cluster_version(mysql_conn,
-							  object->cluster);
+			add_assoc_cond.smallest_lft = 0xFFFFFFFF;
+			add_assoc_cond.rpc_version =
+				get_cluster_version(mysql_conn,
+						    object->cluster);
+		}
+
+		if (object->user) {
+			/*
+			 * We can't just add the pointer here, we have to copy
+			 * the string or we could hit invalid reads afterwards
+			 * when we call _post_add_assoc_cond_cluster() ->
+			 * _check_defaults().
+			 */
+			if (!add_assoc.user_list)
+				add_assoc.user_list = list_create(xfree_ptr);
+
+			if (!list_find_first(add_assoc.user_list,
+					     slurm_find_char_in_list,
+					     object->user))
+				list_append(add_assoc.user_list,
+					    xstrdup(object->user));
 		}
 
 		if (object->parent_acct) {
@@ -3689,12 +3642,14 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				rc = ESLURM_INVALID_PARENT_ACCOUNT;
 				break;
 			}
-			last_parent = parent;
-			last_cluster = object->cluster;
-
+			xfree(last_parent);
+			xfree(last_cluster);
+			last_parent = xstrdup(parent);
+			last_cluster = xstrdup(object->cluster);
 		}
 
 		object->parent_id = my_par_id;
+		xfree(object->lineage);
 		if (object->user) {
 			object->lineage = xstrdup_printf(
 				"%s0-%s/", my_par_lineage, object->user);
@@ -3706,313 +3661,105 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				"%s%s/", my_par_lineage, object->acct);
 		}
 
-		xstrcat(cols, "creation_time, mod_time, acct");
-		xstrfmtcat(vals, "%ld, %ld, '%s'",
-			   now, now, object->acct);
-		xstrfmtcat(update, "where acct='%s'", object->acct);
-
-		xstrfmtcat(extra, ", mod_time=%ld, acct='%s'",
-			   now, object->acct);
-		if (!object->user) {
-			acct_added = true;
-			xstrcat(cols, ", parent_acct");
-			xstrfmtcat(vals, ", '%s'", parent);
-			xstrfmtcat(extra, ", parent_acct='%s', user=''",
-				   parent);
-			xstrfmtcat(update, " && user=''");
-		} else {
-			char *part = object->partition;
-			xstrcat(cols, ", user");
-			xstrfmtcat(vals, ", '%s'", object->user);
-			xstrfmtcat(update, " && user='%s'", object->user);
-			xstrfmtcat(extra, ", user='%s'", object->user);
-
-			/* We need to give a partition whether it be
-			 * '' or the actual partition name given
-			 */
-			if (!part)
-				part = "";
-			xstrcat(cols, ", `partition`");
-			xstrfmtcat(vals, ", '%s'", part);
-			xstrfmtcat(update, " && `partition`='%s'", part);
-			xstrfmtcat(extra, ", `partition`='%s'", part);
-			if (!added_user_list)
-				added_user_list = list_create(NULL);
-			if (!list_find_first(added_user_list,
-					     slurm_find_char_in_list,
-					     object->user))
-				list_append(added_user_list, object->user);
-		}
-
-		if (object->id) {
-			xstrcat(cols, ", id_assoc");
-			xstrfmtcat(vals, ", '%u'", object->id);
-			xstrfmtcat(update, " && id_assoc='%u'", object->id);
-			xstrfmtcat(extra, ", id_assoc='%u'", object->id);
-		}
-
-		if (object->parent_id) {
-			xstrcat(cols, ", id_parent");
-			xstrfmtcat(vals, ", %d", object->parent_id);
-			xstrfmtcat(extra, ", id_parent='%d'", object->parent_id);
-		}
-
-		if (object->lineage) {
-			xstrcat(cols, ", lineage");
-			xstrfmtcat(vals, ", '%s'", object->lineage);
-			xstrfmtcat(extra, ", lineage='%s'", object->lineage);
-		}
-
-		if ((rc = setup_assoc_limits(object, &cols, &vals, &extra,
+		if ((rc = setup_assoc_limits(object,
+					     &add_assoc_cond.cols,
+					     &add_assoc_cond.vals,
+					     &add_assoc_cond.extra,
 					     QOS_LEVEL_NONE, 1))) {
 			error("%s: Failed, setup_assoc_limits functions returned error",
 			      __func__);
-			xfree(query);
-			xfree(cols);
-			xfree(vals);
-			xfree(extra);
-			xfree(update);
 			break;
 		}
 
-		assoc_id = 0;
+		add_assoc_cond.add_assoc = &add_assoc;
+		add_assoc_cond.alloc_assoc = object;
+		list_remove(itr);
+		add_assoc_cond.mysql_conn = mysql_conn;
 
-		if (rpc_version >= SLURM_23_11_PROTOCOL_VERSION) {
-			xstrfmtcat(query,
-				   "insert into \"%s_%s\" (%s) values (%s) on duplicate key update deleted=0%s;",
-				   object->cluster, assoc_table, cols, vals, extra);
-		} else if ((rc = _handle_pre_add_lft(
-			     mysql_conn, uid, now, object,
-			     cols, vals, extra, update,
-			     parent, &moved_parent,
-			     &old_parent, &old_cluster,
-			     &assoc_id, &incr, &my_left, &query))) {
-			if (rc) {
-				xfree(cols);
-				xfree(vals);
-				xfree(extra);
-				xfree(update);
-				if (rc == -1)
-					break;
-				else if (rc == 1)
-					continue;
-			}
-		}
+		rc = _add_assoc_internal(&add_assoc_cond);
 
-		xfree(cols);
-		xfree(vals);
-		xfree(update);
-		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-		if (rc != SLURM_SUCCESS) {
-			error("Couldn't add assoc");
-			xfree(extra);
-			break;
-		}
-		/* see if this was an insert or update.  On an update
-		 * the assoc_id will already be set
-		 */
-		if (!assoc_id) {
-			(void) last_affected_rows(mysql_conn);
-			assoc_id = mysql_insert_id(mysql_conn->db_conn);
-			//info("last id was %d", assoc_id);
-		}
-
-		object->id = assoc_id;
-
-		if (!moved_parent) {
-			_set_assoc_limits_for_add(mysql_conn, object);
-			if ((rpc_version <= SLURM_23_02_PROTOCOL_VERSION) &&
-			    (object->lft == NO_VAL))
-				_set_assoc_lft_rgt(mysql_conn, object);
-		}
-
-		if ((object->flags & ASSOC_FLAG_NO_UPDATE) ||
-		    addto_update_list(mysql_conn->update_list,
-				      SLURMDB_ADD_ASSOC,
-				      object) == SLURM_SUCCESS) {
-			list_remove(itr);
-		}
-
-		/* We don't want to record the transactions of the
-		 * tmp_cluster.
-		 */
-
-		if (xstrcmp(object->cluster, tmp_cluster_name)) {
-			/* we always have a ', ' as the first 2 chars */
-			tmp_extra = slurm_add_slash_to_quotes(extra+2);
-			if (txn_query)
-				xstrfmtcat(txn_query,
-					   ", (%ld, %d, 'id_assoc=%d', "
-					   "'%s', '%s', '%s')",
-					   now, DBD_ADD_ASSOCS, assoc_id,
-					   user_name,
-					   tmp_extra, object->cluster);
-			else
-				xstrfmtcat(txn_query,
-					   "insert into %s "
-					   "(timestamp, action, name, actor, "
-					   "info, cluster) values (%ld, %d, "
-					   "'id_assoc=%d', '%s', '%s', '%s')",
-					   txn_table,
-					   now, DBD_ADD_ASSOCS, assoc_id,
-					   user_name,
-					   tmp_extra, object->cluster);
-			xfree(tmp_extra);
-		}
-		xfree(extra);
+		xfree(add_assoc_cond.cols);
+		xfree(add_assoc_cond.extra);
+		/* The caller can't recieve this so don't send it */
+		xfree(add_assoc_cond.ret_str);
+		xfree(add_assoc_cond.vals);
 	}
 	list_iterator_destroy(itr);
-	xfree(user_name);
 	xfree(my_par_lineage);
 
 	if (rc != SLURM_SUCCESS)
 		goto end_it;
 
-	if (rpc_version <= SLURM_23_02_PROTOCOL_VERSION) {
-		rc = _handle_post_add_lft(mysql_conn, old_cluster,
-					  incr, my_left);
-		if (rc != SLURM_SUCCESS)
+	if (last_cluster) {
+		_post_add_assoc_cond_cluster(&add_assoc_cond);
+		xfree(add_assoc.assoc.cluster);
+		FREE_NULL_LIST(add_assoc.user_list);
+		if (add_assoc_cond.rc != SLURM_SUCCESS) {
+			rc = add_assoc_cond.rc;
 			goto end_it;
-	}
-
-	/* Since we are already removed all the items from assoc_list
-	 * we need to work off the update_list from here on out.
-	 */
-	itr = list_iterator_create(mysql_conn->update_list);;
-	while ((update_object = list_next(itr))) {
-		if (!update_object->objects ||
-		    !list_count(update_object->objects))
-			continue;
-		if (update_object->type == SLURMDB_ADD_ASSOC)
-			break;
-	}
-	list_iterator_destroy(itr);
-
-	if (update_object && update_object->objects
-	    && list_count(update_object->objects))
-		assoc_list_tmp = update_object->objects;
-
-	if (assoc_list_tmp) {
-		ListIterator itr2 = list_iterator_create(assoc_list_tmp);
-
-		if ((rpc_version <= SLURM_23_02_PROTOCOL_VERSION) &&
-		    !moved_parent) {
-			char *cluster_name;
-
-			itr = list_iterator_create(local_cluster_list);
-			while ((cluster_name = list_next(itr))) {
-				uint32_t smallest_lft = 0xFFFFFFFF;
-				while ((object = list_next(itr2))) {
-					if (object->lft < smallest_lft
-					    && !xstrcmp(object->cluster,
-							cluster_name))
-						smallest_lft = object->lft;
-				}
-				list_iterator_reset(itr2);
-				/* now get the lowest lft from the
-				   added files by cluster */
-				if (smallest_lft != 0xFFFFFFFF)
-					rc = as_mysql_get_modified_lfts(
-						mysql_conn, cluster_name,
-						smallest_lft);
-			}
-			list_iterator_destroy(itr);
 		}
+	}
 
-		/* make sure we don't have any other default accounts */
-		list_iterator_reset(itr2);
-		while ((object = list_next(itr2))) {
-			if ((object->is_def != 1) || !object->cluster
-			    || !object->acct || !object->user)
-				continue;
-
-			if ((rc = _reset_default_assoc(
-				     mysql_conn, object,
-				     &query, moved_parent ? 0 : 1))
-			    != SLURM_SUCCESS) {
-				xfree(query);
-				goto end_it;
-			}
+	if (add_assoc_cond.txn_query) {
+		xstrcat(add_assoc_cond.txn_query, ";");
+		debug4("%d(%s:%d) query\n%s",
+		       mysql_conn->conn, THIS_FILE,
+		       __LINE__, add_assoc_cond.txn_query);
+		rc = mysql_db_query(mysql_conn,
+				    add_assoc_cond.txn_query);
+		if (rc != SLURM_SUCCESS) {
+			error("Couldn't add txn");
+			rc = SLURM_SUCCESS;
+			goto end_it;
 		}
-		list_iterator_destroy(itr2);
-		/* This temp list is no longer needed */
-		assoc_list_tmp = NULL;
 	}
 
-	if (query) {
-		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-		if (rc != SLURM_SUCCESS)
-			error("Couldn't update defaults");
-	}
 end_it:
-
-	if (rc == SLURM_SUCCESS) {
-		_make_sure_users_have_default(mysql_conn, added_user_list,
-					      local_cluster_list);
-		FREE_NULL_LIST(added_user_list);
-
-		if (txn_query) {
-			xstrcat(txn_query, ";");
-			debug4("%d(%s:%d) query\n%s",
-			       mysql_conn->conn, THIS_FILE,
-			       __LINE__, txn_query);
-			rc = mysql_db_query(mysql_conn,
-					    txn_query);
-			xfree(txn_query);
-			if (rc != SLURM_SUCCESS) {
-				error("Couldn't add txn");
-				rc = SLURM_SUCCESS;
-			}
-		}
-		if (moved_parent) {
-			slurmdb_assoc_cond_t assoc_cond;
-			/* now we need to send the update of the new parents and
-			 * limits, so just to be safe, send the whole
-			 * tree because we could have some limits that
-			 * were affected but not noticed.
-			 */
-			/* we can probably just look at the mod time now but
-			 * we will have to wait for the next revision number
-			 * since you can't query on mod time here and I don't
-			 * want to rewrite code to make it happen
-			 */
-			memset(&assoc_cond, 0, sizeof(assoc_cond));
-			assoc_cond.cluster_list = local_cluster_list;
-			if (!(assoc_list_tmp =
-			      as_mysql_get_assocs(mysql_conn, uid,
-						  &assoc_cond))) {
-				FREE_NULL_LIST(local_cluster_list);
-				return rc;
-			}
-
-			_move_assoc_list_to_update_list(mysql_conn->update_list,
-							assoc_list_tmp);
-			FREE_NULL_LIST(assoc_list_tmp);
-		}
-
+	if (add_assoc_cond.rc != SLURM_SUCCESS) {
+		reset_mysql_conn(mysql_conn);
+	} else {
 		/*
 		 * We need to refresh the assoc_mgr_user_list to ensure that
 		 * coordinators of parent accounts are also assigned to
 		 * subaccounts potentially added here.
 		 */
-		if (acct_added) {
+		if (!add_assoc.user_list) {
 			if (assoc_mgr_refresh_lists((void *)mysql_conn,
 						    ASSOC_MGR_CACHE_USER)) {
 				error ("Cannot refresh users/coordinators cache after new ccount was added");
-				rc = SLURM_ERROR;
+				add_assoc_cond.rc = SLURM_ERROR;
 			}
 		}
-	} else {
-		FREE_NULL_LIST(added_user_list);
-		xfree(txn_query);
-		reset_mysql_conn(mysql_conn);
+
+		if ((add_assoc_cond.rc == SLURM_SUCCESS) &&
+		    add_assoc_cond.txn_query) {
+			xstrcat(add_assoc_cond.txn_query, ";");
+			debug4("%d(%s:%d) query\n%s",
+			       mysql_conn->conn, THIS_FILE,
+			       __LINE__, add_assoc_cond.txn_query);
+			rc = mysql_db_query(mysql_conn,
+					    add_assoc_cond.txn_query);
+			if (rc != SLURM_SUCCESS) {
+				error("Couldn't add txn");
+				rc = SLURM_SUCCESS;
+			}
+		}
 	}
-	FREE_NULL_LIST(local_cluster_list);
-	return rc;
+	xfree(add_assoc.assoc.cluster);
+	FREE_NULL_LIST(add_assoc.user_list);
+	xfree(add_assoc_cond.cols);
+	xfree(add_assoc_cond.extra);
+	xfree(add_assoc_cond.old_parent);
+	xfree(add_assoc_cond.old_cluster);
+	xfree(add_assoc_cond.ret_str);
+	xfree(add_assoc_cond.txn_query);
+	xfree(add_assoc_cond.user_name);
+	xfree(add_assoc_cond.vals);
+
+	xfree(last_parent);
+	xfree(last_cluster);
+
+	return add_assoc_cond.rc;
 }
 
 extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
