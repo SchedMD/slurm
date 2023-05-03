@@ -184,6 +184,37 @@ static const csv_list_t csv_lists[] = {
 	},
 };
 
+static int _username_to_uid(void *x, void *arg)
+{
+	char *user = x, *p = NULL;
+	List list = arg;
+	long num;
+	uid_t uid;
+
+	xassert(user);
+	xassert(list);
+
+	/* Already an UID? */
+	errno = 0;
+	num = strtol(user, &p, 10);
+	if (!errno && !*p && (user != p) && (num >= 0) && (num < INT_MAX)) {
+		user = xstrdup(user);
+		list_append(list, user);
+		return SLURM_SUCCESS;
+	}
+
+	/* Get the underlying UID */
+	if (uid_from_string(user, &uid)) {
+		error("User name (%s) is not valid", user);
+		return SLURM_ERROR;
+	}
+
+	/* Store the UID */
+	user = xstrdup_printf("%u", uid);
+	list_append(list, user);
+	return SLURM_SUCCESS;
+}
+
 static int _foreach_job(void *x, void *arg)
 {
 	slurmdb_job_rec_t *job = x;
@@ -454,7 +485,7 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 				*list = list2;
 			} else if (!xstrcasecmp("users", key)) {
 				List list2 = list_create(xfree_ptr);
-				if (list_for_each_ro(*list, username_to_uid,
+				if (list_for_each_ro(*list, _username_to_uid,
 						     list2) < 0) {
 					list_destroy(list2);
 					resp_error(ctxt,

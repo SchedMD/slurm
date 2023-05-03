@@ -546,34 +546,3 @@ extern int groupname_to_gid(void *x, void *arg)
 	list_append(list, group);
 	return SLURM_SUCCESS;
 }
-
-extern int username_to_uid(void *x, void *arg)
-{
-	char *user = x, *p = NULL;
-	List list = arg;
-	long num;
-	uid_t uid;
-
-	xassert(user);
-	xassert(list);
-
-	/* Already an UID? */
-	errno = 0;
-	num = strtol(user, &p, 10);
-	if (!errno && !*p && (user != p) && (num >= 0) && (num < INT_MAX)) {
-		user = xstrdup(user);
-		list_append(list, user);
-		return SLURM_SUCCESS;
-	}
-
-	/* Get the underlying UID */
-	if (uid_from_string(user, &uid)) {
-		error("User name (%s) is not valid", user);
-		return SLURM_ERROR;
-	}
-
-	/* Store the UID */
-	user = xstrdup_printf("%u", uid);
-	list_append(list, user);
-	return SLURM_SUCCESS;
-}
