@@ -1023,8 +1023,12 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 	const char *status_string;
 	rsmi_process_info_t proc = {0};
 	rsmi_status_t rc;
+	bool track_gpumem, track_gpuutil;
 
-	if ((gpuutil_pos == -1) || (gpumem_pos == -1)) {
+	track_gpumem = (gpumem_pos != -1);
+	track_gpuutil = (gpuutil_pos != -1);
+
+	if (!track_gpuutil && !track_gpumem) {
 		debug2("%s: We are not tracking TRES gpuutil/gpumem", __func__);
 		return SLURM_SUCCESS;
 	}
@@ -1041,9 +1045,11 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 		return SLURM_ERROR;
 	}
 
-	data[gpuutil_pos].size_read = proc.cu_occupancy;
+	if (track_gpuutil)
+		data[gpuutil_pos].size_read = proc.cu_occupancy;
 
-	data[gpumem_pos].size_read = proc.vram_usage;
+	if (track_gpumem)
+		data[gpumem_pos].size_read = proc.vram_usage;
 
 	log_flag(JAG, "pid %d has GPUUtil=%lu and MemMB=%lu",
 		 pid,
