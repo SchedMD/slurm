@@ -80,7 +80,6 @@ static data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 	foreach_query_search_t *args = arg;
 
 	xassert(args->magic == MAGIC_FOREACH_SEARCH);
-	xassert(args->ctxt->magic == MAGIC_CTXT);
 
 	if (!xstrcasecmp("with_deleted", key)) {
 		if (data_convert_type(data, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
@@ -119,8 +118,6 @@ static int _parse_other_params(ctxt_t *ctxt, slurmdb_account_cond_t *cond)
 	if (!ctxt->query || !data_get_dict_length(ctxt->query))
 		return SLURM_SUCCESS;
 
-	xassert(ctxt->magic == MAGIC_CTXT);
-
 	args.magic = MAGIC_FOREACH_SEARCH;
 	args.ctxt = ctxt;
 	args.account_cond = cond;
@@ -137,7 +134,6 @@ static int _foreach_account(void *x, void *arg)
 	foreach_account_t *args = arg;
 
 	xassert(args->magic == MAGIC_FOREACH_ACCOUNT);
-	xassert(args->ctxt->magic == MAGIC_CTXT);
 
 	DATA_DUMP(args->ctxt->parser, ACCOUNT, *acct,
 		  data_list_append(args->accts));
@@ -191,7 +187,6 @@ static int _foreach_add_acct_coord(void *x, void *arg)
 	};
 
 	xassert(args->magic == MAGIC_FOREACH_COORD);
-	xassert(args->ctxt->magic == MAGIC_CTXT);
 
 	if (args->orig_acct &&
 	    list_find_first(args->orig_acct->coordinators, _foreach_match_coord,
@@ -234,7 +229,6 @@ static int _foreach_rm_acct_coord(void *x, void *arg)
 	};
 
 	xassert(args->magic == MAGIC_FOREACH_COORD);
-	xassert(args->ctxt->magic == MAGIC_CTXT);
 
 	if (args->acct->coordinators &&
 	    list_find_first(args->acct->coordinators, _foreach_match_coord,
@@ -406,20 +400,13 @@ cleanup:
 	FREE_NULL_LIST(assoc_cond.user_list);
 }
 
-extern int op_handler_account(const char *context_id,
-			      http_request_method_t method,
-			      data_t *parameters, data_t *query, int tag,
-			      data_t *resp, void *auth, data_parser_t *parser)
+extern int op_handler_account(ctxt_t *ctxt)
 {
 	char *acct;
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
 
-	if (ctxt->rc) {
+	if (!(acct = get_str_param("account_name", true, ctxt))) {
 		/* no-op already logged */
-	} else if (!(acct = get_str_param("account_name", ctxt))) {
-		/* no-op already logged */
-	} else if (method == HTTP_REQUEST_GET) {
+	} else if (ctxt->method == HTTP_REQUEST_GET) {
 		slurmdb_assoc_cond_t assoc_cond = {};
 		slurmdb_account_cond_t acct_cond = {
 			.assoc_cond = &assoc_cond,
@@ -438,29 +425,21 @@ extern int op_handler_account(const char *context_id,
 		}
 
 		FREE_NULL_LIST(assoc_cond.acct_list);
-	} else if (method == HTTP_REQUEST_DELETE) {
+	} else if (ctxt->method == HTTP_REQUEST_DELETE) {
 		_delete_account(ctxt, acct);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
 /* based on sacctmgr_list_account() */
-extern int op_handler_accounts(const char *context_id,
-			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp, void *auth,
-			       data_parser_t *parser)
+extern int op_handler_accounts(ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
-
-	if (ctxt->rc) {
-		/* no-op already logged */
-	} else if (method == HTTP_REQUEST_GET) {
+	if (ctxt->method == HTTP_REQUEST_GET) {
 		slurmdb_account_cond_t acct_cond = {
 			.with_assocs = true,
 			.with_coords = true,
@@ -470,27 +449,26 @@ extern int op_handler_accounts(const char *context_id,
 		/* Change search conditions based on parameters */
 		if (!_parse_other_params(ctxt, &acct_cond))
 			_dump_accounts(ctxt, &acct_cond);
-	} else if (method == HTTP_REQUEST_POST) {
-		_update_accts(ctxt, (tag != CONFIG_OP_TAG));
+	} else if (ctxt->method == HTTP_REQUEST_POST) {
+		_update_accts(ctxt, (ctxt->tag != CONFIG_OP_TAG));
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
 extern void init_op_accounts(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.39/accounts/",
-			       op_handler_accounts, 0);
-	bind_operation_handler("/slurmdb/v0.0.39/account/{account_name}/",
-			       op_handler_account, 0);
+	bind_handler("/slurmdb/v0.0.39/accounts/", op_handler_accounts, 0);
+	bind_handler("/slurmdb/v0.0.39/account/{account_name}/",
+		     op_handler_account, 0);
 }
 
 extern void destroy_op_accounts(void)
 {
-	unbind_operation_handler(op_handler_accounts);
-	unbind_operation_handler(op_handler_account);
+	unbind_operation_ctxt_handler(op_handler_accounts);
+	unbind_operation_ctxt_handler(op_handler_account);
 }

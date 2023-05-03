@@ -128,7 +128,6 @@ static int _foreach_assoc(void *x, void *arg)
 	foreach_assoc_t *args = arg;
 
 	xassert(args->magic == FOREACH_ASSOC_MAGIC);
-	xassert(args->ctxt->magic == MAGIC_CTXT);
 
 	if ((rc = DATA_DUMP(args->ctxt->parser, ASSOC, *assoc,
 			    data_list_append(args->dassocs)))) {
@@ -376,8 +375,6 @@ static int _foreach_update_assoc(void *x, void *arg)
 	};
 	List assoc_list = NULL;
 
-	xassert(ctxt->magic == MAGIC_CTXT);
-
 	if (assoc->parent_acct && !assoc->parent_acct[0])
 		xfree(assoc->parent_acct);
 
@@ -462,70 +459,58 @@ cleanup:
 	FREE_NULL_DATA(parent_path);
 }
 
-static int op_handler_association(const char *context_id,
-				  http_request_method_t method,
-				  data_t *parameters, data_t *query, int tag,
-				  data_t *resp, void *auth,
-				  data_parser_t *parser)
+static int op_handler_association(ctxt_t *ctxt)
 {
 	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
 
-	if (ctxt->rc || _populate_assoc_cond(ctxt, assoc_cond))
+	if (_populate_assoc_cond(ctxt, assoc_cond))
 		/* no-op - already logged */;
-	else if (method == HTTP_REQUEST_GET)
+	else if (ctxt->method == HTTP_REQUEST_GET)
 		_dump_assoc_cond(ctxt, assoc_cond, true);
-	else if (method == HTTP_REQUEST_DELETE)
+	else if (ctxt->method == HTTP_REQUEST_DELETE)
 		_delete_assoc(ctxt, assoc_cond, true);
 	else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
 	slurmdb_destroy_assoc_cond(assoc_cond);
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
-extern int op_handler_associations(const char *context_id,
-				   http_request_method_t method,
-				   data_t *parameters, data_t *query, int tag,
-				   data_t *resp, void *auth,
-				   data_parser_t *parser)
+extern int op_handler_associations(ctxt_t *ctxt)
 {
 	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
 
-	if (ctxt->rc || _populate_assoc_cond(ctxt, assoc_cond))
+	if (_populate_assoc_cond(ctxt, assoc_cond))
 		/* no-op - already logged */;
-	else if (method == HTTP_REQUEST_GET)
+	else if (ctxt->method == HTTP_REQUEST_GET)
 		_dump_assoc_cond(ctxt, assoc_cond, false);
-	else if (method == HTTP_REQUEST_POST)
-		_update_associations(ctxt, (tag != CONFIG_OP_TAG));
-	else if (method == HTTP_REQUEST_DELETE)
+	else if (ctxt->method == HTTP_REQUEST_POST)
+		_update_associations(ctxt, (ctxt->tag != CONFIG_OP_TAG));
+	else if (ctxt->method == HTTP_REQUEST_DELETE)
 		_delete_assoc(ctxt, assoc_cond, false);
 	else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
 	slurmdb_destroy_assoc_cond(assoc_cond);
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
 extern void init_op_associations(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.39/associations/",
-			       op_handler_associations, 0);
-	bind_operation_handler("/slurmdb/v0.0.39/association/",
-			       op_handler_association, 0);
+	bind_handler("/slurmdb/v0.0.39/associations/", op_handler_associations,
+		     0);
+	bind_handler("/slurmdb/v0.0.39/association/", op_handler_association,
+		     0);
 }
 
 extern void destroy_op_associations(void)
 {
-	unbind_operation_handler(op_handler_associations);
-	unbind_operation_handler(op_handler_association);
+	unbind_operation_ctxt_handler(op_handler_associations);
+	unbind_operation_ctxt_handler(op_handler_association);
 }

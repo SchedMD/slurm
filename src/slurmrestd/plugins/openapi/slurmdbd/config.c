@@ -49,7 +49,7 @@
 #include "src/slurmrestd/operations.h"
 #include "api.h"
 
-static const openapi_handler_t ops[] = {
+static const openapi_ctxt_handler_t ops[] = {
 	/* Warning: order matters */
 	op_handler_clusters,
 	op_handler_tres,
@@ -60,27 +60,18 @@ static const openapi_handler_t ops[] = {
 	op_handler_associations,
 };
 
-static int _op_handler_config(const char *context_id,
-			      http_request_method_t method, data_t *parameters,
-			      data_t *query, int tag, data_t *resp,
-			      void *auth, data_parser_t *parser)
+static int _op_handler_config(ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
-
-	if (ctxt->rc)
-		goto cleanup;
-
-	if ((method != HTTP_REQUEST_GET) && (method != HTTP_REQUEST_POST)) {
+	if ((ctxt->method != HTTP_REQUEST_GET) &&
+	    (ctxt->method != HTTP_REQUEST_POST)) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 		goto cleanup;
 	}
 
 	for (int i = 0; (i < ARRAY_SIZE(ops)); i++) {
-		int rc = ops[i](context_id, method, parameters, query, tag,
-				resp, auth, parser);
+		int rc = ops[i](ctxt);
 
 		/* Ignore empty results */
 		if (rc == ESLURM_REST_EMPTY_RESULT)
@@ -93,20 +84,20 @@ static int _op_handler_config(const char *context_id,
 		}
 	}
 
-	if (!ctxt->rc && (method == HTTP_REQUEST_POST))
+	if (!ctxt->rc && (ctxt->method == HTTP_REQUEST_POST))
 		db_query_commit(ctxt);
 
 cleanup:
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
 extern void init_op_config(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.39/config", _op_handler_config,
-			       CONFIG_OP_TAG);
+	bind_handler("/slurmdb/v0.0.39/config", _op_handler_config,
+		     CONFIG_OP_TAG);
 }
 
 extern void destroy_op_config(void)
 {
-	unbind_operation_handler(_op_handler_config);
+	unbind_operation_ctxt_handler(_op_handler_config);
 }

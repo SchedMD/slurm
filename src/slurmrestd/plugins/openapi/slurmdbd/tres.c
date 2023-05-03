@@ -106,34 +106,27 @@ cleanup:
 #endif /*!NDEBUG*/
 }
 
-extern int op_handler_tres(const char *context_id, http_request_method_t method,
-			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth, data_parser_t *parser)
+extern int op_handler_tres(ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
-
-	if (ctxt->rc)
-		/* no-op already logged */;
-	else if (method == HTTP_REQUEST_GET)
+	if (ctxt->method == HTTP_REQUEST_GET)
 		_dump_tres(ctxt);
-	else if (method == HTTP_REQUEST_POST)
-		_update_tres(ctxt, (tag != CONFIG_OP_TAG));
+	else if (ctxt->method == HTTP_REQUEST_POST)
+		_update_tres(ctxt, (ctxt->tag != CONFIG_OP_TAG));
 	else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
 extern void init_op_tres(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.39/tres/", op_handler_tres, 0);
+	bind_handler("/slurmdb/v0.0.39/tres/", op_handler_tres, 0);
 }
 
 extern void destroy_op_tres(void)
 {
-	unbind_operation_handler(op_handler_tres);
+	unbind_operation_ctxt_handler(op_handler_tres);
 }

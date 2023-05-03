@@ -603,20 +603,13 @@ static void _dump_jobs(ctxt_t *ctxt, slurmdb_job_cond_t *job_cond)
 }
 
 /* based on get_data() in sacct/options.c */
-extern int op_handler_jobs(const char *context_id, http_request_method_t method,
-			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth, data_parser_t *parser)
+extern int op_handler_jobs(ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
-
-	if (ctxt->rc) {
-		/* no-op - already logged */
-	} else if (method != HTTP_REQUEST_GET) {
+	if (ctxt->method != HTTP_REQUEST_GET) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
-	} else if (query && data_get_dict_length(query)) {
+			   get_http_method_string(ctxt->method));
+	} else if (ctxt->query && data_get_dict_length(ctxt->query)) {
 		slurmdb_job_cond_t job_cond = {
 			/*
 			 * default to grabbing all information
@@ -631,36 +624,30 @@ extern int op_handler_jobs(const char *context_id, http_request_method_t method,
 			.job_cond = &job_cond,
 		};
 
-		if (data_dict_for_each(query, _foreach_query_search, &args) >=
-		    0)
+		if (data_dict_for_each(ctxt->query, _foreach_query_search,
+				       &args) >= 0)
 			_dump_jobs(ctxt, &job_cond);
 	} else {
 		_dump_jobs(ctxt, NULL);
 	}
 
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
 /* based on get_data() in sacct/options.c */
-static int _op_handler_job(const char *context_id, http_request_method_t method,
-			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth, data_parser_t *parser)
+static int _op_handler_job(ctxt_t *ctxt)
 {
 	char *jobid;
 	slurmdb_job_cond_t job_cond = {
 		.flags = (JOBCOND_FLAG_DUP | JOBCOND_FLAG_NO_TRUNC),
 		.db_flags = SLURMDB_JOB_FLAG_NOTSET,
 	};
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
 
-	if (ctxt->rc) {
-		/* no-op - already logged */
-	} else if (method != HTTP_REQUEST_GET) {
+	if (ctxt->method != HTTP_REQUEST_GET) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
-	} else if ((jobid = get_str_param("job_id", ctxt))) {
+			   get_http_method_string(ctxt->method));
+	} else if ((jobid = get_str_param("job_id", true, ctxt))) {
 		job_cond.step_list = list_create(slurm_destroy_selected_step);
 		slurm_addto_step_list(job_cond.step_list, jobid);
 
@@ -668,18 +655,17 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 	}
 
 	FREE_NULL_LIST(job_cond.step_list);
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
 extern void init_op_job(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.39/jobs/", op_handler_jobs, 0);
-	bind_operation_handler("/slurmdb/v0.0.39/job/{job_id}", _op_handler_job,
-			       0);
+	bind_handler("/slurmdb/v0.0.39/jobs/", op_handler_jobs, 0);
+	bind_handler("/slurmdb/v0.0.39/job/{job_id}", _op_handler_job, 0);
 }
 
 extern void destroy_op_job(void)
 {
-	unbind_operation_handler(_op_handler_job);
-	unbind_operation_handler(op_handler_jobs);
+	unbind_operation_ctxt_handler(_op_handler_job);
+	unbind_operation_ctxt_handler(op_handler_jobs);
 }

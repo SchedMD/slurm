@@ -70,7 +70,6 @@ static int _foreach_wckey(void *x, void *arg)
 	foreach_wckey_t *args = arg;
 
 	xassert(args->magic == MAGIC_FOREACH_WCKEY);
-	xassert(args->ctxt->magic == MAGIC_CTXT);
 
 	if (DATA_DUMP(args->ctxt->parser, WCKEY, *wckey,
 		      data_list_append(args->wckeys)))
@@ -121,7 +120,7 @@ static void _delete_wckey(ctxt_t *ctxt)
 	slurmdb_wckey_cond_t wckey_cond = {
 		.with_deleted = true,
 	};
-	char *wckey = get_str_param("wckey", ctxt);
+	char *wckey = get_str_param("wckey", true, ctxt);
 	data_t *wckeys =
 		data_set_list(data_key_set(ctxt->resp, "deleted_wckeys"));
 
@@ -171,66 +170,49 @@ cleanup:
 	FREE_NULL_DATA(parent_path);
 }
 
-extern int op_handler_wckey(const char *context_id,
-			    http_request_method_t method,
-			    data_t *parameters, data_t *query, int tag,
-			    data_t *resp, void *auth, data_parser_t *parser)
+extern int op_handler_wckey(ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
-	char *wckey = get_str_param("wckey", ctxt);
+	char *wckey = get_str_param("wckey", true, ctxt);
 
-	if (ctxt->rc) {
-		/* no-op - already logged */;
-	} else if (!wckey) {
+	if (!wckey) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "wckey required for singular query");
-	} else if (method == HTTP_REQUEST_GET) {
+	} else if (ctxt->method == HTTP_REQUEST_GET) {
 		_dump_wckeys(ctxt, wckey);
-	} else if (method == HTTP_REQUEST_DELETE) {
+	} else if (ctxt->method == HTTP_REQUEST_DELETE) {
 		_delete_wckey(ctxt);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
-extern int op_handler_wckeys(const char *context_id,
-			     http_request_method_t method, data_t *parameters,
-			     data_t *query, int tag, data_t *resp,
-			     void *auth, data_parser_t *parser)
+extern int op_handler_wckeys(ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
-
-	if (ctxt->rc)
-		/* no-op - already logged */;
-	else if (method == HTTP_REQUEST_GET)
+	if (ctxt->method == HTTP_REQUEST_GET)
 		_dump_wckeys(ctxt, NULL);
-	else if (method == HTTP_REQUEST_POST)
-		_update_wckeys(ctxt, (tag != CONFIG_OP_TAG));
+	else if (ctxt->method == HTTP_REQUEST_POST)
+		_update_wckeys(ctxt, (ctxt->tag != CONFIG_OP_TAG));
 	else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
 extern void init_op_wckeys(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.39/wckeys/", op_handler_wckeys,
-			       0);
-	bind_operation_handler("/slurmdb/v0.0.39/wckey/{wckey}",
-			       op_handler_wckey, 0);
+	bind_handler("/slurmdb/v0.0.39/wckeys/", op_handler_wckeys, 0);
+	bind_handler("/slurmdb/v0.0.39/wckey/{wckey}", op_handler_wckey, 0);
 }
 
 extern void destroy_op_wckeys(void)
 {
-	unbind_operation_handler(op_handler_wckeys);
-	unbind_operation_handler(op_handler_wckey);
+	unbind_operation_ctxt_handler(op_handler_wckeys);
+	unbind_operation_ctxt_handler(op_handler_wckey);
 }

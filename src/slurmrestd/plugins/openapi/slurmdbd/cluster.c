@@ -72,7 +72,6 @@ static int _foreach_cluster(void *x, void *arg)
 	foreach_cluster_t *args = arg;
 
 	xassert(args->magic == MAGIC_FOREACH_CLUSTER);
-	xassert(args->ctxt->magic == MAGIC_CTXT);
 
 	if (DATA_DUMP(args->ctxt->parser, CLUSTER_REC, *cluster,
 		      data_list_append(args->clusters)))
@@ -179,63 +178,47 @@ static void _update_clusters(ctxt_t *ctxt, bool commit)
 	FREE_NULL_DATA(parent_path);
 }
 
-extern int op_handler_cluster(const char *context_id,
-			      http_request_method_t method, data_t *parameters,
-			      data_t *query, int tag, data_t *resp, void *auth,
-			      data_parser_t *parser)
+extern int op_handler_cluster(ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
-	char *cluster = get_str_param("cluster_name", ctxt);
+	char *cluster = get_str_param("cluster_name", true, ctxt);
 
-	if (ctxt->rc)
-		/* no-op - already logged */;
-	else if (method == HTTP_REQUEST_GET)
+	if (ctxt->method == HTTP_REQUEST_GET)
 		_dump_clusters(ctxt, cluster);
-	else if (method == HTTP_REQUEST_DELETE)
+	else if (ctxt->method == HTTP_REQUEST_DELETE)
 		_delete_cluster(ctxt, cluster);
 	else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
-extern int op_handler_clusters(const char *context_id,
-			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp,
-			       void *auth, data_parser_t *parser)
+extern int op_handler_clusters(ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
-
-	if (ctxt->rc)
-		/* no-op - already logged */;
-	else if (method == HTTP_REQUEST_GET)
+	if (ctxt->method == HTTP_REQUEST_GET)
 		_dump_clusters(ctxt, NULL);
-	else if (method == HTTP_REQUEST_POST)
-		_update_clusters(ctxt, (tag != CONFIG_OP_TAG));
+	else if (ctxt->method == HTTP_REQUEST_POST)
+		_update_clusters(ctxt, (ctxt->tag != CONFIG_OP_TAG));
 	else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
 extern void init_op_cluster(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.39/clusters/",
-			       op_handler_clusters, 0);
-	bind_operation_handler("/slurmdb/v0.0.39/cluster/{cluster_name}",
-			       op_handler_cluster, 0);
+	bind_handler("/slurmdb/v0.0.39/clusters/", op_handler_clusters, 0);
+	bind_handler("/slurmdb/v0.0.39/cluster/{cluster_name}",
+		     op_handler_cluster, 0);
 }
 
 extern void destroy_op_cluster(void)
 {
-	unbind_operation_handler(op_handler_clusters);
-	unbind_operation_handler(op_handler_clusters);
+	unbind_operation_ctxt_handler(op_handler_clusters);
+	unbind_operation_ctxt_handler(op_handler_clusters);
 }

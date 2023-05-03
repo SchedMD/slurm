@@ -53,18 +53,13 @@
 #include "api.h"
 
 /* based on sacctmgr_list_stats() */
-static int _op_handler_diag(const char *context_id,
-			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *resp,
-			    void *auth, data_parser_t *parser)
+static int _op_handler_diag(ctxt_t *ctxt)
 {
 	int rc;
 	slurmdb_stats_rec_t *stats_rec = NULL;
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
 	data_t *dstats = data_key_set(ctxt->resp, "statistics");
 
-	debug4("%s: [%s] diag handler called", __func__, context_id);
+	debug4("%s: [%s] diag handler called", __func__, ctxt->id);
 
 	if (ctxt->rc)
 		goto cleanup;
@@ -75,15 +70,15 @@ static int _op_handler_diag(const char *context_id,
 
 cleanup:
 	slurmdb_destroy_stats_rec(stats_rec);
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
 extern void init_op_diag(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.39/diag/", _op_handler_diag, 0);
+	bind_handler("/slurmdb/v0.0.39/diag/", _op_handler_diag, 0);
 }
 
 extern void destroy_op_diag(void)
 {
-	unbind_operation_handler(_op_handler_diag);
+	unbind_operation_ctxt_handler(_op_handler_diag);
 }

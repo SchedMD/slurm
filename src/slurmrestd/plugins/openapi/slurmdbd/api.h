@@ -46,57 +46,13 @@
 #define DATA_VERSION "v0.0.39"
 #define DATA_PLUGIN "data_parser/" DATA_VERSION
 #define CONFIG_OP_TAG 0xfffffffe
-#define MAGIC_CTXT 0xaffb0ffe
 
-typedef struct {
-	int magic; /* MAGIC_CTXT */
-	int rc;
-	data_t *errors;
-	data_t *warnings;
-	data_parser_t *parser;
-	const char *id; /* string identifying client (usually IP) */
-	void *db_conn;
-	http_request_method_t method;
-	data_t *parameters;
-	data_t *query;
-	data_t *resp;
-} ctxt_t;
+typedef openapi_ctxt_t ctxt_t;
 
-/*
- * Initiate connection context.
- *
- * This function is expected to be called in the callback handlers from
- * operations router. It will setup everything required for handling the client
- * request including tracking errors and warnings.
- *
- * IN context_id - string ident for client
- * IN method - HTTP method of request
- * IN parameters - data list of client supplied HTTP parameters
- * IN query - data list of client supplied HTTP querys
- * IN tag - callback assigned tag
- * IN auth - auth ptr reference
- */
-extern ctxt_t *init_connection(const char *context_id,
-			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp,
-			       void *auth);
-
-/* provides RC for connection and releases connection context */
-extern int fini_connection(ctxt_t *ctxt);
-
-/*
- * Add a response error
- * IN ctxt - connection context
- * IN why - description of error or NULL
- * IN error_code - Error number
- * IN source - Where the error was generated
- * RET value of error_code
- */
-extern int resp_error(ctxt_t *ctxt, int error_code, const char *source,
-		      const char *why, ...)
-	__attribute__((format(printf, 4, 5)));
-extern void resp_warn(ctxt_t *ctxt, const char *source, const char *why, ...)
-	__attribute__((format(printf, 3, 4)));
+#define resp_error(ctxt, error_code, source, why, ...) \
+	openapi_resp_error(ctxt, error_code, source, why, ##__VA_ARGS__)
+#define resp_warn(ctxt, source, why, ...) \
+	openapi_resp_warn(ctxt, source, why, ##__VA_ARGS__)
 
 /* ------------ generic typedefs for slurmdbd queries --------------- */
 
@@ -193,16 +149,11 @@ extern void db_query_commit_funcname(ctxt_t *ctxt, const char *caller);
 
 /* ------------ handlers for user requests --------------- */
 
-#define get_str_param(path, ctxt) get_str_param_funcname(path, ctxt, __func__)
+#define get_str_param(name, req, ctxt) \
+	openapi_get_str_param(ctxt, req, name, __func__)
 
-/*
- * Retrieve parameter
- * IN path - Path to parameter in query
- * IN ctxt - connection context
- * RET string or NULL on error
- */
-extern char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
-				    const char *caller);
+#define get_date_param(name, req, time_ptr, ctxt) \
+	openapi_get_date_param(ctxt, req, name, &time_ptr, __func__)
 
 #define get_query_key_list(path, ctxt, parent_path) \
 	get_query_key_list_funcname(path, ctxt, parent_path, __func__)
@@ -223,25 +174,15 @@ extern data_t *get_query_key_list_funcname(const char *path, ctxt_t *ctxt,
 
 extern void init_op_associations(void);
 extern void destroy_op_associations(void);
-extern int op_handler_associations(const char *context_id,
-				   http_request_method_t method,
-				   data_t *parameters, data_t *query, int tag,
-				   data_t *resp, void *auth,
-				   data_parser_t *parser);
+extern int op_handler_associations(ctxt_t *ctxt);
 
 extern void init_op_accounts(void);
 extern void destroy_op_accounts(void);
-extern int op_handler_accounts(const char *context_id,
-			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp,
-			       void *auth, data_parser_t *parser);
+extern int op_handler_accounts(ctxt_t *ctxt);
 
 extern void init_op_cluster(void);
 extern void destroy_op_cluster(void);
-extern int op_handler_clusters(const char *context_id,
-			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp,
-			       void *auth, data_parser_t *parser);
+extern int op_handler_clusters(ctxt_t *ctxt);
 
 extern void init_op_config(void);
 extern void destroy_op_config(void);
@@ -251,34 +192,26 @@ extern void destroy_op_diag(void);
 
 extern void init_op_job(void);
 extern void destroy_op_job(void);
-extern int op_handler_jobs(const char *context_id, http_request_method_t method,
-			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth, data_parser_t *parser);
+extern int op_handler_jobs(ctxt_t *ctxt);
 
 extern void init_op_tres(void);
 extern void destroy_op_tres(void);
-extern int op_handler_tres(const char *context_id, http_request_method_t method,
-			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth, data_parser_t *parser);
+extern int op_handler_tres(ctxt_t *ctxt);
 
 extern void init_op_users(void);
 extern void destroy_op_users(void);
-extern int op_handler_users(const char *context_id,
-			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *resp, void *auth,
-			    data_parser_t *parser);
+extern int op_handler_users(ctxt_t *ctxt);
 
 extern void init_op_wckeys(void);
 extern void destroy_op_wckeys(void);
-extern int op_handler_wckeys(const char *context_id,
-			     http_request_method_t method,
-			     data_t *parameters, data_t *query, int tag,
-			     data_t *resp, void *auth, data_parser_t *parser);
+extern int op_handler_wckeys(ctxt_t *ctxt);
 
 extern void init_op_qos(void);
 extern void destroy_op_qos(void);
-extern int op_handler_qos(const char *context_id, http_request_method_t method,
-			  data_t *parameters, data_t *query, int tag,
-			  data_t *resp, void *auth, data_parser_t *parser);
+extern int op_handler_qos(ctxt_t *ctxt);
+
+/* register handler against each parser */
+extern void bind_handler(const char *str_path, openapi_ctxt_handler_t callback,
+			 int tag);
 
 #endif

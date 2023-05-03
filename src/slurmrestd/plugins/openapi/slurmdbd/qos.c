@@ -160,8 +160,6 @@ static int _foreach_update_qos(void *x, void *arg)
 	slurmdb_qos_rec_t *qos = x, *found_qos = NULL;
 	slurmdb_qos_cond_t cond = { 0 };
 
-	xassert(ctxt->magic == MAGIC_CTXT);
-
 	/* Search for a QOS with the same id and/or name, if set */
 	if (qos->id || qos->name) {
 		List qos_list = NULL;
@@ -256,29 +254,23 @@ static void _update_qos(ctxt_t *ctxt, bool commit)
 	xfree(parent_path);
 }
 
-extern int op_handler_qos(const char *context_id, http_request_method_t method,
-			  data_t *parameters, data_t *query, int tag,
-			  data_t *resp, void *auth, data_parser_t *parser)
+extern int op_handler_qos(ctxt_t *ctxt)
 {
 	char *qos_name = NULL;
 	slurmdb_qos_cond_t qos_cond = { 0 };
 	List qos_list = NULL;
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
 
-	if (ctxt->rc)
-		goto cleanup;
-
-	if (method == HTTP_REQUEST_GET) {
+	if (ctxt->method == HTTP_REQUEST_GET) {
 		/* Update qos_cond with requested search parameters */
-		if (query && data_get_dict_length(query)) {
+		if (ctxt->query && data_get_dict_length(ctxt->query)) {
 			foreach_query_search_t args = {
 				.magic = MAGIC_FOREACH_SEARCH,
 				.ctxt = ctxt,
 				.qos_cond = &qos_cond,
 			};
 
-			if (data_dict_for_each(query, _foreach_query_search,
+			if (data_dict_for_each(ctxt->query,
+					       _foreach_query_search,
 					       &args) < 0)
 				goto cleanup;
 		}
@@ -287,8 +279,8 @@ extern int op_handler_qos(const char *context_id, http_request_method_t method,
 			goto cleanup;
 	}
 
-	if (tag == TAG_SINGLE_QOS) {
-		qos_name = get_str_param("qos_name", ctxt);
+	if (ctxt->tag == TAG_SINGLE_QOS) {
+		qos_name = get_str_param("qos_name", true, ctxt);
 
 		if (qos_name) {
 			qos_cond.name_list = list_create(NULL);
@@ -300,34 +292,34 @@ extern int op_handler_qos(const char *context_id, http_request_method_t method,
 		}
 	}
 
-	if (method == HTTP_REQUEST_GET)
+	if (ctxt->method == HTTP_REQUEST_GET)
 		_dump_qos(ctxt, qos_list, qos_name);
-	else if (method == HTTP_REQUEST_DELETE && (tag == TAG_SINGLE_QOS))
+	else if (ctxt->method == HTTP_REQUEST_DELETE &&
+		 (ctxt->tag == TAG_SINGLE_QOS))
 		_delete_qos(ctxt, &qos_cond);
-	else if (method == HTTP_REQUEST_POST &&
-		 ((tag == TAG_ALL_QOS) || (tag == CONFIG_OP_TAG)))
-		_update_qos(ctxt, (tag != CONFIG_OP_TAG));
+	else if (ctxt->method == HTTP_REQUEST_POST &&
+		 ((ctxt->tag == TAG_ALL_QOS) || (ctxt->tag == CONFIG_OP_TAG)))
+		_update_qos(ctxt, (ctxt->tag != CONFIG_OP_TAG));
 	else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
 cleanup:
 	FREE_NULL_LIST(qos_cond.name_list);
 	FREE_NULL_LIST(qos_list);
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
 extern void init_op_qos(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.39/qos/", op_handler_qos,
-			       TAG_ALL_QOS);
-	bind_operation_handler("/slurmdb/v0.0.39/qos/{qos_name}",
-			       op_handler_qos, TAG_SINGLE_QOS);
+	bind_handler("/slurmdb/v0.0.39/qos/", op_handler_qos, TAG_ALL_QOS);
+	bind_handler("/slurmdb/v0.0.39/qos/{qos_name}", op_handler_qos,
+		     TAG_SINGLE_QOS);
 }
 
 extern void destroy_op_qos(void)
 {
-	unbind_operation_handler(op_handler_qos);
+	unbind_operation_ctxt_handler(op_handler_qos);
 }

@@ -71,7 +71,6 @@ static data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 	foreach_query_search_t *args = arg;
 
 	xassert(args->magic == MAGIC_QUERY_SEARCH);
-	xassert(args->ctxt->magic == MAGIC_CTXT);
 
 	if (!xstrcasecmp("with_deleted", key)) {
 		if (data_convert_type(data, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
@@ -341,20 +340,12 @@ static void _delete_user(ctxt_t *ctxt, char *user_name)
 }
 
 /* based on sacctmgr_list_user() */
-extern int op_handler_users(const char *context_id,
-			    http_request_method_t method,
-			    data_t *parameters, data_t *query, int tag,
-			    data_t *resp, void *auth, data_parser_t *parser)
+extern int op_handler_users(ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
-
-	if (ctxt->rc) {
-		/* no-op - already logged */
-	} else if (method == HTTP_REQUEST_GET) {
+	if (ctxt->method == HTTP_REQUEST_GET) {
 		slurmdb_user_cond_t user_cond = { 0 };
 
-		if (query && data_get_dict_length(query)) {
+		if (ctxt->query && data_get_dict_length(ctxt->query)) {
 			/* Default to no deleted users */
 			foreach_query_search_t args = {
 				.magic = MAGIC_QUERY_SEARCH,
@@ -362,40 +353,34 @@ extern int op_handler_users(const char *context_id,
 				.user_cond = &user_cond,
 			};
 
-			(void) data_dict_for_each(query, _foreach_query_search,
-						  &args);
+			(void) data_dict_for_each(ctxt->query,
+						  _foreach_query_search, &args);
 		}
 
 		if (!ctxt->rc)
 			_dump_users(ctxt, NULL, &user_cond);
 
-	} else if (method == HTTP_REQUEST_POST) {
-		_update_users(ctxt, (tag != CONFIG_OP_TAG));
+	} else if (ctxt->method == HTTP_REQUEST_POST) {
+		_update_users(ctxt, (ctxt->tag != CONFIG_OP_TAG));
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
-static int op_handler_user(const char *context_id, http_request_method_t method,
-			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, void *auth, data_parser_t *parser)
+static int op_handler_user(ctxt_t *ctxt)
 {
-	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
-				       tag, resp, auth);
-	char *user_name = get_str_param("user_name", ctxt);
+	char *user_name = get_str_param("user_name", true, ctxt);
 
-	if (ctxt->rc) {
-		/* no-op - already logged */
-	} else if (!user_name) {
+	if (!user_name) {
 		resp_error(ctxt, ESLURM_USER_ID_MISSING, __func__,
 			   "User name must be provided singular query");
-	} else if (method == HTTP_REQUEST_GET) {
+	} else if (ctxt->method == HTTP_REQUEST_GET) {
 		slurmdb_user_cond_t user_cond = {0};
-		if (query && data_get_dict_length(query)) {
+		if (ctxt->query && data_get_dict_length(ctxt->query)) {
 			/* Default to no deleted users */
 			foreach_query_search_t args = {
 				.magic = MAGIC_QUERY_SEARCH,
@@ -403,32 +388,32 @@ static int op_handler_user(const char *context_id, http_request_method_t method,
 				.user_cond = &user_cond,
 			};
 
-			if (data_dict_for_each(query, _foreach_query_search,
+			if (data_dict_for_each(ctxt->query,
+					       _foreach_query_search,
 					       &args) < 0)
 				return ESLURM_REST_INVALID_QUERY;
 		}
 
 		_dump_users(ctxt, user_name, &user_cond);
-	} else if (method == HTTP_REQUEST_DELETE) {
+	} else if (ctxt->method == HTTP_REQUEST_DELETE) {
 		_delete_user(ctxt, user_name);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(method));
+			   get_http_method_string(ctxt->method));
 	}
 
-	return fini_connection(ctxt);
+	return SLURM_SUCCESS;
 }
 
 extern void init_op_users(void)
 {
-	bind_operation_handler("/slurmdb/v0.0.39/users/", op_handler_users, 0);
-	bind_operation_handler("/slurmdb/v0.0.39/user/{user_name}",
-			       op_handler_user, 0);
+	bind_handler("/slurmdb/v0.0.39/users/", op_handler_users, 0);
+	bind_handler("/slurmdb/v0.0.39/user/{user_name}", op_handler_user, 0);
 }
 
 extern void destroy_op_users(void)
 {
-	unbind_operation_handler(op_handler_users);
-	unbind_operation_handler(op_handler_user);
+	unbind_operation_ctxt_handler(op_handler_users);
+	unbind_operation_ctxt_handler(op_handler_user);
 }
