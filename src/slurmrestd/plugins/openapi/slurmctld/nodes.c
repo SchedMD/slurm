@@ -96,7 +96,7 @@ static void _dump_nodes(ctxt_t *ctxt, char *name)
 	node_info_msg_t *node_info_ptr = NULL;
 
 	if (!name) {
-		if (get_date_param(ctxt->query, "update_time", &update_time))
+		if (get_date_param("update_time", false, update_time, ctxt))
 			goto done;
 		if ((slurm_load_node(update_time, &node_info_ptr,
 				     SHOW_ALL | SHOW_DETAIL | SHOW_MIXED))) {
@@ -154,7 +154,7 @@ static int _op_handler_node(openapi_ctxt_t *ctxt)
 {
 	char *name;
 
-	if (!(name = get_str_param("node_name", ctxt))) {
+	if (!(name = get_str_param("node_name", true, ctxt))) {
 		resp_error(ctxt, ESLURM_INVALID_NODE_NAME, __func__,
 			   "Node name is requied for singular query");
 		goto done;

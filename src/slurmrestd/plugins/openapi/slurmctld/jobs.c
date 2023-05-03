@@ -64,11 +64,8 @@ static int _op_handler_jobs(openapi_ctxt_t *ctxt)
 		goto cleanup;
 	}
 
-	if ((rc = get_date_param(ctxt->query, "update_time", &update_time))) {
-		resp_error(ctxt, rc, __func__,
-			   "Unable to parse \"update_time\" field");
+	if ((rc = get_date_param("update_time", false, update_time, ctxt)))
 		goto cleanup;
-	}
 
 	rc = slurm_load_jobs(update_time, &job_info_ptr,
 			     SHOW_ALL | SHOW_DETAIL);
@@ -359,7 +356,7 @@ static int _op_handler_job(openapi_ctxt_t *ctxt)
 	slurm_selected_step_t job_id;
 	char *job_id_str;
 
-	if (!(job_id_str = get_str_param("job_id", ctxt)))
+	if (!(job_id_str = get_str_param("job_id", true, ctxt)))
 		goto done;
 
 	if ((rc = unfmt_job_id_string(job_id_str, &job_id))) {

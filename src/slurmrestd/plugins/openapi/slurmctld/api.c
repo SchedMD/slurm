@@ -100,41 +100,6 @@ const openapi_resp_meta_t plugin_meta = {
 	}
 };
 
-extern char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
-				    const char *caller)
-{
-	char *str = NULL;
-	data_t *dbuf;
-
-	if (!ctxt->parameters) {
-		resp_warn(ctxt, caller, "No parameters provided");
-	} else if (!(dbuf = data_key_get(ctxt->parameters, path))) {
-		resp_warn(ctxt, caller, "Parameter %s not found", path);
-	} else if (data_convert_type(dbuf, DATA_TYPE_STRING) !=
-		   DATA_TYPE_STRING) {
-		resp_warn(ctxt, caller, "Parameter %s incorrect format %s",
-			  path, data_type_to_string(data_get_type(dbuf)));
-	} else if (!(str = data_get_string(dbuf)) || !str[0]) {
-		resp_warn(ctxt, caller, "Parameter %s empty", path);
-		str = NULL;
-	}
-
-	return str;
-}
-
-extern int get_date_param(data_t *query, const char *param, time_t *time)
-{
-	data_t *data_update_time;
-	if ((data_update_time = data_key_get(query, param))) {
-		if (data_convert_type(data_update_time, DATA_TYPE_INT_64) ==
-		    DATA_TYPE_INT_64)
-			*time = data_get_int(data_update_time);
-		else
-			return ESLURM_REST_INVALID_QUERY;
-	}
-	return SLURM_SUCCESS;
-}
-
 extern data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 {
 	data_t *spec = NULL;

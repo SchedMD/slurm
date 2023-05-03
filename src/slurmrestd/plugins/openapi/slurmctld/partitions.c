@@ -67,7 +67,7 @@ extern int _op_handler_partitions(openapi_ctxt_t *ctxt)
 		goto done;
 	}
 
-	if ((rc = get_date_param(ctxt->query, "update_time", &update_time)))
+	if ((rc = get_date_param("update_time", false, update_time, ctxt)))
 		goto done;
 
 	errno = 0;
@@ -100,10 +100,10 @@ extern int _op_handler_partition(openapi_ctxt_t *ctxt)
 		goto done;
 	}
 
-	if ((rc = get_date_param(ctxt->query, "update_time", &update_time)))
+	if ((rc = get_date_param("update_time", false, update_time, ctxt)))
 		goto done;
 
-	if (!(name = get_str_param("partition_name", ctxt))) {
+	if (!(name = get_str_param("partition_name", true, ctxt))) {
 		resp_error(
 			ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			"partition_name must be provided for singular partition query");

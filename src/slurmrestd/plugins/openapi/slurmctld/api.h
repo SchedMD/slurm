@@ -50,18 +50,11 @@ typedef openapi_ctxt_t ctxt_t;
 
 /* ------------ handlers for user requests --------------- */
 
-#define get_str_param(path, ctxt) get_str_param_funcname(path, ctxt, __func__)
+#define get_str_param(name, req, ctxt) \
+	openapi_get_str_param(ctxt, req, name, __func__)
 
-/*
- * Retrieve parameter
- * IN path - Path to parameter in query
- * IN ctxt - connection context
- * RET string or NULL on error
- */
-extern char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
-				    const char *caller);
-
-extern int get_date_param(data_t *query, const char *param, time_t *time);
+#define get_date_param(name, req, time_ptr, ctxt) \
+	openapi_get_date_param(ctxt, req, name, &time_ptr, __func__)
 
 /* ------------ declarations for each operation --------------- */
 
