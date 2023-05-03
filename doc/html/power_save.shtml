@@ -139,17 +139,20 @@ Depending upon how nodes are returned to service, this value may need to
 be increased above its default value of 10 seconds.</li>
 
 <li><b>PartitionName= ... PowerDownOnIdle=[YES|NO]</b>:
-If set to <b>YES</b>, then nodes allocated from this partition will immediately
-be requested to power down upon becoming IDLE. A power down request prevents
-further scheduling to the node until it has been put into power save mode by
-<b>SuspendProgram</b>.
+If set to <b>YES</b> and power saving is enabled for the partition, then nodes
+allocated from this partition will be requested to power down after being
+allocated at least one job.
+These nodes will not power down until they transition from COMPLETING to IDLE.
+If set to <b>NO</b> then power saving will operate
+as configured for the partition.
+The default value is <b>NO</b>.</li>
 
 </ul></p>
 
 <p>Note that <i>SuspendProgram</i> and <i>ResumeProgram</i> execute as
 <i>SlurmUser</i> on the node where the <i>slurmctld</i> daemon runs
 (primary and backup server nodes).
-Use of <i>sudo</i> may be required for <i>SlurmUser</i>to power down
+Use of <i>sudo</i> may be required for <i>SlurmUser</i> to power down
 and restart nodes.
 If you need to convert Slurm's hostlist expression into individual node
 names, the <i>scontrol show hostnames</i> command may prove useful.
@@ -281,6 +284,6 @@ and perform the following actions:
 <li>Boot the appropriate image for each node</li>
 </ol>
 
-<p style="text-align:center;">Last modified 11 January 2023</p>
+<p style="text-align:center;">Last modified 03 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
