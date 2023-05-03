@@ -599,6 +599,7 @@ AC_CONFIG_FILES([Makefile
 		 src/slurmrestd/plugins/openapi/dbv0.0.38/Makefile
 		 src/slurmrestd/plugins/openapi/dbv0.0.39/Makefile
 		 src/slurmrestd/plugins/openapi/slurmctld/Makefile
+		 src/slurmrestd/plugins/openapi/slurmdbd/Makefile
 		 src/slurmrestd/plugins/openapi/v0.0.38/Makefile
 		 src/slurmrestd/plugins/openapi/v0.0.39/Makefile
 		 src/sprio/Makefile
