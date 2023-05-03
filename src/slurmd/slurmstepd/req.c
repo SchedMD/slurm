@@ -54,6 +54,7 @@
 #include "src/common/eio.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
+#include "src/common/proc_args.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/acct_gather.h"
@@ -1548,6 +1549,8 @@ _handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid)
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 	uint16_t job_core_spec = NO_VAL16;
+	char *tmp;
+	static uint32_t suspend_grace_time = NO_VAL;
 
 	safe_read(fd, &job_core_spec, sizeof(uint16_t));
 
@@ -1582,6 +1585,27 @@ _handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid)
 		if (!step->batch && switch_g_job_step_pre_suspend(step))
 			error("switch_g_job_step_pre_suspend: %m");
 
+		if (suspend_grace_time == NO_VAL) {
+			char *suspend_grace_str = "suspend_grace_time=";
+
+			/* Set default suspend_grace_time */
+			suspend_grace_time = 2;
+
+			/*
+			 * Overwrite default suspend grace time if set in
+			 * slurm_conf
+			 */
+			if ((tmp = xstrcasestr(slurm_conf.preempt_params,
+					       suspend_grace_str))) {
+				if (parse_uint32((tmp +
+						  strlen(suspend_grace_str)),
+						 &suspend_grace_time)) {
+					error("Could not parse '%s' Using default instead.",
+					      tmp);
+				}
+			}
+		}
+
 		/* SIGTSTP is sent first to let MPI daemons stop their tasks,
 		 * then wait 2 seconds, then send SIGSTOP to the spawned
 		 * process's container to stop everything else.
@@ -1595,7 +1619,7 @@ _handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid)
 			verbose("Error suspending %ps (SIGTSTP): %m",
 				&step->step_id);
 		} else
-			sleep(2);
+			sleep(suspend_grace_time);
 
 		if (proctrack_g_signal(step->cont_id, SIGSTOP) < 0) {
 			verbose("Error suspending %ps (SIGSTOP): %m",
