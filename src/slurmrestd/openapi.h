@@ -178,6 +178,17 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 				      const openapi_resp_meta_t *meta);
 
 /*
+ * Macro to make a single response dumping easy
+ */
+#define DUMP_OPENAPI_RESP_SINGLE(mtype, src, context_ptr)                    \
+do {                                                                         \
+	openapi_resp_single_t openapi_response = {                           \
+		.response = src,                                             \
+	};                                                                   \
+	DATA_DUMP(context_ptr->parser, mtype, openapi_response, ctxt->resp); \
+} while (false)
+
+/*
  * Add a response error
  * IN ctxt - connection context
  * IN why - description of error or NULL

@@ -69,14 +69,6 @@ extern void destroy_op_nodes(void);
 extern void destroy_op_partitions(void);
 extern void destroy_op_reservations(void);
 
-#define DUMP_OPENAPI_RESP_SINGLE(mtype, src, context_ptr)                    \
-do {                                                                         \
-	openapi_resp_single_t openapi_response = {                           \
-		.response = src,                                             \
-	};                                                                   \
-	DATA_DUMP(context_ptr->parser, mtype, openapi_response, ctxt->resp); \
-} while (false)
-
 /* register handler against each parser */
 extern void bind_handler(const char *str_path, openapi_ctxt_handler_t callback);
 
