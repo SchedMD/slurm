@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
     descriptions and submissions from v0.0.39 end points.
  -- accounting_storage/mysql - Query for indiviual QOS correctly when you have
     more than 10.
+ -- Add warning message about ignoring --tres-per-tasks=license when used
+    on a step.
 
 * Changes in Slurm 23.02.2
 ==========================
