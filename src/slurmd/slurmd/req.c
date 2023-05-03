@@ -42,7 +42,6 @@
 #include "config.h"
 
 #define _GNU_SOURCE	/* for setresuid() */
-#define _XOPEN_SOURCE 500 /* for ftw.h */
 
 #include <ctype.h>
 #include <fcntl.h>
