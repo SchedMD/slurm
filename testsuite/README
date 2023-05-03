@@ -1011,3 +1011,7 @@ test_137_1   /plugins/node_features/helpers/test_plugin.py
 test_138_#   Testing stressing cases.
 =====================================
 test_138_1   /stress/test_stdin_broadcast.py
+
+test_143_#   Testing --switches.
+================================
+test_143_1   Test switches with topology/tree + select/cons_tres
