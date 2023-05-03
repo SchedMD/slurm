@@ -215,6 +215,37 @@ static int _username_to_uid(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _groupname_to_gid(void *x, void *arg)
+{
+	char *group = x, *p = NULL;
+	List list = arg;
+	long num;
+	gid_t gid;
+
+	xassert(group);
+	xassert(list);
+
+	/* Already a GID? */
+	errno = 0;
+	num = strtol(group, &p, 10);
+	if (!errno && !*p && (group != p) && (num >= 0) && (num < INT_MAX)) {
+		group = xstrdup(group);
+		list_append(list, group);
+		return SLURM_SUCCESS;
+	}
+
+	/* Get the underlying GID */
+	if (gid_from_string(group, &gid)) {
+		error("Group name (%s) is not valid", group);
+		return SLURM_ERROR;
+	}
+
+	/* Store the GID */
+	group = xstrdup_printf("%u", gid);
+	list_append(list, group);
+	return SLURM_SUCCESS;
+}
+
 static int _foreach_job(void *x, void *arg)
 {
 	slurmdb_job_rec_t *job = x;
@@ -473,7 +504,7 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 
 			if (!xstrcasecmp("groups", key)) {
 				List list2 = list_create(xfree_ptr);
-				if (list_for_each_ro(*list, groupname_to_gid,
+				if (list_for_each_ro(*list, _groupname_to_gid,
 						     list2) < 0) {
 					list_destroy(list2);
 					resp_error(ctxt,

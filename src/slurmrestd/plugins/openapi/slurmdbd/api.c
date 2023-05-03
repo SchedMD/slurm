@@ -515,34 +515,3 @@ extern void slurm_openapi_p_fini(void)
 	data_parser_g_free(global_parser, false);
 	global_parser = NULL;
 }
-
-extern int groupname_to_gid(void *x, void *arg)
-{
-	char *group = x, *p = NULL;
-	List list = arg;
-	long num;
-	gid_t gid;
-
-	xassert(group);
-	xassert(list);
-
-	/* Already a GID? */
-	errno = 0;
-	num = strtol(group, &p, 10);
-	if (!errno && !*p && (group != p) && (num >= 0) && (num < INT_MAX)) {
-		group = xstrdup(group);
-		list_append(list, group);
-		return SLURM_SUCCESS;
-	}
-
-	/* Get the underlying GID */
-	if (gid_from_string(group, &gid)) {
-		error("Group name (%s) is not valid", group);
-		return SLURM_ERROR;
-	}
-
-	/* Store the GID */
-	group = xstrdup_printf("%u", gid);
-	list_append(list, group);
-	return SLURM_SUCCESS;
-}
