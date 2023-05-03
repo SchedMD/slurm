@@ -207,8 +207,9 @@ extern int op_handler_wckeys(ctxt_t *ctxt)
 
 extern void init_op_wckeys(void)
 {
-	bind_handler("/slurmdb/v0.0.39/wckeys/", op_handler_wckeys, 0);
-	bind_handler("/slurmdb/v0.0.39/wckey/{wckey}", op_handler_wckey, 0);
+	bind_handler("/slurmdb/{data_parser}/wckeys/", op_handler_wckeys, 0);
+	bind_handler("/slurmdb/{data_parser}/wckey/{wckey}", op_handler_wckey,
+		     0);
 }
 
 extern void destroy_op_wckeys(void)

@@ -27,7 +27,7 @@
   ],
   "servers": [
     {
-      "url": "/slurmdb/v0.0.39/"
+      "url": "/"
     }
   ],
   "security": [
@@ -40,7 +40,7 @@
     }
   ],
   "paths": {
-    "/job/{job_id}": {
+    "/slurmdb/{data_parser}/job/{job_id}": {
       "get": {
         "tags": [
           "slurm"
@@ -95,7 +95,7 @@
         }
       }
     },
-    "/config": {
+    "/slurmdb/{data_parser}/config": {
       "get": {
         "tags": [
           "slurm"
@@ -191,7 +191,7 @@
         }
       }
     },
-    "/tres/": {
+    "/slurmdb/{data_parser}/tres/": {
       "post": {
         "tags": [
           "slurm"
@@ -275,7 +275,7 @@
         "summary": "Get TRES info"
       }
     },
-    "/qos/{qos_name}": {
+    "/slurmdb/{data_parser}/qos/{qos_name}": {
       "delete": {
         "tags": [
           "slurm"
@@ -397,7 +397,7 @@
         ]
       }
     },
-    "/qos/": {
+    "/slurmdb/{data_parser}/qos/": {
       "get": {
         "tags": [
           "slurm"
@@ -511,7 +511,7 @@
         "summary": "Set QOS info"
       }
     },
-    "/associations/": {
+    "/slurmdb/{data_parser}/associations/": {
       "post": {
         "tags": [
           "slurm"
@@ -738,7 +738,7 @@
         "summary": "Delete associations"
       }
     },
-    "/association/": {
+    "/slurmdb/{data_parser}/association/": {
       "get": {
         "tags": [
           "slurm"
@@ -910,7 +910,7 @@
         "summary": "Delete association"
       }
     },
-    "/user/{user_name}": {
+    "/slurmdb/{data_parser}/user/{user_name}": {
       "delete": {
         "tags": [
           "slurm"
@@ -1032,7 +1032,7 @@
         ]
       }
     },
-    "/users/": {
+    "/slurmdb/{data_parser}/users/": {
       "post": {
         "tags": [
           "slurm"
@@ -1146,7 +1146,7 @@
         ]
       }
     },
-    "/cluster/{cluster_name}": {
+    "/slurmdb/{data_parser}/cluster/{cluster_name}": {
       "delete": {
         "tags": [
           "slurm"
@@ -1252,7 +1252,7 @@
         ]
       }
     },
-    "/clusters/": {
+    "/slurmdb/{data_parser}/clusters/": {
       "get": {
         "tags": [
           "slurm"
@@ -1348,7 +1348,7 @@
         }
       }
     },
-    "/wckey/{wckey}": {
+    "/slurmdb/{data_parser}/wckey/{wckey}": {
       "delete": {
         "tags": [
           "slurm"
@@ -1454,7 +1454,7 @@
         ]
       }
     },
-    "/wckeys/": {
+    "/slurmdb/{data_parser}/wckeys/": {
       "get": {
         "tags": [
           "slurm"
@@ -1550,7 +1550,7 @@
         }
       }
     },
-    "/account/{account_name}": {
+    "/slurmdb/{data_parser}/account/{account_name}": {
       "delete": {
         "tags": [
           "slurm"
@@ -1672,7 +1672,7 @@
         ]
       }
     },
-    "/accounts/": {
+    "/slurmdb/{data_parser}/accounts/": {
       "get": {
         "tags": [
           "slurm"
@@ -1786,7 +1786,7 @@
         }
       }
     },
-    "/jobs/": {
+    "/slurmdb/{data_parser}/jobs/": {
       "get": {
         "tags": [
           "slurm"
@@ -2125,7 +2125,7 @@
         "summary": "Get job list"
       }
     },
-    "/diag/": {
+    "/slurmdb/{data_parser}/diag/": {
       "get": {
         "tags": [
           "slurm"
@@ -2177,12 +2177,7 @@
           }
         },
         "summary": "Retrieve OpenAPI Specification"
-      },
-      "servers": [
-        {
-          "url": "/"
-        }
-      ]
+      }
     },
     "/openapi.json": {
       "get": {
@@ -2195,12 +2190,7 @@
           }
         },
         "summary": "Retrieve OpenAPI Specification"
-      },
-      "servers": [
-        {
-          "url": "/"
-        }
-      ]
+      }
     },
     "/openapi.yaml": {
       "get": {
@@ -2213,12 +2203,7 @@
           }
         },
         "summary": "Retrieve OpenAPI Specification"
-      },
-      "servers": [
-        {
-          "url": "/"
-        }
-      ]
+      }
     },
     "/openapi/v3": {
       "get": {
@@ -2231,12 +2216,7 @@
           }
         },
         "summary": "Retrieve OpenAPI Specification"
-      },
-      "servers": [
-        {
-          "url": "/"
-        }
-      ]
+      }
     }
   },
   "components": {

@@ -212,8 +212,9 @@ extern int op_handler_clusters(ctxt_t *ctxt)
 
 extern void init_op_cluster(void)
 {
-	bind_handler("/slurmdb/v0.0.39/clusters/", op_handler_clusters, 0);
-	bind_handler("/slurmdb/v0.0.39/cluster/{cluster_name}",
+	bind_handler("/slurmdb/{data_parser}/clusters/", op_handler_clusters,
+		     0);
+	bind_handler("/slurmdb/{data_parser}/cluster/{cluster_name}",
 		     op_handler_cluster, 0);
 }
 

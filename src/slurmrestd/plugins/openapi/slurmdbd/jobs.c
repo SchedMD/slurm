@@ -660,8 +660,8 @@ static int _op_handler_job(ctxt_t *ctxt)
 
 extern void init_op_job(void)
 {
-	bind_handler("/slurmdb/v0.0.39/jobs/", op_handler_jobs, 0);
-	bind_handler("/slurmdb/v0.0.39/job/{job_id}", _op_handler_job, 0);
+	bind_handler("/slurmdb/{data_parser}/jobs/", op_handler_jobs, 0);
+	bind_handler("/slurmdb/{data_parser}/job/{job_id}", _op_handler_job, 0);
 }
 
 extern void destroy_op_job(void)

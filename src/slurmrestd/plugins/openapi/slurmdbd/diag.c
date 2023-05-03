@@ -75,7 +75,7 @@ cleanup:
 
 extern void init_op_diag(void)
 {
-	bind_handler("/slurmdb/v0.0.39/diag/", _op_handler_diag, 0);
+	bind_handler("/slurmdb/{data_parser}/diag/", _op_handler_diag, 0);
 }
 
 extern void destroy_op_diag(void)

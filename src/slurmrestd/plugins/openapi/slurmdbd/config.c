@@ -93,7 +93,7 @@ cleanup:
 
 extern void init_op_config(void)
 {
-	bind_handler("/slurmdb/v0.0.39/config", _op_handler_config,
+	bind_handler("/slurmdb/{data_parser}/config", _op_handler_config,
 		     CONFIG_OP_TAG);
 }
 

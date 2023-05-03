@@ -314,8 +314,9 @@ cleanup:
 
 extern void init_op_qos(void)
 {
-	bind_handler("/slurmdb/v0.0.39/qos/", op_handler_qos, TAG_ALL_QOS);
-	bind_handler("/slurmdb/v0.0.39/qos/{qos_name}", op_handler_qos,
+	bind_handler("/slurmdb/{data_parser}/qos/", op_handler_qos,
+		     TAG_ALL_QOS);
+	bind_handler("/slurmdb/{data_parser}/qos/{qos_name}", op_handler_qos,
 		     TAG_SINGLE_QOS);
 }
 

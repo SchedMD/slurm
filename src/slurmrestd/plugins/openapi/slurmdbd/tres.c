@@ -123,7 +123,7 @@ extern int op_handler_tres(ctxt_t *ctxt)
 
 extern void init_op_tres(void)
 {
-	bind_handler("/slurmdb/v0.0.39/tres/", op_handler_tres, 0);
+	bind_handler("/slurmdb/{data_parser}/tres/", op_handler_tres, 0);
 }
 
 extern void destroy_op_tres(void)

@@ -503,10 +503,10 @@ extern int op_handler_associations(ctxt_t *ctxt)
 
 extern void init_op_associations(void)
 {
-	bind_handler("/slurmdb/v0.0.39/associations/", op_handler_associations,
-		     0);
-	bind_handler("/slurmdb/v0.0.39/association/", op_handler_association,
-		     0);
+	bind_handler("/slurmdb/{data_parser}/associations/",
+		     op_handler_associations, 0);
+	bind_handler("/slurmdb/{data_parser}/association/",
+		     op_handler_association, 0);
 }
 
 extern void destroy_op_associations(void)

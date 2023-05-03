@@ -462,8 +462,9 @@ extern int op_handler_accounts(ctxt_t *ctxt)
 
 extern void init_op_accounts(void)
 {
-	bind_handler("/slurmdb/v0.0.39/accounts/", op_handler_accounts, 0);
-	bind_handler("/slurmdb/v0.0.39/account/{account_name}/",
+	bind_handler("/slurmdb/{data_parser}/accounts/", op_handler_accounts,
+		     0);
+	bind_handler("/slurmdb/{data_parser}/account/{account_name}/",
 		     op_handler_account, 0);
 }
 

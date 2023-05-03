@@ -80,9 +80,6 @@ const char plugin_type[] = "openapi/slurmdbd";
 const uint32_t plugin_id = 111;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-/* parser to hold open the plugin contexts */
-static data_parser_t *global_parser = NULL;
-
 decl_static_data(openapi_json);
 
 const openapi_resp_meta_t plugin_meta = {
@@ -259,17 +256,11 @@ extern void bind_handler(const char *str_path, openapi_ctxt_handler_t callback,
 
 const data_t *slurm_openapi_p_get_specification(openapi_spec_flags_t *flags)
 {
-	static data_parser_t *parser;
 	data_t *spec = NULL;
 
-	*flags |= OAS_FLAG_MANGLE_OPID;
+	*flags |= OAS_FLAG_SET_OPID | OAS_FLAG_SET_DATA_PARSER_SPEC;
 
 	static_ref_json_to_data_t(spec, openapi_json);
-
-	parser = data_parser_g_new(NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-				   NULL, DATA_PLUGIN, NULL, false);
-	(void) data_parser_g_specify(parser, spec);
-	data_parser_g_free(parser, false);
 
 	return spec;
 }
@@ -280,10 +271,6 @@ extern void slurm_openapi_p_init(void)
 	if (!slurm_with_slurmdbd()) {
 		fatal("%s: slurm not configured with slurmdbd", __func__);
 	}
-
-	xassert(!global_parser);
-	global_parser = data_parser_g_new(NULL, NULL, NULL, NULL, NULL, NULL,
-					  NULL, NULL, DATA_PLUGIN, NULL, false);
 
 	init_op_accounts();
 	init_op_associations();
@@ -309,7 +296,4 @@ extern void slurm_openapi_p_fini(void)
 	destroy_op_tres();
 	destroy_op_users();
 	destroy_op_wckeys();
-
-	data_parser_g_free(global_parser, false);
-	global_parser = NULL;
 }

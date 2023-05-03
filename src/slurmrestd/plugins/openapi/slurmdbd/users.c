@@ -408,8 +408,9 @@ static int op_handler_user(ctxt_t *ctxt)
 
 extern void init_op_users(void)
 {
-	bind_handler("/slurmdb/v0.0.39/users/", op_handler_users, 0);
-	bind_handler("/slurmdb/v0.0.39/user/{user_name}", op_handler_user, 0);
+	bind_handler("/slurmdb/{data_parser}/users/", op_handler_users, 0);
+	bind_handler("/slurmdb/{data_parser}/user/{user_name}", op_handler_user,
+		     0);
 }
 
 extern void destroy_op_users(void)
