@@ -1006,6 +1006,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			       object, assoc->cluster, assoc_table, assoc->id, lineage, acct, acct);
 	xfree(object);
 
+	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
