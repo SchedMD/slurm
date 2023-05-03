@@ -42,6 +42,8 @@
 
 #include "gres_select_filter.h"
 
+static uint16_t *avail_cores_per_sock = NULL;
+
 static bool *_build_avail_cores_by_sock(bitstr_t *core_bitmap,
 					uint16_t sockets,
 					uint16_t cores_per_sock)
@@ -309,11 +311,10 @@ static int _sock_gres_sort(void *x, void *y)
 	return weight1 - weight2;
 }
 
-static int _sort_sockets_by_avail_cores(const void *x, const void *y,
-					void *socket_avail_cores)
+static int _sort_sockets_by_avail_cores(const void *x, const void *y)
 {
-	uint16_t *sockets = (uint16_t *)socket_avail_cores;
-	return (sockets[*(int *)y] - sockets[*(int *)x]);
+	return (avail_cores_per_sock[*(int *)y] -
+		avail_cores_per_sock[*(int *)x]);
 }
 
 /*
@@ -358,7 +359,6 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 	uint32_t task_cnt_incr;
 	bool *req_sock; /* Required socket */
 	int *socket_index; /* Socket indexes */
-	uint16_t *avail_cores_per_sock;
 	bool has_cpus_per_gres = false;
 	int removed_tasks, efctv_cpt;
 
@@ -483,8 +483,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		sufficient_gres = false;
 		for (int s = 0; s < sockets; s++)
 			socket_index[s] = s;
-		qsort_r(socket_index, sockets, sizeof(int),
-			_sort_sockets_by_avail_cores, avail_cores_per_sock);
+		qsort(socket_index, sockets, sizeof(int),
+		      _sort_sockets_by_avail_cores);
 
 		for (int j = 0; j < sockets; j++) {
 			uint64_t cnt_avail_sock, tot_gres_sock;
