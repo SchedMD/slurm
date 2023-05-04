@@ -2181,6 +2181,11 @@ extern int sort_job_queue2(void *x, void *y)
 	    (job_rec1->resv_ptr->start_time > job_rec2->resv_ptr->start_time))
 		return 1;
 
+	if (job_rec1->use_prefer && !job_rec2->use_prefer)
+		return -1;
+	else if (!job_rec1->use_prefer && job_rec2->use_prefer)
+		return 1;
+
 	return -1;
 }
 
