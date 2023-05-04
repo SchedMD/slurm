@@ -149,7 +149,6 @@ static void _init_slurm_cgroup_conf(void)
 {
 	_clear_slurm_cgroup_conf();
 
-	slurm_cgroup_conf.allowed_kmem_space = -1;
 	slurm_cgroup_conf.allowed_ram_space = 100;
 	slurm_cgroup_conf.allowed_swap_space = 0;
 	slurm_cgroup_conf.cgroup_automount = false;
@@ -162,17 +161,14 @@ static void _init_slurm_cgroup_conf(void)
 #endif
 	slurm_cgroup_conf.constrain_cores = false;
 	slurm_cgroup_conf.constrain_devices = false;
-	slurm_cgroup_conf.constrain_kmem_space = false;
 	slurm_cgroup_conf.constrain_ram_space = false;
 	slurm_cgroup_conf.constrain_swap_space = false;
 	slurm_cgroup_conf.enable_controllers = false;
 	slurm_cgroup_conf.ignore_systemd = false;
 	slurm_cgroup_conf.ignore_systemd_on_failure = false;
-	slurm_cgroup_conf.max_kmem_percent = 100;
 	slurm_cgroup_conf.max_ram_percent = 100;
 	slurm_cgroup_conf.max_swap_percent = 100;
 	slurm_cgroup_conf.memory_swappiness = NO_VAL64;
-	slurm_cgroup_conf.min_kmem_space = XCGROUP_DEFAULT_MIN_RAM;
 	slurm_cgroup_conf.min_ram_space = XCGROUP_DEFAULT_MIN_RAM;
 	slurm_cgroup_conf.root_owned_cgroups = true;
 }
@@ -201,11 +197,6 @@ static void _pack_cgroup_conf(buf_t *buffer)
 	packfloat(slurm_cgroup_conf.max_ram_percent, buffer);
 
 	pack64(slurm_cgroup_conf.min_ram_space, buffer);
-
-	packbool(slurm_cgroup_conf.constrain_kmem_space, buffer);
-	packfloat(slurm_cgroup_conf.allowed_kmem_space, buffer);
-	packfloat(slurm_cgroup_conf.max_kmem_percent, buffer);
-	pack64(slurm_cgroup_conf.min_kmem_space, buffer);
 
 	packbool(slurm_cgroup_conf.constrain_swap_space, buffer);
 	packfloat(slurm_cgroup_conf.allowed_swap_space, buffer);
@@ -251,11 +242,6 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 
 	safe_unpack64(&slurm_cgroup_conf.min_ram_space, buffer);
 
-	safe_unpackbool(&slurm_cgroup_conf.constrain_kmem_space, buffer);
-	safe_unpackfloat(&slurm_cgroup_conf.allowed_kmem_space, buffer);
-	safe_unpackfloat(&slurm_cgroup_conf.max_kmem_percent, buffer);
-	safe_unpack64(&slurm_cgroup_conf.min_kmem_space, buffer);
-
 	safe_unpackbool(&slurm_cgroup_conf.constrain_swap_space, buffer);
 	safe_unpackfloat(&slurm_cgroup_conf.allowed_swap_space, buffer);
 	safe_unpackfloat(&slurm_cgroup_conf.max_swap_percent, buffer);
@@ -294,10 +280,6 @@ static void _read_slurm_cgroup_conf(void)
 		{"MaxRAMPercent", S_P_FLOAT},
 		{"MinRAMSpace", S_P_UINT64},
 		{"ConstrainSwapSpace", S_P_BOOLEAN},
-		{"ConstrainKmemSpace", S_P_BOOLEAN},
-		{"AllowedKmemSpace", S_P_FLOAT},
-		{"MaxKmemPercent", S_P_FLOAT},
-		{"MinKmemSpace", S_P_UINT64},
 		{"AllowedSwapSpace", S_P_FLOAT},
 		{"MaxSwapPercent", S_P_FLOAT},
 		{"MemoryLimitEnforcement", S_P_BOOLEAN},
@@ -315,7 +297,6 @@ static void _read_slurm_cgroup_conf(void)
 	char *conf_path = NULL, *tmp_str;
 	struct stat buf;
 	size_t sz;
-	bool kmem_deprecate_msg = false;
 
 	/* Get the cgroup.conf path and validate the file */
 	conf_path = get_extra_conf_path("cgroup.conf");
@@ -367,36 +348,6 @@ static void _read_slurm_cgroup_conf(void)
 
 		(void) s_p_get_boolean(&slurm_cgroup_conf.constrain_swap_space,
 				       "ConstrainSwapSpace", tbl);
-
-		/*
-		 * Disable constrain_kmem_space by default because of a known
-		 * bug in Linux kernel version 3, early versions of kernel
-		 * version 4, and RedHat/CentOS 6 and 7, which leaks slab
-		 * caches, eventually causing the machine to be unable to create
-		 * new cgroups.
-		 *
-		 * kmem.limit_in_bytes is deprecated in the linux kernel
-		 * and is not used in cgroup v2, so we are deprecating
-		 * ConstrainKmemSpace and related parameters.
-		 */
-		if (s_p_get_boolean(&slurm_cgroup_conf.constrain_kmem_space,
-				    "ConstrainKmemSpace", tbl))
-			kmem_deprecate_msg = true;
-
-		if (s_p_get_float(&slurm_cgroup_conf.allowed_kmem_space,
-				  "AllowedKmemSpace", tbl))
-			kmem_deprecate_msg = true;
-
-		if (s_p_get_float(&slurm_cgroup_conf.max_kmem_percent,
-				  "MaxKmemPercent", tbl))
-			kmem_deprecate_msg = true;
-
-		if (s_p_get_uint64(&slurm_cgroup_conf.min_kmem_space,
-				   "MinKmemSpace", tbl))
-			kmem_deprecate_msg = true;
-
-		if (kmem_deprecate_msg && running_in_daemon())
-			error("AllowedKmemSpace, ConstrainKmemSpace, MaxKmemPercent, and MinKmemSpace are deprecated, and will be removed in a future release");
 
 		(void) s_p_get_float(&slurm_cgroup_conf.allowed_swap_space,
 				     "AllowedSwapSpace", tbl);
@@ -579,7 +530,6 @@ extern void cgroup_init_limits(cgroup_limits_t *limits)
 	limits->device.minor = NO_VAL;
 	limits->limit_in_bytes = NO_VAL64;
 	limits->soft_limit_in_bytes = NO_VAL64;
-	limits->kmem_limit_in_bytes = NO_VAL64;
 	limits->memsw_limit_in_bytes = NO_VAL64;
 	limits->swappiness = NO_VAL64;
 }
@@ -645,30 +595,6 @@ extern List cgroup_get_conf_list(void)
 	key_pair->name = xstrdup("ConstrainSwapSpace");
 	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_swap_space ?
 					 "yes" : "no");
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("ConstrainKmemSpace");
-	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_kmem_space ?
-					 "yes" : "no");
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("AllowedKmemSpace");
-	if (cg_conf->allowed_kmem_space >= 0)
-		key_pair->value = xstrdup_printf("%.0f Bytes",
-						 cg_conf->allowed_kmem_space);
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("MaxKmemPercent");
-	key_pair->value = xstrdup_printf("%.1f%%", cg_conf->max_kmem_percent);
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("MinKmemSpace");
-	key_pair->value = xstrdup_printf("%"PRIu64" MB",
-					 cg_conf->min_kmem_space);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

@@ -45,20 +45,15 @@
 #include "task_cgroup.h"
 
 static bool constrain_ram_space;
-static bool constrain_kmem_space;
 static bool constrain_swap_space;
 
 static float allowed_ram_space;   /* Allowed RAM in percent */
 static float allowed_swap_space;  /* Allowed Swap percent */
-static float allowed_kmem_space;  /* Allowed Kmem number */
-static float max_kmem_percent;	   /* Allowed Kernel memory percent*/
 
-static uint64_t max_kmem;       /* Upper bound for kmem.limit_in_bytes */
 static uint64_t max_ram;        /* Upper bound for memory.limit_in_bytes */
 static uint64_t max_swap;       /* Upper bound for swap */
 static uint64_t totalram;       /* Total RealMemory of node from slurm.conf */
 static uint64_t min_ram_space;  /* Don't constrain RAM below this value */
-static uint64_t min_kmem_space; /* Don't constrain Kernel mem below */
 
 static bool oom_mgr_started = false;
 
@@ -72,7 +67,6 @@ extern int task_cgroup_memory_init(void)
 	if (cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	constrain_kmem_space = slurm_cgroup_conf.constrain_kmem_space;
 	constrain_ram_space = slurm_cgroup_conf.constrain_ram_space;
 	constrain_swap_space = slurm_cgroup_conf.constrain_swap_space;
 
@@ -88,27 +82,21 @@ extern int task_cgroup_memory_init(void)
 	else
 		allowed_ram_space = 100.0;
 
-	allowed_kmem_space = slurm_cgroup_conf.allowed_kmem_space;
 	allowed_swap_space = slurm_cgroup_conf.allowed_swap_space;
 
 	if ((totalram = (uint64_t) conf->conf_memory_size) == 0)
 		error ("Unable to get RealMemory size");
 
-	max_kmem = percent_in_bytes(totalram,
-				    slurm_cgroup_conf.max_kmem_percent);
 	max_ram = percent_in_bytes(totalram,
 				   slurm_cgroup_conf.max_ram_percent);
 	max_swap = percent_in_bytes(totalram,
 				    slurm_cgroup_conf.max_swap_percent);
 	max_swap += max_ram;
 	min_ram_space = slurm_cgroup_conf.min_ram_space * 1024 * 1024;
-	max_kmem_percent = slurm_cgroup_conf.max_kmem_percent;
-	min_kmem_space = slurm_cgroup_conf.min_kmem_space * 1024 * 1024;
 
 	debug("task/cgroup/memory: TotCfgRealMem:%"PRIu64"M allowed:%.4g%%(%s), "
 	      "swap:%.4g%%(%s), max:%.4g%%(%"PRIu64"M) "
-	      "max+swap:%.4g%%(%"PRIu64"M) min:%"PRIu64"M "
-	      "kmem:%.4g%%(%"PRIu64"M %s) min:%"PRIu64"M ",
+	      "max+swap:%.4g%%(%"PRIu64"M) min:%"PRIu64"M ",
 	      totalram, allowed_ram_space,
 	      constrain_ram_space ? "enforced" : "permissive",
 	      allowed_swap_space,
@@ -117,11 +105,7 @@ extern int task_cgroup_memory_init(void)
 	      (uint64_t) (max_ram / (1024 * 1024)),
 	      slurm_cgroup_conf.max_swap_percent,
 	      (uint64_t) (max_swap / (1024 * 1024)),
-	      slurm_cgroup_conf.min_ram_space,
-	      slurm_cgroup_conf.max_kmem_percent,
-	      (uint64_t) (max_kmem / (1024 * 1024)),
-	      constrain_kmem_space ? "enforced" : "permissive",
-	      slurm_cgroup_conf.min_kmem_space);
+	      slurm_cgroup_conf.min_ram_space);
 
         /*
          *  Warning: OOM Killer must be disabled for slurmstepd
@@ -194,31 +178,6 @@ static uint64_t swap_limit_in_bytes(uint64_t mem)
 	return mem;
 }
 
-/*
- * Return kmem memory limit in bytes given a memory limit in bytes.
- * If Kmem space is disabled, it set to max percent of its RAM usage.
- */
-static uint64_t kmem_limit_in_bytes(uint64_t mlb)
-{
-	uint64_t totalKmem = mlb * (max_kmem_percent / 100.0);
-
-	if (allowed_kmem_space < 0) {	/* Initial value */
-		if (mlb > totalKmem)
-			return totalKmem;
-		if (mlb < min_kmem_space)
-			return min_kmem_space;
-		return mlb;
-	}
-
-	if (allowed_kmem_space > totalKmem)
-		return totalKmem;
-
-	if (allowed_kmem_space < min_kmem_space)
-		return min_kmem_space;
-
-	return allowed_kmem_space;
-}
-
 static int _memcg_initialize(stepd_step_rec_t *step, uint64_t mem_limit,
 			     bool is_step)
 {
@@ -249,12 +208,8 @@ static int _memcg_initialize(stepd_step_rec_t *step, uint64_t mem_limit,
 
 	limits.limit_in_bytes = mlb;
 	limits.soft_limit_in_bytes = mlb_soft;
-	limits.kmem_limit_in_bytes = NO_VAL64;
 	limits.memsw_limit_in_bytes = NO_VAL64;
 	limits.swappiness = NO_VAL64;
-
-	if (constrain_kmem_space)
-		limits.kmem_limit_in_bytes = kmem_limit_in_bytes(mlb);
 
 	/* This limit has to be set only if ConstrainSwapSpace is set to yes. */
 	if (constrain_swap_space) {

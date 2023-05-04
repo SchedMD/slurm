@@ -356,10 +356,6 @@ in <i>cgroup/v1</i> provides metrics in USER_HZ.
 <td>cpu.stat</td>
 </tr>
 <tr>
-<td>memory.kmem*</td>
-<td>none</td>
-</tr>
-<tr>
 <td>device.*</td>
 <td>ebpf program</td>
 </tr>

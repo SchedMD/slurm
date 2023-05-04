@@ -1002,14 +1002,6 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 			    != SLURM_SUCCESS)
 				rc = SLURM_ERROR;
 
-			if (limits->kmem_limit_in_bytes != NO_VAL64)
-				if (common_cgroup_set_uint64_param(
-					    &int_cg[sub][level],
-					    "memory.kmem.limit_in_bytes",
-					    limits->kmem_limit_in_bytes)
-				    != SLURM_SUCCESS)
-					rc = SLURM_ERROR;
-
 			if (limits->memsw_limit_in_bytes != NO_VAL64)
 				if (common_cgroup_set_uint64_param(
 					    &int_cg[sub][level],

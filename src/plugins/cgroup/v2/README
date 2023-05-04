@@ -3,7 +3,6 @@ INTERFACE DIFFERENCES BETWEEN V1 and V2
 
 Old Interface			Need to work with
 '''''''''''''			''''''''''''''''''''''
-memory.kmem*			none
 memory.limit_in_bytes		memory.max
 memory.soft_limit_in_bytes	memory.high
 memory.memsw_limit_in_bytes 	memory.swap.max

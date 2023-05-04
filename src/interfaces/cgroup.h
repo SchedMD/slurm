@@ -138,7 +138,6 @@ typedef struct {
 	/* jobacct memory */
 	uint64_t limit_in_bytes;
 	uint64_t soft_limit_in_bytes;
-	uint64_t kmem_limit_in_bytes;
 	uint64_t memsw_limit_in_bytes;
 	uint64_t swappiness;
 } cgroup_limits_t;
@@ -173,11 +172,6 @@ typedef struct {
 	float max_ram_percent;		/* Upper bound on memory as % of RAM */
 
 	uint64_t min_ram_space;		/* Lower bound on memory limit (MB) */
-
-	bool constrain_kmem_space;
-	float allowed_kmem_space;
-	float max_kmem_percent;
-	uint64_t min_kmem_space;
 
 	bool constrain_swap_space;
 	float allowed_swap_space;

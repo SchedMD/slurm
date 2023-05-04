@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- Fixed typo on "initialized" for the description of ESLURM_PLUGIN_NOT_LOADED.
  -- Added max_submit_line_size to SchedulerParameters.
  -- Change TreeWidth default from 50 to 16.
+ -- cgroup.conf - Removed deprecated parameters AllowedKmemSpace,
+    ConstrainKmemSpace, MaxKmemPercent, and MinKmemSpace.
 
 * Changes in Slurm 23.02.3
 ==========================
