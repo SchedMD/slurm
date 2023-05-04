@@ -17,6 +17,9 @@ documents those changes that are of interest to users and administrators.
  -- Added max_submit_line_size to SchedulerParameters.
  -- Change TreeWidth default from 50 to 16.
 
+* Changes in Slurm 23.02.3
+==========================
+
 * Changes in Slurm 23.02.2
 ==========================
  -- Fix regression introduced with the migration to interfaces which caused
