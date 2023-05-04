@@ -71,6 +71,7 @@ typedef enum {
 	DATA_PARSER_ADMIN_LVL, /* uint16_t (placeholder for slurmdb_admin_level_t) */
 	DATA_PARSER_ASSOC_ID, /* slurmdb_assoc_usage_t */
 	DATA_PARSER_ASSOC_LIST, /* list of slurmdb_assoc_rec_t* */
+	DATA_PARSER_OPENAPI_ASSOCS_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_ASSOC_SHORT_LIST, /* list of slurmdb_assoc_rec_t* only for id */
 	DATA_PARSER_ASSOC_SHORT, /* slurmdb_assoc_rec_t (for id only) */
 	DATA_PARSER_ASSOC_SHORT_PTR, /* slurmdb_assoc_rec_t* (for id only) */
@@ -78,6 +79,7 @@ typedef enum {
 	DATA_PARSER_ASSOC_FLAGS, /* slurmdb_assoc_rec_t->flags & ASSOC_FLAG_* */
 	DATA_PARSER_ASSOC_USAGE, /* slurmdb_assoc_usage_t */
 	DATA_PARSER_ASSOC_USAGE_PTR, /* slurmdb_assoc_usage_t* */
+	DATA_PARSER_OPENAPI_ASSOCS_REMOVED_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_CLASSIFICATION_TYPE, /* slurmdb_classification_type_t */
 	DATA_PARSER_CLUSTER_ACCT_REC_LIST, /* list of slurmdb_cluster_accounting_rec_t* */
 	DATA_PARSER_CLUSTER_ACCT_REC, /* slurmdb_cluster_accounting_rec_t */

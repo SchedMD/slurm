@@ -56,12 +56,6 @@ typedef struct {
 	char *parameter;
 } assoc_parameter_t;
 
-typedef struct {
-	int magic; /* FOREACH_ASSOC_MAGIC */
-	ctxt_t *ctxt;
-	data_t *dassocs;
-} foreach_assoc_t;
-
 static const assoc_parameter_t assoc_parameters[] = {
 	{
 		offsetof(slurmdb_assoc_cond_t, partition_list),
@@ -111,52 +105,13 @@ static int _populate_assoc_cond(ctxt_t *ctxt, slurmdb_assoc_cond_t *assoc_cond)
 	return SLURM_SUCCESS;
 }
 
-static int _foreach_delete_assoc(void *x, void *arg)
-{
-	char *assoc = x;
-	data_t *assocs = arg;
-
-	data_set_string(data_list_append(assocs), assoc);
-
-	return DATA_FOR_EACH_CONT;
-}
-
-static int _foreach_assoc(void *x, void *arg)
-{
-	int rc;
-	slurmdb_assoc_rec_t *assoc = x;
-	foreach_assoc_t *args = arg;
-
-	xassert(args->magic == FOREACH_ASSOC_MAGIC);
-
-	if ((rc = DATA_DUMP(args->ctxt->parser, ASSOC, *assoc,
-			    data_list_append(args->dassocs)))) {
-		resp_error(args->ctxt, rc, __func__,
-			   "Unable to dump association id#%u account=%s cluster=%s partition=%s user=%s",
-			   assoc->id, assoc->acct, assoc->cluster,
-			   assoc->partition, assoc->user);
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
-}
-
 static void _dump_assoc_cond(ctxt_t *ctxt, slurmdb_assoc_cond_t *cond,
 			     bool only_one)
 {
 	List assoc_list = NULL;
-	foreach_assoc_t args = {
-		.magic = FOREACH_ASSOC_MAGIC,
-		.ctxt = ctxt,
-	};
-
-	xassert(!data_key_get(ctxt->resp, "associations"));
 
 	if (db_query_list(ctxt, &assoc_list, slurmdb_associations_get, cond))
 		goto cleanup;
-
-	xassert(!data_key_get(ctxt->resp, "associations"));
-	args.dassocs = data_set_list(data_key_set(ctxt->resp, "associations"));
 
 	if (only_one && (list_count(assoc_list) > 1)) {
 		resp_error(ctxt, ESLURM_DATA_AMBIGUOUS_QUERY, __func__,
@@ -165,7 +120,7 @@ static void _dump_assoc_cond(ctxt_t *ctxt, slurmdb_assoc_cond_t *cond,
 	}
 
 	if (assoc_list)
-		list_for_each(assoc_list, _foreach_assoc, &args);
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_ASSOCS_RESP, assoc_list, ctxt);
 
 cleanup:
 	FREE_NULL_LIST(assoc_list);
@@ -176,8 +131,6 @@ static void _delete_assoc(ctxt_t *ctxt, slurmdb_assoc_cond_t *assoc_cond,
 {
 	int rc = SLURM_SUCCESS;
 	List removed = NULL;
-	data_t *drem =
-		data_set_list(data_key_set(ctxt->resp, "removed_associations"));
 
 	rc = db_query_list(ctxt, &removed, slurmdb_associations_remove,
 			   assoc_cond);
@@ -185,11 +138,10 @@ static void _delete_assoc(ctxt_t *ctxt, slurmdb_assoc_cond_t *assoc_cond,
 		resp_error(ctxt, rc, __func__, "remove associations failed");
 	} else if (only_one && list_count(removed) > 1) {
 		resp_error(ctxt, ESLURM_DATA_AMBIGUOUS_MODIFY, __func__,
-				"ambiguous request: More than 1 association would have been deleted.");
-	} else if (list_for_each(removed, _foreach_delete_assoc, drem) < 0) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "unable to list deleted associations");
+			"ambiguous request: More than 1 association would have been deleted.");
 	} else if (!rc) {
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_ASSOCS_REMOVED_RESP, removed,
+					 ctxt);
 		db_query_commit(ctxt);
 	}
 
