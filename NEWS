@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 22.05.10
+===========================
+
 * Changes in Slurm 22.05.9
 ==========================
  -- Allocate correct number of sockets when requesting gres and running with
