@@ -80,9 +80,9 @@ the <b>slurmctld</b> daemon code (the <b>select</b> plugin is not used for job
 steps). If the request can not be immediately satisfied due to a request for
 exclusive access to resources, the appropriate error message will be sent and
 the <b>srun</b> command will retry the request on a periodic basis.
-(NOTE: It would be desirable to queue the job step requests to support job step 
-dependencies and better performance in the initiation of job steps, but that 
-is not currently supported.)
+(<b>NOTE</b>: It would be desirable to queue the job step requests to support
+job step dependencies and better performance in the initiation of job steps,
+but that is not currently supported.)
 If the request can be satisfied, the response contains a digitally signed
 credential (by the <b>cred</b> plugin) identifying the resources to be used.</p>
 

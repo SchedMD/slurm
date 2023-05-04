@@ -260,8 +260,8 @@ JobStep=1234.1 CUDA_VISIBLE_DEVICES=2
 JobStep=1234.2 CUDA_VISIBLE_DEVICES=3
 </PRE>
 
-<P>NOTE: Be sure to specify the <I>File</I> parameters in the <I>gres.conf</I>
-file and ensure they are in the increasing numeric order.</P>
+<p><b>NOTE</b>: Be sure to specify the <I>File</I> parameters in the
+<I>gres.conf</I> file and ensure they are in the increasing numeric order.</p>
 
 <p>The <code class="commandline">CUDA_VISIBLE_DEVICES</code>
 environment variable will also be set in the job's Prolog and Epilog programs.
@@ -385,7 +385,7 @@ Name=mps Count=1100   File=/dev/nvidia2
 Name=mps Count=1000   File=/dev/nvidia3
 </PRE>
 
-<p><b>NOTE:</b> <i>gres/mps</i> requires the use of the <i>select/cons_tres</i>
+<p><b>NOTE</b>: <i>gres/mps</i> requires the use of the <i>select/cons_tres</i>
 plugin.</p>
 
 <p>Job requests for MPS will be processed the same as any other GRES except
@@ -600,7 +600,7 @@ Name=shard Count=8    File=/dev/nvidia2
 Name=shard Count=8    File=/dev/nvidia3
 </PRE>
 
-<p><b>NOTE:</b> <i>gres/shard</i> requires the use of the <i>select/cons_tres</i>
+<p><b>NOTE</b>: <i>gres/shard</i> requires the use of the <i>select/cons_tres</i>
 plugin.</p>
 
 <p>Job requests for shards can not specify a GPU frequency.</p>

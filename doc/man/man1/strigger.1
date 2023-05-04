@@ -34,7 +34,7 @@ interval to ensure that no trigger events are missed OR the trigger must be
 created with an argument of "\-\-flags=PERM".
 If desired, multiple trigger programs can be set for the same event.
 
-\fBIMPORTANT NOTE:\fR This command can only set triggers if run by the
+\fBNOTE\fR: This command can only set triggers if run by the
 user \fISlurmUser\fR unless \fISlurmUser\fR is configured as user root.
 This is required for the \fIslurmctld\fR daemon to set the appropriate
 user and group IDs for the executed program.
@@ -258,7 +258,7 @@ when a node state changes.
 .TP
 \fB\-\-set\fP
 Register an event trigger based upon the supplied options.
-NOTE: An event is only triggered once. A new event trigger
+\fBNOTE\fR: An event is only triggered once. A new event trigger
 must be set established for future events of the same type
 to be processed.
 Triggers can only be set if the command is run by the user

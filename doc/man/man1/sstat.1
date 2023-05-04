@@ -39,8 +39,8 @@ Print all steps for the given job(s) when no step is specified.
 Comma separated list of fields.
 (use '\-\-helpformat' for a list of available fields).
 
-NOTE: When using the format option for listing various fields you can put a
-%NUMBER afterwards to specify how many characters should be printed.
+\fBNOTE\fR: When using the format option for listing various fields you can put
+a %NUMBER afterwards to specify how many characters should be printed.
 
 i.e. format=name%30 will print 30 characters of field name right
 justified.  A \-30 will print 30 characters left justified.
@@ -63,8 +63,9 @@ job steps. This option is required.  The step portion will default to
 the lowest numbered (not batch, extern, etc) step running if not specified,
 unless the \-\-allsteps flag is set where not specifying a step will result in
 all running steps to be displayed.
-NOTE: A step id of 'batch' will display the information about the batch step.
-NOTE: A step id of 'extern' will display the information about the
+\fBNOTE\fR: A step id of 'batch' will display the information about the batch
+step.
+\fBNOTE\fR: A step id of 'extern' will display the information about the
 extern step.  This step is only available when using PrologFlags=contain
 .IP
 
@@ -271,15 +272,15 @@ Requested CPU frequency for the step, in kHz.
 .TP
 \f3TresUsageInAve\fP
 Tres average usage in by all tasks in job.
-NOTE: If corresponding TresUsageInMaxTask is \-1 the metric is node centric
-instead of task.
+\fBNOTE\fR: If corresponding TresUsageInMaxTask is \-1 the metric is node
+centric instead of task.
 .IP
 
 .TP
 \f3TresUsageInMax\fP
 Tres maximum usage in by all tasks in job.
-NOTE: If corresponding TresUsageInMaxTask is \-1 the metric is node centric
-instead of task.
+\fBNOTE\fR: If corresponding TresUsageInMaxTask is \-1 the metric is node
+centric instead of task.
 .IP
 
 .TP
@@ -295,15 +296,15 @@ Task for which each maximum TRES usage out occurred.
 .TP
 \f3TresUsageOutAve\fP
 Tres average usage out by all tasks in job.
-NOTE: If corresponding TresUsageOutMaxTask is \-1 the metric is node centric
-instead of task.
+\fBNOTE\fR: If corresponding TresUsageOutMaxTask is \-1 the metric is node
+centric instead of task.
 .IP
 
 .TP
 \f3TresUsageOutMax\fP
 Tres maximum usage out by all tasks in job.
-NOTE: If corresponding TresUsageOutMaxTask is \-1 the metric is node centric
-instead of task.
+\fBNOTE\fR: If corresponding TresUsageOutMaxTask is \-1 the metric is node
+centric instead of task.
 .IP
 
 .TP

@@ -466,7 +466,7 @@ allocations.
 \fB\-\-cpu\-bind\fR=[{quiet|verbose},]<\fItype\fR>
 Bind tasks to CPUs.
 Used only when the task/affinity plugin is enabled.
-NOTE: To have Slurm always report on the selected CPU binding for all
+\fBNOTE\fR: To have Slurm always report on the selected CPU binding for all
 commands executed in a shell, you can enable verbose mode by setting
 the SLURM_CPU_BIND environment variable value to "verbose".
 
@@ -1171,9 +1171,9 @@ design to support gang scheduling, because suspended jobs still reside in
 memory. To request all the memory on a node, use \fB\-\-mem=0\fR.
 The default shared/exclusive behavior depends on system configuration and the
 partition's \fBOverSubscribe\fR option takes precedence over the job's option.
-NOTE: Since shared GRES (MPS) cannot be allocated at the same time as a sharing
-GRES (GPU) this option only allocates all sharing GRES and no underlying shared
-GRES.
+\fBNOTE\fR: Since shared GRES (MPS) cannot be allocated at the same time as a
+sharing GRES (GPU) this option only allocates all sharing GRES and no underlying
+shared GRES.
 
 This option can also be used when initiating more than one job step within
 an existing resource allocation (default), where you want separate processors to
@@ -1489,9 +1489,9 @@ A list of available generic consumable resources will be printed and the
 command will exit if the option argument is "help".
 Examples of use include "\-\-gres=gpu:2", "\-\-gres=gpu:kepler:2", and
 "\-\-gres=help".
-NOTE: This option applies to job and step allocations. By default, a job step
-is allocated all of the generic resources that have been requested by the job,
-except those implicitly requested when a job is exclusive.
+\fBNOTE\fR: This option applies to job and step allocations. By default, a job
+step is allocated all of the generic resources that have been requested by the
+job, except those implicitly requested when a job is exclusive.
 To change the behavior so that each job step is allocated no generic resources,
 explicitly set the value of \-\-gres to specify zero counts for each generic
 resource OR set "\-\-gres=none" OR set the SLURM_STEP_GRES environment variable
@@ -1628,7 +1628,7 @@ a terminal is not possible. This option applies to job and step allocations.
 \fB\-J\fR, \fB\-\-job\-name\fR=<\fIjobname\fR>
 Specify a name for the job. The specified name will appear along with
 the job id number when querying running jobs on the system. The default
-is the supplied \fBexecutable\fR program's name. NOTE: This information
+is the supplied \fBexecutable\fR program's name. \fBNOTE\fR: This information
 may be written to the slurm_jobacct.log file. This file is space delimited
 so if a space is used in the \fIjobname\fR name it will cause problems in
 properly displaying the contents of the slurm_jobacct.log file when the
@@ -1729,14 +1729,14 @@ options are mutually exclusive. If \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR or
 take precedence over the environment (potentially inherited from \fBsalloc\fR
 or \fBsbatch\fR).
 
-NOTE: A memory size specification of zero is treated as a special case and
+\fBNOTE\fR: A memory size specification of zero is treated as a special case and
 grants the job access to all of the memory on each node for newly submitted jobs
 and all available job memory to new job steps.
 
-NOTE: Enforcement of memory limits currently relies upon the task/cgroup plugin
-or enabling of accounting, which samples memory use on a periodic basis (data
-need not be stored, just collected). In both cases memory use is based upon
-the job's Resident Set Size (RSS). A task may exceed the memory limit until
+\fBNOTE\fR: Enforcement of memory limits currently relies upon the task/cgroup
+plugin or enabling of accounting, which samples memory use on a periodic basis
+(data need not be stored, just collected). In both cases memory use is based
+upon the job's Resident Set Size (RSS). A task may exceed the memory limit until
 the next periodic accounting sample.
 
 This option applies to job and step allocations.
@@ -1759,7 +1759,7 @@ If you want greater control, try running a simple test code with the
 options "\-\-cpu\-bind=verbose,none \-\-mem\-bind=verbose,none" to determine
 the specific configuration.
 
-NOTE: To have Slurm always report on the selected memory binding for
+\fBNOTE\fR: To have Slurm always report on the selected memory binding for
 all commands executed in a shell, you can enable verbose mode by
 setting the SLURM_MEM_BIND environment variable value to "verbose".
 
@@ -1898,7 +1898,7 @@ Also see \fB\-\-mem\fR and \fB\-\-mem\-per\-gpu\fR.
 The \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR and \fB\-\-mem\-per\-gpu\fR
 options are mutually exclusive.
 
-NOTE: If the final amount of memory requested by a job
+\fBNOTE\fR: If the final amount of memory requested by a job
 can't be satisfied by any of the nodes configured in the
 partition, the job will be rejected.
 This could happen if \fB\-\-mem\-per\-cpu\fR is used with the
@@ -2431,7 +2431,7 @@ one task per CPU.
 Normally, \fBsrun\fR will not allocate more than one process per CPU.
 By specifying \fB\-\-overcommit\fR you are explicitly allowing more than one
 process per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are
-permitted to execute per node.  NOTE: \fBMAX_TASKS_PER_NODE\fR is
+permitted to execute per node.  \fBNOTE\fR: \fBMAX_TASKS_PER_NODE\fR is
 defined in the file \fIslurm.h\fR and is not a variable, it is set at
 Slurm build time.
 .IP
@@ -2887,7 +2887,7 @@ Restrict node selection to nodes with at least the specified number of
 threads per core. In task layout, use the specified maximum number of threads
 per core. Implies \fB\-\-cpu\-bind=threads\fR unless
 overridden by command line or environment options.
-NOTE: "Threads" refers to the
+\fBNOTE\fR: "Threads" refers to the
 number of processing units on each core rather than the number of application
 tasks to be launched per core. See additional information under \fB\-B\fR
 option above when task/affinity plugin is enabled. This option applies to job

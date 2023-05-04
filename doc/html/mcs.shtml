@@ -43,7 +43,7 @@ on the loaded plugin.</li><br>
 <li><b>mcs/none</b> is the default and disables MCS labels and functionality.
 </li><br>
 <li><b>mcs/account</b> MCS labels can only take a value equal to the job's
---account. NOTE: this option requires enabling of accounting.
+--account. <b>NOTE</b>: this option requires enabling of accounting.
 </li><br>
 <li><b>mcs/group</b> MCS labels can only take a value equal to the job's user
 group.

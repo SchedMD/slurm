@@ -36,8 +36,8 @@ Slurm daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
 
 .LP
-\fBNOTE:\fP Slurm support for gres/[mps|shard] requires the use of the select/cons_tres
-plugin. For more information on how to configure MPS, see
+\fBNOTE\fR: Slurm support for gres/[mps|shard] requires the use of the
+select/cons_tres plugin. For more information on how to configure MPS, see
 \fIhttps://slurm.schedmd.com/gres.html#MPS_Management\fR.
 For more information on how to configure Sharding, see
 \fIhttps://slurm.schedmd.com/gres.html#Sharding\fR.
@@ -179,19 +179,19 @@ simultaneously share that GPU.
 If using a card with Multi-Instance GPU functionality, use \fBMultipleFiles\fR
 instead. \fBFile\fR and \fBMultipleFiles\fR are mutually exclusive.
 
-NOTE: \fBFile\fR is required for all \fIgpu\fR typed GRES.
+\fBNOTE\fR: \fBFile\fR is required for all \fIgpu\fR typed GRES.
 
-NOTE: If you specify the \fBFile\fR parameter for a resource on some node,
+\fBNOTE\fR: If you specify the \fBFile\fR parameter for a resource on some node,
 the option must be specified on all nodes and Slurm will track the assignment
 of each specific resource on each node. Otherwise Slurm will only track a
 count of allocated resources rather than the state of each individual device
 file.
 
-NOTE: Drain a node before changing the count of records with \fBFile\fR
+\fBNOTE\fR: Drain a node before changing the count of records with \fBFile\fR
 parameters (e.g. if you want to add or remove GPUs from a node's configuration).
 Failure to do so will result in any job using those GRES being aborted.
 
-NOTE: When specifying \fBFile\fR, \fBCount\fR is limited in size
+\fBNOTE\fR: When specifying \fBFile\fR, \fBCount\fR is limited in size
 (currently 1024) for each node.
 .IP
 
@@ -223,8 +223,8 @@ To be used on a shared gres. If using a shared gres (mps) on top of a sharing
 gres (gpu) only allow one of the sharing gres to be used by the shared gres.
 This is the default for MPS.
 
-NOTE: If a gres has this flag configured it is global, so all other nodes with
-that gres will have this flag implied.  This flag is not compatible with
+\fBNOTE\fR: If a gres has this flag configured it is global, so all other nodes
+with that gres will have this flag implied.  This flag is not compatible with
 all_sharing for a specific gres.
 .IP
 
@@ -233,8 +233,8 @@ all_sharing for a specific gres.
 To be used on a shared gres. This is the opposite of one_sharing and can be
 used to allow all sharing gres (gpu) on a node to be used for shared gres (mps).
 
-NOTE: If a gres has this flag configured it is global, so all other nodes with
-that gres will have this flag implied.  This flag is not compatible with
+\fBNOTE\fR: If a gres has this flag configured it is global, so all other nodes
+with that gres will have this flag implied.  This flag is not compatible with
 one_sharing for a specific gres.
 .IP
 

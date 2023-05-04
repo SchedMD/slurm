@@ -161,8 +161,8 @@ default_queue_depth is 100 (jobs), which should be fine in most cases.</li>
 <li>The <i>sched/backfill</i> plugin has relatively high overhead if used with
 large numbers of job. Configuring <b>bf_max_job_test</b> to a modest size (say 100
 jobs or less) and <b>bf_interval</b> to 30 seconds or more will limit the
-overhead of backfill scheduling (NOTE: the default values are fine for both
-of these parameters). Other backfill options available for tuning backfill 
+overhead of backfill scheduling (<b>NOTE</b>: the default values are fine for
+both of these parameters). Other backfill options available for tuning backfill
 scheduling include <b>bf_max_job_user</b>, <b>bf_resolution</b> and
 <b>bf_window</b>. See the slurm.conf man page for details.</li>
 <li>A set of scheduling parameters currently used for running hundreds of jobs

@@ -269,7 +269,7 @@ the accounting plugin, which periodically gathers data about running jobs. Set
 <CODE>JobAcctGather</CODE> and <CODE>JobAcctFrequency</CODE> to
 values suitable for your system.</P>
 <P>
-<B>NOTE:</B> The <CODE>--oversubscribe</CODE> and <CODE>--exclusive</CODE>
+<B>NOTE</B>: The <CODE>--oversubscribe</CODE> and <CODE>--exclusive</CODE>
 options are mutually exclusive when used at job submission. If both options are
 set when submitting a job, the job submission command used will fatal.
 </P>

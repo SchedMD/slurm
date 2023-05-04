@@ -98,7 +98,7 @@ each association in the database.  By setting this option, the
 </li>
 </ul>
 
-<p>NOTE: The association is a combination of cluster, account,
+<p><b>NOTE</b>: The association is a combination of cluster, account,
 user names and optional partition name.
 <br>
 Without AccountingStorageEnforce being set (the default behavior)
@@ -300,7 +300,7 @@ sacctmgr</a> man page.</p>
 </dd>
 </dl>
 
-<p><b>NOTE:</b> When modifying a TRES field with <i>sacctmgr</i>, one must
+<p><b>NOTE</b>: When modifying a TRES field with <i>sacctmgr</i>, one must
 specify which TRES to modify (see <a href="tres.html">TRES</a> for complete
 list) as in the following examples: </p>
 <pre>
