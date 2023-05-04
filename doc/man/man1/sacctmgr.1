@@ -189,7 +189,7 @@ Display the version number of sacctmgr.
 
 .SH "INTERACTIVE COMMANDS"
 
-\fBNOTE:\fP
+\fBNOTE\fR:
 All commands listed below can be used in the interactive mode, but \fINOT\fP
 on the initial command line.
 
@@ -410,7 +410,7 @@ this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new
 value of \-1 for each TRES id.
 
-NOTE: This limit only applies fully when using the Select Consumable
+\fBNOTE\fR: This limit only applies fully when using the Select Consumable
 Resource plugin.
 .IP
 
@@ -421,11 +421,11 @@ present and future jobs running from this association and its children.
 To clear a previously set value use the modify command with a new
 value of \-1 for each TRES id.
 
-NOTE: This limit is not enforced if set on the root
+\fBNOTE\fR: This limit is not enforced if set on the root
 association of a cluster.  So even though it may appear in sacctmgr
 output, it will not be enforced.
 
-ALSO NOTE: This limit only applies when using the Priority Multifactor
+\fBNOTE\fR: This limit only applies when using the Priority Multifactor
 plugin.  The time is decayed using the value of PriorityDecayHalfLife
 or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
 is reached all associated jobs running will be killed and all future
@@ -448,11 +448,11 @@ Maximum wall clock time running jobs are able to be allocated in aggregate for
 this association and all associations which are children of this association.
 To clear a previously set value use the modify command with a new value of \-1.
 
-NOTE: This limit is not enforced if set on the root association of a
+\fBNOTE\fR: This limit is not enforced if set on the root association of a
 cluster.  So even though it may appear in sacctmgr output, it will not
 be enforced.
 
-ALSO NOTE: This limit only applies when using the Priority Multifactor
+\fBNOTE\fR: This limit only applies when using the Priority Multifactor
 plugin.  The time is decayed using the value of PriorityDecayHalfLife
 or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
 is reached all associated jobs running will be killed and all future
@@ -628,7 +628,7 @@ a job run in the account during that time will be removed from the database.
 Otherwise, the account will be marked as deleted and will be viewable with
 the \fBWithDeleted\fR flag.
 .P
-NOTE: If using the WithAssoc option you can also query against
+\fBNOTE\fR: If using the WithAssoc option you can also query against
 association specific information to view only certain associations
 this account may have.  These extra options can be found in the
 \fISPECIFICATIONS FOR ASSOCIATIONS\fP section.  You can also use the
@@ -658,7 +658,7 @@ Organization to which the account belongs.
 List of users that are a coordinator of the account. (Only filled in
 when using the WithCoordinator option.)
 .P
-NOTE: If using the WithAssoc option you can also view the information
+\fBNOTE\fR: If using the WithAssoc option you can also view the information
 about the various associations the account may have on all the
 clusters in the system. The association information can be filtered.
 Note that all the accounts in the database will always be shown as filter only
@@ -688,7 +688,7 @@ List the associations of the user(s).
 \fBPartition\fR=<\fIpartition_name\fR>[,<\fIpartition_name\fR>,...]
 List the associations of the partition(s).
 .P
-NOTE: You can also use the general specifications list above in the
+\fBNOTE\fR: You can also use the general specifications list above in the
 \fIGENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES\fP section.
 
 \fBOther options unique for listing associations:\fP
@@ -1015,7 +1015,7 @@ Appends federation related columns to default format options
 Display information without limit information. This is for a smaller
 default format of Cluster,ControlHost,ControlPort,RPC
 .P
-NOTE: You can also use the general specifications list above in the
+\fBNOTE\fR: You can also use the general specifications list above in the
 \fIGENERAL SPECIFICATIONS FOR ASSOCIATION BASED ENTITIES\fP section.
 .IP
 
@@ -1109,7 +1109,7 @@ Trackable RESources (Billing, BB (Burst buffer), CPU, Energy, GRES, License,
 Memory, and Node) this cluster is accounting for.
 
 .P
-NOTE: You can also view the information about the root association for
+\fBNOTE\fR: You can also view the information about the root association for
 the cluster.  The Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
 .IP
@@ -1126,7 +1126,7 @@ Account name to add this user as a coordinator to.
 \fBNames\fR=<\fIuser_name\fR>[,<\fIuser_name\fR>,...]
 Names of coordinators.
 .P
-NOTE: To list coordinators use the WithCoordinator options with list
+\fBNOTE\fR: To list coordinators use the WithCoordinator options with list
 account or list user.
 .IP
 
@@ -1312,8 +1312,8 @@ On a node event this is the user who caused the event to happen.
 .TP
 \fBClusters\fR[+|\-]=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
 List of clusters to add/remove to a federation. A blank value (e.g. clusters=)
-will remove all federations for the federation. NOTE: a cluster can only be a
-member of one federation.
+will remove all federations for the federation. \fBNOTE\fR: A cluster can only
+be a member of one federation.
 .IP
 
 .TP
@@ -1929,7 +1929,7 @@ The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this QOS.
 To clear a previously set value use the modify command with a new
 value of \-1 for each TRES id.
-NOTE: This limit only applies when using the Priority Multifactor
+\fBNOTE\fR: This limit only applies when using the Priority Multifactor
 plugin.  The time is decayed using the value of PriorityDecayHalfLife
 or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
 is reached all associated jobs running will be killed and all future jobs
@@ -1942,7 +1942,7 @@ inside the limit.
 Maximum wall clock time running jobs are able to be allocated in aggregate for
 this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
-NOTE: This limit only applies when using the Priority Multifactor
+\fBNOTE\fR: This limit only applies when using the Priority Multifactor
 plugin.  The time is decayed using the value of PriorityDecayHalfLife
 or PriorityUsageResetPeriod as set in the slurm.conf.  When this limit
 is reached all associated jobs running will be killed and all future jobs
@@ -1956,7 +1956,7 @@ A float that is factored into an associations [Grp|Max]TRES limits.  For
 example, if the LimitFactor is 2, then an association with a GrpTRES of 30 CPUs,
 would be allowed to allocate 60 CPUs when running under this QOS.
 
-NOTE: This factor is only applied to associations running in this QOS and
+\fBNOTE\fR: This factor is only applied to associations running in this QOS and
 is not applied to any limits in the QOS itself.
 
 To clear a previously set value use the modify command with a new value of \-1.
@@ -2291,8 +2291,8 @@ Valid options are
 If set the resource will treat the counts for \fBAllowed\fR and \fBAllocated\fR
 as absolute counts instead of percentages.
 
-NOTE: If removing this with flags-=absolute there is no effort to convert the
-numbers in the database back to percentages. This is required by the user.
+\fBNOTE\fR: If removing this with flags-=absolute there is no effort to convert
+the numbers in the database back to percentages. This is required by the user.
 .IP
 .RE
 .IP
@@ -2344,7 +2344,7 @@ the \fBWithDeleted\fR flag.
 .IP
 
 .P
-NOTE:  Resource is used to define each resource configured on a system
+\fBNOTE\fR: Resource is used to define each resource configured on a system
 available for usage by Slurm clusters.
 .IP
 
@@ -2514,7 +2514,7 @@ Displays when the transaction occurred.
 \fBWhere\fR
 Displays details of the constraints for the transaction.
 .P
-NOTE: If using the WithAssoc option you can also view the information
+\fBNOTE\fR: If using the WithAssoc option you can also view the information
 about the various associations the transaction affected.  The
 Association format fields are described
 in the \fILIST/SHOW ASSOCIATION FORMAT OPTIONS\fP section.
@@ -2594,7 +2594,7 @@ a job run by the user during that time will be removed from the database.
 Otherwise, the user will be marked as deleted and will be viewable with
 the \fBWithDeleted\fR flag.
 .P
-NOTE: If using the WithAssoc option you can also query against
+\fBNOTE\fR: If using the WithAssoc option you can also query against
 association specific information to view only certain associations
 this user may have.  These extra options can be found in the
 \fISPECIFICATIONS FOR ASSOCIATIONS\fP section.  You can also use the
@@ -2630,7 +2630,7 @@ The user's default wckey.
 \fBUser\fR
 The name of a user.
 .P
-NOTE: If using the WithAssoc option you can also view the information
+\fBNOTE\fR: If using the WithAssoc option you can also view the information
 about the various associations the user may have on all the
 clusters in the system. The association information can be filtered.
 Note that all the users in the database will always be shown as filter only
@@ -2701,13 +2701,13 @@ This is the case for each limit that deals with TRES.  To remove the
 limit \-1 is used i.e. GrpTRESMins=cpu=\-1 would remove only the cpu
 TRES limit.
 
-NOTE: When dealing with Memory as a TRES all limits are in MB.
+\fBNOTE\fR: When dealing with Memory as a TRES all limits are in MB.
 
-NOTE: The Billing TRES is calculated from a partition's TRESBillingWeights. It
-is temporarily calculated during scheduling for each partition to enforce
-billing TRES limits. The final Billing TRES is calculated after the job has been
-allocated resources. The final number can be seen in \fBscontrol show jobs\fP
-and \fBsacct\fP output.
+\fBNOTE\fR: The Billing TRES is calculated from a partition's
+TRESBillingWeights. It is temporarily calculated during scheduling for each
+partition to enforce billing TRES limits. The final Billing TRES is calculated
+after the job has been allocated resources. The final number can be seen in
+\fBscontrol show jobs\fP and \fBsacct\fP output.
 
 .SH "GLOBAL FORMAT OPTION"
 When using the format option for listing various fields you can put a

@@ -589,7 +589,7 @@ Trackable resources. These are the resources allocated to the job/step
 after the job started running.  For pending jobs this should be blank.
 For more details see AccountingStorageTRES in slurm.conf.
 
-NOTE: When a generic resource is configured with the no_consume flag,
+\fBNOTE\fR: When a generic resource is configured with the no_consume flag,
 the allocation will be printed with a zero.
 .IP
 
@@ -1070,21 +1070,21 @@ than will fit into the current field width (for example, the UID that CANCELLED
 a job) the state will be followed by a "+".  You can increase the size of
 the displayed state using the "%NUMBER" format modifier described earlier.
 
-NOTE: The RUNNING state will return suspended jobs as well.  In order
+\fBNOTE\fR: The RUNNING state will return suspended jobs as well.  In order
 to print suspended jobs you must request SUSPENDED at a different call
 from RUNNING.
 
-NOTE: The RUNNING state will return any jobs completed (cancelled or otherwise)
-in the time period requested as the job was also RUNNING during that time.  If
-you are only looking for jobs that finished, please choose the appropriate
-state(s) without the RUNNING state.
+\fBNOTE\fR: The RUNNING state will return any jobs completed (cancelled or
+otherwise) in the time period requested as the job was also RUNNING during that
+time. If you are only looking for jobs that finished, please choose the
+appropriate state(s) without the RUNNING state.
 .IP
 
 .TP
 \f3Submit\fP
 The time the job was submitted. In the same format as \f3End\fP.
 
-NOTE: If a job is requeued, the submit time is reset.  To obtain the
+\fBNOTE\fR: If a job is requeued, the submit time is reset.  To obtain the
 original submit time it is necessary to use the \-D or \-\-duplicate option
 to display all duplicate entries for a job.
 .IP
@@ -1145,15 +1145,15 @@ may differ between proctrack plugins and end-user applications.
 .TP
 \f3TresUsageInAve\fP
 Tres average usage in by all tasks in job.
-NOTE: If corresponding TresUsageInMaxTask is \-1 the metric is node centric
-instead of task.
+\fBNOTE\fR: If corresponding TresUsageInMaxTask is \-1 the metric is node
+centric instead of task.
 .IP
 
 .TP
 \f3TresUsageInMax\fP
 Tres maximum usage in by all tasks in job.
-NOTE: If corresponding TresUsageInMaxTask is \-1 the metric is node centric
-instead of task.
+\fBNOTE\fR: If corresponding TresUsageInMaxTask is \-1 the metric is node
+centric instead of task.
 .IP
 
 .TP
@@ -1169,8 +1169,8 @@ Task for which each maximum TRES usage out occurred.
 .TP
 \f3TresUsageInMin\fP
 Tres minimum usage in by all tasks in job.
-NOTE: If corresponding TresUsageInMinTask is \-1 the metric is node centric
-instead of task.
+\fBNOTE\fR: If corresponding TresUsageInMinTask is \-1 the metric is node
+centric instead of task.
 .IP
 
 .TP
@@ -1191,15 +1191,15 @@ Tres total usage in by all tasks in job.
 .TP
 \f3TresUsageOutAve\fP
 Tres average usage out by all tasks in job.
-NOTE: If corresponding TresUsageOutMaxTask is \-1 the metric is node centric
-instead of task.
+\fBNOTE\fR: If corresponding TresUsageOutMaxTask is \-1 the metric is node
+centric instead of task.
 .IP
 
 .TP
 \f3TresUsageOutMax\fP
 Tres maximum usage out by all tasks in job.
-NOTE: If corresponding TresUsageOutMaxTask is \-1 the metric is node centric
-instead of task.
+\fBNOTE\fR: If corresponding TresUsageOutMaxTask is \-1 the metric is node
+centric instead of task.
 .IP
 
 .TP

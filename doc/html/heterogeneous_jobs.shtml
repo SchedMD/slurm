@@ -204,7 +204,7 @@ plugin is appended.</p>
 ...
 </pre>
 
-<p><b>NOTE:</b> Cray's DataWarp interface directly reads the job script, but
+<p><b>NOTE</b>: Cray's DataWarp interface directly reads the job script, but
 has no knowledge of "Slurm's "hetjob" directive, so Slurm internally rebuilds
 the script for each job component so that only that job component's burst buffer
 directives are included in that script. The batch script's first component of the

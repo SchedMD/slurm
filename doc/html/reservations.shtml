@@ -159,7 +159,7 @@ feature that every selected node must contain.</p>
 whole nodes.
 This capability permits the administrator to identify the core count to be
 reserved on each node as shown in the examples below.<br>
-<b>NOTE:</b> Core reservations are not available when the system is configured
+<b>NOTE</b>: Core reservations are not available when the system is configured
 to use the select/linear plugin.</p>
 <pre>
 # Create a two core reservation for user alan
@@ -278,7 +278,7 @@ $ scontrol delete ReservationName=alan_6
 </pre>
 <p>
 
-<b>NOTE:</b> By default, when a reservation ends the reservation request will be
+<b>NOTE</b>: By default, when a reservation ends the reservation request will be
 removed from any pending jobs submitted to the reservation and will be put into
 a held state.  Use the NO_HOLD_JOBS_AFTER_END reservation flag to let jobs run
 outside of the reservation after the reservation is gone.

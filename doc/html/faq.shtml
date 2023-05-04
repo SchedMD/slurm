@@ -291,7 +291,8 @@ within a cluster to prevent this from occurring.</li>
 <li>PropagateResourceLimits or PropagateResourceLimitsExcept parameters are
 configured in slurm.conf and avoid propagation of specified limits.</li>
 </ul>
-<p>NOTE: This may produce the error message &quot;Can't propagate RLIMIT_...&quot;.
+<p><b>NOTE</b>: This may produce the error message
+&quot;Can't propagate RLIMIT_...&quot;.
 The error message is printed only if the user explicitly specifies that
 the resource limit should be propagated or the srun command is running
 with verbose logging of actions from the slurmd daemon (e.g. "srun -d6 ...").</p>
@@ -779,7 +780,7 @@ For example, a job requesting resources for three tasks on a node with
 ThreadsPerCore=2 will be allocated two full cores.
 Note that Slurm commands contain a multitude of options to control
 resource allocation with respect to base boards, sockets, cores and threads.</p>
-<p>(<b>NOTE:</b> An exception to this would be if the system administrator
+<p>(<b>NOTE</b>: An exception to this would be if the system administrator
 configured SelectTypeParameters=CR_CPU and each node's CPU count without its
 socket/core/thread specification. In that case, each thread would be
 independently scheduled as a CPU. This is not a typical configuration.)</p>
@@ -995,7 +996,7 @@ myadmin
 <pre>
 chmod 600 /etc/ssh/allowed_users
 </pre>
-<p><b>NOTE:</b> root is not necessarily listed on the allowed_users, but I
+<p><b>NOTE</b>: root is not necessarily listed on the allowed_users, but I
 feel somewhat safe if it's on the list.</p>
 
 <p><b>Step 3.</b> On /etc/pam.d/sshd, add pam_listfile.so with sufficient flag
@@ -1615,7 +1616,7 @@ soft limit.</p>
 <p>Be also sure to give SlurmUser the appropriate permissions to write in the
 core location directories.</p>
 
-<p> NOTE: On a diskless node depending on the core_pattern or if
+<p><b>NOTE</b>: On a diskless node depending on the core_pattern or if
 /var/spool/abrt is pointing to an in-memory filespace like tmpfs, if the job
 caused an OOM, then the generation of the core may fill up your machine's
 memory and hang it. It is encouraged then to make coredumps go to a persistent
@@ -1722,9 +1723,9 @@ following procedure is recommended:</p>
 <li>Restart the slurmctld daemon (e.g. "systemctl start slurmctld" on the head node)</li>
 </ol>
 
-<p>NOTE: Jobs submitted with srun, and that are waiting for an allocation,
-prior to new nodes being added to the slurm.conf can fail if the job is
-allocated one of the new nodes.</p>
+<p><b>NOTE</b>: Jobs submitted with srun, and that are waiting for an
+allocation, prior to new nodes being added to the slurm.conf can fail if the
+job is allocated one of the new nodes.</p>
 
 <p><a id="rem_nodes"><b>What process should I follow to remove nodes from Slurm?</b></a><br>
 To safely remove a node from a system, it's best to drain the node of all jobs.

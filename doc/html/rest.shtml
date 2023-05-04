@@ -79,7 +79,7 @@ There are several third party tools that automatically generate documentation
 against the OAS output listed by
 <a href="https://openapi.tools/">openapi.tools.</a></p>
 
-<p><b>NOTE:</b> Slurm attempts to strictly comply with the relevant
+<p><b>NOTE</b>: Slurm attempts to strictly comply with the relevant
 <a href="https://github.com/OAI/OpenAPI-Specification">OpenAPI standards</a>.
 For reasons of compatibility, Slurm may be tested against publicly available
 OpenAPI client generators, but Slurm does not directly support any of them as

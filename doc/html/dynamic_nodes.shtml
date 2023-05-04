@@ -59,7 +59,7 @@ completions through slurmds does happen due to the job's alias list.
 </p>
 
 <p>
-<b>NOTE:</b> The <b>cloud_dns</b> <b>SlurmctldParameter</b> must not be set as
+<b>NOTE</b>: The <b>cloud_dns</b> <b>SlurmctldParameter</b> must not be set as
 this disables the alias list.
 </p>
 

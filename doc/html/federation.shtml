@@ -29,7 +29,7 @@ scheduling policies. The clusters coordinate with the "origin" cluster (cluster
 the job was submitted to) to schedule the job.
 
 <p>
-<b>NOTE:</b> This is not intended as a high-throughput environment. If
+<b>NOTE</b>: This is not intended as a high-throughput environment. If
 scheduling more than 50,000 jobs a day, consider configuring fewer clusters that
 the sibling jobs can be submitted to or directing load
 to the local cluster only (e.g. --cluster-constraint= or -M submission options
@@ -53,14 +53,14 @@ sacctmgr add federation &lt;federation_name&gt; [clusters=&lt;list_of_clusters&g
 
 Clusters can be added or removed from a federation using:
 <br>
-<b>NOTE:</b> A cluster can only be a member of one federation at a time.
+<b>NOTE</b>: A cluster can only be a member of one federation at a time.
 <pre>
 sacctmgr modify federation &lt;federation_name&gt; set clusters[+-]=&lt;list_of_clusters&gt;
 sacctmgr modify cluster &lt;cluster_name&gt; set federation=&lt;federation_name&gt;
 sacctmgr modify federation &lt;federation_name&gt; set clusters=
 sacctmgr modify cluster &lt;cluster_name&gt; set federation=
 </pre>
-<b>NOTE:</b> If a cluster is removed from a federation without first being
+<b>NOTE</b>: If a cluster is removed from a federation without first being
 drained, running jobs on the removed cluster, or that originated from the
 removed cluster, will continue to run as non-federated jobs. If a job is pending
 on the origin cluster, the job will remain pending on the origin cluster as a
@@ -175,7 +175,7 @@ features[+-]=&lt;feature_list&gt;</b> option.
 </p>
 
 <p>
-<b>NOTE:</b> When using the <b>!</b> option, add quotes around the option to
+<b>NOTE</b>: When using the <b>!</b> option, add quotes around the option to
 prevent the shell from interpreting the <b>!</b> (e.g
 --cluster-constraint='!highmem').
 </p>
@@ -249,10 +249,10 @@ cluster to communicate with.
 </p>
 
 <p>
-<b>NOTE:</b> It is required that all compute nodes must be accessible to all
+<b>NOTE</b>: It is required that all compute nodes must be accessible to all
 submission hosts for this to work.
 <br>
-<b>NOTE:</b> The current implementation of the MPI interfaces in Slurm require
+<b>NOTE</b>: The current implementation of the MPI interfaces in Slurm require
 the SlurmdSpooldir to be the same on the host where the srun is being run as it
 is on the compute nodes in the allocation. If they aren’t, a workaround is to
 get an allocation that puts the user on the actual compute node. Then the sruns

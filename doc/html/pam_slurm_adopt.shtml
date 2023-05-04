@@ -215,7 +215,7 @@ can ssh in but may be adopted into a job that exits earlier than the
 job they intended to check on. The ssh connection will at least be
 subject to appropriate limits and the user can be informed of better
 ways to accomplish their objectives if this becomes a problem.
-NOTE: If the module fails to retrieve the cgroup mtime, then the picked
+<b>NOTE</b>: If the module fails to retrieve the cgroup mtime, then the picked
 job may not be the newest one.
 On systems with <i>cgroup/v2</i> the newest is just the job with the greatest
 id, and thus this does not ensure that it is really the newest job.

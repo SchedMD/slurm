@@ -1243,10 +1243,10 @@ partitions. If set to "NO" then the job will be accepted and remain queued
 until the partition limits are altered(Time and Node Limits).
 If set to "ANY" a job must satisfy any of the requested partitions
 to be submitted. The default value is "NO".
-NOTE: If set, then a job's QOS can not be used to exceed partition limits.
-NOTE: The partition limits being considered are its configured MaxMemPerCPU,
-MaxMemPerNode, MinNodes, MaxNodes, MaxTime, AllocNodes, AllowAccounts,
-AllowGroups, AllowQOS, and QOS usage threshold.
+\fBNOTE\fR: If set, then a job's QOS can not be used to exceed partition limits.
+\fBNOTE\fR: The partition limits being considered are its configured
+MaxMemPerCPU, MaxMemPerNode, MinNodes, MaxNodes, MaxTime, AllocNodes,
+AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold.
 .IP
 
 .TP
@@ -2063,7 +2063,7 @@ Set the cpu frequency for the batch step from given \-\-cpu\-freq, or
 slurm.conf CpuFreqDef, option.  By default only steps started with srun will
 utilize the cpu freq setting options.
 
-NOTE: If you are using srun to launch your steps inside a batch script
+\fBNOTE\fR: If you are using srun to launch your steps inside a batch script
 (advised) this option will create a situation where you may have multiple
 agents setting the cpu_freq as the batch step usually runs on the same
 resources one or more steps the sruns in the script will create.
@@ -2298,7 +2298,7 @@ The maximum number of jobs slurmctld can have in memory at one time.
 Combine with \fBMinJobAge\fR to ensure the slurmctld daemon does not exhaust
 its memory or other resources. Once this limit is reached, requests to submit
 additional jobs will fail. The default value is 10000 jobs.
-NOTE: Each task of a job array counts as one job even though they will not
+\fBNOTE\fR: Each task of a job array counts as one job even though they will not
 occupy separate job records until modified or initiated.
 Performance can suffer with more than a few hundred thousand jobs.
 Setting per MaxSubmitJobs per user is generally valuable to prevent a single
@@ -2333,13 +2333,13 @@ The default value is 0 (unlimited).
 Also see \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBMaxMemPerNode\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
 
-NOTE: If a job specifies a memory per CPU limit that exceeds this system limit,
-that job's count of CPUs per task will try to automatically increase. This
-may result in the job failing due to CPU count limits. This auto\-adjustment
-feature is a best\-effort one and optimal assignment is not guaranteed due to the
-possibility of having heterogeneous configurations and multi\-partition/qos jobs.
-If this is a concern it is advised to use a job submit LUA plugin instead to
-enforce auto\-adjustments to your specific needs.
+\fBNOTE\fR: If a job specifies a memory per CPU limit that exceeds this system
+limit, that job's count of CPUs per task will try to automatically increase.
+This may result in the job failing due to CPU count limits. This
+auto\-adjustment feature is a best\-effort one and optimal assignment is not
+guaranteed due to the possibility of having heterogeneous configurations and
+multi\-partition/qos jobs. If this is a concern it is advised to use a job
+submit LUA plugin instead to enforce auto\-adjustments to your specific needs.
 .IP
 
 .TP
@@ -3220,12 +3220,12 @@ Identifies the plugin to be used for process tracking on a job step basis.
 The slurmd daemon uses this mechanism to identify all processes
 which are children of processes it spawns for a user job step.
 A restart of slurmctld is required for changes to this parameter to take effect.
-NOTE: "proctrack/linuxproc" and "proctrack/pgid" can fail to
+\fBNOTE\fR: "proctrack/linuxproc" and "proctrack/pgid" can fail to
 identify all processes associated with a job since processes
 can become a child of the init process (when the parent process
 terminates) or change their process group.
 To reliably track all processes, "proctrack/cgroup" is highly recommended.
-NOTE: The \fBJobContainerType\fR applies to a job allocation, while
+\fBNOTE\fR: The \fBJobContainerType\fR applies to a job allocation, while
 \fBProctrackType\fR applies to job steps.
 Acceptable values at present include:
 .IP
@@ -3307,7 +3307,7 @@ before a user starts to use any allocated resources.
 In particular, this flag is needed on a Cray system when cluster compatibility
 mode is enabled.
 
-\fBNOTE: Use of the Alloc flag will increase the time required to start jobs.\fR
+\fBNOTE\fR: Use of the Alloc flag will increase the time required to start jobs.
 .IP
 
 .TP
@@ -3344,7 +3344,7 @@ flags.
 When a batch job fails to launch due to a Prolog failure, always requeue it
 automatically even if the job requested no requeues.
 
-\fBNOTE: Setting this flag implicitly sets the Alloc flag.\fR
+\fB\fBNOTE\fR: Setting this flag implicitly sets the Alloc flag.\fR
 .IP
 
 .TP
@@ -3880,7 +3880,7 @@ expected times.
 This has no impact upon the number of tasks from a job array that can be
 started immediately, only those tasks expected to start at some future time.
 Default: 20, Min: 0, Max: 1000.
-NOTE:
+\fBNOTE\fR:
 Jobs submitted to multiple partitions appear in the job queue once per
 partition. If different copies of a single job array record aren't consecutive
 in the job queue and another job array record is in between, then
@@ -3968,17 +3968,17 @@ job counts have not been reached.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 The default value is the value of bf_interval (which defaults to 30 seconds).
 Default: bf_interval value (def. 30 sec), Min: 1, Max: 3600 (1h).
-NOTE: If bf_interval is short and bf_max_time is large, this may cause locks
-to be acquired too frequently and starve out other serviced RPCs. It's
+\fBNOTE\fR: If bf_interval is short and bf_max_time is large, this may cause
+locks to be acquired too frequently and starve out other serviced RPCs. It's
 advisable if using this parameter to set max_rpc_cnt high enough that
 scheduling isn't always disabled, and low enough that the interactive
 workload can get through in a reasonable period of time. max_rpc_cnt needs to
 be below 256 (the default RPC thread limit). Running around the middle (150)
 may give you good results.
-NOTE: When increasing the amount of time spent in the backfill scheduling cycle,
-Slurm can be prevented from responding to client requests in a timely manner.
-To address this you can use \fBmax_rpc_cnt\fR to specify a number of queued RPCs
-before the scheduler stops to respond to these requests.
+\fBNOTE\fR: When increasing the amount of time spent in the backfill scheduling
+cycle, Slurm can be prevented from responding to client requests in a timely
+manner. To address this you can use \fBmax_rpc_cnt\fR to specify a number of
+queued RPCs before the scheduler stops to respond to these requests.
 .IP
 
 .TP
@@ -4244,8 +4244,8 @@ This can improve Slurm's ability to process requests at a cost of initiating
 new jobs less frequently. Default: 0 (option disabled), Min: 0, Max: 1000.
 .IP
 .RS
-NOTE: The maximum number of threads (MAX_SERVER_THREADS) is internally set to
-256 and defines the number of served RPCs at a given time. Setting max_rpc_cnt
+\fBNOTE\fR: The maximum number of threads (MAX_SERVER_THREADS) is internally set
+to 256 and defines the number of served RPCs at a given time. Setting max_rpc_cnt
 to more than 256 will be only useful to let backfill continue scheduling work
 after locks have been yielded (i.e. each 2 seconds) if there are a maximum of
 MAX(max_rpc_cnt/10, 20) RPCs in the queue. i.e. max_rpc_cnt=1000, the scheduler
@@ -4429,8 +4429,8 @@ The default value is 60 seconds.
 Requests to cancel, hold or release any component of a heterogeneous job will
 be applied to all components of the job.
 
-NOTE: this option was previously named whole_pack and this is still supported
-for backwards compatibility.
+\fBNOTE\fR: This option was previously named whole_pack and this is still
+supported for backwards compatibility.
 .RE
 .IP
 
@@ -4638,7 +4638,7 @@ Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 Allocate one task per core by default.
 Without this option, by default one task will be allocated per
 thread on nodes with more than one \fBThreadsPerCore\fR configured.
-NOTE: This option cannot be used with CR_CPU*.
+\fBNOTE\fR: This option cannot be used with CR_CPU*.
 .IP
 
 .TP
@@ -4700,8 +4700,8 @@ Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .TP
 \fBCR_Memory\fR
 Memory is a consumable resource.
-NOTE: This implies \fIOverSubscribe=YES\fR or \fIOverSubscribe=FORCE\fR for
-all partitions.
+\fBNOTE\fR: This implies \fIOverSubscribe=YES\fR or \fIOverSubscribe=FORCE\fR
+for all partitions.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .IP
 
@@ -4984,7 +4984,7 @@ build time. If none is explicitly specified, it will be set to 6817.
 numbers in order to accept larger bursts of incoming messages by specifying
 two numbers separated by a dash (e.g. \fBSlurmctldPort=6817\-6818\fR).
 A restart of slurmctld is required for changes to this parameter to take effect.
-NOTE: Either \fBslurmctld\fR and \fBslurmd\fR daemons must not
+\fBNOTE\fR: Either \fBslurmctld\fR and \fBslurmd\fR daemons must not
 execute on the same nodes or the values of \fBSlurmctldPort\fR and
 \fBSlurmdPort\fR must be different.
 
@@ -5219,7 +5219,7 @@ The port number that the Slurm compute node daemon, \fBslurmd\fR, listens
 to for work. The default value is SLURMD_PORT as established at system
 build time. If none is explicitly specified, its value will be 6818.
 A restart of slurmctld is required for changes to this parameter to take effect.
-NOTE: Either slurmctld and slurmd daemons must not execute
+\fBNOTE\fR: Either slurmctld and slurmd daemons must not execute
 on the same nodes or the values of \fBSlurmctldPort\fR and \fBSlurmdPort\fR
 must be different.
 
@@ -5710,7 +5710,7 @@ This enables the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
 \fBtask/cgroup\fR
 enables process containment to specified resources using Cgroups cpuset
 interface. This enables the \-\-cpu\-bind and/or \-\-mem\-bind srun options.
-NOTE: see "man cgroup.conf" for configuration details.
+\fBNOTE\fR: see "man cgroup.conf" for configuration details.
 .IP
 
 .TP
@@ -5943,7 +5943,7 @@ used for a hierarchical network as described in a \fItopology.conf\fR file
 \fBTrackWCKey\fR
 Boolean yes or no.  Used to set display and track of the Workload
 Characterization Key.  Must be set to track correct wckey usage.
-NOTE: You must also set TrackWCKey in your slurmdbd.conf file to create
+\fBNOTE\fR: You must also set TrackWCKey in your slurmdbd.conf file to create
 historical usage reports.
 .IP
 

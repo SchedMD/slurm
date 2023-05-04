@@ -45,7 +45,7 @@ When <I>select/linear</I> is chosen, we recommend setting
 When <I>select/cons_res</I> or <I>select/cons_tres</I> are chosen, we recommend
 including Memory as a resource (e.g. <I>SelectTypeParameter=CR_Core_Memory</I>).
 <BR>
-<B>NOTE:</B> Unless <I>PreemptMode=SUSPEND,GANG</I> these memory management
+<b>NOTE</b>: Unless <i>PreemptMode=SUSPEND,GANG</i> these memory management
 parameters are not critical.
 </LI>
 <LI>
@@ -58,7 +58,7 @@ It may also be desirable to configure
 <I>MaxMemPerNode</I> (maximum memory per allocated node) in <I>slurm.conf</I>.
 Users can use the <I>--mem</I> or <I>--mem-per-cpu</I> option
 at job submission time to specify their memory requirements.
-<BR><B>NOTE:</B> Unless <I>PreemptMode=SUSPEND,GANG</I> these memory management
+<br><b>NOTE</b>: Unless <i>PreemptMode=SUSPEND,GANG</i> these memory management
 parameters are not critical.
 </LI>
 <LI>
@@ -82,7 +82,7 @@ accounting with the <I>JobAcctGatherType</I> and <I>JobAcctGatherFrequency</I>
 parameters. When accounting is enabled and a job exceeds its configured memory
 limits, it will be canceled in order to prevent it from adversely affecting
 other jobs sharing the same resources.
-<BR><B>NOTE:</B> Unless <I>PreemptMode=SUSPEND,GANG</I> these memory management
+<br><b>NOTE</b>: Unless <i>PreemptMode=SUSPEND,GANG</i> these memory management
 parameters are not critical.
 </LI>
 <LI>
@@ -206,7 +206,7 @@ default the max_share value is 4. In order to preempt jobs (and not gang
 schedule them), always set max_share to 1. To allow up to 2 jobs from this
 partition to be allocated to a common resource (and gang scheduled), set
 <I>OverSubscribe=FORCE:2</I>.
-<BR><B>NOTE:</B> <I>PreemptType=preempt/qos</I> will permit one additional job
+<br><b>NOTE</b>: <i>PreemptType=preempt/qos</i> will permit one additional job
 to be run on the partition if started due to job preemption. For example, a
 configuration of <I>OverSubscribe=FORCE:1</I> will only permit one job per
 resource normally, but a second job can be started if done so through
