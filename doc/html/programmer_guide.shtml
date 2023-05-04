@@ -56,7 +56,8 @@ of subdirectories for each type of file.</p>
 <b>configure.ac</b>, <b>Makefile.am</b>, <b>Make-rpm.mk</b>, <b>META</b>, <b>README</b>,
 <b>slurm.spec.in</b>, and the contents of the <b>auxdir</b> directory. <span class="commandline">autoconf</span>
 and <span class="commandline">make</span> commands are used to build and install
-Slurm in an automated fashion. NOTE: <span class="commandline">autoconf</span>
+Slurm in an automated fashion.
+<b>NOTE</b>: <span class="commandline">autoconf</span>
 version 2.52 or higher is required to build Slurm. Execute
 <span class="commandline">autoconf -V</span> to check your version number.
 The build process is described in the README file.

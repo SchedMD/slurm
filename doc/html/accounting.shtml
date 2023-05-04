@@ -260,7 +260,7 @@ checking for mysql_config... /usr/bin/mysql_config
 MySQL test program built properly.
 </pre>
 
-<p><b>NOTE:</b> Before running the slurmdbd for the first time, review the
+<p><b>NOTE</b>: Before running the slurmdbd for the first time, review the
 current setting for MySQL's <i>innodb_buffer_pool_size</i>.
 Consider setting this
 value large enough to handle the size of the database. Having this value
@@ -399,8 +399,8 @@ prevent users from accessing invalid accounts.
   set to true.
 </li>
 </ul>
-(NOTE: The association is a combination of cluster, account,
-user names and optional partition name.)
+<b>NOTE</b>: The association is a combination of cluster, account,
+user names and optional partition name.
 <br>
 <b>Without AccountingStorageEnforce being set (the default behavior)
 jobs will be executed based upon policies configured in Slurm on each
@@ -497,9 +497,9 @@ and have the same UID as the hosts on which <i>slurmctld</i> execute.
 For security purposes, a user other than "root" is recommended.
 The default value is "root". This name should also be the same SlurmUser
 on all clusters reporting to the SlurmDBD.
-NOTE: If this user is different from the one set for <b>slurmctld</b> and is not
-root, it must be added to accounting with AdminLevel=Admin and <b>slurmctld</b>
-must be restarted.
+<b>NOTE</b>: If this user is different from the one set for <b>slurmctld</b>
+and is not root, it must be added to accounting with AdminLevel=Admin and
+<b>slurmctld</b> must be restarted.
 </li>
 
 <li><b>StorageHost</b>:
@@ -655,13 +655,13 @@ which consists of four elements: cluster, account, user names and
 an optional partition name. Use the <i>sacctmgr</i>
 command to create and manage these records.</p>
 
-<p><b>NOTE:</b> There is an order to set up accounting associations.
+<p><b>NOTE</b>: There is an order to set up accounting associations.
 You must define clusters before you add accounts and you must add accounts
 before you can add users.</p>
 
 <p>For example, to add a cluster named "snowflake" to the database
 execute this line
-(<b>NOTE:</b> as of 20.02, slurmctld will add the cluster to the database upon
+(<b>NOTE</b>: as of 20.02, slurmctld will add the cluster to the database upon
 start if it doesn't exist. Associations still need to be created after
 addition):
 </p>

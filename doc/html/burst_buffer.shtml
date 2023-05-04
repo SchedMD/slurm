@@ -367,7 +367,7 @@ pool. For example: <code>pool=pool1</code></li>
 <li>A <b>capacity</b> specification is a number indicating the amount of space
 required from the pool. A <b>capacity</b> specification can include a suffix of
 "N" (nodes), "K|KiB", "M|MiB", "G|GiB", "T|TiB", "P|PiB" (for powers of 1024)
-and "KB", "MB", "GB", "TB", "PB" (for powers of 1000). <b>NOTE:</b> Usually
+and "KB", "MB", "GB", "TB", "PB" (for powers of 1000). <b>NOTE</b>: Usually
 Slurm interprets KB, MB, GB, TB, PB, TB units as powers of 1024, but for Burst
 Buffers size specifications Slurm supports both IEC/SI formats. This is because
 the CRAY API supports both formats.</li>
@@ -552,7 +552,7 @@ job-specific burst buffer directives will generate an error. Note that zero
 size jobs are not supported for job arrays or heterogeneous job
 allocations.</p>
 
-<p><b>NOTE:</b> The ability to create and destroy persistent burst buffers may
+<p><b>NOTE</b>: The ability to create and destroy persistent burst buffers may
 be limited by the <code>Flags</code> option in the burst_buffer.conf file.
 See the <a href="burst_buffer.conf.html">burst_buffer.conf</a> man page for
 more information.

@@ -73,7 +73,7 @@ we would also include gres/gpu for accounting gpus in requests like
 <pre>AccountingStorageTRES=gres/gpu,gres/gpu:tesla</pre>
 </li>
 
-<p><b>NOTE:</b> Setting gres/gpu will also set gres/gpumem and gres/gpuutil.
+<p><b>NOTE</b>: Setting gres/gpu will also set gres/gpumem and gres/gpuutil.
 </p>
 
 <li><b>PriorityWeightTRES</b>
@@ -135,22 +135,22 @@ with:
 number of allocated CPUs.
 </p>
 
-<p><b>NOTE:</b> TRESBillingWeights is only used when calculating fairshare and
+<p><b>NOTE</b>: TRESBillingWeights is only used when calculating fairshare and
 doesn't affect job priority directly as it is currently not used for the size of
 the job. If you want TRES' to play a role in the job's priority then refer to
 the PriorityWeightTRES option.
 </p>
 
-<p><b>NOTE:</b> As with PriorityWeightTRES only TRES defined in
+<p><b>NOTE</b>: As with PriorityWeightTRES only TRES defined in
   AccountingStorageTRES are available for TRESBillingWeights.
 </p>
 
-<p><b>NOTE:</b> Jobs can be limited based off of the calculated TRES billing
+<p><b>NOTE</b>: Jobs can be limited based off of the calculated TRES billing
 value. See <a href="resource_limits.html">Resource Limits</a> documentation for
 more information.
 </p>
 
-<p><b>NOTE:</b> If a Billing TRES is defined as a weight, it is ignored.</p>
+<p><b>NOTE</b>: If a Billing TRES is defined as a weight, it is ignored.</p>
 </li>
 
 </ul>

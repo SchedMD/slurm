@@ -74,7 +74,7 @@ http://www.nsc.liu.se/~kent/python-hostlist</a><br><br>
 Lua bindings for hostlist functions are also available here:<br>
 <a href="https://github.com/grondo/lua-hostlist">
 https://github.com/grondo/lua-hostlist</a><br>
-<b>NOTE:</b> The Lua  hostlist functions do not support the bracketed numeric
+<b>NOTE</b>: The Lua  hostlist functions do not support the bracketed numeric
 ranges anywhere except at the end of the name (i.e. "tux[0001-0100]"
 and "rack[0-3]_blade[0-63]" are not supported).</li><br>
 

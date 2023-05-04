@@ -49,18 +49,20 @@ the Elasticsearch server URL endpoint (including the port number and the target
 index).
 <pre>JobCompLoc=&lt;host&gt;:&lt;port&gt;/&lt;target&gt;/_doc</pre>
 
-<p>NOTE: Since Elasticsearch 8.0 the APIs that accept types are removed, thereby
-moving to a typeless mode. The Slurm elasticsearch plugin in versions prior to
-20.11 removed any trailing slashes from this option URL and appended a hardcoded
-<b>/slurm/jobcomp</b> suffix representing the <i>/index/type</i> respectively.
+<p><b>NOTE</b>: Since Elasticsearch 8.0 the APIs that accept types are removed,
+thereby moving to a typeless mode. The Slurm elasticsearch plugin in versions
+prior to 20.11 removed any trailing slashes from this option URL and appended
+a hardcoded <b>/slurm/jobcomp</b> suffix representing the <i>/index/type</i>
+respectively.
 Starting from Slurm 20.11 the URL is fully configurable and handed as-is without
 modification to the libcurl library functions. In addition, this also allows
 users to index data from different clusters to the same server but to different
 indices.</p>
 
-<p>NOTE: The Elasticsearch official documentation provides detailed information
-around these concepts, the type to typeless deprecation transition as well as
-reindex API references on how to copy data from one index to another if needed.
+<p><b>NOTE</b>: The Elasticsearch official documentation provides detailed
+information around these concepts, the type to typeless deprecation transition
+as well as reindex API references on how to copy data from one index to another
+if needed.
 </p>
 </li>
 <li>
