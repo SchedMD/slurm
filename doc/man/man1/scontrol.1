@@ -243,7 +243,7 @@ The reason will be appended with: "reboot issued" when the reboot is issued;
 "reboot complete" when the node registers and has a "nextstate" of "DOWN"; or
 "reboot timed out" when the node fails to register within \fBResumeTimeout\fR.
 You must specify either a list of nodes or that ALL nodes are to be rebooted.
-NOTE: By default, this command does not prevent additional jobs from being
+\fBNOTE\fR: By default, this command does not prevent additional jobs from being
 scheduled on any nodes before reboot.
 To do this, you can either use the "ASAP" option or explicitly drain the nodes
 beforehand.
@@ -697,7 +697,7 @@ created.
 .IP
 
 .SH "INTERACTIVE COMMANDS"
-\fBNOTE:\fP
+\fBNOTE\fR:
 All commands listed below can be used in the interactive mode, but \fINOT\fP
 on the initial command line.
 
@@ -1400,7 +1400,7 @@ Count of desired sockets per node
 The time  and  date stamp (in localtime) the job was submitted.
 The format of the output is identical to that of the EndTime field.
 
-NOTE: If a job is requeued, the submit time is reset.
+\fBNOTE\fR: If a job is requeued, the submit time is reset.
 To obtain the original submit time it is necessary
 to use the "sacct \-j <job_id[.<step_id>]" command also
 designating the \-D or \-\-duplicate option to display all
@@ -2370,7 +2370,7 @@ For example "BurstBuffer=datawarp:2TB" (reserve 2TB of storage plus
 plugins).
 Jobs using this reservation are not restricted to these burst buffer resources,
 but may use these reserved resources plus any which are generally available.
-NOTE: Usually Slurm interprets KB, MB, GB, TB, PB, TB units as powers of 1024,
+\fBNOTE\fR: Usually Slurm interprets KB, MB, GB, TB, PB units as powers of 1024,
 but for Burst Buffers size specifications Slurm supports both IEC/SI formats.
 This is because the CRAY API for managing DataWarps supports both formats.
 .IP
@@ -2494,7 +2494,7 @@ used in the reservation.
 Flags associated with the reservation.
 You can add or remove individual flags from an existing reservation by
 adding a '+' or '\-' sign before the '=' sign.  For example:
-Flags\-=DAILY (NOTE: this shortcut is not supported for all flags).
+Flags\-=DAILY (\fBNOTE\fR: This shortcut is not supported for all flags).
 Currently supported flags include:
 .IP
 .RS
@@ -2683,9 +2683,9 @@ to use the reservation.
 Unlike users groups do not allow denied access to reservations.
 You can add or remove individual groups from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
-NOTE: Groups and Users are mutually exclusive in reservations, if you want to
-switch between the 2 you must update the reservation with a group='' or user=''
-and fill in the opposite with the appropriate setting.
+\fBNOTE\fR: Groups and Users are mutually exclusive in reservations, if you
+want to switch between the 2 you must update the reservation with a group=''
+or user='' and fill in the opposite with the appropriate setting.
 .IP
 
 .TP
@@ -2710,9 +2710,9 @@ using the update command and adding a '+' or '\-' sign before the '=' sign.
 If users are denied access to a reservation (user name preceded by a '\-'),
 then all other users are implicitly allowed to use the reservation and it is
 not possible to also explicitly specify allowed users.
-NOTE: Groups and Users are mutually exclusive in reservations, if you want to
-switch between the 2 you must update the reservation with a group='' or user=''
-and fill in the opposite with the appropriate setting.
+\fBNOTE\fR: Groups and Users are mutually exclusive in reservations, if you
+want to switch between the 2 you must update the reservation with a group=''
+or user='' and fill in the opposite with the appropriate setting.
 .IP
 
 .TP

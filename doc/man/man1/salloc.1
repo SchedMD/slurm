@@ -29,8 +29,8 @@ allocation of cpus to jobs and tasks.
 .br
 https://slurm.schedmd.com/cpu_management.html
 
-NOTE: The salloc logic includes support to save and restore the terminal line
-settings and is designed to be executed in the foreground. If you need to
+\fBNOTE\fR: The salloc logic includes support to save and restore the terminal
+line settings and is designed to be executed in the foreground. If you need to
 execute salloc in the background, set its standard input to some file, for
 example: "salloc \-n16 a.out </dev/null &"
 
@@ -848,9 +848,9 @@ design to support gang scheduling, because suspended jobs still reside in
 memory. To request all the memory on a node, use \fB\-\-mem=0\fR.
 The default shared/exclusive behavior depends on system configuration and the
 partition's \fBOverSubscribe\fR option takes precedence over the job's option.
-NOTE: Since shared GRES (MPS) cannot be allocated at the same time as a sharing
-GRES (GPU) this option only allocates all sharing GRES and no underlying shared
-GRES.
+\fBNOTE\fR: Since shared GRES (MPS) cannot be allocated at the same time as a
+sharing GRES (GPU) this option only allocates all sharing GRES and no underlying
+shared GRES.
 
 \fBNOTE\fR: This option is mutually exclusive with \fB\-\-oversubscribe\fR.
 .IP
@@ -912,7 +912,7 @@ If \fImode\fR is not specified, the mode established at Slurm build time
 is used.
 Examples of use include "\-\-get\-user\-env", "\-\-get\-user\-env=10"
 "\-\-get\-user\-env=10L", and "\-\-get\-user\-env=S".
-NOTE: This option only works if the caller has an
+\fBNOTE\fR: This option only works if the caller has an
 effective uid of "root".
 .IP
 
@@ -1294,13 +1294,13 @@ options are mutually exclusive. If \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR or
 \fB\-\-mem\-per\-gpu\fR are specified as command line arguments, then they will
 take precedence over the environment.
 
-NOTE: A memory size specification of zero is treated as a special case and
+\fBNOTE\fR: A memory size specification of zero is treated as a special case and
 grants the job access to all of the memory on each node.
 
-NOTE: Enforcement of memory limits currently relies upon the task/cgroup plugin
-or enabling of accounting, which samples memory use on a periodic basis (data
-need not be stored, just collected). In both cases memory use is based upon
-the job's Resident Set Size (RSS). A task may exceed the memory limit until
+\fBNOTE\fR: Enforcement of memory limits currently relies upon the task/cgroup
+plugin or enabling of accounting, which samples memory use on a periodic basis
+(data need not be stored, just collected). In both cases memory use is based
+upon the job's Resident Set Size (RSS). A task may exceed the memory limit until
 the next periodic accounting sample.
 .IP
 
@@ -1318,7 +1318,7 @@ any memory. This option is typically used to ensure that each task is bound to
 the memory closest to its assigned CPU. \fBThe use of any type other than
 "none" or "local" is not recommended.\fR
 
-NOTE: To have Slurm always report on the selected memory binding for
+\fBNOTE\fR: To have Slurm always report on the selected memory binding for
 all commands executed in a shell, you can enable verbose mode by
 setting the SLURM_MEM_BIND environment variable value to "verbose".
 
@@ -1444,7 +1444,7 @@ Also see \fB\-\-mem\fR and \fB\-\-mem\-per\-gpu\fR.
 The \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR and \fB\-\-mem\-per\-gpu\fR
 options are mutually exclusive.
 
-NOTE: If the final amount of memory requested by a job
+\fBNOTE\fR: If the final amount of memory requested by a job
 can't be satisfied by any of the nodes configured in the
 partition, the job will be rejected.
 This could happen if \fB\-\-mem\-per\-cpu\fR is used with the
@@ -1865,7 +1865,7 @@ one task per CPU.
 Normally, \fBsrun\fR will not allocate more than one process per CPU.
 By specifying \fB\-\-overcommit\fR you are explicitly allowing more than one
 process per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are
-permitted to execute per node.  NOTE: \fBMAX_TASKS_PER_NODE\fR is
+permitted to execute per node.  \fBNOTE\fR: \fBMAX_TASKS_PER_NODE\fR is
 defined in the file \fIslurm.h\fR and is not a variable, it is set at
 Slurm build time.
 .IP
@@ -2069,7 +2069,7 @@ its --exclusive option, reserving entire nodes for the job.
 \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
 Restrict node selection to nodes with at least the specified number of
 threads per core. In task layout, use the specified maximum number of threads
-per core. NOTE: "Threads" refers to the number of processing units on
+per core. \fBNOTE\fR: "Threads" refers to the number of processing units on
 each core rather than the number of application tasks to be launched per core.
 See additional information under \fB\-B\fR option above when task/affinity
 plugin is enabled.
