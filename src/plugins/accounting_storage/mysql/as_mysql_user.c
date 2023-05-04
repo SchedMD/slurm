@@ -1131,6 +1131,8 @@ extern List as_mysql_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *object = NULL;
 	char *extra = NULL, *query = NULL,
 		*name_char = NULL, *assoc_char = NULL, *user_char = NULL;
+	char *name_char_pos = NULL, *assoc_char_pos = NULL,
+		*user_char_pos = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	int set = 0;
@@ -1259,12 +1261,20 @@ no_user_table:
 		user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
 		list_append(assoc_cond.user_list, object);
 
-		xstrfmtcat(name_char, "%sname='%s'",
-			   name_char ? " || " : "", object);
-		xstrfmtcat(user_char, "%suser='%s'",
-			   user_char ? " || " : "", object);
-		xstrfmtcat(assoc_char, "%st2.lineage like '%%/0-%s/%%'",
-			   assoc_char ? " || " : "", object);
+		if (name_char) {
+			xstrfmtcatat(name_char, &name_char_pos, ",'%s'",
+				     object);
+			xstrfmtcatat(user_char, &user_char_pos, ",'%s'",
+				     object);
+		} else {
+			xstrfmtcatat(name_char, &name_char_pos, "name in('%s'",
+				     object);
+			xstrfmtcatat(user_char, &user_char_pos, "user in('%s'",
+				     object);
+		}
+		xstrfmtcatat(assoc_char, &assoc_char_pos,
+			     "%st2.lineage like '%%/0-%s/%%'",
+			     assoc_char ? " || " : "", object);
 
 		user_rec->name = xstrdup(object);
 		if (addto_update_list(mysql_conn->update_list,
@@ -1273,7 +1283,10 @@ no_user_table:
 			slurmdb_destroy_user_rec(user_rec);
 	}
 	list_iterator_destroy(itr);
-
+	if (name_char) {
+		xstrcatat(name_char, &name_char_pos, ")");
+		xstrcatat(user_char, &user_char_pos, ")");
+	}
 	/* We need to remove these accounts from the coord's that have it */
 	coord_list = as_mysql_remove_coord(
 		mysql_conn, uid, NULL, &user_coord_cond);

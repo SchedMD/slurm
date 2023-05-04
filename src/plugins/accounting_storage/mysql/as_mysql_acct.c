@@ -637,7 +637,8 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL,
-		*name_char = NULL, *assoc_char = NULL;
+		*name_char = NULL, *name_char_pos = NULL,
+		*assoc_char = NULL, *assoc_char_pos = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	int set = 0;
@@ -726,11 +727,20 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
 
-		xstrfmtcat(name_char, "%sname='%s'",
-			   name_char ? " || " : "", object);
-		xstrfmtcat(assoc_char, "%st2.lineage like '%%/%s/%%'",
-			   assoc_char ? " || " : "", object);
+		if (name_char)
+			xstrfmtcatat(name_char, &name_char_pos, ",'%s'",
+				     object);
+		else
+			xstrfmtcatat(name_char, &name_char_pos, "name in('%s'",
+				     object);
+		xstrfmtcatat(assoc_char, &assoc_char_pos,
+			     "%st2.lineage like '%%/%s/%%'",
+			     assoc_char ? " || " : "", object);
 	}
+
+	if (name_char)
+		xstrcatat(name_char, &name_char_pos, ")");
+
 	mysql_free_result(result);
 
 	if (!list_count(ret_list)) {
