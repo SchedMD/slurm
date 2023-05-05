@@ -555,6 +555,9 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 			 (gres_js->ntasks_per_gres != NO_VAL16)) {
 			cpus_per_gres = gres_js->ntasks_per_gres *
 				mc_ptr->cpus_per_task;
+		} else if (gres_js->def_cpus_per_gres) {
+			cpus_per_gres = gres_js->def_cpus_per_gres;
+			has_cpus_per_gres = true;
 		} else if (first_pass && mc_ptr->ntasks_per_job &&
 			   (mc_ptr->ntasks_per_job != NO_VAL) &&
 			   gres_js->gres_per_job) {
@@ -570,9 +573,6 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 			 * allocate because of overestimate this won't be an
 			 * issue since it's only in first_pass.
 			 */
-		} else if (gres_js->def_cpus_per_gres) {
-			cpus_per_gres = gres_js->def_cpus_per_gres;
-			has_cpus_per_gres = true;
 		}
 
 		/* Filter out unusable GRES by socket */
