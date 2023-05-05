@@ -4002,6 +4002,9 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				//rc = SLURM_ERROR;
 				break;
 			}
+			/* info("adding %d %s/%s/%s", */
+			/*      object->id, object->cluster, */
+			/*      object->acct, object->user); */
 
 			if (!object->usage)
 				object->usage =
@@ -4045,7 +4048,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				//rc = SLURM_ERROR;
 				break;
 			}
-
+			/* info("removing %d %s/%s/%s", */
+			/*      rec->id, rec->cluster, rec->acct, rec->user); */
 			run_update_resvs = 1; /* needed for updating
 						 reservations */
 
