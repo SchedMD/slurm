@@ -41,10 +41,6 @@
 
 #include "src/common/list.h"
 #include "src/common/log.h"
-#include "src/common/ref.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -57,7 +53,6 @@ static int _op_handler_diag(ctxt_t *ctxt)
 {
 	int rc;
 	slurmdb_stats_rec_t *stats_rec = NULL;
-	data_t *dstats = data_key_set(ctxt->resp, "statistics");
 
 	debug4("%s: [%s] diag handler called", __func__, ctxt->id);
 
@@ -66,7 +61,7 @@ static int _op_handler_diag(ctxt_t *ctxt)
 	else if ((rc = slurmdb_get_stats(ctxt->db_conn, &stats_rec)))
 		resp_error(ctxt, rc, "slurmdb_get_stats", "stats query failed");
 
-	DATA_DUMP(ctxt->parser, STATS_REC_PTR, stats_rec, dstats);
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_SLURMDBD_STATS_RESP, stats_rec, ctxt);
 
 cleanup:
 	slurmdb_destroy_stats_rec(stats_rec);

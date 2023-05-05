@@ -2136,12 +2136,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_diag"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_STATS_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_diag"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_STATS_RESP"
                 }
               }
             },
@@ -2241,22 +2241,6 @@
       }
     },
     "schemas": {
-      "dbv0.0.39_diag": {
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/dbv0.0.39_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/dbv0.0.39_warnings"
-          },
-          "statistics": {
-            "$ref": "DATA_PARSER_STATS_REC_PTR"
-          }
-        }
-      },
       "dbv0.0.39_wckey_info": {
         "type": "object",
         "properties": {

@@ -6448,6 +6448,7 @@ add_openapi_response_single(OPENAPI_ASSOCS_RESP, ASSOC_LIST, "associations", "as
 add_openapi_response_single(OPENAPI_ASSOCS_REMOVED_RESP, STRING_LIST, "removed_associations", "removed_associations");
 add_openapi_response_single(OPENAPI_CLUSTERS_RESP, CLUSTER_REC_LIST, "clusters", "clusters");
 add_openapi_response_single(OPENAPI_CLUSTERS_REMOVED_RESP, STRING_LIST, "deleted_clusters", "deleted_clusters");
+add_openapi_response_single(OPENAPI_SLURMDBD_STATS_RESP, STATS_REC_PTR, "statistics", "statistics");
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_post_response_t, mtype, false, field, 0, path, desc)
@@ -6919,6 +6920,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_CLUSTERS_RESP),
 	addoar(OPENAPI_CLUSTERS_REMOVED_RESP),
 	addpa(OPENAPI_SLURMDBD_CONFIG_RESP, openapi_resp_slurmdbd_config_t),
+	addoar(OPENAPI_SLURMDBD_STATS_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
