@@ -70,6 +70,7 @@
 
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
 #include "src/slurmrestd/plugins/openapi/slurmctld/structs.h"
+#include "src/slurmrestd/plugins/openapi/slurmdbd/structs.h"
 
 #define MAGIC_FOREACH_CSV_STRING 0x889bbe2a
 #define MAGIC_FOREACH_CSV_STRING_LIST 0x8391be0b
@@ -6474,6 +6475,22 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_resp_slurmdbd_config_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
+	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
+	add_parse(CLUSTER_REC_LIST, clusters, "clusters", "clusters"),
+	add_parse(TRES_LIST, tres, "tres", "tres"),
+	add_parse(ACCOUNT_LIST, accounts, "accounts", "accounts"),
+	add_parse(USER_LIST, users, "users", "users"),
+	add_parse(QOS_LIST, qos, "qos", "qos"),
+	add_parse(WCKEY_LIST, wckeys, "wckeys", "wckeys"),
+	add_parse(ASSOC_LIST, associations, "associations", "associations"),
+};
+#undef add_parse
+
 #undef add_parser
 #undef add_parser_skip
 #undef add_complex_parser
@@ -6901,6 +6918,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_ASSOCS_REMOVED_RESP),
 	addoar(OPENAPI_CLUSTERS_RESP),
 	addoar(OPENAPI_CLUSTERS_REMOVED_RESP),
+	addpa(OPENAPI_SLURMDBD_CONFIG_RESP, openapi_resp_slurmdbd_config_t),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),

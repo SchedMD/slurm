@@ -272,6 +272,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_TIMESTAMP, /* time_t */
 	DATA_PARSER_TIMESTAMP_NO_VAL, /* time_t */
+	DATA_PARSER_OPENAPI_SLURMDBD_CONFIG_RESP, /* openapi_resp_slurmdbd_config_t */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

@@ -107,12 +107,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_config_info"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_CONFIG_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_config_info"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_CONFIG_RESP"
                 }
               }
             },
@@ -178,12 +178,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_set_config"
+                "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_CONFIG_RESP"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_set_config"
+                "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_CONFIG_RESP"
               }
             }
           },
@@ -2356,41 +2356,6 @@
           }
         }
       },
-      "dbv0.0.39_config_info": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/dbv0.0.39_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/dbv0.0.39_warnings"
-          },
-          "tres": {
-            "$ref": "DATA_PARSER_TRES_LIST"
-          },
-          "accounts": {
-            "$ref": "DATA_PARSER_ACCOUNT_LIST"
-          },
-          "associations": {
-            "$ref": "DATA_PARSER_ASSOC_LIST"
-          },
-          "users": {
-            "$ref": "DATA_PARSER_USER_LIST"
-          },
-          "qos": {
-            "$ref": "DATA_PARSER_QOS_LIST"
-          },
-          "wckeys": {
-            "$ref": "DATA_PARSER_WCKEY_LIST"
-          },
-          "clusters": {
-            "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
-          }
-        }
-      },
       "status": {
         "type": "object",
         "properties": {
@@ -2523,35 +2488,6 @@
         "properties": {
           "tres": {
             "$ref": "DATA_PARSER_TRES_LIST"
-          }
-        }
-      },
-      "dbv0.0.39_set_config": {
-        "type": "object",
-        "properties": {
-          "clusters": {
-            "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
-          },
-          "TRES": {
-            "type": "array",
-            "items": {
-              "$ref": "DATA_PARSER_TRES_LIST"
-            }
-          },
-          "accounts": {
-            "$ref": "DATA_PARSER_ACCOUNT_LIST"
-          },
-          "users": {
-            "$ref": "DATA_PARSER_USER_LIST"
-          },
-          "qos": {
-            "$ref": "DATA_PARSER_QOS_LIST"
-          },
-          "wckeys": {
-            "$ref": "DATA_PARSER_WCKEY_LIST"
-          },
-          "associations": {
-            "$ref": "DATA_PARSER_ASSOC_LIST"
           }
         }
       }

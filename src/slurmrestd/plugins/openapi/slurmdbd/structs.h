@@ -37,4 +37,20 @@
 #ifndef SLURMRESTD_OPENAPI_SLURMDBD_STRUCTS
 #define SLURMRESTD_OPENAPI_SLURMDBD_STRUCTS
 
+#include "src/common/list.h"
+#include "src/slurmrestd/openapi.h"
+
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	list_t *clusters;
+	list_t *tres;
+	list_t *accounts;
+	list_t *users;
+	list_t *qos;
+	list_t *wckeys;
+	list_t *associations;
+} openapi_resp_slurmdbd_config_t;
+
 #endif

@@ -36,32 +36,29 @@
 
 #include "src/common/list.h"
 #include "src/common/log.h"
-#include "src/common/parse_time.h"
-#include "src/common/ref.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/common/strlcpy.h"
-#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmrestd/operations.h"
 #include "api.h"
+#include "structs.h"
 
-static const openapi_ctxt_handler_t ops[] = {
-	/* Warning: order matters */
-	op_handler_clusters,
-	op_handler_tres,
-	op_handler_accounts,
-	op_handler_users,
-	op_handler_qos,
-	op_handler_wckeys,
-	op_handler_associations,
-};
+//static const openapi_ctxt_handler_t ops[] = {
+//	/* Warning: order matters */
+//	op_handler_clusters,
+//	op_handler_tres,
+//	op_handler_accounts,
+//	op_handler_users,
+//	op_handler_qos,
+//	op_handler_wckeys,
+//	op_handler_associations,
+//};
 
 static int _op_handler_config(ctxt_t *ctxt)
 {
+	openapi_resp_slurmdbd_config_t resp = {0};
+
 	if ((ctxt->method != HTTP_REQUEST_GET) &&
 	    (ctxt->method != HTTP_REQUEST_POST)) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
@@ -70,21 +67,24 @@ static int _op_handler_config(ctxt_t *ctxt)
 		goto cleanup;
 	}
 
-	for (int i = 0; (i < ARRAY_SIZE(ops)); i++) {
-		int rc = ops[i](ctxt);
+	//	for (int i = 0; (i < ARRAY_SIZE(ops)); i++) {
+	//		int rc = ops[i](ctxt);
+	//
+	//		/* Ignore empty results */
+	//		if (rc == ESLURM_REST_EMPTY_RESULT)
+	//			rc = SLURM_SUCCESS;
+	//
+	//		if (rc) {
+	//			if (!ctxt->rc)
+	//				ctxt->rc = rc;
+	//			break;
+	//		}
+	//	}
 
-		/* Ignore empty results */
-		if (rc == ESLURM_REST_EMPTY_RESULT)
-			rc = SLURM_SUCCESS;
-
-		if (rc) {
-			if (!ctxt->rc)
-				ctxt->rc = rc;
-			break;
-		}
-	}
-
-	if (!ctxt->rc && (ctxt->method == HTTP_REQUEST_POST))
+	if (ctxt->method == HTTP_REQUEST_GET)
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_SLURMDBD_CONFIG_RESP, &resp,
+					 ctxt);
+	else if (!ctxt->rc && (ctxt->method == HTTP_REQUEST_POST))
 		db_query_commit(ctxt);
 
 cleanup:
