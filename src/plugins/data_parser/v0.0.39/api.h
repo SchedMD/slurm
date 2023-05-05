@@ -39,6 +39,8 @@
 
 #include "src/interfaces/data_parser.h"
 
+extern const char plugin_type[];
+
 /*
  * These macros are defined by the Makefile.am:
  * DATA_VERSION

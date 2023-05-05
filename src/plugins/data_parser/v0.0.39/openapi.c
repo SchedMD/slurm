@@ -462,7 +462,7 @@ extern int data_parser_p_specify(args_t *args, data_t *spec)
 	(void) data_dict_for_each(sargs.paths, _foreach_check_skip, &sargs);
 
 	if (sargs.skip) {
-		debug("%s: skipping", __func__);
+		debug("%s: %s skipping", plugin_type, __func__);
 		return ESLURM_NOT_SUPPORTED;
 	}
 
