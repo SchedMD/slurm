@@ -51,35 +51,6 @@
 #include "src/slurmrestd/operations.h"
 #include "api.h"
 
-#define MAGIC_FOREACH_CLUSTER 0x2aa2faf2
-#define MAGIC_FOREACH_DEL_CLUSTER 0xa3a2aa3a
-
-typedef struct {
-	int magic; /* MAGIC_FOREACH_CLUSTER */
-	data_t *clusters;
-	ctxt_t *ctxt;
-} foreach_cluster_t;
-
-typedef struct {
-	int magic; /* MAGIC_FOREACH_DEL_CLUSTER */
-	data_t *clusters;
-	ctxt_t *ctxt;
-} foreach_del_cluster_t;
-
-static int _foreach_cluster(void *x, void *arg)
-{
-	slurmdb_cluster_rec_t *cluster = x;
-	foreach_cluster_t *args = arg;
-
-	xassert(args->magic == MAGIC_FOREACH_CLUSTER);
-
-	if (DATA_DUMP(args->ctxt->parser, CLUSTER_REC, *cluster,
-		      data_list_append(args->clusters)))
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
-}
-
 static void _dump_clusters(ctxt_t *ctxt, char *cluster)
 {
 	slurmdb_cluster_cond_t cluster_cond = {
@@ -88,13 +59,7 @@ static void _dump_clusters(ctxt_t *ctxt, char *cluster)
 		.with_usage = true,
 		.flags = NO_VAL,
 	};
-	foreach_cluster_t args = {
-		.magic = MAGIC_FOREACH_CLUSTER,
-		.ctxt = ctxt,
-	};
 	List cluster_list = NULL;
-
-	args.clusters = data_set_list(data_key_set(ctxt->resp, "clusters"));
 
 	if (cluster)
 		list_append(cluster_cond.cluster_list, cluster);
@@ -103,19 +68,11 @@ static void _dump_clusters(ctxt_t *ctxt, char *cluster)
 			  &cluster_cond))
 		/* no-op - error already logged */;
 	else if (cluster_list)
-		list_for_each(cluster_list, _foreach_cluster, &args);
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_CLUSTERS_RESP, cluster_list,
+					 ctxt);
 
 	FREE_NULL_LIST(cluster_list);
 	FREE_NULL_LIST(cluster_cond.cluster_list);
-}
-
-static int _foreach_del_cluster(void *x, void *arg)
-{
-	char *cluster = x;
-	foreach_del_cluster_t *args = arg;
-
-	data_set_string(data_list_append(args->clusters), cluster);
-	return 1;
 }
 
 static void _delete_cluster(ctxt_t *ctxt, char *cluster)
@@ -124,14 +81,7 @@ static void _delete_cluster(ctxt_t *ctxt, char *cluster)
 		.cluster_list = list_create(NULL),
 		.flags = NO_VAL,
 	};
-	foreach_del_cluster_t args = {
-		.magic = MAGIC_FOREACH_DEL_CLUSTER,
-		.ctxt = ctxt,
-	};
 	List cluster_list = NULL;
-
-	args.clusters =
-		data_set_list(data_key_set(ctxt->resp, "deleted_clusters"));
 
 	if (!cluster || !cluster[0]) {
 		resp_warn(ctxt, __func__,
@@ -146,7 +96,8 @@ static void _delete_cluster(ctxt_t *ctxt, char *cluster)
 		db_query_commit(ctxt);
 
 	if (cluster_list)
-		list_for_each(cluster_list, _foreach_del_cluster, &args);
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_CLUSTERS_REMOVED_RESP,
+					 cluster_list, ctxt);
 
 cleanup:
 	FREE_NULL_LIST(cluster_list);
