@@ -644,15 +644,25 @@ extern int register_path_tag(openapi_t *oas, const char *str_path)
 	};
 	entry_t *entries = _parse_openapi_path(str_path);
 
-	if (!entries)
+	if (!entries) {
+		debug4("%s: _parse_openapi_path(%s) failed",
+		       __func__, str_path);
 		goto cleanup;
+	}
 
 	spec_entry = _find_spec_path(oas, str_path, &args.spec);
-	if (!spec_entry)
+	if (!spec_entry) {
+		debug4("%s: _find_spec_path(%s) failed",
+		       __func__, str_path);
 		goto cleanup;
+	}
 
-	if (data_get_type(spec_entry) != DATA_TYPE_DICT)
+	if (data_get_type(spec_entry) != DATA_TYPE_DICT) {
+		debug4("%s: ignoring %s at %s",
+		       __func__, data_type_to_string(data_get_type(spec_entry)),
+		       str_path);
 		goto cleanup;
+	}
 
 	path = xmalloc(sizeof(*path));
 	path->tag = oas->path_tag_counter++;
