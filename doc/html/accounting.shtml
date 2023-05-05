@@ -452,8 +452,8 @@ This file should be only on the computer where SlurmDBD executes and
 should only be readable by the user which executes SlurmDBD (e.g. "slurm").
 This file should be protected from unauthorized access since it
 contains a database login name and password.
-See "man slurmdbd.conf" for a more complete description of the
-configuration parameters.
+See <a href="slurmdbd.conf.html">slurmdbd.conf</a>(5) for a more complete
+description of the configuration parameters.
 Some of the more important parameters include:</p>
 
 <ul>
