@@ -441,6 +441,14 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Job killed due node failure" },
 	{ ERRTAB_ENTRY(ESLURM_EMPTY_LIST),
 	  "Empty list" },
+	{ ERRTAB_ENTRY(ESLURM_GROUP_ID_INVALID),
+	  "Invalid group ID" },
+	{ ERRTAB_ENTRY(ESLURM_GROUP_ID_UNKNOWN),
+	  "Unable to resolve group ID to group name" },
+	{ ERRTAB_ENTRY(ESLURM_USER_ID_INVALID),
+	  "Invalid user ID" },
+	{ ERRTAB_ENTRY(ESLURM_USER_ID_UNKNOWN),
+	  "Unable to resolve user ID to user name" },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),
