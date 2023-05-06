@@ -1526,20 +1526,92 @@ static int DUMP_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 			       data_t *src, args_t *args, data_t *parent_path)
 {
-	uid_t *uid = obj;
+	uid_t *uid_ptr = obj;
+	uid_t uid;
 
-	xassert(args->magic == MAGIC_ARGS);
+	switch (data_convert_type(src, DATA_TYPE_NONE)) {
+	case DATA_TYPE_INT_64:
+	{
+		uid = data_get_int(src);
+		break;
+	}
+	case DATA_TYPE_STRING:
+	{
+		int rc;
 
-	if (data_get_type(src) == DATA_TYPE_NULL)
-		return ESLURM_REST_FAIL_PARSING;
-	else if (data_convert_type(src, DATA_TYPE_STRING) == DATA_TYPE_STRING &&
-		 !uid_from_string(data_get_string(src), uid))
-		return SLURM_SUCCESS;
+		if ((rc = uid_from_string(data_get_string(src), &uid)))
+		{
+			if (rc == SLURM_ERROR)
+				rc = ESLURM_USER_ID_UNKNOWN;
 
-	return ESLURM_REST_FAIL_PARSING;
+			return on_error(PARSING, parser->type, args, rc, NULL,
+				__func__, "Unable to resolve user: %s",
+				data_get_string(src));
+		}
+
+		break;
+	}
+	default:
+		return on_error(PARSING, parser->type, args,
+				ESLURM_DATA_CONV_FAILED, NULL, __func__,
+				"Invalid user field value type: %s",
+				data_type_to_string(data_get_type(src)));
+	}
+
+	if ((uid < 0) || (uid >= INT_MAX))
+		return on_error(PARSING, parser->type, args,
+				ESLURM_USER_ID_INVALID, NULL, __func__,
+				"Invalid user ID: %d", uid);
+
+	*uid_ptr = uid;
+
+	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(GROUP_ID)
+static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
+				data_t *src, args_t *args, data_t *parent_path)
+{
+	gid_t *gid_ptr = obj;
+	gid_t gid;
+
+	switch (data_convert_type(src, DATA_TYPE_NONE)) {
+	case DATA_TYPE_INT_64:
+	{
+		gid = data_get_int(src);
+		break;
+	}
+	case DATA_TYPE_STRING:
+	{
+		int rc;
+
+		if ((rc = gid_from_string(data_get_string(src), &gid)))
+		{
+			if (rc == SLURM_ERROR)
+				rc = ESLURM_GROUP_ID_UNKNOWN;
+
+			return on_error(PARSING, parser->type, args, rc, NULL,
+				__func__, "Unable to resolve group: %s",
+				data_get_string(src));
+		}
+
+		break;
+	}
+	default:
+		return on_error(PARSING, parser->type, args,
+				ESLURM_DATA_CONV_FAILED, NULL, __func__,
+				"Invalid group field value type: %s",
+				data_type_to_string(data_get_type(src)));
+	}
+
+	if ((gid < 0) || (gid >= INT_MAX))
+		return on_error(PARSING, parser->type, args,
+				ESLURM_GROUP_ID_INVALID, NULL, __func__,
+				"Invalid group ID: %d", gid);
+
+	*gid_ptr = gid;
+
+	return SLURM_SUCCESS;
+}
 
 static int DUMP_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 			       data_t *dst, args_t *args)
@@ -1573,7 +1645,47 @@ static int DUMP_FUNC(JOB_REASON)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(JOB_STATE)
+static int PARSE_FUNC(JOB_STATE)(const parser_t *const parser, void *obj,
+				 data_t *src, args_t *args, data_t *parent_path)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t state = NO_VAL, *dst = obj;
+	char *path = NULL;
+
+	switch (data_get_type(src)) {
+	case DATA_TYPE_STRING :
+		state = job_state_num(data_get_string(src));
+		break;
+	case DATA_TYPE_INT_64 :
+		state = data_get_int(src);
+		break;
+	default :
+		rc = on_error(PARSING, parser->type, args,
+			      ESLURM_DATA_CONV_FAILED,
+			      set_source_path(&path, parent_path), __func__,
+			      "Unable to parse job state formatted as %s",
+			      data_type_to_string(data_get_type(src)));
+		goto cleanup;
+	}
+
+	if (state == NO_VAL) {
+		rc = on_error(PARSING, parser->type, args,
+			      ESLURM_DATA_CONV_FAILED,
+			      set_source_path(&path, parent_path), __func__,
+			      "Rejecting NO_VAL job state");
+	} else if ((state & JOB_STATE_BASE) >= JOB_END) {
+		rc = on_error(PARSING, parser->type, args,
+			      ESLURM_DATA_CONV_FAILED,
+			      set_source_path(&path, parent_path), __func__,
+			      "Invalid numeric job state: %u", state);
+	} else {
+		*dst = state;
+	}
+
+cleanup:
+	xfree(path);
+	return rc;
+}
 
 static int DUMP_FUNC(JOB_STATE)(const parser_t *const parser, void *obj,
 				data_t *dst, args_t *args)
@@ -1586,6 +1698,44 @@ static int DUMP_FUNC(JOB_STATE)(const parser_t *const parser, void *obj,
 	data_set_string(dst, job_state_string(*state));
 
 	return SLURM_SUCCESS;
+}
+
+static int PARSE_FUNC(JOB_STATE_ID_STRING)(const parser_t *const parser,
+					   void *obj, data_t *src, args_t *args,
+					   data_t *parent_path)
+{
+	int rc;
+	char **dst = obj;
+	uint32_t state;
+
+	if ((rc = PARSE(JOB_STATE, state, src, parent_path, args)))
+		return rc;
+
+	xfree(*dst);
+	*dst = xstrdup_printf("%u", state);
+
+	return rc;
+}
+
+static int DUMP_FUNC(JOB_STATE_ID_STRING)(const parser_t *const parser,
+					  void *obj, data_t *dst, args_t *args)
+{
+	int rc;
+	char **src = obj;
+	uint32_t state;
+	data_t *parent_path, *dsrc;
+
+	parent_path = data_set_list(data_new());
+	dsrc = data_set_string(data_list_append(parent_path), *src);
+
+	rc = PARSE(JOB_STATE, state, dsrc, parent_path, args);
+
+	FREE_NULL_DATA(parent_path);
+
+	if (rc)
+		return rc;
+	else
+		return DUMP(JOB_STATE, state, dst, args);
 }
 
 static int PARSE_FUNC(STRING)(const parser_t *const parser, void *obj,
@@ -4725,6 +4875,178 @@ static int DUMP_FUNC(TIMESTAMP_NO_VAL)(const parser_t *const parser, void *obj,
 	return DUMP(UINT64_NO_VAL, t, dst, args);
 }
 
+static int PARSE_FUNC(JOB_CONDITION_SUBMIT_TIME)(const parser_t *const parser,
+						 void *obj, data_t *src,
+						 args_t *args,
+						 data_t *parent_path)
+{
+	int rc;
+	slurmdb_job_cond_t *cond = obj;
+	time_t t = NO_VAL64;
+
+	if (data_get_type(src) == DATA_TYPE_NULL)
+		return SLURM_SUCCESS;
+
+	rc = PARSE(TIMESTAMP_NO_VAL, t, src, parent_path, args);
+
+	if (!rc && (t != NO_VAL64)) {
+		cond->usage_start = t;
+		cond->flags |= JOBCOND_FLAG_NO_DEFAULT_USAGE;
+	}
+
+	return rc;
+}
+
+static int DUMP_FUNC(JOB_CONDITION_SUBMIT_TIME)(const parser_t *const parser,
+						void *obj, data_t *dst,
+						args_t *args)
+{
+	slurmdb_job_cond_t *cond = obj;
+	time_t t = NO_VAL64;
+
+	if (cond->flags & JOBCOND_FLAG_NO_DEFAULT_USAGE)
+		t = cond->usage_start;
+
+	return DUMP(TIMESTAMP_NO_VAL, t, dst, args);
+}
+
+static int PARSE_FUNC(SELECTED_STEP)(const parser_t *const parser, void *obj,
+				     data_t *src, args_t *args,
+				     data_t *parent_path)
+{
+	slurm_selected_step_t *step = obj;
+
+	if (data_convert_type(src, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return on_error(PARSING, parser->type, args,
+				ESLURM_DATA_CONV_FAILED, NULL, __func__,
+				"Expecting string but got %s",
+				data_type_to_string(data_get_type(src)));
+
+	return unfmt_job_id_string(data_get_string(src), step);
+}
+
+static int DUMP_FUNC(SELECTED_STEP)(const parser_t *const parser, void *obj,
+				    data_t *dst, args_t *args)
+{
+	int rc;
+	char *str = NULL;
+	slurm_selected_step_t *step = obj;
+
+	if (!step)
+		data_set_string(dst, "");
+
+	if (!(rc = fmt_job_id_string(step, &str)))
+		data_set_string_own(dst, str);
+	else
+		xfree(str);
+
+	return rc;
+}
+
+static int PARSE_FUNC(GROUP_ID_STRING)(const parser_t *const parser, void *obj,
+				       data_t *src, args_t *args,
+				       data_t *parent_path)
+{
+	int rc;
+	char **str = obj;
+	gid_t gid;
+
+	if ((rc = PARSE(GROUP_ID, gid, src, parent_path, args)))
+		return rc;
+
+	xfree(*str);
+	*str = xstrdup_printf("%u", gid);
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(GROUP_ID_STRING)(const parser_t *const parser, void *obj,
+				      data_t *dst, args_t *args)
+{
+	char **str = obj;
+	int rc;
+	gid_t gid;
+	data_t *parent_path, *dsrc;
+	char *gid_str;
+
+	if (!*str && ((*str)[0] == '\0')) {
+		data_set_string(dst, "");
+		return SLURM_SUCCESS;
+	}
+
+	/* use gid id string as parent path and source */
+	parent_path = data_set_list(data_new());
+	dsrc = data_set_string(data_list_append(parent_path), *str);
+
+	rc = PARSE(GROUP_ID, gid, dsrc, parent_path, args);
+
+	FREE_NULL_DATA(parent_path);
+
+	if (rc)
+		return rc;
+
+	if (!(gid_str = gid_to_string_or_null(gid))) {
+		/* group id is unknown but ignore it as is internal */
+		gid_str = xstrdup_printf("%u", gid);
+	}
+
+	data_set_string_own(dst, gid_str);
+
+	return rc;
+}
+
+static int PARSE_FUNC(USER_ID_STRING)(const parser_t *const parser, void *obj,
+				      data_t *src, args_t *args,
+				      data_t *parent_path)
+{
+	char **str = obj;
+	int rc;
+	uid_t uid;
+
+	if ((rc = PARSE(USER_ID, uid, src, parent_path, args)))
+		return rc;
+
+	xfree(*str);
+	*str = xstrdup_printf("%u", uid);
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(USER_ID_STRING)(const parser_t *const parser, void *obj,
+				     data_t *dst, args_t *args)
+{
+	char **str = obj;
+	int rc;
+	uid_t uid;
+	data_t *parent_path, *dsrc;
+	char *uid_str;
+
+	if (!*str && ((*str)[0] == '\0')) {
+		data_set_string(dst, "");
+		return SLURM_SUCCESS;
+	}
+
+	/* use uid id string as parent path and source */
+	parent_path = data_set_list(data_new());
+	dsrc = data_set_string(data_list_append(parent_path), *str);
+
+	rc = PARSE(USER_ID, uid, dsrc, parent_path, args);
+
+	FREE_NULL_DATA(parent_path);
+
+	if (rc)
+		return rc;
+
+	if (!(uid_str = uid_to_string_or_null(uid))) {
+		/* group id is unknown but ignore it as is internal */
+		uid_str = xstrdup_printf("%u", uid);
+	}
+
+	data_set_string_own(dst, uid_str);
+
+	return rc;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -6409,6 +6731,88 @@ static const parser_t PARSER_ARRAY(JOB_SUBMIT_REQ)[] = {
 };
 #undef add_parse
 
+#define add_flag(flag_value, flag_string, hidden, desc)               \
+	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, XSTRINGIFY(flag_value), \
+			   flag_value, INFINITE64,                    \
+			   XSTRINGIFY(INFINITE64), flag_string,       \
+			   hidden, desc)
+static const flag_bit_t PARSER_FLAG_ARRAY(JOB_CONDITION_FLAGS)[] = {
+	add_flag(JOBCOND_FLAG_DUP, "show_duplicates", false, NULL),
+	add_flag(JOBCOND_FLAG_NO_STEP, "skip_steps", false, NULL),
+	add_flag(JOBCOND_FLAG_NO_TRUNC, "disable_truncate_usage_time", false, NULL),
+	add_flag(JOBCOND_FLAG_RUNAWAY, "run_away_jobs", true, NULL),
+	add_flag(JOBCOND_FLAG_WHOLE_HETJOB, "whole_hetjob", false, NULL),
+	add_flag(JOBCOND_FLAG_NO_WHOLE_HETJOB, "disable_whole_hetjob", false, NULL),
+	add_flag(JOBCOND_FLAG_NO_WAIT, "disable_wait_for_result", false, NULL),
+	add_flag(JOBCOND_FLAG_NO_DEFAULT_USAGE, "usage_time_as_submit_time", false, NULL),
+	add_flag(JOBCOND_FLAG_SCRIPT, "show_batch_script", false, NULL),
+	add_flag(JOBCOND_FLAG_ENV, "show_job_environment", false, NULL),
+};
+#undef add_flag
+
+#define add_flag(flag_value, flag_string, hidden, desc)               \
+	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, XSTRINGIFY(flag_value), \
+			   flag_value, INFINITE64,                    \
+			   XSTRINGIFY(INFINITE64), flag_string,       \
+			   hidden, desc)
+#define add_flag_eq(flag_value, flag_string, hidden, desc)            \
+	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL,                       \
+			   XSTRINGIFY(flag_value), flag_value,        \
+			   INFINITE, XSTRINGIFY(INFINITE),            \
+			   flag_string, hidden, desc)
+static const flag_bit_t PARSER_FLAG_ARRAY(JOB_CONDITION_DB_FLAGS)[] = {
+	add_flag_eq(SLURMDB_JOB_FLAG_NONE, "none", true, NULL),
+	add_flag_eq(SLURMDB_JOB_CLEAR_SCHED, "clear_scheduling", true, NULL),
+	add_flag(SLURMDB_JOB_FLAG_NOTSET, "scheduler_unset", false, NULL),
+	add_flag(SLURMDB_JOB_FLAG_SUBMIT, "scheduled_on_submit", false, NULL),
+	add_flag(SLURMDB_JOB_FLAG_SCHED, "scheduled_by_main", false, NULL),
+	add_flag(SLURMDB_JOB_FLAG_BACKFILL, "scheduled_by_backfill", false, NULL),
+	add_flag(SLURMDB_JOB_FLAG_START_R, "job_started", false, NULL),
+};
+#undef add_flag
+#undef add_flag_eq
+
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(slurmdb_job_cond_t, mtype, false, path, desc)
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_job_cond_t, mtype, false, field, 0, path, desc)
+#define add_flags(mtype, field) \
+	add_parse_bit_eflag_array(slurmdb_job_cond_t, mtype, field, NULL)
+static const parser_t PARSER_ARRAY(JOB_CONDITION)[] = {
+	add_parse(CSV_STRING_LIST, acct_list, "account", "CSV account list"),
+	add_parse(CSV_STRING_LIST, associd_list, "association", "CSV association list"),
+	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV cluster list"),
+	add_parse(CSV_STRING_LIST, constraint_list, "constraints", "CSV constraint list"),
+	add_parse(UINT32_NO_VAL, cpus_max, "cpus_max", "number of cpus high range"),
+	add_parse(UINT32_NO_VAL, cpus_min, "cpus_min", "number of cpus low range"),
+	add_flags(JOB_CONDITION_DB_FLAGS, db_flags),
+	add_parse(INT32, exitcode, "exit_code", "job exit code (numeric)"),
+	add_flags(JOB_CONDITION_FLAGS, flags),
+	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
+	add_parse(GROUP_ID_STRING_LIST, groupid_list, "groups", "CSV group list"),
+	add_parse(CSV_STRING_LIST, jobname_list, "job_name", "CSV job name list"),
+	add_parse(UINT32_NO_VAL, nodes_max, "nodes_max", "number of nodes high range"),
+	add_parse(UINT32_NO_VAL, nodes_min, "nodes_min", "number of nodes low range"),
+	add_parse(CSV_STRING_LIST, partition_list, "partition", "CSV partition name list"),
+	add_parse(CSV_STRING_LIST, qos_list, "qos", "CSV QOS name list"),
+	add_parse(CSV_STRING_LIST, reason_list, "reason", "CSV reason list"),
+	add_parse(CSV_STRING_LIST, resv_list, "reservation", "CSV reservation name list"),
+	add_parse(CSV_STRING_LIST, resvid_list, "reservation_id", "CSV reservation ID list"),
+	add_parse(JOB_STATE_ID_STRING_LIST, state_list, "state", "CSV state list"),
+	add_parse(SELECTED_STEP_LIST, step_list, "step", "CSV step id list"),
+	add_parse(UINT32_NO_VAL, timelimit_max, "timelimit_max", "maximum timelimit (seconds)"),
+	add_parse(UINT32_NO_VAL, timelimit_min, "timelimit_min", "minimum timelimit (seconds)"),
+	add_parse(TIMESTAMP, usage_end, "end_time", "usage end timestamp"),
+	add_parse(TIMESTAMP, usage_start, "start_time", "usage start timestamp"),
+	add_cparse(JOB_CONDITION_SUBMIT_TIME, "submit_time", "submit time timestamp"),
+	add_parse(STRING, used_nodes, "node", "ranged node string where jobs ran"),
+	add_parse(USER_ID_STRING_LIST, userid_list, "users", "CSV user name list"),
+	add_parse(CSV_STRING_LIST, wckey_list, "wckey", "CSV wckey list"),
+};
+#undef add_parse
+#undef add_cparse
+#undef add_flags
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -6786,6 +7190,10 @@ static const parser_t parsers[] = {
 	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL),
 	addpsp(TIMESTAMP, UINT64, time_t, NEED_NONE, NULL),
 	addpsp(TIMESTAMP_NO_VAL, UINT64_NO_VAL, time_t, NEED_NONE, NULL),
+	addps(SELECTED_STEP, slurm_selected_step_t, NEED_NONE, STRING, NULL),
+	addps(GROUP_ID_STRING, char *, NEED_NONE, STRING, NULL),
+	addps(USER_ID_STRING, char *, NEED_NONE, STRING, NULL),
+	addpsp(JOB_STATE_ID_STRING, JOB_STATE, char *, NEED_NONE, NULL),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
@@ -6827,6 +7235,7 @@ static const parser_t parsers[] = {
 	addpc(JOB_INFO_STDOUT, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_INFO_STDERR, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_USER, slurmdb_job_rec_t, NEED_NONE, STRING, NULL),
+	addpcp(JOB_CONDITION_SUBMIT_TIME, TIMESTAMP_NO_VAL, slurmdb_job_cond_t, NEED_NONE, NULL),
 
 	/* NULL terminated model parsers */
 	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),
@@ -6855,6 +7264,8 @@ static const parser_t parsers[] = {
 	addpp(JOB_SUBMIT_RESPONSE_MSG_PTR, submit_response_msg_t *, JOB_SUBMIT_RESPONSE_MSG),
 	addpp(PARTITION_INFO_MSG_PTR, partition_info_msg_t *, PARTITION_INFO_MSG),
 	addpp(RESERVATION_INFO_MSG_PTR, reserve_info_msg_t *, RESERVATION_INFO_MSG),
+	addpp(SELECTED_STEP_PTR, slurm_selected_step_t *, SELECTED_STEP),
+	addpp(JOB_CONDITION_PTR, slurmdb_job_cond_t *, JOB_CONDITION),
 
 	/* Pointer model parsers allowing NULL */
 	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),
@@ -6902,6 +7313,7 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_ERROR, openapi_resp_error_t),
 	addpa(OPENAPI_WARNING, openapi_resp_warning_t),
 	addpa(JOB_SUBMIT_REQ, job_submit_request_t),
+	addpa(JOB_CONDITION, slurmdb_job_cond_t),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -6948,6 +7360,8 @@ static const parser_t parsers[] = {
 	addfa(ACCT_GATHER_PROFILE, uint32_t),
 	addfa(ADMIN_LVL, uint16_t), /* slurmdb_admin_level_t */
 	addfa(JOB_SHARED, uint16_t),
+	addfa(JOB_CONDITION_FLAGS, uint32_t),
+	addfa(JOB_CONDITION_DB_FLAGS, uint32_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, NEED_QOS),
@@ -6973,6 +7387,10 @@ static const parser_t parsers[] = {
 	addpl(OPENAPI_ERRORS, OPENAPI_ERROR, NEED_NONE),
 	addpl(OPENAPI_WARNINGS, OPENAPI_WARNING, NEED_NONE),
 	addpl(STRING_LIST, STRING, NEED_NONE),
+	addpl(SELECTED_STEP_LIST, SELECTED_STEP, NEED_NONE),
+	addpl(GROUP_ID_STRING_LIST, GROUP_ID_STRING, NEED_NONE),
+	addpl(USER_ID_STRING_LIST, USER_ID_STRING, NEED_NONE),
+	addpl(JOB_STATE_ID_STRING_LIST, JOB_STATE_ID_STRING, NEED_NONE),
 };
 #undef addpl
 #undef addps

@@ -93,14 +93,23 @@ typedef enum {
 	DATA_PARSER_COORD, /* slurmdb_coord_rec_t */
 	DATA_PARSER_CPU_FREQ_FLAGS, /* uint32_t & CPU_FREQ_* */
 	DATA_PARSER_GROUP_ID, /* Group from numeric GID <-> gid_t */
+	DATA_PARSER_GROUP_ID_STRING, /* char * - group id string */
+	DATA_PARSER_GROUP_ID_STRING_LIST, /* list_t of string group id */
 	DATA_PARSER_GROUP_NAME, /* Group from string group name <-> gid_t */
 	DATA_PARSER_JOB_EXIT_CODE, /* int32_t */
 	DATA_PARSER_JOB_REASON, /* uint32_t <-> enum job_state_reason */
 	DATA_PARSER_JOB_LIST, /* list of slurmdb_job_rec_t* */
 	DATA_PARSER_JOB, /* slurmdb_job_rec_t */
+	DATA_PARSER_JOB_CONDITION, /* slurmdb_job_cond_t */
+	DATA_PARSER_JOB_CONDITION_FLAGS, /* uint32_t - JOBCOND_FLAG_* */
+	DATA_PARSER_JOB_CONDITION_DB_FLAGS, /* uint32_t - SLURMDB_JOB_FLAG_* */
+	DATA_PARSER_JOB_CONDITION_SUBMIT_TIME, /* slurmdb_job_cond_t->usage_start&flags */
+	DATA_PARSER_JOB_CONDITION_PTR, /* slurmdb_job_cond_t* */
 	DATA_PARSER_OPENAPI_SLURMDBD_JOBS_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_SLURMDB_JOB_FLAGS, /* slurmdb_job_rec_t->flags & SLURMDB_JOB_* */
-	DATA_PARSER_JOB_STATE, /* uint32_t <-> JOB_STATE_FLAGS */
+	DATA_PARSER_JOB_STATE, /* uint32_t <-> JOB_* & JOB_STATE_FLAGS */
+	DATA_PARSER_JOB_STATE_ID_STRING, /* char* <-> JOB_* & JOB_STATE_FLAGS - as stringified integer */
+	DATA_PARSER_JOB_STATE_ID_STRING_LIST, /* list_t of char* */
 	DATA_PARSER_STEP_INFO_MSG, /* job_step_info_response_msg_t */
 	DATA_PARSER_STEP_INFO, /* job_step_info_t */
 	DATA_PARSER_STEP_INFO_ARRAY, /* job_step_info_t* */
@@ -143,6 +152,8 @@ typedef enum {
 	DATA_PARSER_TRES, /* slurmdb_tres_rec_t */
 	DATA_PARSER_TRES_NCT, /* slurmdb_tres_nct_rec_t */
 	DATA_PARSER_USER_ID, /* User from numeric UID */
+	DATA_PARSER_USER_ID_STRING, /* char * - user id string */
+	DATA_PARSER_USER_ID_STRING_LIST, /* list_t of string user id */
 	DATA_PARSER_USER, /* slurmdb_user_rec_t */
 	DATA_PARSER_USER_LIST, /* List of slurmdb_user_rec_t*  */
 	DATA_PARSER_USER_FLAGS, /* slurmdb_user_rec_t->parser_user_flags & SLURMDB_USER_FLAG_* */
@@ -275,6 +286,9 @@ typedef enum {
 	DATA_PARSER_TIMESTAMP, /* time_t */
 	DATA_PARSER_TIMESTAMP_NO_VAL, /* time_t */
 	DATA_PARSER_OPENAPI_SLURMDBD_CONFIG_RESP, /* openapi_resp_slurmdbd_config_t */
+	DATA_PARSER_SELECTED_STEP, /* slurm_selected_step_t */
+	DATA_PARSER_SELECTED_STEP_PTR, /* slurm_selected_step_t* */
+	DATA_PARSER_SELECTED_STEP_LIST, /* list_t of slurm_selected_step_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

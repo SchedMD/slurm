@@ -142,6 +142,8 @@ static const struct {
 	add(OPENAPI_META, free_openapi_resp_meta, NULL),
 	add(OPENAPI_ERROR, free_openapi_resp_error, NULL),
 	add(OPENAPI_WARNING, free_openapi_resp_warning, NULL),
+	add(SELECTED_STEP, NULL, NULL),
+	add(JOB_CONDITION, slurmdb_destroy_job_cond, NULL),
 };
 #undef add
 
