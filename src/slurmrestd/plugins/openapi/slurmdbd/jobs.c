@@ -34,8 +34,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
 #include <ctype.h>
 #include <limits.h>
 #include <stdint.h>
@@ -46,10 +44,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
-#include "src/common/ref.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/common/strlcpy.h"
+#include "src/common/read_config.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -58,19 +53,12 @@
 #include "src/slurmrestd/operations.h"
 #include "api.h"
 
-#define MAGIC_FOREACH_JOB 0xf8aefef3
 #define MAGIC_FOREACH_SEARCH 0xf9aeaef3
 
 static int _add_list_job_state(List char_list, char *values);
 
 /* typedef for adding a function to add a char* to a List */
 typedef int (*add_list_t) (List char_list, char *values);
-
-typedef struct {
-	int magic; /* MAGIC_FOREACH_JOB */
-	data_t *jobs;
-	ctxt_t *ctxt;
-} foreach_job_t;
 
 typedef struct {
 	int magic; /* MAGIC_FOREACH_SEARCH */
@@ -244,21 +232,6 @@ static int _groupname_to_gid(void *x, void *arg)
 	group = xstrdup_printf("%u", gid);
 	list_append(list, group);
 	return SLURM_SUCCESS;
-}
-
-static int _foreach_job(void *x, void *arg)
-{
-	slurmdb_job_rec_t *job = x;
-	foreach_job_t *args = arg;
-	data_t *jobs = data_list_append(args->jobs);
-
-	xassert(args->magic == MAGIC_FOREACH_JOB);
-	xassert(data_get_type(args->jobs) == DATA_TYPE_LIST);
-
-	if (DATA_DUMP(args->ctxt->parser, JOB, *job, jobs))
-		return -1;
-	else
-		return 1;
 }
 
 static data_for_each_cmd_t _foreach_list_entry(data_t *data, void *arg)
@@ -575,13 +548,7 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 
 static void _dump_jobs(ctxt_t *ctxt, slurmdb_job_cond_t *job_cond)
 {
-	foreach_job_t args = {
-		.magic = MAGIC_FOREACH_JOB,
-		.ctxt = ctxt,
-	};
-	List jobs = NULL;
-
-	args.jobs = data_set_list(data_key_set(ctxt->resp, "jobs"));
+	list_t *jobs = NULL;
 
 	/* set cluster by default if not specified */
 	if (job_cond &&
@@ -593,8 +560,9 @@ static void _dump_jobs(ctxt_t *ctxt, slurmdb_job_cond_t *job_cond)
 			    xstrdup(slurm_conf.cluster_name));
 	}
 
-	if (!db_query_list(ctxt, &jobs, slurmdb_jobs_get, job_cond) && jobs)
-		list_for_each(jobs, _foreach_job, &args);
+	if (!db_query_list(ctxt, &jobs, slurmdb_jobs_get, job_cond))
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_SLURMDBD_JOBS_RESP, jobs,
+					 ctxt);
 
 	FREE_NULL_LIST(jobs);
 

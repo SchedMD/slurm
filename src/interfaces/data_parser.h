@@ -98,6 +98,7 @@ typedef enum {
 	DATA_PARSER_JOB_REASON, /* uint32_t <-> enum job_state_reason */
 	DATA_PARSER_JOB_LIST, /* list of slurmdb_job_rec_t* */
 	DATA_PARSER_JOB, /* slurmdb_job_rec_t */
+	DATA_PARSER_OPENAPI_SLURMDBD_JOBS_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_SLURMDB_JOB_FLAGS, /* slurmdb_job_rec_t->flags & SLURMDB_JOB_* */
 	DATA_PARSER_JOB_STATE, /* uint32_t <-> JOB_STATE_FLAGS */
 	DATA_PARSER_STEP_INFO_MSG, /* job_step_info_response_msg_t */
