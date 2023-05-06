@@ -334,12 +334,18 @@ extern void check_parser_funcname(const parser_t *const parser,
 							    parser->fields[j]
 								    .key));
 		}
-	} else if (parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) {
+	} else if ((parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) ||
+		   (parser->model ==
+		    PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD)) {
 		/* parser array link to a another parser */
 		const parser_t *const linked =
 			find_parser_by_type(parser->type);
 
-		xassert(parser->key && parser->key[0]);
+		if (parser->model !=
+		    PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) {
+			xassert(parser->key && parser->key[0]);
+		}
+
 		xassert(!parser->flag_bit_array_count);
 		xassert(!parser->fields);
 		xassert(!parser->field_count);
@@ -377,6 +383,7 @@ extern void check_parser_funcname(const parser_t *const parser,
 			xassert(parser->ptr_offset == NO_VAL);
 			break;
 		case PARSER_MODEL_ARRAY_LINKED_FIELD:
+		case PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD:
 			fatal_abort("linked parsers must not link to other linked parsers");
 		case PARSER_MODEL_ARRAY_SKIP_FIELD:
 			fatal_abort("linked parsers must not link to a skip parsers");
@@ -4614,6 +4621,21 @@ static int DUMP_FUNC(TIMESTAMP_NO_VAL)(const parser_t *const parser, void *obj,
 	.obj_type_string = XSTRINGIFY(stype),                         \
 	.size = NO_VAL,                                               \
 	.needs = NEED_NONE                                            \
+}
+#define add_parse_bit_eflag_array(stype, mtype, field, desc)          \
+{                                                                     \
+	.magic = MAGIC_PARSER,                                        \
+	.model = PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD, \
+	.ptr_offset = offsetof(stype, field),                         \
+	.field_name = XSTRINGIFY(field),                              \
+	.key = NULL,                                                  \
+	.required = false,                                            \
+	.type = DATA_PARSER_ ## mtype,                                \
+	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),             \
+	.obj_desc = desc,                                             \
+	.obj_type_string = XSTRINGIFY(stype),                         \
+	.size = sizeof(((stype *) NULL)->field),                      \
+	.needs = NEED_NONE,                                           \
 }
 #define add_parse_bit_flag_array(stype, mtype, req, field, path, desc)\
 {                                                                     \

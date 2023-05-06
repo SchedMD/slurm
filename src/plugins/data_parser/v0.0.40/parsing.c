@@ -526,17 +526,84 @@ cleanup:
 	return rc;
 }
 
+static void _parser_linked_flag(args_t *args, const parser_t *const array,
+				const parser_t *const parser, data_t *src,
+				void *dst, data_t *parent_path,
+				const flag_bit_t *bit, uint64_t *set)
+{
+	char *path = NULL;
+	data_t *ppath = data_copy(NULL, parent_path);
+	bool matched;
+
+	src = data_resolve_dict_path(src, bit->name);
+	openapi_append_rel_path(ppath, bit->name);
+	set_source_path(&path, ppath);
+
+	if (!src) {
+		matched = false;
+	} else if (data_convert_type(src, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
+		matched = false;
+
+		on_warn(PARSING, parser->type, args, path, __func__,
+			"Unable to convert to boolean from %s. Flag %s is being treated as false.",
+			data_type_to_string(data_get_type(src)), bit->name);
+
+	} else {
+		matched = data_get_bool(src);
+	}
+
+	if (bit->type == FLAG_BIT_TYPE_BIT)
+		_set_flag_bit(parser, dst, bit, matched, path, src);
+	else if (bit->type == FLAG_BIT_TYPE_EQUAL) {
+		if (matched || ((~(*set) & bit->mask) == bit->mask))
+			_set_flag_bit_equal(parser, dst, bit, matched, path,
+					    src);
+		*set |= bit->mask;
+	} else {
+		fatal_abort("%s: invalid bit_flag_t", __func__);
+	}
+
+	log_flag(DATA, "%s: parsed flag %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)->%s & 0x%"PRIx64" & %s=0x%"PRIx64" via array parser %s(0x%" PRIxPTR ")=%s(0x%" PRIxPTR ")",
+		 __func__, path, data_type_to_string(data_get_type(src)),
+		 (uintptr_t) src, array->obj_type_string, (uintptr_t) dst,
+		 parser->ptr_offset, parser->field_name, bit->mask,
+		 bit->flag_name, bit->value, parser->obj_type_string,
+		 (uintptr_t) parser, array->type_string, (uintptr_t) array);
+
+	xfree(path);
+}
+
 /* parser linked parser inside of parser array */
 static int _parser_linked(args_t *args, const parser_t *const array,
 			  const parser_t *const parser, data_t *src, void *dst,
 			  data_t *parent_path)
 {
 	int rc = SLURM_ERROR;
-	data_t *ppath = data_copy(NULL, parent_path);
+	data_t *ppath = NULL;
 	char *path = NULL;
 
 	check_parser(parser);
 	verify_parser_sliced(parser);
+
+	if (parser->model ==
+	    PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) {
+		const parser_t *const fp = find_parser_by_type(parser->type);
+		uint64_t set = 0;
+
+		if (parser->ptr_offset != NO_VAL)
+			dst += parser->ptr_offset;
+
+		for (int i = 0; i < fp->flag_bit_array_count; i++) {
+			const flag_bit_t *bit = &fp->flag_bit_array[i];
+
+			_parser_linked_flag(args, array, fp, src, dst,
+					    parent_path, bit, &set);
+		}
+
+		goto cleanup;
+	}
+
+	ppath = data_copy(NULL, parent_path);
 
 	/* only look for child via key if there was one defined */
 	if (parser->key) {
@@ -754,6 +821,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		_parse_check_openapi(parser, src, args, parent_path);
 		rc = parser->parse(parser, dst, src, args, parent_path);
 		break;
+	case PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD:
 	case PARSER_MODEL_ARRAY_LINKED_FIELD:
 		fatal_abort("%s: link model not allowed %u",
 			    __func__, parser->model);
@@ -831,7 +899,7 @@ static bool _match_flag_equal(const parser_t *const parser, void *src,
 
 static void _dump_flag_bit_array_flag(args_t *args, void *src, data_t *dst,
 				      const parser_t *const parser,
-				      const flag_bit_t *bit)
+				      const flag_bit_t *bit, bool set_bool)
 {
 	bool found;
 
@@ -842,7 +910,9 @@ static void _dump_flag_bit_array_flag(args_t *args, void *src, data_t *dst,
 	else
 		fatal_abort("%s: invalid bit_flag_t", __func__);
 
-	if (found)
+	if (set_bool)
+		data_set_bool(dst, found);
+	else if (found)
 		data_set_string(data_list_append(dst), bit->name);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
@@ -901,7 +971,7 @@ static int _dump_flag_bit_array(args_t *args, void *src, data_t *dst,
 
 	for (int8_t i = 0; !rc && (i < parser->flag_bit_array_count); i++)
 		_dump_flag_bit_array_flag(args, src, dst, parser,
-					  &parser->flag_bit_array[i]);
+					  &parser->flag_bit_array[i], false);
 
 	return SLURM_SUCCESS;
 }
@@ -1046,7 +1116,7 @@ static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
 static int _dump_linked(args_t *args, const parser_t *const array,
 			const parser_t *const parser, void *src, data_t *dst)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	check_parser(parser);
 	verify_parser_sliced(parser);
@@ -1076,7 +1146,22 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 			 (uintptr_t) src, array->field_name,
 			 array->ptr_offset, (uintptr_t) dst,
 			 array->key, (uintptr_t) dst);
-		rc = SLURM_SUCCESS;
+		goto cleanup;
+	}
+
+	if (parser->model ==
+	    PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) {
+		if (data_get_type(dst) == DATA_TYPE_NULL)
+			data_set_dict(dst);
+
+		for (int i = 0; i < parser->flag_bit_array_count; i++) {
+			const flag_bit_t *bit = &parser->flag_bit_array[i];
+			data_t *bit_dst = data_define_dict_path(dst, bit->name);
+
+			_dump_flag_bit_array_flag(args, src, bit_dst, parser,
+						  bit, true);
+		}
+
 		goto cleanup;
 	}
 
@@ -1204,6 +1289,7 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 		rc = parser->dump(parser, src, dst, args);
 		_check_dump(parser, dst, args);
 		break;
+	case PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD:
 	case PARSER_MODEL_ARRAY_LINKED_FIELD:
 		fatal_abort("%s: link model not allowed %u",
 			    __func__, parser->model);
