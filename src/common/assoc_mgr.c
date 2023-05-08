@@ -198,6 +198,16 @@ static int _find_acct_by_name(void *x, void *y)
 	return 0;
 }
 
+static int _find_nondirect_acct_by_name(void *x, void *y)
+{
+	slurmdb_coord_rec_t *acct = x;
+
+	if (acct->direct)
+		return 0;
+
+	return _find_acct_by_name(x, y);
+}
+
 /*
  * _find_assoc_rec - return a pointer to the assoc_ptr with the given
  * contents of assoc.
@@ -2292,6 +2302,42 @@ static void _add_potential_coord_childern(slurmdb_assoc_rec_t *assoc)
 	(void) list_for_each(assoc_mgr_coord_list, _foreach_add2coord, assoc);
 }
 
+static int _delete_nondirect_coord_children(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	slurmdb_user_rec_t *user = arg;
+
+	(void) list_delete_first(user->coord_accts,
+				 _find_nondirect_acct_by_name, assoc->acct);
+	if (assoc->usage->children_list)
+		(void) list_for_each(assoc->usage->children_list,
+				     _delete_nondirect_coord_children, user);
+
+	return 0;
+}
+
+static int _foreach_rem_coord(void *x, void *arg)
+{
+	slurmdb_user_rec_t *user = x;
+	slurmdb_assoc_rec_t *assoc = arg;
+
+	/* Check to see if user a coord */
+	if (!user->coord_accts)
+		return 0;
+
+	return _delete_nondirect_coord_children(assoc, user);
+}
+
+static void _remove_nondirect_coord_acct(slurmdb_assoc_rec_t *assoc)
+{
+	xassert(verify_assoc_lock(USER_LOCK, WRITE_LOCK));
+
+	if (assoc->user || !assoc_mgr_coord_list)
+		return;
+
+	(void) list_for_each(assoc_mgr_coord_list, _foreach_rem_coord, assoc);
+}
+
 static void _handle_new_user_coord(slurmdb_user_rec_t *rec)
 {
 	xassert(verify_assoc_lock(USER_LOCK, WRITE_LOCK));
@@ -3989,6 +4035,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				// after all new parents have been set we will
 				// reset the parent pointers below
 				parents_changed = 1;
+				_remove_nondirect_coord_acct(rec);
 			}
 
 			if (object->priority != NO_VAL) {
@@ -4164,6 +4211,21 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 			/* We need to renormalize of something else */
 			if (rec->priority == g_assoc_max_priority)
 				redo_priority = 2;
+
+			_remove_nondirect_coord_acct(rec);
+
+			/*
+			 * Remove the pointer from the childern_list or
+			 * any call removing a parent could get an illegal read
+			 * when _remove_nondirect_coord_acct() is called and
+			 * this rec is still in it's children_list.
+			 */
+			if (rec->usage->parent_assoc_ptr &&
+			    rec->usage->parent_assoc_ptr->
+			    usage->children_list)
+				list_delete_first(rec->usage->parent_assoc_ptr->
+						  usage->children_list,
+						  slurm_find_ptr_in_list, rec);
 
 			_delete_assoc_hash(rec);
 			_remove_from_assoc_list(rec);
