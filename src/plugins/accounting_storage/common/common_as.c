@@ -607,26 +607,6 @@ extern bool is_user_min_admin_level_locked(void *db_conn, uid_t uid,
 	return _is_user_min_admin_level(db_conn, uid, min_level, true);
 }
 
-extern bool is_user_coord(slurmdb_user_rec_t *user, char *account)
-{
-	ListIterator itr;
-	slurmdb_coord_rec_t *coord;
-
-	xassert(user);
-	xassert(account);
-
-	if (!user->coord_accts || !list_count(user->coord_accts))
-		return 0;
-
-	itr = list_iterator_create(user->coord_accts);
-	while((coord = list_next(itr))) {
-		if (!xstrcasecmp(coord->name, account))
-			break;
-	}
-	list_iterator_destroy(itr);
-	return coord ? 1 : 0;
-}
-
 extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
 {
 	return _is_user_any_coord_internal(db_conn, user, false);
