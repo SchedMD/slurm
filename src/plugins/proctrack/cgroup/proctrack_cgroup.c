@@ -209,10 +209,11 @@ extern int proctrack_p_signal (uint64_t id, int signal)
 		if (pids[i] == (pid_t)id)
 			continue;
 
-		/* only signal slurm tasks unless signal is SIGKILL */
 		slurm_task = _slurm_cgroup_is_pid_a_slurm_task(id, pids[i]);
-		if (slurm_task == 1 || signal == SIGKILL) {
-			debug2("killing process %d (%s) with signal %d", pids[i],
+		if (slurm_cgroup_conf.signal_children_processes ||
+		    (slurm_task == 1) || (signal == SIGKILL)) {
+			debug2("sending process %d (%s) signal %d",
+			       pids[i],
 			       (slurm_task==1)?"slurm_task":"inherited_task",
 			       signal);
 			kill(pids[i], signal);

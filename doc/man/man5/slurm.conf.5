@@ -2687,6 +2687,10 @@ option to be specified at the cluster level. Also, because the suspended jobs
 will still use memory on the allocated nodes, Slurm needs to be able to track
 memory resources to be able to suspend jobs.
 .br
+When suspending jobs, Slurm sends the SIGTSTP signal, waits the time specified
+by \fBPreemptParameters=suspend_grace_time\fR (default is 2 seconds), then
+sends the SIGSTOP signal. The SIGCONT signal is sent when resuming jobs.
+.br
 If \fBPreemptType=preempt/qos\fR is configured and if the preempted job(s) and
 the preemptor job are on the same partition, then they will share resources with
 the Gang scheduler (time\-slicing). If not (i.e. if the preemptees and preemptor
@@ -2751,6 +2755,20 @@ priority jobs.
 It may be desirable to set this configuration parameter when there are multiple
 priorities of preemptable jobs.
 The logic to support this option is only available in the select/cons_tres plugin.
+.IP
+
+.TP
+\fBsuspend_grace_time\fR
+Specifies, in units of seconds, the preemption grace time when using
+\fBPreemptMode=SUSPEND\fR.
+When a job is suspended, the SIGTSTP signal will be sent, and then after waiting
+the specified suspend grace time, the SIGSTOP signal will be sent.
+The default value is 2 seconds.
+.br
+\fBNOTE\fR: This parameter is only used when \fBPreemptMode=SUSPEND\fR is
+configured or when suspending jobs with scontrol suspend.
+For setting the preemption grace time when using other preemption modes,
+see \fBGraceTime\fR.
 .IP
 
 .TP
@@ -6840,6 +6858,10 @@ This is followed by the SIGCONT, SIGTERM and SIGKILL signal sequence upon
 reaching its new end time. This second set of signals is sent to both the
 tasks \fBand\fR the containing batch script, if applicable.
 See also the global \fBKillWait\fR configuration parameter.
+.br
+\fBNOTE\fR: This parameter does not apply to \fBPreemptMode=SUSPEND\fR.
+For setting the preemption grace time when using \fBPreemptMode=SUSPEND\fR,
+see \fBPreemptParameters=suspend_grace_time\fR.
 .IP
 
 .TP
