@@ -316,6 +316,13 @@ extern int slurm_find_char_in_list(void *x, void *key)
 	return 0;
 }
 
+extern int slurm_find_ptr_in_list(void *x, void *key)
+{
+	if (x == key)
+		return 1;
+	return 0;
+}
+
 static int _char_list_append_str(void *x, void *arg)
 {
 	char  *char_item = (char *)x;
