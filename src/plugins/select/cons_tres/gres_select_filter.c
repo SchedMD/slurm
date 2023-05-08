@@ -966,6 +966,10 @@ static void _pick_shared_gres_topo(sock_gres_t *sock_gres, bool use_busy_dev,
 
 	for (int j = 0; (j < gres_ns->topo_cnt) && (alloc_gres_cnt == 0); j++) {
 		int t = topo_index ? topo_index[j] : j;
+		if (gres_js->type_id &&
+		    (gres_js->type_id != NO_VAL) &&
+		    (gres_js->type_id != gres_ns->topo_type_id[t]))
+			continue;
 		if (use_busy_dev && (gres_ns->topo_gres_cnt_alloc[t] == 0))
 			continue;
 		if (gres_ns->topo_gres_cnt_alloc &&
