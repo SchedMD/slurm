@@ -421,6 +421,10 @@ attempts without <b>PrologFlags=contain.</b></p>
 <p>Verify that <b>UsePAM</b> is set to <b>On</b> in /etc/ssh/sshd_config (it
 should be on by default).</p>
 
+<p>By setting <b>LaunchParameters=ulimit_pam_adopt</b>, processes adopted by
+the external step can have RLIMIT_RSS set, similar to tasks running in regular
+steps.</p>
+
 <h3 id="firewall">Firewalls, IP Addresses, etc.
 <a class="slurm_link" href="#firewall"></a>
 </h3>
@@ -502,6 +506,6 @@ break process adoption with pam_slurm_adopt.</p>
 <p>When using SELinux support in Slurm, the session started via pam_slurm_adopt
 won't necessarily be in the same context as the job it is associated with.</p>
 
-<p style="text-align:center;">Last modified 29 November 2022</p>
+<p style="text-align:center;">Last modified 05 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
