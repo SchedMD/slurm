@@ -841,6 +841,7 @@ static bool _opt_verify(void)
 	/* massage the numbers */
 	if ((opt.nodes_set || opt.extra_set)				&&
 	    ((opt.min_nodes == opt.max_nodes) || (opt.max_nodes == 0))	&&
+	    (opt.ntasks_per_node == NO_VAL) &&
 	    !opt.ntasks_set) {
 		/* 1 proc / node default */
 		opt.ntasks = MAX(opt.min_nodes, 1);
