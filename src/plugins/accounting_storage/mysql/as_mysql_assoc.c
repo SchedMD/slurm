@@ -717,23 +717,12 @@ static int _move_parent(mysql_conn_t *mysql_conn, uid_t uid,
 			char *id, char *old_parent, char *new_parent,
 			time_t now, uint32_t rpc_version)
 {
-	char *query = NULL;
 	int rc = SLURM_SUCCESS;
 
 	if (rpc_version <= SLURM_23_02_PROTOCOL_VERSION) {
 		rc = _move_parent_legacy(mysql_conn, uid, lft, rgt,
 					 cluster, id, old_parent,
 					 new_parent, now);
-	} else {
-		/*
-		 * Alter the account association that moved parents
-		 * (the id sent in)
-		 */
-		query = xstrdup_printf(
-			"update \"%s_%s\" set parent_acct='%s' where id_assoc=%s;",
-			cluster, assoc_table, new_parent, id);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
 	}
 
 	return rc;
@@ -1680,7 +1669,20 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		if (moved_parent) {
 			mod_assoc->lineage = _set_lineage(
 				mysql_conn, mod_assoc->id, row[MASSOC_ACCT],
-				row[MASSOC_USER], cluster_name);
+				row[MASSOC_USER], mod_assoc->cluster);
+			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
+			rc = _get_parent_id(mysql_conn,
+					    assoc->parent_acct,
+					    mod_assoc->cluster,
+					    &mod_assoc->parent_id,
+					    NULL);
+			if (rc != SLURM_SUCCESS) {
+				slurmdb_destroy_assoc_rec(mod_assoc);
+				goto end_it;
+			}
+			xstrfmtcat(vals, ", parent_acct='%s', id_parent=%u",
+				   mod_assoc->parent_acct,
+				   mod_assoc->parent_id);
 		}
 
 		if (alt_assoc.def_qos_id != NO_VAL)
@@ -1755,11 +1757,6 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		else
 			mod_assoc->priority = assoc->priority;
 
-		/* no need to get the parent id since if we moved
-		 * parent id's we will get it when we send the total list */
-
-		if (!row[MASSOC_USER][0])
-			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
 		if (assoc->qos_list && list_count(assoc->qos_list)) {
 			ListIterator new_qos_itr =
 				list_iterator_create(assoc->qos_list);
