@@ -2247,6 +2247,51 @@ static slurmdb_admin_level_t _get_admin_level_internal(void *db_conn,
 	return level;
 }
 
+static int _foreach_add2coord(void *x, void *arg)
+{
+	slurmdb_user_rec_t *user = x;
+	slurmdb_assoc_rec_t *assoc_in = arg;
+	slurmdb_assoc_rec_t *assoc = assoc_in;
+	slurmdb_coord_rec_t *coord;
+
+	/* Check to see if user a coord */
+	if (!user->coord_accts)
+		return 0;
+
+	/* See if the user is a coord of any of this tree */
+	while (assoc) {
+		if (assoc_mgr_is_user_acct_coord_user_rec(user, assoc->acct))
+			break;
+		assoc = assoc->usage->parent_assoc_ptr;
+	}
+
+	if (!assoc)
+		return 0;
+
+	/* If it is add any missing to the list */
+	assoc = assoc_in;
+	while (assoc) {
+		if (assoc_mgr_is_user_acct_coord_user_rec(user, assoc->acct))
+			break;
+		coord = xmalloc(sizeof(*coord));
+		list_append(user->coord_accts, coord);
+		coord->name = xstrdup(assoc->acct);
+		coord->direct = 0;
+		assoc = assoc->usage->parent_assoc_ptr;
+	}
+	return 0;
+}
+
+static void _add_potential_coord_childern(slurmdb_assoc_rec_t *assoc)
+{
+	xassert(verify_assoc_lock(USER_LOCK, WRITE_LOCK));
+
+	if (assoc->user || !assoc_mgr_coord_list)
+		return;
+
+	(void) list_for_each(assoc_mgr_coord_list, _foreach_add2coord, assoc);
+}
+
 static void _handle_new_user_coord(slurmdb_user_rec_t *rec)
 {
 	xassert(verify_assoc_lock(USER_LOCK, WRITE_LOCK));
@@ -4204,6 +4249,13 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 		*/
 		list_iterator_reset(itr);
 		while ((object = list_next(itr))) {
+			/*
+			 * This needs to run for all since we could had removed
+			 * some that need to be added back (different clusters
+			 * have different paths).
+			 */
+			_add_potential_coord_childern(object);
+
 			if (setup_children) {
 				List children = object->usage->children_list;
 				if (!children || list_is_empty(children))

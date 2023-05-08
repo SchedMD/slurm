@@ -3805,19 +3805,6 @@ end_it:
 	if (add_assoc_cond.rc != SLURM_SUCCESS) {
 		reset_mysql_conn(mysql_conn);
 	} else {
-		/*
-		 * We need to refresh the assoc_mgr_user_list to ensure that
-		 * coordinators of parent accounts are also assigned to
-		 * subaccounts potentially added here.
-		 */
-		if (!add_assoc.user_list) {
-			if (assoc_mgr_refresh_lists((void *)mysql_conn,
-						    ASSOC_MGR_CACHE_USER)) {
-				error ("Cannot refresh users/coordinators cache after new ccount was added");
-				add_assoc_cond.rc = SLURM_ERROR;
-			}
-		}
-
 		if ((add_assoc_cond.rc == SLURM_SUCCESS) &&
 		    add_assoc_cond.txn_query) {
 			xstrcat(add_assoc_cond.txn_query, ";");
@@ -3953,19 +3940,6 @@ extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "didn't affect anything");
 		errno = SLURM_NO_CHANGE_IN_DATA;
 	} else {
-		/*
-		 * We need to refresh the assoc_mgr_user_list to ensure that
-		 * coordinators of parent accounts are also assigned to
-		 * subaccounts potentially added here.
-		 */
-		if (!add_assoc->user_list) {
-			if (assoc_mgr_refresh_lists((void *)mysql_conn,
-						    ASSOC_MGR_CACHE_USER)) {
-				error ("Cannot refresh users/coordinators cache after new ccount was added");
-				add_assoc_cond.rc = SLURM_ERROR;
-			}
-		}
-
 		if ((add_assoc_cond.rc == SLURM_SUCCESS) &&
 		    add_assoc_cond.txn_query) {
 			xstrcat(add_assoc_cond.txn_query, ";");
