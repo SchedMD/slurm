@@ -169,11 +169,12 @@ no_wckeys:
  */
 static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 {
-	char *query = NULL;
+	char *query = NULL, *query_pos = NULL;
+	char *meat_query = NULL, *meat_query_pos = NULL;
 	slurmdb_coord_rec_t *coord = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	ListIterator itr = NULL, itr2 = NULL;
+	ListIterator itr = NULL;
 	char *cluster_name = NULL;
 
 	if (!user) {
@@ -196,6 +197,9 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	xfree(query);
 
 	while ((row = mysql_fetch_row(result))) {
+		if (assoc_mgr_is_user_acct_coord_user_rec(user, row[0]))
+			continue;
+
 		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
 		list_append(user->coord_accts, coord);
 		coord->name = xstrdup(row[0]);
@@ -206,71 +210,56 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	if (!list_count(user->coord_accts))
 		return SLURM_SUCCESS;
 
-	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
-	itr2 = list_iterator_create(as_mysql_cluster_list);
 	itr = list_iterator_create(user->coord_accts);
-	while ((cluster_name = list_next(itr2))) {
-		int set = 0;
-		if (query)
-			xstrcat(query, " union ");
+	while ((coord = list_next(itr))) {
+		/*
+		 * Make sure we don't get the same account back since we want to
+		 * keep track of the sub-accounts.
+		 */
+		xstrfmtcatat(meat_query, &meat_query_pos,
+			     "%s(lineage like '%%/%s/%%' && user='' && acct!='%s')",
+			     meat_query ? " || " : "",
+			     coord->name, coord->name);
 
-		while ((coord = list_next(itr))) {
-			if (set)
-				xstrcat(query, " || ");
-			else
-				xstrfmtcat(query,
-					   "select distinct t1.acct from "
-					   "\"%s_%s\" as t1, \"%s_%s\" "
-					   "as t2 where t1.deleted=0 && (",
-					   cluster_name, assoc_table,
-					   cluster_name, assoc_table);
-			/* Make sure we don't get the same
-			 * account back since we want to keep
-			 * track of the sub-accounts.
-			 */
-			xstrfmtcat(query, "(t2.acct='%s' "
-				   "&& t1.lft between t2.lft "
-				   "and t2.rgt && t1.user='' "
-				   "&& t1.acct!='%s')",
-				   coord->name, coord->name);
-			set = 1;
-		}
-		list_iterator_reset(itr);
-		if (set)
-			xstrcat(query, ")");
-
-	}
-	list_iterator_destroy(itr2);
-	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
-
-	if (query) {
-		debug4("%d(%s:%d) query\n%s",
-		       mysql_conn->conn, THIS_FILE, __LINE__, query);
-		if (!(result = mysql_db_query_ret(
-			      mysql_conn, query, 0))) {
-			xfree(query);
-			return SLURM_ERROR;
-		}
-		xfree(query);
-
-		while ((row = mysql_fetch_row(result))) {
-			list_iterator_reset(itr);
-			while ((coord = list_next(itr))) {
-				if (!xstrcmp(coord->name, row[0]))
-					break;
-			}
-
-			if (coord)
-				continue;
-
-			coord = xmalloc(sizeof(slurmdb_coord_rec_t));
-			list_append(user->coord_accts, coord);
-			coord->name = xstrdup(row[0]);
-			coord->direct = 0;
-		}
-		mysql_free_result(result);
 	}
 	list_iterator_destroy(itr);
+
+	if (!meat_query)
+		return SLURM_SUCCESS;
+
+	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+	itr = list_iterator_create(as_mysql_cluster_list);
+	while ((cluster_name = list_next(itr))) {
+		xstrfmtcatat(query, &query_pos,
+			     "%sselect distinct acct from \"%s_%s\" where deleted=0 && (%s)",
+			     query ? " union " : "",
+			     cluster_name, assoc_table, meat_query);
+	}
+	xfree(meat_query);
+	list_iterator_destroy(itr);
+	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+
+	if (!query)
+		return SLURM_SUCCESS;
+
+	debug4("%d(%s:%d) query\n%s",
+	       mysql_conn->conn, THIS_FILE, __LINE__, query);
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+
+	if (!result)
+		return SLURM_ERROR;
+
+	while ((row = mysql_fetch_row(result))) {
+		if (assoc_mgr_is_user_acct_coord_user_rec(user, row[0]))
+			continue;
+
+		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
+		list_append(user->coord_accts, coord);
+		coord->name = xstrdup(row[0]);
+		coord->direct = 0;
+	}
+	mysql_free_result(result);
 
 	return SLURM_SUCCESS;
 }
