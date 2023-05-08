@@ -3120,13 +3120,9 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 					 uint32_t uid,
 					 char *acct_name)
 {
-	ListIterator itr = NULL;
-	slurmdb_coord_rec_t *acct = NULL;
 	slurmdb_user_rec_t * found_user = NULL;
 	assoc_mgr_lock_t locks = { .user = READ_LOCK };
-
-	if (!acct_name)
-		return false;
+	bool found = false;
 
 	if (!assoc_mgr_user_list)
 		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
@@ -3141,24 +3137,10 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 	found_user = list_find_first(assoc_mgr_coord_list, _list_find_uid,
 				     &uid);
 
-	if (!found_user || !found_user->coord_accts) {
-		assoc_mgr_unlock(&locks);
-		return false;
-	}
-	itr = list_iterator_create(found_user->coord_accts);
-	while ((acct = list_next(itr))) {
-		if (!xstrcmp(acct_name, acct->name))
-			break;
-	}
-	list_iterator_destroy(itr);
+	found = assoc_mgr_is_user_acct_coord_user_rec(found_user, acct_name);
 
-	if (acct) {
-		assoc_mgr_unlock(&locks);
-		return true;
-	}
 	assoc_mgr_unlock(&locks);
-
-	return false;
+	return found;
 }
 
 extern bool assoc_mgr_is_user_acct_coord_user_rec(slurmdb_user_rec_t *user,
