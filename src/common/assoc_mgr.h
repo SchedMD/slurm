@@ -111,6 +111,7 @@ extern List assoc_mgr_tres_list;
 extern slurmdb_tres_rec_t **assoc_mgr_tres_array;
 extern char **assoc_mgr_tres_name_array;
 extern List assoc_mgr_assoc_list;
+extern List assoc_mgr_coord_list;
 extern List assoc_mgr_res_list;
 extern List assoc_mgr_qos_list;
 extern List assoc_mgr_user_list;

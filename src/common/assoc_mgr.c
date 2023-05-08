@@ -64,6 +64,7 @@ List assoc_mgr_tres_list = NULL;
 slurmdb_tres_rec_t **assoc_mgr_tres_array = NULL;
 char **assoc_mgr_tres_name_array = NULL;
 List assoc_mgr_assoc_list = NULL;
+List assoc_mgr_coord_list = NULL;
 List assoc_mgr_res_list = NULL;
 List assoc_mgr_qos_list = NULL;
 List assoc_mgr_user_list = NULL;
@@ -1102,6 +1103,12 @@ static int _post_user_list(List user_list)
 	DEF_TIMERS;
 
 	START_TIMER;
+
+	if (assoc_mgr_coord_list)
+		list_flush(assoc_mgr_coord_list);
+	else
+		assoc_mgr_coord_list = list_create(NULL);
+
 	while ((user = list_next(itr))) {
 		uid_t pw_uid;
 		/* Just to make sure we have a default_wckey since it
@@ -1115,6 +1122,9 @@ static int _post_user_list(List user_list)
 			user->uid = NO_VAL;
 		} else
 			user->uid = pw_uid;
+
+		if (user->coord_accts && list_count(user->coord_accts))
+			list_append(assoc_mgr_coord_list, user);
 	}
 	list_iterator_destroy(itr);
 	END_TIMER2(__func__);
@@ -1699,6 +1709,7 @@ static int _get_assoc_mgr_user_list(void *db_conn, int enforce)
 
 	assoc_mgr_lock(&locks);
 	FREE_NULL_LIST(assoc_mgr_user_list);
+	FREE_NULL_LIST(assoc_mgr_coord_list);
 	assoc_mgr_user_list = acct_storage_g_get_users(db_conn, uid, &user_q);
 
 	if (!assoc_mgr_user_list) {
@@ -2109,6 +2120,7 @@ extern int assoc_mgr_fini(bool save_state)
 	assoc_mgr_lock(&locks);
 
 	FREE_NULL_LIST(assoc_mgr_assoc_list);
+	FREE_NULL_LIST(assoc_mgr_coord_list);
 	FREE_NULL_LIST(assoc_mgr_tres_list);
 	FREE_NULL_LIST(assoc_mgr_res_list);
 	FREE_NULL_LIST(assoc_mgr_qos_list);
@@ -2220,6 +2232,20 @@ static slurmdb_admin_level_t _get_admin_level_internal(void *db_conn,
 		assoc_mgr_unlock(&locks);
 
 	return level;
+}
+
+static void _handle_new_user_coord(slurmdb_user_rec_t *rec)
+{
+	xassert(verify_assoc_lock(USER_LOCK, WRITE_LOCK));
+
+	if (rec->coord_accts && list_count(rec->coord_accts)) {
+		if (!list_find_first(assoc_mgr_coord_list,
+				     slurm_find_ptr_in_list,
+				     rec))
+			list_append(assoc_mgr_coord_list, rec);
+	} else
+		list_delete_first(assoc_mgr_coord_list,
+				  slurm_find_ptr_in_list, rec);
 }
 
 extern bool verify_assoc_lock(assoc_mgr_lock_datatype_t datatype,
@@ -3107,12 +3133,12 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 			return false;
 
 	assoc_mgr_lock(&locks);
-	if (!assoc_mgr_user_list) {
+	if (!assoc_mgr_coord_list || !list_count(assoc_mgr_coord_list)) {
 		assoc_mgr_unlock(&locks);
 		return false;
 	}
 
-	found_user = list_find_first(assoc_mgr_user_list, _list_find_uid,
+	found_user = list_find_first(assoc_mgr_coord_list, _list_find_uid,
 				     &uid);
 
 	if (!found_user || !found_user->coord_accts) {
@@ -4464,6 +4490,7 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 			} else
 				object->uid = pw_uid;
 			list_append(assoc_mgr_user_list, object);
+			_handle_new_user_coord(object);
 			object = NULL;
 			break;
 		case SLURMDB_REMOVE_USER:
@@ -4471,6 +4498,8 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 				//rc = SLURM_ERROR;
 				break;
 			}
+			list_delete_first(assoc_mgr_coord_list,
+					  slurm_find_ptr_in_list, rec);
 			list_delete_item(itr);
 			break;
 		case SLURMDB_ADD_COORD:
@@ -4489,6 +4518,8 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 				rec->coord_accts = object->coord_accts;
 				object->coord_accts = NULL;
 			}
+
+			_handle_new_user_coord(rec);
 			break;
 		default:
 			break;
