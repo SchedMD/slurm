@@ -685,6 +685,19 @@ static int _list_find_uid(void *x, void *key)
 	return 0;
 }
 
+static int _list_find_user(void *x, void *key)
+{
+	slurmdb_user_rec_t *found_user = x;
+	slurmdb_user_rec_t *user = key;
+
+	if (user->uid != NO_VAL)
+		return _list_find_uid(found_user, &user->uid);
+	else if (!xstrcasecmp(found_user->name, user->name))
+		return 1;
+
+	return 0;
+}
+
 /* locks should be put in place before calling this function USER_WRITE */
 static void _set_user_default_acct(slurmdb_assoc_rec_t *assoc)
 {
@@ -2707,7 +2720,6 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 				  slurmdb_user_rec_t **user_pptr,
 				  bool locked)
 {
-	ListIterator itr = NULL;
 	slurmdb_user_rec_t * found_user = NULL;
 	assoc_mgr_lock_t locks = { .user = READ_LOCK };
 
@@ -2735,18 +2747,8 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 		return SLURM_SUCCESS;
 	}
 
-	itr = list_iterator_create(assoc_mgr_user_list);
-	while ((found_user = list_next(itr))) {
-		if (user->uid != NO_VAL) {
-			if (user->uid == found_user->uid)
-				break;
-		} else if (user->name
-			   && !xstrcasecmp(user->name, found_user->name))
-			break;
-	}
-	list_iterator_destroy(itr);
-
-	if (!found_user) {
+	if (!(found_user = list_find_first(assoc_mgr_user_list,
+					   _list_find_user, user))) {
 		if (!locked)
 			assoc_mgr_unlock(&locks);
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
