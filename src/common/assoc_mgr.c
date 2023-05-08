@@ -3164,14 +3164,20 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 extern bool assoc_mgr_is_user_acct_coord_user_rec(slurmdb_user_rec_t *user,
 						  char *acct_name)
 {
+	if (!user)
+		return false;
+
+	if (!user->coord_accts || !list_count(user->coord_accts))
+		return false;
+
+	/*
+	 * If the acct_name == NULL we are only checking to see if they are a
+	 * coord of anything.
+	 */
 	if (!acct_name)
-		return false;
+		return true;
 
-	if (!user || !user->coord_accts)
-		return false;
-
-	if (list_find_first(user->coord_accts, _find_acct_by_name,
-			    acct_name))
+	if (list_find_first(user->coord_accts, _find_acct_by_name, acct_name))
 		return true;
 
 	return false;
