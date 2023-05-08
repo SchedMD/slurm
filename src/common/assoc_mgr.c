@@ -150,23 +150,6 @@ static void _add_assoc_hash(slurmdb_assoc_rec_t *assoc)
 	assoc_hash[inx] = assoc;
 }
 
-static bool _remove_from_assoc_list(slurmdb_assoc_rec_t *assoc)
-{
-	slurmdb_assoc_rec_t *assoc_ptr;
-	ListIterator itr = list_iterator_create(assoc_mgr_assoc_list);
-
-	while ((assoc_ptr = list_next(itr))) {
-		if (assoc_ptr == assoc) {
-			list_remove(itr);
-			break;
-		}
-	}
-
-	list_iterator_destroy(itr);
-
-	return assoc_ptr ? 1 : 0;
-}
-
 static slurmdb_assoc_rec_t *_find_assoc_rec_id(uint32_t assoc_id,
 					       char *cluster_name)
 {
@@ -4228,7 +4211,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 						  slurm_find_ptr_in_list, rec);
 
 			_delete_assoc_hash(rec);
-			_remove_from_assoc_list(rec);
+			list_remove_first(assoc_mgr_assoc_list,
+					  slurm_find_ptr_in_list, rec);
 			if (init_setup.remove_assoc_notify) {
 				/* since there are some deadlock
 				   issues while inside our lock here
