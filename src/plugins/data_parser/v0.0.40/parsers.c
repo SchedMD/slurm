@@ -4633,12 +4633,14 @@ static int DUMP_FUNC(TIMESTAMP_NO_VAL)(const parser_t *const parser, void *obj,
 #define add_flag_bit(flag_value, flag_string)                         \
 	add_flag_masked_bit(flag_value, INFINITE64, flag_string)
 #define add_flag_masked_bit(flag_value, flag_mask, flag_string)       \
-	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, #flag_value, flag_value,\
-			   flag_mask, #flag_mask, flag_string)
+	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, XSTRINGIFY(flag_value), \
+			   flag_value, flag_mask,                     \
+			   XSTRINGIFY(flag_mask), flag_string)
 #define add_flag_equal(flag_value, flag_mask, flag_string)            \
-	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL, #flag_value,          \
-			   flag_value, flag_mask, #flag_mask,         \
-			   flag_string)
+	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL,                       \
+			   XSTRINGIFY(flag_value),                    \
+			   flag_value, flag_mask,                     \
+			   XSTRINGIFY(flag_mask), flag_string)
 #define add_flag_bit_entry(flag_type, flag_value_string, flag_value,  \
 			   flag_mask, flag_mask_string, flag_string)  \
 {                                                                     \
