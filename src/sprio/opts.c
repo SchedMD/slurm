@@ -61,9 +61,9 @@
 #define OPT_LONG_AUTOCOMP  0x105
 
 /* FUNCTIONS */
-static List  _build_job_list( char* str );
-static List  _build_part_list( char* str );
-static List  _build_user_list( char* str );
+static list_t *_build_job_list(char *str);
+static list_t *_build_part_list(char *str);
+static list_t *_build_user_list(char *str);
 static char *_get_prefix(char *token);
 static void  _help( void );
 static void  _parse_token( char *token, char *field, int *field_size,
@@ -465,7 +465,7 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify,
 static void
 _print_options(void)
 {
-	ListIterator iterator;
+	list_itr_t *iterator;
 	int i;
 	uint32_t *job_id;
 	uint32_t *user;
@@ -505,10 +505,9 @@ _print_options(void)
  * IN str - comma separated list of job_ids
  * RET List of job_ids (uint32_t)
  */
-static List
-_build_job_list( char* str )
+static list_t *_build_job_list(char *str)
 {
-	List my_list;
+	list_t *my_list;
 	char *job = NULL, *tmp_char = NULL, *my_job_list = NULL;
 	int i;
 	uint32_t *job_id = NULL;
@@ -539,9 +538,9 @@ _build_job_list( char* str )
  * IN str - comma separated list of partition names
  * RET List of partitions (char)
  */
-static List _build_part_list(char *str)
+static list_t *_build_part_list(char *str)
 {
-	List my_list;
+	list_t *my_list;
 	char *part = NULL;
 	char *tmp_char = NULL, *tok = NULL, *my_part_list = NULL;
 
@@ -565,10 +564,9 @@ static List _build_part_list(char *str)
  * IN str - comma separated list of user names
  * RET List of UIDs (uint32_t)
  */
-static List
-_build_user_list(char* str)
+static list_t *_build_user_list(char *str)
 {
-	List my_list;
+	list_t *my_list;
 	char *user = NULL;
 	char *tmp_char = NULL, *my_user_list = NULL;
 	uid_t uid = (uid_t) 0;

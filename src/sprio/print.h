@@ -56,14 +56,14 @@ typedef struct job_format {
 	char *suffix;
 } job_format_t;
 
-int print_jobs_array(List factors, List format);
-int print_job_from_format(priority_factors_object_t * job, List list);
+int print_jobs_array(list_t *factors, list_t *format);
+int print_job_from_format(priority_factors_object_t * job, list_t *list);
 double get_priority_from_factors(priority_factors_object_t *prio_factors);
 
 /*****************************************************************************
  * Job Line Format Options
  *****************************************************************************/
-int job_format_add_function(List list, int width, bool right_justify,
+int job_format_add_function(list_t *list, int width, bool right_justify,
 			    char *suffix,
 			    int (*function) (priority_factors_object_t *,
 			    int, bool, char*));

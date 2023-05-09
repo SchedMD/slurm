@@ -68,7 +68,7 @@ static int _sort_by_job_prio(void *v1, void *v2);
 static int _sort_by_tres_prio(void *v1, void *v2);
 
 
-extern void sort_job_list(List job_list)
+extern void sort_job_list(list_t *job_list)
 {
 	int i;
 	char c;

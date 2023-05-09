@@ -58,7 +58,7 @@ static int	_print_str(char *str, int width, bool right, bool cut_output);
  * Global Print Functions
  *****************************************************************************/
 
-int print_jobs_array(List jobs, List format)
+int print_jobs_array(list_t *jobs, list_t *format)
 {
 	if (!params.no_header)
 		print_job_from_format(NULL, format);
@@ -163,9 +163,9 @@ static int _print_norm(double number, int width, bool right, bool cut_output)
 /*****************************************************************************
  * Job Print Functions
  *****************************************************************************/
-int print_job_from_format(priority_factors_object_t * job, List list)
+int print_job_from_format(priority_factors_object_t * job, list_t *list)
 {
-	ListIterator i = list_iterator_create(list);
+	list_itr_t *i = list_iterator_create(list);
 	job_format_t *current;
 
 	while ((current = list_next(i))) {
@@ -182,7 +182,7 @@ int print_job_from_format(priority_factors_object_t * job, List list)
 	return SLURM_SUCCESS;
 }
 
-int job_format_add_function(List list, int width, bool right, char *suffix,
+int job_format_add_function(list_t *list, int width, bool right, char *suffix,
 			    int (*function) (priority_factors_object_t *,
 			    int, bool, char*))
 {

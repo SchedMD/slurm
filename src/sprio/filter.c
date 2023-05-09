@@ -87,7 +87,7 @@ static int _filter_job(void *x, void *key)
 	return false;
 }
 
-extern void filter_job_list(List job_list)
+extern void filter_job_list(list_t *job_list)
 {
 	if ((!params.job_list && !params.part_list && !params.user_list) ||
 	    (!job_list))
