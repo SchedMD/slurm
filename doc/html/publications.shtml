@@ -4,6 +4,13 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<h2>Presentations from Cray User Group, May 2023</h2>
+<ul>
+<li><a href="MISC23/CUG23-Slurm-Roadmap.pdf">Slurm 23.02, 23.11, and Beyond</a>,
+Tim Wickberg, SchedMD
+</li>
+</ul>
+
 <h2>Presentations from SC22, November 2022</h2>
 <ul>
 <li><a href="SC22/Slurm-Hearts-Containers.pdf">Slurm ♥ Containers</a>,
@@ -1170,6 +1177,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 5 December 2022</p>
+<p style="text-align:center;">Last modified 9 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
