@@ -35,6 +35,7 @@
 \*****************************************************************************/
 
 #include "src/common/data.h"
+#include "src/common/http.h"
 #include "src/common/log.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -59,6 +60,8 @@ typedef struct {
 	data_t *new_paths; /* newly populated paths */
 	data_t *schemas;
 	data_t *spec;
+	data_t *path_params; /* dict of each path param */
+	data_t *params; /* current parameters target */
 } spec_args_t;
 
 static void _add_parser(const parser_t *parser, spec_args_t *sargs);
@@ -145,6 +148,41 @@ static bool _should_be_ref(const parser_t *parser)
 	return false;
 }
 
+static void _add_eflags(data_t *props, const parser_t *parser,
+			spec_args_t *sargs)
+{
+	parser = find_parser_by_type(parser->type);
+
+	for (int i = 0; i < parser->flag_bit_array_count; i++) {
+		const flag_bit_t *bit = &parser->flag_bit_array[i];
+		data_t *dchild = data_key_set(props, bit->name);
+
+		set_openapi_props(dchild, OPENAPI_FORMAT_BOOL, NULL);
+	}
+}
+
+static void _add_field(data_t *obj, data_t *required,
+		       const parser_t *const pchild, spec_args_t *sargs)
+{
+	data_t *dchild;
+
+	if (pchild->model == PARSER_MODEL_ARRAY_SKIP_FIELD)
+		return;
+
+	if (pchild->required)
+		data_set_string(data_list_append(required), pchild->field_name);
+
+	dchild = _resolve_parser_key(pchild, obj);
+
+	if (pchild->model ==
+	    PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) {
+		data_t *p = data_key_get(dchild, "properties");
+		_add_eflags(p, pchild, sargs);
+	} else {
+		_set_ref(dchild, pchild, sargs);
+	}
+}
+
 /*
  * Populate OpenAPI specification field using parser
  * IN obj - data_t ptr to specific field in OpenAPI schema
@@ -166,8 +204,12 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	xassert(sargs->args->magic == MAGIC_ARGS);
 	xassert(parser->model != PARSER_MODEL_ARRAY_SKIP_FIELD);
 
-	/* find all parsers that should be references */
-	if (parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) {
+	if (parser->model ==
+	    PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) {
+		_set_ref(obj, find_parser_by_type(parser->type), sargs);
+		return NULL;
+	} else if (parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) {
+		/* find all parsers that should be references */
 		_set_ref(obj, find_parser_by_type(parser->type), sargs);
 		return NULL;
 	} else if (parser->pointer_type) {
@@ -216,24 +258,9 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 			data_t *required =
 				data_set_list(data_key_set(obj, "required"));
 
-			for (int i = 0; i < parser->field_count; i++) {
-				data_t *dchild;
-				const parser_t *const pchild =
-					&parser->fields[i];
-
-				if (pchild->model ==
-				    PARSER_MODEL_ARRAY_SKIP_FIELD)
-					continue;
-
-				if (pchild->required) {
-					data_set_string(
-						data_list_append(required),
-						pchild->field_name);
-				}
-
-				dchild = _resolve_parser_key(pchild, obj);
-				_set_ref(dchild, pchild, sargs);
-			}
+			for (int i = 0; i < parser->field_count; i++)
+				_add_field(obj, required, &parser->fields[i],
+					   sargs);
 		} else {
 			fatal("%s: parser %s need to provide openapi specification, array type or pointer type",
 			      __func__, parser->type_string);
@@ -429,12 +456,180 @@ static void _replace_refs(data_t *data, spec_args_t *sargs)
 		(void) data_list_for_each(data, _convert_list_entry, sargs);
 }
 
+static void _add_param(data_t *param, const char *name,
+		       openapi_type_format_t format, bool allow_empty,
+		       const char *desc, spec_args_t *args)
+{
+	data_t *schema;
+	const char *format_str;
+
+	xassert(format > OPENAPI_FORMAT_INVALID);
+	xassert(format < OPENAPI_FORMAT_MAX);
+
+	data_set_string(data_key_set(param, "in"),
+			(data_key_get(args->path_params, name) ?
+			 "path" : "query"));
+	xassert(name);
+	data_set_string(data_key_set(param, "name"), name);
+	data_set_string(data_key_set(param, "style"), "form");
+	data_set_bool(data_key_set(param, "explode"), false);
+	data_set_bool(data_key_set(param, "deprecated"), false);
+	data_set_bool(data_key_set(param, "allowEmptyValue"), allow_empty);
+	data_set_bool(data_key_set(param, "allowReserved"), false);
+	if (desc)
+		data_set_string(data_key_set(param, "description"), desc);
+
+	schema = data_set_dict(data_key_set(param, "schema"));
+	data_set_string(data_key_set(schema, "type"),
+			openapi_type_format_to_type_string(format));
+
+	if ((format_str = openapi_type_format_to_format_string(format)))
+		data_set_string(data_key_set(schema, "format"), format_str);
+}
+
+static void _add_param_eflags(data_t *params, const parser_t *parser,
+			      spec_args_t *args)
+{
+	parser = find_parser_by_type(parser->type);
+
+	for (int i = 0; i < parser->flag_bit_array_count; i++) {
+		const flag_bit_t *bit = &parser->flag_bit_array[i];
+
+		_add_param(data_set_dict(data_list_append(params)), bit->name,
+			   OPENAPI_FORMAT_BOOL, true, NULL, args);
+	}
+}
+
+static void _add_param_linked(data_t *params, const parser_t *fp,
+			      spec_args_t *args)
+{
+	const parser_t *p;
+
+	if (fp->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
+		return;
+	} else if (fp->model ==
+		   PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) {
+		_add_param_eflags(params, fp, args);
+		return;
+	} else if (fp->model == PARSER_MODEL_ARRAY_LINKED_FIELD) {
+		p = find_parser_by_type(fp->type);
+	} else {
+		p = fp;
+	}
+
+	/* resolve out pointer type to first non-pointer */
+	while (p->pointer_type)
+		p = find_parser_by_type(p->pointer_type);
+
+	if (p->model == PARSER_MODEL_ARRAY) {
+		/* no way to parse an dictionary/object currently */
+		return;
+	}
+
+	_add_param(data_set_dict(data_list_append(params)), fp->key,
+		   OPENAPI_FORMAT_STRING,
+		   (p->obj_openapi == OPENAPI_FORMAT_BOOL), fp->obj_desc, args);
+}
+
+static data_for_each_cmd_t _foreach_path_method_ref(data_t *ref, void *arg)
+{
+	spec_args_t *args = arg;
+	const parser_t *parser = NULL;
+
+	for (int i = 0; i < args->parser_count; i++) {
+		if (!xstrcmp(args->parsers[i].type_string,
+			     data_get_string(ref))) {
+			parser = &args->parsers[i];
+			break;
+		}
+	}
+
+	if (!parser) {
+		error("Unknown $ref = %s", data_get_string(ref));
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	if (parser->model != PARSER_MODEL_ARRAY) {
+		error("$ref parameters must be an array parser");
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	for (int i = 0; i < parser->field_count; i++)
+		_add_param_linked(args->params, &parser->fields[i], args);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static data_for_each_cmd_t _foreach_path_method(const char *key, data_t *data,
+						void *arg)
+{
+	spec_args_t *args = arg;
+	data_t *params, *ref, *refs;
+	int rc = DATA_FOR_EACH_CONT;
+
+	if (data_get_type(data) != DATA_TYPE_DICT)
+		return DATA_FOR_EACH_CONT;
+
+	if (!(params = data_key_get(data, OPENAPI_PATH_PARAMS_FIELD)))
+		return DATA_FOR_EACH_CONT;
+
+	if (data_get_type(params) != DATA_TYPE_DICT)
+		return DATA_FOR_EACH_CONT;
+
+	if (!(ref = data_key_get(params, OPENAPI_REF_TAG)))
+		return DATA_FOR_EACH_CONT;
+
+	refs = data_new();
+	data_move(refs, ref);
+	args->params = data_set_list(params);
+
+	if (data_get_type(refs) == DATA_TYPE_LIST) {
+		if (data_list_for_each(refs, _foreach_path_method_ref,
+				       args) < 0)
+			rc = DATA_FOR_EACH_FAIL;
+	} else if (data_get_type(refs) == DATA_TYPE_STRING) {
+		rc = _foreach_path_method_ref(refs, args);
+	} else {
+		error("$ref must be string or dict");
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	FREE_NULL_DATA(refs);
+	return rc;
+}
+
+static data_for_each_cmd_t _foreach_path_entry(data_t *data, void *arg)
+{
+	spec_args_t *args = arg;
+	char *path, *path2;
+
+	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return DATA_FOR_EACH_FAIL;
+
+	path = xstrdup(data_get_string(data));
+
+	if (path[0] != '{') {
+		xfree(path);
+		return DATA_FOR_EACH_CONT;
+	}
+
+	if ((path2 = xstrstr(path, "}")))
+		*path2 = '\0';
+
+	data_key_set(args->path_params, (path + 1));
+
+	xfree(path);
+
+	return DATA_FOR_EACH_CONT;
+}
+
 static data_for_each_cmd_t _foreach_path(const char *key, data_t *data,
 					 void *arg)
 {
+	int rc = SLURM_SUCCESS;
 	char *param, *start, *end, *replaced;
 	spec_args_t *args = arg;
-	data_t *n;
+	data_t *n, *path;
 
 	param = xstrdup(key);
 
@@ -453,11 +648,22 @@ static data_for_each_cmd_t _foreach_path(const char *key, data_t *data,
 		args->new_paths = data_set_dict(data_new());
 
 	n = data_key_set(args->new_paths, replaced);
-	xfree(replaced);
 
 	data_copy(n, data);
 
-	return DATA_FOR_EACH_CONT;
+	args->path_params = data_set_dict(data_new());
+	path = parse_url_path(replaced, false, true);
+	if (data_list_for_each(path, _foreach_path_entry, args) < 0)
+		rc = SLURM_ERROR;
+	FREE_NULL_DATA(path);
+
+	if (!rc && (data_dict_for_each(n, _foreach_path_method, args) < 0))
+		rc = SLURM_ERROR;
+
+	xfree(replaced);
+	FREE_NULL_DATA(args->path_params);
+
+	return rc ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT;
 }
 
 static data_for_each_cmd_t _foreach_join_path(const char *key, data_t *data,
