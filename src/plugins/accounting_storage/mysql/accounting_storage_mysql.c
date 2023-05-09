@@ -2890,6 +2890,9 @@ extern int init(void)
 			error("rollback failed");
 	}
 
+	/* If streaming replication was changed, restore to initial values */
+	mysql_db_restore_streaming_replication(mysql_conn);
+
 	destroy_mysql_conn(mysql_conn);
 
 	return rc;

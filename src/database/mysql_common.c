@@ -780,6 +780,7 @@ extern mysql_conn_t *create_mysql_conn(int conn_num, bool rollback,
 		mysql_conn->flags |= DB_CONN_FLAG_ROLLBACK;
 	mysql_conn->conn = conn_num;
 	mysql_conn->cluster_name = xstrdup(cluster_name);
+	mysql_conn->wsrep_trx_fragment_size_orig = NO_VAL64;
 	slurm_mutex_init(&mysql_conn->lock);
 	mysql_conn->update_list = list_create(slurmdb_destroy_update_object);
 
@@ -794,6 +795,7 @@ extern int destroy_mysql_conn(mysql_conn_t *mysql_conn)
 		xfree(mysql_conn->cluster_name);
 		slurm_mutex_destroy(&mysql_conn->lock);
 		FREE_NULL_LIST(mysql_conn->update_list);
+		xfree(mysql_conn->wsrep_trx_fragment_unit_orig);
 		xfree(mysql_conn);
 	}
 
@@ -1254,6 +1256,38 @@ extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn)
 	}
 
 	/*
+	 * Save the initial wsrep settings so they can be restored later.
+	 * If these were set previously, don't set them again.
+	 *
+	 * If these variables don't exist, streaming replication isn't supported
+	 * so don't turn it on.
+	 */
+	if (!mysql_conn->wsrep_trx_fragment_unit_orig) {
+		rc = mysql_db_get_var_str(
+			mysql_conn,
+			"wsrep_trx_fragment_unit",
+			&mysql_conn->wsrep_trx_fragment_unit_orig);
+		if (rc) {
+			if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
+				error("This version of galera does not support streaming replication.");
+			error("Unable to fetch wsrep_trx_fragment_unit.");
+			return;
+		}
+	}
+	if (mysql_conn->wsrep_trx_fragment_size_orig == NO_VAL64) {
+		rc = mysql_db_get_var_u64(
+			mysql_conn,
+			"wsrep_trx_fragment_size",
+			&mysql_conn->wsrep_trx_fragment_size_orig);
+		if (rc) {
+			if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
+				error("This version of galera does not support streaming replication.");
+			error("Unable to fetch wsrep_trx_fragment_size.");
+			return;
+		}
+	}
+
+	/*
 	 * Force the wsrep_trx_fragment_unit to bytes. The default may change
 	 * in the future, or may have been set by the site, so don't rely on it
 	 * being a specific value.
@@ -1281,6 +1315,53 @@ extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn)
 	else
 		debug2("set wsrep_trx_fragment_size=%"PRIu64" bytes",
 		       fragment_size);
+
+	return;
+}
+
+extern void mysql_db_restore_streaming_replication(mysql_conn_t *mysql_conn)
+{
+	int rc;
+	char *query;
+	uint64_t wsrep_on;
+
+	/* if this errors, assume wsrep_on doesn't exist, so must be disabled */
+	if (mysql_db_get_var_u64(mysql_conn, "wsrep_on", &wsrep_on))
+		wsrep_on = 0;
+
+	debug2("wsrep_on=%lu", wsrep_on);
+
+	if (!wsrep_on)
+		return;
+
+	if (mysql_conn->wsrep_trx_fragment_unit_orig) {
+		query = xstrdup_printf(
+				"SET @@SESSION.wsrep_trx_fragment_unit=\'%s\';",
+				mysql_conn->wsrep_trx_fragment_unit_orig);
+		rc = _mysql_query_internal(mysql_conn->db_conn, query);
+		xfree(query);
+		if (rc) {
+			error("Unable to restore wsrep_trx_fragment_unit.");
+		} else {
+			debug2("Restored wsrep_trx_fragment_unit=%s",
+			       mysql_conn->wsrep_trx_fragment_unit_orig);
+			xfree(mysql_conn->wsrep_trx_fragment_unit_orig);
+		}
+	}
+	if (mysql_conn->wsrep_trx_fragment_size_orig != NO_VAL64) {
+		query = xstrdup_printf(
+				"SET @@SESSION.wsrep_trx_fragment_size=%"PRIu64";",
+				mysql_conn->wsrep_trx_fragment_size_orig);
+		rc = _mysql_query_internal(mysql_conn->db_conn, query);
+		xfree(query);
+		if (rc) {
+			error("Unable to restore wsrep_trx_fragment_size.");
+		} else {
+			debug2("Restored wsrep_trx_fragment_size=%"PRIu64,
+			       mysql_conn->wsrep_trx_fragment_size_orig);
+			mysql_conn->wsrep_trx_fragment_size_orig = NO_VAL64;
+		}
+	}
 
 	return;
 }

@@ -66,6 +66,8 @@ typedef struct {
 	char *pre_commit_query;
 	List update_list;
 	int conn;
+	uint64_t wsrep_trx_fragment_size_orig;
+	char *wsrep_trx_fragment_unit_orig;
 } mysql_conn_t;
 
 typedef struct {
@@ -113,4 +115,5 @@ extern int mysql_db_get_var_u64(mysql_conn_t *mysql_conn,
 	    			 const char *variable_name,
 			    	 uint64_t *value);
 extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn);
+extern void mysql_db_restore_streaming_replication(mysql_conn_t *mysql_conn);
 #endif
