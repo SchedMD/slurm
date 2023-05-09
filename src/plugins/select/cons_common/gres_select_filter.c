@@ -701,6 +701,11 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 						   max_tasks);
 		}
 
+		if (gres_js->ntasks_per_gres) {
+			max_tasks = cnt_avail_total * gres_js->ntasks_per_gres;
+			*max_tasks_this_node = MIN(*max_tasks_this_node,
+						   max_tasks);
+		}
 		/*
 		 * min_tasks_this_node and max_tasks_this_node must be multiple
 		 * of original min_tasks_this_node value. This is to support
