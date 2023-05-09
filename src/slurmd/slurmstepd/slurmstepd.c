@@ -76,7 +76,6 @@
 #include "src/interfaces/task.h"
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/proctrack.h"
-#include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/container.h"
 #include "src/slurmd/slurmstepd/mgr.h"
