@@ -57,7 +57,7 @@ extern int scontrol_create_node(int argc, char **argv)
 	node_msg.extra = node_line;
 	if (slurm_create_node(&node_msg)) {
 		exit_code = 1;
-		slurm_perror("Error creating the node(s)");
+		slurm_perror("Error creating node(s)");
 		return slurm_get_errno();
 	}
 	xfree(node_line);

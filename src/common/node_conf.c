@@ -331,18 +331,21 @@ extern void build_all_frontend_info (bool is_slurmd_context)
 #endif
 }
 
-static void _check_callback(char *alias, char *hostname,
-			    char *address, char *bcast_address,
-			    uint16_t port, int state_val,
-			    slurm_conf_node_t *node_ptr,
-			    config_record_t *config_ptr)
+static int _check_callback(char *alias, char *hostname,
+			   char *address, char *bcast_address,
+			   uint16_t port, int state_val,
+			   slurm_conf_node_t *node_ptr,
+			   config_record_t *config_ptr)
 {
+	int rc = SLURM_SUCCESS;
 	node_record_t *node_rec;
 
 	if ((node_rec = find_node_record2(alias)))
 		fatal("Duplicated NodeHostName %s in config file", alias);
 
-	node_rec = create_node_record(config_ptr, alias);
+	if ((rc = create_node_record(config_ptr, alias, &node_rec)))
+		return rc;
+
 	if ((state_val != NO_VAL) &&
 	    (state_val != NODE_STATE_UNKNOWN))
 		node_rec->node_state = state_val;
@@ -354,6 +357,8 @@ static void _check_callback(char *alias, char *hostname,
 	node_rec->port      = port;
 	node_rec->features  = xstrdup(node_ptr->feature);
 	node_rec->reason    = xstrdup(node_ptr->reason);
+
+	return rc;
 }
 
 extern config_record_t *config_record_from_conf_node(
@@ -415,7 +420,7 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 	for (i = 0; i < count; i++) {
 		node = ptr_array[i];
 		config_ptr = config_record_from_conf_node(node, tres_cnt);
-		expand_nodeline_info(node, config_ptr, _check_callback);
+		expand_nodeline_info(node, config_ptr, NULL, _check_callback);
 	}
 
 	if (set_bitmap) {
@@ -531,14 +536,15 @@ static void _select_spec_cores(node_record_t *node_ptr)
 /*
  * Expand a nodeline's node names, host names, addrs, ports into separate nodes.
  */
-extern void expand_nodeline_info(slurm_conf_node_t *node_ptr, config_record_t
-				 *config_ptr,
-				 void (*_callback) (
-				       char *alias, char *hostname,
-				       char *address, char *bcast_address,
-				       uint16_t port, int state_val,
-				       slurm_conf_node_t *node_ptr,
-				       config_record_t *config_ptr))
+extern int expand_nodeline_info(slurm_conf_node_t *node_ptr,
+				config_record_t *config_ptr,
+				char **err_msg,
+				int (*_callback) (
+					char *alias, char *hostname,
+					char *address, char *bcast_address,
+					uint16_t port, int state_val,
+					slurm_conf_node_t *node_ptr,
+					config_record_t *config_ptr))
 {
 	hostlist_t *address_list = NULL;
 	hostlist_t *alias_list = NULL;
@@ -550,7 +556,7 @@ extern void expand_nodeline_info(slurm_conf_node_t *node_ptr, config_record_t
 	char *bcast_address = NULL;
 	char *hostname = NULL;
 	char *port_str = NULL;
-	int state_val = NODE_STATE_UNKNOWN;
+	int state_val = NODE_STATE_UNKNOWN, rc = SLURM_SUCCESS;
 	int address_count, alias_count, bcast_count, hostname_count, port_count;
 	uint16_t port = slurm_conf.slurmd_port;
 
@@ -659,8 +665,17 @@ extern void expand_nodeline_info(slurm_conf_node_t *node_ptr, config_record_t
 			port = port_int;
 		}
 
-		(*_callback)(alias, hostname, address, bcast_address,
-			     port, state_val, node_ptr, config_ptr);
+		if ((rc = (*_callback)(alias, hostname, address, bcast_address,
+				       port, state_val, node_ptr,
+				       config_ptr))) {
+			if (err_msg) {
+				xfree(*err_msg);
+				*err_msg = xstrdup_printf("%s (%s)",
+							  slurm_strerror(rc),
+							  alias);
+			}
+			break;
+		}
 
 		free(alias);
 	}
@@ -678,6 +693,8 @@ extern void expand_nodeline_info(slurm_conf_node_t *node_ptr, config_record_t
 	FREE_NULL_HOSTLIST(bcast_list);
 	FREE_NULL_HOSTLIST(hostname_list);
 	FREE_NULL_HOSTLIST(port_list);
+
+	return rc;
 }
 
 /*
@@ -826,25 +843,27 @@ extern void grow_node_record_table_ptr(void)
  * create_node_record - create a node record and set its values to defaults
  * IN config_ptr - pointer to node's configuration information
  * IN node_name - name of the node
- * RET pointer to the record or NULL if error
+ * OUT node_ptr - node_record_t** with created node on SUCESS, NULL otherwise.
+ * RET SUCESS, or error code
  * NOTE: allocates memory at node_record_table_ptr that must be xfreed when
  *	the global node table is no longer required
  */
-extern node_record_t *create_node_record(config_record_t *config_ptr,
-					 char *node_name)
+extern int create_node_record(config_record_t *config_ptr, char *node_name,
+			      node_record_t **node_ptr)
 {
-	node_record_t *node_ptr;
 	xassert(config_ptr);
 	xassert(node_name);
+	xassert(node_ptr);
 
 	if (node_record_count >= node_record_table_size)
 		grow_node_record_table_ptr();
 
-	node_ptr = create_node_record_at(node_record_count, node_name,
-					 config_ptr);
+	if (!(*node_ptr = create_node_record_at(node_record_count,
+						node_name, config_ptr)))
+		return ESLURM_NODE_TABLE_FULL;
 	node_record_count++;
 
-	return node_ptr;
+	return SLURM_SUCCESS;
 }
 
 extern node_record_t *create_node_record_at(int index, char *node_name,
@@ -876,33 +895,40 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 	return node_ptr;
 }
 
-extern node_record_t *add_node_record(char *alias, config_record_t *config_ptr)
+extern int add_node_record(char *alias, config_record_t *config_ptr,
+			   node_record_t **node_ptr)
 {
-	node_record_t *node_ptr = NULL;
+	int rc = SLURM_SUCCESS;
 
-	if ((node_ptr = find_node_record2(alias))) {
-		error("Node '%s' already exists in the node table", alias);
-		return NULL;
+	xassert(node_ptr);
+
+	if ((*node_ptr = find_node_record2(alias))) {
+		rc = ESLURM_NODE_ALREADY_EXISTS;
+		goto end;
 	}
 
 	for (int i = 0; i < node_record_count; i++) {
 		if (node_record_table_ptr[i])
 			continue;
 
-		if (!(node_ptr = create_node_record_at(i, alias, config_ptr)))
-			return NULL;
+		if (!(*node_ptr =
+			create_node_record_at(i, alias, config_ptr))) {
+			rc = ESLURM_NODE_TABLE_FULL;
+			goto end;
+		}
 
 		bit_set(config_ptr->node_bitmap, i);
 
-		gres_init_node_config(node_ptr->config_ptr->gres,
-				      &node_ptr->gres_list);
+		gres_init_node_config((*node_ptr)->config_ptr->gres,
+				      &(*node_ptr)->gres_list);
 
 		break;
 	}
-	if (!node_ptr)
-		error("Unable to add node '%s', node table is full", alias);
+	if (!(*node_ptr))
+		rc = ESLURM_NODE_TABLE_FULL;
 
-	return node_ptr;
+end:
+	return rc;
 }
 
 static int _find_config_ptr(void *x, void *arg)

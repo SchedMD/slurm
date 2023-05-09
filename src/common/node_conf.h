@@ -257,14 +257,15 @@ extern int build_node_spec_bitmap(node_record_t *node_ptr);
 /*
  * Expand a nodeline's node names, host names, addrs, ports into separate nodes.
  */
-extern void expand_nodeline_info(slurm_conf_node_t *node_ptr,
-				 config_record_t *config_ptr,
-				 void (*_callback) (
-				       char *alias, char *hostname,
-				       char *address, char *bcast_addr,
-				       uint16_t port, int state_val,
-				       slurm_conf_node_t *node_ptr,
-				       config_record_t *config_ptr));
+extern int expand_nodeline_info(slurm_conf_node_t *node_ptr,
+				config_record_t *config_ptr,
+				char **err_msg,
+				int (*_callback) (
+					char *alias, char *hostname,
+					char *address, char *bcast_addr,
+					uint16_t port, int state_val,
+					slurm_conf_node_t *node_ptr,
+					config_record_t *config_ptr));
 
 /*
  * create_config_record - create a config_record entry and set is values to
@@ -296,12 +297,13 @@ extern void grow_node_record_table_ptr();
  * create_node_record - create a node record and set its values to defaults
  * IN config_ptr - pointer to node's configuration information
  * IN node_name - name of the node
- * RET pointer to the record or NULL if error
+ * OUT node_ptr - node_record_t** with created node on SUCESS, NULL otherwise.
+ * RET SUCESS, or error code
  * NOTE: grows node_record_table_ptr if needed and appends a new node_record_t *
  *       to node_record_table_ptr and increases node_record_count.
  */
-extern node_record_t *create_node_record(config_record_t *config_ptr,
-					 char *node_name);
+extern int create_node_record(config_record_t *config_ptr, char *node_name,
+			      node_record_t **node_ptr);
 
 /*
  * Create a new node_record_t * at the specified index.
@@ -323,9 +325,11 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
  *
  * IN alias - name of node.
  * IN config_ptr - config_record_t* to initialize node with.
- * RET node_record_t* on SUCESS, NULL otherwise.
+ * OUT node_ptr - node_record_t** with added node on SUCESS, NULL otherwise.
+ * RET SUCESS, or error code
  */
-extern node_record_t *add_node_record(char *alias, config_record_t *config_ptr);
+extern int add_node_record(char *alias, config_record_t *config_ptr,
+			   node_record_t **node_ptr);
 
 /*
  * Add existing record to node_record_table_ptr

@@ -2316,13 +2316,14 @@ cleanup:
 	return error_code;
 }
 
-static void _check_callback(char *alias, char *hostname, char *address,
-			    char *bcast_address, uint16_t port, int state_val,
-			    slurm_conf_node_t *node_ptr,
-			    config_record_t *config_ptr)
+static int _check_callback(char *alias, char *hostname, char *address,
+			   char *bcast_address, uint16_t port, int state_val,
+			   slurm_conf_node_t *node_ptr,
+			   config_record_t *config_ptr)
 {
 	_push_to_hashtbls(alias, hostname, address, bcast_address, port,
 			  false, NULL, false);
+	return SLURM_SUCCESS;
 }
 
 static void _init_slurmd_nodehash(void)
@@ -2345,7 +2346,7 @@ static void _init_slurmd_nodehash(void)
 
 	count = slurm_conf_nodename_array(&ptr_array);
 	for (i = 0; i < count; i++) {
-		expand_nodeline_info(ptr_array[i], NULL, _check_callback);
+		expand_nodeline_info(ptr_array[i], NULL, NULL, _check_callback);
 		if ((slurmdb_setup_cluster_name_dims() > 1) &&
 		    !conf_ptr->node_prefix)
 			_set_node_prefix(ptr_array[i]->nodenames);
