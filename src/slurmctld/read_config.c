@@ -1497,6 +1497,18 @@ static void _preserve_dynamic_nodes(node_record_t **old_node_table_ptr,
 		    !IS_NODE_DYNAMIC_NORM(node_ptr))
 			continue;
 
+		/*
+		 * reset values that will be set later in
+		 * _sync_nodes_to_jobs()
+		 */
+		node_ptr->comp_job_cnt = 0;
+		node_ptr->no_share_job_cnt = 0;
+		node_ptr->owner = NO_VAL;
+		node_ptr->owner_job_cnt = 0;
+		node_ptr->run_job_cnt = 0;
+		node_ptr->sus_job_cnt = 0;
+		xfree(node_ptr->mcs_label);
+
 		insert_node_record(node_ptr);
 		old_node_table_ptr[i] = NULL;
 
