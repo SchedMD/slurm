@@ -231,8 +231,8 @@ int auth_p_pack(auth_credential_t *cred, buf_t *buf, uint16_t protocol_version)
 	}
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32((uint32_t) cred->uid, buf);
-		pack32((uint32_t) cred->gid, buf);
+		pack32(cred->uid, buf);
+		pack32(cred->gid, buf);
 		packstr(cred->hostname, buf);
 	} else {
 		error("%s: Unknown protocol version %d",
