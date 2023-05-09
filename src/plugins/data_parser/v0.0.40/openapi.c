@@ -495,8 +495,10 @@ static void _add_param_eflags(data_t *params, const parser_t *parser,
 	for (int i = 0; i < parser->flag_bit_array_count; i++) {
 		const flag_bit_t *bit = &parser->flag_bit_array[i];
 
-		_add_param(data_set_dict(data_list_append(params)), bit->name,
-			   OPENAPI_FORMAT_BOOL, true, NULL, args);
+		if (!bit->hidden)
+			_add_param(data_set_dict(data_list_append(params)),
+				   bit->name, OPENAPI_FORMAT_BOOL, true,
+				   bit->description, args);
 	}
 }
 

@@ -4657,14 +4657,17 @@ static int DUMP_FUNC(TIMESTAMP_NO_VAL)(const parser_t *const parser, void *obj,
 #define add_flag_masked_bit(flag_value, flag_mask, flag_string)       \
 	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, XSTRINGIFY(flag_value), \
 			   flag_value, flag_mask,                     \
-			   XSTRINGIFY(flag_mask), flag_string)
+			   XSTRINGIFY(flag_mask), flag_string, false, \
+			   NULL)
 #define add_flag_equal(flag_value, flag_mask, flag_string)            \
 	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL,                       \
 			   XSTRINGIFY(flag_value),                    \
 			   flag_value, flag_mask,                     \
-			   XSTRINGIFY(flag_mask), flag_string)
+			   XSTRINGIFY(flag_mask), flag_string,        \
+			   false, NULL)
 #define add_flag_bit_entry(flag_type, flag_value_string, flag_value,  \
-			   flag_mask, flag_mask_string, flag_string)  \
+			   flag_mask, flag_mask_string, flag_string,  \
+			   hidden_flag, desc_str)                     \
 {                                                                     \
 	.magic = MAGIC_FLAG_BIT,                                      \
 	.type = flag_type,                                            \
@@ -4675,6 +4678,8 @@ static int DUMP_FUNC(TIMESTAMP_NO_VAL)(const parser_t *const parser, void *obj,
 	.name = flag_string,                                          \
 	.flag_name = flag_value_string,                               \
 	.flag_size = sizeof(flag_value),                              \
+	.hidden = hidden_flag,                                        \
+	.description = desc_str,                                      \
 }
 
 #define add_parse(mtype, field, path, desc) \

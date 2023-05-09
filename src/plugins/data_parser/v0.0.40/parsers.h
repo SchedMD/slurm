@@ -71,6 +71,8 @@ typedef struct {
 	uint64_t value; /* bits set by flag */
 	char *flag_name;
 	size_t flag_size;
+	const char *description;
+	bool hidden; /* hide from OpenAPI spec generation */
 } flag_bit_t;
 
 typedef enum {
