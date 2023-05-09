@@ -178,6 +178,65 @@ static gres_job_state_t *_get_job_alloc_gres_ptr(List job_gres_list_alloc,
 	return gres_js;
 }
 
+static int _get_sharing_cnt_from_shared_cnt(gres_job_state_t *gres_js,
+					    bitstr_t *left_over_bits,
+					    int n, int shared_cnt)
+{
+	int sharing_cnt = 0;
+
+	if (!gres_js->gres_per_bit_alloc || !gres_js->gres_per_bit_alloc[n]) {
+		error("Allocated shared gres with no gres_per_bit_alloc");
+		return shared_cnt;
+	}
+
+	for (int i = 0; (i = bit_ffs_from_bit(left_over_bits, i)) >= 0; i++) {
+		if (shared_cnt <= 0)
+			break;
+		sharing_cnt++;
+		shared_cnt -= gres_js->gres_per_bit_alloc[n][i];
+	}
+
+	return sharing_cnt;
+}
+
+static int _cnt_topo_gres(gres_job_state_t *gres_js, int n,
+			  bitstr_t *topo_gres_bitmap)
+{
+	int gres_cnt = 0;
+
+	if (gres_js->gres_per_bit_alloc && gres_js->gres_per_bit_alloc[n]) {
+		for (int i = 0;
+		     (i = bit_ffs_from_bit(gres_js->gres_bit_alloc[n], i)) >= 0;
+		     i++) {
+			if (bit_test(topo_gres_bitmap, i))
+				gres_cnt += gres_js->gres_per_bit_alloc[n][i];
+		}
+	} else {
+		gres_cnt = bit_overlap(gres_js->gres_bit_alloc[n],
+				       topo_gres_bitmap);
+	}
+
+	return gres_cnt;
+}
+
+static void _copy_matching_gres_per_bit(gres_job_state_t *gres_js,
+					gres_job_state_t *gres_js_alloc, int n)
+{
+	if (!gres_js_alloc->gres_per_bit_alloc) {
+		gres_js_alloc->gres_per_bit_alloc = xcalloc(
+			gres_js_alloc->node_cnt, sizeof(uint64_t *));
+	}
+	gres_js_alloc->gres_per_bit_alloc[n] = xcalloc(
+		bit_size(gres_js_alloc->gres_bit_alloc[n]), sizeof(uint64_t));
+
+	for (int i = 0;
+	     (i = bit_ffs_from_bit(gres_js_alloc->gres_bit_alloc[n], i)) >= 0;
+	     i++) {
+		gres_js_alloc->gres_per_bit_alloc[n][i] =
+			gres_js->gres_per_bit_alloc[n][i];
+	}
+}
+
 static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		      gres_state_t *gres_state_node,
 		      int node_cnt, int node_index,
@@ -193,7 +252,6 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 	int64_t gres_cnt, i;
 	gres_job_state_t  *gres_js_alloc;
 	bitstr_t *alloc_core_bitmap = NULL, *left_over_bits = NULL;
-	uint64_t gres_per_bit = 1;
 	bool log_cnt_err = true;
 	char *log_type;
 	bool shared_gres = false;
@@ -212,8 +270,6 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 
 	if (gres_id_shared(config_flags)) {
 		shared_gres = true;
-		gres_per_bit = gres_js->gres_per_node ?
-			gres_js->gres_per_node : gres_js->gres_per_task;
 	}
 
 	if (gres_js->type_name && !gres_js->type_name[0])
@@ -266,7 +322,10 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 	} else if (gres_js->gres_bit_alloc[node_offset]) {
 		gres_cnt = bit_set_count(
 			gres_js->gres_bit_alloc[node_offset]);
-		gres_cnt *= gres_per_bit;
+		if (gres_js->gres_per_bit_alloc &&
+		    gres_js->gres_per_bit_alloc[node_offset]) {
+			error("gres_per_bit_alloc and not gres_cnt_node_alloc");
+		}
 	} else if (gres_js->total_node_cnt) {
 		/* Using pre-selected GRES */
 		if (gres_js->gres_cnt_node_select &&
@@ -341,6 +400,13 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 				bit_size(gres_js->
 					 gres_bit_alloc[node_offset]));
 			for (i = 0; i < gres_cnt; i++) {
+				uint64_t gres_per_bit = 1;
+				if (gres_js->gres_per_bit_alloc &&
+				    gres_js->gres_per_bit_alloc[node_offset] &&
+				    gres_js->gres_per_bit_alloc[node_offset][i])
+					gres_per_bit =
+						gres_js->gres_per_bit_alloc
+							[node_offset][i];
 				if (bit_test(gres_js->
 					     gres_bit_alloc[node_offset], i) &&
 				    (shared_gres ||
@@ -382,6 +448,20 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		}
 		gres_js->gres_bit_alloc[node_offset] =
 			bit_copy(gres_js->gres_bit_select[node_index]);
+		if (gres_js->gres_per_bit_select &&
+		    gres_js->gres_per_bit_select[node_index]){
+			if (!gres_js->gres_per_bit_alloc) {
+				gres_js->gres_per_bit_alloc = xcalloc(
+					gres_js->node_cnt, sizeof(uint64_t *));
+			}
+			gres_js->gres_per_bit_alloc[node_offset] = xcalloc(
+				bit_size(gres_js->gres_bit_alloc[node_offset]),
+				sizeof(uint64_t));
+			memcpy(gres_js->gres_per_bit_alloc[node_offset],
+			       gres_js->gres_per_bit_select[node_index],
+			       bit_size(gres_js->gres_bit_select[node_index]) *
+				       sizeof(uint64_t));
+		}
 		gres_js->gres_cnt_node_alloc[node_offset] =
 			gres_js->gres_cnt_node_select[node_index];
 		if (!gres_ns->gres_bit_alloc) {
@@ -494,11 +574,8 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 			}
 			if (sz1 != sz2)
 				continue;	/* See error above */
-			gres_cnt = bit_overlap(gres_js->
-					       gres_bit_alloc[node_offset],
-					       gres_ns->
-					       topo_gres_bitmap[i]);
-			gres_cnt *= gres_per_bit;
+			gres_cnt = _cnt_topo_gres(gres_js, node_offset,
+						  gres_ns->topo_gres_bitmap[i]);
 			gres_ns->topo_gres_cnt_alloc[i] += gres_cnt;
 			if ((gres_ns->type_cnt == 0) ||
 			    (gres_ns->topo_type_name == NULL) ||
@@ -561,6 +638,13 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 			if (!bit_test(gres_js->
 				      gres_bit_alloc[node_offset], i))
 				continue;
+			uint64_t gres_per_bit = 1;
+			if (gres_js->gres_per_bit_alloc &&
+			    gres_js->gres_per_bit_alloc[node_offset] &&
+			    gres_js->gres_per_bit_alloc[node_offset][i])
+				gres_per_bit =
+					gres_js->gres_per_bit_alloc
+						[node_offset][i];
 			/*
 			 * NOTE: Immediately after slurmctld restart and before
 			 * the node's registration, the GRES type and topology
@@ -674,11 +758,20 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 
 		if (gres_js->gres_bit_alloc &&
 		    gres_js->gres_bit_alloc[node_offset]) {
-			gres_cnt /= gres_per_bit;
+			if (shared_gres)
+				gres_cnt = _get_sharing_cnt_from_shared_cnt(
+					gres_js, left_over_bits, node_offset,
+					gres_cnt);
 			gres_js_alloc->gres_bit_alloc[node_offset] =
 				bit_pick_cnt(left_over_bits, gres_cnt);
 			bit_and_not(left_over_bits,
 				    gres_js_alloc->gres_bit_alloc[node_offset]);
+		}
+
+		if (gres_js->gres_per_bit_alloc &&
+		    gres_js->gres_per_bit_alloc[node_offset]) {
+			_copy_matching_gres_per_bit(gres_js, gres_js_alloc,
+						    node_offset);
 		}
 	}
 	FREE_NULL_BITMAP(left_over_bits);
@@ -703,6 +796,12 @@ static int _job_alloc(gres_state_t *gres_state_job, List job_gres_list_alloc,
 		    gres_js->gres_bit_alloc[node_offset])
 			gres_js_alloc->gres_bit_alloc[node_offset] = bit_copy(
 				gres_js->gres_bit_alloc[node_offset]);
+
+		if (gres_js->gres_per_bit_alloc &&
+		    gres_js->gres_per_bit_alloc[node_offset]) {
+			_copy_matching_gres_per_bit(gres_js, gres_js_alloc,
+						    node_offset);
+		}
 	}
 
 cleanup:
@@ -1141,7 +1240,7 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 	uint32_t config_flags = gres_state_job->config_flags;
 	int i, j, len, sz1, sz2, last_node;
 	uint64_t gres_cnt = 0, k;
-	uint64_t gres_per_bit = 1;
+	bool shared_gres = false;
 
 	/*
 	 * Validate data structures. Either gres_js->node_cnt and
@@ -1162,9 +1261,16 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 	}
 
 	if (gres_id_shared(config_flags)) {
-		gres_per_bit = gres_js->gres_per_node ?
-			gres_js->gres_per_node : gres_js->gres_per_task;
-		xassert(gres_per_bit);
+		shared_gres = true;
+		if (!(gres_js->gres_per_bit_alloc &&
+		      gres_js->gres_per_bit_alloc[node_offset]) &&
+		    (gres_js->gres_bit_alloc &&
+		     gres_js->gres_bit_alloc[node_offset] &&
+		     bit_set_count(gres_js->gres_bit_alloc[node_offset]))) {
+			error("gres/%s: job %u dealloc node %s where gres shared but there is no gres_per_bit_alloc",
+			      gres_name, job_id, node_name);
+			return SLURM_ERROR;
+		}
 	}
 
 	xfree(gres_ns->gres_used);	/* Clear cache */
@@ -1226,10 +1332,8 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 			sz2 = bit_size(gres_ns->topo_gres_bitmap[i]);
 			if (sz1 != sz2)
 				continue;
-			gres_cnt = (uint64_t)bit_overlap(
-				gres_js->gres_bit_alloc[node_offset],
-				gres_ns->topo_gres_bitmap[i]);
-			gres_cnt *= gres_per_bit;
+			gres_cnt = _cnt_topo_gres(gres_js, node_offset,
+						  gres_ns->topo_gres_bitmap[i]);
 			if (gres_ns->topo_gres_cnt_alloc[i] >= gres_cnt) {
 				gres_ns->topo_gres_cnt_alloc[i] -=
 					gres_cnt;
@@ -1277,10 +1381,13 @@ static int _job_dealloc(gres_state_t *gres_state_job,
 			  bit_size(gres_js->
 				   gres_bit_alloc[node_offset]));
 		for (i = 0; i < len; i++) {
+			uint64_t gres_per_bit;
 			if (!bit_test(gres_js->
 				      gres_bit_alloc[node_offset], i) ||
 			    !gres_ns->topo_gres_cnt_alloc[i])
 				continue;
+			gres_per_bit = shared_gres ?
+				gres_js->gres_per_bit_alloc[node_offset][i] : 1;
 			if (gres_ns->topo_gres_cnt_alloc[i] >=
 			    gres_per_bit) {
 				gres_ns->topo_gres_cnt_alloc[i] -=

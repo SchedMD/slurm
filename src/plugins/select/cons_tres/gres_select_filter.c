@@ -955,6 +955,15 @@ extern void gres_select_filter_sock_core(job_record_t *job_ptr,
 		*min_cores_this_node = 0;
 }
 
+static void _init_gres_per_bit_select(gres_job_state_t *gres_js, int node_inx)
+{
+	if (!gres_js->gres_per_bit_select) {
+		gres_js->gres_per_bit_select = xcalloc(gres_js->total_node_cnt,
+						       sizeof(bitstr_t *));
+	}
+	gres_js->gres_per_bit_select[node_inx] = xcalloc(
+		bit_size(gres_js->gres_bit_select[node_inx]), sizeof(uint64_t));
+}
 
 static void _pick_shared_gres_topo(sock_gres_t *sock_gres, bool use_busy_dev,
 				   bool use_single_dev, int node_inx, int s,
@@ -986,6 +995,7 @@ static void _pick_shared_gres_topo(sock_gres_t *sock_gres, bool use_busy_dev,
 			continue; /* GRES not on this socket */
 		bit_set(gres_js->gres_bit_select[node_inx], t);
 		gres_js->gres_cnt_node_select[node_inx] += *gres_needed;
+		gres_js->gres_per_bit_select[node_inx][t] = *gres_needed;
 		*gres_needed -= *gres_needed;
 	}
 }
@@ -2312,6 +2322,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 
 			if (gres_id_shared(
 				    sock_gres->gres_state_job->config_flags)) {
+				_init_gres_per_bit_select(gres_js, i);
 				_set_shared_node_bits(job_res, i, job_node_inx,
 						      sock_gres, job_id);
 			} else if (gres_js->gres_per_node) {

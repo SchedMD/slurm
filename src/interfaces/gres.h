@@ -279,6 +279,8 @@ typedef struct gres_job_state {
 					 * Used with GRES files */
 	uint64_t *gres_cnt_node_select;	/* Per node GRES selected,
 					 * Used without GRES files */
+	uint64_t **gres_per_bit_select; /* For shared gres to track which
+					   gres was allocated for which bit */
 
 	/* Allocated resources details */
 	/*
@@ -294,6 +296,8 @@ typedef struct gres_job_state {
 					 * Used with GRES files */
 	uint64_t *gres_cnt_node_alloc;	/* Per node GRES allocated,
 					 * Used with and without GRES files */
+	uint64_t **gres_per_bit_alloc;  /* For shared gres to track which
+					   gres was allocated for which bit */
 
 	/*
 	 * Resources currently allocated to job steps on each node.
