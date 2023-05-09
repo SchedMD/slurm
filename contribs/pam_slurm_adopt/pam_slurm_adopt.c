@@ -272,11 +272,11 @@ static int _check_cg_version()
  * Unlike when using cgroup/v1, we will pick here the job with the highest JobID
  * instead of getting the job which has the earliest cgroup creation time.
  */
-static int _indeterminate_multiple_v2(pam_handle_t *pamh, List steps, uid_t uid,
-				      step_loc_t **out_stepd)
+static int _indeterminate_multiple_v2(pam_handle_t *pamh, list_t *steps,
+				      uid_t uid, step_loc_t **out_stepd)
 {
 	int rc = PAM_PERM_DENIED;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	step_loc_t *stepd = NULL;
 	uint32_t most_recent = 0;
 
@@ -309,10 +309,10 @@ static int _indeterminate_multiple_v2(pam_handle_t *pamh, List steps, uid_t uid,
 	return rc;
 }
 
-static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
+static int _indeterminate_multiple(pam_handle_t *pamh, list_t *steps, uid_t uid,
 				   step_loc_t **out_stepd)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int rc = PAM_PERM_DENIED;
 	step_loc_t *stepd = NULL;
 	time_t most_recent = 0, cgroup_time = 0;
@@ -414,7 +414,7 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
  * without adoption. Otherwise, call _indeterminate_multiple to pick a job. If
  * successful, adopt it into a process and use a return code based on success of
  * the adoption and the action_adopt_failure setting. */
-static int _action_unknown(pam_handle_t *pamh, struct passwd *pwd, List steps)
+static int _action_unknown(pam_handle_t *pamh, struct passwd *pwd, list_t *steps)
 {
 	int rc;
 	step_loc_t *stepd = NULL;
@@ -445,9 +445,9 @@ static int _action_unknown(pam_handle_t *pamh, struct passwd *pwd, List steps)
 
 /* _user_job_count returns the count of jobs owned by the user AND sets job_id
  * to the last job from the user that is found */
-static int _user_job_count(List steps, uid_t uid, step_loc_t **out_stepd)
+static int _user_job_count(list_t *steps, uid_t uid, step_loc_t **out_stepd)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	int user_job_cnt = 0;
 	step_loc_t *stepd = NULL;
 	*out_stepd = NULL;
@@ -752,7 +752,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 {
 	int retval = PAM_IGNORE, rc = PAM_IGNORE, slurmrc, bufsize, user_jobs;
 	char *user_name;
-	List steps = NULL;
+	list_t *steps = NULL;
 	step_loc_t *stepd = NULL;
 	struct passwd pwd, *pwd_result;
 	char *buf = NULL;
