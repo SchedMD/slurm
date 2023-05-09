@@ -4838,7 +4838,7 @@ static void _build_node_callback(char *alias, char *hostname, char *address,
 			node_ptr->config_ptr->threads,
 			node_ptr->config_ptr->cores,
 			node_ptr->config_ptr->tot_sockets,
-			slurm_conf.conf_flags & CTL_CONF_OR, NULL);
+			(slurm_conf.conf_flags & CTL_CONF_OR), NULL);
 	}
 }
 
