@@ -273,7 +273,7 @@ static void	_job_state_log(gres_state_t *gres_js, uint32_t job_id);
 static int	_load_plugin(slurm_gres_context_t *gres_ctx);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
 static void	_my_stat(char *file_name);
-static int	_node_config_init(char *orig_config,
+static void	_node_config_init(char *orig_config,
 				  slurm_gres_context_t *gres_ctx,
 				  gres_state_t *gres_state_node);
 static char *	_node_gres_used(gres_node_state_t *gres_ns, char *gres_name);
@@ -3121,11 +3121,9 @@ static gres_node_state_t *_build_gres_node_state(void)
 /*
  * Build a node's gres record based only upon the slurm.conf contents
  */
-static int _node_config_init(char *orig_config,
-			     slurm_gres_context_t *gres_ctx,
-			     gres_state_t *gres_state_node)
+static void _node_config_init(char *orig_config, slurm_gres_context_t *gres_ctx,
+			      gres_state_t *gres_state_node)
 {
-	int rc = SLURM_SUCCESS;
 	gres_node_state_t *gres_ns;
 
 	if (!gres_state_node->gres_data)
@@ -3135,7 +3133,7 @@ static int _node_config_init(char *orig_config,
 	/* If the resource isn't configured for use with this node */
 	if ((orig_config == NULL) || (orig_config[0] == '\0')) {
 		gres_ns->gres_cnt_config = 0;
-		return rc;
+		return;
 	}
 
 	_get_gres_cnt(gres_ns, orig_config,
@@ -3155,8 +3153,6 @@ static int _node_config_init(char *orig_config,
 		bit_realloc(gres_ns->gres_bit_alloc,
 			    gres_ns->gres_cnt_avail);
 	}
-
-	return rc;
 }
 
 /*
@@ -3164,9 +3160,8 @@ static int _node_config_init(char *orig_config,
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT gres_list - List of Gres records for this node to track usage
  */
-extern int gres_init_node_config(char *orig_config, List *gres_list)
+extern void gres_init_node_config(char *orig_config, List *gres_list)
 {
-	int i, rc = SLURM_SUCCESS, rc2;
 	gres_state_t *gres_state_node, *gres_state_node_sharing = NULL,
 		*gres_state_node_shared = NULL;
 
@@ -3176,7 +3171,7 @@ extern int gres_init_node_config(char *orig_config, List *gres_list)
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
 		*gres_list = list_create(_gres_node_list_delete);
 	}
-	for (i = 0; i < gres_context_cnt; i++) {
+	for (int i = 0; i < gres_context_cnt; i++) {
 		gres_node_state_t *gres_ns;
 		/* Find or create gres_state entry on the list */
 		gres_state_node = list_find_first(*gres_list, gres_find_id,
@@ -3188,10 +3183,9 @@ extern int gres_init_node_config(char *orig_config, List *gres_list)
 			list_append(*gres_list, gres_state_node);
 		}
 
-		rc2 = _node_config_init(orig_config,
-					&gres_context[i], gres_state_node);
-		if (rc == SLURM_SUCCESS)
-			rc = rc2;
+		_node_config_init(orig_config, &gres_context[i],
+				  gres_state_node);
+
 		gres_ns = gres_state_node->gres_data;
 		if (gres_ns && gres_ns->gres_cnt_config) {
 			if (gres_id_sharing(gres_state_node->plugin_id))
@@ -3216,8 +3210,6 @@ extern int gres_init_node_config(char *orig_config, List *gres_list)
 			gres_ns_sharing->alt_gres_ns = gres_ns_shared;
 		}
 	}
-
-	return rc;
 }
 
 static int _foreach_get_tot_from_slurmd_conf(void *x, void *arg)
