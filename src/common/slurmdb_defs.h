@@ -204,6 +204,7 @@ extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
 extern slurmdb_tres_rec_t *slurmdb_copy_tres_rec(slurmdb_tres_rec_t *tres);
 extern List slurmdb_copy_tres_list(List tres);
 extern List slurmdb_diff_tres_list(List tres_list_old, List tres_list_new);
+extern list_t *slurmdb_list_copy_coord(list_t *coord_accts);
 extern char *slurmdb_tres_string_combine_lists(
 	List tres_list_old, List tres_list_new);
 /* make a tres_string from a given list

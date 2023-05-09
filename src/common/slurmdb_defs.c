@@ -576,6 +576,21 @@ static void _arch_hash_rec_id(void *item, const char **key, uint32_t *key_len)
 	*key_len = strlen(*key);
 }
 
+static int _list_copy_coord(void *x, void *key)
+{
+	slurmdb_coord_rec_t *coord_in = x;
+	list_t **ret_list = key;
+	slurmdb_coord_rec_t *coord = xmalloc(sizeof(*coord));
+
+	if (!*ret_list)
+		*ret_list = list_create(slurmdb_destroy_coord_rec);
+	list_append(*ret_list, coord);
+	coord->name = xstrdup(coord_in->name);
+	coord->direct = coord_in->direct;
+
+	return 0;
+}
+
 extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 {
 	slurmdb_job_rec_t *job = xmalloc(sizeof(slurmdb_job_rec_t));
@@ -3432,6 +3447,19 @@ extern List slurmdb_copy_tres_list(List tres)
 
 	return tres_out;
 }
+
+extern list_t *slurmdb_list_copy_coord(list_t *coord_accts)
+{
+	list_t *ret_list = NULL;
+
+	if (!coord_accts || !list_count(coord_accts))
+		return NULL;
+
+	list_for_each(coord_accts, _list_copy_coord, &ret_list);
+
+	return ret_list;
+}
+
 
 extern List slurmdb_diff_tres_list(List tres_list_old, List tres_list_new)
 {

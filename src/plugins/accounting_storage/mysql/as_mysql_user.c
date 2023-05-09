@@ -1652,8 +1652,18 @@ empty:
 		if (slurm_atoul(row[USER_REQ_DELETED]))
 			user->flags |= SLURMDB_USER_FLAG_DELETED;
 
-		if (user_cond && user_cond->with_coords)
-			_get_user_coords(mysql_conn, user);
+		if (user_cond && user_cond->with_coords) {
+			/*
+			 * On start up the coord list doesn't exist so get it
+			 * the SQL way.
+			 */
+			if (!assoc_mgr_coord_list)
+				_get_user_coords(mysql_conn, user);
+			else
+				user->coord_accts =
+					assoc_mgr_user_acct_coords(
+						mysql_conn, user->name);
+		}
 	}
 	mysql_free_result(result);
 

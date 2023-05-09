@@ -3244,6 +3244,36 @@ extern list_t *assoc_mgr_acct_coords(void *db_conn, char *acct_name)
 	return find_coord.ret_list;
 }
 
+extern list_t *assoc_mgr_user_acct_coords(void *db_conn, char *user_name)
+{
+	assoc_mgr_lock_t locks = { .user = READ_LOCK };
+	slurmdb_user_rec_t *user, req_user;
+	list_t *ret_list = NULL;
+
+	assoc_mgr_lock(&locks);
+
+	xassert(assoc_mgr_coord_list);
+
+	if (!list_count(assoc_mgr_coord_list)) {
+		assoc_mgr_unlock(&locks);
+		return NULL;
+	}
+
+	memset(&req_user, 0, sizeof(req_user));
+	req_user.name = user_name;
+	req_user.uid = NO_VAL;
+
+	user = list_find_first(
+		assoc_mgr_coord_list, _list_find_user, &req_user);
+
+	if (user && user->coord_accts)
+		ret_list = slurmdb_list_copy_coord(user->coord_accts);
+
+	assoc_mgr_unlock(&locks);
+
+	return ret_list;
+}
+
 extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 					 uint32_t uid,
 					 char *acct_name)
