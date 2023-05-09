@@ -239,7 +239,7 @@ static time_t startup = 0;		/* daemon startup time */
 static time_t last_slurmctld_msg = 0;
 
 static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
-static List job_limits_list = NULL;
+static list_t *job_limits_list = NULL;
 static bool job_limits_loaded = false;
 
 static int next_fini_job_inx = 0;
@@ -264,8 +264,8 @@ static pthread_mutex_t prolog_serial_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define FILE_BCAST_TIMEOUT 300
 static pthread_rwlock_t file_bcast_lock = PTHREAD_RWLOCK_INITIALIZER;
-static List file_bcast_list = NULL;
-static List bcast_libdir_list = NULL;
+static list_t *file_bcast_list = NULL;
+static list_t *bcast_libdir_list = NULL;
 
 static pthread_mutex_t waiter_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -1573,7 +1573,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	if (first_job_run) {
 		int rc;
 		job_env_t job_env;
-		List job_gres_list, gres_prep_env_list;
+		list_t *job_gres_list, *gres_prep_env_list;
 		uint32_t jobid;
 
 		slurm_cred_insert_jobid(conf->vctx, req->step_id.job_id);
@@ -1592,8 +1592,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 			error("container_g_create(%u): %m", req->step_id.job_id);
 
 		memset(&job_env, 0, sizeof(job_env));
-		job_gres_list = (List) slurm_cred_get(req->cred,
-						      CRED_DATA_JOB_GRES_LIST);
+		job_gres_list = slurm_cred_get(req->cred,
+					       CRED_DATA_JOB_GRES_LIST);
 		gres_prep_env_list = gres_g_prep_build_env(
 			job_gres_list, req->complete_nodelist);
 		gres_g_prep_set_env(&job_env.gres_job_env,
@@ -2514,7 +2514,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	 */
 	if (first_job_run) {
 		job_env_t job_env;
-		List job_gres_list, gres_prep_env_list;
+		list_t *job_gres_list, *gres_prep_env_list;
 		uint32_t jobid;
 
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
@@ -2526,8 +2526,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		node_id = nodelist_find(req->nodes, conf->node_name);
 #endif
 		memset(&job_env, 0, sizeof(job_env));
-		job_gres_list = (List) slurm_cred_get(req->cred,
-						      CRED_DATA_JOB_GRES_LIST);
+		job_gres_list = slurm_cred_get(req->cred,
+					       CRED_DATA_JOB_GRES_LIST);
 		gres_prep_env_list = gres_g_prep_build_env(job_gres_list,
 							   req->nodes);
 		gres_g_prep_set_env(&job_env.gres_job_env,
@@ -2673,8 +2673,8 @@ _rpc_job_notify(slurm_msg_t *msg)
 {
 	job_notify_msg_t *req = msg->data;
 	uid_t job_uid;
-	List steps;
-	ListIterator i;
+	list_t *steps;
+	list_itr_t *i;
 	step_loc_t *stepd = NULL;
 	int step_cnt  = 0;
 	int fd;
@@ -2974,8 +2974,8 @@ static int _find_step_loc(void *x, void *key)
 static void
 _load_job_limits(void)
 {
-	List steps;
-	ListIterator step_iter;
+	list_t *steps;
+	list_itr_t *step_iter;
 	step_loc_t *stepd;
 	int fd;
 	job_mem_limits_t *job_limits_ptr;
@@ -3063,8 +3063,8 @@ _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 static void
 _enforce_job_mem_limit(void)
 {
-	List steps;
-	ListIterator step_iter, job_limits_iter;
+	list_t *steps;
+	list_itr_t *step_iter, *job_limits_iter;
 	job_mem_limits_t *job_limits_ptr;
 	step_loc_t *stepd;
 	int fd, i, job_inx, job_cnt;
@@ -3587,8 +3587,8 @@ _get_step_list(void)
 {
 	char tmp[64];
 	char *step_list = NULL;
-	List steps;
-	ListIterator i;
+	list_t *steps;
+	list_itr_t *i;
 	step_loc_t *stepd;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
@@ -3967,8 +3967,8 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 	slurm_msg_t           resp_msg;
 	job_id_response_msg_t resp;
 	bool         found = false;
-	List         steps;
-	ListIterator i;
+	list_t *steps;
+	list_itr_t *i;
 	step_loc_t *stepd;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
@@ -4467,7 +4467,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	uint32_t nodeid = NO_VAL;
 	uid_t uid = -1;
 	uint16_t protocol_version;
-	List steps = stepd_available(conf->spooldir, conf->node_name);;
+	list_t *steps = stepd_available(conf->spooldir, conf->node_name);;
 	step_loc_t *stepd = NULL;
 
 	slurm_msg_t_copy(&resp_msg, msg);
@@ -4579,8 +4579,8 @@ done:
 
 static uid_t _get_job_uid(uint32_t jobid)
 {
-	List steps;
-	ListIterator i;
+	list_t *steps;
+	list_itr_t *i;
 	step_loc_t *stepd;
 	uid_t uid = -1;
 	int fd;
@@ -4626,8 +4626,8 @@ static int
 _kill_all_active_steps(uint32_t jobid, int sig, int flags, char *details,
 		       bool batch, uid_t req_uid)
 {
-	List steps;
-	ListIterator i;
+	list_t *steps;
+	list_itr_t *i;
 	step_loc_t *stepd;
 	int step_cnt  = 0;
 	int rc = SLURM_SUCCESS;
@@ -4687,8 +4687,8 @@ _kill_all_active_steps(uint32_t jobid, int sig, int flags, char *details,
  */
 extern int ume_notify(void)
 {
-	List steps;
-	ListIterator i;
+	list_t *steps;
+	list_itr_t *i;
 	step_loc_t *stepd;
 	int step_cnt  = 0;
 	int fd;
@@ -4729,8 +4729,8 @@ extern int ume_notify(void)
 static int
 _terminate_all_steps(uint32_t jobid, bool batch)
 {
-	List steps;
-	ListIterator i;
+	list_t *steps;
+	list_itr_t *i;
 	step_loc_t *stepd;
 	int step_cnt  = 0;
 	int fd;
@@ -4773,8 +4773,8 @@ static bool
 _job_still_running(uint32_t job_id)
 {
 	bool         retval = false;
-	List         steps;
-	ListIterator i;
+	list_t *steps;
+	list_itr_t *i;
 	step_loc_t  *s     = NULL;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
@@ -4824,8 +4824,8 @@ _wait_state_completed(uint32_t jobid, int max_delay)
 static bool
 _steps_completed_now(uint32_t jobid)
 {
-	List steps;
-	ListIterator i;
+	list_t *steps;
+	list_itr_t *i;
 	step_loc_t *stepd;
 	bool rc = true;
 
@@ -4943,8 +4943,8 @@ _unlock_suspend_job(uint32_t job_id)
 /* Add record for every launched job so we know they are ready for suspend */
 extern void record_launched_jobs(void)
 {
-	List steps;
-	ListIterator i;
+	list_t *steps;
+	list_itr_t *i;
 	step_loc_t *stepd;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
@@ -4973,8 +4973,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 {
 	int time_slice = -1;
 	suspend_int_msg_t *req = msg->data;
-	List steps;
-	ListIterator i;
+	list_t *steps;
+	list_itr_t *i;
 	step_loc_t *stepd;
 	int step_cnt  = 0;
 	int rc = SLURM_SUCCESS;

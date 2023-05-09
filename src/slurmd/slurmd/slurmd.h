@@ -145,10 +145,10 @@ typedef struct slurmd_config {
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        acct_freq_task;
 
-	List		starting_steps; /* steps that are starting but cannot
+	list_t *starting_steps;		/* steps that are starting but cannot
 					   receive RPCs yet */
 	pthread_cond_t	starting_steps_cond;
-	List		prolog_running_jobs;
+	list_t *prolog_running_jobs;
 	pthread_cond_t	prolog_running_cond;
 	bool		print_gres;	/* Print gres info (-G) and exit */
 

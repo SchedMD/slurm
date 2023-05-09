@@ -642,7 +642,7 @@ static int _load_gres()
 	int rc;
 	uint32_t cpu_cnt;
 	node_record_t *node_rec;
-	List gres_list = NULL;
+	list_t *gres_list = NULL;
 
 	node_rec = find_node_record2(conf->node_name);
 	if (node_rec && node_rec->config_ptr) {
@@ -791,8 +791,8 @@ fail:
 static void
 _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 {
-	List steps;
-	ListIterator i;
+	list_t *steps;
+	list_itr_t *i;
 	step_loc_t *stepd;
 	int  n;
 	char *arch, *os;
@@ -2427,8 +2427,8 @@ _kill_old_slurmd(void)
 /* Reset slurmd logging based upon configuration parameters */
 extern void update_slurmd_logging(log_level_t log_lvl)
 {
-	List steps;
-	ListIterator i;
+	list_t *steps;
+	list_itr_t *i;
 	step_loc_t *stepd;
 	log_options_t *o = &conf->log_opts;
 	slurm_conf_t *cf;
