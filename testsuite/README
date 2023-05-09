@@ -948,6 +948,7 @@ test_121_2   /features/gres/test_mps--gres=mps_by_job.py
 test_122_#   Testing of job_arrays.
 ===================================
 test_122_1   /features/job_arrays/test_basics.py
+test_122_2   Test job array with gres
 
 test_123_#   Testing of reservations.
 =====================================
