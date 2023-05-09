@@ -251,7 +251,6 @@ auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	auth_credential_t *cred = NULL;
 	uint32_t tmpint;
-	uint32_t uint32_tmp = 0;
 
 	if (!buf) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
@@ -275,7 +274,7 @@ auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 		cred->uid = tmpint;
 		safe_unpack32(&tmpint, buf);
 		cred->gid = tmpint;
-		safe_unpackstr_xmalloc(&cred->hostname, &uint32_tmp, buf);
+		safe_unpackstr(&cred->hostname, buf);
 	} else {
 		error("%s: unknown protocol version %u",
 		      __func__, protocol_version);
