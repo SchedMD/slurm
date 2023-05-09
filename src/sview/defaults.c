@@ -889,7 +889,7 @@ extern int save_defaults(bool final_save)
 		} else if (!page_opts->def_col_list
 			   && page_opts->col_list
 			   && list_count(page_opts->col_list)) {
-			ListIterator itr =
+			list_itr_t *itr =
 				list_iterator_create(page_opts->col_list);
 			char *col_name = NULL;
 			//user requested no save of page options

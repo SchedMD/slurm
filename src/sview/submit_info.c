@@ -72,7 +72,7 @@ extern void set_menus_submit(void *arg, void *arg2,
 	GtkTreeView *tree_view = (GtkTreeView *)arg;
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	GtkMenu *menu = (GtkMenu *)arg2;
-	/* List button_list = (List)arg2; */
+	/* list_t *button_list = arg2; */
 
 	switch(type) {
 	case TAB_CLICKED:

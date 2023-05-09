@@ -68,7 +68,7 @@ void _search_entry(sview_search_info_t *sview_search_info)
 {
 	int id = 0;
 	char title[100] = {0};
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
 	char *upper = NULL, *lower = NULL;
@@ -187,10 +187,10 @@ static GtkTreeStore *_local_create_treestore_2cols(GtkWidget *popup,
 	return treestore;
 }
 
-static void _gtk_print_key_pairs(List config_list, char *title, bool first,
+static void _gtk_print_key_pairs(list_t *config_list, char *title, bool first,
 				 GtkTreeStore *treestore, GtkTreeIter *iter)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	config_key_pair_t *key_pair;
 	int update = 0;
 
@@ -210,12 +210,12 @@ static void _gtk_print_key_pairs(List config_list, char *title, bool first,
 	list_iterator_destroy(itr);
 }
 
-static void
-_gtk_print_config_plugin_params_list(List l, char *title, bool first,
-				     GtkTreeStore *treestore,
-				     GtkTreeIter *iter)
+static void _gtk_print_config_plugin_params_list(list_t *l, char *title,
+						 bool first,
+						 GtkTreeStore *treestore,
+						 GtkTreeIter *iter)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	config_plugin_params_t *p;
 	int update = 0;
 
@@ -242,7 +242,7 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 {
 	char time_str[256], tmp_str[300];
 	GtkTreeIter iter;
-	List ret_list = NULL;
+	list_t *ret_list = NULL;
 	char *select_title = "Select Plugin Configuration";
 	char *tmp_title = NULL;
 
@@ -284,13 +284,13 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 
 static void _layout_conf_dbd(GtkTreeStore *treestore)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	GtkTreeIter iter;
 	config_key_pair_t *key_pair;
 	int update = 0;
 	time_t now = time(NULL);
 	char tmp_str[256], *user_name = NULL;
-	List dbd_config_list = NULL;
+	list_t *dbd_config_list = NULL;
 
 	/* first load accounting parms from slurm.conf */
 	uint16_t track_wckey = slurm_get_track_wckey();
@@ -392,7 +392,7 @@ extern void create_config_popup(GtkAction *action, gpointer user_data)
 
 extern void create_dbconfig_popup(GtkAction *action, gpointer user_data)
 {
-	List dbd_config_list = NULL;
+	list_t *dbd_config_list = NULL;
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
 		"Slurm Database Config Info",
 		GTK_WINDOW(user_data),

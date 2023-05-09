@@ -64,16 +64,16 @@ typedef struct {
 	int node_cnt;
 	char *nodes;
 	int pos;
-	List step_list;
+	list_t *step_list;
 	hostlist_t *task_hl;
 	char *task_hl_str;
 	hostlist_t *task_pending_hl;
 	char *task_pending_hl_str;
-	List task_list;
-	List task_pending_list;
+	list_t *task_list;
+	list_t *task_pending_list;
 } sview_job_info_t;
 
-static List foreach_list = NULL;
+static list_t *foreach_list = NULL;
 static char *stacked_job_list = NULL;
 
 typedef struct {
@@ -2817,7 +2817,7 @@ static void _update_info_task(sview_job_info_t *sview_job_info_ptr,
 	int i;
 	GtkTreeIter first_task_iter;
 	int set = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	sview_job_info_t *task_ptr = NULL;
 
 	memset(&first_task_iter, 0, sizeof(GtkTreeIter));
@@ -2886,7 +2886,7 @@ static void _update_info_step(sview_job_info_t *sview_job_info_ptr,
 	int i;
 	GtkTreeIter first_step_iter;
 	int set = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	job_step_info_t *step_ptr = NULL;
 
 	memset(&first_step_iter, 0, sizeof(GtkTreeIter));
@@ -2967,13 +2967,12 @@ static void _update_info_step(sview_job_info_t *sview_job_info_ptr,
 	return;
 }
 
-static void _update_info_job(List info_list,
-			     GtkTreeView *tree_view)
+static void _update_info_job(list_t *info_list, GtkTreeView *tree_view)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	int jobid = 0;
 	job_info_t *job_ptr = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	sview_job_info_t *sview_job_info = NULL;
 
 	set_for_update(model, SORTID_UPDATED);
@@ -3074,14 +3073,14 @@ static int _het_job_id_match(void *x, void *key)
 	return 0;
 }
 
-static List _create_job_info_list(job_info_msg_t *job_info_ptr,
-				  job_step_info_response_msg_t *step_info_ptr,
-				  int want_odd_states)
+static list_t *_create_job_info_list(job_info_msg_t *job_info_ptr,
+				     job_step_info_response_msg_t *step_info_ptr,
+				     int want_odd_states)
 {
-	static List info_list = NULL;
-	static List odd_info_list = NULL;
-	List last_list = NULL;
-	ListIterator last_list_itr = NULL;
+	static list_t *info_list = NULL;
+	static list_t *odd_info_list = NULL;
+	list_t *last_list = NULL;
+	list_itr_t *last_list_itr = NULL;
 	static job_info_msg_t *last_job_info_ptr = NULL;
 	static job_step_info_response_msg_t *last_step_info_ptr = NULL;
 	int i = 0, j = 0;
@@ -3267,11 +3266,11 @@ update_color:
 
 }
 
-void _display_info_job(List info_list, popup_info_t *popup_win)
+void _display_info_job(list_t *info_list, popup_info_t *popup_win)
 {
 	job_step_info_t *step_ptr;
 	specific_info_t *spec_info = popup_win->spec_info;
-	ListIterator itr = NULL, itr2 = NULL;
+	list_itr_t *itr = NULL, *itr2 = NULL;
 	sview_job_info_t *sview_job_info = NULL, *sview_job_info2 = NULL;
 	int found = 0;
 	GtkTreeView *treeview = NULL;
@@ -3741,11 +3740,11 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
-	List info_list = NULL;
+	list_t *info_list = NULL;
 	int j, k;
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	GtkTreePath *path = NULL;
 	static bool set_opts = false;
 
@@ -3924,12 +3923,12 @@ extern void specific_info_job(popup_info_t *popup_win)
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
-	List info_list = NULL;
-	List send_info_list = NULL;
+	list_t *info_list = NULL;
+	list_t *send_info_list = NULL;
 	int j, k;
 	sview_job_info_t *sview_job_info_ptr = NULL;
 	job_info_t *job_ptr = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	char *uname = NULL;
 	hostset_t *hostset = NULL;
 	int name_diff;
@@ -4159,7 +4158,7 @@ extern void set_menus_job(void *arg, void *arg2, GtkTreePath *path, int type)
 	GtkTreeView *tree_view = (GtkTreeView *)arg;
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	GtkMenu *menu = (GtkMenu *)arg2;
-	List button_list = (List)arg2;
+	list_t *button_list = arg2;
 
 	switch(type) {
 	case TAB_CLICKED:
@@ -4198,7 +4197,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL, *cluster_name = NULL;
 	char title[100] = {0};
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	popup_info_t *popup_win = NULL;
 	int jobid = NO_VAL;
 	int stepid = NO_VAL;
@@ -4348,7 +4347,7 @@ static void process_foreach_list(jobs_foreach_common_t *jobs_foreach_common)
 	int response = 0;
 	char *tmp_char_ptr = "";
 	jobs_foreach_t *job_foreach = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	if (jobs_foreach_common->edit_type == EDIT_SIGNAL) {
 		const gchar *entry_txt = gtk_entry_get_text(
@@ -4553,7 +4552,7 @@ static void _edit_each_job(GtkTreeModel *model, GtkTreeIter *iter,
 	char *tmp_char_ptr = "";
 	jobs_foreach_t *job_foreach = NULL;
 	job_desc_msg_t *job_msg;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	itr = list_iterator_create(foreach_list);
 	while ((job_foreach = list_next(itr))) {

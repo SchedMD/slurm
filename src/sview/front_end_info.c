@@ -274,11 +274,11 @@ static void _append_front_end_record(
 	_update_front_end_record(sview_front_end_info_ptr, treestore);
 }
 
-static void _update_info_front_end(List info_list, GtkTreeView *tree_view)
+static void _update_info_front_end(list_t *info_list, GtkTreeView *tree_view)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	char *name;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	sview_front_end_info_t *sview_front_end_info = NULL;
 
 	set_for_update(model, SORTID_UPDATED);
@@ -318,14 +318,14 @@ static void _update_info_front_end(List info_list, GtkTreeView *tree_view)
 	last_model = model;
 }
 
-static List _create_front_end_info_list(
+static list_t *_create_front_end_info_list(
 	front_end_info_msg_t *front_end_info_ptr, int changed)
 {
 	char *upper = NULL;
 	char user[32], time_str[256];
-	static List info_list = NULL;
-	List last_list = NULL;
-	ListIterator last_list_itr = NULL;
+	static list_t *info_list = NULL;
+	list_t *last_list = NULL;
+	list_itr_t *last_list_itr = NULL;
 	int i = 0;
 	sview_front_end_info_t *sview_front_end_info_ptr = NULL;
 	front_end_info_t *front_end_ptr = NULL;
@@ -420,14 +420,14 @@ update_color:
 	return info_list;
 }
 
-static void _display_info_front_end(List info_list, popup_info_t *popup_win)
+static void _display_info_front_end(list_t *info_list, popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->search_info->gchar_data;
 	int found = 0, j;
 	front_end_info_t *front_end_ptr = NULL;
 	GtkTreeView *treeview = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	sview_front_end_info_t *sview_fe_info = NULL;
 	int update = 0;
 
@@ -615,7 +615,7 @@ no_input:
 extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 {
 	int error_code = SLURM_SUCCESS;
-	List info_list = NULL;
+	list_t *info_list = NULL;
 	static int view = -1;
 	static front_end_info_msg_t *front_end_info_ptr = NULL;
 	char error_char[100];
@@ -623,7 +623,7 @@ extern void get_info_front_end(GtkTable *table, display_data_t *display_data)
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	int changed = 1, j;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	GtkTreePath *path = NULL;
 	static bool set_opts = false;
 
@@ -762,11 +762,11 @@ extern void specific_info_front_end(popup_info_t *popup_win)
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
-	List resv_list = NULL;
-	List send_resv_list = NULL;
+	list_t *resv_list = NULL;
+	list_t *send_resv_list = NULL;
 	int changed = 1;
 	sview_front_end_info_t *sview_front_end_info_ptr = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	if (!spec_info->display_widget) {
 		setup_popup_info(popup_win, display_data_front_end, SORTID_CNT);
@@ -892,7 +892,7 @@ extern void set_menus_front_end(void *arg, void *arg2, GtkTreePath *path,
 	GtkTreeView *tree_view = (GtkTreeView *)arg;
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	GtkMenu *menu = (GtkMenu *)arg2;
-	List button_list = (List)arg2;
+	list_t *button_list = arg2;
 
 	switch (type) {
 	case TAB_CLICKED:
@@ -933,7 +933,7 @@ extern void popup_all_front_end(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
 	char title[100] = {0};
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
 

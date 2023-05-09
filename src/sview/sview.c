@@ -60,8 +60,8 @@ bool toggled = false;
 bool force_refresh = false;
 bool apply_hidden_change = true;
 bool apply_partition_check = false;
-List popup_list = NULL;
-List signal_params_list = NULL;
+list_t *popup_list = NULL;
+list_t *signal_params_list = NULL;
 int page_running = -1;
 bool global_entry_changed = 0;
 bool global_send_update_msg = 0;
@@ -83,7 +83,7 @@ GMutex *grid_mutex = NULL;
 GCond *grid_cond = NULL;
 int cluster_dims;
 uint32_t cluster_flags;
-List cluster_list = NULL;
+list_t *cluster_list = NULL;
 switch_record_bitmaps_t *g_switch_nodes_maps = NULL;
 popup_pos_t popup_pos;
 char *federation_name = NULL;
@@ -1260,12 +1260,12 @@ static GtkWidget *_create_cluster_combo(void)
 	GtkListStore *model = NULL;
 	GtkWidget *combo = NULL;
 	GtkTreeIter iter;
-	ListIterator itr;
+	list_itr_t *itr;
 	slurmdb_cluster_rec_t *cluster_rec;
 	GtkCellRenderer *renderer = NULL;
 	bool got_db = slurm_with_slurmdbd();
 	int count = 0, spot = 0;
-	List fed_list = NULL;
+	list_t *fed_list = NULL;
 
 	if (!got_db)
 		return NULL;

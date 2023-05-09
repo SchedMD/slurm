@@ -384,11 +384,11 @@ static void _append_bb_record(sview_bb_info_t *sview_bb_info_ptr,
 }
 
 /* Update the Burst Buffer inforamtion record */
-static void _update_info_bb(List info_list, GtkTreeView *tree_view)
+static void _update_info_bb(list_t *info_list, GtkTreeView *tree_view)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	char *name = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	sview_bb_info_t *sview_bb_info = NULL;
 
 	set_for_update(model, SORTID_UPDATED);
@@ -426,11 +426,11 @@ static void _update_info_bb(List info_list, GtkTreeView *tree_view)
 	last_model = model;
 }
 
-static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
+static list_t *_create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 {
-	static List info_list = NULL;
-	List last_list = NULL;
-	ListIterator last_list_itr = NULL;
+	static list_t *info_list = NULL;
+	list_t *last_list = NULL;
+	list_itr_t *last_list_itr = NULL;
 	int i, j, pos = 0;
 	static burst_buffer_info_msg_t *last_bb_info_ptr = NULL;
 	sview_bb_info_t *sview_bb_info_ptr = NULL;
@@ -513,14 +513,14 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 	return info_list;
 }
 
-static void _display_info_bb(List info_list, popup_info_t *popup_win)
+static void _display_info_bb(list_t *info_list, popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->search_info->gchar_data;
 	//int found = 0;
 	burst_buffer_resv_t *bb_ptr = NULL;
 	GtkTreeView *treeview = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	sview_bb_info_t *sview_bb_info = NULL;
 	int update = 0;
 	char bb_name_id[32];
@@ -657,7 +657,7 @@ extern void admin_edit_bb(GtkCellRendererText *cell,
 extern void get_info_bb(GtkTable *table, display_data_t *display_data)
 {
 	int error_code = SLURM_SUCCESS;
-	List info_list = NULL;
+	list_t *info_list = NULL;
 	static int view = -1;
 	static burst_buffer_info_msg_t *bb_info_ptr = NULL;
 	char error_char[100];
@@ -787,10 +787,10 @@ extern void specific_info_bb(popup_info_t *popup_win)
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
-	List bb_list = NULL;
-	List send_bb_list = NULL;
+	list_t *bb_list = NULL;
+	list_t *send_bb_list = NULL;
 	sview_bb_info_t *sview_bb_info_ptr = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	if (!spec_info->display_widget) {
 		setup_popup_info(popup_win, display_data_bb, SORTID_CNT);
@@ -947,7 +947,7 @@ extern void popup_all_bb(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
 	char title[100] = {0};
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
 

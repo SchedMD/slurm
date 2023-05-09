@@ -677,11 +677,11 @@ static void _append_node_record(sview_node_info_t *sview_node_info,
 	_update_node_record(sview_node_info, treestore);
 }
 
-static void _update_info_node(List info_list, GtkTreeView *tree_view)
+static void _update_info_node(list_t *info_list, GtkTreeView *tree_view)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	char *name = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	sview_node_info_t *sview_node_info = NULL;
 
 	set_for_update(model, SORTID_UPDATED);
@@ -740,7 +740,7 @@ static void _node_info_list_del(void *object)
 	}
 }
 
-static void _display_info_node(List info_list,	popup_info_t *popup_win)
+static void _display_info_node(list_t *info_list, popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->search_info->gchar_data;
@@ -748,7 +748,7 @@ static void _display_info_node(List info_list,	popup_info_t *popup_win)
 	node_info_t *node_ptr = NULL;
 	GtkTreeView *treeview = NULL;
 	int update = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	sview_node_info_t *sview_node_info = NULL;
 	int i = -1;
 
@@ -855,13 +855,13 @@ extern void refresh_node(GtkAction *action, gpointer user_data)
 }
 
 /* don't destroy the list from this function */
-extern List create_node_info_list(node_info_msg_t *node_info_ptr,
-				  bool by_partition)
+extern list_t *create_node_info_list(node_info_msg_t *node_info_ptr,
+				     bool by_partition)
 {
-	static List info_list = NULL;
+	static list_t *info_list = NULL;
 	static node_info_msg_t *last_node_info_ptr = NULL;
-	List last_list = NULL;
-	ListIterator last_list_itr = NULL;
+	list_t *last_list = NULL;
+	list_itr_t *last_list_itr = NULL;
 	int i = 0;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	node_info_t *node_ptr = NULL;
@@ -1554,10 +1554,10 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
-	List info_list = NULL;
+	list_t *info_list = NULL;
 	int i = 0, sort_key;
 	sview_node_info_t *sview_node_info_ptr = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	GtkTreePath *path = NULL;
 	static bool set_opts = false;
 
@@ -1698,9 +1698,9 @@ extern void specific_info_node(popup_info_t *popup_win)
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
-	List info_list = NULL;
-	List send_info_list = NULL;
-	ListIterator itr = NULL;
+	list_t *info_list = NULL;
+	list_t *send_info_list = NULL;
+	list_itr_t *itr = NULL;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	node_info_t *node_ptr = NULL;
 	hostlist_t *hostlist = NULL;
@@ -1880,7 +1880,7 @@ extern void set_menus_node(void *arg, void *arg2, GtkTreePath *path, int type)
 	GtkTreeView *tree_view = (GtkTreeView *)arg;
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	GtkMenu *menu = (GtkMenu *)arg2;
-	List button_list = (List)arg2;
+	list_t *button_list = arg2;
 
 	switch(type) {
 	case TAB_CLICKED:
@@ -1939,7 +1939,7 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 extern void popup_all_node_name(char *name, int id, char *cluster_name)
 {
 	char title[100] = {0};
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
 

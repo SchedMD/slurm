@@ -152,7 +152,7 @@ typedef struct  {
 } switch_record_bitmaps_t;
 
 typedef struct {
-	List col_list;
+	list_t *col_list;
 	bool def_col_list;
 	display_data_t *display_data;
 	char *page_name;
@@ -239,8 +239,8 @@ struct popup_info {
 	GtkWidget *event_box;
 	int force_refresh;
 	int full_grid;
-	List grid_button_list;
-	List multi_button_list;
+	list_t *grid_button_list;
+	list_t *multi_button_list;
 	GtkTable *grid_table;
 	GtkTreeIter iter;
 	GtkTreeModel *model;
@@ -258,7 +258,7 @@ struct popup_info {
 
 typedef struct {
 	GtkWidget *button;
-	List button_list; /*list this grid_button exists in does not
+	list_t *button_list; /*list this grid_button exists in does not
 			   * need to be freed, should only be a
 			   * pointer to an existing list */
 	char *color;
@@ -291,7 +291,7 @@ typedef struct {
 
 typedef struct {
 	display_data_t *display_data;
-	List *button_list;
+	list_t **button_list;
 } signal_params_t;
 
 extern sview_config_t default_sview_config;
@@ -302,10 +302,10 @@ extern bool toggled;
 extern bool force_refresh;
 extern bool apply_hidden_change;
 extern bool apply_partition_check;
-extern List popup_list;
-extern List grid_button_list;
-extern List multi_button_list;
-extern List signal_params_list;
+extern list_t *popup_list;
+extern list_t *grid_button_list;
+extern list_t *multi_button_list;
+extern list_t *signal_params_list;
 extern bool global_entry_changed;
 extern bool global_send_update_msg;
 extern bool global_edit_error;
@@ -325,7 +325,7 @@ extern char *sview_colors[];
 extern int sview_colors_cnt;
 extern int cluster_dims;
 extern uint32_t cluster_flags;
-extern List cluster_list;
+extern list_t *cluster_list;
 extern front_end_info_msg_t *g_front_end_info_ptr;
 extern job_info_msg_t *g_job_info_ptr;
 extern node_info_msg_t *g_node_info_ptr;
@@ -370,26 +370,27 @@ extern void destroy_grid_button(void *arg);
 extern grid_button_t *create_grid_button_from_another(
 	grid_button_t *grid_button, char *name, int color_inx);
 /* do not free the char * from this function it is static */
-extern void change_grid_color(List button_list, int start, int end,
+extern void change_grid_color(list_t *button_list, int start, int end,
 			      int color_inx, bool change_unused,
 			      enum node_states state_override);
-extern void change_grid_color_array(List button_list, int array_len,
+extern void change_grid_color_array(list_t *button_list, int array_len,
 				    int *color_inx, bool *color_set_flag,
 				    bool only_change_unused,
 				    enum node_states state_override);
-extern void highlight_grid(GtkTreeView *tree_view,
-			   int node_inx_id, int color_inx_id, List button_list);
-extern void highlight_grid_range(int start, int end, List button_list);
-extern void set_grid_used(List button_list, int start, int end,
+extern void highlight_grid(GtkTreeView *tree_view, int node_inx_id,
+			   int color_inx_id, list_t *button_list);
+extern void highlight_grid_range(int start, int end, list_t *button_list);
+extern void set_grid_used(list_t *button_list, int start, int end,
 			  bool used, bool reset_highlight);
-extern void get_button_list_from_main(List *button_list, int start, int end,
+extern void get_button_list_from_main(list_t **button_list, int start, int end,
 				      int color_inx);
-extern List copy_main_button_list(int initial_color);
-extern void put_buttons_in_table(GtkTable *table, List button_list);
+extern list_t *copy_main_button_list(int initial_color);
+extern void put_buttons_in_table(GtkTable *table, list_t *button_list);
 extern int get_system_stats(GtkTable *table);
-extern int setup_grid_table(GtkTable *table, List button_list, List node_list);
+extern int setup_grid_table(GtkTable *table, list_t *button_list,
+			    list_t *node_list);
 extern void sview_init_grid(bool reset_highlight);
-extern void sview_clear_unused_grid(List button_list, int color_inx);
+extern void sview_clear_unused_grid(list_t *button_list, int color_inx);
 extern void setup_popup_grid_list(popup_info_t *popup_win);
 extern void post_setup_popup_grid_list(popup_info_t *popup_win);
 
@@ -461,7 +462,7 @@ extern void cluster_change_job(void);
 // node_info.c
 extern void refresh_node(GtkAction *action, gpointer user_data);
 /* don't destroy the list from this function */
-extern List create_node_info_list(node_info_msg_t *node_info_ptr,
+extern list_t *create_node_info_list(node_info_msg_t *node_info_ptr,
 				  bool by_partition);
 extern int update_active_features_node(GtkDialog *dialog, const char *nodelist,
 				      const char *old_features);
@@ -535,7 +536,8 @@ extern void make_options_menu(GtkTreeView *tree_view, GtkTreePath *path,
 extern GtkScrolledWindow *create_scrolled_window(void);
 extern GtkWidget *create_entry(void);
 extern void create_page(GtkNotebook *notebook, display_data_t *display_data);
-extern GtkTreeView *create_treeview(display_data_t *local, List *button_list);
+extern GtkTreeView *create_treeview(display_data_t *local,
+				    list_t **button_list);
 extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table);
 extern void create_treestore(GtkTreeView *tree_view,
 			     display_data_t *display_data, int count,

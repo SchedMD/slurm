@@ -695,12 +695,11 @@ static void _append_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 	_update_resv_record(sview_resv_info_ptr, treestore);
 }
 
-static void _update_info_resv(List info_list,
-			      GtkTreeView *tree_view)
+static void _update_info_resv(list_t *info_list, GtkTreeView *tree_view)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	char *name = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	sview_resv_info_t *sview_resv_info = NULL;
 
 	set_for_update(model, SORTID_UPDATED);
@@ -764,11 +763,11 @@ static int _sview_resv_sort_aval_dec(void *s1, void *s2)
 	return 0;
 }
 
-static List _create_resv_info_list(reserve_info_msg_t *resv_info_ptr)
+static list_t *_create_resv_info_list(reserve_info_msg_t *resv_info_ptr)
 {
-	static List info_list = NULL;
-	List last_list = NULL;
-	ListIterator last_list_itr = NULL;
+	static list_t *info_list = NULL;
+	list_t *last_list = NULL;
+	list_itr_t *last_list_itr = NULL;
 	int i = 0;
 	static reserve_info_msg_t *last_resv_info_ptr = NULL;
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
@@ -825,14 +824,14 @@ update_color:
 	return info_list;
 }
 
-static void _display_info_resv(List info_list, popup_info_t *popup_win)
+static void _display_info_resv(list_t *info_list, popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->search_info->gchar_data;
 	int found = 0;
 	reserve_info_t *resv_ptr = NULL;
 	GtkTreeView *treeview = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	sview_resv_info_t *sview_resv_info = NULL;
 	int update = 0;
 	int j = 0;
@@ -1118,7 +1117,7 @@ no_input:
 extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 {
 	int error_code = SLURM_SUCCESS;
-	List info_list = NULL;
+	list_t *info_list = NULL;
 	static int view = -1;
 	static reserve_info_msg_t *resv_info_ptr = NULL;
 	char error_char[100];
@@ -1126,7 +1125,7 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
 	int j=0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
 	reserve_info_t *resv_ptr = NULL;
 	time_t now = time(NULL);
@@ -1272,12 +1271,12 @@ extern void specific_info_resv(popup_info_t *popup_win)
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
-	List resv_list = NULL;
-	List send_resv_list = NULL;
+	list_t *resv_list = NULL;
+	list_t *send_resv_list = NULL;
 	sview_resv_info_t *sview_resv_info_ptr = NULL;
 	int j=0;
 	hostset_t *hostset = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	if (!spec_info->display_widget) {
 		setup_popup_info(popup_win, display_data_resv, SORTID_CNT);
@@ -1421,7 +1420,7 @@ extern void set_menus_resv(void *arg, void *arg2, GtkTreePath *path, int type)
 	GtkTreeView *tree_view = (GtkTreeView *)arg;
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	GtkMenu *menu = (GtkMenu *)arg2;
-	List button_list = (List)arg2;
+	list_t *button_list = arg2;
 
 	switch(type) {
 	case TAB_CLICKED:
@@ -1460,7 +1459,7 @@ extern void popup_all_resv(GtkTreeModel *model, GtkTreeIter *iter, int id)
 {
 	char *name = NULL;
 	char title[100] = {0};
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
 

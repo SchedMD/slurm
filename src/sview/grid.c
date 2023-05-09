@@ -44,9 +44,9 @@
 #define RESET_GRID -2
 #define TOPO_DEBUG  0
 
-List grid_button_list = NULL;
-List blinking_button_list = NULL;
-List multi_button_list = NULL;
+list_t *grid_button_list = NULL;
+list_t *blinking_button_list = NULL;
+list_t *multi_button_list = NULL;
 
 char *sview_colors[] = {"#0000FF", "#00FF00", "#00FFFF", "#FFFF00",
 			"#FF0000", "#4D4DC6", "#F09A09", "#BDFA19",
@@ -63,11 +63,11 @@ int sview_colors_cnt = 20;
 typedef struct {
 	int node_inx_id;
 	int color_inx_id;
-	List button_list;
+	list_t *button_list;
 } grid_foreach_t;
 
 typedef struct {
-	List button_list;
+	list_t *button_list;
 	int *coord_x;
 	int *coord_y;
 	int default_y_offset;
@@ -349,7 +349,7 @@ static void _each_highlightd(GtkTreeModel *model,
 			     GtkTreeIter *iter,
 			     gpointer userdata)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	grid_button_t *grid_button = NULL;
 	int *node_inx = NULL;
 	int color_inx;
@@ -413,7 +413,7 @@ static void _each_highlight_selected(GtkTreeModel *model,
 	int node_inx = 0;
 	bool speedup_break = true;
 	grid_foreach_t *grid_foreach = userdata;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 
 	xassert(grid_foreach);
 	if (working_sview_config.grid_topological)
@@ -659,14 +659,14 @@ static int _add_button_to_list(node_info_t *node_ptr,
 }
 
 static int _grid_table_by_switch(button_processor_t *button_processor,
-				 List node_list)
+				 list_t *node_list)
 {
 	int rc = SLURM_SUCCESS;
 	int inx = 0, ii = 0;
 	switch_record_bitmaps_t *sw_nodes_bitmaps_ptr = g_switch_nodes_maps;
 #if TOPO_DEBUG
 	/* engage if want original display below switched */
-	ListIterator itr = list_iterator_create(node_list);
+	list_itr_t *itr = list_iterator_create(node_list);
 	sview_node_info_t *sview_node_info_ptr = NULL;
 #endif
 	button_processor->inx = &inx;
@@ -728,11 +728,11 @@ static int _grid_table_by_switch(button_processor_t *button_processor,
 }
 
 static int _grid_table_by_list(button_processor_t *button_processor,
-			       List node_list)
+			       list_t *node_list)
 {
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	int inx = 0, rc = SLURM_SUCCESS;
-	ListIterator itr = list_iterator_create(node_list);
+	list_itr_t *itr = list_iterator_create(node_list);
 	button_processor->inx = &inx;
 
 	while ((sview_node_info_ptr = list_next(itr))) {
@@ -925,11 +925,11 @@ extern grid_button_t *create_grid_button_from_another(
 }
 
 /* start == -1 for all */
-extern void change_grid_color(List button_list, int start, int end,
+extern void change_grid_color(list_t *button_list, int start, int end,
 			      int color_inx, bool only_change_unused,
 			      enum node_states state_override)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	grid_button_t *grid_button = NULL;
 	GdkColor color;
 	char *new_col = NULL;
@@ -965,12 +965,12 @@ extern void change_grid_color(List button_list, int start, int end,
 /* This variation of change_grid_color() is faster when changing many
  * button colors at the same time since we can issue a single call to
  * _change_button_color() and eliminate a nested loop. */
-extern void change_grid_color_array(List button_list, int array_len,
+extern void change_grid_color_array(list_t *button_list, int array_len,
 				    int *color_inx, bool *color_set_flag,
 				    bool only_change_unused,
 				    enum node_states state_override)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	grid_button_t *grid_button = NULL;
 	GdkColor color;
 	char *new_col = NULL;
@@ -1006,10 +1006,10 @@ extern void change_grid_color_array(List button_list, int array_len,
 	return;
 }
 
-extern void highlight_grid(GtkTreeView *tree_view,
-			   int node_inx_id, int color_inx_id, List button_list)
+extern void highlight_grid(GtkTreeView *tree_view, int node_inx_id,
+			   int color_inx_id, list_t *button_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	grid_button_t *grid_button = NULL;
 	grid_foreach_t grid_foreach;
 
@@ -1047,9 +1047,9 @@ extern void highlight_grid(GtkTreeView *tree_view,
 }
 
 /* start == -1 for all */
-extern void highlight_grid_range(int start, int end, List button_list)
+extern void highlight_grid_range(int start, int end, list_t *button_list)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	grid_button_t *grid_button = NULL;
 
 	if (!button_list)
@@ -1081,10 +1081,10 @@ extern void highlight_grid_range(int start, int end, List button_list)
 	return;
 }
 
-extern void set_grid_used(List button_list, int start, int end,
+extern void set_grid_used(list_t *button_list, int start, int end,
 			  bool used, bool reset_highlight)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	grid_button_t *grid_button = NULL;
 
 	if (!button_list)
@@ -1107,11 +1107,11 @@ extern void set_grid_used(List button_list, int start, int end,
 	return;
 }
 
-extern void get_button_list_from_main(List *button_list, int start, int end,
+extern void get_button_list_from_main(list_t **button_list, int start, int end,
 				      int color_inx)
 {
-	ListIterator itr = NULL;
-	ListIterator button_itr = NULL;
+	list_itr_t *itr = NULL;
+	list_itr_t *button_itr = NULL;
 	grid_button_t *grid_button = NULL;
 	grid_button_t *send_grid_button = NULL;
 
@@ -1145,12 +1145,12 @@ extern void get_button_list_from_main(List *button_list, int start, int end,
 	return;
 }
 
-extern List copy_main_button_list(int initial_color)
+extern list_t *copy_main_button_list(int initial_color)
 {
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	grid_button_t *grid_button = NULL;
 	grid_button_t *send_grid_button = NULL;
-	List button_list = list_create(destroy_grid_button);
+	list_t *button_list = list_create(destroy_grid_button);
 
 	itr = list_iterator_create(grid_button_list);
 	while ((grid_button = list_next(itr))) {
@@ -1167,12 +1167,12 @@ extern List copy_main_button_list(int initial_color)
 	return button_list;
 }
 
-extern void put_buttons_in_table(GtkTable *table, List button_list)
+extern void put_buttons_in_table(GtkTable *table, list_t *button_list)
 {
 	int coord_x=0, coord_y=0;
 	button_processor_t button_processor;
 	grid_button_t *grid_button = NULL;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	list_sort(button_list, (ListCmpF) _sort_button_inx);
 
 	if (!button_list) {
@@ -1245,11 +1245,12 @@ extern void put_buttons_in_table(GtkTable *table, List button_list)
 	gtk_widget_show_all(GTK_WIDGET(table));
 }
 
-extern int update_grid_table(GtkTable *table, List button_list, List node_list)
+extern int update_grid_table(GtkTable *table, list_t *button_list,
+			     list_t *node_list)
 {
 	int rc = SLURM_SUCCESS;
 	int coord_x=0, coord_y=0, inx=0;
-	ListIterator itr = NULL, itr2 = NULL;
+	list_itr_t *itr = NULL, *itr2 = NULL;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	button_processor_t button_processor;
 
@@ -1319,7 +1320,7 @@ extern int get_system_stats(GtkTable *table)
 {
 	int rc = SLURM_SUCCESS;
 	node_info_msg_t *node_info_ptr = NULL;
-	List node_list = NULL;
+	list_t *node_list = NULL;
 
 	if ((rc = get_new_info_node(&node_info_ptr, force_refresh))
 	    == SLURM_NO_CHANGE_IN_DATA) {
@@ -1346,7 +1347,8 @@ extern int get_system_stats(GtkTable *table)
 	return SLURM_SUCCESS;
 }
 
-extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
+extern int setup_grid_table(GtkTable *table, list_t *button_list,
+			    list_t *node_list)
 {
 	int rc = SLURM_SUCCESS;
 	button_processor_t button_processor;
@@ -1385,7 +1387,7 @@ extern void sview_init_grid(bool reset_highlight)
 	int rc = SLURM_SUCCESS;
 	node_info_t *node_ptr = NULL;
 	int i = 0;
-	ListIterator itr = NULL;
+	list_itr_t *itr = NULL;
 	grid_button_t *grid_button = NULL;
 
 	rc = get_new_info_node(&node_info_ptr, force_refresh);
