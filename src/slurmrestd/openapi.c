@@ -566,7 +566,7 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 	populate_methods_t *args = arg;
 	populate_methods_t nargs = *args;
 	entry_method_t *method = args->method;
-	const data_t *para;
+	const data_t *para, *ref;
 	int count = 0;
 	entry_t *entry;
 	http_request_method_t method_type;
@@ -606,7 +606,8 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 	nargs.entries = method->entries;
 
 	para = data_key_get_const(data, "parameters");
-	if (!para) {
+	if (!para || ((data_get_type(para) == DATA_TYPE_DICT) &&
+		      (ref = data_key_get_const(para, OPENAPI_REF_TAG)))) {
 		/* increment to next method entry */
 		args->method++;
 		return DATA_FOR_EACH_CONT;
