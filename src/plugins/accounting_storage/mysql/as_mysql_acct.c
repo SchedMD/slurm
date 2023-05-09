@@ -57,84 +57,6 @@ typedef struct {
 } add_acct_cond_t;
 
 
-/* Fill in all the users that are coordinator for this account.  This
- * will fill in if there are coordinators from a parent account also.
- */
-static int _get_account_coords(mysql_conn_t *mysql_conn,
-			       slurmdb_account_rec_t *acct)
-{
-	char *query = NULL, *cluster_name = NULL;
-	slurmdb_coord_rec_t *coord = NULL;
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
-	ListIterator itr;
-
-	if (!acct) {
-		error("We need a account to fill in.");
-		return SLURM_ERROR;
-	}
-
-	if (!acct->coordinators)
-		acct->coordinators = list_create(slurmdb_destroy_coord_rec);
-
-	query = xstrdup_printf(
-		"select user from %s where acct='%s' && deleted=0",
-		acct_coord_table, acct->name);
-
-	if (!(result =
-	      mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-	while ((row = mysql_fetch_row(result))) {
-		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
-		list_append(acct->coordinators, coord);
-		coord->name = xstrdup(row[0]);
-		coord->direct = 1;
-	}
-	mysql_free_result(result);
-
-	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
-	itr = list_iterator_create(as_mysql_cluster_list);
-	while ((cluster_name = list_next(itr))) {
-		if (query)
-			xstrcat(query, " union ");
-		xstrfmtcat(query,
-			   "select distinct t0.user from %s as t0, "
-			   "\"%s_%s\" as t1, \"%s_%s\" as t2 "
-			   "where t0.acct=t1.acct && "
-			   "t1.lft<t2.lft && t1.rgt>t2.lft && "
-			   "t1.user='' && t2.acct='%s' "
-			   "&& t1.acct!='%s' && !t0.deleted",
-			   acct_coord_table, cluster_name, assoc_table,
-			   cluster_name, assoc_table,
-			   acct->name, acct->name);
-	}
-	list_iterator_destroy(itr);
-	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
-
-	if (!query) {
-		error("No clusters defined?  How could there be accts?");
-		return SLURM_SUCCESS;
-	}
-	xstrcat(query, ";");
-
-	if (!(result =  mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-	while ((row = mysql_fetch_row(result))) {
-		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
-		list_append(acct->coordinators, coord);
-		coord->name = xstrdup(row[0]);
-		coord->direct = 0;
-	}
-	mysql_free_result(result);
-	return SLURM_SUCCESS;
-}
-
 static int _foreach_add_acct(void *x, void *arg)
 {
 	char *name = x;
@@ -962,9 +884,9 @@ empty:
 		if (slurm_atoul(row[SLURMDB_REQ_DELETED]))
 			acct->flags |= SLURMDB_ACCT_FLAG_DELETED;
 
-		if (acct_cond && acct_cond->with_coords) {
-			_get_account_coords(mysql_conn, acct);
-		}
+		if (acct_cond && acct_cond->with_coords)
+			acct->coordinators =
+				assoc_mgr_acct_coords(mysql_conn, acct->name);
 
 		if (acct_cond && acct_cond->with_assocs) {
 			if (!acct_cond->assoc_cond) {

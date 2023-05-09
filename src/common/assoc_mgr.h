@@ -265,6 +265,14 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn,
 				   bool locked);
 
 /*
+ * Get a list of all users that are coordinator for this account.  This
+ * will fill in if there are coordinators from a parent account also.
+ * IN: acct - Name of account.
+ * RET: list of slurmdb_coord_rec_t's to be freed from caller.
+ */
+extern list_t *assoc_mgr_acct_coords(void *db_conn, char *acct_name);
+
+/*
  * get admin_level of uid
  * IN: uid - uid of user to check admin_level of.
  * RET: admin level SLURMDB_ADMIN_NOTSET on error

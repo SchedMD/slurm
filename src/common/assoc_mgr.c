@@ -53,6 +53,11 @@
 #define ASSOC_HASH_SIZE 1000
 #define ASSOC_HASH_ID_INX(_assoc_id)	(_assoc_id % ASSOC_HASH_SIZE)
 
+typedef struct {
+	char *req;
+	list_t *ret_list;
+} find_coord_t;
+
 slurmdb_assoc_rec_t *assoc_mgr_root_assoc = NULL;
 uint32_t g_qos_max_priority = 0;
 uint32_t g_assoc_max_priority = 0;
@@ -687,6 +692,28 @@ static int _list_find_user(void *x, void *key)
 		return _list_find_uid(found_user, &user->uid);
 	else if (!xstrcasecmp(found_user->name, user->name))
 		return 1;
+
+	return 0;
+}
+
+static int _list_find_coord(void *x, void *key)
+{
+	slurmdb_user_rec_t *user = x;
+	find_coord_t *find_coord = key;
+	slurmdb_coord_rec_t *found_coord, *coord;
+
+	if (!user->coord_accts ||
+	    !(found_coord = list_find_first(user->coord_accts,
+					    _find_acct_by_name,
+					    find_coord->req)))
+		return 0;
+
+	if (!find_coord->ret_list)
+		find_coord->ret_list = list_create(slurmdb_destroy_coord_rec);
+	coord = xmalloc(sizeof(*coord));
+	list_append(find_coord->ret_list, coord);
+	coord->name = xstrdup(user->name);
+	coord->direct = found_coord->direct;
 
 	return 0;
 }
@@ -3190,6 +3217,31 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level_locked(void *db_conn,
 							      uint32_t uid)
 {
 	return _get_admin_level_internal(db_conn, uid, true);
+}
+
+extern list_t *assoc_mgr_acct_coords(void *db_conn, char *acct_name)
+{
+	assoc_mgr_lock_t locks = { .user = READ_LOCK };
+	find_coord_t find_coord;
+
+	if (!assoc_mgr_user_list)
+		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
+			return NULL;
+
+	assoc_mgr_lock(&locks);
+	if (!assoc_mgr_coord_list || !list_count(assoc_mgr_coord_list)) {
+		assoc_mgr_unlock(&locks);
+		return NULL;
+	}
+
+	memset(&find_coord, 0, sizeof(find_coord));
+	find_coord.req = acct_name;
+	(void) list_for_each(assoc_mgr_coord_list,
+			     _list_find_coord, &find_coord);
+
+	assoc_mgr_unlock(&locks);
+
+	return find_coord.ret_list;
 }
 
 extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
