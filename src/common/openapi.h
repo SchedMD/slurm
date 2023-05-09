@@ -106,6 +106,16 @@ extern openapi_type_format_t openapi_data_type_to_type_format(data_type_t type);
 #define OPENAPI_DATA_PARSER_PARAM "{data_parser}"
 
 /*
+ * Field name of parameters in a given path
+ */
+#define OPENAPI_PATH_PARAMS_FIELD "parameters"
+
+/*
+ * OpenAPI reference tag
+ */
+#define OPENAPI_REF_TAG "$ref"
+
+/*
  * Generate formated path string from relative path
  * IN/OUT str_ptr - ptr to path string to set/replace
  * IN relative_path - data list with each component of relative path
