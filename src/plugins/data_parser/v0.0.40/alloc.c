@@ -139,9 +139,9 @@ static const struct {
 	add(TRES, slurmdb_destroy_tres_rec, NULL),
 	add(USER, slurmdb_destroy_user_rec, _create_user_rec_obj),
 	add(WCKEY, slurmdb_destroy_wckey_rec, _create_wckey_rec_obj),
-	add(OPENAPI_META, NULL, free_openapi_resp_meta),
-	add(OPENAPI_ERROR, NULL, free_openapi_resp_error),
-	add(OPENAPI_WARNING, NULL, free_openapi_resp_warning),
+	add(OPENAPI_META, free_openapi_resp_meta, NULL),
+	add(OPENAPI_ERROR, free_openapi_resp_error, NULL),
+	add(OPENAPI_WARNING, free_openapi_resp_warning, NULL),
 };
 #undef add
 
