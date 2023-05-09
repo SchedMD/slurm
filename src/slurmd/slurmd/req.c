@@ -147,8 +147,6 @@ typedef struct {
 	uint32_t job_id;
 } active_job_t;
 
-static void _fb_rdlock(void);
-static void _fb_rdunlock(void);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(uint32_t job_id);
@@ -265,9 +263,7 @@ static pthread_mutex_t prolog_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t prolog_serial_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define FILE_BCAST_TIMEOUT 300
-static pthread_mutex_t file_bcast_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  file_bcast_cond  = PTHREAD_COND_INITIALIZER;
-static int fb_read_lock = 0, fb_write_wait_lock = 0, fb_write_lock = 0;
+static pthread_rwlock_t file_bcast_lock = PTHREAD_RWLOCK_INITIALIZER;
 static List file_bcast_list = NULL;
 static List bcast_libdir_list = NULL;
 
@@ -1430,16 +1426,16 @@ static void _handle_libdir_fixup(launch_tasks_request_msg_t *req)
 	libdir_rec_t *libdir;
 	char *orig, *new;
 
-	_fb_rdlock();
+	slurm_rwlock_rdlock(&file_bcast_lock);
 	if (!(libdir = list_find_first(bcast_libdir_list,
 				       _find_libdir_record,
 				       &libdir_args))) {
-		_fb_rdunlock();
+		slurm_rwlock_unlock(&file_bcast_lock);
 		return;
 	}
 
 	new = xstrdup(libdir->directory);
-	_fb_rdunlock();
+	slurm_rwlock_unlock(&file_bcast_lock);
 
 	if ((orig = getenvp(req->env, "LD_LIBRARY_PATH")))
 		xstrfmtcat(new, ":%s", orig);
@@ -4073,52 +4069,6 @@ static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
 	return arg;
 }
 
-static void _fb_rdlock(void)
-{
-	slurm_mutex_lock(&file_bcast_mutex);
-	while (1) {
-		if ((fb_write_wait_lock == 0) && (fb_write_lock == 0)) {
-			fb_read_lock++;
-			break;
-		} else {	/* wait for state change and retry */
-			slurm_cond_wait(&file_bcast_cond, &file_bcast_mutex);
-		}
-	}
-	slurm_mutex_unlock(&file_bcast_mutex);
-}
-
-static void _fb_rdunlock(void)
-{
-	slurm_mutex_lock(&file_bcast_mutex);
-	fb_read_lock--;
-	slurm_cond_broadcast(&file_bcast_cond);
-	slurm_mutex_unlock(&file_bcast_mutex);
-}
-
-static void _fb_wrlock(void)
-{
-	slurm_mutex_lock(&file_bcast_mutex);
-	fb_write_wait_lock++;
-	while (1) {
-		if ((fb_read_lock == 0) && (fb_write_lock == 0)) {
-			fb_write_lock++;
-			fb_write_wait_lock--;
-			break;
-		} else {	/* wait for state change and retry */
-			slurm_cond_wait(&file_bcast_cond, &file_bcast_mutex);
-		}
-	}
-	slurm_mutex_unlock(&file_bcast_mutex);
-}
-
-static void _fb_wrunlock(void)
-{
-	slurm_mutex_lock(&file_bcast_mutex);
-	fb_write_lock--;
-	slurm_cond_broadcast(&file_bcast_cond);
-	slurm_mutex_unlock(&file_bcast_mutex);
-}
-
 static int _bcast_find_in_list(void *x, void *y)
 {
 	file_bcast_info_t *info = (file_bcast_info_t *)x;
@@ -4138,9 +4088,9 @@ static file_bcast_info_t *_bcast_lookup_file(file_bcast_info_t *key)
 /* must not have read lock, will get write lock */
 static void _file_bcast_close_file(file_bcast_info_t *key)
 {
-	_fb_wrlock();
+	slurm_rwlock_wrlock(&file_bcast_lock);
 	list_delete_all(file_bcast_list, _bcast_find_in_list, key);
-	_fb_wrunlock();
+	slurm_rwlock_unlock(&file_bcast_lock);
 }
 
 static void _free_file_bcast_info_t(void *arg)
@@ -4200,10 +4150,10 @@ static void _file_bcast_cleanup(void)
 {
 	time_t now = time(NULL);
 
-	_fb_wrlock();
+	slurm_rwlock_wrlock(&file_bcast_lock);
 	list_delete_all(file_bcast_list, _bcast_find_in_list_to_remove, &now);
 	list_delete_all(bcast_libdir_list, _libdir_find_in_list_to_remove, &now);
-	_fb_wrunlock();
+	slurm_rwlock_unlock(&file_bcast_lock);
 }
 
 static int _bcast_find_by_job(void *x, void *y)
@@ -4237,10 +4187,10 @@ static int _libdir_find_by_job(void *x, void *y)
 
 static void _file_bcast_job_cleanup(uint32_t job_id)
 {
-	_fb_wrlock();
+	slurm_rwlock_wrlock(&file_bcast_lock);
 	list_delete_all(file_bcast_list, _bcast_find_by_job, &job_id);
 	list_delete_all(bcast_libdir_list, _libdir_find_by_job, &job_id);
-	_fb_wrunlock();
+	slurm_rwlock_unlock(&file_bcast_lock);
 }
 
 void file_bcast_init(void)
@@ -4253,7 +4203,7 @@ void file_bcast_init(void)
 
 void file_bcast_purge(void)
 {
-	_fb_wrlock();
+	slurm_rwlock_wrlock(&file_bcast_lock);
 	FREE_NULL_LIST(file_bcast_list);
 	FREE_NULL_LIST(bcast_libdir_list);
 	/* destroying list before exit, no need to unlock */
@@ -4310,13 +4260,13 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 		};
 		char *fname = NULL;
 
-		_fb_rdlock();
+		slurm_rwlock_rdlock(&file_bcast_lock);
 		if (!(libdir = list_find_first(bcast_libdir_list,
 					       _find_libdir_record,
 					       &libdir_args))) {
 			error("Could not find library directory for transfer from uid %u",
 			      key.uid);
-			_fb_rdunlock();
+			slurm_rwlock_unlock(&file_bcast_lock);
 			rc = SLURM_ERROR;
 			goto done;
 		}
@@ -4325,7 +4275,7 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 		xstrfmtcat(fname, "%s/%s", libdir->directory, req->fname);
 		xfree(req->fname);
 		req->fname = fname;
-		_fb_rdunlock();
+		slurm_rwlock_unlock(&file_bcast_lock);
 	} else if (req->fname[strlen(req->fname) - 1] == '/') {
 		/*
 		 * "srun --bcast" was called with a target directory instead of
@@ -4356,11 +4306,11 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 	}
 	sbcast_cred_arg_free(cred_arg);
 
-	_fb_rdlock();
+	slurm_rwlock_rdlock(&file_bcast_lock);
 	if (!(file_info = _bcast_lookup_file(&key))) {
 		error("No registered file transfer for uid %u file `%s`.",
 		      key.uid, key.fname);
-		_fb_rdunlock();
+		slurm_rwlock_unlock(&file_bcast_lock);
 		rc = SLURM_ERROR;
 		goto done;
 	}
@@ -4369,7 +4319,7 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 	if (bcast_decompress_data(req) < 0) {
 		error("sbcast: data decompression error for UID %u, file %s",
 		      key.uid, key.fname);
-		_fb_rdunlock();
+		slurm_rwlock_unlock(&file_bcast_lock);
 		rc = SLURM_ERROR;
 		goto done;
 	}
@@ -4383,7 +4333,7 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 				continue;
 			error("sbcast: uid:%u can't write `%s`: %m",
 			      key.uid, key.fname);
-			_fb_rdunlock();
+			slurm_rwlock_unlock(&file_bcast_lock);
 			rc = SLURM_ERROR;
 			goto done;
 		}
@@ -4412,7 +4362,7 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 		}
 	}
 
-	_fb_rdunlock();
+	slurm_rwlock_unlock(&file_bcast_lock);
 
 	if (req->flags & FILE_BCAST_LAST_BLOCK) {
 		_file_bcast_close_file(&key);
@@ -4491,11 +4441,11 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	file_info->last_update = file_info->start_time = time(NULL);
 
 	//TODO: mmap the file here
-	_fb_wrlock();
+	slurm_rwlock_wrlock(&file_bcast_lock);
 	list_append(file_bcast_list, file_info);
 	if (libdir)
 		list_append(bcast_libdir_list, libdir);
-	_fb_wrunlock();
+	slurm_rwlock_unlock(&file_bcast_lock);
 
 	return SLURM_SUCCESS;
 }
