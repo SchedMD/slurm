@@ -269,8 +269,7 @@ report_acct_grouping_to_hv(slurmdb_report_acct_grouping_t* rec, HV* hv)
 
     STORE_FIELD(hv, rec, acct,     charp);
     STORE_FIELD(hv, rec, count,    uint32_t);
-    STORE_FIELD(hv, rec, lft,      uint32_t);
-    STORE_FIELD(hv, rec, rgt,      uint32_t);
+    STORE_FIELD(hv, rec, lineage,  charp);
 
     my_av = (AV*)sv_2mortal((SV*)newAV());
     if (rec->groups) {

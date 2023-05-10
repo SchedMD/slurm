@@ -1398,6 +1398,7 @@ extern void slurmdb_destroy_report_acct_grouping(void *object)
 	if (acct_grouping) {
 		xfree(acct_grouping->acct);
 		FREE_NULL_LIST(acct_grouping->groups);
+		xfree(acct_grouping->lineage);
 		FREE_NULL_LIST(acct_grouping->tres_list);
 		xfree(acct_grouping);
 	}

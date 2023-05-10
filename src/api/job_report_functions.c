@@ -65,7 +65,6 @@ static void _check_create_grouping(
 	bool individual, bool wckey_type)
 {
 	ListIterator itr;
-	slurmdb_wckey_rec_t *wckey = (slurmdb_wckey_rec_t *)object;
 	slurmdb_assoc_rec_t *assoc = (slurmdb_assoc_rec_t *)object;
 	slurmdb_report_cluster_grouping_t *cluster_group = NULL;
 	slurmdb_report_acct_grouping_t *acct_group = NULL;
@@ -100,12 +99,9 @@ static void _check_create_grouping(
 		acct_group = xmalloc(sizeof(slurmdb_report_acct_grouping_t));
 
 		acct_group->acct = xstrdup(name);
-		if (wckey_type)
-			acct_group->lft = wckey->id;
-		else {
-			acct_group->lft = assoc->lft;
-			acct_group->rgt = assoc->rgt;
-		}
+		if (!wckey_type)
+			acct_group->lineage = xstrdup(assoc->lineage);
+
 		acct_group->groups = list_create(
 			slurmdb_destroy_report_job_grouping);
 		list_append(cluster_group->acct_list, acct_group);
@@ -410,30 +406,26 @@ no_objects:
 				continue;
 			}
 
-			if (!flat_view
-			   && (acct_group->lft != NO_VAL)
-			   && (job->lft != NO_VAL)) {
-				/* keep separate since we don't want
-				 * to so a xstrcmp if we don't have to
-				 */
-				if (job->lft > acct_group->lft
-				    && job->lft < acct_group->rgt) {
-					char *mywckey = NULL;
-					if (!both)
-						break;
-					if (acct_group->acct) {
-						if ((mywckey = strstr(
-							     acct_group->acct,
-							     ":")))
-							mywckey++;
-					}
-					if (!job->wckey && !mywckey)
-						break;
-					else if (!mywckey || !job->wckey)
-						continue;
-					else if (!xstrcmp(mywckey, job->wckey))
-						break;
+			/*
+			 * This is only used for non wckey_type checks, the
+			 * wckey_type acct_group does not have lineage set.
+			 */
+			if (!flat_view &&
+			    xstrstr(job->lineage, acct_group->lineage)) {
+				char *mywckey = NULL;
+				if (!both)
+					break;
+				if (acct_group->acct) {
+					if ((mywckey = strstr(
+						     acct_group->acct, ":")))
+						mywckey++;
 				}
+				if (!job->wckey && !mywckey)
+					break;
+				else if (!mywckey || !job->wckey)
+					continue;
+				else if (!xstrcmp(mywckey, job->wckey))
+					break;
 			} else if (!xstrcmp(acct_group->acct, tmp_acct))
 				break;
 		}

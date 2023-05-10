@@ -1341,8 +1341,8 @@ typedef struct {
 	char *acct;	/* account name */
 	uint32_t count; /* total count of jobs taken up by this acct */
 	List groups;	/* containing slurmdb_report_job_grouping_t's*/
-	uint32_t lft;
-	uint32_t rgt;
+	char *lineage;	/* Complete path up the hierarchy to the root
+			 * association */
 	List tres_list; /* list of slurmdb_tres_rec_t *'s */
 } slurmdb_report_acct_grouping_t;
 
