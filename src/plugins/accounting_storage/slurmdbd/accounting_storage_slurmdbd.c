@@ -3433,8 +3433,9 @@ extern void acct_storage_p_send_all(void *db_conn, time_t event_time,
 	debug2("called %s", rpc_num2string(msg_type));
 	switch (msg_type) {
 	case ACCOUNTING_FIRST_REG:
-	case ACCOUNTING_NODES_CHANGE_DB:
 		(void) send_jobs_to_accounting();
+		/* fall through */
+	case ACCOUNTING_NODES_CHANGE_DB:
 		(void) send_resvs_to_accounting(msg_type);
 		/* fall through */
 	case ACCOUNTING_TRES_CHANGE_DB:

@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- srun - fix issue creating regular and interactive steps because
     *_PACK_GROUP* environment variables were incorrectly set on non-HetSteps.
  -- Fix dynamic nodes getting stuck in allocated states when reconfiguring.
+ -- Avoid job write lock when nodes are dynamically added/removed.
 
 * Changes in Slurm 23.02.2
 ==========================
