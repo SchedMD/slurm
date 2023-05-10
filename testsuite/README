@@ -1022,3 +1022,7 @@ test_138_1   /stress/test_stdin_broadcast.py
 test_143_#   Testing --switches.
 ================================
 test_143_1   Test switches with topology/tree + select/cons_tres
+
+test_144_#   Testing of gres.
+================================
+test_144_4   Test gres with file or type and --overlap
