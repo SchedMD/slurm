@@ -1150,7 +1150,6 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 
 			pack32(0, buffer);
 			pack16(0, buffer);
-			pack32(0, buffer);
 
 			packnull(buffer);
 			packnull(buffer);
@@ -1170,7 +1169,6 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 
 			pack32(NO_VAL, buffer);
 
-			pack32(0, buffer);
 			pack32(0, buffer);
 
 			packnull(buffer);
@@ -1203,7 +1201,6 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 
 		pack32(object->id, buffer);
 		pack16(object->is_def, buffer);
-		pack32(object->lft, buffer);
 
 		packstr(object->lineage, buffer);
 		packstr(object->max_tres_mins_pj, buffer);
@@ -1223,7 +1220,6 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 
 		_pack_list_of_str(object->qos_list, buffer);
 
-		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
 
 		packstr(object->user, buffer);
@@ -1478,7 +1474,6 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 
 		safe_unpack32(&object_ptr->id, buffer);
 		safe_unpack16(&object_ptr->is_def, buffer);
-		safe_unpack32(&object_ptr->lft, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->lineage,
 				       &uint32_tmp, buffer);
@@ -1515,7 +1510,6 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 			}
 		}
 
-		safe_unpack32(&object_ptr->rgt, buffer);
 		safe_unpack32(&object_ptr->uid, buffer);
 
 		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
@@ -4385,7 +4379,6 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->gid, buffer);
 		pack32(job->jobid, buffer);
 		packstr(job->jobname, buffer);
-		pack32(job->lft, buffer);
 		packstr(job->licenses, buffer);
 		packstr(job->lineage, buffer);
 		packstr(job->mcs_label, buffer);
@@ -4661,7 +4654,6 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->gid, buffer);
 		safe_unpack32(&job_ptr->jobid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->jobname, &uint32_tmp, buffer);
-		safe_unpack32(&job_ptr->lft, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->licenses, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->lineage, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->mcs_label,
