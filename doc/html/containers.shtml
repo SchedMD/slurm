@@ -411,7 +411,7 @@ host networking</a></li>
 <h3>Setup procedure</h3>
 <ol>
 <li>
-<a href="https://podman.io/getting-started/installation"> Install and configure
+<a href="https://podman.io/docs/installation"> Install and configure
 Podman</a><br>Podman must be fully operational and able to run containers
 before continuing.</li>
 <li>
