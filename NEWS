@@ -32,6 +32,9 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix regression in 23.02.2 that ignored the partition DefCpuPerGPU setting
     on the first pass of scheduling a job requesting --gpus --ntasks.
+ -- openapi/dbv0.0.39/users - If a default account update failed, resulting in a
+    no-op, the query returned success without any warning. Now a warning is sent
+    back to the client that the default account wasn't modified.
 
 * Changes in Slurm 23.02.2
 ==========================
