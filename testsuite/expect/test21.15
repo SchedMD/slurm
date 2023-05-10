@@ -83,6 +83,7 @@ array set user_req2 {
 set user_req2(cluster) $tc1
 set user_req2(account) $ta1
 set user_req2(defaultqos) $dqos1
+set user_req2(qos) $dqos1
 
 set timeout 60
 
