@@ -588,6 +588,12 @@ end
   specify a gpu with its type, thus enforcing the limits for each specific
   model.
 </p>
+
+<p>When <b>TRESBillingWeights</b> are defined for a partition, both typed and
+non-typed resources should be included. For example, if you have 'tesla' GPUs
+in one partition and you only define the billing weights for the 'tesla' typed
+GPU resource, then those weights will not be applied to the generic GPUs.</p>
+
 <p>It is also advisable to set <b>AccountingStorageTRES</b> for both generic
   and specific gres types, otherwise requests that ask for the generic instance
   of a gres won't be accounted for. For example, to track generic GPUs and
@@ -1272,6 +1278,6 @@ the network, etc.</p>
 
 <p><b>TimeLimit</b> &mdash; The job exhausted its time limit.</p>
 
-<p style="text-align: center;">Last modified 24 May 2023</p>
+<p style="text-align: center;">Last modified 09 June 2023</p>
 
 <!--#include virtual="footer.txt"-->
