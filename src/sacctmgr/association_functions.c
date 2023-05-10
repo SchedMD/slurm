@@ -649,8 +649,6 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	case PRINT_ID:
 		field->print_routine(field, &assoc->id, last);
 		break;
-	case PRINT_LFT:
-		field->print_routine(field, &assoc->lft, last);
 		break;
 	case PRINT_MAXCM:
 		tmp_uint64 = slurmdb_find_tres_count_in_string(
