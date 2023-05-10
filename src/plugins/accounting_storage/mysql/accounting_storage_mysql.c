@@ -3526,6 +3526,7 @@ extern List acct_storage_p_get_events(mysql_conn_t *mysql_conn, uint32_t uid,
 extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
 					slurmdb_assoc_cond_t *assoc_cond)
 {
+	int rc = SLURM_SUCCESS;
 	List ret_list = NULL;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
@@ -3538,19 +3539,21 @@ extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	ret_list = list_create(slurmdb_destroy_assoc_rec);
 
-	if (as_mysql_acct_no_assocs(mysql_conn, assoc_cond, ret_list)
-	    != SLURM_SUCCESS)
+	if ((rc = as_mysql_acct_no_assocs(mysql_conn, assoc_cond, ret_list)) !=
+	     SLURM_SUCCESS)
 		goto end_it;
 
-	if (as_mysql_acct_no_users(mysql_conn, assoc_cond, ret_list)
-	    != SLURM_SUCCESS)
+	if ((rc = as_mysql_acct_no_users(mysql_conn, assoc_cond, ret_list)) !=
+	    SLURM_SUCCESS)
 		goto end_it;
 
-	if (as_mysql_user_no_assocs_or_no_uid(mysql_conn, assoc_cond, ret_list)
-	    != SLURM_SUCCESS)
+	if ((rc = as_mysql_user_no_assocs_or_no_uid(mysql_conn,
+						    assoc_cond, ret_list)) !=
+	    SLURM_SUCCESS)
 		goto end_it;
 
 end_it:
+	errno = rc;
 
 	return ret_list;
 }
