@@ -1021,3 +1021,4 @@ test_144_#   Testing of gres.
 ================================
 test_144_1   Test --exclusive allocation with gres flagged as explicit
 test_144_2   Test enforce-binding with GPUs that share cores
+test_144_4   Test gres with file or type and --overlap
