@@ -840,6 +840,8 @@ typedef struct {
 	uint32_t jobid;
 	char	*jobname;
 	uint32_t lft;
+	char *lineage;		   /* Complete path up the hierarchy to the root
+				    * association */
 	char *licenses;
 	char 	*mcs_label;
 	char	*nodes;

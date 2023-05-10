@@ -740,7 +740,7 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, gid,             uint32_t);
     STORE_FIELD(hv, rec, jobid,           uint32_t);
     STORE_FIELD(hv, rec, jobname,         charp);
-    STORE_FIELD(hv, rec, lft,             uint32_t);
+    STORE_FIELD(hv, rec, lineage,         charp);
     STORE_FIELD(hv, rec, partition,       charp);
     STORE_FIELD(hv, rec, nodes,           charp);
     STORE_FIELD(hv, rec, priority,        uint32_t);

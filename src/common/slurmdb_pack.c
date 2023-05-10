@@ -4387,6 +4387,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		packstr(job->jobname, buffer);
 		pack32(job->lft, buffer);
 		packstr(job->licenses, buffer);
+		packstr(job->lineage, buffer);
 		packstr(job->mcs_label, buffer);
 		packstr(job->nodes, buffer);
 		pack32(job->het_job_id, buffer);
@@ -4662,6 +4663,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&job_ptr->jobname, &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->lft, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->licenses, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->lineage, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->mcs_label,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->nodes, &uint32_tmp, buffer);
