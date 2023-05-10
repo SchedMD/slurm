@@ -28,6 +28,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.02.3
 ==========================
+ -- Fix regression in 23.02.2 that ignored the partition DefCpuPerGPU setting
+    on the first pass of scheduling a job requesting --gpus --ntasks.
 
 * Changes in Slurm 23.02.2
 ==========================
