@@ -12761,6 +12761,39 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		}
 	}
 
+	if (job_desc->exc_nodes && detail_ptr &&
+	    !xstrcmp(job_desc->exc_nodes, detail_ptr->exc_nodes)) {
+		sched_debug("%s: new exc_nodes identical to old exc_nodes %s",
+			    __func__, job_desc->exc_nodes);
+	} else if (job_desc->exc_nodes) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_JOB_NOT_PENDING;
+		else if (job_desc->exc_nodes[0] == '\0') {
+			xfree(detail_ptr->exc_nodes);
+			FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
+		} else {
+			if (node_name2bitmap(job_desc->exc_nodes, false,
+					     &exc_bitmap)) {
+				sched_error("%s: Invalid node list for update of %pJ: %s",
+					    __func__, job_ptr,
+					    job_desc->exc_nodes);
+				FREE_NULL_BITMAP(exc_bitmap);
+				error_code = ESLURM_INVALID_NODE_NAME;
+			}
+			if (exc_bitmap) {
+				xfree(detail_ptr->exc_nodes);
+				detail_ptr->exc_nodes =
+					xstrdup(job_desc->exc_nodes);
+				FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
+				detail_ptr->exc_node_bitmap = exc_bitmap;
+				sched_info("%s: setting exc_nodes to %s for %pJ",
+					   __func__, job_desc->exc_nodes, job_ptr);
+			}
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
 	/*
 	 * Must check req_nodes to set the job_ptr->details->req_node_bitmap
 	 * before we validate it later.
@@ -13106,38 +13139,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
-	if (job_desc->exc_nodes && detail_ptr &&
-	    !xstrcmp(job_desc->exc_nodes, detail_ptr->exc_nodes)) {
-		sched_debug("%s: new exc_nodes identical to old exc_nodes %s",
-			    __func__, job_desc->exc_nodes);
-	} else if (job_desc->exc_nodes) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
-			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (job_desc->exc_nodes[0] == '\0') {
-			xfree(detail_ptr->exc_nodes);
-			FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
-		} else {
-			if (node_name2bitmap(job_desc->exc_nodes, false,
-					     &exc_bitmap)) {
-				sched_error("%s: Invalid node list for update of %pJ: %s",
-					    __func__, job_ptr,
-					    job_desc->exc_nodes);
-				FREE_NULL_BITMAP(exc_bitmap);
-				error_code = ESLURM_INVALID_NODE_NAME;
-			}
-			if (exc_bitmap) {
-				xfree(detail_ptr->exc_nodes);
-				detail_ptr->exc_nodes =
-					xstrdup(job_desc->exc_nodes);
-				FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
-				detail_ptr->exc_node_bitmap = exc_bitmap;
-				sched_info("%s: setting exc_nodes to %s for %pJ",
-					   __func__, job_desc->exc_nodes, job_ptr);
-			}
-		}
-	}
-	if (error_code != SLURM_SUCCESS)
-		goto fini;
 
 	if (job_desc->min_nodes == INFINITE) {
 		/* Used by scontrol just to get current configuration info */
