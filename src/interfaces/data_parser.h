@@ -171,6 +171,8 @@ typedef enum {
 	DATA_PARSER_USER_FLAGS, /* slurmdb_user_rec_t->parser_user_flags & SLURMDB_USER_FLAG_* */
 	DATA_PARSER_USER_CONDITION, /* slurmdb_user_cond_t */
 	DATA_PARSER_USER_CONDITION_PTR, /* slurmdb_user_cond_t* */
+	DATA_PARSER_OPENAPI_USERS_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_USERS_REMOVED_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_WCKEY, /* slurmdb_wckey_rec_t */
 	DATA_PARSER_WCKEY_LIST, /* List of slurmdb_wckey_rec_t* */
 	DATA_PARSER_WCKEY_FLAGS, /* slurmdb_wckey_rec_t->flags & SLURMDB_WCKEY_FLAG_* */
@@ -303,6 +305,8 @@ typedef enum {
 	DATA_PARSER_SELECTED_STEP, /* slurm_selected_step_t */
 	DATA_PARSER_SELECTED_STEP_PTR, /* slurm_selected_step_t* */
 	DATA_PARSER_SELECTED_STEP_LIST, /* list_t of slurm_selected_step_t* */
+	DATA_PARSER_OPENAPI_USER_PARAM, /* openapi_user_param_t */
+	DATA_PARSER_OPENAPI_USER_QUERY, /* openapi_user_query_t */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

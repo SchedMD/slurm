@@ -34,91 +34,28 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
-#include <stdint.h>
-
-#include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
 
 #include "src/common/list.h"
 #include "src/common/log.h"
-#include "src/common/parse_time.h"
 #include "src/common/read_config.h"
-#include "src/common/ref.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/common/strlcpy.h"
-#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 #include "api.h"
+#include "structs.h"
 
-#define MAGIC_QUERY_SEARCH 0x9e8dbee1
-
-typedef struct {
-	int magic; /* MAGIC_QUERY_SEARCH */
-	ctxt_t *ctxt;
-	slurmdb_user_cond_t *user_cond;
-} foreach_query_search_t;
-
-static data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
-						 void *arg)
+static void _dump_users(ctxt_t *ctxt, slurmdb_user_cond_t *user_cond)
 {
-	foreach_query_search_t *args = arg;
-
-	xassert(args->magic == MAGIC_QUERY_SEARCH);
-
-	if (!xstrcasecmp("with_deleted", key)) {
-		if (data_convert_type(data, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
-			resp_error(args->ctxt, ESLURM_REST_INVALID_QUERY, key,
-				   "%s must be a Boolean instead of %s", key,
-				   data_type_to_string(data_get_type(data)));
-			return DATA_FOR_EACH_FAIL;
-		}
-
-		if (data->data.bool_u)
-			args->user_cond->with_deleted = true;
-		else
-			args->user_cond->with_deleted = false;
-
-		return DATA_FOR_EACH_CONT;
-	}
-
-	resp_error(args->ctxt, ESLURM_REST_INVALID_QUERY, key,
-		   "Unknown query field %s", key);
-	return DATA_FOR_EACH_FAIL;
-}
-
-static void _dump_users(ctxt_t *ctxt, char *user_name,
-			slurmdb_user_cond_t *user_cond)
-{
-	data_t *dusers;
 	List user_list = NULL;
-	slurmdb_assoc_cond_t assoc_cond = { 0 };
-
-	dusers = data_key_set(ctxt->resp, "users");
-
-	user_cond->assoc_cond = &assoc_cond;
-	user_cond->with_assocs = true;
-	user_cond->with_coords = true;
-	/* with_deleted defaults to false */
-	user_cond->with_wckeys = true;
-
-	if (user_name) {
-		assoc_cond.user_list = list_create(NULL);
-		list_append(assoc_cond.user_list, user_name);
-	}
 
 	if (!db_query_list(ctxt, &user_list, slurmdb_users_get, user_cond))
-		DATA_DUMP(ctxt->parser, USER_LIST, user_list, dusers);
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_USERS_RESP, user_list, ctxt);
 
 	FREE_NULL_LIST(user_list);
-	FREE_NULL_LIST(assoc_cond.user_list);
-	user_cond->assoc_cond = NULL;
 }
 
 static int _match_wckey_name(void *x, void *key)
@@ -204,7 +141,6 @@ static int _foreach_update_user(void *x, void *arg)
 		}
 	}
 
-
 	if (user->assoc_list && list_count(user->assoc_list)) {
 		resp_warn(ctxt, __func__, "User %s associations list ignored. They must be set via the associations end point.",
 			  user->name);
@@ -276,18 +212,14 @@ cleanup:
 
 static void _update_users(ctxt_t *ctxt, bool commit)
 {
-	data_t *parent_path = NULL;
-	data_t *dusers = get_query_key_list("users", ctxt, &parent_path);
+	openapi_resp_single_t resp = {0};
 	list_t *user_list = NULL;
 
-	if (!dusers) {
-		resp_warn(ctxt, __func__,
-			  "ignoring empty or non-existant users array");
+	if (DATA_PARSE(ctxt->parser, OPENAPI_USERS_RESP, user_list, ctxt->query,
+		       ctxt->parent_path))
 		goto cleanup;
-	}
 
-	if (DATA_PARSE(ctxt->parser, USER_LIST, user_list, dusers, parent_path))
-		goto cleanup;
+	user_list = resp.response;
 
 	if (list_for_each(user_list, _foreach_update_user, ctxt) < 0)
 		goto cleanup;
@@ -297,69 +229,41 @@ static void _update_users(ctxt_t *ctxt, bool commit)
 
 cleanup:
 	FREE_NULL_LIST(user_list);
-	FREE_NULL_DATA(parent_path);
-}
-
-static int _foreach_delete_user(void *x, void *arg)
-{
-	char *user = x;
-	data_t *users = arg;
-
-	data_set_string(data_list_append(users), user);
-
-	return DATA_FOR_EACH_CONT;
 }
 
 static void _delete_user(ctxt_t *ctxt, char *user_name)
 {
-	slurmdb_assoc_cond_t assoc_cond = {
-		.user_list = list_create(NULL),
-	};
+	slurmdb_assoc_cond_t assoc_cond = {0};
 	slurmdb_user_cond_t user_cond = {
 		.assoc_cond = &assoc_cond,
-		.with_assocs = true,
-		.with_coords = true,
-		.with_deleted = false,
-		.with_wckeys = true,
 	};
 	List user_list = NULL;
-	data_t *dremoved_users =
-		data_set_list(data_key_set(ctxt->resp, "removed_users"));
 
+	assoc_cond.user_list = list_create(NULL);
 	list_append(assoc_cond.user_list, user_name);
 
-	if (!db_query_list(ctxt, &user_list, slurmdb_users_remove,
-			   &user_cond) &&
-	    (list_for_each(user_list, _foreach_delete_user, dremoved_users) >=
-	     0))
+	if (!db_query_list(ctxt, &user_list, slurmdb_users_remove, &user_cond))
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_USERS_REMOVED_RESP, user_list,
+					 ctxt);
+
+	if (!ctxt->rc)
 		db_query_commit(ctxt);
 
 	FREE_NULL_LIST(user_list);
 	FREE_NULL_LIST(assoc_cond.user_list);
-	assoc_cond.user_list = NULL;
 }
 
 /* based on sacctmgr_list_user() */
 extern int op_handler_users(ctxt_t *ctxt)
 {
 	if (ctxt->method == HTTP_REQUEST_GET) {
-		slurmdb_user_cond_t user_cond = { 0 };
+		slurmdb_user_cond_t *user_cond = NULL;
 
-		if (ctxt->query && data_get_dict_length(ctxt->query)) {
-			/* Default to no deleted users */
-			foreach_query_search_t args = {
-				.magic = MAGIC_QUERY_SEARCH,
-				.ctxt = ctxt,
-				.user_cond = &user_cond,
-			};
+		if (!DATA_PARSE(ctxt->parser, USER_CONDITION_PTR, user_cond,
+				ctxt->query, ctxt->parent_path))
+			_dump_users(ctxt, user_cond);
 
-			(void) data_dict_for_each(ctxt->query,
-						  _foreach_query_search, &args);
-		}
-
-		if (!ctxt->rc)
-			_dump_users(ctxt, NULL, &user_cond);
-
+		slurmdb_destroy_user_cond(user_cond);
 	} else if (ctxt->method == HTTP_REQUEST_POST) {
 		_update_users(ctxt, (ctxt->tag != CONFIG_OP_TAG));
 	} else {
@@ -373,44 +277,52 @@ extern int op_handler_users(ctxt_t *ctxt)
 
 static int op_handler_user(ctxt_t *ctxt)
 {
-	char *user_name = get_str_param("user_name", true, ctxt);
+	openapi_user_param_t params = {0};
+	openapi_user_query_t query = {0};
 
-	if (!user_name) {
+	if (DATA_PARSE(ctxt->parser, OPENAPI_USER_PARAM, params,
+		       ctxt->parameters, ctxt->parent_path))
+		goto cleanup;
+	if (DATA_PARSE(ctxt->parser, OPENAPI_USER_QUERY, query, ctxt->query,
+		       ctxt->parent_path))
+		goto cleanup;
+
+	if (!params.name || !params.name[0]) {
 		resp_error(ctxt, ESLURM_USER_ID_MISSING, __func__,
-			   "User name must be provided singular query");
+			   "User name must be provided for singular query");
 	} else if (ctxt->method == HTTP_REQUEST_GET) {
-		slurmdb_user_cond_t user_cond = {0};
-		if (ctxt->query && data_get_dict_length(ctxt->query)) {
-			/* Default to no deleted users */
-			foreach_query_search_t args = {
-				.magic = MAGIC_QUERY_SEARCH,
-				.ctxt = ctxt,
-				.user_cond = &user_cond,
-			};
+		slurmdb_assoc_cond_t assoc_cond = {0};
+		slurmdb_user_cond_t user_cond = {
+			.assoc_cond = &assoc_cond,
+			.with_deleted = query.with_deleted,
+			.with_assocs = !query.without_assocs,
+			.with_coords = !query.without_coords,
+			.with_wckeys = !query.without_wckeys,
+		};
 
-			if (data_dict_for_each(ctxt->query,
-					       _foreach_query_search,
-					       &args) < 0)
-				return ESLURM_REST_INVALID_QUERY;
-		}
+		assoc_cond.user_list = list_create(NULL);
+		list_append(assoc_cond.user_list, params.name);
 
-		_dump_users(ctxt, user_name, &user_cond);
+		_dump_users(ctxt, &user_cond);
+
+		FREE_NULL_LIST(assoc_cond.user_list);
 	} else if (ctxt->method == HTTP_REQUEST_DELETE) {
-		_delete_user(ctxt, user_name);
+		_delete_user(ctxt, params.name);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
 			   get_http_method_string(ctxt->method));
 	}
 
+cleanup:
+	xfree(params.name);
 	return SLURM_SUCCESS;
 }
 
 extern void init_op_users(void)
 {
 	bind_handler("/slurmdb/{data_parser}/users/", op_handler_users, 0);
-	bind_handler("/slurmdb/{data_parser}/user/{user_name}", op_handler_user,
-		     0);
+	bind_handler("/slurmdb/{data_parser}/user/{name}", op_handler_user, 0);
 }
 
 extern void destroy_op_users(void)

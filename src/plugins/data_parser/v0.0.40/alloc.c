@@ -145,6 +145,8 @@ static const struct {
 	add(SELECTED_STEP, NULL, NULL),
 	add(JOB_CONDITION, slurmdb_destroy_job_cond, NULL),
 	add(QOS_CONDITION, slurmdb_destroy_qos_cond, NULL),
+	add(USER_CONDITION, slurmdb_destroy_user_cond, NULL),
+	add(ASSOC_CONDITION, slurmdb_destroy_assoc_cond, NULL),
 };
 #undef add
 

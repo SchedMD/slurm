@@ -53,4 +53,15 @@ typedef struct {
 	list_t *associations;
 } openapi_resp_slurmdbd_config_t;
 
+typedef struct {
+	char *name;
+} openapi_user_param_t;
+
+typedef struct {
+	bool with_deleted;
+	bool without_assocs;
+	bool without_coords;
+	bool without_wckeys;
+} openapi_user_query_t;
+
 #endif

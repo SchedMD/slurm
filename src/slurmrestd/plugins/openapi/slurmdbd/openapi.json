@@ -859,7 +859,7 @@
         "summary": "Delete association"
       }
     },
-    "/slurmdb/{data_parser}/user/{user_name}": {
+    "/slurmdb/{data_parser}/user/{name}": {
       "delete": {
         "tags": [
           "slurm"
@@ -898,19 +898,9 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "user_name",
-            "in": "path",
-            "description": "Slurm User Name",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        "parameters": {
+          "$ref": "DATA_PARSER_OPENAPI_USER_PARAM"
+        }
       },
       "get": {
         "tags": [
@@ -923,12 +913,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_user_info"
+                  "$ref": "DATA_PARSER_OPENAPI_USERS_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_user_info"
+                  "$ref": "DATA_PARSER_OPENAPI_USERS_RESP"
                 }
               }
             },
@@ -950,35 +940,12 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "user_name",
-            "in": "path",
-            "description": "Slurm User Name",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "with_deleted",
-            "in": "query",
-            "description": "Include deleted users. False by default.",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ],
-              "default": "false"
-            }
-          }
-        ]
+        "parameters": {
+          "$ref": [
+            "DATA_PARSER_OPENAPI_USER_PARAM",
+            "DATA_PARSER_OPENAPI_USER_QUERY"
+          ]
+        }
       }
     },
     "/slurmdb/{data_parser}/users/": {
@@ -993,12 +960,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_update_users"
+                "$ref": "DATA_PARSER_OPENAPI_USERS_RESP"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_update_users"
+                "$ref": "DATA_PARSER_OPENAPI_USERS_RESP"
               }
             }
           },
@@ -1048,12 +1015,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_user_info"
+                  "$ref": "DATA_PARSER_OPENAPI_USERS_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_user_info"
+                  "$ref": "DATA_PARSER_OPENAPI_USERS_RESP"
                 }
               }
             },
@@ -1075,24 +1042,9 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "with_deleted",
-            "in": "query",
-            "description": "Include deleted users. False by default.",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ],
-              "default": "false"
-            }
-          }
-        ]
+        "parameters": {
+          "$ref": "DATA_PARSER_USER_CONDITION"
+        }
       }
     },
     "/slurmdb/{data_parser}/cluster/{cluster_name}": {

@@ -7062,6 +7062,23 @@ static const parser_t PARSER_ARRAY(USER_CONDITION)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_user_param_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_USER_PARAM)[] = {
+	add_parse(STRING, name, "name", "User name"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_user_query_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_USER_QUERY)[] = {
+	add_parse(BOOL, with_deleted, "with_deleted", "Include deleted users"),
+	add_parse(BOOL, without_assocs, "without_assocs", "Skip query of assocations"),
+	add_parse(BOOL, without_coords, "without_coords", "Skip query of coordinators"),
+	add_parse(BOOL, without_wckeys, "without_wckeys", "Skip query of wckeys"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -7106,6 +7123,8 @@ add_openapi_response_single(OPENAPI_SLURMDBD_JOBS_RESP, JOB_LIST, "jobs", "jobs"
 add_openapi_response_single(OPENAPI_SLURMDBD_QOS_RESP, QOS_LIST, "QOS", "QOS");
 add_openapi_response_single(OPENAPI_SLURMDBD_QOS_REMOVED_RESP, STRING_LIST, "removed_qos", "removed QOS");
 add_openapi_response_single(OPENAPI_TRES_RESP, TRES_LIST, "TRES", "TRES");
+add_openapi_response_single(OPENAPI_USERS_RESP, USER_LIST, "users", "users");
+add_openapi_response_single(OPENAPI_USERS_REMOVED_RESP, STRING_LIST, "removed_users", "removed_users");
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_post_response_t, mtype, false, field, 0, path, desc)
@@ -7577,6 +7596,8 @@ static const parser_t parsers[] = {
 	addpa(QOS_CONDITION, slurmdb_qos_cond_t),
 	addpa(ASSOC_CONDITION, slurmdb_assoc_cond_t),
 	addpa(USER_CONDITION, slurmdb_user_cond_t),
+	addpa(OPENAPI_USER_PARAM, openapi_user_param_t),
+	addpa(OPENAPI_USER_QUERY, openapi_user_query_t),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -7601,6 +7622,8 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_SLURMDBD_QOS_RESP),
 	addoar(OPENAPI_SLURMDBD_QOS_REMOVED_RESP),
 	addoar(OPENAPI_TRES_RESP),
+	addoar(OPENAPI_USERS_RESP),
+	addoar(OPENAPI_USERS_REMOVED_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
