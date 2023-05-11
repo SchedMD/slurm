@@ -735,6 +735,7 @@ static int _get_parent_id(
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *query = NULL;
+	int rc = SLURM_SUCCESS;
 
 	xassert(parent);
 	xassert(cluster);
@@ -756,12 +757,14 @@ static int _get_parent_id(
 			*parent_id = slurm_atoul(row[0]);
 		if (lineage && row[1])
 			*lineage = xstrdup(row[1]);
-	} else
+	} else {
 		error("no association for parent %s on cluster %s",
 		      parent, cluster);
+		rc = ESLURM_INVALID_PARENT_ACCOUNT;
+	}
 	mysql_free_result(result);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int _set_assoc_lft_rgt(

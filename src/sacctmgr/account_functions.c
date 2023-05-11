@@ -658,19 +658,6 @@ assoc_start:
 			goto assoc_end;
 		}
 
-		if (assoc->parent_acct) {
-			slurmdb_account_rec_t *acct_rec =
-				sacctmgr_find_account(assoc->parent_acct);
-			if (!acct_rec) {
-				exit_code=1;
-				fprintf(stderr,
-					" Parent Account %s doesn't exist.\n",
-					assoc->parent_acct);
-				rc = SLURM_ERROR;
-				goto assoc_end;
-			}
-		}
-
 		ret_list = slurmdb_associations_modify(
 			db_conn, acct_cond->assoc_cond, assoc);
 
@@ -686,6 +673,18 @@ assoc_start:
 		} else if (ret_list) {
 			printf(" Nothing modified\n");
 			rc = SLURM_ERROR;
+		} else if ((errno == ESLURM_INVALID_PARENT_ACCOUNT) &&
+			   assoc->parent_acct) {
+			slurmdb_account_rec_t *acct_rec =
+				sacctmgr_find_account(assoc->parent_acct);
+			if (!acct_rec) {
+				exit_code=1;
+				fprintf(stderr,
+					" Parent Account %s doesn't exist.\n",
+					assoc->parent_acct);
+				rc = SLURM_ERROR;
+				goto assoc_end;
+			}
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Error with request: %s\n",
