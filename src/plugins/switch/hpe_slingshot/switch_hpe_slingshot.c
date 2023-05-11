@@ -345,6 +345,32 @@ extern int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job,
 	return SLURM_SUCCESS;
 }
 
+static void _copy_jobinfo(slingshot_jobinfo_t *old, slingshot_jobinfo_t *new)
+{
+	/* Copy static (non-malloced) fields */
+	memcpy(new, old, sizeof(slingshot_jobinfo_t));
+
+	/* Copy malloced fields */
+	if (old->num_vnis) {
+		size_t vnisz = old->num_vnis * sizeof(uint16_t);
+		new->vnis = xmalloc(vnisz);
+		memcpy(new->vnis, old->vnis, vnisz);
+	}
+
+	if (old->num_profiles) {
+		size_t profilesz = old->num_profiles *
+				   sizeof(slingshot_comm_profile_t);
+		new->profiles = xmalloc(profilesz);
+		memcpy(new->profiles, old->profiles, profilesz);
+	}
+
+	if (old->num_nics) {
+		size_t nicsz = old->num_nics * sizeof(slingshot_hsn_nic_t);
+		new->nics = xmalloc(nicsz);
+		memcpy(new->nics, old->nics, nicsz);
+	}
+}
+
 extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 				  slurm_step_layout_t *step_layout,
 				  step_record_t *step_ptr)
@@ -388,31 +414,7 @@ extern int switch_p_duplicate_jobinfo(switch_jobinfo_t *tmp,
 	slingshot_jobinfo_t *old = (slingshot_jobinfo_t *) tmp;
 	slingshot_jobinfo_t *new = xmalloc(sizeof(*new));
 
-	/* Copy static (non-malloced) fields */
-	memcpy(new, old, sizeof(slingshot_jobinfo_t));
-
-	/* Copy malloced fields */
-	if (old->num_vnis > 0) {
-		size_t vnisz = old->num_vnis * sizeof(uint16_t);
-		new->vnis = xmalloc(vnisz);
-		memcpy(new->vnis, old->vnis, vnisz);
-	}
-
-	if (old->num_profiles > 0) {
-		size_t profilesz = old->num_profiles *
-				   sizeof(slingshot_comm_profile_t);
-		new->profiles = xmalloc(profilesz);
-		memcpy(new->profiles, old->profiles, profilesz);
-	}
-
-	if (old->vni_pids)
-		new->vni_pids = bit_copy(old->vni_pids);
-
-	if (old->num_nics) {
-		size_t nicsz = old->num_nics * sizeof(slingshot_hsn_nic_t);
-		new->nics = xmalloc(nicsz);
-		memcpy(new->nics, old->nics, nicsz);
-	}
+	_copy_jobinfo(old, new);
 
 	*dest = (switch_jobinfo_t *)new;
 	return SLURM_SUCCESS;
