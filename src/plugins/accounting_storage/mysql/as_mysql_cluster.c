@@ -544,12 +544,6 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	cluster_cond->with_deleted = 0;
 	_setup_cluster_cond_limits(cluster_cond, &extra);
 
-	/* Needed if talking to older Slurm versions < 2.2 */
-	if (!mysql_conn->cluster_name && cluster_cond->cluster_list
-	    && list_count(cluster_cond->cluster_list))
-		mysql_conn->cluster_name =
-			xstrdup(list_peek(cluster_cond->cluster_list));
-
 	set = 0;
 	if (cluster->control_host) {
 		xstrfmtcat(vals, ", control_host='%s'", cluster->control_host);

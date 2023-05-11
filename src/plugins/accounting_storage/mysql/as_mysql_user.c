@@ -604,47 +604,11 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 				   user_name, tmp_extra);
 		xfree(tmp_extra);
 		xfree(extra);
-
-		/* For < 2.2 systems we need to set the is_def flag in
-		   the default association/wckey so as to make sure we get
-		   it set correctly.
-		*/
-		if (object->assoc_list) {
-			slurmdb_assoc_rec_t *assoc = NULL;
-			ListIterator assoc_itr =
-				list_iterator_create(object->assoc_list);
-			while ((assoc = list_next(assoc_itr))) {
-				/* We need to mark all of the
-				   associations with this account
-				   since there could be multiple
-				   clusters here.
-				*/
-				if (!xstrcmp(assoc->acct, object->default_acct))
-					assoc->is_def = 1;
-			}
-			list_iterator_destroy(assoc_itr);
+		if (object->assoc_list)
 			list_transfer(assoc_list, object->assoc_list);
-		}
 
-		if (object->wckey_list) {
-			if (object->default_wckey) {
-				slurmdb_wckey_rec_t *wckey = NULL;
-				ListIterator wckey_itr = list_iterator_create(
-					object->wckey_list);
-				while ((wckey = list_next(wckey_itr))) {
-					/* We need to mark all of the
-					   wckeys with this account
-					   since there could be multiple
-					   clusters here.
-					*/
-					if (!xstrcmp(wckey->name,
-						     object->default_wckey))
-						wckey->is_def = 1;
-				}
-				list_iterator_destroy(wckey_itr);
-			}
+		if (object->wckey_list)
 			list_transfer(wckey_list, object->wckey_list);
-		}
 	}
 	list_iterator_destroy(itr);
 	xfree(user_name);
