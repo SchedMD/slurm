@@ -783,30 +783,6 @@ extern int sacctmgr_modify_cluster(int argc, char **argv)
 		}
 	}
 
-	if (cond_set & SA_SET_USER) {
-		List temp_list = NULL;
-
-		temp_list = slurmdb_clusters_get(db_conn, &cluster_cond);
-		if (!temp_list) {
-			exit_code=1;
-			fprintf(stderr,
-				" Problem getting clusters from database.  "
-				"Contact your admin.\n");
-			rc = SLURM_ERROR;
-			goto end_it;
-		} else if (!list_count(temp_list)) {
-			fprintf(stderr,
-				" Query didn't return any clusters.\n");
-			rc = SLURM_ERROR;
-			goto end_it;
-		}
-		/* we are only looking for the clusters returned from
-		   this query, so we free the cluster_list and replace
-		   it */
-		FREE_NULL_LIST(assoc_cond->cluster_list);
-		assoc_cond->cluster_list = temp_list;
-	}
-
 	printf(" Setting\n");
 	if (rec_set & SA_SET_CLUST)
 		sacctmgr_print_cluster(cluster);
