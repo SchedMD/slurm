@@ -394,6 +394,8 @@ static int _foreach_add_user(void *x, void *arg)
 	object = xmalloc(sizeof(*object));
 	object->name = xstrdup(x);
 	object->admin_level = add_user_cond->user_in->admin_level;
+	object->coord_accts = slurmdb_list_copy_coord(
+		add_user_cond->user_in->coord_accts);
 
 	query = xstrdup_printf(
 		"insert into %s (creation_time, mod_time, name, admin_level) values (%ld, %ld, '%s', %u) on duplicate key update deleted=0, mod_time=VALUES(mod_time), admin_level=VALUES(admin_level);",
@@ -413,6 +415,21 @@ static int _foreach_add_user(void *x, void *arg)
 			object->name, slurm_strerror(add_user_cond->rc));
 		slurmdb_destroy_user_rec(object);
 		error("%s", add_user_cond->ret_str);
+		return -1;
+	}
+
+	if (object->coord_accts) {
+		slurmdb_user_rec_t *user_rec = add_user_cond->user_in;
+		add_user_cond->user_in = object;
+		add_user_cond->rc = _add_coords(add_user_cond);
+		add_user_cond->user_in = user_rec;
+	} else {
+		add_user_cond->rc =
+			_get_user_coords(add_user_cond->mysql_conn, object);
+	}
+
+	if (add_user_cond->rc != SLURM_SUCCESS) {
+		slurmdb_destroy_user_rec(object);
 		return -1;
 	}
 
@@ -510,9 +527,6 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		if (object->coord_accts)
-			debug("Adding coordinators with users is not supported, ignored, use as_mysql_add_coord() separately instead.");
-
 		xstrcat(cols, "creation_time, mod_time, name");
 		xstrfmtcat(vals, "%ld, %ld, '%s'",
 			   (long)now, (long)now, object->name);
@@ -548,6 +562,25 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(extra);
 			continue;
 		}
+
+		if (object->coord_accts) {
+			add_user_cond_t add_user_cond;
+			memset(&add_user_cond, 0, sizeof(add_user_cond));
+			add_user_cond.user_in = object;
+			add_user_cond.mysql_conn = mysql_conn;
+			add_user_cond.user_name = user_name;
+			add_user_cond.now = now;
+			add_user_cond.txn_query = txn_query;
+			add_user_cond.txn_query_pos = txn_query_pos;
+			rc = _add_coords(&add_user_cond);
+			txn_query = add_user_cond.txn_query;
+			txn_query_pos = add_user_cond.txn_query_pos;
+		} else {
+			rc = _get_user_coords(mysql_conn, object);
+		}
+
+		if (rc != SLURM_SUCCESS)
+			continue;
 
 		if (addto_update_list(mysql_conn->update_list, SLURMDB_ADD_USER,
 				      object) == SLURM_SUCCESS)
@@ -679,14 +712,6 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * parent they are trying to add to
 		 */
 	}
-
-	if (user->coord_accts) {
-		ret_str = xstrdup_printf("Adding coordinators with users is not supported, use as_mysql_add_coord() separately instead.");
-		error("%s", ret_str);
-		errno = SLURM_ERROR;
-		return ret_str;
-	}
-
 
 	if (user->admin_level == SLURMDB_ADMIN_NOTSET)
 		user->admin_level = SLURMDB_ADMIN_NONE;
