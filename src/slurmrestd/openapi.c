@@ -1163,7 +1163,7 @@ static data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
 
 	/* sub out '.' for '_' to avoid breaking compilers */
 	for (int s = strlen(p), i = 0; i < s; i++)
-		if (p[i] == '.')
+		if ((p[i] == '.') || (p[i] == '{') || (p[i] == '}'))
 			p[i] = '_';
 
 	xstrfmtcatat(args->operation, &args->at, "%s%s",
