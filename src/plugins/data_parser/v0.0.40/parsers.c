@@ -5178,6 +5178,73 @@ static int DUMP_FUNC(QOS_ID_STRING_CSV_LIST)(const parser_t *const parser,
 	return DUMP(CSV_STRING_LIST, src, dst, args);
 }
 
+static int PARSE_FUNC(ASSOC_ID_STRING)(const parser_t *const parser, void *obj,
+				       data_t *src, args_t *args,
+				       data_t *parent_path)
+{
+	char **id = obj;
+
+	if (data_convert_type(src, DATA_TYPE_INT_64) != DATA_TYPE_INT_64)
+		return ESLURM_DATA_CONV_FAILED;
+
+	if (!data_get_string_converted(src, id))
+		return SLURM_SUCCESS;
+
+	return ESLURM_DATA_CONV_FAILED;
+}
+
+static int DUMP_FUNC(ASSOC_ID_STRING)(const parser_t *const parser, void *obj,
+				      data_t *dst, args_t *args)
+{
+	char **id = obj;
+
+	data_set_string(dst, *id);
+
+	return SLURM_SUCCESS;
+}
+
+static int PARSE_FUNC(ASSOC_ID_STRING_CSV_LIST)(const parser_t *const parser,
+						void *obj, data_t *src,
+						args_t *args,
+						data_t *parent_path)
+{
+	int rc;
+	list_t **dst = obj;
+	list_t *str_list = list_create(xfree_ptr);
+	data_t *d = data_new();
+	char *str = NULL;
+
+	if ((rc = PARSE(CSV_STRING_LIST, str_list, src, parent_path, args)))
+		goto cleanup;
+
+	*dst = list_create(xfree_ptr);
+
+	while ((str = list_pop(str_list))) {
+		char *out = NULL;
+
+		data_set_string_own(d, str);
+
+		if ((rc = PARSE(ASSOC_ID_STRING, out, d, parent_path, args)))
+			goto cleanup;
+
+		list_append(*dst, out);
+	}
+
+cleanup:
+	FREE_NULL_LIST(str_list);
+	FREE_NULL_DATA(d);
+	return rc;
+}
+
+static int DUMP_FUNC(ASSOC_ID_STRING_CSV_LIST)(const parser_t *const parser,
+					       void *obj, data_t *dst,
+					       args_t *args)
+{
+	list_t **src = obj;
+
+	return DUMP(CSV_STRING_LIST, src, dst, args);
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -6956,6 +7023,45 @@ static const parser_t PARSER_ARRAY(QOS_CONDITION)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_assoc_cond_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
+	add_parse(CSV_STRING_LIST, acct_list, "account", "CSV accounts list"),
+	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV clusters list"),
+	add_parse(QOS_ID_STRING_CSV_LIST, def_qos_id_list, "default_qos", "CSV QOS list"),
+	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
+	add_parse(ASSOC_ID_STRING_CSV_LIST, id_list, "id", "CSV id list"),
+	add_parse(BOOL16, only_defs, "only_defaults", "filter to only defaults"),
+	add_parse(CSV_STRING_LIST, parent_acct_list, "parent_account", "CSV names of parent account"),
+	add_parse(CSV_STRING_LIST, partition_list, "partition", "CSV partition name list"),
+	add_parse(QOS_ID_STRING_CSV_LIST, qos_list, "qos", "CSV QOS list"),
+	add_parse(TIMESTAMP, usage_end, "usage_end", "usage end UNIX timestamp"),
+	add_parse(TIMESTAMP, usage_start, "usage_start", "usage start UNIX timestamp"),
+	add_parse(CSV_STRING_LIST, user_list, "user", "CSV user list"),
+	add_parse(BOOL16, with_usage, "with_usage", "fill in usage"),
+	add_parse(BOOL16, with_deleted, "with_deleted", "return deleted associations"),
+	add_parse(BOOL16, with_raw_qos, "with_raw_qos", "return a raw qos or delta_qos"),
+	add_parse(BOOL16, with_sub_accts, "with_sub_accts", "return sub acct information also"),
+	add_parse(BOOL16, without_parent_info, "without_parent_info", "don't give me parent id/name"),
+	add_parse(BOOL16, without_parent_limits, "without_parent_limits", "don't give me limits from parents"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_user_cond_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(USER_CONDITION)[] = {
+	add_parse(ADMIN_LVL, admin_level, "admin_level", "Administrator level"),
+	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "association", "Association filter"),
+	add_parse(CSV_STRING_LIST, def_acct_list, "default_account", "CSV default account list"),
+	add_parse(CSV_STRING_LIST, def_wckey_list, "default_wckey", "CSV default wckey list"),
+	add_parse(BOOL16, with_assocs, "with_assocs", "With associations"),
+	add_parse(BOOL16, with_coords, "with_coords", "With coordinators"),
+	add_parse(BOOL16, with_deleted, "with_deleted", "With deleted"),
+	add_parse(BOOL16, with_wckeys, "with_wckeys", "With wckeys"),
+	add_parse(BOOL16, without_defaults, "without_defaults", "Exclude defaults"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -7343,6 +7449,8 @@ static const parser_t parsers[] = {
 	addpsp(QOS_NAME_CSV_LIST, STRING, list_t *, NEED_NONE, NULL),
 	addpsp(QOS_ID_STRING, STRING, char *, NEED_NONE, NULL),
 	addpsp(QOS_ID_STRING_CSV_LIST, STRING, list_t *, NEED_NONE, NULL),
+	addpsp(ASSOC_ID_STRING, STRING, char *, NEED_NONE, NULL),
+	addpsp(ASSOC_ID_STRING_CSV_LIST, STRING_LIST, list_t *, NEED_NONE, NULL),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
@@ -7416,6 +7524,8 @@ static const parser_t parsers[] = {
 	addpp(SELECTED_STEP_PTR, slurm_selected_step_t *, SELECTED_STEP),
 	addpp(JOB_CONDITION_PTR, slurmdb_job_cond_t *, JOB_CONDITION),
 	addpp(QOS_CONDITION_PTR, slurmdb_qos_cond_t *, QOS_CONDITION),
+	addpp(ASSOC_CONDITION_PTR, slurmdb_assoc_cond_t *, ASSOC_CONDITION),
+	addpp(USER_CONDITION_PTR, slurmdb_user_cond_t *, USER_CONDITION),
 
 	/* Pointer model parsers allowing NULL */
 	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),
@@ -7465,6 +7575,8 @@ static const parser_t parsers[] = {
 	addpa(JOB_SUBMIT_REQ, job_submit_request_t),
 	addpa(JOB_CONDITION, slurmdb_job_cond_t),
 	addpa(QOS_CONDITION, slurmdb_qos_cond_t),
+	addpa(ASSOC_CONDITION, slurmdb_assoc_cond_t),
+	addpa(USER_CONDITION, slurmdb_user_cond_t),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),

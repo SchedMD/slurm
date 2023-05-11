@@ -70,6 +70,8 @@ typedef enum {
 	DATA_PARSER_ACCOUNTING, /* slurmdb_accounting_rec_t */
 	DATA_PARSER_ADMIN_LVL, /* uint16_t (placeholder for slurmdb_admin_level_t) */
 	DATA_PARSER_ASSOC_ID, /* slurmdb_assoc_usage_t */
+	DATA_PARSER_ASSOC_ID_STRING, /* char * of assoc id */
+	DATA_PARSER_ASSOC_ID_STRING_CSV_LIST, /* list of char* */
 	DATA_PARSER_ASSOC_LIST, /* list of slurmdb_assoc_rec_t* */
 	DATA_PARSER_OPENAPI_ASSOCS_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_ASSOC_SHORT_LIST, /* list of slurmdb_assoc_rec_t* only for id */
@@ -80,6 +82,8 @@ typedef enum {
 	DATA_PARSER_ASSOC_USAGE, /* slurmdb_assoc_usage_t */
 	DATA_PARSER_ASSOC_USAGE_PTR, /* slurmdb_assoc_usage_t* */
 	DATA_PARSER_OPENAPI_ASSOCS_REMOVED_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_ASSOC_CONDITION, /* slurmdb_assoc_cond_t */
+	DATA_PARSER_ASSOC_CONDITION_PTR, /* slurmdb_assoc_cond_t* */
 	DATA_PARSER_CLASSIFICATION_TYPE, /* slurmdb_classification_type_t */
 	DATA_PARSER_CLUSTER_ACCT_REC_LIST, /* list of slurmdb_cluster_accounting_rec_t* */
 	DATA_PARSER_CLUSTER_ACCT_REC, /* slurmdb_cluster_accounting_rec_t */
@@ -165,6 +169,8 @@ typedef enum {
 	DATA_PARSER_USER, /* slurmdb_user_rec_t */
 	DATA_PARSER_USER_LIST, /* List of slurmdb_user_rec_t*  */
 	DATA_PARSER_USER_FLAGS, /* slurmdb_user_rec_t->parser_user_flags & SLURMDB_USER_FLAG_* */
+	DATA_PARSER_USER_CONDITION, /* slurmdb_user_cond_t */
+	DATA_PARSER_USER_CONDITION_PTR, /* slurmdb_user_cond_t* */
 	DATA_PARSER_WCKEY, /* slurmdb_wckey_rec_t */
 	DATA_PARSER_WCKEY_LIST, /* List of slurmdb_wckey_rec_t* */
 	DATA_PARSER_WCKEY_FLAGS, /* slurmdb_wckey_rec_t->flags & SLURMDB_WCKEY_FLAG_* */
