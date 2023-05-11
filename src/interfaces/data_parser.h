@@ -124,13 +124,20 @@ typedef enum {
 	DATA_PARSER_QOS_ID, /* uint32_t of QOS id */
 	DATA_PARSER_QOS_ID_LIST, /* List of char* of QOS ids */
 	DATA_PARSER_QOS_STRING_ID_LIST, /* List of char* of QOS ids */
+	DATA_PARSER_QOS_ID_STRING_CSV_LIST, /* List of char* of QOS ids */
+	DATA_PARSER_QOS_ID_STRING, /* char* of QOS id */
 	DATA_PARSER_QOS_NAME, /* char * of QOS name */
 	DATA_PARSER_QOS_NAME_LIST, /* List of char* of QOS names */
+	DATA_PARSER_QOS_NAME_CSV_LIST, /* List of char* of QOS names */
 	DATA_PARSER_QOS_PREEMPT_LIST, /* slurmdb_qos_rec_t->preempt_bitstr & preempt_list */
 	DATA_PARSER_QOS, /* slurmdb_qos_rec_t */
 	DATA_PARSER_QOS_LIST, /* list of slurmdb_qos_rec_t* */
 	DATA_PARSER_QOS_FLAGS, /* slurmdb_qos_rec_t->flags & QOS_FLAG_* */
 	DATA_PARSER_QOS_PREEMPT_MODES, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_* */
+	DATA_PARSER_QOS_CONDITION, /* slurmdb_qos_cond_t */
+	DATA_PARSER_QOS_CONDITION_PTR, /* slurmdb_qos_cond_t* */
+	DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_SLURMDBD_QOS_REMOVED_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_RPC_ID, /* slurmdbd_msg_type_t */
 	DATA_PARSER_SELECT_PLUGIN_ID, /* int (SELECT_PLUGIN_*) -> string */
 	DATA_PARSER_STATS_REC_PTR, /* slurmdb_stats_rec_t* */

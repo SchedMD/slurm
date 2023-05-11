@@ -144,6 +144,7 @@ static const struct {
 	add(OPENAPI_WARNING, free_openapi_resp_warning, NULL),
 	add(SELECTED_STEP, NULL, NULL),
 	add(JOB_CONDITION, slurmdb_destroy_job_cond, NULL),
+	add(QOS_CONDITION, slurmdb_destroy_qos_cond, NULL),
 };
 #undef add
 

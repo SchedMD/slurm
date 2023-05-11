@@ -5047,6 +5047,137 @@ static int DUMP_FUNC(USER_ID_STRING)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+static int PARSE_FUNC(QOS_NAME_CSV_LIST)(const parser_t *const parser,
+					 void *obj, data_t *src, args_t *args,
+					 data_t *parent_path)
+{
+	int rc;
+	list_t **dst = obj;
+	list_t *str_list = list_create(xfree_ptr);
+	data_t *d = data_new();
+	char *str = NULL;
+
+	if ((rc = PARSE(CSV_STRING_LIST, str_list, src, parent_path, args)))
+		goto cleanup;
+
+	FREE_NULL_LIST(*dst);
+	*dst = list_create(xfree_ptr);
+
+	while ((str = list_pop(str_list))) {
+		char *out = NULL;
+
+		data_set_string_own(d, str);
+
+		if ((rc = PARSE(QOS_NAME, out, d, parent_path, args)))
+			goto cleanup;
+
+		list_append(*dst, out);
+	}
+
+cleanup:
+	FREE_NULL_LIST(str_list);
+	FREE_NULL_DATA(d);
+	return rc;
+}
+
+static int DUMP_FUNC(QOS_NAME_CSV_LIST)(const parser_t *const parser, void *obj,
+					data_t *dst, args_t *args)
+{
+	list_t **src = obj;
+
+	return DUMP(CSV_STRING_LIST, *src, dst, args);
+}
+
+static int PARSE_FUNC(QOS_ID_STRING)(const parser_t *const parser, void *obj,
+				     data_t *src, args_t *args,
+				     data_t *parent_path)
+{
+	int rc;
+	slurmdb_qos_rec_t *qos = NULL;
+	char **id = obj;
+
+	if (!(rc = resolve_qos(PARSING, parser, &qos, src, args, parent_path,
+			       __func__, true))) {
+		xfree(*id);
+		xstrfmtcat(*id, "%u", qos->id);
+		return rc;
+	}
+
+	/*
+	 * QOS id may not always be resolvable to a known QOS such as in the
+	 * case of creating a new QOS which references a new QOS in the same QOS
+	 * list. To ignore this chicken and the egg problem, we just blindly
+	 * send the QOS id to slurmdbd if we can stringifiy it.
+	 */
+	if (data_get_type(src) == DATA_TYPE_DICT) {
+		data_t *n = data_key_get(src, "id");
+
+		if (n && !data_get_string_converted(n, id))
+			return SLURM_SUCCESS;
+
+		return ESLURM_DATA_CONV_FAILED;
+	}
+
+	if (data_convert_type(src, DATA_TYPE_INT_64) != DATA_TYPE_INT_64)
+		return ESLURM_DATA_CONV_FAILED;
+
+	if (!data_get_string_converted(src, id))
+		return SLURM_SUCCESS;
+
+	return ESLURM_DATA_CONV_FAILED;
+}
+
+static int DUMP_FUNC(QOS_ID_STRING)(const parser_t *const parser, void *obj,
+				    data_t *dst, args_t *args)
+{
+	char **id = obj;
+
+	data_set_string(dst, *id);
+
+	return SLURM_SUCCESS;
+}
+
+static int PARSE_FUNC(QOS_ID_STRING_CSV_LIST)(const parser_t *const parser,
+					      void *obj, data_t *src,
+					      args_t *args, data_t *parent_path)
+{
+	int rc;
+	list_t **dst = obj;
+	list_t *str_list = list_create(xfree_ptr);
+	data_t *d = data_new();
+	char *str = NULL;
+
+	if ((rc = PARSE(CSV_STRING_LIST, str_list, src, parent_path, args)))
+		goto cleanup;
+
+	*dst = list_create(xfree_ptr);
+
+	while ((str = list_pop(str_list))) {
+		char *out = NULL;
+
+		data_set_string_own(d, str);
+
+		if ((rc = PARSE(QOS_ID_STRING, out, d, parent_path, args)))
+			goto cleanup;
+
+		list_append(*dst, out);
+	}
+
+cleanup:
+	FREE_NULL_LIST(str_list);
+	FREE_NULL_DATA(d);
+	return rc;
+}
+
+static int DUMP_FUNC(QOS_ID_STRING_CSV_LIST)(const parser_t *const parser,
+					     void *obj, data_t *dst,
+					     args_t *args)
+{
+	list_t **src = obj;
+
+	return DUMP(CSV_STRING_LIST, src, dst, args);
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -6813,6 +6944,18 @@ static const parser_t PARSER_ARRAY(JOB_CONDITION)[] = {
 #undef add_cparse
 #undef add_flags
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_qos_cond_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(QOS_CONDITION)[] = {
+	add_parse(CSV_STRING_LIST, description_list, "description", "CSV description list"),
+	add_parse(QOS_ID_STRING_CSV_LIST, id_list, "id", "CSV QOS id list"),
+	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
+	add_parse(QOS_NAME_CSV_LIST, name_list, "name", "CSV QOS name list"),
+	add_parse_bit_flag_array(slurmdb_qos_cond_t, QOS_PREEMPT_MODES, false, preempt_mode, "preempt_mode", NULL),
+	add_parse(BOOL16, with_deleted, "with_deleted", "Include deleted QOS"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -6854,6 +6997,8 @@ add_openapi_response_single(OPENAPI_CLUSTERS_RESP, CLUSTER_REC_LIST, "clusters",
 add_openapi_response_single(OPENAPI_CLUSTERS_REMOVED_RESP, STRING_LIST, "deleted_clusters", "deleted_clusters");
 add_openapi_response_single(OPENAPI_SLURMDBD_STATS_RESP, STATS_REC_PTR, "statistics", "statistics");
 add_openapi_response_single(OPENAPI_SLURMDBD_JOBS_RESP, JOB_LIST, "jobs", "jobs");
+add_openapi_response_single(OPENAPI_SLURMDBD_QOS_RESP, QOS_LIST, "QOS", "QOS");
+add_openapi_response_single(OPENAPI_SLURMDBD_QOS_REMOVED_RESP, STRING_LIST, "removed_qos", "removed QOS");
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_post_response_t, mtype, false, field, 0, path, desc)
@@ -7194,6 +7339,9 @@ static const parser_t parsers[] = {
 	addps(GROUP_ID_STRING, char *, NEED_NONE, STRING, NULL),
 	addps(USER_ID_STRING, char *, NEED_NONE, STRING, NULL),
 	addpsp(JOB_STATE_ID_STRING, JOB_STATE, char *, NEED_NONE, NULL),
+	addpsp(QOS_NAME_CSV_LIST, STRING, list_t *, NEED_NONE, NULL),
+	addpsp(QOS_ID_STRING, STRING, char *, NEED_NONE, NULL),
+	addpsp(QOS_ID_STRING_CSV_LIST, STRING, list_t *, NEED_NONE, NULL),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
@@ -7266,6 +7414,7 @@ static const parser_t parsers[] = {
 	addpp(RESERVATION_INFO_MSG_PTR, reserve_info_msg_t *, RESERVATION_INFO_MSG),
 	addpp(SELECTED_STEP_PTR, slurm_selected_step_t *, SELECTED_STEP),
 	addpp(JOB_CONDITION_PTR, slurmdb_job_cond_t *, JOB_CONDITION),
+	addpp(QOS_CONDITION_PTR, slurmdb_qos_cond_t *, QOS_CONDITION),
 
 	/* Pointer model parsers allowing NULL */
 	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),
@@ -7314,6 +7463,7 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_WARNING, openapi_resp_warning_t),
 	addpa(JOB_SUBMIT_REQ, job_submit_request_t),
 	addpa(JOB_CONDITION, slurmdb_job_cond_t),
+	addpa(QOS_CONDITION, slurmdb_qos_cond_t),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -7335,6 +7485,8 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_SLURMDBD_CONFIG_RESP, openapi_resp_slurmdbd_config_t),
 	addoar(OPENAPI_SLURMDBD_STATS_RESP),
 	addoar(OPENAPI_SLURMDBD_JOBS_RESP),
+	addoar(OPENAPI_SLURMDBD_QOS_RESP),
+	addoar(OPENAPI_SLURMDBD_QOS_REMOVED_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
