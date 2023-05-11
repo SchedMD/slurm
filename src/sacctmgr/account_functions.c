@@ -721,7 +721,7 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 	slurmdb_account_cond_t *acct_cond =
 		xmalloc(sizeof(slurmdb_account_cond_t));
 	int i = 0;
-	List ret_list = NULL, local_assoc_list = NULL;
+	List ret_list = NULL;
 	ListIterator itr = NULL;
 	int cond_set = 0, prev_set = 0;
 
@@ -776,9 +776,6 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 		}
 	}
 
-	acct_cond->assoc_cond->only_defs = 1;
-	local_assoc_list = slurmdb_associations_get(
-		db_conn, acct_cond->assoc_cond);
 	acct_cond->assoc_cond->only_defs = 0;
 
 	notice_thread_init();
@@ -861,7 +858,6 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 end_it:
 
 	FREE_NULL_LIST(ret_list);
-	FREE_NULL_LIST(local_assoc_list);
 
 	return rc;
 }
