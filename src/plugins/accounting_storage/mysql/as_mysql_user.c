@@ -360,6 +360,7 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	slurmdb_user_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *query = NULL, *txn_query = NULL;
+	char *txn_query_pos = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	char *extra = NULL, *tmp_extra = NULL;
@@ -453,12 +454,12 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		tmp_extra = slurm_add_slash_to_quotes(extra+2);
 
 		if (txn_query)
-			xstrfmtcat(txn_query,
-				   ", (%ld, %u, '%s', '%s', '%s')",
-				   (long)now, DBD_ADD_USERS, object->name,
-				   user_name, tmp_extra);
+			xstrfmtcatat(txn_query, &txn_query_pos,
+				     ", (%ld, %u, '%s', '%s', '%s')",
+				     (long)now, DBD_ADD_USERS, object->name,
+				     user_name, tmp_extra);
 		else
-			xstrfmtcat(txn_query,
+			xstrfmtcatat(txn_query, &txn_query_pos,
 				   "insert into %s "
 				   "(timestamp, action, name, actor, info) "
 				   "values (%ld, %u, '%s', '%s', '%s')",
