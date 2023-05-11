@@ -97,13 +97,6 @@ extern ssize_t slurm_msg_sendto(int open_fd,
  */
 extern size_t slurm_bufs_sendto(int fd, msg_bufs_t *buffers);
 
-/* slurm_msg_sendto_timeout is identical to _slurm_msg_sendto except
- * IN timeout - maximum time to wait for a message in milliseconds */
-extern ssize_t slurm_msg_sendto_timeout(int open_fd,
-					char *buffer,
-					size_t size,
-					int timeout);
-
 /********************/
 /* stream functions */
 /********************/

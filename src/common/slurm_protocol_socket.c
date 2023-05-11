@@ -159,16 +159,10 @@ extern ssize_t slurm_msg_recvfrom_timeout(int fd, char **pbuf, size_t *lenp,
 
 extern ssize_t slurm_msg_sendto(int fd, char *buffer, size_t size)
 {
-	return slurm_msg_sendto_timeout(fd, buffer, size,
-	                                (slurm_conf.msg_timeout * 1000));
-}
-
-ssize_t slurm_msg_sendto_timeout(int fd, char *buffer,
-				 size_t size, int timeout)
-{
 	int   len;
 	uint32_t usize;
 	SigFunc *ohandler;
+	int timeout = slurm_conf.msg_timeout * 1000;
 
 	/*
 	 *  Ignore SIGPIPE so that send can return a error code if the
