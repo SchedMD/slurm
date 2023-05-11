@@ -41,6 +41,10 @@
 #include "as_mysql_wckey.h"
 
 typedef struct {
+	list_t *acct_list; /* for coords, a list of just char * instead of
+			    * slurmdb_coord_rec_t */
+	char *coord_query;
+	char *coord_query_pos;
 	mysql_conn_t *mysql_conn;
 	time_t now;
 	int rc;
@@ -260,6 +264,105 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 		coord->direct = 0;
 	}
 	mysql_free_result(result);
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_add_coord(void *x, void *arg)
+{
+	slurmdb_coord_rec_t *coord = x;
+	add_user_cond_t *add_user_cond = arg;
+
+	if (!add_user_cond->coord_query)
+		xstrfmtcatat(add_user_cond->coord_query,
+			     &add_user_cond->coord_query_pos,
+			     "insert into %s (creation_time, mod_time, acct, user) values ",
+			     acct_coord_table);
+	else
+		xstrcatat(add_user_cond->coord_query,
+			  &add_user_cond->coord_query_pos,
+			  ", ");
+
+	xstrfmtcatat(add_user_cond->coord_query,
+		     &add_user_cond->coord_query_pos,
+		     "(%ld, %ld, '%s', '%s')",
+		     add_user_cond->now, add_user_cond->now, coord->name,
+		     add_user_cond->user_in->name);
+
+	if (!add_user_cond->txn_query)
+		xstrfmtcatat(add_user_cond->txn_query,
+			     &add_user_cond->txn_query_pos,
+			     "insert into %s (timestamp, action, name, actor, info) values ",
+			     txn_table);
+	else
+		xstrcatat(add_user_cond->txn_query,
+			  &add_user_cond->txn_query_pos,
+			  ", ");
+
+	xstrfmtcatat(add_user_cond->txn_query,
+		     &add_user_cond->txn_query_pos,
+		     "(%ld, %u, '%s', '%s', '%s')",
+		     add_user_cond->now, DBD_ADD_ACCOUNT_COORDS,
+		     add_user_cond->user_in->name,
+		     add_user_cond->user_name, coord->name);
+
+	return 0;
+}
+
+static int _foreach_add_acct(void *x, void *arg)
+{
+	char *acct = x;
+	list_t *coord_accts = arg;
+	slurmdb_coord_rec_t *coord = xmalloc(sizeof(*coord));
+
+	coord->name = xstrdup(acct);
+	coord->direct = 1;
+	list_append(coord_accts, coord);
+
+	return 0;
+}
+
+static int _add_coords(add_user_cond_t *add_user_cond)
+{
+	xassert(add_user_cond);
+	xassert(add_user_cond->mysql_conn);
+	xassert(add_user_cond->user_in);
+
+	if (add_user_cond->acct_list && list_count(add_user_cond->acct_list)) {
+		if (add_user_cond->user_in->coord_accts)
+			list_flush(add_user_cond->user_in->coord_accts);
+		else
+			add_user_cond->user_in->coord_accts =
+				list_create(slurmdb_destroy_coord_rec);
+		(void) list_for_each(add_user_cond->acct_list,
+				     _foreach_add_acct,
+				     add_user_cond->user_in->coord_accts);
+	}
+
+	if (add_user_cond->user_in->coord_accts &&
+	    list_count(add_user_cond->user_in->coord_accts))
+		(void) list_for_each(add_user_cond->user_in->coord_accts,
+				     _foreach_add_coord,
+				     add_user_cond);
+
+	if (add_user_cond->coord_query) {
+		int rc = SLURM_SUCCESS;
+		xstrfmtcat(add_user_cond->coord_query,
+			   " on duplicate key update mod_time=%ld, deleted=0, user=VALUES(user);",
+			   add_user_cond->now);
+		DB_DEBUG(DB_ASSOC, add_user_cond->mysql_conn->conn, "query\n%s",
+			 add_user_cond->coord_query);
+		rc = mysql_db_query(add_user_cond->mysql_conn,
+				    add_user_cond->coord_query);
+		xfree(add_user_cond->coord_query);
+		add_user_cond->coord_query_pos = NULL;
+
+		if (rc != SLURM_SUCCESS) {
+			error("Couldn't add coords");
+			return ESLURM_BAD_SQL;
+		}
+	}
+
+	_get_user_coords(add_user_cond->mysql_conn, add_user_cond->user_in);
 
 	return SLURM_SUCCESS;
 }
@@ -710,12 +813,10 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 			      List acct_list, slurmdb_user_cond_t *user_cond)
 {
-	char *query = NULL, *user = NULL, *acct = NULL;
-	char *user_name = NULL, *txn_query = NULL;
-	ListIterator itr, itr2;
-	time_t now = time(NULL);
+	char *user = NULL;
+	ListIterator itr;
 	int rc = SLURM_SUCCESS;
-	slurmdb_user_rec_t *user_rec = NULL;
+	add_user_cond_t add_user_cond;
 
 	if (!user_cond || !user_cond->assoc_cond
 	    || !user_cond->assoc_cond->user_list
@@ -732,6 +833,7 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		slurmdb_user_rec_t user;
 		slurmdb_coord_rec_t *coord = NULL;
 		char *acct = NULL;
+		ListIterator itr2;
 
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
 		user.uid = uid;
@@ -765,78 +867,51 @@ extern int as_mysql_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 	}
 
-	user_name = uid_to_string((uid_t) uid);
+	memset(&add_user_cond, 0, sizeof(add_user_cond));
+	add_user_cond.acct_list = acct_list;
+	add_user_cond.mysql_conn = mysql_conn;
+	add_user_cond.user_name = uid_to_string((uid_t) uid);
+	add_user_cond.now = time(NULL);
 	itr = list_iterator_create(user_cond->assoc_cond->user_list);
-	itr2 = list_iterator_create(acct_list);
 	while ((user = list_next(itr))) {
 		if (!user[0])
 			continue;
-		while ((acct = list_next(itr2))) {
-			if (!acct[0])
-				continue;
-			if (query)
-				xstrfmtcat(query, ", (%ld, %ld, '%s', '%s')",
-					   (long)now, (long)now, acct, user);
-			else
-				query = xstrdup_printf(
-					"insert into %s (creation_time, "
-					"mod_time, acct, user) values "
-					"(%ld, %ld, '%s', '%s')",
-					acct_coord_table,
-					(long)now, (long)now, acct, user);
+		add_user_cond.user_in = xmalloc(sizeof(slurmdb_user_rec_t));
+		add_user_cond.user_in->name = xstrdup(user);
 
-			if (txn_query)
-				xstrfmtcat(txn_query,
-					   ", (%ld, %u, '%s', '%s', '%s')",
-					   (long)now, DBD_ADD_ACCOUNT_COORDS,
-					   user, user_name, acct);
-			else
-				xstrfmtcat(txn_query,
-					   "insert into %s "
-					   "(timestamp, action, name, "
-					   "actor, info) "
-					   "values (%ld, %u, '%s', "
-					   "'%s', '%s')",
-					   txn_table,
-					   (long)now, DBD_ADD_ACCOUNT_COORDS,
-					   user,
-					   user_name, acct);
+		if ((rc = _add_coords(&add_user_cond)) != SLURM_SUCCESS) {
+			slurmdb_destroy_user_rec(add_user_cond.user_in);
+			xfree(add_user_cond.txn_query);
+			break;
 		}
-		list_iterator_reset(itr2);
+
+		if ((rc = addto_update_list(mysql_conn->update_list,
+					    SLURMDB_ADD_COORD,
+					    add_user_cond.user_in)) !=
+		    SLURM_SUCCESS) {
+			slurmdb_destroy_user_rec(add_user_cond.user_in);
+			xfree(add_user_cond.txn_query);
+			break;
+		}
+		add_user_cond.user_in = NULL;
 	}
-	xfree(user_name);
 	list_iterator_destroy(itr);
-	list_iterator_destroy(itr2);
 
-	if (query) {
-		xstrfmtcat(query,
-			   " on duplicate key update mod_time=%ld, "
-			   "deleted=0, user=VALUES(user);%s",
-			   (long)now, txn_query);
-		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-		xfree(txn_query);
+	xfree(add_user_cond.user_name);
 
+	if (add_user_cond.txn_query) {
+		xstrcatat(add_user_cond.txn_query,
+			  &add_user_cond.txn_query_pos,
+			  ";");
+		rc = mysql_db_query(mysql_conn, add_user_cond.txn_query);
+		xfree(add_user_cond.txn_query);
 		if (rc != SLURM_SUCCESS) {
-			error("Couldn't add cluster hour rollup");
-			return rc;
+			error("Couldn't add txn");
+			rc = SLURM_SUCCESS;
 		}
-		/* get the update list set */
-		itr = list_iterator_create(user_cond->assoc_cond->user_list);
-		while ((user = list_next(itr))) {
-			user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
-			user_rec->name = xstrdup(user);
-			_get_user_coords(mysql_conn, user_rec);
-			if (addto_update_list(mysql_conn->update_list,
-					      SLURMDB_ADD_COORD, user_rec)
-			    != SLURM_SUCCESS)
-				slurmdb_destroy_user_rec(user_rec);
-		}
-		list_iterator_destroy(itr);
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern List as_mysql_modify_users(mysql_conn_t *mysql_conn, uint32_t uid,
