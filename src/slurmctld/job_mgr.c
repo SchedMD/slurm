@@ -12761,6 +12761,43 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		}
 	}
 
+	/*
+	 * Before any action over excluded or required nodes, we are going to
+	 * reset them to their original values.
+	 *
+	 * We will decide later if those values need update, or even if we need
+	 * to merge the negated required list into the excluded one (when
+	 * -N < size required list).
+	 */
+	FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
+	if (detail_ptr->exc_nodes) {
+		/* This error should never happen */
+		if (node_name2bitmap(detail_ptr->exc_nodes,
+				     false, &exc_bitmap)) {
+			sched_info("%s: Invalid excluded nodes list in job records: %s",
+				   __func__, detail_ptr->exc_nodes);
+			FREE_NULL_BITMAP(exc_bitmap);
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto fini;
+		}
+		detail_ptr->exc_node_bitmap = exc_bitmap;
+		exc_bitmap = NULL;
+	}
+	FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
+	if (detail_ptr->req_nodes) {
+		/* This error should never happen */
+		if (node_name2bitmap(detail_ptr->req_nodes,
+				     false, &new_req_bitmap)) {
+			sched_info("%s: Invalid required nodes list in job records: %s",
+				   __func__, detail_ptr->req_nodes);
+			FREE_NULL_BITMAP(new_req_bitmap);
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto fini;
+		}
+		detail_ptr->req_node_bitmap = new_req_bitmap;
+		new_req_bitmap = NULL;
+	}
+
 	if (job_desc->exc_nodes && detail_ptr &&
 	    !xstrcmp(job_desc->exc_nodes, detail_ptr->exc_nodes)) {
 		sched_debug("%s: new exc_nodes identical to old exc_nodes %s",
