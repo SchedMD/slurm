@@ -766,8 +766,8 @@ static void _free_vni(uint16_t vni)
 	}
 	bitoff_t bit = vni - slingshot_state.vni_min;
 	if (!bit_test(slingshot_state.vni_table, bit)) {
-		warning("%s(%hu): bit %zu not set in vni_table!",
-			__func__, vni, bit);
+		log_flag(SWITCH, "vni %hu: bit %zu not set in vni_table!",
+			 vni, bit);
 		return;
 	}
 	bit_clear(slingshot_state.vni_table, bit);
@@ -804,8 +804,8 @@ static uint16_t _free_job_vni(uint32_t job_id)
 		}
 	}
 	if (slingshot_state.num_job_vnis > 0)
-		error("job_id=%u: not found in job_vnis[%d]",
-		      job_id, slingshot_state.num_job_vnis);
+		log_flag(SWITCH, "job_id=%u: not found in job_vnis[%d]",
+			 job_id, slingshot_state.num_job_vnis);
 	return 0;
 }
 
