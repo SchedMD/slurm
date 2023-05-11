@@ -34,85 +34,58 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <stdint.h>
-
-#include "slurm/slurm.h"
-#include "slurm/slurmdb.h"
-
 #include "src/common/list.h"
 #include "src/common/log.h"
-#include "src/common/parse_time.h"
-#include "src/common/ref.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/common/strlcpy.h"
-#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 #include "api.h"
 
-static void _dump_tres(ctxt_t *ctxt)
-{
-	list_t *tres_list = NULL;
-	slurmdb_tres_cond_t tres_cond = {
-		.with_deleted = 1,
-	};
-
-	if (db_query_list(ctxt, &tres_list, slurmdb_tres_get, &tres_cond))
-		return;
-
-	DATA_DUMP(ctxt->parser, TRES_LIST, tres_list,
-		  data_key_set(ctxt->resp, "TRES"));
-}
-
-static void _update_tres(ctxt_t *ctxt, bool commit)
-{
-#ifdef NDEBUG
-	/*
-	 * Updating TRES is not currently supported and is disabled
-	 * except for developer testing as the TRES id can not be maintained
-	 * while updating or adding new TRES.
-	 */
-	if (commit)
-		resp_error(ctxt, ESLURM_NOT_SUPPORTED, __func__,
-			   "Updating TRES is not currently supported");
-#else
-	data_t *dtres = NULL;
-	int rc = SLURM_SUCCESS;
-	List tres_list = NULL;
-	data_t *parent_path = NULL;
-
-	tres_list = list_create(slurmdb_destroy_tres_rec);
-
-	if (!(dtres = get_query_key_list("TRES", ctxt, &parent_path))) {
-		resp_warn(ctxt, __func__,
-			  "ignoring empty or non-existant TRES array");
-		goto cleanup;
-	}
-
-	if ((rc = DATA_PARSE(ctxt->parser, TRES_LIST, tres_list, dtres,
-			     parent_path)))
-		goto cleanup;
-
-	if (!(rc = db_query_rc(ctxt, tres_list, slurmdb_tres_add)) && commit)
-		db_query_commit(ctxt);
-
-cleanup:
-	FREE_NULL_LIST(tres_list);
-	xfree(parent_path);
-#endif /*!NDEBUG*/
-}
-
 extern int op_handler_tres(ctxt_t *ctxt)
 {
-	if (ctxt->method == HTTP_REQUEST_GET)
-		_dump_tres(ctxt);
-	else if (ctxt->method == HTTP_REQUEST_POST)
-		_update_tres(ctxt, (ctxt->tag != CONFIG_OP_TAG));
-	else {
+	if (ctxt->method == HTTP_REQUEST_GET) {
+		list_t *tres_list = NULL;
+		slurmdb_tres_cond_t tres_cond = {
+			/* mimic slurmdb_init_tres_cond() */
+			.with_deleted = 1,
+			.count = NO_VAL,
+		};
+
+		if (!db_query_list(ctxt, &tres_list, slurmdb_tres_get,
+				   &tres_cond))
+			DUMP_OPENAPI_RESP_SINGLE(OPENAPI_TRES_RESP, tres_list,
+						 ctxt);
+
+		FREE_NULL_LIST(tres_list);
+	} else if (ctxt->method == HTTP_REQUEST_POST) {
+#ifdef NDEBUG
+		/*
+		 * Updating TRES is not currently supported and is disabled
+		 * except for developer testing as the TRES id can not be
+		 * maintained while updating or adding new TRES.
+		 */
+		if (ctxt->tag != CONFIG_OP_TAG)
+			resp_error(ctxt, ESLURM_NOT_SUPPORTED, __func__,
+				   "Updating TRES is not currently supported");
+#else
+		int rc;
+		list_t *tres_list = NULL;
+
+		if ((rc = DATA_PARSE(ctxt->parser, OPENAPI_TRES_RESP, tres_list,
+				     ctxt->query, ctxt->parent_path))) {
+			FREE_NULL_LIST(tres_list);
+			return rc;
+		}
+
+		if (!(rc = db_query_rc(ctxt, tres_list, slurmdb_tres_add)))
+			db_query_commit(ctxt);
+
+		FREE_NULL_LIST(tres_list);
+#endif /* NDEBUG */
+	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
 			   get_http_method_string(ctxt->method));

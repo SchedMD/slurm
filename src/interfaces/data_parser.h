@@ -157,6 +157,7 @@ typedef enum {
 	DATA_PARSER_TRES_ID_STR, /* List of slurmdb_tres_rec_t* combined into a TRES string with TRES id# instead of type/name */
 	DATA_PARSER_TRES_LIST, /* List of slurmdb_tres_rec_t* */
 	DATA_PARSER_TRES, /* slurmdb_tres_rec_t */
+	DATA_PARSER_OPENAPI_TRES_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_TRES_NCT, /* slurmdb_tres_nct_rec_t */
 	DATA_PARSER_USER_ID, /* User from numeric UID */
 	DATA_PARSER_USER_ID_STRING, /* char * - user id string */

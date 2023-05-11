@@ -6999,6 +6999,7 @@ add_openapi_response_single(OPENAPI_SLURMDBD_STATS_RESP, STATS_REC_PTR, "statist
 add_openapi_response_single(OPENAPI_SLURMDBD_JOBS_RESP, JOB_LIST, "jobs", "jobs");
 add_openapi_response_single(OPENAPI_SLURMDBD_QOS_RESP, QOS_LIST, "QOS", "QOS");
 add_openapi_response_single(OPENAPI_SLURMDBD_QOS_REMOVED_RESP, STRING_LIST, "removed_qos", "removed QOS");
+add_openapi_response_single(OPENAPI_TRES_RESP, TRES_LIST, "TRES", "TRES");
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_post_response_t, mtype, false, field, 0, path, desc)
@@ -7487,6 +7488,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_SLURMDBD_JOBS_RESP),
 	addoar(OPENAPI_SLURMDBD_QOS_RESP),
 	addoar(OPENAPI_SLURMDBD_QOS_REMOVED_RESP),
+	addoar(OPENAPI_TRES_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
