@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
     back to the client that the default account wasn't modified.
  -- srun - fix issue creating regular and interactive steps because
     *_PACK_GROUP* environment variables were incorrectly set on non-HetSteps.
+ -- Fix dynamic nodes getting stuck in allocated states when reconfiguring.
 
 * Changes in Slurm 23.02.2
 ==========================
