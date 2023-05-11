@@ -1,8 +1,13 @@
 /*****************************************************************************\
- *  test_plugin.c - link and test algo of the multifactor plugin.
+ *  test_130_2.c - Test of priority multifactor combined with
+ *	Fairshare=parent. A failure of this test but a success of test24.3 is
+ *	indicative of a problem with SLURMDB_FS_USE_PARENT.
  *
- *  Usage: test.exe
+ *  Usage: test_130_2
  *****************************************************************************
+ *  Modified by Brigham Young University
+ *      Ryan Cox <ryan_cox@byu.edu> and Levi Morrison <levi_morrison@byu.edu>
+ *
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
@@ -76,6 +81,9 @@ int _setup_assoc_list(void)
 		list_create(slurmdb_destroy_user_rec);
 	assoc_mgr_qos_list =
 		list_create(slurmdb_destroy_qos_rec);
+	assoc_mgr_tres_list =
+		list_create(slurmdb_destroy_tres_rec);
+	assoc_mgr_tres_array = xmalloc(sizeof(slurmdb_tres_rec_t));
 
 	/* we just want make it so we setup_children so just pretend
 	 * we are running off cache */
@@ -83,6 +91,7 @@ int _setup_assoc_list(void)
 	assoc_init_arg.running_cache = &running_cache;
 	running_cache = RUNNING_CACHE_STATE_RUNNING;
 	assoc_mgr_init(NULL, &assoc_init_arg, SLURM_SUCCESS);
+
 
 	/* Here we make the tres we want to add to the system.
 	 * We do this as an update to avoid having to do setup. */
@@ -101,6 +110,7 @@ int _setup_assoc_list(void)
 
 	/* Here we make the associations we want to add to the system.
 	 * We do this as an update to avoid having to do setup. */
+	memset(&update, 0, sizeof(slurmdb_update_object_t));
 	update.type = SLURMDB_ADD_ASSOC;
 	update.objects = list_create(slurmdb_destroy_assoc_rec);
 
@@ -291,6 +301,117 @@ int _setup_assoc_list(void)
 	assoc->user = xstrdup("User6");
 	list_append(update.objects, assoc);
 
+	/* Check for proper handling of Fairshare=parent */
+
+	/* sub of root id 1 */
+	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
+	assoc->cluster = xstrdup(slurm_conf.cluster_name);
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
+	assoc->id = 5;
+	/* assoc->lft = ; */
+	/* assoc->rgt = ; */
+	assoc->parent_id = 1;
+	assoc->shares_raw = 50;
+	assoc->acct = xstrdup("AccountH");
+	list_append(update.objects, assoc);
+
+	/* sub of AccountH id 5 */
+	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
+	assoc->cluster = xstrdup(slurm_conf.cluster_name);
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
+	assoc->id = 51;
+	/* assoc->lft = ; */
+	/* assoc->rgt = ; */
+	assoc->parent_id = 5;
+	assoc->shares_raw = SLURMDB_FS_USE_PARENT;
+	assoc->usage->usage_raw = 35;
+	assoc->acct = xstrdup("AccountHTA");
+	list_append(update.objects, assoc);
+
+	/* sub of AccountHTA id 51 */
+	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
+	assoc->cluster = xstrdup(slurm_conf.cluster_name);
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
+	assoc->id = 511;
+	/* assoc->lft = ; */
+	/* assoc->rgt = ; */
+	assoc->parent_id = 51;
+	assoc->shares_raw = SLURMDB_FS_USE_PARENT;
+	assoc->usage->usage_raw = 10;
+	assoc->acct = xstrdup("AccountHTA");
+	assoc->user = xstrdup("UHTAStd1");
+	list_append(update.objects, assoc);
+
+	/* sub of AccountHTA id 51 */
+	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
+	assoc->cluster = xstrdup(slurm_conf.cluster_name);
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
+	assoc->id = 512;
+	/* assoc->lft = ; */
+	/* assoc->rgt = ; */
+	assoc->parent_id = 51;
+	assoc->shares_raw = 30;
+	assoc->usage->usage_raw = 10;
+	assoc->acct = xstrdup("AccountHTA");
+	assoc->user = xstrdup("UHTAStd2");
+	list_append(update.objects, assoc);
+
+	/* sub of AccountHTA id 51 */
+	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
+	assoc->cluster = xstrdup(slurm_conf.cluster_name);
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
+	assoc->id = 513;
+	/* assoc->lft = ; */
+	/* assoc->rgt = ; */
+	assoc->parent_id = 51;
+	assoc->shares_raw = 50;
+	assoc->usage->usage_raw = 25;
+	assoc->acct = xstrdup("AccountHTA");
+	assoc->user = xstrdup("UHTAStd3");
+	list_append(update.objects, assoc);
+
+	/* sub of AccountH id 5 */
+	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
+	assoc->cluster = xstrdup(slurm_conf.cluster_name);
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
+	assoc->id = 52;
+	/* assoc->lft = ; */
+	/* assoc->rgt = ; */
+	assoc->parent_id = 5;
+	assoc->shares_raw = SLURMDB_FS_USE_PARENT;
+	assoc->usage->usage_raw = 20;
+	assoc->acct = xstrdup("AccountH");
+	assoc->user = xstrdup("UHRA1");
+	list_append(update.objects, assoc);
+
+	/* sub of AccountH id 5 */
+	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
+	assoc->cluster = xstrdup(slurm_conf.cluster_name);
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
+	assoc->id = 53;
+	/* assoc->lft = ; */
+	/* assoc->rgt = ; */
+	assoc->parent_id = 5;
+	assoc->shares_raw = 40;
+	assoc->usage->usage_raw = 20;
+	assoc->acct = xstrdup("AccountH");
+	assoc->user = xstrdup("UHRA2");
+	list_append(update.objects, assoc);
+
+	/* sub of AccountH id 5 */
+	assoc = xmalloc(sizeof(slurmdb_assoc_rec_t));
+	assoc->cluster = xstrdup(slurm_conf.cluster_name);
+	assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
+	assoc->id = 54;
+	/* assoc->lft = ; */
+	/* assoc->rgt = ; */
+	assoc->parent_id = 5;
+	assoc->shares_raw = 50;
+	assoc->usage->usage_raw = 25;
+	assoc->acct = xstrdup("AccountH");
+	assoc->user = xstrdup("UHRA3");
+	list_append(update.objects, assoc);
+
 	if (assoc_mgr_update_assocs(&update, false))
 		error("assoc_mgr_update_assocs: %m");
 	list_destroy(update.objects);
@@ -373,5 +494,6 @@ int main (int argc, char **argv)
 		list_destroy(assoc_mgr_assoc_list);
 	if (assoc_mgr_qos_list)
 		list_destroy(assoc_mgr_qos_list);
+	xfree(assoc_mgr_tres_array);
 	return 0;
 }
