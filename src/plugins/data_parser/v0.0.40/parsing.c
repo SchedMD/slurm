@@ -358,7 +358,8 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 
 	if (data_get_type(src) != DATA_TYPE_LIST) {
 		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_FLAGS_INVALID_TYPE, path, __func__,
+			      ESLURM_DATA_FLAGS_INVALID_TYPE,
+			      set_source_path(&path, parent_path), __func__,
 			      "Expected List but found a %s",
 			      data_type_to_string(data_get_type(src)));
 		goto cleanup;
