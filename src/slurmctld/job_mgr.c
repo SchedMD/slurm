@@ -12902,6 +12902,17 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
+	if (new_req_bitmap_given) {
+		xfree(detail_ptr->req_nodes);
+		if (job_desc->req_nodes[0] != '\0')
+			detail_ptr->req_nodes =	xstrdup(job_desc->req_nodes);
+		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
+		detail_ptr->req_node_bitmap = new_req_bitmap;
+		new_req_bitmap = NULL;
+		sched_info("%s: setting req_nodes to %s for %pJ",
+			   __func__, job_desc->req_nodes, job_ptr);
+	}
+
 	/* this needs to be after partition and QOS checks */
 	if (job_desc->reservation
 	    && (!xstrcmp(job_desc->reservation, job_ptr->resv_name) ||
@@ -13355,33 +13366,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		acct_policy_add_job_submit(job_ptr);
 	}
 
-	if (new_req_bitmap_given) {
-		xfree(detail_ptr->req_nodes);
-		if (job_desc->req_nodes[0] != '\0')
-			detail_ptr->req_nodes =	xstrdup(job_desc->req_nodes);
-		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
-		detail_ptr->req_node_bitmap = new_req_bitmap;
-		new_req_bitmap = NULL;
-		sched_info("%s: setting req_nodes to %s for %pJ",
-			   __func__, job_desc->req_nodes, job_ptr);
-
-		/*
-		 * If a nodelist has been provided with more nodes than are
-		 * required for the job, translate this into an exclusion of
-		 * all nodes except those requested.
-		 */
-		if (detail_ptr->req_node_bitmap &&
-		    (bit_set_count(detail_ptr->req_node_bitmap) >
-		     job_desc->min_nodes)) {
-			if (!detail_ptr->exc_node_bitmap)
-				detail_ptr->exc_node_bitmap =
-					bit_alloc(node_record_count);
-			bit_or_not(detail_ptr->exc_node_bitmap,
-				   detail_ptr->req_node_bitmap);
-			FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
-		}
-	}
-
 	if (new_resv_ptr) {
 		FREE_NULL_LIST(job_ptr->resv_list);
 		xfree(job_ptr->resv_name);
@@ -13605,6 +13589,25 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
+
+	/*
+	 * If the job records now holds a required nodelist with more nodes than
+	 * are required, translate this list into an exclusion of all nodes
+	 * except those requested.
+	 *
+	 * Merge the resulting negated version into the excluded nodelist of the
+	 * job.
+	 */
+	if (detail_ptr->req_node_bitmap &&
+	    (bit_set_count(detail_ptr->req_node_bitmap) >
+	     job_desc->min_nodes)) {
+		if (!detail_ptr->exc_node_bitmap)
+			detail_ptr->exc_node_bitmap =
+				bit_alloc(node_record_count);
+		bit_or_not(detail_ptr->exc_node_bitmap,
+			   detail_ptr->req_node_bitmap);
+		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
+	}
 
 	if (job_desc->time_limit != NO_VAL) {
 		if (IS_JOB_FINISHED(job_ptr) || job_ptr->preempt_time)
