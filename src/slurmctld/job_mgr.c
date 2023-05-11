@@ -12765,8 +12765,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	 * Must check req_nodes to set the job_ptr->details->req_node_bitmap
 	 * before we validate it later.
 	 */
-	if (job_desc->req_nodes &&
-	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
+	if (job_desc->req_nodes && detail_ptr &&
+	    !xstrcmp(job_desc->req_nodes, detail_ptr->req_nodes)) {
+		sched_debug("%s: new req_nodes identical to old req_nodes %s",
+			    __func__, job_desc->req_nodes);
+	} else if (job_desc->req_nodes &&
+		   (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 		/*
 		 * Use req_nodes to change the nodes associated with a running
 		 * for lack of other field in the job request to use
