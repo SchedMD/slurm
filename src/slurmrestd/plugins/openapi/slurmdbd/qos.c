@@ -34,19 +34,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <stdint.h>
-
-#include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
 
 #include "src/common/list.h"
 #include "src/common/log.h"
-#include "src/common/parse_time.h"
-#include "src/common/ref.h"
 #include "src/common/slurmdbd_defs.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/strlcpy.h"
-#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -54,103 +46,6 @@
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 #include "api.h"
-
-enum {
-	TAG_ALL_QOS = 0,
-	TAG_SINGLE_QOS,
-};
-
-#define MAGIC_FOREACH_SEARCH 0xde0d0ee8
-typedef struct {
-	int magic; /* MAGIC_FOREACH_SEARCH */
-	ctxt_t *ctxt;
-	slurmdb_qos_cond_t *qos_cond;
-} foreach_query_search_t;
-
-static data_for_each_cmd_t _foreach_query_search(const char *key,
-						 data_t *data,
-						 void *arg)
-{
-	foreach_query_search_t *args = arg;
-	xassert(args->magic == MAGIC_FOREACH_SEARCH);
-
-	if (!xstrcasecmp("with_deleted", key)) {
-		if (data_convert_type(data, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
-			resp_error(args->ctxt, ESLURM_REST_INVALID_QUERY,
-				   __func__,
-				   "Field %s must be a Boolean instead of %s",
-				   key,
-				   data_type_to_string(data_get_type(data)));
-			return DATA_FOR_EACH_FAIL;
-		}
-
-		if (data->data.bool_u)
-			args->qos_cond->with_deleted = true;
-		else
-			args->qos_cond->with_deleted = false;
-
-		return DATA_FOR_EACH_CONT;
-	}
-
-	resp_error(args->ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-		   "Unknown Query field: %s", key);
-	return DATA_FOR_EACH_FAIL;
-}
-
-static void _dump_qos(ctxt_t *ctxt, list_t *qos_list, char *qos_name)
-{
-	slurmdb_qos_rec_t *qos;
-	ListIterator iter = list_iterator_create(qos_list);
-	data_t *dqos_list = data_key_set(ctxt->resp, "qos");
-
-	if (data_get_type(dqos_list) != DATA_TYPE_LIST)
-		data_set_list(dqos_list);
-
-	/*
-	 * We are forced to use iterator here due to calls inside of
-	 * _foreach_qos() that attempt to lock qos_list.
-	 */
-	while ((qos = list_next(iter))) {
-		if (!qos_name || !xstrcmp(qos->name, qos_name)) {
-			data_t *q = data_list_append(dqos_list);
-
-			debug("%s: [%s] dumping QOS %s",
-			      __func__, ctxt->id,
-			      (qos_name ? qos_name : ""));
-
-			if (DATA_DUMP(ctxt->parser, QOS, *qos, q))
-				break;
-		}
-	}
-
-	list_iterator_destroy(iter);
-}
-
-static int _foreach_delete_qos(void *x, void *arg)
-{
-	char *qos = x;
-	data_t *qoslist = arg;
-
-	data_set_string(data_list_append(qoslist), qos);
-
-	return DATA_FOR_EACH_CONT;
-}
-
-static void _delete_qos(ctxt_t *ctxt, slurmdb_qos_cond_t *qos_cond)
-{
-	List qos_list = NULL;
-	data_t *dremoved =
-		data_set_list(data_key_set(ctxt->resp, "removed_qos"));
-
-	if (!db_query_list(ctxt, &qos_list, slurmdb_qos_remove, qos_cond) &&
-	    qos_list)
-		list_for_each(qos_list, _foreach_delete_qos, dremoved);
-
-	if (!ctxt->rc)
-		db_query_commit(ctxt);
-
-	FREE_NULL_LIST(qos_list);
-}
 
 /* If the QOS already exists, update it. If not, create it */
 static int _foreach_update_qos(void *x, void *arg)
@@ -226,98 +121,69 @@ static int _foreach_update_qos(void *x, void *arg)
 	return (rc != SLURM_SUCCESS) ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT;
 }
 
-static void _update_qos(ctxt_t *ctxt, bool commit)
-{
-	List qos_list = NULL;
-	data_t *parent_path = NULL;
-	data_t *dqos;
-
-	if (!(dqos = get_query_key_list("QOS", ctxt, &parent_path))) {
-		resp_warn(
-			ctxt, __func__,
-			"ignoring empty or non-existant QOS array for update");
-		FREE_NULL_DATA(parent_path);
-		return;
-	}
-
-	qos_list = list_create(slurmdb_destroy_qos_rec);
-
-	if (!DATA_PARSE(ctxt->parser, QOS_LIST, qos_list, dqos, parent_path)) {
-		if (qos_list)
-			list_for_each_ro(qos_list, _foreach_update_qos, ctxt);
-
-		if (!ctxt->rc && commit)
-			db_query_commit(ctxt);
-	}
-
-	FREE_NULL_LIST(qos_list);
-	xfree(parent_path);
-}
-
 extern int op_handler_qos(ctxt_t *ctxt)
 {
-	char *qos_name = NULL;
-	slurmdb_qos_cond_t qos_cond = { 0 };
-	List qos_list = NULL;
+	slurmdb_qos_cond_t *qos_cond = NULL;
+	list_t *qos_list = NULL;
+
+	if (((ctxt->method == HTTP_REQUEST_GET) ||
+	     (ctxt->method == HTTP_REQUEST_DELETE)) &&
+	    DATA_PARSE(ctxt->parser, QOS_CONDITION_PTR, qos_cond,
+		       ctxt->parameters, ctxt->parent_path))
+		goto cleanup;
 
 	if (ctxt->method == HTTP_REQUEST_GET) {
-		/* Update qos_cond with requested search parameters */
-		if (ctxt->query && data_get_dict_length(ctxt->query)) {
-			foreach_query_search_t args = {
-				.magic = MAGIC_FOREACH_SEARCH,
-				.ctxt = ctxt,
-				.qos_cond = &qos_cond,
-			};
-
-			if (data_dict_for_each(ctxt->query,
-					       _foreach_query_search,
-					       &args) < 0)
-				goto cleanup;
-		}
-
-		if (db_query_list(ctxt, &qos_list, slurmdb_qos_get, &qos_cond))
+		if (db_query_list(ctxt, &qos_list, slurmdb_qos_get, qos_cond))
 			goto cleanup;
-	}
 
-	if (ctxt->tag == TAG_SINGLE_QOS) {
-		qos_name = get_str_param("qos_name", true, ctxt);
-
-		if (qos_name) {
-			qos_cond.name_list = list_create(NULL);
-			list_append(qos_cond.name_list, qos_name);
-		} else {
-			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, "qos_name",
-				   "QOS name must be given for single QOS query");
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_SLURMDBD_QOS_RESP, qos_list,
+					 ctxt);
+	} else if (ctxt->method == HTTP_REQUEST_DELETE) {
+		if (!qos_cond->name_list ||
+		    list_is_empty(qos_cond->name_list)) {
+			resp_error(ctxt, ESLURM_DATA_AMBIGUOUS_MODIFY, __func__,
+				   "QOS name must be provided for DELETE");
 			goto cleanup;
 		}
-	}
 
-	if (ctxt->method == HTTP_REQUEST_GET)
-		_dump_qos(ctxt, qos_list, qos_name);
-	else if (ctxt->method == HTTP_REQUEST_DELETE &&
-		 (ctxt->tag == TAG_SINGLE_QOS))
-		_delete_qos(ctxt, &qos_cond);
-	else if (ctxt->method == HTTP_REQUEST_POST &&
-		 ((ctxt->tag == TAG_ALL_QOS) || (ctxt->tag == CONFIG_OP_TAG)))
-		_update_qos(ctxt, (ctxt->tag != CONFIG_OP_TAG));
-	else {
+		db_query_list(ctxt, &qos_list, slurmdb_qos_remove, qos_cond);
+
+		if (qos_list && !ctxt->rc)
+			db_query_commit(ctxt);
+
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_SLURMDBD_QOS_REMOVED_RESP,
+					 qos_list, ctxt);
+	} else if (ctxt->method == HTTP_REQUEST_POST) {
+		openapi_resp_single_t post = { 0 };
+
+		if (DATA_PARSE(ctxt->parser, OPENAPI_SLURMDBD_QOS_RESP, post,
+			       ctxt->query, ctxt->parent_path) ||
+		    !post.response)
+			goto cleanup;
+
+		qos_list = post.response;
+
+		if (list_for_each_ro(qos_list, _foreach_update_qos, ctxt) < 0)
+			goto cleanup;
+
+		if (!ctxt->rc)
+			db_query_commit(ctxt);
+	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
 			   get_http_method_string(ctxt->method));
 	}
 
 cleanup:
-	FREE_NULL_LIST(qos_cond.name_list);
 	FREE_NULL_LIST(qos_list);
+	slurmdb_destroy_qos_cond(qos_cond);
 	return SLURM_SUCCESS;
 }
 
 extern void init_op_qos(void)
 {
-	bind_handler("/slurmdb/{data_parser}/qos/", op_handler_qos,
-		     TAG_ALL_QOS);
-	bind_handler("/slurmdb/{data_parser}/qos/{qos_name}", op_handler_qos,
-		     TAG_SINGLE_QOS);
+	bind_handler("/slurmdb/{data_parser}/qos/", op_handler_qos, 0);
+	bind_handler("/slurmdb/{data_parser}/qos/{name}", op_handler_qos, 0);
 }
 
 extern void destroy_op_qos(void)

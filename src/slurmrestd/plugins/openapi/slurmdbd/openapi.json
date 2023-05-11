@@ -275,7 +275,7 @@
         "summary": "Get TRES info"
       }
     },
-    "/slurmdb/{data_parser}/qos/{qos_name}": {
+    "/slurmdb/{data_parser}/qos/{name}": {
       "delete": {
         "tags": [
           "slurm"
@@ -287,12 +287,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_REMOVED_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_REMOVED_RESP"
                 }
               }
             },
@@ -314,19 +314,9 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "qos_name",
-            "in": "path",
-            "description": "Slurm QOS Name",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        "parameters": {
+          "$ref": "DATA_PARSER_QOS_CONDITION"
+        }
       },
       "get": {
         "tags": [
@@ -339,12 +329,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_qos_info"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_qos_info"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP"
                 }
               }
             },
@@ -366,35 +356,9 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "qos_name",
-            "in": "path",
-            "description": "Slurm QOS Name",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "with_deleted",
-            "in": "query",
-            "description": "Include deleted QOSs. False by default.",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ],
-              "default": "false"
-            }
-          }
-        ]
+        "parameters": {
+          "$ref": "DATA_PARSER_QOS_CONDITION"
+        }
       }
     },
     "/slurmdb/{data_parser}/qos/": {
@@ -403,35 +367,20 @@
           "slurm"
         ],
         "operationId": "get_qos",
-        "parameters": [
-          {
-            "name": "with_deleted",
-            "in": "query",
-            "description": "Include deleted QOSs. False by default.",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ],
-              "default": "false"
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": "DATA_PARSER_QOS_CONDITION"
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_qos_info"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_qos_info"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP"
                 }
               }
             },
@@ -497,12 +446,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_update_qos"
+                "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_update_qos"
+                "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP"
               }
             }
           },
@@ -1977,23 +1926,6 @@
           }
         }
       },
-      "dbv0.0.39_qos_info": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/dbv0.0.39_warnings"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/dbv0.0.39_errors"
-          },
-          "qos": {
-            "$ref": "DATA_PARSER_QOS_LIST"
-          }
-        }
-      },
       "dbv0.0.39_tres_info": {
         "type": "object",
         "properties": {
@@ -2143,14 +2075,6 @@
         "properties": {
           "users": {
             "$ref": "DATA_PARSER_USER_LIST"
-          }
-        },
-        "type": "object"
-      },
-      "dbv0.0.39_update_qos": {
-        "properties": {
-          "qos": {
-            "$ref": "DATA_PARSER_QOS_LIST"
           }
         },
         "type": "object"
