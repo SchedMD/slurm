@@ -60,6 +60,7 @@ typedef enum {
 	DATA_PARSER_BOOL16, /* uint16_t */
 	DATA_PARSER_BOOL16_NO_VAL, /* uint16_t - false if NO_VAL16 */
 	DATA_PARSER_CSV_STRING, /* char * - comma delimited list stored as a string */
+	DATA_PARSER_CSV_STRING_LIST, /* list_t of char* - comma delimited list stored as a list_t* */
 	DATA_PARSER_ACCOUNT_LIST, /* list of slurmdb_account_rec_t* */
 	DATA_PARSER_ACCOUNT, /* slurmdb_account_rec_t */
 	DATA_PARSER_ACCOUNT_FLAGS, /* slurmdb_account_rec_t->flags & SLURMDB_ACCT_FLAG_* */
@@ -244,6 +245,7 @@ typedef enum {
 	DATA_PARSER_JOB_DESC_MSG_PTR, /* job_desc_msg_t* */
 	DATA_PARSER_JOB_DESC_MSG_LIST, /* list_t of job_desc_msg_t* */
 	DATA_PARSER_STRING_ARRAY, /* char** (NULL terminated) */
+	DATA_PARSER_STRING_LIST, /* list_t of char* */
 	DATA_PARSER_SIGNAL, /* uint16_t - UNIX process signal */
 	DATA_PARSER_CPU_BINDING_FLAGS, /* uint16_t <-> cpu_bind_type_t */
 	DATA_PARSER_CRON_ENTRY, /* cron_entry_t */

@@ -72,6 +72,7 @@
 #include "src/slurmrestd/plugins/openapi/slurmctld/structs.h"
 
 #define MAGIC_FOREACH_CSV_STRING 0x889bbe2a
+#define MAGIC_FOREACH_CSV_STRING_LIST 0x8391be0b
 #define MAGIC_FOREACH_LIST 0xaefa2af3
 #define MAGIC_FOREACH_LIST_FLAG 0xa1d4acd2
 #define MAGIC_FOREACH_POPULATE_GLOBAL_TRES_LIST 0x31b8aad2
@@ -160,6 +161,25 @@ typedef struct {
 	hostlist_t *host_list;
 	data_t *parent_path;
 } foreach_hostlist_parse_t;
+
+typedef struct {
+	int magic; /* MAGIC_FOREACH_CSV_STRING */
+	int rc;
+	char *dst;
+	char *pos;
+	const parser_t *const parser;
+	args_t *args;
+	data_t *parent_path;
+} parse_foreach_CSV_STRING_t;
+
+typedef struct {
+	int magic; /* MAGIC_FOREACH_CSV_STRING_LIST */
+	list_t *list;
+	data_t *dst_list;
+	const parser_t *const parser;
+	args_t *args;
+	data_t *parent_path;
+} parse_foreach_CSV_STRING_LIST_t;
 
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
@@ -2792,16 +2812,6 @@ void SPEC_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
 			  "Total time spent processing RPC in seconds");
 }
 
-typedef struct {
-	int magic; /* MAGIC_FOREACH_CSV_STRING */
-	int rc;
-	char *dst;
-	char *pos;
-	const parser_t *const parser;
-	args_t *args;
-	data_t *parent_path;
-} parse_foreach_CSV_STRING_t;
-
 static data_for_each_cmd_t _parse_foreach_CSV_STRING_list(data_t *data,
 							  void *arg)
 {
@@ -2908,6 +2918,145 @@ static int DUMP_FUNC(CSV_STRING)(const parser_t *const parser, void *obj,
 	}
 
 	xfree(str);
+	return SLURM_SUCCESS;
+}
+
+static data_for_each_cmd_t _parse_foreach_CSV_STRING_LIST_list(data_t *data,
+							       void *arg)
+{
+	parse_foreach_CSV_STRING_LIST_t *args = arg;
+
+	xassert(args->magic == MAGIC_FOREACH_CSV_STRING_LIST);
+
+	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
+		on_error(PARSING, args->parser->type, args->args,
+			 ESLURM_DATA_CONV_FAILED, NULL, __func__,
+			 "unable to convert csv entry %s to string",
+			 data_type_to_string(data_get_type(data)));
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	list_append(args->list, xstrdup(data_get_string(data)));
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static data_for_each_cmd_t _parse_foreach_CSV_STRING_LIST_dict(const char *key,
+							       data_t *data,
+							       void *arg)
+{
+	parse_foreach_CSV_STRING_LIST_t *args = arg;
+
+	xassert(args->magic == MAGIC_FOREACH_CSV_STRING_LIST);
+
+	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
+		on_error(PARSING, args->parser->type, args->args,
+			 ESLURM_DATA_CONV_FAILED, NULL, __func__,
+			 "unable to convert csv entry %s to string",
+			 data_type_to_string(data_get_type(data)));
+		return DATA_FOR_EACH_FAIL;
+	}
+
+	list_append(args->list,
+		    xstrdup_printf("%s=%s", key, data_get_string(data)));
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static int PARSE_FUNC(CSV_STRING_LIST)(const parser_t *const parser, void *obj,
+				       data_t *src, args_t *args,
+				       data_t *parent_path)
+{
+	int rc = SLURM_SUCCESS;
+	list_t **list_ptr = obj;
+	list_t *list = list_create(xfree_ptr);
+
+	if (data_get_type(src) == DATA_TYPE_LIST) {
+		parse_foreach_CSV_STRING_LIST_t pargs = {
+			.magic = MAGIC_FOREACH_CSV_STRING_LIST,
+			.parser = parser,
+			.args = args,
+			.parent_path = parent_path,
+			.list = list,
+		};
+
+		data_list_for_each(src, _parse_foreach_CSV_STRING_LIST_list,
+				   &pargs);
+	} else if (data_get_type(src) == DATA_TYPE_DICT) {
+		parse_foreach_CSV_STRING_LIST_t pargs = {
+			.magic = MAGIC_FOREACH_CSV_STRING_LIST,
+			.parser = parser,
+			.args = args,
+			.parent_path = parent_path,
+			.list = list,
+		};
+
+		data_dict_for_each(src, _parse_foreach_CSV_STRING_LIST_dict,
+				   &pargs);
+	} else if (data_convert_type(src, DATA_TYPE_STRING) ==
+		   DATA_TYPE_STRING) {
+		char *save_ptr = NULL;
+		char *token = NULL;
+		char *str = xstrdup(data_get_string(src));
+
+		if (!str || (str[0] == '\0')) {
+			xfree(str);
+			goto cleanup;
+		}
+
+		token = strtok_r(str, ",", &save_ptr);
+		while (token) {
+			list_append(list, xstrdup(token));
+			token = strtok_r(NULL, ",", &save_ptr);
+		}
+
+		xfree(str);
+	} else {
+		on_error(PARSING, parser->type, args, ESLURM_DATA_CONV_FAILED,
+			 NULL, __func__,
+			 "Expected dictionary or list or string for comma delimited list but got %s",
+			 data_type_to_string(data_get_type(src)));
+	}
+
+cleanup:
+	if (rc)
+		FREE_NULL_LIST(list);
+	else
+		*list_ptr = list;
+
+	return rc;
+}
+
+static int _dump_foreach_CSV_STRING_LIST(void *x, void *arg)
+{
+	char *str = x;
+	parse_foreach_CSV_STRING_LIST_t *args = arg;
+
+	xassert(args->magic == MAGIC_FOREACH_CSV_STRING_LIST);
+
+	data_set_string(data_list_append(args->dst_list), str);
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(CSV_STRING_LIST)(const parser_t *const parser, void *obj,
+				      data_t *dst, args_t *args)
+{
+	list_t **list_ptr = obj;
+	parse_foreach_CSV_STRING_LIST_t pargs = {
+		.magic = MAGIC_FOREACH_CSV_STRING_LIST,
+		.parser = parser,
+		.args = args,
+		.parent_path = NULL,
+		.dst_list = dst,
+	};
+
+	data_set_list(dst);
+
+	if (list_for_each_ro(*list_ptr, _dump_foreach_CSV_STRING_LIST,
+			     &pargs) < 0)
+		return ESLURM_DATA_CONV_FAILED;
+
 	return SLURM_SUCCESS;
 }
 
@@ -6589,6 +6738,7 @@ static const parser_t parsers[] = {
 	addps(USER_ID, uid_t, NEED_NONE, STRING, NULL),
 	addpsp(TRES_STR, TRES_LIST, char *, NEED_TRES, NULL),
 	addpsa(CSV_STRING, STRING, char *, NEED_NONE, NULL),
+	addpsp(CSV_STRING_LIST, STRING_LIST, list_t *, NEED_NONE, NULL),
 	addpsa(LICENSES, LICENSE, license_info_msg_t, NEED_NONE, NULL),
 	addps(CORE_SPEC, uint16_t, NEED_NONE, INT32, NULL),
 	addps(THREAD_SPEC, uint16_t, NEED_NONE, INT32, NULL),
@@ -6788,6 +6938,7 @@ static const parser_t parsers[] = {
 	addpl(JOB_DESC_MSG_LIST, JOB_DESC_MSG, NEED_NONE),
 	addpl(OPENAPI_ERRORS, OPENAPI_ERROR, NEED_NONE),
 	addpl(OPENAPI_WARNINGS, OPENAPI_WARNING, NEED_NONE),
+	addpl(STRING_LIST, STRING, NEED_NONE),
 };
 #undef addpl
 #undef addps
