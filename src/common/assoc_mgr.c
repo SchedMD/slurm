@@ -4292,6 +4292,13 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 						  usage->children_list,
 						  slurm_find_ptr_in_list, rec);
 
+			/*
+			 * If the root assoc has been removed we need to clear
+			 * the short cut pointer.
+			 */
+			if (rec == assoc_mgr_root_assoc)
+				assoc_mgr_root_assoc = NULL;
+
 			_delete_assoc_hash(rec);
 			list_remove_first(assoc_mgr_assoc_list,
 					  slurm_find_ptr_in_list, rec);

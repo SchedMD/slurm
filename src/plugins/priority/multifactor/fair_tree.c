@@ -408,6 +408,9 @@ static void _apply_priority_fs(void)
 
 	log_flag(PRIO, "Fair Tree fairshare algorithm, starting at root:");
 
+	if (!assoc_mgr_root_assoc)
+		return;
+
 	assoc_mgr_root_assoc->usage->level_fs = (long double) NO_VAL;
 
 	/* _calc_tree_fs requires an array instead of List */
