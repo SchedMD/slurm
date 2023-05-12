@@ -9,7 +9,7 @@ Nodes possess resources such as processors, memory, swap, local
 disk, etc. and jobs consume these resources. The exclusive use default policy
 in Slurm can result in inefficient utilization of the cluster and of its nodes
 resources.
-Slurm's <i>cons_res</i> and <i>cons_tres</i> plugins are available to
+Slurm's <i>cons_tres</i> plugin is available to
 manage resources on a much more fine-grained basis as described below.</p>
 
 <h2 id="using_cons_res">
@@ -34,8 +34,8 @@ Using the Consumable Trackable Resource Plugin: <b>select/cons_tres</b>
 <a class="slurm_link" href="#using_cons_tres"></a>
 </h2>
 
-<p>Consumable resources has been enhanced with several new resources
---namely CPU (same as in previous version), Socket, Core, Memory
+<p>The Consumable Trackable Resources (<b>cons_tres</b>) plugin has been built
+to work with several resources. It can track a Board, Socket, Core, CPU, Memory
 as well as any combination of the logical processors with Memory:</p>
 <ul>
   <li><b>CPU</b> (<i>CR_CPU</i>): CPU as a consumable resource.</li>
@@ -49,7 +49,7 @@ as well as any combination of the logical processors with Memory:</p>
   <li><b>Socket</b> (<i>CR_Socket</i>): Socket as a consumable resource.</li>
   <li/><b>Core</b> (<i>CR_Core</i>): Core as a consumable resource.</li>
   <li><b>Memory</b> (<i>CR_Memory</i>) Memory <u>only</u> as a
-  consumable resource. Note! CR_Memory assumes OverSubscribe=Yes</li>
+  consumable resource. <b>NOTE</b>: CR_Memory assumes OverSubscribe=Yes</li>
   <li><b>Socket and Memory</b> (<i>CR_Socket_Memory</i>): Socket
   and Memory as consumable resources.</li>
   <li><b>Core and Memory</b> (<i>CR_Core_Memory</i>): Core and
@@ -58,12 +58,11 @@ as well as any combination of the logical processors with Memory:</p>
   as consumable resources.</li>
 </ul>
 
-<p>All CR_s assume <b>OverSubscribe=No</b> or <b>OverSubscribe=Force</b>
-EXCEPT for <b>CR_MEMORY</b> which assumes <b>OverSubscribe=Yes</b>.</p>
+<p>All CR_* parameters assume <b>OverSubscribe=No</b> or
+<b>OverSubscribe=Force</b> EXCEPT for <b>CR_MEMORY</b> which assumes
+<b>OverSubscribe=Yes</b>.</p>
 
-<p>The Consumable Trackable Resources (<b>cons_tres</b>) plugin provides all
-the same functionality provided by the Consumable Resources (<b>cons_res</b>)
-plugin. It also includes additional functionality specifically
+<p>The cons_tres plugin also provides functionality specifically
 related to GPUs.</p>
 
 <p>Additional parameters available for the <b>cons_tres</b> plugin:</p>
@@ -83,31 +82,30 @@ related to GPUs.</p>
   <li><b>--mem-per-gpu=</b>: Amount of memory for each GPU.</li>
   </ul>
 
-<p>srun's <i>-E</i> extension for sockets, cores, and threads are
+<p>srun's <i>-B</i> extension for sockets, cores, and threads is
 ignored within the node allocation mechanism when CR_CPU or
-CR_CPU_MEMORY is selected. It is considered to compute the total
-number of tasks when -n is not specified.</p>
+CR_CPU_MEMORY is selected. It is used to compute the total
+number of tasks when <i>-n</i> is not specified.</p>
 
-<p>In the cases where Memory is the consumable resource or one of
-the two consumable resources the <b>RealMemory</b> parameter, which
-defines a node's amount of real memory in slurm.conf, must be
-set.</p>
+<p>In the cases where Memory is a consumable resource, the <b>RealMemory</b>
+parameter must be set in the slurm.conf to define a node's amount of real
+memory.</p>
 
 <p>The job submission commands (salloc, sbatch and srun) support the options
-<i>--mem=MB</i> and <i>--mem-per-cpu=MB</i> permitting users to specify
-the maximum amount of real memory per node or per allocated required.
+<i>--mem=MB</i> and <i>--mem-per-cpu=MB</i>, permitting users to specify
+the maximum amount of real memory required per node or per allocated CPU.
 This option is required in the environments where Memory is a consumable
 resource. It is important to specify enough memory since Slurm will not allow
 the application to use more than the requested amount of real memory. The
-default value for --mem is 1 MB. See the <b>srun</b> man page for more
-details.</p>
+default value for --mem is inherited from <b>DefMemPerNode</b>. See
+<a href="srun.html#OPT_mem">srun</a>(1) for more details.</p>
 
 <p>Using <i>--overcommit</i> or <i>-O</i> is allowed. When the process to
 logical processor pinning is enabled by using an appropriate TaskPlugin
 configuration parameter, the extra processes will time share the allocated
 resources.</p>
 
-<p>The consumable trackable resource plugin is enabled via the SelectType
+<p>The Consumable Trackable Resource plugin is enabled via the SelectType
 parameter in the slurm.conf.</p>
 <pre>
 # Excerpt from sample slurm.conf file
@@ -117,24 +115,22 @@ SelectType=select/cons_tres
 <h2 id="general">General Comments<a class="slurm_link" href="#general"></a></h2>
 
 <p>Slurm's default <b>select/linear</b> plugin is using a best fit algorithm
-based on number of consecutive nodes. The same node allocation approach is used
-with <b>select/cons_res</b> and <b>select/cons_tres</b> for consistency.</p>
+based on number of consecutive nodes.</p>
 
-<p>The <b>select/cons_res</b> and <b>select/cons_tres</b> plugins are enabled
-or disabled cluster-wide.</p>
+<p>The <b>select/cons_tres</b> plugin is enabled or disabled cluster-wide.</p>
 
 <p>In the case where <b>select/linear</b> is enabled, the normal Slurm
 behaviors are not disrupted. The major change users see when using the
-<b>select/cons_res</b> or <b>select/cons_tres</b> plugins, is that jobs can be
+<b>select/cons_tres</b> plugin is that jobs can be
 co-scheduled on nodes when resources permit it. Generic resources (such as GPUs)
-can also be tracked individually with these plugins.
+can also be tracked individually with this plugin.
 The rest of Slurm, such as srun and its options (except srun -s ...), etc. are not
 affected by this plugin. Slurm is, from the user's point of view, working the
 same way as when using the default node selection scheme.</p>
 
 <p>The <i>--exclusive</i> srun option allows users to request nodes in
-exclusive mode even when consumable resources is enabled. See the <b>srun</b>
-man page for details. </p>
+exclusive mode even when consumable resources is enabled. See
+<a href="srun.html#OPT_exclusive">srun</a>(1) for details. </p>
 
 <p>srun's <i>-s</i> or <i>--oversubscribe</i> is incompatible with the consumable
 resource environment and will therefore not be honored. Since this
@@ -157,7 +153,7 @@ NODELIST     NODES PARTITION  STATE  CPUS  S:C:T MEMORY
 hydra[12-16]     5 allNodes*  ...       4  2:2:1   2007
 </pre>
 
-<p>Using select/cons_res plug-in with CR_Memory</p>
+<p>Using select/cons_tres plug-in with CR_Memory</p>
 <pre>
 Example:
 # srun -N 5 -n 20 --mem=1000 sleep 100 &  <-- running
@@ -171,7 +167,7 @@ JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
  1819  allNodes  sleep sballe  R  0:11      5 hydra[12-16]
 </pre>
 
-<p>Using select/cons_res plug-in with CR_Socket_Memory (2 sockets/node)</p>
+<p>Using select/cons_tres plug-in with CR_Socket_Memory (2 sockets/node)</p>
 <pre>
 Example 1:
 # srun -N 5 -n 5 --mem=1000 sleep 100 &        <-- running
@@ -192,7 +188,7 @@ JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
  1830  allNodes  sleep sballe  R  0:07      5 hydra[12-16]
 </pre>
 
-<p>Using select/cons_res plug-in with CR_CPU_Memory (4 CPUs/node)</p>
+<p>Using select/cons_tres plug-in with CR_CPU_Memory (4 CPUs/node)</p>
 <pre>
 Example 1:
 # srun -N 5 -n 5 --mem=1000 sleep 100 &  <-- running
@@ -227,14 +223,14 @@ are allocated across a cluster using (1) Slurm's default allocation method
 approach.</p>
 
 <p>It is important to understand that the example listed below is a
-contrived example and is only given here to illustrate the use of CPU as
+contrived example and is only given here to illustrate the use of CPUs as
 consumable resources. Job 2 and Job 3 call for the node count to equal
 the processor count. This would typically be done because
 that one task per node requires all of the memory, disk space, etc. The
 bottleneck would not be processor count.</p>
 
 <p>Trying to execute more than one job per node will almost certainly severely
-impact parallel job's performance.
+impact a parallel job's performance.
 The biggest beneficiary of CPUs as consumable resources will be serial jobs or
 jobs with modest parallelism, which can effectively share resources. On many
 systems with larger processor count, jobs typically run one fewer task than
@@ -276,7 +272,7 @@ JOBID PARTITION   NAME  USER  ST  TIME  NODES NODELIST(REASON)
     3       lsf  sleep  root  PD  0:00      3 (Resources)
     4       lsf  sleep  root  PD  0:00      1 (Resources)
     5       lsf  sleep  root  PD  0:00      1 (Resources)
-    2       lsf  sleep  root   R  0:14      4 xc14n[13-16]
+    2       lsf  sleep  root   R  0:14      4 linux[01-04]
 </pre>
 
 <p>Once Job 2 is finished, Job 3 is scheduled and runs on
@@ -290,8 +286,8 @@ and Job 4 can run concurrently on the cluster.</p>
 # squeue
 JOBID PARTITION   NAME  USER  ST  TIME  NODES NODELIST(REASON)
     5       lsf  sleep  root  PD  0:00      1 (Resources)
-    3       lsf  sleep  root   R  0:11      3 xc14n[13-15]
-    4       lsf  sleep  root   R  0:11      1 xc14n16
+    3       lsf  sleep  root   R  0:11      3 linux[01-03]
+    4       lsf  sleep  root   R  0:11      1 linux04
 </pre>
 
 <p>Once Job 3 finishes, Job 5 is allocated resources and can run.</p>
@@ -307,7 +303,8 @@ cannot be shared with other jobs.</p>
 <a class="slurm_link" href="#using_proc"></a>
 </h2>
 
-<p>The output of squeue shows that we
+<p>We will run through the same scenario again using the <b>cons_tres</b>
+plugin and CPUs as the consumable resource. The output of squeue shows that we
 have 3 out of the 4 jobs allocated and running. This is a 2 running job
 increase over the default Slurm approach.</p>
 
@@ -377,14 +374,15 @@ amount of time users have to wait for their job to complete as well as
 increasing the overall efficiency of the use of the cluster. The drawback is
 that users do not have entire nodes dedicated to their jobs by default.</p>
 
-<p>We have added the <i>"--exclusive"</i> option to srun (see the <b>srun</b>
-man page for more details), which allows users to specify that they would like
+<p>We have added the <i>--exclusive</i> option to srun (see
+<a href="srun.html#OPT_exclusive">srun</a>(1) for more details),
+which allows users to specify that they would like
 their nodes to be allocated in exclusive mode.
 This is to accommodate users who might have mpi/threaded/openMP
 programs that will take advantage of all the CPUs on a node but only need
 one mpi process per node.</p>
 
 
-<p style="text-align:center;">Last modified 19 September 2022</p>
+<p style="text-align:center;">Last modified 18 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
