@@ -33,11 +33,10 @@ SelectType=select/cons_res
 Using the Consumable Trackable Resource Plugin: <b>select/cons_tres</b>
 <a class="slurm_link" href="#using_cons_tres"></a>
 </h2>
-<ul>
 
-<li>Consumable resources has been enhanced with several new resources
+<p>Consumable resources has been enhanced with several new resources
 --namely CPU (same as in previous version), Socket, Core, Memory
-as well as any combination of the logical processors with Memory:</li>
+as well as any combination of the logical processors with Memory:</p>
 <ul>
   <li><b>CPU</b> (<i>CR_CPU</i>): CPU as a consumable resource.</li>
   <ul>
@@ -59,19 +58,20 @@ as well as any combination of the logical processors with Memory:</li>
   as consumable resources.</li>
 </ul>
 
-<li>All CR_s assume <b>OverSubscribe=No</b> or <b>OverSubscribe=Force</b>
-EXCEPT for <b>CR_MEMORY</b> which assumes <b>OverSubscribe=Yes</b>.</li>
+<p>All CR_s assume <b>OverSubscribe=No</b> or <b>OverSubscribe=Force</b>
+EXCEPT for <b>CR_MEMORY</b> which assumes <b>OverSubscribe=Yes</b>.</p>
 
-<li>The Consumable Trackable Resources (<b>cons_tres</b>) plugin provides all
+<p>The Consumable Trackable Resources (<b>cons_tres</b>) plugin provides all
 the same functionality provided by the Consumable Resources (<b>cons_res</b>)
 plugin. It also includes additional functionality specifically
-related to GPUs.</li>
-<li>Additional parameters available for the <b>cons_tres</b> plugin:
+related to GPUs.</p>
+
+<p>Additional parameters available for the <b>cons_tres</b> plugin:</p>
   <ul>
   <li><b>DefCpuPerGPU</b>: Default number of CPUs allocated per GPU.</li>
   <li><b>DefMemPerGPU</b>: Default amount of memory allocated per GPU.</li>
-  </ul></li>
-<li>Additional job submit options available for the <b>cons_tres</b> plugin:
+  </ul>
+<p>Additional job submit options available for the <b>cons_tres</b> plugin:</p>
   <ul>
   <li><b>--cpus-per-gpu=</b>: Number of CPUs for every GPU.</li>
   <li><b>--gpus=</b>: Count of GPUs for entire job allocation.</li>
@@ -81,72 +81,69 @@ related to GPUs.</li>
   <li><b>--gpus-per-socket=</b>: Number of GPUs per socket.</li>
   <li><b>--gpus-per-task=</b>: Number of GPUs per task.</li>
   <li><b>--mem-per-gpu=</b>: Amount of memory for each GPU.</li>
-  </ul></li>
+  </ul>
 
-<li>srun's <i>-E</i> extension for sockets, cores, and threads are
+<p>srun's <i>-E</i> extension for sockets, cores, and threads are
 ignored within the node allocation mechanism when CR_CPU or
 CR_CPU_MEMORY is selected. It is considered to compute the total
-number of tasks when -n is not specified.</li>
+number of tasks when -n is not specified.</p>
 
-<li>In the cases where Memory is the consumable resource or one of
+<p>In the cases where Memory is the consumable resource or one of
 the two consumable resources the <b>RealMemory</b> parameter, which
 defines a node's amount of real memory in slurm.conf, must be
-set.</li>
+set.</p>
 
-<li>The job submission commands (salloc, sbatch and srun) support the options
+<p>The job submission commands (salloc, sbatch and srun) support the options
 <i>--mem=MB</i> and <i>--mem-per-cpu=MB</i> permitting users to specify
 the maximum amount of real memory per node or per allocated required.
 This option is required in the environments where Memory is a consumable
 resource. It is important to specify enough memory since Slurm will not allow
 the application to use more than the requested amount of real memory. The
 default value for --mem is 1 MB. See the <b>srun</b> man page for more
-details.</li>
+details.</p>
 
-<li>Using <i>--overcommit</i> or <i>-O</i> is allowed. When the process to
+<p>Using <i>--overcommit</i> or <i>-O</i> is allowed. When the process to
 logical processor pinning is enabled by using an appropriate TaskPlugin
 configuration parameter, the extra processes will time share the allocated
-resources.</li>
+resources.</p>
 
-<li>The consumable trackable resource plugin is enabled via the SelectType
-parameter in the slurm.conf.</li>
+<p>The consumable trackable resource plugin is enabled via the SelectType
+parameter in the slurm.conf.</p>
 <pre>
 # Excerpt from sample slurm.conf file
 SelectType=select/cons_tres
 </pre>
-</ul>
 
 <h2 id="general">General Comments<a class="slurm_link" href="#general"></a></h2>
 
-<ul>
-<li>Slurm's default <b>select/linear</b> plugin is using a best fit algorithm
+<p>Slurm's default <b>select/linear</b> plugin is using a best fit algorithm
 based on number of consecutive nodes. The same node allocation approach is used
-with <b>select/cons_res</b> and <b>select/cons_tres</b> for consistency.</li>
+with <b>select/cons_res</b> and <b>select/cons_tres</b> for consistency.</p>
 
-<li>The <b>select/cons_res</b> and <b>select/cons_tres</b> plugins are enabled
-or disabled cluster-wide.</li>
+<p>The <b>select/cons_res</b> and <b>select/cons_tres</b> plugins are enabled
+or disabled cluster-wide.</p>
 
-<li>In the case where <b>select/linear</b> is enabled, the normal Slurm
+<p>In the case where <b>select/linear</b> is enabled, the normal Slurm
 behaviors are not disrupted. The major change users see when using the
 <b>select/cons_res</b> or <b>select/cons_tres</b> plugins, is that jobs can be
 co-scheduled on nodes when resources permit it. Generic resources (such as GPUs)
 can also be tracked individually with these plugins.
 The rest of Slurm, such as srun and its options (except srun -s ...), etc. are not
 affected by this plugin. Slurm is, from the user's point of view, working the
-same way as when using the default node selection scheme.</li>
+same way as when using the default node selection scheme.</p>
 
-<li>The <i>--exclusive</i> srun option allows users to request nodes in
+<p>The <i>--exclusive</i> srun option allows users to request nodes in
 exclusive mode even when consumable resources is enabled. See the <b>srun</b>
-man page for details. </li>
+man page for details. </p>
 
-<li>srun's <i>-s</i> or <i>--oversubscribe</i> is incompatible with the consumable
+<p>srun's <i>-s</i> or <i>--oversubscribe</i> is incompatible with the consumable
 resource environment and will therefore not be honored. Since this
 environment's nodes are shared by default, <i>--exclusive</i> allows users to
-obtain dedicated nodes.</li>
+obtain dedicated nodes.</p>
 
-<li>The <i>--oversubscribe</i> and <i>--exclusive</i> options are mutually
+<p>The <i>--oversubscribe</i> and <i>--exclusive</i> options are mutually
 exclusive when used at job submission. If both options are set when submitting
-a job, the job submission command used will fatal.</li>
-</ul>
+a job, the job submission command used will fatal.</p>
 
 
 <h2 id="example_mem">Examples of CR_Memory, CR_Socket_Memory, and CR_CPU_Memory
