@@ -69,7 +69,7 @@
 
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
 
-#define MAGIC_FOREACH_CSV_LIST 0x8891be2b
+#define MAGIC_FOREACH_CSV_STRING 0xb891be2b
 #define MAGIC_FOREACH_LIST 0xaefa2af3
 #define MAGIC_FOREACH_LIST_FLAG 0xa1d4acd2
 #define MAGIC_FOREACH_POPULATE_GLOBAL_TRES_LIST 0x31b8aad2
@@ -2756,18 +2756,19 @@ void SPEC_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
 }
 
 typedef struct {
-	int magic; /* MAGIC_FOREACH_CSV_LIST */
+	int magic; /* MAGIC_FOREACH_CSV_STRING */
 	int rc;
 	char *dst;
 	char *pos;
 	const parser_t *const parser;
 	args_t *args;
 	data_t *parent_path;
-} parse_foreach_CSV_LIST_t;
+} parse_foreach_CSV_STRING_t;
 
-static data_for_each_cmd_t _parse_foreach_CSV_LIST_list(data_t *data, void *arg)
+static data_for_each_cmd_t _parse_foreach_CSV_STRING_list(data_t *data,
+							  void *arg)
 {
-	parse_foreach_CSV_LIST_t *args = arg;
+	parse_foreach_CSV_STRING_t *args = arg;
 
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
 		args->rc = on_error(PARSING, args->parser->type, args->args,
@@ -2783,10 +2784,11 @@ static data_for_each_cmd_t _parse_foreach_CSV_LIST_list(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static data_for_each_cmd_t _parse_foreach_CSV_LIST_dict(const char *key,
-							data_t *data, void *arg)
+static data_for_each_cmd_t _parse_foreach_CSV_STRING_dict(const char *key,
+							  data_t *data,
+							  void *arg)
 {
-	parse_foreach_CSV_LIST_t *args = arg;
+	parse_foreach_CSV_STRING_t *args = arg;
 
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
 		args->rc = on_error(PARSING, args->parser->type, args->args,
@@ -2802,12 +2804,13 @@ static data_for_each_cmd_t _parse_foreach_CSV_LIST_dict(const char *key,
 	return DATA_FOR_EACH_CONT;
 }
 
-static int PARSE_FUNC(CSV_LIST)(const parser_t *const parser, void *obj,
-				data_t *src, args_t *args, data_t *parent_path)
+static int PARSE_FUNC(CSV_STRING)(const parser_t *const parser, void *obj,
+				  data_t *src, args_t *args,
+				  data_t *parent_path)
 {
 	char **dst = obj;
-	parse_foreach_CSV_LIST_t pargs = {
-		.magic = MAGIC_FOREACH_CSV_LIST,
+	parse_foreach_CSV_STRING_t pargs = {
+		.magic = MAGIC_FOREACH_CSV_STRING,
 		.parser = parser,
 		.args = args,
 		.parent_path = parent_path,
@@ -2819,10 +2822,10 @@ static int PARSE_FUNC(CSV_LIST)(const parser_t *const parser, void *obj,
 	xfree(*dst);
 
 	if (data_get_type(src) == DATA_TYPE_LIST) {
-		(void) data_list_for_each(src, _parse_foreach_CSV_LIST_list,
+		(void) data_list_for_each(src, _parse_foreach_CSV_STRING_list,
 					  &pargs);
 	} else if (data_get_type(src) == DATA_TYPE_DICT) {
-		(void) data_dict_for_each(src, _parse_foreach_CSV_LIST_dict,
+		(void) data_dict_for_each(src, _parse_foreach_CSV_STRING_dict,
 					  &pargs);
 	} else if (data_convert_type(src, DATA_TYPE_STRING) ==
 		   DATA_TYPE_STRING) {
@@ -2843,8 +2846,8 @@ static int PARSE_FUNC(CSV_LIST)(const parser_t *const parser, void *obj,
 	return pargs.rc;
 }
 
-static int DUMP_FUNC(CSV_LIST)(const parser_t *const parser, void *obj,
-			       data_t *dst, args_t *args)
+static int DUMP_FUNC(CSV_STRING)(const parser_t *const parser, void *obj,
+				 data_t *dst, args_t *args)
 {
 	char **src_ptr = obj;
 	char *src = *src_ptr;
@@ -5201,8 +5204,8 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(EXT_SENSORS_DATA_PTR, ext_sensors, "external_sensors", NULL),
 	add_parse(STRING, extra, "extra", NULL),
 	add_parse(POWER_MGMT_DATA_PTR, power, "power", NULL),
-	add_parse(CSV_LIST, features, "features", NULL),
-	add_parse(CSV_LIST, features_act, "active_features", NULL),
+	add_parse(CSV_STRING, features, "features", NULL),
+	add_parse(CSV_STRING, features_act, "active_features", NULL),
 	add_parse(STRING, gres, "gres", NULL),
 	add_parse(STRING, gres_drain, "gres_drained", NULL),
 	add_parse(STRING, gres_used, "gres_used", NULL),
@@ -5216,7 +5219,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse_bit_flag_array(node_info_t, NODE_STATES, false, node_state, "state", NULL),
 	add_parse(STRING, os, "operating_system", NULL),
 	add_parse(USER_ID, owner, "owner", NULL),
-	add_parse(CSV_LIST, partitions, "partitions", NULL),
+	add_parse(CSV_STRING, partitions, "partitions", NULL),
 	add_parse(UINT16, port, "port", NULL),
 	add_parse(UINT64, real_memory, "real_memory", NULL),
 	add_parse(STRING, comment, "comment", NULL),
@@ -5415,7 +5418,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(UINT32_NO_VAL, het_job_offset, "het_job_offset", NULL),
 	add_parse(UINT32, job_id, "job_id", NULL),
 	add_parse(JOB_RES_PTR, job_resrcs, "job_resources", NULL),
-	add_parse(CSV_LIST, job_size_str, "job_size_str", NULL),
+	add_parse(CSV_STRING, job_size_str, "job_size_str", NULL),
 	add_parse(JOB_STATE, job_state, "job_state", NULL),
 	add_parse(UINT64, last_sched_eval, "last_sched_evaluation", NULL),
 	add_parse(STRING, licenses, "licenses", NULL),
@@ -5940,7 +5943,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_skip(environment),
 	add_skip(env_hash),
 	add_skip(env_size),
-	add_parse(CSV_LIST, exc_nodes, "excluded_nodes", NULL),
+	add_parse(CSV_STRING, exc_nodes, "excluded_nodes", NULL),
 	add_parse(STRING, extra, "extra", NULL),
 	add_parse(STRING, features, "constraints", NULL),
 	add_skip(fed_siblings_active),
@@ -5977,7 +5980,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(BOOL16, reboot, "reboot", NULL),
 	add_skip(resp_host),
 	add_skip(restart_cnt),
-	add_parse(CSV_LIST, req_nodes, "required_nodes", NULL),
+	add_parse(CSV_STRING, req_nodes, "required_nodes", NULL),
 	add_parse(BOOL16, requeue, "requeue", NULL),
 	add_parse(STRING, reservation, "reservation", NULL),
 	add_parse(STRING, script, "script", NULL),
@@ -6050,8 +6053,8 @@ static const parser_t PARSER_ARRAY(UPDATE_NODE_MSG)[] = {
 	add_parse(STRING, comment, "comment", "arbitrary comment"),
 	add_parse(UINT32, cpu_bind, "cpu_bind", "default CPU binding type"),
 	add_parse(STRING, extra, "extra", "arbitrary string"),
-	add_parse(CSV_LIST, features, "features", "new available feature for node"),
-	add_parse(CSV_LIST, features_act, "features_act", "new active feature for node"),
+	add_parse(CSV_STRING, features, "features", "new available feature for node"),
+	add_parse(CSV_STRING, features_act, "features_act", "new active feature for node"),
 	add_parse(STRING, gres, "gres", "new generic resources for node"),
 	add_parse(HOSTLIST_STRING, node_addr, "address", "communication name"),
 	add_parse(HOSTLIST_STRING, node_hostname, "hostname", "node's hostname"),
@@ -6314,7 +6317,7 @@ static const parser_t parsers[] = {
 	addps(JOB_STATE, uint32_t, NEED_NONE, STRING, NULL),
 	addps(USER_ID, uid_t, NEED_NONE, STRING, NULL),
 	addpsp(TRES_STR, TRES_LIST, char *, NEED_TRES, NULL),
-	addpsa(CSV_LIST, STRING, char *, NEED_NONE, NULL),
+	addpsa(CSV_STRING, STRING, char *, NEED_NONE, NULL),
 	addpsa(LICENSES, LICENSE, license_info_msg_t, NEED_NONE, NULL),
 	addps(CORE_SPEC, uint16_t, NEED_NONE, INT32, NULL),
 	addps(THREAD_SPEC, uint16_t, NEED_NONE, INT32, NULL),

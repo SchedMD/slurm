@@ -59,7 +59,7 @@ typedef enum {
 	DATA_PARSER_BOOL, /* uint8_t */
 	DATA_PARSER_BOOL16, /* uint16_t */
 	DATA_PARSER_BOOL16_NO_VAL, /* uint16_t - false if NO_VAL16 */
-	DATA_PARSER_CSV_LIST, /* char * - comma delimited list */
+	DATA_PARSER_CSV_STRING, /* char * - comma delimited list stored as a string */
 	DATA_PARSER_ACCOUNT_LIST, /* list of slurmdb_account_rec_t* */
 	DATA_PARSER_ACCOUNT, /* slurmdb_account_rec_t */
 	DATA_PARSER_ACCOUNT_FLAGS, /* slurmdb_account_rec_t->flags & SLURMDB_ACCT_FLAG_* */
