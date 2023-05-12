@@ -661,7 +661,7 @@ static void _parse_check_openapi(const parser_t *const parser, data_t *src,
 extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		 data_t *src, args_t *args, data_t *parent_path)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	char *path = NULL;
 
 	check_parser(parser);
