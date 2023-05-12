@@ -7109,6 +7109,33 @@ static const parser_t PARSER_ARRAY(WCKEY_CONDITION)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_account_param_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_PARAM)[] = {
+	add_parse(STRING, name, "account_name", "Account name"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_account_query_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_QUERY)[] = {
+	add_parse(BOOL, without_assocs, "without_assocs", "skip query of associations"),
+	add_parse(BOOL, without_coords, "without_coords", "skip query of coordinators"),
+	add_parse(BOOL, with_deleted, "with_deleted", "include deleted"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_account_cond_t , mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(ACCOUNT_CONDITION)[] = {
+	add_parse(ASSOC_CONDITION_PTR, assoc_cond, "assocation", "assocation filter"),
+	add_parse(STRING_LIST, description_list, "description", "CSV description list"),
+	add_parse(BOOL16, with_assocs, "with_assocs", "include associations"),
+	add_parse(BOOL16, with_coords, "with_coords", "include coordinators"),
+	add_parse(BOOL16, with_deleted, "with_deleted", "include deleted accounts"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -7578,6 +7605,7 @@ static const parser_t parsers[] = {
 	addpp(ASSOC_CONDITION_PTR, slurmdb_assoc_cond_t *, ASSOC_CONDITION),
 	addpp(USER_CONDITION_PTR, slurmdb_user_cond_t *, USER_CONDITION),
 	addpp(WCKEY_CONDITION_PTR, slurmdb_wckey_cond_t *, WCKEY_CONDITION),
+	addpp(ACCOUNT_CONDITION_PTR, slurmdb_account_cond_t *, ACCOUNT_CONDITION),
 
 	/* Pointer model parsers allowing NULL */
 	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),
@@ -7634,6 +7662,9 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_USER_QUERY, openapi_user_query_t),
 	addpa(OPENAPI_WCKEY_PARAM, openapi_wckey_param_t),
 	addpa(WCKEY_CONDITION, slurmdb_wckey_cond_t),
+	addpa(OPENAPI_ACCOUNT_PARAM, openapi_account_param_t),
+	addpa(OPENAPI_ACCOUNT_QUERY, openapi_account_query_t),
+	addpa(ACCOUNT_CONDITION, slurmdb_account_cond_t),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),

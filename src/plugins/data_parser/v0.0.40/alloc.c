@@ -147,6 +147,7 @@ static const struct {
 	add(QOS_CONDITION, slurmdb_destroy_qos_cond, NULL),
 	add(USER_CONDITION, slurmdb_destroy_user_cond, NULL),
 	add(ASSOC_CONDITION, slurmdb_destroy_assoc_cond, NULL),
+	add(ACCOUNT_CONDITION, slurmdb_destroy_account_cond, NULL),
 };
 #undef add
 

@@ -72,4 +72,14 @@ typedef struct {
 	char *wckey;
 } openapi_wckey_param_t;
 
+typedef struct {
+	char *name;
+} openapi_account_param_t;
+
+typedef struct {
+	bool without_assocs;
+	bool without_coords;
+	bool with_deleted;
+} openapi_account_query_t;
+
 #endif

@@ -63,6 +63,10 @@ typedef enum {
 	DATA_PARSER_CSV_STRING_LIST, /* list_t of char* - comma delimited list stored as a list_t* */
 	DATA_PARSER_OPENAPI_ACCOUNTS_REMOVED_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_ACCOUNTS_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_ACCOUNT_PARAM, /* openapi_account_param_t */
+	DATA_PARSER_OPENAPI_ACCOUNT_QUERY, /* openapi_account_query_t */
+	DATA_PARSER_ACCOUNT_CONDITION, /* slurmdb_account_cond_t */
+	DATA_PARSER_ACCOUNT_CONDITION_PTR, /* slurmdb_account_cond_t* */
 	DATA_PARSER_ACCOUNT_LIST, /* list of slurmdb_account_rec_t* */
 	DATA_PARSER_ACCOUNT, /* slurmdb_account_rec_t */
 	DATA_PARSER_ACCOUNT_FLAGS, /* slurmdb_account_rec_t->flags & SLURMDB_ACCT_FLAG_* */
