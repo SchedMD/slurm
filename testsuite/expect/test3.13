@@ -51,7 +51,7 @@ proc get_wrong_uid {} {
 	regexp "(${re_word_str})\\(($number)\\)" [get_config_param "SlurmUser"] - slurm_user slurm_uid
 	set max_uid [expr min($my_uid, $slurm_uid)]
 	while {$wrong_uid < $max_uid} {
-		if {![run_command_status "$bin_id $wrong_uid"]} {
+		if {![run_command_status -nolog -none "$bin_id $wrong_uid"]} {
 			return $wrong_uid
 		}
 		incr wrong_uid
@@ -88,7 +88,7 @@ if {[regexp "slurm_update error: Access.*denied" $output]} {
 #
 log_info "Test 1"
 set wrong_uid [get_wrong_uid]
-set output [run_command_output "$scontrol update JobName=$script_name UserID=$wrong_uid Priority=$new_prio"]
+set output [run_command_output -xfail "$scontrol update JobName=$script_name UserID=$wrong_uid Priority=$new_prio"]
 subtest {[regexp "No jobs with" $output]} "Verify bad JobName/UserID error"
 
 #
@@ -96,7 +96,7 @@ subtest {[regexp "No jobs with" $output]} "Verify bad JobName/UserID error"
 #
 log_info "Test 2"
 set no_jobs 0
-set output [run_command_output "$scontrol update JobName=$script_name UserID=$my_uid Priority=$new_prio"]
+set output [run_command_output -none "$scontrol update JobName=$script_name UserID=$my_uid Priority=$new_prio"]
 subtest {![regexp "No jobs with" $output]} "Verify absence of bad JobName/UserID error"
 
 #
