@@ -1582,7 +1582,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  ", primary key (node_name(42), time_start), "
 				  "key rollup (node_name(42), time_start, "
 				  "time_end, state), "
-				  "key time_start_end (time_start, time_end))")
+				  "key archive_purge (time_end))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1613,7 +1613,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  "time_eligible), "
 				  "key env_hash_inx (env_hash_inx), "
 				  "key script_hash_inx (script_hash_inx), "
-				  "key archive_purge (time_submit, time_end))")
+				  "key archive_purge (time_end))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1651,7 +1651,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  resv_table_fields,
 				  ", primary key (id_resv, time_start), "
-				  "key time_start_end (time_start, time_end))")
+				  "key archive_purge (time_end))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1662,7 +1662,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  ", primary key (job_db_inx, id_step, "
 				  "step_het_comp), "
 				  "key no_step_comp (job_db_inx, id_step), "
-				  "key time_start_end (time_start, time_end))")
+				  "key archive_purge (time_end))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
