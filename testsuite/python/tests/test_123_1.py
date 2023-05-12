@@ -41,7 +41,7 @@ def create_resv(request, node_list):
 
 
 @pytest.fixture(scope='function')
-def delete_resv(xfail=False):
+def delete_resv():
 
     yield
 
@@ -51,8 +51,7 @@ def delete_resv(xfail=False):
 
     atf.run_command(
         "scontrol delete reservation resv1",
-        user=atf.properties['slurm-user'],
-        xfail=xfail)
+        user=atf.properties['slurm-user'])
 
 
 @pytest.mark.parametrize("create_resv", ["REPLACE_DOWN", "REPLACE", ""], indirect=True)
@@ -102,6 +101,7 @@ def test_replace_flags(create_resv, delete_resv):
             lambda results: not re.search(rf"(?:State=).+(\+RESERVED)",
                 results['stdout']),
         quiet=False)
+
 
 @pytest.mark.parametrize("create_resv", ["STATIC_ALLOC", "MAINT"], indirect=True)
 def test_noreplace_flags(create_resv, delete_resv):
@@ -161,19 +161,20 @@ def test_noreplace_flags(create_resv, delete_resv):
                 results['stdout']),
             quiet=False)
 
+
 @pytest.mark.parametrize(
     "flag, delete_resv",
-    [("MAINT,REPLACE", True),        ("STATIC_ALLOC,REPLACE", True),
-     ("MAINT,REPLACE_DOWN", True),   ("STATIC_ALLOC,REPLACE_DOWN", True),
-     ("REPLACE,MAINT", True),        ("REPLACE_DOWN,MAINT", True),
-     ("REPLACE,STATIC_ALLOC", True), ("REPLACE_DOWN,STATIC_ALLOC", True),
-     ("HOURLY,WEEKDAY", True), ("WEEKDAY,WEEKEND", True),
-     ("WEEKEND,WEEKLY", True), ("WEEKLY,HOURLY", True),
-     ("TIME_FLOAT,HOURLY", True),  ("TIME_FLOAT,WEEKDAY", True),
-     ("TIME_FLOAT,WEEKEND", True), ("TIME_FLOAT,WEEKLY", True),
-     ("HOURLY,TIME_FLOAT", True),  ("WEEKDAY,TIME_FLOAT", True),
-     ("WEEKEND,TIME_FLOAT", True), ("WEEKLY,TIME_FLOAT", True)])
-def test_incompatible_flags(flag, delete_resv):
+    [("MAINT,REPLACE", True),       ("STATIC_ALLOC,REPLACE", True),
+     ("MAINT,REPLACE_DOWN", True),  ("STATIC_ALLOC,REPLACE_DOWN", True),
+     ("REPLACE,MAINT", True),       ("REPLACE_DOWN,MAINT", True),
+     ("REPLACE,STATIC_ALLOC", True),("REPLACE_DOWN,STATIC_ALLOC", True),
+     ("HOURLY,WEEKDAY", True),      ("WEEKDAY,WEEKEND", True),
+     ("WEEKEND,WEEKLY", True),      ("WEEKLY,HOURLY", True),
+     ("TIME_FLOAT,HOURLY", True),   ("TIME_FLOAT,WEEKDAY", True),
+     ("TIME_FLOAT,WEEKEND", True),  ("TIME_FLOAT,WEEKLY", True),
+     ("HOURLY,TIME_FLOAT", True),   ("WEEKDAY,TIME_FLOAT", True),
+     ("WEEKEND,TIME_FLOAT", True),  ("WEEKLY,TIME_FLOAT", True)])
+def test_incomp_flags(flag, delete_resv):
     """Verify that reservations are not allowed to be created with incompatible
     flags"""
 
@@ -181,7 +182,7 @@ def test_incompatible_flags(flag, delete_resv):
     result = atf.run_command(
         "scontrol create reservationname=resv1 "
         f"user={atf.properties['test-user']} start=now duration=1 nodecnt=1 "
-        f"flags={flag}", user=atf.properties['slurm-user'], xfail=True)
+        f"flags={flag}", user=atf.properties['slurm-user'], xfail=True, fatal=True)
 
     expected_output = "Error creating the res"
     logging.info(f"Assert output message is {expected_output}")
@@ -189,3 +190,34 @@ def test_incompatible_flags(flag, delete_resv):
 
     logging.info(f"Assert exit code is not 0")
     assert result['exit_code'] != 0
+
+
+@pytest.mark.parametrize(
+    "create_flag, update_flag",
+    [("MAINT", "REPLACE"),          ("STATIC_ALLOC", "REPLACE"),
+     ("MAINT", "REPLACE_DOWN"),     ("STATIC_ALLOC", "REPLACE_DOWN"),
+     ("REPLACE", "MAINT"),          ("REPLACE_DOWN", "MAINT"),
+     ("REPLACE", "STATIC_ALLOC"),   ("REPLACE_DOWN", "STATIC_ALLOC"),
+     ("HOURLY", "WEEKDAY"),         ("WEEKDAY", "WEEKEND"),
+     ("WEEKEND", "WEEKLY"),         ("WEEKLY", "HOURLY"),
+     ("TIME_FLOAT", "HOURLY"),      ("TIME_FLOAT", "WEEKDAY"),
+     ("TIME_FLOAT", "WEEKEND"),     ("TIME_FLOAT", "WEEKLY"),
+     ("HOURLY", "TIME_FLOAT"),      ("WEEKDAY", "TIME_FLOAT"),
+     ("WEEKEND", "TIME_FLOAT"),     ("WEEKLY", "TIME_FLOAT")])
+def test_update_incomp_flags(create_flag, update_flag, delete_resv):
+    """Verify that reservations created with a a given flag cannot be
+    updated with incompatible flags"""
+    result = atf.run_command(
+        "scontrol create reservationname=resv1 "
+        f"user={atf.properties['test-user']} start=now duration=1 nodecnt=1 "
+        f"flags={create_flag}", user=atf.properties['slurm-user'])
+
+    result = atf.run_command(
+        f"scontrol update reservation=resv1 flags={update_flag}",
+        user=atf.properties['slurm-user'], xfail=True, fatal=True)
+
+    expected_output = "Error updating the res"
+    assert re.search(rf"{expected_output}", result['stderr']) is not None, \
+        "Could not find 'error updating the res' in output"
+
+    assert result['exit_code'] != 0, "Assert exit code is not 0"
