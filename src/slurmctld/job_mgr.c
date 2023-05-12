@@ -17895,6 +17895,17 @@ extern int update_job_wckey(char *module, job_record_t *job_ptr,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Currently only sends active and suspsended jobs not already in the datbase.
+ *
+ * On node changes, we opt not to send updated node_inx's due to the heavy cost
+ * of doing so. If we were to update the job's node_inx's, this could be done by
+ * resizing the job which will create a new db record for the job with the
+ * changed node_inx's -- like how reservations are done.
+ * e.g.
+ * job_pre_resize_acctg(job_ptr);
+ * job_post_resize_acctg(job_ptr);
+ */
 extern int send_jobs_to_accounting(void)
 {
 	ListIterator itr = NULL;
