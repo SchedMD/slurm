@@ -68,4 +68,8 @@ typedef struct {
 	bool without_wckeys;
 } openapi_user_query_t;
 
+typedef struct {
+	char *wckey;
+} openapi_wckey_param_t;
+
 #endif

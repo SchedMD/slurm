@@ -1251,12 +1251,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_WCKEY_REMOVED_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_WCKEY_REMOVED_RESP"
                 }
               }
             },
@@ -1303,12 +1303,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_wckey_info"
+                  "$ref": "DATA_PARSER_OPENAPI_WCKEY_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_wckey_info"
+                  "$ref": "DATA_PARSER_OPENAPI_WCKEY_RESP"
                 }
               }
             },
@@ -1356,12 +1356,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_wckey_info"
+                  "$ref": "DATA_PARSER_OPENAPI_WCKEY_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/dbv0.0.39_wckey_info"
+                  "$ref": "DATA_PARSER_OPENAPI_WCKEY_RESP"
                 }
               }
             },
@@ -1428,12 +1428,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_wckey_info"
+                "$ref": "DATA_PARSER_OPENAPI_WCKEY_RESP"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "#/components/schemas/dbv0.0.39_wckey_info"
+                "$ref": "DATA_PARSER_OPENAPI_WCKEY_RESP"
               }
             }
           },
@@ -1837,20 +1837,6 @@
       }
     },
     "schemas": {
-      "dbv0.0.39_wckey_info": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/dbv0.0.39_errors"
-          },
-          "wckeys": {
-            "$ref": "DATA_PARSER_WCKEY_LIST"
-          }
-        }
-      },
       "dbv0.0.39_user_info": {
         "type": "object",
         "properties": {

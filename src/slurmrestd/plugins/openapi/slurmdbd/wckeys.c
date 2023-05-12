@@ -34,174 +34,122 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
-#include <stdint.h>
-
-#include "slurm/slurm.h"
-#include "slurm/slurmdb.h"
-
 #include "src/common/list.h"
 #include "src/common/log.h"
-#include "src/common/parse_time.h"
-#include "src/common/ref.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/common/strlcpy.h"
-#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmrestd/operations.h"
 #include "api.h"
+#include "structs.h"
 
-#define MAGIC_FOREACH_WCKEY 0xb3a2faf2
-
-typedef struct {
-	int magic; /* MAGIC_FOREACH_WCKEY */
-	data_t *wckeys;
-	ctxt_t *ctxt;
-} foreach_wckey_t;
-
-static int _foreach_wckey(void *x, void *arg)
+static void _dump_wckeys(ctxt_t *ctxt, slurmdb_wckey_cond_t *wckey_cond)
 {
-	slurmdb_wckey_rec_t *wckey = x;
-	foreach_wckey_t *args = arg;
-
-	xassert(args->magic == MAGIC_FOREACH_WCKEY);
-
-	if (DATA_DUMP(args->ctxt->parser, WCKEY, *wckey,
-		      data_list_append(args->wckeys)))
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
-}
-
-static void _dump_wckeys(ctxt_t *ctxt, char *wckey)
-{
-	slurmdb_wckey_cond_t wckey_cond = {
-		.with_deleted = true,
-	};
-	foreach_wckey_t args = {
-		.magic = MAGIC_FOREACH_WCKEY,
-		.ctxt = ctxt,
-	};
 	List wckey_list = NULL;
 
-	args.wckeys = data_set_list(data_key_set(ctxt->resp, "wckeys"));
-
-	if (wckey) {
-		wckey_cond.name_list = list_create(NULL);
-		list_append(wckey_cond.name_list, wckey);
-	}
-
-	if (!db_query_list(ctxt, &wckey_list, slurmdb_wckeys_get,
-			   &wckey_cond) &&
-	    wckey_list)
-		list_for_each(wckey_list, _foreach_wckey, &args);
+	if (!db_query_list(ctxt, &wckey_list, slurmdb_wckeys_get, wckey_cond))
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_WCKEY_RESP, wckey_list, ctxt);
 
 	FREE_NULL_LIST(wckey_list);
-	FREE_NULL_LIST(wckey_cond.name_list);
 }
 
-static int _foreach_del_wckey(void *x, void *arg)
-{
-	char *wckey = x;
-	data_t *wckeys = arg;
-
-	data_set_string(data_list_append(wckeys), wckey);
-	return SLURM_SUCCESS;
-}
-
-static void _delete_wckey(ctxt_t *ctxt)
+static void _delete_wckey(ctxt_t *ctxt, slurmdb_wckey_cond_t *wckey_cond)
 {
 	List wckey_list = NULL;
-	slurmdb_wckey_cond_t wckey_cond = {
-		.with_deleted = true,
-	};
-	char *wckey = get_str_param("wckey", true, ctxt);
-	data_t *wckeys =
-		data_set_list(data_key_set(ctxt->resp, "deleted_wckeys"));
-
-	if (!wckey || !wckey[0]) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "wckey name must be provided for delete operation");
-		goto cleanup;
-	}
-
-	wckey_cond.name_list = list_create(NULL);
-	list_append(wckey_cond.name_list, wckey);
 
 	if (!db_query_list(ctxt, &wckey_list, slurmdb_wckeys_remove,
-			   &wckey_cond))
+			   wckey_cond))
 		db_query_commit(ctxt);
 
-	if (!ctxt->rc && wckey_list) {
-		list_for_each(wckey_list, _foreach_del_wckey, wckeys);
-	}
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_WCKEY_REMOVED_RESP, wckey_list, ctxt);
 
-cleanup:
 	FREE_NULL_LIST(wckey_list);
-	FREE_NULL_LIST(wckey_cond.name_list);
 }
 
 static void _update_wckeys(ctxt_t *ctxt, bool commit)
 {
-	data_t *parent_path = NULL;
-	data_t *dwckeys = get_query_key_list("wckeys", ctxt, &parent_path);
+	openapi_resp_single_t resp = {0};
 	list_t *wckey_list = NULL;
 
-	if (!dwckeys) {
+	if (DATA_PARSE(ctxt->parser, OPENAPI_WCKEY_RESP, resp, ctxt->query,
+		       ctxt->parent_path))
+		goto cleanup;
+
+	wckey_list = resp.response;
+
+	if (!wckey_list || list_is_empty(wckey_list)) {
 		resp_warn(ctxt, __func__,
 			  "ignoring empty or non-existant wckeys array for update");
 		goto cleanup;
 	}
-
-	if (DATA_PARSE(ctxt->parser, WCKEY_LIST, wckey_list, dwckeys,
-		       parent_path))
-		goto cleanup;
 
 	if (!db_query_rc(ctxt, wckey_list, slurmdb_wckeys_add) && commit)
 		db_query_commit(ctxt);
 
 cleanup:
 	FREE_NULL_LIST(wckey_list);
-	FREE_NULL_DATA(parent_path);
+	{
+		openapi_resp_single_t *resp_ptr = &resp;
+		FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
+	}
 }
 
 extern int op_handler_wckey(ctxt_t *ctxt)
 {
-	char *wckey = get_str_param("wckey", true, ctxt);
+	slurmdb_wckey_cond_t wckey_cond = {0};
+	openapi_wckey_param_t params = {0};
 
-	if (!wckey) {
+	if (DATA_PARSE(ctxt->parser, OPENAPI_WCKEY_PARAM, params,
+		       ctxt->parameters, ctxt->parent_path))
+		goto cleanup;
+
+	if (!params.wckey || !params.wckey[0]) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "wckey required for singular query");
-	} else if (ctxt->method == HTTP_REQUEST_GET) {
-		_dump_wckeys(ctxt, wckey);
+		goto cleanup;
+	}
+
+	wckey_cond.name_list = list_create(NULL);
+	list_append(wckey_cond.name_list, params.wckey);
+
+	if (ctxt->method == HTTP_REQUEST_GET) {
+		_dump_wckeys(ctxt, &wckey_cond);
 	} else if (ctxt->method == HTTP_REQUEST_DELETE) {
-		_delete_wckey(ctxt);
+		_delete_wckey(ctxt, &wckey_cond);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
 			   get_http_method_string(ctxt->method));
 	}
 
+cleanup:
+	FREE_NULL_LIST(wckey_cond.name_list);
+	xfree(params.wckey);
+
 	return SLURM_SUCCESS;
 }
 
 extern int op_handler_wckeys(ctxt_t *ctxt)
 {
-	if (ctxt->method == HTTP_REQUEST_GET)
-		_dump_wckeys(ctxt, NULL);
-	else if (ctxt->method == HTTP_REQUEST_POST)
+	slurmdb_wckey_cond_t *wckey_cond = NULL;
+
+	if (ctxt->method == HTTP_REQUEST_GET) {
+		if (DATA_PARSE(ctxt->parser, WCKEY_CONDITION_PTR, wckey_cond,
+			       ctxt->query, ctxt->parent_path))
+			goto cleanup;
+
+		_dump_wckeys(ctxt, wckey_cond);
+	} else if (ctxt->method == HTTP_REQUEST_POST) {
 		_update_wckeys(ctxt, (ctxt->tag != CONFIG_OP_TAG));
-	else {
+	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
 			   get_http_method_string(ctxt->method));
 	}
 
+cleanup:
+	slurmdb_destroy_wckey_rec(wckey_cond);
 	return SLURM_SUCCESS;
 }
 

@@ -7086,6 +7086,29 @@ static const parser_t PARSER_ARRAY(OPENAPI_USER_QUERY)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_wckey_param_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_WCKEY_PARAM)[] = {
+	add_parse(STRING, wckey, "wckey", "wckey id"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_wckey_cond_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(WCKEY_CONDITION)[] = {
+	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV cluster name list"),
+	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format name list"),
+	add_parse(CSV_STRING_LIST, id_list, "id", "CSV id list"),
+	add_parse(CSV_STRING_LIST, name_list, "name", "CSV name list"),
+	add_parse(BOOL16, only_defs, "only_defaults", "only query defaults"),
+	add_parse(TIMESTAMP, usage_end, "usage_end", "usage end UNIX timestamp (seconds)"),
+	add_parse(TIMESTAMP, usage_start, "usage_start", "usage start UNIX timestamp (seconds)"),
+	add_parse(CSV_STRING_LIST, user_list, "user", "CSV user list"),
+	add_parse(BOOL16, with_usage, "with_usage", "include usage with query"),
+	add_parse(BOOL16, with_deleted, "with_deleted", "include deleted wckeys with query"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -7132,6 +7155,8 @@ add_openapi_response_single(OPENAPI_SLURMDBD_QOS_REMOVED_RESP, STRING_LIST, "rem
 add_openapi_response_single(OPENAPI_TRES_RESP, TRES_LIST, "TRES", "TRES");
 add_openapi_response_single(OPENAPI_USERS_RESP, USER_LIST, "users", "users");
 add_openapi_response_single(OPENAPI_USERS_REMOVED_RESP, STRING_LIST, "removed_users", "removed_users");
+add_openapi_response_single(OPENAPI_WCKEY_RESP, WCKEY_LIST, "wckeys", "wckeys");
+add_openapi_response_single(OPENAPI_WCKEY_REMOVED_RESP, STRING_LIST, "deleted_wckeys", "deleted wckeys");
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_post_response_t, mtype, false, field, 0, path, desc)
@@ -7552,6 +7577,7 @@ static const parser_t parsers[] = {
 	addpp(QOS_CONDITION_PTR, slurmdb_qos_cond_t *, QOS_CONDITION),
 	addpp(ASSOC_CONDITION_PTR, slurmdb_assoc_cond_t *, ASSOC_CONDITION),
 	addpp(USER_CONDITION_PTR, slurmdb_user_cond_t *, USER_CONDITION),
+	addpp(WCKEY_CONDITION_PTR, slurmdb_wckey_cond_t *, WCKEY_CONDITION),
 
 	/* Pointer model parsers allowing NULL */
 	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),
@@ -7606,6 +7632,8 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_SLURMDBD_JOB_PARAM, openapi_job_param_t),
 	addpa(OPENAPI_USER_PARAM, openapi_user_param_t),
 	addpa(OPENAPI_USER_QUERY, openapi_user_query_t),
+	addpa(OPENAPI_WCKEY_PARAM, openapi_wckey_param_t),
+	addpa(WCKEY_CONDITION, slurmdb_wckey_cond_t),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -7632,6 +7660,8 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_TRES_RESP),
 	addoar(OPENAPI_USERS_RESP),
 	addoar(OPENAPI_USERS_REMOVED_RESP),
+	addoar(OPENAPI_WCKEY_RESP),
+	addoar(OPENAPI_WCKEY_REMOVED_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
