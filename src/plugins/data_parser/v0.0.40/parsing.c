@@ -530,7 +530,7 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 			  const parser_t *const parser, data_t *src, void *dst,
 			  data_t *parent_path)
 {
-	int rc;
+	int rc = SLURM_ERROR;
 	data_t *ppath = data_copy(NULL, parent_path);
 	char *path = NULL;
 
