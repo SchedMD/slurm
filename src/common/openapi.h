@@ -182,4 +182,17 @@ typedef struct {
 	void *response;
 } openapi_resp_single_t;
 
+/* release meta, errors, warnings - not response or other fields */
+#define FREE_OPENAPI_RESP_COMMON_CONTENTS(resp)			\
+do {								\
+	if (resp) {						\
+		free_openapi_resp_warning(resp->warnings);	\
+		resp->warnings = NULL;				\
+		free_openapi_resp_error(resp->errors);		\
+		resp->errors = NULL;				\
+		free_openapi_resp_meta(resp->meta);		\
+		resp->meta = NULL;				\
+	}							\
+} while(false)
+
 #endif /* SLURM_OPENAPI_H */
