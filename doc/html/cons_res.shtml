@@ -18,6 +18,23 @@ Using the Consumable Resource Allocation Plugin: <b>select/cons_res</b>
 </h2>
 
 <ul>
+<li>The consumable resource plugin is enabled via SelectType and
+SelectTypeParameters in the slurm.conf.</li>
+
+<pre>
+# Excerpt from sample slurm.conf file
+
+SelectType=select/cons_res
+</pre>
+
+</ul>
+
+<h2 id="using_cons_tres">
+Using the Consumable Trackable Resource Plugin: <b>select/cons_tres</b>
+<a class="slurm_link" href="#using_cons_tres"></a>
+</h2>
+<ul>
+
 <li>Consumable resources has been enhanced with several new resources
 --namely CPU (same as in previous version), Socket, Core, Memory
 as well as any combination of the logical processors with Memory:</li>
@@ -42,48 +59,9 @@ as well as any combination of the logical processors with Memory:</li>
   as consumable resources.</li>
 </ul>
 
-<li>In the cases where Memory is the consumable resource or one of
-the two consumable resources the <b>RealMemory</b> parameter, which
-defines a node's amount of real memory in slurm.conf, must be
-set.</li>
-
-<li>srun's <i>-E</i> extension for sockets, cores, and threads are
-ignored within the node allocation mechanism when CR_CPU or
-CR_CPU_MEMORY is selected. It is considered to compute the total
-number of tasks when -n is not specified.</li>
-
-<li>The job submission commands (salloc, sbatch and srun) support the options
-<i>--mem=MB</i> and <i>--mem-per-cpu=MB</i> permitting users to specify
-the maximum amount of real memory per node or per allocated required.
-This option is required in the environments where Memory is a consumable
-resource. It is important to specify enough memory since Slurm will not allow
-the application to use more than the requested amount of real memory. The
-default value for --mem is 1 MB. See the <b>srun</b> man page for more
-details.</li>
-
 <li>All CR_s assume <b>OverSubscribe=No</b> or <b>OverSubscribe=Force</b>
 EXCEPT for <b>CR_MEMORY</b> which assumes <b>OverSubscribe=Yes</b>.</li>
 
-<li>The consumable resource plugin is enabled via SelectType and
-SelectTypeParameters in the slurm.conf.</li>
-
-<pre>
-# Excerpt from sample slurm.conf file
-
-SelectType=select/cons_res
-</pre>
-
-<li>Using <i>--overcommit</i> or <i>-O</i> is allowed. When the process to
-logical processor pinning is enabled by using an appropriate TaskPlugin
-configuration parameter, the extra processes will time share the allocated
-resources.</li>
-</ul>
-
-<h2 id="using_cons_tres">
-Using the Consumable Trackable Resource Plugin: <b>select/cons_tres</b>
-<a class="slurm_link" href="#using_cons_tres"></a>
-</h2>
-<ul>
 <li>The Consumable Trackable Resources (<b>cons_tres</b>) plugin provides all
 the same functionality provided by the Consumable Resources (<b>cons_res</b>)
 plugin. It also includes additional functionality specifically
@@ -104,6 +82,31 @@ related to GPUs.</li>
   <li><b>--gpus-per-task=</b>: Number of GPUs per task.</li>
   <li><b>--mem-per-gpu=</b>: Amount of memory for each GPU.</li>
   </ul></li>
+
+<li>srun's <i>-E</i> extension for sockets, cores, and threads are
+ignored within the node allocation mechanism when CR_CPU or
+CR_CPU_MEMORY is selected. It is considered to compute the total
+number of tasks when -n is not specified.</li>
+
+<li>In the cases where Memory is the consumable resource or one of
+the two consumable resources the <b>RealMemory</b> parameter, which
+defines a node's amount of real memory in slurm.conf, must be
+set.</li>
+
+<li>The job submission commands (salloc, sbatch and srun) support the options
+<i>--mem=MB</i> and <i>--mem-per-cpu=MB</i> permitting users to specify
+the maximum amount of real memory per node or per allocated required.
+This option is required in the environments where Memory is a consumable
+resource. It is important to specify enough memory since Slurm will not allow
+the application to use more than the requested amount of real memory. The
+default value for --mem is 1 MB. See the <b>srun</b> man page for more
+details.</li>
+
+<li>Using <i>--overcommit</i> or <i>-O</i> is allowed. When the process to
+logical processor pinning is enabled by using an appropriate TaskPlugin
+configuration parameter, the extra processes will time share the allocated
+resources.</li>
+
 <li>The consumable trackable resource plugin is enabled via the SelectType
 parameter in the slurm.conf.</li>
 <pre>
