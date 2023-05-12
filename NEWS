@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
     *_PACK_GROUP* environment variables were incorrectly set on non-HetSteps.
  -- Fix dynamic nodes getting stuck in allocated states when reconfiguring.
  -- Avoid job write lock when nodes are dynamically added/removed.
+ -- burst_buffer/lua - allow jobs to get scheduled sooner after
+    slurm_bb_data_in completes.
 
 * Changes in Slurm 23.02.2
 ==========================

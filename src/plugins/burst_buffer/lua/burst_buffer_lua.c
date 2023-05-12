@@ -3363,14 +3363,13 @@ static void *_start_stage_in(void *x)
 					bb_alloc->size = bb_job->total_size;
 					bb_state.last_update_time = time(NULL);
 				}
-				log_flag(BURST_BUF, "Setup/stage-in complete for %pJ",
-					 job_ptr);
-				queue_job_scheduler();
 			} else {
 				error("unable to find bb_alloc record for %pJ",
 				      job_ptr);
 			}
 		}
+		log_flag(BURST_BUF, "Setup/stage-in complete for %pJ", job_ptr);
+		queue_job_scheduler();
 	} else {
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
