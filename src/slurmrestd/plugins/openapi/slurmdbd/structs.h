@@ -54,6 +54,10 @@ typedef struct {
 } openapi_resp_slurmdbd_config_t;
 
 typedef struct {
+	slurm_selected_step_t *id;
+} openapi_job_param_t;
+
+typedef struct {
 	char *name;
 } openapi_user_param_t;
 

@@ -41,8 +41,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/operations.h"
 #include "api.h"
+#include "src/slurmrestd/operations.h"
+#include "structs.h"
 
 static void _dump_jobs(ctxt_t *ctxt, slurmdb_job_cond_t *job_cond)
 {
@@ -108,22 +109,29 @@ extern int op_handler_jobs(ctxt_t *ctxt)
 /* based on get_data() in sacct/options.c */
 static int _op_handler_job(ctxt_t *ctxt)
 {
-	char *jobid;
+	openapi_job_param_t params = { 0 };
 	slurmdb_job_cond_t job_cond = {
 		.flags = (JOBCOND_FLAG_DUP | JOBCOND_FLAG_NO_TRUNC),
 		.db_flags = SLURMDB_JOB_FLAG_NOTSET,
 	};
 
 	if (ctxt->method != HTTP_REQUEST_GET) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(ctxt->method));
-	} else if ((jobid = get_str_param("job_id", true, ctxt))) {
-		job_cond.step_list = list_create(slurm_destroy_selected_step);
-		slurm_addto_step_list(job_cond.step_list, jobid);
-
-		_dump_jobs(ctxt, &job_cond);
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
 	}
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_SLURMDBD_JOB_PARAM, params,
+		       ctxt->parameters, ctxt->parent_path)) {
+		return resp_error(
+			ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			"Rejecting request. Failure parsing query parameters");
+	}
+
+	job_cond.step_list = list_create(slurm_destroy_selected_step);
+	list_append(job_cond.step_list, params.id);
+
+	_dump_jobs(ctxt, &job_cond);
 
 	FREE_NULL_LIST(job_cond.step_list);
 	return SLURM_SUCCESS;

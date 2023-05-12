@@ -110,6 +110,7 @@ typedef enum {
 	DATA_PARSER_JOB_CONDITION_SUBMIT_TIME, /* slurmdb_job_cond_t->usage_start&flags */
 	DATA_PARSER_JOB_CONDITION_PTR, /* slurmdb_job_cond_t* */
 	DATA_PARSER_OPENAPI_SLURMDBD_JOBS_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_SLURMDBD_JOB_PARAM, /* openapi_job_param_t */
 	DATA_PARSER_SLURMDB_JOB_FLAGS, /* slurmdb_job_rec_t->flags & SLURMDB_JOB_* */
 	DATA_PARSER_JOB_STATE, /* uint32_t <-> JOB_* & JOB_STATE_FLAGS */
 	DATA_PARSER_JOB_STATE_ID_STRING, /* char* <-> JOB_* & JOB_STATE_FLAGS - as stringified integer */

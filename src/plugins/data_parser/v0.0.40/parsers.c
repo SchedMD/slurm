@@ -7062,6 +7062,13 @@ static const parser_t PARSER_ARRAY(USER_CONDITION)[] = {
 };
 #undef add_parse
 
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(openapi_job_param_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_JOB_PARAM)[] = {
+	add_parse_req(SELECTED_STEP_PTR, id, "job_id", "Job id"),
+};
+#undef add_parse_req
+
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_user_param_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_USER_PARAM)[] = {
@@ -7596,6 +7603,7 @@ static const parser_t parsers[] = {
 	addpa(QOS_CONDITION, slurmdb_qos_cond_t),
 	addpa(ASSOC_CONDITION, slurmdb_assoc_cond_t),
 	addpa(USER_CONDITION, slurmdb_user_cond_t),
+	addpa(OPENAPI_SLURMDBD_JOB_PARAM, openapi_job_param_t),
 	addpa(OPENAPI_USER_PARAM, openapi_user_param_t),
 	addpa(OPENAPI_USER_QUERY, openapi_user_query_t),
 
