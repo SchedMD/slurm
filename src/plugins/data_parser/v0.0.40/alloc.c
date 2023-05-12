@@ -177,7 +177,9 @@ extern void free_parser_obj(const parser_t *const parser, void *ptr)
 	log_flag(DATA, "destroying %zd byte %s object at 0x%"PRIxPTR,
 		 xsize(ptr), parser->obj_type_string, (uintptr_t) ptr);
 
-	free_func(ptr);
+	xassert(free_func);
+	if (free_func)
+		free_func(ptr);
 }
 
 extern bool alloc_registered(const parser_t *const parser)
@@ -200,5 +202,6 @@ extern ListDelF parser_obj_free_func(const parser_t *const parser)
 		}
 	}
 
-	return false;
+	xassert(false);
+	return NULL;
 }
