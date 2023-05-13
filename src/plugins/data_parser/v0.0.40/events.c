@@ -79,16 +79,28 @@ extern int on_error(parse_op_t op, data_parser_type_t type, args_t *args,
 
 	switch (op) {
 	case PARSING:
-		cont = args->on_parse_error(args->error_arg, type, error_code,
-					    source, "%s", str);
+		if (args->on_parse_error)
+			cont = args->on_parse_error(args->error_arg, type,
+						    error_code, source, "%s",
+						    str);
+		else
+			cont = false;
 		break;
 	case DUMPING:
-		cont = args->on_dump_error(args->error_arg, type, error_code,
-					   source, "%s", str);
+		if (args->on_dump_error)
+			cont = args->on_dump_error(args->error_arg, type,
+						   error_code, source, "%s",
+						   str);
+		else
+			cont = false;
 		break;
 	case QUERYING:
-		cont = args->on_query_error(args->error_arg, type, error_code,
-					    source, "%s", str);
+		if (args->on_query_error)
+			cont = args->on_query_error(args->error_arg, type,
+						    error_code, source, "%s",
+						    str);
+		else
+			cont = false;
 		break;
 	case PARSE_INVALID:
 		fatal_abort("%s: invalid op should never be called", __func__);
@@ -139,13 +151,19 @@ extern void on_warn(parse_op_t op, data_parser_type_t type, args_t *args,
 
 	switch (op) {
 	case PARSING:
-		args->on_parse_warn(args->warn_arg, type, source, "%s", str);
+		if (args->on_parse_warn)
+			args->on_parse_warn(args->warn_arg, type, source, "%s",
+					    str);
 		break;
 	case DUMPING:
-		args->on_dump_warn(args->warn_arg, type, source, "%s", str);
+		if (args->on_dump_warn)
+			args->on_dump_warn(args->warn_arg, type, source, "%s",
+					   str);
 		break;
 	case QUERYING:
-		args->on_query_warn(args->warn_arg, type, source, "%s", str);
+		if (args->on_query_warn)
+			args->on_query_warn(args->warn_arg, type, source, "%s",
+					    str);
 		break;
 	case PARSE_INVALID:
 		fatal_abort("%s: invalid op should never be called", __func__);
