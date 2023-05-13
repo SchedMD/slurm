@@ -212,12 +212,24 @@ extern int bind_operation_ctxt_handler(const char *str_path,
 				       openapi_ctxt_handler_t callback, int tag,
 				       const openapi_resp_meta_t *meta)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
+	openapi_resp_single_t openapi_response = {0};
+	data_t *resp = data_new();
 
 	xassert(xstrstr(str_path, OPENAPI_DATA_PARSER_PARAM));
 
 	for (int i = 0; parsers[i]; i++) {
-		char *path = xstrdup(str_path);
+		char *path = NULL;
+
+		/*
+		 * Skip parser is openapi resp is not supported
+		 * TODO: check to be removed after data_parser/v0.0.39 removed
+		 */
+		data_set_null(resp);
+		if (DATA_DUMP(parsers[i], OPENAPI_RESP, openapi_response, resp))
+			continue;
+
+		path = xstrdup(str_path);
 
 		xstrsubstitute(path, OPENAPI_DATA_PARSER_PARAM,
 			       data_parser_get_plugin_version(parsers[i]));
@@ -227,10 +239,12 @@ extern int bind_operation_ctxt_handler(const char *str_path,
 		xfree(path);
 
 		if (rc)
-			return rc;
+			break;
 	}
 
-	return SLURM_SUCCESS;
+	FREE_NULL_DATA(resp);
+
+	return rc;
 }
 
 static int _rm_path_callback(void *x, void *ptr)
