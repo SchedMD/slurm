@@ -13,7 +13,7 @@
       "email": "sales@schedmd.com"
     },
     "title": "Slurm Rest API",
-    "version": "dbv0.0.39"
+    "version": "slurmdbd"
   },
   "tags": [
     {
@@ -72,12 +72,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -113,12 +113,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -137,12 +137,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -152,12 +152,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -192,12 +192,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             },
@@ -208,12 +208,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -293,12 +293,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -335,12 +335,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -381,12 +381,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -404,12 +404,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             },
@@ -420,12 +420,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -461,12 +461,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             },
@@ -477,12 +477,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -578,12 +578,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -663,12 +663,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -750,12 +750,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -835,12 +835,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -861,12 +861,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             },
@@ -877,12 +877,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -919,12 +919,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -966,12 +966,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             },
@@ -982,12 +982,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1021,12 +1021,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1065,12 +1065,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1117,12 +1117,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1170,12 +1170,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1193,12 +1193,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             },
@@ -1209,12 +1209,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1267,12 +1267,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1319,12 +1319,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1372,12 +1372,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1395,12 +1395,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             },
@@ -1411,12 +1411,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1469,12 +1469,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1521,12 +1521,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1608,12 +1608,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1631,12 +1631,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             },
@@ -1647,12 +1647,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1707,12 +1707,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1748,12 +1748,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/status"
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
                 }
               }
             }
@@ -1836,185 +1836,6 @@
         "bearerFormat": "JWT"
       }
     },
-    "schemas": {
-      "dbv0.0.39_user_info": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/dbv0.0.39_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/dbv0.0.39_warnings"
-          },
-          "users": {
-            "$ref": "DATA_PARSER_USER_LIST"
-          }
-        }
-      },
-      "dbv0.0.39_tres_info": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/dbv0.0.39_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/dbv0.0.39_warnings"
-          },
-          "tres": {
-            "$ref": "DATA_PARSER_TRES_LIST"
-          }
-        }
-      },
-      "dbv0.0.39_clusters_info": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/dbv0.0.39_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/dbv0.0.39_warnings"
-          },
-          "clusters": {
-            "$ref": "DATA_PARSER_CLUSTER_REC_LIST"
-          }
-        }
-      },
-      "status": {
-        "type": "object",
-        "properties": {
-          "meta": {
-            "$ref": "#/components/schemas/dbv0.0.39_meta"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/dbv0.0.39_errors"
-          },
-          "warnings": {
-            "$ref": "#/components/schemas/dbv0.0.39_warnings"
-          }
-        }
-      },
-      "dbv0.0.39_warnings": {
-        "type": "array",
-        "description": "Slurm warnings",
-        "items": {
-          "$ref": "#/components/schemas/dbv0.0.39_warning"
-        }
-      },
-      "dbv0.0.39_warning": {
-        "properties": {
-          "warning": {
-            "description": "Earning message",
-            "type": "string"
-          },
-          "source": {
-            "description": "Where error occurred in the source",
-            "type": "string"
-          },
-          "description": {
-            "description": "Explaination of cause of error",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "dbv0.0.39_errors": {
-        "type": "array",
-        "description": "Slurm errors",
-        "items": {
-          "$ref": "#/components/schemas/dbv0.0.39_error"
-        }
-      },
-      "dbv0.0.39_error": {
-        "properties": {
-          "error_number": {
-            "description": "Slurm internal error number",
-            "type": "integer"
-          },
-          "error": {
-            "description": "Error message",
-            "type": "string"
-          },
-          "source": {
-            "description": "Where error occurred in the source",
-            "type": "string"
-          },
-          "description": {
-            "description": "Explaination of cause of error",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "dbv0.0.39_meta": {
-        "type": "object",
-        "properties": {
-          "plugin": {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string",
-                "description": ""
-              },
-              "name": {
-                "type": "string",
-                "description": ""
-              }
-            }
-          },
-          "Slurm": {
-            "type": "object",
-            "description": "Slurm information",
-            "properties": {
-              "version": {
-                "type": "object",
-                "properties": {
-                  "major": {
-                    "type": "integer",
-                    "description": ""
-                  },
-                  "micro": {
-                    "type": "integer",
-                    "description": ""
-                  },
-                  "minor": {
-                    "type": "integer",
-                    "description": ""
-                  }
-                }
-              },
-              "release": {
-                "type": "string",
-                "description": "version specifier"
-              }
-            }
-          }
-        }
-      },
-      "dbv0.0.39_update_users": {
-        "properties": {
-          "users": {
-            "$ref": "DATA_PARSER_USER_LIST"
-          }
-        },
-        "type": "object"
-      },
-      "dbv0.0.39_tres_update": {
-        "type": "object",
-        "properties": {
-          "tres": {
-            "$ref": "DATA_PARSER_TRES_LIST"
-          }
-        }
-      }
-    }
+    "schemas": {}
   }
 }
