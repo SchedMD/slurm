@@ -60,6 +60,13 @@ static void *_create_cluster_rec_obj(void)
 	return cluster;
 }
 
+static void *_create_cluster_cond_obj(void)
+{
+	slurmdb_cluster_cond_t *cond = xmalloc(sizeof(*cond));
+	cond->flags = NO_VAL;
+	return cond;
+}
+
 static void *_create_qos_rec_obj(void)
 {
 	slurmdb_qos_rec_t *qos = xmalloc(sizeof(*qos));
@@ -148,6 +155,8 @@ static const struct {
 	add(USER_CONDITION, slurmdb_destroy_user_cond, NULL),
 	add(ASSOC_CONDITION, slurmdb_destroy_assoc_cond, NULL),
 	add(ACCOUNT_CONDITION, slurmdb_destroy_account_cond, NULL),
+	add(CLUSTER_CONDITION, slurmdb_destroy_cluster_cond,
+	    _create_cluster_cond_obj),
 };
 #undef add
 

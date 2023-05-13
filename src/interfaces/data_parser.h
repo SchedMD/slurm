@@ -97,6 +97,9 @@ typedef enum {
 	DATA_PARSER_CLUSTER_REC_FLAGS, /* slurmdb_cluster_rec_t->flags & CLUSTER_FLAG_* */
 	DATA_PARSER_OPENAPI_CLUSTERS_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_CLUSTERS_REMOVED_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_CLUSTER_PARAM, /* openapi_cluster_param_t */
+	DATA_PARSER_CLUSTER_CONDITION, /* slurmdb_cluster_cond_t */
+	DATA_PARSER_CLUSTER_CONDITION_PTR, /* slurmdb_cluster_cond_t* */
 	DATA_PARSER_COORD_LIST, /* List of slurmdb_coord_rec_t* */
 	DATA_PARSER_COORD, /* slurmdb_coord_rec_t */
 	DATA_PARSER_CPU_FREQ_FLAGS, /* uint32_t & CPU_FREQ_* */

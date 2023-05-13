@@ -34,122 +34,106 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <stdint.h>
-
 #include "src/common/list.h"
 #include "src/common/log.h"
-#include "src/common/parse_time.h"
-#include "src/common/ref.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/common/strlcpy.h"
-#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmrestd/operations.h"
 #include "api.h"
+#include "structs.h"
 
-static void _dump_clusters(ctxt_t *ctxt, char *cluster)
+static void _dump_clusters(ctxt_t *ctxt, slurmdb_cluster_cond_t *cluster_cond)
 {
-	slurmdb_cluster_cond_t cluster_cond = {
-		.cluster_list = list_create(NULL),
-		.with_deleted = true,
-		.with_usage = true,
-		.flags = NO_VAL,
-	};
-	List cluster_list = NULL;
+	list_t *cluster_list = NULL;
 
-	if (cluster)
-		list_append(cluster_cond.cluster_list, cluster);
-
-	if (db_query_list(ctxt, &cluster_list, slurmdb_clusters_get,
-			  &cluster_cond))
-		/* no-op - error already logged */;
-	else if (cluster_list)
+	if (!db_query_list(ctxt, &cluster_list, slurmdb_clusters_get,
+			   cluster_cond) &&
+	    cluster_list)
 		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_CLUSTERS_RESP, cluster_list,
 					 ctxt);
 
 	FREE_NULL_LIST(cluster_list);
-	FREE_NULL_LIST(cluster_cond.cluster_list);
 }
 
-static void _delete_cluster(ctxt_t *ctxt, char *cluster)
+static void _delete_cluster(ctxt_t *ctxt, slurmdb_cluster_cond_t *cluster_cond)
 {
-	slurmdb_cluster_cond_t cluster_cond = {
-		.cluster_list = list_create(NULL),
-		.flags = NO_VAL,
-	};
-	List cluster_list = NULL;
-
-	if (!cluster || !cluster[0]) {
-		resp_warn(ctxt, __func__,
-			  "ignoring empty delete cluster request");
-		goto cleanup;
-	}
-
-	list_append(cluster_cond.cluster_list, cluster);
+	list_t *cluster_list = NULL;
 
 	if (!db_query_list(ctxt, &cluster_list, slurmdb_clusters_remove,
-			   &cluster_cond))
+			   cluster_cond))
 		db_query_commit(ctxt);
 
 	if (cluster_list)
 		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_CLUSTERS_REMOVED_RESP,
 					 cluster_list, ctxt);
 
-cleanup:
 	FREE_NULL_LIST(cluster_list);
-	FREE_NULL_LIST(cluster_cond.cluster_list);
 }
 
 static void _update_clusters(ctxt_t *ctxt, bool commit)
 {
-	data_t *parent_path = NULL;
-	data_t *dclusters;
+	openapi_resp_single_t resp = {0};
+	openapi_resp_single_t *resp_ptr = &resp;
 	list_t *cluster_list = NULL;
 
-	dclusters = get_query_key_list("clusters", ctxt, &parent_path);
+	if (DATA_PARSE(ctxt->parser, OPENAPI_CLUSTERS_RESP, resp,
+		       ctxt->parameters, ctxt->parent_path))
+		goto cleanup;
 
-	if (!dclusters) {
-		resp_warn(ctxt, __func__,
-			  "ignoring non-existant clusters array");
-	} else if (!data_get_list_length(dclusters)) {
-		resp_warn(ctxt, __func__, "ignoring empty clusters array");
-	} else if (DATA_PARSE(ctxt->parser, CLUSTER_REC_LIST, cluster_list,
-			      dclusters, parent_path)) {
-		/* no-op already logged */
-	} else if (!db_query_rc(ctxt, cluster_list, slurmdb_clusters_add) &&
-		   commit) {
+	cluster_list = resp.response;
+
+	if (!db_query_rc(ctxt, cluster_list, slurmdb_clusters_add) && commit)
 		db_query_commit(ctxt);
-	}
 
+cleanup:
 	FREE_NULL_LIST(cluster_list);
-	FREE_NULL_DATA(parent_path);
+	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 }
 
 extern int op_handler_cluster(ctxt_t *ctxt)
 {
-	char *cluster = get_str_param("cluster_name", true, ctxt);
+	openapi_cluster_param_t params = {0};
+	slurmdb_cluster_cond_t cluster_cond = {
+		.flags = NO_VAL,
+	};
 
-	if (ctxt->method == HTTP_REQUEST_GET)
-		_dump_clusters(ctxt, cluster);
-	else if (ctxt->method == HTTP_REQUEST_DELETE)
-		_delete_cluster(ctxt, cluster);
-	else {
+	if (DATA_PARSE(ctxt->parser, OPENAPI_CLUSTER_PARAM, params,
+		       ctxt->parameters, ctxt->parent_path))
+		goto cleanup;
+
+	cluster_cond.cluster_list = list_create(NULL);
+	list_append(cluster_cond.cluster_list, params.name);
+
+	if (ctxt->method == HTTP_REQUEST_GET) {
+		_dump_clusters(ctxt, &cluster_cond);
+	} else if (ctxt->method == HTTP_REQUEST_DELETE) {
+		_delete_cluster(ctxt, &cluster_cond);
+	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
 			   get_http_method_string(ctxt->method));
 	}
 
+cleanup:
+	FREE_NULL_LIST(cluster_cond.cluster_list);
+	xfree(params.name);
 	return SLURM_SUCCESS;
 }
 
 extern int op_handler_clusters(ctxt_t *ctxt)
 {
+	slurmdb_cluster_cond_t *cluster_cond = NULL;
+
+	if (DATA_PARSE(ctxt->parser, CLUSTER_CONDITION_PTR, cluster_cond,
+		       ctxt->query, ctxt->parent_path))
+		goto cleanup;
+
 	if (ctxt->method == HTTP_REQUEST_GET)
-		_dump_clusters(ctxt, NULL);
+		_dump_clusters(ctxt, cluster_cond);
+	else if (ctxt->method == HTTP_REQUEST_POST)
+		_delete_cluster(ctxt, cluster_cond);
 	else if (ctxt->method == HTTP_REQUEST_POST)
 		_update_clusters(ctxt, (ctxt->tag != CONFIG_OP_TAG));
 	else {
@@ -158,6 +142,8 @@ extern int op_handler_clusters(ctxt_t *ctxt)
 			   get_http_method_string(ctxt->method));
 	}
 
+cleanup:
+	slurmdb_destroy_cluster_cond(cluster_cond);
 	return SLURM_SUCCESS;
 }
 

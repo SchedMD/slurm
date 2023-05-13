@@ -7136,6 +7136,36 @@ static const parser_t PARSER_ARRAY(ACCOUNT_CONDITION)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_cluster_param_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_CLUSTER_PARAM)[] = {
+	add_parse(STRING, name, "cluster_name", "Cluster name"),
+};
+#undef add_parse
+
+static const flag_bit_t PARSER_FLAG_ARRAY(CLUSTER_CLASSIFICATION)[] = {
+	add_flag_equal(SLURMDB_CLASS_NONE, INFINITE16, "UNCLASSIFIED"),
+	add_flag_bit(SLURMDB_CLASS_CAPABILITY, "CAPABILITY"),
+	add_flag_bit(SLURMDB_CLASS_CAPACITY, "CAPACITY"),
+	add_flag_bit(SLURMDB_CLASS_CAPAPACITY, "CAPAPACITY"),
+};
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_cluster_cond_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(CLUSTER_CONDITION)[] = {
+	add_parse_bit_flag_array(slurmdb_cluster_cond_t, CLUSTER_CLASSIFICATION, false, classification, "classification", NULL),
+	add_parse(STRING_LIST, cluster_list, "cluster", "CSV cluster list"),
+	add_parse(STRING_LIST, federation_list, "federation", "CSV federation list"),
+	add_parse_bit_flag_array(slurmdb_cluster_cond_t, CLUSTER_REC_FLAGS, false, flags, "flags", NULL),
+	add_parse(STRING_LIST, format_list, "format", "CSV format list"),
+	add_parse(STRING_LIST, rpc_version_list, "rpc_version", "CSV RPC version list"),
+	add_parse(TIMESTAMP, usage_end, "usage_end", "Usage end UNIX timestamp (seconds)"),
+	add_parse(TIMESTAMP, usage_start, "usage_start", "Usage start UNIX timestamp (seconds)"),
+	add_parse(BOOL16, with_deleted, "with_deleted", "include deleted clusters"),
+	add_parse(BOOL16, with_usage, "with_usage", "query usage"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -7606,6 +7636,7 @@ static const parser_t parsers[] = {
 	addpp(USER_CONDITION_PTR, slurmdb_user_cond_t *, USER_CONDITION),
 	addpp(WCKEY_CONDITION_PTR, slurmdb_wckey_cond_t *, WCKEY_CONDITION),
 	addpp(ACCOUNT_CONDITION_PTR, slurmdb_account_cond_t *, ACCOUNT_CONDITION),
+	addpp(CLUSTER_CONDITION_PTR, slurmdb_cluster_cond_t *, CLUSTER_CONDITION),
 
 	/* Pointer model parsers allowing NULL */
 	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),
@@ -7665,6 +7696,8 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_ACCOUNT_PARAM, openapi_account_param_t),
 	addpa(OPENAPI_ACCOUNT_QUERY, openapi_account_query_t),
 	addpa(ACCOUNT_CONDITION, slurmdb_account_cond_t),
+	addpa(OPENAPI_CLUSTER_PARAM, openapi_cluster_param_t),
+	addpa(CLUSTER_CONDITION, slurmdb_cluster_cond_t),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -7720,6 +7753,7 @@ static const parser_t parsers[] = {
 	addfa(JOB_SHARED, uint16_t),
 	addfa(JOB_CONDITION_FLAGS, uint32_t),
 	addfa(JOB_CONDITION_DB_FLAGS, uint32_t),
+	addfa(CLUSTER_CLASSIFICATION, uint16_t), /* slurmdb_classification_type_t */
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, NEED_QOS),
