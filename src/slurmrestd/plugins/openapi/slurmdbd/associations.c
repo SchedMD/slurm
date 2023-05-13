@@ -36,74 +36,12 @@
 
 #include "src/common/list.h"
 #include "src/common/log.h"
-#include "src/common/parse_time.h"
-#include "src/common/ref.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/common/strlcpy.h"
-#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmrestd/operations.h"
 #include "api.h"
-
-#define FOREACH_ASSOC_MAGIC 0x13113114
-
-typedef struct {
-	size_t offset;
-	char *parameter;
-} assoc_parameter_t;
-
-static const assoc_parameter_t assoc_parameters[] = {
-	{
-		offsetof(slurmdb_assoc_cond_t, partition_list),
-		"partition"
-	},
-	{
-		offsetof(slurmdb_assoc_cond_t, cluster_list),
-		"cluster"
-	},
-	{
-		offsetof(slurmdb_assoc_cond_t, acct_list),
-		"account"
-	},
-	{
-		offsetof(slurmdb_assoc_cond_t, user_list),
-		"user"
-	},
-};
-
-static int _populate_assoc_cond(ctxt_t *ctxt, slurmdb_assoc_cond_t *assoc_cond)
-{
-	if (!ctxt->query)
-		return SLURM_SUCCESS;
-
-	for (int i = 0; i < ARRAY_SIZE(assoc_parameters); i++) {
-		char *value = NULL;
-		const assoc_parameter_t *ap = &assoc_parameters[i];
-		List *list = ((void *) assoc_cond) + ap->offset;
-		int rc = data_retrieve_dict_path_string(ctxt->query,
-							ap->parameter, &value);
-
-		if (rc == ESLURM_DATA_PATH_NOT_FOUND) {
-			/* parameter not in query */
-			continue;
-		} else if (rc) {
-			return resp_error(ctxt, rc, __func__,
-					"Invalid format for query parameter %s",
-					ap->parameter);
-		}
-
-		*list = list_create(xfree_ptr);
-		(void) slurm_addto_char_list(*list, value);
-
-		xfree(value);
-	}
-
-	return SLURM_SUCCESS;
-}
 
 static void _dump_assoc_cond(ctxt_t *ctxt, slurmdb_assoc_cond_t *cond,
 			     bool only_one)
@@ -386,19 +324,15 @@ static int _foreach_update_assoc(void *x, void *arg)
 
 static void _update_associations(ctxt_t *ctxt, bool commit)
 {
-	data_t *parent_path = NULL;
-	data_t *dassoc = get_query_key_list("associations", ctxt, &parent_path);
-	List assoc_list = NULL;
+	openapi_resp_single_t resp = {0};
+	openapi_resp_single_t *resp_ptr = &resp;
+	list_t *assoc_list = NULL;
 
-	if (!dassoc) {
-		resp_warn(ctxt, __func__,
-			  "ignoring empty or non-existant associations array");
+	if (DATA_PARSE(ctxt->parser, OPENAPI_ASSOCS_RESP, resp, ctxt->query,
+		       ctxt->parent_path))
 		goto cleanup;
-	}
 
-	if (DATA_PARSE(ctxt->parser, ASSOC_LIST, assoc_list, dassoc,
-		       parent_path))
-		goto cleanup;
+	assoc_list = resp.response;
 
 	if (list_for_each(assoc_list, _foreach_update_assoc, ctxt) < 0)
 		goto cleanup;
@@ -408,16 +342,18 @@ static void _update_associations(ctxt_t *ctxt, bool commit)
 
 cleanup:
 	FREE_NULL_LIST(assoc_list);
-	FREE_NULL_DATA(parent_path);
+	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 }
 
 static int op_handler_association(ctxt_t *ctxt)
 {
-	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
+	slurmdb_assoc_cond_t *assoc_cond = NULL;
 
-	if (_populate_assoc_cond(ctxt, assoc_cond))
-		/* no-op - already logged */;
-	else if (ctxt->method == HTTP_REQUEST_GET)
+	if (DATA_PARSE(ctxt->parser, ASSOC_CONDITION_PTR, assoc_cond,
+		       ctxt->parameters, ctxt->parent_path))
+		goto cleanup;
+
+	if (ctxt->method == HTTP_REQUEST_GET)
 		_dump_assoc_cond(ctxt, assoc_cond, true);
 	else if (ctxt->method == HTTP_REQUEST_DELETE)
 		_delete_assoc(ctxt, assoc_cond, true);
@@ -427,17 +363,20 @@ static int op_handler_association(ctxt_t *ctxt)
 			   get_http_method_string(ctxt->method));
 	}
 
+cleanup:
 	slurmdb_destroy_assoc_cond(assoc_cond);
 	return SLURM_SUCCESS;
 }
 
 extern int op_handler_associations(ctxt_t *ctxt)
 {
-	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
+	slurmdb_assoc_cond_t *assoc_cond = NULL;
 
-	if (_populate_assoc_cond(ctxt, assoc_cond))
-		/* no-op - already logged */;
-	else if (ctxt->method == HTTP_REQUEST_GET)
+	if (DATA_PARSE(ctxt->parser, ASSOC_CONDITION_PTR, assoc_cond,
+		       ctxt->parameters, ctxt->parent_path))
+		goto cleanup;
+
+	if (ctxt->method == HTTP_REQUEST_GET)
 		_dump_assoc_cond(ctxt, assoc_cond, false);
 	else if (ctxt->method == HTTP_REQUEST_POST)
 		_update_associations(ctxt, (ctxt->tag != CONFIG_OP_TAG));
@@ -449,6 +388,7 @@ extern int op_handler_associations(ctxt_t *ctxt)
 			   get_http_method_string(ctxt->method));
 	}
 
+cleanup:
 	slurmdb_destroy_assoc_cond(assoc_cond);
 	return SLURM_SUCCESS;
 }
