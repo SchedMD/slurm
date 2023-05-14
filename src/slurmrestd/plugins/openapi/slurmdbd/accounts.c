@@ -305,7 +305,7 @@ cleanup:
 	FREE_NULL_LIST(assoc_cond.user_list);
 }
 
-extern int op_handler_account(ctxt_t *ctxt)
+static int _op_handler_account(ctxt_t *ctxt)
 {
 	openapi_account_param_t params = {0};
 	openapi_account_query_t query = {0};
@@ -346,7 +346,7 @@ cleanup:
 }
 
 /* based on sacctmgr_list_account() */
-extern int op_handler_accounts(ctxt_t *ctxt)
+static int _op_handler_accounts(ctxt_t *ctxt)
 {
 	if (ctxt->method == HTTP_REQUEST_GET) {
 		slurmdb_account_cond_t *acct_cond = NULL;
@@ -373,14 +373,14 @@ extern int op_handler_accounts(ctxt_t *ctxt)
 
 extern void init_op_accounts(void)
 {
-	bind_handler("/slurmdb/{data_parser}/accounts/", op_handler_accounts,
+	bind_handler("/slurmdb/{data_parser}/accounts/", _op_handler_accounts,
 		     0);
 	bind_handler("/slurmdb/{data_parser}/account/{account_name}/",
-		     op_handler_account, 0);
+		     _op_handler_account, 0);
 }
 
 extern void destroy_op_accounts(void)
 {
-	unbind_operation_ctxt_handler(op_handler_accounts);
-	unbind_operation_ctxt_handler(op_handler_account);
+	unbind_operation_ctxt_handler(_op_handler_accounts);
+	unbind_operation_ctxt_handler(_op_handler_account);
 }

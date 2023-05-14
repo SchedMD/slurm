@@ -345,7 +345,7 @@ cleanup:
 	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 }
 
-static int op_handler_association(ctxt_t *ctxt)
+static int _op_handler_association(ctxt_t *ctxt)
 {
 	slurmdb_assoc_cond_t *assoc_cond = NULL;
 
@@ -368,7 +368,7 @@ cleanup:
 	return SLURM_SUCCESS;
 }
 
-extern int op_handler_associations(ctxt_t *ctxt)
+static int _op_handler_associations(ctxt_t *ctxt)
 {
 	slurmdb_assoc_cond_t *assoc_cond = NULL;
 
@@ -396,13 +396,13 @@ cleanup:
 extern void init_op_associations(void)
 {
 	bind_handler("/slurmdb/{data_parser}/associations/",
-		     op_handler_associations, 0);
+		     _op_handler_associations, 0);
 	bind_handler("/slurmdb/{data_parser}/association/",
-		     op_handler_association, 0);
+		     _op_handler_association, 0);
 }
 
 extern void destroy_op_associations(void)
 {
-	unbind_operation_ctxt_handler(op_handler_associations);
-	unbind_operation_ctxt_handler(op_handler_association);
+	unbind_operation_ctxt_handler(_op_handler_associations);
+	unbind_operation_ctxt_handler(_op_handler_association);
 }

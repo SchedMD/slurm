@@ -121,7 +121,7 @@ static int _foreach_update_qos(void *x, void *arg)
 	return (rc != SLURM_SUCCESS) ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT;
 }
 
-extern int op_handler_qos(ctxt_t *ctxt)
+static int _op_handler_qos(ctxt_t *ctxt)
 {
 	slurmdb_qos_cond_t *qos_cond = NULL;
 	list_t *qos_list = NULL;
@@ -182,11 +182,11 @@ cleanup:
 
 extern void init_op_qos(void)
 {
-	bind_handler("/slurmdb/{data_parser}/qos/", op_handler_qos, 0);
-	bind_handler("/slurmdb/{data_parser}/qos/{name}", op_handler_qos, 0);
+	bind_handler("/slurmdb/{data_parser}/qos/", _op_handler_qos, 0);
+	bind_handler("/slurmdb/{data_parser}/qos/{name}", _op_handler_qos, 0);
 }
 
 extern void destroy_op_qos(void)
 {
-	unbind_operation_ctxt_handler(op_handler_qos);
+	unbind_operation_ctxt_handler(_op_handler_qos);
 }

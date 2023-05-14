@@ -92,7 +92,7 @@ cleanup:
 	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 }
 
-extern int op_handler_cluster(ctxt_t *ctxt)
+static int _op_handler_cluster(ctxt_t *ctxt)
 {
 	openapi_cluster_param_t params = {0};
 	slurmdb_cluster_cond_t cluster_cond = {
@@ -122,7 +122,7 @@ cleanup:
 	return SLURM_SUCCESS;
 }
 
-extern int op_handler_clusters(ctxt_t *ctxt)
+static int _op_handler_clusters(ctxt_t *ctxt)
 {
 	slurmdb_cluster_cond_t *cluster_cond = NULL;
 
@@ -149,14 +149,14 @@ cleanup:
 
 extern void init_op_cluster(void)
 {
-	bind_handler("/slurmdb/{data_parser}/clusters/", op_handler_clusters,
+	bind_handler("/slurmdb/{data_parser}/clusters/", _op_handler_clusters,
 		     0);
 	bind_handler("/slurmdb/{data_parser}/cluster/{cluster_name}",
-		     op_handler_cluster, 0);
+		     _op_handler_cluster, 0);
 }
 
 extern void destroy_op_cluster(void)
 {
-	unbind_operation_ctxt_handler(op_handler_clusters);
-	unbind_operation_ctxt_handler(op_handler_clusters);
+	unbind_operation_ctxt_handler(_op_handler_clusters);
+	unbind_operation_ctxt_handler(_op_handler_clusters);
 }

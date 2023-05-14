@@ -44,7 +44,7 @@
 #include "src/slurmrestd/operations.h"
 #include "api.h"
 
-extern int op_handler_tres(ctxt_t *ctxt)
+static int _op_handler_tres(ctxt_t *ctxt)
 {
 	if (ctxt->method == HTTP_REQUEST_GET) {
 		list_t *tres_list = NULL;
@@ -96,10 +96,10 @@ extern int op_handler_tres(ctxt_t *ctxt)
 
 extern void init_op_tres(void)
 {
-	bind_handler("/slurmdb/{data_parser}/tres/", op_handler_tres, 0);
+	bind_handler("/slurmdb/{data_parser}/tres/", _op_handler_tres, 0);
 }
 
 extern void destroy_op_tres(void)
 {
-	unbind_operation_ctxt_handler(op_handler_tres);
+	unbind_operation_ctxt_handler(_op_handler_tres);
 }

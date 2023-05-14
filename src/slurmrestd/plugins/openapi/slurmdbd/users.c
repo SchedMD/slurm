@@ -254,7 +254,7 @@ static void _delete_user(ctxt_t *ctxt, char *user_name)
 }
 
 /* based on sacctmgr_list_user() */
-extern int op_handler_users(ctxt_t *ctxt)
+static int _op_handler_users(ctxt_t *ctxt)
 {
 	if (ctxt->method == HTTP_REQUEST_GET) {
 		slurmdb_user_cond_t *user_cond = NULL;
@@ -275,7 +275,7 @@ extern int op_handler_users(ctxt_t *ctxt)
 	return SLURM_SUCCESS;
 }
 
-static int op_handler_user(ctxt_t *ctxt)
+static int _op_handler_user(ctxt_t *ctxt)
 {
 	openapi_user_param_t params = {0};
 	openapi_user_query_t query = {0};
@@ -321,12 +321,12 @@ cleanup:
 
 extern void init_op_users(void)
 {
-	bind_handler("/slurmdb/{data_parser}/users/", op_handler_users, 0);
-	bind_handler("/slurmdb/{data_parser}/user/{name}", op_handler_user, 0);
+	bind_handler("/slurmdb/{data_parser}/users/", _op_handler_users, 0);
+	bind_handler("/slurmdb/{data_parser}/user/{name}", _op_handler_user, 0);
 }
 
 extern void destroy_op_users(void)
 {
-	unbind_operation_ctxt_handler(op_handler_users);
-	unbind_operation_ctxt_handler(op_handler_user);
+	unbind_operation_ctxt_handler(_op_handler_users);
+	unbind_operation_ctxt_handler(_op_handler_user);
 }

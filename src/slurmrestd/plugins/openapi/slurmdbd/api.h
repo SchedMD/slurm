@@ -174,15 +174,12 @@ extern data_t *get_query_key_list_funcname(const char *path, ctxt_t *ctxt,
 
 extern void init_op_associations(void);
 extern void destroy_op_associations(void);
-extern int op_handler_associations(ctxt_t *ctxt);
 
 extern void init_op_accounts(void);
 extern void destroy_op_accounts(void);
-extern int op_handler_accounts(ctxt_t *ctxt);
 
 extern void init_op_cluster(void);
 extern void destroy_op_cluster(void);
-extern int op_handler_clusters(ctxt_t *ctxt);
 
 extern void init_op_config(void);
 extern void destroy_op_config(void);
@@ -192,23 +189,18 @@ extern void destroy_op_diag(void);
 
 extern void init_op_job(void);
 extern void destroy_op_job(void);
-extern int op_handler_jobs(ctxt_t *ctxt);
 
 extern void init_op_tres(void);
 extern void destroy_op_tres(void);
-extern int op_handler_tres(ctxt_t *ctxt);
 
 extern void init_op_users(void);
 extern void destroy_op_users(void);
-extern int op_handler_users(ctxt_t *ctxt);
 
 extern void init_op_wckeys(void);
 extern void destroy_op_wckeys(void);
-extern int op_handler_wckeys(ctxt_t *ctxt);
 
 extern void init_op_qos(void);
 extern void destroy_op_qos(void);
-extern int op_handler_qos(ctxt_t *ctxt);
 
 /* register handler against each parser */
 extern void bind_handler(const char *str_path, openapi_ctxt_handler_t callback,
