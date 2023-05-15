@@ -49,6 +49,7 @@ set cluster(MaxSubmitJobs) 400
 set cluster(MaxNodes)      200
 set cluster(MaxWall)       01:00:00
 set cluster(DefaultQos)    "${test_name}_qos_1"
+set cluster(Qos)    "${test_name}_qos_1,${test_name}_qos_2"
 
 array set mod_cluster {}
 set mod_cluster(Fairshare)     1375
@@ -83,6 +84,8 @@ proc cleanup {} {
 	run_command "$sacctmgr -i delete cluster $tc1,$tc2,$tc3"
 	run_command "$sacctmgr -i delete qos $cluster(DefaultQos) $mod_cluster(DefaultQos)"
 }
+
+cleanup
 
 #
 # Create tmp QOS

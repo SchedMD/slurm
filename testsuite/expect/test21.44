@@ -55,12 +55,12 @@ if {[string compare [get_admin_level] "Administrator"]} {
 }
 
 proc cleanup {} {
-	global sacctmgr acct
+	global sacctmgr acct acct_a acct_b acct_c acct_cc acct_d
 	global qos_1 qos_2 qos_3
 	global user_w user_x user_y user_z
 
 	run_command -nolog "$sacctmgr -i delete user ${user_w},${user_x},${user_y},${user_z}"
-	run_command -nolog "$sacctmgr -i delete account ${acct}"
+	run_command -nolog "$sacctmgr -i delete account ${acct},$acct_a,$acct_b,$acct_c,$acct_cc,$acct_d"
 	run_command -nolog "$sacctmgr -i delete qos ${qos_1},${qos_2},${qos_3}"
 }
 

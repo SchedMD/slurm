@@ -120,16 +120,16 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 	skip "Not using accounting_storage/slurmdbd"
 }
 
-# clean it up (and check to make sure we can do this test
-remove_qos $qos_names_str
-if {$access_err != 0} {
-	skip "Not authorized to perform this test"
-}
-
 proc cleanup {} {
 	global qos_names_str
 
 	remove_qos $qos_names_str
+}
+
+# Make sure we have a clean system and permission to do this work
+cleanup
+if {$access_err != 0} {
+	skip "Not authorized to perform this test"
 }
 
 # Add a few QoS
