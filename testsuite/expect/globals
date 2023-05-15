@@ -3662,13 +3662,75 @@ proc make_bash_script { script_name script_contents } {
 proc check_acct_associations { } {
 	global sacctmgr number re_word_str
 
-	set rc true
+	# 2 versions after 23.11 we can remove the below function
+	# until then we should check older clusters lft/rgt
+	set rc [check_acct_associations_lft]
+
+	if { !$rc } {
+		return $rc;
+	}
+
 	log_user 0
 	log_debug "Sanity-Checking Associations"
 	#
 	# Use sacctmgr to check associations
 	#
-	spawn $sacctmgr -n -p list assoc wopi wopl withd format=lft,rgt,cluster
+	spawn $sacctmgr -n -p list assoc wopi wopl withd format=lineage,cluster
+	expect {
+	       -re "($re_word_str)\\|($re_word_str)\\|" {
+		      # Here we are checking if we have duplicates and
+		      # setting up an array to check for holes later
+
+		      set lineage $expect_out(1,string)
+		      set cluster $expect_out(2,string)
+		      set first [info exists found($cluster,$lineage)]
+
+		      if { $first } {
+			     log_error "$cluster found lineage $lineage again"
+			     set rc false
+		      } else {
+			     set found($cluster,$lineage) 1
+		      }
+		      exp_continue
+	       }
+	       timeout {
+			fail "sacctmgr add not responding"
+	       }
+	       eof {
+		      wait
+	       }
+	}
+
+	log_user 1
+	return $rc
+}
+
+proc check_acct_associations_lft { } {
+	global sacctmgr number re_word_str
+
+	set rc true
+	log_user 0
+
+	log_debug "Sanity-Checking Associations"
+
+	set clusters ""
+
+	spawn $sacctmgr show cluster format=cluster,rpc -p
+	expect {
+		-re "($re_word_str)\\|($number)\\|" {
+			# 9984 == 23.02, the last version where lft/rgt matter
+			if { $expect_out(2,string) > 9984 } {
+				exp_continue
+			}
+			set clusters [ concat $clusters "," $expect_out(1,string) ]
+			exp_continue
+		}
+	}
+
+	#
+	# Use sacctmgr to check associations
+	#
+	spawn $sacctmgr -n -p list assoc wopi wopl withd format=lft,rgt,cluster clusters="$clusters"
 	expect {
 	       -re "($number)\\|($number)\\|($re_word_str)\\|" {
 		      # Here we are checking if we have duplicates and
@@ -3725,7 +3787,6 @@ proc check_acct_associations { } {
 	log_user 1
 	return $rc
 }
-
 
 ################################################################
 #

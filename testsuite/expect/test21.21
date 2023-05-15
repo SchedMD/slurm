@@ -131,6 +131,8 @@ proc cleanup { } {
 	run_command "$sacctmgr -i delete qos $test_qos"
 }
 
+cleanup
+
 set got_node 0
 spawn $srun -N1 -t1 printenv SLURM_NODELIST
 expect {

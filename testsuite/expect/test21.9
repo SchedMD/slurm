@@ -51,6 +51,7 @@ set cluster(MaxSubmitJobs) 400
 set cluster(MaxNodes)      200
 set cluster(MaxWall)       01:00:00
 set cluster(DefaultQos)    "${test_name}_qos_1"
+set cluster(Qos) "${test_name}_qos_1,${test_name}_qos_2"
 
 # Modified Cluster Limits
 array set mod_cluster {}
@@ -88,6 +89,8 @@ proc cleanup {} {
 	run_command "$sacctmgr -i delete qos $cluster(DefaultQos) $mod_cluster(DefaultQos)"
 }
 
+cleanup
+
 #
 # Create tmp QOS
 #
@@ -106,7 +109,7 @@ expect {
 	}
 }
 if {$qos_set != 1} {
-	fail "QOS ($dqos) was not created"
+	fail "QOS $cluster(DefaultQos) $mod_cluster(DefaultQos) was not created"
 }
 
 #
