@@ -155,12 +155,14 @@ static void _set_tmpdirs(List lresp)
 
 static void _set_euid(list_t *lresp)
 {
+#if (HAVE_PMIX_VER >= 5)
 	pmix_info_t *kvp;
 
 	uid_t uid = pmixp_info_jobuid();
 
 	PMIXP_KVP_CREATE(kvp, PMIX_USERID, &uid, PMIX_UINT32);
 	list_append(lresp, kvp);
+#endif
 }
 
 /*
