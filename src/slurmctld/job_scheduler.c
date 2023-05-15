@@ -1263,12 +1263,8 @@ static int _schedule(bool full_queue)
 		}
 
 		sched_update = slurm_conf.last_update;
-		info("SchedulerParameters=default_queue_depth=%d,"
-		     "max_rpc_cnt=%d,max_sched_time=%d,partition_job_depth=%d,"
-		     "sched_max_job_start=%d,sched_min_interval=%d%s",
-		     def_job_limit, defer_rpc_cnt, sched_timeout,
-		     max_jobs_per_part, sched_max_job_start,
-		     sched_min_interval, (bf_licenses ? ",bf_licenses" : ""));
+		if (slurm_conf.sched_params && strlen(slurm_conf.sched_params))
+			info("SchedulerParameters=%s", slurm_conf.sched_params);
 	}
 
 	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
