@@ -236,6 +236,7 @@ typedef enum {
 	DATA_PARSER_OPEN_MODE, /* uint8_t - OPEN_MODE_* */
 	DATA_PARSER_WARN_FLAGS, /* uint16_t - KILL_*|WARN_SENT */
 	DATA_PARSER_X11_FLAGS, /* uint16_t - X11_FORWARD_* */
+	DATA_PARSER_HOLD, /* uint32_t (priority) --hold */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
