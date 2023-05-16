@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid job write lock when nodes are dynamically added/removed.
  -- burst_buffer/lua - allow jobs to get scheduled sooner after
     slurm_bb_data_in completes.
+ -- mpi/pmix - fix regression introduced in 23.02.2 which caused PMIx shmem
+    backed files permissions to be incorrect.
 
 * Changes in Slurm 23.02.2
 ==========================
