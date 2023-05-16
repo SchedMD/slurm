@@ -354,8 +354,8 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	 * when grouping the names
 	 */
 	if (txn_cond->with_assoc_info)
-		mysql_db_query(mysql_conn,
-			       "set session group_concat_max_len=65536;");
+		(void) mysql_db_query(mysql_conn,
+				      "set session group_concat_max_len=65536;");
 
 empty:
 	if (!locked && !use_cluster_list) {
