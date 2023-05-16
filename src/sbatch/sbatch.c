@@ -105,6 +105,9 @@ int main(int argc, char **argv)
 	slurm_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
+	if (cli_filter_init() != SLURM_SUCCESS)
+		fatal("failed to initialize cli_filter plugin");
+
 	_set_exit_code();
 	if (spank_init_allocator() < 0) {
 		error("Failed to initialize plugin stack");
@@ -344,6 +347,7 @@ int main(int argc, char **argv)
 		rc = _job_wait(resp->job_id);
 
 #ifdef MEMORY_LEAK_DEBUG
+	cli_filter_fini();
 	select_g_fini();
 	slurm_reset_all_options(&opt, false);
 	slurm_auth_fini();

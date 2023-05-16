@@ -38,7 +38,6 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/cli_filter.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/select.h"
@@ -69,9 +68,6 @@ extern void slurm_client_init_plugins(void)
 	if (select_g_init(0) != SLURM_SUCCESS)
 		fatal("failed to initialize node selection plugin");
 
-	if (cli_filter_init() != SLURM_SUCCESS)
-		fatal("failed to initialize cli_filter plugin");
-
 	if (gres_init() != SLURM_SUCCESS)
 		fatal("failed to initialize gres plugin");
 }
@@ -79,7 +75,6 @@ extern void slurm_client_init_plugins(void)
 extern void slurm_client_fini_plugins(void)
 {
 	gres_fini();
-	cli_filter_fini();
 	select_g_fini();
 	slurm_acct_storage_fini();
 }

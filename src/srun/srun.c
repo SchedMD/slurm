@@ -66,6 +66,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/cli_filter.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
@@ -176,6 +177,8 @@ int srun(int ac, char **av)
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 	_set_exit_code();
 
+	if (cli_filter_init() != SLURM_SUCCESS)
+		fatal("failed to initialize cli_filter plugin");
 	if (slurm_cred_init() != SLURM_SUCCESS)
 		fatal("failed to initialize cred plugin");
 	if (switch_init(0) != SLURM_SUCCESS )
@@ -238,6 +241,7 @@ int srun(int ac, char **av)
 
 
 #ifdef MEMORY_LEAK_DEBUG
+	cli_filter_fini();
 	mpi_fini();
 	select_g_fini();
 	switch_fini();
