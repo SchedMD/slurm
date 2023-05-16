@@ -148,11 +148,6 @@ enum {
 	ASSOC_REQ_COUNT
 };
 
-static char *get_parent_limits_select =
-	"select @par_id, @mj, @mja, @mpt, @msj, "
-	"@mwpj, @mtpj, @mtpn, @mtmpj, @mtrm, "
-	"@def_qos_id, @qos, @delta_qos, @prio;";
-
 enum {
 	ASSOC2_REQ_PARENT_ID,
 	ASSOC2_REQ_MJ,
@@ -823,9 +818,8 @@ static int _set_assoc_limits_for_add(
 		return SLURM_SUCCESS;
 
 	query = xstrdup_printf("call get_parent_limits('%s', "
-			       "'%s', '%s', %u); %s",
-			       assoc_table, parent, assoc->cluster, 0,
-			       get_parent_limits_select);
+			       "'%s', '%s', %u);",
+			       assoc_table, parent, assoc->cluster, 0);
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
@@ -1602,10 +1596,9 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			   sure we get the parent's information, if any. */
 			query = xstrdup_printf(
 				"call get_parent_limits('%s', "
-				"'%s', '%s', %u); %s",
+				"'%s', '%s', %u);",
 				assoc_table, account,
-				cluster_name, 0,
-				get_parent_limits_select);
+				cluster_name, 0);
 			debug4("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
 			if (!(result2 = mysql_db_query_ret(
@@ -2281,11 +2274,10 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		     || xstrcmp(cluster_name, last_cluster))) {
 			query = xstrdup_printf(
 				"call get_parent_limits('%s', "
-				"'%s', '%s', %u); %s",
+				"'%s', '%s', %u);",
 				assoc_table, parent_acct,
 				cluster_name,
-				without_parent_limits,
-				get_parent_limits_select);
+				without_parent_limits);
 			debug4("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
 			if (!(result2 = mysql_db_query_ret(
