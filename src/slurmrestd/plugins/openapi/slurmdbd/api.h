@@ -217,5 +217,6 @@ extern void bind_handler(const char *str_path, openapi_ctxt_handler_t callback,
 extern int update_accounts(ctxt_t *ctxt, bool commit, list_t *acct_list);
 extern int update_associations(ctxt_t *ctxt, bool commit, list_t *assoc_list);
 extern int update_clusters(ctxt_t *ctxt, bool commit, list_t *cluster_list);
+extern int update_qos(ctxt_t *ctxt, bool commit, list_t *qos_list);
 
 #endif

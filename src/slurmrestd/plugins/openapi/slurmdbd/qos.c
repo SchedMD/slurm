@@ -121,6 +121,15 @@ static int _foreach_update_qos(void *x, void *arg)
 	return (rc != SLURM_SUCCESS) ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT;
 }
 
+extern int update_qos(ctxt_t *ctxt, bool commit, list_t *qos_list)
+{
+	if (!(list_for_each_ro(qos_list, _foreach_update_qos, ctxt) < 0) &&
+	    !ctxt->rc && commit)
+		db_query_commit(ctxt);
+
+	return ctxt->rc;
+}
+
 static int _op_handler_qos(ctxt_t *ctxt)
 {
 	slurmdb_qos_cond_t *qos_cond = NULL;
@@ -156,18 +165,12 @@ static int _op_handler_qos(ctxt_t *ctxt)
 	} else if (ctxt->method == HTTP_REQUEST_POST) {
 		openapi_resp_single_t post = { 0 };
 
-		if (DATA_PARSE(ctxt->parser, OPENAPI_SLURMDBD_QOS_RESP, post,
-			       ctxt->query, ctxt->parent_path) ||
-		    !post.response)
-			goto cleanup;
-
-		qos_list = post.response;
-
-		if (list_for_each_ro(qos_list, _foreach_update_qos, ctxt) < 0)
-			goto cleanup;
-
-		if (!ctxt->rc)
-			db_query_commit(ctxt);
+		if (!DATA_PARSE(ctxt->parser, OPENAPI_SLURMDBD_QOS_RESP, post,
+				ctxt->query, ctxt->parent_path) &&
+		    post.response) {
+			qos_list = post.response;
+			update_qos(ctxt, true, qos_list);
+		}
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
