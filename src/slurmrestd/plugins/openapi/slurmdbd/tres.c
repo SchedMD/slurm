@@ -44,6 +44,28 @@
 #include "src/slurmrestd/operations.h"
 #include "api.h"
 
+extern int update_tres(ctxt_t *ctxt, bool commit, list_t *tres_list)
+{
+#ifdef NDEBUG
+		/*
+		 * Updating TRES is not currently supported and is disabled
+		 * except for developer testing as the TRES id can not be
+		 * maintained while updating or adding new TRES.
+		 */
+		if (commit)
+			resp_error(ctxt, ESLURM_NOT_SUPPORTED, __func__,
+				   "Updating TRES is not currently supported");
+#else
+		int rc;
+
+		if (!(rc = db_query_rc(ctxt, tres_list, slurmdb_tres_add)) &&
+		    !ctxt->rc && commit)
+			db_query_commit(ctxt);
+
+		return rc;
+#endif /* NDEBUG */
+}
+
 static int _op_handler_tres(ctxt_t *ctxt)
 {
 	if (ctxt->method == HTTP_REQUEST_GET) {
@@ -71,17 +93,11 @@ static int _op_handler_tres(ctxt_t *ctxt)
 			resp_error(ctxt, ESLURM_NOT_SUPPORTED, __func__,
 				   "Updating TRES is not currently supported");
 #else
-		int rc;
 		list_t *tres_list = NULL;
 
-		if ((rc = DATA_PARSE(ctxt->parser, OPENAPI_TRES_RESP, tres_list,
-				     ctxt->query, ctxt->parent_path))) {
-			FREE_NULL_LIST(tres_list);
-			return rc;
-		}
-
-		if (!(rc = db_query_rc(ctxt, tres_list, slurmdb_tres_add)))
-			db_query_commit(ctxt);
+		if (!DATA_PARSE(ctxt->parser, OPENAPI_TRES_RESP, tres_list,
+				ctxt->query, ctxt->parent_path))
+			update_tres(ctxt, true, tres_list);
 
 		FREE_NULL_LIST(tres_list);
 #endif /* NDEBUG */
