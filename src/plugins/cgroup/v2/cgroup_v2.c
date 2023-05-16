@@ -1034,7 +1034,7 @@ extern int init(void)
 
 	/*
 	 * Check available controllers in cgroup.controller, record them in our
-	 * bitmap and enable them if CgroupAutomountOption is set.
+	 * bitmap and enable them if EnableControllers option is set.
 	 * We enable them manually just because we support CgroupIgnoreSystemd
 	 * option. Theorically when starting a unit with Delegate=yes, you will
 	 * get all controllers available at your level.
