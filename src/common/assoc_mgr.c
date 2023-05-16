@@ -2186,53 +2186,6 @@ extern int assoc_mgr_fini(bool save_state)
 	return SLURM_SUCCESS;
 }
 
-#ifndef NDEBUG
-/*
- * Used to protect against double-locking within a single thread. Calling
- * assoc_mgr_lock() while already holding locks will lead to deadlock;
- * this will force such instances to abort() in development builds.
- */
-/*
- * FIXME: __thread is non-standard, and may cause build failures on unusual
- * systems. Only used within development builds to mitigate possible problems
- * with production builds.
- */
-static __thread bool assoc_mgr_locked = false;
-
-/*
- * Used to detect any location where the acquired locks differ from the
- * release locks.
- */
-
-static __thread assoc_mgr_lock_t thread_locks;
-
-static bool _store_locks(assoc_mgr_lock_t *lock_levels)
-{
-	if (assoc_mgr_locked)
-		return false;
-	assoc_mgr_locked = true;
-
-        memcpy((void *) &thread_locks, (void *) lock_levels,
-               sizeof(assoc_mgr_lock_t));
-
-        return true;
-}
-
-static bool _clear_locks(assoc_mgr_lock_t *lock_levels)
-{
-	if (!assoc_mgr_locked)
-		return false;
-	assoc_mgr_locked = false;
-
-	if (memcmp((void *) &thread_locks, (void *) lock_levels,
-		       sizeof(assoc_mgr_lock_t)))
-		return false;
-
-	memset((void *) &thread_locks, 0, sizeof(assoc_mgr_lock_t));
-
-	return true;
-}
-
 static slurmdb_admin_level_t _get_admin_level_internal(void *db_conn,
 						       uint32_t uid,
 						       bool locked)
@@ -2360,6 +2313,53 @@ static void _handle_new_user_coord(slurmdb_user_rec_t *rec)
 	} else
 		list_delete_first(assoc_mgr_coord_list,
 				  slurm_find_ptr_in_list, rec);
+}
+
+#ifndef NDEBUG
+/*
+ * Used to protect against double-locking within a single thread. Calling
+ * assoc_mgr_lock() while already holding locks will lead to deadlock;
+ * this will force such instances to abort() in development builds.
+ */
+/*
+ * FIXME: __thread is non-standard, and may cause build failures on unusual
+ * systems. Only used within development builds to mitigate possible problems
+ * with production builds.
+ */
+static __thread bool assoc_mgr_locked = false;
+
+/*
+ * Used to detect any location where the acquired locks differ from the
+ * release locks.
+ */
+
+static __thread assoc_mgr_lock_t thread_locks;
+
+static bool _store_locks(assoc_mgr_lock_t *lock_levels)
+{
+	if (assoc_mgr_locked)
+		return false;
+	assoc_mgr_locked = true;
+
+        memcpy((void *) &thread_locks, (void *) lock_levels,
+               sizeof(assoc_mgr_lock_t));
+
+        return true;
+}
+
+static bool _clear_locks(assoc_mgr_lock_t *lock_levels)
+{
+	if (!assoc_mgr_locked)
+		return false;
+	assoc_mgr_locked = false;
+
+	if (memcmp((void *) &thread_locks, (void *) lock_levels,
+		       sizeof(assoc_mgr_lock_t)))
+		return false;
+
+	memset((void *) &thread_locks, 0, sizeof(assoc_mgr_lock_t));
+
+	return true;
 }
 
 extern bool verify_assoc_lock(assoc_mgr_lock_datatype_t datatype,
