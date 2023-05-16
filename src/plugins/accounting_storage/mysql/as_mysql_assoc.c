@@ -3782,7 +3782,6 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(add_assoc.assoc.cluster);
 		FREE_NULL_LIST(add_assoc.user_list);
 		if (add_assoc_cond.rc != SLURM_SUCCESS) {
-			rc = add_assoc_cond.rc;
 			goto end_it;
 		}
 	}
@@ -3796,7 +3795,6 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 				    add_assoc_cond.txn_query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add txn");
-			rc = SLURM_SUCCESS;
 			goto end_it;
 		}
 	}
@@ -3815,7 +3813,6 @@ end_it:
 					    add_assoc_cond.txn_query);
 			if (rc != SLURM_SUCCESS) {
 				error("Couldn't add txn");
-				rc = SLURM_SUCCESS;
 			}
 		}
 	}
