@@ -41,8 +41,7 @@
 /* Cgroup v1 internal functions */
 
 /*
- * Create a cgroup namespace and try to mount it if when it is not available and
- * CgroupAutomount option is set.
+ * Create a cgroup namespace.
  *
  * RET SLURM_SUCCESS if cgroup namespace is created and available, SLURM_ERROR
  *     otherwise.

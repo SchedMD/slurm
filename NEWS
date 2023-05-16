@@ -65,6 +65,7 @@ documents those changes that are of interest to users and administrators.
  -- Changed the default SelectType to select/cons_tres (from select/linear).
  -- Allow SlurmUser/root to use reservations without specific permissions.
  -- Fix sending step signals to nodes not allocated by the step.
+ -- Remove CgroupAutomount= option from cgroup.conf.
 
 * Changes in Slurm 23.02.3
 ==========================
