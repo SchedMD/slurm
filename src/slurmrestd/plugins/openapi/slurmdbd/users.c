@@ -210,25 +210,28 @@ cleanup:
 	return ctxt->rc ? SLURM_ERROR : SLURM_SUCCESS;
 }
 
-static void _update_users(ctxt_t *ctxt, bool commit)
+extern int update_users(ctxt_t *ctxt, bool commit, list_t *user_list)
 {
-	openapi_resp_single_t resp = {0};
-	list_t *user_list = NULL;
-
-	if (DATA_PARSE(ctxt->parser, OPENAPI_USERS_RESP, user_list, ctxt->query,
-		       ctxt->parent_path))
-		goto cleanup;
-
-	user_list = resp.response;
-
-	if (list_for_each(user_list, _foreach_update_user, ctxt) < 0)
-		goto cleanup;
-
-	if (!ctxt->rc && commit)
+	if (!(list_for_each(user_list, _foreach_update_user, ctxt) < 0) &&
+	    !ctxt->rc && commit)
 		db_query_commit(ctxt);
 
-cleanup:
-	FREE_NULL_LIST(user_list);
+	return ctxt->rc;
+}
+
+static void _update_users(ctxt_t *ctxt)
+{
+	openapi_resp_single_t resp = {0};
+	openapi_resp_single_t *resp_ptr = &resp;
+
+	if (!DATA_PARSE(ctxt->parser, OPENAPI_USERS_RESP, resp, ctxt->query,
+			ctxt->parent_path)) {
+		list_t *user_list = resp.response;
+		update_users(ctxt, true, user_list);
+		FREE_NULL_LIST(user_list);
+	}
+
+	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 }
 
 static void _delete_user(ctxt_t *ctxt, char *user_name)
@@ -265,7 +268,7 @@ static int _op_handler_users(ctxt_t *ctxt)
 
 		slurmdb_destroy_user_cond(user_cond);
 	} else if (ctxt->method == HTTP_REQUEST_POST) {
-		_update_users(ctxt, (ctxt->tag != CONFIG_OP_TAG));
+		_update_users(ctxt);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
