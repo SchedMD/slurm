@@ -205,7 +205,7 @@ sleep 10"
 			incr pending
 			exp_continue
 		}
-		-re "R.None" {
+		-re "R." {
 			incr running
 			exp_continue
 		}
