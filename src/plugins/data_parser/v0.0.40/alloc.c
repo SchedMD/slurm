@@ -157,6 +157,7 @@ static const struct {
 	add(ACCOUNT_CONDITION, slurmdb_destroy_account_cond, NULL),
 	add(CLUSTER_CONDITION, slurmdb_destroy_cluster_cond,
 	    _create_cluster_cond_obj),
+	add(WCKEY_CONDITION, slurmdb_destroy_wckey_rec, NULL),
 };
 #undef add
 

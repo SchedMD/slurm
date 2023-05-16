@@ -67,32 +67,35 @@ static void _delete_wckey(ctxt_t *ctxt, slurmdb_wckey_cond_t *wckey_cond)
 	FREE_NULL_LIST(wckey_list);
 }
 
-static void _update_wckeys(ctxt_t *ctxt, bool commit)
+extern int update_wckeys(ctxt_t *ctxt, bool commit, list_t *wckey_list)
 {
-	openapi_resp_single_t resp = {0};
-	list_t *wckey_list = NULL;
-
-	if (DATA_PARSE(ctxt->parser, OPENAPI_WCKEY_RESP, resp, ctxt->query,
-		       ctxt->parent_path))
-		goto cleanup;
-
-	wckey_list = resp.response;
-
-	if (!wckey_list || list_is_empty(wckey_list)) {
-		resp_warn(ctxt, __func__,
-			  "ignoring empty or non-existant wckeys array for update");
-		goto cleanup;
-	}
-
-	if (!db_query_rc(ctxt, wckey_list, slurmdb_wckeys_add) && commit)
+	if (!db_query_rc(ctxt, wckey_list, slurmdb_wckeys_add) && !ctxt->rc &&
+	    commit)
 		db_query_commit(ctxt);
 
-cleanup:
-	FREE_NULL_LIST(wckey_list);
-	{
-		openapi_resp_single_t *resp_ptr = &resp;
-		FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
+	return ctxt->rc;
+}
+
+static void _update_wckeys(ctxt_t *ctxt)
+{
+	openapi_resp_single_t resp = {0};
+	openapi_resp_single_t *resp_ptr = &resp;
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_WCKEY_RESP, resp, ctxt->query,
+		       ctxt->parent_path)) {
+		list_t *wckey_list = resp.response;
+
+		if (!wckey_list || list_is_empty(wckey_list)) {
+			resp_warn(ctxt, __func__,
+				  "ignoring empty or non-existant wckeys array for update");
+		} else {
+			update_wckeys(ctxt, true, wckey_list);
+		}
+
+		FREE_NULL_LIST(wckey_list);
 	}
+
+	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 }
 
 static int _op_handler_wckey(ctxt_t *ctxt)
@@ -141,7 +144,7 @@ static int _op_handler_wckeys(ctxt_t *ctxt)
 
 		_dump_wckeys(ctxt, wckey_cond);
 	} else if (ctxt->method == HTTP_REQUEST_POST) {
-		_update_wckeys(ctxt, (ctxt->tag != CONFIG_OP_TAG));
+		_update_wckeys(ctxt);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",

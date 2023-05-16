@@ -220,5 +220,6 @@ extern int update_clusters(ctxt_t *ctxt, bool commit, list_t *cluster_list);
 extern int update_qos(ctxt_t *ctxt, bool commit, list_t *qos_list);
 extern int update_tres(ctxt_t *ctxt, bool commit, list_t *tres_list);
 extern int update_users(ctxt_t *ctxt, bool commit, list_t *user_list);
+extern int update_wckeys(ctxt_t *ctxt, bool commit, list_t *wckey_list);
 
 #endif
