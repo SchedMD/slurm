@@ -43,10 +43,6 @@
 #include "src/interfaces/data_parser.h"
 #include "src/slurmrestd/openapi.h"
 
-#define DATA_VERSION "v0.0.39"
-#define DATA_PLUGIN "data_parser/" DATA_VERSION
-#define CONFIG_OP_TAG 0xfffffffe
-
 typedef openapi_ctxt_t ctxt_t;
 
 #define resp_error(ctxt, error_code, source, why, ...) \
@@ -146,29 +142,6 @@ extern int db_modify_rc_funcname(ctxt_t *ctxt, void *cond, void *obj,
  * IN ctxt - connection context
  */
 extern void db_query_commit_funcname(ctxt_t *ctxt, const char *caller);
-
-/* ------------ handlers for user requests --------------- */
-
-#define get_str_param(name, req, ctxt) \
-	openapi_get_str_param(ctxt, req, name, __func__)
-
-#define get_date_param(name, req, time_ptr, ctxt) \
-	openapi_get_date_param(ctxt, req, name, &time_ptr, __func__)
-
-#define get_query_key_list(path, ctxt, parent_path) \
-	get_query_key_list_funcname(path, ctxt, parent_path, __func__)
-
-/*
- * Retrieve List from query list
- * IN path - Path to parameter in query (case insensitive)
- * IN ctxt - connection context
- * IN query - query from http request
- * IN/OUT parent_path - data to init to hold parse path
- * RET List ptr or NULL on error
- */
-extern data_t *get_query_key_list_funcname(const char *path, ctxt_t *ctxt,
-					   data_t **parent_path,
-					   const char *caller);
 
 /* ------------ declarations for each operation --------------- */
 
