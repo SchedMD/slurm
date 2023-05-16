@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
     slurm_bb_data_in completes.
  -- mpi/pmix - fix regression introduced in 23.02.2 which caused PMIx shmem
     backed files permissions to be incorrect.
+ -- api/submit - fix memory leaks when submission of batch regular jobs or batch
+    HetJobs fails (response data is a return code).
 
 * Changes in Slurm 23.02.2
 ==========================
