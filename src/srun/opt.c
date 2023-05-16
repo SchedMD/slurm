@@ -1206,9 +1206,6 @@ static bool _opt_verify(void)
 			if (opt.verbose)
 				info("Number of tasks implicitly set to %d",
 				     opt.ntasks);
-		} else if (opt.ntasks_per_node != NO_VAL) {
-			opt.ntasks *= opt.ntasks_per_node;
-			opt.ntasks_set = true;
 		}
 
 		/* massage the numbers */
