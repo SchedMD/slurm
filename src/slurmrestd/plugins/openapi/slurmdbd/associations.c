@@ -322,26 +322,27 @@ static int _foreach_update_assoc(void *x, void *arg)
 	return rc ? SLURM_ERROR : SLURM_SUCCESS;
 }
 
-static void _update_associations(ctxt_t *ctxt, bool commit)
+extern int update_associations(ctxt_t *ctxt, bool commit, list_t *assoc_list)
+{
+	if (!(list_for_each(assoc_list, _foreach_update_assoc, ctxt) < 0) &&
+	    !ctxt->rc && commit)
+		db_query_commit(ctxt);
+
+	return ctxt->rc;
+}
+
+static void _update_associations(ctxt_t *ctxt)
 {
 	openapi_resp_single_t resp = {0};
 	openapi_resp_single_t *resp_ptr = &resp;
-	list_t *assoc_list = NULL;
 
-	if (DATA_PARSE(ctxt->parser, OPENAPI_ASSOCS_RESP, resp, ctxt->query,
-		       ctxt->parent_path))
-		goto cleanup;
+	if (!DATA_PARSE(ctxt->parser, OPENAPI_ASSOCS_RESP, resp, ctxt->query,
+			ctxt->parent_path)) {
+		list_t *assoc_list = resp.response;
+		update_associations(ctxt, true, assoc_list);
+		FREE_NULL_LIST(assoc_list);
+	}
 
-	assoc_list = resp.response;
-
-	if (list_for_each(assoc_list, _foreach_update_assoc, ctxt) < 0)
-		goto cleanup;
-
-	if (!ctxt->rc && commit)
-		db_query_commit(ctxt);
-
-cleanup:
-	FREE_NULL_LIST(assoc_list);
 	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 }
 
@@ -379,7 +380,7 @@ static int _op_handler_associations(ctxt_t *ctxt)
 	if (ctxt->method == HTTP_REQUEST_GET)
 		_dump_assoc_cond(ctxt, assoc_cond, false);
 	else if (ctxt->method == HTTP_REQUEST_POST)
-		_update_associations(ctxt, (ctxt->tag != CONFIG_OP_TAG));
+		_update_associations(ctxt);
 	else if (ctxt->method == HTTP_REQUEST_DELETE)
 		_delete_assoc(ctxt, assoc_cond, false);
 	else {
