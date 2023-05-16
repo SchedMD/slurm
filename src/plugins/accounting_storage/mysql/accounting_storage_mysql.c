@@ -869,7 +869,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	char *query = NULL;
 	time_t now = time(NULL);
 	char *cluster_name = NULL;
-	int rc = SLURM_SUCCESS, rc2;
+	int rc = SLURM_SUCCESS;
 	ListIterator itr = NULL;
 
 	/*
@@ -1017,9 +1017,11 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	}
 
 	/* this needs to be created before post_create is called */
-	rc2 = mysql_db_query(mysql_conn, get_lineage);
-	if (rc2 != SLURM_SUCCESS)
-		rc = rc2;
+	rc = mysql_db_query(mysql_conn, get_lineage);
+	if (rc != SLURM_SUCCESS) {
+		error("issue making get_lineage procedure");
+		return rc;
+	}
 
 	rc = as_mysql_convert_tables_post_create(mysql_conn);
 
@@ -1134,12 +1136,17 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		return rc;
 	}
 
-	rc2 = mysql_db_query(mysql_conn, get_parent_proc);
-	if (rc2 != SLURM_SUCCESS)
-		rc = rc2;
-	rc2 = mysql_db_query(mysql_conn, get_coord_qos);
-	if (rc2 != SLURM_SUCCESS)
-		rc = rc2;
+	rc = mysql_db_query(mysql_conn, get_parent_proc);
+	if (rc != SLURM_SUCCESS) {
+		error("issue making get_parent_proc procedure");
+		return rc;
+	}
+
+	rc = mysql_db_query(mysql_conn, get_coord_qos);
+	if (rc != SLURM_SUCCESS) {
+		error("issue making get_coord_qos procedure");
+		return rc;
+	}
 
 	/* Add user root to be a user by default and have this default
 	 * account be root.  If already there just update
