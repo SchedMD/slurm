@@ -43,6 +43,10 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+ -- scontrol show assoc_mgr will display Lineage instead of Lft for
+    associations.
+ -- sacctmgr list associations 'lft' column is removed.
+ -- sacctmgr list associations 'lineage' has been added.
 
 API CHANGES
 ===========

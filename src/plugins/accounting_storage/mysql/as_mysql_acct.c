@@ -40,82 +40,105 @@
 #include "as_mysql_acct.h"
 #include "as_mysql_user.h"
 
-/* Fill in all the users that are coordinator for this account.  This
- * will fill in if there are coordinators from a parent account also.
- */
-static int _get_account_coords(mysql_conn_t *mysql_conn,
-			       slurmdb_account_rec_t *acct)
+typedef struct {
+	slurmdb_account_rec_t *acct_in;
+	slurmdb_assoc_rec_t *assoc_in;
+	char *insert_query;
+	char *insert_query_pos;
+	mysql_conn_t *mysql_conn;
+	time_t now;
+	int rc;
+	bool ret_str_err;
+	char *ret_str;
+	char *ret_str_pos;
+	char *txn_query;
+	char *txn_query_pos;
+	char *user_name;
+} add_acct_cond_t;
+
+
+static int _foreach_add_acct(void *x, void *arg)
 {
-	char *query = NULL, *cluster_name = NULL;
-	slurmdb_coord_rec_t *coord = NULL;
+	char *name = x;
+	add_acct_cond_t *add_acct_cond = arg;
+	slurmdb_account_rec_t *acct;
+	slurmdb_assoc_rec_t *assoc;
+	char *desc;
+	char *org;
+	char *extra, *tmp_extra;
 	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
-	ListIterator itr;
+	int cnt;
+	char *query;
 
-	if (!acct) {
-		error("We need a account to fill in.");
-		return SLURM_ERROR;
-	}
+	/* Check to see if it is already in the acct_table */
+	query = xstrdup_printf("select name from %s where name='%s' and !deleted",
+			       acct_table, name);
+	result = mysql_db_query_ret(add_acct_cond->mysql_conn, query, 0);
 
-	if (!acct->coordinators)
-		acct->coordinators = list_create(slurmdb_destroy_coord_rec);
-
-	query = xstrdup_printf(
-		"select user from %s where acct='%s' && deleted=0",
-		acct_coord_table, acct->name);
-
-	if (!(result =
-	      mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
 	xfree(query);
-	while ((row = mysql_fetch_row(result))) {
-		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
-		list_append(acct->coordinators, coord);
-		coord->name = xstrdup(row[0]);
-		coord->direct = 1;
-	}
+	if (!result)
+		return -1;
+
+	cnt = mysql_num_rows(result);
 	mysql_free_result(result);
+	/* If so, just return */
+	if (cnt)
+		return 0;
 
-	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
-	itr = list_iterator_create(as_mysql_cluster_list);
-	while ((cluster_name = list_next(itr))) {
-		if (query)
-			xstrcat(query, " union ");
-		xstrfmtcat(query,
-			   "select distinct t0.user from %s as t0, "
-			   "\"%s_%s\" as t1, \"%s_%s\" as t2 "
-			   "where t0.acct=t1.acct && "
-			   "t1.lft<t2.lft && t1.rgt>t2.lft && "
-			   "t1.user='' && t2.acct='%s' "
-			   "&& t1.acct!='%s' && !t0.deleted",
-			   acct_coord_table, cluster_name, assoc_table,
-			   cluster_name, assoc_table,
-			   acct->name, acct->name);
-	}
-	list_iterator_destroy(itr);
-	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+	/* Else, add it */
+	acct = add_acct_cond->acct_in;
+	assoc = add_acct_cond->assoc_in;
+	desc = acct->description ? acct->description : x;
+	org = acct->organization;
 
-	if (!query) {
-		error("No clusters defined?  How could there be accts?");
-		return SLURM_SUCCESS;
+	if (!org) {
+		if (assoc->parent_acct && xstrcmp(assoc->parent_acct, "root"))
+			org = assoc->parent_acct;
+		else
+			org = x;
 	}
-	xstrcat(query, ";");
 
-	if (!(result =  mysql_db_query_ret(mysql_conn, query, 0))) {
-		xfree(query);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-	while ((row = mysql_fetch_row(result))) {
-		coord = xmalloc(sizeof(slurmdb_coord_rec_t));
-		list_append(acct->coordinators, coord);
-		coord->name = xstrdup(row[0]);
-		coord->direct = 0;
-	}
-	mysql_free_result(result);
-	return SLURM_SUCCESS;
+	if (!add_acct_cond->ret_str)
+		xstrcatat(add_acct_cond->ret_str, &add_acct_cond->ret_str_pos,
+			  " Adding Account(s)\n");
+
+	xstrfmtcatat(add_acct_cond->ret_str, &add_acct_cond->ret_str_pos,
+		     "  %s\n", name);
+
+	if (add_acct_cond->insert_query)
+		xstrfmtcatat(add_acct_cond->insert_query,
+			     &add_acct_cond->insert_query_pos,
+			     ", (%ld, %ld, '%s', '%s', '%s')",
+			     add_acct_cond->now, add_acct_cond->now,
+			     name, desc, org);
+	else
+		xstrfmtcatat(add_acct_cond->insert_query,
+			     &add_acct_cond->insert_query_pos,
+			     "insert into %s (creation_time, mod_time, name, description, organization) values (%ld, %ld, '%s', '%s', '%s')",
+			     acct_table, add_acct_cond->now, add_acct_cond->now,
+			     name, desc, org);
+
+	extra = xstrdup_printf("description='%s', organization='%s'",
+			       desc, org);
+	tmp_extra = slurm_add_slash_to_quotes(extra);
+
+	if (add_acct_cond->txn_query)
+		xstrfmtcatat(add_acct_cond->txn_query,
+			     &add_acct_cond->txn_query_pos,
+			     ", (%ld, %u, '%s', '%s', '%s')",
+			     add_acct_cond->now, DBD_ADD_ACCOUNTS, name,
+			     add_acct_cond->user_name, tmp_extra);
+	else
+		xstrfmtcatat(add_acct_cond->txn_query,
+			     &add_acct_cond->txn_query_pos,
+			     "insert into %s (timestamp, action, name, actor, info) values (%ld, %u, '%s', '%s', '%s')",
+			     txn_table,
+			     add_acct_cond->now, DBD_ADD_ACCOUNTS, name,
+			     add_acct_cond->user_name, tmp_extra);
+	xfree(tmp_extra);
+	xfree(extra);
+
+	return 0;
 }
 
 extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
@@ -257,6 +280,134 @@ extern int as_mysql_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	FREE_NULL_LIST(assoc_list);
 
 	return rc;
+}
+
+extern char *as_mysql_add_accts_cond(mysql_conn_t *mysql_conn, uint32_t uid,
+				     slurmdb_add_assoc_cond_t *add_assoc,
+				     slurmdb_account_rec_t *acct)
+{
+	add_acct_cond_t add_acct_cond;
+	char *ret_str = NULL;
+	int rc;
+
+	if (check_connection(mysql_conn) != SLURM_SUCCESS) {
+		errno = ESLURM_DB_CONNECTION;
+		return NULL;
+	}
+
+	if (!add_assoc ||
+	    !add_assoc->acct_list ||
+	    !list_count(add_assoc->acct_list)) {
+		errno = ESLURM_EMPTY_LIST;
+		return NULL;
+	}
+
+	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
+		slurmdb_user_rec_t user;
+
+		memset(&user, 0, sizeof(slurmdb_user_rec_t));
+		user.uid = uid;
+
+		if (!is_user_any_coord(mysql_conn, &user)) {
+			char *ret_str = xstrdup("Only admins/operators/coordinators can add accounts");
+			error("%s", ret_str);
+			errno = ESLURM_ACCESS_DENIED;
+			return ret_str;
+		}
+		/*
+		 * If the user is a coord of any acct they can add
+		 * accounts they are only able to make associations to
+		 * these accounts if they are coordinators of the
+		 * parent they are trying to add to
+		 */
+	}
+
+	memset(&add_acct_cond, 0, sizeof(add_acct_cond));
+	add_acct_cond.acct_in = acct;
+	add_acct_cond.assoc_in = &add_assoc->assoc;
+	add_acct_cond.mysql_conn = mysql_conn;
+	add_acct_cond.now = time(NULL);
+	add_acct_cond.user_name = uid_to_string((uid_t) uid);
+
+	/* First add the accounts to the acct_table. */
+	if (list_for_each_ro(add_assoc->acct_list, _foreach_add_acct,
+			     &add_acct_cond) < 0) {
+		rc = add_acct_cond.rc;
+		goto end_it;
+	}
+
+	if (add_acct_cond.insert_query) {
+		xstrfmtcatat(add_acct_cond.insert_query,
+			     &add_acct_cond.insert_query_pos,
+			     " on duplicate key update deleted=0, description=VALUES(description), mod_time=VALUES(mod_time), organization=VALUES(organization);");
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s",
+			 add_acct_cond.insert_query);
+		rc = mysql_db_query(mysql_conn, add_acct_cond.insert_query);
+		xfree(add_acct_cond.insert_query);
+		if (rc != SLURM_SUCCESS) {
+			error("Couldn't add acct");
+			xfree(add_acct_cond.ret_str);
+			goto end_it;
+		}
+
+		/* Success means we add the defaults to the string */
+		xstrfmtcatat(add_acct_cond.ret_str,
+			     &add_acct_cond.ret_str_pos,
+			     " Settings\n  Description     = %s\n  Organization    = %s\n",
+			     acct->description ?
+			     acct->description : "Account Name",
+			     acct->organization ?
+			     acct->organization : "Parent/Account Name");
+
+		xstrcatat(add_acct_cond.txn_query,
+			  &add_acct_cond.txn_query_pos,
+			  ";");
+		rc = mysql_db_query(mysql_conn, add_acct_cond.txn_query);
+		if (rc != SLURM_SUCCESS) {
+			error("Couldn't add txn");
+			rc = SLURM_SUCCESS;
+		}
+	}
+
+	/* Now add the associations */
+	ret_str = as_mysql_add_assocs_cond(mysql_conn, uid, add_assoc);
+	rc = errno;
+
+	if (rc == SLURM_NO_CHANGE_IN_DATA) {
+		if (add_acct_cond.ret_str)
+			rc = SLURM_SUCCESS;
+	}
+
+end_it:
+	xfree(add_acct_cond.insert_query);
+	xfree(add_acct_cond.txn_query);
+	xfree(add_acct_cond.user_name);
+
+	if (rc != SLURM_SUCCESS) {
+		reset_mysql_conn(mysql_conn);
+		if (!add_acct_cond.ret_str_err)
+			xfree(add_acct_cond.ret_str);
+		else
+			xfree(ret_str);
+		errno = rc;
+		return add_acct_cond.ret_str ? add_acct_cond.ret_str : ret_str;
+	}
+
+	if (ret_str) {
+		xstrcatat(add_acct_cond.ret_str,
+			  &add_acct_cond.ret_str_pos,
+			  ret_str);
+		xfree(ret_str);
+	}
+
+	if (!add_acct_cond.ret_str) {
+		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "didn't affect anything");
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		return NULL;
+	}
+
+	errno = SLURM_SUCCESS;
+	return add_acct_cond.ret_str;
 }
 
 extern List as_mysql_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
@@ -408,7 +559,8 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL,
-		*name_char = NULL, *assoc_char = NULL;
+		*name_char = NULL, *name_char_pos = NULL,
+		*assoc_char = NULL, *assoc_char_pos = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
 	int set = 0;
@@ -492,20 +644,25 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	rc = 0;
 	ret_list = list_create(xfree_ptr);
 	while ((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
-		if (!rc) {
-			xstrfmtcat(name_char, "name='%s'", object);
-			xstrfmtcat(assoc_char, "t2.acct='%s'", object);
-			rc = 1;
-		} else  {
-			xstrfmtcat(name_char, " || name='%s'", object);
-			xstrfmtcat(assoc_char, " || t2.acct='%s'", object);
-		}
+
+		if (name_char)
+			xstrfmtcatat(name_char, &name_char_pos, ",'%s'",
+				     object);
+		else
+			xstrfmtcatat(name_char, &name_char_pos, "name in('%s'",
+				     object);
+		xstrfmtcatat(assoc_char, &assoc_char_pos,
+			     "%st2.lineage like '%%/%s/%%'",
+			     assoc_char ? " || " : "", object);
 	}
+
+	if (name_char)
+		xstrcatat(name_char, &name_char_pos, ")");
+
 	mysql_free_result(result);
 
 	if (!list_count(ret_list)) {
@@ -727,9 +884,9 @@ empty:
 		if (slurm_atoul(row[SLURMDB_REQ_DELETED]))
 			acct->flags |= SLURMDB_ACCT_FLAG_DELETED;
 
-		if (acct_cond && acct_cond->with_coords) {
-			_get_account_coords(mysql_conn, acct);
-		}
+		if (acct_cond && acct_cond->with_coords)
+			acct->coordinators =
+				assoc_mgr_acct_coords(mysql_conn, acct->name);
 
 		if (acct_cond && acct_cond->with_assocs) {
 			if (!acct_cond->assoc_cond) {

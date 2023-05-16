@@ -318,7 +318,7 @@ static List _process_util_by_report(void *db_conn, char *calling_name,
 	if ((type == CLUSTER_REPORT_UA) || (type == CLUSTER_REPORT_AU)) {
 		first_list = type_list;
 		type_list = slurmdb_get_hierarchical_sorted_assoc_list(
-			first_list, true);
+			first_list);
 	}
 
 	/* set up the structures for easy retrieval later */

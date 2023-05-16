@@ -138,6 +138,10 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 				    char **cols, char **vals,
 				    char **extra, qos_level_t qos_level,
 				    bool for_add);
+extern int setup_assoc_limits_locked(slurmdb_assoc_rec_t *assoc,
+				     char **cols, char **vals,
+				     char **extra, qos_level_t qos_level,
+				     bool for_add);
 extern int modify_common(mysql_conn_t *mysql_conn,
 			 uint16_t type,
 			 time_t now,
@@ -173,6 +177,14 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
  */
 extern int get_cluster_dims(mysql_conn_t *mysql_conn, char *cluster_name,
 			    int *dims);
+
+/*
+ * Get the version of the checked in Cluster.  This can be removed
+ * 2 versions after 23.11 as we only need it to keep track of lft/rgt until we
+ * can completely bail from them.
+ */
+extern uint32_t get_cluster_version(mysql_conn_t *mysql_conn,
+				    char *cluster_name);
 
 /*local api functions */
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);

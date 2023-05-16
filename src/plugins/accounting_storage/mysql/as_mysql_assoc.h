@@ -44,6 +44,9 @@
 extern int as_mysql_get_modified_lfts(mysql_conn_t *mysql_conn,
 				      char *cluster_name, uint32_t start_lft);
 
+extern char *as_mysql_add_assocs_cond(mysql_conn_t *mysql_conn, uint32_t uid,
+				      slurmdb_add_assoc_cond_t *add_assoc);
+
 extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn,
 			       uint32_t uid,
 			       List assoc_list);

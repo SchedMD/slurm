@@ -166,6 +166,11 @@ extern void slurmdb_pack_federation_cond(void *in, uint16_t protocol_version,
 extern int slurmdb_unpack_federation_cond(void **object,
 					  uint16_t protocol_version,
 					  buf_t *buffer);
+extern void slurmdb_pack_add_assoc_cond(void *in, uint16_t protocol_version,
+					buf_t *buffer);
+extern int slurmdb_unpack_add_assoc_cond(void **object,
+					 uint16_t protocol_version,
+					 buf_t *buffer);
 extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
 				    buf_t *buffer);
 extern int slurmdb_unpack_assoc_cond(void **object, uint16_t protocol_version,

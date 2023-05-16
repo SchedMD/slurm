@@ -382,7 +382,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _packstr_with_version(void *object, uint16_t protocol_version,
+extern void packstr_with_version(void *object, uint16_t protocol_version,
 				  buf_t *buffer)
 {
 	packstr(object, buffer);
@@ -393,14 +393,14 @@ static void _pack_shares_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	shares_request_msg_t *msg = smsg->data;
 	xassert(msg);
 
-	(void) slurm_pack_list(msg->acct_list, _packstr_with_version, buffer,
+	(void) slurm_pack_list(msg->acct_list, packstr_with_version, buffer,
 			       smsg->protocol_version);
-	(void) slurm_pack_list(msg->user_list, _packstr_with_version, buffer,
+	(void) slurm_pack_list(msg->user_list, packstr_with_version, buffer,
 			       smsg->protocol_version);
 }
 
-static int _unpackstr_with_version(void **object, uint16_t protocol_version,
-				   buf_t *buffer)
+extern int unpackstr_with_version(void **object, uint16_t protocol_version,
+				  buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 
@@ -412,12 +412,12 @@ static int _unpack_shares_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 	shares_request_msg_t *object_ptr = xmalloc(sizeof(*object_ptr));
 	smsg->data = object_ptr;
 
-	if (slurm_unpack_list(&object_ptr->acct_list, _unpackstr_with_version,
+	if (slurm_unpack_list(&object_ptr->acct_list, unpackstr_with_version,
 			      xfree_ptr, buffer, smsg->protocol_version) !=
 	    SLURM_SUCCESS)
 		goto unpack_error;
 
-	if (slurm_unpack_list(&object_ptr->user_list, _unpackstr_with_version,
+	if (slurm_unpack_list(&object_ptr->user_list, unpackstr_with_version,
 			      xfree_ptr, buffer, smsg->protocol_version) !=
 	    SLURM_SUCCESS)
 		goto unpack_error;

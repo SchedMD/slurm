@@ -93,6 +93,10 @@ extern int pack_msg(slurm_msg_t const *msg, buf_t *buffer);
  */
 extern int unpack_msg(slurm_msg_t *msg, buf_t *buffer);
 
+extern void packstr_with_version(void *object, uint16_t protocol_version,
+				 buf_t *buffer);
+extern int unpackstr_with_version(void **object, uint16_t protocol_version,
+				  buf_t *buffer);
 extern int slurm_pack_list(List send_list,
 			   void (*pack_function) (void *object,
 						  uint16_t rpc_version,

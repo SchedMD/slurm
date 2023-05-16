@@ -75,6 +75,19 @@ extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
 				     persist_msg_t *req,
 				     persist_msg_t *resp);
 
+/*
+ * Send an RPC to the SlurmDBD and wait for the return code reply (fill in
+ * comment as well if comment != NULL.
+ *
+ * This handles agent as well as normal connections
+ *
+ * The RPC will not be queued if an error occurs.
+ * Returns SLURM_SUCCESS or an error code
+ */
+extern int dbd_conn_send_recv_rc_comment_msg(uint16_t rpc_version,
+					     persist_msg_t *req,
+					     int *resp_code,
+					     char **comment);
 
 /*
  * Send an RPC to the SlurmDBD and wait for the return code reply.

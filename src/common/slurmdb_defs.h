@@ -141,15 +141,13 @@ extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level);
 /* The next three functions have pointers to assoc_list so do not
  * destroy assoc_list before using the list returned from this function.
  */
-extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list,
-						       bool use_lft);
+extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list);
 extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list);
-extern List slurmdb_get_acct_hierarchical_rec_list_no_lft(List assoc_list);
 
 /* This reorders the list into a alphabetical hierarchy.
    IN/OUT: assoc_list
  */
-extern void slurmdb_sort_hierarchical_assoc_list(List assoc_list, bool use_lft);
+extern void slurmdb_sort_hierarchical_assoc_list(List assoc_list);
 
 /* IN/OUT: tree_list a list of slurmdb_print_tree_t's */
 extern char *slurmdb_tree_name_get(char *name, char *parent, List tree_list);
@@ -206,6 +204,7 @@ extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
 extern slurmdb_tres_rec_t *slurmdb_copy_tres_rec(slurmdb_tres_rec_t *tres);
 extern List slurmdb_copy_tres_list(List tres);
 extern List slurmdb_diff_tres_list(List tres_list_old, List tres_list_new);
+extern list_t *slurmdb_list_copy_coord(list_t *coord_accts);
 extern char *slurmdb_tres_string_combine_lists(
 	List tres_list_old, List tres_list_new);
 /* make a tres_string from a given list

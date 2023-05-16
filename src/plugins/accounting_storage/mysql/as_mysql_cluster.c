@@ -200,7 +200,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_cluster_rec_t *object = NULL;
-	char *cols = NULL, *vals = NULL, *extra = NULL,
+	char *extra = NULL,
 		*query = NULL, *tmp_extra = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
@@ -260,24 +260,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		int fed_id = 0;
 		uint16_t fed_state = CLUSTER_FED_STATE_NA;
 		char *features = NULL;
-		xstrcat(cols, "creation_time, mod_time, acct");
-		xstrfmtcat(vals, "%ld, %ld, 'root'", now, now);
-		xstrfmtcat(extra, ", mod_time=%ld", now);
-		if (object->root_assoc) {
-			rc = setup_assoc_limits(object->root_assoc, &cols,
-						&vals, &extra,
-						QOS_LEVEL_SET, 1);
-			if (rc) {
-				xfree(extra);
-				xfree(cols);
-				xfree(vals);
-				added=0;
-				error("%s: Failed, setup_assoc_limits functions returned error",
-				      __func__);
-				goto end_it;
-
-			}
-		}
 
 		if (object->fed.name) {
 			has_feds = 1;
@@ -288,9 +270,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			if (rc) {
 				error("failed to get cluster id for "
 				      "federation");
-				xfree(extra);
-				xfree(cols);
-				xfree(vals);
 				added=0;
 				goto end_it;
 			}
@@ -329,9 +308,6 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(query);
 		if (rc != SLURM_SUCCESS) {
 			error("Couldn't add cluster %s", object->name);
-			xfree(extra);
-			xfree(cols);
-			xfree(vals);
 			xfree(features);
 			added=0;
 			break;
@@ -341,20 +317,40 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (!affect_rows) {
 			debug2("nothing changed %d", affect_rows);
-			xfree(extra);
-			xfree(cols);
-			xfree(vals);
 			xfree(features);
 			continue;
 		}
 
 		if (!external_cluster) {
+			char *cols = NULL, *vals = NULL;
+			xstrcat(cols, "creation_time, mod_time, acct");
+			xstrfmtcat(vals, "%ld, %ld, 'root'", now, now);
+			xstrfmtcat(extra, ", mod_time=%ld", now);
+			if (!object->root_assoc) {
+				object->root_assoc =
+					xmalloc(sizeof(*object->root_assoc));
+				slurmdb_init_assoc_rec(object->root_assoc, 0);
+			}
+
+			rc = setup_assoc_limits(object->root_assoc,
+						&cols, &vals, &extra,
+						QOS_LEVEL_SET, 1);
+			if (rc) {
+				xfree(extra);
+				xfree(cols);
+				xfree(vals);
+				added=0;
+				error("%s: Failed, setup_assoc_limits functions returned error",
+				      __func__);
+				break;
+			}
+
 			/* Add root account */
 			xstrfmtcat(query,
-				   "insert into \"%s_%s\" (%s, lft, rgt) "
-				   "values (%s, 1, 2) "
+				   "insert into \"%s_%s\" (%s, lft, rgt, lineage) "
+				   "values (%s, 1, 2, '/') "
 				   "on duplicate key update deleted=0, "
-				   "id_assoc=LAST_INSERT_ID(id_assoc)%s;",
+				   "id_assoc=LAST_INSERT_ID(id_assoc), lineage=VALUES(lineage)%s;",
 				   object->name, assoc_table, cols,
 				   vals,
 				   extra);
@@ -372,9 +368,36 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				added=0;
 				break;
 			}
-		} else {
-			xfree(cols);
-			xfree(vals);
+
+			/*
+			 * Add this base association to the update
+			 * list. This cannot be done with
+			 * as_mysql_add_assocs() as it uses this assoc
+			 * to set things up. Since it isn't there yet it
+			 * won't work.
+			 */
+
+			xfree(object->root_assoc->cluster);
+			object->root_assoc->cluster = xstrdup(object->name);
+			xfree(object->root_assoc->acct);
+			object->root_assoc->acct = xstrdup("root");
+			xfree(object->root_assoc->user);
+			object->root_assoc->id =
+				mysql_insert_id(mysql_conn->db_conn);
+			object->root_assoc->lft = 1;
+			object->root_assoc->rgt = 2;
+			xfree(object->root_assoc->lineage);
+			object->root_assoc->lineage = xstrdup("/");
+			if (addto_update_list(mysql_conn->update_list,
+					      SLURMDB_ADD_ASSOC,
+					      object->root_assoc) !=
+			    SLURM_SUCCESS) {
+				xfree(extra);
+				xfree(features);
+				added=0;
+				break;
+			}
+			object->root_assoc = NULL;
 		}
 
 		/* Build up extra with cluster specfic values for txn table */
@@ -520,12 +543,6 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* force to only do non-deleted clusters */
 	cluster_cond->with_deleted = 0;
 	_setup_cluster_cond_limits(cluster_cond, &extra);
-
-	/* Needed if talking to older Slurm versions < 2.2 */
-	if (!mysql_conn->cluster_name && cluster_cond->cluster_list
-	    && list_count(cluster_cond->cluster_list))
-		mysql_conn->cluster_name =
-			xstrdup(list_peek(cluster_cond->cluster_list));
 
 	set = 0;
 	if (cluster->control_host) {
@@ -784,7 +801,7 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(query);
 
-	assoc_char = xstrdup_printf("t2.acct='root'");
+	assoc_char = xstrdup_printf("t2.lineage like '/%%'");
 
 	user_name = uid_to_string((uid_t) uid);
 	while ((row = mysql_fetch_row(result))) {

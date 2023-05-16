@@ -1551,6 +1551,7 @@ extern int slurm_char_list_copy(List dst, List src);
 extern char *slurm_char_list_to_xstr(List char_list);
 extern int slurm_find_char_exact_in_list(void *x, void *key);
 extern int slurm_find_char_in_list(void *x, void *key);
+extern int slurm_find_ptr_in_list(void *x, void *key);
 extern void slurm_remove_char_list_from_char_list(list_t *haystack,
 						  list_t *needles);
 extern int slurm_sort_char_list_asc(void *, void *);

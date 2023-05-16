@@ -412,11 +412,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Info");
 		field->len = 20;
 		field->print_routine = print_fields_str;
-	} else if (!xstrncasecmp("LFT", object, MAX(command_len, 1))) {
-		field->type = PRINT_LFT;
-		field->name = xstrdup("LFT");
-		field->len = 6;
-		field->print_routine = print_fields_uint;
+	} else if (!xstrncasecmp("Lineage", object, MAX(command_len, 1))) {
+		field->type = PRINT_LINEAGE;
+		field->name = xstrdup("Lineage");
+		field->len = -20;
+		field->print_routine = print_fields_str;
 	} else if (!xstrncasecmp("servertype", object, MAX(command_len, 10))) {
 		field->type = PRINT_SERVERTYPE;
 		field->name = xstrdup("ServerType");

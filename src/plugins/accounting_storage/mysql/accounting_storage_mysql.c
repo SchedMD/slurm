@@ -374,9 +374,9 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 	 * enum above in the global settings */
 	static char *jassoc_req_inx[] = {
 		"t0.id_job",
-		"t1.acct",
-		"t1.user",
-		"t1.partition"
+		"t2.acct",
+		"t2.user",
+		"t2.partition"
 	};
 	if (ret_list) {
 		xstrcat(object, jassoc_req_inx[0]);
@@ -386,24 +386,17 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 		query = xstrdup_printf(
 			"select distinct %s "
 			"from \"%s_%s\" as t0, "
-			"\"%s_%s\" as t1, \"%s_%s\" as t2 "
-			"where t1.lft between "
-			"t2.lft and t2.rgt && (%s) "
-			"and t0.id_assoc=t1.id_assoc "
+			"\"%s_%s\" as t2 "
+			"where (%s) "
+			"and t0.id_assoc=t2.id_assoc "
 			"and t0.time_end=0 && t0.state<%d;",
 			object, cluster_name, job_table,
-			cluster_name, assoc_table,
 			cluster_name, assoc_table,
 			assoc_char, JOB_COMPLETE);
 		xfree(object);
 	} else {
 		query = xstrdup_printf(
-			"select t0.id_assoc from \"%s_%s\" as t2 STRAIGHT_JOIN "
-			"\"%s_%s\" as t1 STRAIGHT_JOIN \"%s_%s\" as t0 "
-			"where t1.lft between "
-			"t2.lft and t2.rgt && (%s) "
-			"and t0.id_assoc=t1.id_assoc limit 1;",
-			cluster_name, assoc_table,
+			"select t0.id_assoc from \"%s_%s\" as t2 STRAIGHT_JOIN \"%s_%s\" as t0 where (%s) and t0.id_assoc=t2.id_assoc limit 1;",
 			cluster_name, assoc_table,
 			cluster_name, job_table,
 			assoc_char);
@@ -920,6 +913,75 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"UNTIL @qos != '' || @my_acct = '' END REPEAT; "
 		"select REPLACE(CONCAT(@qos, @delta_qos), ',,', ','); "
 		"END;";
+	char *get_lineage =
+		"drop procedure if exists get_lineage;"
+		"create procedure get_lineage(in acct_in tinytext, in my_table tinytext, out path text) "
+		"begin "
+		"set @acct = '';"
+		"set max_sp_recursion_depth = 100;"
+		"set @s = concat('select @acct := parent_acct from ', my_table, ' where user=\\\'\\\' and acct=\\\'', acct_in, '\\\';');"
+		"prepare query from @s;"
+		"execute query;"
+		"deallocate prepare query;"
+		"if @acct!='' and @acct!='root' then "
+		"call get_lineage(@acct, my_table, path);"
+		"else "
+		"set path = '/';"
+		"end if;"
+		"if acct_in!='root' then "
+		"set path = CONCAT(path, acct_in, '/');"
+		"end if;"
+
+		"end;"
+		"drop procedure if exists set_lineage;"
+		"create procedure set_lineage(in assoc_id_in int unsigned, in acct_in tinytext, in user_in tinytext, in my_table tinytext) "
+		"begin "
+		"set @lineage = '';"
+		"call get_lineage(acct_in, my_table, @lineage);"
+		"if user_in is not null && user_in!='' then "
+		"set @lineage = CONCAT(@lineage, '0-', user_in, '/');"
+		"end if;"
+		"set @s = concat('update ', my_table, ' set mod_time=NOW(), lineage=@lineage where id_assoc=', assoc_id_in, ';');"
+		"prepare query from @s;"
+		"execute query;"
+		"select @lineage;"
+		"end;";
+		/* "drop procedure if exists get_lineage;" */
+		/* "create procedure get_lineage(in assoc_id_in int, in my_table tinytext, out path text) " */
+		/* "begin " */
+		/* "declare temppath text;" */
+		/* "declare usename tinytext;" */
+		/* "set @acct = '';" */
+		/* "set @user = '';" */
+		/* "set @id_par = 0;" */
+		/* "set max_sp_recursion_depth = 255;" */
+		/* "set @s = concat('select @acct := acct, @user := user, @id_par := id_parent from ', my_table, ' where id_assoc=', assoc_id_in, ';');" */
+		/* "prepare query from @s;" */
+		/* "execute query;" */
+		/* "deallocate prepare query;" */
+		/* "if @user!='' then " */
+		/* "set usename = CONCAT('0-', @user); " */
+		/* "else " */
+		/* "set usename = @acct;" */
+		/* "end if;" */
+		/* "if @id_par=0 then " */
+		/* "set path = CONCAT('/');" */
+		/* "else " */
+		/* "call get_lineage(@id_par, my_table, temppath);" */
+		/* "set path = CONCAT(temppath, usename, '/');" */
+		/* "end if;" */
+		/* "end;" */
+		/* "drop procedure if exists set_lineage;" */
+		/* "create procedure set_lineage(assoc_id_in INT, in my_table tinytext)" */
+		/* "begin " */
+		/* "set @lineage = '';" */
+		/* "call get_lineage(assoc_id_in, my_table, @lineage);" */
+		/* "set @s = concat('update ', my_table, ' set lineage=@lineage where id_assoc=', assoc_id_in, ';');" */
+		/* "prepare query from @s;" */
+		/* "execute query;" */
+		/* "deallocate prepare query;" */
+		/* "end;"; */
+
 	char *query = NULL;
 	time_t now = time(NULL);
 	char *cluster_name = NULL;
@@ -1069,6 +1131,11 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 		return rc;
 	}
+
+	/* this needs to be created before post_create is called */
+	rc2 = mysql_db_query(mysql_conn, get_lineage);
+	if (rc2 != SLURM_SUCCESS)
+		rc = rc2;
 
 	rc = as_mysql_convert_tables_post_create(mysql_conn);
 
@@ -1294,8 +1361,10 @@ extern int create_cluster_assoc_table(
 		{ "acct", "tinytext not null" },
 		{ "partition", "tinytext not null default ''" },
 		{ "parent_acct", "tinytext not null default ''" },
-		{ "lft", "int not null" },
-		{ "rgt", "int not null" },
+		{ "id_parent", "int unsigned not null" },
+		{ "lineage", "text" },
+		{ "lft", "int not null default 0" },
+		{ "rgt", "int not null default 0" },
 		{ "shares", "int default 1 not null" },
 		{ "max_jobs", "int default NULL" },
 		{ "max_jobs_accrue", "int default NULL" },
@@ -1810,17 +1879,15 @@ extern int remove_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	return rc;
 }
 
-extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
-			      char **cols, char **vals,
-			      char **extra, qos_level_t qos_level,
-			      bool for_add)
+static int _setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
+			       char **cols, char **vals,
+			       char **extra, qos_level_t qos_level,
+			       bool for_add, bool locked)
 {
 	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE |
 		TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_SIMPLE |
 		TRES_STR_FLAG_NO_NULL;
 
-	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				   NO_LOCK, NO_LOCK, NO_LOCK };
 	if (!assoc)
 		return SLURM_ERROR;
 
@@ -1852,6 +1919,25 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			assoc->priority = INFINITE;
 		if (assoc->def_qos_id == NO_VAL)
 			assoc->def_qos_id = INFINITE;
+
+		/* Below should never be set, but clearing just to be safe */
+		FREE_NULL_LIST(assoc->accounting_list);
+
+		xfree(assoc->grp_tres_ctld);
+		xfree(assoc->grp_tres_mins_ctld);
+		xfree(assoc->grp_tres_run_mins_ctld);
+		xfree(assoc->max_tres_mins_ctld);
+		xfree(assoc->max_tres_run_mins_ctld);
+		xfree(assoc->max_tres_ctld);
+		xfree(assoc->max_tres_pn_ctld);
+
+		if (assoc->leaf_usage != assoc->usage)
+			slurmdb_destroy_assoc_usage(assoc->leaf_usage);
+		assoc->leaf_usage = NULL;
+
+		slurmdb_destroy_assoc_usage(assoc->usage);
+		assoc->user_rec = NULL;
+		slurmdb_destroy_bf_usage(assoc->bf_usage);
 	}
 
 	if (assoc->shares_raw == INFINITE) {
@@ -1997,16 +2083,33 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*extra, ", def_qos_id=NULL");
 	} else if ((assoc->def_qos_id != NO_VAL)
 		   && ((int32_t)assoc->def_qos_id > 0)) {
-		assoc_mgr_lock(&locks);
+		assoc_mgr_lock_t locks = {
+			.qos = READ_LOCK,
+		};
+		if (!locked)
+			assoc_mgr_lock(&locks);
 		if (!list_find_first(assoc_mgr_qos_list,
 		    slurmdb_find_qos_in_list, &(assoc->def_qos_id))) {
-			assoc_mgr_unlock(&locks);
+			if (!locked)
+				assoc_mgr_unlock(&locks);
 			return ESLURM_INVALID_QOS;
 		}
-		assoc_mgr_unlock(&locks);
+		if (!locked)
+			assoc_mgr_unlock(&locks);
 		xstrcat(*cols, ", def_qos_id");
 		xstrfmtcat(*vals, ", %u", assoc->def_qos_id);
 		xstrfmtcat(*extra, ", def_qos_id=%u", assoc->def_qos_id);
+		if (qos_level == QOS_LEVEL_SET)	{
+			char *qos_list_str = NULL;
+			if (default_qos_str && !assoc->qos_list)
+				qos_list_str = xstrdup(default_qos_str);
+			xstrfmtcat(qos_list_str, ",%u", assoc->def_qos_id);
+			if (!assoc->qos_list)
+				assoc->qos_list = list_create(xfree_ptr);
+			slurm_addto_char_list(assoc->qos_list,
+					      qos_list_str);
+			xfree(qos_list_str);
+		}
 	}
 
 	if (assoc->comment) {
@@ -2163,6 +2266,24 @@ end_modify:
 
 }
 
+extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
+			      char **cols, char **vals,
+			      char **extra, qos_level_t qos_level,
+			      bool for_add)
+{
+	return _setup_assoc_limits(
+		assoc, cols, vals, extra, qos_level, for_add, false);
+}
+
+extern int setup_assoc_limits_locked(slurmdb_assoc_rec_t *assoc,
+				     char **cols, char **vals,
+				     char **extra, qos_level_t qos_level,
+				     bool for_add)
+{
+	return _setup_assoc_limits(
+		assoc, cols, vals, extra, qos_level, for_add, true);
+}
+
 /* This is called by most modify functions to alter the table and
  * insert a new line in the transaction table.
  */
@@ -2253,6 +2374,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	bool has_jobs = false;
 	char *tmp_name_char = NULL;
 	bool cluster_centric = true;
+	uint32_t rpc_version;
 	uint32_t smallest_lft = 0xFFFFFFFF;
 
 	/* figure out which tables we need to append the cluster name to */
@@ -2428,15 +2550,13 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			return SLURM_ERROR;
 		}
 
-		/* If we are doing this on an assoc_table we have
-		   already done this, so don't */
-		query = xstrdup_printf("select distinct t1.id_assoc "
-				       "from \"%s_%s\" as t1, \"%s_%s\" as t2 "
-				       "where (%s) && t1.lft between "
-				       "t2.lft and t2.rgt && t1.deleted=0 "
-				       "&& t2.deleted=0;",
-				       cluster_name, assoc_table,
-				       cluster_name, assoc_table, assoc_char);
+		/*
+		 * If we are doing this on an assoc_table we have
+		 * already done this, so don't
+		 */
+		query = xstrdup_printf(
+			"select distinct t2.id_assoc from \"%s_%s\" as t2 where %s && t2.deleted=0;",
+			cluster_name, assoc_table, assoc_char);
 
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		if (!(result = mysql_db_query_ret(
@@ -2506,84 +2626,92 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 	if (has_jobs)
 		goto just_update;
 
-	/* remove completely all the associations for this added in the last
+	/*
+	 * Remove completely all the associations for this added in the last
 	 * day, since they are most likely nothing we really wanted in
 	 * the first place.
 	 */
-	query = xstrdup_printf("select id_assoc from \"%s_%s\" as t1 where "
-			       "creation_time>%ld && (%s);",
-			       cluster_name, assoc_table,
-			       day_old, loc_assoc_char);
+	rpc_version = get_cluster_version(mysql_conn, cluster_name);
+	if (rpc_version <= SLURM_23_02_PROTOCOL_VERSION) {
+		query = xstrdup_printf("select id_assoc from \"%s_%s\" as t1 where "
+				       "creation_time>%ld && (%s);",
+				       cluster_name, assoc_table,
+				       day_old, loc_assoc_char);
 
-	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-	if (!(result = mysql_db_query_ret(
-		      mysql_conn, query, 0))) {
-		xfree(query);
-		reset_mysql_conn(mysql_conn);
-		return SLURM_ERROR;
-	}
-	xfree(query);
-
-	while ((row = mysql_fetch_row(result))) {
-		MYSQL_RES *result2 = NULL;
-		MYSQL_ROW row2;
-		uint32_t lft;
-
-		/* we have to do this one at a time since the lft's and rgt's
-		   change. If you think you need to remove this make
-		   sure your new way can handle changing lft and rgt's
-		   in the association. */
-		xstrfmtcat(query,
-			   "SELECT lft, rgt, (rgt - lft + 1) "
-			   "FROM \"%s_%s\" WHERE id_assoc = %s;",
-			   cluster_name, assoc_table, row[0]);
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-		if (!(result2 = mysql_db_query_ret(
+		if (!(result = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(query);
-			rc = SLURM_ERROR;
-			break;
+			reset_mysql_conn(mysql_conn);
+			return SLURM_ERROR;
 		}
 		xfree(query);
-		if (!(row2 = mysql_fetch_row(result2))) {
+
+		while ((row = mysql_fetch_row(result))) {
+			MYSQL_RES *result2 = NULL;
+			MYSQL_ROW row2;
+			uint32_t lft;
+
+			/* we have to do this one at a time since the lft's and rgt's
+			   change. If you think you need to remove this make
+			   sure your new way can handle changing lft and rgt's
+			   in the association. */
+			xstrfmtcat(query,
+				   "SELECT lft, rgt, (rgt - lft + 1) "
+				   "FROM \"%s_%s\" WHERE id_assoc = %s;",
+				   cluster_name, assoc_table, row[0]);
+			DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+				 "query\n%s", query);
+			if (!(result2 = mysql_db_query_ret(
+				      mysql_conn, query, 0))) {
+				xfree(query);
+				rc = SLURM_ERROR;
+				break;
+			}
+			xfree(query);
+			if (!(row2 = mysql_fetch_row(result2))) {
+				mysql_free_result(result2);
+				continue;
+			}
+
+			xstrfmtcat(query,
+				   "delete quick from \"%s_%s\" where "
+				   "lft between %s AND %s;",
+				   cluster_name, assoc_table, row2[0], row2[1]);
+
+			xstrfmtcat(query,
+				   "UPDATE \"%s_%s\" SET rgt = rgt - %s WHERE rgt > %s;"
+				   "UPDATE \"%s_%s\" SET "
+				   "lft = lft - %s WHERE lft > %s;",
+				   cluster_name, assoc_table, row2[2], row2[1],
+				   cluster_name, assoc_table, row2[2], row2[1]);
+
+			lft = slurm_atoul(row2[0]);
+			if (lft < smallest_lft)
+				smallest_lft = lft;
+
 			mysql_free_result(result2);
-			continue;
+
+			DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+				 "query\n%s", query);
+			rc = mysql_db_query(mysql_conn, query);
+			xfree(query);
+			if (rc != SLURM_SUCCESS) {
+				error("couldn't remove assoc");
+				break;
+			}
 		}
+		mysql_free_result(result);
 
-		xstrfmtcat(query,
-			   "delete quick from \"%s_%s\" where "
-			   "lft between %s AND %s;",
-			   cluster_name, assoc_table, row2[0], row2[1]);
-
-		xstrfmtcat(query,
-			   "UPDATE \"%s_%s\" SET rgt = rgt - %s WHERE rgt > %s;"
-			   "UPDATE \"%s_%s\" SET "
-			   "lft = lft - %s WHERE lft > %s;",
-			   cluster_name, assoc_table, row2[2], row2[1],
-			   cluster_name, assoc_table, row2[2], row2[1]);
-
-		lft = slurm_atoul(row2[0]);
-		if (lft < smallest_lft)
-			smallest_lft = lft;
-
-		mysql_free_result(result2);
+	} else {
+		query = xstrdup_printf("delete quick from \"%s_%s\" where creation_time>%ld && (%s);",
+				       cluster_name, assoc_table,
+				       day_old, loc_assoc_char);
 
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
-		if (rc != SLURM_SUCCESS) {
-			error("couldn't remove assoc");
-			break;
-		}
 	}
-	mysql_free_result(result);
-	/* This already happened before, but we need to run it again
-	   since the first time we ran it we didn't know if we were
-	   going to remove the above associations.
-	*/
-	if (rc == SLURM_SUCCESS)
-		rc = as_mysql_get_modified_lfts(mysql_conn,
-						cluster_name, smallest_lft);
 
 	if (rc == SLURM_ERROR) {
 		reset_mysql_conn(mysql_conn);
@@ -2627,6 +2755,19 @@ just_update:
 	xfree(query);
 	if (rc != SLURM_SUCCESS) {
 		reset_mysql_conn(mysql_conn);
+	}
+
+	/* This already happened before, but we need to run it again
+	   since the first time we ran it we didn't know if we were
+	   going to remove the above associations.
+	*/
+	if ((rc == SLURM_SUCCESS) && (smallest_lft != 0xFFFFFFFF)) {
+		rc = as_mysql_get_modified_lfts(mysql_conn,
+						cluster_name,
+						smallest_lft);
+		if (rc != SLURM_SUCCESS) {
+			reset_mysql_conn(mysql_conn);
+		}
 	}
 
 	return rc;
@@ -2954,6 +3095,31 @@ extern int get_cluster_dims(mysql_conn_t *mysql_conn, char *cluster_name,
 	return SLURM_SUCCESS;
 }
 
+extern uint32_t get_cluster_version(mysql_conn_t *mysql_conn,
+				    char *cluster_name)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	uint32_t rpc_version = 0;
+
+	char *query = xstrdup_printf(
+		"select rpc_version from %s where name='%s' && deleted=0",
+		cluster_table, cluster_name);
+
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+
+	if (!result)
+		return rpc_version;
+
+	if ((row = mysql_fetch_row(result)))
+		rpc_version = slurm_atoul(row[0]);
+
+	mysql_free_result(result);
+
+	return rpc_version;
+}
+
 extern void *acct_storage_p_get_connection(
 	int conn_num, uint16_t *persist_conn_flags,
 	bool rollback, char *cluster_name)
@@ -3097,6 +3263,13 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_add_users(mysql_conn, uid, user_list);
 }
 
+extern char *acct_storage_p_add_users_cond(void *mysql_conn, uint32_t uid,
+					   slurmdb_add_assoc_cond_t *add_assoc,
+					   slurmdb_user_rec_t *user)
+{
+	return as_mysql_add_users_cond(mysql_conn, uid, add_assoc, user);
+}
+
 extern int acct_storage_p_add_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 				    List acct_list,
 				    slurmdb_user_cond_t *user_cond)
@@ -3108,6 +3281,13 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 				    List acct_list)
 {
 	return as_mysql_add_accts(mysql_conn, uid, acct_list);
+}
+
+extern char *acct_storage_p_add_accts_cond(void *mysql_conn, uint32_t uid,
+					   slurmdb_add_assoc_cond_t *add_assoc,
+					   slurmdb_account_rec_t *acct)
+{
+	return as_mysql_add_accts_cond(mysql_conn, uid, add_assoc, acct);
 }
 
 extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
@@ -3346,6 +3526,7 @@ extern List acct_storage_p_get_events(mysql_conn_t *mysql_conn, uint32_t uid,
 extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
 					slurmdb_assoc_cond_t *assoc_cond)
 {
+	int rc = SLURM_SUCCESS;
 	List ret_list = NULL;
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
@@ -3358,19 +3539,21 @@ extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	ret_list = list_create(slurmdb_destroy_assoc_rec);
 
-	if (as_mysql_acct_no_assocs(mysql_conn, assoc_cond, ret_list)
-	    != SLURM_SUCCESS)
+	if ((rc = as_mysql_acct_no_assocs(mysql_conn, assoc_cond, ret_list)) !=
+	     SLURM_SUCCESS)
 		goto end_it;
 
-	if (as_mysql_acct_no_users(mysql_conn, assoc_cond, ret_list)
-	    != SLURM_SUCCESS)
+	if ((rc = as_mysql_acct_no_users(mysql_conn, assoc_cond, ret_list)) !=
+	    SLURM_SUCCESS)
 		goto end_it;
 
-	if (as_mysql_user_no_assocs_or_no_uid(mysql_conn, assoc_cond, ret_list)
-	    != SLURM_SUCCESS)
+	if ((rc = as_mysql_user_no_assocs_or_no_uid(mysql_conn,
+						    assoc_cond, ret_list)) !=
+	    SLURM_SUCCESS)
 		goto end_it;
 
 end_it:
+	errno = rc;
 
 	return ret_list;
 }

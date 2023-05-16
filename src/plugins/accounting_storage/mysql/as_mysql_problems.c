@@ -48,7 +48,7 @@ static int _setup_assoc_cond_limits(
 	ListIterator itr = NULL;
 	char *object = NULL;
 
-	xstrfmtcat(*extra, "where deleted=0");
+	xstrfmtcat(*extra, "where t1.deleted=0");
 
 	if (!assoc_cond)
 		return 0;
@@ -60,7 +60,7 @@ static int _setup_assoc_cond_limits(
 		while ((object = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "acct='%s'", object);
+			xstrfmtcat(*extra, "t1.acct='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -74,7 +74,7 @@ static int _setup_assoc_cond_limits(
 		while ((object = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "user='%s'", object);
+			xstrfmtcat(*extra, "t1.user='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -82,7 +82,7 @@ static int _setup_assoc_cond_limits(
 	} else if (user_query) {
 		/* we want all the users, but no non-user associations */
 		set = 1;
-		xstrcat(*extra, " && (user!='')");
+		xstrcat(*extra, " && (t1.user!='')");
 	}
 
 	if (assoc_cond->partition_list
@@ -93,7 +93,7 @@ static int _setup_assoc_cond_limits(
 		while ((object = list_next(itr))) {
 			if (set)
 				xstrcat(*extra, " || ");
-			xstrfmtcat(*extra, "`partition`='%s'", object);
+			xstrfmtcat(*extra, "t1.`partition`='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -141,7 +141,7 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);
-		return SLURM_ERROR;
+		return ESLURM_BAD_SQL;
 	}
 	xfree(query);
 
@@ -176,7 +176,7 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 		if (!(result2 = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(query);
-			rc = SLURM_ERROR;
+			rc = ESLURM_BAD_SQL;
 			break;
 		}
 		xfree(query);
@@ -241,9 +241,9 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 	};
 
 	xfree(tmp);
-	xstrfmtcat(tmp, "%s", assoc_req_inx[i]);
+	xstrfmtcat(tmp, "t1.%s", assoc_req_inx[i]);
 	for(i=1; i<ASSOC_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", assoc_req_inx[i]);
+		xstrfmtcat(tmp, ", t1.%s", assoc_req_inx[i]);
 	}
 
 	if (assoc_cond &&
@@ -257,12 +257,16 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
-		/* only get the account associations */
+		/*
+		 * Only get the account associations that don't have an
+		 * associated row with a user in it
+		 */
 		if (query)
 			xstrcat(query, " union ");
-		xstrfmtcat(query, "select distinct %s, '%s' as cluster "
-			   "from \"%s_%s\" %s && user='' && lft=(rgt-1) ",
+
+		xstrfmtcat(query, "select distinct %s, '%s' as cluster from \"%s_%s\" as t1 left join \"%s_%s\" as t2 on t2.lineage like concat(t1.lineage, '0-%%') %s && t1.user='' && t2.lineage is NULL",
 			   tmp, cluster_name, cluster_name,
+			   assoc_table, cluster_name,
 			   assoc_table, extra);
 	}
 	list_iterator_destroy(itr);
@@ -278,7 +282,7 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);
-		return SLURM_ERROR;
+		return ESLURM_BAD_SQL;
 	}
 	xfree(query);
 
@@ -343,7 +347,7 @@ extern int as_mysql_user_no_assocs_or_no_uid(
 	if (!(result = mysql_db_query_ret(
 		      mysql_conn, query, 0))) {
 		xfree(query);
-		return SLURM_ERROR;
+		return ESLURM_BAD_SQL;
 	}
 	xfree(query);
 
@@ -391,7 +395,7 @@ extern int as_mysql_user_no_assocs_or_no_uid(
 		if (!(result2 = mysql_db_query_ret(
 			      mysql_conn, query, 0))) {
 			xfree(query);
-			rc = SLURM_ERROR;
+			rc = ESLURM_BAD_SQL;
 			break;
 		}
 		xfree(query);

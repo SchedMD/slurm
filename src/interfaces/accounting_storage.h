@@ -98,6 +98,19 @@ extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
 				    List user_list);
 
 /*
+ * add users to accounting system
+ * IN: slurmdb_add_assoc_cond_t *assoc_cond with cluster (optional) acct
+ *     and user lists filled in along with any limits in the assoc rec.
+ * IN: slurmdb_user_rec_t *
+ * RET: Return char * to print out of what was added or NULL and errno set on
+ *      error.
+ */
+extern char *acct_storage_g_add_users_cond(
+	void *db_conn, uint32_t uid,
+	slurmdb_add_assoc_cond_t *add_assoc,
+	slurmdb_user_rec_t *user);
+
+/*
  * add users as account coordinators
  * IN: acct_list list of char *'s of names of accounts
  * IN:  slurmdb_user_cond_t *user_cond
@@ -115,6 +128,19 @@ extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
  */
 extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
 				       List acct_list);
+
+/*
+ * add accounts to accounting system
+ * IN: slurmdb_add_assoc_cond_t *assoc_cond with cluster (optional) and acct
+ *     lists filled in along with any limits in the assoc rec.
+ * IN: slurmdb_account_rec_t *
+ * RET: Return char * to print out of what was added or NULL and errno set on
+ *      error.
+ */
+extern char *acct_storage_g_add_accounts_cond(
+	void *db_conn, uint32_t uid,
+	slurmdb_add_assoc_cond_t *add_assoc,
+	slurmdb_account_rec_t *acct);
 
 /*
  * add clusters to accounting system

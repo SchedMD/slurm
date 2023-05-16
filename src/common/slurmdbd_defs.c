@@ -57,6 +57,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_FINI;
 	} else if (!xstrcasecmp(msg_type, "Add Accounts")) {
 		return DBD_ADD_ACCOUNTS;
+	} else if (!xstrcasecmp(msg_type, "Add Accounts Cond")) {
+		return DBD_ADD_ACCOUNTS_COND;
 	} else if (!xstrcasecmp(msg_type, "Add Account Coord")) {
 		return DBD_ADD_ACCOUNT_COORDS;
 	} else if (!xstrcasecmp(msg_type, "Add TRES")) {
@@ -71,6 +73,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_ADD_RES;
 	} else if (!xstrcasecmp(msg_type, "Add Users")) {
 		return DBD_ADD_USERS;
+	} else if (!xstrcasecmp(msg_type, "Add Users Cond")) {
+		return DBD_ADD_USERS_COND;
 	} else if (!xstrcasecmp(msg_type, "Cluster TRES")) {
 		return DBD_CLUSTER_TRES;
 	} else if (!xstrcasecmp(msg_type, "Flush Jobs")) {
@@ -254,6 +258,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Add Accounts";
 		break;
+	case DBD_ADD_ACCOUNTS_COND:
+		if (get_enum) {
+			return "DBD_ADD_ACCOUNTS_COND";
+		} else
+			return "Add Accounts Cond";
+		break;
 	case DBD_ADD_ACCOUNT_COORDS:
 		if (get_enum) {
 			return "DBD_ADD_ACCOUNT_COORDS";
@@ -295,6 +305,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_ADD_USERS";
 		} else
 			return "Add Users";
+		break;
+	case DBD_ADD_USERS_COND:
+		if (get_enum) {
+			return "DBD_ADD_USERS_COND";
+		} else
+			return "Add Users Cond";
 		break;
 	case DBD_CLUSTER_TRES:
 		if (get_enum) {
@@ -923,6 +939,8 @@ extern void slurmdbd_free_msg(persist_msg_t *msg)
 	case DBD_JOB_SUSPEND:
 		slurmdbd_free_job_suspend_msg(msg->data);
 		break;
+	case DBD_ADD_ACCOUNTS_COND:
+	case DBD_ADD_USERS_COND:
 	case DBD_MODIFY_ACCOUNTS:
 	case DBD_MODIFY_ASSOCS:
 	case DBD_MODIFY_CLUSTERS:
@@ -1147,6 +1165,14 @@ extern void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
 
 	if (msg) {
 		switch (type) {
+		case DBD_ADD_ACCOUNTS_COND:
+			destroy_cond = slurmdb_destroy_add_assoc_cond;
+			destroy_rec = slurmdb_destroy_account_rec;
+			break;
+		case DBD_ADD_USERS_COND:
+			destroy_cond = slurmdb_destroy_add_assoc_cond;
+			destroy_rec = slurmdb_destroy_user_rec;
+			break;
 		case DBD_MODIFY_ACCOUNTS:
 			destroy_cond = slurmdb_destroy_account_cond;
 			destroy_rec = slurmdb_destroy_account_rec;

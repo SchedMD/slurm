@@ -111,6 +111,7 @@ extern List assoc_mgr_tres_list;
 extern slurmdb_tres_rec_t **assoc_mgr_tres_array;
 extern char **assoc_mgr_tres_name_array;
 extern List assoc_mgr_assoc_list;
+extern List assoc_mgr_coord_list;
 extern List assoc_mgr_res_list;
 extern List assoc_mgr_qos_list;
 extern List assoc_mgr_user_list;
@@ -264,12 +265,36 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn,
 				   bool locked);
 
 /*
+ * Get a list of all users that are coordinator for this account.  This
+ * will fill in if there are coordinators from a parent account also.
+ * IN: acct - Name of account.
+ * RET: list of slurmdb_coord_rec_t's to be freed from caller.
+ */
+extern list_t *assoc_mgr_acct_coords(void *db_conn, char *acct_name);
+
+/*
+ * Get a list of all users that are coordinator for this account.  This
+ * will fill in if there are coordinators from a parent account also.
+ * IN: acct - Name of account.
+ * RET: list of slurmdb_coord_rec_t's to be freed from caller.
+ */
+extern list_t *assoc_mgr_user_acct_coords(void *db_conn, char *user_name);
+
+/*
  * get admin_level of uid
  * IN: uid - uid of user to check admin_level of.
  * RET: admin level SLURMDB_ADMIN_NOTSET on error
  */
 extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 						       uint32_t uid);
+
+/*
+ * Get admin_level of uid where USER_LOCK is already in READ_LOCK.
+ * IN: uid - uid of user to check admin_level of.
+ * RET: admin level SLURMDB_ADMIN_NOTSET on error
+ */
+extern slurmdb_admin_level_t assoc_mgr_get_admin_level_locked(void *db_conn,
+							      uint32_t uid);
 
 /*
  * see if user is coordinator of given acct
@@ -286,9 +311,8 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
  * IN: acct - name of account
  * RET: true or false
  */
-extern bool assoc_mgr_is_user_acct_coord_user_rec(void *db_conn,
-                                                 slurmdb_user_rec_t *user,
-                                                 char *acct_name);
+extern bool assoc_mgr_is_user_acct_coord_user_rec(slurmdb_user_rec_t *user,
+						  char *acct_name);
 
 /*
  * get the share information from the association list

@@ -619,7 +619,6 @@ test24.#   Testing of sshare/priority multifactor plugin.
 =========================================================
 test24.1   multifactor plugin algo test
 test24.2   sshare h, n, p, P, v, and V options.
-test24.3   multifactor plugin algo test for fairshare=parent
 test24.4   Test of Fair Tree multifactor
 test24.5   Test SiteFactor
 test24.6   Test non-normalized factors
@@ -981,7 +980,7 @@ test_129_1   /parameters/slurm/PreserveCaseUser/test_PreserveCaseUser.py
 test_130_#   Testing of PriorityType.
 =====================================
 test_130_1   /parameters/slurm/PriorityType/basic/test_priority.py
-test_130_2   /parameters/slurm/PriorityType/multifactor/test_plugin.py
+test_130_2   multifactor plugin algo test for fairshare=parent
 test_130_3   /parameters/slurm/PriorityType/multifactor/test_priority.py
 
 test_132_#   Testing of Prolog.
