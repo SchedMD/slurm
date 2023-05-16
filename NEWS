@@ -48,6 +48,13 @@ documents those changes that are of interest to users and administrators.
  -- api/submit - fix memory leaks when submission of batch regular jobs or batch
     HetJobs fails (response data is a return code).
  -- openapi/v0.0.39 - fix memory leak in _job_post_het_submit().
+ -- Fix regression in 23.02.2 that set the SLURM_NTASKS environment variable
+    in sbatch jobs from --ntasks-per-node when --ntasks was not requested.
+ -- Fix regression in 23.02 that caused sbatch jobs to set the wrong number
+    of tasks when requesting --ntasks-per-node without --ntasks, and also
+    requesting one of the following options: --sockets-per-node,
+    --cores-per-socket, --threads-per-core (or --hint=nomultithread), or
+    -B,--extra-node-info.
 
 * Changes in Slurm 23.02.2
 ==========================

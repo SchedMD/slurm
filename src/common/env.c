@@ -1226,6 +1226,7 @@ extern int
 env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 			const char *node_name)
 {
+	bool ntasks_set = batch->ntasks ? true : false;
 	char *tmp = NULL;
 	int i;
 	slurm_step_layout_t *step_layout = NULL;
@@ -1318,7 +1319,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		env_array_overwrite_fmt(dest, "SLURM_CPUS_PER_TASK", "%u",
 					cpus_per_task);
 
-	if (step_layout_req.num_tasks) {
+	if (ntasks_set) {
 		env_array_overwrite_fmt(dest, "SLURM_NTASKS", "%u",
 					step_layout_req.num_tasks);
 		/* keep around for old scripts */
