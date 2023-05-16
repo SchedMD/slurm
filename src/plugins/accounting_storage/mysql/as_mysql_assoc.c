@@ -149,7 +149,6 @@ enum {
 };
 
 enum {
-	ASSOC2_REQ_PARENT_ID,
 	ASSOC2_REQ_MJ,
 	ASSOC2_REQ_MJA,
 	ASSOC2_REQ_MPT,
@@ -2101,7 +2100,6 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 	char *parent_delta_qos = NULL;
 	char *last_acct = NULL;
 	char *last_cluster = NULL;
-	uint32_t parent_id = 0;
 	char *query = NULL;
 	char *extra = xstrdup(sent_extra);
 
@@ -2252,13 +2250,11 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 		if (!without_parent_info
 		    && row[ASSOC_REQ_PARENT][0]) {
 			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
-			assoc->parent_id = slurm_atoul(row[ASSOC_REQ_ID_PAR]);
 			parent_acct = row[ASSOC_REQ_PARENT];
 		} else if (!assoc->user) {
 			/* This is the root association so we have no
 			   parent id */
 			parent_acct = NULL;
-			parent_id = 0;
 		}
 
 		if (row[ASSOC_REQ_PART][0])
@@ -2288,11 +2284,9 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			xfree(query);
 
 			if (!(row2 = mysql_fetch_row(result2))) {
-				parent_id = 0;
 				goto no_parent_limits;
 			}
 
-			parent_id = slurm_atoul(row2[ASSOC2_REQ_PARENT_ID]);
 			if (!without_parent_limits) {
 				if (row2[ASSOC2_REQ_DEF_QOS])
 					parent_def_qos_id = slurm_atoul(
@@ -2520,8 +2514,6 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 			list_iterator_destroy(curr_qos_itr);
 			list_flush(delta_qos_list);
 		}
-
-		assoc->parent_id = parent_id;
 
 		//info("parent id is %d", assoc->parent_id);
 		//log_assoc_rec(assoc);
