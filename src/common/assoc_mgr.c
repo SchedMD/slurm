@@ -2255,7 +2255,7 @@ static int _foreach_add2coord(void *x, void *arg)
 	return 0;
 }
 
-static void _add_potential_coord_childern(slurmdb_assoc_rec_t *assoc)
+static void _add_potential_coord_children(slurmdb_assoc_rec_t *assoc)
 {
 	xassert(verify_assoc_lock(USER_LOCK, WRITE_LOCK));
 
@@ -4280,7 +4280,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 			_remove_nondirect_coord_acct(rec);
 
 			/*
-			 * Remove the pointer from the childern_list or
+			 * Remove the pointer from the children_list or
 			 * any call removing a parent could get an illegal read
 			 * when _remove_nondirect_coord_acct() is called and
 			 * this rec is still in it's children_list.
@@ -4389,7 +4389,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 			 * some that need to be added back (different clusters
 			 * have different paths).
 			 */
-			_add_potential_coord_childern(object);
+			_add_potential_coord_children(object);
 
 			if (setup_children) {
 				List children = object->usage->children_list;
