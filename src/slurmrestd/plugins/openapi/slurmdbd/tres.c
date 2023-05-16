@@ -93,6 +93,8 @@ static int _op_handler_tres(ctxt_t *ctxt)
 			resp_error(ctxt, ESLURM_NOT_SUPPORTED, __func__,
 				   "Updating TRES is not currently supported");
 #else
+		openapi_resp_single_t resp = {0};
+		openapi_resp_single_t *resp_ptr = &resp;
 		list_t *tres_list = NULL;
 
 		if (!DATA_PARSE(ctxt->parser, OPENAPI_TRES_RESP, tres_list,
@@ -100,6 +102,7 @@ static int _op_handler_tres(ctxt_t *ctxt)
 			update_tres(ctxt, true, tres_list);
 
 		FREE_NULL_LIST(tres_list);
+		FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 #endif /* NDEBUG */
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
