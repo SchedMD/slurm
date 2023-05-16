@@ -192,6 +192,9 @@ extern void *alloc_parser_obj(const parser_t *const parser)
 		}
 	}
 
+	xassert(obj);
+	xassert(xsize(obj) == parser->size);
+
 	log_flag(DATA, "created %zd byte %s object at 0x%"PRIxPTR,
 		 xsize(obj), parser->obj_type_string, (uintptr_t) obj);
 
