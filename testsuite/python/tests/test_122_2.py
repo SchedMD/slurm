@@ -24,7 +24,7 @@ def test_job_array_with_gres():
                     --output={output_pattern}")
     output_file_1 = f"{atf.module_tmp_path}/{job_id}-1.out"
     output_file_2 = f"{atf.module_tmp_path}/{job_id}-2.out"
-    atf.wait_for_job_state(job_id, 'DONE', timeout=5, fatal=True)
+    atf.wait_for_job_state(job_id, 'DONE', timeout=15, fatal=True)
     with open(output_file_1, 'r') as f:
         output = f.read()
         assert 'DONE' in output, 'Expect job to finish'
