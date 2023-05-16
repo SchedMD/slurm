@@ -649,8 +649,8 @@ static int DUMP_FUNC(QOS_STRING_ID_LIST)(const parser_t *const parser,
 	 * QOS string ID list is special because the contents have dynamic sizes
 	 * which must be accounted for while dumping and parsing
 	 */
-	List *qos_list_ptr = obj;
-	List qos_list = *qos_list_ptr;
+	list_t **qos_list_ptr = obj;
+	list_t *qos_list = *qos_list_ptr;
 	foreach_qos_string_id_t argstruct = { .magic = MAGIC_FOREACH_STRING_ID,
 					      .parser = parser,
 					      .args = args,
@@ -677,7 +677,7 @@ static data_for_each_cmd_t _foreach_parse_qos_string_id(data_t *src, void *arg)
 {
 	foreach_qos_string_id_t *argstruct = arg;
 	const parser_t *const parser = argstruct->parser;
-	List qos_list = argstruct->qos_list;
+	list_t *qos_list = argstruct->qos_list;
 	data_t *parent_path = argstruct->parent_path;
 	args_t *args = argstruct->args;
 	const char *caller = argstruct->caller;
@@ -705,7 +705,7 @@ static int PARSE_FUNC(QOS_STRING_ID_LIST)(const parser_t *const parser,
 					  void *obj, data_t *src, args_t *args,
 					  data_t *parent_path)
 {
-	List *qos_list_ptr = obj;
+	list_t **qos_list_ptr = obj;
 	foreach_qos_string_id_t argstruct = {
 		.magic = MAGIC_FOREACH_STRING_ID,
 		.parser = parser,
@@ -919,7 +919,7 @@ static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 {
 	char **tres = obj;
 	int rc = SLURM_SUCCESS;
-	List tres_list = NULL;
+	list_t *tres_list = NULL;
 	char *path = NULL;
 
 	xassert(!*tres);
@@ -973,7 +973,7 @@ static int DUMP_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 {
 	int rc;
 	char **tres = obj;
-	List tres_list = NULL;
+	list_t *tres_list = NULL;
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(args->tres_list && (list_count(args->tres_list) >= 0));
@@ -1085,9 +1085,9 @@ static int _dump_tres_nct(const parser_t *const parser, data_t *dst,
 	};
 	slurmdb_tres_nct_rec_t *tres_nct = NULL;
 	int tres_nct_count = 0;
-	List tres_count_list = NULL;
-	List tres_node_list = NULL;
-	List tres_task_list = NULL;
+	list_t *tres_count_list = NULL;
+	list_t *tres_node_list = NULL;
+	list_t *tres_task_list = NULL;
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
@@ -7338,9 +7338,9 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 		.model = PARSER_MODEL_LIST,                                    \
 		.type = DATA_PARSER_##typev,                                   \
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
-		.obj_type_string = XSTRINGIFY(List),                           \
+		.obj_type_string = XSTRINGIFY(list_t *),                       \
 		.list_type = DATA_PARSER_##typel,                              \
-		.size = sizeof(List),                                          \
+		.size = sizeof(list_t *),                                      \
 		.needs = need,                                                 \
 		.ptr_offset = NO_VAL,                                          \
 	}
@@ -7513,7 +7513,7 @@ static const parser_t parsers[] = {
 	addps(BOOL16_NO_VAL, uint16_t, NEED_NONE, BOOL, NULL),
 	addps(QOS_NAME, char *, NEED_QOS, STRING, NULL),
 	addps(QOS_ID, uint32_t, NEED_QOS, STRING, NULL),
-	addpsa(QOS_STRING_ID_LIST, STRING, List, NEED_NONE, "List of QOS names"),
+	addpsa(QOS_STRING_ID_LIST, STRING, list_t *, NEED_NONE, "List of QOS names"),
 	addpss(JOB_EXIT_CODE, int32_t, NEED_NONE, OBJECT, NULL),
 	addps(RPC_ID, slurmdbd_msg_type_t, NEED_NONE, STRING, NULL),
 	addps(SELECT_PLUGIN_ID, int, NEED_NONE, STRING, NULL),
