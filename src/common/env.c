@@ -1226,7 +1226,7 @@ extern int
 env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 			const char *node_name)
 {
-	bool ntasks_set = batch->ntasks ? true : false;
+	bool ntasks_set;
 	char *tmp = NULL;
 	int i;
 	slurm_step_layout_t *step_layout = NULL;
@@ -1239,6 +1239,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	if (!batch)
 		return SLURM_ERROR;
 
+	ntasks_set = batch->ntasks ? true : false;
 	memset(&step_layout_req, 0, sizeof(slurm_step_layout_req_t));
 	step_layout_req.num_tasks = batch->ntasks;
 

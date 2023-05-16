@@ -55,6 +55,9 @@ documents those changes that are of interest to users and administrators.
     requesting one of the following options: --sockets-per-node,
     --cores-per-socket, --threads-per-core (or --hint=nomultithread), or
     -B,--extra-node-info.
+ -- Fix double counting suspended job counts on nodes when reconfiguring, which
+    prevented nodes with suspended jobs from being powered down or rebooted
+    once the jobs completed.
 
 * Changes in Slurm 23.02.2
 ==========================
