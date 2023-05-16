@@ -1689,19 +1689,15 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 				OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME);
 	meta = data_key_set(ctxt.resp, OPENAPI_RESP_STRUCT_META_FIELD_NAME);
 
-	/* none of the fields should be populated */
-	xassert((data_get_type(errors) == DATA_TYPE_NULL));
-	xassert((data_get_type(warnings) == DATA_TYPE_NULL));
-	xassert((data_get_type(meta) == DATA_TYPE_NULL));
-
-	{
+	if (data_get_type(meta) == DATA_TYPE_NULL) {
 		/* cast to remove const */
 		void *ptr = (void *) &query_meta;
 		DATA_DUMP(ctxt.parser, OPENAPI_META_PTR, ptr, meta);
 	}
 
-	if ((rc = DATA_DUMP(ctxt.parser, OPENAPI_ERRORS, ctxt.errors,
-			    errors))) {
+	if ((data_get_type(errors) == DATA_TYPE_NULL) &&
+	    ((rc = DATA_DUMP(ctxt.parser, OPENAPI_ERRORS, ctxt.errors,
+			     errors)))) {
 		/* data_parser doesn't support OPENAPI_ERRORS parser */
 		data_t *e =
 			data_set_dict(data_list_append(data_set_list(errors)));
@@ -1712,7 +1708,9 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 		data_set_string(data_key_set(e, "error"),
 				slurm_strerror(ESLURM_NOT_SUPPORTED));
 	}
-	DATA_DUMP(ctxt.parser, OPENAPI_WARNINGS, ctxt.warnings, warnings);
+	if (data_get_type(warnings) == DATA_TYPE_NULL)
+		DATA_DUMP(ctxt.parser, OPENAPI_WARNINGS, ctxt.warnings,
+			  warnings);
 
 	if (!rc)
 		rc = ctxt.rc;
