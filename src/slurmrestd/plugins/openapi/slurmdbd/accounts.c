@@ -255,26 +255,27 @@ cleanup:
 	return ctxt->rc ? SLURM_ERROR : SLURM_SUCCESS;
 }
 
-static void _update_accts(ctxt_t *ctxt, bool commit)
+extern int update_accounts(ctxt_t *ctxt, bool commit, list_t *acct_list)
 {
-	list_t *acct_list = NULL;
+	if (!(list_for_each(acct_list, _foreach_update_acct, ctxt) < 0) &&
+	    !ctxt->rc && commit)
+		db_query_commit(ctxt);
+
+	return ctxt->rc;
+}
+
+static void _update_accts(ctxt_t *ctxt)
+{
 	openapi_resp_single_t resp = {0};
 	openapi_resp_single_t *resp_ptr = &resp;
 
-	if (DATA_PARSE(ctxt->parser, OPENAPI_ACCOUNTS_RESP, resp, ctxt->query,
-		       ctxt->parent_path))
-		goto cleanup;
+	if (!DATA_PARSE(ctxt->parser, OPENAPI_ACCOUNTS_RESP, resp, ctxt->query,
+			ctxt->parent_path)) {
+		list_t *acct_list = resp.response;
+		update_accounts(ctxt, true, acct_list);
+		FREE_NULL_LIST(acct_list);
+	}
 
-	acct_list = resp.response;
-
-	if (list_for_each(acct_list, _foreach_update_acct, ctxt) < 0)
-		goto cleanup;
-
-	if (!ctxt->rc && commit)
-		db_query_commit(ctxt);
-
-cleanup:
-	FREE_NULL_LIST(acct_list);
 	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 }
 
@@ -361,7 +362,7 @@ static int _op_handler_accounts(ctxt_t *ctxt)
 
 		slurmdb_destroy_account_cond(acct_cond);
 	} else if (ctxt->method == HTTP_REQUEST_POST) {
-		_update_accts(ctxt, (ctxt->tag != CONFIG_OP_TAG));
+		_update_accts(ctxt);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",

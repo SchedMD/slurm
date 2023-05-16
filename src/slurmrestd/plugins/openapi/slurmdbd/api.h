@@ -206,4 +206,14 @@ extern void destroy_op_qos(void);
 extern void bind_handler(const char *str_path, openapi_ctxt_handler_t callback,
 			 int tag);
 
+/*
+ * Declarations for update handlers:
+ * Most of the direct API calls need handlers to split up each updated entity
+ * to check if an update or an add call is required. In some cases, the updates
+ * must be handled via a diff of the current entity.
+ *
+ */
+
+extern int update_accounts(ctxt_t *ctxt, bool commit, list_t *acct_list);
+
 #endif
