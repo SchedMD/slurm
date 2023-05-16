@@ -96,6 +96,10 @@ typedef enum {
 
 #define MAGIC_PARSER 0xa3bafa05
 
+typedef void *(*parser_new_func_t)(void);
+/* must be compatible with ListDelF */
+typedef void (*parser_free_func_t)(void *ptr);
+
 typedef struct parser_s {
 	int magic; /* MAGIC_PARSER */
 	parser_model_t model;
@@ -107,6 +111,8 @@ typedef struct parser_s {
 	char *obj_type_string; /* stringified C type */
 	openapi_type_format_t obj_openapi; /* OpenAPI format for object */
 	ssize_t size; /* size of target obj */
+	parser_new_func_t new; /* function to create new instance of obj being pointed at */
+	parser_free_func_t free; /* function to release instance of obj being pointed at */
 
 	/* Linked model properties ------------------------------------------ */
 	char *field_name; /* name of field in struct if there is a ptr_offset */

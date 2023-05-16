@@ -88,6 +88,8 @@
 #define PARSE_FUNC(type) _parse_##type
 #define DUMP_FUNC(type) _dump_##type
 #define SPEC_FUNC(type) _openapi_spec_##type
+#define NEW_FUNC(type) _openapi_new_##type
+#define FREE_FUNC(type) _openapi_free_##type
 #define PARSE_DISABLED(type)                                                 \
 	static int PARSE_FUNC(type)(const parser_t *const parser, void *src, \
 				    data_t *dst, args_t *args,               \
@@ -7264,7 +7266,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 #undef add_openapi_response_single
 
 /* add parser array (for struct) */
-#define addpa(typev, typet)                                                    \
+#define addpa(typev, typet, newf, freef)                                       \
 	{                                                                      \
 		.magic = MAGIC_PARSER,                                         \
 		.model = PARSER_MODEL_ARRAY,                                   \
@@ -7272,6 +7274,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_type_string = XSTRINGIFY(typet),                          \
 		.size = sizeof(typet),                                         \
+		.new = newf,                                                   \
+		.free = freef,                                                 \
 		.needs = NEED_NONE,                                            \
 		.fields = PARSER_ARRAY(typev),                                 \
 		.field_count = ARRAY_SIZE(PARSER_ARRAY(typev)),                \
@@ -7345,7 +7349,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 		.ptr_offset = NO_VAL,                                          \
 	}
 /* add parser for simple type */
-#define addps(typev, stype, need, typeo, desc)                                 \
+#define addps(typev, stype, need, typeo, newf, freef, desc)                    \
 	{                                                                      \
 		.magic = MAGIC_PARSER,                                         \
 		.type = DATA_PARSER_##typev,                                   \
@@ -7355,6 +7359,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 		.obj_type_string = XSTRINGIFY(stype),                          \
 		.obj_openapi = OPENAPI_FORMAT_ ## typeo,                       \
 		.size = sizeof(stype),                                         \
+		.new = newf,                                                   \
+		.free = freef,                                                 \
 		.needs = need,                                                 \
 		.parse = PARSE_FUNC(typev),                                    \
 		.dump = DUMP_FUNC(typev),                                      \
@@ -7395,7 +7401,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 		.ptr_offset = NO_VAL,                                          \
 	}
 /* add parser for simple type with spec generator */
-#define addpss(typev, stype, need, typeo, desc)                                \
+#define addpss(typev, stype, need, typeo, desc, newf, freef)                   \
 	{                                                                      \
 		.magic = MAGIC_PARSER,                                         \
 		.type = DATA_PARSER_##typev,                                   \
@@ -7405,6 +7411,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 		.obj_type_string = XSTRINGIFY(stype),                          \
 		.obj_openapi = OPENAPI_FORMAT_ ## typeo,                       \
 		.size = sizeof(stype),                                         \
+		.new = newf,                                                   \
+		.free = freef,                                                 \
 		.needs = need,                                                 \
 		.openapi_spec = SPEC_FUNC(typev),                              \
 		.parse = PARSE_FUNC(typev),                                    \
@@ -7492,67 +7500,67 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 		.ptr_offset = NO_VAL,                                          \
 	}
 /* add OpenAPI singular response */
-#define addoar(mtype) addpa(mtype, openapi_resp_single_t)
+#define addoar(mtype) addpa(mtype, openapi_resp_single_t, NULL, NULL)
 static const parser_t parsers[] = {
 	/* Simple type parsers */
-	addps(STRING, char *, NEED_NONE, STRING, NULL),
-	addps(UINT32, uint32_t, NEED_NONE, INT32, NULL),
-	addpss(UINT32_NO_VAL, uint32_t, NEED_NONE, OBJECT, NULL),
-	addps(UINT64, uint64_t, NEED_NONE, INT64, NULL),
-	addpss(UINT64_NO_VAL, uint64_t, NEED_NONE, OBJECT, NULL),
-	addps(UINT16, uint16_t, NEED_NONE, INT32, NULL),
-	addpss(UINT16_NO_VAL, uint16_t, NEED_NONE, OBJECT, NULL),
-	addps(INT32, int32_t, NEED_NONE, INT32, NULL),
-	addps(INT64, int64_t, NEED_NONE, INT64, NULL),
-	addpss(INT64_NO_VAL, int64_t, NEED_NONE, OBJECT, NULL),
-	addps(FLOAT128, long double, NEED_NONE, NUMBER, NULL),
-	addps(FLOAT64, double, NEED_NONE, DOUBLE, NULL),
-	addpss(FLOAT64_NO_VAL, double, NEED_NONE, OBJECT, NULL),
-	addps(BOOL, uint8_t, NEED_NONE, BOOL, NULL),
-	addps(BOOL16, uint16_t, NEED_NONE, BOOL, NULL),
-	addps(BOOL16_NO_VAL, uint16_t, NEED_NONE, BOOL, NULL),
-	addps(QOS_NAME, char *, NEED_QOS, STRING, NULL),
-	addps(QOS_ID, uint32_t, NEED_QOS, STRING, NULL),
+	addps(STRING, char *, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(UINT32, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
+	addpss(UINT32_NO_VAL, uint32_t, NEED_NONE, OBJECT, NULL, NULL, NULL),
+	addps(UINT64, uint64_t, NEED_NONE, INT64, NULL, NULL, NULL),
+	addpss(UINT64_NO_VAL, uint64_t, NEED_NONE, OBJECT, NULL, NULL, NULL),
+	addps(UINT16, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
+	addpss(UINT16_NO_VAL, uint16_t, NEED_NONE, OBJECT, NULL, NULL, NULL),
+	addps(INT32, int32_t, NEED_NONE, INT32, NULL, NULL, NULL),
+	addps(INT64, int64_t, NEED_NONE, INT64, NULL, NULL, NULL),
+	addpss(INT64_NO_VAL, int64_t, NEED_NONE, OBJECT, NULL, NULL, NULL),
+	addps(FLOAT128, long double, NEED_NONE, NUMBER, NULL, NULL, NULL),
+	addps(FLOAT64, double, NEED_NONE, DOUBLE, NULL, NULL, NULL),
+	addpss(FLOAT64_NO_VAL, double, NEED_NONE, OBJECT, NULL, NULL, NULL),
+	addps(BOOL, uint8_t, NEED_NONE, BOOL, NULL, NULL, NULL),
+	addps(BOOL16, uint16_t, NEED_NONE, BOOL, NULL, NULL, NULL),
+	addps(BOOL16_NO_VAL, uint16_t, NEED_NONE, BOOL, NULL, NULL, NULL),
+	addps(QOS_NAME, char *, NEED_QOS, STRING, NULL, NULL, NULL),
+	addps(QOS_ID, uint32_t, NEED_QOS, STRING, NULL, NULL, NULL),
 	addpsa(QOS_STRING_ID_LIST, STRING, list_t *, NEED_NONE, "List of QOS names"),
-	addpss(JOB_EXIT_CODE, int32_t, NEED_NONE, OBJECT, NULL),
-	addps(RPC_ID, slurmdbd_msg_type_t, NEED_NONE, STRING, NULL),
-	addps(SELECT_PLUGIN_ID, int, NEED_NONE, STRING, NULL),
-	addps(TASK_DISTRIBUTION, uint32_t, NEED_NONE, STRING, NULL),
-	addpss(SLURM_STEP_ID, slurm_step_id_t, NEED_NONE, OBJECT, NULL),
-	addps(STEP_ID, uint32_t, NEED_NONE, STRING, NULL),
-	addpss(WCKEY_TAG, char *, NEED_NONE, OBJECT, NULL),
-	addps(GROUP_ID, gid_t, NEED_NONE, STRING, NULL),
-	addps(JOB_REASON, uint32_t, NEED_NONE, STRING, NULL),
-	addps(JOB_STATE, uint32_t, NEED_NONE, STRING, NULL),
-	addps(USER_ID, uid_t, NEED_NONE, STRING, NULL),
+	addpss(JOB_EXIT_CODE, int32_t, NEED_NONE, OBJECT, NULL, NULL, NULL),
+	addps(RPC_ID, slurmdbd_msg_type_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(SELECT_PLUGIN_ID, int, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(TASK_DISTRIBUTION, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addpss(SLURM_STEP_ID, slurm_step_id_t, NEED_NONE, OBJECT, NULL, NULL, NULL),
+	addps(STEP_ID, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addpss(WCKEY_TAG, char *, NEED_NONE, OBJECT, NULL, NULL, NULL),
+	addps(GROUP_ID, gid_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(JOB_REASON, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(JOB_STATE, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(USER_ID, uid_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsp(TRES_STR, TRES_LIST, char *, NEED_TRES, NULL),
 	addpsa(CSV_STRING, STRING, char *, NEED_NONE, NULL),
 	addpsp(CSV_STRING_LIST, STRING_LIST, list_t *, NEED_NONE, NULL),
 	addpsa(LICENSES, LICENSE, license_info_msg_t, NEED_NONE, NULL),
-	addps(CORE_SPEC, uint16_t, NEED_NONE, INT32, NULL),
-	addps(THREAD_SPEC, uint16_t, NEED_NONE, INT32, NULL),
-	addps(NICE, uint32_t, NEED_NONE, INT32, NULL),
+	addps(CORE_SPEC, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
+	addps(THREAD_SPEC, uint16_t, NEED_NONE, INT32, NULL, NULL, NULL),
+	addps(NICE, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
 	addpsp(JOB_MEM_PER_CPU, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
 	addpsp(JOB_MEM_PER_NODE, UINT64_NO_VAL, uint64_t, NEED_NONE, NULL),
-	addps(ALLOCATED_CORES, uint32_t, NEED_NONE, INT32, NULL),
-	addps(ALLOCATED_CPUS, uint32_t, NEED_NONE, INT32, NULL),
-	addps(CONTROLLER_PING_MODE, int, NEED_NONE, STRING, NULL),
-	addps(CONTROLLER_PING_RESULT, bool, NEED_NONE, STRING, NULL),
+	addps(ALLOCATED_CORES, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
+	addps(ALLOCATED_CPUS, uint32_t, NEED_NONE, INT32, NULL, NULL, NULL),
+	addps(CONTROLLER_PING_MODE, int, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(CONTROLLER_PING_RESULT, bool, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsa(HOSTLIST, STRING, hostlist_t *, NEED_NONE, NULL),
 	addpsa(HOSTLIST_STRING, STRING, char *, NEED_NONE, NULL),
-	addps(CPU_FREQ_FLAGS, uint32_t, NEED_NONE, STRING, NULL),
-	addps(ERROR, int, NEED_NONE, STRING, NULL),
+	addps(CPU_FREQ_FLAGS, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(ERROR, int, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsa(JOB_INFO_MSG, JOB_INFO, job_info_msg_t, NEED_NONE, NULL),
 	addpsa(STRING_ARRAY, STRING, char **, NEED_NONE, NULL),
-	addps(SIGNAL, uint16_t, NEED_NONE, STRING, NULL),
-	addps(BITSTR, bitstr_t, NEED_NONE, STRING, NULL),
-	addpss(JOB_ARRAY_RESPONSE_MSG, job_array_resp_msg_t, NEED_NONE, ARRAY, NULL),
-	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL),
+	addps(SIGNAL, uint16_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(BITSTR, bitstr_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addpss(JOB_ARRAY_RESPONSE_MSG, job_array_resp_msg_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
+	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
 	addpsp(TIMESTAMP, UINT64, time_t, NEED_NONE, NULL),
 	addpsp(TIMESTAMP_NO_VAL, UINT64_NO_VAL, time_t, NEED_NONE, NULL),
-	addps(SELECTED_STEP, slurm_selected_step_t, NEED_NONE, STRING, NULL),
-	addps(GROUP_ID_STRING, char *, NEED_NONE, STRING, NULL),
-	addps(USER_ID_STRING, char *, NEED_NONE, STRING, NULL),
+	addps(SELECTED_STEP, slurm_selected_step_t, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(GROUP_ID_STRING, char *, NEED_NONE, STRING, NULL, NULL, NULL),
+	addps(USER_ID_STRING, char *, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsp(JOB_STATE_ID_STRING, JOB_STATE, char *, NEED_NONE, NULL),
 	addpsp(QOS_NAME_CSV_LIST, STRING, list_t *, NEED_NONE, NULL),
 	addpsp(QOS_ID_STRING, STRING, char *, NEED_NONE, NULL),
@@ -7643,60 +7651,60 @@ static const parser_t parsers[] = {
 	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),
 
 	/* Array of parsers */
-	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t),
-	addpa(ASSOC, slurmdb_assoc_rec_t),
-	addpa(USER, slurmdb_user_rec_t),
-	addpa(JOB, slurmdb_job_rec_t),
-	addpa(STEP, slurmdb_step_rec_t),
-	addpa(ACCOUNT, slurmdb_account_rec_t),
-	addpa(ACCOUNTING, slurmdb_accounting_rec_t),
-	addpa(COORD, slurmdb_coord_rec_t),
-	addpa(WCKEY, slurmdb_wckey_rec_t),
-	addpa(TRES, slurmdb_tres_rec_t),
-	addpa(TRES_NCT, slurmdb_tres_nct_rec_t),
-	addpa(QOS, slurmdb_qos_rec_t),
-	addpa(STATS_REC, slurmdb_stats_rec_t),
-	addpa(CLUSTER_REC, slurmdb_cluster_rec_t),
-	addpa(CLUSTER_ACCT_REC, slurmdb_cluster_accounting_rec_t),
-	addpa(ASSOC_USAGE, slurmdb_assoc_usage_t),
-	addpa(STATS_RPC, slurmdb_rpc_obj_t),
-	addpa(STATS_USER, slurmdb_rpc_obj_t),
-	addpa(STATS_MSG, stats_info_response_msg_t),
-	addpa(NODE, node_info_t),
-	addpa(LICENSE, slurm_license_info_t),
-	addpa(JOB_INFO, slurm_job_info_t),
-	addpa(JOB_RES, job_resources_t),
-	addpa(CONTROLLER_PING, controller_ping_t),
-	addpa(STEP_INFO, job_step_info_t),
-	addpa(PARTITION_INFO, partition_info_t),
-	addpa(SINFO_DATA, sinfo_data_t),
-	addpa(ACCT_GATHER_ENERGY, acct_gather_energy_t),
-	addpa(EXT_SENSORS_DATA, ext_sensors_data_t),
-	addpa(POWER_MGMT_DATA, power_mgmt_data_t),
-	addpa(RESERVATION_INFO, reserve_info_t),
-	addpa(RESERVATION_CORE_SPEC, resv_core_spec_t),
-	addpa(JOB_SUBMIT_RESPONSE_MSG, submit_response_msg_t),
-	addpa(JOB_DESC_MSG, job_desc_msg_t),
-	addpa(CRON_ENTRY, cron_entry_t),
-	addpa(UPDATE_NODE_MSG, update_node_msg_t),
-	addpa(OPENAPI_META, openapi_resp_meta_t),
-	addpa(OPENAPI_ERROR, openapi_resp_error_t),
-	addpa(OPENAPI_WARNING, openapi_resp_warning_t),
-	addpa(JOB_SUBMIT_REQ, job_submit_request_t),
-	addpa(JOB_CONDITION, slurmdb_job_cond_t),
-	addpa(QOS_CONDITION, slurmdb_qos_cond_t),
-	addpa(ASSOC_CONDITION, slurmdb_assoc_cond_t),
-	addpa(USER_CONDITION, slurmdb_user_cond_t),
-	addpa(OPENAPI_SLURMDBD_JOB_PARAM, openapi_job_param_t),
-	addpa(OPENAPI_USER_PARAM, openapi_user_param_t),
-	addpa(OPENAPI_USER_QUERY, openapi_user_query_t),
-	addpa(OPENAPI_WCKEY_PARAM, openapi_wckey_param_t),
-	addpa(WCKEY_CONDITION, slurmdb_wckey_cond_t),
-	addpa(OPENAPI_ACCOUNT_PARAM, openapi_account_param_t),
-	addpa(OPENAPI_ACCOUNT_QUERY, openapi_account_query_t),
-	addpa(ACCOUNT_CONDITION, slurmdb_account_cond_t),
-	addpa(OPENAPI_CLUSTER_PARAM, openapi_cluster_param_t),
-	addpa(CLUSTER_CONDITION, slurmdb_cluster_cond_t),
+	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t, NULL, NULL),
+	addpa(ASSOC, slurmdb_assoc_rec_t, NULL, NULL),
+	addpa(USER, slurmdb_user_rec_t, NULL, NULL),
+	addpa(JOB, slurmdb_job_rec_t, NULL, NULL),
+	addpa(STEP, slurmdb_step_rec_t, NULL, NULL),
+	addpa(ACCOUNT, slurmdb_account_rec_t, NULL, NULL),
+	addpa(ACCOUNTING, slurmdb_accounting_rec_t, NULL, NULL),
+	addpa(COORD, slurmdb_coord_rec_t, NULL, NULL),
+	addpa(WCKEY, slurmdb_wckey_rec_t, NULL, NULL),
+	addpa(TRES, slurmdb_tres_rec_t, NULL, NULL),
+	addpa(TRES_NCT, slurmdb_tres_nct_rec_t, NULL, NULL),
+	addpa(QOS, slurmdb_qos_rec_t, NULL, NULL),
+	addpa(STATS_REC, slurmdb_stats_rec_t, NULL, NULL),
+	addpa(CLUSTER_REC, slurmdb_cluster_rec_t, NULL, NULL),
+	addpa(CLUSTER_ACCT_REC, slurmdb_cluster_accounting_rec_t, NULL, NULL),
+	addpa(ASSOC_USAGE, slurmdb_assoc_usage_t, NULL, NULL),
+	addpa(STATS_RPC, slurmdb_rpc_obj_t, NULL, NULL),
+	addpa(STATS_USER, slurmdb_rpc_obj_t, NULL, NULL),
+	addpa(STATS_MSG, stats_info_response_msg_t, NULL, NULL),
+	addpa(NODE, node_info_t, NULL, NULL),
+	addpa(LICENSE, slurm_license_info_t, NULL, NULL),
+	addpa(JOB_INFO, slurm_job_info_t, NULL, NULL),
+	addpa(JOB_RES, job_resources_t, NULL, NULL),
+	addpa(CONTROLLER_PING, controller_ping_t, NULL, NULL),
+	addpa(STEP_INFO, job_step_info_t, NULL, NULL),
+	addpa(PARTITION_INFO, partition_info_t, NULL, NULL),
+	addpa(SINFO_DATA, sinfo_data_t, NULL, NULL),
+	addpa(ACCT_GATHER_ENERGY, acct_gather_energy_t, NULL, NULL),
+	addpa(EXT_SENSORS_DATA, ext_sensors_data_t, NULL, NULL),
+	addpa(POWER_MGMT_DATA, power_mgmt_data_t, NULL, NULL),
+	addpa(RESERVATION_INFO, reserve_info_t, NULL, NULL),
+	addpa(RESERVATION_CORE_SPEC, resv_core_spec_t, NULL, NULL),
+	addpa(JOB_SUBMIT_RESPONSE_MSG, submit_response_msg_t, NULL, NULL),
+	addpa(JOB_DESC_MSG, job_desc_msg_t, NULL, NULL),
+	addpa(CRON_ENTRY, cron_entry_t, NULL, NULL),
+	addpa(UPDATE_NODE_MSG, update_node_msg_t, NULL, NULL),
+	addpa(OPENAPI_META, openapi_resp_meta_t, NULL, NULL),
+	addpa(OPENAPI_ERROR, openapi_resp_error_t, NULL, NULL),
+	addpa(OPENAPI_WARNING, openapi_resp_warning_t, NULL, NULL),
+	addpa(JOB_SUBMIT_REQ, job_submit_request_t, NULL, NULL),
+	addpa(JOB_CONDITION, slurmdb_job_cond_t, NULL, NULL),
+	addpa(QOS_CONDITION, slurmdb_qos_cond_t, NULL, NULL),
+	addpa(ASSOC_CONDITION, slurmdb_assoc_cond_t, NULL, NULL),
+	addpa(USER_CONDITION, slurmdb_user_cond_t, NULL, NULL),
+	addpa(OPENAPI_SLURMDBD_JOB_PARAM, openapi_job_param_t, NULL, NULL),
+	addpa(OPENAPI_USER_PARAM, openapi_user_param_t, NULL, NULL),
+	addpa(OPENAPI_USER_QUERY, openapi_user_query_t, NULL, NULL),
+	addpa(OPENAPI_WCKEY_PARAM, openapi_wckey_param_t, NULL, NULL),
+	addpa(WCKEY_CONDITION, slurmdb_wckey_cond_t, NULL, NULL),
+	addpa(OPENAPI_ACCOUNT_PARAM, openapi_account_param_t, NULL, NULL),
+	addpa(OPENAPI_ACCOUNT_QUERY, openapi_account_query_t, NULL, NULL),
+	addpa(ACCOUNT_CONDITION, slurmdb_account_cond_t, NULL, NULL),
+	addpa(OPENAPI_CLUSTER_PARAM, openapi_cluster_param_t, NULL, NULL),
+	addpa(CLUSTER_CONDITION, slurmdb_cluster_cond_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -7704,8 +7712,8 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_PING_ARRAY_RESP),
 	addoar(OPENAPI_LICENSES_RESP),
 	addoar(OPENAPI_JOB_INFO_RESP),
-	addpa(OPENAPI_JOB_POST_RESPONSE, job_post_response_t),
-	addpa(OPENAPI_JOB_SUBMIT_RESPONSE, job_submit_response_t),
+	addpa(OPENAPI_JOB_POST_RESPONSE, job_post_response_t, NULL, NULL),
+	addpa(OPENAPI_JOB_SUBMIT_RESPONSE, job_submit_response_t, NULL, NULL),
 	addoar(OPENAPI_NODES_RESP),
 	addoar(OPENAPI_PARTITION_RESP),
 	addoar(OPENAPI_RESERVATION_RESP),
@@ -7715,7 +7723,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_ASSOCS_REMOVED_RESP),
 	addoar(OPENAPI_CLUSTERS_RESP),
 	addoar(OPENAPI_CLUSTERS_REMOVED_RESP),
-	addpa(OPENAPI_SLURMDBD_CONFIG_RESP, openapi_resp_slurmdbd_config_t),
+	addpa(OPENAPI_SLURMDBD_CONFIG_RESP, openapi_resp_slurmdbd_config_t, NULL, NULL),
 	addoar(OPENAPI_SLURMDBD_STATS_RESP),
 	addoar(OPENAPI_SLURMDBD_JOBS_RESP),
 	addoar(OPENAPI_SLURMDBD_QOS_RESP),
