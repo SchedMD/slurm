@@ -417,7 +417,7 @@ static int _parse_pointer(const parser_t *const parser, void *dst, data_t *src,
 	*ptr = alloc_parser_obj(pt);
 
 	if ((rc = parse(*ptr, NO_VAL, pt, src, args, parent_path)))
-		free_parser_obj(parser, *ptr);
+		free_parser_obj(pt, *ptr);
 
 	return rc;
 }
