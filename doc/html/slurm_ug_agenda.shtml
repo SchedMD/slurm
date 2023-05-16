@@ -1,15 +1,12 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Slurm User Group Meeting 2022</h1>
+<h1>Slurm User Group Meeting 2023</h1>
 
-<p>The Slurm User Group Meeting (SLUG'22) this fall will be held online once again.</p>
+<p>The Slurm User Group Meeting (SLUG'23) this fall will be held in person at the <a href="https://www.byu.edu/">Brigham Young University</a> from September 12-13, 2023.</p>
 
-<p>In lieu of an in-person meeting, SchedMD will broadcast a set of presentations on Tuesday, September 20th, 2022 through YouTube Live from the <a href="https://www.youtube.com/c/schedmdslurm/">SchedMD Slurm</a> channel. All of the sessions are listed under the <a href="https://www.youtube.com/playlist?list=PLZfwi0jHMBxDkdmRn91ImqnweZH9-1eIF">Slurm User Group 2022</a> playlist. No registration is required.</p>
+<p>Sites interested in submitting technical talks or site reports are encourage to send a brief abstract to <a href="mailto:slugc@schedmd.com">slugc@schedmd.com</a> by June 9th. Notifications of acceptance will go out on June 23.</p>
 
-<p>Viewers are encouraged to ask questions through the live chat feature. Community presentations are pre-recorded, but the presenters have been encouraged to participate and respond directly through the live chat if able. For the SchedMD presentations (which will be done live), SchedMD staff will be moderating the chat, and will forward relevant and timely questions to the presenter. The last 5-10 minutes of each presentation will be reserved for further Q+A, as well as provide a brief break between each session.</p>
-
-<p>Please note that each presentation is contained in a separate broadcast, and you will need to switch between them at the breaks.</p>
-
+<!--
 <a name="schedule"><h2>Schedule</h2></a>
 
 <h3>All times are US Mountain Daylight Time (UTC-6)</h3>
@@ -39,7 +36,8 @@
 <tr><td nowrap>14:00</td><td>Carter &mdash; AWS</td><td><a href="https://youtu.be/qbJKkUmgJ18">EDA Slurm Cluster on AWS (Extra Session &mdash; no live chat)</a></td></tr>
 
 </table>
+-->
 
-<p style="text-align:center;">Last modified 19 September 2022</p>
+<p style="text-align:center;">Last modified 16 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
