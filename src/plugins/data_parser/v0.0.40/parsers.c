@@ -7637,6 +7637,7 @@ static const parser_t parsers[] = {
 	addpp(WCKEY_CONDITION_PTR, slurmdb_wckey_cond_t *, WCKEY_CONDITION),
 	addpp(ACCOUNT_CONDITION_PTR, slurmdb_account_cond_t *, ACCOUNT_CONDITION),
 	addpp(CLUSTER_CONDITION_PTR, slurmdb_cluster_cond_t *, CLUSTER_CONDITION),
+	addpp(OPENAPI_SLURMDBD_CONFIG_RESP_PTR, openapi_resp_slurmdbd_config_t *, OPENAPI_SLURMDBD_CONFIG_RESP),
 
 	/* Pointer model parsers allowing NULL */
 	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),

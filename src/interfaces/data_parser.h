@@ -315,6 +315,7 @@ typedef enum {
 	DATA_PARSER_TIMESTAMP, /* time_t */
 	DATA_PARSER_TIMESTAMP_NO_VAL, /* time_t */
 	DATA_PARSER_OPENAPI_SLURMDBD_CONFIG_RESP, /* openapi_resp_slurmdbd_config_t */
+	DATA_PARSER_OPENAPI_SLURMDBD_CONFIG_RESP_PTR, /* openapi_resp_slurmdbd_config_t* */
 	DATA_PARSER_SELECTED_STEP, /* slurm_selected_step_t */
 	DATA_PARSER_SELECTED_STEP_PTR, /* slurm_selected_step_t* */
 	DATA_PARSER_SELECTED_STEP_LIST, /* list_t of slurm_selected_step_t* */

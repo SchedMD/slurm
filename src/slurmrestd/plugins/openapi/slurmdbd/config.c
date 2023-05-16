@@ -44,20 +44,62 @@
 #include "api.h"
 #include "structs.h"
 
-//static const openapi_ctxt_handler_t ops[] = {
-//	/* Warning: order matters */
-//	op_handler_clusters,
-//	op_handler_tres,
-//	op_handler_accounts,
-//	op_handler_users,
-//	op_handler_qos,
-//	op_handler_wckeys,
-//	op_handler_associations,
-//};
+static void _dump(ctxt_t *ctxt, openapi_resp_slurmdbd_config_t *resp)
+{
+	slurmdb_tres_cond_t tres_cond = {
+		.with_deleted = true,
+		.count = NO_VAL,
+	};
+	slurmdb_cluster_cond_t cluster_cond = {
+		.flags = NO_VAL,
+		.with_deleted = true,
+		.with_usage = true,
+	};
+	slurmdb_assoc_cond_t assoc_cond = {
+		.with_usage = true,
+		.with_deleted = true,
+		.with_raw_qos = true,
+		.with_sub_accts = true,
+	};
+	slurmdb_account_cond_t acct_cond = {
+		.assoc_cond = &assoc_cond,
+		.with_deleted = true,
+		.with_assocs = true,
+		.with_coords = true,
+	};
+	slurmdb_user_cond_t user_cond = {
+		.assoc_cond = &assoc_cond,
+		.with_deleted = true,
+		.with_assocs = true,
+		.with_coords = true,
+	};
+	slurmdb_qos_cond_t qos_cond = {
+		.with_deleted = true,
+	};
+	slurmdb_wckey_cond_t wckey_cond = {
+		.with_deleted = true,
+		.with_usage = true,
+	};
+
+	if (!db_query_list(ctxt, &resp->clusters, slurmdb_clusters_get,
+			   &cluster_cond) &&
+	    !db_query_list(ctxt, &resp->tres, slurmdb_tres_get, &tres_cond) &&
+	    !db_query_list(ctxt, &resp->accounts, slurmdb_accounts_get,
+			   &acct_cond) &&
+	    !db_query_list(ctxt, &resp->users, slurmdb_users_get, &user_cond) &&
+	    !db_query_list(ctxt, &resp->qos, slurmdb_qos_get, &qos_cond) &&
+	    !db_query_list(ctxt, &resp->wckeys, slurmdb_wckeys_get,
+			   &wckey_cond) &&
+	    !db_query_list(ctxt, &resp->associations, slurmdb_associations_get,
+			   &assoc_cond))
+		DATA_DUMP(ctxt->parser, OPENAPI_SLURMDBD_CONFIG_RESP_PTR, resp,
+			  ctxt->resp);
+}
 
 static int _op_handler_config(ctxt_t *ctxt)
 {
 	openapi_resp_slurmdbd_config_t resp = {0};
+	openapi_resp_slurmdbd_config_t *resp_ptr = &resp;
 
 	if ((ctxt->method != HTTP_REQUEST_GET) &&
 	    (ctxt->method != HTTP_REQUEST_POST)) {
@@ -67,34 +109,43 @@ static int _op_handler_config(ctxt_t *ctxt)
 		goto cleanup;
 	}
 
-	//	for (int i = 0; (i < ARRAY_SIZE(ops)); i++) {
-	//		int rc = ops[i](ctxt);
-	//
-	//		/* Ignore empty results */
-	//		if (rc == ESLURM_REST_EMPTY_RESULT)
-	//			rc = SLURM_SUCCESS;
-	//
-	//		if (rc) {
-	//			if (!ctxt->rc)
-	//				ctxt->rc = rc;
-	//			break;
-	//		}
-	//	}
+	if (ctxt->method == HTTP_REQUEST_GET) {
+		_dump(ctxt, &resp);
+	} else if (ctxt->method == HTTP_REQUEST_POST) {
+		if (DATA_PARSE(ctxt->parser, OPENAPI_SLURMDBD_CONFIG_RESP, resp,
+			       ctxt->query, ctxt->parent_path))
+			goto cleanup;
 
-	if (ctxt->method == HTTP_REQUEST_GET)
-		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_SLURMDBD_CONFIG_RESP, &resp,
-					 ctxt);
-	else if (!ctxt->rc && (ctxt->method == HTTP_REQUEST_POST))
-		db_query_commit(ctxt);
+		if (!update_clusters(ctxt, false, resp.clusters) &&
+		    !update_tres(ctxt, false, resp.tres) &&
+		    !update_accounts(ctxt, false, resp.accounts) &&
+		    !update_users(ctxt, false, resp.users) &&
+		    !update_qos(ctxt, false, resp.qos) &&
+		    !update_wckeys(ctxt, false, resp.wckeys) &&
+		    !update_associations(ctxt, false, resp.associations) &&
+		    !ctxt->rc)
+			db_query_commit(ctxt);
+	} else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+	}
 
 cleanup:
+	FREE_NULL_LIST(resp.clusters);
+	FREE_NULL_LIST(resp.tres);
+	FREE_NULL_LIST(resp.accounts);
+	FREE_NULL_LIST(resp.users);
+	FREE_NULL_LIST(resp.qos);
+	FREE_NULL_LIST(resp.wckeys);
+	FREE_NULL_LIST(resp.associations);
+	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 	return SLURM_SUCCESS;
 }
 
 extern void init_op_config(void)
 {
-	bind_handler("/slurmdb/{data_parser}/config", _op_handler_config,
-		     CONFIG_OP_TAG);
+	bind_handler("/slurmdb/{data_parser}/config", _op_handler_config, 0);
 }
 
 extern void destroy_op_config(void)
