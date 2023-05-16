@@ -307,10 +307,8 @@ typedef enum {
 	DATA_PARSER_OPENAPI_META_PTR, /* openapi_resp_meta_t* */
 	DATA_PARSER_OPENAPI_ERROR, /* openapi_resp_error_t */
 	DATA_PARSER_OPENAPI_ERRORS, /* list_t of openapi_resp_error_t* */
-	DATA_PARSER_OPENAPI_ERRORS_PTR, /* ptr to list_t of openapi_resp_error_t* */
 	DATA_PARSER_OPENAPI_WARNING, /* openapi_resp_warning_t */
 	DATA_PARSER_OPENAPI_WARNINGS, /* list_t of openapi_resp_warning_t* */
-	DATA_PARSER_OPENAPI_WARNINGS_PTR, /* ptr to list_t of openapi_resp_warning_t* */
 	DATA_PARSER_OPENAPI_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_TIMESTAMP, /* time_t */
 	DATA_PARSER_TIMESTAMP_NO_VAL, /* time_t */

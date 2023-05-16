@@ -7169,9 +7169,9 @@ static const parser_t PARSER_ARRAY(CLUSTER_CONDITION)[] = {
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
-	add_parser(rtype, OPENAPI_ERRORS_PTR, false, errors, 0, OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME , "Query errors")
+	add_parser(rtype, OPENAPI_ERRORS, false, errors, 0, OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME , "Query errors")
 #define add_openapi_response_warnings(rtype) \
-	add_parser(rtype, OPENAPI_WARNINGS_PTR, false, warnings, 0, OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME , "Query warnings")
+	add_parser(rtype, OPENAPI_WARNINGS, false, warnings, 0, OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME , "Query warnings")
 
 /*
  * Generic response when there is only possiblity of warnings/errors
@@ -7641,8 +7641,6 @@ static const parser_t parsers[] = {
 
 	/* Pointer model parsers allowing NULL */
 	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),
-	addppn(OPENAPI_ERRORS_PTR, list_t *, OPENAPI_ERRORS),
-	addppn(OPENAPI_WARNINGS_PTR, list_t *, OPENAPI_WARNINGS),
 
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t),
