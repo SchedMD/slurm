@@ -779,12 +779,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"@delta_qos := REPLACE(CONCAT(delta_qos, @delta_qos), "
 		"\\\',,\\\', \\\',\\\'), '); "
 		"end if; "
-		/* "set @s = CONCAT(@s, @mtpj := REPLACE(CONCAT(@mtpj, max_tres_pj), " */
-		/* "\\\',,\\\', \\\',\\\'), '); " */
-		/* "@mtmpj := REPLACE(CONCAT(@mtmpj, max_tres_mins_pj), " */
-		/* "\\\',,\\\', \\\',\\\'), '); " */
-		/* "@mtrm := REPLACE(CONCAT(@mtrm, max_tres_run_mins), " */
-		/* "\\\',,\\\', \\\',\\\'), '); " */
 		"set @s = concat(@s, "
 		"'@mtpj := CONCAT(@mtpj, "
 		"if (@mtpj != \\\'\\\' && max_tres_pj != \\\'\\\', "
@@ -807,80 +801,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"set @my_acct = @my_acct_new; "
 		"UNTIL without_limits || @my_acct = '' END REPEAT; "
 		"END;";
-	/* char *get_parent_proc = */
-	/* 	"drop procedure if exists get_parent_limits; " */
-	/* 	"create procedure get_parent_limits(" */
-	/* 	"my_table text, acct text, cluster text, without_limits int) " */
-	/* 	"begin " */
-	/* 	"set @par_id = NULL; " */
-	/* 	"set @mj = NULL; " */
-	/* 	"set @msj = NULL; " */
-	/* 	"set @mcpj = NULL; " */
-	/* 	"set @mnpj = NULL; " */
-	/* 	"set @mwpj = NULL; " */
-	/* 	"set @mcmpj = NULL; " */
-	/* 	"set @mcrm = NULL; " */
-	/* 	"set @def_qos_id = NULL; " */
-	/* 	"set @qos = ''; " */
-	/* 	"set @delta_qos = ''; " */
-	/* 	"set @my_acct = acct; " */
-	/* 	"if without_limits then " */
-	/* 	"set @mj = 0; " */
-	/* 	"set @msj = 0; " */
-	/* 	"set @mcpj = 0; " */
-	/* 	"set @mnpj = 0; " */
-	/* 	"set @mwpj = 0; " */
-	/* 	"set @mcmpj = 0; " */
-	/* 	"set @mcrm = 0; " */
-	/* 	"set @def_qos_id = 0; " */
-	/* 	"set @qos = 1; " */
-	/* 	"end if; " */
-	/* 	"REPEAT " */
-	/* 	"set @s = 'select '; " */
-	/* 	"if @par_id is NULL then set @s = CONCAT(" */
-	/* 	"@s, '@par_id := id_assoc, '); " */
-	/* 	"end if; " */
-	/* 	"if @mj is NULL then set @s = CONCAT(" */
-	/* 	"@s, '@mj := max_jobs, '); " */
-	/* 	"end if; " */
-	/* 	"if @msj is NULL then set @s = CONCAT(" */
-	/* 	"@s, '@msj := max_submit_jobs, '); " */
-	/* 	"end if; " */
-	/* 	"if @mcpj is NULL then set @s = CONCAT(" */
-	/* 	"@s, '@mcpj := max_cpus_pj, ') ;" */
-	/* 	"end if; " */
-	/* 	"if @mnpj is NULL then set @s = CONCAT(" */
-	/* 	"@s, '@mnpj := max_nodes_pj, ') ;" */
-	/* 	"end if; " */
-	/* 	"if @mwpj is NULL then set @s = CONCAT(" */
-	/* 	"@s, '@mwpj := max_wall_pj, '); " */
-	/* 	"end if; " */
-	/* 	"if @mcmpj is NULL then set @s = CONCAT(" */
-	/* 	"@s, '@mcmpj := max_cpu_mins_pj, '); " */
-	/* 	"end if; " */
-	/* 	"if @mcrm is NULL then set @s = CONCAT(" */
-	/* 	"@s, '@mcrm := max_cpu_run_mins, '); " */
-	/* 	"end if; " */
-	/* 	"if @def_qos_id is NULL then set @s = CONCAT(" */
-	/* 	"@s, '@def_qos_id := def_qos_id, '); " */
-	/* 	"end if; " */
-	/* 	"if @qos = '' then set @s = CONCAT(" */
-	/* 	"@s, '@qos := qos, " */
-	/* 	"@delta_qos := REPLACE(CONCAT(delta_qos, @delta_qos), " */
-	/* 	"\\\',,\\\', \\\',\\\'), '); " */
-	/* 	"end if; " */
-	/* 	"set @s = concat(@s, '@my_acct_new := parent_acct from \"', " */
-	/* 	"cluster, '_', my_table, '\" where " */
-	/* 	"acct = \\\'', @my_acct, '\\\' && user=\\\'\\\''); " */
-	/* 	"prepare query from @s; " */
-	/* 	"execute query; " */
-	/* 	"deallocate prepare query; " */
-	/* 	"set @my_acct = @my_acct_new; " */
-	/* 	"UNTIL (@mj != -1 && @msj != -1 && @mcpj != -1 " */
-	/* 	"&& @mnpj != -1 && @mwpj != -1 && @mcmpj != -1 " */
-	/* 	"&& @mcrm != -1 && @def_qos_id != -1 && @qos != '') " */
-	/* 	"|| @my_acct = '' END REPEAT; " */
-	/* 	"END;"; */
 	char *get_coord_qos =
 		"drop procedure if exists get_coord_qos; "
 		"create procedure get_coord_qos(my_table text, acct text, "
@@ -946,41 +866,6 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"execute query;"
 		"select @lineage;"
 		"end;";
-		/* "drop procedure if exists get_lineage;" */
-		/* "create procedure get_lineage(in assoc_id_in int, in my_table tinytext, out path text) " */
-		/* "begin " */
-		/* "declare temppath text;" */
-		/* "declare usename tinytext;" */
-		/* "set @acct = '';" */
-		/* "set @user = '';" */
-		/* "set @id_par = 0;" */
-		/* "set max_sp_recursion_depth = 255;" */
-		/* "set @s = concat('select @acct := acct, @user := user, @id_par := id_parent from ', my_table, ' where id_assoc=', assoc_id_in, ';');" */
-		/* "prepare query from @s;" */
-		/* "execute query;" */
-		/* "deallocate prepare query;" */
-		/* "if @user!='' then " */
-		/* "set usename = CONCAT('0-', @user); " */
-		/* "else " */
-		/* "set usename = @acct;" */
-		/* "end if;" */
-		/* "if @id_par=0 then " */
-		/* "set path = CONCAT('/');" */
-		/* "else " */
-		/* "call get_lineage(@id_par, my_table, temppath);" */
-		/* "set path = CONCAT(temppath, usename, '/');" */
-		/* "end if;" */
-		/* "end;" */
-		/* "drop procedure if exists set_lineage;" */
-		/* "create procedure set_lineage(assoc_id_in INT, in my_table tinytext)" */
-		/* "begin " */
-		/* "set @lineage = '';" */
-		/* "call get_lineage(assoc_id_in, my_table, @lineage);" */
-		/* "set @s = concat('update ', my_table, ' set lineage=@lineage where id_assoc=', assoc_id_in, ';');" */
-		/* "prepare query from @s;" */
-		/* "execute query;" */
-		/* "deallocate prepare query;" */
-		/* "end;"; */
 
 	char *query = NULL;
 	time_t now = time(NULL);
