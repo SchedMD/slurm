@@ -5247,6 +5247,89 @@ static int DUMP_FUNC(ASSOC_ID_STRING_CSV_LIST)(const parser_t *const parser,
 	return DUMP(CSV_STRING_LIST, src, dst, args);
 }
 
+static void *NEW_FUNC(ASSOC)(void)
+{
+	slurmdb_assoc_rec_t *assoc = xmalloc(sizeof(*assoc));
+	slurmdb_init_assoc_rec(assoc, false);
+	return assoc;
+}
+
+static void *NEW_FUNC(USER)(void)
+{
+	slurmdb_user_rec_t *user = xmalloc(sizeof(*user));
+	user->assoc_list = list_create(slurmdb_destroy_assoc_rec);
+	user->coord_accts = list_create(slurmdb_destroy_coord_rec);
+	return user;
+}
+
+static void *NEW_FUNC(ACCOUNT)(void)
+{
+	slurmdb_account_rec_t *acct = xmalloc(sizeof(*acct));
+	acct->assoc_list = list_create(slurmdb_destroy_assoc_rec);
+	acct->coordinators = list_create(slurmdb_destroy_coord_rec);
+	return acct;
+}
+
+static void *NEW_FUNC(WCKEY)(void)
+{
+	slurmdb_wckey_rec_t *wckey = xmalloc(sizeof(*wckey));
+	slurmdb_init_wckey_rec(wckey, false);
+	wckey->accounting_list = list_create(slurmdb_destroy_account_rec);
+	return wckey;
+}
+
+static void *NEW_FUNC(QOS)(void)
+{
+	slurmdb_qos_rec_t *qos = xmalloc(sizeof(*qos));
+
+	slurmdb_init_qos_rec(qos, false, NO_VAL);
+
+	/*
+	 * Clear the QOS_FLAG_NOTSET by slurmdb_init_qos_rec() so that
+	 * flag updates won't be ignored.
+	 */
+	qos->flags = 0;
+
+	/* force to off instead of NO_VAL */
+	qos->preempt_mode = PREEMPT_MODE_OFF;
+
+	return qos;
+}
+
+static void FREE_FUNC(TRES_NCT)(void *ptr)
+{
+	slurmdb_tres_nct_rec_t *tres = ptr;
+
+	if (!tres)
+		return;
+
+	xfree(tres->node);
+	xfree(tres->name);
+	xfree(tres->type);
+	xfree(tres);
+}
+
+static void *NEW_FUNC(CLUSTER_REC)(void)
+{
+	slurmdb_cluster_rec_t *cluster = xmalloc(sizeof(*cluster));
+	slurmdb_init_cluster_rec(cluster, false);
+	return cluster;
+}
+
+static void *NEW_FUNC(JOB_DESC_MSG)(void)
+{
+	job_desc_msg_t *job = xmalloc(sizeof(*job));
+	slurm_init_job_desc_msg(job);
+	return job;
+}
+
+static void *NEW_FUNC(CLUSTER_CONDITION)(void)
+{
+	slurmdb_cluster_cond_t *cond = xmalloc(sizeof(*cond));
+	cond->flags = NO_VAL;
+	return cond;
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -7651,21 +7734,21 @@ static const parser_t parsers[] = {
 	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),
 
 	/* Array of parsers */
-	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t, NULL, NULL),
-	addpa(ASSOC, slurmdb_assoc_rec_t, NULL, NULL),
-	addpa(USER, slurmdb_user_rec_t, NULL, NULL),
-	addpa(JOB, slurmdb_job_rec_t, NULL, NULL),
-	addpa(STEP, slurmdb_step_rec_t, NULL, NULL),
-	addpa(ACCOUNT, slurmdb_account_rec_t, NULL, NULL),
-	addpa(ACCOUNTING, slurmdb_accounting_rec_t, NULL, NULL),
-	addpa(COORD, slurmdb_coord_rec_t, NULL, NULL),
-	addpa(WCKEY, slurmdb_wckey_rec_t, NULL, NULL),
-	addpa(TRES, slurmdb_tres_rec_t, NULL, NULL),
-	addpa(TRES_NCT, slurmdb_tres_nct_rec_t, NULL, NULL),
-	addpa(QOS, slurmdb_qos_rec_t, NULL, NULL),
+	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
+	addpa(ASSOC, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
+	addpa(USER, slurmdb_user_rec_t, NEW_FUNC(USER), slurmdb_destroy_user_rec),
+	addpa(JOB, slurmdb_job_rec_t, (parser_new_func_t) slurmdb_create_job_rec, slurmdb_destroy_job_rec),
+	addpa(STEP, slurmdb_step_rec_t, (parser_new_func_t) slurmdb_create_step_rec, slurmdb_destroy_step_rec),
+	addpa(ACCOUNT, slurmdb_account_rec_t, NEW_FUNC(ACCOUNT), slurmdb_destroy_account_rec),
+	addpa(ACCOUNTING, slurmdb_accounting_rec_t, NULL, slurmdb_destroy_accounting_rec),
+	addpa(COORD, slurmdb_coord_rec_t, NULL, slurmdb_destroy_coord_rec),
+	addpa(WCKEY, slurmdb_wckey_rec_t, NEW_FUNC(WCKEY), slurmdb_destroy_wckey_rec),
+	addpa(TRES, slurmdb_tres_rec_t, NULL, slurmdb_destroy_tres_rec),
+	addpa(TRES_NCT, slurmdb_tres_nct_rec_t, NULL, FREE_FUNC(TRES_NCT)),
+	addpa(QOS, slurmdb_qos_rec_t, NEW_FUNC(QOS), slurmdb_destroy_qos_rec),
 	addpa(STATS_REC, slurmdb_stats_rec_t, NULL, NULL),
-	addpa(CLUSTER_REC, slurmdb_cluster_rec_t, NULL, NULL),
-	addpa(CLUSTER_ACCT_REC, slurmdb_cluster_accounting_rec_t, NULL, NULL),
+	addpa(CLUSTER_REC, slurmdb_cluster_rec_t, NEW_FUNC(CLUSTER_REC), slurmdb_destroy_cluster_rec),
+	addpa(CLUSTER_ACCT_REC, slurmdb_cluster_accounting_rec_t, NULL, slurmdb_destroy_clus_res_rec),
 	addpa(ASSOC_USAGE, slurmdb_assoc_usage_t, NULL, NULL),
 	addpa(STATS_RPC, slurmdb_rpc_obj_t, NULL, NULL),
 	addpa(STATS_USER, slurmdb_rpc_obj_t, NULL, NULL),
@@ -7684,27 +7767,27 @@ static const parser_t parsers[] = {
 	addpa(RESERVATION_INFO, reserve_info_t, NULL, NULL),
 	addpa(RESERVATION_CORE_SPEC, resv_core_spec_t, NULL, NULL),
 	addpa(JOB_SUBMIT_RESPONSE_MSG, submit_response_msg_t, NULL, NULL),
-	addpa(JOB_DESC_MSG, job_desc_msg_t, NULL, NULL),
+	addpa(JOB_DESC_MSG, job_desc_msg_t, NEW_FUNC(JOB_DESC_MSG), (parser_free_func_t) slurm_free_job_desc_msg),
 	addpa(CRON_ENTRY, cron_entry_t, NULL, NULL),
 	addpa(UPDATE_NODE_MSG, update_node_msg_t, NULL, NULL),
-	addpa(OPENAPI_META, openapi_resp_meta_t, NULL, NULL),
-	addpa(OPENAPI_ERROR, openapi_resp_error_t, NULL, NULL),
-	addpa(OPENAPI_WARNING, openapi_resp_warning_t, NULL, NULL),
+	addpa(OPENAPI_META, openapi_resp_meta_t, NULL, free_openapi_resp_meta),
+	addpa(OPENAPI_ERROR, openapi_resp_error_t, NULL, free_openapi_resp_error),
+	addpa(OPENAPI_WARNING, openapi_resp_warning_t, NULL, free_openapi_resp_warning),
 	addpa(JOB_SUBMIT_REQ, job_submit_request_t, NULL, NULL),
-	addpa(JOB_CONDITION, slurmdb_job_cond_t, NULL, NULL),
-	addpa(QOS_CONDITION, slurmdb_qos_cond_t, NULL, NULL),
-	addpa(ASSOC_CONDITION, slurmdb_assoc_cond_t, NULL, NULL),
-	addpa(USER_CONDITION, slurmdb_user_cond_t, NULL, NULL),
+	addpa(JOB_CONDITION, slurmdb_job_cond_t, NULL, slurmdb_destroy_job_cond),
+	addpa(QOS_CONDITION, slurmdb_qos_cond_t, NULL, slurmdb_destroy_qos_cond),
+	addpa(ASSOC_CONDITION, slurmdb_assoc_cond_t, NULL, slurmdb_destroy_assoc_cond),
+	addpa(USER_CONDITION, slurmdb_user_cond_t, NULL, slurmdb_destroy_user_cond),
 	addpa(OPENAPI_SLURMDBD_JOB_PARAM, openapi_job_param_t, NULL, NULL),
 	addpa(OPENAPI_USER_PARAM, openapi_user_param_t, NULL, NULL),
 	addpa(OPENAPI_USER_QUERY, openapi_user_query_t, NULL, NULL),
 	addpa(OPENAPI_WCKEY_PARAM, openapi_wckey_param_t, NULL, NULL),
-	addpa(WCKEY_CONDITION, slurmdb_wckey_cond_t, NULL, NULL),
+	addpa(WCKEY_CONDITION, slurmdb_wckey_cond_t, NULL, slurmdb_destroy_wckey_rec),
 	addpa(OPENAPI_ACCOUNT_PARAM, openapi_account_param_t, NULL, NULL),
 	addpa(OPENAPI_ACCOUNT_QUERY, openapi_account_query_t, NULL, NULL),
-	addpa(ACCOUNT_CONDITION, slurmdb_account_cond_t, NULL, NULL),
-	addpa(OPENAPI_CLUSTER_PARAM, openapi_cluster_param_t, NULL, NULL),
-	addpa(CLUSTER_CONDITION, slurmdb_cluster_cond_t, NULL, NULL),
+	addpa(ACCOUNT_CONDITION, slurmdb_account_cond_t, NULL, slurmdb_destroy_account_cond),
+	addpa(OPENAPI_CLUSTER_PARAM, openapi_cluster_param_t, NULL, slurmdb_destroy_cluster_cond),
+	addpa(CLUSTER_CONDITION, slurmdb_cluster_cond_t, NEW_FUNC(CLUSTER_CONDITION), slurmdb_destroy_cluster_cond),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
