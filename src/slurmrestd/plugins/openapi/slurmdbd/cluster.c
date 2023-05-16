@@ -72,23 +72,26 @@ static void _delete_cluster(ctxt_t *ctxt, slurmdb_cluster_cond_t *cluster_cond)
 	FREE_NULL_LIST(cluster_list);
 }
 
-static void _update_clusters(ctxt_t *ctxt, bool commit)
+extern int update_clusters(ctxt_t *ctxt, bool commit, list_t *cluster_list)
 {
-	openapi_resp_single_t resp = {0};
-	openapi_resp_single_t *resp_ptr = &resp;
-	list_t *cluster_list = NULL;
-
-	if (DATA_PARSE(ctxt->parser, OPENAPI_CLUSTERS_RESP, resp,
-		       ctxt->parameters, ctxt->parent_path))
-		goto cleanup;
-
-	cluster_list = resp.response;
-
 	if (!db_query_rc(ctxt, cluster_list, slurmdb_clusters_add) && commit)
 		db_query_commit(ctxt);
 
-cleanup:
-	FREE_NULL_LIST(cluster_list);
+	return ctxt->rc;
+}
+
+static void _update_clusters(ctxt_t *ctxt)
+{
+	openapi_resp_single_t resp = {0};
+	openapi_resp_single_t *resp_ptr = &resp;
+
+	if (!DATA_PARSE(ctxt->parser, OPENAPI_CLUSTERS_RESP, resp,
+			ctxt->parameters, ctxt->parent_path)) {
+		list_t *cluster_list = resp.response;
+		update_clusters(ctxt, true, cluster_list);
+		FREE_NULL_LIST(cluster_list);
+	}
+
 	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 }
 
@@ -135,7 +138,7 @@ static int _op_handler_clusters(ctxt_t *ctxt)
 	else if (ctxt->method == HTTP_REQUEST_POST)
 		_delete_cluster(ctxt, cluster_cond);
 	else if (ctxt->method == HTTP_REQUEST_POST)
-		_update_clusters(ctxt, (ctxt->tag != CONFIG_OP_TAG));
+		_update_clusters(ctxt);
 	else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
