@@ -108,6 +108,16 @@ static void *_create_job_desc_msg_obj(void)
 	return job;
 }
 
+static void *_create_openapi_errors_obj(void)
+{
+	return list_create(free_openapi_resp_error);
+}
+
+static void *_create_openapi_warnings_obj(void)
+{
+	return list_create(free_openapi_resp_warning);
+}
+
 typedef void *(*alloc_func_t)(const parser_t *const parser);
 
 #define add(typem, freef, addf)             \
@@ -158,6 +168,11 @@ static const struct {
 	add(CLUSTER_CONDITION, slurmdb_destroy_cluster_cond,
 	    _create_cluster_cond_obj),
 	add(WCKEY_CONDITION, slurmdb_destroy_wckey_rec, NULL),
+	add(OPENAPI_META, free_openapi_resp_meta, NULL),
+	add(OPENAPI_ERROR, free_openapi_resp_error, NULL),
+	add(OPENAPI_ERRORS, list_destroy, _create_openapi_errors_obj),
+	add(OPENAPI_WARNING, free_openapi_resp_warning, NULL),
+	add(OPENAPI_WARNINGS, list_destroy, _create_openapi_warnings_obj),
 };
 #undef add
 
