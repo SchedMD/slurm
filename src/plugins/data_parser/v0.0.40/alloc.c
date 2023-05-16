@@ -37,160 +37,22 @@
 #include "src/common/data.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "alloc.h"
 
-static void *_create_assoc_rec_obj(void)
-{
-	slurmdb_assoc_rec_t *assoc = xmalloc(sizeof(*assoc));
-	slurmdb_init_assoc_rec(assoc, false);
-	return assoc;
-}
-
-static void *_create_cluster_rec_obj(void)
-{
-	slurmdb_cluster_rec_t *cluster = xmalloc(sizeof(*cluster));
-	slurmdb_init_cluster_rec(cluster, false);
-	return cluster;
-}
-
-static void *_create_cluster_cond_obj(void)
-{
-	slurmdb_cluster_cond_t *cond = xmalloc(sizeof(*cond));
-	cond->flags = NO_VAL;
-	return cond;
-}
-
-static void *_create_qos_rec_obj(void)
-{
-	slurmdb_qos_rec_t *qos = xmalloc(sizeof(*qos));
-
-	slurmdb_init_qos_rec(qos, false, NO_VAL);
-
-	/*
-	 * Clear the QOS_FLAG_NOTSET by slurmdb_init_qos_rec() so that
-	 * flag updates won't be ignored.
-	 */
-	qos->flags = 0;
-
-	/* force to off instead of NO_VAL */
-	qos->preempt_mode = PREEMPT_MODE_OFF;
-
-	return qos;
-}
-
-static void *_create_user_rec_obj(void)
-{
-	slurmdb_user_rec_t *user = xmalloc(sizeof(*user));
-	user->assoc_list = list_create(slurmdb_destroy_assoc_rec);
-	user->coord_accts = list_create(slurmdb_destroy_coord_rec);
-	return user;
-}
-
-static void *_create_wckey_rec_obj(void)
-{
-	slurmdb_wckey_rec_t *wckey = xmalloc(sizeof(*wckey));
-	slurmdb_init_wckey_rec(wckey, false);
-	wckey->accounting_list = list_create(slurmdb_destroy_account_rec);
-	return wckey;
-}
-
-static void *_create_job_desc_msg_obj(void)
-{
-	job_desc_msg_t *job = xmalloc(sizeof(*job));
-	slurm_init_job_desc_msg(job);
-	return job;
-}
-
-static void *_create_openapi_errors_obj(void)
-{
-	return list_create(free_openapi_resp_error);
-}
-
-static void *_create_openapi_warnings_obj(void)
-{
-	return list_create(free_openapi_resp_warning);
-}
-
-typedef void *(*alloc_func_t)(const parser_t *const parser);
-
-#define add(typem, freef, addf)             \
-{                                           \
-	.type = DATA_PARSER_ ## typem,      \
-	.free_func = (ListDelF) freef,      \
-	.alloc_func = (alloc_func_t) addf,  \
-}
-static const struct {
-	type_t type;
-	/* if NULL then xfree_ptr() is used */
-	ListDelF free_func;
-	/*
-	 * function to create object
-	 * RET ptr to obj
-	 *
-	 * if NULL, then xmalloc() is used
-	 */
-	alloc_func_t alloc_func;
-} types[] = {
-	add(ACCOUNTING, slurmdb_destroy_accounting_rec, NULL),
-	add(ACCOUNT, slurmdb_destroy_account_rec, NULL),
-	add(ASSOC_SHORT, slurmdb_destroy_assoc_rec, _create_assoc_rec_obj),
-	add(ASSOC, slurmdb_destroy_assoc_rec, _create_assoc_rec_obj),
-	add(CLUSTER_ACCT_REC, slurmdb_destroy_clus_res_rec, NULL),
-	add(CLUSTER_REC, slurmdb_destroy_cluster_rec, _create_cluster_rec_obj),
-	add(COORD, slurmdb_destroy_coord_rec, NULL),
-	add(JOB_DESC_MSG, (ListDelF) slurm_free_job_desc_msg,
-	    _create_job_desc_msg_obj),
-	add(JOB, slurmdb_destroy_job_rec, slurmdb_create_job_rec),
-	add(QOS_ID, NULL, NULL),
-	add(QOS_NAME, NULL, NULL),
-	add(QOS, slurmdb_destroy_qos_rec, _create_qos_rec_obj),
-	add(STRING, NULL, NULL),
-	add(STEP, slurmdb_destroy_step_rec, slurmdb_create_step_rec),
-	add(TRES, slurmdb_destroy_tres_rec, NULL),
-	add(USER, slurmdb_destroy_user_rec, _create_user_rec_obj),
-	add(WCKEY, slurmdb_destroy_wckey_rec, _create_wckey_rec_obj),
-	add(OPENAPI_META, free_openapi_resp_meta, NULL),
-	add(OPENAPI_ERROR, free_openapi_resp_error, NULL),
-	add(OPENAPI_WARNING, free_openapi_resp_warning, NULL),
-	add(SELECTED_STEP, NULL, NULL),
-	add(JOB_CONDITION, slurmdb_destroy_job_cond, NULL),
-	add(QOS_CONDITION, slurmdb_destroy_qos_cond, NULL),
-	add(USER_CONDITION, slurmdb_destroy_user_cond, NULL),
-	add(ASSOC_CONDITION, slurmdb_destroy_assoc_cond, NULL),
-	add(ACCOUNT_CONDITION, slurmdb_destroy_account_cond, NULL),
-	add(CLUSTER_CONDITION, slurmdb_destroy_cluster_cond,
-	    _create_cluster_cond_obj),
-	add(WCKEY_CONDITION, slurmdb_destroy_wckey_rec, NULL),
-	add(OPENAPI_META, free_openapi_resp_meta, NULL),
-	add(OPENAPI_ERROR, free_openapi_resp_error, NULL),
-	add(OPENAPI_ERRORS, list_destroy, _create_openapi_errors_obj),
-	add(OPENAPI_WARNING, free_openapi_resp_warning, NULL),
-	add(OPENAPI_WARNINGS, list_destroy, _create_openapi_warnings_obj),
-};
-#undef add
-
 extern void *alloc_parser_obj(const parser_t *const parser)
 {
 	void *obj = NULL;
-	xassert(alloc_registered(parser));
+
 	check_parser(parser);
 
-	for (int i = 0; i < ARRAY_SIZE(types); i++) {
-		if (types[i].type == parser->type) {
-			if (types[i].alloc_func)
-				obj = types[i].alloc_func(parser);
-			else
-				obj = xmalloc(parser->size);
-			break;
-		}
-	}
+	if (parser->new)
+		obj = parser->new();
+	else
+		obj = xmalloc(parser->size);
 
 	xassert(obj);
 	xassert(xsize(obj) == parser->size);
@@ -203,39 +65,18 @@ extern void *alloc_parser_obj(const parser_t *const parser)
 
 extern void free_parser_obj(const parser_t *const parser, void *ptr)
 {
-	ListDelF free_func = parser_obj_free_func(parser);
-
-	xassert(alloc_registered(parser));
 	check_parser(parser);
+
+	if (!ptr)
+		return;
+
+	xassert(xsize(ptr) == parser->size);
 
 	log_flag(DATA, "destroying %zd byte %s object at 0x%"PRIxPTR,
 		 xsize(ptr), parser->obj_type_string, (uintptr_t) ptr);
 
-	xassert(free_func);
-	if (free_func)
-		free_func(ptr);
-}
-
-extern bool alloc_registered(const parser_t *const parser)
-{
-	for (int i = 0; i < ARRAY_SIZE(types); i++)
-		if (types[i].type == parser->type)
-			return true;
-
-	return false;
-}
-
-extern ListDelF parser_obj_free_func(const parser_t *const parser)
-{
-	for (int i = 0; i < ARRAY_SIZE(types); i++) {
-		if (types[i].type == parser->type) {
-			if (types[i].free_func)
-				return types[i].free_func;
-			else
-				return xfree_ptr;
-		}
-	}
-
-	xassert(false);
-	return NULL;
+	if (parser->free)
+		parser->free(ptr);
+	else
+		xfree_ptr(ptr);
 }

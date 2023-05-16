@@ -352,7 +352,7 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 	);
 
 	if (!list_args.list)
-		list_args.list = list_create(parser_obj_free_func(parser));
+		list_args.list = list_create((ListDelF) parser->free);
 
 	xassert(list_count(list_args.list) >= 0);
 

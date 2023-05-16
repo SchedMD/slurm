@@ -50,14 +50,4 @@ extern void *alloc_parser_obj(const parser_t *const parser);
  */
 extern void free_parser_obj(const parser_t *const parser, void *ptr);
 
-/*
- * Get ptr to free function for given object
- */
-extern ListDelF parser_obj_free_func(const parser_t *const parser);
-
-/*
- * Check if allocator for parser is registered
- */
-extern bool alloc_registered(const parser_t *const parser);
-
 #endif
