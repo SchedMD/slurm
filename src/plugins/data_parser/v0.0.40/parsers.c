@@ -99,12 +99,6 @@
 			    XSTRINGIFY(type));                               \
 	}
 
-/*
- * Modify request for QOS will ignore an empty List. This allows slurmdbd to
- * know we want this field to be empty.
- */
-#define EMPTY_QOS_ID_ENTRY "\'\'"
-
 /* based on slurmdb_tres_rec_t but includes node and task */
 typedef struct {
 	uint64_t count;
@@ -734,25 +728,12 @@ static int PARSE_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 					data_t *src, args_t *args,
 					data_t *parent_path)
 {
-	int rc;
 	slurmdb_qos_rec_t *qos = obj;
 
 	xassert(!qos->preempt_list);
 
-	if ((rc = PARSE(QOS_STRING_ID_LIST, qos->preempt_list, src, parent_path,
-			args)))
-		return rc;
-
-	if (list_is_empty(qos->preempt_list)) {
-		/*
-		 * If the QOS list is empty, then we need to set this special
-		 * entry to notify slurmdbd that this is explicilty empty and
-		 * not a no change request
-		 */
-		list_append(qos->preempt_list, EMPTY_QOS_ID_ENTRY);
-	}
-
-	return SLURM_SUCCESS;
+	return PARSE(QOS_STRING_ID_LIST, qos->preempt_list, src, parent_path,
+		     args);
 }
 
 static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,

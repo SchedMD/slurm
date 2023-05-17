@@ -47,6 +47,12 @@
 #include "src/slurmrestd/operations.h"
 #include "api.h"
 
+/*
+ * Modify request for QOS will ignore an empty List. This allows slurmdbd to
+ * know we want this field to be empty.
+ */
+#define EMPTY_QOS_ID_ENTRY "\'\'"
+
 /* If the QOS already exists, update it. If not, create it */
 static int _foreach_update_qos(void *x, void *arg)
 {
@@ -110,6 +116,21 @@ static int _foreach_update_qos(void *x, void *arg)
 
 		if (!qos->id)
 			qos->id = found_qos->id;
+
+		if (qos->preempt_list && list_is_empty(qos->preempt_list) &&
+		    found_qos->preempt_list &&
+		    !list_is_empty(found_qos->preempt_list)) {
+			/*
+			 * If the new QOS list is empty but the QOS had a
+			 * preempt list before, then we need to set this special
+			 * entry to notify slurmdbd that this is explicilty
+			 * empty and not a no change request.
+			 *
+			 * If we always set this value, then slurmdbd will
+			 * return ESLURM_QOS_PREEMPTION_LOOP.
+			 */
+			list_append(qos->preempt_list, EMPTY_QOS_ID_ENTRY);
+		}
 
 		rc = db_modify_rc(ctxt, &cond, qos, slurmdb_qos_modify);
 	}
