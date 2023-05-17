@@ -15,6 +15,7 @@ import sys
 sys.path.append(sys.path[0] + '/lib')
 import atf
 
+
 # Add test description (docstring) as a junit property
 def pytest_itemcollected(item):
     node = item.obj
@@ -78,20 +79,49 @@ def session_setup(request):
     color_log_level(logging.TRACE, purple=True, bold=True)
 
 
+def update_tmp_path_exec_permissions():
+    """
+    For pytest versions 6+  the tmp path it uses no longer has
+    public exec permissions for dynamically created directories by default.
+
+    This causes problems when trying to read temp files during tests as
+    users other than atf (ie slurm).  The tests will fail with permission denied.
+
+    To fix this we check and add the x bit to the public group on tmp
+    directories so the files inside can be read. Adding just 'read' is
+    not enough
+
+    Bug 16568
+    """
+
+    user_name = atf.get_user_name()
+    path = f"/tmp/pytest-of-{user_name}"
+
+    if os.path.isdir(path):
+        os.chmod(path, 0o777)
+        for root, dirs, files in os.walk(path):
+            for d in dirs :
+                os.chmod(os.path.join(root, d), 0o777)
+
+
+@pytest.fixture(scope="function", autouse=True)
+def tmp_path_setup(request):
+    update_tmp_path_exec_permissions()
+
+
 @pytest.fixture(scope="module", autouse=True)
 def module_setup(request, tmp_path_factory):
-
     atf.properties['slurm-started'] = False
     atf.properties['configurations-modified'] = set()
     atf.properties['accounting-database-modified'] = False
     atf.properties['orig-environment'] = dict(os.environ)
-    #print(f"properties = {atf.properties}")
 
     # Creating a module level tmp_path mimicing what tmp_path does
     name = request.node.name
     name = re.sub(r'[\W]', '_', name)
     name = name[:30]
     atf.module_tmp_path = tmp_path_factory.mktemp(name, numbered=True)
+    update_tmp_path_exec_permissions()
 
     # Module-level fixtures should run from within the module_tmp_path
     os.chdir(atf.module_tmp_path)
@@ -111,11 +141,9 @@ def module_setup(request, tmp_path_factory):
 
 
 def module_teardown():
-
     failures = []
 
     if atf.properties['auto-config']:
-
         if atf.properties['slurm-started'] == True:
 
             # Cancel all jobs
