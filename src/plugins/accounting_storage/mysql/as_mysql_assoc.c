@@ -1880,6 +1880,13 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		}
 	}
 
+	/*
+	 * If we were only moving associations to where they already are then we
+	 * can get here
+	 */
+	if (!name_char)
+		goto end_it;
+
 	xstrcat(name_char, ")");
 
 	if (assoc->parent_acct) {
