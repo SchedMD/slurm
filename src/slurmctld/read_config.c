@@ -331,6 +331,8 @@ extern hostlist_t *nodespec_to_hostlist(const char *nodes, bool uniq,
 			return NULL;
 		}
 		_add_all_nodes_to_hostlist(hl);
+		if (nodesets)
+			*nodesets = xstrdup("ALL");
 		return hl;
 	} else if (!(hl = hostlist_create(nodes))) {
 		error("%s: hostlist_create() error for %s", __func__, nodes);
