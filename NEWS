@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
     output formatting.
  -- openapi/slurmdbd - convert to using data_parser plugins for all input and
     output formatting.
+ -- data_parser/v0.0.39 - skip empty string when parsing QOS ids.
 
 * Changes in Slurm 23.02.3
 ==========================

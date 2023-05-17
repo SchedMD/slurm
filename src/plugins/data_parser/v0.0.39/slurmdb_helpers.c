@@ -204,14 +204,8 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 		   DATA_TYPE_STRING) {
 		char *qos_name = data_get_string(src);
 
-		if (!qos_name || !qos_name[0]) {
-			rc = ESLURM_INVALID_QOS;
-			if (ignore_failure)
-				on_error(op, parser->type, args, rc,
-					 set_source_path(&path, parent_path),
-					 caller, "Unable to resolve QOS with empty name");
-			goto done;
-		}
+		if (!qos_name || !qos_name[0])
+			return SLURM_SUCCESS;
 
 		qos = list_find_first(args->qos_list,
 				      slurmdb_find_qos_in_list_by_name,
