@@ -1026,3 +1026,4 @@ test_143_1   Test switches with topology/tree + select/cons_tres
 test_144_#   Testing of gres.
 ================================
 test_144_4   Test gres with file or type and --overlap
+test_144_6   Test gres with no_consume flag
