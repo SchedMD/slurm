@@ -3191,6 +3191,9 @@ static void _kill_old_slurmctld(void)
 	int fd;
 	pid_t oldpid = read_pidfile(slurm_conf.slurmctld_pidfile, &fd);
 	if (oldpid != (pid_t) 0) {
+		if (!ignore_state_errors && xstrstr(slurm_conf.slurmctld_params, "no_quick_restart"))
+			fatal("SlurmctldParameters=no_quick_restart set. Please shutdown your previous slurmctld (pid oldpid) before starting a new one. (-i to ignore this message)");
+
 		info ("killing old slurmctld[%ld]", (long) oldpid);
 		kill(oldpid, SIGTERM);
 

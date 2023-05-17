@@ -40,6 +40,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     to be sent to children processes in a step/job rather than just the parent.
  -- Add PreemptParameters=suspend_grace_time parameter to control amount of
     time between SIGTSTP and SIGSTOP signals when suspending jobs.
+ -- Add SlurmctldParameters=no_quick_restart to avoid a new slurmctld taking
+    over the old slurmctld on accident.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

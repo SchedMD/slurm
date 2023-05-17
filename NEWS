@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
     leaving background processes on a node.
  -- scontrol show assoc_mgr will display Lineage instead of Lft for
     associations.
+ -- Add SlurmctldParameters=no_quick_restart to avoid a new slurmctld taking
+    over the old slurmctld on accedent.
 
 * Changes in Slurm 23.02.3
 ==========================

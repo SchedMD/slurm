@@ -4854,6 +4854,13 @@ a buffer.
 .IP
 
 .TP
+\fBno_quick_restart\fR
+By default starting a new instance of the slurmctld will kill the old one
+running before taking control. If this option is set this will not happen
+without the \fB-i\fR option.
+.IP
+
+.TP
 \fBpower_save_interval\fR
 How often the power_save thread looks to resume and suspend nodes. The
 power_save thread will do work sooner if there are node state changes. Default
