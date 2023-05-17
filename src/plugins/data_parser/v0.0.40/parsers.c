@@ -5761,21 +5761,21 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_parse_bit_flag_array(slurmdb_qos_rec_t, QOS_FLAGS, false, flags, "flags", NULL),
 	add_parse(UINT32, id, "id", NULL),
 	add_parse(UINT32, grace_time, "limits/grace_time", NULL),
-	add_parse(UINT32, grp_jobs_accrue, "limits/max/active_jobs/accruing", NULL),
-	add_parse(UINT32, grp_jobs, "limits/max/active_jobs/count", NULL),
+	add_parse(UINT32_NO_VAL, grp_jobs_accrue, "limits/max/active_jobs/accruing", NULL),
+	add_parse(UINT32_NO_VAL, grp_jobs, "limits/max/active_jobs/count", NULL),
 	add_parse(TRES_STR, grp_tres, "limits/max/tres/total", NULL),
 	add_skip(grp_tres_ctld), /* not packed */
 	add_parse(TRES_STR, grp_tres_run_mins, "limits/max/tres/minutes/per/qos", NULL),
 	add_skip(grp_tres_run_mins_ctld), /* not packed */
 	add_parse(STRING, name, "name", NULL),
-	add_parse(UINT32, grp_wall, "limits/max/wall_clock/per/qos", NULL),
-	add_parse(FLOAT64, limit_factor, "limits/factor", NULL),
-	add_parse(UINT32, max_jobs_pa, "limits/max/jobs/active_jobs/per/account", NULL),
-	add_parse(UINT32, max_jobs_pu, "limits/max/jobs/active_jobs/per/user", NULL),
-	add_parse(UINT32, max_jobs_accrue_pa, "limits/max/accruing/per/account", NULL),
-	add_parse(UINT32, max_jobs_accrue_pu, "limits/max/accruing/per/user", NULL),
-	add_parse(UINT32, max_submit_jobs_pa, "limits/max/jobs/per/account", NULL),
-	add_parse(UINT32, max_submit_jobs_pu, "limits/max/jobs/per/user", NULL),
+	add_parse(UINT32_NO_VAL, grp_wall, "limits/max/wall_clock/per/qos", NULL),
+	add_parse(FLOAT64_NO_VAL, limit_factor, "limits/factor", NULL),
+	add_parse(UINT32_NO_VAL, max_jobs_pa, "limits/max/jobs/active_jobs/per/account", NULL),
+	add_parse(UINT32_NO_VAL, max_jobs_pu, "limits/max/jobs/active_jobs/per/user", NULL),
+	add_parse(UINT32_NO_VAL, max_jobs_accrue_pa, "limits/max/accruing/per/account", NULL),
+	add_parse(UINT32_NO_VAL, max_jobs_accrue_pu, "limits/max/accruing/per/user", NULL),
+	add_parse(UINT32_NO_VAL, max_submit_jobs_pa, "limits/max/jobs/per/account", NULL),
+	add_parse(UINT32_NO_VAL, max_submit_jobs_pu, "limits/max/jobs/per/user", NULL),
 	add_parse(TRES_STR, max_tres_mins_pj, "limits/max/tres/minutes/per/job", NULL),
 	add_skip(max_tres_mins_pj_ctld), /* not packed */
 	add_parse(TRES_STR, max_tres_pa, "limits/max/tres/per/account", NULL),
@@ -5790,8 +5790,8 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_skip(max_tres_run_mins_pa_ctld), /* not packed */
 	add_parse(TRES_STR, max_tres_run_mins_pu, "limits/max/tres/minutes/per/user", NULL),
 	add_skip(max_tres_run_mins_pu_ctld), /* not packed */
-	add_parse(UINT32, max_wall_pj, "limits/max/wall_clock/per/job", NULL),
-	add_parse(UINT32, min_prio_thresh, "limits/min/priority_threshold", NULL),
+	add_parse(UINT32_NO_VAL, max_wall_pj, "limits/max/wall_clock/per/job", NULL),
+	add_parse(UINT32_NO_VAL, min_prio_thresh, "limits/min/priority_threshold", NULL),
 	add_parse(TRES_STR, min_tres_pj, "limits/min/tres/per/job", NULL),
 	add_skip(min_tres_pj_ctld), /* not packed */
 	add_complex_parser(slurmdb_qos_rec_t, QOS_PREEMPT_LIST, false, "preempt/list", NULL),
