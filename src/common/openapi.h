@@ -196,10 +196,8 @@ typedef struct {
 #define FREE_OPENAPI_RESP_COMMON_CONTENTS(resp)			\
 do {								\
 	if (resp) {						\
-		free_openapi_resp_warning(resp->warnings);	\
-		resp->warnings = NULL;				\
-		free_openapi_resp_error(resp->errors);		\
-		resp->errors = NULL;				\
+		FREE_NULL_LIST(resp->warnings);			\
+		FREE_NULL_LIST(resp->errors);			\
 		free_openapi_resp_meta(resp->meta);		\
 		resp->meta = NULL;				\
 	}							\
