@@ -109,7 +109,13 @@ is as follows:</p>
 <li>The slurmd --conf-server $host[:$port] option</li>
 <li>The -f $config_file option</li>
 <li>The SLURM_CONF environment variable (if set)</li>
-<li>The default slurm config file (likely /etc/slurm.conf)</li>
+<li>A local slurm config file:
+  <ol>
+    <li>The default slurm config file (likely /etc/slurm.conf)</li>
+    <li>For user commands, a cached slurm config file
+        (run/slurm/conf/slurm.conf)</li>
+  </ol>
+</li>
 <li>The SLURM_CONF_SERVER environment variable (if set)</li>
 <li>Any DNS SRV records (from lowest priority value to highest)</li>
 </ol>
@@ -132,6 +138,6 @@ is as follows:</p>
 <li>topology.conf</li>
 </ul>
 
-<p style="text-align:center;">Last modified 04 November 2022</p>
+<p style="text-align:center;">Last modified 17 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
