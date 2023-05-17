@@ -58,40 +58,24 @@ proc cleanup { } {
 	cancel_job $het_job_id
 }
 
-set timeout $max_job_delay
-spawn $salloc --exclusive=user -t2 -N1 : -N1
-expect {
-	-re "job ($number) has been allocated resources" {
-		set het_job_id $expect_out(1,string)
-		reset_bash_prompt
-		exp_continue
-	}
-	-re "$test_prompt" {
-		#log_debug "Job initiated"
-	}
-	timeout {
-		fail "salloc: allocation not granted in $timeout seconds"
-	}
-	eof {
-		wait
-	}
-}
-if {$het_job_id == 0} {
-	fail "salloc failure"
-}
+set het_job_id [submit_job "-t2 -N1 : -N1 --wrap '$bin_sleep 30'"]
+wait_for_job -fail $het_job_id "RUNNING"
 
-run_command -fail "$srun -N1 -n1 --het-group=0 mkdir -p $tmp_dir"
-run_command -fail "$srun -N1 -n1 --het-group=1 mkdir -p $tmp_dir"
+run_command -fail "$srun -N1 -n1 --jobid=${het_job_id} --het-group=0 mkdir -p $tmp_dir"
+run_command -fail "$srun -N1 -n1 --jobid=${het_job_id} --het-group=1 mkdir -p $tmp_dir"
+
+run_command -fail "$srun --jobid=${het_job_id} --het-group=0 printenv SLURM_JOB_ID"
+run_command -fail "$srun --jobid=${het_job_id} --het-group=1 printenv SLURM_JOB_ID"
 
 run_command -fail "$sbcast -f --jobid=$het_job_id $srun $tmp_dir/file"
 run_command -fail "$sbcast -f --jobid=${het_job_id}+0 $srun $tmp_dir/file_comp0"
 run_command -fail "$sbcast -f --jobid=${het_job_id}+1 $srun $tmp_dir/file_comp1"
 
-subtest {![run_command_status "$srun -N1 -n1 --het-group=0 ls $tmp_dir/file"]} "Verify main file is in node of component 0"
-subtest {![run_command_status "$srun -N1 -n1 --het-group=1 ls $tmp_dir/file"]} "Verify main file is in node of component 1"
-subtest {![run_command_status "$srun -N1 -n1 --het-group=0 ls $tmp_dir/file_comp0"]} "Verify file_comp0 is in node of component 0"
-subtest {![run_command_status "$srun -N1 -n1 --het-group=1 ls $tmp_dir/file_comp1"]} "Verify file_comp1 is in node of component 1"
+subtest {![run_command_status "$srun -N1 -n1 --jobid=${het_job_id} --het-group=0 ls $tmp_dir/file"]} "Verify main file is in node of component 0"
+subtest {![run_command_status "$srun -N1 -n1 --jobid=${het_job_id} --het-group=1 ls $tmp_dir/file"]} "Verify main file is in node of component 1"
+subtest {![run_command_status "$srun -N1 -n1 --jobid=${het_job_id} --het-group=0 ls $tmp_dir/file_comp0"]} "Verify file_comp0 is in node of component 0"
+subtest {![run_command_status "$srun -N1 -n1 --jobid=${het_job_id} --het-group=1 ls $tmp_dir/file_comp1"]} "Verify file_comp1 is in node of component 1"
 
 # TODO: This fails with multiple_slurmd because $tmp_dir is shared
-# subtest {[run_command_status -xfail "$srun -N1 -n1 --het-group=0 ls $tmp_dir/file_comp1"]} "Verify file_comp1 is not is not in node of component 0"
-# subtest {[run_command_status -xfail "$srun -N1 -n1 --het-group=1 ls $tmp_dir/file_comp0"]} "Verify file_comp0 is not is not in node of component 1"
+# subtest {[run_command_status -xfail "$srun -N1 -n1 --jobid=${het_job_id} --het-group=0 ls $tmp_dir/file_comp1"]} "Verify file_comp1 is not is not in node of component 0"
+# subtest {[run_command_status -xfail "$srun -N1 -n1 --jobid=${het_job_id} --het-group=1 ls $tmp_dir/file_comp0"]} "Verify file_comp0 is not is not in node of component 1"
