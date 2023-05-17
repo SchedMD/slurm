@@ -248,6 +248,7 @@ typedef enum {
 	REQUEST_SET_SUSPEND_EXC_PARTS,
 	REQUEST_SET_SUSPEND_EXC_STATES,
 
+	DBD_MESSAGES_START	= 1400,
 	PERSIST_RC = 1433, /* To mirror the DBD_RC this is replacing */
 	/* Don't make any messages in this range as this is what the DBD uses
 	 * unless mirroring */

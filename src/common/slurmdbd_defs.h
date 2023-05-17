@@ -49,7 +49,8 @@
 /* Slurm DBD message types */
 /* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */
 typedef enum {
-	DEFUNCT_DBD_INIT = 1400,/* Connection initialization		*/
+	SLURM_DBD_MESSAGES_START = 1400, /* So that we don't overlap with any
+					  * slurm_msg_type_t numbers. */
 	DBD_FINI,       	/* Connection finalization		*/
 	DBD_ADD_ACCOUNTS,       /* Add new account to the mix           */
 	DBD_ADD_ACCOUNT_COORDS, /* Add new coordinatior to an account   */
@@ -85,7 +86,7 @@ typedef enum {
 	DBD_MODIFY_CLUSTERS,    /* #1430, Modify existing cluster       */
 	DBD_MODIFY_USERS,       /* Modify existing user                 */
 	DBD_NODE_STATE,		/* Record node state transition		*/
-	DBD_DEFUNCT_RPC_1433,	/* Free for reuse			*/
+	SLURM_PERSIST_RC,	/* To mirror the DBD_RC this is replacing */
 	DBD_REGISTER_CTLD,	/* Register a slurmctld's comm port	*/
 	DBD_REMOVE_ACCOUNTS,    /* Remove existing account              */
 	DBD_REMOVE_ACCOUNT_COORDS,/* Remove existing coordinator from
@@ -154,12 +155,13 @@ typedef enum {
 	DBD_REMOVE_FEDERATIONS, /* Removing existing federation 	*/
 	DBD_JOB_HEAVY,         /* Send job script/env  		*/
 	DBD_GOT_JOB_ENV,	/* Loading env hash table*/
-	DBD_GOT_JOB_SCRIPT,	/* Loadung bash script hash table*/
+	DBD_GOT_JOB_SCRIPT,	/* #1450, Loading bash script hash table */
 	DBD_ADD_ACCOUNTS_COND,  /* Add new account to the mix with acct_rec and
 				 * add_assoc_cond */
 	DBD_ADD_USERS_COND,     /* Add new user to the mix with user_rec and
 				 * add_assoc_cond */
-
+	SLURM_DBD_MESSAGES_END = 2000, /* So that we don't overlap with any
+					* slurm_msg_type_t numbers. */
 	SLURM_PERSIST_INIT = 6500, /* So we don't use the
 				    * REQUEST_PERSIST_INIT also used here.
 				    */
