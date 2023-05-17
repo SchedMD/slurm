@@ -95,12 +95,10 @@ static int _uid_cmp(const void *x, const void *y)
 	a = *(uid_t *)x;
 	b = *(uid_t *)y;
 
-	/* Sort in decreasing order so that the 0
-	 * as at the end.
-	 */
-	if (a > b)
-		return -1;
+	/* Sort in increasing order so that the 0 is at the beginning */
 	if (a < b)
+		return -1;
+	if (a > b)
 		return 1;
 	return 0;
 }
