@@ -367,9 +367,12 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 
 	if (data_list_for_each(src, _foreach_parse_list, &list_args) < 0) {
 		rc = on_error(PARSING, parser->type, args,
-			ESLURM_REST_FAIL_PARSING,
-			set_source_path(&path, parent_path),
-			__func__, "parsing failed");
+			      ESLURM_REST_FAIL_PARSING,
+			      set_source_path(&path, parent_path), __func__,
+			      "Parsing list %s of %s failed",
+			      parser->type_string,
+			      find_parser_by_type(parser->list_type)
+				      ->type_string);
 		goto cleanup;
 	}
 
@@ -845,6 +848,12 @@ cleanup:
 						    parser->field_name : ""),
 		 parser->type_string, (uintptr_t) parser, rc,
 		 slurm_strerror(rc));
+
+	if (rc && !parser->list_type) {
+		rc = on_error(PARSING, parser->type, args, rc,
+			      set_source_path(&path, parent_path), __func__,
+			      "Parser %s failed", parser->type_string);
+	}
 
 	xfree(path);
 
