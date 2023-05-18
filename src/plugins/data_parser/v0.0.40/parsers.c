@@ -7263,6 +7263,21 @@ static const parser_t PARSER_ARRAY(OPENAPI_NODE_PARAM)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_partitions_query_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_PARTITIONS_QUERY)[] = {
+	add_parse(TIMESTAMP, update_time, "update_time", "Filter partitions since update timestamp"),
+	add_parse_bit_flag_array(openapi_partitions_query_t, JOB_SHOW_FLAGS, false, show_flags, "flags", "Query flags"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_partition_param_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_PARTITION_PARAM)[] = {
+	add_parse(STRING, partition_name, "partition_name", "Partition name"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_nodes_query_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_NODES_QUERY)[] = {
 	add_parse(TIMESTAMP, update_time, "update_time", "Filter jobs since update timestamp"),
@@ -7812,6 +7827,8 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_JOB_INFO_QUERY, openapi_job_info_query_t, NULL, NULL),
 	addpa(OPENAPI_NODE_PARAM, openapi_node_param_t, NULL, NULL),
 	addpa(OPENAPI_NODES_QUERY, openapi_nodes_query_t, NULL, NULL),
+	addpa(OPENAPI_PARTITION_PARAM, openapi_partition_param_t, NULL, NULL),
+	addpa(OPENAPI_PARTITIONS_QUERY, openapi_partitions_query_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),

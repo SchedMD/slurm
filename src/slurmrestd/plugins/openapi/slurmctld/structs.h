@@ -92,4 +92,13 @@ typedef struct {
 	uint16_t show_flags;
 } openapi_nodes_query_t;
 
+typedef struct {
+	char *partition_name;
+} openapi_partition_param_t;
+
+typedef struct {
+	time_t update_time;
+	uint16_t show_flags;
+} openapi_partitions_query_t;
+
 #endif
