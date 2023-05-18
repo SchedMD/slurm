@@ -48,14 +48,6 @@ typedef openapi_ctxt_t ctxt_t;
 #define resp_warn(ctxt, source, why, ...) \
 	openapi_resp_warn(ctxt, source, why, ##__VA_ARGS__)
 
-/* ------------ handlers for user requests --------------- */
-
-#define get_str_param(name, req, ctxt) \
-	openapi_get_str_param(ctxt, req, name, __func__)
-
-#define get_date_param(name, req, time_ptr, ctxt) \
-	openapi_get_date_param(ctxt, req, name, &time_ptr, __func__)
-
 /* ------------ declarations for each operation --------------- */
 
 extern void init_op_diag(void);
