@@ -463,7 +463,6 @@ static data_t *_add_param(data_t *param, const char *name,
 			  const char *desc, spec_args_t *args)
 {
 	data_t *schema;
-	const char *format_str;
 
 	xassert(format > OPENAPI_FORMAT_INVALID);
 	xassert(format < OPENAPI_FORMAT_MAX);
@@ -482,11 +481,7 @@ static data_t *_add_param(data_t *param, const char *name,
 		data_set_string(data_key_set(param, "description"), desc);
 
 	schema = data_set_dict(data_key_set(param, "schema"));
-	data_set_string(data_key_set(schema, "type"),
-			openapi_type_format_to_type_string(format));
-
-	if ((format_str = openapi_type_format_to_format_string(format)))
-		data_set_string(data_key_set(schema, "format"), format_str);
+	data_set_string(data_key_set(schema, "type"), "string");
 
 	return schema;
 }
