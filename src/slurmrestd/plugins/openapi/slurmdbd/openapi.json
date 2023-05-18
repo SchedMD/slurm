@@ -89,7 +89,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_config",
         "summary": "Dump all configuration information",
         "responses": {
           "200": {
@@ -128,7 +127,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "set_config",
         "summary": "Load all configuration information",
         "responses": {
           "200": {
@@ -185,7 +183,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "update_tres",
         "responses": {
           "200": {
             "content": {
@@ -240,7 +237,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_tres",
         "responses": {
           "200": {
             "content": {
@@ -270,7 +266,6 @@
           "slurm"
         ],
         "summary": "Delete QOS",
-        "operationId": "delete_qos",
         "responses": {
           "200": {
             "content": {
@@ -312,7 +307,6 @@
           "slurm"
         ],
         "summary": "Get QOS info",
-        "operationId": "get_single_qos",
         "responses": {
           "200": {
             "content": {
@@ -355,7 +349,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_qos",
         "parameters": {
           "$ref": "DATA_PARSER_QOS_CONDITION"
         },
@@ -397,7 +390,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "update_qos",
         "responses": {
           "200": {
             "content": {
@@ -454,7 +446,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "update_associations",
         "responses": {
           "200": {
             "content": {
@@ -509,7 +500,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_associations",
         "parameters": [
           {
             "name": "cluster",
@@ -594,7 +584,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "delete_associations",
         "parameters": [
           {
             "name": "cluster",
@@ -681,7 +670,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_association",
         "parameters": [
           {
             "name": "cluster",
@@ -766,7 +754,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "delete_association",
         "parameters": [
           {
             "name": "cluster",
@@ -854,7 +841,6 @@
           "slurm"
         ],
         "summary": "Delete user",
-        "operationId": "delete_user",
         "responses": {
           "200": {
             "content": {
@@ -896,7 +882,6 @@
           "slurm"
         ],
         "summary": "Get user info",
-        "operationId": "get_user",
         "responses": {
           "200": {
             "content": {
@@ -943,7 +928,6 @@
           "slurm"
         ],
         "summary": "Update user",
-        "operationId": "update_users",
         "requestBody": {
           "description": "add or update user",
           "content": {
@@ -998,7 +982,6 @@
           "slurm"
         ],
         "summary": "Get user list",
-        "operationId": "get_users",
         "responses": {
           "200": {
             "content": {
@@ -1042,7 +1025,6 @@
           "slurm"
         ],
         "summary": "Delete cluster",
-        "operationId": "delete_cluster",
         "responses": {
           "200": {
             "content": {
@@ -1094,7 +1076,6 @@
           "slurm"
         ],
         "summary": "Get cluster info",
-        "operationId": "get_cluster",
         "responses": {
           "200": {
             "content": {
@@ -1147,7 +1128,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_clusters",
         "responses": {
           "200": {
             "content": {
@@ -1186,7 +1166,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "add_clusters",
         "responses": {
           "200": {
             "content": {
@@ -1244,7 +1223,6 @@
           "slurm"
         ],
         "summary": "Delete wckey",
-        "operationId": "delete_wckey",
         "responses": {
           "200": {
             "content": {
@@ -1296,7 +1274,6 @@
           "slurm"
         ],
         "summary": "Get wckey info",
-        "operationId": "get_wckey",
         "responses": {
           "200": {
             "content": {
@@ -1349,7 +1326,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_wckeys",
         "responses": {
           "200": {
             "content": {
@@ -1388,7 +1364,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "add_wckeys",
         "responses": {
           "200": {
             "content": {
@@ -1446,7 +1421,6 @@
           "slurm"
         ],
         "summary": "Delete account",
-        "operationId": "delete_account",
         "responses": {
           "200": {
             "content": {
@@ -1498,7 +1472,6 @@
           "slurm"
         ],
         "summary": "Get account info",
-        "operationId": "get_account",
         "responses": {
           "200": {
             "content": {
@@ -1567,7 +1540,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_accounts",
         "parameters": [
           {
             "name": "with_deleted",
@@ -1624,7 +1596,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "update_accounts",
         "responses": {
           "200": {
             "content": {
@@ -1681,7 +1652,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_jobs",
         "parameters": {
           "$ref": "DATA_PARSER_JOB_CONDITION"
         },
@@ -1725,7 +1695,6 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "diag",
         "responses": {
           "200": {
             "content": {
