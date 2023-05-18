@@ -97,6 +97,7 @@
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/interfaces/core_spec.h"
 #include "src/interfaces/cred.h"
+#include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/job_container.h"
 #include "src/interfaces/jobacct_gather.h"
@@ -274,16 +275,26 @@ _send_srun_resp_msg(slurm_msg_t *resp_msg, uint32_t nnodes)
 static void _local_jobacctinfo_aggregate(
 	jobacctinfo_t *dest, jobacctinfo_t *from)
 {
+	int gpumem_pos = -1, gpuutil_pos = -1;
+
+	gpu_get_tres_pos(&gpumem_pos, &gpuutil_pos);
+
 	/*
 	 * Here to make any sense for some variables we need to move the
-	 * Max to the total (i.e. Mem VMem) since the total might be
-	 * incorrect data, this way the total/ave will be of the Max
+	 * Max to the total (i.e. Mem, VMem, gpumem, gpuutil) since the total
+	 * might be incorrect data, this way the total/ave will be of the Max
 	 * values.
 	 */
 	from->tres_usage_in_tot[TRES_ARRAY_MEM] =
 		from->tres_usage_in_max[TRES_ARRAY_MEM];
 	from->tres_usage_in_tot[TRES_ARRAY_VMEM] =
 		from->tres_usage_in_max[TRES_ARRAY_VMEM];
+	if (gpumem_pos != -1)
+		from->tres_usage_in_tot[gpumem_pos] =
+			from->tres_usage_in_max[gpumem_pos];
+	if (gpuutil_pos != -1)
+		from->tres_usage_in_tot[gpuutil_pos] =
+			from->tres_usage_in_max[gpuutil_pos];
 
 	/*
 	 * Here ave_watts stores the ave of the watts collected so store that
