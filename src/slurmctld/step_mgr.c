@@ -1921,7 +1921,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 				int job_node_inx, uint16_t sockets,
 				uint16_t cores, bool use_all_cores,
 				bool oversubscribing_cpus, int *core_cnt,
-				uint16_t cpus_per_task)
+				uint16_t cores_per_task)
 {
 	int core_inx, i, sock_inx;
 	static int last_core_inx;
@@ -1987,7 +1987,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 			}
 		}
 	} else { /* SLURM_DIST_SOCKCYCLIC */
-		int task_alloc_cpus = 0;
+		int task_alloc_cores = 0;
 		int *next_core = xcalloc(sockets, sizeof(int));
 		bool nothing_allocated = false;
 		while (!nothing_allocated) {
@@ -2017,9 +2017,9 @@ static bool _handle_core_select(step_record_t *step_ptr,
 						xfree(next_core);
 						return true;
 					}
-					if (++task_alloc_cpus ==
-					    cpus_per_task) {
-						task_alloc_cpus = 0;
+					if (++task_alloc_cores ==
+					    cores_per_task) {
+						task_alloc_cores = 0;
 						break;
 					}
 				}
