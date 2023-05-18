@@ -7232,6 +7232,29 @@ static const parser_t PARSER_ARRAY(CLUSTER_CONDITION)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_job_info_param_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_JOB_INFO_PARAM)[] = {
+	add_parse(SELECTED_STEP, job_id, "job_id", "JobId"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_job_info_delete_query_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_JOB_INFO_DELETE_QUERY)[] = {
+	add_parse(SIGNAL, signal, "signal", "Signal to send to Job"),
+	add_parse_bit_flag_array(openapi_job_info_delete_query_t, WARN_FLAGS, false, flags, "flags", "Signalling flags"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_job_info_query_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_JOB_INFO_QUERY)[] = {
+	add_parse(TIMESTAMP, update_time, "update_time", "Filter jobs since update timestamp"),
+	add_parse_bit_flag_array(openapi_job_info_query_t, JOB_SHOW_FLAGS, false, show_flags, "flags", "Query flags"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -7769,6 +7792,9 @@ static const parser_t parsers[] = {
 	addpa(ACCOUNT_CONDITION, slurmdb_account_cond_t, NULL, slurmdb_destroy_account_cond),
 	addpa(OPENAPI_CLUSTER_PARAM, openapi_cluster_param_t, NULL, slurmdb_destroy_cluster_cond),
 	addpa(CLUSTER_CONDITION, slurmdb_cluster_cond_t, NEW_FUNC(CLUSTER_CONDITION), slurmdb_destroy_cluster_cond),
+	addpa(OPENAPI_JOB_INFO_PARAM, openapi_job_info_param_t, NULL, NULL),
+	addpa(OPENAPI_JOB_INFO_DELETE_QUERY, openapi_job_info_delete_query_t, NULL, NULL),
+	addpa(OPENAPI_JOB_INFO_QUERY, openapi_job_info_query_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),

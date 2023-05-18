@@ -37,6 +37,7 @@
 #include "src/common/env.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/parse_time.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -51,48 +52,61 @@
 
 static int _op_handler_jobs(openapi_ctxt_t *ctxt)
 {
-	time_t update_time = 0; /* default to unix epoch */
+	openapi_job_info_query_t query = {0};
 	job_info_msg_t *job_info_ptr = NULL;
-	int rc = SLURM_SUCCESS;
-
-	debug4("%s: jobs handler called by %s", __func__, ctxt->id);
+	int rc;
 
 	if (ctxt->method != HTTP_REQUEST_GET) {
-		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
-			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(ctxt->method));
-		goto cleanup;
+		return resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY),
+				  __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
 	}
 
-	if ((rc = get_date_param("update_time", false, update_time, ctxt)))
-		goto cleanup;
+	if (DATA_PARSE(ctxt->parser, OPENAPI_JOB_INFO_QUERY, query, ctxt->query,
+		       ctxt->parent_path)) {
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Rejecting request. Failure parsing query.");
+	}
 
-	rc = slurm_load_jobs(update_time, &job_info_ptr,
-			     SHOW_ALL | SHOW_DETAIL);
+	if (!query.show_flags)
+		query.show_flags = SHOW_ALL | SHOW_DETAIL;
+
+	rc = slurm_load_jobs(query.update_time, &job_info_ptr,
+			     query.show_flags);
 
 	if (rc == SLURM_NO_CHANGE_IN_DATA) {
+		char ts[32] = {0};
+		slurm_make_time_str(&query.update_time, ts, sizeof(ts));
 		rc = SLURM_SUCCESS;
 		resp_warn(ctxt, __func__,
-			  "No job changes since update_time=%ld",
-			  update_time);
+			  "No job changes since update_time[%ld]=%s",
+			  query.update_time, ts);
 	} else if (rc) {
 		resp_error(ctxt, rc, "slurm_load_jobs()",
 			   "Unable to query jobs");
-		goto cleanup;
+	} else {
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOB_INFO_RESP, job_info_ptr,
+					 ctxt);
 	}
 
-	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOB_INFO_RESP, job_info_ptr, ctxt);
-
-cleanup:
 	slurm_free_job_info_msg(job_info_ptr);
 	return rc;
 }
 
 static void _handle_job_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 {
+	openapi_job_info_query_t query = {0};
 	int rc = SLURM_SUCCESS;
 	job_info_msg_t *job_info_ptr = NULL;
 	uint32_t id;
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_JOB_INFO_QUERY, query, ctxt->query,
+		       ctxt->parent_path)) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Rejecting request. Failure parsing query.");
+		return;
+	}
 
 	if (job_id->het_job_offset != NO_VAL)
 		id = job_id->step_id.job_id + job_id->het_job_offset;
@@ -105,7 +119,10 @@ static void _handle_job_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 		resp_warn(ctxt, __func__,
 			  "Job steps are not supported for job searches. Showing whole job instead.");
 
-	if ((rc = slurm_load_job(&job_info_ptr, id, SHOW_ALL | SHOW_DETAIL))) {
+	if (!query.show_flags)
+		query.show_flags = SHOW_ALL | SHOW_DETAIL;
+
+	if ((rc = slurm_load_job(&job_info_ptr, id, query.show_flags))) {
 		char *id = NULL;
 
 		fmt_job_id_string(job_id, &id);
@@ -123,27 +140,30 @@ static void _handle_job_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 
 static void _handle_job_delete(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 {
-	uint16_t signal = 0;
-	data_t *dsignal = data_key_get(ctxt->query, "signal");
+	openapi_job_info_delete_query_t query = {0};
 
-	if (!dsignal)
-		signal = SIGKILL;
-	else if (DATA_PARSE(ctxt->parser, SIGNAL, signal, dsignal,
-			    ctxt->parent_path))
+	if (DATA_PARSE(ctxt->parser, OPENAPI_JOB_INFO_DELETE_QUERY, query,
+		       ctxt->query, ctxt->parent_path))
 		return;
 
-	if (slurm_kill_job(job_id->step_id.job_id, signal, KILL_FULL_JOB)) {
+	if (!query.signal)
+		query.signal = SIGKILL;
+
+	if (!query.flags)
+		query.flags = KILL_FULL_JOB;
+
+	if (slurm_kill_job(job_id->step_id.job_id, query.signal, query.flags)) {
 		/* Already signaled jobs are considered a success here */
 		if (errno == ESLURM_ALREADY_DONE) {
 			resp_warn(ctxt, __func__,
 				  "Job was already sent signal %s",
-				  strsignal(signal));
+				  strsignal(query.signal));
 			return;
 		}
 
 		resp_error(ctxt, errno, "slurm_kill_job2()",
 			   "unable to send signal %s to JobId=%u",
-			   strsignal(signal), job_id->step_id.job_id);
+			   strsignal(query.signal), job_id->step_id.job_id);
 	}
 }
 
@@ -352,41 +372,39 @@ static void _job_post(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 
 static int _op_handler_job(openapi_ctxt_t *ctxt)
 {
-	int rc = SLURM_SUCCESS;
-	slurm_selected_step_t job_id;
-	char *job_id_str;
+	openapi_job_info_param_t params = {0};
+	slurm_selected_step_t *job_id;
 
-	if (!(job_id_str = get_str_param("job_id", true, ctxt)))
-		goto done;
-
-	if ((rc = unfmt_job_id_string(job_id_str, &job_id))) {
-		resp_error(ctxt, rc, __func__, "Failure parsing \"%s\"",
-			   job_id_str);
-		goto done;
+	if (DATA_PARSE(ctxt->parser, OPENAPI_JOB_INFO_PARAM, params,
+		       ctxt->parameters, ctxt->parent_path)) {
+		return resp_error(
+			ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			"Rejecting request. Failure parsing parameters");
 	}
 
-	if ((job_id.step_id.job_id == NO_VAL) || (job_id.step_id.job_id <= 0)
-	    || (job_id.step_id.job_id >= MAX_JOB_ID)) {
-		rc = resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-				"Invalid JobID=%u rejected",
-				job_id.step_id.job_id);
-		goto done;
+	job_id = &params.job_id;
+
+	if ((job_id->step_id.job_id == NO_VAL) ||
+	    (job_id->step_id.job_id <= 0) ||
+	    (job_id->step_id.job_id >= MAX_JOB_ID)) {
+		return resp_error(ctxt, ESLURM_INVALID_JOB_ID, __func__,
+				  "Invalid JobID=%u rejected",
+				  job_id->step_id.job_id);
 	}
 
 	if (ctxt->method == HTTP_REQUEST_GET) {
-		_handle_job_get(ctxt, &job_id);
+		_handle_job_get(ctxt, job_id);
 	} else if (ctxt->method == HTTP_REQUEST_DELETE) {
-		_handle_job_delete(ctxt, &job_id);
+		_handle_job_delete(ctxt, job_id);
 	} else if (ctxt->method == HTTP_REQUEST_POST) {
-		_job_post(ctxt, &job_id);
+		_job_post(ctxt, job_id);
 	} else {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(ctxt->method));
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
 	}
 
-done:
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 static int _op_handler_submit_job(openapi_ctxt_t *ctxt)

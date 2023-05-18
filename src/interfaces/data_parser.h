@@ -231,6 +231,9 @@ typedef enum {
 	DATA_PARSER_JOB_INFO_MSG, /* job_info_msg_t */
 	DATA_PARSER_JOB_INFO_MSG_PTR, /* job_info_msg_t* */
 	DATA_PARSER_OPENAPI_JOB_INFO_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_JOB_INFO_PARAM, /* openapi_job_info_param_t */
+	DATA_PARSER_OPENAPI_JOB_INFO_DELETE_QUERY, /* openapi_job_info_delete_query_t */
+	DATA_PARSER_OPENAPI_JOB_INFO_QUERY, /* openapi_job_info_query_t */
 	DATA_PARSER_JOB_INFO, /* slurm_job_info_t */
 	DATA_PARSER_JOB_INFO_STDIN, /* slurm_job_info_t->stdin (handles % replacements) */
 	DATA_PARSER_JOB_INFO_STDOUT, /* slurm_job_info_t->stdout (handles % replacements) */

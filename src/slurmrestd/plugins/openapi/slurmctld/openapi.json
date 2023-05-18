@@ -166,20 +166,9 @@
           "slurm"
         ],
         "summary": "get list of jobs",
-        "parameters": [
-          {
-            "name": "update_time",
-            "in": "query",
-            "description": "Filter if changed since update_time. Use of this parameter can result in faster replies.",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": "DATA_PARSER_OPENAPI_JOB_INFO_QUERY"
+        },
         "responses": {
           "200": {
             "description": "job(s) information",
@@ -220,19 +209,12 @@
           "slurm"
         ],
         "summary": "get job info",
-        "parameters": [
-          {
-            "name": "job_id",
-            "in": "path",
-            "description": "Slurm JobID",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": [
+            "DATA_PARSER_OPENAPI_JOB_INFO_PARAM",
+            "DATA_PARSER_OPENAPI_JOB_INFO_QUERY"
+          ]
+        },
         "responses": {
           "200": {
             "description": "job(s) information",
@@ -271,19 +253,9 @@
           "slurm"
         ],
         "summary": "update job",
-        "parameters": [
-          {
-            "name": "job_id",
-            "in": "path",
-            "description": "Slurm Job ID",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": "DATA_PARSER_OPENAPI_JOB_INFO_PARAM"
+        },
         "requestBody": {
           "description": "update job",
           "content": {
@@ -338,48 +310,12 @@
           "slurm"
         ],
         "summary": "cancel or signal job",
-        "parameters": [
-          {
-            "name": "job_id",
-            "in": "path",
-            "description": "Slurm Job ID",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "signal",
-            "in": "query",
-            "description": "signal to send to job",
-            "required": false,
-            "style": "form",
-            "explode": true,
-            "schema": {
-              "type": "string",
-              "description": "POSIX signal name",
-              "enum": [
-                "HUP",
-                "INT",
-                "QUIT",
-                "ABRT",
-                "KILL",
-                "ALRM",
-                "TERM",
-                "USR1",
-                "USR2",
-                "URG",
-                "CONT",
-                "STOP",
-                "TSTP",
-                "TTIN",
-                "TTOU"
-              ]
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": [
+            "DATA_PARSER_OPENAPI_JOB_INFO_PARAM",
+            "DATA_PARSER_OPENAPI_JOB_INFO_DELETE_QUERY"
+          ]
+        },
         "responses": {
           "200": {
             "description": "job cancelled or sent signal",

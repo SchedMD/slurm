@@ -69,4 +69,18 @@ typedef struct {
 	list_t *jobs; /* list of job_desc_msg_t* */
 } job_submit_request_t;
 
+typedef struct {
+	slurm_selected_step_t job_id;
+} openapi_job_info_param_t;
+
+typedef struct {
+	uint16_t signal;
+	uint16_t flags;
+} openapi_job_info_delete_query_t;
+
+typedef struct {
+	time_t update_time;
+	uint16_t show_flags;
+} openapi_job_info_query_t;
+
 #endif
