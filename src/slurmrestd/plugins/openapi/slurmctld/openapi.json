@@ -1,8 +1,8 @@
 {
-  "openapi": "3.0.2",
+  "openapi": "3.0.3",
   "info": {
-    "title": "Slurm Rest API",
-    "description": "API to access and control Slurm.",
+    "title": "Slurm REST API",
+    "description": "API to access and control Slurm",
     "termsOfService": "https://github.com/SchedMD/slurm/blob/master/DISCLAIMER",
     "contact": {
       "name": "SchedMD LLC",
@@ -12,8 +12,7 @@
     "license": {
       "name": "Apache 2.0",
       "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
-    },
-    "version": "0.0.40"
+    }
   },
   "tags": [
     {
