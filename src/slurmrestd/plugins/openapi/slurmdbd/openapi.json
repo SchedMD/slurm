@@ -42,7 +42,7 @@
     "/slurmdb/{data_parser}/job/{job_id}": {
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "operationId": "get_job",
         "summary": "Get job info",
@@ -87,7 +87,7 @@
     "/slurmdb/{data_parser}/config": {
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Dump all configuration information",
         "responses": {
@@ -125,7 +125,7 @@
       },
       "post": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Load all configuration information",
         "responses": {
@@ -181,7 +181,7 @@
     "/slurmdb/{data_parser}/tres/": {
       "post": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "responses": {
           "200": {
@@ -235,7 +235,7 @@
       },
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "responses": {
           "200": {
@@ -263,7 +263,7 @@
     "/slurmdb/{data_parser}/qos/{name}": {
       "delete": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Delete QOS",
         "responses": {
@@ -304,7 +304,7 @@
       },
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Get QOS info",
         "responses": {
@@ -347,7 +347,7 @@
     "/slurmdb/{data_parser}/qos/": {
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "parameters": {
           "$ref": "DATA_PARSER_QOS_CONDITION"
@@ -388,7 +388,7 @@
       },
       "post": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "responses": {
           "200": {
@@ -444,7 +444,7 @@
     "/slurmdb/{data_parser}/associations/": {
       "post": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "responses": {
           "200": {
@@ -498,7 +498,7 @@
       },
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "parameters": [
           {
@@ -582,7 +582,7 @@
       },
       "delete": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "parameters": [
           {
@@ -668,7 +668,7 @@
     "/slurmdb/{data_parser}/association/": {
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "parameters": [
           {
@@ -752,7 +752,7 @@
       },
       "delete": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "parameters": [
           {
@@ -838,7 +838,7 @@
     "/slurmdb/{data_parser}/user/{name}": {
       "delete": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Delete user",
         "responses": {
@@ -879,7 +879,7 @@
       },
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Get user info",
         "responses": {
@@ -925,7 +925,7 @@
     "/slurmdb/{data_parser}/users/": {
       "post": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Update user",
         "requestBody": {
@@ -979,7 +979,7 @@
       },
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Get user list",
         "responses": {
@@ -1022,7 +1022,7 @@
     "/slurmdb/{data_parser}/cluster/{cluster_name}": {
       "delete": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Delete cluster",
         "responses": {
@@ -1073,7 +1073,7 @@
       },
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Get cluster info",
         "responses": {
@@ -1126,7 +1126,7 @@
     "/slurmdb/{data_parser}/clusters/": {
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "responses": {
           "200": {
@@ -1164,7 +1164,7 @@
       },
       "post": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "responses": {
           "200": {
@@ -1220,7 +1220,7 @@
     "/slurmdb/{data_parser}/wckey/{wckey}": {
       "delete": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Delete wckey",
         "responses": {
@@ -1271,7 +1271,7 @@
       },
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Get wckey info",
         "responses": {
@@ -1324,7 +1324,7 @@
     "/slurmdb/{data_parser}/wckeys/": {
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "responses": {
           "200": {
@@ -1362,7 +1362,7 @@
       },
       "post": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "responses": {
           "200": {
@@ -1418,7 +1418,7 @@
     "/slurmdb/{data_parser}/account/{account_name}": {
       "delete": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Delete account",
         "responses": {
@@ -1469,7 +1469,7 @@
       },
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "summary": "Get account info",
         "responses": {
@@ -1538,7 +1538,7 @@
     "/slurmdb/{data_parser}/accounts/": {
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "parameters": [
           {
@@ -1594,7 +1594,7 @@
       },
       "post": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "responses": {
           "200": {
@@ -1650,7 +1650,7 @@
     "/slurmdb/{data_parser}/jobs/": {
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "parameters": {
           "$ref": "DATA_PARSER_JOB_CONDITION"
@@ -1693,7 +1693,7 @@
     "/slurmdb/{data_parser}/diag/": {
       "get": {
         "tags": [
-          "slurm"
+          "slurmdb"
         ],
         "responses": {
           "200": {
