@@ -62,6 +62,8 @@ documents those changes that are of interest to users and administrators.
     once the jobs completed.
  -- Fix backfill not scheduling jobs submitted with --prefer and --constraint
     properly.
+ -- Avoid possible slurmctld segfault caused by race condition with already
+    completed slurmdbd_conn connections.
 
 * Changes in Slurm 23.02.2
 ==========================
