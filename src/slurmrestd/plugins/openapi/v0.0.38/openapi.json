@@ -44,6 +44,7 @@
         ],
         "operationId": "diag",
         "summary": "get diagnostics",
+        "deprecated": true,
         "responses": {
           "200": {
             "description": "diagnostic results",
@@ -85,6 +86,7 @@
         ],
         "operationId": "slurmctld_get_licenses",
         "summary": "get all Slurm tracked license info",
+        "deprecated": true,
         "responses": {
           "200": {
             "description": "results of get all licenses",
@@ -114,6 +116,7 @@
         ],
         "operationId": "ping",
         "summary": "ping test",
+        "deprecated": true,
         "responses": {
           "200": {
             "description": "results of ping test",
@@ -155,6 +158,7 @@
         ],
         "operationId": "get_jobs",
         "summary": "get list of jobs",
+        "deprecated": true,
         "parameters": [
           {
             "name": "update_time",
@@ -210,6 +214,7 @@
         ],
         "operationId": "get_job",
         "summary": "get job info",
+        "deprecated": true,
         "parameters": [
           {
             "name": "job_id",
@@ -250,6 +255,7 @@
         ],
         "operationId": "update_job",
         "summary": "update job",
+        "deprecated": true,
         "parameters": [
           {
             "name": "job_id",
@@ -294,6 +300,7 @@
         ],
         "operationId": "cancel_job",
         "summary": "cancel or signal job",
+        "deprecated": true,
         "parameters": [
           {
             "name": "job_id",
@@ -335,6 +342,7 @@
         ],
         "operationId": "submit_job",
         "summary": "submit new job",
+        "deprecated": true,
         "requestBody": {
           "description": "submit new job",
           "content": {
@@ -392,6 +400,7 @@
         ],
         "operationId": "get_nodes",
         "summary": "get all node info",
+        "deprecated": true,
         "parameters": [
           {
             "name": "update_time",
@@ -447,6 +456,7 @@
         ],
         "operationId": "get_node",
         "summary": "get node info",
+        "deprecated": true,
         "parameters": [
           {
             "name": "node_name",
@@ -501,6 +511,7 @@
         ],
         "operationId": "get_partitions",
         "summary": "get all partition info",
+        "deprecated": true,
         "parameters": [
           {
             "name": "update_time",
@@ -556,6 +567,7 @@
         ],
         "operationId": "get_partition",
         "summary": "get partition info",
+        "deprecated": true,
         "parameters": [
           {
             "name": "partition_name",
@@ -622,6 +634,7 @@
         ],
         "operationId": "get_reservations",
         "summary": "get all reservation info",
+        "deprecated": true,
         "parameters": [
           {
             "name": "update_time",
@@ -677,6 +690,7 @@
         ],
         "operationId": "get_reservation",
         "summary": "get reservation info",
+        "deprecated": true,
         "parameters": [
           {
             "name": "reservation_name",
