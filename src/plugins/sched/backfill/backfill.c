@@ -1744,6 +1744,7 @@ static void _attempt_backfill(void)
 	job_record_t *reject_array_job = NULL;
 	part_record_t *reject_array_part = NULL;
 	slurmctld_resv_t *reject_array_resv = NULL;
+	bool reject_array_use_prefer = false;
 	uint32_t start_time, array_start_time = 0;
 	struct timeval start_tv;
 	uint32_t test_array_job_id = 0;
@@ -2150,13 +2151,15 @@ next_task:
 			    (reject_array_job->array_job_id ==
 				job_ptr->array_job_id) &&
 			    (reject_array_part == part_ptr) &&
-			    (reject_array_resv == job_ptr->resv_ptr))
+			    (reject_array_resv == job_ptr->resv_ptr) &&
+			    (reject_array_use_prefer == use_prefer))
 				continue;  /* already rejected array element */
 
 			/* assume reject whole array for now, clear if OK */
 			reject_array_job = job_ptr;
 			reject_array_part = part_ptr;
 			reject_array_resv = job_ptr->resv_ptr;
+			reject_array_use_prefer = use_prefer;
 
 			if (!job_array_start_test(job_ptr))
 				continue;
