@@ -7255,6 +7255,21 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_INFO_QUERY)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_node_param_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_NODE_PARAM)[] = {
+	add_parse(STRING, node_name, "node_name", "Node name"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_nodes_query_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_NODES_QUERY)[] = {
+	add_parse(TIMESTAMP, update_time, "update_time", "Filter jobs since update timestamp"),
+	add_parse_bit_flag_array(openapi_nodes_query_t, JOB_SHOW_FLAGS, false, show_flags, "flags", "Query flags"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -7795,6 +7810,8 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_JOB_INFO_PARAM, openapi_job_info_param_t, NULL, NULL),
 	addpa(OPENAPI_JOB_INFO_DELETE_QUERY, openapi_job_info_delete_query_t, NULL, NULL),
 	addpa(OPENAPI_JOB_INFO_QUERY, openapi_job_info_query_t, NULL, NULL),
+	addpa(OPENAPI_NODE_PARAM, openapi_node_param_t, NULL, NULL),
+	addpa(OPENAPI_NODES_QUERY, openapi_nodes_query_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),

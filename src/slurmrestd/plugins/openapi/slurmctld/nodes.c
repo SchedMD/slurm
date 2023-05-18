@@ -45,20 +45,7 @@
 #include "src/slurmrestd/operations.h"
 
 #include "api.h"
-
-static void _delete_node(ctxt_t *ctxt, char *name)
-{
-	update_node_msg_t *node_msg = xmalloc(sizeof(*node_msg));
-	slurm_init_update_node_msg(node_msg);
-
-	node_msg->node_names = xstrdup(name);
-
-	if (slurm_delete_node(node_msg))
-		resp_error(ctxt, errno, __func__,
-			   "Failure to update node %s", name);
-
-	slurm_free_update_node_msg(node_msg);
-}
+#include "structs.h"
 
 static void _update_node(ctxt_t *ctxt, char *name)
 {
@@ -92,21 +79,29 @@ cleanup:
 
 static void _dump_nodes(ctxt_t *ctxt, char *name)
 {
-	time_t update_time = 0;
+	openapi_nodes_query_t query = {0};
 	node_info_msg_t *node_info_ptr = NULL;
 
+	if (DATA_PARSE(ctxt->parser, OPENAPI_NODES_QUERY, query, ctxt->query,
+		       ctxt->parent_path)) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Rejecting request. Failure parsing query.");
+		goto done;
+	}
+
+	if (!query.show_flags)
+		query.show_flags = SHOW_ALL | SHOW_DETAIL | SHOW_MIXED;
+
 	if (!name) {
-		if (get_date_param("update_time", false, update_time, ctxt))
-			goto done;
-		if ((slurm_load_node(update_time, &node_info_ptr,
-				     SHOW_ALL | SHOW_DETAIL | SHOW_MIXED))) {
+		if ((slurm_load_node(query.update_time, &node_info_ptr,
+				     query.show_flags))) {
 			resp_error(ctxt, errno, __func__,
 				   "Failure to query nodes");
 			goto done;
 		}
 	} else {
 		if (slurm_load_node_single(&node_info_ptr, name,
-			(SHOW_ALL|SHOW_DETAIL|SHOW_MIXED)) ||
+					   query.show_flags) ||
 		    !node_info_ptr || !node_info_ptr->record_count) {
 			resp_error(ctxt, errno, __func__,
 				   "Failure to query node %s", name);
@@ -118,8 +113,9 @@ static void _dump_nodes(ctxt_t *ctxt, char *name)
 		int rc;
 		partition_info_msg_t *part_info_ptr = NULL;
 
-		if ((rc = slurm_load_partitions(update_time, &part_info_ptr,
-						SHOW_ALL))) {
+		if ((rc = slurm_load_partitions(query.update_time,
+						&part_info_ptr,
+						query.show_flags))) {
 			resp_error(ctxt, rc, __func__,
 				   "Unable to query partitions");
 			goto done;
@@ -152,20 +148,32 @@ static int _op_handler_nodes(openapi_ctxt_t *ctxt)
 
 static int _op_handler_node(openapi_ctxt_t *ctxt)
 {
-	char *name;
+	openapi_node_param_t params = {0};
 
-	if (!(name = get_str_param("node_name", true, ctxt))) {
-		resp_error(ctxt, ESLURM_INVALID_NODE_NAME, __func__,
-			   "Node name is requied for singular query");
+	if (DATA_PARSE(ctxt->parser, OPENAPI_NODE_PARAM, params,
+		       ctxt->parameters, ctxt->parent_path)) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Rejecting request. Failure parsing parameters");
 		goto done;
 	}
 
 	if (ctxt->method == HTTP_REQUEST_GET) {
-		_dump_nodes(ctxt, name);
+		_dump_nodes(ctxt, params.node_name);
 	} else if (ctxt->method == HTTP_REQUEST_DELETE) {
-		_delete_node(ctxt, name);
+		update_node_msg_t *node_msg = xmalloc(sizeof(*node_msg));
+		slurm_init_update_node_msg(node_msg);
+
+		SWAP(node_msg->node_names, params.node_name);
+
+		if (slurm_delete_node(node_msg)) {
+			resp_error(ctxt, errno, __func__,
+				   "Failure to update node %s",
+				   node_msg->node_names);
+		}
+
+		slurm_free_update_node_msg(node_msg);
 	} else if (ctxt->method == HTTP_REQUEST_POST) {
-		_update_node(ctxt, name);
+		_update_node(ctxt, params.node_name);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
@@ -173,6 +181,7 @@ static int _op_handler_node(openapi_ctxt_t *ctxt)
 	}
 
 done:
+	xfree(params.node_name);
 	return SLURM_SUCCESS;
 }
 

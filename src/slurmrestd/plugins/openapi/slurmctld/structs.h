@@ -83,4 +83,13 @@ typedef struct {
 	uint16_t show_flags;
 } openapi_job_info_query_t;
 
+typedef struct {
+	char *node_name;
+} openapi_node_param_t;
+
+typedef struct {
+	time_t update_time;
+	uint16_t show_flags;
+} openapi_nodes_query_t;
+
 #endif

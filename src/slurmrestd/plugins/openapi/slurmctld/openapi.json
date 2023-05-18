@@ -412,20 +412,9 @@
           "slurm"
         ],
         "summary": "get all node info",
-        "parameters": [
-          {
-            "name": "update_time",
-            "in": "query",
-            "description": "Filter if changed since update_time. Use of this parameter can result in faster replies.",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": "DATA_PARSER_OPENAPI_NODES_QUERY"
+        },
         "responses": {
           "200": {
             "description": "node information",
@@ -466,19 +455,12 @@
           "slurm"
         ],
         "summary": "get node info",
-        "parameters": [
-          {
-            "name": "node_name",
-            "in": "path",
-            "description": "Slurm Node Name",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": [
+            "DATA_PARSER_OPENAPI_NODE_PARAM",
+            "DATA_PARSER_OPENAPI_NODES_QUERY"
+          ]
+        },
         "responses": {
           "200": {
             "description": "node information",
@@ -517,19 +499,9 @@
           "slurm"
         ],
         "summary": "update node properties",
-        "parameters": [
-          {
-            "name": "node_name",
-            "in": "path",
-            "description": "Slurm Node Name",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": "DATA_PARSER_OPENAPI_NODE_PARAM"
+        },
         "requestBody": {
           "description": "update node",
           "content": {
@@ -584,19 +556,9 @@
           "slurm"
         ],
         "summary": "delete node",
-        "parameters": [
-          {
-            "name": "node_name",
-            "in": "path",
-            "description": "Slurm Node Name",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": "DATA_PARSER_OPENAPI_NODE_PARAM"
+        },
         "responses": {
           "200": {
             "description": "node deleted",
