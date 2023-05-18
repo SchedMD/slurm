@@ -183,6 +183,15 @@ static void _add_field(data_t *obj, data_t *required,
 	}
 }
 
+static void _add_param_flag_enum(data_t *param, const parser_t *parser)
+{
+	data_t *fenums = data_set_list(data_key_set(param, "enum"));
+
+	for (int i = 0; i < parser->flag_bit_array_count; i++)
+		data_set_string(data_list_append(fenums),
+				parser->flag_bit_array[i].name);
+}
+
 /*
  * Populate OpenAPI specification field using parser
  * IN obj - data_t ptr to specific field in OpenAPI schema
@@ -246,14 +255,7 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 			_set_ref(props, find_parser_by_type(parser->list_type),
 				 sargs);
 		} else if (parser->flag_bit_array) {
-			data_t *fenums;
-			set_openapi_props(props, OPENAPI_FORMAT_STRING,
-					  "flags");
-			fenums = data_set_list(data_key_set(props, "enum"));
-
-			for (int i = 0; i < parser->flag_bit_array_count; i++)
-				data_set_string(data_list_append(fenums),
-						parser->flag_bit_array[i].name);
+			_add_param_flag_enum(props, parser);
 		} else if (parser->fields) {
 			data_t *required =
 				data_set_list(data_key_set(obj, "required"));
@@ -456,9 +458,9 @@ static void _replace_refs(data_t *data, spec_args_t *sargs)
 		(void) data_list_for_each(data, _convert_list_entry, sargs);
 }
 
-static void _add_param(data_t *param, const char *name,
-		       openapi_type_format_t format, bool allow_empty,
-		       const char *desc, spec_args_t *args)
+static data_t *_add_param(data_t *param, const char *name,
+			  openapi_type_format_t format, bool allow_empty,
+			  const char *desc, spec_args_t *args)
 {
 	data_t *schema;
 	const char *format_str;
@@ -485,6 +487,8 @@ static void _add_param(data_t *param, const char *name,
 
 	if ((format_str = openapi_type_format_to_format_string(format)))
 		data_set_string(data_key_set(schema, "format"), format_str);
+
+	return schema;
 }
 
 static void _add_param_eflags(data_t *params, const parser_t *parser,
@@ -505,6 +509,7 @@ static void _add_param_eflags(data_t *params, const parser_t *parser,
 static void _add_param_linked(data_t *params, const parser_t *fp,
 			      spec_args_t *args)
 {
+	data_t *schema;
 	const parser_t *p;
 
 	if (fp->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
@@ -528,9 +533,16 @@ static void _add_param_linked(data_t *params, const parser_t *fp,
 		return;
 	}
 
-	_add_param(data_set_dict(data_list_append(params)), fp->key,
-		   OPENAPI_FORMAT_STRING,
-		   (p->obj_openapi == OPENAPI_FORMAT_BOOL), fp->obj_desc, args);
+	schema = _add_param(data_set_dict(data_list_append(params)), fp->key,
+			    OPENAPI_FORMAT_STRING,
+			    (p->obj_openapi == OPENAPI_FORMAT_BOOL),
+			    fp->obj_desc, args);
+
+	if (fp->model == PARSER_MODEL_ARRAY_LINKED_FIELD)
+		fp = find_parser_by_type(fp->type);
+
+	if (fp->flag_bit_array)
+		_add_param_flag_enum(schema, fp);
 }
 
 static data_for_each_cmd_t _foreach_path_method_ref(data_t *ref, void *arg)
