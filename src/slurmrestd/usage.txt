@@ -1,6 +1,8 @@
 Usage: slurmrestd [OPTIONS] [host:port]...
 	-a <authentication types>
 		List of authentication types to accept.
+	-d <data_parser plugins to load>
+		CSV list of data_parser plugins.
 	-f file
 		Use specified file for slurmctld configuration
 	-h, --help
