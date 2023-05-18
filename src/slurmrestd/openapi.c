@@ -1415,6 +1415,8 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 	data_t *components = data_set_dict(data_key_set(j, "components"));
 	data_t *components_schemas = data_set_dict(
 		data_key_set(components, "schemas"));
+	char *version_at = NULL;
+	char *version = xstrdup_printf("Slurm-%s", SLURM_VERSION_STRING);
 
 	/* copy the generic info from the first spec with defined */
 	for (int i = 0; oas->spec[i]; i++) {
@@ -1456,6 +1458,11 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 			  src);
 		break;
 	}
+
+	/* Populate OAS version */
+	for (int i = 0; oas->spec[i]; i++)
+		xstrfmtcatat(version, &version_at, "&%s", oas->plugin_types[i]);
+	data_set_string_own(data_define_dict_path(j, "/info/version"), version);
 
 	/* set single server at "/" */
 	data_set_string(
