@@ -101,4 +101,12 @@ typedef struct {
 	uint16_t show_flags;
 } openapi_partitions_query_t;
 
+typedef struct {
+	char *reservation_name;
+} openapi_reservation_param_t;
+
+typedef struct {
+	time_t update_time;
+} openapi_reservation_query_t;
+
 #endif

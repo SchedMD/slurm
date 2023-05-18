@@ -43,12 +43,13 @@
 #include "src/slurmrestd/operations.h"
 
 #include "api.h"
+#include "structs.h"
 
 extern int _op_handler_reservations(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 	reserve_info_msg_t *res_info_ptr = NULL;
-	time_t update_time = 0;
+	openapi_reservation_query_t query = {0};
 
 	if (ctxt->method != HTTP_REQUEST_GET) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
@@ -57,11 +58,15 @@ extern int _op_handler_reservations(openapi_ctxt_t *ctxt)
 		goto done;
 	}
 
-	if ((rc = get_date_param("update_time", false, update_time, ctxt)))
+	if (DATA_PARSE(ctxt->parser, OPENAPI_RESERVATION_QUERY, query,
+		       ctxt->query, ctxt->parent_path)) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Rejecting request. Failure parsing query");
 		goto done;
+	}
 
 	errno = 0;
-	if ((rc = slurm_load_reservations(update_time, &res_info_ptr))) {
+	if ((rc = slurm_load_reservations(query.update_time, &res_info_ptr))) {
 		if (rc == SLURM_ERROR)
 			rc = errno;
 
@@ -80,11 +85,11 @@ done:
 
 extern int _op_handler_reservation(openapi_ctxt_t *ctxt)
 {
+	openapi_reservation_param_t params = {0};
+	openapi_reservation_query_t query = {0};
 	int rc = SLURM_SUCCESS;
 	reserve_info_msg_t *res_info_ptr = NULL;
 	reserve_info_t *res = NULL;
-	time_t update_time = 0;
-	char *name = NULL;
 
 	if (ctxt->method != HTTP_REQUEST_GET) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
@@ -93,43 +98,43 @@ extern int _op_handler_reservation(openapi_ctxt_t *ctxt)
 		goto done;
 	}
 
-	if ((rc = get_date_param("update_time", false, update_time, ctxt)))
+	if (DATA_PARSE(ctxt->parser, OPENAPI_RESERVATION_PARAM, params,
+		       ctxt->parameters, ctxt->parent_path)) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Rejecting request. Failure parsing parameters");
 		goto done;
+	}
 
-	if (!(name = get_str_param("reservation_name", true, ctxt))) {
-		resp_error(ctxt, ESLURM_RESERVATION_INVALID, __func__,
-			   "Reservation name is requied for singular query");
+	if (DATA_PARSE(ctxt->parser, OPENAPI_RESERVATION_QUERY, query,
+		       ctxt->query, ctxt->parent_path)) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Rejecting request. Failure parsing query");
 		goto done;
 	}
 
 	errno = 0;
-	if ((rc = slurm_load_reservations(update_time, &res_info_ptr))) {
+	if ((rc = slurm_load_reservations(query.update_time, &res_info_ptr)) ||
+	    !res_info_ptr || !res_info_ptr->record_count) {
 		if (rc == SLURM_ERROR)
 			rc = errno;
 
 		resp_error(ctxt, rc, "slurm_load_reservations()",
-			   "Unable to query reservation %s", name);
-
-		goto done;
-	}
-
-	if (!res_info_ptr || (res_info_ptr->record_count == 0)) {
-		resp_error(ctxt, ESLURM_RESERVATION_INVALID, __func__,
-			   "Unable to query reservation %s", name);
+			   "Unable to query reservations");
 		goto done;
 	}
 
 	for (int i = 0; !rc && i < res_info_ptr->record_count; i++) {
-		if (!xstrcasecmp(name,
-				 res_info_ptr->reservation_array[i].name)) {
+		const char *n = res_info_ptr->reservation_array[i].name;
+		if (!xstrcasecmp(params.reservation_name, n)) {
 			res = &res_info_ptr->reservation_array[i];
 			break;
 		}
 	}
 
-	if (!res) {
+	if (!res && params.reservation_name) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Unable to find reservation %s", name);
+			   "Unable to find reservation %s",
+			   params.reservation_name);
 	} else {
 		reserve_info_msg_t r = {
 			.last_update = res_info_ptr->last_update,
@@ -141,6 +146,7 @@ extern int _op_handler_reservation(openapi_ctxt_t *ctxt)
 
 done:
 	slurm_free_reservation_info_msg(res_info_ptr);
+	xfree(params.reservation_name);
 	return rc;
 }
 

@@ -7285,6 +7285,20 @@ static const parser_t PARSER_ARRAY(OPENAPI_NODES_QUERY)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_reservation_param_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_RESERVATION_PARAM)[] = {
+	add_parse(STRING, reservation_name, "reservation_name", "Reservation name"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_reservation_query_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_RESERVATION_QUERY)[] = {
+	add_parse(TIMESTAMP, update_time, "update_time", "Filter reservations since update timestamp"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -7829,6 +7843,8 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_NODES_QUERY, openapi_nodes_query_t, NULL, NULL),
 	addpa(OPENAPI_PARTITION_PARAM, openapi_partition_param_t, NULL, NULL),
 	addpa(OPENAPI_PARTITIONS_QUERY, openapi_partitions_query_t, NULL, NULL),
+	addpa(OPENAPI_RESERVATION_PARAM, openapi_reservation_param_t, NULL, NULL),
+	addpa(OPENAPI_RESERVATION_QUERY, openapi_reservation_query_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
