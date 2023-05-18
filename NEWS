@@ -37,6 +37,20 @@ documents those changes that are of interest to users and administrators.
     options are requested in the commandline or both are requested in the
     environment. If one option is requested in the command line, it will
     override the other option in the environment.
+ -- slurmrestd - openapi/dbv0.0.37 and openapi/v0.0.37 plugins have been
+    removed.
+ -- slurmrestd - openapi/dbv0.0.38 and openapi/v0.0.38 plugins have been tagged
+    as deprecated.
+ -- openapi/slurmctld - forked from openapi/v0.0.38.
+ -- openapi/slurmdbd - forked from openapi/dbv0.0.38.
+ -- data_parser/v0.0.40 - forked from data_parser/v0.0.39 plugin.
+ -- data_parser/v0.0.40 - added OpenAPI schema generation of path parameters
+    and OperationIds.
+ -- slurmrestd - added auto population of info/version field.
+ -- openapi/slurmctld - convert to using data_parser plugins for all input and
+    output formatting.
+ -- openapi/slurmdbd - convert to using data_parser plugins for all input and
+    output formatting.
 
 * Changes in Slurm 23.02.3
 ==========================

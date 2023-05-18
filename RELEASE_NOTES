@@ -55,6 +55,10 @@ COMMAND CHANGES (see man pages for details)
     options are requested in the commandline or both are requested in the
     environment. If one option is requested in the command line, it will
     override the other option in the environment.
+ -- slurmrestd - new argument '-s' has been added to allow explicit loading of
+    data_parser plugins or '-s list' to list possible plugins.
+ -- All commands supporting '--yaml' and '--json' arguments will now use the
+    data_parser/v0.0.40 plugin for formatting the output by default.
 
 API CHANGES
 ===========
@@ -63,3 +67,31 @@ API CHANGES
     time string).
  -- "flags" argument was added to slurm_kill_job_step().
  -- Fixed typo on "initialized" for the description of ESLURM_PLUGIN_NOT_LOADED.
+
+SLURMRESTD CHANGES
+==================
+ -- openapi/dbv0.0.37 and openapi/v0.0.37 plugins have been removed.
+ -- openapi/dbv0.0.38 and openapi/v0.0.38 plugins have been tagged as
+    deprecated to warn of their removal in the next release.
+ -- New openapi plugins will no longer be versioned. Existing versioned openapi
+    plugins will follow normal deprecation and removal schedule. Data format
+    versioning will now be handled by the data_parser plugins which will now be
+    used by the openapi plugins.
+ -- data_parser plugins will now generate all schemas related to object
+    formatting and structure. The openapi.json files in the openapi/slurmctld
+    and openapi/slurmdbd directories should be considered templates only. All
+    openapi specifications should be queried from slurmsrestd directly as they
+    change depending on the loaded plugins and settings.
+ -- The version field in the info object of the OpenAPI specfication will now
+    list the Slurm version running and list out the loaded openapi plugins at
+    time of generation using '&' as a delimiter in loading order.
+ -- OpenAPI specfication from openapi/slurmctld and openapi/slurmdbd plugins is
+    known to be incompatible with OpenAPI Generator version 5 and below. Sites
+    are advised to port to OpenAPI Generator version 6 or greater for generated
+    clients.
+ -- Path parameters fields in OpenAPI specifications will now only give type as
+    strings for openapi/slurmctld and openapi/slurmdbd end points. The 'enum'
+    will now be auto-populated when parameter has list of known valid values.
+    Prior more detailed formatting information was found to conflict with
+    generated OpenAPI clients forcing limitations on the possible values not
+    present in Slurm's parsing capabilities.
