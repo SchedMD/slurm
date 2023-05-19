@@ -77,6 +77,11 @@ typedef struct {
 	int (*specify)(void *arg, data_t *dst);
 } parse_funcs_t;
 
+typedef struct {
+	char *plugin_type;
+	char *params;
+} plugin_param_t;
+
 /*
  * Must be synchronized with parse_funcs_t above.
  */
@@ -153,6 +158,7 @@ extern int data_parser_g_dump(data_parser_t *parser, data_parser_type_t type,
 	return rc;
 }
 
+/* takes ownership of params */
 static data_parser_t *_new_parser(data_parser_on_error_t on_parse_error,
 				  data_parser_on_error_t on_dump_error,
 				  data_parser_on_error_t on_query_error,
@@ -187,7 +193,46 @@ static data_parser_t *_new_parser(data_parser_on_error_t on_parse_error,
 	return parser;
 }
 
-static int _load_plugins(const char *plugin_type, plugrack_foreach_t listf,
+static plugin_param_t *_parse_plugin_type(const char *plugin_type)
+{
+	char *type, *last = NULL, *pl;
+	plugin_param_t *pparams = NULL;
+	int count = 0;
+
+	if (!plugin_type)
+		return NULL;
+
+	pl = xstrdup(plugin_type);
+	type = strtok_r(pl, ",", &last);
+	while (type) {
+		char *pl;
+		plugin_param_t *p;
+
+		xrecalloc(pparams, (count + 2), sizeof(*pparams));
+
+		p = &pparams[count];
+
+		if ((pl = xstrstr(type,
+				  SLURM_DATA_PARSER_PLUGIN_PARAMS_CHAR))) {
+			p->plugin_type = xstrndup(type, (pl - type));
+			p->params = xstrdup(pl);
+		} else {
+			p->plugin_type = xstrdup(type);
+		}
+
+		log_flag(DATA, "%s: plugin=%s params=%s",
+		       __func__, p->plugin_type, p->params);
+
+		count++;
+
+		type = strtok_r(NULL, ",", &last);
+	}
+
+	xfree(pl);
+	return pparams;
+}
+
+static int _load_plugins(plugin_param_t *pparams, plugrack_foreach_t listf,
 			 bool skip_loading)
 {
 	int rc = SLURM_SUCCESS;
@@ -200,8 +245,16 @@ static int _load_plugins(const char *plugin_type, plugrack_foreach_t listf,
 	xassert(sizeof(parse_funcs_t) ==
 		(sizeof(void *) * ARRAY_SIZE(parse_syms)));
 
-	rc = load_plugins(&plugins, PARSE_MAJOR_TYPE, plugin_type, listf,
-			  parse_syms, ARRAY_SIZE(parse_syms));
+	if (!pparams) {
+		rc = load_plugins(&plugins, PARSE_MAJOR_TYPE, NULL, listf,
+				  parse_syms, ARRAY_SIZE(parse_syms));
+	} else {
+		for (int i = 0; !rc && pparams[i].plugin_type; i++)
+			rc = load_plugins(&plugins, PARSE_MAJOR_TYPE,
+					  pparams[i].plugin_type, listf,
+					  parse_syms, ARRAY_SIZE(parse_syms));
+	}
+
 	xassert(rc || plugins);
 
 	slurm_mutex_unlock(&init_mutex);
@@ -248,21 +301,57 @@ extern data_parser_t *data_parser_g_new(data_parser_on_error_t on_parse_error,
 					bool skip_loading)
 {
 	int rc, index;
+	char *params = NULL;
+	data_parser_t *parser = NULL;
+	plugin_param_t *pparams;
 
-	if ((rc = _load_plugins(plugin_type, listf, skip_loading))) {
+	if (!xstrcasecmp(plugin_type, "list")) {
+		xassert(listf);
+		load_plugins(&plugins, PARSE_MAJOR_TYPE, plugin_type, listf,
+			     parse_syms, ARRAY_SIZE(parse_syms));
+		return NULL;
+	}
+
+	pparams = _parse_plugin_type(plugin_type);
+
+	if (!pparams || !pparams[0].plugin_type) {
+		error("%s: invalid plugin %s", __func__, plugin_type);
+		goto cleanup;
+	}
+
+	if (pparams[1].plugin_type) {
+		error("%s: rejecting ambiguous plugin %s",
+		      __func__, plugin_type);
+		goto cleanup;
+	}
+
+	if ((rc = _load_plugins(pparams, listf, skip_loading))) {
 		error("%s: failure loading plugins: %s",
 		      __func__, slurm_strerror(rc));
-		return NULL;
+		goto cleanup;
 	}
 
-	if ((index = _find_plugin_by_type(plugin_type)) < 0) {
-		error("%s: unable to find plugin %s", __func__, plugin_type);
-		return NULL;
+	if ((index = _find_plugin_by_type(pparams[0].plugin_type)) < 0) {
+		error("%s: unable to find plugin %s", __func__,
+		      pparams[0].plugin_type);
+		goto cleanup;
 	}
 
-	return _new_parser(on_parse_error, on_dump_error, on_query_error,
-			   error_arg, on_parse_warn, on_dump_warn,
-			   on_query_warn, warn_arg, index, NULL);
+	SWAP(params, pparams[0].params);
+
+	parser = _new_parser(on_parse_error, on_dump_error, on_query_error,
+			     error_arg, on_parse_warn, on_dump_warn,
+			     on_query_warn, warn_arg, index, params);
+cleanup:
+	if (pparams) {
+		for (int i = 0; pparams[i].plugin_type; i++) {
+			xfree(pparams[i].plugin_type);
+			xfree(pparams[i].params);
+		}
+		xfree(pparams);
+	}
+
+	return parser;
 }
 
 extern data_parser_t **data_parser_g_new_array(
@@ -278,26 +367,76 @@ extern data_parser_t **data_parser_g_new_array(
 	plugrack_foreach_t listf,
 	bool skip_loading)
 {
-	int rc;
-	data_parser_t **parsers;
+	int rc, i = 0;
+	data_parser_t **parsers = NULL;
+	plugin_param_t *pparams;
 
-	if ((rc = _load_plugins(plugin_type, listf, skip_loading))) {
+	if (!xstrcasecmp(plugin_type, "list")) {
+		xassert(listf);
+		load_plugins(&plugins, PARSE_MAJOR_TYPE, plugin_type, listf,
+			     parse_syms, ARRAY_SIZE(parse_syms));
+		return NULL;
+	}
+
+	pparams = _parse_plugin_type(plugin_type);
+
+	if ((rc = _load_plugins(pparams, listf, skip_loading))) {
 		error("%s: failure loading plugins: %s",
 		      __func__, slurm_strerror(rc));
-		return NULL;
+		goto cleanup;
 	}
 
 	/* always allocate for all possible plugins */
 	parsers = xcalloc((plugins->count + 1), sizeof(*parsers));
 
-	for (int i = 0; i < plugins->count; i++) {
-		parsers[i] = _new_parser(on_parse_error, on_dump_error,
-					 on_query_error, error_arg,
-					 on_parse_warn, on_dump_warn,
-					 on_query_warn, warn_arg, i, NULL);
+	if (pparams) {
+		for (; pparams[i].plugin_type; i++) {
+			int index =
+				_find_plugin_by_type(pparams[i].plugin_type);
+
+			if (index < 0) {
+				error("%s: unable to find plugin %s",
+				      __func__, pparams[i].plugin_type);
+				goto cleanup;
+			}
+
+			parsers[i] = _new_parser(on_parse_error, on_dump_error,
+						 on_query_error, error_arg,
+						 on_parse_warn, on_dump_warn,
+						 on_query_warn, warn_arg, index,
+						 pparams[i].params);
+
+			pparams[i].params = NULL;
+			xfree(pparams[i].plugin_type);
+		}
+	} else {
+		for (; i < plugins->count; i++) {
+			parsers[i] = _new_parser(on_parse_error, on_dump_error,
+						 on_query_error, error_arg,
+						 on_parse_warn, on_dump_warn,
+						 on_query_warn, warn_arg, i,
+						 NULL);
+		}
 	}
 
+	xfree(pparams);
+
 	return parsers;
+cleanup:
+	if (pparams) {
+		for (; pparams[i].plugin_type; i++) {
+			xfree(pparams[i].plugin_type);
+			xfree(pparams[i].params);
+		}
+		xfree(pparams);
+	}
+
+	if (plugins)
+		for (int j = 0; j < plugins->count; j++)
+			FREE_NULL_DATA_PARSER(parsers[j]);
+	xfree(parsers);
+
+	return NULL;
 }
 
 extern const char *data_parser_get_plugin(data_parser_t *parser)

@@ -354,6 +354,9 @@ typedef struct data_parser_s data_parser_t;
 	 XSTRINGIFY(SLURM_API_REVISION) "." \
 	 XSTRINGIFY(SLURM_API_CURRENT))
 
+/* Separator character for parameters for a given data_parser plugin list */
+#define SLURM_DATA_PARSER_PLUGIN_PARAMS_CHAR "+"
+
 /*
  * Initialize new data parser against given plugin
  * IN on_parse_error - callback when an parsing error is encountered
@@ -369,6 +372,8 @@ typedef struct data_parser_s data_parser_t;
  * IN on_warn_arg - ptr to pass to on_warn function (not modified)
  * 	ptr must remain valid until free called.
  * IN plugin_type - plugin_type of data_parser plugin to load/use
+ * 	Parameters for plugin may be included when delimited by
+ * 	SLURM_DATA_PARSER_PLUGIN_PARAMS_CHAR.
  * IN listf - list function if plugin_type = "list"
  * IN skip_loading - skip any calls related to loading the plugins
  * RET parser ptr
