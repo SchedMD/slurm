@@ -1499,6 +1499,37 @@ def submit_job_salloc(salloc_args, **run_command_kwargs):
         return 0
 
 
+# Return job id
+def submit_job(command, job_param, job, *, wrap_job=True, **run_command_kwargs):
+    """Submits a job using given command and returns the job id.
+
+    Args*:
+        command (string): The command to submit the job (salloc, srun, sbatch).
+        job_param (string): The arguments to the job.
+        job (string): The command or job file to be executed.
+        wrap_job (boolean): If job needs to be wrapped when command is sbatch.
+
+    * run_command arguments are also accepted (e.g. fatal) and will be supplied
+        to the underlying job_id and subsequent run_command call.
+
+    Returns: The job id.
+    """
+
+    # Make sure command is a legal command to run a job
+    assert command in ["salloc", "srun", "sbatch"], \
+        f"Invalid command '{command}'. Should be salloc, srun, or sbatch."
+
+    if command == "salloc":
+        return submit_job_salloc(f"{job_param} {job}", **run_command_kwargs)
+    elif command == "srun":
+        return submit_job_srun(f"{job_param} {job}", **run_command_kwargs)
+    elif command == "sbatch":
+        # If the job should be wrapped, do so before submitting
+        if wrap_job:
+            job = f"--wrap '{job}'"
+        return submit_job_sbatch(f"{job_param} {job}", **run_command_kwargs)
+
+
 def run_job_nodes(srun_args, **run_command_kwargs):
     """Runs a job using srun and returns the allocated node list.
 
