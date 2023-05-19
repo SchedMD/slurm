@@ -37,6 +37,7 @@ def test_no_consume_parallel():
     job_id_1 = atf.submit_job('--gres=r1 --mem=1 --wrap="sleep 20"')
     job_id_2 = atf.submit_job('--gres=r1 --mem=1 --wrap="sleep 20"')
     atf.wait_for_job_state(job_id_1, 'RUNNING')
+    atf.wait_for_job_state(job_id_2, 'RUNNING')
     squeue = atf.run_command_output('squeue')
     assert re.search(
         f"{job_id_1}( +[^ ]+)( +[^ ]+)( +[^ ]+) +R", squeue) is not None, \
