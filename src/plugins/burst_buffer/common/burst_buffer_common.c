@@ -577,7 +577,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 	}
 
 	bb_hashtbl = s_p_hashtbl_create(bb_options);
-	if (s_p_parse_file(bb_hashtbl, NULL, bb_conf, false, NULL)
+	if (s_p_parse_file(bb_hashtbl, NULL, bb_conf, false, NULL, false)
 	    == SLURM_ERROR) {
 		fatal("%s: something wrong with opening/reading %s: %m",
 		      __func__, bb_conf);

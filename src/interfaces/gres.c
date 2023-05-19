@@ -2554,8 +2554,8 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 
 		gres_cpu_cnt = cpu_cnt;
 		tbl = s_p_hashtbl_create(_gres_conf_options);
-		if (s_p_parse_file(tbl, NULL, gres_conf_file, false, NULL) ==
-		    SLURM_ERROR)
+		if (s_p_parse_file(tbl, NULL, gres_conf_file, false, NULL,
+				   false) == SLURM_ERROR)
 			fatal("error opening/reading %s", gres_conf_file);
 
 		/* Overwrite unspecified local AutoDetect with global default */
@@ -10340,7 +10340,7 @@ extern void gres_parse_config_dummy(void)
 	}
 
 	tbl = s_p_hashtbl_create(_gres_conf_options);
-	s_p_parse_file(tbl, NULL, gres_conf_file, false, NULL);
+	s_p_parse_file(tbl, NULL, gres_conf_file, false, NULL, false);
 	s_p_hashtbl_destroy(tbl);
 	xfree(gres_conf_file);
 }

@@ -602,7 +602,7 @@ extern int load_defaults(void)
 
 	hashtbl = s_p_hashtbl_create(sview_conf_options);
 
-	if (s_p_parse_file(hashtbl, &hash_val, pathname, true, NULL)
+	if (s_p_parse_file(hashtbl, &hash_val, pathname, true, NULL, false)
 	    == SLURM_ERROR)
 		error("something wrong with opening/reading conf file");
 

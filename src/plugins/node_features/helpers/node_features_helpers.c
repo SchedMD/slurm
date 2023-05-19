@@ -419,7 +419,8 @@ static int _read_config_file(void)
 	tbl = s_p_hashtbl_create(conf_options);
 
 	confpath = get_extra_conf_path("helpers.conf");
-	if (s_p_parse_file(tbl, NULL, confpath, false, NULL) == SLURM_ERROR) {
+	if (s_p_parse_file(tbl, NULL, confpath, false, NULL, false) ==
+	    SLURM_ERROR) {
 		error("could not parse configuration file: %s", confpath);
 		goto fail;
 	}
