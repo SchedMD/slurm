@@ -574,6 +574,7 @@ static void _parser_linked_flag(args_t *args, const parser_t *const array,
 		 (uintptr_t) parser, array->type_string, (uintptr_t) array);
 
 	xfree(path);
+	FREE_NULL_DATA(ppath);
 }
 
 /* parser linked parser inside of parser array */
