@@ -1,4 +1,4 @@
-.TH sdiag "1" "Slurm Commands" "May 2021" "Slurm Commands"
+.TH sdiag "1" "Slurm Commands" "May 2023" "Slurm Commands"
 
 .SH "NAME"
 sdiag \- Scheduling diagnostic tool for Slurm
@@ -321,8 +321,9 @@ Print description of options and exit.
 .IP
 
 .TP
-\f3\-\-json\fP
-Dump job information as JSON. Sorting and formatting arguments will be ignored.
+\f3\-\-json\fP, \f3\-\-json\fP=\fIlist\fR, \f3\-\-json\fP=<\fIdata_parser\fR>
+Dump information as JSON using the default data_parser plugin or explicit
+data_parser with parameters. Sorting and formatting arguments will be ignored.
 .IP
 
 .TP
@@ -357,8 +358,9 @@ Print current version number and exit.
 .IP
 
 .TP
-\f3\-\-yaml\fP
-Dump job information as YAML. Sorting and formatting arguments will be ignored.
+\f3\-\-yaml\fP, \f3\-\-yaml\fP=\fIlist\fR, \f3\-\-yaml\fP=<\fIdata_parser\fR>
+Dump information as YAML using the default data_parser plugin or explicit
+data_parser with parameters. Sorting and formatting arguments will be ignored.
 .IP
 
 .SH "PERFORMANCE"

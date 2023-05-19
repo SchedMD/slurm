@@ -90,7 +90,8 @@ int main(int argc, char **argv)
 			if (params.mimetype) {
 				rc = DATA_DUMP_CLI(STATS_MSG, *buf,
 						   "statistics", argc, argv,
-						   NULL, params.mimetype, NULL);
+						   NULL, params.mimetype,
+						   params.data_parser);
 			} else {
 				rc = _print_stats();
 			}
