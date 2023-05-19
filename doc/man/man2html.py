@@ -126,8 +126,8 @@ def llnl_references(line):
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="https://slurm.schedmd.com/cons_res.html">https://slurm.schedmd.com/cons_res.html</A>'
-        htmlStr = '<a href="cons_res.html">cons_res</a>'
+        manStr = '<A HREF="https://slurm.schedmd.com/cons_tres.html">https://slurm.schedmd.com/cons_tres.html</A>'
+        htmlStr = '<a href="cons_tres.html">cons_tres</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix

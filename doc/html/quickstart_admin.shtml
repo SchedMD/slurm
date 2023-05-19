@@ -366,7 +366,7 @@ If you want to execute multiple jobs per node, but track and manage allocation
 of the processors, memory and other resources, the <i>cons_tres</i> (consumable
 trackable resources) plugin is recommended.
 For more information, please see
-<a href="cons_res.html">Consumable Resources in Slurm</a>.</p>
+<a href="cons_tres.html">Consumable Resources in Slurm</a>.</p>
 
 <h3 id="logging">Logging<a class="slurm_link" href="#logging"></a></h3>
 <p>Slurm uses syslog to record events if the <code>SlurmctldLogFile</code> and

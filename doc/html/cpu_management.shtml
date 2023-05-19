@@ -23,7 +23,7 @@ for <a href="slurm.conf.html">slurm.conf</a>, <a href="cgroup.conf.html">cgroup.
 option. The following html documents may also be useful:</p>
 
 <p>
-<a href="cons_res.html">Consumable Resources in Slurm</a><br>
+<a href="cons_tres.html">Consumable Resources in Slurm</a><br>
 <a href="cons_res_share.html">Sharing Consumable Resources</a><br>
 <a href="mc_support.html">Support for Multi-core/Multi-thread
 Architectures</a><br>
@@ -53,7 +53,7 @@ SelectType=select/linear</font> is configured, all resources on the selected nod
 to the job/step. If <font face="Courier New, monospace">SelectType</font> is configured to be
 <font face="Courier New, monospace">select/cons_tres</font>,
 individual sockets, cores and threads may be allocated from the selected nodes as
-<a href="cons_res.html">consumable resources</a>. The consumable resource type is defined by
+<a href="cons_tres.html">consumable resources</a>. The consumable resource type is defined by
 <font face="Courier New, monospace">SelectTypeParameters.</font>
 <br>
 <br>
@@ -485,7 +485,7 @@ SelectType=select/linear</font> is configured, all resources on the selected nod
 to the job/step. If <font face="Courier New, monospace">SelectType</font> is configured to be
 <font face="Courier New, monospace">select/cons_tres</font>,
 individual sockets, cores and threads may be allocated from the selected nodes as
-<a href="cons_res.html">consumable resources</a>. The consumable resource type is defined by
+<a href="cons_tres.html">consumable resources</a>. The consumable resource type is defined by
 <font face="Courier New, monospace">SelectTypeParameters.</font>
 <br>
 </p><p>When using a <font face="Courier New, monospace">SelectType</font> of

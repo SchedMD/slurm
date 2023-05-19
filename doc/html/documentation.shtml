@@ -80,7 +80,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li>Slurm Scheduling
 <ul>
 <li><a href="sched_config.html">Scheduling Configuration Guide</a></li>
-<li><a href="cons_res.html">Consumable Resources Guide</a></li>
+<li><a href="cons_tres.html">Consumable Resources Guide</a></li>
 <li><a href="core_spec.html">Core Specialization</a></li>
 <li><a href="gang_scheduling.html">Gang Scheduling</a></li>
 <li><a href="gres.html">Generic Resource (GRES) Scheduling</a></li>
@@ -133,6 +133,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 5 October 2022</p>
+<p style="text-align:center;">Last modified 19 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
