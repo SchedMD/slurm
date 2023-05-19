@@ -3114,8 +3114,9 @@ static int PARSE_FUNC(CSV_STRING_LIST)(const parser_t *const parser, void *obj,
 			.list = list,
 		};
 
-		data_list_for_each(src, _parse_foreach_CSV_STRING_LIST_list,
-				   &pargs);
+		(void) data_list_for_each(src,
+					  _parse_foreach_CSV_STRING_LIST_list,
+					  &pargs);
 	} else if (data_get_type(src) == DATA_TYPE_DICT) {
 		parse_foreach_CSV_STRING_LIST_t pargs = {
 			.magic = MAGIC_FOREACH_CSV_STRING_LIST,
@@ -3125,8 +3126,9 @@ static int PARSE_FUNC(CSV_STRING_LIST)(const parser_t *const parser, void *obj,
 			.list = list,
 		};
 
-		data_dict_for_each(src, _parse_foreach_CSV_STRING_LIST_dict,
-				   &pargs);
+		(void) data_dict_for_each(src,
+					  _parse_foreach_CSV_STRING_LIST_dict,
+					  &pargs);
 	} else if (data_convert_type(src, DATA_TYPE_STRING) ==
 		   DATA_TYPE_STRING) {
 		char *save_ptr = NULL;
