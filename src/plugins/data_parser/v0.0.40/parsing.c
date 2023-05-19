@@ -1167,6 +1167,7 @@ static int _dump_linked(args_t *args, const parser_t *const array,
 			const flag_bit_t *bit = &parser->flag_bit_array[i];
 			data_t *bit_dst = data_define_dict_path(dst, bit->name);
 
+			xassert(src);
 			_dump_flag_bit_array_flag(args, src, bit_dst, parser,
 						  bit, true);
 		}
