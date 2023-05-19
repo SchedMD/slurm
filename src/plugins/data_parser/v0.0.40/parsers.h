@@ -73,6 +73,7 @@ typedef struct {
 	size_t flag_size;
 	const char *description;
 	bool hidden; /* hide from OpenAPI spec generation */
+	uint16_t deprecated; /* protocol version when deprecated */
 } flag_bit_t;
 
 typedef enum {
@@ -113,6 +114,7 @@ typedef struct parser_s {
 	ssize_t size; /* size of target obj */
 	parser_new_func_t new; /* function to create new instance of obj being pointed at */
 	parser_free_func_t free; /* function to release instance of obj being pointed at */
+	uint16_t deprecated; /* protocol version when deprecated */
 
 	/* Linked model properties ------------------------------------------ */
 	char *field_name; /* name of field in struct if there is a ptr_offset */

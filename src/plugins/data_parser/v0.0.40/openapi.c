@@ -460,7 +460,7 @@ static void _replace_refs(data_t *data, spec_args_t *sargs)
 
 static data_t *_add_param(data_t *param, const char *name,
 			  openapi_type_format_t format, bool allow_empty,
-			  const char *desc, spec_args_t *args)
+			  const char *desc, bool deprecated, spec_args_t *args)
 {
 	data_t *schema;
 
@@ -474,7 +474,7 @@ static data_t *_add_param(data_t *param, const char *name,
 	data_set_string(data_key_set(param, "name"), name);
 	data_set_string(data_key_set(param, "style"), "form");
 	data_set_bool(data_key_set(param, "explode"), false);
-	data_set_bool(data_key_set(param, "deprecated"), false);
+	data_set_bool(data_key_set(param, "deprecated"), deprecated);
 	data_set_bool(data_key_set(param, "allowEmptyValue"), allow_empty);
 	data_set_bool(data_key_set(param, "allowReserved"), false);
 	if (desc)
@@ -497,7 +497,7 @@ static void _add_param_eflags(data_t *params, const parser_t *parser,
 		if (!bit->hidden)
 			_add_param(data_set_dict(data_list_append(params)),
 				   bit->name, OPENAPI_FORMAT_BOOL, true,
-				   bit->description, args);
+				   bit->description, !!bit->deprecated, args);
 	}
 }
 
@@ -531,7 +531,7 @@ static void _add_param_linked(data_t *params, const parser_t *fp,
 	schema = _add_param(data_set_dict(data_list_append(params)), fp->key,
 			    OPENAPI_FORMAT_STRING,
 			    (p->obj_openapi == OPENAPI_FORMAT_BOOL),
-			    fp->obj_desc, args);
+			    fp->obj_desc, !!fp->deprecated, args);
 
 	if (fp->model == PARSER_MODEL_ARRAY_LINKED_FIELD)
 		fp = find_parser_by_type(fp->type);
