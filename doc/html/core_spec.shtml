@@ -130,8 +130,8 @@ one for Cray systems and a different model for other systems.</p>
 By default, no resources will be reserved for system use.
 The user must explicitly set a specialized core count as described above.</p>
 
-<p>For all other systems, configure SelectType to <i>cons_res</i> or
-<i>cons_tres</i>, configure CoreSpecPlugin to <i>core_spec/none</i> (the
+<p>For all other systems, configure SelectType to <i>cons_tres</i>,
+configure CoreSpecPlugin to <i>core_spec/none</i> (the
 default), and enable the <i>task/cgroup</i> TaskPlugin.
 In addition, specialized resources should be configured in slurm.conf on the
 node specification line using the <i>CoreSpecCount</i> or <i>CPUSpecList</i>
@@ -153,6 +153,6 @@ system use.</p>
 cores for their job, the configuration parameter <i>AllowSpecResourcesUsage</i>
 must be set to a value of <i>1</i>.</p>
 
-<p style="text-align:center;">Last modified 17 May 2023</p>
+<p style="text-align:center;">Last modified 19 May 2023</p>
 
 <!--#include virtual="footer.txt"-->

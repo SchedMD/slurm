@@ -120,8 +120,8 @@ busy nodes that have more than half of the CPUs available for use. The
 <CODE>select/linear</CODE> plugin simply counts jobs on nodes, and does not
 track the CPU usage on each node.
 </P><P>
-The sharing functionality in the 
-<CODE>select/cons_tres</CODE> plugins also support the
+The sharing functionality in the
+<CODE>select/cons_tres</CODE> plugin also supports the
 new <CODE>OverSubscribe=FORCE:&lt;num&gt;</CODE> syntax. If <CODE>OverSubscribe=FORCE:3</CODE>
 is configured with a consumable resource plugin and <CODE>CR_Core</CODE> or
 <CODE>CR_Core_Memory</CODE>, then the plugin will
@@ -154,7 +154,7 @@ may share resources</TD><TD>Jobs do not run on the same nodes</TD></TR>
 </TABLE>
 <P>
 The next table contains several scenarios with the <CODE>select/cons_tres</CODE>
-plugins enabled to further
+plugin enabled to further
 clarify how a node is used when it is configured in more than one partition and
 the partitions have different "OverSubscribe" policies.
 </P>
@@ -199,7 +199,7 @@ priority. This works in reverse also, and in fact it's easier for jobs from the
 consumable resource "sharing" provides more resource availability for new jobs
 to begin running "on top of" the existing jobs. This happens with the
 <CODE>select/linear</CODE> plugin also, so it's not specific to the
-<CODE>select/cons_tres</CODE> plugins.
+<CODE>select/cons_tres</CODE> plugin.
 </P>
 
 <h2 id="memory_management">Memory Management
@@ -251,7 +251,7 @@ whole nodes to jobs. The
 <CODE>srun --mem-per-cpu=&lt;num&gt;</CODE> option can be used to specify the
 jobs memory requirement on a per allocated CPU basis. This is recommended
 for use with the <CODE>select/cons_tres</CODE>
-plugins, which can allocate individual CPUs to jobs.</P>
+plugin, which can allocate individual CPUs to jobs.</P>
 
 <P>Default and maximum values for memory on a per node or per CPU basis can
 be configured by the system administrator using the following

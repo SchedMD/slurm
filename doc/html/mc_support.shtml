@@ -339,10 +339,10 @@ given that their added memory requirement do not exceed the total amount
 of memory on the nodes.</p>
 
 
-<p>In order to use memory as a consumable resource, the select/cons_res
+<p>In order to use memory as a consumable resource, the select/cons_tres
 plugin must be first enabled in slurm.conf:
 <PRE>
-SelectType=select/cons_res      # enable consumable resources
+SelectType=select/cons_tres     # enable consumable resources
 SelectTypeParameters=CR_Memory  # memory as a consumable resource
 </PRE>
 
@@ -935,6 +935,6 @@ NodeName=dualcore[01-16] CoresPerSocket=2 ThreadsPerCore=1
 <p>For a more complete description of the various node configuration options
 see the slurm.conf man page.</p>
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 22 April 2021</p>
+<p style="text-align:center;">Last modified 19 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
