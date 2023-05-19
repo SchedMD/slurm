@@ -1171,6 +1171,7 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 	char *file_name, *path_name;
 	char *file_with_mod;
 	int rc;
+	struct stat temp;
 
 	*leftover = NULL;
 	if (xstrncasecmp("include", line, strlen("include")) == 0) {
@@ -1191,6 +1192,14 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 		if (!file_name)	/* Error printed by _parse_for_format() */
 			return -1;
 		path_name = get_extra_conf_path(file_name);
+
+		stat(path_name, &temp);
+		if ((check_permissions) &&
+		   ((temp.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO)) != 0600))
+			fatal("Included file %s at %s should be 600 is %o accessible for group or others",
+			      file_name,
+			      path_name,
+			      temp.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO));
 		if (!last_ancestor)
 			last_ancestor = xbasename(slurm_conf_path);
 		rc = s_p_parse_file(hashtbl, hash_val, path_name, ignore_new,
