@@ -134,7 +134,7 @@ extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
 				 data_parser_on_warn_t on_parse_warn,
 				 data_parser_on_warn_t on_dump_warn,
 				 data_parser_on_warn_t on_query_warn,
-				 void *warn_arg)
+				 void *warn_arg, const char *params)
 {
 	args_t *args = xmalloc(sizeof(*args));
 	args->magic = MAGIC_ARGS;
@@ -147,7 +147,8 @@ extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
 	args->on_query_warn = on_query_warn;
 	args->warn_arg = warn_arg;
 
-	log_flag(DATA, "init parser 0x%" PRIxPTR, (uintptr_t) args);
+	log_flag(DATA, "init %s(0x%"PRIxPTR") with params=%s",
+		 plugin_type, (uintptr_t) args, params);
 
 	parsers_init();
 

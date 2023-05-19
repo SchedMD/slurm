@@ -70,7 +70,8 @@ typedef struct {
 		     data_parser_on_error_t on_query_error, void *error_arg,
 		     data_parser_on_warn_t on_parse_warn,
 		     data_parser_on_warn_t on_dump_warn,
-		     data_parser_on_warn_t on_query_warn, void *warn);
+		     data_parser_on_warn_t on_query_warn, void *warn,
+		     char *params);
 	void (*free)(void *arg);
 	int (*assign)(void *arg, data_parser_attr_type_t type, void *obj);
 	int (*specify)(void *arg, data_t *dst);
@@ -159,7 +160,8 @@ static data_parser_t *_new_parser(data_parser_on_error_t on_parse_error,
 				  data_parser_on_warn_t on_parse_warn,
 				  data_parser_on_warn_t on_dump_warn,
 				  data_parser_on_warn_t on_query_warn,
-				  void *warn_arg, int plugin_index)
+				  void *warn_arg, int plugin_index,
+				  char *params)
 {
 	DEF_TIMERS;
 	const parse_funcs_t *funcs;
@@ -174,7 +176,7 @@ static data_parser_t *_new_parser(data_parser_on_error_t on_parse_error,
 	funcs = plugins->functions[plugin_index];
 	parser->arg = funcs->new(on_parse_error, on_dump_error, on_query_error,
 				 error_arg, on_parse_warn, on_dump_warn,
-				 on_query_warn, warn_arg);
+				 on_query_warn, warn_arg, params);
 	END_TIMER2(__func__);
 
 	slurm_mutex_lock(&init_mutex);
@@ -260,7 +262,7 @@ extern data_parser_t *data_parser_g_new(data_parser_on_error_t on_parse_error,
 
 	return _new_parser(on_parse_error, on_dump_error, on_query_error,
 			   error_arg, on_parse_warn, on_dump_warn,
-			   on_query_warn, warn_arg, index);
+			   on_query_warn, warn_arg, index, NULL);
 }
 
 extern data_parser_t **data_parser_g_new_array(
@@ -292,7 +294,7 @@ extern data_parser_t **data_parser_g_new_array(
 		parsers[i] = _new_parser(on_parse_error, on_dump_error,
 					 on_query_error, error_arg,
 					 on_parse_warn, on_dump_warn,
-					 on_query_warn, warn_arg, i);
+					 on_query_warn, warn_arg, i, NULL);
 	}
 
 	return parsers;

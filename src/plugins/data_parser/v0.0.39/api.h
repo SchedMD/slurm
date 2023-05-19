@@ -73,7 +73,7 @@ extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
 				 data_parser_on_warn_t on_parse_warn,
 				 data_parser_on_warn_t on_dump_warn,
 				 data_parser_on_warn_t on_query_warn,
-				 void *warn_arg);
+				 void *warn_arg, const char *params);
 extern void data_parser_p_free(args_t *args);
 
 extern int data_parser_p_assign(args_t *args, data_parser_attr_type_t type,
