@@ -64,23 +64,4 @@ typedef struct {
 	List assoc_list;
 } args_t;
 
-extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
-				 data_parser_on_error_t on_dump_error,
-				 data_parser_on_error_t on_query_error,
-				 void *error_arg,
-				 data_parser_on_warn_t on_parse_warn,
-				 data_parser_on_warn_t on_dump_warn,
-				 data_parser_on_warn_t on_query_warn,
-				 void *warn_arg);
-extern void data_parser_p_free(args_t *args);
-
-extern int data_parser_p_assign(args_t *args, data_parser_attr_type_t type,
-				void *obj);
-
-extern int data_parser_p_dump(args_t *args, data_parser_type_t type, void *src,
-			      ssize_t src_bytes, data_t *dst);
-extern int data_parser_p_parse(args_t *args, data_parser_type_t type, void *dst,
-			       ssize_t dst_bytes, data_t *src,
-			       data_t *parent_path);
-
 #endif
