@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
     properly.
  -- Avoid possible slurmctld segfault caused by race condition with already
     completed slurmdbd_conn connections.
+ -- Slurmdbd.conf checks included conf files for 0600 permissions
 
 * Changes in Slurm 23.02.2
 ==========================
