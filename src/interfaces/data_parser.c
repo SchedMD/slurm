@@ -207,6 +207,33 @@ static int _load_plugins(const char *plugin_type, plugrack_foreach_t listf,
 	return rc;
 }
 
+static int _find_plugin_by_type(const char *plugin_type)
+{
+	if (!plugin_type)
+		return -1;
+
+	/* quick match by pointer address */
+	for (int i = 0; i < plugins->count; i++) {
+		if (plugin_type == plugins->types[i])
+			return i;
+	}
+
+	/* match by full string */
+	for (int i = 0; i < plugins->count; i++) {
+		if (!xstrcasecmp(plugin_type, plugins->types[i]))
+			return i;
+	}
+
+	/* match by string without "data_parser/" */
+	for (int i = 0; i < plugins->count; i++) {
+		if (!xstrcasecmp(plugin_type,
+				 _get_plugin_version(plugins->types[i])))
+			return i;
+	}
+
+	return -1;
+}
+
 extern data_parser_t *data_parser_g_new(data_parser_on_error_t on_parse_error,
 					data_parser_on_error_t on_dump_error,
 					data_parser_on_error_t on_query_error,
@@ -218,51 +245,22 @@ extern data_parser_t *data_parser_g_new(data_parser_on_error_t on_parse_error,
 					plugrack_foreach_t listf,
 					bool skip_loading)
 {
-	int rc, found = -1;
+	int rc, index;
 
-	rc = _load_plugins(plugin_type, listf, skip_loading);
-
-	if (rc) {
+	if ((rc = _load_plugins(plugin_type, listf, skip_loading))) {
 		error("%s: failure loading plugins: %s",
 		      __func__, slurm_strerror(rc));
 		return NULL;
 	}
 
-	for (int i = 0; plugin_type && (i < plugins->count); i++) {
-		if (plugin_type == plugins->types[i]) {
-			found = i;
-			break;
-		}
-	}
-
-	if (found < 0) {
-		for (int i = 0; plugin_type && (i < plugins->count); i++) {
-			if (!xstrcasecmp(plugin_type, plugins->types[i])) {
-				found = i;
-				break;
-			}
-		}
-	}
-
-	if (found < 0) {
-		for (int i = 0; plugin_type && (i < plugins->count); i++) {
-			if (!xstrcasecmp(plugin_type,
-					 _get_plugin_version(
-						plugins->types[i]))) {
-				found = i;
-				break;
-			}
-		}
-	}
-
-	if (found < 0) {
-		error("%s: plugin %s not found", __func__, plugin_type);
+	if ((index = _find_plugin_by_type(plugin_type)) < 0) {
+		error("%s: unable to find plugin %s", __func__, plugin_type);
 		return NULL;
 	}
 
 	return _new_parser(on_parse_error, on_dump_error, on_query_error,
 			   error_arg, on_parse_warn, on_dump_warn,
-			   on_query_warn, warn_arg, found);
+			   on_query_warn, warn_arg, index);
 }
 
 extern data_parser_t **data_parser_g_new_array(
