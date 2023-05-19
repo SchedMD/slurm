@@ -3218,7 +3218,7 @@ static int _init_slurm_conf(const char *file_name)
 	/* init hash to 0 */
 	conf_ptr->hash_val = 0;
 	rc = s_p_parse_file(conf_hashtbl, &conf_ptr->hash_val, name, false,
-			    NULL);
+			    NULL, false);
 	/* s_p_dump_values(conf_hashtbl, slurm_conf_options); */
 
 	if (_validate_and_set_defaults(conf_ptr, conf_hashtbl) == SLURM_ERROR)

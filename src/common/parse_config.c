@@ -1164,7 +1164,7 @@ static void _handle_include(char *include_file, char *conf_file)
 static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 				    const char *line, char **leftover,
 				    bool ignore_new, char *slurm_conf_path,
-				    char *last_ancestor)
+				    char *last_ancestor, bool check_permissions)
 {
 	char *ptr;
 	char *fn_start, *fn_stop;
@@ -1194,7 +1194,7 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 		if (!last_ancestor)
 			last_ancestor = xbasename(slurm_conf_path);
 		rc = s_p_parse_file(hashtbl, hash_val, path_name, ignore_new,
-				    last_ancestor);
+				    last_ancestor, check_permissions);
 		xfree(path_name);
 		if (rc == SLURM_SUCCESS) {
 			if (!xstrstr(file_name, "/") && running_in_slurmctld())
@@ -1211,7 +1211,7 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 }
 
 int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
-		   bool ignore_new, char *last_ancestor)
+		   bool ignore_new, char *last_ancestor, bool check_permissions)
 {
 	FILE *f;
 	char *leftover = NULL;
@@ -1263,7 +1263,8 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 
 		inc_rc = _parse_include_directive(hashtbl, hash_val,
 						  line, &leftover, ignore_new,
-						  filename, last_ancestor);
+						  filename, last_ancestor,
+						  check_permissions);
 		if (inc_rc == 0) {
 			if (!_parse_next_key(hashtbl, line, &leftover,
 					     ignore_new)) {

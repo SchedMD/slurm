@@ -314,7 +314,8 @@ void s_p_hashtbl_destroy(s_p_hashtbl_t *hashtbl);
  * 		       Include files in configless configurations.
  */
 int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
-		   bool ignore_new, char *last_ancestor);
+		   bool ignore_new, char *last_ancestor,
+		   bool check_permissions);
 
 /* Returns SLURM_SUCCESS if buffer was opened and parse correctly.
  * buffer must be a valid buf_t buffer only containing strings. The parsing

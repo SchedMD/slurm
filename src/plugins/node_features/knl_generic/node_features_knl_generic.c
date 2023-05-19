@@ -232,7 +232,8 @@ static s_p_hashtbl_t *_config_make_tbl(char *filename)
 		return tbl;
 	}
 
-	if (s_p_parse_file(tbl, NULL, filename, false, NULL) == SLURM_ERROR) {
+	if (s_p_parse_file(tbl, NULL, filename, false, NULL, false) ==
+	    SLURM_ERROR) {
 		error("knl.conf: %s: s_p_parse_file error: %m", __func__);
 		s_p_hashtbl_destroy(tbl);
 		tbl = NULL;

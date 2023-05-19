@@ -394,7 +394,8 @@ static int _mpi_init_locked(char **mpi_type)
 					continue;
 				if (s_p_parse_file(all_tbls[i],
 						   NULL, conf_path,
-						   true, NULL) != SLURM_SUCCESS)
+						   true, NULL, false) !=
+						   SLURM_SUCCESS)
 					/*
 					 * conf_path can't be freed: It's needed
 					 * by fatal and fatal will exit
