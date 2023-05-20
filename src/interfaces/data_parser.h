@@ -328,6 +328,7 @@ typedef enum {
 	DATA_PARSER_SELECTED_STEP_LIST, /* list_t of slurm_selected_step_t* */
 	DATA_PARSER_OPENAPI_USER_PARAM, /* openapi_user_param_t */
 	DATA_PARSER_OPENAPI_USER_QUERY, /* openapi_user_query_t */
+	DATA_PARSER_FLAGS, /* data_parser_flags_t */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

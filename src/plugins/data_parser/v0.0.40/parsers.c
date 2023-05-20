@@ -7301,6 +7301,10 @@ static const parser_t PARSER_ARRAY(OPENAPI_RESERVATION_QUERY)[] = {
 };
 #undef add_parse
 
+static const flag_bit_t PARSER_FLAG_ARRAY(FLAGS)[] = {
+	add_flag_equal(FLAG_NONE , INFINITE, "NONE"),
+};
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -7903,6 +7907,7 @@ static const parser_t parsers[] = {
 	addfa(JOB_CONDITION_FLAGS, uint32_t),
 	addfa(JOB_CONDITION_DB_FLAGS, uint32_t),
 	addfa(CLUSTER_CLASSIFICATION, uint16_t), /* slurmdb_classification_type_t */
+	addfa(FLAGS, data_parser_flags_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, NEED_QOS),

@@ -127,6 +127,32 @@ extern int data_parser_p_parse(args_t *args, data_parser_type_t type, void *dst,
 	return parse(dst, dst_bytes, parser, src, args, parent_path);
 }
 
+static void _parse_param(const char *param, args_t *args)
+{
+	const parser_t *const parser = find_parser_by_type(DATA_PARSER_FLAGS);
+
+	for (int i = 0; i < parser->flag_bit_array_count; i++) {
+		const flag_bit_t *bit = &parser->flag_bit_array[i];
+
+		xassert(bit->magic == MAGIC_FLAG_BIT);
+
+		if (bit->type != FLAG_BIT_TYPE_BIT)
+			continue;
+
+		if (xstrcasecmp(bit->flag_name, param))
+			continue;
+
+		log_flag(DATA, "parser(0x%"PRIxPTR") activated flag=%s",
+			 (uintptr_t) args, bit->flag_name);
+
+		args->flags |= bit->value;
+		return;
+	}
+
+	log_flag(DATA, "parser(0x%"PRIxPTR") ignoring param=%s",
+		 (uintptr_t) args, param);
+}
+
 extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
 				 data_parser_on_error_t on_dump_error,
 				 data_parser_on_error_t on_query_error,
@@ -136,7 +162,10 @@ extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
 				 data_parser_on_warn_t on_query_warn,
 				 void *warn_arg, const char *params)
 {
-	args_t *args = xmalloc(sizeof(*args));
+	args_t *args;
+	char *param, *last = NULL, *dup;
+
+	args = xmalloc(sizeof(*args));
 	args->magic = MAGIC_ARGS;
 	args->on_parse_error = on_parse_error;
 	args->on_dump_error = on_dump_error;
@@ -146,9 +175,24 @@ extern args_t *data_parser_p_new(data_parser_on_error_t on_parse_error,
 	args->on_dump_warn = on_dump_warn;
 	args->on_query_warn = on_query_warn;
 	args->warn_arg = warn_arg;
+	args->flags = FLAG_NONE;
 
 	log_flag(DATA, "init %s(0x%"PRIxPTR") with params=%s",
 		 plugin_type, (uintptr_t) args, params);
+
+	if ((dup = xstrdup(params))) {
+		param = strtok_r(dup, SLURM_DATA_PARSER_PLUGIN_PARAMS_CHAR,
+				 &last);
+		while (param) {
+			if (param[0])
+				_parse_param(param, args);
+
+			param = strtok_r(NULL,
+					 SLURM_DATA_PARSER_PLUGIN_PARAMS_CHAR,
+					 &last);
+		}
+		xfree(dup);
+	}
 
 	parsers_init();
 

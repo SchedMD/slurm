@@ -47,6 +47,10 @@
 
 #define MAGIC_ARGS 0x2ea1bebb
 
+typedef enum {
+	FLAG_NONE = 0,
+} data_parser_flags_t;
+
 typedef struct {
 	int magic; /* MAGIC_ARGS */
 	data_parser_on_error_t on_parse_error;
@@ -62,6 +66,7 @@ typedef struct {
 	List tres_list;
 	List qos_list;
 	List assoc_list;
+	data_parser_flags_t flags;
 } args_t;
 
 #endif
