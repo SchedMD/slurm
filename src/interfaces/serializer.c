@@ -47,12 +47,19 @@
 #define SERIALIZER_MAJOR_TYPE "serializer"
 #define SERIALIZER_MIME_TYPES_SYM "mime_types"
 #define PMT_MAGIC 0xaaba8031
+#define MIME_ARRAY_MAGIC 0xabb00031
 
 typedef struct {
 	int (*data_to_string)(char **dest, size_t *length, const data_t *src,
 			      serializer_flags_t flags);
 	int (*string_to_data)(data_t **dest, const char *src, size_t length);
 } funcs_t;
+
+typedef struct {
+	int magic; /* MIME_ARRAY_MAGIC */
+	char **mime_array;
+	int index;
+} mime_type_array_args_t;
 
 /* Must be synchronized with funcs_t above */
 static const char *syms[] = {
@@ -200,6 +207,49 @@ static int _register_mime_types(List mime_types_list, size_t plugin_index,
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static int _foreach_add_mime_type(void *x, void *arg)
+{
+	const plugin_mime_type_t *pmt = x;
+	mime_type_array_args_t *args = arg;
+
+	xassert(args->magic == MIME_ARRAY_MAGIC);
+	xassert(!args->mime_array[args->index]);
+
+	args->mime_array[args->index] = xstrdup(pmt->mime_type);
+	args->index++;
+
+	return SLURM_SUCCESS;
+}
+
+extern const char **get_mime_type_array(void)
+{
+	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+	static char **mime_array = NULL;
+
+	slurm_mutex_lock(&lock);
+
+	if (mime_array) {
+		slurm_mutex_unlock(&lock);
+		return (const char **) mime_array;
+	} else {
+		mime_type_array_args_t args = {
+			.magic = MIME_ARRAY_MAGIC,
+		};
+
+		xrecalloc(mime_array, (list_count(mime_types_list) + 1),
+			  sizeof(*mime_array));
+
+		args.mime_array = mime_array;
+
+		list_for_each_ro(mime_types_list, _foreach_add_mime_type,
+				 &args);
+		xassert(args.index == list_count(mime_types_list));
+
+		slurm_mutex_unlock(&lock);
+		return (const char **) mime_array;
+	}
 }
 
 extern int serializer_g_init(const char *plugin_list, plugrack_foreach_t listf)

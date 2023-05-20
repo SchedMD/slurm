@@ -91,6 +91,9 @@ extern int serialize_g_string_to_data(data_t **dest, const char *src,
  */
 extern const char *resolve_mime_type(const char *mime_type);
 
+/* Provide ptr to NULL terminated array of all supported mimetypes */
+extern const char **get_mime_type_array(void);
+
 /*
  * Load and initialize serializer plugins
  *
