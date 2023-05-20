@@ -560,7 +560,7 @@ static void _print_ping(int argc, char **argv)
 
 	if (mime_type) {
 		exit_code = DATA_DUMP_CLI(CONTROLLER_PING_ARRAY, pings, "pings",
-					  argc, argv, NULL, mime_type);
+					  argc, argv, NULL, mime_type, NULL);
 		xfree(pings);
 		return;
 	}

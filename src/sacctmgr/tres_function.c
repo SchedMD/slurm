@@ -160,7 +160,7 @@ int sacctmgr_list_tres(int argc, char **argv)
 
 	if (mime_type) {
 		int rc = DATA_DUMP_CLI(TRES_LIST, tres_list, "tres", argc, argv,
-				       db_conn, mime_type);
+				       db_conn, mime_type, NULL);
 		FREE_NULL_LIST(format_list);
 		FREE_NULL_LIST(tres_list);
 		return rc;

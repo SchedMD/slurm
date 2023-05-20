@@ -650,26 +650,46 @@ static void _populate_cli_response_meta(data_t *meta, int argc, char **argv,
 		data_set_string(data_list_append(cmd), argv[i]);
 }
 
+static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
+				   const plugin_handle_t id, void *arg)
+{
+	info("%s", full_type);
+}
+
 extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 				       int obj_bytes, const char *key, int argc,
 				       char **argv, void *acct_db_conn,
-				       const char *mime_type)
+				       const char *mime_type,
+				       const char *data_parser)
 {
 	int rc = SLURM_SUCCESS;
-	data_t *resp = data_set_dict(data_new());
-	data_t *meta = data_set_dict(data_key_set(resp, "meta"));
-	data_t *dout = data_key_set(resp, key);
+	data_t *resp, *meta, *dout;
 	char *out = NULL;
-	data_parser_t *parser =
-		data_parser_g_new(_dump_cli_stdout_on_error,
-				  _dump_cli_stdout_on_error,
-				  _dump_cli_stdout_on_error,
-				  data_set_list(data_key_set(resp, "errors")),
-				  _dump_cli_stdout_on_warn,
-				  _dump_cli_stdout_on_warn,
-				  _dump_cli_stdout_on_warn,
-				  data_set_list(data_key_set(resp, "warnings")),
-				  SLURM_DATA_PARSER_VERSION, NULL, false);
+	data_parser_t *parser;
+
+	if (!xstrcasecmp(data_parser, "list")) {
+		info("Possible data_parser plugins:");
+		data_parser_g_new(NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+				  NULL, "list", _plugrack_foreach_list, false);
+		return SLURM_SUCCESS;
+	}
+
+	resp = data_set_dict(data_new());
+	meta = data_set_dict(data_key_set(resp, "meta"));
+	dout = data_key_set(resp, key);
+
+	parser = data_parser_g_new(
+		_dump_cli_stdout_on_error,
+		_dump_cli_stdout_on_error,
+		_dump_cli_stdout_on_error,
+		data_set_list(data_key_set(resp, "errors")),
+		_dump_cli_stdout_on_warn,
+		_dump_cli_stdout_on_warn,
+		_dump_cli_stdout_on_warn,
+		data_set_list(data_key_set(resp, "warnings")),
+		(data_parser ? data_parser : SLURM_DATA_PARSER_VERSION),
+		NULL,
+		false);
 
 	if (!parser) {
 		rc = ESLURM_DATA_INVALID_PARSER;

@@ -252,7 +252,7 @@ extern int sacctmgr_list_wckey(int argc, char **argv)
 
 	if (mime_type) {
 		rc = DATA_DUMP_CLI(WCKEY_LIST, wckey_list, "wckeys", argc, argv,
-				   db_conn, mime_type);
+				   db_conn, mime_type, NULL);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(wckey_list);
 		return rc;

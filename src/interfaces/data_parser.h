@@ -543,16 +543,20 @@ extern int data_parser_g_dump(data_parser_t *parser, data_parser_type_t type,
  * IN argv - argv arg of main()
  * IN acct_db_conn - slurmdb connection or NULL
  * IN mime_type - dump object as given mime type
+ * IN data_parser - data_parser parameters
  * RET SLURM_SUCCESS or error
  */
 extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 				       int obj_bytes, const char *key, int argc,
 				       char **argv, void *acct_db_conn,
-				       const char *mime_type);
+				       const char *mime_type,
+				       const char *data_parser);
 
-#define DATA_DUMP_CLI(type, src, key, argc, argv, db_conn, mime_type)      \
+#define DATA_DUMP_CLI(type, src, key, argc, argv, db_conn, mime_type,      \
+		      data_parser)                                         \
 	data_parser_dump_cli_stdout(DATA_PARSER_##type, &src, sizeof(src), \
-				    key, argc, argv, db_conn, mime_type)
+				    key, argc, argv, db_conn, mime_type,   \
+				    data_parser)
 
 /*
  * Populate OpenAPI schema for each parser

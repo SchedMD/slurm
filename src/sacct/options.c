@@ -1414,7 +1414,7 @@ extern void do_list(int argc, char **argv)
 
 	if (params.mimetype) {
 		errno = DATA_DUMP_CLI(JOB_LIST, jobs, "jobs", argc, argv,
-				      acct_db_conn, params.mimetype);
+				      acct_db_conn, params.mimetype, NULL);
 		return;
 	}
 

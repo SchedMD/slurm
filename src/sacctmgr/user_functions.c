@@ -1004,7 +1004,7 @@ extern int sacctmgr_list_user(int argc, char **argv)
 
 	if (mime_type) {
 		rc = DATA_DUMP_CLI(USER_LIST, user_list, "users", argc, argv,
-				   db_conn, mime_type);
+				   db_conn, mime_type, NULL);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(user_list);
 		return rc;
