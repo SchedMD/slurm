@@ -446,6 +446,7 @@ extern int data_parser_g_assign(data_parser_t *parser,
 /*
  * Get Plugin type as string.
  * String is valid for the life of the parser.
+ * RET plugin including params as string
  */
 extern const char *data_parser_get_plugin(data_parser_t *parser);
 
@@ -454,6 +455,12 @@ extern const char *data_parser_get_plugin(data_parser_t *parser);
  * String is valid for the life of the parser.
  */
 extern const char *data_parser_get_plugin_version(data_parser_t *parser);
+
+/*
+ * Get Plugin params as string
+ * String is valid for the life of the parser.
+ */
+extern const char *data_parser_get_plugin_params(data_parser_t *parser);
 
 /*
  * Free data parser instance

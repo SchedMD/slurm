@@ -57,6 +57,8 @@ struct data_parser_s {
 	/* arg returned by plugin init() */
 	void *arg;
 	const char *plugin_type; /* ptr to plugin plugin_type - do not xfree */
+	char *params; /* parameters from _new - must xfree */
+	char *plugin_string; /* plugin_type+params - must xfree */
 };
 
 typedef struct {
@@ -177,6 +179,7 @@ static data_parser_t *_new_parser(data_parser_on_error_t on_parse_error,
 
 	parser->plugin_offset = plugin_index;
 	parser->plugin_type = plugins->types[plugin_index];
+	parser->params = params;
 
 	START_TIMER;
 	funcs = plugins->functions[plugin_index];
@@ -441,12 +444,20 @@ cleanup:
 
 extern const char *data_parser_get_plugin(data_parser_t *parser)
 {
-	xassert(!parser || parser->magic == PARSE_MAGIC);
-
-	if (parser)
-		return parser->plugin_type;
-	else
+	if (!parser)
 		return NULL;
+
+	xassert(parser->magic == PARSE_MAGIC);
+
+	/*
+	 * Generate string as requested using full plugin type where the
+	 * original request may not having included data_parser/
+	 */
+	if (!parser->plugin_string)
+		xstrfmtcat(parser->plugin_string, "%s%s", parser->plugin_type,
+			   (parser->params ? parser->params : ""));
+
+	return parser->plugin_string;
 }
 
 static const char *_get_plugin_version(const char *plugin_type)
@@ -474,6 +485,16 @@ extern const char *data_parser_get_plugin_version(data_parser_t *parser)
 	return _get_plugin_version(parser->plugin_type);
 }
 
+extern const char *data_parser_get_plugin_params(data_parser_t *parser)
+{
+	xassert(!parser || parser->magic == PARSE_MAGIC);
+
+	if (!parser)
+		return NULL;
+
+	return parser->params;
+}
+
 extern void data_parser_g_free(data_parser_t *parser, bool skip_unloading)
 {
 	DEF_TIMERS;
@@ -496,6 +517,8 @@ extern void data_parser_g_free(data_parser_t *parser, bool skip_unloading)
 		funcs->free(parser->arg);
 	END_TIMER2(__func__);
 
+	xfree(parser->params);
+	xfree(parser->plugin_string);
 	parser->arg = NULL;
 	parser->plugin_offset = -1;
 	parser->magic = ~PARSE_MAGIC;
