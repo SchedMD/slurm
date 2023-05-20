@@ -63,4 +63,13 @@ extern void set_openapi_parse_ref(data_t *obj, const parser_t *parser,
 extern data_t *set_openapi_props(data_t *obj, openapi_type_format_t format,
 				 const char *desc);
 
+/*
+ * Populate dst with OpenAPI specification schema
+ * IN dst - data_t ptr to populate with schema
+ * IN parser - schema parser to specify
+ * IN args - parser args
+ */
+extern void set_openapi_schema(data_t *dst, const parser_t *parser,
+			       args_t *args);
+
 #endif

@@ -49,6 +49,8 @@
 
 typedef enum {
 	FLAG_NONE = 0,
+	/* only dump the OpenAPI Specification instead of the requested data */
+	FLAG_SPEC_ONLY = SLURM_BIT(0),
 } data_parser_flags_t;
 
 typedef struct {

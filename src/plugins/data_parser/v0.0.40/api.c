@@ -139,7 +139,7 @@ static void _parse_param(const char *param, args_t *args)
 		if (bit->type != FLAG_BIT_TYPE_BIT)
 			continue;
 
-		if (xstrcasecmp(bit->flag_name, param))
+		if (xstrcasecmp(bit->name, param))
 			continue;
 
 		log_flag(DATA, "parser(0x%"PRIxPTR") activated flag=%s",

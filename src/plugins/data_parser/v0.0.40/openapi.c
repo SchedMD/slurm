@@ -62,6 +62,7 @@ typedef struct {
 	data_t *spec;
 	data_t *path_params; /* dict of each path param */
 	data_t *params; /* current parameters target */
+	bool disable_refs;
 } spec_args_t;
 
 static void _add_parser(const parser_t *parser, spec_args_t *sargs);
@@ -294,7 +295,7 @@ extern void _set_ref(data_t *obj, const parser_t *parser, spec_args_t *sargs)
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
-	if (!_should_be_ref(parser)) {
+	if (sargs->disable_refs || !_should_be_ref(parser)) {
 		_set_openapi_parse(obj, parser, sargs);
 		return;
 	}
@@ -714,4 +715,24 @@ extern int data_parser_p_specify(args_t *args, data_t *spec)
 	FREE_NULL_DATA(sargs.new_paths);
 
 	return SLURM_SUCCESS;
+}
+
+extern void set_openapi_schema(data_t *dst, const parser_t *parser,
+			       args_t *args)
+{
+	spec_args_t sargs = {
+		.magic = MAGIC_SPEC_ARGS,
+		.args = args,
+		.spec = dst,
+		.disable_refs = true,
+	};
+
+	xassert(args->magic == MAGIC_ARGS);
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	data_set_dict(dst);
+
+	get_parsers(&sargs.parsers, &sargs.parser_count);
+
+	(void) _set_openapi_parse(dst, parser, &sargs);
 }

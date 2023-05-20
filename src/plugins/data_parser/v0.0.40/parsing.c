@@ -44,6 +44,7 @@
 #include "alloc.h"
 #include "api.h"
 #include "events.h"
+#include "openapi.h"
 #include "parsers.h"
 #include "parsing.h"
 #include "slurmdb_helpers.h"
@@ -1233,6 +1234,11 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 	 * way to dump value of __typeof__ as a value in C.
 	 */
 	xassert((src_bytes == NO_VAL) || (src_bytes == parser->size));
+
+	if (args->flags & FLAG_SPEC_ONLY) {
+		set_openapi_schema(dst, parser, args);
+		return SLURM_SUCCESS;
+	}
 
 	if ((rc = load_prereqs(DUMPING, parser, args)))
 		goto done;
