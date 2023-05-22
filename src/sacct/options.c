@@ -269,7 +269,7 @@ sacct [<OPTION>]                                                            \n \
                    jobs. Adding .step will display the specific job step of \n\
                    that job. (A step id of 'batch' will display the         \n\
                    information about the batch step.)                       \n\
-     --json:                                                                \n\
+     --json[=data_parser]                                                   \n\
                    Produce JSON output                                      \n\
      -k, --timelimit-min:                                                   \n\
                    Only send data about jobs with this timelimit.           \n\
@@ -366,7 +366,7 @@ sacct [<OPTION>]                                                            \n \
      -X, --allocations:                                                     \n\
 	           Only show statistics relevant to the job allocation      \n\
 	           itself, not taking steps into consideration.             \n\
-     --yaml:                                                                \n\
+     --yaml[=data_parser]                                                   \n\
                    Produce YAML output                                      \n\
 	                                                                    \n\
      Note, valid start/end time formats are...                              \n\
@@ -640,8 +640,8 @@ extern void parse_command_line(int argc, char **argv)
                 {"wckeys",         required_argument, 0,    'W'},
                 {"whole-hetjob",   optional_argument, 0,    OPT_LONG_WHETJOB},
                 {"associations",   required_argument, 0,    'x'},
-                {"json", no_argument, 0, OPT_LONG_JSON},
-                {"yaml", no_argument, 0, OPT_LONG_YAML},
+                {"json", optional_argument, 0, OPT_LONG_JSON},
+                {"yaml", optional_argument, 0, OPT_LONG_YAML},
                 {0,                0,		      0,    0}};
 
 	params.opt_uid = getuid();
@@ -937,11 +937,13 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case OPT_LONG_JSON:
 			params.mimetype = MIME_TYPE_JSON;
+			params.data_parser = optarg;
 			data_init();
 			serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL);
 			break;
 		case OPT_LONG_YAML:
 			params.mimetype = MIME_TYPE_YAML;
+			params.data_parser = optarg;
 			data_init();
 			serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL);
 			break;
@@ -1414,7 +1416,8 @@ extern void do_list(int argc, char **argv)
 
 	if (params.mimetype) {
 		errno = DATA_DUMP_CLI(JOB_LIST, jobs, "jobs", argc, argv,
-				      acct_db_conn, params.mimetype, NULL);
+				      acct_db_conn, params.mimetype,
+				      params.data_parser);
 		return;
 	}
 

@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.40 - skip empty string when parsing QOS ids.
  -- data_parser/v0.0.40 - log errors on every level of parsing on failure.
  -- sdiag - add --yaml and --json arg support to specify data_parser plugin.
+ -- sacct - add --yaml and --json arg support to specify data_parser plugin.
 
 * Changes in Slurm 23.02.3
 ==========================

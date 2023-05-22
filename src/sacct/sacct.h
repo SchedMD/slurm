@@ -216,6 +216,7 @@ typedef struct {
 	int units;		/* --units*/
 	bool use_local_uid;	/* --use-local-uid */
 	char *mimetype;         /* --yaml or --json */
+	char *data_parser;      /* data_parser args */
 } sacct_parameters_t;
 
 extern print_field_t fields[];
