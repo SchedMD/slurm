@@ -5488,6 +5488,24 @@ static int DUMP_FUNC(JOB_EXCLUSIVE)(const parser_t *const parser, void *obj,
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = NEED_NONE,                                           \
 }
+#define add_parser_deprec(stype, mtype, req, field, overload, path, desc, \
+			  deprec)                                         \
+{                                                                         \
+	.magic = MAGIC_PARSER,                                            \
+	.model = PARSER_MODEL_ARRAY_LINKED_FIELD,                         \
+	.ptr_offset = offsetof(stype, field),                             \
+	.field_name = XSTRINGIFY(field),                                  \
+	.field_name_overloads = overload,                                 \
+	.key = path,                                                      \
+	.required = req,                                                  \
+	.type = DATA_PARSER_ ## mtype,                                    \
+	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),                 \
+	.obj_desc = desc,                                                 \
+	.obj_type_string = XSTRINGIFY(stype),                             \
+	.size = sizeof(((stype *) NULL)->field),                          \
+	.needs = NEED_NONE,                                               \
+	.deprecated = deprec,                                             \
+}
 #define add_parser_skip(stype, field)                                 \
 {                                                                     \
 	.magic = MAGIC_PARSER,                                        \
@@ -6402,6 +6420,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_EXCLUSIVE_FLAGS)[] = {
 	add_parser(slurm_job_info_t, mtype, false, field, 0, path, desc)
 #define add_parse_overload(mtype, field, overloads, path, desc) \
 	add_parser(slurm_job_info_t, mtype, false, field, overloads, path, desc)
+#define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(slurm_job_info_t, mtype, false, field, overloads, path, desc, deprec)
 #define add_cparse(mtype, path, desc) \
 	add_complex_parser(slurm_job_info_t, mtype, false, path, desc)
 static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
@@ -6513,8 +6533,8 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, sched_nodes, "scheduled_nodes", NULL),
 	add_parse(STRING, selinux_context, "selinux_context", NULL),
 	add_parse_overload(JOB_SHARED, shared, 2, "shared", NULL),
-	add_parse_overload(JOB_EXCLUSIVE, shared, 2, "exclusive", NULL),
-	add_parse_overload(BOOL16, shared, 2, "oversubscribe", NULL),
+	add_parse_deprec(JOB_EXCLUSIVE, shared, 2, "exclusive", NULL, SLURM_23_11_PROTOCOL_VERSION),
+	add_parse_deprec(BOOL16, shared, 2, "oversubscribe", NULL, SLURM_23_11_PROTOCOL_VERSION),
 	add_parse_bit_flag_array(slurm_job_info_t, JOB_SHOW_FLAGS, false, show_flags, "show_flags", NULL),
 	add_parse(UINT16, sockets_per_board, "sockets_per_board", NULL),
 	add_parse(UINT16_NO_VAL, sockets_per_node, "sockets_per_node", NULL),
@@ -6550,6 +6570,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 };
 #undef add_parse
 #undef add_parse_overload
+#undef add_parse_deprec
 #undef add_cparse
 #undef add_skip
 
@@ -6949,6 +6970,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(X11_FLAGS)[] = {
 	add_parser(job_desc_msg_t, mtype, false, field, 0, path, desc)
 #define add_parse_overload(mtype, field, overloads, path, desc) \
 	add_parser(job_desc_msg_t, mtype, false, field, overloads, path, desc)
+#define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(job_desc_msg_t, mtype, false, field, overloads, path, desc, deprec)
 #define add_skip(field) \
 	add_parser_skip(job_desc_msg_t, field)
 #define add_flags(mtype, field, path, desc) \
@@ -7037,8 +7060,8 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_skip(script_buf),
 	add_skip(script_hash),
 	add_parse_overload(JOB_SHARED, shared, 2, "shared", NULL),
-	add_parse_overload(JOB_EXCLUSIVE, shared, 2, "exclusive", NULL),
-	add_parse_overload(BOOL16, shared, 2, "oversubscribe", NULL),
+	add_parse_deprec(JOB_EXCLUSIVE, shared, 2, "exclusive", NULL, SLURM_23_11_PROTOCOL_VERSION),
+	add_parse_deprec(BOOL16, shared, 2, "oversubscribe", NULL, SLURM_23_11_PROTOCOL_VERSION),
 	add_parse(UINT32, site_factor, "site_factor", NULL),
 	add_cparse(JOB_DESC_MSG_SPANK_ENV, "spank_environment", NULL),
 	add_skip(spank_job_env),
@@ -7093,6 +7116,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 };
 #undef add_parse
 #undef add_parse_overload
+#undef add_parse_deprec
 #undef add_cparse
 #undef add_skip
 #undef add_flags
