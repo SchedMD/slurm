@@ -676,13 +676,40 @@ cleanup:
 	return DATA_FOR_EACH_CONT;
 }
 
+/*
+ * Try to guess if the user actually set the value or if the value was dumped
+ * with the other oversubsribed values which means it doesn't need to be logged
+ */
+static int _is_duplicate_linked_parser_value(args_t *args,
+					     const parser_t *const array,
+					     const parser_t *const parser,
+					     data_t *src_obj, data_t *src,
+					     data_t *parent_path)
+{
+	if (parser->field_name_overloads == 1)
+		return false;
+
+	for (int i = 0; i < array->field_count; i++) {
+		if ((array->fields[i].field_name_overloads != 1) &&
+		    !xstrcmp(array->fields[i].field_name, parser->field_name) &&
+		    !data_check_match(src,
+				      data_key_get(src_obj,
+						   array->fields[i].key),
+				      false)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 /* parser linked parser inside of parser array */
 static int _parser_linked(args_t *args, const parser_t *const array,
 			  const parser_t *const parser, data_t *src, void *dst,
 			  data_t *parent_path)
 {
 	int rc = SLURM_ERROR;
-	data_t *ppath = NULL;
+	data_t *ppath = NULL, *src_obj = src;
 	char *path = NULL;
 
 	check_parser(parser);
@@ -758,6 +785,15 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 	}
 
 	xassert(parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD);
+
+	if (!(args->flags & FLAG_FAST) && parser->deprecated &&
+	    (parser->deprecated <= SLURM_MIN_PROTOCOL_VERSION) &&
+	    !_is_duplicate_linked_parser_value(args, array, parser, src_obj,
+					       src, parent_path)) {
+		on_warn(PARSING, parser->type, args,
+			set_source_path(&path, ppath), __func__,
+			"Field \"%s\" is deprecated", parser->key);
+	}
 
 	log_flag(DATA, "%s: BEGIN: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via array parser %s(0x%" PRIxPTR ")=%s(0x%" PRIxPTR ")",
 		 __func__, path, data_type_to_string(data_get_type(src)),
