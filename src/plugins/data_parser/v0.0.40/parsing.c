@@ -809,22 +809,23 @@ static void _parse_check_openapi(const parser_t *const parser, data_t *src,
 	found_type = openapi_type_format_to_type_string(found);
 	found_format = openapi_type_format_to_format_string(found);
 
-	/*
-	 * Warn as this is user provided data and the parser may accept
-	 * the format anyway. Steer the user towards the formats given
-	 * in the OpenAPI specification as set in the parser.
-	 */
-	on_warn(PARSING, parser->type, args, set_source_path(&path,
-							     parent_path),
-		__func__,
-		"Expected OpenAPI type=%s%s%s (Slurm type=%s) but got OpenAPI type=%s%s%s (Slurm type=%s)",
-		oas_type, (oas_format ? " format=" : ""),
-		(oas_format ? oas_format : ""),
-		data_type_to_string(openapi_type_format_to_data_type(
-			parser->obj_openapi)),
-		found_type, (found_format ? " format=" : ""),
-		(found_format ? found_format : ""),
-		data_type_to_string(data_get_type(src)));
+	if (!(args->flags & FLAG_COMPLEX_VALUES)) {
+		/*
+		 * Warn as this is user provided data and the parser may accept
+		 * the format anyway. Steer the user towards the formats given
+		 * in the OpenAPI specification as set in the parser.
+		 */
+		on_warn(PARSING, parser->type, args,
+			set_source_path(&path, parent_path), __func__,
+			"Expected OpenAPI type=%s%s%s (Slurm type=%s) but got OpenAPI type=%s%s%s (Slurm type=%s)",
+			oas_type, (oas_format ? " format=" : ""),
+			(oas_format ? oas_format : ""),
+			data_type_to_string(openapi_type_format_to_data_type(
+				parser->obj_openapi)),
+			found_type, (found_format ? " format=" : ""),
+			(found_format ? found_format : ""),
+			data_type_to_string(data_get_type(src)));
+	}
 
 	xfree(path);
 }
@@ -1337,8 +1338,10 @@ static void _check_dump(const parser_t *const parser, data_t *dst, args_t *args)
 	if (parser->obj_openapi == OPENAPI_FORMAT_INVALID)
 		return;
 
-	xassert(data_get_type(dst) ==
-		openapi_type_format_to_data_type(parser->obj_openapi));
+	if (!(args->flags & FLAG_COMPLEX_VALUES)) {
+		xassert(data_get_type(dst) ==
+			openapi_type_format_to_data_type(parser->obj_openapi));
+	}
 }
 
 extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,

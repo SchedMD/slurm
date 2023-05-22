@@ -187,6 +187,12 @@ static int PARSE_FUNC(UINT64)(const parser_t *const parser, void *obj,
 			      data_t *str, args_t *args, data_t *parent_path);
 static int DUMP_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				    data_t *dst, args_t *args);
+static int PARSE_FUNC(INT64_NO_VAL)(const parser_t *const parser, void *obj,
+				    data_t *str, args_t *args,
+				    data_t *parent_path);
+static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
+				      data_t *str, args_t *args,
+				      data_t *parent_path);
 
 #ifndef NDEBUG
 static void _check_flag_bit(int8_t i, const flag_bit_t *bit)
@@ -1854,6 +1860,34 @@ static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
+	if (data_get_type(str) == DATA_TYPE_INT_64) {
+		int64_t value;
+
+		if ((rc = PARSE_FUNC(INT64_NO_VAL)(parser, &value, str, args,
+						   parent_path)))
+			return rc;
+
+		if (value == INFINITE64)
+			*dst = (double) INFINITE;
+		else if (value == NO_VAL64)
+			*dst = (double) NO_VAL;
+		else
+			*dst = value;
+		return rc;
+	}
+
+	if (data_get_type(str) == DATA_TYPE_STRING) {
+		if (!xstrcasecmp(data_get_string(str), "Infinity")) {
+			*dst = (double) INFINITE;
+			return SLURM_SUCCESS;
+		} else if (!xstrcasecmp(data_get_string(str), "NaN")) {
+			*dst = (double) NO_VAL;
+			return SLURM_SUCCESS;
+		}
+
+		data_convert_type(str, DATA_TYPE_FLOAT);
+	}
+
 	if (data_get_type(str) == DATA_TYPE_FLOAT)
 		return PARSE_FUNC(FLOAT64)(parser, obj, str, args, parent_path);
 
@@ -1933,6 +1967,16 @@ static int DUMP_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->magic == MAGIC_ARGS);
 
+	if (args->flags & FLAG_COMPLEX_VALUES) {
+		if (isinf(*src))
+			data_set_string(dst, "Infinity");
+		else if (isnan(*src))
+			data_set_null(dst);
+		else
+			data_set_float(dst, *src);
+		return SLURM_SUCCESS;
+	}
+
 	data_set_dict(dst);
 	set = data_key_set(dst, "set");
 	inf = data_key_set(dst, "infinite");
@@ -1959,6 +2003,12 @@ static void SPEC_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser,
 				      args_t *args, data_t *spec, data_t *dst)
 {
 	data_t *props, *dset, *dinf, *dnum;
+
+	if (args->flags & FLAG_COMPLEX_VALUES) {
+		set_openapi_props(dst, OPENAPI_FORMAT_NUMBER,
+				  "64 bit floating point number");
+		return;
+	}
 
 	props = set_openapi_props(dst, OPENAPI_FORMAT_OBJECT,
 				  "64 bit floating point number with flags");
@@ -2138,6 +2188,16 @@ static int DUMP_FUNC(UINT16_NO_VAL)(const parser_t *const parser, void *obj,
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->magic == MAGIC_ARGS);
 
+	if (args->flags & FLAG_COMPLEX_VALUES) {
+		if (*src == INFINITE16)
+			data_set_string(dst, "Infinity");
+		else if (*src == NO_VAL16)
+			data_set_null(dst);
+		else
+			data_set_int(dst, *src);
+		return SLURM_SUCCESS;
+	}
+
 	data_set_dict(dst);
 	set = data_key_set(dst, "set");
 	inf = data_key_set(dst, "infinite");
@@ -2182,6 +2242,35 @@ static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 	if (data_get_type(str) == DATA_TYPE_NULL) {
 		*dst = NO_VAL64;
 		return SLURM_SUCCESS;
+	}
+
+	if (data_get_type(str) == DATA_TYPE_FLOAT) {
+		double value;
+
+		if ((rc = PARSE_FUNC(FLOAT64_NO_VAL)(parser, &value, str, args,
+						     parent_path)))
+			return rc;
+
+		if (isinf(value))
+			*dst = INFINITE64;
+		else if (isnan(value))
+			*dst = NO_VAL64;
+		else
+			*dst = value;
+
+		return rc;
+	}
+
+	if (data_get_type(str) == DATA_TYPE_STRING) {
+		if (!xstrcasecmp(data_get_string(str), "Infinity")) {
+			*dst = INFINITE64;
+			return SLURM_SUCCESS;
+		} else if (!xstrcasecmp(data_get_string(str), "NaN")) {
+			*dst = NO_VAL64;
+			return SLURM_SUCCESS;
+		}
+
+		data_convert_type(str, DATA_TYPE_INT_64);
 	}
 
 	if (data_get_type(str) == DATA_TYPE_INT_64)
@@ -2260,6 +2349,16 @@ static int DUMP_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 	uint64_t *src = obj;
 	data_t *set, *inf, *num;
 
+	if (args->flags & FLAG_COMPLEX_VALUES) {
+		if (*src == INFINITE64)
+			data_set_string(dst, "Infinity");
+		else if (*src == NO_VAL64)
+			data_set_null(dst);
+		else
+			data_set_int(dst, *src);
+		return SLURM_SUCCESS;
+	}
+
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->magic == MAGIC_ARGS);
 
@@ -2289,6 +2388,11 @@ static void SPEC_FUNC(UINT64_NO_VAL)(const parser_t *const parser, args_t *args,
 				     data_t *spec, data_t *dst)
 {
 	data_t *props, *dset, *dinf, *dnum;
+
+	if (args->flags & FLAG_COMPLEX_VALUES) {
+		set_openapi_props(dst, OPENAPI_FORMAT_INT64, "Integer number");
+		return;
+	}
 
 	props = set_openapi_props(dst, OPENAPI_FORMAT_OBJECT,
 				  "Integer number with flags");
@@ -2418,6 +2522,16 @@ static int DUMP_FUNC(UINT32_NO_VAL)(const parser_t *const parser, void *obj,
 
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->magic == MAGIC_ARGS);
+
+	if (args->flags & FLAG_COMPLEX_VALUES) {
+		if (*src == INFINITE)
+			data_set_string(dst, "Infinity");
+		else if (*src == NO_VAL)
+			data_set_null(dst);
+		else
+			data_set_int(dst, *src);
+		return SLURM_SUCCESS;
+	}
 
 	data_set_dict(dst);
 	set = data_key_set(dst, "set");
@@ -2626,6 +2740,14 @@ static int DUMP_FUNC(BOOL16_NO_VAL)(const parser_t *const parser, void *obj,
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
+	if (args->flags & FLAG_COMPLEX_VALUES) {
+		if (*b == NO_VAL16)
+			data_set_null(dst);
+		else
+			data_set_bool(dst, *b);
+		return SLURM_SUCCESS;
+	}
 
 	if (*b == NO_VAL16)
 		data_set_bool(dst, false);
@@ -7305,6 +7427,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(FLAGS)[] = {
 	add_flag_equal(FLAG_NONE , INFINITE, "NONE"),
 	add_flag_bit(FLAG_SPEC_ONLY, "SPEC_ONLY"),
 	add_flag_bit(FLAG_FAST, "FAST"),
+	add_flag_bit(FLAG_COMPLEX_VALUES, "COMPLEX"),
 };
 
 #define add_openapi_response_meta(rtype) \

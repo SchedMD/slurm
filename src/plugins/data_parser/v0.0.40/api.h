@@ -53,6 +53,8 @@ typedef enum {
 	FLAG_SPEC_ONLY = SLURM_BIT(0),
 	/* attempt to run as fast as possible, skipping more expensive checks */
 	FLAG_FAST = SLURM_BIT(1),
+	/* use null/false/Infinity/NaN for *_NO_VALs */
+	FLAG_COMPLEX_VALUES = SLURM_BIT(2),
 } data_parser_flags_t;
 
 typedef struct {

@@ -232,7 +232,8 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 		parser->openapi_spec(parser, sargs->args, sargs->spec, obj);
 
 		/* the resultant type must match the obj_openapi type */
-		xassert(!xstrcmp(data_get_string(data_key_get(obj, "type")),
+		xassert((sargs->args->flags & FLAG_COMPLEX_VALUES) ||
+			!xstrcmp(data_get_string(data_key_get(obj, "type")),
 				 openapi_type_format_to_type_string(
 					 parser->obj_openapi)));
 		return NULL;
@@ -264,7 +265,7 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 			for (int i = 0; i < parser->field_count; i++)
 				_add_field(obj, required, &parser->fields[i],
 					   sargs);
-		} else {
+		} else if (!(sargs->args->flags & FLAG_COMPLEX_VALUES)) {
 			fatal("%s: parser %s need to provide openapi specification, array type or pointer type",
 			      __func__, parser->type_string);
 		}
