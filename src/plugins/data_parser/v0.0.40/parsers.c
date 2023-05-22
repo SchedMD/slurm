@@ -5902,7 +5902,7 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_complex_parser(slurmdb_qos_rec_t, QOS_PREEMPT_LIST, false, "preempt/list", NULL),
 	add_parse_bit_flag_array(slurmdb_qos_rec_t, QOS_PREEMPT_MODES, false, preempt_mode, "preempt/mode", NULL),
 	add_parse(UINT32_NO_VAL, preempt_exempt_time, "preempt/exempt_time", NULL),
-	add_parse(UINT32, priority, "priority", NULL),
+	add_parse(UINT32_NO_VAL, priority, "priority", NULL),
 	add_skip(usage), /* not packed */
 	add_parse(FLOAT64_NO_VAL, usage_factor, "usage_factor", NULL),
 	add_parse(FLOAT64_NO_VAL, usage_thres, "usage_threshold", NULL),
