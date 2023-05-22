@@ -174,7 +174,7 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 			error_code =
 				DATA_DUMP_CLI(NODES, *node_info_ptr, "nodes",
 					      argc, argv, NULL, mime_type,
-					      NULL);
+					      data_parser);
 		else
 			scontrol_print_node(NULL, node_info_ptr);
 	} else {
@@ -221,7 +221,7 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 
 			error_code = DATA_DUMP_CLI(NODE_ARRAY, nodes, "nodes",
 						   argc, argv, NULL, mime_type,
-						   NULL);
+						   data_parser);
 
 			xfree(nodes);
 		} else {

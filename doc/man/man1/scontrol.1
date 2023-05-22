@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "January 2023" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "May 2023" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -69,6 +69,12 @@ unavailable to user's group will be displayed (i.e. this is the default behavior
 .IP
 
 .TP
+\f3\-\-json\fP, \f3\-\-json\fP=\fIlist\fR, \f3\-\-json\fP=<\fIdata_parser\fR>
+Dump information as JSON using the default data_parser plugin or explicit
+data_parser with parameters. Sorting and formatting arguments will be ignored.
+.IP
+
+.TP
 \fB\-\-local\fR
 Show only information local to this cluster. Ignore other clusters in the
 federated if a member of one. Overrides \-\-federation.
@@ -103,6 +109,12 @@ the verbosity of logging. By default only errors will be displayed.
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
+.IP
+
+.TP
+\f3\-\-yaml\fP, \f3\-\-yaml\fP=\fIlist\fR, \f3\-\-yaml\fP=<\fIdata_parser\fR>
+Dump information as YAML using the default data_parser plugin or explicit
+data_parser with parameters. Sorting and formatting arguments will be ignored.
 .IP
 
 .SH "COMMANDS"

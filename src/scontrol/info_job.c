@@ -320,7 +320,7 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 	if (mime_type) {
 		if ((error_code = DATA_DUMP_CLI(JOB_INFO_MSG, *job_buffer_ptr,
 						"jobs", argc, argv, NULL,
-						mime_type, NULL)))
+						mime_type, data_parser)))
 			exit_code =1;
 		return;
 	}
@@ -475,7 +475,7 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 	if (error_code || !job_step_info_ptr) {
 		if (mime_type) {
 			DATA_DUMP_CLI(STEP_INFO_MSG, job_step_info_ptr, "steps",
-				      argc, argv, NULL, mime_type, NULL);
+				      argc, argv, NULL, mime_type, data_parser);
 			exit_code = SLURM_ERROR;
 			slurm_free_job_step_info_response_msg(
 				job_step_info_ptr);
@@ -527,7 +527,7 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 
 	if (mime_type) {
 		if (DATA_DUMP_CLI(STEP_INFO_ARRAY, steps, "steps", argc, argv,
-				  NULL, mime_type, NULL))
+				  NULL, mime_type, data_parser))
 			exit_code = SLURM_ERROR;
 	} else if (steps) {
 		int i = 0;

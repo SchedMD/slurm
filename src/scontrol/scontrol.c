@@ -76,6 +76,7 @@ int verbosity = 0;	/* count of "-v" options */
 uint32_t cluster_flags; /* what type of cluster are we talking to */
 uint32_t euid = SLURM_AUTH_NOBODY; /* proxy request as user */
 const char *mime_type = NULL; /* mimetype if we are using data_parser */
+const char *data_parser = NULL; /* data_parser args */
 
 front_end_info_msg_t *old_front_end_info_ptr = NULL;
 job_info_msg_t *old_job_info_ptr = NULL;
@@ -120,7 +121,7 @@ int main(int argc, char **argv)
 		{"future",   0, 0, 'F'},
 		{"help",     0, 0, 'h'},
 		{"hide",     0, 0, OPT_LONG_HIDE},
-		{"json", 0, 0, OPT_LONG_JSON},
+		{"json", optional_argument, 0, OPT_LONG_JSON},
 		{"local",    0, 0, OPT_LONG_LOCAL},
 		{"oneliner", 0, 0, 'o'},
 		{"quiet",    0, 0, 'Q'},
@@ -129,7 +130,7 @@ int main(int argc, char **argv)
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
-		{"yaml", 0, 0, OPT_LONG_YAML},
+		{"yaml", optional_argument, 0, OPT_LONG_YAML},
 		{NULL,       0, 0, 0}
 	};
 
@@ -235,6 +236,7 @@ int main(int argc, char **argv)
 			exit(0);
 		case OPT_LONG_JSON :
 			mime_type = MIME_TYPE_JSON;
+			data_parser = optarg;
 			if (data_init())
 				fatal("data_init() failed");
 			if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
@@ -242,6 +244,7 @@ int main(int argc, char **argv)
 			break;
 		case OPT_LONG_YAML :
 			mime_type = MIME_TYPE_YAML;
+			data_parser = optarg;
 			if (data_init())
 				fatal("data_init() failed");
 			if (serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL))
@@ -560,7 +563,8 @@ static void _print_ping(int argc, char **argv)
 
 	if (mime_type) {
 		exit_code = DATA_DUMP_CLI(CONTROLLER_PING_ARRAY, pings, "pings",
-					  argc, argv, NULL, mime_type, NULL);
+					  argc, argv, NULL, mime_type,
+					  data_parser);
 		xfree(pings);
 		return;
 	}

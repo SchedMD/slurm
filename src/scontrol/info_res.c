@@ -91,7 +91,7 @@ extern void scontrol_print_res(char *reservation_name, int argc, char **argv)
 		if (mime_type) {
 			DATA_DUMP_CLI(RESERVATION_INFO_MSG, res_info_ptr,
 				      "reservations", argc, argv, NULL,
-				      mime_type, NULL);
+				      mime_type, data_parser);
 			exit_code = SLURM_ERROR;
 			slurm_free_reservation_info_msg(res_info_ptr);
 			return;
@@ -125,7 +125,7 @@ extern void scontrol_print_res(char *reservation_name, int argc, char **argv)
 
 	if (mime_type) {
 		if (DATA_DUMP_CLI(RESERVATION_INFO_ARRAY, resvs, "reservations",
-				  argc, argv, NULL, mime_type, NULL))
+				  argc, argv, NULL, mime_type, data_parser))
 			exit_code = SLURM_ERROR;
 	} else {
 		for (int i = 0; resvs[i]; i++)

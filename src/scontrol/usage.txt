@@ -6,7 +6,7 @@ scontrol [<OPTION>] [<COMMAND>]
      -F, --future   Report information about nodes in "FUTURE" state.
      -h, --help     Equivalent to "help" command
      --hide         Equivalent to "hide" command
-     --json         Produce JSON output
+     --json[=data_parser] Produce JSON output
      --local        Report information only about jobs on the local cluster.
 	            Overrides --federation.
      -M, --cluster  Equivalent to "cluster" command. Implies --local.
@@ -18,7 +18,7 @@ scontrol [<OPTION>] [<COMMAND>]
      -u,--uid       Update job as user "uid" instead of the invoking user.
      -v, --verbose  Equivalent to "verbose" command
      -V, --version  Equivalent to "version" command
-     --yaml         Produce YAML output
+     --yaml[=data_parser] Produce YAML output
 
   <keyword> may be omitted from the execute line and scontrol will execute
   in interactive mode. It will process commands as entered until explicitly
