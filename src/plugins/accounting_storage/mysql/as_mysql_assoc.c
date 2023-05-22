@@ -539,7 +539,7 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 	uint32_t diff = 0;
 	uint32_t width = 0;
 	char *query = xstrdup_printf(
-		"SELECT lft from \"%s_%s\" where acct='%s' && user='';",
+		"SELECT lft, id_assoc from \"%s_%s\" where acct='%s' && user='';",
 		cluster, assoc_table, parent);
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(
@@ -554,13 +554,13 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 		return ESLURM_INVALID_PARENT_ACCOUNT;
 	}
 	par_left = slurm_atoul(row[0]);
-	mysql_free_result(result);
 
 	diff = ((par_left + 1) - *lft);
 
 	if (diff == 0) {
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn,
 		         "Trying to move association to the same position? Nothing to do.");
+		mysql_free_result(result);
 		return ESLURM_SAME_PARENT_ACCOUNT;
 	}
 
@@ -604,12 +604,13 @@ static int _move_account(mysql_conn_t *mysql_conn, uint32_t *lft, uint32_t *rgt,
 		   cluster, assoc_table, now);
 	xstrfmtcat(query,
 		   "update \"%s_%s\" set mod_time=%ld, "
-		   "parent_acct='%s' where id_assoc = %s;",
-		   cluster, assoc_table, now, parent, id);
+		   "parent_acct='%s', id_parent=%s where id_assoc = %s;",
+		   cluster, assoc_table, now, parent, row[1], id);
 	/* get the new lft and rgt if changed */
 	xstrfmtcat(query,
 		   "select lft, rgt from \"%s_%s\" where id_assoc = %s",
 		   cluster, assoc_table, id);
+	mysql_free_result(result);
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 1))) {
 		xfree(query);
