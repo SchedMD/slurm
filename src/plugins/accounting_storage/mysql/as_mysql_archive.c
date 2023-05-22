@@ -78,6 +78,7 @@
 
 typedef struct {
 	char *cluster_nodes;
+	char *extra;
 	char *instance_id;
 	char *instance_type;
 	char *node_name;
@@ -93,6 +94,7 @@ static void _free_local_event_members(local_event_t *object)
 {
 	if (object) {
 		xfree(object->cluster_nodes);
+		xfree(object->extra);
 		xfree(object->instance_id);
 		xfree(object->instance_type);
 		xfree(object->node_name);
@@ -924,6 +926,7 @@ static void _pack_local_event(local_event_t *object, buf_t *buffer)
 {
 	/* Always packs as current version */
 	packstr(object->cluster_nodes, buffer);
+	packstr(object->extra, buffer);
 	packstr(object->instance_id, buffer);
 	packstr(object->instance_type, buffer);
 	packstr(object->node_name, buffer);
@@ -944,6 +947,7 @@ static int _unpack_local_event(local_event_t *object, uint16_t rpc_version,
 
 	if (rpc_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&object->cluster_nodes, buffer);
+		safe_unpackstr(&object->extra, buffer);
 		safe_unpackstr(&object->instance_id, buffer);
 		safe_unpackstr(&object->instance_type, buffer);
 		safe_unpackstr(&object->node_name, buffer);
@@ -3319,6 +3323,7 @@ static buf_t *_pack_archive_events(MYSQL_RES *result, char *cluster_name,
 		memset(&event, 0, sizeof(local_event_t));
 
 		event.cluster_nodes = row[EVENT_REQ_CNODES];
+		event.extra = row[EVENT_REQ_EXTRA];
 		event.instance_id = row[EVENT_REQ_INSTANCE_ID];
 		event.instance_type = row[EVENT_REQ_INSTANCE_TYPE];
 		event.node_name = row[EVENT_REQ_NODE];
@@ -3371,6 +3376,7 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 			     object.period_end,
 			     object.node_name,
 			     object.cluster_nodes,
+			     object.extra,
 			     object.instance_id,
 			     object.instance_type,
 			     object.reason,
