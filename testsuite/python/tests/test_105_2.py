@@ -23,7 +23,7 @@ def test_hetjob(tmp_path):
 #SBATCH --cpus-per-task=1 --mem-per-cpu=6  --ntasks=1 -t1
 
 $bin_sleep 300""")
-    leader_job_id = atf.submit_job(f"-t1 {file_in}", fatal=True)
+    leader_job_id = atf.submit_job_sbatch(f"-t1 {file_in}", fatal=True)
     jobs_dict = atf.get_jobs()
 
     # Verify details about leader job

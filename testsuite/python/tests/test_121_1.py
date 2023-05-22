@@ -86,7 +86,7 @@ def test_two_parallel_consumption_sbatch(mps_nodes, file_in_2a):
 
     file_out1 = atf.module_tmp_path / "output1"
 
-    job_id = atf.submit_job(f"--gres=mps:{job_mps} -w {mps_nodes[0]} -n1 -t1 -o {file_out1} {file_in_2a}")
+    job_id = atf.submit_job_sbatch(f"--gres=mps:{job_mps} -w {mps_nodes[0]} -n1 -t1 -o {file_out1} {file_in_2a}")
     assert job_id != 0, "Job failed to submit"
     atf.wait_for_job_state(job_id, 'DONE', timeout=15, fatal=True)
     atf.wait_for_file(file_out1)
@@ -130,7 +130,7 @@ def test_three_parallel_consumption_sbatch(mps_nodes, file_in_1a):
     date
     """)
 
-    job_id = atf.submit_job(f"--gres=mps:{job_mps} -w {mps_nodes[0]} -c6 -n1 -t1 -o {file_out1} {file_in2}")
+    job_id = atf.submit_job_sbatch(f"--gres=mps:{job_mps} -w {mps_nodes[0]} -c6 -n1 -t1 -o {file_out1} {file_in2}")
 
     assert job_id != 0, "Job failed to submit"
     atf.wait_for_job_state(job_id, 'DONE', timeout=20, fatal=True)
@@ -157,7 +157,7 @@ def test_consume_more_gresMps_than_allocated(mps_nodes, file_in_1a):
     srun --mem=0 --overlap --gres=mps:{step_mps2} {file_in_1a}
     """)
 
-    job_id = atf.submit_job(f"--gres=mps:{job_mps2} -w {mps_nodes[0]} -n1 -t1 -o {file_out1} {file_in2}")
+    job_id = atf.submit_job_sbatch(f"--gres=mps:{job_mps2} -w {mps_nodes[0]} -n1 -t1 -o {file_out1} {file_in2}")
 
     assert job_id != 0, "Job failed to submit"
     atf.wait_for_job_state(job_id, 'DONE', timeout=20, fatal=True)
@@ -214,7 +214,7 @@ def test_gresGPU_gresMPS_GPU_sharing(mps_nodes):
     squeue --name=test_job --noheader --state=r --format=\"jobid=%i state=%T\"
     """)
 
-    job_id = atf.submit_job(f"--gres=gpu:1 -w {mps_nodes[0]} -n1 -t1 -o {file_out1} -J 'test_job' {file_in1}")
+    job_id = atf.submit_job_sbatch(f"--gres=gpu:1 -w {mps_nodes[0]} -n1 -t1 -o {file_out1} -J 'test_job' {file_in1}")
 
     assert job_id != 0, "Job failed to submit"
     atf.wait_for_job_state(job_id, 'DONE', timeout=35, fatal=True)

@@ -39,7 +39,7 @@ done
 wait""")
 
     # Spawn a batch job with multiple steps in background
-    job_id = atf.submit_job(f"-O {job_mem_opt} -n{steps_submitted} --output={file_out} {file_in}")
+    job_id = atf.submit_job_sbatch(f"-O {job_mem_opt} -n{steps_submitted} --output={file_out} {file_in}")
     atf.wait_for_job_state(job_id, 'RUNNING', fatal=True)
 
     # Check that all of the steps in background are in squeue at the same time within a time limit

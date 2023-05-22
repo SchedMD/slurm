@@ -156,7 +156,7 @@ do
     srun -O --output={file_out} true
 done""")
     os.chmod(file_in, 0o0777)
-    job_id = atf.submit_job(f"-N{node_count} --output /dev/null {str(file_in)}")
+    job_id = atf.submit_job_sbatch(f"-N{node_count} --output /dev/null {str(file_in)}")
     atf.wait_for_job_state(job_id, 'DONE')
     tmp_dir_list = os.listdir(tmp_path)
     for step in range(0,step_count):
@@ -170,7 +170,7 @@ do
     srun -O --error={file_err} true
 done""")
     os.chmod(file_in, 0o0777)
-    job_id = atf.submit_job(f"-N{node_count} --output /dev/null {str(file_in)}")
+    job_id = atf.submit_job_sbatch(f"-N{node_count} --output /dev/null {str(file_in)}")
     atf.wait_for_job_state(job_id, 'DONE')
     tmp_dir_list = os.listdir(tmp_path)
     for step in range(0,step_count):
@@ -227,7 +227,7 @@ done""")
     file_in = tmp_path / "file_in.A.input"
     atf.make_bash_script(file_in, f"""srun -O --output={file_out} hostname""")
     os.chmod(file_in, 0o0777)
-    job_id = atf.submit_job(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
+    job_id = atf.submit_job_sbatch(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
     atf.wait_for_job_state(job_id, "DONE")
     os.remove(file_in)
     result_out = fpc.get_tmp_file()
@@ -236,7 +236,7 @@ done""")
 
     atf.make_bash_script(file_in, f"""srun -O --error={file_err} uid""")
     os.chmod(file_in, 0o0777)
-    job_id = atf.submit_job(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
+    job_id = atf.submit_job_sbatch(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
     atf.wait_for_job_state(job_id, "DONE")
     os.remove(file_in)
     result_err = fpc.get_tmp_file()
@@ -250,7 +250,7 @@ done""")
     file_in = tmp_path / "file_in.A.a.input"
     atf.make_bash_script(file_in, f"""srun -O --output={file_out} hostname""")
     os.chmod(file_in, 0o0777)
-    job_id = atf.submit_job(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
+    job_id = atf.submit_job_sbatch(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
     atf.wait_for_job_state(job_id, "DONE")
     tmp_dir_list = os.listdir(tmp_path)
     for array_id in range(1,array_size+1):
@@ -259,7 +259,7 @@ done""")
         fpc.remove_file(id_file)
 
     atf.make_bash_script(file_in, f"""srun -O --error={file_err} uid""")
-    job_id = atf.submit_job(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
+    job_id = atf.submit_job_sbatch(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
     atf.wait_for_job_state(job_id, "DONE")
     tmp_dir_list = os.listdir(tmp_path)
     for array_id in range(1,array_size+1):

@@ -40,7 +40,7 @@ def test_mail_type_and_mail_user(mail_program_out):
     assert re.findall(rf"SLURM_JOB_ID={job_id} SLURM_JOB_USER={atf.properties[slurm_user]} SLURM_JOB_MAIL_TYPE=Began", output) is not None, "Start mail not sent"
     assert re.findall(rf"SLURM_JOB_ID={job_id} SLURM_JOB_USER={atf.properties[slurm_user]} SLURM_JOB_MAIL_TYPE=Ended", output) is not None, "End mail not sent"
 
-    job_id = atf.submit_job(f'--wrap="srun --mail-type=END --mail-user={atf.properties[slurm_user]} sleep 100"')
+    job_id = atf.submit_job_sbatch(f'--wrap="srun --mail-type=END --mail-user={atf.properties[slurm_user]} sleep 100"')
     atf.wait_for_job_state(job_id, 'RUNNING')
     atf.run_command(f"scancel {job_id}")
     output = atf.run_command_output(f"cat {mail_program_out}")

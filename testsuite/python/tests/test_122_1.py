@@ -17,7 +17,7 @@ def test_submit_and_cancel():
     """Test basic submission and cancellation of job arrays"""
 
     # Submit a job array
-    job_id = atf.submit_job(f"-N 1 --array=0-{array_size - 1} --begin=midnight --output=/dev/null --wrap=\"sleep 10\"", fatal=True)
+    job_id = atf.submit_job_sbatch(f"-N 1 --array=0-{array_size - 1} --begin=midnight --output=/dev/null --wrap=\"sleep 10\"", fatal=True)
 
     # Verify the task count
     array_task_id = atf.get_job_parameter(job_id, 'ArrayTaskId')

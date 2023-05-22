@@ -19,7 +19,7 @@ def test_job_array_with_gres():
     """Test creating job array with gres requested"""
 
     output_pattern = f"{atf.module_tmp_path}/%A-%a.out"
-    job_id = atf.submit_job(
+    job_id = atf.submit_job_sbatch(
             f"--array=1-2 --gres=r1:1 --wrap='echo DONE' \
                     --output={output_pattern}")
     output_file_1 = f"{atf.module_tmp_path}/{job_id}-1.out"

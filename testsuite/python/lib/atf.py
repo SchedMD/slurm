@@ -1342,7 +1342,7 @@ def require_sudo_rights():
         pytest.skip("This test requires the test user to have unprompted sudo privileges", allow_module_level=True)
 
 
-def submit_job(sbatch_args="--wrap \"sleep 60\"", **run_command_kwargs):
+def submit_job_sbatch(sbatch_args="--wrap \"sleep 60\"", **run_command_kwargs):
     """Submits a job using sbatch and returns the job id.
 
     The submitted job will automatically be cancelled when the test ends.
