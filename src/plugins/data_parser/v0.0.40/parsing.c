@@ -52,6 +52,7 @@
 #define MAGIC_FOREACH_LIST_FLAG 0xa1d4acd2
 #define MAGIC_FOREACH_LIST 0xaefa2af3
 #define MAGIC_FOREACH_NT_ARRAY 0xaba1be2b
+#define MAGIC_FOREACH_PARSE_MARRAY 0xa081be2b
 
 typedef struct {
 	int magic;
@@ -82,6 +83,14 @@ typedef struct {
 	args_t *args;
 	data_t *parent_path;
 } foreach_nt_array_t;
+
+typedef struct {
+	int magic; /* MAGIC_FOREACH_PARSE_MARRAY */
+	args_t *args;
+	const parser_t *const array;
+	data_t *parent_path;
+	data_t *path;
+} parse_marray_args_t;
 
 static void _set_flag_bit(const parser_t *const parser, void *dst,
 			  const flag_bit_t *bit, bool matched, const char *path,
@@ -578,6 +587,95 @@ static void _parser_linked_flag(args_t *args, const parser_t *const array,
 	FREE_NULL_DATA(ppath);
 }
 
+static data_for_each_cmd_t _foreach_parse_marray(const char *key, data_t *data,
+						 void *arg)
+{
+	parse_marray_args_t *aargs = arg;
+	parse_marray_args_t cargs = *aargs;
+	args_t *args = aargs->args;
+	const parser_t *const array = aargs->array;
+	char *path = NULL;
+
+	xassert(aargs->magic == MAGIC_FOREACH_PARSE_MARRAY);
+	xassert(cargs.magic == MAGIC_FOREACH_PARSE_MARRAY);
+	xassert(array->model == PARSER_MODEL_ARRAY);
+
+	cargs.parent_path = data_copy(NULL, aargs->parent_path);
+	openapi_append_rel_path(cargs.parent_path, key);
+
+	cargs.path = data_copy(NULL, aargs->path);
+	data_set_string(data_list_append(cargs.path), key);
+
+	for (int i = 0; i < array->field_count; i++) {
+		bool match;
+		const parser_t *const parser = &array->fields[i];
+		data_t *fpath;
+
+		if (parser->model == PARSER_MODEL_ARRAY_SKIP_FIELD)
+			continue;
+
+		if (parser->model ==
+		    PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) {
+			const parser_t *const fp =
+				find_parser_by_type(parser->type);
+
+			for (int i = 0; i < fp->flag_bit_array_count; i++) {
+				const flag_bit_t *bit = &fp->flag_bit_array[i];
+
+				if (!xstrcasecmp(key, bit->name)) {
+					if (slurm_conf.debug_flags &
+					    DEBUG_FLAG_DATA) {
+						char *p = NULL;
+						data_list_join_str(&p,
+								   cargs.path,
+								   "/");
+
+						log_flag(DATA, "%s: matched %s as bitflag %s",
+						      __func__, p, bit->name);
+
+						xfree(p);
+					}
+					goto cleanup;
+				}
+			}
+		}
+
+		fpath = data_new();
+		(void) data_list_split_str(fpath, parser->key, "/");
+		match = data_check_match(fpath, cargs.path, false);
+		FREE_NULL_DATA(fpath);
+
+		if (match) {
+			if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
+				char *p = NULL;
+				data_list_join_str(&p, cargs.path, "/");
+				log_flag(DATA, "%s: matched %s to %s",
+				      __func__, p, parser->key);
+				xfree(p);
+			}
+			goto cleanup;
+		}
+	}
+
+	if (data_get_type(data) == DATA_TYPE_DICT) {
+		/* still unknown, so try next level of tree */
+		(void) data_dict_for_each(data, _foreach_parse_marray, &cargs);
+		goto cleanup;
+	}
+
+	on_warn(PARSING, array->type, args,
+		set_source_path(&path, cargs.parent_path),
+		__func__, "Ignoring unknown field \"%s\" of type %s in %s", key,
+		data_type_to_string(data_get_type(data)),
+		array->type_string);
+
+cleanup:
+	FREE_NULL_DATA(cargs.path);
+	FREE_NULL_DATA(cargs.parent_path);
+	xfree(path);
+	return DATA_FOR_EACH_CONT;
+}
+
 /* parser linked parser inside of parser array */
 static int _parser_linked(args_t *args, const parser_t *const array,
 			  const parser_t *const parser, data_t *src, void *dst,
@@ -802,14 +900,38 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		rc = _parse_list(parser, dst, src, args, parent_path);
 		break;
 	case PARSER_MODEL_ARRAY:
+	{
 		xassert(parser->fields);
 		verify_parser_not_sliced(parser);
 
-		/* recursively run the child parsers */
-		for (int i = 0; !rc && (i < parser->field_count); i++)
-			rc = _parser_linked(args, parser, &parser->fields[i],
-					    src, dst, parent_path);
+		if (data_get_type(src) != DATA_TYPE_DICT) {
+			rc = on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_EXPECTED_DICT,
+				      set_source_path(&path, parent_path),
+				      __func__,
+				      "Rejecting %s when dictionary expected",
+				      data_type_to_string(data_get_type(src)));
+		} else {
+			parse_marray_args_t aargs = {
+				.magic = MAGIC_FOREACH_PARSE_MARRAY,
+				.args = args,
+				.array = parser,
+				.parent_path = parent_path,
+			};
+
+			/* recursively run the child parsers */
+			for (int i = 0; !rc && (i < parser->field_count); i++)
+				rc = _parser_linked(args, parser,
+						    &parser->fields[i], src,
+						    dst, parent_path);
+
+			aargs.path = data_set_list(data_new());
+			(void) data_dict_for_each(src, _foreach_parse_marray,
+						  &aargs);
+			FREE_NULL_DATA(aargs.path);
+		}
 		break;
+	}
 	case PARSER_MODEL_PTR:
 		verify_parser_not_sliced(parser);
 		rc = _parse_pointer(parser, dst, src, args, parent_path);
