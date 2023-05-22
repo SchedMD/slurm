@@ -139,8 +139,8 @@ parse_command_line( int argc, char* *argv )
 		{"users",      required_argument, 0, 'u'},
 		{"verbose",    no_argument,       0, 'v'},
 		{"version",    no_argument,       0, 'V'},
-		{"json", no_argument, 0, OPT_LONG_JSON},
-		{"yaml", no_argument, 0, OPT_LONG_YAML},
+		{"json", optional_argument, 0, OPT_LONG_JSON},
+		{"yaml", optional_argument, 0, OPT_LONG_YAML},
 		{NULL,         0,                 0, 0}
 	};
 
@@ -353,11 +353,13 @@ parse_command_line( int argc, char* *argv )
 			exit(0);
 		case OPT_LONG_JSON:
 			params.mimetype = MIME_TYPE_JSON;
+			params.data_parser = optarg;
 			data_init();
 			serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL);
 			break;
 		case OPT_LONG_YAML:
 			params.mimetype = MIME_TYPE_YAML;
+			params.data_parser = optarg;
 			data_init();
 			serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL);
 			break;
@@ -2159,6 +2161,7 @@ Usage: squeue [-A account] [--clusters names] [-i seconds] [--job jobid]\n\
               [--reservation reservation] [--sort fields] [--start]\n\
               [--step step_id] [-t states] [-u user_name] [--usage]\n\
               [-L licenses] [-w nodes] [--federation] [--local] [--sibling]\n\
+              [--json=data_parser] [--yaml=data_parser]\n\
 	      [-ahjlrsv]\n");
 }
 
@@ -2178,7 +2181,7 @@ Usage: squeue [OPTIONS]\n\
   -i, --iterate=seconds           specify an interation period\n\
   -j, --job=job(s)                comma separated list of jobs IDs\n\
                                   to view, default is all\n\
-      --json                      Produce JSON output\n\
+      --json[=data_parser]        Produce JSON output\n\
       --local                     Report information only about jobs on the\n\
                                   local cluster. Overrides --federation.\n\
   -l, --long                      long report\n\
@@ -2212,7 +2215,7 @@ Usage: squeue [OPTIONS]\n\
   -V, --version                   output version information and exit\n\
   -w, --nodelist=hostlist         list of nodes to view, default is \n\
 				  all nodes\n\
-      --yaml                      Produce YAML output\n\
+      --yaml[=data_parser]        Produce YAML output\n\
 \nHelp options:\n\
   --help                          show this help message\n\
   --usage                         display a brief summary of squeue options\n");
