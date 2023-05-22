@@ -1476,7 +1476,7 @@ def run_job_id(srun_args, **run_command_kwargs):
 
 
 # Return job id (command should not be interactive/shell)
-def alloc_job_id(salloc_args, **run_command_kwargs):
+def submit_job_salloc(salloc_args, **run_command_kwargs):
     """Submits a job using salloc and returns the job id.
 
     The submitted job will automatically be cancelled when the test ends.
