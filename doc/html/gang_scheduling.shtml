@@ -88,7 +88,7 @@ adversely affecting other jobs sharing the same resources.
 <B>PreemptMode</B>: set the <I>GANG</I> option.
 See the <I>slurm.conf</I> manpage for other options that may be specified to
 enable job <a href="preempt.html">preemption</a> in addition to GANG.
-In order to use gang scheduling, the \fBGANG\fR option must be specified at
+In order to use gang scheduling, the <b>GANG</b> option must be specified at
 the cluster level.
 <BR>
 <b>NOTE</b>: Gang scheduling is performed independently for each partition, so
