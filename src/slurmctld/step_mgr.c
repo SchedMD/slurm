@@ -2686,6 +2686,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	int cpus_alloc;
 	int job_node_inx = -1, step_node_inx = -1;
 	uint16_t req_tpc = NO_VAL16;
+	uint32_t step_id = step_ptr->step_id.step_id;
 	node_record_t *node_ptr;
 
 	xassert(job_resrcs_ptr);
@@ -2698,8 +2699,13 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	xassert(job_resrcs_ptr->cpus);
 	xassert(job_resrcs_ptr->cpus_used);
 
-	if (step_ptr->step_layout == NULL)	/* batch step */
+	/* These special steps do not allocate any resources */
+	if ((step_id == SLURM_EXTERN_CONT) ||
+	    (step_id == SLURM_BATCH_SCRIPT) ||
+	    (step_id == SLURM_INTERACTIVE_STEP)) {
+		log_flag(STEPS, "Skip %s for %pS", __func__, step_ptr);
 		return;
+	}
 
 	if (!bit_set_count(job_resrcs_ptr->node_bitmap))
 		return;
