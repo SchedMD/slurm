@@ -5,7 +5,7 @@
 # See man slurm.conf and man cgroup.conf for further
 # information on cgroup configuration parameters
 #--
-CgroupAutomount=yes
-
-ConstrainCores=no
-ConstrainRAMSpace=no
+ConstrainCores=yes
+ConstrainDevices=yes
+ConstrainRAMSpace=yes
+ConstrainSwapSpace=yes
