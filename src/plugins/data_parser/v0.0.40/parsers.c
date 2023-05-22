@@ -6983,7 +6983,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(UINT16, plane_size, "distribution_plane_size", NULL),
 	add_flags(POWER_FLAGS, power_flags, "power_flags", NULL),
 	add_parse(STRING, prefer, "prefer", NULL),
-	add_parse(UINT32, priority, "priority", NULL),
+	add_parse(UINT32_NO_VAL, priority, "priority", NULL),
 	add_parse(ACCT_GATHER_PROFILE, profile, "profile", NULL),
 	add_parse(STRING, qos, "qos", NULL),
 	add_parse(BOOL16, reboot, "reboot", NULL),
