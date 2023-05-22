@@ -866,6 +866,7 @@ _pack_update_node_msg(update_node_msg_t * msg, buf_t *buffer,
 		packstr(msg->features, buffer);
 		packstr(msg->features_act, buffer);
 		packstr(msg->gres, buffer);
+		packstr(msg->instance_id, buffer);
 		packstr(msg->node_addr, buffer);
 		packstr(msg->node_hostname, buffer);
 		packstr(msg->node_names, buffer);
@@ -924,6 +925,7 @@ _unpack_update_node_msg(update_node_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&tmp_ptr->features, buffer);
 		safe_unpackstr(&tmp_ptr->features_act, buffer);
 		safe_unpackstr(&tmp_ptr->gres, buffer);
+		safe_unpackstr(&tmp_ptr->instance_id, buffer);
 		safe_unpackstr(&tmp_ptr->node_addr, buffer);
 		safe_unpackstr(&tmp_ptr->node_hostname, buffer);
 		safe_unpackstr(&tmp_ptr->node_names, buffer);
