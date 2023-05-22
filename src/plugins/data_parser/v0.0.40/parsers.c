@@ -5435,6 +5435,38 @@ static void *NEW_FUNC(CLUSTER_CONDITION)(void)
 	return cond;
 }
 
+static int PARSE_FUNC(JOB_EXCLUSIVE)(const parser_t *const parser, void *obj,
+				     data_t *src, args_t *args,
+				     data_t *parent_path)
+{
+	uint16_t *flag = obj;
+
+	if (data_get_type(src) == DATA_TYPE_NULL) {
+		*flag = JOB_SHARED_OK;
+		return SLURM_SUCCESS;
+	}
+
+	if (data_get_type(src) == DATA_TYPE_BOOL) {
+		if (data_get_bool(src)) {
+			*flag = JOB_SHARED_NONE;
+		} else {
+			*flag = JOB_SHARED_OK;
+		}
+
+		return SLURM_SUCCESS;
+	}
+
+	return PARSE(JOB_EXCLUSIVE_FLAGS, *flag, src, parent_path, args);
+}
+
+static int DUMP_FUNC(JOB_EXCLUSIVE)(const parser_t *const parser, void *obj,
+				    data_t *dst, args_t *args)
+{
+	uint16_t *flag = obj;
+
+	return DUMP(JOB_EXCLUSIVE_FLAGS, *flag, dst, args);
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -6357,6 +6389,13 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_SHARED)[] = {
 	add_flag_equal(JOB_SHARED_MCS, INFINITE16, "mcs"),
 };
 
+static const flag_bit_t PARSER_FLAG_ARRAY(JOB_EXCLUSIVE_FLAGS)[] = {
+	add_flag_equal(JOB_SHARED_NONE, INFINITE16, "true"),
+	add_flag_equal(JOB_SHARED_OK, INFINITE16, "false"),
+	add_flag_equal(JOB_SHARED_USER, INFINITE16, "user"),
+	add_flag_equal(JOB_SHARED_MCS, INFINITE16, "mcs"),
+};
+
 #define add_skip(field) \
 	add_parser_skip(slurm_job_info_t, field)
 #define add_parse(mtype, field, path, desc) \
@@ -6473,7 +6512,9 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, resv_name, "resv_name", NULL),
 	add_parse(STRING, sched_nodes, "scheduled_nodes", NULL),
 	add_parse(STRING, selinux_context, "selinux_context", NULL),
-	add_parse(JOB_SHARED, shared, "shared", NULL),
+	add_parse_overload(JOB_SHARED, shared, 2, "shared", NULL),
+	add_parse_overload(JOB_EXCLUSIVE, shared, 2, "exclusive", NULL),
+	add_parse_overload(BOOL16, shared, 2, "oversubscribe", NULL),
 	add_parse_bit_flag_array(slurm_job_info_t, JOB_SHOW_FLAGS, false, show_flags, "show_flags", NULL),
 	add_parse(UINT16, sockets_per_board, "sockets_per_board", NULL),
 	add_parse(UINT16_NO_VAL, sockets_per_node, "sockets_per_node", NULL),
@@ -6995,7 +7036,9 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(STRING, script, "script", NULL),
 	add_skip(script_buf),
 	add_skip(script_hash),
-	add_parse(JOB_SHARED, shared, "shared", NULL),
+	add_parse_overload(JOB_SHARED, shared, 2, "shared", NULL),
+	add_parse_overload(JOB_EXCLUSIVE, shared, 2, "exclusive", NULL),
+	add_parse_overload(BOOL16, shared, 2, "oversubscribe", NULL),
 	add_parse(UINT32, site_factor, "site_factor", NULL),
 	add_cparse(JOB_DESC_MSG_SPANK_ENV, "spank_environment", NULL),
 	add_skip(spank_job_env),
@@ -7817,6 +7860,7 @@ static const parser_t parsers[] = {
 	addps(BITSTR, bitstr_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpss(JOB_ARRAY_RESPONSE_MSG, job_array_resp_msg_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
 	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
+	addpsp(JOB_EXCLUSIVE, JOB_EXCLUSIVE_FLAGS, uint16_t, NEED_NONE, NULL),
 	addpsp(TIMESTAMP, UINT64, time_t, NEED_NONE, NULL),
 	addpsp(TIMESTAMP_NO_VAL, UINT64_NO_VAL, time_t, NEED_NONE, NULL),
 	addps(SELECTED_STEP, slurm_selected_step_t, NEED_NONE, STRING, NULL, NULL, NULL),
@@ -8028,6 +8072,7 @@ static const parser_t parsers[] = {
 	addfa(ACCT_GATHER_PROFILE, uint32_t),
 	addfa(ADMIN_LVL, uint16_t), /* slurmdb_admin_level_t */
 	addfa(JOB_SHARED, uint16_t),
+	addfa(JOB_EXCLUSIVE_FLAGS, uint16_t),
 	addfa(JOB_CONDITION_FLAGS, uint32_t),
 	addfa(JOB_CONDITION_DB_FLAGS, uint32_t),
 	addfa(CLUSTER_CLASSIFICATION, uint16_t), /* slurmdb_classification_type_t */
