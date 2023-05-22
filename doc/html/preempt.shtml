@@ -112,7 +112,7 @@ scheduling. It is only compatible with <I>PreemptType=preempt/none</I>.
 <LI>
 <I>GANG</I>: Enables gang scheduling (time slicing) of jobs in the same
 partition, and allows the resuming of suspended jobs. In order to use gang
-scheduling, the \fBGANG\fR option must be specified at the cluster level.
+scheduling, the <b>GANG</b> option must be specified at the cluster level.
 <BR>
 <B>NOTE</B>: Gang scheduling is performed independently for each partition, so
 if you only want time-slicing by <I>OverSubscribe</I>, without any preemption,
