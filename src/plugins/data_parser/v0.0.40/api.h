@@ -51,6 +51,8 @@ typedef enum {
 	FLAG_NONE = 0,
 	/* only dump the OpenAPI Specification instead of the requested data */
 	FLAG_SPEC_ONLY = SLURM_BIT(0),
+	/* attempt to run as fast as possible, skipping more expensive checks */
+	FLAG_FAST = SLURM_BIT(1),
 } data_parser_flags_t;
 
 typedef struct {

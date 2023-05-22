@@ -60,6 +60,8 @@ documents those changes that are of interest to users and administrators.
  -- sinfo - add --yaml and --json arg support to specify data_parser plugin.
  -- squeue - add --yaml and --json arg support to specify data_parser plugin.
  -- data_parser/v0.0.40 - add warnings for unknown fields during parsing.
+ -- data_parser/v0.0.40 - add FAST parameter to allow requestor to skip more
+    time intensive warning checks.
 
 * Changes in Slurm 23.02.3
 ==========================

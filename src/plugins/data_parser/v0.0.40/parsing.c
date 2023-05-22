@@ -912,23 +912,26 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 				      "Rejecting %s when dictionary expected",
 				      data_type_to_string(data_get_type(src)));
 		} else {
-			parse_marray_args_t aargs = {
-				.magic = MAGIC_FOREACH_PARSE_MARRAY,
-				.args = args,
-				.array = parser,
-				.parent_path = parent_path,
-			};
-
 			/* recursively run the child parsers */
 			for (int i = 0; !rc && (i < parser->field_count); i++)
 				rc = _parser_linked(args, parser,
 						    &parser->fields[i], src,
 						    dst, parent_path);
 
-			aargs.path = data_set_list(data_new());
-			(void) data_dict_for_each(src, _foreach_parse_marray,
-						  &aargs);
-			FREE_NULL_DATA(aargs.path);
+			if (!(args->flags & FLAG_FAST)) {
+				parse_marray_args_t aargs = {
+					.magic = MAGIC_FOREACH_PARSE_MARRAY,
+					.args = args,
+					.array = parser,
+					.parent_path = parent_path,
+				};
+
+				aargs.path = data_set_list(data_new());
+				(void) data_dict_for_each(src,
+							  _foreach_parse_marray,
+							  &aargs);
+				FREE_NULL_DATA(aargs.path);
+			}
 		}
 		break;
 	}
@@ -945,7 +948,10 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	case PARSER_MODEL_COMPLEX:
 		xassert(parser->parse != _parse_list);
 		verify_parser_not_sliced(parser);
-		_parse_check_openapi(parser, src, args, parent_path);
+
+		if (!(args->flags & FLAG_FAST))
+			_parse_check_openapi(parser, src, args, parent_path);
+
 		rc = parser->parse(parser, dst, src, args, parent_path);
 		break;
 	case PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD:

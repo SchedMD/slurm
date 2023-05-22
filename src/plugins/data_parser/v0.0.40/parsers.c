@@ -7304,6 +7304,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_RESERVATION_QUERY)[] = {
 static const flag_bit_t PARSER_FLAG_ARRAY(FLAGS)[] = {
 	add_flag_equal(FLAG_NONE , INFINITE, "NONE"),
 	add_flag_bit(FLAG_SPEC_ONLY, "SPEC_ONLY"),
+	add_flag_bit(FLAG_FAST, "FAST"),
 };
 
 #define add_openapi_response_meta(rtype) \
