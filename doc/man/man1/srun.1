@@ -2332,6 +2332,8 @@ instead of the node level. If set to 1, it will imply \fB\-\-cpu\-bind=cores\fR.
 Otherwise, if set to a value greater than 1, it will imply
 \fB\-\-cpu\-bind=threads\fR. Automatic binding behavior can be avoided by also
 specifying \fB\-\-cpu\-bind=none\fR.
+Slurm may allocate more cpus than what was requested in order to respect this
+option.
 .br
 \fBNOTE\fR: This option is not supported when using
 \fISelectType=select/linear\fR. This value can not be greater than
