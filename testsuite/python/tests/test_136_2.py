@@ -57,7 +57,7 @@ def create_cpu_list(node):
 def test_job_submit(node_name):
     """Verify a job requesting a proper number of cpus is submitted with CPUSpecList plugin enabled"""
 
-    job_id = atf.run_job_id(f"-w {node_name} -N1 -n{available_cores} true")
+    job_id = atf.submit_job_srun(f"-w {node_name} -N1 -n{available_cores} true")
     output = atf.run_command_output(f"scontrol show job {job_id} -dd | grep CPU_IDs= | awk '{{print $2}}' | sed 's/^.*CPU_IDs=//'")
     cpu_spec_list = atf.get_node_parameter(node_name, 'CPUSpecList')
 

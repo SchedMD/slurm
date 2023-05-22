@@ -15,6 +15,6 @@ def test_job_name():
 
     # Compare the job name given too the JobName field in scontrol
     job_name = "AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHHIIIIIJJJJJKKKKKLLLLLMMMMM"
-    job_id = atf.run_job_id(f"--job-name={job_name} true")
+    job_id = atf.submit_job_srun(f"--job-name={job_name} true")
     job_param_name = atf.get_job_parameter(job_id, "JobName")
     assert job_name == job_param_name

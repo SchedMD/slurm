@@ -1451,7 +1451,7 @@ def run_job_error(srun_args, **run_command_kwargs):
 
 
 # Return job id
-def run_job_id(srun_args, **run_command_kwargs):
+def submit_job_srun(srun_args, **run_command_kwargs):
     """Runs a job using srun and returns the job id.
 
     This function obtains the job id by adding the -v option to srun
