@@ -1,4 +1,4 @@
-.TH sinfo "1" "Slurm Commands" "August 2022" "Slurm Commands"
+.TH sinfo "1" "Slurm Commands" "May 2023" "Slurm Commands"
 
 .SH "NAME"
 sinfo \- View information about Slurm nodes and partitions.
@@ -669,9 +669,9 @@ By default prints a time stamp with the header.
 .IP
 
 .TP
-\f3\-\-json\fP
-Dump node information as JSON. All other formatting and filtering arguments will
-be ignored.
+\f3\-\-json\fP, \f3\-\-json\fP=\fIlist\fR, \f3\-\-json\fP=<\fIdata_parser\fR>
+Dump information as JSON using the default data_parser plugin or explicit
+data_parser with parameters. Sorting and formatting arguments will be ignored.
 .IP
 
 .TP
@@ -810,9 +810,9 @@ Print version information and exit.
 .IP
 
 .TP
-\f3\-\-yaml\fP
-Dump node information as YAML. All other formatting and filtering arguments will
-be ignored.
+\f3\-\-yaml\fP, \f3\-\-yaml\fP=\fIlist\fR, \f3\-\-yaml\fP=<\fIdata_parser\fR>
+Dump information as YAML using the default data_parser plugin or explicit
+data_parser with parameters. Sorting and formatting arguments will be ignored.
 .IP
 
 .SH "OUTPUT FIELD DESCRIPTIONS"

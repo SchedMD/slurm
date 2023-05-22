@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
  -- sdiag - add --yaml and --json arg support to specify data_parser plugin.
  -- sacct - add --yaml and --json arg support to specify data_parser plugin.
  -- scontrol - add --yaml and --json arg support to specify data_parser plugin.
+ -- sinfo - add --yaml and --json arg support to specify data_parser plugin.
 
 * Changes in Slurm 23.02.3
 ==========================

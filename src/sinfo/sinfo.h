@@ -190,6 +190,7 @@ struct sinfo_parameters {
 
 	char* format;
 	char *mimetype; /* --yaml or --json */
+	char *data_parser; /* data_parser args */
 	char* nodes;
 	char* partition;
 	char* sort;
