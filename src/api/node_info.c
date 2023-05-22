@@ -481,9 +481,15 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	}
 
 	/****** Line (optional) ******/
-	if (node_ptr->instance_id) {
+	if (node_ptr->instance_id || node_ptr->instance_type) {
 		xstrcat(out, line_end);
-		xstrfmtcat(out, "InstanceId=%s", node_ptr->instance_id);
+
+		if (node_ptr->instance_id)
+			xstrfmtcat(out, "InstanceId=%s ",
+				   node_ptr->instance_id);
+		if (node_ptr->instance_type)
+			xstrfmtcat(out, "InstanceType=%s",
+				   node_ptr->instance_type);
 	}
 
 	/****** Line (optional) ******/
