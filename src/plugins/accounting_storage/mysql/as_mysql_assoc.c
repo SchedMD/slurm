@@ -911,35 +911,52 @@ end_it:
 	return SLURM_SUCCESS;
 }
 
-static char *_set_lineage(mysql_conn_t *mysql_conn,
-			  uint32_t id, char *acct, char *user, char *cluster)
+static int _set_lineage(mysql_conn_t *mysql_conn, slurmdb_assoc_rec_t *assoc,
+			char *parent_acct, char *acct, char *user, char *part)
 {
-	char *lineage = NULL;
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
-	char *query = xstrdup_printf(
-		"call set_lineage(%u, '%s', '%s', '\"%s_%s\"');",
-		id, acct, user, cluster, assoc_table);
+	int rc;
+	char *query = NULL, *query_pos = NULL;
 
+	xassert(assoc);
+	xassert(assoc->cluster);
+	xassert(parent_acct);
+	xassert(acct);
+
+	rc = _get_parent_id(mysql_conn,
+			    parent_acct,
+			    assoc->cluster,
+			    &assoc->parent_id,
+			    &assoc->lineage);
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	if (user && user[0]) {
+		xstrfmtcat(assoc->lineage, "0-%s/", user);
+		if (part && part[0])
+			xstrfmtcat(assoc->lineage, "%s/", part);
+	} else
+		xstrfmtcat(assoc->lineage, "%s/", acct);
+
+	//info("%u parent's is %s(%u) '%s' '%s'", assoc->id, parent_acct, assoc->parent_id, assoc->parent_acct, assoc->lineage);
+
+	/*
+	 * This has to be updated immediately so others can grab this right
+	 * afterward.
+	 */
+	xstrfmtcatat(query, &query_pos,
+		     "update \"%s_%s\" set lineage='%s', id_parent=%u",
+		     assoc->cluster, assoc_table,
+		     assoc->lineage, assoc->parent_id);
+
+	if (!user || !user[0])
+		xstrfmtcatat(query, &query_pos,
+			     ", parent_acct='%s'", parent_acct);
+	xstrfmtcatat(query, &query_pos, " where id_assoc=%u", assoc->id);
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-	result = mysql_db_query_ret(mysql_conn, query, 1);
+	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
-	if (!result) {
-		error("Problem setting lineage");
-		goto end_it;
-	}
 
-	if (!(row = mysql_fetch_row(result))) {
-		error("No lineage returned");
-		mysql_free_result(result);
-		goto end_it;
-	}
-
-	lineage = xstrdup(row[0]);
-	mysql_free_result(result);
-
-end_it:
-	return lineage;
+	return rc;
 }
 
 /*
@@ -951,11 +968,13 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			       slurmdb_assoc_rec_t *assoc,
 			       char *acct,
 			       char *lineage,
-			       List ret_list, int moved_parent)
+			       List ret_list, int moved_parent,
+			       char *old_parent, char *new_parent,
+			       bool handle_child_parent)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	char *query = NULL, *object = NULL;
+	char *query = NULL, *query_pos = NULL, *object = NULL;
 	int i, rc = SLURM_SUCCESS;
 	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE | TRES_STR_FLAG_NO_NULL;
 
@@ -963,6 +982,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"id_assoc",
 		"user",
 		"acct",
+		"parent_acct",
 		"`partition`",
 		"max_jobs",
 		"max_jobs_accrue",
@@ -983,6 +1003,7 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		ASSOC_ID,
 		ASSOC_USER,
 		ASSOC_ACCT,
+		ASSOC_PACCT,
 		ASSOC_PART,
 		ASSOC_MJ,
 		ASSOC_MJA,
@@ -1006,14 +1027,26 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	if (!ret_list || !lineage)
 		return SLURM_ERROR;
 
+	if (handle_child_parent && !moved_parent)
+		return SLURM_SUCCESS;
+
 	xstrcat(object, assoc_inx[0]);
 	for (i=1; i<ASSOC_COUNT; i++)
 		xstrfmtcat(object, ", %s", assoc_inx[i]);
 
 	/* We want all the sub accounts and user accounts */
-	query = xstrdup_printf("select distinct %s from \"%s_%s\" where deleted!=1 && id_assoc!=%u && lineage like '%s%%' && ((user = '' && parent_acct = '%s') || (user != '' && acct = '%s')) order by lineage;",
-			       object, assoc->cluster, assoc_table, assoc->id, lineage, acct, acct);
+	xstrfmtcatat(query, &query_pos,
+		     "select distinct %s from \"%s_%s\" where deleted!=1 && id_assoc!=%u && lineage like '%s%%' && ((user = '' && parent_acct = '%s')",
+		     object, assoc->cluster, assoc_table,
+		     assoc->id, lineage, acct);
 	xfree(object);
+
+	if (!handle_child_parent)
+		xstrfmtcatat(query, &query_pos,
+			     " || (user != '' && acct = '%s')",
+			     acct);
+	xstrcatat(query, &query_pos, ") order by lineage;");
+
 
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
@@ -1157,13 +1190,24 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		}
 
 		if (moved_parent) {
+			char *use_parent;
+
+			if (row[ASSOC_USER][0])
+				use_parent = row[ASSOC_ACCT];
+			else if (!xstrcmp(row[ASSOC_ACCT], new_parent))
+				use_parent = old_parent;
+			else
+				use_parent = row[ASSOC_PACCT];
+
 			/*
 			 * Now set lineage on all of the associations related
 			 * set_lineage() sets mod_time as well.
 			 */
-			mod_assoc->lineage = _set_lineage(
-				mysql_conn, mod_assoc->id, row[ASSOC_ACCT],
-				row[ASSOC_USER], assoc->cluster);
+			rc = _set_lineage(mysql_conn, mod_assoc, use_parent,
+					  row[ASSOC_ACCT], row[ASSOC_USER],
+					  row[ASSOC_PART]);
+			if (rc != SLURM_SUCCESS)
+				break;
 			modified = 1;
 		}
 
@@ -1184,17 +1228,17 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 					xstrfmtcatat(object, &object_pos,
 						     " P = %s",
 						     row[ASSOC_PART]);
-				if (addto_update_list(mysql_conn->update_list,
-						      SLURMDB_MODIFY_ASSOC,
-						      mod_assoc) !=
-				    SLURM_SUCCESS) {
-					error("couldn't add to the update list");
-				} else
-					mod_assoc = NULL;
 			}
+
 			list_append(ret_list, object);
 			object = NULL;
-
+			if (addto_update_list(mysql_conn->update_list,
+					      SLURMDB_MODIFY_ASSOC,
+					      mod_assoc) !=
+			    SLURM_SUCCESS) {
+				error("couldn't add to the update list");
+			} else
+				mod_assoc = NULL;
 		}
 		slurmdb_destroy_assoc_rec(mod_assoc);
 	}
@@ -1663,22 +1707,26 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		mod_assoc->id = slurm_atoul(row[MASSOC_ID]);
 		mod_assoc->cluster = xstrdup(cluster_name);
 		if (moved_parent) {
-			mod_assoc->lineage = _set_lineage(
-				mysql_conn, mod_assoc->id, row[MASSOC_ACCT],
-				row[MASSOC_USER], mod_assoc->cluster);
-			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
-			rc = _get_parent_id(mysql_conn,
+			/*
+			 * Now check to see if we are going to make a child of
+			 * this account the new parent. If so we need to move
+			 * that child to this accounts parent and then do the
+			 * move.
+			 */
+			_modify_unset_users(mysql_conn,
+					    mod_assoc,
+					    row[MASSOC_ACCT],
+					    row[MASSOC_LINEAGE],
+					    ret_list,
+					    true,
+					    row[MASSOC_PACCT],
 					    assoc->parent_acct,
-					    mod_assoc->cluster,
-					    &mod_assoc->parent_id,
-					    NULL);
-			if (rc != SLURM_SUCCESS) {
-				slurmdb_destroy_assoc_rec(mod_assoc);
-				goto end_it;
-			}
-			xstrfmtcat(vals, ", parent_acct='%s', id_parent=%u",
-				   mod_assoc->parent_acct,
-				   mod_assoc->parent_id);
+					    true);
+
+			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
+			rc = _set_lineage(mysql_conn, mod_assoc,
+					  mod_assoc->parent_acct,
+					  row[MASSOC_ACCT], NULL, NULL);
 		}
 
 		if (alt_assoc.def_qos_id != NO_VAL)
@@ -1848,7 +1896,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					    row[MASSOC_ACCT],
 					    row[MASSOC_LINEAGE],
 					    ret_list,
-					    moved_parent);
+					    moved_parent,
+					    row[MASSOC_PACCT],
+					    assoc->parent_acct,
+					    false);
 		} else if ((assoc->is_def == 1) && row[MASSOC_USER][0]) {
 			/* Use fresh one here so we don't have to
 			   worry about dealing with bad values.
@@ -1869,9 +1920,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			}
 		}
 
-		if (!vals || !vals[0] ||
-		    ((rpc_version <= SLURM_23_02_PROTOCOL_VERSION) &&
-		     moved_parent))
+		if (!moved_parent &&
+		    (!vals || !vals[0] ||
+		     ((rpc_version <= SLURM_23_02_PROTOCOL_VERSION) &&
+		      moved_parent)))
 			slurmdb_destroy_assoc_rec(mod_assoc);
 		else if (addto_update_list(mysql_conn->update_list,
 					   SLURMDB_MODIFY_ASSOC,
