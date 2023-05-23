@@ -230,7 +230,8 @@ sub run_unit_tests {
         }
 
         # Execute the unit test using the test driver
-        my $test_output = `make check TESTS='${test}' 2>&1`;
+        # Set SUBDIRS to nothing so it doesnt descend into dirs without tests
+        my $test_output = `make check TESTS='${test}' SUBDIRS= 2>&1`;
         $rc = $? >> 8;
 
         my $test_status = 'Passed';
