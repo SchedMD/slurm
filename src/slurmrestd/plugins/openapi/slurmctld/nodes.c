@@ -47,7 +47,7 @@
 #include "api.h"
 #include "structs.h"
 
-static void _update_node(ctxt_t *ctxt, char *name)
+static void _update_node(ctxt_t *ctxt, const char *name)
 {
 	int rc;
 	data_t *ppath = data_set_list(data_new());
@@ -77,7 +77,7 @@ cleanup:
 	FREE_NULL_DATA(ppath);
 }
 
-static void _dump_nodes(ctxt_t *ctxt, char *name)
+static void _dump_nodes(ctxt_t *ctxt, const char *name)
 {
 	openapi_nodes_query_t query = {0};
 	node_info_msg_t *node_info_ptr = NULL;
