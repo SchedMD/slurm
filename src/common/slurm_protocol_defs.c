@@ -2439,7 +2439,7 @@ extern char *job_reason_string(enum job_state_reason inx)
 }
 
 /* Given a job's reason string for waiting, return enum job_state_reason */
-extern enum job_state_reason job_reason_num(char *reason)
+extern enum job_state_reason job_reason_num(const char *reason)
 {
 	if (!xstrcasecmp(reason, "None"))
 		return WAIT_NO_REASON;
