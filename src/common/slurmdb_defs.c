@@ -2558,6 +2558,8 @@ extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr,
 		debug2("  GrpWall          : %s", time_buf);
 	}
 
+	debug2("  Lineage          : %s", assoc_ptr->lineage);
+
 	debug2("  MaxTRESMins      : %s",
 	       assoc_ptr->max_tres_mins_pj ?
 	       assoc_ptr->max_tres_mins_pj : "NONE");
