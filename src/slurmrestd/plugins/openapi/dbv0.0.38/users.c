@@ -102,11 +102,7 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 			return DATA_FOR_EACH_FAIL;
 		}
 
-		if (data->data.bool_u)
-			args->user_cond->with_deleted = true;
-		else
-			args->user_cond->with_deleted = false;
-
+		args->user_cond->with_deleted = data_get_bool(data);
 		return DATA_FOR_EACH_CONT;
 	}
 
