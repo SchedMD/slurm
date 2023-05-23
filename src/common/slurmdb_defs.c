@@ -1722,11 +1722,11 @@ extern char *slurmdb_qos_str(List qos_list, uint32_t level)
 		return NULL;
 }
 
-extern uint32_t str_2_slurmdb_qos(List qos_list, char *level)
+extern uint32_t str_2_slurmdb_qos(List qos_list, const char *level)
 {
 	ListIterator itr = NULL;
 	slurmdb_qos_rec_t *qos = NULL;
-	char *working_level = NULL;
+	const char *working_level = NULL;
 
 	if (!qos_list) {
 		error("We need a qos list to translate");
