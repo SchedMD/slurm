@@ -449,6 +449,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Invalid user ID" },
 	{ ERRTAB_ENTRY(ESLURM_USER_ID_UNKNOWN),
 	  "Unable to resolve user ID to user name" },
+	{ ERRTAB_ENTRY(ESLURM_INVALID_ASSOC),
+	  "Invalid or unknown association" },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),
