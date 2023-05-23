@@ -51,23 +51,25 @@
 #define DATA_LIST_MAGIC 0x1992F89F
 #define DATA_LIST_NODE_MAGIC 0x1921F89F
 
+typedef struct data_list_s data_list_t;
 typedef struct data_list_node_s data_list_node_t;
-struct data_list_node_s {
+
+typedef struct data_list_node_s {
 	int magic;
 	data_list_node_t *next;
 
 	data_t *data;
 	char *key; /* key for dictionary (only) */
-};
+} data_list_node_t;
 
-/* single forward linked list */
-struct data_list_s {
+/* Single linked list for list_u and dict_u */
+typedef struct data_list_s {
 	int magic;
 	size_t count;
 
 	data_list_node_t *begin;
 	data_list_node_t *end;
-};
+} data_list_t;
 
 /*
  * Data is based on the JSON data type and has the same types.
