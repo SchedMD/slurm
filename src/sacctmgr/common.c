@@ -1531,7 +1531,8 @@ extern int get_double(char *in_value, double *out_value, char *type)
 	return SLURM_SUCCESS;
 }
 
-static int _addto_action_char_list_internal(List char_list, char *name, void *x)
+static int _addto_action_char_list_internal(List char_list, const char *name,
+					    void *x)
 {
 	uint32_t id = 0;
 	char *tmp_name = NULL;
@@ -1554,7 +1555,7 @@ static int _addto_action_char_list_internal(List char_list, char *name, void *x)
 	}
 }
 
-extern int addto_action_char_list(List char_list, char *names)
+extern int addto_action_char_list(List char_list, const char *names)
 {
 	if (!char_list) {
 		error("No list was given to fill in");

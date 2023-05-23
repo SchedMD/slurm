@@ -381,8 +381,9 @@ extern int slurm_char_list_copy(List dst, List src)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_parse_char_list(List char_list, char *names, void *args,
-				 int (*func_ptr)(List char_list, char *name,
+extern int slurm_parse_char_list(List char_list, const char *names, void *args,
+				 int (*func_ptr)(List char_list,
+						 const char *name,
 						 void *args))
 {
 	int i = 0, start = 0, count = 0, result = 0;
@@ -577,7 +578,7 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 }
 
 /* Parses string and converts names to either uid or gid list */
-static int _slurm_addto_id_char_list_internal(List char_list, char *name,
+static int _slurm_addto_id_char_list_internal(List char_list, const char *name,
 					      void *x)
 {
 	bool gid = *(bool *)x;
@@ -614,7 +615,8 @@ typedef struct {
 	int mode;
 } char_list_internal_args_t;
 
-static int _slurm_addto_mode_char_list_internal(List char_list, char *name,
+static int _slurm_addto_mode_char_list_internal(List char_list,
+						const char *name,
 						void *args_in)
 {
 	char *tmp_name = NULL;
@@ -671,7 +673,7 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode)
 			      	     _slurm_addto_mode_char_list_internal);
 }
 
-static int _addto_step_list_internal(List step_list, char *name, void *x)
+static int _addto_step_list_internal(List step_list, const char *name, void *x)
 {
 	slurm_selected_step_t *selected_step = NULL;
 

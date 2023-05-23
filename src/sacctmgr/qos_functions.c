@@ -42,7 +42,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/interfaces/data_parser.h"
 
-static int _parse_preempt_modes_internal(List null, char *name, void *x)
+static int _parse_preempt_modes_internal(List null, const char *name, void *x)
 {
 	uint16_t *preempt_mode = x;
 	uint16_t ret_mode = 0;

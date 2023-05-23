@@ -2805,7 +2805,8 @@ typedef struct {
 	List qos_list;
 } qos_char_list_args_t;
 
-static int _slurmdb_addto_qos_char_list_internal(List char_list, char *name,
+static int _slurmdb_addto_qos_char_list_internal(List char_list,
+						 const char *name,
 						 void *args_in)
 {
 	char *tmp_name;

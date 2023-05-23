@@ -326,7 +326,7 @@ static int _get_info(shares_request_msg_t *shares_req,
 }
 
 /* returns number of objects added to list */
-static int _addto_name_char_list_internal(list_t *char_list, char *name,
+static int _addto_name_char_list_internal(list_t *char_list, const char *name,
 					  void *x)
 {
 	char *tmp_name = NULL;
