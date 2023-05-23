@@ -414,7 +414,7 @@ typedef struct dbd_step_start_msg {
  * Slurm DBD message processing functions
 \*****************************************************************************/
 
-extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type);
+extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(const char *msg_type);
 extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type,
 				     int get_enum);
 
