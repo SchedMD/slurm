@@ -832,6 +832,11 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"UNTIL @qos != '' || @my_acct = '' END REPEAT; "
 		"select REPLACE(CONCAT(@qos, @delta_qos), ',,', ','); "
 		"END;";
+	/*
+	 * 2 versions after 23.11 we can remove [get|set]_lineage, it is only
+	 * used in converting.  Don't forget to drop procedure for 2 versions
+	 * after 24.05.
+	 */
 	char *get_lineage =
 		"drop procedure if exists get_lineage;"
 		"create procedure get_lineage(in acct_in tinytext, in my_table tinytext, out path text) "
