@@ -44,7 +44,7 @@
 #include "src/common/uid.h"
 #include "src/sacctmgr/sacctmgr.h"
 
-static uint32_t _decode_node_state(char *val)
+static uint32_t _decode_node_state(const char *val)
 {
 	int vallen;
 
