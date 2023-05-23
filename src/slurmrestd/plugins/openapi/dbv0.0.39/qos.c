@@ -288,7 +288,7 @@ extern int op_handler_qos(const char *context_id, http_request_method_t method,
 
 		if (qos_name) {
 			qos_cond.name_list = list_create(NULL);
-			list_append(qos_cond.name_list, qos_name);
+			list_append(qos_cond.name_list, (void *) qos_name);
 		} else {
 			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, "qos_name",
 				   "QOS name must be given for single QOS query");

@@ -98,7 +98,7 @@ static void _dump_clusters(ctxt_t *ctxt, const char *cluster)
 	args.clusters = data_set_list(data_key_set(ctxt->resp, "clusters"));
 
 	if (cluster)
-		list_append(cluster_cond.cluster_list, cluster);
+		list_append(cluster_cond.cluster_list, (void *) cluster);
 
 	if (db_query_list(ctxt, &cluster_list, slurmdb_clusters_get,
 			  &cluster_cond))
@@ -140,7 +140,7 @@ static void _delete_cluster(ctxt_t *ctxt, const char *cluster)
 		goto cleanup;
 	}
 
-	list_append(cluster_cond.cluster_list, cluster);
+	list_append(cluster_cond.cluster_list, (void *) cluster);
 
 	if (!db_query_list(ctxt, &cluster_list, slurmdb_clusters_remove,
 			   &cluster_cond))

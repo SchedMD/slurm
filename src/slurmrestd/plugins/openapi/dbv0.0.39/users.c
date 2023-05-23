@@ -107,7 +107,7 @@ static void _dump_users(ctxt_t *ctxt, const char *user_name,
 
 	if (user_name) {
 		assoc_cond.user_list = list_create(NULL);
-		list_append(assoc_cond.user_list, user_name);
+		list_append(assoc_cond.user_list, (void *) user_name);
 	}
 
 	if (!db_query_list(ctxt, &user_list, slurmdb_users_get, user_cond))
@@ -353,7 +353,7 @@ static void _delete_user(ctxt_t *ctxt, const char *user_name)
 	data_t *dremoved_users =
 		data_set_list(data_key_set(ctxt->resp, "removed_users"));
 
-	list_append(assoc_cond.user_list, user_name);
+	list_append(assoc_cond.user_list, (void *) user_name);
 
 	if (!db_query_list(ctxt, &user_list, slurmdb_users_remove,
 			   &user_cond) &&
