@@ -139,7 +139,7 @@ char	*bit_fmt(char *str, int32_t len, bitstr_t *b);
 char    *bit_fmt_full(bitstr_t *b);
 char    *bit_fmt_range(bitstr_t *b, int offset, int len);
 int	bit_unfmt(bitstr_t *b, char *str);
-int32_t	*bitfmt2int (char *bit_str_ptr);
+extern int32_t *bitfmt2int(const char *bit_str_ptr);
 char *  inx2bitfmt (int32_t *inx);
 int     inx2bitstr(bitstr_t *b, int32_t *inx);
 int32_t *bitstr2inx(bitstr_t *b);
