@@ -32,6 +32,10 @@ if {![have_lua]} {
 	skip "LUA must be installed and enabled to test lua job_submit plugin."
 }
 
+if {[check_config_select "linear"]} {
+    skip "Test requires SelectType!=select/linear"
+}
+
 proc test_min_mem { cmd min_mem_per_cpu_exp min_mem_per_node_exp } {
 	set output [run_command_output -fail "$cmd"]
 	set per_cpu_found ""
@@ -64,6 +68,7 @@ reconfigure -fail
 testproc test_min_mem "$salloc -J $job_name $bin_true" nil nil
 testproc test_min_mem "$srun -J $job_name $bin_true" nil nil
 testproc test_min_mem "$sbatch -J $job_name -o /dev/null --wrap $bin_true" nil nil
+
 testproc test_min_mem "$salloc -J $job_name --mem-per-cpu=1024 $bin_true" 1024 nil
 testproc test_min_mem "$srun -J $job_name --mem-per-cpu=1024 $bin_true" 1024 nil
 testproc test_min_mem "$sbatch -J $job_name --mem-per-cpu=1024 -o /dev/null --wrap $bin_true" 1024 nil
