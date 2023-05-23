@@ -1549,7 +1549,7 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					   bool lower_case_normalization);
 extern int slurm_addto_id_char_list(List char_list, char *names, bool gid);
 extern int slurm_addto_mode_char_list(List char_list, char *names, int mode);
-extern int slurm_addto_step_list(List step_list, char *names);
+extern int slurm_addto_step_list(List step_list, const char *names);
 extern int slurm_char_list_copy(List dst, List src);
 extern char *slurm_char_list_to_xstr(List char_list);
 extern int slurm_find_char_exact_in_list(void *x, void *key);
