@@ -960,17 +960,17 @@ static int _set_lineage(mysql_conn_t *mysql_conn, slurmdb_assoc_rec_t *assoc,
 }
 
 /*
- * Used to get all the users in a lineage.  This is just
- * to send the user all the associations that are being modified from
+ * Used to get all the associations in a lineage.  This is just
+ * to send the assoc_mgr all the associations that are being modified from
  * a previous change to it's parent.
  */
-static int _modify_unset_users(mysql_conn_t *mysql_conn,
-			       slurmdb_assoc_rec_t *assoc,
-			       char *acct,
-			       char *lineage,
-			       List ret_list, int moved_parent,
-			       char *old_parent, char *new_parent,
-			       bool handle_child_parent)
+static int _modify_child_assocs(mysql_conn_t *mysql_conn,
+				slurmdb_assoc_rec_t *assoc,
+				char *acct,
+				char *lineage,
+				List ret_list, int moved_parent,
+				char *old_parent, char *new_parent,
+				bool handle_child_parent)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1713,15 +1713,15 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			 * that child to this accounts parent and then do the
 			 * move.
 			 */
-			_modify_unset_users(mysql_conn,
-					    mod_assoc,
-					    row[MASSOC_ACCT],
-					    row[MASSOC_LINEAGE],
-					    ret_list,
-					    true,
-					    row[MASSOC_PACCT],
-					    assoc->parent_acct,
-					    true);
+			_modify_child_assocs(mysql_conn,
+					     mod_assoc,
+					     row[MASSOC_ACCT],
+					     row[MASSOC_LINEAGE],
+					     ret_list,
+					     true,
+					     row[MASSOC_PACCT],
+					     assoc->parent_acct,
+					     true);
 
 			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
 			rc = _set_lineage(mysql_conn, mod_assoc,
@@ -1891,15 +1891,15 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		}
 
 		if (account_type) {
-			_modify_unset_users(mysql_conn,
-					    mod_assoc,
-					    row[MASSOC_ACCT],
-					    row[MASSOC_LINEAGE],
-					    ret_list,
-					    moved_parent,
-					    row[MASSOC_PACCT],
-					    assoc->parent_acct,
-					    false);
+			_modify_child_assocs(mysql_conn,
+					     mod_assoc,
+					     row[MASSOC_ACCT],
+					     row[MASSOC_LINEAGE],
+					     ret_list,
+					     moved_parent,
+					     row[MASSOC_PACCT],
+					     assoc->parent_acct,
+					     false);
 		} else if ((assoc->is_def == 1) && row[MASSOC_USER][0]) {
 			/* Use fresh one here so we don't have to
 			   worry about dealing with bad values.
