@@ -2067,7 +2067,7 @@ extern char *slurmdb_admin_level_str(slurmdb_admin_level_t level)
 	return "Unknown";
 }
 
-extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level)
+extern slurmdb_admin_level_t str_2_slurmdb_admin_level(const char *level)
 {
 	if (!level) {
 		return SLURMDB_ADMIN_NOTSET;
