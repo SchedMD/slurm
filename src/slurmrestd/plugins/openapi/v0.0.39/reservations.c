@@ -57,7 +57,7 @@ extern int _op_handler_reservations(const char *context_id,
 	int rc;
 	reserve_info_msg_t *res_info_ptr = NULL;
 	time_t update_time = 0;
-	char *name = NULL;
+	const char *name = NULL;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
 	data_t *dres = data_key_set(resp, "reservations");
