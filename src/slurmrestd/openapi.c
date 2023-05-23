@@ -1204,7 +1204,7 @@ static data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		return DATA_FOR_EACH_FAIL;
 
-	p = data_get_string(data);
+	p = xstrdup(data_get_string(data));
 
 	/* sub out '.' for '_' to avoid breaking compilers */
 	for (int s = strlen(p), i = 0; i < s; i++)
@@ -1213,6 +1213,8 @@ static data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
 
 	xstrfmtcatat(args->operation, &args->at, "%s%s",
 		     (args->operation ? "_" : ""), data_get_string(data));
+
+	xfree(p);
 
 	return DATA_FOR_EACH_CONT;
 }
