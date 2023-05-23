@@ -542,7 +542,7 @@ static int PARSE_FUNC(QOS_NAME)(const parser_t *const parser, void *obj,
 		if (n && !data_get_string_converted(n, qos_name))
 			return SLURM_SUCCESS;
 
-		rc = ESLURM_REST_FAIL_PARSING;
+		rc = ESLURM_INVALID_QOS;
 	} else if (!data_get_string_converted(src, qos_name))
 		return SLURM_SUCCESS;
 
@@ -596,8 +596,7 @@ static int DUMP_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 
 	qos = list_find_first(args->qos_list, slurmdb_find_qos_in_list, qos_id);
 	if (!qos) {
-		return on_error(DUMPING, parser->type, args,
-				ESLURM_REST_EMPTY_RESULT,
+		return on_error(DUMPING, parser->type, args, ESLURM_INVALID_QOS,
 				"list_find_first()->slurmdb_find_qos_in_list()",
 				__func__, "Unable to find QOS with id#%d",
 				*qos_id);
@@ -723,7 +722,7 @@ static int PARSE_FUNC(QOS_STRING_ID_LIST)(const parser_t *const parser,
 	if (data_list_for_each(src, _foreach_parse_qos_string_id, &argstruct) <
 	    0) {
 		FREE_NULL_LIST(argstruct.qos_list);
-		return ESLURM_REST_FAIL_PARSING;
+		return ESLURM_INVALID_QOS;
 	}
 
 	*qos_list_ptr = argstruct.qos_list;
@@ -822,7 +821,7 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 		if (match)
 			job->associd = match->id;
 		else
-			rc = ESLURM_REST_EMPTY_RESULT;
+			rc = ESLURM_INVALID_ASSOC;
 	}
 
 	slurmdb_destroy_assoc_rec(assoc);
@@ -923,7 +922,7 @@ static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 
 	if (data_get_type(src) != DATA_TYPE_LIST) {
 		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_REST_FAIL_PARSING,
+			      ESLURM_DATA_EXPECTED_LIST,
 			      set_source_path(&path, parent_path), __func__,
 			      "TRES should be LIST but is type %s",
 			      data_type_to_string(data_get_type(src)));
@@ -944,8 +943,7 @@ static int PARSE_FUNC(TRES_STR)(const parser_t *const parser, void *obj,
 					      TRES_STR_FLAG_SIMPLE))) {
 		rc = SLURM_SUCCESS;
 	} else {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_REST_FAIL_PARSING,
+		rc = on_error(PARSING, parser->type, args, ESLURM_INVALID_TRES,
 			      set_source_path(&path, parent_path), __func__,
 			      "Unable to convert TRES to string");
 		xassert(!rc); /* should not have failed */
@@ -1340,12 +1338,12 @@ static int PARSE_FUNC(SELECT_PLUGIN_ID)(const parser_t *const parser, void *obj,
 	xassert(args->magic == MAGIC_ARGS);
 
 	if (data_get_type(src) == DATA_TYPE_NULL)
-		return ESLURM_REST_FAIL_PARSING;
+		return ESLURM_PLUGIN_INVALID;
 	else if (data_convert_type(src, DATA_TYPE_STRING) == DATA_TYPE_STRING &&
 		 (*id = select_string_to_plugin_id(data_get_string(src)) > 0))
 		return SLURM_SUCCESS;
 
-	return ESLURM_REST_FAIL_PARSING;
+	return ESLURM_DATA_CONV_FAILED;
 }
 
 static int DUMP_FUNC(SELECT_PLUGIN_ID)(const parser_t *const parser, void *obj,
@@ -2669,7 +2667,7 @@ static int PARSE_FUNC(BOOL)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	return ESLURM_REST_FAIL_PARSING;
+	return ESLURM_DATA_CONV_FAILED;
 }
 
 static int DUMP_FUNC(BOOL)(const parser_t *const parser, void *obj, data_t *dst,
@@ -2696,7 +2694,7 @@ static int PARSE_FUNC(BOOL16)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	return ESLURM_REST_FAIL_PARSING;
+	return ESLURM_DATA_CONV_FAILED;
 }
 
 static int DUMP_FUNC(BOOL16)(const parser_t *const parser, void *obj,
