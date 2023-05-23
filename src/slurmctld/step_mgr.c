@@ -2785,6 +2785,11 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			 * only want to use this logic if it was set at step
 			 * allocation time, which means only for steps started
 			 * with 23.11.
+			 * Two versions after 23.11, we can remove just the
+			 * protocol version check, so this will turn into:
+			 *   if (gres_cpus_alloc) {
+			 *   ...
+			 *   } else
 			 */
 			if (gres_cpus_alloc &&
 			    (step_ptr->start_protocol_ver >=
