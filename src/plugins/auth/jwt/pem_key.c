@@ -62,7 +62,7 @@ static void _handle_prepend(char **string)
 	}
 }
 
-static char *_to_base64_from_base64url(char *in)
+static char *_to_base64_from_base64url(const char *in)
 {
 	char *out;
 	int i;
@@ -97,7 +97,7 @@ static char *_to_base64_from_base64url(char *in)
  * Convert base64url encoded value to DER formatted hex.
  * Returns an xmalloc()'d string.
  */
-static char *_to_hex(char *base64url)
+static char *_to_hex(const char *base64url)
 {
 	char *base64, *hex;
 	unsigned char *bin;
@@ -194,7 +194,7 @@ static int _to_bin(char **bin, char *hex)
  *
  * mod and exp need to be input in base64url format
  */
-extern char *pem_from_mod_exp(char *mod, char *exp)
+extern char *pem_from_mod_exp(const char *mod, const char *exp)
 {
 	int modbytes, expbytes, binkeylen;
 	char *modhex, *exphex;
