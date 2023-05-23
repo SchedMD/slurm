@@ -2929,17 +2929,13 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 		xstrfmtcat(extra, ", `partition`='%s'", part);
 	}
 
-	if (assoc->parent_id) {
-		xstrcat(cols, ", id_parent");
-		xstrfmtcat(vals, ", %d", assoc->parent_id);
-		xstrfmtcat(extra, ", id_parent='%d'", assoc->parent_id);
-	}
+	xassert(assoc->parent_id);
+	xassert(assoc->lineage);
 
-	if (assoc->lineage) {
-		xstrcat(cols, ", lineage");
-		xstrfmtcat(vals, ", '%s'", assoc->lineage);
-		xstrfmtcat(extra, ", lineage='%s'", assoc->lineage);
-	}
+	xstrcat(cols, ", id_parent, lineage");
+	xstrfmtcat(vals, ", %d, '%s'", assoc->parent_id, assoc->lineage);
+	xstrfmtcat(extra, ", id_parent='%d', lineage='%s'",
+		   assoc->parent_id, assoc->lineage);
 
 	if (add_assoc_cond->extra)
 		xstrcat(extra, add_assoc_cond->extra);
@@ -3000,14 +2996,6 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 	}
 
 	assoc->id = assoc_id;
-
-	if (!assoc->lineage) {
-		assoc->lineage = _set_lineage(mysql_conn,
-					      assoc->id,
-					      assoc->acct,
-					      assoc->user,
-					      assoc->cluster);
-	}
 
 	/*
 	 * If we have a alloc_assoc it means we are using the old method that
