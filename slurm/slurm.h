@@ -4227,7 +4227,7 @@ extern int slurm_load_node2(time_t update_time, node_info_msg_t **resp,
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_info_msg
  */
-extern int slurm_load_node_single(node_info_msg_t **resp, char *node_name,
+extern int slurm_load_node_single(node_info_msg_t **resp, const char *node_name,
 				  uint16_t show_flags);
 
 /*
