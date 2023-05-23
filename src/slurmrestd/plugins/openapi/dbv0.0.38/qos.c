@@ -102,7 +102,8 @@ static int _foreach_qos(slurmdb_qos_rec_t *qos, data_t *dqos_list,
 		    &penv);
 }
 
-static int _dump_qos(data_t *resp, void *auth, List g_qos_list, char *qos_name)
+static int _dump_qos(data_t *resp, void *auth, List g_qos_list,
+		     const char *qos_name)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -327,7 +328,7 @@ extern int op_handler_qos(const char *context_id, http_request_method_t method,
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
 	List g_qos_list = NULL;
-	char *qos_name = NULL;
+	const char *qos_name = NULL;
 	slurmdb_qos_cond_t qos_cond = { 0 };
 
 
@@ -354,7 +355,7 @@ extern int op_handler_qos(const char *context_id, http_request_method_t method,
 
 		if (qos_name) {
 			qos_cond.name_list = list_create(NULL);
-			list_append(qos_cond.name_list, qos_name);
+			list_append(qos_cond.name_list, (void *) qos_name);
 		} else
 			rc = ESLURM_REST_INVALID_QUERY;
 	}

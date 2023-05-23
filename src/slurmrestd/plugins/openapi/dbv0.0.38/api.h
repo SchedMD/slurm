@@ -167,8 +167,8 @@ extern int db_query_commit(data_t *errors, rest_auth_context_t *auth);
  * IN parameters - paramets from http request
  * RET string or NULL on error
  */
-extern char *get_str_param(const char *path, data_t *errors,
-			   data_t *parameters);
+extern const char *get_str_param(const char *path, data_t *errors,
+				 data_t *parameters);
 
 /*
  * Retrieve List from query list

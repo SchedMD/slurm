@@ -90,7 +90,7 @@ static data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 	return DATA_FOR_EACH_FAIL;
 }
 
-static void _dump_users(ctxt_t *ctxt, char *user_name,
+static void _dump_users(ctxt_t *ctxt, const char *user_name,
 			slurmdb_user_cond_t *user_cond)
 {
 	data_t *dusers;
@@ -337,7 +337,7 @@ static int _foreach_delete_user(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static void _delete_user(ctxt_t *ctxt, char *user_name)
+static void _delete_user(ctxt_t *ctxt, const char *user_name)
 {
 	slurmdb_assoc_cond_t assoc_cond = {
 		.user_list = list_create(NULL),
@@ -412,7 +412,7 @@ static int op_handler_user(const char *context_id, http_request_method_t method,
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
-	char *user_name = get_str_param("user_name", ctxt);
+	const char *user_name = get_str_param("user_name", ctxt);
 
 	if (ctxt->rc) {
 		/* no-op - already logged */

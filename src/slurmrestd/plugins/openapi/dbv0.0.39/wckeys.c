@@ -79,7 +79,7 @@ static int _foreach_wckey(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _dump_wckeys(ctxt_t *ctxt, char *wckey)
+static void _dump_wckeys(ctxt_t *ctxt, const char *wckey)
 {
 	slurmdb_wckey_cond_t wckey_cond = {
 		.with_deleted = true,
@@ -121,7 +121,7 @@ static void _delete_wckey(ctxt_t *ctxt)
 	slurmdb_wckey_cond_t wckey_cond = {
 		.with_deleted = true,
 	};
-	char *wckey = get_str_param("wckey", ctxt);
+	const char *wckey = get_str_param("wckey", ctxt);
 	data_t *wckeys =
 		data_set_list(data_key_set(ctxt->resp, "deleted_wckeys"));
 
@@ -178,7 +178,7 @@ extern int op_handler_wckey(const char *context_id,
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
-	char *wckey = get_str_param("wckey", ctxt);
+	const char *wckey = get_str_param("wckey", ctxt);
 
 	if (ctxt->rc) {
 		/* no-op - already logged */;

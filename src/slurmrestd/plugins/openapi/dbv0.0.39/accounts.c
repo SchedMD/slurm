@@ -374,7 +374,7 @@ static int _foreach_delete_acct(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static void _delete_account(ctxt_t *ctxt, char *account)
+static void _delete_account(ctxt_t *ctxt, const char *account)
 {
 	data_t *dremoved;
 	List removed = NULL;
@@ -407,7 +407,7 @@ extern int op_handler_account(const char *context_id,
 			      data_t *query, int tag, data_t *resp, void *auth,
 			      data_parser_t *parser)
 {
-	char *acct;
+	const char *acct;
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
 
