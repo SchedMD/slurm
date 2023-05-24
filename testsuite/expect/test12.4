@@ -31,85 +31,6 @@ source ./globals
 set test_acct   "${test_name}_acct"
 set timeout     60
 
-#
-# Check accounting config and bail if not found.
-#
-if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
-	skip "This test can't be run without a usable AccountStorageType"
-}
-
-if {[get_admin_level] ne "Administrator"} {
-	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
-}
-
-proc cleanup {} {
-	global sacctmgr test_acct
-
-	run_command "$sacctmgr -i delete account $test_acct"
-}
-
-set accounting_storage_type [get_config_param "AccountingStorageType"]
-
-set cluster [get_config_param "ClusterName"]
-#
-# Identify the user and his group
-#
-set user_name [get_my_user_name]
-set user_gid [get_my_gid]
-
-#
-# Use sacctmgr to add an account
-#
-set aamatches 0
-spawn $sacctmgr -i add account $test_acct cluster=$cluster
-expect {
-	-re "Adding Account" {
-		incr aamatches
-		exp_continue
-	}
-	-re "Nothing new added" {
-		log_warn "Vestigial account $test_acct found"
-		incr aamatches
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr add not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$aamatches != 1} {
-	fail "sacctmgr had a problem adding account"
-}
-
-#
-# Add self to this new account
-#
-spawn $sacctmgr -i create user name=$user_name account=$test_acct cluster=$cluster
-expect {
-	 timeout {
-		fail "sacctmgr add not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-
-#
-# Spawn a job via srun using this account
-#
-set output [run_command_output -fail "$srun -N1 -v --account=$test_acct $bin_id"]
-if {![regexp "launching StepId=($number)\.$re_word_str" $output - job_id]} {
-	fail "Did not get srun job id"
-}
-subtest {[get_job_param $job_id "Account"] eq $test_acct} "Verify srun job is using the specified account"
-
-if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
-	sleep 12
-}
-
 ################################################################
 #
 # Proc: sacct_job
@@ -416,7 +337,34 @@ proc sacct_vargs { soption vargs job_id} {
 		return $matches
 	}
 }
-################################################################
+
+proc cleanup {} {
+	global sacctmgr test_acct
+
+	run_command "$sacctmgr -i delete account $test_acct"
+}
+
+#
+# Check accounting config and bail if not found.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+}
+
+if {[get_admin_level] ne "Administrator"} {
+	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
+}
+
+cleanup
+
+set accounting_storage_type [get_config_param "AccountingStorageType"]
+
+set cluster [get_config_param "ClusterName"]
+#
+# Identify the user and his group
+#
+set user_name [get_my_user_name]
+set user_gid [get_my_gid]
 
 #
 # Use sacctmgr to add an account
