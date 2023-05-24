@@ -2351,6 +2351,37 @@ static void _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 	}
 }
 
+static void _kill_step_on_msg_fail(step_complete_msg_t *req, uid_t uid)
+{
+	static int active_rpc_cnt = 0;
+	int rc, rem;
+	uint32_t step_rc;
+	DEF_TIMERS;
+	/* Same locks as _slurm_rpc_step_complete */
+	slurmctld_lock_t job_write_lock = {
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.fed = READ_LOCK
+	};
+
+	/* init */
+	START_TIMER;
+	error("Step creation timed out: Deallocating %ps nodes %u-%u",
+	      &req->step_id, req->range_first, req->range_last);
+
+	_throttle_start(&active_rpc_cnt);
+	lock_slurmctld(job_write_lock);
+
+	rc = step_partial_comp(req, uid, true, &rem, &step_rc);
+
+	unlock_slurmctld(job_write_lock);
+	_throttle_fini(&active_rpc_cnt);
+
+	END_TIMER2(__func__);
+	log_flag(STEPS, "%s: %ps rc:%s %s",
+		 __func__, &req->step_id, slurm_strerror(rc), TIME_STR);
+}
+
 /* _slurm_rpc_job_step_create - process RPC to create/register a job step
  *	with the step_mgr */
 static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
@@ -2506,7 +2537,17 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 			      &job_step_resp);
 		resp.protocol_version = step_rec->start_protocol_ver;
 
-		slurm_send_node_msg(msg->conn_fd, &resp);
+		if (slurm_send_node_msg(msg->conn_fd, &resp) < 0) {
+			step_complete_msg_t req;
+
+			memset(&req, 0, sizeof(req));
+			req.step_id = step_rec->step_id;
+			req.jobacct = step_rec->jobacct;
+			req.step_rc = SIGKILL;
+			req.range_first = 0;
+			req.range_last = step_layout->node_cnt - 1;
+			_kill_step_on_msg_fail(&req, msg->auth_uid);
+		}
 
 		slurm_cred_destroy(slurm_cred);
 		slurm_step_layout_destroy(step_layout);
