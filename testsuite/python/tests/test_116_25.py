@@ -26,7 +26,7 @@ def test_signal_forwarding():
     file_out = atf.module_tmp_path / 'file_out'
     script_file = pathlib.Path(atf.properties['testsuite_python_lib']) / 'signal_forwarding_script.py'
     atf.make_bash_script(file_in, f"""srun --output={file_out} python3 {script_file}""")
-    job_id = atf.submit_job(f'{file_in}')
+    job_id = atf.submit_job_sbatch(f'{file_in}')
 
     for i in range(sig1_count):
         atf.run_command(f"scancel --signal {signal.SIGUSR1.value} {job_id}")

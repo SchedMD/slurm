@@ -21,7 +21,7 @@ def test_account():
     my_acct = 'MY_ACCT'
     qa_acct = 'QA_ACCT'
     os.environ["SLURM_ACCOUNT"] = "QA_ACCT"
-    job_id = atf.submit_job(f'--account={my_acct} --wrap="sleep 5"')
+    job_id = atf.submit_job_sbatch(f'--account={my_acct} --wrap="sleep 5"')
     assert job_id != 0, f'Batch submit failure'
     output = atf.run_command_output(f'scontrol show job {job_id}')
     assert re.search(f'Account={my_acct.lower()}', output), f'Account information not processed from sbatch'

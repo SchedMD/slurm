@@ -55,10 +55,10 @@ scontrol show burst
 """)
 
     # Submit a job to use the persisent burst buffer
-    bb_use_job_id = atf.submit_job(f"-N1 -t1 -o {bb_use_output} {bb_use_script}", fatal=True)
+    bb_use_job_id = atf.submit_job_sbatch(f"-N1 -t1 -o {bb_use_output} {bb_use_script}", fatal=True)
 
     # Submit a job to create the persisent burst buffer
-    bb_create_job_id = atf.submit_job(f"-N1 -t1 -o {bb_create_output} {bb_create_script}", fatal=True)
+    bb_create_job_id = atf.submit_job_sbatch(f"-N1 -t1 -o {bb_create_output} {bb_create_script}", fatal=True)
 
     # The burst buffer creation should complete first
     assert atf.wait_for_job_state(bb_create_job_id, 'DONE', timeout=660), f"Burst buffer creation job ({bb_create_job_id}) did not run"
@@ -84,7 +84,7 @@ scontrol show burst
 """)
 
     # Submit a job to delete the persisent burst buffer
-    bb_delete_job_id = atf.submit_job(f"-N1 -t1 -o {bb_delete_output} {bb_delete_script}", fatal=True)
+    bb_delete_job_id = atf.submit_job_sbatch(f"-N1 -t1 -o {bb_delete_output} {bb_delete_script}", fatal=True)
 
     # The burst buffer deletion job should complete
     assert atf.wait_for_job_state(bb_delete_job_id, 'DONE', timeout=660), f"Burst buffer deletion job ({bb_delete_job_id}) did not run"

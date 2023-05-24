@@ -20,19 +20,19 @@ def section_description():
 @pytest.fixture(scope='module')
 def first_job():
     """Submit a non-held job"""
-    return atf.submit_job(fatal=True)
+    return atf.submit_job_sbatch(fatal=True)
 
 
 @pytest.fixture(scope='module')
 def second_job():
     """Submit a second non-held job"""
-    return atf.submit_job(fatal=True)
+    return atf.submit_job_sbatch(fatal=True)
 
 
 @pytest.fixture(scope='module')
 def held_job():
     """Submit a held job"""
-    return atf.submit_job("--hold --wrap=\"sleep 60\"", fatal=True)
+    return atf.submit_job_sbatch("--hold --wrap=\"sleep 60\"", fatal=True)
 
 
 @pytest.fixture(scope='module')

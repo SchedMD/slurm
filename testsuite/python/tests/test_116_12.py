@@ -71,13 +71,13 @@ def test_output_error_formatting(tmp_path):
 
     # Test %j puts the job id in the file names
     file_out = fpc.create_file_path("j")
-    job_id = atf.run_job_id(f"--output={file_out} -N1 -O id")
+    job_id = atf.submit_job_srun(f"--output={file_out} -N1 -O id")
     file_out = fpc.get_tmp_file()
     assert re.search(str(job_id), file_out) is not None, f"%j: Job id ({job_id}) was not in file name ({file_out})"
     fpc.remove_file(file_out)
 
     file_err = fpc.create_file_path("j", ERROR_TYPE)
-    job_id = atf.run_job_id(f"--error={file_err} -N1 -O uid")
+    job_id = atf.submit_job_srun(f"--error={file_err} -N1 -O uid")
     file_err = fpc.get_tmp_file()
     assert re.search(str(job_id), file_err) is not None, f"%j: Job id ({job_id}) was not in file name ({file_err})"
     fpc.remove_file(file_err)
@@ -156,7 +156,7 @@ do
     srun -O --output={file_out} true
 done""")
     os.chmod(file_in, 0o0777)
-    job_id = atf.submit_job(f"-N{node_count} --output /dev/null {str(file_in)}")
+    job_id = atf.submit_job_sbatch(f"-N{node_count} --output /dev/null {str(file_in)}")
     atf.wait_for_job_state(job_id, 'DONE')
     tmp_dir_list = os.listdir(tmp_path)
     for step in range(0,step_count):
@@ -170,7 +170,7 @@ do
     srun -O --error={file_err} true
 done""")
     os.chmod(file_in, 0o0777)
-    job_id = atf.submit_job(f"-N{node_count} --output /dev/null {str(file_in)}")
+    job_id = atf.submit_job_sbatch(f"-N{node_count} --output /dev/null {str(file_in)}")
     atf.wait_for_job_state(job_id, 'DONE')
     tmp_dir_list = os.listdir(tmp_path)
     for step in range(0,step_count):
@@ -183,14 +183,14 @@ done""")
     job_command = "uid"
     file_out = fpc.create_file_path("x")
     file_err = fpc.create_file_path("x", ERROR_TYPE)
-    job_id = atf.run_job_id(f"--output={file_out} {job_command}")
+    job_id = atf.submit_job_srun(f"--output={file_out} {job_command}")
     job_name = atf.get_job_parameter(job_id, "JobName")
     assert job_command == job_name, f"%x: Job command ({job_command}) is not the same as the JobName ({job_name})"
     result_out = fpc.create_file(job_command)
     assert result_out in os.listdir(tmp_path), f"%x: Output file ({result_out}) was not created"
     fpc.remove_file(result_out)
 
-    job_id = atf.run_job_id(f"--error={file_err} {job_command}")
+    job_id = atf.submit_job_srun(f"--error={file_err} {job_command}")
     job_name = atf.get_job_parameter(job_id, "JobName")
     assert job_command == job_name, f"%x: Job command ({job_command}) is not the same as the JobName ({job_name})"
     result_err = fpc.create_file(job_command, ERROR_TYPE)
@@ -210,7 +210,7 @@ done""")
     assert re.search(node_host_name, result_out) is not None, f"%N: Output file ({result_out}) does not contain NodeHostName ({node_host_name})"
     fpc.remove_file(result_out)
 
-    job_id = atf.run_job_id(f"--error={file_err} true")
+    job_id = atf.submit_job_srun(f"--error={file_err} true")
     node_name = atf.get_job_parameter(job_id, "NodeList")
     node_host_name = atf.get_node_parameter(node_name, "NodeHostName")
     node_addr = atf.get_node_parameter(node_name, "NodeAddr")
@@ -227,7 +227,7 @@ done""")
     file_in = tmp_path / "file_in.A.input"
     atf.make_bash_script(file_in, f"""srun -O --output={file_out} hostname""")
     os.chmod(file_in, 0o0777)
-    job_id = atf.submit_job(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
+    job_id = atf.submit_job_sbatch(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
     atf.wait_for_job_state(job_id, "DONE")
     os.remove(file_in)
     result_out = fpc.get_tmp_file()
@@ -236,7 +236,7 @@ done""")
 
     atf.make_bash_script(file_in, f"""srun -O --error={file_err} uid""")
     os.chmod(file_in, 0o0777)
-    job_id = atf.submit_job(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
+    job_id = atf.submit_job_sbatch(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
     atf.wait_for_job_state(job_id, "DONE")
     os.remove(file_in)
     result_err = fpc.get_tmp_file()
@@ -250,7 +250,7 @@ done""")
     file_in = tmp_path / "file_in.A.a.input"
     atf.make_bash_script(file_in, f"""srun -O --output={file_out} hostname""")
     os.chmod(file_in, 0o0777)
-    job_id = atf.submit_job(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
+    job_id = atf.submit_job_sbatch(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
     atf.wait_for_job_state(job_id, "DONE")
     tmp_dir_list = os.listdir(tmp_path)
     for array_id in range(1,array_size+1):
@@ -259,7 +259,7 @@ done""")
         fpc.remove_file(id_file)
 
     atf.make_bash_script(file_in, f"""srun -O --error={file_err} uid""")
-    job_id = atf.submit_job(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
+    job_id = atf.submit_job_sbatch(f"-N1 --output=/dev/null --array=1-{array_size} {file_in}")
     atf.wait_for_job_state(job_id, "DONE")
     tmp_dir_list = os.listdir(tmp_path)
     for array_id in range(1,array_size+1):

@@ -1342,7 +1342,7 @@ def require_sudo_rights():
         pytest.skip("This test requires the test user to have unprompted sudo privileges", allow_module_level=True)
 
 
-def submit_job(sbatch_args="--wrap \"sleep 60\"", **run_command_kwargs):
+def submit_job_sbatch(sbatch_args="--wrap \"sleep 60\"", **run_command_kwargs):
     """Submits a job using sbatch and returns the job id.
 
     The submitted job will automatically be cancelled when the test ends.
@@ -1451,7 +1451,7 @@ def run_job_error(srun_args, **run_command_kwargs):
 
 
 # Return job id
-def run_job_id(srun_args, **run_command_kwargs):
+def submit_job_srun(srun_args, **run_command_kwargs):
     """Runs a job using srun and returns the job id.
 
     This function obtains the job id by adding the -v option to srun
@@ -1473,10 +1473,12 @@ def run_job_id(srun_args, **run_command_kwargs):
 
     if match := re.search(r"jobid (\d+)", results['stderr']):
         return int(match.group(1))
+    else:
+        return 0
 
 
 # Return job id (command should not be interactive/shell)
-def alloc_job_id(salloc_args, **run_command_kwargs):
+def submit_job_salloc(salloc_args, **run_command_kwargs):
     """Submits a job using salloc and returns the job id.
 
     The submitted job will automatically be cancelled when the test ends.
@@ -1497,6 +1499,37 @@ def alloc_job_id(salloc_args, **run_command_kwargs):
         return job_id
     else:
         return 0
+
+
+# Return job id
+def submit_job(command, job_param, job, *, wrap_job=True, **run_command_kwargs):
+    """Submits a job using given command and returns the job id.
+
+    Args*:
+        command (string): The command to submit the job (salloc, srun, sbatch).
+        job_param (string): The arguments to the job.
+        job (string): The command or job file to be executed.
+        wrap_job (boolean): If job needs to be wrapped when command is sbatch.
+
+    * run_command arguments are also accepted (e.g. fatal) and will be supplied
+        to the underlying job_id and subsequent run_command call.
+
+    Returns: The job id.
+    """
+
+    # Make sure command is a legal command to run a job
+    assert command in ["salloc", "srun", "sbatch"], \
+        f"Invalid command '{command}'. Should be salloc, srun, or sbatch."
+
+    if command == "salloc":
+        return submit_job_salloc(f"{job_param} {job}", **run_command_kwargs)
+    elif command == "srun":
+        return submit_job_srun(f"{job_param} {job}", **run_command_kwargs)
+    elif command == "sbatch":
+        # If the job should be wrapped, do so before submitting
+        if wrap_job:
+            job = f"--wrap '{job}'"
+        return submit_job_sbatch(f"{job_param} {job}", **run_command_kwargs)
 
 
 def run_job_nodes(srun_args, **run_command_kwargs):

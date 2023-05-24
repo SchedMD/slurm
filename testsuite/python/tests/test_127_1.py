@@ -42,7 +42,7 @@ exit 0
     atf.set_config_parameter('Epilog', epilog)
 
     # Verify that the epilog ran by checking for the file creation
-    job_id = atf.run_job_id(f"-t1 true", fatal=True)
+    job_id = atf.submit_job_srun(f"-t1 true", fatal=True)
 
     # TODO: Temporary debug mechanics to troubleshoot bug 14466 (remove once fixed)
     global srun_ran_successfully

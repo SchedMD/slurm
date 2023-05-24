@@ -32,7 +32,7 @@ def create_resv(delete_old_resv):
 
 def test_clear_job_expired_deadline(create_resv):
     """Put several jobs in the queue that will go past the resv deadline"""
-    job_id = atf.submit_job(sbatch_args = rf' -w node1 --deadline=now+4 '
+    job_id = atf.submit_job_sbatch(sbatch_args = rf' -w node1 --deadline=now+4 '
         f'--begin=now --reservation=resv1 '
         f'--wrap="sleep 300"')
 
