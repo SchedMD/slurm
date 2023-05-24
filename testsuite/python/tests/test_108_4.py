@@ -15,7 +15,7 @@ def setup():
 @pytest.fixture(scope='module')
 def batch_job():
     """Submit a batch job and wait for it to start running"""
-    job_id = atf.submit_job(fatal=True)
+    job_id = atf.submit_job_sbatch(fatal=True)
     atf.wait_for_job_state(job_id, 'RUNNING', fatal=True)
     return job_id
 

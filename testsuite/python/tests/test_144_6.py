@@ -34,8 +34,8 @@ def test_no_consume():
 def test_no_consume_parallel():
     """Test no_consume gres with parallel jobs"""
 
-    job_id_1 = atf.submit_job('--gres=r1 --mem=1 --wrap="sleep 20"')
-    job_id_2 = atf.submit_job('--gres=r1 --mem=1 --wrap="sleep 20"')
+    job_id_1 = atf.submit_job_sbatch('--gres=r1 --mem=1 --wrap="sleep 20"')
+    job_id_2 = atf.submit_job_sbatch('--gres=r1 --mem=1 --wrap="sleep 20"')
     atf.wait_for_job_state(job_id_1, 'RUNNING')
     atf.wait_for_job_state(job_id_2, 'RUNNING')
     squeue = atf.run_command_output('squeue')

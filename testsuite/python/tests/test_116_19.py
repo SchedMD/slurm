@@ -72,7 +72,7 @@ def test_user_limits():
     ulimit -s {limit_stack}
     srun python3 {script_file}""")
 
-    job_id = atf.submit_job(f"--output={file_out} --error={file_err} {file_in}")
+    job_id = atf.submit_job_sbatch(f"--output={file_out} --error={file_err} {file_in}")
     atf.wait_for_job_state(job_id, 'DONE')
     f = open(file_out, 'r')
     line = f.readline()

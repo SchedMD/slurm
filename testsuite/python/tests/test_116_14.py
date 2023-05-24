@@ -31,7 +31,7 @@ srun -n{srun_tasks} -N{srun_nodes} printenv SLURM_NNODES
 srun -n{srun_tasks} -N{srun_nodes} printenv SLURM_NTASKS""")
 
     atf.run_command("srun printenv SLURM_NNODES")
-    job_id = atf.submit_job(f"-O --output={file_out} -N{num_nodes} -n{num_tasks} {file_in}")
+    job_id = atf.submit_job_sbatch(f"-O --output={file_out} -N{num_nodes} -n{num_tasks} {file_in}")
     atf.wait_for_job_state(job_id, 'DONE')
     atf.wait_for_file(file_out)
     f = open(file_out, 'r')

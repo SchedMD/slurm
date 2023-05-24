@@ -158,19 +158,19 @@ def enforce_ALL(limit_name, flag, val_fail, val_pass):
         if limit_name == "AllowAccounts": custom_val_fail = ''
 
     # 1 Reject p1,p2 with no p1 limit met
-    assert atf.submit_job(f"-p p1,p2 {flag}{val_fail} --wrap \"hostname\" -o /dev/null") == 0, f"Job should fail on p1,p2 due to {limit_name} limit not met on the required partition p1 with EnforcePartLimits=ALL"
+    assert atf.submit_job_sbatch(f"-p p1,p2 {flag}{val_fail} --wrap \"hostname\" -o /dev/null") == 0, f"Job should fail on p1,p2 due to {limit_name} limit not met on the required partition p1 with EnforcePartLimits=ALL"
 
     # 2 Reject p1 no limit met
-    assert atf.submit_job(f"-p p1 {flag}{val_fail} --wrap \"hostname\" -o /dev/null") == 0, f"Job should fail on p1 due to {limit_name} limit not met on the required partition p1 with EnforcePartLimits=ALL"
+    assert atf.submit_job_sbatch(f"-p p1 {flag}{val_fail} --wrap \"hostname\" -o /dev/null") == 0, f"Job should fail on p1 due to {limit_name} limit not met on the required partition p1 with EnforcePartLimits=ALL"
 
     # 3 Accept p2 no limit met ** This one and the first have a memory conflict
-    assert atf.submit_job(f"-p p2 {flag}{custom_val_fail} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p2 despite {limit_name} limit not met on the required partition p1 with EnforcePartLimits=ALL"
+    assert atf.submit_job_sbatch(f"-p p2 {flag}{custom_val_fail} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p2 despite {limit_name} limit not met on the required partition p1 with EnforcePartLimits=ALL"
 
     # 4 Accept p1 with limit met
-    assert atf.submit_job(f"-p p1 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=ALL"
+    assert atf.submit_job_sbatch(f"-p p1 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=ALL"
 
     # 5 Accept p1,p2 with p1 limit met
-    assert atf.submit_job(f"-p p1,p2 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1,p2 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=ALL"
+    assert atf.submit_job_sbatch(f"-p p1,p2 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1,p2 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=ALL"
 
 
 def enforce_ANY(limit_name, flag, val_fail, val_pass):
@@ -185,19 +185,19 @@ def enforce_ANY(limit_name, flag, val_fail, val_pass):
         if limit_name == "AllowAccounts": custom_val_fail = ''
 
     # 1 Accept p1,p2 with no p1 limit met
-    assert atf.submit_job(f"-p p1,p2 {flag}{custom_val_fail} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1,p2 despite {limit_name} not met on p1 with EnforcePartLimits=ANY"
+    assert atf.submit_job_sbatch(f"-p p1,p2 {flag}{custom_val_fail} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1,p2 despite {limit_name} not met on p1 with EnforcePartLimits=ANY"
 
     # 2 Reject p1 no limit met
-    assert atf.submit_job(f"-p p1 {flag}{val_fail} --wrap \"hostname\" -o /dev/null") == 0, f"Job should fail on p1 due to {limit_name} limit not met on the required partition p1 with EnforcePartLimits=ANY"
+    assert atf.submit_job_sbatch(f"-p p1 {flag}{val_fail} --wrap \"hostname\" -o /dev/null") == 0, f"Job should fail on p1 due to {limit_name} limit not met on the required partition p1 with EnforcePartLimits=ANY"
 
     # 3 Accept p2 no limit met ** This one and the first have a memory conflict
-    assert atf.submit_job(f"-p p2 {flag}{custom_val_fail} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p2 despite {limit_name} limit not met on the required partition p1 with EnforcePartLimits=ANY"
+    assert atf.submit_job_sbatch(f"-p p2 {flag}{custom_val_fail} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p2 despite {limit_name} limit not met on the required partition p1 with EnforcePartLimits=ANY"
 
     # 4 Accept p1 with limit met
-    assert atf.submit_job(f"-p p1 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=ANY"
+    assert atf.submit_job_sbatch(f"-p p1 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=ANY"
 
     # 5 Accept p1,p2 with p1 limit met
-    assert atf.submit_job(f"-p p1,p2 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1,p2 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=ANY"
+    assert atf.submit_job_sbatch(f"-p p1,p2 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1,p2 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=ANY"
 
 
 def enforce_NO(limit_name, flag, val_fail, val_pass):
@@ -212,23 +212,23 @@ def enforce_NO(limit_name, flag, val_fail, val_pass):
         if limit_name == "AllowAccounts": custom_val_fail = ''
 
     # 1 Submit -> pend on p1,p2 with bad p1 limit set -> complete with p1 limit met
-    job_id = atf.submit_job(f"-p p1,p2 {flag}{custom_val_fail} --wrap \"hostname&\" -o /dev/null", timeout=1)
+    job_id = atf.submit_job_sbatch(f"-p p1,p2 {flag}{custom_val_fail} --wrap \"hostname&\" -o /dev/null", timeout=1)
     satisfy_pending_job_limit(job_id, limit_name, custom_val_fail);
     assert atf.get_job_parameter(job_id, 'JobState', quiet=True) == 'COMPLETED', f"Job should submit, pend, then complete on p1,p2 with updated limit {limit_name} on partition p1 to passing valueswith EnforcePartLimits=NO"
 
     # 2 Submit -> pend on just p1 with bad limit, then complete with good limit
-    job_id = atf.submit_job(f"-p p1 {flag}{custom_val_fail} --wrap \"hostname&\" -o /dev/null", timeout=1)
+    job_id = atf.submit_job_sbatch(f"-p p1 {flag}{custom_val_fail} --wrap \"hostname&\" -o /dev/null", timeout=1)
     satisfy_pending_job_limit(job_id, limit_name, custom_val_fail);
     assert atf.get_job_parameter(job_id, 'JobState', quiet=True) == 'COMPLETED', f"Job should submit, pend, then complete on p1 with updated limit {limit_name} on partition p1 to passing values with EnforcePartLimits=NO"
 
     # 3 Submit -> complete on p2 with no limit set
-    assert atf.submit_job(f"-p p2, {flag}{custom_val_fail} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p2 despite {limit_name} limit not met on the required partition p1 with EnforcePartLimits=NO"
+    assert atf.submit_job_sbatch(f"-p p2, {flag}{custom_val_fail} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p2 despite {limit_name} limit not met on the required partition p1 with EnforcePartLimits=NO"
 
     # 4 Submit -> complete on p1 with p1 limit met
-    assert atf.submit_job(f"-p p1 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=NO"
+    assert atf.submit_job_sbatch(f"-p p1 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=NO"
 
     # 5 Submit -> complete on p1,p2 with p1 limit met
-    assert atf.submit_job(f"-p p1,p2 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1,p2 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=NO"
+    assert atf.submit_job_sbatch(f"-p p1,p2 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1,p2 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=NO"
 
 
 def enforce_NO_QOS(limit_name, flag, val_fail, val_pass):
@@ -237,7 +237,7 @@ def enforce_NO_QOS(limit_name, flag, val_fail, val_pass):
     val_fail = "bad_qos"
 
     # 1 Submit -> pend on p1,p2 with bad p1 limit set -> complete with p1 limit met
-    job_id = atf.submit_job(f"-p p1,p2 {flag}{val_fail} --wrap \"hostname&\" -o /dev/null", timeout=1)
+    job_id = atf.submit_job_sbatch(f"-p p1,p2 {flag}{val_fail} --wrap \"hostname&\" -o /dev/null", timeout=1)
     satisfy_pending_job_limit(job_id, limit_name, f"{val_pass},{val_fail}");
     assert atf.get_job_parameter(job_id, 'JobState', quiet=True) == 'COMPLETED', f"Job should submit, pend, then complete on p1,p2 with updated limit {limit_name} on partition p1 to passing valueswith EnforcePartLimits=NO"
 
@@ -245,7 +245,7 @@ def enforce_NO_QOS(limit_name, flag, val_fail, val_pass):
     atf.run_command(f"scontrol update partitionname=p1 {limit_name}={val_pass}", user=atf.properties['slurm-user'], fatal=True, quiet=True)
 
     # 2 Submit -> pend on just p1 with bad limit, then complete with good limit
-    job_id = atf.submit_job(f"-p p1 {flag}{val_fail} --wrap \"hostname&\" -o /dev/null", timeout=1)
+    job_id = atf.submit_job_sbatch(f"-p p1 {flag}{val_fail} --wrap \"hostname&\" -o /dev/null", timeout=1)
     satisfy_pending_job_limit(job_id, limit_name, f"{val_pass},{val_fail}");
     assert atf.get_job_parameter(job_id, 'JobState', quiet=True) == 'COMPLETED', f"Job should submit, pend, then complete on p1 with updated limit {limit_name} on partition p1 to passing values with EnforcePartLimits=NO"
 
@@ -253,13 +253,13 @@ def enforce_NO_QOS(limit_name, flag, val_fail, val_pass):
     atf.run_command(f"scontrol update partitionname=p1 {limit_name}={val_pass}", user=atf.properties['slurm-user'], fatal=True, quiet=True)
 
     # 3 Submit -> complete on p2 with no limit set
-    assert atf.submit_job(f"-p p2, {flag}{val_fail} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p2 despite {limit_name} limit not met on the required partition p1 with EnforcePartLimits=NO"
+    assert atf.submit_job_sbatch(f"-p p2, {flag}{val_fail} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p2 despite {limit_name} limit not met on the required partition p1 with EnforcePartLimits=NO"
 
     # 4 Submit -> complete on p1 with p1 limit met
-    assert atf.submit_job(f"-p p1 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=NO"
+    assert atf.submit_job_sbatch(f"-p p1 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=NO"
 
     # 5 Submit -> complete on p1,p2 with p1 limit met
-    assert atf.submit_job(f"-p p1,p2 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1,p2 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=NO"
+    assert atf.submit_job_sbatch(f"-p p1,p2 {flag}{val_pass} --wrap \"hostname\" -o /dev/null") != 0, f"Job should pass on p1,p2 due to {limit_name} limit met on the required partition p1 with EnforcePartLimits=NO"
 
 
 # Tests:

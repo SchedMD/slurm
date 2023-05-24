@@ -68,14 +68,14 @@ def test_job_denied(node_names):
 def test_node_state(node_names, teardown_jobs):
     """Verify that sinfo state is returned as 'alloc' when using all cpus except specialized cores"""
 
-    job_id = atf.submit_job(f"-w {node_names} -n{available_cores} --wrap='srun sleep 60'")
+    job_id = atf.submit_job_sbatch(f"-w {node_names} -n{available_cores} --wrap='srun sleep 60'")
     atf.wait_for_job_state(job_id, "RUNNING")
 
     assert len(re.findall("alloc", atf.run_command_output(f"sinfo -n {node_names} -h -N -o%t"))) == 2, "node states in sinfo should be both 'alloc'"
 
     atf.cancel_all_jobs(quiet=True)
 
-    job_id = atf.submit_job(f"-w {node_names} -n2 --wrap='srun sleep 60'")
+    job_id = atf.submit_job_sbatch(f"-w {node_names} -n2 --wrap='srun sleep 60'")
     atf.wait_for_job_state(job_id, "RUNNING")
 
     assert len(re.findall("alloc", atf.run_command_output(f"sinfo -n {node_names} -h -N -o%t"))) == 1, "one node state in sinfo should be 'alloc'"
@@ -87,7 +87,7 @@ def test_core_spec_override(node_names):
     a job, you should be able to use the extra cores.
     """
 
-    job_id = atf.submit_job(f"-w {node_names} --core-spec=0 -n{total_cores} --wrap='srun true'")
+    job_id = atf.submit_job_sbatch(f"-w {node_names} --core-spec=0 -n{total_cores} --wrap='srun true'")
     atf.wait_for_job_state(job_id, "DONE")
 
     output = int(re.findall(
@@ -96,7 +96,7 @@ def test_core_spec_override(node_names):
 
     assert output == total_cores, f"--core-spec=0 should allow {total_cores} cores"
 
-    job_id = atf.submit_job(f"-w {node_names} --core-spec=0 --wrap='srun true'")
+    job_id = atf.submit_job_sbatch(f"-w {node_names} --core-spec=0 --wrap='srun true'")
     atf.wait_for_job_state(job_id, "DONE")
 
     output = int(re.findall(
@@ -105,7 +105,7 @@ def test_core_spec_override(node_names):
 
     assert output == total_cores, f"Using --core-spec should imply --exclusive and using all cores"
 
-    job_id = atf.submit_job(f"-w {node_names} --core-spec=1 -n{total_cores - 2} --wrap='srun true'")
+    job_id = atf.submit_job_sbatch(f"-w {node_names} --core-spec=1 -n{total_cores - 2} --wrap='srun true'")
     atf.wait_for_job_state(job_id, "DONE")
 
     output = int(re.findall(
@@ -114,7 +114,7 @@ def test_core_spec_override(node_names):
 
     assert output == total_cores - 2, f"--core-spec=1 should allocate all cores except 1 per node"
 
-    job_id = atf.submit_job(f"-w {node_names} --core-spec=2 -n{total_cores - 4} --wrap='srun true'")
+    job_id = atf.submit_job_sbatch(f"-w {node_names} --core-spec=2 -n{total_cores - 4} --wrap='srun true'")
     atf.wait_for_job_state(job_id, "DONE")
 
     output = int(re.findall(
@@ -132,7 +132,7 @@ def test_thread_spec_override(node_names):
     a job, you should be able to use the extra threads.
     """
 
-    job_id = atf.submit_job(f"-w {node_names} --thread-spec=1 --wrap='srun true'")
+    job_id = atf.submit_job_sbatch(f"-w {node_names} --thread-spec=1 --wrap='srun true'")
     atf.wait_for_job_state(job_id, "DONE")
 
     output = int(re.findall(

@@ -68,7 +68,7 @@ def test_gres_mps_option_job():
     scontrol -dd show job $SLURM_JOBID | grep mps
     exit 0""")
 
-    job_id1 = atf.submit_job(f"--gres=craynetwork:0 --gres=mps:{mps_fail_cnt} -N{node_count} -t1 -o {file_out1} -J 'test_job' {file_in}")
+    job_id1 = atf.submit_job_sbatch(f"--gres=craynetwork:0 --gres=mps:{mps_fail_cnt} -N{node_count} -t1 -o {file_out1} -J 'test_job' {file_in}")
     assert job_id1 != 0, "Job 1 failed to submit"
 
     atf.repeat_command_until(f"scontrol show job {job_id1}", lambda results: re.search(r"Reason=.*AssocMaxGRESPerJob", results['stdout']), fatal=True)
@@ -79,6 +79,6 @@ def test_gres_mps_option_job():
     assert re.search(r"JobState=PENDING", output), "Job state is bad (JobState != PENDING)"
     assert re.search(r"Reason=.*AssocMaxGRESPerJob", output), "Job state is bad (Reason != '.*AssocMaxGRESPerJob    ')"
 
-    job_id2 = atf.submit_job(f"--account='test_mps_acct' --gres=craynetwork:0 --gres=mps:{mps_good_cnt} -N{node_count} -t1 -o {file_out2} -J 'test_job2' {file_in}")
+    job_id2 = atf.submit_job_sbatch(f"--account='test_mps_acct' --gres=craynetwork:0 --gres=mps:{mps_good_cnt} -N{node_count} -t1 -o {file_out2} -J 'test_job2' {file_in}")
     assert job_id2 != 0, "Job 2 failed to submit"
     assert atf.wait_for_job_state(job_id2, 'DONE', fatal=True)

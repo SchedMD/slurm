@@ -51,7 +51,7 @@ def test_gres_overlap():
     """Test gres without file and --overlap"""
 
     output_file = f"{atf.module_tmp_path}/out"
-    job_id = atf.submit_job(f"-wnode2 -N1 --gres=r2:1 \
+    job_id = atf.submit_job_sbatch(f"-wnode2 -N1 --gres=r2:1 \
             --output={output_file} --wrap='\
             srun --overlap --gres=r2:1 hostname &\
             srun --overlap --gres=r2:1 hostname &\

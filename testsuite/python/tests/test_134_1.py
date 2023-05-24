@@ -19,7 +19,7 @@ def setup():
 @pytest.fixture(scope='module')
 def salloc_noshell():
     """Submit a backgrounded salloc job"""
-    job_id = atf.alloc_job_id("--verbose --no-shell", fatal=True)
+    job_id = atf.submit_job_salloc("--verbose --no-shell", fatal=True)
     atf.wait_for_job_state(job_id, 'RUNNING', fatal=True)
     return job_id
 

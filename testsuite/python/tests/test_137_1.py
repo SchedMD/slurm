@@ -92,7 +92,7 @@ def test_request_adds_new_ActiveFeature(our_node):
     make_rebooter_script(our_node, out_file)
 
     # Submit a job with inactive available feature 'f2', should trigger reboot
-    atf.submit_job(f"--wrap='true' -C f2 -w {our_node}", fatal=True)
+    atf.submit_job_sbatch(f"--wrap='true' -C f2 -w {our_node}", fatal=True)
 
     # Wait for output from rebooter script that indicates a successful reboot
     atf.repeat_command_until(f"cat {out_file}", lambda results: re.search(r'done', results['stdout']), fatal=True, timeout=30)

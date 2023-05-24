@@ -21,7 +21,7 @@ def test_prolog_success(tmp_path):
     atf.make_bash_script(prolog_script, f"touch {prolog_touched_file}")
     atf.set_config_parameter('Prolog', prolog_script)
 
-    job_id = atf.submit_job(fatal=True)
+    job_id = atf.submit_job_sbatch(fatal=True)
 
     # Verify that the prolog ran by checking for the file creation
     assert atf.wait_for_file(prolog_touched_file), f"File ({prolog_touched_file}) was not created"
@@ -42,7 +42,7 @@ exit 1
 """)
     atf.set_config_parameter('Prolog', prolog_script)
 
-    job_id = atf.submit_job(fatal=True)
+    job_id = atf.submit_job_sbatch(fatal=True)
 
     # Verify that the prolog ran by checking for the file creation
     assert atf.wait_for_file(prolog_output_file), f"File ({prolog_output_file}) was not created"
