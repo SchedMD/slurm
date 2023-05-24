@@ -90,8 +90,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@WITH_JSON_PARSER_TRUE@am__append_1 = json
-@WITH_YAML_TRUE@am__append_2 = yaml
+@WITH_YAML_TRUE@am__append_1 = yaml
 subdir = src/plugins/serializer
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -469,7 +468,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = url-encoded $(am__append_1) $(am__append_2)
+SUBDIRS = url-encoded json $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:
