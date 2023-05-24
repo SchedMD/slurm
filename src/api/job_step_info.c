@@ -614,9 +614,8 @@ extern int slurm_job_step_stat(slurm_step_id_t *step_id,
 	if (!node_list) {
 		if (!(step_layout = slurm_job_step_layout_get(step_id))) {
 			rc = errno;
-			error("slurm_job_step_stat: "
-			      "problem getting step_layout for %ps: %s",
-			      step_id, slurm_strerror(rc));
+			error("%s: problem getting step_layout for %ps: %s",
+			      __func__, step_id, slurm_strerror(rc));
 			return rc;
 		}
 		node_list = step_layout->node_list;
@@ -669,23 +668,20 @@ extern int slurm_job_step_stat(slurm_step_id_t *step_id,
 			rc = slurm_get_return_code(ret_data_info->type,
 						   ret_data_info->data);
 			if (rc == ESLURM_INVALID_JOB_ID) {
-				debug("slurm_job_step_stat: job step %ps has already completed",
-				      step_id);
+				debug("%s: job step %ps has already completed",
+				      __func__, step_id);
 			} else {
-				error("slurm_job_step_stat: "
-				      "there was an error with the request to "
-				      "%s rc = %s",
-				      ret_data_info->node_name,
+				error("%s: there was an error with the request to %s rc = %s",
+				      __func__, ret_data_info->node_name,
 				      slurm_strerror(rc));
 			}
 			break;
 		default:
 			rc = slurm_get_return_code(ret_data_info->type,
 						   ret_data_info->data);
-			error("slurm_job_step_stat: "
-			      "unknown return given from %s: %d rc = %s",
-			      ret_data_info->node_name, ret_data_info->type,
-			      slurm_strerror(rc));
+			error("%s: unknown return given from %s: %d rc = %s",
+			      __func__, ret_data_info->node_name,
+			      ret_data_info->type, slurm_strerror(rc));
 			break;
 		}
 	}
