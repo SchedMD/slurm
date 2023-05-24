@@ -1178,6 +1178,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 	bool network_error_logged = false;
 #endif
 	bool node_cnt_error_logged = false;
+	bool tres_license_error_logged = false;
 	bool x11_error_logged = false;
 
 	/*
@@ -1300,6 +1301,15 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 						opt_local->ntasks =
 							opt_local->min_nodes;
 					}
+				}
+				if (!tres_license_error_logged &&
+				    !slurm_option_set_by_env(
+					    opt_local,
+					    LONG_OPT_TRES_PER_TASK) &&
+				    xstrstr(opt_local->tres_per_task,
+					    "license")) {
+					warning("Ignoring --tres-per-task license specification because licenses can only be specified at job allocation time, not during step allocation.");
+					tres_license_error_logged = true;
 				}
 				if (srun_opt->core_spec_set &&
 				    !core_spec_error_logged) {
