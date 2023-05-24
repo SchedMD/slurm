@@ -1473,6 +1473,8 @@ def submit_job_srun(srun_args, **run_command_kwargs):
 
     if match := re.search(r"jobid (\d+)", results['stderr']):
         return int(match.group(1))
+    else:
+        return 0
 
 
 # Return job id (command should not be interactive/shell)
