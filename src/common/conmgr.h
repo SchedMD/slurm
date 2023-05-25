@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef SLURMRESTD_CONMGR_H
-#define SLURMRESTD_CONMGR_H
+#ifndef _CONMGR_H
+#define _CONMGR_H
 
 #include <netdb.h>
 
@@ -466,4 +466,4 @@ extern void con_mgr_add_delayed_work(con_mgr_t *mgr, con_mgr_fd_t *con,
 				     long nanoseconds, void *arg,
 				     const char *tag);
 
-#endif /* SLURMRESTD_CONMGR_H */
+#endif /* _CONMGR_H */
