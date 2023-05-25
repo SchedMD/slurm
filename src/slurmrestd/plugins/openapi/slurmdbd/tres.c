@@ -47,22 +47,22 @@
 extern int update_tres(ctxt_t *ctxt, bool commit, list_t *tres_list)
 {
 #ifdef NDEBUG
-		/*
-		 * Updating TRES is not currently supported and is disabled
-		 * except for developer testing as the TRES id can not be
-		 * maintained while updating or adding new TRES.
-		 */
-		if (commit)
-			resp_error(ctxt, ESLURM_NOT_SUPPORTED, __func__,
-				   "Updating TRES is not currently supported");
+	/*
+	 * Updating TRES is not currently supported and is disabled
+	 * except for developer testing as the TRES id can not be
+	 * maintained while updating or adding new TRES.
+	 */
+	if (commit)
+		resp_error(ctxt, ESLURM_NOT_SUPPORTED, __func__,
+			   "Updating TRES is not currently supported");
 #else
-		int rc;
+	int rc;
 
-		if (!(rc = db_query_rc(ctxt, tres_list, slurmdb_tres_add)) &&
-		    !ctxt->rc && commit)
-			db_query_commit(ctxt);
+	if (!(rc = db_query_rc(ctxt, tres_list, slurmdb_tres_add)) &&
+	    !ctxt->rc && commit)
+		db_query_commit(ctxt);
 
-		return rc;
+	return rc;
 #endif /* NDEBUG */
 }
 
