@@ -130,36 +130,11 @@ extern void *slurm_rest_auth_p_get_db_conn(rest_auth_context_t *context)
 	return NULL;
 }
 
-static int _get_auth_creds(int input_fd, char *name,
-			   uid_t *cred_uid, gid_t *cred_gid, pid_t *cred_pid)
-{
-#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__NetBSD__)
-	struct ucred cred = { 0 };
-	socklen_t len = sizeof(cred);
-	if (!getsockopt(input_fd, SOL_SOCKET, SO_PEERCRED, &cred, &len)) {
-		*cred_uid = cred.uid;
-		*cred_gid = cred.gid;
-		*cred_pid = cred.pid;
-		return SLURM_SUCCESS;
-	}
-#else
-	struct xucred cred = { 0 };
-	socklen_t len = sizeof(cred);
-	if (!getsockopt(input_fd, 0, LOCAL_PEERCRED, &cred, &len)) {
-		*cred_uid = cred.cr_uid;
-		*cred_gid = cred.cr_groups[0];
-		*cred_pid = cred.cr_pid;
-		return SLURM_SUCCESS;
-	}
-#endif
-	return SLURM_ERROR;
-}
-
 static int _auth_socket(on_http_request_args_t *args,
 			rest_auth_context_t *ctxt,
 			const char *header_user_name)
 {
-	int input_fd = args->context->con->input_fd;
+	int rc;
 	char *name = args->context->con->name;
 	uid_t cred_uid;
 	gid_t cred_gid;
@@ -167,11 +142,11 @@ static int _auth_socket(on_http_request_args_t *args,
 
 	xassert(!ctxt->user_name);
 
-	if (_get_auth_creds(input_fd, name, &cred_uid, &cred_gid, &cred_pid) !=
-	    SLURM_SUCCESS) {
+	if ((rc = con_mgr_get_fd_auth_creds(args->context->con, &cred_uid,
+					    &cred_gid, &cred_pid))) {
 		/* socket may be remote, local auth doesn't apply */
-		debug("%s: [%s] unable to get socket ownership: %m",
-		      __func__, name);
+		debug("%s: [%s] unable to get socket ownership: %s",
+		      __func__, name, slurm_strerror(rc));
 		return ESLURM_AUTH_CRED_INVALID;
 	}
 

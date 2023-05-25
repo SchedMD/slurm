@@ -326,6 +326,14 @@ extern con_mgr_t *init_con_mgr(int thread_count, int max_connections,
 extern void free_con_mgr(con_mgr_t *mgr);
 
 /*
+ * Request kernel provide auth credentials for connection
+ * IN con connection to query creds
+ * RET SLURM_SUCCESS or error (ESLURM_NOT_SUPPORTED if connection can't query)
+ */
+extern int con_mgr_get_fd_auth_creds(con_mgr_fd_t *con, uid_t *cred_uid, gid_t
+				     *cred_gid, pid_t *cred_pid);
+
+/*
  * instruct connection manager to process fd (async)
  * IN mgr connection manager to update
  * IN type connection type for fd
