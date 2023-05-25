@@ -1049,7 +1049,7 @@ extern void parse_command_line(int argc, char **argv)
 	if (params.opt_completion) {
 		slurmdb_jobcomp_init();
 
-		if (!xstrcmp(slurm_conf.job_comp_type, "jobcomp/none")) {
+		if (!slurm_conf.job_comp_type) {
 			fprintf(stderr, "Slurm job completion is disabled\n");
 			exit(1);
 		}
