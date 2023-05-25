@@ -3377,7 +3377,9 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	*newly_up = (!orig_node_avail &&
 		     bit_test(avail_node_bitmap, node_ptr->index));
 
-	if (!error_code && IS_NODE_CLOUD(node_ptr) && cloud_reg_addrs) {
+	if (!error_code &&
+	    cloud_reg_addrs &&
+	    (IS_NODE_CLOUD(node_ptr) || IS_NODE_DYNAMIC_NORM(node_ptr))) {
 		slurm_addr_t addr;
 		char *comm_name = NULL, *hostname = NULL;
 

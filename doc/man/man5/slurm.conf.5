@@ -4851,7 +4851,11 @@ DNS, this step can be avoided by configuring this option.
 \fBcloud_reg_addrs\fR
 When a cloud node registers, the node's NodeAddr and NodeHostName will
 automatically be set. They will be reset back to the nodename after powering
-off.
+off. Dynamically registered nodes automatically set the node's NodeAddr and
+NodeHostName on the first registration and won't be updated on subsequent
+registrations if it changes. Setting \fBcloud_reg_addrs\fR will update a
+dynamically registered node's NodeAddr and NodeHostName if it changes on
+subsequent registrations.
 .IP
 
 .TP
