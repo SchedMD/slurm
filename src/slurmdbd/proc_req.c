@@ -2291,7 +2291,8 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	if (!node_ptr.tres_str)
 		node_state_msg->new_state = DBD_NODE_STATE_UP;
 
-	if (node_state_msg->new_state == DBD_NODE_STATE_UP) {
+	switch (node_state_msg->new_state) {
+	case DBD_NODE_STATE_UP:
 		debug2("DBD_NODE_STATE_UP: NODE:%s REASON:%s TIME:%ld",
 		       node_state_msg->hostlist,
 		       node_state_msg->reason,
@@ -2306,7 +2307,8 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			&node_ptr,
 			node_state_msg->event_time);
 		xfree(node_ptr.reason);
-	} else {
+		break;
+	case DBD_NODE_STATE_DOWN:
 		debug2("DBD_NODE_STATE_DOWN: NODE:%s STATE:%s REASON:%s UID:%u TIME:%ld",
 		       node_state_msg->hostlist,
 		       node_state_string(node_state_msg->state),
@@ -2318,6 +2320,7 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			&node_ptr,
 			node_state_msg->event_time,
 			node_state_msg->reason, node_ptr.reason_uid);
+		break;
 	}
 
 end_it:
