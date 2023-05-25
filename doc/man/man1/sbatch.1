@@ -814,6 +814,10 @@ from the next consecutive socket for the next task, in a
 round\-robin fashion across sockets. 
 Tasks requiring more than one CPU will have all of those CPUs allocated on a
 single socket if possible.
+.br
+\fBNOTE\fR: In nodes with hyper-threading enabled, a task not requesting full
+cores may be distributed across sockets. This can be avoided by specifying
+\fB\-\-ntasks\-per\-core=1\fR, which forces tasks to allocate full cores.
 .IP
 
 .TP
