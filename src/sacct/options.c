@@ -1369,7 +1369,7 @@ extern void do_help(void)
 
 /* Return true if the specified job id is local to a cluster
  * (not a federated job) */
-static inline bool _test_local_job(uint32_t job_id)
+static bool _test_local_job(uint32_t job_id)
 {
 	if ((job_id & (~MAX_JOB_ID)) == 0)
 		return true;
