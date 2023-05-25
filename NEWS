@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
     more than 10.
  -- Add warning message about ignoring --tres-per-tasks=license when used
     on a step.
+ -- sshare - Fix command to work when using priority/basic.
 
 * Changes in Slurm 23.02.2
 ==========================

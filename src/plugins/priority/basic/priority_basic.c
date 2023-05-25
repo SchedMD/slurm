@@ -50,8 +50,10 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
+extern list_t *job_list  __attribute__((weak_import));
 extern int slurmctld_tres_cnt __attribute__((weak_import));
 #else
+list_t *job_list = NULL;
 int slurmctld_tres_cnt = 0;
 #endif
 
