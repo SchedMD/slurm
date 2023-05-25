@@ -2063,7 +2063,9 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	    (task_cnt <= tasks_per_node || (step_ptr->flags & SSF_OVERCOMMIT)))
 	{
 		use_all_cores = true;
-		core_cnt = job_resrcs_ptr->cpus[job_node_inx] / cpus_per_core;
+		core_cnt = job_resrcs_ptr->cpus[job_node_inx];
+		core_cnt += (cpus_per_core - 1);
+		core_cnt /= cpus_per_core;
 	} else {
 		use_all_cores = false;
 
