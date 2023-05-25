@@ -628,7 +628,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	debug2("Requested GPU graphics frequency: %s", tmp);
 	xfree(tmp);
 
-	if (!mem_freq_num || !gpu_freq_num) {
+	if (!mem_freq_num && !gpu_freq_num) {
 		debug2("%s: No frequencies to set", __func__);
 		return;
 	}

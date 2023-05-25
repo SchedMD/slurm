@@ -58,6 +58,8 @@ documents those changes that are of interest to users and administrators.
     data from jackaloped.
  -- Fix TresUsageIn[Tot|Ave] calculation for gres/gpumem and gres/gpuutil.
  -- Avoid unnecessary gres/gpumem and gres/gpuutil TRES position lookups.
+ -- Fix issue in the gpu plugins where gpu frequencies would only be set if both
+    gpu memory and gpu frequencies were set, while one or the other suffices.
 
 * Changes in Slurm 23.02.2
 ==========================
