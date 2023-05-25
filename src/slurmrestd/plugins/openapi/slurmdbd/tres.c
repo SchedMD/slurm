@@ -55,6 +55,7 @@ extern int update_tres(ctxt_t *ctxt, bool commit, list_t *tres_list)
 	if (commit)
 		resp_error(ctxt, ESLURM_NOT_SUPPORTED, __func__,
 			   "Updating TRES is not currently supported");
+	return ESLURM_NOT_SUPPORTED;
 #else
 	int rc;
 
