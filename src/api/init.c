@@ -38,7 +38,6 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/cli_filter.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/select.h"
@@ -56,9 +55,6 @@ extern void slurm_init(const char *conf)
 	if (acct_storage_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize the accounting storage plugin");
 
-	if (cli_filter_init() != SLURM_SUCCESS)
-		fatal("failed to initialize cli_filter plugin");
-
 	if (gres_init() != SLURM_SUCCESS)
 		fatal("failed to initialize gres plugin");
 }
@@ -66,8 +62,6 @@ extern void slurm_init(const char *conf)
 extern void slurm_fini(void)
 {
 	gres_fini();
-	cli_filter_fini();
-	select_g_fini();
 	acct_storage_g_fini();
 	hash_g_fini();
 	auth_g_fini();

@@ -187,6 +187,9 @@ int main(int argc, char **argv)
 	slurm_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
+	if (cli_filter_init() != SLURM_SUCCESS)
+		fatal("failed to initialize cli_filter plugin");
+
 	argvzero = argv[0];
 	_set_exit_code();
 
@@ -677,6 +680,7 @@ relinquish:
 	}
 
 #ifdef MEMORY_LEAK_DEBUG
+	cli_filter_fini();
 	slurm_reset_all_options(&opt, false);
 	auth_g_fini();
 	slurm_conf_destroy();

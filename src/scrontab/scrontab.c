@@ -634,6 +634,9 @@ extern int main(int argc, char **argv)
 	slurm_init(NULL);
 	_parse_args(argc, argv);
 
+	if (cli_filter_init() != SLURM_SUCCESS)
+		fatal("failed to initialize cli_filter plugin");
+
 	if (!xstrcasestr(slurm_conf.scron_params, "enable"))
 		fatal("scrontab is disabled on this cluster");
 
@@ -677,6 +680,7 @@ extern int main(int argc, char **argv)
 
 	_edit_and_update_crontab(crontab);
 
+	cli_filter_fini();
 	spank_fini(NULL);
 
 	return 0;

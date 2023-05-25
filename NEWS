@@ -77,6 +77,10 @@ documents those changes that are of interest to users and administrators.
     more than 10.
  -- Add warning message about ignoring --tres-per-tasks=license when used
     on a step.
+ -- sshare - Fix command to work when using priority/basic.
+ -- Avoid loading cli_filter plugins outside of salloc/sbatch/scron/srun. This
+    fixes a number of missing symbol problems that can manifest for executables
+    linked against libslurm (and not libslurmfull).
 
 * Changes in Slurm 23.02.2
 ==========================
