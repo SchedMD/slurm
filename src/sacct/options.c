@@ -1047,7 +1047,11 @@ extern void parse_command_line(int argc, char **argv)
 	      (job_cond->flags & JOBCOND_FLAG_NO_WHOLE_HETJOB ? "no" : 0));
 
 	if (params.opt_completion) {
-		slurmdb_jobcomp_init();
+		if (slurmdb_jobcomp_init() != SLURM_SUCCESS) {
+			fprintf(stderr,
+				"Slurm unable to initialize jobcomp plugin\n");
+			exit(1);
+		}
 
 		if (!slurm_conf.job_comp_type) {
 			fprintf(stderr, "Slurm job completion is disabled\n");
