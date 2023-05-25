@@ -59,24 +59,24 @@
 #include <unistd.h>
 
 #include "src/common/fd.h"
-
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/auth.h"
-#include "src/interfaces/cli_filter.h"
-#include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/spank.h"
-#include "src/interfaces/switch.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/auth.h"
+#include "src/interfaces/cli_filter.h"
+#include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/switch.h"
 
 #include "src/bcast/file_bcast.h"
 
