@@ -875,6 +875,40 @@ def remove_config_parameter_value(name, value, source='slurm'):
         set_config_parameter(name, None, source=source)
 
 
+def require_whereami():
+    """Compiles the whereami.c program to be used by tests
+
+    This function installs the whereami program.  To get the
+    correct output, TaskPlugin is required in the slurm.conf
+    file before slurm starts up.
+    ex: TaskPlugin=task/cray_aries,task/cgroup,task/affinity
+
+    The file will be installed in the testsuite/python/lib/scripts
+    directory where the whereami.c file is located
+
+    Examples:
+        >>> atf.require_whereami()
+        >>> print('\nwhereami is located at', atf.properties['whereami'])
+        >>> output = atf.run_command(f"srun {atf.properties['whereami']}",
+        >>>     user=atf.properties['slurm-user'])
+    """
+    require_config_parameter("TaskPlugin",
+        "task/cray_aries,task/cgroup,task/affinity")
+    # If the file already exists and we don't need to recompile
+    dest_file = f"{properties['testsuite_scripts_dir']}/whereami"
+    if os.path.isfile(dest_file):
+        properties['whereami'] = dest_file
+        return
+
+    source_file = f"{properties['testsuite_scripts_dir']}/whereami.c"
+    if not os.path.isfile(source_file):
+        pytest.fail('Could not find whereami.c!')
+
+    run_command(f"gcc {source_file} -o {dest_file}", fatal=True,
+        user=properties['slurm-user'])
+    properties['whereami'] = dest_file
+
+
 def require_config_parameter(parameter_name, parameter_value, condition=None, source='slurm', skip_message=None):
     """Ensures that a configuration parameter has the required value.
 
@@ -2443,6 +2477,7 @@ properties['testsuite_python_lib'] = properties['testsuite_base_dir'] + '/python
 properties['slurm-source-dir'] = str(pathlib.Path(__file__).resolve().parents[3])
 properties['slurm-build-dir'] = properties['slurm-source-dir']
 properties['slurm-prefix'] = '/usr/local'
+properties['testsuite_scripts_dir']  = properties['testsuite_base_dir'] + '/python/scripts'
 
 # Override directory properties with values from testsuite.conf file
 testsuite_config = {}
