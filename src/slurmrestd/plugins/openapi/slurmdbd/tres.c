@@ -89,9 +89,8 @@ static int _op_handler_tres(ctxt_t *ctxt)
 		 * except for developer testing as the TRES id can not be
 		 * maintained while updating or adding new TRES.
 		 */
-		if (ctxt->tag != CONFIG_OP_TAG)
-			resp_error(ctxt, ESLURM_NOT_SUPPORTED, __func__,
-				   "Updating TRES is not currently supported");
+		resp_error(ctxt, ESLURM_NOT_SUPPORTED, __func__,
+			   "Updating TRES is not currently supported");
 #else
 		openapi_resp_single_t resp = {0};
 		openapi_resp_single_t *resp_ptr = &resp;
