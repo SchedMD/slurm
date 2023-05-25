@@ -171,7 +171,8 @@ static bool _adjust_dev_limits(int dev, struct cxil_devinfo *devinfo)
 		}
 		num_system_svc++;
 #if HAVE_STRUCT_CXI_RSRC_USE
-		if ((rc = cxil_get_svc_rsrc_use_p(cxi_devs[dev],
+		if (cxil_get_svc_rsrc_use_p &&
+		    (rc = cxil_get_svc_rsrc_use_p(cxi_devs[dev],
 						  list->descs[svc].svc_id,
 						  &usage))) {
 			error("Could not get resource usage for CXI dev_id=%d (%s) svc_id=%d: %s",

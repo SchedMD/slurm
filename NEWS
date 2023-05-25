@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 23.02.4
 ==========================
  -- Fix sbatch return code when --wait is requested on a job array.
+ -- switch/hpe_slingshot - avoid segfault when running with old libcxi.
 
 * Changes in Slurm 23.02.3
 ==========================
