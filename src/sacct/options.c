@@ -1047,24 +1047,25 @@ extern void parse_command_line(int argc, char **argv)
 	      (job_cond->flags & JOBCOND_FLAG_NO_WHOLE_HETJOB ? "no" : 0));
 
 	if (params.opt_completion) {
+		if (!slurm_conf.job_comp_type) {
+			fprintf(stderr, "Slurm job completion is disabled\n");
+			exit(1);
+		}
+
 		if (slurmdb_jobcomp_init() != SLURM_SUCCESS) {
 			fprintf(stderr,
 				"Slurm unable to initialize jobcomp plugin\n");
 			exit(1);
 		}
-
-		if (!slurm_conf.job_comp_type) {
-			fprintf(stderr, "Slurm job completion is disabled\n");
-			exit(1);
-		}
 	} else {
-		if (acct_storage_g_init() != SLURM_SUCCESS) {
-			fprintf(stderr, "Slurm unable to initialize storage plugin\n");
-			exit(1);
-		}
 		if (!slurm_conf.accounting_storage_type) {
 			fprintf(stderr,
 				"Slurm accounting storage is disabled\n");
+			exit(1);
+		}
+		if (acct_storage_g_init() != SLURM_SUCCESS) {
+			fprintf(stderr,
+				"Slurm unable to initialize storage plugin\n");
 			exit(1);
 		}
 		acct_db_conn = slurmdb_connection_get(NULL);
