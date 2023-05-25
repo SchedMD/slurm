@@ -81,6 +81,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid loading cli_filter plugins outside of salloc/sbatch/scron/srun. This
     fixes a number of missing symbol problems that can manifest for executables
     linked against libslurm (and not libslurmfull).
+ -- Allow cloud_reg_addrs to update dynamically registered node's addrs on
+    subsequent registrations.
 
 * Changes in Slurm 23.02.2
 ==========================
