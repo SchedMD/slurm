@@ -471,7 +471,7 @@ static bool _copy_het_job_jobinfo(slingshot_jobinfo_t *jobinfo,
  */
 static uint32_t _get_het_job_node_cnt(step_record_t *step_ptr)
 {
-	hostlist_t hl;
+	hostlist_t *hl;
 	job_record_t *het_job_leader, *het_job_ptr, *job_ptr;
 	list_itr_t *job_iter;
 	uint32_t node_cnt;
