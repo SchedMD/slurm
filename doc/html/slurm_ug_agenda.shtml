@@ -2,9 +2,34 @@
 
 <h1>Slurm User Group Meeting 2023</h1>
 
-<p>The Slurm User Group Meeting (SLUG'23) this fall will be held in person at the <a href="https://www.byu.edu/">Brigham Young University</a> from September 12-13, 2023.</p>
+<p>The Slurm User Group Meeting (SLUG'23) this fall will be held in person at <a href="https://www.byu.edu/">Brigham Young University</a> from September 12-13, 2023.</p>
 
+<a name="call_for_papers"><h2>Call for Papers</h2></a>
 <p>Sites interested in submitting technical talks or site reports are encourage to send a brief abstract to <a href="mailto:slugc@schedmd.com">slugc@schedmd.com</a> by June 9th. Notifications of acceptance will go out on June 23.</p>
+
+<a name="registration"><h2>Registration</h2></a>
+
+<p><a href="https://www.eventbrite.com/e/slurm-user-group-2023-registration-631240546467">Registration</a> includes the Monday evening welcome reception (more details to come) and both days of main conference activity. All meals will be provided on Tuesday, September 12th with breakfast and lunch being provided on Wednesday, September 13th. Note that coffee is not provided on campus, so be sure to get your morning caffeine before arriving.</p>
+
+<p>Registration fees are:
+<ul>
+<li>$700 for early bird registration, ending 16 June 2023</li>
+<li>$900 for standard registration, ending 28 July 2023</li>
+<li>$1,100 for late registration, ending 1 September 2023</li>
+</ul>
+</p>
+
+<a name="travel"><h2>Travel</h2></a>
+
+<p>Provo, Utah does have an airport (PVU) that attendees can fly into. Given the small nature of both the airport and airlines at PVU, we suggest attendees consider flights into Salt Lake City (SLC) as well.</p>
+
+<a name="hotels"><h2>Hotels</h2></a>
+
+<p><a href="https://www.marriott.com/en-us/hotels/slcpo-residence-inn-provo-north/overview/">Residence Inn Provo North</a> &mdash; This location has a complimentary shuttle that attendees can schedule for rides to BYU. This hotel is located in a quieter part of town and features a river along the back of the property with a walking trail. A nearby shopping center is walking distance and offers popular food options and a Neighborhood Walmart.</p>
+
+<p><a href="https://www.marriott.com/en-us/hotels/slcvo-provo-marriott-hotel-and-conference-center/overview/">Provo Marriott Hotel and Conference Center</a> &mdash; This hotel is located in the heart of downtown Provo. It does not have a shuttle, but is an easy and beautiful quarter mile walk to the bus station. The bus is complementary and runs about every 8 minutes, followed by a 12-15 minute ride into campus. Being downtown, there are a number of shops, restaurants, parks, a rec center, etc. nearby.</p>
+
+<p><a href="https://www.hyatt.com/en-US/hotel/utah/hyatt-place-provo/pvuzp">Hyatt Place Provo</a> &mdash; The Hyatt is across the street from the Provo Marriott Hotel and Conference center. Staying here would put you in downtown Provo, a quarter mile from the bus stop that runs into campus.</p>
 
 <!--
 <a name="schedule"><h2>Schedule</h2></a>
@@ -38,6 +63,6 @@
 </table>
 -->
 
-<p style="text-align:center;">Last modified 16 May 2023</p>
+<p style="text-align:center;">Last modified 17 May 2023</p>
 
 <!--#include virtual="footer.txt"-->
