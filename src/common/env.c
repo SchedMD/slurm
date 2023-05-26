@@ -1321,8 +1321,10 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		/* keep around for old scripts */
 		env_array_overwrite_fmt(dest, "SLURM_NPROCS", "%u",
 					step_layout_req.num_tasks);
-	} else {
+	} else if (!step_layout_req.num_tasks) {
 		/*
+		 * Figure out num_tasks if it was not set by either
+		 * batch->ntasks or SLURM_NTASKS_PER_NODE above
 		 * Iterate over all kind of cluster nodes, and accum. the number
 		 * of tasks all the group can hold.
 		 */
