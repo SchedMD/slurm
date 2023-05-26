@@ -26,6 +26,7 @@ import traceback
 
 default_command_timeout = 60
 default_polling_timeout = 15
+default_sql_cmd_timeout = 120
 
 
 def node_range_to_list(node_expression):
@@ -2153,7 +2154,7 @@ def backup_accounting_database():
     else:
 
         mysqldump_command = f"{mysqldump_path} {mysql_options} {database_name} > {sql_dump_file}"
-        run_command(mysqldump_command, fatal=True, quiet=True)
+        run_command(mysqldump_command, fatal=True, quiet=True, timeout=default_sql_cmd_timeout)
 
 
 def restore_accounting_database():
@@ -2197,11 +2198,11 @@ def restore_accounting_database():
     # If the sticky bit is set and the dump file is empty, remove the database.
     # Otherwise, restore the dump.
 
-    run_command(f"{base_command} -e \"drop database {database_name}\"", fatal=True, quiet=True)
+    run_command(f"{base_command} -e \"drop database {database_name}\"", fatal=True, quiet=False, timeout=default_sql_cmd_timeout)
     dump_stat = os.stat(sql_dump_file)
     if not (dump_stat.st_size == 0 and dump_stat.st_mode & stat.S_ISVTX):
         run_command(f"{base_command} -e \"create database {database_name}\"", fatal=True, quiet=True)
-        run_command(f"{base_command} {database_name} < {sql_dump_file}", fatal=True, quiet=True)
+        run_command(f"{base_command} {database_name} < {sql_dump_file}", fatal=True, quiet=True, timeout=default_sql_cmd_timeout)
 
     # In either case, remove the dump file
     run_command(f"rm -f {sql_dump_file}", fatal=True, quiet=True)
