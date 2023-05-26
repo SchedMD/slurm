@@ -306,6 +306,7 @@ typedef struct gres_job_state {
 	 */
 	bitstr_t **gres_bit_step_alloc;
 	uint64_t  *gres_cnt_step_alloc;
+	uint64_t **gres_per_bit_step_alloc;
 } gres_job_state_t;
 
 typedef enum {
@@ -373,6 +374,8 @@ typedef struct gres_step_state {
 	uint32_t node_cnt;
 	bitstr_t *node_in_use;
 	bitstr_t **gres_bit_alloc;	/* Used with GRES files */
+	uint64_t **gres_per_bit_alloc;  /* For shared gres to track which
+					   gres was allocated for which bit */
 } gres_step_state_t;
 
 /* Per-socket GRES availability information for scheduling purposes */

@@ -6372,7 +6372,18 @@ extern void *gres_job_state_dup(gres_job_state_t *gres_js)
 				bit_copy(gres_js->gres_bit_step_alloc[i]);
 		}
 	}
-
+	if (gres_js->gres_per_bit_step_alloc && gres_js->gres_bit_alloc) {
+		new_gres_js->gres_per_bit_step_alloc = xcalloc(
+			gres_js->node_cnt, sizeof(uint64_t *));
+		for (i = 0; i < gres_js->node_cnt; i++) {
+			int bit_cnt = bit_size(gres_js->gres_bit_alloc[i]);
+			new_gres_js->gres_per_bit_step_alloc[i] = xcalloc(
+				bit_cnt, sizeof(uint64_t));
+			memcpy(new_gres_js->gres_per_bit_step_alloc[i],
+			       gres_js->gres_per_bit_step_alloc[i],
+			       bit_cnt * sizeof(uint64_t));
+		}
+	}
 	if (gres_js->gres_cnt_node_select) {
 		i = sizeof(uint64_t) * gres_js->total_node_cnt;
 		new_gres_js->gres_cnt_node_select = xmalloc(i);
@@ -7814,6 +7825,18 @@ static void _job_state_log(gres_state_t *gres_state_job, uint32_t job_id)
 		} else if (gres_js->gres_bit_step_alloc)
 			info("  gres_bit_step_alloc[%d]:NULL", i);
 
+		if (gres_js->gres_per_bit_step_alloc &&
+		    gres_js->gres_per_bit_step_alloc[i]) {
+			for (int j = 0;
+			     (j = bit_ffs_from_bit(
+				      gres_js->gres_bit_step_alloc[i], j)) >= 0;
+			     j++) {
+				info("  gres_per_bit_step_alloc[%d][%d]:%"PRIu64,
+				     i, j,
+				     gres_js->gres_per_bit_step_alloc[i][j]);
+			}
+		}
+
 		if (gres_js->gres_cnt_step_alloc) {
 			info("  gres_cnt_step_alloc[%d]:%"PRIu64"", i,
 			     gres_js->gres_cnt_step_alloc[i]);
@@ -8079,6 +8102,12 @@ static void _step_state_delete(void *gres_data)
 		for (i = 0; i < gres_ss->node_cnt; i++)
 			FREE_NULL_BITMAP(gres_ss->gres_bit_alloc[i]);
 		xfree(gres_ss->gres_bit_alloc);
+	}
+	if (gres_ss->gres_per_bit_alloc) {
+		for (i = 0; i < gres_ss->node_cnt; i++){
+			xfree(gres_ss->gres_per_bit_alloc[i]);
+		}
+		xfree(gres_ss->gres_per_bit_alloc);
 	}
 	xfree(gres_ss->gres_cnt_node_alloc);
 	xfree(gres_ss->type_name);
@@ -8463,6 +8492,18 @@ static void *_step_state_dup(gres_step_state_t *gres_ss)
 				bit_copy(gres_ss->gres_bit_alloc[i]);
 		}
 	}
+	if (new_gres_ss->gres_per_bit_alloc && gres_ss->gres_bit_alloc) {
+		new_gres_ss->gres_per_bit_alloc = xcalloc(gres_ss->node_cnt,
+							  sizeof(uint64_t *));
+		for (i = 0; i < gres_ss->node_cnt; i++) {
+			int bit_cnt = bit_size(gres_ss->gres_bit_alloc[i]);
+			new_gres_ss->gres_per_bit_alloc[i] = xcalloc(
+				bit_cnt, sizeof(uint64_t));
+			memcpy(new_gres_ss->gres_per_bit_alloc[i],
+			       gres_ss->gres_per_bit_alloc[i],
+			       bit_cnt * sizeof(uint64_t));
+		}
+	}
 	return new_gres_ss;
 }
 
@@ -8495,6 +8536,17 @@ static void *_step_state_dup2(gres_step_state_t *gres_ss, int node_index)
 		new_gres_ss->gres_bit_alloc = xmalloc(sizeof(bitstr_t *));
 		new_gres_ss->gres_bit_alloc[0] =
 			bit_copy(gres_ss->gres_bit_alloc[node_index]);
+	}
+	if (gres_ss->gres_per_bit_alloc &&
+	    (node_index < gres_ss->node_cnt) && gres_ss->gres_bit_alloc &&
+	    gres_ss->gres_bit_alloc[node_index]) {
+		int bit_cnt = bit_size(gres_ss->gres_bit_alloc[node_index]);
+		new_gres_ss->gres_per_bit_alloc = xmalloc(sizeof(uint64_t *));
+		new_gres_ss->gres_per_bit_alloc[0] = xcalloc(bit_cnt,
+							     sizeof(uint64_t));
+		memcpy(new_gres_ss->gres_per_bit_alloc[0],
+		       gres_ss->gres_per_bit_alloc[node_index],
+		       bit_cnt * sizeof(uint64_t));
 	}
 	return new_gres_ss;
 }
@@ -9518,6 +9570,15 @@ static void _step_state_log_node(gres_step_state_t *gres_ss, int i)
 		     (int)bit_size(gres_ss->gres_bit_alloc[i]));
 	} else
 		info("  gres_bit_alloc[%d]:NULL", i);
+
+	if (gres_ss->gres_per_bit_alloc && gres_ss->gres_per_bit_alloc[i]) {
+		for (int j = 0;
+		     (j = bit_ffs_from_bit(gres_ss->gres_bit_alloc[i], j)) >= 0;
+		     j++) {
+			info("  gres_per_bit_alloc[%d][%d]:%" PRIu64, i, j,
+			     gres_ss->gres_per_bit_alloc[i][j]);
+		}
+	}
 }
 
 static void _step_state_log(gres_step_state_t *gres_ss,
