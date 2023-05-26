@@ -47,6 +47,10 @@ documents those changes that are of interest to users and administrators.
  -- Allow cloud_reg_addrs to update dynamically registered node's addrs on
     subsequent registrations.
  -- switch/hpe_slingshot - Fix hetjob components being assigned different vnis.
+ -- Revert a change in 22.05.5 that prevented tasks from sharing a core if
+    --cpus-per-task > threads per core, but caused incorrect accounting and cpu
+    binding. Instead, --ntasks-per-core=1 may be requested to prevent tasks from
+    sharing a core.
 
 * Changes in Slurm 23.02.2
 ==========================
