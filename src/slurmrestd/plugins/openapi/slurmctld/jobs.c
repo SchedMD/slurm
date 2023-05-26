@@ -372,7 +372,7 @@ static void _job_post(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 
 static int _op_handler_job(openapi_ctxt_t *ctxt)
 {
-	openapi_job_info_param_t params = {0};
+	openapi_job_info_param_t params = {{ 0 }};
 	slurm_selected_step_t *job_id;
 
 	if (DATA_PARSE(ctxt->parser, OPENAPI_JOB_INFO_PARAM, params,
