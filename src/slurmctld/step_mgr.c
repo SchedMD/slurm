@@ -2074,18 +2074,9 @@ static int _pick_step_cores(step_record_t *step_ptr,
 			core_cnt += (cpus_per_core - 1);
 			core_cnt /= cpus_per_core;
 		} else if (step_ptr->cpus_per_task > 0) {
-			if (((ntasks_per_core == INFINITE16) ||
-			     (ntasks_per_core == 1)) &&
-			    (step_ptr->cpus_per_task > cpus_per_core)) {
-				int cores_per_task = step_ptr->cpus_per_task;
-				cores_per_task += (cpus_per_core - 1);
-				cores_per_task /= cpus_per_core;
-				core_cnt *= cores_per_task;
-			} else {
-				core_cnt *= step_ptr->cpus_per_task;
-				core_cnt += (cpus_per_core - 1);
-				core_cnt /= cpus_per_core;
-			}
+			core_cnt *= step_ptr->cpus_per_task;
+			core_cnt += (cpus_per_core - 1);
+			core_cnt /= cpus_per_core;
 		}
 
 		log_flag(STEPS, "%s: For step %pS required cores:%u on node: %d available cores: %u",

@@ -708,7 +708,7 @@ job allocation.
 This option controls the distribution of tasks to the nodes on which
 resources have been allocated, and the distribution of those resources
 to tasks for binding (task affinity). The first distribution
-method (before the first ":") controls the distribution of tasks to nodes. 
+method (before the first ":") controls the distribution of tasks to nodes.
 The second distribution method (after the first ":")
 controls the distribution of allocated CPUs across sockets for binding
 to tasks. The third distribution method (after the second ":") controls
@@ -801,7 +801,7 @@ Use the default method for distributing CPUs across sockets (cyclic).
 
 .TP
 .B block
-The block distribution method will distribute allocated CPUs 
+The block distribution method will distribute allocated CPUs
 consecutively from the same socket for binding to tasks, before using
 the next consecutive socket.
 .IP
@@ -810,15 +810,19 @@ the next consecutive socket.
 .B cyclic
 The cyclic distribution method will distribute allocated CPUs for
 binding to a given task consecutively from the same socket, and
-from the next consecutive socket for the next task, in a 
-round\-robin fashion across sockets. 
+from the next consecutive socket for the next task, in a
+round\-robin fashion across sockets.
 Tasks requiring more than one CPU will have all of those CPUs allocated on a
 single socket if possible.
+.br
+\fBNOTE\fR: In nodes with hyper-threading enabled, a task not requesting full
+cores may be distributed across sockets. This can be avoided by specifying
+\fB\-\-ntasks\-per\-core=1\fR, which forces tasks to allocate full cores.
 .IP
 
 .TP
 .B fcyclic
-The fcyclic distribution method will distribute allocated CPUs 
+The fcyclic distribution method will distribute allocated CPUs
 for binding to tasks from consecutive sockets in a
 round\-robin fashion across the sockets.
 Tasks requiring more than one CPU will have each CPUs allocated in a cyclic
@@ -836,7 +840,7 @@ Use the default method for distributing CPUs across cores
 
 .TP
 .B block
-The block distribution method will distribute allocated CPUs 
+The block distribution method will distribute allocated CPUs
 consecutively from the same core for binding to tasks, before using
 the next consecutive core.
 .IP
@@ -845,13 +849,13 @@ the next consecutive core.
 .B cyclic
 The cyclic distribution method will distribute allocated CPUs for
 binding to a given task consecutively from the same core, and
-from the next consecutive core for the next task, in a 
-round\-robin fashion across cores. 
+from the next consecutive core for the next task, in a
+round\-robin fashion across cores.
 .IP
 
 .TP
 .B fcyclic
-The fcyclic distribution method will distribute allocated CPUs 
+The fcyclic distribution method will distribute allocated CPUs
 for binding to tasks from consecutive cores in a
 round\-robin fashion across the cores.
 .IP
