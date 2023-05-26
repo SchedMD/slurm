@@ -83,6 +83,7 @@ documents those changes that are of interest to users and administrators.
     linked against libslurm (and not libslurmfull).
  -- Allow cloud_reg_addrs to update dynamically registered node's addrs on
     subsequent registrations.
+ -- switch/hpe_slingshot - Fix hetjob components being assigned different vnis.
 
 * Changes in Slurm 23.02.2
 ==========================

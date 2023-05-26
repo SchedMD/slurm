@@ -345,19 +345,173 @@ extern int switch_p_alloc_jobinfo(switch_jobinfo_t **switch_job,
 	return SLURM_SUCCESS;
 }
 
+static void _copy_jobinfo(slingshot_jobinfo_t *old, slingshot_jobinfo_t *new)
+{
+	/* Copy static (non-malloced) fields */
+	memcpy(new, old, sizeof(slingshot_jobinfo_t));
+
+	/* Copy malloced fields */
+	if (old->num_vnis) {
+		size_t vnisz = old->num_vnis * sizeof(uint16_t);
+		new->vnis = xmalloc(vnisz);
+		memcpy(new->vnis, old->vnis, vnisz);
+	}
+
+	if (old->num_profiles) {
+		size_t profilesz = old->num_profiles *
+				   sizeof(slingshot_comm_profile_t);
+		new->profiles = xmalloc(profilesz);
+		memcpy(new->profiles, old->profiles, profilesz);
+	}
+
+	if (old->num_nics) {
+		size_t nicsz = old->num_nics * sizeof(slingshot_hsn_nic_t);
+		new->nics = xmalloc(nicsz);
+		memcpy(new->nics, old->nics, nicsz);
+	}
+}
+
+/*
+ * Get the slingshot jobinfo structure from a given step record.
+ */
+static slingshot_jobinfo_t *_get_slingshot_jobinfo(step_record_t *step_ptr)
+{
+	if (!step_ptr || !step_ptr->switch_job || !step_ptr->switch_job->data)
+		return NULL;
+	return (slingshot_jobinfo_t *) step_ptr->switch_job->data;
+}
+
+/*
+ * Copy slingshot jobinfo from the first het step in a non-het job
+ */
+static bool _copy_het_step_jobinfo(slingshot_jobinfo_t *jobinfo,
+				   step_record_t *step_ptr)
+{
+	slingshot_jobinfo_t *het_jobinfo;
+	step_record_t *het_step_ptr;
+	job_record_t *job_ptr;
+	slurm_step_id_t tmp_step_id;
+
+	/* For the first component, we build the jobinfo, not copy it */
+	if (step_ptr->step_id.step_het_comp == 0)
+		return false;
+
+	/* Get the step record for the first component */
+	job_ptr = step_ptr->job_ptr;
+	tmp_step_id.job_id = step_ptr->step_id.job_id,
+	tmp_step_id.step_id = step_ptr->step_id.step_id,
+	tmp_step_id.step_het_comp = 0,
+
+	het_step_ptr = find_step_record(job_ptr, &tmp_step_id);
+	het_jobinfo = _get_slingshot_jobinfo(het_step_ptr);
+
+	/* Copy it to the current step */
+	if (het_jobinfo) {
+		log_flag(SWITCH, "Copying slingshot jobinfo from %pS to %pS",
+			 het_step_ptr, step_ptr);
+		_copy_jobinfo(het_jobinfo, jobinfo);
+		return true;
+	}
+	return false;
+}
+
+/*
+ * Copy slingshot jobinfo from the first het step in a het job
+ */
+static bool _copy_het_job_jobinfo(slingshot_jobinfo_t *jobinfo,
+				  step_record_t *step_ptr)
+{
+	slingshot_jobinfo_t *het_jobinfo = NULL;
+	job_record_t *het_job_leader, *het_job_ptr, *job_ptr;
+	step_record_t *het_step_ptr;
+	list_itr_t *job_iter;
+
+	job_ptr = step_ptr->job_ptr;
+	if (!(het_job_leader = find_job_record(job_ptr->het_job_id)))
+		return false;
+
+	/* Loop through all heterogeneous job components */
+	job_iter = list_iterator_create(het_job_leader->het_job_list);
+	while ((het_job_ptr = list_next(job_iter))) {
+		slurm_step_id_t tmp_step_id = {
+			.job_id = het_job_ptr->job_id,
+			.step_id = step_ptr->step_id.step_id,
+			.step_het_comp = NO_VAL,
+		};
+
+		/*
+		 * If we get here without finding an existing jobinfo, we must
+		 * be the first component, so there's nothing to copy from.
+		 */
+		if (job_ptr->job_id == het_job_ptr->job_id) {
+			list_iterator_destroy(job_iter);
+			return false;
+		}
+
+		/* Look for a step in this job matching our step id */
+		het_step_ptr = find_step_record(het_job_ptr, &tmp_step_id);
+		het_jobinfo = _get_slingshot_jobinfo(het_step_ptr);
+
+		/* Copy it to the current step */
+		if (het_jobinfo) {
+			log_flag(SWITCH,
+				 "Copying slingshot jobinfo from %pS to %pS",
+				 het_step_ptr, step_ptr);
+			_copy_jobinfo(het_jobinfo, jobinfo);
+			list_iterator_destroy(job_iter);
+			return true;
+		}
+	}
+	list_iterator_destroy(job_iter);
+	return false;
+}
+
+/*
+ * Get the node count for a het step in a het job
+ */
+static uint32_t _get_het_job_node_cnt(step_record_t *step_ptr)
+{
+	hostlist_t hl;
+	job_record_t *het_job_leader, *het_job_ptr, *job_ptr;
+	list_itr_t *job_iter;
+	uint32_t node_cnt;
+
+	job_ptr = step_ptr->job_ptr;
+	if (!(het_job_leader = find_job_record(job_ptr->het_job_id)))
+		return job_ptr->node_cnt;
+
+	/* Loop through all heterogeneous job components */
+	hl = hostlist_create(NULL);
+	job_iter = list_iterator_create(het_job_leader->het_job_list);
+	while ((het_job_ptr = list_next(job_iter)))
+		hostlist_push(hl, het_job_ptr->nodes);
+	list_iterator_destroy(job_iter);
+
+	/* Remove duplicates in the list */
+	hostlist_uniq(hl);
+	node_cnt = hostlist_count(hl);
+	hostlist_destroy(hl);
+	return node_cnt;
+}
+
 extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 				  slurm_step_layout_t *step_layout,
 				  step_record_t *step_ptr)
 {
 	slingshot_jobinfo_t *job = (slingshot_jobinfo_t *) switch_job;
+	job_record_t *job_ptr;
+	uint32_t job_id;
+	uint32_t node_cnt;
+	char *node_list;
 
 	if (!step_ptr) {
 		fatal("switch_p_build_jobinfo: step_ptr NULL not supported");
 	}
-	xassert(step_ptr->job_ptr);
+	job_ptr = step_ptr->job_ptr;
+	xassert(job_ptr);
 	log_flag(SWITCH, "job_id=%u step_id=%u uid=%u network='%s'",
 		step_ptr->step_id.job_id, step_ptr->step_id.step_id,
-		step_ptr->job_ptr->user_id, step_ptr->network);
+		job_ptr->user_id, step_ptr->network);
 
 	if (!job) {
 		debug("switch_job was NULL");
@@ -365,20 +519,51 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	}
 	xassert(job->version == SLURM_PROTOCOL_VERSION);
 
+	/*
+	 * If this is a homogeneous step, or the first component in a
+	 * heterogeneous step, get the job ID, node list, and node count to use.
+	 *
+	 * Note that for heterogeneous steps, at the point this function is
+	 * called, the nodelist isn't available for all step components.
+	 * Without an accurate nodelist Instant On won't work, so we skip it.
+	 *
+	 * If this is not the first component in a heterogeneous step, copy the
+	 * jobinfo struct from the first component.
+	 */
+	if (job_ptr->het_job_id && (job_ptr->het_job_id != NO_VAL)) {
+		/* This is a het step in a het job */
+		if (_copy_het_job_jobinfo(job, step_ptr))
+			return SLURM_SUCCESS;
+
+		node_list = NULL;
+		node_cnt = _get_het_job_node_cnt(step_ptr);
+		job_id = job_ptr->het_job_id;
+	} else if (step_ptr->step_id.step_het_comp != NO_VAL) {
+		/* This is a het step in a non-het job */
+		if (_copy_het_step_jobinfo(job, step_ptr))
+			return SLURM_SUCCESS;
+
+		node_list = NULL;
+		node_cnt = job_ptr->node_cnt;
+		job_id = job_ptr->job_id;
+	} else {
+		/* This is a non-het step in a non-het job */
+		node_list = step_layout->node_list;
+		node_cnt = step_layout->node_cnt;
+		job_id = job_ptr->job_id;
+	}
+
 	/* Do VNI allocation/traffic classes/network limits */
-	if (!slingshot_setup_job_step(job, step_layout->node_cnt,
-				      step_ptr->step_id.job_id,
-				      step_ptr->network,
-				      step_ptr->job_ptr->network))
+	if (!slingshot_setup_job_step(job, node_cnt, job_id, step_ptr->network,
+				      job_ptr->network))
 		return SLURM_ERROR;
 
 	/*
 	 * Fetch any Instant On data if configured;
 	 * don't fail launch on Instant On failure
 	 */
-	slingshot_fetch_instant_on(job, step_layout->node_list,
-				   step_layout->node_cnt);
-
+	if (node_list)
+		slingshot_fetch_instant_on(job, node_list, node_cnt);
 	return SLURM_SUCCESS;
 }
 
@@ -388,31 +573,7 @@ extern int switch_p_duplicate_jobinfo(switch_jobinfo_t *tmp,
 	slingshot_jobinfo_t *old = (slingshot_jobinfo_t *) tmp;
 	slingshot_jobinfo_t *new = xmalloc(sizeof(*new));
 
-	/* Copy static (non-malloced) fields */
-	memcpy(new, old, sizeof(slingshot_jobinfo_t));
-
-	/* Copy malloced fields */
-	if (old->num_vnis > 0) {
-		size_t vnisz = old->num_vnis * sizeof(uint16_t);
-		new->vnis = xmalloc(vnisz);
-		memcpy(new->vnis, old->vnis, vnisz);
-	}
-
-	if (old->num_profiles > 0) {
-		size_t profilesz = old->num_profiles *
-				   sizeof(slingshot_comm_profile_t);
-		new->profiles = xmalloc(profilesz);
-		memcpy(new->profiles, old->profiles, profilesz);
-	}
-
-	if (old->vni_pids)
-		new->vni_pids = bit_copy(old->vni_pids);
-
-	if (old->num_nics) {
-		size_t nicsz = old->num_nics * sizeof(slingshot_hsn_nic_t);
-		new->nics = xmalloc(nicsz);
-		memcpy(new->nics, old->nics, nicsz);
-	}
+	_copy_jobinfo(old, new);
 
 	*dest = (switch_jobinfo_t *)new;
 	return SLURM_SUCCESS;
