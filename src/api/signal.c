@@ -118,9 +118,7 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 	return rc;
 }
 
-static int _signal_job_step(const job_step_info_t *step,
-			    const resource_allocation_response_msg_t *
-			    allocation, uint16_t signal)
+static int _signal_job_step(const job_step_info_t *step, uint16_t signal)
 {
 	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
@@ -130,7 +128,7 @@ static int _signal_job_step(const job_step_info_t *step,
 	memcpy(&rpc.step_id, &step->step_id, sizeof(rpc.step_id));
 	rpc.signal = signal;
 
-	rc = _local_send_recv_rc_msgs(allocation->node_list,
+	rc = _local_send_recv_rc_msgs(step->nodes,
 				      REQUEST_SIGNAL_TASKS, &rpc);
 	return rc;
 }
@@ -179,9 +177,7 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
  * RET Upon successful termination of the job step, 0 shall be returned.
  * Otherwise, -1 shall be returned and errno set to indicate the error.
  */
-static int _terminate_job_step(const job_step_info_t *step,
-			       const resource_allocation_response_msg_t *
-			       allocation)
+static int _terminate_job_step(const job_step_info_t *step)
 {
 	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
@@ -192,7 +188,7 @@ static int _terminate_job_step(const job_step_info_t *step,
 	memset(&rpc, 0, sizeof(rpc));
 	memcpy(&rpc.step_id, &step->step_id, sizeof(rpc.step_id));
 	rpc.signal = (uint16_t)-1; /* not used by slurmd */
-	rc = _local_send_recv_rc_msgs(allocation->node_list,
+	rc = _local_send_recv_rc_msgs(step->nodes,
 				      REQUEST_TERMINATE_TASKS, &rpc);
 	if ((rc == -1) && (errno == ESLURM_ALREADY_DONE)) {
 		rc = 0;
@@ -285,7 +281,7 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
 		if ((step_info->job_steps[i].step_id.job_id == job_id) &&
 		    (step_info->job_steps[i].step_id.step_id == step_id)) {
  			rc = _signal_job_step(&step_info->job_steps[i],
- 					      alloc_info, signal);
+ 					      signal);
  			save_errno = rc;
 			break;
 		}
@@ -342,8 +338,7 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 	for (i = 0; i < step_info->job_step_count; i++) {
 		if ((step_info->job_steps[i].step_id.job_id == job_id) &&
 		    (step_info->job_steps[i].step_id.step_id == step_id)) {
-			rc = _terminate_job_step(&step_info->job_steps[i],
-						 alloc_info);
+			rc = _terminate_job_step(&step_info->job_steps[i]);
 			save_errno = errno;
 			break;
 		}
