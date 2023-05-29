@@ -1,3 +1,3 @@
 # Makefile for route plugins
 
-SUBDIRS = default topology
+SUBDIRS = default partition topology

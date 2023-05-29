@@ -66,6 +66,8 @@ documents those changes that are of interest to users and administrators.
  -- Allow SlurmUser/root to use reservations without specific permissions.
  -- Fix sending step signals to nodes not allocated by the step.
  -- Remove CgroupAutomount= option from cgroup.conf.
+ -- Add route/partition plugin to route communications based on partition node
+    lists.
 
 * Changes in Slurm 23.02.3
 ==========================

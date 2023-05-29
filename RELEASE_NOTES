@@ -28,6 +28,8 @@ HIGHLIGHTS
  -- job_submit/throttle - improve reset of submitted job counts per user in
     order to better honor SchedulerParameters=jobs_per_user_per_hour=#.
  -- Allow SlurmUser/root to use reservations without specific permissions.
+ -- Add route/partition plugin to route communications based on partition node
+    lists.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
