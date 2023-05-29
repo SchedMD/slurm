@@ -42,7 +42,8 @@
 
 typedef struct slurm_mcs_ops {
 	int (*set)		(job_record_t *job_ptr, char *label);
-	int (*check)		(uint32_t user_id, char *mcs_label);
+	int (*check)		(uint32_t user_id, char *mcs_label,
+				 bool assoc_locked);
 } slurm_mcs_ops_t;
 
 /*
@@ -241,5 +242,5 @@ extern int mcs_g_check_mcs_label(uint32_t user_id, char *mcs_label,
 {
 	xassert(g_mcs_context);
 
-	return (int)(*(ops.check))(user_id, mcs_label);
+	return (int)(*(ops.check))(user_id, mcs_label, assoc_locked);
 }
