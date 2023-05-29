@@ -173,7 +173,6 @@ extern int select_char2coord(char coord)
 extern int select_g_init(bool only_default)
 {
 	int retval = SLURM_SUCCESS;
-	char *select_type = NULL;
 	int i, j, plugin_cnt;
 	char *plugin_type = "select";
 	List plugin_names = NULL;
@@ -184,14 +183,13 @@ extern int select_g_init(bool only_default)
 	if ( select_context )
 		goto done;
 
-	select_type = slurm_get_select_type();
 	if (working_cluster_rec) {
 		/* just ignore warnings here */
 	} else {
 #ifdef HAVE_NATIVE_CRAY
-		if (xstrcasecmp(select_type, "select/cray_aries")) {
+		if (xstrcasecmp(slurm_conf.select_type, "select/cray_aries")) {
 			error("%s is incompatible with a Cray/Aries system.",
-			      select_type);
+			      slurm_conf.select_type);
 			fatal("Use SelectType=select/cray_aries");
 		}
 #endif
@@ -200,11 +198,11 @@ extern int select_g_init(bool only_default)
 	select_context_cnt = 0;
 
 	plugin_args.plugin_type    = plugin_type;
-	plugin_args.default_plugin = select_type;
+	plugin_args.default_plugin = slurm_conf.select_type;
 
 	if (only_default) {
 		plugin_names = list_create(xfree_ptr);
-		list_append(plugin_names, xstrdup(select_type));
+		list_append(plugin_names, xstrdup(slurm_conf.select_type));
 	} else {
 		plugin_names = plugin_get_plugins_of_type(plugin_type);
 	}
@@ -217,7 +215,7 @@ extern int select_g_init(bool only_default)
 
 
 	if (select_context_default == -1)
-		fatal("Can't find plugin for %s", select_type);
+		fatal("Can't find plugin for %s", slurm_conf.select_type);
 
 	/* Ensure that plugin_id is valid and unique */
 	for (i=0; i<select_context_cnt; i++) {
@@ -247,14 +245,13 @@ done:
 				fatal("Invalid SelectTypeParameters for "
 				      "%s: %s (%u), it can't contain "
 				      "CR_(CPU|CORE|SOCKET).",
-				      select_type,
+				      slurm_conf.select_type,
 				      select_type_param_string(cr_type),
 				      cr_type);
 			}
 		}
 	}
 
-	xfree(select_type);
 	FREE_NULL_LIST(plugin_names);
 
 	return retval;

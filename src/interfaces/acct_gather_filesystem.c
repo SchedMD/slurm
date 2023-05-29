@@ -112,7 +112,6 @@ extern int acct_gather_filesystem_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "acct_gather_filesystem";
-	char *type = NULL;
 
 	slurm_mutex_lock(&g_context_lock);
 
@@ -124,13 +123,13 @@ extern int acct_gather_filesystem_init(void)
 		goto done;
 	}
 
-	type = slurm_get_acct_gather_filesystem_type();
-
 	g_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+		plugin_type, slurm_conf.acct_gather_filesystem_type,
+		(void **)&ops, syms, sizeof(syms));
 
 	if (!g_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.acct_gather_filesystem_type);
 		retval = SLURM_ERROR;
 		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
@@ -140,8 +139,8 @@ extern int acct_gather_filesystem_init(void)
 done:
 	slurm_mutex_unlock(&g_context_lock);
 	if (retval != SLURM_SUCCESS)
-		fatal("can not open the %s plugin", type);
-	xfree(type);
+		fatal("can not open the %s plugin",
+		      slurm_conf.acct_gather_filesystem_type);
 
 	return retval;
 }

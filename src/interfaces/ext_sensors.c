@@ -82,7 +82,6 @@ extern int ext_sensors_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "ext_sensors";
-	char *type = NULL;
 
 	slurm_mutex_lock(&g_context_lock);
 
@@ -94,13 +93,13 @@ extern int ext_sensors_init(void)
 		goto done;
 	}
 
-	type = slurm_get_ext_sensors_type();
-
 	g_context = plugin_context_create(
-		plugin_type, type, (void **)&ops, syms, sizeof(syms));
+		plugin_type, slurm_conf.ext_sensors_type,
+		(void **)&ops, syms, sizeof(syms));
 
 	if (!g_context) {
-		error("cannot create %s context for %s", plugin_type, type);
+		error("cannot create %s context for %s",
+		      plugin_type, slurm_conf.ext_sensors_type);
 		retval = SLURM_ERROR;
 		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
@@ -108,7 +107,6 @@ extern int ext_sensors_init(void)
 	plugin_inited = PLUGIN_INITED;
 done:
 	slurm_mutex_unlock(&g_context_lock);
-	xfree(type);
 
 	return retval;
 }
