@@ -92,6 +92,7 @@ check_PROGRAMS = $(am__EXEEXT_2)
 TESTS = log-test$(EXEEXT) $(am__EXEEXT_1)
 @HAVE_CHECK_TRUE@am__append_1 = xhash-test \
 @HAVE_CHECK_TRUE@	 data-test \
+@HAVE_CHECK_TRUE@	 serializer-test \
 @HAVE_CHECK_TRUE@	 slurm_opt-test \
 @HAVE_CHECK_TRUE@	 xstring-test \
 @HAVE_CHECK_TRUE@	 parse_time-test \
@@ -160,6 +161,7 @@ CONFIG_HEADER = $(top_builddir)/config.h \
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = xhash-test$(EXEEXT) data-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	serializer-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	slurm_opt-test$(EXEEXT) xstring-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	parse_time-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	job-resources-test$(EXEEXT) \
@@ -212,6 +214,13 @@ reverse_tree_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(reverse_tree_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
+serializer_test_SOURCES = serializer-test.c
+serializer_test_OBJECTS = serializer_test-serializer-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@serializer_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
+serializer_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(serializer_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
 slurm_opt_test_SOURCES = slurm_opt-test.c
 slurm_opt_test_OBJECTS = slurm_opt_test-slurm_opt-test.$(OBJEXT)
 @HAVE_CHECK_TRUE@slurm_opt_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
@@ -251,6 +260,7 @@ am__depfiles_remade = ./$(DEPDIR)/data_test-data-test.Po \
 	./$(DEPDIR)/log-test.Po ./$(DEPDIR)/pack_test-pack-test.Po \
 	./$(DEPDIR)/parse_time_test-parse_time-test.Po \
 	./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po \
+	./$(DEPDIR)/serializer_test-serializer-test.Po \
 	./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po \
 	./$(DEPDIR)/xhash_test-xhash-test.Po \
 	./$(DEPDIR)/xstring_test-xstring-test.Po
@@ -274,8 +284,8 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = data-test.c job-resources-test.c log-test.c pack-test.c \
-	parse_time-test.c reverse_tree-test.c slurm_opt-test.c \
-	xhash-test.c xstring-test.c
+	parse_time-test.c reverse_tree-test.c serializer-test.c \
+	slurm_opt-test.c xhash-test.c xstring-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -787,6 +797,8 @@ LDADD = $(LIB_SLURM)
 @HAVE_CHECK_TRUE@xhash_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@data_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@data_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@serializer_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@serializer_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@slurm_opt_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@slurm_opt_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@xstring_test_CFLAGS = $(MYCFLAGS)
@@ -866,6 +878,10 @@ reverse_tree-test$(EXEEXT): $(reverse_tree_test_OBJECTS) $(reverse_tree_test_DEP
 	@rm -f reverse_tree-test$(EXEEXT)
 	$(AM_V_CCLD)$(reverse_tree_test_LINK) $(reverse_tree_test_OBJECTS) $(reverse_tree_test_LDADD) $(LIBS)
 
+serializer-test$(EXEEXT): $(serializer_test_OBJECTS) $(serializer_test_DEPENDENCIES) $(EXTRA_serializer_test_DEPENDENCIES) 
+	@rm -f serializer-test$(EXEEXT)
+	$(AM_V_CCLD)$(serializer_test_LINK) $(serializer_test_OBJECTS) $(serializer_test_LDADD) $(LIBS)
+
 slurm_opt-test$(EXEEXT): $(slurm_opt_test_OBJECTS) $(slurm_opt_test_DEPENDENCIES) $(EXTRA_slurm_opt_test_DEPENDENCIES) 
 	@rm -f slurm_opt-test$(EXEEXT)
 	$(AM_V_CCLD)$(slurm_opt_test_LINK) $(slurm_opt_test_OBJECTS) $(slurm_opt_test_LDADD) $(LIBS)
@@ -890,6 +906,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_test-pack-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_time_test-parse_time-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/serializer_test-serializer-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xhash_test-xhash-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xstring_test-xstring-test.Po@am__quote@ # am--include-marker
@@ -990,6 +1007,20 @@ reverse_tree_test-reverse_tree-test.obj: reverse_tree-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='reverse_tree-test.c' object='reverse_tree_test-reverse_tree-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(reverse_tree_test_CFLAGS) $(CFLAGS) -c -o reverse_tree_test-reverse_tree-test.obj `if test -f 'reverse_tree-test.c'; then $(CYGPATH_W) 'reverse_tree-test.c'; else $(CYGPATH_W) '$(srcdir)/reverse_tree-test.c'; fi`
+
+serializer_test-serializer-test.o: serializer-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(serializer_test_CFLAGS) $(CFLAGS) -MT serializer_test-serializer-test.o -MD -MP -MF $(DEPDIR)/serializer_test-serializer-test.Tpo -c -o serializer_test-serializer-test.o `test -f 'serializer-test.c' || echo '$(srcdir)/'`serializer-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/serializer_test-serializer-test.Tpo $(DEPDIR)/serializer_test-serializer-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='serializer-test.c' object='serializer_test-serializer-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(serializer_test_CFLAGS) $(CFLAGS) -c -o serializer_test-serializer-test.o `test -f 'serializer-test.c' || echo '$(srcdir)/'`serializer-test.c
+
+serializer_test-serializer-test.obj: serializer-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(serializer_test_CFLAGS) $(CFLAGS) -MT serializer_test-serializer-test.obj -MD -MP -MF $(DEPDIR)/serializer_test-serializer-test.Tpo -c -o serializer_test-serializer-test.obj `if test -f 'serializer-test.c'; then $(CYGPATH_W) 'serializer-test.c'; else $(CYGPATH_W) '$(srcdir)/serializer-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/serializer_test-serializer-test.Tpo $(DEPDIR)/serializer_test-serializer-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='serializer-test.c' object='serializer_test-serializer-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(serializer_test_CFLAGS) $(CFLAGS) -c -o serializer_test-serializer-test.obj `if test -f 'serializer-test.c'; then $(CYGPATH_W) 'serializer-test.c'; else $(CYGPATH_W) '$(srcdir)/serializer-test.c'; fi`
 
 slurm_opt_test-slurm_opt-test.o: slurm_opt-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_opt_test_CFLAGS) $(CFLAGS) -MT slurm_opt_test-slurm_opt-test.o -MD -MP -MF $(DEPDIR)/slurm_opt_test-slurm_opt-test.Tpo -c -o slurm_opt_test-slurm_opt-test.o `test -f 'slurm_opt-test.c' || echo '$(srcdir)/'`slurm_opt-test.c
@@ -1300,6 +1331,13 @@ data-test.log: data-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+serializer-test.log: serializer-test$(EXEEXT)
+	@p='serializer-test$(EXEEXT)'; \
+	b='serializer-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 slurm_opt-test.log: slurm_opt-test$(EXEEXT)
 	@p='slurm_opt-test$(EXEEXT)'; \
 	b='slurm_opt-test'; \
@@ -1408,6 +1446,7 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/pack_test-pack-test.Po
 	-rm -f ./$(DEPDIR)/parse_time_test-parse_time-test.Po
 	-rm -f ./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po
+	-rm -f ./$(DEPDIR)/serializer_test-serializer-test.Po
 	-rm -f ./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po
 	-rm -f ./$(DEPDIR)/xstring_test-xstring-test.Po
@@ -1462,6 +1501,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/pack_test-pack-test.Po
 	-rm -f ./$(DEPDIR)/parse_time_test-parse_time-test.Po
 	-rm -f ./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po
+	-rm -f ./$(DEPDIR)/serializer_test-serializer-test.Po
 	-rm -f ./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po
 	-rm -f ./$(DEPDIR)/xstring_test-xstring-test.Po
