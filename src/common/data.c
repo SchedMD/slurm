@@ -1422,6 +1422,9 @@ static int _convert_data_force_bool(data_t *data)
 		else if (regex_quick_match(data->data.string_u,
 					   &bool_pattern_true_re))
 			data_set_bool(data, true);
+		else if (regex_quick_match(data->data.string_u,
+					   &bool_pattern_false_re))
+			data_set_bool(data, false);
 		else { /* try to auto detect the type and try again */
 			if (data_convert_type(data, DATA_TYPE_NONE)
 			    != DATA_TYPE_NONE)
