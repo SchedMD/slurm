@@ -1637,15 +1637,6 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 	if (!data)
 		return DATA_TYPE_NONE;
 
-	/*
-	 * This currently only works on primitive types and doesn't
-	 * apply to dictionaries or lists.
-	 */
-	if (data_get_type(data) == DATA_TYPE_DICT)
-		return DATA_TYPE_NONE;
-	if (data_get_type(data) == DATA_TYPE_LIST)
-		return DATA_TYPE_NONE;
-
 	switch (match) {
 	case DATA_TYPE_STRING:
 		return _convert_data_string(data) ? DATA_TYPE_NONE :
@@ -1676,10 +1667,15 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 			return DATA_TYPE_BOOL;
 
 		return DATA_TYPE_NONE;
-	default:
+	case DATA_TYPE_DICT:
+	case DATA_TYPE_LIST:
+		/* data_parser should be used for this conversion instead. */
+		return DATA_TYPE_NONE;
+	case DATA_TYPE_MAX:
 		break;
 	}
 
+	xassert(false);
 	return DATA_TYPE_NONE;
 }
 
