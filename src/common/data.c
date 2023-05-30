@@ -64,7 +64,7 @@ static const char *bool_pattern_false = "^([nN]([Oo]|)|[fF](|[aA][lL][sS][eE])|[
 static regex_t bool_pattern_false_re;
 static const char *int_pattern = "^([+-]?[0-9]+)$";
 static regex_t int_pattern_re;
-static const char *float_pattern = "^([+-]?[0-9]*[.][0-9]*(|[eE][+-]?[0-9]+))$";
+static const char *float_pattern = "^([+-]?([0-9]*[.][0-9]*(|[eE][+-]?[0-9]+)|[+-]?[iI][nN][fF]([iI][nN][iI][tT][yY]|)|[+-]?[nN][aA][nN]))$";
 static regex_t float_pattern_re;
 
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -1541,7 +1541,54 @@ static int _convert_data_float(data_t *data)
 	case DATA_TYPE_STRING:
 		if (regex_quick_match(data->data.string_u, &float_pattern_re)) {
 			double x;
-			if (sscanf(data->data.string_u, "%lf", &x) == 1) {
+			if ((data->data.string_u[0] == '-') &&
+			    ((data->data.string_u[1] == 'i') ||
+			     (data->data.string_u[1] == 'I'))) {
+				xassert(!xstrcasecmp(data->data.string_u,
+						     "-infinity") ||
+					!xstrcasecmp(data->data.string_u,
+						     "-inf"));
+				data_set_float(data, -INFINITY);
+				return SLURM_SUCCESS;
+			} else if ((data->data.string_u[0] == '+') &&
+				   ((data->data.string_u[1] == 'i') ||
+				    (data->data.string_u[1] == 'I'))) {
+				xassert(!xstrcasecmp(data->data.string_u,
+						     "+infinity") ||
+					!xstrcasecmp(data->data.string_u,
+						     "+inf"));
+				data_set_float(data, INFINITY);
+				return SLURM_SUCCESS;
+			} else if ((data->data.string_u[0] == 'i') ||
+				   (data->data.string_u[0] == 'I')) {
+				xassert(!xstrcasecmp(data->data.string_u,
+						     "infinity") ||
+					!xstrcasecmp(data->data.string_u,
+						     "inf"));
+				data_set_float(data, INFINITY);
+				return SLURM_SUCCESS;
+			} else if ((data->data.string_u[0] == '-') &&
+				   ((data->data.string_u[1] == 'n') ||
+				    (data->data.string_u[1] == 'N'))) {
+				xassert(!xstrcasecmp(data->data.string_u,
+						     "-nan"));
+				data_set_float(data, -NAN);
+				return SLURM_SUCCESS;
+			} else if ((data->data.string_u[0] == '+') &&
+				   ((data->data.string_u[1] == 'n') ||
+				    (data->data.string_u[1] == 'N'))) {
+				xassert(!xstrcasecmp(data->data.string_u,
+						     "+nan"));
+				data_set_float(data, NAN);
+				return SLURM_SUCCESS;
+			} else if ((data->data.string_u[0] == 'N') ||
+				   (data->data.string_u[0] == 'N')) {
+				xassert(!xstrcasecmp(data->data.string_u,
+						     "nan"));
+				data_set_float(data, NAN);
+				return SLURM_SUCCESS;
+			} else if (sscanf(data->data.string_u, "%lf", &x) ==
+				   1) {
 				log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to float: %s->%lf",
 					 __func__, (uintptr_t) data,
 					 data->data.string_u, x);
