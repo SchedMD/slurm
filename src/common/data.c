@@ -1847,7 +1847,9 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			 data_get_int(b));
 		return rc;
 	case DATA_TYPE_FLOAT:
-		rc = fuzzy_equal(data_get_float(a), data_get_float(b));
+		if (!(rc = (data_get_float(a) == data_get_float(b))))
+			rc = fuzzy_equal(data_get_float(a), data_get_float(b));
+
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%e %s %s(0x%"PRIXPTR")=%e",
 			 data_type_to_string(data_get_type(a)), (uintptr_t) a,
 			 data_get_float(a), (rc ? "=" : "!="),
