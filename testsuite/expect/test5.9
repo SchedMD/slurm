@@ -37,6 +37,11 @@ set file_err      "$test_dir/error"
 set file_in       "$test_dir/$job_script"
 set file_out      "$test_dir/output"
 set test_acct     "${test_name}_acct"
+set network_param "ip"
+
+if {[param_contains [get_config_param "SwitchType"] "*slingshot"]} {
+	set network_param "depth"
+}
 
 ############################Job Format Test############################
 
@@ -64,7 +69,7 @@ set sq_format(account)       $test_acct
 # cpus-per-task
 set sq_format(cpuspertask)   2
 # network
-set sq_format(network)       "ip"
+set sq_format(network)       $network_param
 # requeue
 set sq_format(requeue)       1
 # profile
