@@ -583,20 +583,6 @@ char *slurm_get_acct_gather_interconnect_type(void)
 	return acct_gather_interconnect_type;
 }
 
-extern uint16_t slurm_get_acct_gather_node_freq(void)
-{
-	uint16_t freq = 0;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		freq = conf->acct_gather_node_freq;
-		slurm_conf_unlock();
-	}
-	return freq;
-}
-
 /* slurm_get_ext_sensors_type
  * get ExtSensorsType from slurm_conf object
  * RET char *   - ext_sensors type, MUST be xfreed by caller
