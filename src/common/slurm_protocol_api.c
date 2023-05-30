@@ -583,26 +583,6 @@ char *slurm_get_acct_gather_interconnect_type(void)
 	return acct_gather_interconnect_type;
 }
 
-/* slurm_get_filesystem_accounting_type
- * get FilesystemAccountingType from slurm_conf object
- * RET char *   - filesystem_accounting type, MUST be xfreed by caller
- */
-char *slurm_get_acct_gather_filesystem_type(void)
-{
-	char *acct_gather_filesystem_type = NULL;
-	slurm_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		acct_gather_filesystem_type =
-			xstrdup(conf->acct_gather_filesystem_type);
-		slurm_conf_unlock();
-	}
-	return acct_gather_filesystem_type;
-}
-
-
 extern uint16_t slurm_get_acct_gather_node_freq(void)
 {
 	uint16_t freq = 0;

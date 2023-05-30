@@ -136,13 +136,6 @@ char *slurm_get_preempt_type(void);
  */
 char *slurm_get_acct_gather_interconnect_type(void);
 
-/* slurm_get_acct_filesystem_profile_type
- * get FilesystemAccountingType from slurm_conf object
- * RET char *   - acct_gather_filesystem_type, MUST be xfreed by caller
- */
-char *slurm_get_acct_gather_filesystem_type(void);
-
-
 /* slurm_get_acct_gather_node_freq
  * returns the accounting poll frequency for requesting info from a
  * node from the slurm_conf object
