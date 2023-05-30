@@ -1226,6 +1226,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 			break;
 
 		case LOG_LEVEL_ERROR:
+			priority = LOG_ERR;
 			pfx = sched? "error: sched: " : "error: ";
 			pfx = spank ? "" : pfx;
 			break;
