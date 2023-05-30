@@ -4498,6 +4498,7 @@ a node are individually allocated as consumable resources.
 Note that whole nodes can be allocated to jobs for selected
 partitions by using the \fIOverSubscribe=Exclusive\fR option.
 See the partition \fBOverSubscribe\fR parameter for more information.
+This is the default value.
 .IP
 
 .TP
@@ -4518,7 +4519,6 @@ nodes is not recommended and may result in valid job allocation requests being
 rejected. The linear plugin is not designed to track generic resources on a
 node. In cases where generic resources (such as GPUs) need to be tracked,
 the cons_tres plugin should be used instead.
-This is the default value.
 .RE
 .IP
 

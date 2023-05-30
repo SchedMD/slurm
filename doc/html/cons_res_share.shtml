@@ -14,12 +14,12 @@ discussed in its own section below.)
 The per-partition <CODE>OverSubscribe</CODE> setting applies to the <U>entity
 being selected for scheduling</U>:
 <UL><LI><P>
-When the default <CODE>select/linear</CODE> plugin is enabled, the
+When the <CODE>select/linear</CODE> plugin is enabled, the
 per-partition <CODE>OverSubscribe</CODE> setting controls whether or not the
 <B>nodes</B> are shared among jobs.
 </P></LI><LI><P>
-When the <CODE>select/cons_tres</CODE> plugins
-are enabled, the per-partition <CODE>OverSubscribe</CODE> setting controls
+When the default <CODE>select/cons_tres</CODE> plugin is
+enabled, the per-partition <CODE>OverSubscribe</CODE> setting controls
 whether or not the <B>configured consumable resources</B> are shared among jobs.
 When a consumable resource such as a core,
 socket, or CPU is shared, it means that more than one job can be assigned to it.
@@ -274,6 +274,6 @@ options are mutually exclusive when used at job submission. If both options are
 set when submitting a job, the job submission command used will fatal.
 </P>
 
-<p style="text-align:center;">Last modified 19 September 2022</p>
+<p style="text-align:center;">Last modified 30 May 2023</p>
 
 <!--#include virtual="footer.txt"-->

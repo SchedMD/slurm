@@ -142,7 +142,7 @@ typedef struct node_record node_record_t;
 #if defined HAVE_NATIVE_CRAY
 #  define DEFAULT_SELECT_TYPE       "select/cray_aries"
 #else
-#  define DEFAULT_SELECT_TYPE       "select/linear"
+#  define DEFAULT_SELECT_TYPE       "select/cons_tres"
 #endif
 #define DEFAULT_SLURMCTLD_PIDFILE   "/var/run/slurmctld.pid"
 #define DEFAULT_SLURMCTLD_TIMEOUT   120

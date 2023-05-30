@@ -42,6 +42,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     time between SIGTSTP and SIGSTOP signals when suspending jobs.
  -- Add SlurmctldParameters=no_quick_restart to avoid a new slurmctld taking
     over the old slurmctld on accident.
+ -- Changed the default SelectType to select/cons_tres (from select/linear).
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
