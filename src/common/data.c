@@ -1666,15 +1666,16 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 		if (!_convert_data_null(data))
 			return DATA_TYPE_NULL;
 
-		if (!_convert_data_bool(data))
-			return DATA_TYPE_BOOL;
-
 		if (!_convert_data_int(data))
 			return DATA_TYPE_INT_64;
 
 		if (!_convert_data_float(data))
 			return DATA_TYPE_FLOAT;
 
+		if (!_convert_data_bool(data))
+			return DATA_TYPE_BOOL;
+
+		return DATA_TYPE_NONE;
 	default:
 		break;
 	}
