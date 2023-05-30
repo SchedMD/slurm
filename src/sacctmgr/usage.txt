@@ -71,21 +71,21 @@ sacctmgr [<OPTION>] [<COMMAND>]
                             WithDeleted, WithCoordinators, WithRawQOS,
                             and WOPLimits
        add account        - Clusters=, DefaultQOS=, Description=, Fairshare=,
-                            GrpTRESMins=, GrpTRES=, GrpJobs=, GrpMemory=,
-                            GrpNodes=, GrpSubmitJob=, GrpWall=, MaxTRESMins=,
-                            MaxTRES=, MaxJobs=, MaxNodes=, MaxSubmitJobs=,
-                            MaxWall=, Names=, Organization=, Parent=,
-                            Priority= and QosLevel=
-       modify account     - (set options) DefaultQOS=, Description=,
-                            Fairshare=, GrpTRESMins=, GrpTRESRunMins=,
-                            GrpTRES=, GrpJobs=, GrpMemory=, GrpNodes=,
+                            GrpTRESMins=, GrpTRES=, GrpJobs=,
                             GrpSubmitJob=, GrpWall=, MaxTRESMins=, MaxTRES=,
                             MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=,
-                            Names=, Organization=, Parent=, and QosLevel=
+                            Names=, Organization=, Parent=, Priority=
+                            and QosLevel=
+       modify account     - (set options) DefaultQOS=, Description=,
+                            Fairshare=, GrpTRESMins=, GrpTRESRunMins=,
+                            GrpTRES=, GrpJobs=, GrpSubmitJob=, GrpWall=,
+                            MaxTRESMins=, MaxTRES=, MaxJobs=, MaxNodes=,
+                            MaxSubmitJobs=, MaxWall=, Names=, Organization=,
+                            Parent=, and QosLevel=
                             RawUsage= (with admin privileges only)
                             (where options) Clusters=, DefaultQOS=,
                             Descriptions=, Names=, Organizations=,
-                            Parent=,Priority= and QosLevel=
+                            Parent=, Priority= and QosLevel=
        delete account     - Clusters=, DefaultQOS=, Descriptions=, Names=,
                             Organizations=, and Parents=
 
@@ -98,14 +98,12 @@ sacctmgr [<OPTION>] [<COMMAND>]
                             Flags=, Format=, Names=, RPC= WithFed and
                             WOLimits
        add cluster        - DefaultQOS=, Fairshare=, Federation=, FedState=,
-                            GrpTRES=, GrpJobs=, GrpMemory=, GrpNodes=,
-                            GrpSubmitJob=, MaxTRESMins=, MaxJobs=,
-                            MaxNodes=, MaxSubmitJobs=, MaxWall=, Name=,
-                            QosLevel= and Weight=
+                            GrpTRES=, GrpJobs=, GrpSubmitJob=, MaxTRESMins=,
+                            MaxJobs=, MaxNodes=, MaxSubmitJobs=, MaxWall=,
+                            Name=, QosLevel= and Weight=
        modify cluster     - (set options) DefaultQOS=, Fairshare=,
                             Federation=, FedState=, GrpTRES=, GrpJobs=,
-                            GrpMemory=, GrpNodes=, GrpSubmitJob=,
-                            MaxTRESMins=, MaxJobs=, MaxNodes=,
+                            GrpSubmitJob=, MaxTRESMins=, MaxJobs=, MaxNodes=,
                             MaxSubmitJobs=, MaxWall=, QosLevel= and Weight=
                             (where options) Classification=, Federation=,
                             Flags=, and Names=
@@ -211,18 +209,17 @@ sacctmgr [<OPTION>] [<COMMAND>]
 
        Association        - Account, Cluster, Comment, DefaultQOS, Fairshare,
                             GrpTRESMins, GrpTRESRunMins, GrpTRES, GrpJobs,
-                            GrpMemory, GrpNodes, GrpSubmitJob, GrpWall,
-                            ID, LFT, MaxTRESMins, MaxTRES,
-                            MaxJobs, MaxNodes, MaxSubmitJobs, MaxWall, QOS,
-                            ParentID, ParentName, Partition, RGT,
-                            User, WithRawQOS
+                            GrpSubmitJob, GrpWall, ID, LFT, MaxTRESMins,
+                            MaxTRES, MaxJobs, MaxNodes, MaxSubmitJobs, MaxWall,
+                            QOS, ParentID, ParentName, Partition, RGT, User,
+                            WithRawQOS
 
        Cluster            - Classification, Cluster, ClusterNodes,
                             ControlHost, ControlPort, DefaultQOS,
                             Fairshare, Flags, GrpTRESMins, GrpTRES GrpJobs,
-                            GrpMemory, GrpNodes, GrpSubmitJob, MaxTRESMins,
-                            MaxTRES, MaxJobs, MaxNodes, MaxSubmitJobs,
-                            MaxWall, NodeCount, PluginIDSelect, RPC, TRES
+                            GrpSubmitJob, MaxTRESMins, MaxTRES, MaxJobs,
+                            MaxNodes, MaxSubmitJobs, MaxWall, NodeCount,
+                            PluginIDSelect, RPC, TRES
 
        Event              - Cluster, ClusterNodes, Duration, End,
                             Event, EventRaw, NodeName, Reason, Start,
