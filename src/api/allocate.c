@@ -1166,8 +1166,8 @@ static void _destroy_allocation_response_socket(listen_t *listen)
  * IN msg: message received
  * OUT resp: resource allocation response message or List of them
  * RET 1 if resp is filled in, 0 otherwise */
-static int
-_handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp)
+static int _handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp,
+		       uint32_t job_id)
 {
 	uid_t req_uid;
 	uid_t uid       = getuid();
@@ -1189,10 +1189,18 @@ _handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp)
 		msg->data = NULL;
 		rc = 1;
 	} else if (msg->msg_type == SRUN_JOB_COMPLETE) {
-		info("Job has been cancelled");
+		srun_job_complete_msg_t *job_comp_msg = msg->data;
+		if (job_comp_msg->job_id == job_id) {
+			info("Job has been cancelled");
+		} else {
+			verbose("Ignoring SRUN_JOB_COMPLETE message for JobId=%u (our JobId=%u)",
+				job_comp_msg->job_id, job_id);
+			rc = 2;
+		}
 	} else {
 		error("%s: received spurious message type: %s",
 		      __func__, rpc_num2string(msg->msg_type));
+		rc = 2;
 	}
 	return rc;
 }
@@ -1202,8 +1210,8 @@ _handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp)
  * IN msg_type: RESPONSE_RESOURCE_ALLOCATION or RESPONSE_HET_JOB_ALLOCATION
  * OUT resp: resource allocation response message or List
  * RET 1 if resp is filled in, 0 otherwise */
-static int
-_accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp)
+static int _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp,
+				  uint32_t job_id)
 {
 	int	     conn_fd;
 	slurm_msg_t  *msg = NULL;
@@ -1235,7 +1243,8 @@ _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp)
 		return SLURM_ERROR;
 	}
 
-	rc = _handle_msg(msg, msg_type, resp); /* xfer payload */
+	rc = _handle_msg(msg, msg_type, resp, job_id); /* xfer payload */
+
 	slurm_free_msg(msg);
 
 	close(conn_fd);
@@ -1300,8 +1309,14 @@ static void _wait_for_allocation_response(uint32_t job_id,
 
 	info("job %u queued and waiting for resources", job_id);
 	*resp = NULL;
-	if ((rc = _wait_for_alloc_rpc(listen, timeout)) == 1)
-		rc = _accept_msg_connection(listen->fd, msg_type, resp);
+	while (true) {
+		if ((rc = _wait_for_alloc_rpc(listen, timeout)) != 1)
+			break;
+
+		if ((rc = _accept_msg_connection(listen->fd, msg_type, resp,
+						 job_id)) != 2)
+			break;
+	}
 	if (rc <= 0) {
 		errnum = errno;
 		/* Maybe the resource allocation response RPC got lost
