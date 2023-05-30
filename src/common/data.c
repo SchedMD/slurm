@@ -66,6 +66,8 @@ static const char *int_pattern = "^([+-]?[0-9]+)$";
 static regex_t int_pattern_re;
 static const char *float_pattern = "^([+-]?[0-9]*[.][0-9]*(|[eE][+-]?[0-9]+))$";
 static regex_t float_pattern_re;
+static const char *null_pattern = "^([~]|[nN][uU][lL][lL])$";
+static regex_t null_pattern_re;
 
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool initialized = false; /* protected by init_mutex */
@@ -111,6 +113,7 @@ extern void data_fini(void)
 		regfree(&bool_pattern_false_re);
 		regfree(&int_pattern_re);
 		regfree(&float_pattern_re);
+		regfree(&null_pattern_re);
 	}
 
 	slurm_mutex_unlock(&init_mutex);
@@ -154,6 +157,13 @@ extern int data_init(void)
 				     REG_EXTENDED)) != 0) {
 		dump_regex_error(reg_rc, &float_pattern_re,
 				 "compile \"%s\"", float_pattern);
+		rc = ESLURM_DATA_REGEX_COMPILE;
+	}
+
+	if (!rc && (reg_rc = regcomp(&null_pattern_re, null_pattern,
+				     REG_EXTENDED)) != 0) {
+		dump_regex_error(reg_rc, &null_pattern_re, "compile \"%s\"",
+				 null_pattern);
 		rc = ESLURM_DATA_REGEX_COMPILE;
 	}
 
@@ -1449,7 +1459,8 @@ static int _convert_data_null(data_t *data)
 
 	switch (data->type) {
 	case DATA_TYPE_STRING:
-		if (!data->data.string_u || !data->data.string_u[0]) {
+		if (!data->data.string_u || !data->data.string_u[0] ||
+		    regex_quick_match(data->data.string_u, &null_pattern_re)) {
 			log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to null: %s->null",
 				 __func__, (uintptr_t) data,
 				 data->data.string_u);
