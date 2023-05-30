@@ -1800,8 +1800,20 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			 data_get_int(b));
 		return rc;
 	case DATA_TYPE_FLOAT:
-		if (!(rc = (data_get_float(a) == data_get_float(b))))
-			rc = fuzzy_equal(data_get_float(a), data_get_float(b));
+		if (!(rc = (data_get_float(a) == data_get_float(b))) ||
+		    !(rc = fuzzy_equal(data_get_float(a), data_get_float(b)))) {
+			if (isnan(data_get_float(a)) ==
+			    isnan(data_get_float(a)))
+				rc = true;
+			else if (signbit(data_get_float(a)) !=
+				 signbit(data_get_float(b)))
+				rc = false;
+			else if (isinf(data_get_float(a)) !=
+				 isinf(data_get_float(b)))
+				rc = false;
+			else
+				rc = false;
+		}
 
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%e %s %s(0x%"PRIXPTR")=%e",
 			 data_type_to_string(data_get_type(a)), (uintptr_t) a,
