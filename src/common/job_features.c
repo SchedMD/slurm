@@ -325,6 +325,16 @@ static int _evaluate_job_feature(void *x, void *arg)
 		args->working_list = args->curr_feature_sets;
 	}
 
+	if (!args->paren_lists &&
+	    ((job_feat_ptr->op_code == FEATURE_OP_OR) ||
+	     (job_feat_ptr->op_code == FEATURE_OP_MOR))) {
+		/*
+		 * If not inside parentheses, move feature sets in the
+		 * current list to the final list, and start fresh with
+		 * the current list.
+		 */
+		list_transfer(args->final_feature_sets,
+			      args->curr_feature_sets);
 	}
 
 	if (args->debug_flag) {

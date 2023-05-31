@@ -94,6 +94,22 @@ typedef struct {
  *
  * {[a,c],[a,d],[b,c],[b,d]}
  *
+ *
+ * Bar outside of parentheses starts a brand new set of features.
+ * Bar inside of parentheses starts a new set of features within the current
+ * feature set.
+ * For example:
+ *
+ * a|(b&c|d)&e
+ *
+ * is evaluated to:
+ *
+ * {a}, {b,c,e}, {d,e}
+ *
+ * After a, we start a new group of features.
+ * After c, we are still inside of parentheses, so we start a new group of
+ * features within the current feature group.
+ *
  * Each feature (i.e. 'a', 'b', 'c', 'd') is of type job_feature_t.
  *
  * IN job_features - feature string requested by the user
