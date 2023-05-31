@@ -6711,6 +6711,22 @@ extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 					       tres_rec->id);
 					continue;
 				}
+				/*
+				 * If Relative make the number absolute based on
+				 * the relative_tres_cnt[pos]
+				 */
+				if (relative && relative_tres_cnt &&
+				    (tres_rec->count != INFINITE64)) {
+					/* Sanity check for max possible. */
+					if (tres_rec->count > 100)
+						tres_rec->count = 100;
+
+					tres_rec->count *=
+						relative_tres_cnt[pos];
+
+					/* This will truncate/round down */
+					tres_rec->count /= 100;
+				}
 				/* set the index to the count */
 				(*tres_cnt)[pos] = tres_rec->count;
 				/* info("%d pos %d has count of %"PRIu64, */
