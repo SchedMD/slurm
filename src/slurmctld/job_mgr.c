@@ -2460,13 +2460,14 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	if (job_ptr->tres_alloc_str)
 		assoc_mgr_set_tres_cnt_array(
 			&job_ptr->tres_alloc_cnt, job_ptr->tres_alloc_str,
-			0, true);
+			0, true, false, NULL);
 	else
 		job_set_alloc_tres(job_ptr, true);
 
 	if (job_ptr->tres_req_str)
 		assoc_mgr_set_tres_cnt_array(
-			&job_ptr->tres_req_cnt, job_ptr->tres_req_str, 0, true);
+			&job_ptr->tres_req_cnt, job_ptr->tres_req_str, 0, true,
+			false, NULL);
 	else
 		job_set_req_tres(job_ptr, true);
 	assoc_mgr_unlock(&locks);

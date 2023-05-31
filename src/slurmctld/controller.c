@@ -1886,11 +1886,11 @@ static int _update_job_tres(void *x, void *args)
 	*/
 	if (assoc_mgr_set_tres_cnt_array(&job_ptr->tres_req_cnt,
 					 job_ptr->tres_req_str,
-					 0, true))
+					 0, true, false, NULL))
 		job_set_req_tres(job_ptr, true);
 	if (assoc_mgr_set_tres_cnt_array(&job_ptr->tres_alloc_cnt,
 					 job_ptr->tres_alloc_str,
-					 0, true))
+					 0, true, false, NULL))
 		job_set_alloc_tres(job_ptr, true);
 
 	update_job_limit_set_tres(&job_ptr->limit_set.tres);

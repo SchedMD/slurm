@@ -3995,7 +3995,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->grp_tres_ctld,
-					rec->grp_tres, INFINITE64, 1);
+					rec->grp_tres, INFINITE64, 1,
+					false, NULL);
 			}
 
 			if (object->grp_tres_mins) {
@@ -4007,7 +4008,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->grp_tres_mins_ctld,
-					rec->grp_tres_mins, INFINITE64, 1);
+					rec->grp_tres_mins, INFINITE64, 1,
+					false, NULL);
 			}
 
 			if (object->grp_tres_run_mins) {
@@ -4019,7 +4021,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->grp_tres_run_mins_ctld,
-					rec->grp_tres_run_mins, INFINITE64, 1);
+					rec->grp_tres_run_mins, INFINITE64, 1,
+					false, NULL);
 			}
 
 			if (object->grp_jobs != NO_VAL)
@@ -4049,7 +4052,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->max_tres_ctld,
-					rec->max_tres_pj, INFINITE64, 1);
+					rec->max_tres_pj, INFINITE64, 1,
+					false, NULL);
 			}
 
 			if (object->max_tres_pn) {
@@ -4061,7 +4065,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->max_tres_pn_ctld,
-					rec->max_tres_pn, INFINITE64, 1);
+					rec->max_tres_pn, INFINITE64, 1,
+					false, NULL);
 			}
 
 			if (object->max_tres_mins_pj) {
@@ -4073,7 +4078,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->max_tres_mins_ctld,
-					rec->max_tres_mins_pj, INFINITE64, 1);
+					rec->max_tres_mins_pj, INFINITE64, 1,
+					false, NULL);
 			}
 
 			if (object->max_tres_run_mins) {
@@ -4085,7 +4091,8 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->max_tres_run_mins_ctld,
-					rec->max_tres_run_mins, INFINITE64, 1);
+					rec->max_tres_run_mins, INFINITE64, 1,
+					false, NULL);
 			}
 
 			if (object->max_jobs != NO_VAL)
@@ -4747,6 +4754,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 	itr = list_iterator_create(assoc_mgr_qos_list);
 	while ((object = list_pop(update->objects))) {
 		bool update_jobs = false;
+		bool relative = false;
+
 		list_iterator_reset(itr);
 		while ((rec = list_next(itr))) {
 			if (object->id == rec->id) {
@@ -4813,6 +4822,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 					rec->flags = object->flags;
 			}
 
+			relative = (rec->flags & QOS_FLAG_RELATIVE);
+
 			if (object->grace_time != NO_VAL)
 				rec->grace_time = object->grace_time;
 
@@ -4828,8 +4839,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->grp_tres_ctld, rec->grp_tres,
-					INFINITE64, 1);
-
+					INFINITE64, 1,
+					relative, rec->relative_tres_cnt);
 			}
 
 			if (object->grp_tres_mins) {
@@ -4841,7 +4852,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->grp_tres_mins_ctld,
-					rec->grp_tres_mins, INFINITE64, 1);
+					rec->grp_tres_mins, INFINITE64, 1,
+					relative, rec->relative_tres_cnt);
 			}
 
 			if (object->grp_tres_run_mins) {
@@ -4853,7 +4865,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->grp_tres_run_mins_ctld,
-					rec->grp_tres_run_mins, INFINITE64, 1);
+					rec->grp_tres_run_mins, INFINITE64, 1,
+					relative, rec->relative_tres_cnt);
 			}
 
 			if (object->grp_jobs != NO_VAL)
@@ -4876,7 +4889,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->max_tres_pa_ctld,
-					rec->max_tres_pa, INFINITE64, 1);
+					rec->max_tres_pa, INFINITE64, 1,
+					relative, rec->relative_tres_cnt);
 			}
 
 			if (object->max_tres_pj) {
@@ -4888,7 +4902,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->max_tres_pj_ctld,
-					rec->max_tres_pj, INFINITE64, 1);
+					rec->max_tres_pj, INFINITE64, 1,
+					relative, rec->relative_tres_cnt);
 			}
 
 			if (object->max_tres_pn) {
@@ -4900,7 +4915,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->max_tres_pn_ctld,
-					rec->max_tres_pn, INFINITE64, 1);
+					rec->max_tres_pn, INFINITE64, 1,
+					relative, rec->relative_tres_cnt);
 			}
 
 			if (object->max_tres_pu) {
@@ -4912,7 +4928,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->max_tres_pu_ctld,
-					rec->max_tres_pu, INFINITE64, 1);
+					rec->max_tres_pu, INFINITE64, 1,
+					relative, rec->relative_tres_cnt);
 			}
 
 			if (object->max_tres_mins_pj) {
@@ -4924,7 +4941,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->max_tres_mins_pj_ctld,
-					rec->max_tres_mins_pj, INFINITE64, 1);
+					rec->max_tres_mins_pj, INFINITE64, 1,
+					relative, rec->relative_tres_cnt);
 			}
 
 			if (object->max_tres_run_mins_pa) {
@@ -4937,7 +4955,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				assoc_mgr_set_tres_cnt_array(
 					&rec->max_tres_run_mins_pa_ctld,
 					rec->max_tres_run_mins_pa,
-					INFINITE64, 1);
+					INFINITE64, 1,
+					relative, rec->relative_tres_cnt);
 			}
 
 			if (object->max_tres_run_mins_pu) {
@@ -4950,7 +4969,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				assoc_mgr_set_tres_cnt_array(
 					&rec->max_tres_run_mins_pu_ctld,
 					rec->max_tres_run_mins_pu,
-					INFINITE64, 1);
+					INFINITE64, 1,
+					relative, rec->relative_tres_cnt);
 			}
 
 			if (object->max_jobs_pa != NO_VAL)
@@ -4990,7 +5010,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				}
 				assoc_mgr_set_tres_cnt_array(
 					&rec->min_tres_pj_ctld,
-					rec->min_tres_pj, INFINITE64, 1);
+					rec->min_tres_pj, INFINITE64, 1,
+					relative, rec->relative_tres_cnt);
 			}
 
 			if (object->preempt_bitstr) {
@@ -6647,7 +6668,9 @@ extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec(slurmdb_tres_rec_t *tres_rec)
 }
 
 extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
-					uint64_t init_val, bool locked)
+					uint64_t init_val, bool locked,
+					bool relative,
+					uint64_t *relative_tres_cnt)
 {
 	int diff_cnt = 0, i;
 
@@ -6713,52 +6736,73 @@ extern void assoc_mgr_set_assoc_tres_cnt(slurmdb_assoc_rec_t *assoc)
 	xassert(assoc_mgr_tres_array);
 
 	assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_ctld, assoc->grp_tres,
-				     INFINITE64, 1);
+				     INFINITE64, 1, false, NULL);
 	assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_mins_ctld,
-				     assoc->grp_tres_mins, INFINITE64, 1);
+				     assoc->grp_tres_mins, INFINITE64, 1,
+				     false, NULL);
 	assoc_mgr_set_tres_cnt_array(&assoc->grp_tres_run_mins_ctld,
-				     assoc->grp_tres_run_mins, INFINITE64, 1);
+				     assoc->grp_tres_run_mins, INFINITE64, 1,
+				     false, NULL);
 	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_ctld,
-				     assoc->max_tres_pj, INFINITE64, 1);
+				     assoc->max_tres_pj, INFINITE64, 1,
+				     false, NULL);
 	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_pn_ctld,
-				     assoc->max_tres_pn, INFINITE64, 1);
+				     assoc->max_tres_pn, INFINITE64, 1,
+				     false, NULL);
 	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_mins_ctld,
-				     assoc->max_tres_mins_pj, INFINITE64, 1);
+				     assoc->max_tres_mins_pj, INFINITE64, 1,
+				     false, NULL);
 	assoc_mgr_set_tres_cnt_array(&assoc->max_tres_run_mins_ctld,
-				     assoc->max_tres_run_mins, INFINITE64, 1);
+				     assoc->max_tres_run_mins, INFINITE64, 1,
+				     false, NULL);
 }
 
 /* tres read lock needs to be locked before this is called. */
 extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos)
 {
+	bool relative;
+
 	/* This isn't needed on the dbd */
 	if (slurmdbd_conf)
 		return;
 
 	xassert(assoc_mgr_tres_array);
 
+	relative = (qos->flags & QOS_FLAG_RELATIVE);
+
 	assoc_mgr_set_tres_cnt_array(&qos->grp_tres_ctld, qos->grp_tres,
-				     INFINITE64, 1);
+				     INFINITE64, 1,
+				     relative, qos->relative_tres_cnt);
 	assoc_mgr_set_tres_cnt_array(&qos->grp_tres_mins_ctld,
-				     qos->grp_tres_mins, INFINITE64, 1);
+				     qos->grp_tres_mins, INFINITE64, 1,
+				     relative, qos->relative_tres_cnt);
 	assoc_mgr_set_tres_cnt_array(&qos->grp_tres_run_mins_ctld,
-				     qos->grp_tres_run_mins, INFINITE64, 1);
+				     qos->grp_tres_run_mins, INFINITE64, 1,
+				     relative, qos->relative_tres_cnt);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pa_ctld,
-				     qos->max_tres_pa, INFINITE64, 1);
+				     qos->max_tres_pa, INFINITE64, 1,
+				     relative, qos->relative_tres_cnt);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pj_ctld,
-				     qos->max_tres_pj, INFINITE64, 1);
+				     qos->max_tres_pj, INFINITE64, 1,
+				     relative, qos->relative_tres_cnt);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pn_ctld,
-				     qos->max_tres_pn, INFINITE64, 1);
+				     qos->max_tres_pn, INFINITE64, 1,
+				     relative, qos->relative_tres_cnt);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_pu_ctld,
-				     qos->max_tres_pu, INFINITE64, 1);
+				     qos->max_tres_pu, INFINITE64, 1,
+				     relative, qos->relative_tres_cnt);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_mins_pj_ctld,
-				     qos->max_tres_mins_pj, INFINITE64, 1);
+				     qos->max_tres_mins_pj, INFINITE64, 1,
+				     relative, qos->relative_tres_cnt);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_run_mins_pa_ctld,
-				     qos->max_tres_run_mins_pa, INFINITE64, 1);
+				     qos->max_tres_run_mins_pa, INFINITE64, 1,
+				     relative, qos->relative_tres_cnt);
 	assoc_mgr_set_tres_cnt_array(&qos->max_tres_run_mins_pu_ctld,
-				     qos->max_tres_run_mins_pu, INFINITE64, 1);
+				     qos->max_tres_run_mins_pu, INFINITE64, 1,
+				     relative, qos->relative_tres_cnt);
 	assoc_mgr_set_tres_cnt_array(&qos->min_tres_pj_ctld,
-				     qos->min_tres_pj, INFINITE64, 1);
+				     qos->min_tres_pj, INFINITE64, 1,
+				     relative, qos->relative_tres_cnt);
 }
 
 extern char *assoc_mgr_make_tres_str_from_array(

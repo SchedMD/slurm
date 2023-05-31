@@ -523,10 +523,14 @@ extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec(
  * IN tres_str - simple format of tres used with id and count set
  * IN init_val - what the initial value is going to be set to
  * IN locked - if the assoc_mgr tres read lock is locked or not.
+ * IN relative - if the counts should be relative (percentage) or absolute
+ * IN relative_tres_cnt - if relative is set the total count of tres possibl.
  * RET if positions changed in array from string 1 if nothing changed 0
  */
 extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
-					uint64_t init_val, bool locked);
+					uint64_t init_val, bool locked,
+					bool relative,
+					uint64_t *relative_tres_cnt);
 
 /* Creates all the tres arrays for an association.
  * NOTE: The assoc_mgr tres read lock needs to be locked before this
