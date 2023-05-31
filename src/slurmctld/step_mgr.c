@@ -1875,7 +1875,7 @@ static bool _pick_step_core(step_record_t *step_ptr,
 			    job_resources_t *job_resrcs_ptr,
 			    bitstr_t *avail_core_bitmap, int job_node_inx,
 			    int sock_inx, int core_inx, bool use_all_cores,
-			    bool oversubscribing_cpus)
+			    bool oversubscribing_cores)
 {
 	int bit_offset;
 
@@ -1889,8 +1889,8 @@ static bool _pick_step_core(step_record_t *step_ptr,
 	if (!bit_test(avail_core_bitmap, bit_offset))
 		return false;
 
-	if (oversubscribing_cpus) {
-		/* Already allocated CPUs, now we are oversubscribing CPUs */
+	if (oversubscribing_cores) {
+		/* Already allocated cores, now we are oversubscribing cores */
 		if (bit_test(step_ptr->core_bitmap_job, bit_offset))
 			return false; /* already taken by this step */
 
@@ -1920,7 +1920,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 				bitstr_t *avail_core_bitmap,
 				int job_node_inx, uint16_t sockets,
 				uint16_t cores, bool use_all_cores,
-				bool oversubscribing_cpus, int *core_cnt,
+				bool oversubscribing_cores, int *core_cnt,
 				uint16_t cores_per_task)
 {
 	int core_inx, i, sock_inx;
@@ -1935,7 +1935,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 	 * Use last_core_inx to avoid putting all of the extra
 	 * work onto core zero when oversubscribing cpus.
 	 */
-	if (oversubscribing_cpus)
+	if (oversubscribing_cores)
 		last_core_inx = (last_core_inx + 1) % cores;
 
 	/*
@@ -1948,7 +1948,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 		/* Fill sockets before allocating to the next socket */
 		for (sock_inx=0; sock_inx < sockets; sock_inx++) {
 			for (i=0; i < cores; i++) {
-				if (oversubscribing_cpus)
+				if (oversubscribing_cores)
 					core_inx = (last_core_inx + i) % cores;
 				else
 					core_inx = i;
@@ -1957,7 +1957,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 						     avail_core_bitmap,
 						     job_node_inx, sock_inx,
 						     core_inx, use_all_cores,
-						     oversubscribing_cpus))
+						     oversubscribing_cores))
 					continue;
 
 				if (--(*core_cnt) == 0)
@@ -1968,7 +1968,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 		   ((step_ptr->step_layout->task_dist & SLURM_DIST_SOCKMASK) ==
 		    SLURM_DIST_SOCKCFULL)) {
 		for (i = 0; i < cores; i++) {
-			if (oversubscribing_cpus)
+			if (oversubscribing_cores)
 				core_inx = (last_core_inx + i) % cores;
 			else
 				core_inx = i;
@@ -1977,7 +1977,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 						     avail_core_bitmap,
 						     job_node_inx, sock_inx,
 						     core_inx, use_all_cores,
-						     oversubscribing_cpus)) {
+						     oversubscribing_cores)) {
 						if (sock_inx == sockets)
 							sock_inx = 0;
 						continue;
@@ -1995,7 +1995,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 			for (sock_inx = 0; sock_inx < sockets; sock_inx++) {
 				for (i = next_core[sock_inx]; i < cores;
 				     i++) {
-					if (oversubscribing_cpus)
+					if (oversubscribing_cores)
 						core_inx = (last_core_inx + i) %
 							   cores;
 					else
@@ -2010,7 +2010,7 @@ static bool _handle_core_select(step_record_t *step_ptr,
 						sock_inx,
 						core_inx,
 						use_all_cores,
-						oversubscribing_cpus))
+						oversubscribing_cores))
 						continue;
 					nothing_allocated = false;
 					if (--(*core_cnt) == 0) {
