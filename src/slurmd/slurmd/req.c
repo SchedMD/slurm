@@ -479,12 +479,16 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	slurm_msg_t_init(&msg);
 
 	/* send conf over to slurmstepd */
-	if (send_slurmd_conf_lite(fd, conf) < 0)
-		goto rwfail;
+	if (send_slurmd_conf_lite(fd, conf)) {
+		error("%s: send_slurmd_conf_lite(%d) failed: %m", __func__, fd);
+		goto fail;
+	}
 
 	/* send conf_hashtbl */
-	if (read_conf_send_stepd(fd))
-		goto rwfail;
+	if (read_conf_send_stepd(fd)) {
+		error("%s: read_conf_send_stepd(%d) failed: %m", __func__, fd);
+		goto fail;
+	}
 
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));
@@ -522,7 +526,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 
 		if (children == -1) {
 			error("reverse_tree_info: Sanity check fail, can't start job");
-			goto rwfail;
+			goto fail;
 		}
 		/*
 		 * rank 0 always talks directly to the slurmctld. If
@@ -624,16 +628,25 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	 */
 
 	/* send cgroup conf over to slurmstepd */
-	if (cgroup_write_conf(fd) < 0)
-		goto rwfail;
+	if (cgroup_write_conf(fd)) {
+		error("%s: cgroup_write_conf(%d) failed: %m",
+		      __func__, fd);
+		goto fail;
+	}
 
 	/* send acct_gather.conf over to slurmstepd */
-	if (acct_gather_write_conf(fd) < 0)
-		goto rwfail;
+	if (acct_gather_write_conf(fd)) {
+		error("%s: acct_gather_write_conf(%d) failed: %m",
+		      __func__, fd);
+		goto fail;
+	}
 
 	/* Send job_container information to slurmstepd */
-	if (container_g_send_stepd(fd) != SLURM_SUCCESS)
-		goto rwfail;
+	if (container_g_send_stepd(fd)) {
+		error("%s: container_g_send_stepd(%d) failed: %m",
+		      __func__, fd);
+		goto fail;
+	}
 
 	/* Send GRES information to slurmstepd */
 	gres_g_send_stepd(fd, &msg);
@@ -643,17 +656,20 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		launch_tasks_request_msg_t *job = req;
 		if ((job->step_id.step_id != SLURM_EXTERN_CONT) &&
 		    (job->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
-			if (mpi_conf_send_stepd(fd, job->mpi_plugin_id) !=
-			    SLURM_SUCCESS)
-				goto rwfail;
+			if (mpi_conf_send_stepd(fd, job->mpi_plugin_id)) {
+				error("%s: mpi_conf_send_stepd(%d, %u) failed: %m",
+				      __func__, fd, job->mpi_plugin_id);
+				goto fail;
+			}
 		}
 	}
 
 	return 0;
 
 rwfail:
+	error("%s: failed: %m", __func__);
+fail:
 	FREE_NULL_BUFFER(buffer);
-	error("_send_slurmstepd_init failed");
 	return errno;
 }
 
