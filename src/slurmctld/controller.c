@@ -506,22 +506,6 @@ int main(int argc, char **argv)
 	 * Initialize plugins.
 	 * If running configuration test, report ALL failures.
 	 */
-	if (acct_storage_g_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize accounting_storage plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize accounting_storage plugin");
-		}
-	}
-	if (bb_g_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize burst_buffer plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize burst_buffer plugin");
-		}
-	}
 	if (select_g_init(0) != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize node selection plugin");
@@ -659,11 +643,6 @@ int main(int argc, char **argv)
 			agent_init();	/* Killed at any previous shutdown */
 			(void) _shutdown_backup_controller();
 		} else if (test_config || slurmctld_primary) {
-			if (!test_config) {
-				(void) _shutdown_backup_controller();
-				trigger_primary_ctld_res_ctrl();
-				ctld_assoc_mgr_init();
-			}
 			if (acct_storage_g_init() != SLURM_SUCCESS) {
 				if (test_config) {
 					error("failed to initialize accounting_storage plugin");
@@ -671,6 +650,11 @@ int main(int argc, char **argv)
 				} else {
 					fatal("failed to initialize accounting_storage plugin");
 				}
+			}
+			if (!test_config) {
+				(void) _shutdown_backup_controller();
+				trigger_primary_ctld_res_ctrl();
+				ctld_assoc_mgr_init();
 			}
 			/*
 			 * read_slurm_conf() will load the burst buffer state,
