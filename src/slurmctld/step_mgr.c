@@ -2079,9 +2079,9 @@ static int _pick_step_cores(step_record_t *step_ptr,
 			core_cnt /= cpus_per_core;
 		}
 
-		log_flag(STEPS, "%s: For step %pS required cores:%u on node: %d available cores: %u",
+		log_flag(STEPS, "%s: step %pS requires %u cores on node %d with cpus_per_core=%u, available cpus from job: %u",
 			 __func__, step_ptr, core_cnt, job_node_inx,
-			 job_resrcs_ptr->cpus[job_node_inx]);
+			 cpus_per_core, job_resrcs_ptr->cpus[job_node_inx]);
 
 		if (core_cnt * cpus_per_core >
 		    job_resrcs_ptr->cpus[job_node_inx] &&
