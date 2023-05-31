@@ -657,11 +657,11 @@ int main(int argc, char **argv)
 		if (!slurmctld_primary) {
 			sched_g_fini();	/* make sure shutdown */
 			_run_primary_prog(false);
+			if (slurm_acct_storage_init() != SLURM_SUCCESS)
+				fatal("failed to initialize accounting_storage plugin");
 			run_backup();
 			agent_init();	/* Killed at any previous shutdown */
 			(void) _shutdown_backup_controller();
-			if (slurm_acct_storage_init() != SLURM_SUCCESS)
-				fatal("failed to initialize accounting_storage plugin");
 		} else if (test_config || slurmctld_primary) {
 			if (!test_config) {
 				(void) _shutdown_backup_controller();
