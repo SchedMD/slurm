@@ -422,6 +422,9 @@ static uint32_t _str_2_qos_flags(char *flags)
 	if (xstrcasestr(flags, "NoDecay"))
 		return QOS_FLAG_NO_DECAY;
 
+	if (xstrcasestr(flags, "Relative"))
+		return QOS_FLAG_RELATIVE;
+
 	if (xstrcasestr(flags, "UsageFactorSafe"))
 		return QOS_FLAG_USAGE_FACTOR_SAFE;
 
@@ -956,6 +959,7 @@ extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos)
 		xfree(qos->name);
 		FREE_NULL_BITMAP(qos->preempt_bitstr);
 		FREE_NULL_LIST(qos->preempt_list);
+		xfree(qos->relative_tres_cnt);
 		slurmdb_destroy_qos_usage(qos->usage);
 	}
 }
@@ -1936,6 +1940,8 @@ extern char *slurmdb_qos_flags_str(uint32_t flags)
 		xstrcat(qos_flags, "RequiresReservation,");
 	if (flags & QOS_FLAG_NO_DECAY)
 		xstrcat(qos_flags, "NoDecay,");
+	if (flags & QOS_FLAG_RELATIVE)
+		xstrcat(qos_flags, "Relative,");
 	if (flags & QOS_FLAG_USAGE_FACTOR_SAFE)
 		xstrcat(qos_flags, "UsageFactorSafe,");
 

@@ -1551,6 +1551,17 @@ override the requested partition's TimeLimit.
 .IP
 
 .TP
+\fBRelative\fR
+If set the QOS limits will be treated as percentages of a cluster/partition
+instead of absolutes.
+Since the QOS limits will be based on the size of a cluster or partitions some
+limitations are inherit. Namely if this flag is set only one partition can have
+this QOS as it's partition QOS, and if this is used as a partition QOS jobs will
+not be allowed to use it as a normal QOS.
+
+.IP
+
+.TP
 \fBRequiresReservation\fR
 If set jobs using this QOS must designate a reservation when submitting a job.
 This option can be useful in restricting usage of a QOS that may have greater

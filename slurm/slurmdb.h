@@ -136,6 +136,7 @@ typedef enum {
 #define	QOS_FLAG_OVER_PART_QOS       SLURM_BIT(7)
 #define	QOS_FLAG_NO_DECAY            SLURM_BIT(8)
 #define	QOS_FLAG_USAGE_FACTOR_SAFE   SLURM_BIT(9)
+#define	QOS_FLAG_RELATIVE            SLURM_BIT(10)
 
 /* Define Server Resource flags */
 #define	SLURMDB_RES_FLAG_BASE        0x0fffffff /* apply to get real flags */
@@ -1040,6 +1041,7 @@ typedef struct {
 					 eligible for preemption */
 	uint32_t priority;  /* ranged int needs to be a unint for
 			     * heterogeneous systems */
+	uint64_t *relative_tres_cnt; /* Only here for convenience DON'T PACK */
 	slurmdb_qos_usage_t *usage; /* For internal use only, DON'T PACK */
 	double usage_factor; /* factor to apply to usage in this qos */
 	double usage_thres; /* percent of effective usage of an
