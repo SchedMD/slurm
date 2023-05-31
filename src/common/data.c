@@ -1715,6 +1715,7 @@ extern size_t data_convert_tree(data_t *data, const data_type_t match)
 }
 
 typedef struct {
+	const data_t *a;
 	const data_t *b;
 	bool mask;
 } find_dict_match_t;
@@ -1722,19 +1723,26 @@ typedef struct {
 data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
 				     void *arg)
 {
+	bool rc;
 	find_dict_match_t *p = arg;
 	const data_t *b = data_key_get_const(p->b, key);
 
-	if (data_check_match(a, b, p->mask))
-		return DATA_FOR_EACH_CONT;
-	else
-		return DATA_FOR_EACH_FAIL;
+	rc = data_check_match(a, b, p->mask);
+
+	log_flag(DATA, "dictionary compare: %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR") %s %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR")",
+		 key, (uintptr_t) p->a, data_type_to_string(data_get_type(a)),
+		 (uintptr_t) a, (rc ? "\u2261" : "\u2260"), key,
+		 (uintptr_t) p->b, data_type_to_string(data_get_type(b)),
+		 (uintptr_t) b);
+
+	return rc ? DATA_FOR_EACH_CONT : DATA_FOR_EACH_FAIL;
 }
 
 static bool _data_match_dict(const data_t *a, const data_t *b, bool mask)
 {
 	find_dict_match_t p = {
 		.mask = mask,
+		.a = a,
 		.b = b,
 	};
 
