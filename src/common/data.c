@@ -100,6 +100,12 @@ typedef struct {
 	const char *token;
 } merge_path_strings_t;
 
+typedef struct {
+	const data_t *a;
+	const data_t *b;
+	bool mask;
+} find_dict_match_t;
+
 static void _check_magic(const data_t *data);
 static void _release(data_t *data);
 static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn);
@@ -1666,12 +1672,6 @@ extern size_t data_convert_tree(data_t *data, const data_type_t match)
 
 	return args.count;
 }
-
-typedef struct {
-	const data_t *a;
-	const data_t *b;
-	bool mask;
-} find_dict_match_t;
 
 data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
 				     void *arg)
