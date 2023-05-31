@@ -64,7 +64,7 @@ static const char *bool_pattern_false = "^([nN]([Oo]|)|[fF](|[aA][lL][sS][eE])|[
 static regex_t bool_pattern_false_re;
 static const char *int_pattern = "^([+-]?[0-9]+)$";
 static regex_t int_pattern_re;
-static const char *float_pattern = "^([+-]?[0-9]*[.][0-9]*(|[eE][+-]?[0-9]+))$";
+static const char *float_pattern = "^([+-]?((([0-9]+[.]?[0-9]*)|([0-9]*[.]?[0-9]+))(|[eE][+-]?[0-9]+)|[+-]?[iI][nN][fF]([iI][nN][iI][tT][yY]|)|[+-]?[nN][aA][nN]))$";
 static regex_t float_pattern_re;
 static const char *null_pattern = "^([~]|[nN][uU][lL][lL])$";
 static regex_t null_pattern_re;
