@@ -643,8 +643,11 @@ extern int mpi_conf_send_stepd(int fd, uint32_t plugin_id)
 
 	slurm_mutex_lock(&context_lock);
 
-	if ((index = _plugin_idx(plugin_id)) < 0)
+	if ((index = _plugin_idx(plugin_id)) < 0) {
+		error("%s: unable to resolve MPI plugin offset from plugin_id=%u. This error usually results from a job being submitted against an MPI plugin which was not compiled into slurmd but was for job submission command.",
+		      __func__, plugin_id);
 		goto rwfail;
+	}
 
 	/* send the type over */
 	mpi_type = _plugin_type(index);
