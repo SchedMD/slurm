@@ -63,6 +63,7 @@ documents those changes that are of interest to users and administrators.
  -- sacct - print planned time is 0 for a job that was cancelled before it
     started.
  -- Fix reservations group ACL's not working with the root group.
+ -- slurmctld - Fix backup slurmctld crash when it takes control multiple times.
 
 * Changes in Slurm 23.02.2
 ==========================
