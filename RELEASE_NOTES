@@ -27,6 +27,7 @@ HIGHLIGHTS
  -- Change TreeWidth default from 50 to 16.
  -- job_submit/throttle - improve reset of submitted job counts per user in
     order to better honor SchedulerParameters=jobs_per_user_per_hour=#.
+ -- Allow SlurmUser/root to use reservations without specific permissions.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

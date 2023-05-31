@@ -5643,6 +5643,9 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 		return ESLURM_RESERVATION_ACCESS;
 	}
 
+	if (validate_slurm_user(job_ptr->user_id))
+		return SLURM_SUCCESS;
+
 	/* Determine if we have access */
 	if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 		char tmp_char[30];

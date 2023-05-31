@@ -63,6 +63,7 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.40 - add FAST parameter to allow requestor to skip more
     time intensive warning checks.
  -- Changed the default SelectType to select/cons_tres (from select/linear).
+ -- Allow SlurmUser/root to use reservations without specific permissions.
 
 * Changes in Slurm 23.02.3
 ==========================
