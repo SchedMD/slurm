@@ -10,7 +10,7 @@ job node <b>exclusivity</b> and job/node information display <b>privacy</b>.
 execute more than one job at a time on each resource, no matter "what type"
 of job. Slurm job submission clients can also use the <b>--exclusive</b> and
 <b>--oversubscribe</b> parameters to request how the job can be
-<a href="cons_res_share.html">shared</a>. The <b>ExclusiveUser</b>
+<a href="cons_tres_share.html">shared</a>. The <b>ExclusiveUser</b>
 slurm.conf parameter and the --exclusive=<b>user</b> client parameter value
 modifies the exclusivity functionality. With this parameter enabled, the
 "type of job" now matters when considering exclusivity, so jobs can share

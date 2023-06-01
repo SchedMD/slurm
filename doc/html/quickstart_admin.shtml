@@ -355,7 +355,7 @@ jobs in higher priority queues.</li>
 <a href="preempt.html">Preemption</a>,
 <a href="reservations.html">Resource Reservation Guide</a>,
 <a href="resource_limits.html">Resource Limits</a> and
-<a href="cons_res_share.html">Sharing Consumable Resources</a>.</p>
+<a href="cons_tres_share.html">Sharing Consumable Resources</a>.</p>
 
 <h3 id="resource">Resource selection
 <a class="slurm_link" href="#resource"></a>

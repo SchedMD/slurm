@@ -24,7 +24,7 @@ option. The following html documents may also be useful:</p>
 
 <p>
 <a href="cons_tres.html">Consumable Resources in Slurm</a><br>
-<a href="cons_res_share.html">Sharing Consumable Resources</a><br>
+<a href="cons_tres_share.html">Sharing Consumable Resources</a><br>
 <a href="mc_support.html">Support for Multi-core/Multi-thread
 Architectures</a><br>
 <a href="dist_plane.html">Plane distribution</a></p>
