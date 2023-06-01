@@ -62,7 +62,7 @@ static const char *bool_pattern_true = "^([Yy](|[eE][sS])|[tT]([rR][uU][eE]|)|[O
 static regex_t bool_pattern_true_re;
 static const char *bool_pattern_false = "^([nN]([Oo]|)|[fF](|[aA][lL][sS][eE])|[oO][fF][fF])$";
 static regex_t bool_pattern_false_re;
-static const char *int_pattern = "^([+-]?[0-9]+)$";
+static const char *int_pattern = "^(0[xX][a-zA-Z0-9]+|[+-]?[0-9]+)$";
 static regex_t int_pattern_re;
 static const char *float_pattern = "^([+-]?((([0-9]+[.]?[0-9]*)|([0-9]*[.]?[0-9]+))(|[eE][+-]?[0-9]+)|[+-]?[iI][nN][fF]([iI][nN][iI][tT][yY]|)|[+-]?[nN][aA][nN]))$";
 static regex_t float_pattern_re;
@@ -1511,15 +1511,22 @@ static int _convert_data_int(data_t *data)
 	case DATA_TYPE_STRING:
 		if (regex_quick_match(data->data.string_u, &int_pattern_re)) {
 			int64_t x;
-			if (sscanf(data->data.string_u, "%"SCNd64, &x) == 1) {
+			const char *s = data->data.string_u;
+
+			if ((s[0] == '0') && (s[1] == 'x') &&
+			    (sscanf(s, "%"SCNx64, &x) == 1)) {
+				log_flag(DATA, "%s: converted data (0x%"PRIXPTR") to hex int: %s->%"PRId64,
+					 __func__, (uintptr_t) data, s, x);
+				data_set_int(data, x);
+				return SLURM_SUCCESS;
+			} else if (sscanf(s, "%"SCNd64, &x) == 1) {
 				log_flag(DATA, "%s: converted data (0x%"PRIXPTR") to int: %s->%"PRId64,
-					 __func__, (uintptr_t) data,
-					 data->data.string_u, x);
+					 __func__, (uintptr_t) data, s, x);
 				data_set_int(data, x);
 				return SLURM_SUCCESS;
 			} else { /* failed */
-				debug2("%s: sscanf of int failed: %s", __func__,
-				       data->data.string_u);
+				debug2("%s: sscanf of int failed: %s",
+				       __func__, s);
 				return ESLURM_DATA_CONV_FAILED;
 			}
 		} else {
