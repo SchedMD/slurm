@@ -3538,7 +3538,7 @@ function __scontrol_setdebugflags() {
 }
 
 # completion handler for: scontrol show assoc_mgr *
-function __scontrol_show_assoc_mgr() {
+function __scontrol_show_assocmgr() {
 	local parameters=(
 		"accounts="
 		"flags="
