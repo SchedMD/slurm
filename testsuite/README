@@ -1036,3 +1036,7 @@ test_145_#   Testing --constraint.
 ==================================
 test_145_1   Test --constraint with --ntasks-per-node
 test_145_2   Test --constraint
+
+test_146_#   Testing partitions.
+================================
+test_146_1   Test MaxCPUsPerNode and MaxCPUsPerSocket
