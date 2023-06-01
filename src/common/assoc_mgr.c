@@ -2300,6 +2300,11 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 			       assoc->uid, found_assoc->uid);
 			continue;
 		}
+		if (assoc->acct && xstrcmp(assoc->acct, found_assoc->acct)) {
+			debug4("not the right acct %s != %s",
+			       assoc->acct, found_assoc->acct);
+			continue;
+		}
 
 		list_append(assoc_list, found_assoc);
 		set = 1;
@@ -2307,7 +2312,12 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 	list_iterator_destroy(itr);
 
 	if (!set) {
-		debug("UID %u has no associations", assoc->uid);
+		if (assoc->acct)
+			debug("UID %u Acct %s has no associations", assoc->uid,
+			      assoc->acct);
+		else
+			debug("UID %u has no associations", assoc->uid);
+
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			return SLURM_ERROR;
 	}

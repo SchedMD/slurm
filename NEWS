@@ -81,6 +81,8 @@ documents those changes that are of interest to users and administrators.
     reservations and restarting the controller.
  -- Fix nodes resuming after down and drain state update requests from
     clients older than 23.02.
+ -- Fix advanced reservation creation/update when an association that should
+    have access to it is composed with partition(s).
 
 * Changes in Slurm 23.02.2
 ==========================
