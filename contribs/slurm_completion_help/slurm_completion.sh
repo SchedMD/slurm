@@ -26,7 +26,7 @@
 #     - 5 = TRACE
 ################################################################################
 #  Copyright (C) SchedMD LLC.
-#  Written by Skyler Malinowski <malinowski@schedmd.com>
+#  Written by Skyler Malinowski <skyler@schedmd.com>
 #
 #  This file is part of Slurm, a resource management program.
 #  For details, see <https://slurm.schedmd.com/>.
