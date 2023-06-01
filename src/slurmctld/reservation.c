@@ -848,7 +848,8 @@ static bool _is_account_valid(char *account)
  * associations must be set before calling this function and while
  * handling it after a return.
  */
-static int _append_assoc_list(List assoc_list, slurmdb_assoc_rec_t *assoc)
+static int _append_acct_to_assoc_list(List assoc_list,
+				      slurmdb_assoc_rec_t *assoc)
 {
 	int rc = ESLURM_INVALID_ACCOUNT;
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
@@ -951,7 +952,8 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 				       sizeof(slurmdb_assoc_rec_t));
 				assoc.acct = resv_ptr->account_list[j];
 				assoc.uid  = NO_VAL;
-				rc = _append_assoc_list(assoc_list, &assoc);
+				rc = _append_acct_to_assoc_list(assoc_list,
+								&assoc);
 				if (rc != SLURM_SUCCESS)
 					goto end_it;
 			}
@@ -991,8 +993,9 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 			memset(&assoc, 0, sizeof(slurmdb_assoc_rec_t));
 			assoc.acct = resv_ptr->account_list[i];
 			assoc.uid  = NO_VAL;
-			if ((rc = _append_assoc_list(assoc_list, &assoc))
-			    != SLURM_SUCCESS) {
+			if ((rc = _append_acct_to_assoc_list(assoc_list,
+							     &assoc)) !=
+							     SLURM_SUCCESS) {
 				goto end_it;
 			}
 		}
