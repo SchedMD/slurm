@@ -8427,9 +8427,6 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 		 * If called from a client we don't have a job_gres_list_req so
 		 * don't check against that.
 		 */
-		if (rc == SLURM_SUCCESS && running_in_slurmctld())
-			_validate_step_counts(new_step_list, job_gres_list_req,
-					      step_min_nodes, &rc, err_msg);
 		if (rc == SLURM_SUCCESS) {
 			bool overlap_merge = false;
 			int over_count = 0;
@@ -8452,6 +8449,10 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 							 0);
 			xfree(over_list);
 		}
+		if (rc == SLURM_SUCCESS && running_in_slurmctld())
+			_validate_step_counts(new_step_list, job_gres_list_req,
+					      step_min_nodes, &rc, err_msg);
+
 		if (rc == SLURM_SUCCESS)
 			*step_gres_list = new_step_list;
 		else
