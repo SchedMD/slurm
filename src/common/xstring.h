@@ -253,10 +253,10 @@ extern char *xstring_bytes2hex(const unsigned char *string, int len,
  * Dump byte string printable format
  * IN string - byte string to dump as printable format
  * IN len - number of bytes to dump
- * IN replace - character to replace printable characters
+ * IN replace - string to replace printable characters
  * RET loggable string (must xfree()) or NULL on error
  */
 extern char *xstring_bytes2printable(const unsigned char *string, int len,
-				     const char replace);
+				     const char *replace);
 
 #endif /* !_XSTRING_H */

@@ -881,7 +881,7 @@ extern char *xstring_bytes2hex(const unsigned char *string, int len,
 }
 
 extern char *xstring_bytes2printable(const unsigned char *string, int len,
-				     const char replace)
+				     const char *replace)
 {
 	char *str = NULL, *pos = NULL;
 
@@ -893,7 +893,7 @@ extern char *xstring_bytes2printable(const unsigned char *string, int len,
 		    (string[i] == ' '))
 			xstrfmtcatat(str, &pos, "%c", string[i]);
 		else
-			xstrfmtcatat(str, &pos, "%c", replace);
+			xstrfmtcatat(str, &pos, "%s", replace);
 	}
 
 	return str;
