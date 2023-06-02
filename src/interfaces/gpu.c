@@ -191,6 +191,7 @@ extern void gpu_get_tres_pos(int *gpumem_pos, int *gpuutil_pos)
 		loc_gpuutil_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
 		tres_rec.name = "gpumem";
 		loc_gpumem_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
+		inited = true;
 	}
 
 	if (gpumem_pos)

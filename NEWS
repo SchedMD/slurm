@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
  -- switch/hpe_slingshot - Fix bad instant-on data due to incorrect parsing of
     data from jackaloped.
  -- Fix TresUsageIn[Tot|Ave] calculation for gres/gpumem and gres/gpuutil.
+ -- Avoid unnecessary gres/gpumem and gres/gpuutil TRES position lookups.
 
 * Changes in Slurm 23.02.2
 ==========================
