@@ -1032,3 +1032,7 @@ test_144_2   Test enforce-binding with GPUs that share cores
 test_144_3   Test --exact with GPUs and multiple steps
 test_144_4   Test gres with file or type and --overlap
 test_144_6   Test gres with no_consume flag
+
+test_145_#   Testing --constraint.
+==================================
+test_145_1   Test --constraint with --ntasks-per-node
