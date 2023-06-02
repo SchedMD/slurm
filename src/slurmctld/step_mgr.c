@@ -2828,11 +2828,8 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			 * core allocated even though we are only using what was
 			 * requested.
 			 */
-			if ((req_tpc != NO_VAL16) && (req_tpc < vpus)) {
-				cpus_alloc += req_tpc - 1;
-				cpus_alloc /= req_tpc;
-				cpus_alloc *= vpus;
-			}
+			_modify_cpus_alloc_for_tpc(job_resrcs_ptr->cr_type,
+						   req_tpc, vpus, &cpus_alloc);
 
 			/*
 			 * TODO: We need ntasks-per-* sent to the ctld to make
