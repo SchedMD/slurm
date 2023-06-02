@@ -1503,7 +1503,7 @@ static int _convert_data_bool(data_t *data)
 	return ESLURM_DATA_CONV_FAILED;
 }
 
-static int _convert_data_int(data_t *data)
+static int _convert_data_int(data_t *data, bool force)
 {
 	_check_magic(data);
 
@@ -1533,8 +1533,11 @@ static int _convert_data_int(data_t *data)
 			return ESLURM_DATA_CONV_FAILED;
 		}
 	case DATA_TYPE_FLOAT:
-		data_set_int(data, lrint(data_get_float(data)));
-		return SLURM_SUCCESS;
+		if (force) {
+			data_set_int(data, lrint(data_get_float(data)));
+			return SLURM_SUCCESS;
+		}
+		return ESLURM_DATA_CONV_FAILED;
 	case DATA_TYPE_INT_64:
 		return SLURM_SUCCESS;
 	default:
@@ -1598,8 +1601,8 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 		return _convert_data_force_bool(data) ? DATA_TYPE_NONE :
 							DATA_TYPE_BOOL;
 	case DATA_TYPE_INT_64:
-		return _convert_data_int(data) ? DATA_TYPE_NONE :
-						 DATA_TYPE_INT_64;
+		return _convert_data_int(data, true) ? DATA_TYPE_NONE :
+						       DATA_TYPE_INT_64;
 	case DATA_TYPE_FLOAT:
 		return _convert_data_float(data) ? DATA_TYPE_NONE :
 						   DATA_TYPE_FLOAT;
@@ -1610,7 +1613,7 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 		if (!_convert_data_null(data))
 			return DATA_TYPE_NULL;
 
-		if (!_convert_data_int(data))
+		if (!_convert_data_int(data, false))
 			return DATA_TYPE_INT_64;
 
 		if (!_convert_data_float(data))
