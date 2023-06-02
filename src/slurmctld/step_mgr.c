@@ -2228,6 +2228,19 @@ static bool _use_one_thread_per_core(step_record_t *step_ptr)
 	return false;
 }
 
+static void _modify_cpus_alloc_for_tpc(uint16_t cr_type, uint16_t req_tpc,
+				       uint16_t vpus, int *cpus_alloc)
+{
+	xassert(cpus_alloc);
+
+	if ((cr_type & (CR_CORE | CR_SOCKET)) &&
+	    (req_tpc != NO_VAL16) && (req_tpc < vpus)) {
+		*cpus_alloc += req_tpc - 1;
+		*cpus_alloc /= req_tpc;
+		*cpus_alloc *= vpus;
+	}
+}
+
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
 static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 {
@@ -2490,12 +2503,8 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 			 * requested. Don't worry about cpus_alloc_mem, it's
 			 * already correct.
 			 */
-			if ((job_resrcs_ptr->cr_type & (CR_CORE | CR_SOCKET)) &&
-			    (req_tpc != NO_VAL16) && (req_tpc < vpus)) {
-				cpus_alloc += req_tpc - 1;
-				cpus_alloc /= req_tpc;
-				cpus_alloc *= vpus;
-			}
+			_modify_cpus_alloc_for_tpc(job_resrcs_ptr->cr_type,
+						   req_tpc, vpus, &cpus_alloc);
 
 			/*
 			 * TODO: We need ntasks-per-* sent to the ctld to make
