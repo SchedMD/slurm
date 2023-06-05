@@ -193,7 +193,7 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 		show_flags |= SHOW_FEDERATION | SHOW_SIBLING;
 
 	/* We require detail data when CPUs are requested */
-	if (params.format && strstr(params.format, "C"))
+	if ((params.format && strstr(params.format, "C")) || params.detail_flag)
 		show_flags |= SHOW_DETAIL;
 
 	if (old_job_ptr) {

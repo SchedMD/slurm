@@ -68,6 +68,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix inadvertent permission denied error for --task-prolog and --task-epilog
     with filesystems mounted with root_squash.
  -- switch/hpe_slingshot - remove the unused vni_pids option.
+ -- Fix missing detailed cpu and gres information in json/yaml output from
+    scontrol, squeue and sinfo.
 
 * Changes in Slurm 23.02.2
 ==========================
