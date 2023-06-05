@@ -69,6 +69,13 @@ unavailable to user's group will be displayed (i.e. this is the default behavior
 .IP
 
 .TP
+\fB\-\-json\fR
+Formats information from the \fIshow\fR command as JSON. All informtaion is
+dumped, even if it would normally not be. Filtering arguments are still used.
+This option implicitly sets the \fB\-\-details\fR option.
+.IP
+
+.TP
 \fB\-\-local\fR
 Show only information local to this cluster. Ignore other clusters in the
 federated if a member of one. Overrides \-\-federation.
@@ -103,6 +110,13 @@ the verbosity of logging. By default only errors will be displayed.
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
+.IP
+
+.TP
+\fB\-\-yaml\fR
+Formats information from the \fIshow\fR command as YAML. All information is
+dumped, even if it would normally not be. Filtering arguments are still used.
+This option implicitly sets the \fB\-\-details\fR option.
 .IP
 
 .SH "COMMANDS"

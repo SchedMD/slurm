@@ -1323,8 +1323,9 @@ Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
 
 .TP
 \f3\-\-json\fP
-Dump job information as JSON. All other formatting and filtering arguments will
-be ignored.
+Dump all job information as JSON. All information is dumped, even if it would
+normally not be. Formatting options are ignored; however, filtering arguments
+are still used.
 .IP
 
 .TP
@@ -1486,8 +1487,9 @@ Print version information and exit.
 
 .TP
 \f3\-\-yaml\fP
-Dump job information as YAML. All other formatting and filtering arguments will
-be ignored.
+Dump all job information as YAML. All information is dumped, even if it would
+normally not be. Formatting options are ignored; however, filtering arguments
+are still used.
 .IP
 
 .SH "JOB REASON CODES"
