@@ -455,6 +455,9 @@ int auth_p_verify(auth_token_t *cred, char *auth_info)
 		goto fail;
 	}
 
+	jwt_free(jwt);
+	jwt = NULL;
+
 	if (!cred->username)
 		cred->username = username;
 	else if (!xstrcmp(cred->username, username)) {
