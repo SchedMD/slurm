@@ -69,6 +69,8 @@ documents those changes that are of interest to users and administrators.
  -- Add route/partition plugin to route communications based on partition node
     lists.
  -- SPANK - added new spank_prepend_task_argv() function.
+ -- slurmd - improve error logging at job startup during transition from slurmd
+    to slurmstepd.
 
 * Changes in Slurm 23.02.4
 ==========================
