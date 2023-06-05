@@ -123,6 +123,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid unnecessary gres/gpumem and gres/gpuutil TRES position lookups.
  -- Fix issue in the gpu plugins where gpu frequencies would only be set if both
     gpu memory and gpu frequencies were set, while one or the other suffices.
+ -- sacct - print planned time is 0 for a job that was cancelled before it
+    started.
 
 * Changes in Slurm 23.02.2
 ==========================
