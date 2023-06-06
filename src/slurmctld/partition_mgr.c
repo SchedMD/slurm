@@ -145,6 +145,10 @@ static int _calc_part_tres(void *x, void *arg)
 		assoc_mgr_make_tres_str_from_array(part_ptr->tres_cnt,
 						   TRES_STR_CONVERT_UNITS,
 						   true);
+	if (part_ptr->qos_ptr)
+		assoc_mgr_set_qos_tres_relative_cnt(part_ptr->qos_ptr,
+						    part_ptr->tres_cnt);
+
 	return 0;
 }
 
@@ -167,7 +171,13 @@ extern void set_partition_tres(bool assoc_mgr_locked)
 		xassert(verify_assoc_lock(QOS_LOCK, WRITE_LOCK));
 		xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
 	}
+
+	assoc_mgr_clear_qos_tres_relative_cnt(true);
+
 	list_for_each(part_list, _calc_part_tres, NULL);
+
+	assoc_mgr_set_unset_qos_tres_relative_cnt(true);
+
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
 }
@@ -1822,7 +1832,10 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->nodes != NULL) {
-		assoc_mgr_lock_t assoc_tres_read_lock = { .tres = READ_LOCK };
+		assoc_mgr_lock_t assoc_tres_read_lock = {
+			.qos = WRITE_LOCK,
+			.tres = READ_LOCK,
+		};
 		char *backup_node_list = part_ptr->nodes;
 
 		if (part_desc->nodes[0] == '\0')
@@ -1851,6 +1864,8 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		power_save_set_timeouts(NULL);
 
 		assoc_mgr_lock(&assoc_tres_read_lock);
+		if (part_ptr->qos_ptr)
+			part_ptr->qos_ptr->flags &= ~QOS_FLAG_RELATIVE_SET;
 		_calc_part_tres(part_ptr, NULL);
 		assoc_mgr_unlock(&assoc_tres_read_lock);
 	} else if (part_ptr->node_bitmap == NULL) {

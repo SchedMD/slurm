@@ -542,6 +542,22 @@ extern void assoc_mgr_set_assoc_tres_cnt(slurmdb_assoc_rec_t *assoc);
  * is called. */
 extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos);
 
+/* Creates all the tres arrays for a QOS with the relative flag set.
+ * NOTE: The assoc_mgr qos write and tres read lock needs to be locked before
+ * this is called. */
+extern void assoc_mgr_set_qos_tres_relative_cnt(slurmdb_qos_rec_t *qos,
+						uint64_t *tres_cnt);
+
+/* Creates all the tres arrays for a QOS with the relative flag set.
+ * NOTE: The assoc_mgr qos write and tres read lock needs to be locked before
+ * this is called. */
+extern void assoc_mgr_set_unset_qos_tres_relative_cnt(bool locked);
+
+/* Removes QOS_FLAG_RELATIVE_SET from all qos.
+ * NOTE: The assoc_mgr qos write lock needs to be locked before this
+ * is called. */
+extern void assoc_mgr_clear_qos_tres_relative_cnt(bool locked);
+
 /* Make a simple tres string from a tres count array.
  * IN tres_cnt - counts of each tres used
  * IN flags - TRES_STR_FLAG_SIMPLE or 0 for formatted string

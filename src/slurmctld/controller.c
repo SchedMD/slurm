@@ -2594,7 +2594,9 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 	int i;
 	uint64_t cluster_billing = 0;
 	char *unique_tres = NULL;
-	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
+	assoc_mgr_lock_t locks = {
+		.qos = WRITE_LOCK,
+		.tres = WRITE_LOCK };
 	int active_node_count = 0;
 
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));

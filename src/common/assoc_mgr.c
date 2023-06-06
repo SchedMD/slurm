@@ -2291,6 +2291,22 @@ static int _foreach_rem_coord(void *x, void *arg)
 	return _delete_nondirect_coord_children(assoc, user);
 }
 
+static int _reset_relative_flag(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos = x;
+
+	qos->flags &= ~QOS_FLAG_RELATIVE_SET;
+
+	return 0;
+}
+
+static int _set_relative_cnt(void *x, void *arg)
+{
+	assoc_mgr_set_qos_tres_relative_cnt(x, NULL);
+
+	return 0;
+}
+
 static void _remove_nondirect_coord_acct(slurmdb_assoc_rec_t *assoc)
 {
 	xassert(verify_assoc_lock(USER_LOCK, WRITE_LOCK));
@@ -6819,6 +6835,63 @@ extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos)
 	assoc_mgr_set_tres_cnt_array(&qos->min_tres_pj_ctld,
 				     qos->min_tres_pj, INFINITE64, 1,
 				     relative, qos->relative_tres_cnt);
+}
+
+/* qos write and tres read lock needs to be locked before this is called. */
+extern void assoc_mgr_set_qos_tres_relative_cnt(slurmdb_qos_rec_t *qos,
+						uint64_t *relative_tres_cnt)
+{
+	if (!(qos->flags & QOS_FLAG_RELATIVE) ||
+	    (qos->flags & QOS_FLAG_RELATIVE_SET))
+		return;
+
+	xfree(qos->relative_tres_cnt);
+
+	qos->relative_tres_cnt = xcalloc_nz(g_tres_count,
+					    sizeof(*qos->relative_tres_cnt));
+
+	if (relative_tres_cnt)
+		memcpy(qos->relative_tres_cnt, relative_tres_cnt,
+		       sizeof(*relative_tres_cnt) * g_tres_count);
+	else {
+		for (int i = 0; i < g_tres_count; i++)
+			qos->relative_tres_cnt[i] =
+				assoc_mgr_tres_array[i]->count;
+	}
+
+	assoc_mgr_set_qos_tres_cnt(qos);
+
+	qos->flags |= QOS_FLAG_RELATIVE_SET;
+}
+
+/* tres read lock needs to be locked before this is called. */
+extern void assoc_mgr_set_unset_qos_tres_relative_cnt(bool locked)
+{
+	assoc_mgr_lock_t locks = {
+		.qos = WRITE_LOCK,
+		.tres = READ_LOCK,
+	};
+
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	(void) list_for_each(assoc_mgr_qos_list, _set_relative_cnt, NULL);
+
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+}
+
+extern void assoc_mgr_clear_qos_tres_relative_cnt(bool locked)
+{
+	assoc_mgr_lock_t locks = { .qos = WRITE_LOCK };
+
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	(void) list_for_each(assoc_mgr_qos_list, _reset_relative_flag, NULL);
+
+	if (!locked)
+		assoc_mgr_unlock(&locks);
 }
 
 extern char *assoc_mgr_make_tres_str_from_array(
