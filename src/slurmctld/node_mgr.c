@@ -4788,7 +4788,7 @@ static void _update_parts()
 {
 	/* scan partition table and identify nodes in each */
 	list_for_each(part_list, _foreach_build_part_bitmap, NULL);
-	set_partition_tres();
+	set_partition_tres(false);
 }
 
 static int _build_node_callback(char *alias, char *hostname, char *address,

@@ -2704,7 +2704,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 	assoc_mgr_tres_array[TRES_ARRAY_NODE]->count = active_node_count;
 	assoc_mgr_tres_array[TRES_ARRAY_BILLING]->count = cluster_billing;
 
-	set_partition_tres();
+	set_partition_tres(true);
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
@@ -3229,7 +3229,7 @@ static void *_assoc_cache_mgr(void *no_data)
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	assoc_mgr_lock_t locks =
-		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = WRITE_LOCK,
+		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = WRITE_LOCK,
 		  .user = READ_LOCK };
 
 	while (running_cache == RUNNING_CACHE_STATE_RUNNING) {

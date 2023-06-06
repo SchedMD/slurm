@@ -2733,7 +2733,7 @@ waitpid_timeout(const char *, pid_t, int *, int);
 /*
  * Calculate and populate the number of tres' for all partitions.
  */
-extern void set_partition_tres();
+extern void set_partition_tres(bool assoc_mgr_locked);
 
 /*
  * Update job's federated siblings strings.

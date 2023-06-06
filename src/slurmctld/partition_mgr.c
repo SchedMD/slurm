@@ -151,12 +151,25 @@ static int _calc_part_tres(void *x, void *arg)
 /*
  * Calculate and populate the number of tres' for all partitions.
  */
-extern void set_partition_tres()
+extern void set_partition_tres(bool assoc_mgr_locked)
 {
+	assoc_mgr_lock_t locks = {
+		.qos = WRITE_LOCK,
+		.tres = READ_LOCK,
+	};
+
 	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+	else {
+		xassert(verify_assoc_lock(QOS_LOCK, WRITE_LOCK));
+		xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
+	}
 	list_for_each(part_list, _calc_part_tres, NULL);
+	if (!assoc_mgr_locked)
+		assoc_mgr_unlock(&locks);
 }
 
 /*
