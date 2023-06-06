@@ -62,6 +62,7 @@ documents those changes that are of interest to users and administrators.
     gpu memory and gpu frequencies were set, while one or the other suffices.
  -- sacct - print planned time is 0 for a job that was cancelled before it
     started.
+ -- Fix reservations group ACL's not working with the root group.
 
 * Changes in Slurm 23.02.2
 ==========================

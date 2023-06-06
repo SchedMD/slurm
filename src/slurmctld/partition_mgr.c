@@ -1683,6 +1683,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	if (part_desc->allow_groups != NULL) {
 		xfree(part_ptr->allow_groups);
 		xfree(part_ptr->allow_uids);
+		part_ptr->allow_uids_cnt = 0;
 		if ((xstrcasecmp(part_desc->allow_groups, "ALL") == 0) ||
 		    (part_desc->allow_groups[0] == '\0')) {
 			info("%s: setting allow_groups to ALL for partition %s",
@@ -1693,7 +1694,8 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 			info("%s: setting allow_groups to %s for partition %s",
 			     __func__, part_ptr->allow_groups, part_desc->name);
 			part_ptr->allow_uids =
-				get_groups_members(part_ptr->allow_groups);
+				get_groups_members(part_ptr->allow_groups,
+						   &part_ptr->allow_uids_cnt);
 			clear_group_cache();
 		}
 	}
@@ -1913,7 +1915,7 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 #if defined(_SC_GETPW_R_SIZE_MAX)
 	long ii;
 #endif
-	int i = 0, res, uid_array_len;
+	int res;
 	size_t buflen;
 	struct passwd pwd, *pwd_result;
 	char *buf;
@@ -1926,14 +1928,13 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 		return 1;	/* all users allowed */
 	if (validate_slurm_user(run_uid))
 		return 1;	/* super-user can run anywhere */
-	if (part_ptr->allow_uids == NULL)
-		return 0;	/* no non-super-users in the list */
+	if (!part_ptr->allow_uids_cnt)
+		return 0;
 
-	for (i = 0; part_ptr->allow_uids[i]; i++) {
+	for (int i = 0; i < part_ptr->allow_uids_cnt; i++) {
 		if (part_ptr->allow_uids[i] == run_uid)
 			return 1;
 	}
-	uid_array_len = i;
 
 	/* If this user has failed AllowGroups permission check on this
 	 * partition in past 5 seconds, then do not test again for performance
@@ -2041,8 +2042,9 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 		      (long) run_uid, grp.gr_name, part_ptr->name);
 		part_ptr->allow_uids =
 			xrealloc(part_ptr->allow_uids,
-				 (sizeof(uid_t) * (uid_array_len + 1)));
-		part_ptr->allow_uids[uid_array_len] = run_uid;
+				 (sizeof(uid_t) *
+				  (part_ptr->allow_uids_cnt + 1)));
+		part_ptr->allow_uids[part_ptr->allow_uids_cnt++] = run_uid;
 	}
 
 fini:	if (ret == 0) {
@@ -2086,20 +2088,22 @@ static int _update_part_uid_access_list(void *x, void *arg)
 	part_record_t *part_ptr = (part_record_t *)x;
 	int *updated = (int *)arg;
 	int i = 0;
-	uid_t *tmp_uids;
+	uid_t *tmp_uids = part_ptr->allow_uids;
+	int tmp_uid_cnt = part_ptr->allow_uids_cnt;
 
-	tmp_uids = part_ptr->allow_uids;
-	part_ptr->allow_uids = get_groups_members(part_ptr->allow_groups);
+	part_ptr->allow_uids =
+		get_groups_members(part_ptr->allow_groups,
+				   &part_ptr->allow_uids_cnt);
 
 	if ((!part_ptr->allow_uids) && (!tmp_uids)) {
-		/* no changes, and no arrays to compare */
-	} else if ((!part_ptr->allow_uids) || (!tmp_uids)) {
-		/* one is set when it wasn't before */
+		/* no changes, because no arrays to compare */
+	} else if ((!part_ptr->allow_uids) || (!tmp_uids) ||
+		   (part_ptr->allow_uids_cnt != tmp_uid_cnt)) {
+		/* creating, removing, or updating list, but sizes mismatch */
 		*updated = 1;
 	} else {
-		/* step through arrays and compare item by item */
-		/* uid_t arrays are terminated with a zero */
-		for (i = 0; part_ptr->allow_uids[i]; i++) {
+		/* updating with same size, we need to compare 1 by 1 */
+		for (i = 0; i < part_ptr->allow_uids_cnt; i++) {
 			if (tmp_uids[i] != part_ptr->allow_uids[i]) {
 				*updated = 1;
 				break;

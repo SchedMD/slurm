@@ -366,7 +366,8 @@ typedef struct {
 				 * NULL indicates all */
 	char *allow_groups;	/* comma delimited list of groups,
 				 * NULL indicates all */
-	uid_t *allow_uids;	/* zero terminated list of allowed user IDs */
+	uid_t *allow_uids;	/* list of allowed user IDs */
+	int allow_uids_cnt;	/* count of allowed user IDs */
 	char *allow_qos;	/* comma delimited list of qos,
 				 * NULL indicates all */
 	bitstr_t *allow_qos_bitstr; /* (DON'T PACK) assocaited with

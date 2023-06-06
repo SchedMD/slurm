@@ -90,8 +90,6 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static bool _user_access(uid_t run_uid, uint32_t submit_uid,
 			 part_record_t *part_ptr)
 {
-	int i;
-
 	if (run_uid == 0) {
 		if (part_ptr->flags & PART_FLAG_NO_ROOT)
 			return false;
@@ -101,10 +99,10 @@ static bool _user_access(uid_t run_uid, uint32_t submit_uid,
 	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0))
 		return false;
 
-	if (part_ptr->allow_uids == NULL)
+	if (!part_ptr->allow_uids_cnt)
 		return true;	/* AllowGroups=ALL */
 
-	for (i=0; part_ptr->allow_uids[i]; i++) {
+	for (int i = 0; i < part_ptr->allow_uids_cnt; i++) {
 		if (part_ptr->allow_uids[i] == run_uid)
 			return true;	/* User in AllowGroups */
 	}

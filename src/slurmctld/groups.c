@@ -53,6 +53,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/uid.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -67,10 +68,12 @@
 
 #define _DEBUG 0
 
-static uid_t *_get_group_members(char *group_name);
+static uid_t *_get_group_members(char *group_name, int *uid_cnt);
 static void   _cache_del_func(void *x);
-static uid_t *_get_group_cache(char *group_name);
-static void   _log_group_members(char *group_name, uid_t *group_uids);
+static uid_t *_get_group_cache(char *group_name, int *uid_cnt);
+static void   _log_group_members(char *group_name,
+				 uid_t *group_uids,
+				 int uid_cnt);
 static void   _put_group_cache(char *group_name, void *group_uids, int uid_cnt);
 
 static List group_cache_list = NULL;
@@ -92,12 +95,10 @@ static int _uid_cmp(const void *x, const void *y)
 	a = *(uid_t *)x;
 	b = *(uid_t *)y;
 
-	/* Sort in decreasing order so that the 0
-	 * as at the end.
-	 */
-	if (a > b)
-		return -1;
+	/* Sort in increasing order so that the 0 is at the beginning */
 	if (a < b)
+		return -1;
+	if (a > b)
 		return 1;
 	return 0;
 }
@@ -105,115 +106,97 @@ static int _uid_cmp(const void *x, const void *y)
 /*
  * _remove_duplicate_uids()
  */
-static uid_t *_remove_duplicate_uids(uid_t *u)
+static void _remove_duplicate_uids(uid_t **u, int *u_cnt)
 {
-	int i;
-	int j;
-	int num;
+	int j = 0;
 	uid_t *v;
 	uid_t cur;
 
-	if (!u)
-		return NULL;
+	xassert(u);
+	xassert(u_cnt);
+	if ((!*u) || (!*u_cnt))
+		return;
 
-	num = 1;
-	for (i = 0; u[i]; i++)
-		++num;
+	v = xcalloc(*u_cnt, sizeof(uid_t));
+	qsort(*u, *u_cnt, sizeof(uid_t), _uid_cmp);
 
-	v = xcalloc(num, sizeof(uid_t));
-	qsort(u, num, sizeof(uid_t), _uid_cmp);
-
-	j = 0;
-	cur = u[0];
-	for (i = 0; u[i]; i++) {
-		if (u[i] == cur)
+	cur = (*u)[0];
+	for (int i = 0; i < *u_cnt; i++) {
+		if ((*u)[i] == cur)
 			continue;
-		v[j] = cur;
-		cur = u[i];
-		++j;
+		v[j++] = cur;
+		cur = (*u)[i];
 	}
-	v[j] = cur;
+	v[j++] = cur;
 
-	xfree(u);
-	return v;
+	xfree(*u);
+	*u = v;
+	*u_cnt = j;
 }
 
-/* _uid_list_size - return the count of uid's in a zero terminated list */
-static int _uid_list_size(uid_t * uid_list_ptr)
-{
-	int i;
-
-	if (uid_list_ptr == NULL)
-		return 0;
-
-	for (i = 0;; i++) {
-		if (uid_list_ptr[i] == 0)
-			break;
-	}
-
-	return i;
-}
-
-extern uid_t *get_groups_members(char *group_names)
+extern uid_t *get_groups_members(char *group_names, int *user_cnt)
 {
 	uid_t *group_uids = NULL;
-	uid_t *temp_uids  = NULL;
-	int i, j, k;
 	char *tmp_names = NULL, *name_ptr = NULL, *one_group_name = NULL;
 
+	*user_cnt = 0;
 	if (group_names == NULL)
 		return NULL;
 
 	tmp_names = xstrdup(group_names);
 	one_group_name = strtok_r(tmp_names, ",", &name_ptr);
 	while (one_group_name) {
-		temp_uids = _get_group_members(one_group_name);
-		if (temp_uids == NULL)
-			;
-		else if (group_uids == NULL) {
+		int tmp_uid_cnt = 0;
+		uid_t *temp_uids =  _get_group_members(one_group_name,
+						       &tmp_uid_cnt);
+		if (!tmp_uid_cnt) {
+			xfree(temp_uids);
+		} else if (!group_uids) {
 			group_uids = temp_uids;
+			*user_cnt = tmp_uid_cnt;
 		} else {
 			/* concatenate the uid_lists and free the new one */
-			i = _uid_list_size(group_uids);
-			j = _uid_list_size(temp_uids);
-			xrealloc(group_uids, sizeof(uid_t) * (i + j + 1));
-			for (k = 0; k <= j; k++)
-				group_uids[i + k] = temp_uids[k];
+			xrealloc(group_uids,
+				 sizeof(uid_t) * (*user_cnt + tmp_uid_cnt));
+			for (int i = 0; i < tmp_uid_cnt; i++)
+				group_uids[(*user_cnt)++] = temp_uids[i];
 			xfree(temp_uids);
 		}
 		one_group_name = strtok_r(NULL, ",", &name_ptr);
 	}
 	xfree(tmp_names);
 
-	group_uids = _remove_duplicate_uids(group_uids);
-
+	_remove_duplicate_uids(&group_uids, user_cnt);
 	return group_uids;
 }
 
 /*
  * _get_group_members - identify the users in a given group name
  * IN group_name - a single group name
- * RET a zero terminated list of its UIDs or NULL on error
- * NOTE: User root has implicitly access to every group
+ * OUT uid_cnt - pointer to fill the size of returned array
+ * RET list of its UIDs or NULL on error
  * NOTE: The caller must xfree non-NULL return values
  */
-static uid_t *_get_group_members(char *group_name)
+static uid_t *_get_group_members(char *group_name, int *uid_cnt)
 {
 	char *grp_buffer = NULL;
   	struct group grp,  *grp_result = NULL;
 	struct passwd *pwd_result = NULL;
 	uid_t *group_uids = NULL, my_uid;
 	gid_t my_gid;
-	int buflen = PW_BUF_SIZE, i, j, res, uid_cnt;
+	int buflen = PW_BUF_SIZE, i, res, group_uids_size = 0;
 #if defined (__APPLE__)
 #else
 	char pw_buffer[PW_BUF_SIZE];
 	struct passwd pw;
 #endif
 
-	group_uids = _get_group_cache(group_name);
-	if (group_uids)	{	/* We found in cache */
-		_log_group_members(group_name, group_uids);
+	*uid_cnt = 0;
+
+	group_uids = _get_group_cache(group_name, uid_cnt);
+	if (*uid_cnt) {
+		/* We found in cache */
+		_log_group_members(group_name, group_uids, *uid_cnt);
 		return group_uids;
 	}
 
@@ -246,9 +229,6 @@ static uid_t *_get_group_members(char *group_name)
 	}
 	my_gid = grp_result->gr_gid;
 
-	j = 0;
-	uid_cnt = 0;
-
 	/* Get the members from the getgrnam_r() call.
 	 */
 	for (i = 0; grp_result->gr_mem[i]; i++) {
@@ -259,13 +239,11 @@ static uid_t *_get_group_members(char *group_name)
 		}
 		if (my_uid == 0)
 			continue;
-		if (j + 1 >= uid_cnt) {
-			uid_cnt += 100;
-			xrealloc(group_uids,
-				 (sizeof(uid_t) * uid_cnt));
+		if (group_uids_size < (*uid_cnt + 1)) {
+			group_uids_size += 100;
+			xrealloc(group_uids, (sizeof(uid_t) * group_uids_size));
 		}
-
-		group_uids[j++] = my_uid;
+		group_uids[(*uid_cnt)++] = my_uid;
 	}
 
 	/* Note that in environments where user/group enumeration has
@@ -313,12 +291,12 @@ static uid_t *_get_group_members(char *group_name)
 				}
 				if (my_uid == 0)
 					continue;
-				if (j+1 >= uid_cnt) {
-					uid_cnt += 100;
-					xrealloc(group_uids,
-						 (sizeof(uid_t) * uid_cnt));
+				if (group_uids_size < (*uid_cnt + 1)) {
+					group_uids_size += 100;
+					xrealloc(group_uids, (sizeof(uid_t) *
+							      group_uids_size));
 				}
-				group_uids[j++] = my_uid;
+				group_uids[(*uid_cnt)++] = my_uid;
 			}
 		}
 	}
@@ -336,16 +314,19 @@ static uid_t *_get_group_members(char *group_name)
 			break;
  		if (pwd_result->pw_gid != my_gid)
 			continue;
-		if (j+1 >= uid_cnt) {
-			uid_cnt += 100;
-			xrealloc(group_uids, (sizeof(uid_t) * uid_cnt));
+		if (group_uids_size < (*uid_cnt + 1)) {
+			group_uids_size += 100;
+			xrealloc(group_uids, (sizeof(uid_t) * group_uids_size));
 		}
-		group_uids[j++] = pwd_result->pw_uid;
+		group_uids[(*uid_cnt)++] = pwd_result->pw_uid;
 	}
 	endpwent();
 	xfree(grp_buffer);
-	_put_group_cache(group_name, group_uids, j);
-	_log_group_members(group_name, group_uids);
+	_put_group_cache(group_name, group_uids, *uid_cnt);
+	_log_group_members(group_name, group_uids, *uid_cnt);
+
+	if (!(*uid_cnt))
+		xfree(group_uids);
 	return group_uids;
 }
 
@@ -372,12 +353,14 @@ extern time_t get_group_tlm(void)
 
 /* Get a record from our group/uid cache.
  * Return NULL if not found. */
-static uid_t *_get_group_cache(char *group_name)
+static uid_t *_get_group_cache(char *group_name, int *uid_cnt)
 {
 	ListIterator iter;
 	struct group_cache_rec *cache_rec;
 	uid_t *group_uids = NULL;
 	int sz;
+
+	*uid_cnt = 0;
 
 	slurm_mutex_lock(&group_cache_mutex);
 	if (!group_cache_list) {
@@ -389,9 +372,10 @@ static uid_t *_get_group_cache(char *group_name)
 	while ((cache_rec = list_next(iter))) {
 		if (xstrcmp(group_name, cache_rec->group_name))
 			continue;
-		sz = sizeof(uid_t) * (cache_rec->uid_cnt + 1);
+		sz = sizeof(uid_t) * cache_rec->uid_cnt;
 		group_uids = xmalloc(sz);
 		memcpy(group_uids, cache_rec->group_uids, sz);
+		*uid_cnt = cache_rec->uid_cnt;
 		break;
 	}
 	list_iterator_destroy(iter);
@@ -432,18 +416,16 @@ static void _put_group_cache(char *group_name, void *group_uids, int uid_cnt)
 	slurm_mutex_unlock(&group_cache_mutex);
 }
 
-static void _log_group_members(char *group_name, uid_t *group_uids)
+static void _log_group_members(char *group_name, uid_t *group_uids, int uid_cnt)
 {
 #if _DEBUG
-	int i;
-
-	if ((group_uids == NULL) || (group_uids[0] == 0)) {
+	if ((!group_uids) || (!uid_cnt)) {
 		info("Group %s has no users", group_name);
 		return;
 	}
 
 	info("Group %s contains uids:", group_name);
-	for (i=0; group_uids && group_uids[i]; i++)
+	for (int i = 0; i < uid_cnt; i++)
 		info("  %u", group_uids[i]);
 #endif
 }
