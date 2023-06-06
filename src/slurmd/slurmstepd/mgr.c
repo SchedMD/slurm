@@ -165,8 +165,6 @@ static int sig_array[] = {SIGTERM, 0};
 /*
  * step manager related prototypes
  */
-static bool _access(const char *path, int modes, uid_t uid,
-		    int ngids, gid_t *gids);
 static void _send_launch_failure(launch_tasks_request_msg_t *,
 				 slurm_addr_t *, int, uint16_t);
 static int  _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized);
@@ -2865,44 +2863,6 @@ _become_user(stepd_step_rec_t *step, struct priv_state *ps)
 }
 
 /*
- * Check this user's access rights to a file
- * path IN: pathname of file to test
- * modes IN: desired access
- * uid IN: user ID to access the file
- * gid IN: group ID to access the file
- * RET true on success, false on failure
- */
-static bool _access(const char *path, int modes, uid_t uid,
-		    int ngids, gid_t *gids)
-{
-	struct stat buf;
-	int f_mode, i;
-
-	if (!gids)
-		return false;
-
-	if (stat(path, &buf) != 0)
-		return false;
-
-	if (buf.st_uid == uid)
-		f_mode = (buf.st_mode >> 6) & 07;
-	else {
-		for (i=0; i < ngids; i++)
-			if (buf.st_gid == gids[i])
-				break;
-		if (i < ngids)	/* one of the gids matched */
-			f_mode = (buf.st_mode >> 3) & 07;
-		else		/* uid and gid failed, test against all */
-			f_mode = buf.st_mode & 07;
-	}
-
-	if ((f_mode & modes) == modes)
-		return true;
-
-	return false;
-}
-
-/*
  * Run a script as a specific user, with the specified uid, gid, and
  * extended groups.
  *
@@ -2929,11 +2889,6 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
 
 	debug("[job %u] attempting to run %s [%s]",
 	      step->step_id.job_id, name, path);
-
-	if (!_access(path, 5, step->uid, step->ngids, step->gids)) {
-		error("Could not run %s [%s]: access denied", name, path);
-		return -1;
-	}
 
 	if ((ei = _fork_child_with_wait_info(0)) == NULL) {
 		error ("executing %s: fork: %m", name);
@@ -3008,6 +2963,10 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
 				/* System limit on open files or memory reached,
 				 * retry after short delay */
 				sleep(1);
+			} else if (errno == EACCES) {
+				error("Could not run %s [%s]: access denied",
+				      name, path);
+				break;
 			} else {
 				break;
 			}
