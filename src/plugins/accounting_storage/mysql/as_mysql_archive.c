@@ -910,9 +910,9 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 
 static uint32_t high_buffer_size = (1024 * 1024);
 
-static void _pack_local_event(local_event_t *object, uint16_t rpc_version,
-			      buf_t *buffer)
+static void _pack_local_event(local_event_t *object, buf_t *buffer)
 {
+	/* Always packs as current version */
 	packstr(object->cluster_nodes, buffer);
 	packstr(object->node_name, buffer);
 	packstr(object->period_end, buffer);
@@ -968,9 +968,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_job(local_job_t *object, uint16_t rpc_version,
-			    buf_t *buffer)
+static void _pack_local_job(local_job_t *object, buf_t *buffer)
 {
+	/* Always packs as current version */
 	packstr(object->account, buffer);
 	packstr(object->admin_comment, buffer);
 	packstr(object->alloc_nodes, buffer);
@@ -1744,9 +1744,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_job_env(local_job_env_t *object, uint16_t rpc_version,
-				buf_t *buffer)
+static void _pack_local_job_env(local_job_env_t *object, buf_t *buffer)
 {
+	/* Always packs as current version */
 	packstr(object->hash_inx, buffer);
 	packstr(object->last_used, buffer);
 	packstr(object->env_hash, buffer);
@@ -1772,9 +1772,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_job_script(local_job_script_t *object,
-				   uint16_t rpc_version, buf_t *buffer)
+static void _pack_local_job_script(local_job_script_t *object, buf_t *buffer)
 {
+	/* Always packs as current version */
 	packstr(object->hash_inx, buffer);
 	packstr(object->last_used, buffer);
 	packstr(object->script_hash, buffer);
@@ -1800,9 +1800,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_resv(local_resv_t *object, uint16_t rpc_version,
-			     buf_t *buffer)
+static void _pack_local_resv(local_resv_t *object, buf_t *buffer)
 {
+	/* Always packs as current version */
 	packstr(object->assocs, buffer);
 	packstr(object->comment, buffer);
 	packstr(object->deleted, buffer);
@@ -1891,9 +1891,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_step(local_step_t *object, uint16_t rpc_version,
-			     buf_t *buffer)
+static void _pack_local_step(local_step_t *object, buf_t *buffer)
 {
+	/* Always packs as current version */
 	packstr(object->act_cpufreq, buffer);
 	packstr(object->deleted, buffer);
 	packstr(object->exit_code, buffer);
@@ -2504,9 +2504,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_suspend(local_suspend_t *object, uint16_t rpc_version,
-				buf_t *buffer)
+static void _pack_local_suspend(local_suspend_t *object, buf_t *buffer)
 {
+	/* Always packs as current version */
 	packstr(object->associd, buffer);
 	packstr(object->job_db_inx, buffer);
 	packstr(object->period_end, buffer);
@@ -2530,9 +2530,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_txn(local_txn_t *object, uint16_t rpc_version,
-			    buf_t *buffer)
+static void _pack_local_txn(local_txn_t *object, buf_t *buffer)
 {
+	/* Always packs as current version */
 	packstr(object->id, buffer);
 	packstr(object->timestamp, buffer);
 	packstr(object->action, buffer);
@@ -2562,9 +2562,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_usage(local_usage_t *object, uint16_t rpc_version,
-			      buf_t *buffer)
+static void _pack_local_usage(local_usage_t *object, buf_t *buffer)
 {
+	/* Always packs as current version */
 	packstr(object->id, buffer);
 	packstr(object->tres_id, buffer);
 	packstr(object->time_start, buffer);
@@ -2602,8 +2602,9 @@ unpack_error:
 }
 
 static void _pack_local_cluster_usage(local_cluster_usage_t *object,
-				      uint16_t rpc_version, buf_t *buffer)
+				      buf_t *buffer)
 {
+	/* Always packs as current version */
 	packstr(object->tres_id, buffer);
 	packstr(object->time_start, buffer);
 	packstr(object->tres_cnt, buffer);
@@ -3312,7 +3313,7 @@ static buf_t *_pack_archive_events(MYSQL_RES *result, char *cluster_name,
 		event.state = row[EVENT_REQ_STATE];
 		event.tres_str = row[EVENT_REQ_TRES];
 
-		_pack_local_event(&event, SLURM_PROTOCOL_VERSION, buffer);
+		_pack_local_event(&event, buffer);
 	}
 
 	return buffer;
@@ -3446,7 +3447,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.wckey_id = row[JOB_REQ_WCKEYID];
 		job.work_dir = row[JOB_REQ_WORK_DIR];
 
-		_pack_local_job(&job, SLURM_PROTOCOL_VERSION, buffer);
+		_pack_local_job(&job, buffer);
 	}
 
 	return buffer;
@@ -3723,7 +3724,7 @@ static buf_t *_pack_archive_job_env(MYSQL_RES *result, char *cluster_name,
 		job.env_hash = row[JOB_ENV_ENV_HASH];
 		job.env_vars = row[JOB_ENV_ENV_VARS];
 
-		_pack_local_job_env(&job, SLURM_PROTOCOL_VERSION, buffer);
+		_pack_local_job_env(&job, buffer);
 	}
 
 	return buffer;
@@ -3831,7 +3832,7 @@ static buf_t *_pack_archive_job_script(MYSQL_RES *result, char *cluster_name,
 		job.script_hash = row[JOB_SCRIPT_SCRIPT_HASH];
 		job.batch_script = row[JOB_SCRIPT_BATCH_SCRIPT];
 
-		_pack_local_job_script(&job, SLURM_PROTOCOL_VERSION, buffer);
+		_pack_local_job_script(&job, buffer);
 	}
 
 	return buffer;
@@ -3949,7 +3950,7 @@ static buf_t *_pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
 		resv.unused_wall = row[RESV_REQ_UNUSED];
 		resv.comment = row[RESV_REQ_COMMENT];
 
-		_pack_local_resv(&resv, SLURM_PROTOCOL_VERSION, buffer);
+		_pack_local_resv(&resv, buffer);
 	}
 
 	return buffer;
@@ -4122,7 +4123,7 @@ static buf_t *_pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 		step.user_sec = row[STEP_REQ_USER_SEC];
 		step.user_usec = row[STEP_REQ_USER_USEC];
 
-		_pack_local_step(&step, SLURM_PROTOCOL_VERSION, buffer);
+		_pack_local_step(&step, buffer);
 	}
 
 	return buffer;
@@ -4325,7 +4326,7 @@ static buf_t *_pack_archive_suspends(MYSQL_RES *result, char *cluster_name,
 		suspend.period_start = row[SUSPEND_REQ_START];
 		suspend.period_end = row[SUSPEND_REQ_END];
 
-		_pack_local_suspend(&suspend, SLURM_PROTOCOL_VERSION, buffer);
+		_pack_local_suspend(&suspend, buffer);
 	}
 
 	return buffer;
@@ -4407,7 +4408,7 @@ static buf_t *_pack_archive_txns(MYSQL_RES *result, char *cluster_name,
 		txn.info = row[TXN_REQ_INFO];
 		txn.cluster = row[TXN_REQ_CLUSTER];
 
-		_pack_local_txn(&txn, SLURM_PROTOCOL_VERSION, buffer);
+		_pack_local_txn(&txn, buffer);
 	}
 
 	return buffer;
@@ -4522,7 +4523,7 @@ static buf_t *_pack_archive_usage(MYSQL_RES *result, char *cluster_name,
 		usage.mod_time = row[USAGE_MOD_TIME];
 		usage.deleted = row[USAGE_DELETED];
 
-		_pack_local_usage(&usage, SLURM_PROTOCOL_VERSION, buffer);
+		_pack_local_usage(&usage, buffer);
 	}
 
 	return buffer;
@@ -4654,8 +4655,7 @@ static buf_t *_pack_archive_cluster_usage(MYSQL_RES *result, char *cluster_name,
 		usage.mod_time = row[CLUSTER_MOD_TIME];
 		usage.deleted = row[CLUSTER_DELETED];
 
-		_pack_local_cluster_usage(
-			&usage, SLURM_PROTOCOL_VERSION, buffer);
+		_pack_local_cluster_usage(&usage, buffer);
 	}
 
 	return buffer;
