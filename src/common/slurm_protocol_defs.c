@@ -4856,6 +4856,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->gres);
 		xfree(node->gres_drain);
 		xfree(node->gres_used);
+		xfree(node->instance_id);
 		xfree(node->mcs_label);
 		xfree(node->name);
 		xfree(node->node_addr);

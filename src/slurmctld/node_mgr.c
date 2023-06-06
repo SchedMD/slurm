@@ -292,6 +292,7 @@ static void _dump_node_state(node_record_t *dump_node_ptr, buf_t *buffer)
 	packstr (dump_node_ptr->features, buffer);
 	packstr (dump_node_ptr->features_act, buffer);
 	packstr (dump_node_ptr->gres, buffer);
+	packstr (dump_node_ptr->instance_id, buffer);
 	packstr (dump_node_ptr->cpu_spec_list, buffer);
 	pack32  (dump_node_ptr->next_state, buffer);
 	pack32  (dump_node_ptr->node_state, buffer);
@@ -353,6 +354,7 @@ extern int load_all_node_state ( bool state_only )
 	char *node_name = NULL, *comment = NULL, *reason = NULL, *state_file;
 	char *features = NULL, *features_act = NULL;
 	char *gres = NULL, *extra = NULL;
+	char *instance_id = NULL;
 	char *mcs_label = NULL;
 	int error_code = SLURM_SUCCESS, node_cnt = 0;
 	uint32_t node_state, cpu_bind = 0, next_state = NO_VAL;
@@ -433,6 +435,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpackstr_xmalloc(&features, &len, buffer);
 			safe_unpackstr_xmalloc(&features_act, &len,buffer);
 			safe_unpackstr_xmalloc(&gres, &len, buffer);
+			safe_unpackstr_xmalloc(&instance_id, &len, buffer);
 			safe_unpackstr_xmalloc(&cpu_spec_list, &len, buffer);
 			safe_unpack32(&next_state, buffer);
 			safe_unpack32(&node_state, buffer);
@@ -726,6 +729,11 @@ extern int load_all_node_state ( bool state_only )
 				comment = NULL;
 			}
 
+			if (!node_ptr->instance_id) {
+				node_ptr->instance_id = instance_id;
+				instance_id = NULL;
+			}
+
 			if (node_ptr->reason == NULL) {
 				node_ptr->reason = reason;
 				reason = NULL;	/* Nothing to free */
@@ -767,6 +775,9 @@ extern int load_all_node_state ( bool state_only )
 			xfree(node_ptr->comment);
 			node_ptr->comment = comment;
 			comment = NULL; /* Nothing to free */
+			xfree(node_ptr->instance_id);
+			node_ptr->instance_id = instance_id;
+			instance_id = NULL; /* Nothing to free */
 			xfree(node_ptr->reason);
 			node_ptr->reason	= reason;
 			reason			= NULL;	/* Nothing to free */
@@ -849,6 +860,7 @@ extern int load_all_node_state ( bool state_only )
 		xfree (node_name);
 		xfree(comment);
 		xfree(extra);
+		xfree(instance_id);
 		xfree(reason);
 		xfree(cpu_spec_list);
 	}
@@ -885,6 +897,7 @@ unpack_error:
 	xfree(node_name);
 	xfree(comment);
 	xfree(extra);
+	xfree(instance_id);
 	xfree(reason);
 	goto fini;
 }
@@ -1251,6 +1264,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->comment, buffer);
 		packstr(dump_node_ptr->extra, buffer);
+		packstr(dump_node_ptr->instance_id, buffer);
 		packstr(dump_node_ptr->reason, buffer);
 		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
 					protocol_version);
