@@ -1189,8 +1189,6 @@ static int _part_rec_field_index(lua_State *L)
 static bool _user_can_use_part(uint32_t user_id, uint32_t submit_uid,
 			       part_record_t *part_ptr)
 {
-	int i;
-
 	if (user_id == 0) {
 		if (part_ptr->flags & PART_FLAG_NO_ROOT)
 			return false;
@@ -1200,10 +1198,10 @@ static bool _user_can_use_part(uint32_t user_id, uint32_t submit_uid,
 	if ((part_ptr->flags & PART_FLAG_ROOT_ONLY) && (submit_uid != 0))
 		return false;
 
-	if (part_ptr->allow_uids == NULL)
+	if (!part_ptr->allow_uids_cnt)
 		return true;	/* No user ID filters */
 
-	for (i=0; part_ptr->allow_uids[i]; i++) {
+	for (int i = 0; i < part_ptr->allow_uids_cnt; i++) {
 		if (user_id == part_ptr->allow_uids[i])
 			return true;
 	}

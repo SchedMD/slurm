@@ -1714,30 +1714,20 @@ static int _update_group_uid_list(slurmctld_resv_t *resv_ptr, char *groups)
 	/* Just a reset of group list */
 	resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
 
+	xfree(resv_ptr->groups);
+	xfree(resv_ptr->user_list);
+	resv_ptr->user_cnt = 0;
+
 	if (resv_groups && resv_groups[0] != '\0') {
-		uid_t *user_list = get_groups_members(resv_groups);
+		resv_ptr->user_list =
+			get_groups_members(resv_groups, &resv_ptr->user_cnt);
 
-		if (!user_list)
+		if (resv_ptr->user_cnt) {
+			resv_ptr->groups = resv_groups;
+			resv_groups = NULL;
+		} else {
 			goto inval;
-
-		xfree(resv_ptr->groups);
-		resv_ptr->groups = resv_groups;
-		resv_groups = NULL;
-
-		/* set the count */
-		for (resv_ptr->user_cnt = 0;
-		     user_list[resv_ptr->user_cnt];
-		     resv_ptr->user_cnt++)
-			;
-
-		xfree(resv_ptr->user_list);
-		resv_ptr->user_list = user_list;
-		user_list = NULL;
-
-	} else {
-		xfree(resv_ptr->groups);
-		xfree(resv_ptr->user_list);
-		resv_ptr->user_cnt = 0;
+		}
 	}
 
 	xfree(g_cpy);
@@ -2740,16 +2730,14 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	}
 
 	if (resv_desc_ptr->groups) {
-		user_list = get_groups_members(resv_desc_ptr->groups);
+		user_list =
+			get_groups_members(resv_desc_ptr->groups, &user_cnt);
 
 		if (!user_list) {
 			rc = ESLURM_GROUP_ID_MISSING;
 			goto bad_parse;
 		}
 		info("processed groups %s", resv_desc_ptr->groups);
-		/* set the count */
-		for (user_cnt = 0; user_list[user_cnt]; user_cnt++)
-			info("uid %u", user_list[user_cnt]);
 	}
 
 	if (resv_desc_ptr->licenses) {
@@ -3974,7 +3962,9 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 	}
 
 	if (resv_ptr->groups) {
-		uid_t *user_list = get_groups_members(resv_ptr->groups);
+		int user_cnt = 0;
+		uid_t *user_list = get_groups_members(resv_ptr->groups,
+						      &user_cnt);
 
 		if (!user_list) {
 			error("Reservation %s has invalid groups (%s)",
@@ -3982,14 +3972,9 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			return false;
 		}
 
-		/* set the count */
-		for (resv_ptr->user_cnt = 0;
-		     user_list[resv_ptr->user_cnt];
-		     resv_ptr->user_cnt++)
-			;
-
 		xfree(resv_ptr->user_list);
 		resv_ptr->user_list = user_list;
+		resv_ptr->user_cnt = user_cnt;
 		resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
 	}
 
@@ -6705,9 +6690,7 @@ static int _update_resv_group_uid_access_list(void *x, void *arg)
 	if (!resv_ptr->groups)
 		return 0;
 
-	if ((tmp_uids = get_groups_members(resv_ptr->groups)))
-		for (user_cnt = 0; tmp_uids[user_cnt]; user_cnt++)
-			;
+	tmp_uids = get_groups_members(resv_ptr->groups, &user_cnt);
 
 	/*
 	 * If the lists are different sizes clearly we are different.

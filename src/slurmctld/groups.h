@@ -49,22 +49,11 @@ extern void clear_group_cache(void);
 /*
  * get_groups_members - identify the users in a given comma separated group list
  * IN group_names - comma separated group list
- * RET a zero terminated list of its UIDs or NULL on error
- * NOTE: User root has implicitly access to every group
+ * OUT user_cnt - pointer to an integer holding returned array size
  * NOTE: The caller must xfree non-NULL return values
  * NOTE: Call clear_group_cache() to flush cache
  */
-extern uid_t *get_groups_members(char *group_names);
-
-/*
- * get_group_members - identify the users in a given group name
- * IN group_name - a single group name
- * RET a zero terminated list of its UIDs or NULL on error
- * NOTE: User root has implicitly access to every group
- * NOTE: The caller must xfree non-NULL return values
- * NOTE: Call clear_group_cache() to flush cache
- */
-extern uid_t *get_group_members(char *group_name);
+extern uid_t *get_groups_members(char *group_names, int *user_cnt);
 
 /* get_group_tlm - return the time of last modification for the GROUP_FILE */
 extern time_t get_group_tlm(void);
