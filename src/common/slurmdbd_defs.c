@@ -1222,6 +1222,7 @@ extern void slurmdbd_free_node_state_msg(dbd_node_state_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->hostlist);
+		xfree(msg->instance_id);
 		xfree(msg->reason);
 		xfree(msg->tres_str);
 		xfree(msg);

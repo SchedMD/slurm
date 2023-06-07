@@ -872,6 +872,7 @@ static void _pack_node_state_msg(dbd_node_state_msg_t *msg,
 {
 	if (rpc_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		packstr(msg->hostlist, buffer);
+		packstr(msg->instance_id, buffer);
 		packstr(msg->reason, buffer);
 		pack32(msg->reason_uid, buffer);
 		pack16(msg->new_state, buffer);
@@ -901,6 +902,7 @@ static int _unpack_node_state_msg(dbd_node_state_msg_t **msg,
 
 	if (rpc_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg_ptr->hostlist, buffer);
+		safe_unpackstr(&msg_ptr->instance_id, buffer);
 		safe_unpackstr(&msg_ptr->reason, buffer);
 		safe_unpack32(&msg_ptr->reason_uid, buffer);
 		safe_unpack16(&msg_ptr->new_state, buffer);
