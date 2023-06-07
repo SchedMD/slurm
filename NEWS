@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix step running indefinitely when slurmctld takes more than MessageTimeout
     to respond. Now, slurmctld will cancel the step when detected, preventing
     following steps from getting stuck waiting for resources to be released.
+ -- Fix regression to make job_desc.min_cpus accurate again in job_submit when
+    requesting a job with --ntasks-per-node.
 
 * Changes in Slurm 23.02.3
 ==========================
