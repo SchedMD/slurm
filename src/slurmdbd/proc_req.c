@@ -2288,7 +2288,8 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	node_ptr.reason_time = node_state_msg->event_time;
 	node_ptr.reason_uid = node_state_msg->reason_uid;
 
-	if (!node_ptr.tres_str)
+	if (!node_ptr.tres_str &&
+	    (node_state_msg->new_state != DBD_NODE_STATE_UPDATE))
 		node_state_msg->new_state = DBD_NODE_STATE_UP;
 
 	switch (node_state_msg->new_state) {
@@ -2320,6 +2321,13 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			&node_ptr,
 			node_state_msg->event_time,
 			node_state_msg->reason, node_ptr.reason_uid);
+		break;
+	case DBD_NODE_STATE_UPDATE:
+		debug2("DBD_NODE_STATE_UPDATE: NODE:%s",
+		       node_state_msg->hostlist);
+		rc = clusteracct_storage_g_node_update(
+			slurmdbd_conn->db_conn,
+			&node_ptr);
 		break;
 	default:
 		comment = "DBD_NODE_STATE message has invalid new_state";
