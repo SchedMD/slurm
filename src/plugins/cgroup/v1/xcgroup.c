@@ -47,25 +47,12 @@ extern int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args,
 	cgns->subsystems = xstrdup(subsys);
 
 	if (!xcgroup_ns_is_available(cgns)) {
-		if (slurm_cgroup_conf.cgroup_automount) {
-			if (xcgroup_ns_mount(cgns)) {
-				error("unable to mount %s cgroup "
-				      "namespace: %s",
-				      subsys, slurm_strerror(errno));
-				goto clean;
-			}
-			info("cgroup namespace '%s' is now mounted", subsys);
-		} else {
-			error("cgroup namespace '%s' not mounted. aborting",
-			      subsys);
-			goto clean;
-		}
+		error("cgroup namespace '%s' not mounted. aborting", subsys);
+		common_cgroup_ns_destroy(cgns);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
-clean:
-	common_cgroup_ns_destroy(cgns);
-	return SLURM_ERROR;
 }
 
 extern int xcgroup_ns_mount(xcgroup_ns_t *cgns)

@@ -25,13 +25,6 @@ The following cgroup.conf parameters are defined to control the general behavior
 of Slurm cgroup plugins.
 
 .TP
-\fBCgroupAutomount\fR=<yes|no>
-In cgroup/v1 this parameter detects if /sys/fs/cgroup/<controller_name> is
-available, and if not it tries to mount the filesystem.
-In cgroup/v2 this parameter is ignored.
-.IP
-
-.TP
 \fBCgroupMountpoint\fR=\fIPATH\fR
 Only intended for development and testing. Specifies the \fIPATH\fR under which
 cgroup controllers should be mounted. The default \fIPATH\fR is /sys/fs/cgroup.

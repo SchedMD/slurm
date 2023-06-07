@@ -427,8 +427,7 @@ mode for creating the cgroup directories without creating a systemd "scope".
 This is only if a call to dbus returned an error, as it would be with
 <b>IgnoreSystemd</b>.
 </li>
-<li><b>CgroupAutomount=[yes|no]</b>: This option is only used when
-<b>IgnoreSystemd</b> is set. If both are set slurmd will check all the
+<li><b>EnableControllers=[yes|no]</b>: When set slurmd will check all the
 available controllers in <i>/sys/fs/cgroup</i> and will enable them recursively
 until it reaches the slurmd level. This will imply that the manually created
 slurmstepd directories will also have these controllers set.

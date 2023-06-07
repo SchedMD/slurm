@@ -44,6 +44,10 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Add SlurmctldParameters=no_quick_restart to avoid a new slurmctld taking
     over the old slurmctld on accident.
  -- Changed the default SelectType to select/cons_tres (from select/linear).
+ -- Remove CgroupAutomount= option from cgroup.conf. Modern kernels mount the
+    cgroup file system automatically. CgroupAutomount could cause a cgroup v2
+    system to be configured in a hybrid v1 and v2 system. The cgroup/v1 plugin
+    will now fail if the cgroup filesystem is not mounted.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

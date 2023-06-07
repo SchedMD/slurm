@@ -125,6 +125,16 @@ static int _unpack_cgroup_conf(buf_t *buffer);
 static void _read_slurm_cgroup_conf(void);
 
 /* Local functions */
+static int _defunct_option(void **dest, slurm_parser_enum_t type,
+			  const char *key, const char *value,
+			  const char *line, char **leftover)
+{
+	if (running_in_daemon())
+		error("The option \"%s\" is defunct, please remove it from cgroup.conf.",
+		      key);
+	return 0;
+}
+
 static void _cgroup_conf_fini()
 {
 	slurm_rwlock_wrlock(&cg_conf_lock);
@@ -151,7 +161,6 @@ static void _init_slurm_cgroup_conf(void)
 
 	slurm_cgroup_conf.allowed_ram_space = 100;
 	slurm_cgroup_conf.allowed_swap_space = 0;
-	slurm_cgroup_conf.cgroup_automount = false;
 	slurm_cgroup_conf.cgroup_mountpoint = xstrdup(DEFAULT_CGROUP_BASEDIR);
 	slurm_cgroup_conf.cgroup_plugin = xstrdup(DEFAULT_CGROUP_PLUGIN);
 #ifndef MULTIPLE_SLURMD
@@ -186,7 +195,6 @@ static void _pack_cgroup_conf(buf_t *buffer)
 		return;
 	}
 	packbool(1, buffer);
-	packbool(slurm_cgroup_conf.cgroup_automount, buffer);
 	packstr(slurm_cgroup_conf.cgroup_mountpoint, buffer);
 
 	packstr(slurm_cgroup_conf.cgroup_prepend, buffer);
@@ -229,7 +237,6 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 		return SLURM_SUCCESS;
 	}
 
-	safe_unpackbool(&slurm_cgroup_conf.cgroup_automount, buffer);
 	safe_unpackstr_xmalloc(&slurm_cgroup_conf.cgroup_mountpoint,
 			       &uint32_tmp, buffer);
 
@@ -275,7 +282,7 @@ unpack_error:
 static void _read_slurm_cgroup_conf(void)
 {
 	s_p_options_t options[] = {
-		{"CgroupAutomount", S_P_BOOLEAN},
+		{"CgroupAutomount", S_P_BOOLEAN, _defunct_option},
 		{"CgroupMountpoint", S_P_STRING},
 		{"CgroupReleaseAgentDir", S_P_STRING},
 		{"ConstrainCores", S_P_BOOLEAN},
@@ -320,9 +327,6 @@ static void _read_slurm_cgroup_conf(void)
 		}
 
 		/* cgroup initialization parameters */
-		(void) s_p_get_boolean(&slurm_cgroup_conf.cgroup_automount,
-				       "CgroupAutomount", tbl);
-
 		if (s_p_get_string(&tmp_str, "CgroupMountpoint", tbl)) {
 			/* Remove the trailing / if any. */
 			sz = strlen(tmp_str);
@@ -559,12 +563,6 @@ extern List cgroup_get_conf_list(void)
 
 	/* Fill list with cgroup config key pairs */
 	cgroup_conf_l = list_create(destroy_config_key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("CgroupAutomount");
-	key_pair->value = xstrdup_printf("%s", cg_conf->cgroup_automount ?
-					 "yes" : "no");
-	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CgroupMountpoint");

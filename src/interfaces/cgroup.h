@@ -160,7 +160,6 @@ typedef struct {
 
 /* Slurm cgroup plugins configuration parameters */
 typedef struct {
-	bool cgroup_automount;
 	char *cgroup_mountpoint;
 
 	char *cgroup_prepend;
@@ -211,10 +210,8 @@ extern int cgroup_g_fini(void);
 /*
  * Create the cgroup namespace and the root cgroup objects. This two entities
  * are the basic ones used by any other function and contain information about
- * the cg paths, mount points, name, ownership, and so on. The creation of the
- * root namespace may involve also automounting the cgroup subsystem. Set also
- * any specific required parameter on the root cgroup depending on the
- * controller.
+ * the cg paths, mount points, name, ownership, and so on. Set also any specific
+ * required parameter on the root cgroup depending on the controller.
  *
  * In cgroup/v1 a subsystem is a synonym for cgroup controller.
  *
