@@ -215,7 +215,7 @@ extern void dbd_conn_close(slurm_persist_conn_t **pc)
 		log_flag(NET, "We are shutdown, not sending DB_FINI to %s:%u",
 			 (*pc)->rem_host,
 			 (*pc)->rem_port);
-		return;
+		goto destroy_conn;
 	}
 
 	/* If the connection is already gone, we don't need to send a fini. */
@@ -223,7 +223,7 @@ extern void dbd_conn_close(slurm_persist_conn_t **pc)
 		log_flag(NET, "unable to send DB_FINI msg to %s:%u",
 			 (*pc)->rem_host,
 			 (*pc)->rem_port);
-		return;
+		goto destroy_conn;
 	}
 
 	buffer = init_buf(1024);
@@ -239,6 +239,7 @@ extern void dbd_conn_close(slurm_persist_conn_t **pc)
 		 (*pc)->rem_host, (*pc)->rem_port,
 		 rc, slurm_strerror(rc));
 
+destroy_conn:
 	slurm_persist_conn_destroy(*pc);
 	*pc = NULL;
 }

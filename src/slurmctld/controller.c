@@ -651,11 +651,13 @@ int main(int argc, char **argv)
 		if (!slurmctld_primary) {
 			sched_g_fini();	/* make sure shutdown */
 			_run_primary_prog(false);
+			if (acct_storage_g_init() != SLURM_SUCCESS)
+				fatal("failed to initialize accounting_storage plugin");
+			if (bb_g_init() != SLURM_SUCCESS)
+				fatal("failed to initialize burst buffer plugin");
 			run_backup();
 			agent_init();	/* Killed at any previous shutdown */
 			(void) _shutdown_backup_controller();
-			if (acct_storage_g_init() != SLURM_SUCCESS)
-				fatal("failed to initialize accounting_storage plugin");
 		} else if (test_config || slurmctld_primary) {
 			if (!test_config) {
 				(void) _shutdown_backup_controller();
@@ -668,6 +670,18 @@ int main(int argc, char **argv)
 					test_config_rc = 1;
 				} else {
 					fatal("failed to initialize accounting_storage plugin");
+				}
+			}
+			/*
+			 * read_slurm_conf() will load the burst buffer state,
+			 * init the burst buffer plugin early.
+			 */
+			if (bb_g_init() != SLURM_SUCCESS) {
+				if (test_config) {
+					error("failed to initialize burst_buffer plugin");
+					test_config_rc = 1;
+				} else {
+					fatal("failed to initialize burst_buffer plugin");
 				}
 			}
 			/* Now recover the remaining state information */
@@ -792,8 +806,6 @@ int main(int argc, char **argv)
 
 		sync_job_priorities();
 
-		if (bb_g_init() != SLURM_SUCCESS)
-			fatal("failed to initialize burst buffer plugin");
 		if (power_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize power management plugin");
 		if (slurm_mcs_init() != SLURM_SUCCESS)

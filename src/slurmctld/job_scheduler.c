@@ -5250,4 +5250,5 @@ void main_sched_fini(void)
 		return;
 	slurm_cond_broadcast(&sched_cond);
 	pthread_join(thread_id_sched, NULL);
+	thread_id_sched = 0;
 }

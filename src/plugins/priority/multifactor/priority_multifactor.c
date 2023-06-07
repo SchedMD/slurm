@@ -1746,6 +1746,9 @@ int init ( void )
 		return SLURM_SUCCESS;
 	}
 
+	if (site_factor_g_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize site_factor plugin.");
+
 	_internal_setup();
 
 	/* Check to see if we are running a supported accounting plugin */
@@ -1785,8 +1788,6 @@ int init ( void )
 		}
 		calc_fairshare = 0;
 	}
-
-	site_factor_g_init();
 
 	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
