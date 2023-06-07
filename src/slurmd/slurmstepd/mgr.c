@@ -2873,7 +2873,7 @@ _become_user(stepd_step_rec_t *step, struct priv_state *ps)
  * env IN: environment variables to use on exec, sets minimal environment
  *	if NULL
  *
- * RET 0 on success, -1 on failure.
+ * RET 0 on success, -1 on early failure, or the return from execve().
  */
 int
 _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
@@ -3005,5 +3005,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
 	/* Ensure that all child processes get killed, one last time */
 	killpg(cpid, SIGKILL);
 
+	if (WIFEXITED(status))
+		return WEXITSTATUS(status);
 	return status;
 }
