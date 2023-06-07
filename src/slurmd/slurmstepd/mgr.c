@@ -2933,13 +2933,13 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
 		if (_drop_privileges(step, true, &sprivs, false) < 0) {
 			error("run_script_as_user _drop_privileges: %m");
 			/* child process, should not return */
-			exit(127);
+			_exit(127);
 		}
 
 		if (_become_user(step, &sprivs) < 0) {
 			error("run_script_as_user _become_user failed: %m");
 			/* child process, should not return */
-			exit(127);
+			_exit(127);
 		}
 
 		if (chdir(step->cwd) == -1)
