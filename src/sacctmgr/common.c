@@ -310,6 +310,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Event");
 		field->len = 7;
 		field->print_routine = print_fields_str;
+	} else if (!xstrncasecmp("Extra", object, MAX(command_len, 2))) {
+		field->type = PRINT_EXTRA;
+		field->name = xstrdup("Extra");
+		field->len = 20;
+		field->print_routine = print_fields_str;
 	} else if (!xstrncasecmp("Features", object, MAX(command_len, 3))) {
 		field->type = PRINT_FEATURES;
 		field->name = xstrdup("Features");
