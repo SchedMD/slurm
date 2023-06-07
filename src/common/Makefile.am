@@ -150,6 +150,8 @@ libcommon_la_SOURCES =				\
 	tres_frequency.h			\
 	uid.c					\
 	uid.h					\
+	utf.c					\
+	utf.h					\
 	uthash.h				\
 	util-net.c				\
 	util-net.h				\
