@@ -276,6 +276,9 @@ static void _pack_cond_msg(dbd_cond_msg_t *msg, uint16_t rpc_version,
 	case DBD_GET_EVENTS:
 		my_function = slurmdb_pack_event_cond;
 		break;
+	case DBD_GET_INSTANCES:
+		my_function = slurmdb_pack_instance_cond;
+		break;
 	default:
 		fatal("Unknown pack type");
 		return;
@@ -341,6 +344,9 @@ static int _unpack_cond_msg(dbd_cond_msg_t **msg, uint16_t rpc_version,
 		break;
 	case DBD_GET_EVENTS:
 		my_function = slurmdb_unpack_event_cond;
+		break;
+	case DBD_GET_INSTANCES:
+		my_function = slurmdb_unpack_instance_cond;
 		break;
 	default:
 		fatal("%s: Unknown unpack type", __func__);
@@ -1574,6 +1580,7 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_EVENTS:
 	case DBD_GET_FEDERATIONS:
+	case DBD_GET_INSTANCES:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_PROBS:
 	case DBD_GET_QOS:
@@ -1781,6 +1788,7 @@ extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_EVENTS:
 	case DBD_GET_FEDERATIONS:
+	case DBD_GET_INSTANCES:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_PROBS:
 	case DBD_GET_QOS:

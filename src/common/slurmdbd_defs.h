@@ -160,6 +160,7 @@ typedef enum {
 				 * add_assoc_cond */
 	DBD_ADD_USERS_COND,     /* Add new user to the mix with user_rec and
 				 * add_assoc_cond */
+	DBD_GET_INSTANCES,	/* Get instance information */
 	SLURM_DBD_MESSAGES_END = 2000, /* So that we don't overlap with any
 					* slurm_msg_type_t numbers. */
 	SLURM_PERSIST_INIT = 6500, /* So we don't use the
