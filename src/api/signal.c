@@ -246,21 +246,20 @@ fail1:
 extern int
 slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
 {
-	resource_allocation_response_msg_t *alloc_info = NULL;
 	job_step_info_response_msg_t *step_info = NULL;
 	int rc;
 	int i;
 	int save_errno = 0;
-
-	if (slurm_allocation_lookup(job_id, &alloc_info)) {
-		return -1;
-	}
 
 	/*
 	 * The controller won't give us info about the batch script job step,
 	 * so we need to handle that separately.
 	 */
 	if (step_id == SLURM_BATCH_SCRIPT) {
+		resource_allocation_response_msg_t *alloc_info = NULL;
+		if (slurm_allocation_lookup(job_id, &alloc_info))
+			return -1;
+
 		rc = _signal_batch_script_step(alloc_info, signal);
 		slurm_free_resource_allocation_response_msg(alloc_info);
 		errno = rc;
@@ -288,7 +287,6 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
 	}
 	slurm_free_job_step_info_response_msg(step_info);
 fail:
-	slurm_free_resource_allocation_response_msg(alloc_info);
  	errno = save_errno;
  	return rc ? -1 : 0;
 }
@@ -304,21 +302,20 @@ fail:
 extern int
 slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 {
-	resource_allocation_response_msg_t *alloc_info = NULL;
 	job_step_info_response_msg_t *step_info = NULL;
 	int rc = 0;
 	int i;
 	int save_errno = 0;
-
-	if (slurm_allocation_lookup(job_id, &alloc_info)) {
-		return -1;
-	}
 
 	/*
 	 * The controller won't give us info about the batch script job step,
 	 * so we need to handle that separately.
 	 */
 	if (step_id == SLURM_BATCH_SCRIPT) {
+		resource_allocation_response_msg_t *alloc_info = NULL;
+		if (slurm_allocation_lookup(job_id, &alloc_info))
+			return -1;
+
 		rc = _terminate_batch_script_step(alloc_info);
 		slurm_free_resource_allocation_response_msg(alloc_info);
 		errno = rc;
@@ -345,7 +342,6 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 	}
 	slurm_free_job_step_info_response_msg(step_info);
 fail:
-	slurm_free_resource_allocation_response_msg(alloc_info);
 	errno = save_errno;
 	return rc ? -1 : 0;
 }
