@@ -1360,6 +1360,9 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg, uint16_t rpc_version,
 	case DBD_GOT_EVENTS:
 		my_function = slurmdb_pack_event_rec;
 		break;
+	case DBD_GOT_INSTANCES:
+		my_function = slurmdb_pack_instance_rec;
+		break;
 	case DBD_SEND_MULT_JOB_START:
 		slurm_pack_list_until(msg->my_list, _pack_job_start_msg,
 				      buffer, MAX_MSG_SIZE, rpc_version);
@@ -1465,6 +1468,10 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 	case DBD_GOT_EVENTS:
 		my_function = slurmdb_unpack_event_rec;
 		my_destroy = slurmdb_destroy_event_rec;
+		break;
+	case DBD_GOT_INSTANCES:
+		my_function = slurmdb_unpack_instance_rec;
+		my_destroy = slurmdb_destroy_instance_rec;
 		break;
 	case DBD_SEND_MULT_JOB_START:
 		my_function = _unpack_job_start_msg;
@@ -1745,6 +1752,7 @@ extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_EVENTS:
 	case DBD_GOT_FEDERATIONS:
+	case DBD_GOT_INSTANCES:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
 	case DBD_GOT_PROBS:

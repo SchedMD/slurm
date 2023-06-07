@@ -121,6 +121,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GOT_EVENTS;
 	} else if (!xstrcasecmp(msg_type, "Got Federations")) {
 		return DBD_GOT_FEDERATIONS;
+	} else if (!xstrcasecmp(msg_type, "Got Instances")) {
+		return DBD_GOT_INSTANCES;
 	} else if (!xstrcasecmp(msg_type, "Got Jobs")) {
 		return DBD_GOT_JOBS;
 	} else if (!xstrcasecmp(msg_type, "Got List")) {
@@ -451,6 +453,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_GOT_FEDERATIONS";
 		} else
 			return "Got Federations";
+		break;
+	case DBD_GOT_INSTANCES:
+		if (get_enum) {
+			return "DBD_GOT_INSTANCES";
+		} else
+			return "Got Instances";
 		break;
 	case DBD_GOT_JOBS:
 		if (get_enum) {
@@ -869,6 +877,7 @@ extern void slurmdbd_free_msg(persist_msg_t *msg)
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_EVENTS:
 	case DBD_GOT_FEDERATIONS:
+	case DBD_GOT_INSTANCES:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
 	case DBD_GOT_PROBS:
