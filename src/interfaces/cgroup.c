@@ -179,7 +179,6 @@ static void _init_slurm_cgroup_conf(void)
 	slurm_cgroup_conf.max_swap_percent = 100;
 	slurm_cgroup_conf.memory_swappiness = NO_VAL64;
 	slurm_cgroup_conf.min_ram_space = XCGROUP_DEFAULT_MIN_RAM;
-	slurm_cgroup_conf.root_owned_cgroups = true;
 	slurm_cgroup_conf.signal_children_processes = false;
 }
 
@@ -218,7 +217,6 @@ static void _pack_cgroup_conf(buf_t *buffer)
 	packbool(slurm_cgroup_conf.ignore_systemd, buffer);
 	packbool(slurm_cgroup_conf.ignore_systemd_on_failure, buffer);
 
-	packbool(slurm_cgroup_conf.root_owned_cgroups, buffer);
 	packbool(slurm_cgroup_conf.enable_controllers, buffer);
 	packbool(slurm_cgroup_conf.signal_children_processes, buffer);
 }
@@ -263,7 +261,6 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 	safe_unpackbool(&slurm_cgroup_conf.ignore_systemd, buffer);
 	safe_unpackbool(&slurm_cgroup_conf.ignore_systemd_on_failure, buffer);
 
-	safe_unpackbool(&slurm_cgroup_conf.root_owned_cgroups, buffer);
 	safe_unpackbool(&slurm_cgroup_conf.enable_controllers, buffer);
 	safe_unpackbool(&slurm_cgroup_conf.signal_children_processes, buffer);
 
@@ -301,7 +298,6 @@ static void _read_slurm_cgroup_conf(void)
 		{"CgroupPlugin", S_P_STRING},
 		{"IgnoreSystemd", S_P_BOOLEAN},
 		{"IgnoreSystemdOnFailure", S_P_BOOLEAN},
-		{"RootOwnedCgroups", S_P_BOOLEAN},
 		{"EnableControllers", S_P_BOOLEAN},
 		{"SignalChildrenProcesses", S_P_BOOLEAN},
 		{NULL} };
@@ -401,9 +397,6 @@ static void _read_slurm_cgroup_conf(void)
 			    &slurm_cgroup_conf.ignore_systemd_on_failure,
 			    "IgnoreSystemdOnFailure", tbl)))
 			slurm_cgroup_conf.ignore_systemd_on_failure = false;
-
-		(void) s_p_get_boolean(&slurm_cgroup_conf.root_owned_cgroups,
-				       "RootOwnedCgroups", tbl);
 
 		(void) s_p_get_boolean(&slurm_cgroup_conf.enable_controllers,
 				       "EnableControllers", tbl);

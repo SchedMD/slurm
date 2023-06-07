@@ -1074,9 +1074,6 @@ extern int init(void)
 			return SLURM_ERROR;
 	}
 
-	/* In cgroup/v2 the entire cgroup tree is owned by root. */
-	slurm_cgroup_conf.root_owned_cgroups = true;
-
 	/*
 	 * If we're slurmd we're all set and able to constrain things, i.e.
 	 * CoreSpec* and MemSpec*.

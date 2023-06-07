@@ -355,13 +355,9 @@ extern int common_cgroup_instantiate(xcgroup_t *cg)
 	mode_t omask;
 
 	char *file_path;
-	uid_t uid;
-	gid_t gid;
 
 	/* init variables based on input cgroup */
 	file_path = cg->path;
-	uid = cg->uid;
-	gid = cg->gid;
 
 	/* save current mask and apply working one */
 	cmask = S_IWGRP | S_IWOTH;
@@ -377,14 +373,6 @@ extern int common_cgroup_instantiate(xcgroup_t *cg)
 		}
 	}
 	umask(omask);
-
-	/* change cgroup ownership as requested */
-	if (!slurm_cgroup_conf.root_owned_cgroups &&
-	    chown(file_path, uid, gid)) {
-		error("%s: unable to chown %d:%d cgroup '%s' : %m",
-		      __func__, uid, gid, file_path);
-		return fstatus;
-	}
 
 	/* following operations failure might not result in a general
 	 * failure so set output status to success */

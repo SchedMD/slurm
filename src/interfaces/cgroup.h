@@ -183,7 +183,6 @@ typedef struct {
 	bool ignore_systemd;
 	bool ignore_systemd_on_failure;
 
-	bool root_owned_cgroups;
 	bool enable_controllers;
 	bool signal_children_processes;
 } cgroup_conf_t;
