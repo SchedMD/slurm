@@ -1074,6 +1074,40 @@ static int _get_events(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	return rc;
 }
 
+static int _get_instances(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer)
+{
+	dbd_cond_msg_t *get_msg = msg->data;
+	dbd_list_msg_t list_msg = { NULL };
+	int rc = SLURM_SUCCESS;
+
+	debug2("DBD_GET_INSTANCES: called in CONN %d", slurmdbd_conn->conn->fd);
+
+	list_msg.my_list = acct_storage_g_get_instances(
+		slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
+		get_msg->cond);
+
+	if (!errno) {
+		if (!list_msg.my_list)
+			list_msg.my_list = list_create(NULL);
+		*out_buffer = init_buf(1024);
+		pack16((uint16_t) DBD_GOT_INSTANCES, *out_buffer);
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->conn->version,
+				       DBD_GOT_INSTANCES,
+				       *out_buffer);
+	} else {
+		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
+							errno,
+							slurm_strerror(errno),
+							DBD_GET_INSTANCES);
+		rc = SLURM_ERROR;
+	}
+
+	FREE_NULL_LIST(list_msg.my_list);
+
+	return rc;
+}
+
 static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			  buf_t **out_buffer)
 {
@@ -3527,6 +3561,9 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		break;
 	case DBD_GET_EVENTS:
 		rc = _get_events(slurmdbd_conn, msg, out_buffer);
+		break;
+	case DBD_GET_INSTANCES:
+		rc = _get_instances(slurmdbd_conn, msg, out_buffer);
 		break;
 	case DBD_GET_JOBS_COND:
 		rc = _get_jobs_cond(slurmdbd_conn, msg, out_buffer);
