@@ -352,6 +352,7 @@ typedef struct dbd_node_state_msg {
 	time_t event_time;	/* time of transition */
 	char *hostlist;		/* name of hosts */
 	char *instance_id;	/* cloud instance id */
+	char *instance_type;	/* cloud instance type */
 	uint16_t new_state;	/* new state of host, see DBD_NODE_STATE_* */
 	char *reason;		/* explanation for the node's state */
 	uint32_t reason_uid;   	/* User that set the reason, ignore if
