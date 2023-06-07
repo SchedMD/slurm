@@ -1791,6 +1791,16 @@ extern List slurmdb_events_get(void *db_conn,
 
 /*
  * get info from the storage
+ *
+ * IN:  slurmdb_instance_cond_t *
+ * RET: List of slurmdb_instance_rec_t *
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_instances_get(void *db_conn,
+				  slurmdb_instance_cond_t *instance_cond);
+
+/*
+ * get info from the storage
  * IN:  slurmdb_assoc_cond_t *
  * RET: List of slurmdb_assoc_rec_t *
  * note List needs to be freed with slurm_list_destroy() when called

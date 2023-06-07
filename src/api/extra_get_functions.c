@@ -79,6 +79,22 @@ extern List slurmdb_events_get(void *db_conn,
 
 /*
  * get info from the storage
+ *
+ * IN:  slurmdb_instance_cond_t *
+ * RET: List of slurmdb_instance_rec_t *
+ * note List needs to be freed when called
+ */
+extern List slurmdb_instances_get(void *db_conn,
+				  slurmdb_instance_cond_t *instance_cond)
+{
+	if (db_api_uid == -1)
+		db_api_uid = getuid();
+
+	return acct_storage_g_get_instances(db_conn, db_api_uid, instance_cond);
+}
+
+/*
+ * get info from the storage
  * IN:  slurmdb_assoc_cond_t *
  * RET: List of slurmdb_assoc_rec_t *
  * note List needs to be freed when called
