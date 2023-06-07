@@ -407,9 +407,14 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("ID");
 		field->len = 6;
 		field->print_routine = print_fields_uint;
-	} else if (!xstrncasecmp("Info", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Info", object, MAX(command_len, 3))) {
 		field->type = PRINT_INFO;
 		field->name = xstrdup("Info");
+		field->len = 20;
+		field->print_routine = print_fields_str;
+	} else if (!xstrncasecmp("InstanceId", object, MAX(command_len, 3))) {
+		field->type = PRINT_INSTANCE_ID;
+		field->name = xstrdup("InstanceId");
 		field->len = 20;
 		field->print_routine = print_fields_str;
 	} else if (!xstrncasecmp("Lineage", object, MAX(command_len, 1))) {
