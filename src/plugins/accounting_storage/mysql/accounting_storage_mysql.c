@@ -3408,6 +3408,13 @@ extern List acct_storage_p_get_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_get_cluster_events(mysql_conn, uid, event_cond);
 }
 
+extern List acct_storage_p_get_instances(mysql_conn_t *mysql_conn,
+					 uint32_t uid,
+					 slurmdb_instance_cond_t *instance_cond)
+{
+	return as_mysql_get_instances(mysql_conn, uid, instance_cond);
+}
+
 extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
 					slurmdb_assoc_cond_t *assoc_cond)
 {
