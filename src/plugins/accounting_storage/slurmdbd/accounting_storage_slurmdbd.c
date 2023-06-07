@@ -2248,6 +2248,48 @@ extern List acct_storage_p_get_events(void *db_conn, uint32_t uid,
 	return ret_list;
 }
 
+extern List acct_storage_p_get_instances(void *db_conn,
+					 uint32_t uid,
+					 slurmdb_instance_cond_t *instance_cond)
+{
+	persist_msg_t req = {0}, resp = {0};
+	dbd_cond_msg_t get_msg = {0};
+	dbd_list_msg_t *got_msg;
+	int rc;
+	List ret_list = NULL;
+
+	get_msg.cond = instance_cond;
+
+	req.msg_type = DBD_GET_INSTANCES;
+	req.conn = db_conn;
+	req.data = &get_msg;
+	rc = dbd_conn_send_recv(SLURM_PROTOCOL_VERSION, &req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("DBD_GET_INSTANCES failure: %m");
+	else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+		if (msg->rc == SLURM_SUCCESS) {
+			info("%s", msg->comment);
+			ret_list = list_create(NULL);
+		} else {
+			slurm_seterrno(msg->rc);
+			error("%s", msg->comment);
+		}
+		slurm_persist_free_rc_msg(msg);
+	} else if (resp.msg_type != DBD_GOT_INSTANCES) {
+		error("response type not DBD_GOT_INSTANCES: %u",
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
+
+	return ret_list;
+}
+
 extern List acct_storage_p_get_problems(void *db_conn, uid_t uid,
 					slurmdb_assoc_cond_t *assoc_cond)
 {
