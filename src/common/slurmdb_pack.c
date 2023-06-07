@@ -1940,6 +1940,62 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void slurmdb_pack_instance_rec(void *in,
+				      uint16_t protocol_version,
+				      buf_t *buffer)
+{
+	slurmdb_instance_rec_t *object = in;
+
+	xassert(in);
+
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		packstr(object->cluster, buffer);
+		packstr(object->extra, buffer);
+		packstr(object->instance_id, buffer);
+		packstr(object->instance_type, buffer);
+		packstr(object->node_name, buffer);
+		pack_time(object->time_end, buffer);
+		pack_time(object->time_start, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+extern int slurmdb_unpack_instance_rec(void **object,
+				       uint16_t protocol_version,
+				       buf_t *buffer)
+{
+	uint32_t uint32_tmp;
+	slurmdb_instance_rec_t *object_ptr = xmalloc(sizeof(*object_ptr));
+	*object = object_ptr;
+
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&object_ptr->extra, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->instance_id, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&object_ptr->instance_type, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&object_ptr->node_name, &uint32_tmp,
+				       buffer);
+		safe_unpack_time(&object_ptr->time_end, buffer);
+		safe_unpack_time(&object_ptr->time_start, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurmdb_destroy_instance_rec(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
 extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version,
 				 buf_t *buffer)
 {

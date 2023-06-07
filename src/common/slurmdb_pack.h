@@ -102,6 +102,12 @@ extern void slurmdb_pack_event_rec(void *in, uint16_t protocol_version,
 				   buf_t *buffer);
 extern int slurmdb_unpack_event_rec(void **object, uint16_t protocol_version,
 				    buf_t *buffer);
+extern void slurmdb_pack_instance_rec(void *in,
+				      uint16_t protocol_version,
+				      buf_t *buffer);
+extern int slurmdb_unpack_instance_rec(void **object,
+				       uint16_t protocol_version,
+				       buf_t *buffer);
 extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version,
 				 buf_t *buffer);
 extern int slurmdb_unpack_qos_rec(void **object, uint16_t protocol_version,
