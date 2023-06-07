@@ -183,6 +183,7 @@ typedef struct slurm_acct_storage_ops {
 	char *(*node_inx)          (void *db_conn, char *nodes);
 	int  (*node_up)            (void *db_conn, node_record_t *node_ptr,
 				    time_t event_time);
+	int  (*node_update)	   (void *db_conn, node_record_t *node_ptr);
 	int  (*cluster_tres)       (void *db_conn, char *cluster_nodes,
 				    char *tres_str_in, time_t event_time,
 				    uint16_t rpc_version);
@@ -277,6 +278,7 @@ static const char *syms[] = {
 	"clusteracct_storage_p_node_down",
 	"acct_storage_p_node_inx",
 	"clusteracct_storage_p_node_up",
+	"clusteracct_storage_p_node_update",
 	"clusteracct_storage_p_cluster_tres",
 	"clusteracct_storage_p_register_ctld",
 	"clusteracct_storage_p_register_disconn_ctld",
@@ -1014,6 +1016,12 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 	node_ptr->reason_uid = NO_VAL;
 
 	return (*(ops.node_up))(db_conn, node_ptr, event_time);
+}
+
+extern int clusteracct_storage_g_node_update(void *db_conn,
+					     node_record_t *node_ptr)
+{
+	return (*(ops.node_update))(db_conn, node_ptr);
 }
 
 extern int clusteracct_storage_g_cluster_tres(void *db_conn,

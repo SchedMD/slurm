@@ -625,6 +625,9 @@ extern char *acct_storage_g_node_inx(void *db_conn, char *nodes);
 extern int clusteracct_storage_g_node_up(void *db_conn, node_record_t *node_ptr,
 					 time_t event_time);
 
+extern int clusteracct_storage_g_node_update(void *db_conn,
+					     node_record_t *node_ptr);
+
 extern int clusteracct_storage_g_cluster_tres(void *db_conn,
 					      char *cluster_nodes,
 					      char *tres_str_in,
