@@ -817,6 +817,16 @@ typedef struct {
 	time_t time_start; /* time start of instances */
 } slurmdb_instance_cond_t;
 
+typedef struct {
+	char *cluster; /* name of associated cluster */
+	char *extra; /* name of instance_id */
+	char *instance_id; /* name of instance_id */
+	char *instance_type; /* name of instance_id */
+	char *node_name; /* name of node */
+	time_t time_end; /* time end of instance */
+	time_t time_start; /* time start of instance */
+} slurmdb_instance_rec_t;
+
 /* slurmdb_job_cond_t is defined above alphabetical */
 
 typedef struct {
@@ -1871,6 +1881,7 @@ extern void slurmdb_free_assoc_mgr_state_msg(void *object);
 extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc);
 extern void slurmdb_destroy_assoc_rec(void *object);
 extern void slurmdb_destroy_event_rec(void *object);
+extern void slurmdb_destroy_instance_rec(void *object);
 extern void slurmdb_destroy_job_rec(void *object);
 extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos);
 extern void slurmdb_destroy_qos_rec(void *object);

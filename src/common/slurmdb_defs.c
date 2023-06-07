@@ -895,6 +895,22 @@ extern void slurmdb_destroy_event_rec(void *object)
 	}
 }
 
+extern void slurmdb_destroy_instance_rec(void *object)
+{
+	slurmdb_instance_rec_t *slurmdb_instance = object;
+
+	if (slurmdb_instance) {
+		xfree(slurmdb_instance->cluster);
+		xfree(slurmdb_instance->extra);
+		xfree(slurmdb_instance->instance_id);
+		xfree(slurmdb_instance->instance_type);
+		xfree(slurmdb_instance->node_name);
+
+		xfree(slurmdb_instance);
+	}
+	return;
+}
+
 extern void slurmdb_destroy_job_rec(void *object)
 {
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
