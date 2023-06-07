@@ -1796,6 +1796,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			if (update_node_msg->instance_id[0])
 				node_ptr->instance_id = xstrdup(
 					update_node_msg->instance_id);
+			update_db = true;
 		}
 
 		if (update_node_msg->instance_type) {
