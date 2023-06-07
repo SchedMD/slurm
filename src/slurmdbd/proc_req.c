@@ -2278,6 +2278,7 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	}
 
 	memset(&node_ptr, 0, sizeof(node_record_t));
+	node_ptr.extra = node_state_msg->extra;
 	node_ptr.instance_id = node_state_msg->instance_id;
 	node_ptr.instance_type = node_state_msg->instance_type;
 	node_ptr.name = node_state_msg->hostlist;
