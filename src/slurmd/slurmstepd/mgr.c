@@ -2920,12 +2920,12 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
 		if (setexeccon(step->selinux_context)) {
 			error("Failed to set SELinux context to %s: %m",
 			      step->selinux_context);
-			_exit(1);
+			_exit(127);
 		}
 #else
 		if (step->selinux_context) {
 			error("Built without SELinux support but context was specified");
-			_exit(1);
+			_exit(127);
 		}
 #endif
 
