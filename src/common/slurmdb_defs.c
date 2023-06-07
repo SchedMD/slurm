@@ -1204,6 +1204,22 @@ extern void slurmdb_destroy_event_cond(void *object)
 	}
 }
 
+extern void slurmdb_destroy_instance_cond(void *object)
+{
+	slurmdb_instance_cond_t *slurmdb_instance = object;
+
+	if (slurmdb_instance) {
+		FREE_NULL_LIST(slurmdb_instance->cluster_list);
+		FREE_NULL_LIST(slurmdb_instance->extra_list);
+		FREE_NULL_LIST(slurmdb_instance->format_list);
+		FREE_NULL_LIST(slurmdb_instance->instance_id_list);
+		FREE_NULL_LIST(slurmdb_instance->instance_type_list);
+		xfree(slurmdb_instance->node_list);
+
+		xfree(slurmdb_instance);
+	}
+}
+
 extern void slurmdb_destroy_job_cond(void *object)
 {
 	slurmdb_job_cond_t *job_cond =

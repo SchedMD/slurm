@@ -806,6 +806,17 @@ typedef struct {
 	List      cluster_list;	/* List of slurmdb_cluster_rec_t *'s */
 } slurmdb_federation_rec_t;
 
+typedef struct {
+	List cluster_list; /* list of char * */
+	List extra_list; /* list of char * */
+	List format_list; /* list of char * */
+	List instance_id_list; /* list of char * */
+	List instance_type_list; /* list of char * */
+	char *node_list; /* node list string */
+	time_t time_end; /* time end of instances */
+	time_t time_start; /* time start of instances */
+} slurmdb_instance_cond_t;
+
 /* slurmdb_job_cond_t is defined above alphabetical */
 
 typedef struct {
@@ -1882,6 +1893,7 @@ extern void slurmdb_destroy_federation_cond(void *object);
 extern void slurmdb_destroy_tres_cond(void *object);
 extern void slurmdb_destroy_assoc_cond(void *object);
 extern void slurmdb_destroy_event_cond(void *object);
+extern void slurmdb_destroy_instance_cond(void *object);
 extern void slurmdb_destroy_job_cond(void *object);
 extern void slurmdb_destroy_qos_cond(void *object);
 extern void slurmdb_destroy_reservation_cond(void *object);
