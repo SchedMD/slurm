@@ -1658,6 +1658,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
 		bool acct_updated = false;
+		bool update_db = false;
 
 		node_ptr = find_node_record (this_node_name);
 		if (node_ptr == NULL) {
@@ -1802,6 +1803,11 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			if (update_node_msg->instance_type[0])
 				node_ptr->instance_type = xstrdup(
 					update_node_msg->instance_type);
+		}
+
+		if (update_db) {
+			clusteracct_storage_g_node_update(acct_db_conn,
+							  node_ptr);
 		}
 
 		if ((update_node_msg->resume_after != NO_VAL) &&
