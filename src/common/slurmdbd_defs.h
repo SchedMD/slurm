@@ -348,6 +348,8 @@ typedef struct {
 
 #define DBD_NODE_STATE_DOWN  1
 #define DBD_NODE_STATE_UP    2
+#define DBD_NODE_STATE_UPDATE 3
+
 typedef struct dbd_node_state_msg {
 	time_t event_time;	/* time of transition */
 	char *extra;		/* arbitrary sting */

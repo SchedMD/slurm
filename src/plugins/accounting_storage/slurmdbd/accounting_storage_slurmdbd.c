@@ -2777,6 +2777,36 @@ extern int clusteracct_storage_p_node_up(void *db_conn, node_record_t *node_ptr,
 	return SLURM_SUCCESS;
 }
 
+extern int clusteracct_storage_p_node_update(void *db_conn,
+					     node_record_t *node_ptr,
+					     time_t event_time)
+{
+	persist_msg_t msg = { 0 };
+	dbd_node_state_msg_t req;
+
+	if (IS_NODE_FUTURE(node_ptr) ||
+	    (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWERED_DOWN(node_ptr)))
+		return SLURM_SUCCESS;
+
+	memset(&req, 0, sizeof(dbd_node_state_msg_t));
+
+	req.hostlist = node_ptr->name;
+	req.extra = node_ptr->extra;
+	req.instance_id = node_ptr->instance_id;
+	req.instance_type = node_ptr->instance_type;
+	req.new_state = DBD_NODE_STATE_UPDATE;
+	req.tres_str = node_ptr->tres_str;
+
+	msg.msg_type = DBD_NODE_STATE;
+	msg.conn = db_conn;
+	msg.data = &req;
+
+	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
 extern int clusteracct_storage_p_cluster_tres(void *db_conn,
 					      char *cluster_nodes_in,
 					      char *tres_str_in,
