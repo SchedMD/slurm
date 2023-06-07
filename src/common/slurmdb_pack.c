@@ -4069,6 +4069,96 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void slurmdb_pack_instance_cond(void *in,
+				       uint16_t protocol_version,
+				       buf_t *buffer)
+{
+	slurmdb_instance_cond_t *object = in;
+
+	xassert(in);
+
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		(void) slurm_pack_list(object->cluster_list,
+				       packstr_with_version,
+				       buffer,
+				       protocol_version);
+		(void) slurm_pack_list(object->extra_list,
+				       packstr_with_version,
+				       buffer,
+				       protocol_version);
+		(void) slurm_pack_list(object->format_list,
+				       packstr_with_version,
+				       buffer,
+				       protocol_version);
+		(void) slurm_pack_list(object->instance_id_list,
+				       packstr_with_version,
+				       buffer,
+				       protocol_version);
+		(void) slurm_pack_list(object->instance_type_list,
+				       packstr_with_version,
+				       buffer,
+				       protocol_version);
+		packstr(object->node_list, buffer);
+		pack_time(object->time_end, buffer);
+		pack_time(object->time_start, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+extern int slurmdb_unpack_instance_cond(void **object,
+					 uint16_t protocol_version,
+					 buf_t *buffer)
+{
+	uint32_t uint32_tmp;
+	slurmdb_instance_cond_t *object_ptr = xmalloc(sizeof(*object_ptr));
+	*object = object_ptr;
+
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		if (slurm_unpack_list(&object_ptr->cluster_list,
+				      unpackstr_with_version,
+				      xfree_ptr,
+				      buffer, protocol_version))
+			goto unpack_error;
+		if (slurm_unpack_list(&object_ptr->extra_list,
+				      unpackstr_with_version,
+				      xfree_ptr,
+				      buffer, protocol_version))
+			goto unpack_error;
+		if (slurm_unpack_list(&object_ptr->format_list,
+				      unpackstr_with_version,
+				      xfree_ptr,
+				      buffer, protocol_version))
+			goto unpack_error;
+		if (slurm_unpack_list(&object_ptr->instance_id_list,
+				      unpackstr_with_version,
+				      xfree_ptr,
+				      buffer, protocol_version))
+			goto unpack_error;
+		if (slurm_unpack_list(&object_ptr->instance_type_list,
+				      unpackstr_with_version,
+				      xfree_ptr,
+				      buffer, protocol_version))
+			goto unpack_error;
+		safe_unpackstr_xmalloc(&object_ptr->node_list, &uint32_tmp,
+				       buffer);
+		safe_unpack_time(&object_ptr->time_end, buffer);
+		safe_unpack_time(&object_ptr->time_start, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurmdb_destroy_instance_cond(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
 extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 				  buf_t *buffer)
 {

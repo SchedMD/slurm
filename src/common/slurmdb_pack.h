@@ -185,6 +185,12 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 				    buf_t *buffer);
 extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 				     buf_t *buffer);
+extern void slurmdb_pack_instance_cond(void *in,
+				       uint16_t protocol_version,
+				       buf_t *buffer);
+extern int slurmdb_unpack_instance_cond(void **object,
+					uint16_t protocol_version,
+					buf_t *buffer);
 extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 				  buf_t *buffer);
 extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
