@@ -70,6 +70,8 @@ documents those changes that are of interest to users and administrators.
     scontrol, squeue and sinfo.
  -- Fix regression in 23.02 that causes a failure to allocate job steps that
     request --cpus-per-gpu and gpus with types.
+ -- sacct - when printing PLANNED time, use end time instead of start time for
+    jobs cancelled before they started.
 
 * Changes in Slurm 23.02.2
 ==========================

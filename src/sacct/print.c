@@ -1715,12 +1715,18 @@ extern void print_fields(type_t type, void *object)
 			/*
 			 * If eligible is 0 or -1, then the job was never
 			 * eligible to run, so planned time is 0.
+			 *
+			 * If the job hasn't started yet and has an end time,
+			 * presume the job was cancelled and use end time
+			 * instead of start time.
 			 */
 			switch(type) {
 			case JOB:
 				if (!job->eligible ||
 				    (job->eligible == INFINITE))
 					tmp_uint64 = 0;
+				else if ((job->start == NO_VAL) && job->end)
+					tmp_uint64 = job->end - job->eligible;
 				else if (job->start)
 					tmp_uint64 = job->start - job->eligible;
 				else
