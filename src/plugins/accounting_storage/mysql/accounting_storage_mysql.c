@@ -3522,6 +3522,12 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 	return as_mysql_node_up(mysql_conn, node_ptr, event_time);
 }
 
+extern int clusteracct_storage_p_node_update(mysql_conn_t *mysql_conn,
+					     node_record_t *node_ptr)
+{
+	return as_mysql_node_update(mysql_conn, node_ptr);
+}
+
 /* This is only called when not running from the slurmdbd so we can
  * assumes some things like rpc_version.
  */

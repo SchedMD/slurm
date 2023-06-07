@@ -64,6 +64,9 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 extern int as_mysql_node_up(mysql_conn_t *mysql_conn, node_record_t *node_ptr,
 			    time_t event_time);
 
+extern int as_mysql_node_update(mysql_conn_t *mysql_conn,
+				node_record_t *node_ptr);
+
 extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 				  char *cluster, uint16_t port);
 

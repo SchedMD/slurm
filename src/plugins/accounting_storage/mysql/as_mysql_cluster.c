@@ -1565,6 +1565,67 @@ extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
+extern int as_mysql_node_update(mysql_conn_t *mysql_conn,
+				node_record_t *node_ptr)
+{
+	char *query;
+	char *values = NULL;
+	int rc = SLURM_SUCCESS;
+	MYSQL_RES *result = NULL;
+
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return ESLURM_DB_CONNECTION;
+
+	if (!mysql_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
+	xstrfmtcat(values, "%sextra='%s'",
+		   values ? ", " : "",
+		   node_ptr->extra ? node_ptr->extra : "");
+	xstrfmtcat(values, "%sinstance_id='%s'",
+		   values ? ", " : "",
+		   node_ptr->instance_id ? node_ptr->instance_id : "");
+	xstrfmtcat(values, "%sinstance_type='%s'",
+		   values ? ", " : "",
+		   node_ptr->instance_type ? node_ptr->instance_type : "");
+
+	query = xstrdup_printf("select time_start from \"%s_%s\" "
+			       "where node_name='%s' AND (state & %"PRIu64") limit 1;",
+			       mysql_conn->cluster_name, event_table,
+			       node_ptr->name, NODE_STATE_POWERED_DOWN);
+	DB_DEBUG(DB_EVENT, mysql_conn->conn, "check event table status for node '%s':\n%s",
+		 node_ptr->name, query);
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+
+	if (!result) {
+		xfree(values);
+		return SLURM_ERROR;
+	}
+	if (!mysql_fetch_row(result)) {
+		/* create new event if no events for the node yet. */
+		as_mysql_node_down(mysql_conn, node_ptr, time(NULL),
+				   "node-update", slurm_conf.slurm_user_id);
+		as_mysql_node_up(mysql_conn, node_ptr, time(NULL));
+	}
+	mysql_free_result(result);
+
+	query = xstrdup_printf("update \"%s_%s\" "
+			       "set %s "
+			       "where node_name='%s' AND (state & %ld) "
+			       "order by time_start desc "
+			       "limit 1",
+			       mysql_conn->cluster_name, event_table, values,
+			       node_ptr->name, NODE_STATE_POWERED_DOWN);
+	DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
+	xfree(values);
+	return rc;
+}
+
 /* This function is not used in the slurmdbd. */
 extern int as_mysql_register_ctld(mysql_conn_t *mysql_conn,
 				  char *cluster, uint16_t port)
