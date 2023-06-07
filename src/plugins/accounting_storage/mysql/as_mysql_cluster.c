@@ -46,6 +46,36 @@
 #include "src/interfaces/select.h"
 #include "src/common/slurm_time.h"
 
+/* if this changes you will need to edit the corresponding enum */
+static char *event_req_inx[] = {
+	"cluster_nodes",
+	"extra",
+	"instance_id",
+	"instance_type",
+	"node_name",
+	"state",
+	"time_start",
+	"time_end",
+	"reason",
+	"reason_uid",
+	"tres",
+};
+
+enum {
+	EVENT_REQ_CNODES,
+	EVENT_REQ_EXTRA,
+	EVENT_REQ_INSTANCE_ID,
+	EVENT_REQ_INSTANCE_TYPE,
+	EVENT_REQ_NODE,
+	EVENT_REQ_STATE,
+	EVENT_REQ_START,
+	EVENT_REQ_END,
+	EVENT_REQ_REASON,
+	EVENT_REQ_REASON_UID,
+	EVENT_REQ_TRES,
+	EVENT_REQ_COUNT
+};
+
 extern int as_mysql_get_fed_cluster_id(mysql_conn_t *mysql_conn,
 				       const char *cluster,
 				       const char *federation,
@@ -1115,36 +1145,6 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	List use_cluster_list = NULL;
 	slurmdb_user_rec_t user;
 	bool locked = false;
-
-	/* if this changes you will need to edit the corresponding enum */
-	char *event_req_inx[] = {
-		"cluster_nodes",
-		"extra",
-		"instance_id",
-		"instance_type",
-		"node_name",
-		"state",
-		"time_start",
-		"time_end",
-		"reason",
-		"reason_uid",
-		"tres",
-	};
-
-	enum {
-		EVENT_REQ_CNODES,
-		EVENT_REQ_EXTRA,
-		EVENT_REQ_INSTANCE_ID,
-		EVENT_REQ_INSTANCE_TYPE,
-		EVENT_REQ_NODE,
-		EVENT_REQ_STATE,
-		EVENT_REQ_START,
-		EVENT_REQ_END,
-		EVENT_REQ_REASON,
-		EVENT_REQ_REASON_UID,
-		EVENT_REQ_TRES,
-		EVENT_REQ_COUNT
-	};
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
