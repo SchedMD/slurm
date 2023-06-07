@@ -424,10 +424,6 @@ extern void cr_fini_global_core_data(void);
 /*return the coremap index to the first core of the given node */
 extern uint32_t cr_get_coremap_offset(uint32_t node_index);
 
-/* Return a bitmap the size of the machine in cores. On a Bluegene
- * system it will return a bitmap in cnodes. */
-extern bitstr_t *cr_create_cluster_core_bitmap(int core_mult);
-
 /*
  * Determine maximum number of CPUs on this node usable by a job
  * ntasks_per_core IN - tasks-per-core to be launched by this job
