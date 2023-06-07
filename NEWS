@@ -130,6 +130,7 @@ documents those changes that are of interest to users and administrators.
     started.
  -- Fix reservations group ACL's not working with the root group.
  -- slurmctld - Fix backup slurmctld crash when it takes control multiple times.
+ -- Fix updating a job with a ReqNodeList greater than the job's node count.
  -- Fix inadvertent permission denied error for --task-prolog and --task-epilog
     with filesystems mounted with root_squash.
 
