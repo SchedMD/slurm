@@ -1585,6 +1585,7 @@ extern void slurm_free_node_registration_status_msg(
 		xfree(msg->cpu_spec_list);
 		if (msg->energy)
 			acct_gather_energy_destroy(msg->energy);
+		xfree(msg->extra);
 		xfree(msg->features_active);
 		xfree(msg->features_avail);
 		xfree(msg->hostname);
