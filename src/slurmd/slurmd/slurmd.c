@@ -794,6 +794,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		 * that shouldn't be overwritten if modified by
 		 * 'scontrol update' after the node's first registration.
 		 */
+		msg->extra = xstrdup(conf->extra);
 		msg->instance_id = xstrdup(conf->instance_id);
 		msg->instance_type = xstrdup(conf->instance_type);
 	}
@@ -1422,6 +1423,7 @@ _destroy_conf(void)
 		xfree(conf->cpu_spec_list);
 		xfree(conf->dynamic_conf);
 		xfree(conf->dynamic_feature);
+		xfree(conf->extra);
 		xfree(conf->hostname);
 		if (conf->hwloc_xml) {
 			/*
@@ -1512,6 +1514,7 @@ _process_cmdline(int ac, char **av)
 		LONG_OPT_AUTHINFO,
 		LONG_OPT_CONF,
 		LONG_OPT_CONF_SERVER,
+		LONG_OPT_EXTRA,
 		LONG_OPT_INSTANCE_ID,
 		LONG_OPT_INSTANCE_TYPE,
 	};
@@ -1520,6 +1523,7 @@ _process_cmdline(int ac, char **av)
 		{"authinfo",		required_argument, 0, LONG_OPT_AUTHINFO},
 		{"conf",		required_argument, 0, LONG_OPT_CONF},
 		{"conf-server",		required_argument, 0, LONG_OPT_CONF_SERVER},
+		{"extra",		required_argument, 0, LONG_OPT_EXTRA},
 		{"instance-id",		required_argument, 0, LONG_OPT_INSTANCE_ID},
 		{"instance-type",	required_argument, 0, LONG_OPT_INSTANCE_TYPE},
 		{"version",		no_argument,       0, 'V'},
@@ -1610,6 +1614,9 @@ _process_cmdline(int ac, char **av)
 			break;
 		case LONG_OPT_CONF_SERVER:
 			conf->conf_server = xstrdup(optarg);
+			break;
+		case LONG_OPT_EXTRA:
+			conf->extra = xstrdup(optarg);
 			break;
 		case LONG_OPT_INSTANCE_ID:
 			conf->instance_id = xstrdup(optarg);
@@ -2268,6 +2275,7 @@ Usage: %s [OPTIONS]\n\
    --conf-server host[:port]  Get configs from slurmctld at `host[:port]`.\n\
    -d stepd                   Pathname to the slurmstepd program.\n\
    -D                         Run daemon in foreground.\n\
+   --extra                    Arbitrary descriptive string.\n\
    -f config                  Read configuration from the specified file.\n\
    -F[feature]                Start as Dynamic Future node w/optional Feature.\n\
    -G                         Print node's GRES configuration and exit.\n\

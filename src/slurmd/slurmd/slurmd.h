@@ -114,6 +114,7 @@ typedef struct slurmd_config {
 	char         *node_name;	/* node name                       */
 	char         *node_topo_addr;   /* node's topology address         */
 	char         *node_topo_pattern;/* node's topology address pattern */
+	char         *extra;		/* arbiratry string		   */
 	char         *conffile;		/* config filename                 */
 	char         *instance_id;	/* cloud instance id		   */
 	char         *instance_type;	/* cloud instance type		   */
