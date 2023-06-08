@@ -1331,6 +1331,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint32_t hash_val;      /* hash value of slurm.conf and included files
 				 * existing on node */
 	char *hostname;         /* hostname of slurmd */
+	char *instance_id;	/* cloud instance id */
 	uint32_t job_count;	/* number of associate job_id's */
 	char *node_name;
 	uint16_t boards;

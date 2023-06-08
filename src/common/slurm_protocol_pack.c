@@ -1074,6 +1074,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		packstr(msg->features_active, buffer);
 		packstr(msg->features_avail, buffer);
 		packstr(msg->hostname, buffer);
+		packstr(msg->instance_id, buffer);
 		packstr(msg->node_name, buffer);
 		packstr(msg->arch, buffer);
 		packstr(msg->cpu_spec_list, buffer);
@@ -1178,6 +1179,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpackstr(&node_reg_ptr->features_active, buffer);
 		safe_unpackstr(&node_reg_ptr->features_avail, buffer);
 		safe_unpackstr(&node_reg_ptr->hostname, buffer);
+		safe_unpackstr(&node_reg_ptr->instance_id, buffer);
 		safe_unpackstr(&node_reg_ptr->node_name, buffer);
 		safe_unpackstr(&node_reg_ptr->arch, buffer);
 		safe_unpackstr(&node_reg_ptr->cpu_spec_list, buffer);

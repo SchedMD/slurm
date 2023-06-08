@@ -1588,6 +1588,7 @@ extern void slurm_free_node_registration_status_msg(
 		xfree(msg->features_active);
 		xfree(msg->features_avail);
 		xfree(msg->hostname);
+		xfree(msg->instance_id);
 		FREE_NULL_BUFFER(msg->gres_info);
 		xfree(msg->node_name);
 		xfree(msg->os);
