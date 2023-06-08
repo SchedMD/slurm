@@ -1452,7 +1452,7 @@ The \fBsacct\fR command is the exclusive command to display job
 records from the Slurm database.
 
 .SH "SPECIFICATIONS FOR QOS"
-\fBNOTE\fR: The group limits (GrpJobs, GrpNodes, etc.) are tested when a job is
+\fBNOTE\fR: The group limits (GrpJobs, GrpTRES, etc.) are tested when a job is
 being considered for being allocated resources.
 If starting a job would cause any of its group limit to be exceeded,
 that job will not be considered for scheduling even if that job might preempt
@@ -2788,9 +2788,8 @@ association and all associations which are children of this association.
 
 .TP
 \fBGrpNodes=\fR
-Maximum number of nodes running jobs are able to be
-allocated in aggregate for this association and all associations which
-are children of this association.
+This option has been deprecated in favor of the more versatile TRES.
+Equivalent limit definition is now \fBGrpTRES=node=#\fR.
 .IP
 
 .TP
@@ -2911,9 +2910,8 @@ association and all associations which are children of this association.
 
 .TP
 \fBGrpNodes=\fR
-Maximum number of nodes running jobs are able to be
-allocated in aggregate for this association and all associations which
-are children of this association.
+This option has been deprecated in favor of the more versatile TRES.
+Equivalent limit definition is now \fBGrpTRES=node=#\fR.
 .IP
 
 .TP
