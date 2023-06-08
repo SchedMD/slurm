@@ -915,7 +915,7 @@ shared GRES.
 .IP
 
 .TP
-\fB\-\-export\fR={[ALL,]<\fIenvironment_variables\fR>|ALL|NONE}
+\fB\-\-export\fR={[ALL,]<\fIenvironment_variables\fR>|ALL|NIL|NONE}
 Identify which environment variables from the submission environment are
 propagated to the launched application. Note that SLURM_* variables are
 always propagated.
@@ -926,6 +926,16 @@ always propagated.
 Default mode if \fB\-\-export\fR is not specified. All of the user's environment
 will be loaded (either from the caller's environment or from a clean environment
 if \fI\-\-get\-user\-env\fR is specified).
+.IP
+
+.TP
+\fB\-\-export\fR=NIL
+Only SLURM_* variables from the user environment will be defined. User must use
+absolute path to the binary to be executed that will define the environment.
+User can not specify explicit environment variables with "NIL".
+
+Unlike NONE, NIL will not automatically create a user's environment using the
+\fI\-\-get\-user\-env\fR mechanism.
 .IP
 
 .TP
