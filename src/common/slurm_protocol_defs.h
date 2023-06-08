@@ -1332,6 +1332,7 @@ typedef struct slurm_node_registration_status_msg {
 				 * existing on node */
 	char *hostname;         /* hostname of slurmd */
 	char *instance_id;	/* cloud instance id */
+	char *instance_type;	/* cloud instance type */
 	uint32_t job_count;	/* number of associate job_id's */
 	char *node_name;
 	uint16_t boards;
