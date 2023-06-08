@@ -135,6 +135,7 @@
 /* global, copied to STDERR_FILENO in tasks before the exec */
 int devnull = -1;
 bool get_reg_resp = 1;
+bool sent_successful_registration = false;
 slurmd_conf_t * conf = NULL;
 int fini_job_cnt = 0;
 uint32_t *fini_job_id = NULL;
@@ -680,6 +681,8 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 		if (get_reg_resp)
 			get_reg_resp = false;
 
+		sent_successful_registration = true;
+
 		assoc_mgr_lock(&locks);
 		prev_tres_count = g_tres_count;
 		assoc_mgr_post_tres_list(resp->tres_list);
@@ -784,6 +787,15 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	static bool first_msg = true;
 	static time_t slurmd_start_time = 0;
 	buf_t *gres_info;
+
+	if (!sent_successful_registration) {
+		/*
+		 * Only send this on the first registration. These are values
+		 * that shouldn't be overwritten if modified by
+		 * 'scontrol update' after the node's first registration.
+		 */
+		msg->instance_id = xstrdup(conf->instance_id);
+	}
 
 	msg->dynamic_type = conf->dynamic_type;
 	msg->dynamic_conf = xstrdup(conf->dynamic_conf);
@@ -1419,6 +1431,7 @@ _destroy_conf(void)
 			/* (void)remove(conf->hwloc_xml); */
 			xfree(conf->hwloc_xml);
 		}
+		xfree(conf->instance_id);
 		xfree(conf->logfile);
 		xfree(conf->node_name);
 		xfree(conf->node_topo_addr);
@@ -1497,12 +1510,14 @@ _process_cmdline(int ac, char **av)
 		LONG_OPT_AUTHINFO,
 		LONG_OPT_CONF,
 		LONG_OPT_CONF_SERVER,
+		LONG_OPT_INSTANCE_ID,
 	};
 
 	static struct option long_options[] = {
 		{"authinfo",		required_argument, 0, LONG_OPT_AUTHINFO},
 		{"conf",		required_argument, 0, LONG_OPT_CONF},
 		{"conf-server",		required_argument, 0, LONG_OPT_CONF_SERVER},
+		{"instance-id",		required_argument, 0, LONG_OPT_INSTANCE_ID},
 		{"version",		no_argument,       0, 'V'},
 		{NULL,			0,                 0, 0}
 	};
@@ -1592,6 +1607,9 @@ _process_cmdline(int ac, char **av)
 		case LONG_OPT_CONF_SERVER:
 			conf->conf_server = xstrdup(optarg);
 			break;
+		case LONG_OPT_INSTANCE_ID:
+			conf->instance_id = xstrdup(optarg);
+			break;
 		default:
 			_usage();
 			exit(1);
@@ -1605,6 +1623,8 @@ _process_cmdline(int ac, char **av)
 	 */
 	if (!conf->stepd_loc)
 		conf->stepd_loc = slurm_get_stepd_loc();
+	if (!conf->instance_id)
+		conf->instance_id = xstrdup("");
 }
 
 
@@ -2243,6 +2263,7 @@ Usage: %s [OPTIONS]\n\
    -F[feature]                Start as Dynamic Future node w/optional Feature.\n\
    -G                         Print node's GRES configuration and exit.\n\
    -h                         Print this help message.\n\
+   --instance-id              Cloud instance ID of node.\n\
    -L logfile                 Log messages to the file `logfile'.\n\
    -M                         Use mlock() to lock slurmd pages into memory.\n\
    -n value                   Run the daemon at the specified nice value.\n\
