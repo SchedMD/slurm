@@ -252,13 +252,13 @@ extern int acct_gather_profile_fini(void)
 {
 	int rc = SLURM_SUCCESS, i;
 
-	if (!g_context)
-		return SLURM_SUCCESS;
-
+	/*
+	 * If the plugin is a NOOP, do the cleanup of jobacct gather anyways
+	 * since other plugins might have been inited in acct_gather_conf_init()
+	 * and we've started the polling mechanism in
+	 * acct_gather_profile_startpoll().
+	 */
 	slurm_mutex_lock(&g_context_lock);
-
-	if (!g_context)
-		goto done;
 
 	for (i=0; i < PROFILE_CNT; i++) {
 		switch (i) {
@@ -287,6 +287,9 @@ extern int acct_gather_profile_fini(void)
 		slurm_mutex_unlock(&timer_thread_mutex);
 		pthread_join(timer_thread_id, NULL);
 	}
+
+	if (!g_context)
+		goto done;
 
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
@@ -487,11 +490,16 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 				acct_gather_profile_timer[i].freq);
 			break;
 		case PROFILE_TASK:
-			/* Always set up the task (always first) to be
-			   done since it is used to control memory
-			   consumption and such.  It will check
-			   profile inside it's plugin.
-			*/
+			/*
+			 * Always set up the task (always first) to be
+			 * done since it is used to control memory
+			 * consumption and such.  It will check
+			 * profile inside it's plugin. Note that if this
+			 * plugin is ACCT_GATHER_PROFILE_NONE we'll still need
+			 * to call job_acct_gather_fini() at the end, in
+			 * acct_gather_profile_fini() to cleanup the cgroup
+			 * tree.
+			 */
 			_set_freq(i, freq, freq_def);
 
 			jobacct_gather_startpoll(
