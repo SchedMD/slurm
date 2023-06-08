@@ -795,6 +795,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		 * 'scontrol update' after the node's first registration.
 		 */
 		msg->instance_id = xstrdup(conf->instance_id);
+		msg->instance_type = xstrdup(conf->instance_type);
 	}
 
 	msg->dynamic_type = conf->dynamic_type;
@@ -1432,6 +1433,7 @@ _destroy_conf(void)
 			xfree(conf->hwloc_xml);
 		}
 		xfree(conf->instance_id);
+		xfree(conf->instance_type);
 		xfree(conf->logfile);
 		xfree(conf->node_name);
 		xfree(conf->node_topo_addr);
@@ -1511,6 +1513,7 @@ _process_cmdline(int ac, char **av)
 		LONG_OPT_CONF,
 		LONG_OPT_CONF_SERVER,
 		LONG_OPT_INSTANCE_ID,
+		LONG_OPT_INSTANCE_TYPE,
 	};
 
 	static struct option long_options[] = {
@@ -1518,6 +1521,7 @@ _process_cmdline(int ac, char **av)
 		{"conf",		required_argument, 0, LONG_OPT_CONF},
 		{"conf-server",		required_argument, 0, LONG_OPT_CONF_SERVER},
 		{"instance-id",		required_argument, 0, LONG_OPT_INSTANCE_ID},
+		{"instance-type",	required_argument, 0, LONG_OPT_INSTANCE_TYPE},
 		{"version",		no_argument,       0, 'V'},
 		{NULL,			0,                 0, 0}
 	};
@@ -1610,6 +1614,9 @@ _process_cmdline(int ac, char **av)
 		case LONG_OPT_INSTANCE_ID:
 			conf->instance_id = xstrdup(optarg);
 			break;
+		case LONG_OPT_INSTANCE_TYPE:
+			conf->instance_type = xstrdup(optarg);
+			break;
 		default:
 			_usage();
 			exit(1);
@@ -1625,6 +1632,8 @@ _process_cmdline(int ac, char **av)
 		conf->stepd_loc = slurm_get_stepd_loc();
 	if (!conf->instance_id)
 		conf->instance_id = xstrdup("");
+	if (!conf->instance_type)
+		conf->instance_type = xstrdup("");
 }
 
 
@@ -2264,6 +2273,7 @@ Usage: %s [OPTIONS]\n\
    -G                         Print node's GRES configuration and exit.\n\
    -h                         Print this help message.\n\
    --instance-id              Cloud instance ID of node.\n\
+   --instance-type            Cloud instance type of node.\n\
    -L logfile                 Log messages to the file `logfile'.\n\
    -M                         Use mlock() to lock slurmd pages into memory.\n\
    -n value                   Run the daemon at the specified nice value.\n\
