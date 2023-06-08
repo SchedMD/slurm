@@ -383,8 +383,7 @@ static int _job_wait(uint32_t job_id)
 		rc = slurm_load_job(&resp, job_id, SHOW_ALL);
 		if (rc == SLURM_SUCCESS) {
 			for (i = 0, job_ptr = resp->job_array;
-			     (i < resp->record_count) && complete;
-			     i++, job_ptr++) {
+			     (i < resp->record_count); i++, job_ptr++) {
 				if (IS_JOB_FINISHED(job_ptr)) {
 					if (WIFEXITED(job_ptr->exit_code)) {
 						ec2 = WEXITSTATUS(job_ptr->
