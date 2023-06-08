@@ -2997,6 +2997,11 @@ extern char *filter_out_changeable_features(const char *features);
 extern void reset_node_active_features(node_record_t *node_ptr);
 
 /*
+ * Reset a node's instance variables
+ */
+extern void reset_node_instance(node_record_t *node_ptr);
+
+/*
  * Return a hostlist with expanded node specification.
  *
  * Handles node range expressions, nodesets and ALL keyword.
