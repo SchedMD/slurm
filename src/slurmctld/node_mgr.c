@@ -1797,6 +1797,13 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					update_node_msg->instance_id);
 		}
 
+		if (update_node_msg->instance_type) {
+			xfree(node_ptr->instance_type);
+			if (update_node_msg->instance_type[0])
+				node_ptr->instance_type = xstrdup(
+					update_node_msg->instance_type);
+		}
+
 		if ((update_node_msg->resume_after != NO_VAL) &&
 		    ((update_node_msg->node_state == NODE_STATE_DOWN) ||
 		     (update_node_msg->node_state == NODE_STATE_DRAIN))) {
