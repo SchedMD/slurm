@@ -71,7 +71,10 @@ unavailable to user's group will be displayed (i.e. this is the default behavior
 .TP
 \f3\-\-json\fP, \f3\-\-json\fP=\fIlist\fR, \f3\-\-json\fP=<\fIdata_parser\fR>
 Dump information as JSON using the default data_parser plugin or explicit
-data_parser with parameters. Sorting and formatting arguments will be ignored.
+data_parser with parameters.  All informtaion is dumped, even if it would
+normally not be. Sorting and formatting arguments passed to other options are
+ignored; however, filtering arguments are still used.
+This option implicitly sets the \fB\-\-details\fR option.
 .IP
 
 .TP
@@ -112,9 +115,12 @@ Print version information and exit.
 .IP
 
 .TP
-\f3\-\-yaml\fP, \f3\-\-yaml\fP=\fIlist\fR, \f3\-\-yaml\fP=<\fIdata_parser\fR>
 Dump information as YAML using the default data_parser plugin or explicit
-data_parser with parameters. Sorting and formatting arguments will be ignored.
+data_parser with parameters.  All informtaion is dumped, even if it would
+normally not be. Sorting and formatting arguments passed to other options are
+ignored; however, filtering arguments are still used.
+This option implicitly sets the \fB\-\-details\fR option.
+
 .IP
 
 .SH "COMMANDS"

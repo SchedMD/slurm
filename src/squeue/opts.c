@@ -354,12 +354,14 @@ parse_command_line( int argc, char* *argv )
 		case OPT_LONG_JSON:
 			params.mimetype = MIME_TYPE_JSON;
 			params.data_parser = optarg;
+			params.detail_flag = true;
 			data_init();
 			serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL);
 			break;
 		case OPT_LONG_YAML:
 			params.mimetype = MIME_TYPE_YAML;
 			params.data_parser = optarg;
+			params.detail_flag = true;
 			data_init();
 			serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL);
 			break;
