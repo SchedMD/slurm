@@ -81,3 +81,16 @@ wait_for_job -fail $job_id DONE
 set output [run_command_output -fail -user $testsuite_user "$bin_cat $output_file"]
 subtest {[regexp "(uid=0)" $output]} "Verify that user namespaces allows uid 0"
 
+#
+# Submit a job while faking uid=0; verify slurm doesn't submit the job as actual root
+#
+set output [run_command_output -user $testsuite_user "$bin_unshare -ru $srun $bin_id"]
+subtest {[regexp $testsuite_user $output]} "Verify slurm user is job user"
+subtest {![regexp "(uid=0)" $output]} "Verify slurm user isn't able to escalate to root"
+
+#
+# Submit a job that fakes uid=0; verify job is not actually root
+#
+set output [run_command_output -user "$testsuite_user" "$srun $bin_unshare -ru $bin_bash -c '$bin_id; ls /root; exit 0'"]
+subtest {[regexp "(uid=0)" $output]} "Verify job can mock uid=0"
+subtest {[regexp "ls: cannot open directory '/root': Permission denied" $output]} "Verify job isn't actually root"
