@@ -1119,6 +1119,7 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	/* if this changes you will need to edit the corresponding enum */
 	char *event_req_inx[] = {
 		"cluster_nodes",
+		"instance_id",
 		"node_name",
 		"state",
 		"time_start",
@@ -1130,6 +1131,7 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	enum {
 		EVENT_REQ_CNODES,
+		EVENT_REQ_INSTANCE_ID,
 		EVENT_REQ_NODE,
 		EVENT_REQ_STATE,
 		EVENT_REQ_START,
