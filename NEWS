@@ -136,6 +136,8 @@ documents those changes that are of interest to users and administrators.
  -- switch/hpe_slingshot - remove the unused vni_pids option.
  -- Fix missing detailed cpu and gres information in json/yaml output from
     scontrol, squeue and sinfo.
+ -- Fix regression in 23.02 that causes a failure to allocate job steps that
+    request --cpus-per-gpu and gpus with types.
 
 * Changes in Slurm 23.02.2
 ==========================
