@@ -70,13 +70,6 @@
 #define SLINGSHOT_VNI_MIN_DEF 1024
 #define SLINGSHOT_VNI_MAX_DEF 65535
 
-/* Number of Slingshot VNI "PIDs"/device */
-#define SLINGSHOT_VNI_PIDS 256
-/* Max size for Slingshot VNI "PIDs" job file (256 bits in hex) */
-#define SLINGSHOT_VNI_PIDS_BUFSIZ ((SLINGSHOT_VNI_PIDS / 4) + 3)
-/* Format for VNI "PIDs" job file name */
-#define SLINGSHOT_VNI_PIDS_FMT "%s/vni_pids.%u" /* <spooldir>, <job_id> */
-
 /* Number of retries for destroying CXI services */
 #define SLINGSHOT_CXI_DESTROY_RETRIES 5
 
@@ -219,7 +212,7 @@ typedef struct slingshot_jobinfo {
 	uint32_t depth;        /* Threads-per-task for limit calculation */
 	uint32_t num_profiles; /* Number of communication profiles */
 	slingshot_comm_profile_t *profiles; /* List of communication profiles */
-	bitstr_t *vni_pids;    /* Set of Slingshot job VNI allocated PIDs */
+	bitstr_t *vni_pids;    /* Unused */
 	uint32_t flags;        /* Configuration flags */
 	uint32_t num_nics;     /* Number of entries in 'nics' array */
 	slingshot_hsn_nic_t *nics; /* HSN NIC information for instant on */
@@ -238,11 +231,12 @@ typedef struct slingshot_jobinfo {
  * If SLINGSHOT_FLAGS_ADJUST_LIMITS is set (default), slurmd will adjust
  * resource limit reservations by subtracting system service reserved/used
  * resources
- * If SLINGSHOT_FLAGS_VNI_PIDS is set, slurmd will create a set of Slingshot
- * "VNI PIDs" to support overlapping job steps on compute nodes (deprecated)
  */
 #define SLINGSHOT_FLAGS_ADJUST_LIMITS 0x1
-#define SLINGSHOT_FLAGS_VNI_PIDS      0x2
+/*
+ * #define SLINGSHOT_FLAGS_VNI_PIDS      0x2 DEPRECATED in 23.02, can be used in
+ *					     25.02
+ */
 #define SLINGSHOT_FLAGS_DEFAULT SLINGSHOT_FLAGS_ADJUST_LIMITS
 
 /* Environment variables set for applications */
@@ -250,7 +244,6 @@ typedef struct slingshot_jobinfo {
 #define SLINGSHOT_VNIS_ENV            "SLINGSHOT_VNIS"
 #define SLINGSHOT_DEVICES_ENV         "SLINGSHOT_DEVICES"
 #define SLINGSHOT_TCS_ENV             "SLINGSHOT_TCS"
-#define SLINGSHOT_INTER_VNI_PIDS_ENV  "SLINGSHOT_INTER_VNI_PIDS"
 
 /* Global variables */
 extern slingshot_state_t slingshot_state;
