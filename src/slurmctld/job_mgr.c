@@ -12993,6 +12993,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 					error_code = ESLURM_INVALID_QOS;
 			}
 
+			if (job_ptr->state_reason == WAIT_RESV_INVALID)
+				_release_job(job_ptr, uid);
+
 			xfree(tmp_job_rec.resv_name);
 		}
 		if (error_code != SLURM_SUCCESS)
