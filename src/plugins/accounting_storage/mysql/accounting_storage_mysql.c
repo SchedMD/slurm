@@ -1325,6 +1325,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "node_name", "tinytext default '' not null" },
 		{ "cluster_nodes", "text not null default ''" },
 		{ "instance_id", "text" },
+		{ "instance_type", "text" },
 		{ "reason", "tinytext not null" },
 		{ "reason_uid", "int unsigned default 0xfffffffe not null" },
 		{ "state", "int unsigned default 0 not null" },
