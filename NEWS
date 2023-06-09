@@ -126,8 +126,6 @@ documents those changes that are of interest to users and administrators.
  -- Avoid unnecessary gres/gpumem and gres/gpuutil TRES position lookups.
  -- Fix issue in the gpu plugins where gpu frequencies would only be set if both
     gpu memory and gpu frequencies were set, while one or the other suffices.
- -- sacct - print planned time is 0 for a job that was cancelled before it
-    started.
  -- Fix reservations group ACL's not working with the root group.
  -- slurmctld - Fix backup slurmctld crash when it takes control multiple times.
  -- Fix updating a job with a ReqNodeList greater than the job's node count.
@@ -138,6 +136,8 @@ documents those changes that are of interest to users and administrators.
     scontrol, squeue and sinfo.
  -- Fix regression in 23.02 that causes a failure to allocate job steps that
     request --cpus-per-gpu and gpus with types.
+ -- sacct - when printing PLANNED time, use end time instead of start time for
+    jobs cancelled before they started.
 
 * Changes in Slurm 23.02.2
 ==========================
