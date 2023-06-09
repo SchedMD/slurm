@@ -16732,6 +16732,7 @@ extern bool job_independent(job_record_t *job_ptr)
 	    (job_ptr->state_reason == WAIT_HELD_USER) ||
 	    (job_ptr->state_reason == WAIT_MAX_REQUEUE) ||
 	    (job_ptr->state_reason == WAIT_RESV_DELETED) ||
+	    (job_ptr->state_reason == WAIT_RESV_INVALID) ||
 	    (job_ptr->state_reason == WAIT_DEP_INVALID))
 		return false;
 
