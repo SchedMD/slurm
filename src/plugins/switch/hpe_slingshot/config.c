@@ -1038,9 +1038,6 @@ extern bool slingshot_setup_job_step(slingshot_jobinfo_t *job, int node_cnt,
 	job->num_profiles = 0;
 	job->profiles = NULL;
 
-	/* vni_pids are deprecated */
-	job->vni_pids = NULL;
-
 	return true;
 
 err:

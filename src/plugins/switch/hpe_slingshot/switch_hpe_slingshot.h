@@ -212,7 +212,6 @@ typedef struct slingshot_jobinfo {
 	uint32_t depth;        /* Threads-per-task for limit calculation */
 	uint32_t num_profiles; /* Number of communication profiles */
 	slingshot_comm_profile_t *profiles; /* List of communication profiles */
-	bitstr_t *vni_pids;    /* Unused */
 	uint32_t flags;        /* Configuration flags */
 	uint32_t num_nics;     /* Number of entries in 'nics' array */
 	slingshot_hsn_nic_t *nics; /* HSN NIC information for instant on */
