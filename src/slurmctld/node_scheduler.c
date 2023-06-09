@@ -3058,7 +3058,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	if (prolog_msg_ptr->x11) {
 		prolog_msg_ptr->x11_magic_cookie =
 				xstrdup(job_ptr->details->x11_magic_cookie);
-		prolog_msg_ptr->x11_alloc_host = xstrdup(job_ptr->resp_host);
+		prolog_msg_ptr->x11_alloc_host = xstrdup(job_ptr->alloc_node);
 		prolog_msg_ptr->x11_alloc_port = job_ptr->other_port;
 		prolog_msg_ptr->x11_target = xstrdup(job_ptr->details->x11_target);
 		prolog_msg_ptr->x11_target_port = job_ptr->details->x11_target_port;

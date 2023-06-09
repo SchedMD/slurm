@@ -87,6 +87,7 @@ documents those changes that are of interest to users and administrators.
  -- sbatch - Added new --export=NIL option.
  -- Fix job layout calculations with --ntasks-per-gpu, especially when --nodes
     has not been explicitly provided.
+ -- Fix X11 forwarding for jobs submitted from the slurmctld host.
 
 * Changes in Slurm 23.02.2
 ==========================
