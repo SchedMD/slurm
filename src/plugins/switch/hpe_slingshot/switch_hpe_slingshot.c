@@ -714,7 +714,6 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 		for (pidx = 0; pidx < jobinfo->num_profiles; pidx++) {
 			_pack_comm_profile(&jobinfo->profiles[pidx], buffer);
 		}
-		pack_bit_str_hex(jobinfo->vni_pids, buffer); /* Unused */
 		pack32(jobinfo->flags, buffer);
 		pack32(jobinfo->num_nics, buffer);
 		for (pidx = 0; pidx < jobinfo->num_nics; pidx++) {
@@ -834,7 +833,6 @@ extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 						  buffer))
 				goto unpack_error;
 		}
-		unpack_bit_str_hex(&jobinfo->vni_pids, buffer); /* Unused */
 		safe_unpack32(&jobinfo->flags, buffer);
 
 		safe_unpack32(&jobinfo->num_nics, buffer);
