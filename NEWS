@@ -145,6 +145,8 @@ documents those changes that are of interest to users and administrators.
     reservation is not usable by the job.
  -- Fix losing list of reservations on job when updating job with list of
     reservations and restarting the controller.
+ -- Fix nodes resuming after down and drain state update requests from
+    clients older than 23.02.
 
 * Changes in Slurm 23.02.2
 ==========================
