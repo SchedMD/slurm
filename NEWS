@@ -141,6 +141,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix potentially waiting indefinitely for a defunct process to finish,
     which affects various scripts including Prolog and Epilog. This could have
     various symptoms, such as jobs getting stuck in a completing state.
+ -- Hold the job with "(Reservation ... invalid)" state reason if the
+    reservation is not usable by the job.
 
 * Changes in Slurm 23.02.2
 ==========================
