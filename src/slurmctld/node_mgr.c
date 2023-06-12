@@ -3254,6 +3254,25 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 						      now);
 	}
 
+	if (reg_msg->extra) {
+		xfree(node_ptr->extra);
+		if (reg_msg->extra[0])
+			node_ptr->extra = xstrdup(reg_msg->extra);
+	}
+
+	if (reg_msg->instance_id) {
+		xfree(node_ptr->instance_id);
+		if (reg_msg->instance_id[0])
+			node_ptr->instance_id = xstrdup(reg_msg->instance_id);
+	}
+
+	if (reg_msg->instance_type) {
+		xfree(node_ptr->instance_type);
+		if (reg_msg->instance_type[0])
+			node_ptr->instance_type =
+				xstrdup(reg_msg->instance_type);
+	}
+
 	was_invalid_reg = IS_NODE_INVALID_REG(node_ptr);
 	node_ptr->node_state &= ~NODE_STATE_INVALID_REG;
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
