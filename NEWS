@@ -143,6 +143,8 @@ documents those changes that are of interest to users and administrators.
     various symptoms, such as jobs getting stuck in a completing state.
  -- Hold the job with "(Reservation ... invalid)" state reason if the
     reservation is not usable by the job.
+ -- Fix losing list of reservations on job when updating job with list of
+    reservations and restarting the controller.
 
 * Changes in Slurm 23.02.2
 ==========================
