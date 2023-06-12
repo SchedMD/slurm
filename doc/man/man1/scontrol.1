@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "January 2023" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "June 2023" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -1589,8 +1589,14 @@ Use quotes to enclose a reason having more than one word.
 
 .TP
 \fBResumeAfter\fR=<\fIseconds\fR>
-Automatically resume a node after this amount of seconds, when its state is
+Schedule a node state resume after this amount of seconds, when its state is
 updated to "DOWN" or "DRAIN".
+Upon state resume, the node's state will be changed from \fBDRAIN\fR,
+\fBDRAINING\fR, \fBDOWN\fR or \fBREBOOT\fR to \fBIDLE\fR and \fBNoResp\fR.
+slurmctld will then attempt to contact slurmd to request that the node
+register itself.
+
+\fBNOTE\fR: A value of \-1 will unschedule the node state resume.
 .IP
 
 .TP
