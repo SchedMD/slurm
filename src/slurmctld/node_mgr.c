@@ -2950,6 +2950,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	uint32_t node_flags;
 	time_t now = time(NULL);
 	bool orig_node_avail;
+	bool update_db = false;
 	bool was_invalid_reg, was_powering_up = false, was_powered_down = false;
 	static int node_features_cnt = -1;
 	int sockets1, sockets2;	/* total sockets on node */
@@ -3256,22 +3257,31 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 
 	if (reg_msg->extra) {
 		xfree(node_ptr->extra);
-		if (reg_msg->extra[0])
+		if (reg_msg->extra[0]) {
 			node_ptr->extra = xstrdup(reg_msg->extra);
+			update_db = true;
+		}
 	}
 
 	if (reg_msg->instance_id) {
 		xfree(node_ptr->instance_id);
-		if (reg_msg->instance_id[0])
+		if (reg_msg->instance_id[0]) {
 			node_ptr->instance_id = xstrdup(reg_msg->instance_id);
+			update_db = true;
+		}
 	}
 
 	if (reg_msg->instance_type) {
 		xfree(node_ptr->instance_type);
-		if (reg_msg->instance_type[0])
+		if (reg_msg->instance_type[0]) {
 			node_ptr->instance_type =
 				xstrdup(reg_msg->instance_type);
+			update_db = true;
+		}
 	}
+
+	if (update_db)
+		clusteracct_storage_g_node_update(acct_db_conn, node_ptr);
 
 	was_invalid_reg = IS_NODE_INVALID_REG(node_ptr);
 	node_ptr->node_state &= ~NODE_STATE_INVALID_REG;
