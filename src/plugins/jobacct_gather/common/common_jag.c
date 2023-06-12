@@ -783,7 +783,7 @@ static void _record_profile(struct jobacctinfo *jobacct)
 			data[FIELD_GPUMEM].u64 =
 				jobacct->tres_usage_in_tot[gpumem_pos] /
 				1048576;
-			data[FIELD_GPUUTIL].u64 =
+			data[FIELD_GPUUTIL].d =
 				jobacct->tres_usage_in_tot[gpuutil_pos];
 ;
 		}
