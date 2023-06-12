@@ -981,6 +981,8 @@ _unpack_update_node_msg(update_node_msg_t ** msg, buf_t *buffer,
 	tmp_ptr = xmalloc(sizeof(update_node_msg_t));
 	*msg = tmp_ptr;
 
+	slurm_init_update_node_msg(tmp_ptr);
+
 	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->comment, buffer);
 		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
