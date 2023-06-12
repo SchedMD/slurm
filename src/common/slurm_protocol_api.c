@@ -481,14 +481,12 @@ extern char *slurm_auth_opts_to_socket(char *opts)
 		return NULL;
 
 	socket = conf_get_opt_str(opts, "socket=");
-	if (!socket) {
-		/* old format */
+	/*
+	 * If socket not specified AND = is not present, assume its the old
+	 * format and opts is the socket
+	 */
+	if (!socket && !strchr(opts, '='))
 		socket = xstrdup(opts);
-	} else {
-		/* New format, but socket not specified */
-		if (!strlen(socket))
-			xfree(socket);
-	}
 
 	return socket;
 }
