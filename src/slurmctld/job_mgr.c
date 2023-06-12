@@ -13409,7 +13409,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (new_resv_ptr) {
 		FREE_NULL_LIST(job_ptr->resv_list);
 		xfree(job_ptr->resv_name);
-		job_ptr->resv_name = xstrdup(new_resv_ptr->name);
+		job_ptr->resv_name = xstrdup(job_desc->reservation);
 		job_ptr->resv_list = new_resv_list;
 		job_ptr->resv_id = new_resv_ptr->resv_id;
 		job_ptr->resv_ptr = new_resv_ptr;
