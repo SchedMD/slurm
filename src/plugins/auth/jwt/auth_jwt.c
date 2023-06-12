@@ -198,7 +198,7 @@ static void _init_hs256(void)
 {
 	char *key_file;
 
-	key_file = conf_get_opt_str(slurm_conf.authalt_params, "jwt=");
+	key_file = conf_get_opt_str(slurm_conf.authalt_params, "jwt_key=");
 
 	/*
 	 * If jwks was loaded, and jwt is not explicitly configured, skip setup.
