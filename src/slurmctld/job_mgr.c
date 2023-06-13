@@ -3933,6 +3933,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
 	node_record_t *node_ptr;
+	bitstr_t *orig_job_node_bitmap;
 	int kill_job_cnt = 0;
 	time_t now = time(NULL);
 
@@ -3946,6 +3947,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		bool suspended = false;
+		job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 		if (!_het_job_on_node(job_ptr, node_ptr->index))
 			continue;	/* job not on this node */
 		if (IS_JOB_SUSPENDED(job_ptr)) {
@@ -3992,7 +3994,13 @@ extern int kill_running_job_by_node_name(char *node_name)
 				      node_name, job_ptr);
 				job_pre_resize_acctg(job_ptr);
 				kill_step_on_node(job_ptr, node_ptr, true);
+				orig_job_node_bitmap =
+					bit_copy(job_resrcs_ptr->node_bitmap);
 				excise_node_from_job(job_ptr, node_ptr);
+				/* Resize the bitmaps of the job's steps */
+				rebuild_step_bitmaps(job_ptr,
+						     orig_job_node_bitmap);
+				FREE_NULL_BITMAP(orig_job_node_bitmap);
 				(void) gs_job_start(job_ptr);
 				gres_ctld_job_build_details(
 					job_ptr->gres_list_alloc,
@@ -11981,6 +11989,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	job_details_t *detail_ptr;
 	part_record_t *new_part_ptr = NULL, *use_part_ptr = NULL;
 	bitstr_t *exc_bitmap = NULL, *new_req_bitmap = NULL;
+	bitstr_t *orig_job_node_bitmap = NULL;
 	time_t now = time(NULL);
 	multi_core_data_t *mc_ptr = NULL;
 	bool update_accounting = false, new_req_bitmap_given = false;
@@ -12436,12 +12445,18 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 #ifndef HAVE_FRONT_END
 			abort_job_on_nodes(job_ptr, rem_nodes);
 #endif
+			orig_job_node_bitmap =
+				bit_copy(job_ptr->job_resrcs->node_bitmap);
 			for (int i = 0;
 			     (node_ptr = next_node_bitmap(rem_nodes, &i));
 			     i++) {
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
+			/* Resize the core bitmaps of the job's steps */
+			rebuild_step_bitmaps(job_ptr, orig_job_node_bitmap);
+
+			FREE_NULL_BITMAP(orig_job_node_bitmap);
 			FREE_NULL_BITMAP(rem_nodes);
 			(void) gs_job_start(job_ptr);
 			gres_ctld_job_build_details(job_ptr->gres_list_alloc,
@@ -14003,12 +14018,18 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 #ifndef HAVE_FRONT_END
 			abort_job_on_nodes(job_ptr, rem_nodes);
 #endif
+			orig_job_node_bitmap =
+				bit_copy(job_ptr->job_resrcs->node_bitmap);
 			for (int i = 0;
 			     (node_ptr = next_node_bitmap(rem_nodes, &i));
 			     i++) {
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
+			/* Resize the core bitmaps of the job's steps */
+			rebuild_step_bitmaps(job_ptr, orig_job_node_bitmap);
+
+			FREE_NULL_BITMAP(orig_job_node_bitmap);
 			FREE_NULL_BITMAP(rem_nodes);
 			FREE_NULL_BITMAP(tmp_nodes);
 			(void) gs_job_start(job_ptr);
@@ -14991,12 +15012,7 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 	 */
 	job_ptr->end_time_exp = job_ptr->end_time;
 
-	/*
-	 * If a job is resized, the core bitmap will differ in the step.
-	 * See rebuild_step_bitmaps(). The problem will go away when we have
-	 * per-node core bitmaps. For now just set a flag that the job was
-	 * resized while there were active job steps.
-	 */
+	/* A job was resized with active job steps */
 	if (job_ptr->step_list && (list_count(job_ptr->step_list) > 0))
 		job_ptr->bit_flags |= JOB_RESIZED;
 }

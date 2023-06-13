@@ -154,6 +154,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix job layout calculations with --ntasks-per-gpu, especially when --nodes
     has not been explicitly provided.
  -- Fix X11 forwarding for jobs submitted from the slurmctld host.
+ -- When a job requests --no-kill and one or more nodes fail during the job,
+    fix subsequent job steps unable to use some of the remaining resources
+    allocated to the job.
 
 * Changes in Slurm 23.02.2
 ==========================
