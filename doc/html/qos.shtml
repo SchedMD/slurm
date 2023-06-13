@@ -90,7 +90,7 @@ will take precedence over the association's limits.</p>
 <p>A QOS can be attached to a partition.  This means a partition will have all
 the same limits as a QOS.  This also gives the ability of a true 'floating'
 partition, meaning if you assign all the nodes to a partition and then in the
-Partition's QOS limit the number of GrpCPUs or GrpNodes the partition will have
+Partition's QOS limit the number of GrpTRES the partition will have
 access to all the nodes, but only be able to run on the number of
 resources in it.</p>
 
@@ -280,15 +280,15 @@ $ sacctmgr show qos format=name,priority
 <p>Set some other limits</p>
 
 <pre>
-$ sacctmgr modify qos zebra set GrpCPUs=24
+$ sacctmgr modify qos zebra set GrpTRES=cpu=24
  Modified qos...
   zebra
 
-$ sacctmgr show qos format=name,priority,GrpCPUs
-      Name   Priority  GrpCPUs
----------- ---------- --------
+$ sacctmgr show qos format=name,priority,GrpTRES
+      Name   Priority       GrpTRES
+---------- ---------- -------------
     normal          0
-     zebra         10       24
+     zebra         10        cpu=24
 </pre>
 
 <p>Add a QOS to a user account</p>
