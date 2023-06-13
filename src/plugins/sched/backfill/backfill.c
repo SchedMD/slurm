@@ -1235,8 +1235,9 @@ static bool _job_runnable_now(job_record_t *job_ptr)
 	if (job_ptr->array_recs &&
 	    ((job_ptr->array_recs->pend_run_tasks >= bf_max_job_array_resv) ||
 	     (job_ptr->array_recs->max_run_tasks &&
-	      (job_ptr->array_recs->pend_run_tasks >=
-	     job_ptr->array_recs->max_run_tasks))))
+	      ((job_ptr->array_recs->pend_run_tasks +
+		job_ptr->array_recs->tot_run_tasks) >=
+	       job_ptr->array_recs->max_run_tasks))))
 		return false;
 
 	return true;
@@ -3096,8 +3097,9 @@ skip_start:
 			    (test_array_count <
 			     job_ptr->array_recs->task_cnt) &&
 			    (!job_ptr->array_recs->max_run_tasks ||
-			     (job_ptr->array_recs->pend_run_tasks <
-			     job_ptr->array_recs->max_run_tasks)))
+			     ((job_ptr->array_recs->pend_run_tasks +
+			       job_ptr->array_recs->tot_run_tasks) <
+			      job_ptr->array_recs->max_run_tasks)))
 				goto next_task;
 		}
 	}
