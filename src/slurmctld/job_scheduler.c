@@ -582,7 +582,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 		}
 		tested_jobs++;
 		job_ptr->preempt_in_progress = false;	/* initialize */
-		if (job_ptr->array_recs)
+		if (job_ptr->array_recs && backfill)
 			job_ptr->array_recs->pend_run_tasks = 0;
 		if (job_ptr->resv_list)
 			job_ptr->resv_ptr = NULL;
