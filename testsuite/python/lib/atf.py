@@ -141,8 +141,9 @@ def run_command(command, fatal=False, timeout=default_command_timeout, quiet=Fal
     except subprocess.TimeoutExpired as e:
         duration = e.timeout
         exit_code = errno.ETIMEDOUT
-        stdout = e.stdout if e.stdout else ''
-        stderr = e.stderr if e.stderr else ''
+        # These are byte objects, not strings
+        stdout = e.stdout.decode('utf-8') if e.stdout else ''
+        stderr = e.stderr.decode('utf-8') if e.stderr else ''
 
     if input is not None:
         logging.log(log_details_level, f"Command input: {input}")
