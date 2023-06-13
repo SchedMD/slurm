@@ -905,8 +905,10 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 					       sizeof(slurmdb_assoc_rec_t));
 					assoc.acct = resv_ptr->account_list[j];
 					assoc.uid  = resv_ptr->user_list[i];
-					rc = _append_assoc_list(
-						assoc_list_allow, &assoc);
+					rc = assoc_mgr_get_user_assocs(
+						acct_db_conn, &assoc,
+						accounting_enforce,
+						assoc_list_allow);
 					if (rc != SLURM_SUCCESS)
 						goto end_it;
 				}
