@@ -876,6 +876,19 @@ def remove_config_parameter_value(name, value, source='slurm'):
         set_config_parameter(name, None, source=source)
 
 
+def is_tool(tool):
+    """Returns True if the tool is found in PATH"""
+    from shutil import which
+    return which(tool) is not None
+
+
+def require_tool(tool):
+    """Skips if the supplied tool is not found"""
+    if not is_tool(tool):
+        msg = f"This test requires '{tool}' and it was not found"
+        pytest.skip(msg, allow_module_level=True)
+
+
 def require_whereami():
     """Compiles the whereami.c program to be used by tests
 
