@@ -149,6 +149,7 @@ documents those changes that are of interest to users and administrators.
     clients older than 23.02.
  -- Fix advanced reservation creation/update when an association that should
     have access to it is composed with partition(s).
+ -- auth/jwt - Fix memory leak.
 
 * Changes in Slurm 23.02.2
 ==========================
