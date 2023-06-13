@@ -2160,11 +2160,11 @@ extern char *data_type_to_string(data_type_t type)
 		case DATA_TYPE_DICT:
 			return "dictionary";
 		case DATA_TYPE_INT_64:
-			return "int 64bits";
+			return "64 bit integer";
 		case DATA_TYPE_STRING:
 			return "string";
 		case DATA_TYPE_FLOAT:
-			return "floating point";
+			return "floating point number";
 		case DATA_TYPE_BOOL:
 			return "boolean";
 		default:
