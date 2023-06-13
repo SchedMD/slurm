@@ -150,6 +150,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix advanced reservation creation/update when an association that should
     have access to it is composed with partition(s).
  -- auth/jwt - Fix memory leak.
+ -- sbatch - Added new --export=NIL option.
 
 * Changes in Slurm 23.02.2
 ==========================
