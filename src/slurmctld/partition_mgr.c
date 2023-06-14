@@ -145,9 +145,11 @@ static int _calc_part_tres(void *x, void *arg)
 		assoc_mgr_make_tres_str_from_array(part_ptr->tres_cnt,
 						   TRES_STR_CONVERT_UNITS,
 						   true);
-	if (part_ptr->qos_ptr)
+	if (part_ptr->qos_ptr) {
+		part_ptr->qos_ptr->flags |= QOS_FLAG_PART_QOS;
 		assoc_mgr_set_qos_tres_relative_cnt(part_ptr->qos_ptr,
 						    part_ptr->tres_cnt);
+	}
 
 	return 0;
 }
@@ -1088,6 +1090,15 @@ static int _build_visible_parts_foreach(void *elem, void *x)
 	return SLURM_SUCCESS;
 }
 
+static int _find_part_qos(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+
+	if (part_ptr->qos_ptr == arg)
+		return 1;
+	return 0;
+}
+
 extern part_record_t **build_visible_parts(uid_t uid, bool skip)
 {
 	part_record_t **visible_parts_save;
@@ -1693,10 +1704,15 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->qos_char && part_desc->qos_char[0] == '\0') {
+		slurmdb_qos_rec_t *qos = part_ptr->qos_ptr;
 		info("%s: removing partition QOS %s from partition %s",
 		     __func__, part_ptr->qos_char, part_ptr->name);
 		xfree(part_ptr->qos_char);
 		part_ptr->qos_ptr = NULL;
+		if (qos) {
+		        if (!list_find_first(part_list, _find_part_qos, qos))
+				qos->flags &= ~QOS_FLAG_PART_QOS;
+		}
 	} else if (part_desc->qos_char) {
 		slurmdb_qos_rec_t qos_rec, *backup_qos_ptr = part_ptr->qos_ptr;
 
@@ -1718,6 +1734,14 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 
 			xfree(part_ptr->qos_char);
 			part_ptr->qos_char = xstrdup(part_desc->qos_char);
+			part_ptr->qos_ptr->flags |= QOS_FLAG_PART_QOS;
+
+			if (backup_qos_ptr) {
+				if (!list_find_first(part_list, _find_part_qos,
+						     backup_qos_ptr))
+					backup_qos_ptr->flags &=
+						~QOS_FLAG_PART_QOS;
+			}
 		}
 	}
 

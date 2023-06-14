@@ -138,6 +138,7 @@ typedef enum {
 #define	QOS_FLAG_USAGE_FACTOR_SAFE   SLURM_BIT(9)
 #define	QOS_FLAG_RELATIVE            SLURM_BIT(10)
 #define	QOS_FLAG_RELATIVE_SET        SLURM_BIT(11)
+#define	QOS_FLAG_PART_QOS            SLURM_BIT(12)
 
 /* Define Server Resource flags */
 #define	SLURMDB_RES_FLAG_BASE        0x0fffffff /* apply to get real flags */

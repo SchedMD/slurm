@@ -928,6 +928,9 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 			      "please check your configuration",
 			      part_ptr->name, qos_rec.name);
 		}
+		if (part_ptr->qos_ptr) {
+			part_ptr->qos_ptr->flags |= QOS_FLAG_PART_QOS;
+		}
 	}
 
 	return 0;

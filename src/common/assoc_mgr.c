@@ -2291,11 +2291,15 @@ static int _foreach_rem_coord(void *x, void *arg)
 	return _delete_nondirect_coord_children(assoc, user);
 }
 
+/* This is called when resetting a partition's QOS */
 static int _reset_relative_flag(void *x, void *arg)
 {
 	slurmdb_qos_rec_t *qos = x;
 
 	qos->flags &= ~QOS_FLAG_RELATIVE_SET;
+
+	/* Remove the Part flag as well */
+	qos->flags &= ~QOS_FLAG_PART_QOS;
 
 	return 0;
 }
