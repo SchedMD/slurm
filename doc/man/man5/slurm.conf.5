@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "May 2023" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "June 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -3702,6 +3702,14 @@ for message forwarding.
 .TP
 \fBroute/default\fR
 default, use TreeWidth.
+.IP
+
+.TP
+\fBroute/partition\fR
+Use partition nodes lists to route communications from the controller. Once on
+the compute node, communications will be routed using TreeWidth. If a node is
+in multiple partitions, the first partition seen will be used. The controller
+will communicate directly with any nodes that aren't part of a partition.
 .IP
 
 .TP

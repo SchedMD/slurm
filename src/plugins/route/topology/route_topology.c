@@ -229,8 +229,6 @@ extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 		buf = hostlist_ranged_string_xmalloc(hl);
 		fatal("ROUTE: Failed to make bitmap from hostlist=%s.", buf);
 	}
-	if (run_in_slurmctld)
-		unlock_slurmctld(node_read_lock);
 
 	/* Find lowest level switches containing all the nodes in the list */
 	switch_bitmap = bit_alloc(switch_record_cnt);
@@ -287,6 +285,8 @@ extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 	    bit_super_set(nodes_bitmap,
 			  switch_record_table[s_first].node_bitmap)) {
 		/* This is a leaf switch. Construct list based on TreeWidth */
+		if (run_in_slurmctld)
+			unlock_slurmctld(node_read_lock);
 		FREE_NULL_BITMAP(nodes_bitmap);
 		FREE_NULL_BITMAP(switch_bitmap);
 		return route_split_hostlist_treewidth(hl, sp_hl, count,
@@ -325,6 +325,8 @@ extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 		}
 	}
 
+	if (run_in_slurmctld)
+		unlock_slurmctld(node_read_lock);
 	FREE_NULL_BITMAP(nodes_bitmap);
 	FREE_NULL_BITMAP(switch_bitmap);
 
