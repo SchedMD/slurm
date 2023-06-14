@@ -853,6 +853,9 @@ static int _append_acct_to_assoc_list(List assoc_list,
 {
 	int rc = ESLURM_INVALID_ACCOUNT;
 	slurmdb_assoc_rec_t *assoc_ptr = NULL;
+
+	xassert(assoc->uid == NO_VAL);
+
 	if (assoc_mgr_fill_in_assoc(
 		    acct_db_conn, assoc,
 		    accounting_enforce,
