@@ -2319,7 +2319,7 @@ extern int assoc_mgr_get_user_assocs(void *db_conn,
 			debug("UID %u has no associations", assoc->uid);
 
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
-			return SLURM_ERROR;
+			return ESLURM_INVALID_ACCOUNT;
 	}
 	return SLURM_SUCCESS;
 }
