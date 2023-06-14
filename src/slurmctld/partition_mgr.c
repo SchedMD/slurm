@@ -1715,16 +1715,25 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		}
 	} else if (part_desc->qos_char) {
 		slurmdb_qos_rec_t qos_rec, *backup_qos_ptr = part_ptr->qos_ptr;
-
+		slurmdb_qos_rec_t *qos = NULL;
+		part_record_t *qos_part_ptr = NULL;
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 		qos_rec.name = part_desc->qos_char;
 		if (assoc_mgr_fill_in_qos(
 			    acct_db_conn, &qos_rec, accounting_enforce,
-			    (slurmdb_qos_rec_t **)&part_ptr->qos_ptr, 0)
+			    (slurmdb_qos_rec_t **)&qos, 0)
 		    != SLURM_SUCCESS) {
 			error("%s: invalid qos (%s) given",
 			      __func__, qos_rec.name);
 			error_code = ESLURM_INVALID_QOS;
+			part_ptr->qos_ptr = backup_qos_ptr;
+		} else if ((qos->flags & QOS_FLAG_RELATIVE) &&
+			   (qos_part_ptr = list_find_first(
+				   part_list, _find_part_qos, qos))) {
+			error_code = ESLURM_INVALID_RELATIVE_QOS;
+			error("%s: %s Partition %s already uses relative QOS (%s).",
+			      __func__, slurm_strerror(error_code),
+			      qos_part_ptr->name, qos_rec.name);
 			part_ptr->qos_ptr = backup_qos_ptr;
 		} else {
 			info("%s: changing partition QOS from "
@@ -1734,6 +1743,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 
 			xfree(part_ptr->qos_char);
 			part_ptr->qos_char = xstrdup(part_desc->qos_char);
+			part_ptr->qos_ptr = qos;
 			part_ptr->qos_ptr->flags |= QOS_FLAG_PART_QOS;
 
 			if (backup_qos_ptr) {

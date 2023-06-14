@@ -929,6 +929,10 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 			      part_ptr->name, qos_rec.name);
 		}
 		if (part_ptr->qos_ptr) {
+			if ((part_ptr->qos_ptr->flags & QOS_FLAG_PART_QOS) &&
+			    (part_ptr->qos_ptr->flags & QOS_FLAG_RELATIVE))
+				fatal("QOS %s is a relative QOS. A relative QOS must be unique per partition. Please check your configuration and adjust accordingly",
+				      part_ptr->qos_ptr->name);
 			part_ptr->qos_ptr->flags |= QOS_FLAG_PART_QOS;
 		}
 	}

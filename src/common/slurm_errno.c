@@ -455,6 +455,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Node already exists in the node table" },
 	{ ERRTAB_ENTRY(ESLURM_NODE_TABLE_FULL),
 	  "Unable to add node, node table is full" },
+	{ ERRTAB_ENTRY(ESLURM_INVALID_RELATIVE_QOS),
+	  "Invalid QOS specification, relative QOS can only be used in a single partition per cluster." },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),
