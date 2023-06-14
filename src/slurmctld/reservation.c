@@ -192,6 +192,7 @@ static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
 static bitstr_t *_pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
 						 resv_desc_msg_t *resv_desc_ptr,
 						 bitstr_t **core_bitmap,
+						 int total_node_cnt,
 						 List feature_list);
 static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 				resv_desc_msg_t *resv_desc_ptr,
@@ -5295,7 +5296,8 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			have_xand = true;
 			*resv_bitmap = _pick_nodes_by_feature_node_cnt(
 				node_bitmaps[max_bitmap], resv_desc_ptr,
-				core_bitmap, job_ptr->details->feature_list);
+				core_bitmap, total_node_cnt,
+				job_ptr->details->feature_list);
 		} else {
 			/*
 			 * Simple AND/OR node filtering.
@@ -5359,6 +5361,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 static bitstr_t *_pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
 						 resv_desc_msg_t *resv_desc_ptr,
 						 bitstr_t **core_bitmap,
+						 int total_node_cnt,
 						 List feature_list)
 {
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap = NULL, *tmp_avail_bitmap;
@@ -5428,6 +5431,24 @@ TRY_AVAIL:
 		/* Test failed for active features, test available features */
 		test_active = false;
 		goto TRY_AVAIL;
+	}
+
+	/*
+	 * We have picked all the featured nodes, if we requested more nodes we
+	 * will now pick those non-featured nodes.
+	 */
+	if (ret_bitmap && (bit_set_count(ret_bitmap) < total_node_cnt)) {
+		detail_ptr->orig_min_cpus =
+			detail_ptr->num_tasks =
+			detail_ptr->min_cpus =
+			detail_ptr->max_nodes =
+			detail_ptr->min_nodes =
+			resv_desc_ptr->node_cnt =
+			total_node_cnt - bit_set_count(ret_bitmap);
+		tmp_avail_bitmap = bit_copy(avail_bitmap);
+		_pick_nodes(tmp_avail_bitmap, resv_desc_ptr,
+			    core_bitmap, &ret_bitmap);
+		FREE_NULL_BITMAP(tmp_avail_bitmap);
 	}
 
 	detail_ptr->orig_min_cpus =
