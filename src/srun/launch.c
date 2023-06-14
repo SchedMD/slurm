@@ -900,6 +900,9 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	 * _validate_tres_per_task(). But we should probably revisit this to get
 	 * rid of gpus_per_task completely.
 	 */
+	if (opt_local->tres_per_task)
+	        step_req->tres_per_task = xstrdup(opt_local->tres_per_task);
+
 	if (!opt_local->tres_bind && opt_local->gpus_per_task) {
 		/* Implicit GPU binding with gpus_per_task */
 		xstrfmtcat(opt_local->tres_bind, "gpu:per_task:%s",
@@ -952,7 +955,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 				     step_req->ntasks_per_tres,
 				     step_req->min_nodes,
 				     &tmp_gres_list,
-				     NULL, job->step_id.job_id,
+				     job->step_id.job_id,
 				     NO_VAL, &step_req->num_tasks,
 				     &step_req->cpu_count, NULL);
 	FREE_NULL_LIST(tmp_gres_list);

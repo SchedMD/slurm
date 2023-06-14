@@ -157,6 +157,8 @@ documents those changes that are of interest to users and administrators.
  -- When a job requests --no-kill and one or more nodes fail during the job,
     fix subsequent job steps unable to use some of the remaining resources
     allocated to the job.
+ -- Fix shared gres allocation when using --tres-per-task with tasks that span
+    multiple sockets.
 
 * Changes in Slurm 23.02.2
 ==========================

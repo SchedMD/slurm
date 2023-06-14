@@ -906,8 +906,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
  */
 static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 				int job_node_inx, sock_gres_t *sock_gres,
-				uint32_t job_id, gres_mc_data_t *tres_mc_ptr,
-				uint32_t **tasks_per_node_socket)
+				uint32_t job_id, gres_mc_data_t *tres_mc_ptr)
 {
 	int core_offset;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
@@ -915,12 +914,22 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
 	int *used_sock = NULL, alloc_gres_cnt = 0;
-	uint64_t gres_per_bit, gres_per_node;
+	uint64_t gres_per_node = 0;
 	bool use_busy_dev = gres_use_busy_dev(sock_gres->gres_state_node, 0);
 
 	gres_js = sock_gres->gres_state_job->gres_data;
-	gres_per_node = gres_per_bit = gres_js->gres_per_node ?
-		gres_js->gres_per_node : gres_js->gres_per_task;
+
+	/* Determine how many gres are required on this node */
+	if (gres_js->gres_per_node) {
+		gres_per_node = gres_js->gres_per_node;
+	} else if (gres_js->gres_per_task && job_res->tasks_per_node) {
+		gres_per_node = gres_js->gres_per_task *
+				job_res->tasks_per_node[job_node_inx];
+	} else {
+		error("%s: Invalid job resource allocation. No tasks allocated on nodes.",
+		      __func__);
+		return;
+	}
 
 	gres_ns = sock_gres->gres_state_node->gres_data;
 	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
@@ -964,14 +973,8 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	 */
 	for (s = -1;	/* Socket == - 1 if GRES avail from any socket */
 	     (s < sock_cnt) && (alloc_gres_cnt == 0); s++) {
-		gres_per_node = gres_per_bit;
 		if ((s >= 0) && !used_sock[s])
 			continue;
-		if (gres_js->gres_per_task) {
-			gres_per_node *= tasks_per_node_socket[node_inx][s];
-			if (!gres_per_node)
-				continue;
-		}
 
 		for (t = 0; t < gres_ns->topo_cnt; t++) {
 			if (use_busy_dev &&
@@ -2217,8 +2220,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 				/* gres/mps: select specific topo bit for job */
 				_pick_specific_topo(job_res, i, node_inx,
 						    sock_gres, job_id,
-						    tres_mc_ptr,
-					       tasks_per_node_socket);
+						    tres_mc_ptr);
 			} else if (gres_js->gres_per_node) {
 				_set_node_bits(job_res, i, node_inx,
 					       sock_gres, job_id, tres_mc_ptr);
