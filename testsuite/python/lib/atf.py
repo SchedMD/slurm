@@ -889,7 +889,7 @@ def require_tool(tool):
         pytest.skip(msg, allow_module_level=True)
 
 
-def require_whereami():
+def require_whereami(is_cray=False):
     """Compiles the whereami.c program to be used by tests
 
     This function installs the whereami program.  To get the
@@ -906,8 +906,13 @@ def require_whereami():
         >>> output = atf.run_command(f"srun {atf.properties['whereami']}",
         >>>     user=atf.properties['slurm-user'])
     """
-    require_config_parameter("TaskPlugin",
-        "task/cray_aries,task/cgroup,task/affinity")
+    require_config_parameter("TaskPlugin", "task/cgroup,task/affinity")
+
+    # Set requirement for cray systems
+    if is_cray:
+        require_config_parameter("TaskPlugin",
+            "task/cray_aries,task/cgroup,task/affinity")
+
     # If the file already exists and we don't need to recompile
     dest_file = f"{properties['testsuite_scripts_dir']}/whereami"
     if os.path.isfile(dest_file):
@@ -916,7 +921,7 @@ def require_whereami():
 
     source_file = f"{properties['testsuite_scripts_dir']}/whereami.c"
     if not os.path.isfile(source_file):
-        pytest.fail('Could not find whereami.c!')
+        pytest.skip("Could not find whereami.c!", allow_module_level=True)
 
     run_command(f"gcc {source_file} -o {dest_file}", fatal=True,
         user=properties['slurm-user'])
