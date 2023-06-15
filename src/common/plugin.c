@@ -106,13 +106,13 @@ static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,
 	uint32_t *version;
 	uint32_t mask = 0xffffff;
 
-	if (!(name = dlsym(plug, PLUGIN_NAME))) {
+	if (!(name = dlsym(plug, "plugin_name"))) {
 		verbose("%s: %s is not a Slurm plugin: %s",
 			caller, fq_path, _dlerror());
 		return EPLUGIN_MISSING_NAME;
 	}
 
-	if (!(type = dlsym(plug, PLUGIN_TYPE))) {
+	if (!(type = dlsym(plug, "plugin_type"))) {
 		verbose("%s: %s is not a Slurm plugin: %s",
 			caller, fq_path, _dlerror());
 		return EPLUGIN_MISSING_NAME;
@@ -122,10 +122,10 @@ static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,
 		strlcpy(plugin_type, type, type_len);
 	}
 
-	version = dlsym(plug, PLUGIN_VERSION);
+	version = dlsym(plug, "plugin_version");
 	if (!version) {
-		verbose("%s: %s symbol not found in %s: %s",
-			caller, PLUGIN_VERSION, fq_path, _dlerror());
+		verbose("%s: plugin_version symbol not found in %s: %s",
+			caller, fq_path, _dlerror());
 		return EPLUGIN_MISSING_NAME;
 	}
 
@@ -343,7 +343,7 @@ const char *
 plugin_get_name( plugin_handle_t plug )
 {
 	if ( plug != PLUGIN_INVALID_HANDLE )
-		return (const char *) dlsym( plug, PLUGIN_NAME );
+		return (const char *) dlsym(plug, "plugin_name");
 	else
 		return NULL;
 }
@@ -352,7 +352,7 @@ const char *
 plugin_get_type( plugin_handle_t plug )
 {
 	if ( plug != PLUGIN_INVALID_HANDLE )
-		return (const char *) dlsym( plug, PLUGIN_TYPE );
+		return (const char *) dlsym(plug, "plugin_type");
 	else
 		return NULL;
 }
@@ -364,7 +364,7 @@ plugin_get_version( plugin_handle_t plug )
 
 	if (plug == PLUGIN_INVALID_HANDLE)
 		return 0;
-	ptr = (uint32_t *) dlsym(plug, PLUGIN_VERSION);
+	ptr = (uint32_t *) dlsym(plug, "plugin_version");
 	return ptr ? *ptr : 0;
 }
 

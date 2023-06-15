@@ -47,17 +47,6 @@
 #include "slurm/slurm_errno.h"
 
 /*
- * These symbols are required to be defined in any plugin managed by
- * this code.  Use these macros instead of string literals in order to
- * avoid typographical errors.
- *
- * Their meanings are described in the sample plugin.
- */
-#define PLUGIN_NAME		"plugin_name"
-#define PLUGIN_TYPE		"plugin_type"
-#define PLUGIN_VERSION		"plugin_version"
-
-/*
  * Opaque type for plugin handle.  Most plugin operations will want
  * of these.
  *
