@@ -155,12 +155,9 @@ void plugin_unload( plugin_handle_t plug );
 void *plugin_get_sym( plugin_handle_t plug, const char *name );
 
 /*
- * Access functions to get the name, type, and version of a plugin
- * from the plugin itself.
+ * Access function to get the name from the plugin itself.
  */
 const char *plugin_get_name( plugin_handle_t plug );
-const char *plugin_get_type( plugin_handle_t plug );
-uint32_t plugin_get_version( plugin_handle_t plug );
 
 /*
  * Get the addresses of several symbols from the plugin at once.

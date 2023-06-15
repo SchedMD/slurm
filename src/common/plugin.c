@@ -348,26 +348,6 @@ plugin_get_name( plugin_handle_t plug )
 		return NULL;
 }
 
-const char *
-plugin_get_type( plugin_handle_t plug )
-{
-	if ( plug != PLUGIN_INVALID_HANDLE )
-		return (const char *) dlsym(plug, "plugin_type");
-	else
-		return NULL;
-}
-
-uint32_t
-plugin_get_version( plugin_handle_t plug )
-{
-	uint32_t *ptr;
-
-	if (plug == PLUGIN_INVALID_HANDLE)
-		return 0;
-	ptr = (uint32_t *) dlsym(plug, "plugin_version");
-	return ptr ? *ptr : 0;
-}
-
 int
 plugin_get_syms( plugin_handle_t plug,
 		 int n_syms,
