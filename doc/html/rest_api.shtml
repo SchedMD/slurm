@@ -234,6 +234,17 @@
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -309,6 +320,17 @@
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -391,75 +413,75 @@
     "error_number" : 0
   } ],
   "statistics" : {
-    "schedule_cycle_per_minute" : 6,
-    "req_time_start" : 5,
-    "jobs_running" : 8,
-    "bf_last_backfilled_jobs" : 3,
+    "schedule_cycle_per_minute" : 1,
+    "req_time_start" : 1,
+    "jobs_running" : 6,
+    "bf_last_backfilled_jobs" : 6,
     "rpcs_by_message_type" : [ {
-      "average_time" : 7,
-      "type_id" : 3,
+      "average_time" : 3,
+      "type_id" : 7,
       "count" : 3,
       "message_type" : "message_type",
-      "total_time" : 5
+      "total_time" : 7
     }, {
-      "average_time" : 7,
-      "type_id" : 3,
+      "average_time" : 3,
+      "type_id" : 7,
       "count" : 3,
       "message_type" : "message_type",
-      "total_time" : 5
+      "total_time" : 7
     } ],
-    "bf_last_depth" : 3,
-    "bf_backfilled_het_jobs" : 6,
-    "bf_backfilled_jobs" : 6,
+    "bf_last_depth" : 6,
+    "bf_backfilled_het_jobs" : 3,
+    "bf_backfilled_jobs" : 9,
     "rpcs_by_user" : [ {
-      "average_time" : 0,
-      "user_id" : 3,
-      "count" : 4,
-      "total_time" : 6,
+      "average_time" : 4,
+      "user_id" : 5,
+      "count" : 3,
+      "total_time" : 0,
       "user" : "user"
     }, {
-      "average_time" : 0,
-      "user_id" : 3,
-      "count" : 4,
-      "total_time" : 6,
+      "average_time" : 4,
+      "user_id" : 5,
+      "count" : 3,
+      "total_time" : 0,
       "user" : "user"
     } ],
-    "bf_table_size" : 4,
-    "bf_depth_sum" : 7,
-    "bf_cycle_mean" : 2,
-    "job_states_ts" : 9,
-    "bf_queue_len" : 7,
-    "jobs_started" : 4,
-    "schedule_cycle_max" : 4,
+    "bf_table_size" : 0,
+    "bf_depth_sum" : 3,
+    "bf_cycle_mean" : 1,
+    "job_states_ts" : 8,
+    "bf_queue_len" : 0,
+    "jobs_started" : 1,
+    "schedule_cycle_max" : 2,
     "server_thread_count" : 5,
-    "dbd_agent_queue_size" : 3,
-    "bf_table_size_mean" : 8,
-    "jobs_pending" : 6,
-    "agent_count" : 7,
-    "bf_queue_len_sum" : 0,
-    "bf_cycle_sum" : 5,
-    "bf_cycle_last" : 6,
-    "parts_packed" : 6,
-    "agent_thread_count" : 9,
-    "jobs_completed" : 5,
-    "bf_depth_mean" : 6,
+    "dbd_agent_queue_size" : 9,
+    "bf_table_size_mean" : 4,
+    "jobs_pending" : 9,
+    "agent_count" : 2,
+    "bf_queue_len_sum" : 6,
+    "bf_cycle_sum" : 6,
+    "bf_cycle_last" : 5,
+    "parts_packed" : 0,
+    "agent_thread_count" : 7,
+    "jobs_completed" : 4,
+    "bf_depth_mean" : 2,
     "bf_active" : true,
     "bf_depth_mean_try" : 6,
-    "bf_depth_try_sum" : 0,
+    "bf_depth_try_sum" : 7,
     "schedule_cycle_mean" : 1,
-    "agent_queue_size" : 2,
+    "agent_queue_size" : 5,
     "jobs_failed" : 9,
-    "gettimeofday_latency" : 2,
+    "gettimeofday_latency" : 3,
     "bf_last_depth_try" : 3,
-    "req_time" : 1,
-    "bf_cycle_counter" : 1,
-    "schedule_queue_length" : 7,
-    "bf_queue_len_mean" : 6,
-    "schedule_cycle_total" : 1,
-    "bf_when_last_cycle" : 7,
-    "schedule_cycle_last" : 7,
-    "jobs_canceled" : 9,
-    "jobs_submitted" : 1,
+    "req_time" : 6,
+    "bf_cycle_counter" : 6,
+    "schedule_queue_length" : 6,
+    "bf_queue_len_mean" : 7,
+    "schedule_cycle_total" : 7,
+    "bf_when_last_cycle" : 8,
+    "schedule_cycle_last" : 4,
+    "jobs_canceled" : 5,
+    "jobs_submitted" : 7,
     "schedule_cycle_mean_depth" : 1
   }
 }</code></pre>
@@ -732,6 +754,7 @@
     "tres_per_socket" : "tres_per_socket",
     "array_task_string" : "array_task_string",
     "submit_time" : 6,
+    "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
       "number" : 3,
@@ -993,6 +1016,7 @@
     "tres_per_socket" : "tres_per_socket",
     "array_task_string" : "array_task_string",
     "submit_time" : 6,
+    "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
       "number" : 3,
@@ -1341,6 +1365,7 @@
     "tres_per_socket" : "tres_per_socket",
     "array_task_string" : "array_task_string",
     "submit_time" : 6,
+    "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
       "number" : 3,
@@ -1602,6 +1627,7 @@
     "tres_per_socket" : "tres_per_socket",
     "array_task_string" : "array_task_string",
     "submit_time" : 6,
+    "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
       "number" : 3,
@@ -3451,6 +3477,17 @@
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -3533,6 +3570,17 @@
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -3615,6 +3663,17 @@
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -3690,6 +3749,17 @@
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -3951,6 +4021,17 @@
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -4026,6 +4107,17 @@
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -4101,6 +4193,17 @@
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -4176,6 +4279,17 @@
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -8255,6 +8369,17 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -8337,6 +8462,17 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -8419,6 +8555,17 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -8501,6 +8648,17 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -8583,6 +8741,17 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -8665,6 +8834,17 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "warning" : "warning",
     "description" : "description",
     "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 0
   } ]
 }</code></pre>
     <h3 class="field-label">Example data</h3>
@@ -9027,7 +9207,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     <div class="model-description"></div>
     <div class="field-items">
       <div class="param">meta (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_meta">v0.0.39_meta</a></span>  </div>
-<div class="param">errors (optional)</div><div class="param-desc"><span class="param-type"><a href="#status">status</a></span>  </div>
+<div class="param">errors (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_error">array[v0.0.39_error]</a></span> Slurm errors </div>
 <div class="param">warnings (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_warning">array[v0.0.39_warning]</a></span> Slurm warnings </div>
     </div>  <!-- field-items -->
   </div>
@@ -9339,6 +9519,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
 <div class="param">exclusive (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
         
+<div class="param">oversubscribe (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span>  </div>
 <div class="param">site_factor (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
 <div class="param">spank_environment (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">distribution (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
@@ -9515,6 +9696,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
 <div class="param">exclusive (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
         
+<div class="param">oversubscribe (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span>  </div>
 <div class="param">show_flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
         
