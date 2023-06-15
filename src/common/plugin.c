@@ -293,13 +293,12 @@ plugin_load_and_link(const char *type_name, int n_syms,
  * crash if the library handle is not valid.
  */
 
-void
-plugin_unload( plugin_handle_t plug )
+void plugin_unload(plugin_handle_t plug)
 {
 	void (*fini)(void);
 
-	if ( plug != PLUGIN_INVALID_HANDLE ) {
-		if ( ( fini = dlsym( plug, "fini" ) ) != NULL ) {
+	if (plug != PLUGIN_INVALID_HANDLE) {
+		if ((fini = dlsym(plug, "fini")) != NULL) {
 			(*fini)();
 		}
 #ifndef MEMORY_LEAK_DEBUG
@@ -312,46 +311,40 @@ plugin_unload( plugin_handle_t plug )
  * to display the stack where the eventual leaks may be.
  * It is always best to test with and without --enable-memory-leak-debug.
 \**************************************************************************/
-		(void) dlclose( plug );
+		(void) dlclose(plug);
 #endif
 	}
 }
 
-
-void *
-plugin_get_sym( plugin_handle_t plug, const char *name )
+void *plugin_get_sym(plugin_handle_t plug, const char *name)
 {
-	if ( plug != PLUGIN_INVALID_HANDLE )
-		return dlsym( plug, name );
+	if (plug != PLUGIN_INVALID_HANDLE)
+		return dlsym(plug, name);
 	else
 		return NULL;
 }
 
-const char *
-plugin_get_name( plugin_handle_t plug )
+const char *plugin_get_name(plugin_handle_t plug)
 {
-	if ( plug != PLUGIN_INVALID_HANDLE )
+	if (plug != PLUGIN_INVALID_HANDLE)
 		return (const char *) dlsym(plug, "plugin_name");
 	else
 		return NULL;
 }
 
-int
-plugin_get_syms( plugin_handle_t plug,
-		 int n_syms,
-		 const char *names[],
-		 void *ptrs[] )
+int plugin_get_syms(plugin_handle_t plug, int n_syms, const char *names[],
+		    void *ptrs[] )
 {
 	int i, count;
 
 	count = 0;
-	for ( i = 0; i < n_syms; ++i ) {
-		ptrs[ i ] = dlsym( plug, names[ i ] );
-		if ( ptrs[ i ] )
+	for (i = 0; i < n_syms; ++i) {
+		ptrs[i] = dlsym(plug, names[i]);
+		if (ptrs[i])
 			++count;
 		else
 			debug3("Couldn't find sym '%s' in the plugin",
-			       names[ i ]);
+			       names[i]);
 	}
 
 	return count;
