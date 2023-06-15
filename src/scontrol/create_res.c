@@ -369,7 +369,6 @@ scontrol_update_res(int argc, char **argv)
 	ret = slurm_update_reservation(&resv_msg);
 	if (ret) {
 		exit_code = 1;
-		slurm_perror("Error updating the reservation");
 		ret = slurm_get_errno();
 	} else {
 		printf("Reservation updated.\n");
