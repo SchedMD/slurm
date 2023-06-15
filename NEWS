@@ -69,6 +69,9 @@ documents those changes that are of interest to users and administrators.
  -- Add route/partition plugin to route communications based on partition node
     lists.
 
+* Changes in Slurm 23.02.4
+==========================
+
 * Changes in Slurm 23.02.3
 ==========================
  -- Fix regression in 23.02.2 that ignored the partition DefCpuPerGPU setting
