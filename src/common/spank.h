@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _PLUGSTACK_H
-#define _PLUGSTACK_H
+#ifndef _COMMON_SPANK_H
+#define _COMMON_SPANK_H
 
 #include <config.h>
 
@@ -217,4 +217,4 @@ extern bool spank_option_isset(char *optname);
  */
 extern bool spank_option_get_next_set(char **plugin, char **name,
 				      char **value, void **state);
-#endif /* !_PLUGSTACK_H */
+#endif /* !_COMMON_SPANK_H */
