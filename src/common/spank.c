@@ -2412,6 +2412,35 @@ spank_err_t spank_job_control_unsetenv (spank_t spank, const char *var)
 	return (ESPANK_SUCCESS);
 }
 
+spank_err_t spank_prepend_task_argv(spank_t spank, int argc,
+				    const char *argv[])
+{
+	int new_argc, j = 0;
+	char **new_argv;
+
+	if (!spank || (spank->magic != SPANK_MAGIC) || !argv)
+		return ESPANK_BAD_ARG;
+
+	if (!spank->task || !spank->task->argv ||
+	    ((spank->phase != STEP_TASK_INIT_PRIV) &&
+	     (spank->phase != STEP_USER_TASK_INIT)))
+		return ESPANK_NOT_TASK;
+
+	new_argc = argc + spank->task->argc;
+	new_argv = xcalloc(new_argc + 1, sizeof(char *));
+
+	for (int i = 0; i < argc && argv[i]; i++)
+		new_argv[j++] = xstrdup(argv[i]);
+	for (int i = 0; i < spank->task->argc && spank->task->argv[i]; i++)
+		new_argv[j++] = spank->task->argv[i];
+	new_argv[j] = NULL;
+
+	spank->task->argc = new_argc;
+	spank->task->argv = new_argv;
+
+	return ESPANK_SUCCESS;
+}
+
 /*
  * spank_get_plugin_names
  * Get names of all spank plugins

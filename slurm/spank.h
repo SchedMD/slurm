@@ -397,6 +397,18 @@ spank_err_t spank_job_control_getenv (spank_t sp, const char *name,
 spank_err_t spank_job_control_unsetenv (spank_t sp, const char *name);
 
 /*
+ *  Prepend the argument vector "argv" of length "argc" to the
+ *  argument vector of the task to be spawned
+ *  This function can be invoked from the following functions to take effect:
+ *  slurm_spank_task_init_privileged, and slurm_spank_task_init.
+ *
+ *  Returns ESPANK_SUCCESS on success, o/w spank_err_t on failure:
+ *    ESPANK_BAD_ARG   = spank handle invalid or argv is NULL.
+ *    ESPANK_NOT_TASK  = called from outside a task context.
+ */
+spank_err_t spank_prepend_task_argv(spank_t spank, int argc, const char *argv[]);
+
+/*
  *  Slurm logging functions which are exported to plugins.
  */
 extern void slurm_info (const char *format, ...)

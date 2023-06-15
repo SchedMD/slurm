@@ -75,6 +75,7 @@ API CHANGES
     time string).
  -- "flags" argument was added to slurm_kill_job_step().
  -- Fixed typo on "initialized" for the description of ESLURM_PLUGIN_NOT_LOADED.
+ -- SPANK - added new spank_prepend_task_argv() function.
 
 SLURMRESTD CHANGES
 ==================

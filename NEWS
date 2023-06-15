@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove CgroupAutomount= option from cgroup.conf.
  -- Add route/partition plugin to route communications based on partition node
     lists.
+ -- SPANK - added new spank_prepend_task_argv() function.
 
 * Changes in Slurm 23.02.4
 ==========================
