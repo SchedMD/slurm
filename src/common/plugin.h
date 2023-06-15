@@ -96,16 +96,12 @@ const char *plugin_strerror(plugin_err_t err);
  *	plugin type.
  * type_len - the number of bytes available in plugin_type.  The type
  *	will be zero-terminated if space permits.
- * plugin_version - pointer to place to store the plugin version.  May
- *	be NULL to indicate that the caller is not interested in the
- *	plugin version.
  *
  * Returns a plugin_err_t.
  */
 extern plugin_err_t plugin_peek(const char *fq_path,
 				char *plugin_type,
-				const size_t type_len,
-				uint32_t *plugin_version);
+				const size_t type_len);
 
 
 /*

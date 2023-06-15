@@ -151,7 +151,7 @@ static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,
 }
 
 extern plugin_err_t plugin_peek(const char *fq_path, char *plugin_type,
-				const size_t type_len, uint32_t *plugin_version)
+				const size_t type_len)
 {
 	plugin_err_t rc;
 	plugin_handle_t plug;

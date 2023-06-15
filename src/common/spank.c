@@ -428,7 +428,7 @@ _spank_plugin_find (const char *path, const char *file)
 			xstrcatchar (fq_path, '/');
 		xstrcat (fq_path, file);
 
-		if (plugin_peek(fq_path, NULL, 0, NULL) == EPLUGIN_SUCCESS)
+		if (plugin_peek(fq_path, NULL, 0) == EPLUGIN_SUCCESS)
 			return (fq_path);
 
 		xfree (fq_path);
