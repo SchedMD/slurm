@@ -48,16 +48,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "src/common/env.h"
+#include "src/common/job_options.h"
+#include "src/common/optz.h"
 #include "src/common/plugin.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
-#include "src/common/xassert.h"
-#include "src/common/strlcpy.h"
 #include "src/common/read_config.h"
 #include "src/common/spank.h"
-#include "src/common/optz.h"
-#include "src/common/job_options.h"
-#include "src/common/env.h"
+#include "src/common/strlcpy.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
