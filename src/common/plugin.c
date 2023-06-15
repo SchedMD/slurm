@@ -50,13 +50,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "src/common/xmalloc.h"
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
-#include "src/common/strlcpy.h"
-#include "src/common/xstring.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/strlcpy.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
 #include "slurm/slurm_errno.h"
 
 strong_alias(plugin_get_syms,         slurm_plugin_get_syms);
