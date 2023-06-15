@@ -4151,6 +4151,37 @@ extern void validate_all_reservations(bool run_now)
 	}
 }
 
+static int _validate_job_resv(void *job, void *y)
+{
+	job_record_t *job_ptr = (job_record_t *)job;
+	int rc = SLURM_SUCCESS;
+
+	if (job_ptr->resv_name == NULL)
+		return 0;
+
+	if ((job_ptr->resv_ptr == NULL) ||
+	    (job_ptr->resv_ptr->magic != RESV_MAGIC))
+		rc = validate_job_resv(job_ptr);
+
+	if (!job_ptr->resv_ptr) {
+		error("%pJ linked to defunct reservation %s",
+		      job_ptr, job_ptr->resv_name);
+		job_ptr->resv_id = 0;
+		xfree(job_ptr->resv_name);
+	}
+
+	if (rc != SLURM_SUCCESS) {
+		error("%pJ linked to invalid reservation: %s, holding the job.",
+		      job_ptr, job_ptr->resv_name);
+		job_ptr->state_reason = WAIT_RESV_INVALID;
+		job_ptr->job_state |= JOB_RESV_DEL_HOLD;
+		xstrfmtcat(job_ptr->state_desc,
+			   "Reservation %s is invalid",
+			   job_ptr->resv_name);
+	}
+	return 0;
+}
+
 /*
  * Validate all reservation records, reset bitmaps, etc.
  * Purge any invalid reservation.
@@ -4159,7 +4190,6 @@ static void _validate_all_reservations(void)
 {
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
-	job_record_t *job_ptr;
 
 	/* Make sure we have node write locks. */
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
@@ -4184,36 +4214,7 @@ static void _validate_all_reservations(void)
 	list_iterator_destroy(iter);
 
 	/* Validate all job reservation pointers */
-	iter = list_iterator_create(job_list);
-	while ((job_ptr = list_next(iter))) {
-		int rc = SLURM_SUCCESS;
-
-		if (job_ptr->resv_name == NULL)
-			continue;
-
-		if ((job_ptr->resv_ptr == NULL) ||
-		    (job_ptr->resv_ptr->magic != RESV_MAGIC))
-			rc = validate_job_resv(job_ptr);
-
-		if (!job_ptr->resv_ptr) {
-			error("%pJ linked to defunct reservation %s",
-			       job_ptr, job_ptr->resv_name);
-			job_ptr->resv_id = 0;
-			xfree(job_ptr->resv_name);
-		}
-
-		if (rc != SLURM_SUCCESS) {
-			error("%pJ linked to invalid reservation: %s, holding the job.",
-			      job_ptr, job_ptr->resv_name);
-			job_ptr->state_reason = WAIT_RESV_INVALID;
-			job_ptr->job_state |= JOB_RESV_DEL_HOLD;
-			xstrfmtcat(job_ptr->state_desc,
-				   "Reservation %s is invalid",
-				   job_ptr->resv_name);
-		}
-	}
-	list_iterator_destroy(iter);
-
+	list_for_each(job_list, _validate_job_resv, NULL);
 }
 
 /*
