@@ -64,18 +64,6 @@ strong_alias(plugin_load_and_link,    slurm_plugin_load_and_link);
 strong_alias(plugin_strerror,         slurm_plugin_strerror);
 strong_alias(plugin_unload,           slurm_plugin_unload);
 
-/* dlerror() on AIX sometimes fails, revert to strerror() as needed */
-static char *_dlerror(void)
-{
-	int error_code = errno;
-	char *rc = dlerror();
-
-	if ((rc == NULL) || (rc[0] == '\0'))
-		rc = strerror(error_code);
-
-	return rc;
-}
-
 const char * plugin_strerror(plugin_err_t e)
 {
 	switch (e) {
@@ -108,13 +96,13 @@ static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,
 
 	if (!(name = dlsym(plug, "plugin_name"))) {
 		verbose("%s: %s is not a Slurm plugin: %s",
-			caller, fq_path, _dlerror());
+			caller, fq_path, dlerror());
 		return EPLUGIN_MISSING_NAME;
 	}
 
 	if (!(type = dlsym(plug, "plugin_type"))) {
 		verbose("%s: %s is not a Slurm plugin: %s",
-			caller, fq_path, _dlerror());
+			caller, fq_path, dlerror());
 		return EPLUGIN_MISSING_NAME;
 	}
 
@@ -125,7 +113,7 @@ static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,
 	version = dlsym(plug, "plugin_version");
 	if (!version) {
 		verbose("%s: plugin_version symbol not found in %s: %s",
-			caller, fq_path, _dlerror());
+			caller, fq_path, dlerror());
 		return EPLUGIN_MISSING_NAME;
 	}
 
@@ -157,7 +145,7 @@ extern plugin_err_t plugin_peek(const char *fq_path, char *plugin_type,
 	plugin_handle_t plug;
 
 	if (!(plug = dlopen(fq_path, RTLD_LAZY))) {
-		debug3("%s: dlopen(%s): %s", __func__, fq_path, _dlerror());
+		debug3("%s: dlopen(%s): %s", __func__, fq_path, dlerror());
 		return EPLUGIN_DLOPEN_FAILED;
 	}
 
@@ -188,8 +176,7 @@ plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 	plug = dlopen(fq_path, RTLD_LAZY);
 	if (plug == NULL) {
 		error("plugin_load_from_file: dlopen(%s): %s",
-		      fq_path,
-		      _dlerror());
+		      fq_path, dlerror());
 		return EPLUGIN_DLOPEN_FAILED;
 	}
 
