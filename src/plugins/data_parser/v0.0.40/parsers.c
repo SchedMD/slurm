@@ -6348,7 +6348,6 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_FLAGS)[] = {
 	add_flag_bit(RESET_ACCRUE_TIME, "JOB_ACCRUE_TIME_RESET"),
 	add_flag_bit(CRON_JOB, "CRON_JOB"),
 	add_flag_bit(JOB_MEM_SET, "EXACT_MEMORY_REQUESTED"),
-	add_flag_bit(JOB_RESIZED, "JOB_RESIZED"),
 	add_flag_bit(USE_DEFAULT_ACCT, "USING_DEFAULT_ACCOUNT"),
 	add_flag_bit(USE_DEFAULT_PART, "USING_DEFAULT_PARTITION"),
 	add_flag_bit(USE_DEFAULT_QOS, "USING_DEFAULT_QOS"),

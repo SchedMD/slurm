@@ -732,8 +732,6 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 		data_set_string(data_list_append(bitflags), "JOB_WAS_RUNNING");
 	if (job->bitflags & JOB_MEM_SET)
 		data_set_string(data_list_append(bitflags), "JOB_MEM_SET");
-	if (job->bitflags & JOB_RESIZED)
-		data_set_string(data_list_append(bitflags), "JOB_RESIZED");
 	/* boards_per_node intentionally omitted */
 	data_set_string(data_key_set(jd, "burst_buffer"), job->burst_buffer);
 	data_set_string(data_key_set(jd, "burst_buffer_state"),
