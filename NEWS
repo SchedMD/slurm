@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - avoid dumping null in OpenAPI schema required fields.
  -- data_parser/v0.0.39 - avoid rejecting valid memory_per_node formatted as
     dictionary provided with a job description.
+ -- data_parser/v0.0.39 - avoid rejecting valid memory_per_cpu formatted as
+    dictionary provided with a job description.
 
 * Changes in Slurm 23.02.3
 ==========================
