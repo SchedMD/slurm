@@ -628,4 +628,13 @@ extern int slurm_hex_to_char(int v);
  */
 extern int slurm_char_to_hex(int c);
 
+/*
+ * Query assoc share info from slurmctld
+ * IN shares_req - which accounts and users to query
+ * IN/OUT shares_resp - populated result
+ * RET: SLURM_SUCCESS or error
+ */
+extern int slurm_associations_get_shares(shares_request_msg_t *shares_req,
+					 shares_response_msg_t **shares_resp);
+
 #endif
