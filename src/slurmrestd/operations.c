@@ -500,6 +500,8 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 			e = HTTP_STATUS_CODE_ERROR_BAD_REQUEST;
 		else if (rc == ESLURM_DATA_UNKNOWN_MIME_TYPE)
 			e = HTTP_STATUS_CODE_ERROR_UNSUPPORTED_MEDIA_TYPE;
+		else if (rc == ESLURM_INVALID_JOB_ID)
+			e = HTTP_STATUS_CODE_ERROR_NOT_FOUND;
 
 		rc = _operations_router_reject(args, body, e, write_mime);
 	} else {
