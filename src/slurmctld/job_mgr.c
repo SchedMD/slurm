@@ -15011,10 +15011,6 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 	 * it will not run again for the job.
 	 */
 	job_ptr->end_time_exp = job_ptr->end_time;
-
-	/* A job was resized with active job steps */
-	if (job_ptr->step_list && (list_count(job_ptr->step_list) > 0))
-		job_ptr->bit_flags |= JOB_RESIZED;
 }
 
 /*

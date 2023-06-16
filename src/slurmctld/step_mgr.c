@@ -2872,14 +2872,6 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			if (!(step_ptr->flags & SSF_OVERLAP_FORCE))
 				bit_and_not(job_resrcs_ptr->core_bitmap_used,
 					    step_ptr->core_bitmap_job);
-		} else if (job_ptr->bit_flags & JOB_RESIZED) {
-			/*
-			 * The step bitmaps should have been resized with
-			 * rebuild_step_bitmaps() to match the job bitmaps, so
-			 * this is an error.
-			 */
-			error("%s: %pS ending, unable to update job's core use information due to job resizing",
-			      __func__, step_ptr);
 		} else {
 			error("%s: %pS core_bitmap size mismatch (%d != %d)",
 			      __func__, step_ptr, job_core_size,
