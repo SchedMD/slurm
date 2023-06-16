@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.39 - avoid rejecting valid memory_per_cpu formatted as
     dictionary provided with a job description.
  -- slurmrestd - Return HTTP error code 404 when job query fails.
+ -- slurmrestd - Add return schema to error response to job and license query.
 
 * Changes in Slurm 23.02.3
 ==========================
