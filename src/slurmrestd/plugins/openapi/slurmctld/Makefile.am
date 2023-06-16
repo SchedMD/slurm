@@ -39,7 +39,8 @@ pkglib_LTLIBRARIES = openapi_slurmctld.la
 noinst_LTLIBRARIES = libopenapi_ref.la
 
 openapi_slurmctld_la_SOURCES = \
-	api.c api.h assoc_mgr.c diag.c jobs.c nodes.c partitions.c reservations.c structs.h
+	api.c api.h assoc_mgr.c control.c diag.c jobs.c nodes.c partitions.c \
+	reservations.c structs.h
 
 openapi_slurmctld_la_LDFLAGS = $(PLUGIN_FLAGS)
 openapi_slurmctld_la_LIBADD = openapi_ref.lo

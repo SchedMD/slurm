@@ -39,6 +39,46 @@
     }
   ],
   "paths": {
+    "/slurm/{data_parser}/reconfigure/": {
+      "get": {
+        "tags": [
+          "slurm"
+        ],
+        "summary": "request slurmctld reconfigure",
+        "responses": {
+          "200": {
+            "description": "reconfigure requested successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "reconfigure requested failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/slurm/{data_parser}/diag/": {
       "get": {
         "tags": [

@@ -119,6 +119,7 @@ extern void bind_handler(const char *str_path, openapi_ctxt_handler_t callback)
 extern void slurm_openapi_p_init(void)
 {
 	init_op_assoc_mgr();
+	init_op_control();
 	init_op_diag();
 	init_op_jobs();
 	init_op_nodes();
@@ -129,6 +130,7 @@ extern void slurm_openapi_p_init(void)
 extern void slurm_openapi_p_fini(void)
 {
 	destroy_op_assoc_mgr();
+	destroy_op_control();
 	destroy_op_diag();
 	destroy_op_jobs();
 	destroy_op_nodes();

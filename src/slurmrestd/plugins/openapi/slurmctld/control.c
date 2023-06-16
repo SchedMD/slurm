@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  api.h - Slurm REST API openapi operations handlers
+ *  control.c - slurmctld control operations handlers
  *****************************************************************************
- *  Copyright (C) 2019-2020 SchedMD LLC.
+ *  Copyright (C) 2023 SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
@@ -34,38 +34,37 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef OPENAPI_SLURMCTLD
-#define OPENAPI_SLURMCTLD
+#include "src/common/log.h"
+#include "src/common/read_config.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
-#include "src/common/data.h"
-#include "src/interfaces/data_parser.h"
-#include "src/slurmrestd/openapi.h"
+#include "src/slurmrestd/operations.h"
 
-typedef openapi_ctxt_t ctxt_t;
+#include "api.h"
 
-#define resp_error(ctxt, error_code, source, why, ...) \
-	openapi_resp_error(ctxt, error_code, source, why, ##__VA_ARGS__)
-#define resp_warn(ctxt, source, why, ...) \
-	openapi_resp_warn(ctxt, source, why, ##__VA_ARGS__)
+static int _op_handler_reconfigure(openapi_ctxt_t *ctxt)
+{
+	int rc = SLURM_SUCCESS;
 
-/* ------------ declarations for each operation --------------- */
+	if (ctxt->method != HTTP_REQUEST_GET)
+		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+	else if ((rc = slurm_reconfigure()))
+		resp_error(ctxt, rc, __func__, "slurm_reconfigure() failed");
 
-extern void init_op_assoc_mgr(void);
-extern void init_op_control(void);
-extern void init_op_diag(void);
-extern void init_op_jobs(void);
-extern void init_op_nodes(void);
-extern void init_op_partitions(void);
-extern void init_op_reservations(void);
-extern void destroy_op_assoc_mgr(void);
-extern void destroy_op_control(void);
-extern void destroy_op_diag(void);
-extern void destroy_op_jobs(void);
-extern void destroy_op_nodes(void);
-extern void destroy_op_partitions(void);
-extern void destroy_op_reservations(void);
+	return rc;
+}
 
-/* register handler against each parser */
-extern void bind_handler(const char *str_path, openapi_ctxt_handler_t callback);
+extern void init_op_control(void)
+{
+	bind_handler("/slurm/{data_parser}/reconfigure/",
+		     _op_handler_reconfigure);
+}
 
-#endif
+extern void destroy_op_control(void)
+{
+	unbind_operation_ctxt_handler(_op_handler_reconfigure);
+}

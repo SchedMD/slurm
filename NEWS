@@ -213,6 +213,8 @@ documents those changes that are of interest to users and administrators.
  -- Update slurmstepd processes with current SlurmctldHost settings, allowing
     for controller changes without draining all compute jobs.
  -- Add format_stderr to LogTimeFormat of slurm.conf and slurmdbd.conf.
+ -- slurmrestd - add `GET /slurm/v0.0.40/reconfigure` endpoint to allow
+    equivalent requests of `scontrol reconfigure`.
 
 * Changes in Slurm 23.02.6
 ==========================
