@@ -227,7 +227,7 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 				if (pchild->required) {
 					data_set_string(
 						data_list_append(required),
-						pchild->field_name);
+						pchild->key);
 				}
 
 				dchild = _resolve_parser_key(pchild, obj);

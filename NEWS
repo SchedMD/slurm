@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- scontrol - Reset std{err,in,out} when set to empty string.
  -- slurmrestd - mark environment as a required field for job submission
     descriptions.
+ -- slurmrestd - avoid dumping null in OpenAPI schema required fields.
 
 * Changes in Slurm 23.02.3
 ==========================
