@@ -178,11 +178,11 @@ extern void free_openapi_resp_warning(void *obj);
 
 /* Macros to declare each of the common response fields */
 #define OPENAPI_RESP_STRUCT_META_FIELD openapi_resp_meta_t *meta
-#define OPENAPI_RESP_STRUCT_META_FIELD_NAME "meta"
+#define OPENAPI_RESP_STRUCT_META_FIELD_NAME meta
 #define OPENAPI_RESP_STRUCT_ERRORS_FIELD list_t *errors
-#define OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME "errors"
+#define OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME errors
 #define OPENAPI_RESP_STRUCT_WARNINGS_FIELD list_t *warnings
-#define OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME "warnings"
+#define OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME warnings
 
 /* macro to declare a single entry OpenAPI response struct */
 typedef struct {

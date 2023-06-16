@@ -7699,11 +7699,11 @@ static const flag_bit_t PARSER_FLAG_ARRAY(FLAGS)[] = {
 };
 
 #define add_openapi_response_meta(rtype) \
-	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, OPENAPI_RESP_STRUCT_META_FIELD_NAME, "Slurm meta values")
+	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
-	add_parser(rtype, OPENAPI_ERRORS, false, errors, 0, OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME , "Query errors")
+	add_parser(rtype, OPENAPI_ERRORS, false, errors, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME), "Query errors")
 #define add_openapi_response_warnings(rtype) \
-	add_parser(rtype, OPENAPI_WARNINGS, false, warnings, 0, OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME , "Query warnings")
+	add_parser(rtype, OPENAPI_WARNINGS, false, warnings, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME), "Query warnings")
 
 /*
  * Generic response when there is only possiblity of warnings/errors

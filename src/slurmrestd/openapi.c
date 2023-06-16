@@ -1690,15 +1690,24 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 
 	/* need to populate meta, errors and warnings */
 
-	errors = data_key_set(ctxt.resp, OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME);
+	errors = data_key_set(ctxt.resp,
+		XSTRINGIFY(OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME));
 	warnings = data_key_set(ctxt.resp,
-				OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME);
-	meta = data_key_set(ctxt.resp, OPENAPI_RESP_STRUCT_META_FIELD_NAME);
+		XSTRINGIFY(OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME));
+	meta = data_key_set(ctxt.resp,
+		XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME));
 
 	if (data_get_type(meta) == DATA_TYPE_NULL) {
 		/* cast to remove const */
 		void *ptr = (void *) &query_meta;
 		DATA_DUMP(ctxt.parser, OPENAPI_META_PTR, ptr, meta);
+	}
+
+	if (data_get_type(errors) == DATA_TYPE_LIST) {
+		if (!data_get_list_length(errors))
+			data_set_null(errors);
+		else
+			xassert(list_is_empty(ctxt.errors));
 	}
 
 	if ((data_get_type(errors) == DATA_TYPE_NULL) &&
@@ -1714,6 +1723,14 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 		data_set_string(data_key_set(e, "error"),
 				slurm_strerror(ESLURM_NOT_SUPPORTED));
 	}
+
+	if (data_get_type(errors) == DATA_TYPE_LIST) {
+		if (!data_get_list_length(warnings))
+			data_set_null(warnings);
+		else
+			xassert(list_is_empty(ctxt.warnings));
+	}
+
 	if (data_get_type(warnings) == DATA_TYPE_NULL)
 		DATA_DUMP(ctxt.parser, OPENAPI_WARNINGS, ctxt.warnings,
 			  warnings);

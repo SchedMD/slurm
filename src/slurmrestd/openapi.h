@@ -184,8 +184,13 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 do {                                                                         \
 	openapi_resp_single_t openapi_response = {                           \
 		.response = src,                                             \
+		.OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME = context_ptr->errors,\
+		.OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME =                   \
+			context_ptr->warnings,                               \
 	};                                                                   \
 	DATA_DUMP(context_ptr->parser, mtype, openapi_response, ctxt->resp); \
+	list_flush(context_ptr->errors);                                     \
+	list_flush(context_ptr->warnings);                                   \
 } while (false)
 
 /*
