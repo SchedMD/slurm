@@ -1344,10 +1344,17 @@ extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg)
 
 		switch (cmd) {
 		case DATA_FOR_EACH_CONT:
+			if (i)
+				i = i->next;
 			break;
 		case DATA_FOR_EACH_DELETE:
-			_release_data_list_node(d->data.dict_u, i);
+		{
+			data_list_node_t *idel = i;
+			i = i->next;
+			_release_data_list_node(d->data.list_u, idel);
+			_check_data_list_magic(d->data.list_u);
 			break;
+		}
 		case DATA_FOR_EACH_FAIL:
 			count *= -1;
 			/* fall through */
@@ -1357,9 +1364,6 @@ extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg)
 		default:
 			fatal_abort("%s: invalid cmd", __func__);
 		}
-
-		if (i)
-			i = i->next;
 	}
 
 	return count;
