@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
     requesting a job with --ntasks-per-node.
  -- scontrol - Permit changes to StdErr and StdIn for pending jobs.
  -- scontrol - Reset std{err,in,out} when set to empty string.
+ -- slurmrestd - mark environment as a required field for job submission
+    descriptions.
 
 * Changes in Slurm 23.02.3
 ==========================
