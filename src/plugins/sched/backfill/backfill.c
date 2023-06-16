@@ -3097,7 +3097,8 @@ skip_start:
 			    (test_array_count <
 			     job_ptr->array_recs->task_cnt) &&
 			    (!job_ptr->array_recs->max_run_tasks ||
-			     ((job_ptr->array_recs->pend_run_tasks +
+			     ((MAX(job_ptr->array_recs->pend_run_tasks,
+				   test_array_count) +
 			       job_ptr->array_recs->tot_run_tasks) <
 			      job_ptr->array_recs->max_run_tasks)))
 				goto next_task;
