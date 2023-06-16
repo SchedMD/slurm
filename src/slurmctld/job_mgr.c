@@ -825,6 +825,14 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	}
 
 	if (qos_ptr) {
+		if ((qos_ptr->flags & QOS_FLAG_RELATIVE) &&
+		    (qos_ptr->flags & QOS_FLAG_PART_QOS)) {
+			log_var(log_lvl, "QOS %s is relative and used as a Partition QOS. This prohibits it from being used as a job's QOS",
+				qos_rec->name);
+			*error_code = ESLURM_INVALID_QOS;
+			return NULL;
+		}
+
 		if ((qos_ptr->flags & QOS_FLAG_REQ_RESV) &&
 		    (!resv_name || resv_name[0] == '\0')) {
 			log_var(log_lvl, "qos %s can only be used in a reservation",
