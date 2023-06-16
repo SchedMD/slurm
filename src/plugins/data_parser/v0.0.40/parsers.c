@@ -5452,6 +5452,214 @@ static int DUMP_FUNC(JOB_EXCLUSIVE)(const parser_t *const parser, void *obj,
 	return DUMP(JOB_EXCLUSIVE_FLAGS, *flag, dst, args);
 }
 
+static int _parse_job_rlimit(const parser_t *const parser, void *obj,
+			     data_t *src, args_t *args, data_t *parent_path,
+			     const char *name)
+{
+	int rc;
+	job_desc_msg_t *job = obj;
+	uint64_t limit = NO_VAL64;
+
+	if ((rc = PARSE(UINT64_NO_VAL, limit, src, parent_path, args))) {
+		/* error already logged */
+		return rc;
+	}
+
+	if (limit != NO_VAL64) {
+		if ((rc = setenvf(&job->environment, name, "%" PRIu64, limit)))
+			return rc;
+
+		job->env_size = envcount(job->environment);
+		return SLURM_SUCCESS;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _dump_job_rlimit(const parser_t *const parser, void *obj,
+			    data_t *dst, args_t *args, const char *name)
+{
+	job_desc_msg_t *job = obj;
+	uint64_t limit = NO_VAL64;
+	const char *str_limit = getenvp(job->environment, "SLURM_RLIMIT_CPU");
+	int rc = SLURM_SUCCESS;
+
+	if (str_limit) {
+		data_t *parent_path = data_set_list(data_new());
+		data_t *d = data_set_string(data_new(), str_limit);
+
+		/* convert env string value to integer */
+		rc = PARSE(UINT64_NO_VAL, limit, d, parent_path, args);
+
+		FREE_NULL_DATA(d);
+		FREE_NULL_DATA(parent_path);
+	}
+
+	if (rc)
+		return rc;
+
+	return DUMP(UINT64_NO_VAL, limit, dst, args);
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_RLIMIT_CPU)(const parser_t *const parser,
+					       void *obj, data_t *src,
+					       args_t *args,
+					       data_t *parent_path)
+{
+	return _parse_job_rlimit(parser, obj, src, args, parent_path,
+				 "SLURM_RLIMIT_CPU");
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_RLIMIT_CPU)(const parser_t *const parser,
+					      void *obj, data_t *dst,
+					      args_t *args)
+{
+	return _dump_job_rlimit(parser, obj, dst, args, "SLURM_RLIMIT_CPU");
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_RLIMIT_FSIZE)(const parser_t *const parser,
+						 void *obj, data_t *src,
+						 args_t *args,
+						 data_t *parent_path)
+{
+	return _parse_job_rlimit(parser, obj, src, args, parent_path,
+				 "SLURM_RLIMIT_FSIZE");
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_RLIMIT_FSIZE)(const parser_t *const parser,
+						void *obj, data_t *dst,
+						args_t *args)
+{
+	return _dump_job_rlimit(parser, obj, dst, args, "SLURM_RLIMIT_FSIZE");
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_RLIMIT_DATA)(const parser_t *const parser,
+						void *obj, data_t *src,
+						args_t *args,
+						data_t *parent_path)
+{
+	return _parse_job_rlimit(parser, obj, src, args, parent_path,
+				 "SLURM_RLIMIT_DATA");
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_RLIMIT_DATA)(const parser_t *const parser,
+					       void *obj, data_t *dst,
+					       args_t *args)
+{
+	return _dump_job_rlimit(parser, obj, dst, args, "SLURM_RLIMIT_DATA");
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_RLIMIT_STACK)(const parser_t *const parser,
+						 void *obj, data_t *src,
+						 args_t *args,
+						 data_t *parent_path)
+{
+	return _parse_job_rlimit(parser, obj, src, args, parent_path,
+				 "SLURM_RLIMIT_STACK");
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_RLIMIT_STACK)(const parser_t *const parser,
+						void *obj, data_t *dst,
+						args_t *args)
+{
+	return _dump_job_rlimit(parser, obj, dst, args, "SLURM_RLIMIT_STACK");
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_RLIMIT_CORE)(const parser_t *const parser,
+						void *obj, data_t *src,
+						args_t *args,
+						data_t *parent_path)
+{
+	return _parse_job_rlimit(parser, obj, src, args, parent_path,
+				 "SLURM_RLIMIT_CORE");
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_RLIMIT_CORE)(const parser_t *const parser,
+					       void *obj, data_t *dst,
+					       args_t *args)
+{
+	return _dump_job_rlimit(parser, obj, dst, args, "SLURM_RLIMIT_CORE");
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_RLIMIT_RSS)(const parser_t *const parser,
+					       void *obj, data_t *src,
+					       args_t *args,
+					       data_t *parent_path)
+{
+	return _parse_job_rlimit(parser, obj, src, args, parent_path,
+				 "SLURM_RLIMIT_RSS");
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_RLIMIT_RSS)(const parser_t *const parser,
+					      void *obj, data_t *dst,
+					      args_t *args)
+{
+	return _dump_job_rlimit(parser, obj, dst, args, "SLURM_RLIMIT_RSS");
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_RLIMIT_NPROC)(const parser_t *const parser,
+						 void *obj, data_t *src,
+						 args_t *args,
+						 data_t *parent_path)
+{
+	return _parse_job_rlimit(parser, obj, src, args, parent_path,
+				 "SLURM_RLIMIT_NPROC");
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_RLIMIT_NPROC)(const parser_t *const parser,
+						void *obj, data_t *dst,
+						args_t *args)
+{
+	return _dump_job_rlimit(parser, obj, dst, args, "SLURM_RLIMIT_NPROC");
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_RLIMIT_NOFILE)(const parser_t *const parser,
+						  void *obj, data_t *src,
+						  args_t *args,
+						  data_t *parent_path)
+{
+	return _parse_job_rlimit(parser, obj, src, args, parent_path,
+				 "SLURM_RLIMIT_NOFILE");
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_RLIMIT_NOFILE)(const parser_t *const parser,
+						 void *obj, data_t *dst,
+						 args_t *args)
+{
+	return _dump_job_rlimit(parser, obj, dst, args, "SLURM_RLIMIT_NOFILE");
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_RLIMIT_MEMLOCK)(const parser_t *const parser,
+						   void *obj, data_t *src,
+						   args_t *args,
+						   data_t *parent_path)
+{
+	return _parse_job_rlimit(parser, obj, src, args, parent_path,
+				 "SLURM_RLIMIT_MEMLOCK");
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_RLIMIT_MEMLOCK)(const parser_t *const parser,
+						  void *obj, data_t *dst,
+						  args_t *args)
+{
+	return _dump_job_rlimit(parser, obj, dst, args, "SLURM_RLIMIT_MEMLOCK");
+}
+
+static int PARSE_FUNC(JOB_DESC_MSG_RLIMIT_AS)(const parser_t *const parser,
+					      void *obj, data_t *src,
+					      args_t *args, data_t *parent_path)
+{
+	return _parse_job_rlimit(parser, obj, src, args, parent_path,
+				 "SLURM_RLIMIT_AS");
+}
+
+static int DUMP_FUNC(JOB_DESC_MSG_RLIMIT_AS)(const parser_t *const parser,
+					     void *obj, data_t *dst,
+					     args_t *args)
+{
+	return _dump_job_rlimit(parser, obj, dst, args, "SLURM_RLIMIT_AS");
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -6998,6 +7206,16 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(TIMESTAMP, end_time, "end_time", NULL),
 	add_cparse(JOB_DESC_MSG_ENV, "environment", NULL),
 	add_skip(environment),
+	add_cparse(JOB_DESC_MSG_RLIMIT_CPU, "rlimits/cpu", "Per-process CPU limit, in seconds."),
+	add_cparse(JOB_DESC_MSG_RLIMIT_FSIZE, "rlimits/fsize", "Largest file that can be created, in bytes."),
+	add_cparse(JOB_DESC_MSG_RLIMIT_DATA, "rlimits/data", "Maximum size of data segment, in bytes. "),
+	add_cparse(JOB_DESC_MSG_RLIMIT_STACK, "rlimits/stack", "Maximum size of stack segment, in bytes."),
+	add_cparse(JOB_DESC_MSG_RLIMIT_CORE, "rlimits/core", "Largest core file that can be created, in bytes."),
+	add_cparse(JOB_DESC_MSG_RLIMIT_RSS, "rlimits/rss", "Largest resident set size, in bytes. This affects swapping; processes that are exceeding their resident set size will be more likely to have physical memory taken from them."),
+	add_cparse(JOB_DESC_MSG_RLIMIT_NPROC, "rlimits/nproc", "Number of processes."),
+	add_cparse(JOB_DESC_MSG_RLIMIT_NOFILE, "rlimits/nofile", "Number of open files."),
+	add_cparse(JOB_DESC_MSG_RLIMIT_MEMLOCK, "rlimits/memlock", "Locked-in-memory address space"),
+	add_cparse(JOB_DESC_MSG_RLIMIT_AS, "rlimits/as", "Address space limit."),
 	add_skip(env_hash),
 	add_skip(env_size),
 	add_parse(CSV_STRING, exc_nodes, "excluded_nodes", NULL),
@@ -7922,6 +8140,16 @@ static const parser_t parsers[] = {
 	addpc(JOB_INFO_STDERR, slurm_job_info_t, NEED_NONE, STRING, NULL),
 	addpc(JOB_USER, slurmdb_job_rec_t, NEED_NONE, STRING, NULL),
 	addpcp(JOB_CONDITION_SUBMIT_TIME, TIMESTAMP_NO_VAL, slurmdb_job_cond_t, NEED_NONE, NULL),
+	addpcp(JOB_DESC_MSG_RLIMIT_CPU, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Per-process CPU limit, in seconds."),
+	addpcp(JOB_DESC_MSG_RLIMIT_FSIZE, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Largest file that can be created, in bytes."),
+	addpcp(JOB_DESC_MSG_RLIMIT_DATA, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Maximum size of data segment, in bytes. "),
+	addpcp(JOB_DESC_MSG_RLIMIT_STACK, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Maximum size of stack segment, in bytes."),
+	addpcp(JOB_DESC_MSG_RLIMIT_CORE, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Largest core file that can be created, in bytes."),
+	addpcp(JOB_DESC_MSG_RLIMIT_RSS, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Largest resident set size, in bytes. This affects swapping; processes that are exceeding their resident set size will be more likely to have physical memory taken from them."),
+	addpcp(JOB_DESC_MSG_RLIMIT_NPROC, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Number of processes."),
+	addpcp(JOB_DESC_MSG_RLIMIT_NOFILE, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Number of open files."),
+	addpcp(JOB_DESC_MSG_RLIMIT_MEMLOCK, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Locked-in-memory address space"),
+	addpcp(JOB_DESC_MSG_RLIMIT_AS, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Address space limit."),
 
 	/* NULL terminated model parsers */
 	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),

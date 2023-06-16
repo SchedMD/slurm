@@ -76,6 +76,7 @@ documents those changes that are of interest to users and administrators.
  -- Changed default value of PriorityType from priority/basic to
     priority/multifactor.
  -- torque/mpiexec - Propogate exit code from launched process.
+ -- slurmrestd - Add new rlimits fields for job submission.
 
 * Changes in Slurm 23.02.4
 ==========================

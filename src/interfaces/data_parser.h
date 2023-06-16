@@ -299,6 +299,16 @@ typedef enum {
 	DATA_PARSER_JOB_DESC_MSG_ENV, /* job_desc_msg_t->env* */
 	DATA_PARSER_JOB_DESC_MSG_NODES, /* job_desc_msg_t->min/max_cpus */
 	DATA_PARSER_JOB_DESC_MSG_SPANK_ENV, /* job_desc_msg_t->spank_env* */
+	DATA_PARSER_JOB_DESC_MSG_RLIMIT_CPU, /* job_desc_msg_t->environment */
+	DATA_PARSER_JOB_DESC_MSG_RLIMIT_FSIZE, /* job_desc_msg_t->environment */
+	DATA_PARSER_JOB_DESC_MSG_RLIMIT_DATA, /* job_desc_msg_t->environment */
+	DATA_PARSER_JOB_DESC_MSG_RLIMIT_STACK, /* job_desc_msg_t->environment */
+	DATA_PARSER_JOB_DESC_MSG_RLIMIT_CORE, /* job_desc_msg_t->environment */
+	DATA_PARSER_JOB_DESC_MSG_RLIMIT_RSS, /* job_desc_msg_t->environment */
+	DATA_PARSER_JOB_DESC_MSG_RLIMIT_NPROC, /* job_desc_msg_t->environment */
+	DATA_PARSER_JOB_DESC_MSG_RLIMIT_NOFILE, /* job_desc_msg_t->environment */
+	DATA_PARSER_JOB_DESC_MSG_RLIMIT_MEMLOCK, /* job_desc_msg_t->environment */
+	DATA_PARSER_JOB_DESC_MSG_RLIMIT_AS, /* job_desc_msg_t->environment */
 	DATA_PARSER_JOB_DESC_MSG_PTR, /* job_desc_msg_t* */
 	DATA_PARSER_JOB_DESC_MSG_LIST, /* list_t of job_desc_msg_t* */
 	DATA_PARSER_STRING_ARRAY, /* char** (NULL terminated) */
