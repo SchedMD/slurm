@@ -4761,7 +4761,11 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 	int redo_priority = 0;
 	List remove_list = NULL;
 	List update_list = NULL;
-	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK };
+	assoc_mgr_lock_t locks = {
+		.assoc = WRITE_LOCK,
+		.qos = WRITE_LOCK,
+		.tres = READ_LOCK,
+	};
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
@@ -4795,7 +4799,10 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				object->usage = slurmdb_create_qos_usage(
 					g_tres_count);
 
-			assoc_mgr_set_qos_tres_cnt(object);
+			if (object->flags & QOS_FLAG_RELATIVE)
+				assoc_mgr_set_qos_tres_relative_cnt(object, NULL);
+			else
+				assoc_mgr_set_qos_tres_cnt(object);
 
 			list_append(assoc_mgr_qos_list, object);
 /* 			char *tmp = get_qos_complete_str_bitstr( */
@@ -6802,6 +6809,7 @@ extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos)
 	if (slurmdbd_conf)
 		return;
 
+	xassert(verify_assoc_lock(QOS_LOCK, WRITE_LOCK));
 	xassert(assoc_mgr_tres_array);
 
 	relative = (qos->flags & QOS_FLAG_RELATIVE);
@@ -6845,6 +6853,9 @@ extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos)
 extern void assoc_mgr_set_qos_tres_relative_cnt(slurmdb_qos_rec_t *qos,
 						uint64_t *relative_tres_cnt)
 {
+	xassert(verify_assoc_lock(QOS_LOCK, WRITE_LOCK));
+	xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
+
 	if (!(qos->flags & QOS_FLAG_RELATIVE) ||
 	    (qos->flags & QOS_FLAG_RELATIVE_SET))
 		return;

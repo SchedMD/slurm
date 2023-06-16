@@ -1705,23 +1705,42 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 
 	if (part_desc->qos_char && part_desc->qos_char[0] == '\0') {
 		slurmdb_qos_rec_t *qos = part_ptr->qos_ptr;
-		info("%s: removing partition QOS %s from partition %s",
-		     __func__, part_ptr->qos_char, part_ptr->name);
 		xfree(part_ptr->qos_char);
 		part_ptr->qos_ptr = NULL;
 		if (qos) {
+			assoc_mgr_lock_t locks = {
+				.qos = WRITE_LOCK,
+				.tres = READ_LOCK,
+			};
+			assoc_mgr_lock(&locks);
+			info("%s: removing partition QOS '%s' from partition '%s'",
+			     __func__, qos->name, part_ptr->name);
 		        if (!list_find_first(part_list, _find_part_qos, qos))
 				qos->flags &= ~QOS_FLAG_PART_QOS;
+			/*
+			 * Reset relative QOS to the full system cnts
+			 */
+			if ((qos->flags & QOS_FLAG_RELATIVE) &&
+			    !(qos->flags & QOS_FLAG_PART_QOS)) {
+				qos->flags &= ~QOS_FLAG_RELATIVE_SET;
+				assoc_mgr_set_qos_tres_relative_cnt(qos, NULL);
+			}
+			assoc_mgr_unlock(&locks);
 		}
 	} else if (part_desc->qos_char) {
+		assoc_mgr_lock_t locks = {
+			.qos = WRITE_LOCK,
+			.tres = READ_LOCK,
+		};
 		slurmdb_qos_rec_t qos_rec, *backup_qos_ptr = part_ptr->qos_ptr;
 		slurmdb_qos_rec_t *qos = NULL;
 		part_record_t *qos_part_ptr = NULL;
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 		qos_rec.name = part_desc->qos_char;
+		assoc_mgr_lock(&locks);
 		if (assoc_mgr_fill_in_qos(
 			    acct_db_conn, &qos_rec, accounting_enforce,
-			    (slurmdb_qos_rec_t **)&qos, 0)
+			    (slurmdb_qos_rec_t **)&qos, true)
 		    != SLURM_SUCCESS) {
 			error("%s: invalid qos (%s) given",
 			      __func__, qos_rec.name);
@@ -1745,14 +1764,37 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 			part_ptr->qos_char = xstrdup(part_desc->qos_char);
 			part_ptr->qos_ptr = qos;
 			part_ptr->qos_ptr->flags |= QOS_FLAG_PART_QOS;
+			/*
+			 * Set a relative QOS' counts based on the partition.
+			 */
+			if (qos->flags & QOS_FLAG_RELATIVE) {
+				qos->flags &= ~QOS_FLAG_RELATIVE_SET;
+				assoc_mgr_set_qos_tres_relative_cnt(
+					qos, part_ptr->tres_cnt);
+			}
 
 			if (backup_qos_ptr) {
 				if (!list_find_first(part_list, _find_part_qos,
 						     backup_qos_ptr))
 					backup_qos_ptr->flags &=
 						~QOS_FLAG_PART_QOS;
+
+				/*
+				 * Reset relative QOS to the full system cnts
+				 */
+				if ((backup_qos_ptr->flags &
+				     QOS_FLAG_RELATIVE) &&
+				    !(backup_qos_ptr->flags &
+				      QOS_FLAG_PART_QOS)) {
+					backup_qos_ptr->flags &=
+						~QOS_FLAG_RELATIVE_SET;
+					assoc_mgr_set_qos_tres_relative_cnt(
+						backup_qos_ptr, NULL);
+				}
+
 			}
 		}
+		assoc_mgr_unlock(&locks);
 	}
 
 	if (part_desc->allow_alloc_nodes != NULL) {
