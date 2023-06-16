@@ -118,6 +118,24 @@
 #include "src/common/list.h"
 #include "src/common/plugrack.h"
 
+#define PRINTF_DATA_T "%s(0x%"PRIxPTR")"
+#define PRINTF_DATA_T_VAL(d) \
+	data_type_to_string(data_get_type(d)), ((uintptr_t) d)
+
+#define PRINTF_DATA_LIST_T "data-list(0x%"PRIxPTR")[%zu]"
+#define PRINTF_DATA_LIST_T_VAL(d) (uintptr_t) d, d->count
+#define PRINTF_DATA_LIST_NODE_T "data-list-node(0x%"PRIxPTR")[%s]="PRINTF_DATA_T
+#define PRINTF_DATA_LIST_NODE_T_VAL(d) \
+	(uintptr_t) d, d->key, PRINTF_DATA_T_VAL(d->data)
+
+/* Dict uses list currently but that can change */
+#define PRINTF_DATA_DICT_T PRINTF_DATA_LIST_T
+#define PRINTF_DATA_DICT_T_VAL(d) PRINTF_DATA_LIST_T_VAL(d)
+
+#define PRINTF_DATA_T_INDEX "%s(0x%"PRIxPTR")[%s]"
+#define PRINTF_DATA_T_INDEX_VAL(d, key) \
+	data_type_to_string(data_get_type(d)), ((uintptr_t) d), key
+
 /*
  * The possible types of data.
  *
