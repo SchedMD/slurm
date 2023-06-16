@@ -513,9 +513,9 @@ Allocated resources constraints enforcement using Linux Control Groups
 
 <H2>Prolog and Epilog</H2>
 <P>
-<B>Prolog/Epilog</B>: Fully qualified path that will be executed as
-root on every node of a user's job before the job's tasks
-will be initiated there and after that job has terminated.
+<B>Prolog/Epilog</B>: Path that will be executed as root on every
+node of a user's job before the job's tasks will be initiated there
+and after that job has terminated.
 These parameters are optional.
 <DL>
 <DT> <input type="text" name="prolog" value="" size=40> <B>Prolog</B>

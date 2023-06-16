@@ -1226,12 +1226,14 @@ AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold.
 
 .TP
 \fBEpilog\fR
-Fully qualified pathname of a script to execute as user root on every
-node when a user's job completes (e.g. "/usr/local/slurm/epilog"). A
-glob pattern (See \fBglob\fR (7)) may also be used to run more than
-one epilog script (e.g. "/etc/slurm/epilog.d/*").  When more than one epilog
-script is configured, they are executed in reverse order. The Epilog script
-or scripts may be used to purge files, disable user login, etc.
+Pathname of a script to execute as user root on every node when a user's job
+completes (e.g. "/usr/local/slurm/epilog"). If it is not an absolute path name
+(i.e. it does not start with a slash), it will be searched for in the same
+directory as the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also
+be used to run more than one epilog script (e.g. "/etc/slurm/epilog.d/*").
+When more than one epilog script is configured, they are executed in reverse
+order. The Epilog script or scripts may be used to purge files, disable user
+login, etc.
 By default there is no epilog.
 See \fBProlog and Epilog Scripts\fR for more information.
 .IP
@@ -3240,12 +3242,12 @@ Uses Process Group IDs.
 
 .TP
 \fBProlog\fR
-Fully qualified pathname of a program for the slurmd to execute
-whenever it is asked to run a job step from a new job allocation (e.g.
-"/usr/local/slurm/prolog"). A glob pattern (See \fBglob\fR (7)) may
-also be used to specify more than one program to run (e.g.
-"/etc/slurm/prolog.d/*"). When more than one prolog script is configured,
-they are executed in reverse order.
+Pathname of a program for the slurmd to execute whenever it is asked to run a
+job step from a new job allocation. If it is not an absolute path name (i.e. it
+does not start with a slash), it will be searched for in the same directory as
+the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also be used to
+specify more than one program to run (e.g. "/etc/slurm/prolog.d/*"). When more
+than one prolog script is configured, they are executed in reverse order.
 The slurmd executes the prolog before starting
 the first job step.  The prolog script or scripts may be used to purge files,
 enable user login, etc.  By default there is no prolog. Any configured script
@@ -4840,15 +4842,19 @@ subsequent registrations.
 .TP
 \fBenable_configless\fR
 Permit "configless" operation by the slurmd, slurmstepd, and user commands.
-When enabled the slurmd will be permitted to retrieve config files from the
-slurmctld, and on any 'scontrol reconfigure' command new configs will
-be automatically pushed out and applied to nodes that are running in this
-"configless" mode.
+When enabled the slurmd will be permitted to retrieve config files and
+\fBProlog\fR and \fBEpilog\fR scripts from the slurmctld, and on any 'scontrol
+reconfigure' command new configs and scripts will be automatically pushed out
+and applied to nodes that are running in this "configless" mode.
 A restart of slurmctld is required for changes to this parameter to take effect.
 See https://slurm.schedmd.com/configless_slurm.html for more details.
 
 \fBNOTE\fR: Included files with the \fBInclude\fR directive will only be pushed
 if the filename has no path separators and is located adjacent to slurm.conf.
+
+\fBNOTE\fR: \fBProlog\fR and \fBEpilog\fR scripts will only be pushed if the
+filenames have no path separators and are located adjacent to slurm.conf.
+Glob patterns (See \fBglob\fR (7)) are not supported.
 .IP
 
 .TP
