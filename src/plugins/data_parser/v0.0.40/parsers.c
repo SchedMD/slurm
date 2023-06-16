@@ -1635,61 +1635,6 @@ static int DUMP_FUNC(JOB_REASON)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-static int PARSE_FUNC(JOB_STATE)(const parser_t *const parser, void *obj,
-				 data_t *src, args_t *args, data_t *parent_path)
-{
-	int rc = SLURM_SUCCESS;
-	uint32_t state = NO_VAL, *dst = obj;
-	char *path = NULL;
-
-	switch (data_get_type(src)) {
-	case DATA_TYPE_STRING :
-		state = job_state_num(data_get_string(src));
-		break;
-	case DATA_TYPE_INT_64 :
-		state = data_get_int(src);
-		break;
-	default :
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_CONV_FAILED,
-			      set_source_path(&path, parent_path), __func__,
-			      "Unable to parse job state formatted as %s",
-			      data_type_to_string(data_get_type(src)));
-		goto cleanup;
-	}
-
-	if (state == NO_VAL) {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_CONV_FAILED,
-			      set_source_path(&path, parent_path), __func__,
-			      "Rejecting NO_VAL job state");
-	} else if ((state & JOB_STATE_BASE) >= JOB_END) {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_CONV_FAILED,
-			      set_source_path(&path, parent_path), __func__,
-			      "Invalid numeric job state: %u", state);
-	} else {
-		*dst = state;
-	}
-
-cleanup:
-	xfree(path);
-	return rc;
-}
-
-static int DUMP_FUNC(JOB_STATE)(const parser_t *const parser, void *obj,
-				data_t *dst, args_t *args)
-{
-	uint32_t *state = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
-	data_set_string(dst, job_state_string(*state));
-
-	return SLURM_SUCCESS;
-}
-
 static int PARSE_FUNC(JOB_STATE_ID_STRING)(const parser_t *const parser,
 					   void *obj, data_t *src, args_t *args,
 					   data_t *parent_path)
@@ -1698,7 +1643,9 @@ static int PARSE_FUNC(JOB_STATE_ID_STRING)(const parser_t *const parser,
 	char **dst = obj;
 	uint32_t state;
 
-	if ((rc = PARSE(JOB_STATE, state, src, parent_path, args)))
+	if (data_get_type(src) == DATA_TYPE_INT_64)
+		state = data_get_int(src);
+	else if ((rc = PARSE(JOB_STATE, state, src, parent_path, args)))
 		return rc;
 
 	xfree(*dst);
@@ -5959,7 +5906,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(STRING, script, "script", NULL),
 	add_skip(show_full),
 	add_parse(TIMESTAMP, start, "time/start", NULL),
-	add_parse(JOB_STATE, state, "state/current", NULL),
+	add_parse_bit_flag_array(slurmdb_job_rec_t, JOB_STATE, false, state, "state/current", NULL),
 	add_parse(JOB_REASON, state_reason_prev, "state/reason", NULL),
 	add_parse(STEP_LIST, steps, "steps", NULL),
 	add_parse(TIMESTAMP, submit, "time/submission", NULL),
@@ -6175,7 +6122,7 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(CPU_FREQ_FLAGS, req_cpufreq_gov, "CPU/governor", NULL),
 	add_parse(USER_ID, requid, "kill_request_user", NULL),
 	add_parse(TIMESTAMP_NO_VAL, start, "time/start", NULL),
-	add_parse(JOB_STATE, state, "state", NULL),
+	add_parse_bit_flag_array(slurmdb_step_rec_t, JOB_STATE, false, state, "state", NULL),
 	add_parse(UINT64, stats.act_cpufreq, "statistics/CPU/actual_frequency", NULL),
 	add_parse(UINT64_NO_VAL, stats.consumed_energy, "statistics/energy/consumed", NULL),
 	add_parse(SLURM_STEP_ID, step_id, "step/id", NULL),
@@ -6680,7 +6627,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(UINT32, job_id, "job_id", NULL),
 	add_parse(JOB_RES_PTR, job_resrcs, "job_resources", NULL),
 	add_parse(CSV_STRING, job_size_str, "job_size_str", NULL),
-	add_parse(JOB_STATE, job_state, "job_state", NULL),
+	add_parse_bit_flag_array(slurm_job_info_t, JOB_STATE, false, job_state, "job_state", NULL),
 	add_parse(TIMESTAMP_NO_VAL, last_sched_eval, "last_sched_evaluation", NULL),
 	add_parse(STRING, licenses, "licenses", NULL),
 	add_parse_bit_flag_array(slurm_job_info_t, JOB_MAIL_FLAGS, false, mail_type, "mail_type", NULL),
@@ -6821,7 +6768,7 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 	add_parse(UINT32, srun_pid, "srun/pid", NULL),
 	add_parse(TIMESTAMP_NO_VAL, start_time, "time/start", NULL),
 	add_skip(start_protocol_ver),
-	add_parse(JOB_STATE, state, "state", NULL),
+	add_parse_bit_flag_array(job_step_info_t, JOB_STATE, false, state, "state", NULL),
 	add_parse(SLURM_STEP_ID, step_id, "id", NULL),
 	add_parse(STRING, submit_line, "submit_line", NULL),
 	add_parse(TASK_DISTRIBUTION, task_dist, "task/distribution", NULL),
@@ -7698,6 +7645,48 @@ static const flag_bit_t PARSER_FLAG_ARRAY(FLAGS)[] = {
 	add_flag_bit(FLAG_COMPLEX_VALUES, "COMPLEX"),
 };
 
+#define add_flag(flag_value, mask, flag_string, hidden, desc)               \
+	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, XSTRINGIFY(flag_value),       \
+			   flag_value, mask, XSTRINGIFY(mask), flag_string, \
+			   hidden, desc)
+#define add_flag_eq(flag_value, mask, flag_string, hidden, desc)            \
+	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL, XSTRINGIFY(flag_value),     \
+			   flag_value, mask, XSTRINGIFY(mask), flag_string, \
+			   hidden, desc)
+static const flag_bit_t PARSER_FLAG_ARRAY(JOB_STATE)[] = {
+	add_flag_eq(JOB_PENDING, JOB_STATE_BASE, "PENDING", false, "queued waiting for initiation"),
+	add_flag_eq(JOB_RUNNING, JOB_STATE_BASE, "RUNNING", false, "allocated resources and executing"),
+	add_flag_eq(JOB_SUSPENDED, JOB_STATE_BASE, "SUSPENDED", false, "allocated resources, execution suspended"),
+	add_flag_eq(JOB_COMPLETE, JOB_STATE_BASE, "COMPLETED", false, "completed execution successfully"),
+	add_flag_eq(JOB_CANCELLED, JOB_STATE_BASE, "CANCELLED", false, "cancelled by user"),
+	add_flag_eq(JOB_FAILED, JOB_STATE_BASE, "FAILED", false, "completed execution unsuccessfully"),
+	add_flag_eq(JOB_TIMEOUT, JOB_STATE_BASE, "TIMEOUT", false, "terminated on reaching time limit"),
+	add_flag_eq(JOB_NODE_FAIL, JOB_STATE_BASE, "NODE_FAIL", false, "terminated on node failure"),
+	add_flag_eq(JOB_PREEMPTED, JOB_STATE_BASE, "PREEMPTED", false, "terminated due to preemption"),
+	add_flag_eq(JOB_BOOT_FAIL, JOB_STATE_BASE, "BOOT_FAIL", false, "terminated due to node boot failure"),
+	add_flag_eq(JOB_DEADLINE, JOB_STATE_BASE, "DEADLINE", false, "terminated on deadline"),
+	add_flag_eq(JOB_OOM, JOB_STATE_BASE, "OUT_OF_MEMORY", false, "experienced out of memory error"),
+	add_flag_eq(JOB_END, JOB_STATE_BASE, "invalid-placeholder", true, NULL),
+	add_flag(JOB_LAUNCH_FAILED, JOB_STATE_FLAGS, "LAUNCH_FAILED", false, "job launch failed"),
+	add_flag(JOB_UPDATE_DB, JOB_STATE_FLAGS, "UPDATE_DB", false, "Send job start to database again"),
+	add_flag(JOB_REQUEUE, JOB_STATE_FLAGS, "REQUEUED", false, "Requeue job in completing state"),
+	add_flag(JOB_REQUEUE_HOLD, JOB_STATE_FLAGS, "REQUEUE_HOLD", false, "Requeue any job in hold"),
+	add_flag(JOB_SPECIAL_EXIT, JOB_STATE_FLAGS, "SPECIAL_EXIT", false, "Requeue an exit job in hold"),
+	add_flag(JOB_RESIZING, JOB_STATE_FLAGS, "RESIZING", false, "Size of job about to change, flag set before calling accounting functions immediately before job changes size"),
+	add_flag(JOB_CONFIGURING, JOB_STATE_FLAGS, "CONFIGURING", false, "Allocated nodes booting"),
+	add_flag(JOB_COMPLETING, JOB_STATE_FLAGS, "COMPLETING", false, "Waiting for epilog completion"),
+	add_flag(JOB_STOPPED, JOB_STATE_FLAGS, "STOPPED", false, "Job is stopped state (holding resources, but sent SIGSTOP)"),
+	add_flag(JOB_RECONFIG_FAIL, JOB_STATE_FLAGS, "RECONFIG_FAIL", false, "Node configuration for job failed, not job state, just job requeue flag"),
+	add_flag(JOB_POWER_UP_NODE, JOB_STATE_FLAGS, "POWER_UP_NODE", false, "Allocated powered down nodes, waiting for reboot"),
+	add_flag(JOB_REVOKED, JOB_STATE_FLAGS, "REVOKED", false, "Sibling job revoked"),
+	add_flag(JOB_REQUEUE_FED, JOB_STATE_FLAGS, "REQUEUE_FED", false, "Job being requeued by federation"),
+	add_flag(JOB_RESV_DEL_HOLD, JOB_STATE_FLAGS, "RESV_DEL_HOLD", false, "Job is being held"),
+	add_flag(JOB_SIGNALING, JOB_STATE_FLAGS, "SIGNALING", false, "Outgoing signal is pending"),
+	add_flag(JOB_STAGE_OUT, JOB_STATE_FLAGS, "STAGE_OUT", false, "Staging out data (burst buffer)"),
+};
+#undef add_flag
+#undef add_flag_eq
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8061,7 +8050,6 @@ static const parser_t parsers[] = {
 	addpss(WCKEY_TAG, char *, NEED_NONE, OBJECT, NULL, NULL, NULL),
 	addps(GROUP_ID, gid_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(JOB_REASON, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
-	addps(JOB_STATE, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(USER_ID, uid_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsp(TRES_STR, TRES_LIST, char *, NEED_TRES, NULL),
 	addpsa(CSV_STRING, STRING, char *, NEED_NONE, NULL),
@@ -8313,6 +8301,7 @@ static const parser_t parsers[] = {
 	addfa(JOB_CONDITION_DB_FLAGS, uint32_t),
 	addfa(CLUSTER_CLASSIFICATION, uint16_t), /* slurmdb_classification_type_t */
 	addfa(FLAGS, data_parser_flags_t),
+	addfa(JOB_STATE, uint32_t), /* enum job_states */
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, NEED_QOS),

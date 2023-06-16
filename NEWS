@@ -77,6 +77,8 @@ documents those changes that are of interest to users and administrators.
     priority/multifactor.
  -- torque/mpiexec - Propogate exit code from launched process.
  -- slurmrestd - Add new rlimits fields for job submission.
+ -- data_parser/v0.0.40 - convert job state field to flag array to provide
+    enumeration of values.
 
 * Changes in Slurm 23.02.4
 ==========================
