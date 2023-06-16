@@ -4800,6 +4800,12 @@ static int _feature_string2list(char *features, char *debug_str,
 			break;
 		} else if (feature == NULL) {
 			feature = &tmp_requested[i];
+		} else if (i && (tmp_requested[i - 1] == '\0')) {
+			/* ')' and ']' should be followed by a token. */
+			verbose("%s constraint has an unexpected character: %s",
+				debug_str, features);
+			rc = ESLURM_INVALID_FEATURE;
+			goto fini;
 		}
 	}
 
