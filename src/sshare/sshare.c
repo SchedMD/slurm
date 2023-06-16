@@ -40,6 +40,8 @@
 #include <grp.h>
 
 #include "src/common/proc_args.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
 #include "src/interfaces/priority.h"
 #include "src/sshare/sshare.h"
@@ -48,8 +50,6 @@
 #define OPT_LONG_USAGE 0x101
 #define OPT_LONG_AUTOCOMP 0x102
 
-static int      _get_info(shares_request_msg_t *shares_req,
-			  shares_response_msg_t **shares_resp);
 static int _addto_name_char_list(list_t *char_list, char *names, bool gid);
 static int 	_single_cluster(shares_request_msg_t *req_msg);
 static int 	_multi_cluster(shares_request_msg_t *req_msg);
@@ -255,7 +255,7 @@ static int _single_cluster(shares_request_msg_t *req_msg)
 	int rc = SLURM_SUCCESS;
 	shares_response_msg_t *resp_msg = NULL;
 
-	rc = _get_info(req_msg, &resp_msg);
+	rc = slurm_associations_get_shares(req_msg, &resp_msg);
 	if (rc) {
 		slurm_perror("Couldn't get shares from controller");
 		return rc;
@@ -287,42 +287,6 @@ static int _multi_cluster(shares_request_msg_t *req_msg)
 	list_iterator_destroy(itr);
 
 	return rc;
-}
-
-static int _get_info(shares_request_msg_t *shares_req,
-		     shares_response_msg_t **shares_resp)
-{
-	int rc;
-        slurm_msg_t req_msg;
-        slurm_msg_t resp_msg;
-
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
-
-        req_msg.msg_type = REQUEST_SHARE_INFO;
-        req_msg.data     = shares_req;
-
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
-					   working_cluster_rec) < 0)
-		return SLURM_ERROR;
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_SHARE_INFO:
-		*shares_resp = (shares_response_msg_t *) resp_msg.data;
-		break;
-	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);
-		if (rc)
-			slurm_seterrno_ret(rc);
-		*shares_resp = NULL;
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
-
-	return SLURM_SUCCESS;
 }
 
 /* returns number of objects added to list */
