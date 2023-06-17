@@ -51,6 +51,7 @@
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
@@ -84,6 +85,7 @@
 #define MAGIC_FOREACH_STRING_ARRAY 0xaea1be2b
 #define MAGIC_FOREACH_HOSTLIST 0xae71b92b
 #define MAGIC_LIST_PER_TRES_TYPE_NCT 0xb1d8acd2
+#define MAGIC_FOREACH_DUMP_ASSOC_SHARES 0xaccc222b
 
 #define PARSER_ARRAY(type) _parser_array_##type
 #define PARSER_FLAG_ARRAY(type) _parser_flag_array_##type
@@ -195,6 +197,38 @@ typedef struct {
 	uint32_t return_code;
 	uint16_t signal;
 } proc_exit_code_verbose_t;
+
+typedef struct {
+	char *name;
+	long double value;
+} SHARES_FLOAT128_TRES_t;
+
+typedef struct {
+	char *name;
+	uint64_t value;
+} SHARES_UINT64_TRES_t;
+
+typedef struct {
+	/*
+	 * Special wrapper since assoc_shares_object_t references objects
+	 * outside of its own structure.
+	 */
+	assoc_shares_object_t obj;
+	uint64_t tot_shares;
+	uint32_t tres_cnt;
+	char **tres_names;
+} assoc_shares_object_wrap_t;
+
+typedef struct {
+	int magic; /* MAGIC_FOREACH_DUMP_ASSOC_SHARES */
+	int rc;
+	args_t *args;
+	assoc_shares_object_wrap_t wrap;
+	data_t *dst;
+	uint64_t tot_shares;
+	uint32_t tres_cnt;
+	char **tres_names;
+} _foreach_dump_ASSOC_SHARES_OBJ_LIST_t;
 
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
@@ -5680,6 +5714,147 @@ static int DUMP_FUNC(JOB_DESC_MSG_RLIMIT_AS)(const parser_t *const parser,
 	return _dump_job_rlimit(parser, obj, dst, args, "SLURM_RLIMIT_AS");
 }
 
+PARSE_DISABLED(ASSOC_SHARES_OBJ_LIST)
+
+static int _foreach_dump_ASSOC_SHARES_OBJ_LIST(void *x, void *arg)
+{
+	assoc_shares_object_t *obj = x;
+	_foreach_dump_ASSOC_SHARES_OBJ_LIST_t *args = arg;
+	data_t *e = data_list_append(args->dst);
+	assoc_shares_object_wrap_t wrap = {
+		.obj = *obj,
+		.tot_shares = args->tot_shares,
+		.tres_cnt = args->tres_cnt,
+		.tres_names = args->tres_names,
+	};
+
+	xassert(args->magic == MAGIC_FOREACH_DUMP_ASSOC_SHARES);
+
+	if ((args->rc = DUMP(ASSOC_SHARES_OBJ_WRAP, wrap, e, args->args)))
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+static int DUMP_FUNC(ASSOC_SHARES_OBJ_LIST)(const parser_t *const parser,
+					    void *obj, data_t *dst,
+					    args_t *args)
+{
+	shares_response_msg_t *resp = obj;
+	_foreach_dump_ASSOC_SHARES_OBJ_LIST_t fargs = {
+		.magic = MAGIC_FOREACH_DUMP_ASSOC_SHARES,
+		.rc = SLURM_SUCCESS,
+		.args = args,
+		.tot_shares = resp->tot_shares,
+		.tres_cnt = resp->tres_cnt,
+		.tres_names = resp->tres_names,
+		.dst = dst,
+	};
+
+	data_set_list(dst);
+
+	if (list_for_each(resp->assoc_shares_list,
+			  _foreach_dump_ASSOC_SHARES_OBJ_LIST, &fargs) < 0)
+		xassert(fargs.rc);
+
+	return fargs.rc;
+}
+
+static int _dump_uint64_shares_tres_list(const assoc_shares_object_wrap_t *wrap,
+					 const uint64_t *array, data_t *dst,
+					 args_t *args)
+{
+	int rc;
+	list_t *list = list_create(xfree_ptr);
+
+	for (uint32_t i = 0; i < wrap->tres_cnt; i++) {
+		SHARES_UINT64_TRES_t *tres = xmalloc(sizeof(*tres));
+		list_append(list, tres);
+
+		tres->name = wrap->tres_names[i];
+		tres->value = array[i];
+	}
+
+	rc = DUMP(SHARES_UINT64_TRES_LIST, list, dst, args);
+
+	FREE_NULL_LIST(list);
+	return rc;
+}
+
+static int _dump_float128_shares_tres_list(
+	const assoc_shares_object_wrap_t *wrap,
+	const long double *array,
+	data_t *dst, args_t *args)
+{
+	int rc;
+	list_t *list = list_create(xfree_ptr);
+
+	for (uint32_t i = 0; i < wrap->tres_cnt; i++) {
+		SHARES_FLOAT128_TRES_t *tres = xmalloc(sizeof(*tres));
+		list_append(list, tres);
+
+		tres->name = wrap->tres_names[i];
+		tres->value = array[i];
+	}
+
+	rc = DUMP(SHARES_FLOAT128_TRES_LIST, list, dst, args);
+
+	FREE_NULL_LIST(list);
+	return rc;
+}
+
+PARSE_DISABLED(ASSOC_SHARES_OBJ_WRAP_TRES_RUN_SECS)
+
+static int DUMP_FUNC(ASSOC_SHARES_OBJ_WRAP_TRES_RUN_SECS)(
+	const parser_t *const parser,
+	void *obj,
+	data_t *dst,
+	args_t *args)
+{
+	assoc_shares_object_wrap_t *wrap = obj;
+	return _dump_uint64_shares_tres_list(wrap, wrap->obj.tres_run_secs,
+					     dst, args);
+}
+
+PARSE_DISABLED(ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS)
+
+static int DUMP_FUNC(ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS)(
+	const parser_t *const parser,
+	void *obj,
+	data_t *dst,
+	args_t *args)
+{
+	assoc_shares_object_wrap_t *wrap = obj;
+	return _dump_uint64_shares_tres_list(wrap, wrap->obj.tres_grp_mins,
+					     dst, args);
+}
+
+PARSE_DISABLED(ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW)
+
+static int DUMP_FUNC(ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW)(
+	const parser_t *const parser,
+	void *obj,
+	data_t *dst,
+	args_t *args)
+{
+	assoc_shares_object_wrap_t *wrap = obj;
+	return _dump_float128_shares_tres_list(wrap, wrap->obj.usage_tres_raw,
+					       dst, args);
+}
+
+static void *NEW_FUNC(SHARES_REQ_MSG)(void)
+{
+	shares_request_msg_t *req = xmalloc(sizeof(*req));
+	req->acct_list = list_create(xfree_ptr);
+	req->user_list = list_create(xfree_ptr);
+	return req;
+}
+
+static void FREE_FUNC(SHARES_REQ_MSG)(void *ptr)
+{
+	shares_request_msg_t *msg = ptr;
+	slurm_free_shares_request_msg(msg);
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -7874,6 +8049,80 @@ static const flag_bit_t PARSER_FLAG_ARRAY(STEP_NAMES)[] = {
 };
 #undef add_flag_eq
 
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(shares_response_msg_t, mtype, false, path, desc)
+#define add_parse(mtype, field, path, desc) \
+	add_parser(shares_response_msg_t, mtype, false, field, 0, path, desc)
+#define add_skip(field) add_parser_skip(shares_response_msg_t, field)
+static const parser_t PARSER_ARRAY(SHARES_RESP_MSG)[] = {
+	add_cparse(ASSOC_SHARES_OBJ_LIST, "shares", "Assocation shares"),
+	add_parse(UINT64, tot_shares, "total_shares", "Total number of shares"),
+	add_skip(tres_cnt),
+	add_skip(tres_names),
+};
+#undef add_parse
+#undef add_cparse
+#undef add_skip
+
+static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_SHARES_OBJ_WRAP_TYPE)[] = {
+	add_flag_equal(1, INFINITE16, "USER"),
+	add_flag_equal(0, INFINITE16, "ASSOCIATION"),
+};
+
+#define add_cparse(mtype, path, desc) \
+	add_complex_parser(assoc_shares_object_wrap_t, mtype, false, path, desc)
+#define add_parse(mtype, field, path, desc) \
+	add_parser(assoc_shares_object_wrap_t, mtype, false, field, 0, path, desc)
+#define add_skip(field) add_parser_skip(assoc_shares_object_wrap_t, field)
+static const parser_t PARSER_ARRAY(ASSOC_SHARES_OBJ_WRAP)[] = {
+	add_parse(UINT32, obj.assoc_id, "id", "assocation id"),
+	add_parse(STRING, obj.cluster, "cluster", "cluster name"),
+	add_parse(STRING, obj.name, "name", "share name"),
+	add_parse(STRING, obj.parent, "parent", "parent name"),
+	add_parse(STRING, obj.partition, "partition", "partition name"),
+	add_parse(FLOAT64_NO_VAL, obj.shares_norm, "shares_normalized", "normalized shares"),
+	add_parse(UINT32_NO_VAL, obj.shares_raw, "shares", "number of shares allocated"),
+	add_cparse(ASSOC_SHARES_OBJ_WRAP_TRES_RUN_SECS, "tres/run_seconds", "currently running tres-secs = grp_used_tres_run_secs"),
+	add_cparse(ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS, "tres/group_minutes", "tres-minute limit"),
+	add_parse(FLOAT64, obj.usage_efctv, "effective_usage", "effective, normalized usage"),
+	add_parse(FLOAT64_NO_VAL, obj.usage_norm, "usage_normalized", "normalized usage"),
+	add_parse(UINT64, obj.usage_raw, "usage", "measure of tresbillableunits usage"),
+	add_cparse(ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW, "tres/usage", "measure of each tres usage"),
+	add_parse(FLOAT64, obj.fs_factor, "fairshare/factor", "fairshare factor"),
+	add_parse(FLOAT64, obj.level_fs, "fairshare/level", "fairshare factor at this level. stored on an assoc as a long double, but that is not needed for display in sshare"),
+	add_parse_bit_flag_array(assoc_shares_object_wrap_t, ASSOC_SHARES_OBJ_WRAP_TYPE, false, obj.user, "type", "user or account association"),
+	add_skip(tot_shares),
+	add_skip(tres_cnt),
+	add_skip(tres_names),
+};
+#undef add_parse
+#undef add_cparse
+#undef add_skip
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(SHARES_UINT64_TRES_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(SHARES_UINT64_TRES)[] = {
+	add_parse(STRING, name, "name", "TRES name"),
+	add_parse(UINT64_NO_VAL, value, "value", "TRES value"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(SHARES_FLOAT128_TRES_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(SHARES_FLOAT128_TRES)[] = {
+	add_parse(STRING, name, "name", "TRES name"),
+	add_parse(FLOAT128, value, "value", "TRES value"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(shares_request_msg_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(SHARES_REQ_MSG)[] = {
+	add_parse(CSV_STRING_LIST, acct_list, "accounts", "Accounts to query"),
+	add_parse(CSV_STRING_LIST, user_list, "users", "Users to query"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -7923,6 +8172,7 @@ add_openapi_response_single(OPENAPI_USERS_RESP, USER_LIST, "users", "users");
 add_openapi_response_single(OPENAPI_USERS_REMOVED_RESP, STRING_LIST, "removed_users", "removed_users");
 add_openapi_response_single(OPENAPI_WCKEY_RESP, WCKEY_LIST, "wckeys", "wckeys");
 add_openapi_response_single(OPENAPI_WCKEY_REMOVED_RESP, STRING_LIST, "deleted_wckeys", "deleted wckeys");
+add_openapi_response_single(OPENAPI_SHARES_RESP, SHARES_RESP_MSG_PTR, "shares", "fairshare info");
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_post_response_t, mtype, false, field, 0, path, desc)
@@ -8327,6 +8577,10 @@ static const parser_t parsers[] = {
 	addpcp(JOB_DESC_MSG_RLIMIT_NOFILE, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Number of open files."),
 	addpcp(JOB_DESC_MSG_RLIMIT_MEMLOCK, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Locked-in-memory address space"),
 	addpcp(JOB_DESC_MSG_RLIMIT_AS, UINT64_NO_VAL, job_desc_msg_t, NEED_NONE, "Address space limit."),
+	addpca(ASSOC_SHARES_OBJ_LIST, ASSOC_SHARES_OBJ_WRAP, shares_response_msg_t, NEED_NONE, NULL),
+	addpcp(ASSOC_SHARES_OBJ_WRAP_TRES_RUN_SECS, SHARES_UINT64_TRES_LIST, assoc_shares_object_wrap_t, NEED_NONE, NULL),
+	addpcp(ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS, SHARES_UINT64_TRES_LIST, assoc_shares_object_wrap_t, NEED_NONE, NULL),
+	addpcp(ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW, SHARES_FLOAT128_TRES_LIST, assoc_shares_object_wrap_t, NEED_NONE, NULL),
 
 	/* NULL terminated model parsers */
 	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),
@@ -8366,6 +8620,9 @@ static const parser_t parsers[] = {
 	addpp(CLUSTER_CONDITION_PTR, slurmdb_cluster_cond_t *, CLUSTER_CONDITION),
 	addpp(OPENAPI_SLURMDBD_CONFIG_RESP_PTR, openapi_resp_slurmdbd_config_t *, OPENAPI_SLURMDBD_CONFIG_RESP),
 	addpp(SLURM_STEP_ID_STRING_PTR, slurm_step_id_t *, SLURM_STEP_ID_STRING),
+	addpp(ASSOC_SHARES_OBJ_WRAP_PTR, assoc_shares_object_t *, ASSOC_SHARES_OBJ_WRAP),
+	addpp(SHARES_REQ_MSG_PTR, shares_request_msg_t *, SHARES_REQ_MSG),
+	addpp(SHARES_RESP_MSG_PTR, shares_response_msg_t *, SHARES_RESP_MSG),
 
 	/* Pointer model parsers allowing NULL */
 	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),
@@ -8438,6 +8695,11 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_RESERVATION_QUERY, openapi_reservation_query_t, NULL, NULL),
 	addpa(PROCESS_EXIT_CODE_VERBOSE, proc_exit_code_verbose_t, NULL, NULL),
 	addpa(SLURM_STEP_ID, slurm_step_id_t, NULL, NULL),
+	addpa(SHARES_REQ_MSG, shares_request_msg_t, NEW_FUNC(SHARES_REQ_MSG), FREE_FUNC(SHARES_REQ_MSG)),
+	addpa(SHARES_RESP_MSG, shares_response_msg_t, NULL, NULL),
+	addpa(ASSOC_SHARES_OBJ_WRAP, assoc_shares_object_wrap_t, NULL, NULL),
+	addpa(SHARES_UINT64_TRES, SHARES_UINT64_TRES_t, NULL, NULL),
+	addpa(SHARES_FLOAT128_TRES, SHARES_FLOAT128_TRES_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -8467,6 +8729,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_USERS_REMOVED_RESP),
 	addoar(OPENAPI_WCKEY_RESP),
 	addoar(OPENAPI_WCKEY_REMOVED_RESP),
+	addoar(OPENAPI_SHARES_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
@@ -8501,6 +8764,7 @@ static const parser_t parsers[] = {
 	addfa(JOB_STATE, uint32_t), /* enum job_states */
 	addfa(PROCESS_EXIT_CODE_STATUS, uint32_t),
 	addfa(STEP_NAMES, uint32_t),
+	addfa(ASSOC_SHARES_OBJ_WRAP_TYPE, uint16_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, NEED_QOS),
@@ -8531,6 +8795,8 @@ static const parser_t parsers[] = {
 	addpl(GROUP_ID_STRING_LIST, GROUP_ID_STRING, NEED_NONE),
 	addpl(USER_ID_STRING_LIST, USER_ID_STRING, NEED_NONE),
 	addpl(JOB_STATE_ID_STRING_LIST, JOB_STATE_ID_STRING, NEED_NONE),
+	addpl(SHARES_UINT64_TRES_LIST, SHARES_UINT64_TRES, NEED_NONE),
+	addpl(SHARES_FLOAT128_TRES_LIST, SHARES_FLOAT128_TRES, NEED_NONE),
 };
 #undef addpl
 #undef addps

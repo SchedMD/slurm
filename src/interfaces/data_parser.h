@@ -352,6 +352,22 @@ typedef enum {
 	DATA_PARSER_PROCESS_EXIT_CODE_VERBOSE, /* proc_exit_code_verbose_t */
 	DATA_PARSER_PROCESS_EXIT_CODE_STATUS, /* proc_exit_code_status_t */
 	DATA_PARSER_PROCESS_EXIT_CODE, /* uint32_t */
+	DATA_PARSER_SHARES_REQ_MSG, /* shares_request_msg_t */
+	DATA_PARSER_SHARES_REQ_MSG_PTR, /* shares_request_msg_t* */
+	DATA_PARSER_SHARES_RESP_MSG, /* shares_response_msg_t */
+	DATA_PARSER_SHARES_RESP_MSG_PTR, /* shares_response_msg_t* */
+	DATA_PARSER_OPENAPI_SHARES_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_SHARES_UINT64_TRES, /* SHARES_UINT64_TRES_t */
+	DATA_PARSER_SHARES_UINT64_TRES_LIST, /* list_t of SHARES_UINT64_TRES_t */
+	DATA_PARSER_SHARES_FLOAT128_TRES, /* SHARES_FLOAT128_TRES_t */
+	DATA_PARSER_SHARES_FLOAT128_TRES_LIST, /* list_t of SHARES_FLOAT128_TRES_t */
+	DATA_PARSER_ASSOC_SHARES_OBJ_LIST, /* list of assoc_shares_object_t* to convert to assoc_shares_object_wrap_t */
+	DATA_PARSER_ASSOC_SHARES_OBJ_WRAP, /* assoc_shares_object_wrap_t to wrap assoc_shares_object_t */
+	DATA_PARSER_ASSOC_SHARES_OBJ_WRAP_TRES_RUN_SECS, /* assoc_shares_object_wrap_t->tres_cnt&obj->tres_run_secs */
+	DATA_PARSER_ASSOC_SHARES_OBJ_WRAP_TRES_GRP_MINS, /* assoc_shares_object_wrap_t->tres_cnt&obj->tres_grp_mins */
+	DATA_PARSER_ASSOC_SHARES_OBJ_WRAP_TRES_USAGE_RAW, /* assoc_shares_object_wrap_t->tres_cnt&obj->usage_tres_raw */
+	DATA_PARSER_ASSOC_SHARES_OBJ_WRAP_TYPE, /* assoc_shares_object_wrap_t.obj->user */
+	DATA_PARSER_ASSOC_SHARES_OBJ_WRAP_PTR, /* assoc_shares_object_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
