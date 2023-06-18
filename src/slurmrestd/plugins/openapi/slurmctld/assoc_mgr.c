@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  api.h - Slurm REST API openapi operations handlers
+ *  assoc_mgr.c - assoc_mgr operations handlers
  *****************************************************************************
- *  Copyright (C) 2019-2020 SchedMD LLC.
+ *  Copyright (C) 2023 SchedMD LLC.
  *  Written by Nathan Rini <nate@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
@@ -34,36 +34,67 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef OPENAPI_SLURMCTLD
-#define OPENAPI_SLURMCTLD
+#include "src/common/env.h"
+#include "src/common/list.h"
+#include "src/common/log.h"
+#include "src/common/parse_time.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
-#include "src/common/data.h"
-#include "src/interfaces/data_parser.h"
-#include "src/slurmrestd/openapi.h"
+#include "src/interfaces/serializer.h"
 
-typedef openapi_ctxt_t ctxt_t;
+#include "src/slurmrestd/operations.h"
 
-#define resp_error(ctxt, error_code, source, why, ...) \
-	openapi_resp_error(ctxt, error_code, source, why, ##__VA_ARGS__)
-#define resp_warn(ctxt, source, why, ...) \
-	openapi_resp_warn(ctxt, source, why, ##__VA_ARGS__)
+#include "api.h"
+#include "structs.h"
 
-/* ------------ declarations for each operation --------------- */
+static void _dump_shares(openapi_ctxt_t *ctxt)
+{
+	int rc;
 
-extern void init_op_assoc_mgr(void);
-extern void init_op_diag(void);
-extern void init_op_jobs(void);
-extern void init_op_nodes(void);
-extern void init_op_partitions(void);
-extern void init_op_reservations(void);
-extern void destroy_op_assoc_mgr(void);
-extern void destroy_op_diag(void);
-extern void destroy_op_jobs(void);
-extern void destroy_op_nodes(void);
-extern void destroy_op_partitions(void);
-extern void destroy_op_reservations(void);
+	shares_request_msg_t *req = NULL;
+	shares_response_msg_t *resp = NULL;
 
-/* register handler against each parser */
-extern void bind_handler(const char *str_path, openapi_ctxt_handler_t callback);
+	if (DATA_PARSE(ctxt->parser, SHARES_REQ_MSG_PTR, req, ctxt->parameters,
+		       ctxt->parent_path)) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Rejecting request. Failure parsing parameters.");
+		return;
+	} else if ((rc = slurm_associations_get_shares(req, &resp))) {
+		resp_error(ctxt, rc, __func__,
+			   "slurm_associations_get_shares() failed: %s",
+			   get_http_method_string(ctxt->method));
+	} else {
+		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_SHARES_RESP, resp, ctxt);
+	}
 
-#endif
+	slurm_free_shares_request_msg(req);
+	slurm_free_shares_response_msg(resp);
+}
+
+static int _op_handler_shares(openapi_ctxt_t *ctxt)
+{
+	if (ctxt->method == HTTP_REQUEST_GET) {
+		_dump_shares(ctxt);
+	} else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern void init_op_assoc_mgr(void)
+{
+	bind_handler("/slurm/{data_parser}/shares", _op_handler_shares);
+}
+
+extern void destroy_op_assoc_mgr(void)
+{
+	unbind_operation_ctxt_handler(_op_handler_shares);
+}

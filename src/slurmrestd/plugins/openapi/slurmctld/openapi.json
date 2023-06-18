@@ -830,6 +830,49 @@
         }
       }
     },
+    "/slurm/{data_parser}/shares": {
+      "get": {
+        "tags": [
+          "slurm"
+        ],
+        "summary": "get fairshare info",
+        "parameters": {
+          "$ref": "DATA_PARSER_SHARES_REQ_MSG"
+        },
+        "responses": {
+          "200": {
+            "description": "shares information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_SHARES_RESP"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_SHARES_RESP"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "unable to query shares",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_SHARES_RESP"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_SHARES_RESP"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/openapi.yaml": {
       "get": {
         "tags": [

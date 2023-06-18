@@ -151,6 +151,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - For 'GET /slurmdb/v0.0.40/jobs' mimick default behavior for
     handling of job start and end times as sacct when one or both fields are
     not provided as a query parameter.
+ -- openapi/slurmctld - Add 'GET /slurm/v0.0.40/shares' endpoint to dump same
+    output as sshare.
 
 * Changes in Slurm 23.02.5
 ==========================
