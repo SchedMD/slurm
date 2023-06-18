@@ -110,6 +110,8 @@ extern char **tres_names;
 extern uint32_t tres_cnt;
 extern int long_flag;
 extern char *opt_field_list;
+extern char *mimetype; /* --yaml or --json */
+extern char *data_parser; /* data_parser args */
 
 extern int process(shares_response_msg_t *msg, uint16_t options);
 

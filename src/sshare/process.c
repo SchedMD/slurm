@@ -45,6 +45,8 @@ int long_flag;		/* exceeds 80 character limit with more info */
 char **tres_names = NULL;
 uint32_t tres_cnt = 0;
 char *opt_field_list = NULL;
+char *mimetype;
+char *data_parser;
 
 print_field_t fields[] = {
 	{-20, "Account", print_fields_str, PRINT_ACCOUNT},

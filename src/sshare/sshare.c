@@ -39,20 +39,26 @@
 
 #include <grp.h>
 
+#include "src/common/data.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
+#include "src/interfaces/data_parser.h"
 #include "src/interfaces/priority.h"
+#include "src/interfaces/serializer.h"
 #include "src/sshare/sshare.h"
 
 #define OPT_LONG_HELP  0x100
 #define OPT_LONG_USAGE 0x101
 #define OPT_LONG_AUTOCOMP 0x102
+#define OPT_LONG_JSON 0x103
+#define OPT_LONG_YAML 0x104
 
 static int _addto_name_char_list(list_t *char_list, char *names, bool gid);
-static int 	_single_cluster(shares_request_msg_t *req_msg);
-static int 	_multi_cluster(shares_request_msg_t *req_msg);
+static int _single_cluster(int argc, char **argv,
+			   shares_request_msg_t *req_msg);
+static int _multi_cluster(int argc, char **argv, shares_request_msg_t *req_msg);
 static char *   _convert_to_name(uint32_t id, bool is_gid);
 static void     _print_version( void );
 static void	_usage(void);
@@ -93,6 +99,8 @@ int main (int argc, char **argv)
 		{"version",  0, 0, 'V'},
 		{"help",     0, 0, OPT_LONG_HELP},
 		{"usage",    0, 0, OPT_LONG_USAGE},
+		{"json",    optional_argument, 0, OPT_LONG_JSON},
+		{"yaml",    optional_argument, 0, OPT_LONG_YAML},
 		{NULL,       0, 0, 0}
 	};
 
@@ -187,6 +195,16 @@ int main (int argc, char **argv)
 			suggest_completion(long_options, optarg);
 			exit(0);
 			break;
+		case OPT_LONG_JSON:
+			mimetype = MIME_TYPE_JSON;
+			data_parser = optarg;
+			serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL);
+			break;
+		case OPT_LONG_YAML:
+			mimetype = MIME_TYPE_YAML;
+			data_parser = optarg;
+			serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL);
+			break;
 		default:
 			exit_code = 1;
 			fprintf(stderr, "getopt error, returned %c\n",
@@ -240,9 +258,9 @@ int main (int argc, char **argv)
 	}
 
 	if (clusters)
-		exit_code = _multi_cluster(&req_msg);
+		exit_code = _multi_cluster(argc, argv, &req_msg);
 	else
-		exit_code = _single_cluster(&req_msg);
+		exit_code = _single_cluster(argc, argv, &req_msg);
 
 	FREE_NULL_LIST(req_msg.acct_list);
 	FREE_NULL_LIST(req_msg.user_list);
@@ -250,7 +268,7 @@ int main (int argc, char **argv)
 }
 
 
-static int _single_cluster(shares_request_msg_t *req_msg)
+static int _single_cluster(int argc, char **argv, shares_request_msg_t *req_msg)
 {
 	int rc = SLURM_SUCCESS;
 	shares_response_msg_t *resp_msg = NULL;
@@ -261,13 +279,19 @@ static int _single_cluster(shares_request_msg_t *req_msg)
 		return rc;
 	}
 
-	process(resp_msg, options);
+	if (mimetype) {
+		rc = DATA_DUMP_CLI(SHARES_RESP_MSG_PTR, resp_msg, "shares",
+				   argc, argv, NULL, mimetype, data_parser);
+	} else {
+		process(resp_msg, options);
+	}
+
 	slurm_free_shares_response_msg(resp_msg);
 
 	return rc;
 }
 
-static int _multi_cluster(shares_request_msg_t *req_msg)
+static int _multi_cluster(int argc, char **argv, shares_request_msg_t *req_msg)
 {
 	list_itr_t *itr;
 	bool first = true;
@@ -280,7 +304,7 @@ static int _multi_cluster(shares_request_msg_t *req_msg)
 		else
 			printf("\n");
 		printf("CLUSTER: %s\n", working_cluster_rec->name);
-		rc2 = _single_cluster(req_msg);
+		rc2 = _single_cluster(argc, argv, req_msg);
 		if (rc2)
 			rc = 1;
 	}
@@ -362,6 +386,7 @@ Usage:  sshare [OPTION]                                                    \n\
     -A or --accounts=      display specific accounts (comma separated list)\n\
     -e or --helpformat     Print a list of fields that can be specified    \n\
                            with the '--format' option                      \n\
+    --json[=data_parser]   Produce JSON output                             \n\
     -l or --long           include normalized usage in output              \n\
     -m or --partition      print the partition part of the association     \n\
     -M or --cluster=names  clusters to issue commands to.                  \n\
@@ -375,6 +400,7 @@ Usage:  sshare [OPTION]                                                    \n\
     -U or --Users          display only user information                   \n\
     -v or --verbose        display more information                        \n\
     -V or --version        display tool version number                     \n\
+    --yaml[=data_parser]   Produce YAML output                             \n\
           --help           display this usage description                  \n\
           --usage          display this usage description                  \n\
                                                                            \n\n");
