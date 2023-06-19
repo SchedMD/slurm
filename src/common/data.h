@@ -449,7 +449,8 @@ extern int data_list_for_each(data_t *d, DataListForF f, void *arg);
  *
  *  Will process per return of [f]
  */
-extern int data_list_for_each_const(const data_t *d, DataListForFConst f, void *arg);
+extern int data_list_for_each_const(const data_t *d, DataListForFConst f,
+				    void *arg);
 
 /*
  * Use match() function ptr find a specific matching value in list
@@ -484,7 +485,8 @@ extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg);
  *
  *  Will process per return of [f]
  */
-extern int data_dict_for_each_const(const data_t *d, DataDictForFConst f, void *arg);
+extern int data_dict_for_each_const(const data_t *d, DataDictForFConst f,
+				    void *arg);
 
 /*
  * Get number of entities in dictionary
