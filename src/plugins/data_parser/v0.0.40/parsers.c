@@ -7828,6 +7828,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 	add_parse(QOS_LIST, qos, "qos", "qos"),
 	add_parse(WCKEY_LIST, wckeys, "wckeys", "wckeys"),
 	add_parse(ASSOC_LIST, associations, "associations", "associations"),
+	add_parse(INSTANCE_LIST, instances, "instances", "instances"),
 };
 #undef add_parse
 
