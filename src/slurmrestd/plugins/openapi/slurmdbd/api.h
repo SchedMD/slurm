@@ -160,6 +160,9 @@ extern void destroy_op_config(void);
 extern void init_op_diag(void);
 extern void destroy_op_diag(void);
 
+extern void init_op_instances(void);
+extern void destroy_op_instances(void);
+
 extern void init_op_job(void);
 extern void destroy_op_job(void);
 

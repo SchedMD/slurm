@@ -277,6 +277,7 @@ extern void slurm_openapi_p_init(void)
 	init_op_cluster();
 	init_op_config();
 	init_op_diag();
+	init_op_instances();
 	init_op_job();
 	init_op_qos();
 	init_op_tres();
@@ -291,6 +292,7 @@ extern void slurm_openapi_p_fini(void)
 	destroy_op_cluster();
 	destroy_op_config();
 	destroy_op_diag();
+	destroy_op_instances();
 	destroy_op_job();
 	destroy_op_qos();
 	destroy_op_tres();

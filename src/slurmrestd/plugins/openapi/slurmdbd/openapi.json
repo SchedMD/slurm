@@ -835,6 +835,178 @@
         "summary": "Delete association"
       }
     },
+    "/slurmdb/{data_parser}/instances/": {
+      "get": {
+        "tags": [
+          "slurmdb"
+        ],
+        "parameters": [
+          {
+            "name": "cluster",
+            "in": "query",
+            "description": "Cluster name",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "extra",
+            "in": "query",
+            "description": "Arbitrary string",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance_id",
+            "in": "query",
+            "description": "Cloud instance ID",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance_type",
+            "in": "query",
+            "description": "Cloud instance type",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_INSTANCES_RESP"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_INSTANCES_RESP"
+                }
+              }
+            },
+            "description": "List of instances"
+          },
+          "default": {
+            "description": "Instance not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get instance list"
+      }
+    },
+    "/slurmdb/{data_parser}/instance/": {
+      "get": {
+        "tags": [
+          "slurmdb"
+        ],
+        "parameters": [
+          {
+            "name": "cluster",
+            "in": "query",
+            "description": "Cluster name",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "extra",
+            "in": "query",
+            "description": "Arbitrary string",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance_id",
+            "in": "query",
+            "description": "Cloud instance ID",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance_type",
+            "in": "query",
+            "description": "Cloud instance type",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_INSTANCES_RESP"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_INSTANCES_RESP"
+                }
+              }
+            },
+            "description": "List of instances"
+          },
+          "default": {
+            "description": "Instance not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get instance info"
+      }
+    },
     "/slurmdb/{data_parser}/user/{name}": {
       "delete": {
         "tags": [
