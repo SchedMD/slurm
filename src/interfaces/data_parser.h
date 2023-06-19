@@ -111,6 +111,7 @@ typedef enum {
 	DATA_PARSER_INSTANCE_CONDITION, /* slurmdb_instance_cond_t */
 	DATA_PARSER_INSTANCE_CONDITION_PTR, /* slurmdb_instance_cond_t* */
 	DATA_PARSER_INSTANCE_LIST, /* list of slurmdb_instance_rec_t */
+	DATA_PARSER_OPENAPI_INSTANCES_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_JOB_EXIT_CODE, /* int32_t */
 	DATA_PARSER_JOB_REASON, /* uint32_t <-> enum job_state_reason */
 	DATA_PARSER_JOB_LIST, /* list of slurmdb_job_rec_t* */
