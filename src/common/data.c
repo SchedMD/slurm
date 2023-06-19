@@ -493,14 +493,14 @@ extern data_t *data_set_string(data_t *data, const char *value)
 	return data;
 }
 
-extern data_t *data_set_string_own(data_t *data, char *value)
+extern data_t *_data_set_string_own(data_t *data, char **value_ptr)
 {
 	_check_magic(data);
 
 	if (!data)
 		return NULL;
 
-	if (!value) {
+	if (!*value_ptr) {
 		data->type = DATA_TYPE_NULL;
 
 		log_flag(DATA, "%s: set "PRINTF_DATA_T"=null",
@@ -509,27 +509,29 @@ extern data_t *data_set_string_own(data_t *data, char *value)
 	}
 
 	/* check that the string was xmalloc()ed and actually has contents */
-	xassert(xsize(value));
+	xassert(xsize(*value_ptr));
 
 #ifndef NDEBUG
 	/*
 	 * catch use after free by the caller by using the existing xfree()
 	 * functionality
 	 */
-	char *nv = xstrdup(value);
-	xfree(value);
-	value = nv;
+	char *nv = xstrdup(*value_ptr);
+	xfree(*value_ptr);
+	*value_ptr = nv;
 #endif
 
 	_release(data);
 
 	data->type = DATA_TYPE_STRING;
 	/* take ownership of string */
-	data->data.string_u = value;
+	data->data.string_u = *value_ptr;
 
-	log_flag_hex(DATA, value, strlen(value), "%s: set "PRINTF_DATA_T,
-		 __func__, PRINTF_DATA_T_VAL(data), value);
+	log_flag_hex(DATA, *value_ptr, strlen(*value_ptr),
+		     "%s: set "PRINTF_DATA_T,
+		     __func__, PRINTF_DATA_T_VAL(data), *value_ptr);
 
+	*value_ptr = NULL;
 	return data;
 }
 
