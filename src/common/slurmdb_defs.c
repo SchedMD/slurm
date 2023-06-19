@@ -1604,6 +1604,25 @@ extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,
 	federation->flags = FEDERATION_FLAG_NOTSET;
 }
 
+extern void slurmdb_init_instance_rec(slurmdb_instance_rec_t *instance,
+					 bool free_it)
+{
+	if (!instance)
+		return;
+
+	if (free_it)
+		slurmdb_destroy_instance_rec(instance);
+	memset(instance, 0, sizeof(slurmdb_instance_rec_t));
+
+	/* instance->cluster = NULL; */
+	/* instance->extra = NULL; */
+	/* instance->instance_id = NULL; */
+	/* instance->instance_type = NULL; */
+	/* instance->node_name = NULL; */
+	instance->time_end = NO_VAL;
+	instance->time_start = NO_VAL;
+}
+
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
 				 uint32_t init_val)
 {
