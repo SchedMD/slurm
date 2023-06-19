@@ -3874,6 +3874,8 @@ function __scontrol_update_nodename() {
 		"cpubind="
 		"extra="
 		"gres="
+		"instanceid="
+		"instancetype="
 		"nodeaddr="
 		"nodehostname="
 		"nodename=" # meta
