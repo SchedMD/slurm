@@ -569,14 +569,23 @@ static data_for_each_cmd_t _foreach_path_method_ref(data_t *ref, void *arg)
 	}
 
 	if (!parser) {
-		error("Unknown $ref = %s", data_get_string(ref));
+		error("%s: Unable to find parser for $ref = %s",
+		      __func__, data_get_string(ref));
 		return DATA_FOR_EACH_FAIL;
 	}
+
+	/* auto-dereference pointers to avoid unneeded resolution failures */
+	if (parser->model == PARSER_MODEL_PTR)
+		parser = find_parser_by_type(parser->pointer_type);
 
 	if (parser->model != PARSER_MODEL_ARRAY) {
 		error("$ref parameters must be an array parser");
 		return DATA_FOR_EACH_FAIL;
 	}
+
+	debug3("$ref=%s found parser %s(0x%"PRIxPTR")=%s",
+	       data_get_string(ref), parser->type_string, (uintptr_t) parser,
+	       parser->obj_type_string);
 
 	for (int i = 0; i < parser->field_count; i++)
 		_add_param_linked(args->params, &parser->fields[i], args);
