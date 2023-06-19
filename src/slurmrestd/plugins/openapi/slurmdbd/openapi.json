@@ -1431,19 +1431,12 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "account_name",
-            "in": "path",
-            "description": "Slurm Account Name",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        "parameters": {
+          "$ref": [
+            "DATA_PARSER_OPENAPI_ACCOUNT_PARAM",
+            "DATA_PARSER_OPENAPI_ACCOUNT_QUERY"
+          ]
+        }
       },
       "get": {
         "tags": [
@@ -1482,35 +1475,12 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "account_name",
-            "in": "path",
-            "description": "Slurm Account Name",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "with_deleted",
-            "in": "query",
-            "description": "Include deleted accounts. False by default.",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ],
-              "default": "false"
-            }
-          }
-        ]
+        "parameters": {
+          "$ref": [
+            "DATA_PARSER_OPENAPI_ACCOUNT_PARAM",
+            "DATA_PARSER_OPENAPI_ACCOUNT_QUERY"
+          ]
+        }
       }
     },
     "/slurmdb/{data_parser}/accounts/": {
@@ -1518,24 +1488,9 @@
         "tags": [
           "slurmdb"
         ],
-        "parameters": [
-          {
-            "name": "with_deleted",
-            "in": "query",
-            "description": "Include deleted accounts. False by default.",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ],
-              "default": "false"
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": "DATA_PARSER_ACCOUNT_CONDITION"
+        },
         "responses": {
           "200": {
             "content": {
