@@ -1692,6 +1692,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->comment, buffer);
 		safe_unpackstr(&node->extra, buffer);
 		safe_unpackstr(&node->instance_id, buffer);
+		safe_unpackstr(&node->instance_type, buffer);
 		safe_unpackstr(&node->reason, buffer);
 		if (acct_gather_energy_unpack(&node->energy, buffer,
 					      protocol_version, 1)

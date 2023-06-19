@@ -2655,6 +2655,9 @@ static int _restore_node_state(int recover,
 		node_ptr->instance_id = old_node_ptr->instance_id;
 		old_node_ptr->instance_id = NULL;
 
+		node_ptr->instance_type = old_node_ptr->instance_type;
+		old_node_ptr->instance_type = NULL;
+
 		if (node_ptr->reason == NULL) {
 			/* Recover only if not explicitly set in slurm.conf */
 			node_ptr->reason = old_node_ptr->reason;

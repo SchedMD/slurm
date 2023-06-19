@@ -122,6 +122,7 @@ struct node_record {
 					 * plugins */
 	uint32_t index;			/* Index into node_record_table_ptr */
 	char *instance_id;		/* cloud instance id */
+	char *instance_type;		/* cloud instance type */
 	time_t last_busy;		/* time node was last busy (no jobs) */
 	time_t last_response;		/* last response from the node */
 	uint32_t magic;			/* magic cookie for data integrity */

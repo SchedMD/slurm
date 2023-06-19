@@ -1290,6 +1290,7 @@ extern void purge_node_rec(node_record_t *node_ptr)
 	xfree(node_ptr->gres);
 	FREE_NULL_LIST(node_ptr->gres_list);
 	xfree(node_ptr->instance_id);
+	xfree(node_ptr->instance_type);
 	xfree(node_ptr->mcs_label);
 	xfree(node_ptr->name);
 	xfree(node_ptr->node_hostname);

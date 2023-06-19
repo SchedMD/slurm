@@ -2244,6 +2244,7 @@ typedef struct node_info {
 	char *gres_drain;	/* list of drained GRES */
 	char *gres_used;	/* list of GRES in current use */
 	char *instance_id;	/* cloud instance id */
+	char *instance_type;	/* cloud instance type */
 	time_t last_busy;	/* time node was last busy (i.e. no jobs) */
 	char *mcs_label;	/* mcs label if mcs plugin in use */
 	uint64_t mem_spec_limit; /* MB memory limit for specialization */
