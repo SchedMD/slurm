@@ -390,7 +390,7 @@ static void _do_power_work(time_t now)
 
 	iter = list_iterator_create(resume_job_list);
 	while ((job_id_ptr = list_next(iter))) {
-		char *nodes;
+		char *nodes, *node_bitmap;
 		job_record_t *job_ptr;
 		data_t *job_node_data;
 		bitstr_t *need_resume_bitmap, *to_resume_bitmap;
@@ -442,8 +442,11 @@ static void _do_power_work(time_t now)
 			     job_ptr->job_id);
 		data_set_string(data_key_set(job_node_data, "features"),
 				job_ptr->details->features_use);
-		data_set_string_own(data_key_set(job_node_data, "nodes_alloc"),
-				    bitmap2node_name(job_ptr->node_bitmap));
+		if ((node_bitmap = bitmap2node_name(job_ptr->node_bitmap))) {
+			data_set_string_own(data_key_set(job_node_data,
+							 "nodes_alloc"),
+					    node_bitmap);
+		}
 		nodes = bitmap2node_name(to_resume_bitmap);
 		data_set_string_own(data_key_set(job_node_data, "nodes_resume"),
 				    nodes);
