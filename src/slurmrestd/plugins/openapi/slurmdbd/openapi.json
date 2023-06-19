@@ -500,52 +500,9 @@
         "tags": [
           "slurmdb"
         ],
-        "parameters": [
-          {
-            "name": "cluster",
-            "in": "query",
-            "description": "Cluster name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "account",
-            "in": "query",
-            "description": "Account name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "user",
-            "in": "query",
-            "description": "User name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "partition",
-            "in": "query",
-            "description": "Partition Name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": "DATA_PARSER_ASSOC_CONDITION"
+        },
         "responses": {
           "200": {
             "content": {
@@ -584,52 +541,9 @@
         "tags": [
           "slurmdb"
         ],
-        "parameters": [
-          {
-            "name": "cluster",
-            "in": "query",
-            "description": "Cluster name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "account",
-            "in": "query",
-            "description": "Account name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "user",
-            "in": "query",
-            "description": "User name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "partition",
-            "in": "query",
-            "description": "Partition Name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": "DATA_PARSER_ASSOC_CONDITION"
+        },
         "responses": {
           "200": {
             "content": {
@@ -670,52 +584,9 @@
         "tags": [
           "slurmdb"
         ],
-        "parameters": [
-          {
-            "name": "cluster",
-            "in": "query",
-            "description": "Cluster name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "account",
-            "in": "query",
-            "description": "Account name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "user",
-            "in": "query",
-            "description": "User name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "partition",
-            "in": "query",
-            "description": "Partition Name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": "DATA_PARSER_ASSOC_CONDITION"
+        },
         "responses": {
           "200": {
             "content": {
@@ -754,52 +625,9 @@
         "tags": [
           "slurmdb"
         ],
-        "parameters": [
-          {
-            "name": "cluster",
-            "in": "query",
-            "description": "Cluster name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "account",
-            "in": "query",
-            "description": "Account name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "user",
-            "in": "query",
-            "description": "User name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "partition",
-            "in": "query",
-            "description": "Partition Name",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": {
+          "$ref": "DATA_PARSER_ASSOC_CONDITION"
+        },
         "responses": {
           "200": {
             "content": {
