@@ -2321,6 +2321,13 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			node_state_msg->event_time,
 			node_state_msg->reason, node_ptr.reason_uid);
 		break;
+	default:
+		comment = "DBD_NODE_STATE message has invalid new_state";
+		error("CONN:%d %s %u",
+		      slurmdbd_conn->conn->fd, comment,
+		      slurmdbd_conn->conn->auth_uid);
+		rc = SLURM_ERROR;
+		break;
 	}
 
 end_it:
