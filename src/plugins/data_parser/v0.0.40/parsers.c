@@ -7364,6 +7364,20 @@ static const parser_t PARSER_ARRAY(OPENAPI_WARNING)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_instance_cond_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(INSTANCE_CONDITION)[] = {
+	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV clusters list"),
+	add_parse(CSV_STRING_LIST, extra_list, "extra", "CSV extra list"),
+	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
+	add_parse(CSV_STRING_LIST, instance_id_list, "instance_id", "CSV instance_id list"),
+	add_parse(CSV_STRING_LIST, instance_type_list, "instance_type", "CSV instance_type list"),
+	add_parse(STRING, node_list, "node_list", "ranged node string"),
+	add_parse(TIMESTAMP, time_end, "time_end", "time end UNIX timestamp"),
+	add_parse(TIMESTAMP, time_start, "time_start", "time start UNIX timestamp"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
 	add_parser(job_submit_request_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(JOB_SUBMIT_REQ)[] = {
 	add_parse(STRING, script, "script", "batch job script"),
@@ -8205,6 +8219,7 @@ static const parser_t parsers[] = {
 	addpp(PARTITION_INFO_MSG_PTR, partition_info_msg_t *, PARTITION_INFO_MSG),
 	addpp(RESERVATION_INFO_MSG_PTR, reserve_info_msg_t *, RESERVATION_INFO_MSG),
 	addpp(SELECTED_STEP_PTR, slurm_selected_step_t *, SELECTED_STEP),
+	addpp(INSTANCE_CONDITION_PTR, slurmdb_instance_cond_t *, INSTANCE_CONDITION),
 	addpp(JOB_CONDITION_PTR, slurmdb_job_cond_t *, JOB_CONDITION),
 	addpp(QOS_CONDITION_PTR, slurmdb_qos_cond_t *, QOS_CONDITION),
 	addpp(ASSOC_CONDITION_PTR, slurmdb_assoc_cond_t *, ASSOC_CONDITION),
@@ -8258,6 +8273,7 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_META, openapi_resp_meta_t, NULL, free_openapi_resp_meta),
 	addpa(OPENAPI_ERROR, openapi_resp_error_t, NULL, free_openapi_resp_error),
 	addpa(OPENAPI_WARNING, openapi_resp_warning_t, NULL, free_openapi_resp_warning),
+	addpa(INSTANCE_CONDITION, slurmdb_instance_cond_t, NULL, slurmdb_destroy_instance_cond),
 	addpa(JOB_SUBMIT_REQ, job_submit_request_t, NULL, NULL),
 	addpa(JOB_CONDITION, slurmdb_job_cond_t, NULL, slurmdb_destroy_job_cond),
 	addpa(QOS_CONDITION, slurmdb_qos_cond_t, NULL, slurmdb_destroy_qos_cond),
