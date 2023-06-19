@@ -91,7 +91,7 @@ static int _dump_node(data_t *p, node_info_t *node)
 	int rc;
 	uint16_t alloc_cpus = 0;
 	uint64_t alloc_memory = 0;
-	char *node_alloc_tres = NULL;
+	char *node_alloc_tres = NULL, *next_state, *reason_uid, *node_state;
 	double node_tres_weighted = 0;
 	data_t *d;
 
@@ -130,18 +130,18 @@ static int _dump_node(data_t *p, node_info_t *node)
 	data_set_string(data_key_set(d, "mcs_label"), node->mcs_label);
 	/* mem_spec_limit intentionally omitted */
 	data_set_string(data_key_set(d, "name"), node->name);
-	data_set_string_own(data_key_set(d, "next_state_after_reboot"),
-			    _get_long_node_state(node->next_state));
+	if ((next_state = _get_long_node_state(node->next_state)))
+		data_set_string_own(data_key_set(d, "next_state_after_reboot"),
+				    next_state);
 	data_set_string(data_key_set(d, "address"), node->node_addr);
 	data_set_string(data_key_set(d, "hostname"), node->node_hostname);
-
-	data_set_string_own(data_key_set(d, "state"),
-			    _get_long_node_state(node->node_state));
+	if ((node_state = _get_long_node_state(node->node_state)))
+		data_set_string_own(data_key_set(d, "state"), node_state);
 	_add_node_state_flags(data_set_list(data_key_set(d, "state_flags")),
 			      node->node_state);
-
-	data_set_string_own(data_key_set(d, "next_state_after_reboot"),
-			    _get_long_node_state(node->next_state));
+	if ((next_state = _get_long_node_state(node->next_state)))
+		data_set_string_own(data_key_set(d, "next_state_after_reboot"),
+				    next_state);
 	_add_node_state_flags(
 		data_set_list(data_key_set(d, "next_state_after_reboot_flags")),
 		node->next_state);
@@ -150,8 +150,8 @@ static int _dump_node(data_t *p, node_info_t *node)
 	if (node->owner == NO_VAL) {
 		data_set_null(data_key_set(d, "owner"));
 	} else {
-		data_set_string_own(data_key_set(d, "owner"),
-				    uid_to_string_or_null(node->owner));
+		char *str = uid_to_string_or_null(node->owner);
+		data_set_string_own(data_key_set(d, "owner"), str);
 	}
 
 	if (node->partitions) {
@@ -176,8 +176,10 @@ static int _dump_node(data_t *p, node_info_t *node)
 	data_set_int(data_key_set(d, "real_memory"), node->real_memory);
 	data_set_string(data_key_set(d, "reason"), node->reason);
 	data_set_int(data_key_set(d, "reason_changed_at"), node->reason_time);
-	data_set_string_own(data_key_set(d, "reason_set_by_user"),
-			    uid_to_string_or_null(node->reason_uid));
+	if ((reason_uid = uid_to_string_or_null(node->reason_uid))) {
+		data_set_string_own(data_key_set(d, "reason_set_by_user"),
+				    reason_uid);
+	}
 	data_set_int(data_key_set(d, "slurmd_start_time"), node->slurmd_start_time);
 	data_set_int(data_key_set(d, "sockets"), node->sockets);
 	data_set_int(data_key_set(d, "threads"), node->threads);

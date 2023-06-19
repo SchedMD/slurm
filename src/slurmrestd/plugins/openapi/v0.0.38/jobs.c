@@ -820,10 +820,9 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 	if (job->group_id == NO_VAL)
 		data_set_null(data_key_set(jd, "group_id"));
 	else {
+		char *str = gid_to_string_or_null((gid_t) job->group_id);
 		data_set_int(data_key_set(jd, "group_id"), job->group_id);
-		data_set_string_own(
-			data_key_set(jd, "group_name"),
-			gid_to_string_or_null((gid_t) job->group_id));
+		data_set_string_own(data_key_set(jd, "group_name"), str);
 	}
 	if (job->job_id == NO_VAL)
 		data_set_null(data_key_set(jd, "job_id"));
@@ -1035,9 +1034,8 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 	if (job->user_name) {
 		data_set_string(data_key_set(jd, "user_name"), job->user_name);
 	} else {
-		data_set_string_own(
-			data_key_set(jd, "user_name"),
-			uid_to_string_or_null((uid_t) job->user_id));
+		char *str = uid_to_string_or_null((uid_t) job->user_id);
+		data_set_string_own(data_key_set(jd, "user_name"), str);
 	}
 	/* wait4switch intentionally omitted */
 	data_set_string(data_key_set(jd, "wckey"), job->wckey);
