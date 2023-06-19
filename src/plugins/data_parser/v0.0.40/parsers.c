@@ -4674,8 +4674,9 @@ static int DUMP_FUNC(SIGNAL)(const parser_t *const parser, void *obj,
 			     data_t *dst, args_t *args)
 {
 	uint16_t *sig = obj;
+	char *str = sig_num2name(*sig);
 
-	data_set_string_own(dst, sig_num2name(*sig));
+	data_set_string_own(dst, str);
 
 	return SLURM_SUCCESS;
 }
@@ -4703,11 +4704,13 @@ static int DUMP_FUNC(BITSTR)(const parser_t *const parser, void *obj,
 			     data_t *dst, args_t *args)
 {
 	bitstr_t *b = obj;
+	char *str;
 
 	if (!b)
 		return SLURM_SUCCESS;
 
-	data_set_string_own(dst, bit_fmt_full(b));
+	str = bit_fmt_full(b);
+	data_set_string_own(dst, str);
 
 	return SLURM_SUCCESS;
 }
