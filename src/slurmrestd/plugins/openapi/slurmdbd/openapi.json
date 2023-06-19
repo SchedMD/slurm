@@ -1057,19 +1057,12 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "cluster_name",
-            "in": "path",
-            "description": "Slurm cluster name",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        "parameters": {
+          "$ref": [
+            "DATA_PARSER_CLUSTER_CONDITION",
+            "DATA_PARSER_OPENAPI_CLUSTER_PARAM"
+          ]
+        }
       },
       "get": {
         "tags": [
@@ -1108,19 +1101,12 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "cluster_name",
-            "in": "path",
-            "description": "Slurm cluster name",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        "parameters": {
+          "$ref": [
+            "DATA_PARSER_CLUSTER_CONDITION",
+            "DATA_PARSER_OPENAPI_CLUSTER_PARAM"
+          ]
+        }
       }
     },
     "/slurmdb/{data_parser}/clusters/": {
@@ -1160,7 +1146,10 @@
             }
           }
         },
-        "summary": "Get cluster list"
+        "summary": "Get cluster list",
+        "parameters": {
+          "$ref": "DATA_PARSER_CLUSTER_CONDITION"
+        }
       },
       "post": {
         "tags": [
