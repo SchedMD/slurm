@@ -288,10 +288,19 @@ extern data_t *data_set_string(data_t *data, const char *value);
 /*
  * Set data to string type with given value.
  * IN data structure to modify
- * IN value value to set (takes ownership of value and will xfree())
+ * IN value ptr to value to set (takes ownership of value and will xfree())
  * RET data ptr or NULL on error
  */
-extern data_t *data_set_string_own(data_t *data, char *value);
+extern data_t *_data_set_string_own(data_t *data, char **value_ptr);
+
+/*
+ * Set data to string type with given value.
+ * IN data structure to modify
+ * IN value ptr to value to set
+ * 	Takes ownership of value and will xfree(). Sets value to NULL.
+ * RET data ptr or NULL on error
+ */
+#define data_set_string_own(data, value) _data_set_string_own(data, &value)
 
 /*
  * Set data to string type with given formatted value.
