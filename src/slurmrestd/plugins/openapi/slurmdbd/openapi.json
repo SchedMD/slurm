@@ -1244,19 +1244,12 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "wckey",
-            "in": "path",
-            "description": "Slurm wckey name",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        "parameters": {
+          "$ref": [
+            "DATA_PARSER_WCKEY_CONDITION_PTR",
+            "DATA_PARSER_OPENAPI_WCKEY_PARAM"
+          ]
+        }
       },
       "get": {
         "tags": [
@@ -1295,19 +1288,12 @@
             }
           }
         },
-        "parameters": [
-          {
-            "name": "wckey",
-            "in": "path",
-            "description": "Slurm wckey name",
-            "required": true,
-            "style": "simple",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        "parameters": {
+          "$ref": [
+            "DATA_PARSER_WCKEY_CONDITION_PTR",
+            "DATA_PARSER_OPENAPI_WCKEY_PARAM"
+          ]
+        }
       }
     },
     "/slurmdb/{data_parser}/wckeys/": {
@@ -1347,7 +1333,10 @@
             }
           }
         },
-        "summary": "Get wckey list"
+        "summary": "Get wckey list",
+        "parameters": {
+          "$ref": "DATA_PARSER_WCKEY_CONDITION_PTR"
+        }
       },
       "post": {
         "tags": [
