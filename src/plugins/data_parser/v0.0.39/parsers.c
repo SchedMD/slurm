@@ -4396,11 +4396,11 @@ static int DUMP_FUNC(JOB_DESC_MSG_NODES)(const parser_t *const parser, void *obj
 	if (job->job_size_str) {
 		data_set_string(dst, job->job_size_str);
 	} else if (job->min_nodes != job->max_nodes)
-		data_set_string_own(dst,
-				    xstrdup_printf("%d-%d", job->min_nodes,
-						   job->max_nodes));
-	else
-		data_set_string_own(dst, xstrdup_printf("%d", job->min_nodes));
+		data_set_string_fmt(dst, "%d-%d", job->min_nodes,
+				    job->max_nodes);
+	else {
+		data_set_string_fmt(dst, "%d", job->min_nodes);
+	}
 
 	return SLURM_SUCCESS;
 }
