@@ -1382,6 +1382,108 @@ Numeric value of the name of the FedState.
 The index of the cluster in the federation.
 .IP
 
+.SH "SPECIFICATIONS FOR INSTANCES"
+
+.TP
+\fBClusters\fR=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
+Name of the cluster that the instance ran on.  Default is the cluster where the
+command was run.
+.IP
+
+.TP
+\fBEnd\fR=<\fIOPT\fR>
+Period ending of instances. Default is now.
+
+Valid time formats are...
+.br
+HH:MM[:SS] [AM|PM]
+.br
+MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+.br
+MM/DD[/YY]\-HH:MM[:SS]
+.br
+YYYY\-MM\-DD[THH:MM[:SS]]
+.br
+now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
+.IP
+
+.TP
+\fBExtra\fR=<\fIOPT\fR>
+Arbitrary string associated with node during life of the instance.
+.IP
+
+.TP
+\fBInstanceId\fR=<\fIOPT\fR>
+Cloud instance ID.
+.IP
+
+.TP
+\fBInstanceType\fR=<\fIOPT\fR>
+Cloud instance type.
+.IP
+
+.TP
+\fBNodes\fR=<\fInode_name\fR>[,<\fInode_name\fR>,...]
+The node on which the instance ran.
+.IP
+
+.TP
+\fBStart\fR=<\fIOPT\fR>
+Period start of instances.  Default is 00:00:00 of previous day.
+
+Valid time formats are...
+.br
+HH:MM[:SS] [AM|PM]
+.br
+MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+.br
+MM/DD[/YY]\-HH:MM[:SS]
+.br
+YYYY\-MM\-DD[THH:MM[:SS]]
+.br
+now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
+.IP
+
+
+.SH "LIST/SHOW INSTANCE FORMAT OPTIONS"
+Show time periods for when cloud nodes were active.
+
+.TP
+\fBCluster\fR
+Name of the cluster that the instance ran on.
+.IP
+
+.TP
+\fBEnd\fR
+Time when instance ended.
+.IP
+
+.TP
+\fBExtra\fR
+Arbitrary string associated with node during life of the instance.
+.IP
+
+.TP
+\fBInstanceId\fR
+Cloud instance ID.
+.IP
+
+.TP
+\fBInstanceType\fR
+Cloud instance type.
+.IP
+
+.TP
+\fBNodeName\fR
+The node on which the instance ran.
+.IP
+
+.TP
+\fBStart\fR
+Time when instance started.
+.IP
+
+
 
 .SH "SPECIFICATIONS FOR JOB"
 
