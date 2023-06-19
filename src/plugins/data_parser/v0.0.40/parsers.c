@@ -5369,6 +5369,13 @@ static void *NEW_FUNC(CLUSTER_CONDITION)(void)
 	return cond;
 }
 
+static void *NEW_FUNC(INSTANCE)(void)
+{
+	slurmdb_instance_rec_t *instance = xmalloc(sizeof(*instance));
+	slurmdb_init_instance_rec(instance, false);
+	return instance;
+}
+
 static int PARSE_FUNC(JOB_EXCLUSIVE)(const parser_t *const parser, void *obj,
 				     data_t *src, args_t *args,
 				     data_t *parent_path)
@@ -5857,6 +5864,27 @@ static const flag_bit_t PARSER_FLAG_ARRAY(SLURMDB_JOB_FLAGS)[] = {
 	add_flag_bit(SLURMDB_JOB_FLAG_SCHED, "STARTED_ON_SCHEDULE"),
 	add_flag_bit(SLURMDB_JOB_FLAG_BACKFILL, "STARTED_ON_BACKFILL"),
 };
+
+#define add_skip(field) \
+	add_parser_skip(slurmdb_instance_rec_t, field)
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_instance_rec_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(slurmdb_instance_rec_t, mtype, true, field, 0, path, desc)
+/* should mirror the structure of slurmdb_instance_rec_t */
+static const parser_t PARSER_ARRAY(INSTANCE)[] ={
+	add_parse(STRING, cluster, "cluster", NULL),
+	add_parse(STRING, extra, "extra", NULL),
+	add_parse(STRING, instance_id, "instance_id", NULL),
+	add_parse(STRING, instance_type, "instance_type", NULL),
+	add_parse(STRING, node_name, "node_name", NULL),
+	add_parse(TIMESTAMP, time_end, "time/time_end", NULL),
+	add_parse(TIMESTAMP, time_start, "time/time_start", NULL),
+};
+#undef add_parse
+#undef add_parse_req
+#undef add_skip
+
 
 #define add_skip(field) \
 	add_parser_skip(slurmdb_job_rec_t, field)
@@ -8192,6 +8220,7 @@ static const parser_t parsers[] = {
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
 	addpa(ASSOC, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
+	addpa(INSTANCE, slurmdb_instance_rec_t, NEW_FUNC(INSTANCE), slurmdb_destroy_instance_rec),
 	addpa(USER, slurmdb_user_rec_t, NEW_FUNC(USER), slurmdb_destroy_user_rec),
 	addpa(JOB, slurmdb_job_rec_t, (parser_new_func_t) slurmdb_create_job_rec, slurmdb_destroy_job_rec),
 	addpa(STEP, slurmdb_step_rec_t, (parser_new_func_t) slurmdb_create_step_rec, slurmdb_destroy_step_rec),

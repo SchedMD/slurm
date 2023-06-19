@@ -107,6 +107,7 @@ typedef enum {
 	DATA_PARSER_GROUP_ID_STRING, /* char * - group id string */
 	DATA_PARSER_GROUP_ID_STRING_LIST, /* list_t of string group id */
 	DATA_PARSER_GROUP_NAME, /* Group from string group name <-> gid_t */
+	DATA_PARSER_INSTANCE, /* slurmdb_instance_rec_t */
 	DATA_PARSER_JOB_EXIT_CODE, /* int32_t */
 	DATA_PARSER_JOB_REASON, /* uint32_t <-> enum job_state_reason */
 	DATA_PARSER_JOB_LIST, /* list of slurmdb_job_rec_t* */
