@@ -40,6 +40,7 @@
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/uid.h"
 #include "src/sacctmgr/sacctmgr.h"
+#include "src/interfaces/data_parser.h"
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_instance_cond_t *instance_cond,
@@ -197,6 +198,14 @@ extern int sacctmgr_list_instance(int argc, char **argv)
 
 	instance_list = slurmdb_instances_get(db_conn, instance_cond);
 	slurmdb_destroy_instance_cond(instance_cond);
+
+	if (mime_type) {
+		rc = DATA_DUMP_CLI(INSTANCE_LIST, instance_list, "instances",
+				   argc, argv, db_conn, mime_type, NULL);
+		FREE_NULL_LIST(print_fields_list);
+		FREE_NULL_LIST(instance_list);
+		return rc;
+	}
 
 	if (!instance_list) {
 		exit_code = 1;
