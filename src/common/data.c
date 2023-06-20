@@ -81,6 +81,11 @@ typedef struct {
 	bool mask;
 } find_dict_match_t;
 
+typedef struct {
+	size_t count;
+	data_type_t match;
+} convert_args_t;
+
 static void _check_magic(const data_t *data);
 static void _release(data_t *data);
 static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn);
@@ -1785,11 +1790,6 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 	xassert(false);
 	return DATA_TYPE_NONE;
 }
-
-typedef struct {
-	size_t count;
-	data_type_t match;
-} convert_args_t;
 
 data_for_each_cmd_t _convert_list_entry(data_t *data, void *arg)
 {
