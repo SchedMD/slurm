@@ -404,12 +404,6 @@ extern int init(void)
 {
 	int rc;
 
-	if ((rc = data_init())) {
-		error("%s: unable to init data structures: %s",
-		      __func__, slurm_strerror(rc));
-		return rc;
-	}
-
 	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
 		error("%s: unable to load JSON serializer: %s",
 		      __func__, slurm_strerror(rc));

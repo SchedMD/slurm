@@ -750,12 +750,6 @@ extern int setup_container(stepd_step_rec_t *step)
 		return ESLURM_CONTAINER_NOT_CONFIGURED;
 	}
 
-	if ((rc = data_init())) {
-		error("Unable to init data structures: %s",
-		      slurm_strerror(rc));
-		goto error;
-	}
-
 	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
 		error("Unable to load JSON plugin: %s",
 		      slurm_strerror(rc));

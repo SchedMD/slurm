@@ -974,9 +974,6 @@ extern int init_openapi(openapi_t **oas, const char *plugins,
 	xassert(!*oas);
 	destroy_openapi(*oas);
 
-	if ((rc = data_init()))
-		return rc;
-
 	/* must have JSON plugin to parse the openapi.json */
 	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL)))
 		return rc;

@@ -474,9 +474,6 @@ int main(int argc, char **argv)
 	if (thread_count > 1024)
 		fatal("Excessive thread count");
 
-	if (data_init())
-		fatal("Unable to initialize data static structures");
-
 	if (serializer_g_init(NULL, NULL))
 		fatal("Unable to initialize serializers");
 
@@ -620,7 +617,6 @@ int main(int argc, char **argv)
 	free_con_mgr(conmgr);
 	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
 	serializer_g_fini();
-	data_fini();
 	for (size_t i = 0; i < auth_plugin_count; i++) {
 		plugrack_release_by_type(auth_rack, auth_plugin_types[i]);
 		xfree(auth_plugin_types[i]);

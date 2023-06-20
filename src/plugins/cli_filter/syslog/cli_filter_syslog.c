@@ -119,12 +119,6 @@ extern int init(void)
 	stored_data = xmalloc(sizeof(char *) * 24);
 	stored_sz = 24;
 
-	if ((rc = data_init())) {
-		error("%s: unable to data structures: %s", __func__,
-		      slurm_strerror(rc));
-		return rc;
-	}
-
 	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
 		error("%s: unable to load JSON serializer: %s", __func__,
 		      slurm_strerror(rc));

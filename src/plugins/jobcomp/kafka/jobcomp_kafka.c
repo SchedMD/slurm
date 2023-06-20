@@ -82,12 +82,6 @@ extern int init(void)
 
 	log_flag(JOBCOMP, "loaded");
 
-	if ((rc = data_init())) {
-		error("%s: unable to init data structures: %s",
-		      plugin_type, slurm_strerror(rc));
-		return rc;
-	}
-
 	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
 		error("%s: unable to load JSON serializer: %s",
 		      plugin_type, slurm_strerror(rc));
