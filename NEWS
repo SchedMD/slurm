@@ -120,6 +120,13 @@ documents those changes that are of interest to users and administrators.
  -- Remove FIRST_CORES flag from reservations.
  -- scontrol/sview - Remove comma separated CoreCnt option from reservations.
  -- scontrol/sview - Remove comma separated NodeCnt option from reservations.
+ -- Add cloud instance id and instance type to node records. Can be viewed/
+    updated with scontrol.
+ -- slurmd - add "instance-id", "instance-type", and "extra" options to allow
+    them to be set on startup.
+ -- Add cloud instance accounting to database that can be viewed with 'sacctmgr
+    show instance'.
+ -- openapi/v0.0.40 - add /instance and /instances endpoints.
 
 * Changes in Slurm 23.02.5
 ==========================

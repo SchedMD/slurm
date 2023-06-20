@@ -99,6 +99,10 @@ COMMAND CHANGES (see man pages for details)
  -- scontrol/sview - Remove FIRST_CORES flag from reservations.
  -- scontrol/sview - Remove comma separated CoreCnt option from reservations.
  -- scontrol/sview - Remove comma separated NodeCnt option from reservations.
+ -- slurmd - add "instance-id", "instance-type", and "extra" options to allow
+    them to be set on startup.
+ -- scontrol - add InstanceId and InstanceType to node records.
+ -- sacctmgr - add 'show instance' for cloud instance accounting data
 
 API CHANGES
 ===========
@@ -136,3 +140,4 @@ SLURMRESTD CHANGES
     Prior more detailed formatting information was found to conflict with
     generated OpenAPI clients forcing limitations on the possible values not
     present in Slurm's parsing capabilities.
+ -- openapi/v0.0.40 - add /instance and /instances endpoints.
