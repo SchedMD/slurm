@@ -34,24 +34,18 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
 #define _ISOC99_SOURCE	/* needed for lrint */
 
 #include <ctype.h>
 #include <math.h>
 
-#include "slurm/slurm.h"
-
+#include "src/common/data.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
-#include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-#include "src/common/data.h"
 
 #define DATA_MAGIC 0x1992189F
 #define DATA_LIST_MAGIC 0x1992F89F
