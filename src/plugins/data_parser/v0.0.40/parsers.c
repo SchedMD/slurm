@@ -6455,6 +6455,8 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, gres, "gres", NULL),
 	add_parse(STRING, gres_drain, "gres_drained", NULL),
 	add_parse(STRING, gres_used, "gres_used", NULL),
+	add_parse(STRING, instance_id, "instance_id", NULL),
+	add_parse(STRING, instance_type, "instance_type", NULL),
 	add_parse(TIMESTAMP_NO_VAL, last_busy, "last_busy", NULL),
 	add_parse(STRING, mcs_label, "mcs_label", NULL),
 	add_parse(UINT64, mem_spec_limit, "specialized_memory", NULL),
