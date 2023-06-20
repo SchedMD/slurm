@@ -1817,6 +1817,8 @@ int read_slurm_conf(int recover, bool reconfig)
 		load_job_ret = load_all_job_state();
 	}
 
+	/* _gres_reconfig needs to happen before restore_node_features */
+	_gres_reconfig(reconfig);
 	/* NOTE: Run restore_node_features before _restore_job_accounting */
 	restore_node_features(recover);
 
@@ -1864,8 +1866,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	 */
 	config_power_mgr();
 
-
-	_gres_reconfig(reconfig);
 	_sync_jobs_to_conf();		/* must follow select_g_job_init() */
 
 	/*

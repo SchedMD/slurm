@@ -27,6 +27,10 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Return HTTP error code 404 when job query fails.
  -- slurmrestd - Add return schema to error response to job and license query.
  -- Fix handling of ArrayTaskThrottle in backfill.
+ -- Fix regression in 23.02.2 when checking gres state on slurmctld startup or
+    reconfigure. Gres changes in the configuration were not updated on slurmctld
+    startup. On startup or reconfigure, these messages were present in the log:
+    "error: Attempt to change gres/gpu Count".
 
 * Changes in Slurm 23.02.3
 ==========================
