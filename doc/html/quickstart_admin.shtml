@@ -110,13 +110,13 @@ present. Build dependencies for various plugins and commands are denoted below:
 		present.</li>
 <li> <b>HTML Man Pages</b> HTML versions of the man pages will be generated if
 		the <i>man2html</i> command is present.</li>
-<li> <b>IPMI Energy Consumption</b> The <i>acct_gather_energy/ipmi</i>
-		accounting plugin will be built if the <i>freeipmi</i>
-		development library is present.</li>
 <li> <b>InfiniBand Accounting</b> The <i>acct_gather_interconnect/ofed</i>
 		InfiniBand accounting plugin will be built if the
 		<i>libibmad</i> and <i>libibumad</i> development libraries are
 		present.</li>
+<li> <b>IPMI Energy Consumption</b> The <i>acct_gather_energy/ipmi</i>
+		accounting plugin will be built if the <i>freeipmi</i>
+		development library is present.</li>
 <li> <b>Lua Support</b> The lua API will be available in various plugins if the
 		<i>lua</i> development library is present.</li>
 <li> <b>MUNGE</b> The auth/munge plugin will be built if the MUNGE
@@ -126,11 +126,11 @@ present. Build dependencies for various plugins and commands are denoted below:
 		<i>mysql</i> development library (preferably version 5.5 or
 		later), or if the <i>MariaDB</i> development library is
 		present.</li>
-<li> <b>PAM Support</b> PAM support will be added if the <i>PAM</i> development
-		library is installed.</li>
 <li> <b>NUMA Affinity</b> NUMA support in the task/affinity plugin will be
 		available if the <i>numa</i> development library is installed.
 		</li>
+<li> <b>PAM Support</b> PAM support will be added if the <i>PAM</i> development
+		library is installed.</li>
 <li> <b>Readline Support</b> Readline support in scontrol and sacctmgr's
 		interactive modes will be available if the <i>readline</i>
 		development library is present.</li>
