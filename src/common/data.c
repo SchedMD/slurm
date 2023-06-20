@@ -323,7 +323,7 @@ static void _data_list_prepend(data_list_t *dl, data_t *d, const char *key)
 		 PRINTF_DATA_LIST_NODE_T_VAL(n));
 }
 
-data_t *data_new(void)
+extern data_t *data_new(void)
 {
 	data_t *data = xmalloc(sizeof(*data));
 	data->magic = DATA_MAGIC;
@@ -746,7 +746,7 @@ static bool _match_string(const char *key, data_t *data, void *needle_ptr)
 	return !xstrcmp(key, needle);
 }
 
-data_t *data_key_get(data_t *data, const char *key)
+extern data_t *data_key_get(data_t *data, const char *key)
 {
 	return data_dict_find_first(data, _match_string, (void *) key);
 }
@@ -833,7 +833,7 @@ extern data_t *data_dict_find_first(
 		return NULL;
 }
 
-data_t *data_key_set(data_t *data, const char *key)
+extern data_t *data_key_set(data_t *data, const char *key)
 {
 	data_t *d;
 
@@ -864,7 +864,7 @@ data_t *data_key_set(data_t *data, const char *key)
 	return d;
 }
 
-data_t *data_key_set_int(data_t *data, int64_t key)
+extern data_t *data_key_set_int(data_t *data, int64_t key)
 {
 	char *key_str = xstrdup_printf("%"PRId64, key);
 	data_t *node = data_key_set(data, key_str);
@@ -874,7 +874,7 @@ data_t *data_key_set_int(data_t *data, int64_t key)
 	return node;
 }
 
-bool data_key_unset(data_t *data, const char *key)
+extern bool data_key_unset(data_t *data, const char *key)
 {
 	data_list_node_t *i;
 
@@ -912,7 +912,7 @@ bool data_key_unset(data_t *data, const char *key)
 	return true;
 }
 
-double data_get_float(const data_t *data)
+extern double data_get_float(const data_t *data)
 {
 	_check_magic(data);
 
@@ -923,7 +923,7 @@ double data_get_float(const data_t *data)
 	return data->data.float_u;
 }
 
-bool data_get_bool(const data_t *data)
+extern bool data_get_bool(const data_t *data)
 {
 	_check_magic(data);
 
@@ -934,7 +934,7 @@ bool data_get_bool(const data_t *data)
 	return data->data.bool_u;
 }
 
-int64_t data_get_int(const data_t *data)
+extern int64_t data_get_int(const data_t *data)
 {
 	_check_magic(data);
 
@@ -967,7 +967,7 @@ extern const char *data_get_string_const(const data_t *data)
 	return data->data.string_u;
 }
 
-int data_get_string_converted(const data_t *d, char **buffer)
+extern int data_get_string_converted(const data_t *d, char **buffer)
 {
 	_check_magic(d);
 	char *_buffer = NULL;
@@ -1081,7 +1081,7 @@ extern int data_get_int_converted(const data_t *d, int64_t *buffer)
 	return rc;
 }
 
-size_t data_get_dict_length(const data_t *data)
+extern size_t data_get_dict_length(const data_t *data)
 {
 	_check_magic(data);
 
@@ -1092,7 +1092,7 @@ size_t data_get_dict_length(const data_t *data)
 	return data->data.dict_u->count;
 }
 
-size_t data_get_list_length(const data_t *data)
+extern size_t data_get_list_length(const data_t *data)
 {
 	_check_magic(data);
 
@@ -1445,7 +1445,6 @@ static int _convert_data_string(data_t *data)
 	return ESLURM_DATA_CONV_FAILED;
 }
 
-
 static int _convert_data_force_bool(data_t *data)
 {
 	_check_magic(data);
@@ -1791,7 +1790,7 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 	return DATA_TYPE_NONE;
 }
 
-data_for_each_cmd_t _convert_list_entry(data_t *data, void *arg)
+static data_for_each_cmd_t _convert_list_entry(data_t *data, void *arg)
 {
 	convert_args_t *args = arg;
 
@@ -1800,8 +1799,8 @@ data_for_each_cmd_t _convert_list_entry(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
-					void *arg)
+static data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
+					       void *arg)
 {
 	convert_args_t *args = arg;
 
@@ -1834,8 +1833,8 @@ extern size_t data_convert_tree(data_t *data, const data_type_t match)
 	return args.count;
 }
 
-data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
-				     void *arg)
+static data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
+					    void *arg)
 {
 	bool rc;
 	find_dict_match_t *p = arg;
@@ -2144,7 +2143,7 @@ extern data_t *data_define_dict_path(data_t *data, const char *path)
 	return found;
 }
 
-data_t *data_copy(data_t *dest, const data_t *src)
+extern data_t *data_copy(data_t *dest, const data_t *src)
 {
 	if (!src)
 		return NULL;
