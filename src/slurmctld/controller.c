@@ -586,13 +586,6 @@ int main(int argc, char **argv)
 		} else
 			fatal("Failed to initialize MPI plugins.");
 	}
-	if (data_init()) {
-		if (test_config) {
-			error("Failed to initialize data plugins.");
-			test_config_rc = 1;
-		} else
-			fatal("Failed to initialize data plugins.");
-	}
 	if (route_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("Failed to initialize route plugins.");
@@ -992,7 +985,6 @@ int main(int argc, char **argv)
 	cgroup_conf_destroy();
 	usleep(500000);
 	serializer_g_fini();
-	data_fini();
 }
 #else
 	/*

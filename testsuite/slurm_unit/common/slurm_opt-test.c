@@ -794,12 +794,6 @@ int main(void)
 	xfree(slurm_unit_conf_filename);
 	close(fd);
 
-	/* data_init() is necessary on this test */
-	if (data_init()) {
-		error("data_init_static() failed");
-		return EXIT_FAILURE;
-	}
-
 	/* Start the actual libcheck code */
 	int number_failed;
 	SRunner *sr = srunner_create(slurm_opt_suite());
@@ -807,9 +801,6 @@ int main(void)
 	srunner_run_all(sr, CK_ENV);
 	number_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);
-
-	/* Cleanup */
-	data_fini();
 
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

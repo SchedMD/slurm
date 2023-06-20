@@ -90,15 +90,6 @@ static void _check_magic(const data_t *data);
 static void _release(data_t *data);
 static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn);
 
-extern void data_fini(void)
-{
-}
-
-extern int data_init(void)
-{
-	return SLURM_SUCCESS;
-}
-
 static data_list_t *_data_list_new(void)
 {
 	data_list_t *dl = xmalloc(sizeof(*dl));

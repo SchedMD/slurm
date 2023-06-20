@@ -355,17 +355,11 @@ int main(void)
 	log_opts.stderr_level = LOG_LEVEL_DEBUG5;
 	log_init("data-test", log_opts, 0, NULL);
 
-	if (data_init()) {
-		error("data_init() failed");
-		return EXIT_FAILURE;
-	}
-
 	SRunner *sr = srunner_create(suite_data());
 
 	srunner_run_all(sr, CK_ENV);
 	number_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);
 
-	data_fini();
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
