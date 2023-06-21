@@ -289,6 +289,14 @@ static void *_launch_one_app(void *data)
 	}
 	slurm_mutex_unlock(&launch_mutex);
 
+	/*
+	 * Update argv[0] after spank_local_user() so that S_JOB_ARGV holds the
+	 * original command line args in local context only.
+	 */
+	if (opt_local->srun_opt->bcast_flag) {
+		xfree(opt_local->argv[0]);
+		opt_local->argv[0] = xstrdup(opt_local->srun_opt->bcast_file);
+	}
 relaunch:
 	launch_common_set_stdio_fds(job, &cio_fds, opt_local);
 
@@ -814,8 +822,12 @@ static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 		fatal("Failed to broadcast '%s'. Step launch aborted.",
 		      params->src_fname);
 
-	xfree(opt_local->argv[0]);
-	opt_local->argv[0] = xstrdup(params->dst_fname);
+	/*
+	 * Defer setting argv[0] to dst_fname till later point in
+	 * _launch_one_app(). Use bcast_file member as value placeholder.
+	 */
+	xfree(srun_opt->bcast_file);
+	srun_opt->bcast_file = xstrdup(params->dst_fname);
 
 	slurm_destroy_selected_step(params->selected_step);
 	xfree(params->dst_fname);
