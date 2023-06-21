@@ -169,11 +169,14 @@ static void _kill_pg(pid_t pid)
 	killpg(pid, SIGKILL);
 }
 
-static void _run_command_child(run_command_args_t *args, int write_fd)
+static void _run_command_child(run_command_args_t *args, int write_fd,
+			       int read_fd)
 {
-	int devnull;
+	int stdin_fd;
 
-	if ((devnull = open("/dev/null", O_RDWR)) < 0) {
+	if (read_fd > 0)
+		stdin_fd = read_fd;
+	else if ((stdin_fd = open("/dev/null", O_RDWR)) < 0) {
 		/*
 		 * We must avoid calling non-async-signal-safe functions at
 		 * this point (like error() or similar), so we won't log
@@ -181,7 +184,7 @@ static void _run_command_child(run_command_args_t *args, int write_fd)
 		 */
 		_exit(127);
 	}
-	dup2(devnull, STDIN_FILENO);
+	dup2(stdin_fd, STDIN_FILENO);
 	dup2(write_fd, STDERR_FILENO);
 	dup2(write_fd, STDOUT_FILENO);
 	run_command_child_pre_exec();
@@ -221,6 +224,7 @@ extern char *run_command(run_command_args_t *args)
 {
 	pid_t cpid;
 	char *resp = NULL;
+	int pfd_to_child[2] = { -1, -1 };
 	int pfd[2] = { -1, -1 };
 	bool free_argv = false;
 
@@ -244,8 +248,13 @@ extern char *run_command(run_command_args_t *args)
 		resp = xstrdup("Run command failed - configuration error");
 		return resp;
 	}
-	if (pipe(pfd) != 0) {
+	if ((pipe(pfd) != 0) ||
+	    (script_launcher && (pipe(pfd_to_child) != 0))) {
 		error("%s: pipe(): %m", __func__);
+		fd_close(&pfd[0]);
+		fd_close(&pfd[1]);
+		fd_close(&pfd_to_child[0]);
+		fd_close(&pfd_to_child[1]);
 		*(args->status) = 127;
 		resp = xstrdup("System error");
 		return resp;
@@ -259,17 +268,24 @@ extern char *run_command(run_command_args_t *args)
 	child_proc_count++;
 	slurm_mutex_unlock(&proc_count_mutex);
 	if ((cpid = fork()) == 0) {
-		_run_command_child(args, pfd[1]);
+		/* Child writes to pfd[1] and reads from pfd_to_child[0] */
+		fd_close(&pfd_to_child[1]);
+		fd_close(&pfd[0]);
+		_run_command_child(args, pfd[1], pfd_to_child[0]);
 		/* We should never get here. */
 	} else if (cpid < 0) {
 		close(pfd[0]);
 		close(pfd[1]);
+		fd_close(&pfd_to_child[0]);
+		fd_close(&pfd_to_child[1]);
 		error("%s: fork(): %m", __func__);
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
 		slurm_mutex_unlock(&proc_count_mutex);
 	} else {
+		/* Parent writes to pfd_to_child[1] and reads from pfd[0] */
 		close(pfd[1]);
+		fd_close(&pfd_to_child[0]);
 		if (args->tid)
 			track_script_reset_cpid(args->tid, cpid);
 		resp = run_command_poll_child(cpid,
@@ -281,6 +297,7 @@ extern char *run_command(run_command_args_t *args)
 					      args->tid,
 					      args->status,
 					      args->timed_out);
+		fd_close(&pfd_to_child[1]);
 		close(pfd[0]);
 		slurm_mutex_lock(&proc_count_mutex);
 		child_proc_count--;
