@@ -480,7 +480,8 @@ extern int find_map_conf_file(void *x, void *key)
 	return 0;
 }
 
-extern void load_config_response_list(config_response_msg_t *msg, char *files[])
+extern void load_config_response_list(config_response_msg_t *msg,
+				      char *files[], bool to_slurmd)
 {
 	conf_includes_map_t *map = NULL;
 
