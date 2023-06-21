@@ -3130,7 +3130,7 @@ static int _test_step_desc_fields(job_step_create_request_msg_t *step_specs)
 
 		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 		                           "max_submit_line_size="))) {
-			max_submit_line = atoi(tmp_ptr + 16);
+			max_submit_line = atoi(tmp_ptr + 21);
 		} else {
 			max_submit_line = DEFAULT_MAX_SUBMIT_LINE_SIZE;
 		}

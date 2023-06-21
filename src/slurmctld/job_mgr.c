@@ -7729,7 +7729,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 
 		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 		                           "max_submit_line_size="))) {
-			max_submit_line = atoi(tmp_ptr + 16);
+			max_submit_line = atoi(tmp_ptr + 21);
 		} else {
 			max_submit_line = DEFAULT_MAX_SUBMIT_LINE_SIZE;
 		}

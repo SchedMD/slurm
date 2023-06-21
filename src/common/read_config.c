@@ -5078,7 +5078,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	}
 	temp_str = xstrcasestr(conf->sched_params, "max_submit_line_size=");
 	if (temp_str) {
-		if (atoi(temp_str + 16) > MAX_MAX_SUBMIT_LINE_SIZE)
+		if (atoi(temp_str + 21) > MAX_MAX_SUBMIT_LINE_SIZE)
 			fatal("SchedulerParameters option max_submit_line_size cannot exceed %d",
 			      MAX_MAX_SUBMIT_LINE_SIZE);
 	}
