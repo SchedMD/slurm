@@ -323,10 +323,11 @@ static void _init_minimal_conf_server_config(List controllers)
 }
 
 static int _write_conf(const char *dir, const char *name, const char *content,
-		      bool exists)
+		      bool exists, bool execute)
 {
 	char *file = NULL, *file_final = NULL;
 	int fd = -1;
+	mode_t mode = execute ? 0755 : 0644;
 
 	xstrfmtcat(file, "%s/%s.new", dir, name);
 	xstrfmtcat(file_final, "%s/%s", dir, name);
@@ -337,7 +338,7 @@ static int _write_conf(const char *dir, const char *name, const char *content,
 	}
 
 
-	if ((fd = open(file, O_CREAT|O_WRONLY|O_TRUNC|O_CLOEXEC, 0644)) < 0) {
+	if ((fd = open(file, O_CREAT|O_WRONLY|O_TRUNC|O_CLOEXEC, mode)) < 0) {
 		error("%s: could not open config file `%s`", __func__, file);
 		goto rwfail;
 	}
@@ -377,7 +378,7 @@ extern int write_one_config(void *x, void *arg)
 	config_file_t *config = (config_file_t *) x;
 	char *dir = (char *) arg;
 	if (_write_conf(dir, config->file_name, config->file_content,
-		        config->exists))
+		        config->exists, false))
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
