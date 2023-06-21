@@ -9273,16 +9273,18 @@ extern void pack_config_file(void *in, uint16_t protocol_version,
 {
 	config_file_t *object = in;
 
-	if (!object) {
-		packbool(0, buffer);
-		packnull(buffer);
-		packnull(buffer);
-		return;
-	}
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (!object) {
+			packbool(0, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			return;
+		}
 
-	packbool(object->exists, buffer);
-	packstr(object->file_name, buffer);
-	packstr(object->file_content, buffer);
+		packbool(object->exists, buffer);
+		packstr(object->file_name, buffer);
+		packstr(object->file_content, buffer);
+	}
 }
 
 extern int unpack_config_file(void **out, uint16_t protocol_version,
@@ -9290,9 +9292,12 @@ extern int unpack_config_file(void **out, uint16_t protocol_version,
 {
 	config_file_t *object = xmalloc(sizeof(*object));
 
-	safe_unpackbool(&object->exists, buffer);
-	safe_unpackstr(&object->file_name, buffer);
-	safe_unpackstr(&object->file_content, buffer);
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackbool(&object->exists, buffer);
+		safe_unpackstr(&object->file_name, buffer);
+		safe_unpackstr(&object->file_content, buffer);
+	}
+
 	*out = object;
 	return SLURM_SUCCESS;
 
