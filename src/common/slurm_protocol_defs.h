@@ -1185,6 +1185,7 @@ typedef struct {
 
 typedef struct {
 	bool exists;
+	bool execute;
 	char *file_name;
 	char *file_content;
 

@@ -9276,12 +9276,14 @@ extern void pack_config_file(void *in, uint16_t protocol_version,
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		if (!object) {
 			packbool(0, buffer);
+			packbool(0, buffer);
 			packnull(buffer);
 			packnull(buffer);
 			return;
 		}
 
 		packbool(object->exists, buffer);
+		packbool(object->execute, buffer);
 		packstr(object->file_name, buffer);
 		packstr(object->file_content, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -9305,6 +9307,7 @@ extern int unpack_config_file(void **out, uint16_t protocol_version,
 
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpackbool(&object->exists, buffer);
+		safe_unpackbool(&object->execute, buffer);
 		safe_unpackstr(&object->file_name, buffer);
 		safe_unpackstr(&object->file_content, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {

@@ -378,7 +378,7 @@ extern int write_one_config(void *x, void *arg)
 	config_file_t *config = (config_file_t *) x;
 	char *dir = (char *) arg;
 	if (_write_conf(dir, config->file_name, config->file_content,
-		        config->exists, false))
+		        config->exists, config->execute))
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
@@ -405,7 +405,8 @@ extern int write_configs_to_conf_cache(config_response_msg_t *msg,
 	return SLURM_SUCCESS;
 }
 
-static void _load_conf2list(config_response_msg_t *msg, char *file_name)
+static void _load_conf2list(config_response_msg_t *msg, char *file_name,
+			    bool is_script)
 {
 	config_file_t *conf_file = NULL;
 	buf_t *config;
@@ -427,6 +428,7 @@ static void _load_conf2list(config_response_msg_t *msg, char *file_name)
 
 	conf_file = xmalloc(sizeof(*conf_file));
 	conf_file->exists = config_exists;
+	conf_file->execute = is_script;
 	if (config)
 		conf_file->file_content = xstrndup(config->head, config->size);
 	conf_file->file_name = xstrdup(file_name);
@@ -452,7 +454,7 @@ static int _foreach_include_file(void *x, void *arg)
 	char *file_name = x;
 	config_response_msg_t *msg = arg;
 
-	_load_conf2list(msg, file_name);
+	_load_conf2list(msg, file_name, false);
 
 	return SLURM_SUCCESS;
 }
@@ -490,7 +492,7 @@ extern void load_config_response_list(config_response_msg_t *msg,
 		msg->config_files = list_create(destroy_config_file);
 
 	for (int i = 0; files[i]; i++) {
-		_load_conf2list(msg, files[i]);
+		_load_conf2list(msg, files[i], false);
 
 		if (conf_includes_list) {
 			map = list_find_first_ro(conf_includes_list,
