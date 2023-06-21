@@ -503,6 +503,19 @@ extern void load_config_response_list(config_response_msg_t *msg,
 						 _foreach_include_file, msg);
 		}
 	}
+
+	/*
+	 * Load Prolog and Epilog scripts.
+	 * Only load if a non-absolute path is provided, this is our
+	 * indication that the file should be sent out, and matches
+	 * configuration semantics for the Include lines.
+	 */
+	if (to_slurmd) {
+		if (slurm_conf.prolog && (slurm_conf.prolog[0] != '/'))
+			_load_conf2list(msg, slurm_conf.prolog, true);
+		if (slurm_conf.epilog && (slurm_conf.epilog[0] != '/'))
+			_load_conf2list(msg, slurm_conf.epilog, true);
+	}
 }
 
 extern void destroy_config_file(void *object)

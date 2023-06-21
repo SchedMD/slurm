@@ -953,6 +953,21 @@ _read_config(void)
 	if (conf->conffile == NULL)
 		conf->conffile = xstrdup(cf->slurm_conf);
 
+	/*
+	 * Allow for Prolog and Epilog scripts to have non-absolute paths.
+	 * This is needed for configless to work with Prolog and Epilog.
+	 */
+	if (cf->prolog) {
+		char *tmp_prolog = cf->prolog;
+		cf->prolog = get_extra_conf_path(tmp_prolog);
+		xfree(tmp_prolog);
+	}
+	if (cf->epilog) {
+		char *tmp_epilog = cf->epilog;
+		cf->epilog = get_extra_conf_path(tmp_epilog);
+		xfree(tmp_epilog);
+	}
+
 #ifndef HAVE_FRONT_END
 	/*
 	 * We can't call slurm_select_cr_type() because we don't load the select

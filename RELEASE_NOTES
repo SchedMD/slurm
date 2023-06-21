@@ -30,6 +30,7 @@ HIGHLIGHTS
  -- Allow SlurmUser/root to use reservations without specific permissions.
  -- Add route/partition plugin to route communications based on partition node
     lists.
+ -- Added ability for configless to push Prolog and Epilog scripts to slurmds.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -50,6 +51,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     cgroup file system automatically. CgroupAutomount could cause a cgroup v2
     system to be configured in a hybrid v1 and v2 system. The cgroup/v1 plugin
     will now fail if the cgroup filesystem is not mounted.
+ -- Prolog and Epilog do not have to be fully qualified pathnames.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
