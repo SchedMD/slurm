@@ -5934,7 +5934,7 @@ extern char * debug_flags2str(uint64_t debug_flags)
  * Keep in sycn with debug_flags2str() above
  * Returns SLURM_ERROR if invalid
  */
-extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
+extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 {
 	int rc = SLURM_SUCCESS;
 	char *tmp_str, *tok, *last = NULL;
