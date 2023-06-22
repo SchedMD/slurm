@@ -155,8 +155,6 @@ libcommon_la_SOURCES =				\
 	uthash.h				\
 	util-net.c				\
 	util-net.h				\
-	vbuf.c					\
-	vbuf.h					\
 	working_cluster.c			\
 	working_cluster.h			\
 	workq.c					\
