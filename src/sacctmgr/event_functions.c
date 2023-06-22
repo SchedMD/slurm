@@ -84,8 +84,7 @@ static uint32_t _decode_node_state(const char *val)
 	return NO_VAL;
 }
 
-static int _addto_state_char_list_internal(List char_list, const char *name,
-					   void *x)
+static int _addto_state_char_list_internal(List char_list, char *name, void *x)
 {
 	uint32_t c;
 	char *tmp_name = NULL;

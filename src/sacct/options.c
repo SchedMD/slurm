@@ -112,8 +112,7 @@ static void _help_fields_msg(void)
 }
 
 /* returns number of objects added to list */
-static int _addto_reason_char_list_internal(List char_list, const char *name,
-					    void *x)
+static int _addto_reason_char_list_internal(List char_list, char *name, void *x)
 {
 	uint32_t c;
 	char *tmp_name = NULL;
@@ -171,8 +170,7 @@ static bool _supported_state(uint32_t state_num)
 	}
 }
 
-static int _addto_state_char_list_internal(List char_list, const char *name,
-					   void *x)
+static int _addto_state_char_list_internal(List char_list, char *name, void *x)
 {
 	uint32_t c;
 	char *tmp_name = NULL;
