@@ -56,7 +56,6 @@
 
 #include "src/common/macros.h"
 #include "src/common/slurm_time.h"
-#include "src/common/utf.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -884,50 +883,17 @@ extern char *xstring_bytes2hex(const unsigned char *string, int len,
 extern char *xstring_bytes2printable(const unsigned char *string, int len,
 				     const char *replace)
 {
-	static const utf8_t broke[UTF8_CHAR_MAX_BYTES] =
-		UTF8_BYTE_ORDER_MARK_SEQ;
-	bool fail = false;
 	char *str = NULL, *pos = NULL;
-	utf8_t *p = (utf8_t *) string;
-	utf8_t *end = ((utf8_t *) string) + len;
 
-	xassert(len >= 0);
 	if (len <= 0)
 		return NULL;
 
-	while (p <= end) {
-		utf8_t c[UTF8_CHAR_MAX_BYTES];
-		int bytes;
-		utf_code_t utf;
-
-		if (fail) {
-			xstrfmtcatat(str, &pos, "%s", broke);
-			p++;
-			continue;
-		}
-
-		if (read_utf8_character(p, end, &utf, &bytes)) {
-			fail = true;
-			continue;
-		}
-
-		if (write_utf8_character(get_utf8_loggable(utf), c, true)) {
-			fail = true;
-			continue;
-		}
-
-		xassert(bytes >= 0);
-		if (bytes) {
-			/*
-			 * Keep the byte count in sync so it keeps matching hex
-			 */
-			for (int i = 1; i < bytes; i++)
-				xstrfmtcatat(str, &pos, "%s", " ");
-
-			p += bytes;
-		}
-
-		xstrfmtcatat(str, &pos, "%s", c);
+	for (int i = 0; i < len; i++) {
+		if (isalnum(string[i]) || ispunct(string[i]) ||
+		    (string[i] == ' '))
+			xstrfmtcatat(str, &pos, "%c", string[i]);
+		else
+			xstrfmtcatat(str, &pos, "%s", replace);
 	}
 
 	return str;
