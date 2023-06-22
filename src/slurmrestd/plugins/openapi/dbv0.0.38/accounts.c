@@ -244,7 +244,7 @@ static int _foreach_delete_acct(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _delete_account(data_t *resp, void *auth, const char *account)
+static int _delete_account(data_t *resp, void *auth, char *account)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -257,7 +257,7 @@ static int _delete_account(data_t *resp, void *auth, const char *account)
 		.assoc_cond = &assoc_cond,
 	};
 
-	list_append(assoc_cond.acct_list, (void *) account);
+	list_append(assoc_cond.acct_list, account);
 
 	if (!db_query_list(errors, auth, &removed, slurmdb_accounts_remove,
 			   &acct_cond) &&
@@ -284,7 +284,7 @@ extern int op_handler_account(const char *context_id,
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
-	const char *acct = get_str_param("account_name", errors, parameters);
+	char *acct = get_str_param("account_name", errors, parameters);
 
 	if (!acct) {
 		/* no-op */;
@@ -299,7 +299,7 @@ extern int op_handler_account(const char *context_id,
 			/* with_deleted defaults to false */
 		};
 
-		list_append(assoc_cond.acct_list, (void *) acct);
+		list_append(assoc_cond.acct_list, acct);
 
 		/* Change search conditions based on parameters */
 		if (_parse_other_params(query, &acct_cond, errors) !=

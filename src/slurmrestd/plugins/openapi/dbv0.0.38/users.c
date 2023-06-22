@@ -111,8 +111,8 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 	return DATA_FOR_EACH_FAIL;
 }
 
-static int _dump_users(data_t *resp, data_t *errors, void *auth,
-		       const char *user_name, slurmdb_user_cond_t *user_cond)
+static int _dump_users(data_t *resp, data_t *errors, void *auth, char *user_name,
+		       slurmdb_user_cond_t *user_cond)
 {
 	int rc = SLURM_SUCCESS;
 	List user_list = NULL;
@@ -136,7 +136,7 @@ static int _dump_users(data_t *resp, data_t *errors, void *auth,
 
 	if (user_name) {
 		assoc_cond.user_list = list_create(NULL);
-		list_append(assoc_cond.user_list, (void *) user_name);
+		list_append(assoc_cond.user_list, user_name);
 	}
 
 	if (!(rc = db_query_list(errors, auth, &user_list, slurmdb_users_get,
@@ -357,8 +357,8 @@ static int _foreach_delete_user(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _delete_user(data_t *resp, void *auth, const char *user_name,
-			data_t *errors)
+static int _delete_user(data_t *resp, void *auth,
+			char *user_name, data_t *errors)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_assoc_cond_t assoc_cond = { .user_list = list_create(NULL) };
@@ -371,7 +371,7 @@ static int _delete_user(data_t *resp, void *auth, const char *user_name,
 	};
 	List user_list = NULL;
 
-	list_append(assoc_cond.user_list, (void *) user_name);
+	list_append(assoc_cond.user_list, user_name);
 
 	if (!(rc = db_query_list(errors, auth, &user_list, slurmdb_users_remove,
 				 &user_cond)) &&
@@ -427,7 +427,7 @@ static int op_handler_user(const char *context_id, http_request_method_t method,
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
-	const char *user_name = get_str_param("user_name", errors, parameters);
+	char *user_name = get_str_param("user_name", errors, parameters);
 
 	if (!user_name) {
 		rc = ESLURM_REST_INVALID_QUERY;

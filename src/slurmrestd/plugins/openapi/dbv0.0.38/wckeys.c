@@ -77,7 +77,7 @@ static int _foreach_wckey(void *x, void *arg)
 	return 1;
 }
 
-static int _dump_wckeys(data_t *resp, data_t *errors, const char *wckey,
+static int _dump_wckeys(data_t *resp, data_t *errors, char *wckey,
 			void *auth)
 {
 	int rc = SLURM_SUCCESS;
@@ -92,7 +92,7 @@ static int _dump_wckeys(data_t *resp, data_t *errors, const char *wckey,
 
 	if (wckey) {
 		wckey_cond.name_list = list_create(NULL);
-		list_append(wckey_cond.name_list, (void *) wckey);
+		list_append(wckey_cond.name_list, wckey);
 	}
 
 	if (!(rc = db_query_list(errors, auth, &wckey_list, slurmdb_wckeys_get,
@@ -121,7 +121,7 @@ static int _foreach_del_wckey(void *x, void *arg)
 	return 1;
 }
 
-static int _delete_wckey(data_t *resp, data_t *errors, const char *wckey,
+static int _delete_wckey(data_t *resp, data_t *errors, char *wckey,
 			 void *auth)
 {
 	int rc = SLURM_SUCCESS;
@@ -140,7 +140,7 @@ static int _delete_wckey(data_t *resp, data_t *errors, const char *wckey,
 		goto cleanup;
 	}
 
-	list_append(wckey_cond.name_list, (void *) wckey);
+	list_append(wckey_cond.name_list, wckey);
 
 	if (!(rc = db_query_list(errors, auth, &wckey_list,
 				 slurmdb_wckeys_remove, &wckey_cond)))
@@ -228,7 +228,7 @@ extern int op_handler_wckey(const char *context_id,
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
-	const char *wckey = get_str_param("wckey", errors, parameters);
+	char *wckey = get_str_param("wckey", errors, parameters);
 
 	if (!wckey)
 		rc = ESLURM_REST_INVALID_QUERY;

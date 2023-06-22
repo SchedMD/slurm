@@ -101,7 +101,7 @@ data_for_each_cmd_t _foreach_list_entry(data_t *data, void *arg)
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		return DATA_FOR_EACH_FAIL;
 
-	if (slurm_addto_char_list(list, (void *) data_get_string(data)) < 1)
+	if (slurm_addto_char_list(list, data_get_string(data)) < 1)
 		return DATA_FOR_EACH_FAIL;
 
 	return DATA_FOR_EACH_CONT;
@@ -126,7 +126,7 @@ static int _parse_csv_list(data_t *src, const char *key, List *list,
 		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
 				  "format must be a string", key);
 
-	if (add_to(*list, (void *) data_get_string(src)) < 1)
+	if (add_to(*list, data_get_string(src)) < 1)
 		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
 				  "Unable to parse CSV list", key);
 
@@ -573,7 +573,7 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
-	const char *jobid;
+	char *jobid;
 	slurmdb_job_cond_t job_cond = {
 		.flags = (JOBCOND_FLAG_DUP | JOBCOND_FLAG_NO_TRUNC),
 		.db_flags = SLURMDB_JOB_FLAG_NOTSET,

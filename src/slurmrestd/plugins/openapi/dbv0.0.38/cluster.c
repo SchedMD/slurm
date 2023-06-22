@@ -80,7 +80,7 @@ static int _foreach_cluster(void *x, void *arg)
 	return 1;
 }
 
-static int _dump_clusters(data_t *resp, data_t *errors, const char *cluster,
+static int _dump_clusters(data_t *resp, data_t *errors, char *cluster,
 			  void *auth)
 {
 	int rc = SLURM_SUCCESS;
@@ -100,7 +100,7 @@ static int _dump_clusters(data_t *resp, data_t *errors, const char *cluster,
 	List cluster_list = NULL;
 
 	if (cluster)
-		list_append(cluster_cond.cluster_list, (void *) cluster);
+		list_append(cluster_cond.cluster_list, cluster);
 
 	if (!(rc = db_query_list(errors, auth, &args.tres_list,
 				 slurmdb_tres_get, &tres_cond)) &&
@@ -131,7 +131,7 @@ static int _foreach_del_cluster(void *x, void *arg)
 	return 1;
 }
 
-static int _delete_cluster(data_t *resp, data_t *errors, const char *cluster,
+static int _delete_cluster(data_t *resp, data_t *errors, char *cluster,
 			   void *auth)
 {
 	int rc = SLURM_SUCCESS;
@@ -151,7 +151,7 @@ static int _delete_cluster(data_t *resp, data_t *errors, const char *cluster,
 		goto cleanup;
 	}
 
-	list_append(cluster_cond.cluster_list, (void *) cluster);
+	list_append(cluster_cond.cluster_list, cluster);
 
 	if (!(rc = db_query_list(errors, auth, &cluster_list,
 				 slurmdb_clusters_remove, &cluster_cond)))
@@ -244,7 +244,7 @@ extern int op_handler_cluster(const char *context_id,
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
-	const char *cluster = get_str_param("cluster_name", errors, parameters);
+	char *cluster = get_str_param("cluster_name", errors, parameters);
 
 	if (!rc && (method == HTTP_REQUEST_GET))
 		rc = _dump_clusters(resp, errors, cluster, auth);

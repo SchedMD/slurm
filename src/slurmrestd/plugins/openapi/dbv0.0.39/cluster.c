@@ -81,7 +81,7 @@ static int _foreach_cluster(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _dump_clusters(ctxt_t *ctxt, const char *cluster)
+static void _dump_clusters(ctxt_t *ctxt, char *cluster)
 {
 	slurmdb_cluster_cond_t cluster_cond = {
 		.cluster_list = list_create(NULL),
@@ -119,7 +119,7 @@ static int _foreach_del_cluster(void *x, void *arg)
 	return 1;
 }
 
-static void _delete_cluster(ctxt_t *ctxt, const char *cluster)
+static void _delete_cluster(ctxt_t *ctxt, char *cluster)
 {
 	slurmdb_cluster_cond_t cluster_cond = {
 		.cluster_list = list_create(NULL),
@@ -186,7 +186,7 @@ extern int op_handler_cluster(const char *context_id,
 {
 	ctxt_t *ctxt = init_connection(context_id, method, parameters, query,
 				       tag, resp, auth);
-	const char *cluster = get_str_param("cluster_name", ctxt);
+	char *cluster = get_str_param("cluster_name", ctxt);
 
 	if (ctxt->rc)
 		/* no-op - already logged */;

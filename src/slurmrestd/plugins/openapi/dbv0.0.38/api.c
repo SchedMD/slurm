@@ -243,10 +243,9 @@ extern int db_query_commit(data_t *errors, rest_auth_context_t *auth)
 	return rc;
 }
 
-extern const char *get_str_param(const char *path, data_t *errors,
-				 data_t *parameters)
+extern char *get_str_param(const char *path, data_t *errors, data_t *parameters)
 {
-	const char *str = NULL;
+	char *str = NULL;
 	data_t *dbuf;
 
 	if (!parameters) {

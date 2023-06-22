@@ -1202,7 +1202,7 @@ static int _parse_qos_str_id(const parser_t *const parse, void *obj,
 			     data_t *src, data_t *errors,
 			     const parser_env_t *penv)
 {
-	const char *qos_name = NULL;
+	char *qos_name = NULL;
 	uint32_t *qos_id = (((void *)obj) + parse->field_offset);
 	slurmdb_qos_rec_t *qos;
 
@@ -1224,8 +1224,7 @@ static int _parse_qos_str_id(const parser_t *const parse, void *obj,
 		return ESLURM_REST_EMPTY_RESULT;
 
 	qos = list_find_first(penv->g_qos_list,
-			      slurmdb_find_qos_in_list_by_name,
-			      (void *) qos_name);
+			      slurmdb_find_qos_in_list_by_name, qos_name);
 	if (!qos)
 		return ESLURM_REST_EMPTY_RESULT;
 
@@ -1348,8 +1347,7 @@ static data_for_each_cmd_t _for_each_parse_qos_id(data_t *data, void *arg)
 		return rc;
 
 	if (slurmdb_addto_qos_char_list(args->qos_list, args->g_qos_list,
-					(void *) data_get_string(name),
-					0) > 0) {
+					data_get_string(name), 0) > 0) {
 		return DATA_FOR_EACH_CONT;
 	} else {
 		resp_error(args->errors, ESLURM_REST_FAIL_PARSING,
@@ -1642,7 +1640,7 @@ static data_for_each_cmd_t _for_each_parse_assoc(data_t *data, void *arg)
 		return DATA_FOR_EACH_FAIL;
 	else if (data_convert_type(data, DATA_TYPE_STRING) ==
 		 DATA_TYPE_STRING) {
-		list_append(args->acct_list, (void *) data_get_string(data));
+		list_append(args->acct_list, data_get_string(data));
 		return DATA_FOR_EACH_CONT;
 	}
 
