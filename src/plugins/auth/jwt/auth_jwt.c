@@ -126,7 +126,7 @@ static __thread char *thread_username = NULL;
 
 static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 {
-	const char *alg, *kid, *n, *e, *key, *x5c, *kty;
+	char *alg, *kid, *n, *e, *key, *x5c, *kty;
 
 	if (!(kid = data_get_string(data_key_get(d, "kid"))))
 		fatal("%s: failed to load kid field", __func__);
@@ -139,7 +139,7 @@ static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 		debug3("x5c for kid %s is %s", kid, x5c);
 
 		data_set_int(data_key_set(d, "slurm-pem-len"), strlen(x5c));
-		data_set_string(data_key_set(d, "slurm-pem"), x5c);
+		data_set_string_own(data_key_set(d, "slurm-pem"), x5c);
 		return DATA_FOR_EACH_CONT;
 	}
 
@@ -156,7 +156,7 @@ static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 	debug3("key for kid %s mod %s exp %s is\n%s", kid, n, e, key);
 
 	data_set_int(data_key_set(d, "slurm-pem-len"), strlen(key));
-	data_set_string(data_key_set(d, "slurm-pem"), key);
+	data_set_string_own(data_key_set(d, "slurm-pem"), key);
 
 	return DATA_FOR_EACH_CONT;
 }
@@ -293,7 +293,7 @@ typedef struct {
 
 static data_for_each_cmd_t _verify_rs256_jwt(data_t *d, void *arg)
 {
-	const char *alg, *kid, *key;
+	char *alg, *kid, *key;
 	int len;
 	jwt_t *jwt;
 	int rc;
