@@ -1414,13 +1414,29 @@ static int _convert_data_force_bool(data_t *data)
 {
 	_check_magic(data);
 
-	/* attempt to detect the type first */
-	data_convert_type(data, DATA_TYPE_NONE);
-
 	switch (data->type) {
 	case DATA_TYPE_STRING:
-		/* non-empty string but not recognized format */
-		data_set_bool(data, true);
+		if (data->data.string_u == NULL ||
+		    data->data.string_u[0] == '\0')
+			data_set_bool(data, false);
+		else if (regex_quick_match(data->data.string_u,
+					   &bool_pattern_true_re))
+			data_set_bool(data, true);
+		else if (regex_quick_match(data->data.string_u,
+					   &bool_pattern_false_re))
+			data_set_bool(data, false);
+		else { /* try to auto detect the type and try again */
+			if (data_convert_type(data, DATA_TYPE_NONE)
+			    != DATA_TYPE_NONE)
+				return _convert_data_force_bool(data);
+			else {
+				/*
+				 * not NULL or empty and unknown type,
+				 * so it must be true
+				 */
+				data_set_bool(data, true);
+			}
+		}
 		return SLURM_SUCCESS;
 	case DATA_TYPE_BOOL:
 		return SLURM_SUCCESS;
