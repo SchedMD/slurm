@@ -1612,7 +1612,7 @@ extern void _log_flag_hex(const void *data, size_t len, const char *fmt, ...)
 		int remain = len - i;
 		int print = (remain < hex_cols) ? remain : hex_cols;
 		char *phex = xstring_bytes2hex((data + i), print, " ");
-		char *pstr = xstring_bytes2printable((data + i), print, ".");
+		char *pstr = xstring_bytes2printable((data + i), print, '.');
 
 		format_print(LOG_LEVEL_VERBOSE, "%s [%04d/%04zu] 0x%s \"%s\"",
 			     prepend, i, len, phex, pstr);
