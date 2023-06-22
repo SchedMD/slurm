@@ -476,7 +476,7 @@ extern data_t *data_set_float(data_t *data, double value)
 	if (!data)
 		return NULL;
 
-	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to float: %e",
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to float: %lf",
 	       __func__, (uintptr_t) data, value);
 
 	data->type = DATA_TYPE_FLOAT;
