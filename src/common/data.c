@@ -38,8 +38,8 @@
 
 #define _ISOC99_SOURCE	/* needed for lrint */
 
-#include <ctype.h>
 #include <math.h>
+#include <regex.h>
 
 #include "slurm/slurm.h"
 
@@ -49,9 +49,28 @@
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xregex.h"
 #include "src/common/xstring.h"
 
 #include "src/common/data.h"
+
+/*
+ * Regex matches based on YAML 1.1 section 5.5.
+ * Honors ~ as YAML 1.1 allows for null fields.
+ */
+static const char *bool_pattern_true = "^([Yy](|[eE][sS])|[tT]([rR][uU][eE]|)|[Oo][nN])$";
+static regex_t bool_pattern_true_re;
+static const char *bool_pattern_false = "^([nN]([Oo]|)|[fF](|[aA][lL][sS][eE])|[oO][fF][fF])$";
+static regex_t bool_pattern_false_re;
+static const char *int_pattern = "^(0[xX][a-zA-Z0-9]+|[+-]?[0-9]+)$";
+static regex_t int_pattern_re;
+static const char *float_pattern = "^([+-]?((([0-9]+[.]?[0-9]*)|([0-9]*[.]?[0-9]+))(|[eE][+-]?[0-9]+)|[+-]?[iI][nN][fF]([iI][nN][iI][tT][yY]|)|[+-]?[nN][aA][nN]))$";
+static regex_t float_pattern_re;
+static const char *null_pattern = "^([~]|[nN][uU][lL][lL])$";
+static regex_t null_pattern_re;
+
+static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool initialized = false; /* protected by init_mutex */
 
 #define DATA_MAGIC 0x1992189F
 #define DATA_LIST_MAGIC 0x1992F89F
@@ -93,11 +112,70 @@ static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn);
 
 extern void data_fini(void)
 {
+	slurm_mutex_lock(&init_mutex);
+
+	if (initialized) {
+		regfree(&bool_pattern_true_re);
+		regfree(&bool_pattern_false_re);
+		regfree(&int_pattern_re);
+		regfree(&float_pattern_re);
+		regfree(&null_pattern_re);
+	}
+
+	slurm_mutex_unlock(&init_mutex);
 }
 
 extern int data_init(void)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+	int reg_rc; /* regex rc */
+
+	slurm_mutex_lock(&init_mutex);
+
+	if (initialized) {
+		slurm_mutex_unlock(&init_mutex);
+		return SLURM_SUCCESS;
+	}
+	initialized = true;
+
+	if (!rc && (reg_rc = regcomp(&bool_pattern_true_re, bool_pattern_true,
+			      REG_EXTENDED)) != 0) {
+		dump_regex_error(reg_rc, &bool_pattern_true_re,
+				 "compile \"%s\"", bool_pattern_true);
+		rc = ESLURM_DATA_REGEX_COMPILE;
+	}
+
+	if (!rc && (reg_rc = regcomp(&bool_pattern_false_re, bool_pattern_false,
+			      REG_EXTENDED)) != 0) {
+		dump_regex_error(reg_rc, &bool_pattern_false_re,
+				 "compile \"%s\"", bool_pattern_false);
+		rc = ESLURM_DATA_REGEX_COMPILE;
+	}
+
+	if (!rc && (reg_rc = regcomp(&int_pattern_re, int_pattern,
+				     REG_EXTENDED)) != 0) {
+		dump_regex_error(reg_rc, &int_pattern_re,
+				 "compile \"%s\"", int_pattern);
+		rc = ESLURM_DATA_REGEX_COMPILE;
+	}
+
+	if (!rc && (reg_rc = regcomp(&float_pattern_re, float_pattern,
+				     REG_EXTENDED)) != 0) {
+		dump_regex_error(reg_rc, &float_pattern_re,
+				 "compile \"%s\"", float_pattern);
+		rc = ESLURM_DATA_REGEX_COMPILE;
+	}
+
+	if (!rc && (reg_rc = regcomp(&null_pattern_re, null_pattern,
+				     REG_EXTENDED)) != 0) {
+		dump_regex_error(reg_rc, &null_pattern_re, "compile \"%s\"",
+				 null_pattern);
+		rc = ESLURM_DATA_REGEX_COMPILE;
+	}
+
+	slurm_mutex_unlock(&init_mutex);
+
+	return rc;
 }
 
 static data_list_t *_data_list_new(void)
@@ -1374,114 +1452,54 @@ static int _convert_data_null(data_t *data)
 
 	switch (data->type) {
 	case DATA_TYPE_STRING:
-	{
-		const char *str = data->data.string_u;
-
-		xassert(data->data.string_u);
-
-		if (!str[0])
-			goto convert;
-
-		if (str[0] == '~')
-			goto convert;
-
-		if (!xstrcasecmp(str, "null"))
-			goto convert;
-
-		goto fail;
-	}
+		if (!data->data.string_u || !data->data.string_u[0] ||
+		    regex_quick_match(data->data.string_u, &null_pattern_re)) {
+			log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to null: %s->null",
+				 __func__, (uintptr_t) data,
+				 data->data.string_u);
+			data_set_null(data);
+			return SLURM_SUCCESS;
+		} else {
+			return ESLURM_DATA_CONV_FAILED;
+		}
 	case DATA_TYPE_NULL:
 		return SLURM_SUCCESS;
 	default:
 		return ESLURM_DATA_CONV_FAILED;
 	}
-fail:
+
 	return ESLURM_DATA_CONV_FAILED;
-convert:
-	log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to null: %s->null",
-		 __func__, (uintptr_t) data,
-		 data->data.string_u);
-	data_set_null(data);
-	return SLURM_SUCCESS;
 }
 
 static int _convert_data_bool(data_t *data)
 {
-	const char *str = NULL;
-
 	_check_magic(data);
 
 	switch (data->type) {
 	case DATA_TYPE_STRING:
-	{
-		str = data->data.string_u;
-
-		if (tolower(str[0]) == 'y') {
-			if (!str[1] || ((tolower(str[1]) == 'e') &&
-					(tolower(str[2]) == 's') &&
-					(str[3] == '\0'))) {
-				data_set_bool(data, true);
-				goto converted;
-			}
-			goto fail;
-		} else if (tolower(str[0]) == 't') {
-			if (!str[1] || ((tolower(str[1]) == 'r') &&
-					(tolower(str[2]) == 'u') &&
-					(tolower(str[3]) == 'e') &&
-					(str[4] == '\0'))) {
-				data_set_bool(data, true);
-				goto converted;
-			}
-			goto fail;
-		} else if ((tolower(str[0]) == 'o') &&
-			   (tolower(str[1]) == 'n') &&
-			   (str[2] == '\0')) {
+		if (regex_quick_match(data->data.string_u,
+				      &bool_pattern_true_re)) {
+			log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to bool: %s->true",
+				 __func__, (uintptr_t) data,
+				 data->data.string_u);
 			data_set_bool(data, true);
-			goto converted;
-		} else if (tolower(str[0]) == 'n') {
-			if (!str[1] || ((tolower(str[1]) == 'o') &&
-					(str[2] == '\0'))) {
-				data_set_bool(data, false);
-				goto converted;
-			}
-			goto fail;
-		} else if (tolower(str[0]) == 'f') {
-			if (!str[1] || ((tolower(str[1]) == 'a') &&
-					(tolower(str[2]) == 'l') &&
-					(tolower(str[3]) == 's') &&
-					(tolower(str[4]) == 'e') &&
-					(str[5] == '\0'))) {
-				data_set_bool(data, false);
-				goto converted;
-			}
-			goto fail;
-		} else if ((tolower(str[0]) == 'o') &&
-			   (tolower(str[1]) == 'f') &&
-			   (tolower(str[2]) == 'f') &&
-			   (str[3] == '\0')) {
+			return SLURM_SUCCESS;
+		} else if (regex_quick_match(data->data.string_u,
+					     &bool_pattern_false_re)) {
+			log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to bool: %s->false",
+				 __func__, (uintptr_t) data,
+				 data->data.string_u);
 			data_set_bool(data, false);
-			goto converted;
+			return SLURM_SUCCESS;
+		} else {
+			return ESLURM_DATA_CONV_FAILED;
 		}
-
-		goto fail;
-	}
 	case DATA_TYPE_BOOL:
 		return SLURM_SUCCESS;
 	default:
-		goto fail;
+		return ESLURM_DATA_CONV_FAILED;
 	}
 
-	goto fail;
-
-converted:
-	log_flag(DATA, "%s: converted data (0x%"PRIXPTR") to bool: %s->%s",
-		 __func__, (uintptr_t) data, str,
-		 (data_get_bool(data) ? "true" : "false"));
-	return SLURM_SUCCESS;
-
-fail:
-	log_flag(DATA, "%s: convert to bool failed: %s",
-		 __func__, str);
 	return ESLURM_DATA_CONV_FAILED;
 }
 
@@ -1491,29 +1509,29 @@ static int _convert_data_int(data_t *data, bool force)
 
 	switch (data->type) {
 	case DATA_TYPE_STRING:
-	{
-		int64_t x;
-		const char *str = data->data.string_u;
+		if (regex_quick_match(data->data.string_u, &int_pattern_re)) {
+			int64_t x;
+			const char *s = data->data.string_u;
 
-		if (!str[0])
-			goto string_fail;
-
-		if ((str[0] == '0') && (tolower(str[1]) == 'x')) {
-			if ((sscanf(str, "%"SCNx64, &x) == 1)) {
+			if ((s[0] == '0') && (s[1] == 'x') &&
+			    (sscanf(s, "%"SCNx64, &x) == 1)) {
 				log_flag(DATA, "%s: converted data (0x%"PRIXPTR") to hex int: %s->%"PRId64,
-					 __func__, (uintptr_t) data, str, x);
+					 __func__, (uintptr_t) data, s, x);
 				data_set_int(data, x);
 				return SLURM_SUCCESS;
+			} else if (sscanf(s, "%"SCNd64, &x) == 1) {
+				log_flag(DATA, "%s: converted data (0x%"PRIXPTR") to int: %s->%"PRId64,
+					 __func__, (uintptr_t) data, s, x);
+				data_set_int(data, x);
+				return SLURM_SUCCESS;
+			} else { /* failed */
+				debug2("%s: sscanf of int failed: %s",
+				       __func__, s);
+				return ESLURM_DATA_CONV_FAILED;
 			}
-		} else if (sscanf(str, "%"SCNd64, &x) == 1) {
-			log_flag(DATA, "%s: converted data (0x%"PRIXPTR") to int: %s->%"PRId64,
-				 __func__, (uintptr_t) data, str, x);
-			data_set_int(data, x);
-			return SLURM_SUCCESS;
+		} else {
+			return ESLURM_DATA_CONV_FAILED;
 		}
-
-		goto string_fail;
-	}
 	case DATA_TYPE_FLOAT:
 		if (force) {
 			data_set_int(data, lrint(data_get_float(data)));
@@ -1526,78 +1544,50 @@ static int _convert_data_int(data_t *data, bool force)
 		return ESLURM_DATA_CONV_FAILED;
 	}
 
-string_fail:
-	log_flag(DATA, "%s: convert to int failed: %s",
-		 __func__, data->data.string_u);
 	return ESLURM_DATA_CONV_FAILED;
 }
 
 static int _convert_data_float_from_string(data_t *data)
 {
+	double x;
+	int rc = SLURM_SUCCESS;
 	const char *str = data->data.string_u;
-	int i = 0;
-	bool negative = false;
 
-	xassert(str);
+	if (!regex_quick_match(str, &float_pattern_re))
+		return ESLURM_DATA_CONV_FAILED;
 
-	if (str[i] == '+') {
-		i++;
-	} else if (str[i] == '-') {
-		i++;
-		negative = true;
+	if ((str[0] == '-') && ((str[1] == 'i') || (str[1] == 'I'))) {
+		xassert(!xstrcasecmp(str, "-infinity") ||
+			!xstrcasecmp(str, "-inf"));
+		data_set_float(data, -INFINITY);
+	} else if ((str[0] == '+') && ((str[1] == 'i') || (str[1] == 'I'))) {
+		xassert(!xstrcasecmp(str, "+infinity") ||
+			!xstrcasecmp(str, "+inf"));
+		data_set_float(data, INFINITY);
+	} else if ((str[0] == 'i') || (str[0] == 'I')) {
+		xassert(!xstrcasecmp(str, "infinity") ||
+			!xstrcasecmp(str, "inf"));
+		data_set_float(data, INFINITY);
+	} else if ((str[0] == '-') && ((str[1] == 'n') || (str[1] == 'N'))) {
+		xassert(!xstrcasecmp(str, "-nan"));
+		data_set_float(data, -NAN);
+	} else if ((str[0] == '+') && ((str[1] == 'n') || (str[1] == 'N'))) {
+		xassert(!xstrcasecmp(str, "+nan"));
+		data_set_float(data, NAN);
+	} else if ((str[0] == 'N') || (str[0] == 'N')) {
+		xassert(!xstrcasecmp(str, "nan"));
+		data_set_float(data, NAN);
+	} else if (sscanf(str, "%lf", &x) == 1) {
+		data_set_float(data, x);
+	} else { /* failed */
+		error("%s: unable to parse \"%s\" as double float failed",
+		      __func__, str);
+		rc = ESLURM_DATA_CONV_FAILED;
 	}
 
-	if ((tolower(str[i]) == 'i')) {
-		i++;
-
-		if (!xstrcasecmp(&str[i], "nf") ||
-		    !xstrcasecmp(&str[i], "nfinity")) {
-			if (negative)
-				data_set_float(data, -INFINITY);
-			else
-				data_set_float(data, INFINITY);
-
-			goto converted;
-		}
-
-		goto fail;
-	}
-
-	if ((tolower(str[i]) == 'n')) {
-		i++;
-
-		if (!xstrcasecmp(&str[i], "an")) {
-			if (negative)
-				data_set_float(data, -NAN);
-			else
-				data_set_float(data, NAN);
-
-			goto converted;
-		}
-
-		goto fail;
-	}
-
-	if ((str[i] >= '0') && (str[i] <= '9')) {
-		double x;
-
-		if (sscanf(&str[i], "%lf", &x) == 1) {
-			data_set_float(data, x);
-			goto converted;
-		}
-	}
-
-	goto fail;
-
-converted:
-	log_flag(DATA, "%s: converted data (0x%"PRIXPTR") to float: %s->%lf",
+	log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to float: %s->%lf",
 		 __func__, (uintptr_t) data, str, data_get_float(data));
-	return SLURM_SUCCESS;
-
-fail:
-	log_flag(DATA, "%s: convert to double float failed: %s",
-		 __func__, str);
-	return ESLURM_DATA_CONV_FAILED;
+	return rc;
 }
 
 static int _convert_data_float(data_t *data)
