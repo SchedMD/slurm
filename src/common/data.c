@@ -994,7 +994,7 @@ int data_get_string_converted(const data_t *d, char **buffer)
 		data_copy(dclone, d);
 		if (data_convert_type(dclone, DATA_TYPE_STRING) ==
 		    DATA_TYPE_STRING)
-			SWAP(_buffer, dclone->data.string_u);
+			_buffer = xstrdup(data_get_string(dclone));
 		FREE_NULL_DATA(dclone);
 	} else {
 		_buffer = xstrdup(data_get_string_const(d));
