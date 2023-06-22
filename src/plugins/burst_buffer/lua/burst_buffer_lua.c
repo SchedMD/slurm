@@ -2162,6 +2162,12 @@ extern int init(void)
                 return rc;
 	lua_script_path = get_extra_conf_path("burst_buffer.lua");
 
+	if ((rc = data_init())) {
+		error("%s: unable to init data structures: %s",
+		      __func__, slurm_strerror(rc));
+		return rc;
+	}
+
 	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
 		error("%s: unable to load JSON serializer: %s",
 		      __func__, slurm_strerror(rc));
@@ -2232,6 +2238,7 @@ extern int fini(void)
 
 	slurm_lua_fini();
 	xfree(lua_script_path);
+	/* Don't call data_fini(), that is taken care of elsewhere. */
 
 	return SLURM_SUCCESS;
 }

@@ -47,6 +47,13 @@
  * pointer which is a child of the existing tree and will be cleaned up by the
  * root.
  *
+ * To use data_t, data_init() must be called before anything else. It is safe to
+ * call this multiple times but not advised before every usage as it may be
+ * slow. data_init() is designed to allow calls for a specific plugin
+ * requirement which will not prevent loading of other plugins by the other
+ * calls to data_init(). data_fini() needs to be called after all data
+ * operations are complete is only for testing for memory leaks.
+ *
  * data_t has very *strict* typing that is based on JSON. All of the possible
  * types are in data_type_t. The caller is required to verify the type of the
  * data_t pointer is correct before calling the helper function to retrieve the
@@ -63,9 +70,15 @@
  * proceed. There are purposefully no iterators for data_t pointers to avoid any
  * form of dangling pointers.
  *
+ * data_t uses a plugin interface for serialization of the data to common
+ * formats. These plugins require 3rd party libraries and may not have been
+ * compiled. Any code should expect this possiblity as data_init() will fail if
+ * the plugin is not found.
+ *
  * Example usage:
  *
  * //Global init requiring JSON serializer
+ * if (data_init()) fatal("failed");
  * if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL)) fatal("failed");
  * //Create root data entry:
  * data_t *ex = data_new();
@@ -91,6 +104,8 @@
  * xassert(data_get_int(data_key_get(ex, "test2") == 12345);
  * // cleanup tree
  * FREE_NULL_DATA(ex);
+ * // release all global memory and plugins
+ * data_fini();
  */
 
 #ifndef _DATA_H
@@ -206,6 +221,19 @@ typedef data_for_each_cmd_t (*DataDictForF)(const char *key, data_t *data,
  */
 typedef data_for_each_cmd_t (*DataDictForFConst)(const char *key,
 						 const data_t *data, void *arg);
+
+/*
+ * Initialize static structs needed by data functions
+ *
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_init(void);
+/*
+ * Cleanup global memory used by data_t helpers
+ *
+ * WARNING: must be called only once after all data commands complete
+ */
+extern void data_fini(void);
 
 /*
  * Create new data struct.

@@ -639,6 +639,10 @@ extern int main(int argc, char **argv)
 	if (!state.root_dir || !state.root_dir[0])
 		_set_root();
 
+	if ((rc = data_init()))
+		fatal("%s: error loading data: %s", __func__,
+		      slurm_strerror(rc));
+
 	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL)))
 		fatal("%s: error loading JSON parser: %s", __func__,
 		      slurm_strerror(rc));
@@ -675,6 +679,7 @@ extern int main(int argc, char **argv)
 	xfree(command_argv);
 	auth_g_fini();
 	fini_setproctitle();
+	data_fini();
 	gres_fini();
 	select_g_fini();
 	log_fini();

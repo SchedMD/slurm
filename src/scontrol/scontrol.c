@@ -238,6 +238,8 @@ int main(int argc, char **argv)
 			mime_type = MIME_TYPE_JSON;
 			data_parser = optarg;
 			detail_flag = 1;
+			if (data_init())
+				fatal("data_init() failed");
 			if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
 				fatal("JSON plugin load failure");
 			break;
@@ -245,6 +247,8 @@ int main(int argc, char **argv)
 			mime_type = MIME_TYPE_YAML;
 			data_parser = optarg;
 			detail_flag = 1;
+			if (data_init())
+				fatal("data_init() failed");
 			if (serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL))
 				fatal("YAML plugin load failure");
 			break;
@@ -292,6 +296,7 @@ int main(int argc, char **argv)
 	FREE_NULL_LIST(clusters);
 	slurm_conf_destroy();
 	serializer_g_fini();
+	data_fini();
 #endif /* MEMORY_LEAK_DEBUG */
 
 	exit(exit_code);

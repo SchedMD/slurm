@@ -169,6 +169,9 @@ static void _init_jwks(void)
 	if (!(key_file = conf_get_opt_str(slurm_conf.authalt_params, "jwks=")))
 		return;
 
+	if (data_init())
+		fatal("%s: data_init() failed", __func__);
+
 	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
 		fatal("%s: serializer_g_init() failed", __func__);
 

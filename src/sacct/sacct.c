@@ -210,6 +210,7 @@ int main(int argc, char **argv)
 	sacct_fini();
 
 #if MEMORY_LEAK_DEBUG
+	data_fini();
 	auth_g_fini();
 	slurm_conf_destroy();
 	log_fini();
