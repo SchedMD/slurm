@@ -49,7 +49,7 @@ strong_alias(slurmdbd_free_list_msg,	slurm_slurmdbd_free_list_msg);
 strong_alias(slurmdbd_free_usage_msg,	slurm_slurmdbd_free_usage_msg);
 strong_alias(slurmdbd_free_id_rc_msg,	slurm_slurmdbd_free_id_rc_msg);
 
-extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(const char *msg_type)
+extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 {
 	if (!msg_type) {
 		return NO_VAL;
