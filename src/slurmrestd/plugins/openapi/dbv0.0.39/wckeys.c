@@ -94,7 +94,7 @@ static void _dump_wckeys(ctxt_t *ctxt, const char *wckey)
 
 	if (wckey) {
 		wckey_cond.name_list = list_create(NULL);
-		list_append(wckey_cond.name_list, (void *) wckey);
+		list_append(wckey_cond.name_list, wckey);
 	}
 
 	if (!db_query_list(ctxt, &wckey_list, slurmdb_wckeys_get,
@@ -132,7 +132,7 @@ static void _delete_wckey(ctxt_t *ctxt)
 	}
 
 	wckey_cond.name_list = list_create(NULL);
-	list_append(wckey_cond.name_list, (void *) wckey);
+	list_append(wckey_cond.name_list, wckey);
 
 	if (!db_query_list(ctxt, &wckey_list, slurmdb_wckeys_remove,
 			   &wckey_cond))

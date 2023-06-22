@@ -386,7 +386,7 @@ static void _delete_account(ctxt_t *ctxt, const char *account)
 		.assoc_cond = &assoc_cond,
 	};
 
-	list_append(assoc_cond.acct_list, (void *) account);
+	list_append(assoc_cond.acct_list, account);
 
 	if (db_query_list(ctxt, &removed, slurmdb_accounts_remove, &acct_cond))
 		goto cleanup;
@@ -428,7 +428,7 @@ extern int op_handler_account(const char *context_id,
 
 		/* Change search conditions based on parameters */
 		if (!_parse_other_params(ctxt, &acct_cond)) {
-			list_append(assoc_cond.acct_list, (void *) acct);
+			list_append(assoc_cond.acct_list, acct);
 
 			_dump_accounts(ctxt, &acct_cond);
 		}

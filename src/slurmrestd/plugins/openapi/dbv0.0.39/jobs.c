@@ -206,7 +206,7 @@ static data_for_each_cmd_t _foreach_list_entry(data_t *data, void *arg)
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		return DATA_FOR_EACH_FAIL;
 
-	if (slurm_addto_char_list(list, (void *) data_get_string(data)) < 1)
+	if (slurm_addto_char_list(list, data_get_string(data)) < 1)
 		return DATA_FOR_EACH_FAIL;
 
 	return DATA_FOR_EACH_CONT;
@@ -230,7 +230,7 @@ static int _parse_csv_list(data_t *src, const char *key, List *list,
 		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, key,
 				  "format must be a string");
 
-	if (add_to(*list, (void *) data_get_string(src)) < 1)
+	if (add_to(*list, data_get_string(src)) < 1)
 		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, key,
 				  "Unable to parse CSV list");
 
