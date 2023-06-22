@@ -693,7 +693,7 @@ static int _addto_step_list_internal(List step_list, const char *name, void *x)
 }
 
 /* returns number of objects added to list */
-extern int slurm_addto_step_list(List step_list, const char *names)
+extern int slurm_addto_step_list(List step_list, char *names)
 {
 	if (!step_list) {
 		error("No list was given to fill in");
