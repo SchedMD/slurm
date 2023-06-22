@@ -201,26 +201,24 @@ typedef enum {
  *  Function prototype for operating on each item in a list typed data_t.
  *  Returns command requested for processing
  */
-typedef data_for_each_cmd_t (*DataListForF)(data_t *data, void *arg);
+typedef data_for_each_cmd_t (*DataListForF) (data_t *data, void *arg);
 /*
  *  Function prototype for operating on each item in a list typed data_t.
  *  Returns command requested for processing
  */
-typedef data_for_each_cmd_t (*DataListForFConst)(const data_t *data, void *arg);
+typedef data_for_each_cmd_t (*DataListForFConst) (const data_t *data, void *arg);
 
 /*
  *  Function prototype for operating on each item in a dictionary typed data_t.
  *  Returns command requested for processing
  */
-typedef data_for_each_cmd_t (*DataDictForF)(const char *key, data_t *data,
-					    void *arg);
+typedef data_for_each_cmd_t (*DataDictForF) (const char *key, data_t *data, void *arg);
 
 /*
  *  Function prototype for operating on each item in a dictionary typed data_t.
  *  Returns command requested for processing
  */
-typedef data_for_each_cmd_t (*DataDictForFConst)(const char *key,
-						 const data_t *data, void *arg);
+typedef data_for_each_cmd_t (*DataDictForFConst) (const char *key, const data_t *data, void *arg);
 
 /*
  * Initialize static structs needed by data functions
