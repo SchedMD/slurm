@@ -7472,8 +7472,13 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 			job_ptr->state_reason = WAIT_HELD_USER;
 		else
 			job_ptr->state_reason = WAIT_HELD;
-	} else if (job_ptr->priority != NO_VAL) {
+	} else if ((job_ptr->priority != NO_VAL) &&
+		   (job_ptr->priority != INFINITE)) {
 		job_ptr->direct_set_prio = 1;
+	} else if ((job_ptr->priority == INFINITE) &&
+		   (user_submit_priority == INFINITE)) {
+		/* This happens when "hold": false is specified to slurmrestd */
+		job_ptr->priority = NO_VAL;
 	}
 
 	/*
