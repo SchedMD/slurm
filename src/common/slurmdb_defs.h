@@ -136,7 +136,7 @@ extern uint32_t str_2_res_flags(char *flags, int option);
 extern char *slurmdb_res_type_str(slurmdb_resource_type_t type);
 
 extern char *slurmdb_admin_level_str(slurmdb_admin_level_t level);
-extern slurmdb_admin_level_t str_2_slurmdb_admin_level(const char *level);
+extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level);
 
 /* The next three functions have pointers to assoc_list so do not
  * destroy assoc_list before using the list returned from this function.
