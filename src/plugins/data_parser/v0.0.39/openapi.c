@@ -263,8 +263,6 @@ extern void set_openapi_parse_ref(data_t *obj, const parser_t *parser,
 
 extern void _set_ref(data_t *obj, const parser_t *parser, spec_args_t *sargs)
 {
-	char *str;
-
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
@@ -273,8 +271,8 @@ extern void _set_ref(data_t *obj, const parser_t *parser, spec_args_t *sargs)
 		return;
 	}
 
-	str = _get_parser_path(parser);
-	data_set_string_own(data_key_set(data_set_dict(obj), "$ref"), str);
+	data_set_string_own(data_key_set(data_set_dict(obj), "$ref"),
+			    _get_parser_path(parser));
 
 	_add_parser(parser, sargs);
 }
@@ -386,7 +384,6 @@ static data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
 	    !xstrncmp(data_get_string(data), TYPE_PREFIX,
 		      strlen(TYPE_PREFIX))) {
 		const parser_t *parser = NULL;
-		char *str;
 
 		for (int i = 0; i < sargs->parser_count; i++) {
 			if (!xstrcmp(sargs->parsers[i].type_string,
@@ -400,8 +397,7 @@ static data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
 			fatal_abort("%s: unknown %s",
 				    __func__, data_get_string(data));
 
-		str = _get_parser_path(parser);
-		data_set_string_own(data, str);
+		data_set_string_own(data, _get_parser_path(parser));
 		_add_parser(parser, sargs);
 	}
 
