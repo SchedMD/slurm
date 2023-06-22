@@ -1794,8 +1794,6 @@ static bool _data_match_lists(const data_t *a, const data_t *b, bool mask)
 
 extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 {
-	bool rc;
-
 	if (a == NULL && b == NULL)
 		return true;
 
@@ -1805,76 +1803,29 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 	_check_magic(a);
 	_check_magic(b);
 
-	if (data_get_type(a) != data_get_type(b)) {
-		log_flag(DATA, "type mismatch: %s(0x%"PRIXPTR") != %s(0x%"PRIXPTR")",
-			 data_type_to_string(data_get_type(a)), (uintptr_t) a,
-			 data_type_to_string(data_get_type(b)), (uintptr_t) b);
+	if (data_get_type(a) != data_get_type(b))
 		return false;
-	}
 
 	switch (data_get_type(a)) {
 	case DATA_TYPE_NULL:
-		rc = (data_get_type(b) == DATA_TYPE_NULL);
-		log_flag(DATA, "compare: %s(0x%"PRIXPTR") %s %s(0x%"PRIXPTR")",
-			 data_type_to_string(data_get_type(a)), (uintptr_t) a,
-			 (rc ? "=" : "!="),
-			 data_type_to_string(data_get_type(b)), (uintptr_t) b);
-		return rc;
+		return (data_get_type(b) == DATA_TYPE_NULL);
 	case DATA_TYPE_STRING:
-		rc = !xstrcmp(data_get_string_const(a),
-			      data_get_string_const(b));
-		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%s %s %s(0x%"PRIXPTR")=%s",
-			 data_type_to_string(data_get_type(a)), (uintptr_t) a,
-			 data_get_string_const(a), (rc ? "=" : "!="),
-			 data_type_to_string(data_get_type(b)),
-			 (uintptr_t) b, data_get_string_const(b));
-		return rc;
+		// TODO: should we have a case insensitive compare?
+		return !xstrcmp(data_get_string_const(a),
+				data_get_string_const(b));
 	case DATA_TYPE_BOOL:
-		rc = (data_get_bool(a) == data_get_bool(b));
-		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%s %s %s(0x%"PRIXPTR")=%s",
-			 data_type_to_string(data_get_type(a)), (uintptr_t) a,
-			 (data_get_bool(a) ? "True" : "False"),
-			 (rc ? "=" : "!="),
-			 data_type_to_string(data_get_type(b)), (uintptr_t) b,
-			 (data_get_bool(b) ? "True" : "False"));
-		return rc;
+		return (data_get_bool(a) == data_get_bool(b));
 	case DATA_TYPE_INT_64:
-		rc = data_get_int(a) == data_get_int(b);
-		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%"PRId64" %s %s(0x%"PRIXPTR")=%"PRId64,
-			 data_type_to_string(data_get_type(a)), (uintptr_t) a,
-			 data_get_int(a), (rc ? "=" : "!="),
-			 data_type_to_string(data_get_type(b)), (uintptr_t) b,
-			 data_get_int(b));
-		return rc;
+		return data_get_int(a) == data_get_int(b);
 	case DATA_TYPE_FLOAT:
-		rc = fuzzy_equal(data_get_float(a), data_get_float(b));
-		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%e %s %s(0x%"PRIXPTR")=%e",
-			 data_type_to_string(data_get_type(a)), (uintptr_t) a,
-			 data_get_float(a), (rc ? "=" : "!="),
-			 data_type_to_string(data_get_type(b)), (uintptr_t) b,
-			 data_get_float(b));
-		return rc;
+		return fuzzy_equal(data_get_float(a), data_get_float(b));
 	case DATA_TYPE_DICT:
-		rc = _data_match_dict(a, b, mask);
-		log_flag(DATA, "compare dictionary: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
-			 data_type_to_string(data_get_type(a)), (uintptr_t) a,
-			 data_get_dict_length(a), (rc ? "=" : "!="),
-			 data_type_to_string(data_get_type(b)), (uintptr_t) b,
-			 data_get_dict_length(b));
-		return rc;
+		return _data_match_dict(a, b, mask);
 	case DATA_TYPE_LIST:
-		rc = _data_match_lists(a, b, mask);
-		log_flag(DATA, "compare list: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
-			 data_type_to_string(data_get_type(a)), (uintptr_t) a,
-			 data_get_list_length(a), (rc ? "=" : "!="),
-			 data_type_to_string(data_get_type(b)), (uintptr_t) b,
-			 data_get_list_length(b));
-		return rc;
+		return _data_match_lists(a, b, mask);
 	default:
 		fatal_abort("%s: unexpected data type", __func__);
 	}
-
-	return rc;
 }
 
 extern data_t *data_resolve_dict_path(data_t *data, const char *path)
