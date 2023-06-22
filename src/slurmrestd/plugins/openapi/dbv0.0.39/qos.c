@@ -84,7 +84,11 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 			return DATA_FOR_EACH_FAIL;
 		}
 
-		args->qos_cond->with_deleted = data_get_bool(data);
+		if (data->data.bool_u)
+			args->qos_cond->with_deleted = true;
+		else
+			args->qos_cond->with_deleted = false;
+
 		return DATA_FOR_EACH_CONT;
 	}
 

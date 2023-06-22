@@ -148,8 +148,26 @@ extern char *data_type_to_string(data_type_t type);
 /* opaque type for list_u and dict_u */
 typedef struct data_list_s data_list_t;
 
-/* Opaque data struct to hold generic data. */
-typedef struct data_s data_t;
+/*
+ * Opaque data struct to hold generic data.
+ * data is based on the JSON data type and has the same types.
+ * data forms a tree structure.
+ * please avoid direct access of this struct and only use access functions.
+ * the nature of this struct may change at any time, only pass around pointers
+ * created from data_new().
+ */
+typedef struct {
+	int magic;
+	data_type_t type;
+	union { /* append "_u" to every type to avoid reserved words */
+		data_list_t *list_u;
+		data_list_t *dict_u;
+		int64_t int_u;
+		char *string_u;
+		double float_u;
+		bool bool_u;
+	} data;
+} data_t;
 
 /*
  * Enum to control how the foreach will

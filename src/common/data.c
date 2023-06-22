@@ -69,27 +69,6 @@ struct data_list_s {
 	data_list_node_t *end;
 };
 
-/*
- * Data is based on the JSON data type and has the same types.
- * Data forms a tree structure.
- * Please avoid direct access of this struct and only use access functions.
- * The nature of this struct may change at any time, only pass around pointers
- * created from data_new().
- */
-struct data_s {
-	int magic;
-	data_type_t type;
-
-	union { /* append "_u" to every type to avoid reserved words */
-		data_list_t *list_u;
-		data_list_t *dict_u;
-		int64_t int_u;
-		char *string_u;
-		double float_u;
-		bool bool_u;
-	} data;
-};
-
 typedef struct {
 	char *path;
 	char *at;
