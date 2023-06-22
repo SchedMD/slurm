@@ -182,8 +182,10 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-serializer_json_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_serializer_json_la_OBJECTS = serializer_json.lo
+@WITH_JSON_PARSER_TRUE@serializer_json_la_DEPENDENCIES =  \
+@WITH_JSON_PARSER_TRUE@	$(am__DEPENDENCIES_1)
+@WITH_JSON_PARSER_TRUE@am_serializer_json_la_OBJECTS =  \
+@WITH_JSON_PARSER_TRUE@	serializer_json.lo
 serializer_json_la_OBJECTS = $(am_serializer_json_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -193,6 +195,8 @@ serializer_json_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(serializer_json_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
+@WITH_JSON_PARSER_TRUE@am_serializer_json_la_rpath = -rpath \
+@WITH_JSON_PARSER_TRUE@	$(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -518,13 +522,15 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
-pkglib_LTLIBRARIES = serializer_json.la
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) \
+			  -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
+
+@WITH_JSON_PARSER_TRUE@pkglib_LTLIBRARIES = serializer_json.la
 
 # Serializer JSON plugin.
-serializer_json_la_SOURCES = serializer_json.c
-serializer_json_la_LDFLAGS = $(PLUGIN_FLAGS)
-serializer_json_la_LIBADD = $(JSON_LDFLAGS)
+@WITH_JSON_PARSER_TRUE@serializer_json_la_SOURCES = serializer_json.c
+@WITH_JSON_PARSER_TRUE@serializer_json_la_LDFLAGS = $(PLUGIN_FLAGS)
+@WITH_JSON_PARSER_TRUE@serializer_json_la_LIBADD = $(JSON_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -595,7 +601,7 @@ clean-pkglibLTLIBRARIES:
 	}
 
 serializer_json.la: $(serializer_json_la_OBJECTS) $(serializer_json_la_DEPENDENCIES) $(EXTRA_serializer_json_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(serializer_json_la_LINK) -rpath $(pkglibdir) $(serializer_json_la_OBJECTS) $(serializer_json_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(serializer_json_la_LINK) $(am_serializer_json_la_rpath) $(serializer_json_la_OBJECTS) $(serializer_json_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -817,9 +823,9 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 .PRECIOUS: Makefile
 
 
-force:
-$(serializer_json_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+@WITH_JSON_PARSER_TRUE@force:
+@WITH_JSON_PARSER_TRUE@$(serializer_json_la_LIBADD) : force
+@WITH_JSON_PARSER_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
