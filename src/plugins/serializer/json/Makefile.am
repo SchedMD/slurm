@@ -4,7 +4,10 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) \
+			  -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
+
+if WITH_JSON_PARSER
 
 pkglib_LTLIBRARIES = serializer_json.la
 
@@ -16,3 +19,5 @@ serializer_json_la_LIBADD = $(JSON_LDFLAGS)
 force:
 $(serializer_json_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+
+endif
