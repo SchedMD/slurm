@@ -1602,7 +1602,7 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id);
  */
 extern int fmt_job_id_string(slurm_selected_step_t *id, char **dst);
 
-extern slurm_selected_step_t *slurm_parse_step_str(const char *name);
+extern slurm_selected_step_t *slurm_parse_step_str(char *name);
 
 extern resource_allocation_response_msg_t *
 slurm_copy_resource_allocation_response_msg(

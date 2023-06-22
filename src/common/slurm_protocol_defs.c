@@ -935,7 +935,7 @@ cleanup:
 	return rc;
 }
 
-extern slurm_selected_step_t *slurm_parse_step_str(const char *name)
+extern slurm_selected_step_t *slurm_parse_step_str(char *name)
 {
 	slurm_selected_step_t *selected_step;
 	char *dot, *plus = NULL, *under;
