@@ -145,6 +145,9 @@ typedef enum {
 /* convert type to readable string */
 extern char *data_type_to_string(data_type_t type);
 
+/* opaque type for list_u and dict_u */
+typedef struct data_list_s data_list_t;
+
 /* Opaque data struct to hold generic data. */
 typedef struct data_s data_t;
 
