@@ -150,7 +150,7 @@ static void  _free_all_reservations(reserve_info_msg_t *msg);
 
 static void _free_all_step_info (job_step_info_response_msg_t *msg);
 
-static char *_convert_to_id(const char *name, bool gid)
+static char *_convert_to_id(char *name, bool gid)
 {
 	char *tmp_name;
 	if (gid) {
