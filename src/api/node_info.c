@@ -769,7 +769,7 @@ extern int slurm_load_node2(time_t update_time, node_info_msg_t **resp,
  * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_info_msg
  */
-extern int slurm_load_node_single(node_info_msg_t **resp, const char *node_name,
+extern int slurm_load_node_single(node_info_msg_t **resp, char *node_name,
 				  uint16_t show_flags)
 {
 	slurm_msg_t req_msg;
@@ -777,7 +777,7 @@ extern int slurm_load_node_single(node_info_msg_t **resp, const char *node_name,
 
 	slurm_msg_t_init(&req_msg);
 	memset(&req, 0, sizeof(req));
-	req.node_name    = (char *) node_name;
+	req.node_name    = node_name;
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_NODE_INFO_SINGLE;
 	req_msg.data     = &req;
