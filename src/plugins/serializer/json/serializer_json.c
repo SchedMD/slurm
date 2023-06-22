@@ -39,10 +39,11 @@
 #include "src/common/data.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
+#include "src/common/utf.h"
+#include "src/common/vbuf.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/utf.h"
 #include "src/interfaces/serializer.h"
 
 /*
@@ -84,12 +85,6 @@ const char *mime_types[] = {
 
 /* Max number of levels to parse */
 #define MAX_DEPTH 50
-
-/* Default quoted string alloc size */
-#define STRING_ALLOC_MIN 64
-
-/* Default alloc size when serializing data to string */
-#define INITIAL_OUTPUT_STRING_ALLOC (STRING_ALLOC_MIN * 1024)
 
 #ifndef NDEBUG
 
@@ -134,13 +129,6 @@ static char *_cast_cstring(void *ptr, const bool is_compat)
 }
 #define cast_cstring(ptr) _cast_cstring(ptr, IS_TYPE_STRING(ptr))
 
-static char **_cast_cstring_ptr(void *ptr, const bool is_compat)
-{
-	xassert(is_compat);
-	return ptr;
-}
-#define cast_cstring_ptr(ptr) _cast_cstring_ptr(ptr, IS_TYPE_STRING_PTR(ptr))
-
 static utf8_t *_cast_utf8string(void *ptr, const bool is_compat)
 {
 	xassert(is_compat);
@@ -161,26 +149,16 @@ static const utf8_t *_cast_const_utf8string(const void *ptr,
 
 #define cast_cstring(ptr) ((char *) ptr)
 #define cast_const_cstring(ptr) ((const char *) ptr)
-#define cast_cstring_ptr(ptr) ((char **) ptr)
 #define cast_utf8string(ptr) ((utf8_t *) ptr)
 #define cast_const_utf8string(ptr) ((const utf8_t *) ptr)
 
 #endif
 
-/* wrapper to convert xstrcatat() to using char * from utf8_t */
-#define catat(src, src_at, str)                                               \
-	_xstrcatat(cast_cstring_ptr(&src), cast_cstring_ptr(&src_at),         \
-		   cast_const_cstring(str))
+/* wrapper to push const utf8 string */
+#define catat(buf, str) vbuf_dup_push(buf, str, utf8len(str))
 
-/* wrapper to add a single utf character */
-#define catcharat(src_str, src_str_at, character, return_code)                 \
-	_cat_char_at(cast_cstring_ptr(&src_str), cast_cstring_ptr(&src_str_at),\
-		     character, &return_code)
-
-/* wrapper to convert xstrfmtcat() to using char * from utf8_t */
-#define catfmtat(src, src_at, fmt, ...)                                       \
-	_xstrfmtcatat(cast_cstring_ptr(&src), cast_cstring_ptr(&src_at), fmt, \
-		      ##__VA_ARGS__)
+#define push_utf8(buf, character, return_code)  \
+	_push_utf8(buf, character, &return_code)
 
 /* wrapper for utf8_t* to char* */
 #define utf8len(x) strlen(cast_const_cstring(x))
@@ -257,8 +235,8 @@ typedef struct {
 
 	const utf8_t *unquoted; /* start of unquoted string */
 
-	utf8_t *quoted;
-	utf8_t *quoted_at;
+	vbuf_t *quoted;
+	bool quoted_started; /* true if parsing inside of quoted string */
 
 	const utf8_t *escaped; /* start of escaped sequence */
 	uint8_t escaped_chars; /* number of match hex'ed chars */
@@ -278,8 +256,7 @@ typedef struct {
 	const data_t *parent;
 	int index;
 
-	utf8_t *dst;
-	utf8_t *dst_at;
+	vbuf_t *dst;
 
 	serializer_flags_t flags;
 } dump_state_t;
@@ -311,22 +288,18 @@ static bool is_debug_active()
 		(get_log_level() >= LOG_LEVEL_DEBUG));
 }
 
-static void _cat_char_at(char **src_ptr, char **src_at_ptr, utf_code_t utf,
-			 int *rc_ptr)
+static void _push_utf8(vbuf_t *buf, utf_code_t utf, int *rc_ptr)
 {
 	xassert(!*rc_ptr);
-
-	if (!*src_ptr)
-		*src_at_ptr = *src_ptr = xmalloc(STRING_ALLOC_MIN);
 
 	if (utf <= UTF_ASCII_MAX_CODE) {
 		utf8_t c[] = { utf, 0};
 		/* avoid penatly to build stack with write_utf8_character() */
-		_xstrcatat(src_ptr, src_at_ptr, (const char *) c);
+		vbuf_dup_push(buf, c, 1);
 	} else {
 		utf8_t c[UTF8_CHAR_MAX_BYTES];
 		*rc_ptr = write_utf8_character(utf, c, true);
-		_xstrcatat(src_ptr, src_at_ptr, (const char *) c);
+		vbuf_dup_push(buf, c, utf8len(c));
 	}
 }
 
@@ -346,16 +319,13 @@ extern int serializer_p_fini(void)
 
 static utf8_t *_dump_target_stack(state_t *state)
 {
-	utf8_t *stack = NULL;
-	utf8_t *stack_at = NULL;
+	vbuf_t *stack = vbuf_new(0, 0);
 
-	for (int i = 0; i < state->parents.depth; i++) {
-		catfmtat(stack, stack_at, "%s"PRINTF_DATA_T,
-			 (stack ? "->" : ""),
-			 PRINTF_DATA_T_VAL(state->parents.stack[i]));
-	}
+	for (int i = 0; i < state->parents.depth; i++)
+		vbuf_push_printf(stack, "%s"PRINTF_DATA_T, (stack ? "->" : ""),
+				 PRINTF_DATA_T_VAL(state->parents.stack[i]));
 
-	return stack;
+	return vbuf_to_string(&stack, NULL, true, true);
 }
 
 static void _push_target(state_t *state, data_t *t)
@@ -487,7 +457,7 @@ static char *_printable(const utf8_t *src)
 	int rc = SLURM_SUCCESS;
 	const int len = !src ? 0 : utf8len(src);
 	const utf8_t *end = src + len;
-	utf8_t *pos = NULL, *output = NULL;
+	vbuf_t *output = vbuf_new(0, 0);
 
 	if (!len)
 		return NULL;
@@ -506,9 +476,9 @@ static char *_printable(const utf8_t *src)
 			 * src is corrupt, so we just dump replacements from
 			 * here on.
 			 */
-			catcharat(output, pos, UTF_REPLACEMENT_CODE, rc);
+			push_utf8(output, UTF_REPLACEMENT_CODE, rc);
 		} else {
-			catcharat(output, pos, get_utf8_loggable(utf), rc);
+			push_utf8(output, get_utf8_loggable(utf), rc);
 			src += bytes;
 		}
 	}
@@ -517,7 +487,7 @@ static char *_printable(const utf8_t *src)
 		     "%s: printable string 0x%"PRIxPTR,
 		     __func__, (uintptr_t) output);
 
-	return cast_cstring(output);
+	return vbuf_to_string(&output, NULL, true, true);
 }
 
 static bool _is_unquoted_char(utf_code_t utf)
@@ -689,10 +659,9 @@ static int _on_enter_quoted(state_t *state, utf_code_t utf)
 				   PRINTF_DATA_T_VAL(state->target));
 	}
 
-	xassert(!state->quoted);
-	xassert(!state->quoted_at);
-
-	state->quoted_at = state->quoted = xmalloc(STRING_ALLOC_MIN);
+	xassert(vbuf_is_empty(state->quoted));
+	xassert(!state->quoted_started);
+	state->quoted_started = true;
 
 	parse_debug(state, utf,
 		    "BEGIN: quoted string while parsing "PRINTF_DATA_T,
@@ -703,10 +672,15 @@ static int _on_enter_quoted(state_t *state, utf_code_t utf)
 static int _on_quoted(state_t *state, utf_code_t utf)
 {
 	int rc = SLURM_SUCCESS;
+	size_t quoted_bytes = 0;
+	utf8_t *quoted;
+
+	quoted = vbuf_to_string(&state->quoted, &quoted_bytes, true, false);
+	state->quoted_started = false;
 
 	if (data_get_type(state->target) == DATA_TYPE_DICT) {
 		if (state->key) {
-			char *printable = _printable(state->quoted);
+			char *printable = _printable(quoted);
 
 			rc = parse_error(state, utf,
 					 ESLURM_JSON_UNEXPECTED_QUOTED_STRING,
@@ -715,11 +689,10 @@ static int _on_quoted(state_t *state, utf_code_t utf)
 					 PRINTF_DATA_T_INDEX_VAL(state->target,
 						state->key_printable));
 
-			xfree(state->quoted);
 			xfree(printable);
 		} else {
-			_on_dict_key(state, utf, state->quoted, "quoted string");
-			state->quoted = NULL;
+			_on_dict_key(state, utf, quoted, "quoted string");
+			quoted = NULL;
 		}
 	} else if (data_get_type(state->target) == DATA_TYPE_LIST) {
 		data_t *parent = state->target, *target;
@@ -730,9 +703,7 @@ static int _on_quoted(state_t *state, utf_code_t utf)
 			char *index = xstrdup_printf("%zu",
 				(data_get_list_length(parent) - 1));
 
-			parse_debug_hex(state,
-					state->quoted,
-					utf8len(state->quoted),
+			parse_debug_hex(state, quoted, quoted_bytes,
 					"END: parsed quoted string while parsing "PRINTF_DATA_T_INDEX"="PRINTF_DATA_T,
 					PRINTF_DATA_T_INDEX_VAL(parent, index),
 					PRINTF_DATA_T_VAL(target));
@@ -740,28 +711,28 @@ static int _on_quoted(state_t *state, utf_code_t utf)
 			xfree(index);
 		}
 
-		data_set_utf8_own(target, state->quoted);
+		data_set_utf8_own(target, quoted);
 	} else if (data_get_type(state->target) == DATA_TYPE_NULL) {
-		parse_debug_hex(state, state->quoted, utf8len(state->quoted),
+		parse_debug_hex(state, quoted, quoted_bytes,
 				"END: parsed quoted string while parsing "PRINTF_DATA_T,
 				PRINTF_DATA_T_VAL(state->target));
 
-		data_set_utf8_own(state->target, state->quoted);
+		data_set_utf8_own(state->target, quoted);
 		rc = _pop_target(state, utf);
 	} else {
-		char *printable = _printable(state->quoted);
+		char *printable = _printable(quoted);
 
 		rc = parse_error(state, utf,
 				 ESLURM_JSON_UNEXPECTED_QUOTED_STRING,
 				 "unexpected quoted string \"%s\" while parsing "PRINTF_DATA_T,
 				 printable, PRINTF_DATA_T_VAL(state->target));
 
-		xfree(state->quoted);
 		xfree(printable);
 	}
 
-	xassert(!state->quoted);
-	state->quoted_at = NULL;
+	xassert(!state->quoted_started);
+	xassert(vbuf_is_empty(state->quoted));
+	xfree(quoted);
 
 	return rc;
 }
@@ -779,7 +750,7 @@ static int _on_escaped_utf_code(state_t *state, utf_code_t utf)
 	utf8_t *escaped = NULL;
 	utf_code_t eutf;
 
-	xassert(state->quoted);
+	xassert(state->quoted_started);
 	xassert(state->escaped[0] == '\\');
 	xassert(state->escaped[1] == 'u');
 
@@ -800,7 +771,7 @@ static int _on_escaped_utf_code(state_t *state, utf_code_t utf)
 	if (sscanf(cast_cstring(escaped), "%"SCNx32, &eutf) == 1) {
 		parse_debug(state, utf, "END: escaped UTF string \\u%s = "UTF8_PRINTF,
 			    escaped, eutf);
-		catcharat(state->quoted, state->quoted_at, eutf, rc);
+		push_utf8(state->quoted, eutf, rc);
 	} else {
 		rc = parse_error(state, eutf, ESLURM_JSON_INVALID_ESCAPED,
 				 "unable to parse \\u%s to integer for UTF encoding",
@@ -878,7 +849,7 @@ static int _on_escaped(state_t *state, const utf8_t *p, const utf_code_t utf,
 	int rc = SLURM_SUCCESS;
 
 	/* inside of escaped sequence */
-	xassert(state->quoted);
+	xassert(state->quoted_started);
 
 	if (p != (state->escaped + 1))
 		return _on_escaped_utf_char(state, p, utf, go_next_char);
@@ -899,8 +870,7 @@ static int _on_escaped(state_t *state, const utf8_t *p, const utf_code_t utf,
 			parse_debug(state, utf, "END: escaped string \\%c",
 				    escaped_chars[i].utf);
 
-			catat(state->quoted, state->quoted_at,
-			      escaped_chars[i].escaped);
+			catat(state->quoted, escaped_chars[i].escaped);
 
 			state->escaped = NULL;
 			break;
@@ -1203,6 +1173,8 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src_ptr,
 	else
 		state.target = *dest = data_new();
 
+	state.quoted = vbuf_new(0, 0);
+
 	log_flag_hex(DATA, src, length,
 		     "parsing string 0x%"PRIxPTR" to "PRINTF_DATA_T,
 		     (uintptr_t) src, PRINTF_DATA_T_VAL(state.target));
@@ -1252,10 +1224,10 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src_ptr,
 			goto cleanup;
 		}
 
+#ifndef NDEBUG
 		xassert(!rc);
-		xassert((!state.unquoted && !state.quoted) ||
-			(state.unquoted && !state.quoted) ||
-			(!state.unquoted && state.quoted));
+		xassert((!!state.unquoted ^ !!state.quoted_started) ||
+			(!state.unquoted && !state.quoted_started));
 		xassert(state.parents.depth >= 0);
 		xassert(state.parents.max_depth > 0);
 		xassert(xsize(state.parents.stack) > 0);
@@ -1265,8 +1237,8 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src_ptr,
 		xassert(state.col <= length);
 		xassert(state.comment_type >= COMMENT_UNKNOWN);
 		xassert(state.comment_type <= COMMENT_SPAN_END);
-		xassert(!state.escaped || state.quoted);
-		xassert(!state.quoted_at || state.quoted);
+		xassert(!state.escaped || (!vbuf_is_empty(state.quoted) &&
+			state.quoted_started));
 		xassert(!state.key_printable || state.key);
 		xassert(!state.key_source || state.key);
 		/* there should always be target unless stream is complete */
@@ -1280,6 +1252,7 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src_ptr,
 		xassert(!state.escaped ||
 			((state.escaped >= cast_const_utf8string(src_ptr)) &&
 			 (state.escaped <= end)));
+#endif /* !NDEBUG */
 
 		if (p >= end) {
 			if (state.unquoted) {
@@ -1309,7 +1282,7 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src_ptr,
 				if ((rc = _on_escaped_utf_code(&state, utf)))
 					goto cleanup;
 			}
-			if (state.quoted) {
+			if (state.quoted_started) {
 				rc = parse_error(&state, utf,
 					ESLURM_JSON_UNCLOSED_QUOTED_STRING,
 					"Invalid quoted string at end of source string");
@@ -1404,7 +1377,7 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src_ptr,
 				continue;
 		}
 
-		if (state.quoted) {
+		if (state.quoted_started) {
 			if (!is_space_checked) {
 				is_space = is_utf8_space(utf);
 				is_space_checked = true;
@@ -1431,8 +1404,7 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src_ptr,
 				xassert(!state.escaped);
 				state.escaped = p;
 			} else {
-				catcharat(state.quoted, state.quoted_at, utf,
-					  rc);
+				push_utf8(state.quoted, utf, rc);
 			}
 
 			if (rc)
@@ -1565,7 +1537,7 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src_ptr,
 	}
 
 cleanup:
-	xfree(state.quoted);
+	FREE_NULL_VBUF(state.quoted);
 	xfree(state.key);
 	xfree(state.parents.stack);
 
@@ -1616,7 +1588,7 @@ static void _cat_depth(dump_state_t *state)
 {
 	if (state->flags & SER_FLAGS_PRETTY)
 		for (int i = 0; i < state->depth; i++)
-			catat(state->dst, state->dst_at, "\t");
+			catat(state->dst, "\t");
 }
 
 static int _cat_data_string(dump_state_t *state, const utf8_t *src,
@@ -1624,11 +1596,11 @@ static int _cat_data_string(dump_state_t *state, const utf8_t *src,
 {
 	log_flag_hex(DATA, src, len, "dump quoted string");
 
-	catat(state->dst, state->dst_at, "\"");
+	catat(state->dst, "\"");
 
 	for (const utf8_t *end = src + len; src < end; src++) {
 		bool found = false;
-		int utf_bytes;
+		int utf_bytes = 0;
 		utf_code_t utf;
 		int rc;
 
@@ -1639,8 +1611,9 @@ static int _cat_data_string(dump_state_t *state, const utf8_t *src,
 			dump_debug(state, utf,
 				   "Dumping escaped %d bytes UTF-8 character",
 				   utf_bytes);
-			catfmtat(state->dst, state->dst_at, "\\u%06"PRIx32,
-				     ((utf < 0) ? UTF_REPLACEMENT_CODE : utf));
+			vbuf_push_printf(state->dst, "\\u%06"PRIx32,
+					 ((utf < 0) ?
+					  UTF_REPLACEMENT_CODE : utf));
 			src += (utf_bytes - 1);
 			continue;
 		}
@@ -1654,7 +1627,7 @@ static int _cat_data_string(dump_state_t *state, const utf8_t *src,
 				};
 				dump_debug(state, utf, "Dumping escaped character "UTF8_PRINTF"=\\%c",
 					   utf, escaped_chars[i].utf);
-				catat(state->dst, state->dst_at, c);
+				catat(state->dst, c);
 				found = true;
 				break;
 			}
@@ -1664,14 +1637,14 @@ static int _cat_data_string(dump_state_t *state, const utf8_t *src,
 			int rc = SLURM_SUCCESS;
 
 			dump_debug(state, utf, "dumping ASCII character");
-			catcharat(state->dst, state->dst_at, *src, rc);
+			push_utf8(state->dst, *src, rc);
 
 			if (rc)
 				return rc;
 		}
 	}
 
-	catat(state->dst, state->dst_at, "\"");
+	catat(state->dst, "\"");
 	return SLURM_SUCCESS;
 }
 
@@ -1682,15 +1655,15 @@ static data_for_each_cmd_t _foreach_cat_data_list(const data_t *src, void *arg)
 
 	if (state->index > 0) {
 		if (data_get_type(state->parent) != DATA_TYPE_DICT) {
-			catat(state->dst, state->dst_at, ",");
+			catat(state->dst, ",");
 
 			if (state->flags & SER_FLAGS_PRETTY)
-				catat(state->dst, state->dst_at, "\n");
+				catat(state->dst, "\n");
 		}
 		_cat_depth(state);
 	} else {
 		if (state->flags & SER_FLAGS_PRETTY)
-			catat(state->dst, state->dst_at, "\n");
+			catat(state->dst, "\n");
 		_cat_depth(state);
 	}
 
@@ -1715,14 +1688,14 @@ static data_for_each_cmd_t _foreach_cat_data_dict(const char *key,
 	if (state->index > 0) {
 		if (data_get_type(state->parent) != DATA_TYPE_LIST) {
 			if (state->flags & SER_FLAGS_PRETTY)
-				catat(state->dst, state->dst_at, ",\n");
+				catat(state->dst, ",\n");
 			else
-				catat(state->dst, state->dst_at, "\n");
+				catat(state->dst, "\n");
 		}
 		_cat_depth(state);
 	} else {
 		if (state->flags & SER_FLAGS_PRETTY)
-			catat(state->dst, state->dst_at, "\n");
+			catat(state->dst, "\n");
 		_cat_depth(state);
 	}
 
@@ -1737,9 +1710,9 @@ static data_for_each_cmd_t _foreach_cat_data_dict(const char *key,
 	}
 
 	if (state->flags & SER_FLAGS_PRETTY)
-		catat(state->dst, state->dst_at, ": ");
+		catat(state->dst, ": ");
 	else
-		catat(state->dst, state->dst_at, ":");
+		catat(state->dst, ":");
 
 	if ((rc = _cat_data(state, src))) {
 		if (!state->rc)
@@ -1754,14 +1727,14 @@ static data_for_each_cmd_t _foreach_cat_data_dict(const char *key,
 static int _cat_data_null(dump_state_t *state, const data_t *src)
 {
 	xassert(data_get_type(src) == DATA_TYPE_NULL);
-	catat(state->dst, state->dst_at, "null");
+	catat(state->dst, "null");
 	return SLURM_SUCCESS;
 }
 
 static int _cat_data_int_64(dump_state_t *state, const data_t *src)
 {
 	xassert(data_get_type(src) == DATA_TYPE_INT_64);
-	catfmtat(state->dst, state->dst_at, "%"PRId64, data_get_int(src));
+	vbuf_push_printf(state->dst, "%"PRId64, data_get_int(src));
 	return SLURM_SUCCESS;
 }
 
@@ -1803,19 +1776,19 @@ static int _cat_data_float(dump_state_t *state, const data_t *src)
 	}
 
 	if (!str)
-		catfmtat(state->dst, state->dst_at, "%e",
-		      data_get_float(src));
+		vbuf_push_printf(state->dst, "%e", data_get_float(src));
 	else
-		catat(state->dst, state->dst_at, str);
+		catat(state->dst, str);
 
 	return SLURM_SUCCESS;
 }
 
 static int _cat_data_bool(dump_state_t *state, const data_t *src)
 {
+	const char *str;
 	xassert(data_get_type(src) == DATA_TYPE_BOOL);
-	catat(state->dst, state->dst_at,
-	      (data_get_bool(src) ? "true" : "false"));
+	str = data_get_bool(src) ? "true" : "false";
+	catat(state->dst, str);
 	return SLURM_SUCCESS;
 }
 
@@ -1824,7 +1797,7 @@ static int _cat_data_list(dump_state_t *state, const data_t *src)
 	const data_t *parent = state->parent;
 	int index = state->index;
 
-	catat(state->dst, state->dst_at, "[");
+	catat(state->dst, "[");
 
 	if (data_get_list_length(src) > 0) {
 		state->depth++;
@@ -1836,7 +1809,7 @@ static int _cat_data_list(dump_state_t *state, const data_t *src)
 			return SLURM_ERROR;
 
 		if ((state->flags & SER_FLAGS_PRETTY) && (state->index > 0))
-			catat(state->dst, state->dst_at, "\n");
+			catat(state->dst, "\n");
 
 		state->parent = parent;
 		state->index = index;
@@ -1845,7 +1818,7 @@ static int _cat_data_list(dump_state_t *state, const data_t *src)
 		_cat_depth(state);
 	}
 
-	catat(state->dst, state->dst_at, "]");
+	catat(state->dst, "]");
 	return SLURM_SUCCESS;
 }
 
@@ -1854,7 +1827,7 @@ static int _cat_data_dict(dump_state_t *state, const data_t *src)
 	const data_t *parent = state->parent;
 	int index = state->index;
 
-	catat(state->dst, state->dst_at, "{");
+	catat(state->dst, "{");
 
 	if (data_get_dict_length(src) > 0) {
 		state->depth++;
@@ -1866,7 +1839,7 @@ static int _cat_data_dict(dump_state_t *state, const data_t *src)
 			return SLURM_ERROR;
 
 		if ((state->flags & SER_FLAGS_PRETTY) && (state->index > 0))
-			catat(state->dst, state->dst_at, "\n");
+			catat(state->dst, "\n");
 
 		state->parent = parent;
 		state->index = index;
@@ -1875,7 +1848,7 @@ static int _cat_data_dict(dump_state_t *state, const data_t *src)
 		_cat_depth(state);
 	}
 
-	catat(state->dst, state->dst_at, "}");
+	catat(state->dst, "}");
 	return SLURM_SUCCESS;
 }
 
@@ -1918,7 +1891,7 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 		.flags = flags,
 	};
 
-	state.dst_at = state.dst = xmalloc(INITIAL_OUTPUT_STRING_ALLOC);
+	state.dst = vbuf_new(0, 0);
 
 	/*
 	 * Always start JSON output with BOM to notify reader we are outputting
@@ -1926,31 +1899,38 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 	 * terminal emulator but may break pre-UTF terminals...do those even
 	 * exist any more?
 	 */
-	catcharat(state.dst, state.dst_at, UTF_BYTE_ORDER_MARK_CODE, rc);
+	push_utf8(state.dst, UTF_BYTE_ORDER_MARK_CODE, rc);
 	xassert(!rc);
 
 	if (!(rc = _cat_data(&state, src))) {
-		xassert(!state.depth);
-		xfree(*dest);
-		*dest = cast_cstring(state.dst);
-		if (length)
-			*length = utf8len(state.dst);
+		size_t str_bytes = NULL;
+		utf8_t *str;
 
-		log_flag_hex(DATA, state.dst, (length ? *length : 0),
+		str = vbuf_to_string(&state.dst, &str_bytes, true, true);
+
+		/* verify entire tree was dumped */
+		xassert(!state.depth);
+
+		xfree(*dest);
+		*dest = cast_cstring(str);
+		if (length)
+			*length = str_bytes;
+
+		log_flag_hex(DATA, str, str_bytes,
 			     "%s: dumped "PRINTF_DATA_T" successfully",
 			     __func__, PRINTF_DATA_T_VAL(src));
 	} else {
-		log_flag_hex(DATA, src, utf8len(state.dst),
-			     "%s: dumping "PRINTF_DATA_T" failed",
-			     __func__, PRINTF_DATA_T_VAL(src));
+		log_flag(DATA, "%s: dumping "PRINTF_DATA_T" failed: %s",
+			 __func__, PRINTF_DATA_T_VAL(src), slurm_strerror(rc));
 
 		if (length)
 			*length = 0;
 
 		if (!state.rc)
 			state.rc = rc;
-		xfree(state.dst);
 	}
+
+	FREE_NULL_VBUF(state.dst);
 
 	return state.rc;
 }
