@@ -1539,10 +1539,9 @@ static int _convert_data_int(data_t *data, bool force)
 		int64_t x;
 		const char *str = data->data.string_u;
 
-		if (!str[0])
-			goto string_fail;
-
-		if ((str[0] == '0') && (tolower(str[1]) == 'x')) {
+		if (!str[0]) {
+			/* fail down */
+		} if ((str[0] == '0') && (tolower(str[1]) == 'x')) {
 			if ((sscanf(str, "%"SCNx64, &x) == 1)) {
 				log_flag_hex(DATA, str, strlen(str),
 					     "%s: converted hex number %pD->%"PRId64,
@@ -1558,7 +1557,10 @@ static int _convert_data_int(data_t *data, bool force)
 			return SLURM_SUCCESS;
 		}
 
-		goto string_fail;
+		log_flag_hex(DATA, str, strlen(str),
+			     "%s: convert %pD to int failed",
+			     __func__, data);
+		return ESLURM_DATA_CONV_FAILED;
 	}
 	case DATA_TYPE_FLOAT:
 		if (force) {
@@ -1571,11 +1573,6 @@ static int _convert_data_int(data_t *data, bool force)
 	default:
 		return ESLURM_DATA_CONV_FAILED;
 	}
-
-string_fail:
-	log_flag_hex(DATA, data->data.string_u, strlen(data->data.string_u),
-		     "%s: convert %pD to int failed: %s", __func__, data);
-	return ESLURM_DATA_CONV_FAILED;
 }
 
 static int _convert_data_float_from_string(data_t *data)
