@@ -935,6 +935,9 @@ extern int scontrol_update_job(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "StdErr", MAX(taglen, 6))) {
 			job_msg.std_err = val;
 			update_cnt++;
+		} else if (!xstrncasecmp(tag, "StdIn", MAX(taglen, 5))) {
+			job_msg.std_in = val;
+			update_cnt++;
 		}
 		else if (xstrncasecmp(tag, "StdOut", MAX(taglen, 6)) == 0) {
 			job_msg.std_out = val;

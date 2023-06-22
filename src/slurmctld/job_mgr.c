@@ -14329,6 +14329,21 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
 
+	if (job_desc->std_in && detail_ptr &&
+	    !xstrcmp(job_desc->std_in, detail_ptr->std_in)) {
+		sched_debug("%s: new std_in identical to old std_in %s",
+			    __func__, job_desc->std_in);
+	} else if (job_desc->std_in) {
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_JOB_NOT_PENDING;
+		else if (detail_ptr) {
+			xfree(detail_ptr->std_in);
+			detail_ptr->std_in = xstrdup(job_desc->std_in);
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
 	if (job_desc->std_out && detail_ptr &&
 	    !xstrcmp(job_desc->std_out, detail_ptr->std_out)) {
 		sched_debug("%s: new std_out identical to old std_out %s",
