@@ -1550,7 +1550,6 @@ static int _convert_data_int(data_t *data, bool force)
 static int _convert_data_float_from_string(data_t *data)
 {
 	double x;
-	int rc = SLURM_SUCCESS;
 	const char *str = data->data.string_u;
 
 	if (!regex_quick_match(str, &float_pattern_re))
@@ -1560,34 +1559,39 @@ static int _convert_data_float_from_string(data_t *data)
 		xassert(!xstrcasecmp(str, "-infinity") ||
 			!xstrcasecmp(str, "-inf"));
 		data_set_float(data, -INFINITY);
+		return SLURM_SUCCESS;
 	} else if ((str[0] == '+') && ((str[1] == 'i') || (str[1] == 'I'))) {
 		xassert(!xstrcasecmp(str, "+infinity") ||
 			!xstrcasecmp(str, "+inf"));
 		data_set_float(data, INFINITY);
+		return SLURM_SUCCESS;
 	} else if ((str[0] == 'i') || (str[0] == 'I')) {
 		xassert(!xstrcasecmp(str, "infinity") ||
 			!xstrcasecmp(str, "inf"));
 		data_set_float(data, INFINITY);
+		return SLURM_SUCCESS;
 	} else if ((str[0] == '-') && ((str[1] == 'n') || (str[1] == 'N'))) {
 		xassert(!xstrcasecmp(str, "-nan"));
 		data_set_float(data, -NAN);
+		return SLURM_SUCCESS;
 	} else if ((str[0] == '+') && ((str[1] == 'n') || (str[1] == 'N'))) {
 		xassert(!xstrcasecmp(str, "+nan"));
 		data_set_float(data, NAN);
+		return SLURM_SUCCESS;
 	} else if ((str[0] == 'N') || (str[0] == 'N')) {
 		xassert(!xstrcasecmp(str, "nan"));
 		data_set_float(data, NAN);
+		return SLURM_SUCCESS;
 	} else if (sscanf(str, "%lf", &x) == 1) {
+		log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to float: %s->%lf",
+			 __func__, (uintptr_t) data, str, x);
 		data_set_float(data, x);
+		return SLURM_SUCCESS;
 	} else { /* failed */
-		error("%s: unable to parse \"%s\" as double float failed",
+		error("%s: sscanf of double failed: %s",
 		      __func__, str);
-		rc = ESLURM_DATA_CONV_FAILED;
+		return ESLURM_DATA_CONV_FAILED;
 	}
-
-	log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to float: %s->%lf",
-		 __func__, (uintptr_t) data, str, data_get_float(data));
-	return rc;
 }
 
 static int _convert_data_float(data_t *data)
