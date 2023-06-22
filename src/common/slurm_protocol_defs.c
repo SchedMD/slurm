@@ -383,8 +383,7 @@ extern int slurm_char_list_copy(List dst, List src)
 
 extern int slurm_parse_char_list(List char_list, const char *names, void *args,
 				 int (*func_ptr)(List char_list,
-						 const char *name,
-						 void *args))
+						 const char *name, void *args))
 {
 	int i = 0, start = 0, count = 0, result = 0;
 	char quote_c = '\0';
@@ -616,8 +615,7 @@ typedef struct {
 } char_list_internal_args_t;
 
 static int _slurm_addto_mode_char_list_internal(List char_list,
-						const char *name,
-						void *args_in)
+						const char *name, void *args_in)
 {
 	char *tmp_name = NULL;
 	char_list_internal_args_t *args = args_in;
