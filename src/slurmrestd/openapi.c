@@ -1744,10 +1744,10 @@ extern data_t *openapi_get_param(openapi_ctxt_t *ctxt, bool required,
 	return dbuf;
 }
 
-extern const char *openapi_get_str_param(openapi_ctxt_t *ctxt, bool required,
-					 const char *name, const char *caller)
+extern char *openapi_get_str_param(openapi_ctxt_t *ctxt, bool required,
+				   const char *name, const char *caller)
 {
-	const char *str = NULL;
+	char *str = NULL;
 	data_t *dbuf = openapi_get_param(ctxt, required, name, caller);
 
 	if (!dbuf)
