@@ -1547,70 +1547,75 @@ static int _convert_data_int(data_t *data, bool force)
 	return ESLURM_DATA_CONV_FAILED;
 }
 
-static int _convert_data_float_from_string(data_t *data)
-{
-	double x;
-
-	if (!regex_quick_match(data->data.string_u, &float_pattern_re))
-		return ESLURM_DATA_CONV_FAILED;
-
-	if ((data->data.string_u[0] == '-') &&
-	    ((data->data.string_u[1] == 'i') ||
-	     (data->data.string_u[1] == 'I'))) {
-		xassert(!xstrcasecmp(data->data.string_u, "-infinity") ||
-			!xstrcasecmp(data->data.string_u, "-inf"));
-		data_set_float(data, -INFINITY);
-		return SLURM_SUCCESS;
-	} else if ((data->data.string_u[0] == '+') &&
-		   ((data->data.string_u[1] == 'i') ||
-		    (data->data.string_u[1] == 'I'))) {
-		xassert(!xstrcasecmp(data->data.string_u, "+infinity") ||
-			!xstrcasecmp(data->data.string_u, "+inf"));
-		data_set_float(data, INFINITY);
-		return SLURM_SUCCESS;
-	} else if ((data->data.string_u[0] == 'i') ||
-		   (data->data.string_u[0] == 'I')) {
-		xassert(!xstrcasecmp(data->data.string_u, "infinity") ||
-			!xstrcasecmp(data->data.string_u, "inf"));
-		data_set_float(data, INFINITY);
-		return SLURM_SUCCESS;
-	} else if ((data->data.string_u[0] == '-') &&
-		   ((data->data.string_u[1] == 'n') ||
-		    (data->data.string_u[1] == 'N'))) {
-		xassert(!xstrcasecmp(data->data.string_u, "-nan"));
-		data_set_float(data, -NAN);
-		return SLURM_SUCCESS;
-	} else if ((data->data.string_u[0] == '+') &&
-		   ((data->data.string_u[1] == 'n') ||
-		    (data->data.string_u[1] == 'N'))) {
-		xassert(!xstrcasecmp(data->data.string_u, "+nan"));
-		data_set_float(data, NAN);
-		return SLURM_SUCCESS;
-	} else if ((data->data.string_u[0] == 'N') ||
-		   (data->data.string_u[0] == 'N')) {
-		xassert(!xstrcasecmp(data->data.string_u, "nan"));
-		data_set_float(data, NAN);
-		return SLURM_SUCCESS;
-	} else if (sscanf(data->data.string_u, "%lf", &x) == 1) {
-		log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to float: %s->%lf",
-			 __func__, (uintptr_t) data,
-			 data->data.string_u, x);
-		data_set_float(data, x);
-		return SLURM_SUCCESS;
-	} else { /* failed */
-		error("%s: sscanf of double failed: %s",
-		      __func__, data->data.string_u);
-		return ESLURM_DATA_CONV_FAILED;
-	}
-}
-
 static int _convert_data_float(data_t *data)
 {
 	_check_magic(data);
 
 	switch (data->type) {
 	case DATA_TYPE_STRING:
-		return _convert_data_float_from_string(data);
+		if (regex_quick_match(data->data.string_u, &float_pattern_re)) {
+			double x;
+			if ((data->data.string_u[0] == '-') &&
+			    ((data->data.string_u[1] == 'i') ||
+			     (data->data.string_u[1] == 'I'))) {
+				xassert(!xstrcasecmp(data->data.string_u,
+						     "-infinity") ||
+					!xstrcasecmp(data->data.string_u,
+						     "-inf"));
+				data_set_float(data, -INFINITY);
+				return SLURM_SUCCESS;
+			} else if ((data->data.string_u[0] == '+') &&
+				   ((data->data.string_u[1] == 'i') ||
+				    (data->data.string_u[1] == 'I'))) {
+				xassert(!xstrcasecmp(data->data.string_u,
+						     "+infinity") ||
+					!xstrcasecmp(data->data.string_u,
+						     "+inf"));
+				data_set_float(data, INFINITY);
+				return SLURM_SUCCESS;
+			} else if ((data->data.string_u[0] == 'i') ||
+				   (data->data.string_u[0] == 'I')) {
+				xassert(!xstrcasecmp(data->data.string_u,
+						     "infinity") ||
+					!xstrcasecmp(data->data.string_u,
+						     "inf"));
+				data_set_float(data, INFINITY);
+				return SLURM_SUCCESS;
+			} else if ((data->data.string_u[0] == '-') &&
+				   ((data->data.string_u[1] == 'n') ||
+				    (data->data.string_u[1] == 'N'))) {
+				xassert(!xstrcasecmp(data->data.string_u,
+						     "-nan"));
+				data_set_float(data, -NAN);
+				return SLURM_SUCCESS;
+			} else if ((data->data.string_u[0] == '+') &&
+				   ((data->data.string_u[1] == 'n') ||
+				    (data->data.string_u[1] == 'N'))) {
+				xassert(!xstrcasecmp(data->data.string_u,
+						     "+nan"));
+				data_set_float(data, NAN);
+				return SLURM_SUCCESS;
+			} else if ((data->data.string_u[0] == 'N') ||
+				   (data->data.string_u[0] == 'N')) {
+				xassert(!xstrcasecmp(data->data.string_u,
+						     "nan"));
+				data_set_float(data, NAN);
+				return SLURM_SUCCESS;
+			} else if (sscanf(data->data.string_u, "%lf", &x) ==
+				   1) {
+				log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to float: %s->%lf",
+					 __func__, (uintptr_t) data,
+					 data->data.string_u, x);
+				data_set_float(data, x);
+				return SLURM_SUCCESS;
+			} else { /* failed */
+				error("%s: sscanf of double failed: %s",
+				      __func__, data->data.string_u);
+				return ESLURM_DATA_CONV_FAILED;
+			}
+		} else {
+			return ESLURM_DATA_CONV_FAILED;
+		}
 	case DATA_TYPE_INT_64:
 		if (data_get_int(data) == INFINITE64)
 			data_set_float(data, HUGE_VAL);
