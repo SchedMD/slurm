@@ -959,7 +959,7 @@ extern int64_t data_get_int(const data_t *data)
 	return data->data.int_u;
 }
 
-extern const char *data_get_string(data_t *data)
+extern char *data_get_string(data_t *data)
 {
 	_check_magic(data);
 
