@@ -282,10 +282,10 @@ extern void resp_warn(ctxt_t *ctxt, const char *source, const char *why, ...)
 		data_set_string(data_key_set(w, "source"), source);
 }
 
-extern const char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
-					  const char *caller)
+extern char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
+				    const char *caller)
 {
-	const char *str = NULL;
+	char *str = NULL;
 	data_t *dbuf;
 
 	xassert(ctxt->magic == MAGIC_CTXT);
