@@ -128,7 +128,7 @@ extern uint32_t str_2_federation_flags(char *flags, int option);
 extern char *slurmdb_job_flags_str(uint32_t flags);
 extern uint32_t str_2_job_flags(char *flags);
 extern char *slurmdb_qos_str(List qos_list, uint32_t level);
-extern uint32_t str_2_slurmdb_qos(List qos_list, const char *level);
+extern uint32_t str_2_slurmdb_qos(List qos_list, char *level);
 extern char *slurmdb_qos_flags_str(uint32_t flags);
 extern uint32_t str_2_qos_flags(char *flags, int option);
 extern char *slurmdb_res_flags_str(uint32_t flags);
