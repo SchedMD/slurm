@@ -796,6 +796,8 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 				       &rc));
 			if (rc != SLURM_SUCCESS) {
 				/* Failed to parse, error already logged */
+				slurm_free_job_step_create_request_msg(
+							step_req);
 				return NULL;
 			}
 			/*
