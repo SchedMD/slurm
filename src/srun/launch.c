@@ -795,10 +795,17 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 				       &gpus_per_node, &save_ptr,
 				       &rc));
 			if (rc != SLURM_SUCCESS) {
-				error("No gpus requested with --cpus-per-gpu");
+				/* Failed to parse, error already logged */
 				return NULL;
 			}
-			/* Same math as gpus_per_node */
+			/*
+			 * Same math as gpus_per_node
+			 *
+			 * If gpus_per_node == 0, then the step did not request
+			 * gpus, but the step may still inherit gpus from the
+			 * job. This math will set requested cpus to zero in
+			 * case gpus_per_node == 0.
+			 */
 			step_req->cpu_count = opt_local->min_nodes *
 				gpus_per_node * opt_local->cpus_per_gpu;
 		} else if (opt_local->gpus_per_socket) {
