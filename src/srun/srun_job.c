@@ -1160,6 +1160,23 @@ static void _copy_job_resp(List job_resp_list, int count)
 		list_append(job_resp_list, new);
 	}
 }
+static void _check_gpus_per_socket(slurm_opt_t *opt_local)
+{
+	static bool checked = false; /* Only log the warning once */
+
+	if (!opt_local->gpus_per_socket || checked)
+		return;
+
+	checked = true;
+	if (opt_local->gpus_per_socket &&
+	    !slurm_option_set_by_env(opt_local, LONG_OPT_GPUS_PER_SOCKET)) {
+		/*
+		 * gpus_per_socket does not work for steps.
+		 * If it is set by env, it was likely inherited by the job.
+		 */
+		warning("Ignoring --gpus-per-socket because it can only be specified at job allocation time, not during step allocation.");
+	}
+}
 
 extern void create_srun_job(void **p_job, bool *got_alloc)
 {
@@ -1302,6 +1319,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 							opt_local->min_nodes;
 					}
 				}
+				_check_gpus_per_socket(opt_local);
 				if (!tres_license_error_logged &&
 				    !slurm_option_set_by_env(
 					    opt_local,
