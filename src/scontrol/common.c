@@ -38,3 +38,38 @@
 
 #include "scontrol.h"
 
+/*
+ * scontrol_process_plus_minus - convert a string like
+ *       Users+=a,b,c
+ *  to   Users=+a,+b,+c
+ *
+ * IN plus_or_minus - '+' or '-'
+ * IN src - source string
+ * RET converted string
+ */
+extern char *scontrol_process_plus_minus(char plus_or_minus, char *src)
+{
+	int num_commas = 0;
+	int i;
+	int srclen = strlen(src);
+	char *dst, *ret;
+
+	for (i = 0; i < srclen; i++) {
+		if (src[i] == ',')
+			num_commas++;
+	}
+	ret = dst = xmalloc(srclen + 2 + num_commas);
+
+	*dst++ = plus_or_minus;
+	for (i = 0; i < srclen; i++) {
+		if (*src == ',') {
+			*dst++ = *src++;
+			*dst++ = plus_or_minus;
+		} else {
+			*dst++ = *src++;
+		}
+	}
+	*dst = '\0';
+
+	return ret;
+}
