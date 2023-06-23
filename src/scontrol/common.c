@@ -43,11 +43,17 @@
  *       Users+=a,b,c
  *  to   Users=+a,+b,+c
  *
+ *  or if nodestr true
+ *       Nodes+=h1[1,3],h[5-10]
+ *  to   Nodes=+h1[1,3],+h[5-10]
+ *
  * IN plus_or_minus - '+' or '-'
  * IN src - source string
+ * IN nodestr - process as node string
  * RET converted string
  */
-extern char *scontrol_process_plus_minus(char plus_or_minus, char *src)
+extern char *scontrol_process_plus_minus(char plus_or_minus, char *src,
+					 bool nodestr)
 {
 	int num_commas = 0;
 	int i;
@@ -55,14 +61,19 @@ extern char *scontrol_process_plus_minus(char plus_or_minus, char *src)
 	char *dst, *ret;
 
 	for (i = 0; i < srclen; i++) {
-		if (src[i] == ',')
+		/*
+		 * for a node string a comma within a bracketed
+		 * expression is expected to have a digit following so
+		 * only add plus/minus if this is not the case
+		 */
+		if ((src[i] == ',') && (!nodestr || !isdigit(src[i + 1])))
 			num_commas++;
 	}
 	ret = dst = xmalloc(srclen + 2 + num_commas);
 
 	*dst++ = plus_or_minus;
 	for (i = 0; i < srclen; i++) {
-		if (*src == ',') {
+		if ((*src == ',') && (!nodestr || !isdigit(src[1]))) {
 			*dst++ = *src++;
 			*dst++ = plus_or_minus;
 		} else {

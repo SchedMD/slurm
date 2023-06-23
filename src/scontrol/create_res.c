@@ -105,7 +105,7 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			if (plus_minus) {
 				resv_msg_ptr->accounts =
 					scontrol_process_plus_minus(plus_minus,
-								    val);
+								    val, false);
 				*res_free_flags |= RESV_FREE_STR_ACCT;
 				plus_minus = '\0';
 			} else {
@@ -124,7 +124,7 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			if (plus_minus) {
 				char *tmp =
 					scontrol_process_plus_minus(plus_minus,
-								    val);
+								    val, false);
 				f = parse_resv_flags(tmp, msg, resv_msg_ptr);
 				xfree(tmp);
 				plus_minus = '\0';
@@ -145,7 +145,7 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			if (plus_minus) {
 				resv_msg_ptr->groups =
 					scontrol_process_plus_minus(plus_minus,
-								    val);
+								    val, false);
 				*res_free_flags |= RESV_FREE_STR_GROUP;
 				plus_minus = '\0';
 			} else {
@@ -162,7 +162,7 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			if (plus_minus) {
 				resv_msg_ptr->users =
 					scontrol_process_plus_minus(plus_minus,
-								    val);
+								    val, false);
 				*res_free_flags |= RESV_FREE_STR_USER;
 				plus_minus = '\0';
 			} else {
@@ -263,7 +263,7 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			if (plus_minus) {
 				resv_msg_ptr->node_list =
 					scontrol_process_plus_minus(plus_minus,
-								    val);
+								    val, true);
 				*res_free_flags |= RESV_FREE_STR_NODES;
 				plus_minus = '\0';
 			} else {
