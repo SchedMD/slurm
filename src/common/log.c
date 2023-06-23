@@ -788,6 +788,19 @@ static char *_stepid2fmt(step_record_t *step_ptr, char *buf, int buf_size)
 				     STEP_ID_FLAG_SPACE | STEP_ID_FLAG_NO_JOB);
 }
 
+static char *_print_data_t(const data_t *d, char *buffer, uint16_t size)
+{
+	/*
+	 * NOTE: You will notice we put a %.0s in front of the string.
+	 * This is to handle the fact that we can't remove the job_ptr
+	 * argument from the va_list directly. So when we call vsnprintf()
+	 * to handle the va_list this will effectively skip this argument.
+	 */
+	snprintf(buffer, size, "%%.0s%s(0x%"PRIxPTR")",
+		 data_type_to_string(data_get_type(d)), ((uintptr_t) d));
+	return buffer;
+}
+
 extern char *vxstrfmt(const char *fmt, va_list ap)
 {
 	char	*intermediate_fmt = NULL;
@@ -824,6 +837,7 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 			case 'p':
 				switch (*(p + 2)) {
 				case 'A':
+				case 'D':
 				case 'J':
 				case 's':
 				case 'S':
@@ -882,6 +896,22 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					xstrcat(intermediate_fmt,
 						_addr2fmt(
 							addr_ptr,
+							substitute_on_stack,
+							sizeof(substitute_on_stack)));
+					va_end(ap_copy);
+					break;
+				}
+				case 'D':	/* "%pD" -> data_type(0xDEADBEEF) */
+				{
+					data_t *d = NULL;
+					va_list	ap_copy;
+
+					va_copy(ap_copy, ap);
+					for (int i = 0; i < cnt; i++ )
+						d = va_arg(ap_copy, void *);
+					xstrcat(intermediate_fmt,
+						_print_data_t(
+							d,
 							substitute_on_stack,
 							sizeof(substitute_on_stack)));
 					va_end(ap_copy);
