@@ -2802,7 +2802,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 				 * ntasks_per_core was requested: use the same
 				 * logic here as in _step_alloc_lps().
 				 */
-				if (step_ptr->ntasks_per_core != NO_VAL16)
+				if (step_ptr->ntasks_per_core != INFINITE16)
 					cpus_alloc =
 						tasks[step_node_inx] *
 						cpus_per_task;
