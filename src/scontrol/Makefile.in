@@ -181,12 +181,13 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-am_scontrol_OBJECTS = create_res.$(OBJEXT) info_burst_buffer.$(OBJEXT) \
-	info_assoc_mgr.$(OBJEXT) info_fed.$(OBJEXT) info_job.$(OBJEXT) \
-	info_lics.$(OBJEXT) info_node.$(OBJEXT) info_part.$(OBJEXT) \
-	info_res.$(OBJEXT) reboot_node.$(OBJEXT) scontrol.$(OBJEXT) \
-	update_job.$(OBJEXT) update_node.$(OBJEXT) \
-	update_part.$(OBJEXT) update_step.$(OBJEXT)
+am_scontrol_OBJECTS = common.$(OBJEXT) create_res.$(OBJEXT) \
+	info_burst_buffer.$(OBJEXT) info_assoc_mgr.$(OBJEXT) \
+	info_fed.$(OBJEXT) info_job.$(OBJEXT) info_lics.$(OBJEXT) \
+	info_node.$(OBJEXT) info_part.$(OBJEXT) info_res.$(OBJEXT) \
+	reboot_node.$(OBJEXT) scontrol.$(OBJEXT) update_job.$(OBJEXT) \
+	update_node.$(OBJEXT) update_part.$(OBJEXT) \
+	update_step.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
 am__DEPENDENCIES_1 =
 scontrol_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -207,7 +208,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/create_res.Po \
+am__depfiles_remade = ./$(DEPDIR)/common.Po ./$(DEPDIR)/create_res.Po \
 	./$(DEPDIR)/info_assoc_mgr.Po ./$(DEPDIR)/info_burst_buffer.Po \
 	./$(DEPDIR)/info_fed.Po ./$(DEPDIR)/info_job.Po \
 	./$(DEPDIR)/info_lics.Po ./$(DEPDIR)/info_node.Po \
@@ -526,6 +527,7 @@ AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.* *.bino
 AM_CPPFLAGS = -I$(top_srcdir)
 scontrol_SOURCES = \
+	common.c	\
 	create_res.c	\
 	info_burst_buffer.c \
 	info_assoc_mgr.c \
@@ -663,6 +665,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/create_res.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_assoc_mgr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_burst_buffer.Po@am__quote@ # am--include-marker
@@ -807,7 +810,8 @@ clean-am: clean-binPROGRAMS clean-generic clean-libtool \
 	clean-noinstLTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/create_res.Po
+		-rm -f ./$(DEPDIR)/common.Po
+	-rm -f ./$(DEPDIR)/create_res.Po
 	-rm -f ./$(DEPDIR)/info_assoc_mgr.Po
 	-rm -f ./$(DEPDIR)/info_burst_buffer.Po
 	-rm -f ./$(DEPDIR)/info_fed.Po
@@ -867,7 +871,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/create_res.Po
+		-rm -f ./$(DEPDIR)/common.Po
+	-rm -f ./$(DEPDIR)/create_res.Po
 	-rm -f ./$(DEPDIR)/info_assoc_mgr.Po
 	-rm -f ./$(DEPDIR)/info_burst_buffer.Po
 	-rm -f ./$(DEPDIR)/info_fed.Po
