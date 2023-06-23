@@ -159,9 +159,11 @@ preempted in order to start a pending job.
 from lower PriorityTier partitions. This is not compatible with
 <I>PreemptMode=OFF</I>.</LI>
 <LI><I>preempt/qos</I>: Job preemption rules are specified by Quality Of
-Service (QOS) specifications in the Slurm database. This option is not
-compatible with <I>PreemptMode=OFF</I>. A configuration of
-<I>PreemptMode=SUSPEND</I> is only supported by the
+Service (QOS) specifications in the Slurm database. In the case of
+<I>PreemptMode=SUSPEND</I>, a preempting job needs to be submitted to a
+partition with a higher PriorityTier or to the same partition.
+This option is not compatible with <I>PreemptMode=OFF</I>.
+configuration of <I>PreemptMode=SUSPEND</I> is only supported by the
 <I>SelectType=select/cons_res</I> and <I>SelectType=select/cons_tres</I>
 plugins.
 See the <a href="sacctmgr.html">sacctmgr man page</a> to configure the options
@@ -181,7 +183,6 @@ PreemptEligibleTime is shown in the output of "scontrol show job &lt;job id&gt;"
 <B>PriorityTier</B>: Configure the partition's <I>PriorityTier</I> setting
 relative to other partitions to control the preemptive behavior when
 <I>PreemptType=preempt/partition_prio</I>.
-This option is not relevant if <I>PreemptType=preempt/qos</I>.
 If two jobs from two
 different partitions are allocated to the same resources, the job in the
 partition with the greater <I>PriorityTier</I> value will preempt the job in the
@@ -531,6 +532,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 07 April 2023</p>
+<p style="text-align:center;">Last modified 30 August 2023</p>
 
 <!--#include virtual="footer.txt"-->
