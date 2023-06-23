@@ -490,4 +490,18 @@ extern bitstr_t *node_conf_get_active_bitmap(void);
  */
 extern void node_conf_set_all_active_bits(bitstr_t *b);
 
+/*
+ * Tokenize node string on comma not followed by a digit. Return pointer to next
+ * token or NULL if there are no more.
+ *
+ * Commas followed by a digit are assumed to be within brackets.
+ * ex. string h[1,5],h[8,9] tokens are h[1,5] and h[8,9]
+ *
+ * IN s - pointer to string
+ * IN save_ptr - maintains context between successive calls that parse the same
+ * string (similar to strtok_r())
+ *
+ * NOTE: Like strtok_r() characters in s may be modified.
+ */
+extern char *nodestr_comma_strtok_r(char *s, char **save_ptr);
 #endif /* !_HAVE_NODE_CONF_H */
