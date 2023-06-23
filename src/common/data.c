@@ -1552,8 +1552,13 @@ static int _convert_data_int(data_t *data, bool force)
 		const char *str = data->data.string_u;
 
 		if (!str[0]) {
-			/* fail down */
-		} if ((str[0] == '0') && (tolower(str[1]) == 'x')) {
+			log_flag_hex(DATA, str, strlen(str),
+				     "%s: convert empty string %pD to integer failed",
+				     __func__, data);
+			return ESLURM_DATA_CONV_FAILED;
+		}
+
+		if ((str[0] == '0') && (tolower(str[1]) == 'x')) {
 			if ((sscanf(str, "%"SCNx64, &x) == 1)) {
 				log_flag_hex(DATA, str, strlen(str),
 					     "%s: converted hex number %pD->%"PRId64,
@@ -1561,18 +1566,36 @@ static int _convert_data_int(data_t *data, bool force)
 				data_set_int(data, x);
 				return SLURM_SUCCESS;
 			}
-		} else if (sscanf(str, "%"SCNd64, &x) == 1) {
+
+			log_flag_hex(DATA, str, strlen(str),
+				     "%s: conversion of hex string %pD to integer failed",
+				     __func__, data);
+			return ESLURM_DATA_CONV_FAILED;
+		}
+
+		if (!force) {
+			for (const char *p = str; *p; p++) {
+				if ((*p < '0') || (*p > '9')) {
+					log_flag_hex(DATA, str, strlen(str),
+						     "%s: rejecting non-numeric conversion of %pD to integer failed",
+						     __func__, data);
+					return ESLURM_DATA_CONV_FAILED;
+				}
+			}
+		}
+
+		if (sscanf(str, "%"SCNd64, &x) == 1) {
 			log_flag_hex(DATA, str, strlen(str),
 				     "%s: converted %pD->%"PRId64,
 				     __func__, data, x);
 			data_set_int(data, x);
 			return SLURM_SUCCESS;
+		} else {
+			log_flag_hex(DATA, str, strlen(str),
+				     "%s: conversion of %pD to integer failed",
+				     __func__, data);
+			return ESLURM_DATA_CONV_FAILED;
 		}
-
-		log_flag_hex(DATA, str, strlen(str),
-			     "%s: convert %pD to int failed",
-			     __func__, data);
-		return ESLURM_DATA_CONV_FAILED;
 	}
 	case DATA_TYPE_FLOAT:
 		if (force) {
@@ -1711,6 +1734,9 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 
 		if (!_convert_data_float(data))
 			return DATA_TYPE_FLOAT;
+
+		if (!_convert_data_int(data, true))
+			return DATA_TYPE_INT_64;
 
 		if (!_convert_data_bool(data))
 			return DATA_TYPE_BOOL;
