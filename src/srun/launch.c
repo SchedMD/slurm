@@ -803,12 +803,10 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 				gpus_per_node * opt_local->cpus_per_gpu;
 		} else if (opt_local->gpus_per_socket) {
 			/*
-			 * gpus_per_socket is not supported for steps;
-			 * one of the other gpus_per options must be used in
-			 * conjunction with cpus_per_gpu.
+			 * gpus_per_socket is not fully supported for steps and
+			 * does not affect the gpus allocated to the step:
+			 * slurmctld may inherit gres from the job.
 			 */
-			error("gpus_per_socket and cpus_per_gpu is not supported for steps");
-			return NULL;
 		}
 		/*
 		 * If none of these are requested, the step may inherit gres
