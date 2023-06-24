@@ -506,39 +506,42 @@ extern data_t *data_set_string(data_t *data, const char *value)
 
 extern data_t *_data_set_string_own(data_t *data, char **value_ptr)
 {
+	char *value;
 	_check_magic(data);
 
-	if (!data)
+	if (!data) {
+		xfree(*value_ptr);
 		return NULL;
+	}
 
-	if (!*value_ptr) {
+	_release(data);
+
+	value = *value_ptr;
+
+	if (!value) {
 		data->type = DATA_TYPE_NULL;
 
 		log_flag(DATA, "%s: set %pD=null", __func__, data);
 		return data;
 	}
 
-	/* check that the string was xmalloc()ed and actually has contents */
-	xassert(xsize(*value_ptr));
-
 #ifndef NDEBUG
+	/* check that the string was xmalloc()ed and actually has contents */
+	xassert(xsize(value) > 0);
 	/*
 	 * catch use after free by the caller by using the existing xfree()
 	 * functionality
 	 */
-	char *nv = xstrdup(*value_ptr);
+	value = xstrdup(value);
+	/* releasing original string instead of NULLing original pointer */
 	xfree(*value_ptr);
-	*value_ptr = nv;
 #endif
-
-	_release(data);
 
 	data->type = DATA_TYPE_STRING;
 	/* take ownership of string */
-	data->data.string_u = *value_ptr;
+	data->data.string_u = value;
 
-	log_flag_hex(DATA, *value_ptr, strlen(*value_ptr), "%s: set %pD",
-		     __func__, data);
+	log_flag_hex(DATA, value, strlen(value), "%s: set %pD", __func__, data);
 
 	*value_ptr = NULL;
 	return data;
