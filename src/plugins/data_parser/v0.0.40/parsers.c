@@ -1874,17 +1874,8 @@ static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 		return rc;
 	}
 
-	if (data_get_type(str) == DATA_TYPE_STRING) {
-		if (!xstrcasecmp(data_get_string(str), "Infinity")) {
-			*dst = (double) INFINITE;
-			return SLURM_SUCCESS;
-		} else if (!xstrcasecmp(data_get_string(str), "NaN")) {
-			*dst = (double) NO_VAL;
-			return SLURM_SUCCESS;
-		}
-
+	if (data_get_type(str) == DATA_TYPE_STRING)
 		(void) data_convert_type(str, DATA_TYPE_FLOAT);
-	}
 
 	if (data_get_type(str) == DATA_TYPE_FLOAT)
 		return PARSE_FUNC(FLOAT64)(parser, obj, str, args, parent_path);
