@@ -226,8 +226,7 @@ extern char *slurmdb_format_tres_str(
 extern int slurmdb_sort_tres_by_id_asc(void *v1, void *v2);
 
 /* Used to turn a tres string into a list containing
- * slurmdb_tres_rec_t's with only id's and counts filled in, no
- * formatted types or names.
+ * slurmdb_tres_rec_t's with id's or name/types and counts filled in.
  *
  * IN/OUT: tres_list - list created from the simple tres string
  * IN    : tres - simple string you want convert
