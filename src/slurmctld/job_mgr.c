@@ -196,7 +196,7 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
 static char *_copy_nodelist_no_dup(char *node_list);
-static job_record_t *_create_job_record(uint32_t num_jobs);
+static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add);
 static void _delete_job_details(job_record_t *job_entry);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
@@ -625,21 +625,24 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
  *    = 0 - split out a job array record to its own job record
  *    = 1 - simple job OR job array with one task
  *    > 1 - job array create with the task count as num_jobs
+ * IN list_add - add to the joblist or not.
  * RET pointer to the record or NULL if error
  * NOTE: allocates memory that should be xfreed with job_mgr_list_delete_job
  */
-static job_record_t *_create_job_record(uint32_t num_jobs)
+static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add)
 {
 	job_record_t *job_ptr = xmalloc(sizeof(*job_ptr));
 	job_details_t *detail_ptr = xmalloc(sizeof(*detail_ptr));
 
-	if ((job_count + num_jobs) >= slurm_conf.max_job_cnt) {
-		error("%s: MaxJobCount limit from slurm.conf reached (%u)",
-		      __func__, slurm_conf.max_job_cnt);
+	if (list_add) {
+		if ((job_count + num_jobs) >= slurm_conf.max_job_cnt) {
+			error("%s: MaxJobCount limit from slurm.conf reached (%u)",
+			      __func__, slurm_conf.max_job_cnt);
+		}
+		job_count += num_jobs;
+		last_job_update = time(NULL);
+		list_append(job_list, job_ptr);
 	}
-
-	job_count += num_jobs;
-	last_job_update = time(NULL);
 
 	job_ptr->magic = JOB_MAGIC;
 	job_ptr->array_task_id = NO_VAL;
@@ -653,7 +656,6 @@ static job_record_t *_create_job_record(uint32_t num_jobs)
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet  */
 	job_ptr->billable_tres = (double)NO_VAL;
-	list_append(job_list, job_ptr);
 
 	return job_ptr;
 }
@@ -1700,7 +1702,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 
 		job_ptr = find_job_record(job_id);
 		if (job_ptr == NULL) {
-			job_ptr = _create_job_record(1);
+			job_ptr = _create_job_record(1, true);
 			job_ptr->job_id = job_id;
 			job_ptr->array_job_id = array_job_id;
 			job_ptr->array_task_id = array_task_id;
@@ -1932,7 +1934,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 
 		job_ptr = find_job_record(job_id);
 		if (job_ptr == NULL) {
-			job_ptr = _create_job_record(1);
+			job_ptr = _create_job_record(1, true);
 			job_ptr->job_id = job_id;
 			job_ptr->array_job_id = array_job_id;
 			job_ptr->array_task_id = array_task_id;
@@ -4413,7 +4415,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	List save_step_list;
 	int i;
 
-	job_ptr_pend = _create_job_record(0);
+	job_ptr_pend = _create_job_record(0, true);
 
 	_remove_job_hash(job_ptr, JOB_HASH_JOB);
 	job_ptr_pend->job_id = job_ptr->job_id;
@@ -8479,7 +8481,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 		}
 	}
 
-	job_ptr = _create_job_record(1);
+	job_ptr = _create_job_record(1, true);
 
 	*job_rec_ptr = job_ptr;
 	job_ptr->partition = xstrdup(job_desc->partition);
