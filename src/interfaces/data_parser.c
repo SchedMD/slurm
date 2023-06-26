@@ -669,8 +669,10 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 
 	if (!xstrcasecmp(data_parser, "list")) {
 		info("Possible data_parser plugins:");
-		data_parser_g_new(NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-				  NULL, "list", _plugrack_foreach_list, false);
+		parser = data_parser_g_new(NULL, NULL, NULL, NULL, NULL, NULL,
+					   NULL, NULL, "list",
+					   _plugrack_foreach_list, false);
+		FREE_NULL_DATA_PARSER(parser);
 		return SLURM_SUCCESS;
 	}
 
