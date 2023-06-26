@@ -1545,7 +1545,7 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 				data_type_to_string(data_get_type(src)));
 	}
 
-	if ((uid < 0) || (uid >= INT_MAX))
+	if (uid >= INT_MAX)
 		return on_error(PARSING, parser->type, args,
 				ESLURM_USER_ID_INVALID, NULL, __func__,
 				"Invalid user ID: %d", uid);
