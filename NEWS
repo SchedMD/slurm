@@ -81,6 +81,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid slurmctld segfault when specifying AccountingStorageExternalHost.
  -- Fix collected GPUUtilization values for acct_gather_profile plugins.
  -- Fix slurmrestd handling of job hold/release operations.
+ -- Make spank S_JOB_ARGV item value hold the requested command argv instead of
+    the srun --bcast value when --bcast requested (only in local context).
 
 * Changes in Slurm 23.02.3
 ==========================
