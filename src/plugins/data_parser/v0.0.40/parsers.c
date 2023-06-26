@@ -2268,7 +2268,7 @@ static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 			return SLURM_SUCCESS;
 		}
 
-		data_convert_type(str, DATA_TYPE_INT_64);
+		(void) data_convert_type(str, DATA_TYPE_INT_64);
 	}
 
 	if (data_get_type(str) == DATA_TYPE_INT_64)
