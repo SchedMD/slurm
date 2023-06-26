@@ -5126,7 +5126,7 @@ static int DUMP_FUNC(USER_ID_STRING)(const parser_t *const parser, void *obj,
 	data_t *parent_path, *dsrc;
 	char *uid_str;
 
-	if (!*str && ((*str)[0] == '\0')) {
+	if (!*str || ((*str)[0] == '\0')) {
 		data_set_string(dst, "");
 		return SLURM_SUCCESS;
 	}
