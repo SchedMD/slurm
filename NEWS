@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression to make job_desc.min_cpus accurate again in job_submit when
     requesting a job with --ntasks-per-node.
  -- scontrol - Permit changes to StdErr and StdIn for pending jobs.
+ -- scontrol - Reset std{err,in,out} when set to empty string.
 
 * Changes in Slurm 23.02.3
 ==========================

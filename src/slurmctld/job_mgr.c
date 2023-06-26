@@ -14321,6 +14321,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	} else if (job_desc->std_err) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
+		else if (detail_ptr && job_desc->std_err[0] == '\0')
+			xfree(detail_ptr->std_err);
 		else if (detail_ptr) {
 			xfree(detail_ptr->std_err);
 			detail_ptr->std_err = xstrdup(job_desc->std_err);
@@ -14336,6 +14338,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	} else if (job_desc->std_in) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
+		else if (detail_ptr && job_desc->std_in[0] == '\0')
+			xfree(detail_ptr->std_in);
 		else if (detail_ptr) {
 			xfree(detail_ptr->std_in);
 			detail_ptr->std_in = xstrdup(job_desc->std_in);
@@ -14351,6 +14355,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	} else if (job_desc->std_out) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
+		else if (detail_ptr && job_desc->std_out[0] == '\0')
+			xfree(detail_ptr->std_out);
 		else if (detail_ptr) {
 			xfree(detail_ptr->std_out);
 			detail_ptr->std_out = xstrdup(job_desc->std_out);

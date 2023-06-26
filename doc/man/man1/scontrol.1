@@ -1208,16 +1208,25 @@ Only privileged users can modify the value.
 .TP
 \fBStdErr\fR=<\fIfilepath\fR>
 Set the batch job's stderr file path.
+Value may be reset to job default with blank data value, "StdErr=".
+
+\fBNOTE\fR: By default, StdErr will be merged into StdOut.
 .IP
 
 .TP
 \fBStdIn\fR=<\fIfilepath\fR>
 Set the batch job's stdin file path.
+Value may be reset to job default with blank data value, "StdIn=".
+
+\fBNOTE\fR: By default, StdIn will be '/dev/null'.
 .IP
 
 .TP
 \fBStdOut\fR=<\fIfilepath\fR>
 Set the batch job's stdout file path.
+Value may be reset to job default with blank data value, "StdOut=".
+
+\fBNOTE\fR: By default, StdOut will be based on the \fIJobId\fP.
 .IP
 
 .TP
