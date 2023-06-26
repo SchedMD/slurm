@@ -1590,7 +1590,7 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 				data_type_to_string(data_get_type(src)));
 	}
 
-	if ((gid < 0) || (gid >= INT_MAX))
+	if (gid >= INT_MAX)
 		return on_error(PARSING, parser->type, args,
 				ESLURM_GROUP_ID_INVALID, NULL, __func__,
 				"Invalid group ID: %d", gid);
