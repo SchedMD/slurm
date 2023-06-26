@@ -2,6 +2,22 @@
 
 <h1>Containers Guide</h1>
 
+<h2>Contents</h2>
+<a href="#overview">Overview</a><br>
+<a href="#limitations">Known limitations</a><br>
+<a href="#prereq">Prerequisites</a><br>
+<a href="#software">Required software</a><br>
+<a href="#example">Example configurations for various OCI Runtimes</a><br>
+<a href="#testing">Testing OCI runtime outside of Slurm</a><br>
+<a href="#request">Requesting container jobs or steps</a><br>
+<a href="#docker-scrun">Integration with Rootless Docker</a><br>
+<a href="#podman-scrun">Integration with Podman</a><br>
+<a href="#bundle">OCI Container bundle</a><br>
+<a href="#ex-ompi5-pmix4">Example OpenMPI v5 + PMIx v4 container</a><br>
+<a href="#plugin">Container support via Plugin</a><br>
+<a href="#types">Container Types</a><br>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 <p>Containers are being adopted in HPC workloads.
 Containers rely on existing kernel features to allow greater user control over
 what applications see and can interact with at any given time. For HPC
@@ -794,6 +810,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 19 May 2023</p>
+<p style="text-align:center;">Last modified 26 June 2023</p>
 
 <!--#include virtual="footer.txt"-->
