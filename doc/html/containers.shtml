@@ -292,7 +292,7 @@ sbatch --wrap 'srun bash -c "--container $ABS_PATH_TO_BUNDLE cat /etc/*rel*"'
 </pre></li>
 </ul>
 
-<h2 id="scrun">Integration with Rootless Docker (Docker Engine v20.10+ & Slurm-23.02+)
+<h2 id="docker-scrun">Integration with Rootless Docker (Docker Engine v20.10+ & Slurm-23.02+)
 <a class="slurm_link" href="#docker-scrun"></a>
 </h2>
 <p>Slurm's <a href="scrun.html">scrun</a> can be directly integrated with <a
@@ -383,7 +383,7 @@ docker run $DOCKER_SECURITY alpine -e SCRUN_JOB_NUM_NODES=10 hostname</pre>
 </li>
 </ol>
 
-<h2 id="scrun">Integration with Podman (Slurm-23.02+)
+<h2 id="podman-scrun">Integration with Podman (Slurm-23.02+)
 <a class="slurm_link" href="#podman-scrun"></a>
 </h2>
 <p>
@@ -562,7 +562,9 @@ srun --container ~/oci_images/alpine/ uptime</pre>
     </li>
 </ul>
 
-<h2 id="testing">Example OpenMPI v5 + PMIx v4 container<a class="slurm_link" href="#ex-ompi5-pmix4"></a></h2>
+<h2 id="ex-ompi5-pmix4">Example OpenMPI v5 + PMIx v4 container
+<a class="slurm_link" href="#ex-ompi5-pmix4"></a>
+</h2>
 
 Minimalist Dockerfile to generate a image with OpenMPI and PMIx to test basic MPI jobs.
 
