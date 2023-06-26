@@ -188,7 +188,7 @@ function displayfile()
    "# <br>" +
    "# JOB PRIORITY <br>" +
    "#PriorityFlags= <br>" +
-   "#PriorityType=priority/basic <br>" +
+   "#PriorityType=priority/multifactor <br>" +
    "#PriorityDecayHalfLife= <br>" +
    "#PriorityCalcPeriod= <br>" +
    "#PriorityFavorSmall= <br>" +

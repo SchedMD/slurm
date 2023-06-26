@@ -73,6 +73,8 @@ documents those changes that are of interest to users and administrators.
     to slurmstepd.
  -- Added ability for configless to push Prolog and Epilog scripts to slurmds.
  -- Prolog and Epilog do not have to be fully qualified pathnames.
+ -- Changed default value of PriorityType from priority/basic to
+    priority/multifactor.
 
 * Changes in Slurm 23.02.4
 ==========================

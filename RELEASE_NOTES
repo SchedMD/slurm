@@ -52,6 +52,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     system to be configured in a hybrid v1 and v2 system. The cgroup/v1 plugin
     will now fail if the cgroup filesystem is not mounted.
  -- Prolog and Epilog do not have to be fully qualified pathnames.
+ -- Changed default value of PriorityType from priority/basic to
+    priority/multifactor.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

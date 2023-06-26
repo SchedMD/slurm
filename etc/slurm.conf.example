@@ -97,7 +97,7 @@ SelectType=select/cons_tres
 #
 # JOB PRIORITY
 #PriorityFlags=
-#PriorityType=priority/basic
+#PriorityType=priority/multifactor
 #PriorityDecayHalfLife=
 #PriorityCalcPeriod=
 #PriorityFavorSmall=
