@@ -176,7 +176,8 @@ static int _op_handler_qos(ctxt_t *ctxt)
 			goto cleanup;
 		}
 
-		db_query_list(ctxt, &qos_list, slurmdb_qos_remove, qos_cond);
+		(void) db_query_list(ctxt, &qos_list, slurmdb_qos_remove,
+				     qos_cond);
 
 		if (qos_list && !ctxt->rc)
 			db_query_commit(ctxt);
