@@ -13853,6 +13853,40 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		}
 	}
 
+	if (job_desc->std_err && detail_ptr &&
+	    !xstrcmp(job_desc->std_err, detail_ptr->std_err)) {
+		sched_debug("%s: new std_err identical to old std_err %s",
+			    __func__, job_desc->std_err);
+	} else if (job_desc->std_err) {
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_JOB_NOT_PENDING;
+		else if (detail_ptr && job_desc->std_err[0] == '\0')
+			xfree(detail_ptr->std_err);
+		else if (detail_ptr) {
+			xfree(detail_ptr->std_err);
+			detail_ptr->std_err = xstrdup(job_desc->std_err);
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
+	if (job_desc->std_in && detail_ptr &&
+	    !xstrcmp(job_desc->std_in, detail_ptr->std_in)) {
+		sched_debug("%s: new std_in identical to old std_in %s",
+			    __func__, job_desc->std_in);
+	} else if (job_desc->std_in) {
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_JOB_NOT_PENDING;
+		else if (detail_ptr && job_desc->std_in[0] == '\0')
+			xfree(detail_ptr->std_in);
+		else if (detail_ptr) {
+			xfree(detail_ptr->std_in);
+			detail_ptr->std_in = xstrdup(job_desc->std_in);
+		}
+	}
+	if (error_code != SLURM_SUCCESS)
+		goto fini;
+
 	if (job_desc->std_out && detail_ptr &&
 	    !xstrcmp(job_desc->std_out, detail_ptr->std_out)) {
 		sched_debug("%s: new std_out identical to old std_out %s",
@@ -13860,6 +13894,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	} else if (job_desc->std_out) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
+		else if (detail_ptr && job_desc->std_out[0] == '\0')
+			xfree(detail_ptr->std_out);
 		else if (detail_ptr) {
 			xfree(detail_ptr->std_out);
 			detail_ptr->std_out = xstrdup(job_desc->std_out);

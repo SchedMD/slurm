@@ -3791,6 +3791,8 @@ function __scontrol_update_jobid() {
 		"reservationname="
 		"resetaccruetime="
 		"sitefactor="
+		"stderr="
+		"stdin="
 		"stdout="
 		"shared="
 		"starttime="
@@ -3850,6 +3852,8 @@ function __scontrol_update_jobid() {
 	reqnodelist) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	irequeue) __slurm_compreply "${binary[*]}" ;;
 	reservationname?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;
+	stderr) _filedir ;;
+	stdin) _filedir ;;
 	stdout) _filedir ;;
 	shared) __slurm_compreply "$(__slurm_boolean)" ;;
 	userid?(s)) __slurm_compreply "$(__slurm_users)" ;;
