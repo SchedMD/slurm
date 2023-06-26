@@ -3211,7 +3211,8 @@ static int PARSE_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	if (data_get_type(src) == DATA_TYPE_INT_64) {
+	if ((data_get_type(src) == DATA_TYPE_INT_64) ||
+	    (data_get_type(src) == DATA_TYPE_DICT)) {
 		if ((rc = PARSE(UINT64_NO_VAL, cpu_mem, src, parent_path,
 				args))) {
 			/* error already logged */
@@ -3294,7 +3295,8 @@ static int PARSE_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	if (data_get_type(src) == DATA_TYPE_INT_64) {
+	if ((data_get_type(src) == DATA_TYPE_INT_64) ||
+	    (data_get_type(src) == DATA_TYPE_DICT)) {
 		if ((rc = PARSE(UINT64_NO_VAL, node_mem, src, parent_path,
 				args))) {
 			/* error already logged */
