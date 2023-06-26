@@ -696,8 +696,10 @@ static data_for_each_cmd_t _foreach_parse_qos_string_id(data_t *src, void *arg)
 			    argstruct->index);
 
 	if (!(rc = resolve_qos(PARSING, parser, &qos, src, args, parent_path,
-			       caller, false)))
+			       caller, false))) {
+		xassert(qos);
 		list_append(qos_list, xstrdup_printf("%u", qos->id));
+	}
 
 	FREE_NULL_DATA(ppath);
 	return (rc ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT);
