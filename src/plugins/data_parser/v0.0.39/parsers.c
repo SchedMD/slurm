@@ -5936,6 +5936,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(X11_FLAGS)[] = {
 
 #define add_cparse(mtype, path, desc) \
 	add_complex_parser(job_desc_msg_t, mtype, false, path, desc)
+#define add_cparse_req(mtype, path, desc) \
+	add_complex_parser(job_desc_msg_t, mtype, true, path, desc)
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_desc_msg_t, mtype, false, field, 0, path, desc)
 #define add_parse_overload(mtype, field, overloads, path, desc) \
@@ -5980,7 +5982,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(UINT32, delay_boot, "delay_boot", NULL),
 	add_parse(STRING, dependency, "dependency", NULL),
 	add_parse(UINT64, end_time, "end_time", NULL),
-	add_cparse(JOB_DESC_MSG_ENV, "environment", NULL),
+	add_cparse_req(JOB_DESC_MSG_ENV, "environment", NULL),
 	add_skip(environment),
 	add_skip(env_hash),
 	add_skip(env_size),
@@ -6087,6 +6089,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 #undef add_parse
 #undef add_parse_overload
 #undef add_cparse
+#undef add_cparse_req
 #undef add_skip
 #undef add_flags
 
