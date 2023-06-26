@@ -1883,7 +1883,7 @@ static int PARSE_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 			return SLURM_SUCCESS;
 		}
 
-		data_convert_type(str, DATA_TYPE_FLOAT);
+		(void) data_convert_type(str, DATA_TYPE_FLOAT);
 	}
 
 	if (data_get_type(str) == DATA_TYPE_FLOAT)
