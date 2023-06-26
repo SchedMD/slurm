@@ -2259,17 +2259,8 @@ static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 		return rc;
 	}
 
-	if (data_get_type(str) == DATA_TYPE_STRING) {
-		if (!xstrcasecmp(data_get_string(str), "Infinity")) {
-			*dst = INFINITE64;
-			return SLURM_SUCCESS;
-		} else if (!xstrcasecmp(data_get_string(str), "NaN")) {
-			*dst = NO_VAL64;
-			return SLURM_SUCCESS;
-		}
-
+	if (data_get_type(str) == DATA_TYPE_STRING)
 		(void) data_convert_type(str, DATA_TYPE_INT_64);
-	}
 
 	if (data_get_type(str) == DATA_TYPE_INT_64)
 		return PARSE_FUNC(UINT64)(parser, obj, str, args, parent_path);
