@@ -5033,14 +5033,13 @@ static int PARSE_FUNC(SELECTED_STEP)(const parser_t *const parser, void *obj,
 static int DUMP_FUNC(SELECTED_STEP)(const parser_t *const parser, void *obj,
 				    data_t *dst, args_t *args)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	char *str = NULL;
 	slurm_selected_step_t *step = obj;
 
 	if (!step)
 		data_set_string(dst, "");
-
-	if (!(rc = fmt_job_id_string(step, &str)))
+	else if (!(rc = fmt_job_id_string(step, &str)))
 		data_set_string_own(dst, str);
 	else
 		xfree(str);
