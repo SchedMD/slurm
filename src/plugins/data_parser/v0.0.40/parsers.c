@@ -638,6 +638,7 @@ static int _foreach_dump_qos_string_id(void *x, void *arg)
 	FREE_NULL_DATA(dstring_id);
 	FREE_NULL_DATA(parent_path);
 
+	xassert(qos);
 	(void) data_set_string(data_list_append(dst), qos->name);
 
 	return SLURM_SUCCESS;
