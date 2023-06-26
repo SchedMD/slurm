@@ -83,6 +83,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmrestd handling of job hold/release operations.
  -- Make spank S_JOB_ARGV item value hold the requested command argv instead of
     the srun --bcast value when --bcast requested (only in local context).
+ -- Fix step running indefinitely when slurmctld takes more than MessageTimeout
+    to respond. Now, slurmctld will cancel the step when detected, preventing
+    following steps from getting stuck waiting for resources to be released.
 
 * Changes in Slurm 23.02.3
 ==========================
