@@ -5185,6 +5185,7 @@ static int PARSE_FUNC(QOS_ID_STRING)(const parser_t *const parser, void *obj,
 	if (!(rc = resolve_qos(PARSING, parser, &qos, src, args, parent_path,
 			       __func__, true))) {
 		xfree(*id);
+		xassert(qos);
 		xstrfmtcat(*id, "%u", qos->id);
 		return rc;
 	}
