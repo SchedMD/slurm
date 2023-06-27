@@ -130,6 +130,12 @@ documents those changes that are of interest to users and administrators.
  -- SelectTypeParameters=cr_cpu - Fix a log error "CPU underflow" at step
     completion for steps that request --threads-per-core or
     --hint=nomultithread.
+ -- select/linear - fix task launch failure that sometimes occurred when
+    requesting --threads-per-core or --hint=nomultithread. This also fixes
+    memory calculation with one of these options and --mem-per-cpu:
+    Previously, memory = mem-per-cpu * all cpus including unusable threads.
+    Now, memory = mem-per-cpu * only usuable threads. This behavior matches
+    the documentation and select/cons_tres.
 
 * Changes in Slurm 23.02.5
 ==========================

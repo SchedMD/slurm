@@ -103,6 +103,11 @@ COMMAND CHANGES (see man pages for details)
     them to be set on startup.
  -- scontrol - add InstanceId and InstanceType to node records.
  -- sacctmgr - add 'show instance' for cloud instance accounting data
+ -- salloc/sbatch/srun --mem-per-cpu and select/linear: Fix memory calculation
+    with --threads-per-core or --hint=nomultithread and --mem-per-cpu:
+    Previously, memory = mem-per-cpu * all cpus including unusable threads.
+    Now, memory = mem-per-cpu * only usuable threads. This behavior matches
+    the documentation and select/cons_tres.
 
 API CHANGES
 ===========
