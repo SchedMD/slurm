@@ -175,8 +175,8 @@ B<mpiexec.slurm> - Run an MPI program under Slurm
 
 mpiexec.slurm args executable pgmargs
 
-where args are comannd line arguments for mpiexec (see below), executable is
-the name of the eecutable and pgmargs are command line arguments for the
+where args are command line arguments for mpiexec (see below), executable is
+the name of the executable and pgmargs are command line arguments for the
 executable. For example the following command will run the MPI program a.out on
 4 processes:
 
