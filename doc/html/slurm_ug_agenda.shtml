@@ -4,8 +4,10 @@
 
 <p>The Slurm User Group Meeting (SLUG'23) this fall will be held in person at <a href="https://www.byu.edu/">Brigham Young University</a> from September 12-13, 2023.</p>
 
+<!--
 <a name="call_for_papers"><h2>Call for Papers</h2></a>
 <p>Sites interested in submitting technical talks or site reports are encourage to send a brief abstract to <a href="mailto:slugc@schedmd.com">slugc@schedmd.com</a> by June 9th. Notifications of acceptance will go out on June 23.</p>
+-->
 
 <a name="registration"><h2>Registration</h2></a>
 
@@ -63,6 +65,108 @@
 </table>
 -->
 
-<p style="text-align:center;">Last modified 17 May 2023</p>
+<a name="abstracts"><h2>Abstracts</h2></a>
+
+<br />
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Building Blocks in the Cloud: Scaling LEGO engineering with Slurm and AWS Parallel Cluster</h3>
+
+<h4>Brian Skjerven and Matt Vaughn, AWS</h4>
+
+<p>AWS ParallelCluster is a tool that enables R&amp;D customers and their IT administrators to design a operate powerful and elastic HPC clusters on AWS. In this talk, we'll introduce ParallelCluster through the lens of LEGO engineering, who use ParallelCluster and Slurm to scale their simulations that support structural analysis and material science research. We'll discuss the overall hybrid HPC architecture that LEGO has built, with a particular focus on how Slurm work to extend their existing cluster. We'll also detail how LEGO handles the messy business of software license management for commercial applications in this hybrid environment &mdash; all with Slurm's help.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>CINECA experience with Slurm</h3>
+
+<h4>Alessandro Marani, CINECA</h4>
+
+<p>The Italian Supercomputing center CINECA adopted Slurm as its first choice resource scheduler since 2016, implementing it in many top tier HPC clusters including the latest arrival Leonardo, ranked at 4th place in the current Top500. In this report we discuss how we take advantage of the various features to manage the necessities of different communities sharing the same environment, and what customizations we implemented to resolve some complex situations. By sharing our successes and our difficulties we may also contribute to inspire new features that may be implemented in the future and would be very useful to our cause and that of other sites.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Demand Driven Cluster Elasticity</h3>
+
+<h4>Mike Fazio, The DOW Chemical Company</h4>
+
+<p>An elastically scalable cluster can be a critical component in minimizing the time from job submission to execution. Few organizations have the resources on-premises to meet the peak demand on their supercomputer resources. Utilizing consumption-based compute to augment existing resources allows variable demand to be met while maintaining affordability. A turnkey High Performance Computing (HPC) on demand service provides a low barrier of entry with minimal skill up, but ultimately proved difficult to meet the needs of our organization. Utilizing a strategic set of tools allows the delivery of an elastically scalable cluster with a unified entry point for users while maintaining control of proprietary data. This talk will cover Dow's journey into hybrid on-premises/cloud HPC to provide researchers seamless access to computational resources.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Guardant Health Site Report</h3>
+
+<h4>Alex Younts, Guardant Health</h4>
+
+<p>Guardant Health is a life sciences company based in Palo Alto, CA, and we endeavor to bring our products to everyone around the world in the fight against cancer. Our proprietary bioinformatics pipeline was originally developed to run on Sun Grid Engine. We began a transition to Slurm after a successful proof-of-concept engagement with SchedMD. Our goal was to enable the ability to compute anywhere by using a federation of our on-premise clusters and the cloud. We will present interesting details of our Slurm architecture, our results so far, and how we evangelized Slurm to our users and developers.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Simulation of Cluster Scheduling Behavior Using Digital Twins</h3>
+
+<h4>Vivian Hafener, Los Alamos National Laboratory</h4>
+
+<p>The ability to accurately simulate the impact of changes to a system's scheduler configuration on the performance of a system is a capability that can guide decisions in the administration of HPC systems, provide recommendations to improve system performance, and validate the impact that proposed changes will have on a system prior to deployment. This presentation introduces a suite of tools based on a modified version of the open source BatSim simulation platform. This can be used to evaluate the scheduling performance of a system, to examine the impact of scheduling policy changes on jobs of different types, and to evaluate the impact of scheduled maintenance or other reservations on the job flow of the system. These tools use workload files generated by historical Slurm logs to evaluate the impact of such changes to a "digital twin" of the physical cluster, with an identical cluster configuration, job details, and scheduling policy. These tools are being used to inform LANL's production HPC operations and are under active development and enhancement. This illustration-rich presentation shows the breadth and applicability of the tools and techniques developed to date. A goal of this presentation is to solicit questions of interest which we could incorporate into this body of open-source work. </p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Optimizing Diverse Workloads and System Resource Usage</h3>
+
+<h4>Chansup Byun, Lincoln Laboratory Supercomputing Center</h4>
+
+<p>At the Lincoln Laboratory Supercomputing Center (LLSC), we have very diverse workloads ranging from various machine learning and artificial intelligence applications to the traditional high performance computing applications and other simulation codes, to advanced database services, to dynamic web services, and to on-demand Jupyter Notebook services running on large cluster systems. We have been using Slurm to enable and scale such diverse workloads efficiently and continue to exploit advanced Slurm features to use system resources more efficiently. Recently we have introduced the whole node scheduling approach so that only one user's job or jobs can be scheduled on a node. There are many benefits with this scheduling approach and we will discuss about the details in this presentation. Spot job support is another feature implemented on selected LLSC systems to improve system resource usage with minimizing any impact on normal jobs. Spot jobs are a way to improve system utilization while providing users additional capacity to meet their computing needs. We have observed some issues with Slurm scheduling performance when preempting spot jobs and will discuss how we have achieved significant improvement in the scheduling performance in the presentation.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Running Flux in Slurm</h3>
+
+<h4>Ryan Day, Lawrence Livermore National Laboratory</h4>
+
+<p>Flux is a novel, open source resource management package designed to enable complex workflows on modern, heterogeneous HPC systems. Its hierarchical design allows users to elegantly subdivide their allocation and coordinate scheduling of jobs in those sub-allocations. Flux is also easy for users to run inside of allocations from other resource managers. In this talk, I will describe Flux and some example workflows, then demonstrate how to launch and run a Flux instance inside of an allocation on a Slurm managed cluster.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>PACE Site Report</h3>
+
+<h4>Aaron Jezghani, PACE at Georgia Institute of Tech</h4>
+
+<p>Throughout FY23, the Partnership for an Advanced Computing Environment (PACE) at Georgia Institute of Technology has conducted a staggered scheduler migration to Slurm of approximately 2,000 servers across 4 clusters. Each of the 4 clusters provided unique challenges, including cost recovery via job accounting, instructional needs for a wide range of classes, and federal regulations for protected data that needed to be addressed. By treating each new requirement as an incremental change to the previous efforts and providing broad access to advanced training and testing opportunities, PACE has successfully migrated 3 clusters and is finalizing the last. We will present motivations for migrating to Slurm, challenges encountered through the migration, and experiences post migration.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Field Notes</h3>
+
+<h4>Jason Booth, SchedMD</h4>
+
+<p>Best practices and configuration advice from SchedMD's Director of Support.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Slurm 23.11 and Beyond</h3>
+
+<h4>Tim Wickberg, SchedMD</h4>
+
+<p>This presentation will focus on the upcoming Slurm 23.11 release, as well as a preview of plans for the successor Slurm 24.08 release, and beyond. Additional time will be allotted for community discussion and Q&amp;A with the principle Slurm developers.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Accelerating Genomics Research Machine Learning with Slurm</h3>
+
+<h4>William Markuske, SDSC</h4>
+
+<p>This presentation will discuss how the Research Data Services (RDS) team at the San Diego Supercomputer Center (SDSC) uses Slurm to support genomics researchers developing machine learning techniques for conducting genome-wide association studies and computational network biology at the University of California San Diego (UCSD). Genomics machine learning requires high throughput computing across heterogenous hardware to meet the workflow demands of novel model development and training. The presentation will go through the configuration of a specially built National Resource for Network Biology (NRNB) compute cluster. The NRNB cluster consists of a heterogeneous node configuration including standard compute nodes, high memory nodes, and different GPU nodes to support about 50 genomics researchers. Slurm is used to manage resources on the cluster to reduce time to discovery for the researchers by tuning the environment for their specific needs. The presentation will discuss Slurm job throughput tuning for thousands of sub-node sized jobs, heterogeneous resource allocation and fair use, storage allocation, and deploying development Jupyter environments through Slurm. Furthermore, the presentation will demonstrate how Slurm is being used to automate sequence data ingestion and processing as part of the Institute for Genomics Medicine to support computational genomics efforts.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Saving Power with Slurm</h3>
+
+<h4>Ole Holm Nielsen, Technical University of Denmark (DTU)</h4>
+
+<p>Energy costs have risen greatly in some parts of the world since mid 2022, and HPC centers experience an increased focus on saving on the electricity bill. The Slurm Power Saving Guide documents a method to turn nodes off and on automatically, both on-premise and in the cloud. Scripts for performing power actions are left up to individual sites. We report on experiences with on-premise node power saving, and present scripts based on IPMI power actions. Some challenges have been found with Slurm up to and including 22.05, and we discuss workarounds as well as solutions provided in 23.02. Hardware stability under frequent power cycles will be discussed.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<p style="text-align:center;">Last modified 27 June 2023</p>
 
 <!--#include virtual="footer.txt"-->
