@@ -1383,7 +1383,7 @@ static int _convert_data_force_bool(data_t *data)
 	_check_magic(data);
 
 	/* attempt to detect the type first */
-	data_convert_type(data, DATA_TYPE_NONE);
+	(void) data_convert_type(data, DATA_TYPE_NONE);
 
 	switch (data->type) {
 	case DATA_TYPE_STRING:
