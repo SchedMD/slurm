@@ -88,6 +88,7 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 	char *print_acct = NULL;
 	list_t *tree_list = NULL;
 	char *tmp_char = NULL;
+	uint64_t *tres_raw;
 
 	int field_count = 0;
 
@@ -201,14 +202,15 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 	if (!resp->assoc_shares_list || !list_count(resp->assoc_shares_list))
 		return SLURM_SUCCESS;
 
+	tres_raw = xcalloc(tres_cnt, sizeof(uint64_t));
 	tree_list = list_create(slurmdb_destroy_print_tree);
 	itr = list_iterator_create(resp->assoc_shares_list);
+
 	while ((share = list_next(itr))) {
 		int curr_inx = 1;
 		char *tmp_char = NULL;
 		char *local_acct = NULL;
 		print_field_t *field = NULL;
-		uint64_t tres_raw[tres_cnt];
 		double tmp_double;
 
 		if ((options & PRINT_USERS_ONLY) && share->user == 0)
@@ -361,5 +363,6 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(print_fields_list);
+	xfree(tres_raw);
 	return rc;
 }
