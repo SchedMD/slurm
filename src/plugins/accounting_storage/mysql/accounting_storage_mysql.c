@@ -1580,8 +1580,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  event_table_fields,
 				  ", primary key (node_name(42), time_start), "
-				  "key rollup (node_name(42), time_start, "
-				  "time_end, state), "
+				  "key rollup (time_start, time_end, state), "
 				  "key archive_purge (time_end))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
