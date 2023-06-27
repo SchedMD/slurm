@@ -461,7 +461,20 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 	for (int i = 0, j = 0, k = -1;
 	     (node_ptr = next_node_bitmap(bitmap, &i)); i++) {
 		node_cpus = _get_total_cpus(i);
+
+		/* Use all CPUs for accounting */
 		job_resrcs_ptr->cpus[j] = node_cpus;
+		total_cpus += node_cpus;
+
+		/*
+		 * Get the usable cpu count for cpu_array_value and memory
+		 * allocation. Steps in the job will use this to know how
+		 * many cpus they can use. This is needed so steps avoid
+		 * allocating too many cpus with --threads-per-core and then
+		 * fail to launch.
+		 */
+		node_cpus = job_resources_get_node_cpu_cnt(job_resrcs_ptr,
+							   j, i);
 		if ((k == -1) ||
 		    (job_resrcs_ptr->cpu_array_value[k] != node_cpus)) {
 			job_resrcs_ptr->cpu_array_cnt++;
@@ -469,7 +482,6 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 			job_resrcs_ptr->cpu_array_value[k] = node_cpus;
 		} else
 			job_resrcs_ptr->cpu_array_reps[k]++;
-		total_cpus += node_cpus;
 
 		if (job_memory_node) {
 			job_resrcs_ptr->memory_allocated[j] = job_memory_node;

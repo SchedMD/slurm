@@ -2233,7 +2233,7 @@ static void _modify_cpus_alloc_for_tpc(uint16_t cr_type, uint16_t req_tpc,
 {
 	xassert(cpus_alloc);
 
-	if ((cr_type & (CR_CORE | CR_SOCKET)) &&
+	if ((cr_type & (CR_CORE | CR_SOCKET | CR_LINEAR)) &&
 	    (req_tpc != NO_VAL16) && (req_tpc < vpus)) {
 		*cpus_alloc += req_tpc - 1;
 		*cpus_alloc /= req_tpc;
