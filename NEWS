@@ -127,6 +127,9 @@ documents those changes that are of interest to users and administrators.
  -- Add cloud instance accounting to database that can be viewed with 'sacctmgr
     show instance'.
  -- openapi/v0.0.40 - add /instance and /instances endpoints.
+ -- SelectTypeParameters=cr_cpu - Fix a log error "CPU underflow" at step
+    completion for steps that request --threads-per-core or
+    --hint=nomultithread.
 
 * Changes in Slurm 23.02.5
 ==========================
