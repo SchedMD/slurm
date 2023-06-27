@@ -1510,8 +1510,6 @@ static int _convert_data_bool(data_t *data)
 		goto fail;
 	}
 
-	goto fail;
-
 converted:
 	log_flag_hex(DATA, str, strlen(str),
 		     "%s: converted %pD->%s",
