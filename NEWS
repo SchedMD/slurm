@@ -75,6 +75,7 @@ documents those changes that are of interest to users and administrators.
  -- Prolog and Epilog do not have to be fully qualified pathnames.
  -- Changed default value of PriorityType from priority/basic to
     priority/multifactor.
+ -- torque/mpiexec - Propogate exit code from launched process.
 
 * Changes in Slurm 23.02.4
 ==========================

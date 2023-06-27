@@ -161,9 +161,11 @@ if($config_file) {
 }
 
 #print "$command\n";
-system($command);
+my $exit_code = system($command);
 
 system("rm -f $new_config") if($new_config);
+
+exit($exit_code >> 8);
 
 __END__
 
