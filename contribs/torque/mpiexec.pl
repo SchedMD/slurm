@@ -123,45 +123,41 @@ if ($man) {
 }
 
 # Use sole remaining argument as jobIds
-my $script;
-if ($ARGV[0]) {
-	foreach (@ARGV) {
-	        $script .= "$_ ";
-	}
-} elsif(!$config_file) {
+if(!$ARGV[0] && !$config_file) {
         pod2usage(2);
 }
 
 my $new_config;
 
 
-my $command = "$srun";
+my @command = ("$srun");
 
 # write stdout and err to files instead of stdout
-$command .= " -o job.o\%j -e job.e\%j" if $nostdout;
-$command .= " -inone" if $nostdin;
-$command .= " -i0" if !$allstdin; #default only send stdin to first node
-$command .= " -n$nprocs" if $nprocs; # number of tasks
-$command .= " -w$hostname" if $hostname; # Hostlist provided
-$command .= " -t '" . $ENV{"MPIEXEC_TIMEOUT"} . "'" if $ENV{"MPIEXEC_TIMEOUT"};
+push @command, "-o job.o\%j -e job.e\%j" if $nostdout;
+push @command, "-inone" if $nostdin;
+push @command, "-i0" if !$allstdin; #default only send stdin to first node
+push @command, "-n$nprocs" if $nprocs; # number of tasks
+push @command, "-w$hostname" if $hostname; # Hostlist provided
+push @command, "-t '" . $ENV{"MPIEXEC_TIMEOUT"} . "'" if $ENV{"MPIEXEC_TIMEOUT"};
 
 if($verbose) {
-	$command .= " -"; # verbose
+	my $verbose_flag = "-"; # verbose
 	for(my $i=0; $i<$verbose; $i++) {
-		$command .= "v";
+		$verbose_flag .= "v";
 	}
+  push @command, $verbose_flag
 }
 
 if($config_file) {
 	($new_config, my $new_nprocs) = get_new_config();
-	$command .= " -n$new_nprocs" if !$nprocs;
-	$command .= " --multi-prog $new_config";
+	push @command, "-n$new_nprocs" if !$nprocs;
+	push @command, "--multi-prog $new_config";
 } else {
-	$command .= " $script";
+	push @command, @ARGV;
 }
 
-#print "$command\n";
-my $exit_code = system($command);
+#print "@command\n";
+my $exit_code = system(@command);
 
 system("rm -f $new_config") if($new_config);
 
