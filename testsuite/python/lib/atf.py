@@ -1376,6 +1376,8 @@ def require_config_parameter(
             value is sufficient. If not, the target parameter_value will be
             used (or the test will be skipped in the case of local-config mode).
         source (string): Name of the config file without the .conf prefix.
+        skip_message (string): Message to be displayed if in local-config mode
+            and parameter not present.
 
     Note:
         When requiring a complex parameter (one which may be repeated and has
