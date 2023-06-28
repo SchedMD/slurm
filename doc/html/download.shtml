@@ -232,15 +232,8 @@ sudo make install</pre>
 	<pre>--with-jwt=/usr/local/</pre>
 </li><br>
 
-<li><b>Slurm-web</b><br>
-Slurm-web is a free software, distributed under the GPL version 3 license,
-that provides both a HTTP REST API (based on JSON format) and a web GUI
-with dashboards and graphical views of the current state of your
-Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
-<a href="http://edf-hpc.github.io/slurm-web">http://edf-hpc.github.io/slurm-web</a></li>
-
 </ul>
 
-<p style="text-align:center;">Last modified 06 April 2023</p>
+<p style="text-align:center;">Last modified 28 June 2023</p>
 
 <!--#include virtual="footer.txt"-->
