@@ -97,6 +97,8 @@ documents those changes that are of interest to users and administrators.
  -- Reject reservation update if it will result in previously submitted
     jobs losing access to the reservation.
  -- data_parser/v0.0.40 - output partition state when dumping partitions.
+ -- Allow for a shared suffix to be used with the hostlist format. E.g.,
+    "node[0001-0010]-int".
 
 * Changes in Slurm 23.02.4
 ==========================

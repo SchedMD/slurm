@@ -303,7 +303,8 @@ static hostlist_t *_hostlist_create_bracketed(const char *, char *, char *, int)
 static void hostlist_resize(hostlist_t *, size_t);
 static void hostlist_expand(hostlist_t *);
 static int hostlist_push_range(hostlist_t *, hostrange_t *);
-static int hostlist_push_hr(hostlist_t *, char *, unsigned long, unsigned long, int);
+static int hostlist_push_hr(hostlist_t *, char *, char *, unsigned long,
+			    unsigned long, int);
 static int hostlist_insert_range(hostlist_t *, hostrange_t *, int);
 static void hostlist_delete_range(hostlist_t *, int n);
 static void hostlist_coalesce(hostlist_t *hl);
@@ -1218,11 +1219,34 @@ static int hostlist_push_range(hostlist_t *hl, hostrange_t *hr)
 /* Same as hostlist_push_range() above, but prefix, lo, hi, and width
  * are passed as args
  */
-static int hostlist_push_hr(hostlist_t *hl, char *prefix, unsigned long lo,
-			    unsigned long hi, int width)
+static int hostlist_push_hr(hostlist_t *hl, char *prefix, char *suffix,
+			    unsigned long lo, unsigned long hi, int width)
 {
-	hostrange_t *hr = hostrange_create(prefix, lo, hi, width);
-	int retval = hostlist_push_range(hl, hr);
+	int retval = 0;
+	hostrange_t *hr;
+	if (suffix) {
+		char *host = NULL;
+		unsigned long i;
+
+		xassert(prefix);
+
+		hr = hostrange_new();
+		hr->singlehost = 1;
+		hr->lo = 0L;
+		hr->hi = 0L;
+		hr->width = 0;
+
+		for (i = lo; i <= hi; i++) {
+			xstrfmtcat(host, "%s%0*lu%s", prefix, width, i, suffix);
+			hr->prefix = host;
+			retval =+ hostlist_push_range(hl, hr);
+			xfree(host);
+		}
+		hr->prefix = NULL;
+	} else {
+		hr = hostrange_create(prefix, lo, hi, width);
+		retval = hostlist_push_range(hl, hr);
+	}
 	hostrange_destroy(hr);
 	return retval;
 }
@@ -1423,7 +1447,7 @@ hostlist_t *_hostlist_create(const char *hostlist, char *sep, char *r_op,
 		} else {
 			if (high < low)
 				high = low;
-			hostlist_push_hr(new, prefix, low, high, fmt);
+			hostlist_push_hr(new, prefix, NULL, low, high, fmt);
 		}
 
 		error = 0;
@@ -1629,8 +1653,8 @@ static int _parse_range_list(char *str,
 /* Validate prefix and push with the numeric suffix onto the hostlist
  * The prefix can contain a up to one range expresseion (e.g. "rack[1-4]_").
  * RET 0 on success, -1 on failure (invalid prefix) */
-static int _push_range_list(hostlist_t *hl, char *prefix, struct _range *range,
-			    int n, int dims)
+static int _push_range_list(hostlist_t *hl, char *prefix, char *suffix,
+			    struct _range *range, int n, int dims)
 {
 	int i, k, nr, rc = 0, rc1;
 	char *p, *q;
@@ -1667,6 +1691,7 @@ static int _push_range_list(hostlist_t *hl, char *prefix, struct _range *range,
 					   prefix, pre_range->width, j, q);
 				if (recurse) {
 					rc1 = _push_range_list(hl, new_prefix,
+							       suffix,
 							       saved_range,
 							       n, dims);
 					rc = MAX(rc, rc1);
@@ -1674,6 +1699,7 @@ static int _push_range_list(hostlist_t *hl, char *prefix, struct _range *range,
 					range = saved_range;
 					for (k = 0; k < n; k++) {
 						hostlist_push_hr(hl, new_prefix,
+								 suffix,
 								 range->lo,
 								 range->hi,
 								 range->width);
@@ -1689,7 +1715,7 @@ static int _push_range_list(hostlist_t *hl, char *prefix, struct _range *range,
 	}
 
 	for (k = 0; k < n; k++) {
-		hostlist_push_hr(hl, prefix,
+		hostlist_push_hr(hl, prefix, suffix,
 				 range->lo, range->hi, range->width);
 		range++;
 	}
@@ -1719,12 +1745,17 @@ static hostlist_t *_hostlist_create_bracketed(const char *hostlist, char *sep,
 
 	while ((tok = _next_tok(sep, &str)) != NULL) {
 		if ((p = strrchr(tok, '[')) != NULL) {
-			char *q, *prefix = tok;
+			char *q, *prefix = tok, *suffix = NULL;
 			*p++ = '\0';
 
 			if ((q = strchr(p, ']'))) {
-				if ((q[1] != ',') && (q[1] != '\0'))
-					goto error;
+				if ((q[1] != ',') && (q[1] != '\0')) {
+					/* suffix only supported for dims == 1 */
+					if (dims == 1)
+						suffix = q + 1;
+					else
+						goto error;
+				}
 				*q = '\0';
 				nr = _parse_range_list(p,
 						       &ranges,
@@ -1732,8 +1763,8 @@ static hostlist_t *_hostlist_create_bracketed(const char *hostlist, char *sep,
 						       dims);
 				if (nr < 0)
 					goto error;
-				if (_push_range_list(
-					    new, prefix, ranges, nr, dims))
+				if (_push_range_list(new, prefix, suffix,
+						     ranges, nr, dims))
 					goto error;
 			} else {
 				/* Found '[' but ']' is missing. */

@@ -58,6 +58,8 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
  -- Prolog and Epilog do not have to be fully qualified pathnames.
  -- Changed default value of PriorityType from priority/basic to
     priority/multifactor.
+ -- Allow for a shared suffix to be used with the hostlist format. E.g.,
+    "node[0001-0010]-int".
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
