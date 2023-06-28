@@ -12,6 +12,7 @@ Currently supported distributions include:
 <li>Cray Linux Environment 7</li>
 <li>Debian 10 (Buster)</li>
 <li>Debian 11 (Bullseye)</li>
+<li>Debian 12 (Bookworm)</li>
 <li>RedHat Enterprise Linux 7 (RHEL7), CentOS 7, Scientific Linux 7</li>
 <li>RedHat Enterprise Linux 8 (RHEL8) and RHEL8 derivatives</li>
 <li>RedHat Enterprise Linux 9 (RHEL9) and RHEL9 derivatives</li>
@@ -20,6 +21,7 @@ Currently supported distributions include:
 <li>Ubuntu 18.04</li>
 <li>Ubuntu 20.04</li>
 <li>Ubuntu 22.04</li>
+<li>Ubuntu 23.04</li>
 </ul>
 </li>
 <li><b>NetBSD</b> &mdash; Limited support, not actively tested.</li>
