@@ -2872,12 +2872,14 @@ def require_nodes(requested_node_count, requirements_list=[]):
         Cores
         RealMemory
         Gres
+        Features
 
     Returns:
         None
 
     Example:
         >>> require_nodes(2, [('CPUs', 4), ('RealMemory', 40)])
+        >>> require_nodes(2, [('CPUs', 2), ('RealMemory', 30), ('Features', 'gpu,mpi')])
     """
 
     # If using local-config and slurm is running, use live node information
@@ -3005,6 +3007,15 @@ def require_nodes(requested_node_count, requirements_list=[]):
                             if nonqualifying_node_count == 1:
                                 augmentation_dict[parameter_name] = gres_value
                 else:
+                    if node_qualifies:
+                        node_qualifies = False
+                        nonqualifying_node_count += 1
+                    if nonqualifying_node_count == 1:
+                        augmentation_dict[parameter_name] = parameter_value
+            elif parameter_name == 'Features':
+                required_features = set(parameter_value.split(','))
+                node_features = set(lower_node_dict.get('features', '').split(','))
+                if not required_features.issubset(node_features):
                     if node_qualifies:
                         node_qualifies = False
                         nonqualifying_node_count += 1
