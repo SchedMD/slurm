@@ -162,8 +162,9 @@ important than optimizing network topology then do NOT use the
 
 <p><b>NOTE</b>: The <b>topology.conf</b> file for an Infiniband switch can be
 automatically generated using the <b>slurmibtopology</b> tool found here:<br>
-<a href="https://ftp.fysik.dtu.dk/Slurm/slurmibtopology.sh">
-https://ftp.fysik.dtu.dk/Slurm/slurmibtopology.sh</a>.</p>
+<a href="https://github.com/OleHolmNielsen/Slurm_tools/tree/master/slurmibtopology">
+https://github.com/OleHolmNielsen/Slurm_tools/tree/master/slurmibtopology</a>.
+</p>
 
 <p><b>NOTE</b>: The <b>topology.conf</b> file for an Omni-Path (OPA) switch can
 be automatically generated using the <b>opa2slurm</b> tool found here:<br>
@@ -201,6 +202,6 @@ The value will be set component types listed in SLURM_TOPOLOGY_ADDR.
 Each component will be identified as either "switch" or "node".
 A period is used to separate each hardware component type.</p>
 
-<p style="text-align:center;">Last modified 6 June 2022</p>
+<p style="text-align:center;">Last modified 28 June 2023</p>
 
 <!--#include virtual="footer.txt"-->
