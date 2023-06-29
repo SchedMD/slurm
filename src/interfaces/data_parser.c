@@ -580,10 +580,11 @@ static bool _dump_cli_stdout_on_error(void *arg, data_parser_type_t type,
 	data_t *e = data_set_dict(data_list_append(errors));
 
 	if (why) {
-		char *str = vxstrfmt(why, ap);
+		char *str;
 		va_start(ap, why);
-		data_set_string_own(data_key_set(e, "description"), str);
+		str = vxstrfmt(why, ap);
 		va_end(ap);
+		data_set_string_own(data_key_set(e, "description"), str);
 	}
 
 	if (error_code) {
@@ -608,10 +609,11 @@ static void _dump_cli_stdout_on_warn(void *arg, data_parser_type_t type,
 	data_t *w = data_set_dict(data_list_append(warns));
 
 	if (why) {
-		char *str = vxstrfmt(why, ap);
+		char *str;
 		va_start(ap, why);
-		data_set_string_own(data_key_set(w, "description"), str);
+		str = vxstrfmt(why, ap);
 		va_end(ap);
+		data_set_string_own(data_key_set(w, "description"), str);
 	}
 
 	if (source)
