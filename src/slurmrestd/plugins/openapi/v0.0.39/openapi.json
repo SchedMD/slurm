@@ -105,7 +105,17 @@
             }
           },
           "default": {
-            "description": "unable to request licenses"
+            "description": "unable to request licenses",
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/status"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/status"
+              }
+            }
           }
         }
       }
@@ -243,7 +253,17 @@
             }
           },
           "default": {
-            "description": "job matching JobId not found"
+            "description": "job matching JobId not found",
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/status"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/status"
+              }
+            }
           }
         }
       },
