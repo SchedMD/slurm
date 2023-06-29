@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- switch/hpe_slingshot - support alternate traffic class names with "TC_"
     prefix.
  -- scrontab - Fix cutting off the final character of quoted variables.
+ -- Fix slurmstepd segfault when ContainerPath is not set in oci.conf
 
 * Changes in Slurm 23.02.3
 ==========================
