@@ -166,10 +166,6 @@ def test_step_tres_legal(name):
 # Check requested TRES when exceeding allowed amount or illegal format
 @pytest.mark.parametrize("name", tres_dict.keys())
 def test_step_tres_illegal(name):
-    # TODO: Remove skip once Bug 14867 is fixed
-    if name == "shard":
-        pytest.skip(f"Known Bug 14867 for TRES {name}")
-
     env_file = atf.module_tmp_path / (name + "_env")
     tres_param = f"{tres_dict[name]['param']}{tres_dict[name]['num']}"
 
@@ -261,9 +257,6 @@ def test_tres_leaking(name, command):
 # Make sure no commas between TRES doesn't work
 @pytest.mark.parametrize("name", tres_dict.keys())
 def test_no_commas(name):
-    # TODO: Remove skip once Bug 14867 is fixed
-    pytest.skip(f"Known Bug 14867 for all TRES")
-
     env_file = atf.module_tmp_path / (name + "_env")
     tres_params = [f"{tres_dict[name]['param']}{tres_dict[name]['num']}"]
 
@@ -296,10 +289,6 @@ def test_no_commas(name):
 # Make sure having extra colons and/or nothing between colons doesn't work
 @pytest.mark.parametrize("name", tres_dict.keys())
 def test_extra_colons(name):
-    # TODO: Remove skip once Bug 14867 is fixed
-    if name != "cpu":
-        pytest.skip(f"Known Bug 14867 for TRES != cpu")
-
     env_file = atf.module_tmp_path / (name + "_env")
     # Replace each colon with two in new tres_param
     tres_params = [f"{tres_dict[name]['param']}{tres_dict[name]['num']}"
