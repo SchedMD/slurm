@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 23.02 that causes slurmstepd to crash when srun requests
     more than TreeWidth nodes in a step and uses the pmi2 or pmix plugin.
  -- Reject job ArrayTaskThrottle update requests from unprivileged users.
+ -- data_parser/v0.0.39 - populate description fields of property objects in
+    generated OpenAPI specifications where defined.
 
 * Changes in Slurm 23.02.3
 ==========================
