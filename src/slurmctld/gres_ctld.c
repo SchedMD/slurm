@@ -810,10 +810,11 @@ static void _job_select_whole_node_internal(
 	if (gres_ns->no_consume) {
 		gres_js->total_gres = NO_CONSUME_VAL64;
 	} else if (type_inx != -1)
-		gres_js->total_gres +=
+		gres_js->total_gres =
 			gres_ns->type_cnt_avail[type_inx];
 	else
-		gres_js->total_gres += gres_ns->gres_cnt_avail;
+		gres_js->total_gres = gres_ns->gres_cnt_avail;
+
 }
 
 static void _handle_explicit_alloc(void *x, void *arg)
@@ -1847,6 +1848,7 @@ static void _set_type_tres_cnt(List gres_list,
 	gres_state_t *gres_state_ptr;
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_rec;
+	bool typeless_found = false;
 	char *col_name = NULL;
 	uint64_t count;
 	int tres_pos;
@@ -1880,6 +1882,9 @@ static void _set_type_tres_cnt(List gres_list,
 			gres_job_state_t *gres_js = (gres_job_state_t *)
 				gres_state_ptr->gres_data;
 			count = gres_js->total_gres;
+			if (!gres_js->type_name)
+				typeless_found = true;
+
 			break;
 		}
 		case GRES_STATE_TYPE_NODE:
@@ -1906,8 +1911,11 @@ static void _set_type_tres_cnt(List gres_list,
 		if ((tres_pos = assoc_mgr_find_tres_pos(&tres_rec,true)) != -1){
 			if (count == NO_CONSUME_VAL64)
 				tres_cnt[tres_pos] = NO_CONSUME_VAL64;
-			else
+			else if (!typeless_found)
 				tres_cnt[tres_pos] += count;
+			else
+				tres_cnt[tres_pos] = count;
+
 			set_total = true;
 		}
 
