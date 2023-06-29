@@ -107,6 +107,12 @@ HIGHLIGHTS
     (OCI) runtime proxy to run containers seamlessly via Slurm.
  -- Fixed GpuFreqDef option. When set in slurm.conf, it will be used if
     --gpu-freq was not explicitly set by the job step.
+ -- srun/sbatch/salloc - In order to support user namespaces, process user and
+    group ids are no longer used unless explicitly requested as an argument and
+    are left as nobody(99) by default. Any cli_filters or SPANK plugins need to
+    ignore any uid or gid that equal SLURM_AUTH_NOBODY (99). User and group ids
+    are now resolved by the active auth plugin. To determine the actual job uid
+    or gid you should use the RESPONSE_RESOURCE_ALLOCATION RPC.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
