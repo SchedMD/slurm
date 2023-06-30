@@ -251,6 +251,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Avoid matching query URLs based on partial matches to an
     existing endpoint, e.g. POST request to /slurm/v0.0.40/job was routed
     to the handler of POST /slurm/v0.0.40/job/submit.
+ -- Don't display old job_arrays/het_jobs in sacct if Job ID was reused.
 
 * Changes in Slurm 23.02.7
 ==========================

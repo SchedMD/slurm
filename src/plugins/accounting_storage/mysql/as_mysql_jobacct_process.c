@@ -493,7 +493,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	char *prefix="t2";
 	int rc = SLURM_SUCCESS;
 	int last_id = -1, curr_id = -1;
+	int comb_id = 0;
 	local_cluster_t *curr_cluster = NULL;
+	bool jobid_filtered = false;
 
 	/* This is here to make sure we are looking at only this user
 	 * if this flag is set.  We also include any accounts they may be
@@ -566,6 +568,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		xstrcat(query, extra);
 		xfree(extra);
 	}
+	if (job_cond->step_list)
+		jobid_filtered = true;
 
 	/* Here we want to order them this way in such a way so it is
 	   easy to look for duplicates, it is also easy to sort the
@@ -602,13 +606,26 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		char *db_inx_char = row[JOB_REQ_DB_INX];
 		bool job_ended = 0;
 		int start = slurm_atoul(row[JOB_REQ_START]);
+		int arrayjob = slurm_atoul(row[JOB_REQ_ARRAYJOBID]);
+		int hetjob = slurm_atoul(row[JOB_REQ_HET_JOB_ID]);
 
 		curr_id = slurm_atoul(row[JOB_REQ_JOBID]);
-
-		if (job_cond && !(job_cond->flags & JOBCOND_FLAG_DUP)
-		    && (curr_id == last_id)
-		    && (slurm_atoul(row[JOB_REQ_STATE]) != JOB_RESIZING))
-			continue;
+		if (job_cond && !(job_cond->flags & JOBCOND_FLAG_DUP)) {
+			if ((curr_id == last_id) &&
+			    (slurm_atoul(row[JOB_REQ_STATE]) != JOB_RESIZING))
+				continue;
+			/*
+			 * Doing advanced duplication removal when requesting
+			 * specific jobIDs and hetjobs/arrayjobs involved
+			*/
+			if (jobid_filtered) {
+				if ((last_id != hetjob) &&
+				    (last_id != arrayjob)) {
+					comb_id = arrayjob + hetjob;
+				} else if (comb_id != (arrayjob + hetjob))
+					continue;
+			}
+		}
 
 		/* check the bitmap to see if this is one of the jobs
 		   we are looking for */
