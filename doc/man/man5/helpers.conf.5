@@ -1,4 +1,4 @@
-.TH "helpers.conf" "5" "Slurm Configuration File" "January 2023" "Slurm Configuration File"
+.TH "helpers.conf" "5" "Slurm Configuration File" "June 2023" "Slurm Configuration File"
 
 .SH "NAME"
 helpers.conf \- Slurm configuration file for the helpers plugin.
@@ -126,6 +126,8 @@ AllowUserBoot=user1,user2
 
 .TP
 \fBExample Helper script\fR:
+Helper scripts need to have the executable bit set and must exist on the
+nodes, where they will be executed by slurmd.
 When the helper script is called with no arguments it should return the
 feature(s) that are currently active for the node, with multiple features
 being new-line delimited. When the helper script is called with a feature
