@@ -193,6 +193,9 @@ if {[set_nodes_and_threads_by_request "-N1"]} {
 	skip "Test needs to be able to submit a job with -N1."
 }
 
+if {![check_config_select "cons_tres"] || ![check_config_select "cons_res"]} {
+    skip "Test requires SelectType=select/cons_tres or cons_res"
+}
 testproc test_overlap_after_overlap
 testproc test_overlap_after_exclusive
 testproc test_exclusive_after_overlap
