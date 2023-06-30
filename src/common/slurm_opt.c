@@ -6385,6 +6385,77 @@ static void _validate_cpus_per_tres(slurm_opt_t *opt)
 	}
 }
 
+/*
+ * If the node list supplied is a file name, translate that into
+ *	a list of nodes, we orphan the data pointed to
+ * RET true if the node list is a valid one
+ */
+static bool _valid_node_list(slurm_opt_t *opt, char **node_list_pptr)
+{
+	int count = NO_VAL;
+
+	/*
+	 * If we are using Arbitrary and we specified the number of procs to use
+	 * then we need exactly this many since we are saying, lay it out this
+	 * way! Same for max and min nodes. Other than that just read in as many
+	 * in the hostfile.
+	 */
+	if (opt->ntasks_set)
+		count = opt->ntasks;
+	else if (opt->nodes_set) {
+		if (opt->max_nodes)
+			count = opt->max_nodes;
+		else if (opt->min_nodes)
+			count = opt->min_nodes;
+	}
+
+	return verify_node_list(node_list_pptr, opt->distribution, count);
+}
+
+static void _validate_nodelist(slurm_opt_t *opt)
+{
+	int error_exit = 1;
+
+	if (opt->nodefile) {
+		char *tmp;
+		xfree(opt->nodelist);
+		if (!(tmp = slurm_read_hostfile(opt->nodefile, 0))) {
+			error("Invalid --nodefile node file");
+			exit(-1);
+		}
+		opt->nodelist = xstrdup(tmp);
+		free(tmp);
+	}
+
+	if (!opt->nodelist) {
+		if ((opt->nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
+			/*
+			 * make sure the file being read in has a / in it to
+			 * make sure it is a file in the _valid_node_list()
+			 * function.
+			 */
+			if (!xstrstr(opt->nodelist, "/")) {
+				char *add_slash = xstrdup("./");
+				xstrcat(add_slash, opt->nodelist);
+				xfree(opt->nodelist);
+				opt->nodelist = add_slash;
+			}
+			opt->distribution &= SLURM_DIST_STATE_FLAGS;
+			opt->distribution |= SLURM_DIST_ARBITRARY;
+			if (!_valid_node_list(opt, &opt->nodelist)) {
+				error("Failure getting NodeNames from hostfile");
+				exit(error_exit);
+			} else {
+				debug("loaded nodes (%s) from hostfile",
+				      opt->nodelist);
+			}
+		}
+	} else {
+		if (!_valid_node_list(opt, &opt->nodelist))
+			exit(error_exit);
+	}
+}
+
 /* Validate shared options between srun, salloc, and sbatch */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 {
@@ -6395,6 +6466,7 @@ extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 	_validate_share_options(opt);
 	_validate_tres_per_task(opt);
 	_validate_cpus_per_tres(opt);
+	_validate_nodelist(opt);
 }
 
 extern char *slurm_option_get_argv_str(const int argc, char **argv)
