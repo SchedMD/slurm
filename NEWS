@@ -108,6 +108,8 @@ documents those changes that are of interest to users and administrators.
     startup. On startup or reconfigure, these messages were present in the log:
     "error: Attempt to change gres/gpu Count".
  -- Fix potential double count of gres when dealing with limits.
+ -- switch/hpe_slingshot - support alternate traffic class names with "TC_"
+    prefix.
 
 * Changes in Slurm 23.02.3
 ==========================
