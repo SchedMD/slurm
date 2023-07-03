@@ -232,10 +232,10 @@ Slurm Accounting Configuration Before Build
 <a class="slurm_link" href="#slurm-accounting-configuration-before-build"></a>
 </h2>
 
-<p>While the SlurmDBD will work with a flat text file for recording
-job completions and similar data, this configuration will not allow for
-"associations" between a user and account. A database allows such
-a configuration.
+<p>You can configure SlurmDBD to communicate with a database by using
+<b>AccountingStorageType=accounting_storage/slurmdbd</b>. This allows
+the creation of user entities called "associations", which consist of the
+cluster, a user, account and optionally a partition.</p>
 
 <p><b>MySQL or MariaDB is the preferred database.</b>
 
@@ -920,7 +920,7 @@ completely. This is meant to clean up after typographical errors.
 Removing user associations or accounts, however, will cause slurmctld to lose
 track of usage data for that user/account.</p>
 
-<p style="text-align:center;">Last modified 24 May 2023</p>
+<p style="text-align:center;">Last modified 28 June 2023</p>
 
 <!--#include virtual="footer.txt"-->
 
