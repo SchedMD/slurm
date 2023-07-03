@@ -905,6 +905,13 @@ static bool _opt_verify(void)
 	int hl_cnt = 0;
 	bool mpack_reset_nodes = false;
 
+	if (opt.srun_opt->interactive) {
+		if (((opt.distribution & SLURM_DIST_STATE_BASE) ==
+		     SLURM_DIST_ARBITRARY)) {
+			opt.distribution &= ~SLURM_DIST_ARBITRARY;
+		}
+	}
+
 	/*
 	 * This means --ntasks was read from the environment.
 	 * We will override it with what the user specified in the hostlist.
