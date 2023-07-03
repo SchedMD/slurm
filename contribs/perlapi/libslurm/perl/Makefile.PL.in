@@ -2,15 +2,6 @@ use 5.008;
 use ExtUtils::MakeMaker;
 
 
-if (!(-e "@libdir@/libslurm.so") && !(-e "@top_builddir@/src/api/.libs/libslurm.so")) {
-	die("I can't seem to find the library files I need in your Slurm installation.
-Please check that you have Slurm installation has at least one of the
-following link(s):
-
-   @top_builddir@/src/api/.libs/libslurm.so
-   @libdir@/libslurm.so\n");
-}
-
 # Most all the extra code is to deal with MakeMaker < 6.11 not working
 # correctly to build rpms
 
