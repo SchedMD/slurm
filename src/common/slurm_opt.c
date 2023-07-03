@@ -6659,7 +6659,9 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 		hostlist_t *hl = hostlist_create(opt_local->nodelist);
 		xfree(opt_local->nodelist);
 		opt_local->nodelist = hostlist_ranged_string_xmalloc(hl);
-		hostlist_uniq(hl);
+		if (((opt_local->distribution & SLURM_DIST_STATE_BASE) !=
+		      SLURM_DIST_ARBITRARY))
+			hostlist_uniq(hl);
 		job_desc->req_nodes = hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
 	}
