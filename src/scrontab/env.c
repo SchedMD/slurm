@@ -92,12 +92,12 @@ extern bool load_env(char *line, char **key, char **value)
 		/* ensure trailing quote is found */
 		value_end = value_start;
 		while (line[value_end]) {
-			if (line[value_end + 1] == line[quote])
+			if (line[value_end] == line[quote])
 				break;
 			value_end++;
 		}
 
-		end = value_end + 1;
+		end = value_end;
 		if (!line[end] || (line[end] != line[quote])) {
 			error("not match");
 			return false;

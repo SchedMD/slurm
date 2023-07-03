@@ -110,6 +110,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential double count of gres when dealing with limits.
  -- switch/hpe_slingshot - support alternate traffic class names with "TC_"
     prefix.
+ -- scrontab - Fix cutting off the final character of quoted variables.
 
 * Changes in Slurm 23.02.3
 ==========================
