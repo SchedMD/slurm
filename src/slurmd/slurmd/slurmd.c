@@ -2183,11 +2183,6 @@ _restore_cred_state(slurm_cred_ctx_t *ctx)
 	int cred_fd, data_allocated, data_read = 0;
 	buf_t *buffer = NULL;
 
-	if ( (mkdir(conf->spooldir, 0755) < 0) && (errno != EEXIST) ) {
-		fatal("mkdir(%s): %m", conf->spooldir);
-		return SLURM_ERROR;
-	}
-
 	file_name = xstrdup(conf->spooldir);
 	xstrcat(file_name, "/cred_state");
 	cred_fd = open(file_name, O_RDONLY);
