@@ -348,7 +348,7 @@ if [setup_federation $fed_name] {
 
 # get number of nodes per cluster
 # devide by 2 to get 2 jobs per clusters
-set node_count [expr [llength [get_nodes_by_state idle,alloc,comp]] / 2]
+set node_count [expr [llength [get_nodes_by_state idle,alloc,comp "[default_partition] --local"]] / 2]
 
 make_bash_script $file_in "env; $bin_sleep 300"
 
