@@ -2178,27 +2178,14 @@ _slurmd_init(void)
 static int
 _restore_cred_state(slurm_cred_ctx_t *ctx)
 {
-	char *file_name = NULL, *data = NULL;
-	uint32_t data_offset = 0;
-	int cred_fd, data_allocated, data_read = 0;
+	char *file_name = NULL;
 	buf_t *buffer = NULL;
 
 	file_name = xstrdup(conf->spooldir);
 	xstrcat(file_name, "/cred_state");
-	cred_fd = open(file_name, O_RDONLY);
-	if (cred_fd < 0)
-		goto cleanup;
 
-	data_allocated = 1024;
-	data = xmalloc(data_allocated);
-	while ((data_read = read(cred_fd, data + data_offset, 1024)) == 1024) {
-		data_offset += data_read;
-		data_allocated += 1024;
-		xrealloc(data, data_allocated);
-	}
-	data_offset += data_read;
-	close(cred_fd);
-	buffer = create_buf(data, data_offset);
+	if (!(buffer = create_mmap_buf(file_name)))
+		goto cleanup;
 
 	slurm_cred_ctx_unpack(ctx, buffer);
 
