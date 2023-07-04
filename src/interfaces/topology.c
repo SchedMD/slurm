@@ -64,9 +64,9 @@ typedef struct slurm_topo_ops {
  * Must be synchronized with slurm_topo_ops_t above.
  */
 static const char *syms[] = {
-	"topo_build_config",
-	"topo_generate_node_ranking",
-	"topo_get_node_addr",
+	"topology_p_build_config",
+	"topology_p_generate_node_ranking",
+	"topology_p_get_node_addr",
 };
 
 static slurm_topo_ops_t ops;

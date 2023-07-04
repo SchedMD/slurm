@@ -151,7 +151,7 @@ extern int fini(void)
  * topo_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.
  */
-extern int topo_build_config(void)
+extern int topology_p_build_config(void)
 {
 	if (node_record_count)
 		_validate_switches();
@@ -162,7 +162,7 @@ extern int topo_build_config(void)
  * When TopologyParam=SwitchAsNodeRank is set, this plugin assigns a unique
  * node_rank for all nodes belonging to the same leaf switch.
  */
-extern bool topo_generate_node_ranking(void)
+extern bool topology_p_generate_node_ranking(void)
 {
 	/* By default, node_rank is 0, so start at 1 */
 	int switch_rank = 1;
@@ -206,7 +206,8 @@ extern bool topo_generate_node_ranking(void)
  *      address : s0.s4.s8.tux1
  *      pattern : switch.switch.switch.node
  */
-extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
+extern int topology_p_get_node_addr(char *node_name, char **paddr,
+				    char **ppattern)
 {
 	node_record_t *node_ptr;
 	hostlist_t *sl = NULL;
