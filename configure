@@ -685,11 +685,6 @@ HAVE_LUA_FALSE
 HAVE_LUA_TRUE
 lua_LIBS
 lua_CFLAGS
-HAVE_NETLOC_FALSE
-HAVE_NETLOC_TRUE
-NETLOC_LDFLAGS
-NETLOC_CPPFLAGS
-NETLOC_LIBS
 SLURMRESTD_PORT
 WITH_SLURMRESTD_FALSE
 WITH_SLURMRESTD_TRUE
@@ -1069,7 +1064,6 @@ with_slurmdbd_port
 with_slurmctld_port_count
 enable_slurmrestd
 with_slurmrestd_port
-with_netloc
 with_readline
 with_systemdsystemunitdir
 with_munge
@@ -1831,7 +1825,6 @@ Optional Packages:
                           set slurmctld default port count [1]
   --with-slurmrestd-port=N
                           set slurmrestd default port [6820]
-  --with-netloc=PATH      Specify path to netloc installation
   --without-readline      compile without readline support
   --with-systemdsystemunitdir=DIR
                           Directory for systemd service files
@@ -26873,134 +26866,6 @@ printf "%s\n" "#define SLURMRESTD_PORT $slurmrestdport" >>confdefs.h
 
 
 
-  _x_ac_netloc_dirs="/usr /usr/local"
-  _x_ac_netloc_libs="lib64 lib"
-  x_ac_cv_netloc_nosub="no"
-
-
-# Check whether --with-netloc was given.
-if test ${with_netloc+y}
-then :
-  withval=$with_netloc; if test "x$with_netloc" != xno && test "x$with_netloc" != xyes
-then :
-  _x_ac_netloc_dirs="$with_netloc"
-fi
-fi
-
-
-  if test "x$with_netloc" = xno; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for netloc disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for netloc disabled" >&2;}
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for netloc installation" >&5
-printf %s "checking for netloc installation... " >&6; }
-if test ${x_ac_cv_netloc_dir+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-
-        for d in $_x_ac_netloc_dirs; do
-          test -d "$d" || continue
-          test -d "$d/include" || continue
-          test -f "$d/include/netloc.h" || continue
-          for bit in $_x_ac_netloc_libs; do
-            test -d "$d/$bit" || continue
-            _x_ac_netloc_cppflags_save="$CPPFLAGS"
-            CPPFLAGS="-I$d/include $CPPFLAGS"
-            _x_ac_netloc_libs_save="$LIBS"
-            LIBS="-L$d/$bit -lnetloc $LIBS"
-            cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <netloc.h>
-                                #include <netloc/map.h>
-int
-main (void)
-{
-netloc_map_t map;
-                                netloc_map_create(&map);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  x_ac_cv_netloc_dir=$d
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-              cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <netloc.h>
-                                #include <netloc_map.h>
-int
-main (void)
-{
-netloc_map_t map;
-                                netloc_map_create(&map)
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  x_ac_cv_netloc_dir=$d
-              x_ac_cv_netloc_nosub="yes"
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-            CPPFLAGS="$_x_ac_netloc_cppflags_save"
-            LIBS="$_x_ac_netloc_libs_save"
-            test -n "$x_ac_cv_netloc_dir" && break
-          done
-          test -n "$x_ac_cv_netloc_dir" && break
-        done
-
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_netloc_dir" >&5
-printf "%s\n" "$x_ac_cv_netloc_dir" >&6; }
-
-    if test -z "$x_ac_cv_netloc_dir"; then
-      if test -z "$with_netloc"; then
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate netloc installation" >&5
-printf "%s\n" "$as_me: WARNING: unable to locate netloc installation" >&2;}
-      else
-        as_fn_error $? "unable to locate netloc installation" "$LINENO" 5
-      fi
-    else
-      NETLOC_CPPFLAGS="-I$x_ac_cv_netloc_dir/include"
-      if test "$ac_with_rpath" = "yes"; then
-        NETLOC_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_netloc_dir/$bit -L$x_ac_cv_netloc_dir/$bit"
-      else
-        NETLOC_LDFLAGS="-L$x_ac_cv_netloc_dir/$bit"
-      fi
-      NETLOC_LIBS="-lnetloc"
-
-printf "%s\n" "#define HAVE_NETLOC 1" >>confdefs.h
-
-      if test "$x_ac_cv_netloc_nosub" = "yes"; then
-
-printf "%s\n" "#define HAVE_NETLOC_NOSUB 1" >>confdefs.h
-
-      fi
-    fi
-
-
-
-
-  fi
-
-   if test -n "$x_ac_cv_netloc_dir"; then
-  HAVE_NETLOC_TRUE=
-  HAVE_NETLOC_FALSE='#'
-else
-  HAVE_NETLOC_TRUE='#'
-  HAVE_NETLOC_FALSE=
-fi
-
-
-
-
 	x_ac_lua_pkg_name="lua"
 	#check for 5.4, 5.3, 5.2 and then 5.1
 	if test -n "$PKG_CONFIG" && \
@@ -28399,10 +28264,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_SLURMRESTD_TRUE}" && test -z "${WITH_SLURMRESTD_FALSE}"; then
   as_fn_error $? "conditional \"WITH_SLURMRESTD\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_NETLOC_TRUE}" && test -z "${HAVE_NETLOC_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_NETLOC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_LUA_TRUE}" && test -z "${HAVE_LUA_FALSE}"; then

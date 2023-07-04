@@ -319,10 +319,6 @@ AC_SUBST(SLURM_PREFIX)
 
 X_AC_SLURMRESTD([6820])
 
-dnl check for netloc library
-dnl
-X_AC_NETLOC
-
 dnl check for lua library
 dnl
 X_AC_LUA
