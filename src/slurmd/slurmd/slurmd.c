@@ -2236,13 +2236,11 @@ _slurmd_fini(void)
  */
 extern void save_cred_state(slurm_cred_ctx_t *ctx)
 {
-	char *old_file, *new_file, *reg_file;
+	char *new_file, *reg_file;
 	int cred_fd = -1, rc;
 	buf_t *buffer = NULL;
 	static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-	old_file = xstrdup(conf->spooldir);
-	xstrcat(old_file, "/cred_state.old");
 	reg_file = xstrdup(conf->spooldir);
 	xstrcat(reg_file, "/cred_state");
 	new_file = xstrdup(conf->spooldir);
@@ -2265,10 +2263,6 @@ extern void save_cred_state(slurm_cred_ctx_t *ctx)
 			_drain_node("SlurmdSpoolDir is full");
 		goto cleanup;
 	}
-	(void) unlink(old_file);
-	if (link(reg_file, old_file))
-		debug4("unable to create link for %s -> %s: %m",
-		       reg_file, old_file);
 	(void) unlink(reg_file);
 	if (link(new_file, reg_file))
 		debug4("unable to create link for %s -> %s: %m",
@@ -2277,7 +2271,6 @@ extern void save_cred_state(slurm_cred_ctx_t *ctx)
 
 cleanup:
 	slurm_mutex_unlock(&state_mutex);
-	xfree(old_file);
 	xfree(reg_file);
 	xfree(new_file);
 	FREE_NULL_BUFFER(buffer);
