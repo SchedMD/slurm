@@ -45,8 +45,8 @@
 #define MCS_SELECT_ONDEMANDSELECT	0x01
 #define MCS_SELECT_SELECT		0x02
 
-extern int slurm_mcs_init(void);
-extern int slurm_mcs_fini(void);
+extern int mcs_g_init(void);
+extern int mcs_g_fini(void);
 extern int slurm_mcs_reconfig(void);
 extern char *slurm_mcs_get_params_specific(void);
 extern int slurm_mcs_reset_params(void);

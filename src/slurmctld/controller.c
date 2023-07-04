@@ -778,7 +778,7 @@ int main(int argc, char **argv)
 
 		if (power_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize power management plugin");
-		if (slurm_mcs_init() != SLURM_SUCCESS)
+		if (mcs_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize mcs plugin");
 
 		/*
@@ -854,7 +854,7 @@ int main(int argc, char **argv)
 
 		bb_g_fini();
 		power_g_fini();
-		slurm_mcs_fini();
+		mcs_g_fini();
 		fed_mgr_fini();
 
 		if (running_cache != RUNNING_CACHE_STATE_NOTRUNNING) {

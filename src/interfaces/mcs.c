@@ -71,7 +71,7 @@ static int _slurm_mcs_check_and_load_privatedata(char *params);
 /*
  * Initialize context for mcs plugin
  */
-extern int slurm_mcs_init(void)
+extern int mcs_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "mcs";
@@ -125,7 +125,7 @@ done:
 	return retval;
 }
 
-extern int slurm_mcs_fini(void)
+extern int mcs_g_fini(void)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -142,8 +142,8 @@ extern int slurm_mcs_fini(void)
 
 extern int slurm_mcs_reconfig(void)
 {
-	slurm_mcs_fini();
-	return slurm_mcs_init();
+	mcs_g_fini();
+	return mcs_g_init();
 }
 
 /* slurm_mcs_get_params_specific
