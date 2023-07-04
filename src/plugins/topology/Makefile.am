@@ -1,3 +1,3 @@
 # Makefile for topology plugins
 
-SUBDIRS = 3d_torus hypercube tree
+SUBDIRS = 3d_torus tree
