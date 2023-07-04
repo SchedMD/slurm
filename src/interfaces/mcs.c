@@ -40,6 +40,10 @@
 #include "src/common/plugrack.h"
 #include "src/common/xstring.h"
 
+#define MCS_SELECT_NOSELECT		0x00
+#define MCS_SELECT_ONDEMANDSELECT	0x01
+#define MCS_SELECT_SELECT		0x02
+
 typedef struct slurm_mcs_ops {
 	int (*set)		(job_record_t *job_ptr, char *label);
 	int (*check)		(uint32_t user_id, char *mcs_label,
