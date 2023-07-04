@@ -95,23 +95,23 @@ extern int topology_g_fini(void);
  */
 
 /*
- * slurm_topo_build_config - build or rebuild system topology information
+ * topology_g_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.
  */
-extern int slurm_topo_build_config( void );
+extern int topology_g_build_config(void);
 
 /*
- * slurm_topo_generate_node_ranking  -  populate node_rank fields
+ * topology_g_generate_node_ranking  -  populate node_rank fields
  * NOTE: This operation is only supported by those topology plugins for
  *       which the node ordering between slurmd and slurmctld is invariant.
  */
-extern bool slurm_topo_generate_node_ranking( void );
+extern bool topology_g_generate_node_ranking(void);
 
 /*
- * slurm_topo_get_node_addr - build node address and the associated pattern
+ * topology_g_get_node_addr - build node address and the associated pattern
  *      based on the topology information
  */
-extern int slurm_topo_get_node_addr( char* node_name, char** addr,
-				     char** pattern );
+extern int topology_g_get_node_addr(char *node_name, char **addr,
+				    char **pattern);
 
 #endif

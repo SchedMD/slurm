@@ -1283,7 +1283,7 @@ _reconfigure(void)
 	 * Rebuild topology information and refresh slurmd topo infos
 	 */
 	rehash_node();
-	slurm_topo_build_config();
+	topology_g_build_config();
 	_set_topo_info();
 	route_g_reconfigure();
 
@@ -2094,7 +2094,7 @@ _slurmd_init(void)
 	 * Build node hash table first to speed up the topo build
 	 */
 	rehash_node();
-	slurm_topo_build_config();
+	topology_g_build_config();
 	_set_topo_info();
 	build_conf_buf();
 	route_init();
@@ -2569,7 +2569,7 @@ static int _set_topo_info(void)
 	char *addr = NULL, *pattern = NULL;
 
 	slurm_mutex_lock(&conf->config_mutex);
-	rc = slurm_topo_get_node_addr(conf->node_name, &addr, &pattern);
+	rc = topology_g_get_node_addr(conf->node_name, &addr, &pattern);
 	if (rc == SLURM_SUCCESS) {
 		xfree(conf->node_topo_addr);
 		xfree(conf->node_topo_pattern);

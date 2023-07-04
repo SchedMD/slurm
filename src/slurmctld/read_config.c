@@ -242,7 +242,7 @@ static void _sort_node_record_table_ptr(void)
 {
 	int (*compare_fn)(const void *, const void *);
 
-	if (slurm_topo_generate_node_ranking())
+	if (topology_g_generate_node_ranking())
 		compare_fn = &_sort_nodes_by_rank;
 	else
 		compare_fn = &_sort_nodes_by_name;
@@ -1754,7 +1754,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	_sort_node_record_table_ptr();
 
 	rehash_node();
-	slurm_topo_build_config();
+	topology_g_build_config();
 	route_g_reconfigure();
 	if (reconfig)
 		power_g_reconfig();

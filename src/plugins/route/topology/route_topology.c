@@ -216,7 +216,7 @@ extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 		build_all_nodeline_info(false, 0);
 		rehash_node();
 
-		if (slurm_topo_build_config() != SLURM_SUCCESS) {
+		if (topology_g_build_config() != SLURM_SUCCESS) {
 			fatal("ROUTE: Failed to build topology config");
 		}
 	}

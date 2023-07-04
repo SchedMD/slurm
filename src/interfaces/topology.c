@@ -127,7 +127,7 @@ extern int topology_g_fini(void)
 	return rc;
 }
 
-extern int slurm_topo_build_config(void)
+extern int topology_g_build_config(void)
 {
 	int rc;
 	DEF_TIMERS;
@@ -139,7 +139,7 @@ extern int slurm_topo_build_config(void)
 
 	START_TIMER;
 	rc = (*(ops.build_config))();
-	END_TIMER3("slurm_topo_build_config", 20000);
+	END_TIMER3(__func__, 20000);
 
 	return rc;
 }
@@ -148,7 +148,7 @@ extern int slurm_topo_build_config(void)
  * This operation is only supported by those topology plugins for
  * which the node ordering between slurmd and slurmctld is invariant.
  */
-extern bool slurm_topo_generate_node_ranking(void)
+extern bool topology_g_generate_node_ranking(void)
 {
 	xassert(plugin_inited);
 
@@ -158,8 +158,7 @@ extern bool slurm_topo_generate_node_ranking(void)
 	return (*(ops.node_ranking))();
 }
 
-extern int slurm_topo_get_node_addr(char* node_name,
-				    char **addr,
+extern int topology_g_get_node_addr(char *node_name, char **addr,
 				    char **pattern)
 {
 	xassert(plugin_inited);
