@@ -411,7 +411,6 @@ AC_CONFIG_FILES([Makefile
 		 contribs/pmi2/Makefile
 		 contribs/seff/Makefile
 		 contribs/sgather/Makefile
-		 contribs/sgi/Makefile
 		 contribs/sjobexit/Makefile
 		 contribs/torque/Makefile
 		 doc/Makefile

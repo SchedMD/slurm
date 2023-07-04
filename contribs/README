@@ -62,11 +62,6 @@ of the Slurm contribs distribution follows:
      Gather remote files from a job into a central location. Reverse of of
      sbcast command.
 
-  sgi/               [Tools for use on SGI systems]
-     netloc_to_topology.c   [ C program ]
-     Used to construct a Slurm topology.conf file based upon SGI network APIs.
-     README.txt      [Documentation]
-
   sjobexit/          [ Perl programs ]
      Tools for managing job exit code records
 

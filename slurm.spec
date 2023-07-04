@@ -471,8 +471,6 @@ test -f %{buildroot}/%{_sbindir}/capmc_suspend		&&
   echo %{_sbindir}/capmc_suspend			>> $LIST
 test -f %{buildroot}/%{_sbindir}/capmc_resume		&&
   echo %{_sbindir}/capmc_resume				>> $LIST
-test -f %{buildroot}/%{_bindir}/netloc_to_topology		&&
-  echo %{_bindir}/netloc_to_topology			>> $LIST
 
 test -f %{buildroot}/opt/modulefiles/slurm/%{version}-%{rel} &&
   echo /opt/modulefiles/slurm/%{version}-%{rel} >> $LIST
