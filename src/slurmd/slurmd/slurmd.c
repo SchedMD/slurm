@@ -2097,7 +2097,7 @@ _slurmd_init(void)
 	topology_g_build_config();
 	_set_topo_info();
 	build_conf_buf();
-	route_init();
+	route_g_init();
 
 	/*
 	 * Check for cpu frequency set capabilities on this node
@@ -2242,7 +2242,7 @@ _slurmd_fini(void)
 	acct_gather_conf_destroy();
 	fini_system_cgroup();
 	cgroup_g_fini();
-	route_fini();
+	route_g_fini();
 	xcpuinfo_fini();
 	slurm_mutex_lock(&cached_features_mutex);
 	xfree(cached_features_avail);

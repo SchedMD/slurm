@@ -292,7 +292,7 @@ int main(int argc, char *argv[])
 		goto ouch;
 
 	slurm_init(NULL);
-	if (route_init() != SLURM_SUCCESS) {
+	if (route_g_init() != SLURM_SUCCESS) {
 		error("failed to initialize route plugins");
 		exit(1);
 	}

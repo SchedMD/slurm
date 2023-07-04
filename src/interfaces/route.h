@@ -48,14 +48,14 @@
  *
  * Returns a Slurm errno.
  */
-extern int route_init(void);
+extern int route_g_init(void);
 
 /*
  * Terminate the route plugin.
  *
  * Returns a Slurm errno.
  */
-extern int route_fini(void);
+extern int route_g_fini(void);
 
 /*****************************************************************************\
  *  Plugin API Declarations

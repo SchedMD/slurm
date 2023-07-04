@@ -2723,7 +2723,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout)
 		 * Load route and topo plugins here to make it so the api can do
 		 * it easily
 		 */
-		if (route_init() != SLURM_SUCCESS) {
+		if (route_g_init() != SLURM_SUCCESS) {
 			error("failed to initialize route plugins");
 			return NULL;
 		}

@@ -77,7 +77,7 @@ static slurm_route_ops_t ops;
 static plugin_context_t	*g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
-extern int route_init(void)
+extern int route_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "route";
@@ -103,7 +103,7 @@ done:
 	return retval;
 }
 
-extern int route_fini(void)
+extern int route_g_fini(void)
 {
 	int rc;
 
