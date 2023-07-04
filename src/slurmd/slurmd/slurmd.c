@@ -149,8 +149,6 @@ static int             active_threads = 0;
 static pthread_mutex_t active_mutex   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond    = PTHREAD_COND_INITIALIZER;
 
-static pthread_mutex_t fork_mutex     = PTHREAD_MUTEX_INITIALIZER;
-
 typedef struct connection {
 	int fd;
 	slurm_addr_t *cli_addr;
@@ -187,8 +185,6 @@ static bool plugins_registered = false;
 static bool refresh_cached_features = true;
 static pthread_mutex_t cached_features_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static void      _atfork_final(void);
-static void      _atfork_prepare(void);
 static int       _convert_spec_cores(void);
 static int       _core_spec_init(void);
 static void      _create_msg_socket(void);
@@ -201,7 +197,6 @@ static void      _handle_connection(int fd, slurm_addr_t *client);
 static void      _hup_handler(int);
 static void      _increment_thd_count(void);
 static void      _init_conf(void);
-static void      _install_fork_handlers(void);
 static bool      _is_core_spec_cray(void);
 static void      _kill_old_slurmd(void);
 static int       _memory_spec_init(void);
@@ -394,7 +389,6 @@ main (int argc, char **argv)
 	rfc2822_timestamp(time_stamp, sizeof(time_stamp));
 	info("%s started on %s", slurm_prog_name, time_stamp);
 
-	_install_fork_handlers();
 	slurm_conf_install_fork_handlers();
 	record_launched_jobs();
 
@@ -2512,32 +2506,6 @@ static void _update_nice(void)
 		return;
 	if (setpriority(PRIO_PROCESS, pid, conf->nice))
 		error("Unable to reset nice value to %d: %m", conf->nice);
-}
-
-/*
- *  Lock the fork mutex to protect fork-critical regions
- */
-static void _atfork_prepare(void)
-{
-	slurm_mutex_lock(&fork_mutex);
-}
-
-/*
- *  Unlock  fork mutex to allow fork-critical functions to continue
- */
-static void _atfork_final(void)
-{
-	slurm_mutex_unlock(&fork_mutex);
-}
-
-static void _install_fork_handlers(void)
-{
-	int err;
-
-	err = pthread_atfork(&_atfork_prepare, &_atfork_final, &_atfork_final);
-	if (err) error ("pthread_atfork: %m");
-
-	return;
 }
 
 /*
