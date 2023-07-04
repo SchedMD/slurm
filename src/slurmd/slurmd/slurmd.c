@@ -2233,13 +2233,11 @@ _slurmd_fini(void)
 
 /*
  * save_cred_state - save the current credential list to a file
- * IN list - list of credentials
- * RET int - zero or error code
  */
-int save_cred_state(slurm_cred_ctx_t *ctx)
+extern void save_cred_state(slurm_cred_ctx_t *ctx)
 {
 	char *old_file, *new_file, *reg_file;
-	int cred_fd = -1, error_code = SLURM_SUCCESS, rc;
+	int cred_fd = -1, rc;
 	buf_t *buffer = NULL;
 	static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -2255,7 +2253,6 @@ int save_cred_state(slurm_cred_ctx_t *ctx)
 		error("creat(%s): %m", new_file);
 		if (errno == ENOSPC)
 			_drain_node("SlurmdSpoolDir is full");
-		error_code = errno;
 		goto cleanup;
 	}
 	buffer = init_buf(1024);
@@ -2266,7 +2263,6 @@ int save_cred_state(slurm_cred_ctx_t *ctx)
 		(void) unlink(new_file);
 		if ((rc < 0) && (errno == ENOSPC))
 			_drain_node("SlurmdSpoolDir is full");
-		error_code = errno;
 		goto cleanup;
 	}
 	(void) unlink(old_file);
@@ -2287,7 +2283,6 @@ cleanup:
 	FREE_NULL_BUFFER(buffer);
 	if (cred_fd >= 0)
 		close(cred_fd);
-	return error_code;
 }
 
 static int _drain_node(char *reason)
