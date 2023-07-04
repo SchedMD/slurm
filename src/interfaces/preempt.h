@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __SLURM_CONTROLLER_PREEMPT_H__
-#define __SLURM_CONTROLLER_PREEMPT_H__
+#ifndef _INTERFACES_PREEMPT_H
+#define _INTERFACES_PREEMPT_H
 
 #include "slurm/slurm.h"
 #include "src/slurmctld/slurmctld.h"
@@ -128,4 +128,4 @@ extern int preempt_g_get_data(job_record_t *job_ptr,
 			      slurm_preempt_data_type_t data_type,
 			      void *data);
 
-#endif /*__SLURM_CONTROLLER_PREEMPT_H__*/
+#endif

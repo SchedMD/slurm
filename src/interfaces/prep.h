@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _PREP_H_
-#define _PREP_H_
+#ifndef _INTERFACES_PREP_H
+#define _INTERFACES_PREP_H
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -103,4 +103,4 @@ extern void prep_g_epilog_slurmctld(job_record_t *job_ptr);
 /* Whether or not the requested prep is configured or not */
 extern bool prep_g_required(prep_call_type_t type);
 
-#endif /* !_PREP_H_ */
+#endif

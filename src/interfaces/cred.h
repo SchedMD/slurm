@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_SLURM_CRED_H
-#define _HAVE_SLURM_CRED_H
+#ifndef _INTERFACES_CRED_H
+#define _INTERFACES_CRED_H
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -442,4 +442,4 @@ extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, uint16_t protocol_versio
 extern void print_sbcast_cred(sbcast_cred_t *sbcast_cred);
 extern void sbcast_cred_arg_free(sbcast_cred_arg_t *arg);
 
-#endif  /* _HAVE_SLURM_CREDS_H */
+#endif

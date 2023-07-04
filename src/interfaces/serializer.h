@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SERIALIZER_H
-#define _SERIALIZER_H
+#ifndef _INTERFACES_SERIALIZER_H
+#define _INTERFACES_SERIALIZER_H
 
 #include "src/common/data.h"
 

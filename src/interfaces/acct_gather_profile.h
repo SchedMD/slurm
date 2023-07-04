@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __SLURM_ACCT_GATHER_PROFILE_H__
-#define __SLURM_ACCT_GATHER_PROFILE_H__
+#ifndef _INTERFACES_ACCT_GATHER_PROFILE_H
+#define _INTERFACES_ACCT_GATHER_PROFILE_H
 
 #include <inttypes.h>
 #include <sys/resource.h>
@@ -243,4 +243,4 @@ extern void acct_gather_profile_g_conf_values(void *data);
 /* Return true if the given type of plugin must be profiled */
 extern bool acct_gather_profile_g_is_active(uint32_t type);
 
-#endif /*__SLURM_ACCT_GATHER_PROFILE_H__*/
+#endif

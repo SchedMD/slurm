@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _GRES_H
-#define _GRES_H
+#ifndef _INTERFACES_GRES_H
+#define _INTERFACES_GRES_H
 
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
@@ -1194,4 +1194,4 @@ extern bool gres_use_busy_dev(gres_state_t *gres_state_node,
  */
 extern void gres_parse_config_dummy(void);
 
-#endif /* !_GRES_H */
+#endif

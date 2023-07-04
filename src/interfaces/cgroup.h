@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _COMMON_CGROUP_H_
-#define _COMMON_CGROUP_H_
+#ifndef _INTERFACES_CGROUP_H
+#define _INTERFACES_CGROUP_H
 
 /* Check filesystem type */
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)

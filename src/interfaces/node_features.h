@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _NODE_FEATURES_H
-#define _NODE_FEATURES_H
+#ifndef _INTERFACES_NODE_FEATURES_H
+#define _INTERFACES_NODE_FEATURES_H
 
 #include "slurm/slurm.h"
 #include "src/common/bitstring.h"
@@ -143,4 +143,4 @@ extern uint32_t node_features_g_boot_time(void);
 /* Get node features plugin configuration */
 extern List node_features_g_get_config(void);
 
-#endif /* !_NODE_FEATURES_H */
+#endif

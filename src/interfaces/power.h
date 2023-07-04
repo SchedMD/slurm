@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/interfaces/power.h - Generic power management plugin wrapper functions.
+ *  power.h - Generic power management plugin wrapper functions.
  *****************************************************************************
  *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURM_POWER_H
-#define _SLURM_POWER_H
+#ifndef _INTERFACES_POWER_H
+#define _INTERFACES_POWER_H
 
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -74,4 +74,4 @@ extern int power_mgmt_data_unpack(power_mgmt_data_t **power, buf_t *buffer,
 /* Free a power management data structure */
 extern void power_mgmt_data_free(power_mgmt_data_t *power);
 
-#endif /* _SLURM_POWER_H */
+#endif

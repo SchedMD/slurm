@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  task_plugin.h - Define plugin functions for task pre_launch and post_term.
+ *  task.h - Define plugin functions for task pre_launch and post_term.
  *****************************************************************************
  *  Copyright (C) 2005-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURMD_TASK_PLUGIN_H_
-#define _SLURMD_TASK_PLUGIN_H_
+#ifndef _INTERFACES_TASK_H
+#define _INTERFACES_TASK_H
 
 #ifdef __FreeBSD__
 #include <sys/param.h>
@@ -170,4 +170,4 @@ extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str);
  */
 extern int task_str_to_cpuset(cpu_set_t *mask, const char* str);
 
-#endif /* _SLURMD_TASK_PLUGIN_H_ */
+#endif

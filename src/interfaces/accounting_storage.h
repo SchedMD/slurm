@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_accounting_storage.h - Define accounting storage plugin functions.
+ *  accounting_storage.h - Define accounting storage plugin functions.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURM_ACCOUNTING_STORAGE_H
-#define _SLURM_ACCOUNTING_STORAGE_H
+#ifndef _INTERFACES_ACCOUNTING_STORAGE_H
+#define _INTERFACES_ACCOUNTING_STORAGE_H
 
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
@@ -699,4 +699,4 @@ extern int jobacct_storage_g_archive(void *db_conn,
 extern int jobacct_storage_g_archive_load(void *db_conn,
 					  slurmdb_archive_rec_t *arch_rec);
 
-#endif /*_SLURM_ACCOUNTING_STORAGE_H*/
+#endif

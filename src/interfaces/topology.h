@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_topology.h - Define topology plugin functions.
+ *  topology.h - Define topology plugin functions.
  *****************************************************************************
  *  Copyright (C) 2009 Lawrence Livermore National Security.
  *  Copyright (C) 2014 Silicon Graphics International Corp. All rights reserved.
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __SLURM_CONTROLLER_TOPO_PLUGIN_API_H__
-#define __SLURM_CONTROLLER_TOPO_PLUGIN_API_H__
+#ifndef _INTERFACES_TOPOLOGY_H
+#define _INTERFACES_TOPOLOGY_H
 
 #include "slurm/slurm.h"
 #include "src/slurmctld/slurmctld.h"
@@ -141,4 +141,4 @@ extern bool slurm_topo_generate_node_ranking( void );
 extern int slurm_topo_get_node_addr( char* node_name, char** addr,
 				     char** pattern );
 
-#endif /*__SLURM_CONTROLLER_TOPO_PLUGIN_API_H__*/
+#endif

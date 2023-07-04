@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _COMMON_SELECT_H_
-#define _COMMON_SELECT_H_
+#ifndef _INTERFACES_SELECT_H
+#define _INTERFACES_SELECT_H
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_acct_gather_filesystem.h - implementation-independent job filesystem
+ *  acct_gather_filesystem.h - implementation-independent job filesystem
  *  accounting plugin definitions
  *****************************************************************************
  *  Copyright (C) 2013 Bull
@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __SLURM_ACCT_GATHER_FILESYSTEM_H__
-#define __SLURM_ACCT_GATHER_FILESYSTEM_H__
+#ifndef _INTERFACES_ACCT_GATHER_FILESYSTEM_H
+#define _INTERFACES_ACCT_GATHER_FILESYSTEM_H
 
 #include <inttypes.h>
 #include <sys/resource.h>
@@ -83,4 +83,4 @@ extern int acct_gather_filesystem_g_conf_set(s_p_hashtbl_t *tbl);
  */
 extern int acct_gather_filesystem_g_conf_values(void *data);
 
-#endif /*__SLURM_ACCT_GATHER_FILESYSTEM_H__*/
+#endif

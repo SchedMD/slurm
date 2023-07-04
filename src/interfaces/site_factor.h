@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SITE_FACTOR_H
-#define _SITE_FACTOR_H
+#ifndef _INTERFACES_SITE_FACTOR_H
+#define _INTERFACES_SITE_FACTOR_H
 
 #include "src/slurmctld/slurmctld.h"
 
@@ -57,4 +57,4 @@ extern void site_factor_g_set(job_record_t *job_ptr);
  */
 extern void site_factor_g_update(void);
 
-#endif /* !_SITE_FACTOR_H */
+#endif

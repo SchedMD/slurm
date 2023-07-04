@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  sched_plugin.h - Define scheduler plugin functions.
- *  (NOTE: This can't be named sched.h as there is a sched.h that gres.c loads
- *  that isn't this which will mess up things.
+ *  (NOTE: This can't be named sched.h as there is a <sched.h> that collides.)
  *****************************************************************************
  *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -38,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __SLURM_CONTROLLER_SCHED_PLUGIN_API_H__
-#define __SLURM_CONTROLLER_SCHED_PLUGIN_API_H__
+#ifndef _INTERFACES_SCHED_PLUGIN_H
+#define _INTERFACES_SCHED_PLUGIN_H
 
 #include "slurm/slurm.h"
 #include "src/slurmctld/slurmctld.h"
@@ -69,4 +68,4 @@ extern int sched_g_fini(void);
  */
 extern int sched_g_reconfig(void);
 
-#endif /*__SLURM_CONTROLLER_SCHED_PLUGIN_API_H__*/
+#endif

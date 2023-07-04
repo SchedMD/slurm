@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __SLURM_AUTHENTICATION_H__
-#define __SLURM_AUTHENTICATION_H__
+#ifndef _INTERFACES_AUTH_H
+#define _INTERFACES_AUTH_H
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -132,4 +132,4 @@ extern void auth_g_thread_clear(void);
  */
 extern const char *auth_get_plugin_name(int plugin_id);
 
-#endif /*__SLURM_AUTHENTICATION_H__*/
+#endif

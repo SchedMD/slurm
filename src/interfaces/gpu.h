@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _GPU_PLUGIN_H
-#define _GPU_PLUGIN_H
+#ifndef _INTERFACES_GPU_H
+#define _INTERFACES_GPU_H
 
 #include "slurm/slurm.h"
 #include "src/interfaces/gres.h"
@@ -61,4 +61,4 @@ extern int gpu_g_energy_read(uint32_t dv_ind, gpu_status_t *gpu);
 extern void gpu_g_get_device_count(unsigned int *device_count);
 extern int gpu_g_usage_read(pid_t pid, acct_gather_data_t *data);
 
-#endif /* !_GPU_PLUGIN_H */
+#endif

@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _DATA_PARSER_H
-#define _DATA_PARSER_H
+#ifndef _INTERFACES_DATA_PARSER_H
+#define _INTERFACES_DATA_PARSER_H
 
 #include "src/common/data.h"
 

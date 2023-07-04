@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_acct_gather_interconnect.h - implementation-independent job interconnect
+ *  acct_gather_interconnect.h - implementation-independent job interconnect
  *  accounting plugin definitions
  *****************************************************************************
  *  Copyright (C) 2013 Bull
@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __SLURM_ACCT_GATHER_INTERCONNECT_H__
-#define __SLURM_ACCT_GATHER_INTERCONNECT_H__
+#ifndef _INTERFACES_ACCT_GATHER_INTERCONNECT_H
+#define _INTERFACES_ACCT_GATHER_INTERCONNECT_H
 
 #include <inttypes.h>
 #include <sys/resource.h>
@@ -84,4 +84,4 @@ extern int acct_gather_interconnect_g_conf_set(s_p_hashtbl_t *tbl);
  */
 extern int acct_gather_interconnect_g_conf_values(void *data);
 
-#endif /*__SLURM_ACCT_GATHER_INTERCONNECT_H__*/
+#endif

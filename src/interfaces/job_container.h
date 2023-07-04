@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_container_plugin.h - job container plugin stub.
+ *  job_container.h - job container plugin stub.
  *****************************************************************************
  *  Copyright (C) 2013 SchedMD LLC
  *  Written by Morris Jette
@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _JOB_CONTAINER_PLUGIN_H_
-#define _JOB_CONTAINER_PLUGIN_H_
+#ifndef _INTERFACES_JOB_CONTAINER_H
+#define _INTERFACES_JOB_CONTAINER_H
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -98,4 +98,4 @@ extern int container_g_send_stepd(int fd);
 /* Receive job_container config from slurmd on the provided file descriptor */
 extern int container_g_recv_stepd(int fd);
 
-#endif /* _JOB_CONTAINER_PLUGIN_H_ */
+#endif

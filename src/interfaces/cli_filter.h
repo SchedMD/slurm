@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CLI_FILTER_H
-#define _CLI_FILTER_H
+#ifndef _INTERFACES_CLI_FILTER_H
+#define _INTERFACES_CLI_FILTER_H
 
 #include "slurm/slurm.h"
 #include "src/common/slurm_opt.h"
@@ -110,4 +110,4 @@ extern int cli_filter_g_pre_submit(slurm_opt_t *opt, int offset);
 extern void cli_filter_g_post_submit(int offset, uint32_t jobid,
 				     uint32_t stepid);
 
-#endif /* !_CLI_FILTER_H */
+#endif

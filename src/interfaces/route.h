@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_route.h - Define route plugin functions.
+ *  route.h - Define route plugin functions.
  *****************************************************************************
  *  Copyright (C) 2014 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef __SLURM_ROUTE_PLUGIN_API_H__
-#define __SLURM_ROUTE_PLUGIN_API_H__
+#ifndef _INTERFACES_ROUTE_H
+#define _INTERFACES_ROUTE_H
 
 /*****************************************************************************\
  *  Functions required of all plugins
@@ -118,4 +118,4 @@ extern int route_split_hostlist_treewidth(hostlist_t *hl,
 					  hostlist_t ***sp_hl,
 					  int* count, uint16_t tree_width);
 
-#endif /*___SLURM_ROUTE_PLUGIN_API_H__*/
+#endif

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_jobacct_gather.h - implementation-independent job completion logging
+ *  jobacct_gather.h - implementation-independent job completion logging
  *  API definitions
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
@@ -47,8 +47,8 @@
  *       Morris Jette, et al.
 \*****************************************************************************/
 
-#ifndef __SLURM_JOBACCT_GATHER_H__
-#define __SLURM_JOBACCT_GATHER_H__
+#ifndef _INTERFACES_JOBACCT_GATHER_H
+#define _INTERFACES_JOBACCT_GATHER_H
 
 #include <inttypes.h>
 #include <sys/resource.h>
@@ -171,4 +171,5 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct);
 extern void jobacct_common_free_jobacct(void *object);
 
 extern long jobacct_gather_get_clk_tck();
-#endif /*__SLURM_JOBACCT_GATHER_H__*/
+
+#endif

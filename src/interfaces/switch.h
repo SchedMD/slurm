@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/interfaces/switch.h - Generic switch (switch_g) info for slurm
+ *  switch.h - Generic switch (switch_g) info for slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SWITCH_H
-#define _SWITCH_H
+#ifndef _INTERFACES_SWITCH_H
+#define _INTERFACES_SWITCH_H
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -335,4 +335,4 @@ extern int switch_g_job_step_pre_resume(stepd_step_rec_t *step);
  */
 extern int switch_g_job_step_post_resume(stepd_step_rec_t *step);
 
-#endif /* _SWITCH_H */
+#endif
