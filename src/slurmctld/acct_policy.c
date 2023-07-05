@@ -3094,7 +3094,7 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 		}
 
 		/* We don't need to look at the regular limits for
-		 * parents since we have pre-propogated them, so just
+		 * parents since we have pre-propagated them, so just
 		 * continue with the next parent
 		 */
 		if (parent) {
@@ -3597,7 +3597,7 @@ extern bool acct_policy_job_runnable_pre_select(job_record_t *job_ptr,
 
 		/*
 		 * We don't need to look at the regular limits for parents
-		 * since we have pre-propogated them, so just continue with
+		 * since we have pre-propagated them, so just continue with
 		 * the next parent.
 		 */
 		if (parent) {
@@ -3977,7 +3977,7 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 
 
 		/* We don't need to look at the regular limits for
-		 * parents since we have pre-propogated them, so just
+		 * parents since we have pre-propagated them, so just
 		 * continue with the next parent
 		 */
 		if (parent) {
@@ -4480,7 +4480,7 @@ static void _get_accrue_limits(job_record_t *job_ptr,
 				       assoc_ptr->usage->accrue_cnt);
 		/*
 		 * We don't need to look at the regular limits for
-		 * parents since we have pre-propogated them, so just
+		 * parents since we have pre-propagated them, so just
 		 * continue with the next parent
 		 */
 		if (!parent)
