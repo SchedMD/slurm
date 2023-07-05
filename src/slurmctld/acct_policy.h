@@ -70,7 +70,7 @@ extern void acct_policy_job_fini(job_record_t *job_ptr);
  * acct_policy_alter_job - if resources change on a job this needs to
  * be called after they have been validated, but before they actually
  * do.  Each of the resources can be changed one at a time.  If no
- * change happens on a resouce just put old values in for the new.
+ * change happens on a resource just put old values in for the new.
  * At the time of writing this function any node or cpu size change
  * while running was already handled in the job_pre|post_resize_acctg functions.
  */

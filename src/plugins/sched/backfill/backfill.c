@@ -989,7 +989,7 @@ extern void backfill_reconfig(void)
 /* Update backfill scheduling statistics
  * IN tv1 - start time
  * IN tv2 - end (current) time
- * IN node_space_recs - count of records in resouces/time table being tested
+ * IN node_space_recs - count of records in resources/time table being tested
  */
 static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2,
 			   int node_space_recs)
