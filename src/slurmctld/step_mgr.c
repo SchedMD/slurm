@@ -127,6 +127,10 @@ static step_record_t *_build_interactive_step(
 	job_record_t *job_ptr_in,
 	job_step_create_request_msg_t *step_specs,
 	uint16_t protocol_version);
+static int _build_ext_launcher_step(step_record_t **new_step_record,
+				    job_record_t *job_ptr,
+				    job_step_create_request_msg_t *step_specs,
+				    uint16_t protocol_version);
 static void _wake_pending_steps(job_record_t *job_ptr);
 
 /* Determine how many more CPUs are required for a job step */
@@ -914,7 +918,8 @@ static int _mark_busy_nodes(void *x, void *arg)
 	 */
 	if ((step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) ||
 	    (step_ptr->step_id.step_id == SLURM_EXTERN_CONT) ||
-	    (step_ptr->step_id.step_id == SLURM_INTERACTIVE_STEP))
+	    (step_ptr->step_id.step_id == SLURM_INTERACTIVE_STEP) ||
+	    (step_ptr->flags & SSF_EXT_LAUNCHER))
 		return 0;
 
 	if (!step_ptr->step_node_bitmap) {
@@ -1176,8 +1181,12 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			 job_resrcs_ptr->cpus_used[node_inx],
 			 usable_cpu_cnt[i], node_record_table_ptr[i]->name);
 
-		/* Don't do this test if --overlap=force */
-		if (!(step_spec->flags & SSF_OVERLAP_FORCE)) {
+		/*
+		 * Don't do this test if --overlap=force or
+		 * --external-launcher
+		 */
+		if ((!(step_spec->flags & SSF_OVERLAP_FORCE)) &&
+		    (!(step_spec->flags & SSF_EXT_LAUNCHER))) {
 			/*
 			 * If whole is given and
 			 * job_resrcs_ptr->cpus_used[node_inx]
@@ -2695,7 +2704,8 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	/* These special steps do not allocate any resources */
 	if ((step_id == SLURM_EXTERN_CONT) ||
 	    (step_id == SLURM_BATCH_SCRIPT) ||
-	    (step_id == SLURM_INTERACTIVE_STEP)) {
+	    (step_id == SLURM_INTERACTIVE_STEP) ||
+	    (step_ptr->flags & SSF_EXT_LAUNCHER)) {
 		log_flag(STEPS, "Skip %s for %pS", __func__, step_ptr);
 		return;
 	}
@@ -3231,6 +3241,12 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 			return SLURM_SUCCESS;
 		else
 			return ESLURM_DUPLICATE_STEP_ID;
+	}
+
+	if (step_specs->flags & SSF_EXT_LAUNCHER) {
+		debug("%s: external launcher step requested", __func__);
+		return _build_ext_launcher_step(new_step_record, job_ptr,
+						step_specs, protocol_version);
 	}
 
 	/* A step cannot request more threads per core than its allocation. */
@@ -4703,7 +4719,8 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 	xfree(step_ptr->tres_alloc_str);
 	xfree(step_ptr->tres_fmt_alloc_str);
 
-	if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) &&
+	if (((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) ||
+	     (step_ptr->flags & SSF_EXT_LAUNCHER)) &&
 	    job_ptr->tres_alloc_str) {
 		/* get the tres from the whole job */
 		step_ptr->tres_alloc_str =
@@ -5523,7 +5540,8 @@ static int _rebuild_bitmaps(void *x, void *arg)
 				if ((step_id != SLURM_INTERACTIVE_STEP) &&
 				    (step_id != SLURM_EXTERN_CONT) &&
 				    (step_id != SLURM_BATCH_SCRIPT) &&
-				    !(step_ptr->flags & SSF_OVERLAP_FORCE))
+				    !(step_ptr->flags & SSF_OVERLAP_FORCE) &&
+				    !(step_ptr->flags & SSF_EXT_LAUNCHER))
 					bit_set(job_ptr->job_resrcs->
 						core_bitmap_used,
 						new_core_offset + j);
@@ -5757,4 +5775,138 @@ static step_record_t *_build_interactive_step(
 	jobacct_storage_g_step_start(acct_db_conn, step_ptr);
 
 	return step_ptr;
+}
+
+/*
+ * Build a special step for mpi launchers.
+ */
+static int _build_ext_launcher_step(step_record_t **step_rec,
+				    job_record_t *job_ptr,
+				    job_step_create_request_msg_t *step_specs,
+				    uint16_t protocol_version)
+{
+	bitstr_t *nodeset;
+	uint32_t node_count;
+	int rc;
+	dynamic_plugin_data_t *select_jobinfo = NULL;
+	char *step_node_list;
+	step_record_t *step_ptr;
+
+	if (!step_rec)
+		return SLURM_ERROR;
+
+	step_ptr = *step_rec = _create_step_record(job_ptr, protocol_version);
+
+	if (!step_ptr) {
+		error("%s: Can't create step_record! This should never happen",
+		      __func__);
+		return SLURM_ERROR;
+	}
+
+	if (job_ptr->next_step_id >= slurm_conf.max_step_cnt)
+		return SLURM_ERROR;
+
+	/* Reset some fields we're going to ignore in _pick_step_nodes. */
+	step_specs->flags = SSF_EXT_LAUNCHER;
+	step_specs->cpu_count = 0;
+	xfree(step_specs->cpus_per_tres);
+	step_specs->ntasks_per_core = NO_VAL16;
+	step_specs->ntasks_per_tres = NO_VAL16;
+	step_specs->pn_min_memory = 0;
+	xfree(step_specs->mem_per_tres);
+	step_specs->threads_per_core = NO_VAL16;
+	xfree(step_specs->tres_bind);
+	xfree(step_specs->tres_per_step);
+	xfree(step_specs->tres_per_node);
+	xfree(step_specs->tres_per_socket);
+	xfree(step_specs->tres_per_task);
+
+	/* Select the nodes for this job */
+	select_jobinfo = select_g_select_jobinfo_alloc();
+	nodeset = _pick_step_nodes(job_ptr, step_specs, NULL, 0, 0,
+				   select_jobinfo, &rc);
+	if (nodeset == NULL) {
+		select_g_select_jobinfo_free(select_jobinfo);
+		if ((rc == ESLURM_NODES_BUSY) ||
+		    (rc == ESLURM_PORTS_BUSY) ||
+		    (rc == ESLURM_INTERCONNECT_BUSY))
+			_build_pending_step(job_ptr, step_specs);
+		return rc;
+	}
+
+	/* Here is where the node list is set for the step */
+	if (step_specs->node_list &&
+	    ((step_specs->task_dist & SLURM_DIST_STATE_BASE) ==
+	     SLURM_DIST_ARBITRARY)) {
+		step_node_list = xstrdup(step_specs->node_list);
+		xfree(step_specs->node_list);
+		step_specs->node_list = bitmap2node_name(nodeset);
+	} else {
+		step_node_list = bitmap2node_name_sortable(nodeset, false);
+		xfree(step_specs->node_list);
+		step_specs->node_list = xstrdup(step_node_list);
+	}
+	log_flag(STEPS, "Picked nodes %s when accumulating from %s",
+		 step_node_list, step_specs->node_list);
+
+	/* We want 1 task per node. */
+	step_ptr->step_node_bitmap = nodeset;
+	node_count = bit_set_count(nodeset);
+	step_specs->num_tasks = node_count;
+
+	/* Create the fake step layout with 1 task per node */
+	step_ptr->step_layout = fake_slurm_step_layout_create(
+		step_node_list, NULL, NULL, node_count, node_count,
+		SLURM_PROTOCOL_VERSION);
+	xfree(step_node_list);
+
+	if (!step_ptr->step_layout) {
+		select_g_select_jobinfo_free(select_jobinfo);
+		return SLURM_ERROR;
+	}
+
+	/* Needed for not considering it in _mark_busy_nodes */
+	step_ptr->flags |= SSF_EXT_LAUNCHER;
+
+	/* Set the step id */
+	memcpy(&step_ptr->step_id, &step_specs->step_id,
+	       sizeof(step_ptr->step_id));
+
+	if (step_specs->array_task_id != NO_VAL)
+		step_ptr->step_id.job_id = job_ptr->job_id;
+
+	if (step_specs->step_id.step_id != NO_VAL) {
+		if (step_specs->step_id.step_het_comp == NO_VAL) {
+			job_ptr->next_step_id =
+				MAX(job_ptr->next_step_id,
+				    step_specs->step_id.step_id);
+			job_ptr->next_step_id++;
+		}
+	} else if (job_ptr->het_job_id &&
+		   (job_ptr->het_job_id != job_ptr->job_id)) {
+		job_record_t *het_job;
+		het_job = find_job_record(job_ptr->het_job_id);
+		if (het_job)
+			step_ptr->step_id.step_id = het_job->next_step_id++;
+		else
+			step_ptr->step_id.step_id = job_ptr->next_step_id++;
+		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
+					    step_ptr->step_id.step_id);
+	} else {
+		step_ptr->step_id.step_id = job_ptr->next_step_id++;
+	}
+
+	/* The step needs to run on all the cores. */
+	step_ptr->core_bitmap_job = bit_copy(job_ptr->job_resrcs->core_bitmap);
+	step_ptr->ext_sensors = ext_sensors_alloc();
+	step_ptr->name = xstrdup(step_specs->name);
+	step_ptr->select_jobinfo = select_jobinfo;
+	step_ptr->state = JOB_RUNNING;
+	step_ptr->start_time = job_ptr->start_time;
+	step_ptr->time_last_active = time(NULL);
+
+	step_set_alloc_tres(step_ptr, 1, false, false);
+	jobacct_storage_g_step_start(acct_db_conn, step_ptr);
+
+	return SLURM_SUCCESS;
 }
