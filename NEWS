@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Add the JobId to debug() messages indicating when cpus_per_task/mem_per_cpu
     or pn_min_cpus are being automatically adjusted.
+ -- Fix regression in 23.02.2 that caused slurmctld -R to crash on startup if
+    a node features plugin is configured.
 
 * Changes in Slurm 23.02.4
 ==========================
