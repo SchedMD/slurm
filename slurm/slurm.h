@@ -1885,7 +1885,7 @@ typedef struct job_info {
 	char *tres_per_node;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
-	char *tres_req_str;	/* tres reqeusted in the job */
+	char *tres_req_str;	/* tres requested in the job */
 	char *tres_alloc_str;   /* tres used in the job */
 	uint32_t user_id;	/* user the job runs as */
 	char *user_name;	/* user_name or null. not always set, but

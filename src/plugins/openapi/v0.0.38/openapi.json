@@ -1988,7 +1988,7 @@
           },
           "tres_req_str": {
             "type": "string",
-            "description": "tres reqeusted in the job"
+            "description": "tres requested in the job"
           },
           "tres_alloc_str": {
             "type": "string",
