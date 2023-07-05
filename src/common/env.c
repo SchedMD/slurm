@@ -68,6 +68,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"
+#include "src/common/spank.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -1837,23 +1838,26 @@ void env_array_merge(char ***dest_array, const char **src_array)
 }
 
 /*
- * Merge the environment variables in src_array beginning with "SLURM" into the
- * array dest_array.  Any variables already found in dest_array will be
- * overwritten with the value from src_array.
+ * Merge the environment variables in src_array beginning with "SLURM" or
+ * SPANK_OPTION_ENV_PREFIX into the array dest_array. Any variables already
+ * found in dest_array will be overwritten with the value from src_array.
  */
-void env_array_merge_slurm(char ***dest_array, const char **src_array)
+void env_array_merge_slurm_spank(char ***dest_array, const char **src_array)
 {
 	char **ptr;
 	char name[256], *value;
+	int spank_len;
 
 	if (src_array == NULL)
 		return;
 
+	spank_len = strlen(SPANK_OPTION_ENV_PREFIX);
 	value = xmalloc(ENV_BUFSIZE);
 	for (ptr = (char **)src_array; *ptr != NULL; ptr++) {
 		if (_env_array_entry_splitter(*ptr, name, sizeof(name),
 					      value, ENV_BUFSIZE) &&
-		    (xstrncmp(name, "SLURM", 5) == 0))
+		    ((xstrncmp(name, "SLURM", 5) == 0) ||
+		     (xstrncmp(name, SPANK_OPTION_ENV_PREFIX, spank_len) == 0)))
 			env_array_overwrite(dest_array, name, value);
 	}
 	xfree(value);

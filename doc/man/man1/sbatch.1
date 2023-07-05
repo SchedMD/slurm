@@ -930,8 +930,9 @@ if \fI\-\-get\-user\-env\fR is specified).
 
 .TP
 \fB\-\-export\fR=NIL
-Only SLURM_* variables from the user environment will be defined. User must use
-absolute path to the binary to be executed that will define the environment.
+Only SLURM_* and SPANK option variables from the user environment will be
+defined. User must use absolute path to the binary to be executed that will
+define the environment.
 User can not specify explicit environment variables with "NIL".
 
 Unlike NONE, NIL will not automatically create a user's environment using the
@@ -940,8 +941,9 @@ Unlike NONE, NIL will not automatically create a user's environment using the
 
 .TP
 \fB\-\-export\fR=NONE
-Only SLURM_* variables from the user environment will be defined. User must use
-absolute path to the binary to be executed that will define the environment.
+Only SLURM_* and SPANK option variables from the user environment will be
+defined. User must use absolute path to the binary to be executed that will
+define the environment.
 User can not specify explicit environment variables with "NONE".
 However, Slurm will then implicitly attempt to load the user's environment on
 the node where the script is being executed, as if \fI\-\-get\-user\-env\fR was
@@ -956,8 +958,9 @@ sbatch command, the environment variable SLURM_EXPORT_ENV should be set to
 
 .TP
 \fB\-\-export\fR=[\fIALL\fR,]<\fIenvironment_variables\fR>
-Exports all SLURM_* environment variables along with explicitly defined
-variables. Multiple environment variable names should be comma separated.
+Exports all SLURM_* and SPANK option environment variables along with explicitly
+defined variables. Multiple environment variable names should be comma
+separated.
 Environment variable names may be specified to propagate the current
 value (e.g. "\-\-export=EDITOR") or specific values may be exported
 (e.g. "\-\-export=EDITOR=/bin/emacs"). If "ALL" is specified, then all user

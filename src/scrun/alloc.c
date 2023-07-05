@@ -613,7 +613,8 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 
 		/* scrape SLURM_* from calling env */
 		state.job_env = env_array_create();
-		env_array_merge_slurm(&state.job_env, (const char **) environ);
+		env_array_merge_slurm_spank(&state.job_env,
+					    (const char **) environ);
 		unlock_state();
 
 		debug("Running under existing JobId=%u", job_id);

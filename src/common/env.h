@@ -217,11 +217,11 @@ void env_unset_environment(void);
 void env_array_merge(char ***dest_array, const char **src_array);
 
 /*
- * Merge the environment variables in src_array beginning with "SLURM" into the
- * array dest_array.  Any variables already found in dest_array will be
- * overwritten with the value from src_array.
+ * Merge the environment variables in src_array beginning with "SLURM" or
+ * SPANK_OPTION_ENV_PREFIX into the array dest_array.  Any variables already
+ * found in dest_array will be overwritten with the value from src_array.
  */
-void env_array_merge_slurm(char ***dest_array, const char **src_array);
+void env_array_merge_slurm_spank(char ***dest_array, const char **src_array);
 
 /*
  * Remove environment variables in env_ptr matching regex.

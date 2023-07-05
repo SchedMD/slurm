@@ -586,7 +586,8 @@ static char **_build_user_env(srun_job_t *job, slurm_opt_t *opt_local)
 	else if (all)
 		env_array_merge(&dest_array, (const char **) job->env);
 	else
-		env_array_merge_slurm(&dest_array, (const char **) job->env);
+		env_array_merge_slurm_spank(&dest_array,
+					    (const char **) job->env);
 
 	return dest_array;
 }
