@@ -9064,7 +9064,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
       <div class="param">error_number (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Slurm internal error number </div>
 <div class="param">error (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Error message </div>
 <div class="param">source (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Where error occurred in the source </div>
-<div class="param">description (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Explaination of cause of error </div>
+<div class="param">description (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Explanation of cause of error </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -9165,7 +9165,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     <div class="field-items">
       <div class="param">warning (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Earning message </div>
 <div class="param">source (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Where error occurred in the source </div>
-<div class="param">description (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Explaination of cause of error </div>
+<div class="param">description (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Explanation of cause of error </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -9365,7 +9365,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
       <div class="param">error_number (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Slurm internal error number </div>
 <div class="param">error (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Error message </div>
 <div class="param">source (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Where error occurred in the source </div>
-<div class="param">description (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Explaination of cause of error </div>
+<div class="param">description (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Explanation of cause of error </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -10197,7 +10197,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     <div class="field-items">
       <div class="param">warning (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Earning message </div>
 <div class="param">source (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Where error occurred in the source </div>
-<div class="param">description (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Explaination of cause of error </div>
+<div class="param">description (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Explanation of cause of error </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
