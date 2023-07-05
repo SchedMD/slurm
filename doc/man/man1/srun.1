@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "May 2023" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "July 2023" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1255,6 +1255,25 @@ have an environment variable defined for \fIEDITOR\fR, then the job's
 environment will use the value given by \fB\-\-export\fR.
 .RE
 .RE
+.IP
+
+.TP
+\fB\-\-external\-launcher\fR
+Create a special step on one or more allocated nodes which won't consume any
+resources, but will have access to all of the job's allocated resources on the
+nodes.
+
+Options like --ntasks-per-*, --mem*, --cpus*, --tres*, --gres*, will be ignored.
+
+This is meant for use MPI implementations that require their own launcher.
+This launches a step with access to all the resources and which will later
+spawn any number of user processes with access to all these resources.
+
+The resource usage within this special step will still be accounted for if the
+accounting plugins are enabled. This special step can be overlapped with any
+other step.
+
+\fBNOTE\fR: This option is not intended to be used directly.
 .IP
 
 .TP

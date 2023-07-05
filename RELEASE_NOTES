@@ -31,6 +31,10 @@ HIGHLIGHTS
  -- Add route/partition plugin to route communications based on partition node
     lists.
  -- Added ability for configless to push Prolog and Epilog scripts to slurmds.
+ -- Added --external-launcher option to srun to allow different MPI
+    implementations to run their launcher (orte, hydra, etc.) inside a special
+    step with access to all the allocated resources in the node, and without
+    consuming any of them, allowing for other steps to run concurrently now.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
