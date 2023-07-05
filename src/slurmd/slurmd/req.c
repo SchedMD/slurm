@@ -1514,7 +1514,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	super_user = _slurm_authorized_user(msg->auth_uid);
 
-	if (req->step_id.step_id == SLURM_INTERACTIVE_STEP) {
+	if ((req->step_id.step_id == SLURM_INTERACTIVE_STEP) ||
+	    (req->flags & LAUNCH_EXT_LAUNCHER)) {
 		req->cpu_bind_type = CPU_BIND_NONE;
 		xfree(req->cpu_bind);
 		req->mem_bind_type = MEM_BIND_NONE;
