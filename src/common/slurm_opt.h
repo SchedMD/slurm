@@ -104,6 +104,7 @@ enum {
 	LONG_OPT_EXCLUSIVE,
 	LONG_OPT_EXPORT,
 	LONG_OPT_EXPORT_FILE,
+	LONG_OPT_EXTERNAL_LAUNCHER,
 	LONG_OPT_EXTRA,
 	LONG_OPT_GET_USER_ENV,
 	LONG_OPT_GID,
@@ -244,6 +245,7 @@ typedef struct {
 	cpu_bind_type_t cpu_bind_type;	/* --cpu-bind			*/
 	bool debugger_test;		/* --debugger-test		*/
 	bool disable_status;		/* --disable-status		*/
+	bool external_launcher;		/* --external-launcher		*/
 	char *epilog;			/* --epilog			*/
 	bool exact;			/* --exact			*/
 	bool exclusive;			/* --exclusive			*/

@@ -1159,6 +1159,7 @@ typedef enum {
 				     * are not decremented from the job's
 				     * allocation */
 	SSF_NO_SIG_FAIL = 1 << 7, /* Don't fail step due to signal */
+	SSF_EXT_LAUNCHER = 1 << 8, /* Request is for an external launcher */
 } step_spec_flags_t;
 
 /*****************************************************************************\

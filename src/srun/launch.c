@@ -717,6 +717,10 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 		debug("interactive step launch request");
 		step_req->flags |= SSF_INTERACTIVE;
 	}
+	if (srun_opt->external_launcher) {
+		debug("external launcher step request");
+		step_req->flags |= SSF_EXT_LAUNCHER;
+	}
 
 	if (opt_local->immediate == 1)
 		step_req->immediate = opt_local->immediate;

@@ -1748,6 +1748,16 @@ static slurm_cli_opt_t slurm_opt_export = {
 	.reset_func = arg_reset_export,
 };
 
+COMMON_SRUN_BOOL_OPTION(external_launcher);
+static slurm_cli_opt_t slurm_opt_external_launcher = {
+	.name = "external-launcher",
+	.has_arg = no_argument,
+	.val = LONG_OPT_EXTERNAL_LAUNCHER,
+	.set_func_srun = arg_set_external_launcher,
+	.get_func = arg_get_external_launcher,
+	.reset_func = arg_reset_external_launcher,
+};
+
 COMMON_STRING_OPTION(extra);
 static slurm_cli_opt_t slurm_opt_extra = {
 	.name = "extra",
@@ -5224,6 +5234,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_exclude,
 	&slurm_opt_exclusive,
 	&slurm_opt_export,
+	&slurm_opt_external_launcher,
 	&slurm_opt_extra,
 	&slurm_opt_extra_node_info,
 	&slurm_opt_get_user_env,
