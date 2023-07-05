@@ -2341,6 +2341,20 @@ extern void set_env_from_opts(slurm_opt_t *opt, char ***dest,
 					    het_job_offset, "%s",
 					    opt->tres_per_task);
 	}
+
+	/*
+	 * In the case that an external launcher (mpirun) is launching instead
+	 * of srun let the srun it launches to treat the request differently.
+	 */
+	env_array_append(dest, "OMPI_MCA_plm_slurm_args",
+			 "--external-launcher");
+	env_array_append(dest, "PRTE_MCA_plm_slurm_args",
+			 "--external-launcher");
+	env_array_append(dest, "HYDRA_LAUNCHER_EXTRA_ARGS",
+			 "--external-launcher");
+	env_array_append(dest, "I_MPI_HYDRA_BOOTSTRAP_EXEC_EXTRA_ARGS",
+			 "--external-launcher");
+
 }
 
 extern char *find_quote_token(char *tmp, char *sep, char **last)
