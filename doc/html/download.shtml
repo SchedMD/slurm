@@ -65,6 +65,15 @@ Perl 6 DRMAA bindings are available from
 <a href="https://github.com/scovit/Scheduler-DRMAA">https://github.com/scovit/Scheduler-DRMAA</a>.
 </li><br>
 
+<li><b>Hardware topology</b></li>
+<ul>
+<li><a href="http://www.open-mpi.org/projects/hwloc/">
+Portable Hardware Locality (hwloc)</a></li>
+<li>
+Used by slurmd and PMIx client to get hardware topology information.
+</li>
+</ul>
+
 <li><b>Hostlist</b><br>
 A Python program used for manipulation of Slurm hostlists including
 functions such as intersection and difference. Download the code from:<br>
@@ -113,12 +122,6 @@ administrators and other developers a low cost, low effort ability to
 dynamically modify the runtime behavior of Slurm job launch.
 Additional documentation can be found
 <a href="https://slurm.schedmd.com/spank.html">here</a>.</li><br>
-
-<li><b>Task Affinity</b> plugins</li>
-<ul>
-<li><a href="http://www.open-mpi.org/projects/hwloc/">
-Portable Hardware Locality (HWLOC)</a></li>
-</ul>
 
 <li><b>Node Health Check</b><br>
 Probably the most comprehensive and lightweight health check tool out
@@ -234,6 +237,6 @@ sudo make install</pre>
 
 </ul>
 
-<p style="text-align:center;">Last modified 28 June 2023</p>
+<p style="text-align:center;">Last modified 05 July 2023</p>
 
 <!--#include virtual="footer.txt"-->
