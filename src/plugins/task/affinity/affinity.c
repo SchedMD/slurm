@@ -77,6 +77,8 @@ static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
 #else
 	uint16_t s, sid  = ldom % conf->sockets;
 	uint16_t i, cpus = conf->cores * conf->threads;
+	warning("%s: Attempting to bind to NUMA locality domains while Slurm was build without NUMA support",
+		__func__);
 	if (!conf->block_map)
 		return false;
 	for (s = sid * cpus; s < (sid+1) * cpus; s++) {
