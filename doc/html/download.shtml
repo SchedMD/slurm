@@ -69,6 +69,10 @@ Perl 6 DRMAA bindings are available from
 <ul>
 <li><a href="http://www.open-mpi.org/projects/hwloc/">
 Portable Hardware Locality (hwloc)</a></li>
+<li><b>NOTE</b>: If you build Slurm or any MPI stack component with hwloc, note
+that versions 2.5.0 through 2.7.0 (inclusive) of hwloc have a bug that pushes an
+untouchable value into the environ array, causing a segfault when accessing it.
+It is advisable to build with hwloc version 2.7.1 or later.</li>
 <li>
 Used by slurmd and PMIx client to get hardware topology information.
 </li>
