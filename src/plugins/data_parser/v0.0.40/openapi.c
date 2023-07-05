@@ -189,8 +189,9 @@ static void _add_param_flag_enum(data_t *param, const parser_t *parser)
 	data_t *fenums = data_set_list(data_key_set(param, "enum"));
 
 	for (int i = 0; i < parser->flag_bit_array_count; i++)
-		data_set_string(data_list_append(fenums),
-				parser->flag_bit_array[i].name);
+		if (!parser->flag_bit_array[i].hidden)
+			data_set_string(data_list_append(fenums),
+					parser->flag_bit_array[i].name);
 }
 
 /*
