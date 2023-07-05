@@ -195,14 +195,14 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *step, uint32_t node_tid)
 			char val = slurm_char_to_hex(*ptr);
 			if (val == (char) -1)
 				return false;
-			if (val & 1)
-				_bind_ldom(base, mask);
-			if (val & 2)
-				_bind_ldom(base + 1, mask);
-			if (val & 4)
-				_bind_ldom(base + 2, mask);
-			if (val & 8)
-				_bind_ldom(base + 3, mask);
+			if ((val & 1) && !_bind_ldom(base, mask))
+				return false;
+			if ((val & 2) && !_bind_ldom(base + 1, mask))
+				return false;
+			if ((val & 4) && !_bind_ldom(base + 2, mask))
+				return false;
+			if ((val & 8) && !_bind_ldom(base + 3, mask))
+				return false;
 			ptr--;
 			base += 4;
 		}
