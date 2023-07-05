@@ -44,7 +44,6 @@
         ],
         "operationId": "diag",
         "summary": "get diagnostics",
-        "deprecated": true,
         "responses": {
           "200": {
             "description": "diagnostic results",
@@ -76,7 +75,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/licenses/": {
@@ -86,7 +86,6 @@
         ],
         "operationId": "slurmctld_get_licenses",
         "summary": "get all Slurm tracked license info",
-        "deprecated": true,
         "responses": {
           "200": {
             "description": "results of get all licenses",
@@ -106,7 +105,8 @@
           "default": {
             "description": "unable to request licenses"
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/ping/": {
@@ -116,7 +116,6 @@
         ],
         "operationId": "ping",
         "summary": "ping test",
-        "deprecated": true,
         "responses": {
           "200": {
             "description": "results of ping test",
@@ -148,7 +147,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/jobs/": {
@@ -158,7 +158,6 @@
         ],
         "operationId": "get_jobs",
         "summary": "get list of jobs",
-        "deprecated": true,
         "parameters": [
           {
             "name": "update_time",
@@ -204,7 +203,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/job/{job_id}": {
@@ -214,7 +214,6 @@
         ],
         "operationId": "get_job",
         "summary": "get job info",
-        "deprecated": true,
         "parameters": [
           {
             "name": "job_id",
@@ -247,7 +246,8 @@
           "default": {
             "description": "job matching JobId not found"
           }
-        }
+        },
+        "deprecated": true
       },
       "post": {
         "tags": [
@@ -255,7 +255,6 @@
         ],
         "operationId": "update_job",
         "summary": "update job",
-        "deprecated": true,
         "parameters": [
           {
             "name": "job_id",
@@ -292,7 +291,8 @@
           "500": {
             "description": "job not found"
           }
-        }
+        },
+        "deprecated": true
       },
       "delete": {
         "tags": [
@@ -300,7 +300,6 @@
         ],
         "operationId": "cancel_job",
         "summary": "cancel or signal job",
-        "deprecated": true,
         "parameters": [
           {
             "name": "job_id",
@@ -332,7 +331,8 @@
           "500": {
             "description": "job not found"
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/job/submit": {
@@ -342,7 +342,6 @@
         ],
         "operationId": "submit_job",
         "summary": "submit new job",
-        "deprecated": true,
         "requestBody": {
           "description": "submit new job",
           "content": {
@@ -390,7 +389,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/nodes/": {
@@ -400,7 +400,6 @@
         ],
         "operationId": "get_nodes",
         "summary": "get all node info",
-        "deprecated": true,
         "parameters": [
           {
             "name": "update_time",
@@ -446,7 +445,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/node/{node_name}": {
@@ -456,7 +456,6 @@
         ],
         "operationId": "get_node",
         "summary": "get node info",
-        "deprecated": true,
         "parameters": [
           {
             "name": "node_name",
@@ -501,7 +500,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/partitions/": {
@@ -511,7 +511,6 @@
         ],
         "operationId": "get_partitions",
         "summary": "get all partition info",
-        "deprecated": true,
         "parameters": [
           {
             "name": "update_time",
@@ -557,7 +556,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/partition/{partition_name}": {
@@ -567,7 +567,6 @@
         ],
         "operationId": "get_partition",
         "summary": "get partition info",
-        "deprecated": true,
         "parameters": [
           {
             "name": "partition_name",
@@ -624,7 +623,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/reservations/": {
@@ -634,7 +634,6 @@
         ],
         "operationId": "get_reservations",
         "summary": "get all reservation info",
-        "deprecated": true,
         "parameters": [
           {
             "name": "update_time",
@@ -680,7 +679,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/reservation/{reservation_name}": {
@@ -690,7 +690,6 @@
         ],
         "operationId": "get_reservation",
         "summary": "get reservation info",
-        "deprecated": true,
         "parameters": [
           {
             "name": "reservation_name",
@@ -747,7 +746,8 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/openapi.yaml": {
@@ -2002,7 +2002,7 @@
           },
           "tres_req_str": {
             "type": "string",
-            "description": "tres reqeusted in the job"
+            "description": "tres requested in the job"
           },
           "tres_alloc_str": {
             "type": "string",

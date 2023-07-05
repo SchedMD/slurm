@@ -26990,7 +26990,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
 <div class="param">tres_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> semicolon delimited list of TRES=# values </div>
 <div class="param">tres_per_socket (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> semicolon delimited list of TRES=# values </div>
 <div class="param">tres_per_task (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> semicolon delimited list of TRES=# values </div>
-<div class="param">tres_req_str (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> tres reqeusted in the job </div>
+<div class="param">tres_req_str (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> tres requested in the job </div>
 <div class="param">tres_alloc_str (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> tres used in the job </div>
 <div class="param">user_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> user id the job runs as </div>
 <div class="param">user_name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> user the job runs as </div>
@@ -27433,7 +27433,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
 <div class="param">tres_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> semicolon delimited list of TRES=# values </div>
 <div class="param">tres_per_socket (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> semicolon delimited list of TRES=# values </div>
 <div class="param">tres_per_task (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> semicolon delimited list of TRES=# values </div>
-<div class="param">tres_req_str (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> tres reqeusted in the job </div>
+<div class="param">tres_req_str (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> tres requested in the job </div>
 <div class="param">tres_alloc_str (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> tres used in the job </div>
 <div class="param">user_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> user id the job runs as format: int64</div>
 <div class="param">user_name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> user the job runs as </div>
