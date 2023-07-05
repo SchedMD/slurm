@@ -1157,7 +1157,7 @@
             "type": "string"
           },
           "description": {
-            "description": "Explaination of cause of error",
+            "description": "Explanation of cause of error",
             "type": "string"
           }
         },
@@ -1185,7 +1185,7 @@
             "type": "string"
           },
           "description": {
-            "description": "Explaination of cause of error",
+            "description": "Explanation of cause of error",
             "type": "string"
           }
         },
