@@ -180,7 +180,7 @@ OCIRunTimeStart="sudo singularity oci start %n.%u.%j.%s.%t"
 OCIRunTimeKill="sudo singularity oci kill %n.%u.%j.%s.%t"
 OCIRunTimeDelete="sudo singularity oci delete %n.%u.%j.%s.%t
 </pre>
-<b>WARNING</b>: Singuarity (v3.8.0) requires <i>sudo</i> for OCI support,
+<b>WARNING</b>: Singularity (v3.8.0) requires <i>sudo</i> for OCI support,
 which is a security risk since the user is able to modify these calls.
 This example is only provided for testing purposes.
 </li>
