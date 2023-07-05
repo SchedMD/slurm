@@ -484,7 +484,7 @@ static void _get_current_debug(GtkRadioAction *action)
 	if (!debug_action)
 		debug_action = gtk_action_group_get_action(
 			menu_action_group, "debug_quiet");
-	/* Since this is the inital value we don't signal anything
+	/* Since this is the initial value we don't signal anything
 	   changed so we need to make it happen here */
 	if (debug_level == 0)
 		debug_inited = 1;

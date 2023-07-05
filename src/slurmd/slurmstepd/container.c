@@ -974,7 +974,7 @@ static void _create_start(stepd_step_rec_t *step,
 	xfree(out);
 
 	/*
-	 * the inital PID is now dead but the container could still be running
+	 * the initial PID is now dead but the container could still be running
 	 * but it likely is running outside of slurmstepd's process group
 	 */
 

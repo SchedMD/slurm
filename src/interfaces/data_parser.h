@@ -264,7 +264,7 @@ typedef struct data_parser_s data_parser_t;
 	 XSTRINGIFY(SLURM_API_CURRENT))
 
 /*
- * Initalize new data parser against given plugin
+ * Initialize new data parser against given plugin
  * IN on_parse_error - callback when an parsing error is encountered
  * 	ptr must remain valid until free called.
  * IN on_dump_error - callback when an parsing error is encountered
