@@ -48,6 +48,11 @@ installed. If policies at your site allow you to install from source, this
 will allow you to install these packages to different locations, so you can
 choose which libraries to use.</p>
 
+<p><b>NOTE</b>: If you build any MPI stack component with hwloc, note that
+versions 2.5.0 through 2.7.0 (inclusive) of hwloc have a bug that pushes an
+untouchable value into the environ array, causing a segfault when accessing it.
+It is advisable to build with hwloc version 2.7.1 or later.</p>
+
 <p>Links to instructions for using several varieties of MPI/PMI
 with Slurm are provided below.
 <ul>
@@ -95,11 +100,6 @@ versions may have some compatibility issues with support of pmi and pmi2 APIs.
 Note also that Intel MPI doesn't officially support PMIx. It may work since PMIx
 offers some compatibility with PMI-2, but there is no guarantee that it will.
 </p>
-
-<p><b>NOTE</b>: If you build PMIx with hwloc, note that versions 2.5.0 through
-2.7.0 (inclusive) of hwloc have a bug that pushes an untouchable value into the
-environ array, causing a segfault when accessing it. It is advisable to avoid
-these versions.</p>
 
 <p>Additional PMIx notes can be found in the SchedMD
 <a href="publications.html">Publications and Presentations</a> page.</p>
@@ -625,6 +625,6 @@ using the same <b>PMI_CONTROL_PORT</b>.</p>
 <p>This plugin does not support MPMD/heterogeneous jobs and it requires
 <i>libpals >= 0.2.8</i>.</p>
 
-<p style="text-align:center;">Last modified 13 September 2022</p>
+<p style="text-align:center;">Last modified 05 July 2023</p>
 
 <!--#include virtual="footer.txt"-->
