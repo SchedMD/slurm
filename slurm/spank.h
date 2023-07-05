@@ -170,7 +170,7 @@ enum spank_item {
 typedef enum spank_item spank_item_t;
 
 /*
- * SPANK error codes match the Slurm internal error codes and the inheirted
+ * SPANK error codes match the Slurm internal error codes and the inherited
  * POSIX error codes.
  */
 typedef slurm_err_t spank_err_t;

@@ -25103,7 +25103,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     <div class='model-description'></div>
     <div class="field-items">
       <div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Name of user </div>
-<div class="param">direct (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> If user is coordinator of this account directly or coordinator status was inheirted from a higher account in the tree </div>
+<div class="param">direct (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> If user is coordinator of this account directly or coordinator status was inherited from a higher account in the tree </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -25463,7 +25463,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     <div class='model-description'></div>
     <div class="field-items">
       <div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Name of user </div>
-<div class="param">direct (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> If user is coordinator of this account directly or coordinator status was inheirted from a higher account in the tree </div>
+<div class="param">direct (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> If user is coordinator of this account directly or coordinator status was inherited from a higher account in the tree </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
