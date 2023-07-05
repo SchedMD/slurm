@@ -1698,7 +1698,7 @@
           },
           "direct": {
             "type": "integer",
-            "description": "If user is coordinator of this account directly or coordinator status was inheirted from a higher account in the tree"
+            "description": "If user is coordinator of this account directly or coordinator status was inherited from a higher account in the tree"
           }
         }
       },
