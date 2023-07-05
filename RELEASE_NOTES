@@ -72,6 +72,7 @@ COMMAND CHANGES (see man pages for details)
  -- All commands supporting '--yaml' and '--json' arguments will now use the
     data_parser/v0.0.40 plugin for formatting the output by default.
  -- torque/mpiexec - Propogate exit code from launched process.
+ -- sbatch - removed --export-file option (used with defunct Moab integration).
 
 API CHANGES
 ===========

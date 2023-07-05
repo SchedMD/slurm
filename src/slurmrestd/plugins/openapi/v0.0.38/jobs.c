@@ -129,7 +129,6 @@ const params_t job_params[] = {
 	{ "exclude_nodes", 'x' },
 	{ "excluded_nodes", 'x', true },
 	{ "exclusive", LONG_OPT_EXCLUSIVE },
-	{ "export_file", LONG_OPT_EXPORT_FILE, true },
 	{ "export", LONG_OPT_EXPORT, true },
 	{ "extra_node_info", 'B', true },
 	{ "get_user_environment", LONG_OPT_GET_USER_ENV },
@@ -333,11 +332,6 @@ static int _fill_job_desc_from_opts(slurm_opt_t *opt, job_desc_msg_t *desc)
 	env_array_free(desc->environment);
 	desc->environment = env_array_copy((const char **) opt->environment);
 
-	if (sbopt->export_file) {
-		error("%s: rejecting request to use load environment from file: %s",
-		      __func__, sbopt->export_file);
-		return -1;
-	}
 	if (opt->export_env) {
 		/*
 		 * job environment is loaded directly via data_t list and not

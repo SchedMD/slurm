@@ -1748,17 +1748,6 @@ static slurm_cli_opt_t slurm_opt_export = {
 	.reset_func = arg_reset_export,
 };
 
-COMMON_SBATCH_STRING_OPTION(export_file);
-static slurm_cli_opt_t slurm_opt_export_file = {
-	.name = "export-file",
-	.has_arg = required_argument,
-	.val = LONG_OPT_EXPORT_FILE,
-	.set_func_sbatch = arg_set_export_file,
-	.set_func_data = arg_set_data_export_file,
-	.get_func = arg_get_export_file,
-	.reset_func = arg_reset_export_file,
-};
-
 COMMON_STRING_OPTION(extra);
 static slurm_cli_opt_t slurm_opt_extra = {
 	.name = "extra",
@@ -5235,7 +5224,6 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_exclude,
 	&slurm_opt_exclusive,
 	&slurm_opt_export,
-	&slurm_opt_export_file,
 	&slurm_opt_extra,
 	&slurm_opt_extra_node_info,
 	&slurm_opt_get_user_env,
