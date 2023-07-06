@@ -6615,7 +6615,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(TIMESTAMP_NO_VAL, end_time, "end_time", NULL),
 	add_parse(STRING, exc_nodes, "excluded_nodes", NULL),
 	add_skip(exc_node_inx),
-	add_parse(UINT32, exit_code, "exit_code", NULL),
+	add_parse(JOB_EXIT_CODE, exit_code, "exit_code", NULL),
 	add_parse(STRING, extra, "extra", NULL),
 	add_parse(STRING, failed_node, "failed_node", NULL),
 	add_parse(STRING, features, "features", NULL),
