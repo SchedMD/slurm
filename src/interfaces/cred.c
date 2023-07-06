@@ -136,13 +136,6 @@ static list_t *cred_job_list = NULL;
 static list_t *cred_state_list = NULL;
 
 /*
- * Verification context used in slurmd during credential unpack operations.
- * Needs to be a global here since we don't want to modify the entire
- * unpack chain ahead of slurm_cred_unpack() to pass this around.
- */
-static slurm_cred_ctx_t *verifier_ctx = NULL;
-
-/*
  * Static prototypes:
  */
 
@@ -321,7 +314,6 @@ extern slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(void)
 	xassert(g_context);
 
 	ctx = _slurm_cred_ctx_alloc();
-	verifier_ctx = ctx;
 	return ctx;
 }
 
@@ -1388,7 +1380,7 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 	 * cross-check that the signature matches up later.
 	 * (Only done in slurmd.)
 	 */
-	if (credential->siglen && verifier_ctx)
+	if (credential->siglen && running_in_slurmd())
 		_cred_verify_signature(credential);
 
 	return credential;
