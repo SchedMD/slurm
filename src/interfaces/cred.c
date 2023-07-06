@@ -108,8 +108,6 @@ struct slurm_cred_context {
 	pthread_mutex_t mutex;
 	enum ctx_type type;	/* context type (creator or verifier)	*/
 	void *key;		/* private or public key		*/
-	list_t *job_list;	/* List of used jobids (for verifier)	*/
-	list_t *state_list;	/* List of cred states (for verifier)	*/
 };
 
 typedef struct {
@@ -150,6 +148,9 @@ static list_t *sbcast_cache_list = NULL;
 static int cred_expire = DEFAULT_EXPIRATION_WINDOW;
 static bool enable_nss_slurm = false;
 static bool enable_send_gids = true;
+
+static list_t *cred_job_list = NULL;
+static list_t *cred_state_list = NULL;
 
 /*
  * Verification context used in slurmd during credential unpack operations.
@@ -233,6 +234,11 @@ extern int cred_g_init(void)
 	}
 	sbcast_cache_list = list_create(xfree_ptr);
 
+	if (running_in_slurmd()) {
+		cred_job_list = list_create(xfree_ptr);
+		cred_state_list = list_create(xfree_ptr);
+	}
+
 done:
 	slurm_mutex_unlock( &g_context_lock );
 
@@ -248,6 +254,8 @@ extern int cred_g_fini(void)
 		return SLURM_SUCCESS;
 
 	FREE_NULL_LIST(sbcast_cache_list);
+	FREE_NULL_LIST(cred_job_list);
+	FREE_NULL_LIST(cred_state_list);
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	return rc;
@@ -378,8 +386,6 @@ extern void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx)
 
 	if (ctx->key)
 		(*(ops.cred_destroy_key))(ctx->key);
-	FREE_NULL_LIST(ctx->job_list);
-	FREE_NULL_LIST(ctx->state_list);
 
 	ctx->magic = ~CRED_CTX_MAGIC;
 	slurm_mutex_unlock(&ctx->mutex);
@@ -702,7 +708,7 @@ extern int slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 	xassert(ctx->type  == SLURM_CRED_VERIFIER);
 
-	rc = list_delete_all(ctx->state_list, _list_find_cred_state, cred);
+	rc = list_delete_all(cred_state_list, _list_find_cred_state, cred);
 
 	slurm_mutex_unlock(&ctx->mutex);
 
@@ -1480,7 +1486,7 @@ extern int slurm_cred_ctx_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 
 	/*
 	 * Unpack job state list and cred state list from buffer
-	 * appening them onto ctx->state_list and ctx->job_list.
+	 * appening them onto cred_state_list and cred_job_list.
 	 */
 	_job_state_unpack(ctx, buffer);
 	_cred_state_unpack(ctx, buffer);
@@ -1496,8 +1502,6 @@ static void _verifier_ctx_init(slurm_cred_ctx_t *ctx)
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 	xassert(ctx->type == SLURM_CRED_VERIFIER);
 
-	ctx->job_list   = list_create(xfree_ptr);
-	ctx->state_list = list_create(xfree_ptr);
 
 	return;
 }
@@ -1854,7 +1858,7 @@ static bool _credential_replayed(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 
 	_clear_expired_credential_states(ctx);
 
-	s = list_find_first(ctx->state_list, _list_find_cred_state, cred);
+	s = list_find_first(cred_state_list, _list_find_cred_state, cred);
 
 	/*
 	 * If we found a match, this credential is being replayed.
@@ -1944,17 +1948,17 @@ static int _list_find_job_state(void *x, void *key)
 static job_state_t *_find_job_state(slurm_cred_ctx_t *ctx, uint32_t jobid)
 {
 	job_state_t *j =
-		list_find_first(ctx->job_list, _list_find_job_state, &jobid);
+		list_find_first(cred_job_list, _list_find_job_state, &jobid);
 	return j;
 }
 
 static job_state_t *_insert_job_state(slurm_cred_ctx_t *ctx, uint32_t jobid)
 {
 	job_state_t *j = list_find_first(
-		ctx->job_list, _list_find_job_state, &jobid);;
+		cred_job_list, _list_find_job_state, &jobid);
 	if (!j) {
 		j = _job_state_create(jobid);
-		list_append(ctx->job_list, j);
+		list_append(cred_job_list, j);
 	} else
 		debug2("%s: we already have a job state for job %u.  No big deal, just an FYI.",
 		       __func__, jobid);
@@ -1988,7 +1992,7 @@ static void _clear_expired_job_states(slurm_cred_ctx_t *ctx)
 {
 	time_t        now = time(NULL);
 
-	list_delete_all(ctx->job_list, _list_find_expired_job_state, &now);
+	list_delete_all(cred_job_list, _list_find_expired_job_state, &now);
 }
 
 static int _list_find_expired_cred_state(void *x, void *key)
@@ -2005,14 +2009,14 @@ static void _clear_expired_credential_states(slurm_cred_ctx_t *ctx)
 {
 	time_t        now = time(NULL);
 
-	list_delete_all(ctx->state_list, _list_find_expired_cred_state, &now);
+	list_delete_all(cred_state_list, _list_find_expired_cred_state, &now);
 }
 
 
 static void _insert_cred_state(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 {
 	cred_state_t *s = _cred_state_create(ctx, cred);
-	list_append(ctx->state_list, s);
+	list_append(cred_state_list, s);
 }
 
 
@@ -2098,9 +2102,9 @@ unpack_error:
 
 static void _cred_state_pack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 {
-	pack32(list_count(ctx->state_list), buffer);
+	pack32(list_count(cred_state_list), buffer);
 
-	list_for_each(ctx->state_list, _cred_state_pack_one, buffer);
+	list_for_each(cred_state_list, _cred_state_pack_one, buffer);
 }
 
 
@@ -2119,7 +2123,7 @@ static void _cred_state_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 			goto unpack_error;
 
 		if (now < s->expiration)
-			list_append(ctx->state_list, s);
+			list_append(cred_state_list, s);
 		else
 			xfree(s);
 	}
@@ -2134,9 +2138,9 @@ unpack_error:
 
 static void _job_state_pack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 {
-	pack32((uint32_t) list_count(ctx->job_list), buffer);
+	pack32((uint32_t) list_count(cred_job_list), buffer);
 
-	list_for_each(ctx->job_list, _job_state_pack_one, buffer);
+	list_for_each(cred_job_list, _job_state_pack_one, buffer);
 }
 
 
@@ -2155,7 +2159,7 @@ static void _job_state_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 			goto unpack_error;
 
 		if (!j->revoked || (j->revoked && (now < j->expiration)))
-			list_append(ctx->job_list, j);
+			list_append(cred_job_list, j);
 		else {
 			debug3 ("not appending expired job %u state",
 			        j->jobid);
