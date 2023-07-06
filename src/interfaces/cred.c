@@ -102,7 +102,6 @@ struct slurm_cred_context {
 
 typedef struct {
 	void *(*cred_ctx_create)	(void);
-	void  (*cred_destroy_key)	(void *key);
 	int   (*cred_sign)		(void *key, char *buffer,
 					 int buf_size, char **sig_pp,
 					 uint32_t *sig_size_p);
@@ -119,7 +118,6 @@ typedef struct {
  */
 static const char *syms[] = {
 	"cred_p_ctx_create",
-	"cred_p_destroy_key",
 	"cred_p_sign",
 	"cred_p_verify_sign",
 	"cred_p_str_error",
@@ -366,10 +364,6 @@ extern void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx)
 
 	slurm_mutex_lock(&ctx->mutex);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
-
-	if (ctx->key)
-		(*(ops.cred_destroy_key))(ctx->key);
-
 	ctx->magic = ~CRED_CTX_MAGIC;
 	slurm_mutex_unlock(&ctx->mutex);
 	slurm_mutex_destroy(&ctx->mutex);

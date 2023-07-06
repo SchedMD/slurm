@@ -94,11 +94,6 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern void cred_p_destroy_key(void *key)
-{
-	return;
-}
-
 extern void *cred_p_ctx_create(void)
 {
 	static char *ctx = "null crypto context";
