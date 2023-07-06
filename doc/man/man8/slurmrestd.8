@@ -1,4 +1,4 @@
-.TH slurmrestd "8" "Slurm REST Daemon" "March 2023" "Slurm REST Daemon"
+.TH slurmrestd "8" "Slurm REST Daemon" "July 2023" "Slurm REST Daemon"
 
 .SH "NAME"
 slurmrestd \- Interface to Slurm via REST API.
@@ -234,6 +234,303 @@ This signal is explicitly ignored.
 due to their lack of thread safety. Active \fBSPANK\fR plugins and
 \fBJobSubmitPlugins\fR in \fBslurmctld\fR are independent of slurmrestd and can
 be used to enforce site policy on job submissions.
+
+.SH "EXAMPLES"
+
+.LP
+Start \fBslurmrestd\fR with a UNIX socket in listen mode:
+.IP
+.nf
+$ export SLURMRESTD=/var/spool/slurm/restd/rest
+$ slurmrestd -s dbv0.0.39,v0.0.39 unix:$SLURMRESTD
+.fi
+
+.LP
+Verify connectivity with the controller with a ping, with \fBslurmrestd\fR
+running in listen mode:
+.IP
+.nf
+$ curl --unix-socket "${SLURMRESTD}" 'http://localhost:8080/slurm/v0.0.39/ping'
+{
+  "meta": {
+    "plugin": {
+      "type": "openapi\/v0.0.39",
+      "name": "Slurm OpenAPI v0.0.39",
+      "data_parser": "v0.0.39"
+    },
+    "client": {
+      "source": "\/tmp\/slurmrestd\/restd->fd:8"
+    },
+    "Slurm": {
+      "version": {
+        "major": 23,
+        "micro": 3,
+        "minor": 2
+      },
+      "release": "23.02.3"
+    }
+  },
+  "errors": [
+  ],
+  "warnings": [
+  ],
+  "pings": [
+    {
+      "hostname": "kitt",
+      "pinged": "UP",
+      "latency": 606,
+      "mode": "primary"
+    }
+  ]
+}
+.fi
+
+.LP
+Query the status of a node with \fBslurmrestd\fR running in INETD mode:
+.IP
+.nf
+$ echo -e "GET http://localhost:8080/slurm/v0.0.39/node/node01 HTTP/1.1\\r\\n" | slurmrestd
+slurmrestd: operations_router: [fd:0->/dev/pts/1] GET /slurm/v0.0.39/node/node01
+slurmrestd: rest_auth/local: slurm_rest_auth_p_authenticate: [fd:0->/dev/pts/1] accepted connection from user: user1[1001]
+HTTP/1.1 200 OK
+Content-Length: 3777
+Content-Type: application/json
+
+{
+  "meta": {
+    "plugin": {
+      "type": "openapi\/v0.0.39",
+      "name": "Slurm OpenAPI v0.0.39",
+      "data_parser": "v0.0.39"
+    },
+    "client": {
+      "source": "fd:0->\/dev\/pts\/1"
+    },
+    "Slurm": {
+      "version": {
+        "major": 23,
+        "micro": 3,
+        "minor": 2
+      },
+      "release": "23.02.3"
+    }
+  },
+  "errors": [
+  ],
+  "warnings": [
+  ],
+  "nodes": [
+    {
+      "architecture": "x86_64",
+      "burstbuffer_network_address": "",
+      "boards": 1,
+      "boot_time": 1688652669,
+      "cluster_name": "",
+      "cores": 12,
+      "specialized_cores": 0,
+      "cpu_binding": 0,
+      "cpu_load": {
+        "set": true,
+        "infinite": false,
+        "number": 17
+      },
+      "free_mem": {
+        "set": true,
+        "infinite": false,
+        "number": 187
+      },
+      "cpus": 24,
+      "effective_cpus": 24,
+      "specialized_cpus": "",
+      "energy": {
+        "average_watts": 0,
+        "base_consumed_energy": 0,
+        "consumed_energy": 0,
+        "current_watts": 0,
+        "previous_consumed_energy": 0,
+        "last_collected": 0
+      },
+      "external_sensors": {
+        "consumed_energy": {
+          "set": false,
+          "infinite": false,
+          "number": 0
+        },
+        "temperature": {
+          "set": false,
+          "infinite": false,
+          "number": 0
+        },
+        "energy_update_time": 0,
+        "current_watts": 0
+      },
+      "extra": "",
+      "power": {
+        "maximum_watts": {
+          "set": false,
+          "infinite": false,
+          "number": 0
+        },
+        "current_watts": 0,
+        "total_energy": 0,
+        "new_maximum_watts": 0,
+        "peak_watts": 0,
+        "lowest_watts": 0,
+        "new_job_time": 0,
+        "state": 0,
+        "time_start_day": 0
+      },
+      "features": [
+        "rhel7",
+        "rhel8",
+        "rhel76",
+        "rhel79",
+        "rhel85",
+        "rack1"
+      ],
+      "active_features": [
+        "rhel7",
+        "rack1"
+      ],
+      "gres": "cpu:24,gpu:tesla:4(S:0),test:8",
+      "gres_drained": "N\/A",
+      "gres_used": "cpu:0,gpu:tesla:0(IDX:N\/A),tesla:0,test:0",
+      "last_busy": 1688671269,
+      "mcs_label": "",
+      "specialized_memory": 0,
+      "name": "node01",
+      "next_state_after_reboot": [
+        "INVALID",
+        "PERFCTRS",
+        "RESERVED",
+        "UNDRAIN",
+        "CLOUD",
+        "RESUME",
+        "DRAIN",
+        "COMPLETING",
+        "NOT_RESPONDING",
+        "POWERED_DOWN",
+        "FAIL",
+        "POWERING_UP",
+        "MAINTENANCE",
+        "REBOOT_REQUESTED",
+        "REBOOT_CANCELED",
+        "POWERING_DOWN",
+        "DYNAMIC_FUTURE",
+        "REBOOT_ISSUED",
+        "PLANNED",
+        "INVALID_REG",
+        "POWER_DOWN",
+        "POWER_UP",
+        "POWER_DRAIN",
+        "DYNAMIC_NORM"
+      ],
+      "address": "kitt",
+      "hostname": "kitt",
+      "state": [
+        "IDLE"
+      ],
+      "operating_system": "Linux 5.15.0-76-generic #83-Ubuntu SMP Thu Jun 15 19:16:32 UTC 2023",
+      "owner": "",
+      "partitions": [
+        "debug"
+      ],
+      "port": 18001,
+      "real_memory": 15678,
+      "comment": "",
+      "reason": "",
+      "reason_changed_at": 0,
+      "reason_set_by_user": "",
+      "resume_after": {
+        "set": true,
+        "infinite": false,
+        "number": 0
+      },
+      "reservation": "",
+      "alloc_memory": 0,
+      "alloc_cpus": 0,
+      "alloc_idle_cpus": 24,
+      "tres_used": "",
+      "tres_weighted": 0.0,
+      "slurmd_start_time": 1688671266,
+      "sockets": 1,
+      "threads": 2,
+      "temporary_disk": 0,
+      "weight": 1,
+      "tres": "cpu=24,mem=15678M,billing=39,gres\/gpu=4,gres\/gpu:tesla=4,gres\/test=8",
+      "version": "23.02.3"
+    }
+  ]
+}
+.fi
+
+.LP
+Submit a job to \fBslurmrestd\fR with it running in listen mode:
+.IP
+.nf
+$ cat example_job.json
+{"script": "#!/bin/bash\\nsleep 30",
+  "job": {
+    "name": "ExampleJob",
+    "account": "sub1",
+    "hold": false,
+    "environment": {
+      "PATH": "/bin"
+    },
+    "tasks": 12,
+    "memory_per_cpu": 100,
+    "time_limit": 240
+  }
+}
+
+$ curl -H "Content-Type: application/json" -d @example_job.json --unix-socket "${SLURMRESTD}" 'http://localhost:8080/slurm/v0.0.39/job/submit'
+{
+  "meta": {
+    "plugin": {
+      "type": "openapi\/v0.0.39",
+      "name": "Slurm OpenAPI v0.0.39",
+      "data_parser": "v0.0.39"
+    },
+    "client": {
+      "source": "\/tmp\/slurmrestd\/restd->fd:8"
+    },
+    "Slurm": {
+      "version": {
+        "major": 23,
+        "micro": 3,
+        "minor": 2
+      },
+      "release": "23.02.3"
+    }
+  },
+  "errors": [
+  ],
+  "warnings": [
+    {
+      "description": "Expected OpenAPI type=array (Slurm type=list) but got OpenAPI type=object (Slurm type=dictionary)",
+      "source": "#\/job\/environment\/"
+    },
+    {
+      "description": "Expected OpenAPI type=object (Slurm type=dictionary) but got OpenAPI type=integer (Slurm type=int 64bits)",
+      "source": "#\/job\/time_limit\/"
+    },
+    {
+      "description": "Expected OpenAPI type=object (Slurm type=dictionary) but got OpenAPI type=integer (Slurm type=int 64bits)",
+      "source": "#\/job\/memory_per_cpu\/"
+    }
+  ],
+  "result": {
+    "job_id": 8990,
+    "step_id": "batch",
+    "error_code": 0,
+    "error": "No error",
+    "job_submit_user_msg": ""
+  },
+  "job_id": 8990,
+  "step_id": "batch",
+  "job_submit_user_msg": ""
+}
+.fi
 
 .SH "COPYING"
 Copyright (C) 2019\-2022 SchedMD LLC.
