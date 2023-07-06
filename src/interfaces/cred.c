@@ -170,7 +170,6 @@ static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg);
 static cred_state_t * _cred_state_create(slurm_cred_ctx_t *ctx,
 					 slurm_cred_t *c);
 static job_state_t  * _job_state_create(uint32_t jobid);
-static void           _job_state_destroy(job_state_t   *js);
 
 static job_state_t  * _find_job_state(slurm_cred_ctx_t *ctx, uint32_t jobid);
 static job_state_t  * _insert_job_state(slurm_cred_ctx_t *ctx,  uint32_t jobid);
@@ -1509,7 +1508,7 @@ static void _verifier_ctx_init(slurm_cred_ctx_t *ctx)
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 	xassert(ctx->type == SLURM_CRED_VERIFIER);
 
-	ctx->job_list   = list_create((ListDelF) _job_state_destroy);
+	ctx->job_list   = list_create(xfree_ptr);
 	ctx->state_list = list_create(xfree_ptr);
 
 	return;
@@ -1988,12 +1987,6 @@ static job_state_t *_job_state_create(uint32_t jobid)
 	return j;
 }
 
-static void _job_state_destroy(job_state_t *j)
-{
-	debug3 ("destroying job %u state", j->jobid);
-	xfree(j);
-}
-
 static int _list_find_expired_job_state(void *x, void *key)
 {
 	job_state_t *j = x;
@@ -2111,7 +2104,7 @@ static job_state_t *_job_state_unpack_one(buf_t *buffer)
 	return j;
 
 unpack_error:
-	_job_state_destroy(j);
+	xfree(j);
 	return NULL;
 }
 
@@ -2179,7 +2172,7 @@ static void _job_state_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 		else {
 			debug3 ("not appending expired job %u state",
 			        j->jobid);
-			_job_state_destroy(j);
+			xfree(j);
 		}
 	}
 
