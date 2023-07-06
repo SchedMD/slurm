@@ -51,7 +51,9 @@
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
 #include "src/common/run_command.h"
+#include "src/interfaces/route.h"
 #include "src/interfaces/select.h"
+#include "src/interfaces/topology.h"
 #include "src/common/setproctitle.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/jobacct_gather.h"
@@ -708,7 +710,9 @@ _init_from_slurmd(int sock, char **argv,
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
 	    (slurm_cred_init() != SLURM_SUCCESS) ||
-	    (job_container_init() != SLURM_SUCCESS))
+	    (job_container_init() != SLURM_SUCCESS) ||
+	    (route_init() != SLURM_SUCCESS) ||
+	    (slurm_topo_init() != SLURM_SUCCESS))
 		fatal("Couldn't load all plugins");
 
 	/*

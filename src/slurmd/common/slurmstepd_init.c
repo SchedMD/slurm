@@ -288,7 +288,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* resv_over_run */
 	/* resv_prolog */
 	/* ret2service */
-	/* route_plugin */
+	packstr(slurm_conf.route_plugin, buffer);
 	/* sched_logfile */
 	/* sched_log_level */
 	/* sched_params */
@@ -344,8 +344,8 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	packstr(slurm_conf.task_prolog, buffer);
 	pack16(slurm_conf.tcp_timeout, buffer);
 	packstr(slurm_conf.tmp_fs, buffer);
-	/* topology_param */
-	/* topology_plugin */
+	packstr(slurm_conf.topology_param, buffer);
+	packstr(slurm_conf.topology_plugin, buffer);
 	pack16(slurm_conf.tree_width, buffer);
 	packstr(slurm_conf.unkillable_program, buffer);
 	pack16(slurm_conf.unkillable_timeout, buffer);
@@ -518,7 +518,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* resv_over_run */
 	/* resv_prolog */
 	/* ret2service */
-	/* route_plugin */
+	safe_unpackstr(&slurm_conf.route_plugin, buffer);
 	/* sched_logfile */
 	/* sched_log_level */
 	/* sched_params */
@@ -574,8 +574,8 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	safe_unpackstr(&slurm_conf.task_prolog, buffer);
 	safe_unpack16(&slurm_conf.tcp_timeout, buffer);
 	safe_unpackstr(&slurm_conf.tmp_fs, buffer);
-	/* topology_param */
-	/* topology_plugin */
+	safe_unpackstr(&slurm_conf.topology_param, buffer);
+	safe_unpackstr(&slurm_conf.topology_plugin, buffer);
 	safe_unpack16(&slurm_conf.tree_width, buffer);
 	safe_unpackstr(&slurm_conf.unkillable_program, buffer);
 	safe_unpack16(&slurm_conf.unkillable_timeout, buffer);
