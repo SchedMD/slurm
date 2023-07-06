@@ -95,7 +95,6 @@ typedef struct {
  */
 #define CRED_CTX_MAGIC 0x0c0c0c
 struct slurm_cred_context {
-	int magic;
 	void *key;		/* private or public key		*/
 };
 
@@ -324,9 +323,6 @@ extern void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx)
 		return;
 	xassert(g_context);
 
-	xassert(ctx->magic == CRED_CTX_MAGIC);
-	ctx->magic = ~CRED_CTX_MAGIC;
-
 	xfree(ctx);
 
 	return;
@@ -375,8 +371,6 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx,
 
 	if (_fill_cred_gids(arg) != SLURM_SUCCESS)
 		goto fail;
-
-	xassert(ctx->magic == CRED_CTX_MAGIC);
 
 	cred->buffer = init_buf(4096);
 	cred->buf_version = protocol_version;
@@ -526,7 +520,6 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t *ctx,
 	slurm_rwlock_rdlock(&cred->mutex);
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	xassert(ctx->magic  == CRED_CTX_MAGIC);
 	xassert(cred->magic == CRED_MAGIC);
 
 	/* NOTE: the verification checks that the credential was
@@ -591,7 +584,6 @@ extern bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid)
 	bool retval = false;
 
 	xassert(ctx != NULL);
-	xassert(ctx->magic == CRED_CTX_MAGIC);
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
@@ -610,7 +602,6 @@ extern bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid)
 extern int slurm_cred_insert_jobid(slurm_cred_ctx_t *ctx, uint32_t jobid)
 {
 	xassert(ctx != NULL);
-	xassert(ctx->magic == CRED_CTX_MAGIC);
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
@@ -633,8 +624,6 @@ extern int slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	xassert(ctx->magic == CRED_CTX_MAGIC);
-
 	rc = list_delete_all(cred_state_list, _list_find_cred_state, cred);
 
 	slurm_mutex_unlock(&cred_cache_mutex);
@@ -650,8 +639,6 @@ extern int slurm_cred_revoke(slurm_cred_ctx_t *ctx, uint32_t jobid, time_t time,
 	xassert(ctx != NULL);
 
 	slurm_mutex_lock(&cred_cache_mutex);
-
-	xassert(ctx->magic == CRED_CTX_MAGIC);
 
 	_clear_expired_job_states(ctx);
 
@@ -690,8 +677,6 @@ extern int slurm_cred_begin_expiration(slurm_cred_ctx_t *ctx, uint32_t jobid)
 	xassert(ctx != NULL);
 
 	slurm_mutex_lock(&cred_cache_mutex);
-
-	xassert(ctx->magic == CRED_CTX_MAGIC);
 
 	_clear_expired_job_states(ctx);
 
@@ -1404,7 +1389,6 @@ extern int slurm_cred_ctx_pack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 extern int slurm_cred_ctx_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 {
 	xassert(ctx != NULL);
-	xassert(ctx->magic == CRED_CTX_MAGIC);
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
@@ -1424,8 +1408,6 @@ static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void)
 {
 	slurm_cred_ctx_t *ctx = xmalloc(sizeof(*ctx));
 	/* Contents initialized to zero */
-
-	ctx->magic = CRED_CTX_MAGIC;
 
 	return ctx;
 }
