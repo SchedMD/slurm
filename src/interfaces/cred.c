@@ -300,9 +300,8 @@ extern int cred_expiration(void)
 	return cred_expire;
 }
 
-extern slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx,
-				       slurm_cred_arg_t *arg,
-				       bool sign_it, uint16_t protocol_version)
+extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
+				       uint16_t protocol_version)
 {
 	slurm_cred_t *cred = NULL;
 	int i = 0, sock_recs = 0;
@@ -343,7 +342,7 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx,
 
 	_pack_cred(arg, cred->buffer, protocol_version);
 
-	if (sign_it && _cred_sign(ctx, cred) < 0) {
+	if (sign_it && _cred_sign(NULL, cred) < 0) {
 		goto fail;
 	}
 
@@ -359,7 +358,6 @@ fail:
 
 extern slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg)
 {
-	slurm_cred_ctx_t *ctx = NULL;
 	slurm_cred_t *cred = NULL;
 
 	/*
@@ -367,7 +365,7 @@ extern slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg)
 	 */
 	enable_send_gids = true;
 
-	cred = slurm_cred_create(ctx, arg, true, SLURM_PROTOCOL_VERSION);
+	cred = slurm_cred_create(arg, true, SLURM_PROTOCOL_VERSION);
 
 	return cred;
 }

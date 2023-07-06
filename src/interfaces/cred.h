@@ -210,9 +210,8 @@ extern int cred_g_fini(void);
  *
  * Returns NULL on failure.
  */
-extern slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx,
-				       slurm_cred_arg_t *arg,
-				       bool sign_it, uint16_t protocol_version);
+extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
+				       uint16_t protocol_version);
 
 /*
  * Create a "fake" credential with bogus data in the signature.

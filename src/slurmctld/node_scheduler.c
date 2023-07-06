@@ -3070,8 +3070,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 	sign_cred = false;
 
-	prolog_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
-						 &cred_arg, sign_cred,
+	prolog_msg_ptr->cred = slurm_cred_create(&cred_arg, sign_cred,
 						 protocol_version);
 	xfree(cred_arg.job_mem_alloc);
 	xfree(cred_arg.job_mem_alloc_rep_count);

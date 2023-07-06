@@ -14913,8 +14913,7 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 	cred_arg.step_id.step_het_comp = NO_VAL;
 	cred_arg.step_id.step_id = NO_VAL;
 
-	msg->cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg,
-				      false, protocol_version);
+	msg->cred = slurm_cred_create(&cred_arg, false, protocol_version);
 
 	msg->derived_ec = job_ptr->derived_ec;
 	msg->details = xstrdup(job_ptr->state_desc);

@@ -805,8 +805,7 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 					    &cred_arg.step_mem_alloc_size);
 	}
 
-	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg,
-					true, protocol_version);
+	*slurm_cred = slurm_cred_create(&cred_arg, true, protocol_version);
 
 	xfree(cred_arg.job_mem_alloc);
 	xfree(cred_arg.job_mem_alloc_rep_count);
