@@ -90,15 +90,6 @@ typedef struct {
 	time_t   revoked;       /* Time at which credentials were revoked   */
 } job_state_t;
 
-
-/*
- * Completion of slurm credential context
- */
-enum ctx_type {
-	SLURM_CRED_CREATOR,
-	SLURM_CRED_VERIFIER
-};
-
 /*
  * Credential context, slurm_cred_ctx_t:
  */
@@ -106,7 +97,6 @@ enum ctx_type {
 struct slurm_cred_context {
 	int magic;
 	pthread_mutex_t mutex;
-	enum ctx_type type;	/* context type (creator or verifier)	*/
 	void *key;		/* private or public key		*/
 };
 
@@ -330,8 +320,6 @@ extern slurm_cred_ctx_t *slurm_cred_creator_ctx_create(void)
 	ctx = _slurm_cred_ctx_alloc();
 	slurm_mutex_lock(&ctx->mutex);
 
-	ctx->type = SLURM_CRED_CREATOR;
-
 	ctx->key = (*(ops.cred_ctx_create))();
 	if (!ctx->key)
 		goto fail;
@@ -353,8 +341,6 @@ extern slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(void)
 
 	ctx = _slurm_cred_ctx_alloc();
 	slurm_mutex_lock(&ctx->mutex);
-
-	ctx->type = SLURM_CRED_VERIFIER;
 
 	ctx->key = (*(ops.cred_ctx_create))();
 	if (!ctx->key)
@@ -439,7 +425,6 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx,
 
 	slurm_mutex_lock(&ctx->mutex);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
-	xassert(ctx->type == SLURM_CRED_CREATOR);
 
 	cred->buffer = init_buf(4096);
 	cred->buf_version = protocol_version;
@@ -593,7 +578,6 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t *ctx,
 	slurm_mutex_lock(&ctx->mutex);
 
 	xassert(ctx->magic  == CRED_CTX_MAGIC);
-	xassert(ctx->type   == SLURM_CRED_VERIFIER);
 	xassert(cred->magic == CRED_MAGIC);
 
 	/* NOTE: the verification checks that the credential was
@@ -659,7 +643,6 @@ extern bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid)
 
 	xassert(ctx != NULL);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
-	xassert(ctx->type  == SLURM_CRED_VERIFIER);
 
 	slurm_mutex_lock(&ctx->mutex);
 
@@ -679,7 +662,6 @@ extern int slurm_cred_insert_jobid(slurm_cred_ctx_t *ctx, uint32_t jobid)
 {
 	xassert(ctx != NULL);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
-	xassert(ctx->type  == SLURM_CRED_VERIFIER);
 
 	slurm_mutex_lock(&ctx->mutex);
 
@@ -703,7 +685,6 @@ extern int slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 	slurm_mutex_lock(&ctx->mutex);
 
 	xassert(ctx->magic == CRED_CTX_MAGIC);
-	xassert(ctx->type  == SLURM_CRED_VERIFIER);
 
 	rc = list_delete_all(cred_state_list, _list_find_cred_state, cred);
 
@@ -722,7 +703,6 @@ extern int slurm_cred_revoke(slurm_cred_ctx_t *ctx, uint32_t jobid, time_t time,
 	slurm_mutex_lock(&ctx->mutex);
 
 	xassert(ctx->magic == CRED_CTX_MAGIC);
-	xassert(ctx->type  == SLURM_CRED_VERIFIER);
 
 	_clear_expired_job_states(ctx);
 
@@ -763,7 +743,6 @@ extern int slurm_cred_begin_expiration(slurm_cred_ctx_t *ctx, uint32_t jobid)
 	slurm_mutex_lock(&ctx->mutex);
 
 	xassert(ctx->magic == CRED_CTX_MAGIC);
-	xassert(ctx->type  == SLURM_CRED_VERIFIER);
 
 	_clear_expired_job_states(ctx);
 
@@ -1477,7 +1456,6 @@ extern int slurm_cred_ctx_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 {
 	xassert(ctx != NULL);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
-	xassert(ctx->type  == SLURM_CRED_VERIFIER);
 
 	slurm_mutex_lock(&ctx->mutex);
 
