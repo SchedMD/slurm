@@ -143,7 +143,6 @@ typedef struct slurmctld_config {
 	time_t	shutdown_time;
 	bool    submissions_disabled;
 
-	slurm_cred_ctx_t *cred_ctx;
 	pthread_cond_t thread_count_cond;
 	pthread_mutex_t thread_count_lock;
 	pthread_t thread_id_acct_update;

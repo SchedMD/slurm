@@ -2032,8 +2032,7 @@ static void _pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 /* Create an sbcast credential for the specified job and nodes
  *	including digital signature.
  * RET the sbcast credential or NULL on error */
-extern sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t *ctx,
-					 sbcast_cred_arg_t *arg,
+extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 					 uint16_t protocol_version)
 {
 	buf_t *buffer;

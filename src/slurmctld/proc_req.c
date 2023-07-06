@@ -3222,10 +3222,8 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 	sbcast_arg.nodes = node_list; /* avoid extra copy */
 	sbcast_arg.expiration = job_ptr->end_time;
 
-	if ((sbcast_cred =
-		    create_sbcast_cred(slurmctld_config.cred_ctx,
-				       &sbcast_arg,
-				       msg->protocol_version)) == NULL) {
+	if (!(sbcast_cred = create_sbcast_cred(&sbcast_arg,
+					       msg->protocol_version))) {
 		unlock_slurmctld(job_read_lock);
 		error("%s %pJ cred create error", __func__, job_ptr);
 		slurm_send_rc_msg(msg, SLURM_ERROR);

@@ -411,9 +411,8 @@ typedef struct {
 	char *nodes;
 } sbcast_cred_arg_t;
 
-extern sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t *ctx,
-				  sbcast_cred_arg_t *arg,
-				  uint16_t protocol_version);
+extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
+					 uint16_t protocol_version);
 extern void delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
 extern sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t *ctx,
 				       sbcast_cred_t *sbcast_cred,
