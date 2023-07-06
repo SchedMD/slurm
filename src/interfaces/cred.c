@@ -394,17 +394,7 @@ extern void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx)
 
 extern int cred_ctx_lifetime(slurm_cred_ctx_t *ctx)
 {
-	int lifespan;
-
-	xassert(ctx != NULL);
-
-	slurm_mutex_lock(&ctx->mutex);
-	xassert(ctx->magic == CRED_CTX_MAGIC);
-
-	lifespan = ctx->expiry_window;
-	slurm_mutex_unlock(&ctx->mutex);
-
-	return lifespan;
+	return cred_expire;
 }
 
 extern slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx,
