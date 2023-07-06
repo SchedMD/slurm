@@ -200,14 +200,10 @@ extern const char *cred_p_str_error(int errnum)
 extern int cred_p_sign(void *key, char *buffer, int buf_size,
 		       char **sig_pp, uint32_t *sig_size_p)
 {
-	int retry = RETRY_COUNT, auth_ttl;
+	int retry = RETRY_COUNT;
 	char *cred;
 	munge_err_t err;
 	munge_ctx_t ctx = (munge_ctx_t) key;
-
-	auth_ttl = slurm_get_auth_ttl();
-	if (auth_ttl)
-		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
 
 again:
 	err = munge_encode(&cred, ctx, buffer, buf_size);
