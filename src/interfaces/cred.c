@@ -392,7 +392,7 @@ extern void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx)
 	return;
 }
 
-extern int cred_ctx_lifetime(slurm_cred_ctx_t *ctx)
+extern int cred_expiration(void)
 {
 	return cred_expire;
 }

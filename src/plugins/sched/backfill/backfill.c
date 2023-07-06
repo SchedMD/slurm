@@ -3921,7 +3921,7 @@ static void _het_job_kill_now(het_job_map_t *map)
 	int cred_lifetime = 1200;
 	uint32_t save_bitflags;
 
-	cred_lifetime = cred_ctx_lifetime(slurmctld_config.cred_ctx);
+	cred_lifetime = cred_expiration();
 	iter = list_iterator_create(map->het_job_rec_list);
 	while ((rec = list_next(iter))) {
 		job_ptr = rec->job_ptr;

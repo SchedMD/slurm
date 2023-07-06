@@ -16007,8 +16007,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 		if (job_ptr->details->begin_time <= now) {
 			int cred_lifetime = DEFAULT_EXPIRATION_WINDOW;
 			time_t begin_time;
-			cred_lifetime =
-				cred_ctx_lifetime(slurmctld_config.cred_ctx);
+			cred_lifetime = cred_expiration();
 			begin_time = now + cred_lifetime + 1;
 			if ((job_ptr->bit_flags & CRON_JOB) &&
 			    job_ptr->details->crontab_entry) {

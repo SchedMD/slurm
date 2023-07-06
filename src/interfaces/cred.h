@@ -193,7 +193,7 @@ slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(void);
  * Set and get credential context options
  *
  */
-extern int cred_ctx_lifetime(slurm_cred_ctx_t *ctx);
+extern int cred_expiration(void);
 
 /*
  * Destroy a credential context, freeing associated memory.
