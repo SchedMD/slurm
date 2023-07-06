@@ -1639,7 +1639,7 @@ static int PARSE_FUNC(JOB_STATE_ID_STRING)(const parser_t *const parser,
 					   void *obj, data_t *src, args_t *args,
 					   data_t *parent_path)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	char **dst = obj;
 	uint32_t state;
 
