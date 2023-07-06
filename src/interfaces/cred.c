@@ -135,6 +135,7 @@ static int cred_expire = DEFAULT_EXPIRATION_WINDOW;
 static bool enable_nss_slurm = false;
 static bool enable_send_gids = true;
 
+static pthread_mutex_t cred_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 static list_t *cred_job_list = NULL;
 static list_t *cred_state_list = NULL;
 
@@ -542,7 +543,7 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t *ctx,
 	xassert(g_context);
 
 	slurm_rwlock_rdlock(&cred->mutex);
-	slurm_mutex_lock(&ctx->mutex);
+	slurm_mutex_lock(&cred_cache_mutex);
 
 	xassert(ctx->magic  == CRED_CTX_MAGIC);
 	xassert(cred->magic == CRED_MAGIC);
@@ -571,14 +572,14 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t *ctx,
 		goto error;
 	}
 
-	slurm_mutex_unlock(&ctx->mutex);
+	slurm_mutex_unlock(&cred_cache_mutex);
 
 	/* coverity[missing_unlock] */
 	return cred->arg;
 
 error:
 	errnum = slurm_get_errno();
-	slurm_mutex_unlock(&ctx->mutex);
+	slurm_mutex_unlock(&cred_cache_mutex);
 	slurm_rwlock_unlock(&cred->mutex);
 	slurm_seterrno(errnum);
 	return NULL;
@@ -611,7 +612,7 @@ extern bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid)
 	xassert(ctx != NULL);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 
-	slurm_mutex_lock(&ctx->mutex);
+	slurm_mutex_lock(&cred_cache_mutex);
 
 	_clear_expired_job_states(ctx);
 
@@ -620,7 +621,7 @@ extern bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid)
 	 */
 	retval = (_find_job_state(ctx, jobid) != NULL);
 
-	slurm_mutex_unlock(&ctx->mutex);
+	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return retval;
 }
@@ -630,12 +631,12 @@ extern int slurm_cred_insert_jobid(slurm_cred_ctx_t *ctx, uint32_t jobid)
 	xassert(ctx != NULL);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 
-	slurm_mutex_lock(&ctx->mutex);
+	slurm_mutex_lock(&cred_cache_mutex);
 
 	_clear_expired_job_states(ctx);
 	(void) _insert_job_state(ctx, jobid);
 
-	slurm_mutex_unlock(&ctx->mutex);
+	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -649,13 +650,13 @@ extern int slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 	if (!cred->verified)
 		return SLURM_ERROR;
 
-	slurm_mutex_lock(&ctx->mutex);
+	slurm_mutex_lock(&cred_cache_mutex);
 
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 
 	rc = list_delete_all(cred_state_list, _list_find_cred_state, cred);
 
-	slurm_mutex_unlock(&ctx->mutex);
+	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return (rc > 0 ? SLURM_SUCCESS : SLURM_ERROR);
 }
@@ -667,7 +668,7 @@ extern int slurm_cred_revoke(slurm_cred_ctx_t *ctx, uint32_t jobid, time_t time,
 
 	xassert(ctx != NULL);
 
-	slurm_mutex_lock(&ctx->mutex);
+	slurm_mutex_lock(&cred_cache_mutex);
 
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 
@@ -693,11 +694,11 @@ extern int slurm_cred_revoke(slurm_cred_ctx_t *ctx, uint32_t jobid, time_t time,
 
 	j->revoked = time;
 
-	slurm_mutex_unlock(&ctx->mutex);
+	slurm_mutex_unlock(&cred_cache_mutex);
 	return SLURM_SUCCESS;
 
 error:
-	slurm_mutex_unlock(&ctx->mutex);
+	slurm_mutex_unlock(&cred_cache_mutex);
 	return SLURM_ERROR;
 }
 
@@ -707,7 +708,7 @@ extern int slurm_cred_begin_expiration(slurm_cred_ctx_t *ctx, uint32_t jobid)
 
 	xassert(ctx != NULL);
 
-	slurm_mutex_lock(&ctx->mutex);
+	slurm_mutex_lock(&cred_cache_mutex);
 
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 
@@ -726,11 +727,11 @@ extern int slurm_cred_begin_expiration(slurm_cred_ctx_t *ctx, uint32_t jobid)
 	j->expiration = time(NULL) + cred_expire;
 	debug2("set revoke expiration for jobid %u to %ld UTS",
 	       j->jobid, j->expiration);
-	slurm_mutex_unlock(&ctx->mutex);
+	slurm_mutex_unlock(&cred_cache_mutex);
 	return SLURM_SUCCESS;
 
 error:
-	slurm_mutex_unlock(&ctx->mutex);
+	slurm_mutex_unlock(&cred_cache_mutex);
 	return SLURM_ERROR;
 }
 
@@ -1411,10 +1412,10 @@ unpack_error:
 
 extern int slurm_cred_ctx_pack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 {
-	slurm_mutex_lock(&ctx->mutex);
+	slurm_mutex_lock(&cred_cache_mutex);
 	_job_state_pack(ctx, buffer);
 	_cred_state_pack(ctx, buffer);
-	slurm_mutex_unlock(&ctx->mutex);
+	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -1424,7 +1425,7 @@ extern int slurm_cred_ctx_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 	xassert(ctx != NULL);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 
-	slurm_mutex_lock(&ctx->mutex);
+	slurm_mutex_lock(&cred_cache_mutex);
 
 	/*
 	 * Unpack job state list and cred state list from buffer
@@ -1433,7 +1434,7 @@ extern int slurm_cred_ctx_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 	_job_state_unpack(ctx, buffer);
 	_cred_state_unpack(ctx, buffer);
 
-	slurm_mutex_unlock(&ctx->mutex);
+	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return SLURM_SUCCESS;
 }
@@ -1811,7 +1812,7 @@ extern void slurm_cred_handle_reissue(slurm_cred_ctx_t *ctx,
 	job_state_t *j;
 
 	if (!locked)
-		slurm_mutex_lock(&ctx->mutex);
+		slurm_mutex_lock(&cred_cache_mutex);
 
 	j = _find_job_state(ctx, cred->arg->step_id.job_id);
 
@@ -1828,7 +1829,7 @@ extern void slurm_cred_handle_reissue(slurm_cred_ctx_t *ctx,
 		_clear_expired_job_states(ctx);
 	}
 	if (!locked)
-		slurm_mutex_unlock(&ctx->mutex);
+		slurm_mutex_unlock(&cred_cache_mutex);
 }
 
 extern bool slurm_cred_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
@@ -1836,14 +1837,14 @@ extern bool slurm_cred_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 	job_state_t *j;
 	bool rc = false;
 
-	slurm_mutex_lock(&ctx->mutex);
+	slurm_mutex_lock(&cred_cache_mutex);
 
 	j = _find_job_state(ctx, cred->arg->step_id.job_id);
 
 	if (j && (j->revoked != (time_t)0) && (cred->ctime <= j->revoked))
 		rc = true;
 
-	slurm_mutex_unlock(&ctx->mutex);
+	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return rc;
 }
