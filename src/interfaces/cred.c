@@ -101,7 +101,6 @@ struct slurm_cred_context {
 };
 
 typedef struct {
-	void *(*cred_ctx_create)	(void);
 	int   (*cred_sign)		(void *key, char *buffer,
 					 int buf_size, char **sig_pp,
 					 uint32_t *sig_size_p);
@@ -117,7 +116,6 @@ typedef struct {
  * for slurm_cred_ops_t.
  */
 static const char *syms[] = {
-	"cred_p_ctx_create",
 	"cred_p_sign",
 	"cred_p_verify_sign",
 	"cred_p_str_error",
@@ -316,19 +314,7 @@ extern slurm_cred_ctx_t *slurm_cred_creator_ctx_create(void)
 	xassert(g_context);
 
 	ctx = _slurm_cred_ctx_alloc();
-	slurm_mutex_lock(&ctx->mutex);
-
-	ctx->key = (*(ops.cred_ctx_create))();
-	if (!ctx->key)
-		goto fail;
-
-	slurm_mutex_unlock(&ctx->mutex);
 	return ctx;
-
-fail:
-	slurm_mutex_unlock(&ctx->mutex);
-	slurm_cred_ctx_destroy(ctx);
-	return NULL;
 }
 
 extern slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(void)
@@ -338,21 +324,8 @@ extern slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(void)
 	xassert(g_context);
 
 	ctx = _slurm_cred_ctx_alloc();
-	slurm_mutex_lock(&ctx->mutex);
-
-	ctx->key = (*(ops.cred_ctx_create))();
-	if (!ctx->key)
-		goto fail;
-
-	slurm_mutex_unlock(&ctx->mutex);
-
 	verifier_ctx = ctx;
 	return ctx;
-
-fail:
-	slurm_mutex_unlock(&ctx->mutex);
-	slurm_cred_ctx_destroy(ctx);
-	return NULL;
 }
 
 

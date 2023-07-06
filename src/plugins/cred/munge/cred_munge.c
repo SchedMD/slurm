@@ -122,12 +122,6 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern void *cred_p_ctx_create(void)
-{
-	static char *ctx = "munge cred context";
-	return (void *) ctx;
-}
-
 static munge_ctx_t _munge_ctx_create(void)
 {
 	munge_ctx_t ctx;

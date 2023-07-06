@@ -94,12 +94,6 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern void *cred_p_ctx_create(void)
-{
-	static char *ctx = "null crypto context";
-	return (void *) ctx;
-}
-
 extern const char *cred_p_str_error(int errnum)
 {
 	if (errnum == ESIG_INVALID)
