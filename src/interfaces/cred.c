@@ -340,7 +340,6 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx,
 	slurm_cred_t *cred = NULL;
 	int i = 0, sock_recs = 0;
 
-	xassert(ctx != NULL);
 	xassert(arg != NULL);
 	xassert(g_context);
 
@@ -512,7 +511,6 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t *ctx,
 	time_t now = time(NULL);
 	int errnum;
 
-	xassert(ctx  != NULL);
 	xassert(cred != NULL);
 
 	xassert(g_context);
@@ -583,8 +581,6 @@ extern bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid)
 {
 	bool retval = false;
 
-	xassert(ctx != NULL);
-
 	slurm_mutex_lock(&cred_cache_mutex);
 
 	_clear_expired_job_states(ctx);
@@ -601,8 +597,6 @@ extern bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid)
 
 extern int slurm_cred_insert_jobid(slurm_cred_ctx_t *ctx, uint32_t jobid)
 {
-	xassert(ctx != NULL);
-
 	slurm_mutex_lock(&cred_cache_mutex);
 
 	_clear_expired_job_states(ctx);
@@ -616,8 +610,6 @@ extern int slurm_cred_insert_jobid(slurm_cred_ctx_t *ctx, uint32_t jobid)
 extern int slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 {
 	int rc = 0;
-
-	xassert(ctx != NULL);
 
 	if (!cred->verified)
 		return SLURM_ERROR;
@@ -635,8 +627,6 @@ extern int slurm_cred_revoke(slurm_cred_ctx_t *ctx, uint32_t jobid, time_t time,
 			     time_t start_time)
 {
 	job_state_t  *j = NULL;
-
-	xassert(ctx != NULL);
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
@@ -673,8 +663,6 @@ error:
 extern int slurm_cred_begin_expiration(slurm_cred_ctx_t *ctx, uint32_t jobid)
 {
 	job_state_t  *j = NULL;
-
-	xassert(ctx != NULL);
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
@@ -1388,8 +1376,6 @@ extern int slurm_cred_ctx_pack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 
 extern int slurm_cred_ctx_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 {
-	xassert(ctx != NULL);
-
 	slurm_mutex_lock(&cred_cache_mutex);
 
 	/*
@@ -2099,7 +2085,6 @@ extern sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t *ctx,
 	int rc;
 	sbcast_cred_t *sbcast_cred;
 
-	xassert(ctx);
 	xassert(g_context);
 
 	sbcast_cred = xmalloc(sizeof(struct sbcast_cred));
@@ -2192,8 +2177,6 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t *ctx,
 	int i, rc;
 	time_t now = time(NULL);
 	buf_t *buffer;
-
-	xassert(ctx);
 
 	xassert(g_context);
 
