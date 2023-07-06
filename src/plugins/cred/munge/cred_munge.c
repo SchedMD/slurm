@@ -124,11 +124,16 @@ extern int fini(void)
 
 extern void cred_p_destroy_key(void *key)
 {
-	munge_ctx_destroy((munge_ctx_t) key);
 	return;
 }
 
 extern void *cred_p_ctx_create(void)
+{
+	static char *ctx = "munge cred context";
+	return (void *) ctx;
+}
+
+static munge_ctx_t _munge_ctx_create(void)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
@@ -179,7 +184,7 @@ extern void *cred_p_ctx_create(void)
 		return NULL;
 	}
 
-	return (void *) ctx;
+	return ctx;
 }
 
 extern const char *cred_p_str_error(int errnum)
@@ -203,7 +208,10 @@ extern int cred_p_sign(void *key, char *buffer, int buf_size,
 	int retry = RETRY_COUNT;
 	char *cred;
 	munge_err_t err;
-	munge_ctx_t ctx = (munge_ctx_t) key;
+	munge_ctx_t ctx = _munge_ctx_create();
+
+	if (!ctx)
+		return 0;
 
 again:
 	err = munge_encode(&cred, ctx, buffer, buf_size);
@@ -216,12 +224,14 @@ again:
 		}
 		if (err == EMUNGE_SOCKET)  /* Also see MUNGE_OPT_TTL above */
 			error("If munged is up, restart with --num-threads=10");
+		munge_ctx_destroy(ctx);
 		return err;
 	}
 
 	*sig_size_p = strlen(cred) + 1;
 	*sig_pp = xstrdup(cred);
 	free(cred);
+	munge_ctx_destroy(ctx);
 	return 0;
 }
 
@@ -235,7 +245,10 @@ extern int cred_p_verify_sign(void *key, char *buffer, uint32_t buf_size,
 	int buf_out_size;
 	int rc = SLURM_SUCCESS;
 	munge_err_t err;
-	munge_ctx_t ctx = (munge_ctx_t) key;
+	munge_ctx_t ctx = _munge_ctx_create();
+
+	if (!ctx)
+		return SLURM_ERROR;
 
 again:
 	err = munge_decode(signature, ctx, &buf_out, &buf_out_size,
@@ -279,5 +292,6 @@ again:
 end_it:
 	if (buf_out)
 		free(buf_out);
+	munge_ctx_destroy(ctx);
 	return rc;
 }
