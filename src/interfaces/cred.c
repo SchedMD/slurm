@@ -165,7 +165,7 @@ static bool _credential_replayed(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 static bool _credential_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 
 static int _cred_sign(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
-static void _cred_verify_signature(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
+static void _cred_verify_signature(slurm_cred_t *cred);
 
 static job_state_t *_job_state_unpack_one(buf_t *buffer);
 static cred_state_t *_cred_state_unpack_one(buf_t *buffer);
@@ -1389,7 +1389,7 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 	 * (Only done in slurmd.)
 	 */
 	if (credential->siglen && verifier_ctx)
-		_cred_verify_signature(verifier_ctx, credential);
+		_cred_verify_signature(credential);
 
 	return credential;
 
@@ -1475,7 +1475,7 @@ static int _cred_sign(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 	return SLURM_SUCCESS;
 }
 
-static void _cred_verify_signature(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
+static void _cred_verify_signature(slurm_cred_t *cred)
 {
 	int rc;
 	void *start = get_buf_data(cred->buffer);
