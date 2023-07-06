@@ -177,7 +177,6 @@ static int _list_find_cred_state(void *x, void *key);
 static void _insert_cred_state(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 static void _clear_expired_job_states(slurm_cred_ctx_t *ctx);
 static void _clear_expired_credential_states(slurm_cred_ctx_t *ctx);
-static void _verifier_ctx_init(slurm_cred_ctx_t *ctx);
 
 static bool _credential_replayed(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 static bool _credential_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
@@ -360,8 +359,6 @@ extern slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(void)
 	ctx->key = (*(ops.cred_ctx_create))();
 	if (!ctx->key)
 		goto fail;
-
-	_verifier_ctx_init(ctx);
 
 	slurm_mutex_unlock(&ctx->mutex);
 
@@ -1494,16 +1491,6 @@ extern int slurm_cred_ctx_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 	slurm_mutex_unlock(&ctx->mutex);
 
 	return SLURM_SUCCESS;
-}
-
-static void _verifier_ctx_init(slurm_cred_ctx_t *ctx)
-{
-	xassert(ctx != NULL);
-	xassert(ctx->magic == CRED_CTX_MAGIC);
-	xassert(ctx->type == SLURM_CRED_VERIFIER);
-
-
-	return;
 }
 
 static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void)
