@@ -471,15 +471,6 @@ int main(int argc, char **argv)
 			fatal("failed to initialize cred plugin");
 		}
 	}
-	slurmctld_config.cred_ctx = slurm_cred_creator_ctx_create();
-	if (!slurmctld_config.cred_ctx) {
-		if (test_config) {
-			error("slurm_cred_creator_ctx_create: %m");
-			test_config_rc = 1;
-		} else {
-			fatal("slurm_cred_creator_ctx_create: %m");
-		}
-	}
 
 	/* Must set before plugins are loaded. */
 	backup_inx = _controller_index();
@@ -977,8 +968,7 @@ int main(int argc, char **argv)
 	getnameinfo_cache_purge();
 	license_free();
 	FREE_NULL_LIST(slurmctld_config.acct_update_list);
-	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
-	cred_g_fini();	/* must be after ctx_destroy */
+	cred_g_fini();
 	slurm_conf_destroy();
 	cluster_rec_free();
 	track_script_fini();

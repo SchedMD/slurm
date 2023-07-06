@@ -138,7 +138,6 @@ static list_t *cred_state_list = NULL;
  * Static prototypes:
  */
 
-static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void);
 static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg);
 
 static cred_state_t * _cred_state_create(slurm_cred_ctx_t *ctx,
@@ -296,38 +295,6 @@ static void _release_cred_gids(slurm_cred_arg_t *arg)
 	arg->ngids = 0;
 }
 
-extern slurm_cred_ctx_t *slurm_cred_creator_ctx_create(void)
-{
-	slurm_cred_ctx_t *ctx = NULL;
-
-	xassert(g_context);
-
-	ctx = _slurm_cred_ctx_alloc();
-	return ctx;
-}
-
-extern slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(void)
-{
-	slurm_cred_ctx_t *ctx = NULL;
-
-	xassert(g_context);
-
-	ctx = _slurm_cred_ctx_alloc();
-	return ctx;
-}
-
-
-extern void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx)
-{
-	if (ctx == NULL)
-		return;
-	xassert(g_context);
-
-	xfree(ctx);
-
-	return;
-}
-
 extern int cred_expiration(void)
 {
 	return cred_expire;
@@ -392,7 +359,7 @@ fail:
 
 extern slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg)
 {
-	slurm_cred_ctx_t *ctx;
+	slurm_cred_ctx_t *ctx = NULL;
 	slurm_cred_t *cred = NULL;
 
 	/*
@@ -400,9 +367,7 @@ extern slurm_cred_t *slurm_cred_faker(slurm_cred_arg_t *arg)
 	 */
 	enable_send_gids = true;
 
-	ctx = slurm_cred_creator_ctx_create();
 	cred = slurm_cred_create(ctx, arg, true, SLURM_PROTOCOL_VERSION);
-	slurm_cred_ctx_destroy(ctx);
 
 	return cred;
 }
@@ -1388,14 +1353,6 @@ extern int slurm_cred_ctx_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return SLURM_SUCCESS;
-}
-
-static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void)
-{
-	slurm_cred_ctx_t *ctx = xmalloc(sizeof(*ctx));
-	/* Contents initialized to zero */
-
-	return ctx;
 }
 
 static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg)

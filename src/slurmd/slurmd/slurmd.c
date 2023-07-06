@@ -1442,7 +1442,6 @@ _destroy_conf(void)
 		slurm_cond_destroy(&conf->starting_steps_cond);
 		FREE_NULL_LIST(conf->prolog_running_jobs);
 		slurm_cond_destroy(&conf->prolog_running_cond);
-		slurm_cred_ctx_destroy(conf->vctx);
 		xfree(conf);
 	}
 	return;
@@ -2133,12 +2132,6 @@ _slurmd_init(void)
 	}
 
 	rlimits_use_max_nofile();
-
-	/*
-	 * Create a context for verifying slurm job credentials
-	 */
-	if (!(conf->vctx = slurm_cred_verifier_ctx_create()))
-		return SLURM_ERROR;
 
 	if (conf->cleanstart) {
 		/*

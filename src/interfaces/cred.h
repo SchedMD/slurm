@@ -180,25 +180,10 @@ typedef enum {
 } cred_data_enum_t;
 
 /*
- * Initialize current process for slurm credential creation.
- */
-slurm_cred_ctx_t *slurm_cred_creator_ctx_create(void);
-
-/*
- * Initialize current process for slurm credential verification.
- */
-slurm_cred_ctx_t *slurm_cred_verifier_ctx_create(void);
-
-/*
  * Set and get credential context options
  *
  */
 extern int cred_expiration(void);
-
-/*
- * Destroy a credential context, freeing associated memory.
- */
-void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx);
 
 /*
  * Pack and unpack slurm credential context.
