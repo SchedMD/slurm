@@ -191,7 +191,7 @@ extern const char *cred_p_str_error(int errnum)
 }
 
 /* NOTE: Caller must xfree the signature returned by sig_pp */
-extern int cred_p_sign(void *key, char *buffer, int buf_size,
+extern int cred_p_sign(char *buffer, int buf_size,
 		       char **sig_pp, uint32_t *sig_size_p)
 {
 	int retry = RETRY_COUNT;
@@ -224,7 +224,7 @@ again:
 	return 0;
 }
 
-extern int cred_p_verify_sign(void *key, char *buffer, uint32_t buf_size,
+extern int cred_p_verify_sign(char *buffer, uint32_t buf_size,
 			      char *signature, uint32_t sig_size)
 {
 	int retry = RETRY_COUNT;

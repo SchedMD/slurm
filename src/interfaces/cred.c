@@ -101,13 +101,10 @@ struct slurm_cred_context {
 };
 
 typedef struct {
-	int   (*cred_sign)		(void *key, char *buffer,
-					 int buf_size, char **sig_pp,
-					 uint32_t *sig_size_p);
-	int   (*cred_verify_sign)	(void *key, char *buffer,
-					 uint32_t buf_size,
-					 char *signature,
-					 uint32_t sig_size);
+	int   (*cred_sign)		(char *buffer, int buf_size,
+					 char **sig_pp, uint32_t *sig_size_p);
+	int   (*cred_verify_sign)	(char *buffer, uint32_t buf_size,
+					 char *signature, uint32_t sig_size);
 	const char *(*cred_str_error)	(int);
 } slurm_cred_ops_t;
 
@@ -1475,8 +1472,7 @@ static int _cred_sign(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 {
 	int rc;
 
-	rc = (*(ops.cred_sign))(ctx->key,
-				get_buf_data(cred->buffer),
+	rc = (*(ops.cred_sign))(get_buf_data(cred->buffer),
 				get_buf_offset(cred->buffer),
 				&cred->signature,
 				&cred->siglen);
@@ -1497,8 +1493,7 @@ static void _cred_verify_signature(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 
 	debug("Checking credential with %u bytes of sig data", cred->siglen);
 
-	rc = (*(ops.cred_verify_sign))(ctx->key, start, len,
-				       cred->signature,
+	rc = (*(ops.cred_verify_sign))(start, len, cred->signature,
 				       cred->siglen);
 
 	if (rc) {
@@ -2167,9 +2162,8 @@ extern sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t *ctx,
 
 	buffer = init_buf(4096);
 	_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
-	rc = (*(ops.cred_sign))(
-		ctx->key, get_buf_data(buffer), get_buf_offset(buffer),
-		&sbcast_cred->signature, &sbcast_cred->siglen);
+	rc = (*(ops.cred_sign))(get_buf_data(buffer), get_buf_offset(buffer),
+				&sbcast_cred->signature, &sbcast_cred->siglen);
 	FREE_NULL_BUFFER(buffer);
 
 	if (rc) {
@@ -2247,9 +2241,10 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t *ctx,
 		_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
 		/* NOTE: the verification checks that the credential was
 		 * created by SlurmUser or root */
-		rc = (*(ops.cred_verify_sign)) (
-			ctx->key, get_buf_data(buffer), get_buf_offset(buffer),
-			sbcast_cred->signature, sbcast_cred->siglen);
+		rc = (*(ops.cred_verify_sign))(get_buf_data(buffer),
+					       get_buf_offset(buffer),
+					       sbcast_cred->signature,
+					       sbcast_cred->siglen);
 		FREE_NULL_BUFFER(buffer);
 
 		if (rc) {
@@ -2287,10 +2282,10 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t *ctx,
 			buffer = init_buf(4096);
 			_pack_sbcast_cred(sbcast_cred, buffer,
 					  protocol_version);
-			rc = (*(ops.cred_verify_sign)) (
-				ctx->key, get_buf_data(buffer),
-				get_buf_offset(buffer),
-				sbcast_cred->signature, sbcast_cred->siglen);
+			rc = (*(ops.cred_verify_sign))(get_buf_data(buffer),
+						       get_buf_offset(buffer),
+						       sbcast_cred->signature,
+						       sbcast_cred->siglen);
 			FREE_NULL_BUFFER(buffer);
 			if (rc)
 				err_str = (char *)(*(ops.cred_str_error))(rc);
