@@ -96,7 +96,6 @@ typedef struct {
 #define CRED_CTX_MAGIC 0x0c0c0c
 struct slurm_cred_context {
 	int magic;
-	pthread_mutex_t mutex;
 	void *key;		/* private or public key		*/
 };
 
@@ -333,11 +332,8 @@ extern void slurm_cred_ctx_destroy(slurm_cred_ctx_t *ctx)
 		return;
 	xassert(g_context);
 
-	slurm_mutex_lock(&ctx->mutex);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 	ctx->magic = ~CRED_CTX_MAGIC;
-	slurm_mutex_unlock(&ctx->mutex);
-	slurm_mutex_destroy(&ctx->mutex);
 
 	xfree(ctx);
 
@@ -388,7 +384,6 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx,
 	if (_fill_cred_gids(arg) != SLURM_SUCCESS)
 		goto fail;
 
-	slurm_mutex_lock(&ctx->mutex);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 
 	cred->buffer = init_buf(4096);
@@ -397,14 +392,11 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_ctx_t *ctx,
 	_pack_cred(arg, cred->buffer, protocol_version);
 
 	if (sign_it && _cred_sign(ctx, cred) < 0) {
-		slurm_mutex_unlock(&ctx->mutex);
 		goto fail;
 	}
 
 	/* Release any values populated through _fill_cred_gids(). */
 	_release_cred_gids(arg);
-
-	slurm_mutex_unlock(&ctx->mutex);
 
 	return cred;
 
@@ -1440,8 +1432,6 @@ static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void)
 {
 	slurm_cred_ctx_t *ctx = xmalloc(sizeof(*ctx));
 	/* Contents initialized to zero */
-
-	slurm_mutex_init(&ctx->mutex);
 
 	ctx->magic = CRED_CTX_MAGIC;
 
