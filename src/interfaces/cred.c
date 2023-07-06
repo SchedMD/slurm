@@ -110,8 +110,6 @@ struct slurm_cred_context {
 	void *key;		/* private or public key		*/
 	list_t *job_list;	/* List of used jobids (for verifier)	*/
 	list_t *state_list;	/* List of cred states (for verifier)	*/
-
-	int expiry_window;	/* expiration window for cached creds	*/
 };
 
 typedef struct {
@@ -602,7 +600,7 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t *ctx,
 		goto error;
 	}
 
-	if (now > (cred->ctime + ctx->expiry_window)) {
+	if (now > (cred->ctime + cred_expire)) {
 		slurm_seterrno(ESLURMD_CREDENTIAL_EXPIRED);
 		goto error;
 	}
@@ -776,7 +774,7 @@ extern int slurm_cred_begin_expiration(slurm_cred_ctx_t *ctx, uint32_t jobid)
 		goto error;
 	}
 
-	j->expiration  = time(NULL) + ctx->expiry_window;
+	j->expiration = time(NULL) + cred_expire;
 	debug2("set revoke expiration for jobid %u to %ld UTS",
 	       j->jobid, j->expiration);
 	slurm_mutex_unlock(&ctx->mutex);
@@ -1512,7 +1510,6 @@ static slurm_cred_ctx_t *_slurm_cred_ctx_alloc(void)
 	slurm_mutex_init(&ctx->mutex);
 
 	ctx->magic = CRED_CTX_MAGIC;
-	ctx->expiry_window = cred_expire;
 
 	return ctx;
 }
@@ -2026,7 +2023,7 @@ static cred_state_t *_cred_state_create(slurm_cred_ctx_t *ctx,
 
 	memcpy(&s->step_id, &cred->arg->step_id, sizeof(s->step_id));
 	s->ctime      = cred->ctime;
-	s->expiration = cred->ctime + ctx->expiry_window;
+	s->expiration = cred->ctime + cred_expire;
 
 	return s;
 }
