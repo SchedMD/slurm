@@ -511,22 +511,6 @@ extern int slurm_cred_insert_jobid(uint32_t jobid)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_cred_rewind(slurm_cred_t *cred)
-{
-	int rc = 0;
-
-	if (!cred->verified)
-		return SLURM_ERROR;
-
-	slurm_mutex_lock(&cred_cache_mutex);
-
-	rc = list_delete_all(cred_state_list, _list_find_cred_state, cred);
-
-	slurm_mutex_unlock(&cred_cache_mutex);
-
-	return (rc > 0 ? SLURM_SUCCESS : SLURM_ERROR);
-}
-
 extern int slurm_cred_revoke(uint32_t jobid, time_t time, time_t start_time)
 {
 	job_state_t  *j = NULL;

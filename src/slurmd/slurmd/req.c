@@ -1732,12 +1732,6 @@ done:
 	if (slurm_send_rc_err_msg(msg, errnum, errmsg) < 0) {
 		error("%s: unable to send return code to address:port=%pA msg_type=%s: %m",
 		      __func__, &msg->address, rpc_num2string(msg->msg_type));
-
-		/*
-		 * Rewind credential so that srun may perform retry
-		 */
-		slurm_cred_rewind(req->cred); /* ignore errors */
-
 	} else if (errnum == SLURM_SUCCESS) {
 		save_cred_state();
 	}

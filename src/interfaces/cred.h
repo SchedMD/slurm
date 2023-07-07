@@ -277,13 +277,6 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred,
 extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred);
 
 /*
- * Rewind the last play of credential cred. This allows the credential
- *  be used again. Returns SLURM_ERROR if no credential state is found
- *  to be rewound, SLURM_SUCCESS otherwise.
- */
-extern int slurm_cred_rewind(slurm_cred_t *cred);
-
-/*
  * Check to see if this credential is a reissue of an existing credential
  * (this can happen, for instance, with "scontrol restart").  If
  * this credential is a reissue, then the old credential is cleared
