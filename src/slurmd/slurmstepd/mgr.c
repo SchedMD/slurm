@@ -2479,23 +2479,16 @@ error:
 	return SLURM_ERROR;
 }
 
-extern int stepd_drain_node(char *reason)
+extern void stepd_drain_node(char *reason)
 {
-	slurm_msg_t req_msg;
 	update_node_msg_t update_node_msg;
 
 	slurm_init_update_node_msg(&update_node_msg);
 	update_node_msg.node_names = conf->node_name;
 	update_node_msg.node_state = NODE_STATE_DRAIN;
 	update_node_msg.reason = reason;
-	slurm_msg_t_init(&req_msg);
-	req_msg.msg_type = REQUEST_UPDATE_NODE;
-	req_msg.data = &update_node_msg;
 
-	if (slurm_send_only_controller_msg(&req_msg, working_cluster_rec) < 0)
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
+	(void) slurm_update_node(&update_node_msg);
 }
 
 static void
