@@ -40,4 +40,6 @@
 extern void save_cred_state(void);
 extern void restore_cred_state(void);
 
+extern bool cred_jobid_cached(uint32_t jobid);
+
 #endif

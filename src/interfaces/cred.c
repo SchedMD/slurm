@@ -495,25 +495,6 @@ extern void slurm_cred_destroy(slurm_cred_t *cred)
 	xfree(cred);
 }
 
-
-extern bool slurm_cred_jobid_cached(uint32_t jobid)
-{
-	bool retval = false;
-
-	slurm_mutex_lock(&cred_cache_mutex);
-
-	//_clear_expired_job_states();
-
-	/*
-	 * Return true if we find a cached job state for job id `jobid'
-	 */
-	retval = (_find_job_state(jobid) != NULL);
-
-	slurm_mutex_unlock(&cred_cache_mutex);
-
-	return retval;
-}
-
 extern int slurm_cred_insert_jobid(uint32_t jobid)
 {
 	slurm_mutex_lock(&cred_cache_mutex);

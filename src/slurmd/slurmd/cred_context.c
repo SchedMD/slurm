@@ -68,6 +68,21 @@ static int _list_find_expired_job_state(void *x, void *key)
 	return 0;
 }
 
+static int _list_find_job_state(void *x, void *key)
+{
+	job_state_t *j = x;
+	uint32_t jobid = *(uint32_t *) key;
+
+	if (j->jobid == jobid)
+		return 1;
+	return 0;
+}
+
+static job_state_t *_find_job_state(uint32_t jobid)
+{
+	return list_find_first(cred_job_list, _list_find_job_state, &jobid);
+}
+
 static void _clear_expired_job_states(void)
 {
 	time_t now = time(NULL);
@@ -254,4 +269,16 @@ extern void restore_cred_state(void)
 cleanup:
 	xfree(file_name);
 	FREE_NULL_BUFFER(buffer);
+}
+
+extern bool cred_jobid_cached(uint32_t jobid)
+{
+	bool retval = false;
+
+	slurm_mutex_lock(&cred_cache_mutex);
+	_clear_expired_job_states();
+	retval = (_find_job_state(jobid) != NULL);
+	slurm_mutex_unlock(&cred_cache_mutex);
+
+	return retval;
 }

@@ -324,14 +324,6 @@ extern bool slurm_cred_revoked(slurm_cred_t *cred);
  */
 extern int slurm_cred_begin_expiration(uint32_t jobid);
 
-
-/*
- * Returns true if the credential context has a cached state for
- * job id jobid.
- */
-extern bool slurm_cred_jobid_cached(uint32_t jobid);
-
-
 /*
  * Add a jobid to the slurm credential context without inserting
  * a credential state. This is used by the verifier to track job ids
