@@ -380,11 +380,6 @@ extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
 			  list_t **job_gres_list, list_t **step_gres_list);
 
 /*
- * Print a slurm job credential using the info() call
- */
-extern void slurm_cred_print(slurm_cred_t *cred);
-
-/*
  * Functions to create, delete, pack, and unpack an sbcast credential
  * Caller of extract_sbcast_cred() must xfree returned node string
  */
