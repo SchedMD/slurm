@@ -622,15 +622,15 @@ error:
 	return SLURM_ERROR;
 }
 
-extern int slurm_cred_begin_expiration(slurm_cred_ctx_t *ctx, uint32_t jobid)
+extern int slurm_cred_begin_expiration(uint32_t jobid)
 {
 	job_state_t  *j = NULL;
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	_clear_expired_job_states(ctx);
+	_clear_expired_job_states(NULL);
 
-	if (!(j = _find_job_state(ctx, jobid))) {
+	if (!(j = _find_job_state(NULL, jobid))) {
 		slurm_seterrno(ESRCH);
 		goto error;
 	}

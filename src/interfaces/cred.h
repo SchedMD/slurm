@@ -322,7 +322,7 @@ extern bool slurm_cred_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
  *  EEXIST if expiration period has already begun for jobid.
  *
  */
-extern int slurm_cred_begin_expiration(slurm_cred_ctx_t *ctx, uint32_t jobid);
+extern int slurm_cred_begin_expiration(uint32_t jobid);
 
 
 /*
