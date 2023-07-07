@@ -210,7 +210,7 @@ static void      _reconfigure(void);
 static void     *_registration_engine(void *arg);
 static void      _resource_spec_fini(void);
 static int       _resource_spec_init(void);
-static void      _restore_cred_state(slurm_cred_ctx_t *ctx);
+static void      _restore_cred_state(void);
 static void      _select_spec_cores(void);
 static void     *_service_connection(void *);
 static int       _set_slurmd_spooldir(const char *dir);
@@ -357,7 +357,7 @@ main (int argc, char **argv)
 	 * Restore any saved revoked credential information
 	 */
 	if (!conf->cleanstart)
-		_restore_cred_state(conf->vctx);
+		_restore_cred_state();
 
 	if (acct_gather_conf_init() != SLURM_SUCCESS)
 		fatal("Unable to initialize acct_gather_conf");
@@ -2162,7 +2162,7 @@ _slurmd_init(void)
 	return SLURM_SUCCESS;
 }
 
-static void _restore_cred_state(slurm_cred_ctx_t *ctx)
+static void _restore_cred_state(void)
 {
 	char *file_name = NULL;
 	buf_t *buffer = NULL;
@@ -2173,7 +2173,7 @@ static void _restore_cred_state(slurm_cred_ctx_t *ctx)
 	if (!(buffer = create_mmap_buf(file_name)))
 		goto cleanup;
 
-	slurm_cred_ctx_unpack(ctx, buffer);
+	slurm_cred_ctx_unpack(NULL, buffer);
 
 cleanup:
 	xfree(file_name);
