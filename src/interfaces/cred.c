@@ -164,8 +164,8 @@ static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 		       uint16_t protocol_version);
 static void _job_state_unpack(buf_t *buffer);
 static void _job_state_pack(buf_t *buffer);
-static void _cred_state_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer);
-static void _cred_state_pack(slurm_cred_ctx_t *ctx, buf_t *buffer);
+static void _cred_state_unpack(buf_t *buffer);
+static void _cred_state_pack(buf_t *buffer);
 
 /* Initialize the plugin. */
 extern int cred_g_init(void)
@@ -1328,7 +1328,7 @@ extern int slurm_cred_ctx_pack(buf_t *buffer)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
 	_job_state_pack(buffer);
-	_cred_state_pack(NULL, buffer);
+	_cred_state_pack(buffer);
 	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return SLURM_SUCCESS;
@@ -1343,7 +1343,7 @@ extern int slurm_cred_ctx_unpack(buf_t *buffer)
 	 * appening them onto cred_state_list and cred_job_list.
 	 */
 	_job_state_unpack(buffer);
-	_cred_state_unpack(NULL, buffer);
+	_cred_state_unpack(buffer);
 
 	slurm_mutex_unlock(&cred_cache_mutex);
 
@@ -1928,7 +1928,7 @@ unpack_error:
 }
 
 
-static void _cred_state_pack(slurm_cred_ctx_t *ctx, buf_t *buffer)
+static void _cred_state_pack(buf_t *buffer)
 {
 	pack32(list_count(cred_state_list), buffer);
 
@@ -1936,7 +1936,7 @@ static void _cred_state_pack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 }
 
 
-static void _cred_state_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
+static void _cred_state_unpack(buf_t *buffer)
 {
 	time_t        now = time(NULL);
 	uint32_t      n;
