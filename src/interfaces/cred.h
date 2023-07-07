@@ -204,8 +204,8 @@ extern int cred_expiration(void);
  * buffer, on unpack() the contents of the buffer are used to
  * initialize the state of the context ctx.
  */
-int slurm_cred_ctx_pack(buf_t *buffer);
-int slurm_cred_ctx_unpack(buf_t *buffer);
+extern void slurm_cred_ctx_pack(buf_t *buffer);
+extern void slurm_cred_ctx_unpack(buf_t *buffer);
 
 /* Initialize the plugin. */
 extern int cred_g_init(void);

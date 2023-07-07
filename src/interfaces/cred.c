@@ -1294,17 +1294,15 @@ unpack_error:
 	return NULL;
 }
 
-extern int slurm_cred_ctx_pack(buf_t *buffer)
+extern void slurm_cred_ctx_pack(buf_t *buffer)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
 	_job_state_pack(buffer);
 	_cred_state_pack(buffer);
 	slurm_mutex_unlock(&cred_cache_mutex);
-
-	return SLURM_SUCCESS;
 }
 
-extern int slurm_cred_ctx_unpack(buf_t *buffer)
+extern void slurm_cred_ctx_unpack(buf_t *buffer)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
 
@@ -1316,8 +1314,6 @@ extern int slurm_cred_ctx_unpack(buf_t *buffer)
 	_cred_state_unpack(buffer);
 
 	slurm_mutex_unlock(&cred_cache_mutex);
-
-	return SLURM_SUCCESS;
 }
 
 static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg)
