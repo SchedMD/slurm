@@ -114,7 +114,6 @@ static cred_state_t *_cred_state_create(slurm_cred_t *c);
 static job_state_t  * _job_state_create(uint32_t jobid);
 
 static job_state_t *_find_job_state(uint32_t jobid);
-static job_state_t *_insert_job_state(uint32_t jobid);
 static int _list_find_cred_state(void *x, void *key);
 
 static bool _credential_replayed(slurm_cred_t *cred);
@@ -518,10 +517,14 @@ extern bool slurm_cred_jobid_cached(uint32_t jobid)
 extern int slurm_cred_insert_jobid(uint32_t jobid)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
-
 	//_clear_expired_job_states();
-	(void) _insert_job_state(jobid);
-
+	if (_find_job_state(jobid)) {
+		debug2("%s: we already have a job state for job %u.",
+		       __func__, jobid);
+	} else {
+		job_state_t *j = _job_state_create(jobid);
+		list_append(cred_job_list, j);
+	}
 	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return SLURM_SUCCESS;
@@ -557,7 +560,8 @@ extern int slurm_cred_revoke(uint32_t jobid, time_t time, time_t start_time)
 		 *   job. Insert a job state object so that we can
 		 *   revoke any future credentials.
 		 */
-		j = _insert_job_state(jobid);
+		j = _job_state_create(jobid);
+		list_append(cred_job_list, j);
 	}
 	if (j->revoked) {
 		if (start_time && (j->revoked < start_time)) {
@@ -1687,7 +1691,8 @@ static bool _credential_revoked(slurm_cred_t *cred)
 	//_clear_expired_job_states();
 
 	if (!(j = _find_job_state(cred->arg->step_id.job_id))) {
-		(void) _insert_job_state(cred->arg->step_id.job_id);
+		j = _job_state_create(cred->arg->step_id.job_id);
+		list_append(cred_job_list, j);
 		return false;
 	}
 
@@ -1715,20 +1720,6 @@ static job_state_t *_find_job_state(uint32_t jobid)
 		list_find_first(cred_job_list, _list_find_job_state, &jobid);
 	return j;
 }
-
-static job_state_t *_insert_job_state(uint32_t jobid)
-{
-	job_state_t *j = list_find_first(
-		cred_job_list, _list_find_job_state, &jobid);
-	if (!j) {
-		j = _job_state_create(jobid);
-		list_append(cred_job_list, j);
-	} else
-		debug2("%s: we already have a job state for job %u.  No big deal, just an FYI.",
-		       __func__, jobid);
-	return j;
-}
-
 
 static job_state_t *_job_state_create(uint32_t jobid)
 {
