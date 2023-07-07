@@ -155,7 +155,7 @@ static void _clear_expired_credential_states(slurm_cred_ctx_t *ctx);
 static bool _credential_replayed(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 static bool _credential_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 
-static int _cred_sign(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
+static int _cred_sign(slurm_cred_t *cred);
 static void _cred_verify_signature(slurm_cred_t *cred);
 
 static job_state_t *_job_state_unpack_one(buf_t *buffer);
@@ -342,7 +342,7 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 
 	_pack_cred(arg, cred->buffer, protocol_version);
 
-	if (sign_it && _cred_sign(NULL, cred) < 0) {
+	if (sign_it && _cred_sign(cred) < 0) {
 		goto fail;
 	}
 
@@ -1371,7 +1371,7 @@ static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg)
 	return cred;
 }
 
-static int _cred_sign(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
+static int _cred_sign(slurm_cred_t *cred)
 {
 	int rc;
 
