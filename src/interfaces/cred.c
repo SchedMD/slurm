@@ -117,8 +117,6 @@ static job_state_t *_find_job_state(uint32_t jobid);
 static job_state_t *_insert_job_state(uint32_t jobid);
 static int _list_find_cred_state(void *x, void *key);
 
-static void _insert_cred_state(slurm_cred_t *cred);
-
 static bool _credential_replayed(slurm_cred_t *cred);
 static bool _credential_revoked(slurm_cred_t *cred);
 
@@ -1634,7 +1632,9 @@ static bool _credential_replayed(slurm_cred_t *cred)
 	/*
 	 * Otherwise, save the credential state
 	 */
-	_insert_cred_state(cred);
+	s = _cred_state_create(cred);
+	list_append(cred_state_list, s);
+
 	return false;
 }
 
@@ -1741,13 +1741,6 @@ static job_state_t *_job_state_create(uint32_t jobid)
 
 	return j;
 }
-
-static void _insert_cred_state(slurm_cred_t *cred)
-{
-	cred_state_t *s = _cred_state_create(cred);
-	list_append(cred_state_list, s);
-}
-
 
 static cred_state_t *_cred_state_create(slurm_cred_t *cred)
 {
