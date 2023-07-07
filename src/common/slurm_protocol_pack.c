@@ -2034,15 +2034,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		} else
 			array_len = 0;
 		pack32_array(msg->node_cnt, array_len, buffer);
-		if (msg->core_cnt) {
-			for (array_len = 0; msg->core_cnt[array_len];
-			     array_len++) {
-				/* determine array length */
-			}
-			array_len++;	/* Include trailing zero */
-		} else
-			array_len = 0;
-		pack32_array(msg->core_cnt, array_len, buffer);
+		pack32(msg->core_cnt, buffer);
 		packstr(msg->node_list,    buffer);
 		packstr(msg->features,     buffer);
 		packstr(msg->licenses,     buffer);
@@ -2056,6 +2048,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		packstr(msg->groups, buffer);
 		packstr(msg->comment, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		uint32_t *core_cnt = NULL;
 		packstr(msg->name,         buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->end_time,   buffer);
@@ -2070,15 +2063,14 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		} else
 			array_len = 0;
 		pack32_array(msg->node_cnt, array_len, buffer);
-		if (msg->core_cnt) {
-			for (array_len = 0; msg->core_cnt[array_len];
-			     array_len++) {
-				/* determine array length */
-			}
-			array_len++;	/* Include trailing zero */
+		if (msg->core_cnt && (msg->core_cnt != NO_VAL)) {
+			core_cnt = xcalloc(2, sizeof(core_cnt));
+			core_cnt[0] = msg->core_cnt;
+			array_len = 2;	/* Include trailing zero */
 		} else
 			array_len = 0;
-		pack32_array(msg->core_cnt, array_len, buffer);
+		pack32_array(core_cnt, array_len, buffer);
+		xfree(core_cnt);
 		packstr(msg->node_list,    buffer);
 		packstr(msg->features,     buffer);
 		packstr(msg->licenses,     buffer);
@@ -2092,6 +2084,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		packstr(msg->groups, buffer);
 		packstr(msg->comment, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t *core_cnt = NULL;
 		packstr(msg->name,         buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->end_time,   buffer);
@@ -2106,15 +2099,14 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		} else
 			array_len = 0;
 		pack32_array(msg->node_cnt, array_len, buffer);
-		if (msg->core_cnt) {
-			for (array_len = 0; msg->core_cnt[array_len];
-			     array_len++) {
-				/* determine array length */
-			}
-			array_len++;	/* Include trailing zero */
+		if (msg->core_cnt && (msg->core_cnt != NO_VAL)) {
+			core_cnt = xcalloc(2, sizeof(core_cnt));
+			core_cnt[0] = msg->core_cnt;
+			array_len = 2;	/* Include trailing zero */
 		} else
 			array_len = 0;
-		pack32_array(msg->core_cnt, array_len, buffer);
+		pack32_array(core_cnt, array_len, buffer);
+		xfree(core_cnt);
 		packstr(msg->node_list,    buffer);
 		packstr(msg->features,     buffer);
 		packstr(msg->licenses,     buffer);
@@ -2159,17 +2151,7 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 			/* This avoids a pointer to a zero length buffer */
 			xfree(tmp_ptr->node_cnt);
 		}
-		safe_unpack32_array(&tmp_ptr->core_cnt, &uint32_tmp, buffer);
-		if (uint32_tmp > NO_VAL)
-			goto unpack_error;
-		if (uint32_tmp > 0) {
-			/* Must be zero terminated */
-			if (tmp_ptr->core_cnt[uint32_tmp-1] != 0)
-				goto unpack_error;
-		} else {
-			/* This avoids a pointer to a zero length buffer */
-			xfree(tmp_ptr->core_cnt);
-		}
+		safe_unpack32(&tmp_ptr->core_cnt, buffer);
 		safe_unpackstr(&tmp_ptr->node_list, buffer);
 		safe_unpackstr(&tmp_ptr->features, buffer);
 		safe_unpackstr(&tmp_ptr->licenses, buffer);
@@ -2185,6 +2167,7 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&tmp_ptr->groups, buffer);
 		safe_unpackstr(&tmp_ptr->comment, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		uint32_t *core_cnt;
 		safe_unpackstr(&tmp_ptr->name, buffer);
 		safe_unpack_time(&tmp_ptr->start_time, buffer);
 		safe_unpack_time(&tmp_ptr->end_time,   buffer);
@@ -2201,17 +2184,16 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 			/* This avoids a pointer to a zero length buffer */
 			xfree(tmp_ptr->node_cnt);
 		}
-		safe_unpack32_array(&tmp_ptr->core_cnt, &uint32_tmp, buffer);
+		safe_unpack32_array(&core_cnt, &uint32_tmp, buffer);
 		if (uint32_tmp > NO_VAL)
 			goto unpack_error;
 		if (uint32_tmp > 0) {
-			/* Must be zero terminated */
-			if (tmp_ptr->core_cnt[uint32_tmp-1] != 0)
-				goto unpack_error;
-		} else {
-			/* This avoids a pointer to a zero length buffer */
-			xfree(tmp_ptr->core_cnt);
+			tmp_ptr->core_cnt = 0;
+			for (int i = 0; i < uint32_tmp; i++)
+				tmp_ptr->core_cnt += core_cnt[i];
 		}
+		xfree(core_cnt);
+
 		safe_unpackstr(&tmp_ptr->node_list, buffer);
 		safe_unpackstr(&tmp_ptr->features, buffer);
 		safe_unpackstr(&tmp_ptr->licenses, buffer);
@@ -2227,6 +2209,7 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&tmp_ptr->groups, buffer);
 		safe_unpackstr(&tmp_ptr->comment, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t *core_cnt;
 		safe_unpackstr(&tmp_ptr->name, buffer);
 		safe_unpack_time(&tmp_ptr->start_time, buffer);
 		safe_unpack_time(&tmp_ptr->end_time,   buffer);
@@ -2243,17 +2226,16 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 			/* This avoids a pointer to a zero length buffer */
 			xfree(tmp_ptr->node_cnt);
 		}
-		safe_unpack32_array(&tmp_ptr->core_cnt, &uint32_tmp, buffer);
+		safe_unpack32_array(&core_cnt, &uint32_tmp, buffer);
 		if (uint32_tmp > NO_VAL)
 			goto unpack_error;
 		if (uint32_tmp > 0) {
-			/* Must be zero terminated */
-			if (tmp_ptr->core_cnt[uint32_tmp-1] != 0)
-				goto unpack_error;
-		} else {
-			/* This avoids a pointer to a zero length buffer */
-			xfree(tmp_ptr->core_cnt);
+			tmp_ptr->core_cnt = 0;
+			for (int i = 0; i < uint32_tmp; i++)
+				tmp_ptr->core_cnt += core_cnt[i];
 		}
+		xfree(core_cnt);
+
 		safe_unpackstr(&tmp_ptr->node_list, buffer);
 		safe_unpackstr(&tmp_ptr->features, buffer);
 		safe_unpackstr(&tmp_ptr->licenses, buffer);
@@ -2268,6 +2250,9 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&tmp_ptr->burst_buffer, buffer);
 		safe_unpackstr(&tmp_ptr->groups, buffer);
 	}
+
+	if (!tmp_ptr->core_cnt)
+		tmp_ptr->core_cnt = NO_VAL;
 
 	return SLURM_SUCCESS;
 

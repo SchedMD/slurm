@@ -97,6 +97,7 @@ COMMAND CHANGES (see man pages for details)
  -- Reject reservation update if it will result in previously submitted
     jobs losing access to the reservation.
  -- scontrol/sview - Remove FIRST_CORES flag from reservations.
+ -- scontrol/sview - Remove comma separated CoreCnt option from reservations.
 
 API CHANGES
 ===========

@@ -240,17 +240,13 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			   xstrncasecmp(tag, "CoreCount", MAX(taglen,5)) == 0 ||
 			   xstrncasecmp(tag, "CPUCnt",    MAX(taglen,5)) == 0 ||
 			   xstrncasecmp(tag, "CPUCount",  MAX(taglen,5)) == 0) {
-
-			if (state_control_parse_resv_corecnt(resv_msg_ptr, val,
-							     res_free_flags,
-							     false, &err_msg)
-			    == SLURM_ERROR) {
-				error("%s", err_msg);
-				xfree(err_msg);
+			if (xstrchr(val, ',')) {
 				exit_code = 1;
+				error("Using a comma separated array for CoreCnt is no longer valid.");
 				return SLURM_ERROR;
 			}
 
+			resv_msg_ptr->core_cnt = slurm_atoul(val);
 		} else if (xstrncasecmp(tag, "Nodes", MAX(taglen, 5)) == 0) {
 			if (plus_minus) {
 				resv_msg_ptr->node_list =
@@ -430,7 +426,7 @@ scontrol_create_res(int argc, char **argv)
 	 * If the following parameters are null, but a partition is named, then
 	 * make the reservation for the whole partition.
 	 */
-	if ((resv_msg.core_cnt == 0) &&
+	if ((!resv_msg.core_cnt || (resv_msg.core_cnt == NO_VAL)) &&
 	    (resv_msg.burst_buffer == NULL ||
 	     resv_msg.burst_buffer[0] == '\0') &&
 	    (resv_msg.node_cnt  == NULL || resv_msg.node_cnt[0]  == 0)    &&
@@ -463,7 +459,7 @@ scontrol_create_res(int argc, char **argv)
 
 	if (resv_msg.resv_watts != NO_VAL &&
 	    (!(resv_msg.flags & RESERVE_FLAG_ANY_NODES) ||
-	     (resv_msg.core_cnt != 0) ||
+	     (resv_msg.core_cnt && (resv_msg.core_cnt != NO_VAL)) ||
 	     (resv_msg.node_cnt  != NULL && resv_msg.node_cnt[0]  != 0) ||
 	     (resv_msg.node_list != NULL && resv_msg.node_list[0] != '\0') ||
 	     (resv_msg.licenses  != NULL && resv_msg.licenses[0]  != '\0'))) {

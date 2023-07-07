@@ -114,53 +114,6 @@ cleanup:
 	return rc;
 }
 
-extern int state_control_parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr,
-					    char *val, uint32_t *res_free_flags,
-					    bool from_tres, char **err_msg)
-{
-	char *endptr = NULL, *core_cnt, *tok, *ptrptr = NULL;
-	int node_inx = 0;
-
-	/*
-	 * CoreCnt and TRES=cpu= might appear within the same request,
-	 * so we free the first and realloc the second.
-	 */
-	if (*res_free_flags & RESV_FREE_STR_TRES_CORE)
-		xfree(resv_msg_ptr->core_cnt);
-
-	core_cnt = xstrdup(val);
-	tok = strtok_r(core_cnt, ",", &ptrptr);
-	while (tok) {
-		xrealloc(resv_msg_ptr->core_cnt,
-			 sizeof(uint32_t) * (node_inx + 2));
-		*res_free_flags |= RESV_FREE_STR_TRES_CORE;
-		resv_msg_ptr->core_cnt[node_inx] =
-			strtol(tok, &endptr, 10);
-		if ((endptr == NULL) ||
-		    (endptr[0] != '\0') ||
-		    (tok[0] == '\0')) {
-			if (err_msg) {
-				if (from_tres)
-					xstrfmtcat(*err_msg,
-						   "Invalid TRES core count %s",
-						   val);
-				else
-					xstrfmtcat(*err_msg,
-						   "Invalid core count %s",
-						   val);
-			}
-			xfree(core_cnt);
-			return SLURM_ERROR;
-		}
-		node_inx++;
-		tok = strtok_r(NULL, ",", &ptrptr);
-	}
-
-	xfree(core_cnt);
-	return SLURM_SUCCESS;
-
-}
-
 extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
 			      uint32_t *res_free_flags, bool from_tres,
 			      char **err_msg)
@@ -323,13 +276,8 @@ extern int state_control_parse_resv_tres(char *val,
 
 	if (tres_corecnt && tres_corecnt[0] != '\0') {
 		/* only have this on a cons_tres machine */
-		ret = state_control_parse_resv_corecnt(resv_msg_ptr,
-						       tres_corecnt,
-						       res_free_flags, true,
-						       err_msg);
+		resv_msg_ptr->core_cnt = slurm_atoul(tres_corecnt);
 		xfree(tres_corecnt);
-		if (ret != SLURM_SUCCESS)
-			goto error;
 	}
 
 	if (tres_nodecnt && tres_nodecnt[0] != '\0') {

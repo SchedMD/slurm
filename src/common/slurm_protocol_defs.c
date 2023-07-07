@@ -1663,8 +1663,6 @@ extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
 		xfree(msg->burst_buffer);
 	if (res_free_flags & RESV_FREE_STR_COMMENT)
 		xfree(msg->comment);
-	if (res_free_flags & RESV_FREE_STR_TRES_CORE)
-		xfree(msg->core_cnt);
 	if (res_free_flags & RESV_FREE_STR_TRES_LIC)
 		xfree(msg->licenses);
 	if (res_free_flags & RESV_FREE_STR_TRES_NODE)

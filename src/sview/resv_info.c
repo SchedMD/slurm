@@ -265,16 +265,16 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "burst_buffer";
 		break;
 	case SORTID_CORE_CNT:
-		type = "Core Count";
-		if (state_control_parse_resv_corecnt(resv_msg, (char *)new_text,
-						     &res_free_flags, false,
-						     &err_msg) == SLURM_ERROR) {
+		if (strtok_r((char *)new_text, ",", &type)) {
+			type = NULL;
 			if (global_edit_error_msg)
 				g_free(global_edit_error_msg);
-			global_edit_error_msg = g_strdup(err_msg);
-			xfree(err_msg);
+			global_edit_error_msg = g_strdup("Using a comma separated array for CoreCnt is no longer valid.");
 			goto return_error;
 		}
+
+		type = "Core Count";
+		resv_msg->core_cnt = slurm_atoul((char *)new_text);
 		break;
 	case SORTID_DURATION:
 		type = "duration";

@@ -2422,10 +2422,8 @@ This is because the CRAY API for managing DataWarps supports both formats.
 \fBCoreCnt\fR=<\fInum\fR>
 This option is only supported when
 \fIselect/cons_tres\fP is used. Identify number of cores to be reserved.
-If NodeCnt is used this is the total number of cores to reserve
+If NodeCnt or Nodelist is used this is the total number of cores to reserve
 where cores per node is CoreCnt/NodeCnt.
-If a nodelist is used, this should be an array of core numbers by node:
-Nodes=node[1\-5] CoreCnt=2,2,3,3,4.
 .IP
 
 .TP
