@@ -7648,9 +7648,20 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 		    sharing_gres_allocated)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
-		(*(gres_ctx->ops.job_set_env))(&step->env,
-					       gres_bit_alloc, gres_cnt,
-					       flags);
+		if ((step->flags & LAUNCH_EXT_LAUNCHER)) {
+			/*
+			 * We need the step environment variables, but still
+			 * use all the job's gres.
+			 */
+			(*(gres_ctx->ops.step_set_env))(&step->env,
+							gres_bit_alloc,
+							gres_cnt,
+							flags);
+		} else
+			(*(gres_ctx->ops.job_set_env))(&step->env,
+						       gres_bit_alloc,
+						       gres_cnt,
+						       flags);
 		gres_cnt = 0;
 		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
