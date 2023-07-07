@@ -1539,12 +1539,7 @@ extern void slurm_cred_handle_reissue(slurm_cred_t *cred, bool locked)
 		 * old record so that "cred" will look like a new
 		 * credential to any ensuing commands. */
 		info("reissued job credential for job %u", j->jobid);
-
-		/* Setting j->expiration to zero will make
-		 * _clear_expired_job_states() remove this
-		 * job credential from the cred context. */
-		j->expiration = 0;
-		//_clear_expired_job_states();
+		list_delete_ptr(cred_job_list, j);
 	}
 	if (!locked)
 		slurm_mutex_unlock(&cred_cache_mutex);
