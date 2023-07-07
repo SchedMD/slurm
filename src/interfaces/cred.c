@@ -90,14 +90,6 @@ typedef struct {
 	time_t   revoked;       /* Time at which credentials were revoked   */
 } job_state_t;
 
-/*
- * Credential context, slurm_cred_ctx_t:
- */
-#define CRED_CTX_MAGIC 0x0c0c0c
-struct slurm_cred_context {
-	void *key;		/* private or public key		*/
-};
-
 typedef struct {
 	int   (*cred_sign)		(char *buffer, int buf_size,
 					 char **sig_pp, uint32_t *sig_size_p);

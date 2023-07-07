@@ -167,11 +167,6 @@ typedef struct sbcast_cred {
 	uint32_t siglen;	/* signature length in bytes		*/
 } sbcast_cred_t;
 
-/*
- * The slurm_cred_ctx_t incomplete type
- */
-typedef struct slurm_cred_context slurm_cred_ctx_t;
-
 /* Used by slurm_cred_get() */
 typedef enum {
 	CRED_DATA_JOB_GRES_LIST = 1,
