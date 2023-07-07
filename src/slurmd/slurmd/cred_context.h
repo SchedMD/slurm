@@ -50,4 +50,6 @@ extern bool cred_jobid_cached(uint32_t jobid);
  */
 extern int cred_insert_jobid(uint32_t jobid);
 
+extern int cred_revoke(uint32_t jobid, time_t time, time_t start_time);
+
 #endif

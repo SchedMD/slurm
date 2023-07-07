@@ -310,3 +310,40 @@ extern int cred_insert_jobid(uint32_t jobid)
 
 	return SLURM_SUCCESS;
 }
+
+extern int cred_revoke(uint32_t jobid, time_t time, time_t start_time)
+{
+	job_state_t  *j = NULL;
+
+	slurm_mutex_lock(&cred_cache_mutex);
+
+	_clear_expired_job_states();
+
+	if (!(j = _find_job_state(jobid))) {
+		/*
+		 * This node has not yet seen a job step for this job.
+		 * Insert a job state object so that we can revoke any future
+		 * credentials.
+		 */
+		j = _job_state_create(jobid);
+		list_append(cred_job_list, j);
+	}
+	if (j->revoked) {
+		if (start_time && (j->revoked < start_time)) {
+			debug("job %u requeued, but started no tasks", jobid);
+			j->expiration = (time_t) MAX_TIME;
+		} else {
+			slurm_seterrno(EEXIST);
+			goto error;
+		}
+	}
+
+	j->revoked = time;
+
+	slurm_mutex_unlock(&cred_cache_mutex);
+	return SLURM_SUCCESS;
+
+error:
+	slurm_mutex_unlock(&cred_cache_mutex);
+	return SLURM_ERROR;
+}

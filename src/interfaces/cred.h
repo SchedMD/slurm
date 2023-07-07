@@ -285,14 +285,6 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred);
 extern void slurm_cred_handle_reissue(slurm_cred_t *cred, bool locked);
 
 /*
- * Revoke all credentials for job id jobid
- * time IN - the time the job termination was requested by slurmctld
- *           (local time from slurmctld server)
- * start_time IN - job start time, used to recongnize job requeue
- */
-extern int slurm_cred_revoke(uint32_t jobid, time_t time, time_t start_time);
-
-/*
  * Report if a all credentials for a give job id have been
  * revoked (i.e. has the job been killed)
  *
