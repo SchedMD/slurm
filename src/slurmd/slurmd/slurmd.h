@@ -173,7 +173,7 @@ int send_registration_msg(uint32_t status);
 /*
  * save_cred_state - save the current credential list to a file
  */
-void save_cred_state(slurm_cred_ctx_t *vctx);
+void save_cred_state(void);
 
 /* Run the health check program if configured */
 int run_script_health_check(void);

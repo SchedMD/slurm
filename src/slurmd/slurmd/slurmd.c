@@ -2189,7 +2189,7 @@ _slurmd_fini(void)
 	core_spec_g_fini();
 	jobacct_gather_fini();
 	acct_gather_profile_fini();
-	save_cred_state(conf->vctx);
+	save_cred_state();
 	switch_fini();
 	slurmd_task_fini();
 	slurm_conf_destroy();
@@ -2227,7 +2227,7 @@ _slurmd_fini(void)
 /*
  * save_cred_state - save the current credential list to a file
  */
-extern void save_cred_state(slurm_cred_ctx_t *ctx)
+extern void save_cred_state(void)
 {
 	char *new_file, *reg_file;
 	int cred_fd = -1, rc;
@@ -2247,7 +2247,7 @@ extern void save_cred_state(slurm_cred_ctx_t *ctx)
 		goto cleanup;
 	}
 	buffer = init_buf(1024);
-	slurm_cred_ctx_pack(ctx, buffer);
+	slurm_cred_ctx_pack(NULL, buffer);
 	rc = write(cred_fd, get_buf_data(buffer), get_buf_offset(buffer));
 	if (rc != get_buf_offset(buffer)) {
 		error("write %s error %m", new_file);

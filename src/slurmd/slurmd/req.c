@@ -1738,7 +1738,7 @@ done:
 		slurm_cred_rewind(conf->vctx, req->cred); /* ignore errors */
 
 	} else if (errnum == SLURM_SUCCESS) {
-		save_cred_state(conf->vctx);
+		save_cred_state();
 	}
 
 	/*
@@ -5223,7 +5223,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 			      req->start_time) < 0) {
 		debug("revoking cred for job %u: %m", req->step_id.job_id);
 	} else {
-		save_cred_state(conf->vctx);
+		save_cred_state();
 		debug("credential for job %u revoked", req->step_id.job_id);
 	}
 
@@ -5257,7 +5257,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 		return;
 	}
 
-	save_cred_state(conf->vctx);
+	save_cred_state();
 
 	_file_bcast_job_cleanup(req->step_id.job_id);
 
@@ -5358,7 +5358,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			      req->start_time) < 0) {
 		debug("revoking cred for job %u: %m", req->step_id.job_id);
 	} else {
-		save_cred_state(conf->vctx);
+		save_cred_state();
 		debug("credential for job %u revoked", req->step_id.job_id);
 	}
 
@@ -5452,7 +5452,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 					  ESLURMD_KILL_JOB_ALREADY_COMPLETE);
 		}
 		slurm_cred_begin_expiration(req->step_id.job_id);
-		save_cred_state(conf->vctx);
+		save_cred_state();
 		_waiter_complete(req->step_id.job_id);
 
 		/*
@@ -5510,7 +5510,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		goto done;
 	}
 
-	save_cred_state(conf->vctx);
+	save_cred_state();
 
 	_file_bcast_job_cleanup(req->step_id.job_id);
 
