@@ -151,8 +151,8 @@ static void _insert_cred_state(slurm_cred_t *cred);
 static void _clear_expired_job_states(void);
 static void _clear_expired_credential_states(void);
 
-static bool _credential_replayed(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
-static bool _credential_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
+static bool _credential_replayed(slurm_cred_t *cred);
+static bool _credential_revoked(slurm_cred_t *cred);
 
 static int _cred_sign(slurm_cred_t *cred);
 static void _cred_verify_signature(slurm_cred_t *cred);
@@ -495,12 +495,12 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred)
 
 	slurm_cred_handle_reissue(cred, true);
 
-	if (_credential_revoked(NULL, cred)) {
+	if (_credential_revoked(cred)) {
 		slurm_seterrno(ESLURMD_CREDENTIAL_REVOKED);
 		goto error;
 	}
 
-	if (_credential_replayed(NULL, cred)) {
+	if (_credential_replayed(cred)) {
 		slurm_seterrno(ESLURMD_CREDENTIAL_REPLAYED);
 		goto error;
 	}
@@ -1682,7 +1682,7 @@ static int _list_find_cred_state(void *x, void *key)
 }
 
 
-static bool _credential_replayed(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
+static bool _credential_replayed(slurm_cred_t *cred)
 {
 	cred_state_t *s = NULL;
 
@@ -1745,7 +1745,7 @@ extern bool slurm_cred_revoked(slurm_cred_t *cred)
 	return rc;
 }
 
-static bool _credential_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
+static bool _credential_revoked(slurm_cred_t *cred)
 {
 	job_state_t  *j = NULL;
 
