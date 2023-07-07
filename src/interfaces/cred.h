@@ -197,16 +197,6 @@ extern list_t *cred_state_list;
  */
 extern int cred_expiration(void);
 
-/*
- * Pack and unpack slurm credential context.
- *
- * On pack() ctx is packed in machine-independent format into the
- * buffer, on unpack() the contents of the buffer are used to
- * initialize the state of the context ctx.
- */
-extern void slurm_cred_ctx_pack(buf_t *buffer);
-extern void slurm_cred_ctx_unpack(buf_t *buffer);
-
 /* Initialize the plugin. */
 extern int cred_g_init(void);
 

@@ -127,15 +127,8 @@ static bool _credential_revoked(slurm_cred_t *cred);
 static int _cred_sign(slurm_cred_t *cred);
 static void _cred_verify_signature(slurm_cred_t *cred);
 
-static job_state_t *_job_state_unpack_one(buf_t *buffer);
-static cred_state_t *_cred_state_unpack_one(buf_t *buffer);
-
 static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 		       uint16_t protocol_version);
-static void _job_state_unpack(buf_t *buffer);
-static void _job_state_pack(buf_t *buffer);
-static void _cred_state_unpack(buf_t *buffer);
-static void _cred_state_pack(buf_t *buffer);
 
 /* Initialize the plugin. */
 extern int cred_g_init(void)
@@ -1294,28 +1287,6 @@ unpack_error:
 	return NULL;
 }
 
-extern void slurm_cred_ctx_pack(buf_t *buffer)
-{
-	slurm_mutex_lock(&cred_cache_mutex);
-	_job_state_pack(buffer);
-	_cred_state_pack(buffer);
-	slurm_mutex_unlock(&cred_cache_mutex);
-}
-
-extern void slurm_cred_ctx_unpack(buf_t *buffer)
-{
-	slurm_mutex_lock(&cred_cache_mutex);
-
-	/*
-	 * Unpack job state list and cred state list from buffer
-	 * appening them onto cred_state_list and cred_job_list.
-	 */
-	_job_state_unpack(buffer);
-	_cred_state_unpack(buffer);
-
-	slurm_mutex_unlock(&cred_cache_mutex);
-}
-
 static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg)
 {
 	slurm_cred_t *cred = xmalloc(sizeof(*cred));
@@ -1824,148 +1795,6 @@ static cred_state_t *_cred_state_create(slurm_cred_t *cred)
 	s->expiration = cred->ctime + cred_expire;
 
 	return s;
-}
-
-static int _cred_state_pack_one(void *x, void *key)
-{
-	cred_state_t *s = x;
-	buf_t *buffer = key;
-
-	pack_step_id(&s->step_id, buffer, SLURM_PROTOCOL_VERSION);
-	pack_time(s->ctime, buffer);
-	pack_time(s->expiration, buffer);
-
-	return SLURM_SUCCESS;
-}
-
-
-static cred_state_t *_cred_state_unpack_one(buf_t *buffer)
-{
-	cred_state_t *s = xmalloc(sizeof(*s));
-
-	if (unpack_step_id_members(&s->step_id, buffer,
-				   SLURM_PROTOCOL_VERSION) != SLURM_SUCCESS)
-		goto unpack_error;
-	safe_unpack_time(&s->ctime, buffer);
-	safe_unpack_time(&s->expiration, buffer);
-	return s;
-
-unpack_error:
-	xfree(s);
-	return NULL;
-}
-
-static int _job_state_pack_one(void *x, void *key)
-{
-	job_state_t *j = x;
-	buf_t *buffer = key;
-
-	pack32(j->jobid, buffer);
-	pack_time(j->revoked, buffer);
-	pack_time(j->ctime, buffer);
-	pack_time(j->expiration, buffer);
-
-	return SLURM_SUCCESS;
-}
-
-
-static job_state_t *_job_state_unpack_one(buf_t *buffer)
-{
-	job_state_t *j = xmalloc(sizeof(*j));
-
-	safe_unpack32(&j->jobid, buffer);
-	safe_unpack_time(&j->revoked, buffer);
-	safe_unpack_time(&j->ctime, buffer);
-	safe_unpack_time(&j->expiration, buffer);
-
-	debug3("cred_unpack: job %u ctime:%ld revoked:%ld expires:%ld",
-	       j->jobid, j->ctime, j->revoked, j->expiration);
-
-	if ((j->revoked) && (j->expiration == (time_t) MAX_TIME)) {
-		warning("revoke on job %u has no expiration", j->jobid);
-		j->expiration = j->revoked + 600;
-	}
-
-	return j;
-
-unpack_error:
-	xfree(j);
-	return NULL;
-}
-
-
-static void _cred_state_pack(buf_t *buffer)
-{
-	pack32(list_count(cred_state_list), buffer);
-
-	list_for_each(cred_state_list, _cred_state_pack_one, buffer);
-}
-
-
-static void _cred_state_unpack(buf_t *buffer)
-{
-	time_t        now = time(NULL);
-	uint32_t      n;
-	int           i   = 0;
-	cred_state_t *s   = NULL;
-
-	safe_unpack32(&n, buffer);
-	if (n > NO_VAL)
-		goto unpack_error;
-	for (i = 0; i < n; i++) {
-		if (!(s = _cred_state_unpack_one(buffer)))
-			goto unpack_error;
-
-		if (now < s->expiration)
-			list_append(cred_state_list, s);
-		else
-			xfree(s);
-	}
-
-	return;
-
-unpack_error:
-	error("Unable to unpack job credential state information");
-	return;
-}
-
-
-static void _job_state_pack(buf_t *buffer)
-{
-	pack32((uint32_t) list_count(cred_job_list), buffer);
-
-	list_for_each(cred_job_list, _job_state_pack_one, buffer);
-}
-
-
-static void _job_state_unpack(buf_t *buffer)
-{
-	time_t       now = time(NULL);
-	uint32_t     n   = 0;
-	int          i   = 0;
-	job_state_t *j   = NULL;
-
-	safe_unpack32(&n, buffer);
-	if (n > NO_VAL)
-		goto unpack_error;
-	for (i = 0; i < n; i++) {
-		if (!(j = _job_state_unpack_one(buffer)))
-			goto unpack_error;
-
-		if (!j->revoked || (j->revoked && (now < j->expiration)))
-			list_append(cred_job_list, j);
-		else {
-			debug3 ("not appending expired job %u state",
-			        j->jobid);
-			xfree(j);
-		}
-	}
-
-	return;
-
-unpack_error:
-	error("Unable to unpack job state information");
-	return;
 }
 
 /*****************************************************************************\
