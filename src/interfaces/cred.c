@@ -1325,17 +1325,17 @@ unpack_error:
 	return NULL;
 }
 
-extern int slurm_cred_ctx_pack(slurm_cred_ctx_t *ctx, buf_t *buffer)
+extern int slurm_cred_ctx_pack(buf_t *buffer)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
-	_job_state_pack(ctx, buffer);
-	_cred_state_pack(ctx, buffer);
+	_job_state_pack(NULL, buffer);
+	_cred_state_pack(NULL, buffer);
 	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_cred_ctx_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
+extern int slurm_cred_ctx_unpack(buf_t *buffer)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
 
@@ -1343,8 +1343,8 @@ extern int slurm_cred_ctx_unpack(slurm_cred_ctx_t *ctx, buf_t *buffer)
 	 * Unpack job state list and cred state list from buffer
 	 * appening them onto cred_state_list and cred_job_list.
 	 */
-	_job_state_unpack(ctx, buffer);
-	_cred_state_unpack(ctx, buffer);
+	_job_state_unpack(NULL, buffer);
+	_cred_state_unpack(NULL, buffer);
 
 	slurm_mutex_unlock(&cred_cache_mutex);
 

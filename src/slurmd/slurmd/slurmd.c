@@ -2173,7 +2173,7 @@ static void _restore_cred_state(void)
 	if (!(buffer = create_mmap_buf(file_name)))
 		goto cleanup;
 
-	slurm_cred_ctx_unpack(NULL, buffer);
+	slurm_cred_ctx_unpack(buffer);
 
 cleanup:
 	xfree(file_name);
@@ -2247,7 +2247,7 @@ extern void save_cred_state(void)
 		goto cleanup;
 	}
 	buffer = init_buf(1024);
-	slurm_cred_ctx_pack(NULL, buffer);
+	slurm_cred_ctx_pack(buffer);
 	rc = write(cred_fd, get_buf_data(buffer), get_buf_offset(buffer));
 	if (rc != get_buf_offset(buffer)) {
 		error("write %s error %m", new_file);
