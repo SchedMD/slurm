@@ -149,7 +149,7 @@ static int _list_find_cred_state(void *x, void *key);
 
 static void _insert_cred_state(slurm_cred_t *cred);
 static void _clear_expired_job_states(void);
-static void _clear_expired_credential_states(slurm_cred_ctx_t *ctx);
+static void _clear_expired_credential_states(void);
 
 static bool _credential_replayed(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
 static bool _credential_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
@@ -1686,7 +1686,7 @@ static bool _credential_replayed(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 {
 	cred_state_t *s = NULL;
 
-	_clear_expired_credential_states(ctx);
+	_clear_expired_credential_states();
 
 	s = list_find_first(cred_state_list, _list_find_cred_state, cred);
 
@@ -1834,7 +1834,7 @@ static int _list_find_expired_cred_state(void *x, void *key)
 	return 0;
 }
 
-static void _clear_expired_credential_states(slurm_cred_ctx_t *ctx)
+static void _clear_expired_credential_states(void)
 {
 	time_t        now = time(NULL);
 
