@@ -68,7 +68,8 @@ static void _job_state_pack(void *x, uint16_t protocol_version, buf_t *buffer)
 	pack_time(j->expiration, buffer);
 }
 
-static job_state_t *_job_state_unpack_one(buf_t *buffer)
+static int _job_state_unpack(void **out, uint16_t protocol_version,
+			     buf_t *buffer)
 {
 	job_state_t *j = xmalloc(sizeof(*j));
 
@@ -85,40 +86,13 @@ static job_state_t *_job_state_unpack_one(buf_t *buffer)
 		j->expiration = j->revoked + 600;
 	}
 
-	return j;
+	*out = j;
+	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree(j);
-	return NULL;
-}
-
-static void _job_state_unpack(buf_t *buffer)
-{
-	time_t now = time(NULL);
-	uint32_t n = 0;
-	job_state_t *j = NULL;
-
-	safe_unpack32(&n, buffer);
-	if (n > NO_VAL)
-		goto unpack_error;
-	for (int i = 0; i < n; i++) {
-		if (!(j = _job_state_unpack_one(buffer)))
-			goto unpack_error;
-
-		if (!j->revoked || (j->revoked && (now < j->expiration)))
-			list_append(cred_job_list, j);
-		else {
-			debug3("not appending expired job %u state",
-			       j->jobid);
-			xfree(j);
-		}
-	}
-
-	return;
-
-unpack_error:
-	error("Unable to unpack job state information");
-	return;
+	*out = NULL;
+	return SLURM_ERROR;
 }
 
 static void _cred_state_pack(void *x, uint16_t protocol_version, buf_t *buffer)
@@ -131,7 +105,8 @@ static void _cred_state_pack(void *x, uint16_t protocol_version, buf_t *buffer)
 	pack_time(s->expiration, buffer);
 }
 
-static cred_state_t *_cred_state_unpack_one(buf_t *buffer)
+static int _cred_state_unpack(void **out, uint16_t protocol_version,
+			      buf_t *buffer)
 {
 	cred_state_t *s = xmalloc(sizeof(*s));
 
@@ -141,37 +116,13 @@ static cred_state_t *_cred_state_unpack_one(buf_t *buffer)
 	safe_unpack_time(&s->ctime, buffer);
 	safe_unpack_time(&s->expiration, buffer);
 
-	return s;
+	*out = s;
+	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree(s);
-	return NULL;
-}
-
-static void _cred_state_unpack(buf_t *buffer)
-{
-	time_t now = time(NULL);
-	uint32_t n;
-	cred_state_t *s = NULL;
-
-	safe_unpack32(&n, buffer);
-	if (n > NO_VAL)
-		goto unpack_error;
-	for (int i = 0; i < n; i++) {
-		if (!(s = _cred_state_unpack_one(buffer)))
-			goto unpack_error;
-
-		if (now < s->expiration)
-			list_append(cred_state_list, s);
-		else
-			xfree(s);
-	}
-
-	return;
-
-unpack_error:
-	error("Unable to unpack job credential state information");
-	return;
+	*out = NULL;
+	return SLURM_ERROR;
 }
 
 static void _cred_context_pack(buf_t *buffer)
@@ -187,14 +138,26 @@ static void _cred_context_pack(buf_t *buffer)
 
 static void _cred_context_unpack(buf_t *buffer)
 {
+	/* FIXME: find a way to version this file at some point */
+	uint16_t version = SLURM_PROTOCOL_VERSION;
+
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	/*
-	 * Unpack job state list and cred state list from buffer
-	 * appening them onto cred_state_list and cred_job_list.
-	 */
-	_job_state_unpack(buffer);
-	_cred_state_unpack(buffer);
+	FREE_NULL_LIST(cred_job_list);
+	if (slurm_unpack_list(&cred_job_list, _job_state_unpack,
+			      xfree_ptr, buffer, version)) {
+		warning("%s: failed to restore job state from file", __func__);
+		cred_job_list = list_create(xfree_ptr);
+	}
+	/* FIXME: run _clear_expired_job_states() */
+
+	FREE_NULL_LIST(cred_state_list);
+	if (slurm_unpack_list(&cred_state_list, _cred_state_unpack,
+			      xfree_ptr, buffer, version)) {
+		warning("%s: failed to restore job state from file", __func__);
+		cred_state_list = list_create(xfree_ptr);
+	}
+	/* FIXME: run _clear_expired_credential_states() */
 
 	slurm_mutex_unlock(&cred_cache_mutex);
 }
