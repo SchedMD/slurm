@@ -1664,7 +1664,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	 * Since the job could have been killed while the prolog was running,
 	 * test if the credential has since been revoked and exit as needed.
 	 */
-	if (slurm_cred_revoked(req->cred)) {
+	if (cred_revoked(req->cred)) {
 		info("Job %u already killed, do not launch %ps",
 		     req->step_id.job_id, &req->step_id);
 		errnum = SLURM_SUCCESS;
@@ -2272,7 +2272,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	if (slurm_get_stream_addr(msg->conn_fd, &self)) {
 		error("%s: slurm_get_stream_addr(): %m", __func__);
 		rc = SLURM_ERROR;
-	} else if (slurm_cred_revoked(req->cred)) {
+	} else if (cred_revoked(req->cred)) {
 		info("Job %u already killed, do not launch extern step",
 		     req->job_id);
 		/*
@@ -2477,7 +2477,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	}
 
 	slurm_cred_handle_reissue(req->cred, false);
-	if (slurm_cred_revoked(req->cred)) {
+	if (cred_revoked(req->cred)) {
 		error("Job %u already killed, do not launch batch job",
 		      req->job_id);
 		rc = ESLURMD_CREDENTIAL_REVOKED;	/* job already ran */
@@ -2614,7 +2614,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	 * running (especially on BlueGene, which can take minutes
 	 * for partition booting). Test if the credential has since
 	 * been revoked and exit as needed. */
-	if (slurm_cred_revoked(req->cred)) {
+	if (cred_revoked(req->cred)) {
 		info("Job %u already killed, do not launch batch job",
 		     req->job_id);
 		rc = SLURM_SUCCESS;     /* job already ran */
@@ -2633,7 +2633,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	/* On a busy system, slurmstepd may take a while to respond,
 	 * if the job was cancelled in the interim, run through the
 	 * abort logic below. */
-	revoked = slurm_cred_revoked(req->cred);
+	revoked = cred_revoked(req->cred);
 	if (revoked)
 		_launch_complete_rm(req->job_id);
 	if (revoked && _is_batch_job_finished(req->job_id)) {
