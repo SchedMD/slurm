@@ -140,8 +140,6 @@ typedef struct slurmd_config {
 	bool	      cleanstart;	/* clean start requested (-c)      */
 	bool	      mlock_pages;	/* mlock() slurmd  */
 
-	slurm_cred_ctx_t *vctx;          /* slurm_cred_t verifier context   */
-
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        acct_freq_task;
 
