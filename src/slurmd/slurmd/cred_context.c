@@ -33,3 +33,29 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "src/common/pack.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+#include "src/interfaces/cred.h"
+
+#include "src/slurmd/slurmd/slurmd.h"
+
+extern void restore_cred_state(void)
+{
+	char *file_name = NULL;
+	buf_t *buffer = NULL;
+
+	file_name = xstrdup(conf->spooldir);
+	xstrcat(file_name, "/cred_state");
+
+	if (!(buffer = create_mmap_buf(file_name)))
+		goto cleanup;
+
+	slurm_cred_ctx_unpack(buffer);
+
+cleanup:
+	xfree(file_name);
+	FREE_NULL_BUFFER(buffer);
+}

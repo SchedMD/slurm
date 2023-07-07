@@ -120,6 +120,7 @@
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/xcpuinfo.h"
 
+#include "src/slurmd/slurmd/cred_context.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/req.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -210,7 +211,6 @@ static void      _reconfigure(void);
 static void     *_registration_engine(void *arg);
 static void      _resource_spec_fini(void);
 static int       _resource_spec_init(void);
-static void      _restore_cred_state(void);
 static void      _select_spec_cores(void);
 static void     *_service_connection(void *);
 static int       _set_slurmd_spooldir(const char *dir);
@@ -357,7 +357,7 @@ main (int argc, char **argv)
 	 * Restore any saved revoked credential information
 	 */
 	if (!conf->cleanstart)
-		_restore_cred_state();
+		restore_cred_state();
 
 	if (acct_gather_conf_init() != SLURM_SUCCESS)
 		fatal("Unable to initialize acct_gather_conf");
@@ -2160,24 +2160,6 @@ _slurmd_init(void)
 		fatal("slurmstepd not a file at %s", conf->stepd_loc);
 
 	return SLURM_SUCCESS;
-}
-
-static void _restore_cred_state(void)
-{
-	char *file_name = NULL;
-	buf_t *buffer = NULL;
-
-	file_name = xstrdup(conf->spooldir);
-	xstrcat(file_name, "/cred_state");
-
-	if (!(buffer = create_mmap_buf(file_name)))
-		goto cleanup;
-
-	slurm_cred_ctx_unpack(buffer);
-
-cleanup:
-	xfree(file_name);
-	FREE_NULL_BUFFER(buffer);
 }
 
 static int
