@@ -317,13 +317,6 @@ extern bool slurm_cred_revoked(slurm_cred_t *cred);
  */
 extern int slurm_cred_begin_expiration(uint32_t jobid);
 
-/*
- * Add a jobid to the slurm credential context without inserting
- * a credential state. This is used by the verifier to track job ids
- * that it has seen, but not necessarily received a credential for.
- */
-extern int slurm_cred_insert_jobid(uint32_t jobid);
-
 /* Free memory associated with slurm credential `cred.'
  */
 extern void slurm_cred_destroy(slurm_cred_t *cred);

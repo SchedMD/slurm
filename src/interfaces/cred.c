@@ -495,22 +495,6 @@ extern void slurm_cred_destroy(slurm_cred_t *cred)
 	xfree(cred);
 }
 
-extern int slurm_cred_insert_jobid(uint32_t jobid)
-{
-	slurm_mutex_lock(&cred_cache_mutex);
-	//_clear_expired_job_states();
-	if (_find_job_state(jobid)) {
-		debug2("%s: we already have a job state for job %u.",
-		       __func__, jobid);
-	} else {
-		job_state_t *j = _job_state_create(jobid);
-		list_append(cred_job_list, j);
-	}
-	slurm_mutex_unlock(&cred_cache_mutex);
-
-	return SLURM_SUCCESS;
-}
-
 extern int slurm_cred_revoke(uint32_t jobid, time_t time, time_t start_time)
 {
 	job_state_t  *j = NULL;

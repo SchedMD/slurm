@@ -58,6 +58,18 @@ static void _drain_node(char *reason)
 	(void) slurm_update_node(&update_node_msg);
 }
 
+static job_state_t *_job_state_create(uint32_t jobid)
+{
+	job_state_t *j = xmalloc(sizeof(*j));
+
+	j->jobid = jobid;
+	j->revoked = (time_t) 0;
+	j->ctime = time(NULL);
+	j->expiration = (time_t) MAX_TIME;
+
+	return j;
+}
+
 static int _list_find_expired_job_state(void *x, void *key)
 {
 	job_state_t *j = x;
@@ -281,4 +293,20 @@ extern bool cred_jobid_cached(uint32_t jobid)
 	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return retval;
+}
+
+extern int cred_insert_jobid(uint32_t jobid)
+{
+	slurm_mutex_lock(&cred_cache_mutex);
+	_clear_expired_job_states();
+	if (_find_job_state(jobid)) {
+		debug2("%s: we already have a job state for job %u.",
+		       __func__, jobid);
+	} else {
+		job_state_t *j = _job_state_create(jobid);
+		list_append(cred_job_list, j);
+	}
+	slurm_mutex_unlock(&cred_cache_mutex);
+
+	return SLURM_SUCCESS;
 }

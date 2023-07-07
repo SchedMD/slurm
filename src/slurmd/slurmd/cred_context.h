@@ -42,4 +42,12 @@ extern void restore_cred_state(void);
 
 extern bool cred_jobid_cached(uint32_t jobid);
 
+/*
+ * Add a jobid to the credential context without a credential state.
+ * This is used by the verifier to track job ids that it has seen,
+ * but not necessarily received a credential for.
+ * E.g., if the prolog or batch were the first related RPCS to be processed.
+ */
+extern int cred_insert_jobid(uint32_t jobid);
+
 #endif
