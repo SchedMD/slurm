@@ -2116,10 +2116,8 @@ static void _sbcast_cache_add(sbcast_cred_t *sbcast_cred)
  *	blocks or shared object files must have a recent signature on file
  *	(in our cache) or the slurmd must have recently been restarted.
  * RET 0 on success, -1 on error */
-extern sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t *ctx,
-					      sbcast_cred_t *sbcast_cred,
-					      uint16_t block_no,
-					      uint16_t flags,
+extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
+					      uint16_t block_no, uint16_t flags,
 					      uint16_t protocol_version)
 {
 	sbcast_cred_arg_t *arg;

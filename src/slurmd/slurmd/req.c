@@ -4053,8 +4053,8 @@ static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
 	sbcast_cred_arg_t *arg;
 	hostset_t *hset = NULL;
 
-	arg = extract_sbcast_cred(conf->vctx, req->cred, req->block_no,
-				  req->flags, protocol_version);
+	arg = extract_sbcast_cred(req->cred, req->block_no, req->flags,
+				  protocol_version);
 	if (!arg) {
 		error("Security violation: Invalid sbcast_cred from uid %u",
 		      req_uid);
