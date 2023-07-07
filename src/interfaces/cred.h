@@ -287,8 +287,7 @@ extern int slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
  * this credential is a reissue, then the old credential is cleared
  * from the cred context "ctx".
  */
-extern void slurm_cred_handle_reissue(slurm_cred_ctx_t *ctx, slurm_cred_t *cred,
-				      bool locked);
+extern void slurm_cred_handle_reissue(slurm_cred_t *cred, bool locked);
 
 /*
  * Revoke all credentials for job id jobid
