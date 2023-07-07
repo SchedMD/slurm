@@ -37,6 +37,7 @@
 #ifndef _CRED_CONTEXT_H
 #define _CRED_CONTEXT_H
 
+extern void save_cred_state(void);
 extern void restore_cred_state(void);
 
 #endif

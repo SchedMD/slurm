@@ -103,6 +103,7 @@
 
 #include "src/bcast/file_bcast.h"
 
+#include "src/slurmd/slurmd/cred_context.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
