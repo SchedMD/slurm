@@ -58,17 +58,14 @@ static void _drain_node(char *reason)
 	(void) slurm_update_node(&update_node_msg);
 }
 
-static int _job_state_pack_one(void *x, void *key)
+static void _job_state_pack(void *x, uint16_t protocol_version, buf_t *buffer)
 {
 	job_state_t *j = x;
-	buf_t *buffer = key;
 
 	pack32(j->jobid, buffer);
 	pack_time(j->revoked, buffer);
 	pack_time(j->ctime, buffer);
 	pack_time(j->expiration, buffer);
-
-	return SLURM_SUCCESS;
 }
 
 static job_state_t *_job_state_unpack_one(buf_t *buffer)
@@ -93,13 +90,6 @@ static job_state_t *_job_state_unpack_one(buf_t *buffer)
 unpack_error:
 	xfree(j);
 	return NULL;
-}
-
-static void _job_state_pack(buf_t *buffer)
-{
-	pack32(list_count(cred_job_list), buffer);
-
-	list_for_each(cred_job_list, _job_state_pack_one, buffer);
 }
 
 static void _job_state_unpack(buf_t *buffer)
@@ -131,16 +121,14 @@ unpack_error:
 	return;
 }
 
-static int _cred_state_pack_one(void *x, void *key)
+static void _cred_state_pack(void *x, uint16_t protocol_version, buf_t *buffer)
 {
 	cred_state_t *s = x;
-	buf_t *buffer = key;
 
-	pack_step_id(&s->step_id, buffer, SLURM_PROTOCOL_VERSION);
+	/* WARNING: this is not safe if pack_step_id() ever changes format */
+	pack_step_id(&s->step_id, buffer, protocol_version);
 	pack_time(s->ctime, buffer);
 	pack_time(s->expiration, buffer);
-
-	return SLURM_SUCCESS;
 }
 
 static cred_state_t *_cred_state_unpack_one(buf_t *buffer)
@@ -158,13 +146,6 @@ static cred_state_t *_cred_state_unpack_one(buf_t *buffer)
 unpack_error:
 	xfree(s);
 	return NULL;
-}
-
-static void _cred_state_pack(buf_t *buffer)
-{
-	pack32(list_count(cred_state_list), buffer);
-
-	list_for_each(cred_state_list, _cred_state_pack_one, buffer);
 }
 
 static void _cred_state_unpack(buf_t *buffer)
@@ -195,9 +176,12 @@ unpack_error:
 
 static void _cred_context_pack(buf_t *buffer)
 {
+	/* FIXME: find a way to version this file at some point */
+	uint16_t version = SLURM_PROTOCOL_VERSION;
+
 	slurm_mutex_lock(&cred_cache_mutex);
-	_job_state_pack(buffer);
-	_cred_state_pack(buffer);
+	slurm_pack_list(cred_job_list, _job_state_pack, buffer, version);
+	slurm_pack_list(cred_state_list, _cred_state_pack, buffer, version);
 	slurm_mutex_unlock(&cred_cache_mutex);
 }
 
