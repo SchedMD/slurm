@@ -149,7 +149,7 @@ static job_state_t  * _insert_job_state(slurm_cred_ctx_t *ctx,  uint32_t jobid);
 static int _list_find_cred_state(void *x, void *key);
 
 static void _insert_cred_state(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
-static void _clear_expired_job_states(slurm_cred_ctx_t *ctx);
+static void _clear_expired_job_states(void);
 static void _clear_expired_credential_states(slurm_cred_ctx_t *ctx);
 
 static bool _credential_replayed(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
@@ -545,7 +545,7 @@ extern bool slurm_cred_jobid_cached(uint32_t jobid)
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	_clear_expired_job_states(NULL);
+	_clear_expired_job_states();
 
 	/*
 	 * Return true if we find a cached job state for job id `jobid'
@@ -561,7 +561,7 @@ extern int slurm_cred_insert_jobid(uint32_t jobid)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	_clear_expired_job_states(NULL);
+	_clear_expired_job_states();
 	(void) _insert_job_state(NULL, jobid);
 
 	slurm_mutex_unlock(&cred_cache_mutex);
@@ -591,7 +591,7 @@ extern int slurm_cred_revoke(uint32_t jobid, time_t time, time_t start_time)
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	_clear_expired_job_states(NULL);
+	_clear_expired_job_states();
 
 	if (!(j = _find_job_state(NULL, jobid))) {
 		/*
@@ -627,7 +627,7 @@ extern int slurm_cred_begin_expiration(uint32_t jobid)
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	_clear_expired_job_states(NULL);
+	_clear_expired_job_states();
 
 	if (!(j = _find_job_state(NULL, jobid))) {
 		slurm_seterrno(ESRCH);
@@ -1723,7 +1723,7 @@ extern void slurm_cred_handle_reissue(slurm_cred_t *cred, bool locked)
 		 * _clear_expired_job_states() remove this
 		 * job credential from the cred context. */
 		j->expiration = 0;
-		_clear_expired_job_states(NULL);
+		_clear_expired_job_states();
 	}
 	if (!locked)
 		slurm_mutex_unlock(&cred_cache_mutex);
@@ -1750,7 +1750,7 @@ static bool _credential_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 {
 	job_state_t  *j = NULL;
 
-	_clear_expired_job_states(ctx);
+	_clear_expired_job_states();
 
 	if (!(j = _find_job_state(ctx, cred->arg->step_id.job_id))) {
 		(void) _insert_job_state(ctx, cred->arg->step_id.job_id);
@@ -1818,7 +1818,7 @@ static int _list_find_expired_job_state(void *x, void *key)
 	return 0;
 }
 
-static void _clear_expired_job_states(slurm_cred_ctx_t *ctx)
+static void _clear_expired_job_states(void)
 {
 	time_t        now = time(NULL);
 
