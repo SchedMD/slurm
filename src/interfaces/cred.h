@@ -337,7 +337,7 @@ extern bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid);
  * a credential state. This is used by the verifier to track job ids
  * that it has seen, but not necessarily received a credential for.
  */
-extern int slurm_cred_insert_jobid(slurm_cred_ctx_t *ctx, uint32_t jobid);
+extern int slurm_cred_insert_jobid(uint32_t jobid);
 
 /* Free memory associated with slurm credential `cred.'
  */

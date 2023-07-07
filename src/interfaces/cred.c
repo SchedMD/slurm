@@ -557,12 +557,12 @@ extern bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid)
 	return retval;
 }
 
-extern int slurm_cred_insert_jobid(slurm_cred_ctx_t *ctx, uint32_t jobid)
+extern int slurm_cred_insert_jobid(uint32_t jobid)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	_clear_expired_job_states(ctx);
-	(void) _insert_job_state(ctx, jobid);
+	_clear_expired_job_states(NULL);
+	(void) _insert_job_state(NULL, jobid);
 
 	slurm_mutex_unlock(&cred_cache_mutex);
 
