@@ -307,7 +307,7 @@ extern int slurm_cred_revoke(slurm_cred_ctx_t *ctx, uint32_t jobid, time_t time,
  * than the revoke time, see "scontrol requeue", purge the old
  * job record and make like it never existed
  */
-extern bool slurm_cred_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
+extern bool slurm_cred_revoked(slurm_cred_t *cred);
 
 /*
  * Begin expiration period for the revocation of credentials

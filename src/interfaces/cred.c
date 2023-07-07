@@ -1731,14 +1731,14 @@ extern void slurm_cred_handle_reissue(slurm_cred_ctx_t *ctx,
 		slurm_mutex_unlock(&cred_cache_mutex);
 }
 
-extern bool slurm_cred_revoked(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
+extern bool slurm_cred_revoked(slurm_cred_t *cred)
 {
 	job_state_t *j;
 	bool rc = false;
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	j = _find_job_state(ctx, cred->arg->step_id.job_id);
+	j = _find_job_state(NULL, cred->arg->step_id.job_id);
 
 	if (j && (j->revoked != (time_t)0) && (cred->ctime <= j->revoked))
 		rc = true;
