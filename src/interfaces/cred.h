@@ -279,7 +279,7 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred);
  *  be used again. Returns SLURM_ERROR if no credential state is found
  *  to be rewound, SLURM_SUCCESS otherwise.
  */
-extern int slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred);
+extern int slurm_cred_rewind(slurm_cred_t *cred);
 
 /*
  * Check to see if this credential is a reissue of an existing credential

@@ -569,7 +569,7 @@ extern int slurm_cred_insert_jobid(uint32_t jobid)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
+extern int slurm_cred_rewind(slurm_cred_t *cred)
 {
 	int rc = 0;
 

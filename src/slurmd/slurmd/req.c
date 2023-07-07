@@ -1735,7 +1735,7 @@ done:
 		/*
 		 * Rewind credential so that srun may perform retry
 		 */
-		slurm_cred_rewind(conf->vctx, req->cred); /* ignore errors */
+		slurm_cred_rewind(req->cred); /* ignore errors */
 
 	} else if (errnum == SLURM_SUCCESS) {
 		save_cred_state();
