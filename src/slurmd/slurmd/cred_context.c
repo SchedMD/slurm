@@ -58,6 +58,38 @@ static void _drain_node(char *reason)
 	(void) slurm_update_node(&update_node_msg);
 }
 
+static int _list_find_expired_job_state(void *x, void *key)
+{
+	job_state_t *j = x;
+	time_t curr_time = *(time_t *) key;
+
+	if (j->revoked && (curr_time > j->expiration))
+		return 1;
+	return 0;
+}
+
+static void _clear_expired_job_states(void)
+{
+	time_t now = time(NULL);
+	list_delete_all(cred_job_list, _list_find_expired_job_state, &now);
+}
+
+static int _list_find_expired_cred_state(void *x, void *key)
+{
+	cred_state_t *s = x;
+	time_t curr_time = *(time_t *) key;
+
+	if (curr_time > s->expiration)
+		return 1;
+	return 0;
+}
+
+static void _clear_expired_credential_states(void)
+{
+	time_t now = time(NULL);
+	list_delete_all(cred_state_list, _list_find_expired_cred_state, &now);
+}
+
 static void _job_state_pack(void *x, uint16_t protocol_version, buf_t *buffer)
 {
 	job_state_t *j = x;
@@ -149,7 +181,7 @@ static void _cred_context_unpack(buf_t *buffer)
 		warning("%s: failed to restore job state from file", __func__);
 		cred_job_list = list_create(xfree_ptr);
 	}
-	/* FIXME: run _clear_expired_job_states() */
+	_clear_expired_job_states();
 
 	FREE_NULL_LIST(cred_state_list);
 	if (slurm_unpack_list(&cred_state_list, _cred_state_unpack,
@@ -157,7 +189,7 @@ static void _cred_context_unpack(buf_t *buffer)
 		warning("%s: failed to restore job state from file", __func__);
 		cred_state_list = list_create(xfree_ptr);
 	}
-	/* FIXME: run _clear_expired_credential_states() */
+	_clear_expired_credential_states();
 
 	slurm_mutex_unlock(&cred_cache_mutex);
 }
