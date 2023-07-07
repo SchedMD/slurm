@@ -468,8 +468,7 @@ extern void *slurm_cred_get(slurm_cred_t *cred,
  * On success, returns a pointer to the arg structure within the credential.
  * Caller *must* release the lock.
  */
-extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t *ctx,
-					   slurm_cred_t *cred)
+extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred)
 {
 	time_t now = time(NULL);
 	int errnum;
@@ -495,14 +494,14 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_ctx_t *ctx,
 		goto error;
 	}
 
-	slurm_cred_handle_reissue(ctx, cred, true);
+	slurm_cred_handle_reissue(NULL, cred, true);
 
-	if (_credential_revoked(ctx, cred)) {
+	if (_credential_revoked(NULL, cred)) {
 		slurm_seterrno(ESLURMD_CREDENTIAL_REVOKED);
 		goto error;
 	}
 
-	if (_credential_replayed(ctx, cred)) {
+	if (_credential_replayed(NULL, cred)) {
 		slurm_seterrno(ESLURMD_CREDENTIAL_REPLAYED);
 		goto error;
 	}

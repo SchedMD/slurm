@@ -1120,7 +1120,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	/*
 	 * First call slurm_cred_verify() so that all credentials are checked
 	 */
-	if (!(arg = slurm_cred_verify(conf->vctx, cred)))
+	if (!(arg = slurm_cred_verify(cred)))
 		return SLURM_ERROR;
 	xassert(arg->job_mem_alloc);
 
