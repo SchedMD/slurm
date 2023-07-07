@@ -328,7 +328,7 @@ extern int slurm_cred_begin_expiration(uint32_t jobid);
  * Returns true if the credential context has a cached state for
  * job id jobid.
  */
-extern bool slurm_cred_jobid_cached(slurm_cred_ctx_t *ctx, uint32_t jobid);
+extern bool slurm_cred_jobid_cached(uint32_t jobid);
 
 
 /*
