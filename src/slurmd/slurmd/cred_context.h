@@ -54,4 +54,19 @@ extern int cred_revoke(uint32_t jobid, time_t time, time_t start_time);
 
 extern bool cred_revoked(slurm_cred_t *cred);
 
+/*
+ * Begin expiration period for the revocation of credentials for jobid.
+ * This should be run after slurm_cred_revoke().
+ * This function is used because we may want to revoke credentials for a jobid,
+ * but not purge the revocation from memory until after some other action has
+ * occurred, e.g. completion of a job epilog.
+ *
+ * Returns 0 for success, SLURM_ERROR for failure with errno set to:
+ *
+ *  ESRCH  if jobid is not cached
+ *  EEXIST if expiration period has already begun for jobid.
+ *
+ */
+extern int cred_begin_expiration(uint32_t jobid);
+
 #endif

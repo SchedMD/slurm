@@ -284,21 +284,6 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred);
  */
 extern void slurm_cred_handle_reissue(slurm_cred_t *cred, bool locked);
 
-/*
- * Begin expiration period for the revocation of credentials
- *  for job id jobid. This should be run after slurm_cred_revoke()
- *  This function is used because we may want to revoke credentials
- *  for a jobid, but not purge the revocation from memory until after
- *  some other action has occurred, e.g. completion of a job epilog.
- *
- * Returns 0 for success, SLURM_ERROR for failure with errno set to:
- *
- *  ESRCH  if jobid is not cached
- *  EEXIST if expiration period has already begun for jobid.
- *
- */
-extern int slurm_cred_begin_expiration(uint32_t jobid);
-
 /* Free memory associated with slurm credential `cred.'
  */
 extern void slurm_cred_destroy(slurm_cred_t *cred);

@@ -5240,7 +5240,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	 *   the epilog again, as that script has already been executed
 	 *   for this job.
 	 */
-	if (slurm_cred_begin_expiration(req->step_id.job_id) < 0) {
+	if (cred_begin_expiration(req->step_id.job_id) < 0) {
 		debug("Not running epilog for jobid %d: %m", req->step_id.job_id);
 		return;
 	}
@@ -5438,7 +5438,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg,
 					  ESLURMD_KILL_JOB_ALREADY_COMPLETE);
 		}
-		slurm_cred_begin_expiration(req->step_id.job_id);
+		cred_begin_expiration(req->step_id.job_id);
 		save_cred_state();
 		_waiter_complete(req->step_id.job_id);
 
@@ -5492,7 +5492,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 *   the epilog again, as that script has already been executed
 	 *   for this job.
 	 */
-	if (slurm_cred_begin_expiration(req->step_id.job_id) < 0) {
+	if (cred_begin_expiration(req->step_id.job_id) < 0) {
 		debug("Not running epilog for jobid %d: %m", req->step_id.job_id);
 		goto done;
 	}

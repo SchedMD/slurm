@@ -495,35 +495,6 @@ extern void slurm_cred_destroy(slurm_cred_t *cred)
 	xfree(cred);
 }
 
-extern int slurm_cred_begin_expiration(uint32_t jobid)
-{
-	job_state_t  *j = NULL;
-
-	slurm_mutex_lock(&cred_cache_mutex);
-
-	//_clear_expired_job_states();
-
-	if (!(j = _find_job_state(jobid))) {
-		slurm_seterrno(ESRCH);
-		goto error;
-	}
-
-	if (j->expiration < (time_t) MAX_TIME) {
-		slurm_seterrno(EEXIST);
-		goto error;
-	}
-
-	j->expiration = time(NULL) + cred_expire;
-	debug2("set revoke expiration for jobid %u to %ld UTS",
-	       j->jobid, j->expiration);
-	slurm_mutex_unlock(&cred_cache_mutex);
-	return SLURM_SUCCESS;
-
-error:
-	slurm_mutex_unlock(&cred_cache_mutex);
-	return SLURM_ERROR;
-}
-
 extern int slurm_cred_get_signature(slurm_cred_t *cred,
 				    char **datap, uint32_t *datalen)
 {
