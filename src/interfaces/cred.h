@@ -296,8 +296,7 @@ extern void slurm_cred_handle_reissue(slurm_cred_ctx_t *ctx, slurm_cred_t *cred,
  *           (local time from slurmctld server)
  * start_time IN - job start time, used to recongnize job requeue
  */
-extern int slurm_cred_revoke(slurm_cred_ctx_t *ctx, uint32_t jobid, time_t time,
-			     time_t start_time);
+extern int slurm_cred_revoke(uint32_t jobid, time_t time, time_t start_time);
 
 /*
  * Report if a all credentials for a give job id have been

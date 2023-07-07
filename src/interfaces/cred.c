@@ -585,22 +585,21 @@ extern int slurm_cred_rewind(slurm_cred_ctx_t *ctx, slurm_cred_t *cred)
 	return (rc > 0 ? SLURM_SUCCESS : SLURM_ERROR);
 }
 
-extern int slurm_cred_revoke(slurm_cred_ctx_t *ctx, uint32_t jobid, time_t time,
-			     time_t start_time)
+extern int slurm_cred_revoke(uint32_t jobid, time_t time, time_t start_time)
 {
 	job_state_t  *j = NULL;
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	_clear_expired_job_states(ctx);
+	_clear_expired_job_states(NULL);
 
-	if (!(j = _find_job_state(ctx, jobid))) {
+	if (!(j = _find_job_state(NULL, jobid))) {
 		/*
 		 *  This node has not yet seen a job step for this
 		 *   job. Insert a job state object so that we can
 		 *   revoke any future credentials.
 		 */
-		j = _insert_job_state(ctx, jobid);
+		j = _insert_job_state(NULL, jobid);
 	}
 	if (j->revoked) {
 		if (start_time && (j->revoked < start_time)) {

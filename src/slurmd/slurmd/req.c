@@ -2417,8 +2417,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		 * can't check the return code.
 		 */
 		if (rc)
-			slurm_cred_revoke(conf->vctx, req->job_id, time(NULL),
-					  time(NULL));
+			slurm_cred_revoke(req->job_id, time(NULL), time(NULL));
 
 		_remove_job_running_prolog(req->job_id);
 	} else
@@ -5219,7 +5218,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
-	if (slurm_cred_revoke(conf->vctx, req->step_id.job_id, req->time,
+	if (slurm_cred_revoke(req->step_id.job_id, req->time,
 			      req->start_time) < 0) {
 		debug("revoking cred for job %u: %m", req->step_id.job_id);
 	} else {
@@ -5354,7 +5353,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
-	if (slurm_cred_revoke(conf->vctx, req->step_id.job_id, req->time,
+	if (slurm_cred_revoke(req->step_id.job_id, req->time,
 			      req->start_time) < 0) {
 		debug("revoking cred for job %u: %m", req->step_id.job_id);
 	} else {
