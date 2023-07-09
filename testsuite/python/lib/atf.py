@@ -1376,6 +1376,75 @@ def set_node_parameter(node_name, new_parameter_name, new_parameter_value):
     if is_slurmctld_running(quiet=True):
         restart_slurm(quiet=True)
 
+def get_reservations(quiet=False, **run_command_kwargs):
+    """Returns the reservations as a dictionary of dictionaries.
+
+    Args:
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns: A dictionary of dictionaries where the first level keys are the
+        reservation names and with the their values being a dictionary of
+        configuration parameters for the respective reservation.
+    """
+
+    resvs_dict = {}
+    resv_dict = {}
+
+    output = run_command_output("scontrol show reservations -o", fatal=True, quiet=quiet, **run_command_kwargs)
+    for line in output.splitlines():
+        if line == '':
+            continue
+
+        while match := re.search(r'^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)', line):
+            parameter_name, parameter_value = match.group(1), match.group(2)
+
+            # Remove the consumed parameter from the line
+            line = re.sub(r'^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)', '', line)
+
+            # Reformat the value if necessary
+            if is_integer(parameter_value):
+                parameter_value = int(parameter_value)
+            elif is_float(parameter_value):
+                parameter_value = float(parameter_value)
+            elif parameter_value == '(null)':
+                parameter_value = None
+
+            # Add it to the temporary resv dictionary
+            resv_dict[parameter_name] = parameter_value
+
+        # Add the redv dictionary to the resv dictionary
+        resvs_dict[resv_dict['ReservationName']] = resv_dict
+
+        # Clear the resv dictionary for use by the next resv
+        resv_dict = {}
+
+    return resvs_dict
+
+
+def get_reservation_parameter(resv_name, parameter_name, default=None):
+    """Obtains the value for a reservation configuration parameter.
+
+    Args:
+        resv_name (string): The reservation name.
+        parameter_name (string): The parameter name.
+        default (string or None): This value is returned if the parameter
+            is not found.
+
+    Returns: The value of the specified reservation parameter, or the default if not
+        found.
+    """
+
+    resvs_dict = get_reservations()
+
+    if resv_name in resvs_dict:
+        resv_dict = resvs_dict[resv_name]
+    else:
+        pytest.fail(f"reservation ({resv_name}) was not found")
+
+    if parameter_name in resv_dict:
+        return resv_dict[parameter_name]
+    else:
+        return default
 
 def is_super_user():
     uid = os.getuid()
