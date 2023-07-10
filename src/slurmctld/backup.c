@@ -255,11 +255,11 @@ void run_backup(void)
 		error("failed to restore switch state");
 		abort();
 	}
+	slurmctld_config.shutdown_time = (time_t) 0;
 	if (read_slurm_conf(2, false)) {	/* Recover all state */
 		error("Unable to recover slurm state");
 		abort();
 	}
-	slurmctld_config.shutdown_time = (time_t) 0;
 	unlock_slurmctld(config_write_lock);
 	select_g_select_nodeinfo_set_all();
 
