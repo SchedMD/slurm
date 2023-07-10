@@ -119,6 +119,7 @@ documents those changes that are of interest to users and administrators.
     percentages of a cluster/partition instead of absolutes.
  -- Remove FIRST_CORES flag from reservations.
  -- scontrol/sview - Remove comma separated CoreCnt option from reservations.
+ -- scontrol/sview - Remove comma separated NodeCnt option from reservations.
 
 * Changes in Slurm 23.02.5
 ==========================

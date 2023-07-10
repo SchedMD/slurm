@@ -317,16 +317,16 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "name";
 		break;
 	case SORTID_NODE_CNT:
-		type = "Node Count";
-		if (parse_resv_nodecnt(resv_msg, (char *)new_text,
-				       &res_free_flags, false,
-				       &err_msg) == SLURM_ERROR) {
+		if (strtok_r((char *)new_text, ",", &type)) {
+			type = NULL;
 			if (global_edit_error_msg)
 				g_free(global_edit_error_msg);
-			global_edit_error_msg = g_strdup(err_msg);
-			xfree(err_msg);
+			global_edit_error_msg = g_strdup("Using a comma separated array for NodeCnt is no longer valid.");
 			goto return_error;
 		}
+
+		type = "Node Count";
+		resv_msg->node_cnt = slurm_atoul((char *)new_text);
 		break;
 	case SORTID_NODELIST:
 		resv_msg->node_list = xstrdup(new_text);

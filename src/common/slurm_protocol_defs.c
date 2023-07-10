@@ -1665,8 +1665,6 @@ extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
 		xfree(msg->comment);
 	if (res_free_flags & RESV_FREE_STR_TRES_LIC)
 		xfree(msg->licenses);
-	if (res_free_flags & RESV_FREE_STR_TRES_NODE)
-		xfree(msg->node_cnt);
 	if (res_free_flags & RESV_FREE_STR_GROUP)
 		xfree(msg->groups);
 	if (res_free_flags & RESV_FREE_STR_NODES)

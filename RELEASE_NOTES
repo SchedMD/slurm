@@ -98,6 +98,7 @@ COMMAND CHANGES (see man pages for details)
     jobs losing access to the reservation.
  -- scontrol/sview - Remove FIRST_CORES flag from reservations.
  -- scontrol/sview - Remove comma separated CoreCnt option from reservations.
+ -- scontrol/sview - Remove comma separated NodeCnt option from reservations.
 
 API CHANGES
 ===========

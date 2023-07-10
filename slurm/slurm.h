@@ -2628,11 +2628,7 @@ typedef struct resv_desc_msg {
 				  * once any jobs are queued for the
 				  * reservation */
 	char *name;		/* name of reservation (optional on create) */
-	uint32_t *node_cnt;	/* Count of nodes required. Specify set of job
-				 * sizes with trailing zero to optimize layout
-				 * for those jobs just specify their total size
-				 * to ignore optimized topology. For example,
-				 * {512,512,1024,0} OR {2048,0}. */
+	uint32_t node_cnt;	/* Count of nodes required. */
 	char *node_list;	/* list of reserved nodes or ALL */
 	char *partition;	/* name of partition to be used */
 	uint32_t purge_comp_time; /* If PURGE_COMP flag is set the amount of

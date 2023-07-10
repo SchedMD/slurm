@@ -199,7 +199,7 @@
 #define RESV_FREE_STR_TRES_BB   SLURM_BIT(2)
 /* #define SLURM_BIT(3) reusable 2 versions after 23.11 */
 #define RESV_FREE_STR_TRES_LIC  SLURM_BIT(4)
-#define RESV_FREE_STR_TRES_NODE SLURM_BIT(5)
+/* #define SLURM_BIT(5) reusable 2 versions after 23.11 */
 #define RESV_FREE_STR_GROUP     SLURM_BIT(6)
 #define RESV_FREE_STR_COMMENT   SLURM_BIT(7)
 #define RESV_FREE_STR_NODES     SLURM_BIT(8)
