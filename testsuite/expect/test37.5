@@ -367,7 +367,7 @@ if {$requeue_exithold_num ne "(null)"} {
 
 
 # get number of nodes per cluster
-set node_count [llength [get_nodes_by_state idle,alloc,comp]]
+set node_count [llength [get_nodes_by_state idle,alloc,comp "[default_partition] --local"]]
 
 set origin_cluster [get_config_param "ClusterName"]
 set all_cluster_list [list $fedc1 $fedc2 $fedc3]

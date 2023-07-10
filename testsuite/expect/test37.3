@@ -91,8 +91,8 @@ proc test_fed_status {cname fed_flags cluster_list} {
 				if {$expected_matches &&
 				    [dict get $clusters($name) host]     eq $host &&
 				    [dict get $clusters($name) state]    eq $state &&
-				    [dict get $clusters($name) features] eq $features] &&
-				    [dict get $clusters($name) conn]     eq Self &&
+				    [dict get $clusters($name) features] eq $features &&
+				    [dict get $clusters($name) conn]     eq "Self" &&
 				    [dict get $clusters($name) port]     == $port &&
 				    [dict get $clusters($name) id]       == $id} {
 					log_debug "Matched self: $name"
