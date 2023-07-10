@@ -250,7 +250,7 @@ if [setup_federation $fed_name] {
 }
 
 # Get number of nodes per cluster
-set node_count [llength [get_nodes_by_state idle,alloc,comp]]
+set node_count [llength [get_nodes_by_state idle,alloc,comp "[default_partition] --local"]]
 
 log_info "################################################################"
 log_info "Setup cluster features"
