@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
  -- scrontab - Fix cutting off the final character of quoted variables.
  -- Fix slurmstepd segfault when ContainerPath is not set in oci.conf
  -- Change the log message warning for rate limited users from debug to verbose.
+ -- Fixed an issue where jobs requesting licenses were incorrectly rejected.
 
 * Changes in Slurm 23.02.3
 ==========================
