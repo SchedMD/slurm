@@ -1,4 +1,4 @@
-.TH strigger "1" "Slurm Commands" "August 2022" "Slurm Commands"
+.TH strigger "1" "Slurm Commands" "July 2023" "Slurm Commands"
 
 .SH "NAME"
 strigger \- Used to set, get or clear Slurm trigger information.
@@ -91,6 +91,12 @@ Trigger an event if the specified node goes into a DOWN state.
 .TP
 \fB\-D\fR, \fB\-\-drained\fR
 Trigger an event if the specified node goes into a DRAINED state.
+.IP
+
+.TP
+\fB\-\-draining\fR
+Trigger an event if the specified node goes into a DRAINING state,
+before it is DRAINED.
 .IP
 
 .TP
@@ -253,6 +259,11 @@ This can be useful to clear triggers which may have already been purged.
 Trigger an event when the system configuration changes.
 This is triggered when the slurmctld daemon reads its configuration file or
 when a node state changes.
+.IP
+
+.TP
+\fB\-R\fR, \fB\-\-resume\fR
+Trigger an event if the specified node is set to the RESUME state.
 .IP
 
 .TP
