@@ -3747,7 +3747,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 				bit_set_count(resv_ptr->node_bitmap);
 
 	}
-	memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
+	slurm_init_resv_desc_msg(&resv_desc);
 	resv_desc.start_time  = resv_ptr->start_time;
 	resv_desc.end_time    = resv_ptr->end_time;
 	resv_desc.flags       = resv_ptr->flags;
@@ -4417,7 +4417,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 			FREE_NULL_BITMAP(rem_bitmap);
 		}
 
-		memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
+		slurm_init_resv_desc_msg(&resv_desc);
 		resv_desc.start_time  = resv_ptr->start_time;
 		resv_desc.end_time    = resv_ptr->end_time;
 		resv_desc.features    = resv_ptr->features;
@@ -4537,7 +4537,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	/* Reservation includes DOWN, DRAINED/DRAINING, FAILING or
 	 * NO_RESPOND nodes. Generate new request using _select_nodes()
 	 * in attempt to replace these nodes */
-	memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
+	slurm_init_resv_desc_msg(&resv_desc);
 	resv_desc.start_time = resv_ptr->start_time;
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
@@ -4919,7 +4919,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 
 	/* Must increase node count. Make this look like new request so
 	 * we can use _select_nodes() for selecting the nodes */
-	memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
+	slurm_init_resv_desc_msg(&resv_desc);
 	resv_desc.start_time = resv_ptr->start_time;
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
