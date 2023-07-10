@@ -79,6 +79,9 @@ uint64_t str_to_mbytes(const char *arg);
  */
 extern char *mbytes_to_str(uint64_t mbytes);
 
+/* Convert a string into a node count */
+extern int str_to_nodes(const char *num_str, char **leftover);
+
 /* verify that a node count in arg is of a known form (count or min-max[:step]) */
 bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes,
 		       char **job_size_str);
