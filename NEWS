@@ -82,6 +82,18 @@ documents those changes that are of interest to users and administrators.
  -- sbatch - removed --export-file option (used with defunct Moab integration).
  -- Define SPANK options environment variables when --export=[NIL|NONE] is
     specified.
+ -- slurmrestd - Numeric input fields provided with a null formatted value will
+    now convert to zero (0) where it can be a valid value. This is expected to
+    be only be notable with job submission against v0.0.38 versioned endpoints
+    with job requests with fields provided with null values. These fields were
+    already rejected by v0.0.39+ endpoints, unless +complex parser value is
+    provided to v0.0.40+ endpoints.
+ -- slurmrestd - Improve parsing of integers and floating point numbers when
+    handling incoming user provided numeric fields. Fields that would have not
+    rejected a number for a numeric field followed by other non-numeric
+    characters will now get rejected. This is expected to be only be notable
+    with job submission against v0.0.38 versioned endpoints with malformed job
+    requests.
 
 * Changes in Slurm 23.02.4
 ==========================
