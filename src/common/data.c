@@ -1616,6 +1616,18 @@ static int _convert_data_int(data_t *data, bool force)
 		return ESLURM_DATA_CONV_FAILED;
 	case DATA_TYPE_INT_64:
 		return SLURM_SUCCESS;
+	case DATA_TYPE_NULL:
+		if (force) {
+			/*
+			 * Conversion from NULL to integer is a loss of
+			 * information as NULL implies value is not set where as
+			 * integer 0 could just mean there is a a value zero as
+			 * opposed to there be no value set. This conversion is
+			 * only done when force is true as such.
+			 */
+			data_set_int(data, 0);
+			return SLURM_SUCCESS;
+		}
 	default:
 		return ESLURM_DATA_CONV_FAILED;
 	}
