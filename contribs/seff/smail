@@ -58,11 +58,8 @@ if [ -n "$status" ]; then
     jobid="${sarray[1]}"
     # Remove the trailing "_*" until seff supports array jobs fully
     jobid=${jobid%"_*"}
-    # Fork a child so sleep is asynchronous.
-    {
-        sleep $JOB_COMPLETION_TIME
-        $SEFF $jobid | $MAIL -s "$subject" $recipient
-    } &
+    sleep $JOB_COMPLETION_TIME
+    $SEFF $jobid | $MAIL -s "$subject" $recipient
 else
     $MAIL -s "$subject" $recipient
 fi
