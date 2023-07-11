@@ -1229,7 +1229,7 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 }
 
 /*
- * Tranfer licenses into the control of a reservation.
+ * Transfer licenses into the control of a reservation.
  * Finds the global license, deducts the required number, then assigns those
  * to a new record locked to that reservation.
  */
