@@ -43,7 +43,7 @@ ClusterName=${SLURM_CLUSTER_NAME}
 subject="$ClusterName $2"
 recipient=$3
 
-# If we decide later to seff based on specific status codes, 
+# If we decide later to seff based on specific status codes,
 # we can test against $status.
 status=`echo "${array[2]}" | tr -d ' '`
 if [ -n "$status" ]; then
