@@ -1681,9 +1681,10 @@ static int _convert_data_float_from_string(data_t *data)
 	}
 
 	if ((str[i] >= '0') && (str[i] <= '9')) {
+		char end;
 		double x;
 
-		if (sscanf(&str[i], "%lf", &x) == 1) {
+		if (sscanf(&str[i], "%lf%c", &x, &end) == 1) {
 			data_set_float(data, x);
 			goto converted;
 		}
