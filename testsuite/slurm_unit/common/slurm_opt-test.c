@@ -583,8 +583,8 @@ START_TEST(test_data_job)
 	opt.req_switch = 1;
 	data_set_null(arg);
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_SWITCHES, arg,
-						errors) == 0, "switches");
-	ck_assert_msg(opt.req_switch == 0, "switches value");
+						errors) != 0, "switches");
+	ck_assert_msg(opt.req_switch == 1, "switches value");
 	ck_assert_msg(opt.wait4switch == 12345, "wait 4 switches value");
 	opt.wait4switch = 12345;
 	opt.req_switch = 1;
