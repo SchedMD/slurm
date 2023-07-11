@@ -705,7 +705,7 @@ START_TEST(test_data_job)
 
 	data_set_null(arg);
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_WAIT_ALL_NODES,
-						arg, errors) != 0,
+						arg, errors) == 0,
 		      "wait-all-nodes");
 	data_set_string(arg, "0");
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_WAIT_ALL_NODES,
