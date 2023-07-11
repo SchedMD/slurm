@@ -1724,7 +1724,7 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 				slurm_strerror(ESLURM_NOT_SUPPORTED));
 	}
 
-	if (data_get_type(errors) == DATA_TYPE_LIST) {
+	if (data_get_type(warnings) == DATA_TYPE_LIST) {
 		if (!data_get_list_length(warnings))
 			data_set_null(warnings);
 		else
