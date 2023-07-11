@@ -1560,6 +1560,7 @@ static int _convert_data_int(data_t *data, bool force)
 	case DATA_TYPE_STRING:
 	{
 		int64_t x;
+		char end;
 		const char *str = data->data.string_u;
 
 		if (!str[0]) {
@@ -1570,7 +1571,7 @@ static int _convert_data_int(data_t *data, bool force)
 		}
 
 		if ((str[0] == '0') && (tolower(str[1]) == 'x')) {
-			if ((sscanf(str, "%"SCNx64, &x) == 1)) {
+			if (sscanf(str, "%"SCNx64"%c", &x, &end) == 1) {
 				log_flag_hex(DATA, str, strlen(str),
 					     "%s: converted hex number %pD->%"PRId64,
 					 __func__, data, x);
@@ -1595,7 +1596,7 @@ static int _convert_data_int(data_t *data, bool force)
 			}
 		}
 
-		if (sscanf(str, "%"SCNd64, &x) == 1) {
+		if (sscanf(str, "%"SCNd64"%c", &x, &end) == 1) {
 			log_flag_hex(DATA, str, strlen(str),
 				     "%s: converted %pD->%"PRId64,
 				     __func__, data, x);
