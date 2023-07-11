@@ -8,15 +8,15 @@
 # $3: The To: email address.
 #
 # The subject should look like this for an start record:
-# SLURM Job_id=323 Name=ddt_clone Began, Queued time 00:00:01
+# Slurm Job_id=323 Name=ddt_clone Began, Queued time 00:00:01
 #
 # The subject should look like this for an end record:
-# SLURM Job_id=327 Name=ddt_clone Ended, Run time 00:05:01, COMPLETED, ExitCode 0
-# SLURM Job_id=328 Name=ddt_clone Failed, Run time 00:05:01, FAILED, ExitCode 127
-# SLURM Job_id=342 Name=ddt_clone Ended, Run time 00:00:33, CANCELLED, ExitCode 0
+# Slurm Job_id=327 Name=ddt_clone Ended, Run time 00:05:01, COMPLETED, ExitCode 0
+# Slurm Job_id=328 Name=ddt_clone Failed, Run time 00:05:01, FAILED, ExitCode 127
+# Slurm Job_id=342 Name=ddt_clone Ended, Run time 00:00:33, CANCELLED, ExitCode 0
 # Not sure what to do about PENDING state resulting from a requeue request.
 # Doing a seff on it for now:
-# SLURM Job_id=326 Name=ddt_clone Failed, Run time 00:00:41, PENDING, ExitCode 0
+# Slurm Job_id=326 Name=ddt_clone Failed, Run time 00:00:41, PENDING, ExitCode 0
 #
 # These end records are the only types of messages to process. They have 4 (rather
 # than 2) comma-delimited arguments, of which ending status is the 3rd.
