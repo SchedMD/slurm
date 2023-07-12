@@ -1527,10 +1527,6 @@ fail1:
 		stepd_send_step_complete_msgs(step);
 	}
 
-	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP)
-	    && core_spec_g_clear(step->cont_id))
-		error("core_spec_g_clear: %m");
-
 	return(rc);
 }
 
