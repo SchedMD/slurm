@@ -965,16 +965,6 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_suspend(void *suspend_info, int max_wait)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_job_resume(void *suspend_info, int max_wait)
-{
-	return SLURM_SUCCESS;
-}
-
 /*
  * Non-privileged
  */

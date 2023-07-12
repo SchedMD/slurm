@@ -222,23 +222,6 @@ extern int switch_g_job_preinit(stepd_step_rec_t *step);
 extern int switch_g_job_init(stepd_step_rec_t *step);
 
 /*
- * Suspend a job's use of switch resources. This may reset MPI timeout values
- * and/or release switch resources. See also switch_g_job_resume().
- *
- * IN max_wait - maximum number of seconds to wait for operation to complete
- * RET SLURM_SUCCESS or error code
- */
-extern int switch_g_job_suspend(void *suspend_info, int max_wait);
-
-/*
- * Resume a job's use of switch resources. See also switch_g_job_suspend().
- *
- * IN max_wait - maximum number of seconds to wait for operation to complete
- * RET SLURM_SUCCESS or error code
- */
-extern int switch_g_job_resume(void *suspend_info, int max_wait);
-
-/*
  * This function is run from the same process as switch_g_job_init()
  * after all job tasks have exited. It is *not* run as root, because
  * the process in question has already setuid to the job owner.
