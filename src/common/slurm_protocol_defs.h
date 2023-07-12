@@ -1268,7 +1268,6 @@ typedef struct suspend_int_msg {
 	uint8_t  indf_susp;     /* non-zero if being suspended indefinitely */
 	uint32_t job_id;        /* slurm job_id */
 	uint16_t op;            /* suspend operation, see enum suspend_opts */
-	void *   switch_info;	/* opaque data for switch plugin */
 } suspend_int_msg_t;
 
 typedef struct ping_slurmd_resp_msg {
