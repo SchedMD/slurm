@@ -47,9 +47,6 @@
 
 typedef struct core_spec_ops {
 	int	(*core_spec_p_set)	(uint64_t cont_id, uint16_t count);
-	int	(*core_spec_p_clear)	(uint64_t cont_id);
-	int	(*core_spec_p_suspend)	(uint64_t cont_id, uint16_t count);
-	int	(*core_spec_p_resume)	(uint64_t cont_id, uint16_t count);
 } core_spec_ops_t;
 
 /*
@@ -57,9 +54,6 @@ typedef struct core_spec_ops {
  */
 static const char *syms[] = {
 	"core_spec_p_set",
-	"core_spec_p_clear",
-	"core_spec_p_suspend",
-	"core_spec_p_resume",
 };
 
 static core_spec_ops_t		*ops = NULL;
@@ -176,63 +170,6 @@ extern int core_spec_g_set(uint64_t cont_id, uint16_t core_count)
 	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
 		rc = (*(ops[i].core_spec_p_set))(cont_id, core_count);
-	}
-
-	return rc;
-}
-
-/*
- * Clear specialized cores at job termination
- *
- * Return SLURM_SUCCESS on success
- */
-extern int core_spec_g_clear(uint64_t cont_id)
-{
-	int i, rc = SLURM_SUCCESS;
-
-	xassert(g_core_spec_context_num >= 0);
-
-	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
-	     i++) {
-		rc = (*(ops[i].core_spec_p_clear))(cont_id);
-	}
-
-	return rc;
-}
-
-/*
- * Reset specialized cores at job suspend
- *
- * Return SLURM_SUCCESS on success
- */
-extern int core_spec_g_suspend(uint64_t cont_id, uint16_t count)
-{
-	int i, rc = SLURM_SUCCESS;
-
-	xassert(g_core_spec_context_num >= 0);
-
-	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
-	     i++) {
-		rc = (*(ops[i].core_spec_p_suspend))(cont_id, count);
-	}
-
-	return rc;
-}
-
-/*
- * Reset specialized cores at job resume
- *
- * Return SLURM_SUCCESS on success
- */
-extern int core_spec_g_resume(uint64_t cont_id, uint16_t count)
-{
-	int i, rc = SLURM_SUCCESS;
-
-	xassert(g_core_spec_context_num >= 0);
-
-	for (i = 0; ((i < g_core_spec_context_num) && (rc == SLURM_SUCCESS));
-	     i++) {
-		rc = (*(ops[i].core_spec_p_resume))(cont_id, count);
 	}
 
 	return rc;

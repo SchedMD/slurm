@@ -63,25 +63,5 @@ extern int core_spec_g_fini(void);
  * Return SLURM_SUCCESS on success
  */
 extern int core_spec_g_set(uint64_t cont_id, uint16_t core_count);
-/*
- * Clear specialized cores at job termination
- *
- * Return SLURM_SUCCESS on success
- */
-extern int core_spec_g_clear(uint64_t cont_id);
-
-/*
- * Reset specialized cores at job suspend
- *
- * Return SLURM_SUCCESS on success
- */
-extern int core_spec_g_suspend(uint64_t cont_id, uint16_t core_count);
-
-/*
- * Reset specialized cores at job resume
- *
- * Return SLURM_SUCCESS on success
- */
-extern int core_spec_g_resume(uint64_t cont_id, uint16_t core_count);
 
 #endif
