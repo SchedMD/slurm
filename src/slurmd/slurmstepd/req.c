@@ -1547,14 +1547,10 @@ _handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
-	uint16_t job_core_spec = NO_VAL16;
 	char *tmp;
 	static uint32_t suspend_grace_time = NO_VAL;
 
-	safe_read(fd, &job_core_spec, sizeof(uint16_t));
-
-	debug("_handle_suspend for %ps uid:%u core_spec:%u",
-	      &step->step_id, uid, job_core_spec);
+	debug("%s for %ps uid:%u", __func__, &step->step_id, uid);
 
 	if (!_slurm_authorized_user(uid)) {
 		debug("job step suspend request from uid %u for %ps",
@@ -1647,12 +1643,8 @@ _handle_resume(int fd, stepd_step_rec_t *step, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
-	uint16_t job_core_spec = NO_VAL16;
 
-	safe_read(fd, &job_core_spec, sizeof(uint16_t));
-
-	debug("_handle_resume for %ps uid:%u core_spec:%u",
-	      &step->step_id, uid, job_core_spec);
+	debug("%s for %ps uid:%u", __func__, &step->step_id, uid);
 
 	if (!_slurm_authorized_user(uid)) {
 		debug("job step resume request from uid %u for %ps",
