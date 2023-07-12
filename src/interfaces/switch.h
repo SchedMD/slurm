@@ -222,14 +222,6 @@ extern int switch_g_job_preinit(stepd_step_rec_t *step);
 extern int switch_g_job_init(stepd_step_rec_t *step);
 
 /*
- * Determine if a job can be suspended
- *
- * IN jobinfo - switch information for a job step
- * RET SLURM_SUCCESS or error code
- */
-extern int switch_g_job_suspend_test(dynamic_plugin_data_t *jobinfo);
-
-/*
  * Build data structure containing information needed to suspend or resume
  * a job
  *

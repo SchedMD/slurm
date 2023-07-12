@@ -16670,25 +16670,6 @@ static int _resume_job_nodes(job_record_t *job_ptr, bool indf_susp)
 	return rc;
 }
 
-static int _job_suspend_switch_test(job_record_t *job_ptr)
-{
-	int rc = SLURM_SUCCESS;
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
-
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->state != JOB_RUNNING)
-			continue;
-		rc = switch_g_job_suspend_test(step_ptr->switch_job);
-		if (rc != SLURM_SUCCESS)
-			break;
-	}
-	list_iterator_destroy (step_iterator);
-
-	return rc;
-}
-
 /*
  * Determine if a job can be resumed.
  * Check for multiple jobs on the same nodes with core specialization.
@@ -16740,9 +16721,6 @@ static int _job_suspend_op(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 		return ESLURM_JOB_PENDING;
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
-	if ((op == SUSPEND_JOB) &&
-	    (_job_suspend_switch_test(job_ptr) != SLURM_SUCCESS))
-		return ESLURM_NOT_SUPPORTED;
 	if ((op == RESUME_JOB) && (rc = _job_resume_test(job_ptr)))
 		return rc;
 
