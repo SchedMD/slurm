@@ -2057,7 +2057,6 @@ typedef struct {
 	char **env;
 	char *container; /* OCI Container bundle path */
 	char *cwd;
-	bool user_managed_io;
 	uint32_t msg_timeout; /* timeout set for sending message */
 	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
 	uint16_t ntasks_per_core; /* number of tasks to invoke on each core */
@@ -2065,14 +2064,13 @@ typedef struct {
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on
 				    * each socket */
 
-	/* START - only used if user_managed_io is false */
+	/* I/O handling */
 	bool buffered_stdio;
 	bool labelio;
 	char *remote_output_filename;
 	char *remote_error_filename;
 	char *remote_input_filename;
 	slurm_step_io_fds_t local_fds;
-	/*  END  - only used if user_managed_io is false */
 
 	bool multi_prog;
 	bool no_alloc;
