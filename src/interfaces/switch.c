@@ -78,12 +78,6 @@ typedef struct slurm_switch_ops {
 	int          (*job_init)          ( stepd_step_rec_t *step );
 	void         (*job_suspend_info_get)( switch_jobinfo_t *jobinfo,
 					      void *suspend_info );
-	void         (*job_suspend_info_pack)( void *suspend_info,
-					       buf_t *buffer,
-					       uint16_t protocol_version );
-	int          (*job_suspend_info_unpack)( void **suspend_info,
-						 buf_t *buffer,
-						 uint16_t protocol_version );
 	void         (*job_suspend_info_free)( void *suspend_info );
 	int          (*job_suspend)       ( void *suspend_info,
 					    int max_wait );
@@ -126,8 +120,6 @@ static const char *syms[] = {
 	"switch_p_job_preinit",
 	"switch_p_job_init",
 	"switch_p_job_suspend_info_get",
-	"switch_p_job_suspend_info_pack",
-	"switch_p_job_suspend_info_unpack",
 	"switch_p_job_suspend_info_free",
 	"switch_p_job_suspend",
 	"switch_p_job_resume",
@@ -534,30 +526,6 @@ extern void switch_g_job_suspend_info_get(dynamic_plugin_data_t *jobinfo,
 		plugin_id = switch_context_default;
 
 	(*(ops[plugin_id].job_suspend_info_get)) (data, suspend_info);
-}
-
-extern void switch_g_job_suspend_info_pack(void *suspend_info, buf_t *buffer,
-					   uint16_t protocol_version)
-{
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return;
-
-	(*(ops[switch_context_default].job_suspend_info_pack))
-		(suspend_info, buffer, protocol_version);
-}
-
-extern int switch_g_job_suspend_info_unpack(void **suspend_info, buf_t *buffer,
-					    uint16_t protocol_version)
-{
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
-
-	return (*(ops[switch_context_default].job_suspend_info_unpack))
-		(suspend_info, buffer, protocol_version);
 }
 
 extern void switch_g_job_suspend_info_free(void *suspend_info)

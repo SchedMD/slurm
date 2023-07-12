@@ -703,17 +703,6 @@ extern void switch_p_job_suspend_info_get(switch_jobinfo_t *jobinfo,
 {
 	return;
 }
-extern void switch_p_job_suspend_info_pack(void *suspend_info, buf_t *buffer,
-					   uint16_t protocol_version)
-{
-	return;
-}
-
-extern int switch_p_job_suspend_info_unpack(void **suspend_info, buf_t *buffer,
-					    uint16_t protocol_version)
-{
-	return SLURM_SUCCESS;
-}
 
 extern void switch_p_job_suspend_info_free(void *suspend_info)
 {

@@ -230,27 +230,7 @@ extern int switch_g_job_init(stepd_step_rec_t *step);
  */
 extern void switch_g_job_suspend_info_get(dynamic_plugin_data_t *jobinfo,
 					  void **suspend_info);
-/*
- * Pack data structure containing information needed to suspend or resume
- * a job
- *
- * IN suspend_info - data to be sent with job suspend/resume RPC
- * IN/OUT buffer to hold the data
- * IN protocol_version - version of Slurm we are talking to.
- */
-extern void switch_g_job_suspend_info_pack(void *suspend_info, buf_t *buffer,
-					   uint16_t protocol_version);
-/*
- * Unpack data structure containing information needed to suspend or resume
- * a job
- *
- * IN suspend_info - data to be sent with job suspend/resume RPC
- * IN/OUT buffer that holds the data
- * IN protocol_version - version of Slurm we are talking to.
- * RET SLURM_SUCCESS or error code
- */
-extern int switch_g_job_suspend_info_unpack(void **suspend_info, buf_t *buffer,
-					    uint16_t protocol_version);
+
 /*
  * Free data structure containing information needed to suspend or resume
  * a job
