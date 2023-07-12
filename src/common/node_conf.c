@@ -1486,3 +1486,26 @@ extern void node_conf_set_all_active_bits(bitstr_t *b)
 	for (int i = 0; next_node(&i); i++)
 		bit_set(b, i);
 }
+
+extern char *nodestr_comma_strtok_r(char *s, char **save_ptr)
+{
+	char *end;
+
+	if (s == NULL)
+		s = *save_ptr;
+
+	if (*s == '\0') {
+		*save_ptr = s;
+		return NULL;
+	}
+
+	/* token ends with a comma not followed by a digit */
+	end = s;
+	while (*end && ((end[0] != ',') || isdigit(end[1])))
+		end++;
+
+	if (*end)
+		*end++ = '\0';
+	*save_ptr = end;
+	return s;
+}

@@ -8,6 +8,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
 bin_PROGRAMS = scontrol
 
 scontrol_SOURCES =	\
+	common.c	\
 	create_res.c	\
 	info_burst_buffer.c \
 	info_assoc_mgr.c \
