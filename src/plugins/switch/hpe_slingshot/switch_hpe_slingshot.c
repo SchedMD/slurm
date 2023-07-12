@@ -1050,13 +1050,6 @@ extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job, int key,
-				void *resulting_data)
-{
-	slurm_seterrno(EINVAL);
-	return SLURM_ERROR;
-}
-
 extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo, char *nodelist)
 {
 	slingshot_jobinfo_t *job = (slingshot_jobinfo_t *) jobinfo;

@@ -72,8 +72,6 @@ typedef struct slurm_switch_ops {
 	int          (*unpack_jobinfo)    ( switch_jobinfo_t **jobinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
-	int          (*get_jobinfo)       ( switch_jobinfo_t *switch_job,
-					    int key, void *data);
 	int          (*job_preinit)       ( stepd_step_rec_t *step );
 	int          (*job_init)          ( stepd_step_rec_t *step );
 	int          (*job_fini)          ( switch_jobinfo_t *jobinfo );
@@ -109,7 +107,6 @@ static const char *syms[] = {
 	"switch_p_free_jobinfo",
 	"switch_p_pack_jobinfo",
 	"switch_p_unpack_jobinfo",
-	"switch_p_get_jobinfo",
 	"switch_p_job_preinit",
 	"switch_p_job_init",
 	"switch_p_job_fini",
@@ -455,26 +452,6 @@ unpack_error:
 	*jobinfo = NULL;
 	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
-}
-
-extern int  switch_g_get_jobinfo(dynamic_plugin_data_t *jobinfo,
-				 int data_type, void *data)
-{
-	void *jobdata = NULL;
-	uint32_t plugin_id;
-
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
-
-	if (jobinfo) {
-		jobdata   = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = switch_context_default;
-
-	return (*(ops[plugin_id].get_jobinfo))(jobdata, data_type, data);
 }
 
 extern int switch_g_job_preinit(stepd_step_rec_t *step)

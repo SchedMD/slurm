@@ -149,15 +149,6 @@ extern int switch_g_unpack_jobinfo(dynamic_plugin_data_t **jobinfo,
 				   buf_t *buffer,
 				   uint16_t protocol_version);
 
-/* get some field from a switch job credential
- * IN jobinfo - the switch job credential
- * IN data_type - the type of data to get from the credential
- * OUT data - the desired data from the credential
- * RET         - slurm error code
- */
-extern int  switch_g_get_jobinfo(dynamic_plugin_data_t *jobinfo,
-	int data_type, void *data);
-
 /*
  * Note that the job step associated with the specified nodelist
  * has completed execution.
