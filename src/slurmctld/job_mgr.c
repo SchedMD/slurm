@@ -16528,7 +16528,6 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 				 * of agent.c RPCs */
 	agent_args->hostlist = hostlist_create(NULL);
 	sus_ptr = xmalloc(sizeof(suspend_int_msg_t));
-	sus_ptr->job_core_spec = job_ptr->details->core_spec;
 	sus_ptr->job_id = job_ptr->job_id;
 	sus_ptr->op = op;
 	sus_ptr->indf_susp = indf_susp;

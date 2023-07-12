@@ -1266,7 +1266,6 @@ typedef struct forward_data_msg {
 /* suspend_msg_t variant for internal slurm daemon communications */
 typedef struct suspend_int_msg {
 	uint8_t  indf_susp;     /* non-zero if being suspended indefinitely */
-	uint16_t job_core_spec;	/* Count of specialized cores */
 	uint32_t job_id;        /* slurm job_id */
 	uint16_t op;            /* suspend operation, see enum suspend_opts */
 	void *   switch_info;	/* opaque data for switch plugin */
