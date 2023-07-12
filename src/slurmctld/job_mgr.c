@@ -253,7 +253,7 @@ static void _set_job_requeue_exit_value(job_record_t *job_ptr);
 static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 			      uint16_t flags);
 static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags);
-static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp);
+static void _suspend_job(job_record_t *job_ptr, uint16_t op);
 static int  _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp);
 static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset);
 static int _update_job_nodes_str(void *x, void *arg);
@@ -16495,7 +16495,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
  * indf_susp IN - set if job is being suspended indefinitely by user
  *                or admin, otherwise suspended for gang scheduling
  */
-static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp)
+static void _suspend_job(job_record_t *job_ptr, uint16_t op)
 {
 #ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
@@ -16512,7 +16512,6 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 	sus_ptr = xmalloc(sizeof(suspend_int_msg_t));
 	sus_ptr->job_id = job_ptr->job_id;
 	sus_ptr->op = op;
-	sus_ptr->indf_susp = indf_susp;
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
@@ -16718,7 +16717,7 @@ static int _job_suspend_op(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 		rc = _suspend_job_nodes(job_ptr, indf_susp);
 		if (rc != SLURM_SUCCESS)
 			return rc;
-		_suspend_job(job_ptr, op, indf_susp);
+		_suspend_job(job_ptr, op);
 		job_ptr->job_state = JOB_SUSPENDED;
 		if (indf_susp) {    /* Job being manually suspended, not gang */
 			debug("%s: Holding %pJ, suspend operation",
@@ -16741,7 +16740,7 @@ static int _job_suspend_op(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 		power_g_job_resume(job_ptr);
 		if (rc != SLURM_SUCCESS)
 			return rc;
-		_suspend_job(job_ptr, op, indf_susp);
+		_suspend_job(job_ptr, op);
 		if (job_ptr->priority == 0) {
 			/* Job was manually suspended, not gang */
 			set_job_prio(job_ptr);

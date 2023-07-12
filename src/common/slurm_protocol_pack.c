@@ -9662,11 +9662,10 @@ static void _pack_suspend_int_msg(suspend_int_msg_t *msg, buf_t *buffer,
 {
 	xassert(msg);
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
-		pack8(msg->indf_susp, buffer);
 		pack32(msg->job_id, buffer);
 		pack16(msg->op, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack8(msg->indf_susp, buffer);
+		pack8(0, buffer);
 		pack16(NO_VAL16, buffer);
 		pack32(msg->job_id,  buffer);
 		pack16(msg->op, buffer);
@@ -9683,12 +9682,12 @@ static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, buf_t *buffer,
 	*msg_ptr = msg ;
 
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
-		safe_unpack8(&msg->indf_susp, buffer);
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack16(&msg->op, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint8_t uint8_tmp;
 		uint16_t uint16_tmp;
-		safe_unpack8(&msg->indf_susp, buffer);
+		safe_unpack8(&uint8_tmp, buffer);
 		safe_unpack16(&uint16_tmp, buffer);
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack16(&msg->op,     buffer);
