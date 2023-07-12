@@ -16489,24 +16489,6 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 	return;
 }
 
-static void *_switch_suspend_info(job_record_t *job_ptr)
-{
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
-	void *switch_suspend_info = NULL;
-
-	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->state != JOB_RUNNING)
-			continue;
-		switch_g_job_suspend_info_get(step_ptr->switch_job,
-					      &switch_suspend_info);
-	}
-	list_iterator_destroy (step_iterator);
-
-	return switch_suspend_info;
-}
-
 /* Send suspend request to slumrd of all nodes associated with a job
  * job_ptr IN - job to be suspended or resumed
  * op IN - SUSPEND_JOB or RESUME_JOB
@@ -16531,7 +16513,6 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 	sus_ptr->job_id = job_ptr->job_id;
 	sus_ptr->op = op;
 	sus_ptr->indf_susp = indf_susp;
-	sus_ptr->switch_info = _switch_suspend_info(job_ptr);
 
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);

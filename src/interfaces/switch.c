@@ -76,8 +76,6 @@ typedef struct slurm_switch_ops {
 					    int key, void *data);
 	int          (*job_preinit)       ( stepd_step_rec_t *step );
 	int          (*job_init)          ( stepd_step_rec_t *step );
-	void         (*job_suspend_info_get)( switch_jobinfo_t *jobinfo,
-					      void *suspend_info );
 	void         (*job_suspend_info_free)( void *suspend_info );
 	int          (*job_suspend)       ( void *suspend_info,
 					    int max_wait );
@@ -119,7 +117,6 @@ static const char *syms[] = {
 	"switch_p_get_jobinfo",
 	"switch_p_job_preinit",
 	"switch_p_job_init",
-	"switch_p_job_suspend_info_get",
 	"switch_p_job_suspend_info_free",
 	"switch_p_job_suspend",
 	"switch_p_job_resume",
@@ -506,26 +503,6 @@ extern int switch_g_job_init(stepd_step_rec_t *step)
 		return SLURM_SUCCESS;
 
 	return (*(ops[switch_context_default].job_init))(step);
-}
-
-extern void switch_g_job_suspend_info_get(dynamic_plugin_data_t *jobinfo,
-					  void **suspend_info)
-{
-	void *data = NULL;
-	uint32_t plugin_id;
-
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return;
-
-	if (jobinfo) {
-		data      = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = switch_context_default;
-
-	(*(ops[plugin_id].job_suspend_info_get)) (data, suspend_info);
 }
 
 extern void switch_g_job_suspend_info_free(void *suspend_info)

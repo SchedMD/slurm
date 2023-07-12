@@ -222,16 +222,6 @@ extern int switch_g_job_preinit(stepd_step_rec_t *step);
 extern int switch_g_job_init(stepd_step_rec_t *step);
 
 /*
- * Build data structure containing information needed to suspend or resume
- * a job
- *
- * IN jobinfo - switch information for a job step
- * RET data to be sent with job suspend/resume RPC
- */
-extern void switch_g_job_suspend_info_get(dynamic_plugin_data_t *jobinfo,
-					  void **suspend_info);
-
-/*
  * Free data structure containing information needed to suspend or resume
  * a job
  *

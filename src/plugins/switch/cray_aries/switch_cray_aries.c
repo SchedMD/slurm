@@ -698,12 +698,6 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 	return SLURM_SUCCESS;
 }
 
-extern void switch_p_job_suspend_info_get(switch_jobinfo_t *jobinfo,
-					  void **suspend_info)
-{
-	return;
-}
-
 extern void switch_p_job_suspend_info_free(void *suspend_info)
 {
 	return;
