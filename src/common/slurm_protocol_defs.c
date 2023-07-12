@@ -1981,10 +1981,7 @@ slurm_free_requeue_msg(requeue_msg_t *msg)
 
 extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg)
 {
-	if (msg) {
-		switch_g_job_suspend_info_free(msg->switch_info);
-		xfree(msg);
-	}
+	xfree(msg);
 }
 
 extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg)

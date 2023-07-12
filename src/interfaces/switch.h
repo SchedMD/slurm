@@ -222,14 +222,6 @@ extern int switch_g_job_preinit(stepd_step_rec_t *step);
 extern int switch_g_job_init(stepd_step_rec_t *step);
 
 /*
- * Free data structure containing information needed to suspend or resume
- * a job
- *
- * IN suspend_info - data sent with job suspend/resume RPC
- */
-extern void switch_g_job_suspend_info_free(void *suspend_info);
-
-/*
  * Suspend a job's use of switch resources. This may reset MPI timeout values
  * and/or release switch resources. See also switch_g_job_resume().
  *

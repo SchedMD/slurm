@@ -76,7 +76,6 @@ typedef struct slurm_switch_ops {
 					    int key, void *data);
 	int          (*job_preinit)       ( stepd_step_rec_t *step );
 	int          (*job_init)          ( stepd_step_rec_t *step );
-	void         (*job_suspend_info_free)( void *suspend_info );
 	int          (*job_suspend)       ( void *suspend_info,
 					    int max_wait );
 	int          (*job_resume)        ( void *suspend_info,
@@ -117,7 +116,6 @@ static const char *syms[] = {
 	"switch_p_get_jobinfo",
 	"switch_p_job_preinit",
 	"switch_p_job_init",
-	"switch_p_job_suspend_info_free",
 	"switch_p_job_suspend",
 	"switch_p_job_resume",
 	"switch_p_job_fini",
@@ -503,16 +501,6 @@ extern int switch_g_job_init(stepd_step_rec_t *step)
 		return SLURM_SUCCESS;
 
 	return (*(ops[switch_context_default].job_init))(step);
-}
-
-extern void switch_g_job_suspend_info_free(void *suspend_info)
-{
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return;
-
-	(*(ops[switch_context_default].job_suspend_info_free)) (suspend_info);
 }
 
 extern int switch_g_job_suspend(void *suspend_info, int max_wait)
