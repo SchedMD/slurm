@@ -1913,6 +1913,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 			.tres = READ_LOCK,
 		};
 		char *backup_node_list = part_ptr->nodes;
+		int rc;
 
 		if (part_desc->nodes[0] == '\0')
 			part_ptr->nodes = NULL;	/* avoid empty string */
@@ -1952,10 +1953,10 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		xfree(part_ptr->orig_nodes);
 		part_ptr->orig_nodes = xstrdup(part_ptr->nodes);
 
-		error_code = build_part_bitmap(part_ptr);
-		if (error_code) {
+		if ((rc = build_part_bitmap(part_ptr))) {
 			xfree(part_ptr->nodes);
 			part_ptr->nodes = backup_node_list;
+			error_code = rc;
 		} else {
 			info("%s: setting nodes to %s for partition %s",
 			     __func__, part_ptr->nodes, part_desc->name);
