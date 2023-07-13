@@ -1917,14 +1917,9 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		if (part_desc->nodes[0] == '\0')
 			part_ptr->nodes = NULL;	/* avoid empty string */
 		else if ((part_desc->nodes[0] != '+') &&
-			 (part_desc->nodes[0] != '-')) {
-			int i;
+			 (part_desc->nodes[0] != '-'))
 			part_ptr->nodes = xstrdup(part_desc->nodes);
-			for (i = 0; part_ptr->nodes[i]; i++) {
-				if (isspace(part_ptr->nodes[i]))
-					part_ptr->nodes[i] = ',';
-			}
-		} else {
+		else {
 			char *p, *tmp, *tok, *save_ptr = NULL;
 			hostset_t *hs = hostset_create(part_ptr->nodes);
 
