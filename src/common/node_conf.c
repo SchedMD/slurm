@@ -1517,6 +1517,8 @@ extern char *nodestr_comma_strtok_r(char *s, char **save_ptr)
 	if (s == NULL)
 		s = *save_ptr;
 
+	xassert(s); /* If s is NULL here we are using this function wrong */
+
 	if (*s == '\0') {
 		*save_ptr = s;
 		return NULL;
