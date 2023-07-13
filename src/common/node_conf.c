@@ -1510,7 +1510,7 @@ extern void node_conf_set_all_active_bits(bitstr_t *b)
 		bit_set(b, i);
 }
 
-extern char *nodestr_comma_strtok_r(char *s, char **save_ptr)
+extern char *node_conf_nodestr_comma_strtok_r(char *s, char **save_ptr)
 {
 	char *end;
 
