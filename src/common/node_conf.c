@@ -1487,12 +1487,14 @@ extern void node_conf_set_all_active_bits(bitstr_t *b)
 		bit_set(b, i);
 }
 
-extern char *nodestr_comma_strtok_r(char *s, char **save_ptr)
+extern char *node_conf_nodestr_comma_strtok_r(char *s, char **save_ptr)
 {
 	char *end;
 
 	if (s == NULL)
 		s = *save_ptr;
+
+	xassert(s); /* If s is NULL here we are using this function wrong */
 
 	if (*s == '\0') {
 		*save_ptr = s;

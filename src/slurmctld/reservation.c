@@ -2494,7 +2494,7 @@ static bitstr_t *_get_update_node_bitmap(slurmctld_resv_t *resv_ptr,
 	hostlist_t *hl = NULL;
 
 	tmp = xstrdup(node_list);
-	tok = nodestr_comma_strtok_r(tmp, &last);
+	tok = node_conf_nodestr_comma_strtok_r(tmp, &last);
 	while (tok) {
 		bool minus = false, plus = false;
 		if (tok[0] == '-') {
@@ -2544,7 +2544,7 @@ static bitstr_t *_get_update_node_bitmap(slurmctld_resv_t *resv_ptr,
 		if (!node_bitmap)
 			break;
 
-		tok = nodestr_comma_strtok_r(NULL, &last);
+		tok = node_conf_nodestr_comma_strtok_r(NULL, &last);
 	}
 	xfree(tmp);
 
