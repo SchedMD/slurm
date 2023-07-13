@@ -54,6 +54,8 @@ documents those changes that are of interest to users and administrators.
     allocation or if the job was canceled before getting one.
  -- slurmrestd - Correct applying environment variable SLURMRESTD_DEBUG to
     logging configuration.
+ -- Fix intel oneapi autodetect: detect the /dev/dri/renderD[0-9]+ gpus, and do
+    not detect /dev/dri/card[0-9]+.
 
 * Changes in Slurm 23.02.4
 ==========================
