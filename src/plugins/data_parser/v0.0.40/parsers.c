@@ -6610,7 +6610,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(TIMESTAMP_NO_VAL, deadline, "deadline", NULL),
 	add_parse(UINT32_NO_VAL, delay_boot, "delay_boot", NULL),
 	add_parse(STRING, dependency, "dependency", NULL),
-	add_parse(UINT32, derived_ec, "derived_exit_code", NULL),
+	add_parse(JOB_EXIT_CODE, derived_ec, "derived_exit_code", NULL),
 	add_parse(TIMESTAMP_NO_VAL, eligible_time, "eligible_time", NULL),
 	add_parse(TIMESTAMP_NO_VAL, end_time, "end_time", NULL),
 	add_parse(STRING, exc_nodes, "excluded_nodes", NULL),
