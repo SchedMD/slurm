@@ -217,6 +217,9 @@ documents those changes that are of interest to users and administrators.
     equivalent requests of `scontrol reconfigure`.
  -- sreport - cluster Utilization PlannedDown field now includes the time that
     all nodes were in the POWERED_DOWN state instead of just cloud nodes.
+ -- scontrol update partition now allows Nodes+=<node-list> and
+    Nodes-=<node-list> to add/delete nodes from the existing partition node
+    list. Nodes=+host1,-host2 is also allowed.
 
 * Changes in Slurm 23.02.6
 ==========================
