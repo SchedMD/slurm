@@ -503,5 +503,5 @@ extern void node_conf_set_all_active_bits(bitstr_t *b);
  *
  * NOTE: Like strtok_r() characters in s may be modified.
  */
-extern char *node_conf_nodestr_comma_strtok_r(char *s, char **save_ptr);
+extern char *node_conf_nodestr_tokenize(char *s, char **save_ptr);
 #endif /* !_HAVE_NODE_CONF_H */
