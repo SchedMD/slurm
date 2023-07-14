@@ -3020,4 +3020,12 @@ extern void reconfigure_slurm_post_send(int error_code);
  */
 extern uint16_t get_job_share_value(job_record_t *job_ptr);
 
+/*
+ * job_mgr_list_delete_job - delete a job record and its corresponding
+ *	job_details,
+ *	see common/list.h for documentation
+ * IN job_entry - pointer to job_record to delete
+ */
+extern void job_mgr_list_delete_job(void *job_entry);
+
 #endif /* !_HAVE_SLURMCTLD_H */

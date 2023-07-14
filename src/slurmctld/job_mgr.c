@@ -216,7 +216,6 @@ static int  _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 			char **err_msg, uint16_t protocol_version);
 static void _job_timed_out(job_record_t *job_ptr, bool preempted);
 static void _kill_dependent(job_record_t *job_ptr);
-static void _list_delete_job(void *job_entry);
 static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 			      uint16_t protocol_version);
@@ -627,7 +626,7 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
  *    = 1 - simple job OR job array with one task
  *    > 1 - job array create with the task count as num_jobs
  * RET pointer to the record or NULL if error
- * NOTE: allocates memory that should be xfreed with _list_delete_job
+ * NOTE: allocates memory that should be xfreed with job_mgr_list_delete_job
  */
 static job_record_t *_create_job_record(uint32_t num_jobs)
 {
@@ -4364,7 +4363,7 @@ void init_job_conf(void)
 {
 	if (job_list == NULL) {
 		job_count = 0;
-		job_list = list_create(_list_delete_job);
+		job_list = list_create(job_mgr_list_delete_job);
 	}
 
 	last_job_update = time(NULL);
@@ -9855,12 +9854,7 @@ static void _delete_job_common(job_record_t *job_ptr)
 	}
 }
 
-/*
- * _list_delete_job - delete a job record and its corresponding job_details,
- *	see common/list.h for documentation
- * IN job_entry - pointer to job_record to delete
- */
-static void _list_delete_job(void *job_entry)
+extern void job_mgr_list_delete_job(void *job_entry)
 {
 	job_record_t *job_ptr = (job_record_t *) job_entry;
 	int job_array_size, i;
