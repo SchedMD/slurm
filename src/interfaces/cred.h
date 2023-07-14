@@ -276,14 +276,6 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred,
  */
 extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred);
 
-/*
- * Check to see if this credential is a reissue of an existing credential
- * (this can happen, for instance, with "scontrol restart").  If
- * this credential is a reissue, then the old credential is cleared
- * from the cred context "ctx".
- */
-extern void slurm_cred_handle_reissue(slurm_cred_t *cred, bool locked);
-
 /* Free memory associated with slurm credential `cred.'
  */
 extern void slurm_cred_destroy(slurm_cred_t *cred);

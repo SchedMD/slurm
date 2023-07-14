@@ -405,6 +405,27 @@ error:
 	return SLURM_ERROR;
 }
 
+extern void cred_handle_reissue(slurm_cred_t *cred, bool locked)
+{
+	job_state_t *j;
+
+	if (!locked)
+		slurm_mutex_lock(&cred_cache_mutex);
+
+	j = _find_job_state(cred->arg->step_id.job_id);
+
+	if (j && j->revoked && (cred->ctime > j->revoked)) {
+		/* The credential has been reissued.  Purge the
+		 * old record so that "cred" will look like a new
+		 * credential to any ensuing commands. */
+		info("reissued job credential for job %u", j->jobid);
+		list_delete_ptr(cred_job_list, j);
+	}
+
+	if (!locked)
+		slurm_mutex_unlock(&cred_cache_mutex);
+}
+
 static bool _credential_revoked(slurm_cred_t *cred)
 {
 	job_state_t *j = NULL;
@@ -465,7 +486,7 @@ extern bool cred_cache_valid(slurm_cred_t *cred)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	slurm_cred_handle_reissue(cred, true);
+	cred_handle_reissue(cred, true);
 
 	if (_credential_revoked(cred)) {
 		slurm_seterrno(ESLURMD_CREDENTIAL_REVOKED);

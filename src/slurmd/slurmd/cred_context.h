@@ -69,6 +69,14 @@ extern bool cred_revoked(slurm_cred_t *cred);
  */
 extern int cred_begin_expiration(uint32_t jobid);
 
+/*
+ * Check to see if this credential is a reissue of an existing credential
+ * (this can happen, for instance, with "scontrol restart").
+ * If this credential is a reissue, then the old credential is cleared
+ * from the cred context.
+ */
+extern void cred_handle_reissue(slurm_cred_t *cred, bool locked);
+
 extern bool cred_cache_valid(slurm_cred_t *cred);
 
 #endif

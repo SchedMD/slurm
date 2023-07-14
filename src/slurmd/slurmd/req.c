@@ -2344,7 +2344,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		error("%s: Error talking to slurmctld: %m", __func__);
 	}
 
-	slurm_cred_handle_reissue(req->cred, false);
+	cred_handle_reissue(req->cred, false);
 
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !cred_jobid_cached(req->job_id);
@@ -2481,7 +2481,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		goto done;
 	}
 
-	slurm_cred_handle_reissue(req->cred, false);
+	cred_handle_reissue(req->cred, false);
 	if (cred_revoked(req->cred)) {
 		error("Job %u already killed, do not launch batch job",
 		      req->job_id);

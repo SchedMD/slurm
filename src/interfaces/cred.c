@@ -110,8 +110,6 @@ list_t *cred_state_list = NULL;
 
 static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg);
 
-static job_state_t *_find_job_state(uint32_t jobid);
-
 static int _cred_sign(slurm_cred_t *cred);
 static void _cred_verify_signature(slurm_cred_t *cred);
 
@@ -1463,42 +1461,6 @@ static void _pack_cred(slurm_cred_arg_t *cred, buf_t *buffer,
 		}
 		packstr(cred->selinux_context, buffer);
 	}
-}
-
-extern void slurm_cred_handle_reissue(slurm_cred_t *cred, bool locked)
-{
-	job_state_t *j;
-
-	if (!locked)
-		slurm_mutex_lock(&cred_cache_mutex);
-
-	j = _find_job_state(cred->arg->step_id.job_id);
-
-	if (j != NULL && j->revoked && (cred->ctime > j->revoked)) {
-		/* The credential has been reissued.  Purge the
-		 * old record so that "cred" will look like a new
-		 * credential to any ensuing commands. */
-		info("reissued job credential for job %u", j->jobid);
-		list_delete_ptr(cred_job_list, j);
-	}
-	if (!locked)
-		slurm_mutex_unlock(&cred_cache_mutex);
-}
-
-static int _list_find_job_state(void *x, void *key)
-{
-	job_state_t *j = (job_state_t *) x;
-	uint32_t jobid = *(uint32_t *) key;
-	if (j->jobid == jobid)
-		return 1;
-	return 0;
-}
-
-static job_state_t *_find_job_state(uint32_t jobid)
-{
-	job_state_t *j =
-		list_find_first(cred_job_list, _list_find_job_state, &jobid);
-	return j;
 }
 
 /*****************************************************************************\
