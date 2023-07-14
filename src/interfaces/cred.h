@@ -187,7 +187,6 @@ typedef struct {
 	time_t revoked;		/* Time at which credentials were revoked   */
 } job_state_t;
 
-extern pthread_mutex_t cred_cache_mutex;
 extern list_t *cred_job_list;
 extern list_t *cred_state_list;
 

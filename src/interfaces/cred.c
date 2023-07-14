@@ -100,7 +100,6 @@ static int cred_expire = DEFAULT_EXPIRATION_WINDOW;
 static bool enable_nss_slurm = false;
 static bool enable_send_gids = true;
 
-pthread_mutex_t cred_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 list_t *cred_job_list = NULL;
 list_t *cred_state_list = NULL;
 

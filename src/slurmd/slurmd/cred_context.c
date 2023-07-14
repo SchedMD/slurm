@@ -46,6 +46,8 @@
 /* FIXME: Y2038 problem */
 #define MAX_TIME 0x7fffffff
 
+static pthread_mutex_t cred_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static void _drain_node(char *reason)
 {
 	update_node_msg_t update_node_msg;
