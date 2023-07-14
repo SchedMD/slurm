@@ -463,8 +463,6 @@ static bool _credential_revoked(slurm_cred_t *cred)
 {
 	job_state_t *j = NULL;
 
-	_clear_expired_job_states();
-
 	if (!(j = _find_job_state(cred->arg->step_id.job_id))) {
 		j = _job_state_create(cred->arg->step_id.job_id);
 		list_append(cred_job_list, j);
@@ -496,8 +494,6 @@ static bool _credential_replayed(slurm_cred_t *cred)
 {
 	cred_state_t *s = NULL;
 
-	_clear_expired_credential_states();
-
 	s = list_find_first(cred_state_list, _list_find_cred_state, cred);
 
 	/*
@@ -518,6 +514,9 @@ static bool _credential_replayed(slurm_cred_t *cred)
 extern bool cred_cache_valid(slurm_cred_t *cred)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
+
+	_clear_expired_job_states();
+	_clear_expired_credential_states();
 
 	cred_handle_reissue(cred, true);
 
