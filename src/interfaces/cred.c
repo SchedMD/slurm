@@ -100,9 +100,6 @@ static int cred_expire = DEFAULT_EXPIRATION_WINDOW;
 static bool enable_nss_slurm = false;
 static bool enable_send_gids = true;
 
-list_t *cred_job_list = NULL;
-list_t *cred_state_list = NULL;
-
 /*
  * Static prototypes:
  */
@@ -154,11 +151,6 @@ extern int cred_g_init(void)
 	}
 	sbcast_cache_list = list_create(xfree_ptr);
 
-	if (running_in_slurmd()) {
-		cred_job_list = list_create(xfree_ptr);
-		cred_state_list = list_create(xfree_ptr);
-	}
-
 done:
 	slurm_mutex_unlock( &g_context_lock );
 
@@ -174,8 +166,6 @@ extern int cred_g_fini(void)
 		return SLURM_SUCCESS;
 
 	FREE_NULL_LIST(sbcast_cache_list);
-	FREE_NULL_LIST(cred_job_list);
-	FREE_NULL_LIST(cred_state_list);
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 	return rc;

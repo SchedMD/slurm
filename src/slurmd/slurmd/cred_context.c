@@ -47,6 +47,8 @@
 #define MAX_TIME 0x7fffffff
 
 static pthread_mutex_t cred_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
+static list_t *cred_job_list = NULL;
+static list_t *cred_state_list = NULL;
 
 static void _drain_node(char *reason)
 {
@@ -219,7 +221,6 @@ static void _cred_context_unpack(buf_t *buffer)
 	if (slurm_unpack_list(&cred_job_list, _job_state_unpack,
 			      xfree_ptr, buffer, version)) {
 		warning("%s: failed to restore job state from file", __func__);
-		cred_job_list = list_create(xfree_ptr);
 	}
 	_clear_expired_job_states();
 
@@ -227,7 +228,6 @@ static void _cred_context_unpack(buf_t *buffer)
 	if (slurm_unpack_list(&cred_state_list, _cred_state_unpack,
 			      xfree_ptr, buffer, version)) {
 		warning("%s: failed to restore job state from file", __func__);
-		cred_state_list = list_create(xfree_ptr);
 	}
 	_clear_expired_credential_states();
 
@@ -300,11 +300,18 @@ extern void cred_state_init(void)
 {
 	if (!conf->cleanstart)
 		_restore_cred_state();
+
+	if (!cred_job_list)
+		cred_job_list = list_create(xfree_ptr);
+	if (!cred_state_list)
+		cred_state_list = list_create(xfree_ptr);
 }
 
 extern void cred_state_fini(void)
 {
 	save_cred_state();
+	FREE_NULL_LIST(cred_job_list);
+	FREE_NULL_LIST(cred_state_list);
 }
 
 extern bool cred_jobid_cached(uint32_t jobid)
