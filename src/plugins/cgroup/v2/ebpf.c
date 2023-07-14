@@ -228,7 +228,6 @@ extern int load_ebpf_prog(bpf_program_t *program, const char cgroup_path[],
 			  bool override_flag)
 {
 	int dirfd, ret, fd = -1;
-	char log[8192] = "\0";
 	union bpf_attr attr;
 
 	/*
@@ -253,9 +252,10 @@ extern int load_ebpf_prog(bpf_program_t *program, const char cgroup_path[],
 	/* We set the license to GPL to use helper functions marked gpl_only. */
 	attr.license = (size_t) "GPL";
 	strlcpy(attr.prog_name, "Slurm_Cgroup_v2", BPF_OBJ_NAME_LEN);
-	attr.log_level = 1;
-	attr.log_buf = (size_t) log;
-	attr.log_size = sizeof(log);
+	/* Explicitly disable logging */
+	attr.log_level = 0;
+	attr.log_buf = (size_t) NULL;
+	attr.log_size = 0;
 
 	/* Call the load syscall */
 	fd = bpf(BPF_PROG_LOAD, &attr, sizeof(attr));
