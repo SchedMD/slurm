@@ -9865,7 +9865,9 @@ static void _list_delete_job(void *job_entry)
 	job_record_t *job_ptr = (job_record_t *) job_entry;
 	int job_array_size, i;
 
-	xassert(job_entry);
+	if (!job_entry)
+		return;
+
 	xassert (job_ptr->magic == JOB_MAGIC);
 	job_ptr->magic = 0;	/* make sure we don't delete record twice */
 
