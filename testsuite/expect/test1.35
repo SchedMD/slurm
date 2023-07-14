@@ -38,6 +38,10 @@ set steps_started        30
 set job_mem_opt          "--mem-per-cpu=256M"
 set step_mem_opt         "--mem-per-cpu=6M"
 
+if {[check_config_select "linear"]} {
+    skip "Test requires SelectType!=select/linear"
+}
+
 proc cleanup {} {
 	global job_id
 
