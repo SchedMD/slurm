@@ -3048,4 +3048,10 @@ extern uint16_t get_job_share_value(job_record_t *job_ptr);
  */
 extern void job_mgr_list_delete_job(void *job_entry);
 
+/*
+ * Build a job rec from an advanced reservation request.
+ */
+extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
+	resv_desc_msg_t *resv_desc_ptr);
+
 #endif /* !_HAVE_SLURMCTLD_H */

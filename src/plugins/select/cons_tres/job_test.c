@@ -5051,7 +5051,12 @@ alloc_job:
 	 * checks are accurate later on.
 	 */
 	if (mode != SELECT_MODE_RUN_NOW) {
-		free_job_resources(&job_ptr->job_resrcs);
+		/*
+		 * If we are a reservation the job_id == 0, we don't want to
+		 * free job_resrcs here.
+		 */
+		if (job_ptr->job_id)
+			free_job_resources(&job_ptr->job_resrcs);
 		return error_code;
 	}
 

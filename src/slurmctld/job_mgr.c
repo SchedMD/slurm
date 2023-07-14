@@ -9849,6 +9849,9 @@ extern void free_null_array_recs(job_record_t *job_ptr)
 
 static void _delete_job_common(job_record_t *job_ptr)
 {
+	if (!job_ptr->job_id)
+		return;
+
 	/* Remove record from fed_job_list */
 	fed_mgr_remove_fed_job_info(job_ptr->job_id);
 
@@ -9877,6 +9880,8 @@ extern void job_mgr_list_delete_job(void *job_entry)
 
 	if (job_ptr->array_recs) {
 		job_array_size = MAX(1, job_ptr->array_recs->task_cnt);
+	} else if (!job_ptr->job_id) { /* reservation */
+		job_array_size = 0;
 	} else {
 		job_array_size = 1;
 	}
@@ -19214,4 +19219,65 @@ extern uint16_t get_job_share_value(job_record_t *job_ptr)
 		shared = NO_VAL16;	/* No user or partition info */
 
 	return shared;
+}
+
+extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
+	resv_desc_msg_t *resv_desc_ptr)
+{
+	job_record_t *job_ptr;
+	job_details_t *detail_ptr;
+
+	job_ptr = _create_job_record(1, false);
+	detail_ptr = job_ptr->details;
+
+	job_ptr->partition = xstrdup(resv_desc_ptr->partition);
+	job_ptr->time_limit = resv_desc_ptr->duration;
+
+	detail_ptr->begin_time = resv_desc_ptr->start_time;
+	if (resv_desc_ptr->node_cnt != NO_VAL) {
+		detail_ptr->max_nodes = detail_ptr->min_nodes =
+			resv_desc_ptr->node_cnt;
+	} else {
+		detail_ptr->min_nodes = 1;
+		/* 500000 comes from job_scheduler.c job_start_data() */
+		detail_ptr->max_nodes = 500000;
+	}
+
+	if (resv_desc_ptr->node_list) {
+		hostlist_t *hl = hostlist_create(resv_desc_ptr->node_list);
+		hostlist_uniq(hl);
+		detail_ptr->req_nodes = hostlist_ranged_string_xmalloc(hl);
+		detail_ptr->max_nodes = detail_ptr->min_nodes =
+			hostlist_count(hl);
+		hostlist_destroy(hl);
+
+		(void) node_name2bitmap(detail_ptr->req_nodes, true,
+					&detail_ptr->req_node_bitmap);
+	}
+
+	if (resv_desc_ptr->core_cnt != NO_VAL) {
+		detail_ptr->mc_ptr = xmalloc(sizeof(*detail_ptr->mc_ptr));
+		detail_ptr->mc_ptr->cores_per_socket = NO_VAL16;
+		detail_ptr->mc_ptr->ntasks_per_core = 1;
+		detail_ptr->mc_ptr->ntasks_per_socket = INFINITE16;
+		detail_ptr->mc_ptr->plane_size = 0;
+		detail_ptr->mc_ptr->sockets_per_node = NO_VAL16;
+		detail_ptr->mc_ptr->threads_per_core = 1;
+
+		detail_ptr->num_tasks = detail_ptr->min_cpus =
+			resv_desc_ptr->core_cnt;
+	} else {
+		detail_ptr->num_tasks = detail_ptr->min_cpus =
+			detail_ptr->min_nodes;
+		detail_ptr->whole_node = WHOLE_NODE_REQUIRED;
+	}
+	detail_ptr->core_spec = NO_VAL16;
+	detail_ptr->cpus_per_task = 1;
+	detail_ptr->orig_min_cpus = detail_ptr->min_cpus;
+	detail_ptr->orig_max_cpus = detail_ptr->max_cpus = NO_VAL;
+	detail_ptr->features = xstrdup(resv_desc_ptr->features);
+	detail_ptr->task_dist = SLURM_DIST_BLOCK;
+	job_ptr->best_switch = true;
+
+	return job_ptr;
 }

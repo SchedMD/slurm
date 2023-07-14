@@ -1675,6 +1675,7 @@ extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->features);
+		xassert(!msg->job_ptr); /* This shouldn't be here */
 		xfree(msg->name);
 		xfree(msg->node_list);
 		xfree(msg->partition);

@@ -2622,6 +2622,7 @@ typedef struct resv_desc_msg {
 	char *features;		/* required node features */
 	uint64_t flags;		/* see RESERVE_FLAG_* above */
 	char *groups;		/* names of linux groups permitted to use */
+	void *job_ptr;          /* internal use only DON'T PACK */
 	char *licenses;		/* names of licenses to be reserved */
 	uint32_t max_start_delay;/* Maximum delay in which jobs outside of the
 				  * reservation will be permitted to overlap
