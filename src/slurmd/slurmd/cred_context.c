@@ -46,6 +46,19 @@
 /* FIXME: Y2038 problem */
 #define MAX_TIME 0x7fffffff
 
+typedef struct {
+	time_t ctime;		/* Time that the cred was created	*/
+	time_t expiration;	/* Time at which cred is no longer good	*/
+	slurm_step_id_t step_id;/* Slurm step id for this credential	*/
+} cred_state_t;
+
+typedef struct {
+	time_t ctime;		/* Time that this entry was created         */
+	time_t expiration;	/* Time at which credentials can be purged  */
+	uint32_t jobid;		/* Slurm job id for this credential         */
+	time_t revoked;		/* Time at which credentials were revoked   */
+} job_state_t;
+
 static pthread_mutex_t cred_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 static list_t *cred_job_list = NULL;
 static list_t *cred_state_list = NULL;

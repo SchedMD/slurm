@@ -174,19 +174,6 @@ typedef enum {
 	CRED_DATA_STEP_GRES_LIST,
 } cred_data_enum_t;
 
-typedef struct {
-	time_t ctime;		/* Time that the cred was created	*/
-	time_t expiration;	/* Time at which cred is no longer good	*/
-	slurm_step_id_t step_id;/* Slurm step id for this credential	*/
-} cred_state_t;
-
-typedef struct {
-	time_t ctime;		/* Time that this entry was created         */
-	time_t expiration;	/* Time at which credentials can be purged  */
-	uint32_t jobid;		/* Slurm job id for this credential         */
-	time_t revoked;		/* Time at which credentials were revoked   */
-} job_state_t;
-
 /*
  * Set and get credential context options
  *
