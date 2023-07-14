@@ -275,7 +275,6 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred,
  * *Must* release lock with slurm_cred_unlock_args().
  */
 extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred);
-extern bool cred_cache_valid(slurm_cred_t *cred);
 
 /*
  * Check to see if this credential is a reissue of an existing credential

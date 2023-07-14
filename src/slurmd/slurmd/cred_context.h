@@ -69,4 +69,6 @@ extern bool cred_revoked(slurm_cred_t *cred);
  */
 extern int cred_begin_expiration(uint32_t jobid);
 
+extern bool cred_cache_valid(slurm_cred_t *cred);
+
 #endif

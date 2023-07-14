@@ -58,6 +58,17 @@ static void _drain_node(char *reason)
 	(void) slurm_update_node(&update_node_msg);
 }
 
+static cred_state_t *_cred_state_create(slurm_cred_t *cred)
+{
+	cred_state_t *s = xmalloc(sizeof(*s));
+
+	memcpy(&s->step_id, &cred->arg->step_id, sizeof(s->step_id));
+	s->ctime = cred->ctime;
+	s->expiration = cred->ctime + cred_expiration();
+
+	return s;
+}
+
 static job_state_t *_job_state_create(uint32_t jobid)
 {
 	job_state_t *j = xmalloc(sizeof(*j));
@@ -392,4 +403,84 @@ extern int cred_begin_expiration(uint32_t jobid)
 error:
 	slurm_mutex_unlock(&cred_cache_mutex);
 	return SLURM_ERROR;
+}
+
+static bool _credential_revoked(slurm_cred_t *cred)
+{
+	job_state_t *j = NULL;
+
+	_clear_expired_job_states();
+
+	if (!(j = _find_job_state(cred->arg->step_id.job_id))) {
+		j = _job_state_create(cred->arg->step_id.job_id);
+		list_append(cred_job_list, j);
+		return false;
+	}
+
+	if (cred->ctime <= j->revoked) {
+		debug3("cred for %u revoked. expires at %ld UTS",
+		       j->jobid, j->expiration);
+		return true;
+	}
+
+	return false;
+}
+
+static int _list_find_cred_state(void *x, void *key)
+{
+	cred_state_t *s = x;
+	slurm_cred_t *cred = key;
+
+	if (!memcmp(&s->step_id, &cred->arg->step_id, sizeof(s->step_id)) &&
+	    (s->ctime == cred->ctime))
+		return 1;
+
+	return 0;
+}
+
+static bool _credential_replayed(slurm_cred_t *cred)
+{
+	cred_state_t *s = NULL;
+
+	_clear_expired_credential_states();
+
+	s = list_find_first(cred_state_list, _list_find_cred_state, cred);
+
+	/*
+	 * If we found a match, this credential is being replayed.
+	 */
+	if (s)
+		return true;
+
+	/*
+	 * Otherwise, save the credential state
+	 */
+	s = _cred_state_create(cred);
+	list_append(cred_state_list, s);
+
+	return false;
+}
+
+extern bool cred_cache_valid(slurm_cred_t *cred)
+{
+	slurm_mutex_lock(&cred_cache_mutex);
+
+	slurm_cred_handle_reissue(cred, true);
+
+	if (_credential_revoked(cred)) {
+		slurm_seterrno(ESLURMD_CREDENTIAL_REVOKED);
+		goto error;
+	}
+
+	if (_credential_replayed(cred)) {
+		slurm_seterrno(ESLURMD_CREDENTIAL_REPLAYED);
+		goto error;
+	}
+
+	slurm_mutex_unlock(&cred_cache_mutex);
+	return true;
+
+error:
+	slurm_mutex_unlock(&cred_cache_mutex);
+	return false;
 }
