@@ -351,12 +351,7 @@ main (int argc, char **argv)
 #endif /* _POSIX_MEMLOCK */
 	}
 
-
-	/*
-	 * Restore any saved revoked credential information
-	 */
-	if (!conf->cleanstart)
-		restore_cred_state();
+	cred_state_init();
 
 	if (acct_gather_conf_init() != SLURM_SUCCESS)
 		fatal("Unable to initialize acct_gather_conf");
@@ -2170,7 +2165,7 @@ _slurmd_fini(void)
 	core_spec_g_fini();
 	jobacct_gather_fini();
 	acct_gather_profile_fini();
-	save_cred_state();
+	cred_state_fini();
 	switch_fini();
 	slurmd_task_fini();
 	slurm_conf_destroy();

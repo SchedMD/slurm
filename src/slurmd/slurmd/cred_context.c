@@ -278,7 +278,7 @@ cleanup:
 		close(cred_fd);
 }
 
-extern void restore_cred_state(void)
+static void _restore_cred_state(void)
 {
 	char *file_name = NULL;
 	buf_t *buffer = NULL;
@@ -294,6 +294,17 @@ extern void restore_cred_state(void)
 cleanup:
 	xfree(file_name);
 	FREE_NULL_BUFFER(buffer);
+}
+
+extern void cred_state_init(void)
+{
+	if (!conf->cleanstart)
+		_restore_cred_state();
+}
+
+extern void cred_state_fini(void)
+{
+	save_cred_state();
 }
 
 extern bool cred_jobid_cached(uint32_t jobid)
