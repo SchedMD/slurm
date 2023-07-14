@@ -1123,6 +1123,11 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	 */
 	if (!(arg = slurm_cred_verify(cred)))
 		return SLURM_ERROR;
+
+	/* Check that the credential cache doesn't have any concerns. */
+	if (!cred_cache_valid(cred))
+		goto fail;
+
 	xassert(arg->job_mem_alloc);
 
 	if ((arg->step_id.job_id != jobid) || (arg->step_id.step_id != stepid)) {

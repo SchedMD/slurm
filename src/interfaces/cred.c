@@ -419,7 +419,7 @@ extern void *slurm_cred_get(slurm_cred_t *cred,
 	return rc;
 }
 
-static bool _cred_cache_valid(slurm_cred_t *cred)
+extern bool cred_cache_valid(slurm_cred_t *cred)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
 
@@ -473,9 +473,6 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred)
 		slurm_seterrno(ESLURMD_CREDENTIAL_EXPIRED);
 		goto error;
 	}
-
-	if (!_cred_cache_valid(cred))
-		goto error;
 
 	/* coverity[missing_unlock] */
 	return cred->arg;
