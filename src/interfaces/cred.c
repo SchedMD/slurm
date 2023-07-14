@@ -419,6 +419,31 @@ extern void *slurm_cred_get(slurm_cred_t *cred,
 	return rc;
 }
 
+static bool _cred_cache_valid(slurm_cred_t *cred)
+{
+	slurm_mutex_lock(&cred_cache_mutex);
+
+	slurm_cred_handle_reissue(cred, true);
+
+	if (_credential_revoked(cred)) {
+		slurm_seterrno(ESLURMD_CREDENTIAL_REVOKED);
+		goto error;
+	}
+
+	if (_credential_replayed(cred)) {
+		slurm_seterrno(ESLURMD_CREDENTIAL_REPLAYED);
+		goto error;
+	}
+
+	slurm_mutex_unlock(&cred_cache_mutex);
+
+	return true;
+
+error:
+	slurm_mutex_unlock(&cred_cache_mutex);
+	return false;
+}
+
 /*
  * Returns NULL on error.
  *
@@ -435,8 +460,6 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred)
 	xassert(g_context);
 
 	slurm_rwlock_rdlock(&cred->mutex);
-	slurm_mutex_lock(&cred_cache_mutex);
-
 	xassert(cred->magic == CRED_MAGIC);
 
 	/* NOTE: the verification checks that the credential was
@@ -451,26 +474,14 @@ extern slurm_cred_arg_t *slurm_cred_verify(slurm_cred_t *cred)
 		goto error;
 	}
 
-	slurm_cred_handle_reissue(cred, true);
-
-	if (_credential_revoked(cred)) {
-		slurm_seterrno(ESLURMD_CREDENTIAL_REVOKED);
+	if (!_cred_cache_valid(cred))
 		goto error;
-	}
-
-	if (_credential_replayed(cred)) {
-		slurm_seterrno(ESLURMD_CREDENTIAL_REPLAYED);
-		goto error;
-	}
-
-	slurm_mutex_unlock(&cred_cache_mutex);
 
 	/* coverity[missing_unlock] */
 	return cred->arg;
 
 error:
 	errnum = slurm_get_errno();
-	slurm_mutex_unlock(&cred_cache_mutex);
 	slurm_rwlock_unlock(&cred->mutex);
 	slurm_seterrno(errnum);
 	return NULL;
