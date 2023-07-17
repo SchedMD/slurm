@@ -136,6 +136,8 @@ documents those changes that are of interest to users and administrators.
  -- Fixed an issue where jobs requesting licenses were incorrectly rejected.
  -- smail - Fix issues where e-mails at job completion were not being sent.
  -- scontrol/slurmctld - fix comma parsing when updating a reservation's nodes.
+ -- cgroup/v2 - Avoid capturing log output for ebpf when constraining devices,
+    as this can lead to inadvertent failure if the log buffer is too small.
 
 * Changes in Slurm 23.02.3
 ==========================
