@@ -30,6 +30,10 @@ source ./globals
 
 set file_in "$test_dir/job_script"
 
+if {[check_config_select "linear"]} {
+    skip "Test requires SelectType!=linear"
+}
+
 make_bash_script $file_in {echo CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES}
 
 proc run_gpu_test { gres_cnt } {
