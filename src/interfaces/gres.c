@@ -8723,8 +8723,7 @@ static bitstr_t *_get_closest_usable_gres(int context_inx,
 
 /* Select the best available gres from gres_slots */
 static int _assign_gres_to_task(cpu_set_t *task_cpu_set, int ntasks_per_gres,
-				bitstr_t *gres_slots, bitstr_t *gres_bit_alloc,
-				int plugin_id)
+				bitstr_t *gres_slots, int plugin_id)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	int start, end, gres_inx = 0, best_slot = -1;
@@ -8824,8 +8823,8 @@ static bitstr_t *_get_single_usable_gres(int context_inx,
 	 * quit the loop
 	 */
 	for (int i = 0; i <= local_proc_id; i++) {
-		idx = _assign_gres_to_task(step->task[i]->cpu_set, ntasks_per_gres,
-					   gres_slots, gres_bit_alloc,
+		idx = _assign_gres_to_task(step->task[i]->cpu_set,
+					   ntasks_per_gres, gres_slots,
 					   gres_context[context_inx].plugin_id);
 	}
 	FREE_NULL_BITMAP(gres_slots);
