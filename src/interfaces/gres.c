@@ -198,6 +198,7 @@ typedef struct {
 
 typedef struct {
 	bitstr_t **gres_bit_alloc;
+	uint64_t **gres_per_bit;
 	bool is_job;
 	uint32_t plugin_id;
 } foreach_gres_accumulate_device_t;
@@ -245,7 +246,8 @@ static void _accumulate_job_gres_alloc(gres_job_state_t *gres_js,
 				       uint64_t *gres_cnt);
 static void _accumulate_step_gres_alloc(gres_state_t *gres_state_step,
 					bitstr_t **gres_bit_alloc,
-					uint64_t *gres_cnt);
+					uint64_t *gres_cnt,
+					uint64_t **gres_per_bit);
 static void _add_gres_context(char *gres_name);
 static gres_node_state_t *_build_gres_node_state(void);
 static void	_build_node_gres_str(List *gres_list, char **gres_str,
@@ -304,7 +306,7 @@ static void _parse_accel_bind_type(uint16_t accel_bind_type,
 static int _get_usable_gres(int context_inx, int proc_id,
 			    char *tres_bind_str, bitstr_t **usable_gres_ptr,
 			    bitstr_t *gres_bit_alloc,  bool get_devices,
-			    stepd_step_rec_t *step);
+			    stepd_step_rec_t *step, uint64_t *gres_per_bit);
 
 extern uint32_t gres_build_id(char *name)
 {
@@ -8027,7 +8029,7 @@ static int _accumulate_gres_device(void *x, void *arg)
 					   args->gres_bit_alloc, NULL);
 	} else {
 		_accumulate_step_gres_alloc(gres_ptr, args->gres_bit_alloc,
-					    NULL);
+					    NULL, args->gres_per_bit);
 	}
 
 	return 0;
@@ -8040,6 +8042,7 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 	int j;
 	ListIterator dev_itr;
 	bitstr_t *gres_bit_alloc = NULL;
+	uint64_t *gres_per_bit = NULL;
 	gres_device_t *gres_device;
 	List gres_devices;
 	List device_list = NULL;
@@ -8087,6 +8090,7 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 		 * merged (accumulated) together */
 		foreach_gres_accumulate_device_t args = {
 			.gres_bit_alloc = &gres_bit_alloc,
+			.gres_per_bit = &gres_per_bit,
 			.is_job = is_job,
 			.plugin_id = gres_context[j].plugin_id,
 		};
@@ -8106,7 +8110,7 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 
 		if (_get_usable_gres(j, local_proc_id, tres_bind_str,
 				     &usable_gres, gres_bit_alloc,
-				     true, step) == SLURM_ERROR)
+				     true, step, gres_per_bit) == SLURM_ERROR)
 			continue;
 
 		dev_itr = list_iterator_create(gres_devices);
@@ -9355,8 +9359,9 @@ end:
 }
 
 static void _accumulate_step_gres_alloc(gres_state_t *gres_state_step,
-				        bitstr_t **gres_bit_alloc,
-				        uint64_t *gres_cnt)
+					bitstr_t **gres_bit_alloc,
+					uint64_t *gres_cnt,
+					uint64_t **gres_per_bit)
 {
 	gres_step_state_t *gres_ss =
 		(gres_step_state_t *)gres_state_step->gres_data;
@@ -9377,6 +9382,19 @@ static void _accumulate_step_gres_alloc(gres_state_t *gres_state_step,
 	}
 	if (gres_cnt && gres_ss->gres_cnt_node_alloc)
 		*gres_cnt += gres_ss->gres_cnt_node_alloc[0];
+	if (gres_per_bit &&
+	    gres_ss->gres_per_bit_alloc &&
+	    gres_ss->gres_per_bit_alloc[0] &&
+	    gres_ss->gres_bit_alloc &&
+	    gres_ss->gres_bit_alloc[0]) {
+		if (!*gres_per_bit)
+			*gres_per_bit = xcalloc(
+				bit_size(gres_ss->gres_bit_alloc[0]),
+				sizeof(uint64_t *));
+		for (int i = 0; i < bit_size(gres_ss->gres_bit_alloc[0]); i++) {
+			(*gres_per_bit)[i] += gres_ss->gres_per_bit_alloc[0][i];
+		}
+	}
 }
 
 /*
@@ -9417,6 +9435,81 @@ static void _filter_gres_per_task(bitstr_t *usable_gres, uint32_t gpus_per_task,
 		error("Not enough gpus to bind for gpus per task");
 }
 
+static void _filter_shared_gres_per_task(bitstr_t *test_gres,
+					 bitstr_t *usable_gres,
+					 uint64_t *gres_per_bit_avail,
+					 uint32_t *gres_needed,
+					 bool use_single_dev,
+					 bool set_usable_gres)
+{
+	for (int bit = 0;
+	     *gres_needed && (bit = bit_ffs_from_bit(test_gres, bit)) >= 0;
+	     bit++) {
+		int dec = MIN(gres_per_bit_avail[bit], *gres_needed);
+
+		if (dec < (use_single_dev ? *gres_needed : 1))
+			continue;
+
+		gres_per_bit_avail[bit] -= dec;
+		*gres_needed -= dec;
+
+		if (set_usable_gres)
+			bit_set(usable_gres, bit);
+	}
+}
+
+/*
+ * Given a required gres_per_task count, determine which shared gres should be
+ * assigned to this task. Prefer allocating shared gres belonging to a single
+ * device if possible.
+ */
+static bitstr_t *_get_shared_gres_per_task(bitstr_t *gres_bit_alloc,
+					   uint64_t *gres_per_bit,
+					   uint32_t gres_per_task,
+					   int local_proc_id)
+{
+	uint32_t gres_needed;
+	bitstr_t *usable_gres;
+	uint64_t *gres_per_bit_avail;
+
+	usable_gres = bit_alloc(bit_size(gres_bit_alloc));
+	gres_per_bit_avail = xcalloc(bit_size(gres_bit_alloc),
+				     sizeof(uint64_t));
+	memcpy(gres_per_bit_avail, gres_per_bit,
+	       bit_size(gres_bit_alloc) * sizeof(uint64_t));
+
+	/*
+	 * We must determine what the previous tasks are taking first to know
+	 * which gres are available to be assigned to this task.
+	 */
+	for (int i = 0; i <= local_proc_id; i++) {
+		gres_needed = gres_per_task;
+
+		/* First: Select single device with sufficient available gres */
+		if (gres_needed)
+			_filter_shared_gres_per_task(gres_bit_alloc,
+						     usable_gres,
+						     gres_per_bit_avail,
+						     &gres_needed, true,
+						     (i == local_proc_id));
+		/* Second: Select devices with any available shared gres */
+		if (gres_needed)
+			_filter_shared_gres_per_task(gres_bit_alloc,
+						     usable_gres,
+						     gres_per_bit_avail,
+						     &gres_needed, false,
+						     (i == local_proc_id));
+
+		if (gres_needed) {
+			error("Not enough shared gres to bind %d per task",
+			      gres_per_task);
+			break;
+		}
+	}
+	xfree(gres_per_bit_avail);
+	return usable_gres;
+}
+
 /* Convert old binding options to current gres binding format
  *
  * IN accel_bind_type - GRES binding options (old format, a bitmap)
@@ -9435,7 +9528,7 @@ static void _parse_accel_bind_type(uint16_t accel_bind_type, char *tres_bind_str
 static int _get_usable_gres(int context_inx, int proc_id,
 			    char *tres_bind_str, bitstr_t **usable_gres_ptr,
 			    bitstr_t *gres_bit_alloc,  bool get_devices,
-			    stepd_step_rec_t *step)
+			    stepd_step_rec_t *step, uint64_t *gres_per_bit)
 {
 	char *sep;
 	bitstr_t *usable_gres = NULL;
@@ -9483,6 +9576,17 @@ static int _get_usable_gres(int context_inx, int proc_id,
 						      slurm_atoul(sep + 9),
 						      proc_id);
 			}
+		} else
+			return SLURM_ERROR;
+	} else if (!xstrcmp(gres_name, "shard") &&
+		   (sep = xstrstr(tres_bind_str, "shard:"))) {
+		sep += 6;
+		if (!xstrncasecmp(sep, "per_task:", 9)) {
+			usable_gres = _get_shared_gres_per_task(
+				gres_bit_alloc, gres_per_bit,
+				slurm_atoul(sep + 9), proc_id);
+			if (!get_devices && gres_use_local_device_index())
+				bit_consolidate(usable_gres);
 		} else
 			return SLURM_ERROR;
 	} else if (!xstrcmp(gres_name, "nic") &&
@@ -9543,8 +9647,9 @@ extern void gres_g_step_set_env(stepd_step_rec_t *step)
 		while ((gres_state_step = list_next(gres_iter))) {
 			if (gres_state_step->plugin_id != gres_ctx->plugin_id)
 				continue;
-			_accumulate_step_gres_alloc(
-				gres_state_step, &gres_bit_alloc, &gres_cnt);
+			_accumulate_step_gres_alloc(gres_state_step,
+						    &gres_bit_alloc, &gres_cnt,
+						    NULL);
 			/* Does step have a sharing GRES (GPU)? */
 			if (gres_id_sharing(gres_ctx->plugin_id))
 				sharing_gres_allocated = true;
@@ -9581,6 +9686,7 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 	bitstr_t *usable_gres = NULL;
 	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
+	uint64_t *gres_per_bit = NULL;
 	bool sharing_gres_allocated = false;
 	gres_internal_flags_t flags;
 
@@ -9608,15 +9714,16 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 		while ((gres_state_step = list_next(gres_iter))) {
 			if (gres_state_step->plugin_id != gres_ctx->plugin_id)
 				continue;
-			_accumulate_step_gres_alloc(
-				gres_state_step, &gres_bit_alloc, &gres_cnt);
+			_accumulate_step_gres_alloc(gres_state_step,
+						    &gres_bit_alloc, &gres_cnt,
+						    &gres_per_bit);
 			/* Does task have a sharing GRES (GPU)? */
 			if (gres_id_sharing(gres_ctx->plugin_id))
 				sharing_gres_allocated = true;
 		}
 		if (_get_usable_gres(i, local_proc_id, step->tres_bind,
-				     &usable_gres, gres_bit_alloc,
-				     false, step) == SLURM_ERROR) {
+				     &usable_gres, gres_bit_alloc, false, step,
+				     gres_per_bit) == SLURM_ERROR) {
 			FREE_NULL_BITMAP(gres_bit_alloc);
 			continue;
 		}

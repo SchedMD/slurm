@@ -127,6 +127,21 @@ static int _valid_gpu_bind(char *arg)
  * Test for valid shard binding specification
  * RET - -1 on error, else 0
  */
+static int _valid_shard_bind(char *arg)
+{
+	if (!strncasecmp(arg, "verbose,", 8))
+		arg += 8;
+	if (!xstrncasecmp(arg, "none", 4))
+		return 0;
+	if (!xstrncasecmp(arg, "per_task:", 9))
+		return _valid_num(arg + 9);
+	return -1;
+}
+
+/*
+ * Test for valid shard binding specification
+ * RET - -1 on error, else 0
+ */
 static int _valid_nic_bind(char *arg)
 {
 	if (!strncasecmp(arg, "verbose,", 8))
@@ -169,6 +184,11 @@ extern int tres_bind_verify_cmdline(const char *arg)
 		sep++;
 		if (!strcmp(tok, "gpu")) {
 			if (_valid_gpu_bind(sep) != 0) {
+				rc = -1;
+				break;
+			}
+		} else if (!strcmp(tok, "shard")) {
+			if (_valid_shard_bind(sep) != 0) {
 				rc = -1;
 				break;
 			}
