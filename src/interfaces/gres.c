@@ -9459,16 +9459,18 @@ static void _filter_shared_gres_per_task(bitstr_t *test_gres,
 
 /*
  * Given a required gres_per_task count, determine which shared gres should be
- * assigned to this task. Prefer allocating shared gres belonging to a single
- * device if possible.
+ * assigned to this task. Prefer gres with core affinity that match the task
+ * and prefer allocating shared gres belonging to a single device if possible.
  */
 static bitstr_t *_get_shared_gres_per_task(bitstr_t *gres_bit_alloc,
 					   uint64_t *gres_per_bit,
 					   uint32_t gres_per_task,
+					   stepd_step_rec_t *step,
+					   uint32_t sharing_plugin_id,
 					   int local_proc_id)
 {
 	uint32_t gres_needed;
-	bitstr_t *usable_gres;
+	bitstr_t *usable_gres, *closest_gres;
 	uint64_t *gres_per_bit_avail;
 
 	usable_gres = bit_alloc(bit_size(gres_bit_alloc));
@@ -9482,16 +9484,40 @@ static bitstr_t *_get_shared_gres_per_task(bitstr_t *gres_bit_alloc,
 	 * which gres are available to be assigned to this task.
 	 */
 	for (int i = 0; i <= local_proc_id; i++) {
+		closest_gres = _get_closest_usable_gres(sharing_plugin_id,
+							gres_bit_alloc,
+							step->task[i]->cpu_set);
+
 		gres_needed = gres_per_task;
 
-		/* First: Select single device with sufficient available gres */
+		/*
+		 * Compare this selection priority with _set_shared_task_bits()
+		 * in gres_select_filter.c
+		 *
+		 * First: Get a single device with core affinity with sufficient
+		 *	available shared gres.
+		 * Second: Get a single device with sufficient available shared
+		 *	gres
+		 * Third: Get devices with core affinity with any available
+		 *	shared gres
+		 * Fourth: Get devices with any available shared gres
+		 */
+		if (gres_needed)
+			_filter_shared_gres_per_task(closest_gres, usable_gres,
+						     gres_per_bit_avail,
+						     &gres_needed, true,
+						     (i == local_proc_id));
 		if (gres_needed)
 			_filter_shared_gres_per_task(gres_bit_alloc,
 						     usable_gres,
 						     gres_per_bit_avail,
 						     &gres_needed, true,
 						     (i == local_proc_id));
-		/* Second: Select devices with any available shared gres */
+		if (gres_needed)
+			_filter_shared_gres_per_task(closest_gres, usable_gres,
+						     gres_per_bit_avail,
+						     &gres_needed, false,
+						     (i == local_proc_id));
 		if (gres_needed)
 			_filter_shared_gres_per_task(gres_bit_alloc,
 						     usable_gres,
@@ -9584,7 +9610,8 @@ static int _get_usable_gres(int context_inx, int proc_id,
 		if (!xstrncasecmp(sep, "per_task:", 9)) {
 			usable_gres = _get_shared_gres_per_task(
 				gres_bit_alloc, gres_per_bit,
-				slurm_atoul(sep + 9), proc_id);
+				slurm_atoul(sep + 9),
+				step, gpu_plugin_id, proc_id);
 			if (!get_devices && gres_use_local_device_index())
 				bit_consolidate(usable_gres);
 		} else
