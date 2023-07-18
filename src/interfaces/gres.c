@@ -8818,7 +8818,7 @@ static int _assign_gres_to_task(cpu_set_t *task_cpu_set, int ntasks_per_gres,
 static bitstr_t *_get_single_usable_gres(int context_inx,
 					 int ntasks_per_gres,
 					 int local_proc_id,
-					 cpu_set_t *task_cpu_set,
+					 stepd_step_rec_t *step,
 					 bitstr_t *gres_bit_alloc)
 {
 	int idx = 0;
@@ -8857,7 +8857,7 @@ static bitstr_t *_get_single_usable_gres(int context_inx,
 	 * quit the loop
 	 */
 	for (int i = 0; i <= local_proc_id; i++) {
-		idx = _assign_gres_to_task(task_cpu_set, ntasks_per_gres,
+		idx = _assign_gres_to_task(step->task[i]->cpu_set, ntasks_per_gres,
 					   gres_slots, gres_bit_alloc,
 					   gres_context[context_inx].plugin_id);
 	}
@@ -9172,7 +9172,7 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 			   tres_bind->tasks_per_gres) {
 			usable_gres = _get_single_usable_gres(
 				context_inx, tres_bind->tasks_per_gres, proc_id,
-				step->task[proc_id]->cpu_set, gres_bit_alloc);
+				step, gres_bit_alloc);
 			if (!get_devices && gres_use_local_device_index())
 				bit_consolidate(usable_gres);
 		} else if (tres_bind->bind_gpu) {
