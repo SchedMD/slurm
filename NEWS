@@ -96,6 +96,7 @@ documents those changes that are of interest to users and administrators.
     requests.
  -- Reject reservation update if it will result in previously submitted
     jobs losing access to the reservation.
+ -- data_parser/v0.0.40 - output partition state when dumping partitions.
 
 * Changes in Slurm 23.02.4
 ==========================

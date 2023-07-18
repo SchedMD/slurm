@@ -1231,6 +1231,36 @@ static int DUMP_FUNC(JOB_USER)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(PARTITION_INFO_STATE)
+
+static int DUMP_FUNC(PARTITION_INFO_STATE)(const parser_t *const parser,
+					   void *obj, data_t *dst, args_t *args)
+{
+	uint16_t *state = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	switch(*state) {
+	case PARTITION_INACTIVE:
+		data_set_string(dst, "INATIVE");
+		break;
+	case PARTITION_DOWN:
+		data_set_string(dst, "DOWN");
+		break;
+	case PARTITION_DRAIN:
+		data_set_string(dst, "DRAIN");
+		break;
+	case PARTITION_UP:
+		data_set_string(dst, "UP");
+		break;
+	default:
+		data_set_string(dst, "UNKNOWN");
+		break;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 PARSE_DISABLED(ROLLUP_STATS)
 
 static int DUMP_FUNC(ROLLUP_STATS)(const parser_t *const parser, void *obj,
@@ -6824,7 +6854,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(UINT16, priority_tier, "priority/tier", NULL),
 	add_parse(STRING, qos_char, "qos/assigned", NULL),
 	add_parse(UINT16_NO_VAL, resume_timeout, "timeouts/resume", NULL),
-	add_skip(state_up), //FIXME
+	add_parse(PARTITION_INFO_STATE, state_up, "state", NULL),
 	add_parse(UINT32_NO_VAL, suspend_time, "suspend_time", NULL),
 	add_parse(UINT16_NO_VAL, suspend_timeout, "timeouts/suspend", NULL),
 	add_parse(UINT32, total_cpus, "cpus/total", NULL),
@@ -8073,6 +8103,7 @@ static const parser_t parsers[] = {
 	addps(SIGNAL, uint16_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(BITSTR, bitstr_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpss(JOB_ARRAY_RESPONSE_MSG, job_array_resp_msg_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
+	addps(PARTITION_INFO_STATE, uint16_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
 	addpsp(JOB_EXCLUSIVE, JOB_EXCLUSIVE_FLAGS, uint16_t, NEED_NONE, NULL),
 	addpsp(TIMESTAMP, UINT64, time_t, NEED_NONE, NULL),
