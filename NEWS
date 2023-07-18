@@ -138,6 +138,8 @@ documents those changes that are of interest to users and administrators.
  -- scontrol/slurmctld - fix comma parsing when updating a reservation's nodes.
  -- cgroup/v2 - Avoid capturing log output for ebpf when constraining devices,
     as this can lead to inadvertent failure if the log buffer is too small.
+ -- Fix --gpu-bind=single binding tasks to wrong gpus, leading to some gpus
+    having more tasks than they should and other gpus being unused.
 
 * Changes in Slurm 23.02.3
 ==========================
