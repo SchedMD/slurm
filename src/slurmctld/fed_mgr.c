@@ -2123,6 +2123,20 @@ static int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 		return SLURM_ERROR;
 	}
 
+	slurm_mutex_lock(&sibling->lock);
+	if (!sibling->rpc_version && sibling->fed.recv) {
+		sibling->rpc_version =
+			((slurm_persist_conn_t *)sibling->fed.recv)->version;
+	}
+	slurm_mutex_unlock(&sibling->lock);
+
+	if (!sibling->rpc_version) {
+		error("%s: cluster %s doesn't have rpc_version yet.",
+		      __func__, sib_name);
+		unlock_slurmctld(job_read_lock);
+		return SLURM_ERROR;
+	}
+
 	sync_time = time(NULL);
 	jobids = _get_sync_jobid_list(sibling->fed.id, sync_time);
 	pack_spec_jobs(&dump, &dump_size, jobids, SHOW_ALL,
