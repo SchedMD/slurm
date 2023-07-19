@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "May 2023" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "July 2023" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -2752,8 +2752,14 @@ SLURM_NODE_ALIASES=ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
 .IP
 
 .TP
+\fBSLURM_NPROCS\fR
+Set to value of the \fB\-\-ntasks\fR option, if specified.
+See \fBSLURM_NTASKS\fR. Included for backwards compatibility.
+.IP
+
+.TP
 \fBSLURM_NTASKS\fR
-Same as \fB\-n\fR, \fB\-\-ntasks\fR
+Set to value of the \fB\-\-ntasks\fR option, if specified.
 .IP
 
 .TP
