@@ -542,6 +542,7 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(vals, ", control_host='%s'", cluster->control_host);
 		set++;
 		clust_reg = true;
+		fed_update = true;
 	}
 
 	if (cluster->control_port) {
@@ -549,12 +550,14 @@ extern List as_mysql_modify_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   cluster->control_port, cluster->control_port);
 		set++;
 		clust_reg = true;
+		fed_update = true;
 	}
 
 	if (cluster->rpc_version) {
 		xstrfmtcat(vals, ", rpc_version=%u", cluster->rpc_version);
 		set++;
 		clust_reg = true;
+		fed_update = true;
 	}
 
 	if (cluster->dimensions) {
