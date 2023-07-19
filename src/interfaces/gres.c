@@ -9136,11 +9136,15 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 				false, get_devices);
 		} else if (tres_bind->bind_gpu &&
 			   tres_bind->tasks_per_gres) {
-			usable_gres = _get_single_usable_gres(
-				context_inx, tres_bind->tasks_per_gres, proc_id,
-				step, gres_bit_alloc);
-			if (!get_devices && gres_use_local_device_index())
-				bit_consolidate(usable_gres);
+			if (!get_devices && gres_use_local_device_index()) {
+				usable_gres = bit_alloc(
+					bit_size(gres_bit_alloc));
+				bit_set(usable_gres, 0);
+			} else {
+				usable_gres = _get_single_usable_gres(
+					context_inx, tres_bind->tasks_per_gres,
+					proc_id, step, gres_bit_alloc);
+			}
 		} else if (tres_bind->bind_gpu) {
 			usable_gres = _get_closest_usable_gres(
 				context_inx, gres_bit_alloc,
