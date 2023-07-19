@@ -9396,42 +9396,70 @@ static void _accumulate_step_gres_alloc(gres_state_t *gres_state_step,
 	}
 }
 
-/*
- * Filter usable_gres to include the correct gpus per task.
- *
- * IN/OUT - usable_gres
- * IN - gpus_per_task_str
- * IN - local_proc_id
- */
-static void _filter_gres_per_task(bitstr_t *usable_gres, uint32_t gpus_per_task,
-				  int local_proc_id)
+static void _filter_gres_per_task(bitstr_t *test_gres,
+				  bitstr_t *gres_bit_avail,
+				  bitstr_t *usable_gres,
+				  uint32_t *gres_needed,
+				  bool set_usable_gres)
 {
-	int nskip = local_proc_id * gpus_per_task;
-	int i_first, i_last, bit;
+	for (int bit = 0;
+	     *gres_needed && (bit = bit_ffs_from_bit(test_gres, bit)) >= 0;
+	     bit++) {
+		(*gres_needed)--;
+		bit_clear(gres_bit_avail, bit);
+		if (set_usable_gres)
+			bit_set(usable_gres, bit);
+	}
+}
 
-	i_first = bit_ffs(usable_gres);
+/*
+ * Given a required gres_per_task count, determine which gres should be assigned
+ * to this task. Prefer gres with cpu affinity that match the task.
+ *
+ * RET usable_gres
+ */
+static bitstr_t *_get_gres_per_task(bitstr_t *gres_bit_alloc,
+				    uint32_t gres_per_task,
+				    stepd_step_rec_t *step,
+				    uint32_t plugin_id,
+				    int local_proc_id)
+{
+	uint32_t gres_needed;
+	bitstr_t *usable_gres, *gres_bit_avail, *closest_gres = NULL;
 
-	if (i_first == -1)
-		return;
+	usable_gres = bit_alloc(bit_size(gres_bit_alloc));
+	gres_bit_avail = bit_copy(gres_bit_alloc);
 
-	i_last = bit_fls(usable_gres);
-	for (bit = i_first; bit <= i_last; bit++) {
-		if (!bit_test(usable_gres, bit))
-			continue;
-		if (nskip) {
-			bit_clear(usable_gres, bit);
-			nskip--;
-		} else if (gpus_per_task) {
-			gpus_per_task--;
-		} else {
-			bit_nclear(usable_gres, bit,
-				   bit_size(usable_gres) - 1);
+	/*
+	 * We must determine what the previous tasks are taking first to know
+	 * which gres are available to be assigned to this task.
+	 */
+	for (int i = 0; i <= local_proc_id; i++) {
+		closest_gres = _get_closest_usable_gres(
+			plugin_id, gres_bit_avail, step->task[i]->cpu_set);
+
+		gres_needed = gres_per_task;
+
+		/* First: Try to select device with with cpu affinity */
+		if (gres_needed)
+			_filter_gres_per_task(closest_gres, gres_bit_avail,
+					      usable_gres, &gres_needed,
+					      (i == local_proc_id));
+
+		/* Second: Select any avaialble device */
+		if (gres_needed)
+			_filter_gres_per_task(gres_bit_avail, gres_bit_avail,
+					      usable_gres, &gres_needed,
+					      (i == local_proc_id));
+
+		if (gres_needed) {
+			error("Not enough gres to bind %d per task",
+			      gres_per_task);
 			break;
 		}
 	}
 
-	if (gpus_per_task)
-		error("Not enough gpus to bind for gpus per task");
+	return usable_gres;
 }
 
 static void _filter_shared_gres_per_task(bitstr_t *test_gres,
@@ -9597,10 +9625,9 @@ static int _get_usable_gres(int context_inx, int proc_id,
 					bit_size(gres_bit_alloc));
 				bit_nset(usable_gres, 0, slurm_atoul(sep + 9));
 			} else {
-				usable_gres = bit_copy(gres_bit_alloc);
-				_filter_gres_per_task(usable_gres,
-						      slurm_atoul(sep + 9),
-						      proc_id);
+				usable_gres = _get_gres_per_task(
+					gres_bit_alloc, slurm_atoul(sep + 9),
+					step, plugin_id, proc_id);
 			}
 		} else
 			return SLURM_ERROR;

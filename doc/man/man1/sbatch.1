@@ -1136,8 +1136,10 @@ requested).
 .TP
 \fBper_task:<gpus_per_task>\fR
 Each task will be bound to the number of gpus specified in
-\fI<gpus_per_task>\fR. Gpus are assigned in order to tasks. The first task will
-be assigned the first x number of gpus on the node etc.
+\fI<gpus_per_task>\fR. Tasks are preferentially assigned gpus with affinity to
+cores in their allocation like in \fI\-\-gpu\-bind=closest\fR, though they will
+take any gpus if they are unavailable. If no affinity exists, the first task
+will be assigned the first x number of gpus on the node etc.
 .IP
 
 .TP
