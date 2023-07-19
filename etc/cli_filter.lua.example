@@ -61,22 +61,6 @@ function slurm_cli_pre_submit(options, pack_offset)
 	--[[ Store a variable for potential use in slurm_cli_post_submit --]]
 	slurm.cli_store(0,options["type"])
 
-
-	if options["type"] == "srun"
-	then
-		if options["uid"] == "0" --[[ or options["uid"] == SpecialUser --]]
-		then
-			slurm.log_info("srun allowed for uid: %s", options["uid"])
-		else
-			local time_limit_in_minutes = slurm.time_str2mins(options["time"])
-			if options["pty"] == "set" and time_limit_in_minutes > (4 * 60)
-			then
-				slurm.log_error("Use of srun with --pty is forbidden for uid: %s for time longer than 4h", options["uid"])
-				return slurm.ERROR
-			end
-		end
-	end
-
 	if options["type"] == "sbatch" and options["wrap"] ~= nil
 	then
 		slurm.log_error("--wrap option is forbidden");
