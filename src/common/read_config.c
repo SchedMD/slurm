@@ -3226,9 +3226,7 @@ static int _init_slurm_conf(const char *file_name)
 					    slurm_conf_stepd_options,
 					    slurm_conf_stepd_options_cnt);
 
-	no_addr_cache = false;
-	if (xstrcasestr("NoAddrCache", conf_ptr->comm_params))
-		no_addr_cache = true;
+	no_addr_cache = xstrcasestr(conf_ptr->comm_params, "NoAddrCache");
 
 	conf_initialized = true;
 
