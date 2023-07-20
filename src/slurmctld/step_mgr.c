@@ -2318,7 +2318,7 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 
 		if (!(task_cnt = step_layout->tasks[step_node_inx])) {
 			/* This should have been caught earlier */
-			error("Bad step layout: no tasks placed on node %d (%s)\n",
+			error("Bad step layout: no tasks placed on node %d (%s)",
 			      job_node_inx,
 			      node_ptr->name);
 			final_rc = ESLURM_BAD_TASK_COUNT;
