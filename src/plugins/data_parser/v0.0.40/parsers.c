@@ -1231,36 +1231,6 @@ static int DUMP_FUNC(JOB_USER)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(PARTITION_INFO_STATE)
-
-static int DUMP_FUNC(PARTITION_INFO_STATE)(const parser_t *const parser,
-					   void *obj, data_t *dst, args_t *args)
-{
-	uint16_t *state = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-
-	switch(*state) {
-	case PARTITION_INACTIVE:
-		data_set_string(dst, "INATIVE");
-		break;
-	case PARTITION_DOWN:
-		data_set_string(dst, "DOWN");
-		break;
-	case PARTITION_DRAIN:
-		data_set_string(dst, "DRAIN");
-		break;
-	case PARTITION_UP:
-		data_set_string(dst, "UP");
-		break;
-	default:
-		data_set_string(dst, "UNKNOWN");
-		break;
-	}
-
-	return SLURM_SUCCESS;
-}
-
 PARSE_DISABLED(ROLLUP_STATS)
 
 static int DUMP_FUNC(ROLLUP_STATS)(const parser_t *const parser, void *obj,
@@ -6419,6 +6389,14 @@ static const flag_bit_t PARSER_FLAG_ARRAY(NODE_STATES)[] = {
 	add_flag_masked_bit(NODE_STATE_DYNAMIC_NORM, NODE_STATE_FLAGS, "DYNAMIC_NORM"),
 };
 
+static const flag_bit_t PARSER_FLAG_ARRAY(PARTITION_STATES)[] = {
+	add_flag_equal(PARTITION_INACTIVE, INFINITE16, "INACTIVE"),
+	add_flag_equal(NO_VAL16, INFINITE16, "UNKNOWN"),
+	add_flag_equal(PARTITION_UP, INFINITE16, "UP"),
+	add_flag_equal(PARTITION_DOWN, INFINITE16, "DOWN"),
+	add_flag_equal(PARTITION_DRAIN, INFINITE16, "DRAIN"),
+};
+
 #define add_parse(mtype, field, path, desc) \
 	add_parser(node_info_t, mtype, false, field, 0, path, desc)
 #define add_cparse(mtype, path, desc) \
@@ -6854,7 +6832,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(UINT16, priority_tier, "priority/tier", NULL),
 	add_parse(STRING, qos_char, "qos/assigned", NULL),
 	add_parse(UINT16_NO_VAL, resume_timeout, "timeouts/resume", NULL),
-	add_parse(PARTITION_INFO_STATE, state_up, "state", NULL),
+	add_parse_bit_flag_array(partition_info_t, PARTITION_STATES, false, state_up, "partition/state", NULL),
 	add_parse(UINT32_NO_VAL, suspend_time, "suspend_time", NULL),
 	add_parse(UINT16_NO_VAL, suspend_timeout, "timeouts/suspend", NULL),
 	add_parse(UINT32, total_cpus, "cpus/total", NULL),
@@ -8103,7 +8081,6 @@ static const parser_t parsers[] = {
 	addps(SIGNAL, uint16_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(BITSTR, bitstr_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpss(JOB_ARRAY_RESPONSE_MSG, job_array_resp_msg_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
-	addps(PARTITION_INFO_STATE, uint16_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
 	addpsp(JOB_EXCLUSIVE, JOB_EXCLUSIVE_FLAGS, uint16_t, NEED_NONE, NULL),
 	addpsp(TIMESTAMP, UINT64, time_t, NEED_NONE, NULL),
@@ -8313,6 +8290,7 @@ static const parser_t parsers[] = {
 	addfa(QOS_PREEMPT_MODES, uint16_t),
 	addfa(CLUSTER_REC_FLAGS, uint32_t),
 	addfa(NODE_STATES, uint32_t),
+	addfa(PARTITION_STATES, uint16_t),
 	addfa(JOB_FLAGS, uint64_t),
 	addfa(JOB_SHOW_FLAGS, uint16_t),
 	addfa(POWER_FLAGS, uint8_t),
