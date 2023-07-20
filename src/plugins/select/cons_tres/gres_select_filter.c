@@ -542,11 +542,12 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 						bit_clear(avail_core, i);
 
 						avail_cores_per_sock[s]--;
-						cnt = bit_set_count(avail_core);
-						cnt *= cpus_per_core;
+						tot_core_cnt--;
+						cnt = tot_core_cnt *
+							cpus_per_core;
 						if (cnt < *avail_cpus)
 							*avail_cpus = cnt;
-						if (--tot_core_cnt <=
+						if (tot_core_cnt <=
 						    min_core_cnt)
 							break;
 					}
@@ -638,13 +639,13 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 						continue;
 					bit_clear(avail_core, i);
 
-					cnt = bit_set_count(avail_core);
-					cnt *= cpus_per_core;
+					avail_cores_tot--;
+					avail_cores_per_sock[s]--;
+
+					cnt = avail_cores_tot * cpus_per_core;
 					if (cnt < *avail_cpus)
 						*avail_cpus = cnt;
 
-					avail_cores_tot--;
-					avail_cores_per_sock[s]--;
 				}
 			}
 		}
@@ -809,13 +810,14 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					if (!bit_test(avail_core, i))
 						continue;
 					bit_clear(avail_core, i);
-					cnt = bit_set_count(avail_core);
-					cnt *= cpus_per_core;
-					if (cnt < *avail_cpus)
-						*avail_cpus = cnt;
 
 					avail_cores_tot--;
 					avail_cores_per_sock[s]--;
+
+					cnt = avail_cores_tot * cpus_per_core;
+					if (cnt < *avail_cpus)
+						*avail_cpus = cnt;
+
 					if (avail_cores_tot == req_cores)
 						break;
 				}
@@ -849,13 +851,14 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				if (!bit_test(avail_core, i))
 					continue;
 				bit_clear(avail_core, i);
-				cnt = bit_set_count(avail_core);
-				cnt *= cpus_per_core;
-				if (cnt < *avail_cpus)
-					*avail_cpus = cnt;
 
 				avail_cores_per_sock[full_socket]--;
 				avail_cores_tot--;
+
+				cnt = avail_cores_tot * cpus_per_core;
+				if (cnt < *avail_cpus)
+					*avail_cpus = cnt;
+
 				break;
 			}
 		}
