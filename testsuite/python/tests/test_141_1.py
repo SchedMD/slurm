@@ -121,8 +121,9 @@ def test_cloud_state_cycle():
     atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", reverse=True,
         timeout=resume_timeout+5, fatal=True)
 
-    # Once cloud node is registered and resumed, the job has a maximum of 30 seconds to start
-    atf.wait_for_job_state(job_id, "COMPLETED", timeout=30+5, fatal=True)
+    # Cloud node takes PERIODIC_TIMEOUT seconds to register and resume.
+    # The job has 45 seconds to finish
+    atf.wait_for_job_state(job_id, "COMPLETED", timeout=atf.PERIODIC_TIMEOUT+45, fatal=True)
     assert "IDLE" in atf.get_node_parameter(f"{node_prefix}1", "State").split("+"), \
         "Per 'SlurmctldParameters=idle_on_node_suspend' in slurm.conf, cloud node should always be "\
         "in IDLE state except when ALLOCATED/MIXED for an assigned job"
@@ -352,8 +353,9 @@ def test_node_features():
     assert "f1" == atf.get_node_parameter(f"{node_prefix}1", "ActiveFeatures"), \
         "Cloud node should only have the 'f1' feature when none are explicitly requested"
 
-    # Once cloud node is registered and resumed, the job has a maximum of 30 seconds to start
-    atf.wait_for_job_state(job_id, "COMPLETED", timeout=30+5, fatal=True)
+    # Cloud node takes PERIODIC_TIMEOUT seconds to register and resume.
+    # The job has 45 seconds to finish
+    atf.wait_for_job_state(job_id, "COMPLETED", timeout=atf.PERIODIC_TIMEOUT+45, fatal=True)
     assert "IDLE" in atf.get_node_parameter(f"{node_prefix}1", "State").split("+"), \
         "Per 'SlurmctldParameters=idle_on_node_suspend' in slurm.conf, cloud node should always be "\
         "in IDLE state except when ALLOCATED/MIXED for an assigned job"
@@ -391,8 +393,9 @@ def test_node_features():
             f"{node_prefix}1", "ActiveFeatures").split(",")), \
         "Cloud node should have both of its available features active"
 
-    # Once cloud node is registered and resumed, the job has a maximum of 30 seconds to start
-    atf.wait_for_job_state(job_id, "COMPLETED", timeout=30+5, fatal=True)
+    # Cloud node takes PERIODIC_TIMEOUT seconds to register and resume.
+    # The job has 45 seconds to finish
+    atf.wait_for_job_state(job_id, "COMPLETED", timeout=atf.PERIODIC_TIMEOUT+45, fatal=True)
     atf.wait_for_node_state(f"{node_prefix}1", "IDLE", timeout=5, fatal=True)
 
     # Put cloud node in IDLE+POWERED_DOWN state for possible future tests
@@ -429,8 +432,9 @@ def test_power_down_on_idle():
     atf.wait_for_node_state(f"{node_prefix}1", "POWERING_UP", reverse=True,
         timeout=resume_timeout+5, fatal=True)
 
-    # Once cloud node is registered and resumed, the job has a maximum of 30 seconds to start
-    atf.wait_for_job_state(job_id, "COMPLETED", timeout=30+5, fatal=True)
+    # Cloud node takes PERIODIC_TIMEOUT seconds to register and resume.
+    # The job has 45 seconds to finish
+    atf.wait_for_job_state(job_id, "COMPLETED", timeout=atf.PERIODIC_TIMEOUT+45, fatal=True)
 
     # Immediately upon job completion and becoming IDLE, cloud node should POWER_DOWN
     assert "POWER_DOWN" in atf.get_node_parameter(f"{node_prefix}1", "State").split("+") \
