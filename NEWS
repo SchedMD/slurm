@@ -143,6 +143,7 @@ documents those changes that are of interest to users and administrators.
     as this can lead to inadvertent failure if the log buffer is too small.
  -- Fix --gpu-bind=single binding tasks to wrong gpus, leading to some gpus
     having more tasks than they should and other gpus being unused.
+ -- Fix main scheduler loop not starting after failover to backup controller.
 
 * Changes in Slurm 23.02.3
 ==========================
