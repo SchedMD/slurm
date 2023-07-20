@@ -315,6 +315,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix filesystem handling race conditions that could lead to an attacker
     taking control of an arbitrary file, or removing entire directories'
     contents. CVE-2023-41914.
+ -- Return error when updating ArrayTaskThrottle on a non-ArrayJobId.
 
 * Changes in Slurm 23.02.5
 ==========================

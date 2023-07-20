@@ -14926,8 +14926,14 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 					      __func__, job_ptr);
 					continue;
 				}
-				rc = _update_job(het_job, job_desc, uid,
-						 &err_msg);
+				if (job_desc->array_inx) {
+					err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
+					rc = ESLURM_NOT_SUPPORTED;
+					break;
+				} else {
+					rc = _update_job(het_job, job_desc, uid,
+							 &err_msg);
+				}
 			}
 			list_iterator_destroy(iter);
 			goto reply;
@@ -14938,7 +14944,12 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		     ((job_ptr->array_task_id != NO_VAL) &&
 		      (job_ptr->array_job_id  != job_id)))) {
 			/* This is a regular job or single task of job array */
-			rc = _update_job(job_ptr, job_desc, uid, &err_msg);
+			if (job_desc->array_inx) {
+				err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
+				rc = ESLURM_NOT_SUPPORTED;
+			} else
+				rc = _update_job(job_ptr, job_desc, uid,
+						 &err_msg);
 			goto reply;
 		}
 
@@ -14995,7 +15006,12 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			rc = ESLURM_INVALID_JOB_ID;
 			goto reply;
 		}
-		rc = _update_job(job_ptr, job_desc, uid, &err_msg);
+		if (job_desc->array_inx) {
+			err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
+			rc = ESLURM_NOT_SUPPORTED;
+		} else {
+			rc = _update_job(job_ptr, job_desc, uid, &err_msg);
+		}
 		goto reply;
 	}
 
@@ -15040,7 +15056,13 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			/* Update the record with all pending tasks */
 			job_desc->array_bitmap =
 				bit_copy(job_ptr->array_recs->task_id_bitmap);
-			rc2 = _update_job(job_ptr, job_desc, uid, &err_msg);
+			if (job_desc->array_inx) {
+				err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
+				rc2 = ESLURM_NOT_SUPPORTED;
+			} else
+				rc2 = _update_job(job_ptr, job_desc, uid,
+						  &err_msg);
+
 			if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
 				rc = rc2;
 				goto reply;
@@ -15091,7 +15113,11 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			continue;
 		}
 
-		rc2 = _update_job(job_ptr, job_desc, uid, &err_msg);
+		if (job_desc->array_inx) {
+			err_msg = xstrdup("Update of ArrayTaskThrottle is only allowed on ArrayJobId");
+			rc2 = ESLURM_NOT_SUPPORTED;
+		} else
+			rc2 = _update_job(job_ptr, job_desc, uid, &err_msg);
 		if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
 			rc = rc2;
 			goto reply;
@@ -15113,6 +15139,7 @@ reply:
 			slurm_free_job_array_resp(resp_array_msg);
 		} else {
 			slurm_send_rc_err_msg(msg, rc, err_msg);
+			xfree(err_msg);
 		}
 	}
 	_resp_array_free(resp_array);
