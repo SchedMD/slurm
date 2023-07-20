@@ -1875,18 +1875,15 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 /*
  * Select specific GRES (set GRES bitmap) for this job on this node based upon
  *	per-task resource specification
- * job_res IN - job resource allocation
  * node_inx IN - global node index
- * job_node_inx IN - node index for this job's allocation
  * sock_gres IN - job/node request specifications, UPDATED: set bits in
  *		  gres_bit_select
  * job_id IN - job ID for logging
- * tres_mc_ptr IN - job's multi-core options
+ * tasks_per_node_socket IN - Task count per socket on each node
+
  */
-static void _set_task_bits(struct job_resources *job_res, int node_inx,
-			   int job_node_inx, sock_gres_t *sock_gres,
-			   uint32_t job_id, gres_mc_data_t *tres_mc_ptr,
-			   uint32_t **tasks_per_node_socket)
+static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
+			   uint32_t job_id, uint32_t **tasks_per_node_socket)
 {
 	uint16_t sock_cnt = 0;
 	int gres_cnt, g, l, s;
@@ -2332,8 +2329,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 				_set_sock_bits(job_res, i, node_inx,
 					       sock_gres, job_id, tres_mc_ptr);
 			} else if (gres_js->gres_per_task) {
-				_set_task_bits(job_res, i, node_inx,
-					       sock_gres, job_id, tres_mc_ptr,
+				_set_task_bits(i, sock_gres, job_id,
 					       tasks_per_node_socket);
 			} else if (gres_js->gres_per_job) {
 				job_fini = _set_job_bits1(
