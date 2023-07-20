@@ -7190,7 +7190,9 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 	uint32_t core_cnt = 0;
 	bitstr_t *alloc_core_bitmap = NULL;
 	bitstr_t *avail_core_bitmap = NULL;
-	bool shared_gres = gres_id_shared(gres_state_job->config_flags);
+	bool use_single_dev = (gres_id_shared(gres_state_job->config_flags) &&
+			       !(slurm_conf.select_type_param &
+				 MULTIPLE_SHARING_GRES_PJ));
 	bool use_busy_dev;
 
 	if (gres_ns->no_consume)
@@ -7236,7 +7238,7 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 					gres_avail -= gres_ns->
 						topo_gres_cnt_alloc[i];
 				}
-				if (shared_gres)
+				if (use_single_dev)
 					gres_max = MAX(gres_max, gres_avail);
 				continue;
 			}
@@ -7255,12 +7257,12 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 					gres_avail -= gres_ns->
 						topo_gres_cnt_alloc[i];
 				}
-				if (shared_gres)
+				if (use_single_dev)
 					gres_max = MAX(gres_max, gres_avail);
 				break;
 			}
 		}
-		if (shared_gres)
+		if (use_single_dev)
 			gres_avail = gres_max;
 		if (min_gres_node > gres_avail)
 			return (uint32_t) 0;	/* insufficient GRES avail */
@@ -7384,7 +7386,7 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 				break;
 			}
 			/* update counts of allocated cores and GRES */
-			if (shared_gres) {
+			if (use_single_dev) {
 				/*
 				 * Process outside of loop after specific
 				 * device selected
@@ -7403,7 +7405,7 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 					gres_ns->
 					topo_core_bitmap[top_inx]);
 			}
-			if (shared_gres) {
+			if (use_single_dev) {
 				gres_total = MAX(gres_total, gres_tmp);
 				gres_avail = gres_total;
 			} else {
@@ -7417,7 +7419,7 @@ static uint32_t _job_test(gres_state_t *gres_state_job,
 				core_cnt = bit_set_count(alloc_core_bitmap);
 			}
 		}
-		if (shared_gres && (top_inx >= 0) &&
+		if (use_single_dev && (top_inx >= 0) &&
 		    (gres_avail >= min_gres_node)) {
 			if (!gres_ns->topo_core_bitmap[top_inx]) {
 				bit_set_all(alloc_core_bitmap);

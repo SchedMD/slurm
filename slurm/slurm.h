@@ -1026,6 +1026,8 @@ enum node_states {
 /* By default, distribute cores using a block approach inside the nodes */
 #define CR_CORE_DEFAULT_DIST_BLOCK 0x1000
 #define CR_LLN		0x4000  /* Select nodes by "least loaded." */
+#define MULTIPLE_SHARING_GRES_PJ 0x8000  /* Allow multiple sharing gres per job */
+
 
 /*
  * This is used internally to know whether the job was started with

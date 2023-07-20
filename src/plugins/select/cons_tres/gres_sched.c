@@ -230,10 +230,11 @@ static sock_gres_t *_build_sock_gres_by_topo(
 			}
 		}
 
-		/* shared gres can only use one GPU per job */
+		/* By default only allow one sharing gres per job */
 		if (gres_id_shared(gres_state_node->config_flags) &&
-		    (avail_gres > sock_gres->max_node_gres) &&
-		    !use_total_gres)
+		    !(slurm_conf.select_type_param &
+		      MULTIPLE_SHARING_GRES_PJ) &&
+		    (avail_gres > sock_gres->max_node_gres) && !use_total_gres)
 			/*
 			 * Test use_total_gres so we don't reject shared gres
 			 * jobs as never runnable (see bug 15283)
