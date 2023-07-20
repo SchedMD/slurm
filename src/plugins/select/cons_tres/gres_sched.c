@@ -956,6 +956,7 @@ extern List gres_sched_create_sock_gres_list(
 			FREE_NULL_LIST(sock_gres_list);
 			break;
 		}
+		sock_gres->use_total_gres = use_total_gres;
 		sock_gres->gres_state_job = gres_state_job;
 		sock_gres->gres_state_node = gres_state_node;
 		list_append(sock_gres_list, sock_gres);

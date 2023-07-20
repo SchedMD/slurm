@@ -390,6 +390,9 @@ typedef struct sock_gres {	/* GRES availability by socket */
 	uint64_t total_cnt_before_filter; /* Total GRES count before
 					   * first_pass of
 					   * gres_select_filter_sock_core */
+	bool use_total_gres; /* Was this struct built counting all gres or
+			      * only currently available gres
+			      * i.e. test_only */
 } sock_gres_t;
 
 /* Similar to multi_core_data_t in slurm_protocol_defs.h */
