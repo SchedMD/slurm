@@ -2245,7 +2245,6 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 	uint16_t orig_cpus_per_task = step_ptr->cpus_per_task;
 	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
-	char *err_msg_pos = NULL;
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -2393,22 +2392,19 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 
 		if (gres_cpus_alloc) {
 			if (task_cnt > gres_cpus_alloc) {
-				if (!(step_ptr->flags & SSF_OVERCOMMIT)) {
-					xstrfmtcatat(*err_msg, &err_msg_pos,
-						     "Requested fewer cpus (%d) than tasks (%u) on node %d (%s); request enough cpus for at least one cpu per task or use --overcommit\n",
-						     gres_cpus_alloc,
-						     task_cnt,
-						     job_node_inx,
-						     node_ptr->name);
-					rc = ESLURM_INVALID_CPU_COUNT;
-					final_rc = rc;
-					/*
-					 * We need to set alloc resources
-					 * before we continue to avoid
-					 * underflow in _step_dealloc_lps()
-					 */
-				} else
-					cpus_per_task = 1;
+				/*
+				 * Do not error here. If a job requests fewer
+				 * cpus than tasks via cpus_per_gres,
+				 * the job will be allocated one cpu per task.
+				 * Do the same here.
+				 * Use this same logic in _step_dealloc_lps.
+				 */
+				cpus_per_task = 1;
+				log_flag(STEPS, "%s: %pS node %d (%s) gres_cpus_alloc (%d) < tasks (%u), changing gres_cpus_alloc to tasks.",
+					 __func__, step_ptr, job_node_inx,
+					 node_ptr->name, gres_cpus_alloc,
+					 task_cnt);
+				gres_cpus_alloc = task_cnt;
 			} else {
 				cpus_per_task = gres_cpus_alloc / task_cnt;
 			}
@@ -2798,14 +2794,20 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			    (step_ptr->start_protocol_ver >=
 			     SLURM_23_11_PROTOCOL_VERSION)) {
 				/*
-				 * allocated cpus may be modified if
-				 * ntasks_per_core was requested: use the same
-				 * logic here as in _step_alloc_lps().
+				 * Use the same logic here as in
+				 * _step_alloc_lps().
+				 *
+				 * Allocated cpus may be modified if
+				 * ntasks_per_core was requested.
+				 * If gres_cpus_alloc is less than the number
+				 * of tasks, then default to one cpu per task.
 				 */
 				if (step_ptr->ntasks_per_core != INFINITE16)
 					cpus_alloc =
 						tasks[step_node_inx] *
 						cpus_per_task;
+				else if (gres_cpus_alloc < tasks[step_node_inx])
+					cpus_alloc = tasks[step_node_inx];
 				else
 					cpus_alloc = gres_cpus_alloc;
 			} else
