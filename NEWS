@@ -100,6 +100,9 @@ documents those changes that are of interest to users and administrators.
  -- Allow for a shared suffix to be used with the hostlist format. E.g.,
     "node[0001-0010]-int".
  -- Fix perlapi build when using non-default libdir.
+ -- Replace SRUN_CPUS_PER_TASK with SLURM_CPUS_PER_TASK and get back the
+    previous behavior before Slurm 22.05 since now we have the new external
+    launcher step.
 
 * Changes in Slurm 23.02.4
 ==========================

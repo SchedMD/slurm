@@ -35,6 +35,13 @@ HIGHLIGHTS
     implementations to run their launcher (orte, hydra, etc.) inside a special
     step with access to all the allocated resources in the node, and without
     consuming any of them, allowing for other steps to run concurrently now.
+ -- Replace SRUN_CPUS_PER_TASK with SLURM_CPUS_PER_TASK and get back to the
+    behavior before Slurm 22.05. Starting in Slurm 22.05, --cpus-per-task
+    implies --exact which is why we needed to make srun not read
+    SLURM_CPUS_PER_TASK. Since now we have the new external launcher step,
+    (srun --external-launcher), srun can read this env variable from within
+    an allocation again, so even if -c1 is set, mpirun will run and won't be
+    bound to a single cpu.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
