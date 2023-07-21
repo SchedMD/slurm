@@ -146,6 +146,8 @@ documents those changes that are of interest to users and administrators.
     having more tasks than they should and other gpus being unused.
  -- Fix main scheduler loop not starting after failover to backup controller.
  -- Added error message when attempting to use sattach on batch or extern steps.
+ -- Fix regression in 23.02 that causes slurmstepd to crash when srun requests
+    more than TreeWidth nodes in a step and uses the pmi2 or pmix plugin.
 
 * Changes in Slurm 23.02.3
 ==========================

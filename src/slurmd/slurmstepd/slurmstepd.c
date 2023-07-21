@@ -49,6 +49,8 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/run_command.h"
+#include "src/interfaces/route.h"
+#include "src/interfaces/topology.h"
 #include "src/common/setproctitle.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
@@ -699,7 +701,9 @@ _init_from_slurmd(int sock, char **argv,
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
 	    (cred_g_init() != SLURM_SUCCESS) ||
-	    (job_container_init() != SLURM_SUCCESS))
+	    (job_container_init() != SLURM_SUCCESS) ||
+	    (route_g_init() != SLURM_SUCCESS) ||
+	    (topology_g_init() != SLURM_SUCCESS))
 		fatal("Couldn't load all plugins");
 
 	/*
