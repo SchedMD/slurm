@@ -1,14 +1,6 @@
 use 5.008;
 use ExtUtils::MakeMaker;
 
-if (!(-e "@prefix@/lib/libslurm.so") && !(-e "@top_builddir@/src/api/.libs/libslurm.so")) {
-	die("I can't seem to find the library files I need in your Slurm installation.
-Please check that you have Slurm installation has at least one of the
-following link(s):
-
-   @top_builddir@/src/api/.libs/libslurm.so
-   @prefix@/lib/libslurm.so\n");
-}
 
 # Most all the extra code is to deal with MakeMaker < 6.11 not working
 # correctly to build rpms
@@ -76,7 +68,7 @@ DESTDIR_BUG
 # AIX has problems with not always having the correct
 # flags so we have to add some :)
 my $os = lc(`uname`);
-my $other_ld_flags = "-Wl,-rpath,@top_builddir@/src/db_api/.libs -Wl,-rpath,@prefix@/lib";
+my $other_ld_flags = '-Wl,-rpath,@top_builddir@/src/db_api/.libs -Wl,-rpath,@libdir@';
 $other_ld_flags = " -brtl -G -bnoentry -bgcbypass:1000 -bexpfull"
 	if $os =~ "aix";
 
@@ -87,7 +79,7 @@ WriteMakefile(
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM  => 'Slurmdb.pm', # retrieve abstract from module
        AUTHOR         => 'Don Lipari <lipari@llnl.gov>') : ()),
-    LIBS              => ["-L@top_builddir@/src/api/.libs -L@prefix@/lib -lslurm"], # e.g., '-lm'
+    LIBS              => ['-L@top_builddir@/src/api/.libs -L@libdir@ -lslurm'], # e.g., '-lm'
     DEFINE            => '', # e.g., '-DHAVE_SOMETHING'
     INC               => "-I. -I@top_srcdir@ -I@top_srcdir@/contribs/perlapi/common -I@top_builddir@",
     # Un-comment this if you add C files to link with later:
