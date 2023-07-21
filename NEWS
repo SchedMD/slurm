@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix --gpu-bind=single binding tasks to wrong gpus, leading to some gpus
     having more tasks than they should and other gpus being unused.
  -- Fix main scheduler loop not starting after failover to backup controller.
+ -- Added error message when attempting to use sattach on batch or extern steps.
 
 * Changes in Slurm 23.02.3
 ==========================

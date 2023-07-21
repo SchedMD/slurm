@@ -378,6 +378,12 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	if ((opt.selected_step->step_id.step_id == SLURM_EXTERN_CONT) ||
+	    (opt.selected_step->step_id.step_id == SLURM_BATCH_SCRIPT)) {
+		error("Cannot be used with extern or batch steps");
+		verified = false;
+	}
+
 	/*
 	 * set up standard IO filters
 	 */

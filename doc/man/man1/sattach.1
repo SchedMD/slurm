@@ -9,8 +9,10 @@ sattach [\fIoptions\fP] <jobid.stepid>
 .SH "DESCRIPTION"
 .LP
 sattach attaches to a running Slurm job step.  By attaching, it makes available
-the IO streams of all of the tasks of a running Slurm job step.  It also
-suitable for use with a parallel debugger like TotalView.
+the IO streams of all of the tasks of a running Slurm job step. It is also
+suitable for use with a parallel debugger like TotalView. It cannot be used to
+attach directly to extern or batch steps since the IO channels of these steps
+are not set or directly forwarded to a file.
 
 .SH "OPTIONS"
 .LP
