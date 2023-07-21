@@ -112,6 +112,16 @@ function print_job_info(job_info)
 	job_state = job_info["job_state"]
 	nodes = job_info["nodes"]
 	partition = job_info["partition"]
+	user_name = job_info["user_name"]
+
+	--user_name is not guaranteed to be set, but is accurate when it is.
+	--See slurm_job_info_t in slurm.h. This is for performance reasons.
+	--The script may do a lookup using the UID if needed.
+
+	if (user_name == nil) then
+		user_name = "NULL"
+		--Or do lookup with UID here
+	end
 
 	slurm.log_info("%s:\
 JobId=%u\
@@ -127,10 +137,12 @@ JobId=%u\
 	job_state=%u\
 	nodes=%s\
 	partition=%s\
+	user_name=%s\
 ",
 		lua_script_name, job_id, account, array_job_id, array_task_id,
 		array_max_tasks, array_task_str, gres_total, group_id,
-		het_job_id, het_job_offset, job_state, nodes, partition)
+		het_job_id, het_job_offset, job_state, nodes, partition,
+		user_name)
 
 	if (gres_detail_cnt ~= 0) then
 		slurm.log_info("complete gres_detail_str=\n%s",

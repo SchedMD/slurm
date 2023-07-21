@@ -610,6 +610,15 @@ static int _lua_job_info_field(lua_State *L, const job_info_t *job_info,
 		lua_pushstring(L, job_info->tres_alloc_str);
 	} else if (!xstrcmp(name, "user_id")) {
 		lua_pushinteger(L, job_info->user_id);
+	/*
+	 * user_name is not guaranteed to be set, but is accurate when it is.
+	 * See slurm_job_info_t in slurm.h. This is for performance reasons,
+	 * as we are avoiding using a job_write_lock to set it in job_info
+	 * before it is packed, and we are avoiding doing a lookup with UID
+	 * multiple times per job in the lua script. If performance is not a
+	 * concern and username is needed, the script may do a lookup using
+	 * the UID.
+	 */
 	} else if (!xstrcmp(name, "user_name")) {
 		lua_pushstring(L, job_info->user_name);
 	} else if (!xstrcmp(name, "wait4switch")) {
