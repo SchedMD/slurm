@@ -316,7 +316,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* slurmctld_primary_off_prog */
 	/* slurmctld_primary_on_prog */
 	/* slurmctld_syslog_debug */
-	/* slurmctld_timeout */
+	pack16(slurm_conf.slurmctld_timeout, buffer);
 	/* slurmctld_params */
 	/* slurmd_debug */
 	/* slurmd_logfile */
@@ -546,7 +546,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* slurmctld_primary_off_prog */
 	/* slurmctld_primary_on_prog */
 	/* slurmctld_syslog_debug */
-	/* slurmctld_timeout */
+	safe_unpack16(&slurm_conf.slurmctld_timeout, buffer);
 	/* slurmctld_params */
 	/* slurmd_debug */
 	/* slurmd_logfile */

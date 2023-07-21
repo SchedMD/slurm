@@ -14,6 +14,9 @@ documents those changes that are of interest to users and administrators.
     --mem-per-cpu.
  -- Fix a regression from 22.05.7 in which some jobs were allocated too few
     nodes, thus overcommitting cpus to some tasks.
+ -- Fix a job being stuck in the completing state if the job ends while the
+    primary controller is down or unresponsive and the backup controller has
+    not yet taken over.
 
 * Changes in Slurm 23.02.4
 ==========================
