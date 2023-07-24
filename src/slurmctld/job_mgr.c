@@ -1279,7 +1279,8 @@ extern int load_all_job_state(void)
 	 * into the job_mgr_load_job_state function than any other option.
 	 */
 	while (remaining_buf(buffer) > 0) {
-		error_code = job_mgr_load_job_state(buffer, protocol_version);
+		error_code = job_mgr_load_job_state(
+			buffer, NULL, protocol_version);
 		if (error_code != SLURM_SUCCESS)
 			goto unpack_error;
 		job_cnt++;
@@ -1590,7 +1591,9 @@ extern int job_mgr_dump_job_state(void *object, void *arg)
 	return 0;
 }
 
-extern int job_mgr_load_job_state(buf_t *buffer, uint16_t protocol_version)
+extern int job_mgr_load_job_state(buf_t *buffer,
+				  job_record_t **job_ptr_out,
+				  uint16_t protocol_version)
 {
 	uint64_t db_index;
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
@@ -1689,12 +1692,19 @@ extern int job_mgr_load_job_state(buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 
-		job_ptr = find_job_record(job_id);
-		if (job_ptr == NULL) {
-			job_ptr = _create_job_record(1, true);
+		if (job_ptr_out) {
+			*job_ptr_out = job_ptr = _create_job_record(1, false);
 			job_ptr->job_id = job_id;
 			job_ptr->array_job_id = array_job_id;
 			job_ptr->array_task_id = array_task_id;
+		} else {
+			job_ptr = find_job_record(job_id);
+			if (job_ptr == NULL) {
+				job_ptr = _create_job_record(1, true);
+				job_ptr->job_id = job_id;
+				job_ptr->array_job_id = array_job_id;
+				job_ptr->array_task_id = array_task_id;
+			}
 		}
 
 		safe_unpack32(&user_id, buffer);
@@ -1921,12 +1931,19 @@ extern int job_mgr_load_job_state(buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 
-		job_ptr = find_job_record(job_id);
-		if (job_ptr == NULL) {
-			job_ptr = _create_job_record(1, true);
+		if (job_ptr_out) {
+			*job_ptr_out = job_ptr = _create_job_record(1, false);
 			job_ptr->job_id = job_id;
 			job_ptr->array_job_id = array_job_id;
 			job_ptr->array_task_id = array_task_id;
+		} else {
+			job_ptr = find_job_record(job_id);
+			if (job_ptr == NULL) {
+				job_ptr = _create_job_record(1, true);
+				job_ptr->job_id = job_id;
+				job_ptr->array_job_id = array_job_id;
+				job_ptr->array_task_id = array_task_id;
+			}
 		}
 
 		safe_unpack32(&user_id, buffer);

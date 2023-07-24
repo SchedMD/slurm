@@ -2458,10 +2458,13 @@ extern int job_mgr_dump_job_state(void *object, void *arg);
 /*
  * job_mgr_load_job_state - Unpack a job's state information from a buffer
  *
+ * If job_ptr_out is not NULL it will be filled in outside of the job_list.
+ *
  * NOTE: assoc_mgr qos, tres and assoc read lock must be unlocked before
  * calling
  */
-extern int job_mgr_load_job_state(buf_t *buffer, uint16_t protocol_version);
+extern int job_mgr_load_job_state(buf_t *buffer, job_record_t **job_ptr_out,
+				  uint16_t protocol_version);
 
 
 /* For the job array data structure, build the string representation of the
