@@ -12035,6 +12035,26 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		return ESLURM_JOB_SETTING_DB_INX;
 
 	operator = validate_operator(uid);
+
+	/* Check authorization for modifying this job */
+	is_coord_oldacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+						       job_ptr->account);
+	is_coord_newacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
+						       job_desc->account);
+	if ((job_ptr->user_id != uid) && !operator) {
+		/*
+		 * Fail if we are not coordinators of the current account or
+		 * if we are changing an account and  we are not coordinators
+		 * of both src and dest accounts.
+		 */
+		if (!is_coord_oldacc ||
+		    (!is_coord_newacc && job_desc->account)) {
+			error("Security violation, JOB_UPDATE RPC from uid %u",
+			      uid);
+			return ESLURM_USER_ID_MISSING;
+		}
+	}
+
 	if (job_desc->burst_buffer) {
 		/*
 		 * burst_buffer contents are validated at job submit time and
@@ -12118,25 +12138,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		acct_policy_limit_set.qos = ADMIN_SET_LIMIT;
 	} else
 		memset(tres, 0, sizeof(tres));
-
-	/* Check authorization for modifying this job */
-	is_coord_oldacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						       job_ptr->account);
-	is_coord_newacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						       job_desc->account);
-	if ((job_ptr->user_id != uid) && !operator) {
-		/*
-		 * Fail if we are not coordinators of the current account or
-		 * if we are changing an account and  we are not coordinators
-		 * of both src and dest accounts.
-		 */
-		if (!is_coord_oldacc ||
-		    (!is_coord_newacc && job_desc->account)) {
-			error("Security violation, JOB_UPDATE RPC from uid %u",
-			      uid);
-			return ESLURM_USER_ID_MISSING;
-		}
-	}
 
 	detail_ptr = job_ptr->details;
 	if (detail_ptr)
