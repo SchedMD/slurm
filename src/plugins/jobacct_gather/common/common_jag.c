@@ -1058,6 +1058,10 @@ extern void jag_common_poll_data(List task_list, uint64_t cont_id,
 		if (acct_gather_interconnect_g_get_data(prec->tres_data) < 0) {
 			log_flag(JAG, "problem retrieving interconnect data");
 		}
+		/* find all my descendents */
+		if (callbacks->get_offspring_data)
+			(*(callbacks->get_offspring_data))
+				(prec_list, prec, prec->pid);
 
 		/*
 		 * Only jobacct_gather/cgroup uses prec_extra, and we want to
@@ -1086,10 +1090,6 @@ extern void jag_common_poll_data(List task_list, uint64_t cont_id,
 				      "UsePss") ?  "pss" : "rss"),
 			 prec->tres_data[TRES_ARRAY_MEM].size_read);
 
-		/* find all my descendents */
-		if (callbacks->get_offspring_data)
-			(*(callbacks->get_offspring_data))
-				(prec_list, prec, prec->pid);
 
 		last_total_cputime =
 			(double)jobacct->tres_usage_in_tot[TRES_ARRAY_CPU];
