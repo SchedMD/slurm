@@ -9028,7 +9028,7 @@ bitstr_t *cpu_set_to_bit_str(cpu_set_t *cpu_set, int cpu_count)
  * This function only works with task/cgroup and constrained devices or
  * if the job step has access to the entire node's resources.
  */
-static bitstr_t *_get_closest_usable_gres(int context_inx,
+static bitstr_t *_get_closest_usable_gres(uint32_t plugin_id,
 					  bitstr_t *gres_bit_alloc,
 					  cpu_set_t *task_cpu_set)
 {
@@ -9050,8 +9050,7 @@ static bitstr_t *_get_closest_usable_gres(int context_inx,
 	usable_gres = bit_alloc(bitmap_size);
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
-		if (gres_slurmd_conf->plugin_id !=
-		    gres_context[context_inx].plugin_id)
+		if (gres_slurmd_conf->plugin_id != plugin_id)
 			continue;
 		if ((gres_inx + gres_slurmd_conf->count) > bitmap_size) {
 			error("GRES %s bitmap overflow ((%d + %"PRIu64") > %d)",
@@ -9532,6 +9531,7 @@ static int _get_usable_gres(int context_inx, int proc_id,
 {
 	char *sep;
 	bitstr_t *usable_gres = NULL;
+	uint32_t plugin_id = gres_context[context_inx].plugin_id;
 	char *gres_name = gres_context[context_inx].gres_name;
 	*usable_gres_ptr = NULL;
 
@@ -9561,7 +9561,7 @@ static int _get_usable_gres(int context_inx, int proc_id,
 			}
 		} else if (!xstrncasecmp(sep, "closest", 7)) {
 			usable_gres = _get_closest_usable_gres(
-				context_inx, gres_bit_alloc,
+				plugin_id, gres_bit_alloc,
 				step->task[proc_id]->cpu_set);
 			if (!get_devices && gres_use_local_device_index())
 				bit_consolidate(usable_gres);
