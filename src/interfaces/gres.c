@@ -9169,8 +9169,7 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 				step->task[proc_id]->cpu_set);
 			if (!get_devices && gres_use_local_device_index())
 				bit_consolidate(usable_gres);
-		}
-		else
+		} else
 			return SLURM_ERROR;
 	} else {
 		return SLURM_ERROR;
