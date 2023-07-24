@@ -5532,6 +5532,11 @@ extern char *slurm_conf_expand_slurmd_path(const char *path,
 	const char *hostname;
 	char *dir = NULL;
 
+#ifndef NDEBUG
+	if (xstrstr(path, "%n"))
+		xassert(node_name);
+#endif
+
 	dir = xstrdup(path);
 	if (!host_name)
 		hostname = _internal_get_hostname(node_name);
