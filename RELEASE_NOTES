@@ -96,6 +96,7 @@ COMMAND CHANGES (see man pages for details)
     specified.
  -- Reject reservation update if it will result in previously submitted
     jobs losing access to the reservation.
+ -- scontrol/sview - Remove FIRST_CORES flag from reservations.
 
 API CHANGES
 ===========

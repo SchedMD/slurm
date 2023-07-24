@@ -163,115 +163,6 @@ static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **avail_cores)
  * node_cnt IN - required node count
  * core_cnt IN - required core count
  * exc_cores IN/OUT - Cores to AVOID using on input, selected cores on output
- * RET selected nodes
- */
-static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
-				   uint32_t node_cnt, uint32_t *core_cnt,
-				   bitstr_t ***exc_cores)
-{
-	char tmp[128];
-	bitstr_t **tmp_cores;
-	bitstr_t **avail_cores;
-	bitstr_t *picked_node_bitmap = NULL;
-	bitstr_t *tmp_core_bitmap;
-	int c, c_cnt, i;
-	int local_node_offset = 0;
-	bool fini = false;
-
-	if (!core_cnt || (core_cnt[0] == 0))
-		return picked_node_bitmap;
-
-	if (*exc_cores == NULL) {	/* Exclude no cores by default */
-		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
-			bit_fmt(tmp, sizeof(tmp), avail_node_bitmap);
-			log_flag(RESERVATION, "exc_cores:NULL avail_nodes:%s",
-				 tmp);
-		}
-
-		c = cr_get_coremap_offset(node_record_count);
-		tmp_core_bitmap = bit_alloc(c);
-		bit_not(tmp_core_bitmap);
-		avail_cores = core_bitmap_to_array(tmp_core_bitmap);
-		FREE_NULL_BITMAP(tmp_core_bitmap);
-	} else {
-		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
-			tmp_cores = *exc_cores;
-			bit_fmt(tmp, sizeof(tmp), avail_node_bitmap);
-			log_flag(RESERVATION, "avail_nodes:%s",
-				 tmp);
-			for (i = 0; next_node(&i); i++) {
-				if (!tmp_cores[i])
-					continue;
-				bit_fmt(tmp, sizeof(tmp), tmp_cores[i]);
-				log_flag(RESERVATION, "exc_cores[%d]: %s",
-					 i, tmp);
-			}
-		}
-		/*
-		 * Ensure all nodes in avail_node_bitmap are represented
-		 * in exc_cores. For now include ALL nodes.
-		 */
-		c = cr_get_coremap_offset(node_record_count);
-		tmp_core_bitmap = bit_alloc(c);
-		bit_not(tmp_core_bitmap);
-		avail_cores = core_bitmap_to_array(tmp_core_bitmap);
-		FREE_NULL_BITMAP(tmp_core_bitmap);
-		core_array_and_not(avail_cores, *exc_cores);
-	}
-
-	xassert(avail_cores);
-
-	picked_node_bitmap = bit_alloc(node_record_count);
-	for (i = 0; next_node(&i); i++) {
-		if (fini ||
-		    !avail_cores[i] ||
-		    !bit_test(avail_node_bitmap, i) ||
-		    (bit_set_count_range(avail_cores[i], 0,
-					 core_cnt[local_node_offset]) <
-		     core_cnt[local_node_offset])) {
-			FREE_NULL_BITMAP(avail_cores[i]);
-			continue;
-		}
-		bit_set(picked_node_bitmap, i);
-		c_cnt = 0;
-		for (c = 0; c < node_record_table_ptr[i]->tot_cores; c++) {
-			if (!bit_test(avail_cores[i], c))
-				continue;
-			if (++c_cnt > core_cnt[local_node_offset])
-				bit_clear(avail_cores[i], c);
-		}
-		if (core_cnt[++local_node_offset] == 0)
-			fini = true;
-	}
-
-	if (!fini) {
-		log_flag(RESERVATION, "reservation request can not be satisfied");
-		FREE_NULL_BITMAP(picked_node_bitmap);
-		free_core_array(&avail_cores);
-	} else {
-		free_core_array(exc_cores);
-		*exc_cores = avail_cores;
-
-		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
-			for (i = 0; next_node(&i); i++) {
-				if (!avail_cores[i])
-					continue;
-				bit_fmt(tmp, sizeof(tmp), avail_cores[i]);
-				log_flag(RESERVATION, "selected cores[%d] %s",
-					 i, tmp);
-			}
-		}
-	}
-
-	return picked_node_bitmap;
-}
-
-/*
- * Select resources for advanced reservation
- * avail_node_bitmap IN - Available nodes
- * node_cnt IN - required node count
- * core_cnt IN - required core count
- * exc_cores IN/OUT - Cores to AVOID using on input, selected cores on output
  * RET selected node bitmap
  */
 static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
@@ -1655,25 +1546,11 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	if (core_cnt) {
 		/*
 		 * Run this now to set up exc_core_bitmap if needed for
-		 * pick_first_cores and sequential_pick.
+		 * sequential_pick.
 		 */
 		if (!exc_core_bitmap)
 			exc_core_bitmap = build_core_array();
 		_spec_core_filter(avail_node_bitmap, exc_core_bitmap);
-	}
-
-	if ((resv_desc_ptr->flags & RESERVE_FLAG_FIRST_CORES) && core_cnt) {
-		/* Reservation request with "Flags=first_cores CoreCnt=#" */
-		avail_nodes_bitmap = _pick_first_cores(
-			avail_node_bitmap,
-			node_cnt, core_cnt,
-			&exc_core_bitmap);
-		if (avail_nodes_bitmap && core_bitmap && exc_core_bitmap) {
-			FREE_NULL_BITMAP(*core_bitmap);
-			*core_bitmap = core_array_to_bitmap(exc_core_bitmap);
-		}
-		free_core_array(&exc_core_bitmap);
-		return avail_nodes_bitmap;
 	}
 
 	/* When reservation includes a nodelist we use _sequential_pick code */

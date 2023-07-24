@@ -1574,10 +1574,6 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 				outflags |= RESERVE_FLAG_NO_PURGE_COMP;
 			else
 				outflags |= RESERVE_FLAG_PURGE_COMP;
-		} else if (!xstrncasecmp(curr, "First_Cores", MAX(taglen,1)) &&
-			   op != RESV_REM) {
-			curr += taglen;
-			outflags |= RESERVE_FLAG_FIRST_CORES;
 		} else if (!xstrncasecmp(curr, "Time_Float", MAX(taglen,1)) &&
 			   op == RESV_NEW) {
 			curr += taglen;

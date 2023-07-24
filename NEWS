@@ -117,6 +117,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove NoAddrCache CommunicationParameter.
  -- Add QOS flag 'Relative'. If set the QOS limits will be treated as
     percentages of a cluster/partition instead of absolutes.
+ -- Remove FIRST_CORES flag from reservations.
 
 * Changes in Slurm 23.02.5
 ==========================

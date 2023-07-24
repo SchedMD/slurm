@@ -2764,7 +2764,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 					RESERVE_FLAG_STATIC   |
 					RESERVE_FLAG_ANY_NODES   |
 					RESERVE_FLAG_PART_NODES  |
-					RESERVE_FLAG_FIRST_CORES |
 					RESERVE_FLAG_TIME_FLOAT  |
 					RESERVE_FLAG_PURGE_COMP  |
 					RESERVE_FLAG_REPLACE     |
@@ -3305,8 +3304,6 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			resv_ptr->flags &= (~RESERVE_FLAG_ANY_NODES);
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_STATIC)
 			resv_ptr->flags &= (~RESERVE_FLAG_STATIC);
-		if (resv_desc_ptr->flags & RESERVE_FLAG_FIRST_CORES)
-			resv_ptr->flags |= RESERVE_FLAG_FIRST_CORES;
 		if (resv_desc_ptr->flags & RESERVE_REOCCURRING) {
 
 			if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {

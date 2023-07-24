@@ -635,10 +635,10 @@ proc inc3_11_9 {} {
 	}
 
 	# Make the reservation using more cores than free, but use the
-	# IGNORE_JOBS and FIRST_CORES flags. Verify that it is created with the
+	# IGNORE_JOBS flags. Verify that it is created with the
 	# correct nodes, CoreCnt, and CoreIDs.
 
-	set ret_code [create_res $res_name "StartTime=now Duration=60 Nodes=$def_node_name\[$min_node_inx\-$max_node_inx\] CoreCnt=2,2,2,2,$cores_per_node User=$user_name Flags=IGNORE_JOBS,FIRST_CORES"]
+	set ret_code [create_res $res_name "StartTime=now Duration=60 Nodes=$def_node_name\[$min_node_inx\-$max_node_inx\] CoreCnt=2,2,2,2,$cores_per_node User=$user_name Flags=IGNORE_JOBS"]
 	if {$ret_code == 1} {
 		cancel_job $job_id
 		fail "Reservation was not created when it should have been"
@@ -741,17 +741,6 @@ proc inc3_11_9 {} {
 		eof {
 			wait
 		}
-	}
-
-	# Make the reservation with the FIRST_CORES flag. It should fail
-	# to be created even though there are enough cores because the
-	# FIRST_CORES flag requires the lowest numbered cores.
-	set ret_code [create_res $res_name "StartTime=now Duration=60 Nodes=$def_node_name\[$min_node_inx\-$max_node_inx\] CoreCnt=1,1,1,1,1 User=$user_name Flags=FIRST_CORES"]
-
-	if {! [
-		subtest {$ret_code != 0} "Reservation with the FIRST_CORES flag should fail to be created"
-	]} {
-		delete_res $res_name
 	}
 
 	cancel_job $job_id

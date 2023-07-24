@@ -3592,11 +3592,6 @@ extern char *reservation_flags_string(reserve_info_t * resv_ptr)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_PART_NODES");
 	}
-	if (flags & RESERVE_FLAG_FIRST_CORES) {
-		if (flag_str[0])
-			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "FIRST_CORES");
-	}
 	if (flags & RESERVE_FLAG_TIME_FLOAT) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");

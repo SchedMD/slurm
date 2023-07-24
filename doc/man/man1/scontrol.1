@@ -2422,11 +2422,10 @@ This is because the CRAY API for managing DataWarps supports both formats.
 \fBCoreCnt\fR=<\fInum\fR>
 This option is only supported when
 \fIselect/cons_tres\fP is used. Identify number of cores to be reserved.
-If NodeCnt is used without the FIRST_CORES flag, this
-is the total number of cores to reserve where cores per node is CoreCnt/NodeCnt.
-If a nodelist is used, or if NodeCnt is used with the FIRST_CORES flag, this
-should be an array of core numbers by node: Nodes=node[1\-5] CoreCnt=2,2,3,3,4
-or flags=FIRST_CORES NodeCnt=5 CoreCnt=1,2,1,3,2.
+If NodeCnt is used this is the total number of cores to reserve
+where cores per node is CoreCnt/NodeCnt.
+If a nodelist is used, this should be an array of core numbers by node:
+Nodes=node[1\-5] CoreCnt=2,2,3,3,4.
 .IP
 
 .TP
@@ -2568,12 +2567,6 @@ forcing jobs requesting the reservation to use those resources in the time
 frame reserved. Another use case could be to always have a particular number of
 nodes with a specific feature reserved for a specific account so users in this
 account may use this nodes plus possibly other nodes without this feature.
-.IP
-
-.TP
-\fBFIRST_CORES\fR
-Use the lowest numbered cores on a node only. Flag removal with '\-=' is not
-supported.
 .IP
 
 .TP
