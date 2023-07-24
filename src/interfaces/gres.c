@@ -313,7 +313,7 @@ static int	_valid_gres_type(char *gres_name, gres_node_state_t *gres_ns,
 				 bool config_overrides, char **reason_down);
 static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
 			     tres_bind_t *tres_bind);
-static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
+static int _get_usable_gres(int context_inx, int proc_id,
 			    tres_bind_t *tres_bind,
 			    bitstr_t **usable_gres_ptr,
 			    bitstr_t *gres_bit_alloc,  bool get_devices,
@@ -7873,8 +7873,7 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 			continue;
 		}
 
-		if (_get_usable_gres(gres_context[j].gres_name, j,
-				     local_proc_id, &tres_bind,
+		if (_get_usable_gres(j, local_proc_id, &tres_bind,
 				     &usable_gres, gres_bit_alloc,
 				     true, step) == SLURM_ERROR)
 			continue;
@@ -9109,12 +9108,13 @@ static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
 	tres_bind->request = tres_bind_str;
 }
 
-static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
+static int _get_usable_gres(int context_inx, int proc_id,
 			    tres_bind_t *tres_bind, bitstr_t **usable_gres_ptr,
 			    bitstr_t *gres_bit_alloc,  bool get_devices,
 			    stepd_step_rec_t *step)
 {
 	bitstr_t *usable_gres = NULL;
+	char *gres_name = gres_context[context_inx].gres_name;
 	*usable_gres_ptr = NULL;
 
 	if (!tres_bind->bind_gpu && !tres_bind->bind_nic &&
@@ -9291,7 +9291,7 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 			if (gres_id_sharing(gres_ctx->plugin_id))
 				sharing_gres_allocated = true;
 		}
-		if (_get_usable_gres(gres_ctx->gres_name, i, local_proc_id,
+		if (_get_usable_gres(i, local_proc_id,
 				     &tres_bind, &usable_gres, gres_bit_alloc,
 				     false, step) == SLURM_ERROR) {
 			FREE_NULL_BITMAP(gres_bit_alloc);
