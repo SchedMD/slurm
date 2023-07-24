@@ -189,18 +189,6 @@ typedef struct {
 	void *without_type_state; /* gres_[job|step]_state_t */
 } overlap_check_t;
 
-/* These are the options that are currently supported with --tres-bind */
-typedef struct {
-	bool bind_gpu; /* If we are binding to a gpu or not. */
-	bool bind_nic; /* If we are binding to a nic or not. */
-	uint32_t gpus_per_task; /* How many gpus per task requested. */
-	gres_internal_flags_t gres_internal_flags;
-	char *map_gpu; /* GPU map requested. */
-	char *mask_gpu; /* GPU mask requested. */
-	char *request;
-	uint32_t tasks_per_gres; /* How many tasks per gres requested */
-} tres_bind_t;
-
 typedef struct {
 	slurm_gres_context_t *gres_ctx;
 	int new_has_file;
@@ -311,11 +299,10 @@ static void	_validate_gres_conf(List gres_conf_list,
 static int	_validate_file(char *path_name, char *gres_name);
 static int	_valid_gres_type(char *gres_name, gres_node_state_t *gres_ns,
 				 bool config_overrides, char **reason_down);
-static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
-			     tres_bind_t *tres_bind);
+static void _parse_accel_bind_type(uint16_t accel_bind_type,
+				   char *tres_bind_str);
 static int _get_usable_gres(int context_inx, int proc_id,
-			    tres_bind_t *tres_bind,
-			    bitstr_t **usable_gres_ptr,
+			    char *tres_bind_str, bitstr_t **usable_gres_ptr,
 			    bitstr_t *gres_bit_alloc,  bool get_devices,
 			    stepd_step_rec_t *step);
 
@@ -7810,7 +7797,6 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 	List gres_devices;
 	List device_list = NULL;
 	bitstr_t *usable_gres = NULL;
-	tres_bind_t tres_bind;
 
 	xassert(gres_context_cnt >= 0);
 
@@ -7845,10 +7831,8 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 	if (!gres_list)
 		return device_list;
 
-	if (accel_bind_type || tres_bind_str)
-		_parse_tres_bind(accel_bind_type, tres_bind_str, &tres_bind);
-	else
-		memset(&tres_bind, 0, sizeof(tres_bind));
+	if (accel_bind_type)
+		_parse_accel_bind_type(accel_bind_type, tres_bind_str);
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (j = 0; j < gres_context_cnt; j++) {
@@ -7873,7 +7857,7 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 			continue;
 		}
 
-		if (_get_usable_gres(j, local_proc_id, &tres_bind,
+		if (_get_usable_gres(j, local_proc_id, tres_bind_str,
 				     &usable_gres, gres_bit_alloc,
 				     true, step) == SLURM_ERROR)
 			continue;
@@ -8791,6 +8775,12 @@ static bitstr_t *_get_single_usable_gres(int context_inx,
 	bitstr_t *gres_slots = NULL;
 	int32_t gres_count = bit_set_count(gres_bit_alloc);
 
+	if ((ntasks_per_gres <= 0) || (ntasks_per_gres > UINT32_MAX)) {
+		error("%s: single: does not specify a valid number. Defaulting to 1.",
+			__func__);
+		ntasks_per_gres = 1;
+	}
+
 	/* No need to select gres if there is only 1 to use */
 	if (gres_count <= 1) {
 		log_flag(GRES, "%s: (task %d) No need to select single gres since count is 0 or 1",
@@ -9059,114 +9049,78 @@ static void _filter_gres_per_task(bitstr_t *usable_gres, uint32_t gpus_per_task,
 		error("Not enough gpus to bind for gpus per task");
 }
 
-/* Parse bind information to find which gres is usable by the task.
+/* Convert old binding options to current gres binding format
  *
  * IN accel_bind_type - GRES binding options (old format, a bitmap)
- * IN tres_bind - TRES binding directives (new format, a string)
- * OUT tres_bind - String parsed filled into structure.
+ * IN/OUT tres_bind_str - TRES binding directives (new format, a string)
  */
-static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
-			     tres_bind_t *tres_bind)
+static void _parse_accel_bind_type(uint16_t accel_bind_type, char *tres_bind_str)
 {
-	char *sep;
-
-	xassert(tres_bind);
-	memset(tres_bind, 0, sizeof(tres_bind_t));
-
-	tres_bind->gres_internal_flags = GRES_INTERNAL_FLAG_NONE;
-
-	tres_bind->bind_gpu = accel_bind_type & ACCEL_BIND_CLOSEST_GPU;
-	tres_bind->bind_nic = accel_bind_type & ACCEL_BIND_CLOSEST_NIC;
-	if (!tres_bind->bind_gpu && (sep = xstrstr(tres_bind_str, "gpu:"))) {
-		sep += 4;
-		if (!xstrncasecmp(sep, "verbose,", 8)) {
-			sep += 8;
-			tres_bind->gres_internal_flags |=
-				GRES_INTERNAL_FLAG_VERBOSE;
-		}
-		if (!xstrncasecmp(sep, "single:", 7)) {
-			long tasks_per_gres;
-			sep += 7;
-			tasks_per_gres = strtol(sep, NULL, 0);
-			if ((tasks_per_gres <= 0) ||
-			    (tasks_per_gres > UINT32_MAX)) {
-				error("%s: single:%s does not specify a valid number. Defaulting to 1.",
-				      __func__, sep);
-				tasks_per_gres = 1;
-			}
-			tres_bind->tasks_per_gres = tasks_per_gres;
-			tres_bind->bind_gpu = true;
-		} else if (!xstrncasecmp(sep, "closest", 7))
-			tres_bind->bind_gpu = true;
-		else if (!xstrncasecmp(sep, "map_gpu:", 8))
-			tres_bind->map_gpu = sep + 8;
-		else if (!xstrncasecmp(sep, "mask_gpu:", 9))
-			tres_bind->mask_gpu = sep + 9;
-		else if (!xstrncasecmp(sep, "per_task:", 9))
-			tres_bind->gpus_per_task = slurm_atoul(sep + 9);
+	if (accel_bind_type & ACCEL_BIND_CLOSEST_GPU) {
+		xstrfmtcat(tres_bind_str, ",gpu:closest");
 	}
-	tres_bind->request = tres_bind_str;
+	if (accel_bind_type & ACCEL_BIND_CLOSEST_NIC) {
+		xstrfmtcat(tres_bind_str, ",nic:closest");
+	}
 }
 
 static int _get_usable_gres(int context_inx, int proc_id,
-			    tres_bind_t *tres_bind, bitstr_t **usable_gres_ptr,
+			    char *tres_bind_str, bitstr_t **usable_gres_ptr,
 			    bitstr_t *gres_bit_alloc,  bool get_devices,
 			    stepd_step_rec_t *step)
 {
+	char *sep;
 	bitstr_t *usable_gres = NULL;
 	char *gres_name = gres_context[context_inx].gres_name;
 	*usable_gres_ptr = NULL;
 
-	if (!tres_bind->bind_gpu && !tres_bind->bind_nic &&
-	    !tres_bind->map_gpu && !tres_bind->mask_gpu &&
-	    !tres_bind->gpus_per_task)
+	if (!gres_bit_alloc || !tres_bind_str)
 		return SLURM_SUCCESS;
 
-	if (!gres_bit_alloc)
-		return SLURM_SUCCESS;
-
-	if (!xstrcmp(gres_name, "gpu")) {
-		if (tres_bind->map_gpu) {
+	if (!xstrcmp(gres_name, "gpu") &&
+	    (sep = xstrstr(tres_bind_str, "gpu:"))) {
+		sep += 4;
+		if (!xstrncasecmp(sep, "map_gpu:", 8)) {
 			usable_gres = _get_usable_gres_map_or_mask(
-				tres_bind->map_gpu, proc_id, gres_bit_alloc,
+				(sep + 8), proc_id, gres_bit_alloc,
 				true, get_devices);
-		} else if (tres_bind->mask_gpu) {
+		} else if (!xstrncasecmp(sep, "mask_gpu:", 9)) {
 			usable_gres = _get_usable_gres_map_or_mask(
-				tres_bind->mask_gpu, proc_id, gres_bit_alloc,
+				(sep + 9), proc_id, gres_bit_alloc,
 				false, get_devices);
-		} else if (tres_bind->bind_gpu &&
-			   tres_bind->tasks_per_gres) {
+		} else if (!xstrncasecmp(sep, "single:", 7)) {
 			if (!get_devices && gres_use_local_device_index()) {
 				usable_gres = bit_alloc(
 					bit_size(gres_bit_alloc));
 				bit_set(usable_gres, 0);
 			} else {
 				usable_gres = _get_single_usable_gres(
-					context_inx, tres_bind->tasks_per_gres,
+					context_inx, slurm_atoul(sep + 7),
 					proc_id, step, gres_bit_alloc);
 			}
-		} else if (tres_bind->bind_gpu) {
+		} else if (!xstrncasecmp(sep, "closest", 7)) {
 			usable_gres = _get_closest_usable_gres(
 				context_inx, gres_bit_alloc,
 				step->task[proc_id]->cpu_set);
 			if (!get_devices && gres_use_local_device_index())
 				bit_consolidate(usable_gres);
-		} else if (tres_bind->gpus_per_task) {
-			if(!get_devices && gres_use_local_device_index()){
+		} else if (!xstrncasecmp(sep, "per_task:", 9)) {
+			if (!get_devices && gres_use_local_device_index()) {
 				usable_gres = bit_alloc(
 					bit_size(gres_bit_alloc));
-				bit_nset(usable_gres, 0,
-					 tres_bind->gpus_per_task - 1);
+				bit_nset(usable_gres, 0, slurm_atoul(sep + 9));
 			} else {
 				usable_gres = bit_copy(gres_bit_alloc);
 				_filter_gres_per_task(usable_gres,
-						      tres_bind->gpus_per_task,
+						      slurm_atoul(sep + 9),
 						      proc_id);
 			}
 		} else
 			return SLURM_ERROR;
-	} else if (!xstrcmp(gres_name, "nic")) {
-		if (tres_bind->bind_nic) {
+	} else if (!xstrcmp(gres_name, "nic") &&
+		   (sep = xstrstr(tres_bind_str, "nic:"))) {
+		sep += 4;
+		if (!xstrncasecmp(sep, "closest", 7)) {
 			usable_gres = _get_closest_usable_gres(
 				context_inx, gres_bit_alloc,
 				step->task[proc_id]->cpu_set);
@@ -9175,12 +9129,12 @@ static int _get_usable_gres(int context_inx, int proc_id,
 		} else
 			return SLURM_ERROR;
 	} else {
-		return SLURM_ERROR;
+		return SLURM_SUCCESS;
 	}
 
 	if (usable_gres && !bit_set_count(usable_gres)) {
 		error("Bind request %s does not specify any devices within the allocation for task %d. Binding to the first device in the allocation instead.",
-		      tres_bind->request, proc_id);
+		      tres_bind_str, proc_id);
 		if (!get_devices && gres_use_local_device_index())
 			bit_set(usable_gres, 0);
 		else
@@ -9259,12 +9213,13 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 	bitstr_t *usable_gres = NULL;
 	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
-	tres_bind_t tres_bind;
 	bool sharing_gres_allocated = false;
 	gres_internal_flags_t flags;
 
-	_parse_tres_bind(step->accel_bind_type, step->tres_bind, &tres_bind);
-	flags = tres_bind.gres_internal_flags;
+	if (step->accel_bind_type)
+		_parse_accel_bind_type(step->accel_bind_type, step->tres_bind);
+	if (xstrstr(step->tres_bind, "verbose,"))
+		flags = GRES_INTERNAL_FLAG_VERBOSE;
 
 	xassert(gres_context_cnt >= 0);
 	slurm_mutex_lock(&gres_context_lock);
@@ -9291,8 +9246,8 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 			if (gres_id_sharing(gres_ctx->plugin_id))
 				sharing_gres_allocated = true;
 		}
-		if (_get_usable_gres(i, local_proc_id,
-				     &tres_bind, &usable_gres, gres_bit_alloc,
+		if (_get_usable_gres(i, local_proc_id, step->tres_bind,
+				     &usable_gres, gres_bit_alloc,
 				     false, step) == SLURM_ERROR) {
 			FREE_NULL_BITMAP(gres_bit_alloc);
 			continue;

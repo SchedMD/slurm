@@ -124,6 +124,19 @@ static int _valid_gpu_bind(char *arg)
 }
 
 /*
+ * Test for valid shard binding specification
+ * RET - -1 on error, else 0
+ */
+static int _valid_nic_bind(char *arg)
+{
+	if (!strncasecmp(arg, "verbose,", 8))
+		arg += 8;
+	if (!xstrncasecmp(arg, "closest", 9))
+		return _valid_num(arg + 9);
+	return -1;
+}
+
+/*
  * Verify --tres-bind command line option
  * NOTE: Separate TRES specifications with ";" rather than ","
  *
@@ -154,8 +167,13 @@ extern int tres_bind_verify_cmdline(const char *arg)
 		}
 		sep[0] = '\0';
 		sep++;
-		if (!strcmp(tok, "gpu")) {	/* Only support GPUs today */
+		if (!strcmp(tok, "gpu")) {
 			if (_valid_gpu_bind(sep) != 0) {
+				rc = -1;
+				break;
+			}
+		} else if (!strcmp(tok, "nic")) {
+			if (_valid_nic_bind(sep) != 0) {
 				rc = -1;
 				break;
 			}
