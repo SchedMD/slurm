@@ -203,7 +203,6 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
 	bool locked, log_level_t log_lvl);
 static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer);
-static int _dump_job_state(void *object, void *arg);
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 				  buf_t *buffer);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
@@ -221,7 +220,6 @@ static int  _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 			      uint16_t protocol_version);
 static int  _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 				  buf_t *buffer, uint16_t protocol_version);
-static int  _load_job_state(buf_t *buffer, uint16_t protocol_version);
 static bitstr_t *_make_requeue_array(char *conf_buf);
 static uint32_t _max_switch_wait(uint32_t input_wait);
 static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
@@ -910,7 +908,7 @@ int dump_all_job_state(void)
 	pack_time(slurmctld_diag_stats.bf_when_last_cycle, buffer);
 
 	jobs_start = get_buf_offset(buffer);
-	list_for_each_ro(job_list, _dump_job_state, buffer);
+	list_for_each_ro(job_list, job_mgr_dump_job_state, buffer);
 	jobs_end = get_buf_offset(buffer);
 	if ((difftime(now, last_job_state_size_check) > 60) &&
 	    (jobs_count = list_count(job_list))) {
@@ -1278,10 +1276,10 @@ extern int load_all_job_state(void)
 	 * out that created a double lock when steps were being loaded during
 	 * the calls to jobacctinfo_create() which also locks the read lock.
 	 * It ended up being much easier to move the locks for the assoc_mgr
-	 * into the _load_job_state function than any other option.
+	 * into the job_mgr_load_job_state function than any other option.
 	 */
 	while (remaining_buf(buffer) > 0) {
-		error_code = _load_job_state(buffer, protocol_version);
+		error_code = job_mgr_load_job_state(buffer, protocol_version);
 		if (error_code != SLURM_SUCCESS)
 			goto unpack_error;
 		job_cnt++;
@@ -1400,13 +1398,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/*
- * _dump_job_state - dump the state of a specific job, its details, and
- *	steps to a buffer
- * IN dump_job_ptr - pointer to job for which information is requested
- * IN/OUT buffer - location to store data, pointers automatically advanced
- */
-static int _dump_job_state(void *object, void *arg)
+extern int job_mgr_dump_job_state(void *object, void *arg)
 {
 	job_record_t *dump_job_ptr = object;
 	buf_t *buffer = arg;
@@ -1598,10 +1590,7 @@ static int _dump_job_state(void *object, void *arg)
 	return 0;
 }
 
-/* Unpack a job's state information from a buffer */
-/* NOTE: assoc_mgr qos, tres and assoc read lock must be unlocked before
- * calling */
-static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
+extern int job_mgr_load_job_state(buf_t *buffer, uint16_t protocol_version)
 {
 	uint64_t db_index;
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;

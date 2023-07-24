@@ -2447,6 +2447,23 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 /* Update time stamps for job step suspend */
 extern void suspend_job_step(job_record_t *job_ptr);
 
+/*
+ * job_mgr_dump_job_state - dump the state of a specific job, its details, and
+ *	steps to a buffer
+ * IN dump_job_ptr - pointer to job for which information is requested
+ * IN/OUT buffer - location to store data, pointers automatically advanced
+ */
+extern int job_mgr_dump_job_state(void *object, void *arg);
+
+/*
+ * job_mgr_load_job_state - Unpack a job's state information from a buffer
+ *
+ * NOTE: assoc_mgr qos, tres and assoc read lock must be unlocked before
+ * calling
+ */
+extern int job_mgr_load_job_state(buf_t *buffer, uint16_t protocol_version);
+
+
 /* For the job array data structure, build the string representation of the
  * bitmap.
  * NOTE: bit_fmt_hexmask() is far more scalable than bit_fmt(). */
