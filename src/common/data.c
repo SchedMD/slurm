@@ -54,6 +54,37 @@
 typedef struct data_list_s data_list_t;
 typedef struct data_list_node_s data_list_node_t;
 
+typedef enum {
+	TYPE_NONE = 0, /* invalid or unknown type */
+	/* only for bounds checks to avoid any overlap with DATA_TYPE_* */
+	TYPE_START = 0xFF00,
+	TYPE_NULL, /* ECMA-262:4.3.13 NULL type */
+	TYPE_LIST, /* ECMA-262:22.1 Array Object (ordered list) */
+	TYPE_DICT, /* ECMA-262:23.1 Map Object (dictionary) */
+	TYPE_INT_64, /*  64bit signed integer
+				This exists as an convenient storage type.
+				ECMA does not have an integer primitive.
+				ECMA-262:7.1.4 ToInteger() returns approx
+				this value with some rounding. */
+	TYPE_STRING, /* ECMA-262:4.3.18 String type */
+	TYPE_FLOAT, /* ECMA-262:6.1.6 Number type */
+	TYPE_BOOL, /* ECMA-262:4.3.15 Boolean type */
+	TYPE_MAX /* only for bounds checking */
+} type_t;
+
+static const struct {
+	data_type_t external_type;
+	type_t internal_type;
+} type_map[] = {
+	{ DATA_TYPE_NULL, TYPE_NULL },
+	{ DATA_TYPE_LIST, TYPE_LIST },
+	{ DATA_TYPE_DICT, TYPE_DICT },
+	{ DATA_TYPE_INT_64, TYPE_INT_64 },
+	{ DATA_TYPE_STRING, TYPE_STRING },
+	{ DATA_TYPE_FLOAT, TYPE_FLOAT },
+	{ DATA_TYPE_BOOL, TYPE_BOOL },
+};
+
 typedef struct data_list_node_s {
 	int magic;
 	data_list_node_t *next;
@@ -80,7 +111,7 @@ typedef struct data_list_s {
  */
 struct data_s {
 	int magic;
-	data_type_t type;
+	type_t type;
 
 	union { /* append "_u" to every type to avoid reserved words */
 		data_list_t *list_u;
@@ -106,7 +137,7 @@ typedef struct {
 
 typedef struct {
 	size_t count;
-	data_type_t match;
+	type_t match;
 } convert_args_t;
 
 static void _check_magic(const data_t *data);
@@ -347,7 +378,7 @@ extern data_t *data_new(void)
 {
 	data_t *data = xmalloc(sizeof(*data));
 	data->magic = DATA_MAGIC;
-	data->type = DATA_TYPE_NULL;
+	data->type = TYPE_NULL;
 
 	log_flag(DATA, "%s: new %pD", __func__, data);
 
@@ -359,16 +390,16 @@ static void _check_magic(const data_t *data)
 	if (!data)
 		return;
 
-	xassert(data->type > DATA_TYPE_NONE);
-	xassert(data->type < DATA_TYPE_MAX);
+	xassert(data->type > TYPE_START);
+	xassert(data->type < TYPE_MAX);
 	xassert(data->magic == DATA_MAGIC);
 
-	if (data->type == DATA_TYPE_NULL)
+	if (data->type == TYPE_NULL)
 		/* make sure NULL type has a NULL value */
 		xassert(data->data.list_u == NULL);
-	if (data->type == DATA_TYPE_LIST)
+	if (data->type == TYPE_LIST)
 		_check_data_list_magic(data->data.list_u);
-	if (data->type == DATA_TYPE_DICT)
+	if (data->type == TYPE_DICT)
 		_check_data_list_magic(data->data.dict_u);
 }
 
@@ -377,13 +408,13 @@ static void _release(data_t *data)
 	_check_magic(data);
 
 	switch (data->type) {
-	case DATA_TYPE_LIST:
+	case TYPE_LIST:
 		_release_data_list(data->data.list_u);
 		break;
-	case DATA_TYPE_DICT:
+	case TYPE_DICT:
 		_release_data_list(data->data.dict_u);
 		break;
-	case DATA_TYPE_STRING:
+	case TYPE_STRING:
 		xfree(data->data.string_u);
 		break;
 	default:
@@ -391,7 +422,7 @@ static void _release(data_t *data)
 		break;
 	}
 
-	data->type = DATA_TYPE_NONE;
+	data->type = TYPE_NONE;
 	/* always zero data in debug mode */
 	xassert(memset(&data->data, 0, sizeof(data->data)));
 }
@@ -407,7 +438,7 @@ extern void data_free(data_t *data)
 	_release(data);
 
 	data->magic = ~DATA_MAGIC;
-	data->type = DATA_TYPE_NONE;
+	data->type = TYPE_NONE;
 	xfree(data);
 }
 
@@ -418,7 +449,11 @@ extern data_type_t data_get_type(const data_t *data)
 
 	_check_magic(data);
 
-	return data->type;
+	for (int i = 0; i < ARRAY_SIZE(type_map); i++)
+		if (type_map[i].internal_type == data->type)
+			return type_map[i].external_type;
+
+	return DATA_TYPE_NONE;
 }
 
 extern data_t *data_set_float(data_t *data, double value)
@@ -427,7 +462,7 @@ extern data_t *data_set_float(data_t *data, double value)
 	if (!data)
 		return NULL;
 
-	data->type = DATA_TYPE_FLOAT;
+	data->type = TYPE_FLOAT;
 	data->data.float_u = value;
 
 	log_flag(DATA, "%s: set %pD=%e", __func__, data, value);
@@ -442,7 +477,7 @@ extern data_t *data_set_null(data_t *data)
 		return NULL;
 	_release(data);
 
-	data->type = DATA_TYPE_NULL;
+	data->type = TYPE_NULL;
 	xassert((memset(&data->data, 0, sizeof(data->data))));
 
 	log_flag(DATA, "%s: set %pD=null", __func__, data);
@@ -457,7 +492,7 @@ extern data_t *data_set_bool(data_t *data, bool value)
 		return NULL;
 	_release(data);
 
-	data->type = DATA_TYPE_BOOL;
+	data->type = TYPE_BOOL;
 	data->data.bool_u = value;
 
 	log_flag(DATA, "%s: set %pD=%s",
@@ -473,7 +508,7 @@ extern data_t *data_set_int(data_t *data, int64_t value)
 		return NULL;
 	_release(data);
 
-	data->type = DATA_TYPE_INT_64;
+	data->type = TYPE_INT_64;
 	data->data.int_u = value;
 
 	log_flag(DATA, "%s: set %pD=%"PRId64, __func__, data, value);
@@ -490,13 +525,13 @@ extern data_t *data_set_string(data_t *data, const char *value)
 	_release(data);
 
 	if (!value) {
-		data->type = DATA_TYPE_NULL;
+		data->type = TYPE_NULL;
 
 		log_flag(DATA, "%s: set %pD=null", __func__, data);
 		return data;
 	}
 
-	data->type = DATA_TYPE_STRING;
+	data->type = TYPE_STRING;
 	data->data.string_u = xstrdup(value);
 
 	log_flag_hex(DATA, value, strlen(value), "%s: set %pD", __func__, data);
@@ -519,7 +554,7 @@ extern data_t *_data_set_string_own(data_t *data, char **value_ptr)
 	value = *value_ptr;
 
 	if (!value) {
-		data->type = DATA_TYPE_NULL;
+		data->type = TYPE_NULL;
 
 		log_flag(DATA, "%s: set %pD=null", __func__, data);
 		return data;
@@ -537,7 +572,7 @@ extern data_t *_data_set_string_own(data_t *data, char **value_ptr)
 	xfree(*value_ptr);
 #endif
 
-	data->type = DATA_TYPE_STRING;
+	data->type = TYPE_STRING;
 	/* take ownership of string */
 	data->data.string_u = value;
 
@@ -555,7 +590,7 @@ extern data_t *data_set_dict(data_t *data)
 		return NULL;
 	_release(data);
 
-	data->type = DATA_TYPE_DICT;
+	data->type = TYPE_DICT;
 	data->data.dict_u = _data_list_new();
 
 	log_flag(DATA, "%s: set %pD to dictionary", __func__, data);
@@ -571,7 +606,7 @@ extern data_t *data_set_list(data_t *data)
 		return NULL;
 	_release(data);
 
-	data->type = DATA_TYPE_LIST;
+	data->type = TYPE_LIST;
 	data->data.list_u = _data_list_new();
 
 	log_flag(DATA, "%s: set %pD to list", __func__, data);
@@ -584,8 +619,8 @@ extern data_t *data_list_append(data_t *data)
 	data_t *ndata = NULL;
 	_check_magic(data);
 
-	xassert(data && (data->type == DATA_TYPE_LIST));
-	if (!data || data->type != DATA_TYPE_LIST)
+	xassert(data && (data->type == TYPE_LIST));
+	if (!data || data->type != TYPE_LIST)
 		return NULL;
 
 	ndata = data_new();
@@ -602,7 +637,7 @@ extern data_t *data_list_prepend(data_t *data)
 	data_t *ndata = NULL;
 	_check_magic(data);
 
-	if (!data || data->type != DATA_TYPE_LIST)
+	if (!data || data->type != TYPE_LIST)
 		return NULL;
 
 	ndata = data_new();
@@ -620,7 +655,7 @@ extern data_t *data_list_dequeue(data_t *data)
 	data_t *ret = NULL;
 	_check_magic(data);
 
-	if (!data || data->type != DATA_TYPE_LIST)
+	if (!data || data->type != TYPE_LIST)
 		return NULL;
 
 	if (!(n = data->data.list_u->begin))
@@ -646,7 +681,7 @@ static data_for_each_cmd_t _data_list_join(const data_t *src, void *arg)
 	data_t *dst_entry;
 	_check_magic(src);
 	_check_magic(dst);
-	xassert(dst->type == DATA_TYPE_LIST);
+	xassert(dst->type == TYPE_LIST);
 
 	log_flag(DATA, "%s: list join data %pD to %pD", __func__, src, dst);
 
@@ -668,7 +703,7 @@ extern data_t *data_list_join(const data_t **data, bool flatten_lists)
 			 __func__, (flatten_lists ? "flattened" : ""),
 			 data[i], dst, dst->data.list_u->count);
 
-		if (flatten_lists && (data[i]->type == DATA_TYPE_LIST))
+		if (flatten_lists && (data[i]->type == TYPE_LIST))
 			(void) data_list_for_each_const(data[i],
 							_data_list_join, dst);
 		else /* simple join */
@@ -686,8 +721,8 @@ const data_t *data_key_get_const(const data_t *data, const char *key)
 	if (!data)
 		return NULL;
 
-	xassert(data->type == DATA_TYPE_DICT);
-	if (!key || data->type != DATA_TYPE_DICT)
+	xassert(data->type == TYPE_DICT);
+	if (!key || data->type != TYPE_DICT)
 		return NULL;
 
 	/* don't bother searching empty dictionary */
@@ -743,8 +778,8 @@ extern data_t *data_list_find_first(
 	if (!data)
 		return NULL;
 
-	xassert(data->type == DATA_TYPE_LIST);
-	if (data->type != DATA_TYPE_LIST)
+	xassert(data->type == TYPE_LIST);
+	if (data->type != TYPE_LIST)
 		return NULL;
 
 	/* don't bother searching empty list */
@@ -779,8 +814,8 @@ extern data_t *data_dict_find_first(
 	if (!data)
 		return NULL;
 
-	xassert(data->type == DATA_TYPE_DICT);
-	if (data->type != DATA_TYPE_DICT)
+	xassert(data->type == TYPE_DICT);
+	if (data->type != TYPE_DICT)
 		return NULL;
 
 	/* don't bother searching empty dictionary */
@@ -813,9 +848,9 @@ extern data_t *data_key_set(data_t *data, const char *key)
 	if (!data)
 		return NULL;
 
-	xassert(data->type == DATA_TYPE_DICT);
+	xassert(data->type == TYPE_DICT);
 	xassert(key && key[0]);
-	if (!key || !key[0] || data->type != DATA_TYPE_DICT)
+	if (!key || !key[0] || data->type != TYPE_DICT)
 		return NULL;
 
 	if ((d = data_key_get(data, key))) {
@@ -851,8 +886,8 @@ extern bool data_key_unset(data_t *data, const char *key)
 	if (!data)
 		return false;
 
-	xassert(data->type == DATA_TYPE_DICT);
-	if (!key || data->type != DATA_TYPE_DICT)
+	xassert(data->type == TYPE_DICT);
+	if (!key || data->type != TYPE_DICT)
 		return NULL;
 
 	_check_data_list_magic(data->data.dict_u);
@@ -887,7 +922,7 @@ extern double data_get_float(const data_t *data)
 	if (!data)
 		return NAN;
 
-	xassert(data->type == DATA_TYPE_FLOAT);
+	xassert(data->type == TYPE_FLOAT);
 	return data->data.float_u;
 }
 
@@ -898,7 +933,7 @@ extern bool data_get_bool(const data_t *data)
 	if (!data)
 		return false;
 
-	xassert(data->type == DATA_TYPE_BOOL);
+	xassert(data->type == TYPE_BOOL);
 	return data->data.bool_u;
 }
 
@@ -909,7 +944,7 @@ extern int64_t data_get_int(const data_t *data)
 	if (!data)
 		return 0;
 
-	xassert(data->type == DATA_TYPE_INT_64);
+	xassert(data->type == TYPE_INT_64);
 	return data->data.int_u;
 }
 
@@ -920,7 +955,7 @@ extern char *data_get_string(data_t *data)
 	if (!data)
 		return NULL;
 
-	xassert(data->type == DATA_TYPE_STRING);
+	xassert(data->type == TYPE_STRING);
 	return data->data.string_u;
 }
 
@@ -931,7 +966,7 @@ extern const char *data_get_string_const(const data_t *data)
 	if (!data)
 		return NULL;
 
-	xassert(data->type == DATA_TYPE_STRING);
+	xassert(data->type == TYPE_STRING);
 	return data->data.string_u;
 }
 
@@ -944,7 +979,7 @@ extern int data_get_string_converted(const data_t *d, char **buffer)
 	if (!d || !buffer)
 		return ESLURM_DATA_PTR_NULL;
 
-	if (d->type != DATA_TYPE_STRING) {
+	if (d->type != TYPE_STRING) {
 		/* copy the data and then convert it to a string type */
 		data_t *dclone = data_new();
 		data_copy(dclone, d);
@@ -984,7 +1019,7 @@ extern int data_copy_bool_converted(const data_t *d, bool *buffer)
 	if (!d || !buffer)
 		return ESLURM_DATA_PTR_NULL;
 
-	if (d->type != DATA_TYPE_BOOL) {
+	if (d->type != TYPE_BOOL) {
 		data_t *dclone = data_new();
 		data_copy(dclone, d);
 		if (data_convert_type(dclone, DATA_TYPE_BOOL) ==
@@ -1027,7 +1062,7 @@ extern int data_get_int_converted(const data_t *d, int64_t *buffer)
 	if (!d || !buffer)
 		return ESLURM_DATA_PTR_NULL;
 
-	if (d->type != DATA_TYPE_INT_64) {
+	if (d->type != TYPE_INT_64) {
 		data_t *dclone = data_new();
 		data_copy(dclone, d);
 		if (data_convert_type(dclone, DATA_TYPE_INT_64) ==
@@ -1052,7 +1087,7 @@ extern size_t data_get_dict_length(const data_t *data)
 	if (!data)
 		return 0;
 
-	xassert(data->type == DATA_TYPE_DICT);
+	xassert(data->type == TYPE_DICT);
 	return data->data.dict_u->count;
 }
 
@@ -1063,7 +1098,7 @@ extern size_t data_get_list_length(const data_t *data)
 	if (!data)
 		return 0;
 
-	xassert(data->type == DATA_TYPE_LIST);
+	xassert(data->type == TYPE_LIST);
 	return data->data.list_u->count;
 }
 
@@ -1075,8 +1110,8 @@ extern data_t *data_get_list_last(data_t *data)
 	if (!data)
 		return NULL;
 
-	xassert(data->type == DATA_TYPE_LIST);
-	if (data->type != DATA_TYPE_LIST)
+	xassert(data->type == TYPE_LIST);
+	if (data->type != TYPE_LIST)
 		return NULL;
 
 	if (!data->data.list_u->count)
@@ -1106,11 +1141,11 @@ extern int data_list_split_str(data_t *dst, const char *src, const char *token)
 	char *tok = NULL;
 	char *str = xstrdup(src);
 
-	if (dst->type == DATA_TYPE_NULL)
+	if (dst->type == TYPE_NULL)
 		data_set_list(dst);
 
-	xassert(dst->type == DATA_TYPE_LIST);
-	if (dst->type != DATA_TYPE_LIST)
+	xassert(dst->type == TYPE_LIST);
+	if (dst->type != TYPE_LIST)
 		return SLURM_ERROR;
 
 	tok = strtok_r(str, "/", &save_ptr);
@@ -1154,7 +1189,7 @@ extern int data_list_join_str(char **dst, const data_t *src, const char *token)
 	};
 
 	xassert(!*dst);
-	xassert(src->type == DATA_TYPE_LIST);
+	xassert(src->type == TYPE_LIST);
 
 	if (data_list_for_each_const(src, _foreach_join_str, &args) < 0) {
 		xfree(args.path);
@@ -1177,7 +1212,7 @@ extern int data_list_for_each_const(const data_t *d, DataListForFConst f, void *
 
 	_check_magic(d);
 
-	if (!d || (d->type != DATA_TYPE_LIST)) {
+	if (!d || (d->type != TYPE_LIST)) {
 		error("%s: for each attempted on non-list object (0x%"PRIXPTR")",
 		      __func__, (uintptr_t) d);
 		return -1;
@@ -1226,7 +1261,7 @@ extern int data_list_for_each(data_t *d, DataListForF f, void *arg)
 
 	_check_magic(d);
 
-	if (!d || (d->type != DATA_TYPE_LIST)) {
+	if (!d || (d->type != TYPE_LIST)) {
 		error("%s: for each attempted on non-list %pD", __func__, d);
 		return -1;
 	}
@@ -1380,22 +1415,22 @@ static int _convert_data_string(data_t *data)
 	_check_magic(data);
 
 	switch (data->type) {
-	case DATA_TYPE_STRING:
+	case TYPE_STRING:
 		return SLURM_SUCCESS;
-	case DATA_TYPE_BOOL:
+	case TYPE_BOOL:
 		data_set_string(data, (data->data.bool_u ? "true" : "false"));
 		return SLURM_SUCCESS;
-	case DATA_TYPE_NULL:
+	case TYPE_NULL:
 		data_set_string(data, "");
 		return SLURM_SUCCESS;
-	case DATA_TYPE_FLOAT:
+	case TYPE_FLOAT:
 	{
 		char *str = xstrdup_printf("%lf", data->data.float_u);
 		data_set_string(data, str);
 		xfree(str);
 		return SLURM_SUCCESS;
 	}
-	case DATA_TYPE_INT_64:
+	case TYPE_INT_64:
 	{
 		char *str = xstrdup_printf("%"PRId64, data->data.int_u);
 		data_set_string(data, str);
@@ -1417,19 +1452,19 @@ static int _convert_data_force_bool(data_t *data)
 	(void) data_convert_type(data, DATA_TYPE_NONE);
 
 	switch (data->type) {
-	case DATA_TYPE_STRING:
+	case TYPE_STRING:
 		/* non-empty string but not recognized format */
 		data_set_bool(data, true);
 		return SLURM_SUCCESS;
-	case DATA_TYPE_BOOL:
+	case TYPE_BOOL:
 		return SLURM_SUCCESS;
-	case DATA_TYPE_NULL:
+	case TYPE_NULL:
 		data_set_bool(data, false);
 		return SLURM_SUCCESS;
-	case DATA_TYPE_FLOAT:
+	case TYPE_FLOAT:
 		data_set_bool(data, data->data.float_u != 0);
 		return SLURM_SUCCESS;
-	case DATA_TYPE_INT_64:
+	case TYPE_INT_64:
 		data_set_bool(data, data->data.int_u != 0);
 		return SLURM_SUCCESS;
 	default:
@@ -1444,7 +1479,7 @@ static int _convert_data_null(data_t *data)
 	_check_magic(data);
 
 	switch (data->type) {
-	case DATA_TYPE_STRING:
+	case TYPE_STRING:
 	{
 		const char *str = data->data.string_u;
 
@@ -1461,7 +1496,7 @@ static int _convert_data_null(data_t *data)
 
 		goto fail;
 	}
-	case DATA_TYPE_NULL:
+	case TYPE_NULL:
 		return SLURM_SUCCESS;
 	default:
 		return ESLURM_DATA_CONV_FAILED;
@@ -1482,7 +1517,7 @@ static int _convert_data_bool(data_t *data)
 	_check_magic(data);
 
 	switch (data->type) {
-	case DATA_TYPE_STRING:
+	case TYPE_STRING:
 	{
 		str = data->data.string_u;
 
@@ -1535,7 +1570,7 @@ static int _convert_data_bool(data_t *data)
 
 		goto fail;
 	}
-	case DATA_TYPE_BOOL:
+	case TYPE_BOOL:
 		return SLURM_SUCCESS;
 	default:
 		goto fail;
@@ -1563,7 +1598,7 @@ static int _convert_data_int(data_t *data, bool force)
 	_check_magic(data);
 
 	switch (data->type) {
-	case DATA_TYPE_STRING:
+	case TYPE_STRING:
 	{
 		int64_t x;
 		char end;
@@ -1615,15 +1650,15 @@ static int _convert_data_int(data_t *data, bool force)
 			return ESLURM_DATA_CONV_FAILED;
 		}
 	}
-	case DATA_TYPE_FLOAT:
+	case TYPE_FLOAT:
 		if (force) {
 			data_set_int(data, lrint(data_get_float(data)));
 			return SLURM_SUCCESS;
 		}
 		return ESLURM_DATA_CONV_FAILED;
-	case DATA_TYPE_INT_64:
+	case TYPE_INT_64:
 		return SLURM_SUCCESS;
-	case DATA_TYPE_NULL:
+	case TYPE_NULL:
 		if (force) {
 			/*
 			 * Conversion from NULL to integer is a loss of
@@ -1714,9 +1749,9 @@ static int _convert_data_float(data_t *data)
 	_check_magic(data);
 
 	switch (data->type) {
-	case DATA_TYPE_STRING:
+	case TYPE_STRING:
 		return _convert_data_float_from_string(data);
-	case DATA_TYPE_INT_64:
+	case TYPE_INT_64:
 		if (data_get_int(data) == INFINITE64)
 			data_set_float(data, HUGE_VAL);
 		else if (data_get_int(data) == NO_VAL64)
@@ -1724,7 +1759,7 @@ static int _convert_data_float(data_t *data)
 		else /* attempt normal fp conversion */
 			data_set_float(data, data_get_int(data));
 		return SLURM_SUCCESS;
-	case DATA_TYPE_FLOAT:
+	case TYPE_FLOAT:
 		return SLURM_SUCCESS;
 	default:
 		return ESLURM_DATA_CONV_FAILED;
@@ -1813,10 +1848,10 @@ extern size_t data_convert_tree(data_t *data, const data_type_t match)
 		return 0;
 
 	switch (data->type) {
-	case DATA_TYPE_DICT:
+	case TYPE_DICT:
 		(void)data_dict_for_each(data, _convert_dict_entry, &args);
 		break;
-	case DATA_TYPE_LIST:
+	case TYPE_LIST:
 		(void)data_list_for_each(data, _convert_list_entry, &args);
 		break;
 	default:
@@ -1854,10 +1889,10 @@ static bool _data_match_dict(const data_t *a, const data_t *b, bool mask)
 		.b = b,
 	};
 
-	if (!a || (a->type != DATA_TYPE_DICT))
+	if (!a || (a->type != TYPE_DICT))
 		return false;
 
-	if (!b || (b->type != DATA_TYPE_DICT))
+	if (!b || (b->type != TYPE_DICT))
 		return false;
 
 	_check_magic(a);
@@ -1876,9 +1911,9 @@ static bool _data_match_lists(const data_t *a, const data_t *b, bool mask)
 	const data_list_node_t *ptr_a;
 	const data_list_node_t *ptr_b;
 
-	if (!a || (a->type != DATA_TYPE_LIST))
+	if (!a || (a->type != TYPE_LIST))
 		return false;
-	if (!b || (b->type != DATA_TYPE_LIST))
+	if (!b || (b->type != TYPE_LIST))
 		return false;
 
 	_check_magic(a);
@@ -1929,14 +1964,14 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 	}
 
 	switch (a->type) {
-	case DATA_TYPE_NULL:
-		rc = (b->type == DATA_TYPE_NULL);
+	case TYPE_NULL:
+		rc = (b->type == TYPE_NULL);
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR") %s %s(0x%"PRIXPTR")",
 			 data_type_to_string(a->type), (uintptr_t) a,
 			 (rc ? "=" : "!="),
 			 data_type_to_string(b->type), (uintptr_t) b);
 		return rc;
-	case DATA_TYPE_STRING:
+	case TYPE_STRING:
 		rc = !xstrcmp(data_get_string_const(a),
 			      data_get_string_const(b));
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%s %s %s(0x%"PRIXPTR")=%s",
@@ -1945,7 +1980,7 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			 data_type_to_string(b->type), (uintptr_t) b,
 			 data_get_string_const(b));
 		return rc;
-	case DATA_TYPE_BOOL:
+	case TYPE_BOOL:
 		rc = (data_get_bool(a) == data_get_bool(b));
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%s %s %s(0x%"PRIXPTR")=%s",
 			 data_type_to_string(a->type), (uintptr_t) a,
@@ -1954,7 +1989,7 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			 data_type_to_string(b->type), (uintptr_t) b,
 			 (data_get_bool(b) ? "True" : "False"));
 		return rc;
-	case DATA_TYPE_INT_64:
+	case TYPE_INT_64:
 		rc = data_get_int(a) == data_get_int(b);
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%"PRId64" %s %s(0x%"PRIXPTR")=%"PRId64,
 			 data_type_to_string(a->type), (uintptr_t) a,
@@ -1962,7 +1997,7 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			 data_type_to_string(b->type), (uintptr_t) b,
 			 data_get_int(b));
 		return rc;
-	case DATA_TYPE_FLOAT:
+	case TYPE_FLOAT:
 		if (!(rc = (data_get_float(a) == data_get_float(b))) ||
 		    !(rc = fuzzy_equal(data_get_float(a), data_get_float(b)))) {
 			if (isnan(data_get_float(a)) ==
@@ -1984,7 +2019,7 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			 data_type_to_string(b->type), (uintptr_t) b,
 			 data_get_float(b));
 		return rc;
-	case DATA_TYPE_DICT:
+	case TYPE_DICT:
 		rc = _data_match_dict(a, b, mask);
 		log_flag(DATA, "compare dictionary: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
 			 data_type_to_string(a->type), (uintptr_t) a,
@@ -1992,7 +2027,7 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			 data_type_to_string(b->type), (uintptr_t) b,
 			 data_get_dict_length(b));
 		return rc;
-	case DATA_TYPE_LIST:
+	case TYPE_LIST:
 		rc = _data_match_lists(a, b, mask);
 		log_flag(DATA, "compare list: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
 			 data_type_to_string(a->type), (uintptr_t) a,
@@ -2025,7 +2060,7 @@ extern data_t *data_resolve_dict_path(data_t *data, const char *path)
 	while (token && found) {
 		xstrtrim(token);
 
-		if (!found || (found->type != DATA_TYPE_DICT)) {
+		if (!found || (found->type != TYPE_DICT)) {
 			found = NULL;
 			break;
 		}
@@ -2067,7 +2102,7 @@ extern const data_t *data_resolve_dict_path_const(const data_t *data,
 	while (token && found) {
 		xstrtrim(token);
 
-		if (!found || (found->type != DATA_TYPE_DICT)) {
+		if (!found || (found->type != TYPE_DICT)) {
 			found = false;
 			break;
 		}
@@ -2109,9 +2144,9 @@ extern data_t *data_define_dict_path(data_t *data, const char *path)
 	while (token && found) {
 		xstrtrim(token);
 
-		if (found->type == DATA_TYPE_NULL)
+		if (found->type == TYPE_NULL)
 			data_set_dict(found);
-		else if (found->type != DATA_TYPE_DICT) {
+		else if (found->type != TYPE_DICT) {
 			found = NULL;
 			break;
 		}
@@ -2149,17 +2184,17 @@ extern data_t *data_copy(data_t *dest, const data_t *src)
 	log_flag(DATA, "%s: copy data %pD to %pD", __func__, src, dest);
 
 	switch (src->type) {
-	case DATA_TYPE_STRING:
+	case TYPE_STRING:
 		return data_set_string(dest, data_get_string_const(src));
-	case DATA_TYPE_BOOL:
+	case TYPE_BOOL:
 		return data_set_bool(dest, data_get_bool(src));
-	case DATA_TYPE_INT_64:
+	case TYPE_INT_64:
 		return data_set_int(dest, data_get_int(src));
-	case DATA_TYPE_FLOAT:
+	case TYPE_FLOAT:
 		return data_set_float(dest, data_get_float(src));
-	case DATA_TYPE_NULL:
+	case TYPE_NULL:
 		return data_set_null(dest);
-	case DATA_TYPE_LIST:
+	case TYPE_LIST:
 	{
 		data_list_node_t *i = src->data.list_u->begin;
 
@@ -2174,7 +2209,7 @@ extern data_t *data_copy(data_t *dest, const data_t *src)
 
 		return dest;
 	}
-	case DATA_TYPE_DICT:
+	case TYPE_DICT:
 	{
 		data_list_node_t *i = src->data.dict_u->begin;
 
@@ -2209,7 +2244,7 @@ extern data_t *data_move(data_t *dest, data_t *src)
 
 	memmove(&dest->data, &src->data, sizeof(src->data));
 	dest->type = src->type;
-	src->type = DATA_TYPE_NULL;
+	src->type = TYPE_NULL;
 	xassert((memset(&src->data, 0, sizeof(src->data))));
 
 	return dest;
