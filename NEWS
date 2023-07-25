@@ -36,6 +36,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix sinfo segfault when printing multiple clusters with --noheader option.
  -- Federation - fix clusters not syncing if clusters are added to a federation
     before they have registered with the dbd.
+ -- Change pmi2 plugin to honor the SrunPortRange option. This matches the new
+    behavior of the pmix plugin in 23.02.0. Note that neither of these plugins
+    makes use of the "MpiParams=ports=" option, and previously were only limited
+    by the systems ephemeral port range.
 
 * Changes in Slurm 23.02.4
 ==========================
