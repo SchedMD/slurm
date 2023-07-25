@@ -100,8 +100,9 @@ static int _parse_jc_conf_internal(void **dest, slurm_parser_enum_t type,
 		goto end_it;
 	}
 
-	slurm_jc_conf.basepath = slurm_conf_expand_slurmd_path(basepath, NULL,
-							       conf->node_name);
+	slurm_jc_conf.basepath = slurm_conf_expand_slurmd_path(basepath,
+							       conf->node_name,
+							       NULL);
 	xfree(basepath);
 
 #ifdef MULTIPLE_SLURMD
