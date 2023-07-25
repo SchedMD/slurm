@@ -1200,6 +1200,18 @@ extern void cleanup_container(stepd_step_rec_t *step)
 				xfree(jconfig);
 			}
 
+			if (oci_conf->create_env_file) {
+				char *envfile = NULL;
+
+				xstrfmtcat(envfile, "%s/%s", c->spool_dir,
+					   SLURM_CONTAINER_ENV_FILE);
+
+				if (unlink(envfile) && (errno != ENOENT))
+					error("unlink(%s): %m", envfile);
+
+				xfree(envfile);
+			}
+
 			if (rmdir(c->spool_dir) && (errno != ENOENT))
 				error("rmdir(%s): %m", c->spool_dir);
 			xfree(c->spool_dir);
@@ -1209,19 +1221,6 @@ extern void cleanup_container(stepd_step_rec_t *step)
 	/* swap to non-task spool_dir */
 	xfree(c->spool_dir);
 	c->spool_dir = _generate_spooldir(step, NULL);
-
-	if (oci_conf->create_env_file) {
-		char *envfile = NULL;
-
-		/* keep _generate_pattern() in sync with this path */
-		xstrfmtcat(envfile, "%s/%s", c->spool_dir,
-			   SLURM_CONTAINER_ENV_FILE);
-
-		if (unlink(envfile) && (errno != ENOENT))
-			error("unlink(%s): %m", envfile);
-
-		xfree(envfile);
-	}
 
 	if (rmdir(c->spool_dir) && (errno != ENOENT))
 		error("rmdir(%s): %m", c->spool_dir);
