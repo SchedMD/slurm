@@ -92,24 +92,6 @@ source code.
 </p>
 Tested compatibility by OpenAPI plugins:
 <ul>
-	<li>openapi/v0.0.35:
-		<ul>
-			<li>
-				<a href="https://github.com/OpenAPITools/openapi-generator">
-					v4.x of OpenAPI-generator
-				</a>
-			</li>
-		</ul>
-	</li>
-	<li>openapi/v0.0.36:
-		<ul>
-			<li>
-				<a href="https://github.com/OpenAPITools/openapi-generator">
-					v4.x of OpenAPI-generator
-				</a>
-			</li>
-		</ul>
-	</li>
 	<li>openapi/v0.0.37:
 		<ul>
 			<li>
@@ -124,11 +106,25 @@ Tested compatibility by OpenAPI plugins:
 			</li>
 		</ul>
 	</li>
-	<li>openapi/dbv0.0.36:
+	<li>openapi/v0.0.38:
 		<ul>
 			<li>
 				<a href="https://github.com/OpenAPITools/openapi-generator">
 					v4.x of OpenAPI-generator
+				</a>
+			</li>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v5.x of OpenAPI-generator
+				</a>
+			</li>
+		</ul>
+	</li>
+	<li>openapi/v0.0.39:
+		<ul>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v6.x of OpenAPI-generator
 				</a>
 			</li>
 		</ul>
@@ -143,6 +139,29 @@ Tested compatibility by OpenAPI plugins:
 			<li>
 				<a href="https://github.com/OpenAPITools/openapi-generator">
 					v5.x of OpenAPI-generator
+				</a>
+			</li>
+		</ul>
+	</li>
+	<li>openapi/dbv0.0.38:
+		<ul>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v4.x of OpenAPI-generator
+				</a>
+			</li>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v5.x of OpenAPI-generator
+				</a>
+			</li>
+		</ul>
+	</li>
+	<li>openapi/dbv0.0.39:
+		<ul>
+			<li>
+				<a href="https://github.com/OpenAPITools/openapi-generator">
+					v6.x of OpenAPI-generator
 				</a>
 			</li>
 		</ul>
