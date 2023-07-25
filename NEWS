@@ -51,6 +51,8 @@ documents those changes that are of interest to users and administrators.
  -- Reject job ArrayTaskThrottle update requests from unprivileged users.
  -- data_parser/v0.0.39 - populate description fields of property objects in
     generated OpenAPI specifications where defined.
+ -- slurmstepd - Avoid segfault caused by ContainerPath not being terminated by
+    '/' in oci.conf.
 
 * Changes in Slurm 23.02.3
 ==========================

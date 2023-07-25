@@ -631,8 +631,8 @@ static char *_generate_spooldir(stepd_step_rec_t *step,
 				next = end + 1;
 			}
 
-			term = end[1];
-			end[1] = '\0';
+			term = *end;
+			*end = '\0';
 
 			if (_pattern_has_taskid(start)) {
 				/* cut pattern at this directory */
@@ -640,7 +640,7 @@ static char *_generate_spooldir(stepd_step_rec_t *step,
 				break;
 			}
 
-			end[1] = term;
+			*end = term;
 		}
 	}
 
