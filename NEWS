@@ -189,6 +189,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Correct issue where field and $ref description fields were not
     getting populated for OpenAPI specification generation for queries to
     'GET /openapi/v3' for v0.0.40 endpoints.
+ -- slurmdbd - Check for innodb_redo_log_capacity instead of
+    innodb_log_file_size in MySQL 8.0.30+.
 
 * Changes in Slurm 23.02.5
 ==========================

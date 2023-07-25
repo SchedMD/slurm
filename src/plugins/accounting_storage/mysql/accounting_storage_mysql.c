@@ -2766,12 +2766,16 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 	const uint64_t logfile_size = 67108864;
 	const char lockwait_var[] = "innodb_lock_wait_timeout";
 	const uint64_t lockwait_timeout = 900;
+	const char redo_log_var[] = "innodb_redo_log_capacity";
 	const char allowed_packet_var[] = "max_allowed_packet";
 	const uint64_t allowed_packet = 16777216;
+	const char *logfile_var_actual = NULL;
 
 	uint64_t value;
 	bool recommended_values = true;
 	char *error_msg = xstrdup("Database settings not recommended values:");
+	const char *db_info;
+
 
 	if (mysql_db_get_var_u64(mysql_conn, buffer_var, &value))
 		goto error;
@@ -2781,12 +2785,22 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 		xstrfmtcat(error_msg, " %s", buffer_var);
 	}
 
-	if (mysql_db_get_var_u64(mysql_conn, logfile_var, &value))
-		goto error;
-	debug2("%s: %"PRIu64, logfile_var, value);
+	/* redo_log_capacity is the name for log_file_size in mysql 8.0.30+ */
+	db_info = mysql_get_server_info(mysql_conn->db_conn);
+	if (!xstrcasestr(db_info, "mariadb") &&
+	    (mysql_get_server_version(mysql_conn->db_conn) >= 80030)) {
+		if (mysql_db_get_var_u64(mysql_conn, redo_log_var, &value))
+			goto error;
+		logfile_var_actual = redo_log_var;
+	} else {
+		if (mysql_db_get_var_u64(mysql_conn, logfile_var, &value))
+			goto error;
+		logfile_var_actual = logfile_var;
+	}
+	debug2("%s: %"PRIu64, logfile_var_actual, value);
 	if (value < (logfile_size / 2)) {
 		recommended_values = false;
-		xstrfmtcat(error_msg, " %s", logfile_var);
+		xstrfmtcat(error_msg, " %s", logfile_var_actual);
 	}
 
 	if (mysql_db_get_var_u64(mysql_conn, lockwait_var, &value))

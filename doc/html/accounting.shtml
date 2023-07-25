@@ -272,7 +272,8 @@ significant portion of the system memory to this, keeping in mind the other
 resource requirements on the machine running MySQL/MariaDB, somewhere between
 5 and 50 percent of the available memory.
 <i>innodb_log_file_size</i> Should also be increased from default to reduce
-unnecessary small writes to disk.
+unnecessary small writes to disk.  For MySQL 8.0.30+,
+<i>innodb_redo_log_capacity</i> should be used instead.
 When using <b>AccountingStoreFlags=job_env,job_script</b> or older SQL servers,
 it is also important to check the value of <i>max_allowed_packet</i>.  When the
 packet size is too small and a large job script is used, the SQL server may
@@ -921,7 +922,7 @@ completely. This is meant to clean up after typographical errors.
 Removing user associations or accounts, however, will cause slurmctld to lose
 track of usage data for that user/account.</p>
 
-<p style="text-align:center;">Last modified 28 June 2023</p>
+<p style="text-align:center;">Last modified 25 July 2023</p>
 
 <!--#include virtual="footer.txt"-->
 
