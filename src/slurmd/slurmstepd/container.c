@@ -637,6 +637,7 @@ static char *_generate_spooldir(stepd_step_rec_t *step,
 			if (_pattern_has_taskid(start)) {
 				/* cut pattern at this directory */
 				*start = '\0';
+				*end = term;
 				break;
 			}
 
