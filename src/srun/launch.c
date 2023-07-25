@@ -936,6 +936,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 				   opt_local->ntasks_per_gpu);
 	}
 
+	_implicitly_bind_tres_per_task(opt_local, "shard");
 	_implicitly_bind_tres_per_task(opt_local, "gpu");
 
 	/*
