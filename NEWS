@@ -156,6 +156,8 @@ documents those changes that are of interest to users and administrators.
     generated OpenAPI specifications where defined.
  -- slurmstepd - Avoid segfault caused by ContainerPath not being terminated by
     '/' in oci.conf.
+ -- data_parser/v0.0.39 - Change v0.0.39_job_info response to tag exit_code
+    field as being complex instead of only an unsigned integer.
 
 * Changes in Slurm 23.02.3
 ==========================

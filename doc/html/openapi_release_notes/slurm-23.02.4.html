@@ -1,13 +1,16 @@
 <h2>Slurm 23.02.4</h2>
 
+<h3>openapi/v0.0.39 (src/plugins/openapi/v0.0.39/openapi.json)</h3>
 <h4>Tag job description environment field as required</h4>
 <table class="tchange">
 <tr class="trchange">
 	<td class="tdfield">Field add</td>
 	<td class="tdchange">
 		.components.schemas."v0.0.39_job_desc_msg".required
+	</td>
+</tr>
+</table>
 
-<h3>openapi/v0.0.39 (src/plugins/openapi/v0.0.39/openapi.json)</h3>
 <h4>Add status schema to default</h4>
 <table class="tchange">
 <tr class="trchange">
@@ -21,5 +24,22 @@
 	<td class="tdchange">
 		.paths."/job/{job_id}".get.responses.default
 	</td>
+</tr>
+</table>
+
+<h4>Tag derived_exit_code and exit_code as UINT32_NO_VAL to avoid 4294967295 on still running jobs.</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Field changed</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.39_job_info".properties.derived_exit_code
+	</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Field changed</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.39_job_info".properties.exit_code
+	</td>
+<tr class="trchange">
 </tr>
 </table>
