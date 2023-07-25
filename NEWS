@@ -165,6 +165,7 @@ documents those changes that are of interest to users and administrators.
  -- job_container/tmpfs - Fix %h and %n substitution in BasePath where %h was
     substituted as the NodeName instead of the hostname, and %n was substituted
     as an empty string.
+ -- Fix regression where --cpu-bind=verbose would override TaskPluginParam.
 
 * Changes in Slurm 23.02.3
 ==========================
