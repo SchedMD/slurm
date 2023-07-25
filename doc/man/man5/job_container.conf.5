@@ -59,7 +59,8 @@ for mounting. The \fBBasePath\fR gets mounted as 'private' during slurmd start
 and remains mounted until shutdown. The first "%h" within the name is replaced
 with the hostname on which the \fBslurmd\fR is running. The first "%n" within
 the name is replaced with the Slurm node name on which the \fBslurmd\fR is
-running.
+running. Set \fIPATH\fR to 'none' to disable the tmpfs plugin on node subsets
+when there is a global setting.
 
 \fBNOTE\fR: The \fBBasePath\fR must be unique to each node.  If BasePath is on a
 shared filesystem, you can use "%h" or "%n" to create node-uinque directories.

@@ -199,6 +199,9 @@ static int _read_slurm_jc_conf(void)
 	if (!slurm_jc_conf.basepath) {
 		debug("Config not found in %s. Disabling plugin on this node",
 		      tmpfs_conf_file);
+	} else if (!xstrncasecmp(slurm_jc_conf.basepath, "none", 4)) {
+		debug("Plugin is disabled on this node per %s.",
+		      tmpfs_conf_file);
 	}
 
 	if (!shared_set)

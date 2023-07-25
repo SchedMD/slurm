@@ -105,7 +105,7 @@ static int _find_step_in_list(step_loc_t *stepd, uint32_t *job_id)
 
 static bool _is_plugin_disabled(char *basepath)
 {
-	return (!basepath);
+	return ((!basepath) || (!xstrncasecmp(basepath, "none", 4)));
 }
 
 static int _restore_ns(List steps, const char *d_name)

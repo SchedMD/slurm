@@ -111,6 +111,8 @@ documents those changes that are of interest to users and administrators.
     replication for Galera 4 clusters during the upgrade process.
  -- job_container/tmpfs - disable plugin for nodes that are not listed in
     job_container.conf when there is no global BasePath set.
+ -- job_container/tmpfs - Add "BasePath=none" option to disable plugin on node
+    subsets when there is a global setting.
 
 * Changes in Slurm 23.02.5
 ==========================
