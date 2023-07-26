@@ -1239,7 +1239,7 @@ static int hostlist_push_hr(hostlist_t *hl, char *prefix, char *suffix,
 		for (i = lo; i <= hi; i++) {
 			xstrfmtcat(host, "%s%0*lu%s", prefix, width, i, suffix);
 			hr->prefix = host;
-			retval =+ hostlist_push_range(hl, hr);
+			retval += hostlist_push_range(hl, hr);
 			xfree(host);
 		}
 		hr->prefix = NULL;
