@@ -198,6 +198,13 @@ extern void data_free(data_t *data);
 extern data_type_t data_get_type(const data_t *data);
 
 /*
+ * Get human friendly type string
+ * IN data struct to get type
+ * RET human friendly string of type for data
+ */
+extern const char *data_get_type_string(const data_t *data);
+
+/*
  * Set data to float type with given value.
  * IN data structure to modify
  * IN value value to set

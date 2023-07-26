@@ -2331,3 +2331,16 @@ extern char *data_type_to_string(data_type_t type)
 			return "INVALID";
 	}
 }
+
+extern const char *data_get_type_string(const data_t *data)
+{
+	if (!data)
+		return "INVALID";
+
+	for (int i = 0; i < ARRAY_SIZE(type_map); i++)
+		if (type_map[i].internal_type == data->type)
+			return data_type_to_string(type_map[i].external_type);
+
+	xassert(false);
+	return "INVALID";
+}
