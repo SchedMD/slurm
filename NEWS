@@ -204,6 +204,7 @@ documents those changes that are of interest to users and administrators.
     unavailable, that could previously have lead to all jobs being cancelled.
  -- The warning printed when using configure --without-PACKAGE has been changed
     to a notice.
+ -- Fix --cpu-freq with userspace governor and frequency ranges behavior.
 
 * Changes in Slurm 23.02.6
 ==========================
