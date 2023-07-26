@@ -166,6 +166,10 @@ documents those changes that are of interest to users and administrators.
     substituted as the NodeName instead of the hostname, and %n was substituted
     as an empty string.
  -- Fix regression where --cpu-bind=verbose would override TaskPluginParam.
+ -- scancel - Fix --clusters/-M for federations. Only filtered jobs (e.g. -A,
+    -u, -p, etc.) from the specified clusters will be canceled, rather than all
+    jobs in the federation. Specific jobids will still be routed to the origin
+    cluster for cancellation.
 
 * Changes in Slurm 23.02.3
 ==========================
