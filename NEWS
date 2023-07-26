@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
     interactive mode.
  -- Properly handle a race condition between bind() and listen() calls in the
     network stack when running with SrunPortRange set.
+ -- Federation - Fix revoked jobs being returned regardless of the -a/--all
+    option for privileged users.
 
 * Changes in Slurm 23.02.4
 ==========================
