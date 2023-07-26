@@ -56,6 +56,8 @@ documents those changes that are of interest to users and administrators.
     logging configuration.
  -- Fix intel oneapi autodetect: detect the /dev/dri/renderD[0-9]+ gpus, and do
     not detect /dev/dri/card[0-9]+.
+ -- Format batch, extern, interactive, and pending step ids into strings that
+    are human readable.
 
 * Changes in Slurm 23.02.4
 ==========================
