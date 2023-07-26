@@ -270,7 +270,7 @@ static int _parse_flag(void *dst, const parser_t *const parser, data_t *src,
 			      ESLURM_DATA_FLAGS_INVALID_TYPE,
 			      set_source_path(&path, ppath), __func__,
 			      "Expected a List but found a %s",
-			      data_type_to_string(data_get_type(src)));
+			      data_get_type_string(src));
 
 		goto cleanup;
 	/*
@@ -357,7 +357,7 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 
 	log_flag(DATA, "%s: BEGIN: list parsing %s{%s(0x%"PRIxPTR")} to List 0x%"PRIxPTR" via parser %s(0x%"PRIxPTR")",
 		__func__, set_source_path(&path, parent_path),
-		data_type_to_string(data_get_type(src)), (uintptr_t) src,
+		data_get_type_string(src), (uintptr_t) src,
 		(uintptr_t) dst, parser->type_string, (uintptr_t) parser
 	);
 
@@ -371,7 +371,7 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 			      ESLURM_DATA_FLAGS_INVALID_TYPE,
 			      set_source_path(&path, parent_path), __func__,
 			      "Expected List but found a %s",
-			      data_type_to_string(data_get_type(src)));
+			      data_get_type_string(src));
 		goto cleanup;
 	}
 
@@ -393,7 +393,7 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 
 cleanup:
 	log_flag(DATA, "%s: END: list parsing %s{%s(0x%"PRIxPTR")} to List 0x%"PRIxPTR" via parser %s(0x%"PRIxPTR") rc[%d]:%s",
-		__func__, path, data_type_to_string(data_get_type(src)),
+		__func__, path, data_get_type_string(src),
 		(uintptr_t) src, (uintptr_t) dst, parser->type_string,
 		(uintptr_t) parser, rc, slurm_strerror(rc)
 	);
@@ -501,7 +501,7 @@ static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
 			      ESLURM_DATA_FLAGS_INVALID_TYPE,
 			      set_source_path(&path, parent_path), __func__,
 			      "Expected List but found a %s",
-			      data_type_to_string(data_get_type(src)));
+			      data_get_type_string(src));
 		goto cleanup;
 	}
 
@@ -559,7 +559,7 @@ static void _parser_linked_flag(args_t *args, const parser_t *const array,
 
 		on_warn(PARSING, parser->type, args, path, __func__,
 			"Unable to convert to boolean from %s. Flag %s is being treated as false.",
-			data_type_to_string(data_get_type(src)), bit->name);
+			data_get_type_string(src), bit->name);
 
 	} else {
 		matched = data_get_bool(src);
@@ -577,7 +577,7 @@ static void _parser_linked_flag(args_t *args, const parser_t *const array,
 	}
 
 	log_flag(DATA, "%s: parsed flag %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)->%s & 0x%"PRIx64" & %s=0x%"PRIx64" via array parser %s(0x%" PRIxPTR ")=%s(0x%" PRIxPTR ")",
-		 __func__, path, data_type_to_string(data_get_type(src)),
+		 __func__, path, data_get_type_string(src),
 		 (uintptr_t) src, array->obj_type_string, (uintptr_t) dst,
 		 parser->ptr_offset, parser->field_name, bit->mask,
 		 bit->flag_name, bit->value, parser->obj_type_string,
@@ -666,8 +666,7 @@ static data_for_each_cmd_t _foreach_parse_marray(const char *key, data_t *data,
 	on_warn(PARSING, array->type, args,
 		set_source_path(&path, cargs.parent_path),
 		__func__, "Ignoring unknown field \"%s\" of type %s in %s", key,
-		data_type_to_string(data_get_type(data)),
-		array->type_string);
+		data_get_type_string(data), array->type_string);
 
 cleanup:
 	FREE_NULL_DATA(cargs.path);
@@ -772,7 +771,7 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 	if (parser->model == PARSER_MODEL_ARRAY_SKIP_FIELD) {
 		log_flag(DATA, "%s: SKIP: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via array parser %s(0x%" PRIxPTR ")=%s(0x%" PRIxPTR ")",
 			 __func__, parser->field_name,
-			 data_type_to_string(data_get_type(src)),
+			 data_get_type_string(src),
 			 (uintptr_t) src, parser->obj_type_string,
 			 (uintptr_t) dst, parser->ptr_offset,
 			 (parser->field_name ? "->" : ""),
@@ -796,7 +795,7 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 	}
 
 	log_flag(DATA, "%s: BEGIN: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via array parser %s(0x%" PRIxPTR ")=%s(0x%" PRIxPTR ")",
-		 __func__, path, data_type_to_string(data_get_type(src)),
+		 __func__, path, data_get_type_string(src),
 		 (uintptr_t) src, array->obj_type_string, (uintptr_t) dst,
 		 array->ptr_offset, (array->field_name ? "->" : ""),
 		 (array->field_name ? array->field_name : ""),
@@ -807,7 +806,7 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 		   ppath);
 
 	log_flag(DATA, "%s: END: parsing %s{%s(0x%" PRIxPTR ")} to %s(0x%" PRIxPTR "+%zd)%s%s=%s(0x%" PRIxPTR ") via array parser %s(0x%" PRIxPTR ")=%s(0x%" PRIxPTR ") rc[%d]:%s",
-		 __func__, path, data_type_to_string(data_get_type(src)),
+		 __func__, path, data_get_type_string(src),
 		 (uintptr_t) src, array->obj_type_string, (uintptr_t) dst,
 		 array->ptr_offset, (array->field_name ? "->" : ""),
 		 (array->field_name ? array->field_name : ""),
@@ -860,7 +859,7 @@ static void _parse_check_openapi(const parser_t *const parser, data_t *src,
 				parser->obj_openapi)),
 			found_type, (found_format ? " format=" : ""),
 			(found_format ? found_format : ""),
-			data_type_to_string(data_get_type(src)));
+			data_get_type_string(src));
 	}
 
 	xfree(path);
@@ -915,7 +914,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 
 	log_flag(DATA, "%s: BEGIN: parsing %s{%s(0x%" PRIxPTR ")} to %zd byte object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ")",
 		 __func__, set_source_path(&path, parent_path),
-		 data_type_to_string(data_get_type(src)),
+		 data_get_type_string(src),
 		 (uintptr_t) src, (dst_bytes == NO_VAL ? -1 : dst_bytes),
 		 parser->obj_type_string, (uintptr_t) dst,
 		 (parser->ptr_offset == NO_VAL ? 0 : parser->ptr_offset),
@@ -947,7 +946,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 				      set_source_path(&path, parent_path),
 				      __func__,
 				      "Rejecting %s when dictionary expected",
-				      data_type_to_string(data_get_type(src)));
+				      data_get_type_string(src));
 		} else {
 			/* recursively run the child parsers */
 			for (int i = 0; !rc && (i < parser->field_count); i++)
@@ -1006,7 +1005,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 cleanup:
 	log_flag(DATA, "%s: END: parsing %s{%s(0x%" PRIxPTR ")} to %zd byte object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ") rc[%d]:%s",
 		 __func__, set_source_path(&path, parent_path),
-		 data_type_to_string(data_get_type(src)), (uintptr_t) src,
+		 data_get_type_string(src), (uintptr_t) src,
 		 (dst_bytes == NO_VAL ? -1 : dst_bytes),
 		 parser->obj_type_string, (uintptr_t) dst, (parser->ptr_offset
 							    == NO_VAL ? 0 :
@@ -1127,7 +1126,7 @@ static void _dump_flag_bit_array_flag(args_t *args, void *src, data_t *dst,
 			 parser->obj_type_string, (uintptr_t) src,
 			 parser->ptr_offset, parser->field_name,
 			 parser->type_string, (uintptr_t) parser,
-			 data_type_to_string(data_get_type(dst)),
+			 data_get_type_string(dst),
 			 (uintptr_t) dst);
 	}
 }

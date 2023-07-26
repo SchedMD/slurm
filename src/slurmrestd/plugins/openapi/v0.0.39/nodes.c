@@ -158,7 +158,7 @@ static int _op_handler_nodes(const char *context_id,
 			resp_error(
 				ctxt, ESLURM_INVALID_NODE_NAME, __func__,
 				"Expected string for node name but got %s",
-				data_type_to_string(data_get_type(node_name)));
+				data_get_type_string(node_name));
 			goto done;
 		}
 	}

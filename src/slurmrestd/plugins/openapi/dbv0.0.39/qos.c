@@ -79,8 +79,7 @@ static data_for_each_cmd_t _foreach_query_search(const char *key,
 			resp_error(args->ctxt, ESLURM_REST_INVALID_QUERY,
 				   __func__,
 				   "Field %s must be a Boolean instead of %s",
-				   key,
-				   data_type_to_string(data_get_type(data)));
+				   key, data_get_type_string(data));
 			return DATA_FOR_EACH_FAIL;
 		}
 

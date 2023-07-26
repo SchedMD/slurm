@@ -582,8 +582,7 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 
 	if (data_get_type(data) != DATA_TYPE_DICT)
 		fatal("%s: path %s has unexpected data type %s instead of dictionary",
-		      __func__, args->str_path,
-		      data_type_to_string(data_get_type(data)));
+		      __func__, args->str_path, data_get_type_string(data));
 
 	for (entry = args->entries; entry->type; entry++)
 		count++;
@@ -614,8 +613,7 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 	}
 	if (data_get_type(para) != DATA_TYPE_LIST)
 		fatal("%s: path %s parameters field is unexpected type %s",
-		      __func__, args->str_path,
-		      data_type_to_string(data_get_type(para)));
+		      __func__, args->str_path, data_get_type_string(para));
 	if (data_list_for_each_const(para, _populate_parameters, &nargs) < 0)
 		fatal("%s: path %s parameters failed parsing",
 		      __func__, args->str_path);
@@ -660,7 +658,7 @@ extern int register_path_tag(openapi_t *oas, const char *str_path)
 
 	if (data_get_type(spec_entry) != DATA_TYPE_DICT) {
 		debug4("%s: ignoring %s at %s",
-		       __func__, data_type_to_string(data_get_type(spec_entry)),
+		       __func__, data_get_type_string(spec_entry),
 		       str_path);
 		goto cleanup;
 	}
@@ -764,7 +762,7 @@ static bool _match_param(const data_t *data, match_path_from_data_t *args)
 		debug5("%s: parameter %s[%s]->%s[%s] result=%s",
 		       __func__, entry->name,
 		       openapi_type_to_string(entry->parameter),
-		       str, data_type_to_string(data_get_type(data)),
+		       str, data_get_type_string(data),
 		       (matched ? "matched" : "failed"));
 
 		xfree(str);
@@ -1125,7 +1123,7 @@ static data_for_each_cmd_t _merge_schema(const char *key, data_t *data,
 
 	if (data_get_type(data) != DATA_TYPE_DICT) {
 		error("%s: expected schema[%s] as type dictionary but got type %s",
-		      __func__, key, data_type_to_string(data_get_type(data)));
+		      __func__, key, data_get_type_string(data));
 		return DATA_FOR_EACH_FAIL;
 	}
 
@@ -1246,7 +1244,7 @@ static data_for_each_cmd_t _differentiate_path_operationId(const char *key,
 		    DATA_TYPE_STRING) {
 			error("%s: [%s %s] unexpected type for operationId: %s",
 			      __func__, key, args->path,
-			      data_type_to_string(data_get_type(op)));
+			      data_get_type_string(op));
 			return DATA_FOR_EACH_FAIL;
 		}
 
@@ -1775,13 +1773,11 @@ extern char *openapi_get_str_param(openapi_ctxt_t *ctxt, bool required,
 			openapi_resp_error(ctxt, ESLURM_DATA_CONV_FAILED,
 					   caller,
 					   "Rejecting required parameter \"%s\" provided with format %s which was unable to be converted to string.",
-					   name, data_type_to_string(
-						data_get_type(dbuf)));
+					   name, data_get_type_string(dbuf));
 		else
 			openapi_resp_warn(ctxt, caller,
 					  "Ignoring parameter \"%s\" provided with format %s which was unable to be converted to string.",
-					  name, data_type_to_string(
-						data_get_type(dbuf)));
+					  name, data_get_type_string(dbuf));
 	} else if (!(str = data_get_string(dbuf)) || !str[0]) {
 		if (required)
 			openapi_resp_error(ctxt, ESLURM_DATA_PARSE_NOTHING,

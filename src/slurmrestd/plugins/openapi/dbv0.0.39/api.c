@@ -395,7 +395,7 @@ extern char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
 	} else if (data_convert_type(dbuf, DATA_TYPE_STRING) !=
 		   DATA_TYPE_STRING) {
 		resp_warn(ctxt, caller, "Parameter %s incorrect format %s",
-			  path, data_type_to_string(data_get_type(dbuf)));
+			  path, data_get_type_string(dbuf));
 	} else if (!(str = data_get_string(dbuf)) || !str[0]) {
 		resp_warn(ctxt, caller, "Parameter %s empty", path);
 		str = NULL;
@@ -435,7 +435,7 @@ extern data_t *get_query_key_list_funcname(const char *path, ctxt_t *ctxt,
 	if (data_get_type(ctxt->query) != DATA_TYPE_DICT) {
 		resp_warn(ctxt, caller,
 			  "expected HTTP query to be a dictionary instead of %s while searching for %s",
-			  data_type_to_string(data_get_type(ctxt->query)),
+			  data_get_type_string(ctxt->query),
 			  openapi_fmt_rel_path_str(&path_str, *parent_path));
 		goto cleanup;
 	}
@@ -450,7 +450,7 @@ extern data_t *get_query_key_list_funcname(const char *path, ctxt_t *ctxt,
 	if (data_get_type(dst) != DATA_TYPE_LIST) {
 		resp_warn(ctxt, caller, "%s must be a list but found %s",
 			  openapi_fmt_rel_path_str(&path_str, *parent_path),
-			  data_type_to_string(data_get_type(dst)));
+			  data_get_type_string(dst));
 		goto cleanup;
 	}
 

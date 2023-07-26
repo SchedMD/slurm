@@ -90,10 +90,8 @@ static data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 
 			resp_error(args->ctxt, ESLURM_REST_INVALID_QUERY,
 				   __func__, "Query %s=%s must be a Boolean",
-				   key,
-				   (str ? str :
-					  data_type_to_string(
-						  data_get_type(data))));
+				   key, (str ? str :
+					 data_get_type_string(data)));
 
 			xfree(str);
 			return DATA_FOR_EACH_FAIL;

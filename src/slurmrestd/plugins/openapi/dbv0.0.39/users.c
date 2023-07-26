@@ -77,7 +77,7 @@ static data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 		if (data_convert_type(data, DATA_TYPE_BOOL) != DATA_TYPE_BOOL) {
 			resp_error(args->ctxt, ESLURM_REST_INVALID_QUERY, key,
 				   "%s must be a Boolean instead of %s", key,
-				   data_type_to_string(data_get_type(data)));
+				   data_get_type_string(data));
 			return DATA_FOR_EACH_FAIL;
 		}
 

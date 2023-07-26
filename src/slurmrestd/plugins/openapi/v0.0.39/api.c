@@ -297,7 +297,7 @@ extern char *get_str_param_funcname(const char *path, ctxt_t *ctxt,
 	} else if (data_convert_type(dbuf, DATA_TYPE_STRING) !=
 		   DATA_TYPE_STRING) {
 		resp_warn(ctxt, caller, "Parameter %s incorrect format %s",
-			  path, data_type_to_string(data_get_type(dbuf)));
+			  path, data_get_type_string(dbuf));
 	} else if (!(str = data_get_string(dbuf)) || !str[0]) {
 		resp_warn(ctxt, caller, "Parameter %s empty", path);
 		str = NULL;

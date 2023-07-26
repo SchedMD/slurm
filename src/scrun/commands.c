@@ -113,7 +113,7 @@ static void _load_config()
 	ver = data_resolve_dict_path(state.config, "/ociVersion/");
 	if (data_get_type(ver) != DATA_TYPE_STRING)
 		fatal("Invalid /ociVersion/ type %s",
-		      data_type_to_string(data_get_type(ver)));
+		      data_get_type_string(ver));
 	xfree(state.oci_version);
 	state.oci_version = xstrdup(data_get_string(ver));
 
@@ -121,7 +121,7 @@ static void _load_config()
 					   "/process/terminal"))) {
 		if (data_get_type(term) != DATA_TYPE_BOOL)
 			fatal("Invalid /process/terminal type %s",
-			      data_type_to_string(data_get_type(term)));
+			      data_get_type_string(term));
 		state.requested_terminal = data_get_bool(term);
 	} else {
 		state.requested_terminal = false;
@@ -140,7 +140,7 @@ static data_for_each_cmd_t _foreach_env(data_t *data, void *arg)
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		fatal("%s: expected string at /process/env[%d] in %s but found type %s",
 		      __func__, *i, state.config_file,
-		      data_type_to_string(data_get_type(data)));
+		      data_get_type_string(data));
 
 	for (int j = 0; match_env[j]; j++) {
 		if (xstrncmp(match_env[j], data_get_string(data),
@@ -166,8 +166,7 @@ static void _load_config_environ()
 
 	if (data_get_type(denv) != DATA_TYPE_LIST)
 		fatal("%s: expected list at /process/env/ in %s but found type %s",
-		      __func__, state.config_file,
-		      data_type_to_string(data_get_type(denv)));
+		      __func__, state.config_file, data_get_type_string(denv));
 
 	(void) data_list_for_each(denv, _foreach_env, &i);
 }

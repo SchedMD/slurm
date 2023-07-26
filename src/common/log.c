@@ -797,7 +797,7 @@ static char *_print_data_t(const data_t *d, char *buffer, uint16_t size)
 	 * to handle the va_list this will effectively skip this argument.
 	 */
 	snprintf(buffer, size, "%%.0s%s(0x%"PRIxPTR")",
-		 data_type_to_string(data_get_type(d)), ((uintptr_t) d));
+		 data_get_type_string(d), ((uintptr_t) d));
 	return buffer;
 }
 
