@@ -66,7 +66,8 @@ typedef enum {
 				ECMA does not have an integer primitive.
 				ECMA-262:7.1.4 ToInteger() returns approx
 				this value with some rounding. */
-	TYPE_STRING, /* ECMA-262:4.3.18 String type */
+	TYPE_STRING_PTR, /* ECMA-262:4.3.18 String type */
+	TYPE_STRING_INLINE, /* string stored in union directly */
 	TYPE_FLOAT, /* ECMA-262:6.1.6 Number type */
 	TYPE_BOOL, /* ECMA-262:4.3.15 Boolean type */
 	TYPE_MAX /* only for bounds checking */
@@ -80,7 +81,8 @@ static const struct {
 	{ DATA_TYPE_LIST, TYPE_LIST },
 	{ DATA_TYPE_DICT, TYPE_DICT },
 	{ DATA_TYPE_INT_64, TYPE_INT_64 },
-	{ DATA_TYPE_STRING, TYPE_STRING },
+	{ DATA_TYPE_STRING, TYPE_STRING_PTR },
+	{ DATA_TYPE_STRING, TYPE_STRING_INLINE },
 	{ DATA_TYPE_FLOAT, TYPE_FLOAT },
 	{ DATA_TYPE_BOOL, TYPE_BOOL },
 };
@@ -117,7 +119,8 @@ struct data_s {
 		data_list_t *list_u;
 		data_list_t *dict_u;
 		int64_t int_u;
-		char *string_u;
+		char string_inline_u[sizeof(void *)];
+		char *string_ptr_u;
 		double float_u;
 		bool bool_u;
 	} data;
@@ -414,8 +417,8 @@ static void _release(data_t *data)
 	case TYPE_DICT:
 		_release_data_list(data->data.dict_u);
 		break;
-	case TYPE_STRING:
-		xfree(data->data.string_u);
+	case TYPE_STRING_PTR:
+		xfree(data->data.string_ptr_u);
 		break;
 	default:
 		/* other types don't need to be freed */
@@ -516,8 +519,29 @@ extern data_t *data_set_int(data_t *data, int64_t value)
 	return data;
 }
 
+static void _set_data_string_ptr(data_t *data, const size_t len,
+				  char **value_ptr)
+{
+	data->type = TYPE_STRING_PTR;
+	data->data.string_ptr_u = *value_ptr;
+	*value_ptr = NULL;
+	log_flag_hex(DATA, data->data.string_ptr_u, len, "%s: set string %pD",
+		     __func__, data);
+}
+
+static void _set_data_string_inline(data_t *data, const size_t len,
+				    const char *value)
+{
+	memmove(data->data.string_inline_u, value, len + 1);
+	data->type = TYPE_STRING_INLINE;
+	log_flag_hex(DATA, data->data.string_inline_u, len,
+		     "%s: set inline string %pD", __func__, data);
+}
+
 extern data_t *data_set_string(data_t *data, const char *value)
 {
+	int len;
+
 	_check_magic(data);
 
 	if (!data)
@@ -531,10 +555,12 @@ extern data_t *data_set_string(data_t *data, const char *value)
 		return data;
 	}
 
-	data->type = TYPE_STRING;
-	data->data.string_u = xstrdup(value);
-
-	log_flag_hex(DATA, value, strlen(value), "%s: set %pD", __func__, data);
+	if ((len = strlen(value)) < sizeof(data->data.string_inline_u)) {
+		_set_data_string_inline(data, len, value);
+	} else {
+		char *dval = xstrdup(value);
+		_set_data_string_ptr(data, len, &dval);
+	}
 
 	return data;
 }
@@ -542,6 +568,7 @@ extern data_t *data_set_string(data_t *data, const char *value)
 extern data_t *_data_set_string_own(data_t *data, char **value_ptr)
 {
 	char *value;
+	int len;
 	_check_magic(data);
 
 	if (!data) {
@@ -552,6 +579,7 @@ extern data_t *_data_set_string_own(data_t *data, char **value_ptr)
 	_release(data);
 
 	value = *value_ptr;
+	*value_ptr = NULL;
 
 	if (!value) {
 		data->type = TYPE_NULL;
@@ -572,13 +600,15 @@ extern data_t *_data_set_string_own(data_t *data, char **value_ptr)
 	xfree(*value_ptr);
 #endif
 
-	data->type = TYPE_STRING;
-	/* take ownership of string */
-	data->data.string_u = value;
+	if ((len = strlen(value)) < sizeof(data->data.string_inline_u)) {
+		_set_data_string_inline(data, len, value);
+		/* we don't need to keep this string alloc */
+		xfree(value);
+	} else {
+		_set_data_string_ptr(data, len, &value);
+	}
 
-	log_flag_hex(DATA, value, strlen(value), "%s: set %pD", __func__, data);
-
-	*value_ptr = NULL;
+	xassert(!value);
 	return data;
 }
 
@@ -955,8 +985,16 @@ extern char *data_get_string(data_t *data)
 	if (!data)
 		return NULL;
 
-	xassert(data->type == TYPE_STRING);
-	return data->data.string_u;
+	xassert((data->type == TYPE_STRING_PTR) ||
+		(data->type == TYPE_STRING_INLINE));
+
+	if (data->type == TYPE_STRING_PTR) {
+		return data->data.string_ptr_u;
+	} else if (data->type == TYPE_STRING_INLINE) {
+		return data->data.string_inline_u;
+	} else {
+		return NULL;
+	}
 }
 
 extern const char *data_get_string_const(const data_t *data)
@@ -966,8 +1004,16 @@ extern const char *data_get_string_const(const data_t *data)
 	if (!data)
 		return NULL;
 
-	xassert(data->type == TYPE_STRING);
-	return data->data.string_u;
+	xassert((data->type == TYPE_STRING_PTR) ||
+		(data->type == TYPE_STRING_INLINE));
+
+	if (data->type == TYPE_STRING_PTR) {
+		return data->data.string_ptr_u;
+	} else if (data->type == TYPE_STRING_INLINE) {
+		return data->data.string_inline_u;
+	} else {
+		return NULL;
+	}
 }
 
 extern int data_get_string_converted(const data_t *d, char **buffer)
@@ -979,13 +1025,13 @@ extern int data_get_string_converted(const data_t *d, char **buffer)
 	if (!d || !buffer)
 		return ESLURM_DATA_PTR_NULL;
 
-	if (d->type != TYPE_STRING) {
+	if ((d->type != TYPE_STRING_PTR) && (d->type != TYPE_STRING_INLINE)) {
 		/* copy the data and then convert it to a string type */
 		data_t *dclone = data_new();
 		data_copy(dclone, d);
 		if (data_convert_type(dclone, DATA_TYPE_STRING) ==
 		    DATA_TYPE_STRING)
-			SWAP(_buffer, dclone->data.string_u);
+			_buffer = xstrdup(data_get_string(dclone));
 		FREE_NULL_DATA(dclone);
 		cloned = true;
 	} else {
@@ -1415,7 +1461,8 @@ static int _convert_data_string(data_t *data)
 	_check_magic(data);
 
 	switch (data->type) {
-	case TYPE_STRING:
+	case TYPE_STRING_INLINE:
+	case TYPE_STRING_PTR:
 		return SLURM_SUCCESS;
 	case TYPE_BOOL:
 		data_set_string(data, (data->data.bool_u ? "true" : "false"));
@@ -1452,7 +1499,8 @@ static int _convert_data_force_bool(data_t *data)
 	(void) data_convert_type(data, DATA_TYPE_NONE);
 
 	switch (data->type) {
-	case TYPE_STRING:
+	case TYPE_STRING_INLINE:
+	case TYPE_STRING_PTR:
 		/* non-empty string but not recognized format */
 		data_set_bool(data, true);
 		return SLURM_SUCCESS;
@@ -1479,11 +1527,10 @@ static int _convert_data_null(data_t *data)
 	_check_magic(data);
 
 	switch (data->type) {
-	case TYPE_STRING:
+	case TYPE_STRING_INLINE:
+	case TYPE_STRING_PTR:
 	{
-		const char *str = data->data.string_u;
-
-		xassert(data->data.string_u);
+		const char *str = data_get_string(data);
 
 		if (!str[0])
 			goto convert;
@@ -1504,7 +1551,7 @@ static int _convert_data_null(data_t *data)
 fail:
 	return ESLURM_DATA_CONV_FAILED;
 convert:
-	log_flag_hex(DATA, data->data.string_u, strlen(data->data.string_u),
+	log_flag_hex(DATA, data_get_string(data), strlen(data_get_string(data)),
 		     "%s: converted %pD->null", __func__, data);
 	data_set_null(data);
 	return SLURM_SUCCESS;
@@ -1517,9 +1564,10 @@ static int _convert_data_bool(data_t *data)
 	_check_magic(data);
 
 	switch (data->type) {
-	case TYPE_STRING:
+	case TYPE_STRING_INLINE:
+	case TYPE_STRING_PTR:
 	{
-		str = data->data.string_u;
+		str = data_get_string(data);
 
 		if (tolower(str[0]) == 'y') {
 			if (!str[1] || ((tolower(str[1]) == 'e') &&
@@ -1598,11 +1646,12 @@ static int _convert_data_int(data_t *data, bool force)
 	_check_magic(data);
 
 	switch (data->type) {
-	case TYPE_STRING:
+	case TYPE_STRING_INLINE:
+	case TYPE_STRING_PTR:
 	{
 		int64_t x;
 		char end;
-		const char *str = data->data.string_u;
+		const char *str = data_get_string(data);
 
 		if (!str[0]) {
 			log_flag_hex(DATA, str, strlen(str),
@@ -1677,7 +1726,7 @@ static int _convert_data_int(data_t *data, bool force)
 
 static int _convert_data_float_from_string(data_t *data)
 {
-	const char *str = data->data.string_u;
+	const char *str = data_get_string(data);
 	int i = 0;
 	bool negative = false;
 
@@ -1749,7 +1798,8 @@ static int _convert_data_float(data_t *data)
 	_check_magic(data);
 
 	switch (data->type) {
-	case TYPE_STRING:
+	case TYPE_STRING_INLINE:
+	case TYPE_STRING_PTR:
 		return _convert_data_float_from_string(data);
 	case TYPE_INT_64:
 		if (data_get_int(data) == INFINITE64)
@@ -1971,7 +2021,8 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 			 (rc ? "=" : "!="),
 			 data_type_to_string(b->type), (uintptr_t) b);
 		return rc;
-	case TYPE_STRING:
+	case TYPE_STRING_INLINE:
+	case TYPE_STRING_PTR:
 		rc = !xstrcmp(data_get_string_const(a),
 			      data_get_string_const(b));
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%s %s %s(0x%"PRIXPTR")=%s",
@@ -2184,7 +2235,8 @@ extern data_t *data_copy(data_t *dest, const data_t *src)
 	log_flag(DATA, "%s: copy data %pD to %pD", __func__, src, dest);
 
 	switch (src->type) {
-	case TYPE_STRING:
+	case TYPE_STRING_INLINE:
+	case TYPE_STRING_PTR:
 		return data_set_string(dest, data_get_string_const(src));
 	case TYPE_BOOL:
 		return data_set_bool(dest, data_get_bool(src));
