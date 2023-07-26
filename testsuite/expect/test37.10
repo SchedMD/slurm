@@ -183,8 +183,8 @@ proc cleanup { } {
 	global fed_name bin_bash bin_rm test_name
 
 	cancel_federation_jobs
-	delete_federations $fed_name
 	exec $bin_bash -c "$bin_rm -f $test_name*.out"
+	delete_federations $fed_name
 }
 
 # Start test
