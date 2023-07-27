@@ -518,6 +518,9 @@ sbatch @slurm_spank_task_post_fork       @remote    @0        @yes         @no
 sbatch @slurm_spank_task_init            @remote    @1        @no          @yes
 sbatch @slurm_spank_task_exit            @remote    @0        @no          @no
 sbatch @slurm_spank_exit                 @allocator @0        @no          @no
+=
+scrontab @slurm_spank_init               @allocator @1        @no          @no
+scrontab @slurm_spank_exit               @allocator @0        @no          @no
 .TE
 
 \fBNOTE\fR: The behavior for \fBProctrackType=proctrack/pgid\fR may result in
