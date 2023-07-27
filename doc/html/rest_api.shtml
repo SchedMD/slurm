@@ -569,13 +569,13 @@
     },
     "memory_per_tres" : "memory_per_tres",
     "scheduled_nodes" : "scheduled_nodes",
-    "minimum_switches" : 9,
+    "minimum_switches" : 4,
     "qos" : "qos",
-    "resize_time" : 9,
-    "eligible_time" : 9,
+    "resize_time" : 5,
+    "eligible_time" : 7,
     "exclusive" : [ "true", "true" ],
     "cpus_per_tres" : "cpus_per_tres",
-    "preemptable_time" : 4,
+    "preemptable_time" : 7,
     "tasks" : {
       "number" : 3,
       "set" : false,
@@ -604,15 +604,23 @@
     },
     "tres_per_job" : "tres_per_job",
     "failed_node" : "failed_node",
-    "derived_exit_code" : 7,
-    "maximum_switch_wait_time" : 1,
+    "derived_exit_code" : {
+      "number" : 3,
+      "set" : false,
+      "infinite" : true
+    },
+    "maximum_switch_wait_time" : 3,
     "core_spec" : 1,
     "mcs_label" : "mcs_label",
     "required_nodes" : "required_nodes",
     "tres_bind" : "tres_bind",
     "user_id" : 6,
     "selinux_context" : "selinux_context",
-    "exit_code" : 2,
+    "exit_code" : {
+      "number" : 3,
+      "set" : false,
+      "infinite" : true
+    },
     "federation_origin" : "federation_origin",
     "container_id" : "container_id",
     "shared" : [ "none", "none" ],
@@ -682,10 +690,10 @@
       "set" : false,
       "infinite" : true
     },
-    "end_time" : 3,
-    "sockets_per_board" : 8,
-    "nice" : 7,
-    "last_sched_evaluation" : 6,
+    "end_time" : 9,
+    "sockets_per_board" : 9,
+    "nice" : 1,
+    "last_sched_evaluation" : 1,
     "tres_per_node" : "tres_per_node",
     "burst_buffer" : "burst_buffer",
     "licenses" : "licenses",
@@ -728,6 +736,7 @@
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
+    "hold" : true,
     "cpu_frequency_maximum" : {
       "number" : 3,
       "set" : false,
@@ -753,7 +762,7 @@
     "allocating_node" : "allocating_node",
     "tres_per_socket" : "tres_per_socket",
     "array_task_string" : "array_task_string",
-    "submit_time" : 6,
+    "submit_time" : 8,
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
@@ -762,16 +771,16 @@
       "infinite" : true
     },
     "batch_flag" : true,
-    "start_time" : 9,
+    "start_time" : 6,
     "name" : "name",
-    "preempt_time" : 1,
+    "preempt_time" : 6,
     "contiguous" : true,
     "job_resources" : {
       "nodes" : "nodes",
       "allocated_nodes" : [ "", "" ],
-      "allocated_cpus" : 1,
+      "allocated_cpus" : 7,
       "allocated_hosts" : 1,
-      "allocated_cores" : 1
+      "allocated_cores" : 4
     },
     "billable_tres" : {
       "number" : 5.025004791520295,
@@ -793,7 +802,7 @@
     },
     "gres_detail" : [ "gres_detail", "gres_detail" ],
     "network" : "network",
-    "restart_cnt" : 6,
+    "restart_cnt" : 9,
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
@@ -808,8 +817,8 @@
       "infinite" : true
     },
     "standard_output" : "standard_output",
-    "pre_sus_time" : 5,
-    "suspend_time" : 3,
+    "pre_sus_time" : 1,
+    "suspend_time" : 9,
     "association_id" : 6,
     "command" : "command",
     "tres_freq" : "tres_freq",
@@ -817,8 +826,8 @@
     "tres_per_task" : "tres_per_task",
     "mail_user" : "mail_user",
     "nodes" : "nodes",
-    "group_id" : 4,
-    "job_id" : 7,
+    "group_id" : 3,
+    "job_id" : 2,
     "comment" : "comment",
     "account" : "account"
   }, {
@@ -831,13 +840,13 @@
     },
     "memory_per_tres" : "memory_per_tres",
     "scheduled_nodes" : "scheduled_nodes",
-    "minimum_switches" : 9,
+    "minimum_switches" : 4,
     "qos" : "qos",
-    "resize_time" : 9,
-    "eligible_time" : 9,
+    "resize_time" : 5,
+    "eligible_time" : 7,
     "exclusive" : [ "true", "true" ],
     "cpus_per_tres" : "cpus_per_tres",
-    "preemptable_time" : 4,
+    "preemptable_time" : 7,
     "tasks" : {
       "number" : 3,
       "set" : false,
@@ -866,15 +875,23 @@
     },
     "tres_per_job" : "tres_per_job",
     "failed_node" : "failed_node",
-    "derived_exit_code" : 7,
-    "maximum_switch_wait_time" : 1,
+    "derived_exit_code" : {
+      "number" : 3,
+      "set" : false,
+      "infinite" : true
+    },
+    "maximum_switch_wait_time" : 3,
     "core_spec" : 1,
     "mcs_label" : "mcs_label",
     "required_nodes" : "required_nodes",
     "tres_bind" : "tres_bind",
     "user_id" : 6,
     "selinux_context" : "selinux_context",
-    "exit_code" : 2,
+    "exit_code" : {
+      "number" : 3,
+      "set" : false,
+      "infinite" : true
+    },
     "federation_origin" : "federation_origin",
     "container_id" : "container_id",
     "shared" : [ "none", "none" ],
@@ -944,10 +961,10 @@
       "set" : false,
       "infinite" : true
     },
-    "end_time" : 3,
-    "sockets_per_board" : 8,
-    "nice" : 7,
-    "last_sched_evaluation" : 6,
+    "end_time" : 9,
+    "sockets_per_board" : 9,
+    "nice" : 1,
+    "last_sched_evaluation" : 1,
     "tres_per_node" : "tres_per_node",
     "burst_buffer" : "burst_buffer",
     "licenses" : "licenses",
@@ -990,6 +1007,7 @@
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
+    "hold" : true,
     "cpu_frequency_maximum" : {
       "number" : 3,
       "set" : false,
@@ -1015,7 +1033,7 @@
     "allocating_node" : "allocating_node",
     "tres_per_socket" : "tres_per_socket",
     "array_task_string" : "array_task_string",
-    "submit_time" : 6,
+    "submit_time" : 8,
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
@@ -1024,16 +1042,16 @@
       "infinite" : true
     },
     "batch_flag" : true,
-    "start_time" : 9,
+    "start_time" : 6,
     "name" : "name",
-    "preempt_time" : 1,
+    "preempt_time" : 6,
     "contiguous" : true,
     "job_resources" : {
       "nodes" : "nodes",
       "allocated_nodes" : [ "", "" ],
-      "allocated_cpus" : 1,
+      "allocated_cpus" : 7,
       "allocated_hosts" : 1,
-      "allocated_cores" : 1
+      "allocated_cores" : 4
     },
     "billable_tres" : {
       "number" : 5.025004791520295,
@@ -1055,7 +1073,7 @@
     },
     "gres_detail" : [ "gres_detail", "gres_detail" ],
     "network" : "network",
-    "restart_cnt" : 6,
+    "restart_cnt" : 9,
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
@@ -1070,8 +1088,8 @@
       "infinite" : true
     },
     "standard_output" : "standard_output",
-    "pre_sus_time" : 5,
-    "suspend_time" : 3,
+    "pre_sus_time" : 1,
+    "suspend_time" : 9,
     "association_id" : 6,
     "command" : "command",
     "tres_freq" : "tres_freq",
@@ -1079,8 +1097,8 @@
     "tres_per_task" : "tres_per_task",
     "mail_user" : "mail_user",
     "nodes" : "nodes",
-    "group_id" : 4,
-    "job_id" : 7,
+    "group_id" : 3,
+    "job_id" : 2,
     "comment" : "comment",
     "account" : "account"
   } ],
@@ -1180,13 +1198,13 @@
     },
     "memory_per_tres" : "memory_per_tres",
     "scheduled_nodes" : "scheduled_nodes",
-    "minimum_switches" : 9,
+    "minimum_switches" : 4,
     "qos" : "qos",
-    "resize_time" : 9,
-    "eligible_time" : 9,
+    "resize_time" : 5,
+    "eligible_time" : 7,
     "exclusive" : [ "true", "true" ],
     "cpus_per_tres" : "cpus_per_tres",
-    "preemptable_time" : 4,
+    "preemptable_time" : 7,
     "tasks" : {
       "number" : 3,
       "set" : false,
@@ -1215,15 +1233,23 @@
     },
     "tres_per_job" : "tres_per_job",
     "failed_node" : "failed_node",
-    "derived_exit_code" : 7,
-    "maximum_switch_wait_time" : 1,
+    "derived_exit_code" : {
+      "number" : 3,
+      "set" : false,
+      "infinite" : true
+    },
+    "maximum_switch_wait_time" : 3,
     "core_spec" : 1,
     "mcs_label" : "mcs_label",
     "required_nodes" : "required_nodes",
     "tres_bind" : "tres_bind",
     "user_id" : 6,
     "selinux_context" : "selinux_context",
-    "exit_code" : 2,
+    "exit_code" : {
+      "number" : 3,
+      "set" : false,
+      "infinite" : true
+    },
     "federation_origin" : "federation_origin",
     "container_id" : "container_id",
     "shared" : [ "none", "none" ],
@@ -1293,10 +1319,10 @@
       "set" : false,
       "infinite" : true
     },
-    "end_time" : 3,
-    "sockets_per_board" : 8,
-    "nice" : 7,
-    "last_sched_evaluation" : 6,
+    "end_time" : 9,
+    "sockets_per_board" : 9,
+    "nice" : 1,
+    "last_sched_evaluation" : 1,
     "tres_per_node" : "tres_per_node",
     "burst_buffer" : "burst_buffer",
     "licenses" : "licenses",
@@ -1339,6 +1365,7 @@
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
+    "hold" : true,
     "cpu_frequency_maximum" : {
       "number" : 3,
       "set" : false,
@@ -1364,7 +1391,7 @@
     "allocating_node" : "allocating_node",
     "tres_per_socket" : "tres_per_socket",
     "array_task_string" : "array_task_string",
-    "submit_time" : 6,
+    "submit_time" : 8,
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
@@ -1373,16 +1400,16 @@
       "infinite" : true
     },
     "batch_flag" : true,
-    "start_time" : 9,
+    "start_time" : 6,
     "name" : "name",
-    "preempt_time" : 1,
+    "preempt_time" : 6,
     "contiguous" : true,
     "job_resources" : {
       "nodes" : "nodes",
       "allocated_nodes" : [ "", "" ],
-      "allocated_cpus" : 1,
+      "allocated_cpus" : 7,
       "allocated_hosts" : 1,
-      "allocated_cores" : 1
+      "allocated_cores" : 4
     },
     "billable_tres" : {
       "number" : 5.025004791520295,
@@ -1404,7 +1431,7 @@
     },
     "gres_detail" : [ "gres_detail", "gres_detail" ],
     "network" : "network",
-    "restart_cnt" : 6,
+    "restart_cnt" : 9,
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
@@ -1419,8 +1446,8 @@
       "infinite" : true
     },
     "standard_output" : "standard_output",
-    "pre_sus_time" : 5,
-    "suspend_time" : 3,
+    "pre_sus_time" : 1,
+    "suspend_time" : 9,
     "association_id" : 6,
     "command" : "command",
     "tres_freq" : "tres_freq",
@@ -1428,8 +1455,8 @@
     "tres_per_task" : "tres_per_task",
     "mail_user" : "mail_user",
     "nodes" : "nodes",
-    "group_id" : 4,
-    "job_id" : 7,
+    "group_id" : 3,
+    "job_id" : 2,
     "comment" : "comment",
     "account" : "account"
   }, {
@@ -1442,13 +1469,13 @@
     },
     "memory_per_tres" : "memory_per_tres",
     "scheduled_nodes" : "scheduled_nodes",
-    "minimum_switches" : 9,
+    "minimum_switches" : 4,
     "qos" : "qos",
-    "resize_time" : 9,
-    "eligible_time" : 9,
+    "resize_time" : 5,
+    "eligible_time" : 7,
     "exclusive" : [ "true", "true" ],
     "cpus_per_tres" : "cpus_per_tres",
-    "preemptable_time" : 4,
+    "preemptable_time" : 7,
     "tasks" : {
       "number" : 3,
       "set" : false,
@@ -1477,15 +1504,23 @@
     },
     "tres_per_job" : "tres_per_job",
     "failed_node" : "failed_node",
-    "derived_exit_code" : 7,
-    "maximum_switch_wait_time" : 1,
+    "derived_exit_code" : {
+      "number" : 3,
+      "set" : false,
+      "infinite" : true
+    },
+    "maximum_switch_wait_time" : 3,
     "core_spec" : 1,
     "mcs_label" : "mcs_label",
     "required_nodes" : "required_nodes",
     "tres_bind" : "tres_bind",
     "user_id" : 6,
     "selinux_context" : "selinux_context",
-    "exit_code" : 2,
+    "exit_code" : {
+      "number" : 3,
+      "set" : false,
+      "infinite" : true
+    },
     "federation_origin" : "federation_origin",
     "container_id" : "container_id",
     "shared" : [ "none", "none" ],
@@ -1555,10 +1590,10 @@
       "set" : false,
       "infinite" : true
     },
-    "end_time" : 3,
-    "sockets_per_board" : 8,
-    "nice" : 7,
-    "last_sched_evaluation" : 6,
+    "end_time" : 9,
+    "sockets_per_board" : 9,
+    "nice" : 1,
+    "last_sched_evaluation" : 1,
     "tres_per_node" : "tres_per_node",
     "burst_buffer" : "burst_buffer",
     "licenses" : "licenses",
@@ -1601,6 +1636,7 @@
       "infinite" : true
     },
     "job_size_str" : [ "job_size_str", "job_size_str" ],
+    "hold" : true,
     "cpu_frequency_maximum" : {
       "number" : 3,
       "set" : false,
@@ -1626,7 +1662,7 @@
     "allocating_node" : "allocating_node",
     "tres_per_socket" : "tres_per_socket",
     "array_task_string" : "array_task_string",
-    "submit_time" : 6,
+    "submit_time" : 8,
     "oversubscribe" : true,
     "wckey" : "wckey",
     "max_nodes" : {
@@ -1635,16 +1671,16 @@
       "infinite" : true
     },
     "batch_flag" : true,
-    "start_time" : 9,
+    "start_time" : 6,
     "name" : "name",
-    "preempt_time" : 1,
+    "preempt_time" : 6,
     "contiguous" : true,
     "job_resources" : {
       "nodes" : "nodes",
       "allocated_nodes" : [ "", "" ],
-      "allocated_cpus" : 1,
+      "allocated_cpus" : 7,
       "allocated_hosts" : 1,
-      "allocated_cores" : 1
+      "allocated_cores" : 4
     },
     "billable_tres" : {
       "number" : 5.025004791520295,
@@ -1666,7 +1702,7 @@
     },
     "gres_detail" : [ "gres_detail", "gres_detail" ],
     "network" : "network",
-    "restart_cnt" : 6,
+    "restart_cnt" : 9,
     "resv_name" : "resv_name",
     "extra" : "extra",
     "delay_boot" : {
@@ -1681,8 +1717,8 @@
       "infinite" : true
     },
     "standard_output" : "standard_output",
-    "pre_sus_time" : 5,
-    "suspend_time" : 3,
+    "pre_sus_time" : 1,
+    "suspend_time" : 9,
     "association_id" : 6,
     "command" : "command",
     "tres_freq" : "tres_freq",
@@ -1690,8 +1726,8 @@
     "tres_per_task" : "tres_per_task",
     "mail_user" : "mail_user",
     "nodes" : "nodes",
-    "group_id" : 4,
-    "job_id" : 7,
+    "group_id" : 3,
+    "job_id" : 2,
     "comment" : "comment",
     "account" : "account"
   } ],
@@ -6068,6 +6104,7 @@
     "required" : {
       "memory" : 4
     },
+    "hold" : true,
     "partition" : "partition",
     "qos" : "qos",
     "array" : {
@@ -6274,6 +6311,7 @@
     "required" : {
       "memory" : 4
     },
+    "hold" : true,
     "partition" : "partition",
     "qos" : "qos",
     "array" : {
@@ -6632,6 +6670,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "required" : {
       "memory" : 4
     },
+    "hold" : true,
     "partition" : "partition",
     "qos" : "qos",
     "array" : {
@@ -6838,6 +6877,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "required" : {
       "memory" : 4
     },
+    "hold" : true,
     "partition" : "partition",
     "qos" : "qos",
     "array" : {
@@ -9416,6 +9456,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
 <div class="param">mcs (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_39_job_mcs">v0_0_39_job_mcs</a></span>  </div>
 <div class="param">nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
 <div class="param">partition (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">hold (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Hold (true) or release (false) job </div>
 <div class="param">priority (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
 <div class="param">qos (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
 <div class="param">required (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_39_job_required">v0_0_39_job_required</a></span>  </div>
@@ -9468,7 +9509,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
 <div class="param">delay_boot (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
 <div class="param">dependency (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
 <div class="param">end_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
-<div class="param">environment (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
+<div class="param">environment </div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">excluded_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">extra (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
 <div class="param">constraints (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
@@ -9503,7 +9544,8 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
         <div class="param-enum-header">Enum:</div>
         
 <div class="param">prefer (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
-<div class="param">priority (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+<div class="param">hold (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Hold (true) or release (false) job </div>
+<div class="param">priority (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
 <div class="param">profile (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
         
@@ -9623,11 +9665,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
 <div class="param">deadline (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
 <div class="param">delay_boot (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
 <div class="param">dependency (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
-<div class="param">derived_exit_code (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+<div class="param">derived_exit_code (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
 <div class="param">eligible_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
 <div class="param">end_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
 <div class="param">excluded_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
-<div class="param">exit_code (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+<div class="param">exit_code (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
 <div class="param">extra (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
 <div class="param">failed_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
 <div class="param">features (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
@@ -9676,6 +9718,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
 <div class="param">preempt_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
 <div class="param">preemptable_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
 <div class="param">pre_sus_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span>  format: int64</div>
+<div class="param">hold (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Hold (true) or release (false) job </div>
 <div class="param">priority (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
 <div class="param">profile (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
@@ -10155,20 +10198,20 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     <h3><a name="v0.0.39_update_node_msg"><code>v0.0.39_update_node_msg</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">comment (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
-<div class="param">cpu_bind (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
-<div class="param">extra (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+      <div class="param">comment (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> arbitrary comment </div>
+<div class="param">cpu_bind (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> default CPU binding type format: int32</div>
+<div class="param">extra (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> arbitrary string </div>
 <div class="param">features (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">features_act (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
-<div class="param">gres (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">gres (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> new generic resources for node </div>
 <div class="param">address (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">hostname (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
-<div class="param">state (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
+<div class="param">state (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> assign new node state </div>
         <div class="param-enum-header">Enum:</div>
         
-<div class="param">reason (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
-<div class="param">reason_uid (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
+<div class="param">reason (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> reason for node being DOWN or DRAINING </div>
+<div class="param">reason_uid (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> user ID of sending (needed if user root is sending message) </div>
 <div class="param">resume_after (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
 <div class="param">weight (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
     </div>  <!-- field-items -->
