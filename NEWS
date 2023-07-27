@@ -108,6 +108,9 @@ documents those changes that are of interest to users and administrators.
  -- data_parser/v0.0.40 - Change v0.0.40_job_info response to tag
     derived_exit_code field as verbose job exit code object.
 
+* Changes in Slurm 23.02.5
+==========================
+
 * Changes in Slurm 23.02.4
 ==========================
  -- Fix sbatch return code when --wait is requested on a job array.
