@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Slurm User and Administrator Guide for Cray Systems Natively</h1>
+<h1>Slurm User and Administrator Guide for Cray XC Systems</h1>
 
 <ul>
 <li><a href="#user_guide">User Guide</a></li>
@@ -220,6 +220,6 @@ is down and prevents any new jobs from being started.
 </p>
 
 
-<p style="text-align:center;">Last modified 30 June 2021</p>
+<p style="text-align:center;">Last modified 27 July 2023</p>
 
 <!--#include virtual="footer.txt"-->

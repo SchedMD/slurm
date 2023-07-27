@@ -191,7 +191,7 @@ script for Slurm?</a></li>
     jobs. How do I get the new UID to take effect?</a></li>
 <li><a href="#mysql_duplicate">Slurmdbd is failing to start with a 'Duplicate entry'
     error in the database. How do I fix that?</a></li>
-<li><a href="#cray_sigbus">Why are applications on my Cray system failing
+<li><a href="#cray_sigbus">Why are applications on my Cray XC system failing
     with SIGBUS (bus error)?</a></li>
 <li><a href="#sysv_memory">How do I configure Slurm to work with System V IPC
     enabled applications?</a></li>
@@ -1983,7 +1983,7 @@ The problem with DVS caching is related to the fact that the dereferenced value
 of /opt/slurm/default symlink is cached in the DVS attribute cache, and that
 cache is not dropped when the rest of the VM caches are.</p>
 
-<p>The Cray Native Slurm installation manual indicates that Slurm should
+<p>The Cray XC Slurm installation manual indicates that Slurm should
 have a "default" symlink run through /etc/alternatives.
 As an alternative to that:
 <ol>
@@ -2095,7 +2095,7 @@ Bye
 $ mysql -u&lt;user&gt; -p&lt;user&gt; &lt;/tmp/slurm_db_backup.sql
 </pre>
 
-<p><a id="cray_sigbus"><b>Why are applications on my Cray system failing
+<p><a id="cray_sigbus"><b>Why are applications on my Cray XC system failing
     with SIGBUS (bus error)?</b></a><br>
 By default, Slurm flushes Lustre file system and kernel caches upon completion
 of each job step. If multiple applications are run simultaneously on compute
@@ -2403,6 +2403,6 @@ output file). It's also possible that a job could have multiple output files
 (see <a href=srun.html#OPT_filename-pattern>filename pattern</a> in the srun
 man page).</p>
 
-<p style="text-align:center;">Last modified 04 May 2023</p>
+<p style="text-align:center;">Last modified 27 July 2023</p>
 
 <!--#include virtual="footer.txt"-->
