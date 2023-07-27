@@ -20177,8 +20177,12 @@ fi
 printf "%s\n" "#define HAVE_PAM /**/" >>confdefs.h
 
     else
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate PAM libraries" >&5
+      if test -z "$enable_pam"; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate PAM libraries" >&5
 printf "%s\n" "$as_me: WARNING: unable to locate PAM libraries" >&2;}
+      else
+        as_fn_error $? "unable to locate PAM libraries" "$LINENO" 5
+      fi
     fi
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
