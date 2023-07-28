@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.02.5
 ==========================
+ -- Add the JobId to debug() messages indicating when cpus_per_task/mem_per_cpu
+    or pn_min_cpus are being automatically adjusted.
 
 * Changes in Slurm 23.02.4
 ==========================
