@@ -2936,12 +2936,16 @@ def require_nodes(requested_node_count, requirements_list=[]):
         Gres
         Features
 
+    Other node requirement types will still be appended to the requirements,
+    but this could stop slurm from starting.
+
     Returns:
         None
 
     Example:
         >>> require_nodes(2, [('CPUs', 4), ('RealMemory', 40)])
         >>> require_nodes(2, [('CPUs', 2), ('RealMemory', 30), ('Features', 'gpu,mpi')])
+        >>> require_nodes(2, [('CPUs', 4), ('Sockets', 1)])
     """
 
     # If using local-config and slurm is running, use live node information
@@ -3084,7 +3088,12 @@ def require_nodes(requested_node_count, requirements_list=[]):
                     if nonqualifying_node_count == 1:
                         augmentation_dict[parameter_name] = parameter_value
             else:
-                pytest.fail(f"{parameter_name} is not a supported requirement type")
+                logging.debug(f"{parameter_name} is not a supported node requirement type.")
+                logging.debug(f"{parameter_name}={parameter_value} will be added anyways!")
+                augmentation_dict[parameter_name] = parameter_value
+                if node_qualifies:
+                    node_qualifies = False
+                    nonqualifying_node_count += 1
         if node_qualifies:
             qualifying_node_count += 1
             if first_qualifying_node_name == "":
