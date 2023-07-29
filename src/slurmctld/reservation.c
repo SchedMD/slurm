@@ -235,11 +235,14 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 			      bitstr_t **core_bitmap)
 {
 	job_record_t *job_ptr;
+	resv_exc_t resv_exc = { 0 };
 	int rc;
 
 	xassert(avail_node_bitmap);
 	xassert(resv_desc_ptr);
 	xassert(resv_desc_ptr->job_ptr);
+
+	resv_exc.core_bitmap = core_bitmap ? *core_bitmap : NULL;
 
 	job_ptr = resv_desc_ptr->job_ptr;
 
@@ -248,7 +251,7 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 		job_ptr->details->max_nodes,
 		job_ptr->details->min_nodes,
 		SELECT_MODE_WILL_RUN, NULL, NULL,
-		core_bitmap ? *core_bitmap : NULL);
+		&resv_exc);
 
 	if (rc != SLURM_SUCCESS) {
 		return NULL;
@@ -3989,6 +3992,23 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 	return rc;
 }
 
+extern void reservation_delete_resv_exc_parts(resv_exc_t *resv_exc)
+{
+	if (!resv_exc)
+		return;
+
+	FREE_NULL_BITMAP(resv_exc->core_bitmap);
+}
+
+extern void reservation_delete_resv_exc(resv_exc_t *resv_exc)
+{
+	if (!resv_exc)
+		return;
+
+	reservation_delete_resv_exc_parts(resv_exc);
+	xfree(resv_exc);
+}
+
 /* Return pointer to the named reservation or NULL if not found */
 extern slurmctld_resv_t *find_resv_name(char *resv_name)
 {
@@ -6674,32 +6694,9 @@ extern uint32_t job_test_watts_resv(job_record_t *job_ptr, time_t when,
 	return resv_cnt;
 }
 
-/*
- * Determine which nodes a job can use based upon reservations
- * IN job_ptr      - job to test
- * IN/OUT when     - when we want the job to start (IN)
- *                   when the reservation is available (OUT)
- * IN move_time    - if true, then permit the start time to advance from
- *                   "when" as needed IF job has no reservervation
- * OUT node_bitmap - nodes which the job can use, caller must free unless error
- * OUT exc_core_bitmap - cores which the job can NOT use, caller must free
- *			 unless error
- * OUT resv_overlap - set to true if the job's run time and available nodes
- *		      overlap with an advanced reservation, indicates that
- *		      resources were removed from availability to the job
- * IN reboot    - true if node reboot required to start job
- * RET	SLURM_SUCCESS if runable now
- *	ESLURM_RESERVATION_ACCESS access to reservation denied
- *	ESLURM_RESERVATION_INVALID reservation invalid
- *	ESLURM_INVALID_TIME_VALUE reservation invalid at time "when"
- *	ESLURM_NODES_BUSY job has no reservation, but required nodes are
- *			  reserved
- *	ESLURM_RESERVATION_MAINT job has no reservation, but required nodes are
- *				 in maintenance reservation
- */
 extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			 bool move_time, bitstr_t **node_bitmap,
-			 bitstr_t **exc_core_bitmap, bool *resv_overlap,
+			 resv_exc_t *resv_exc_ptr, bool *resv_overlap,
 			 bool reboot)
 {
 	slurmctld_resv_t *resv_ptr = NULL, *res2_ptr;
@@ -6833,10 +6830,11 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		 * if reservation is using just partial nodes, this returns
 		 * coremap to exclude
 		 */
-		if (resv_ptr->core_bitmap && exc_core_bitmap &&
+		if (resv_ptr->core_bitmap && resv_exc_ptr &&
 		    !(resv_ptr->flags & RESERVE_FLAG_FLEX) ) {
-			*exc_core_bitmap = bit_copy(resv_ptr->core_bitmap);
-			bit_not(*exc_core_bitmap);
+			resv_exc_ptr->core_bitmap =
+				bit_copy(resv_ptr->core_bitmap);
+			bit_not(resv_exc_ptr->core_bitmap);
 		}
 
 		return SLURM_SUCCESS;
@@ -6926,14 +6924,14 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 
 				if (resv_ptr->core_bitmap == NULL) {
 					;
-				} else if (exc_core_bitmap == NULL) {
-					error("%s: exc_core_bitmap is NULL",
+				} else if (!resv_exc_ptr) {
+					error("%s: resv_exc_ptr is NULL",
 					      __func__);
-				} else if (*exc_core_bitmap == NULL) {
-					*exc_core_bitmap =
+				} else if (!resv_exc_ptr->core_bitmap) {
+					resv_exc_ptr->core_bitmap =
 						bit_copy(resv_ptr->core_bitmap);
 				} else {
-					bit_or(*exc_core_bitmap,
+					bit_or(resv_exc_ptr->core_bitmap,
 					       resv_ptr->core_bitmap);
 				}
 			}

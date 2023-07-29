@@ -397,7 +397,7 @@ extern int select_p_node_init()
  * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode==SELECT_MODE_TEST_ONLY or input pointer is NULL.
- * IN exc_core_bitmap - Cores to be excluded for use (in advanced reservation)
+ * IN resv_exc_ptr - Various TRES which the job can NOT use.
  * RET zero on success, EINVAL otherwise
  */
 extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
@@ -405,7 +405,7 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
 			     List *preemptee_job_list,
-			     bitstr_t *exc_core_bitmap)
+			     resv_exc_t *resv_exc_ptr)
 {
 	int rc;
 	bitstr_t **exc_cores;
@@ -416,10 +416,10 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		return EINVAL;
 
 	/*
-	 * FIXME: exc_core_bitmap is a full-system core bitmap to be replaced
-	 * with a set of per-node bitmaps in a future release of Slurm
+	 * FIXME: resv_exc_ptr->core_bitmap is a full-system core bitmap to be
+	 * replaced with a set of per-node bitmaps in a future release of Slurm
 	 */
-	exc_cores = core_bitmap_to_array(exc_core_bitmap);
+	exc_cores = core_bitmap_to_array(resv_exc_ptr->core_bitmap);
 #if _DEBUG
 	if (exc_cores) {
 		int i;

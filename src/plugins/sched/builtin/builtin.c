@@ -144,10 +144,10 @@ static void _compute_start_times(void)
 	job_record_t *job_ptr;
 	part_record_t *part_ptr;
 	bitstr_t *alloc_bitmap = NULL, *avail_bitmap = NULL;
-	bitstr_t *exc_core_bitmap = NULL;
 	uint32_t max_nodes, min_nodes, req_nodes, time_limit;
 	time_t now = time(NULL), sched_start, last_job_alloc;
 	bool resv_overlap = false;
+	resv_exc_t resv_exc = { 0 };
 
 	sched_start = now;
 	last_job_alloc = now - 1;
@@ -192,10 +192,10 @@ static void _compute_start_times(void)
 		}
 
 		j = job_test_resv(job_ptr, &now, true, &avail_bitmap,
-				  &exc_core_bitmap, &resv_overlap, false);
+				  &resv_exc, &resv_overlap, false);
 		if (j != SLURM_SUCCESS) {
 			FREE_NULL_BITMAP(avail_bitmap);
-			FREE_NULL_BITMAP(exc_core_bitmap);
+			reservation_delete_resv_exc_parts(&resv_exc);
 			continue;
 		}
 
@@ -203,7 +203,7 @@ static void _compute_start_times(void)
 				       min_nodes, max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN,
 				       NULL, NULL,
-				       exc_core_bitmap);
+				       &resv_exc);
 		if (rc == SLURM_SUCCESS) {
 			last_job_update = now;
 			if (job_ptr->time_limit == INFINITE)
@@ -223,7 +223,7 @@ static void _compute_start_times(void)
 			last_job_alloc = job_ptr->start_time + time_limit;
 		}
 		FREE_NULL_BITMAP(avail_bitmap);
-		FREE_NULL_BITMAP(exc_core_bitmap);
+		reservation_delete_resv_exc_parts(&resv_exc);
 
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			debug2("scheduling loop exiting after %d jobs",

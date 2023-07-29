@@ -63,7 +63,7 @@ typedef struct {
 						 uint16_t mode,
 						 List preeemptee_candidates,
 						 List *preemptee_job_list,
-						 bitstr_t *exc_core_bitmap);
+						 resv_exc_t *resv_exc_ptr);
 	int		(*job_begin)		(job_record_t *job_ptr);
 	int		(*job_ready)		(job_record_t *job_ptr);
 	int		(*job_expand)		(job_record_t *from_job_ptr,
@@ -390,7 +390,7 @@ extern int select_g_select_jobinfo_get(dynamic_plugin_data_t *jobinfo,
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  *		Existing list is appended to.
- * IN exc_core_bitmap - cores reserved and not usable
+ * IN resv_exc_ptr - Various TRES which the job can NOT use.
  * RET zero on success, EINVAL otherwise
  */
 extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
@@ -398,7 +398,7 @@ extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
 			     List *preemptee_job_list,
-			     bitstr_t *exc_core_bitmap);
+			     resv_exc_t *resv_exc_ptr);
 
 /*
  * Note initiation of job is about to begin. Called immediately

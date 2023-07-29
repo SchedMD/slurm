@@ -4019,13 +4019,13 @@ extern int job_start_data(job_record_t *job_ptr,
 	part_record_t *part_ptr;
 	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL;
-	bitstr_t *exc_core_bitmap = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int i, rc = SLURM_SUCCESS;
 	time_t now = time(NULL), start_res, orig_start_time = (time_t) 0;
 	List preemptee_candidates = NULL, preemptee_job_list = NULL;
 	bool resv_overlap = false;
 	ListIterator iter = NULL;
+	resv_exc_t resv_exc = { 0 };
 
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
@@ -4090,10 +4090,10 @@ next_part:
 		start_res = now;
 
 	i = job_test_resv(job_ptr, &start_res, true, &resv_bitmap,
-			  &exc_core_bitmap, &resv_overlap, false);
+			  &resv_exc, &resv_overlap, false);
 	if (i != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(avail_bitmap);
-		FREE_NULL_BITMAP(exc_core_bitmap);
+		reservation_delete_resv_exc_parts(&resv_exc);
 		if (job_ptr->part_ptr_list && (part_ptr = list_next(iter)))
 			goto next_part;
 
@@ -4141,7 +4141,7 @@ next_part:
 					       SELECT_MODE_WILL_RUN,
 					       preemptee_candidates,
 					       &preemptee_job_list,
-					       exc_core_bitmap);
+					       &resv_exc);
 			if (rc == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = active_bitmap;
@@ -4162,7 +4162,7 @@ next_part:
 					       SELECT_MODE_WILL_RUN,
 					       preemptee_candidates,
 					       &preemptee_job_list,
-					       exc_core_bitmap);
+					       &resv_exc);
 			if (test_fini == 0) {
 				job_ptr->details->share_res = save_share_res;
 				job_ptr->details->whole_node = save_whole_node;
@@ -4209,7 +4209,7 @@ next_part:
 	FREE_NULL_LIST(preemptee_candidates);
 	FREE_NULL_LIST(preemptee_job_list);
 	FREE_NULL_BITMAP(avail_bitmap);
-	FREE_NULL_BITMAP(exc_core_bitmap);
+	reservation_delete_resv_exc_parts(&resv_exc);
 
 	if (rc && job_ptr->part_ptr_list && (part_ptr = list_next(iter)))
 		goto next_part;

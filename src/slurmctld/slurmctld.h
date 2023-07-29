@@ -504,6 +504,10 @@ typedef struct {
 	uid_t *user_list;	/* array of users permitted to use	*/
 } slurmctld_resv_t;
 
+typedef struct {
+	bitstr_t *core_bitmap;
+} resv_exc_t;
+
 extern List resv_list;		/* list of slurmctld_resv_t entries */
 extern time_t last_resv_update;	/* time of last resv_list update */
 
