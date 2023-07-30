@@ -488,41 +488,41 @@ set ji3 [sbatch]
 sleep 2
 
 if { [string match $o0 $fedc1] } {
-	set reg1 "(JobId=($ji0|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg1 "(JobId=($ji0|$ji3) JobName=input\\s+\\n)"
 	set reg4 "(StepId=$ji0\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 } elseif { [string match $o0 $fedc2] } {
-	set reg2 "(JobId=($ji0|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg2 "(JobId=($ji0|$ji3) JobName=input\\s+\\n)"
 	set reg5 "(StepId=$ji0\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 } else {
-	set reg3 "(JobId=($ji0|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg3 "(JobId=($ji0|$ji3) JobName=input\\s+\\n)"
 	set reg6 "(StepId=$ji0\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 }
 
 if { [string match $o1 $fedc1] } {
-	set reg1 "(JobId=($ji1|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg1 "(JobId=($ji1|$ji3) JobName=input\\s+\\n)"
 	set reg4 "(StepId=$ji1\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 } elseif { [string match $o1 $fedc2] } {
-	set reg2 "(JobId=($ji1|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg2 "(JobId=($ji1|$ji3) JobName=input\\s+\\n)"
 	set reg5 "(StepId=$ji1\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 } else {
-	set reg3 "(JobId=($ji1|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg3 "(JobId=($ji1|$ji3) JobName=input\\s+\\n)"
 	set reg6 "(StepId=$ji1\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 }
 
 if { [string match $o2 $fedc1] } {
-	set reg1 "(JobId=($ji2|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg1 "(JobId=($ji2|$ji3) JobName=input\\s+\\n)"
 	set reg4 "(StepId=$ji2\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 } elseif { [string match $o2 $fedc2] } {
-	set reg2 "(JobId=($ji2|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg2 "(JobId=($ji2|$ji3) JobName=input\\s+\\n)"
 	set reg5 "(StepId=$ji2\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 } else {
-	set reg3 "(JobId=($ji2|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg3 "(JobId=($ji2|$ji3) JobName=input\\s+\\n)"
 	set reg6 "(StepId=$ji2\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 }
 
 
 set tasks "\\($ji0\\|$ji1\\|$ji2\\|$ji3\\)"
-set regex_j "(JobId=($ji0|$ji1|$ji2|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+set regex_j "(JobId=($ji0|$ji1|$ji2|$ji3) JobName=input\\s+\\n)"
 set regex_s "(StepId=($ji0|$ji1|$ji2)\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 
 scontrol_show "jobs" $tasks "$regex_j{4}" ""
