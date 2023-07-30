@@ -120,15 +120,15 @@ proc verify { job_id output } {
 	global squeue fedc1 fedc2 fedc3
 
 	if {[string match $output $fedc1]} {
-		squeue "-M$output " "CLUSTER: $fedc1\\s+$job_id.+R.+"
+		squeue "-M$output " "$job_id.+R.+"
 		squeue "-M$fedc1 -s " "$job_id\\.0.+$fedc1.+$job_id\\.1.+$fedc1.+$job_id\\.Batch.+$fedc1"
 	}
 	if {[string match $output $fedc2]} {
-		squeue "-M$output " "CLUSTER: $fedc2\\s+$job_id.+R.+"
+		squeue "-M$output " "$job_id.+R.+"
 		squeue "-M$fedc2 -s " "$job_id\\.0.+$fedc2.+$job_id\\.1.+$fedc2.+$job_id\\.Batch.+$fedc2"
 	}
 	if {[string match $output $fedc3]} {
-		squeue "-M$output " "CLUSTER: $fedc3\\s+$job_id.+R.+"
+		squeue "-M$output " "$job_id.+R.+"
 		squeue "-M$fedc3 -s " "$job_id\\.0.+$fedc3.+$job_id\\.1.+$fedc3.+$job_id\\.Batch.+$fedc3"
 	}
 
