@@ -182,7 +182,7 @@ static void prepend_cluster_name(void)
 	if (list_find_first(params.format_list, _list_find_func,
 			    _print_cluster_name))
 		return;
-	format_prepend_cluster_name(params.format_list, 8, false, "");
+	format_prepend_cluster_name(params.format_list, 8, false, NULL);
 }
 
 static int _multi_cluster(List clusters, int argc, char **argv)

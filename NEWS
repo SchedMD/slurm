@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
     option for privileged users.
  -- Federation - Fix canceling pending federated jobs from non-origin clusters
     which could leave federated jobs orphaned from the origin cluster.
+ -- Fix sinfo segfault when printing multiple clusters with --noheader option.
 
 * Changes in Slurm 23.02.4
 ==========================
