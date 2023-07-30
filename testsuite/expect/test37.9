@@ -335,7 +335,7 @@ if {$matches != 4} {
 	fail "Unexpected error (got $matches)"
 }
 
-make_bash_script $file_in "env; $my_srun sleep 900 & $my_srun sleep 900"
+make_bash_script $file_in "env; $my_srun --overlap sleep 900 & $my_srun --overlap sleep 900"
 
 log_info "################################################################"
 log_info "Verify federated squeue output"
