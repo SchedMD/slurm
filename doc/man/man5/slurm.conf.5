@@ -1510,25 +1510,46 @@ steps may run in parallel with the interactive step.
 
 .TP
 \fBJobAcctGatherType\fR
-The job accounting mechanism type.
-Acceptable values at present include "jobacct_gather/linux" (for Linux
-systems), "jobacct_gather/cgroup" and
-"jobacct_gather/none" (no accounting data collected).
-The default value is "jobacct_gather/none".
-"jobacct_gather/cgroup" is a plugin for the Linux operating system
-that uses cgroups to collect accounting statistics. The plugin collects the
-following statistics: From the cgroup memory subsystem: memory.usage_in_bytes
-(reported as 'pages') and rss from memory.stat (reported as 'rss'). From the
-cgroup cpuacct subsystem: user cpu time and system cpu time. No value
-is provided by cgroups for virtual memory size ('vsize').
-In order to use the \fBsstat\fR tool "jobacct_gather/linux",
-or "jobacct_gather/cgroup" must be configured.
-.br
-\fBNOTE\fR: Changing this configuration parameter changes the contents of
-the messages between Slurm daemons. Any previously running job steps are
-managed by a slurmstepd daemon that will persist through the lifetime of
-that job step and not change its communication protocol. Only change this
-configuration parameter when there are no running job steps.
+The JobAcctGather plugin collects memory, cpu, io, interconnect, energy and gpu
+usage information at the task level, depending on which plugins are configured
+in Slurm. This parameter will control how some of these metrics will be
+collected.
+
+Configurable values at present are:
+.IP
+.RS
+.TP 20
+\fBjobacct_gather/cgroup\fR (recommended)
+Collect cpu and memory statistics by reading the task's cgroup directory
+interfaces (e.g. memory.stat, cpu.stat) by issuing a call to the configured
+CgroupPlugin (see "man cgroup.conf").
+This mechanism ignores JobAcctGatherParams=UsePSS or NoShared since these are
+used only when reading memory usage from the proc filesystem.
+.IP
+
+.TP
+\fBjobacct_gather/linux\fR
+Collect cpu and memory statistics by reading procfs. The plugin will take all
+the pids of the task and for each of them will read /proc/<pid>/stats. If UsePSS
+is set it will also read /proc/<pid>/smaps, and if NoShare is set it will also
+read /proc/<pid>/statm (see \fBJobAcctGatherParams\fR for more information).
+
+This plugin carries a performance penalty on jobs with a large number of spawned
+processes since it needs to iterate over all the task pids and aggregate the
+stats into one single metric for the ppid, and then these values need to be
+aggregated to the task stats.
+.IP
+
+.TP
+\fBjobacct_gather/none\fR
+This is the default value. No accounting data is collected. \fBsstat\fR will
+not work.
+.RE
+.IP
+
+\fBNOTE\fR: Changing the plugin type when jobs are running in the cluster is
+possible. The already running steps will keep using the previous plugin
+mechanism, while new steps will use the new mechanism.
 .IP
 
 .TP
