@@ -1999,7 +1999,7 @@ int env_array_to_file(const char *filename, const char **env_array,
 		/* skip any env variables with a newline in newline mode */
 		if (newline && xstrstr(*p, "\n")) {
 			log_flag_hex(STEPS, *p, strlen(*p),
-				     "%s: skiping environment variable with newline",
+				     "%s: skipping environment variable with newline",
 				     __func__);
 			continue;
 		}
