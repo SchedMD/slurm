@@ -20,4 +20,4 @@ def test_parallel_launch_srun():
     node_cnt = 1-4
     output = atf.run_job_output(f"-N{node_cnt} -n{task_cnt} -O -t1 --overlap srun -l -n{mult} -O --overlap id")
     match = re.findall(r'\d+: uid=', output)
-    assert len(match) == mult * task_cnt, f"Failed to get output from all tasks. Got {len(match)} ouputs expected {task_cnt * mult}"
+    assert len(match) == mult * task_cnt, f"Failed to get output from all tasks. Got {len(match)} outputs expected {task_cnt * mult}"

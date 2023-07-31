@@ -16,7 +16,7 @@ def setup():
     atf.require_slurm_running()
 
 
-def test_input_ouput_taskid():
+def test_input_output_taskid():
     """Verify srun stdin/out routing with specific task number."""
 
     task_id = 4

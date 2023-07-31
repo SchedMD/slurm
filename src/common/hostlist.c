@@ -1446,7 +1446,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op,
 			/* push pointer past prefix */
 			tok += pos;
 
-			/* count number of digits for ouput fmt */
+			/* count number of digits for output fmt */
 			for (fmt = 0; isdigit(tok[fmt]); ++fmt) {;}
 
 			if (fmt == 0)

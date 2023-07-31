@@ -36,7 +36,7 @@ typedef struct {
     KangarooTwelve_Phases phase;
 } KangarooTwelve_Instance;
 
-/** Extendable ouput function KangarooTwelve.
+/** Extendable output function KangarooTwelve.
   * @param  input           Pointer to the input message (M).
   * @param  inputByteLen    The length of the input message in bytes.
   * @param  output          Pointer to the output buffer.

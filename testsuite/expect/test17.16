@@ -60,5 +60,5 @@ wait_for_file -fail $file_out
 #
 # Check arguments returned in stdout
 #
-set ouput [run_command_output -fail "$bin_cat $file_out"]
-subtest {[regexp "$arg1,$arg2" $ouput]} "Verify that arguments get forwarded to job script"
+set output [run_command_output -fail "$bin_cat $file_out"]
+subtest {[regexp "$arg1,$arg2" $output]} "Verify that arguments get forwarded to job script"

@@ -12,7 +12,7 @@ def setup():
     atf.require_slurm_running()
 
 
-def test_input_ouput_error(tmp_path):
+def test_input_output_error(tmp_path):
     """Verify srun -input,--output, and --error options work"""
 
     CONTENT = "sleep aaa\nexit 0"
