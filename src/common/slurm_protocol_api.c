@@ -63,6 +63,7 @@
 #include "src/interfaces/hash.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/net.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/interfaces/accounting_storage.h"
@@ -815,29 +816,10 @@ int slurm_init_msg_engine_port(uint16_t port)
  */
 int slurm_init_msg_engine_ports(uint16_t *ports)
 {
-	slurm_addr_t addr;
-	int cc;
-	int val;
-	int s;
-	int port;
+	int fd;
+	uint16_t port;
 
-	slurm_setup_addr(&addr, 0);
-
-	s = socket(addr.ss_family, SOCK_STREAM, IPPROTO_TCP);
-	if (s < 0)
-		return -1;
-
-	val = 1;
-	cc = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int));
-	if (cc < 0) {
-		close(s);
-		return -1;
-	}
-
-	if ((port = sock_bind_listen_range(s, ports, false)) < 0)
-		return -1;
-
-	return s;
+	return net_stream_listen_ports(&fd, &port, ports, false);
 }
 
 /**********************************************************************\
