@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "February 2023" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "August 2023" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -117,7 +117,8 @@ socket level (or NUMA level with numa_node_as_socket) for job allocations.
 Therefore it is not possible to preferentially assign GRES with different
 specific CPUs on the same socket (or NUMA with numa_node_as_socket) and this
 option should generally be
-used to identify all cores on some socket. Though, job step allocation with
+used to identify all cores on some socket. Though, job step allocations that
+request a portion of the job's resources with
 --exact will look at cores directly for which more specific core identification
 may be useful.
 
