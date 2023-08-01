@@ -1556,8 +1556,13 @@ static int _get_gpumem(nvmlDevice_t device, pid_t pid, acct_gather_data_t *data)
 		rc = nvmlDeviceGetComputeRunningProcesses(device, &ccnt,
 							  cproc_info);
 		if (rc != NVML_SUCCESS) {
-			error("NVML: Failed to get Compute running procs(%d): %s",
-			      rc, nvmlErrorString(rc));
+			if (rc == NVML_ERROR_INSUFFICIENT_SIZE) {
+				log_flag(JAG, "NVML: Failed to get Compute running procs(%d): %s. New processes started in between calls, accounting not gathered during this interval",
+				      rc, nvmlErrorString(rc));
+			} else {
+				error("NVML: Failed to get Compute running procs(%d): %s",
+				      rc, nvmlErrorString(rc));
+			}
 			xfree(cproc_info);
 			return SLURM_ERROR;
 		}
@@ -1590,8 +1595,13 @@ static int _get_gpumem(nvmlDevice_t device, pid_t pid, acct_gather_data_t *data)
 		rc = nvmlDeviceGetGraphicsRunningProcesses(device, &gcnt,
 							   gproc_info);
 		if (rc != NVML_SUCCESS) {
-			error("NVML: Failed to get Graphics running procs(%d): %s",
-			      rc, nvmlErrorString(rc));
+			if (rc == NVML_ERROR_INSUFFICIENT_SIZE) {
+				log_flag(JAG, "NVML: Failed to get Graphics running procs(%d): %s. New processes started in between calls, accounting not gathered during this interval",
+				      rc, nvmlErrorString(rc));
+			} else {
+				error("NVML: Failed to get Graphics running procs(%d): %s",
+				      rc, nvmlErrorString(rc));
+			}
 			xfree(gproc_info);
 			return SLURM_ERROR;
 		}
