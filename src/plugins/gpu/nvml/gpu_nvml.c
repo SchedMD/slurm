@@ -1534,90 +1534,75 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 	return gres_list_system;
 }
 
-static int _get_gpumem(nvmlDevice_t device, pid_t pid, acct_gather_data_t *data)
+static char *_get_nvml_func_str(void *fname)
+{
+	if (fname == nvmlDeviceGetComputeRunningProcesses)
+		return "Compute";
+	return "Graphics";
+}
+
+static int _get_nvml_process_info(nvmlReturn_t (*get_proc)(nvmlDevice_t,
+							   unsigned int *,
+							   nvmlProcessInfo_t *),
+				  nvmlDevice_t device, pid_t pid,
+				  acct_gather_data_t *data)
 {
 	nvmlReturn_t rc;
-	nvmlProcessInfo_t *cproc_info, *gproc_info;
-	unsigned int gcnt = 0, ccnt = 0;
+	nvmlProcessInfo_t *proc_info;
+	unsigned int proc_cnt = 0;
 
+	/*
+	 * Get the number of "[Compute|Graphics]" processes. If there are no
+	 * processes proc_cnt will be 0 and rc == NVML_SUCCESS, if there are
+	 * processes proc_cnt will be set and rc == NVML_ERROR_INSUFFICIENT_SIZE
+	 */
+	rc = get_proc(device, &proc_cnt, NULL);
+
+	if ((rc != NVML_SUCCESS) && (rc != NVML_ERROR_INSUFFICIENT_SIZE))
+		return SLURM_ERROR;
+
+	if (proc_cnt) {
+		proc_info = xcalloc(proc_cnt, sizeof(*proc_info));
+		rc = get_proc(device, &proc_cnt, proc_info);
+		if (rc != NVML_SUCCESS) {
+			if (rc == NVML_ERROR_INSUFFICIENT_SIZE) {
+				log_flag(JAG, "NVML: Failed to get %s running procs(%d): %s. New processes started in between calls, accounting not gathered during this interval",
+					 _get_nvml_func_str(get_proc),
+					 rc, nvmlErrorString(rc));
+			} else {
+				error("NVML: Failed to get %s running procs(%d): %s",
+				      _get_nvml_func_str(get_proc),
+				      rc, nvmlErrorString(rc));
+			}
+			xfree(proc_info);
+			return SLURM_ERROR;
+		}
+		for (int i = 0; i < proc_cnt; i++) {
+			if (proc_info[i].pid != pid)
+				continue;
+			/* Store MB usedGpuMemory is in bytes */
+			data[gpumem_pos].size_read += proc_info[i].usedGpuMemory;
+			break;
+		}
+		xfree(proc_info);
+		log_flag(JAG, "pid %d has GPUUtil=%lu and MemMB=%lu",
+			 pid, data[gpuutil_pos].size_read,
+			 data[gpumem_pos].size_read / 1048576);
+	}
+	return SLURM_SUCCESS;
+}
+
+static int _get_gpumem(nvmlDevice_t device, pid_t pid, acct_gather_data_t *data)
+{
 	data[gpumem_pos].size_read = 0;
 
-	/*
-	 * Get the number of "Compute" processes. If there are no processes
-	 * *ccnt will be 0 and rc == NVML_SUCCESS, if there are processes *ccnt
-	 * will be set and rc == NVML_ERROR_INSUFFICIENT_SIZE
-	 */
-	rc = nvmlDeviceGetComputeRunningProcesses(device, &ccnt, NULL);
-	if ((rc != NVML_SUCCESS) && (rc != NVML_ERROR_INSUFFICIENT_SIZE))
+	if (_get_nvml_process_info(nvmlDeviceGetComputeRunningProcesses, device,
+				   pid, data) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if (ccnt) {
-		cproc_info = xcalloc(ccnt, sizeof(*cproc_info));
-		rc = nvmlDeviceGetComputeRunningProcesses(device, &ccnt,
-							  cproc_info);
-		if (rc != NVML_SUCCESS) {
-			if (rc == NVML_ERROR_INSUFFICIENT_SIZE) {
-				log_flag(JAG, "NVML: Failed to get Compute running procs(%d): %s. New processes started in between calls, accounting not gathered during this interval",
-				      rc, nvmlErrorString(rc));
-			} else {
-				error("NVML: Failed to get Compute running procs(%d): %s",
-				      rc, nvmlErrorString(rc));
-			}
-			xfree(cproc_info);
-			return SLURM_ERROR;
-		}
-		for (int i = 0; i < ccnt; i++) {
-			if (cproc_info[i].pid != pid)
-				continue;
-			/* Store MB usedGpuMemory is in bytes */
-			data[gpumem_pos].size_read +=
-				cproc_info[i].usedGpuMemory;
-			break;
-		}
-		xfree(cproc_info);
-		log_flag(JAG, "pid %d has GPUUtil=%lu and MemMB=%lu", pid,
-			 data[gpuutil_pos].size_read,
-			 data[gpumem_pos].size_read / 1048576);
-		return SLURM_SUCCESS;
-	}
-
-	/*
-	 * The process is not a "Compute" process if we make it here. Check if
-	 * it is a "Graphics" process in the same way as done above with
-	 * "Compute" processes
-	 */
-	rc = nvmlDeviceGetGraphicsRunningProcesses(device, &gcnt, NULL);
-	if ((rc != NVML_SUCCESS) && (rc != NVML_ERROR_INSUFFICIENT_SIZE))
+	if (_get_nvml_process_info(nvmlDeviceGetGraphicsRunningProcesses,
+				   device, pid, data) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-
-	if (gcnt) {
-		gproc_info = xcalloc(gcnt, sizeof(*gproc_info));
-		rc = nvmlDeviceGetGraphicsRunningProcesses(device, &gcnt,
-							   gproc_info);
-		if (rc != NVML_SUCCESS) {
-			if (rc == NVML_ERROR_INSUFFICIENT_SIZE) {
-				log_flag(JAG, "NVML: Failed to get Graphics running procs(%d): %s. New processes started in between calls, accounting not gathered during this interval",
-				      rc, nvmlErrorString(rc));
-			} else {
-				error("NVML: Failed to get Graphics running procs(%d): %s",
-				      rc, nvmlErrorString(rc));
-			}
-			xfree(gproc_info);
-			return SLURM_ERROR;
-		}
-		for (int i = 0; i < gcnt; i++) {
-			if (gproc_info[i].pid != pid)
-				continue;
-			/* Store MB usedGpuMemory is in bytes */
-			data[gpumem_pos].size_read +=
-				gproc_info[i].usedGpuMemory;
-			break;
-		}
-		xfree(gproc_info);
-		log_flag(JAG, "pid %d has GPUUtil=%lu and MemMB=%lu", pid,
-			 data[gpuutil_pos].size_read,
-			 data[gpumem_pos].size_read / 1048576);
-	}
 
 	return SLURM_SUCCESS;
 }
