@@ -136,6 +136,8 @@ documents those changes that are of interest to users and administrators.
     Previously, memory = mem-per-cpu * all cpus including unusable threads.
     Now, memory = mem-per-cpu * only usuable threads. This behavior matches
     the documentation and select/cons_tres.
+ -- gpu/nvml - Reduce chances of NVML_ERROR_INSUFFICIENT_SIZE error when getting
+    gpu memory information.
 
 * Changes in Slurm 23.02.5
 ==========================
