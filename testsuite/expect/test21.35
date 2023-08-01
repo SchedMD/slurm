@@ -90,6 +90,19 @@ if {![is_super_user]} {
 	skip "Test can only be ran as SlurmUser"
 }
 
+if {[check_config_select "linear"]} {
+    # Adjust the resources to reflect the first node
+    spawn $scontrol show nodes
+    expect {
+        -re {CPUTot=(\d+)} {
+            set max_tres_limit(cpu) $expect_out(1,string)
+            set max_tres_limit(billing) $expect_out(1,string)
+        }
+        timeout {
+            fail "'scontrol show nodes' not responding"
+        }
+    }
+}
 
 proc cleanup { } {
 	global sacctmgr test_acct test_qos

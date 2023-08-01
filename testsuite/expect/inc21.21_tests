@@ -41,7 +41,7 @@ proc inc21_21_good { test_type limit } {
 
 	log_info "====== Test $test_type ======"
 
-	if {($test_type eq "maxcpus" || $test_type eq "maxcpumins") && [default_part_exclusive] != 0} {
+	if {($test_type eq "maxcpus" || $test_type eq "maxcpumins") && ([default_part_exclusive] != 0 || [check_config_select "linear"])} {
 		log_warn "Unable to perform test with exclusive node allocations"
 		set is_skip 1
 		return
@@ -140,7 +140,7 @@ proc inc21_21_grp_test { test_type limit } {
 		return
 	}
 
-	if { [default_part_exclusive] != 0} {
+	if { [default_part_exclusive] != 0 || [check_config_select "linear"]} {
 		log_warn "This test can't be run Exclusive node allocations"
 		set is_skip 1
 		return

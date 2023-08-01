@@ -57,9 +57,26 @@ $nvcc ${file_prog}.cu -o $file_prog
 ./$file_prog"
 
 #
+# If select type is linear, pick a node that has a gpu
+# Else, use --gres (this doesn't work on select/linear)
+#
+set get_gpu "--gres=gpu:1"
+if {[check_config_select "linear"]} {
+    set available_nodes [node_list_to_range [get_nodes_by_state]]
+    set gpu_dict [get_gres_count "gpu" $available_nodes]
+    dict for {node gpu_count} $gpu_dict {
+        # Find the first node that has gpu
+        if {$gpu_count >= 1} {
+            set get_gpu "-w$node"
+            break
+        }
+    }
+}
+
+#
 # Spawn a batch job to build and run CUDA job
 #
-set job_id [submit_job -fail "--output=$file_out -N1 --gres=gpu:1 -t1 $file_in"]
+set job_id [submit_job -fail "--output=$file_out -N1 $get_gpu -t1 $file_in"]
 
 #
 # Wait for job to complete and check for file
