@@ -33,6 +33,10 @@ if {[get_config_param "FrontendName"] ne "MISSING" || $enable_memory_leak_debug 
 	set job_cnt 2
 }
 
+if {[check_config_select "linear"]} {
+    skip "Test requires SelectType != linear"
+}
+
 proc cleanup {} {
 	global scancel test_name
 

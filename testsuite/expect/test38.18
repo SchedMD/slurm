@@ -486,9 +486,9 @@ proc test_mem_per_gpu {} {
 
 test_gpu_bind
 test_gpu_freq
-test_gpus_per_node
 
 if {[check_config_select "cons_tres"]} {
+    test_gpus_per_node
 	test_cpus_per_gpu
 	test_gpus_per_job
 	test_gpus_per_socket
