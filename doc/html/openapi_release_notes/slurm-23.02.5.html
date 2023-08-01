@@ -33,6 +33,26 @@
 </tr>
 </table>
 
+<h4>Add required/memory_per_cpu and required/memory_per_node to v0.0.39_job to
+	differientate between jobs that require memory per node or per CPU.
+	Jobs that required per cpu memory will dump very large integers due to
+	internal bit packing required/memory but dump correct amounts for per
+	node memory.</h4>
+<table class="tchange">
+	<tr class="trchange">
+		<td class="tdfield">Field added</td>
+		<td class="tdchange">
+			.components.schemas."v0.0.39_job".properties.required.properties.mem_per_cpu
+		</td>
+	</tr>
+	<tr class="trchange">
+		<td class="tdfield">Field added</td>
+		<td class="tdchange">
+			.components.schemas."v0.0.39_job".properties.required.properties.mem_per_node
+		</td>
+	</tr>
+</table>
+
 <h3>openapi/dbv0.0.39</h3>
 
 <h4>Add missing fields</h4>

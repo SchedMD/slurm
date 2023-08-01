@@ -4733,7 +4733,15 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse_overload(UINT32_NO_VAL, priority, 1, "priority", "Request specific job priority"),
 	add_parse(QOS_ID, qosid, "qos", NULL),
 	add_parse(UINT32, req_cpus, "required/CPUs", NULL),
-	add_parse(UINT64, req_mem, "required/memory", NULL),
+	add_parse_overload(JOB_MEM_PER_CPU, req_mem, 2, "required/memory_per_cpu", NULL),
+	add_parse_overload(JOB_MEM_PER_NODE, req_mem, 2, "required/memory_per_node", NULL),
+
+	/*
+	 * This will give a large negative value instead of the slurm.conf
+	 * DefMemPerCPU. It will be removed in v40.
+	 */
+	add_parse_overload(UINT64, req_mem, 2, "required/memory", NULL),
+
 	add_parse(USER_ID, requid, "kill_request_user", NULL),
 	add_parse(UINT32, resvid, "reservation/id", NULL),
 	add_parse(STRING, resv_name, "reservation/name", NULL),
