@@ -3,12 +3,12 @@
 <p>All of the OpenAPI plugins have moved from "src/slurmrestd/plugins/openapi/"
 to "src/plugins/openapi/".</p>
 
-<h3>openapi/v0.0.35 (src/plugins/openapi/v0.0.35/openapi.json)</h3>
+<h3>openapi/v0.0.35</h3>
 
 <h4>Deprecation notice</h4>
 The v0.0.35 plugin has now been deprecated.
 
-<h3>openapi/dbv0.0.37 (src/plugins/openapi/dbv0.0.37/openapi.json)</h3>
+<h3>openapi/dbv0.0.37</h3>
 
 <h4>add plugin</h4>
 <table class="tchange">
@@ -35,7 +35,7 @@ The v0.0.35 plugin has now been deprecated.
 </tr>
 </table>
 
-<h3>openapi/v0.0.37 (src/plugins/openapi/v0.0.37/openapi.json)</h3>
+<h3>openapi/v0.0.37</h3>
 
 <h4>add plugin</h4>
 <table class="tchange">
@@ -172,11 +172,11 @@ The v0.0.35 plugin has now been deprecated.
 
 <h4>replace nodes_online with state in /partitions endpoint<h4>
 <table class="tchange">
-<tr>
+<tr class="trchange">
 	<td class="tdfield">removed path</td>
 	<td class="tdchange">.components.schemas."v0.0.37_partitions_response".nodes_online</td>
 </tr>
-<tr>
+<tr class="trchange">
 	<td class="tdfield">added path</td>
 	<td class="tdchange">.components.schemas."v0.0.37_partitions_response".state</td>
 </tr>
@@ -184,11 +184,11 @@ The v0.0.35 plugin has now been deprecated.
 
 <h4>Add POST method for /associations<h4>
 <table class="tchange">
-<tr>
+<tr class="trchange">
 	<td class="tdfield">new path</td>
 	<td class="tdchange">.paths."/associations/".post</td>
 </tr>
-<tr>
+<tr class="trchange">
 	<td class="tdfield">new path</td>
 	<td class="tdchange">.components.schemas."dbv0.0.37_response_associations"</td>
 </tr>
