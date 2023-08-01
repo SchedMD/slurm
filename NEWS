@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix a job being stuck in the completing state if the job ends while the
     primary controller is down or unresponsive and the backup controller has
     not yet taken over.
+ -- Fix slurmctld segfault when a node registers with a configured CpuSpecList
+    while slurmctld configuration has the node without CpuSpecList.
 
 * Changes in Slurm 23.02.4
 ==========================

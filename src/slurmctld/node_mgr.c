@@ -3112,7 +3112,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 
 		if (build_node_spec_bitmap(node_ptr) != SLURM_SUCCESS)
 			error_code = EINVAL;
-		else if (!bit_equal(node_spec_bitmap_old,
+		else if (!node_spec_bitmap_old ||
+			 !bit_equal(node_spec_bitmap_old,
 				    node_ptr->node_spec_bitmap)) {
 			debug("Node %s has different spec CPUs than expected (%s, %s)",
 			      reg_msg->node_name, cpu_spec_list_old,
