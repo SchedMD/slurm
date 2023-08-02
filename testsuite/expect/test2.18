@@ -117,7 +117,7 @@ proc test_part { acct part acct_con } {
 
 	spawn $srun -I5 -A $acct -p $part true
 	expect {
-		-re "error" {
+		-re "error:" {
 			if { $acct_con == 1 } {
 				log_debug "This error is expected"
 			} else {

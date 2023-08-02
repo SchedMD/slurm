@@ -184,12 +184,14 @@ def test_incomp_flags(flag, delete_resv):
         f"user={atf.properties['test-user']} start=now duration=1 nodecnt=1 "
         f"flags={flag}", user=atf.properties['slurm-user'], xfail=True, fatal=True)
 
-    expected_output = "Error creating the res"
-    logging.info(f"Assert output message is {expected_output}")
-    assert re.search(rf"{expected_output}", result['stderr']) is not None
+    expected_output = "Error creating the reservation"
+    logging.info(f"Assert output message contains {expected_output}")
+    assert expected_output in result['stderr'], \
+        f"Could not find {expected_output} in {result['stderr']}"
 
     logging.info(f"Assert exit code is not 0")
-    assert result['exit_code'] != 0
+    assert result['exit_code'] != 0, \
+        "The command was supposed to fail, but didn't!"
 
 
 @pytest.mark.parametrize(
@@ -216,8 +218,11 @@ def test_update_incomp_flags(create_flag, update_flag, delete_resv):
         f"scontrol update reservation=resv1 flags={update_flag}",
         user=atf.properties['slurm-user'], xfail=True, fatal=True)
 
-    expected_output = "Error updating the res"
-    assert re.search(rf"{expected_output}", result['stderr']) is not None, \
+    expected_output = "slurm_update error"
+    logging.info(f"Assert output message contains {expected_output}")
+    assert expected_output in result['stderr'], \
         "Could not find 'error updating the res' in output"
 
-    assert result['exit_code'] != 0, "Assert exit code is not 0"
+    logging.info(f"Assert exit code is not 0")
+    assert result['exit_code'] != 0, \
+        "The command was supposed to fail, but didn't!"
