@@ -358,6 +358,12 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	}
 
 	*avail_cpus = avail_res_array[node_inx]->avail_cpus;
+	/*
+	 * _allocate_sc() filters available cpus and cores if the job does
+	 * not request gres. If the job requests gres, _allocate_sc() defers
+	 * filtering cpus and cores so that gres_select_filter_sock_core() can
+	 * do it.
+	 */
 	if (job_ptr->gres_list_req) {
 		gres_select_filter_sock_core(
 			mc_ptr,
