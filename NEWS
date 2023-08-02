@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
     a node features plugin is configured.
  -- Fix and prevent reoccurring reservations from overlapping.
  -- job_container/tmpfs - Avoid attempts to share BasePath between nodes.
+ -- Change the log message warning for rate limited users from verbose to info.
 
 * Changes in Slurm 23.02.4
 ==========================

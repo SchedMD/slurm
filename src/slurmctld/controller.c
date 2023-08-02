@@ -1495,7 +1495,7 @@ static void *_service_connection(void *arg)
 	 * to minimize controller disruption.
 	 */
 	if (rate_limit_exceeded(msg)) {
-		verbose("RPC rate limit exceeded by uid %u with %s, telling to back off",
+		info("RPC rate limit exceeded by uid %u with %s, telling to back off",
 		      msg->auth_uid, rpc_num2string(msg->msg_type));
 		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
 	} else {
