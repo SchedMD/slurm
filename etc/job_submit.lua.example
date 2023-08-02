@@ -39,6 +39,26 @@ function _log_user_and_debug(fmt, ...)
 end
 
 
+-- Do not allow interactive jobs longer than 4 hours except for certain users
+function validate_interactive_job(job_desc, uid)
+	if job_desc['script'] ~= nil then
+		return slurm.SUCCESS -- no limit for batch jobs
+	end
+	if uid == 0 --[[ or uid == SpecialUser --]] then
+		_log_user_and_debug("Interactive job allowed for uid: %u", uid)
+	else
+		local time_limit = job_desc['time_limit']
+		if (time_limit == slurm.NO_VAL) then
+			_log_user_and_debug("You must request a time limit within 4 hours for interactive jobs")
+			return slurm.ESLURM_INVALID_TIME_LIMIT
+		elseif (time_limit > (4 * 60)) then
+			_log_user_and_debug("Interactive jobs for time longer than 4h forbidden")
+			return slurm.ESLURM_INVALID_TIME_LIMIT
+		end
+	end
+	return slurm.SUCCESS
+end
+
 function slurm_job_submit(job_desc, part_list, submit_uid)
 
 	--[[
@@ -47,6 +67,11 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 	--]]
 	if submit_uid == 0 then
 		return slurm.SUCCESS
+	end
+
+	local rc = validate_interactive_job(job_desc, submit_uid)
+	if rc ~= slurm.SUCCESS then
+		return rc
 	end
 
 	--[[
@@ -158,6 +183,11 @@ function  slurm_job_modify(job_desc, job_ptr, part_list, modify_uid)
 	--[[ Don't block/modify any update from root --]]
 	if modify_uid == 0 then
 		return slurm.SUCCESS
+	end
+
+	local rc = validate_interactive_job(job_desc, modify_uid)
+	if rc ~= slurm.SUCCESS then
+		return rc
 	end
 
 	--[[
