@@ -257,9 +257,13 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 	}
 
 	for (int i = 0; i < num; i++) {
-		if ((_is_port_ok(*fd, *port, local)) &&
-		    (!listen(*fd, SLURM_DEFAULT_LISTEN_BACKLOG)))
-			return *fd;
+		if (_is_port_ok(*fd, *port, local)) {
+			if (!listen(*fd, SLURM_DEFAULT_LISTEN_BACKLOG))
+				return *fd;
+
+			log_flag(NET, "%s: listen() failed: %m",
+				 __func__);
+		}
 
 		if (*port == max)
 			*port = min;
