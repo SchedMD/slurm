@@ -154,6 +154,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/slurmctld - Add 'GET /slurm/v0.0.40/shares' endpoint to dump same
     output as sshare.
  -- sshare - add JSON/YAML support.
+ -- data_parser/v0.0.40 - Remove "required/memory" output in json. It is
+    replaced by "required/memory_per_cpu" and "required/memory_per_node".
 
 * Changes in Slurm 23.02.5
 ==========================

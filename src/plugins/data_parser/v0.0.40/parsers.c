@@ -6147,6 +6147,8 @@ static const parser_t PARSER_ARRAY(INSTANCE)[] ={
 	add_parser_skip(slurmdb_job_rec_t, field)
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_job_rec_t, mtype, false, field, 0, path, desc)
+#define add_parse_overload(mtype, field, overloads, path, desc) \
+	add_parser(slurmdb_job_rec_t, mtype, false, field, overloads, path, desc)
 /* should mirror the structure of slurmdb_job_rec_t  */
 static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(STRING, account, "account", NULL),
@@ -6186,7 +6188,8 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(UINT32_NO_VAL, priority, "priority", NULL),
 	add_parse(QOS_ID, qosid, "qos", NULL),
 	add_parse(UINT32, req_cpus, "required/CPUs", NULL),
-	add_parse(UINT64, req_mem, "required/memory", NULL),
+	add_parse_overload(JOB_MEM_PER_CPU, req_mem, 1, "required/memory_per_cpu", NULL),
+	add_parse_overload(JOB_MEM_PER_NODE, req_mem, 1, "required/memory_per_node", NULL),
 	add_parse(USER_ID, requid, "kill_request_user", NULL),
 	add_parse(UINT32, resvid, "reservation/id", NULL),
 	add_parse(STRING, resv_name, "reservation/name", NULL),
@@ -6220,6 +6223,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 };
 #undef add_parse
 #undef add_skip
+#undef add_parse_overload
 
 static const flag_bit_t PARSER_FLAG_ARRAY(ACCOUNT_FLAGS)[] = {
 	add_flag_bit(SLURMDB_ACCT_FLAG_DELETED, "DELETED"),
