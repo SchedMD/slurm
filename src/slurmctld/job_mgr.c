@@ -160,6 +160,11 @@ typedef struct {
 	int rc;
 } job_overlap_args_t;
 
+typedef struct {
+	int node_index;
+	int node_count;
+} node_inx_cnt_t;
+
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
 time_t last_job_update;		/* time of last update to job records */
@@ -715,6 +720,7 @@ static void _delete_job_details(job_record_t *job_entry)
 	xfree(job_entry->details->req_nodes);
 	xfree(job_entry->details->script);
 	xfree(job_entry->details->script_hash);
+	xfree(job_entry->details->arbitrary_tpn);
 	xfree(job_entry->details->work_dir);
 	xfree(job_entry->details->x11_magic_cookie);
 	xfree(job_entry->details->x11_target);
@@ -8621,6 +8627,56 @@ static uint16_t _default_wait_all_nodes(job_desc_msg_t *job_desc)
 	return default_batch_wait;
 }
 
+static int _comp_node_inx(const void *n1, const void *n2)
+{
+	const node_inx_cnt_t *node1 = n1;
+	const node_inx_cnt_t *node2 = n2;
+
+	return node1->node_index - node2->node_index;
+}
+
+static void _calc_arbitrary_tpn(job_record_t *job_ptr)
+{
+	uint16_t *arbitrary_tasks_np = NULL;
+	int cur_node = 0;
+	int num_nodes = job_ptr->details->min_nodes;
+	char *host, *prev_host = NULL;
+	node_inx_cnt_t *node_inx_cnts;
+	hostlist_t *hl = hostlist_create(job_ptr->details->req_nodes);
+	hostlist_sort(hl);
+
+	xassert(num_nodes == hostlist_count(hl));
+
+	arbitrary_tasks_np = xcalloc(num_nodes, sizeof(uint16_t));
+	node_inx_cnts = xcalloc(num_nodes, sizeof(node_inx_cnt_t));
+
+	while ((host = hostlist_shift(hl))) {
+		if (!prev_host || !xstrcmp(host, prev_host)) {
+			node_inx_cnts[cur_node].node_count += 1;
+		} else {
+			node_inx_cnts[cur_node].node_index =
+				node_name_get_inx(prev_host);
+			cur_node++;
+			node_inx_cnts[cur_node].node_count += 1;
+		}
+
+		free(prev_host);
+		prev_host = host;
+	}
+	node_inx_cnts[cur_node].node_index = node_name_get_inx(prev_host);
+	free(prev_host);
+
+	qsort(node_inx_cnts, num_nodes, sizeof(node_inx_cnt_t), _comp_node_inx);
+
+	for (int i = 0; i < num_nodes; i++)
+		arbitrary_tasks_np[i] = node_inx_cnts[i].node_count;
+
+	hostlist_destroy(hl);
+	xfree(node_inx_cnts);
+
+	job_ptr->details->arbitrary_tpn = arbitrary_tasks_np;
+}
+
 /* _copy_job_desc_to_job_record - copy the job descriptor from the RPC
  *	structure into the actual slurmctld job record */
 static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
@@ -8810,8 +8866,14 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->x11_target = xstrdup(job_desc->x11_target);
 	detail_ptr->x11_target_port = job_desc->x11_target_port;
 	if (job_desc->req_nodes) {
-		detail_ptr->req_nodes =
-			_copy_nodelist_no_dup(job_desc->req_nodes);
+		if ((job_desc->task_dist & SLURM_DIST_STATE_BASE) ==
+		    SLURM_DIST_ARBITRARY) {
+			detail_ptr->req_nodes = xstrdup(job_desc->req_nodes);
+			_calc_arbitrary_tpn(job_ptr);
+		} else {
+			detail_ptr->req_nodes =
+				_copy_nodelist_no_dup(job_desc->req_nodes);
+		}
 		detail_ptr->req_node_bitmap = *req_bitmap;
 		*req_bitmap = NULL;	/* Reused nothing left to free */
 		detail_ptr->exc_node_bitmap = *exc_bitmap;

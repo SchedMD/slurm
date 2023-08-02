@@ -570,6 +570,8 @@ typedef struct {
 	char *acctg_freq;		/* accounting polling interval */
 	time_t accrue_time;             /* Time when we start accruing time for
 					 * priority, */
+	uint16_t *arbitrary_tpn;	/* array of the number of tasks on each
+					 * node for arbitrary distribution */
 	uint32_t argc;			/* count of argv elements */
 	char **argv;			/* arguments for a batch job script */
 	time_t begin_time;		/* start at this time (srun --begin),

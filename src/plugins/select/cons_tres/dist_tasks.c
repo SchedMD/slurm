@@ -1135,33 +1135,40 @@ fini:	xfree(sock_avoid);
  * tasks to a node.
  *
  * RETURNS rc
- *  rc > 0 if tpn limit exceeded
+ *  rc > 0 if tpn limit or arbitrary tpn exceeded
  *  rc == 0 if exactly at tpn limit
  *  rc < 0 if not at limit yet
  */
 static int _at_tpn_limit(const uint32_t n, const job_record_t *job_ptr,
-			  const char *tag, bool log_error)
+			 const char *tag, bool log_error)
 {
 	const job_resources_t *job_res = job_ptr->job_resrcs;
 	const log_level_t log_lvl = log_error ? LOG_LEVEL_ERROR :
 						LOG_LEVEL_INFO;
-	int rc = -1;
+	int limit_rc = -1;
+	int arbitrary_rc = -1;
+
+	if (job_ptr->details->arbitrary_tpn) {
+		arbitrary_rc = job_res->tasks_per_node[n] -
+			job_ptr->details->arbitrary_tpn[n];
+	}
 
 	/* Special case where no limit is imposed - no overcommit */
 	if (job_ptr->details->ntasks_per_node == 0)
-		return rc;
+		return MAX(limit_rc, arbitrary_rc);
 
-	rc = job_res->tasks_per_node[n] - job_ptr->details->ntasks_per_node;
+	limit_rc = job_res->tasks_per_node[n] -
+		job_ptr->details->ntasks_per_node;
 
 	/* Limit exceeded */
-	if ((rc > 0) && (log_error || (slurm_conf.debug_flags &
-				       DEBUG_FLAG_SELECT_TYPE)))
+	if ((limit_rc > 0) && (log_error || (slurm_conf.debug_flags &
+					     DEBUG_FLAG_SELECT_TYPE)))
 		log_var(log_lvl,
 			"%s over tasks_per_node for %pJ node:%u task_per_node:%d max:%u",
 			tag, job_ptr, n, job_res->tasks_per_node[n],
 			job_ptr->details->ntasks_per_node);
 
-	return rc;
+	return MAX(limit_rc, arbitrary_rc);
 }
 
 /*
