@@ -269,6 +269,17 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 
 			log_flag(NET, "%s: listen() failed: %m",
 				 __func__);
+
+			/*
+			 * If bind() succeeds but listen() fails we need to
+			 * close and reestablish the socket before trying
+			 * again on another port number.
+			 */
+			if (close(*fd)) {
+				log_flag(NET, "%s: close(%d) failed: %m",
+					 __func__, *fd);
+			}
+			*fd = -1;
 		}
 
 		if (*port == max)
