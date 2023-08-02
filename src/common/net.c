@@ -228,50 +228,6 @@ static bool _is_port_ok(int s, uint16_t port, bool local)
 	return true;
 }
 
-
-/*
- * bind() and then listen() to any port in a given range of ports
- *
- * IN: s - socket
- * IN: port - port number to attempt to bind
- * IN: local - only bind to localhost if true
- * OUT: port was bound successfully or -1 on failure
- */
-static int _sock_bind_listen_range(int s, uint16_t *range, bool local)
-{
-	uint32_t count;
-	uint32_t min;
-	uint32_t max;
-	uint32_t port;
-	uint32_t num;
-
-	min = range[0];
-	max = range[1];
-
-	srand(getpid());
-	num = max - min + 1;
-	port = min + (random() % num);
-	count = num;
-
-	do {
-		if ((_is_port_ok(s, port, local)) &&
-		    (!listen(s, SLURM_DEFAULT_LISTEN_BACKLOG)))
-			return port;
-
-		if (port == max)
-			port = min;
-		else
-			++port;
-		--count;
-	} while (count > 0);
-
-	close(s);
-	error("%s: all ports in range (%u, %u) exhausted, cannot establish listening port",
-	      __func__, min, max);
-
-	return -1;
-}
-
 /* net_stream_listen_ports()
  */
 int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local)
@@ -279,6 +235,13 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 	slurm_addr_t sin;
 	int cc;
 	int val;
+	uint32_t count;
+	uint32_t min = ports[0], max = ports[1];
+	uint32_t num = max - min + 1;
+
+	srand(getpid());
+	*port = min + (random() % num);
+	count = num;
 
 	slurm_setup_addr(&sin, 0); /* Decide on IPv4 or IPv6 */
 
@@ -292,11 +255,23 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 		return -1;
 	}
 
-	if ((cc = _sock_bind_listen_range(*fd, ports, local)) < 0)
-		return -1;
-	*port = cc;
+	do {
+		if ((_is_port_ok(*fd, *port, local)) &&
+		    (!listen(*fd, SLURM_DEFAULT_LISTEN_BACKLOG)))
+			return *fd;
 
-	return *fd;
+		if (*port == max)
+			*port = min;
+		else
+			++(*port);
+		--count;
+	} while (count > 0);
+
+	close(*fd);
+	error("%s: all ports in range (%u, %u) exhausted, cannot establish listening port",
+	      __func__, min, max);
+
+	return -1;
 }
 
 extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
