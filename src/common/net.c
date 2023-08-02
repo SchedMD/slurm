@@ -233,7 +233,6 @@ static bool _is_port_ok(int s, uint16_t port, bool local)
 int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local)
 {
 	slurm_addr_t sin;
-	int cc;
 	int val;
 	uint32_t min = ports[0], max = ports[1];
 	uint32_t num = max - min + 1;
@@ -247,8 +246,7 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 		return -1;
 
 	val = 1;
-	cc = setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int));
-	if (cc < 0) {
+	if (setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int)) < 0) {
 		close(*fd);
 		return -1;
 	}
