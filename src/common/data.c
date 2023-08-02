@@ -1275,9 +1275,12 @@ extern int data_dict_for_each_const(const data_t *d, DataDictForFConst f, void *
 	int count = 0;
 	const data_list_node_t *i;
 
+	if (!d)
+		return 0;
+
 	_check_magic(d);
 
-	if (!d || data_get_type(d) != DATA_TYPE_DICT) {
+	if (data_get_type(d) != DATA_TYPE_DICT) {
 		error("%s: for each attempted on non-dict %pD", __func__, d);
 		return -1;
 	}
@@ -1324,9 +1327,12 @@ extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg)
 	int count = 0;
 	data_list_node_t *i;
 
+	if (!d)
+		return 0;
+
 	_check_magic(d);
 
-	if (!d || data_get_type(d) != DATA_TYPE_DICT) {
+	if (data_get_type(d) != DATA_TYPE_DICT) {
 		error("%s: for each attempted on non-dict %pD", __func__, d);
 		return -1;
 	}
