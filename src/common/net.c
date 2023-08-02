@@ -242,11 +242,16 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 
 	slurm_setup_addr(&sin, 0); /* Decide on IPv4 or IPv6 */
 
-	if ((*fd = socket(sin.ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0)
+	if ((*fd = socket(sin.ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+		log_flag(NET, "%s: socket() failed: %m",
+			 __func__);
 		return -1;
+	}
 
 	val = 1;
 	if (setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int)) < 0) {
+		log_flag(NET, "%s: setsockopt() failed: %m",
+			 __func__);
 		close(*fd);
 		return -1;
 	}
