@@ -599,6 +599,7 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state &= (~NODE_STATE_DRAIN);
 			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
+			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 
 			reset_node_active_features(node_ptr);
