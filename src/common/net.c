@@ -233,7 +233,6 @@ static bool _is_port_ok(int s, uint16_t port, bool local)
 int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local)
 {
 	slurm_addr_t sin;
-	int val;
 	uint32_t min = ports[0], max = ports[1];
 	uint32_t num = max - min + 1;
 
@@ -242,21 +241,28 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 
 	slurm_setup_addr(&sin, 0); /* Decide on IPv4 or IPv6 */
 
-	if ((*fd = socket(sin.ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-		log_flag(NET, "%s: socket() failed: %m",
-			 __func__);
-		return -1;
-	}
-
-	val = 1;
-	if (setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int)) < 0) {
-		log_flag(NET, "%s: setsockopt() failed: %m",
-			 __func__);
-		close(*fd);
-		return -1;
-	}
+	*fd = -1;
 
 	for (int i = 0; i < num; i++) {
+		if (*fd < 0) {
+			const int one = 1;
+
+			if ((*fd = socket(sin.ss_family, SOCK_STREAM,
+					  IPPROTO_TCP)) < 0) {
+				log_flag(NET, "%s: socket() failed: %m",
+					 __func__);
+				return -1;
+			}
+
+			if (setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &one,
+				       sizeof(int)) < 0) {
+				log_flag(NET, "%s: setsockopt() failed: %m",
+					 __func__);
+				close(*fd);
+				return -1;
+			}
+		}
+
 		if (_is_port_ok(*fd, *port, local)) {
 			if (!listen(*fd, SLURM_DEFAULT_LISTEN_BACKLOG))
 				return *fd;
