@@ -235,13 +235,11 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 	slurm_addr_t sin;
 	int cc;
 	int val;
-	uint32_t count;
 	uint32_t min = ports[0], max = ports[1];
 	uint32_t num = max - min + 1;
 
 	srand(getpid());
 	*port = min + (random() % num);
-	count = num;
 
 	slurm_setup_addr(&sin, 0); /* Decide on IPv4 or IPv6 */
 
@@ -255,7 +253,7 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 		return -1;
 	}
 
-	do {
+	for (int i = 0; i < num; i++) {
 		if ((_is_port_ok(*fd, *port, local)) &&
 		    (!listen(*fd, SLURM_DEFAULT_LISTEN_BACKLOG)))
 			return *fd;
@@ -264,8 +262,7 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 			*port = min;
 		else
 			++(*port);
-		--count;
-	} while (count > 0);
+	}
 
 	close(*fd);
 	error("%s: all ports in range (%u, %u) exhausted, cannot establish listening port",
