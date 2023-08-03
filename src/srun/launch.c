@@ -852,12 +852,22 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 		   step_req->cpu_count);
 	xfmt_tres(&step_req->tres_per_step, "gres:gpu", opt_local->gpus);
 
-	xfmt_tres(&step_req->tres_per_node, "gres:gpu",
-		  opt_local->gpus_per_node);
 	if (opt_local->gres)
 		add_tres = opt_local->gres;
 	else
 		add_tres = getenv("SLURM_STEP_GRES");
+
+	/*
+	 * If --gres=none was requested, we need to send exactly
+	 * tres_per_node="none" to slurmctld to not inherit gres from the job.
+	 * Do not also send --gpus-per-node which could have been set from the
+	 * environment.
+	 */
+	if (!add_tres || xstrcasecmp(add_tres, "NONE")) {
+		xfmt_tres(&step_req->tres_per_node, "gres:gpu",
+			  opt_local->gpus_per_node);
+	}
+
 	if (add_tres) {
 		if (step_req->tres_per_node) {
 			xstrfmtcat(step_req->tres_per_node, ",%s", add_tres);
