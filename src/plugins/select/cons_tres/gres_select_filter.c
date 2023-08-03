@@ -536,17 +536,16 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					for (int c = cores_per_socket - 1;
 					     c >= 0; c--) {
 						int i = (s * cores_per_socket) + c;
+						int cnt;
 						if (!bit_test(avail_core, i))
 							continue;
 						bit_clear(avail_core, i);
 
 						avail_cores_per_sock[s]--;
-						if (bit_set_count(avail_core) *
-						    cpus_per_core <
-						    *avail_cpus) {
-							*avail_cpus -=
-								cpus_per_core;
-						}
+						cnt = bit_set_count(avail_core);
+						cnt *= cpus_per_core;
+						if (cnt < *avail_cpus)
+							*avail_cpus = cnt;
 						if (--tot_core_cnt <=
 						    min_core_cnt)
 							break;
@@ -634,13 +633,16 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					continue;
 				for (int c = cores_per_socket - 1; c >= 0; c--) {
 					int i = (s * cores_per_socket) + c;
+					int cnt;
 					if (!bit_test(avail_core, i))
 						continue;
 					bit_clear(avail_core, i);
-					if (bit_set_count(avail_core) *
-					    cpus_per_core < *avail_cpus) {
-						*avail_cpus -= cpus_per_core;
-					}
+
+					cnt = bit_set_count(avail_core);
+					cnt *= cpus_per_core;
+					if (cnt < *avail_cpus)
+						*avail_cpus = cnt;
+
 					avail_cores_tot--;
 					avail_cores_per_sock[s]--;
 				}
@@ -803,13 +805,15 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					continue;
 				for (int c = cores_per_socket - 1; c >= 0; c--) {
 					int i = (s * cores_per_socket) + c;
+					int cnt;
 					if (!bit_test(avail_core, i))
 						continue;
 					bit_clear(avail_core, i);
-					if (bit_set_count(avail_core) *
-					    cpus_per_core < *avail_cpus) {
-						*avail_cpus -= cpus_per_core;
-					}
+					cnt = bit_set_count(avail_core);
+					cnt *= cpus_per_core;
+					if (cnt < *avail_cpus)
+						*avail_cpus = cnt;
+
 					avail_cores_tot--;
 					avail_cores_per_sock[s]--;
 					if (avail_cores_tot == req_cores)
@@ -841,13 +845,15 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				break;
 			for (int c = cores_per_socket - 1; c >= 0; c--) {
 				int i = (full_socket * cores_per_socket) + c;
+				int cnt;
 				if (!bit_test(avail_core, i))
 					continue;
 				bit_clear(avail_core, i);
-				if (bit_set_count(avail_core) * cpus_per_core <
-				    *avail_cpus) {
-					*avail_cpus -= cpus_per_core;
-				}
+				cnt = bit_set_count(avail_core);
+				cnt *= cpus_per_core;
+				if (cnt < *avail_cpus)
+					*avail_cpus = cnt;
+
 				avail_cores_per_sock[full_socket]--;
 				avail_cores_tot--;
 				break;

@@ -117,6 +117,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix and prevent reoccurring reservations from overlapping.
  -- job_container/tmpfs - Avoid attempts to share BasePath between nodes.
  -- Change the log message warning for rate limited users from verbose to info.
+ -- With CR_Cpu_Memory, fix node selection for jobs that request gres and
+    --mem-per-cpu.
 
 * Changes in Slurm 23.02.4
 ==========================
