@@ -590,6 +590,8 @@ extern data_t *_data_set_string_own(data_t *data, char **value_ptr)
 	}
 
 #ifndef NDEBUG
+	char *old_value = value;
+
 	/* check that the string was xmalloc()ed and actually has contents */
 	xassert(xsize(value) > 0);
 	/*
@@ -598,7 +600,7 @@ extern data_t *_data_set_string_own(data_t *data, char **value_ptr)
 	 */
 	value = xstrdup(value);
 	/* releasing original string instead of NULLing original pointer */
-	xfree(*value_ptr);
+	xfree(old_value);
 #endif
 
 	if ((len = strlen(value)) < sizeof(data->data.string_inline_u)) {
