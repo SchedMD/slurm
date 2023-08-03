@@ -628,6 +628,7 @@ int main(int argc, char **argv)
 	auth_rack = NULL;
 
 	xfree(auth_plugin_handles);
+	select_g_fini();
 	slurm_fini();
 	log_fini();
 
