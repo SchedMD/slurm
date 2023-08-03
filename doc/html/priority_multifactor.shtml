@@ -102,7 +102,7 @@ Job_priority =
 	(PriorityWeightAssoc) * (assoc_factor) +
 	(PriorityWeightFairshare) * (fair-share_factor) +
 	(PriorityWeightJobSize) * (job_size_factor) +
-	(PriorityWeightPartition) * (partition_factor) +
+	(PriorityWeightPartition) * (priority_job_factor) +
 	(PriorityWeightQOS) * (QOS_factor) +
 	SUM(TRES_weight_cpu * TRES_factor_cpu,
 	    TRES_weight_&lt;type&gt; * TRES_factor_&lt;type&gt;,
@@ -118,6 +118,36 @@ Job_priority =
   A job's priority, and hence its order in the queue, can vary over
   time.  For example, the longer a job sits in the queue, the higher
   its priority will grow when the age_weight is non-zero.</P>
+
+<p>The default behavior is for slurmctld to "normalize" the priority values
+in relation to the one with the highest value. This makes it so that the
+most priority a job can get from any factor is equal to the
+<i>PriorityWeight*</i> value for that factor. Using Partitions as an example,
+if 'PartitionA' had a <i>PriorityJobFactor</i> of 20 and 'PartitionB' had a
+<i>PriorityJobFactor</i> of 10 and the <i>PriorityWeightPartition</i> was set
+to 5000, then the calculation for the priority that any job would gain for
+the partition would look like this:
+<pre>
+# PartitionA
+5000 * (20 / 20) = 5000
+
+# PartitionB
+5000 * (10 / 20) = 2500
+</pre>
+You can change the default behavior so that it doesn't normalize the
+priority values, but uses the raw <i>PriorityJobFactor</i> values instead,
+with <i>PriorityFlags=NO_NORMAL_PART</i>. In that case the calculation of
+the partition based priority would look like this:
+<pre>
+# PartitionA
+5000 * 20 = 100000
+
+# PartitionB
+5000 * 10 = 50000
+</pre>
+See the other priority factors you can configure to not be normalized in the
+<a href="slurm.conf.html#OPT_PriorityFlags">PriorityFlags</a> section of the
+documentation.</p>
 
 <P> <b>IMPORTANT:</b> The weight values should be high enough to get a
   good set of significant digits since all the factors are floating
@@ -457,6 +487,6 @@ PriorityWeightPartition=1000
 PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
-<p style="text-align:center;">Last modified 11 June 2021</p>
+<p style="text-align:center;">Last modified 03 August 2023</p>
 
 <!--#include virtual="footer.txt"-->
