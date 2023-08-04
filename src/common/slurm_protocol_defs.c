@@ -1489,6 +1489,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 
 	if (job) {
 		xfree(job->account);
+		xfree(job->admin_comment);
 		xfree(job->alloc_node);
 		FREE_NULL_BITMAP(job->array_bitmap);
 		xfree(job->array_task_str);
@@ -1497,14 +1498,18 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->burst_buffer);
 		xfree(job->burst_buffer_state);
 		xfree(job->cluster);
+		xfree(job->cluster_features);
 		xfree(job->command);
 		xfree(job->comment);
 		xfree(job->container);
+		xfree(job->container_id);
 		xfree(job->cpus_per_tres);
+		xfree(job->cronspec);
 		xfree(job->dependency);
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
 		xfree(job->extra);
+		xfree(job->failed_node);
 		xfree(job->features);
 		xfree(job->fed_origin_str);
 		xfree(job->fed_siblings_active_str);
@@ -1527,6 +1532,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->nodes);
 		xfree(job->sched_nodes);
 		xfree(job->partition);
+		xfree(job->prefer);
 		xfree(job->qos);
 		xfree(job->req_node_inx);
 		xfree(job->req_nodes);
@@ -1537,6 +1543,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->std_err);
 		xfree(job->std_in);
 		xfree(job->std_out);
+		xfree(job->system_comment);
 		xfree(job->tres_alloc_str);
 		xfree(job->tres_bind);
 		xfree(job->tres_freq);
