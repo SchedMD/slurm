@@ -540,7 +540,7 @@ extern int acct_storage_g_add_wckeys(void *db_conn, uint32_t uid,
 extern int acct_storage_g_add_reservation(void *db_conn,
 					  slurmdb_reservation_rec_t *resv)
 {
-	xassert(plugin_context);
+	xassert(plugin_inited);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -662,7 +662,7 @@ extern List acct_storage_g_modify_wckeys(void *db_conn, uint32_t uid,
 extern int acct_storage_g_modify_reservation(void *db_conn,
 					     slurmdb_reservation_rec_t *resv)
 {
-	xassert(plugin_context);
+	xassert(plugin_inited);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
@@ -775,7 +775,7 @@ extern List acct_storage_g_remove_wckeys(void *db_conn, uint32_t uid,
 extern int acct_storage_g_remove_reservation(void *db_conn,
 					     slurmdb_reservation_rec_t *resv)
 {
-	xassert(plugin_context);
+	xassert(plugin_inited);
 
 	if (plugin_inited == PLUGIN_NOOP)
 		return SLURM_SUCCESS;
