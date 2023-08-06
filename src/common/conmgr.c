@@ -1208,7 +1208,7 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	/* make sure the connection has finished on_connection */
-	if (!con->is_listen && !con->is_connected) {
+	if (!con->is_listen && !con->is_connected && (con->input_fd != -1)) {
 		log_flag(NET, "%s: [%s] waiting for on_connection to complete",
 			 __func__, con->name);
 		return 0;
