@@ -1637,6 +1637,14 @@ _process_cmdline(int ac, char **av)
 	 */
 	if (!conf->stepd_loc)
 		conf->stepd_loc = slurm_get_stepd_loc();
+
+	/*
+	 * Set instance_type and id to "" so that the controller will clear any
+	 * preivous instance_type or id.
+	 *
+	 * "extra" is left NULL if not explicitly set on the cmd line so that
+	 * any existing "extra" information on the controller is left intact.
+	 */
 	if (!conf->instance_id)
 		conf->instance_id = xstrdup("");
 	if (!conf->instance_type)
