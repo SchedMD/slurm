@@ -112,6 +112,10 @@ def test_cloud_state_cycle():
         quiet=True), \
         "Submitted job should be in CONFIGURING state while its ALLOCATED cloud node is POWERING_UP"
 
+    # TODO: Wait 2 seconds to avoid race condition between slurmd and slurmctld
+    #       Remove once bug 16459 is fixed.
+    time.sleep(2)
+
     # Register the new slurmd
     atf.run_command(
         f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_prefix}1 --conf 'feature=f1'",
@@ -187,6 +191,10 @@ def test_scontrol_power_up_down():
         "Per 'SlurmctldParameters=idle_on_node_suspend' in slurm.conf, cloud node should always be "\
         "in IDLE state except when ALLOCATED/MIXED for an assigned job"
 
+    # TODO: Wait 2 seconds to avoid race condition between slurmd and slurmctld
+    #       Remove once bug 16459 is fixed.
+    time.sleep(2)
+
     # Register the new slurmd
     atf.run_command(
         f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_prefix}1 --conf 'feature=f1'",
@@ -222,6 +230,10 @@ def test_scontrol_power_down_asap():
     assert "IDLE" in atf.get_node_parameter(f"{node_prefix}1", "State").split("+"), \
         "Per 'SlurmctldParameters=idle_on_node_suspend' in slurm.conf, cloud node should always be "\
         "in IDLE state except when ALLOCATED/MIXED for an assigned job"
+
+    # TODO: Wait 2 seconds to avoid race condition between slurmd and slurmctld
+    #       Remove once bug 16459 is fixed.
+    time.sleep(2)
 
     # Register the new slurmd
     atf.run_command(
@@ -268,6 +280,10 @@ def test_scontrol_power_down_force_and_resume():
     assert "IDLE" in atf.get_node_parameter(f"{node_prefix}1", "State").split("+"), \
         "Per 'SlurmctldParameters=idle_on_node_suspend' in slurm.conf, cloud node should always be "\
         "in IDLE state except when ALLOCATED/MIXED for an assigned job"
+
+    # TODO: Wait 2 seconds to avoid race condition between slurmd and slurmctld
+    #       Remove once bug 16459 is fixed.
+    time.sleep(2)
 
     # Register the new slurmd
     atf.run_command(
@@ -330,6 +346,10 @@ def test_node_features():
         quiet=True), \
         "Submitted job should be in CONFIGURING state while its ALLOCATED cloud node is POWERING_UP"
 
+    # TODO: Wait 2 seconds to avoid race condition between slurmd and slurmctld
+    #       Remove once bug 16459 is fixed.
+    time.sleep(2)
+
     # Register the new slurmd
     atf.run_command(
         f"{atf.properties['slurm-sbin-dir']}/slurmd -b -N {node_prefix}1 --conf 'feature=f1'",
@@ -368,6 +388,10 @@ def test_node_features():
     assert "CONFIGURING" == atf.get_job_parameter(job_id, "JobState", default="NOT_FOUND",
         quiet=True), \
         "Submitted job should be in CONFIGURING state while its ALLOCATED cloud node is POWERING_UP"
+
+    # TODO: Wait 2 seconds to avoid race condition between slurmd and slurmctld
+    #       Remove once bug 16459 is fixed.
+    time.sleep(2)
 
     # Register the new slurmd
     atf.run_command(
@@ -415,6 +439,10 @@ def test_power_down_on_idle():
     assert "CONFIGURING" == atf.get_job_parameter(job_id, "JobState", default="NOT_FOUND",
         quiet=True), \
         "Submitted job should be in CONFIGURING state while its ALLOCATED cloud node is POWERING_UP"
+
+    # TODO: Wait 2 seconds to avoid race condition between slurmd and slurmctld
+    #       Remove once bug 16459 is fixed.
+    time.sleep(2)
 
     # Register the new slurmd
     atf.run_command(
