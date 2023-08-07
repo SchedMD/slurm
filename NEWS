@@ -119,6 +119,8 @@ documents those changes that are of interest to users and administrators.
  -- Change the log message warning for rate limited users from verbose to info.
  -- With CR_Cpu_Memory, fix node selection for jobs that request gres and
     --mem-per-cpu.
+ -- Fix a regression from 22.05.7 in which some jobs were allocated too few
+    nodes, thus overcommitting cpus to some tasks.
 
 * Changes in Slurm 23.02.4
 ==========================
