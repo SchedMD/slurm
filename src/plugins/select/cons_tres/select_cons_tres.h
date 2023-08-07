@@ -47,6 +47,7 @@
 
 #include "src/common/bitstring.h"
 #include "src/interfaces/gres.h"
+#include "src/common/core_array.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
@@ -62,7 +63,6 @@
 #include "src/slurmd/slurmd/slurmd.h"
 
 #include "cons_helpers.h"
-#include "core_array.h"
 #include "node_data.h"
 #include "part_data.h"
 #include "job_resources.h"

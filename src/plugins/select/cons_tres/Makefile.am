@@ -11,7 +11,6 @@ pkglib_LTLIBRARIES = select_cons_tres.la
 # Trackable RESources selection plugin.
 select_cons_tres_la_SOURCES = \
 	cons_helpers.c cons_helpers.h \
-	core_array.c core_array.h \
 	dist_tasks.c dist_tasks.h \
 	gres_sched.c gres_sched.h \
 	gres_select_filter.c gres_select_filter.h \

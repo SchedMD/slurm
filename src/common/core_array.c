@@ -33,7 +33,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "select_cons_tres.h"
+#include "src/common/core_array.h"
+
+#include "src/common/node_conf.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 /*
