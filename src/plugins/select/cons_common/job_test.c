@@ -1150,6 +1150,7 @@ try_next_nodes_cnt:
 	/* make these changes permanent */
 	avail_cores_tmp = avail_cores;
 	avail_cores = copy_core_array(free_cores);
+	bit_copybits(orig_node_map, node_bitmap);
 
 	avail_res_array = _select_nodes(job_ptr, min_nodes, max_nodes,
 					req_nodes, node_bitmap, free_cores,
