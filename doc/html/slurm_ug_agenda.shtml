@@ -127,6 +127,14 @@
 
 <!-- -------------------------------------------------------------------------- -->
 
+<h3>Never use Slurm HA again: Solve all your problems with Kubernetes</h3>
+
+<h4>Douglas Jacobsen and Chris Samuel, National Energy Research Scientific Computing Center (NERSC)</h4>
+
+<p>As part of the Perlmutter CrayEX system deployment, NERSC developed a production deployment of its Slurm controller and database on the on-system Kubernetes services cluster. This has led to both improved reliability and process improvements for managing the Slurm daemons and supporting infrastructure, especially around the Slurm database, but has also generated new options for how we interact with Slurm in general. By building "micro"-services out of the various components the HA is now managed directly by Kubernetes, common database operations are managed by a well known MariaDB operator, and overall reliability is higher than ever. This presents new integration options for the future that blur the lines between systems and cloud offerings.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
 <h3>PACE Site Report</h3>
 
 <h4>Aaron Jezghani, PACE at Georgia Institute of Tech</h4>
@@ -167,6 +175,6 @@
 
 <!-- -------------------------------------------------------------------------- -->
 
-<p style="text-align:center;">Last modified 27 June 2023</p>
+<p style="text-align:center;">Last modified 7 August 2023</p>
 
 <!--#include virtual="footer.txt"-->
