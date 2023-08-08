@@ -45,6 +45,7 @@ HIGHLIGHTS
  -- Enable streaming replication for Galera 4 during upgrades.
  -- Remove cloud_reg_addrs and make it default behavior. Slurm will
     automatically manage NodeHostName and NodeAddr for cloud nodes.
+ -- Remove NoAddrCache CommunicationParameter.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

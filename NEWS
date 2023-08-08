@@ -114,6 +114,7 @@ documents those changes that are of interest to users and administrators.
  -- job_container/tmpfs - Add "BasePath=none" option to disable plugin on node
     subsets when there is a global setting.
  -- Remove cloud_reg_addrs and make it default behavior.
+ -- Remove NoAddrCache CommunicationParameter.
 
 * Changes in Slurm 23.02.5
 ==========================

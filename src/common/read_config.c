@@ -122,7 +122,6 @@ static s_p_hashtbl_t *default_nodename_tbl;
 static s_p_hashtbl_t *default_partition_tbl;
 static log_level_t lvl = LOG_LEVEL_FATAL;
 static int	local_test_config_rc = SLURM_SUCCESS;
-static bool     no_addr_cache = false;
 static list_t *config_files = NULL;
 
 inline static void _normalize_debug_level(uint16_t *level);
@@ -2771,8 +2770,7 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
 				return SLURM_ERROR;
 			}
 		}
-		if (!no_addr_cache)
-			p->bcast_addr_initialized = true;
+		p->bcast_addr_initialized = true;
 		*address = p->bcast_addr;
 		slurm_conf_unlock();
 		return SLURM_SUCCESS;
@@ -2784,8 +2782,7 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
 			slurm_conf_unlock();
 			return SLURM_ERROR;
 		}
-		if (!no_addr_cache)
-			p->addr_initialized = true;
+		p->addr_initialized = true;
 	}
 
 	*address = p->addr;
@@ -3226,8 +3223,6 @@ static int _init_slurm_conf(const char *file_name)
 		conf_buf = s_p_pack_hashtbl(conf_hashtbl,
 					    slurm_conf_stepd_options,
 					    slurm_conf_stepd_options_cnt);
-
-	no_addr_cache = xstrcasestr(conf_ptr->comm_params, "NoAddrCache");
 
 	conf_initialized = true;
 
@@ -4041,6 +4036,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	(void) s_p_get_string(&conf->comm_params, "CommunicationParameters",
 			      hashtbl);
+	if (running_in_slurmctld() &&
+	    xstrcasestr(conf->comm_params, "NoAddrCache"))
+		error("The CommunicationParameters option \"NoAddrCache\" is defunct, please remove it from slurm.conf.");
 
 	/*
 	 * IPv4 on by default, can be disabled.

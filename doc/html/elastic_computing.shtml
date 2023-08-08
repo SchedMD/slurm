@@ -39,12 +39,6 @@ support node addressing that can change.</p>
 See the slurm.conf man page for more details about these options.
 Some general Slurm configuration parameters that are of interest include:
 <dl>
-<dt><b>CommunicationParameters=NoAddrCache</b>
-<dd> By default, Slurm will cache a node's network address after successfully
-establishing the node's network address. This option disables the cache and
-Slurm will look up the node's network address each time a connection is made.
-This is useful, for example, in a cloud environment where the node addresses
-come and go out of DNS.
 <dt><b>ReconfigFlags=KeepPowerSaveSettings</b>
 <dd>If set, an "scontrol reconfig" command will preserve the current state of
 SuspendExcNodes, SuspendExcParts and SuspendExcStates.
@@ -583,6 +577,6 @@ controller.
 Features l1 and l2 will always be active and can be used as selectable labels.
 </p>
 
-<p style="text-align:center;">Last modified 7 July 2023</p>
+<p style="text-align:center;">Last modified 8 August 2023</p>
 
 <!--#include virtual="footer.txt"-->
