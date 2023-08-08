@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 23.02.6
 ==========================
  -- Fix CpusPerTres= not upgreadable with scontrol update
+ -- Fix unintentional gres removal when validating the gres job state.
 
 * Changes in Slurm 23.02.5
 ==========================

@@ -13091,7 +13091,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		if (!job_desc->ntasks_per_tres)
 			job_desc->ntasks_per_tres = detail_ptr->ntasks_per_tres;
 
-		gres_list = gres_job_state_list_dup(job_ptr->gres_list_req);
 		if ((error_code = gres_job_state_validate(
 			     job_desc->cpus_per_tres,
 			     job_desc->tres_freq,

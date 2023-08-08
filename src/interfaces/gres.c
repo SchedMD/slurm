@@ -6158,11 +6158,6 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 			break;
 		}
 
-		/* Delete from list, since no GRES was actually added */
-		if (!gres_js->total_gres) {
-			list_delete_item(iter);
-			continue;
-		}
 		if (_set_over_list(gres_state_job, over_list, &over_count, 1))
 			overlap_merge = true;
 	}
