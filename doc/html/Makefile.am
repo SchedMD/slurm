@@ -60,6 +60,7 @@ generated_html = \
 	platforms.html \
 	plugins.html \
 	power_mgmt.html \
+	power_save.html \
 	preempt.html \
 	prep_plugins.html \
 	priority_multifactor.html \

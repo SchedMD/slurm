@@ -99,7 +99,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 <li>Cloud
 <ul>
-<li><a href="elastic_computing.html">Cloud Scheduling Guide</a></li>
+<li><a href="power_save.html">Cloud Scheduling Guide</a></li>
 <li><a href="https://github.com/schedmd/slurm-gcp">Slurm on Google Cloud Platform</a></li>
 <li><a href="https://www.schedmd.com/downloads/extras/Slurm_ParallelCluster_AWS.pdf">Deploying Slurm with ParallelCluster on Your AWS Cluster</a></li>
 <li><a href="https://github.com/Azure/cyclecloud-slurm">Slurm on Microsoft Azure and CycleCloud</a></li>
@@ -131,6 +131,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 19 May 2023</p>
+<p style="text-align:center;">Last modified 10 November 2023</p>
 
 <!--#include virtual="footer.txt"-->
