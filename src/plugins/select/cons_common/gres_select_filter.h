@@ -114,6 +114,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
  *		   co-located GRES and cores if possible
  * IN avail_core - cores available on this node, UPDATED
  * IN node_name - name of the node
+ * IN cr_type
  */
 extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					 List sock_gres_list,
@@ -128,7 +129,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					 bool enforce_binding,
 					 bool first_pass,
 					 bitstr_t *avail_core,
-					 char *node_name);
+					 char *node_name,
+					 uint16_t cr_type);
 
 /*
  * Make final GRES selection for the job
