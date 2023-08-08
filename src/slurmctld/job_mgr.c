@@ -13082,6 +13082,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				mc_ptr->ntasks_per_socket;
 			orig_ntasks_per_socket = job_desc->ntasks_per_socket;
 		}
+		if (job_desc->sockets_per_node == NO_VAL16)
+			job_desc->sockets_per_node =
+				detail_ptr->mc_ptr->sockets_per_node;
 		if (job_desc->cpus_per_task == NO_VAL16)
 			job_desc->cpus_per_task =
 				detail_ptr->orig_cpus_per_task;
@@ -13120,6 +13123,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			job_desc->ntasks_per_node = NO_VAL16;	/* Unchanged */
 		if (job_desc->ntasks_per_socket == orig_ntasks_per_socket)
 			job_desc->ntasks_per_socket = NO_VAL16; /* Unchanged */
+		if (job_desc->sockets_per_node ==
+		    detail_ptr->mc_ptr->sockets_per_node)
+			job_desc->sockets_per_node = NO_VAL16;
 		if (job_desc->cpus_per_task == detail_ptr->cpus_per_task)
 			job_desc->cpus_per_task = NO_VAL16;	/* Unchanged */
 		if (job_desc->ntasks_per_tres == detail_ptr->ntasks_per_tres)
