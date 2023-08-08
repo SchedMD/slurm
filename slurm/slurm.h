@@ -1946,7 +1946,15 @@ typedef struct slurm_step_layout {
 	 * cpus_per_task - Array of the length "node_cnt", the same length as
 	 * tasks. Each element of the array is the number of cpus per task
 	 * assigned to the corresponding node.
+	 * cpt_compact_* are used in packing/unpacking cpus_per_task.
+	 * They are an abbreviated version of cpus_per_task, similar to
+	 * the cpu arrays in job_resources_t.
+	 * Populate these from cpus_per_task when packing.
+	 * Populate cpus_per_task from these when unpacking.
 	 */
+	uint16_t *cpt_compact_array;
+	uint32_t cpt_compact_cnt;
+	uint32_t *cpt_compact_reps;
 	uint16_t *cpus_per_task;
 	char *front_end;	/* If a front-end architecture, the name of
 				 * of the node running all tasks,

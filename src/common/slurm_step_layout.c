@@ -64,6 +64,75 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 				 const char *arbitrary_nodes);
 
+static void _build_cpt_from_compact_array(slurm_step_layout_t *step_layout)
+{
+	uint32_t node_cnt;
+	uint16_t *cpus_per_task;
+
+	xassert(step_layout);
+
+	node_cnt = step_layout->node_cnt;
+	if (!node_cnt)
+		return;
+
+	cpus_per_task = xcalloc(node_cnt, sizeof(*cpus_per_task));
+	for (int i = 0; i < step_layout->cpt_compact_cnt; i++) {
+		for (int j = 0; j < step_layout->cpt_compact_reps[i]; j++) {
+			cpus_per_task[i + j] =
+				step_layout->cpt_compact_array[i];
+		}
+	}
+
+	step_layout->cpus_per_task = cpus_per_task;
+}
+
+static void _build_compact_cpt_array(slurm_step_layout_t *step_layout)
+{
+	uint16_t last_value = NO_VAL16, curr_value;
+	uint16_t *cpt_array;
+	uint32_t cpt_count = 0, node_cnt;
+	uint32_t *cpt_reps;
+
+	xassert(step_layout);
+
+	if (!step_layout->cpus_per_task)
+		return;
+
+	/* cpus_per_task should only exist after node_cnt is set */
+	xassert(step_layout->node_cnt);
+
+	/*
+	 * Do not rebuild the compact arrays if they already exist.
+	 * step_layout->cpus_per_task should not change after it is set.
+	 */
+	if (step_layout->cpt_compact_array && step_layout->cpt_compact_reps)
+		return;
+
+	xassert(!step_layout->cpt_compact_array);
+	xassert(!step_layout->cpt_compact_reps);
+
+	node_cnt = step_layout->node_cnt;
+
+	cpt_array = xcalloc(node_cnt, sizeof(*cpt_array));
+	cpt_reps = xcalloc(node_cnt, sizeof(*cpt_reps));
+
+	for (int i = 0; i < node_cnt; i++) {
+		curr_value = step_layout->cpus_per_task[i];
+		/* curr_value should not equal last_value the first time */
+		if (curr_value != last_value) {
+			last_value = curr_value;
+			cpt_array[cpt_count] = last_value;
+			cpt_reps[cpt_count] = 1;
+			cpt_count++;
+		} else {
+			cpt_reps[cpt_count - 1]++;
+		}
+	}
+	step_layout->cpt_compact_array = cpt_array;
+	step_layout->cpt_compact_reps = cpt_reps;
+	step_layout->cpt_compact_cnt = cpt_count;
+}
+
 /*
  * slurm_step_layout_create - determine how many tasks of a job will be
  *                    run on each node. Distribution is influenced
@@ -321,8 +390,14 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 				     step_layout->tasks[i],
 				     buffer);
 		}
-		pack16_array(step_layout->cpus_per_task, step_layout->node_cnt,
-			     buffer);
+		/* Pack a compact version of cpus_per_task */
+		_build_compact_cpt_array(step_layout);
+		if (step_layout->cpt_compact_cnt) {
+			pack16_array(step_layout->cpt_compact_array,
+				     step_layout->cpt_compact_cnt, buffer);
+			pack32_array(step_layout->cpt_compact_reps,
+				     step_layout->cpt_compact_cnt, buffer);
+		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (step_layout)
 			i = 1;
@@ -381,8 +456,12 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, buf_t *buffer,
 					    buffer);
 			step_layout->tasks[i] = num_tids;
 		}
-		safe_unpack16_array(&step_layout->cpus_per_task, &uint32_tmp,
-				    buffer);
+		safe_unpack16_array(&step_layout->cpt_compact_array,
+				    &step_layout->cpt_compact_cnt, buffer);
+		safe_unpack32_array(&step_layout->cpt_compact_reps,
+				    &uint32_tmp, buffer);
+		xassert(uint32_tmp == step_layout->cpt_compact_cnt);
+		_build_cpt_from_compact_array(step_layout);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&uint16_tmp, buffer);
 		if (!uint16_tmp)
@@ -429,6 +508,8 @@ extern int slurm_step_layout_destroy(slurm_step_layout_t *step_layout)
 		xfree(step_layout->front_end);
 		xfree(step_layout->node_list);
 		xfree(step_layout->tasks);
+		xfree(step_layout->cpt_compact_array);
+		xfree(step_layout->cpt_compact_reps);
 		xfree(step_layout->cpus_per_task);
 		for (i = 0; i < step_layout->node_cnt; i++) {
 			xfree(step_layout->tids[i]);
