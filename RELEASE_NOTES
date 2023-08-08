@@ -43,6 +43,8 @@ HIGHLIGHTS
     an allocation again, so even if -c1 is set, mpirun will run and won't be
     bound to a single cpu.
  -- Enable streaming replication for Galera 4 during upgrades.
+ -- Remove cloud_reg_addrs and make it default behavior. Slurm will
+    automatically manage NodeHostName and NodeAddr for cloud nodes.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

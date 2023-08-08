@@ -5236,6 +5236,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	(void) s_p_get_string(&conf->slurmctld_params,
 			      "SlurmctldParameters", hashtbl);
+	if (running_in_slurmctld() &&
+	    xstrcasestr(conf->slurmctld_params, "cloud_reg_addrs"))
+		error("The SlurmctldParameters option \"cloud_reg_addrs\" is defunct, please remove it from slurm.conf.");
 
 	if (s_p_get_string(&temp_str, "SlurmdDebug", hashtbl)) {
 		conf->slurmd_debug = log_string2num(temp_str);
