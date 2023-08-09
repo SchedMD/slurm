@@ -47,6 +47,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#define DATA_DEFINE_DICT_PATH_BUFFER_SIZE 1024
 #define DATA_MAGIC 0x1992189F
 #define DATA_LIST_MAGIC 0x1992F89F
 #define DATA_LIST_NODE_MAGIC 0x1921F89F
@@ -2104,13 +2105,18 @@ extern data_t *data_resolve_dict_path(data_t *data, const char *path)
 	char *save_ptr = NULL;
 	char *token = NULL;
 	char *str;
+	char local[DATA_DEFINE_DICT_PATH_BUFFER_SIZE];
+	size_t len = strlen(path);
 
 	_check_magic(data);
 
 	if (!data)
 		return NULL;
 
-	str = xstrdup(path);
+	if (len < sizeof(local))
+		str = memcpy(local, path, (len + 1));
+	else
+		str = xstrdup(path);
 
 	token = strtok_r(str, "/", &save_ptr);
 	while (token && found) {
@@ -2126,7 +2132,9 @@ extern data_t *data_resolve_dict_path(data_t *data, const char *path)
 
 		token = strtok_r(NULL, "/", &save_ptr);
 	}
-	xfree(str);
+
+	if (str != local)
+		xfree(str);
 
 	if (found)
 		log_flag_hex(DATA, path, strlen(path),
