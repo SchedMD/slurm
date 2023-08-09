@@ -126,6 +126,8 @@ documents those changes that are of interest to users and administrators.
     not yet taken over.
  -- Fix slurmctld segfault when a node registers with a configured CpuSpecList
     while slurmctld configuration has the node without CpuSpecList.
+ -- Fix cloud nodes getting stuck in POWERED_DOWN+NO_RESPOND state after not
+    registering by ResumeTimeout.
 
 * Changes in Slurm 23.02.4
 ==========================
