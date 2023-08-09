@@ -52,6 +52,8 @@ documents those changes that are of interest to users and administrators.
     0 AllocNodes while it is pending or if it is canceled before restarting.
  -- sacct - AllocCPUS now correctly shows 0 if a job has not yet received an
     allocation or if the job was canceled before getting one.
+ -- slurmrestd - Correct applying environment variable SLURMRESTD_DEBUG to
+    logging configuration.
 
 * Changes in Slurm 23.02.4
 ==========================
