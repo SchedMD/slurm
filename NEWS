@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix crash in slurmstepd that can occur when launching tasks via mpi using
     the pmi2 plugin and using the route/topology plugin.
  -- data_parser/v0.0.39 - skip empty string when parsing QOS ids.
+ -- data_parser/v0.0.39 - Fix potential DATA log segfault
 
 * Changes in Slurm 23.02.6
 ==========================
