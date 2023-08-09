@@ -2120,7 +2120,17 @@ extern data_t *data_resolve_dict_path(data_t *data, const char *path)
 
 	token = strtok_r(str, "/", &save_ptr);
 	while (token && found) {
-		xstrtrim(token);
+		/* walk forward any whitespace */
+		while (*token && isspace(*token))
+			token++;
+
+		/* zero any ending whitespace */
+		for (int i = strlen(token) - 1; i >= 0; i--) {
+			if (isspace(token[i]))
+				token[i] = '\0';
+			else
+				break;
+		}
 
 		if (!found || (found->type != TYPE_DICT)) {
 			found = NULL;
