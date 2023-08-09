@@ -191,7 +191,6 @@ scontrol_print_completing (void)
 			scontrol_print_completing_job(&job_info[i],
 						      node_info_msg);
 	}
-	slurm_free_node_info_msg(node_info_msg);
 }
 
 extern void
