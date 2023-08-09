@@ -191,6 +191,10 @@ documents those changes that are of interest to users and administrators.
     'GET /openapi/v3' for v0.0.40 endpoints.
  -- slurmdbd - Check for innodb_redo_log_capacity instead of
     innodb_log_file_size in MySQL 8.0.30+.
+ -- slurmrestd - Fix log level requests SLURMRESTD_DEBUG and -v applying on top
+    of each other and the default logging level (info). -v now applies on top
+    of the default log level, and SLURMRESTD_DEBUG sets the log level if -v is
+    not given.
 
 * Changes in Slurm 23.02.5
 ==========================

@@ -98,6 +98,7 @@ typedef struct {
 
 /* Debug level to use */
 static int debug_level = 0;
+static int debug_increase = 0;
 /* detected run mode */
 static run_mode_t run_mode = { 0 };
 /* Listen string */
@@ -294,14 +295,26 @@ static void _setup_logging(int argc, char **argv)
 	log_options_t logopt = LOG_OPTS_INITIALIZER;
 	log_facility_t fac = SYSLOG_FACILITY_DAEMON;
 
-	/* increase debug level as requested */
-	logopt.syslog_level += debug_level;
+	/*
+	 * Set debug level as requested.
+	 * debug_level is set to the value of SLURMRESTD_DEBUG.
+	 * SLURMRESTD_DEBUG sets the debug level if -v's are not given.
+	 * debug_increase is the command line option -v, which applies on top
+	 * of the default log level (info).
+	 */
+	if (debug_increase)
+		debug_level = MIN((LOG_LEVEL_INFO + debug_increase),
+				  (LOG_LEVEL_END - 1));
+	else if (!debug_level)
+		debug_level = LOG_LEVEL_INFO;
+
+	logopt.syslog_level = debug_level;
 
 	if (run_mode.stderr_tty) {
 		/* Log to stderr if it is a tty */
 		logopt = (log_options_t) LOG_OPTS_STDERR_ONLY;
 		fac = SYSLOG_FACILITY_USER;
-		logopt.stderr_level += debug_level;
+		logopt.stderr_level = debug_level;
 	}
 
 	if (log_init(xbasename(argv[0]), logopt, fac, NULL))
@@ -371,7 +384,7 @@ static void _parse_commandline(int argc, char **argv)
 				fatal("Unable to resolve user: %s", optarg);
 			break;
 		case 'v':
-			debug_level++;
+			debug_increase++;
 			break;
 		case 'V':
 			print_slurm_version();
