@@ -123,6 +123,12 @@ configuration found in the slurm.conf, Slurm will tell the client command,
 after waiting for all nodes to boot, each node's IP address. However, in
 environments where the nodes are in DNS, this step can be avoided by
 configuring this option.
+<dt><b>SlurmctldParameters=cloud_reg_addrs</b>
+<dd>When a cloud node registers, the node's NodeAddr and NodeHostName will
+automatically be set. They will be reset back to the nodename after powering off.
+This option avoids the need of manually notifying Slurm to the node's address
+and hostname before registration (e.g. scontrol update nodename=&lt;name&gt;
+nodeaddr=&lt;addr&gt;).</dd></dt>
 <dt><b>SlurmctldParameters=idle_on_node_suspend</b>
 <dd>Mark nodes as idle, regardless of current state, when suspending nodes with
 SuspendProgram so that nodes will be eligible to be resumed at a later time.
@@ -585,6 +591,6 @@ controller.
 Features l1 and l2 will always be active and can be used as selectable labels.
 </p>
 
-<p style="text-align:center;">Last modified 22 March 2023</p>
+<p style="text-align:center;">Last modified 7 July 2023</p>
 
 <!--#include virtual="footer.txt"-->
