@@ -6456,6 +6456,19 @@ static void _validate_nodelist(slurm_opt_t *opt)
 	}
 }
 
+static void _validate_arbitrary(slurm_opt_t *opt)
+{
+	int error_exit = 1;
+
+	if ((opt->distribution & SLURM_DIST_STATE_BASE) != SLURM_DIST_ARBITRARY)
+		return;
+	if (!opt->nodes_set)
+		return;
+
+	error("--nodes is incompatable with --distribution=arbitrary");
+	exit(error_exit);
+}
+
 /* Validate shared options between srun, salloc, and sbatch */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 {
@@ -6467,6 +6480,7 @@ extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 	_validate_tres_per_task(opt);
 	_validate_cpus_per_tres(opt);
 	_validate_nodelist(opt);
+	_validate_arbitrary(opt);
 }
 
 extern char *slurm_option_get_argv_str(const int argc, char **argv)
