@@ -1085,6 +1085,9 @@ allocated to the job. Multiple node names may be specified using
 simple node range expressions (e.g. "lx[10\-20]"). After a job's allocation
 is reduced, subsequent \fBsrun\fR commands must explicitly specify node and
 task counts which are valid for the new allocation.
+
+\fBNOTE\fR: The allocated nodes of jobs with arbitrary distribution can not be
+updated.
 .IP
 
 .TP
@@ -1101,6 +1104,9 @@ relinquished. After a job's allocation is reduced, subsequent \fBsrun\fR
 commands must explicitly specify node and task counts which are valid for the
 new allocation. Also see the \fINodeList\fP parameter above. This is the same
 as ReqNodes.
+
+\fBNOTE\fR: The node count of jobs with arbitrary distribution can not be
+updated.
 .IP
 
 .TP
