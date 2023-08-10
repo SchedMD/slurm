@@ -1171,13 +1171,12 @@ extern int mysql_db_create_table(mysql_conn_t *mysql_conn, char *table_name,
 	return rc;
 }
 
-extern int mysql_db_get_var_u64(mysql_conn_t *mysql_conn,
-	    			 const char *variable_name,
-			    	 uint64_t *value)
+extern int mysql_db_get_var_str(mysql_conn_t *mysql_conn,
+				const char *variable_name,
+				char **value)
 {
 	MYSQL_ROW row = NULL;
 	MYSQL_RES *result = NULL;
-	char *err_check = NULL;
 	char *query;
 
 	query = xstrdup_printf("select @@%s;", variable_name);
@@ -1198,14 +1197,32 @@ extern int mysql_db_get_var_u64(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	row = mysql_fetch_row(result);
-	*value = strtoull(row[0], &err_check, 10);
+	*value = xstrdup(row[0]);
 
-	if (*err_check) {
-		error("%s: error parsing string to int `%s`", __func__, row[1]);
-		mysql_free_result(result);
+	mysql_free_result(result);
+
+	return SLURM_SUCCESS;
+}
+
+extern int mysql_db_get_var_u64(mysql_conn_t *mysql_conn,
+				const char *variable_name,
+				uint64_t *value)
+{
+	char *err_check = NULL, *var_str = NULL;
+
+	if (mysql_db_get_var_str(mysql_conn, variable_name, &var_str)) {
 		return SLURM_ERROR;
 	}
-	mysql_free_result(result);
+
+	*value = strtoull(var_str, &err_check, 10);
+
+	if (*err_check) {
+		error("%s: error parsing string to int `%s`",
+		      __func__, var_str);
+		xfree(var_str);
+		return SLURM_ERROR;
+	}
+	xfree(var_str);
 
 	return SLURM_SUCCESS;
 }
