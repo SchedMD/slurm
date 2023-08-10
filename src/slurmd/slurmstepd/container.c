@@ -1176,19 +1176,35 @@ extern void cleanup_container(stepd_step_rec_t *step)
 	if (oci_conf->disable_cleanup)
 		goto done;
 
-	if (!oci_conf->ignore_config_json && (step->node_tasks > 0)) {
+	if (step->node_tasks > 0) {
 		/* clear every config.json and task dir */
 		for (int i = 0; i < step->node_tasks; i++) {
-			char *jconfig = NULL;
-
 			xfree(c->spool_dir);
 			c->spool_dir = _generate_spooldir(step, step->task[i]);
 			_generate_patterns(step, step->task[i]);
-			xstrfmtcat(jconfig, "%s/config.json", c->spool_dir);
 
-			if ((unlink(jconfig) < 0) && (errno != ENOENT))
-				error("unlink(%s): %m", jconfig);
-			xfree(jconfig);
+			if (!oci_conf->ignore_config_json) {
+				char *jconfig = NULL;
+
+				xstrfmtcat(jconfig, "%s/config.json",
+					   c->spool_dir);
+
+				if ((unlink(jconfig) < 0) && (errno != ENOENT))
+					error("unlink(%s): %m", jconfig);
+				xfree(jconfig);
+			}
+
+			if (oci_conf->create_env_file) {
+				char *envfile = NULL;
+
+				xstrfmtcat(envfile, "%s/%s", c->spool_dir,
+					   SLURM_CONTAINER_ENV_FILE);
+
+				if (unlink(envfile) && (errno != ENOENT))
+					error("unlink(%s): %m", envfile);
+
+				xfree(envfile);
+			}
 
 			if (rmdir(c->spool_dir) && (errno != ENOENT))
 				error("rmdir(%s): %m", c->spool_dir);
@@ -1199,19 +1215,6 @@ extern void cleanup_container(stepd_step_rec_t *step)
 	/* swap to non-task spool_dir */
 	xfree(c->spool_dir);
 	c->spool_dir = _generate_spooldir(step, NULL);
-
-	if (oci_conf->create_env_file) {
-		char *envfile = NULL;
-
-		/* keep _generate_pattern() in sync with this path */
-		xstrfmtcat(envfile, "%s/%s", c->spool_dir,
-			   SLURM_CONTAINER_ENV_FILE);
-
-		if (unlink(envfile) && (errno != ENOENT))
-			error("unlink(%s): %m", envfile);
-
-		xfree(envfile);
-	}
 
 	if (rmdir(c->spool_dir) && (errno != ENOENT))
 		error("rmdir(%s): %m", c->spool_dir);
