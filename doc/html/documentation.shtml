@@ -23,7 +23,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="mc_support.html">Support for Multi-core/Multi-threaded Architectures</a></li>
 <li><a href="multi_cluster.html">Multi-Cluster Operation</a></li>
 <li><a href="hdf5_profile_user_guide.html">Profiling Using HDF5 User Guide</a></li>
-<li><a href="nonstop.html">Failure Management Support</a></li>
 <li><a href="job_exit_code.html">Job Exit Codes</a></li>
 <li><a href="resource_binding.html">Resource Binding</a></li>
 <li>Specific Systems
@@ -51,7 +50,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="jobcomp_kafka.html">Job Completion Kafka plugin Guide</a></li>
 <li><a href="job_container_tmpfs.html">job_container/tmpfs - Job Specific Temporary File Management</a></li>
 <li><a href="jwt.html">JSON Web Tokens Authentication</a></li>
-<li><a href="nonstop.html">Failure Management Support</a></li>
 <li><a href="federation.html">Federated Scheduling Guide</a></li>
 <li><a href="pam_slurm_adopt.html">Job Containment (SSH Session Control) with pam_slurm_adopt</a></li>
 <li><a href="big_sys.html">Large Cluster Administration Guide</a></li>

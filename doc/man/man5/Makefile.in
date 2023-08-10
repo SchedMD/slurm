@@ -475,7 +475,6 @@ man5_MANS = \
 	job_container.conf.5 \
 	knl.conf.5 \
 	mpi.conf.5 \
-	nonstop.conf.5 \
 	oci.conf.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
@@ -491,7 +490,6 @@ man5_MANS = \
 @HAVE_MAN2HTML_TRUE@	job_container.conf.html \
 @HAVE_MAN2HTML_TRUE@	knl.conf.html \
 @HAVE_MAN2HTML_TRUE@	mpi.conf.html \
-@HAVE_MAN2HTML_TRUE@	nonstop.conf.html \
 @HAVE_MAN2HTML_TRUE@	oci.conf.html \
 @HAVE_MAN2HTML_TRUE@	slurm.conf.html \
 @HAVE_MAN2HTML_TRUE@	slurmdbd.conf.html \
