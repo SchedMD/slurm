@@ -134,6 +134,8 @@ documents those changes that are of interest to users and administrators.
     spooldir.
  -- Fix scontrol segfault when 'completing' command requested repeatedly in
     interactive mode.
+ -- Properly handle a race condition between bind() and listen() calls in the
+    network stack when running with SrunPortRange set.
 
 * Changes in Slurm 23.02.4
 ==========================

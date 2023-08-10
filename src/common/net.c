@@ -192,31 +192,107 @@ extern int net_set_keep_alive(int sock)
 	return 0;
 }
 
+/*
+ * Check if we can bind() the socket s to port port.
+ *
+ * IN: s - socket
+ * IN: port - port number to attempt to bind
+ * IN: local - only bind to localhost if true
+ * OUT: true/false if port was bound successfully
+ */
+static bool _is_port_ok(int s, uint16_t port, bool local)
+{
+	slurm_addr_t addr;
+	slurm_setup_addr(&addr, port);
+
+	if (!local) {
+		debug3("%s: requesting non-local port", __func__);
+	} else if (addr.ss_family == AF_INET) {
+		struct sockaddr_in *sin = (struct sockaddr_in *) &addr;
+		sin->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	} else if (addr.ss_family == AF_INET6) {
+		struct sockaddr_in6 *sin = (struct sockaddr_in6 *) &addr;
+		sin->sin6_addr = in6addr_loopback;
+	} else {
+		error("%s: protocol family %u unsupported",
+		      __func__, addr.ss_family);
+		return false;
+	}
+
+	if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+		log_flag(NET, "%s: bind() failed on port:%d fd:%d: %m",
+			 __func__, port, s);
+		return false;
+	}
+
+	return true;
+}
+
 /* net_stream_listen_ports()
  */
 int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local)
 {
 	slurm_addr_t sin;
-	int cc;
-	int val;
+	uint32_t min = ports[0], max = ports[1];
+	uint32_t num = max - min + 1;
+
+	srandom(getpid());
+	*port = min + (random() % num);
 
 	slurm_setup_addr(&sin, 0); /* Decide on IPv4 or IPv6 */
 
-	if ((*fd = socket(sin.ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0)
-		return -1;
+	*fd = -1;
 
-	val = 1;
-	cc = setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int));
-	if (cc < 0) {
-		close(*fd);
-		return -1;
+	for (int i = 0; i < num; i++) {
+		if (*fd < 0) {
+			const int one = 1;
+
+			if ((*fd = socket(sin.ss_family, SOCK_STREAM,
+					  IPPROTO_TCP)) < 0) {
+				log_flag(NET, "%s: socket() failed: %m",
+					 __func__);
+				return -1;
+			}
+
+			if (setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &one,
+				       sizeof(int)) < 0) {
+				log_flag(NET, "%s: setsockopt() failed: %m",
+					 __func__);
+				close(*fd);
+				return -1;
+			}
+		}
+
+		if (_is_port_ok(*fd, *port, local)) {
+			if (!listen(*fd, SLURM_DEFAULT_LISTEN_BACKLOG))
+				return *fd;
+
+			log_flag(NET, "%s: listen() failed: %m",
+				 __func__);
+
+			/*
+			 * If bind() succeeds but listen() fails we need to
+			 * close and reestablish the socket before trying
+			 * again on another port number.
+			 */
+			if (close(*fd)) {
+				log_flag(NET, "%s: close(%d) failed: %m",
+					 __func__, *fd);
+			}
+			*fd = -1;
+		}
+
+		if (*port == max)
+			*port = min;
+		else
+			++(*port);
 	}
 
-	if ((cc = sock_bind_listen_range(*fd, ports, local)) < 0)
-		return -1;
-	*port = cc;
+	close(*fd);
+	error("%s: all ports in range (%u, %u) exhausted, cannot establish listening port",
+	      __func__, min, max);
 
-	return *fd;
+	return -1;
 }
 
 extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
