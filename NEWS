@@ -67,6 +67,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Correct memory leak while parsing OpenAPI specification
     templates with server overrides.
  -- slurmrestd - Reduce memory usage when printing out job CPU frequency.
+ -- Fix overwriting user node reason with system message.
 
 * Changes in Slurm 23.02.4
 ==========================
