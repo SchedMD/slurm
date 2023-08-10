@@ -5918,8 +5918,10 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 	 * If the cluster is part of a federation and it isn't the origin of the
 	 * job then if it doesn't know about the federated job, then route the
 	 * request to the origin cluster via the client. If the cluster does
-	 * know about the job and it owns the job, the this cluster will cancel
-	 * the job and it will report the cancel back to the origin.
+	 * know about the job and it owns the job, then this cluster will cancel
+	 * the job and it will report the cancel back to the origin. If job does
+	 * reside on this cluster but doesn't own it (e.g. pending jobs), then
+	 * route the request back to the origin to handle it.
 	 */
 	lock_slurmctld(fed_job_read_lock);
 	if (fed_mgr_fed_rec) {
@@ -5939,7 +5941,9 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 		    (((slurm_persist_conn_t *)origin->fed.send)->fd != -1) &&
 		    (origin != fed_mgr_cluster_rec) &&
 		    (!(job_ptr = find_job_record(job_id)) ||
-		     (job_ptr && fed_mgr_job_started_on_sib(job_ptr)))) {
+		     (job_ptr && job_ptr->fed_details &&
+		      (job_ptr->fed_details->cluster_lock !=
+		       fed_mgr_cluster_rec->fed.id)))) {
 
 			slurmdb_cluster_rec_t *dst =
 				fed_mgr_get_cluster_by_id(origin_id);

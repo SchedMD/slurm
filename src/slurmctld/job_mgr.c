@@ -10105,7 +10105,7 @@ static bool _all_parts_hidden(job_record_t *job_ptr,
 static bool _hide_job_user_rec(job_record_t *job_ptr, slurmdb_user_rec_t *user,
 			       uint16_t show_flags)
 {
-	if (!job_ptr || (!(show_flags & SHOW_ALL) && IS_JOB_REVOKED(job_ptr)))
+	if (!job_ptr)
 		return true;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
@@ -10128,6 +10128,9 @@ static int _pack_job(void *object, void *arg)
 
 	if ((pack_info->filter_uid != NO_VAL) &&
 	    (pack_info->filter_uid != job_ptr->user_id))
+		return SLURM_SUCCESS;
+
+	if (!(pack_info->show_flags & SHOW_ALL) && IS_JOB_REVOKED(job_ptr))
 		return SLURM_SUCCESS;
 
 	if (!pack_info->privileged) {
@@ -10351,6 +10354,9 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	if (!(valid_operator = validate_operator_user_rec(&user_rec)))
 		hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
 
+	if (!(show_flags & SHOW_ALL) && job_ptr && IS_JOB_REVOKED(job_ptr))
+		hide_job = true;
+
 	if (job_ptr && job_ptr->het_job_list) {
 		/* Pack heterogeneous job components */
 		if (!hide_job) {
@@ -10383,6 +10389,13 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 		while (job_ptr) {
 			if ((job_ptr->job_id == job_id) && packed_head) {
 				;	/* Already packed */
+			} else if (!(show_flags & SHOW_ALL) &&
+				   IS_JOB_REVOKED(job_ptr)) {
+				/*
+				 * Array jobs can't be federated but to be
+				 * consistent and future proof, don't pack
+				 * revoked array jobs.
+				 */
 			} else if (job_ptr->array_job_id == job_id) {
 				if (valid_operator ||
 				    !_hide_job_user_rec(job_ptr, &user_rec,
