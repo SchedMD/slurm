@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "July 2023" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "August 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4844,17 +4844,6 @@ Since Slurm communications rely on the node configuration found in the
 slurm.conf, Slurm will tell the client command, after waiting for all nodes to
 boot, each node's ip address. However, in environments where the nodes are in
 DNS, this step can be avoided by configuring this option.
-.IP
-
-.TP
-\fBcloud_reg_addrs\fR
-When a cloud node registers, the node's NodeAddr and NodeHostName will
-automatically be set. They will be reset back to the nodename after powering
-off. Dynamically registered nodes automatically set the node's NodeAddr and
-NodeHostName on the first registration and won't be updated on subsequent
-registrations if it changes. Setting \fBcloud_reg_addrs\fR will update a
-dynamically registered node's NodeAddr and NodeHostName if it changes on
-subsequent registrations.
 .IP
 
 .TP

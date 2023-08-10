@@ -115,20 +115,12 @@ respond in this time frame will be marked DOWN and the jobs scheduled on the
 node requeued. Nodes which reboot after this time frame will be marked DOWN
 with a reason of "Node unexpectedly rebooted." The default value is 60 seconds.
 <dt><b>SlurmctldParameters=cloud_dns</b>
-<dd>By default, Slurm expects that the network addresses for cloud nodes
-won't be known until creation of the node and that Slurm will be notified of
-the node's address (e.g. scontrol update nodename=&lt;name&gt;
-nodeaddr=&lt;addr&gt;). Since Slurm communications rely on the node
-configuration found in the slurm.conf, Slurm will tell the client command,
-after waiting for all nodes to boot, each node's IP address. However, in
-environments where the nodes are in DNS, this step can be avoided by
-configuring this option.
-<dt><b>SlurmctldParameters=cloud_reg_addrs</b>
 <dd>When a cloud node registers, the node's NodeAddr and NodeHostName will
-automatically be set. They will be reset back to the nodename after powering off.
-This option avoids the need of manually notifying Slurm to the node's address
-and hostname before registration (e.g. scontrol update nodename=&lt;name&gt;
-nodeaddr=&lt;addr&gt;).</dd></dt>
+automatically be set. They will be reset back to the nodename after powering
+off. Since Slurm communications rely on the node configuration found in the
+slurm.conf, Slurm will tell the client command, after waiting for all nodes to
+boot, each node's IP address. However, in environments where the nodes are in
+DNS, this step can be avoided by configuring this option.
 <dt><b>SlurmctldParameters=idle_on_node_suspend</b>
 <dd>Mark nodes as idle, regardless of current state, when suspending nodes with
 SuspendProgram so that nodes will be eligible to be resumed at a later time.
