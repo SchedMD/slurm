@@ -236,7 +236,7 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 	uint32_t min = ports[0], max = ports[1];
 	uint32_t num = max - min + 1;
 
-	srand(getpid());
+	srandom(getpid());
 	*port = min + (random() % num);
 
 	slurm_setup_addr(&sin, 0); /* Decide on IPv4 or IPv6 */
