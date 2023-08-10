@@ -1199,7 +1199,7 @@ extern int mysql_db_get_var_u64(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	row = mysql_fetch_row(result);
-	*value = (uint64_t) strtoll(row[1], &err_check, 10);
+	*value = strtoull(row[1], &err_check, 10);
 
 	if (*err_check) {
 		error("%s: error parsing string to int `%s`", __func__, row[1]);
