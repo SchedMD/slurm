@@ -3482,6 +3482,12 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		xfree(comm_name);
 	}
 
+	if (was_powering_up || was_powered_down)
+		log_flag(POWER, "Node %s/%s/%s powered up with instance_id=%s, instance_type=%s",
+			 node_ptr->name, node_ptr->node_hostname,
+			 node_ptr->comm_name, reg_msg->instance_id,
+			 reg_msg->instance_type);
+
 	return error_code;
 }
 
