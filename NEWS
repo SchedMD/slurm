@@ -132,6 +132,8 @@ documents those changes that are of interest to users and administrators.
     skipped.
  -- slurmstepd - Cleanup per task generated environment for containers in
     spooldir.
+ -- Fix scontrol segfault when 'completing' command requested repeatedly in
+    interactive mode.
 
 * Changes in Slurm 23.02.4
 ==========================
