@@ -4999,7 +4999,6 @@ extern void record_launched_jobs(void)
 static void
 _rpc_suspend_job(slurm_msg_t *msg)
 {
-	int time_slice = -1;
 	suspend_int_msg_t *req = msg->data;
 	list_t *steps;
 	list_itr_t *i;
@@ -5008,8 +5007,6 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	DEF_TIMERS;
 
-	if (time_slice == -1)
-		time_slice = slurm_conf.sched_time_slice;
 	if ((req->op != SUSPEND_JOB) && (req->op != RESUME_JOB)) {
 		error("REQUEST_SUSPEND_INT: bad op code %u", req->op);
 		rc = ESLURM_NOT_SUPPORTED;
@@ -5172,7 +5169,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	_unlock_suspend_job(req->job_id);
 
 	END_TIMER;
-	if (DELTA_TIMER >= (time_slice * USEC_IN_SEC)) {
+	if (DELTA_TIMER >= (slurm_conf.sched_time_slice * USEC_IN_SEC)) {
 		if (req->op == SUSPEND_JOB) {
 			info("Suspend time for job_id %u was %s. "
 			     "Configure SchedulerTimeSlice higher.",
