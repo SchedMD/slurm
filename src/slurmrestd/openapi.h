@@ -35,7 +35,7 @@
 \*****************************************************************************/
 
 /*
- * Based on OpenAPI 3.0.2 spec (OAS):
+ * Based on OpenAPI 3.0.2 Standard:
  * 	https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md
  */
 
