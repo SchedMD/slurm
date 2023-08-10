@@ -42,8 +42,6 @@
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/rest_auth.h"
 
-extern openapi_t *openapi_state;
-
 /*
  * setup locks.
  * only call once!

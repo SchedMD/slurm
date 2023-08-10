@@ -51,12 +51,6 @@
 #include "src/interfaces/data_parser.h"
 
 /*
- * Opaque type for tracking state
- */
-struct openapi_s;
-typedef struct openapi_s openapi_t;
-
-/*
  * Callback from openapi caller.
  * we are not passing any http information to make this generic.
  * RET SLURM_SUCCESS or error to kill the connection
@@ -89,14 +83,14 @@ typedef enum {
  *
  * Can safely be called multiple times for same path.
  */
-extern int register_path_tag(openapi_t *oas, const char *path);
+extern int register_path_tag(const char *path);
 
 /*
  * Unregister a given unique tag against a path.
  *
  * IN tag - path tag to remove
  */
-extern void unregister_path_tag(openapi_t *oas, int tag);
+extern void unregister_path_tag(int tag);
 
 /*
  * Find tag assigned to given path
@@ -109,37 +103,34 @@ extern void unregister_path_tag(openapi_t *oas, int tag);
  *     -2 if path tag was found, but method wasn't found within path tag, or
  *     the tag assigned to the given path.
  */
-extern int find_path_tag(openapi_t *oas, const data_t *path, data_t *params,
+extern int find_path_tag(const data_t *path, data_t *params,
 			 http_request_method_t method);
 
 /*
  * Print registered methods for the requested tag at log level DEBUG4.
  */
-extern void print_path_tag_methods(openapi_t *oas, int tag);
+extern void print_path_tag_methods(int tag);
 
 /*
- * Init the OAS data structs.
- * IN/OUT oas - openapi state (must point to NULL)
- * IN plugins - comma delimited list of plugins or "list"
+ * Init the OpenAPI data structs.
+ * IN plugins_list - comma delimited list of plugins or "list"
  * 	pass NULL to load all found or "" to load none of them
  * IN listf - function to call if plugins="list" (may be NULL)
- * IN parsers - array of loaded data_parsers
+ * IN parsers_ptr - array of loaded data_parsers
  * RET SLURM_SUCCESS or error
  */
-extern int init_openapi(openapi_t **oas, const char *plugins,
-			plugrack_foreach_t listf,
-			data_parser_t **parsers);
+extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
+			data_parser_t **parsers_ptr);
 
 /*
  * Free openapi
  */
-extern void destroy_openapi(openapi_t *oas);
-
+extern void destroy_openapi(void);
 
 /*
  * Joins all of the loaded specs into a single spec
  */
-extern int get_openapi_specification(openapi_t *oas, data_t *resp);
+extern int get_openapi_specification(data_t *resp);
 
 /*
  * Extracts the db_conn using given auth context

@@ -50,7 +50,6 @@
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
 
-openapi_t *openapi_state = NULL;
 static pthread_rwlock_t paths_lock = PTHREAD_RWLOCK_INITIALIZER;
 static List paths = NULL;
 static data_parser_t **parsers; /* symlink to parser array */
@@ -151,7 +150,7 @@ static int _bind(const char *str_path, openapi_handler_t callback,
 	debug3("%s: binding %s to 0x%"PRIxPTR,
 	       __func__, str_path, (uintptr_t) callback);
 
-	path_tag = register_path_tag(openapi_state, str_path);
+	path_tag = register_path_tag(str_path);
 	if (path_tag == -1)
 		fatal_abort("%s: failure registering OpenAPI for path: %s",
 			    __func__, str_path);
@@ -162,7 +161,7 @@ static int _bind(const char *str_path, openapi_handler_t callback,
 	/* add new path */
 	debug4("%s: new path %s with path_tag %d callback_tag %d",
 	       __func__, str_path, path_tag, callback_tag);
-	print_path_tag_methods(openapi_state, path_tag);
+	print_path_tag_methods(path_tag);
 
 	path = xmalloc(sizeof(*path));
 	path->magic = MAGIC;
@@ -260,7 +259,7 @@ static int _rm_path_callback(void *x, void *ptr)
 
 	debug5("%s: removing tag %d for callback=0x%"PRIxPTR,
 	       __func__, path->tag, (uintptr_t) ptr);
-	unregister_path_tag(openapi_state, path->tag);
+	unregister_path_tag(path->tag);
 
 	return 1;
 }
@@ -332,7 +331,7 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 	/* attempt to identify path leaf types */
 	(void) data_convert_tree(path, DATA_TYPE_NONE);
 
-	*path_tag = find_path_tag(openapi_state, path, params, args->method);
+	*path_tag = find_path_tag(path, params, args->method);
 
 	FREE_NULL_DATA(path);
 

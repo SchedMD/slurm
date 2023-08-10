@@ -35,7 +35,7 @@
 \*****************************************************************************/
 
 #include "src/common/data.h"
-#include "src/common/plugin.h"
+#include "src/common/plugrack.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -44,17 +44,16 @@
 #include "src/interfaces/serializer.h"
 #include "src/slurmrestd/openapi.h"
 
-#define MAGIC_PATH 0x1121baef
-#define MAGIC_OAS 0x1211be0f
+#define OPENAPI_MAJOR_TYPE "openapi"
 
 typedef struct {
 	int (*init)(void);
 	int (*fini)(void);
 	data_t *(*get_oas)(openapi_spec_flags_t *flags);
-} slurm_openapi_ops_t;
+} funcs_t;
 
 /*
- * Must be synchronized with slurm_openapi_ops_t above.
+ * Must be synchronized with funcs_t above.
  */
 static const char *syms[] = {
 	"slurm_openapi_p_init",
@@ -141,24 +140,12 @@ typedef struct {
 	merge_path_t *merge_args;
 } id_merge_path_t;
 
-struct openapi_s {
-	int magic;
-	List paths;
-	int path_tag_counter;
-	data_t **spec;
-	openapi_spec_flags_t *spec_flags;
-
-	slurm_openapi_ops_t *ops;
-	int context_cnt;
-	plugin_context_t **context;
-
-	plugin_handle_t *plugin_handles;
-	char **plugin_types;
-	size_t plugin_count;
-	plugrack_t *rack;
-
-	data_parser_t **parsers; /* symlink to parser array */
-};
+static list_t *paths = NULL;
+static int path_tag_counter = 0;
+static data_t **specs = NULL;
+static openapi_spec_flags_t *spec_flags = NULL;
+static plugins_t *plugins = NULL;
+static data_parser_t **parsers = NULL; /* symlink to parser array */
 
 static char *_entry_to_string(entry_t *entry);
 
@@ -335,15 +322,13 @@ static int _print_path_tag_methods(void *x, void *arg)
 	return -1;
 }
 
-extern void print_path_tag_methods(openapi_t *oas, int tag)
+extern void print_path_tag_methods(int tag)
 {
 	if (get_log_level() < LOG_LEVEL_DEBUG4)
 		return;
 
-	xassert(oas->magic == MAGIC_OAS);
-
-	if (list_for_each_ro(oas->paths, _print_path_tag_methods, &tag) >= 0)
-		error("%s: Tag %d not found in oas->paths", __func__, tag);
+	if (list_for_each_ro(paths, _print_path_tag_methods, &tag) >= 0)
+		error("%s: Tag %d not found in paths", __func__, tag);
 }
 
 static bool _match_server_path(const data_t *server_path, const data_t *path,
@@ -482,18 +467,17 @@ static data_for_each_cmd_t _match_server_path_string(const data_t *data,
 	return rc;
 }
 
-static const data_t *_find_spec_path(openapi_t *oas, const char *str_path,
-				     data_t **spec)
+static const data_t *_find_spec_path(const char *str_path, data_t **spec)
 {
 	match_path_string_t args = {0};
 	data_t *path = parse_url_path(str_path, true, true);
 	args.path = path;
 
-	for (size_t i = 0; oas->spec[i]; i++) {
+	for (size_t i = 0; i < plugins->count; i++) {
 		const data_t *servers =
-			data_resolve_dict_path_const(oas->spec[i], "/servers");
+			data_resolve_dict_path_const(specs[i], "/servers");
 		args.path_list =
-			data_resolve_dict_path_const(oas->spec[i], "/paths");
+			data_resolve_dict_path_const(specs[i], "/paths");
 
 		if (!args.path_list ||
 		    (data_get_type(args.path_list) != DATA_TYPE_DICT) ||
@@ -507,7 +491,7 @@ static const data_t *_find_spec_path(openapi_t *oas, const char *str_path,
 		args.path_list = NULL;
 
 		if (args.found) {
-			*spec = oas->spec[i];
+			*spec = specs[i];
 			break;
 		}
 	}
@@ -629,7 +613,7 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 	return DATA_FOR_EACH_CONT;
 }
 
-extern int register_path_tag(openapi_t *oas, const char *str_path)
+extern int register_path_tag(const char *str_path)
 {
 	int rc = -1;
 	path_t *path = NULL;
@@ -645,7 +629,7 @@ extern int register_path_tag(openapi_t *oas, const char *str_path)
 		goto cleanup;
 	}
 
-	spec_entry = _find_spec_path(oas, str_path, &args.spec);
+	spec_entry = _find_spec_path(str_path, &args.spec);
 	if (!spec_entry) {
 		debug4("%s: _find_spec_path(%s) failed",
 		       __func__, str_path);
@@ -660,7 +644,7 @@ extern int register_path_tag(openapi_t *oas, const char *str_path)
 	}
 
 	path = xmalloc(sizeof(*path));
-	path->tag = oas->path_tag_counter++;
+	path->tag = path_tag_counter++;
 	path->methods = xcalloc((data_get_dict_length(spec_entry) + 1),
 				sizeof(*path->methods));
 
@@ -670,7 +654,7 @@ extern int register_path_tag(openapi_t *oas, const char *str_path)
 	if (data_dict_for_each_const(spec_entry, _populate_methods, &args) < 0)
 		fatal("%s: _populate_methods() failed", __func__);
 
-	list_append(oas->paths, path);
+	list_append(paths, path);
 
 	rc = path->tag;
 
@@ -694,11 +678,9 @@ static int _rm_path_by_tag(void *x, void *tptr)
 	return 1;
 }
 
-extern void unregister_path_tag(openapi_t *oas, int tag)
+extern void unregister_path_tag(int tag)
 {
-	xassert(oas->magic == MAGIC_OAS);
-
-	list_delete_all(oas->paths, _rm_path_by_tag, &tag);
+	list_delete_all(paths, _rm_path_by_tag, &tag);
 }
 
 /*
@@ -887,7 +869,7 @@ static int _match_path_from_data(void *x, void *key)
 	}
 }
 
-extern int find_path_tag(openapi_t *oas, const data_t *dpath, data_t *params,
+extern int find_path_tag(const data_t *dpath, data_t *params,
 			 http_request_method_t method)
 {
 	match_path_from_data_t args = {
@@ -897,31 +879,11 @@ extern int find_path_tag(openapi_t *oas, const data_t *dpath, data_t *params,
 		.tag = -1,
 	};
 
-	xassert(oas->magic == MAGIC_OAS);
 	xassert(data_get_type(params) == DATA_TYPE_DICT);
 
-	(void) list_find_first(oas->paths, _match_path_from_data, &args);
+	(void) list_find_first(paths, _match_path_from_data, &args);
 
 	return args.tag;
-}
-
-static void _oas_plugrack_foreach(const char *full_type, const char *fq_path,
-				  const plugin_handle_t id, void *arg)
-{
-	openapi_t *oas = arg;
-	xassert(oas->magic == MAGIC_OAS);
-
-	oas->plugin_count += 1;
-	xrecalloc(oas->plugin_handles, oas->plugin_count,
-		  sizeof(*oas->plugin_handles));
-	xrecalloc(oas->plugin_types, oas->plugin_count,
-		  sizeof(*oas->plugin_types));
-
-	oas->plugin_types[oas->plugin_count - 1] = xstrdup(full_type);
-	oas->plugin_handles[oas->plugin_count - 1] = id;
-
-	debug5("%s: OAS plugin type:%s path:%s",
-	       __func__, full_type, fq_path);
 }
 
 static data_for_each_cmd_t _foreach_remove_template(const char *key,
@@ -935,19 +897,20 @@ static data_for_each_cmd_t _foreach_remove_template(const char *key,
 		return DATA_FOR_EACH_DELETE;
 }
 
-static int _apply_data_parser_specs(openapi_t *oas, int plugin_id)
+static int _apply_data_parser_specs(int plugin_id)
 {
-	data_parser_t **parsers = oas->parsers;
-	data_t *paths, *spec = oas->spec[plugin_id];
+	data_t *paths, *spec = specs[plugin_id];
 
-	for (int i = 0; parsers[i]; i++) {
-		int rc;
+	if (parsers) {
+		for (int i = 0; parsers[i]; i++) {
+			int rc;
 
-		if ((rc = data_parser_g_specify(parsers[i], spec)) &&
-		    (rc != ESLURM_NOT_SUPPORTED)) {
-			error("%s: parser specification failed: %s",
-			      __func__, slurm_strerror(rc));
-			return rc;
+			if ((rc = data_parser_g_specify(parsers[i], spec)) &&
+			    (rc != ESLURM_NOT_SUPPORTED)) {
+				error("%s: parser specification failed: %s",
+				      __func__, slurm_strerror(rc));
+				return rc;
+			}
 		}
 	}
 
@@ -958,157 +921,70 @@ static int _apply_data_parser_specs(openapi_t *oas, int plugin_id)
 	return SLURM_SUCCESS;
 }
 
-extern int init_openapi(openapi_t **oas, const char *plugins,
-			plugrack_foreach_t listf, data_parser_t **parsers)
+extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
+			data_parser_t **parsers_ptr)
 {
+	int rc;
 
-	openapi_t *t = NULL;
-	int rc = SLURM_SUCCESS;
-
-	xassert(!*oas);
-	destroy_openapi(*oas);
+	if (specs)
+		fatal("%s called twice", __func__);
 
 	/* must have JSON plugin to parse the openapi.json */
 	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL)))
-		return rc;
+		fatal("Plugin serializer/json failed to load: %s",
+		      slurm_strerror(rc));
 
-	*oas = t = xmalloc(sizeof(*t));
-	t->magic = MAGIC_OAS;
-	t->paths = list_create(_list_delete_path_t);
-	t->parsers = parsers;
+	if ((rc = load_plugins(&plugins, OPENAPI_MAJOR_TYPE, plugin_list, listf,
+			       syms, ARRAY_SIZE(syms))))
+		fatal("Loading OpenAPI plugins failed: %s", slurm_strerror(rc));
 
-	t->rack = plugrack_create("openapi");
-	plugrack_read_dir(t->rack, slurm_conf.plugindir);
+	if (!plugins->count)
+		fatal("No OpenAPI plugins loaded.");
 
-	if (plugins && !xstrcasecmp(plugins, "list")) {
-		plugrack_foreach(t->rack, listf, oas);
-		return SLURM_SUCCESS;
-	} else if (plugins) {
-		/* User provide which plugins they want */
-		char *type, *last = NULL;
-		char *pbuf = xstrdup(plugins);
+	parsers = parsers_ptr;
+	paths = list_create(_list_delete_path_t);
+	specs = xcalloc((plugins->count + 1), sizeof(*specs));
+	spec_flags = xcalloc((plugins->count + 1), sizeof(*spec_flags));
 
-		type = strtok_r(pbuf, ",", &last);
-		while (type) {
-			xstrtrim(type);
+	for (size_t i = 0; i < plugins->count; i++) {
+		const funcs_t *funcs = plugins->functions[i];
 
-			/* Permit both prefix and no-prefix for plugin names. */
-			if (xstrncmp(type, "openapi/", 8) == 0)
-				type += 8;
-			type = xstrdup_printf("openapi/%s", type);
-			xstrtrim(type);
-
-			_oas_plugrack_foreach(type, NULL, PLUGIN_INVALID_HANDLE,
-					      t);
-
-			xfree(type);
-			type = strtok_r(NULL, ",", &last);
-		}
-
-		xfree(pbuf);
-	} else /* Add all possible */
-		plugrack_foreach(t->rack, _oas_plugrack_foreach, t);
-
-	if (!t->plugin_count) {
-		error("No OAS plugins to load. Nothing to do.");
-		rc = SLURM_PLUGIN_NAME_INVALID;
-	}
-
-	for (size_t i = 0; i < t->plugin_count; i++) {
-		if ((t->plugin_handles[i] == PLUGIN_INVALID_HANDLE) &&
-		    (t->plugin_handles[i] =
-		     plugrack_use_by_type(t->rack, t->plugin_types[i])) ==
-		    PLUGIN_INVALID_HANDLE)
-				fatal("Unable to find plugin: %s",
-				      t->plugin_types[i]);
-	}
-
-	t->ops = xcalloc((t->plugin_count + 1), sizeof(*t->ops));
-	t->context = xcalloc((t->plugin_count + 1), sizeof(*t->context));
-	t->spec = xcalloc((t->plugin_count + 1), sizeof(*t->spec));
-	t->spec_flags = xcalloc((t->plugin_count + 1), sizeof(*t->spec_flags));
-
-	for (size_t i = 0; (i < t->plugin_count); i++) {
-		openapi_spec_flags_t flags = OAS_FLAG_NONE;
-
-		if (t->plugin_handles[i] == PLUGIN_INVALID_HANDLE) {
-			error("Invalid plugin to load?");
-			rc = ESLURM_PLUGIN_INVALID;
-			break;
-		}
-
-		if (plugin_get_syms(t->plugin_handles[i], ARRAY_SIZE(syms), syms,
-				    (void **)&t->ops[t->context_cnt]) <
-		    ARRAY_SIZE(syms)) {
-			error("Incomplete plugin detected");
-			rc = ESLURM_PLUGIN_INCOMPLETE;
-			break;
-		}
-
-		t->spec[t->context_cnt] =
-			(*(t->ops[t->context_cnt].get_oas))(&flags);
-		t->spec_flags[t->context_cnt] = flags;
-		if (!t->spec[t->context_cnt]) {
-			error("unable to load OpenAPI spec");
-			rc = ESLURM_PLUGIN_INCOMPLETE;
-			break;
-		}
+		spec_flags[i] = OAS_FLAG_NONE;
+		if (!(specs[i] = funcs->get_oas(&(spec_flags[i]))))
+			fatal("Loading OpenAPI specification from %s failed",
+			      plugins->types[i]);
 
 		debug2("%s: loaded plugin %s with flags 0x%"PRIx64,
-		       __func__, t->plugin_types[i], flags);
+		       __func__, plugins->types[i], spec_flags[i]);
 
-		if (flags & OAS_FLAG_SET_DATA_PARSER_SPEC)
-			_apply_data_parser_specs(t, t->context_cnt);
-
-		t->context_cnt++;
+		if (spec_flags[i] & OAS_FLAG_SET_DATA_PARSER_SPEC)
+			_apply_data_parser_specs(i);
 	}
 
-	for (size_t i = 0; !rc && (t->context_cnt > 0) && (i < t->context_cnt);
-	     i++)
-		(*(t->ops[i].init))();
+	/* Call init() after all plugins are fully loaded */
+	for (size_t i = 0; i < plugins->count; i++) {
+		const funcs_t *funcs = plugins->functions[i];
+		funcs->init();
+	}
 
 	return rc;
 }
 
-extern void destroy_openapi(openapi_t *oas)
+extern void destroy_openapi(void)
 {
-	int rc;
-
-	if (!oas)
+	if (!specs)
 		return;
 
-	xassert(oas->magic == MAGIC_OAS);
-
-	for (size_t i = 0; (oas->context_cnt > 0) && (i < oas->context_cnt);
-	     i++) {
-		(*(oas->ops[i].fini))();
-
-		if (oas->context[i] && plugin_context_destroy(oas->context[i]))
-			fatal_abort("%s: unable to unload plugin", __func__);
+	for (size_t i = 0; i < plugins->count; i++) {
+		const funcs_t *funcs = plugins->functions[i];
+		funcs->fini();
+		FREE_NULL_DATA(specs[i]);
 	}
-	xfree(oas->context);
 
-	FREE_NULL_LIST(oas->paths);
-
-	for (size_t i = 0; oas->spec[i]; i++)
-		FREE_NULL_DATA(oas->spec[i]);
-	xfree(oas->spec);
-	xfree(oas->spec_flags);
-	xfree(oas->ops);
-
-	for (size_t i = 0; i < oas->plugin_count; i++) {
-		plugrack_release_by_type(oas->rack, oas->plugin_types[i]);
-		xfree(oas->plugin_types[i]);
-	}
-	xfree(oas->plugin_types);
-	xfree(oas->plugin_handles);
-	if ((rc = plugrack_destroy(oas->rack)))
-		fatal_abort("unable to clean up plugrack: %s",
-			    slurm_strerror(rc));
-	oas->rack = NULL;
-
-	oas->magic = ~MAGIC_OAS;
-	xfree(oas);
+	FREE_NULL_PLUGINS(plugins);
+	FREE_NULL_LIST(paths);
+	xfree(specs);
+	xfree(spec_flags);
 }
 
 static data_for_each_cmd_t _merge_schema(const char *key, data_t *data,
@@ -1402,7 +1278,7 @@ static data_for_each_cmd_t _merge_path_server(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-extern int get_openapi_specification(openapi_t *oas, data_t *resp)
+extern int get_openapi_specification(data_t *resp)
 {
 	data_t *j = data_set_dict(resp);
 	data_t *tags = data_set_list(data_key_set(j, "tags"));
@@ -1414,8 +1290,8 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 	char *version = xstrdup_printf("Slurm-%s", SLURM_VERSION_STRING);
 
 	/* copy the generic info from the first spec with defined */
-	for (int i = 0; oas->spec[i]; i++) {
-		data_t *src = data_key_get(oas->spec[i], "openapi");
+	for (int i = 0; i < plugins->count; i++) {
+		data_t *src = data_key_get(specs[i], "openapi");
 
 		if (!src)
 			continue;
@@ -1423,8 +1299,8 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 		data_copy(data_key_set(j, "openapi"), src);
 		break;
 	}
-	for (int i = 0; oas->spec[i]; i++) {
-		data_t *src = data_key_get(oas->spec[i], "info");
+	for (int i = 0; i < plugins->count; i++) {
+		data_t *src = data_key_get(specs[i], "info");
 
 		if (!src)
 			continue;
@@ -1432,8 +1308,8 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 		data_copy(data_key_set(j, "info"), src);
 		break;
 	}
-	for (int i = 0; oas->spec[i]; i++) {
-		data_t *src = data_key_get(oas->spec[i], "security");
+	for (int i = 0; i < plugins->count; i++) {
+		data_t *src = data_key_get(specs[i], "security");
 
 		if (!src)
 			continue;
@@ -1441,9 +1317,9 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 		(void) data_copy(data_key_set(j, "security"), src);
 		break;
 	}
-	for (int i = 0; oas->spec[i]; i++) {
+	for (int i = 0; i < plugins->count; i++) {
 		data_t *src = data_resolve_dict_path(
-			oas->spec[i], "/components/securitySchemes");
+			specs[i], "/components/securitySchemes");
 
 		if (!src)
 			continue;
@@ -1455,8 +1331,8 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 	}
 
 	/* Populate OAS version */
-	for (int i = 0; oas->spec[i]; i++)
-		xstrfmtcatat(version, &version_at, "&%s", oas->plugin_types[i]);
+	for (int i = 0; i < plugins->count; i++)
+		xstrfmtcatat(version, &version_at, "&%s", plugins->types[i]);
 	data_set_string_own(data_define_dict_path(j, "/info/version"), version);
 
 	/* set single server at "/" */
@@ -1467,23 +1343,22 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 		"/");
 
 	/* merge all the unique tags together */
-	for (int i = 0; oas->spec[i]; i++) {
-		data_t *src_tags = data_key_get(oas->spec[i], "tags");
+	for (int i = 0; i < plugins->count; i++) {
+		data_t *src_tags = data_key_get(specs[i], "tags");
 		if (src_tags &&
 		    (data_list_for_each(src_tags, _merge_tag, tags) < 0))
 			fatal("%s: unable to merge tags", __func__);
 	}
 
 	/* merge all the unique paths together */
-	for (int i = 0; oas->spec[i]; i++) {
-		data_t *src_srvs = data_key_get(oas->spec[i], "servers");
+	for (int i = 0; i < plugins->count; i++) {
+		data_t *src_srvs = data_key_get(specs[i], "servers");
 
 		if (src_srvs) {
 			merge_path_server_t p_args = {
 				.dst_paths = paths,
-				.src_paths = data_key_get(oas->spec[i],
-							  "paths"),
-				.flags = oas->spec_flags[i],
+				.src_paths = data_key_get(specs[i], "paths"),
+				.flags = spec_flags[i],
 			};
 
 			if (data_list_for_each(src_srvs, _merge_path_server,
@@ -1495,9 +1370,9 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 			merge_path_t p_args = {
 				.server_path = NULL,
 				.paths = paths,
-				.flags = oas->spec_flags[i],
+				.flags = spec_flags[i],
 			};
-			data_t *src_paths = data_key_get(oas->spec[i], "paths");
+			data_t *src_paths = data_key_get(specs[i], "paths");
 
 			if (src_paths &&
 			    (data_dict_for_each(src_paths, _merge_path,
@@ -1507,9 +1382,9 @@ extern int get_openapi_specification(openapi_t *oas, data_t *resp)
 	}
 
 	/* merge all the unique component schemas together */
-	for (int i = 0; oas->spec[i]; i++) {
-		data_t *src = data_resolve_dict_path(oas->spec[i],
-						     "/components/schemas");
+	for (int i = 0; i < plugins->count; i++) {
+		data_t *src =
+			data_resolve_dict_path(specs[i], "/components/schemas");
 
 		if (src && (data_dict_for_each(src, _merge_schema,
 					       components_schemas) < 0)) {

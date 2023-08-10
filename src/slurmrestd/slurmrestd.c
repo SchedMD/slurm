@@ -432,7 +432,7 @@ static int _op_handler_openapi(const char *context_id,
 			       data_t *query, int tag, data_t *resp, void *auth,
 			       data_parser_t *parser)
 {
-	return get_openapi_specification(openapi_state, resp);
+	return get_openapi_specification(resp);
 }
 
 int main(int argc, char **argv)
@@ -549,9 +549,8 @@ int main(int argc, char **argv)
 
 	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
 		info("Possible OpenAPI plugins:");
-		exit(init_openapi(&openapi_state, oas_specs,
-				  _plugrack_foreach_list, NULL));
-	} else if (init_openapi(&openapi_state, oas_specs, NULL, parsers))
+		exit(init_openapi(oas_specs, _plugrack_foreach_list, NULL));
+	} else if (init_openapi(oas_specs, NULL, parsers))
 		fatal("Unable to initialize OpenAPI structures");
 
 	xfree(oas_specs);
@@ -612,8 +611,7 @@ int main(int argc, char **argv)
 	/* cleanup everything */
 	destroy_rest_auth();
 	destroy_operations();
-	destroy_openapi(openapi_state);
-	openapi_state = NULL;
+	destroy_openapi();
 	free_con_mgr(conmgr);
 	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
 	serializer_g_fini();
