@@ -201,6 +201,7 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
 static char *_copy_nodelist_no_dup(char *node_list);
+static void _calc_arbitrary_tpn(job_record_t *job_ptr);
 static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add);
 static void _delete_job_details(job_record_t *job_entry);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
@@ -3047,6 +3048,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 
 	/* free any left-over detail data */
 	xfree(job_ptr->details->acctg_freq);
+	xfree(job_ptr->details->arbitrary_tpn);
 	for (i=0; i<job_ptr->details->argc; i++)
 		xfree(job_ptr->details->argv[i]);
 	xfree(job_ptr->details->argv);
@@ -3150,6 +3152,10 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->task_dist = task_dist;
 	job_ptr->details->whole_node = whole_node;
 	job_ptr->details->work_dir = work_dir;
+
+	if ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
+	    SLURM_DIST_ARBITRARY)
+		_calc_arbitrary_tpn(job_ptr);
 
 	return SLURM_SUCCESS;
 
