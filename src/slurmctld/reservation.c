@@ -2243,7 +2243,7 @@ static bool _slots_overlap(const constraint_slot_t *slot0,
  * Used to check overlapping time slots. See _advance_time() for actual
  * advancement of reservation.
  */
-static int _get_advance_secs(const constraint_slot_t *slot)
+static time_t _get_advance_secs(const constraint_slot_t *slot)
 {
 	time_t reoccurring_secs = -1;
 	struct tm tm;
