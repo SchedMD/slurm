@@ -258,12 +258,12 @@ set jt "$jid(0)_1"
 
 wait_for_fed_job $jt RUNNING $fedc1,$fedc2,$fedc3
 
-set r0  "(\\s+($jid(0))_(\[1-9\]|10).+$eol)"
-set r1  "(\\s+($jid(0))_\\\[11-15\\\].+$eol)"
+set r0  "(($fedc1\\s+$jid(0))_(\[1-9\]|10).+$eol)"
+set r1  "(($fedc1\\s+$jid(0))_\\\[11-15\\\].+$eol)"
 
-set regf1 "CLUSTER: $fedc1$eol$r1$r0{10}"
-set regf2 "CLUSTER: $fedc2$eol\\s*$eol"
-set regf3 "CLUSTER: $fedc3$eol\\s*"
+set regf1 "$r1$r0{10}"
+set regf2 ""
+set regf3 ""
 
 squeue "$regf1$regf2$regf3"
 
@@ -271,9 +271,9 @@ set jid(1) [sbatch "--cluster-constraint=fa" ""]
 
 set r2 "(\\s+($jid(1))_\\\[1-15\\\].+$eol)"
 
-set regf1 "CLUSTER: $fedc1$eol.*($r1|$r2){2}$r0{10}"
-set regf2 "CLUSTER: $fedc2$eol\\s*$eol"
-set regf3 "CLUSTER: $fedc3$eol\\s*"
+set regf1 "$fedc1.*($r1|$r2){2}$r0{10}"
+set regf2 ""
+set regf3 ""
 
 squeue "$regf1$regf2$regf3"
 
@@ -288,15 +288,15 @@ set jt "$jid(2)_1"
 
 wait_for_fed_job $jt RUNNING $fedc1,$fedc2,$fedc3
 
-set r0  "(\\s+($jid(0))_1\[1-5\].+$eol)"
-set r1  "(\\s+($jid(1))_\[1-5\].+$eol)"
-set r2  "(\\s+($jid(1))_\\\[6-15\\\].+$eol)"
-set r3  "(\\s+($jid(2))_(\[1-9\]|10).+$eol)"
-set r4  "(\\s+($jid(2))_\\\[11-15\\\].+$eol)"
+set r0  "($fedc1\\s+($jid(0))_1\[1-5\].+$eol)"
+set r1  "($fedc1\\s+($jid(1))_\[1-5\].+$eol)"
+set r2  "($fedc1\\s+($jid(1))_\\\[6-15\\\].+$eol)"
+set r3  "($fedc2\\s+($jid(2))_(\[1-9\]|10).+$eol)"
+set r4  "($fedc2\\s+($jid(2))_\\\[11-15\\\].+$eol)"
 
-set regf1 "CLUSTER: $fedc1$eol$r2.*($r0|$r1){10}"
-set regf2 "CLUSTER: $fedc2$eol\\s*$r4$r3{10}"
-set regf3 "CLUSTER: $fedc3$eol\\s*"
+set regf1 "$r2.*($r0|$r1){10}"
+set regf2 "$r4$r3{10}"
+set regf3 ""
 
 squeue "$regf1$regf2$regf3"
 

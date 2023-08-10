@@ -138,7 +138,7 @@ proc squeue { options regex } {
 	global my_squeue
 
 	set matches 0
-	set command "$my_squeue --noheader -a "
+	set command "$my_squeue -a "
 	append command $options
 	spawn {*}$command
 	expect {
@@ -331,9 +331,9 @@ set reg3 "\\s*$jid($fedc3).+R.+$eol"
 
 set regs "$regpd $reg1a $reg1b $reg1c $reg2 $reg3"
 
-set regf1 "CLUSTER: $fedc1\\s*$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
-set regf2 "CLUSTER: $fedc2\\s*$regpd$reg2$eol"
-set regf3 "CLUSTER: $fedc3\\s*$regpd$reg3"
+set regf1 "CLUSTER: $fedc1\\s*JOBID.*?$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
+set regf2 "CLUSTER: $fedc2\\s*JOBID.*?$regpd$reg2$eol"
+set regf3 "CLUSTER: $fedc3\\s*JOBID.*?$regpd$reg3"
 
 set regex "$regf1$regf2$regf3"
 
@@ -389,9 +389,9 @@ set reg3 "\\s*$jid($fedc3).+R.+$eol"
 
 set regs "$regpd $reg1a $reg1b $reg1c $reg2 $reg3"
 
-set regf1 "CLUSTER: $fedc1$eol$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
-set regf2 "CLUSTER: $fedc2$eol$regpd$reg2$eol"
-set regf3 "CLUSTER: $fedc3$eol$regpd$reg3"
+set regf1 "CLUSTER: $fedc1\\s*JOBID.*?$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
+set regf2 "CLUSTER: $fedc2\\s*JOBID.*?$regpd$reg2$eol"
+set regf3 "CLUSTER: $fedc3\\s*JOBID.*?$regpd$reg3"
 
 set regex "$regf1$regf2$regf3"
 
@@ -443,9 +443,9 @@ set reg3 "\\s*$jid($fedc3).+R.+$eol"
 
 set regs "$reg1a $reg1b $reg1c $reg2 $reg3"
 
-set regf1 "CLUSTER: $fedc1$eol$reg1a\\s*($reg1b|$reg1c){2}$eol"
-set regf2 "CLUSTER: $fedc2$eol$reg2$eol"
-set regf3 "CLUSTER: $fedc3$eol$reg3"
+set regf1 "CLUSTER: $fedc1\\s*JOBID.*?$reg1a\\s*($reg1b|$reg1c){2}$eol"
+set regf2 "CLUSTER: $fedc2\\s*JOBID.*?$reg2$eol"
+set regf3 "CLUSTER: $fedc3\\s*JOBID.*?$reg3"
 
 set regex "$regf1$regf2$regf3"
 
@@ -494,9 +494,9 @@ set reg3 "\\s*$jid($fedc3).+R.+$eol"
 
 set regs "$regpd $reg1a $reg1b $reg1c $reg2 $reg3"
 
-set regf1 "CLUSTER: $fedc1$eol$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
-set regf2 "CLUSTER: $fedc2$eol$regpd$reg2$eol"
-set regf3 "CLUSTER: $fedc3$eol$regpd$reg3"
+set regf1 "CLUSTER: $fedc1\\s*JOBID.*?$regpd$reg1a\\s*($reg1b|$reg1c){2}$eol"
+set regf2 "CLUSTER: $fedc2\\s*JOBID.*?$regpd$reg2$eol"
+set regf3 "CLUSTER: $fedc3\\s*JOBID.*?$regpd$reg3"
 
 set regex "$regf1$regf2$regf3"
 

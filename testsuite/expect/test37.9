@@ -120,16 +120,16 @@ proc verify { job_id output } {
 	global squeue fedc1 fedc2 fedc3
 
 	if {[string match $output $fedc1]} {
-		squeue "-M$output " "CLUSTER: $fedc1\\s+$job_id.+R.+"
-		squeue "-M$fedc1 -s " "$job_id\\.0.+$fedc1.+$job_id\\.1.+$fedc1.+$job_id\\.Batch.+$fedc1"
+		squeue "-M$output " "$job_id.+R.+"
+		squeue "-M$fedc1 -s " "$job_id\\.0.+$fedc1.+$job_id\\.1.+$fedc1.+$job_id\\.batch.+$fedc1"
 	}
 	if {[string match $output $fedc2]} {
-		squeue "-M$output " "CLUSTER: $fedc2\\s+$job_id.+R.+"
-		squeue "-M$fedc2 -s " "$job_id\\.0.+$fedc2.+$job_id\\.1.+$fedc2.+$job_id\\.Batch.+$fedc2"
+		squeue "-M$output " "$job_id.+R.+"
+		squeue "-M$fedc2 -s " "$job_id\\.0.+$fedc2.+$job_id\\.1.+$fedc2.+$job_id\\.batch.+$fedc2"
 	}
 	if {[string match $output $fedc3]} {
-		squeue "-M$output " "CLUSTER: $fedc3\\s+$job_id.+R.+"
-		squeue "-M$fedc3 -s " "$job_id\\.0.+$fedc3.+$job_id\\.1.+$fedc3.+$job_id\\.Batch.+$fedc3"
+		squeue "-M$output " "$job_id.+R.+"
+		squeue "-M$fedc3 -s " "$job_id\\.0.+$fedc3.+$job_id\\.1.+$fedc3.+$job_id\\.batch.+$fedc3"
 	}
 
 }
@@ -335,7 +335,7 @@ if {$matches != 4} {
 	fail "Unexpected error (got $matches)"
 }
 
-make_bash_script $file_in "env; $my_srun sleep 900 & $my_srun sleep 900"
+make_bash_script $file_in "env; $my_srun --overlap sleep 900 & $my_srun --overlap sleep 900"
 
 log_info "################################################################"
 log_info "Verify federated squeue output"
@@ -347,52 +347,52 @@ set ji2 [sbatch]
 set local ""
 
 set output [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
-set x ($ji0\\s+$ji0\\.0\\s+$output\\s+$ji0\\s+$ji0\\.1\\s+$output\\s+$ji0\\s+$ji0\\.Batch\\s+$output)
+set x ($ji0\\s+$ji0\\.0\\s+$output\\s+$ji0\\s+$ji0\\.1\\s+$output\\s+$ji0\\s+$ji0\\.batch\\s+$output)
 if {[string match $output $fedc1]} {
 	set a ($ji0\\s+$output\\s+)
-	set x1 ($ji0\\s+$ji0\\.Batch\\s+$output\\s+$ji0\\s+$ji0\\.0\\s+$output\\s+$ji0\\s+$ji0\\.1\\s+$output)
+	set x1 ($ji0\\s+$ji0\\.batch\\s+$output\\s+$ji0\\s+$ji0\\.0\\s+$output\\s+$ji0\\s+$ji0\\.1\\s+$output)
 	set local ($ji0.+R.+)
 } elseif {[string match $output $fedc2]} {
 	set b ($ji0\\s+$output\\s+)
-	set y1 ($ji0\\s+$ji0\\.Batch\\s+$output\\s+$ji0\\s+$ji0\\.0\\s+$output\\s+$ji0\\s+$ji0\\.1\\s+$output)
+	set y1 ($ji0\\s+$ji0\\.batch\\s+$output\\s+$ji0\\s+$ji0\\.0\\s+$output\\s+$ji0\\s+$ji0\\.1\\s+$output)
 } else {
 	set c ($ji0\\s+$output\\s+)
-	set z1 ($ji0\\s+$ji0\\.Batch\\s+$output\\s+$ji0\\s+$ji0\\.0\\s+$output\\s+$ji0\\s+$ji0\\.0\\s+$output)
+	set z1 ($ji0\\s+$ji0\\.batch\\s+$output\\s+$ji0\\s+$ji0\\.0\\s+$output\\s+$ji0\\s+$ji0\\.0\\s+$output)
 }
 
 
 set output [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
-set y ($ji1\\s+$ji1\\.0\\s+$output\\s+$ji1\\s+$ji1\\.1\\s+$output\\s+$ji1\\s+$ji1\\.Batch\\s+$output)
+set y ($ji1\\s+$ji1\\.0\\s+$output\\s+$ji1\\s+$ji1\\.1\\s+$output\\s+$ji1\\s+$ji1\\.batch\\s+$output)
 if {[string match $output $fedc1]} {
 	set a ($ji1\\s+$output\\s+)
-	set x1 ($ji1\\s+$ji1\\.Batch\\s+$output\\s+$ji1\\s+$ji1\\.0\\s+$output\\s+$ji1\\s+$ji1\\.1\\s+$output)
+	set x1 ($ji1\\s+$ji1\\.batch\\s+$output\\s+$ji1\\s+$ji1\\.0\\s+$output\\s+$ji1\\s+$ji1\\.1\\s+$output)
 	set local ($ji1.+R.+)
 } elseif {[string match $output $fedc2]} {
 	set b ($ji1\\s+$output\\s+)
-	set y1 ($ji1\\s+$ji1\\.Batch\\s+$output\\s+$ji1\\s+$ji1\\.0\\s+$output\\s+$ji1\\s+$ji1\\.1\\s+$output)
+	set y1 ($ji1\\s+$ji1\\.batch\\s+$output\\s+$ji1\\s+$ji1\\.0\\s+$output\\s+$ji1\\s+$ji1\\.1\\s+$output)
 } else {
 	set c ($ji1\\s+$output\\s+)
-	set z1 ($ji1\\s+$ji1\\.Batch\\s+$output\\s+$ji1\\s+$ji1\\.0\\s+$output\\s+$ji1\\s+$ji1\\.1\\s+$output)
+	set z1 ($ji1\\s+$ji1\\.batch\\s+$output\\s+$ji1\\s+$ji1\\.0\\s+$output\\s+$ji1\\s+$ji1\\.1\\s+$output)
 }
 
 set output [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
-set z ($ji2\\s+$ji2\\.0\\s+$output\\s+$ji2\\s+$ji2\\.1\\s+$output\\s+$ji2\\s+$ji2\\.Batch\\s+$output)
+set z ($ji2\\s+$ji2\\.0\\s+$output\\s+$ji2\\s+$ji2\\.1\\s+$output\\s+$ji2\\s+$ji2\\.batch\\s+$output)
 if {[string match $output $fedc1]} {
 	set a ($ji2\\s+$output\\s+)
-	set x1 ($ji2\\s+$ji2\\.Batch\\s+$output\\s+$ji2\\s+$ji2\\.0\\s+$output\\s+$ji2\\s+$ji2\\.1\\s+$output)
+	set x1 ($ji2\\s+$ji2\\.batch\\s+$output\\s+$ji2\\s+$ji2\\.0\\s+$output\\s+$ji2\\s+$ji2\\.1\\s+$output)
 	set local ($ji2.+R.+)
 } elseif {[string match $output $fedc2]} {
 	set b ($ji2\\s+$output\\s+)
-	set y1 ($ji2\\s+$ji2\\.Batch\\s+$output\\s+$ji2\\s+$ji2\\.0\\s+$output\\s+$ji2\\s+$ji2\\.1\\s+$output)
+	set y1 ($ji2\\s+$ji2\\.batch\\s+$output\\s+$ji2\\s+$ji2\\.0\\s+$output\\s+$ji2\\s+$ji2\\.1\\s+$output)
 } else {
 	set c ($ji2\\s+$output\\s+)
-	set z1 ($ji2\\s+$ji2\\.Batch\\s+$output\\s+$ji2\\s+$ji2\\.0\\s+$output\\s+$ji2\\s+$ji2\\.1\\s+$output)
+	set z1 ($ji2\\s+$ji2\\.batch\\s+$output\\s+$ji2\\s+$ji2\\.0\\s+$output\\s+$ji2\\s+$ji2\\.1\\s+$output)
 }
 
 # Give time for steps to start.
 sleep 2
 
-squeue "-s " "$ji0\\.0.+$ji0\\.1.+$ji0\\.Batch.+$ji1\\.0.+$ji1\\.1.+$ji1\\.Batch.+$ji2\\.0.+$ji2\\.1.+$ji2\\.Batch.+"
+squeue "-s " "$ji0\\.0.+$ji0\\.1.+$ji0\\.batch.+$ji1\\.0.+$ji1\\.1.+$ji1\\.batch.+$ji2\\.0.+$ji2\\.1.+$ji2\\.batch.+"
 squeue "--local " "$local"
 squeue "-s -O jobid,stepid,cluster " "$x\\s+$y\\s+$z"
 squeue "-s -O jobid,stepid,cluster -Scluster " "$x1\\s+$y1\\s+$z1"
@@ -488,41 +488,41 @@ set ji3 [sbatch]
 sleep 2
 
 if { [string match $o0 $fedc1] } {
-	set reg1 "(JobId=($ji0|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg1 "(JobId=($ji0|$ji3) JobName=input\\s+\\n)"
 	set reg4 "(StepId=$ji0\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 } elseif { [string match $o0 $fedc2] } {
-	set reg2 "(JobId=($ji0|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg2 "(JobId=($ji0|$ji3) JobName=input\\s+\\n)"
 	set reg5 "(StepId=$ji0\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 } else {
-	set reg3 "(JobId=($ji0|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg3 "(JobId=($ji0|$ji3) JobName=input\\s+\\n)"
 	set reg6 "(StepId=$ji0\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 }
 
 if { [string match $o1 $fedc1] } {
-	set reg1 "(JobId=($ji1|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg1 "(JobId=($ji1|$ji3) JobName=input\\s+\\n)"
 	set reg4 "(StepId=$ji1\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 } elseif { [string match $o1 $fedc2] } {
-	set reg2 "(JobId=($ji1|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg2 "(JobId=($ji1|$ji3) JobName=input\\s+\\n)"
 	set reg5 "(StepId=$ji1\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 } else {
-	set reg3 "(JobId=($ji1|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg3 "(JobId=($ji1|$ji3) JobName=input\\s+\\n)"
 	set reg6 "(StepId=$ji1\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 }
 
 if { [string match $o2 $fedc1] } {
-	set reg1 "(JobId=($ji2|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg1 "(JobId=($ji2|$ji3) JobName=input\\s+\\n)"
 	set reg4 "(StepId=$ji2\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 } elseif { [string match $o2 $fedc2] } {
-	set reg2 "(JobId=($ji2|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg2 "(JobId=($ji2|$ji3) JobName=input\\s+\\n)"
 	set reg5 "(StepId=$ji2\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 } else {
-	set reg3 "(JobId=($ji2|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+	set reg3 "(JobId=($ji2|$ji3) JobName=input\\s+\\n)"
 	set reg6 "(StepId=$ji2\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 }
 
 
 set tasks "\\($ji0\\|$ji1\\|$ji2\\|$ji3\\)"
-set regex_j "(JobId=($ji0|$ji1|$ji2|$ji3) JobName=test37\\.9\\.in\\s+\\n)"
+set regex_j "(JobId=($ji0|$ji1|$ji2|$ji3) JobName=input\\s+\\n)"
 set regex_s "(StepId=($ji0|$ji1|$ji2)\\.\[0-1\].+ TimeLimit=UNLIMITED\\s+\\n)"
 
 scontrol_show "jobs" $tasks "$regex_j{4}" ""
