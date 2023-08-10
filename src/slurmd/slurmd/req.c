@@ -5026,8 +5026,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	if (msg->conn_fd >= 0) {
 		slurm_send_rc_msg(msg, rc);
 		if (close(msg->conn_fd) < 0)
-			error("_rpc_suspend_job: close(%d): %m",
-			      msg->conn_fd);
+			error("%s: close(%d): %m", __func__, msg->conn_fd);
 		msg->conn_fd = -1;
 	}
 	if (rc != SLURM_SUCCESS)
