@@ -251,6 +251,7 @@ enum cluster_fed_states {
 /* Flags for slurmdbd_conn->db_conn */
 #define DB_CONN_FLAG_CLUSTER_DEL SLURM_BIT(0)
 #define DB_CONN_FLAG_ROLLBACK SLURM_BIT(1)
+#define DB_CONN_FLAG_FEDUPDATE SLURM_BIT(2)
 
 /********************************************/
 
