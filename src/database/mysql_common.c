@@ -1239,7 +1239,7 @@ extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn)
 	if (mysql_db_get_var_u64(mysql_conn, "wsrep_on", &wsrep_on))
 		wsrep_on = 0;
 
-	debug2("wsrep_on=%lu", wsrep_on);
+	debug2("wsrep_on=%"PRIu64, wsrep_on);
 
 	if (!wsrep_on)
 		return;
