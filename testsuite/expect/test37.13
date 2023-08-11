@@ -269,9 +269,9 @@ squeue "$regf1$regf2$regf3"
 
 set jid(1) [sbatch "--cluster-constraint=fa" ""]
 
-set r2 "(\\s+($jid(1))_\\\[1-15\\\].+$eol)"
+set r2 "($fedc1\\s+($jid(1))_\\\[1-15\\\].+$eol)"
 
-set regf1 "$fedc1.*($r1|$r2){2}$r0{10}"
+set regf1 "($r1|$r2){2}$r0{10}"
 set regf2 ""
 set regf3 ""
 
