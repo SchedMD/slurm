@@ -343,12 +343,8 @@ main (int argc, char **argv)
 		 * Call mlockall() if available to ensure slurmd
 		 *  doesn't get swapped out
 		 */
-#ifdef _POSIX_MEMLOCK
 		if (mlockall (MCL_FUTURE | MCL_CURRENT) < 0)
 			error ("failed to mlock() slurmd pages: %m");
-#else
-		error ("mlockall() system call does not appear to be available");
-#endif /* _POSIX_MEMLOCK */
 	}
 
 	cred_state_init();

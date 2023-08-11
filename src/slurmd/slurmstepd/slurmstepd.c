@@ -166,7 +166,6 @@ main (int argc, char **argv)
 	 * to SIGBUS at any time after upgrade. Avoid that by locking it
 	 * in-memory. */
 	if (xstrstr(slurm_conf.launch_params, "slurmstepd_memlock")) {
-#ifdef _POSIX_MEMLOCK
 		int flags = MCL_CURRENT;
 		if (xstrstr(slurm_conf.launch_params, "slurmstepd_memlock_all"))
 			flags |= MCL_FUTURE;
@@ -174,9 +173,6 @@ main (int argc, char **argv)
 			info("failed to mlock() slurmstepd pages: %m");
 		else
 			debug("slurmstepd locked in memory");
-#else
-		info("mlockall() system call does not appear to be available");
-#endif
 	}
 
 	acct_gather_energy_g_set_data(ENERGY_DATA_STEP_PTR, step);
