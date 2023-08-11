@@ -70,6 +70,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent deadlock when rpc_queue is enabled.
  -- slurmrestd - Correct OpenAPI specification generation bug where fields with
     overlapping parent paths would not get generated.
+ -- Fix memory leak as a result of a partition info query.
 
 * Changes in Slurm 23.02.4
 ==========================

@@ -4928,6 +4928,7 @@ extern void slurm_free_partition_info_members(partition_info_t * part)
 		xfree(part->job_defaults_str);
 		xfree(part->name);
 		xfree(part->nodes);
+		xfree(part->nodesets);
 		xfree(part->node_inx);
 		xfree(part->qos_char);
 		xfree(part->tres_fmt_str);
