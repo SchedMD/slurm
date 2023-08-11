@@ -27,8 +27,11 @@ To run the testsuites using the unified test-runner:
   Review and edit testsuite.conf as necessary.
 * pytest (pytest-3) must be installed in order to run the python testsuite.
 * expect must be installed in order to run the expect testsuite.
-* If perldoc is installed, ./run-tests --man can be used to display a man page
-  for the test-runner.
+* Set the SLURM_CLUSTER environment variable to set up a custom directory
+  in the 'results' dir that will hold unique logs and test data.
+  You can name this whatever you'd like, it will be created if needed.
+  This is a useful way to archive results from run-tests with things like
+  different dates, commits, or configs.
 * Execute run-tests with the desired options to run the testsuites.
 
 testsuite.conf:
