@@ -318,6 +318,40 @@ static int _sort_sockets_by_avail_cores(const void *x, const void *y)
 		avail_cores_per_sock[*(int *)x]);
 }
 
+static void _estimate_cpus_per_gres(uint32_t ntasks_per_job,
+				    uint64_t gres_per_job,
+				    uint32_t cpus_per_task,
+				    uint16_t *cpus_per_gres)
+{
+	if (ntasks_per_job >= gres_per_job &&
+	    (ntasks_per_job % gres_per_job == 0)) {
+		/*
+		 * If we have more tasks than gres and tasks is multiple of
+		 * gres we want to attempt placing tasks on CPUs on the same
+		 * sockets as the GPU
+		 */
+		uint64_t tasks_per_gres = ntasks_per_job / gres_per_job;
+		*cpus_per_gres = tasks_per_gres * cpus_per_task;
+	} else if ((gres_per_job % ntasks_per_job == 0)) {
+		/*
+		 * If we have more gres than tasks, but gres is multiple of
+		 * tasks we attempt symmetrical distribution of tasks
+		 */
+		uint64_t gres_per_task = gres_per_job / ntasks_per_job;
+		if ((cpus_per_task % gres_per_task == 0)) {
+			/*
+			 * If cpus_per_task is multiple of gres_per_task we
+			 * attempt giving each GPU same number of CPUs
+			 * For instance --gpus=8 -n2 -c8 will result in
+			 * first_pass attempting --cpus-per-gres=2, but
+			 * in case of ---gpus=8 -n2 -c3 we don't attempt that
+			 * since it's not well defined.
+			 */
+			*cpus_per_gres = cpus_per_task / gres_per_task;
+		}
+	}
+}
+
 /*
  * Determine how many tasks can be started on a given node and which
  *	sockets/cores are required
@@ -479,18 +513,10 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		} else if (first_pass && mc_ptr->ntasks_per_job &&
 			   (mc_ptr->ntasks_per_job != NO_VAL) &&
 			   gres_js->gres_per_job) {
-			uint64_t tasks_per_gres = mc_ptr->ntasks_per_job;
-			tasks_per_gres +=  gres_js->gres_per_job - 1;
-			tasks_per_gres /= gres_js->gres_per_job;
-			cpus_per_gres = tasks_per_gres * mc_ptr->cpus_per_task;
-			/*
-			 * We use round-up division here in case of requests
-			 * like -n3 --gpus=2, where coming up with 3/2=1 CPU
-			 * per GRES results in underestimation and may lead to
-			 * too many GRES selected from the socket. If we won't
-			 * allocate because of overestimate this won't be an
-			 * issue since it's only in first_pass.
-			 */
+			_estimate_cpus_per_gres(mc_ptr->ntasks_per_job,
+						gres_js->gres_per_job,
+						mc_ptr->cpus_per_task,
+						&cpus_per_gres);
 		}
 
 		/* Filter out unusable GRES by socket */
