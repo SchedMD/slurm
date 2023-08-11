@@ -291,8 +291,8 @@ main (int argc, char **argv)
 	 */
 	conf = xmalloc(sizeof(slurmd_conf_t));
 	_init_conf();
-	conf->argv = &argv;
-	conf->argc = &argc;
+	conf->argv = argv;
+	conf->argc = argc;
 
 	if (_slurmd_init() < 0) {
 		error( "slurmd initialization failed" );
@@ -1984,7 +1984,7 @@ _slurmd_init(void)
 	 * Process commandline arguments first, since one option may be
 	 * an alternate location for the slurm config file.
 	 */
-	_process_cmdline(*conf->argc, *conf->argv);
+	_process_cmdline(conf->argc, conf->argv);
 
 	/*
 	 * Work out how this node is going to be configured. If running in

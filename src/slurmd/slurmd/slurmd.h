@@ -80,8 +80,8 @@ typedef struct {
  */
 typedef struct slurmd_config {
 	char         *prog;		/* Program basename		   */
-	char         ***argv;           /* pointer to argument vector      */
-	int          *argc;             /* pointer to argument count       */
+	char         **argv;            /* argument vector                 */
+	int          argc;              /* argument count                  */
 	buf_t        *buf;              /* packed version of this lite config */
 	char         *hostname;	 	/* local hostname		   */
 	char         *conf_server;	/* slurmctld to fetch config from  */

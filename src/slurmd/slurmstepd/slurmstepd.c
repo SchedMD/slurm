@@ -130,8 +130,8 @@ main (int argc, char **argv)
 
 	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));
-	conf->argv = &argv;
-	conf->argc = &argc;
+	conf->argv = argv;
+	conf->argc = argc;
 	init_setproctitle(argc, argv);
 
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
