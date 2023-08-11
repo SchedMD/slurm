@@ -812,6 +812,7 @@ test_102_3   /commands/sacctmgr/test_--json.py
 test_103_#   Testing of salloc options.
 =======================================
 test_103_1   /commands/salloc/test_--usage.py
+test_103_2   Test salloc with default command
 
 test_104_#   Testing of sattach options.
 ========================================
