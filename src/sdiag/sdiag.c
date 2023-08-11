@@ -155,6 +155,13 @@ static int _print_stats(void)
 	}
 	printf("\tLast queue length: %u\n", buf->schedule_queue_len);
 
+	printf("\nMain scheduler exit:\n");
+
+	for (i = 0; i < buf->schedule_exit_cnt; i++) {
+		printf("\t%s:%2u\n", schedule_exit2string(i),
+		       buf->schedule_exit[i]);
+	}
+
 	if (buf->bf_active) {
 		printf("\nBackfilling stats (WARNING: data obtained"
 		       " in the middle of backfilling execution.)\n");

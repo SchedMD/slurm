@@ -111,6 +111,7 @@ static bool	_job_runnable_test2(job_record_t *job_ptr, time_t now,
 				    bool check_min_time);
 static bool	_scan_depend(List dependency_list, job_record_t *job_ptr);
 static void *	_sched_agent(void *args);
+static void _set_schedule_exit(schedule_exit_t code);
 static int	_schedule(bool full_queue);
 static int	_valid_batch_features(job_record_t *job_ptr, bool can_reboot);
 static int	_valid_feature_list(job_record_t *job_ptr, List feature_list,
@@ -1011,6 +1012,13 @@ static void _set_features(job_record_t *job_ptr, bool use_prefer)
 	}
 }
 
+static void _set_schedule_exit(schedule_exit_t code)
+{
+	xassert(code < SCHEDULE_EXIT_COUNT);
+
+	slurmctld_diag_stats.schedule_exit[code]++;
+}
+
 static int _schedule(bool full_queue)
 {
 	ListIterator job_iterator = NULL, part_iterator = NULL;
@@ -1408,8 +1416,10 @@ static int _schedule(bool full_queue)
 			    IS_JOB_PENDING(job_ptr)) /* test job in next part */
 				goto next_part;
 			job_ptr = list_next(job_iterator);
-			if (!job_ptr)
+			if (!job_ptr) {
+				_set_schedule_exit(SCHEDULE_EXIT_END);
 				break;
+			}
 
 			/* When not fifo we do this in build_job_queue(). */
 			if (IS_JOB_PENDING(job_ptr)) {
@@ -1451,8 +1461,10 @@ next_part:
 			use_prefer = false;
 		} else {
 			job_queue_rec = list_pop(job_queue);
-			if (!job_queue_rec)
+			if (!job_queue_rec) {
+				_set_schedule_exit(SCHEDULE_EXIT_END);
 				break;
+			}
 			array_task_id = job_queue_rec->array_task_id;
 			job_ptr  = job_queue_rec->job_ptr;
 			part_ptr = job_queue_rec->part_ptr;
@@ -1510,10 +1522,12 @@ next_part:
 next_task:
 		if ((time(NULL) - sched_start) >= sched_timeout) {
 			sched_debug("loop taking too long, breaking out");
+			_set_schedule_exit(SCHEDULE_EXIT_TIMEOUT);
 			break;
 		}
 		if (sched_max_job_start && (job_cnt >= sched_max_job_start)) {
 			sched_debug("sched_max_job_start reached, breaking out");
+			_set_schedule_exit(SCHEDULE_EXIT_MAX_JOB_START);
 			break;
 		}
 
@@ -1563,6 +1577,7 @@ next_task:
 		if (!full_queue && (job_depth++ > def_job_limit)) {
 			sched_debug("already tested %u jobs, breaking out",
 				    job_depth);
+			_set_schedule_exit(SCHEDULE_EXIT_MAX_DEPTH);
 			break;
 		}
 
@@ -1571,6 +1586,7 @@ next_task:
 		    (slurmctld_config.server_thread_count >= defer_rpc_cnt)) {
 			sched_debug("schedule() returning, too many RPCs");
 			slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+			_set_schedule_exit(SCHEDULE_EXIT_RPC_CNT);
 			break;
 		}
 		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
@@ -1807,6 +1823,7 @@ skip_start:
 			if (bf_licenses) {
 				sched_debug("%pJ is blocked on licenses. Stopping scheduling so license backfill can handle this",
 					    job_ptr);
+				_set_schedule_exit(SCHEDULE_EXIT_LIC);
 				break;
 			}
 		} else if (error_code == ESLURM_BURST_BUFFER_WAIT) {

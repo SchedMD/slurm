@@ -10807,6 +10807,8 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 			safe_unpack32(&msg->schedule_cycle_sum, buffer);
 			safe_unpack32(&msg->schedule_cycle_counter, buffer);
 			safe_unpack32(&msg->schedule_cycle_depth, buffer);
+			safe_unpack32_array(&msg->schedule_exit,
+					    &msg->schedule_exit_cnt, buffer);
 			safe_unpack32(&msg->schedule_queue_len, buffer);
 
 			safe_unpack32(&msg->bf_backfilled_jobs, buffer);

@@ -3163,6 +3163,8 @@ typedef struct stats_info_response_msg {
 	uint32_t schedule_cycle_sum;
 	uint32_t schedule_cycle_counter;
 	uint32_t schedule_cycle_depth;
+	uint32_t *schedule_exit;
+	uint32_t schedule_exit_cnt;
 	uint32_t schedule_queue_len;
 
 	uint32_t jobs_submitted;

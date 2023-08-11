@@ -154,6 +154,15 @@ typedef struct slurmctld_config {
 	pthread_t thread_id_rpc;
 } slurmctld_config_t;
 
+typedef enum {
+	SCHEDULE_EXIT_END,
+	SCHEDULE_EXIT_MAX_DEPTH,
+	SCHEDULE_EXIT_MAX_JOB_START,
+	SCHEDULE_EXIT_LIC,
+	SCHEDULE_EXIT_RPC_CNT,
+	SCHEDULE_EXIT_TIMEOUT,
+	SCHEDULE_EXIT_COUNT
+} schedule_exit_t;
 /* Job scheduling statistics */
 typedef struct diag_stats {
 	int proc_req_threads;
@@ -164,6 +173,7 @@ typedef struct diag_stats {
 	uint32_t schedule_cycle_sum;
 	uint32_t schedule_cycle_counter;
 	uint32_t schedule_cycle_depth;
+	uint32_t schedule_exit[SCHEDULE_EXIT_COUNT];
 	uint32_t schedule_queue_len;
 
 	uint32_t jobs_submitted;

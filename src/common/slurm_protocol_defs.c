@@ -6975,3 +6975,23 @@ extern uint32_t slurm_select_cr_type(void)
 
 	return cr_type;
 }
+
+char *schedule_exit2string(uint16_t opcode)
+{
+	switch (opcode) {
+	case SCHEDULE_EXIT_END:
+		return "End of job queue";
+	case SCHEDULE_EXIT_MAX_DEPTH:
+		return "Hit default_queue_depth";
+	case SCHEDULE_EXIT_MAX_JOB_START:
+		return "Hit sched_max_job_start";
+	case SCHEDULE_EXIT_LIC:
+		return "Blocked on licenses";
+	case SCHEDULE_EXIT_RPC_CNT:
+		return "Hit max_rpc_cnt";
+	case SCHEDULE_EXIT_TIMEOUT:
+		return "Timeout (max_sched_time)";
+	default:
+		return "unknown";
+	}
+}

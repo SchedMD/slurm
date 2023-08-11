@@ -114,6 +114,8 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			       buffer);
 			pack32(slurmctld_diag_stats.schedule_cycle_depth,
 			       buffer);
+			pack32_array(slurmctld_diag_stats.schedule_exit,
+				     SCHEDULE_EXIT_COUNT, buffer);
 			pack32(slurmctld_diag_stats.schedule_queue_len, buffer);
 
 			pack32(slurmctld_diag_stats.backfilled_jobs, buffer);
@@ -230,6 +232,9 @@ extern void reset_stats(int level)
 	slurmctld_diag_stats.jobs_completed = 0;
 	slurmctld_diag_stats.jobs_canceled = 0;
 	slurmctld_diag_stats.jobs_failed = 0;
+
+	memset(slurmctld_diag_stats.schedule_exit, 0,
+	       sizeof(slurmctld_diag_stats.schedule_exit));
 
 	/* Just resetting this value when reset requested explicitly */
 	if (level)
