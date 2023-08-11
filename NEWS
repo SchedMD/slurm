@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- Federation - Fix canceling pending federated jobs from non-origin clusters
     which could leave federated jobs orphaned from the origin cluster.
  -- Fix sinfo segfault when printing multiple clusters with --noheader option.
+ -- Federation - fix clusters not syncing if clusters are added to a federation
+    before they have registered with the dbd.
 
 * Changes in Slurm 23.02.4
 ==========================
