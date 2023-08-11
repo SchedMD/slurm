@@ -323,6 +323,9 @@ static void _estimate_cpus_per_gres(uint32_t ntasks_per_job,
 				    uint32_t cpus_per_task,
 				    uint16_t *cpus_per_gres)
 {
+	if (!ntasks_per_job || (ntasks_per_job == NO_VAL) || !gres_per_job)
+		return;
+
 	if (ntasks_per_job >= gres_per_job &&
 	    (ntasks_per_job % gres_per_job == 0)) {
 		/*
@@ -510,14 +513,11 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		} else if (gres_js->def_cpus_per_gres) {
 			cpus_per_gres = gres_js->def_cpus_per_gres;
 			has_cpus_per_gres = true;
-		} else if (first_pass && mc_ptr->ntasks_per_job &&
-			   (mc_ptr->ntasks_per_job != NO_VAL) &&
-			   gres_js->gres_per_job) {
+		} else if (first_pass)
 			_estimate_cpus_per_gres(mc_ptr->ntasks_per_job,
 						gres_js->gres_per_job,
 						mc_ptr->cpus_per_task,
 						&cpus_per_gres);
-		}
 
 		/* Filter out unusable GRES by socket */
 		cnt_avail_total = sock_gres->cnt_any_sock;
