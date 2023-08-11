@@ -2639,7 +2639,18 @@ static void _queue_func(bool locked, con_mgr_t *mgr, work_func_t func,
 	if (!locked)
 		slurm_mutex_lock(&mgr->mutex);
 
-	if (!mgr->deferred_funcs) {
+	if (mgr->shutdown) {
+		/*
+		 * Mgr is shutdown so workq will reject new work. Need to unlock
+		 * the mutex and run the work directly. To avoid function and
+		 * arg getting lost during shutdown.
+		 */
+		slurm_mutex_unlock(&mgr->mutex);
+		log_flag(NET, "%s: running function 0x%"PRIxPTR"(0x%"PRIxPTR") directly after shutdown",
+			 __func__, (uintptr_t) func, (uintptr_t) arg);
+		func(arg);
+		slurm_mutex_lock(&mgr->mutex);
+	} else if (!mgr->deferred_funcs) {
 		/* this should never fail here */
 		workq_add_work(mgr->workq, func, arg, tag);
 	} else {
