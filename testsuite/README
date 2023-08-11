@@ -963,7 +963,7 @@ test_122_2   Test job array with gres
 test_123_#   Testing of reservations.
 =====================================
 test_123_1   /features/reservations/test_flags.py
-test_123_4   Test reservations access
+test_123_4   Test reservation access
 
 test_124_#   Testing of AccountingStorageEnforce.
 =================================================
