@@ -156,6 +156,11 @@ documents those changes that are of interest to users and administrators.
     AND'd feature was sometimes AND'd to all sets of features instead of just
     the current set. E.g. "foo|bar&baz" was interpreted as {foo,baz} or
     {bar,baz} instead of how it is documented: "{foo} or {bar,baz}".
+ -- Fix job accounting so that when a job is requeued its allocated node count
+    is cleared. After the requeue, sacct will correctly show that the job has
+    0 AllocNodes while it is pending or if it is canceled before restarting.
+ -- sacct - AllocCPUS now correctly shows 0 if a job has not yet received an
+    allocation or if the job was canceled before getting one.
 
 * Changes in Slurm 23.02.4
 ==========================
