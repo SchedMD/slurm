@@ -1887,11 +1887,11 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
  * sock_gres IN - job/node request specifications, UPDATED: set bits in
  *		  gres_bit_select
  * job_id IN - job ID for logging
- * tasks_per_node_socket IN - Task count per socket on each node
+ * tasks_per_socket IN - Task count for each socket
 
  */
 static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
-			   uint32_t job_id, uint32_t **tasks_per_node_socket)
+			   uint32_t job_id, uint32_t *tasks_per_socket)
 {
 	uint16_t sock_cnt = 0;
 	int gres_cnt, g, l, s;
@@ -1912,10 +1912,9 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 	for (s = -1;	/* Socket == - 1 if GRES avail from any socket */
 	     s < sock_cnt; s++) {
 		if ((s > 0) &&
-		    (!tasks_per_node_socket[node_inx] ||
-		     (tasks_per_node_socket[node_inx][s] == 0)))
+		    (!tasks_per_socket || (tasks_per_socket[s] == 0)))
 			continue;
-		total_tasks += tasks_per_node_socket[node_inx][s];
+		total_tasks += tasks_per_socket[s];
 		total_gres_goal = total_tasks * gres_js->gres_per_task;
 		for (g = 0; g < gres_cnt; g++) {
 			if (total_gres_cnt >= total_gres_goal)
@@ -2165,18 +2164,17 @@ static void _free_tasks_per_node_sock(uint32_t **tasks_per_node_socket,
 }
 
 /* Return the count of tasks for a job on a given node */
-static uint32_t _get_task_cnt_node(uint32_t **tasks_per_node_socket,
-				   int node_inx, int sock_cnt)
+static uint32_t _get_task_cnt_node(uint32_t *tasks_per_socket, int sock_cnt)
 {
 	uint32_t task_cnt = 0;
 
-	if (!tasks_per_node_socket || !tasks_per_node_socket[node_inx]) {
-		error("%s: tasks_per_node_socket is NULL", __func__);
+	if (!tasks_per_socket) {
+		error("%s: tasks_per_socket is NULL", __func__);
 		return 1;	/* Best guess if no data structure */
 	}
 
 	for (int s = 0; s < sock_cnt; s++)
-		task_cnt += tasks_per_node_socket[node_inx][s];
+		task_cnt += tasks_per_socket[s];
 
 	return task_cnt;
 }
@@ -2297,8 +2295,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 						gres_js->gres_per_task;
 					gres_js->gres_cnt_node_select[i] *=
 						_get_task_cnt_node(
-							tasks_per_node_socket,
-							i,
+							tasks_per_node_socket[i],
 							node_ptr->tot_sockets);
 				} else if (gres_js->gres_per_job) {
 					gres_js->gres_cnt_node_select[i] =
@@ -2338,7 +2335,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 					       sock_gres, job_id, tres_mc_ptr);
 			} else if (gres_js->gres_per_task) {
 				_set_task_bits(i, sock_gres, job_id,
-					       tasks_per_node_socket);
+					       tasks_per_node_socket[i]);
 			} else if (gres_js->gres_per_job) {
 				job_fini = _set_job_bits1(
 					job_res, i, job_node_inx,
