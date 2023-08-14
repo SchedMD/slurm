@@ -380,6 +380,9 @@ typedef struct sock_gres {	/* GRES availability by socket */
 	int sock_cnt;		/* Socket count, size of bits_by_sock and
 				 * cnt_by_sock arrays */
 	uint64_t total_cnt;	/* Total GRES count of this name & type */
+	uint64_t total_cnt_before_filter; /* Total GRES count before
+					   * first_pass of
+					   * gres_select_filter_sock_core */
 } sock_gres_t;
 
 /* Similar to multi_core_data_t in slurm_protocol_defs.h */
