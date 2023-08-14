@@ -257,6 +257,7 @@ static void _het_job_start_test(node_space_map_t *node_space,
 				uint32_t het_job_id);
 static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 				  node_space_map_t *node_space);
+static void _set_bf_exit(bf_exit_t code);
 static int  _set_hetjob_details(void *x, void *arg);
 static int  _start_job(job_record_t *job_ptr, bitstr_t *avail_bitmap);
 static bool _test_resv_overlap(node_space_map_t *node_space,
@@ -1901,6 +1902,7 @@ static void _attempt_backfill(void)
 		job_queue_rec = list_pop(job_queue);
 		if (!job_queue_rec) {
 			log_flag(BACKFILL, "reached end of job queue");
+			_set_bf_exit(BF_EXIT_END);
 			break;
 		}
 
@@ -1908,6 +1910,7 @@ static void _attempt_backfill(void)
 		    max_backfill_job_cnt) {
 			log_flag(BACKFILL, "bf_max_job_test: limit of %d reached",
 				 max_backfill_job_cnt);
+			_set_bf_exit(BF_EXIT_MAX_JOB_TEST);
 			break;
 		}
 
@@ -1924,6 +1927,7 @@ static void _attempt_backfill(void)
 
 		if (slurmctld_config.shutdown_time ||
 		    (difftime(time(NULL),orig_sched_start) >= bf_max_time)){
+			_set_bf_exit(BF_EXIT_TIMEOUT);
 			break;
 		}
 
@@ -1946,6 +1950,7 @@ static void _attempt_backfill(void)
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
 				state_changed_break = true;
+				_set_bf_exit(BF_EXIT_STATE_CHANGED);
 				break;
 			}
 			/* Reset backfill scheduling timers, resume testing */
@@ -2279,6 +2284,7 @@ next_task:
 		    (difftime(time(NULL), orig_sched_start) >=
 		     bf_max_time)) {
 			_set_job_time_limit(job_ptr, orig_time_limit);
+			_set_bf_exit(BF_EXIT_TIMEOUT);
 			break;
 		}
 		test_time_count++;
@@ -2306,6 +2312,7 @@ next_task:
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count);
 				state_changed_break = true;
+				_set_bf_exit(BF_EXIT_STATE_CHANGED);
 				break;
 			}
 
@@ -2845,11 +2852,13 @@ skip_start:
 				    (job_start_cnt >= max_backfill_jobs_start)){
 					log_flag(BACKFILL, "bf_max_job_start limit of %d reached",
 						 max_backfill_jobs_start);
+					_set_bf_exit(BF_EXIT_MAX_JOB_START);
 					break;
 				}
 				if (job_test_cnt >= max_backfill_job_cnt) {
 					log_flag(BACKFILL, "bf_max_job_test: limit of %d reached",
 						 max_backfill_job_cnt);
+					_set_bf_exit(BF_EXIT_MAX_JOB_TEST);
 					break;
 				}
 				if (is_job_array_head &&
@@ -3069,6 +3078,7 @@ skip_start:
 						(bf_node_space_size / 2));
 				}
 				_set_job_time_limit(job_ptr, orig_time_limit);
+				_set_bf_exit(BF_EXIT_TABLE_LIMIT);
 				break;
 			}
 			_add_reservation(start_time, end_reserve, avail_bitmap,
@@ -4213,4 +4223,11 @@ static bool _het_job_deadlock_test(job_record_t *job_ptr)
 	list_iterator_destroy(part_iter);
 
 	return have_deadlock;
+}
+
+static void _set_bf_exit(bf_exit_t code)
+{
+	xassert(code < BF_EXIT_COUNT);
+
+	slurmctld_diag_stats.bf_exit[code]++;
 }

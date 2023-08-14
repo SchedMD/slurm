@@ -6995,3 +6995,23 @@ char *schedule_exit2string(uint16_t opcode)
 		return "unknown";
 	}
 }
+
+char *bf_exit2string(uint16_t opcode)
+{
+	switch (opcode) {
+	case BF_EXIT_END:
+		return "End of job queue";
+	case BF_EXIT_MAX_JOB_START:
+		return "Hit bf_max_job_start";
+	case BF_EXIT_MAX_JOB_TEST:
+		return "Hit bf_max_job_test";
+	case BF_EXIT_STATE_CHANGED:
+		return "System state changed";
+	case BF_EXIT_TABLE_LIMIT:
+		return "Hit table size limit (bf_node_space_size)";
+	case BF_EXIT_TIMEOUT:
+		return "Timeout (bf_max_time)";
+	default:
+		return "unknown";
+	}
+}

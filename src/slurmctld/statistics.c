@@ -140,6 +140,8 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			pack32(slurmctld_diag_stats.bf_active, buffer);
 			pack32(slurmctld_diag_stats.backfilled_het_jobs,
 			       buffer);
+			pack32_array(slurmctld_diag_stats.bf_exit,
+				     BF_EXIT_COUNT, buffer);
 		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		parts_packed = resp;
@@ -253,6 +255,9 @@ extern void reset_stats(int level)
 	slurmctld_diag_stats.bf_cycle_max = 0;
 	slurmctld_diag_stats.bf_last_depth = 0;
 	slurmctld_diag_stats.bf_last_depth_try = 0;
+
+	memset(slurmctld_diag_stats.bf_exit, 0,
+	       sizeof(slurmctld_diag_stats.bf_exit));
 
 	last_proc_req_start = time(NULL);
 }

@@ -10830,6 +10830,8 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 
 			safe_unpack32(&msg->bf_active, buffer);
 			safe_unpack32(&msg->bf_backfilled_het_jobs, buffer);
+			safe_unpack32_array(&msg->bf_exit,
+					    &msg->bf_exit_cnt, buffer);
 		}
 
 		safe_unpack32(&msg->rpc_type_size, buffer);

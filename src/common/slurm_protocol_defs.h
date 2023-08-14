@@ -1979,6 +1979,8 @@ extern uint32_t slurm_select_cr_type(void);
 
 extern char *schedule_exit2string(uint16_t opcode);
 
+extern char *bf_exit2string(uint16_t opcode);
+
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\

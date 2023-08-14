@@ -163,6 +163,17 @@ typedef enum {
 	SCHEDULE_EXIT_TIMEOUT,
 	SCHEDULE_EXIT_COUNT
 } schedule_exit_t;
+
+typedef enum {
+	BF_EXIT_END,
+	BF_EXIT_MAX_JOB_START,
+	BF_EXIT_MAX_JOB_TEST,
+	BF_EXIT_STATE_CHANGED,
+	BF_EXIT_TABLE_LIMIT,
+	BF_EXIT_TIMEOUT,
+	BF_EXIT_COUNT
+} bf_exit_t;
+
 /* Job scheduling statistics */
 typedef struct diag_stats {
 	int proc_req_threads;
@@ -196,6 +207,7 @@ typedef struct diag_stats {
 	uint64_t bf_cycle_sum;
 	uint32_t bf_depth_sum;
 	uint32_t bf_depth_try_sum;
+	uint32_t bf_exit[BF_EXIT_COUNT];
 	uint32_t bf_last_depth;
 	uint32_t bf_last_depth_try;
 	uint32_t bf_queue_len;

@@ -3184,6 +3184,8 @@ typedef struct stats_info_response_msg {
 	uint64_t bf_cycle_sum;
 	uint32_t bf_cycle_last;
 	uint32_t bf_cycle_max;
+	uint32_t *bf_exit;
+	uint32_t bf_exit_cnt;
 	uint32_t bf_last_depth;
 	uint32_t bf_last_depth_try;
 	uint32_t bf_depth_sum;

@@ -206,6 +206,12 @@ static int _print_stats(void)
 		printf("\tMean table size: %u\n",
 		       buf->bf_table_size_sum / buf->bf_cycle_counter);
 	}
+	printf("\nBackfill exit\n");
+
+	for (i = 0; i < buf->bf_exit_cnt; i++) {
+		printf("\t%s:%2u\n", bf_exit2string(i),
+		       buf->bf_exit[i]);
+	}
 
 	printf("\nLatency for 1000 calls to gettimeofday(): %d microseconds\n",
 	       buf->gettimeofday_latency);
