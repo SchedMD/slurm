@@ -53,7 +53,8 @@ typedef struct {
 	int last_op;
 	int last_paren_op;
 	list_t *paren_lists;
-	list_t *feature_sets;
+	list_t *curr_feature_sets;
+	list_t *final_feature_sets;
 	list_t *tmp_feature_list;
 	list_t *working_list;
 } evalute_feature_arg_t;
@@ -273,8 +274,8 @@ static int _evaluate_job_feature(void *x, void *arg)
 		list_append(args->working_list, args->tmp_feature_list);
 	} else { /* FEATURE_OP_AND, other ops not supported */
 		/*
-		 * - If we're in a paren, append to current feature list.
-		 * - Otherwise, distribute to all possible lists.
+		 * - If we're in a paren, append to the current feature list.
+		 * - Otherwise, distribute to all of the current lists.
 		 */
 		if (args->paren_lists) {
 			if (!args->tmp_feature_list) {
@@ -294,10 +295,10 @@ static int _evaluate_job_feature(void *x, void *arg)
 
 			list_append(features, job_feat_ptr);
 			list_append(tmp, features);
-			_distribute_lists(&args->feature_sets, tmp,
+			_distribute_lists(&args->curr_feature_sets, tmp,
 					  args->debug_flag);
 			/* Update working_list to the new list */
-			args->working_list = args->feature_sets;
+			args->working_list = args->curr_feature_sets;
 
 			FREE_NULL_LIST(tmp);
 		}
@@ -306,39 +307,59 @@ static int _evaluate_job_feature(void *x, void *arg)
 	if (args->last_paren_cnt > job_feat_ptr->paren) {
 		/*
 		 * End of expression in parenthesis
-		 * OR: Transfer paren_lists to feature_sets.
+		 * OR: Transfer paren_lists to curr_feature_sets.
 		 */
 		if ((args->last_paren_op == FEATURE_OP_OR) ||
 		    (args->last_paren_op == FEATURE_OP_MOR)) {
-			list_transfer(args->feature_sets,
+			list_transfer(args->curr_feature_sets,
 				      args->paren_lists);
 		} else { /* FEATURE_OP_AND, other ops not supported */
-			_distribute_lists(&args->feature_sets,
+			/* Distribute to the current feature sets */
+			_distribute_lists(&args->curr_feature_sets,
 					  args->paren_lists,
 					  args->debug_flag);
 		}
 		FREE_NULL_LIST(args->paren_lists);
 		args->tmp_feature_list = NULL;
 		/* Update working_list to the new list */
-		args->working_list = args->feature_sets;
+		args->working_list = args->curr_feature_sets;
+	}
+
+	if (!args->paren_lists &&
+	    ((job_feat_ptr->op_code == FEATURE_OP_OR) ||
+	     (job_feat_ptr->op_code == FEATURE_OP_MOR))) {
+		/*
+		 * If not inside parentheses, move feature sets in the
+		 * current list to the final list, and start fresh with
+		 * the current list.
+		 */
+		list_transfer(args->final_feature_sets,
+			      args->curr_feature_sets);
 	}
 
 	if (args->debug_flag) {
-		char *feature_sets_str = NULL, *paren_lists_str = NULL;
+		char *curr_feature_sets_str = NULL;
+		char *final_feature_sets_str = NULL;
+		char *paren_lists_str = NULL;
 
-		if (args->feature_sets)
-			list_for_each(args->feature_sets,
+		if (args->curr_feature_sets)
+			list_for_each(args->curr_feature_sets,
 				      job_features_set2str,
-				      &feature_sets_str);
+				      &curr_feature_sets_str);
+		if (args->final_feature_sets)
+			list_for_each(args->final_feature_sets,
+				      job_features_set2str,
+				      &final_feature_sets_str);
 		if (args->paren_lists)
 			list_for_each(args->paren_lists,
 				      job_features_set2str,
 				      &paren_lists_str);
-		log_flag(NODE_FEATURES, "%s: After evaluating feature %s: feature sets: %s; paren lists: %s",
-			 __func__, job_feat_ptr->name, feature_sets_str,
-			 paren_lists_str);
+		log_flag(NODE_FEATURES, "%s: After evaluating feature %s: final feature sets: %s; curr feature sets: %s; paren lists: %s",
+			 __func__, job_feat_ptr->name, final_feature_sets_str,
+			 curr_feature_sets_str, paren_lists_str);
 
-		xfree(feature_sets_str);
+		xfree(curr_feature_sets_str);
+		xfree(final_feature_sets_str);
 		xfree(paren_lists_str);
 	}
 
@@ -357,7 +378,8 @@ extern list_t *job_features_list2feature_sets(char *job_features,
 		.last_op = FEATURE_OP_AND,
 		.last_paren_op = FEATURE_OP_AND,
 		.paren_lists = NULL,
-		.feature_sets = NULL,
+		.curr_feature_sets = NULL,
+		.final_feature_sets = NULL,
 		.tmp_feature_list = NULL,
 		.working_list = NULL,
 	};
@@ -366,18 +388,24 @@ extern list_t *job_features_list2feature_sets(char *job_features,
 		suppress_log_flag ? false :
 		(slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES);
 
-	feature_sets_arg.feature_sets = list_create((ListDelF) list_destroy);
-	feature_sets_arg.working_list = feature_sets_arg.feature_sets;
+	feature_sets_arg.curr_feature_sets =
+		list_create((ListDelF) list_destroy);
+	feature_sets_arg.final_feature_sets =
+		list_create((ListDelF) list_destroy);
+	feature_sets_arg.working_list = feature_sets_arg.curr_feature_sets;
 
 	if (feature_sets_arg.debug_flag)
 		log_flag(NODE_FEATURES, "%s: Convert %s to a matching OR expression",
 			 __func__, job_features);
 	list_for_each(job_feature_list, _evaluate_job_feature,
 		      &feature_sets_arg);
+	list_transfer(feature_sets_arg.final_feature_sets,
+		      feature_sets_arg.curr_feature_sets);
 
+	FREE_NULL_LIST(feature_sets_arg.curr_feature_sets);
 	FREE_NULL_LIST(feature_sets_arg.paren_lists);
 
-	return feature_sets_arg.feature_sets;
+	return feature_sets_arg.final_feature_sets;
 }
 
 extern int job_features_set2str(void *x, void *arg)
