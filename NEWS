@@ -40,6 +40,13 @@ documents those changes that are of interest to users and administrators.
     behavior of the pmix plugin in 23.02.0. Note that neither of these plugins
     makes use of the "MpiParams=ports=" option, and previously were only limited
     by the systems ephemeral port range.
+ -- node_features/helpers - Fix node selection for jobs requesting changeable
+    features with the '|' operator, which could prevent jobs from running on
+    some valid nodes.
+ -- node_features/helpers - Fix inconsistent handling of '&' and '|', where an
+    AND'd feature was sometimes AND'd to all sets of features instead of just
+    the current set. E.g. "foo|bar&baz" was interpreted as {foo,baz} or
+    {bar,baz} instead of how it is documented: "{foo} or {bar,baz}".
 
 * Changes in Slurm 23.02.4
 ==========================

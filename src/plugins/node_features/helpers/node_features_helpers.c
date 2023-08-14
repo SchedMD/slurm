@@ -546,11 +546,28 @@ static char *_xlate_job_features(char *job_features,
 	 * Find the first feature set that works for this job and turn it into a
 	 * comma-separated list of char* of only the changeable features.
 	 */
-	list_for_each(feature_sets,
-		      _reconcile_job_features,
-		      &valid_arg);
-	log_flag(NODE_FEATURES, "final_feature_str=%s",
-		 valid_arg.final_feature_str);
+	if (list_for_each(feature_sets, _reconcile_job_features,
+			  &valid_arg) < 0) {
+		/*
+		 * Found a valid feature set. It is possible for this string to
+		 * be NULL if the chosen feature set contained only static
+		 * features.
+		 */
+		log_flag(NODE_FEATURES, "final_feature_str=%s",
+			 valid_arg.final_feature_str);
+	} else {
+		char *job_nodes = bitmap2node_name(job_node_bitmap);
+
+		/*
+		 * Here the list_for_each iterated through all features sets and
+		 * did not find a valid feature set. This should not happen
+		 * and means there is a mismatch in handling features in this
+		 * plugin and in the scheduler.
+		 */
+		error("Failed to translate feature request '%s' into features that match with the job's nodes '%s'",
+		      job_features, job_nodes);
+		xfree(job_nodes);
+	}
 
 	FREE_NULL_LIST(feature_sets);
 
@@ -873,8 +890,6 @@ extern char *node_features_p_job_xlate(char *job_features,
 				       list_t *feature_list,
 				       bitstr_t *job_node_bitmap)
 {
-	char *node_features = NULL;
-
 	if (!job_features)
 		return NULL;
 
@@ -884,20 +899,7 @@ extern char *node_features_p_job_xlate(char *job_features,
 		return NULL;
 	}
 
-	node_features = _xlate_job_features(job_features, feature_list,
-					    job_node_bitmap);
-	if (!node_features) {
-		char *job_nodes = bitmap2node_name(job_node_bitmap);
-		/*
-		 * This should not happen and means there is a mismatch in
-		 * handling features in this plugin and in the scheduler.
-		 */
-		error("Failed to translate feature request '%s' into features that match with the job's nodes '%s'",
-		      job_features, job_nodes);
-		xfree(job_nodes);
-	}
-
-	return node_features;
+	return _xlate_job_features(job_features, feature_list, job_node_bitmap);
 }
 
 /* Return true if the plugin requires PowerSave mode for booting nodes */
