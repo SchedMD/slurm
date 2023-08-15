@@ -506,6 +506,7 @@ typedef struct {
 
 typedef struct {
 	bitstr_t *core_bitmap;
+	bitstr_t **exc_cores;
 } resv_exc_t;
 
 extern List resv_list;		/* list of slurmctld_resv_t entries */

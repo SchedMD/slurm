@@ -408,26 +408,20 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			     resv_exc_t *resv_exc_ptr)
 {
 	int rc;
-	bitstr_t **exc_cores;
 
 	xassert(node_bitmap);
 	debug2("evaluating %pJ", job_ptr);
 	if (!job_ptr->details)
 		return EINVAL;
 
-	/*
-	 * FIXME: resv_exc_ptr->core_bitmap is a full-system core bitmap to be
-	 * replaced with a set of per-node bitmaps in a future release of Slurm
-	 */
-	exc_cores = core_bitmap_to_array(resv_exc_ptr->core_bitmap);
 #if _DEBUG
-	if (exc_cores) {
+	if (resv_exc_ptr->exc_cores) {
 		int i;
 		char tmp[128];
 		for (i = 0; i < next_node(&i); i++) {
-			if (!exc_cores[i])
+			if (!resv_exc_ptr->exc_cores[i])
 				continue;
-			bit_fmt(tmp, sizeof(tmp), exc_cores[i]);
+			bit_fmt(tmp, sizeof(tmp), resv_exc_ptr->exc_cores[i]);
 			error("IN exc_cores[%d] %s", i, tmp);
 		}
 	}
@@ -435,10 +429,7 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 	rc = job_test(job_ptr, node_bitmap, min_nodes, max_nodes,
 		      req_nodes, mode, preemptee_candidates,
-		      preemptee_job_list, exc_cores);
-
-	free_core_array(&exc_cores);
-
+		      preemptee_job_list, resv_exc_ptr->exc_cores);
 	return rc;
 }
 

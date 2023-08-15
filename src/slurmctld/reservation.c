@@ -55,6 +55,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
+#include "src/common/core_array.h"
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
 #include "src/common/job_features.h"
@@ -243,6 +244,7 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 	xassert(resv_desc_ptr->job_ptr);
 
 	resv_exc.core_bitmap = core_bitmap ? *core_bitmap : NULL;
+	resv_exc.exc_cores = core_bitmap_to_array(resv_exc.core_bitmap);
 
 	job_ptr = resv_desc_ptr->job_ptr;
 
@@ -252,6 +254,8 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 		job_ptr->details->min_nodes,
 		SELECT_MODE_WILL_RUN, NULL, NULL,
 		&resv_exc);
+
+	free_core_array(&resv_exc.exc_cores);
 
 	if (rc != SLURM_SUCCESS) {
 		return NULL;
@@ -3998,6 +4002,7 @@ extern void reservation_delete_resv_exc_parts(resv_exc_t *resv_exc)
 		return;
 
 	FREE_NULL_BITMAP(resv_exc->core_bitmap);
+	free_core_array(&resv_exc->exc_cores);
 }
 
 extern void reservation_delete_resv_exc(resv_exc_t *resv_exc)
@@ -6819,9 +6824,12 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		 */
 		if (resv_ptr->core_bitmap && resv_exc_ptr &&
 		    !(resv_ptr->flags & RESERVE_FLAG_FLEX) ) {
+			free_core_array(&resv_exc_ptr->exc_cores);
 			resv_exc_ptr->core_bitmap =
 				bit_copy(resv_ptr->core_bitmap);
 			bit_not(resv_exc_ptr->core_bitmap);
+			resv_exc_ptr->exc_cores =
+				core_bitmap_to_array(resv_exc_ptr->core_bitmap);
 		}
 
 		return SLURM_SUCCESS;
@@ -6931,6 +6939,14 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			}
 		}
 		list_iterator_destroy(iter);
+
+		if (resv_exc_ptr) {
+			free_core_array(&resv_exc_ptr->exc_cores);
+			if (resv_exc_ptr->core_bitmap) {
+				resv_exc_ptr->exc_cores = core_bitmap_to_array(
+					resv_exc_ptr->core_bitmap);
+			}
+		}
 
 		if ((rc == SLURM_SUCCESS) && move_time) {
 			if (license_job_test(job_ptr, job_start_time, reboot)
