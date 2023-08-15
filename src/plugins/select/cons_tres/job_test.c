@@ -4042,7 +4042,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			      uint16_t cr_type,
 			      node_use_record_t *node_usage,
 			      enum node_cr_state job_node_req,
-			      bitstr_t **exc_cores, bool qos_preemptor)
+			      resv_exc_t *resv_exc_ptr, bool qos_preemptor)
 {
 	node_record_t *node_ptr;
 	uint32_t gres_cpus, gres_cores;
@@ -4095,8 +4095,10 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 		}
 
 		/* Exclude nodes with reserved cores */
-		if ((job_ptr->details->whole_node == 1) && exc_cores) {
-			if (exc_cores[i] && (bit_ffs(exc_cores[i]) != -1)) {
+		if ((job_ptr->details->whole_node == 1) &&
+		    resv_exc_ptr->exc_cores) {
+			if (resv_exc_ptr->exc_cores[i] &&
+			    (bit_ffs(resv_exc_ptr->exc_cores[i]) != -1)) {
 				debug3("node %s exclusive", node_ptr->name);
 				goto clear_bit;
 			}
@@ -4213,7 +4215,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		     enum node_cr_state job_node_req,
 		     part_res_record_t *cr_part_ptr,
 		     node_use_record_t *node_usage, list_t *license_list,
-		     bitstr_t **exc_cores, bool prefer_alloc_nodes,
+		     resv_exc_t *resv_exc_ptr, bool prefer_alloc_nodes,
 		     bool qos_preemptor, bool preempt_mode)
 {
 	int error_code = SLURM_SUCCESS;
@@ -4253,7 +4255,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	if (!test_only) {
 		error_code = _verify_node_state(
 			cr_part_ptr, job_ptr, node_bitmap, cr_type,
-			node_usage, job_node_req, exc_cores, qos_preemptor);
+			node_usage, job_node_req, resv_exc_ptr, qos_preemptor);
 		if (error_code != SLURM_SUCCESS) {
 			return error_code;
 		}
@@ -4438,11 +4440,12 @@ try_next_nodes_cnt:
 	free_core_array(&free_cores);
 	free_cores = copy_core_array(avail_cores);
 
-	if (exc_cores) {
+	if (resv_exc_ptr->exc_cores) {
 #if _DEBUG
-		core_array_log("exclude reserved cores", NULL, exc_cores);
+		core_array_log("exclude reserved cores",
+			       NULL, resv_exc_ptr->exc_cores);
 #endif
-		core_array_and_not(free_cores, exc_cores);
+		core_array_and_not(free_cores, resv_exc_ptr->exc_cores);
 	}
 
 	/* remove all existing allocations from free_cores */
@@ -4509,8 +4512,8 @@ try_next_nodes_cnt:
 	bit_copybits(node_bitmap, orig_node_map);
 	free_core_array(&free_cores);
 	free_cores = copy_core_array(avail_cores);
-	if (exc_cores)
-		core_array_and_not(free_cores, exc_cores);
+	if (resv_exc_ptr->exc_cores)
+		core_array_and_not(free_cores, resv_exc_ptr->exc_cores);
 
 	if (preempt_by_part) {
 		/*
@@ -5297,7 +5300,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			  uint32_t req_nodes, uint16_t job_node_req,
 			  List preemptee_candidates,
 			  List *preemptee_job_list,
-			  bitstr_t **exc_core_bitmap)
+			  resv_exc_t *resv_exc_ptr)
 {
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
@@ -5318,7 +5321,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_WILL_RUN, tmp_cr_type, job_node_req,
 		       select_part_record, select_node_usage,
-		       cluster_license_list, exc_core_bitmap, false, false,
+		       cluster_license_list, resv_exc_ptr, false, false,
 		       false);
 	if (rc == SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(orig_map);
@@ -5372,7 +5375,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes,
 			       req_nodes, SELECT_MODE_WILL_RUN, tmp_cr_type,
 			       job_node_req, future_part, future_usage,
-			       future_license_list, exc_core_bitmap, false,
+			       future_license_list, resv_exc_ptr, false,
 			       qos_preemptor, true);
 		if (rc == SLURM_SUCCESS) {
 			/*
@@ -5467,7 +5470,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				       max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN, tmp_cr_type,
 				       job_node_req, future_part, future_usage,
-				       future_license_list, exc_core_bitmap,
+				       future_license_list, resv_exc_ptr,
 				       backfill_busy_nodes, qos_preemptor,
 				       true);
 			if (rc == SLURM_SUCCESS) {
@@ -5523,7 +5526,7 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    uint32_t req_nodes, uint16_t job_node_req,
 		    List preemptee_candidates, List *preemptee_job_list,
-		    bitstr_t **exc_cores)
+		    resv_exc_t *resv_exc_ptr)
 {
 	int rc;
 	bitstr_t *orig_node_map = NULL, *save_node_map;
@@ -5544,7 +5547,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_RUN_NOW, tmp_cr_type, job_node_req,
 		       select_part_record, select_node_usage,
-		       cluster_license_list, exc_cores, false, false,
+		       cluster_license_list, resv_exc_ptr, false, false,
 		       preempt_mode);
 
 	/* Don't try preempting for licenses if not enabled */
@@ -5568,7 +5571,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 			       req_nodes, SELECT_MODE_RUN_NOW, tmp_cr_type,
 			       job_node_req, select_part_record,
 			       select_node_usage, cluster_license_list,
-			       exc_cores, false, true, preempt_mode);
+			       resv_exc_ptr, false, true, preempt_mode);
 	} else if ((rc != SLURM_SUCCESS) && preemptee_candidates) {
 		int preemptee_cand_cnt = list_count(preemptee_candidates);
 		/* Remove preemptable jobs from simulated environment */
@@ -5608,7 +5611,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 				       SELECT_MODE_WILL_RUN,
 				       tmp_cr_type, job_node_req,
 				       future_part, future_usage,
-				       future_license_list, exc_cores,
+				       future_license_list, resv_exc_ptr,
 				       false, false, preempt_mode);
 			tmp_job_ptr->details->usable_nodes = 0;
 			if (rc != SLURM_SUCCESS)
@@ -6303,7 +6306,7 @@ static avail_res_t *_allocate(job_record_t *job_ptr,
  * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
- * IN exc_cores - Cores to be excluded for use (in advanced reservation)
+ * IN resv_exc_ptr - Various TRES which the job can NOT use.
  * RET zero on success, EINVAL otherwise
  * globals (passed via select_p_node_init):
  *	node_record_count - count of nodes configured
@@ -6320,7 +6323,7 @@ extern int job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		    uint32_t req_nodes, uint16_t mode,
 		    List preemptee_candidates,
 		    List *preemptee_job_list,
-		    bitstr_t **exc_cores)
+		    resv_exc_t *resv_exc_ptr)
 {
 	int rc = EINVAL;
 	uint16_t job_node_req;
@@ -6356,7 +6359,8 @@ extern int job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		verbose("%pJ node_mode:%s alloc_mode:%s",
 			job_ptr, node_mode, alloc_mode);
 
-		core_array_log("node_list & exc_cores", node_bitmap, exc_cores);
+		core_array_log("node_list & exc_cores",
+			       node_bitmap, resv_exc_ptr->exc_cores);
 
 		verbose("nodes: min:%u max:%u requested:%u avail:%u",
 			min_nodes, max_nodes, req_nodes,
@@ -6370,7 +6374,7 @@ extern int job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				    req_nodes, job_node_req,
 				    preemptee_candidates,
 				    preemptee_job_list,
-				    exc_cores);
+				    resv_exc_ptr);
 	} else if (mode == SELECT_MODE_TEST_ONLY) {
 		rc = _test_only(job_ptr, node_bitmap, min_nodes,
 				max_nodes, req_nodes, job_node_req);
@@ -6378,7 +6382,7 @@ extern int job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		rc = _run_now(job_ptr, node_bitmap, min_nodes, max_nodes,
 			      req_nodes, job_node_req,
 			      preemptee_candidates,
-			      preemptee_job_list, exc_cores);
+			      preemptee_job_list, resv_exc_ptr);
 	} else {
 		/* Should never get here */
 		error("Mode %d is invalid",
