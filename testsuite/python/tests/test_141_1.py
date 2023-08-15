@@ -30,20 +30,6 @@ def setup():
     # Time to wait for cloud node to power up and register with slurmctld after being ALLOCATED job
     atf.require_config_parameter("ResumeTimeout", resume_timeout)
 
-    ''' Registering CLOUD Nodes with Slurmctld Background:
-
-        With CLOUD nodes, Slurm assumes that the nodes aren't addressable (can't communicate with
-        the nodes by their nodenames), so you have to tell the controller how to communicate with
-        the nodes by telling the controller what the node's nodeaddr is. You can do this by doing:
-            scontrol update nodename=<name> nodeaddr=<addr> nodehostname=<hostname>
-
-        OR...
-
-        you can use cloud_reg_addrs (this is newer and better), which will set the nodeaddr and
-        nodehostname when registering the slurmd.
-    '''
-    atf.require_config_parameter_includes("SlurmctldParameters", "cloud_reg_addrs")
-
     # Mark nodes as IDLE, regardless of current state, when suspending nodes with
     # SuspendProgram so that nodes will be eligible to be resumed at a later time
     atf.require_config_parameter_includes("SlurmctldParameters", "idle_on_node_suspend")
