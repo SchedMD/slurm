@@ -474,4 +474,9 @@ extern void con_mgr_add_delayed_work(con_mgr_t *mgr, con_mgr_fd_t *con,
 				     long nanoseconds, void *arg,
 				     const char *tag);
 
+/*
+ * Get number of threads used by conmgr
+ */
+extern int con_mgr_get_thread_count(const con_mgr_t *mgr);
+
 #endif /* _CONMGR_H */
