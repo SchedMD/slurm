@@ -93,4 +93,10 @@ extern int workq_get_active(workq_t *workq);
 		_X = NULL;              \
 	} while (0)
 
+
+/*
+ * Get number of threads used by workq
+ */
+extern int get_workq_thread_count(const workq_t *workq);
+
 #endif /* SLURMRESTD_WORKQ_H */

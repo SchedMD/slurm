@@ -61,6 +61,9 @@ struct workq_s {
 	/* manger is actively shutting down */
 	bool shutdown;
 
+	/* number of threads */
+	int threads;
+
 	pthread_mutex_t mutex;
 	pthread_cond_t cond;
 };
@@ -165,6 +168,7 @@ extern workq_t *new_workq(int count)
 	workq->magic = MAGIC_WORKQ;
 	workq->workers = list_create(NULL);
 	workq->work = list_create(_work_delete);
+	workq->threads = count;
 
 	slurm_mutex_init(&workq->mutex);
 	slurm_cond_init(&workq->cond, NULL);
@@ -348,4 +352,9 @@ extern int workq_get_active(workq_t *workq)
 	slurm_mutex_unlock(&workq->mutex);
 
 	return active;
+}
+
+extern int get_workq_thread_count(const workq_t *workq)
+{
+	return workq->threads;
 }
