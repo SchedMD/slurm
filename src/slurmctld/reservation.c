@@ -5259,25 +5259,14 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 
 	/* Satisfy feature specification */
 	if (resv_desc_ptr->features) {
-		job_record_t *job_ptr;
+		job_record_t *job_ptr = resv_desc_ptr->job_ptr;
 		bool dummy = false;
 		int total_node_cnt = 0;
 
-		/*
-		 * Build dummy job record so that existing job feature logic
-		 * can be re-used. The alternative of passing all of the
-		 * relevant fields to directly the functions rather than a
-		 * job record was explored and found too cumbersome.
-		 */
-		job_ptr = xmalloc(sizeof(job_record_t));
-		job_ptr->details = xmalloc(sizeof(job_details_t));
-		job_ptr->details->features = resv_desc_ptr->features;
-		/* job_ptr->job_id = 0; */
-		/* job_ptr->user_id = 0; */
-		rc = build_feature_list(job_ptr, false, true);
-		if ((rc == SLURM_SUCCESS) &&
-		    list_find_first(job_ptr->details->feature_list,
-				    _have_mor_feature, &dummy)) {
+		if (!job_ptr->details->feature_list)
+			rc = ESLURM_INVALID_FEATURE;
+		else if (list_find_first(job_ptr->details->feature_list,
+					 _have_mor_feature, &dummy)) {
 			rc = ESLURM_INVALID_FEATURE;
 		} else {
 			find_feature_nodes(job_ptr->details->feature_list,
@@ -5286,6 +5275,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				total_node_cnt = resv_desc_ptr->node_cnt;
 			}
 		}
+
 		if (rc != SLURM_SUCCESS) {
 			;
 		} else if (list_find_first(job_ptr->details->feature_list,
@@ -5329,9 +5319,6 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				bit_and(node_bitmaps[i], tmp_bitmap);
 			FREE_NULL_BITMAP(tmp_bitmap);
 		}
-		FREE_NULL_LIST(job_ptr->details->feature_list);
-		xfree(job_ptr->details);
-		xfree(job_ptr);
 	}
 
 	if (!have_xand && (rc == SLURM_SUCCESS)) {

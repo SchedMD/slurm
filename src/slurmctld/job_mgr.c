@@ -19276,6 +19276,12 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 	detail_ptr->orig_min_cpus = detail_ptr->min_cpus;
 	detail_ptr->orig_max_cpus = detail_ptr->max_cpus = NO_VAL;
 	detail_ptr->features = xstrdup(resv_desc_ptr->features);
+
+	if (build_feature_list(job_ptr, false, true)) {
+		error("%s: invalid features(%s) for reservation given",
+		      __func__, detail_ptr->features);
+	}
+
 	detail_ptr->task_dist = SLURM_DIST_BLOCK;
 	job_ptr->best_switch = true;
 
