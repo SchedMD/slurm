@@ -942,7 +942,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	/* should not get here */
 }
 
-/* This should only be going to the stepd, no protocol version neede */
+/* This should only be going to the stepd, no protocol version needed */
 static void _pack_node_conf_lite(void *ptr, buf_t *buffer)
 {
 	slurm_conf_node_t *n = ptr;
@@ -973,7 +973,7 @@ unpack_error:
 	return NULL;
 }
 
-/* This should only be going to the stepd, no protocol version neede */
+/* This should only be going to the stepd, no protocol version needed */
 static void _pack_frontend_conf_lite(void *ptr, buf_t *buffer)
 {
 	slurm_conf_frontend_t *n = ptr;
