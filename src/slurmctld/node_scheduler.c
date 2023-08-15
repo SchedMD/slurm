@@ -3142,6 +3142,8 @@ extern void launch_prolog(job_record_t *job_ptr)
 			      __func__, job_ptr);
 	}
 
+	job_ptr->prolog_launch_time = time(NULL);
+
 	/* Launch the RPC via agent */
 	set_agent_arg_r_uid(agent_arg_ptr, SLURM_AUTH_UID_ANY);
 	agent_queue_request(agent_arg_ptr);
