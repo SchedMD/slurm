@@ -2710,12 +2710,12 @@ extern void slurm_reset_alias(char *node_name, char *node_addr,
 	p = node_to_host_hashtbl[idx];
 	while (p) {
 		if (xstrcmp(p->alias, node_name) == 0) {
-			if (node_addr) {
+			if (xstrcmp(p->address, node_addr)) {
 				xfree(p->address);
 				p->address = xstrdup(node_addr);
 				p->addr_initialized = false;
 			}
-			if (node_hostname) {
+			if (xstrcmp(p->hostname, node_hostname)) {
 				_reset_hostname(p, node_hostname);
 			}
 			break;
