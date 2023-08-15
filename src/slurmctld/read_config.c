@@ -507,7 +507,8 @@ static void _validate_slurmd_addr(void)
 			continue;
 		if (IS_NODE_CLOUD(node_ptr) &&
 		    (IS_NODE_POWERING_DOWN(node_ptr) ||
-		     IS_NODE_POWERED_DOWN(node_ptr)))
+		     IS_NODE_POWERED_DOWN(node_ptr) ||
+		     IS_NODE_POWERING_UP(node_ptr)))
 				continue;
 		if (node_ptr->port == 0)
 			node_ptr->port = slurm_conf.slurmd_port;
