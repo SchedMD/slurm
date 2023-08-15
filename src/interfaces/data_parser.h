@@ -137,6 +137,7 @@ typedef enum {
 	DATA_PARSER_STEP_TRES_REQ_MIN, /* slurmdb_step_rec_t->tres_usage_in_min(|_nodeid|taskid) */
 	DATA_PARSER_STEP_TRES_USAGE_MAX, /* slurmdb_step_rec_t->tres_usage_out_in_max(|_nodeid|taskid) */
 	DATA_PARSER_STEP_TRES_USAGE_MIN, /* slurmdb_step_rec_t->tres_usage_out_in_min(|_nodeid|taskid) */
+	DATA_PARSER_STEP_NAMES, /* uint32_t <-> SLURM_EXTERN_CONT,SLURM_BATCH_SCRIPT,SLURM_PENDING_STEP,SLURM_INTERACTIVE_STEP */
 	DATA_PARSER_JOB_USER, /* user/uid from slurmdb_job_rec_t* */
 	DATA_PARSER_QOS_ID, /* uint32_t of QOS id */
 	DATA_PARSER_QOS_ID_LIST, /* List of char* of QOS ids */

@@ -1343,35 +1343,68 @@ static int DUMP_FUNC(TASK_DISTRIBUTION)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(STEP_ID)
+static int PARSE_FUNC(STEP_ID)(const parser_t *const parser, void *obj,
+			       data_t *src, args_t *args, data_t *parent_path)
+{
+	uint32_t *id = obj;
+
+	data_convert_type(src, DATA_TYPE_NONE);
+
+	if (data_get_type(src) == DATA_TYPE_INT_64) {
+		if (data_get_int(src) > SLURM_MAX_NORMAL_STEP_ID)
+			return ESLURM_INVALID_STEP_ID_TOO_LARGE;
+		if (data_get_int(src) < 0)
+			return ESLURM_INVALID_STEP_ID_NEGATIVE;
+
+		*id = data_get_int(src);
+		return SLURM_SUCCESS;
+	}
+
+	if (data_convert_type(src, DATA_TYPE_STRING) == DATA_TYPE_STRING)
+		return PARSE(STEP_NAMES, *id, src, parent_path, args);
+
+	return ESLURM_DATA_CONV_FAILED;
+}
 
 static int DUMP_FUNC(STEP_ID)(const parser_t *const parser, void *obj,
 			      data_t *dst, args_t *args)
 {
 	uint32_t *id = obj;
 
-	xassert(args->magic == MAGIC_ARGS);
+	if (*id > SLURM_MAX_NORMAL_STEP_ID) {
+		int rc;
+		data_t *name, *names = data_new();
 
-	// TODO rewrite after bug#9622 resolved
+		/*
+		 * Use intermediary to convert flag dictionary response to
+		 * string
+		 */
 
-	switch (*id) {
-	case SLURM_EXTERN_CONT :
-		data_set_string(dst, "extern");
-		break;
-	case SLURM_BATCH_SCRIPT :
-		data_set_string(dst, "batch");
-		break;
-	case SLURM_PENDING_STEP :
-		data_set_string(dst, "pending");
-		break;
-	case SLURM_INTERACTIVE_STEP :
-		data_set_string(dst, "interactive");
-		break;
-	default :
-		data_set_string_fmt(dst, "%u", *id);
+		if ((rc = DUMP(STEP_NAMES, *id, names, args))) {
+			FREE_NULL_DATA(names);
+			return rc;
+		}
+
+		if (data_get_list_length(names) != 1) {
+			FREE_NULL_DATA(names);
+			return ESLURM_DATA_CONV_FAILED;
+		}
+
+		name = data_list_dequeue(names);
+		FREE_NULL_DATA(names);
+
+		data_move(dst, name);
+
+		FREE_NULL_DATA(name);
+		return SLURM_SUCCESS;
 	}
 
-	return SLURM_SUCCESS;
+	data_set_int(dst, *id);
+
+	if (data_convert_type(dst, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return ESLURM_DATA_CONV_FAILED;
+	else
+		return SLURM_SUCCESS;
 }
 
 PARSE_DISABLED(WCKEY_TAG)
@@ -7787,6 +7820,18 @@ static const parser_t PARSER_ARRAY(SLURM_STEP_ID)[] = {
 };
 #undef add_parse
 
+#define add_flag_eq(flag_value, mask, flag_string, hidden, desc)            \
+	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL, XSTRINGIFY(flag_value),     \
+			   flag_value, mask, XSTRINGIFY(mask), flag_string, \
+			   hidden, desc)
+static const flag_bit_t PARSER_FLAG_ARRAY(STEP_NAMES)[] = {
+	add_flag_eq(SLURM_PENDING_STEP, INFINITE, "TBD", false, "StepId not yet assigned"),
+	add_flag_eq(SLURM_EXTERN_CONT, INFINITE, "extern", false, "External Step"),
+	add_flag_eq(SLURM_BATCH_SCRIPT, INFINITE, "batch", false, "Batch Step"),
+	add_flag_eq(SLURM_INTERACTIVE_STEP, INFINITE, "interactive", false, "Interactive Step"),
+};
+#undef add_flag_eq
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8411,6 +8456,7 @@ static const parser_t parsers[] = {
 	addfa(FLAGS, data_parser_flags_t),
 	addfa(JOB_STATE, uint32_t), /* enum job_states */
 	addfa(PROCESS_EXIT_CODE_STATUS, uint32_t),
+	addfa(STEP_NAMES, uint32_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, NEED_QOS),
