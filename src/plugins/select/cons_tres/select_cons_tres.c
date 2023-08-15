@@ -410,6 +410,8 @@ extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	int rc;
 
 	xassert(node_bitmap);
+	xassert(resv_exc_ptr);
+
 	debug2("evaluating %pJ", job_ptr);
 	if (!job_ptr->details)
 		return EINVAL;
