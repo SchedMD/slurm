@@ -5269,6 +5269,7 @@ static bitstr_t *_pick_idle_xand_nodes(bitstr_t *avail_bitmap,
 				       List feature_list)
 {
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap = NULL, *tmp_avail_bitmap;
+	bitstr_t *feature_bitmap;
 	uint32_t *save_core_cnt, *save_node_cnt;
 	uint32_t new_node_cnt[2] = {0, 0};
 	job_feature_t *feat_ptr;
@@ -5289,26 +5290,19 @@ TRY_AVAIL:
 	 */
 	feat_iter = list_iterator_create(feature_list);
 	while ((feat_ptr = list_next(feat_iter))) {
+		feature_bitmap = test_active ?
+			feat_ptr->node_bitmap_active :
+			feat_ptr->node_bitmap_avail;
 		if (feat_ptr->paren > paren) {	/* Start parenthesis */
 			paren = feat_ptr->paren;
-			if (test_active)
-				tmp_bitmap = feat_ptr->node_bitmap_active;
-			else
-				tmp_bitmap = feat_ptr->node_bitmap_avail;
+			tmp_bitmap = feature_bitmap;
 			continue;
 		}
 		if ((feat_ptr->paren == 1) ||	 /* Continue parenthesis */
 		    (feat_ptr->paren < paren)) { /* End of parenthesis */
 			paren = feat_ptr->paren;
-			if (test_active) {
-				bit_and(feat_ptr->node_bitmap_active,
-					tmp_bitmap);
-				tmp_bitmap = feat_ptr->node_bitmap_active;
-			} else {
-				bit_and(feat_ptr->node_bitmap_avail,
-					tmp_bitmap);
-				tmp_bitmap = feat_ptr->node_bitmap_avail;
-			}
+			bit_and(feature_bitmap, tmp_bitmap);
+			tmp_bitmap = feature_bitmap;
 			if (feat_ptr->paren == 1)
 				continue;
 		}
@@ -5319,10 +5313,7 @@ TRY_AVAIL:
 		tmp_avail_bitmap = bit_copy(avail_bitmap);
 		if (ret_bitmap)
 			bit_and_not(tmp_avail_bitmap, ret_bitmap);
-		if (test_active)
-			bit_and(tmp_avail_bitmap, feat_ptr->node_bitmap_active);
-		else
-			bit_and(tmp_avail_bitmap, feat_ptr->node_bitmap_avail);
+		bit_and(tmp_avail_bitmap, feature_bitmap);
 		tmp_bitmap = _pick_nodes(tmp_avail_bitmap, resv_desc_ptr,
 					 core_bitmap);
 		FREE_NULL_BITMAP(tmp_avail_bitmap);
