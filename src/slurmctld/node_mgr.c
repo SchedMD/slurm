@@ -345,7 +345,7 @@ static buf_t *_open_node_state_file(char **state_file)
  *	Data goes into common storage.
  * IN state_only - if true, overwrite only node state and reason
  *	Use this to overwrite the "UNKNOWN state typically used in slurm.conf
- * RET 0 or error code
+ * RET SUCCESS or error code
  */
 extern int load_all_node_state ( bool state_only )
 {
@@ -354,7 +354,7 @@ extern int load_all_node_state ( bool state_only )
 	char *features = NULL, *features_act = NULL;
 	char *gres = NULL, *extra = NULL;
 	char *mcs_label = NULL;
-	int error_code = 0, node_cnt = 0;
+	int error_code = SLURM_SUCCESS, node_cnt = 0;
 	uint32_t node_state, cpu_bind = 0, next_state = NO_VAL;
 	uint16_t cpus = 1, boards = 1, sockets = 1, cores = 1, threads = 1;
 	uint64_t real_memory;
@@ -538,8 +538,11 @@ extern int load_all_node_state ( bool state_only )
 			config_ptr->tot_sockets = sockets;
 			config_ptr->weight = weight;
 
-			if (!(node_ptr = add_node_record(node_name,
-							 config_ptr))) {
+			if ((error_code = add_node_record(node_name, config_ptr,
+							  &node_ptr))) {
+				error("%s (%s)",
+				      slurm_strerror(error_code), node_name);
+				error_code = SLURM_SUCCESS;
 				list_delete_ptr(config_list, config_ptr);
 			} else {
 				/*
@@ -4790,15 +4793,16 @@ static void _update_parts()
 	set_partition_tres();
 }
 
-static void _build_node_callback(char *alias, char *hostname, char *address,
-				 char *bcast_address, uint16_t port,
-				 int state_val, slurm_conf_node_t *conf_node,
-				 config_record_t *config_ptr)
+static int _build_node_callback(char *alias, char *hostname, char *address,
+				char *bcast_address, uint16_t port,
+				int state_val, slurm_conf_node_t *conf_node,
+				config_record_t *config_ptr)
 {
+	int rc = SLURM_SUCCESS;
 	node_record_t *node_ptr;
 
-	if (!(node_ptr = add_node_record(alias, config_ptr)))
-		return;
+	if ((rc = add_node_record(alias, config_ptr, &node_ptr)))
+		return rc;
 
 	if ((state_val != NO_VAL) &&
 	    (state_val != NODE_STATE_UNKNOWN))
@@ -4829,17 +4833,21 @@ static void _build_node_callback(char *alias, char *hostname, char *address,
 		bit_set(cloud_node_bitmap, node_ptr->index);
 		bit_set(power_node_bitmap, node_ptr->index);
 
-		gres_g_node_config_load(
-			node_ptr->config_ptr->cpus, node_ptr->name,
-			node_ptr->gres_list, NULL, NULL);
-		gres_node_config_validate(
+		if ((rc = gres_g_node_config_load(node_ptr->config_ptr->cpus,
+						  node_ptr->name,
+						  node_ptr->gres_list, NULL,
+						  NULL)))
+			return rc;
+
+		rc = gres_node_config_validate(
 			node_ptr->name, node_ptr->config_ptr->gres,
 			&node_ptr->gres, &node_ptr->gres_list,
 			node_ptr->config_ptr->threads,
 			node_ptr->config_ptr->cores,
 			node_ptr->config_ptr->tot_sockets,
-			slurm_conf.conf_flags & CTL_CONF_OR, NULL);
+			(slurm_conf.conf_flags & CTL_CONF_OR), NULL);
 	}
+	return rc;
 }
 
 extern void consolidate_config_list(bool is_locked, bool force)
@@ -4917,7 +4925,10 @@ extern int create_nodes(char *nodeline, char **err_msg)
 						  slurmctld_tres_cnt);
 	config_ptr->node_bitmap = bit_alloc(node_record_count);
 
-	expand_nodeline_info(conf_node, config_ptr, _build_node_callback);
+	if ((rc = expand_nodeline_info(conf_node, config_ptr, err_msg,
+				       _build_node_callback)))
+		error("Failed to create a node in '%s': %s",
+		      conf_node->nodenames, *err_msg);
 	s_p_hashtbl_destroy(node_hashtbl);
 
 	if (config_ptr->feature) {
@@ -4953,7 +4964,7 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 	node_record_t *node_ptr;
 	slurm_addr_t addr;
 	char *comm_name = NULL;
-	int state_val = NODE_STATE_UNKNOWN;
+	int state_val = NODE_STATE_UNKNOWN, rc;
 	s_p_hashtbl_t *node_hashtbl = NULL;
 	slurm_conf_node_t *conf_node = NULL;
 	slurm_node_registration_status_msg_t *reg_msg = msg->data;
@@ -4995,7 +5006,8 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 
 	config_ptr->node_bitmap = bit_alloc(node_record_count);
 
-	if (!(node_ptr = add_node_record(reg_msg->node_name, config_ptr))) {
+	if ((rc = add_node_record(reg_msg->node_name, config_ptr, &node_ptr))) {
+		error("%s (%s)", slurm_strerror(rc), reg_msg->node_name);
 		list_delete_ptr(config_list, config_ptr);
 		return SLURM_ERROR;
 	}

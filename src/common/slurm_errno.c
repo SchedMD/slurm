@@ -451,6 +451,10 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Unable to resolve user ID to user name" },
 	{ ERRTAB_ENTRY(ESLURM_INVALID_ASSOC),
 	  "Invalid or unknown association" },
+	{ ERRTAB_ENTRY(ESLURM_NODE_ALREADY_EXISTS),
+	  "Node already exists in the node table" },
+	{ ERRTAB_ENTRY(ESLURM_NODE_TABLE_FULL),
+	  "Unable to add node, node table is full" },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),

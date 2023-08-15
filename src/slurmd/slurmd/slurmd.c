@@ -1785,15 +1785,16 @@ static int _establish_configuration(void)
 	return SLURM_SUCCESS;
 }
 
-static void _build_node_callback(char *alias, char *hostname, char *address,
-				 char *bcast_address, uint16_t port,
-				 int state_val, slurm_conf_node_t *conf_node,
-				 config_record_t *config_ptr)
+static int _build_node_callback(char *alias, char *hostname, char *address,
+				char *bcast_address, uint16_t port,
+				int state_val, slurm_conf_node_t *conf_node,
+				config_record_t *config_ptr)
 {
+	int rc = SLURM_SUCCESS;
 	node_record_t *node_ptr;
 
-	if (!(node_ptr = create_node_record(config_ptr, alias)))
-		return;
+	if ((rc = create_node_record(config_ptr, alias, &node_ptr)))
+		return rc;
 
 	if ((state_val != NO_VAL) &&
 	    (state_val != NODE_STATE_UNKNOWN))
@@ -1809,6 +1810,8 @@ static void _build_node_callback(char *alias, char *hostname, char *address,
 	node_ptr->node_state |= NODE_STATE_DYNAMIC_NORM;
 
 	slurm_conf_add_node(node_ptr);
+
+	return rc;
 }
 
 static int _create_nodes(char *nodeline, char **err_msg)
@@ -1836,7 +1839,9 @@ static int _create_nodes(char *nodeline, char **err_msg)
 	}
 
 	config_ptr = config_record_from_conf_node(conf_node, 0);
-	expand_nodeline_info(conf_node, config_ptr, _build_node_callback);
+	if ((rc = expand_nodeline_info(conf_node, config_ptr, err_msg,
+				       _build_node_callback)))
+		error("%s", *err_msg);
 	s_p_hashtbl_destroy(node_hashtbl);
 
 fini:
