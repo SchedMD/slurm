@@ -1343,44 +1343,6 @@ static int DUMP_FUNC(TASK_DISTRIBUTION)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(SLURM_STEP_ID)
-
-static int DUMP_FUNC(SLURM_STEP_ID)(const parser_t *const parser, void *obj,
-				    data_t *dst, args_t *args)
-{
-	int rc = SLURM_SUCCESS;
-	slurm_step_id_t *id = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-
-	data_set_dict(dst);
-
-	if (id->job_id != NO_VAL)
-		data_set_int(data_key_set(dst, "job_id"), id->job_id);
-	if (id->step_het_comp != NO_VAL)
-		data_set_int(data_key_set(dst, "step_het_component"),
-			     id->step_het_comp);
-	if (id->step_id != NO_VAL)
-		rc = DUMP(STEP_ID, id->step_id, data_key_set(dst, "step_id"),
-			  args);
-
-	return rc;
-}
-
-void SPEC_FUNC(SLURM_STEP_ID)(const parser_t *const parser, args_t *args,
-			      data_t *spec, data_t *dst)
-{
-	data_t *props =
-		set_openapi_props(dst, OPENAPI_FORMAT_OBJECT, "step details");
-	set_openapi_props(data_key_set(props, "job_id"), OPENAPI_FORMAT_INT32,
-			  "JobID");
-	set_openapi_props(data_key_set(props, "step_het_component"),
-			  OPENAPI_FORMAT_INT32, "HetStep");
-	set_openapi_parse_ref(data_key_set(props, "step_id"),
-			      find_parser_by_type(DATA_PARSER_STEP_ID), spec,
-			      args);
-}
-
 PARSE_DISABLED(STEP_ID)
 
 static int DUMP_FUNC(STEP_ID)(const parser_t *const parser, void *obj,
@@ -7816,6 +7778,15 @@ static const parser_t PARSER_ARRAY(PROCESS_EXIT_CODE_VERBOSE)[] = {
 #undef add_parse_overload
 #undef add_flag
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurm_step_id_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(SLURM_STEP_ID)[] = {
+	add_parse(UINT32_NO_VAL, job_id, "job_id", "Job identifier"),
+	add_parse(UINT32_NO_VAL, step_het_comp, "step_het_component", "HetJob Component"),
+	add_parse(STEP_ID, step_id, "step_id", "Job StepId"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8175,7 +8146,6 @@ static const parser_t parsers[] = {
 	addps(RPC_ID, slurmdbd_msg_type_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(SELECT_PLUGIN_ID, int, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(TASK_DISTRIBUTION, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
-	addpss(SLURM_STEP_ID, slurm_step_id_t, NEED_NONE, OBJECT, NULL, NULL, NULL),
 	addps(STEP_ID, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpss(WCKEY_TAG, char *, NEED_NONE, OBJECT, NULL, NULL, NULL),
 	addps(GROUP_ID, gid_t, NEED_NONE, STRING, NULL, NULL, NULL),
@@ -8378,6 +8348,7 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_RESERVATION_PARAM, openapi_reservation_param_t, NULL, NULL),
 	addpa(OPENAPI_RESERVATION_QUERY, openapi_reservation_query_t, NULL, NULL),
 	addpa(PROCESS_EXIT_CODE_VERBOSE, proc_exit_code_verbose_t, NULL, NULL),
+	addpa(SLURM_STEP_ID, slurm_step_id_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
