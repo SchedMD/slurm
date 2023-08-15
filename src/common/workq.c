@@ -47,6 +47,24 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+struct workq_s {
+	int magic;
+	/* list of workq_worker_t */
+	list_t *workers;
+	/* list of workq_work_t */
+	list_t *work;
+
+	/* track simple stats for logging */
+	int active;
+	int total;
+
+	/* manger is actively shutting down */
+	bool shutdown;
+
+	pthread_mutex_t mutex;
+	pthread_cond_t cond;
+};
+
 typedef struct {
 	int magic;
 	work_func_t func;

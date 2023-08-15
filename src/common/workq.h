@@ -47,23 +47,7 @@
 typedef void (*work_func_t)(void *arg);
 
 /* Opaque struct */
-typedef struct {
-	int magic;
-	/* list of workq_worker_t */
-	List workers;
-	/* list of workq_work_t */
-	List work;
-
-	/* track simple stats for logging */
-	int active;
-	int total;
-
-	/* manger is actively shutting down */
-	bool shutdown;
-
-	pthread_mutex_t mutex;
-	pthread_cond_t cond;
-} workq_t;
+typedef struct workq_s workq_t;
 
 /*
  * Initialize a new workq struct
