@@ -164,23 +164,21 @@ cleanup:
 
 extern int cli_filter_p_setup_defaults(slurm_opt_t *opt, bool early)
 {
-	struct passwd pwd, *result;
-	char buffer[PW_BUF_SIZE];
-	char defaults_path[PATH_MAX];
+	char *defaults_path;
 	char *line = NULL;
 	size_t line_sz = 0;
 	ssize_t nbytes = 0;
 	FILE *fp = NULL;
-	int rc = 0, line_cnt = 0;
+	int line_cnt = 0;
 
-	rc = slurm_getpwuid_r(getuid(), &pwd, buffer, PW_BUF_SIZE, &result);
-	if (!result || (rc != 0)) {
+	defaults_path = uid_to_dir(getuid());
+	if (!defaults_path) {
 		error("Failed to lookup user homedir to load slurm defaults.");
 		return SLURM_SUCCESS;
 	}
-	snprintf(defaults_path, sizeof(defaults_path), "%s/%s",
-		 result->pw_dir, USER_DEFAULTS_FILE);
+	xstrfmtcat(defaults_path, "/%s", USER_DEFAULTS_FILE);
 	fp = fopen(defaults_path, "r");
+	xfree(defaults_path);
 
 	if (!fp) {
 		/* $HOME/<USER_DEFAULTS_FILE> does not exist or is not readable
