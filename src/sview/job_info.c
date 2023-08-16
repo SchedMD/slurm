@@ -1877,7 +1877,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_time_run[40],  tmp_time_resize[256], tmp_time_submit[256];
 	char tmp_time_elig[256], tmp_time_start[256],  tmp_time_end[256];
 	char tmp_time_sus[40],  tmp_time_limit[40],  tmp_alloc_node[40];
-	char tmp_exit[40],      tmp_group_id[40],    tmp_derived_ec[40];
+	char tmp_exit[40], tmp_derived_ec[40];
 	char tmp_cpu_cnt[40],   tmp_node_cnt[40],    tmp_disk[40];
 	char tmp_cpus_max[40],  tmp_mem_min[40],     tmp_cpu_req[40];
 	char tmp_nodes_min[40], tmp_nodes_max[40],   tmp_cpus_per_task[40];
@@ -1887,14 +1887,13 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	char tmp_thread_spec[40], tmp_time_deadline[256], tmp_het_job_id[40];
 	char tmp_het_job_id_set[40], tmp_het_job_offset[40];
 	char tmp_time_accrue[256];
-	char *tmp_batch,  *tmp_cont, *tmp_requeue, *tmp_uname;
+	char *tmp_batch,  *tmp_cont, *tmp_requeue, *tmp_uname, *tmp_gname;
 	char *tmp_reboot, *tmp_reason, *tmp_nodes;
 	char time_buf[32];
 	time_t now_time = time(NULL);
 	int suspend_secs = 0;
 	GtkTreeIter step_iter;
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
-	struct group *group_info = NULL;
 	uint16_t term_code = 0, term_sig = 0;
 	uint64_t min_mem = 0;
 
@@ -2081,14 +2080,8 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		term_sig = 0;
 	snprintf(tmp_exit, sizeof(tmp_exit), "%u:%u", term_code, term_sig);
 
-	group_info = getgrgid((gid_t) job_ptr->group_id);
-	if ( group_info && group_info->gr_name[ 0 ] ) {
-		snprintf(tmp_group_id, sizeof(tmp_group_id), "%s",
-			 group_info->gr_name);
-	} else {
-		snprintf(tmp_group_id, sizeof(tmp_group_id), "%u",
-			 job_ptr->group_id);
-	}
+	if (!(tmp_gname = gid_to_string_or_null(job_ptr->group_id)))
+		xstrfmtcat(tmp_gname, "%u", job_ptr->group_id);
 
 	min_mem = job_ptr->pn_min_memory;
 	if (min_mem & MEM_PER_CPU)
@@ -2304,7 +2297,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_FED_ORIGIN,   job_ptr->fed_origin_str,
 				   SORTID_FED_VIABLE_SIBS,
 				   job_ptr->fed_siblings_viable_str,
-				   SORTID_GROUP_ID,     tmp_group_id,
+				   SORTID_GROUP_ID, tmp_gname,
 				   SORTID_JOBID,        tmp_job_id,
 				   SORTID_JOBID_FORMATTED, tmp_job_id,
 				   SORTID_LICENSES,     job_ptr->licenses,
