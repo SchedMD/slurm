@@ -322,7 +322,7 @@ static list_t *_create_front_end_info_list(
 	front_end_info_msg_t *front_end_info_ptr, int changed)
 {
 	char *upper = NULL;
-	char user[32], time_str[256];
+	char time_str[256];
 	static list_t *info_list = NULL;
 	list_t *last_list = NULL;
 	list_itr_t *last_list_itr = NULL;
@@ -390,19 +390,20 @@ static list_t *_create_front_end_info_list(
 
 		if (front_end_ptr->reason && front_end_ptr->reason_time &&
 		    (front_end_ptr->reason_uid != NO_VAL)) {
-			struct passwd *pw = NULL;
+			char *user;
 
-			if ((pw=getpwuid(front_end_ptr->reason_uid)))
-				snprintf(user, sizeof(user), "%s", pw->pw_name);
-			else
-				snprintf(user, sizeof(user), "Unk(%u)",
-					 front_end_ptr->reason_uid);
+			user = uid_to_string_or_null(front_end_ptr->reason_uid);
+
+			if (!user)
+				xstrfmtcat(user, "Unk(%u)",
+					   front_end_ptr->reason_uid);
 			slurm_make_time_str(&front_end_ptr->reason_time,
 					    time_str, sizeof(time_str));
 			sview_front_end_info_ptr->reason =
 				xstrdup_printf("%s [%s@%s]",
 					       front_end_ptr->reason, user,
 					       time_str);
+			xfree(user);
 		} else {
 			sview_front_end_info_ptr->reason =
 				xstrdup(front_end_ptr->reason);
