@@ -40,6 +40,7 @@
 #include <grp.h>
 
 #include "src/common/proc_args.h"
+#include "src/common/uid.h"
 #include "src/interfaces/priority.h"
 #include "src/sshare/sshare.h"
 
@@ -215,16 +216,15 @@ int main (int argc, char **argv)
 			fprintf(stderr, "\t: %s\n", temp);
 		list_iterator_destroy(itr);
 	} else if (!req_msg.user_list || !list_count(req_msg.user_list)) {
-		struct passwd *pwd;
-		if ((pwd = getpwuid(getuid()))) {
+		char *user = uid_to_string_or_null(getuid());
+		if (user) {
 			if (!req_msg.user_list) {
 				req_msg.user_list = list_create(xfree_ptr);
 			}
-			temp = xstrdup(pwd->pw_name);
-			list_append(req_msg.user_list, temp);
+			list_append(req_msg.user_list, user);
 			if (verbosity) {
 				fprintf(stderr, "Users requested:\n");
-				fprintf(stderr, "\t: %s\n", temp);
+				fprintf(stderr, "\t: %s\n", user);
 			}
 		}
 	}
@@ -371,12 +371,10 @@ static char *_convert_to_name(uint32_t id, bool is_gid)
 		}
 		name = xstrdup(grp->gr_name);
 	} else {
-		struct passwd *pwd;
-		if (!(pwd = getpwuid((uid_t) id))) {
+		if (!(name = uid_to_string_or_null(id))) {
 			fprintf(stderr, "Invalid user id: %u\n", id);
 			exit(1);
 		}
-		name = xstrdup(pwd->pw_name);
 	}
 	return name;
 }
