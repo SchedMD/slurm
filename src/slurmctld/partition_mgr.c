@@ -1866,10 +1866,7 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 	static part_record_t *last_fail_part_ptr = NULL;
 	static time_t last_fail_time = 0;
 	time_t now;
-	int res;
-	size_t buflen;
-	struct passwd pwd, *pwd_result;
-	char *buf;
+	gid_t primary_gid;
 	char *primary_group = NULL;
 	char *groups, *saveptr = NULL, *one_group_name;
 	int ret = 0;
@@ -1911,38 +1908,22 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 	 * sssd/nscd/etc. so should be fast.  */
 
 	/* First figure out the primary GID.  */
-	buflen = PW_BUF_SIZE;
-	buf = xmalloc(buflen);
-	while (1) {
-		slurm_seterrno(0);
-		res = getpwuid_r(run_uid, &pwd, buf, buflen, &pwd_result);
-		/* We need to check for !pwd_result, since it appears some
-		 * versions of this function do not return an error on
-		 * failure.
-		 */
-		if (res != 0 || !pwd_result) {
-			if (errno == ERANGE) {
-				buflen *= 2;
-				xrealloc(buf, buflen);
-				continue;
-			}
-			error("%s: Could not find passwd entry for uid %u",
-			      __func__, run_uid);
-			xfree(buf);
-			goto fini;
-		}
-		break;
+	primary_gid = gid_from_uid(run_uid);
+
+	if (primary_gid == (gid_t) -1) {
+		error("%s: Could not find passwd entry for uid %u",
+		      __func__, run_uid);
+		goto fini;
 	}
 
 	/* Then use the primary GID to figure out the name of the
 	 * group with that GID.  */
 
-	primary_group = gid_to_string_or_null(pwd.pw_gid);
+	primary_group = gid_to_string_or_null(primary_gid);
 
 	if (!primary_group) {
 		error("%s: Could not find group with gid %u",
-		      __func__, pwd.pw_gid);
-		xfree(buf);
+		      __func__, primary_gid);
 		goto fini;
 	}
 
@@ -1958,7 +1939,6 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 		one_group_name = strtok_r(NULL, ",", &saveptr);
 	}
 	xfree(groups);
-	xfree(buf);
 	xfree(primary_group);
 
 	if (ret == 1) {
