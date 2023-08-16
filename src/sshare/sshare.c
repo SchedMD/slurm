@@ -364,12 +364,10 @@ static char *_convert_to_name(uint32_t id, bool is_gid)
 	char *name = NULL;
 
 	if (is_gid) {
-		struct group *grp;
-		if (!(grp = getgrgid((gid_t) id))) {
+		if (!(name = gid_to_string_or_null(id))) {
 			fprintf(stderr, "Invalid group id: %u\n", id);
 			exit(1);
 		}
-		name = xstrdup(grp->gr_name);
 	} else {
 		if (!(name = uid_to_string_or_null(id))) {
 			fprintf(stderr, "Invalid user id: %u\n", id);
