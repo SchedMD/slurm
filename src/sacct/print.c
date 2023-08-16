@@ -39,6 +39,7 @@
 #include "sacct.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/parse_time.h"
+#include "src/common/uid.h"
 #include "slurm/slurm.h"
 
 print_field_t *field = NULL;
@@ -2036,12 +2037,16 @@ extern void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_USER:
+		{
+			char *user = NULL;
 			switch(type) {
 			case JOB:
 				if (job->user)
 					tmp_char = job->user;
-				else if ((pw=getpwuid(job->uid)))
-						tmp_char = pw->pw_name;
+				else {
+					user = uid_to_string_or_null(job->uid);
+					tmp_char = user;
+				}
 				break;
 			case JOBCOMP:
 				tmp_char = job_comp->uid_name;
@@ -2053,7 +2058,9 @@ extern void print_fields(type_t type, void *object)
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));
+			xfree(user);
 			break;
+		}
 		case PRINT_USERCPU:
 			switch(type) {
 			case JOB:
