@@ -43,7 +43,6 @@
 #include <ctype.h>		/* isdigit    */
 #include <fcntl.h>
 #include <limits.h>
-#include <pwd.h>		/* getpwuid   */
 #include <signal.h>
 #include <stdarg.h>		/* va_start   */
 #include <stdio.h>
