@@ -1870,8 +1870,7 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 	size_t buflen;
 	struct passwd pwd, *pwd_result;
 	char *buf;
-	char *grp_buffer;
-	struct group grp, *grp_result;
+	char *primary_group = NULL;
 	char *groups, *saveptr = NULL, *one_group_name;
 	int ret = 0;
 
@@ -1937,29 +1936,14 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 
 	/* Then use the primary GID to figure out the name of the
 	 * group with that GID.  */
-	grp_buffer = xmalloc(buflen);
-	while (1) {
-		slurm_seterrno(0);
-		res = getgrgid_r(pwd.pw_gid, &grp, grp_buffer, buflen,
-				 &grp_result);
 
-		/* We need to check for !grp_result, since it appears some
-		 * versions of this function do not return an error on
-		 * failure.
-		 */
-		if (res != 0 || !grp_result) {
-			if (errno == ERANGE) {
-				buflen *= 2;
-				xrealloc(grp_buffer, buflen);
-				continue;
-			}
-			error("%s: Could not find group with gid %u",
-			      __func__, pwd.pw_gid);
-			xfree(buf);
-			xfree(grp_buffer);
-			goto fini;
-		}
-		break;
+	primary_group = gid_to_string_or_null(pwd.pw_gid);
+
+	if (!primary_group) {
+		error("%s: Could not find group with gid %u",
+		      __func__, pwd.pw_gid);
+		xfree(buf);
+		goto fini;
 	}
 
 	/* And finally check the name of the primary group against the
@@ -1967,7 +1951,7 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 	groups = xstrdup(part_ptr->allow_groups);
 	one_group_name = strtok_r(groups, ",", &saveptr);
 	while (one_group_name) {
-		if (xstrcmp (one_group_name, grp.gr_name) == 0) {
+		if (!xstrcmp(one_group_name, primary_group)) {
 			ret = 1;
 			break;
 		}
@@ -1975,11 +1959,11 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 	}
 	xfree(groups);
 	xfree(buf);
-	xfree(grp_buffer);
+	xfree(primary_group);
 
 	if (ret == 1) {
-		debug("UID %ld added to AllowGroup %s of partition %s",
-		      (long) run_uid, grp.gr_name, part_ptr->name);
+		debug("UID %u added to AllowGroup %s of partition %s",
+		      run_uid, primary_group, part_ptr->name);
 		part_ptr->allow_uids =
 			xrealloc(part_ptr->allow_uids,
 				 (sizeof(uid_t) *
