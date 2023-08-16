@@ -119,10 +119,6 @@ typedef struct {
 						 job_record_t *job_ptr,
 						 void *data);
 	int		(*reconfigure)		(void);
-	bitstr_t *      (*resv_test)            (resv_desc_msg_t *resv_desc_ptr,
-						 uint32_t node_cnt,
-						 bitstr_t *avail_bitmap,
-						 bitstr_t **core_bitmap);
 } slurm_select_ops_t;
 
 /*
@@ -496,29 +492,6 @@ extern int select_g_step_start(step_record_t *step_ptr);
  *                   if false, the step is completely terminated
  */
 extern int select_g_step_finish(step_record_t *step_ptr, bool killing_step);
-
-/*********************************\
- * ADVANCE RESERVATION FUNCTIONS *
-\*********************************/
-
-/*
- * select_g_resv_test - Identify the nodes which "best" satisfy a reservation
- *	request. "best" is defined as either single set of consecutive nodes
- *	satisfying the request and leaving the minimum number of unused nodes
- *	OR the fewest number of consecutive node sets
- * IN/OUT resv_desc_ptr - reservation request - select_jobinfo can be
- *	updated in the plugin
- * IN node_cnt - count of required nodes
- * IN/OUT avail_bitmap - nodes available for the reservation
- * IN/OUT core_bitmap - cores which can not be used for this
- *	reservation IN, and cores to be used in the reservation OUT
- *	(flush bitstr then apply only used cores)
- * RET - nodes selected for use by the reservation
- */
-extern bitstr_t * select_g_resv_test(resv_desc_msg_t *resv_desc_ptr,
-				     uint32_t node_cnt,
-				     bitstr_t *avail_bitmap,
-				     bitstr_t **core_bitmap);
 
 /*****************************\
  * GET INFORMATION FUNCTIONS *

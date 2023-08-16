@@ -1276,36 +1276,3 @@ extern int select_p_reconfigure(void)
 
 	return SLURM_SUCCESS;
 }
-
-extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
-				    uint32_t node_cnt,
-				    bitstr_t *avail_node_bitmap,
-				    bitstr_t **core_bitmap)
-{
-	job_record_t *job_ptr;
-	int rc;
-
-	xassert(avail_node_bitmap);
-	xassert(resv_desc_ptr);
-	xassert(resv_desc_ptr->job_ptr);
-
-	job_ptr = resv_desc_ptr->job_ptr;
-
-	rc = select_p_job_test(
-		job_ptr, avail_node_bitmap, job_ptr->details->min_nodes,
-		job_ptr->details->max_nodes,
-		job_ptr->details->min_nodes,
-		SELECT_MODE_WILL_RUN, NULL, NULL,
-		core_bitmap ? *core_bitmap : NULL);
-
-	if (rc != SLURM_SUCCESS) {
-		return NULL;
-	}
-
-	if ((resv_desc_ptr->core_cnt != NO_VAL) && core_bitmap) {
-		FREE_NULL_BITMAP(*core_bitmap);
-		*core_bitmap = bit_copy(job_ptr->job_resrcs->core_bitmap);
-	}
-
-	return bit_copy(avail_node_bitmap);
-}

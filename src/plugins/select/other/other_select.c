@@ -93,7 +93,6 @@ const char *node_select_syms[] = {
 	"select_p_select_jobinfo_unpack",
 	"select_p_get_info_from_plugin",
 	"select_p_reconfigure",
-	"select_p_resv_test",
 };
 
 static slurm_select_ops_t ops;
@@ -574,16 +573,4 @@ extern int other_reconfigure (void)
 		return SLURM_ERROR;
 
 	return (*(ops.reconfigure))();
-}
-
-extern bitstr_t * other_resv_test(resv_desc_msg_t *resv_desc_ptr,
-				  uint32_t node_cnt,
-				  bitstr_t *avail_bitmap,
-				  bitstr_t **core_bitmap)
-{
-	if (other_select_init() < 0)
-		return NULL;
-
-	return (*(ops.resv_test))(resv_desc_ptr, node_cnt,
-				  avail_bitmap, core_bitmap);
 }

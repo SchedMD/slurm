@@ -2042,12 +2042,3 @@ extern int select_p_reconfigure(void)
 {
 	return other_reconfigure();
 }
-
-extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
-				     uint32_t node_cnt,
-				     bitstr_t *avail_bitmap,
-				     bitstr_t **core_bitmap)
-{
-	return other_resv_test(resv_desc_ptr, node_cnt,
-			       avail_bitmap, core_bitmap);
-}
