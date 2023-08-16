@@ -107,6 +107,12 @@ extern char *uid_to_string_cached(uid_t uid);
 extern char *uid_to_dir(uid_t uid);
 
 /*
+ * Translate uid to shell.
+ * NOTE: xfree the return value
+ */
+extern char *uid_to_shell(uid_t uid);
+
+/*
  * Same as uid_to_string, but for group name.
  * NOTE: xfree the return value
  */

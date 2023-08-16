@@ -241,6 +241,20 @@ extern char *uid_to_dir(uid_t uid)
 	return dir;
 }
 
+extern char *uid_to_shell(uid_t uid)
+{
+	struct passwd pwd, *result;
+	char buffer[PW_BUF_SIZE];
+	char *shell = NULL;
+	int rc;
+
+	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
+	if (result && (rc == 0))
+		shell = xstrdup(result->pw_shell);
+
+	return shell;
+}
+
 gid_t
 gid_from_uid (uid_t uid)
 {
