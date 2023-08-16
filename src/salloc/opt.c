@@ -46,7 +46,6 @@
 #include <fcntl.h>
 #include <getopt.h>
 #include <limits.h>
-#include <pwd.h>		/* getpwuid   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv, strtol, etc. */
 #include <sys/stat.h>
@@ -328,18 +327,15 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 static char *_get_shell(void)
 {
 	uid_t uid = opt.uid;
-	struct passwd pwd, *result;
-	char buffer[PW_BUF_SIZE];
+	char *shell;
 
 	if (uid == SLURM_AUTH_NOBODY)
 		uid = getuid();
 
-	slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
-
-	if (!result)
+	if (!(shell = uid_to_shell(uid)))
 		fatal("no user information for user %u", uid);
 
-	return result->pw_shell;
+	return shell;
 }
 
 static void _salloc_default_command(int *argcp, char **argvp[])
