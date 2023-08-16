@@ -116,6 +116,12 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 			    uint32_t max_nodes, uint32_t req_nodes,
 			    avail_res_t **avail_res_array, uint16_t cr_type,
 			    bool prefer_alloc_nodes, bool first_pass);
+static int _eval_nodes_consec(job_record_t *job_ptr,
+			      gres_mc_data_t *mc_ptr, bitstr_t *node_map,
+			      bitstr_t **avail_core, uint32_t min_nodes,
+			      uint32_t max_nodes, uint32_t req_nodes,
+			      avail_res_t **avail_res_array, uint16_t cr_type,
+			      bool prefer_alloc_nodes, bool first_pass);
 static int _eval_nodes_dfly(job_record_t *job_ptr,
 			    gres_mc_data_t *mc_ptr, bitstr_t *node_map,
 			    bitstr_t **avail_core, uint32_t min_nodes,
@@ -463,42 +469,15 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 		       uint16_t cr_type, bool prefer_alloc_nodes,
 		       bool first_pass)
 {
-	int i, j, error_code = SLURM_ERROR;
-	int *consec_cpus;	/* how many CPUs we can add from this
-				 * consecutive set of nodes */
-	List *consec_gres;	/* how many GRES we can add from this
-				 * consecutive set of nodes */
-	int *consec_nodes;	/* how many nodes we can add from this
-				 * consecutive set of nodes */
-	int *consec_start;	/* where this consecutive set starts (index) */
-	int *consec_end;	/* where this consecutive set ends (index) */
-	int *consec_req;	/* are nodes from this set required
-				 * (in req_bitmap) */
-	uint64_t *consec_weight; /* node scheduling weight */
-	node_record_t *node_ptr = NULL;
-	int consec_index, consec_size, sufficient;
-	int rem_cpus, rem_nodes; /* remaining resources desired */
-	int min_rem_nodes;	/* remaining resources desired */
-	int best_fit_nodes, best_fit_cpus, best_fit_req;
-	int best_fit_sufficient, best_fit_index = 0;
-	bool new_best;
-	uint64_t best_weight = 0;
-	uint16_t avail_cpus = 0;
-	int64_t rem_max_cpus;
-	int total_cpus = 0;	/* #CPUs allocated to job */
-	bool gres_per_job, required_node;
 	job_details_t *details_ptr = job_ptr->details;
-	bitstr_t *req_map = details_ptr->req_node_bitmap;
-	bool enforce_binding = false;
-	uint16_t *avail_cpu_per_node = NULL;
 
 	xassert(node_map);
 	if (bit_set_count(node_map) < min_nodes)
-		return error_code;
+		return SLURM_ERROR;
 
 	if ((details_ptr->req_node_bitmap) &&
 	    (!bit_super_set(details_ptr->req_node_bitmap, node_map)))
-		return error_code;
+		return SLURM_ERROR;
 
 	if (job_ptr->bit_flags & SPREAD_JOB) {
 		/* Spread the job out over many nodes */
@@ -563,6 +542,48 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 						prefer_alloc_nodes, first_pass);
 		}
 	}
+
+	return _eval_nodes_consec(job_ptr, mc_ptr, node_map, avail_core,
+				  min_nodes, max_nodes, req_nodes,
+				  avail_res_array, cr_type, prefer_alloc_nodes,
+				  first_pass);
+}
+
+static int _eval_nodes_consec(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
+			      bitstr_t *node_map, bitstr_t **avail_core,
+			      uint32_t min_nodes, uint32_t max_nodes,
+			      uint32_t req_nodes, avail_res_t **avail_res_array,
+			      uint16_t cr_type, bool prefer_alloc_nodes,
+			      bool first_pass)
+{
+	int i, j, error_code = SLURM_ERROR;
+	int *consec_cpus;	/* how many CPUs we can add from this
+				 * consecutive set of nodes */
+	List *consec_gres;	/* how many GRES we can add from this
+				 * consecutive set of nodes */
+	int *consec_nodes;	/* how many nodes we can add from this
+				 * consecutive set of nodes */
+	int *consec_start;	/* where this consecutive set starts (index) */
+	int *consec_end;	/* where this consecutive set ends (index) */
+	int *consec_req;	/* are nodes from this set required
+				 * (in req_bitmap) */
+	uint64_t *consec_weight; /* node scheduling weight */
+	node_record_t *node_ptr = NULL;
+	int consec_index, consec_size, sufficient;
+	int rem_cpus, rem_nodes; /* remaining resources desired */
+	int min_rem_nodes;	/* remaining resources desired */
+	int best_fit_nodes, best_fit_cpus, best_fit_req;
+	int best_fit_sufficient, best_fit_index = 0;
+	bool new_best;
+	uint64_t best_weight = 0;
+	uint16_t avail_cpus = 0;
+	int64_t rem_max_cpus;
+	int total_cpus = 0;	/* #CPUs allocated to job */
+	bool gres_per_job, required_node;
+	job_details_t *details_ptr = job_ptr->details;
+	bitstr_t *req_map = details_ptr->req_node_bitmap;
+	bool enforce_binding = false;
+	uint16_t *avail_cpu_per_node = NULL;
 
 	if (job_ptr->gres_list_req && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
