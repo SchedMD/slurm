@@ -1209,6 +1209,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 			       int update)
 {
 	char *nodes = NULL, *reason = NULL, *uname = NULL;
+	char *group;
 	char tmp_char[256];
 	char time_buf[32];
 	char tmp1[128];
@@ -1216,7 +1217,6 @@ static void _layout_job_record(GtkTreeView *treeview,
 	time_t now_time = time(NULL);
 	int suspend_secs = 0;
 	job_info_t *job_ptr = sview_job_info_ptr->job_ptr;
-	struct group *group_info = NULL;
 	uint16_t term_code = 0, term_sig = 0;
 	uint64_t min_mem = 0;
 
@@ -1456,16 +1456,13 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_GRES),
 				   job_ptr->tres_per_node);
 
-	group_info = getgrgid((gid_t)job_ptr->group_id);
-	if (group_info && group_info->gr_name[0])
-		snprintf(tmp_char, sizeof(tmp_char), "%s", group_info->gr_name);
-	else
-		snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->group_id);
-
+	if (!(group = gid_to_string_or_null(job_ptr->group_id)))
+		xstrfmtcat(group, "%u", job_ptr->group_id);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_GROUP_ID),
-				   tmp_char);
+				   group);
+	xfree(group);
 
 	if (job_ptr->array_task_str) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u_[%s] (%u)",
