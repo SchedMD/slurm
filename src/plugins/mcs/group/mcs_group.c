@@ -249,7 +249,6 @@ static int _find_mcs_label(gid_t *groups, int ngroups, char **result)
 	int i = 0;
 	int j = 0;
 	uint32_t tmp_group ;
-	struct group *gr;
 
 	if (ngroups == 0)
 		return SLURM_ERROR;
@@ -258,10 +257,9 @@ static int _find_mcs_label(gid_t *groups, int ngroups, char **result)
 		for (j = 0; j < ngroups; j++) {
 			tmp_group = (uint32_t) groups[j];
 			if (array_mcs_parameter[i] == tmp_group) {
-				if ((gr = getgrgid(groups[j]))) {
-					*result = gr->gr_name;
-				} else {
-					error("%s: getgrgid(%u): %m",
+				*result = gid_to_string_or_null(groups[j]);
+				if (!*result) {
+					error("%s: failed to lookup name for gid %u",
 					      __func__, (uint32_t) groups[j]);
 					rc = SLURM_ERROR;
 				}
@@ -351,7 +349,7 @@ extern int mcs_p_set_mcs_label(job_record_t *job_ptr, char *label)
 			return SLURM_ERROR;
 		} else {
 			xfree(job_ptr->mcs_label);
-			job_ptr->mcs_label = xstrdup(result);
+			job_ptr->mcs_label = result;
 			return SLURM_SUCCESS;
 		}
 	} else {
