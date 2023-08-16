@@ -5416,8 +5416,6 @@ TRY_AVAIL:
 			feat_ptr->count ? feat_ptr->count : 1;
 
 		tmp_avail_bitmap = bit_copy(avail_bitmap);
-		if (ret_bitmap)
-			bit_and_not(tmp_avail_bitmap, ret_bitmap);
 		bit_and(tmp_avail_bitmap, feature_bitmap);
 		_pick_nodes(tmp_avail_bitmap, resv_desc_ptr,
 			    core_bitmap, &ret_bitmap);
@@ -5678,6 +5676,9 @@ static void _pick_nodes(bitstr_t *avail_bitmap,
 {
 	bitstr_t *avail_bitmaps[MAX_BITMAPS] = { avail_bitmap };
 	bitstr_t *avail_core_bitmaps[MAX_BITMAPS] = { *core_bitmap };
+
+	if (*ret_node_bitmap)
+		bit_and_not(avail_bitmap, *ret_node_bitmap);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 		char *nodes = NULL;
