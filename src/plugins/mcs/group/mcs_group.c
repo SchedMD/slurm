@@ -245,14 +245,11 @@ static int _check_and_load_params(void)
  */
 static int _find_mcs_label(gid_t *groups, int ngroups, char **result)
 {
-	int i = 0;
-	int j = 0;
-
 	if (ngroups == 0)
 		return SLURM_ERROR;
 
-	for (i = 0; i < nb_mcs_groups; i++) {
-		for (j = 0; j < ngroups; j++) {
+	for (int i = 0; i < nb_mcs_groups; i++) {
+		for (int j = 0; j < ngroups; j++) {
 			if (array_mcs_parameter[i] == groups[j]) {
 				*result = gid_to_string_or_null(groups[j]);
 				if (!*result) {
