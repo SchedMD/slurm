@@ -146,6 +146,8 @@ documents those changes that are of interest to users and administrators.
     object.
  -- sacct - Output in JSON or YAML output will will have the 'step/id' field
     given as a string instead of an object.
+ -- scontrol/squeue - Step output in JSON or YAML output will will have the
+    'id' field given as a string instead of an object.
 
 * Changes in Slurm 23.02.5
 ==========================

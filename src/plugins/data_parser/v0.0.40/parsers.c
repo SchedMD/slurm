@@ -6890,7 +6890,7 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 	add_parse(TIMESTAMP_NO_VAL, start_time, "time/start", NULL),
 	add_skip(start_protocol_ver),
 	add_parse_bit_flag_array(job_step_info_t, JOB_STATE, false, state, "state", NULL),
-	add_parse(SLURM_STEP_ID, step_id, "id", NULL),
+	add_parse(SLURM_STEP_ID_STRING, step_id, "id", NULL),
 	add_parse(STRING, submit_line, "submit_line", NULL),
 	add_parse(TASK_DISTRIBUTION, task_dist, "task/distribution", NULL),
 	add_parse(UINT32_NO_VAL, time_limit, "time/limit", NULL),
