@@ -1866,9 +1866,6 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 	static part_record_t *last_fail_part_ptr = NULL;
 	static time_t last_fail_time = 0;
 	time_t now;
-#if defined(_SC_GETPW_R_SIZE_MAX)
-	long ii;
-#endif
 	int res;
 	size_t buflen;
 	struct passwd pwd, *pwd_result;
@@ -1916,11 +1913,6 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 
 	/* First figure out the primary GID.  */
 	buflen = PW_BUF_SIZE;
-#if defined(_SC_GETPW_R_SIZE_MAX)
-	ii = sysconf(_SC_GETPW_R_SIZE_MAX);
-	if ((ii >= 0) && (ii > buflen))
-		buflen = ii;
-#endif
 	buf = xmalloc(buflen);
 	while (1) {
 		slurm_seterrno(0);
@@ -1945,12 +1937,6 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 
 	/* Then use the primary GID to figure out the name of the
 	 * group with that GID.  */
-#ifdef _SC_GETGR_R_SIZE_MAX
-	ii = sysconf(_SC_GETGR_R_SIZE_MAX);
-	buflen = PW_BUF_SIZE;
-	if ((ii >= 0) && (ii > buflen))
-		buflen = ii;
-#endif
 	grp_buffer = xmalloc(buflen);
 	while (1) {
 		slurm_seterrno(0);
