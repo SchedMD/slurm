@@ -1407,6 +1407,48 @@ static int DUMP_FUNC(STEP_ID)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 }
 
+static int PARSE_FUNC(SLURM_STEP_ID_STRING)(const parser_t *const parser,
+					    void *obj, data_t *src,
+					    args_t *args, data_t *parent_path)
+{
+	slurm_step_id_t *id = obj;
+
+	data_convert_type(src, DATA_TYPE_NONE);
+
+	if (data_get_type(src) == DATA_TYPE_STRING) {
+		slurm_selected_step_t step = {0};
+		int rc;
+
+		if ((rc = PARSE(SELECTED_STEP, step, src, parent_path, args)))
+			return rc;
+
+		/* we must reject values that step_id can not store */
+		if (step.array_task_id != NO_VAL)
+			return ESLURM_DATA_CONV_FAILED;
+		if (step.het_job_offset != NO_VAL)
+			return ESLURM_DATA_CONV_FAILED;
+
+		*id = step.step_id;
+		return SLURM_SUCCESS;
+	}
+
+	/* default to step_id dictionary format */
+	return PARSE(SLURM_STEP_ID, *id, src, parent_path, args);
+}
+
+static int DUMP_FUNC(SLURM_STEP_ID_STRING)(const parser_t *const parser,
+					   void *obj, data_t *dst, args_t *args)
+{
+	slurm_step_id_t *id = obj;
+	slurm_selected_step_t step = {
+		.array_task_id = NO_VAL,
+		.het_job_offset = NO_VAL,
+		.step_id = *id,
+	};
+
+	return DUMP(SELECTED_STEP, step, dst, args);
+}
+
 PARSE_DISABLED(WCKEY_TAG)
 
 static int DUMP_FUNC(WCKEY_TAG)(const parser_t *const parser, void *obj,
@@ -8232,6 +8274,7 @@ static const parser_t parsers[] = {
 	addpsp(ASSOC_ID_STRING, STRING, char *, NEED_NONE, NULL),
 	addpsp(ASSOC_ID_STRING_CSV_LIST, STRING_LIST, list_t *, NEED_NONE, NULL),
 	addpsp(PROCESS_EXIT_CODE, PROCESS_EXIT_CODE_VERBOSE, uint32_t, NEED_NONE, "return code returned by process"),
+	addpsp(SLURM_STEP_ID_STRING, SELECTED_STEP, slurm_step_id_t, NEED_NONE, "Slurm Job StepId"),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
@@ -8322,6 +8365,7 @@ static const parser_t parsers[] = {
 	addpp(ACCOUNT_CONDITION_PTR, slurmdb_account_cond_t *, ACCOUNT_CONDITION),
 	addpp(CLUSTER_CONDITION_PTR, slurmdb_cluster_cond_t *, CLUSTER_CONDITION),
 	addpp(OPENAPI_SLURMDBD_CONFIG_RESP_PTR, openapi_resp_slurmdbd_config_t *, OPENAPI_SLURMDBD_CONFIG_RESP),
+	addpp(SLURM_STEP_ID_STRING_PTR, slurm_step_id_t *, SLURM_STEP_ID_STRING),
 
 	/* Pointer model parsers allowing NULL */
 	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),
