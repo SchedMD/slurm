@@ -189,10 +189,10 @@ static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
 			       bitstr_t **ret_node_bitmap,
 			       bitstr_t **ret_core_bitmap,
 			       const char **bitmap_tags);
-static bitstr_t *_pick_idle_xand_nodes(bitstr_t *avail_bitmap,
-				       resv_desc_msg_t *resv_desc_ptr,
-				       bitstr_t **core_bitmap,
-				       List feature_list);
+static bitstr_t *_pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
+						 resv_desc_msg_t *resv_desc_ptr,
+						 bitstr_t **core_bitmap,
+						 List feature_list);
 static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 				resv_desc_msg_t *resv_desc_ptr,
 				uint32_t node_cnt, bitstr_t **core_bitmap);
@@ -5293,7 +5293,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 
 			/* Accumulate resources by feature type/count */
 			have_xand = true;
-			*resv_bitmap = _pick_idle_xand_nodes(
+			*resv_bitmap = _pick_nodes_by_feature_node_cnt(
 				node_bitmaps[max_bitmap], resv_desc_ptr,
 				core_bitmap, job_ptr->details->feature_list);
 		} else {
@@ -5356,10 +5356,10 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	return rc;
 }
 
-static bitstr_t *_pick_idle_xand_nodes(bitstr_t *avail_bitmap,
-				       resv_desc_msg_t *resv_desc_ptr,
-				       bitstr_t **core_bitmap,
-				       List feature_list)
+static bitstr_t *_pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
+						 resv_desc_msg_t *resv_desc_ptr,
+						 bitstr_t **core_bitmap,
+						 List feature_list)
 {
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap = NULL, *tmp_avail_bitmap;
 	bitstr_t *feature_bitmap;
