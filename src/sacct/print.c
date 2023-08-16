@@ -284,7 +284,6 @@ extern void print_fields(type_t type, void *object)
 	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
 	jobcomp_job_rec_t *job_comp = (jobcomp_job_rec_t *)object;
 	struct passwd *pw = NULL;
-	struct	group *gr = NULL;
 	int cpu_tres_rec_count = 0;
 	int step_cpu_tres_rec_count = 0;
 	char tmp1[128];
@@ -918,13 +917,11 @@ extern void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			tmp_char = NULL;
-			if ((gr=getgrgid(tmp_uint32)))
-				tmp_char=gr->gr_name;
-
+			tmp_char = gid_to_string_or_null(tmp_uint32);
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));
+			xfree(tmp_char);
 			break;
 		case PRINT_JOBID:
 			if (type == JOBSTEP)
