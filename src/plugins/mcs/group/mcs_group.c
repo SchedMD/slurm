@@ -254,7 +254,7 @@ static int _find_mcs_label(gid_t *groups, int ngroups, char **result)
 				*result = gid_to_string_or_null(groups[j]);
 				if (!*result) {
 					error("%s: failed to lookup name for gid %u",
-					      __func__, (uint32_t) groups[j]);
+					      __func__, groups[j]);
 					return SLURM_ERROR;
 				}
 				return SLURM_SUCCESS;
