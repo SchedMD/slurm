@@ -141,6 +141,11 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Convert to generating OperationIDs based on path for all
     v0.0.40 tagged paths.
  -- slurmrestd - Reduce memory used while dumping a job's stdio paths.
+ -- slurmrestd - Jobs queried from data_parser/v0.0.40 from slurmdb will have
+    'step/id' field given as a string to match CLI formatting instead of an
+    object.
+ -- sacct - Output in JSON or YAML output will will have the 'step/id' field
+    given as a string instead of an object.
 
 * Changes in Slurm 23.02.5
 ==========================
