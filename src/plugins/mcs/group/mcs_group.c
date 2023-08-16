@@ -245,7 +245,6 @@ static int _check_and_load_params(void)
  */
 static int _find_mcs_label(gid_t *groups, int ngroups, char **result)
 {
-	int rc = SLURM_SUCCESS;
 	int i = 0;
 	int j = 0;
 
@@ -259,15 +258,14 @@ static int _find_mcs_label(gid_t *groups, int ngroups, char **result)
 				if (!*result) {
 					error("%s: failed to lookup name for gid %u",
 					      __func__, (uint32_t) groups[j]);
-					rc = SLURM_ERROR;
+					return SLURM_ERROR;
 				}
-				return rc;
+				return SLURM_SUCCESS;
 			}
 		}
 	}
-	rc = SLURM_ERROR;
 
-	return rc;
+	return SLURM_ERROR;
 }
 
 /*
