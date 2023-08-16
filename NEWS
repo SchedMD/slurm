@@ -63,6 +63,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove MYSQL_OPT_RECONNECT completely.
  -- Fix cloud nodes in POWERING_UP state disappearing (getting set to FUTURE)
     when an `scontrol reconfigure` happens.
+ -- openapi/dbv0.0.39 - Avoid assert / segfault on missing coordinators list.
 
 * Changes in Slurm 23.02.4
 ==========================

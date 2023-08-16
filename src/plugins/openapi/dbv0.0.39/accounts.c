@@ -194,7 +194,7 @@ static int _foreach_add_acct_coord(void *x, void *arg)
 	xassert(args->magic == MAGIC_FOREACH_COORD);
 	xassert(args->ctxt->magic == MAGIC_CTXT);
 
-	if (args->orig_acct &&
+	if (args->orig_acct && args->orig_acct->coordinators &&
 	    list_find_first(args->orig_acct->coordinators, _foreach_match_coord,
 			    coord)) {
 		/* account already has coordinator -> nothing to do here */
