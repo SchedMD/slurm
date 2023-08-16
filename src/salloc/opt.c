@@ -324,21 +324,22 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 		exit(error_exit);
 }
 
-/* _get_shell - return a string containing the default shell for this user
- * NOTE: This function is NOT reentrant (see getpwuid_r if needed) */
+/* return a string containing the default shell for this user */
 static char *_get_shell(void)
 {
-	struct passwd *pw_ent_ptr;
+	uid_t uid = opt.uid;
+	struct passwd pwd, *result;
+	char buffer[PW_BUF_SIZE];
 
-	if (opt.uid == SLURM_AUTH_NOBODY)
-		pw_ent_ptr = getpwuid(getuid());
-	else
-		pw_ent_ptr = getpwuid(opt.uid);
+	if (uid == SLURM_AUTH_NOBODY)
+		uid = getuid();
 
-	if (!pw_ent_ptr)
-		fatal("no user information for user %u", opt.uid);
+	slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
 
-	return pw_ent_ptr->pw_shell;
+	if (!result)
+		fatal("no user information for user %u", uid);
+
+	return result->pw_shell;
 }
 
 static void _salloc_default_command(int *argcp, char **argvp[])
