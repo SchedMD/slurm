@@ -101,6 +101,12 @@ extern void uid_cache_clear(void);
 extern char *uid_to_string_cached(uid_t uid);
 
 /*
+ * Translate uid to home directory.
+ * NOTE: xfree the return value
+ */
+extern char *uid_to_dir(uid_t uid);
+
+/*
  * Same as uid_to_string, but for group name.
  * NOTE: xfree the return value
  */

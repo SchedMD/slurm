@@ -227,6 +227,20 @@ extern char *uid_to_string_cached(uid_t uid)
 	return entry->username;
 }
 
+extern char *uid_to_dir(uid_t uid)
+{
+	struct passwd pwd, *result;
+	char buffer[PW_BUF_SIZE];
+	char *dir = NULL;
+	int rc;
+
+	rc = slurm_getpwuid_r(uid, &pwd, buffer, PW_BUF_SIZE, &result);
+	if (result && (rc == 0))
+		dir = xstrdup(result->pw_dir);
+
+	return dir;
+}
+
 gid_t
 gid_from_uid (uid_t uid)
 {
