@@ -248,15 +248,13 @@ static int _find_mcs_label(gid_t *groups, int ngroups, char **result)
 	int rc = SLURM_SUCCESS;
 	int i = 0;
 	int j = 0;
-	uint32_t tmp_group ;
 
 	if (ngroups == 0)
 		return SLURM_ERROR;
 
 	for (i = 0; i < nb_mcs_groups; i++) {
 		for (j = 0; j < ngroups; j++) {
-			tmp_group = (uint32_t) groups[j];
-			if (array_mcs_parameter[i] == tmp_group) {
+			if (array_mcs_parameter[i] == groups[j]) {
 				*result = gid_to_string_or_null(groups[j]);
 				if (!*result) {
 					error("%s: failed to lookup name for gid %u",
