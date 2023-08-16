@@ -1925,7 +1925,9 @@ static data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
 	log_flag(DATA, "dictionary compare: %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR") %s %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR")",
 		 key, (uintptr_t) p->a, data_type_to_string(a->type),
 		 (uintptr_t) a, (rc ? "\u2261" : "\u2260"), key,
-		 (uintptr_t) p->b, data_type_to_string(b->type),
+		 (uintptr_t) p->b,
+		 (b ? data_type_to_string(b->type) :
+		      data_type_to_string(TYPE_NONE)),
 		 (uintptr_t) b);
 
 	return rc ? DATA_FOR_EACH_CONT : DATA_FOR_EACH_FAIL;
