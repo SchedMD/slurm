@@ -1893,19 +1893,18 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 		return 0;
 	}
 
-	/* The allow_uids list is built from the allow_groups list,
-	 * and if user/group enumeration has been disabled, it's
-	 * possible that the users primary group is not returned as a
-	 * member of a group.  Enumeration is problematic if the
-	 * user/group database is large (think university-wide central
-	 * account database or such), as in such environments
-	 * enumeration would load the directory servers a lot, so the
-	 * recommendation is to have it disabled (e.g. enumerate=False
-	 * in sssd.conf).  So check explicitly whether the primary
-	 * group is allowed as a final resort.  This should
-	 * (hopefully) not happen that often, and anyway the
-	 * getpwuid_r and getgrgid_r calls should be cached by
-	 * sssd/nscd/etc. so should be fast.  */
+	/*
+	 * The allow_uids list is built from the allow_groups list.  If
+	 * user/group enumeration has been disabled, it's possible that the
+	 * user's primary group is not returned as a member of a group.
+	 * Enumeration is problematic if the user/group database is large
+	 * (think university-wide central account database or such), as in such
+	 * environments enumeration would load the directory servers a lot, so
+	 * the recommendation is to have it disabled (e.g. enumerate=False in
+	 * sssd.conf). So check explicitly whether the primary group is allowed
+	 * as a final resort.
+	 * This should (hopefully) not happen that often.
+	 */
 
 	/* First figure out the primary GID.  */
 	primary_gid = gid_from_uid(run_uid);
