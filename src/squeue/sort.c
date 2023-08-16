@@ -370,16 +370,15 @@ static int _sort_job_by_group_name(void *void1, void *void2)
 	int diff;
 	job_info_t *job1;
 	job_info_t *job2;
-	struct group *group_info = NULL;
-	char *name1 = "", *name2 = "";
+	char *name1, *name2;
 
 	_get_job_info_from_void(&job1, &job2, void1, void2);
 
-	if ((group_info = getgrgid((gid_t) job1->group_id)))
-		name1 = group_info->gr_name;
-	if ((group_info = getgrgid((gid_t) job2->group_id)))
-		name2 = group_info->gr_name;
+	name1 = gid_to_string_or_null(job1->group_id);
+	name2 = gid_to_string_or_null(job2->group_id);
 	diff = xstrcmp(name1, name2);
+	xfree(name1);
+	xfree(name2);
 
 	if (reverse_order)
 		diff = -diff;
