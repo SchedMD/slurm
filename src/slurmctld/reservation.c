@@ -5059,11 +5059,11 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	return i;
 }
 
-static int _have_xand_feature(void *x, void *key)
+static int _feature_has_node_cnt(void *x, void *key)
 {
 	job_feature_t *feat_ptr = (job_feature_t *) x;
 
-	if (feat_ptr->op_code == FEATURE_OP_XAND)
+	if (feat_ptr->count > 0)
 		return 1;
 	return 0;
 }
@@ -5285,7 +5285,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		if (rc != SLURM_SUCCESS) {
 			;
 		} else if (list_find_first(job_ptr->details->feature_list,
-					   _have_xand_feature, &dummy)) {
+					   _feature_has_node_cnt, &dummy)) {
 			/* take the core_bitmap */
 			FREE_NULL_BITMAP(*core_bitmap);
 			*core_bitmap = core_bitmaps[max_bitmap];
