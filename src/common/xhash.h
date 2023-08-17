@@ -37,7 +37,6 @@
 #define __XHASH_EJ2ORE_INC__
 
 #include <stdint.h>
-#include <pthread.h>
 
 #define xhash_free(__p) xhash_free_ptr(&(__p));
 
