@@ -374,8 +374,8 @@ static int _sort_job_by_group_name(void *void1, void *void2)
 
 	_get_job_info_from_void(&job1, &job2, void1, void2);
 
-	name1 = gid_to_string_or_null(job1->group_id);
-	name2 = gid_to_string_or_null(job2->group_id);
+	name1 = gid_to_string(job1->group_id);
+	name2 = gid_to_string(job2->group_id);
 	diff = xstrcmp(name1, name2);
 	xfree(name1);
 	xfree(name2);
