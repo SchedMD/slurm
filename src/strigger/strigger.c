@@ -63,7 +63,6 @@ static int   _get_trigger(void);
 static int   _set_trigger(void);
 static char *_trig_flags(uint16_t flags);
 static int   _trig_offset(uint16_t offset);
-static char *_trig_user(uint32_t user_id);
 
 int main(int argc, char **argv)
 {
@@ -424,7 +423,7 @@ static int _get_trigger(void)
 		}
 		line_no++;
 
-		user = _trig_user(trig_msg->trigger_array[i].user_id);
+		user = uid_to_string(trig_msg->trigger_array[i].user_id);
 		printf("%7u %-9s %7s %-35s %6d %-8s %-5s %s\n",
 			trig_msg->trigger_array[i].trig_id,
 			trigger_res_type(trig_msg->trigger_array[i].res_type),
@@ -454,14 +453,4 @@ static int _trig_offset(uint16_t offset)
 	rc  = offset;
 	rc -= 0x8000;
 	return rc;
-}
-
-static char *_trig_user(uint32_t user_id)
-{
-	char *user = uid_to_string_or_null(user_id);
-
-	if (!user)
-		user = xstrdup("unknown");
-
-	return user;
 }
