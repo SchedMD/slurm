@@ -173,6 +173,8 @@ documents those changes that are of interest to users and administrators.
     not detect /dev/dri/card[0-9]+.
  -- Format batch, extern, interactive, and pending step ids into strings that
     are human readable.
+ -- Fix node selection for jobs that request --gpus and a number of tasks fewer
+    than gpus, which resulted in incorrectly rejecting these jobs.
 
 * Changes in Slurm 23.02.4
 ==========================

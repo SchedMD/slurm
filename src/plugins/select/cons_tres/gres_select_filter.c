@@ -396,6 +396,19 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		int min_core_cnt, req_cores, rem_sockets, req_sock_cnt = 0;
 		int threads_per_core;
 
+		/*
+		 * sock_gres->total_cnt is a value used by gres_sched_add
+		 * it may be decreased by gres_select_filter_sock_core
+		 * in first_pass, but in 2nd pass we should start
+		 * from the value set by gres_select_filter_remove_unusable
+		 */
+		if (first_pass)
+			sock_gres->total_cnt_before_filter =
+				sock_gres->total_cnt;
+		else
+			sock_gres->total_cnt =
+				sock_gres->total_cnt_before_filter;
+
 		if (mc_ptr->threads_per_core)
 			threads_per_core =
 				MIN(cpus_per_core,
@@ -521,7 +534,6 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 			    (tot_gres_sock == 0)) {
 				/*
 				 * Insufficient GRES on this socket
-				 * GRES removed here won't be used in 2nd pass
 				 */
 				if (((gres_js->gres_per_socket >
 				      tot_gres_sock) ||
