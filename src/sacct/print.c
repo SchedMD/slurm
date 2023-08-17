@@ -2041,7 +2041,7 @@ extern void print_fields(type_t type, void *object)
 				if (job->user)
 					tmp_char = job->user;
 				else {
-					user = uid_to_string_or_null(job->uid);
+					user = uid_to_string(job->uid);
 					tmp_char = user;
 				}
 				break;
