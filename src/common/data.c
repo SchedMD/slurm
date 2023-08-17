@@ -743,7 +743,7 @@ extern data_t *data_list_join(const data_t **data, bool flatten_lists)
 	return dst;
 }
 
-const data_t *data_key_get_const(const data_t *data, const char *key)
+extern const data_t *data_key_get_const(const data_t *data, const char *key)
 {
 	const data_list_node_t *i;
 
