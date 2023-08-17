@@ -2403,6 +2403,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 					  iter);
 	}
 
+	xfree(tmp_gname);
 	xfree(tmp_nodes);
 
 	return;
