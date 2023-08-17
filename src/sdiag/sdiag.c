@@ -214,9 +214,7 @@ static int _print_stats(void)
 
 	printf("\nRemote Procedure Call statistics by user\n");
 	for (i = 0; i < buf->rpc_user_size; i++) {
-		char *user = uid_to_string_or_null(buf->rpc_user_id[i]);
-		if (!user)
-			xstrfmtcat(user, "%u", buf->rpc_user_id[i]);
+		char *user = uid_to_string(buf->rpc_user_id[i]);
 
 		printf("\t%-16s(%8u) count:%-6u "
 		       "ave_time:%-6u total_time:%"PRIu64"\n",
