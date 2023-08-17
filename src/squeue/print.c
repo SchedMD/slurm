@@ -787,11 +787,8 @@ int _print_job_group_name(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("GROUP", width, right, true);
 	else {
-		char *group = gid_to_string_or_null(job->group_id);
-		if (group)
-			_print_str(group, width, right, true);
-		else
-			_print_int(job->group_id, width, right, true);
+		char *group = gid_to_string(job->group_id);
+		_print_str(group, width, right, true);
 		xfree(group);
 	}
 	if (suffix)
