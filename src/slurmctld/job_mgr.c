@@ -11116,6 +11116,8 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				min_nodes /= max_cpu_cnt;
 				min_nodes = MAX(min_nodes,
 						detail_ptr->min_nodes);
+				min_nodes = MIN(min_nodes,
+						detail_ptr->max_nodes);
 				pack32(min_nodes, buffer);
 				pack32(detail_ptr->max_nodes, buffer);
 			}
