@@ -1188,12 +1188,9 @@ static data_for_each_cmd_t _differentiate_path_operationId(const char *key,
 		return DATA_FOR_EACH_FAIL;
 	}
 
-	if (args->merge_args->flags & OAS_FLAG_MANGLE_OPID) {
-		xfree(merge[1]);
-	} else if (args->merge_args->flags & OAS_FLAG_SET_OPID) {
-		xfree(merge[0]);
-		xfree(merge[2]);
-	}
+	for (int i = 0; i < ARRAY_SIZE(merge); i++)
+		if (merge[i] != args->server_path)
+			FREE_NULL_DATA(merge[i]);
 
 	debug5("%s: [%s %s] setting OperationId %s -> %s",
 	       __func__, key, args->path, (op && (data_get_type(op) ==
