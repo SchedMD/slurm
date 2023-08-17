@@ -72,6 +72,9 @@ documents those changes that are of interest to users and administrators.
     overlapping parent paths would not get generated.
  -- Fix memory leak as a result of a partition info query.
  -- Fix memory leak as a result of a job info query.
+ -- slurmrestd - For 'GET /slurm/v0.0.39/node[s]', change format of node's
+    energy field "current_watts" to a dictionary to account for unset value
+    instead of dumping 4294967294.
 
 * Changes in Slurm 23.02.4
 ==========================

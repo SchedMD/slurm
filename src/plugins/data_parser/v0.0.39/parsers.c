@@ -5727,7 +5727,7 @@ static const parser_t PARSER_ARRAY(ACCT_GATHER_ENERGY)[] = {
 	add_parse(UINT32, ave_watts, "average_watts", NULL),
 	add_parse(UINT64, base_consumed_energy, "base_consumed_energy", NULL),
 	add_parse(UINT64, consumed_energy, "consumed_energy", NULL),
-	add_parse(UINT32, current_watts, "current_watts", NULL),
+	add_parse(UINT32_NO_VAL, current_watts, "current_watts", NULL),
 	add_parse(UINT64, previous_consumed_energy, "previous_consumed_energy", NULL),
 	add_parse(UINT64, poll_time, "last_collected", NULL),
 };
