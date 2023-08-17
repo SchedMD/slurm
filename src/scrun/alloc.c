@@ -541,7 +541,7 @@ static void _alloc_job(con_mgr_t *conmgr)
 	}
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG) {
-		char *user = uid_to_string_or_null(alloc->uid);
+		char *user = uid_to_string(alloc->uid);
 		char *group = gid_to_string(alloc->gid);
 
 		debug("allocated jobId=%u user[%u]=%s group[%u]=%s",
