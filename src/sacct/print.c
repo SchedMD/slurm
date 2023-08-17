@@ -917,7 +917,7 @@ extern void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			tmp_char = gid_to_string_or_null(tmp_uint32);
+			tmp_char = gid_to_string(tmp_uint32);
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));
