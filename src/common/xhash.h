@@ -55,18 +55,6 @@ typedef struct xhash_st xhash_t;
   */
 typedef void (*xhash_idfunc_t)(void* item, const char** key, uint32_t* key_len);
 
-/**
-  * @param id is the unique identifier an item can be identified with.
-  * @param hashes_count is the number of hashes contained in the hash
-  *                     table and the function must return an index in
-  *                     range [0 to hashes_count-1].
-  * @returns a hash used as an index for storing the item identified by
-  *          the given id.
-  */
-
-/* Currently not implementable with uthash */
-typedef unsigned (*xhash_hashfunc_t)(unsigned hashes_count, const char* id);
-
 /** This type of function is used to free data inserted into xhash table */
 typedef void (*xhash_freefunc_t)(void* item);
 
