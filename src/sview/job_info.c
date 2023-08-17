@@ -1456,8 +1456,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_GRES),
 				   job_ptr->tres_per_node);
 
-	if (!(group = gid_to_string_or_null(job_ptr->group_id)))
-		xstrfmtcat(group, "%u", job_ptr->group_id);
+	group = gid_to_string(job_ptr->group_id);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_GROUP_ID),
@@ -2080,8 +2079,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 		term_sig = 0;
 	snprintf(tmp_exit, sizeof(tmp_exit), "%u:%u", term_code, term_sig);
 
-	if (!(tmp_gname = gid_to_string_or_null(job_ptr->group_id)))
-		xstrfmtcat(tmp_gname, "%u", job_ptr->group_id);
+	tmp_gname = gid_to_string(job_ptr->group_id);
 
 	min_mem = job_ptr->pn_min_memory;
 	if (min_mem & MEM_PER_CPU)
