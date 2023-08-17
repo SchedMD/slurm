@@ -9115,7 +9115,7 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 			    bitstr_t *gres_bit_alloc,  bool get_devices,
 			    stepd_step_rec_t *step)
 {
-	bitstr_t *usable_gres;
+	bitstr_t *usable_gres = NULL;
 	*usable_gres_ptr = NULL;
 
 	if (!tres_bind->bind_gpu && !tres_bind->bind_nic &&
@@ -9176,7 +9176,7 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 		return SLURM_ERROR;
 	}
 
-	if (!bit_set_count(usable_gres)) {
+	if (usable_gres && !bit_set_count(usable_gres)) {
 		error("Bind request %s does not specify any devices within the allocation for task %d. Binding to the first device in the allocation instead.",
 		      tres_bind->request, proc_id);
 		if (!get_devices && gres_use_local_device_index())
