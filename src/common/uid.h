@@ -87,9 +87,10 @@ char *uid_to_string_or_null(uid_t uid);
 
 /*
  * Translate uid to user name,
+ * If lookup fails, will return the uid printed as a string.
  * NOTE: xfree the return value
  */
-char *uid_to_string (uid_t uid);
+extern char *uid_to_string(uid_t uid);
 
 /* Free any memory allocated by uid_to_string_cached() */
 extern void uid_cache_clear(void);

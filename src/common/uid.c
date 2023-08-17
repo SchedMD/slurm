@@ -171,16 +171,12 @@ char *uid_to_string_or_null(uid_t uid)
 	return ustring;
 }
 
-/*
- * Convert a uid to an xmalloc'd string.
- * Always returns a string - "nobody" is sent back on error.
- */
-char *uid_to_string(uid_t uid)
+extern char *uid_to_string(uid_t uid)
 {
 	char *result = uid_to_string_or_null(uid);
 
 	if (!result)
-		result = xstrdup("nobody");
+		result = xstrdup_printf("%u", uid);
 
 	return result;
 }
