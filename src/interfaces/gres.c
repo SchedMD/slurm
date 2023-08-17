@@ -8797,7 +8797,7 @@ static bitstr_t *_get_single_usable_gres(int context_inx,
 	if (gres_count <= 1) {
 		log_flag(GRES, "%s: (task %d) No need to select single gres since count is 0 or 1",
 			 __func__, local_proc_id);
-		return bit_copy(gres_bit_alloc);;
+		return bit_copy(gres_bit_alloc);
 	}
 
 	/*
@@ -9183,7 +9183,6 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 			bit_set(usable_gres, 0);
 		else
 			bit_set(usable_gres, bit_ffs(gres_bit_alloc));
-
 	}
 
 	*usable_gres_ptr = usable_gres;
