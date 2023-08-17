@@ -114,9 +114,10 @@ extern char *uid_to_shell(uid_t uid);
 
 /*
  * Same as uid_to_string, but for group name.
+ * If lookup fails, will return the gid printed as a string.
  * NOTE: xfree the return value
  */
-char *gid_to_string (gid_t gid);
+extern char *gid_to_string(gid_t gid);
 
 /*
  * Translate gid to user name.

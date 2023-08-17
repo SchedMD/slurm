@@ -357,12 +357,12 @@ int gid_from_string(const char *name, gid_t *gidp)
 	return 0;
 }
 
-char *gid_to_string(gid_t gid)
+extern char *gid_to_string(gid_t gid)
 {
 	char *result = gid_to_string_or_null(gid);
 
 	if (!result)
-		return xstrdup("nobody");
+		return xstrdup_printf("%u", gid);
 
 	return result;
 }
