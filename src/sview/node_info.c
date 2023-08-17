@@ -921,17 +921,11 @@ extern list_t *create_node_info_list(node_info_msg_t *node_info_ptr,
 
 		if (node_ptr->reason &&
 		    (node_ptr->reason_uid != NO_VAL) && node_ptr->reason_time) {
-			char *user = uid_to_string_or_null(node_ptr->reason_uid);
-
-			if (!user)
-				xstrfmtcat(user, "Unk(%u)",
-					   node_ptr->reason_uid);
-
+			char *user = uid_to_string(node_ptr->reason_uid);
 			slurm_make_time_str(&node_ptr->reason_time,
 					    time_str, sizeof(time_str));
 			sview_node_info_ptr->reason = xstrdup_printf(
 				"%s [%s@%s]", node_ptr->reason, user, time_str);
-
 			xfree(user);
 		} else if (node_ptr->reason)
 			sview_node_info_ptr->reason = xstrdup(node_ptr->reason);

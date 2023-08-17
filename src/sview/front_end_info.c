@@ -392,11 +392,7 @@ static list_t *_create_front_end_info_list(
 		    (front_end_ptr->reason_uid != NO_VAL)) {
 			char *user;
 
-			user = uid_to_string_or_null(front_end_ptr->reason_uid);
-
-			if (!user)
-				xstrfmtcat(user, "Unk(%u)",
-					   front_end_ptr->reason_uid);
+			user = uid_to_string(front_end_ptr->reason_uid);
 			slurm_make_time_str(&front_end_ptr->reason_time,
 					    time_str, sizeof(time_str));
 			sview_front_end_info_ptr->reason =
