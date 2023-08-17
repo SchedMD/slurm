@@ -189,7 +189,7 @@ static void _script_env(void)
 	if ((state.group_id != NO_VAL) &&
 	    (state.group_id != SLURM_AUTH_NOBODY)) {
 		/* set group if we know it but we may not in a user namespace */
-		char *u = gid_to_string_or_null(state.group_id);
+		char *u = gid_to_string(state.group_id);
 		_set_env(state, "SCRUN_GROUP", u);
 		xfree(u);
 		_set_env_args(state, "SCRUN_GROUP_ID", "%u", state.group_id);
