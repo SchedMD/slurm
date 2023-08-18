@@ -78,6 +78,9 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - For 'GET /slurm/v0.0.39/qos', change format of QOS's
     field "priority" to a dictionary to account for unset value instead of
     dumping 4294967294.
+ -- slurmrestd - For 'GET /slurm/v0.0.39/job[s]', the 'return code' code field
+    in v0.0.39_job_exit_code will be set to -127 instead of being left unset
+    where job does not have a relevant return code.
 
 * Changes in Slurm 23.02.4
 ==========================
