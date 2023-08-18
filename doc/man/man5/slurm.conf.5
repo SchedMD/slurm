@@ -1681,6 +1681,12 @@ killed/cancelled by the JobAcctGather plugin.
 This differs from the behavior when using \fBConstrainRAMSpace\fR, where
 processes in the step will be killed, but the step will be left active,
 possibly with other processes left running.
+.IP
+
+.TP
+\fBDisableGPUAcct\fR
+Do not do accounting of GPU usage and skip any gpu driver library call. This
+parameter can help to improve performance if the GPU driver response is slow.
 .RE
 .IP
 
