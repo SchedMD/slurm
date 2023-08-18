@@ -1346,6 +1346,8 @@ data_for_each_cmd_t _merge_path_server(data_t *data, void *arg)
 	    (data_dict_for_each(args->src_paths, _merge_path, &p_args) < 0))
 		fatal("%s: unable to merge paths", __func__);
 
+	FREE_NULL_DATA(p_args.server_path);
+
 	return DATA_FOR_EACH_CONT;
 }
 

@@ -64,6 +64,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix cloud nodes in POWERING_UP state disappearing (getting set to FUTURE)
     when an `scontrol reconfigure` happens.
  -- openapi/dbv0.0.39 - Avoid assert / segfault on missing coordinators list.
+ -- slurmrestd - Correct memory leak while parsing OpenAPI specification
+    templates with server overrides.
 
 * Changes in Slurm 23.02.4
 ==========================
