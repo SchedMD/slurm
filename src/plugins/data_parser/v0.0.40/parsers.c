@@ -7804,17 +7804,17 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PROCESS_EXIT_CODE_STATUS)[] = {
 	add_parser(proc_exit_code_verbose_t, mtype, false, field, 0, path, desc)
 #define add_parse_overload(mtype, field, overloads, path, desc) \
 	add_parser(proc_exit_code_verbose_t, mtype, false, field, overloads, path, desc)
-#define add_flags(mtype, field, path, desc) \
-	add_parse_bit_flag_array(proc_exit_code_verbose_t, mtype, false, field, path, desc)
+#define add_flag(mtype, field, path, desc) \
+	add_parse_bit_flag_string(proc_exit_code_verbose_t, mtype, false, field, path, desc)
 static const parser_t PARSER_ARRAY(PROCESS_EXIT_CODE_VERBOSE)[] = {
-	add_flags(PROCESS_EXIT_CODE_STATUS, status, "status", "Status given by return code"),
+	add_flag(PROCESS_EXIT_CODE_STATUS, status, "status", "Status given by return code"),
 	add_parse(UINT32_NO_VAL, return_code, "return_code", "Process return code (numeric)"),
 	add_parse_overload(UINT16_NO_VAL, signal, 1, "signal/id", "Signal sent to process (numeric)"),
 	add_parse_overload(SIGNAL, signal, 1, "signal/name", "Signal sent to process"),
 };
 #undef add_parse
 #undef add_parse_overload
-#undef add_flags
+#undef add_flag
 
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
