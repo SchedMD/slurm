@@ -4606,6 +4606,11 @@ static int PARSE_FUNC(SIGNAL)(const parser_t *const parser, void *obj,
 				data_get_type_string(src));
 	}
 
+	if (!str[0]) {
+		*sig = NO_VAL16;
+		return SLURM_SUCCESS;
+	}
+
 	if (!(*sig = sig_name2num(str))) {
 		xfree(str);
 		return on_error(PARSING, parser->type, args, rc,
@@ -4626,8 +4631,18 @@ static int DUMP_FUNC(SIGNAL)(const parser_t *const parser, void *obj,
 			     data_t *dst, args_t *args)
 {
 	uint16_t *sig = obj;
-	char *str = sig_num2name(*sig);
+	char *str;
 
+	if (*sig == NO_VAL16) {
+		if (args->flags & FLAG_COMPLEX_VALUES)
+			data_set_null(dst);
+		else
+			data_set_string(dst, "");
+
+		return SLURM_SUCCESS;
+	}
+
+	str = sig_num2name(*sig);
 	data_set_string_own(dst, str);
 
 	return SLURM_SUCCESS;
