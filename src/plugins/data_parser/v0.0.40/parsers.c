@@ -5741,6 +5741,22 @@ static int DUMP_FUNC(JOB_DESC_MSG_RLIMIT_AS)(const parser_t *const parser,
 	.size = sizeof(((stype *) NULL)->field),                      \
 	.needs = NEED_NONE,                                           \
 }
+#define add_parse_bit_flag_string(stype, mtype, req, field, path, desc) \
+{                                                                       \
+	.magic = MAGIC_PARSER,                                          \
+	.model = PARSER_MODEL_ARRAY_LINKED_FIELD,                       \
+	.ptr_offset = offsetof(stype, field),                           \
+	.field_name = XSTRINGIFY(field),                                \
+	.key = path,                                                    \
+	.required = req,                                                \
+	.type = DATA_PARSER_ ## mtype,                                  \
+	.type_string = XSTRINGIFY(DATA_PARSER_ ## mtype),               \
+	.obj_desc = desc,                                               \
+	.obj_type_string = XSTRINGIFY(stype),                           \
+	.size = sizeof(((stype *) NULL)->field),                        \
+	.single_flag = true,                                            \
+	.needs = NEED_NONE,                                             \
+}
 #define add_flag_bit(flag_value, flag_string)                         \
 	add_flag_masked_bit(flag_value, INFINITE64, flag_string)
 #define add_flag_masked_bit(flag_value, flag_mask, flag_string)       \

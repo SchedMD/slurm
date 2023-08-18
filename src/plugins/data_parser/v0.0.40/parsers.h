@@ -133,6 +133,7 @@ typedef struct parser_s {
 	/* Flag array model properties -------------------------------------- */
 	const flag_bit_t *flag_bit_array;
 	uint8_t flag_bit_array_count; /* number of entries in flag_bit_array */
+	bool single_flag; /* false to be list or true to be string for 1 flag */
 
 	/* List model properties -------------------------------------------- */
 	type_t list_type;

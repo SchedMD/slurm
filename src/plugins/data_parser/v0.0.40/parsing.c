@@ -1089,8 +1089,16 @@ static void _dump_flag_bit_array_flag(args_t *args, void *src, data_t *dst,
 
 	if (set_bool)
 		data_set_bool(dst, found);
-	else if (found)
-		data_set_string(data_list_append(dst), bit->name);
+	else if (found) {
+		data_t *dst_flag;
+
+		if (parser->single_flag)
+			dst_flag = dst;
+		else
+			dst_flag = data_list_append(dst);
+
+		data_set_string(dst_flag, bit->name);
+	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_DATA) {
 		const char *type;
@@ -1141,10 +1149,12 @@ static int _dump_flag_bit_array(args_t *args, void *src, data_t *dst,
 	xassert(args->magic == MAGIC_ARGS);
 	check_parser(parser);
 
-	if (data_get_type(dst) == DATA_TYPE_NULL)
-		data_set_list(dst);
-	if (data_get_type(dst) != DATA_TYPE_LIST)
-		return ESLURM_DATA_CONV_FAILED;
+	if (!parser->single_flag) {
+		if (data_get_type(dst) == DATA_TYPE_NULL)
+			data_set_list(dst);
+		if (data_get_type(dst) != DATA_TYPE_LIST)
+			return ESLURM_DATA_CONV_FAILED;
+	}
 
 	for (int8_t i = 0; !rc && (i < parser->flag_bit_array_count); i++)
 		_dump_flag_bit_array_flag(args, src, dst, parser,

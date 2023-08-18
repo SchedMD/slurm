@@ -240,8 +240,11 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 		return NULL;
 	}
 
-	if (parser->array_type || parser->list_type || parser->flag_bit_array)
+	if (parser->array_type || parser->list_type ||
+	    (parser->flag_bit_array && !parser->single_flag))
 		format = OPENAPI_FORMAT_ARRAY;
+	else if (parser->flag_bit_array && parser->single_flag)
+		format = OPENAPI_FORMAT_STRING;
 	else if (parser->fields)
 		format = OPENAPI_FORMAT_OBJECT;
 	else
