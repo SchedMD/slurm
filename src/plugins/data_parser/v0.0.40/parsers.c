@@ -1161,9 +1161,10 @@ static int DUMP_FUNC(JOB_EXIT_CODE)(const parser_t *const parser, void *obj,
 	dsc = data_key_set(dst, "status");
 	drc = data_key_set(dst, "return_code");
 
-	if (*ec == NO_VAL)
+	if (*ec == NO_VAL) {
 		data_set_string(dsc, "PENDING");
-	else if (WIFEXITED(*ec)) {
+		data_set_int(drc, 0);
+	} else if (WIFEXITED(*ec)) {
 		data_set_string(dsc, "SUCCESS");
 		data_set_int(drc, 0);
 	} else if (WIFSIGNALED(*ec)) {
@@ -1173,8 +1174,10 @@ static int DUMP_FUNC(JOB_EXIT_CODE)(const parser_t *const parser, void *obj,
 		data_set_int(data_key_set(sig, "signal_id"), WTERMSIG(*ec));
 		data_set_string(data_key_set(sig, "name"),
 				strsignal(WTERMSIG(*ec)));
+		data_set_int(drc, -127);
 	} else if (WCOREDUMP(*ec)) {
 		data_set_string(dsc, "CORE_DUMPED");
+		data_set_int(drc, -127);
 	} else {
 		data_set_string(dsc, "ERROR");
 		data_set_int(drc, WEXITSTATUS(*ec));
