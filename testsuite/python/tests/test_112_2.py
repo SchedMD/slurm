@@ -1172,20 +1172,21 @@ def test_jobs():
     assert resp.body['step_id']
     jobid = int(resp.body['job_id'])
 
-    job = V0039JobSubmission(
-            job=V0039JobDescMsg(
-                partition=partition_name,
-                name="updated test job",
-                environment=env,
-                priority=V0039Uint32NoVal(number=0, set=True),
-            )
-    )
-
-    resp = slurm.slurm_v0039_update_job(
-            path_params={'job_id': str(jobid)}, body=job)
-    assert resp.response.status == 200
-    assert not resp.body['warnings']
-    assert not resp.body['errors']
+# Disabled until v0.0.40 due double $refs not being supported
+#    job = V0039JobSubmission(
+#            job=V0039JobDescMsg(
+#                environment=env,
+#                partition=partition_name,
+#                name="updated test job",
+#                priority=V0039Uint32NoVal(number=0, set=True),
+#            )
+#    )
+#
+#    resp = slurm.slurm_v0039_update_job(
+#            path_params={'job_id': str(jobid)}, body=job)
+#    assert resp.response.status == 200
+#    assert not resp.body['warnings']
+#    assert not resp.body['errors']
 
     resp = slurm.slurm_v0039_get_job(path_params={'job_id': str(jobid)})
     assert resp.response.status == 200
@@ -1193,7 +1194,7 @@ def test_jobs():
     assert not resp.body['errors']
     for job in resp.body['jobs']:
         assert job['job_id'] == jobid
-        assert job['name'] == "updated test job"
+        assert job['name'] == "test job"
         assert job['partition'] == partition_name
         assert job['priority']['set']
         assert job['priority']['number'] == 0
@@ -1213,7 +1214,7 @@ def test_jobs():
     assert not resp.body['errors']
     for job in resp.body['jobs']:
         assert job['job_id'] == jobid
-        assert job['name'] == "updated test job"
+        assert job['name'] == "test job"
         assert job['partition'] == partition_name
         assert job['user_name'] == local_user_name
         assert job['job_state'] == "CANCELLED"
@@ -1245,7 +1246,7 @@ def test_jobs():
             else:
                 requery=False
                 assert job['job_id'] == jobid
-                assert job['name'] == "updated test job"
+                assert job['name'] == "test job"
                 assert job['partition'] == partition_name
 
 def test_resv():
