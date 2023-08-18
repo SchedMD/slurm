@@ -1500,7 +1500,7 @@ static void _trigger_database_event(trig_mgr_info_t *trig_in, time_t now)
 static void _trigger_run_program(trig_mgr_info_t *trig_in)
 {
 	char *tmp, *save_ptr = NULL, *tok;
-	char *program, *args[64], user_name[1024];
+	char *program, *args[64];
 	char *pname, *uname;
 	uid_t uid;
 	gid_t gid;
@@ -1534,8 +1534,6 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 	uid = trig_in->user_id;
 	gid = trig_in->group_id;
 	uname = uid_to_string(uid);
-	snprintf(user_name, sizeof(user_name), "%s", uname);
-	xfree(uname);
 
 	child_pid = fork();
 	if (child_pid > 0) {
@@ -1545,7 +1543,7 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 		closeall(0);
 		setpgid(0, 0);
 		setsid();
-		if ((initgroups(user_name, gid) == -1) && !run_as_self) {
+		if ((initgroups(uname, gid) == -1) && !run_as_self) {
 			error("trigger: initgroups: %m");
 			exit(1);
 		}
@@ -1562,6 +1560,7 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 	} else {
 		error("fork: %m");
 	}
+	xfree(uname);
 	xfree(program);
 	for (i = 0; i < 64; i++)
 		xfree(args[i]);
