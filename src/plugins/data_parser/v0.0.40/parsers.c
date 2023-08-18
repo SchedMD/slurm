@@ -1162,66 +1162,6 @@ cleanup:
 	return rc;
 }
 
-PARSE_DISABLED(JOB_EXIT_CODE)
-
-static int DUMP_FUNC(JOB_EXIT_CODE)(const parser_t *const parser, void *obj,
-				    data_t *dst, args_t *args)
-{
-	uint32_t *ec = obj;
-	data_t *drc, *dsc;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-	(void) data_set_dict(dst);
-
-	dsc = data_key_set(dst, "status");
-	drc = data_key_set(dst, "return_code");
-
-	if (*ec == NO_VAL) {
-		data_set_string(dsc, "PENDING");
-		data_set_int(drc, 0);
-	} else if (WIFEXITED(*ec)) {
-		data_set_string(dsc, "SUCCESS");
-		data_set_int(drc, 0);
-	} else if (WIFSIGNALED(*ec)) {
-		data_t *sig = data_set_dict(data_key_set(dst, "signal"));
-		data_set_string(dsc, "SIGNALED");
-
-		data_set_int(data_key_set(sig, "signal_id"), WTERMSIG(*ec));
-		data_set_string(data_key_set(sig, "name"),
-				strsignal(WTERMSIG(*ec)));
-		data_set_int(drc, -127);
-	} else if (WCOREDUMP(*ec)) {
-		data_set_string(dsc, "CORE_DUMPED");
-		data_set_int(drc, -127);
-	} else {
-		data_set_string(dsc, "ERROR");
-		data_set_int(drc, WEXITSTATUS(*ec));
-	}
-
-	return SLURM_SUCCESS;
-}
-
-void SPEC_FUNC(JOB_EXIT_CODE)(const parser_t *const parser, args_t *args,
-			      data_t *spec, data_t *dst)
-{
-	data_t *props, *sig;
-
-	props = set_openapi_props(dst, OPENAPI_FORMAT_OBJECT,
-				  "job exit details");
-	set_openapi_props(data_key_set(props, "status"), OPENAPI_FORMAT_STRING,
-			  "exit status");
-	set_openapi_props(data_key_set(props, "return_code"),
-			  OPENAPI_FORMAT_INT32, "return code (numeric)");
-	sig = set_openapi_props(data_key_set(props, "signal"),
-				OPENAPI_FORMAT_OBJECT,
-				"Job exited due to signal");
-	set_openapi_props(data_key_set(sig, "signal_id"), OPENAPI_FORMAT_INT32,
-			  "signal numeric ID");
-	set_openapi_props(data_key_set(sig, "name"), OPENAPI_FORMAT_STRING,
-			  "signal name");
-}
-
 PARSE_DISABLED(JOB_USER)
 
 static int DUMP_FUNC(JOB_USER)(const parser_t *const parser, void *obj,
@@ -5992,13 +5932,13 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(STRING, constraints, "constraints", NULL),
 	add_parse(STRING, container, "container", NULL),
 	add_skip(db_index),
-	add_parse(JOB_EXIT_CODE, derived_ec, "derived_exit_code", NULL),
+	add_parse(PROCESS_EXIT_CODE, derived_ec, "derived_exit_code", NULL),
 	add_parse(STRING, derived_es, "comment/job", NULL),
 	add_parse(UINT32, elapsed, "time/elapsed", NULL),
 	add_parse(TIMESTAMP, eligible, "time/eligible", NULL),
 	add_parse(TIMESTAMP, end, "time/end", NULL),
 	add_skip(env),
-	add_parse(JOB_EXIT_CODE, exitcode, "exit_code", NULL),
+	add_parse(PROCESS_EXIT_CODE, exitcode, "exit_code", NULL),
 	add_parse(STRING, extra, "extra", NULL),
 	add_parse(STRING, failed_node, "failed_node", NULL),
 	add_parse_bit_flag_array(slurmdb_job_rec_t, SLURMDB_JOB_FLAGS, false, flags, "flags", NULL),
@@ -6229,7 +6169,7 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_parse(UINT32, elapsed, "time/elapsed", NULL),
 	add_parse(TIMESTAMP_NO_VAL, end, "time/end", NULL),
-	add_parse(JOB_EXIT_CODE, exitcode, "exit_code", NULL),
+	add_parse(PROCESS_EXIT_CODE, exitcode, "exit_code", NULL),
 	add_skip(job_ptr), /* redundant here */
 	add_parse(UINT32, nnodes, "nodes/count", NULL),
 	add_parse(STRING, nodes, "nodes/range", NULL),
@@ -6730,12 +6670,12 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(TIMESTAMP_NO_VAL, deadline, "deadline", NULL),
 	add_parse(UINT32_NO_VAL, delay_boot, "delay_boot", NULL),
 	add_parse(STRING, dependency, "dependency", NULL),
-	add_parse(JOB_EXIT_CODE, derived_ec, "derived_exit_code", NULL),
+	add_parse(PROCESS_EXIT_CODE, derived_ec, "derived_exit_code", NULL),
 	add_parse(TIMESTAMP_NO_VAL, eligible_time, "eligible_time", NULL),
 	add_parse(TIMESTAMP_NO_VAL, end_time, "end_time", NULL),
 	add_parse(STRING, exc_nodes, "excluded_nodes", NULL),
 	add_skip(exc_node_inx),
-	add_parse(JOB_EXIT_CODE, exit_code, "exit_code", NULL),
+	add_parse(PROCESS_EXIT_CODE, exit_code, "exit_code", NULL),
 	add_parse(STRING, extra, "extra", NULL),
 	add_parse(STRING, failed_node, "failed_node", NULL),
 	add_parse(STRING, features, "features", NULL),
@@ -8216,7 +8156,6 @@ static const parser_t parsers[] = {
 	addps(QOS_NAME, char *, NEED_QOS, STRING, NULL, NULL, NULL),
 	addps(QOS_ID, uint32_t, NEED_QOS, STRING, NULL, NULL, NULL),
 	addpsa(QOS_STRING_ID_LIST, STRING, list_t *, NEED_NONE, "List of QOS names"),
-	addpss(JOB_EXIT_CODE, int32_t, NEED_NONE, OBJECT, NULL, NULL, NULL),
 	addps(RPC_ID, slurmdbd_msg_type_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(SELECT_PLUGIN_ID, int, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(TASK_DISTRIBUTION, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
