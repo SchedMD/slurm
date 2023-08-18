@@ -180,6 +180,22 @@ typedef struct {
 	data_t *parent_path;
 } parse_foreach_CSV_STRING_LIST_t;
 
+typedef enum {
+	PROC_EXIT_CODE_INVALID = 0,
+	PROC_EXIT_CODE_PENDING,
+	PROC_EXIT_CODE_SUCCESS,
+	PROC_EXIT_CODE_ERROR,
+	PROC_EXIT_CODE_SIGNALED,
+	PROC_EXIT_CODE_CORE_DUMPED,
+	PROC_EXIT_CODE_INVALID_MAX
+} proc_exit_code_status_t;
+
+typedef struct {
+	proc_exit_code_status_t status;
+	uint32_t return_code;
+	uint16_t signal;
+} proc_exit_code_verbose_t;
+
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
 				     data_t *parent_path);
@@ -5304,6 +5320,59 @@ static int DUMP_FUNC(ASSOC_ID_STRING_CSV_LIST)(const parser_t *const parser,
 	return DUMP(CSV_STRING_LIST, src, dst, args);
 }
 
+static int PARSE_FUNC(PROCESS_EXIT_CODE)(const parser_t *const parser,
+					 void *obj, data_t *src, args_t *args,
+					 data_t *parent_path)
+{
+	int rc;
+	uint32_t *return_code = obj;
+	proc_exit_code_verbose_t rcv;
+
+	/* parse numeric return code directly first */
+	if (data_convert_type(src, DATA_TYPE_INT_64) == DATA_TYPE_INT_64)
+		return PARSE(UINT32_NO_VAL, *return_code, src, parent_path,
+			     args);
+
+	if ((rc = PARSE(PROCESS_EXIT_CODE_VERBOSE, rcv, src, parent_path,
+			args)))
+		return rc;
+
+	*return_code = rcv.return_code;
+	return rc;
+}
+
+static int DUMP_FUNC(PROCESS_EXIT_CODE)(const parser_t *const parser, void *obj,
+					data_t *dst, args_t *args)
+{
+	uint32_t *return_code = obj;
+	proc_exit_code_verbose_t rcv = {
+		.status = PROC_EXIT_CODE_INVALID,
+		.return_code = NO_VAL,
+		.signal = NO_VAL16,
+	};
+
+	if (*return_code == NO_VAL)
+		rcv.status = PROC_EXIT_CODE_PENDING;
+	else if (WIFEXITED(*return_code)) {
+		rcv.return_code = WEXITSTATUS(*return_code);
+
+		if (rcv.return_code)
+			rcv.status = PROC_EXIT_CODE_ERROR;
+		else
+			rcv.status = PROC_EXIT_CODE_SUCCESS;
+	} else if (WIFSIGNALED(*return_code)) {
+		rcv.status = PROC_EXIT_CODE_SIGNALED;
+		rcv.signal = WTERMSIG(*return_code);
+	} else if (WCOREDUMP(*return_code)) {
+		rcv.status = PROC_EXIT_CODE_CORE_DUMPED;
+	} else {
+		rcv.status = PROC_EXIT_CODE_INVALID;
+		rcv.return_code = *return_code;
+	}
+
+	return DUMP(PROCESS_EXIT_CODE_VERBOSE, rcv, dst, args);
+}
+
 static void *NEW_FUNC(ASSOC)(void)
 {
 	slurmdb_assoc_rec_t *assoc = xmalloc(sizeof(*assoc));
@@ -7759,6 +7828,38 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_STATE)[] = {
 #undef add_flag
 #undef add_flag_eq
 
+#define add_flag_eq(flag_value, flag_string, hidden, desc)            \
+	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL,                       \
+			   XSTRINGIFY(flag_value), flag_value,        \
+			   INFINITE, XSTRINGIFY(INFINITE),            \
+			   flag_string, hidden, desc)
+static const flag_bit_t PARSER_FLAG_ARRAY(PROCESS_EXIT_CODE_STATUS)[] = {
+	add_flag_eq(PROC_EXIT_CODE_INVALID, "INVALID", false, "Process return code invalid"),
+	add_flag_eq(PROC_EXIT_CODE_PENDING, "PENDING", false, "Process has not started or completed yet"),
+	add_flag_eq(PROC_EXIT_CODE_SUCCESS, "SUCCESS", false, "Process exited with return code 0 to signify success"),
+	add_flag_eq(PROC_EXIT_CODE_ERROR, "ERROR", false, "Process exited with nonzero return code"),
+	add_flag_eq(PROC_EXIT_CODE_SIGNALED, "SIGNALED", false, "Process terminated due to signal"),
+	add_flag_eq(PROC_EXIT_CODE_CORE_DUMPED, "CORE_DUMPED", false, "Process terminated due to signal"),
+	add_flag_eq(PROC_EXIT_CODE_INVALID_MAX, "INVALID2", true, NULL),
+};
+#undef add_flag_eq
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(proc_exit_code_verbose_t, mtype, false, field, 0, path, desc)
+#define add_parse_overload(mtype, field, overloads, path, desc) \
+	add_parser(proc_exit_code_verbose_t, mtype, false, field, overloads, path, desc)
+#define add_flags(mtype, field, path, desc) \
+	add_parse_bit_flag_array(proc_exit_code_verbose_t, mtype, false, field, path, desc)
+static const parser_t PARSER_ARRAY(PROCESS_EXIT_CODE_VERBOSE)[] = {
+	add_flags(PROCESS_EXIT_CODE_STATUS, status, "status", "Status given by return code"),
+	add_parse(UINT32_NO_VAL, return_code, "return_code", "Process return code (numeric)"),
+	add_parse_overload(UINT16_NO_VAL, signal, 1, "signal/id", "Signal sent to process (numeric)"),
+	add_parse_overload(SIGNAL, signal, 1, "signal/name", "Signal sent to process"),
+};
+#undef add_parse
+#undef add_parse_overload
+#undef add_flags
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8160,6 +8261,7 @@ static const parser_t parsers[] = {
 	addpsp(QOS_ID_STRING_CSV_LIST, STRING, list_t *, NEED_NONE, NULL),
 	addpsp(ASSOC_ID_STRING, STRING, char *, NEED_NONE, NULL),
 	addpsp(ASSOC_ID_STRING_CSV_LIST, STRING_LIST, list_t *, NEED_NONE, NULL),
+	addpsp(PROCESS_EXIT_CODE, PROCESS_EXIT_CODE_VERBOSE, uint32_t, NEED_NONE, "return code returned by process"),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
@@ -8320,6 +8422,7 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_PARTITIONS_QUERY, openapi_partitions_query_t, NULL, NULL),
 	addpa(OPENAPI_RESERVATION_PARAM, openapi_reservation_param_t, NULL, NULL),
 	addpa(OPENAPI_RESERVATION_QUERY, openapi_reservation_query_t, NULL, NULL),
+	addpa(PROCESS_EXIT_CODE_VERBOSE, proc_exit_code_verbose_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -8381,6 +8484,7 @@ static const parser_t parsers[] = {
 	addfa(CLUSTER_CLASSIFICATION, uint16_t), /* slurmdb_classification_type_t */
 	addfa(FLAGS, data_parser_flags_t),
 	addfa(JOB_STATE, uint32_t), /* enum job_states */
+	addfa(PROCESS_EXIT_CODE_STATUS, uint32_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS, NEED_QOS),

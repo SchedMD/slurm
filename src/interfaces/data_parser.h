@@ -346,6 +346,9 @@ typedef enum {
 	DATA_PARSER_OPENAPI_USER_PARAM, /* openapi_user_param_t */
 	DATA_PARSER_OPENAPI_USER_QUERY, /* openapi_user_query_t */
 	DATA_PARSER_FLAGS, /* data_parser_flags_t */
+	DATA_PARSER_PROCESS_EXIT_CODE_VERBOSE, /* proc_exit_code_verbose_t */
+	DATA_PARSER_PROCESS_EXIT_CODE_STATUS, /* proc_exit_code_status_t */
+	DATA_PARSER_PROCESS_EXIT_CODE, /* uint32_t */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
