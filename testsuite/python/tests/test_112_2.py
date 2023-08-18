@@ -975,7 +975,7 @@ def test_db_qos():
                         number=199
                     ),
             ),
-            priority=180,
+            priority=V0039Uint32NoVal(number=180, set=True),
             usage_factor=V0039Float64NoVal(
                     set=True,
                     number=82382.23823,
@@ -1032,7 +1032,8 @@ def test_db_qos():
         assert qos['name'] == qos_name
         assert qos['preempt']['exempt_time']['set']
         assert qos['preempt']['exempt_time']['number'] == 199
-        assert qos['priority'] == 180
+        assert qos['priority']['set']
+        assert qos['priority']['number'] == 180
         assert qos['usage_factor']['set']
         assert qos['usage_factor']['number'] == 82382.23823
         assert qos['usage_threshold']['set']
@@ -1050,7 +1051,8 @@ def test_db_qos():
         assert not qos['limits']['min']['tres']['per']['job']
         assert qos['name'] == qos2_name
         assert not qos['preempt']['exempt_time']['set']
-        assert qos['priority'] == 0
+        assert qos['priority']['set']
+        assert qos['priority']['number'] == 0
         assert qos['usage_factor']['set']
         assert qos['usage_factor']['number'] == 1
         assert not qos['usage_threshold']['set']
@@ -1157,7 +1159,7 @@ def test_jobs():
                 partition=partition_name,
                 name="test job",
                 environment=env,
-                priority=0,
+                priority=V0039Uint32NoVal(number=0, set=True),
                 current_working_directory="/tmp/"
             )
     )
@@ -1175,7 +1177,7 @@ def test_jobs():
                 partition=partition_name,
                 name="updated test job",
                 environment=env,
-                priority=0
+                priority=V0039Uint32NoVal(number=0, set=True),
             )
     )
 
