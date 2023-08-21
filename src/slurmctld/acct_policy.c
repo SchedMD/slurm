@@ -3300,7 +3300,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 {
 	int rc = true;
 	assoc_mgr_lock_t locks =
-		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
+		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = READ_LOCK };
 	acct_policy_validate_args_t args = {
 		.acct_policy_limit_set = acct_policy_limit_set,
 		.assoc_in = assoc_in, .job_desc = job_desc,
@@ -3476,7 +3476,7 @@ extern bool acct_policy_job_runnable_pre_select(job_record_t *job_ptr,
 			 * parent or not
 			 */
 	assoc_mgr_lock_t locks =
-		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
+		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = READ_LOCK };
 
 	/* check to see if we are enforcing associations */
 	if (!accounting_enforce)
@@ -3716,7 +3716,7 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 			 * parent or not
 			 */
 	assoc_mgr_lock_t locks =
-		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
+		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = READ_LOCK };
 
 	xassert(job_ptr);
 	xassert(job_ptr->part_ptr);

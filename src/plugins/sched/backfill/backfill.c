@@ -3726,7 +3726,7 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 		uint16_t sockets_per_node;
 		assoc_mgr_lock_t locks = {
 			.assoc = READ_LOCK,
-			.qos = READ_LOCK,
+			.qos = WRITE_LOCK,
 			.tres = READ_LOCK,
 		};
 

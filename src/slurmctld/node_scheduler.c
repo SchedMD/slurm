@@ -2337,7 +2337,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	assoc_mgr_lock_t qos_read_lock =
 		{ .assoc = READ_LOCK, .qos = READ_LOCK };
 	assoc_mgr_lock_t job_read_locks =
-		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
+		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = READ_LOCK };
 	List gres_list_pre = NULL;
 	bool gres_list_pre_set = false;
 
