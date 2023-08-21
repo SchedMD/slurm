@@ -176,6 +176,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix node selection for jobs that request --gpus and a number of tasks fewer
     than gpus, which resulted in incorrectly rejecting these jobs.
  -- Remove MYSQL_OPT_RECONNECT completely.
+ -- Fix cloud nodes in POWERING_UP state disappearing (getting set to FUTURE)
+    when an `scontrol reconfigure` happens.
 
 * Changes in Slurm 23.02.4
 ==========================
