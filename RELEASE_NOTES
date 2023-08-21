@@ -46,6 +46,8 @@ HIGHLIGHTS
  -- Remove cloud_reg_addrs and make it default behavior. Slurm will
     automatically manage NodeHostName and NodeAddr for cloud nodes.
  -- Remove NoAddrCache CommunicationParameter.
+ -- Add QOS flag 'Relative'. If set the QOS limits will be treated as
+    percentages of a cluster/partition instead of absolutes.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

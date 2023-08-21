@@ -115,6 +115,8 @@ documents those changes that are of interest to users and administrators.
     subsets when there is a global setting.
  -- Remove cloud_reg_addrs and make it default behavior.
  -- Remove NoAddrCache CommunicationParameter.
+ -- Add QOS flag 'Relative'. If set the QOS limits will be treated as
+    percentages of a cluster/partition instead of absolutes.
 
 * Changes in Slurm 23.02.5
 ==========================
