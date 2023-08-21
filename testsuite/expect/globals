@@ -7184,7 +7184,7 @@ proc _test_init {} {
 
 	# Default precondition checks
 	if {![regexp "is UP" [run_command_output -nolog -none "$scontrol ping"]]} {
-		skip "The expect testsuite requires Slurm to be running, but 'scontrol ping' failed."
+		skip "The expect testsuite requires Slurm to be running, but '$scontrol ping' failed."
 	}
 	if {[llength [get_nodes_by_state]] < 1} {
 		skip "The expect testsuite requires there to be at least one idle node in the default partition."
