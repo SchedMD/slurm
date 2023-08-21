@@ -3724,8 +3724,11 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 	iter = list_iterator_create(map->het_job_rec_list);
 	while ((rec = list_next(iter))) {
 		uint16_t sockets_per_node;
-		assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
-			READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		assoc_mgr_lock_t locks = {
+			.assoc = READ_LOCK,
+			.qos = READ_LOCK,
+			.tres = READ_LOCK,
+		};
 
 		job_ptr = rec->job_ptr;
 		job_ptr->part_ptr = rec->part_ptr;
