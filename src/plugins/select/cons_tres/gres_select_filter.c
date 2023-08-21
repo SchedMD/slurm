@@ -2231,7 +2231,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 	sock_gres_t *sock_gres;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
-	int i, node_inx = -1, gres_cnt;
+	int i, job_node_inx = -1, gres_cnt;
 	int node_cnt, rem_node_cnt;
 	int job_fini = -1;	/* -1: not applicable, 0: more work, 1: fini */
 	uint32_t **tasks_per_node_socket = NULL;
@@ -2246,7 +2246,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 	for (i = 0; (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
 	     i++) {
 		sock_gres_iter =
-			list_iterator_create(sock_gres_list[++node_inx]);
+			list_iterator_create(sock_gres_list[++job_node_inx]);
 		while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))){
 			gres_js = sock_gres->gres_state_job->gres_data;
 			gres_ns = sock_gres->gres_state_node->gres_data;
@@ -2283,7 +2283,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 						gres_js->gres_per_socket;
 					gres_js->gres_cnt_node_select[i] *=
 						_get_sock_cnt(job_res, i,
-							      node_inx);
+							      job_node_inx);
 				} else if (gres_js->gres_per_task) {
 					gres_js->gres_cnt_node_select[i] =
 						gres_js->gres_per_task;
@@ -2308,7 +2308,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 				gres_js->gres_bit_select =
 					xcalloc(node_cnt, sizeof(bitstr_t *));
 			}
-			gres_cnt = _get_gres_node_cnt(gres_ns, node_inx);
+			gres_cnt = _get_gres_node_cnt(gres_ns, job_node_inx);
 			FREE_NULL_BITMAP(gres_js->gres_bit_select[i]);
 			gres_js->gres_bit_select[i] = bit_alloc(gres_cnt);
 			gres_js->gres_cnt_node_select[i] = 0;
@@ -2319,21 +2319,21 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 				 * gres/mps or gres/shard:
 				 * select specific topo bit for job
 				 */
-				_pick_specific_topo(job_res, i, node_inx,
+				_pick_specific_topo(job_res, i, job_node_inx,
 						    sock_gres, job_id,
 						    tres_mc_ptr);
 			} else if (gres_js->gres_per_node) {
-				_set_node_bits(job_res, i, node_inx,
+				_set_node_bits(job_res, i, job_node_inx,
 					       sock_gres, job_id, tres_mc_ptr);
 			} else if (gres_js->gres_per_socket) {
-				_set_sock_bits(job_res, i, node_inx,
+				_set_sock_bits(job_res, i, job_node_inx,
 					       sock_gres, job_id, tres_mc_ptr);
 			} else if (gres_js->gres_per_task) {
 				_set_task_bits(i, sock_gres, job_id,
 					       tasks_per_node_socket);
 			} else if (gres_js->gres_per_job) {
 				job_fini = _set_job_bits1(
-					job_res, i, node_inx,
+					job_res, i, job_node_inx,
 					rem_node_cnt, sock_gres,
 					job_id, tres_mc_ptr,
 					node_ptr->tpc);
@@ -2360,16 +2360,17 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 		 * This logic will make use of GRES that are not on allocated
 		 * sockets and are thus generally less desirable to use.
 		 */
-		node_inx = -1;
+		job_node_inx = -1;
 		for (i = 0; next_node_bitmap(job_res->node_bitmap, &i); i++) {
 			sock_gres_iter = list_iterator_create(
-				sock_gres_list[++node_inx]);
+				sock_gres_list[++job_node_inx]);
 			while ((sock_gres = (sock_gres_t *)
 				list_next(sock_gres_iter))) {
 				if (!sock_gres->gres_state_job->gres_data ||
 				    !sock_gres->gres_state_node->gres_data)
 					continue;
-				job_fini = _set_job_bits2(job_res, i, node_inx,
+				job_fini = _set_job_bits2(job_res, i,
+							  job_node_inx,
 							  sock_gres, job_id,
 							  tres_mc_ptr);
 				if (job_fini == 1)
