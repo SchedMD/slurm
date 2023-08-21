@@ -275,8 +275,10 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr) {
 			int64_t queue_wait = (int64_t)difftime(
 				job_ptr->start_time,
 				job_ptr->details->begin_time);
-			data_set_int(data_key_set(record, "@queue_wait"),
-				     queue_wait);
+			if (queue_wait >= 0)
+				data_set_int(data_key_set(record,
+							  "@queue_wait"),
+							  queue_wait);
 		}
 	}
 
