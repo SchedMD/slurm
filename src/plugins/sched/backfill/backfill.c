@@ -2960,7 +2960,7 @@ skip_start:
 			uint16_t sockets_per_node;
 			assoc_mgr_lock_t locks = {
 				.assoc = READ_LOCK,
-				.qos = READ_LOCK,
+				.qos = WRITE_LOCK,
 				.tres = READ_LOCK,
 			};
 
