@@ -411,21 +411,30 @@ end
 --returns slurm.ERROR, then this function's second return value is ignored and
 --an error message will be printed instead.
 --
---The example in this function simply prints the arguments that were given.
+--The example in this function simply returns the arguments that were given.
+--Example usage:
+--
+--$ scontrol show bbstat foo bar
+--Status return message.
+--Args:
+--arg1
+--arg2
 --]]
 function slurm_bb_get_status(uid, gid, ...)
 
-	local i, v, args
+	local i, v, args, outstr, arr
 	slurm.log_info("%s: slurm_bb_get_status(), uid: %s, gid:%s",
 		lua_script_name, uid, gid)
 
+	arr = { }
 	-- Create a table from variable arg list
 	args = {...}
 	args.n = select("#", ...)
 
 	for i,v in ipairs(args) do
-		slurm.log_info("arg %u: \"%s\"", i, tostring(v))
+		arr[#arr+1] = tostring(v)
 	end
+	outstr = table.concat(arr, "\n")
 
-	return slurm.SUCCESS, "Status return message\n"
-end
+	return slurm.SUCCESS, "Status return message.\nArgs:\n" .. outstr .. "\n"
+	end
