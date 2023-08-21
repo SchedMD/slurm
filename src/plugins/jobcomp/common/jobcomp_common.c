@@ -42,6 +42,16 @@
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/slurmctld/slurmctld.h"
 
+static bool _valid_date_format(char *date_str)
+{
+	if (!date_str || !*date_str ||
+	    !xstrcasecmp(date_str, "unknown") ||
+	    !xstrcasecmp(date_str, "none"))
+		return false;
+
+	return true;
+}
+
 /*
  * Open jobcomp state file, or backup if necessary.
  *
@@ -207,8 +217,10 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr) {
 	data_set_int(data_key_set(record, "user_id"), job_ptr->user_id);
 	data_set_string(data_key_set(record, "groupname"), grp_str);
 	data_set_int(data_key_set(record, "group_id"), job_ptr->group_id);
-	data_set_string(data_key_set(record, "@start"), start_str);
-	data_set_string(data_key_set(record, "@end"), end_str);
+	if (_valid_date_format(start_str))
+		data_set_string(data_key_set(record, "@start"), start_str);
+	if (_valid_date_format(end_str))
+		data_set_string(data_key_set(record, "@end"), end_str);
 	data_set_int(data_key_set(record, "elapsed"), elapsed_time);
 	data_set_string(data_key_set(record, "partition"), job_ptr->partition);
 	data_set_string(data_key_set(record, "alloc_node"),
@@ -248,13 +260,17 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr) {
 	if (job_ptr->details && job_ptr->details->submit_time) {
 		parse_time_make_str_utc(&job_ptr->details->submit_time,
 					time_str, sizeof(time_str));
-		data_set_string(data_key_set(record, "@submit"), time_str);
+		if (_valid_date_format(time_str))
+			data_set_string(data_key_set(record, "@submit"),
+					time_str);
 	}
 
 	if (job_ptr->details && job_ptr->details->begin_time) {
 		parse_time_make_str_utc(&job_ptr->details->begin_time, time_str,
 					sizeof(time_str));
-		data_set_string(data_key_set(record, "@eligible"), time_str);
+		if (_valid_date_format(time_str))
+			data_set_string(data_key_set(record, "@eligible"),
+					time_str);
 		if (job_ptr->start_time) {
 			int64_t queue_wait = (int64_t)difftime(
 				job_ptr->start_time,
