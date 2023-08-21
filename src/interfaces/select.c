@@ -87,7 +87,6 @@ const char *node_select_syms[] = {
 	"select_p_select_jobinfo_unpack",
 	"select_p_get_info_from_plugin",
 	"select_p_reconfigure",
-	"select_p_resv_test",
 };
 
 static int select_context_cnt = -1;
@@ -504,7 +503,7 @@ extern int select_g_node_init()
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  *		Existing list is appended to.
- * IN exc_core_bitmap - cores used in reservations and not usable
+ * IN resv_exc_ptr - Various TRES which the job can NOT use.
  * RET zero on success, EINVAL otherwise
  */
 extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
@@ -512,7 +511,7 @@ extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
 			     List *preemptee_job_list,
-			     bitstr_t *exc_core_bitmap)
+			     resv_exc_t *resv_exc_ptr)
 {
 	xassert(select_context_cnt >= 0);
 
@@ -521,7 +520,7 @@ extern int select_g_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 		 min_nodes, max_nodes,
 		 req_nodes, mode,
 		 preemptee_candidates, preemptee_job_list,
-		 exc_core_bitmap);
+		 resv_exc_ptr);
 }
 
 /*
@@ -1045,29 +1044,4 @@ extern int select_g_reconfigure (void)
 	xassert(select_context_cnt >= 0);
 
 	return (*(ops[select_context_default].reconfigure))();
-}
-
-/*
- * select_g_resv_test - Identify the nodes which "best" satisfy a reservation
- *	request. "best" is defined as either single set of consecutive nodes
- *	satisfying the request and leaving the minimum number of unused nodes
- *	OR the fewest number of consecutive node sets
- * IN/OUT resv_desc_ptr - reservation request - select_jobinfo can be
- *	updated in the plugin
- * IN node_cnt - count of required nodes
- * IN/OUT avail_bitmap - nodes available for the reservation
- * IN/OUT core_bitmap - cores which can not be used for this
- *	reservation IN, and cores to be used in the reservation OUT
- *	(flush bitstr then apply only used cores)
- * RET - nodes selected for use by the reservation
- */
-extern bitstr_t * select_g_resv_test(resv_desc_msg_t *resv_desc_ptr,
-				     uint32_t node_cnt,
-				     bitstr_t *avail_bitmap,
-				     bitstr_t **core_bitmap)
-{
-	xassert(select_context_cnt >= 0);
-
-	return (*(ops[select_context_default].resv_test))
-		(resv_desc_ptr, node_cnt, avail_bitmap, core_bitmap);
 }

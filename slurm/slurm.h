@@ -2523,8 +2523,7 @@ typedef struct will_run_response_msg {
 						  * nodes only flag */
 #define RESERVE_FLAG_OVERLAP	   SLURM_BIT(14) /* Permit to overlap others */
 #define RESERVE_FLAG_SPEC_NODES	   SLURM_BIT(15) /* Contains specific nodes */
-#define RESERVE_FLAG_FIRST_CORES   SLURM_BIT(16) /* Use only first cores
-						  * on each node */
+/* SLURM_BIT(16) Available 2 versions after 23.11 */
 #define RESERVE_FLAG_TIME_FLOAT	   SLURM_BIT(17) /* Time offset is relative */
 #define RESERVE_FLAG_REPLACE	   SLURM_BIT(18) /* Replace resources
 						  * as assigned to jobs */
@@ -2617,23 +2616,20 @@ typedef struct resv_desc_msg {
 	char *accounts;		/* names of accounts permitted to use */
 	char *burst_buffer;	/* burst buffer resources to be included */
 	char *comment;		/* arbitrary comment */
-	uint32_t *core_cnt;	/* Count of cores required */
+	uint32_t core_cnt;	/* Count of cores required */
 	uint32_t duration;	/* duration of reservation in minutes */
 	time_t end_time;	/* end time of reservation */
 	char *features;		/* required node features */
 	uint64_t flags;		/* see RESERVE_FLAG_* above */
 	char *groups;		/* names of linux groups permitted to use */
+	void *job_ptr;          /* internal use only DON'T PACK */
 	char *licenses;		/* names of licenses to be reserved */
 	uint32_t max_start_delay;/* Maximum delay in which jobs outside of the
 				  * reservation will be permitted to overlap
 				  * once any jobs are queued for the
 				  * reservation */
 	char *name;		/* name of reservation (optional on create) */
-	uint32_t *node_cnt;	/* Count of nodes required. Specify set of job
-				 * sizes with trailing zero to optimize layout
-				 * for those jobs just specify their total size
-				 * to ignore optimized topology. For example,
-				 * {512,512,1024,0} OR {2048,0}. */
+	uint32_t node_cnt;	/* Count of nodes required. */
 	char *node_list;	/* list of reserved nodes or ALL */
 	char *partition;	/* name of partition to be used */
 	uint32_t purge_comp_time; /* If PURGE_COMP flag is set the amount of

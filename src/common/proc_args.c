@@ -463,8 +463,7 @@ extern char *mbytes_to_str(uint64_t mbytes)
 }
 
 /* Convert a string into a node count */
-static int
-_str_to_nodes(const char *num_str, char **leftover)
+extern int str_to_nodes(const char *num_str, char **leftover)
 {
 	long int num;
 	char *endptr;
@@ -549,7 +548,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes,
 		xfree(tmp_str);
 	} else if ((ptr = xstrchr(arg, '-')) != NULL) {
 		min_str = xstrndup(arg, ptr-arg);
-		*min_nodes = _str_to_nodes(min_str, &leftover);
+		*min_nodes = str_to_nodes(min_str, &leftover);
 		if (!xstring_is_whitespace(leftover)) {
 			error("\"%s\" is not a valid node count", min_str);
 			xfree(min_str);
@@ -560,7 +559,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes,
 			*min_nodes = 1;
 
 		max_str = xstrndup(ptr+1, strlen(arg)-((ptr+1)-arg));
-		*max_nodes = _str_to_nodes(max_str, &leftover);
+		*max_nodes = str_to_nodes(max_str, &leftover);
 		if (!xstring_is_whitespace(leftover)) {
 			error("\"%s\" is not a valid node count", max_str);
 			xfree(max_str);
@@ -568,7 +567,7 @@ bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes,
 		}
 		xfree(max_str);
 	} else {
-		*min_nodes = *max_nodes = _str_to_nodes(arg, &leftover);
+		*min_nodes = *max_nodes = str_to_nodes(arg, &leftover);
 		if (!xstring_is_whitespace(leftover)) {
 			error("\"%s\" is not a valid node count", arg);
 			return false;
@@ -1574,10 +1573,6 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 				outflags |= RESERVE_FLAG_NO_PURGE_COMP;
 			else
 				outflags |= RESERVE_FLAG_PURGE_COMP;
-		} else if (!xstrncasecmp(curr, "First_Cores", MAX(taglen,1)) &&
-			   op != RESV_REM) {
-			curr += taglen;
-			outflags |= RESERVE_FLAG_FIRST_CORES;
 		} else if (!xstrncasecmp(curr, "Time_Float", MAX(taglen,1)) &&
 			   op == RESV_NEW) {
 			curr += taglen;

@@ -196,14 +196,13 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
 static char *_copy_nodelist_no_dup(char *node_list);
-static job_record_t *_create_job_record(uint32_t num_jobs);
+static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add);
 static void _delete_job_details(job_record_t *job_entry);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
 	bool locked, log_level_t log_lvl);
 static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer);
-static int _dump_job_state(void *object, void *arg);
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 				  buf_t *buffer);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
@@ -216,13 +215,11 @@ static int  _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 			char **err_msg, uint16_t protocol_version);
 static void _job_timed_out(job_record_t *job_ptr, bool preempted);
 static void _kill_dependent(job_record_t *job_ptr);
-static void _list_delete_job(void *job_entry);
 static int  _list_find_job_old(void *job_entry, void *key);
 static int  _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 			      uint16_t protocol_version);
 static int  _load_job_fed_details(job_fed_details_t **fed_details_pptr,
 				  buf_t *buffer, uint16_t protocol_version);
-static int  _load_job_state(buf_t *buffer, uint16_t protocol_version);
 static bitstr_t *_make_requeue_array(char *conf_buf);
 static uint32_t _max_switch_wait(uint32_t input_wait);
 static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
@@ -626,21 +623,24 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
  *    = 0 - split out a job array record to its own job record
  *    = 1 - simple job OR job array with one task
  *    > 1 - job array create with the task count as num_jobs
+ * IN list_add - add to the joblist or not.
  * RET pointer to the record or NULL if error
- * NOTE: allocates memory that should be xfreed with _list_delete_job
+ * NOTE: allocates memory that should be xfreed with job_mgr_list_delete_job
  */
-static job_record_t *_create_job_record(uint32_t num_jobs)
+static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add)
 {
 	job_record_t *job_ptr = xmalloc(sizeof(*job_ptr));
 	job_details_t *detail_ptr = xmalloc(sizeof(*detail_ptr));
 
-	if ((job_count + num_jobs) >= slurm_conf.max_job_cnt) {
-		error("%s: MaxJobCount limit from slurm.conf reached (%u)",
-		      __func__, slurm_conf.max_job_cnt);
+	if (list_add) {
+		if ((job_count + num_jobs) >= slurm_conf.max_job_cnt) {
+			error("%s: MaxJobCount limit from slurm.conf reached (%u)",
+			      __func__, slurm_conf.max_job_cnt);
+		}
+		job_count += num_jobs;
+		last_job_update = time(NULL);
+		list_append(job_list, job_ptr);
 	}
-
-	job_count += num_jobs;
-	last_job_update = time(NULL);
 
 	job_ptr->magic = JOB_MAGIC;
 	job_ptr->array_task_id = NO_VAL;
@@ -654,7 +654,6 @@ static job_record_t *_create_job_record(uint32_t num_jobs)
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet  */
 	job_ptr->billable_tres = (double)NO_VAL;
-	list_append(job_list, job_ptr);
 
 	return job_ptr;
 }
@@ -909,7 +908,7 @@ int dump_all_job_state(void)
 	pack_time(slurmctld_diag_stats.bf_when_last_cycle, buffer);
 
 	jobs_start = get_buf_offset(buffer);
-	list_for_each_ro(job_list, _dump_job_state, buffer);
+	list_for_each_ro(job_list, job_mgr_dump_job_state, buffer);
 	jobs_end = get_buf_offset(buffer);
 	if ((difftime(now, last_job_state_size_check) > 60) &&
 	    (jobs_count = list_count(job_list))) {
@@ -1277,10 +1276,11 @@ extern int load_all_job_state(void)
 	 * out that created a double lock when steps were being loaded during
 	 * the calls to jobacctinfo_create() which also locks the read lock.
 	 * It ended up being much easier to move the locks for the assoc_mgr
-	 * into the _load_job_state function than any other option.
+	 * into the job_mgr_load_job_state function than any other option.
 	 */
 	while (remaining_buf(buffer) > 0) {
-		error_code = _load_job_state(buffer, protocol_version);
+		error_code = job_mgr_load_job_state(
+			buffer, NULL, protocol_version);
 		if (error_code != SLURM_SUCCESS)
 			goto unpack_error;
 		job_cnt++;
@@ -1399,13 +1399,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/*
- * _dump_job_state - dump the state of a specific job, its details, and
- *	steps to a buffer
- * IN dump_job_ptr - pointer to job for which information is requested
- * IN/OUT buffer - location to store data, pointers automatically advanced
- */
-static int _dump_job_state(void *object, void *arg)
+extern int job_mgr_dump_job_state(void *object, void *arg)
 {
 	job_record_t *dump_job_ptr = object;
 	buf_t *buffer = arg;
@@ -1597,10 +1591,9 @@ static int _dump_job_state(void *object, void *arg)
 	return 0;
 }
 
-/* Unpack a job's state information from a buffer */
-/* NOTE: assoc_mgr qos, tres and assoc read lock must be unlocked before
- * calling */
-static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
+extern int job_mgr_load_job_state(buf_t *buffer,
+				  job_record_t **job_ptr_out,
+				  uint16_t protocol_version)
 {
 	uint64_t db_index;
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
@@ -1699,12 +1692,19 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 
-		job_ptr = find_job_record(job_id);
-		if (job_ptr == NULL) {
-			job_ptr = _create_job_record(1);
+		if (job_ptr_out) {
+			*job_ptr_out = job_ptr = _create_job_record(1, false);
 			job_ptr->job_id = job_id;
 			job_ptr->array_job_id = array_job_id;
 			job_ptr->array_task_id = array_task_id;
+		} else {
+			job_ptr = find_job_record(job_id);
+			if (job_ptr == NULL) {
+				job_ptr = _create_job_record(1, true);
+				job_ptr->job_id = job_id;
+				job_ptr->array_job_id = array_job_id;
+				job_ptr->array_task_id = array_task_id;
+			}
 		}
 
 		safe_unpack32(&user_id, buffer);
@@ -1931,12 +1931,19 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 
-		job_ptr = find_job_record(job_id);
-		if (job_ptr == NULL) {
-			job_ptr = _create_job_record(1);
+		if (job_ptr_out) {
+			*job_ptr_out = job_ptr = _create_job_record(1, false);
 			job_ptr->job_id = job_id;
 			job_ptr->array_job_id = array_job_id;
 			job_ptr->array_task_id = array_task_id;
+		} else {
+			job_ptr = find_job_record(job_id);
+			if (job_ptr == NULL) {
+				job_ptr = _create_job_record(1, true);
+				job_ptr->job_id = job_id;
+				job_ptr->array_job_id = array_job_id;
+				job_ptr->array_task_id = array_task_id;
+			}
 		}
 
 		safe_unpack32(&user_id, buffer);
@@ -4364,7 +4371,7 @@ void init_job_conf(void)
 {
 	if (job_list == NULL) {
 		job_count = 0;
-		job_list = list_create(_list_delete_job);
+		job_list = list_create(job_mgr_list_delete_job);
 	}
 
 	last_job_update = time(NULL);
@@ -4414,7 +4421,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	List save_step_list;
 	int i;
 
-	job_ptr_pend = _create_job_record(0);
+	job_ptr_pend = _create_job_record(0, true);
 
 	_remove_job_hash(job_ptr, JOB_HASH_JOB);
 	job_ptr_pend->job_id = job_ptr->job_id;
@@ -8480,7 +8487,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 		}
 	}
 
-	job_ptr = _create_job_record(1);
+	job_ptr = _create_job_record(1, true);
 
 	*job_rec_ptr = job_ptr;
 	job_ptr->partition = xstrdup(job_desc->partition);
@@ -9842,6 +9849,9 @@ extern void free_null_array_recs(job_record_t *job_ptr)
 
 static void _delete_job_common(job_record_t *job_ptr)
 {
+	if (!job_ptr->job_id)
+		return;
+
 	/* Remove record from fed_job_list */
 	fed_mgr_remove_fed_job_info(job_ptr->job_id);
 
@@ -9855,17 +9865,14 @@ static void _delete_job_common(job_record_t *job_ptr)
 	}
 }
 
-/*
- * _list_delete_job - delete a job record and its corresponding job_details,
- *	see common/list.h for documentation
- * IN job_entry - pointer to job_record to delete
- */
-static void _list_delete_job(void *job_entry)
+extern void job_mgr_list_delete_job(void *job_entry)
 {
 	job_record_t *job_ptr = (job_record_t *) job_entry;
 	int job_array_size, i;
 
-	xassert(job_entry);
+	if (!job_entry)
+		return;
+
 	xassert (job_ptr->magic == JOB_MAGIC);
 	job_ptr->magic = 0;	/* make sure we don't delete record twice */
 
@@ -9873,6 +9880,8 @@ static void _list_delete_job(void *job_entry)
 
 	if (job_ptr->array_recs) {
 		job_array_size = MAX(1, job_ptr->array_recs->task_cnt);
+	} else if (!job_ptr->job_id) { /* reservation */
+		job_array_size = 0;
 	} else {
 		job_array_size = 1;
 	}
@@ -19210,4 +19219,71 @@ extern uint16_t get_job_share_value(job_record_t *job_ptr)
 		shared = NO_VAL16;	/* No user or partition info */
 
 	return shared;
+}
+
+extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
+	resv_desc_msg_t *resv_desc_ptr)
+{
+	job_record_t *job_ptr;
+	job_details_t *detail_ptr;
+
+	job_ptr = _create_job_record(1, false);
+	detail_ptr = job_ptr->details;
+
+	job_ptr->partition = xstrdup(resv_desc_ptr->partition);
+	job_ptr->time_limit = resv_desc_ptr->duration;
+
+	detail_ptr->begin_time = resv_desc_ptr->start_time;
+	if (resv_desc_ptr->node_cnt != NO_VAL) {
+		detail_ptr->max_nodes = detail_ptr->min_nodes =
+			resv_desc_ptr->node_cnt;
+	} else {
+		detail_ptr->min_nodes = 1;
+		/* 500000 comes from job_scheduler.c job_start_data() */
+		detail_ptr->max_nodes = 500000;
+	}
+
+	if (resv_desc_ptr->node_list) {
+		hostlist_t *hl = hostlist_create(resv_desc_ptr->node_list);
+		hostlist_uniq(hl);
+		detail_ptr->req_nodes = hostlist_ranged_string_xmalloc(hl);
+		detail_ptr->max_nodes = detail_ptr->min_nodes =
+			hostlist_count(hl);
+		hostlist_destroy(hl);
+
+		(void) node_name2bitmap(detail_ptr->req_nodes, true,
+					&detail_ptr->req_node_bitmap);
+	}
+
+	if (resv_desc_ptr->core_cnt != NO_VAL) {
+		detail_ptr->mc_ptr = xmalloc(sizeof(*detail_ptr->mc_ptr));
+		detail_ptr->mc_ptr->cores_per_socket = NO_VAL16;
+		detail_ptr->mc_ptr->ntasks_per_core = 1;
+		detail_ptr->mc_ptr->ntasks_per_socket = INFINITE16;
+		detail_ptr->mc_ptr->plane_size = 0;
+		detail_ptr->mc_ptr->sockets_per_node = NO_VAL16;
+		detail_ptr->mc_ptr->threads_per_core = 1;
+
+		detail_ptr->num_tasks = detail_ptr->min_cpus =
+			resv_desc_ptr->core_cnt;
+	} else {
+		detail_ptr->num_tasks = detail_ptr->min_cpus =
+			detail_ptr->min_nodes;
+		detail_ptr->whole_node = WHOLE_NODE_REQUIRED;
+	}
+	detail_ptr->core_spec = NO_VAL16;
+	detail_ptr->cpus_per_task = 1;
+	detail_ptr->orig_min_cpus = detail_ptr->min_cpus;
+	detail_ptr->orig_max_cpus = detail_ptr->max_cpus = NO_VAL;
+	detail_ptr->features = xstrdup(resv_desc_ptr->features);
+
+	if (build_feature_list(job_ptr, false, true)) {
+		error("%s: invalid features(%s) for reservation given",
+		      __func__, detail_ptr->features);
+	}
+
+	detail_ptr->task_dist = SLURM_DIST_BLOCK;
+	job_ptr->best_switch = true;
+
+	return job_ptr;
 }

@@ -504,6 +504,11 @@ typedef struct {
 	uid_t *user_list;	/* array of users permitted to use	*/
 } slurmctld_resv_t;
 
+typedef struct {
+	bitstr_t *core_bitmap;
+	bitstr_t **exc_cores;
+} resv_exc_t;
+
 extern List resv_list;		/* list of slurmctld_resv_t entries */
 extern time_t last_resv_update;	/* time of last resv_list update */
 
@@ -2447,6 +2452,26 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 /* Update time stamps for job step suspend */
 extern void suspend_job_step(job_record_t *job_ptr);
 
+/*
+ * job_mgr_dump_job_state - dump the state of a specific job, its details, and
+ *	steps to a buffer
+ * IN dump_job_ptr - pointer to job for which information is requested
+ * IN/OUT buffer - location to store data, pointers automatically advanced
+ */
+extern int job_mgr_dump_job_state(void *object, void *arg);
+
+/*
+ * job_mgr_load_job_state - Unpack a job's state information from a buffer
+ *
+ * If job_ptr_out is not NULL it will be filled in outside of the job_list.
+ *
+ * NOTE: assoc_mgr qos, tres and assoc read lock must be unlocked before
+ * calling
+ */
+extern int job_mgr_load_job_state(buf_t *buffer, job_record_t **job_ptr_out,
+				  uint16_t protocol_version);
+
+
 /* For the job array data structure, build the string representation of the
  * bitmap.
  * NOTE: bit_fmt_hexmask() is far more scalable than bit_fmt(). */
@@ -3019,5 +3044,19 @@ extern void reconfigure_slurm_post_send(int error_code);
  * Return the job's sharing value from job or partition value.
  */
 extern uint16_t get_job_share_value(job_record_t *job_ptr);
+
+/*
+ * job_mgr_list_delete_job - delete a job record and its corresponding
+ *	job_details,
+ *	see common/list.h for documentation
+ * IN job_entry - pointer to job_record to delete
+ */
+extern void job_mgr_list_delete_job(void *job_entry);
+
+/*
+ * Build a job rec from an advanced reservation request.
+ */
+extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
+	resv_desc_msg_t *resv_desc_ptr);
 
 #endif /* !_HAVE_SLURMCTLD_H */

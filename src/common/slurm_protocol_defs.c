@@ -1663,12 +1663,8 @@ extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
 		xfree(msg->burst_buffer);
 	if (res_free_flags & RESV_FREE_STR_COMMENT)
 		xfree(msg->comment);
-	if (res_free_flags & RESV_FREE_STR_TRES_CORE)
-		xfree(msg->core_cnt);
 	if (res_free_flags & RESV_FREE_STR_TRES_LIC)
 		xfree(msg->licenses);
-	if (res_free_flags & RESV_FREE_STR_TRES_NODE)
-		xfree(msg->node_cnt);
 	if (res_free_flags & RESV_FREE_STR_GROUP)
 		xfree(msg->groups);
 	if (res_free_flags & RESV_FREE_STR_NODES)
@@ -1679,6 +1675,7 @@ extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->features);
+		xassert(!msg->job_ptr); /* This shouldn't be here */
 		xfree(msg->name);
 		xfree(msg->node_list);
 		xfree(msg->partition);
@@ -3591,11 +3588,6 @@ extern char *reservation_flags_string(reserve_info_t * resv_ptr)
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_PART_NODES");
-	}
-	if (flags & RESERVE_FLAG_FIRST_CORES) {
-		if (flag_str[0])
-			xstrcat(flag_str, ",");
-		xstrcat(flag_str, "FIRST_CORES");
 	}
 	if (flags & RESERVE_FLAG_TIME_FLOAT) {
 		if (flag_str[0])

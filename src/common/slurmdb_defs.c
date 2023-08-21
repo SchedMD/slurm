@@ -3814,7 +3814,6 @@ extern int slurmdb_sort_tres_by_id_asc(void *v1, void *v2)
 	return 0;
 }
 
-/* This only works on a simple id=count list, not on a formatted list */
 extern void slurmdb_tres_list_from_string(
 	List *tres_list, const char *tres, uint32_t flags)
 {
@@ -3832,13 +3831,50 @@ extern void slurmdb_tres_list_from_string(
 		tmp_str++;
 
 	while (tmp_str) {
-		id = atoi(tmp_str);
+		if (tmp_str[0] >= '0' && tmp_str[0] <= '9') {
+			id = atoi(tmp_str);
+		} else {
+			int end = 0;
+			char *tres_name;
+			assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+
+			while (tmp_str[end]) {
+				if (tmp_str[end] == '=')
+					break;
+				end++;
+			}
+			if (!tmp_str[end]) {
+				error("%s: no TRES id found for %s",
+				      __func__, tmp_str);
+				break;
+			}
+			tres_name = xstrndup(tmp_str, end);
+			assoc_mgr_lock(&locks);
+			if (!assoc_mgr_tres_list) {
+				error("%s: No assoc_mgr_tres_list, this function can't be used here with a formatted tres list.", __func__);
+				break;
+			}
+			tres_rec = list_find_first(
+				assoc_mgr_tres_list,
+				slurmdb_find_tres_in_list_by_type,
+				tres_name);
+			assoc_mgr_unlock(&locks);
+			if (!tres_rec) {
+				error("%s: no TRES known by type %s",
+				      __func__, tres_name);
+				xfree(tres_name);
+				break;
+			}
+			id = tres_rec->id;
+			xfree(tres_name);
+		}
 		/* 0 isn't a valid tres id */
 		if (id <= 0) {
 			error("slurmdb_tres_list_from_string: no id "
 			      "found at %s instead", tmp_str);
 			break;
 		}
+
 		if (!(tmp_str = strchr(tmp_str, '='))) {
 			error("slurmdb_tres_list_from_string: "
 			      "no value found %s", tres);

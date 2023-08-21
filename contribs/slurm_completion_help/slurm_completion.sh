@@ -4045,7 +4045,6 @@ function __scontrol_update_reservationname() {
 		"any_nodes"
 		"daily"
 		"flex"
-		"first_cores"
 		"ignore_jobs"
 		"license_only"
 		"hourly"

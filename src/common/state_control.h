@@ -60,37 +60,6 @@ extern uint32_t state_control_parse_resv_watts(char * watts_str,
 extern int state_control_configured_tres(char *type);
 
 /*
- * Parse and process reservation request option CoreCnt= or TRES=cpu=
- *
- * IN/OUT resv_msg_ptr - msg where core_cnt member is modified
- * IN val - CoreCnt value to parse
- * OUT res_free_flags - uint32_t of flags to set various bits to free strings
- *                      afterwards if needed.
- *                      See RESV_FREE_STR_* in src/common/slurm_protocol_defs.h.
- * IN from_tres - used to discern if the count comes from TRES= or CoreCnt=
- * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
- */
-extern int state_control_parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr,
-					    char *val, uint32_t *res_free_flags,
-					    bool from_tres, char **err_msg);
-
-/*
- * Parse and process reservation request option NodeCnt= or TRES=node=
- *
- * IN/OUT resv_msg_ptr - msg where node_cnt member is modified
- * IN val - NodeCnt value to parse
- * OUT res_free_flags - uint32_t of flags to set various bits to free strings
- *                      afterwards if needed.
- *                      See RESV_FREE_STR_* in src/common/slurm_protocol_defs.h.
- * IN from_tres - used to discern if the count comes from TRES= or NodeCnt=
- * OUT err_msg - set to an explanation of failure, if any. Don't set if NULL
- */
-extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
-			      uint32_t *res_free_flags, bool from_tres,
-			      char **err_msg);
-
-
-/*
  * Parse and process reservation request option TRES=
  * IN val - TRES value to parse
  * IN/OUT resv_msg_ptr - msg whose members might be modified

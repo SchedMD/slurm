@@ -146,10 +146,12 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 void slurm_init_resv_desc_msg (resv_desc_msg_t * resv_msg)
 {
 	memset(resv_msg, 0, sizeof(resv_desc_msg_t));
+	resv_msg->core_cnt = NO_VAL;
 	resv_msg->duration	= NO_VAL;
 	resv_msg->end_time	= (time_t) NO_VAL;
 	resv_msg->flags		= NO_VAL64;
 	resv_msg->max_start_delay = NO_VAL;
+	resv_msg->node_cnt = NO_VAL;
 	resv_msg->purge_comp_time = NO_VAL;
 	resv_msg->start_time	= (time_t) NO_VAL;
 	resv_msg->resv_watts	= NO_VAL;
