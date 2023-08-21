@@ -1763,9 +1763,9 @@ static void _attempt_backfill(void)
 	bool state_changed_break = false;
 	resv_exc_t resv_exc = { 0 };
 	/* QOS Read lock */
-	assoc_mgr_lock_t qos_read_lock =
-		{ NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-		  NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t qos_read_lock = {
+		.qos = READ_LOCK,
+	};
 
 	bf_sleep_usec = 0;
 	job_start_cnt = 0;
@@ -2002,8 +2002,9 @@ static void _attempt_backfill(void)
 
 		if (job_ptr->qos_id) {
 			assoc_mgr_lock_t locks = {
-				READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-				NO_LOCK, NO_LOCK, NO_LOCK };
+				.assoc = READ_LOCK,
+				.qos = READ_LOCK,
+			};
 
 			assoc_mgr_lock(&locks);
 			if (job_ptr->assoc_ptr
@@ -2957,8 +2958,10 @@ skip_start:
 			uint32_t selected_node_cnt;
 			uint64_t tres_req_cnt[slurmctld_tres_cnt];
 			uint16_t sockets_per_node;
-			assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
-				READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK
+			assoc_mgr_lock_t locks = {
+				.assoc = READ_LOCK,
+				.qos = READ_LOCK,
+				.tres = READ_LOCK,
 			};
 
 			selected_node_cnt = bit_set_count(avail_bitmap);
