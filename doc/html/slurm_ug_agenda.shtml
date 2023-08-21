@@ -33,11 +33,13 @@
 
 <p><a href="https://www.hyatt.com/en-US/hotel/utah/hyatt-place-provo/pvuzp">Hyatt Place Provo</a> &mdash; The Hyatt is across the street from the Provo Marriott Hotel and Conference center. Staying here would put you in downtown Provo, a quarter mile from the bus stop that runs into campus.</p>
 
-<!--
 <a name="schedule"><h2>Schedule</h2></a>
 
 <h3>All times are US Mountain Daylight Time (UTC-6)</h3>
-<h2>Tuesday, 20 September 2022</h2>
+
+<p>The main venue for SLUG'23 is the <a href="https://goo.gl/maps/tGHzsksxdFtw1LCB6">Harman Continuing Education Building at BYU</a> in Room 2258/2260. Lunch and snacks will be provided in adjacent space to the conference rooms. Venues for the (optional) welcome reception Monday night, and for dinner on Tuesday night, are included in the agenda below.</p>
+
+<h2>Monday, 11 September 2023</h2>
 <table width="100%" border=1 cellspacing=0 cellpadding=4>
 
 <tr>
@@ -46,24 +48,87 @@
   <th width="45%">Title</th>
  </tr>
 
-<tr><td nowrap>9:00 - 9:50</td><td>Booth &mdash; SchedMD</td><td><a href="https://youtu.be/njEgeMUAqMY">Field Notes 6: From The Frontlines of Slurm Support</a></td></tr>
-
-<tr><td nowrap>10:00 - 10:25</td><td>Nielsen &mdash; Technical University of Denmark (DTU)</td><td><a href="https://youtu.be/WUbuPQ0RB68">Pathfinding into the clouds</a></td></tr>
-
-<tr><td nowrap>10:30 - 10:55</td><td>Rini &mdash; SchedMD</td><td><a href="https://youtu.be/7y7IpCTj5mk">OCI Containers, and scrun</a></td></tr>
-
-<tr><td nowrap>11:00 - 11:25</td><td>Feinstein &mdash; LBNL</td><td><a href="https://youtu.be/uwYsoPySxmU">LBNL Site Report</a></td></tr>
-
-<tr><td nowrap>11:30 - 11:55</td><td>Ihli &mdash; SchedMD</td><td><a href="https://youtu.be/YhSF9YhlSS8">Cloudy, With a Chance of Dynamic Nodes</a></td></tr>
-
-<tr><td nowrap>12:00 - 12:25</td><td>Tsuyuzaki &mdash; NTT</td><td><a href="https://youtu.be/jyUQ33GTnnE">Burst Buffer Lua Plugin For Lustre</a></td></tr>
-
-<tr><td nowrap>12:30 - 12:55</td><td>Wickberg &mdash; SchedMD</td><td><a href="https://youtu.be/sloTCJaeabs">Slurm 22.05, 23.02, and Beyond</a></td></tr>
-
-<tr><td nowrap>14:00</td><td>Carter &mdash; AWS</td><td><a href="https://youtu.be/qbJKkUmgJ18">EDA Slurm Cluster on AWS (Extra Session &mdash; no live chat)</a></td></tr>
+<tr><td nowrap bgcolor="#F0F1C9">18:00 - 20:00</td><td colspan="3" bgcolor="#F0F1C9">Welcome Reception<br /><a href="https://goo.gl/maps/GCdqRjeodU46YDtk8">Provo Marriott Hotel and Conference Center</a></td></tr>
 
 </table>
--->
+
+<h2>Tuesday, 12 September 2023</h2>
+<table width="100%" border=1 cellspacing=0 cellpadding=4>
+
+<tr>
+  <th width="10%">Time</th>
+  <th width="30%">Speaker</th>
+  <th width="45%">Title</th>
+ </tr>
+
+<tr><td nowrap>9:00 - 9:05</td><td>Auble &ndash; SchedMD</td><td>Welcome</td></tr>
+
+<tr><td nowrap>9:05 - 10:00</td><td>TBA &ndash; BYU</td><td>Keynote</td></tr>
+
+<tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:30</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
+
+<tr><td nowrap>10:30 - 11:00</td><td>Jacobsen and Samuel&ndash; NERSC</td><td>Never use Slurm HA again: Solve all your problems with Kubernetes</td></tr>
+
+<tr><td nowrap>11:00 - 11:30</td><td>Younts &ndash; Guardant</td><td>Guardant Health Site Report</td></tr>
+
+<tr><td nowrap>11:30 - 12:00</td><td>Hilton &ndash; SchedMD</td><td>Native Container Support</td></tr>
+
+<tr><td nowrap bgcolor="#F0F1C9">12:00 - 13:00</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
+
+<tr><td nowrap>13:00 - 13:30</td><td>Pratt and Feldman &ndash; CoreWeave</td><td>Providing the Power of Slurm on CoreWeave's Serverless Kubernetes Architecture</td></tr>
+
+<tr><td nowrap>13:30 - 14:00</td><td> &ndash; LLSC</td><td></td></tr>
+
+<tr><td nowrap>14:00 - 14:30</td><td>Rini &ndash; SchedMD</td><td>State of the Slurm REST API</td></tr>
+
+<tr><td nowrap bgcolor="#F0F1C9">14:30 - 15:00</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
+
+<tr><td nowrap>15:00 - 15:30</td><td>TBA &ndash; Google/Recursion</td><td></td></tr>
+
+<tr><td nowrap>15:30 - 16:00</td><td>Fazio &ndash; Dow</td><td>Demand Driven Cluster Elasticity</td></tr>
+
+<tr><td nowrap>16:00 - 17:00</td><td>Booth &ndash; SchedMD</td><td>Field Notes 7 &ndash; How to make the most of Slurm and avoid common issues</td></tr>
+
+<tr><td nowrap bgcolor="#F0F1C9">18:30 - 20:30</td><td colspan="3" bgcolor="#F0F1C9">Dinner<br />The Skyroom<br /><a href="https://goo.gl/maps/P8Z1K8LzYxDkxpBR6">Ernest L. Wilkinson Student Center at BYU</a>, 6th Floor</td></tr>
+
+</table>
+
+<h2>Wednesday, 13 September 2023</h2>
+<table width="100%" border=1 cellspacing=0 cellpadding=4>
+
+<tr>
+  <th width="10%">Time</th>
+  <th width="30%">Speaker</th>
+  <th width="45%">Title</th>
+ </tr>
+
+<tr><td nowrap>9:00 - 9:30</td><td>Markuske &ndash; SDSC</td><td>Accelerating Genomics Research Machine Learning with Slurm</td></tr>
+
+<tr><td nowrap>9:30 - 10:00</td><td>Nielsen &ndash; DTU</td><td>Saving Power with Slurm</td></tr>
+
+<tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:30</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
+
+<tr><td nowrap>10:30 - 11:00</td><td>Day &ndash; LLNL</td><td>Running Flux in Slurm</td></tr>
+
+<tr><td nowrap>11:00 - 11:30</td><td>Marani &ndash; CINECA</td><td>CINECA experience with Slurm</td></tr>
+
+<tr><td nowrap>11:30 - 12:00</td><td>Christiansen &ndash; SchedMD</td><td>Step Management Enhancements</td></tr>
+
+<tr><td nowrap bgcolor="#F0F1C9">12:00 - 13:00</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
+
+<tr><td nowrap>13:00 - 13:30</td><td>Hafener &ndash; LANL</td><td>Simulation of Cluster Scheduling Behavior Using Digital Twins</td></tr>
+
+<tr><td nowrap>13:30 - 14:00</td><td>Jezghani &ndash; Georgia Tech</td><td>PACE Site Report</td></tr>
+
+<tr><td nowrap>14:00 - 14:30</td><td>Skjerven and Vaughn &ndash; AWS</td><td>Building Blocks in the Cloud: Scaling LEGO engineering with Slurm and AWS Parallel Cluster</td></tr>
+
+<tr><td nowrap bgcolor="#F0F1C9">14:30 - 15:00</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
+
+<tr><td nowrap>15:00 - 16:30</td><td>Wickberg &ndash; SchedMD</td><td>Slurm 23.02, 23.11, and Beyond (Roadmap); Open Forum</td></tr>
+
+</table>
+
+<br />
 
 <a name="abstracts"><h2>Abstracts</h2></a>
 
@@ -87,9 +152,17 @@
 
 <!-- -------------------------------------------------------------------------- -->
 
+<h3>Providing the Power of Slurm on CoreWeave's Serverless Kubernetes Architecture</h3>
+
+<h4>Navarre Pratt and Jacob Feldman, CoreWeave</h4>
+
+<p>CoreWeave is a premium cloud provider specializing in high performance GPU-powered workloads for AI/ML, batch processing, and scientific discovery. CoreWeave deploys massive scales of compute and some of the largest dedicated training clusters on the planet, all on top of Kubernetes. As the top choice for scheduling and managing HPC workloads, Slurm is a must-have solution for utilizing compute at this scale for batch workloads. In this talk, we will present the soon to be open-sourced Slurm on Kubernetes (SUNK) solution, a project in collaboration with SchedMD, that brings Kubernetes containerized deployments and Slurm together to provide the ultimate computing platform. We will discuss how SUNK was developed, its range of capabilities, and the role it played in the record-breaking MLPerf submission we completed with NVIDIA.</p>
+
+<!-- -------------------------------------------------------------------------- -->
+
 <h3>Demand Driven Cluster Elasticity</h3>
 
-<h4>Mike Fazio, The DOW Chemical Company</h4>
+<h4>Mike Fazio, The Dow Chemical Company</h4>
 
 <p>An elastically scalable cluster can be a critical component in minimizing the time from job submission to execution. Few organizations have the resources on-premises to meet the peak demand on their supercomputer resources. Utilizing consumption-based compute to augment existing resources allows variable demand to be met while maintaining affordability. A turnkey High Performance Computing (HPC) on demand service provides a low barrier of entry with minimal skill up, but ultimately proved difficult to meet the needs of our organization. Utilizing a strategic set of tools allows the delivery of an elastically scalable cluster with a unified entry point for users while maintaining control of proprietary data. This talk will cover Dow's journey into hybrid on-premises/cloud HPC to provide researchers seamless access to computational resources.</p>
 
@@ -113,7 +186,7 @@
 
 <h3>Optimizing Diverse Workloads and System Resource Usage</h3>
 
-<h4>Chansup Byun, Lincoln Laboratory Supercomputing Center</h4>
+<h4>Chansup Byun, Lincoln Laboratory Supercomputing Center (LLSC)</h4>
 
 <p>At the Lincoln Laboratory Supercomputing Center (LLSC), we have very diverse workloads ranging from various machine learning and artificial intelligence applications to the traditional high performance computing applications and other simulation codes, to advanced database services, to dynamic web services, and to on-demand Jupyter Notebook services running on large cluster systems. We have been using Slurm to enable and scale such diverse workloads efficiently and continue to exploit advanced Slurm features to use system resources more efficiently. Recently we have introduced the whole node scheduling approach so that only one user's job or jobs can be scheduled on a node. There are many benefits with this scheduling approach and we will discuss about the details in this presentation. Spot job support is another feature implemented on selected LLSC systems to improve system resource usage with minimizing any impact on normal jobs. Spot jobs are a way to improve system utilization while providing users additional capacity to meet their computing needs. We have observed some issues with Slurm scheduling performance when preempting spot jobs and will discuss how we have achieved significant improvement in the scheduling performance in the presentation.</p>
 
@@ -121,7 +194,7 @@
 
 <h3>Running Flux in Slurm</h3>
 
-<h4>Ryan Day, Lawrence Livermore National Laboratory</h4>
+<h4>Ryan Day, Lawrence Livermore National Laboratory (LLNL)</h4>
 
 <p>Flux is a novel, open source resource management package designed to enable complex workflows on modern, heterogeneous HPC systems. Its hierarchical design allows users to elegantly subdivide their allocation and coordinate scheduling of jobs in those sub-allocations. Flux is also easy for users to run inside of allocations from other resource managers. In this talk, I will describe Flux and some example workflows, then demonstrate how to launch and run a Flux instance inside of an allocation on a Slurm managed cluster.</p>
 
@@ -143,7 +216,7 @@
 
 <!-- -------------------------------------------------------------------------- -->
 
-<h3>Field Notes</h3>
+<h3>Field Notes 7 &mdash; How to make the most of Slurm and avoid common issues</h3>
 
 <h4>Jason Booth, SchedMD</h4>
 
@@ -151,7 +224,25 @@
 
 <!-- -------------------------------------------------------------------------- -->
 
-<h3>Slurm 23.11 and Beyond</h3>
+<h3>Step Management Enhancements</h3>
+
+<h4>Brian Christiansen, SchedMD</h4>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Native Container Support</h3>
+
+<h4>Scott Hilton and Nate Rini, SchedMD</h4>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>State of the Slurm REST API</h3>
+
+<h4>Nate Rini, SchedMD</h4>
+
+<!-- -------------------------------------------------------------------------- -->
+
+<h3>Slurm 23.02, 23.11, and Beyond (Roadmap)</h3>
 
 <h4>Tim Wickberg, SchedMD</h4>
 
@@ -175,6 +266,6 @@
 
 <!-- -------------------------------------------------------------------------- -->
 
-<p style="text-align:center;">Last modified 7 August 2023</p>
+<p style="text-align:center;">Last modified 21 August 2023</p>
 
 <!--#include virtual="footer.txt"-->
