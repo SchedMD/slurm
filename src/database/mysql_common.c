@@ -849,7 +849,6 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 	bool storage_init = false;
 	char *db_host = db_info->host;
 	unsigned int my_timeout = 30;
-	bool reconnect = 0;
 
 	xassert(mysql_conn);
 
@@ -860,8 +859,6 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 		fatal("mysql_init failed: %s",
 		      mysql_error(mysql_conn->db_conn));
 	}
-
-	mysql_options(mysql_conn->db_conn, MYSQL_OPT_RECONNECT, &reconnect);
 
 	/*
 	 * If this ever changes you will need to alter
