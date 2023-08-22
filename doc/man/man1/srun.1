@@ -1314,7 +1314,8 @@ Supported \fItype\fR options:
 .RS
 .TP 10
 \fBclosest\fR
-Bind each task to the GPU(s) which are closest.
+Bind each task to all GPU(s) with matching cores. See
+https://slurm.schedmd.com/gres.conf.html#OPT_Cores.
 In a NUMA environment, each task may be bound to more than one GPU (i.e.
 all GPUs in that NUMA environment).
 .IP
@@ -1368,12 +1369,10 @@ be assigned the first x number of gpus on the node etc.
 \fBsingle:<tasks_per_gpu>\fR
 Like \fI\-\-gpu\-bind=closest\fR, except that each task can only be bound to a
 single GPU, even when it can be bound to multiple GPUs that are equally close.
-The GPU to bind to is determined by \fI<tasks_per_gpu>\fR, where the
-first \fI<tasks_per_gpu>\fR tasks are bound to the first GPU available, the
-second \fI<tasks_per_gpu>\fR tasks are bound to the second GPU available, etc.
-This is basically a block distribution of tasks onto available GPUs, where the
-available GPUs are determined by the socket affinity of the task and the socket
-affinity of the GPUs as specified in gres.conf's \fICores\fR parameter.
+Each task is bound to the first GPU available to that task, excluding gpus that
+have filled their \fI<tasks_per_gpu>\fR quota with lower index tasks.
+The available GPUs are determined by the socket affinity of the task and the
+socket affinity of the GPUs as specified in gres.conf's \fICores\fR parameter.
 .RE
 .IP
 

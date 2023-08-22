@@ -119,7 +119,8 @@ specific CPUs on the same socket (or NUMA with numa_node_as_socket) and this
 option should generally be
 used to identify all cores on some socket. Though, job step allocations that
 request a portion of the job's resources with
---exact will look at cores directly for which more specific core identification
+\-\-exact and task binding through \-\-gpu\-\bind
+will both look at cores directly for which more specific core identification
 may be useful.
 
 
