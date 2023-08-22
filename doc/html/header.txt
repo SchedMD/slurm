@@ -24,17 +24,8 @@
 			return false;
 		});
 	});
-
-	(function() {
-	  var cx = '011890816164765777536:jvrtxrd3f0w';
-	  var gcse = document.createElement('script');
-	  gcse.type = 'text/javascript';
-	  gcse.async = true;
-	  gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
-	  var s = document.getElementsByTagName('script')[0];
-	  s.parentNode.insertBefore(gcse, s);
-	})();
 	</script>
+	<script async src="https://cse.google.com/cse.js?cx=011890816164765777536:jvrtxrd3f0w"></script>
 </head>
 
 <body>
