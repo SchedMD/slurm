@@ -2752,13 +2752,17 @@ SLURM_NODE_ALIASES=ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
 
 .TP
 \fBSLURM_NPROCS\fR
-Set to value of the \fB\-\-ntasks\fR option, if specified.
+Set to value of the \fB\-\-ntasks\fR option, if specified. Or, if either of
+the \fB\-\-ntasks\-per\-node\fR or \fB\-\-ntasks\-per\-gpu\fR options are
+specified, set to the number of tasks in the job.
 See \fBSLURM_NTASKS\fR. Included for backwards compatibility.
 .IP
 
 .TP
 \fBSLURM_NTASKS\fR
-Set to value of the \fB\-\-ntasks\fR option, if specified.
+Set to value of the \fB\-\-ntasks\fR option, if specified. Or, if either of
+the \fB\-\-ntasks\-per\-node\fR or \fB\-\-ntasks\-per\-gpu\fR options are
+specified, set to the number of tasks in the job.
 .IP
 
 .TP
