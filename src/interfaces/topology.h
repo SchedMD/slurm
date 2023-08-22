@@ -72,6 +72,25 @@ extern int switch_levels;               /* number of switch levels     */
 extern char *topo_conf;
 
 /*****************************************************************************\
+ * defined here but is really block plugin related
+\*****************************************************************************/
+typedef struct {
+	int level;
+	char *name;			/* switch name */
+	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from
+					 * this block */
+	char *nodes;			/* name if direct descendant nodes */
+	uint16_t block_index;
+} block_record_t;
+
+
+extern bitstr_t *blocks_nodes_bitmap;	/* nodes on any bblock */
+extern block_record_t *block_record_table;  /* ptr to block records */
+extern uint16_t bblock_node_cnt;
+extern bitstr_t *block_levels;
+extern int block_record_cnt;
+
+/*****************************************************************************\
  *  Slurm topology functions
 \*****************************************************************************/
 
