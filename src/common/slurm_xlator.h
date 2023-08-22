@@ -448,7 +448,6 @@
 /* plugin.[ch] functions */
 #define plugin_get_syms         slurm_plugin_get_syms
 #define plugin_load_and_link    slurm_plugin_load_and_link
-#define plugin_strerror         slurm_plugin_strerror
 #define plugin_unload           slurm_plugin_unload
 
 /* plugrack.[ch] functions */

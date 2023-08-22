@@ -536,7 +536,7 @@ static int _load_plugin(slurm_gres_context_t *gres_ctx)
 
 	if (errno != ESLURM_PLUGIN_NOTFOUND) {
 		error("Couldn't load specified plugin name for %s: %s",
-		      gres_ctx->gres_type, plugin_strerror(errno));
+		      gres_ctx->gres_type, slurm_strerror(errno));
 		return SLURM_ERROR;
 	}
 

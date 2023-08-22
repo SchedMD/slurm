@@ -75,8 +75,6 @@ typedef enum {
 	PLUGIN_INITED,
 } plugin_init_t;
 
-const char *plugin_strerror(plugin_err_t err);
-
 /*
  * "Peek" into a plugin to discover its type and version.  This does
  * not run the plugin's init() or fini() functions (as defined in this

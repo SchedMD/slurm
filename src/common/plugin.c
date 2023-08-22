@@ -62,13 +62,7 @@
 
 strong_alias(plugin_get_syms,         slurm_plugin_get_syms);
 strong_alias(plugin_load_and_link,    slurm_plugin_load_and_link);
-strong_alias(plugin_strerror,         slurm_plugin_strerror);
 strong_alias(plugin_unload,           slurm_plugin_unload);
-
-const char * plugin_strerror(plugin_err_t e)
-{
-	return slurm_strerror(e);
-}
 
 static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,
 				 const size_t type_len, const char *caller,
@@ -372,7 +366,7 @@ extern plugin_context_t *plugin_context_create(
 
 	if (errno != ESLURM_PLUGIN_NOTFOUND) {
 		error("Couldn't load specified plugin name for %s: %s",
-		      c->type, plugin_strerror(errno));
+		      c->type, slurm_strerror(errno));
 		goto fail;
 	}
 
