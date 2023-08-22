@@ -1141,11 +1141,13 @@ _cpu_freq_check_freq(const char* arg)
 	} else if (xstrncasecmp(arg, "med", 3) == 0) {
 		return CPU_FREQ_MEDIUM;
 	}
-	if ( (frequency = strtoul(arg, &end, 10) )) {
-		return frequency;
+	frequency = strtoul(arg, &end, 10);
+	if ((*end != '\0') ||
+	    ((frequency == 0) && (errno == EINVAL))) {
+		error("unrecognized --cpu-freq argument \"%s\"", arg);
+		return 0;
 	}
-	error("unrecognized --cpu-freq argument \"%s\"", arg);
-	return 0;
+	return frequency;
 }
 
 /*
