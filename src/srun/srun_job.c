@@ -846,6 +846,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 	slurm_opt_t *opt_local = &opt;
 	uint32_t node_offset = 0, het_job_nnodes = 0, step_id = NO_VAL;
 	uint32_t het_job_ntasks = 0, task_offset = 0;
+	bool update_het_nnodes = false;
+	uint32_t updated_het_nnodes;
 
 	job_step_create_response_msg_t *step_resp;
 	char *resv_ports = NULL;
@@ -879,8 +881,10 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			het_job_ntasks += job->ntasks;
 		}
 
+		updated_het_nnodes = het_job_nnodes;
 		list_iterator_reset(job_iter);
 		while ((job = list_next(job_iter))) {
+			uint32_t old_nhosts = job->nhosts;
 			if (opt_list)
 				opt_local = list_next(opt_iter);
 			if (!opt_local)
@@ -918,6 +922,23 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			}
 			node_offset += job->nhosts;
 			task_offset += job->ntasks;
+
+			/*
+			 * If packing nodes (CR_PACK_NODES, -mpack), the step
+			 * may have an updated layout. Need to update each
+			 * component's het_job_nnodes with the updated counts.
+			 */
+			if (job->nhosts < old_nhosts) {
+				update_het_nnodes = true;
+				updated_het_nnodes -= old_nhosts - job->nhosts;
+			}
+		}
+
+		if (update_het_nnodes) {
+			list_iterator_reset(job_iter);
+			while ((job = list_next(job_iter))) {
+				job->het_job_nnodes = updated_het_nnodes;
+			}
 		}
 
 		FREE_NULL_HOSTLIST(exclude_hl);
