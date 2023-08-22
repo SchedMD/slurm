@@ -66,14 +66,8 @@ typedef struct {
 
 #define PLUGIN_INVALID_HANDLE ((void*)0)
 
-typedef enum {
-	EPLUGIN_NOTFOUND = 1,    /* Plugin file does not exist          */
-	EPLUGIN_ACCESS_ERROR,    /* Access denied                       */
-	EPLUGIN_DLOPEN_FAILED,   /* Dlopen not successful               */
-	EPLUGIN_INIT_FAILED,     /* Plugin's init() callback failed     */
-	EPLUGIN_MISSING_NAME,    /* plugin_name/type/version missing    */
-	EPLUGIN_BAD_VERSION,     /* incompatible plugin version         */
-} plugin_err_t;
+/* avoid breaking compile - removing in upcoming patch */
+typedef slurm_err_t plugin_err_t;
 
 typedef enum {
 	PLUGIN_NOT_INITED = 0,

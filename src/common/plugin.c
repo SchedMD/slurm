@@ -67,22 +67,7 @@ strong_alias(plugin_unload,           slurm_plugin_unload);
 
 const char * plugin_strerror(plugin_err_t e)
 {
-	switch (e) {
-		case EPLUGIN_NOTFOUND:
-			return ("Plugin file not found");
-		case EPLUGIN_ACCESS_ERROR:
-			return ("Plugin access denied");
-		case EPLUGIN_DLOPEN_FAILED:
-			return ("Dlopen of plugin file failed");
-		case EPLUGIN_INIT_FAILED:
-			return ("Plugin init() callback failed");
-		case EPLUGIN_MISSING_NAME:
-			return ("Plugin name/type/version symbol missing");
-		case EPLUGIN_BAD_VERSION:
-			return ("Incompatible plugin version");
-	}
-	error("%s: Unknown plugin error: %d", __func__, e);
-	return ("Unknown error");
+	return slurm_strerror(e);
 }
 
 static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,

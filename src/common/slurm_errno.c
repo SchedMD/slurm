@@ -603,6 +603,18 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Plugin missing required symbol or function"		},
 	{ ERRTAB_ENTRY(ESLURM_PLUGIN_NOT_LOADED),
 	  "Required plugin type not loaded or initialized"	},
+	{ ERRTAB_ENTRY(EPLUGIN_NOTFOUND),
+	  "Plugin file not found"				},
+	{ ERRTAB_ENTRY(EPLUGIN_ACCESS_ERROR),
+	  "Plugin access denied"				},
+	{ ERRTAB_ENTRY(EPLUGIN_DLOPEN_FAILED),
+	  "Dlopen of plugin file failed"			},
+	{ ERRTAB_ENTRY(EPLUGIN_INIT_FAILED),
+	  "Plugin init() callback failed"			},
+	{ ERRTAB_ENTRY(EPLUGIN_MISSING_NAME),
+	  "Plugin name/type/version symbol missing"		},
+	{ ERRTAB_ENTRY(EPLUGIN_BAD_VERSION),
+	  "Incompatible plugin version"				},
 
 	/* REST errors */
 	{ ERRTAB_ENTRY(ESLURM_REST_INVALID_QUERY),
