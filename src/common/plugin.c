@@ -81,13 +81,13 @@ static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,
 	if (!(name = dlsym(plug, "plugin_name"))) {
 		verbose("%s: %s is not a Slurm plugin: %s",
 			caller, fq_path, dlerror());
-		return EPLUGIN_MISSING_NAME;
+		return ESLURM_PLUGIN_MISSING_NAME;
 	}
 
 	if (!(type = dlsym(plug, "plugin_type"))) {
 		verbose("%s: %s is not a Slurm plugin: %s",
 			caller, fq_path, dlerror());
-		return EPLUGIN_MISSING_NAME;
+		return ESLURM_PLUGIN_MISSING_NAME;
 	}
 
 	if (plugin_type) {
@@ -98,7 +98,7 @@ static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,
 	if (!version) {
 		verbose("%s: plugin_version symbol not found in %s: %s",
 			caller, fq_path, dlerror());
-		return EPLUGIN_MISSING_NAME;
+		return ESLURM_PLUGIN_MISSING_NAME;
 	}
 
 	debug3("%s->%s: found Slurm plugin name:%s type:%s version:0x%x",
@@ -116,7 +116,7 @@ static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,
 
 		info("%s: Incompatible Slurm plugin %s version (%d.%02d.%d)",
 		     caller, fq_path, plugin_major, plugin_minor, plugin_micro);
-		return EPLUGIN_BAD_VERSION;
+		return ESLURM_PLUGIN_BAD_VERSION;
 	}
 
 	return SLURM_SUCCESS;
@@ -130,7 +130,7 @@ extern plugin_err_t plugin_peek(const char *fq_path, char *plugin_type,
 
 	if (!(plug = dlopen(fq_path, RTLD_LAZY))) {
 		debug3("%s: dlopen(%s): %s", __func__, fq_path, dlerror());
-		return EPLUGIN_DLOPEN_FAILED;
+		return ESLURM_PLUGIN_DLOPEN_FAILED;
 	}
 
 	rc = _verify_syms(plug, plugin_type, type_len, __func__, fq_path);
@@ -161,7 +161,7 @@ plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 	if (plug == NULL) {
 		error("plugin_load_from_file: dlopen(%s): %s",
 		      fq_path, dlerror());
-		return EPLUGIN_DLOPEN_FAILED;
+		return ESLURM_PLUGIN_DLOPEN_FAILED;
 	}
 
 	rc = _verify_syms(plug, NULL, 0, __func__, fq_path);
@@ -177,7 +177,7 @@ plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 	if ((init = dlsym(plug, "init")) != NULL) {
 		if ((*init)() != SLURM_SUCCESS) {
 			dlclose(plug);
-			return EPLUGIN_INIT_FAILED;
+			return ESLURM_PLUGIN_INIT_FAILED;
 		}
 	}
 
@@ -202,7 +202,7 @@ plugin_load_and_link(const char *type_name, int n_syms,
 	char *head = NULL, *dir_array = NULL, *so_name = NULL;
 	char *file_name = NULL;
 	int i = 0;
-	plugin_err_t err = EPLUGIN_NOTFOUND;
+	plugin_err_t err = ESLURM_PLUGIN_NOTFOUND;
 
 	if (!type_name)
 		return plug;
@@ -233,7 +233,7 @@ plugin_load_and_link(const char *type_name, int n_syms,
 			debug4("%s: Does not exist or not a regular file.",
 			       file_name);
 			xfree(file_name);
-			err = EPLUGIN_NOTFOUND;
+			err = ESLURM_PLUGIN_NOTFOUND;
 		} else {
 			if ((err = plugin_load_from_file(&plug, file_name))
 			   == SLURM_SUCCESS) {
@@ -370,7 +370,7 @@ extern plugin_context_t *plugin_context_create(
 	if (c->cur_plugin != PLUGIN_INVALID_HANDLE)
 		return c;
 
-	if (errno != EPLUGIN_NOTFOUND) {
+	if (errno != ESLURM_PLUGIN_NOTFOUND) {
 		error("Couldn't load specified plugin name for %s: %s",
 		      c->type, plugin_strerror(errno));
 		goto fail;
