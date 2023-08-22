@@ -338,7 +338,7 @@ plugin_handle_t plugrack_use_by_type(plugrack_t *rack, const char *full_type)
 
 	it = list_iterator_create(rack->entries);
 	while ((e = list_next(it))) {
-		plugin_err_t err;
+		int err;
 
 		if (xstrcmp(full_type, e->full_type) != 0)
 			continue;

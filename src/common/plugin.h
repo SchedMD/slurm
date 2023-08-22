@@ -66,9 +66,6 @@ typedef struct {
 
 #define PLUGIN_INVALID_HANDLE ((void*)0)
 
-/* avoid breaking compile - removing in upcoming patch */
-typedef slurm_err_t plugin_err_t;
-
 typedef enum {
 	PLUGIN_NOT_INITED = 0,
 	PLUGIN_NOOP,
@@ -88,12 +85,10 @@ typedef enum {
  * type_len - the number of bytes available in plugin_type.  The type
  *	will be zero-terminated if space permits.
  *
- * Returns a plugin_err_t.
+ * RET SLURM_SUCCESS or error
  */
-extern plugin_err_t plugin_peek(const char *fq_path,
-				char *plugin_type,
-				const size_t type_len);
-
+extern int plugin_peek(const char *fq_path, char *plugin_type,
+		       const size_t type_len);
 
 /*
  * Simplest way to get a plugin -- load it from a file.
@@ -102,13 +97,12 @@ extern plugin_err_t plugin_peek(const char *fq_path,
  * fq_path - the fully-qualified pathname (i.e., from root) to
  * the plugin to load.
  *
- * Returns SLURM_SUCCESS on success, and an plugin_err_t error
- * code on failure.
- *
  * The plugin's initialization code will be executed prior
  * to this function's return.
+ *
+ * RET SLURM_SUCCESS or error
  */
-plugin_err_t plugin_load_from_file(plugin_handle_t *pph, const char *fq_path);
+extern int plugin_load_from_file(plugin_handle_t *pph, const char *fq_path);
 
 /*
  * load plugin and link hooks.

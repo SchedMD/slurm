@@ -64,9 +64,9 @@ strong_alias(plugin_get_syms,         slurm_plugin_get_syms);
 strong_alias(plugin_load_and_link,    slurm_plugin_load_and_link);
 strong_alias(plugin_unload,           slurm_plugin_unload);
 
-static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,
-				 const size_t type_len, const char *caller,
-				 const char *fq_path)
+static int _verify_syms(plugin_handle_t plug, char *plugin_type,
+			const size_t type_len, const char *caller,
+			const char *fq_path)
 {
 	char *type, *name;
 	uint32_t *version;
@@ -116,10 +116,10 @@ static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,
 	return SLURM_SUCCESS;
 }
 
-extern plugin_err_t plugin_peek(const char *fq_path, char *plugin_type,
-				const size_t type_len)
+extern int plugin_peek(const char *fq_path, char *plugin_type,
+		       const size_t type_len)
 {
-	plugin_err_t rc;
+	int rc;
 	plugin_handle_t plug;
 
 	if (!(plug = dlopen(fq_path, RTLD_LAZY))) {
@@ -132,10 +132,9 @@ extern plugin_err_t plugin_peek(const char *fq_path, char *plugin_type,
 	return rc;
 }
 
-plugin_err_t
-plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
+extern int plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 {
-	plugin_err_t rc;
+	int rc;
 	plugin_handle_t plug;
 	int (*init)(void);
 
@@ -196,7 +195,7 @@ plugin_load_and_link(const char *type_name, int n_syms,
 	char *head = NULL, *dir_array = NULL, *so_name = NULL;
 	char *file_name = NULL;
 	int i = 0;
-	plugin_err_t err = ESLURM_PLUGIN_NOTFOUND;
+	int err = ESLURM_PLUGIN_NOTFOUND;
 
 	if (!type_name)
 		return plug;
