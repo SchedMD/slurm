@@ -68,6 +68,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix overwriting user node reason with system message.
  -- Remove --uid / --gid options from salloc and srun commands.
  -- Prevent deadlock when rpc_queue is enabled.
+ -- slurmrestd - Correct OpenAPI specification generation bug where fields with
+    overlapping parent paths would not get generated.
 
 * Changes in Slurm 23.02.4
 ==========================

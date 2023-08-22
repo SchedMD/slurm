@@ -319,7 +319,12 @@ static data_t *_resolve_parser_key(const parser_t *parser, data_t *dst)
 		if (data_get_type(props) != DATA_TYPE_DICT)
 			data_set_dict(props);
 
-		dst = data_set_dict(data_key_set(props, data_get_string(pkey)));
+		dst = data_key_set(props, data_get_string(pkey));
+
+		if (data_get_type(dst) == DATA_TYPE_NULL)
+			data_set_dict(dst);
+
+		xassert(data_get_type(dst) == DATA_TYPE_DICT);
 
 		FREE_NULL_DATA(pkey);
 	}

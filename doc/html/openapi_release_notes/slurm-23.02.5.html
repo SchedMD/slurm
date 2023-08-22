@@ -1,1 +1,97 @@
 <h2>Slurm 23.02.5</h2>
+
+<h3>openapi/v0.0.39</h3>
+
+<h4>Add missing fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.39_job_desc_msg".properties.hold
+		.components.schemas."v0.0.39_job_desc_msg".properties.priority
+		.components.schemas."v0.0.39_job_desc_msg".properties.required
+		.components.schemas."v0.0.39_cron_entry".properties.line.properties.start
+		.components.schemas."v0.0.39_partition_info".properties.nodes.properties.allowed_allocation
+		.components.schemas."v0.0.39_partition_info".properties.nodes.properties.configured
+		.components.schemas."v0.0.39_partition_info".properties.accounts.properties.allowed
+		.components.schemas."v0.0.39_partition_info".properties.qos.properties.allowed
+		.components.schemas."v0.0.39_partition_info".properties.qos.properties.deny
+		.components.schemas."v0.0.39_partition_info".properties.tres.properties.billing_weights
+		.components.schemas."v0.0.39_partition_info".properties.cpus.properties.task_binding
+		.components.schemas."v0.0.39_partition_info".properties.default.properties.memory_per_cpu
+		.components.schemas."v0.0.39_partition_info".properties.default.properties.time
+		.components.schemas."v0.0.39_partition_info".properties.maximums.properties.cpus_per_node
+		.components.schemas."v0.0.39_partition_info".properties.maximums.properties.cpus_per_socket
+		.components.schemas."v0.0.39_partition_info".properties.maximums.properties.memory_per_cpu
+		.components.schemas."v0.0.39_partition_info".properties.maximums.properties.nodes
+		.components.schemas."v0.0.39_partition_info".properties.maximums.properties.shares
+		.components.schemas."v0.0.39_partition_info".properties.maximums.properties.time
+		.components.schemas."v0.0.39_partition_info".properties.priority.properties.job_factor
+		.components.schemas."v0.0.39_partition_info".properties.timeouts.properties.resume
+		.components.schemas."v0.0.39_job_info".properties.hold
+	</td>
+</tr>
+</table>
+
+<h3>openapi/dbv0.0.39</h3>
+
+<h4>Add missing fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">
+		.components.schemas."v0.0.39_stats_rpc".properties.time.properties.average
+		.components.schemas."v0.0.39_stats_user".properties.time.properties.average
+		.components.schemas."v0.0.39_user".properties.default.properties.account
+		.components.schemas."v0.0.39_assoc".properties.max.properties.tres
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.active
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.accruing
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.total
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.per.properties.count
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.per.properties.accruing
+		.components.schemas."v0.0.39_assoc".properties.max.properties.jobs.properties.per.properties.submitted
+		.components.schemas."v0.0.39_qos".properties.limits.properties.grace_time
+		.components.schemas."v0.0.39_qos".properties.limits.properties.max
+		.components.schemas."v0.0.39_qos".properties.limits.properties.jobs
+		.components.schemas."v0.0.39_qos".properties.limits.properties.factor
+		.components.schemas."v0.0.39_qos".properties.limits.properties.min.properties.priority_threshold
+		.components.schemas."v0.0.39_qos".properties.preempt.properties.list
+		.components.schemas."v0.0.39_qos".properties.preempt.properties.mode
+		.components.schemas."v0.0.39_job".properties.hold
+		.components.schemas."v0.0.39_job".properties.comment.properties.administrator
+		.components.schemas."v0.0.39_job".properties.comment.properties.job
+		.components.schemas."v0.0.39_job".properties.array.properties.job_id
+		.components.schemas."v0.0.39_job".properties.array.properties.limits
+		.components.schemas."v0.0.39_job".properties.array.properties.task_id
+		.components.schemas."v0.0.39_job".properties.time.properties.elapsed
+		.components.schemas."v0.0.39_job".properties.time.properties.eligible
+		.components.schemas."v0.0.39_job".properties.time.properties.end
+		.components.schemas."v0.0.39_job".properties.time.properties.start
+		.components.schemas."v0.0.39_job".properties.time.properties.submission
+		.components.schemas."v0.0.39_job".properties.time.properties.suspended
+		.components.schemas."v0.0.39_job".properties.time.properties.system
+		.components.schemas."v0.0.39_job".properties.time.properties.limit
+		.components.schemas."v0.0.39_job".properties.time.properties.total
+		.components.schemas."v0.0.39_job".properties.time.properties.user.properties.seconds
+		.components.schemas."v0.0.39_job".properties.het.properties.job_id
+		.components.schemas."v0.0.39_job".properties.required.properties.CPUs
+		.components.schemas."v0.0.39_job".properties.reservation.properties.id
+		.components.schemas."v0.0.39_job".properties.state.properties.current
+		.components.schemas."v0.0.39_job".properties.tres.properties.allocated
+		.components.schemas."v0.0.39_step".properties.time.properties.elapsed
+		.components.schemas."v0.0.39_step".properties.time.properties.end
+		.components.schemas."v0.0.39_step".properties.time.properties.start
+		.components.schemas."v0.0.39_step".properties.time.properties.suspended
+		.components.schemas."v0.0.39_step".properties.time.properties.system
+		.components.schemas."v0.0.39_step".properties.time.properties.total
+		.components.schemas."v0.0.39_step".properties.time.properties.user.properties.seconds
+		.components.schemas."v0.0.39_step".properties.nodes.properties.count
+		.components.schemas."v0.0.39_step".properties.nodes.properties.range
+		.components.schemas."v0.0.39_step".properties.CPU.properties.requested_frequency
+		.components.schemas."v0.0.39_step".properties.statistics.properties.CPU
+		.components.schemas."v0.0.39_step".properties.step.properties.id
+		.components.schemas."v0.0.39_step".properties.tres.properties.requested
+		.components.schemas."v0.0.39_step".properties.tres.properties.consumed
+		.components.schemas."v0.0.39_cluster_rec".properties.controller.properties.host	</td>
+</tr>
+</table>
