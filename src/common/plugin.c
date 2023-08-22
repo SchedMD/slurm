@@ -122,6 +122,7 @@ extern int plugin_peek(const char *fq_path, char *plugin_type,
 	int rc;
 	plugin_handle_t plug;
 
+	(void) dlerror();
 	if (!(plug = dlopen(fq_path, RTLD_LAZY))) {
 		debug3("%s: dlopen(%s): %s", __func__, fq_path, dlerror());
 		return ESLURM_PLUGIN_DLOPEN_FAILED;
@@ -150,6 +151,7 @@ extern int plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 	 * used in the context of srun, not slurmd.)
 	 *
 	 */
+	(void) dlerror();
 	plug = dlopen(fq_path, RTLD_LAZY);
 	if (plug == NULL) {
 		error("plugin_load_from_file: dlopen(%s): %s",
