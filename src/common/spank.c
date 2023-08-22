@@ -348,7 +348,7 @@ static struct spank_plugin *_spank_plugin_create(struct spank_stack *stack,
 	plugin_err_t e;
 	struct spank_plugin_operations ops;
 
-	if ((e = plugin_load_from_file(&p, path)) != EPLUGIN_SUCCESS) {
+	if ((e = plugin_load_from_file(&p, path)) != SLURM_SUCCESS) {
 		error ("spank: %s: %s", path, plugin_strerror(e));
 		return NULL;
 	}
@@ -428,7 +428,7 @@ _spank_plugin_find (const char *path, const char *file)
 			xstrcatchar (fq_path, '/');
 		xstrcat (fq_path, file);
 
-		if (plugin_peek(fq_path, NULL, 0) == EPLUGIN_SUCCESS)
+		if (plugin_peek(fq_path, NULL, 0) == SLURM_SUCCESS)
 			return (fq_path);
 
 		xfree (fq_path);

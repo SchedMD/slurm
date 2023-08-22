@@ -67,8 +67,7 @@ typedef struct {
 #define PLUGIN_INVALID_HANDLE ((void*)0)
 
 typedef enum {
-	EPLUGIN_SUCCESS = 0,     /* Success                             */
-	EPLUGIN_NOTFOUND,        /* Plugin file does not exist          */
+	EPLUGIN_NOTFOUND = 1,    /* Plugin file does not exist          */
 	EPLUGIN_ACCESS_ERROR,    /* Access denied                       */
 	EPLUGIN_DLOPEN_FAILED,   /* Dlopen not successful               */
 	EPLUGIN_INIT_FAILED,     /* Plugin's init() callback failed     */
@@ -111,7 +110,7 @@ extern plugin_err_t plugin_peek(const char *fq_path,
  * fq_path - the fully-qualified pathname (i.e., from root) to
  * the plugin to load.
  *
- * Returns EPLUGIN_SUCCESS on success, and an plugin_err_t error
+ * Returns SLURM_SUCCESS on success, and an plugin_err_t error
  * code on failure.
  *
  * The plugin's initialization code will be executed prior

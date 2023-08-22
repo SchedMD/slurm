@@ -68,8 +68,6 @@ strong_alias(plugin_unload,           slurm_plugin_unload);
 const char * plugin_strerror(plugin_err_t e)
 {
 	switch (e) {
-		case EPLUGIN_SUCCESS:
-			return ("Success");
 		case EPLUGIN_NOTFOUND:
 			return ("Plugin file not found");
 		case EPLUGIN_ACCESS_ERROR:
@@ -136,7 +134,7 @@ static plugin_err_t _verify_syms(plugin_handle_t plug, char *plugin_type,
 		return EPLUGIN_BAD_VERSION;
 	}
 
-	return EPLUGIN_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 extern plugin_err_t plugin_peek(const char *fq_path, char *plugin_type,
@@ -182,7 +180,7 @@ plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 	}
 
 	rc = _verify_syms(plug, NULL, 0, __func__, fq_path);
-	if (rc != EPLUGIN_SUCCESS) {
+	if (rc != SLURM_SUCCESS) {
 		dlclose(plug);
 		return rc;
 	}
@@ -199,7 +197,7 @@ plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 	}
 
 	*p = plug;
-	return EPLUGIN_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -253,7 +251,7 @@ plugin_load_and_link(const char *type_name, int n_syms,
 			err = EPLUGIN_NOTFOUND;
 		} else {
 			if ((err = plugin_load_from_file(&plug, file_name))
-			   == EPLUGIN_SUCCESS) {
+			   == SLURM_SUCCESS) {
 				if (plugin_get_syms(plug, n_syms,
 						    names, ptrs) >= n_syms) {
 					debug3("Success.");

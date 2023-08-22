@@ -276,7 +276,7 @@ static int _plugrack_read_single_dir(plugrack_t *rack, char *dir)
 
 		/* Test the type. */
 		if (plugin_peek(fq_path, plugin_type, type_len) !=
-		    EPLUGIN_SUCCESS) {
+		    SLURM_SUCCESS) {
 			continue;
 		}
 
