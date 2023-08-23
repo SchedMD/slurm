@@ -207,9 +207,7 @@ if {![param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
 
 testproc test_overlap_memory
 
-run_following_testprocs
-
-# Only if gres/gpu is configured
+# Only if gres/gpu is configured, and CR_*MEMORY
 if {[set_nodes_and_threads_by_request "--gres=gpu:1"] || ![param_contains [get_config_param "AccountingStorageTRES"] "*gpu"]} {
 	skip_following_testprocs "Testproc needs to be able to submit a job with --gres=gpu:1 and AccountingStorageTRES with GPUs."
 }
