@@ -5170,7 +5170,6 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	bool have_xand = false;
 	ListIterator itr;
 	job_record_t *job_ptr;
-	bool free_job_ptr = false;
 
 	if (*part_ptr == NULL) {
 		*part_ptr = default_part_loc;
@@ -5349,11 +5348,6 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 
 	if (!resv_desc_ptr->node_list)
 		resv_desc_ptr->node_list = bitmap2node_name(*resv_bitmap);
-
-	if (free_job_ptr) {
-		job_mgr_list_delete_job(resv_desc_ptr->job_ptr);
-		resv_desc_ptr->job_ptr = NULL;
-	}
 
 	return rc;
 }
