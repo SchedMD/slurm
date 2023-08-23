@@ -43,7 +43,6 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <threads.h>
 
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
@@ -2342,14 +2341,19 @@ static void _handle_new_user_coord(slurmdb_user_rec_t *rec)
  * assoc_mgr_lock() while already holding locks will lead to deadlock;
  * this will force such instances to abort() in development builds.
  */
-static thread_local bool assoc_mgr_locked = false;
+/*
+ * FIXME: __thread is non-standard, and may cause build failures on unusual
+ * systems. Only used within development builds to mitigate possible problems
+ * with production builds.
+ */
+static __thread bool assoc_mgr_locked = false;
 
 /*
  * Used to detect any location where the acquired locks differ from the
  * release locks.
  */
 
-static thread_local assoc_mgr_lock_t thread_locks;
+static __thread assoc_mgr_lock_t thread_locks;
 
 static bool _store_locks(assoc_mgr_lock_t *lock_levels)
 {

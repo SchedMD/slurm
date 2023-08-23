@@ -39,7 +39,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <threads.h>
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
@@ -107,8 +106,8 @@ static data_t *jwks = NULL;
 static buf_t *key = NULL;
 static char *token = NULL;
 static char *claim_field = NULL;
-static thread_local char *thread_token = NULL;
-static thread_local char *thread_username = NULL;
+static __thread char *thread_token = NULL;
+static __thread char *thread_username = NULL;
 
 /*
  * This plugin behaves differently than the others in that it needs to operate

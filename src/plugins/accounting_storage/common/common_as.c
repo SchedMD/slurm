@@ -40,7 +40,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <threads.h>
 #include <unistd.h>
 
 #include "src/common/env.h"
@@ -64,7 +63,7 @@ extern char *wckey_hour_table;
 extern char *wckey_month_table;
 
 #ifndef NDEBUG
-extern thread_local bool drop_priv;
+extern __thread bool drop_priv;
 #endif
 
 /*
