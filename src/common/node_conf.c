@@ -1139,7 +1139,13 @@ extern void node_fini2 (void)
 	}
 
 	xfree(node_record_table_ptr);
-	node_record_count = 0;
+	/*
+	 * Don't clear node_record_count because other plugins are relying on
+	 * node_record_count to free arrays on cleanup -- e.g.
+	 * free_core_array().
+	 *
+	 * node_record_count = 0;
+	 */
 }
 
 extern int node_name_get_inx(char *node_name)
@@ -1460,7 +1466,8 @@ extern node_record_t *next_node(int *index)
 {
 	xassert(index);
 
-	if (*index >= node_record_count)
+	if (!node_record_table_ptr ||
+	    (*index >= node_record_count))
 		return NULL;
 
 	while (!node_record_table_ptr[*index]) {
@@ -1480,7 +1487,8 @@ extern node_record_t *next_node_bitmap(bitstr_t *bitmap, int *index)
 {
 	xassert(index);
 
-	if (*index >= node_record_count)
+	if (!node_record_table_ptr ||
+	    (*index >= node_record_count))
 		return NULL;
 
 	xassert(bitmap);
