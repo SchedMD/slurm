@@ -116,8 +116,8 @@ typedef struct {
 	time_t start_time;
 } local_cluster_rec_t;
 
-extern slurmdb_job_rec_t *slurmdb_create_job_rec();
-extern slurmdb_step_rec_t *slurmdb_create_step_rec();
+extern slurmdb_job_rec_t *slurmdb_create_job_rec(void);
+extern slurmdb_step_rec_t *slurmdb_create_step_rec(void);
 extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt);
 extern slurmdb_qos_usage_t *slurmdb_create_qos_usage(int tres_cnt);
 

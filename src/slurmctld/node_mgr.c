@@ -4668,7 +4668,7 @@ extern void reset_node_free_mem(char *node_name, uint64_t free_mem)
  * reboots - If the node hasn't booted by ResumeTimeout, mark the node as down.
  * resume_after - Resume a down|drain node after resume_after time.
  */
-extern void check_node_timers()
+extern void check_node_timers(void)
 {
 	int i;
 	node_record_t *node_ptr;

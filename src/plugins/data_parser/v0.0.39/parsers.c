@@ -6563,7 +6563,7 @@ extern const parser_t *const find_parser_by_type(type_t type)
 	return NULL;
 }
 
-extern void parsers_init()
+extern void parsers_init(void)
 {
 #ifndef NDEBUG
 	/* sanity check the parsers */

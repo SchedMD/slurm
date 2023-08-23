@@ -168,7 +168,7 @@ extern int mpi_p_client_fini(mpi_plugin_client_state_t *state)
 	return SLURM_SUCCESS;
 }
 
-extern int fini()
+extern int fini(void)
 {
 	/* cleanup after ourself */
 	pmi2_stop_agent();

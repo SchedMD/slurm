@@ -291,7 +291,7 @@ extern config_record_t *config_record_from_conf_node(
 /*
  * Grow the node_record_table_ptr.
  */
-extern void grow_node_record_table_ptr();
+extern void grow_node_record_table_ptr(void);
 
 /*
  * create_node_record - create a node record and set its values to defaults

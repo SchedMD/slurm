@@ -398,7 +398,7 @@ extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid);
  *
  * RET hertz - USER_HZ of the system.
  */
-extern long int cgroup_g_get_acct_units();
+extern long int cgroup_g_get_acct_units(void);
 
 /*
  * Check if Cgroup has this feature available.

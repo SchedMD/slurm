@@ -93,7 +93,7 @@ extern int destroy_mysql_db_info(mysql_db_info_t *db_info);
 extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 				   mysql_db_info_t *db_info);
 extern int mysql_db_close_db_connection(mysql_conn_t *mysql_conn);
-extern int mysql_db_cleanup();
+extern int mysql_db_cleanup(void);
 extern int mysql_db_query(mysql_conn_t *mysql_conn, char *query);
 extern int mysql_db_delete_affected_rows(mysql_conn_t *mysql_conn, char *query);
 extern int mysql_db_ping(mysql_conn_t *mysql_conn);

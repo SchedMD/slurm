@@ -125,7 +125,7 @@ void spank_option_table_destroy (struct option *opt_table);
  *
  *  Returns <0 if any option's callback fails. Zero otherwise.
  */
-extern int spank_process_env_options();
+extern int spank_process_env_options(void);
 
 /*
  *  Process a single spank option which was tagged by `optval' in the

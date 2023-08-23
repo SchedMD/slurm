@@ -1234,7 +1234,7 @@ extern int select_p_job_init(List job_list)
 	return other_job_init(job_list);
 }
 
-extern int select_p_node_init()
+extern int select_p_node_init(void)
 {
 	select_nodeinfo_t *nodeinfo = NULL;
 	node_record_t *node_ptr;

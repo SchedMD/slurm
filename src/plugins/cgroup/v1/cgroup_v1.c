@@ -1513,7 +1513,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 }
 
 /* cgroup/v1 usec and ssec are provided in USER_HZ. */
-extern long int cgroup_p_get_acct_units()
+extern long int cgroup_p_get_acct_units(void)
 {
 	return jobacct_gather_get_clk_tck();
 }

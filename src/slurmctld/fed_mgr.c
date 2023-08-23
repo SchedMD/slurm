@@ -6127,7 +6127,7 @@ static int _list_find_not_synced_sib(void *x, void *key)
 	return 0;
 }
 
-extern bool fed_mgr_sibs_synced()
+extern bool fed_mgr_sibs_synced(void)
 {
 	slurmdb_cluster_rec_t *sib;
 	int dummy = 1;

@@ -2540,7 +2540,7 @@ static char *_get_aliased_nodename_fallback(char *hostname)
  * such a match, otherwise iterate through any aliases returned
  * by get_host_by_name.
  */
-extern char *slurm_conf_get_aliased_nodename()
+extern char *slurm_conf_get_aliased_nodename(void)
 {
 	struct addrinfo *addrs, *addr_ptr;
 	char hostname_full[NI_MAXHOST];

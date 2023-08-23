@@ -124,7 +124,7 @@ extern int task_cgroup_memory_init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int task_cgroup_memory_fini()
+extern int task_cgroup_memory_fini(void)
 {
 	return cgroup_g_step_destroy(CG_MEMORY);
 }

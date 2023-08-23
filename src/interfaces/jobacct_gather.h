@@ -170,6 +170,6 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct);
 
 extern void jobacct_common_free_jobacct(void *object);
 
-extern long jobacct_gather_get_clk_tck();
+extern long jobacct_gather_get_clk_tck(void);
 
 #endif

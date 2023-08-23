@@ -488,7 +488,7 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level);
  * Sets the uids of users added to the system after the start of the
  * calling program.
  */
-extern int assoc_mgr_set_missing_uids();
+extern int assoc_mgr_set_missing_uids(void);
 
 /* Normalize shares for an association. External so a priority plugin
  * can call it if needed.
@@ -595,6 +595,6 @@ extern int assoc_mgr_get_old_tres_pos(int cur_pos);
 /* Test whether the tres positions have changed since last reading the tres
  * list.
  */
-extern int assoc_mgr_tres_pos_changed();
+extern int assoc_mgr_tres_pos_changed(void);
 
 #endif /* _SLURM_ASSOC_MGR_H */

@@ -2859,7 +2859,7 @@ extern bool valid_gres_name(char *name);
  * reboots - If the node hasn't booted by ResumeTimeout, mark the node as down.
  * resume_after - Resume a down|drain node after resume_after time.
  */
-extern void check_node_timers();
+extern void check_node_timers(void);
 
 /*
  * Send warning signal to job before end time.

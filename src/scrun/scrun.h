@@ -197,7 +197,7 @@ extern void on_allocation(con_mgr_t *mgr, con_mgr_fd_t *con,
 extern void stop_anchor(int status);
 
 /* run srun container command against job */
-extern void exec_srun_container();
+extern void exec_srun_container(void);
 
 /* convert data array of arguments into argv[] for execv() */
 extern char **create_argv(data_t *args);

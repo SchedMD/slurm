@@ -880,7 +880,7 @@ extern int cgroup_g_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
 	return (*(ops.constrain_apply))(sub, level, task_id);
 }
 
-extern int cgroup_g_step_start_oom_mgr()
+extern int cgroup_g_step_start_oom_mgr(void)
 {
 	xassert(g_context);
 
@@ -909,7 +909,7 @@ extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid)
 	return (*(ops.task_get_acct_data))(taskid);
 }
 
-extern long int cgroup_g_get_acct_units()
+extern long int cgroup_g_get_acct_units(void)
 {
 	xassert(g_context);
 

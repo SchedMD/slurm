@@ -6510,7 +6510,7 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 	return SLURM_SUCCESS;
 }
 
-extern int assoc_mgr_set_missing_uids()
+extern int assoc_mgr_set_missing_uids(void)
 {
 	uid_t pw_uid;
 	ListIterator itr = NULL;
@@ -7089,7 +7089,7 @@ extern double assoc_mgr_tres_weighted(uint64_t *tres_cnt, double *weights,
 /*
  * Must have TRES read locks
  */
-extern int assoc_mgr_tres_pos_changed()
+extern int assoc_mgr_tres_pos_changed(void)
 {
 	return assoc_mgr_tres_old_pos ? true : false;
 }

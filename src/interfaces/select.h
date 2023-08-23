@@ -195,7 +195,7 @@ extern int select_g_state_restore(char *dir_name);
  * IN node_ptr - current node data
  * IN node_count - number of node entries
  */
-extern int select_g_node_init();
+extern int select_g_node_init(void);
 
 /*
  * Note the initialization of job records, issued upon restart of

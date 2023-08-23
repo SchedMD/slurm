@@ -1492,7 +1492,7 @@ typedef struct {
  * Create and init new container state message
  * RET ptr to message (must free with slurm_destroy_container_state_msg())
  */
-extern container_state_msg_t *slurm_create_container_state_msg();
+extern container_state_msg_t *slurm_create_container_state_msg(void);
 extern void slurm_destroy_container_state_msg(container_state_msg_t *msg);
 
 typedef struct {

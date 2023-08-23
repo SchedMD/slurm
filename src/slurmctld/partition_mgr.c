@@ -2374,7 +2374,7 @@ extern int part_policy_valid_qos(part_record_t *part_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern void part_list_update_assoc_lists()
+extern void part_list_update_assoc_lists(void)
 {
 	/* Write lock on part */
 	slurmctld_lock_t part_write_lock = {

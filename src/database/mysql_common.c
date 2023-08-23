@@ -940,7 +940,7 @@ extern int mysql_db_close_db_connection(mysql_conn_t *mysql_conn)
 	return SLURM_SUCCESS;
 }
 
-extern int mysql_db_cleanup()
+extern int mysql_db_cleanup(void)
 {
 	debug3("starting mysql cleaning up");
 

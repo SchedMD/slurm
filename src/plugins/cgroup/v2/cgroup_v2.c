@@ -1373,7 +1373,7 @@ extern int cgroup_p_step_get_pids(pid_t **pids, int *npids)
 }
 
 /* Freeze the user processes of this step */
-extern int cgroup_p_step_suspend()
+extern int cgroup_p_step_suspend(void)
 {
 	/* This plugin is unloaded. */
 	if (!int_cg[CG_LEVEL_STEP_USER].path)
@@ -1389,7 +1389,7 @@ extern int cgroup_p_step_suspend()
 }
 
 /* Resume the user processes of this step */
-extern int cgroup_p_step_resume()
+extern int cgroup_p_step_resume(void)
 {
 	/* This plugin is unloaded. */
 	if (!int_cg[CG_LEVEL_STEP_USER].path)
@@ -1904,7 +1904,7 @@ fail:
 	return NULL;
 }
 
-extern int cgroup_p_step_start_oom_mgr()
+extern int cgroup_p_step_start_oom_mgr(void)
 {
 	/* Just return, no need to start anything. */
 	return SLURM_SUCCESS;
@@ -2178,7 +2178,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
  * Return conversion units used for stats gathered from cpuacct.
  * Dividing the provided data by this number will give seconds.
  */
-extern long int cgroup_p_get_acct_units()
+extern long int cgroup_p_get_acct_units(void)
 {
 	/* usec and ssec from cpuacct.stat are provided in micro-seconds. */
 	return (long int)USEC_IN_SEC;

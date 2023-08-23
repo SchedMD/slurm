@@ -93,7 +93,7 @@ extern int       fed_mgr_q_update_origin_dep_msg(slurm_msg_t *msg);
 extern int       fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name);
 extern void      fed_mgr_remove_fed_job_info(uint32_t job_id);
 extern void      fed_mgr_remove_remote_dependencies(job_record_t *job_ptr);
-extern bool      fed_mgr_sibs_synced();
+extern bool      fed_mgr_sibs_synced(void);
 extern int       fed_mgr_state_save(char *state_save_location);
 extern void      fed_mgr_test_remote_dependencies(void);
 extern int       fed_mgr_state_save(char *state_save_location);

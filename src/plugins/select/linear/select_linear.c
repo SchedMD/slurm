@@ -174,7 +174,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			  List preemptee_candidates,
 			  List *preemptee_job_list);
 
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc();
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /*
@@ -2860,7 +2860,7 @@ extern int select_p_job_init(List job_list_arg)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_node_init()
+extern int select_p_node_init(void)
 {
 	/* NOTE: We free the consumable resources info here, but
 	 * can't rebuild it since the partition and node structures

@@ -594,7 +594,7 @@ static int _list_copy_coord(void *x, void *key)
 	return 0;
 }
 
-extern slurmdb_job_rec_t *slurmdb_create_job_rec()
+extern slurmdb_job_rec_t *slurmdb_create_job_rec(void)
 {
 	slurmdb_job_rec_t *job = xmalloc(sizeof(slurmdb_job_rec_t));
 	job->array_task_id = NO_VAL;
@@ -608,7 +608,7 @@ extern slurmdb_job_rec_t *slurmdb_create_job_rec()
       	return job;
 }
 
-extern slurmdb_step_rec_t *slurmdb_create_step_rec()
+extern slurmdb_step_rec_t *slurmdb_create_step_rec(void)
 {
 	slurmdb_step_rec_t *step = xmalloc(sizeof(slurmdb_step_rec_t));
 	memset(&step->stats, 0, sizeof(slurmdb_stats_t));

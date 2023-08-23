@@ -1201,7 +1201,7 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
 	_jobacctinfo_2_stats_tres_usage(stats, jobacct);
 }
 
-extern long jobacct_gather_get_clk_tck()
+extern long jobacct_gather_get_clk_tck(void)
 {
 	long hertz = sysconf(_SC_CLK_TCK);
 

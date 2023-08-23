@@ -278,7 +278,7 @@ extern int select_p_job_init(List job_list)
  *                                       job data to the 'select_part_record'
  *                                       global array
  */
-extern int select_p_node_init()
+extern int select_p_node_init(void)
 {
 	char *preempt_type, *tmp_ptr;
 	int i;

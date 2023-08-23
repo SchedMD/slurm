@@ -166,7 +166,7 @@ typedef struct parser_s {
 /*
  * Called at startup to run any setup of parsers and testing
  */
-extern void parsers_init();
+extern void parsers_init(void);
 
 #ifndef NDEBUG
 extern void check_parser_funcname(const parser_t *const parser,

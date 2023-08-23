@@ -1195,7 +1195,7 @@ extern int spank_process_option(int optval, const char *arg)
 	return (0);
 }
 
-extern int spank_process_env_options()
+extern int spank_process_env_options(void)
 {
 	char var[1024];
 	const char *arg;
@@ -2621,12 +2621,12 @@ extern bool spank_option_get_next_set(char **plugin, char **name,
 	return false;
 }
 
-extern bool spank_has_prolog()
+extern bool spank_has_prolog(void)
 {
 	return has_prolog;
 }
 
-extern bool spank_has_epilog()
+extern bool spank_has_epilog(void)
 {
 	return has_epilog;
 }
