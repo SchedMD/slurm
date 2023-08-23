@@ -99,6 +99,8 @@ documents those changes that are of interest to users and administrators.
  -- Allow slurmdbd -R to work if the root assoc id is not 1.
  -- Fix slurmdbd -R not returning an error under certain conditions.
  -- slurmdbd - Avoid potential NULL pointer dereference in the mysql plugin.
+ -- Revert a change in 23.02 where SLURM_NTASKS was no longer set in the job's
+    environment when --ntasks-per-node was requested.
 
 * Changes in Slurm 23.02.4
 ==========================
