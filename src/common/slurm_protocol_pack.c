@@ -2048,7 +2048,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		pack64(msg->flags,         buffer);
 
 		if (msg->node_cnt && (msg->node_cnt != NO_VAL)) {
-			node_cnt = xcalloc(2, sizeof(node_cnt));
+			node_cnt = xcalloc(2, sizeof(*node_cnt));
 			node_cnt[0] = msg->node_cnt;
 			array_len = 2;	/* Include trailing zero */
 		} else
@@ -2057,7 +2057,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		xfree(node_cnt);
 
 		if (msg->core_cnt && (msg->core_cnt != NO_VAL)) {
-			core_cnt = xcalloc(2, sizeof(core_cnt));
+			core_cnt = xcalloc(2, sizeof(*core_cnt));
 			core_cnt[0] = msg->core_cnt;
 			array_len = 2;	/* Include trailing zero */
 		} else
@@ -2085,7 +2085,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		pack64(msg->flags,         buffer);
 
 		if (msg->node_cnt && (msg->node_cnt != NO_VAL)) {
-			node_cnt = xcalloc(2, sizeof(node_cnt));
+			node_cnt = xcalloc(2, sizeof(*node_cnt));
 			node_cnt[0] = msg->node_cnt;
 			array_len = 2;	/* Include trailing zero */
 		} else
@@ -2094,7 +2094,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		xfree(node_cnt);
 
 		if (msg->core_cnt && (msg->core_cnt != NO_VAL)) {
-			core_cnt = xcalloc(2, sizeof(core_cnt));
+			core_cnt = xcalloc(2, sizeof(*core_cnt));
 			core_cnt[0] = msg->core_cnt;
 			array_len = 2;	/* Include trailing zero */
 		} else
