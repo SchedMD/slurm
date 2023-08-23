@@ -48,11 +48,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/interfaces/cred.h"
 
-#ifndef __USE_XOPEN_EXTENDED
-extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
-extern pid_t getpgid(pid_t pid);
-#endif
-
 extern int devnull;
 extern bool get_reg_resp;
 
