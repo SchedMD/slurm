@@ -49,7 +49,7 @@ extern int get_new_info_config(slurm_ctl_conf_info_msg_t **info_ptr)
 						 &new_ctl_ptr);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_ctl_conf(g_ctl_info_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_ctl_ptr = g_ctl_info_ptr;
 		}

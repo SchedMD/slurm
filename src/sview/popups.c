@@ -498,7 +498,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 			} else {
 				temp = g_strdup_printf(
 					"Problem creating partition: %s",
-					slurm_strerror(slurm_get_errno()));
+					slurm_strerror(errno));
 			}
 			display_edit_note(temp);
 			g_free(temp);
@@ -513,7 +513,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 			} else {
 				temp = g_strdup_printf(
 					"Problem creating reservation: %s",
-					slurm_strerror(slurm_get_errno()));
+					slurm_strerror(errno));
 			}
 			display_edit_note(temp);
 			g_free(temp);

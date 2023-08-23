@@ -589,16 +589,16 @@ static int _cancel_job_id (uint32_t job_id, uint16_t signal)
 		sleep ( 5 + i );
 	}
 	if (error_code) {
-		error_code = slurm_get_errno();
+		error_code = errno;
 		if ((error_code != ESLURM_ALREADY_DONE) &&
 		    (error_code != ESLURM_INVALID_JOB_ID)) {
 			temp = g_strdup_printf(
 				"Kill job error on job id %u: %s",
-				job_id, slurm_strerror(slurm_get_errno()));
+				job_id, slurm_strerror(errno));
 			display_edit_note(temp);
 			g_free(temp);
 		} else {
-			display_edit_note(slurm_strerror(slurm_get_errno()));
+			display_edit_note(slurm_strerror(errno));
 		}
 	}
 
@@ -640,16 +640,15 @@ static int _cancel_step_id(uint32_t job_id, uint32_t step_id,
 	}
 
 	if (error_code) {
-		error_code = slurm_get_errno();
+		error_code = errno;
 		if (error_code != ESLURM_ALREADY_DONE) {
 			temp = g_strdup_printf(
 				"Kill job error on %s: %s",
-		 		tmp_char,
-				slurm_strerror(slurm_get_errno()));
+				tmp_char, slurm_strerror(errno));
 			display_edit_note(temp);
 			g_free(temp);
 		} else {
-			display_edit_note(slurm_strerror(slurm_get_errno()));
+			display_edit_note(slurm_strerror(errno));
 		}
 	}
 
@@ -3477,7 +3476,7 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_job_info_msg(g_job_info_ptr);
 			changed = 1;
-		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_job_ptr = g_job_info_ptr;
 			changed = 0;
@@ -3550,7 +3549,7 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_job_step_info_response_msg(g_step_info_ptr);
 			changed = 1;
-		} else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_step_ptr = g_step_info_ptr;
 			changed = 0;
@@ -3774,7 +3773,7 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 			gtk_widget_destroy(display_widget);
 		view = ERROR_VIEW;
 		sprintf(error_char, "slurm_load_jobs: %s",
-			slurm_strerror(slurm_get_errno()));
+			slurm_strerror(errno));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
 		gtk_widget_show(label);
@@ -3795,7 +3794,7 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 			gtk_widget_destroy(display_widget);
 		view = ERROR_VIEW;
 		sprintf(error_char, "slurm_load_job_step: %s",
-			slurm_strerror(slurm_get_errno()));
+			slurm_strerror(errno));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
 		gtk_widget_show(label);
@@ -3945,7 +3944,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 			gtk_widget_destroy(spec_info->display_widget);
 
 		sprintf(error_char, "slurm_load_jobs: %s",
-			slurm_strerror(slurm_get_errno()));
+			slurm_strerror(errno));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(GTK_TABLE(popup_win->table),
 					  label,
@@ -3969,7 +3968,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 			gtk_widget_destroy(spec_info->display_widget);
 		spec_info->view = ERROR_VIEW;
 		sprintf(error_char, "slurm_load_job_step: %s",
-			slurm_strerror(slurm_get_errno()));
+			slurm_strerror(errno));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(popup_win->table, label,
 					  0, 1, 0, 1);

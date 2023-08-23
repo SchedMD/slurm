@@ -995,7 +995,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_node_info_msg(g_node_info_ptr);
 			changed = 1;
-		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_node_ptr = g_node_info_ptr;
 			changed = 0;
@@ -1595,7 +1595,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 		if (display_widget)
 			gtk_widget_destroy(display_widget);
 		sprintf(error_char, "slurm_load_node: %s",
-			slurm_strerror(slurm_get_errno()));
+			slurm_strerror(errno));
 		label = gtk_label_new(error_char);
 		display_widget = g_object_ref(label);
 		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
@@ -1727,7 +1727,7 @@ extern void specific_info_node(popup_info_t *popup_win)
 		if (spec_info->display_widget)
 			gtk_widget_destroy(spec_info->display_widget);
 		sprintf(error_char, "slurm_load_node: %s",
-			slurm_strerror(slurm_get_errno()));
+			slurm_strerror(errno));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(popup_win->table,
 					  label,

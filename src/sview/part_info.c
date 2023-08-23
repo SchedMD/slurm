@@ -2188,7 +2188,7 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_partition_info_msg(g_part_info_ptr);
 			changed = 1;
-		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_part_ptr = g_part_info_ptr;
 			changed = 0;
@@ -2543,7 +2543,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 			gtk_widget_destroy(display_widget);
 		view = ERROR_VIEW;
 		snprintf(error_char, 100, "slurm_load_partitions: %s",
-			 slurm_strerror(slurm_get_errno()));
+			 slurm_strerror(errno));
 		label = gtk_label_new(error_char);
 		display_widget = g_object_ref(GTK_WIDGET(label));
 		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
@@ -2563,7 +2563,7 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 			gtk_widget_destroy(display_widget);
 		view = ERROR_VIEW;
 		snprintf(error_char, 100, "slurm_load_node: %s",
-			 slurm_strerror(slurm_get_errno()));
+			 slurm_strerror(errno));
 		label = gtk_label_new(error_char);
 		display_widget = g_object_ref(GTK_WIDGET(label));
 		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
@@ -2695,7 +2695,7 @@ extern void specific_info_part(popup_info_t *popup_win)
 		}
 		spec_info->view = ERROR_VIEW;
 		snprintf(error_char, 100, "slurm_load_partitions: %s",
-			 slurm_strerror(slurm_get_errno()));
+			 slurm_strerror(errno));
 		label = gtk_label_new(error_char);
 		spec_info->display_widget = g_object_ref(GTK_WIDGET(label));
 		gtk_table_attach_defaults(popup_win->table, label, 0, 1, 0, 1);
@@ -2717,7 +2717,7 @@ extern void specific_info_part(popup_info_t *popup_win)
 			gtk_widget_destroy(spec_info->display_widget);
 		spec_info->view = ERROR_VIEW;
 		snprintf(error_char, 100, "slurm_load_node: %s",
-			 slurm_strerror(slurm_get_errno()));
+			 slurm_strerror(errno));
 		label = gtk_label_new(error_char);
 		spec_info->display_widget = g_object_ref(GTK_WIDGET(label));
 		gtk_table_attach_defaults(popup_win->table, label, 0, 1, 0, 1);
