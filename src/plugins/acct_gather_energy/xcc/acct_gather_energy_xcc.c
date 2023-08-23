@@ -44,6 +44,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include <math.h>
+#include <threads.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/interfaces/acct_gather_energy.h"
@@ -253,7 +254,7 @@ static stepd_step_rec_t *step = NULL;
 static int context_id = -1;
 
 /* Thread scope global vars */
-__thread ipmi_ctx_t ipmi_ctx = NULL;
+thread_local ipmi_ctx_t ipmi_ctx = NULL;
 
 static void _reset_slurm_ipmi_conf(slurm_ipmi_conf_t *slurm_ipmi_conf)
 {

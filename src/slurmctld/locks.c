@@ -41,6 +41,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <sys/types.h>
+#include <threads.h>
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
@@ -61,19 +62,14 @@ static pthread_rwlock_t slurmctld_locks[5] = {
  * lock_slurmctld() while already holding locks will lead to deadlock;
  * this will force such instances to abort() in development builds.
  */
-/*
- * FIXME: __thread is non-standard, and may cause build failures on unusual
- * systems. Only used within development builds to mitigate possible problems
- * with production builds.
- */
-static __thread bool slurmctld_locked = false;
+static thread_local bool slurmctld_locked = false;
 
 /*
  * Used to detect any location where the acquired locks differ from the
  * release locks.
  */
 
-static __thread slurmctld_lock_t thread_locks;
+static thread_local slurmctld_lock_t thread_locks;
 
 static bool _store_locks(slurmctld_lock_t lock_levels)
 {

@@ -53,6 +53,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include <threads.h>
 
 #include "src/common/slurm_xlator.h"
 #include "src/interfaces/acct_gather_energy.h"
@@ -176,9 +177,9 @@ pthread_t thread_ipmi_id_run = 0;
 
 /*
  * DCMI context cannot be reused between threads and this plugin can be called
- * from different slurmd threads, so we need the __thread specifier.
+ * from different slurmd threads, so we need the thread_local specifier.
  */
-__thread ipmi_ctx_t ipmi_dcmi_ctx = NULL;
+thread_local ipmi_ctx_t ipmi_dcmi_ctx = NULL;
 static int dcmi_cnt = 0;
 
 static int _read_ipmi_dcmi_values(void);

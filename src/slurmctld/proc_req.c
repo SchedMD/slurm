@@ -46,6 +46,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <threads.h>
 
 #if HAVE_SYS_PRCTL_H
 #  include <sys/prctl.h>
@@ -163,7 +164,7 @@ extern diag_stats_t slurmctld_diag_stats;
  * Implemented with a thread-local variable to apply only to the current
  * RPC handling thread. Set by SLURM_DROP_PRIV bit in the slurm_msg_t flags.
  */
-static __thread bool drop_priv = false;
+static thread_local bool drop_priv = false;
 #endif
 
 typedef struct {
