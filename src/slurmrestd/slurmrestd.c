@@ -475,7 +475,7 @@ static void _auth_plugrack_foreach(const char *full_type, const char *fq_path,
 static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 				   const plugin_handle_t id, void *arg)
 {
-	info("%s", full_type);
+	fprintf(stderr, "%s\n", full_type);
 }
 
 static int _op_handler_openapi(const char *context_id,
@@ -545,7 +545,7 @@ int main(int argc, char **argv)
 	plugrack_read_dir(auth_rack, slurm_conf.plugindir);
 
 	if (rest_auth && !xstrcasecmp(rest_auth, "list")) {
-		info("Possible REST authentication plugins:");
+		fprintf(stderr, "Possible REST authentication plugins:\n");
 		plugrack_foreach(auth_rack, _plugrack_foreach_list, NULL);
 		exit(0);
 	} else if (rest_auth) {
@@ -589,7 +589,7 @@ int main(int argc, char **argv)
 		fatal("Unable to initialize rest authentication");
 
 	if (data_parser_plugins && !xstrcasecmp(data_parser_plugins, "list")) {
-		info("Possible data_parser plugins:");
+		fprintf(stderr, "Possible data_parser plugins:\n");
 		parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL,
 						  NULL, NULL, NULL, NULL,
 						  data_parser_plugins,
@@ -608,7 +608,7 @@ int main(int argc, char **argv)
 		fatal("Unable to initialize operations structures");
 
 	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
-		info("Possible OpenAPI plugins:");
+		fprintf(stderr, "Possible OpenAPI plugins:\n");
 		init_openapi(oas_specs, _plugrack_foreach_list, NULL);
 		exit(0);
 	} else if (init_openapi(oas_specs, NULL, parsers))
