@@ -186,6 +186,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.39 - Avoid assert / segfault on missing coordinators list.
  -- slurmrestd - Correct memory leak while parsing OpenAPI specification
     templates with server overrides.
+ -- slurmrestd - Reduce memory usage when printing out job CPU frequency.
 
 * Changes in Slurm 23.02.4
 ==========================

@@ -72,6 +72,8 @@
 #include "src/slurmrestd/plugins/openapi/slurmctld/structs.h"
 #include "src/slurmrestd/plugins/openapi/slurmdbd/structs.h"
 
+#define CPU_FREQ_FLAGS_BUF_SIZE 64
+
 #define MAGIC_FOREACH_CSV_STRING 0x889bbe2a
 #define MAGIC_FOREACH_CSV_STRING_LIST 0x8391be0b
 #define MAGIC_FOREACH_LIST 0xaefa2af3
@@ -4162,13 +4164,13 @@ static int DUMP_FUNC(CPU_FREQ_FLAGS)(const parser_t *const parser, void *obj,
 				     data_t *dst, args_t *args)
 {
 	uint32_t *freq_ptr = obj;
-	char *buf = xmalloc(BUF_SIZE);
+	char buf[CPU_FREQ_FLAGS_BUF_SIZE];
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-	cpu_freq_to_string(buf, (BUF_SIZE - 1), *freq_ptr);
-	data_set_string_own(dst, buf);
+	cpu_freq_to_string(buf, sizeof(buf), *freq_ptr);
+	data_set_string(dst, buf);
 
 	return SLURM_SUCCESS;
 }
