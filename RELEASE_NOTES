@@ -229,6 +229,7 @@ COMMAND CHANGES (see man pages for details)
     the same information that could provided by regular text output. The prior
     formatted output can now be queried via 'scontrol show nodes --json' or
     'scontrol show nodes --yaml'.
+ -- salloc/srun - Remove --uid/--gid options.
 
 API CHANGES
 ===========

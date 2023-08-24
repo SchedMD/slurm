@@ -66,6 +66,7 @@ documents those changes that are of interest to users and administrators.
     templates with server overrides.
  -- slurmrestd - Reduce memory usage when printing out job CPU frequency.
  -- Fix overwriting user node reason with system message.
+ -- Remove --uid / --gid options from salloc and srun commands.
 
 * Changes in Slurm 23.02.4
 ==========================
