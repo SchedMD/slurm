@@ -260,7 +260,7 @@
         "summary": "Get TRES info"
       }
     },
-    "/slurmdb/{data_parser}/qos/{name}": {
+    "/slurmdb/{data_parser}/qos/{qos}": {
       "delete": {
         "tags": [
           "slurmdb"
@@ -299,7 +299,7 @@
           }
         },
         "parameters": {
-          "$ref": "DATA_PARSER_QOS_CONDITION"
+	  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_PARAM"
         }
       },
       "get": {
@@ -340,7 +340,10 @@
           }
         },
         "parameters": {
-          "$ref": "DATA_PARSER_QOS_CONDITION"
+	  "$ref": [
+	    "DATA_PARSER_OPENAPI_SLURMDBD_QOS_PARAM",
+	    "DATA_PARSER_OPENAPI_SLURMDBD_QOS_QUERY"
+	  ]
         }
       }
     },

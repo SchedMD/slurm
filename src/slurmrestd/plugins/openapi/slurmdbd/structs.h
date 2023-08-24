@@ -87,4 +87,12 @@ typedef struct {
 	char *name;
 } openapi_cluster_param_t;
 
+typedef struct {
+	char *name;
+} openapi_qos_param_t;
+
+typedef struct {
+	bool with_deleted;
+} openapi_qos_query_t;
+
 #endif

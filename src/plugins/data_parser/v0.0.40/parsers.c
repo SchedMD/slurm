@@ -8125,6 +8125,20 @@ static const parser_t PARSER_ARRAY(SHARES_REQ_MSG)[] = {
 };
 #undef add_parse
 
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(openapi_qos_param_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_QOS_PARAM)[] = {
+	add_parse_req(QOS_NAME, name, "qos", "QOS name"),
+};
+#undef add_parse_req
+
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_qos_query_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_QOS_QUERY)[] = {
+	add_parse(BOOL, with_deleted, "with_deleted", "Query includes deleted QOS"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8702,6 +8716,8 @@ static const parser_t parsers[] = {
 	addpa(ASSOC_SHARES_OBJ_WRAP, assoc_shares_object_wrap_t, NULL, NULL),
 	addpa(SHARES_UINT64_TRES, SHARES_UINT64_TRES_t, NULL, NULL),
 	addpa(SHARES_FLOAT128_TRES, SHARES_FLOAT128_TRES_t, NULL, NULL),
+	addpa(OPENAPI_SLURMDBD_QOS_PARAM, openapi_qos_param_t, NULL, NULL),
+	addpa(OPENAPI_SLURMDBD_QOS_QUERY, openapi_qos_query_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),

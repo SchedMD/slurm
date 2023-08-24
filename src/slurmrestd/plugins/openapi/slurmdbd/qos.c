@@ -46,6 +46,7 @@
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 #include "api.h"
+#include "structs.h"
 
 /*
  * Modify request for QOS will ignore an empty List. This allows slurmdbd to
@@ -151,16 +152,9 @@ extern int update_qos(ctxt_t *ctxt, bool commit, list_t *qos_list)
 	return ctxt->rc;
 }
 
-static int _op_handler_qos(ctxt_t *ctxt)
+static int _op_handler_qos(ctxt_t *ctxt, slurmdb_qos_cond_t *qos_cond)
 {
-	slurmdb_qos_cond_t *qos_cond = NULL;
 	list_t *qos_list = NULL;
-
-	if (((ctxt->method == HTTP_REQUEST_GET) ||
-	     (ctxt->method == HTTP_REQUEST_DELETE)) &&
-	    DATA_PARSE(ctxt->parser, QOS_CONDITION_PTR, qos_cond,
-		       ctxt->parameters, ctxt->parent_path))
-		goto cleanup;
 
 	if (ctxt->method == HTTP_REQUEST_GET) {
 		if (db_query_list(ctxt, &qos_list, slurmdb_qos_get, qos_cond))
@@ -201,17 +195,62 @@ static int _op_handler_qos(ctxt_t *ctxt)
 
 cleanup:
 	FREE_NULL_LIST(qos_list);
-	slurmdb_destroy_qos_cond(qos_cond);
 	return SLURM_SUCCESS;
+}
+
+static int _op_handler_single_qos(ctxt_t *ctxt)
+{
+	int rc;
+	openapi_qos_param_t params = {0};
+	openapi_qos_query_t query = {0};
+	slurmdb_qos_cond_t *qos_cond = NULL;
+
+	if ((rc = DATA_PARSE(ctxt->parser, OPENAPI_SLURMDBD_QOS_QUERY, query,
+			     ctxt->query, ctxt->parent_path)))
+		return rc;
+	if ((rc = DATA_PARSE(ctxt->parser, OPENAPI_SLURMDBD_QOS_PARAM, params,
+			     ctxt->parameters, ctxt->parent_path)))
+		return rc;
+
+	qos_cond = xmalloc(sizeof(*qos_cond));
+	qos_cond->name_list = list_create(xfree_ptr);
+	list_append(qos_cond->name_list, params.name);
+	qos_cond->with_deleted = query.with_deleted;
+
+	rc = _op_handler_qos(ctxt, qos_cond);
+
+	slurmdb_destroy_qos_cond(qos_cond);
+
+	return rc;
+}
+
+static int _op_handler_multi_qos(ctxt_t *ctxt)
+{
+	int rc;
+	slurmdb_qos_cond_t *qos_cond = NULL;
+
+	if (((ctxt->method == HTTP_REQUEST_GET) ||
+	     (ctxt->method == HTTP_REQUEST_DELETE)) &&
+	    (rc = DATA_PARSE(ctxt->parser, QOS_CONDITION_PTR, qos_cond,
+			     ctxt->parameters, ctxt->parent_path)))
+		return rc;
+
+	rc = _op_handler_qos(ctxt, qos_cond);
+
+	slurmdb_destroy_qos_cond(qos_cond);
+
+	return rc;
 }
 
 extern void init_op_qos(void)
 {
-	bind_handler("/slurmdb/{data_parser}/qos/", _op_handler_qos, 0);
-	bind_handler("/slurmdb/{data_parser}/qos/{name}", _op_handler_qos, 0);
+	bind_handler("/slurmdb/{data_parser}/qos/", _op_handler_multi_qos, 0);
+	bind_handler("/slurmdb/{data_parser}/qos/{qos}", _op_handler_single_qos,
+		     0);
 }
 
 extern void destroy_op_qos(void)
 {
-	unbind_operation_ctxt_handler(_op_handler_qos);
+	unbind_operation_ctxt_handler(_op_handler_multi_qos);
+	unbind_operation_ctxt_handler(_op_handler_single_qos);
 }
