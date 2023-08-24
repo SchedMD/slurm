@@ -1325,12 +1325,15 @@ typedef struct slurm_node_registration_status_msg {
 	uint64_t free_mem;	/* Free memory in MiB */
 	char *cpu_spec_list;	/* list of specialized CPUs */
 	acct_gather_energy_t *energy;
+	char *extra;		/* arbitrary string */
 	char *features_active;	/* Currently active node features */
 	char *features_avail;	/* Available node features */
 	buf_t *gres_info;	/* generic resource info */
 	uint32_t hash_val;      /* hash value of slurm.conf and included files
 				 * existing on node */
 	char *hostname;         /* hostname of slurmd */
+	char *instance_id;	/* cloud instance id */
+	char *instance_type;	/* cloud instance type */
 	uint32_t job_count;	/* number of associate job_id's */
 	char *node_name;
 	uint16_t boards;

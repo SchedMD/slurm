@@ -1585,9 +1585,12 @@ extern void slurm_free_node_registration_status_msg(
 		xfree(msg->cpu_spec_list);
 		if (msg->energy)
 			acct_gather_energy_destroy(msg->energy);
+		xfree(msg->extra);
 		xfree(msg->features_active);
 		xfree(msg->features_avail);
 		xfree(msg->hostname);
+		xfree(msg->instance_id);
+		xfree(msg->instance_type);
 		FREE_NULL_BUFFER(msg->gres_info);
 		xfree(msg->node_name);
 		xfree(msg->os);
@@ -1625,6 +1628,8 @@ extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 		xfree(msg->features);
 		xfree(msg->features_act);
 		xfree(msg->gres);
+		xfree(msg->instance_id);
+		xfree(msg->instance_type);
 		xfree(msg->node_addr);
 		xfree(msg->node_hostname);
 		xfree(msg->node_names);
@@ -4856,6 +4861,7 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->gres);
 		xfree(node->gres_drain);
 		xfree(node->gres_used);
+		xfree(node->instance_id);
 		xfree(node->mcs_label);
 		xfree(node->name);
 		xfree(node->node_addr);

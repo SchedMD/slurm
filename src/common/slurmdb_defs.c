@@ -895,6 +895,22 @@ extern void slurmdb_destroy_event_rec(void *object)
 	}
 }
 
+extern void slurmdb_destroy_instance_rec(void *object)
+{
+	slurmdb_instance_rec_t *slurmdb_instance = object;
+
+	if (slurmdb_instance) {
+		xfree(slurmdb_instance->cluster);
+		xfree(slurmdb_instance->extra);
+		xfree(slurmdb_instance->instance_id);
+		xfree(slurmdb_instance->instance_type);
+		xfree(slurmdb_instance->node_name);
+
+		xfree(slurmdb_instance);
+	}
+	return;
+}
+
 extern void slurmdb_destroy_job_rec(void *object)
 {
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
@@ -1201,6 +1217,22 @@ extern void slurmdb_destroy_event_cond(void *object)
 		FREE_NULL_LIST(slurmdb_event->state_list);
 		xfree(slurmdb_event->node_list);
 		xfree(slurmdb_event);
+	}
+}
+
+extern void slurmdb_destroy_instance_cond(void *object)
+{
+	slurmdb_instance_cond_t *slurmdb_instance = object;
+
+	if (slurmdb_instance) {
+		FREE_NULL_LIST(slurmdb_instance->cluster_list);
+		FREE_NULL_LIST(slurmdb_instance->extra_list);
+		FREE_NULL_LIST(slurmdb_instance->format_list);
+		FREE_NULL_LIST(slurmdb_instance->instance_id_list);
+		FREE_NULL_LIST(slurmdb_instance->instance_type_list);
+		xfree(slurmdb_instance->node_list);
+
+		xfree(slurmdb_instance);
 	}
 }
 
@@ -1570,6 +1602,25 @@ extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,
 		_free_federation_rec_members(federation);
 	memset(federation, 0, sizeof(slurmdb_federation_rec_t));
 	federation->flags = FEDERATION_FLAG_NOTSET;
+}
+
+extern void slurmdb_init_instance_rec(slurmdb_instance_rec_t *instance,
+					 bool free_it)
+{
+	if (!instance)
+		return;
+
+	if (free_it)
+		slurmdb_destroy_instance_rec(instance);
+	memset(instance, 0, sizeof(slurmdb_instance_rec_t));
+
+	/* instance->cluster = NULL; */
+	/* instance->extra = NULL; */
+	/* instance->instance_id = NULL; */
+	/* instance->instance_type = NULL; */
+	/* instance->node_name = NULL; */
+	instance->time_end = NO_VAL;
+	instance->time_start = NO_VAL;
 }
 
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,

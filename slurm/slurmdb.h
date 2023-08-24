@@ -806,6 +806,27 @@ typedef struct {
 	List      cluster_list;	/* List of slurmdb_cluster_rec_t *'s */
 } slurmdb_federation_rec_t;
 
+typedef struct {
+	List cluster_list; /* list of char * */
+	List extra_list; /* list of char * */
+	List format_list; /* list of char * */
+	List instance_id_list; /* list of char * */
+	List instance_type_list; /* list of char * */
+	char *node_list; /* node list string */
+	time_t time_end; /* time end of instances */
+	time_t time_start; /* time start of instances */
+} slurmdb_instance_cond_t;
+
+typedef struct {
+	char *cluster; /* name of associated cluster */
+	char *extra; /* name of instance_id */
+	char *instance_id; /* name of instance_id */
+	char *instance_type; /* name of instance_id */
+	char *node_name; /* name of node */
+	time_t time_end; /* time end of instance */
+	time_t time_start; /* time start of instance */
+} slurmdb_instance_rec_t;
+
 /* slurmdb_job_cond_t is defined above alphabetical */
 
 typedef struct {
@@ -1770,6 +1791,16 @@ extern List slurmdb_events_get(void *db_conn,
 
 /*
  * get info from the storage
+ *
+ * IN:  slurmdb_instance_cond_t *
+ * RET: List of slurmdb_instance_rec_t *
+ * note List needs to be freed with slurm_list_destroy() when called
+ */
+extern List slurmdb_instances_get(void *db_conn,
+				  slurmdb_instance_cond_t *instance_cond);
+
+/*
+ * get info from the storage
  * IN:  slurmdb_assoc_cond_t *
  * RET: List of slurmdb_assoc_rec_t *
  * note List needs to be freed with slurm_list_destroy() when called
@@ -1860,6 +1891,7 @@ extern void slurmdb_free_assoc_mgr_state_msg(void *object);
 extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc);
 extern void slurmdb_destroy_assoc_rec(void *object);
 extern void slurmdb_destroy_event_rec(void *object);
+extern void slurmdb_destroy_instance_rec(void *object);
 extern void slurmdb_destroy_job_rec(void *object);
 extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos);
 extern void slurmdb_destroy_qos_rec(void *object);
@@ -1882,6 +1914,7 @@ extern void slurmdb_destroy_federation_cond(void *object);
 extern void slurmdb_destroy_tres_cond(void *object);
 extern void slurmdb_destroy_assoc_cond(void *object);
 extern void slurmdb_destroy_event_cond(void *object);
+extern void slurmdb_destroy_instance_cond(void *object);
 extern void slurmdb_destroy_job_cond(void *object);
 extern void slurmdb_destroy_qos_cond(void *object);
 extern void slurmdb_destroy_reservation_cond(void *object);
@@ -1917,6 +1950,8 @@ extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 				     bool free_it);
 extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,
 					bool free_it);
+extern void slurmdb_init_instance_rec(slurmdb_instance_rec_t *instance,
+				      bool free_it);
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos,
 				 bool free_it,
 				 uint32_t init_val);

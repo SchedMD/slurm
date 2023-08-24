@@ -1074,6 +1074,40 @@ static int _get_events(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	return rc;
 }
 
+static int _get_instances(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer)
+{
+	dbd_cond_msg_t *get_msg = msg->data;
+	dbd_list_msg_t list_msg = { NULL };
+	int rc = SLURM_SUCCESS;
+
+	debug2("DBD_GET_INSTANCES: called in CONN %d", slurmdbd_conn->conn->fd);
+
+	list_msg.my_list = acct_storage_g_get_instances(
+		slurmdbd_conn->db_conn, slurmdbd_conn->conn->auth_uid,
+		get_msg->cond);
+
+	if (!errno) {
+		if (!list_msg.my_list)
+			list_msg.my_list = list_create(NULL);
+		*out_buffer = init_buf(1024);
+		pack16((uint16_t) DBD_GOT_INSTANCES, *out_buffer);
+		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->conn->version,
+				       DBD_GOT_INSTANCES,
+				       *out_buffer);
+	} else {
+		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
+							errno,
+							slurm_strerror(errno),
+							DBD_GET_INSTANCES);
+		rc = SLURM_ERROR;
+	}
+
+	FREE_NULL_LIST(list_msg.my_list);
+
+	return rc;
+}
+
 static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			  buf_t **out_buffer)
 {
@@ -2278,6 +2312,9 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	}
 
 	memset(&node_ptr, 0, sizeof(node_record_t));
+	node_ptr.extra = node_state_msg->extra;
+	node_ptr.instance_id = node_state_msg->instance_id;
+	node_ptr.instance_type = node_state_msg->instance_type;
 	node_ptr.name = node_state_msg->hostlist;
 	node_ptr.tres_str = node_state_msg->tres_str;
 	node_ptr.node_state = node_state_msg->state;
@@ -2285,10 +2322,12 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	node_ptr.reason_time = node_state_msg->event_time;
 	node_ptr.reason_uid = node_state_msg->reason_uid;
 
-	if (!node_ptr.tres_str)
+	if (!node_ptr.tres_str &&
+	    (node_state_msg->new_state != DBD_NODE_STATE_UPDATE))
 		node_state_msg->new_state = DBD_NODE_STATE_UP;
 
-	if (node_state_msg->new_state == DBD_NODE_STATE_UP) {
+	switch (node_state_msg->new_state) {
+	case DBD_NODE_STATE_UP:
 		debug2("DBD_NODE_STATE_UP: NODE:%s REASON:%s TIME:%ld",
 		       node_state_msg->hostlist,
 		       node_state_msg->reason,
@@ -2303,7 +2342,8 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			&node_ptr,
 			node_state_msg->event_time);
 		xfree(node_ptr.reason);
-	} else {
+		break;
+	case DBD_NODE_STATE_DOWN:
 		debug2("DBD_NODE_STATE_DOWN: NODE:%s STATE:%s REASON:%s UID:%u TIME:%ld",
 		       node_state_msg->hostlist,
 		       node_state_string(node_state_msg->state),
@@ -2315,6 +2355,21 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			&node_ptr,
 			node_state_msg->event_time,
 			node_state_msg->reason, node_ptr.reason_uid);
+		break;
+	case DBD_NODE_STATE_UPDATE:
+		debug2("DBD_NODE_STATE_UPDATE: NODE:%s",
+		       node_state_msg->hostlist);
+		rc = clusteracct_storage_g_node_update(
+			slurmdbd_conn->db_conn,
+			&node_ptr);
+		break;
+	default:
+		comment = "DBD_NODE_STATE message has invalid new_state";
+		error("CONN:%d %s %u",
+		      slurmdbd_conn->conn->fd, comment,
+		      slurmdbd_conn->conn->auth_uid);
+		rc = SLURM_ERROR;
+		break;
 	}
 
 end_it:
@@ -3506,6 +3561,9 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		break;
 	case DBD_GET_EVENTS:
 		rc = _get_events(slurmdbd_conn, msg, out_buffer);
+		break;
+	case DBD_GET_INSTANCES:
+		rc = _get_instances(slurmdbd_conn, msg, out_buffer);
 		break;
 	case DBD_GET_JOBS_COND:
 		rc = _get_jobs_cond(slurmdbd_conn, msg, out_buffer);

@@ -292,6 +292,8 @@ static void _dump_node_state(node_record_t *dump_node_ptr, buf_t *buffer)
 	packstr (dump_node_ptr->features, buffer);
 	packstr (dump_node_ptr->features_act, buffer);
 	packstr (dump_node_ptr->gres, buffer);
+	packstr (dump_node_ptr->instance_id, buffer);
+	packstr (dump_node_ptr->instance_type, buffer);
 	packstr (dump_node_ptr->cpu_spec_list, buffer);
 	pack32  (dump_node_ptr->next_state, buffer);
 	pack32  (dump_node_ptr->node_state, buffer);
@@ -353,6 +355,8 @@ extern int load_all_node_state ( bool state_only )
 	char *node_name = NULL, *comment = NULL, *reason = NULL, *state_file;
 	char *features = NULL, *features_act = NULL;
 	char *gres = NULL, *extra = NULL;
+	char *instance_id = NULL;
+	char *instance_type = NULL;
 	char *mcs_label = NULL;
 	int error_code = SLURM_SUCCESS, node_cnt = 0;
 	uint32_t node_state, cpu_bind = 0, next_state = NO_VAL;
@@ -422,7 +426,47 @@ extern int load_all_node_state ( bool state_only )
 	while (remaining_buf (buffer) > 0) {
 		uint32_t base_state;
 		uint16_t obj_protocol_version = NO_VAL16;
-		if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+			uint32_t len;
+			safe_unpackstr_xmalloc(&comm_name, &len, buffer);
+			safe_unpackstr_xmalloc(&node_name, &len, buffer);
+			safe_unpackstr_xmalloc(&node_hostname, &len, buffer);
+			safe_unpackstr_xmalloc(&comment, &len, buffer);
+			safe_unpackstr_xmalloc(&extra, &len, buffer);
+			safe_unpackstr_xmalloc(&reason, &len, buffer);
+			safe_unpackstr_xmalloc(&features, &len, buffer);
+			safe_unpackstr_xmalloc(&features_act, &len,buffer);
+			safe_unpackstr_xmalloc(&gres, &len, buffer);
+			safe_unpackstr_xmalloc(&instance_id, &len, buffer);
+			safe_unpackstr_xmalloc(&instance_type, &len, buffer);
+			safe_unpackstr_xmalloc(&cpu_spec_list, &len, buffer);
+			safe_unpack32(&next_state, buffer);
+			safe_unpack32(&node_state, buffer);
+			safe_unpack32(&cpu_bind, buffer);
+			safe_unpack16(&cpus, buffer);
+			safe_unpack16(&boards, buffer);
+			safe_unpack16(&sockets, buffer);
+			safe_unpack16(&cores, buffer);
+			safe_unpack16(&core_spec_cnt, buffer);
+			safe_unpack16(&threads, buffer);
+			safe_unpack64(&real_memory, buffer);
+			safe_unpack32(&tmp_disk, buffer);
+			safe_unpack32(&reason_uid, buffer);
+			safe_unpack_time(&reason_time, buffer);
+			safe_unpack_time(&resume_after, buffer);
+			safe_unpack_time(&boot_req_time, buffer);
+			safe_unpack_time(&power_save_req_time, buffer);
+			safe_unpack_time(&last_response, buffer);
+			safe_unpack16(&obj_protocol_version, buffer);
+			safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
+			if (gres_node_state_unpack(&gres_list, buffer,
+						   node_name,
+						   protocol_version) !=
+			    SLURM_SUCCESS)
+				goto unpack_error;
+			safe_unpack32(&weight, buffer);
+			base_state = node_state & NODE_STATE_BASE;
+		} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 			uint32_t len;
 			safe_unpackstr_xmalloc(&comm_name, &len, buffer);
 			safe_unpackstr_xmalloc(&node_name, &len, buffer);
@@ -688,6 +732,16 @@ extern int load_all_node_state ( bool state_only )
 				comment = NULL;
 			}
 
+			if (!node_ptr->instance_id) {
+				node_ptr->instance_id = instance_id;
+				instance_id = NULL;
+			}
+
+			if (!node_ptr->instance_type) {
+				node_ptr->instance_type = instance_type;
+				instance_type = NULL;
+			}
+
 			if (node_ptr->reason == NULL) {
 				node_ptr->reason = reason;
 				reason = NULL;	/* Nothing to free */
@@ -729,6 +783,12 @@ extern int load_all_node_state ( bool state_only )
 			xfree(node_ptr->comment);
 			node_ptr->comment = comment;
 			comment = NULL; /* Nothing to free */
+			xfree(node_ptr->instance_id);
+			node_ptr->instance_id = instance_id;
+			instance_id = NULL; /* Nothing to free */
+			xfree(node_ptr->instance_type);
+			node_ptr->instance_type = instance_type;
+			instance_type = NULL; /* Nothing to free */
 			xfree(node_ptr->reason);
 			node_ptr->reason	= reason;
 			reason			= NULL;	/* Nothing to free */
@@ -811,6 +871,8 @@ extern int load_all_node_state ( bool state_only )
 		xfree (node_name);
 		xfree(comment);
 		xfree(extra);
+		xfree(instance_id);
+		xfree(instance_type);
 		xfree(reason);
 		xfree(cpu_spec_list);
 	}
@@ -847,6 +909,8 @@ unpack_error:
 	xfree(node_name);
 	xfree(comment);
 	xfree(extra);
+	xfree(instance_id);
+	xfree(instance_type);
 	xfree(reason);
 	goto fini;
 }
@@ -1213,6 +1277,8 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		packstr(dump_node_ptr->os, buffer);
 		packstr(dump_node_ptr->comment, buffer);
 		packstr(dump_node_ptr->extra, buffer);
+		packstr(dump_node_ptr->instance_id, buffer);
+		packstr(dump_node_ptr->instance_type, buffer);
 		packstr(dump_node_ptr->reason, buffer);
 		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
 					protocol_version);
@@ -1592,6 +1658,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
 		bool acct_updated = false;
+		bool update_db = false;
 
 		node_ptr = find_node_record (this_node_name);
 		if (node_ptr == NULL) {
@@ -1715,6 +1782,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			if (update_node_msg->extra[0])
 				node_ptr->extra = xstrdup(
 					update_node_msg->extra);
+			update_db = true;
 		}
 
 		if (update_node_msg->comment) {
@@ -1722,6 +1790,27 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			if (update_node_msg->comment[0])
 				node_ptr->comment =
 					xstrdup(update_node_msg->comment);
+		}
+
+		if (update_node_msg->instance_id) {
+			xfree(node_ptr->instance_id);
+			if (update_node_msg->instance_id[0])
+				node_ptr->instance_id = xstrdup(
+					update_node_msg->instance_id);
+			update_db = true;
+		}
+
+		if (update_node_msg->instance_type) {
+			xfree(node_ptr->instance_type);
+			if (update_node_msg->instance_type[0])
+				node_ptr->instance_type = xstrdup(
+					update_node_msg->instance_type);
+			update_db = true;
+		}
+
+		if (update_db) {
+			clusteracct_storage_g_node_update(acct_db_conn,
+							  node_ptr);
 		}
 
 		if ((update_node_msg->resume_after != NO_VAL) &&
@@ -1827,6 +1916,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					node_ptr->power_save_req_time = 0;
 
 					reset_node_active_features(node_ptr);
+					reset_node_instance(node_ptr);
 
 					clusteracct_storage_g_node_down(
 						acct_db_conn,
@@ -2496,6 +2586,14 @@ extern void reset_node_active_features(node_record_t *node_ptr)
 				    FEATURE_MODE_IND);
 }
 
+extern void reset_node_instance(node_record_t *node_ptr)
+{
+	xassert(node_ptr);
+
+	xfree(node_ptr->instance_id);
+	xfree(node_ptr->instance_type);
+}
+
 /*
  * _update_node_gres - Update generic resources associated with nodes
  *	build new config list records as needed
@@ -2852,6 +2950,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	uint32_t node_flags;
 	time_t now = time(NULL);
 	bool orig_node_avail;
+	bool update_db = false;
 	bool was_invalid_reg, was_powering_up = false, was_powered_down = false;
 	static int node_features_cnt = -1;
 	int sockets1, sockets2;	/* total sockets on node */
@@ -3156,6 +3255,34 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 						      now);
 	}
 
+	if (reg_msg->extra) {
+		xfree(node_ptr->extra);
+		if (reg_msg->extra[0]) {
+			node_ptr->extra = xstrdup(reg_msg->extra);
+			update_db = true;
+		}
+	}
+
+	if (reg_msg->instance_id) {
+		xfree(node_ptr->instance_id);
+		if (reg_msg->instance_id[0]) {
+			node_ptr->instance_id = xstrdup(reg_msg->instance_id);
+			update_db = true;
+		}
+	}
+
+	if (reg_msg->instance_type) {
+		xfree(node_ptr->instance_type);
+		if (reg_msg->instance_type[0]) {
+			node_ptr->instance_type =
+				xstrdup(reg_msg->instance_type);
+			update_db = true;
+		}
+	}
+
+	if (update_db)
+		clusteracct_storage_g_node_update(acct_db_conn, node_ptr);
+
 	was_invalid_reg = IS_NODE_INVALID_REG(node_ptr);
 	node_ptr->node_state &= ~NODE_STATE_INVALID_REG;
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
@@ -3354,6 +3481,12 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 
 		xfree(comm_name);
 	}
+
+	if (was_powering_up || was_powered_down)
+		log_flag(POWER, "Node %s/%s/%s powered up with instance_id=%s, instance_type=%s",
+			 node_ptr->name, node_ptr->node_hostname,
+			 node_ptr->comm_name, reg_msg->instance_id,
+			 reg_msg->instance_type);
 
 	return error_code;
 }

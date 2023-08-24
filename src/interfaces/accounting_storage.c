@@ -156,6 +156,8 @@ typedef struct slurm_acct_storage_ops {
 				    slurmdb_assoc_cond_t *assoc_cond);
 	List (*get_events)         (void *db_conn, uint32_t uid,
 				    slurmdb_event_cond_t *event_cond);
+	List (*get_instances)	   (void *db_conn, uint32_t uid,
+				    slurmdb_instance_cond_t *instance_cond);
 	List (*get_problems)       (void *db_conn, uint32_t uid,
 				    slurmdb_assoc_cond_t *assoc_cond);
 	List (*get_qos)            (void *db_conn, uint32_t uid,
@@ -183,6 +185,7 @@ typedef struct slurm_acct_storage_ops {
 	char *(*node_inx)          (void *db_conn, char *nodes);
 	int  (*node_up)            (void *db_conn, node_record_t *node_ptr,
 				    time_t event_time);
+	int  (*node_update)	   (void *db_conn, node_record_t *node_ptr);
 	int  (*cluster_tres)       (void *db_conn, char *cluster_nodes,
 				    char *tres_str_in, time_t event_time,
 				    uint16_t rpc_version);
@@ -265,6 +268,7 @@ static const char *syms[] = {
 	"acct_storage_p_get_tres",
 	"acct_storage_p_get_assocs",
 	"acct_storage_p_get_events",
+	"acct_storage_p_get_instances",
 	"acct_storage_p_get_problems",
 	"acct_storage_p_get_qos",
 	"acct_storage_p_get_res",
@@ -277,6 +281,7 @@ static const char *syms[] = {
 	"clusteracct_storage_p_node_down",
 	"acct_storage_p_node_inx",
 	"clusteracct_storage_p_node_up",
+	"clusteracct_storage_p_node_update",
 	"clusteracct_storage_p_cluster_tres",
 	"clusteracct_storage_p_register_ctld",
 	"clusteracct_storage_p_register_disconn_ctld",
@@ -872,6 +877,18 @@ extern List acct_storage_g_get_events(void *db_conn, uint32_t uid,
 	return (*(ops.get_events))(db_conn, uid, event_cond);
 }
 
+extern List acct_storage_g_get_instances(void *db_conn,
+					 uint32_t uid,
+					 slurmdb_instance_cond_t *instance_cond)
+{
+	xassert(plugin_inited);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return NULL;
+
+	return (*(ops.get_instances))(db_conn, uid, instance_cond);
+}
+
 extern List acct_storage_g_get_problems(void *db_conn, uint32_t uid,
 					slurmdb_assoc_cond_t *assoc_cond)
 {
@@ -1014,6 +1031,12 @@ extern int clusteracct_storage_g_node_up(void *db_conn,
 	node_ptr->reason_uid = NO_VAL;
 
 	return (*(ops.node_up))(db_conn, node_ptr, event_time);
+}
+
+extern int clusteracct_storage_g_node_update(void *db_conn,
+					     node_record_t *node_ptr)
+{
+	return (*(ops.node_update))(db_conn, node_ptr);
 }
 
 extern int clusteracct_storage_g_cluster_tres(void *db_conn,

@@ -276,6 +276,9 @@ static void _pack_cond_msg(dbd_cond_msg_t *msg, uint16_t rpc_version,
 	case DBD_GET_EVENTS:
 		my_function = slurmdb_pack_event_cond;
 		break;
+	case DBD_GET_INSTANCES:
+		my_function = slurmdb_pack_instance_cond;
+		break;
 	default:
 		fatal("Unknown pack type");
 		return;
@@ -341,6 +344,9 @@ static int _unpack_cond_msg(dbd_cond_msg_t **msg, uint16_t rpc_version,
 		break;
 	case DBD_GET_EVENTS:
 		my_function = slurmdb_unpack_event_cond;
+		break;
+	case DBD_GET_INSTANCES:
+		my_function = slurmdb_unpack_instance_cond;
 		break;
 	default:
 		fatal("%s: Unknown unpack type", __func__);
@@ -872,6 +878,9 @@ static void _pack_node_state_msg(dbd_node_state_msg_t *msg,
 {
 	if (rpc_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		packstr(msg->hostlist, buffer);
+		packstr(msg->extra, buffer);
+		packstr(msg->instance_id, buffer);
+		packstr(msg->instance_type, buffer);
 		packstr(msg->reason, buffer);
 		pack32(msg->reason_uid, buffer);
 		pack16(msg->new_state, buffer);
@@ -901,6 +910,9 @@ static int _unpack_node_state_msg(dbd_node_state_msg_t **msg,
 
 	if (rpc_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg_ptr->hostlist, buffer);
+		safe_unpackstr(&msg_ptr->extra, buffer);
+		safe_unpackstr(&msg_ptr->instance_id, buffer);
+		safe_unpackstr(&msg_ptr->instance_type, buffer);
 		safe_unpackstr(&msg_ptr->reason, buffer);
 		safe_unpack32(&msg_ptr->reason_uid, buffer);
 		safe_unpack16(&msg_ptr->new_state, buffer);
@@ -1348,6 +1360,9 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg, uint16_t rpc_version,
 	case DBD_GOT_EVENTS:
 		my_function = slurmdb_pack_event_rec;
 		break;
+	case DBD_GOT_INSTANCES:
+		my_function = slurmdb_pack_instance_rec;
+		break;
 	case DBD_SEND_MULT_JOB_START:
 		slurm_pack_list_until(msg->my_list, _pack_job_start_msg,
 				      buffer, MAX_MSG_SIZE, rpc_version);
@@ -1453,6 +1468,10 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 	case DBD_GOT_EVENTS:
 		my_function = slurmdb_unpack_event_rec;
 		my_destroy = slurmdb_destroy_event_rec;
+		break;
+	case DBD_GOT_INSTANCES:
+		my_function = slurmdb_unpack_instance_rec;
+		my_destroy = slurmdb_destroy_instance_rec;
 		break;
 	case DBD_SEND_MULT_JOB_START:
 		my_function = _unpack_job_start_msg;
@@ -1568,6 +1587,7 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_EVENTS:
 	case DBD_GET_FEDERATIONS:
+	case DBD_GET_INSTANCES:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_PROBS:
 	case DBD_GET_QOS:
@@ -1732,6 +1752,7 @@ extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_EVENTS:
 	case DBD_GOT_FEDERATIONS:
+	case DBD_GOT_INSTANCES:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
 	case DBD_GOT_PROBS:
@@ -1775,6 +1796,7 @@ extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_EVENTS:
 	case DBD_GET_FEDERATIONS:
+	case DBD_GET_INSTANCES:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_PROBS:
 	case DBD_GET_QOS:

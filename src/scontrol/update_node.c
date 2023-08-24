@@ -128,6 +128,13 @@ scontrol_update_node (int argc, char **argv)
 		} else if (xstrncasecmp(tag, "Gres", MAX(tag_len, 1)) == 0) {
 			node_msg.gres = val;
 			update_cnt++;
+		} else if (!xstrncasecmp(tag, "InstanceId", MAX(tag_len, 9))) {
+			node_msg.instance_id = val;
+			update_cnt++;
+		} else if (!xstrncasecmp(tag, "InstanceType",
+					 MAX(tag_len, 9))) {
+			node_msg.instance_type = val;
+			update_cnt++;
 		} else if (xstrncasecmp(tag, "Weight", MAX(tag_len,1)) == 0) {
 			if (parse_uint32(val, &node_msg.weight)) {
 				exit_code = 1;

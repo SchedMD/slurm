@@ -1323,7 +1323,10 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "time_start", "bigint unsigned not null" },
 		{ "time_end", "bigint unsigned default 0 not null" },
 		{ "node_name", "tinytext default '' not null" },
+		{ "extra", "text" },
 		{ "cluster_nodes", "text not null default ''" },
+		{ "instance_id", "text" },
+		{ "instance_type", "text" },
 		{ "reason", "tinytext not null" },
 		{ "reason_uid", "int unsigned default 0xfffffffe not null" },
 		{ "state", "int unsigned default 0 not null" },
@@ -3405,6 +3408,13 @@ extern List acct_storage_p_get_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	return as_mysql_get_cluster_events(mysql_conn, uid, event_cond);
 }
 
+extern List acct_storage_p_get_instances(mysql_conn_t *mysql_conn,
+					 uint32_t uid,
+					 slurmdb_instance_cond_t *instance_cond)
+{
+	return as_mysql_get_instances(mysql_conn, uid, instance_cond);
+}
+
 extern List acct_storage_p_get_problems(mysql_conn_t *mysql_conn, uint32_t uid,
 					slurmdb_assoc_cond_t *assoc_cond)
 {
@@ -3517,6 +3527,12 @@ extern int clusteracct_storage_p_node_up(mysql_conn_t *mysql_conn,
 					 time_t event_time)
 {
 	return as_mysql_node_up(mysql_conn, node_ptr, event_time);
+}
+
+extern int clusteracct_storage_p_node_update(mysql_conn_t *mysql_conn,
+					     node_record_t *node_ptr)
+{
+	return as_mysql_node_update(mysql_conn, node_ptr);
 }
 
 /* This is only called when not running from the slurmdbd so we can

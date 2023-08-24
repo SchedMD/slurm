@@ -189,8 +189,8 @@ am__v_lt_0 = --silent
 am__v_lt_1 = 
 openapi_slurmdbd_la_DEPENDENCIES = openapi_ref.lo
 am_openapi_slurmdbd_la_OBJECTS = accounts.lo associations.lo api.lo \
-	cluster.lo config.lo diag.lo jobs.lo qos.lo tres.lo users.lo \
-	wckeys.lo
+	cluster.lo config.lo diag.lo instances.lo jobs.lo qos.lo \
+	tres.lo users.lo wckeys.lo
 openapi_slurmdbd_la_OBJECTS = $(am_openapi_slurmdbd_la_OBJECTS)
 openapi_slurmdbd_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
@@ -214,8 +214,9 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/accounts.Plo ./$(DEPDIR)/api.Plo \
 	./$(DEPDIR)/associations.Plo ./$(DEPDIR)/cluster.Plo \
 	./$(DEPDIR)/config.Plo ./$(DEPDIR)/diag.Plo \
-	./$(DEPDIR)/jobs.Plo ./$(DEPDIR)/qos.Plo ./$(DEPDIR)/tres.Plo \
-	./$(DEPDIR)/users.Plo ./$(DEPDIR)/wckeys.Plo
+	./$(DEPDIR)/instances.Plo ./$(DEPDIR)/jobs.Plo \
+	./$(DEPDIR)/qos.Plo ./$(DEPDIR)/tres.Plo ./$(DEPDIR)/users.Plo \
+	./$(DEPDIR)/wckeys.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -535,7 +536,7 @@ pkglib_LTLIBRARIES = openapi_slurmdbd.la
 noinst_LTLIBRARIES = libopenapi_ref.la
 openapi_slurmdbd_la_SOURCES = \
 	accounts.c associations.c api.h api.c cluster.c \
-	config.c diag.c jobs.c qos.c \
+	config.c diag.c instances.c jobs.c qos.c \
 	structs.h tres.c users.c wckeys.c
 
 openapi_slurmdbd_la_LDFLAGS = $(PLUGIN_FLAGS)
@@ -638,6 +639,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diag.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/instances.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobs.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qos.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tres.Plo@am__quote@ # am--include-marker
@@ -778,6 +780,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cluster.Plo
 	-rm -f ./$(DEPDIR)/config.Plo
 	-rm -f ./$(DEPDIR)/diag.Plo
+	-rm -f ./$(DEPDIR)/instances.Plo
 	-rm -f ./$(DEPDIR)/jobs.Plo
 	-rm -f ./$(DEPDIR)/qos.Plo
 	-rm -f ./$(DEPDIR)/tres.Plo
@@ -834,6 +837,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cluster.Plo
 	-rm -f ./$(DEPDIR)/config.Plo
 	-rm -f ./$(DEPDIR)/diag.Plo
+	-rm -f ./$(DEPDIR)/instances.Plo
 	-rm -f ./$(DEPDIR)/jobs.Plo
 	-rm -f ./$(DEPDIR)/qos.Plo
 	-rm -f ./$(DEPDIR)/tres.Plo

@@ -310,6 +310,11 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Event");
 		field->len = 7;
 		field->print_routine = print_fields_str;
+	} else if (!xstrncasecmp("Extra", object, MAX(command_len, 2))) {
+		field->type = PRINT_EXTRA;
+		field->name = xstrdup("Extra");
+		field->len = 20;
+		field->print_routine = print_fields_str;
 	} else if (!xstrncasecmp("Features", object, MAX(command_len, 3))) {
 		field->type = PRINT_FEATURES;
 		field->name = xstrdup("Features");
@@ -407,9 +412,19 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("ID");
 		field->len = 6;
 		field->print_routine = print_fields_uint;
-	} else if (!xstrncasecmp("Info", object, MAX(command_len, 2))) {
+	} else if (!xstrncasecmp("Info", object, MAX(command_len, 3))) {
 		field->type = PRINT_INFO;
 		field->name = xstrdup("Info");
+		field->len = 20;
+		field->print_routine = print_fields_str;
+	} else if (!xstrncasecmp("InstanceId", object, MAX(command_len, 9))) {
+		field->type = PRINT_INSTANCE_ID;
+		field->name = xstrdup("InstanceId");
+		field->len = 20;
+		field->print_routine = print_fields_str;
+	} else if (!xstrncasecmp("InstanceType", object, MAX(command_len, 9))) {
+		field->type = PRINT_INSTANCE_TYPE;
+		field->name = xstrdup("InstanceType");
 		field->len = 20;
 		field->print_routine = print_fields_str;
 	} else if (!xstrncasecmp("Lineage", object, MAX(command_len, 1))) {

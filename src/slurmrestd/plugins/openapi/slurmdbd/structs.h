@@ -45,6 +45,7 @@ typedef struct {
 	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
 	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
 	list_t *clusters;
+	list_t *instances;
 	list_t *tres;
 	list_t *accounts;
 	list_t *users;

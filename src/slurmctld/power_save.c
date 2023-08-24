@@ -580,6 +580,7 @@ static void _do_power_work(time_t now)
 			node_ptr->power_save_req_time = 0;
 
 			reset_node_active_features(node_ptr);
+			reset_node_instance(node_ptr);
 
 			clusteracct_storage_g_node_down(
 				acct_db_conn, node_ptr, now,
@@ -605,6 +606,7 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 
 			reset_node_active_features(node_ptr);
+			reset_node_instance(node_ptr);
 
 			/*
 			 * set_node_down_ptr() will remove the node from the

@@ -160,6 +160,8 @@ typedef enum {
 				 * add_assoc_cond */
 	DBD_ADD_USERS_COND,     /* Add new user to the mix with user_rec and
 				 * add_assoc_cond */
+	DBD_GET_INSTANCES,	/* Get instance information */
+	DBD_GOT_INSTANCES,	/* Response to DBD_GET_INSTANCES */
 	SLURM_DBD_MESSAGES_END = 2000, /* So that we don't overlap with any
 					* slurm_msg_type_t numbers. */
 	SLURM_PERSIST_INIT = 6500, /* So we don't use the
@@ -348,9 +350,14 @@ typedef struct {
 
 #define DBD_NODE_STATE_DOWN  1
 #define DBD_NODE_STATE_UP    2
+#define DBD_NODE_STATE_UPDATE 3
+
 typedef struct dbd_node_state_msg {
 	time_t event_time;	/* time of transition */
+	char *extra;		/* arbitrary sting */
 	char *hostlist;		/* name of hosts */
+	char *instance_id;	/* cloud instance id */
+	char *instance_type;	/* cloud instance type */
 	uint16_t new_state;	/* new state of host, see DBD_NODE_STATE_* */
 	char *reason;		/* explanation for the node's state */
 	uint32_t reason_uid;   	/* User that set the reason, ignore if

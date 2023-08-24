@@ -192,6 +192,11 @@ typedef enum {
 	PRINT_TIMESUBMIT,
 	PRINT_TIMEELIGIBLE,
 
+	/* INSTANCE */
+	PRINT_INSTANCE_ID,
+	PRINT_INSTANCE_TYPE,
+	PRINT_EXTRA,
+
 	/* RESOURCE */
 	PRINT_COUNT = 9000,
 	PRINT_TYPE,
@@ -256,6 +261,7 @@ extern int sacctmgr_list_cluster(int argc, char **argv);
 extern int sacctmgr_list_config(void);
 extern int sacctmgr_list_event(int argc, char **argv);
 extern int sacctmgr_list_federation(int argc, char **argv);
+extern int sacctmgr_list_instance(int argc, char **argv);
 extern int sacctmgr_list_problem(int argc, char **argv);
 extern int sacctmgr_list_qos(int argc, char **argv);
 extern int sacctmgr_list_res(int argc, char **argv);

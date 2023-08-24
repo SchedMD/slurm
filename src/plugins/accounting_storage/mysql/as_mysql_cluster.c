@@ -46,6 +46,36 @@
 #include "src/interfaces/select.h"
 #include "src/common/slurm_time.h"
 
+/* if this changes you will need to edit the corresponding enum */
+static char *event_req_inx[] = {
+	"cluster_nodes",
+	"extra",
+	"instance_id",
+	"instance_type",
+	"node_name",
+	"state",
+	"time_start",
+	"time_end",
+	"reason",
+	"reason_uid",
+	"tres",
+};
+
+enum {
+	EVENT_REQ_CNODES,
+	EVENT_REQ_EXTRA,
+	EVENT_REQ_INSTANCE_ID,
+	EVENT_REQ_INSTANCE_TYPE,
+	EVENT_REQ_NODE,
+	EVENT_REQ_STATE,
+	EVENT_REQ_START,
+	EVENT_REQ_END,
+	EVENT_REQ_REASON,
+	EVENT_REQ_REASON_UID,
+	EVENT_REQ_TRES,
+	EVENT_REQ_COUNT
+};
+
 extern int as_mysql_get_fed_cluster_id(mysql_conn_t *mysql_conn,
 				       const char *cluster,
 				       const char *federation,
@@ -1116,30 +1146,6 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurmdb_user_rec_t user;
 	bool locked = false;
 
-	/* if this changes you will need to edit the corresponding enum */
-	char *event_req_inx[] = {
-		"cluster_nodes",
-		"node_name",
-		"state",
-		"time_start",
-		"time_end",
-		"reason",
-		"reason_uid",
-		"tres",
-	};
-
-	enum {
-		EVENT_REQ_CNODES,
-		EVENT_REQ_NODE,
-		EVENT_REQ_STATE,
-		EVENT_REQ_START,
-		EVENT_REQ_END,
-		EVENT_REQ_REASON,
-		EVENT_REQ_REASON_UID,
-		EVENT_REQ_TRES,
-		EVENT_REQ_COUNT
-	};
-
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
 
@@ -1414,6 +1420,294 @@ empty:
 	return ret_list;
 }
 
+/*
+ * _create_instance_rec - create an instance record from two event table rows
+ * IN row: the "chronologically older" row
+ * IN prev_row: the "chronologically newer" row (may be NULL if row is the first
+ *		row from the query result)
+ * IN cluster: name of the cluster
+ * RET: malloc'd instance
+ *
+ * Each instance runs "between" events, like the following:
+ *
+ * Rows from <cluster>_event_table
+ * -------------+---------------+---------------+---------------+
+ * | time_start	| time_end	| node_name	| instance_id	|
+ * -------------+---------------+---------------+---------------+
+ * | 00:01:00	| -		| n1		| -		| (prev_row)
+ * | -		| 00:00:00	| n1		| 123		| (row)
+ * -------------+---------------+---------------+---------------+
+ *
+ * Resulting slurmdb_instance_rec_t
+ * -------------+---------------+---------------+---------------+
+ * | time_start	| time_end	| node_name	| instance_id	|
+ * -------------+---------------+---------------+---------------+
+ * | 00:00:00	| 00:01:00	| n1		| 123		| (instance)
+ * -------------+---------------+---------------+---------------+
+ *
+ * Other fields in slurmdb_instance_rec_t are filled similarly to instance_id.
+ *
+ */
+static slurmdb_instance_rec_t *_create_instance_rec(MYSQL_ROW row,
+						    MYSQL_ROW prev_row,
+						    char *cluster)
+{
+	uint32_t instance_start = 0;
+	uint32_t instance_end = 0;
+	slurmdb_instance_rec_t *instance = NULL;
+
+	if (!row)
+		return NULL;
+
+	if (row[EVENT_REQ_END])
+		instance_start = slurm_atoul(row[EVENT_REQ_END]);
+
+	if (!instance_start)
+		return NULL;
+
+	instance = xmalloc(sizeof(slurmdb_instance_rec_t));
+
+	instance->cluster = xstrdup(cluster);
+	if (row[EVENT_REQ_NODE] && row[EVENT_REQ_NODE][0])
+		instance->node_name = xstrdup(row[EVENT_REQ_NODE]);
+	if (row[EVENT_REQ_EXTRA] && row[EVENT_REQ_EXTRA][0])
+		instance->extra = xstrdup(row[EVENT_REQ_EXTRA]);
+	if (row[EVENT_REQ_INSTANCE_ID] && row[EVENT_REQ_INSTANCE_ID][0])
+		instance->instance_id = xstrdup(row[EVENT_REQ_INSTANCE_ID]);
+	if (row[EVENT_REQ_INSTANCE_TYPE] && row[EVENT_REQ_INSTANCE_TYPE][0])
+		instance->instance_type = xstrdup(row[EVENT_REQ_INSTANCE_TYPE]);
+
+	if ((!prev_row) ||
+	    ((row[EVENT_REQ_NODE] && prev_row[EVENT_REQ_NODE]) &&
+	     xstrcmp(row[EVENT_REQ_NODE], prev_row[EVENT_REQ_NODE]))) {
+		/*
+		 * "row" is the most recent event record for the current node,
+		 * and it does not have an end time. That means the instance is
+		 * still running, so the instance's end time is set accordingly
+		 */
+		instance->time_start = instance_start;
+		instance->time_end = 0;
+
+		return instance;
+	}
+
+	if (prev_row[EVENT_REQ_START])
+		instance_end = slurm_atoul(prev_row[EVENT_REQ_START]);
+
+	instance->time_start = instance_start;
+	instance->time_end = instance_end;
+
+	return instance;
+}
+
+static void _add_char_list_to_where_clause(List char_list,
+					   const char *col_name,
+					   char **where_clause)
+{
+	ListIterator itr = NULL;
+	int set = 0;
+	char *string = NULL;
+
+	if (!where_clause)
+		return;
+
+	if (char_list && list_count(char_list)) {
+		if (*where_clause)
+			xstrcat(*where_clause, " AND (");
+		else
+			xstrcat(*where_clause, " where (");
+		itr = list_iterator_create(char_list);
+		while ((string = list_next(itr))) {
+			if (set)
+				xstrcat(*where_clause, " OR ");
+			xstrfmtcat(*where_clause, "%s='%s'", col_name, string);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*where_clause, ")");
+	}
+}
+
+extern List as_mysql_get_instances(mysql_conn_t *mysql_conn,
+				   uint32_t uid,
+				   slurmdb_instance_cond_t *instance_cond)
+{
+	bool locked = false;
+	char *cluster = NULL;
+	char *where_clause = NULL;
+	char *object = NULL;
+	char *query = NULL;
+	char *tmp = NULL;
+	int i = 0;
+	int set = 0;
+	List ret_list = NULL;
+	List use_cluster_list = NULL;
+	ListIterator itr = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row, prev_row = NULL;
+	slurmdb_user_rec_t user;
+	time_t now = time(NULL);
+
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return NULL;
+
+	memset(&user, 0, sizeof(slurmdb_user_rec_t));
+	user.uid = uid;
+
+	if (slurm_conf.private_data & PRIVATE_DATA_EVENTS) {
+		if (!is_user_min_admin_level(mysql_conn, uid,
+					     SLURMDB_ADMIN_OPERATOR)) {
+			error("UID %u tried to access events, only administrators can look at events",
+			      uid);
+			errno = ESLURM_ACCESS_DENIED;
+			return NULL;
+		}
+	}
+
+
+	/* determine cluster list */
+	if (instance_cond && instance_cond->cluster_list &&
+	    list_count(instance_cond->cluster_list)) {
+		use_cluster_list = instance_cond->cluster_list;
+	} else {
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+		use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+		locked = true;
+	}
+
+	/* Only query node events for CLOUD & POWERED_DOWN nodes */
+	where_clause = xstrdup_printf(" where (node_name!='') AND "
+				      "(state & %"PRIu64")",
+				      NODE_STATE_POWERED_DOWN);
+
+	if (!instance_cond)
+		goto empty;
+
+	/* Set default time_start to the start of previous day */
+	if (!instance_cond->time_start) {
+		instance_cond->time_start = now;
+		struct tm start_tm;
+
+		if (!localtime_r(&instance_cond->time_start, &start_tm)) {
+			error("Couldn't get localtime from %ld",
+			      (long) instance_cond->time_start);
+		} else {
+			start_tm.tm_sec = 0;
+			start_tm.tm_min = 0;
+			start_tm.tm_hour = 0;
+			start_tm.tm_mday--;
+			instance_cond->time_start = slurm_mktime(&start_tm);
+		}
+	}
+
+	if (instance_cond->time_start) {
+		if (!instance_cond->time_end)
+			instance_cond->time_end = now;
+
+		xstrfmtcat(where_clause,
+			   " AND ((time_start < %ld) AND (time_end >= %ld OR time_end = 0))",
+			   instance_cond->time_end,
+			   instance_cond->time_start);
+	}
+
+	_add_char_list_to_where_clause(instance_cond->extra_list, "extra",
+				       &where_clause);
+	_add_char_list_to_where_clause(instance_cond->instance_id_list,
+				       "instance_id", &where_clause);
+	_add_char_list_to_where_clause(instance_cond->instance_type_list,
+				       "instance_type", &where_clause);
+
+	if (instance_cond->node_list) {
+		int dims = 0;
+		hostlist_t *temp_hl = NULL;
+
+		if (get_cluster_dims(
+			    mysql_conn,
+			    (char *) list_peek(use_cluster_list),
+			    &dims)) {
+			xfree(where_clause);
+			return NULL;
+		}
+
+		temp_hl = hostlist_create_dims(instance_cond->node_list, dims);
+		if (hostlist_count(temp_hl) <= 0) {
+			xfree(where_clause);
+			error("we didn't get any real hosts to look for.");
+			return NULL;
+		}
+
+		set = 0;
+		if (where_clause)
+			xstrcat(where_clause, " AND (");
+		else
+			xstrcat(where_clause, " where (");
+
+		while ((object = hostlist_shift(temp_hl))) {
+			if (set)
+				xstrcat(where_clause, " OR ");
+			xstrfmtcat(where_clause, "node_name='%s'", object);
+			set = 1;
+			free(object);
+		}
+		xstrcat(where_clause, ")");
+		hostlist_destroy(temp_hl);
+	}
+
+empty:
+	xfree(tmp);
+	xstrfmtcat(tmp, "%s", event_req_inx[0]);
+	for (i = 1; i < EVENT_REQ_COUNT; i++) {
+		bool include = true;
+		xstrfmtcat(tmp, ", %s%s", include ? "" : "'' as ",
+			   event_req_inx[i]);
+	}
+
+	ret_list = list_create(slurmdb_destroy_instance_rec);
+
+
+	itr = list_iterator_create(use_cluster_list);
+	while ((cluster = list_next(itr))) {
+		query = xstrdup_printf("select %s from \"%s_%s\" %s "
+				       "order by node_name,time_start desc",
+				       tmp, cluster, event_table,
+				       where_clause ? where_clause : "");
+
+		DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
+		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+			xfree(query);
+			if (mysql_errno(mysql_conn->db_conn) !=
+			    ER_NO_SUCH_TABLE) {
+				FREE_NULL_LIST(ret_list);
+				ret_list = NULL;
+			}
+			break;
+		}
+		xfree(query);
+
+		while ((row = mysql_fetch_row(result))) {
+			slurmdb_instance_rec_t *instance = _create_instance_rec(
+				row, prev_row, cluster);
+
+			if (instance) {
+				list_append(ret_list, instance);
+			}
+
+			prev_row = row;
+		}
+		mysql_free_result(result);
+	}
+	list_iterator_destroy(itr);
+	xfree(tmp);
+	xfree(where_clause);
+
+	if (locked) {
+		FREE_NULL_LIST(use_cluster_list);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+	}
+
+	return ret_list;
+}
+
 extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 			      node_record_t *node_ptr,
 			      time_t event_time, char *reason,
@@ -1556,6 +1850,67 @@ extern int as_mysql_node_up(mysql_conn_t *mysql_conn,
 	DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
+	return rc;
+}
+
+extern int as_mysql_node_update(mysql_conn_t *mysql_conn,
+				node_record_t *node_ptr)
+{
+	char *query;
+	char *values = NULL;
+	int rc = SLURM_SUCCESS;
+	MYSQL_RES *result = NULL;
+
+	if (check_connection(mysql_conn) != SLURM_SUCCESS)
+		return ESLURM_DB_CONNECTION;
+
+	if (!mysql_conn->cluster_name) {
+		error("%s:%d no cluster name", THIS_FILE, __LINE__);
+		return SLURM_ERROR;
+	}
+
+	xstrfmtcat(values, "%sextra='%s'",
+		   values ? ", " : "",
+		   node_ptr->extra ? node_ptr->extra : "");
+	xstrfmtcat(values, "%sinstance_id='%s'",
+		   values ? ", " : "",
+		   node_ptr->instance_id ? node_ptr->instance_id : "");
+	xstrfmtcat(values, "%sinstance_type='%s'",
+		   values ? ", " : "",
+		   node_ptr->instance_type ? node_ptr->instance_type : "");
+
+	query = xstrdup_printf("select time_start from \"%s_%s\" "
+			       "where node_name='%s' AND (state & %"PRIu64") limit 1;",
+			       mysql_conn->cluster_name, event_table,
+			       node_ptr->name, NODE_STATE_POWERED_DOWN);
+	DB_DEBUG(DB_EVENT, mysql_conn->conn, "check event table status for node '%s':\n%s",
+		 node_ptr->name, query);
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	xfree(query);
+
+	if (!result) {
+		xfree(values);
+		return SLURM_ERROR;
+	}
+	if (!mysql_fetch_row(result)) {
+		/* create new event if no events for the node yet. */
+		as_mysql_node_down(mysql_conn, node_ptr, time(NULL),
+				   "node-update", slurm_conf.slurm_user_id);
+		as_mysql_node_up(mysql_conn, node_ptr, time(NULL));
+	}
+	mysql_free_result(result);
+
+	query = xstrdup_printf("update \"%s_%s\" "
+			       "set %s "
+			       "where node_name='%s' AND (state & %ld) "
+			       "order by time_start desc "
+			       "limit 1",
+			       mysql_conn->cluster_name, event_table, values,
+			       node_ptr->name, NODE_STATE_POWERED_DOWN);
+	DB_DEBUG(DB_EVENT, mysql_conn->conn, "query\n%s", query);
+	rc = mysql_db_query(mysql_conn, query);
+	xfree(query);
+	xfree(values);
 	return rc;
 }
 

@@ -577,6 +577,84 @@ controller.
 Features l1 and l2 will always be active and can be used as selectable labels.
 </p>
 
+<h2 id="accounting">Cloud Accounting
+<a class="slurm_link" href="#accounting"></a>
+</h2>
+<p>
+Information about cloud instances can be stored in the database. This can be done
+by configuring instance id/type upon slurmd startup or with
+<i>scontrol update</i>. The node's "extra" field will also be stored in the database.
+</p>
+
+<p>
+Configuring cloud information on slurmd startup:
+<pre>
+$ slurmd --instance-id=12345 --instance-type=m7g.medium --extra="arbitrary string" . . .
+</pre>
+</p>
+
+<p>
+Configuring cloud information with scontrol update:
+<pre>
+$ scontrol update nodename=n1 instanceid=12345 instancetype=m7g.medium extra="arbitrary string"
+</pre>
+</p>
+
+<p>
+This data can then be seen on the controller with
+<i>scontrol show node</i>. Past and current data can be seen in the database
+with <i>sacctmgr show instance</i>, as well as through slurmrestd with the
+<i>/instance</i> and <i>/instances</i> endpoints.
+</p>
+
+<p>
+Showing cloud information on the controller with scontrol:
+<pre>
+$ scontrol show nodes n1 | grep "NodeName\|Extra\|Instance"
+NodeName=n1 Arch=x86_64 CoresPerSocket=4
+   Extra=arbitrary string
+   InstanceId=12345 InstanceType=m7g.medium
+</pre>
+</p>
+
+<p>
+Showing cloud information from the database with sacctmgr:
+<pre>
+$ sacctmgr show instance format=nodename,instanceid,instancetype,extra
+NodeName                  InstanceId         InstanceType                Extra
+--------------- -------------------- -------------------- --------------------
+n1                             12345           m7g.medium     arbitrary string
+</pre>
+</p>
+
+<p>
+Showing cloud information from the database with slurmrestd:
+<pre>
+$ curl -k -s \
+        --request GET \
+        -H X-SLURM-USER-NAME:$(whoami) \
+        -H X-SLURM-USER-TOKEN:$SLURM_JWT \
+        -H "Content-Type: application/json" \
+        --url localhost:8080/slurmdb/v0.0.40/instances \
+        | jq ".instances"
+
+[
+  {
+    "cluster": "c1",
+    "extra": "arbitrary string",
+    "instance_id": "12345",
+    "instance_type": "m7g.medium",
+    "node_name": "n1",
+    "time": {
+      "time_end": 0,
+      "time_start": 1687213177
+    }
+  }
+]
+
+</pre>
+</p>
+
 <p style="text-align:center;">Last modified 8 August 2023</p>
 
 <!--#include virtual="footer.txt"-->

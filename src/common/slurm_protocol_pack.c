@@ -866,6 +866,8 @@ _pack_update_node_msg(update_node_msg_t * msg, buf_t *buffer,
 		packstr(msg->features, buffer);
 		packstr(msg->features_act, buffer);
 		packstr(msg->gres, buffer);
+		packstr(msg->instance_id, buffer);
+		packstr(msg->instance_type, buffer);
 		packstr(msg->node_addr, buffer);
 		packstr(msg->node_hostname, buffer);
 		packstr(msg->node_names, buffer);
@@ -924,6 +926,8 @@ _unpack_update_node_msg(update_node_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&tmp_ptr->features, buffer);
 		safe_unpackstr(&tmp_ptr->features_act, buffer);
 		safe_unpackstr(&tmp_ptr->gres, buffer);
+		safe_unpackstr(&tmp_ptr->instance_id, buffer);
+		safe_unpackstr(&tmp_ptr->instance_type, buffer);
 		safe_unpackstr(&tmp_ptr->node_addr, buffer);
 		safe_unpackstr(&tmp_ptr->node_hostname, buffer);
 		safe_unpackstr(&tmp_ptr->node_names, buffer);
@@ -1067,9 +1071,12 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		pack_time(msg->timestamp, buffer);
 		pack_time(msg->slurmd_start_time, buffer);
 		pack32(msg->status, buffer);
+		packstr(msg->extra, buffer);
 		packstr(msg->features_active, buffer);
 		packstr(msg->features_avail, buffer);
 		packstr(msg->hostname, buffer);
+		packstr(msg->instance_id, buffer);
+		packstr(msg->instance_type, buffer);
 		packstr(msg->node_name, buffer);
 		packstr(msg->arch, buffer);
 		packstr(msg->cpu_spec_list, buffer);
@@ -1171,9 +1178,12 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpack_time(&node_reg_ptr->slurmd_start_time, buffer);
 		/* load the data values */
 		safe_unpack32(&node_reg_ptr->status, buffer);
+		safe_unpackstr(&node_reg_ptr->extra, buffer);
 		safe_unpackstr(&node_reg_ptr->features_active, buffer);
 		safe_unpackstr(&node_reg_ptr->features_avail, buffer);
 		safe_unpackstr(&node_reg_ptr->hostname, buffer);
+		safe_unpackstr(&node_reg_ptr->instance_id, buffer);
+		safe_unpackstr(&node_reg_ptr->instance_type, buffer);
 		safe_unpackstr(&node_reg_ptr->node_name, buffer);
 		safe_unpackstr(&node_reg_ptr->arch, buffer);
 		safe_unpackstr(&node_reg_ptr->cpu_spec_list, buffer);
@@ -1691,6 +1701,8 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->os, buffer);
 		safe_unpackstr(&node->comment, buffer);
 		safe_unpackstr(&node->extra, buffer);
+		safe_unpackstr(&node->instance_id, buffer);
+		safe_unpackstr(&node->instance_type, buffer);
 		safe_unpackstr(&node->reason, buffer);
 		if (acct_gather_energy_unpack(&node->energy, buffer,
 					      protocol_version, 1)

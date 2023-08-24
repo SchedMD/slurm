@@ -5369,6 +5369,13 @@ static void *NEW_FUNC(CLUSTER_CONDITION)(void)
 	return cond;
 }
 
+static void *NEW_FUNC(INSTANCE)(void)
+{
+	slurmdb_instance_rec_t *instance = xmalloc(sizeof(*instance));
+	slurmdb_init_instance_rec(instance, false);
+	return instance;
+}
+
 static int PARSE_FUNC(JOB_EXCLUSIVE)(const parser_t *const parser, void *obj,
 				     data_t *src, args_t *args,
 				     data_t *parent_path)
@@ -5857,6 +5864,27 @@ static const flag_bit_t PARSER_FLAG_ARRAY(SLURMDB_JOB_FLAGS)[] = {
 	add_flag_bit(SLURMDB_JOB_FLAG_SCHED, "STARTED_ON_SCHEDULE"),
 	add_flag_bit(SLURMDB_JOB_FLAG_BACKFILL, "STARTED_ON_BACKFILL"),
 };
+
+#define add_skip(field) \
+	add_parser_skip(slurmdb_instance_rec_t, field)
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_instance_rec_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(slurmdb_instance_rec_t, mtype, true, field, 0, path, desc)
+/* should mirror the structure of slurmdb_instance_rec_t */
+static const parser_t PARSER_ARRAY(INSTANCE)[] ={
+	add_parse(STRING, cluster, "cluster", NULL),
+	add_parse(STRING, extra, "extra", NULL),
+	add_parse(STRING, instance_id, "instance_id", NULL),
+	add_parse(STRING, instance_type, "instance_type", NULL),
+	add_parse(STRING, node_name, "node_name", NULL),
+	add_parse(TIMESTAMP, time_end, "time/time_end", NULL),
+	add_parse(TIMESTAMP, time_start, "time/time_start", NULL),
+};
+#undef add_parse
+#undef add_parse_req
+#undef add_skip
+
 
 #define add_skip(field) \
 	add_parser_skip(slurmdb_job_rec_t, field)
@@ -6427,6 +6455,8 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, gres, "gres", NULL),
 	add_parse(STRING, gres_drain, "gres_drained", NULL),
 	add_parse(STRING, gres_used, "gres_used", NULL),
+	add_parse(STRING, instance_id, "instance_id", NULL),
+	add_parse(STRING, instance_type, "instance_type", NULL),
 	add_parse(TIMESTAMP_NO_VAL, last_busy, "last_busy", NULL),
 	add_parse(STRING, mcs_label, "mcs_label", NULL),
 	add_parse(UINT64, mem_spec_limit, "specialized_memory", NULL),
@@ -7336,6 +7366,20 @@ static const parser_t PARSER_ARRAY(OPENAPI_WARNING)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_instance_cond_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(INSTANCE_CONDITION)[] = {
+	add_parse(CSV_STRING_LIST, cluster_list, "cluster", "CSV clusters list"),
+	add_parse(CSV_STRING_LIST, extra_list, "extra", "CSV extra list"),
+	add_parse(CSV_STRING_LIST, format_list, "format", "CSV format list"),
+	add_parse(CSV_STRING_LIST, instance_id_list, "instance_id", "CSV instance_id list"),
+	add_parse(CSV_STRING_LIST, instance_type_list, "instance_type", "CSV instance_type list"),
+	add_parse(STRING, node_list, "node_list", "ranged node string"),
+	add_parse(TIMESTAMP, time_end, "time_end", "time end UNIX timestamp"),
+	add_parse(TIMESTAMP, time_start, "time_start", "time start UNIX timestamp"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc) \
 	add_parser(job_submit_request_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(JOB_SUBMIT_REQ)[] = {
 	add_parse(STRING, script, "script", "batch job script"),
@@ -7736,6 +7780,7 @@ add_openapi_response_single(OPENAPI_ASSOCS_RESP, ASSOC_LIST, "associations", "as
 add_openapi_response_single(OPENAPI_ASSOCS_REMOVED_RESP, STRING_LIST, "removed_associations", "removed_associations");
 add_openapi_response_single(OPENAPI_CLUSTERS_RESP, CLUSTER_REC_LIST, "clusters", "clusters");
 add_openapi_response_single(OPENAPI_CLUSTERS_REMOVED_RESP, STRING_LIST, "deleted_clusters", "deleted_clusters");
+add_openapi_response_single(OPENAPI_INSTANCES_RESP, INSTANCE_LIST, "instances", "instances");
 add_openapi_response_single(OPENAPI_SLURMDBD_STATS_RESP, STATS_REC_PTR, "statistics", "statistics");
 add_openapi_response_single(OPENAPI_SLURMDBD_JOBS_RESP, JOB_LIST, "jobs", "jobs");
 add_openapi_response_single(OPENAPI_SLURMDBD_QOS_RESP, QOS_LIST, "QOS", "QOS");
@@ -7785,6 +7830,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 	add_parse(QOS_LIST, qos, "qos", "qos"),
 	add_parse(WCKEY_LIST, wckeys, "wckeys", "wckeys"),
 	add_parse(ASSOC_LIST, associations, "associations", "associations"),
+	add_parse(INSTANCE_LIST, instances, "instances", "instances"),
 };
 #undef add_parse
 
@@ -8177,6 +8223,7 @@ static const parser_t parsers[] = {
 	addpp(PARTITION_INFO_MSG_PTR, partition_info_msg_t *, PARTITION_INFO_MSG),
 	addpp(RESERVATION_INFO_MSG_PTR, reserve_info_msg_t *, RESERVATION_INFO_MSG),
 	addpp(SELECTED_STEP_PTR, slurm_selected_step_t *, SELECTED_STEP),
+	addpp(INSTANCE_CONDITION_PTR, slurmdb_instance_cond_t *, INSTANCE_CONDITION),
 	addpp(JOB_CONDITION_PTR, slurmdb_job_cond_t *, JOB_CONDITION),
 	addpp(QOS_CONDITION_PTR, slurmdb_qos_cond_t *, QOS_CONDITION),
 	addpp(ASSOC_CONDITION_PTR, slurmdb_assoc_cond_t *, ASSOC_CONDITION),
@@ -8192,6 +8239,7 @@ static const parser_t parsers[] = {
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
 	addpa(ASSOC, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
+	addpa(INSTANCE, slurmdb_instance_rec_t, NEW_FUNC(INSTANCE), slurmdb_destroy_instance_rec),
 	addpa(USER, slurmdb_user_rec_t, NEW_FUNC(USER), slurmdb_destroy_user_rec),
 	addpa(JOB, slurmdb_job_rec_t, (parser_new_func_t) slurmdb_create_job_rec, slurmdb_destroy_job_rec),
 	addpa(STEP, slurmdb_step_rec_t, (parser_new_func_t) slurmdb_create_step_rec, slurmdb_destroy_step_rec),
@@ -8229,6 +8277,7 @@ static const parser_t parsers[] = {
 	addpa(OPENAPI_META, openapi_resp_meta_t, NULL, free_openapi_resp_meta),
 	addpa(OPENAPI_ERROR, openapi_resp_error_t, NULL, free_openapi_resp_error),
 	addpa(OPENAPI_WARNING, openapi_resp_warning_t, NULL, free_openapi_resp_warning),
+	addpa(INSTANCE_CONDITION, slurmdb_instance_cond_t, NULL, slurmdb_destroy_instance_cond),
 	addpa(JOB_SUBMIT_REQ, job_submit_request_t, NULL, NULL),
 	addpa(JOB_CONDITION, slurmdb_job_cond_t, NULL, slurmdb_destroy_job_cond),
 	addpa(QOS_CONDITION, slurmdb_qos_cond_t, NULL, slurmdb_destroy_qos_cond),
@@ -8271,6 +8320,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_ASSOCS_REMOVED_RESP),
 	addoar(OPENAPI_CLUSTERS_RESP),
 	addoar(OPENAPI_CLUSTERS_REMOVED_RESP),
+	addoar(OPENAPI_INSTANCES_RESP),
 	addpa(OPENAPI_SLURMDBD_CONFIG_RESP, openapi_resp_slurmdbd_config_t, NULL, NULL),
 	addoar(OPENAPI_SLURMDBD_STATS_RESP),
 	addoar(OPENAPI_SLURMDBD_JOBS_RESP),
@@ -8328,6 +8378,7 @@ static const parser_t parsers[] = {
 	addpl(ASSOC_SHORT_LIST, ASSOC_SHORT, NEED_NONE),
 	addpl(COORD_LIST, COORD, NEED_NONE),
 	addpl(CLUSTER_ACCT_REC_LIST, CLUSTER_ACCT_REC, NEED_NONE),
+	addpl(INSTANCE_LIST, INSTANCE, NEED_NONE),
 	addpl(JOB_LIST, JOB, NEED_NONE),
 	addpl(STEP_LIST, STEP, NEED_NONE),
 	addpl(STATS_RPC_LIST, STATS_RPC, NEED_NONE),
