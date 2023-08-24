@@ -108,6 +108,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 23.02.3 which broken x11 forwarding for hosts when
     MUNGE sends a localhost address in the encode host field. This is caused
     when the node hostname is mapped to 127.0.0.1 (or similar) in /etc/hosts.
+ -- openapi/[db]v0.0.39 - fix memory leak on parsing error.
 
 * Changes in Slurm 23.02.4
 ==========================

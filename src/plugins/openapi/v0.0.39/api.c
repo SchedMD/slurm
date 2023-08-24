@@ -103,6 +103,8 @@ static bool _on_error(void *arg, data_parser_type_t type, int error_code,
 
 	resp_error(ctxt, error_code, source, "%s", str);
 
+	xfree(str);
+
 	return false;
 }
 
