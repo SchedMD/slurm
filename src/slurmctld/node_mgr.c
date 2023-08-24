@@ -5200,11 +5200,14 @@ extern void set_node_reason(node_record_t *node_ptr,
 	xassert(node_ptr);
 
 	if (message && message[0]) {
-		if (node_ptr->reason &&
-		    !xstrstr(node_ptr->reason, message)) {
-			xstrfmtcat(node_ptr->reason, " : %s", message);
+		if (node_ptr->reason) {
+			char *tmp;
+			tmp = xstrdup(" : ");
+			xstrcat(tmp, message);
+			if (!xstrstr(node_ptr->reason, tmp))
+				xstrfmtcat(node_ptr->reason, " : %s", message);
+			xfree(tmp);
 		} else {
-			xfree(node_ptr->reason);
 			node_ptr->reason = xstrdup(message);
 		}
 		node_ptr->reason_time = time;
