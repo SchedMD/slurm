@@ -719,6 +719,8 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 		const parser_t *const fp = find_parser_by_type(parser->type);
 		uint64_t set = 0;
 
+		rc = SLURM_SUCCESS;
+
 		if (parser->ptr_offset != NO_VAL)
 			dst += parser->ptr_offset;
 
