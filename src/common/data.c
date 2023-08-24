@@ -1194,6 +1194,9 @@ extern int data_list_split_str(data_t *dst, const char *src, const char *token)
 	if (dst->type != TYPE_LIST)
 		return SLURM_ERROR;
 
+	if (!str || !str[0])
+		return SLURM_SUCCESS;
+
 	tok = strtok_r(str, "/", &save_ptr);
 	while (tok) {
 		data_t *e = data_list_append(dst);
