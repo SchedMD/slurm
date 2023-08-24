@@ -6223,7 +6223,7 @@ extern int load_assoc_mgr_last_tres(void)
 	buf_t *buffer = NULL;
 	time_t buf_time;
 	dbd_list_msg_t *msg = NULL;
-	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
+	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK, .qos = WRITE_LOCK };
 
 	xassert(init_setup.state_save_location &&
 		*init_setup.state_save_location);
@@ -6800,7 +6800,7 @@ extern void assoc_mgr_set_assoc_tres_cnt(slurmdb_assoc_rec_t *assoc)
 				     false, NULL);
 }
 
-/* tres read lock needs to be locked before this is called. */
+/* tres read and qos write locks need to be locked before this is called. */
 extern void assoc_mgr_set_qos_tres_cnt(slurmdb_qos_rec_t *qos)
 {
 	bool relative;

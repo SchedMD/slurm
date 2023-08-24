@@ -2915,7 +2915,7 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 	char *user_name = NULL;
 	bool rc = true;
 	assoc_mgr_lock_t locks =
-		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
+		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = READ_LOCK };
 	bool strict_checking;
 	double limit_factor = -1.0;
 	uint64_t grp_tres_ctld[slurmctld_tres_cnt];
@@ -2938,7 +2938,7 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 		assoc_mgr_lock(&locks);
 
 	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
-	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+	xassert(verify_assoc_lock(QOS_LOCK, WRITE_LOCK));
 	xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
 
 	assoc_mgr_set_qos_tres_cnt(&qos_rec);
@@ -4293,7 +4293,7 @@ extern bool acct_policy_job_time_out(job_record_t *job_ptr)
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t *assoc = NULL;
 	assoc_mgr_lock_t locks =
-		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
+		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = READ_LOCK };
 	time_t now;
 	int i, tres_pos = 0;
 	acct_policy_tres_usage_t tres_usage;
