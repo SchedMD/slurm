@@ -28,6 +28,9 @@ an abbreviated view of <b>struct hostent</b> will be provided. Within a given
 process, the response will include only the cloud hosts that belong to
 allocation.</p>
 
+<p>All of this information is populated by slurmctld as it is seen on the
+host running slurmctld.</p>
+
 <h2 id="INSTALLATION">Installation
 <a class="slurm_link" href="#INSTALLATION"></a>
 </h2>
@@ -170,6 +173,13 @@ overwhelm the underlying directory services.</p>
 with --enable-multiple-slurmd, you can specify which slurmd is used with NodeName
 and SlurmdSpoolDir parameters in the <b>nss_slurm.conf</b> file.</p>
 
-<p style="text-align:center;">Last modified 19 May 2022</p>
+<p>Since the information is gathered from the slurmctld node, there can be
+unexpected consequences if the information differs between the controller and
+the worker nodes. One possible scenario is if a user's shell is /sbin/nologin
+on the slurmctld machine but /bin/bash on the slurmd node. An interactive
+salloc may fail to launch since it will try to spawn the default shell,
+which according to the slurmctld is /sbin/nologin.</p>
+
+<p style="text-align:center;">Last modified 24 Aug 2023</p>
 
 <!--#include virtual="footer.txt"-->
