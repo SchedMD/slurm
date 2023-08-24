@@ -1035,7 +1035,6 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	uint32_t job_uid = NO_VAL;
 	job_record_t *job_ptr, *first_job_ptr = NULL;
 	char *err_msg = NULL, **job_submit_user_msg = NULL;
 	ListIterator iter;
@@ -1093,9 +1092,6 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 	inx = 0;
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = list_next(iter))) {
-		if (job_uid == NO_VAL)
-			job_uid = job_desc_msg->user_id;
-
 		if ((error_code = _valid_id("REQUEST_HET_JOB_ALLOCATION",
 					    job_desc_msg, msg->auth_uid,
 					    msg->auth_gid,
@@ -1192,7 +1188,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    !acct_policy_validate_het_job(submit_job_list)) {
 		info("Hetjob %u exceeded association/QOS limit for user %u",
-		     het_job_id, job_uid);
+		     het_job_id, msg->auth_uid);
 		error_code = ESLURM_ACCOUNTING_POLICY;
         }
 
