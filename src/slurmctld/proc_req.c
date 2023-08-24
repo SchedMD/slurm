@@ -1092,12 +1092,11 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 	inx = 0;
 	iter = list_iterator_create(job_req_list);
 	while ((job_desc_msg = list_next(iter))) {
-		if ((error_code = _valid_id("REQUEST_HET_JOB_ALLOCATION",
-					    job_desc_msg, msg->auth_uid,
-					    msg->auth_gid,
-					    msg->protocol_version))) {
-			break;
-		}
+		/*
+		 * Ignore what was sent in the RPC, only use auth values.
+		 */
+		job_desc_msg->user_id = msg->auth_uid;
+		job_desc_msg->group_id = msg->auth_gid;
 
 		_set_hostname(msg, &job_desc_msg->alloc_node);
 
@@ -1323,12 +1322,11 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t *msg)
 		goto send_msg;
 	}
 
-	if ((error_code = _valid_id("REQUEST_RESOURCE_ALLOCATION", job_desc_msg,
-				    msg->auth_uid, msg->auth_gid,
-				    msg->protocol_version))) {
-		reject_job = true;
-		goto send_msg;
-	}
+	/*
+	 * Ignore what was sent in the RPC, only use auth values.
+	 */
+	job_desc_msg->user_id = msg->auth_uid;
+	job_desc_msg->group_id = msg->auth_gid;
 
 	sched_debug3("Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%u",
 		     msg->auth_uid);
