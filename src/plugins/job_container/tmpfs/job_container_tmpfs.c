@@ -123,7 +123,7 @@ static int _restore_ns(List steps, const char *d_name)
 	}
 
 	/* here we think this is a job container */
-	debug3("determine if job %lu is still running", job_id);
+	log_flag(JOB_CONT, "determine if job %lu is still running", job_id);
 	stepd = list_find_first(steps, (ListFindF)_find_step_in_list, &job_id);
 	if (!stepd) {
 		debug("%s: Job %lu not found, deleting the namespace",
@@ -401,8 +401,8 @@ static int _clean_job_basepath(uint32_t job_id)
 				   jc_conf->basepath, ep->d_name);
 			/* it is not important if this fails */
 			if (umount2(path, MNT_DETACH))
-				debug2("failed to unmount %s for job %u",
-				       path, job_id);
+				log_flag(JOB_CONT, "failed to unmount %s for job %u",
+					 path, job_id);
 			xfree(path);
 		}
 	}
@@ -508,7 +508,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 			xfree(result);
 			goto exit2;
 		} else {
-			debug3("initscript stdout: %s", result);
+			log_flag(JOB_CONT, "initscript stdout: %s", result);
 		}
 		xfree(result);
 	}
@@ -786,7 +786,7 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 		xfree(ns_holder);
 		return SLURM_ERROR;
 	} else {
-		debug3("job entered namespace");
+		log_flag(JOB_CONT, "job entered namespace");
 	}
 
 	close(fd);
@@ -830,8 +830,8 @@ static int _delete_ns(uint32_t job_id)
 	rc = umount2(ns_holder, MNT_DETACH);
 	if (rc) {
 		if ((errno == EINVAL) || (errno == ENOENT)) {
-			debug2("%s: umount2 %s failed: %m",
-			       __func__, ns_holder);
+			log_flag(JOB_CONT, "%s: umount2 %s failed: %m",
+				 __func__, ns_holder);
 		} else {
 			error("%s: umount2 %s failed: %m",
 			      __func__, ns_holder);
@@ -861,7 +861,7 @@ static int _delete_ns(uint32_t job_id)
 	}
 
 	if (umount2(job_mount, MNT_DETACH))
-		debug2("umount2: %s failed: %m", job_mount);
+		log_flag(JOB_CONT, "umount2: %s failed: %m", job_mount);
 	if (rmdir(job_mount))
 		error("rmdir %s failed: %m", job_mount);
 
