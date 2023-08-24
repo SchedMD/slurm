@@ -786,7 +786,7 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 		xfree(ns_holder);
 		return SLURM_ERROR;
 	} else {
-		log_flag(JOB_CONT, "job entered namespace");
+		log_flag(JOB_CONT, "job %u entered namespace", job_id);
 	}
 
 	close(fd);
@@ -816,8 +816,9 @@ static int _delete_ns(uint32_t job_id)
 	 */
 	if (step_ns_fd != -1) {
 		if (close(step_ns_fd))
-			log_flag(JOB_CONT, "close step_ns_fd(%d) failed: %m",
-				 step_ns_fd);
+			log_flag(JOB_CONT, "job %u close step_ns_fd(%d) failed: %m",
+				 job_id, step_ns_fd);
+
 		else
 			step_ns_fd = -1;
 	}
