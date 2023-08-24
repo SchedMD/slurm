@@ -1741,6 +1741,8 @@ static int DUMP_FUNC(STRING)(const parser_t *const parser, void *obj,
 
 	if (*src)
 		data_set_string(data, *src);
+	else if (args->flags & FLAG_COMPLEX_VALUES)
+		data_set_null(data);
 	else
 		data_set_string(data, "");
 
