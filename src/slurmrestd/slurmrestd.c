@@ -98,7 +98,6 @@ typedef struct {
 
 /* Debug level to use */
 static int debug_level = 0;
-static int debug_increase = 0;
 /* detected run mode */
 static run_mode_t run_mode = { 0 };
 /* Listen string */
@@ -257,14 +256,14 @@ static void _setup_logging(int argc, char **argv)
 	log_options_t logopt = LOG_OPTS_INITIALIZER;
 	log_facility_t fac = SYSLOG_FACILITY_DAEMON;
 
-	/* set debug level as requested */
-	logopt.syslog_level = debug_level + debug_increase;
+	/* increase debug level as requested */
+	logopt.syslog_level += debug_level;
 
 	if (run_mode.stderr_tty) {
 		/* Log to stderr if it is a tty */
 		logopt = (log_options_t) LOG_OPTS_STDERR_ONLY;
 		fac = SYSLOG_FACILITY_USER;
-		logopt.stderr_level = debug_level + debug_increase;
+		logopt.stderr_level += debug_level;
 	}
 
 	if (log_init(xbasename(argv[0]), logopt, fac, NULL))
@@ -334,7 +333,7 @@ static void _parse_commandline(int argc, char **argv)
 				fatal("Unable to resolve user: %s", optarg);
 			break;
 		case 'v':
-			debug_increase++;
+			debug_level++;
 			break;
 		case 'V':
 			print_slurm_version();
