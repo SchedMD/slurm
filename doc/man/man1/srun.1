@@ -1319,14 +1319,6 @@ of tasks as one task per thread.
 .IP
 
 .TP
-\fB\-\-gid\fR=<\fIgroup\fR>
-If \fBsrun\fR is run as root, and the \fB\-\-gid\fR option is used,
-submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR
-may be the group name or the numerical group ID. This option applies to
-job allocations.
-.IP
-
-.TP
 \fB\-\-gpu\-bind\fR=[verbose,]<\fItype\fR>
 Bind tasks to specific GPUs.
 By default every spawned task can access every GPU allocated to the step.
@@ -3004,18 +2996,6 @@ administrator.
 \fBNOTE\fR: Invalid TRES for \-\-tres\-per\-task include
 bb,billing,energy,fs,mem,node,pages,vmem.
 .br
-.IP
-
-.TP
-\fB\-\-uid\fR=<\fIuser\fR>
-Attempt to submit and/or run a job as \fIuser\fR instead of the
-invoking user id. The invoking user's credentials will be used
-to check access permissions for the target partition. User root
-may use this option to run jobs as a normal user in a RootOnly
-partition for example. If run as root, \fBsrun\fR will drop
-its permissions to the uid specified after node allocation is
-successful. \fIuser\fR may be the user name or numerical user ID. This option
-applies to job and step allocations.
 .IP
 
 .TP

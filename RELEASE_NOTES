@@ -108,6 +108,7 @@ COMMAND CHANGES (see man pages for details)
     Previously, memory = mem-per-cpu * all cpus including unusable threads.
     Now, memory = mem-per-cpu * only usuable threads. This behavior matches
     the documentation and select/cons_tres.
+ -- salloc/srun - Remove --uid/--gid options.
 
 API CHANGES
 ===========
