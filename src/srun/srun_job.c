@@ -124,7 +124,6 @@ extern char **environ;
  * Prototypes:
  */
 
-static int  _become_user(void);
 static void _call_spank_fini(void);
 static int  _call_spank_local_user(srun_job_t *job, slurm_opt_t *opt_local);
 static void _default_sigaction(int sig);
@@ -1503,11 +1502,6 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 				_compress_het_job_nodelist(job_resp_list);
 		}
 
-		/*
-		 *  Become --uid user
-		 */
-		if (_become_user () < 0)
-			fatal("Unable to assume uid=%u", opt.uid);
 		if (_create_job_step(job, true, srun_job_list, het_job_id,
 				     het_job_nodelist) < 0) {
 			slurm_complete_job(my_job_id, 1);
@@ -1526,12 +1520,6 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 			slurm_free_resource_allocation_response_msg(resp);
 		}
 	}
-
-	/*
-	 *  Become --uid user
-	 */
-	if (_become_user () < 0)
-		fatal("Unable to assume uid=%u", opt.uid);
 
 	/*
 	 * Spawn process to ensure clean-up of job and/or step
@@ -1771,35 +1759,6 @@ _normalize_hostlist(const char *hostlist)
 		return xstrdup(hostlist);
 
 	return buf;
-}
-
-static int _become_user (void)
-{
-	char *user;
-
-	/* Already the user, so there's nothing to change. Return early. */
-	if (opt.uid == SLURM_AUTH_NOBODY)
-		return SLURM_SUCCESS;
-
-	if (!(user = uid_to_string_or_null(opt.uid))) {
-		xfree(user);
-		return (error ("Invalid user id %u: %m", opt.uid));
-	}
-
-	if ((opt.gid != getgid()) && (setgid(opt.gid) < 0)) {
-		xfree(user);
-		return (error ("setgid: %m"));
-	}
-
-	if (initgroups(user, gid_from_uid(opt.uid)))
-		return (error ("initgroups: %m"));
-
-	xfree(user);
-
-	if (setuid (opt.uid) < 0)
-		return (error ("setuid: %m"));
-
-	return (0);
 }
 
 static int _call_spank_local_user(srun_job_t *job, slurm_opt_t *opt_local)
