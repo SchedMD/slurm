@@ -6890,6 +6890,15 @@ extern void assoc_mgr_set_unset_qos_tres_relative_cnt(bool locked)
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
+	if (!assoc_mgr_qos_list) {
+		if (!(init_setup.enforce & ACCOUNTING_ENFORCE_QOS)) {
+			if (!locked)
+				assoc_mgr_unlock(&locks);
+			return;
+		}
+		xassert(assoc_mgr_qos_list);
+	}
+
 	(void) list_for_each(assoc_mgr_qos_list, _set_relative_cnt, NULL);
 
 	if (!locked)
@@ -6902,6 +6911,15 @@ extern void assoc_mgr_clear_qos_tres_relative_cnt(bool locked)
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
+
+	if (!assoc_mgr_qos_list) {
+		if (!(init_setup.enforce & ACCOUNTING_ENFORCE_QOS)) {
+			if (!locked)
+				assoc_mgr_unlock(&locks);
+			return;
+		}
+		xassert(assoc_mgr_qos_list);
+	}
 
 	(void) list_for_each(assoc_mgr_qos_list, _reset_relative_flag, NULL);
 
