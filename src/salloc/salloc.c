@@ -326,12 +326,6 @@ int main(int argc, char **argv)
 	 */
 	if (is_interactive)
 		atexit(_reset_input_mode);
-	if (opt.gid != SLURM_AUTH_NOBODY) {
-		if (setgid(opt.gid) < 0) {
-			error("setgid: %m");
-			exit(error_exit);
-		}
-	}
 
 	/* If can run on multiple clusters find the earliest run time
 	 * and run it there */
@@ -409,19 +403,6 @@ int main(int argc, char **argv)
 		else
 			debug("%s", msg);
 		sleep(++retries);
-	}
-
-	/* If the requested uid is different than ours, become that uid */
-	if (opt.uid != SLURM_AUTH_NOBODY) {
-		/* drop extended groups before changing uid/gid */
-		if ((setgroups(0, NULL) < 0)) {
-			error("setgroups: %m");
-			exit(error_exit);
-		}
-		if (setuid(opt.uid) < 0) {
-			error("setuid: %m");
-			exit(error_exit);
-		}
 	}
 
 	if (!alloc && !job_resp_list) {
