@@ -96,6 +96,8 @@ static int _op_handler_jobs(ctxt_t *ctxt)
 			job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
 		}
 
+		slurmdb_job_cond_def_start_end(job_cond);
+
 		if (!job_cond->cluster_list)
 			job_cond->cluster_list = list_create(xfree_ptr);
 

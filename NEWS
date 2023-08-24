@@ -148,6 +148,9 @@ documents those changes that are of interest to users and administrators.
     given as a string instead of an object.
  -- scontrol/squeue - Step output in JSON or YAML output will will have the
     'id' field given as a string instead of an object.
+ -- slurmrestd - For 'GET /slurmdb/v0.0.40/jobs' mimick default behavior for
+    handling of job start and end times as sacct when one or both fields are
+    not provided as a query parameter.
 
 * Changes in Slurm 23.02.5
 ==========================
