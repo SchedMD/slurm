@@ -1558,8 +1558,11 @@ static int _get_nvml_process_info(nvmlReturn_t (*get_proc)(nvmlDevice_t,
 	 */
 	rc = get_proc(device, &proc_cnt, NULL);
 
-	if ((rc != NVML_SUCCESS) && (rc != NVML_ERROR_INSUFFICIENT_SIZE))
+	if ((rc != NVML_SUCCESS) && (rc != NVML_ERROR_INSUFFICIENT_SIZE)) {
+		error("NVML: Failed to get %s running process count(%d): %s",
+		      _get_nvml_func_str(get_proc), rc, nvmlErrorString(rc));
 		return SLURM_ERROR;
+	}
 
 	if (proc_cnt) {
 		proc_info = xcalloc(proc_cnt, sizeof(*proc_info));
@@ -1626,8 +1629,11 @@ static int _get_gpuutil(nvmlDevice_t device, pid_t pid,
 	if (rc == NVML_SUCCESS || !cnt)
 		return SLURM_SUCCESS;
 
-	if (rc != NVML_ERROR_INSUFFICIENT_SIZE)
+	if (rc != NVML_ERROR_INSUFFICIENT_SIZE) {
+		error("NVML: Failed to get process count for gpu utilization(%d): %s",
+		      rc, nvmlErrorString(rc));
 		return SLURM_ERROR;
+	}
 
 	proc_util = xcalloc(cnt, sizeof(*proc_util));
 	rc = nvmlDeviceGetProcessUtilization(device, proc_util, &cnt,
