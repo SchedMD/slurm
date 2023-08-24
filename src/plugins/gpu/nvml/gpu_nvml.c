@@ -1853,12 +1853,10 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 		if (!_nvml_get_handle(i, &device))
 			continue;
 
-		if (track_gpumem &&
-		    (_get_gpumem(device, pid, data) != SLURM_SUCCESS))
-			return SLURM_ERROR;
-		if (track_gpuutil &&
-		    (_get_gpuutil(device, pid, data) != SLURM_SUCCESS))
-			return SLURM_ERROR;
+		if (track_gpumem)
+			_get_gpumem(device, pid, data);
+		if (track_gpuutil)
+			_get_gpuutil(device, pid, data);
 
 		log_flag(JAG, "pid %d has GPUUtil=%lu and MemMB=%lu",
 			 pid,
