@@ -140,6 +140,7 @@ documents those changes that are of interest to users and administrators.
     gpu memory information.
  -- slurmrestd - Convert to generating OperationIDs based on path for all
     v0.0.40 tagged paths.
+ -- slurmrestd - Reduce memory used while dumping a job's stdio paths.
 
 * Changes in Slurm 23.02.5
 ==========================
