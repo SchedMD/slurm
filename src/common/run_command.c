@@ -287,7 +287,7 @@ extern char *run_command_poll_child(int cpid,
 				    int *status,
 				    bool *timed_out)
 {
-	bool send_terminate = true, reaped = false;
+	bool send_terminate = true;
 	struct pollfd fds;
 	struct timeval tstart;
 	int resp_size = 1024, resp_offset = 0;
@@ -337,20 +337,6 @@ extern char *run_command_poll_child(int cpid,
 		i = poll(&fds, 1, new_wait);
 
 		if (i == 0) {
-			/*
-			 * If the process finished but its stdout file
-			 * descriptor is still open somehow (for
-			 * example, if the script spawned a child
-			 * process), then poll() will return 0.
-			 * Try to reap the script process right now; if
-			 * the script is done, then just exit and kill
-			 * the process group to avoid being stuck in
-			 * this loop.
-			 */
-			if (waitpid(cpid, status, WNOHANG) > 0) {
-				reaped = true;
-				break;
-			}
 			continue;
 		} else if (i < 0) {
 			if ((errno == EAGAIN) || (errno == EINTR))
@@ -384,10 +370,7 @@ extern char *run_command_poll_child(int cpid,
 			}
 		}
 	}
-	if (reaped) {
-		/* Child already reaped, just kill the process group */
-		_kill_pg(cpid);
-	} else if (command_shutdown && orphan_on_shutdown) {
+	if (command_shutdown && orphan_on_shutdown) {
 		/* Don't kill the script on shutdown */
 		*status = 0;
 	} else if (send_terminate) {
