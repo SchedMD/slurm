@@ -161,6 +161,28 @@ extern cron_entry_t *cronspec_to_bitstring(char *pos)
 				pos += 5;
 			else
 				pos += 8;
+		} else if (!strncasecmp(pos, "fika", 4)) {
+			/* "0 15 * * *" */
+			bit_set(entry->minute, 0);
+			bit_set(entry->hour, 15);
+			bit_set_all(entry->day_of_month);
+			entry->flags |= CRON_WILD_DOM;
+			bit_set_all(entry->month);
+			entry->flags |= CRON_WILD_MONTH;
+			bit_set_all(entry->day_of_week);
+			entry->flags |= CRON_WILD_DOW;
+			pos += 4;
+		} else if (!strncasecmp(pos, "teatime", 7)) {
+			/* "0 16 * * *" */
+			bit_set(entry->minute, 0);
+			bit_set(entry->hour, 16);
+			bit_set_all(entry->day_of_month);
+			entry->flags |= CRON_WILD_DOM;
+			bit_set_all(entry->month);
+			entry->flags |= CRON_WILD_MONTH;
+			bit_set_all(entry->day_of_week);
+			entry->flags |= CRON_WILD_DOW;
+			pos += 7;
 		} else if (!strncasecmp(pos, "hourly", 6)) {
 			/* "0 * * * *" */
 			bit_set(entry->minute, 0);

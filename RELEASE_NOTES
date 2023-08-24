@@ -109,6 +109,7 @@ COMMAND CHANGES (see man pages for details)
     Now, memory = mem-per-cpu * only usuable threads. This behavior matches
     the documentation and select/cons_tres.
  -- salloc/srun - Remove --uid/--gid options.
+ -- scrontab - Add @fika and @teatime as valid repetition times.
 
 API CHANGES
 ===========

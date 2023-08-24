@@ -1,4 +1,4 @@
-.TH scrontab "1" "Slurm Commands" "October 2022" "Slurm Commands"
+.TH scrontab "1" "Slurm Commands" "August 2023" "Slurm Commands"
 
 .SH "NAME"
 scrontab \- manage Slurm crontab files
@@ -127,6 +127,18 @@ Job will become eligible at \fI00:00\fR each day.
 .TP
 \fB@hourly\fR
 Job will become eligible at the first minute of each hour.
+.IP
+
+.TP
+\fB@fika\fR
+Job will become eligible at \fI15:00\fR each day.
+(This is a non-standard extension.)
+.IP
+
+.TP
+\fB@teatime\fR
+Job will become eligible at \fI15:00\fR each day.
+(This is a non-standard extension.)
 .IP
 
 .SH "ENVIRONMENT VARIABLES"
