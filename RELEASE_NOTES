@@ -148,3 +148,5 @@ SLURMRESTD CHANGES
     generated OpenAPI clients forcing limitations on the possible values not
     present in Slurm's parsing capabilities.
  -- openapi/v0.0.40 - add /instance and /instances endpoints.
+ -- slurmrestd - OperationIDs may have changed during conversion to v0.0.40
+    from v0.0.39 paths to better match their paths.

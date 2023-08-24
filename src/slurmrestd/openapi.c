@@ -1089,6 +1089,50 @@ static data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
+static data_for_each_cmd_t _foreach_strip_params(data_t *data, void *arg)
+{
+	char *item = data_get_string(data);
+	data_t **last_ptr = arg;
+	int len = strlen(item);
+
+	xassert(item);
+	if (!item || (item[0] != '{')) {
+		char *dst = xstrdup(item);
+		char *last = dst;
+
+		/* strip out '.' */
+		for (int i = 0; i < len; i++) {
+			if (item[i] == '.')
+				continue;
+
+			*last = item[i];
+			last++;
+		}
+
+		*last = '\0';
+
+		data_set_string_own(data, dst);
+
+		*last_ptr = data;
+		return DATA_FOR_EACH_CONT;
+	}
+
+	xassert(len > 2);
+	xassert(item[len - 1] == '}');
+	if (*last_ptr &&
+	    !xstrncmp(data_get_string(*last_ptr), (item + 1), (len - 2))) {
+		/*
+		 * Last item is the same as the parameter name which means that
+		 * the item is uncountable and we need to set last as single.
+		 */
+		data_set_string(data, data_get_string(*last_ptr));
+		data_set_string(*last_ptr, "single");
+		return DATA_FOR_EACH_CONT;
+	}
+
+	return DATA_FOR_EACH_DELETE;
+}
+
 /*
  * Merge plugin id with operationIds in paths.
  * All operationIds must be globaly unique.
@@ -1097,7 +1141,7 @@ static data_for_each_cmd_t _differentiate_path_operationId(const char *key,
 							   data_t *data,
 							   void *arg)
 {
-	data_t *merge[4] = {0}, *merged = NULL;
+	data_t *merge[6] = {0}, *merged = NULL;
 	id_merge_path_t *args = arg;
 	data_t *op = NULL;
 
@@ -1124,11 +1168,18 @@ static data_for_each_cmd_t _differentiate_path_operationId(const char *key,
 		merge[1] =
 			parse_url_path(data_get_string_const(op), false, true);
 	} else if (args->merge_args->flags & OAS_FLAG_SET_OPID) {
+		data_t *last = NULL;
+		data_t *path = parse_url_path(args->path, false, true);
+
+		(void) data_list_for_each(path, _foreach_strip_params, &last);
+
 		op = data_key_set(data, "operationId");
 
-		merge[0] = data_set_string(data_new(), key);
-		merge[1] = args->server_path;
-		merge[2] = parse_url_path(args->path, false, true);
+		merge[0] = args->server_path;
+		merge[1] = data_list_dequeue(path); /* slurm vs slurmdb */
+		merge[2] = data_list_dequeue(path); /* v0.0.XX */
+		merge[3] = data_set_string(data_new(), key);
+		merge[4] = path;
 	}
 
 	merged = data_list_join((const data_t **) merge, true);

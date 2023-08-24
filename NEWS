@@ -138,6 +138,8 @@ documents those changes that are of interest to users and administrators.
     the documentation and select/cons_tres.
  -- gpu/nvml - Reduce chances of NVML_ERROR_INSUFFICIENT_SIZE error when getting
     gpu memory information.
+ -- slurmrestd - Convert to generating OperationIDs based on path for all
+    v0.0.40 tagged paths.
 
 * Changes in Slurm 23.02.5
 ==========================
