@@ -72,11 +72,8 @@ static void _dump_accounts(ctxt_t *ctxt, slurmdb_account_cond_t *acct_cond)
 {
 	List acct_list = NULL;
 
-	if (!db_query_list(ctxt, &acct_list, slurmdb_accounts_get, acct_cond) &&
-	    acct_list)
-		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_ACCOUNTS_RESP, acct_list,
-					 ctxt);
-
+	(void) db_query_list(ctxt, &acct_list, slurmdb_accounts_get, acct_cond);
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_ACCOUNTS_RESP, acct_list, ctxt);
 	FREE_NULL_LIST(acct_list);
 }
 
