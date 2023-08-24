@@ -96,6 +96,13 @@ static int _op_handler_jobs(ctxt_t *ctxt)
 			job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
 		}
 
+		if (!job_cond->cluster_list)
+			job_cond->cluster_list = list_create(xfree_ptr);
+
+		if (list_is_empty(job_cond->cluster_list))
+			list_append(job_cond->cluster_list,
+				    xstrdup(slurm_conf.cluster_name));
+
 		_dump_jobs(ctxt, job_cond);
 
 		slurmdb_destroy_job_cond(job_cond);
