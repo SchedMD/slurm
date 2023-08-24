@@ -1389,7 +1389,7 @@
         }
       }
     },
-    "/slurmdb/{data_parser}/wckey/{wckey}": {
+    "/slurmdb/{data_parser}/wckey/{id}": {
       "delete": {
         "tags": [
           "slurmdb"

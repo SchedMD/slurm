@@ -7628,7 +7628,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_USER_QUERY)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_wckey_param_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_WCKEY_PARAM)[] = {
-	add_parse(STRING, wckey, "wckey", "wckey id"),
+	add_parse(STRING, wckey, "id", "wckey id"),
 };
 #undef add_parse
 

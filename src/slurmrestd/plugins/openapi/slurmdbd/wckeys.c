@@ -159,8 +159,7 @@ cleanup:
 extern void init_op_wckeys(void)
 {
 	bind_handler("/slurmdb/{data_parser}/wckeys/", _op_handler_wckeys, 0);
-	bind_handler("/slurmdb/{data_parser}/wckey/{wckey}", _op_handler_wckey,
-		     0);
+	bind_handler("/slurmdb/{data_parser}/wckey/{id}", _op_handler_wckey, 0);
 }
 
 extern void destroy_op_wckeys(void)
