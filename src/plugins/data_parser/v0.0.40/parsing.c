@@ -1174,7 +1174,7 @@ static int _foreach_dump_list(void *obj, void *arg)
 	xassert(args->parser->ptr_offset == NO_VAL);
 
 	/* we don't know the size of the items in the list */
-	if (dump(obj, NO_VAL, find_parser_by_type(args->parser->list_type),
+	if (dump(&obj, NO_VAL, find_parser_by_type(args->parser->list_type),
 		 item, args->args))
 		return -1;
 
