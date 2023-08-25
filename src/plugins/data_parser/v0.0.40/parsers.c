@@ -5372,7 +5372,7 @@ static void *NEW_FUNC(CLUSTER_CONDITION)(void)
 static void *NEW_FUNC(INSTANCE)(void)
 {
 	slurmdb_instance_rec_t *instance = xmalloc(sizeof(*instance));
-	slurmdb_init_instance_rec(instance, false);
+	slurmdb_init_instance_rec(instance);
 	return instance;
 }
 

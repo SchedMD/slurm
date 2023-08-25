@@ -1950,8 +1950,7 @@ extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 				     bool free_it);
 extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,
 					bool free_it);
-extern void slurmdb_init_instance_rec(slurmdb_instance_rec_t *instance,
-				      bool free_it);
+extern void slurmdb_init_instance_rec(slurmdb_instance_rec_t *instance);
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos,
 				 bool free_it,
 				 uint32_t init_val);

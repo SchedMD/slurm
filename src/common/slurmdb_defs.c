@@ -1604,14 +1604,11 @@ extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,
 	federation->flags = FEDERATION_FLAG_NOTSET;
 }
 
-extern void slurmdb_init_instance_rec(slurmdb_instance_rec_t *instance,
-					 bool free_it)
+extern void slurmdb_init_instance_rec(slurmdb_instance_rec_t *instance)
 {
 	if (!instance)
 		return;
 
-	if (free_it)
-		slurmdb_destroy_instance_rec(instance);
 	memset(instance, 0, sizeof(slurmdb_instance_rec_t));
 
 	/* instance->cluster = NULL; */
