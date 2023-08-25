@@ -2204,6 +2204,14 @@ static int _cluster_get_assocs(mysql_conn_t *mysql_conn,
 				goto no_parent_limits;
 			}
 
+			if (!row2[ASSOC2_REQ_PARENT_ID]) {
+				error("Parent id for cluster %s assoc id %d (account %s) expected but not found.  The %s account may not exist.",
+				      assoc->cluster, assoc->id, assoc->acct,
+				      assoc->acct);
+				parent_id = 0;
+				goto no_parent_limits;
+			}
+
 			parent_id = slurm_atoul(row2[ASSOC2_REQ_PARENT_ID]);
 			if (!without_parent_limits) {
 				if (row2[ASSOC2_REQ_DEF_QOS])

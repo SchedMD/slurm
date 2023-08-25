@@ -98,6 +98,7 @@ documents those changes that are of interest to users and administrators.
     Slurm waiting indefinitely for scripts to finish.
  -- Allow slurmdbd -R to work if the root assoc id is not 1.
  -- Fix slurmdbd -R not returning an error under certain conditions.
+ -- slurmdbd - Avoid potential NULL pointer dereference in the mysql plugin.
 
 * Changes in Slurm 23.02.4
 ==========================
