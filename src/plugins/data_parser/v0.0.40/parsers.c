@@ -8239,7 +8239,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 #undef add_openapi_response_single
 
 /* add parser for a pointer */
-#define addpp(typev, typet, typep)                                             \
+#define addpp(typev, typet, typep, allow_null)                                 \
 	{                                                                      \
 		.magic = MAGIC_PARSER,                                         \
 		.model = PARSER_MODEL_PTR,                                     \
@@ -8250,21 +8250,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 		.needs = NEED_NONE,                                            \
 		.ptr_offset = NO_VAL,                                          \
 		.pointer_type = DATA_PARSER_##typep,                           \
-		.allow_null_pointer = false,                                   \
-	}
-/* add parser for a pointer - allowing NULL */
-#define addppn(typev, typet, typep)                                            \
-	{                                                                      \
-		.magic = MAGIC_PARSER,                                         \
-		.model = PARSER_MODEL_PTR,                                     \
-		.type = DATA_PARSER_##typev,                                   \
-		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
-		.obj_type_string = XSTRINGIFY(typet),                          \
-		.size = sizeof(typet),                                         \
-		.needs = NEED_NONE,                                            \
-		.ptr_offset = NO_VAL,                                          \
-		.pointer_type = DATA_PARSER_##typep,                           \
-		.allow_null_pointer = true,                                    \
+		.allow_null_pointer = allow_null,                              \
 	}
 /* add parser array (for struct) */
 #define addpa(typev, typet, newf, freef)                                       \
@@ -8605,42 +8591,42 @@ static const parser_t parsers[] = {
 	addntp(RESERVATION_INFO_ARRAY, RESERVATION_INFO),
 
 	/* Pointer model parsers */
-	addpp(STATS_REC_PTR, slurmdb_stats_rec_t *, STATS_REC),
-	addpp(ROLLUP_STATS_PTR, slurmdb_rollup_stats_t *, ROLLUP_STATS),
-	addpp(ASSOC_SHORT_PTR, slurmdb_assoc_rec_t *, ASSOC_SHORT),
-	addpp(ASSOC_USAGE_PTR, slurmdb_assoc_usage_t *, ASSOC_USAGE),
-	addpp(JOB_RES_PTR, job_resources_t *, JOB_RES),
-	addpp(PARTITION_INFO_PTR, partition_info_t *, PARTITION_INFO),
-	addpp(ACCT_GATHER_ENERGY_PTR, acct_gather_energy_t *, ACCT_GATHER_ENERGY),
-	addpp(EXT_SENSORS_DATA_PTR, ext_sensors_data_t *, EXT_SENSORS_DATA),
-	addpp(POWER_MGMT_DATA_PTR, power_mgmt_data_t *, POWER_MGMT_DATA),
-	addpp(JOB_DESC_MSG_PTR, job_desc_msg_t *, JOB_DESC_MSG),
-	addpp(CRON_ENTRY_PTR, cron_entry_t *, CRON_ENTRY),
-	addpp(JOB_ARRAY_RESPONSE_MSG_PTR, job_array_resp_msg_t *, JOB_ARRAY_RESPONSE_MSG),
-	addpp(NODES_PTR, node_info_msg_t *, NODES),
-	addpp(STATS_MSG_PTR, stats_info_response_msg_t *, STATS_MSG),
-	addpp(LICENSES_PTR, license_info_msg_t *, LICENSES),
-	addpp(JOB_INFO_MSG_PTR, job_info_msg_t *, JOB_INFO_MSG),
-	addpp(JOB_SUBMIT_RESPONSE_MSG_PTR, submit_response_msg_t *, JOB_SUBMIT_RESPONSE_MSG),
-	addpp(PARTITION_INFO_MSG_PTR, partition_info_msg_t *, PARTITION_INFO_MSG),
-	addpp(RESERVATION_INFO_MSG_PTR, reserve_info_msg_t *, RESERVATION_INFO_MSG),
-	addpp(SELECTED_STEP_PTR, slurm_selected_step_t *, SELECTED_STEP),
-	addpp(INSTANCE_CONDITION_PTR, slurmdb_instance_cond_t *, INSTANCE_CONDITION),
-	addpp(JOB_CONDITION_PTR, slurmdb_job_cond_t *, JOB_CONDITION),
-	addpp(QOS_CONDITION_PTR, slurmdb_qos_cond_t *, QOS_CONDITION),
-	addpp(ASSOC_CONDITION_PTR, slurmdb_assoc_cond_t *, ASSOC_CONDITION),
-	addpp(USER_CONDITION_PTR, slurmdb_user_cond_t *, USER_CONDITION),
-	addpp(WCKEY_CONDITION_PTR, slurmdb_wckey_cond_t *, WCKEY_CONDITION),
-	addpp(ACCOUNT_CONDITION_PTR, slurmdb_account_cond_t *, ACCOUNT_CONDITION),
-	addpp(CLUSTER_CONDITION_PTR, slurmdb_cluster_cond_t *, CLUSTER_CONDITION),
-	addpp(OPENAPI_SLURMDBD_CONFIG_RESP_PTR, openapi_resp_slurmdbd_config_t *, OPENAPI_SLURMDBD_CONFIG_RESP),
-	addpp(SLURM_STEP_ID_STRING_PTR, slurm_step_id_t *, SLURM_STEP_ID_STRING),
-	addpp(ASSOC_SHARES_OBJ_WRAP_PTR, assoc_shares_object_t *, ASSOC_SHARES_OBJ_WRAP),
-	addpp(SHARES_REQ_MSG_PTR, shares_request_msg_t *, SHARES_REQ_MSG),
-	addpp(SHARES_RESP_MSG_PTR, shares_response_msg_t *, SHARES_RESP_MSG),
+	addpp(STATS_REC_PTR, slurmdb_stats_rec_t *, STATS_REC, false),
+	addpp(ROLLUP_STATS_PTR, slurmdb_rollup_stats_t *, ROLLUP_STATS, false),
+	addpp(ASSOC_SHORT_PTR, slurmdb_assoc_rec_t *, ASSOC_SHORT, false),
+	addpp(ASSOC_USAGE_PTR, slurmdb_assoc_usage_t *, ASSOC_USAGE, false),
+	addpp(JOB_RES_PTR, job_resources_t *, JOB_RES, false),
+	addpp(PARTITION_INFO_PTR, partition_info_t *, PARTITION_INFO, false),
+	addpp(ACCT_GATHER_ENERGY_PTR, acct_gather_energy_t *, ACCT_GATHER_ENERGY, false),
+	addpp(EXT_SENSORS_DATA_PTR, ext_sensors_data_t *, EXT_SENSORS_DATA, false),
+	addpp(POWER_MGMT_DATA_PTR, power_mgmt_data_t *, POWER_MGMT_DATA, false),
+	addpp(JOB_DESC_MSG_PTR, job_desc_msg_t *, JOB_DESC_MSG, false),
+	addpp(CRON_ENTRY_PTR, cron_entry_t *, CRON_ENTRY, false),
+	addpp(JOB_ARRAY_RESPONSE_MSG_PTR, job_array_resp_msg_t *, JOB_ARRAY_RESPONSE_MSG, false),
+	addpp(NODES_PTR, node_info_msg_t *, NODES, false),
+	addpp(STATS_MSG_PTR, stats_info_response_msg_t *, STATS_MSG, false),
+	addpp(LICENSES_PTR, license_info_msg_t *, LICENSES, false),
+	addpp(JOB_INFO_MSG_PTR, job_info_msg_t *, JOB_INFO_MSG, false),
+	addpp(JOB_SUBMIT_RESPONSE_MSG_PTR, submit_response_msg_t *, JOB_SUBMIT_RESPONSE_MSG, false),
+	addpp(PARTITION_INFO_MSG_PTR, partition_info_msg_t *, PARTITION_INFO_MSG, false),
+	addpp(RESERVATION_INFO_MSG_PTR, reserve_info_msg_t *, RESERVATION_INFO_MSG, false),
+	addpp(SELECTED_STEP_PTR, slurm_selected_step_t *, SELECTED_STEP, false),
+	addpp(INSTANCE_CONDITION_PTR, slurmdb_instance_cond_t *, INSTANCE_CONDITION, false),
+	addpp(JOB_CONDITION_PTR, slurmdb_job_cond_t *, JOB_CONDITION, false),
+	addpp(QOS_CONDITION_PTR, slurmdb_qos_cond_t *, QOS_CONDITION, false),
+	addpp(ASSOC_CONDITION_PTR, slurmdb_assoc_cond_t *, ASSOC_CONDITION, false),
+	addpp(USER_CONDITION_PTR, slurmdb_user_cond_t *, USER_CONDITION, false),
+	addpp(WCKEY_CONDITION_PTR, slurmdb_wckey_cond_t *, WCKEY_CONDITION, false),
+	addpp(ACCOUNT_CONDITION_PTR, slurmdb_account_cond_t *, ACCOUNT_CONDITION, false),
+	addpp(CLUSTER_CONDITION_PTR, slurmdb_cluster_cond_t *, CLUSTER_CONDITION, false),
+	addpp(OPENAPI_SLURMDBD_CONFIG_RESP_PTR, openapi_resp_slurmdbd_config_t *, OPENAPI_SLURMDBD_CONFIG_RESP, false),
+	addpp(SLURM_STEP_ID_STRING_PTR, slurm_step_id_t *, SLURM_STEP_ID_STRING, false),
+	addpp(ASSOC_SHARES_OBJ_WRAP_PTR, assoc_shares_object_t *, ASSOC_SHARES_OBJ_WRAP, false),
+	addpp(SHARES_REQ_MSG_PTR, shares_request_msg_t *, SHARES_REQ_MSG, false),
+	addpp(SHARES_RESP_MSG_PTR, shares_response_msg_t *, SHARES_RESP_MSG, false),
 
 	/* Pointer model parsers allowing NULL */
-	addppn(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META),
+	addpp(OPENAPI_META_PTR, openapi_resp_meta_t *, OPENAPI_META, true),
 
 	/* Array of parsers */
 	addpa(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
