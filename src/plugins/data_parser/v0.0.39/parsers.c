@@ -1139,9 +1139,10 @@ static int DUMP_FUNC(JOB_EXIT_CODE)(const parser_t *const parser, void *obj,
 	dsc = data_key_set(dst, "status");
 	drc = data_key_set(dst, "return_code");
 
-	if (*ec == NO_VAL)
+	if (*ec == NO_VAL) {
 		data_set_string(dsc, "PENDING");
-	else if (WIFEXITED(*ec)) {
+		data_set_int(drc, 0);
+	} else if (WIFEXITED(*ec)) {
 		data_set_string(dsc, "SUCCESS");
 		data_set_int(drc, 0);
 	} else if (WIFSIGNALED(*ec)) {
@@ -1151,8 +1152,10 @@ static int DUMP_FUNC(JOB_EXIT_CODE)(const parser_t *const parser, void *obj,
 		data_set_int(data_key_set(sig, "signal_id"), WTERMSIG(*ec));
 		data_set_string(data_key_set(sig, "name"),
 				strsignal(WTERMSIG(*ec)));
+		data_set_int(drc, -127);
 	} else if (WCOREDUMP(*ec)) {
 		data_set_string(dsc, "CORE_DUMPED");
+		data_set_int(drc, -127);
 	} else {
 		data_set_string(dsc, "ERROR");
 		data_set_int(drc, WEXITSTATUS(*ec));
@@ -4931,7 +4934,7 @@ static const parser_t PARSER_ARRAY(QOS)[] = {
 	add_complex_parser(slurmdb_qos_rec_t, QOS_PREEMPT_LIST, false, "preempt/list", NULL),
 	add_parse_bit_flag_array(slurmdb_qos_rec_t, QOS_PREEMPT_MODES, false, preempt_mode, "preempt/mode", NULL),
 	add_parse(UINT32_NO_VAL, preempt_exempt_time, "preempt/exempt_time", NULL),
-	add_parse(UINT32, priority, "priority", NULL),
+	add_parse(UINT32_NO_VAL, priority, "priority", NULL),
 	add_skip(usage), /* not packed */
 	add_parse(FLOAT64_NO_VAL, usage_factor, "usage_factor", NULL),
 	add_parse(FLOAT64_NO_VAL, usage_thres, "usage_threshold", NULL),
@@ -5733,7 +5736,7 @@ static const parser_t PARSER_ARRAY(ACCT_GATHER_ENERGY)[] = {
 	add_parse(UINT32, ave_watts, "average_watts", NULL),
 	add_parse(UINT64, base_consumed_energy, "base_consumed_energy", NULL),
 	add_parse(UINT64, consumed_energy, "consumed_energy", NULL),
-	add_parse(UINT32, current_watts, "current_watts", NULL),
+	add_parse(UINT32_NO_VAL, current_watts, "current_watts", NULL),
 	add_parse(UINT64, previous_consumed_energy, "previous_consumed_energy", NULL),
 	add_parse(UINT64, poll_time, "last_collected", NULL),
 };

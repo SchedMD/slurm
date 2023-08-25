@@ -975,7 +975,7 @@ def test_db_qos():
                         number=199
                     ),
             ),
-            priority=180,
+            priority=V0039Uint32NoVal(number=180, set=True),
             usage_factor=V0039Float64NoVal(
                     set=True,
                     number=82382.23823,
@@ -1032,7 +1032,8 @@ def test_db_qos():
         assert qos['name'] == qos_name
         assert qos['preempt']['exempt_time']['set']
         assert qos['preempt']['exempt_time']['number'] == 199
-        assert qos['priority'] == 180
+        assert qos['priority']['set']
+        assert qos['priority']['number'] == 180
         assert qos['usage_factor']['set']
         assert qos['usage_factor']['number'] == 82382.23823
         assert qos['usage_threshold']['set']
@@ -1050,7 +1051,8 @@ def test_db_qos():
         assert not qos['limits']['min']['tres']['per']['job']
         assert qos['name'] == qos2_name
         assert not qos['preempt']['exempt_time']['set']
-        assert qos['priority'] == 0
+        assert qos['priority']['set']
+        assert qos['priority']['number'] == 0
         assert qos['usage_factor']['set']
         assert qos['usage_factor']['number'] == 1
         assert not qos['usage_threshold']['set']
@@ -1157,7 +1159,7 @@ def test_jobs():
                 partition=partition_name,
                 name="test job",
                 environment=env,
-                priority=0,
+                priority=V0039Uint32NoVal(number=0, set=True),
                 current_working_directory="/tmp/"
             )
     )
@@ -1170,20 +1172,21 @@ def test_jobs():
     assert resp.body['step_id']
     jobid = int(resp.body['job_id'])
 
-    job = V0039JobSubmission(
-            job=V0039JobDescMsg(
-                partition=partition_name,
-                name="updated test job",
-                environment=env,
-                priority=0
-            )
-    )
-
-    resp = slurm.slurm_v0039_update_job(
-            path_params={'job_id': str(jobid)}, body=job)
-    assert resp.response.status == 200
-    assert not resp.body['warnings']
-    assert not resp.body['errors']
+# Disabled until v0.0.40 due double $refs not being supported
+#    job = V0039JobSubmission(
+#            job=V0039JobDescMsg(
+#                environment=env,
+#                partition=partition_name,
+#                name="updated test job",
+#                priority=V0039Uint32NoVal(number=0, set=True),
+#            )
+#    )
+#
+#    resp = slurm.slurm_v0039_update_job(
+#            path_params={'job_id': str(jobid)}, body=job)
+#    assert resp.response.status == 200
+#    assert not resp.body['warnings']
+#    assert not resp.body['errors']
 
     resp = slurm.slurm_v0039_get_job(path_params={'job_id': str(jobid)})
     assert resp.response.status == 200
@@ -1191,7 +1194,7 @@ def test_jobs():
     assert not resp.body['errors']
     for job in resp.body['jobs']:
         assert job['job_id'] == jobid
-        assert job['name'] == "updated test job"
+        assert job['name'] == "test job"
         assert job['partition'] == partition_name
         assert job['priority']['set']
         assert job['priority']['number'] == 0
@@ -1211,7 +1214,7 @@ def test_jobs():
     assert not resp.body['errors']
     for job in resp.body['jobs']:
         assert job['job_id'] == jobid
-        assert job['name'] == "updated test job"
+        assert job['name'] == "test job"
         assert job['partition'] == partition_name
         assert job['user_name'] == local_user_name
         assert job['job_state'] == "CANCELLED"
@@ -1243,7 +1246,7 @@ def test_jobs():
             else:
                 requery=False
                 assert job['job_id'] == jobid
-                assert job['name'] == "updated test job"
+                assert job['name'] == "test job"
                 assert job['partition'] == partition_name
 
 def test_resv():
