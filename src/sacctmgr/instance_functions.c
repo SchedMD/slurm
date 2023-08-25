@@ -158,6 +158,7 @@ extern int sacctmgr_list_instance(int argc, char **argv)
 			fprintf(stderr, " Couldn't get localtime from %ld",
 				(long) instance_cond->time_start);
 			exit_code = 1;
+			slurmdb_destroy_instance_cond(instance_cond);
 			return SLURM_ERROR;
 		}
 		start_tm.tm_sec = 0;
