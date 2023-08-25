@@ -1382,7 +1382,7 @@ static int PARSE_FUNC(STEP_ID)(const parser_t *const parser, void *obj,
 {
 	uint32_t *id = obj;
 
-	data_convert_type(src, DATA_TYPE_NONE);
+	(void) data_convert_type(src, DATA_TYPE_NONE);
 
 	if (data_get_type(src) == DATA_TYPE_INT_64) {
 		if (data_get_int(src) > SLURM_MAX_NORMAL_STEP_ID)
