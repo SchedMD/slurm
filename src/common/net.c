@@ -290,7 +290,9 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 			++(*port);
 	}
 
-	close(*fd);
+	if (*fd >= 0)
+		close(*fd);
+
 	error("%s: all ports in range (%u, %u) exhausted, cannot establish listening port",
 	      __func__, min, max);
 
