@@ -2369,13 +2369,17 @@ static void _kill_step_on_msg_fail(step_complete_msg_t *req, slurm_msg_t *msg)
 	error("Step creation timed out: Deallocating %ps nodes %u-%u",
 	      &req->step_id, req->range_first, req->range_last);
 
-	_throttle_start(&active_rpc_cnt);
-	lock_slurmctld(job_write_lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+		_throttle_start(&active_rpc_cnt);
+		lock_slurmctld(job_write_lock);
+	}
 
 	rc = step_partial_comp(req, msg->auth_uid, true, &rem, &step_rc);
 
-	unlock_slurmctld(job_write_lock);
-	_throttle_fini(&active_rpc_cnt);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
+	}
 
 	END_TIMER2(__func__);
 	log_flag(STEPS, "%s: %ps rc:%s %s",
