@@ -2340,7 +2340,7 @@ static void _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 	}
 }
 
-static void _kill_step_on_msg_fail(step_complete_msg_t *req, uid_t uid)
+static void _kill_step_on_msg_fail(step_complete_msg_t *req, slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	int rc, rem;
@@ -2358,13 +2358,17 @@ static void _kill_step_on_msg_fail(step_complete_msg_t *req, uid_t uid)
 	error("Step creation timed out: Deallocating %ps nodes %u-%u",
 	      &req->step_id, req->range_first, req->range_last);
 
-	_throttle_start(&active_rpc_cnt);
-	lock_slurmctld(job_write_lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+		_throttle_start(&active_rpc_cnt);
+		lock_slurmctld(job_write_lock);
+	}
 
-	rc = step_partial_comp(req, uid, true, &rem, &step_rc);
+	rc = step_partial_comp(req, msg->auth_uid, true, &rem, &step_rc);
 
-	unlock_slurmctld(job_write_lock);
-	_throttle_fini(&active_rpc_cnt);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
+	}
 
 	END_TIMER2(__func__);
 	log_flag(STEPS, "%s: %ps rc:%s %s",
@@ -2535,7 +2539,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t *msg)
 			req.step_rc = SIGKILL;
 			req.range_first = 0;
 			req.range_last = step_layout->node_cnt - 1;
-			_kill_step_on_msg_fail(&req, msg->auth_uid);
+			_kill_step_on_msg_fail(&req, msg);
 		}
 
 		slurm_cred_destroy(slurm_cred);
