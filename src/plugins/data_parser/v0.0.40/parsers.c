@@ -1447,7 +1447,7 @@ static int PARSE_FUNC(SLURM_STEP_ID_STRING)(const parser_t *const parser,
 {
 	slurm_step_id_t *id = obj;
 
-	data_convert_type(src, DATA_TYPE_NONE);
+	(void) data_convert_type(src, DATA_TYPE_NONE);
 
 	if (data_get_type(src) == DATA_TYPE_STRING) {
 		slurm_selected_step_t step = {0};
