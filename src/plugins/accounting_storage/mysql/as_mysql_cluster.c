@@ -1466,6 +1466,7 @@ static slurmdb_instance_rec_t *_create_instance_rec(MYSQL_ROW row,
 		return NULL;
 
 	instance = xmalloc(sizeof(slurmdb_instance_rec_t));
+	slurmdb_init_instance_rec(instance);
 
 	instance->cluster = xstrdup(cluster);
 	if (row[EVENT_REQ_NODE] && row[EVENT_REQ_NODE][0])
