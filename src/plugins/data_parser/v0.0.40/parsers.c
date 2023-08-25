@@ -8238,22 +8238,6 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 #undef add_parse_bool
 #undef add_openapi_response_single
 
-/* add parser array (for struct) */
-#define addpa(typev, typet, newf, freef)                                       \
-	{                                                                      \
-		.magic = MAGIC_PARSER,                                         \
-		.model = PARSER_MODEL_ARRAY,                                   \
-		.type = DATA_PARSER_##typev,                                   \
-		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
-		.obj_type_string = XSTRINGIFY(typet),                          \
-		.size = sizeof(typet),                                         \
-		.new = newf,                                                   \
-		.free = freef,                                                 \
-		.needs = NEED_NONE,                                            \
-		.fields = PARSER_ARRAY(typev),                                 \
-		.field_count = ARRAY_SIZE(PARSER_ARRAY(typev)),                \
-		.ptr_offset = NO_VAL,                                          \
-	}
 /* add parser for a pointer */
 #define addpp(typev, typet, typep)                                             \
 	{                                                                      \
@@ -8281,6 +8265,22 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 		.ptr_offset = NO_VAL,                                          \
 		.pointer_type = DATA_PARSER_##typep,                           \
 		.allow_null_pointer = true,                                    \
+	}
+/* add parser array (for struct) */
+#define addpa(typev, typet, newf, freef)                                       \
+	{                                                                      \
+		.magic = MAGIC_PARSER,                                         \
+		.model = PARSER_MODEL_ARRAY,                                   \
+		.type = DATA_PARSER_##typev,                                   \
+		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
+		.obj_type_string = XSTRINGIFY(typet),                          \
+		.size = sizeof(typet),                                         \
+		.new = newf,                                                   \
+		.free = freef,                                                 \
+		.needs = NEED_NONE,                                            \
+		.fields = PARSER_ARRAY(typev),                                 \
+		.field_count = ARRAY_SIZE(PARSER_ARRAY(typev)),                \
+		.ptr_offset = NO_VAL,                                          \
 	}
 /* add parser for NULL terminated array of (sequential) objects */
 #define addnt(typev, typea)                                                    \
