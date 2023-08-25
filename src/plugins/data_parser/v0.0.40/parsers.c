@@ -4637,6 +4637,7 @@ static int PARSE_FUNC(SIGNAL)(const parser_t *const parser, void *obj,
 
 	if (!str[0]) {
 		*sig = NO_VAL16;
+		xfree(str);
 		return SLURM_SUCCESS;
 	}
 
