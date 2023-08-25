@@ -634,31 +634,25 @@ static int DUMP_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 
 	xassert(args->magic == MAGIC_ARGS);
 
-	if (*qos_id == 0) {
-		data_set_string(dst, "");
+	if (!(*qos_id) || (*qos_id) == INFINITE) {
+		if (!(args->flags & FLAG_COMPLEX_VALUES))
+			(void) data_set_string(dst, "");
+		else
+			xassert(data_get_type(dst) == DATA_TYPE_NULL);
+
 		return SLURM_SUCCESS;
 	}
 
 	/* find qos by id from global list */
 	xassert(args->qos_list);
-	if (!args->qos_list || list_is_empty(args->qos_list)) {
-		/* no known QOS to search */
-		return SLURM_SUCCESS;
-	}
-
 	qos = list_find_first(args->qos_list, slurmdb_find_qos_in_list, qos_id);
-	if (!qos) {
-		return on_error(DUMPING, parser->type, args, ESLURM_INVALID_QOS,
-				"list_find_first()->slurmdb_find_qos_in_list()",
-				__func__, "Unable to find QOS with id#%d",
-				*qos_id);
-	}
 
-	/*
-	 * Client is only ever provided the QOS name and not the ID as the is a
-	 * Slurm internal that no user should have to track.
-	 */
-	(void) data_set_string(dst, qos->name);
+	if (qos && qos->name && qos->name[0])
+		(void) data_set_string(dst, qos->name);
+	else if (qos->id)
+		data_set_string_fmt(dst, "%u", qos->id);
+	else if (!(args->flags & FLAG_COMPLEX_VALUES))
+		(void) data_set_string(dst, "");
 
 	return SLURM_SUCCESS;
 }
