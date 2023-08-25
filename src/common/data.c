@@ -1197,7 +1197,10 @@ extern int data_list_split_str(data_t *dst, const char *src, const char *token)
 	if (dst->type != TYPE_LIST)
 		return SLURM_ERROR;
 
-	if (!str || !str[0])
+	if (!str[0])
+		xfree(str);
+
+	if (!str)
 		return SLURM_SUCCESS;
 
 	tok = strtok_r(str, "/", &save_ptr);
