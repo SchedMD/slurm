@@ -1271,8 +1271,13 @@ static bool _opt_verify(void)
 			}
 		}
 
-		if ((opt.ntasks_per_node != NO_VAL) && opt.min_nodes &&
-		    (opt.ntasks_per_node != (opt.ntasks / opt.min_nodes))) {
+		if ((opt.ntasks_per_node != NO_VAL) &&
+		    slurm_option_set_by_env(&opt, 'n') &&
+		    !slurm_option_set_by_env(&opt, 'N')) {
+			slurm_option_reset(&opt, "ntasks");
+		} else if ((opt.ntasks_per_node != NO_VAL) && opt.min_nodes &&
+			   (opt.ntasks_per_node !=
+			    (opt.ntasks / opt.min_nodes))) {
 			if ((opt.ntasks > opt.ntasks_per_node) &&
 			    !mpack_reset_nodes)
 				warning("can't honor --ntasks-per-node set to %u which doesn't match the requested tasks %u with the number of requested nodes %u. Ignoring --ntasks-per-node.",
