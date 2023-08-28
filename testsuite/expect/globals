@@ -1778,7 +1778,7 @@ proc wait_for args {
 # OPTIONS
 #	-fail
 #		fail the testif the condition is not met within the timeout
-#	-subfail
+#	-subtest
 #		if the condition is met within the timeout call subpass, otherwise
 #		call subfail
 #	-timeout <float_number>
