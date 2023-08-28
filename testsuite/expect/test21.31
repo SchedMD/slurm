@@ -144,25 +144,11 @@ if {[check_resource_limits $sr1 [array get resource1_chck]] == 1} {
 # use scontrol show license to verify the cluster license was created
 #
 set matches 0
-spawn $scontrol show license
-expect {
-	-re "LicenseName=($sr1@$resource1(Server))" {
-		incr matches
-		exp_continue
-	}
-	-re "Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 2} {
-	fail "License output is incorrect ($matches != 2. Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes)"
+wait_for -subtest {$matches == 2} {
+	set output [run_command_output -fail "$scontrol show license"]
+	set matches 0
+	incr matches [regexp "LicenseName=($sr1@$resource1(Server))" $output]
+	incr matches [regexp "Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes" $output]
 }
 
 #
