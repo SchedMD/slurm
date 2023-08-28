@@ -245,6 +245,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix --exclusive jobs incorrectly gang-scheduling where they shouldn't.
  -- Fix allocations with CR_SOCKET, gres not assigned to a specific socket, and
     block core distribion potentially allocating more sockets than required.
+ -- gpu/oneapi - Store cores correctly so CPU affinity is tracked.
 
 * Changes in Slurm 23.02.4
 ==========================

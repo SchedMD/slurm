@@ -1009,7 +1009,6 @@ static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
 	uint32_t gpu_num = MAX_GPU_NUM;
 	unsigned long cpu_set[CPU_SET_SIZE] = {0};
 	char *cpu_aff_mac_range = NULL;
-	char *cpu_aff_abs_range = NULL;
 	int i;
 
 	List gres_list_system = list_create(destroy_gres_slurmd_conf);
@@ -1071,7 +1070,7 @@ static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
 		 * Convert cpu range str from machine to abstract (slurm) format
 		 */
 		if (node_config->xcpuinfo_mac_to_abs(cpu_aff_mac_range,
-						     &cpu_aff_abs_range)) {
+						     &gres_slurmd_conf.cpus)) {
 			error("Conversion from machine to abstract failed");
 			FREE_NULL_BITMAP(gres_slurmd_conf.cpus_bitmap);
 			xfree(cpu_aff_mac_range);
@@ -1088,7 +1087,6 @@ static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
 			info("Failed to get device property: 0x%x", oneapi_rc);
 			FREE_NULL_BITMAP(gres_slurmd_conf.cpus_bitmap);
 			xfree(cpu_aff_mac_range);
-			xfree(cpu_aff_abs_range);
 			xfree(gres_slurmd_conf.links);
 			continue;
 		}
@@ -1104,7 +1102,7 @@ static List _get_system_gpu_list_oneapi(node_config_load_t *node_config)
 		debug2("    CPU Affinity Range - Machine: %s",
 			cpu_aff_mac_range);
 		debug2("    Core Affinity Range - Abstract: %s",
-			cpu_aff_abs_range);
+			gres_slurmd_conf.cpus);
 
 		/* Print out possible frequencies for this device */
 		_oneapi_print_freqs(all_devices[i], LOG_LEVEL_DEBUG2);
