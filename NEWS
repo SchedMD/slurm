@@ -243,6 +243,8 @@ documents those changes that are of interest to users and administrators.
  -- For step allocations, fix --gres=none sometimes not ignoring gres from the
     job.
  -- Fix --exclusive jobs incorrectly gang-scheduling where they shouldn't.
+ -- Fix allocations with CR_SOCKET, gres not assigned to a specific socket, and
+    block core distribion potentially allocating more sockets than required.
 
 * Changes in Slurm 23.02.4
 ==========================

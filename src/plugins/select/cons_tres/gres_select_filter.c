@@ -351,7 +351,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 					 bool enforce_binding,
 					 bool first_pass,
 					 bitstr_t *avail_core,
-					 char *node_name)
+					 char *node_name,
+					 uint16_t cr_type)
 {
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
@@ -808,7 +809,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * up to required number of cores based on max_tasks_this_node.
 		 * In case of enforce-binding those are already cleared.
 		 */
-		if ((avail_cores_tot > req_cores) &&
+		if (!(cr_type & CR_SOCKET) &&
+		    (avail_cores_tot > req_cores) &&
 		    !enforce_binding && !first_pass &&
 		    (req_sock_cnt != sockets)) {
 			for (int s = 0; s < sockets; s++) {
@@ -841,7 +843,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * spread them out so that every socket has some cores
 		 * available to use with the nearby GRES that we do need.
 		 */
-		while (req_sock_cnt && (avail_cores_tot > req_cores)) {
+		while (!(cr_type & CR_SOCKET) &&
+		       (req_sock_cnt && (avail_cores_tot > req_cores))) {
 			int full_socket = -1;
 			for (int s = 0; s < sockets; s++) {
 				if (avail_cores_tot == req_cores)

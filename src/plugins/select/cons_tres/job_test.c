@@ -339,7 +339,8 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			  bool enforce_binding, int node_inx,
 			  uint16_t *avail_cpus, uint32_t max_nodes,
 			  int rem_nodes, bitstr_t **avail_core,
-			  avail_res_t **avail_res_array, bool first_pass)
+			  avail_res_t **avail_res_array, bool first_pass,
+			  uint16_t cr_type)
 {
 	int alloc_tasks = 0;
 	uint32_t min_tasks_this_node = 0, max_tasks_this_node = 0;
@@ -426,7 +427,8 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			&min_cores_this_node,
 			rem_nodes, enforce_binding, first_pass,
 			avail_core[node_inx],
-			node_record_table_ptr[node_inx]->name);
+			node_record_table_ptr[node_inx]->name,
+			cr_type);
 	}
 	if (max_tasks_this_node == 0) {
 		*avail_cpus = 0;
@@ -600,7 +602,8 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 		     i++) {
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass);
+				      avail_core, avail_res_array, first_pass,
+				      cr_type);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
@@ -661,7 +664,8 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			node_ptr = node_record_table_ptr[i];
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass);
+				      avail_core, avail_res_array, first_pass,
+				      cr_type);
 			if (avail_cpus == 0) {
 				bit_clear(node_map, i);
 				node_ptr = NULL;
@@ -1116,7 +1120,8 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass);
+				      avail_core, avail_res_array, first_pass,
+				      cr_type);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
@@ -1177,7 +1182,8 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass);
+				      avail_core, avail_res_array, first_pass,
+				      cr_type);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
@@ -1291,7 +1297,8 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass);
+				      avail_core, avail_res_array, first_pass,
+				      cr_type);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
@@ -1363,7 +1370,8 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 				_select_cores(job_ptr, mc_ptr, enforce_binding,
 					      i, &avail_cpus, max_nodes,
 					      min_rem_nodes, avail_core,
-					      avail_res_array, first_pass);
+					      avail_res_array, first_pass,
+					      cr_type);
 				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type);
@@ -1649,7 +1657,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		if (req_nodes_bitmap && bit_test(req_nodes_bitmap, i)) {
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass);
+				      avail_core, avail_res_array, first_pass,
+				      cr_type);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
@@ -1807,7 +1816,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass);
+				      avail_core, avail_res_array, first_pass,
+				      cr_type);
 			if (avail_cpus == 0) {
 				bit_clear(nw->node_bitmap, i);
 				continue;
@@ -2266,7 +2276,8 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		if (req_nodes_bitmap && bit_test(req_nodes_bitmap, i)) {
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass);
+				      avail_core, avail_res_array, first_pass,
+				      cr_type);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
@@ -2460,7 +2471,8 @@ try_again:
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass);
+				      avail_core, avail_res_array, first_pass,
+				      cr_type);
 			if (avail_cpus == 0) {
 				bit_clear(nw->node_bitmap, i);
 				continue;
@@ -2861,7 +2873,8 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass);
+				      avail_core, avail_res_array, first_pass,
+				      cr_type);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
@@ -2929,7 +2942,8 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 				_select_cores(job_ptr, mc_ptr, enforce_binding,
 					      i, &avail_cpus, max_nodes,
 					      min_rem_nodes, avail_core,
-					      avail_res_array, first_pass);
+					      avail_res_array, first_pass,
+					      cr_type);
 				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type);
@@ -3070,7 +3084,8 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass);
+				      avail_core, avail_res_array, first_pass,
+				      cr_type);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
@@ -3131,7 +3146,8 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass);
+				      avail_core, avail_res_array, first_pass,
+				      cr_type);
 			_cpus_to_use(&avail_cpus, rem_max_cpus,
 				     min_rem_nodes, details_ptr,
 				     avail_res_array[i], i, cr_type);
