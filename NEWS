@@ -242,6 +242,7 @@ documents those changes that are of interest to users and administrators.
     'GET /slurmdb/v0.0.39/jobs' from slurmrestd.
  -- For step allocations, fix --gres=none sometimes not ignoring gres from the
     job.
+ -- Fix --exclusive jobs incorrectly gang-scheduling where they shouldn't.
 
 * Changes in Slurm 23.02.4
 ==========================
