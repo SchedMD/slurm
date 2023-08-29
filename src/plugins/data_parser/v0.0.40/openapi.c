@@ -488,7 +488,8 @@ static data_t *_add_param(data_t *param, const char *name,
 			(in_path ? "path" : "query"));
 	xassert(name);
 	data_set_string(data_key_set(param, "name"), name);
-	data_set_string(data_key_set(param, "style"), "form");
+	data_set_string(data_key_set(param, "style"),
+			(in_path ? "simple" : "form"));
 	data_set_bool(data_key_set(param, "explode"), false);
 	data_set_bool(data_key_set(param, "deprecated"), deprecated);
 	data_set_bool(data_key_set(param, "allowEmptyValue"), allow_empty);
