@@ -430,6 +430,7 @@ static int _parse_pointer(const parser_t *const parser, void *dst, data_t *src,
 			 pt->obj_type_string, (uintptr_t) ptr,
 			 slurm_strerror(rc));
 		free_parser_obj(pt, *ptr);
+		*ptr = NULL;
 	}
 
 	return rc;
