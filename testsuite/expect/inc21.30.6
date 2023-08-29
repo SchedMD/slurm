@@ -30,7 +30,7 @@
 proc inc21_30_6 { wait_reason } {
 	global salloc acct number srun job_id1 bin_sleep maxnode_num
 
-	log_info "Starting MaxNode limit test"
+	log_info "Starting $wait_reason test"
 	set job_id1 0
 
 	# Raise an error to abort the catch block
@@ -86,6 +86,6 @@ proc inc21_30_6 { wait_reason } {
 
 	# Convert any errors into failures (after cleaning up)
 	if {$exception_code == 1} { ; # errors only
-		fail "Failure testing MaxNode limit: $message"
+		fail "Failure testing $wait_reason: $message"
 	}
 }

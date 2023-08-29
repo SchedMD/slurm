@@ -31,7 +31,7 @@ proc inc21_30_3 { wait_reason } {
 
 	global salloc scontrol srun acct re_word_str bin_sleep jobmatch number grjobs_num
 
-	log_info "Starting GrpJob limit test"
+	log_info "Starting $wait_reason test"
 	array set job_id {}
 	set check_num $grjobs_num
 
@@ -119,6 +119,6 @@ proc inc21_30_3 { wait_reason } {
 
 	# Convert any errors into failures (after cleaning up)
 	if {$exception_code == 1} { ; # errors only
-		fail "Failure testing GrpJob limits: $message"
+		fail "Failure testing $wait_reason: $message"
 	}
 }
