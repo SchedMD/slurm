@@ -425,8 +425,12 @@ static int _parse_pointer(const parser_t *const parser, void *dst, data_t *src,
 
 	*ptr = alloc_parser_obj(parser);
 
-	if ((rc = parse(*ptr, NO_VAL, pt, src, args, parent_path)))
+	if ((rc = parse(*ptr, NO_VAL, pt, src, args, parent_path))) {
+		log_flag(DATA, "%s object at 0x%"PRIxPTR" freed due to parser error: %s",
+			 pt->obj_type_string, (uintptr_t) ptr,
+			 slurm_strerror(rc));
 		free_parser_obj(pt, *ptr);
+	}
 
 	return rc;
 }
