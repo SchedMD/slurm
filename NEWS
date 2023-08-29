@@ -246,6 +246,12 @@ documents those changes that are of interest to users and administrators.
  -- Fix allocations with CR_SOCKET, gres not assigned to a specific socket, and
     block core distribion potentially allocating more sockets than required.
  -- gpu/oneapi - Store cores correctly so CPU affinity is tracked.
+ -- Revert a change in 23.02.3 where Slurm would kill a script's process group
+    as soon as the script ended instead of waiting as long as any process in
+    that process group held the stdout/stderr file descriptors open. That change
+    broke some scripts that relied on the previous behavior. Setting time limits
+    for scripts (such as PrologEpilogTimeout) is strongly encouraged to avoid
+    Slurm waiting indefinitely for scripts to finish.
 
 * Changes in Slurm 23.02.4
 ==========================
