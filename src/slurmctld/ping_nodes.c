@@ -187,6 +187,7 @@ void ping_nodes (void)
 
 	if (max_reg_threads == 0) {
 		max_reg_threads = MAX(slurm_conf.tree_width, 1);
+		max_reg_threads = MIN(max_reg_threads, 50);
 	}
 	reg_offset += max_reg_threads;
 	if ((reg_offset > active_node_record_count) &&
