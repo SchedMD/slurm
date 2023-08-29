@@ -29,7 +29,7 @@
 proc inc21_30_16 { wait_reason } {
 	global salloc srun acct number bin_sleep maxnodespu_num
 
-	log_info "Starting MaxNodesPerUser test"
+	log_info "Starting $wait_reason test"
 
 	set job_id 0
 
@@ -90,6 +90,6 @@ proc inc21_30_16 { wait_reason } {
 
 	# Convert any errors into failures (after cleaning up)
 	if {$exception_code == 1} { ; # errors only
-		fail "Failure testing MaxNodesPerUser: $message"
+		fail "Failure testing $wait_reason: $message"
 	}
 }

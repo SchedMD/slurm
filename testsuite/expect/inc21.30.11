@@ -35,7 +35,7 @@ proc inc21_30_11 { wait_reason } {
 		return
 	}
 
-	log_info "Starting GrpMem test"
+	log_info "Starting $wait_reason test"
 	set job_id1 0
 	set job_id2 0
 
@@ -90,6 +90,6 @@ proc inc21_30_11 { wait_reason } {
 
 	# Convert any errors into failures (after cleaning up)
 	if {$exception_code == 1} { ; # errors only
-		fail "Failure testing Group Memory: $message"
+		fail "Failure testing $wait_reason: $message"
 	}
 }
