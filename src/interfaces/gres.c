@@ -9596,13 +9596,21 @@ static int _get_usable_gres(int context_inx, int proc_id,
 	if (!xstrcmp(gres_name, "gpu") &&
 	    (sep = xstrstr(tres_bind_str, "gpu:"))) {
 		sep += 4;
-		if (!xstrncasecmp(sep, "map_gpu:", 8)) {
+		if (!xstrncasecmp(sep, "map_gpu:", 8)) { // Old Syntax
 			usable_gres = _get_usable_gres_map_or_mask(
 				(sep + 8), proc_id, gres_bit_alloc,
 				true, get_devices);
-		} else if (!xstrncasecmp(sep, "mask_gpu:", 9)) {
+		} else if (!xstrncasecmp(sep, "mask_gpu:", 9)) { // Old Syntax
 			usable_gres = _get_usable_gres_map_or_mask(
 				(sep + 9), proc_id, gres_bit_alloc,
+				false, get_devices);
+		} else if (!xstrncasecmp(sep, "map:", 4)) {
+			usable_gres = _get_usable_gres_map_or_mask(
+				(sep + 4), proc_id, gres_bit_alloc,
+				true, get_devices);
+		} else if (!xstrncasecmp(sep, "mask:", 5)) {
+			usable_gres = _get_usable_gres_map_or_mask(
+				(sep + 5), proc_id, gres_bit_alloc,
 				false, get_devices);
 		} else if (!xstrncasecmp(sep, "single:", 7)) {
 			if (!get_devices && gres_use_local_device_index()) {

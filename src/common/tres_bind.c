@@ -110,9 +110,11 @@ static int _valid_gpu_bind(char *arg)
 		arg += 8;
 	if (!xstrncasecmp(arg, "closest", 7))
 		return 0;
-	if (!xstrncasecmp(arg, "map_gpu:", 8))
+	if (!xstrncasecmp(arg, "map_gpu:", 8) || //Old syntax
+	    !xstrncasecmp(arg, "map:", 4))
 		return _valid_num_list(arg + 8, false);
-	if (!xstrncasecmp(arg, "mask_gpu:", 9))
+	if (!xstrncasecmp(arg, "mask_gpu:", 9) || //Old syntax
+	    !xstrncasecmp(arg, "mask:", 5))
 		return _valid_num_list(arg + 9, true);
 	if (!xstrncasecmp(arg, "none", 4))
 		return 0;
@@ -160,9 +162,9 @@ static int _valid_nic_bind(char *arg)
  *
  * Example: gpu:closest
  *          gpu:single:2
- *          gpu:map_gpu:0,1
- *          gpu:mask_gpu:0x3,0x3
- *          gpu:map_gpu:0,1+nic:closest
+ *          gpu:map:0,1
+ *          gpu:mask:0x3,0x3s
+ *          gpu:map:0,1+nic:closest
  */
 extern int tres_bind_verify_cmdline(const char *arg)
 {
