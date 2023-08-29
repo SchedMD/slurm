@@ -849,6 +849,68 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
+				data_t *src, args_t *args, data_t *parent_path)
+{
+	int rc = SLURM_ERROR;
+	slurmdb_assoc_rec_t assoc;
+	uint32_t id = 0, *id_ptr = obj;
+
+	slurmdb_init_assoc_rec(&assoc, false);
+	(void) data_convert_type(src, DATA_TYPE_NONE);
+
+	if (data_get_type(src) == DATA_TYPE_INT_64) {
+		if ((rc = PARSE(UINT32, id, src, parent_path, args)) || !id)
+			goto cleanup;
+
+		assoc.id = id;
+	} else if (data_get_type(src) == DATA_TYPE_NULL) {
+		rc = SLURM_SUCCESS;
+	} else {
+		slurmdb_assoc_rec_t *match;
+
+		if ((rc = PARSE(ASSOC_SHORT, assoc, src, parent_path, args)))
+			goto cleanup;
+
+		if ((match = list_find_first(args->assoc_list,
+					     (ListFindF) compare_assoc,
+					     &assoc))) {
+			id = match->id;
+		} else {
+			rc = ESLURM_INVALID_ASSOC;
+		}
+	}
+
+cleanup:
+	slurmdb_free_assoc_rec_members(&assoc);
+	*id_ptr = id;
+	return rc;
+}
+
+static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
+			       data_t *dst, args_t *args)
+{
+	uint32_t *id_ptr = obj;
+	slurmdb_assoc_rec_t key = {
+		.id = *id_ptr,
+	};
+
+	if (key.id && (key.id < NO_VAL)) {
+		slurmdb_assoc_rec_t *match;
+
+		if ((match = list_find_first(args->assoc_list,
+					     (ListFindF) compare_assoc, &key)))
+			return DUMP(ASSOC_SHORT_PTR, match, dst, args);
+	}
+
+	if (args->flags & FLAG_COMPLEX_VALUES) {
+		xassert(data_get_type(dst) == DATA_TYPE_NULL);
+		return SLURM_SUCCESS;
+	}
+
+	return DUMP(ASSOC_SHORT, key, dst, args);
+}
+
 static int PARSE_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
 				    data_t *src, args_t *args,
 				    data_t *parent_path)
@@ -8535,6 +8597,7 @@ static const parser_t parsers[] = {
 	addpsp(ASSOC_ID_STRING_CSV_LIST, STRING_LIST, list_t *, NEED_NONE, NULL),
 	addpsp(PROCESS_EXIT_CODE, PROCESS_EXIT_CODE_VERBOSE, uint32_t, NEED_NONE, "return code returned by process"),
 	addpsp(SLURM_STEP_ID_STRING, SELECTED_STEP, slurm_step_id_t, NEED_NONE, "Slurm Job StepId"),
+	addpsp(ASSOC_ID, ASSOC_SHORT, uint32_t, NEED_ASSOC, "Association ID"),
 
 	/* Complex type parsers */
 	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),

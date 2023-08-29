@@ -92,6 +92,7 @@ typedef enum {
 	DATA_PARSER_ACCOUNTING, /* slurmdb_accounting_rec_t */
 	DATA_PARSER_ACCOUNTING_PTR, /* slurmdb_accounting_rec_t* */
 	DATA_PARSER_ADMIN_LVL, /* uint16_t (placeholder for slurmdb_admin_level_t) */
+	DATA_PARSER_ASSOC_ID, /* uint32_t - Assumes local cluster which may be wrong */
 	DATA_PARSER_ASSOC_ID_STRING, /* char * of assoc id */
 	DATA_PARSER_ASSOC_ID_STRING_CSV_LIST, /* list of char* */
 	DATA_PARSER_ASSOC_LIST, /* list of slurmdb_assoc_rec_t* */
