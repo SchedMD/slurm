@@ -302,13 +302,13 @@ extern void _set_ref(data_t *obj, const parser_t *parser, spec_args_t *sargs)
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
+	while (parser->pointer_type)
+		parser = find_parser_by_type(parser->pointer_type);
+
 	if (sargs->disable_refs || !_should_be_ref(parser)) {
 		_set_openapi_parse(obj, parser, sargs);
 		return;
 	}
-
-	if (parser->pointer_type)
-		parser = find_parser_by_type(parser->pointer_type);
 
 	str = _get_parser_path(parser);
 	data_set_string_own(data_key_set(data_set_dict(obj), "$ref"), str);
