@@ -782,8 +782,9 @@ static int DUMP_FUNC(QOS_PREEMPT_LIST)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
-				data_t *src, args_t *args, data_t *parent_path)
+static int PARSE_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
+				    data_t *src, args_t *args,
+				    data_t *parent_path)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_job_rec_t *job = obj;
@@ -811,8 +812,8 @@ static int PARSE_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
-static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
-			       data_t *dst, args_t *args)
+static int DUMP_FUNC(JOB_ASSOC_ID)(const parser_t *const parser, void *obj,
+				   data_t *dst, args_t *args)
 {
 	slurmdb_job_rec_t *job = obj;
 	slurmdb_assoc_rec_t *assoc = NULL;
@@ -4709,7 +4710,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(UINT32, array_max_tasks, "array/limits/max/running/tasks", NULL),
 	add_parse(UINT32_NO_VAL, array_task_id, "array/task_id", NULL),
 	add_parse(STRING, array_task_str, "array/task", NULL),
-	add_complex_parser(slurmdb_job_rec_t, ASSOC_ID, false, "association", NULL),
+	add_complex_parser(slurmdb_job_rec_t, JOB_ASSOC_ID, false, "association", NULL),
 	add_parse(STRING, blockid, "block", NULL),
 	add_parse(STRING, cluster, "cluster", NULL),
 	add_parse(STRING, constraints, "constraints", NULL),
@@ -6404,7 +6405,7 @@ static const parser_t parsers[] = {
 	addps(HOLD, uint32_t, NEED_NONE, BOOL, "Job held"),
 
 	/* Complex type parsers */
-	addpcp(ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
+	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_ASSOC, NULL),
 	addpca(QOS_PREEMPT_LIST, STRING, slurmdb_qos_rec_t, NEED_QOS, NULL),
 	addpcp(STEP_NODES, HOSTLIST, slurmdb_step_rec_t, NEED_TRES, NULL),
 	addpca(STEP_TRES_REQ_MAX, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
