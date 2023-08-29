@@ -6065,10 +6065,10 @@ static void FREE_FUNC(SHARES_REQ_MSG)(void *ptr)
 	add_parser(slurmdb_assoc_rec_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(ASSOC_SHORT)[] = {
 	/* Identifiers required for any given association */
-	add_parse(STRING, acct, "account", NULL),
-	add_parse(STRING, cluster, "cluster", NULL),
-	add_parse(STRING, partition, "partition", NULL),
-	add_parse_req(STRING, user, "user", NULL),
+	add_parse(STRING, acct, "account", "Association account (if assigned)"),
+	add_parse(STRING, cluster, "cluster", "Association cluster (if assigned)"),
+	add_parse(STRING, partition, "partition", "Association partition (if assigned)"),
+	add_parse_req(STRING, user, "user", "Assocation user (if assigned)"),
 	add_parse(UINT32, id, "id", "Numeric Association ID (if known)"),
 };
 #undef add_parse
