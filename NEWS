@@ -159,6 +159,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Add numeric id to all association identifiers to allow unique
     identification where association has been deleted but is still referenced by
     accounting record.
+ -- slurmrestd - Add accounting, id, and comment fields to association dumps.
 
 * Changes in Slurm 23.02.5
 ==========================
