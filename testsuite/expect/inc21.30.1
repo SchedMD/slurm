@@ -30,7 +30,7 @@
 proc inc21_30_1 { wait_reason } {
 	global srun salloc acct bin_sleep number grn_num check_reason
 
-	log_info "Starting GrpNode limit test"
+	log_info "Starting $wait_reason test"
 	set job_id1  0
 	set job_id2  0
 
@@ -117,6 +117,6 @@ proc inc21_30_1 { wait_reason } {
 
 	# Convert any errors into failures (after cleaning up)
 	if {$exception_code == 1} { ; # errors only
-	    fail "Failure testing GrpNode limit: $message"
+	    fail "Failure testing $wait_reason: $message"
 	}
 }

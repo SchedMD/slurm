@@ -30,7 +30,7 @@
 proc inc21_30_7 { wait_reason } {
 	global salloc scontrol srun acct re_word_str bin_sleep jobmatch job_id1 job_id2 job_id3 number maxjobs_num
 
-	log_info "Starting MaxJob limit test"
+	log_info "Starting $wait_reason test"
 	set check_num $maxjobs_num
 	array set job_id {}
 
@@ -117,6 +117,6 @@ proc inc21_30_7 { wait_reason } {
 
 	# Convert any errors into failures (after cleaning up)
 	if {$exception_code == 1} { ; # errors only
-		fail "Failure testing MaxJobs limit: $message"
+		fail "Failure testing $wait_reason: $message"
 	}
 }

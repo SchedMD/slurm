@@ -31,7 +31,7 @@ proc inc21_34_1 { qostest wait_reason } {
 	global salloc srun nthreads acct bin_sleep grpcpumin_num number
 	global totcpus test_node
 
-	log_info "Starting GrpCpuMins test "
+	log_info "Starting $wait_reason test"
 
 	if {![param_contains [get_config_param "AccountingStorageEnforce"] "safe"]} {
 		log_warn "This test can't be run without AccountingStorageEnforce having \"safe\" in it"
@@ -106,6 +106,6 @@ proc inc21_34_1 { qostest wait_reason } {
 
 	# Convert any errors into failures (after cleaning up)
 	if {$exception_code == 1} { ; # errors only
-		fail "Failure testing QOSGrpCPUMinutesLimit: $message"
+		fail "Failure testing $wait_reason: $message"
 	}
 }
