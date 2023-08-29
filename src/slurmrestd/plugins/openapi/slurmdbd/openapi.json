@@ -299,7 +299,7 @@
           }
         },
         "parameters": {
-	  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_PARAM"
+          "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_PARAM"
         }
       },
       "get": {
@@ -340,10 +340,10 @@
           }
         },
         "parameters": {
-	  "$ref": [
-	    "DATA_PARSER_OPENAPI_SLURMDBD_QOS_PARAM",
-	    "DATA_PARSER_OPENAPI_SLURMDBD_QOS_QUERY"
-	  ]
+          "$ref": [
+            "DATA_PARSER_OPENAPI_SLURMDBD_QOS_PARAM",
+            "DATA_PARSER_OPENAPI_SLURMDBD_QOS_QUERY"
+          ]
         }
       }
     },
@@ -1248,10 +1248,7 @@
           }
         },
         "parameters": {
-          "$ref": [
-            "DATA_PARSER_WCKEY_CONDITION_PTR",
-            "DATA_PARSER_OPENAPI_WCKEY_PARAM"
-          ]
+          "$ref": "DATA_PARSER_OPENAPI_WCKEY_PARAM"
         }
       },
       "get": {
@@ -1292,10 +1289,7 @@
           }
         },
         "parameters": {
-          "$ref": [
-            "DATA_PARSER_WCKEY_CONDITION_PTR",
-            "DATA_PARSER_OPENAPI_WCKEY_PARAM"
-          ]
+          "$ref": "DATA_PARSER_OPENAPI_WCKEY_PARAM"
         }
       }
     },
