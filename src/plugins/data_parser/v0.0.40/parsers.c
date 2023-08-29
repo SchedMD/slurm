@@ -6131,7 +6131,7 @@ static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_parse(UINT32, shares_raw, "shares_raw", NULL),
 	/* slurmdbd should never set uid - it should always be zero */
 	add_skip(uid),
-	add_parse(ASSOC_USAGE_PTR, usage, "usage", NULL),
+	add_skip(usage),
 	add_parse_req(STRING, user, "user", NULL),
 	add_skip(user_rec),
 };
