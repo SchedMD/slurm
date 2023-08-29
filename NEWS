@@ -156,6 +156,9 @@ documents those changes that are of interest to users and administrators.
  -- sshare - add JSON/YAML support.
  -- data_parser/v0.0.40 - Remove "required/memory" output in json. It is
     replaced by "required/memory_per_cpu" and "required/memory_per_node".
+ -- slurmrestd - Add numeric id to all association identifiers to allow unique
+    identification where association has been deleted but is still referenced by
+    accounting record.
 
 * Changes in Slurm 23.02.5
 ==========================

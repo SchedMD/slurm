@@ -6069,6 +6069,7 @@ static const parser_t PARSER_ARRAY(ASSOC_SHORT)[] = {
 	add_parse(STRING, cluster, "cluster", NULL),
 	add_parse(STRING, partition, "partition", NULL),
 	add_parse_req(STRING, user, "user", NULL),
+	add_parse(UINT32, id, "id", "Numeric Association ID (if known)"),
 };
 #undef add_parse
 #undef add_parse_req
