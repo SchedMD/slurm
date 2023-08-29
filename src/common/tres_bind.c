@@ -153,7 +153,7 @@ static int _valid_nic_bind(char *arg)
 
 /*
  * Verify --tres-bind command line option
- * NOTE: Separate TRES specifications with ";" rather than ","
+ * NOTE: Separate TRES specifications with "+" rather than ","
  *
  * arg IN - Parameter value to check
  * RET - -1 on error, else 0
@@ -162,7 +162,7 @@ static int _valid_nic_bind(char *arg)
  *          gpu:single:2
  *          gpu:map_gpu:0,1
  *          gpu:mask_gpu:0x3,0x3
- *          gpu:map_gpu:0,1;nic:closest
+ *          gpu:map_gpu:0,1+nic:closest
  */
 extern int tres_bind_verify_cmdline(const char *arg)
 {
@@ -173,7 +173,7 @@ extern int tres_bind_verify_cmdline(const char *arg)
 		return 0;
 
 	tmp = xstrdup(arg);
-	tok = strtok_r(tmp, ";", &save_ptr);
+	tok = strtok_r(tmp, "+", &save_ptr);
 	while (tok) {
 		sep = strchr(tok, ':');		/* Bad format */
 		if (!sep) {
@@ -201,7 +201,7 @@ extern int tres_bind_verify_cmdline(const char *arg)
 			rc = -1;
 			break;
 		}
-		tok = strtok_r(NULL, ";", &save_ptr);
+		tok = strtok_r(NULL, "+", &save_ptr);
 	}
 	xfree(tmp);
 

@@ -9306,6 +9306,7 @@ static bitstr_t *_get_usable_gres_map_or_mask(char *map_or_mask,
 	max = (is_map ? bitmap_size - 1 : ~(-1 << bitmap_size));
 	while (usable_gres == NULL) {
 		tmp = xstrdup(map_or_mask);
+		strtok(tmp,"+");
 		tok = strtok_r(tmp, ",", &save_ptr);
 		while (tok) {
 			if ((mult = strchr(tok, '*')))
@@ -9571,10 +9572,10 @@ static bitstr_t *_get_shared_gres_per_task(bitstr_t *gres_bit_alloc,
 static void _parse_accel_bind_type(uint16_t accel_bind_type, char *tres_bind_str)
 {
 	if (accel_bind_type & ACCEL_BIND_CLOSEST_GPU) {
-		xstrfmtcat(tres_bind_str, ",gpu:closest");
+		xstrfmtcat(tres_bind_str, "+gpu:closest");
 	}
 	if (accel_bind_type & ACCEL_BIND_CLOSEST_NIC) {
-		xstrfmtcat(tres_bind_str, ",nic:closest");
+		xstrfmtcat(tres_bind_str, "+nic:closest");
 	}
 }
 
