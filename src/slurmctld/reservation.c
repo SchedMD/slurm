@@ -5460,6 +5460,67 @@ TRY_AVAIL:
 }
 
 /*
+ * Build core_resrcs based upon node_bitmap and core_bitmap as needed.
+ * This translates a global core_bitmap (including all nodes) to a
+ * core_bitmap for only those nodes in the reservation. This is needed to
+ * handle nodes being added or removed from the system or their core count
+ * changing.
+ */
+static void _validate_core_resrcs(resv_desc_msg_t *resv_desc_ptr,
+				  bitstr_t *node_bitmap,
+				  bitstr_t *core_bitmap)
+{
+	job_record_t *job_ptr = resv_desc_ptr->job_ptr;
+	int node_inx, rc;
+	int core_offset_local, core_offset_global, core_end;
+
+	xassert(job_ptr);
+
+	/*
+	 * In most cases if we have a core_bitmap the core_resrcs will already
+	 * be correct. In that case just continue.
+	 */
+	if (!core_bitmap ||
+	    !job_ptr->job_resrcs ||
+	    !job_ptr->job_resrcs->core_bitmap ||
+	    bit_equal(job_ptr->job_resrcs->core_bitmap, core_bitmap) ||
+	    !bit_set_count(node_bitmap))
+		return;
+
+	free_job_resources(&job_ptr->job_resrcs);
+
+	job_ptr->job_resrcs = create_job_resources();
+	job_ptr->job_resrcs->nodes = bitmap2node_name(node_bitmap);
+	job_ptr->job_resrcs->node_bitmap = bit_copy(node_bitmap);
+	job_ptr->job_resrcs->nhosts = bit_set_count(node_bitmap);
+	rc = build_job_resources(job_ptr->job_resrcs);
+	if (rc != SLURM_SUCCESS) {
+		free_job_resources(&job_ptr->job_resrcs);
+		return;
+	}
+
+	job_ptr->job_resrcs->cpus =
+		xcalloc(job_ptr->job_resrcs->nhosts, sizeof(uint16_t));
+
+	core_offset_local = -1;
+	node_inx = -1;
+	for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
+		node_inx++;
+		core_offset_global = cr_get_coremap_offset(i);
+		core_end = cr_get_coremap_offset(i + 1);
+		for (int c = core_offset_global; c < core_end; c++) {
+			core_offset_local++;
+			if (!bit_test(core_bitmap, c))
+				continue;
+			if (job_ptr->job_resrcs->core_bitmap)
+				bit_set(job_ptr->job_resrcs->core_bitmap,
+					core_offset_local);
+			job_ptr->job_resrcs->cpus[node_inx]++;
+		}
+	}
+}
+
+/*
  * Pick nodes based on ordered list of bitmaps
  * IN avail_bitmaps - bitmap array of size MAX_BITMAPS.
  * 	last pointer must be NULL.
@@ -5649,6 +5710,9 @@ static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
 		FREE_NULL_BITMAP(selected_core_bitmap);
 		return ESLURM_NODES_BUSY;
 	} else {
+		_validate_core_resrcs(resv_desc_ptr, selected_bitmap,
+				      selected_core_bitmap);
+
 		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *nodes = NULL;
 			int node_cnt = 0;
