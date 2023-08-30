@@ -1196,12 +1196,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "DATA_PARSER_OPENAPI_RESP"
+                "$ref": "DATA_PARSER_OPENAPI_CLUSTERS_RESP"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "DATA_PARSER_OPENAPI_RESP"
+                "$ref": "DATA_PARSER_OPENAPI_CLUSTERS_RESP"
               }
             }
           },
