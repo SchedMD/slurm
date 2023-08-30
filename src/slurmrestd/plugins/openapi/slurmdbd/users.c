@@ -281,27 +281,29 @@ static int _op_handler_users(ctxt_t *ctxt)
 static int _op_handler_user(ctxt_t *ctxt)
 {
 	openapi_user_param_t params = {0};
-	openapi_user_query_t query = {0};
 
 	if (DATA_PARSE(ctxt->parser, OPENAPI_USER_PARAM, params,
 		       ctxt->parameters, ctxt->parent_path))
-		goto cleanup;
-	if (DATA_PARSE(ctxt->parser, OPENAPI_USER_QUERY, query, ctxt->query,
-		       ctxt->parent_path))
 		goto cleanup;
 
 	if (!params.name || !params.name[0]) {
 		resp_error(ctxt, ESLURM_USER_ID_MISSING, __func__,
 			   "User name must be provided for singular query");
 	} else if (ctxt->method == HTTP_REQUEST_GET) {
+		openapi_user_query_t query = {0};
 		slurmdb_assoc_cond_t assoc_cond = {0};
 		slurmdb_user_cond_t user_cond = {
 			.assoc_cond = &assoc_cond,
-			.with_deleted = query.with_deleted,
-			.with_assocs = !query.without_assocs,
-			.with_coords = !query.without_coords,
-			.with_wckeys = !query.without_wckeys,
 		};
+
+		if (DATA_PARSE(ctxt->parser, OPENAPI_USER_QUERY, query,
+			       ctxt->query, ctxt->parent_path))
+			goto cleanup;
+
+		user_cond.with_deleted = query.with_deleted;
+		user_cond.with_assocs = !query.without_assocs;
+		user_cond.with_coords = !query.without_coords;
+		user_cond.with_wckeys = !query.without_wckeys;
 
 		assoc_cond.user_list = list_create(NULL);
 		list_append(assoc_cond.user_list, params.name);
