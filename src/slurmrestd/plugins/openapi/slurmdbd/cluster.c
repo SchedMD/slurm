@@ -135,7 +135,7 @@ static int _op_handler_clusters(ctxt_t *ctxt)
 
 	if (ctxt->method == HTTP_REQUEST_GET)
 		_dump_clusters(ctxt, cluster_cond);
-	else if (ctxt->method == HTTP_REQUEST_POST)
+	else if (ctxt->method == HTTP_REQUEST_DELETE)
 		_delete_cluster(ctxt, cluster_cond);
 	else if (ctxt->method == HTTP_REQUEST_POST)
 		_update_clusters(ctxt);
