@@ -266,8 +266,7 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 	if ((resv_desc_ptr->core_cnt != NO_VAL) && core_bitmap) {
 		FREE_NULL_BITMAP(*core_bitmap);
 		*core_bitmap = bit_copy(job_ptr->job_resrcs->core_bitmap);
-	} else
-		free_job_resources(&job_ptr->job_resrcs);
+	}
 
 	return bit_copy(avail_node_bitmap);
 }
