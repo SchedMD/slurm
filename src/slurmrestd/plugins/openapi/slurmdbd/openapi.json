@@ -1172,7 +1172,7 @@
                 }
               }
             },
-            "description": "List of clusters"
+            "description": "Modify clusters response"
           },
           "default": {
             "description": "Unable to add cluster",
@@ -1190,9 +1190,9 @@
             }
           }
         },
-        "summary": "Add clusters",
+        "summary": "update clusters",
         "requestBody": {
-          "description": "Add or update clusters",
+          "description": "Add or modify clusters",
           "content": {
             "application/json": {
               "schema": {
