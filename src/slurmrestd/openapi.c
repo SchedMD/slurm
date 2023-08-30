@@ -934,6 +934,15 @@ extern int init_openapi(const char *plugin_list, plugrack_foreach_t listf,
 		fatal("Plugin serializer/json failed to load: %s",
 		      slurm_strerror(rc));
 
+	rc = load_plugins(&plugins, OPENAPI_MAJOR_TYPE, plugin_list, listf,
+			  syms, ARRAY_SIZE(syms));
+
+	if (!xstrcasecmp("list", plugin_list))
+		return SLURM_SUCCESS;
+
+	if (rc)
+		fatal("Loading OpenAPI plugins failed: %s", slurm_strerror(rc));
+
 	if ((rc = load_plugins(&plugins, OPENAPI_MAJOR_TYPE, plugin_list, listf,
 			       syms, ARRAY_SIZE(syms))))
 		fatal("Loading OpenAPI plugins failed: %s", slurm_strerror(rc));
