@@ -78,8 +78,8 @@ typedef struct {
 } openapi_account_param_t;
 
 typedef struct {
-	bool without_assocs;
-	bool without_coords;
+	bool with_assocs;
+	bool with_coords;
 	bool with_deleted;
 } openapi_account_query_t;
 

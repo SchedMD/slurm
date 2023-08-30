@@ -322,8 +322,8 @@ static int _op_handler_account(ctxt_t *ctxt)
 			       ctxt->query, ctxt->parent_path))
 			goto cleanup;
 
-		acct_cond.with_assocs = !query.without_assocs;
-		acct_cond.with_coords = !query.without_coords;
+		acct_cond.with_assocs = query.with_assocs;
+		acct_cond.with_coords = query.with_coords;
 		acct_cond.with_deleted = query.with_deleted;
 
 		assoc_cond.acct_list = list_create(NULL);

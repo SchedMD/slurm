@@ -162,6 +162,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Add accounting, id, and comment fields to association dumps.
  -- slurmrestd - Removed usage field from association dumps which was never
     populated. See accounting field for accounting usage records.
+ -- slurmrestd - Default to not query assocations or coordinators with
+    'GET /slurmdb/v0.0.40/accounts'.
 
 * Changes in Slurm 23.02.5
 ==========================

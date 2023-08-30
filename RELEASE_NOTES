@@ -150,3 +150,9 @@ SLURMRESTD CHANGES
  -- openapi/v0.0.40 - add /instance and /instances endpoints.
  -- slurmrestd - OperationIDs may have changed during conversion to v0.0.40
     from v0.0.39 paths to better match their paths.
+ -- slurmrestd - Default to not query assocations or coordinators with
+    'GET /slurmdb/v0.0.40/accounts'. To query account with assocations, query
+    'GET /slurmdb/v0.0.40/accounts?with_assocs'. To query account with
+    coordinators, query 'GET /slurmdb/v0.0.40/accounts?with_coords'. To query
+    both assocations and coordinators with accounts, query
+    'GET /slurmdb/v0.0.40/accounts?with_coords&with_assocs'.

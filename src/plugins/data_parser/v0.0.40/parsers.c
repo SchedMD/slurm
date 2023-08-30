@@ -7901,8 +7901,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_PARAM)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_account_query_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNT_QUERY)[] = {
-	add_parse(BOOL, without_assocs, "without_assocs", "skip query of associations"),
-	add_parse(BOOL, without_coords, "without_coords", "skip query of coordinators"),
+	add_parse(BOOL, with_assocs, "with_assocs", "include associations"),
+	add_parse(BOOL, with_coords, "with_coords", "include coordinators"),
 	add_parse(BOOL, with_deleted, "with_deleted", "include deleted"),
 };
 #undef add_parse
