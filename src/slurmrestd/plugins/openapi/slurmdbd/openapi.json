@@ -1429,10 +1429,7 @@
           }
         },
         "parameters": {
-          "$ref": [
-            "DATA_PARSER_OPENAPI_ACCOUNT_PARAM",
-            "DATA_PARSER_OPENAPI_ACCOUNT_QUERY"
-          ]
+          "$ref": "DATA_PARSER_OPENAPI_ACCOUNT_PARAM"
         }
       },
       "get": {
