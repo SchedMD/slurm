@@ -79,6 +79,7 @@ static int _foreach_update_user(void *x, void *arg)
 	slurmdb_assoc_cond_t assoc_cond = {};
 	slurmdb_user_cond_t user_cond = {
 		.assoc_cond = &assoc_cond,
+		.with_deleted = true,
 	};
 
 	assoc_cond.user_list = list_create(NULL);
