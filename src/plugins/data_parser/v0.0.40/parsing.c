@@ -423,7 +423,7 @@ static int _parse_pointer(const parser_t *const parser, void *dst, data_t *src,
 		return SLURM_SUCCESS;
 	}
 
-	*ptr = alloc_parser_obj(pt);
+	*ptr = alloc_parser_obj(parser);
 
 	if ((rc = parse(*ptr, NO_VAL, pt, src, args, parent_path)))
 		free_parser_obj(pt, *ptr);
