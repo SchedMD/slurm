@@ -9572,10 +9572,10 @@ static bitstr_t *_get_shared_gres_per_task(bitstr_t *gres_bit_alloc,
 static void _parse_accel_bind_type(uint16_t accel_bind_type, char *tres_bind_str)
 {
 	if (accel_bind_type & ACCEL_BIND_CLOSEST_GPU) {
-		xstrfmtcat(tres_bind_str, "+gpu:closest");
+		xstrfmtcat(tres_bind_str, "+gres/gpu:closest");
 	}
 	if (accel_bind_type & ACCEL_BIND_CLOSEST_NIC) {
-		xstrfmtcat(tres_bind_str, "+nic:closest");
+		xstrfmtcat(tres_bind_str, "+gres/nic:closest");
 	}
 }
 
@@ -9594,8 +9594,8 @@ static int _get_usable_gres(int context_inx, int proc_id,
 		return SLURM_SUCCESS;
 
 	if (!xstrcmp(gres_name, "gpu") &&
-	    (sep = xstrstr(tres_bind_str, "gpu:"))) {
-		sep += 4;
+	    (sep = xstrstr(tres_bind_str, "gres/gpu:"))) {
+		sep += 9;
 		if (!xstrncasecmp(sep, "map_gpu:", 8)) { // Old Syntax
 			usable_gres = _get_usable_gres_map_or_mask(
 				(sep + 8), proc_id, gres_bit_alloc,
@@ -9640,9 +9640,9 @@ static int _get_usable_gres(int context_inx, int proc_id,
 			}
 		} else
 			return SLURM_ERROR;
-	} else if (!xstrcmp(gres_name, "shard") &&
+	} else if (!xstrcmp(gres_name, "gres/shard") &&
 		   (sep = xstrstr(tres_bind_str, "shard:"))) {
-		sep += 6;
+		sep += 11;
 		if (!xstrncasecmp(sep, "per_task:", 9)) {
 			usable_gres = _get_shared_gres_per_task(
 				gres_bit_alloc, gres_per_bit,
@@ -9652,9 +9652,9 @@ static int _get_usable_gres(int context_inx, int proc_id,
 				bit_consolidate(usable_gres);
 		} else
 			return SLURM_ERROR;
-	} else if (!xstrcmp(gres_name, "nic") &&
+	} else if (!xstrcmp(gres_name, "gres/nic") &&
 		   (sep = xstrstr(tres_bind_str, "nic:"))) {
-		sep += 4;
+		sep += 9;
 		if (!xstrncasecmp(sep, "closest", 7)) {
 			usable_gres = _get_closest_usable_gres(
 				context_inx, gres_bit_alloc,

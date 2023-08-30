@@ -1947,7 +1947,7 @@ static int arg_set_gpu_bind(slurm_opt_t *opt, const char *arg)
 	xfree(opt->gpu_bind);
 	xfree(opt->tres_bind);
 	opt->gpu_bind = xstrdup(arg);
-	xstrfmtcat(opt->tres_bind, "+gpu:%s", opt->gpu_bind);
+	xstrfmtcat(opt->tres_bind, "+gres/gpu:%s", opt->gpu_bind);
 	if (tres_bind_verify_cmdline(opt->tres_bind)) {
 		error("Invalid --gpu-bind argument: %s", opt->tres_bind);
 		return SLURM_ERROR;
@@ -1967,7 +1967,7 @@ static int arg_set_data_gpu_bind(slurm_opt_t *opt, const data_t *arg,
 		xfree(opt->gpu_bind);
 		xfree(opt->tres_bind);
 		opt->gpu_bind = xstrdup(str);
-		xstrfmtcat(opt->tres_bind, "+gpu:%s", opt->gpu_bind);
+		xstrfmtcat(opt->tres_bind, "+gres/gpu:%s", opt->gpu_bind);
 		if (tres_bind_verify_cmdline(opt->tres_bind)) {
 			rc = SLURM_ERROR;
 			ADD_DATA_ERROR("Invalid --gpu-bind argument", rc);
@@ -1993,6 +1993,18 @@ static slurm_cli_opt_t slurm_opt_gpu_bind = {
 	.set_func_data = arg_set_data_gpu_bind,
 	.get_func = arg_get_gpu_bind,
 	.reset_func = arg_reset_gpu_bind,
+	.reset_each_pass = true,
+};
+
+COMMON_STRING_OPTION(tres_bind);
+static slurm_cli_opt_t slurm_opt_tres_bind = {
+	.name = "tres-bind",
+	.has_arg = required_argument,
+	.val = LONG_OPT_TRES_BIND,
+	.set_func = arg_set_tres_bind,
+	.set_func_data = arg_set_data_tres_bind,
+	.get_func = arg_get_tres_bind,
+	.reset_func = arg_reset_tres_bind,
 	.reset_each_pass = true,
 };
 
@@ -5353,7 +5365,8 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_time_min,
 	&slurm_opt_tmp,
 	&slurm_opt_tree_width,
-	&slurm_opt_tres_per_task,
+	&slurm_opt_tres_bind,
+ 	&slurm_opt_tres_per_task,
 	&slurm_opt_uid,
 	&slurm_opt_unbuffered,
 	&slurm_opt_use_min_nodes,
