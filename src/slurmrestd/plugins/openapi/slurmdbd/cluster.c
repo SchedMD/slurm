@@ -48,11 +48,8 @@ static void _dump_clusters(ctxt_t *ctxt, slurmdb_cluster_cond_t *cluster_cond)
 {
 	list_t *cluster_list = NULL;
 
-	if (!db_query_list(ctxt, &cluster_list, slurmdb_clusters_get,
-			   cluster_cond) &&
-	    cluster_list)
-		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_CLUSTERS_RESP, cluster_list,
-					 ctxt);
+	db_query_list(ctxt, &cluster_list, slurmdb_clusters_get, cluster_cond);
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_CLUSTERS_RESP, cluster_list, ctxt);
 
 	FREE_NULL_LIST(cluster_list);
 }
