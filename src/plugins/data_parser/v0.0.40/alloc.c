@@ -45,35 +45,42 @@
 
 extern void *alloc_parser_obj(const parser_t *const parser)
 {
+	const parser_t *const lparser =
+		find_parser_by_type(parser->pointer_type);
 	void *obj = NULL;
 
 	check_parser(parser);
+	check_parser(lparser);
 
 	if (parser->new)
 		obj = parser->new();
 	else
-		obj = xmalloc(parser->size);
+		obj = xmalloc(lparser->size);
 
 	xassert(obj);
-	xassert(xsize(obj) == parser->size);
+	xassert(xsize(obj) == lparser->size);
 
 	log_flag(DATA, "created %zd byte %s object at 0x%"PRIxPTR,
-		 xsize(obj), parser->obj_type_string, (uintptr_t) obj);
+		 xsize(obj), lparser->obj_type_string, (uintptr_t) obj);
 
 	return obj;
 }
 
 extern void free_parser_obj(const parser_t *const parser, void *ptr)
 {
+	const parser_t *const lparser =
+		find_parser_by_type(parser->pointer_type);
+
 	check_parser(parser);
+	check_parser(lparser);
 
 	if (!ptr)
 		return;
 
-	xassert(xsize(ptr) == parser->size);
+	xassert(xsize(ptr) == lparser->size);
 
 	log_flag(DATA, "destroying %zd byte %s object at 0x%"PRIxPTR,
-		 xsize(ptr), parser->obj_type_string, (uintptr_t) ptr);
+		 xsize(ptr), lparser->obj_type_string, (uintptr_t) ptr);
 
 	if (parser->free)
 		parser->free(ptr);
