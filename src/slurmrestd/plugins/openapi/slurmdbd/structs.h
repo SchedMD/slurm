@@ -64,9 +64,9 @@ typedef struct {
 
 typedef struct {
 	bool with_deleted;
-	bool without_assocs;
-	bool without_coords;
-	bool without_wckeys;
+	bool with_assocs;
+	bool with_coords;
+	bool with_wckeys;
 } openapi_user_query_t;
 
 typedef struct {

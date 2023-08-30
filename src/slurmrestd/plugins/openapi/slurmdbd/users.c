@@ -301,9 +301,9 @@ static int _op_handler_user(ctxt_t *ctxt)
 			goto cleanup;
 
 		user_cond.with_deleted = query.with_deleted;
-		user_cond.with_assocs = !query.without_assocs;
-		user_cond.with_coords = !query.without_coords;
-		user_cond.with_wckeys = !query.without_wckeys;
+		user_cond.with_assocs = query.with_assocs;
+		user_cond.with_coords = query.with_coords;
+		user_cond.with_wckeys = query.with_wckeys;
 
 		assoc_cond.user_list = list_create(NULL);
 		list_append(assoc_cond.user_list, params.name);

@@ -156,3 +156,10 @@ SLURMRESTD CHANGES
     coordinators, query 'GET /slurmdb/v0.0.40/accounts?with_coords'. To query
     both assocations and coordinators with accounts, query
     'GET /slurmdb/v0.0.40/accounts?with_coords&with_assocs'.
+ -- slurmrestd - Default to not query assocations, wckeys or coordinators with
+    'GET /slurmdb/v0.0.40/user'. To query user with assocations, query
+    'GET /slurmdb/v0.0.40/user?with_assocs'. To query user with
+    coordinators, query 'GET /slurmdb/v0.0.40/user?with_coords'. To query user
+    with wckeys, query 'GET /slurmdb/v0.0.40/user?with_wckeys'. To query
+    both assocations, wckeys, and coordinators with user, query
+    'GET /slurmdb/v0.0.40/user?with_coords&with_assocs&with_wckeys'.

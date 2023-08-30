@@ -164,6 +164,8 @@ documents those changes that are of interest to users and administrators.
     populated. See accounting field for accounting usage records.
  -- slurmrestd - Default to not query assocations or coordinators with
     'GET /slurmdb/v0.0.40/accounts'.
+ -- slurmrestd - Default to not query assocations, wckeys or coordinators with
+    'GET /slurmdb/v0.0.40/user'.
 
 * Changes in Slurm 23.02.5
 ==========================

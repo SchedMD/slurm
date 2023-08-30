@@ -7862,9 +7862,9 @@ static const parser_t PARSER_ARRAY(OPENAPI_USER_PARAM)[] = {
 	add_parser(openapi_user_query_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_USER_QUERY)[] = {
 	add_parse(BOOL, with_deleted, "with_deleted", "Include deleted users"),
-	add_parse(BOOL, without_assocs, "without_assocs", "Skip query of assocations"),
-	add_parse(BOOL, without_coords, "without_coords", "Skip query of coordinators"),
-	add_parse(BOOL, without_wckeys, "without_wckeys", "Skip query of wckeys"),
+	add_parse(BOOL, with_assocs, "with_assocs", "Include assocations"),
+	add_parse(BOOL, with_coords, "with_coords", "Include coordinators"),
+	add_parse(BOOL, with_wckeys, "with_wckeys", "Include wckeys"),
 };
 #undef add_parse
 
