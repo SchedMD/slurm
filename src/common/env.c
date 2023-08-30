@@ -2293,6 +2293,8 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 extern void set_env_from_opts(slurm_opt_t *opt, char ***dest,
 			      int het_job_offset)
 {
+	char *pos, *end;
+
 	if (opt->cpus_per_gpu) {
 		env_array_overwrite_het_fmt(dest, "SLURM_CPUS_PER_GPU",
 					    het_job_offset, "%d",
@@ -2303,10 +2305,15 @@ extern void set_env_from_opts(slurm_opt_t *opt, char ***dest,
 					    het_job_offset, "%s",
 					    opt->gpus);
 	}
-	if (opt->gpu_bind) {
+	if (opt->tres_bind && (pos = xstrstr(opt->tres_bind, "gres/gpu:"))) {
+		end = strchr(pos, '+');
+		if (end)
+			*end = '\0';
 		env_array_overwrite_het_fmt(dest, "SLURM_GPU_BIND",
 					    het_job_offset, "%s",
-					    opt->gpu_bind);
+					    pos);
+		if (end)
+			*end = '+';
 	}
 	if (opt->gpu_freq) {
 		env_array_overwrite_het_fmt(dest, "SLURM_GPU_FREQ",
