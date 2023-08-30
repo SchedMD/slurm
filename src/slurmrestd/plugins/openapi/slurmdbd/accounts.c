@@ -306,23 +306,25 @@ cleanup:
 static int _op_handler_account(ctxt_t *ctxt)
 {
 	openapi_account_param_t params = {0};
-	openapi_account_query_t query = {0};
 
 	if (DATA_PARSE(ctxt->parser, OPENAPI_ACCOUNT_PARAM, params,
 		       ctxt->parameters, ctxt->parent_path))
 		goto cleanup;
-	if (DATA_PARSE(ctxt->parser, OPENAPI_ACCOUNT_QUERY, query, ctxt->query,
-		       ctxt->parent_path))
-		goto cleanup;
 
 	if (ctxt->method == HTTP_REQUEST_GET) {
+		openapi_account_query_t query = {0};
 		slurmdb_assoc_cond_t assoc_cond = {0};
 		slurmdb_account_cond_t acct_cond = {
 			.assoc_cond = &assoc_cond,
-			.with_assocs = !query.without_assocs,
-			.with_coords = !query.without_coords,
-			.with_deleted = query.with_deleted,
 		};
+
+		if (DATA_PARSE(ctxt->parser, OPENAPI_ACCOUNT_QUERY, query,
+			       ctxt->query, ctxt->parent_path))
+			goto cleanup;
+
+		acct_cond.with_assocs = !query.without_assocs;
+		acct_cond.with_coords = !query.without_coords;
+		acct_cond.with_deleted = query.with_deleted;
 
 		assoc_cond.acct_list = list_create(NULL);
 		list_append(assoc_cond.acct_list, params.name);
