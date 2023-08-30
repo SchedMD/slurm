@@ -37,32 +37,16 @@
 
 #include "slurm/slurm_errno.h"
 
+#include "src/common/env.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmctld/slurmscriptd_protocol_pack.h"
 
-/* Use this when you don't know the count of char* in the array env */
-static void _pack_env(char **env, buf_t *buffer)
-{
-	uint32_t env_var_cnt = 0;
-
-	/*
-	 * Pack the environment. We don't know how many environment variables
-	 * there are, but we need to pack the number of environment variables
-	 * so we know how to unpack. So we have to loop env twice: once
-	 * to get the number of environment variables so we can pack that first,
-	 * then again to pack the environment.
-	 */
-	while (env && env[env_var_cnt])
-		env_var_cnt++;
-	packstr_array(env, env_var_cnt, buffer);
-}
-
 static void _pack_run_script(run_script_msg_t *script_msg, buf_t *buffer)
 {
 	packstr_array(script_msg->argv, script_msg->argc, buffer);
-	_pack_env(script_msg->env, buffer);
+	packstr_array(script_msg->env, envcount(script_msg->env), buffer);
 	/* Use packmem for extra_buf - treat it as data, not as a string */
 	pack32(script_msg->extra_buf_size, buffer);
 	packmem(script_msg->extra_buf, script_msg->extra_buf_size, buffer);
