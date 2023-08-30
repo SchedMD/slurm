@@ -81,8 +81,8 @@ static void _update_wckeys(ctxt_t *ctxt)
 	openapi_resp_single_t resp = {0};
 	openapi_resp_single_t *resp_ptr = &resp;
 
-	if (DATA_PARSE(ctxt->parser, OPENAPI_WCKEY_RESP, resp, ctxt->query,
-		       ctxt->parent_path)) {
+	if (!DATA_PARSE(ctxt->parser, OPENAPI_WCKEY_RESP, resp, ctxt->query,
+			ctxt->parent_path)) {
 		list_t *wckey_list = resp.response;
 
 		if (!wckey_list || list_is_empty(wckey_list)) {
