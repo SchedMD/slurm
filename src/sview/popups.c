@@ -68,7 +68,7 @@ void _search_entry(sview_search_info_t *sview_search_info)
 {
 	int id = 0;
 	char title[100] = {0};
-	list_itr_t *itr = NULL;
+	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
 	char *upper = NULL, *lower = NULL;
@@ -153,7 +153,7 @@ void _search_entry(sview_search_info_t *sview_search_info)
 	memcpy(popup_win->spec_info->search_info, sview_search_info,
 	       sizeof(sview_search_info_t));
 
-	if (!sview_thread_new((gpointer)popup_thr, popup_win, &error)) {
+	if (!sview_thread_new((gpointer)popup_thr, popup_win, false, &error)) {
 		g_printerr ("Failed to create main popup thread: %s\n",
 			    error->message);
 		return;
@@ -187,10 +187,10 @@ static GtkTreeStore *_local_create_treestore_2cols(GtkWidget *popup,
 	return treestore;
 }
 
-static void _gtk_print_key_pairs(list_t *config_list, char *title, bool first,
+static void _gtk_print_key_pairs(List config_list, char *title, bool first,
 				 GtkTreeStore *treestore, GtkTreeIter *iter)
 {
-	list_itr_t *itr = NULL;
+	ListIterator itr = NULL;
 	config_key_pair_t *key_pair;
 	int update = 0;
 
@@ -210,12 +210,12 @@ static void _gtk_print_key_pairs(list_t *config_list, char *title, bool first,
 	list_iterator_destroy(itr);
 }
 
-static void _gtk_print_config_plugin_params_list(list_t *l, char *title,
-						 bool first,
-						 GtkTreeStore *treestore,
-						 GtkTreeIter *iter)
+static void
+_gtk_print_config_plugin_params_list(List l, char *title, bool first,
+				     GtkTreeStore *treestore,
+				     GtkTreeIter *iter)
 {
-	list_itr_t *itr = NULL;
+	ListIterator itr = NULL;
 	config_plugin_params_t *p;
 	int update = 0;
 
@@ -242,7 +242,7 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 {
 	char time_str[256], tmp_str[300];
 	GtkTreeIter iter;
-	list_t *ret_list = NULL;
+	List ret_list = NULL;
 	char *select_title = "Select Plugin Configuration";
 	char *tmp_title = NULL;
 
@@ -284,13 +284,13 @@ static void _layout_conf_ctl(GtkTreeStore *treestore,
 
 static void _layout_conf_dbd(GtkTreeStore *treestore)
 {
-	list_itr_t *itr = NULL;
+	ListIterator itr = NULL;
 	GtkTreeIter iter;
 	config_key_pair_t *key_pair;
 	int update = 0;
 	time_t now = time(NULL);
 	char tmp_str[256], *user_name = NULL;
-	list_t *dbd_config_list = NULL;
+	List dbd_config_list = NULL;
 
 	/* first load accounting parms from slurm.conf */
 	uint16_t track_wckey = slurm_get_track_wckey();
@@ -392,7 +392,7 @@ extern void create_config_popup(GtkAction *action, gpointer user_data)
 
 extern void create_dbconfig_popup(GtkAction *action, gpointer user_data)
 {
-	list_t *dbd_config_list = NULL;
+	List dbd_config_list = NULL;
 	GtkWidget *popup = gtk_dialog_new_with_buttons(
 		"Slurm Database Config Info",
 		GTK_WINDOW(user_data),
@@ -415,6 +415,80 @@ extern void create_dbconfig_popup(GtkAction *action, gpointer user_data)
 	gtk_widget_show_all(popup);
 
 	FREE_NULL_LIST(dbd_config_list);
+
+	return;
+}
+
+extern void create_daemon_popup(GtkAction *action, gpointer user_data)
+{
+	GtkWidget *popup = gtk_dialog_new_with_buttons(
+		"Slurm Daemons running",
+		GTK_WINDOW(user_data),
+		GTK_DIALOG_DESTROY_WITH_PARENT,
+		GTK_STOCK_CLOSE,
+		GTK_RESPONSE_OK,
+		NULL);
+	int i, update = 0;
+	slurm_ctl_conf_info_msg_t *conf;
+	char me[HOST_NAME_MAX], *b, *c, *n;
+	char *token, *save_ptr = NULL;
+	int actld = 0, ctld = 0, d = 0;
+	GtkTreeStore *treestore =
+		_local_create_treestore_2cols(popup, 300, 100);
+	GtkTreeIter iter;
+	gtk_window_set_type_hint(GTK_WINDOW(popup),
+				 GDK_WINDOW_TYPE_HINT_NORMAL);
+	g_signal_connect(G_OBJECT(popup), "delete_event",
+			 G_CALLBACK(_delete_popup), NULL);
+	g_signal_connect(G_OBJECT(popup), "response",
+			 G_CALLBACK(_delete_popup), NULL);
+
+	slurm_conf_init(NULL);
+	conf = slurm_conf_lock();
+
+	gethostname_short(me, HOST_NAME_MAX);
+	for (i = 1; i < conf->control_cnt; i++) {
+		if ((b = conf->control_machine[i])) {
+			if (!xstrcmp(b, me) ||
+			    !xstrcasecmp(b, "localhost"))
+				ctld = 1;
+		}
+	}
+	if (conf->control_machine[0]) {
+		actld = 1;
+		c = xstrdup(conf->control_machine[0]);
+		token = strtok_r(c, ",", &save_ptr);
+		while (token) {
+			if ((xstrcmp(token, me) == 0) ||
+			    (xstrcasecmp(token, "localhost") == 0)) {
+				ctld = 1;
+				break;
+			}
+			token = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(c);
+	}
+	slurm_conf_unlock();
+
+	if ((n = slurm_conf_get_nodename(me))) {
+		d = 1;
+		xfree(n);
+	} else if ((n = slurm_conf_get_aliased_nodename())) {
+		d = 1;
+		xfree(n);
+	} else if ((n = slurm_conf_get_nodename("localhost"))) {
+		d = 1;
+		xfree(n);
+	}
+	if (actld && ctld)
+		add_display_treestore_line(update, treestore, &iter,
+					   "Slurmctld", "1");
+	if (actld && d)
+		add_display_treestore_line(update, treestore, &iter,
+					   "Slurmd", "1");
+
+
+	gtk_widget_show_all(popup);
 
 	return;
 }
@@ -498,7 +572,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 			} else {
 				temp = g_strdup_printf(
 					"Problem creating partition: %s",
-					slurm_strerror(errno));
+					slurm_strerror(slurm_get_errno()));
 			}
 			display_edit_note(temp);
 			g_free(temp);
@@ -513,7 +587,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 			} else {
 				temp = g_strdup_printf(
 					"Problem creating reservation: %s",
-					slurm_strerror(errno));
+					slurm_strerror(slurm_get_errno()));
 			}
 			display_edit_note(temp);
 			g_free(temp);
@@ -765,7 +839,7 @@ extern void change_refresh_popup(GtkAction *action, gpointer user_data)
 					      temp);
 		g_free(temp);
 		if (!sview_thread_new(_refresh_thr, GINT_TO_POINTER(response),
-				      &error)) {
+				      false, &error)) {
 			g_printerr ("Failed to create refresh thread: %s\n",
 				    error->message);
 		}
@@ -895,7 +969,7 @@ extern void change_grid_popup(GtkAction *action, gpointer user_data)
 					      temp);
 		g_free(temp);
 		if (!sview_thread_new(_refresh_thr, GINT_TO_POINTER(response),
-				      &error)) {
+				      false, &error)) {
 			g_printerr ("Failed to create refresh thread: %s\n",
 				    error->message);
 		}

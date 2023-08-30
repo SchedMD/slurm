@@ -90,7 +90,7 @@ extern void parse_command_line(int argc, char **argv)
 	char *env_val = NULL;
 	int opt_char;
 	int option_index;
-	hostlist_t *host_list;
+	hostlist_t host_list;
 	bool long_form = false;
 	bool opt_a_set = false, opt_p_set = false;
 	bool env_a_set = false, env_p_set = false;
@@ -124,8 +124,8 @@ extern void parse_command_line(int argc, char **argv)
 		{"usage",     no_argument,       0, OPT_LONG_USAGE},
 		{"verbose",   no_argument,       0, 'v'},
 		{"version",   no_argument,       0, 'V'},
-                {"json", optional_argument, 0, OPT_LONG_JSON},
-                {"yaml", optional_argument, 0, OPT_LONG_YAML},
+                {"json", no_argument, 0, OPT_LONG_JSON},
+                {"yaml", no_argument, 0, OPT_LONG_YAML},
 		{NULL,        0,                 0, 0}
 	};
 
@@ -305,14 +305,14 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case OPT_LONG_JSON:
 			params.mimetype = MIME_TYPE_JSON;
-			params.data_parser = optarg;
 			params.match_flags.gres_used_flag = true;
+			data_init();
 			serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL);
 			break;
 		case OPT_LONG_YAML:
 			params.mimetype = MIME_TYPE_YAML;
-			params.data_parser = optarg;
 			params.match_flags.gres_used_flag = true;
+			data_init();
 			serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL);
 			break;
 		case OPT_LONG_AUTOCOMP:
@@ -1462,7 +1462,7 @@ Usage: sinfo [OPTIONS]\n\
   -h, --noheader             no headers on output\n\
   --hide                     do not show hidden or non-accessible partitions\n\
   -i, --iterate=seconds      specify an iteration period\n\
-  --json[=data_parser]       Produce JSON output\n\
+      --json                 Produce JSON output\n\
       --local                show only local cluster in a federation.\n\
                              Overrides --federation.\n\
   -l, --long                 long output - displays more information\n\
@@ -1483,7 +1483,7 @@ Usage: sinfo [OPTIONS]\n\
   -T, --reservation          show only reservation information\n\
   -v, --verbose              verbosity level\n\
   -V, --version              output version information and exit\n\
-  --yaml[=data_parser]       Produce YAML output\n\
+      --yaml                 Produce YAML output\n\
 \nHelp options:\n\
   --help                     show this help message\n\
   --usage                    display brief usage message\n");

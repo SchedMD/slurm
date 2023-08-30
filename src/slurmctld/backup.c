@@ -77,6 +77,7 @@ static void *       _background_signal_hand(void *no_data);
 static void         _backup_reconfig(void);
 static int          _shutdown_primary_controller(int wait_time);
 static void *       _trigger_slurmctld_event(void *arg);
+inline static void  _update_cred_key(void);
 
 typedef struct ping_struct {
 	int backup_inx;
@@ -152,7 +153,7 @@ void run_backup(void)
 	slurm_thread_create(&slurmctld_config.thread_id_sig,
 			    _background_signal_hand, NULL);
 
-	slurm_thread_create_detached(_trigger_slurmctld_event, NULL);
+	slurm_thread_create_detached(NULL, _trigger_slurmctld_event, NULL);
 
 	for (i = 0; ((i < 5) && (slurmctld_config.shutdown_time == 0)); i++) {
 		sleep(1);       /* Give the primary slurmctld set-up time */
@@ -302,6 +303,8 @@ static void *_background_signal_hand(void *no_data)
 			 */
 			lock_slurmctld(config_write_lock);
 			_backup_reconfig();
+			/* Leave config lock set through this */
+			_update_cred_key();
 			unlock_slurmctld(config_write_lock);
 			break;
 		case SIGABRT:   /* abort */
@@ -320,6 +323,16 @@ static void *_background_signal_hand(void *no_data)
 		}
 	}
 	return NULL;
+}
+
+/*
+ * Reset the job credential key based upon configuration parameters.
+ * slurm_conf is locked on entry.
+ */
+static void _update_cred_key(void)
+{
+	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx,
+	                          slurm_conf.job_credential_private_key);
 }
 
 static void _sig_handler(int signal)
@@ -404,7 +417,7 @@ static int _background_process_msg(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	bool send_rc = true;
 
-	if (!msg->auth_ids_set) {
+	if (!msg->auth_uid_set) {
 		error("%s: received message without previously validated auth",
 		      __func__);
 		return SLURM_ERROR;
@@ -426,8 +439,9 @@ static int _background_process_msg(slurm_msg_t *msg)
 
 	if (msg->msg_type != REQUEST_PING) {
 		bool super_user = false;
+		uid_t uid = auth_g_get_uid(msg->auth_cred);
 
-		if (validate_slurm_user(msg->auth_uid))
+		if (validate_slurm_user(uid))
 			super_user = true;
 
 		if (super_user && (msg->msg_type == REQUEST_SHUTDOWN)) {
@@ -695,7 +709,7 @@ static int _shutdown_primary_controller(int wait_time)
 		 */
 		if (i < backup_inx)
 			shutdown_arg->shutdown = true;
-		slurm_thread_create_detached(_shutdown_controller,
+		slurm_thread_create_detached(NULL, _shutdown_controller,
 					     shutdown_arg);
 		slurm_mutex_lock(&shutdown_mutex);
 		shutdown_thread_cnt++;

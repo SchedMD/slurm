@@ -46,8 +46,10 @@
 #include <fcntl.h>
 #include <getopt.h>
 #include <limits.h>
+#include <pwd.h>		/* getpwuid   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv, strtol, etc. */
+#include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
@@ -323,19 +325,22 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 		exit(error_exit);
 }
 
-/* return a string containing the default shell for this user */
+/* _get_shell - return a string containing the default shell for this user
+ * NOTE: This function is NOT reentrant (see getpwuid_r if needed) */
 static char *_get_shell(void)
 {
-	uid_t uid = opt.uid;
-	char *shell;
+	struct passwd *pw_ent_ptr;
 
-	if (uid == SLURM_AUTH_NOBODY)
-		uid = getuid();
+	if (opt.uid == SLURM_AUTH_NOBODY)
+		pw_ent_ptr = getpwuid(getuid());
+	else
+		pw_ent_ptr = getpwuid(opt.uid);
 
-	if (!(shell = uid_to_shell(uid)))
-		fatal("no user information for user %u", uid);
-
-	return shell;
+	if (!pw_ent_ptr) {
+		pw_ent_ptr = getpwnam("nobody");
+		warning("no user information for user %u", opt.uid);
+	}
+	return pw_ent_ptr->pw_shell;
 }
 
 static void _salloc_default_command(int *argcp, char **argvp[])
@@ -392,7 +397,7 @@ static void _salloc_default_command(int *argcp, char **argvp[])
 static bool _opt_verify(void)
 {
 	bool verified = true;
-	hostlist_t *hl = NULL;
+	hostlist_t hl = NULL;
 	int hl_cnt = 0;
 
 	validate_options_salloc_sbatch_srun(&opt);
@@ -520,7 +525,7 @@ static bool _opt_verify(void)
 	 * if (n/plane_size < N) and ((N-1) * plane_size >= n) -->
 	 * problem Simple check will not catch all the problem/invalid
 	 * cases.
-	 * The limitations of the plane distribution in the cons_tres
+	 * The limitations of the plane distribution in the cons_res
 	 * environment are more extensive and are documented in the
 	 * Slurm reference guide.  */
 	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE &&
@@ -603,7 +608,8 @@ static bool _opt_verify(void)
 		}
 	}
 
-	FREE_NULL_HOSTLIST(hl);
+	if (hl)
+		hostlist_destroy(hl);
 
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");

@@ -23,14 +23,18 @@
 
 <h2 id="intro">Introduction<a class="slurm_link" href="#intro"></a></h2>
 
-<p>By default, Slurm has the priority/multifactor plugin set, which schedules
-jobs based on several <a href="#mfjppintro">factors</a></p>
+<p>By default, Slurm assigns job priority on a First In, First Out (FIFO) basis.
+FIFO scheduling should be configured when Slurm is controlled by an external
+scheduler.</p>
 
-<p>In most cases it is preferable to use the Multifactor Priority plugin,
-however basic First In, First Out scheduling is available by setting
-<i>PriorityType=priority/basic</i> in the slurm.conf file. FIFO scheduling
-should be configured when Slurm is controlled by an external scheduler. (See
-<a href="#config">Configuration</a> below)</p>
+<p>The <i>PriorityType</i> parameter in the slurm.conf file selects the priority
+plugin. The default value for this variable is "priority/basic" which enables
+simple FIFO scheduling. (See <a href="#config">Configuration</a> below)</p>
+
+<p>In most cases it is preferable to use the Multifactor Priority plugin, which
+is enabled by setting <i>PriorityType=priority/multifactor</i>. This provides
+a very versatile method of ordering the queue of jobs waiting to be scheduled
+based on several <a href="#mfjppintro">factors</a>.</p>
 
 <p>There are several considerations the scheduler makes when making
 scheduling decisions. Jobs are selected to be evaluated by the scheduler
@@ -72,7 +76,7 @@ influence job priority:</P>
 <DD> a factor associated with each node partition
 <DT> QOS
 <DD> a factor associated with each Quality Of Service
-<DT> Site
+<DT> Site 
 <DD> a factor dictated by an administrator or a site-developed job_submit or site_factor plugin
 <DT> TRES
 <DD> each TRES Type has its own factor for a job which represents the number of
@@ -326,7 +330,7 @@ factor as it is currently configured.</P>
 
 <DL>
 <DT> PriorityType
-<DD> Set this value to "priority/multifactor" to enable the Multifactor Job Priority Plugin.
+<DD> Set this value to "priority/multifactor" to enable the Multifactor Job Priority Plugin.  The default value for this variable is "priority/basic" which enables simple FIFO scheduling.
 <DT> PriorityDecayHalfLife
 <DD> This determines the contribution of historical usage on the
   composite usage value.  The larger the number, the longer past usage

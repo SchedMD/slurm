@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_CORE_SPEC_PLUGIN_H
-#define _INTERFACES_CORE_SPEC_PLUGIN_H
+#ifndef _CORE_SPEC_PLUGIN_H_
+#define _CORE_SPEC_PLUGIN_H_
 
 /*
  * Initialize the core specialization plugin.
@@ -63,5 +63,25 @@ extern int core_spec_g_fini(void);
  * Return SLURM_SUCCESS on success
  */
 extern int core_spec_g_set(uint64_t cont_id, uint16_t core_count);
+/*
+ * Clear specialized cores at job termination
+ *
+ * Return SLURM_SUCCESS on success
+ */
+extern int core_spec_g_clear(uint64_t cont_id);
 
-#endif
+/*
+ * Reset specialized cores at job suspend
+ *
+ * Return SLURM_SUCCESS on success
+ */
+extern int core_spec_g_suspend(uint64_t cont_id, uint16_t core_count);
+
+/*
+ * Reset specialized cores at job resume
+ *
+ * Return SLURM_SUCCESS on success
+ */
+extern int core_spec_g_resume(uint64_t cont_id, uint16_t core_count);
+
+#endif /* _CORE_SPEC_PLUGIN_H_ */

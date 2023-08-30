@@ -70,6 +70,11 @@ typedef struct sockaddr_storage slurm_addr_t;
 typedef struct slurmdb_cluster_rec slurmdb_cluster_rec_t;
 #endif
 
+#ifndef __slurm_cred_t_defined
+#  define __slurm_cred_t_defined
+typedef struct slurm_job_credential slurm_cred_t;
+#endif
+
 /* Define switch_jobinfo_t below to avoid including extraneous slurm headers */
 #ifndef __switch_jobinfo_t_defined
 #  define  __switch_jobinfo_t_defined
@@ -649,14 +654,14 @@ enum hash_plugin_type {
 /* Select plugin (id) in use by cluster */
 enum select_plugin_type {
 	/* 100 unused (originally for BlueGene) */
-	/* 101 unused (originally used for cons_res) */
+	SELECT_PLUGIN_CONS_RES       = 101, /* Cons Res on a normal system */
 	SELECT_PLUGIN_LINEAR         = 102, /* Linear on a normal system */
 	/* 103 unused (originally used for BGQ) */
 	/* 104 unused (originally used for Cray/ALPS with select/linear) */
 	/* 105 unused (originally used for Cray/ALPS with select/cons_res) */
 	SELECT_PLUGIN_SERIAL         = 106, /* Serial */
 	SELECT_PLUGIN_CRAY_LINEAR    = 107, /* Linear on a Native Cray */
-	/* 108 unused (originally used for cons_res on a Native Cray */
+	SELECT_PLUGIN_CRAY_CONS_RES  = 108, /* Cons Res on a Native Cray */
 	SELECT_PLUGIN_CONS_TRES      = 109, /* Cons TRES on a normal system */
 	SELECT_PLUGIN_CRAY_CONS_TRES = 110  /* Cons TRES on a Native Cray */
 };
@@ -1006,7 +1011,9 @@ enum node_states {
 				 * within a board. */
 #define CR_MEMORY	0x0010	/* Memory as consumable resources. Memory is
 				 * not over-committed when selected as a CR. */
-/* was CR_OTHER_CONS_RES    0x0020, removed v23.11 */
+#define CR_OTHER_CONS_RES    0x0020 /* if layering select plugins use
+				     * cons_res instead of linear (default)
+				     */
 /* was CR_NHC_STEP_NO 0x0040, removed v19.05 */
 /* was CR_NHC_NO 0x0080, removed v19.05 */
 
@@ -1025,12 +1032,6 @@ enum node_states {
 /* By default, distribute cores using a block approach inside the nodes */
 #define CR_CORE_DEFAULT_DIST_BLOCK 0x1000
 #define CR_LLN		0x4000  /* Select nodes by "least loaded." */
-
-/*
- * This is used internally to know whether the job was started with
- * cons_tres or linear. It is not a configuration option.
- */
-#define CR_LINEAR 0x8000
 
 #define MEM_PER_CPU  0x8000000000000000
 #define SHARED_FORCE 0x8000
@@ -1102,7 +1103,10 @@ enum node_states {
 #define GRES_ENFORCE_BIND  SLURM_BIT(4) /* Enforce CPU/GRES binding */
 #define TEST_NOW_ONLY      SLURM_BIT(5) /* Test for immediately start only */
 #define JOB_SEND_ENV       SLURM_BIT(6) /* Send env to the dbd */
-/*                         SLURM_BIT(7)    Free to reuse */
+/*
+ * #define NODE_REBOOT     SLURM_BIT(7)    DEPRECATED in 22.05, can be used in
+ *                                         23.11.
+ */
 #define SPREAD_JOB         SLURM_BIT(8) /* Spread job across max node count */
 #define USE_MIN_NODES      SLURM_BIT(9) /* Prefer minimum node count */
 #define JOB_KILL_HURRY     SLURM_BIT(10) /* Avoid burst buffer stage out */
@@ -1122,8 +1126,8 @@ enum node_states {
 #define RESET_ACCRUE_TIME  SLURM_BIT(21) /* Reset the job's accrue time */
 #define CRON_JOB           SLURM_BIT(22) /* Job submitted through scrontab */
 #define JOB_MEM_SET        SLURM_BIT(23) /* Memory limit explicitly set by job */
-/*                         SLURM_BIT(24)    Removed in 23.11, free in 25.05 */
-
+#define JOB_RESIZED        SLURM_BIT(24) /* Running job added/removed nodes
+					  * with active steps */
 #define USE_DEFAULT_ACCT   SLURM_BIT(25) /* Job submitted to default account */
 #define USE_DEFAULT_PART   SLURM_BIT(26) /* Job submitted to default
 					  * partition */
@@ -1164,8 +1168,6 @@ typedef enum {
 				     * steps; resources allocated to this step
 				     * are not decremented from the job's
 				     * allocation */
-	SSF_NO_SIG_FAIL = 1 << 7, /* Don't fail step due to signal */
-	SSF_EXT_LAUNCHER = 1 << 8, /* Request is for an external launcher */
 } step_spec_flags_t;
 
 /*****************************************************************************\
@@ -1189,6 +1191,16 @@ extern void slurm_init(const char *conf);
  */
 extern void slurm_fini(void);
 
+/*
+ * Call in a client to load general plugins.
+ */
+extern void slurm_client_init_plugins(void);
+
+/*
+ * Call in a client to unload general plugins.
+ */
+extern void slurm_client_fini_plugins(void);
+
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
 \*****************************************************************************/
@@ -1200,7 +1212,7 @@ extern void slurm_fini(void);
  */
 #ifndef   __hostlist_t_defined
 #  define __hostlist_t_defined
-typedef struct hostlist hostlist_t;
+typedef struct hostlist * hostlist_t;
 #endif
 
 /*
@@ -1235,20 +1247,20 @@ typedef struct hostlist hostlist_t;
  * The returned hostlist must be freed with hostlist_destroy()
  *
  */
-extern hostlist_t *slurm_hostlist_create(const char *hostlist);
+extern hostlist_t slurm_hostlist_create(const char *hostlist);
 
 /* slurm_hostlist_count():
  *
  * Return the number of hosts in hostlist hl.
  */
-extern int slurm_hostlist_count(hostlist_t *hl);
+extern int slurm_hostlist_count(hostlist_t hl);
 
 /*
  * slurm_hostlist_destroy():
  *
  * Destroy a hostlist object. Frees all memory allocated to the hostlist.
  */
-extern void slurm_hostlist_destroy(hostlist_t *hl);
+extern void slurm_hostlist_destroy(hostlist_t hl);
 
 /* slurm_hostlist_find():
  *
@@ -1257,7 +1269,7 @@ extern void slurm_hostlist_destroy(hostlist_t *hl);
  *
  * Returns -1 if host is not found.
  */
-extern int slurm_hostlist_find(hostlist_t *hl, const char *hostname);
+extern int slurm_hostlist_find(hostlist_t hl, const char *hostname);
 
 /* slurm_hostlist_push():
  *
@@ -1268,7 +1280,7 @@ extern int slurm_hostlist_find(hostlist_t *hl, const char *hostname);
  * Returns the number of hostnames inserted into the list,
  * or 0 on failure.
  */
-extern int slurm_hostlist_push(hostlist_t *hl, const char *hosts);
+extern int slurm_hostlist_push(hostlist_t hl, const char *hosts);
 
 /* slurm_hostlist_push_host():
  *
@@ -1278,7 +1290,7 @@ extern int slurm_hostlist_push(hostlist_t *hl, const char *hosts);
  *
  * return value is 1 for success, 0 for failure.
  */
-extern int slurm_hostlist_push_host(hostlist_t *hl, const char *host);
+extern int slurm_hostlist_push_host(hostlist_t hl, const char *host);
 
 /* slurm_hostlist_ranged_string():
  *
@@ -1291,7 +1303,15 @@ extern int slurm_hostlist_push_host(hostlist_t *hl, const char *host);
  * slurm_hostlist_ranged_string() will write a bracketed hostlist representation
  * where possible.
  */
-extern ssize_t slurm_hostlist_ranged_string(hostlist_t *hl, size_t n, char *buf);
+extern ssize_t slurm_hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
+
+/* slurm_hostlist_ranged_string_malloc():
+ *
+ * Return the string representation of the hostlist hl.
+ *
+ * The result must be released using free();
+ */
+extern char *slurm_hostlist_ranged_string_malloc(hostlist_t hl);
 
 /* hostlist_ranged_string_xmalloc():
  *
@@ -1301,7 +1321,7 @@ extern ssize_t slurm_hostlist_ranged_string(hostlist_t *hl, size_t n, char *buf)
  *
  * Caller should free the result string using xfree().
  */
-extern char *slurm_hostlist_ranged_string_xmalloc(hostlist_t *hl);
+extern char *slurm_hostlist_ranged_string_xmalloc(hostlist_t hl);
 
 /*
  * slurm_hostlist_shift():
@@ -1312,14 +1332,14 @@ extern char *slurm_hostlist_ranged_string_xmalloc(hostlist_t *hl);
  *
  * Note: Caller is responsible for freeing the returned memory.
  */
-extern char *slurm_hostlist_shift(hostlist_t *hl);
+extern char *slurm_hostlist_shift(hostlist_t hl);
 
 /* slurm_hostlist_uniq():
  *
  * Sort the hostlist hl and remove duplicate entries.
  *
  */
-extern void slurm_hostlist_uniq(hostlist_t *hl);
+extern void slurm_hostlist_uniq(hostlist_t hl);
 
 /*****************************************************************************\
  *      SLURM LIST FUNCTIONS
@@ -1941,12 +1961,6 @@ typedef struct {
 } slurm_step_layout_req_t;
 
 typedef struct slurm_step_layout {
-	/*
-	 * cpus_per_task - Array of the length "node_cnt", the same length as
-	 * tasks. Each element of the array is the number of cpus per task
-	 * assigned to the corresponding node.
-	 */
-	uint16_t *cpus_per_task;
 	char *front_end;	/* If a front-end architecture, the name of
 				 * of the node running all tasks,
 				 * NULL otherwise */
@@ -2063,6 +2077,7 @@ typedef struct {
 	char **env;
 	char *container; /* OCI Container bundle path */
 	char *cwd;
+	bool user_managed_io;
 	uint32_t msg_timeout; /* timeout set for sending message */
 	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
 	uint16_t ntasks_per_core; /* number of tasks to invoke on each core */
@@ -2070,13 +2085,14 @@ typedef struct {
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on
 				    * each socket */
 
-	/* I/O handling */
+	/* START - only used if user_managed_io is false */
 	bool buffered_stdio;
 	bool labelio;
 	char *remote_output_filename;
 	char *remote_error_filename;
 	char *remote_input_filename;
 	slurm_step_io_fds_t local_fds;
+	/*  END  - only used if user_managed_io is false */
 
 	bool multi_prog;
 	bool no_alloc;
@@ -2110,9 +2126,9 @@ typedef struct {
 	uint16_t max_cores;
 	uint16_t max_threads;
 	uint16_t cpus_per_task;
-	uint16_t *cpus_per_task_array; /* Per node array of cpus per task */
 	uint16_t threads_per_core;
 	uint32_t task_dist;
+	char *partition;
 	bool preserve_env;
 
 	char *mpi_plugin_name;
@@ -2249,8 +2265,6 @@ typedef struct node_info {
 	char *gres;		/* list of a node's generic resources */
 	char *gres_drain;	/* list of drained GRES */
 	char *gres_used;	/* list of GRES in current use */
-	char *instance_id;	/* cloud instance id */
-	char *instance_type;	/* cloud instance type */
 	time_t last_busy;	/* time node was last busy (i.e. no jobs) */
 	char *mcs_label;	/* mcs label if mcs plugin in use */
 	uint64_t mem_spec_limit; /* MB memory limit for specialization */
@@ -2531,7 +2545,8 @@ typedef struct will_run_response_msg {
 						  * nodes only flag */
 #define RESERVE_FLAG_OVERLAP	   SLURM_BIT(14) /* Permit to overlap others */
 #define RESERVE_FLAG_SPEC_NODES	   SLURM_BIT(15) /* Contains specific nodes */
-/* SLURM_BIT(16) Available 2 versions after 23.11 */
+#define RESERVE_FLAG_FIRST_CORES   SLURM_BIT(16) /* Use only first cores
+						  * on each node */
 #define RESERVE_FLAG_TIME_FLOAT	   SLURM_BIT(17) /* Time offset is relative */
 #define RESERVE_FLAG_REPLACE	   SLURM_BIT(18) /* Replace resources
 						  * as assigned to jobs */
@@ -2624,20 +2639,23 @@ typedef struct resv_desc_msg {
 	char *accounts;		/* names of accounts permitted to use */
 	char *burst_buffer;	/* burst buffer resources to be included */
 	char *comment;		/* arbitrary comment */
-	uint32_t core_cnt;	/* Count of cores required */
+	uint32_t *core_cnt;	/* Count of cores required */
 	uint32_t duration;	/* duration of reservation in minutes */
 	time_t end_time;	/* end time of reservation */
 	char *features;		/* required node features */
 	uint64_t flags;		/* see RESERVE_FLAG_* above */
 	char *groups;		/* names of linux groups permitted to use */
-	void *job_ptr;          /* internal use only DON'T PACK */
 	char *licenses;		/* names of licenses to be reserved */
 	uint32_t max_start_delay;/* Maximum delay in which jobs outside of the
 				  * reservation will be permitted to overlap
 				  * once any jobs are queued for the
 				  * reservation */
 	char *name;		/* name of reservation (optional on create) */
-	uint32_t node_cnt;	/* Count of nodes required. */
+	uint32_t *node_cnt;	/* Count of nodes required. Specify set of job
+				 * sizes with trailing zero to optimize layout
+				 * for those jobs just specify their total size
+				 * to ignore optimized topology. For example,
+				 * {512,512,1024,0} OR {2048,0}. */
 	char *node_list;	/* list of reserved nodes or ALL */
 	char *partition;	/* name of partition to be used */
 	uint32_t purge_comp_time; /* If PURGE_COMP flag is set the amount of
@@ -2877,6 +2895,8 @@ typedef struct {
 	char *job_comp_type;	/* job completion storage type */
 	char *job_comp_user;	/* job completion storage user */
 	char *job_container_plugin; /* job container plugin type */
+	char *job_credential_private_key;	/* path to private key */
+	char *job_credential_public_certificate;/* path to public certificate*/
 	list_t *job_defaults_list; /* list of job_defaults_t elements */
 	uint16_t job_file_append; /* if set, append to stdout/err file */
 	uint16_t job_requeue;	/* If set, jobs get requeued on node failre */
@@ -3089,8 +3109,6 @@ typedef struct slurm_update_node_msg {
 	char *features;		/* new available feature for node */
 	char *features_act;	/* new active feature for node */
 	char *gres;		/* new generic resources for node */
-	char *instance_id;	/* cloud instance id */
-	char *instance_type;	/* cloud instance type */
 	char *node_addr;	/* communication name (optional) */
 	char *node_hostname;	/* node's hostname (optional) */
 	char *node_names;	/* nodelist expression */
@@ -3116,7 +3134,7 @@ typedef struct partition_info update_part_msg_t;
 typedef struct job_sbcast_cred_msg {
 	uint32_t      job_id;		/* assigned job id */
 	char         *node_list;	/* assigned list of nodes */
-	void *sbcast_cred;		/* opaque data structure */
+	sbcast_cred_t *sbcast_cred;	/* opaque data structure */
 } job_sbcast_cred_msg_t;
 
 typedef struct {
@@ -3581,8 +3599,7 @@ typedef struct job_step_kill_msg {
 #define KILL_NO_SIBS     SLURM_BIT(7) /* Don't kill other sibling jobs */
 #define KILL_JOB_RESV    SLURM_BIT(8) /* Job is willing to run on nodes in a
 				       * magnetic reservation. */
-#define KILL_NO_CRON     SLURM_BIT(9) /* request killing cron Jobs */
-#define KILL_NO_SIG_FAIL SLURM_BIT(10) /* Don't fail job due to signal (steps only) */
+#define KILL_NO_CRON SLURM_BIT(9) /* request killing cron Jobs */
 
 /* Use top bit of uint16_t in conjuction with KILL_* flags to indicate signal
  * has been sent to job previously. Does not need to be passed to slurmd. */
@@ -3603,11 +3620,11 @@ extern int slurm_kill_job(uint32_t job_id, uint16_t signal, uint16_t flags);
  * IN job_id  - the job's id
  * IN step_id - the job step's id
  * IN signal  - signal number
- * IN flags - see KILL_* or 0 for no flags
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_kill_job_step(uint32_t job_id, uint32_t step_id,
-			       uint16_t signal, uint16_t flags);
+extern int slurm_kill_job_step(uint32_t job_id,
+			       uint32_t step_id,
+			       uint16_t signal);
 /*
  * slurm_kill_job2 - send REQUEST_KILL_JOB msg to an existing job or step.
  * IN job_id - the job's id (in a string format)

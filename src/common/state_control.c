@@ -36,7 +36,6 @@
 
 #include <ctype.h>
 #include <limits.h>	/* For LONG_MAX */
-#include "src/common/proc_args.h"
 #include "src/common/state_control.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/working_cluster.h"
@@ -115,12 +114,142 @@ cleanup:
 	return rc;
 }
 
+extern int state_control_corecnt_supported(void)
+{
+	uint32_t select_type = slurmdb_setup_plugin_id_select();
+
+	if ((select_type != SELECT_PLUGIN_CONS_RES) &&
+	    (select_type != SELECT_PLUGIN_CONS_TRES) &&
+	    (select_type != SELECT_PLUGIN_CRAY_CONS_RES) &&
+	    (select_type != SELECT_PLUGIN_CRAY_CONS_TRES))
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+extern int state_control_parse_resv_corecnt(resv_desc_msg_t *resv_msg_ptr,
+					    char *val, uint32_t *res_free_flags,
+					    bool from_tres, char **err_msg)
+{
+	char *endptr = NULL, *core_cnt, *tok, *ptrptr = NULL;
+	int node_inx = 0;
+
+	/*
+	 * CoreCnt and TRES=cpu= might appear within the same request,
+	 * so we free the first and realloc the second.
+	 */
+	if (*res_free_flags & RESV_FREE_STR_TRES_CORE)
+		xfree(resv_msg_ptr->core_cnt);
+
+	core_cnt = xstrdup(val);
+	tok = strtok_r(core_cnt, ",", &ptrptr);
+	while (tok) {
+		xrealloc(resv_msg_ptr->core_cnt,
+			 sizeof(uint32_t) * (node_inx + 2));
+		*res_free_flags |= RESV_FREE_STR_TRES_CORE;
+		resv_msg_ptr->core_cnt[node_inx] =
+			strtol(tok, &endptr, 10);
+		if ((endptr == NULL) ||
+		    (endptr[0] != '\0') ||
+		    (tok[0] == '\0')) {
+			if (err_msg) {
+				if (from_tres)
+					xstrfmtcat(*err_msg,
+						   "Invalid TRES core count %s",
+						   val);
+				else
+					xstrfmtcat(*err_msg,
+						   "Invalid core count %s",
+						   val);
+			}
+			xfree(core_cnt);
+			return SLURM_ERROR;
+		}
+		node_inx++;
+		tok = strtok_r(NULL, ",", &ptrptr);
+	}
+
+	xfree(core_cnt);
+	return SLURM_SUCCESS;
+
+}
+
+extern int parse_resv_nodecnt(resv_desc_msg_t *resv_msg_ptr, char *val,
+			      uint32_t *res_free_flags, bool from_tres,
+			      char **err_msg)
+{
+	char *endptr = NULL, *node_cnt, *tok, *ptrptr = NULL;
+	int node_inx = 0;
+	long node_cnt_l;
+	int ret_code = SLURM_SUCCESS;
+
+	/*
+	 * NodeCnt and TRES=node= might appear within the same request,
+	 * so we free the first and realloc the second.
+	 */
+	if (*res_free_flags & RESV_FREE_STR_TRES_NODE)
+		xfree(resv_msg_ptr->node_cnt);
+
+	node_cnt = xstrdup(val);
+	tok = strtok_r(node_cnt, ",", &ptrptr);
+	while (tok) {
+		xrealloc(resv_msg_ptr->node_cnt,
+			 sizeof(uint32_t) * (node_inx + 2));
+		*res_free_flags |= RESV_FREE_STR_TRES_NODE;
+		/*
+		 * Use temporary variable to check for negative or huge values
+		 * since resv_msg_ptr->node_cnt is uint32_t.
+		 */
+		node_cnt_l = strtol(tok, &endptr, 10);
+		if ((node_cnt_l < 0) || (node_cnt_l == LONG_MAX)) {
+			ret_code = SLURM_ERROR;
+			break;
+		} else {
+			resv_msg_ptr->node_cnt[node_inx] = node_cnt_l;
+		}
+
+		if ((endptr != NULL) &&
+		    ((endptr[0] == 'k') ||
+		     (endptr[0] == 'K'))) {
+			resv_msg_ptr->node_cnt[node_inx] *= 1024;
+		} else if ((endptr != NULL) &&
+			   ((endptr[0] == 'm') ||
+			    (endptr[0] == 'M'))) {
+			resv_msg_ptr->node_cnt[node_inx] *= 1024 * 1024;
+		} else if ((endptr == NULL) ||
+			   (endptr[0] != '\0') ||
+			   (tok[0] == '\0')) {
+			ret_code = SLURM_ERROR;
+			break;
+		}
+		node_inx++;
+		tok = strtok_r(NULL, ",", &ptrptr);
+	}
+
+	if (ret_code != SLURM_SUCCESS) {
+		if (err_msg) {
+			xfree(*err_msg);
+			if (from_tres) {
+				xstrfmtcat(*err_msg,
+					   "Invalid TRES node count %s", val);
+			} else {
+				xstrfmtcat(*err_msg,
+					   "Invalid node count %s", val);
+			}
+		} else {
+			info("%s: Invalid node count (%s)", __func__, tok);
+		}
+	}
+	xfree(node_cnt);
+	return ret_code;
+}
+
 extern int state_control_parse_resv_tres(char *val,
 					 resv_desc_msg_t *resv_msg_ptr,
 					 uint32_t *res_free_flags,
 					 char **err_msg)
 {
-	int i, len;
+	int i, ret, len;
 	char *tres_bb = NULL, *tres_license = NULL,
 		*tres_corecnt = NULL, *tres_nodecnt = NULL,
 		*token, *type = NULL, *saveptr1 = NULL,
@@ -206,21 +335,27 @@ extern int state_control_parse_resv_tres(char *val,
 	}
 
 	if (tres_corecnt && tres_corecnt[0] != '\0') {
-		/* only have this on a cons_tres machine */
-		resv_msg_ptr->core_cnt = slurm_atoul(tres_corecnt);
+		/* only have this on a cons_res machine */
+		ret = state_control_corecnt_supported();
+		if (ret != SLURM_SUCCESS) {
+			xstrfmtcat(*err_msg, "CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
+			goto error;
+		}
+		ret = state_control_parse_resv_corecnt(resv_msg_ptr,
+						       tres_corecnt,
+						       res_free_flags, true,
+						       err_msg);
 		xfree(tres_corecnt);
+		if (ret != SLURM_SUCCESS)
+			goto error;
 	}
 
 	if (tres_nodecnt && tres_nodecnt[0] != '\0') {
-		char *leftover = NULL;
-		resv_msg_ptr->node_cnt = str_to_nodes(tres_nodecnt, &leftover);
-		if (!xstring_is_whitespace(leftover)) {
-			xstrfmtcat(*err_msg, "\"%s\" is not a valid node count",
-				   tres_nodecnt);
-			xfree(tres_nodecnt);
-			goto error;
-		}
+		ret = parse_resv_nodecnt(resv_msg_ptr, tres_nodecnt,
+					 res_free_flags, true, err_msg);
 		xfree(tres_nodecnt);
+		if (ret != SLURM_SUCCESS)
+			goto error;
 	}
 
 	if (tres_license && tres_license[0] != '\0') {

@@ -21,7 +21,6 @@ sacctmgr_SOURCES =	\
 	event_functions.c	\
 	federation_functions.c	\
 	file_functions.c	\
-	instance_functions.c	\
 	runaway_job_functions.c \
 	job_functions.c		\
 	reservation_functions.c	\

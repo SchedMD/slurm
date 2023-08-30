@@ -11,13 +11,14 @@ log_facility_t		T_UV
 
 slurm_t			T_SLURM
 bitstr_t *		T_PTROBJ_SLURM
-hostlist_t *		T_PTROBJ_SLURM
+hostlist_t		T_PTROBJ_SLURM
 slurm_step_ctx_t * 	T_PTROBJ_SLURM
 List			T_PTROBJ_SLURM
 ListIterator		T_PTROBJ_SLURM
 
 dynamic_plugin_data_t *	T_PTROBJ_SLURM
 job_resources_t * 	T_PTROBJ_SLURM
+slurm_cred_t * 		T_PTROBJ_SLURM
 switch_jobinfo_t * 	T_PTROBJ_SLURM
 select_jobinfo_t * 	T_PTROBJ_SLURM
 select_nodeinfo_t * 	T_PTROBJ_SLURM

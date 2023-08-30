@@ -147,10 +147,7 @@ int init(void)
 		uid_t uid = getuid() + 1;
 
 		cred = auth_p_create(slurm_conf.authinfo, uid, NULL, 0);
-		if (!cred) {
-			error("Failed to create MUNGE Credential");
-			rc = SLURM_ERROR;
-		} else if (!_decode_cred(cred, socket, true)) {
+		if (!_decode_cred(cred, socket, true)) {
 			error("MUNGE allows root to decode any credential");
 			rc = SLURM_ERROR;
 		}
@@ -190,8 +187,7 @@ auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data, int dlen)
 		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
 		xfree(socket);
 		if (rc != EMUNGE_SUCCESS) {
-			error("Failed to set MUNGE socket: %s",
-			      munge_ctx_strerror(ctx));
+			error("munge_ctx_set failure");
 			munge_ctx_destroy(ctx);
 			return NULL;
 		}
@@ -199,22 +195,14 @@ auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data, int dlen)
 
 	rc = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION, r_uid);
 	if (rc != EMUNGE_SUCCESS) {
-		error("Failed to set uid restriction: %s",
-		      munge_ctx_strerror(ctx));
+		error("munge_ctx_set failure");
 		munge_ctx_destroy(ctx);
 		return NULL;
 	}
 
 	auth_ttl = slurm_get_auth_ttl();
-	if (auth_ttl) {
-		rc = munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
-		if (rc != EMUNGE_SUCCESS) {
-			error("Failed to set MUNGE ttl: %s",
-			      munge_ctx_strerror(ctx));
-			munge_ctx_destroy(ctx);
-			return NULL;
-		}
-	}
+	if (auth_ttl)
+		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
 
 	cred = xmalloc(sizeof(*cred));
 	cred->magic = MUNGE_MAGIC;
@@ -319,7 +307,7 @@ int auth_p_verify(auth_credential_t *c, char *opts)
  * Obtain the Linux UID from the credential.
  * auth_p_verify() must be called first.
  */
-extern void auth_p_get_ids(auth_credential_t *cred, uid_t *uid, gid_t *gid)
+uid_t auth_p_get_uid(auth_credential_t *cred)
 {
 	if (!cred || !cred->verified) {
 		/*
@@ -327,16 +315,36 @@ extern void auth_p_get_ids(auth_credential_t *cred, uid_t *uid, gid_t *gid)
 		 * the calling path did not verify the credential first.
 		 */
 		xassert(!cred);
-		*uid = SLURM_AUTH_NOBODY;
-		*gid = SLURM_AUTH_NOBODY;
-		return;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
+		return SLURM_AUTH_NOBODY;
 	}
 
 	xassert(cred->magic == MUNGE_MAGIC);
 
-	*uid = cred->uid;
-	*gid = cred->gid;
+	return cred->uid;
 }
+
+/*
+ * Obtain the Linux GID from the credential.
+ * auth_p_verify() must be called first.
+ */
+gid_t auth_p_get_gid(auth_credential_t *cred)
+{
+	if (!cred || !cred->verified) {
+		/*
+		 * This xassert will trigger on a development build if
+		 * the calling path did not verify the credential first.
+		 */
+		xassert(!cred);
+		slurm_seterrno(ESLURM_AUTH_BADARG);
+		return SLURM_AUTH_NOBODY;
+	}
+
+	xassert(cred->magic == MUNGE_MAGIC);
+
+	return cred->gid;
+}
+
 
 /*
  * Obtain the Host addr from where the credential originated.

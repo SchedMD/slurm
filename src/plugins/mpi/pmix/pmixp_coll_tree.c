@@ -190,14 +190,14 @@ static void _reset_coll(pmixp_coll_t *coll)
 		/* collective is spoiled, reset state */
 		tree->state = PMIXP_COLL_TREE_SYNC;
 		slurm_kill_job_step(pmixp_info_jobid(),
-				    pmixp_info_stepid(), SIGKILL, 0);
+				    pmixp_info_stepid(), SIGKILL);
 	}
 }
 
 /*
  * Based on ideas provided by Hongjia Cao <hjcao@nudt.edu.cn> in PMI2 plugin
  */
-int pmixp_coll_tree_init(pmixp_coll_t *coll, hostlist_t **hl)
+int pmixp_coll_tree_init(pmixp_coll_t *coll, hostlist_t *hl)
 {
 	int max_depth, width, depth, i;
 	char *p;
@@ -610,7 +610,7 @@ static int _progress_ufwd(pmixp_coll_t *coll)
 		/* collective is spoiled, reset state */
 		tree->state = PMIXP_COLL_TREE_SYNC;
 		slurm_kill_job_step(pmixp_info_jobid(),
-				    pmixp_info_stepid(), SIGKILL, 0);
+				    pmixp_info_stepid(), SIGKILL);
 		return false;
 	}
 
@@ -742,7 +742,7 @@ static int _progress_ufwd_sc(pmixp_coll_t *coll)
 		/* collective is spoiled, reset state */
 		tree->state = PMIXP_COLL_TREE_SYNC;
 		slurm_kill_job_step(pmixp_info_jobid(),
-				    pmixp_info_stepid(), SIGKILL, 0);
+				    pmixp_info_stepid(), SIGKILL);
 		return false;
 	}
 
@@ -836,7 +836,7 @@ static int _progress_dfwd(pmixp_coll_t *coll)
 		/* collective is spoiled, reset state */
 		tree->state = PMIXP_COLL_TREE_SYNC;
 		slurm_kill_job_step(pmixp_info_jobid(),
-				    pmixp_info_stepid(), SIGKILL, 0);
+				    pmixp_info_stepid(), SIGKILL);
 		return false;
 	}
 #ifdef PMIXP_COLL_DEBUG
@@ -944,7 +944,7 @@ int pmixp_coll_tree_local(pmixp_coll_t *coll, char *data, size_t size,
 		/* collective is spoiled, reset state */
 		tree->state = PMIXP_COLL_TREE_SYNC;
 		slurm_kill_job_step(pmixp_info_jobid(),
-				    pmixp_info_stepid(), SIGKILL, 0);
+				    pmixp_info_stepid(), SIGKILL);
 		ret = SLURM_ERROR;
 		goto exit;
 	}
@@ -1143,7 +1143,7 @@ error:
 	_reset_coll(coll);
 error2:
 	slurm_kill_job_step(pmixp_info_jobid(),
-			    pmixp_info_stepid(), SIGKILL, 0);
+			    pmixp_info_stepid(), SIGKILL);
 	/* unlock the structure */
 	slurm_mutex_unlock(&coll->lock);
 
@@ -1292,7 +1292,7 @@ error:
 	_reset_coll(coll);
 error2:
 	slurm_kill_job_step(pmixp_info_jobid(),
-			    pmixp_info_stepid(), SIGKILL, 0);
+			    pmixp_info_stepid(), SIGKILL);
 	slurm_mutex_unlock(&coll->lock);
 
 	return SLURM_ERROR;
@@ -1350,8 +1350,8 @@ void pmixp_coll_tree_log(pmixp_coll_t *coll)
 	}
 	if (tree->chldrn_cnt) {
 		char *done_contrib = NULL, *wait_contrib = NULL;
-		hostlist_t *hl_done_contrib = NULL,
-			*hl_wait_contrib = NULL, **tmp_list;
+		hostlist_t hl_done_contrib = NULL,
+			hl_wait_contrib = NULL, *tmp_list;
 
 		PMIXP_ERROR("child contribs [%d]:", tree->chldrn_cnt);
 		for (i = 0; i < tree->chldrn_cnt; i++) {

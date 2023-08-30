@@ -135,7 +135,7 @@ static int _parse_jc_conf(void **dest, slurm_parser_enum_t type,
 {
 	if (value) {
 		bool match = false;
-		hostlist_t *hl = hostlist_create(value);
+		hostlist_t hl = hostlist_create(value);
 		if (hl) {
 			match = (hostlist_find(hl, conf->node_name) >= 0);
 			hostlist_destroy(hl);
@@ -197,11 +197,9 @@ static int _read_slurm_jc_conf(void)
 		slurm_jc_conf.dirs = xstrdup(SLURM_TMPFS_DEF_DIRS);
 
 	if (!slurm_jc_conf.basepath) {
-		debug("Config not found in %s. Disabling plugin on this node",
+		error("Configuration for this node not found in %s",
 		      tmpfs_conf_file);
-	} else if (!xstrncasecmp(slurm_jc_conf.basepath, "none", 4)) {
-		debug("Plugin is disabled on this node per %s.",
-		      tmpfs_conf_file);
+		rc = SLURM_ERROR;
 	}
 
 	if (!shared_set)

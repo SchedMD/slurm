@@ -143,6 +143,7 @@ typedef struct slurmctld_config {
 	time_t	shutdown_time;
 	bool    submissions_disabled;
 
+	slurm_cred_ctx_t cred_ctx;
 	pthread_cond_t thread_count_cond;
 	pthread_mutex_t thread_count_lock;
 	pthread_t thread_id_acct_update;
@@ -504,11 +505,6 @@ typedef struct {
 	uid_t *user_list;	/* array of users permitted to use	*/
 } slurmctld_resv_t;
 
-typedef struct {
-	bitstr_t *core_bitmap;
-	bitstr_t **exc_cores;
-} resv_exc_t;
-
 extern List resv_list;		/* list of slurmctld_resv_t entries */
 extern time_t last_resv_update;	/* time of last resv_list update */
 
@@ -729,6 +725,14 @@ struct job_record {
 					 * by the job, decremented while job is
 					 * completing */
 	char *cpus_per_tres;		/* semicolon delimited list of TRES=# values */
+	uint16_t cr_enabled;            /* specify if Consumable Resources
+					 * is enabled. Needed since CR deals
+					 * with a finer granularity in its
+					 * node/cpu scheduling (available cpus
+					 * instead of available nodes) than the
+					 * linear plugin
+					 * 0 if cr is NOT enabled,
+					 * 1 if cr is enabled */
 	uint32_t db_flags;              /* Flags to send to the database
 					 * record */
 	uint64_t db_index;              /* used only for database plugins */
@@ -1084,6 +1088,9 @@ enum select_plugindata_info {
 			      * BlueGene support */
 	SELECT_CONFIG_INFO,  /* data-> List get .conf info from select
 			      * plugin */
+	SELECT_SINGLE_JOB_TEST	/* data-> uint16 1 if one select_g_job_test()
+				 * call per job, node weights in node data
+				 * structure, 0 otherwise, for cons_tres */
 };
 #define SELECT_TYPE_CONS_RES	1
 #define SELECT_TYPE_CONS_TRES	2
@@ -2452,26 +2459,6 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 /* Update time stamps for job step suspend */
 extern void suspend_job_step(job_record_t *job_ptr);
 
-/*
- * job_mgr_dump_job_state - dump the state of a specific job, its details, and
- *	steps to a buffer
- * IN dump_job_ptr - pointer to job for which information is requested
- * IN/OUT buffer - location to store data, pointers automatically advanced
- */
-extern int job_mgr_dump_job_state(void *object, void *arg);
-
-/*
- * job_mgr_load_job_state - Unpack a job's state information from a buffer
- *
- * If job_ptr_out is not NULL it will be filled in outside of the job_list.
- *
- * NOTE: assoc_mgr qos, tres and assoc read lock must be unlocked before
- * calling
- */
-extern int job_mgr_load_job_state(buf_t *buffer, job_record_t **job_ptr_out,
-				  uint16_t protocol_version);
-
-
 /* For the job array data structure, build the string representation of the
  * bitmap.
  * NOTE: bit_fmt_hexmask() is far more scalable than bit_fmt(). */
@@ -2664,11 +2651,11 @@ extern int validate_job_create_req(job_desc_msg_t *job_desc, uid_t submit_uid,
 /*
  * validate_jobs_on_node - validate that any jobs that should be on the node
  *	are actually running, if not clean up the job records and/or node
- *	records.
- *
- * IN slurm_msg - contains the node registration message
+ *	records, call this function after validate_node_specs() sets the node
+ *	state properly
+ * IN reg_msg - node registration message
  */
-extern void validate_jobs_on_node(slurm_msg_t *slurm_msg);
+extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg);
 
 /*
  * validate_node_specs - validate the node's specifications as valid,
@@ -2758,7 +2745,7 @@ waitpid_timeout(const char *, pid_t, int *, int);
 /*
  * Calculate and populate the number of tres' for all partitions.
  */
-extern void set_partition_tres(bool assoc_mgr_locked);
+extern void set_partition_tres();
 
 /*
  * Update job's federated siblings strings.
@@ -2859,7 +2846,7 @@ extern bool valid_gres_name(char *name);
  * reboots - If the node hasn't booted by ResumeTimeout, mark the node as down.
  * resume_after - Resume a down|drain node after resume_after time.
  */
-extern void check_node_timers(void);
+extern void check_node_timers();
 
 /*
  * Send warning signal to job before end time.
@@ -2997,11 +2984,6 @@ extern char *filter_out_changeable_features(const char *features);
 extern void reset_node_active_features(node_record_t *node_ptr);
 
 /*
- * Reset a node's instance variables
- */
-extern void reset_node_instance(node_record_t *node_ptr);
-
-/*
  * Return a hostlist with expanded node specification.
  *
  * Handles node range expressions, nodesets and ALL keyword.
@@ -3015,8 +2997,9 @@ extern void reset_node_instance(node_record_t *node_ptr);
  * NOTE: Caller must FREE_NULL_HOSTLIST() returned hostlist_t.
  * NOTE: Caller should interpret a non-NULL but empty hostlist conveniently.
  */
-extern hostlist_t *nodespec_to_hostlist(const char *nodes, bool uniq,
-					char **nodesets);
+extern hostlist_t nodespec_to_hostlist(const char *nodes,
+				       bool uniq,
+				       char **nodesets);
 
 /*
  * set_node_reason - appropriately set node reason with message
@@ -3049,19 +3032,5 @@ extern void reconfigure_slurm_post_send(int error_code);
  * Return the job's sharing value from job or partition value.
  */
 extern uint16_t get_job_share_value(job_record_t *job_ptr);
-
-/*
- * job_mgr_list_delete_job - delete a job record and its corresponding
- *	job_details,
- *	see common/list.h for documentation
- * IN job_entry - pointer to job_record to delete
- */
-extern void job_mgr_list_delete_job(void *job_entry);
-
-/*
- * Build a job rec from an advanced reservation request.
- */
-extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
-	resv_desc_msg_t *resv_desc_ptr);
 
 #endif /* !_HAVE_SLURMCTLD_H */

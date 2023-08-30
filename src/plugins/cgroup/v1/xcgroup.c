@@ -47,12 +47,25 @@ extern int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args,
 	cgns->subsystems = xstrdup(subsys);
 
 	if (!xcgroup_ns_is_available(cgns)) {
-		error("cgroup namespace '%s' not mounted. aborting", subsys);
-		common_cgroup_ns_destroy(cgns);
-		return SLURM_ERROR;
+		if (slurm_cgroup_conf.cgroup_automount) {
+			if (xcgroup_ns_mount(cgns)) {
+				error("unable to mount %s cgroup "
+				      "namespace: %s",
+				      subsys, slurm_strerror(errno));
+				goto clean;
+			}
+			info("cgroup namespace '%s' is now mounted", subsys);
+		} else {
+			error("cgroup namespace '%s' not mounted. aborting",
+			      subsys);
+			goto clean;
+		}
 	}
 
 	return SLURM_SUCCESS;
+clean:
+	common_cgroup_ns_destroy(cgns);
+	return SLURM_ERROR;
 }
 
 extern int xcgroup_ns_mount(xcgroup_ns_t *cgns)
@@ -117,8 +130,13 @@ extern int xcgroup_ns_mount(xcgroup_ns_t *cgns)
 		options = opt_combined;
 	}
 
+#if defined(__APPLE__) || defined(__FreeBSD__)
+	if (mount("cgroup", cgns->mnt_point,
+		  MS_NOSUID|MS_NOEXEC|MS_NODEV, options))
+#else
 	if (mount("cgroup", cgns->mnt_point, "cgroup",
 		  MS_NOSUID|MS_NOEXEC|MS_NODEV, options))
+#endif
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;

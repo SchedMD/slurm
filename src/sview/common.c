@@ -148,7 +148,7 @@ static gboolean _frame_callback(GtkWindow *window,
 		working_sview_config.fi_popup_width = event->configure.width;
 		working_sview_config.fi_popup_height = event->configure.height;
 
-		list_itr_t *itr = list_iterator_create(popup_list);
+		ListIterator itr = list_iterator_create(popup_list);
 		popup_info_t *popup_win = NULL;
 
 		while ((popup_win = list_next(itr))) {
@@ -600,7 +600,7 @@ extern int build_nodes_bitmap(char *node_names, bitstr_t **bitmap)
 {
 	char *this_node_name;
 	bitstr_t *my_bitmap;
-	hostlist_t *host_list;
+	hostlist_t host_list;
 	int node_inx = -1;
 
 	if (TOPO_DEBUG)
@@ -809,7 +809,7 @@ extern void set_page_opts(int page, display_data_t *display_data,
 			  int count, char* initial_opts)
 {
 	page_opts_t *page_opts;
-	list_itr_t *itr = NULL;
+	ListIterator itr = NULL;
 	char *col_name = NULL;
 
 	xassert(page < PAGE_CNT);
@@ -971,7 +971,7 @@ extern void create_page(GtkNotebook *notebook, display_data_t *display_data)
 
 }
 
-extern GtkTreeView *create_treeview(display_data_t *local, list_t **button_list)
+extern GtkTreeView *create_treeview(display_data_t *local, List *button_list)
 {
 	signal_params_t *signal_params = xmalloc(sizeof(signal_params_t));
 	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
@@ -1635,7 +1635,7 @@ extern void destroy_signal_params(void *arg)
 
 extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title)
 {
-	list_itr_t *itr = list_iterator_create(popup_list);
+	ListIterator itr = list_iterator_create(popup_list);
 	popup_info_t *popup_win = NULL;
 
 	while ((popup_win = list_next(itr))) {
@@ -1656,7 +1656,7 @@ extern gboolean delete_popup(GtkWidget *widget, GtkWidget *event, char *title)
 
 extern gboolean delete_popups(void)
 {
-	list_itr_t *itr = list_iterator_create(popup_list);
+	ListIterator itr = list_iterator_create(popup_list);
 	popup_info_t *popup_win = NULL;
 
 	while ((popup_win = list_next(itr))) {
@@ -1961,7 +1961,8 @@ extern void display_edit_note(char *edit_note)
 	msg_id = gtk_statusbar_push(GTK_STATUSBAR(main_statusbar),
 				    STATUS_ADMIN_EDIT,
 				    edit_note);
-	if (!sview_thread_new(_editing_thr, GINT_TO_POINTER(msg_id), &error))
+	if (!sview_thread_new(_editing_thr, GINT_TO_POINTER(msg_id),
+			      false, &error))
 		g_printerr("Failed to create edit thread: %s\n",
 			   error->message);
 

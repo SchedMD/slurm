@@ -68,10 +68,8 @@ typedef struct {
 
 typedef struct {
 	void *auth_cred;
-	uid_t auth_uid;
-	gid_t auth_gid;
-	bool auth_ids_set;
-	int (*callback_proc)(void *arg, persist_msg_t *msg, buf_t **out_buffer);
+	int (*callback_proc)(void *arg, persist_msg_t *msg,
+			     buf_t **out_buffer, uint32_t *uid);
 	void (*callback_fini)(void *arg);
 	char *cluster_name;
 	time_t comm_fail_time;	/* avoid constant error messages */

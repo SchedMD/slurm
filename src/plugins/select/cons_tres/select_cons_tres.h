@@ -47,7 +47,6 @@
 
 #include "src/common/bitstring.h"
 #include "src/interfaces/gres.h"
-#include "src/common/core_array.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
@@ -62,21 +61,8 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
-#include "cons_helpers.h"
-#include "node_data.h"
-#include "part_data.h"
-#include "job_resources.h"
-#include "job_test.h"
+#include "../cons_common/cons_common.h"
 
 /* Global variables */
-extern bool     backfill_busy_nodes;
-extern int      bf_window_scale;
-extern bool     gang_mode;
-extern bool     have_dragonfly;
-extern bool     pack_serial_at_end;
-extern bool     preempt_by_part;
-extern bool     preempt_by_qos;
-extern bool     spec_cores_first;
-extern bool     topo_optional;
 
 #endif /* !_CONS_TRES_H */

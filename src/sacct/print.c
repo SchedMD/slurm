@@ -39,7 +39,6 @@
 #include "sacct.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/parse_time.h"
-#include "src/common/uid.h"
 #include "slurm/slurm.h"
 
 print_field_t *field = NULL;
@@ -284,6 +283,7 @@ extern void print_fields(type_t type, void *object)
 	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
 	jobcomp_job_rec_t *job_comp = (jobcomp_job_rec_t *)object;
 	struct passwd *pw = NULL;
+	struct	group *gr = NULL;
 	int cpu_tres_rec_count = 0;
 	int step_cpu_tres_rec_count = 0;
 	char tmp1[128];
@@ -917,11 +917,13 @@ extern void print_fields(type_t type, void *object)
 			default:
 				break;
 			}
-			tmp_char = gid_to_string(tmp_uint32);
+			tmp_char = NULL;
+			if ((gr=getgrgid(tmp_uint32)))
+				tmp_char=gr->gr_name;
+
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));
-			xfree(tmp_char);
 			break;
 		case PRINT_JOBID:
 			if (type == JOBSTEP)
@@ -2034,16 +2036,12 @@ extern void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_USER:
-		{
-			char *user = NULL;
 			switch(type) {
 			case JOB:
 				if (job->user)
 					tmp_char = job->user;
-				else {
-					user = uid_to_string(job->uid);
-					tmp_char = user;
-				}
+				else if ((pw=getpwuid(job->uid)))
+						tmp_char = pw->pw_name;
 				break;
 			case JOBCOMP:
 				tmp_char = job_comp->uid_name;
@@ -2055,9 +2053,7 @@ extern void print_fields(type_t type, void *object)
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));
-			xfree(user);
 			break;
-		}
 		case PRINT_USERCPU:
 			switch(type) {
 			case JOB:

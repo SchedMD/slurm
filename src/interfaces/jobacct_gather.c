@@ -106,7 +106,7 @@ static const char *syms[] = {
 static slurm_jobacct_gather_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
+static bool init_run = false;
 static pthread_mutex_t init_run_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t watch_tasks_thread_id = 0;
 
@@ -117,6 +117,7 @@ static pthread_mutex_t task_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool jobacct_shutdown = true;
 static pthread_mutex_t jobacct_shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool plugin_polling = true;
 
 static slurm_step_id_t jobacct_step_id = {
 	.job_id = 0,
@@ -327,7 +328,7 @@ static bool _init_run_test(void)
 {
 	bool rc;
 	slurm_mutex_lock(&init_run_mutex);
-	rc = (plugin_inited == PLUGIN_INITED);
+	rc = init_run;
 	slurm_mutex_unlock(&init_run_mutex);
 	return rc;
 }
@@ -523,14 +524,12 @@ extern int jobacct_gather_init(void)
 	char    *plugin_type = "jobacct_gather";
 	int	retval=SLURM_SUCCESS;
 
-	slurm_mutex_lock(&g_context_lock);
-	if (plugin_inited)
-		goto done;
+	if (slurmdbd_conf || (_init_run_test() && g_context))
+		return retval;
 
-	if (slurmdbd_conf || !slurm_conf.job_acct_gather_type) {
-		plugin_inited = PLUGIN_NOOP;
+	slurm_mutex_lock(&g_context_lock);
+	if (g_context)
 		goto done;
-	}
 
 	g_context = plugin_context_create(plugin_type,
 					  slurm_conf.job_acct_gather_type,
@@ -540,12 +539,17 @@ extern int jobacct_gather_init(void)
 		error("cannot create %s context for %s",
 		      plugin_type, slurm_conf.job_acct_gather_type);
 		retval = SLURM_ERROR;
-		plugin_inited = PLUGIN_NOT_INITED;
+		goto done;
+	}
+
+	if (!xstrcasecmp(slurm_conf.job_acct_gather_type,
+			 "jobacct_gather/none")) {
+		plugin_polling = false;
 		goto done;
 	}
 
 	slurm_mutex_lock(&init_run_mutex);
-	plugin_inited = PLUGIN_INITED;
+	init_run = true;
 	slurm_mutex_unlock(&init_run_mutex);
 
 	/* only print the warning messages if in the slurmctld */
@@ -556,8 +560,10 @@ extern int jobacct_gather_init(void)
 		warning("We will use a much slower algorithm with proctrack/pgid, use Proctracktype=proctrack/linuxproc or some other proctrack when using %s",
 			slurm_conf.job_acct_gather_type);
 
-	if (!slurm_conf.accounting_storage_type) {
-		warning("Even though we are collecting accounting information you have asked for it not to be stored (no AccountingStorageType set). If this is not what you have in mind you will need to change it.");
+	if (!xstrcasecmp(slurm_conf.accounting_storage_type,
+	                 ACCOUNTING_STORAGE_TYPE_NONE)) {
+		warning("Even though we are collecting accounting information you have asked for it not to be stored (%s). If this is not what you have in mind you will need to change it.",
+			ACCOUNTING_STORAGE_TYPE_NONE);
 	}
 
 done:
@@ -572,6 +578,10 @@ extern int jobacct_gather_fini(void)
 
 	slurm_mutex_lock(&g_context_lock);
 	if (g_context) {
+		slurm_mutex_lock(&init_run_mutex);
+		init_run = false;
+		slurm_mutex_unlock(&init_run_mutex);
+
 		if (watch_tasks_thread_id) {
 			slurm_mutex_unlock(&g_context_lock);
 			slurm_mutex_lock(&profile_timer->notify_mutex);
@@ -584,9 +594,6 @@ extern int jobacct_gather_fini(void)
 		rc = plugin_context_destroy(g_context);
 		g_context = NULL;
 	}
-	slurm_mutex_lock(&init_run_mutex);
-	plugin_inited = PLUGIN_NOT_INITED;
-	slurm_mutex_unlock(&init_run_mutex);
 	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
@@ -596,10 +603,10 @@ extern int jobacct_gather_startpoll(uint16_t frequency)
 {
 	int retval = SLURM_SUCCESS;
 
-	xassert(plugin_inited);
-
-	if (plugin_inited == PLUGIN_NOOP)
+	if (!plugin_polling)
 		return SLURM_SUCCESS;
+
+	xassert(g_context);
 
 	if (!_jobacct_shutdown_test()) {
 		error("jobacct_gather_startpoll: poll already started!");
@@ -629,10 +636,7 @@ extern int jobacct_gather_endpoll(void)
 {
 	int retval = SLURM_SUCCESS;
 
-	xassert(plugin_inited);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(g_context);
 
 	slurm_mutex_lock(&jobacct_shutdown_mutex);
 	jobacct_shutdown = true;
@@ -652,9 +656,9 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 {
 	struct jobacctinfo *jobacct;
 
-	xassert(plugin_inited);
+	xassert(g_context);
 
-	if (plugin_inited == PLUGIN_NOOP)
+	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
 	if (_jobacct_shutdown_test())
@@ -691,7 +695,7 @@ error:
 
 extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid, bool update_data)
 {
-	if ((plugin_inited == PLUGIN_NOOP) || _jobacct_shutdown_test())
+	if (!plugin_polling || _jobacct_shutdown_test())
 		return NULL;
 
 	if (update_data)
@@ -732,7 +736,7 @@ extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
 	struct jobacctinfo *jobacct = NULL;
 	ListIterator itr = NULL;
 
-	if (plugin_inited == PLUGIN_NOOP)
+	if (!plugin_polling)
 		return NULL;
 
 	/* poll data one last time before removing task
@@ -770,7 +774,7 @@ error:
 
 extern int jobacct_gather_set_proctrack_container_id(uint64_t id)
 {
-	if (plugin_inited == PLUGIN_NOOP)
+	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
 	if (cont_id != NO_VAL64)
@@ -790,7 +794,7 @@ extern int jobacct_gather_set_proctrack_container_id(uint64_t id)
 extern int jobacct_gather_set_mem_limit(slurm_step_id_t *step_id,
 					uint64_t mem_limit)
 {
-	if (plugin_inited == PLUGIN_NOOP)
+	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
 	if ((step_id->job_id == 0) || (mem_limit == 0)) {
@@ -809,7 +813,7 @@ extern int jobacct_gather_set_mem_limit(slurm_step_id_t *step_id,
 extern void jobacct_gather_handle_mem_limit(uint64_t total_job_mem,
 					    uint64_t total_job_vsize)
 {
-	if (plugin_inited == PLUGIN_NOOP)
+	if (!plugin_polling)
 		return;
 
 	if (jobacct_mem_limit)
@@ -836,7 +840,7 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 	struct jobacctinfo *jobacct;
 	jobacct_id_t temp_id;
 
-	if (plugin_inited == PLUGIN_NOOP)
+	if (!plugin_polling)
 		return NULL;
 
 	jobacct = xmalloc(sizeof(struct jobacctinfo));
@@ -876,7 +880,7 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
 	buf_t *buffer = NULL;
 
-	if (plugin_inited == PLUGIN_NOOP)
+	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
 	switch (type) {
@@ -951,7 +955,7 @@ extern int jobacctinfo_getinfo(
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
 	char *buf = NULL;
 
-	if (plugin_inited == PLUGIN_NOOP)
+	if (!plugin_polling)
 		return SLURM_SUCCESS;
 
 	/* jobacct needs to be allocated before this is called.	*/
@@ -1009,8 +1013,7 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct, uint16_t rpc_version,
 {
 	bool no_pack;
 
-	no_pack = ((plugin_inited == PLUGIN_NOOP) &&
-		   (protocol_type != PROTOCOL_TYPE_DBD));
+	no_pack = (!plugin_polling && (protocol_type != PROTOCOL_TYPE_DBD));
 
 	if (!jobacct || no_pack) {
 		pack8((uint8_t) 0, buffer);
@@ -1153,7 +1156,7 @@ unpack_error:
 
 extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 {
-	if (plugin_inited == PLUGIN_NOOP)
+	if (!plugin_polling)
 		return;
 
 	xassert(dest);
@@ -1201,7 +1204,7 @@ extern void jobacctinfo_2_stats(slurmdb_stats_t *stats, jobacctinfo_t *jobacct)
 	_jobacctinfo_2_stats_tres_usage(stats, jobacct);
 }
 
-extern long jobacct_gather_get_clk_tck(void)
+extern long jobacct_gather_get_clk_tck()
 {
 	long hertz = sysconf(_SC_CLK_TCK);
 

@@ -780,7 +780,6 @@ extern mysql_conn_t *create_mysql_conn(int conn_num, bool rollback,
 		mysql_conn->flags |= DB_CONN_FLAG_ROLLBACK;
 	mysql_conn->conn = conn_num;
 	mysql_conn->cluster_name = xstrdup(cluster_name);
-	mysql_conn->wsrep_trx_fragment_size_orig = NO_VAL64;
 	slurm_mutex_init(&mysql_conn->lock);
 	mysql_conn->update_list = list_create(slurmdb_destroy_update_object);
 
@@ -795,7 +794,6 @@ extern int destroy_mysql_conn(mysql_conn_t *mysql_conn)
 		xfree(mysql_conn->cluster_name);
 		slurm_mutex_destroy(&mysql_conn->lock);
 		FREE_NULL_LIST(mysql_conn->update_list);
-		xfree(mysql_conn->wsrep_trx_fragment_unit_orig);
 		xfree(mysql_conn);
 	}
 
@@ -940,7 +938,7 @@ extern int mysql_db_close_db_connection(mysql_conn_t *mysql_conn)
 	return SLURM_SUCCESS;
 }
 
-extern int mysql_db_cleanup(void)
+extern int mysql_db_cleanup()
 {
 	debug3("starting mysql cleaning up");
 
@@ -1168,197 +1166,4 @@ extern int mysql_db_create_table(mysql_conn_t *mysql_conn, char *table_name,
 	rc = _mysql_make_table_current(
 		mysql_conn, table_name, first_field, ending);
 	return rc;
-}
-
-extern int mysql_db_get_var_str(mysql_conn_t *mysql_conn,
-				const char *variable_name,
-				char **value)
-{
-	MYSQL_ROW row = NULL;
-	MYSQL_RES *result = NULL;
-	char *query;
-
-	query = xstrdup_printf("select @@%s;", variable_name);
-	result = mysql_db_query_ret(mysql_conn, query, 0);
-	if (!result) {
-		error("%s: null result from query `%s`", __func__, query);
-		xfree(query);
-		return SLURM_ERROR;
-	}
-
-	if (mysql_num_rows(result) != 1) {
-		error("%s: invalid results from query `%s`", __func__, query);
-		xfree(query);
-		mysql_free_result(result);
-		return SLURM_ERROR;
-	}
-
-	xfree(query);
-
-	row = mysql_fetch_row(result);
-	*value = xstrdup(row[0]);
-
-	mysql_free_result(result);
-
-	return SLURM_SUCCESS;
-}
-
-extern int mysql_db_get_var_u64(mysql_conn_t *mysql_conn,
-				const char *variable_name,
-				uint64_t *value)
-{
-	char *err_check = NULL, *var_str = NULL;
-
-	if (mysql_db_get_var_str(mysql_conn, variable_name, &var_str)) {
-		return SLURM_ERROR;
-	}
-
-	*value = strtoull(var_str, &err_check, 10);
-
-	if (*err_check) {
-		error("%s: error parsing string to int `%s`",
-		      __func__, var_str);
-		xfree(var_str);
-		return SLURM_ERROR;
-	}
-	xfree(var_str);
-
-	return SLURM_SUCCESS;
-}
-
-extern void mysql_db_enable_streaming_replication(mysql_conn_t *mysql_conn)
-{
-	int rc = SLURM_SUCCESS;
-	char *query;
-	uint64_t wsrep_on, wsrep_max_ws_size, fragment_size;
-
-	/* if this errors, assume wsrep_on doesn't exist, so must be disabled */
-	if (mysql_db_get_var_u64(mysql_conn, "wsrep_on", &wsrep_on))
-		wsrep_on = 0;
-
-	debug2("wsrep_on=%"PRIu64, wsrep_on);
-
-	if (!wsrep_on)
-		return;
-
-	/*
-	 * wsrep_max_ws_size represents the maximum write set size in bytes.
-	 * The fragment cannot exceed this value.
-	 */
-	rc = mysql_db_get_var_u64(mysql_conn, "wsrep_max_ws_size",
-			          &wsrep_max_ws_size);
-	if (rc) {
-		error("Failed to get wsrep_max_ws_size");
-		return;
-	}
-
-	/*
-	 * Save the initial wsrep settings so they can be restored later.
-	 * If these were set previously, don't set them again.
-	 *
-	 * If these variables don't exist, streaming replication isn't supported
-	 * so don't turn it on.
-	 */
-	if (!mysql_conn->wsrep_trx_fragment_unit_orig) {
-		rc = mysql_db_get_var_str(
-			mysql_conn,
-			"wsrep_trx_fragment_unit",
-			&mysql_conn->wsrep_trx_fragment_unit_orig);
-		if (rc) {
-			if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
-				error("This version of galera does not support streaming replication.");
-			error("Unable to fetch wsrep_trx_fragment_unit.");
-			return;
-		}
-	}
-	if (mysql_conn->wsrep_trx_fragment_size_orig == NO_VAL64) {
-		rc = mysql_db_get_var_u64(
-			mysql_conn,
-			"wsrep_trx_fragment_size",
-			&mysql_conn->wsrep_trx_fragment_size_orig);
-		if (rc) {
-			if (errno == ER_UNKNOWN_SYSTEM_VARIABLE)
-				error("This version of galera does not support streaming replication.");
-			error("Unable to fetch wsrep_trx_fragment_size.");
-			return;
-		}
-	}
-
-	/*
-	 * Force the wsrep_trx_fragment_unit to bytes. The default may change
-	 * in the future, or may have been set by the site, so don't rely on it
-	 * being a specific value.
-	 */
-	query = xstrdup("SET @@SESSION.wsrep_trx_fragment_unit=\'bytes\';");
-	rc = _mysql_query_internal(mysql_conn->db_conn, query);
-	xfree(query);
-	if (rc) {
-		error("Unable to set wsrep_trx_fragment_unit.");
-		return;
-	}
-
-	/*
-	 * Set the fragment size to 128MiB, or wsrep_max_ws_size if it has been
-	 * set below that. Simply setting it to the max size does not strictly
-	 * result in the best performance.
-	 */
-	fragment_size = MIN(wsrep_max_ws_size, 134217700);
-	query = xstrdup_printf("SET @@SESSION.wsrep_trx_fragment_size=%"PRIu64";",
-			       fragment_size);
-	rc = _mysql_query_internal(mysql_conn->db_conn, query);
-	xfree(query);
-	if (rc)
-		error("Failed to set wsrep_trx_fragment_size");
-	else
-		debug2("set wsrep_trx_fragment_size=%"PRIu64" bytes",
-		       fragment_size);
-
-	return;
-}
-
-extern void mysql_db_restore_streaming_replication(mysql_conn_t *mysql_conn)
-{
-	int rc;
-	char *query;
-	uint64_t wsrep_on;
-
-	/* if this errors, assume wsrep_on doesn't exist, so must be disabled */
-	if (mysql_db_get_var_u64(mysql_conn, "wsrep_on", &wsrep_on))
-		wsrep_on = 0;
-
-	debug2("wsrep_on=%"PRIu64, wsrep_on);
-
-	if (!wsrep_on)
-		return;
-
-	if (mysql_conn->wsrep_trx_fragment_unit_orig) {
-		query = xstrdup_printf(
-				"SET @@SESSION.wsrep_trx_fragment_unit=\'%s\';",
-				mysql_conn->wsrep_trx_fragment_unit_orig);
-		rc = _mysql_query_internal(mysql_conn->db_conn, query);
-		xfree(query);
-		if (rc) {
-			error("Unable to restore wsrep_trx_fragment_unit.");
-		} else {
-			debug2("Restored wsrep_trx_fragment_unit=%s",
-			       mysql_conn->wsrep_trx_fragment_unit_orig);
-			xfree(mysql_conn->wsrep_trx_fragment_unit_orig);
-		}
-	}
-	if (mysql_conn->wsrep_trx_fragment_size_orig != NO_VAL64) {
-		query = xstrdup_printf(
-				"SET @@SESSION.wsrep_trx_fragment_size=%"PRIu64";",
-				mysql_conn->wsrep_trx_fragment_size_orig);
-		rc = _mysql_query_internal(mysql_conn->db_conn, query);
-		xfree(query);
-		if (rc) {
-			error("Unable to restore wsrep_trx_fragment_size.");
-		} else {
-			debug2("Restored wsrep_trx_fragment_size=%"PRIu64,
-			       mysql_conn->wsrep_trx_fragment_size_orig);
-			mysql_conn->wsrep_trx_fragment_size_orig = NO_VAL64;
-		}
-	}
-
-	return;
 }

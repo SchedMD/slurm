@@ -156,16 +156,16 @@ int main(int argc, char **argv)
 
 	/*
 	 * Do plugin init's after _init_pidfile so systemd is happy as
-	 * acct_storage_g_init() could take a long time to finish if running
+	 * slurm_acct_storage_init() could take a long time to finish if running
 	 * for the first time after an upgrade.
 	 */
-	if (auth_g_init() != SLURM_SUCCESS) {
+	if (slurm_auth_init(NULL) != SLURM_SUCCESS) {
 		fatal("Unable to initialize authentication plugins");
 	}
 	if (hash_g_init() != SLURM_SUCCESS) {
 		fatal("failed to initialize hash plugin");
 	}
-	if (acct_storage_g_init() != SLURM_SUCCESS) {
+	if (slurm_acct_storage_init() != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s accounting storage plugin",
 		      slurm_conf.accounting_storage_type);
 	}
@@ -194,10 +194,9 @@ int main(int argc, char **argv)
 
 	/*
 	 * If we are tracking wckey we need to cache wckeys,
-	 * if we aren't only cache the assoc, users, qos, and tres.
+	 * if we aren't only cache the users, qos, and tres.
 	 */
 	assoc_init_arg.cache_level = ASSOC_MGR_CACHE_USER |
-		ASSOC_MGR_CACHE_ASSOC |
 		ASSOC_MGR_CACHE_QOS | ASSOC_MGR_CACHE_TRES;
 	if (slurmdbd_conf->track_wckey)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
@@ -323,9 +322,8 @@ end_it:
 	}
 
 	assoc_mgr_fini(0);
-	acct_storage_g_fini();
-	auth_g_fini();
-	hash_g_fini();
+	slurm_acct_storage_fini();
+	slurm_auth_fini();
 	log_fini();
 	free_slurmdbd_conf();
 	slurm_mutex_lock(&rpc_mutex);

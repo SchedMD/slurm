@@ -74,7 +74,6 @@ we would also include gres/gpu for accounting gpus in requests like
 </li>
 
 <p><b>NOTE</b>: Setting gres/gpu will also set gres/gpumem and gres/gpuutil.
-gres/gpumem and gres/gpuutil can be set individually when gres/gpu is not set.
 </p>
 
 <li><b>PriorityWeightTRES</b>

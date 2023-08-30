@@ -669,11 +669,10 @@ By default prints a time stamp with the header.
 .IP
 
 .TP
-\f3\-\-json\fP, \f3\-\-json\fP=\fIlist\fR, \f3\-\-json\fP=<\fIdata_parser\fR>
-Dump information as JSON using the default data_parser plugin or explicit
-data_parser with parameters. All information is dumped, even if it would
-normally not be. Sorting and formatting arguments passed to other options are
-ignored; however, filtering arguments are still used.
+\f3\-\-json\fP
+Dump all node information as JSON. All information is dumped, even if it would
+normally not be. Formatting options are ignored; however, filtering arguments
+are still used.
 .IP
 
 .TP
@@ -812,11 +811,10 @@ Print version information and exit.
 .IP
 
 .TP
-\f3\-\-yaml\fP, \f3\-\-yaml\fP=\fIlist\fR, \f3\-\-yaml\fP=<\fIdata_parser\fR>
-Dump information as YAML using the default data_parser plugin or explicit
-data_parser with parameters. All information is dumped, even if it would
-normally not be. Sorting and formatting arguments passed to other options are
-ignored; however, filtering arguments are still used.
+\f3\-\-yaml\fP
+Dump all node information as YAML. All information is dumped, even if it would
+normally not be. Formatting options are ignored; however, filtering arguments
+are still used.
 .IP
 
 .SH "OUTPUT FIELD DESCRIPTIONS"
@@ -926,7 +924,7 @@ those compute resources (e.g. CPUs).
 \fBNO\fR indicates resources are never oversubscribed.
 \fBEXCLUSIVE\fR indicates whole nodes are dedicated to jobs
 (equivalent to srun \-\-exclusive option, may be used even
-with select/cons_tres managing individual processors).
+with select/cons_res managing individual processors).
 \fBFORCE\fR indicates resources are always available to be oversubscribed.
 \fBYES\fR indicates resource may be oversubscribed, if requested by the job's
 resource allocation.

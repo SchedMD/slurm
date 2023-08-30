@@ -85,7 +85,6 @@
 #include "src/interfaces/cgroup.h"
 #include "src/interfaces/ext_sensors.h"
 #include "src/interfaces/gres.h"
-#include "src/interfaces/hash.h"
 #include "src/interfaces/job_submit.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/jobcomp.h"
@@ -263,6 +262,7 @@ static void *       _slurmctld_rpc_mgr(void *no_data);
 static void *       _slurmctld_signal_hand(void *no_data);
 static void         _test_thread_limit(void);
 static void         _update_assoc(slurmdb_assoc_rec_t *rec);
+inline static void  _update_cred_key(void);
 static void         _update_diag_job_state_counts(void);
 static void         _update_cluster_tres(void);
 static void         _update_nice(void);
@@ -311,10 +311,6 @@ int main(int argc, char **argv)
 		if (!(conf_file = getenv("SLURM_CONF")))
 			conf_file = default_slurm_config_file;
 	slurm_conf_init(conf_file);
-	if (auth_g_init() != SLURM_SUCCESS)
-		fatal("failed to initialize auth plugin");
-	if (hash_g_init() != SLURM_SUCCESS)
-		fatal("failed to initialize hash plugin");
 
 	lock_slurmctld(config_write_lock);
 	update_logging();
@@ -390,11 +386,18 @@ int main(int argc, char **argv)
 		test_config_rc = 1;
 	}
 
-	if (!slurm_conf.accounting_storage_type) {
-		if (slurm_conf.job_acct_gather_type)
-			error("Job accounting information gathered, but not stored");
-	} else if (!slurm_conf.job_acct_gather_type)
-		info("Job accounting information stored, but details not gathered");
+	if (!xstrcmp(slurm_conf.accounting_storage_type,
+	             "accounting_storage/none")) {
+		if (xstrcmp(slurm_conf.job_acct_gather_type,
+		            "jobacct_gather/none"))
+			error("Job accounting information gathered, "
+			      "but not stored");
+	} else {
+		if (!xstrcmp(slurm_conf.job_acct_gather_type,
+		             "jobacct_gather/none"))
+			info("Job accounting information stored, "
+			     "but details not gathered");
+	}
 
 	if (license_init(slurm_conf.licenses) != SLURM_SUCCESS) {
 		if (test_config) {
@@ -463,12 +466,24 @@ int main(int argc, char **argv)
 		fatal("getnodename error %s", slurm_strerror(error_code));
 
 	/* init job credential stuff */
-	if (cred_g_init() != SLURM_SUCCESS) {
+	if (slurm_cred_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize cred plugin");
 			test_config_rc = 1;
 		} else {
 			fatal("failed to initialize cred plugin");
+		}
+	}
+	slurmctld_config.cred_ctx = slurm_cred_creator_ctx_create(
+		slurm_conf.job_credential_private_key);
+	if (!slurmctld_config.cred_ctx) {
+		if (test_config) {
+			error("slurm_cred_creator_ctx_create(%s): %m",
+			      slurm_conf.job_credential_private_key);
+			test_config_rc = 1;
+		} else {
+			fatal("slurm_cred_creator_ctx_create(%s): %m",
+			      slurm_conf.job_credential_private_key);
 		}
 	}
 
@@ -514,7 +529,7 @@ int main(int argc, char **argv)
 			fatal("failed to initialize gres plugin");
 		}
 	}
-	if (preempt_g_init() != SLURM_SUCCESS) {
+	if (slurm_preempt_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize preempt plugin");
 			test_config_rc = 1;
@@ -577,7 +592,14 @@ int main(int argc, char **argv)
 		} else
 			fatal("Failed to initialize MPI plugins.");
 	}
-	if (route_g_init() != SLURM_SUCCESS) {
+	if (data_init()) {
+		if (test_config) {
+			error("Failed to initialize data plugins.");
+			test_config_rc = 1;
+		} else
+			fatal("Failed to initialize data plugins.");
+	}
+	if (route_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("Failed to initialize route plugins.");
 			test_config_rc = 1;
@@ -590,6 +612,13 @@ int main(int argc, char **argv)
 			test_config_rc = 1;
 		} else
 			fatal("Failed to initialize serialization plugins.");
+	}
+	if (site_factor_g_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("Failed to initialize site_factor plugin.");
+			test_config_rc = 1;
+		} else
+			fatal("Failed to initialize site_factor plugin.");
 	}
 	if (switch_init(1) != SLURM_SUCCESS) {
 		if (test_config) {
@@ -612,7 +641,7 @@ int main(int argc, char **argv)
 		if (!slurmctld_primary) {
 			sched_g_fini();	/* make sure shutdown */
 			_run_primary_prog(false);
-			if (acct_storage_g_init() != SLURM_SUCCESS)
+			if (slurm_acct_storage_init() != SLURM_SUCCESS)
 				fatal("failed to initialize accounting_storage plugin");
 			if (bb_g_init() != SLURM_SUCCESS)
 				fatal("failed to initialize burst buffer plugin");
@@ -620,7 +649,7 @@ int main(int argc, char **argv)
 			agent_init();	/* Killed at any previous shutdown */
 			(void) _shutdown_backup_controller();
 		} else if (test_config || slurmctld_primary) {
-			if (acct_storage_g_init() != SLURM_SUCCESS) {
+			if (slurm_acct_storage_init() != SLURM_SUCCESS) {
 				if (test_config) {
 					error("failed to initialize accounting_storage plugin");
 					test_config_rc = 1;
@@ -769,7 +798,7 @@ int main(int argc, char **argv)
 
 		if (power_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize power management plugin");
-		if (mcs_g_init() != SLURM_SUCCESS)
+		if (slurm_mcs_init() != SLURM_SUCCESS)
 			fatal("failed to initialize mcs plugin");
 
 		/*
@@ -845,7 +874,7 @@ int main(int argc, char **argv)
 
 		bb_g_fini();
 		power_g_fini();
-		mcs_g_fini();
+		slurm_mcs_fini();
 		fed_mgr_fini();
 
 		if (running_cache != RUNNING_CACHE_STATE_NOTRUNNING) {
@@ -861,7 +890,7 @@ int main(int argc, char **argv)
 
 		/* Save any pending state save RPCs */
 		acct_storage_g_close_connection(&acct_db_conn);
-		acct_storage_g_fini();
+		slurm_acct_storage_fini();
 
 		slurm_persist_conn_recv_server_fini();
 		/*
@@ -952,15 +981,14 @@ int main(int argc, char **argv)
 	gres_fini();
 	job_submit_g_fini(false);
 	prep_g_fini();
-	preempt_g_fini();
+	slurm_preempt_fini();
 	jobacct_gather_fini();
 	acct_gather_conf_destroy();
 	select_g_fini();
-	topology_g_fini();
-	auth_g_fini();
-	hash_g_fini();
+	slurm_topo_fini();
+	slurm_auth_fini();
 	switch_fini();
-	route_g_fini();
+	route_fini();
 	site_factor_g_fini();
 
 	/* purge remaining data structures */
@@ -968,13 +996,15 @@ int main(int argc, char **argv)
 	getnameinfo_cache_purge();
 	license_free();
 	FREE_NULL_LIST(slurmctld_config.acct_update_list);
-	cred_g_fini();
+	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
+	slurm_cred_fini();	/* must be after ctx_destroy */
 	slurm_conf_destroy();
 	cluster_rec_free();
 	track_script_fini();
 	cgroup_conf_destroy();
 	usleep(500000);
 	serializer_g_fini();
+	data_fini();
 }
 #else
 	/*
@@ -1165,6 +1195,7 @@ extern int reconfigure_slurm(void)
 	if (rc != SLURM_SUCCESS)
 		error("read_slurm_conf: %s", slurm_strerror(rc));
 	else {
+		_update_cred_key();
 		set_slurmctld_state_loc();
 		if (config_for_slurmd) {
 			configless_update();
@@ -1410,7 +1441,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 			slurmctld_diag_stats.proc_req_raw++;
 			_service_connection(newsockfd);
 		} else {
-			slurm_thread_create_detached(_service_connection,
+			slurm_thread_create_detached(NULL, _service_connection,
 						     newsockfd);
 		}
 	}
@@ -1886,11 +1917,11 @@ static int _update_job_tres(void *x, void *args)
 	*/
 	if (assoc_mgr_set_tres_cnt_array(&job_ptr->tres_req_cnt,
 					 job_ptr->tres_req_str,
-					 0, true, false, NULL))
+					 0, true))
 		job_set_req_tres(job_ptr, true);
 	if (assoc_mgr_set_tres_cnt_array(&job_ptr->tres_alloc_cnt,
 					 job_ptr->tres_alloc_str,
-					 0, true, false, NULL))
+					 0, true))
 		job_set_alloc_tres(job_ptr, true);
 
 	update_job_limit_set_tres(&job_ptr->limit_set.tres);
@@ -2594,9 +2625,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 	int i;
 	uint64_t cluster_billing = 0;
 	char *unique_tres = NULL;
-	assoc_mgr_lock_t locks = {
-		.qos = WRITE_LOCK,
-		.tres = WRITE_LOCK };
+	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
 	int active_node_count = 0;
 
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
@@ -2706,7 +2735,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 	assoc_mgr_tres_array[TRES_ARRAY_NODE]->count = active_node_count;
 	assoc_mgr_tres_array[TRES_ARRAY_BILLING]->count = cluster_billing;
 
-	set_partition_tres(true);
+	set_partition_tres();
 
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
@@ -2933,7 +2962,7 @@ static int _shutdown_backup_controller(void)
 		 */
 		if (i < backup_inx)
 			shutdown_arg->shutdown = true;
-		slurm_thread_create_detached(_shutdown_bu_thread,
+		slurm_thread_create_detached(NULL, _shutdown_bu_thread,
 					     shutdown_arg);
 		slurm_mutex_lock(&bu_mutex);
 		bu_thread_cnt++;
@@ -2947,6 +2976,15 @@ static int _shutdown_backup_controller(void)
 	slurm_mutex_unlock(&bu_mutex);
 
 	return bu_rc;
+}
+
+/* Reset the job credential key based upon configuration parameters */
+static void _update_cred_key(void)
+{
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+
+	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx,
+	                          slurm_conf.job_credential_private_key);
 }
 
 /*
@@ -3164,9 +3202,6 @@ static void _kill_old_slurmctld(void)
 	int fd;
 	pid_t oldpid = read_pidfile(slurm_conf.slurmctld_pidfile, &fd);
 	if (oldpid != (pid_t) 0) {
-		if (!ignore_state_errors && xstrstr(slurm_conf.slurmctld_params, "no_quick_restart"))
-			fatal("SlurmctldParameters=no_quick_restart set. Please shutdown your previous slurmctld (pid oldpid) before starting a new one. (-i to ignore this message)");
-
 		info ("killing old slurmctld[%ld]", (long) oldpid);
 		kill(oldpid, SIGTERM);
 
@@ -3231,7 +3266,7 @@ static void *_assoc_cache_mgr(void *no_data)
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	assoc_mgr_lock_t locks =
-		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = WRITE_LOCK,
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = WRITE_LOCK,
 		  .user = READ_LOCK };
 
 	while (running_cache == RUNNING_CACHE_STATE_RUNNING) {
@@ -3753,7 +3788,7 @@ static void _run_primary_prog(bool primary_on)
 	wait_arg = xmalloc(sizeof(primary_thread_arg_t));
 	wait_arg->cpid = cpid;
 	wait_arg->prog_type = xstrdup(prog_type);
-	slurm_thread_create_detached(_wait_primary_prog, wait_arg);
+	slurm_thread_create_detached(NULL, _wait_primary_prog, wait_arg);
 }
 
 static int _init_dep_job_ptr(void *object, void *arg)

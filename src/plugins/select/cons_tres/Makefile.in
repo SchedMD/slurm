@@ -98,7 +98,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
-	$(top_srcdir)/auxdir/gtk-2.0.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
 	$(top_srcdir)/auxdir/ltoptions.m4 \
 	$(top_srcdir)/auxdir/ltsugar.m4 \
@@ -125,6 +124,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_lz4.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
+	$(top_srcdir)/auxdir/x_ac_netloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_nvml.m4 \
 	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
 	$(top_srcdir)/auxdir/x_ac_oneapi.m4 \
@@ -180,11 +180,9 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-select_cons_tres_la_LIBADD =
-am_select_cons_tres_la_OBJECTS = cons_helpers.lo dist_tasks.lo \
-	gres_sched.lo gres_select_filter.lo gres_select_util.lo \
-	job_resources.lo job_test.lo node_data.lo part_data.lo \
-	select_cons_tres.lo
+select_cons_tres_la_DEPENDENCIES = ../cons_common/libcons_common.la
+am_select_cons_tres_la_OBJECTS = dist_tasks.lo gres_sched.lo \
+	job_test.lo select_cons_tres.lo
 select_cons_tres_la_OBJECTS = $(am_select_cons_tres_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -209,12 +207,9 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/cons_helpers.Plo \
-	./$(DEPDIR)/dist_tasks.Plo ./$(DEPDIR)/gres_sched.Plo \
-	./$(DEPDIR)/gres_select_filter.Plo \
-	./$(DEPDIR)/gres_select_util.Plo ./$(DEPDIR)/job_resources.Plo \
-	./$(DEPDIR)/job_test.Plo ./$(DEPDIR)/node_data.Plo \
-	./$(DEPDIR)/part_data.Plo ./$(DEPDIR)/select_cons_tres.Plo
+am__depfiles_remade = ./$(DEPDIR)/dist_tasks.Plo \
+	./$(DEPDIR)/gres_sched.Plo ./$(DEPDIR)/job_test.Plo \
+	./$(DEPDIR)/select_cons_tres.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -370,6 +365,9 @@ MUNGE_LDFLAGS = @MUNGE_LDFLAGS@
 MUNGE_LIBS = @MUNGE_LIBS@
 MYSQL_CFLAGS = @MYSQL_CFLAGS@
 MYSQL_LIBS = @MYSQL_LIBS@
+NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
+NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
+NETLOC_LIBS = @NETLOC_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
 NUMA_LIBS = @NUMA_LIBS@
@@ -525,19 +523,13 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = select_cons_tres.la
 
 # Trackable RESources selection plugin.
-select_cons_tres_la_SOURCES = \
-	cons_helpers.c cons_helpers.h \
-	dist_tasks.c dist_tasks.h \
-	gres_sched.c gres_sched.h \
-	gres_select_filter.c gres_select_filter.h \
-	gres_select_util.c gres_select_util.h \
-	job_resources.c job_resources.h \
-	job_test.c job_test.h \
-	node_data.c node_data.h \
-	part_data.c part_data.h \
-	select_cons_tres.c select_cons_tres.h
+select_cons_tres_la_SOURCES = dist_tasks.c dist_tasks.h	\
+				gres_sched.c gres_sched.h	\
+				job_test.c job_test.h		\
+				select_cons_tres.c select_cons_tres.h
 
 select_cons_tres_la_LDFLAGS = $(PLUGIN_FLAGS)
+select_cons_tres_la_LIBADD = ../cons_common/libcons_common.la
 all: all-am
 
 .SUFFIXES:
@@ -616,15 +608,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cons_helpers.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dist_tasks.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_sched.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_select_filter.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_select_util.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_resources.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_test.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_data.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/part_data.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cons_tres.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -754,15 +740,9 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/cons_helpers.Plo
-	-rm -f ./$(DEPDIR)/dist_tasks.Plo
+		-rm -f ./$(DEPDIR)/dist_tasks.Plo
 	-rm -f ./$(DEPDIR)/gres_sched.Plo
-	-rm -f ./$(DEPDIR)/gres_select_filter.Plo
-	-rm -f ./$(DEPDIR)/gres_select_util.Plo
-	-rm -f ./$(DEPDIR)/job_resources.Plo
 	-rm -f ./$(DEPDIR)/job_test.Plo
-	-rm -f ./$(DEPDIR)/node_data.Plo
-	-rm -f ./$(DEPDIR)/part_data.Plo
 	-rm -f ./$(DEPDIR)/select_cons_tres.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -809,15 +789,9 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/cons_helpers.Plo
-	-rm -f ./$(DEPDIR)/dist_tasks.Plo
+		-rm -f ./$(DEPDIR)/dist_tasks.Plo
 	-rm -f ./$(DEPDIR)/gres_sched.Plo
-	-rm -f ./$(DEPDIR)/gres_select_filter.Plo
-	-rm -f ./$(DEPDIR)/gres_select_util.Plo
-	-rm -f ./$(DEPDIR)/job_resources.Plo
 	-rm -f ./$(DEPDIR)/job_test.Plo
-	-rm -f ./$(DEPDIR)/node_data.Plo
-	-rm -f ./$(DEPDIR)/part_data.Plo
 	-rm -f ./$(DEPDIR)/select_cons_tres.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
@@ -856,6 +830,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+force:
+$(select_cons_tres_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

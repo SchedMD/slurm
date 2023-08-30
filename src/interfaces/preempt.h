@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_PREEMPT_H
-#define _INTERFACES_PREEMPT_H
+#ifndef __SLURM_CONTROLLER_PREEMPT_H__
+#define __SLURM_CONTROLLER_PREEMPT_H__
 
 #include "slurm/slurm.h"
 #include "src/slurmctld/slurmctld.h"
@@ -56,14 +56,14 @@ typedef enum {
  *
  * Returns a Slurm errno.
  */
-int preempt_g_init(void);
+int slurm_preempt_init(void);
 
 /*
  * Terminate the preemption plugin.
  *
  * Returns a Slurm errno.
  */
-extern int preempt_g_fini(void);
+extern int slurm_preempt_fini(void);
 
 /*
  * slurm_find_preemptable_jobs - Given a pointer to a pending job, return list
@@ -128,4 +128,4 @@ extern int preempt_g_get_data(job_record_t *job_ptr,
 			      slurm_preempt_data_type_t data_type,
 			      void *data);
 
-#endif
+#endif /*__SLURM_CONTROLLER_PREEMPT_H__*/

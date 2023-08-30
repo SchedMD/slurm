@@ -139,7 +139,7 @@ extern int fini(void)
  * IN/OUT count - position in sp_hl array
  */
 static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
-				   int *msg_count, hostlist_t ***sp_hl,
+				   int *msg_count, hostlist_t **sp_hl,
 				   int *count)
 {
 	int lst_count = 0, sw_count;
@@ -187,17 +187,18 @@ static int _subtree_split_hostlist(bitstr_t *nodes_bitmap, int parent,
  * route_p_split_hostlist - logic to split an input hostlist into
  *                           a set of hostlists to forward to.
  *
- * IN: hl        - hostlist_t *   - list of every node to send message to
- *                                  will be empty on return;
- * OUT: sp_hl    - hostlist_t *** - the array of hostlists that will be malloced
- * OUT: count    - int *          - the count of created hostlists
+ * IN: hl        - hostlist_t   - list of every node to send message to
+ *                                will be empty on return;
+ * OUT: sp_hl    - hostlist_t** - the array of hostlists that will be malloced
+ * OUT: count    - int*         - the count of created hostlists
  * RET: SLURM_SUCCESS - int
  *
  * Note: created hostlist will have to be freed independently using
  *       hostlist_destroy by the caller.
  * Note: the hostlist_t array will have to be xfree.
  */
-extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
+extern int route_p_split_hostlist(hostlist_t hl,
+				  hostlist_t** sp_hl,
 				  int* count, uint16_t tree_width)
 {
 	int i, j, k, msg_count, switch_count;
@@ -212,11 +213,12 @@ extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 		if (run_in_slurmctld)
 			fatal_abort("%s: Somehow we have 0 for switch_record_cnt and we are here in the slurmctld.  This should never happen.", __func__);
 		/* configs have not already been processed */
+		slurm_conf_init(NULL);
 		init_node_conf();
 		build_all_nodeline_info(false, 0);
 		rehash_node();
 
-		if (topology_g_build_config() != SLURM_SUCCESS) {
+		if (slurm_topo_build_config() != SLURM_SUCCESS) {
 			fatal("ROUTE: Failed to build topology config");
 		}
 	}
@@ -229,6 +231,8 @@ extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 		buf = hostlist_ranged_string_xmalloc(hl);
 		fatal("ROUTE: Failed to make bitmap from hostlist=%s.", buf);
 	}
+	if (run_in_slurmctld)
+		unlock_slurmctld(node_read_lock);
 
 	/* Find lowest level switches containing all the nodes in the list */
 	switch_bitmap = bit_alloc(switch_record_cnt);
@@ -285,14 +289,12 @@ extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 	    bit_super_set(nodes_bitmap,
 			  switch_record_table[s_first].node_bitmap)) {
 		/* This is a leaf switch. Construct list based on TreeWidth */
-		if (run_in_slurmctld)
-			unlock_slurmctld(node_read_lock);
 		FREE_NULL_BITMAP(nodes_bitmap);
 		FREE_NULL_BITMAP(switch_bitmap);
 		return route_split_hostlist_treewidth(hl, sp_hl, count,
 						      tree_width);
 	}
-	*sp_hl = xcalloc(switch_record_cnt, sizeof(hostlist_t *));
+	*sp_hl = xcalloc(switch_record_cnt, sizeof(hostlist_t));
 	msg_count = hostlist_count(hl);
 	*count = 0;
 	for (j = s_first; j <= s_last; j++) {
@@ -314,7 +316,7 @@ extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 			      buf);
 			xfree(buf);
 		}
-		new_size += msg_count * sizeof(hostlist_t *);
+		new_size += msg_count * sizeof(hostlist_t);
 		xrealloc(*sp_hl, new_size);
 
 		for (j = 0; (node_ptr = next_node_bitmap(nodes_bitmap, &j));
@@ -325,8 +327,6 @@ extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 		}
 	}
 
-	if (run_in_slurmctld)
-		unlock_slurmctld(node_read_lock);
 	FREE_NULL_BITMAP(nodes_bitmap);
 	FREE_NULL_BITMAP(switch_bitmap);
 

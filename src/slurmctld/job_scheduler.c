@@ -1037,7 +1037,7 @@ static int _schedule(bool full_queue)
 	job_record_t *reject_array_job = NULL;
 	part_record_t *reject_array_part = NULL;
 	slurmctld_resv_t *reject_array_resv = NULL;
-	bool reject_array_use_prefer = false;
+	List reject_array_features = NULL;
 	bool use_prefer;
 	bool fail_by_part, wait_on_resv;
 	uint32_t deadline_time_limit, save_time_limit = 0;
@@ -1264,8 +1264,12 @@ static int _schedule(bool full_queue)
 		}
 
 		sched_update = slurm_conf.last_update;
-		if (slurm_conf.sched_params && strlen(slurm_conf.sched_params))
-			info("SchedulerParameters=%s", slurm_conf.sched_params);
+		info("SchedulerParameters=default_queue_depth=%d,"
+		     "max_rpc_cnt=%d,max_sched_time=%d,partition_job_depth=%d,"
+		     "sched_max_job_start=%d,sched_min_interval=%d%s",
+		     def_job_limit, defer_rpc_cnt, sched_timeout,
+		     max_jobs_per_part, sched_max_job_start,
+		     sched_min_interval, (bf_licenses ? ",bf_licenses" : ""));
 	}
 
 	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
@@ -1516,7 +1520,8 @@ next_task:
 				job_ptr->array_job_id) &&
 			    (reject_array_part == part_ptr) &&
 			    (reject_array_resv == job_ptr->resv_ptr) &&
-			    (reject_array_use_prefer == use_prefer))
+			    (reject_array_features ==
+			     job_ptr->details->feature_list_use))
 				continue;  /* already rejected array element */
 
 
@@ -1524,7 +1529,8 @@ next_task:
 			reject_array_job = job_ptr;
 			reject_array_part = part_ptr;
 			reject_array_resv = job_ptr->resv_ptr;
-			reject_array_use_prefer = use_prefer;
+			reject_array_features =
+				job_ptr->details->feature_list_use;
 
 			if (!job_array_start_test(job_ptr))
 				continue;
@@ -1810,6 +1816,7 @@ skip_start:
 				reject_array_job = NULL;
 				reject_array_part = NULL;
 				reject_array_resv = NULL;
+				reject_array_features = NULL;
 			}
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
 				     job_ptr,
@@ -1859,6 +1866,7 @@ skip_start:
 			reject_array_job = NULL;
 			reject_array_part = NULL;
 			reject_array_resv = NULL;
+			reject_array_features = NULL;
 
 			sched_info("Allocate %pJ NodeList=%s #CPUs=%u Partition=%s",
 				   job_ptr, job_ptr->nodes,
@@ -2176,11 +2184,6 @@ extern int sort_job_queue2(void *x, void *y)
 	/* Magnetic or multi-reservation. */
 	if (job_rec1->resv_ptr && job_rec2->resv_ptr &&
 	    (job_rec1->resv_ptr->start_time > job_rec2->resv_ptr->start_time))
-		return 1;
-
-	if (job_rec1->use_prefer && !job_rec2->use_prefer)
-		return -1;
-	else if (!job_rec1->use_prefer && job_rec2->use_prefer)
 		return 1;
 
 	return -1;
@@ -2693,7 +2696,8 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	cred_arg.step_hostlist       = job_ptr->batch_host;
 	cred_arg.step_core_bitmap    = job_resrcs_ptr->core_bitmap;
 
-	launch_msg_ptr->cred = slurm_cred_create(&cred_arg, false,
+	launch_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
+						 &cred_arg, false,
 						 protocol_version);
 	xfree(cred_arg.job_mem_alloc);
 	xfree(cred_arg.job_mem_alloc_rep_count);
@@ -4019,13 +4023,13 @@ extern int job_start_data(job_record_t *job_ptr,
 	part_record_t *part_ptr;
 	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL;
+	bitstr_t *exc_core_bitmap = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int i, rc = SLURM_SUCCESS;
 	time_t now = time(NULL), start_res, orig_start_time = (time_t) 0;
 	List preemptee_candidates = NULL, preemptee_job_list = NULL;
 	bool resv_overlap = false;
 	ListIterator iter = NULL;
-	resv_exc_t resv_exc = { 0 };
 
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
@@ -4090,10 +4094,10 @@ next_part:
 		start_res = now;
 
 	i = job_test_resv(job_ptr, &start_res, true, &resv_bitmap,
-			  &resv_exc, &resv_overlap, false);
+			  &exc_core_bitmap, &resv_overlap, false);
 	if (i != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(avail_bitmap);
-		reservation_delete_resv_exc_parts(&resv_exc);
+		FREE_NULL_BITMAP(exc_core_bitmap);
 		if (job_ptr->part_ptr_list && (part_ptr = list_next(iter)))
 			goto next_part;
 
@@ -4141,7 +4145,7 @@ next_part:
 					       SELECT_MODE_WILL_RUN,
 					       preemptee_candidates,
 					       &preemptee_job_list,
-					       &resv_exc);
+					       exc_core_bitmap);
 			if (rc == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = active_bitmap;
@@ -4162,7 +4166,7 @@ next_part:
 					       SELECT_MODE_WILL_RUN,
 					       preemptee_candidates,
 					       &preemptee_job_list,
-					       &resv_exc);
+					       exc_core_bitmap);
 			if (test_fini == 0) {
 				job_ptr->details->share_res = save_share_res;
 				job_ptr->details->whole_node = save_whole_node;
@@ -4209,7 +4213,7 @@ next_part:
 	FREE_NULL_LIST(preemptee_candidates);
 	FREE_NULL_LIST(preemptee_job_list);
 	FREE_NULL_BITMAP(avail_bitmap);
-	reservation_delete_resv_exc_parts(&resv_exc);
+	FREE_NULL_BITMAP(exc_core_bitmap);
 
 	if (rc && job_ptr->part_ptr_list && (part_ptr = list_next(iter)))
 		goto next_part;
@@ -4304,7 +4308,7 @@ static void _send_reboot_msg(bitstr_t *node_bitmap, char *features,
 {
 	agent_arg_t *reboot_agent_args = NULL;
 	reboot_msg_t *reboot_msg;
-	hostlist_t *hostlist;
+	hostlist_t hostlist;
 
 	reboot_agent_args = xmalloc(sizeof(agent_arg_t));
 	reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
@@ -4571,7 +4575,7 @@ extern void prolog_slurmctld(job_record_t *job_ptr)
 
 	job_id = xmalloc(sizeof(*job_id));
 	*job_id = job_ptr->job_id;
-	slurm_thread_create_detached(_start_prolog_slurmctld_thread, job_id);
+	slurm_thread_create_detached(NULL, _start_prolog_slurmctld_thread, job_id);
 }
 
 /* Decrement a job's prolog_running counter and launch the job if zero */
@@ -4813,12 +4817,6 @@ static int _feature_string2list(char *features, char *debug_str,
 			break;
 		} else if (feature == NULL) {
 			feature = &tmp_requested[i];
-		} else if (i && (tmp_requested[i - 1] == '\0')) {
-			/* ')' and ']' should be followed by a token. */
-			verbose("%s constraint has an unexpected character: %s",
-				debug_str, features);
-			rc = ESLURM_INVALID_FEATURE;
-			goto fini;
 		}
 	}
 

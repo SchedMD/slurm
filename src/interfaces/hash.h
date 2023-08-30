@@ -34,19 +34,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_HASH_H
-#define _INTERFACES_HASH_H
+#ifndef _COMMON_HASH_H_
+#define _COMMON_HASH_H_
 
 #include "slurm/slurm.h"
 
 extern int hash_g_init(void);
-
-/*
- * Terminate the hash plugin, free memory.
- *
- * RET - slurm error code
- */
-extern int hash_g_fini(void);
 
 extern int hash_g_compute(char *input, int len, char *custom_str, int cs_len,
 			  slurm_hash_t *hash);

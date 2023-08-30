@@ -47,6 +47,13 @@
  * pointer which is a child of the existing tree and will be cleaned up by the
  * root.
  *
+ * To use data_t, data_init() must be called before anything else. It is safe to
+ * call this multiple times but not advised before every usage as it may be
+ * slow. data_init() is designed to allow calls for a specific plugin
+ * requirement which will not prevent loading of other plugins by the other
+ * calls to data_init(). data_fini() needs to be called after all data
+ * operations are complete is only for testing for memory leaks.
+ *
  * data_t has very *strict* typing that is based on JSON. All of the possible
  * types are in data_type_t. The caller is required to verify the type of the
  * data_t pointer is correct before calling the helper function to retrieve the
@@ -63,9 +70,15 @@
  * proceed. There are purposefully no iterators for data_t pointers to avoid any
  * form of dangling pointers.
  *
+ * data_t uses a plugin interface for serialization of the data to common
+ * formats. These plugins require 3rd party libraries and may not have been
+ * compiled. Any code should expect this possiblity as data_init() will fail if
+ * the plugin is not found.
+ *
  * Example usage:
  *
  * //Global init requiring JSON serializer
+ * if (data_init()) fatal("failed");
  * if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL)) fatal("failed");
  * //Create root data entry:
  * data_t *ex = data_new();
@@ -91,6 +104,8 @@
  * xassert(data_get_int(data_key_get(ex, "test2") == 12345);
  * // cleanup tree
  * FREE_NULL_DATA(ex);
+ * // release all global memory and plugins
+ * data_fini();
  */
 
 #ifndef _DATA_H
@@ -127,8 +142,29 @@ typedef enum {
 /* convert type to readable string */
 extern char *data_type_to_string(data_type_t type);
 
-/* Opaque data struct to hold generic data. */
-typedef struct data_s data_t;
+/* opaque type for list_u and dict_u */
+typedef struct data_list_s data_list_t;
+
+/*
+ * Opaque data struct to hold generic data.
+ * data is based on the JSON data type and has the same types.
+ * data forms a tree structure.
+ * please avoid direct access of this struct and only use access functions.
+ * the nature of this struct may change at any time, only pass around pointers
+ * created from data_new().
+ */
+typedef struct {
+	int magic;
+	data_type_t type;
+	union { /* append "_u" to every type to avoid reserved words */
+		data_list_t *list_u;
+		data_list_t *dict_u;
+		int64_t int_u;
+		char *string_u;
+		double float_u;
+		bool bool_u;
+	} data;
+} data_t;
 
 /*
  * Enum to control how the foreach will
@@ -147,26 +183,37 @@ typedef enum {
  *  Function prototype for operating on each item in a list typed data_t.
  *  Returns command requested for processing
  */
-typedef data_for_each_cmd_t (*DataListForF)(data_t *data, void *arg);
+typedef data_for_each_cmd_t (*DataListForF) (data_t *data, void *arg);
 /*
  *  Function prototype for operating on each item in a list typed data_t.
  *  Returns command requested for processing
  */
-typedef data_for_each_cmd_t (*DataListForFConst)(const data_t *data, void *arg);
+typedef data_for_each_cmd_t (*DataListForFConst) (const data_t *data, void *arg);
 
 /*
  *  Function prototype for operating on each item in a dictionary typed data_t.
  *  Returns command requested for processing
  */
-typedef data_for_each_cmd_t (*DataDictForF)(const char *key, data_t *data,
-					    void *arg);
+typedef data_for_each_cmd_t (*DataDictForF) (const char *key, data_t *data, void *arg);
 
 /*
  *  Function prototype for operating on each item in a dictionary typed data_t.
  *  Returns command requested for processing
  */
-typedef data_for_each_cmd_t (*DataDictForFConst)(const char *key,
-						 const data_t *data, void *arg);
+typedef data_for_each_cmd_t (*DataDictForFConst) (const char *key, const data_t *data, void *arg);
+
+/*
+ * Initialize static structs needed by data functions
+ *
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_init(void);
+/*
+ * Cleanup global memory used by data_t helpers
+ *
+ * WARNING: must be called only once after all data commands complete
+ */
+extern void data_fini(void);
 
 /*
  * Create new data struct.
@@ -196,13 +243,6 @@ extern void data_free(data_t *data);
  * 	returns DATA_TYPE_NONE if data is NULL.
  */
 extern data_type_t data_get_type(const data_t *data);
-
-/*
- * Get human friendly type string
- * IN data struct to get type
- * RET human friendly string of type for data
- */
-extern const char *data_get_type_string(const data_t *data);
 
 /*
  * Set data to float type with given value.
@@ -246,19 +286,10 @@ extern data_t *data_set_string(data_t *data, const char *value);
 /*
  * Set data to string type with given value.
  * IN data structure to modify
- * IN value ptr to value to set (takes ownership of value and will xfree())
+ * IN value value to set (takes ownership of value and will xfree())
  * RET data ptr or NULL on error
  */
-extern data_t *_data_set_string_own(data_t *data, char **value_ptr);
-
-/*
- * Set data to string type with given value.
- * IN data structure to modify
- * IN value ptr to value to set
- * 	Takes ownership of value and will xfree(). Sets value to NULL.
- * RET data ptr or NULL on error
- */
-#define data_set_string_own(data, value) _data_set_string_own(data, &value)
+extern data_t *data_set_string_own(data_t *data, char *value);
 
 /*
  * Set data to string type with given formatted value.
@@ -398,8 +429,7 @@ extern int data_list_for_each(data_t *d, DataListForF f, void *arg);
  *
  *  Will process per return of [f]
  */
-extern int data_list_for_each_const(const data_t *d, DataListForFConst f,
-				    void *arg);
+extern int data_list_for_each_const(const data_t *d, DataListForFConst f, void *arg);
 
 /*
  * Use match() function ptr find a specific matching value in list
@@ -434,8 +464,7 @@ extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg);
  *
  *  Will process per return of [f]
  */
-extern int data_dict_for_each_const(const data_t *d, DataDictForFConst f,
-				    void *arg);
+extern int data_dict_for_each_const(const data_t *d, DataDictForFConst f, void *arg);
 
 /*
  * Get number of entities in dictionary
@@ -649,15 +678,5 @@ extern int data_retrieve_dict_path_int(const data_t *data, const char *path,
  * RET ptr to dest or NULL on error
  */
 extern data_t *data_copy(data_t *dest, const data_t *src);
-
-/*
- * Move entire data tree from src to dest.
- * src will be changed to being DATA_TYPE_NULL.
- *
- * IN dest destination data to overwrite
- * IN src source data to move and set as DATA_TYPE_NULL
- * RET ptr to dest or NULL on error
- */
-extern data_t *data_move(data_t *dest, data_t *src);
 
 #endif /* _DATA_H */

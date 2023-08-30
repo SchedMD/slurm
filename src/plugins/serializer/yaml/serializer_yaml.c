@@ -373,7 +373,7 @@ static int _yaml_to_data(int depth, yaml_parser_t *parser, data_t *d,
 				error("%s: data (0x%"PRIXPTR") depth=%d unexpected suffix type:%s for data_type:%s",
 				      __func__, (uintptr_t)d, depth,
 				      data_type_to_string(type),
-				      data_get_type_string(d));
+				      data_type_to_string(data_get_type(d)));
 				rc = SLURM_ERROR;
 			} else {
 				rc = _yaml_parse_block(depth, parser, d, mode,
@@ -392,7 +392,8 @@ static int _yaml_to_data(int depth, yaml_parser_t *parser, data_t *d,
 					error("%s: data (0x%"PRIXPTR") depth=%d unexpected block entry type:%s for data_type:%s without key",
 					      __func__, (uintptr_t) d, depth,
 					      data_type_to_string(type),
-					      data_get_type_string(d));
+					      data_type_to_string(
+						      data_get_type(d)));
 					rc = SLURM_ERROR;
 				} else {
 					rc = _yaml_parse_block(depth, parser, d,
@@ -408,7 +409,8 @@ static int _yaml_to_data(int depth, yaml_parser_t *parser, data_t *d,
 					error("%s: data (0x%"PRIXPTR") depth=%d unexpected block entry type:%s for data_type:%s without key",
 					      __func__, (uintptr_t)d, depth,
 					      data_type_to_string(type),
-					      data_get_type_string(d));
+					      data_type_to_string(
+						      data_get_type(d)));
 					rc = SLURM_ERROR;
 				} else
 					debug5("%s: data (0x%"PRIXPTR") depth=%d ignoring YAML_BLOCK_ENTRY_TOKEN (already in list)",
@@ -418,7 +420,7 @@ static int _yaml_to_data(int depth, yaml_parser_t *parser, data_t *d,
 				      __func__, (uintptr_t)d, depth,
 				      _yaml_parse_mode_string(mode),
 				      data_type_to_string(type),
-				      data_get_type_string(d),
+				      data_type_to_string(data_get_type(d)),
 				      key);
 				rc = SLURM_ERROR;
 			}
@@ -437,7 +439,7 @@ static int _yaml_to_data(int depth, yaml_parser_t *parser, data_t *d,
 				error("%s: data (0x%"PRIXPTR") depth=%d unexpected suffix type:%s for data_type:%s mode:%s",
 				      __func__, (uintptr_t)d, depth,
 				      data_type_to_string(type),
-				      data_get_type_string(d),
+				      data_type_to_string(data_get_type(d)),
 				      _yaml_parse_mode_string(mode));
 				rc = SLURM_ERROR;
 			} else {
@@ -454,7 +456,7 @@ static int _yaml_to_data(int depth, yaml_parser_t *parser, data_t *d,
 				error("%s: data (0x%"PRIXPTR") depth=%d unexpected suffix type:%s for data_type:%s",
 				      __func__, (uintptr_t)d, depth,
 				      data_type_to_string(type),
-				      data_get_type_string(d));
+				      data_type_to_string(data_get_type(d)));
 				rc = SLURM_ERROR;
 			} else {
 				xassert(key);
@@ -470,7 +472,7 @@ static int _yaml_to_data(int depth, yaml_parser_t *parser, data_t *d,
 				error("%s: data (0x%"PRIXPTR") depth=%d unexpected suffix type:%s for data_type:%s",
 				      __func__, (uintptr_t)d, depth,
 				      data_type_to_string(type),
-				      data_get_type_string(d));
+				      data_type_to_string(data_get_type(d)));
 				rc = SLURM_ERROR;
 			} else {
 				rc = _yaml_parse_block(depth, parser, d, mode,
@@ -523,7 +525,7 @@ static int _yaml_to_data(int depth, yaml_parser_t *parser, data_t *d,
 				error("%s: data (0x%"PRIXPTR") depth=%d unexpected suffix type:%s for data_type:%s",
 				      __func__, (uintptr_t)d, depth,
 				      data_type_to_string(type),
-				      data_get_type_string(d));
+				      data_type_to_string(data_get_type(d)));
 				rc = SLURM_ERROR;
 			} else {
 				rc = _yaml_parse_block(depth, parser, d, mode,
@@ -543,7 +545,7 @@ static int _yaml_to_data(int depth, yaml_parser_t *parser, data_t *d,
 				error("%s: data (0x%"PRIXPTR") depth=%d unexpected suffix type:%s for data_type:%s",
 				      __func__, (uintptr_t)d, depth,
 				      data_type_to_string(type),
-				      data_get_type_string(d));
+				      data_type_to_string(data_get_type(d)));
 				rc = SLURM_ERROR;
 			} else {
 				rc = _yaml_parse_block(depth, parser, d, mode,

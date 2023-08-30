@@ -25,6 +25,13 @@ The following cgroup.conf parameters are defined to control the general behavior
 of Slurm cgroup plugins.
 
 .TP
+\fBCgroupAutomount\fR=<yes|no>
+In cgroup/v1 this parameter detects if /sys/fs/cgroup/<controller_name> is
+available, and if not it tries to mount the filesystem.
+In cgroup/v2 this parameter is ignored.
+.IP
+
+.TP
 \fBCgroupMountpoint\fR=\fIPATH\fR
 Only intended for development and testing. Specifies the \fIPATH\fR under which
 cgroup controllers should be mounted. The default \fIPATH\fR is /sys/fs/cgroup.
@@ -191,19 +198,6 @@ Set a lower bound (in MB) on the memory limits defined by
 \fBAllowedRAMSpace\fR and \fBAllowedSwapSpace\fR. This prevents
 accidentally creating a memory cgroup with such a low limit that slurmstepd
 is immediately killed due to lack of RAM. The default limit is 30M.
-.IP
-
-.SH "PROCTRACK/CGROUP PLUGIN"
-
-.LP
-The following cgroup.conf parameters are defined to control the behavior
-of this particular plugin:
-
-.TP
-\fBSignalChildrenProcesses\fR=<yes|no>
-If configured to "yes", then send signals (for cancelling, suspending, resuming,
-etc.) to all children processes in a job/step. Otherwise, only send signals to
-the parent process of a job/step. The default setting is "no".
 .IP
 
 .SH "DISTRIBUTION\-SPECIFIC NOTES"

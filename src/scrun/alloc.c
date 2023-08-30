@@ -189,7 +189,7 @@ static void _script_env(void)
 	if ((state.group_id != NO_VAL) &&
 	    (state.group_id != SLURM_AUTH_NOBODY)) {
 		/* set group if we know it but we may not in a user namespace */
-		char *u = gid_to_string(state.group_id);
+		char *u = gid_to_string_or_null(state.group_id);
 		_set_env(state, "SCRUN_GROUP", u);
 		xfree(u);
 		_set_env_args(state, "SCRUN_GROUP_ID", "%u", state.group_id);
@@ -328,8 +328,8 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	}
 	default:
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
-		error("%s:[%s] received spurious srun message type: %s",
-		      __func__, con->name, rpc_num2string(msg->msg_type));
+		error("%s:[%s] received spurious srun message type: %u",
+		      __func__, con->name, msg->msg_type);
 	}
 
 	return rc;
@@ -541,8 +541,8 @@ static void _alloc_job(con_mgr_t *conmgr)
 	}
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG) {
-		char *user = uid_to_string(alloc->uid);
-		char *group = gid_to_string(alloc->gid);
+		char *user = uid_to_string_or_null(alloc->uid);
+		char *group = gid_to_string_or_null(alloc->gid);
 
 		debug("allocated jobId=%u user[%u]=%s group[%u]=%s",
 		      alloc->job_id, alloc->uid, user, alloc->uid, group);
@@ -613,8 +613,7 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 
 		/* scrape SLURM_* from calling env */
 		state.job_env = env_array_create();
-		env_array_merge_slurm_spank(&state.job_env,
-					    (const char **) environ);
+		env_array_merge_slurm(&state.job_env, (const char **) environ);
 		unlock_state();
 
 		debug("Running under existing JobId=%u", job_id);

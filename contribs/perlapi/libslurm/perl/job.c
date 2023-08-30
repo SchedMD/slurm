@@ -66,7 +66,7 @@ static int _job_resrcs_to_hv(job_info_t *job_info, HV *hv)
 	uint64_t *last_mem_alloc_ptr = NULL;
 	uint64_t last_mem_alloc = NO_VAL64;
 	char *last_hosts;
-	hostlist_t *hl, *hl_last;
+	hostlist_t hl, hl_last;
 	uint32_t threads;
 
 	if (!job_resrcs || !job_resrcs->core_bitmap

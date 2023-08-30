@@ -12,8 +12,8 @@ generated_html = \
 	classic_fair_share.html \
 	cli_filter_plugins.html \
 	configless_slurm.html \
-	cons_tres.html \
-	cons_tres_share.html \
+	cons_res.html \
+	cons_res_share.html \
 	containers.html \
 	contributor.html \
 	core_spec.html \

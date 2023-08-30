@@ -284,7 +284,6 @@ extern char *log_build_step_id_str(
  * - %m expands to strerror(errno)
  * - %M expand to time stamp, format is configuration dependent
  * - %pA expands to "AAA.BBB.CCC.DDD:XXXX" for the given slurm_addr_t.
- * - %pD expands to "type(0xDEADBEEF)" for the given data_t*.
  * - %pJ expands to "JobId=XXXX" for the given job_ptr, with the appropriate
  *       format for job arrays and hetjob components.
  * - %pS expands to "JobId=XXXX StepId=YYYY" for a given step_ptr.
@@ -376,7 +375,7 @@ extern const char plugin_type[];
  * Like above logging messages, but prepend "sched: " to the log entry
  * and route the message into the sched_log if enabled.
  */
-void sched_error(const char *, ...) __attribute__((format(printf, 1, 2)));
+int	sched_error(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	sched_info(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	sched_verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 #define sched_debug(fmt, ...)						\

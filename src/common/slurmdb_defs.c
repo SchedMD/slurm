@@ -110,6 +110,7 @@ static void _free_cluster_cond_members(slurmdb_cluster_cond_t *cluster_cond)
 		FREE_NULL_LIST(cluster_cond->cluster_list);
 		FREE_NULL_LIST(cluster_cond->federation_list);
 		FREE_NULL_LIST(cluster_cond->format_list);
+		FREE_NULL_LIST(cluster_cond->plugin_id_select_list);
 		FREE_NULL_LIST(cluster_cond->rpc_version_list);
 	}
 }
@@ -175,7 +176,7 @@ static int _sort_children_list(void *v1, void *v2)
 	assoc_b = *(slurmdb_hierarchical_rec_t    **)v2;
 
 	/* Since all these associations are on the same level we don't
-	 * have to check the lineage
+	 * have to check the lfts
 	 */
 
 	/* check to see if this is a user association or an account.
@@ -199,21 +200,24 @@ static int _sort_children_list(void *v1, void *v2)
 }
 
 /*
- * Comparator used for sorting immediate children of acct_hierarchical_recs by
- * lineage
+ * Comparator used for sorting immediate children of acct_hierarchical_recs
  *
  * returns: -1 assoc_a < assoc_b   0: assoc_a == assoc_b   1: assoc_a > assoc_b
  *
  */
-static int _sort_assoc_by_lineage_asc(void *v1, void *v2)
+static int _sort_assoc_by_lft_dec(void *v1, void *v2)
 {
-	slurmdb_assoc_rec_t *assoc_a = *(slurmdb_assoc_rec_t **)v1;
-	slurmdb_assoc_rec_t *assoc_b = *(slurmdb_assoc_rec_t **)v2;
-	int diff = slurm_sort_char_list_asc(&assoc_a->cluster,
-					    &assoc_b->cluster);
-	if (diff)
-		return diff;
-	return slurm_sort_char_list_asc(&assoc_a->lineage, &assoc_b->lineage);
+	slurmdb_assoc_rec_t *assoc_a;
+	slurmdb_assoc_rec_t *assoc_b;
+
+	assoc_a = *(slurmdb_assoc_rec_t **)v1;
+	assoc_b = *(slurmdb_assoc_rec_t **)v2;
+
+	if (assoc_a->lft == assoc_b->lft)
+		return 0;
+	if (assoc_a->lft > assoc_b->lft)
+		return 1;
+	return -1;
 }
 
 static int _sort_slurmdb_hierarchical_rec_list(
@@ -286,6 +290,8 @@ static char *_get_qos_list_str(List qos_list)
 
 extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 {
+	int plugin_id_select = 0;
+
 	xassert(cluster_rec);
 
 	if (!cluster_rec->control_port) {
@@ -293,6 +299,15 @@ extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 		      cluster_rec->name);
 		return SLURM_ERROR;
 	}
+
+	if ((plugin_id_select = select_get_plugin_id_pos(
+		     cluster_rec->plugin_id_select)) == SLURM_ERROR) {
+		error("Cluster '%s' has an unknown select plugin_id %u",
+		      cluster_rec->name,
+		      cluster_rec->plugin_id_select);
+		return SLURM_ERROR;
+	}
+	cluster_rec->plugin_id_select = plugin_id_select;
 
 	slurm_set_addr(&cluster_rec->control_addr,
 		       cluster_rec->control_port,
@@ -421,9 +436,6 @@ static uint32_t _str_2_qos_flags(char *flags)
 
 	if (xstrcasestr(flags, "NoDecay"))
 		return QOS_FLAG_NO_DECAY;
-
-	if (xstrcasestr(flags, "Relative"))
-		return QOS_FLAG_RELATIVE;
 
 	if (xstrcasestr(flags, "UsageFactorSafe"))
 		return QOS_FLAG_USAGE_FACTOR_SAFE;
@@ -556,6 +568,29 @@ static int _set_qos_bit_from_string(bitstr_t *valid_qos, char *name)
 	return SLURM_SUCCESS;
 }
 
+static void _add_arch_rec(slurmdb_assoc_rec_t *assoc_rec,
+			  List arch_rec_list, xhash_t *all_parents)
+{
+	slurmdb_hierarchical_rec_t *arch_rec =
+		xmalloc(sizeof(slurmdb_hierarchical_rec_t));
+
+	arch_rec->children =
+		list_create(slurmdb_destroy_hierarchical_rec);
+	arch_rec->assoc = assoc_rec;
+
+	if (!assoc_rec->parent_id)
+		arch_rec->sort_name = assoc_rec->cluster;
+	else if (assoc_rec->user)
+		arch_rec->sort_name = assoc_rec->user;
+	else
+		arch_rec->sort_name = assoc_rec->acct;
+
+	assoc_rec->rgt = 0;
+	list_append(arch_rec_list, arch_rec);
+	if (!assoc_rec->user) /* Users are never parent assocs */
+		xhash_add(all_parents, arch_rec);
+}
+
 static char *_create_hash_rec_id(slurmdb_assoc_rec_t *assoc, bool parent)
 {
 	/*
@@ -579,22 +614,53 @@ static void _arch_hash_rec_id(void *item, const char **key, uint32_t *key_len)
 	*key_len = strlen(*key);
 }
 
-static int _list_copy_coord(void *x, void *key)
+static void _find_create_parent(slurmdb_assoc_rec_t *assoc_rec, List assoc_list,
+				List arch_rec_list, xhash_t *all_parents)
 {
-	slurmdb_coord_rec_t *coord_in = x;
-	list_t **ret_list = key;
-	slurmdb_coord_rec_t *coord = xmalloc(sizeof(*coord));
+	slurmdb_assoc_rec_t *par_assoc_rec = NULL;
+	slurmdb_hierarchical_rec_t *par_arch_rec = NULL;
 
-	if (!*ret_list)
-		*ret_list = list_create(slurmdb_destroy_coord_rec);
-	list_append(*ret_list, coord);
-	coord->name = xstrdup(coord_in->name);
-	coord->direct = coord_in->direct;
+	if (assoc_rec->parent_id) {
+		char *key = _create_hash_rec_id(assoc_rec, true);
+		par_arch_rec = xhash_get(all_parents, key, strlen(key));
+		if (par_arch_rec) {
+			_add_arch_rec(assoc_rec, par_arch_rec->children,
+				      all_parents);
+			xfree(key);
+			return;
+		}
 
-	return 0;
+		if (!(par_assoc_rec = list_find_first(
+			      assoc_list, slurmdb_find_assoc_in_list,
+			      &assoc_rec->parent_id))) {
+
+			/* This means we weren't starting at root */
+			_add_arch_rec(assoc_rec, arch_rec_list,
+				      all_parents);
+			xfree(key);
+			return;
+		}
+
+		_find_create_parent(par_assoc_rec, assoc_list, arch_rec_list,
+				    all_parents);
+
+		/* Now that it has been added lets try again */
+		par_arch_rec = xhash_get(all_parents, key, strlen(key));
+		xfree(key);
+		if (par_arch_rec) {
+			_add_arch_rec(assoc_rec, par_arch_rec->children,
+				      all_parents);
+			return;
+		}
+		error("%s: no parent found, this should never happen",
+		      __func__);
+	} else
+		_add_arch_rec(assoc_rec, arch_rec_list, all_parents);
+
+	return;
 }
 
-extern slurmdb_job_rec_t *slurmdb_create_job_rec(void)
+extern slurmdb_job_rec_t *slurmdb_create_job_rec()
 {
 	slurmdb_job_rec_t *job = xmalloc(sizeof(slurmdb_job_rec_t));
 	job->array_task_id = NO_VAL;
@@ -608,7 +674,7 @@ extern slurmdb_job_rec_t *slurmdb_create_job_rec(void)
       	return job;
 }
 
-extern slurmdb_step_rec_t *slurmdb_create_step_rec(void)
+extern slurmdb_step_rec_t *slurmdb_create_step_rec()
 {
 	slurmdb_step_rec_t *step = xmalloc(sizeof(slurmdb_step_rec_t));
 	memset(&step->stats, 0, sizeof(slurmdb_stats_t));
@@ -716,30 +782,22 @@ extern void slurmdb_destroy_qos_usage(void *object)
 	}
 }
 
-extern void slurmdb_free_user_rec_members(slurmdb_user_rec_t *slurmdb_user)
-{
-	if (!slurmdb_user)
-		return;
-
-	FREE_NULL_LIST(slurmdb_user->assoc_list);
-	FREE_NULL_LIST(slurmdb_user->coord_accts);
-	xfree(slurmdb_user->default_acct);
-	xfree(slurmdb_user->default_wckey);
-	xfree(slurmdb_user->name);
-	xfree(slurmdb_user->old_name);
-	FREE_NULL_LIST(slurmdb_user->wckey_list);
-	slurmdb_destroy_bf_usage(slurmdb_user->bf_usage);
-}
 
 extern void slurmdb_destroy_user_rec(void *object)
 {
 	slurmdb_user_rec_t *slurmdb_user = (slurmdb_user_rec_t *)object;
 
-	if (!slurmdb_user)
-		return;
-
-	slurmdb_free_user_rec_members(slurmdb_user);
-	xfree(slurmdb_user);
+	if (slurmdb_user) {
+		FREE_NULL_LIST(slurmdb_user->assoc_list);
+		FREE_NULL_LIST(slurmdb_user->coord_accts);
+		xfree(slurmdb_user->default_acct);
+		xfree(slurmdb_user->default_wckey);
+		xfree(slurmdb_user->name);
+		xfree(slurmdb_user->old_name);
+		FREE_NULL_LIST(slurmdb_user->wckey_list);
+		slurmdb_destroy_bf_usage(slurmdb_user->bf_usage);
+		xfree(slurmdb_user);
+	}
 }
 
 extern void slurmdb_destroy_account_rec(void *object)
@@ -838,7 +896,6 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		xfree(assoc->grp_tres_mins_ctld);
 		xfree(assoc->grp_tres_run_mins);
 		xfree(assoc->grp_tres_run_mins_ctld);
-		xfree(assoc->lineage);
 		xfree(assoc->max_tres_mins_pj);
 		xfree(assoc->max_tres_mins_ctld);
 		xfree(assoc->max_tres_run_mins);
@@ -895,22 +952,6 @@ extern void slurmdb_destroy_event_rec(void *object)
 	}
 }
 
-extern void slurmdb_destroy_instance_rec(void *object)
-{
-	slurmdb_instance_rec_t *slurmdb_instance = object;
-
-	if (slurmdb_instance) {
-		xfree(slurmdb_instance->cluster);
-		xfree(slurmdb_instance->extra);
-		xfree(slurmdb_instance->instance_id);
-		xfree(slurmdb_instance->instance_type);
-		xfree(slurmdb_instance->node_name);
-
-		xfree(slurmdb_instance);
-	}
-	return;
-}
-
 extern void slurmdb_destroy_job_rec(void *object)
 {
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
@@ -928,7 +969,6 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->failed_node);
 		xfree(job->jobname);
 		xfree(job->licenses);
-		xfree(job->lineage);
 		xfree(job->mcs_label);
 		xfree(job->partition);
 		xfree(job->nodes);
@@ -975,7 +1015,6 @@ extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos)
 		xfree(qos->name);
 		FREE_NULL_BITMAP(qos->preempt_bitstr);
 		FREE_NULL_LIST(qos->preempt_list);
-		xfree(qos->relative_tres_cnt);
 		slurmdb_destroy_qos_usage(qos->usage);
 	}
 }
@@ -1220,22 +1259,6 @@ extern void slurmdb_destroy_event_cond(void *object)
 	}
 }
 
-extern void slurmdb_destroy_instance_cond(void *object)
-{
-	slurmdb_instance_cond_t *slurmdb_instance = object;
-
-	if (slurmdb_instance) {
-		FREE_NULL_LIST(slurmdb_instance->cluster_list);
-		FREE_NULL_LIST(slurmdb_instance->extra_list);
-		FREE_NULL_LIST(slurmdb_instance->format_list);
-		FREE_NULL_LIST(slurmdb_instance->instance_id_list);
-		FREE_NULL_LIST(slurmdb_instance->instance_type_list);
-		xfree(slurmdb_instance->node_list);
-
-		xfree(slurmdb_instance);
-	}
-}
-
 extern void slurmdb_destroy_job_cond(void *object)
 {
 	slurmdb_job_cond_t *job_cond =
@@ -1337,32 +1360,6 @@ extern void slurmdb_destroy_archive_cond(void *object)
 	}
 }
 
-extern void slurmdb_free_add_assoc_cond_members(
-	slurmdb_add_assoc_cond_t *add_assoc)
-{
-	if (!add_assoc)
-		return;
-
-	FREE_NULL_LIST(add_assoc->acct_list);
-	slurmdb_free_assoc_rec_members(&add_assoc->assoc);
-	FREE_NULL_LIST(add_assoc->cluster_list);
-	xfree(add_assoc->default_acct);
-	FREE_NULL_LIST(add_assoc->partition_list);
-	FREE_NULL_LIST(add_assoc->user_list);
-	FREE_NULL_LIST(add_assoc->wckey_list);
-}
-
-extern void slurmdb_destroy_add_assoc_cond(void *object)
-{
-	slurmdb_add_assoc_cond_t *add_assoc = object;
-
-	if (!add_assoc)
-		return;
-
-	slurmdb_free_add_assoc_cond_members(add_assoc);
-	xfree(add_assoc);
-}
-
 extern void slurmdb_destroy_update_object(void *object)
 {
 	slurmdb_update_object_t *slurmdb_update =
@@ -1434,7 +1431,6 @@ extern void slurmdb_destroy_report_acct_grouping(void *object)
 	if (acct_grouping) {
 		xfree(acct_grouping->acct);
 		FREE_NULL_LIST(acct_grouping->groups);
-		xfree(acct_grouping->lineage);
 		FREE_NULL_LIST(acct_grouping->tres_list);
 		xfree(acct_grouping);
 	}
@@ -1604,22 +1600,6 @@ extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,
 	federation->flags = FEDERATION_FLAG_NOTSET;
 }
 
-extern void slurmdb_init_instance_rec(slurmdb_instance_rec_t *instance)
-{
-	if (!instance)
-		return;
-
-	memset(instance, 0, sizeof(slurmdb_instance_rec_t));
-
-	/* instance->cluster = NULL; */
-	/* instance->extra = NULL; */
-	/* instance->instance_id = NULL; */
-	/* instance->instance_type = NULL; */
-	/* instance->node_name = NULL; */
-	instance->time_end = NO_VAL;
-	instance->time_start = NO_VAL;
-}
-
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
 				 uint32_t init_val)
 {
@@ -1694,18 +1674,6 @@ extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey, bool free_it)
 		_free_wckey_rec_members(wckey);
 	memset(wckey, 0, sizeof(slurmdb_wckey_rec_t));
 	wckey->is_def = NO_VAL16;
-}
-
-extern void slurmdb_init_add_assoc_cond(slurmdb_add_assoc_cond_t *add_assoc,
-					bool free_it)
-{
-	if (!add_assoc)
-		return;
-
-	if (free_it)
-		slurmdb_free_add_assoc_cond_members(add_assoc);
-	memset(add_assoc, 0, sizeof(*add_assoc));
-	slurmdb_init_assoc_rec(&add_assoc->assoc, free_it);
 }
 
 extern void slurmdb_init_tres_cond(slurmdb_tres_cond_t *tres,
@@ -1988,8 +1956,6 @@ extern char *slurmdb_qos_flags_str(uint32_t flags)
 		xstrcat(qos_flags, "RequiresReservation,");
 	if (flags & QOS_FLAG_NO_DECAY)
 		xstrcat(qos_flags, "NoDecay,");
-	if (flags & QOS_FLAG_RELATIVE)
-		xstrcat(qos_flags, "Relative,");
 	if (flags & QOS_FLAG_USAGE_FACTOR_SAFE)
 		xstrcat(qos_flags, "UsageFactorSafe,");
 
@@ -2140,13 +2106,18 @@ extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level)
 /* This reorders the list into a alphabetical hierarchy returned in a
  * separate list. The original list is not affected. */
 extern List slurmdb_get_hierarchical_sorted_assoc_list(
-	List assoc_list)
+	List assoc_list, bool use_lft)
 {
 	List slurmdb_hierarchical_rec_list;
 	List ret_list = list_create(NULL);
 
-	slurmdb_hierarchical_rec_list =
-		slurmdb_get_acct_hierarchical_rec_list(assoc_list);
+	if (use_lft)
+		slurmdb_hierarchical_rec_list =
+			slurmdb_get_acct_hierarchical_rec_list(assoc_list);
+	else
+		slurmdb_hierarchical_rec_list =
+			slurmdb_get_acct_hierarchical_rec_list_no_lft(
+				assoc_list);
 
 	_append_hierarchical_children_ret_list(ret_list,
 					       slurmdb_hierarchical_rec_list);
@@ -2156,9 +2127,60 @@ extern List slurmdb_get_hierarchical_sorted_assoc_list(
 }
 
 /* This reorders the list into a alphabetical hierarchy. */
-extern void slurmdb_sort_hierarchical_assoc_list(List assoc_list)
+extern void slurmdb_sort_hierarchical_assoc_list(
+	List assoc_list, bool use_lft)
 {
-	(void) list_sort(assoc_list, (ListCmpF)_sort_assoc_by_lineage_asc);
+	List slurmdb_hierarchical_rec_list;
+
+	if (use_lft)
+		slurmdb_hierarchical_rec_list =
+			slurmdb_get_acct_hierarchical_rec_list(assoc_list);
+	else
+		slurmdb_hierarchical_rec_list =
+			slurmdb_get_acct_hierarchical_rec_list_no_lft(
+				assoc_list);
+
+	/* Clear all the pointers out of the list without freeing the
+	   memory since we will just add them back in later.
+	*/
+	while (list_pop(assoc_list)) {
+	}
+
+	_append_hierarchical_children_ret_list(assoc_list,
+					       slurmdb_hierarchical_rec_list);
+	FREE_NULL_LIST(slurmdb_hierarchical_rec_list);
+}
+
+/* Build a hierarchical list using only association id's along with
+ * parent id's.  This method is slower than the non _no_lft function
+ * below, but it is needed if the lft and rgt's ever get messed up.
+ * Each association in here will result in a 0 rgt afterwards.
+ */
+extern List slurmdb_get_acct_hierarchical_rec_list_no_lft(List assoc_list)
+{
+	slurmdb_assoc_rec_t *assoc = NULL;
+	xhash_t *all_parents = xhash_init(_arch_hash_rec_id, NULL);
+	List arch_rec_list = list_create(slurmdb_destroy_hierarchical_rec);
+	ListIterator itr;
+	/* DEF_TIMERS; */
+	/* START_TIMER; */
+
+	itr = list_iterator_create(assoc_list);
+	while ((assoc = list_next(itr))) {
+		if (assoc->rgt == 0) // already processed
+			continue;
+
+		_find_create_parent(assoc, assoc_list,
+				    arch_rec_list, all_parents);
+	}
+	list_iterator_destroy(itr);
+	/* END_TIMER; */
+	/* info("took %s", TIME_STR); */
+	xhash_free(all_parents);
+//	info("got %d", list_count(arch_rec_list));
+	_sort_slurmdb_hierarchical_rec_list(arch_rec_list);
+
+	return arch_rec_list;
 }
 
 extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
@@ -2175,10 +2197,10 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 	ListIterator itr;
 
 	/*
-	 * The list should already be sorted by lineage, do it anyway
+	 * The list should already be sorted by lfts, do it anyway
 	 * just to make sure it is correct.
 	 */
-	slurmdb_sort_hierarchical_assoc_list(assoc_list);
+	list_sort(assoc_list, (ListCmpF)_sort_assoc_by_lft_dec);
 	itr = list_iterator_create(assoc_list);
 
 	while((assoc = list_next(itr))) {
@@ -2612,8 +2634,6 @@ extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr,
 		debug2("  GrpWall          : %s", time_buf);
 	}
 
-	debug2("  Lineage          : %s", assoc_ptr->lineage);
-
 	debug2("  MaxTRESMins      : %s",
 	       assoc_ptr->max_tres_mins_pj ?
 	       assoc_ptr->max_tres_mins_pj : "NONE");
@@ -2966,7 +2986,7 @@ extern int slurmdb_send_accounting_update_persist(
 	rc = slurm_send_recv_msg(0, &req, &resp, 0);
 
 	if (rc != SLURM_SUCCESS) {
-		error("update cluster: %s at %s(%hu): %m",
+		error("update cluster: %m to %s at %s(%hu)",
 		      persist_conn->cluster_name,
 		      persist_conn->rem_host,
 		      persist_conn->rem_port);
@@ -3093,7 +3113,7 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 {
 	local_cluster_rec_t *local_cluster = NULL;
 	int rc = SLURM_SUCCESS;
-	char local_hostname[HOST_NAME_MAX];
+	char local_hostname[64];
 	ListIterator itr;
 	List cluster_list = NULL;
 	List ret_list = NULL;
@@ -3224,7 +3244,7 @@ extern int slurmdb_get_first_het_job_cluster(List job_req_list,
 	job_desc_msg_t *req;
 	local_cluster_rec_t *local_cluster = NULL;
 	int rc = SLURM_SUCCESS;
-	char local_hostname[HOST_NAME_MAX] = "";
+	char local_hostname[64] = "";
 	ListIterator itr;
 	List cluster_list = NULL;
 	List ret_list = NULL;
@@ -3505,19 +3525,6 @@ extern List slurmdb_copy_tres_list(List tres)
 
 	return tres_out;
 }
-
-extern list_t *slurmdb_list_copy_coord(list_t *coord_accts)
-{
-	list_t *ret_list = NULL;
-
-	if (!coord_accts || !list_count(coord_accts))
-		return NULL;
-
-	list_for_each(coord_accts, _list_copy_coord, &ret_list);
-
-	return ret_list;
-}
-
 
 extern List slurmdb_diff_tres_list(List tres_list_old, List tres_list_new)
 {
@@ -3862,6 +3869,7 @@ extern int slurmdb_sort_tres_by_id_asc(void *v1, void *v2)
 	return 0;
 }
 
+/* This only works on a simple id=count list, not on a formatted list */
 extern void slurmdb_tres_list_from_string(
 	List *tres_list, const char *tres, uint32_t flags)
 {
@@ -3879,50 +3887,13 @@ extern void slurmdb_tres_list_from_string(
 		tmp_str++;
 
 	while (tmp_str) {
-		if (tmp_str[0] >= '0' && tmp_str[0] <= '9') {
-			id = atoi(tmp_str);
-		} else {
-			int end = 0;
-			char *tres_name;
-			assoc_mgr_lock_t locks = { .tres = READ_LOCK };
-
-			while (tmp_str[end]) {
-				if (tmp_str[end] == '=')
-					break;
-				end++;
-			}
-			if (!tmp_str[end]) {
-				error("%s: no TRES id found for %s",
-				      __func__, tmp_str);
-				break;
-			}
-			tres_name = xstrndup(tmp_str, end);
-			assoc_mgr_lock(&locks);
-			if (!assoc_mgr_tres_list) {
-				error("%s: No assoc_mgr_tres_list, this function can't be used here with a formatted tres list.", __func__);
-				break;
-			}
-			tres_rec = list_find_first(
-				assoc_mgr_tres_list,
-				slurmdb_find_tres_in_list_by_type,
-				tres_name);
-			assoc_mgr_unlock(&locks);
-			if (!tres_rec) {
-				error("%s: no TRES known by type %s",
-				      __func__, tres_name);
-				xfree(tres_name);
-				break;
-			}
-			id = tres_rec->id;
-			xfree(tres_name);
-		}
+		id = atoi(tmp_str);
 		/* 0 isn't a valid tres id */
 		if (id <= 0) {
 			error("slurmdb_tres_list_from_string: no id "
 			      "found at %s instead", tmp_str);
 			break;
 		}
-
 		if (!(tmp_str = strchr(tmp_str, '='))) {
 			error("slurmdb_tres_list_from_string: "
 			      "no value found %s", tres);

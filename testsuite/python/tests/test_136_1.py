@@ -16,8 +16,8 @@ available_cores = 0
 def setup():
     atf.require_auto_config("needs nodes with and specific number of Cores and CoreSpecCount")
     atf.require_accounting(modify=False)
-    atf.require_config_parameter('SelectType', 'select/cons_tres')
-    atf.require_config_parameter('CoreSpecPlugin', None)
+    atf.require_config_parameter('SelectType', 'select/cons_res')
+    atf.require_config_parameter('CoreSpecPlugin', 'core_spec/none')
     atf.require_config_parameter('TaskPlugin', 'task/cgroup')
     atf.require_config_parameter('AllowSpecResourcesUsage', '1')
     atf.require_nodes(2, [('Cores', 3)])

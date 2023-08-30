@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  route.h - Define route plugin functions.
+ *  slurm_route.h - Define route plugin functions.
  *****************************************************************************
  *  Copyright (C) 2014 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_ROUTE_H
-#define _INTERFACES_ROUTE_H
+#ifndef __SLURM_ROUTE_PLUGIN_API_H__
+#define __SLURM_ROUTE_PLUGIN_API_H__
 
 /*****************************************************************************\
  *  Functions required of all plugins
@@ -48,14 +48,14 @@
  *
  * Returns a Slurm errno.
  */
-extern int route_g_init(void);
+extern int route_init(void);
 
 /*
  * Terminate the route plugin.
  *
  * Returns a Slurm errno.
  */
-extern int route_g_fini(void);
+extern int route_fini(void);
 
 /*****************************************************************************\
  *  Plugin API Declarations
@@ -65,21 +65,20 @@ extern int route_g_fini(void);
  * route_g_split_hostlist - logic to split an input hostlist into
  *                           a set of hostlists to forward to.
  *
- * IN: hl        - hostlist_t *   - list of every node to send message to
- *                                  will be empty on return which is same
- *                                  behavior as similar code replaced in
- *                                  forward.c
- * OUT: sp_hl    - hostlist_t *** - the array of hostlists that will be malloced
- * OUT: count    - int *          - the count of created hostlists
- * IN: tree_width- int            - Max width of each branch on the tree.
+ * IN: hl        - hostlist_t   - list of every node to send message to
+ *                                will be empty on return which is same behavior
+ *                                as similar code replaced in forward.c
+ * OUT: sp_hl    - hostlist_t** - the array of hostlists that will be malloced
+ * OUT: count    - int*         - the count of created hostlists
+ * IN: tree_width- int          - Max width of each branch on the tree.
  * RET: SLURM_SUCCESS - int
  *
  * Note: created hostlist will have to be freed independently using
  *       hostlist_destroy by the caller.
  * Note: the hostlist_t array will have to be xfree.
  */
-extern int route_g_split_hostlist(hostlist_t *hl,
-				  hostlist_t ***sp_hl,
+extern int route_g_split_hostlist(hostlist_t hl,
+				  hostlist_t** sp_hl,
 				  int* count, uint16_t tree_width);
 
 /*
@@ -101,21 +100,20 @@ extern int route_g_reconfigure(void);
  * where the topology version also needs to split the message list based
  * on TreeWidth.
  *
- * IN: hl        - hostlist_t *   - list of every node to send message to
- *                                  will be empty on return which is same
- *                                  behavior as similar code replaced in
- *                                  forward.c
- * OUT: sp_hl    - hostlist_t *** - the array of hostlists that will be malloced
- * OUT: count    - int *          - the count of created hostlists
- * IN: tree_width- int            - Max width of each branch on the tree.
+ * IN: hl        - hostlist_t   - list of every node to send message to
+ *                                will be empty on return which is same behavior
+ *                                as similar code replaced in forward.c
+ * OUT: sp_hl    - hostlist_t** - the array of hostlists that will be malloced
+ * OUT: count    - int*         - the count of created hostlists
+ * IN: tree_width- int          - Max width of each branch on the tree.
  * RET: SLURM_SUCCESS - int
  *
  * Note: created hostlist will have to be freed independently using
  *       hostlist_destroy by the caller.
  * Note: the hostlist_t array will have to be xfree.
  */
-extern int route_split_hostlist_treewidth(hostlist_t *hl,
-					  hostlist_t ***sp_hl,
+extern int route_split_hostlist_treewidth(hostlist_t hl,
+					  hostlist_t** sp_hl,
 					  int* count, uint16_t tree_width);
 
-#endif
+#endif /*___SLURM_ROUTE_PLUGIN_API_H__*/

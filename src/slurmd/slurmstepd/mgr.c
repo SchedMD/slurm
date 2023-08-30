@@ -48,7 +48,6 @@
 #endif
 
 #include <grp.h>
-#include <limits.h>
 #include <poll.h>
 #include <pthread.h>
 #include <pwd.h>
@@ -56,6 +55,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
@@ -103,6 +103,7 @@
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
 #include "src/interfaces/proctrack.h"
+#include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
 
@@ -131,7 +132,7 @@ struct priv_state {
 	gid_t	saved_gid;
 	gid_t *	gid_list;
 	int	ngids;
-	char saved_cwd[PATH_MAX];
+	char	saved_cwd [4096];
 };
 
 step_complete_t step_complete = {
@@ -178,6 +179,7 @@ static int  _slurmd_job_log_init(stepd_step_rec_t *step);
 static void _wait_for_io(stepd_step_rec_t *step);
 static int  _send_exit_msg(stepd_step_rec_t *step, uint32_t *tid, int n,
 			   int status);
+static void _set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state);
 static void _wait_for_all_tasks(stepd_step_rec_t *step);
 static int  _wait_for_any_task(stepd_step_rec_t *step, bool waitflag);
 
@@ -423,7 +425,12 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 	if (_make_batch_script(msg, step))
 		goto cleanup;
 
+	/* this is the new way of setting environment variables */
 	env_array_for_batch_job(&step->env, msg, conf->node_name);
+
+	/* this is the old way of setting environment variables (but
+	 * needed) */
+	step->envtp->overcommit = msg->overcommit;
 
 	return step;
 
@@ -622,8 +629,6 @@ _send_exit_msg(stepd_step_rec_t *step, uint32_t *tid, int n, int status)
 	msg.num_tasks		= n;
 	if (step->oom_error)
 		msg.return_code = SIG_OOM;
-	else if (WIFSIGNALED(status) && (step->flags & LAUNCH_NO_SIG_FAIL))
-		msg.return_code = SLURM_SUCCESS;
 	else
 		msg.return_code = status;
 
@@ -903,7 +908,7 @@ extern void stepd_send_step_complete_msgs(stepd_step_rec_t *step)
 	slurm_mutex_unlock(&step_complete.lock);
 }
 
-extern void set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state)
+static void _set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state)
 {
 	slurm_mutex_lock(&step->state_mutex);
 	step->state = new_state;
@@ -1118,7 +1123,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 		}
 
 		if (rc != SLURM_SUCCESS) {
-			set_job_state(step, SLURMSTEPD_STEP_ENDING);
+			_set_job_state(step, SLURMSTEPD_STEP_ENDING);
 			close_slurmd_conn();
 			goto fail1;
 		}
@@ -1141,7 +1146,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 		_exit(0);
 	} else if (pid < 0) {
 		error("fork: %m");
-		set_job_state(step, SLURMSTEPD_STEP_ENDING);
+		_set_job_state(step, SLURMSTEPD_STEP_ENDING);
 		rc = SLURM_ERROR;
 		/* let the slurmd know we actually are done with the setup */
 		close_slurmd_conn();
@@ -1167,7 +1172,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	jobacct_gather_add_task(pid, &jobacct_id, 1);
 	container_g_add_cont(jobid, step->cont_id);
 
-	set_job_state(step, SLURMSTEPD_STEP_RUNNING);
+	_set_job_state(step, SLURMSTEPD_STEP_RUNNING);
 	if (!slurm_conf.job_acct_gather_freq)
 		jobacct_gather_stat_task(0, true);
 
@@ -1198,7 +1203,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	/* Call the other plugins to clean up
 	 * the cgroup hierarchy.
 	 */
-	set_job_state(step, SLURMSTEPD_STEP_ENDING);
+	_set_job_state(step, SLURMSTEPD_STEP_ENDING);
 	step_terminate_monitor_start(step);
 	proctrack_g_signal(step->cont_id, SIGKILL);
 	proctrack_g_wait(step->cont_id);
@@ -1242,7 +1247,7 @@ fail1:
 		error("spank_fini failed");
 	debug2("%s: After call to spank_fini()", __func__);
 
-	set_job_state(step, SLURMSTEPD_STEP_ENDING);
+	_set_job_state(step, SLURMSTEPD_STEP_ENDING);
 
 	if (step_complete.rank > -1)
 		stepd_wait_for_children_slurmstepd(step);
@@ -1400,7 +1405,7 @@ job_manager(stepd_step_rec_t *step)
 
 	/* Send step launch response with list of pids */
 	_send_launch_resp(step, 0);
-	set_job_state(step, SLURMSTEPD_STEP_RUNNING);
+	_set_job_state(step, SLURMSTEPD_STEP_RUNNING);
 
 #ifdef PR_SET_DUMPABLE
 	/* RHEL6 requires setting "dumpable" flag AGAIN; after euid changes */
@@ -1415,7 +1420,7 @@ job_manager(stepd_step_rec_t *step)
 	_wait_for_all_tasks(step);
 	acct_gather_profile_endpoll();
 	acct_gather_profile_g_node_step_end();
-	set_job_state(step, SLURMSTEPD_STEP_ENDING);
+	_set_job_state(step, SLURMSTEPD_STEP_ENDING);
 
 fail3:
 	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
@@ -1435,7 +1440,7 @@ fail2:
 	 * terminated before the switch window can be released by
 	 * switch_g_job_postfini().
 	 */
-	set_job_state(step, SLURMSTEPD_STEP_ENDING);
+	_set_job_state(step, SLURMSTEPD_STEP_ENDING);
 	step_terminate_monitor_start(step);
 	if (step->cont_id != 0) {
 		proctrack_g_signal(step->cont_id, SIGKILL);
@@ -1512,7 +1517,7 @@ fail1:
 	/* If interactive job startup was abnormal,
 	 * be sure to notify client.
 	 */
-	set_job_state(step, SLURMSTEPD_STEP_ENDING);
+	_set_job_state(step, SLURMSTEPD_STEP_ENDING);
 	if (rc != 0) {
 		error("%s: exiting abnormally: %s",
 		      __func__, slurm_strerror(rc));
@@ -1526,6 +1531,10 @@ fail1:
 			stepd_wait_for_children_slurmstepd(step);
 		stepd_send_step_complete_msgs(step);
 	}
+
+	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP)
+	    && core_spec_g_clear(step->cont_id))
+		error("core_spec_g_clear: %m");
 
 	return(rc);
 }
@@ -2385,7 +2394,7 @@ _wait_for_io(stepd_step_rec_t *step)
 static char *
 _make_batch_dir(stepd_step_rec_t *step)
 {
-	char path[PATH_MAX];
+	char path[MAXPATHLEN];
 
 	if (step->step_id.step_id == SLURM_BATCH_SCRIPT)
 		snprintf(path, sizeof(path), "%s/job%05u",
@@ -2479,16 +2488,23 @@ error:
 	return SLURM_ERROR;
 }
 
-extern void stepd_drain_node(char *reason)
+extern int stepd_drain_node(char *reason)
 {
+	slurm_msg_t req_msg;
 	update_node_msg_t update_node_msg;
 
 	slurm_init_update_node_msg(&update_node_msg);
 	update_node_msg.node_names = conf->node_name;
 	update_node_msg.node_state = NODE_STATE_DRAIN;
 	update_node_msg.reason = reason;
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type = REQUEST_UPDATE_NODE;
+	req_msg.data = &update_node_msg;
 
-	(void) slurm_update_node(&update_node_msg);
+	if (slurm_send_only_controller_msg(&req_msg, working_cluster_rec) < 0)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
 }
 
 static void
@@ -2909,12 +2925,12 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
 		if (setexeccon(step->selinux_context)) {
 			error("Failed to set SELinux context to %s: %m",
 			      step->selinux_context);
-			_exit(127);
+			_exit(1);
 		}
 #else
 		if (step->selinux_context) {
 			error("Built without SELinux support but context was specified");
-			_exit(127);
+			_exit(1);
 		}
 #endif
 
@@ -2922,13 +2938,13 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
 		if (_drop_privileges(step, true, &sprivs, false) < 0) {
 			error("run_script_as_user _drop_privileges: %m");
 			/* child process, should not return */
-			_exit(127);
+			exit(127);
 		}
 
 		if (_become_user(step, &sprivs) < 0) {
 			error("run_script_as_user _become_user failed: %m");
 			/* child process, should not return */
-			_exit(127);
+			exit(127);
 		}
 
 		if (chdir(step->cwd) == -1)

@@ -1208,7 +1208,7 @@ static int _handle_connection(void *x, void *arg)
 	}
 
 	/* make sure the connection has finished on_connection */
-	if (!con->is_listen && !con->is_connected && (con->input_fd != -1)) {
+	if (!con->is_listen && !con->is_connected) {
 		log_flag(NET, "%s: [%s] waiting for on_connection to complete",
 			 __func__, con->name);
 		return 0;
@@ -2639,18 +2639,7 @@ static void _queue_func(bool locked, con_mgr_t *mgr, work_func_t func,
 	if (!locked)
 		slurm_mutex_lock(&mgr->mutex);
 
-	if (mgr->shutdown) {
-		/*
-		 * Mgr is shutdown so workq will reject new work. Need to unlock
-		 * the mutex and run the work directly. To avoid function and
-		 * arg getting lost during shutdown.
-		 */
-		slurm_mutex_unlock(&mgr->mutex);
-		log_flag(NET, "%s: running function 0x%"PRIxPTR"(0x%"PRIxPTR") directly after shutdown",
-			 __func__, (uintptr_t) func, (uintptr_t) arg);
-		func(arg);
-		slurm_mutex_lock(&mgr->mutex);
-	} else if (!mgr->deferred_funcs) {
+	if (!mgr->deferred_funcs) {
 		/* this should never fail here */
 		workq_add_work(mgr->workq, func, arg, tag);
 	} else {
@@ -2839,55 +2828,4 @@ extern void con_mgr_add_delayed_work(con_mgr_t *mgr, con_mgr_fd_t *con,
 		 (uintptr_t) work->func);
 
 	_handle_work(false, work);
-}
-
-extern int con_mgr_get_fd_auth_creds(con_mgr_fd_t *con,
-				     uid_t *cred_uid, gid_t *cred_gid,
-				     pid_t *cred_pid)
-{
-	int fd, rc = ESLURM_NOT_SUPPORTED;
-
-	xassert(cred_uid);
-	xassert(cred_gid);
-	xassert(cred_pid);
-
-	if (!con || !cred_uid || !cred_gid || !cred_pid)
-		return EINVAL;
-
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->mgr->magic == MAGIC_CON_MGR);
-
-	if (((fd = con->input_fd) == -1) && ((fd = con->output_fd) == -1))
-		return SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR;
-
-#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__NetBSD__)
-	struct ucred cred = { 0 };
-	socklen_t len = sizeof(cred);
-	if (!getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len)) {
-		*cred_uid = cred.uid;
-		*cred_gid = cred.gid;
-		*cred_pid = cred.pid;
-		return SLURM_SUCCESS;
-	} else {
-		rc = errno;
-	}
-#else
-	struct xucred cred = { 0 };
-	socklen_t len = sizeof(cred);
-	if (!getsockopt(fd, 0, LOCAL_PEERCRED, &cred, &len)) {
-		*cred_uid = cred.cr_uid;
-		*cred_gid = cred.cr_groups[0];
-		*cred_pid = cred.cr_pid;
-		return SLURM_SUCCESS;
-	} else {
-		rc = errno;
-	}
-#endif
-
-	return rc;
-}
-
-extern int con_mgr_get_thread_count(const con_mgr_t *mgr)
-{
-	return get_workq_thread_count(mgr->workq);
 }

@@ -41,6 +41,7 @@
 #include <sys/stat.h>
 
 #include "src/sacctmgr/sacctmgr.h"
+#include <sys/param.h>		/* MAXPATHLEN */
 #include "src/common/proc_args.h"
 #include "src/common/util-net.h"
 

@@ -46,7 +46,7 @@
 
 /*
  * In an ideal world, we could use sysconf(_SC_GETPW_R_SIZE_MAX) to get the
- * maximum buffer size needed for getpwnam_r(), but if there is no maximum
+ * maximum buffer size neede for getpwnam_r(), but if there is no maximum
  * value configured, the value returned is 1024, which can too small.
  * Diito for _SC_GETGR_R_SIZE_MAX.
  */
@@ -87,10 +87,9 @@ char *uid_to_string_or_null(uid_t uid);
 
 /*
  * Translate uid to user name,
- * If lookup fails, will return the uid printed as a string.
  * NOTE: xfree the return value
  */
-extern char *uid_to_string(uid_t uid);
+char *uid_to_string (uid_t uid);
 
 /* Free any memory allocated by uid_to_string_cached() */
 extern void uid_cache_clear(void);
@@ -102,23 +101,10 @@ extern void uid_cache_clear(void);
 extern char *uid_to_string_cached(uid_t uid);
 
 /*
- * Translate uid to home directory.
- * NOTE: xfree the return value
- */
-extern char *uid_to_dir(uid_t uid);
-
-/*
- * Translate uid to shell.
- * NOTE: xfree the return value
- */
-extern char *uid_to_shell(uid_t uid);
-
-/*
  * Same as uid_to_string, but for group name.
- * If lookup fails, will return the gid printed as a string.
  * NOTE: xfree the return value
  */
-extern char *gid_to_string(gid_t gid);
+char *gid_to_string (gid_t gid);
 
 /*
  * Translate gid to user name.

@@ -76,37 +76,32 @@ static const char *syms[] = {
 static slurm_ext_sensors_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
-static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 
 extern int ext_sensors_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "ext_sensors";
+	char *type = NULL;
 
 	slurm_mutex_lock(&g_context_lock);
 
-	if (plugin_inited)
+	if (g_context)
 		goto done;
 
-	if (!slurm_conf.ext_sensors_type) {
-		plugin_inited = PLUGIN_NOOP;
-		goto done;
-	}
+	type = slurm_get_ext_sensors_type();
 
 	g_context = plugin_context_create(
-		plugin_type, slurm_conf.ext_sensors_type,
-		(void **)&ops, syms, sizeof(syms));
+		plugin_type, type, (void **)&ops, syms, sizeof(syms));
 
 	if (!g_context) {
-		error("cannot create %s context for %s",
-		      plugin_type, slurm_conf.ext_sensors_type);
+		error("cannot create %s context for %s", plugin_type, type);
 		retval = SLURM_ERROR;
-		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
-	plugin_inited = PLUGIN_INITED;
+
 done:
 	slurm_mutex_unlock(&g_context_lock);
+	xfree(type);
 
 	return retval;
 }
@@ -115,7 +110,6 @@ extern int ext_sensors_fini(void)
 {
 	int rc;
 
-	plugin_inited = PLUGIN_NOT_INITED;
 	if (!g_context)
 		return SLURM_SUCCESS;
 
@@ -187,10 +181,7 @@ extern int ext_sensors_g_update_component_data(void)
 {
 	int retval = SLURM_ERROR;
 
-	xassert(plugin_inited);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(g_context);
 
 	retval = (*(ops.update_component_data))();
 
@@ -201,10 +192,7 @@ extern int ext_sensors_g_get_stepstartdata(step_record_t *step_rec)
 {
 	int retval = SLURM_ERROR;
 
-	xassert(plugin_inited);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(g_context);
 
 	retval = (*(ops.get_stepstartdata))(step_rec);
 
@@ -215,10 +203,7 @@ extern int ext_sensors_g_get_stependdata(step_record_t *step_rec)
 {
 	int retval = SLURM_ERROR;
 
-	xassert(plugin_inited);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(g_context);
 
 	retval = (*(ops.get_stependdata))(step_rec);
 
@@ -230,10 +215,7 @@ extern int ext_sensors_g_get_config(void *data)
 
 	List *tmp_list = (List *) data;
 
-	xassert(plugin_inited);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(g_context);
 
 	*tmp_list = (*(ops.get_config))();
 

@@ -172,6 +172,8 @@ static void _calc_cpu_affinity(stepd_step_rec_t *step)
 		step->task[i]->cpu_set = xmalloc(sizeof(cpu_set_t));
 		if (!get_cpuset(step->task[i]->cpu_set, step, i))
 			xfree(step->task[i]->cpu_set);
+		else
+			reset_cpuset(step->task[i]->cpu_set);
 	}
 }
 

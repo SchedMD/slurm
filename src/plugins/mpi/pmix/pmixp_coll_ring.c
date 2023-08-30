@@ -475,7 +475,7 @@ pmixp_coll_ring_ctx_t *pmixp_coll_ring_ctx_select(pmixp_coll_t *coll,
 	return ret;
 }
 
-int pmixp_coll_ring_init(pmixp_coll_t *coll, hostlist_t **hl)
+int pmixp_coll_ring_init(pmixp_coll_t *coll, hostlist_t *hl)
 {
 #ifdef PMIXP_COLL_DEBUG
 	PMIXP_DEBUG("called");
@@ -629,7 +629,7 @@ int pmixp_coll_ring_check(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr)
 			    hdr->seq, nodename, hdr->nodeid, coll->seq);
 		pmixp_debug_hang(0); /* enable hang to debug this! */
 		slurm_kill_job_step(pmixp_info_jobid(),
-				    pmixp_info_stepid(), SIGKILL, 0);
+				    pmixp_info_stepid(), SIGKILL);
 		xfree(nodename);
 		return SLURM_SUCCESS;
 	} else if (PMIXP_COLL_REQ_SKIP == rc) {
@@ -781,8 +781,8 @@ void pmixp_coll_ring_log(pmixp_coll_t *coll)
 		if (coll_ctx->in_use) {
 			int id;
 			char *done_contrib = NULL, *wait_contrib = NULL;
-			hostlist_t *hl_done_contrib = NULL,
-				*hl_wait_contrib = NULL, **tmp_list;
+			hostlist_t hl_done_contrib = NULL,
+				hl_wait_contrib = NULL, *tmp_list;
 
 			PMIXP_ERROR("\t seq=%d contribs: loc=%d/prev=%d/fwd=%d",
 				    coll_ctx->seq, coll_ctx->contrib_local,

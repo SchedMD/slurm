@@ -151,6 +151,11 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 	if (conf->job_container_plugin)
 		STORE_FIELD(hv, conf, job_container_plugin, charp);
 
+	if (conf->job_credential_private_key)
+		STORE_FIELD(hv, conf, job_credential_private_key, charp);
+	if (conf->job_credential_public_certificate)
+		STORE_FIELD(hv, conf, job_credential_public_certificate, charp);
+
 	STORE_FIELD(hv, conf, job_file_append, uint16_t);
 
 	STORE_FIELD(hv, conf, job_requeue, uint16_t);
@@ -481,6 +486,8 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, job_comp_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, job_comp_user, charp, FALSE);
 	FETCH_FIELD(hv, conf, job_container_plugin, charp, FALSE);
+	FETCH_FIELD(hv, conf, job_credential_private_key, charp, FALSE);
+	FETCH_FIELD(hv, conf, job_credential_public_certificate, charp, FALSE);
 	FETCH_FIELD(hv, conf, job_file_append, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, job_requeue, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, job_submit_plugins, charp, FALSE);

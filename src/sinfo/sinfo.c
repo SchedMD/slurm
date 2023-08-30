@@ -260,8 +260,7 @@ static int _get_info(bool clear_old, slurmdb_federation_rec_t *fed,
 	sort_sinfo_list(sinfo_list);
 	if (params.mimetype)
 		rc = DATA_DUMP_CLI(SINFO_DATA_LIST, sinfo_list, "sinfo", argc,
-				   argv, NULL, params.mimetype,
-				   params.data_parser);
+				   argv, NULL, params.mimetype);
 	else
 		rc = print_sinfo_list(sinfo_list);
 
@@ -661,7 +660,7 @@ static int _build_sinfo_data(List sinfo_list,
 
 		if (node_msg->record_count == 1) { /* node_name_single */
 			int pos = -1;
-			hostlist_t *hl;
+			hostlist_t hl;
 
 			node_ptr = &(node_msg->node_array[0]);
 			if ((node_ptr->name == NULL) ||
@@ -688,7 +687,7 @@ static int _build_sinfo_data(List sinfo_list,
 		sinfo_cnt++;
 		slurm_mutex_unlock(&sinfo_cnt_mutex);
 
-		slurm_thread_create_detached(_build_part_info,
+		slurm_thread_create_detached(NULL, _build_part_info,
 					     build_struct_ptr);
 	}
 
@@ -710,7 +709,7 @@ static int _build_sinfo_data(List sinfo_list,
  */
 static bool _filter_out(node_info_t *node_ptr)
 {
-	static hostlist_t *host_list = NULL;
+	static hostlist_t host_list = NULL;
 
 	if (params.nodes) {
 		if (host_list == NULL)

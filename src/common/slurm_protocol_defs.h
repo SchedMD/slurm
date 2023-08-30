@@ -197,9 +197,9 @@
 #define RESV_FREE_STR_USER      SLURM_BIT(0)
 #define RESV_FREE_STR_ACCT      SLURM_BIT(1)
 #define RESV_FREE_STR_TRES_BB   SLURM_BIT(2)
-/* #define SLURM_BIT(3) reusable 2 versions after 23.11 */
+#define RESV_FREE_STR_TRES_CORE SLURM_BIT(3)
 #define RESV_FREE_STR_TRES_LIC  SLURM_BIT(4)
-/* #define SLURM_BIT(5) reusable 2 versions after 23.11 */
+#define RESV_FREE_STR_TRES_NODE SLURM_BIT(5)
 #define RESV_FREE_STR_GROUP     SLURM_BIT(6)
 #define RESV_FREE_STR_COMMENT   SLURM_BIT(7)
 #define RESV_FREE_STR_NODES     SLURM_BIT(8)
@@ -248,7 +248,6 @@ typedef enum {
 	REQUEST_SET_SUSPEND_EXC_PARTS,
 	REQUEST_SET_SUSPEND_EXC_STATES,
 
-	DBD_MESSAGES_START	= 1400,
 	PERSIST_RC = 1433, /* To mirror the DBD_RC this is replacing */
 	/* Don't make any messages in this range as this is what the DBD uses
 	 * unless mirroring */
@@ -537,17 +536,11 @@ typedef struct slurm_msg {
 				 * plugin used to connect to us originally.
 				 */
 	uid_t auth_uid;		/* NEVER PACK. Authenticated uid from auth
-				 * credential. Only valid if auth_ids_set is
+				 * credential. Only valid if auth_uid_set is
 				 * true. Set to SLURM_AUTH_NOBODY if not set
 				 * yet.
 				 */
-	gid_t auth_gid;		/* NEVER PACK. Authenticated uid from auth
-				 * credential. Only valid if auth_ids_set is
-				 * true. Set to SLURM_AUTH_NOBODY if not set
-				 * yet.
-				 */
-	bool auth_ids_set;	/* NEVER PACK. True when auth_uid and auth_gid
-				 * have been set.
+	bool auth_uid_set;	/* NEVER PACK. True when auth_uid has been set.
 				 * This is a safety measure against handling
 				 * a slurm_msg_t that has been xmalloc()'d but
 				 * slurm_msg_t_init() was not called since
@@ -782,8 +775,8 @@ typedef struct shutdown_msg {
 
 typedef enum {
 	SLURMCTLD_SHUTDOWN_ALL = 0,	/* all slurm daemons are shutdown */
-	/* = 1 can be reused two versions after 23.11 */
-	SLURMCTLD_SHUTDOWN_CTLD = 2,	/* slurmctld only (no core file) */
+	SLURMCTLD_SHUTDOWN_ABORT,	/* slurmctld only and generate core */
+	SLURMCTLD_SHUTDOWN_CTLD,	/* slurmctld only (no core file) */
 } slurmctld_shutdown_type_t;
 
 typedef struct last_update_msg {
@@ -875,10 +868,9 @@ typedef struct job_step_create_response_msg {
 #define LAUNCH_PTY		SLURM_BIT(2)
 #define LAUNCH_BUFFERED_IO	SLURM_BIT(3)
 #define LAUNCH_LABEL_IO		SLURM_BIT(4)
-#define LAUNCH_EXT_LAUNCHER	SLURM_BIT(5)
+/* free for reuse two versions after 22.05: SLURM_BIT(5) */
 #define LAUNCH_NO_ALLOC 	SLURM_BIT(6)
 #define LAUNCH_OVERCOMMIT 	SLURM_BIT(7)
-#define LAUNCH_NO_SIG_FAIL 	SLURM_BIT(8)
 
 typedef struct launch_tasks_request_msg {
 	uint32_t  het_job_node_offset;	/* Hetjob node offset or NO_VAL */
@@ -916,7 +908,6 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  argc;
 	uint16_t  node_cpus;
 	uint16_t  cpus_per_task;
-	uint16_t  *cpus_per_task_array; /* Per node array of cpus per task */
 	uint16_t  threads_per_core;
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
 	char    **env;
@@ -968,6 +959,7 @@ typedef struct launch_tasks_request_msg {
 	uint32_t spank_job_env_size;
 	dynamic_plugin_data_t *select_jobinfo; /* select context, opaque data */
 	char *alias_list;	/* node name/address/hostname aliases */
+	char *partition;	/* partition that job is running in */
 
 	/* only filled out if step is SLURM_EXTERN_CONT */
 	uint16_t x11;			/* X11 forwarding setup flags */
@@ -1022,6 +1014,16 @@ typedef struct control_status_msg {
 	time_t control_time;	/* Time we became primary slurmctld (or 0) */
 } control_status_msg_t;
 
+/*
+ * Note: We include the node list here for reliable cleanup on XCPU systems.
+ *
+ * Note: We include select_jobinfo here in addition to the job launch
+ * RPC in order to ensure reliable clean-up of a BlueGene partition in
+ * the event of some launch failure or race condition preventing slurmd
+ * from getting the MPIRUN_PARTITION at that time. It is needed for
+ * the job epilog.
+ */
+
 #define SIG_OOM		253	/* Dummy signal value for out of memory
 				 * (OOM) notification. Exit status reported as
 				 * 0:125 (0x80 is the signal flag and
@@ -1047,7 +1049,7 @@ typedef struct kill_job_msg {
 	uint32_t job_state;
 	uint32_t job_uid;
 	uint32_t job_gid;
-	char *nodes; /* Used for reliable cleanup on XCPU systems. */
+	char *nodes;
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
 	time_t   start_time;	/* time of job start, track job requeue */
@@ -1086,8 +1088,12 @@ typedef struct prolog_launch_msg {
 	uint64_t job_mem_limit;		/* job's memory limit, passed via cred */
 	uint32_t nnodes;			/* count of nodes, passed via cred */
 	char *nodes;			/* list of nodes allocated to job_step */
+	char *partition;		/* partition the job is running in */
+	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
 	char **spank_job_env;		/* SPANK job environment variables */
 	uint32_t spank_job_env_size;	/* size of spank_job_env */
+	char *std_err;			/* pathname of stderr */
+	char *std_out;			/* pathname of stdout */
 	uint32_t uid;
 	char *user_name;		/* job's user name */
 	char *work_dir;			/* full pathname of working directory */
@@ -1185,7 +1191,6 @@ typedef struct {
 
 typedef struct {
 	bool exists;
-	bool execute;
 	char *file_name;
 	char *file_content;
 
@@ -1265,8 +1270,11 @@ typedef struct forward_data_msg {
 
 /* suspend_msg_t variant for internal slurm daemon communications */
 typedef struct suspend_int_msg {
+	uint8_t  indf_susp;     /* non-zero if being suspended indefinitely */
+	uint16_t job_core_spec;	/* Count of specialized cores */
 	uint32_t job_id;        /* slurm job_id */
 	uint16_t op;            /* suspend operation, see enum suspend_opts */
+	void *   switch_info;	/* opaque data for switch plugin */
 } suspend_int_msg_t;
 
 typedef struct ping_slurmd_resp_msg {
@@ -1325,15 +1333,12 @@ typedef struct slurm_node_registration_status_msg {
 	uint64_t free_mem;	/* Free memory in MiB */
 	char *cpu_spec_list;	/* list of specialized CPUs */
 	acct_gather_energy_t *energy;
-	char *extra;		/* arbitrary string */
 	char *features_active;	/* Currently active node features */
 	char *features_avail;	/* Available node features */
 	buf_t *gres_info;	/* generic resource info */
 	uint32_t hash_val;      /* hash value of slurm.conf and included files
 				 * existing on node */
 	char *hostname;         /* hostname of slurmd */
-	char *instance_id;	/* cloud instance id */
-	char *instance_type;	/* cloud instance type */
 	uint32_t job_count;	/* number of associate job_id's */
 	char *node_name;
 	uint16_t boards;
@@ -1495,7 +1500,7 @@ typedef struct {
  * Create and init new container state message
  * RET ptr to message (must free with slurm_destroy_container_state_msg())
  */
-extern container_state_msg_t *slurm_create_container_state_msg(void);
+extern container_state_msg_t *slurm_create_container_state_msg();
 extern void slurm_destroy_container_state_msg(container_state_msg_t *msg);
 
 typedef struct {
@@ -1554,7 +1559,6 @@ extern int slurm_char_list_copy(List dst, List src);
 extern char *slurm_char_list_to_xstr(List char_list);
 extern int slurm_find_char_exact_in_list(void *x, void *key);
 extern int slurm_find_char_in_list(void *x, void *key);
-extern int slurm_find_ptr_in_list(void *x, void *key);
 extern void slurm_remove_char_list_from_char_list(list_t *haystack,
 						  list_t *needles);
 extern int slurm_sort_char_list_asc(void *, void *);
@@ -1856,7 +1860,7 @@ extern void  accounting_enforce_string(uint16_t enforce,
  * IN - nodelist - generate hl from list if hl is NULL
  * RET - nid list, needs to be xfreed.
  */
-extern char *cray_nodelist2nids(hostlist_t *hl_in, char *nodelist);
+extern char *cray_nodelist2nids(hostlist_t hl_in, char *nodelist);
 
 /* Validate SPANK specified job environment does not contain any invalid
  * names. Log failures using info() */
@@ -1973,13 +1977,6 @@ extern int slurm_get_rep_count_inx(
 extern int slurm_get_next_tres(
 	char *tres_type, char *in_val, char **name_ptr, char **type_ptr,
 	uint64_t *cnt, char **save_ptr);
-
-/*
- * Return cached select cons res type.
- *
- * Returns SELECT_TYPE_CONS_TRES, SELECT_TYPE_CONS_RES or 0 (linear).
- */
-extern uint32_t slurm_select_cr_type(void);
 
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\

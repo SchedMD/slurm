@@ -238,6 +238,7 @@ typedef struct {
 	pid_t          jmgr_pid;     /* job manager pid                     */
 	pid_t          pgid;         /* process group id for tasks          */
 	uint32_t       flags;        /* See LAUNCH_* flags defined in slurm_protocol_defs.h */
+	uint16_t       overcommit;
 	env_t          *envtp;
 	uint64_t       cont_id;
 

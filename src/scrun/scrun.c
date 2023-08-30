@@ -136,7 +136,7 @@ static void _parse_create(int argc, char **argv)
 		{ "pid-file", required_argument, NULL, OPT_LONG_PID_FILE },
 		{ NULL, 0, NULL, 0 }
 	};
-	int option_index = 0;
+	int optionIndex = 0;
 	int c = 0;
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG2) {
@@ -145,7 +145,7 @@ static void _parse_create(int argc, char **argv)
 	}
 
 	while ((c = getopt_long(argc, argv, "b:", long_options,
-				&option_index)) != -1) {
+				&optionIndex)) != -1) {
 		switch (c) {
 		case OPT_LONG_BUNDLE:
 		case 'b':
@@ -255,7 +255,7 @@ static void _parse_delete(int argc, char **argv)
 		{ "force", no_argument, NULL, OPT_LONG_FORCE },
 		{ NULL, 0, NULL, 0 }
 	};
-	int option_index = 0;
+	int optionIndex = 0;
 	int c = 0;
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG2) {
@@ -263,7 +263,7 @@ static void _parse_delete(int argc, char **argv)
 			debug2("delete arg[%d]=%s", i, argv[i]);
 	}
 
-	while ((c = getopt_long(argc, argv, "f", long_options, &option_index)) !=
+	while ((c = getopt_long(argc, argv, "f", long_options, &optionIndex)) !=
 	       -1) {
 		switch (c) {
 		case OPT_LONG_FORCE:
@@ -466,7 +466,7 @@ static int _parse_commandline(int argc, char **argv)
 		{ "version", no_argument, NULL, OPT_LONG_VERSION },
 		{ NULL, 0, NULL, 0 }
 	};
-	int option_index = 0;
+	int optionIndex = 0;
 	int c = 0;
 	int index;
 
@@ -476,7 +476,7 @@ static int _parse_commandline(int argc, char **argv)
 
 	optind = 0;
 	while ((c = getopt_long(argc, argv, "f:vV?", long_options,
-				&option_index)) != -1) {
+				&optionIndex)) != -1) {
 		switch (c) {
 		case OPT_LONG_CGROUP_MANAGER:
 			info("WARNING: ignoring --cgroup-manager argument");
@@ -626,7 +626,15 @@ extern int main(int argc, char **argv)
 	_parse_env();
 	argv_offset = _parse_commandline(argc, argv) - 1;
 
-	slurm_init(slurm_conf_filename);
+	if ((rc = slurm_conf_init(slurm_conf_filename)))
+		fatal("%s: Unable to load Slurm configuration: %s", __func__,
+		      slurm_strerror(rc));
+	if ((rc = hash_g_init()))
+		fatal("%s: Unable to load hash plugins: %s", __func__,
+		      slurm_strerror(rc));
+	if ((rc = select_g_init(false)))
+		fatal("%s: Unable to select plugins: %s", __func__,
+		      slurm_strerror(rc));
 	if ((rc = gres_init()))
 		fatal("%s: Unable to GRES plugins: %s", __func__,
 		      slurm_strerror(rc));
@@ -638,6 +646,10 @@ extern int main(int argc, char **argv)
 
 	if (!state.root_dir || !state.root_dir[0])
 		_set_root();
+
+	if ((rc = data_init()))
+		fatal("%s: error loading data: %s", __func__,
+		      slurm_strerror(rc));
 
 	if ((rc = serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL)))
 		fatal("%s: error loading JSON parser: %s", __func__,
@@ -673,8 +685,9 @@ extern int main(int argc, char **argv)
 	FREE_NULL_OCI_CONF(oci_conf);
 	xfree(slurm_conf_filename);
 	xfree(command_argv);
-	auth_g_fini();
+	slurm_auth_fini();
 	fini_setproctitle();
+	data_fini();
 	gres_fini();
 	select_g_fini();
 	log_fini();

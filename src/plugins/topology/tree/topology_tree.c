@@ -117,7 +117,7 @@ static void _free_switch_record_table(void);
 static int  _get_switch_inx(const char *name);
 static void _log_switches(void);
 static int  _node_name2bitmap(char *node_names, bitstr_t **bitmap,
-			      hostlist_t **invalid_hostlist);
+			      hostlist_t *invalid_hostlist);
 static int  _parse_switches(void **dest, slurm_parser_enum_t type,
 			    const char *key, const char *value,
 			    const char *line, char **leftover);
@@ -151,7 +151,7 @@ extern int fini(void)
  * topo_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.
  */
-extern int topology_p_build_config(void)
+extern int topo_build_config(void)
 {
 	if (node_record_count)
 		_validate_switches();
@@ -162,7 +162,7 @@ extern int topology_p_build_config(void)
  * When TopologyParam=SwitchAsNodeRank is set, this plugin assigns a unique
  * node_rank for all nodes belonging to the same leaf switch.
  */
-extern bool topology_p_generate_node_ranking(void)
+extern bool topo_generate_node_ranking(void)
 {
 	/* By default, node_rank is 0, so start at 1 */
 	int switch_rank = 1;
@@ -206,11 +206,10 @@ extern bool topology_p_generate_node_ranking(void)
  *      address : s0.s4.s8.tux1
  *      pattern : switch.switch.switch.node
  */
-extern int topology_p_get_node_addr(char *node_name, char **paddr,
-				    char **ppattern)
+extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 {
 	node_record_t *node_ptr;
-	hostlist_t *sl = NULL;
+	hostlist_t sl = NULL;
 
 	int s_max_level = 0;
 	int i, j;
@@ -280,8 +279,8 @@ static void _find_child_switches(int sw)
 {
 	int i;
 	int cldx; /* index into array of child switches */
-	hostlist_iterator_t *hi;
-	hostlist_t *swlist;
+	hostlist_iterator_t hi;
+	hostlist_t swlist;
 	char *swname;
 
 	swlist = hostlist_create(switch_record_table[sw].switches);
@@ -354,7 +353,7 @@ static void _validate_switches(void)
 	slurm_conf_switches_t *ptr, **ptr_array;
 	int depth, i, j, node_count;
 	switch_record_t *switch_ptr, *prior_ptr;
-	hostlist_t *hl, *invalid_hl = NULL;
+	hostlist_t hl, invalid_hl = NULL;
 	char *child, *buf;
 	bool  have_root = false;
 	bitstr_t *multi_homed_bitmap = NULL;	/* nodes on >1 leaf switch */
@@ -726,11 +725,11 @@ static void _destroy_switches(void *ptr)
  *       to free memory when variables are no longer required
  */
 static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
-			     hostlist_t **invalid_hostlist)
+			     hostlist_t *invalid_hostlist)
 {
 	char *this_node_name;
 	bitstr_t *my_bitmap;
-	hostlist_t *host_list;
+	hostlist_t host_list;
 
 	my_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	*bitmap = my_bitmap;

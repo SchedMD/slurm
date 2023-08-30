@@ -88,7 +88,6 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@LINUX_BUILD_TRUE@am__append_1 = scrun
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -96,7 +95,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
-	$(top_srcdir)/auxdir/gtk-2.0.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
 	$(top_srcdir)/auxdir/ltoptions.m4 \
 	$(top_srcdir)/auxdir/ltsugar.m4 \
@@ -123,6 +121,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_lz4.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
+	$(top_srcdir)/auxdir/x_ac_netloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_nvml.m4 \
 	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
 	$(top_srcdir)/auxdir/x_ac_oneapi.m4 \
@@ -199,10 +198,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = api bcast common database interfaces lua plugins sacct \
-	sacctmgr salloc sattach sbatch sbcast scancel scontrol \
-	scrontab sdiag sinfo slurmctld slurmd slurmdbd slurmrestd \
-	sprio squeue sreport srun sshare sstat strigger sview scrun
+DIST_SUBDIRS = $(SUBDIRS)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -316,6 +312,9 @@ MUNGE_LDFLAGS = @MUNGE_LDFLAGS@
 MUNGE_LIBS = @MUNGE_LIBS@
 MYSQL_CFLAGS = @MYSQL_CFLAGS@
 MYSQL_LIBS = @MYSQL_LIBS@
+NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
+NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
+NETLOC_LIBS = @NETLOC_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
 NUMA_LIBS = @NUMA_LIBS@
@@ -465,11 +464,39 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = api bcast common database interfaces lua plugins sacct \
-	sacctmgr salloc sattach sbatch sbcast scancel scontrol \
-	scrontab sdiag sinfo slurmctld slurmd slurmdbd slurmrestd \
-	sprio squeue sreport srun sshare sstat strigger sview \
-	$(am__append_1)
+SUBDIRS = \
+	api		\
+	bcast		\
+	common		\
+	database	\
+	interfaces	\
+	lua		\
+	plugins		\
+	sacct		\
+	sacctmgr	\
+	salloc		\
+	sattach		\
+	sbatch		\
+	sbcast		\
+	scancel		\
+	scontrol	\
+	scrontab	\
+	scrun		\
+	sdiag		\
+	sinfo		\
+	slurmctld	\
+	slurmd		\
+	slurmdbd	\
+	slurmrestd	\
+	sprio		\
+	squeue		\
+	sreport		\
+	srun		\
+	sshare		\
+	sstat		\
+	strigger	\
+	sview
+
 all: all-recursive
 
 .SUFFIXES:

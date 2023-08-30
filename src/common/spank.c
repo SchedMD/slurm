@@ -44,20 +44,19 @@
 #include <dlfcn.h>
 #include <glob.h>
 #include <libgen.h>
-#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "src/common/env.h"
-#include "src/common/job_options.h"
-#include "src/common/optz.h"
 #include "src/common/plugin.h"
-#include "src/common/read_config.h"
-#include "src/common/spank.h"
-#include "src/common/strlcpy.h"
-#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/xassert.h"
+#include "src/common/strlcpy.h"
+#include "src/common/read_config.h"
+#include "src/common/spank.h"
+#include "src/common/optz.h"
+#include "src/common/job_options.h"
+#include "src/common/env.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -345,11 +344,11 @@ static struct spank_plugin *_spank_plugin_create(struct spank_stack *stack,
 {
 	struct spank_plugin *plugin;
 	plugin_handle_t p;
-	int e;
+	plugin_err_t e;
 	struct spank_plugin_operations ops;
 
-	if ((e = plugin_load_from_file(&p, path)) != SLURM_SUCCESS) {
-		error("spank: %s: %s", path, slurm_strerror(e));
+	if ((e = plugin_load_from_file(&p, path)) != EPLUGIN_SUCCESS) {
+		error ("spank: %s: %s", path, plugin_strerror(e));
 		return NULL;
 	}
 
@@ -403,7 +402,7 @@ void _spank_plugin_destroy(struct spank_plugin *sp)
 static char *
 _spank_plugin_find (const char *path, const char *file)
 {
-	char dir[PATH_MAX];
+	char dir [4096];
 	char *p, *entry;
 	int pathlen = strlen (path);
 
@@ -428,7 +427,7 @@ _spank_plugin_find (const char *path, const char *file)
 			xstrcatchar (fq_path, '/');
 		xstrcat (fq_path, file);
 
-		if (plugin_peek(fq_path, NULL, 0) == SLURM_SUCCESS)
+		if (plugin_peek(fq_path, NULL, 0, NULL) == EPLUGIN_SUCCESS)
 			return (fq_path);
 
 		xfree (fq_path);
@@ -555,7 +554,7 @@ static int _spank_stack_load(struct spank_stack *stack, const char *path)
 {
 	int rc = 0;
 	int line;
-	char buf[PATH_MAX];
+	char buf[4096];
 	int fd;
 	FILE *fp;
 
@@ -1195,7 +1194,7 @@ extern int spank_process_option(int optval, const char *arg)
 	return (0);
 }
 
-extern int spank_process_env_options(void)
+extern int spank_process_env_options()
 {
 	char var[1024];
 	const char *arg;
@@ -2412,35 +2411,6 @@ spank_err_t spank_job_control_unsetenv (spank_t spank, const char *var)
 	return (ESPANK_SUCCESS);
 }
 
-spank_err_t spank_prepend_task_argv(spank_t spank, int argc,
-				    const char *argv[])
-{
-	int new_argc, j = 0;
-	char **new_argv;
-
-	if (!spank || (spank->magic != SPANK_MAGIC) || !argv)
-		return ESPANK_BAD_ARG;
-
-	if (!spank->task || !spank->task->argv ||
-	    ((spank->phase != STEP_TASK_INIT_PRIV) &&
-	     (spank->phase != STEP_USER_TASK_INIT)))
-		return ESPANK_NOT_TASK;
-
-	new_argc = argc + spank->task->argc;
-	new_argv = xcalloc(new_argc + 1, sizeof(char *));
-
-	for (int i = 0; i < argc && argv[i]; i++)
-		new_argv[j++] = xstrdup(argv[i]);
-	for (int i = 0; i < spank->task->argc && spank->task->argv[i]; i++)
-		new_argv[j++] = spank->task->argv[i];
-	new_argv[j] = NULL;
-
-	spank->task->argc = new_argc;
-	spank->task->argv = new_argv;
-
-	return ESPANK_SUCCESS;
-}
-
 /*
  * spank_get_plugin_names
  * Get names of all spank plugins
@@ -2621,12 +2591,12 @@ extern bool spank_option_get_next_set(char **plugin, char **name,
 	return false;
 }
 
-extern bool spank_has_prolog(void)
+extern bool spank_has_prolog()
 {
 	return has_prolog;
 }
 
-extern bool spank_has_epilog(void)
+extern bool spank_has_epilog()
 {
 	return has_epilog;
 }

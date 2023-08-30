@@ -127,7 +127,7 @@ extern void scontrol_print_part(char *partition_name, int argc, char **argv)
 	if (mime_type) {
 		if (parts &&
 		    DATA_DUMP_CLI(PARTITION_INFO_ARRAY, parts, "partitions",
-				  argc, argv, NULL, mime_type, data_parser))
+				  argc, argv, NULL, mime_type))
 			exit_code = SLURM_ERROR;
 	} else {
 		for (int i = 0; i < print_cnt; i++)

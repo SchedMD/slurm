@@ -62,6 +62,7 @@ A list of propagated options follows.</p>
 <li>--epilog            (option available only in srun)</li>
 <li>--error</li>
 <li>--export</li>
+<li>--export-file</li>
 <li>--exclude</li>
 <li>--get-user-env</li>
 <li>--gid</li>

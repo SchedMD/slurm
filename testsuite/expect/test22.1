@@ -256,20 +256,20 @@ expect {
 		set user1acct1 $expect_out(1,string)
 		exp_continue
 	}
-	-re "$user2.$account1.($number)." {
-		set user2acct1 $expect_out(1,string)
-		exp_continue
-	}
 	-re "$user1.$account2.($number)." {
 		set user1acct2 $expect_out(1,string)
 		exp_continue
 	}
-	-re "$user2.$account2.($number)." {
-		set user2acct2 $expect_out(1,string)
-		exp_continue
-	}
 	-re "$user1.$account3.($number)." {
 		set user1acct3 $expect_out(1,string)
+		exp_continue
+	}
+	-re "$user2.$account1.($number)." {
+		set user2acct1 $expect_out(1,string)
+		exp_continue
+	}
+	-re "$user2.$account2.($number)." {
+		set user2acct2 $expect_out(1,string)
 		exp_continue
 	}
 	-re "$user2.$account3.($number)." {

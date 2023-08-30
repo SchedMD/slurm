@@ -612,7 +612,7 @@ extern int slurm_het_job_will_run(List job_req_list)
 	ListIterator iter, itr;
 	time_t first_start = (time_t) 0;
 	uint32_t first_job_id = 0, tot_proc_count = 0, *job_id_ptr;
-	hostset_t *hs = NULL;
+	hostset_t hs = NULL;
 	char *job_list = NULL;
 
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
@@ -953,7 +953,7 @@ char *slurm_read_hostfile(const char *filename, int n)
 	int i, j;
 	int line_size;
 	int line_num = 0;
-	hostlist_t *hostlist = NULL;
+	hostlist_t hostlist = NULL;
 	char *nodelist = NULL, *end_part = NULL;
 	char *asterisk, *tmp_text = NULL, *save_ptr = NULL, *host_name;
 	int total_file_len = 0;
@@ -1187,8 +1187,8 @@ _handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp)
 	} else if (msg->msg_type == SRUN_JOB_COMPLETE) {
 		info("Job has been cancelled");
 	} else {
-		error("%s: received spurious message type: %s",
-		      __func__, rpc_num2string(msg->msg_type));
+		error("%s: received spurious message type: %u",
+		      __func__, msg->msg_type);
 	}
 	return rc;
 }

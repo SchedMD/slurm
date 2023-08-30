@@ -102,7 +102,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
-	$(top_srcdir)/auxdir/gtk-2.0.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
 	$(top_srcdir)/auxdir/ltoptions.m4 \
 	$(top_srcdir)/auxdir/ltsugar.m4 \
@@ -129,6 +128,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_lz4.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
+	$(top_srcdir)/auxdir/x_ac_netloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_nvml.m4 \
 	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
 	$(top_srcdir)/auxdir/x_ac_oneapi.m4 \
@@ -163,8 +163,9 @@ am_libcommon_interfaces_la_OBJECTS = accounting_storage.lo \
 	acct_gather_interconnect.lo acct_gather_profile.lo auth.lo \
 	cgroup.lo cli_filter.lo cred.lo data_parser.lo ext_sensors.lo \
 	gpu.lo gres.lo hash.lo jobacct_gather.lo jobcomp.lo mcs.lo \
-	mpi.lo node_features.lo power.lo prep.lo priority.lo route.lo \
-	select.lo serializer.lo site_factor.lo switch.lo topology.lo
+	mpi.lo node_features.lo openapi.lo power.lo prep.lo \
+	priority.lo route.lo select.lo serializer.lo site_factor.lo \
+	switch.lo topology.lo
 libcommon_interfaces_la_OBJECTS =  \
 	$(am_libcommon_interfaces_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -219,13 +220,14 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
 	./$(DEPDIR)/job_container.Plo ./$(DEPDIR)/job_submit.Plo \
 	./$(DEPDIR)/jobacct_gather.Plo ./$(DEPDIR)/jobcomp.Plo \
 	./$(DEPDIR)/mcs.Plo ./$(DEPDIR)/mpi.Plo \
-	./$(DEPDIR)/node_features.Plo ./$(DEPDIR)/power.Plo \
-	./$(DEPDIR)/preempt.Plo ./$(DEPDIR)/prep.Plo \
-	./$(DEPDIR)/priority.Plo ./$(DEPDIR)/proctrack.Plo \
-	./$(DEPDIR)/route.Plo ./$(DEPDIR)/sched_plugin.Plo \
-	./$(DEPDIR)/select.Plo ./$(DEPDIR)/serializer.Plo \
-	./$(DEPDIR)/site_factor.Plo ./$(DEPDIR)/switch.Plo \
-	./$(DEPDIR)/task.Plo ./$(DEPDIR)/topology.Plo
+	./$(DEPDIR)/node_features.Plo ./$(DEPDIR)/openapi.Plo \
+	./$(DEPDIR)/power.Plo ./$(DEPDIR)/preempt.Plo \
+	./$(DEPDIR)/prep.Plo ./$(DEPDIR)/priority.Plo \
+	./$(DEPDIR)/proctrack.Plo ./$(DEPDIR)/route.Plo \
+	./$(DEPDIR)/sched_plugin.Plo ./$(DEPDIR)/select.Plo \
+	./$(DEPDIR)/serializer.Plo ./$(DEPDIR)/site_factor.Plo \
+	./$(DEPDIR)/switch.Plo ./$(DEPDIR)/task.Plo \
+	./$(DEPDIR)/topology.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -386,6 +388,9 @@ MUNGE_LDFLAGS = @MUNGE_LDFLAGS@
 MUNGE_LIBS = @MUNGE_LIBS@
 MYSQL_CFLAGS = @MYSQL_CFLAGS@
 MYSQL_LIBS = @MYSQL_LIBS@
+NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
+NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
+NETLOC_LIBS = @NETLOC_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
 NUMA_LIBS = @NUMA_LIBS@
@@ -584,6 +589,8 @@ libcommon_interfaces_la_SOURCES = \
 	mpi.h					\
 	node_features.c				\
 	node_features.h				\
+	openapi.c				\
+	openapi.h				\
 	power.c					\
 	power.h					\
 	prep.c					\
@@ -728,6 +735,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mcs.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_features.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/openapi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/power.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/preempt.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prep.Plo@am__quote@ # am--include-marker
@@ -891,6 +899,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/mcs.Plo
 	-rm -f ./$(DEPDIR)/mpi.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
+	-rm -f ./$(DEPDIR)/openapi.Plo
 	-rm -f ./$(DEPDIR)/power.Plo
 	-rm -f ./$(DEPDIR)/preempt.Plo
 	-rm -f ./$(DEPDIR)/prep.Plo
@@ -973,6 +982,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/mcs.Plo
 	-rm -f ./$(DEPDIR)/mpi.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
+	-rm -f ./$(DEPDIR)/openapi.Plo
 	-rm -f ./$(DEPDIR)/power.Plo
 	-rm -f ./$(DEPDIR)/preempt.Plo
 	-rm -f ./$(DEPDIR)/prep.Plo

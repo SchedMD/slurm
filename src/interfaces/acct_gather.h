@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  acct_gather.h - generic interface needed for some acct_gather plugins
+ *  slurm_acct_gather.h - generic interface needed for some
+ *                        acct_gather plugins.
  *****************************************************************************
  *  Copyright (C) 2013 SchedMD LLC.
  *  Written by Danny Auble <da@schedmd.com>
@@ -34,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_ACCT_GATHER_H
-#define _INTERFACES_ACCT_GATHER_H
+#ifndef __SLURM_ACCT_GATHER_H__
+#define __SLURM_ACCT_GATHER_H__
 
 #include <inttypes.h>
 

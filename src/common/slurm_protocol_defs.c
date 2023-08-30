@@ -202,7 +202,6 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
 	memset(msg, 0, sizeof(slurm_msg_t));
 
 	msg->auth_uid = SLURM_AUTH_NOBODY;
-	msg->auth_gid = SLURM_AUTH_NOBODY;
 	msg->conn_fd = -1;
 	msg->msg_type = NO_VAL16;
 	msg->protocol_version = NO_VAL16;
@@ -244,7 +243,7 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
 #endif
 
 	dest->orig_addr.ss_family = AF_UNSPEC;
-	if (src->auth_ids_set)
+	if (src->auth_uid_set)
 		slurm_msg_set_r_uid(dest, src->auth_uid);
 }
 
@@ -313,13 +312,6 @@ extern int slurm_find_char_in_list(void *x, void *key)
 	if (!xstrcasecmp(char1, char2))
 		return 1;
 
-	return 0;
-}
-
-extern int slurm_find_ptr_in_list(void *x, void *key)
-{
-	if (x == key)
-		return 1;
 	return 0;
 }
 
@@ -469,7 +461,7 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 	bool first_brack = false;
 	char *this_node_name;
 	char *tmp_this_node_name;
-	hostlist_t *host_list;
+	hostlist_t host_list;
 
 	if (!char_list) {
 		error("No list was given to fill in");
@@ -735,7 +727,7 @@ extern int slurm_sort_char_list_desc(void *v1, void *v2)
 extern char *slurm_sort_node_list_str(char *node_list)
 {
 	char *sorted_node_list;
-	hostset_t *hs;
+	hostset_t hs;
 
 	hs = hostset_create(node_list);
 	sorted_node_list = hostset_ranged_string_xmalloc(hs);
@@ -1410,6 +1402,9 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 		xfree(msg->alias_list);
 		FREE_NULL_LIST(msg->job_gres_prep);
 		xfree(msg->nodes);
+		xfree(msg->partition);
+		xfree(msg->std_err);
+		xfree(msg->std_out);
 		xfree(msg->work_dir);
 		xfree(msg->user_name);
 
@@ -1592,12 +1587,9 @@ extern void slurm_free_node_registration_status_msg(
 		xfree(msg->cpu_spec_list);
 		if (msg->energy)
 			acct_gather_energy_destroy(msg->energy);
-		xfree(msg->extra);
 		xfree(msg->features_active);
 		xfree(msg->features_avail);
 		xfree(msg->hostname);
-		xfree(msg->instance_id);
-		xfree(msg->instance_type);
 		FREE_NULL_BUFFER(msg->gres_info);
 		xfree(msg->node_name);
 		xfree(msg->os);
@@ -1635,8 +1627,6 @@ extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 		xfree(msg->features);
 		xfree(msg->features_act);
 		xfree(msg->gres);
-		xfree(msg->instance_id);
-		xfree(msg->instance_type);
 		xfree(msg->node_addr);
 		xfree(msg->node_hostname);
 		xfree(msg->node_names);
@@ -1675,8 +1665,12 @@ extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
 		xfree(msg->burst_buffer);
 	if (res_free_flags & RESV_FREE_STR_COMMENT)
 		xfree(msg->comment);
+	if (res_free_flags & RESV_FREE_STR_TRES_CORE)
+		xfree(msg->core_cnt);
 	if (res_free_flags & RESV_FREE_STR_TRES_LIC)
 		xfree(msg->licenses);
+	if (res_free_flags & RESV_FREE_STR_TRES_NODE)
+		xfree(msg->node_cnt);
 	if (res_free_flags & RESV_FREE_STR_GROUP)
 		xfree(msg->groups);
 	if (res_free_flags & RESV_FREE_STR_NODES)
@@ -1687,7 +1681,6 @@ extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->features);
-		xassert(!msg->job_ptr); /* This shouldn't be here */
 		xfree(msg->name);
 		xfree(msg->node_list);
 		xfree(msg->partition);
@@ -1852,6 +1845,8 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->task_epilog);
 	xfree(msg->complete_nodelist);
 
+	xfree(msg->partition);
+
 	if (msg->switch_job)
 		switch_g_free_jobinfo(msg->switch_job);
 
@@ -2004,7 +1999,10 @@ slurm_free_requeue_msg(requeue_msg_t *msg)
 
 extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		switch_g_job_suspend_info_free(msg->switch_info);
+		xfree(msg);
+	}
 }
 
 extern void slurm_free_stats_response_msg(stats_info_response_msg_t *msg)
@@ -3601,6 +3599,11 @@ extern char *reservation_flags_string(reserve_info_t * resv_ptr)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "NO_PART_NODES");
 	}
+	if (flags & RESERVE_FLAG_FIRST_CORES) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "FIRST_CORES");
+	}
 	if (flags & RESERVE_FLAG_TIME_FLOAT) {
 		if (flag_str[0])
 			xstrcat(flag_str, ",");
@@ -4512,9 +4515,9 @@ extern void accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 		strcat(str, "none");
 }
 
-extern char *cray_nodelist2nids(hostlist_t *hl_in, char *nodelist)
+extern char *cray_nodelist2nids(hostlist_t hl_in, char *nodelist)
 {
-	hostlist_t *hl = hl_in;
+	hostlist_t hl = hl_in;
 	char *nids = NULL, *node_name, *sep = "";
 	int i, nid;
 	int nid_begin = -1, nid_end = -1;
@@ -4868,7 +4871,6 @@ extern void slurm_free_node_info_members(node_info_t * node)
 		xfree(node->gres);
 		xfree(node->gres_drain);
 		xfree(node->gres_used);
-		xfree(node->instance_id);
 		xfree(node->mcs_label);
 		xfree(node->name);
 		xfree(node->node_addr);
@@ -5848,7 +5850,6 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 		rc = SLURM_COMMUNICATIONS_CONNECTION_ERROR;
 		break;
 	default:
-		xassert(false);
 		error("don't know the rc for type %u returning %u", type, rc);
 		break;
 	}
@@ -6945,35 +6946,4 @@ fini:	if (rc != SLURM_SUCCESS) {
 	}
 
 	return rc;
-}
-
-extern uint32_t slurm_select_cr_type(void)
-{
-	static bool cr_set = false;
-	static uint32_t cr_type = 0;
-
-	if (!cr_set) {
-		/*
-		 * Only use in the controller. Currently, only the controller
-		 * and the node_info api load in the select plugin. The slurmd
-		 * doesn't load in the select plugin, but both the controller
-		 * and the slurmd read in interfaces/gres.c which use this
-		 * function. The slurmd is already protected by
-		 * running_in_slurmctld() but we add this assert to guard
-		 * against places that aren't loading in the select plugin.
-		 */
-		xassert(running_in_slurmctld());
-
-		/*
-		 * Call this instead of select_get_plugin_id(). Here we are
-		 * looking for the underlying id instead of actual id, meaning
-		 * we want SELECT_TYPE_CONS_TRES not
-		 * SELECT_PLUGIN_CRAY_CONS_TRES.
-		 */
-		(void) select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
-						     &cr_type);
-		cr_set = true;
-	}
-
-	return cr_type;
 }

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  auth.h - implementation-independent authentication API definitions
+ *  slurm_auth.h - implementation-independent authentication API definitions
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_AUTH_H
-#define _INTERFACES_AUTH_H
+#ifndef __SLURM_AUTHENTICATION_H__
+#define __SLURM_AUTHENTICATION_H__
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -67,18 +67,18 @@
  * auth_type IN: authentication mechanism (e.g. "auth/munge") or
  *	NULL to use slurm_conf.auth_type
  */
-extern int auth_g_init(void);
+extern int slurm_auth_init(char *auth_type);
 
 /*
  * Destroy global context, free memory.
  */
-extern int auth_g_fini(void);
+extern int slurm_auth_fini(void);
 
 /*
  * Retrieve the auth_index corresponding to the authentication
  * plugin used to create a given credential.
  */
-extern int auth_index(void *cred);
+extern int slurm_auth_index(void *cred);
 
 /*
  * Check if plugin type corresponding to the authentication
@@ -105,8 +105,8 @@ extern void *auth_g_create(int index, char *auth_info, uid_t r_uid,
 			   void *data, int dlen);
 extern void auth_g_destroy(void *cred);
 extern int auth_g_verify(void *cred, char *auth_info);
-extern void auth_g_get_ids(void *cred, uid_t *uid, gid_t *gid);
 extern uid_t auth_g_get_uid(void *cred);
+extern gid_t auth_g_get_gid(void *cred);
 extern char *auth_g_get_host(void *cred);
 extern int auth_g_get_data(void *cred, char **data, uint32_t *len);
 extern int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version);
@@ -132,4 +132,4 @@ extern void auth_g_thread_clear(void);
  */
 extern const char *auth_get_plugin_name(int plugin_id);
 
-#endif
+#endif /*__SLURM_AUTHENTICATION_H__*/

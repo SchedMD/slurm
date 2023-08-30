@@ -407,7 +407,7 @@ Unique name for OCI container.
 \fB\-\-contiguous\fR
 If set, then the allocated nodes must form a contiguous set.
 
-\fBNOTE\fR: If the SelectType is cons_tres this option won't be honored
+\fBNOTE\fR: If SelectPlugin=cons_res this option won't be honored
 with the \fBtopology/tree\fR or \fBtopology/3d_torus\fR
 plugins, both of which can modify the node ordering.
 .IP
@@ -562,8 +562,8 @@ accounting information will be present.
 
 .TP
 \fB\-\-cpus\-per\-gpu\fR=<\fIncpus\fR>
-Request that \fIncpus\fR processors be allocated per allocated GPU.
-Steps inheriting this value will imply \-\-exact.
+Advise Slurm that ensuing job steps will require \fIncpus\fR processors per
+allocated GPU.
 Not compatible with the \fB\-\-cpus\-per\-task\fR option.
 .IP
 
@@ -717,7 +717,7 @@ The second and third distributions apply only if task affinity is enabled.
 The third distribution is supported only if the task/cgroup plugin is
 configured. The default value for each distribution type is specified by *.
 
-Note that with select/cons_tres, the number of CPUs
+Note that with select/cons_res and select/cons_tres, the number of CPUs
 allocated to each socket and node may be different. Refer to
 https://slurm.schedmd.com/mc_support.html
 for more information on resource allocation, distribution of tasks to
@@ -750,7 +750,7 @@ nodes each with two cpus. A four\-task cyclic distribution request
 will distribute those tasks to the nodes with tasks one and four on
 the first node, task two on the second node, and task three on the
 third node.
-Note that when SelectType is select/cons_tres, the same number of CPUs
+Note that when SelectType is select/cons_res, the same number of CPUs
 may not be allocated on each node. Task distribution will be
 round\-robin among all the nodes with CPUs yet to be assigned to tasks.
 Cyclic distribution is the default behavior if the number
@@ -930,9 +930,8 @@ if \fI\-\-get\-user\-env\fR is specified).
 
 .TP
 \fB\-\-export\fR=NIL
-Only SLURM_* and SPANK option variables from the user environment will be
-defined. User must use absolute path to the binary to be executed that will
-define the environment.
+Only SLURM_* variables from the user environment will be defined. User must use
+absolute path to the binary to be executed that will define the environment.
 User can not specify explicit environment variables with "NIL".
 
 Unlike NONE, NIL will not automatically create a user's environment using the
@@ -941,9 +940,8 @@ Unlike NONE, NIL will not automatically create a user's environment using the
 
 .TP
 \fB\-\-export\fR=NONE
-Only SLURM_* and SPANK option variables from the user environment will be
-defined. User must use absolute path to the binary to be executed that will
-define the environment.
+Only SLURM_* variables from the user environment will be defined. User must use
+absolute path to the binary to be executed that will define the environment.
 User can not specify explicit environment variables with "NONE".
 However, Slurm will then implicitly attempt to load the user's environment on
 the node where the script is being executed, as if \fI\-\-get\-user\-env\fR was
@@ -958,9 +956,8 @@ sbatch command, the environment variable SLURM_EXPORT_ENV should be set to
 
 .TP
 \fB\-\-export\fR=[\fIALL\fR,]<\fIenvironment_variables\fR>
-Exports all SLURM_* and SPANK option environment variables along with explicitly
-defined variables. Multiple environment variable names should be comma
-separated.
+Exports all SLURM_* environment variables along with explicitly defined
+variables. Multiple environment variable names should be comma separated.
 Environment variable names may be specified to propagate the current
 value (e.g. "\-\-export=EDITOR") or specific values may be exported
 (e.g. "\-\-export=EDITOR=/bin/emacs"). If "ALL" is specified, then all user
@@ -1024,7 +1021,7 @@ If task/affinity plugin is enabled, then specifying an allocation in this
 manner also results in subsequently launched tasks being bound to threads
 if the \fB\-B\fR option specifies a thread count, otherwise an option of
 \fIcores\fR if a core count is specified, otherwise an option of \fIsockets\fR.
-If SelectType is configured to select/cons_tres, it must have a parameter of
+If SelectType is configured to select/cons_res, it must have a parameter of
 CR_Core, CR_Core_Memory, CR_Socket, or CR_Socket_Memory for this option
 to be honored.
 If not specified, the scontrol show job will display 'ReqS:C:T=*:*:*'. This
@@ -1274,7 +1271,7 @@ one socket are required to run the job).
 This option may permit a job to be allocated resources sooner than otherwise
 possible, but may result in lower job performance.
 .br
-\fBNOTE\fR: This option is specific to \fBSelectType=cons_tres\fR.
+\fBNOTE\fR: This option is specific to \fBSelectType=cons_res\fR.
 .IP
 
 .TP
@@ -1576,7 +1573,7 @@ per task; \fB\-\-mem\-per\-cpu\fR will be reduced to a value no larger than
 value will equal the original \fB\-\-mem\-per\-cpu\fR value specified by
 the user.
 This parameter would generally be used if individual processors
-are allocated to jobs (\fBSelectType=select/cons_tres\fR).
+are allocated to jobs (\fBSelectType=select/cons_res\fR).
 If resources are allocated by core, socket, or whole nodes, then the number
 of CPUs allocated to a job may be higher than the task count and the value
 of \fB\-\-mem\-per\-cpu\fR should be adjusted accordingly.
@@ -1929,8 +1926,6 @@ Request the maximum \fIntasks\fR be invoked on each core.
 Meant to be used with the \fB\-\-ntasks\fR option.
 Related to \fB\-\-ntasks\-per\-node\fR except at the core level
 instead of the node level. This option will be inherited by srun.
-Slurm may allocate more cpus than what was requested in order to respect this
-option.
 .br
 \fBNOTE\fR: This option is not supported when using
 \fISelectType=select/linear\fR. This value can not be greater than
@@ -2995,7 +2990,7 @@ Name of the cluster on which the job is executing.
 Number of CPUs allocated to the batch step.
 \fBNOTE\fR: The \fBselect/linear\fR plugin allocates entire nodes to
 jobs, so the value indicates the total count of CPUs on the node.
-For the \fBcons/tres\fR plugin, this number
+For the \fBselect/cons_res\fR and \fBcons/tres\fR plugins, this number
 indicates the number of CPUs on this node allocated to the step.
 .IP
 
@@ -3109,7 +3104,7 @@ first and second nodes (as listed by SLURM_JOB_NODELIST) the allocation
 has 72 CPUs, while the third node has 36 CPUs.
 \fBNOTE\fR: The \fBselect/linear\fR plugin allocates entire nodes to jobs, so
 the value indicates the total count of CPUs on allocated nodes. The
-\fBselect/cons_tres\fR plugin allocates individual
+\fBselect/cons_res\fR and \fBselect/cons_tres\fR plugins allocate individual
 CPUs to jobs, so this number indicates the number of CPUs allocated to the job.
 .IP
 

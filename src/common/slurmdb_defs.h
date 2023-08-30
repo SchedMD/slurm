@@ -116,8 +116,8 @@ typedef struct {
 	time_t start_time;
 } local_cluster_rec_t;
 
-extern slurmdb_job_rec_t *slurmdb_create_job_rec(void);
-extern slurmdb_step_rec_t *slurmdb_create_step_rec(void);
+extern slurmdb_job_rec_t *slurmdb_create_job_rec();
+extern slurmdb_step_rec_t *slurmdb_create_step_rec();
 extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt);
 extern slurmdb_qos_usage_t *slurmdb_create_qos_usage(int tres_cnt);
 
@@ -141,13 +141,15 @@ extern slurmdb_admin_level_t str_2_slurmdb_admin_level(char *level);
 /* The next three functions have pointers to assoc_list so do not
  * destroy assoc_list before using the list returned from this function.
  */
-extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list);
+extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list,
+						       bool use_lft);
 extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list);
+extern List slurmdb_get_acct_hierarchical_rec_list_no_lft(List assoc_list);
 
 /* This reorders the list into a alphabetical hierarchy.
    IN/OUT: assoc_list
  */
-extern void slurmdb_sort_hierarchical_assoc_list(List assoc_list);
+extern void slurmdb_sort_hierarchical_assoc_list(List assoc_list, bool use_lft);
 
 /* IN/OUT: tree_list a list of slurmdb_print_tree_t's */
 extern char *slurmdb_tree_name_get(char *name, char *parent, List tree_list);
@@ -204,7 +206,6 @@ extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
 extern slurmdb_tres_rec_t *slurmdb_copy_tres_rec(slurmdb_tres_rec_t *tres);
 extern List slurmdb_copy_tres_list(List tres);
 extern List slurmdb_diff_tres_list(List tres_list_old, List tres_list_new);
-extern list_t *slurmdb_list_copy_coord(list_t *coord_accts);
 extern char *slurmdb_tres_string_combine_lists(
 	List tres_list_old, List tres_list_new);
 /* make a tres_string from a given list
@@ -226,7 +227,8 @@ extern char *slurmdb_format_tres_str(
 extern int slurmdb_sort_tres_by_id_asc(void *v1, void *v2);
 
 /* Used to turn a tres string into a list containing
- * slurmdb_tres_rec_t's with id's or name/types and counts filled in.
+ * slurmdb_tres_rec_t's with only id's and counts filled in, no
+ * formatted types or names.
  *
  * IN/OUT: tres_list - list created from the simple tres string
  * IN    : tres - simple string you want convert

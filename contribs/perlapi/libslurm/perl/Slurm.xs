@@ -484,7 +484,8 @@ slurm_kill_job(slurm_t self, uint32_t job_id, uint16_t signal, uint16_t batch_fl
 	C_ARGS:
 		job_id, signal, batch_flag
 
-int slurm_kill_job_step(slurm_t self, uint32_t job_id, uint32_t step_id, uint16_t signal, uint16_t flags)
+int
+slurm_kill_job_step(slurm_t self, uint32_t job_id, uint32_t step_id, uint16_t signal)
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
@@ -492,7 +493,7 @@ int slurm_kill_job_step(slurm_t self, uint32_t job_id, uint32_t step_id, uint16_
 			      only Slurm::
 			    */
 	C_ARGS:
-		job_id, step_id, signal, flags
+		job_id, step_id, signal
 
 int
 slurm_signal_job(slurm_t self, uint32_t job_id, uint16_t signal)
@@ -1907,17 +1908,23 @@ slurm_pull_trigger(slurm_t self, HV *trigger_info)
 ######################################################################
 MODULE=Slurm PACKAGE=Slurm::Hostlist PREFIX=slurm_hostlist_
 
-hostlist_t *slurm_hostlist_create(char *hostlist)
+hostlist_t
+slurm_hostlist_create(char* hostlist)
 
-int slurm_hostlist_count(hostlist_t *hl)
+int
+slurm_hostlist_count(hostlist_t hl)
 
-int slurm_hostlist_find(hostlist_t *hl, char *hostname)
+int
+slurm_hostlist_find(hostlist_t hl, char* hostname)
 
-int slurm_hostlist_push(hostlist_t *hl, char *hosts)
+int
+slurm_hostlist_push(hostlist_t hl, char* hosts)
 
-int slurm_hostlist_push_host(hostlist_t *hl, char *host)
+int
+slurm_hostlist_push_host(hostlist_t hl, char* host)
 
-char_xfree *slurm_hostlist_ranged_string(hostlist_t *hl)
+char_xfree *
+slurm_hostlist_ranged_string(hostlist_t hl)
 	CODE:
 		RETVAL = slurm_hostlist_ranged_string_xmalloc(hl);
 		if (RETVAL == NULL) {
@@ -1926,7 +1933,8 @@ char_xfree *slurm_hostlist_ranged_string(hostlist_t *hl)
 	OUTPUT:
 		RETVAL
 
-char_free *slurm_hostlist_shift(hostlist_t *hl = NULL)
+char_free *
+slurm_hostlist_shift(hostlist_t hl = NULL)
 	CODE:
 		RETVAL = slurm_hostlist_shift(hl);
 		if (RETVAL == NULL) {
@@ -1935,9 +1943,11 @@ char_free *slurm_hostlist_shift(hostlist_t *hl = NULL)
 	OUTPUT:
 		RETVAL
 
-void slurm_hostlist_uniq(hostlist_t *hl)
+void
+slurm_hostlist_uniq(hostlist_t hl)
 
-void slurm_hostlist_DESTROY(hostlist_t *hl)
+void
+slurm_hostlist_DESTROY(hostlist_t hl)
 	CODE:
 		slurm_hostlist_destroy(hl);
 

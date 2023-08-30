@@ -180,16 +180,32 @@ int auth_p_verify(auth_credential_t *cred, char *auth_info)
 	return SLURM_SUCCESS;
 }
 
-extern void auth_p_get_ids(auth_credential_t *cred, uid_t *uid, gid_t *gid)
+/*
+ * Obtain the Linux UID from the credential.  The accuracy of this data
+ * is not assured until auth_p_verify() has been called for it.
+ */
+uid_t auth_p_get_uid(auth_credential_t *cred)
 {
 	if (!cred) {
-		*uid = SLURM_AUTH_NOBODY;
-		*gid = SLURM_AUTH_NOBODY;
-		return;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
+		return SLURM_AUTH_NOBODY;
 	}
 
-	*uid = cred->uid;
-	*gid = cred->gid;
+	return cred->uid;
+}
+
+/*
+ * Obtain the Linux GID from the credential.
+ * See auth_p_get_uid() above for details on correct behavior.
+ */
+gid_t auth_p_get_gid(auth_credential_t *cred)
+{
+	if (!cred) {
+		slurm_seterrno(ESLURM_AUTH_BADARG);
+		return SLURM_AUTH_NOBODY;
+	}
+
+	return cred->gid;
 }
 
 /*
@@ -231,8 +247,8 @@ int auth_p_pack(auth_credential_t *cred, buf_t *buf, uint16_t protocol_version)
 	}
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(cred->uid, buf);
-		pack32(cred->gid, buf);
+		pack32((uint32_t) cred->uid, buf);
+		pack32((uint32_t) cred->gid, buf);
 		packstr(cred->hostname, buf);
 	} else {
 		error("%s: Unknown protocol version %d",
@@ -250,6 +266,8 @@ int auth_p_pack(auth_credential_t *cred, buf_t *buf, uint16_t protocol_version)
 auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	auth_credential_t *cred = NULL;
+	uint32_t tmpint;
+	uint32_t uint32_tmp = 0;
 
 	if (!buf) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
@@ -260,9 +278,20 @@ auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 	cred = xmalloc(sizeof(*cred));
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&cred->uid, buf);
-		safe_unpack32(&cred->gid, buf);
-		safe_unpackstr(&cred->hostname, buf);
+		/*
+		 * We do it the hard way because we don't know anything about
+		 * the size of uid_t or gid_t, only that they are integer
+		 * values.  We pack them as 32-bit integers, but we can't pass
+		 * addresses to them directly to unpack as 32-bit integers
+		 * because there will be bad clobbering if they really aren't.
+		 * This technique ensures a warning at compile time if the sizes
+		 * are incompatible.
+		 */
+		safe_unpack32(&tmpint, buf);
+		cred->uid = tmpint;
+		safe_unpack32(&tmpint, buf);
+		cred->gid = tmpint;
+		safe_unpackstr_xmalloc(&cred->hostname, &uint32_tmp, buf);
 	} else {
 		error("%s: unknown protocol version %u",
 		      __func__, protocol_version);

@@ -69,11 +69,9 @@ unavailable to user's group will be displayed (i.e. this is the default behavior
 .IP
 
 .TP
-\f3\-\-json\fP, \f3\-\-json\fP=\fIlist\fR, \f3\-\-json\fP=<\fIdata_parser\fR>
-Dump information as JSON using the default data_parser plugin or explicit
-data_parser with parameters.  All information is dumped, even if it would
-normally not be. Sorting and formatting arguments passed to other options are
-ignored; however, filtering arguments are still used.
+\fB\-\-json\fR
+Formats information from the \fIshow\fR command as JSON. All information is
+dumped, even if it would normally not be. Filtering arguments are still used.
 This option implicitly sets the \fB\-\-details\fR option.
 .IP
 
@@ -115,12 +113,10 @@ Print version information and exit.
 .IP
 
 .TP
-Dump information as YAML using the default data_parser plugin or explicit
-data_parser with parameters.  All information is dumped, even if it would
-normally not be. Sorting and formatting arguments passed to other options are
-ignored; however, filtering arguments are still used.
+\fB\-\-yaml\fR
+Formats information from the \fIshow\fR command as YAML. All information is
+dumped, even if it would normally not be. Filtering arguments are still used.
 This option implicitly sets the \fB\-\-details\fR option.
-
 .IP
 
 .SH "COMMANDS"
@@ -1580,16 +1576,6 @@ restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 .IP
 
 .TP
-\fBInstanceId\fR=<\fIinstance_id\fR>
-Cloud instance ID.
-.IP
-
-.TP
-\fBInstanceType\fR=<\fIinstance_type\fR>
-Cloud instance type.
-.IP
-
-.TP
 \fBNodeAddr\fR=<\fInode address\fR>
 Name that a node should be referred to in establishing a communications path.
 This name will be used as an argument to the getaddrinfo() function for
@@ -2129,7 +2115,7 @@ Specifies, in units of seconds, the preemption grace time
 to be extended to a job which has been selected for preemption.
 The default value is zero, no preemption grace time is allowed on
 this partition or qos.
-(Meaningful only for \fIPreemptMode=CANCEL\fR and \fIPreemptMode=REQUEUE\fR)
+(Meaningful only for PreemptMode=CANCEL)
 .IP
 
 .TP
@@ -2430,10 +2416,13 @@ This is because the CRAY API for managing DataWarps supports both formats.
 
 .TP
 \fBCoreCnt\fR=<\fInum\fR>
-This option is only supported when
-\fIselect/cons_tres\fP is used. Identify number of cores to be reserved.
-If NodeCnt or Nodelist is used this is the total number of cores to reserve
-where cores per node is CoreCnt/NodeCnt.
+This option is only supported when \fISelectType=select/cons_res\fP or
+\fIselect/cons_tres\fP. Identify number of cores to be reserved.
+If NodeCnt is used without the FIRST_CORES flag, this
+is the total number of cores to reserve where cores per node is CoreCnt/NodeCnt.
+If a nodelist is used, or if NodeCnt is used with the FIRST_CORES flag, this
+should be an array of core numbers by node: Nodes=node[1\-5] CoreCnt=2,2,3,3,4
+or flags=FIRST_CORES NodeCnt=5 CoreCnt=1,2,1,3,2.
 .IP
 
 .TP
@@ -2575,6 +2564,12 @@ forcing jobs requesting the reservation to use those resources in the time
 frame reserved. Another use case could be to always have a particular number of
 nodes with a specific feature reserved for a specific account so users in this
 account may use this nodes plus possibly other nodes without this feature.
+.IP
+
+.TP
+\fBFIRST_CORES\fR
+Use the lowest numbered cores on a node only. Flag removal with '\-=' is not
+supported.
 .IP
 
 .TP

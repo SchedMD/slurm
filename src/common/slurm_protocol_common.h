@@ -42,6 +42,11 @@
 
 #include "config.h"
 
+#include <sys/time.h>
+#include <time.h>
+
+#include "slurm/slurm_errno.h"
+
 /* for sendto and recvfrom commands */
 #define SLURM_PROTOCOL_NO_SEND_RECV_FLAGS 0
 
@@ -61,18 +66,17 @@
  * done here with them since we have to support old version of archive
  * files since they don't update once they are created.
  */
-#define SLURM_23_11_PROTOCOL_VERSION ((40 << 8) | 0)
 #define SLURM_23_02_PROTOCOL_VERSION ((39 << 8) | 0)
 #define SLURM_22_05_PROTOCOL_VERSION ((38 << 8) | 0)
+#define SLURM_21_08_PROTOCOL_VERSION ((37 << 8) | 0)
 
-#define SLURM_PROTOCOL_VERSION SLURM_23_11_PROTOCOL_VERSION
-#define SLURM_ONE_BACK_PROTOCOL_VERSION SLURM_23_02_PROTOCOL_VERSION
-#define SLURM_MIN_PROTOCOL_VERSION SLURM_22_05_PROTOCOL_VERSION
+#define SLURM_PROTOCOL_VERSION SLURM_23_02_PROTOCOL_VERSION
+#define SLURM_ONE_BACK_PROTOCOL_VERSION SLURM_22_05_PROTOCOL_VERSION
+#define SLURM_MIN_PROTOCOL_VERSION SLURM_21_08_PROTOCOL_VERSION
 
 #if 0
 /* Old Slurm versions kept for reference only.  Slurm only actively keeps track
  * of 2 previous versions. */
-#define SLURM_21_08_PROTOCOL_VERSION ((37 << 8) | 0)
 #define SLURM_20_11_PROTOCOL_VERSION ((36 << 8) | 0)
 #define SLURM_20_02_PROTOCOL_VERSION ((35 << 8) | 0)
 #define SLURM_19_05_PROTOCOL_VERSION ((34 << 8) | 0)

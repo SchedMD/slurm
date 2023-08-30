@@ -135,8 +135,8 @@
   Set <b><i>SelectType=select/cray_aries</i></b> to use.  This plugin is
   a layered plugin.  Which means it enhances a lower layer select
   plugin.  By default it is layered on top of the <i>select/linear</i>
-  plugin.  It can also be layered on top of the <i>select/cons_tres</i> plugin
-  by using the <b><i>SelectTypeParameters=other_cons_tres</i></b>,
+  plugin.  It can also be layered on top of the <i>select/cons_res</i> plugin
+  by using the <b><i>SelectTypeParameters=other_cons_res</i></b>,
   doing this will allow you to run multiple jobs on a Cray node just
   like on a normal Linux cluster.
   Use additional <b><i>SelectTypeParameters</i></b> to identify the resources

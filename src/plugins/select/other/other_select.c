@@ -93,6 +93,7 @@ const char *node_select_syms[] = {
 	"select_p_select_jobinfo_unpack",
 	"select_p_get_info_from_plugin",
 	"select_p_reconfigure",
+	"select_p_resv_test",
 };
 
 static slurm_select_ops_t ops;
@@ -121,7 +122,9 @@ extern int other_select_init(void)
 	if (!other_select_type_param)
 		other_select_type_param = slurm_conf.select_type_param;
 
-	if (other_select_type_param & CR_OTHER_CONS_TRES)
+	if (other_select_type_param & CR_OTHER_CONS_RES)
+		type = "select/cons_res";
+	else if (other_select_type_param & CR_OTHER_CONS_TRES)
 		type = "select/cons_tres";
 	else
 		type = "select/linear";
@@ -206,7 +209,7 @@ extern int other_job_init(List job_list)
  * IN node_ptr - current node data
  * IN node_count - number of node entries
  */
-extern int other_node_init(void)
+extern int other_node_init()
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -231,14 +234,14 @@ extern int other_node_init(void)
  *		jobs to be preempted to initiate the pending job. Not set
  *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
  *		Existing list is appended to.
- * IN resv_exc_ptr - Various TRES which the job can NOT use.
+ * IN exc_core_bitmap - bitmap of cores being reserved.
  * RET zero on success, EINVAL otherwise
  */
 extern int other_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes, uint16_t mode,
 			  List preemptee_candidates, List *preemptee_job_list,
-			  resv_exc_t *resv_exc_ptr)
+			  bitstr_t *exc_core_bitmap)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -248,7 +251,7 @@ extern int other_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 		 min_nodes, max_nodes,
 		 req_nodes, mode,
 		 preemptee_candidates, preemptee_job_list,
-		 resv_exc_ptr);
+		 exc_core_bitmap);
 }
 
 /*
@@ -573,4 +576,16 @@ extern int other_reconfigure (void)
 		return SLURM_ERROR;
 
 	return (*(ops.reconfigure))();
+}
+
+extern bitstr_t * other_resv_test(resv_desc_msg_t *resv_desc_ptr,
+				  uint32_t node_cnt,
+				  bitstr_t *avail_bitmap,
+				  bitstr_t **core_bitmap)
+{
+	if (other_select_init() < 0)
+		return NULL;
+
+	return (*(ops.resv_test))(resv_desc_ptr, node_cnt,
+				  avail_bitmap, core_bitmap);
 }

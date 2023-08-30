@@ -41,11 +41,11 @@
 #include <ctype.h>
 #include <errno.h>
 #include <grp.h>
-#include <limits.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/param.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -400,7 +400,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char *gres_last = "", tmp1[128], tmp2[128];
 	char *tmp6_ptr;
 	char tmp_line[1024 * 128];
-	char tmp_path[PATH_MAX];
+	char tmp_path[MAXPATHLEN];
 	uint16_t exit_status = 0, term_sig = 0;
 	job_resources_t *job_resrcs = job_ptr->job_resrcs;
 	char *job_size_str = NULL;
@@ -418,7 +418,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	uint64_t *last_mem_alloc_ptr = NULL;
 	uint64_t last_mem_alloc = NO_VAL64;
 	char *last_hosts;
-	hostlist_t *hl, *hl_last;
+	hostlist_t hl, hl_last;
 	uint32_t threads;
 	char *line_end = (one_liner) ? " " : "\n   ";
 
@@ -1840,7 +1840,7 @@ extern int slurm_job_cpus_allocated_on_node_id(
 extern int slurm_job_cpus_allocated_on_node(job_resources_t *job_resrcs_ptr,
 					    const char *node)
 {
-	hostlist_t *node_hl;
+	hostlist_t node_hl;
 	int node_id;
 
 	if (!job_resrcs_ptr || !node || !job_resrcs_ptr->nodes)
@@ -1913,7 +1913,7 @@ int slurm_job_cpus_allocated_str_on_node(char *cpus,
 					 job_resources_t *job_resrcs_ptr,
 					 const char *node)
 {
-	hostlist_t *node_hl;
+	hostlist_t node_hl;
 	int node_id;
 
 	if (!job_resrcs_ptr || !node || !job_resrcs_ptr->nodes)

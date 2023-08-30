@@ -83,7 +83,7 @@ typedef struct {
 	time_t end;
 	uint32_t flags;
 	int id;
-	hostlist_t *hl;
+	hostlist_t hl;
 	List local_assocs; /* list of assocs to spread unused time
 			      over of type local_id_usage_t */
 	List loc_tres;

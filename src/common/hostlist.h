@@ -74,7 +74,7 @@
  */
 #ifndef   __hostlist_t_defined
 #  define __hostlist_t_defined
-   typedef struct hostlist hostlist_t;
+   typedef struct hostlist * hostlist_t;
 #endif
 
 /* A hostset is a special case of a hostlist. It:
@@ -84,18 +84,19 @@
  *    (Note: sort occurs first on alphanumeric prefix -- where prefix
  *     matches, numeric suffixes will be sorted *by value*)
  */
-typedef struct hostset hostset_t;
+typedef struct hostset * hostset_t;
 
 /* The hostlist iterator type (may be used with a hostset as well)
  * used for non-destructive access to hostlist members.
  *
  */
-typedef struct hostlist_iterator hostlist_iterator_t;
+typedef struct hostlist_iterator * hostlist_iterator_t;
 
 /* ----[ hostlist_t functions: ]---- */
 
 /* ----[ hostlist creation and destruction ]---- */
 
+//int set_grid(hostlist_t hl, int count);
 int set_grid(int start, int end, int count);
 /*
  * hostlist_create():
@@ -137,21 +138,21 @@ int set_grid(int start, int end, int count);
  * The returned hostlist must be freed with hostlist_destroy()
  *
  */
-hostlist_t *hostlist_create_dims(const char *hostlist, int dims);
-hostlist_t *hostlist_create(const char *hostlist);
+hostlist_t hostlist_create_dims(const char *hostlist, int dims);
+hostlist_t hostlist_create(const char *hostlist);
 
 /* hostlist_copy():
  *
  * Allocate a copy of a hostlist object. Returned hostlist must be freed
  * with hostlist_destroy.
  */
-hostlist_t *hostlist_copy(hostlist_t *hl);
+hostlist_t hostlist_copy(const hostlist_t hl);
 
 /* hostlist_destroy():
  *
  * Destroy a hostlist object. Frees all memory allocated to the hostlist.
  */
-void hostlist_destroy(hostlist_t *hl);
+void hostlist_destroy(hostlist_t hl);
 
 
 /* ----[ hostlist list operations ]---- */
@@ -165,7 +166,7 @@ void hostlist_destroy(hostlist_t *hl);
  * Returns the number of hostnames inserted into the list,
  * or 0 on failure.
  */
-int hostlist_push(hostlist_t *hl, const char *hosts);
+int hostlist_push(hostlist_t hl, const char *hosts);
 
 
 /* hostlist_push_host():
@@ -176,8 +177,8 @@ int hostlist_push(hostlist_t *hl, const char *hosts);
  *
  * return value is 1 for success, 0 for failure.
  */
-int hostlist_push_host_dims(hostlist_t *hl, const char *str, int dims);
-int hostlist_push_host(hostlist_t *hl, const char *host);
+int hostlist_push_host_dims(hostlist_t hl, const char *str, int dims);
+int hostlist_push_host(hostlist_t hl, const char *host);
 
 
 /* hostlist_push_list():
@@ -187,7 +188,7 @@ int hostlist_push_host(hostlist_t *hl, const char *host);
  * Returns 1 for success, 0 for failure.
  *
  */
-int hostlist_push_list(hostlist_t *hl1, hostlist_t *hl2);
+int hostlist_push_list(hostlist_t hl1, hostlist_t hl2);
 
 
 /* hostlist_pop():
@@ -198,13 +199,13 @@ int hostlist_push_list(hostlist_t *hl1, hostlist_t *hl2);
  *
  * Note: Caller is responsible for freeing the returned memory.
  */
-char *hostlist_pop(hostlist_t *hl);
+char * hostlist_pop(hostlist_t hl);
 
 /*
  * Return n-th element from hostlist
  * Release memory using free()
  */
-char *hostlist_nth(hostlist_t *hl, int n);
+char * hostlist_nth(hostlist_t hl, int n);
 
 /* hostlist_shift():
  *
@@ -214,13 +215,46 @@ char *hostlist_nth(hostlist_t *hl, int n);
  *
  * Note: Caller is responsible for freeing the returned memory.
  */
-char *hostlist_shift_dims(hostlist_t *hl, int dims);
-char *hostlist_shift(hostlist_t *hl);
+char * hostlist_shift_dims(hostlist_t hl, int dims);
+char * hostlist_shift(hostlist_t hl);
 
 /*
  * Compares the first hostrange of two hostlists.
  */
-int hostlist_cmp_first(hostlist_t *hl1, hostlist_t *hl2);
+int hostlist_cmp_first(hostlist_t hl1, hostlist_t hl2);
+
+/* hostlist_pop_range():
+ *
+ * Pop the last bracketed list of hosts of the hostlist hl.
+ * Returns the string representation in bracketed list form.
+ * All hosts associated with the returned list are removed
+ * from hl.
+ *
+ * Caller is responsible for freeing returned memory
+ */
+char * hostlist_pop_range(hostlist_t hl);
+
+/* hostlist_pop_range_values():
+ *
+ * Pop the last range of hosts of the hostlist hl and fill in lo and hi with the
+ * values of the range.
+ * Returns 0 if no ranges exist 1 otherwise.
+ * The range associated with the returned lo and hi is removed from hl.
+ */
+int hostlist_pop_range_values(
+	hostlist_t hl, unsigned long *lo, unsigned long *hi);
+
+/* hostlist_shift_range():
+ *
+ * Shift the first bracketed hostlist (improperly: range) off the
+ * hostlist hl. Returns the string representation in bracketed list
+ * form. All hosts associated with the list are removed from the
+ * hostlist.
+ *
+ * Caller is responsible for freeing returned memory.
+ */
+char * hostlist_shift_range(hostlist_t hl);
+
 
 /* hostlist_find():
  *
@@ -230,8 +264,8 @@ int hostlist_cmp_first(hostlist_t *hl1, hostlist_t *hl2);
  * Returns -1 if host is not found.
  *
  */
-int hostlist_find_dims(hostlist_t *hl, const char *hostname, int dims);
-int hostlist_find(hostlist_t *hl, const char *hostname);
+int hostlist_find_dims(hostlist_t hl, const char *hostname, int dims);
+int hostlist_find(hostlist_t hl, const char *hostname);
 
 /* hostlist_delete():
  *
@@ -239,7 +273,7 @@ int hostlist_find(hostlist_t *hl, const char *hostname);
  *
  * Returns the number of hosts successfully deleted
  */
-int hostlist_delete(hostlist_t *hl, const char *hosts);
+int hostlist_delete(hostlist_t hl, const char *hosts);
 
 
 /* hostlist_delete_host():
@@ -250,7 +284,7 @@ int hostlist_delete(hostlist_t *hl, const char *hosts);
  *
  * Returns 1 if successful, 0 if hostname is not found in list.
  */
-int hostlist_delete_host(hostlist_t *hl, const char *hostname);
+int hostlist_delete_host(hostlist_t hl, const char *hostname);
 
 
 /* hostlist_delete_nth():
@@ -260,14 +294,14 @@ int hostlist_delete_host(hostlist_t *hl, const char *hostname);
  * Returns 1 if successful 0 on error.
  *
  */
-int hostlist_delete_nth(hostlist_t *hl, int n);
+int hostlist_delete_nth(hostlist_t hl, int n);
 
 
 /* hostlist_count():
  *
  * Return the number of hosts in hostlist hl.
  */
-int hostlist_count(hostlist_t *hl);
+int hostlist_count(hostlist_t hl);
 
 /* hostlist_is_empty(): return true if hostlist is empty. */
 #define hostlist_is_empty(__hl) ( hostlist_count(__hl) == 0 )
@@ -279,14 +313,14 @@ int hostlist_count(hostlist_t *hl);
  * Sort the hostlist hl.
  *
  */
-void hostlist_sort(hostlist_t *hl);
+void hostlist_sort(hostlist_t hl);
 
 /* hostlist_uniq():
  *
  * Sort the hostlist hl and remove duplicate entries.
  *
  */
-void hostlist_uniq(hostlist_t *hl);
+void hostlist_uniq(hostlist_t hl);
 
 /* Return the base used for encoding numeric hostlist suffixes */
 #define hostlist_get_base(_dimensions) ((_dimensions) > 1 ? 36 : 10)
@@ -301,7 +335,7 @@ void hostlist_parse_int_to_array(int in, int *out, int dims, int hostlist_base);
  * do the same thing as hostlist_ranged_string, but provide the
  * dimensions you are looking for.
  */
-ssize_t hostlist_ranged_string_dims(hostlist_t *hl, size_t n,
+ssize_t hostlist_ranged_string_dims(hostlist_t hl, size_t n,
 				    char *buf, int dims, int brackets);
 /* hostlist_ranged_string():
  *
@@ -320,19 +354,19 @@ ssize_t hostlist_ranged_string_dims(hostlist_t *hl, size_t n,
  * hostlist_ranged_string() will write a bracketed hostlist representation
  * where possible.
  */
-ssize_t hostlist_ranged_string(hostlist_t *hl, size_t n, char *buf);
+ssize_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
 
 /* Variant of hostlist_ranged_string().
  * Returns the buffer which must be released using free() or NULL on failure.
  */
-char *hostlist_ranged_string_malloc(hostlist_t *hl);
+char *hostlist_ranged_string_malloc(hostlist_t hl);
 
 /* Variant of hostlist_ranged_string().
  * Returns the buffer which must be released using xfree().
  */
-char *hostlist_ranged_string_xmalloc_dims(hostlist_t *hl, int dims,
-					  int brackets);
-char *hostlist_ranged_string_xmalloc(hostlist_t *hl);
+char *hostlist_ranged_string_xmalloc_dims(
+	hostlist_t hl, int dims, int brackets);
+char *hostlist_ranged_string_xmalloc(hostlist_t hl);
 
 /* hostlist_deranged_string():
  *
@@ -343,15 +377,20 @@ char *hostlist_ranged_string_xmalloc(hostlist_t *hl);
  * hostlist_deranged_string() will not attempt to write a bracketed
  * hostlist representation. Every hostname will be explicitly written.
  */
-ssize_t hostlist_deranged_string_dims(hostlist_t *hl, size_t n, char *buf,
-				      int dims);
-ssize_t hostlist_deranged_string(hostlist_t *hl, size_t n, char *buf);
+ssize_t hostlist_deranged_string_dims(
+	hostlist_t hl, size_t n, char *buf, int dims);
+ssize_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf);
+
+/* Variant of hostlist_deranged_string().
+ * Returns the buffer which must be released using free() or NULL on failure.
+ */
+char *hostlist_deranged_string_malloc(hostlist_t hl);
 
 /* Variant of hostlist_deranged_string().
  * Returns the buffer which must be released using xfree().
  */
-char *hostlist_deranged_string_xmalloc_dims(hostlist_t *hl, int dims);
-char *hostlist_deranged_string_xmalloc(hostlist_t *hl);
+char *hostlist_deranged_string_xmalloc_dims(hostlist_t hl, int dims);
+char *hostlist_deranged_string_xmalloc(hostlist_t hl);
 
 /* ----[ hostlist utility functions ]---- */
 
@@ -359,7 +398,7 @@ char *hostlist_deranged_string_xmalloc(hostlist_t *hl);
  *
  * Return the number of ranges currently held in hostlist hl.
  */
-int hostlist_nranges(hostlist_t *hl);
+int hostlist_nranges(hostlist_t hl);
 
 
 /* ----[ hostlist iterator functions ]---- */
@@ -369,26 +408,26 @@ int hostlist_nranges(hostlist_t *hl);
  * Creates and returns a hostlist iterator used for non destructive
  * access to a hostlist or hostset. Returns NULL on failure.
  */
-hostlist_iterator_t *hostlist_iterator_create(hostlist_t *hl);
+hostlist_iterator_t hostlist_iterator_create(hostlist_t hl);
 
 /* hostset_iterator_create():
  *
  * Same as hostlist_iterator_create(), but creates a hostlist_iterator
  * from a hostset.
  */
-hostlist_iterator_t *hostset_iterator_create(hostset_t *set);
+hostlist_iterator_t hostset_iterator_create(hostset_t set);
 
 /* hostlist_iterator_destroy():
  *
  * Destroys a hostlist iterator.
  */
-void hostlist_iterator_destroy(hostlist_iterator_t *i);
+void hostlist_iterator_destroy(hostlist_iterator_t i);
 
 /* hostlist_iterator_reset():
  *
  * Reset an iterator to the beginning of the list.
  */
-void hostlist_iterator_reset(hostlist_iterator_t *i);
+void hostlist_iterator_reset(hostlist_iterator_t i);
 
 /* hostlist_next():
  *
@@ -397,15 +436,27 @@ void hostlist_iterator_reset(hostlist_iterator_t *i);
  *
  * The caller is responsible for freeing the returned memory.
  */
-char *hostlist_next_dims(hostlist_iterator_t *i, int dims);
-char *hostlist_next(hostlist_iterator_t *i);
+char * hostlist_next_dims(hostlist_iterator_t i, int dims);
+char * hostlist_next(hostlist_iterator_t i);
+
+
+/* hostlist_next_range():
+ *
+ * Returns the next bracketed hostlist or NULL if the iterator i is
+ * at the end of the list.
+ *
+ * The caller is responsible for freeing the returned memory.
+ *
+ */
+char * hostlist_next_range(hostlist_iterator_t i);
+
 
 /* hostlist_remove():
  * Removes the last host returned by hostlist iterator i
  *
  * Returns 1 for success, 0 for failure.
  */
-int hostlist_remove(hostlist_iterator_t *i);
+int hostlist_remove(hostlist_iterator_t i);
 
 
 /* ----[ hostset operations ]---- */
@@ -415,11 +466,17 @@ int hostlist_remove(hostlist_iterator_t *i);
  * Create a new hostset object from a string representation of a list of
  * hosts. See hostlist_create() for valid hostlist forms.
  */
-hostset_t *hostset_create(const char *hostlist);
+hostset_t hostset_create(const char *hostlist);
+
+/* hostset_copy():
+ *
+ * Copy a hostset object. Returned set must be freed with hostset_destroy().
+ */
+hostset_t hostset_copy(hostset_t set);
 
 /* hostset_destroy():
  */
-void hostset_destroy(hostset_t *set);
+void hostset_destroy(hostset_t set);
 
 /* hostset_insert():
  * Add a host or list of hosts into hostset "set."
@@ -427,40 +484,45 @@ void hostset_destroy(hostset_t *set);
  * Returns number of hosts successfully added to "set"
  * (insertion of a duplicate is not considered successful)
  */
-int hostset_insert(hostset_t *set, const char *hosts);
+int hostset_insert(hostset_t set, const char *hosts);
 
 /* hostset_delete():
  * Delete a host or list of hosts from hostset "set."
  * Returns number of hosts deleted from set.
  */
-int hostset_delete(hostset_t *set, const char *hosts);
+int hostset_delete(hostset_t set, const char *hosts);
 
 /* hostset_intersects():
  * Return 1 if any of the hosts specified by "hosts" are within the hostset "set"
  * Return 0 if all host in "hosts" is not in the hostset "set"
  */
-int hostset_intersects(hostset_t *set, const char *hosts);
+int hostset_intersects(hostset_t set, const char *hosts);
 
 /* hostset_within():
  * Return 1 if all hosts specified by "hosts" are within the hostset "set"
  * Retrun 0 if every host in "hosts" is not in the hostset "set"
  */
-int hostset_within(hostset_t *set, const char *hosts);
+int hostset_within(hostset_t set, const char *hosts);
 
 /* hostset_shift():
  * hostset equivalent to hostlist_shift()
  */
-char *hostset_shift(hostset_t *set);
+char * hostset_shift(hostset_t set);
 
 /* hostset_pop():
  * hostset equivalent to hostlist_pop()
  */
-char *hostset_pop(hostset_t *set);
+char *hostset_pop(hostset_t set);
+
+/* hostset_shift_range():
+ * hostset eqivalent to hostlist_shift_range()
+ */
+char * hostset_shift_range(hostset_t set);
 
 /* hostset_count():
  * Count the number of hosts currently in hostset
  */
-int hostset_count(hostset_t *set);
+int hostset_count(hostset_t set);
 
 /* hostset_find():
  *
@@ -469,29 +531,29 @@ int hostset_count(hostset_t *set);
  *
  * Returns -1 if host is not found.
  */
-int hostset_find(hostset_t *set, const char *hostname);
+int hostset_find(hostset_t set, const char *hostname);
 
 /*
  * Return n-th element from hostset
  * Release memory using free()
  */
-char *hostset_nth(hostset_t *set, int n);
+char * hostset_nth(hostset_t set, int n);
 
 /* hostset_ranged_string():
  * hostset equivalent to hostlist_ranged_string();
  */
-ssize_t hostset_ranged_string(hostset_t *set, size_t n, char *buf);
+ssize_t hostset_ranged_string(hostset_t set, size_t n, char *buf);
 
 /*
  * hostset equivalent to hostlist_deranged_string_xmalloc()
  * Caller must use xfree() to release memory
  */
-char *hostset_deranged_string_xmalloc(hostset_t *set);
+char *hostset_deranged_string_xmalloc(hostset_t set);
 
 /*
  * hostset equivalent to hostlist_ranged_string_xmalloc()
  * Caller must use xfree() to release memory
  */
-char *hostset_ranged_string_xmalloc(hostset_t *set);
+char *hostset_ranged_string_xmalloc(hostset_t set);
 
 #endif /* !_HOSTLIST_H */

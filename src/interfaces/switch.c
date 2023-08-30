@@ -72,8 +72,24 @@ typedef struct slurm_switch_ops {
 	int          (*unpack_jobinfo)    ( switch_jobinfo_t **jobinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
+	int          (*get_jobinfo)       ( switch_jobinfo_t *switch_job,
+					    int key, void *data);
 	int          (*job_preinit)       ( stepd_step_rec_t *step );
 	int          (*job_init)          ( stepd_step_rec_t *step );
+	int          (*job_suspend_test)  ( switch_jobinfo_t *jobinfo );
+	void         (*job_suspend_info_get)( switch_jobinfo_t *jobinfo,
+					      void *suspend_info );
+	void         (*job_suspend_info_pack)( void *suspend_info,
+					       buf_t *buffer,
+					       uint16_t protocol_version );
+	int          (*job_suspend_info_unpack)( void **suspend_info,
+						 buf_t *buffer,
+						 uint16_t protocol_version );
+	void         (*job_suspend_info_free)( void *suspend_info );
+	int          (*job_suspend)       ( void *suspend_info,
+					    int max_wait );
+	int          (*job_resume)        ( void *suspend_info,
+					    int max_wait );
 	int          (*job_fini)          ( switch_jobinfo_t *jobinfo );
 	int          (*job_postfini)      ( stepd_step_rec_t *step);
 	int          (*job_attach)        ( switch_jobinfo_t *jobinfo,
@@ -107,8 +123,16 @@ static const char *syms[] = {
 	"switch_p_free_jobinfo",
 	"switch_p_pack_jobinfo",
 	"switch_p_unpack_jobinfo",
+	"switch_p_get_jobinfo",
 	"switch_p_job_preinit",
 	"switch_p_job_init",
+	"switch_p_job_suspend_test",
+	"switch_p_job_suspend_info_get",
+	"switch_p_job_suspend_info_pack",
+	"switch_p_job_suspend_info_unpack",
+	"switch_p_job_suspend_info_free",
+	"switch_p_job_suspend",
+	"switch_p_job_resume",
 	"switch_p_job_fini",
 	"switch_p_job_postfini",
 	"switch_p_job_attach",
@@ -175,13 +199,10 @@ extern int switch_init(bool only_default)
 
 	slurm_mutex_lock( &context_lock );
 
-	if (switch_context_cnt >= 0)
+	if ( switch_context )
 		goto done;
 
 	switch_context_cnt = 0;
-
-	if (!slurm_conf.switch_type)
-		goto done;
 
 	plugin_args.plugin_type    = plugin_type;
 	plugin_args.default_plugin = slurm_conf.switch_type;
@@ -251,30 +272,21 @@ fini:
 
 extern int  switch_g_reconfig(void)
 {
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	return (*(ops[switch_context_default].reconfig))( );
 }
 
 extern int  switch_g_save(char *dir_name)
 {
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	return (*(ops[switch_context_default].state_save))( dir_name );
 }
 
 extern int  switch_g_restore(char *dir_name, bool recover)
 {
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	return (*(ops[switch_context_default].state_restore))
 		(dir_name, recover);
@@ -282,10 +294,7 @@ extern int  switch_g_restore(char *dir_name, bool recover)
 
 extern int  switch_g_clear(void)
 {
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	return (*(ops[switch_context_default].state_clear))( );
 }
@@ -295,10 +304,7 @@ extern int  switch_g_alloc_jobinfo(dynamic_plugin_data_t **jobinfo,
 {
 	dynamic_plugin_data_t *jobinfo_ptr = NULL;
 
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	jobinfo_ptr = _create_dynamic_plugin_data(switch_context_default);
 	*jobinfo    = jobinfo_ptr;
@@ -314,10 +320,7 @@ extern int switch_g_build_jobinfo(dynamic_plugin_data_t *jobinfo,
 	void *data = NULL;
 	uint32_t plugin_id;
 
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	if (jobinfo) {
 		data      = jobinfo->data;
@@ -334,10 +337,7 @@ extern int  switch_g_duplicate_jobinfo(dynamic_plugin_data_t *source,
 	dynamic_plugin_data_t *dest_ptr = NULL;
 	uint32_t plugin_id = source->plugin_id;
 
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	dest_ptr = _create_dynamic_plugin_data(plugin_id);
 	*dest = dest_ptr;
@@ -348,10 +348,7 @@ extern int  switch_g_duplicate_jobinfo(dynamic_plugin_data_t *source,
 
 extern void switch_g_free_jobinfo(dynamic_plugin_data_t *jobinfo)
 {
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return;
+	xassert(switch_context);
 
 	if (jobinfo) {
 		if (jobinfo->data)
@@ -367,14 +364,7 @@ extern int switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, buf_t *buffer,
 	void *data = NULL;
 	uint32_t plugin_id;
 
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt) {
-		if (protocol_version <= SLURM_23_02_PROTOCOL_VERSION) {
-			pack32(SWITCH_PLUGIN_NONE, buffer);
-		}
-		return SLURM_SUCCESS;
-	}
+	xassert(switch_context);
 
 	if (jobinfo) {
 		data      = jobinfo->data;
@@ -398,16 +388,7 @@ extern int switch_g_unpack_jobinfo(dynamic_plugin_data_t **jobinfo,
 {
 	dynamic_plugin_data_t *jobinfo_ptr = NULL;
 
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt) {
-		if (protocol_version <= SLURM_23_02_PROTOCOL_VERSION) {
-			uint32_t plugin_id;
-			safe_unpack32(&plugin_id, buffer);
-			*jobinfo = NULL;
-		}
-		return SLURM_SUCCESS;
-	}
+	xassert(switch_context);
 
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*jobinfo = jobinfo_ptr;
@@ -454,24 +435,109 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern int  switch_g_get_jobinfo(dynamic_plugin_data_t *jobinfo,
+				 int data_type, void *data)
+{
+	void *jobdata = NULL;
+	uint32_t plugin_id;
+
+	xassert(switch_context);
+
+	if (jobinfo) {
+		jobdata   = jobinfo->data;
+		plugin_id = jobinfo->plugin_id;
+	} else
+		plugin_id = switch_context_default;
+
+	return (*(ops[plugin_id].get_jobinfo))(jobdata, data_type, data);
+}
+
 extern int switch_g_job_preinit(stepd_step_rec_t *step)
 {
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	return (*(ops[switch_context_default].job_preinit))(step);
 }
 
 extern int switch_g_job_init(stepd_step_rec_t *step)
 {
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	return (*(ops[switch_context_default].job_init))(step);
+}
+
+extern int switch_g_job_suspend_test(dynamic_plugin_data_t *jobinfo)
+{
+	void *data = NULL;
+	uint32_t plugin_id;
+
+	xassert(switch_context);
+
+	if (jobinfo) {
+		data      = jobinfo->data;
+		plugin_id = jobinfo->plugin_id;
+	} else
+		plugin_id = switch_context_default;
+
+	return (*(ops[plugin_id].job_suspend_test)) (data);
+}
+
+extern void switch_g_job_suspend_info_get(dynamic_plugin_data_t *jobinfo,
+					  void **suspend_info)
+{
+	void *data = NULL;
+	uint32_t plugin_id;
+
+	xassert(switch_context);
+
+	if (jobinfo) {
+		data      = jobinfo->data;
+		plugin_id = jobinfo->plugin_id;
+	} else
+		plugin_id = switch_context_default;
+
+	(*(ops[plugin_id].job_suspend_info_get)) (data, suspend_info);
+}
+
+extern void switch_g_job_suspend_info_pack(void *suspend_info, buf_t *buffer,
+					   uint16_t protocol_version)
+{
+	xassert(switch_context);
+
+	(*(ops[switch_context_default].job_suspend_info_pack))
+		(suspend_info, buffer, protocol_version);
+}
+
+extern int switch_g_job_suspend_info_unpack(void **suspend_info, buf_t *buffer,
+					    uint16_t protocol_version)
+{
+	xassert(switch_context);
+
+	return (*(ops[switch_context_default].job_suspend_info_unpack))
+		(suspend_info, buffer, protocol_version);
+}
+
+extern void switch_g_job_suspend_info_free(void *suspend_info)
+{
+	xassert(switch_context);
+
+	(*(ops[switch_context_default].job_suspend_info_free)) (suspend_info);
+}
+
+extern int switch_g_job_suspend(void *suspend_info, int max_wait)
+{
+	xassert(switch_context);
+
+	return (*(ops[switch_context_default].job_suspend))
+		(suspend_info, max_wait);
+}
+
+extern int switch_g_job_resume(void *suspend_info, int max_wait)
+{
+	xassert(switch_context);
+
+	return (*(ops[switch_context_default].job_resume))
+		(suspend_info, max_wait);
 }
 
 extern int switch_g_job_fini(dynamic_plugin_data_t *jobinfo)
@@ -479,10 +545,7 @@ extern int switch_g_job_fini(dynamic_plugin_data_t *jobinfo)
 	void *data = NULL;
 	uint32_t plugin_id;
 
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	if (jobinfo) {
 		data      = jobinfo->data;
@@ -495,10 +558,7 @@ extern int switch_g_job_fini(dynamic_plugin_data_t *jobinfo)
 
 extern int switch_g_job_postfini(stepd_step_rec_t *step)
 {
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	return (*(ops[switch_context_default].job_postfini))(step);
 }
@@ -510,10 +570,7 @@ extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
 	void *data = NULL;
 	uint32_t plugin_id;
 
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	if (jobinfo) {
 		data      = jobinfo->data;
@@ -531,10 +588,7 @@ extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,
 	void *data = NULL;
 	uint32_t plugin_id;
 
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	if (jobinfo) {
 		data      = jobinfo->data;
@@ -551,10 +605,7 @@ extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
 	void *data = NULL;
 	uint32_t plugin_id;
 
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	if (jobinfo) {
 		data      = jobinfo->data;
@@ -567,50 +618,35 @@ extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
 
 extern int switch_g_job_step_pre_suspend(stepd_step_rec_t *step)
 {
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	return (*(ops[switch_context_default].job_step_pre_suspend))(step);
 }
 
 extern int switch_g_job_step_post_suspend(stepd_step_rec_t *step)
 {
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	return (*(ops[switch_context_default].job_step_post_suspend))(step);
 }
 
 extern int switch_g_job_step_pre_resume(stepd_step_rec_t *step)
 {
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	return (*(ops[switch_context_default].job_step_pre_resume))(step);
 }
 
 extern int switch_g_job_step_post_resume(stepd_step_rec_t *step)
 {
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return SLURM_SUCCESS;
+	xassert(switch_context);
 
 	return (*(ops[switch_context_default].job_step_post_resume))(step);
 }
 
 extern void switch_g_job_complete(uint32_t job_id)
 {
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return;
+	xassert(switch_context);
 
 	(*(ops[switch_context_default].job_complete))(job_id);
 }

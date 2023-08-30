@@ -46,18 +46,17 @@
 
 extern int scontrol_create_node(int argc, char **argv)
 {
-	update_node_msg_t node_msg;
+	update_node_msg_t node_msg = {0};
 	char *node_line = NULL;
 
 	/* Reconstruct NodeName= line from cmd line */
 	for (int i = 0; i < argc; i++)
 		xstrfmtcat(node_line, "%s%s", i > 0 ? " " : "", argv[i]);
 
-	slurm_init_update_node_msg(&node_msg);
 	node_msg.extra = node_line;
 	if (slurm_create_node(&node_msg)) {
 		exit_code = 1;
-		slurm_perror("Error creating node(s)");
+		slurm_perror("Error creating the node(s)");
 		return slurm_get_errno();
 	}
 	xfree(node_line);
@@ -127,13 +126,6 @@ scontrol_update_node (int argc, char **argv)
 			update_cnt++;
 		} else if (xstrncasecmp(tag, "Gres", MAX(tag_len, 1)) == 0) {
 			node_msg.gres = val;
-			update_cnt++;
-		} else if (!xstrncasecmp(tag, "InstanceId", MAX(tag_len, 9))) {
-			node_msg.instance_id = val;
-			update_cnt++;
-		} else if (!xstrncasecmp(tag, "InstanceType",
-					 MAX(tag_len, 9))) {
-			node_msg.instance_type = val;
 			update_cnt++;
 		} else if (xstrncasecmp(tag, "Weight", MAX(tag_len,1)) == 0) {
 			if (parse_uint32(val, &node_msg.weight)) {

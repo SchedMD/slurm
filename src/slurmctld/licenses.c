@@ -1215,10 +1215,7 @@ extern void slurm_bf_licenses_deduct(bf_licenses_t *licenses,
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
 					   job_entry->name);
 
-		if (!bf_entry) {
-			error("%s: missing license %s",
-			      __func__, job_entry->name);
-		} else if (bf_entry->remaining < needed) {
+		if (bf_entry->remaining < needed) {
 			error("%s: underflow on %s", __func__, bf_entry->name);
 			bf_entry->remaining = 0;
 		} else {
@@ -1247,16 +1244,12 @@ extern void slurm_bf_licenses_transfer(bf_licenses_t *licenses,
 	iter = list_iterator_create(job_ptr->license_list);
 	while ((resv_entry = list_next(iter))) {
 		bf_license_t *bf_entry, *new_entry;
-		int needed = resv_entry->total;
-		int reservable = resv_entry->total;
+		int needed = resv_entry->total, reservable;
 
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
 					   resv_entry->name);
 
-		if (!bf_entry) {
-			error("%s: missing license %s",
-			      __func__, resv_entry->name);
-		} else if (bf_entry->remaining < needed) {
+		if (bf_entry->remaining < needed) {
 			error("%s: underflow on %s", __func__, bf_entry->name);
 			reservable = bf_entry->remaining;
 			bf_entry->remaining = 0;
@@ -1314,7 +1307,7 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 		bf_entry = list_find_first(licenses, _bf_licenses_find_rec,
 					   need->name);
 
-		if (!bf_entry || (bf_entry->remaining < needed)) {
+		if (bf_entry->remaining < needed) {
 			avail = false;
 			break;
 		}
@@ -1335,7 +1328,7 @@ extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b)
 		entry_b = list_find_first(b, _bf_licenses_find_rec,
 					  entry_a->name);
 
-		if (!entry_b || (entry_a->remaining != entry_b->remaining) ||
+		if ((entry_a->remaining != entry_b->remaining) ||
 		    (entry_a->resv_ptr != entry_b->resv_ptr)) {
 			equivalent = false;
 			break;

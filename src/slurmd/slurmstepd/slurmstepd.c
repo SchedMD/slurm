@@ -48,36 +48,38 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/cpu_frequency.h"
+#include "src/interfaces/gres.h"
+#include "src/interfaces/hash.h"
 #include "src/common/run_command.h"
 #include "src/interfaces/route.h"
+#include "src/interfaces/select.h"
 #include "src/interfaces/topology.h"
 #include "src/common/setproctitle.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/acct_gather_profile.h"
+#include "src/interfaces/mpi.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
+#include "src/interfaces/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-
-#include "src/interfaces/acct_gather_energy.h"
-#include "src/interfaces/acct_gather_profile.h"
-#include "src/interfaces/auth.h"
 #include "src/interfaces/cgroup.h"
+
 #include "src/interfaces/core_spec.h"
 #include "src/interfaces/gpu.h"
-#include "src/interfaces/gres.h"
-#include "src/interfaces/hash.h"
 #include "src/interfaces/job_container.h"
-#include "src/interfaces/jobacct_gather.h"
-#include "src/interfaces/mpi.h"
-#include "src/interfaces/proctrack.h"
-#include "src/interfaces/switch.h"
-#include "src/interfaces/task.h"
 
 #include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/slurmstepd_init.h"
+#include "src/interfaces/task.h"
+#include "src/interfaces/acct_gather_energy.h"
+#include "src/interfaces/proctrack.h"
+#include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/container.h"
 #include "src/slurmd/slurmstepd/mgr.h"
@@ -88,6 +90,7 @@
 static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 			     slurm_addr_t **_self, slurm_msg_t **_msg);
 
+static void _dump_user_env(void);
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock);
 static void _got_ack_from_slurmd(int);
@@ -96,7 +99,7 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
 #ifdef MEMORY_LEAK_DEBUG
 static void _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc);
 #endif
-static void _process_cmdline(int argc, char **argv);
+static int _process_cmdline (int argc, char **argv);
 
 static pthread_mutex_t cleanup_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool cleanup = false;
@@ -124,14 +127,15 @@ main (int argc, char **argv)
 	stepd_step_rec_t *step;
 	int rc = 0;
 
-	_process_cmdline(argc, argv);
+	if (_process_cmdline (argc, argv) < 0)
+		fatal ("Error in slurmstepd command line");
 
 	run_command_init();
 
 	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));
-	conf->argv = argv;
-	conf->argc = argc;
+	conf->argv = &argv;
+	conf->argc = &argc;
 	init_setproctitle(argc, argv);
 
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
@@ -166,6 +170,7 @@ main (int argc, char **argv)
 	 * to SIGBUS at any time after upgrade. Avoid that by locking it
 	 * in-memory. */
 	if (xstrstr(slurm_conf.launch_params, "slurmstepd_memlock")) {
+#ifdef _POSIX_MEMLOCK
 		int flags = MCL_CURRENT;
 		if (xstrstr(slurm_conf.launch_params, "slurmstepd_memlock_all"))
 			flags |= MCL_FUTURE;
@@ -173,6 +178,9 @@ main (int argc, char **argv)
 			info("failed to mlock() slurmstepd pages: %m");
 		else
 			debug("slurmstepd locked in memory");
+#else
+		info("mlockall() system call does not appear to be available");
+#endif
 	}
 
 	acct_gather_energy_g_set_data(ENERGY_DATA_STEP_PTR, step);
@@ -407,7 +415,7 @@ static int _get_jobid_uid_gid_from_env(uint32_t *jobid, uid_t *uid, gid_t *gid)
 	return SLURM_SUCCESS;
 }
 
-static int _handle_spank_mode(int argc, char **argv)
+static int _handle_spank_mode (int argc, char **argv)
 {
 	char *prefix = NULL;
 	const char *mode = argv[2];
@@ -436,8 +444,8 @@ static int _handle_spank_mode(int argc, char **argv)
 	 *   This could happen if slurmstepd is run standalone for
 	 *   testing.
 	 */
-	conf = _read_slurmd_conf_lite(STDIN_FILENO);
-	close(STDIN_FILENO);
+	conf = _read_slurmd_conf_lite (STDIN_FILENO);
+	close (STDIN_FILENO);
 
 	if (_get_jobid_uid_gid_from_env(&jobid, &uid, &gid))
 		return error("spank environment invalid");
@@ -445,42 +453,44 @@ static int _handle_spank_mode(int argc, char **argv)
 	debug("Running spank/%s for jobid [%u] uid [%u] gid [%u]",
 	      mode, jobid, uid, gid);
 
-	if (!xstrcmp(mode, "prolog")) {
+	if (xstrcmp (mode, "prolog") == 0) {
 		if (spank_job_prolog(jobid, uid, gid) < 0)
-			return -1;
-	} else if (!xstrcmp(mode, "epilog")) {
-		if (spank_job_epilog(jobid, uid, gid) < 0)
-			return -1;
-	} else {
-		error("Invalid mode %s specified!", mode);
-		return -1;
+			return (-1);
 	}
-
-	return 0;
+	else if (xstrcmp (mode, "epilog") == 0) {
+		if (spank_job_epilog(jobid, uid, gid) < 0)
+			return (-1);
+	}
+	else {
+		error ("Invalid mode %s specified!", mode);
+		return (-1);
+	}
+	return (0);
 }
 
 /*
  *  Process special "modes" of slurmstepd passed as cmdline arguments.
  */
-static void _process_cmdline(int argc, char **argv)
+static int _process_cmdline (int argc, char **argv)
 {
-	if ((argc == 2) && !xstrcmp(argv[1], "getenv")) {
+	if ((argc == 2) && (xstrcmp(argv[1], "getenv") == 0)) {
 		print_rlimits();
-		for (int i = 0; environ[i]; i++)
-			printf("%s\n", environ[i]);
+		_dump_user_env();
 		exit(0);
 	}
-	if ((argc == 2) && !xstrcmp(argv[1], "infinity")) {
+	if ((argc == 2) && (xstrcmp(argv[1], "infinity") == 0)) {
 		set_oom_adj(-1000);
 		(void) poll(NULL, 0, -1);
 		exit(0);
 	}
-	if ((argc == 3) && !xstrcmp(argv[1], "spank")) {
+	if ((argc == 3) && (xstrcmp(argv[1], "spank") == 0)) {
 		if (_handle_spank_mode(argc, argv) < 0)
-			exit(1);
-		exit(0);
+			exit (1);
+		exit (0);
 	}
+	return (0);
 }
+
 
 static void
 _send_ok_to_slurmd(int sock)
@@ -655,7 +665,10 @@ _init_from_slurmd(int sock, char **argv,
 		break;
 	}
 
-	/* Init switch before unpack_msg to only init the default */
+	/* Init select and switch before unpack_msg to only init the default */
+	if (select_g_init(1) != SLURM_SUCCESS )
+		fatal( "failed to initialize node selection plugin" );
+
 	if (switch_init(1) != SLURM_SUCCESS)
 		fatal( "failed to initialize authentication plugin" );
 
@@ -687,19 +700,19 @@ _init_from_slurmd(int sock, char **argv,
 	/*
 	 * Init all plugins after receiving the slurm.conf from the slurmd.
 	 */
-	if ((auth_g_init() != SLURM_SUCCESS) ||
+	if ((slurm_auth_init(NULL) != SLURM_SUCCESS) ||
 	    (cgroup_g_init() != SLURM_SUCCESS) ||
 	    (hash_g_init() != SLURM_SUCCESS) ||
 	    (acct_gather_conf_init() != SLURM_SUCCESS) ||
 	    (core_spec_g_init() != SLURM_SUCCESS) ||
-	    (proctrack_g_init() != SLURM_SUCCESS) ||
+	    (slurm_proctrack_init() != SLURM_SUCCESS) ||
 	    (slurmd_task_init() != SLURM_SUCCESS) ||
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
-	    (cred_g_init() != SLURM_SUCCESS) ||
+	    (slurm_cred_init() != SLURM_SUCCESS) ||
 	    (job_container_init() != SLURM_SUCCESS) ||
-	    (route_g_init() != SLURM_SUCCESS) ||
-	    (topology_g_init() != SLURM_SUCCESS))
+	    (route_init() != SLURM_SUCCESS) ||
+	    (slurm_topo_init() != SLURM_SUCCESS))
 		fatal("Couldn't load all plugins");
 
 	/*
@@ -811,9 +824,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 				    step->step_id.job_id,
 				    step->step_id.step_id);
 	}
-	if (step->batch ||
-	    (step->step_id.step_id == SLURM_INTERACTIVE_STEP) ||
-	    (step->flags & LAUNCH_EXT_LAUNCHER)) {
+	if (step->batch || (step->step_id.step_id == SLURM_INTERACTIVE_STEP)) {
 		gres_g_job_set_env(step, 0);
 	} else if (msg->msg_type == REQUEST_LAUNCH_TASKS) {
 		gres_g_step_set_env(step);
@@ -873,3 +884,11 @@ _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc)
 	jobacctinfo_destroy(step_complete.jobacct);
 }
 #endif
+
+static void _dump_user_env(void)
+{
+	int i;
+
+	for (i=0; environ[i]; i++)
+		printf("%s\n",environ[i]);
+}

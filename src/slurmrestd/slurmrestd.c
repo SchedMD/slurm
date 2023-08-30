@@ -44,14 +44,11 @@
 #include <netdb.h>
 #include <sched.h>
 #include <signal.h>
+#include <sys/prctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#if HAVE_SYS_PRCTL_H
-#include <sys/prctl.h>
-#endif
 
 #include "slurm/slurm.h"
 
@@ -70,20 +67,15 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/data_parser.h"
+#include "src/interfaces/openapi.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
 
 #include "src/slurmrestd/http.h"
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
 
 #define OPT_LONG_MAX_CON 0x100
-
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
-#define unshare(_) (false)
-#endif
 
 decl_static_data(usage_txt);
 
@@ -118,12 +110,10 @@ static size_t auth_plugin_count = 0;
 static plugrack_t *auth_rack = NULL;
 
 static char *oas_specs = NULL;
-static char *data_parser_plugins = NULL;
-static data_parser_t **parsers = NULL;
-static bool unshare_sysv = true;
-static bool unshare_files = true;
-static bool check_user = true;
-static bool become_user = false;
+bool unshare_sysv = true;
+bool unshare_files = true;
+bool check_user = true;
+bool become_user = false;
 
 extern parsed_host_port_t *parse_host_port(const char *str);
 extern void free_parse_host_port(parsed_host_port_t *parsed);
@@ -179,11 +169,6 @@ static void _parse_env(void)
 	if ((buffer = getenv("SLURMRESTD_OPENAPI_PLUGINS")) != NULL) {
 		xfree(oas_specs);
 		oas_specs = xstrdup(buffer);
-	}
-
-	if ((buffer = getenv("SLURMRESTD_DATA_PARSER_PLUGINS")) != NULL) {
-		xfree(data_parser_plugins);
-		data_parser_plugins = xstrdup(buffer);
 	}
 
 	if ((buffer = getenv("SLURMRESTD_SECURITY"))) {
@@ -298,16 +283,12 @@ static void _parse_commandline(int argc, char **argv)
 
 	opterr = 0;
 
-	while ((c = getopt_long(argc, argv, "a:d:f:g:hs:t:u:vV", long_options,
+	while ((c = getopt_long(argc, argv, "a:f:g:hs:t:u:vV", long_options,
 				&option_index)) != -1) {
 		switch (c) {
 		case 'a':
 			xfree(rest_auth);
 			rest_auth = xstrdup(optarg);
-			break;
-		case 'd':
-			xfree(data_parser_plugins);
-			data_parser_plugins = xstrdup(optarg);
 			break;
 		case 'f':
 			xfree(slurm_conf_filename);
@@ -363,16 +344,12 @@ static void _lock_down(void)
 	if ((getuid() == SLURM_AUTH_NOBODY) || (getgid() == SLURM_AUTH_NOBODY))
 		fatal("slurmrestd must not be run as nobody");
 
-#if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1)
 		fatal("Unable to disable new privileges: %m");
-#endif
-
 	if (unshare_sysv && unshare(CLONE_SYSVSEM))
 		fatal("Unable to unshare System V namespace: %m");
 	if (unshare_files && unshare(CLONE_FILES))
 		fatal("Unable to unshare file descriptors: %m");
-
 	if (gid && setgroups(0, NULL))
 		fatal("Unable to drop supplementary groups: %m");
 	if (uid != 0 && (gid == 0))
@@ -429,10 +406,9 @@ static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 
 static int _op_handler_openapi(const char *context_id,
 			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp, void *auth,
-			       data_parser_t *parser)
+			       data_t *query, int tag, data_t *resp, void *auth)
 {
-	return get_openapi_specification(resp);
+	return get_openapi_specification(openapi_state, resp);
 }
 
 int main(int argc, char **argv)
@@ -474,12 +450,18 @@ int main(int argc, char **argv)
 	if (thread_count > 1024)
 		fatal("Excessive thread count");
 
+	if (data_init())
+		fatal("Unable to initialize data static structures");
+
 	if (serializer_g_init(NULL, NULL))
 		fatal("Unable to initialize serializers");
 
 	if (!(conmgr = init_con_mgr((run_mode.listen ? thread_count : 1),
 				    max_connections, callbacks)))
 		fatal("Unable to initialize connection manager");
+
+	if (init_operations())
+		fatal("Unable to initialize operations structures");
 
 	auth_rack = plugrack_create("rest_auth");
 	plugrack_read_dir(auth_rack, slurm_conf.plugindir);
@@ -528,29 +510,11 @@ int main(int argc, char **argv)
 	if (init_rest_auth(become_user, auth_plugin_handles, auth_plugin_count))
 		fatal("Unable to initialize rest authentication");
 
-	if (data_parser_plugins && !xstrcasecmp(data_parser_plugins, "list")) {
-		info("Possible data_parser plugins:");
-		parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL,
-						  NULL, NULL, NULL, NULL,
-						  data_parser_plugins,
-						  _plugrack_foreach_list,
-						  false);
-		exit(SLURM_SUCCESS);
-	} else if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL,
-						       NULL, NULL, NULL, NULL,
-						       data_parser_plugins,
-						       NULL, false))) {
-		fatal("Unable to initialize data_parser plugins");
-	}
-	xfree(data_parser_plugins);
-
-	if (init_operations(parsers))
-		fatal("Unable to initialize operations structures");
-
 	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
 		info("Possible OpenAPI plugins:");
-		exit(init_openapi(oas_specs, _plugrack_foreach_list, NULL));
-	} else if (init_openapi(oas_specs, NULL, parsers))
+		exit(init_openapi(&openapi_state, oas_specs,
+				  _plugrack_foreach_list));
+	} else if (init_openapi(&openapi_state, oas_specs, NULL))
 		fatal("Unable to initialize OpenAPI structures");
 
 	xfree(oas_specs);
@@ -611,10 +575,12 @@ int main(int argc, char **argv)
 	/* cleanup everything */
 	destroy_rest_auth();
 	destroy_operations();
-	destroy_openapi();
+	destroy_openapi(openapi_state);
+	openapi_state = NULL;
 	free_con_mgr(conmgr);
-	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
+
 	serializer_g_fini();
+	data_fini();
 	for (size_t i = 0; i < auth_plugin_count; i++) {
 		plugrack_release_by_type(auth_rack, auth_plugin_types[i]);
 		xfree(auth_plugin_types[i]);
@@ -626,7 +592,6 @@ int main(int argc, char **argv)
 	auth_rack = NULL;
 
 	xfree(auth_plugin_handles);
-	select_g_fini();
 	slurm_fini();
 	log_fini();
 

@@ -328,7 +328,7 @@ end_it:
  *         p_sockets - number of physical processor sockets
  *         p_cores - total number of physical CPU cores
  *         p_threads - total number of hardware execution threads
- *         block_map - abstract->physical block distribution map
+ *         block_map - asbtract->physical block distribution map
  *         block_map_inv - physical->abstract block distribution map (inverse)
  *         return code - 0 if no error, otherwise errno
  * NOTE: User must xfree block_map and block_map_inv

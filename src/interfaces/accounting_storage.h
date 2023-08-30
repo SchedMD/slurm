@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  accounting_storage.h - Define accounting storage plugin functions.
+ *  slurm_accounting_storage.h - Define accounting storage plugin functions.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_ACCOUNTING_STORAGE_H
-#define _INTERFACES_ACCOUNTING_STORAGE_H
+#ifndef _SLURM_ACCOUNTING_STORAGE_H
+#define _SLURM_ACCOUNTING_STORAGE_H
 
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
@@ -57,8 +57,8 @@ typedef enum {
 
 extern uid_t db_api_uid;
 
-extern int acct_storage_g_init(void); /* load the plugin */
-extern int acct_storage_g_fini(void); /* unload the plugin */
+extern int slurm_acct_storage_init(void); /* load the plugin */
+extern int slurm_acct_storage_fini(void); /* unload the plugin */
 
 /*
  * get a new connection to the storage unit
@@ -98,19 +98,6 @@ extern int acct_storage_g_add_users(void *db_conn, uint32_t uid,
 				    List user_list);
 
 /*
- * add users to accounting system
- * IN: slurmdb_add_assoc_cond_t *assoc_cond with cluster (optional) acct
- *     and user lists filled in along with any limits in the assoc rec.
- * IN: slurmdb_user_rec_t *
- * RET: Return char * to print out of what was added or NULL and errno set on
- *      error.
- */
-extern char *acct_storage_g_add_users_cond(
-	void *db_conn, uint32_t uid,
-	slurmdb_add_assoc_cond_t *add_assoc,
-	slurmdb_user_rec_t *user);
-
-/*
  * add users as account coordinators
  * IN: acct_list list of char *'s of names of accounts
  * IN:  slurmdb_user_cond_t *user_cond
@@ -128,19 +115,6 @@ extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
  */
 extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
 				       List acct_list);
-
-/*
- * add accounts to accounting system
- * IN: slurmdb_add_assoc_cond_t *assoc_cond with cluster (optional) and acct
- *     lists filled in along with any limits in the assoc rec.
- * IN: slurmdb_account_rec_t *
- * RET: Return char * to print out of what was added or NULL and errno set on
- *      error.
- */
-extern char *acct_storage_g_add_accounts_cond(
-	void *db_conn, uint32_t uid,
-	slurmdb_add_assoc_cond_t *add_assoc,
-	slurmdb_account_rec_t *acct);
 
 /*
  * add clusters to accounting system
@@ -461,16 +435,6 @@ extern List acct_storage_g_get_events(
 	void *db_conn,  uint32_t uid, slurmdb_event_cond_t *event_cond);
 
 /*
- * get instances from storage
- *
- * IN:  slurmdb_instance_cond_t *
- * RET: List of slurmdb_instance_rec_t *
- * note List needs to be freed when called
- */
-extern List acct_storage_g_get_instances(
-	void *db_conn, uint32_t uid, slurmdb_instance_cond_t *instance_cond);
-
-/*
  * get info from the storage
  * IN:  slurmdb_assoc_cond_t *
  * RET: List of slurmdb_assoc_rec_t *
@@ -635,9 +599,6 @@ extern char *acct_storage_g_node_inx(void *db_conn, char *nodes);
 extern int clusteracct_storage_g_node_up(void *db_conn, node_record_t *node_ptr,
 					 time_t event_time);
 
-extern int clusteracct_storage_g_node_update(void *db_conn,
-					     node_record_t *node_ptr);
-
 extern int clusteracct_storage_g_cluster_tres(void *db_conn,
 					      char *cluster_nodes,
 					      char *tres_str_in,
@@ -712,4 +673,4 @@ extern int jobacct_storage_g_archive(void *db_conn,
 extern int jobacct_storage_g_archive_load(void *db_conn,
 					  slurmdb_archive_rec_t *arch_rec);
 
-#endif
+#endif /*_SLURM_ACCOUNTING_STORAGE_H*/

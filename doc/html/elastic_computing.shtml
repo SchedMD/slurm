@@ -39,6 +39,12 @@ support node addressing that can change.</p>
 See the slurm.conf man page for more details about these options.
 Some general Slurm configuration parameters that are of interest include:
 <dl>
+<dt><b>CommunicationParameters=NoAddrCache</b>
+<dd> By default, Slurm will cache a node's network address after successfully
+establishing the node's network address. This option disables the cache and
+Slurm will look up the node's network address each time a connection is made.
+This is useful, for example, in a cloud environment where the node addresses
+come and go out of DNS.
 <dt><b>ReconfigFlags=KeepPowerSaveSettings</b>
 <dd>If set, an "scontrol reconfig" command will preserve the current state of
 SuspendExcNodes, SuspendExcParts and SuspendExcStates.
@@ -109,12 +115,20 @@ respond in this time frame will be marked DOWN and the jobs scheduled on the
 node requeued. Nodes which reboot after this time frame will be marked DOWN
 with a reason of "Node unexpectedly rebooted." The default value is 60 seconds.
 <dt><b>SlurmctldParameters=cloud_dns</b>
+<dd>By default, Slurm expects that the network addresses for cloud nodes
+won't be known until creation of the node and that Slurm will be notified of
+the node's address (e.g. scontrol update nodename=&lt;name&gt;
+nodeaddr=&lt;addr&gt;). Since Slurm communications rely on the node
+configuration found in the slurm.conf, Slurm will tell the client command,
+after waiting for all nodes to boot, each node's IP address. However, in
+environments where the nodes are in DNS, this step can be avoided by
+configuring this option.
+<dt><b>SlurmctldParameters=cloud_reg_addrs</b>
 <dd>When a cloud node registers, the node's NodeAddr and NodeHostName will
-automatically be set. They will be reset back to the nodename after powering
-off. Since Slurm communications rely on the node configuration found in the
-slurm.conf, Slurm will tell the client command, after waiting for all nodes to
-boot, each node's IP address. However, in environments where the nodes are in
-DNS, this step can be avoided by configuring this option.
+automatically be set. They will be reset back to the nodename after powering off.
+This option avoids the need of manually notifying Slurm to the node's address
+and hostname before registration (e.g. scontrol update nodename=&lt;name&gt;
+nodeaddr=&lt;addr&gt;).</dd></dt>
 <dt><b>SlurmctldParameters=idle_on_node_suspend</b>
 <dd>Mark nodes as idle, regardless of current state, when suspending nodes with
 SuspendProgram so that nodes will be eligible to be resumed at a later time.
@@ -218,7 +232,7 @@ resources from the cloud by using the "--constraint" option.
 
 <pre>
 # Excerpt of slurm.conf
-SelectType=select/cons_tres
+SelectType=select/cons_res
 SelectTypeParameters=CR_CORE_Memory
 
 SuspendProgram=/usr/sbin/slurm_suspend
@@ -577,84 +591,6 @@ controller.
 Features l1 and l2 will always be active and can be used as selectable labels.
 </p>
 
-<h2 id="accounting">Cloud Accounting
-<a class="slurm_link" href="#accounting"></a>
-</h2>
-<p>
-Information about cloud instances can be stored in the database. This can be done
-by configuring instance id/type upon slurmd startup or with
-<i>scontrol update</i>. The node's "extra" field will also be stored in the database.
-</p>
-
-<p>
-Configuring cloud information on slurmd startup:
-<pre>
-$ slurmd --instance-id=12345 --instance-type=m7g.medium --extra="arbitrary string" . . .
-</pre>
-</p>
-
-<p>
-Configuring cloud information with scontrol update:
-<pre>
-$ scontrol update nodename=n1 instanceid=12345 instancetype=m7g.medium extra="arbitrary string"
-</pre>
-</p>
-
-<p>
-This data can then be seen on the controller with
-<i>scontrol show node</i>. Past and current data can be seen in the database
-with <i>sacctmgr show instance</i>, as well as through slurmrestd with the
-<i>/instance</i> and <i>/instances</i> endpoints.
-</p>
-
-<p>
-Showing cloud information on the controller with scontrol:
-<pre>
-$ scontrol show nodes n1 | grep "NodeName\|Extra\|Instance"
-NodeName=n1 Arch=x86_64 CoresPerSocket=4
-   Extra=arbitrary string
-   InstanceId=12345 InstanceType=m7g.medium
-</pre>
-</p>
-
-<p>
-Showing cloud information from the database with sacctmgr:
-<pre>
-$ sacctmgr show instance format=nodename,instanceid,instancetype,extra
-NodeName                  InstanceId         InstanceType                Extra
---------------- -------------------- -------------------- --------------------
-n1                             12345           m7g.medium     arbitrary string
-</pre>
-</p>
-
-<p>
-Showing cloud information from the database with slurmrestd:
-<pre>
-$ curl -k -s \
-        --request GET \
-        -H X-SLURM-USER-NAME:$(whoami) \
-        -H X-SLURM-USER-TOKEN:$SLURM_JWT \
-        -H "Content-Type: application/json" \
-        --url localhost:8080/slurmdb/v0.0.40/instances \
-        | jq ".instances"
-
-[
-  {
-    "cluster": "c1",
-    "extra": "arbitrary string",
-    "instance_id": "12345",
-    "instance_type": "m7g.medium",
-    "node_name": "n1",
-    "time": {
-      "time_end": 0,
-      "time_start": 1687213177
-    }
-  }
-]
-
-</pre>
-</p>
-
-<p style="text-align:center;">Last modified 8 August 2023</p>
+<p style="text-align:center;">Last modified 7 July 2023</p>
 
 <!--#include virtual="footer.txt"-->

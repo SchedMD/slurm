@@ -183,8 +183,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *step)
 
 	if ((step->step_id.step_id != SLURM_BATCH_SCRIPT) &&
 	    (step->step_id.step_id != SLURM_EXTERN_CONT) &&
-	    (step->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
-	    (!(step->flags & LAUNCH_EXT_LAUNCHER))) {
+	    (step->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
 		/*
 		 * Allow or deny access to devices according to GRES permissions
 		 * for the step.
@@ -238,8 +237,7 @@ extern int task_cgroup_devices_constrain(stepd_step_rec_t *step,
 	 */
 	if ((step->step_id.step_id == SLURM_BATCH_SCRIPT) ||
 	    (step->step_id.step_id == SLURM_EXTERN_CONT) ||
-	    (step->step_id.step_id == SLURM_INTERACTIVE_STEP) ||
-	    (step->flags & LAUNCH_EXT_LAUNCHER))
+	    (step->step_id.step_id == SLURM_INTERACTIVE_STEP))
 		return SLURM_SUCCESS;
 
 	/*

@@ -542,14 +542,17 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurm_conf.slurm_user_name, "SlurmUser", tbl);
 
 		if (slurm_conf.slurm_user_name) {
-			uid_t uid;
-
-			if (uid_from_string(slurm_conf.slurm_user_name, &uid) < 0)
-				fatal("failed to look up SlurmUser uid");
-
-			if (conf_path_uid != uid)
-				fatal("slurmdbd.conf owned by %u not SlurmUser(%u)",
-				      conf_path_uid, uid);
+			struct passwd *conf_owner;
+			if ((conf_owner = getpwuid(conf_path_uid))) {
+				if (xstrcmp(conf_owner->pw_name,
+					    slurm_conf.slurm_user_name)) {
+					fatal("slurmdbd.conf not owned by SlurmUser %s!=%s",
+					      conf_owner->pw_name,
+					      slurm_conf.slurm_user_name);
+				}
+			} else
+				fatal("No user entry for uid(%u) owning slurmdbd.conf file %s found",
+				      conf_path_uid, conf_path);
 		}
 
 		if (s_p_get_uint32(&slurmdbd_conf->purge_step,

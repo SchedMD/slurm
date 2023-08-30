@@ -41,6 +41,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/param.h>		/* MAXPATHLEN */
 
 #include "slurm/slurm.h"
 
@@ -59,8 +60,8 @@ strong_alias(route_split_hostlist_treewidth,
 	     slurm_route_split_hostlist_treewidth);
 
 typedef struct slurm_route_ops {
-	int  (*split_hostlist)    (hostlist_t *hl,
-				   hostlist_t ***sp_hl,
+	int  (*split_hostlist)    (hostlist_t hl,
+				   hostlist_t** sp_hl,
 				   int* count, uint16_t tree_width);
 	int  (*reconfigure)       (void);
 } slurm_route_ops_t;
@@ -77,7 +78,7 @@ static slurm_route_ops_t ops;
 static plugin_context_t	*g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
-extern int route_g_init(void)
+extern int route_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "route";
@@ -103,7 +104,7 @@ done:
 	return retval;
 }
 
-extern int route_g_fini(void)
+extern int route_fini(void)
 {
 	int rc;
 
@@ -121,20 +122,19 @@ extern int route_g_fini(void)
  * route_g_split_hostlist - logic to split an input hostlist into
  *                          a set of hostlists to forward to.
  *
- * IN: hl        - hostlist_t *   - list of every node to send message to
- *                                  will be empty on return which is same
- *                                  behavior as similar code replaced in
- *                                  forward.c
- * OUT: sp_hl    - hostlist_t *** - the array of hostlists that will be malloced
- * OUT: count    - int *          - the count of created hostlists
+ * IN: hl        - hostlist_t   - list of every node to send message to
+ *                                will be empty on return which is same behavior
+ *                                as similar code replaced in forward.c
+ * OUT: sp_hl    - hostlist_t** - the array of hostlists that will be malloced
+ * OUT: count    - int*         - the count of created hostlists
  * RET: SLURM_SUCCESS - int
  *
  * Note: created hostlist will have to be freed independently using
  *       hostlist_destroy by the caller.
  * Note: the hostlist_t array will have to be xfree.
  */
-extern int route_g_split_hostlist(hostlist_t *hl,
-				  hostlist_t ***sp_hl,
+extern int route_g_split_hostlist(hostlist_t hl,
+				  hostlist_t** sp_hl,
 				  int* count, uint16_t tree_width)
 {
 	int rc;
@@ -194,20 +194,19 @@ extern int route_g_reconfigure(void)
  * where the topology version also needs to split the message list based
  * on TreeWidth.
  *
- * IN: hl        - hostlist_t *   - list of every node to send message to
- *                                  will be empty on return which is same
- *                                  behavior as similar code replaced in
- *                                  forward.c
- * OUT: sp_hl    - hostlist_t *** - the array of hostlists that will be malloced
- * OUT: count    - int *          - the count of created hostlists
+ * IN: hl        - hostlist_t   - list of every node to send message to
+ *                                will be empty on return which is same behavior
+ *                                as similar code replaced in forward.c
+ * OUT: sp_hl    - hostlist_t** - the array of hostlists that will be malloced
+ * OUT: count    - int*         - the count of created hostlists
  * RET: SLURM_SUCCESS - int
  *
  * Note: created hostlist will have to be freed independently using
  *       hostlist_destroy by the caller.
  * Note: the hostlist_t array will have to be xfree.
  */
-extern int route_split_hostlist_treewidth(hostlist_t *hl,
-					  hostlist_t ***sp_hl,
+extern int route_split_hostlist_treewidth(hostlist_t hl,
+					  hostlist_t** sp_hl,
 					  int* count, uint16_t tree_width)
 {
 	int host_count;
@@ -222,12 +221,12 @@ extern int route_split_hostlist_treewidth(hostlist_t *hl,
 
 	host_count = hostlist_count(hl);
 	span = set_span(host_count, tree_width);
-	*sp_hl = xcalloc(MIN(tree_width, host_count), sizeof(hostlist_t *));
+	*sp_hl = xmalloc(tree_width * sizeof(hostlist_t));
 
 	while ((name = hostlist_shift(hl))) {
 		(*sp_hl)[nhl] = hostlist_create(name);
 		free(name);
-		for (j = 0; span && (j < span[nhl]); j++) {
+		for (j = 0; j < span[nhl]; j++) {
 			name = hostlist_shift(hl);
 			if (!name) {
 				break;

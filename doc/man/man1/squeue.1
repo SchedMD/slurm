@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "May 2023" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "January 2023" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -1322,11 +1322,10 @@ Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
 .IP
 
 .TP
-\f3\-\-json\fP, \f3\-\-json\fP=\fIlist\fR, \f3\-\-json\fP=<\fIdata_parser\fR>
-Dump information as JSON using the default data_parser plugin or explicit
-data_parser with parameters. All information is dumped, even if it would
-normally not be. Sorting and formatting arguments passed to other options are
-ignored; however, filtering arguments are still used.
+\f3\-\-json\fP
+Dump all job information as JSON. All information is dumped, even if it would
+normally not be. Formatting options are ignored; however, filtering arguments
+are still used.
 .IP
 
 .TP
@@ -1487,11 +1486,10 @@ Print version information and exit.
 .IP
 
 .TP
-\f3\-\-yaml\fP, \f3\-\-yaml\fP=\fIlist\fR, \f3\-\-yaml\fP=<\fIdata_parser\fR>
-Dump information as JSON using the default data_parser plugin or explicit
-data_parser with parameters. All information is dumped, even if it would
-normally not be. Sorting and formatting arguments passed to other options are
-ignored; however, filtering arguments are still used.
+\f3\-\-yaml\fP
+Dump all job information as YAML. All information is dumped, even if it would
+normally not be. Formatting options are ignored; however, filtering arguments
+are still used.
 .IP
 
 .SH "JOB REASON CODES"

@@ -118,7 +118,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	partition_info_t *p = NULL;
 	struct records {
 	  char *rec;
-	  hostlist_t *hostlist;
+	  hostlist_t hostlist;
 	  struct records *next;
 	} *rp = NULL;
 	struct records *crp;
@@ -951,6 +951,18 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("JobContainerType");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->job_container_plugin);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("JobCredentialPrivateKey");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->
+				  job_credential_private_key);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("JobCredentialPublicCertificate");
+	key_pair->value = xstrdup(
+		slurm_ctl_conf_ptr->job_credential_public_certificate);
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

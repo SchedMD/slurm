@@ -242,7 +242,7 @@ static void _sort_node_record_table_ptr(void)
 {
 	int (*compare_fn)(const void *, const void *);
 
-	if (topology_g_generate_node_ranking())
+	if (slurm_topo_generate_node_ranking())
 		compare_fn = &_sort_nodes_by_rank;
 	else
 		compare_fn = &_sort_nodes_by_name;
@@ -265,7 +265,7 @@ static void _sort_node_record_table_ptr(void)
 #endif
 }
 
-static void _add_nodes_with_feature(hostlist_t *hl, char *feature)
+static void _add_nodes_with_feature(hostlist_t hl, char *feature)
 {
 	if (avail_feature_list) {
 		char *feature_nodes;
@@ -307,20 +307,14 @@ static void _add_nodes_with_feature(hostlist_t *hl, char *feature)
 	}
 }
 
-static void _add_all_nodes_to_hostlist(hostlist_t *hl)
-{
-	node_record_t *node_ptr;
-
-	for (int i = 0; (node_ptr = next_node(&i)); i++)
-		hostlist_push_host(hl, node_ptr->name);
-}
-
-extern hostlist_t *nodespec_to_hostlist(const char *nodes, bool uniq,
-					char **nodesets)
+extern hostlist_t nodespec_to_hostlist(const char *nodes,
+				       bool uniq,
+				       char **nodesets)
 {
 	int count;
 	slurm_conf_nodeset_t *ptr, **ptr_array;
-	hostlist_t *hl;
+	hostlist_t hl;
+	node_record_t *node_ptr;
 
 	if (nodesets)
 		xfree(*nodesets);
@@ -330,7 +324,8 @@ extern hostlist_t *nodespec_to_hostlist(const char *nodes, bool uniq,
 			error("%s: hostlist_create() error for %s", __func__, nodes);
 			return NULL;
 		}
-		_add_all_nodes_to_hostlist(hl);
+		for (int i = 0; (node_ptr = next_node(&i)); i++)
+			hostlist_push_host(hl, node_ptr->name);
 		return hl;
 	} else if (!(hl = hostlist_create(nodes))) {
 		error("%s: hostlist_create() error for %s", __func__, nodes);
@@ -358,7 +353,8 @@ extern hostlist_t *nodespec_to_hostlist(const char *nodes, bool uniq,
 
 			/* Handle keywords for Nodes= in a NodeSet */
 			if (!xstrcasecmp(ptr->nodes, "ALL")) {
-				_add_all_nodes_to_hostlist(hl);
+				for (int i = 0; (node_ptr = next_node(&i)); i++)
+					hostlist_push_host(hl, node_ptr->name);
 			} else if (ptr->nodes) {
 				hostlist_push(hl, ptr->nodes);
 			}
@@ -381,9 +377,9 @@ static void _init_bitmaps(void)
 	FREE_NULL_BITMAP(future_node_bitmap);
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(power_node_bitmap);
-	FREE_NULL_BITMAP(rs_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
+	FREE_NULL_BITMAP(rs_node_bitmap);
 	avail_node_bitmap = bit_alloc(node_record_count);
 	bf_ignore_node_bitmap = bit_alloc(node_record_count);
 	booting_node_bitmap = bit_alloc(node_record_count);
@@ -392,9 +388,9 @@ static void _init_bitmaps(void)
 	future_node_bitmap = bit_alloc(node_record_count);
 	idle_node_bitmap = bit_alloc(node_record_count);
 	power_node_bitmap = bit_alloc(node_record_count);
-	rs_node_bitmap = bit_alloc(node_record_count);
 	share_node_bitmap = bit_alloc(node_record_count);
 	up_node_bitmap = bit_alloc(node_record_count);
+	rs_node_bitmap = bit_alloc(node_record_count);
 }
 
 static void _build_part_bitmaps(void)
@@ -625,7 +621,7 @@ static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
 {
 	int error_code = 0;
 	node_record_t *node_rec = NULL;
-	hostlist_t *alias_list = NULL;
+	hostlist_t alias_list = NULL;
 	char *alias = NULL;
 	int state_val = NODE_STATE_DOWN;
 
@@ -928,13 +924,6 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 			      "please check your configuration",
 			      part_ptr->name, qos_rec.name);
 		}
-		if (part_ptr->qos_ptr) {
-			if ((part_ptr->qos_ptr->flags & QOS_FLAG_PART_QOS) &&
-			    (part_ptr->qos_ptr->flags & QOS_FLAG_RELATIVE))
-				fatal("QOS %s is a relative QOS. A relative QOS must be unique per partition. Please check your configuration and adjust accordingly",
-				      part_ptr->qos_ptr->name);
-			part_ptr->qos_ptr->flags |= QOS_FLAG_PART_QOS;
-		}
 	}
 
 	return 0;
@@ -1102,7 +1091,7 @@ static void _validate_het_jobs(void)
 {
 	ListIterator job_iterator;
 	job_record_t *job_ptr, *het_job_ptr;
-	hostset_t *hs;
+	hostset_t hs;
 	char *job_id_str;
 	uint32_t job_id;
 	bool het_job_valid;
@@ -1283,9 +1272,18 @@ void _sync_jobs_to_conf(void)
 	bool job_fail = false;
 	time_t now = time(NULL);
 	bool gang_flag = false;
+	static uint32_t cr_flag = NO_VAL;
 
 	xassert(job_list);
 
+	if (cr_flag == NO_VAL) {
+		cr_flag = 0;  /* call is no-op for select/linear and others */
+		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
+						  NULL, &cr_flag)) {
+			cr_flag = NO_VAL;	/* error */
+		}
+
+	}
 	if (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)
 		gang_flag = true;
 
@@ -1385,8 +1383,7 @@ void _sync_jobs_to_conf(void)
 		if (reset_node_bitmap(job_ptr))
 			job_fail = true;
 		if (!job_fail &&
-		    job_ptr->job_resrcs &&
-		    (slurm_select_cr_type() || gang_flag) &&
+		    job_ptr->job_resrcs && (cr_flag || gang_flag) &&
 		    valid_job_resources(job_ptr->job_resrcs)) {
 			error("Aborting %pJ due to change in socket/core configuration of allocated nodes",
 			      job_ptr);
@@ -1628,7 +1625,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (slurm_conf.slurmd_user_id != 0)
 		_test_cgroup_plugin_use();
 
-	if (topology_g_init() != SLURM_SUCCESS) {
+	if (slurm_topo_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("Failed to initialize topology plugin");
 			test_config_rc = 1;
@@ -1762,7 +1759,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	_sort_node_record_table_ptr();
 
 	rehash_node();
-	topology_g_build_config();
+	slurm_topo_build_config();
 	route_g_reconfigure();
 	if (reconfig)
 		power_g_reconfig();
@@ -1994,8 +1991,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (xstrcmp(old_preempt_type, slurm_conf.preempt_type)) {
 		info("Changing PreemptType from %s to %s",
 		     old_preempt_type, slurm_conf.preempt_type);
-		(void) preempt_g_fini();
-		if (preempt_g_init() != SLURM_SUCCESS) {
+		(void) slurm_preempt_fini();
+		if (slurm_preempt_init() != SLURM_SUCCESS) {
 			if (test_config) {
 				error("failed to initialize preempt plugin");
 				test_config_rc = 1;
@@ -2530,7 +2527,7 @@ static int _restore_node_state(int recover,
 {
 	node_record_t *node_ptr, *old_node_ptr;
 	int i, rc = SLURM_SUCCESS;
-	hostset_t *hs = NULL;
+	hostset_t hs = NULL;
 	bool power_save_mode = false;
 
 	if (slurm_conf.suspend_program && slurm_conf.resume_program)
@@ -2651,12 +2648,6 @@ static int _restore_node_state(int recover,
 
 		node_ptr->extra = old_node_ptr->extra;
 		old_node_ptr->extra = NULL;
-
-		node_ptr->instance_id = old_node_ptr->instance_id;
-		old_node_ptr->instance_id = NULL;
-
-		node_ptr->instance_type = old_node_ptr->instance_type;
-		old_node_ptr->instance_type = NULL;
 
 		if (node_ptr->reason == NULL) {
 			/* Recover only if not explicitly set in slurm.conf */
@@ -3237,7 +3228,7 @@ static int _sync_nodes_to_comp_job(void)
 			 * now
 			 */
 			if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)
-				acct_policy_job_begin(job_ptr, false);
+				acct_policy_job_begin(job_ptr);
 
 			if (job_ptr->front_end_ptr)
 				job_ptr->front_end_ptr->job_cnt_run++;
@@ -3261,7 +3252,6 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 	uint32_t node_flags;
 	node_record_t *node_ptr;
 	bitstr_t *node_bitmap, *orig_job_node_bitmap = NULL;
-	bool job_resized = false;
 
 	if (job_ptr->node_bitmap_cg) /* job completing */
 		node_bitmap = job_ptr->node_bitmap_cg;
@@ -3336,7 +3326,6 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 			kill_step_on_node(job_ptr, node_ptr, true);
 			excise_node_from_job(job_ptr, node_ptr);
 			job_post_resize_acctg(job_ptr);
-			job_resized = true;
 			accounting_enforce = save_accounting_enforce;
 		} else if (IS_NODE_DOWN(node_ptr) && IS_JOB_RUNNING(job_ptr)) {
 			info("Killing %pJ on DOWN node %s",
@@ -3352,7 +3341,7 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 	}
 
 	/* If the job was resized then resize the bitmaps of the job's steps */
-	if (job_resized) {
+	if (job_ptr->bit_flags & JOB_RESIZED) {
 		rebuild_step_bitmaps(job_ptr, orig_job_node_bitmap);
 	}
 	FREE_NULL_BITMAP(orig_job_node_bitmap);
@@ -3416,10 +3405,10 @@ static void _restore_job_accounting(void)
 
 		if (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) {
 			if (!IS_JOB_FINISHED(job_ptr))
-				acct_policy_add_job_submit(job_ptr, false);
+				acct_policy_add_job_submit(job_ptr);
 			if (IS_JOB_RUNNING(job_ptr) ||
 			    IS_JOB_SUSPENDED(job_ptr)) {
-				acct_policy_job_begin(job_ptr, false);
+				acct_policy_job_begin(job_ptr);
 				job_claim_resv(job_ptr);
 			} else if (IS_JOB_PENDING(job_ptr) &&
 				   job_ptr->details &&
@@ -3497,8 +3486,8 @@ static int _compare_hostnames(node_record_t **old_node_table,
 	int cc;
 	char *old_ranged;
 	char *ranged;
-	hostset_t *old_set;
-	hostset_t *set;
+	hostset_t old_set;
+	hostset_t set;
 
 	/*
 	 * Don't compare old DYNAMIC_NORM nodes because they don't rely on
@@ -3647,6 +3636,7 @@ extern int load_config_state_lite(void)
 		safe_unpackstr_xmalloc(&last_accounting_storage_type,
 				       &uint32_tmp, buffer);
 	}
+	xassert(slurm_conf.accounting_storage_type);
 
 	if (last_accounting_storage_type
 	    && !xstrcmp(last_accounting_storage_type,

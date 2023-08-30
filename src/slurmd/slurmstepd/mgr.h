@@ -78,6 +78,11 @@ void mgr_launch_batch_job_cleanup(stepd_step_rec_t *step, int rc);
  */
 int job_manager(stepd_step_rec_t *step);
 
-extern void set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state);
+/*
+ * Register passwd entries so that we do not need to call initgroups(2)
+ * frequently.
+ */
+extern void init_initgroups(int);
+
 
 #endif

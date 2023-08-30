@@ -39,19 +39,16 @@
 
 #include "config.h"
 
-#define _GNU_SOURCE /* For clone */
 #include <fcntl.h>
-#include <limits.h>
 #include <poll.h>
-#include <sched.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/param.h>		/* MAXPATHLEN */
 #include <unistd.h>
 
 #include "slurm/slurm.h"
@@ -68,7 +65,6 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"
-#include "src/common/spank.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -95,15 +91,6 @@ strong_alias(env_unset_environment,	slurm_env_unset_environment);
 #define ENV_BUFSIZE (256 * 1024)
 #define MAX_ENV_STRLEN (32 * 4096)	/* Needed for CPU_BIND and MEM_BIND on
 					 * SGI systems with huge CPU counts */
-
-#define STACK_SIZE (1024 * 1024) /* For clone() syscall. */
-
-typedef struct {
-	char *cmdstr;
-	int *fildes;
-	int mode;
-	const char *username;
-} child_args_t;
 
 /*
  *  Return pointer to `name' entry in environment if found, or
@@ -299,7 +286,7 @@ char *getenvp(char **env, const char *name)
 int setup_env(env_t *env, bool preserve_env)
 {
 	int rc = SLURM_SUCCESS;
-	char *dist = NULL;
+	char *addr, *dist = NULL;
 	char addrbuf[INET6_ADDRSTRLEN];
 
 	if (env == NULL)
@@ -856,6 +843,14 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
+	if (slurm_conf.slurmctld_addr)
+		addr = slurm_conf.slurmctld_addr;
+	else
+		addr = slurm_conf.control_addr[0];
+	setenvf(&env->env, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d:%d",
+	        slurm_conf.cluster_name, addr, slurm_conf.slurmctld_port,
+	        SLURM_PROTOCOL_VERSION, select_get_plugin_id());
+
 	return rc;
 }
 
@@ -969,7 +964,6 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_JOBID
  *	SLURM_NNODES
  *	SLURM_NODELIST
- *	SLURM_NPROCS
  *	SLURM_TASKS_PER_NODE
  */
 extern int env_array_for_job(char ***dest,
@@ -1838,26 +1832,23 @@ void env_array_merge(char ***dest_array, const char **src_array)
 }
 
 /*
- * Merge the environment variables in src_array beginning with "SLURM" or
- * SPANK_OPTION_ENV_PREFIX into the array dest_array. Any variables already
- * found in dest_array will be overwritten with the value from src_array.
+ * Merge the environment variables in src_array beginning with "SLURM" into the
+ * array dest_array.  Any variables already found in dest_array will be
+ * overwritten with the value from src_array.
  */
-void env_array_merge_slurm_spank(char ***dest_array, const char **src_array)
+void env_array_merge_slurm(char ***dest_array, const char **src_array)
 {
 	char **ptr;
 	char name[256], *value;
-	int spank_len;
 
 	if (src_array == NULL)
 		return;
 
-	spank_len = strlen(SPANK_OPTION_ENV_PREFIX);
 	value = xmalloc(ENV_BUFSIZE);
 	for (ptr = (char **)src_array; *ptr != NULL; ptr++) {
 		if (_env_array_entry_splitter(*ptr, name, sizeof(name),
 					      value, ENV_BUFSIZE) &&
-		    ((xstrncmp(name, "SLURM", 5) == 0) ||
-		     (xstrncmp(name, SPANK_OPTION_ENV_PREFIX, spank_len) == 0)))
+		    (xstrncmp(name, "SLURM", 5) == 0))
 			env_array_overwrite(dest_array, name, value);
 	}
 	xfree(value);
@@ -1893,6 +1884,101 @@ static int _bracket_cnt(char *value)
 			count--;
 	}
 	return count;
+}
+
+/*
+ * Load user environment from a specified file or file descriptor.
+ *
+ * This will read in a user specified file or fd, that is invoked
+ * via the --export-file option in sbatch. The NAME=value entries must
+ * be NULL separated to support special characters in the environment
+ * definitions.
+ *
+ * (Note: This is being added to a minor release. For the
+ * next major release, it might be a consideration to merge
+ * this functionality with that of load_env_cache and update
+ * env_cache_builder to use the NULL character.)
+ */
+char **env_array_from_file(const char *fname)
+{
+	char *buf = NULL, *ptr = NULL, *eptr = NULL;
+	char *value, *p;
+	char **env = NULL;
+	char name[256];
+	int buf_size = BUFSIZ, buf_left;
+	int file_size = 0, tmp_size;
+	int separator = '\0';
+	int fd;
+
+	if (!fname)
+		return NULL;
+
+	/*
+	 * If file name is a numeric value, then it is assumed to be a
+	 * file descriptor.
+	 */
+	fd = (int)strtol(fname, &p, 10);
+	if ((*p != '\0') || (fd < 3) || (fd > sysconf(_SC_OPEN_MAX)) ||
+	    (fcntl(fd, F_GETFL) < 0)) {
+		fd = open(fname, O_RDONLY);
+		if (fd == -1) {
+			error("Could not open user environment file %s", fname);
+			return NULL;
+		}
+		verbose("Getting environment variables from %s", fname);
+	} else
+		verbose("Getting environment variables from fd %d", fd);
+
+	/*
+	 * Read in the user's environment data.
+	 */
+	buf = ptr = xmalloc(buf_size);
+	buf_left = buf_size;
+	while ((tmp_size = read(fd, ptr, buf_left))) {
+		if (tmp_size < 0) {
+			if (errno == EINTR)
+				continue;
+			error("read(environment_file): %m");
+			break;
+		}
+		buf_left  -= tmp_size;
+		file_size += tmp_size;
+		if (buf_left == 0) {
+			buf_size += BUFSIZ;
+			xrealloc(buf, buf_size);
+		}
+		ptr = buf + file_size;
+		buf_left = buf_size - file_size;
+	}
+	close(fd);
+
+	/*
+	 * Parse the buffer into individual environment variable names
+	 * and build the environment.
+	 */
+	env   = env_array_create();
+	value = xmalloc(ENV_BUFSIZE);
+	for (ptr = buf; ; ptr = eptr+1) {
+		eptr = strchr(ptr, separator);
+		if ((ptr == eptr) || (eptr == NULL))
+			break;
+		if (_env_array_entry_splitter(ptr, name, sizeof(name),
+					      value, ENV_BUFSIZE) &&
+		    (!_discard_env(name, value))) {
+			/*
+			 * Unset the SLURM_SUBMIT_DIR if it is defined so
+			 * that this new value does not get overwritten
+			 * in the subsequent call to env_array_merge().
+			 */
+			if (xstrcmp(name, "SLURM_SUBMIT_DIR") == 0)
+				unsetenv(name);
+			env_array_overwrite(&env, name, value);
+		}
+	}
+	xfree(buf);
+	xfree(value);
+
+	return env;
 }
 
 int env_array_to_file(const char *filename, const char **env_array,
@@ -1941,7 +2027,7 @@ rwfail:
  */
 static char **_load_env_cache(const char *username)
 {
-	char fname[PATH_MAX];
+	char fname[MAXPATHLEN];
 	char *line, name[256], *value;
 	char **env = NULL;
 	FILE *fp;
@@ -1994,68 +2080,6 @@ static char **_load_env_cache(const char *username)
 	return env;
 }
 
-static int _child_fn(void *arg)
-{
-	char **tmp_env = NULL;
-	int devnull;
-	child_args_t *child_args = arg;
-	char *cmdstr;
-	const char *username;
-
-	username = child_args->username;
-	cmdstr = child_args->cmdstr;
-	tmp_env = env_array_create();
-	env_array_overwrite(&tmp_env, "ENVIRONMENT", "BATCH");
-
-	if ((devnull = open("/dev/null", O_RDONLY)) == -1)
-		error("%s: open(/dev/null): %m", __func__);
-
-	dup2(devnull, STDIN_FILENO);
-	dup2(child_args->fildes[1], STDOUT_FILENO);
-	dup2(devnull, STDERR_FILENO);
-	closeall(3);
-
-	if (child_args->mode == 1)
-		execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
-	else if (child_args->mode == 2)
-		execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
-	else {	/* Default system configuration */
-#ifdef LOAD_ENV_NO_LOGIN
-		execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
-#else
-		execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
-#endif
-	}
-	if (devnull >= 0)	/* Avoid Coverity resource leak notification */
-		(void) close(devnull);
-
-	_exit(1);
-}
-
-#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__NetBSD__)
-static int _clone_env_child(child_args_t *child_args)
-{
-	char *child_stack;
-	child_stack = mmap(NULL, STACK_SIZE, PROT_READ | PROT_WRITE,
-			   MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
-	if (child_stack == MAP_FAILED) {
-		error("Cannot allocate stack for child: %m");
-		return -1;
-	}
-	/*
-	 * In Linux (since 2.6.24), use CLONE_NEWPID to clone the child into a
-	 * new pid namespace. We are not into a job cgroup so we want to be
-	 * able to terminate any possible background process, specially because
-	 * we're using sudo here and running some user scripts (e.g. .bashrc).
-	 *
-	 * Killing the 'child' pid will kill all the namespace, since in the
-	 * namespace, this 'child' is pid 1.
-	 */
-	return clone(_child_fn, child_stack + STACK_SIZE,
-		     (SIGCHLD|CLONE_NEWPID), child_args);
-}
-#endif
-
 /*
  * Return an array of strings representing the specified user's default
  * environment variables following a two-prongged approach.
@@ -2076,7 +2100,7 @@ static int _clone_env_child(child_args_t *child_args)
 char **env_array_user_default(const char *username, int timeout, int mode,
 			      bool no_cache)
 {
-	char *line = NULL, *last = NULL, name[PATH_MAX], *value, *buffer;
+	char *line = NULL, *last = NULL, name[MAXPATHLEN], *value, *buffer;
 	char **env = NULL;
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
@@ -2085,7 +2109,6 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	int fildes[2], found, fval, len, rc, timeleft;
 	int buf_read, buf_rem, config_timeout;
 	pid_t child;
-	child_args_t child_args = {0};
 	struct timeval begin, now;
 	struct pollfd ufds;
 	struct stat buf;
@@ -2123,25 +2146,41 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		return NULL;
 	}
 
-	child_args.mode = mode;
-	child_args.fildes = fildes;
-	child_args.username = username;
-	child_args.cmdstr = cmdstr;
-
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 	child = fork();
 	if (child == -1) {
 		fatal("fork: %m");
 		return NULL;
 	}
-	if (child == 0)
-		_child_fn(&child_args);
+	if (child == 0) {
+		char **tmp_env = NULL;
+		int devnull;
+		tmp_env = env_array_create();
+		env_array_overwrite(&tmp_env, "ENVIRONMENT", "BATCH");
+		setpgid(0, 0);
+
+		if ((devnull = open("/dev/null", O_RDONLY)) == -1)
+			error("%s: open(/dev/null): %m", __func__);
+		dup2(devnull, STDIN_FILENO);
+		dup2(fildes[1], STDOUT_FILENO);
+		dup2(devnull, STDERR_FILENO);
+		closeall(3);
+
+		if      (mode == 1)
+			execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
+		else if (mode == 2)
+			execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
+		else {	/* Default system configuration */
+#ifdef LOAD_ENV_NO_LOGIN
+			execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
 #else
-	if ((child = _clone_env_child(&child_args)) == -1) {
-		fatal("clone: %m");
-		return NULL;
-	}
+			execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
 #endif
+		}
+		if (devnull >= 0)	/* Avoid Coverity resource leak notification */
+			(void) close(devnull);
+		_exit(1);
+	}
+
 	close(fildes[1]);
 	if ((fval = fcntl(fildes[0], F_GETFL, 0)) < 0)
 		error("fcntl(F_GETFL) failed: %m");
@@ -2345,20 +2384,6 @@ extern void set_env_from_opts(slurm_opt_t *opt, char ***dest,
 					    het_job_offset, "%s",
 					    opt->tres_per_task);
 	}
-
-	/*
-	 * In the case that an external launcher (mpirun) is launching instead
-	 * of srun let the srun it launches to treat the request differently.
-	 */
-	env_array_append(dest, "OMPI_MCA_plm_slurm_args",
-			 "--external-launcher");
-	env_array_append(dest, "PRTE_MCA_plm_slurm_args",
-			 "--external-launcher");
-	env_array_append(dest, "HYDRA_LAUNCHER_EXTRA_ARGS",
-			 "--external-launcher");
-	env_array_append(dest, "I_MPI_HYDRA_BOOTSTRAP_EXEC_EXTRA_ARGS",
-			 "--external-launcher");
-
 }
 
 extern char *find_quote_token(char *tmp, char *sep, char **last)

@@ -244,6 +244,7 @@ static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static List gres_conf_list = NULL;
 static uint32_t gpu_plugin_id = NO_VAL;
 static volatile uint32_t autodetect_flags = GRES_AUTODETECT_UNSET;
+static uint32_t select_plugin_type = NO_VAL;
 static buf_t *gres_context_buf = NULL;
 static buf_t *gres_conf_buf = NULL;
 static bool reset_prev = true;
@@ -273,7 +274,7 @@ static void	_job_state_log(gres_state_t *gres_js, uint32_t job_id);
 static int	_load_plugin(slurm_gres_context_t *gres_ctx);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
 static void	_my_stat(char *file_name);
-static void	_node_config_init(char *orig_config,
+static int	_node_config_init(char *orig_config,
 				  slurm_gres_context_t *gres_ctx,
 				  gres_state_t *gres_state_node);
 static char *	_node_gres_used(gres_node_state_t *gres_ns, char *gres_name);
@@ -534,9 +535,9 @@ static int _load_plugin(slurm_gres_context_t *gres_ctx)
 	if (gres_ctx->cur_plugin != PLUGIN_INVALID_HANDLE)
 		return SLURM_SUCCESS;
 
-	if (errno != ESLURM_PLUGIN_NOTFOUND) {
+	if (errno != EPLUGIN_NOTFOUND) {
 		error("Couldn't load specified plugin name for %s: %s",
-		      gres_ctx->gres_type, slurm_strerror(errno));
+		      gres_ctx->gres_type, plugin_strerror(errno));
 		return SLURM_ERROR;
 	}
 
@@ -731,8 +732,13 @@ extern int gres_init(void)
 	}
 
 fini:
+	if ((select_plugin_type == NO_VAL) &&
+	    (select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
+					   &select_plugin_type) != SLURM_SUCCESS)) {
+		select_plugin_type = NO_VAL;	/* error */
+	}
 	if (have_shared && running_in_slurmctld() &&
-	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES)) {
+	    (select_plugin_type != SELECT_TYPE_CONS_TRES)) {
 		fatal("Use of shared gres requires the use of select/cons_tres");
 	}
 
@@ -1054,7 +1060,7 @@ static void _my_stat(char *file_name)
 static int _validate_file(char *filenames, char *gres_name)
 {
 	char *one_name;
-	hostlist_t *hl;
+	hostlist_t hl;
 	int file_count = 0;
 
 	if (!(hl = hostlist_create(filenames)))
@@ -1534,7 +1540,7 @@ static int _parse_gres_config_node(void **dest, slurm_parser_enum_t type,
 
 	if (gres_node_name && value) {
 		bool match = false;
-		hostlist_t *hl;
+		hostlist_t hl;
 		hl = hostlist_create(value);
 		if (hl) {
 			match = (hostlist_find(hl, gres_node_name) >= 0);
@@ -1893,7 +1899,7 @@ static void _set_file_subset(gres_slurmd_conf_t *gres_slurmd_conf,
 			     uint64_t new_count)
 {
 	/* Convert file to hostrange */
-	hostlist_t *hl = hostlist_create(gres_slurmd_conf->file);
+	hostlist_t hl = hostlist_create(gres_slurmd_conf->file);
 	unsigned long old_count = hostlist_count(hl);
 
 	if (new_count >= old_count) {
@@ -2393,7 +2399,7 @@ extern int gres_node_config_load(List gres_conf_list,
 	names_list = list_create(_free_name_list);
 	itr = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(itr))) {
-		hostlist_t *hl;
+		hostlist_t hl;
 		char *one_name;
 
 		if (!(gres_slurmd_conf->config_flags & GRES_CONF_HAS_FILE) ||
@@ -3121,9 +3127,11 @@ static gres_node_state_t *_build_gres_node_state(void)
 /*
  * Build a node's gres record based only upon the slurm.conf contents
  */
-static void _node_config_init(char *orig_config, slurm_gres_context_t *gres_ctx,
-			      gres_state_t *gres_state_node)
+static int _node_config_init(char *orig_config,
+			     slurm_gres_context_t *gres_ctx,
+			     gres_state_t *gres_state_node)
 {
+	int rc = SLURM_SUCCESS;
 	gres_node_state_t *gres_ns;
 
 	if (!gres_state_node->gres_data)
@@ -3133,7 +3141,7 @@ static void _node_config_init(char *orig_config, slurm_gres_context_t *gres_ctx,
 	/* If the resource isn't configured for use with this node */
 	if ((orig_config == NULL) || (orig_config[0] == '\0')) {
 		gres_ns->gres_cnt_config = 0;
-		return;
+		return rc;
 	}
 
 	_get_gres_cnt(gres_ns, orig_config,
@@ -3153,6 +3161,8 @@ static void _node_config_init(char *orig_config, slurm_gres_context_t *gres_ctx,
 		bit_realloc(gres_ns->gres_bit_alloc,
 			    gres_ns->gres_cnt_avail);
 	}
+
+	return rc;
 }
 
 /*
@@ -3160,8 +3170,9 @@ static void _node_config_init(char *orig_config, slurm_gres_context_t *gres_ctx,
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT gres_list - List of Gres records for this node to track usage
  */
-extern void gres_init_node_config(char *orig_config, List *gres_list)
+extern int gres_init_node_config(char *orig_config, List *gres_list)
 {
+	int i, rc = SLURM_SUCCESS, rc2;
 	gres_state_t *gres_state_node, *gres_state_node_sharing = NULL,
 		*gres_state_node_shared = NULL;
 
@@ -3171,7 +3182,7 @@ extern void gres_init_node_config(char *orig_config, List *gres_list)
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
 		*gres_list = list_create(_gres_node_list_delete);
 	}
-	for (int i = 0; i < gres_context_cnt; i++) {
+	for (i = 0; i < gres_context_cnt; i++) {
 		gres_node_state_t *gres_ns;
 		/* Find or create gres_state entry on the list */
 		gres_state_node = list_find_first(*gres_list, gres_find_id,
@@ -3183,9 +3194,10 @@ extern void gres_init_node_config(char *orig_config, List *gres_list)
 			list_append(*gres_list, gres_state_node);
 		}
 
-		_node_config_init(orig_config, &gres_context[i],
-				  gres_state_node);
-
+		rc2 = _node_config_init(orig_config,
+					&gres_context[i], gres_state_node);
+		if (rc == SLURM_SUCCESS)
+			rc = rc2;
 		gres_ns = gres_state_node->gres_data;
 		if (gres_ns && gres_ns->gres_cnt_config) {
 			if (gres_id_sharing(gres_state_node->plugin_id))
@@ -3210,6 +3222,8 @@ extern void gres_init_node_config(char *orig_config, List *gres_list)
 			gres_ns_sharing->alt_gres_ns = gres_ns_shared;
 		}
 	}
+
+	return rc;
 }
 
 static int _foreach_get_tot_from_slurmd_conf(void *x, void *arg)
@@ -5882,10 +5896,6 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	uint64_t cnt = 0;
 	ListIterator iter;
 
-	if (tres_per_task && running_in_slurmctld() &&
-	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES))
-		return ESLURM_UNSUPPORTED_GRES;
-
 	if (!cpus_per_tres && !tres_per_job && !tres_per_node &&
 	    !tres_per_socket && !tres_per_task && !mem_per_tres &&
 	    !ntasks_per_tres)
@@ -5904,6 +5914,11 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	}
 
 	xassert(gres_context_cnt >= 0);
+
+	if ((select_plugin_type != SELECT_TYPE_CONS_TRES) &&
+	    (cpus_per_tres || tres_per_job || tres_per_socket ||
+	     tres_per_task || mem_per_tres))
+		return ESLURM_UNSUPPORTED_GRES;
 
 	/*
 	 * Clear fields as requested by job update (i.e. input value is "")
@@ -6182,7 +6197,7 @@ extern int gres_job_revalidate(List gres_list)
 	ListIterator iter;
 	int rc = SLURM_SUCCESS;
 
-	if (!gres_list || (slurm_select_cr_type() == SELECT_TYPE_CONS_TRES))
+	if (!gres_list || (select_plugin_type == SELECT_TYPE_CONS_TRES))
 		return SLURM_SUCCESS;
 
 	iter = list_iterator_create(gres_list);
@@ -7640,20 +7655,9 @@ extern void gres_g_job_set_env(stepd_step_rec_t *step, int node_inx)
 		    sharing_gres_allocated)
 			flags |= GRES_INTERNAL_FLAG_PROTECT_ENV;
 
-		if ((step->flags & LAUNCH_EXT_LAUNCHER)) {
-			/*
-			 * We need the step environment variables, but still
-			 * use all the job's gres.
-			 */
-			(*(gres_ctx->ops.step_set_env))(&step->env,
-							gres_bit_alloc,
-							gres_cnt,
-							flags);
-		} else
-			(*(gres_ctx->ops.job_set_env))(&step->env,
-						       gres_bit_alloc,
-						       gres_cnt,
-						       flags);
+		(*(gres_ctx->ops.job_set_env))(&step->env,
+					       gres_bit_alloc, gres_cnt,
+					       flags);
 		gres_cnt = 0;
 		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
@@ -8039,14 +8043,14 @@ extern void gres_step_list_delete(void *list_element)
  * rc OUT - unchanged or an error code
  * RET gres - step record to set value in, found or created by this function
  */
-static gres_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
-					 List gres_list, char **save_ptr,
-					 int *rc)
+static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
+					      List gres_list, char **save_ptr,
+					      int *rc)
 {
 	static char *prev_save_ptr = NULL;
 	int context_inx = NO_VAL, my_rc = SLURM_SUCCESS;
 	gres_step_state_t *gres_ss = NULL;
-	gres_state_t *gres_state_step = NULL;
+	gres_state_t *gres_state_step;
 	gres_key_t step_search_key;
 	char *type = NULL, *name = NULL;
 
@@ -8104,7 +8108,7 @@ fini:	xfree(name);
 		*rc = my_rc;
 	}
 	*save_ptr = prev_save_ptr;
-	return gres_state_step;
+	return gres_ss;
 }
 
 static int _handle_ntasks_per_tres_step(List new_step_list,
@@ -8112,7 +8116,6 @@ static int _handle_ntasks_per_tres_step(List new_step_list,
 					uint32_t *num_tasks,
 					uint32_t *cpu_count)
 {
-	gres_state_t *gres_state_step;
 	gres_step_state_t *gres_ss;
 	uint64_t cnt = 0;
 	int rc = SLURM_SUCCESS;
@@ -8133,11 +8136,10 @@ static int _handle_ntasks_per_tres_step(List new_step_list,
 				 __func__, *num_tasks, ntasks_per_tres);
 			return ESLURM_INVALID_GRES;
 		}
-		while ((gres_state_step =
+		while ((gres_ss =
 			_get_next_step_gres(in_val, &cnt,
 					    new_step_list,
 					    &save_ptr, &rc))) {
-			gres_ss = gres_state_step->gres_data;
 			/* Simulate a tres_per_job specification */
 			gres_ss->gres_per_step = cnt;
 			gres_ss->ntasks_per_gres = ntasks_per_tres;
@@ -8183,52 +8185,28 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 {
 	int rc = SLURM_SUCCESS;
 	gres_step_state_t *gres_ss;
-	gres_state_t *gres_state_step;
 	List new_step_list;
 	uint64_t cnt = 0;
-	uint16_t cpus_per_gres = 0;
-	char *cpus_per_gres_name = NULL;
-	char *cpus_per_gres_type = NULL;
 
 	*step_gres_list = NULL;
 	xassert(gres_context_cnt >= 0);
-	xassert(num_tasks);
-	xassert(cpu_count);
 
 	slurm_mutex_lock(&gres_context_lock);
 	new_step_list = list_create(gres_step_list_delete);
 	if (cpus_per_tres) {
 		char *in_val = cpus_per_tres, *save_ptr = NULL;
-		while ((gres_state_step = _get_next_step_gres(
-						in_val, &cnt,
-						new_step_list,
-						&save_ptr, &rc))) {
-			gres_ss = gres_state_step->gres_data;
+		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
+						      new_step_list,
+						      &save_ptr, &rc))) {
 			gres_ss->cpus_per_gres = cnt;
 			in_val = NULL;
-			/* Only a single cpus_per_tres value is allowed. */
-			if (cpus_per_gres) {
-				if (err_msg)
-					*err_msg = xstrdup("You may only request cpus_per_tres for one tres");
-				else
-					error("You may only request cpus_per_tres for one tres");
-				rc = ESLURM_INVALID_GRES;
-				FREE_NULL_LIST(new_step_list);
-				goto fini;
-			} else {
-				cpus_per_gres = cnt;
-				cpus_per_gres_name = gres_state_step->gres_name;
-				cpus_per_gres_type = gres_ss->type_name;
-			}
 		}
 	}
 	if (tres_per_step) {
 		char *in_val = tres_per_step, *save_ptr = NULL;
-		while ((gres_state_step = _get_next_step_gres(
-						in_val, &cnt,
-						new_step_list,
-						&save_ptr, &rc))) {
-			gres_ss = gres_state_step->gres_data;
+		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
+						      new_step_list,
+						      &save_ptr, &rc))) {
 			gres_ss->gres_per_step = cnt;
 			in_val = NULL;
 			gres_ss->total_gres =
@@ -8237,24 +8215,21 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	}
 	if (tres_per_node) {
 		char *in_val = tres_per_node, *save_ptr = NULL;
-		while ((gres_state_step = _get_next_step_gres(
-						in_val, &cnt,
-						new_step_list,
-						&save_ptr, &rc))) {
-			gres_ss = gres_state_step->gres_data;
+		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
+						      new_step_list,
+						      &save_ptr, &rc))) {
 			gres_ss->gres_per_node = cnt;
 			in_val = NULL;
+			/* Step only has 1 node, always */
 			gres_ss->total_gres =
-				MAX(gres_ss->total_gres, step_min_nodes * cnt);
+				MAX(gres_ss->total_gres, cnt);
 		}
 	}
 	if (tres_per_socket) {
 		char *in_val = tres_per_socket, *save_ptr = NULL;
-		while ((gres_state_step = _get_next_step_gres(
-						in_val, &cnt,
-						new_step_list,
-						&save_ptr, &rc))) {
-			gres_ss = gres_state_step->gres_data;
+		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
+						      new_step_list,
+						      &save_ptr, &rc))) {
 			gres_ss->gres_per_socket = cnt;
 			in_val = NULL;
 			// TODO: What is sockets_per_node and ntasks_per_socket?
@@ -8271,11 +8246,9 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	}
 	if (tres_per_task) {
 		char *in_val = tres_per_task, *save_ptr = NULL;
-		while ((gres_state_step = _get_next_step_gres(
-						in_val, &cnt,
-						new_step_list,
-						&save_ptr, &rc))) {
-			gres_ss = gres_state_step->gres_data;
+		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
+						      new_step_list,
+						      &save_ptr, &rc))) {
 			gres_ss->gres_per_task = cnt;
 			in_val = NULL;
 			if (*num_tasks != NO_VAL)
@@ -8286,46 +8259,19 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	}
 	if (mem_per_tres) {
 		char *in_val = mem_per_tres, *save_ptr = NULL;
-		while ((gres_state_step = _get_next_step_gres(
-						in_val, &cnt,
-						new_step_list,
-						&save_ptr, &rc))) {
-			gres_ss = gres_state_step->gres_data;
+		while ((gres_ss = _get_next_step_gres(in_val, &cnt,
+						      new_step_list,
+						      &save_ptr, &rc))) {
 			gres_ss->mem_per_gres = cnt;
 			in_val = NULL;
 		}
 	}
 
-	if ((ntasks_per_tres != NO_VAL16)) {
+	if ((ntasks_per_tres != NO_VAL16) && num_tasks && cpu_count) {
 		rc = _handle_ntasks_per_tres_step(new_step_list,
 						  ntasks_per_tres,
 						  num_tasks,
 						  cpu_count);
-	}
-
-	if ((rc == SLURM_SUCCESS) && cpus_per_gres && *cpu_count &&
-	    running_in_slurmctld()) {
-		/*
-		 * Update cpu_count = the total requested gres * cpus_per_gres
-		 *
-		 * If SSF_OVERCOMMIT (step_spec->cpu_count == 0), don't update.
-		 * Only update if in slurmctld because the step can inherit
-		 * gres from the job_gres_list_req, which only exists in
-		 * slurmctld.
-		 */
-		uint64_t gpu_cnt = _get_step_gres_list_cnt(new_step_list,
-							   cpus_per_gres_name,
-							   cpus_per_gres_type);
-
-		if (gpu_cnt == NO_VAL64) {
-			if (err_msg)
-				*err_msg = xstrdup("cpus_per_gres also requires specifying the same gres");
-			else
-				error("cpus_per_gres also requires specifying the same gres");
-			rc = ESLURM_INVALID_GRES;
-			FREE_NULL_LIST(new_step_list);
-		} else
-			*cpu_count = gpu_cnt * cpus_per_gres;
 	}
 
 	if (list_count(new_step_list) == 0) {
@@ -8358,7 +8304,6 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 		else
 			FREE_NULL_LIST(new_step_list);
 	}
-fini:
 	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
 }
@@ -9707,7 +9652,8 @@ extern void gres_g_send_stepd(int fd, slurm_msg_t *msg)
 		step_id = SLURM_BATCH_SCRIPT;
 		cred = job->cred;
 	} else {
-		launch_tasks_request_msg_t *job = msg->data;
+		launch_tasks_request_msg_t *job =
+			(launch_tasks_request_msg_t *)msg->data;
 		step_id = job->step_id.step_id;
 		cred = job->cred;
 	}
@@ -10168,7 +10114,7 @@ extern void add_gres_to_list(List gres_list,
 	gres_slurmd_conf->config_flags = gres_slurmd_conf_in->config_flags;
 
 	if (gres_slurmd_conf_in->file) {
-		hostlist_t *hl = hostlist_create(gres_slurmd_conf_in->file);
+		hostlist_t hl = hostlist_create(gres_slurmd_conf_in->file);
 		gres_slurmd_conf->config_flags |= GRES_CONF_HAS_FILE;
 		if (hostlist_count(hl) > 1)
 			gres_slurmd_conf->config_flags |= GRES_CONF_HAS_MULT;

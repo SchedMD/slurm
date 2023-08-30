@@ -133,11 +133,13 @@ int main(int argc, char *argv[])
 
 	slurm_init(NULL);
 
-	if (select_g_init(1) != SLURM_SUCCESS)
-		fatal("failed to initialize node selection plugin");
-
 	// Initialize GRES info (from slurm.conf)
-	gres_init_node_config(slurm_conf_gres_str, &gres_list);
+	rc = gres_init_node_config(slurm_conf_gres_str, &gres_list);
+	if (rc != SLURM_SUCCESS) {
+		slurm_perror("FAILURE: gres_init_node_config");
+		exit(1);
+	}
+
 	rc = gres_g_node_config_load(4, node_name, gres_list, NULL, NULL);
 	FREE_NULL_LIST(gres_list);
 	if (rc != SLURM_SUCCESS) {

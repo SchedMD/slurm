@@ -159,7 +159,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* cgroup_conf */
 	/* cli_filter_plugins */
 	packstr(slurm_conf.core_spec_plugin, buffer);
-	/* cluster_name */
+	packstr(slurm_conf.cluster_name, buffer);
 	packstr(slurm_conf.comm_params, buffer);
 	/* complete_wait */
 	pack32(slurm_conf.conf_flags, buffer);
@@ -206,6 +206,8 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* job_comp_type */
 	/* job_comp_user */
 	packstr(slurm_conf.job_container_plugin, buffer);
+	/* job_credential_private_key */
+	/* job_credential_public_certificate */
 	/* job_defaults_list */
 	pack16(slurm_conf.job_file_append, buffer);
 	/* job_requeue */
@@ -247,7 +249,6 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* power_plugin */
 	/* preempt_exempt_time */
 	/* preempt_mode */
-	packstr(slurm_conf.preempt_params, buffer);
 	/* preempt_type */
 	packstr(slurm_conf.prep_params, buffer);
 	packstr(slurm_conf.prep_plugins, buffer);
@@ -386,7 +387,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* cgroup_conf */
 	/* cli_filter_plugins */
 	safe_unpackstr(&slurm_conf.core_spec_plugin, buffer);
-	/* cluster_name */
+	safe_unpackstr(&slurm_conf.cluster_name, buffer);
 	safe_unpackstr(&slurm_conf.comm_params, buffer);
 	/* complete_wait */
 	safe_unpack32(&slurm_conf.conf_flags, buffer);
@@ -435,6 +436,8 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* job_comp_type */
 	/* job_comp_user */
 	safe_unpackstr(&slurm_conf.job_container_plugin, buffer);
+	/* job_credential_private_key */
+	/* job_credential_public_certificate */
 	/* job_defaults_list */
 	safe_unpack16(&slurm_conf.job_file_append, buffer);
 	/* job_requeue */
@@ -476,7 +479,6 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* power_plugin */
 	/* preempt_exempt_time */
 	/* preempt_mode */
-	safe_unpackstr(&slurm_conf.preempt_params, buffer);
 	/* preempt_type */
 	safe_unpackstr(&slurm_conf.prep_params, buffer);
 	safe_unpackstr(&slurm_conf.prep_plugins, buffer);

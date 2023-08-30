@@ -119,7 +119,7 @@ static pthread_mutex_t profile_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t timer_thread_id = 0;
 static pthread_mutex_t timer_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t timer_thread_cond = PTHREAD_COND_INITIALIZER;
-static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
+static bool init_run = false;
 
 static void _set_freq(int type, char *freq, char *freq_def)
 {
@@ -153,8 +153,7 @@ static void *_timer_thread(void *args)
 	abs.tv_sec = tvnow.tv_sec;
 	abs.tv_nsec = tvnow.tv_usec * 1000;
 
-	while ((plugin_inited != PLUGIN_NOT_INITED) &&
-	       acct_gather_profile_test()) {
+	while (init_run && acct_gather_profile_test()) {
 		slurm_mutex_lock(&g_context_lock);
 		now = time(NULL);
 
@@ -218,13 +217,8 @@ extern int acct_gather_profile_init(void)
 
 	slurm_mutex_lock(&g_context_lock);
 
-	if (plugin_inited != PLUGIN_NOT_INITED)
+	if (g_context)
 		goto done;
-
-	if (!slurm_conf.acct_gather_profile_type) {
-		plugin_inited = PLUGIN_NOOP;
-		goto done;
-	}
 
 	g_context = plugin_context_create(plugin_type,
 					  slurm_conf.acct_gather_profile_type,
@@ -234,10 +228,9 @@ extern int acct_gather_profile_init(void)
 		error("cannot create %s context for %s",
 		      plugin_type, slurm_conf.acct_gather_profile_type);
 		retval = SLURM_ERROR;
-		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
-	plugin_inited = PLUGIN_INITED;
+	init_run = true;
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
@@ -252,13 +245,15 @@ extern int acct_gather_profile_fini(void)
 {
 	int rc = SLURM_SUCCESS, i;
 
-	/*
-	 * If the plugin is a NOOP, do the cleanup of jobacct gather anyways
-	 * since other plugins might have been inited in acct_gather_conf_init()
-	 * and we've started the polling mechanism in
-	 * acct_gather_profile_startpoll().
-	 */
+	if (!g_context)
+		return SLURM_SUCCESS;
+
 	slurm_mutex_lock(&g_context_lock);
+
+	if (!g_context)
+		goto done;
+
+	init_run = false;
 
 	for (i=0; i < PROFILE_CNT; i++) {
 		switch (i) {
@@ -288,13 +283,9 @@ extern int acct_gather_profile_fini(void)
 		pthread_join(timer_thread_id, NULL);
 	}
 
-	if (!g_context)
-		goto done;
-
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
 done:
-	plugin_inited = PLUGIN_NOT_INITED;
 	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
@@ -457,7 +448,7 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 	int i;
 	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
 
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
+	xassert(init_run);
 
 	slurm_mutex_lock(&profile_running_mutex);
 	if (acct_gather_profile_running) {
@@ -468,10 +459,7 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 	acct_gather_profile_running = true;
 	slurm_mutex_unlock(&profile_running_mutex);
 
-	if (plugin_inited == PLUGIN_NOOP)
-		profile = ACCT_GATHER_PROFILE_NONE;
-	else
-		(*(ops.get))(ACCT_GATHER_PROFILE_RUNNING, &profile);
+	(*(ops.get))(ACCT_GATHER_PROFILE_RUNNING, &profile);
 	xassert(profile != ACCT_GATHER_PROFILE_NOT_SET);
 
 	for (i=0; i < PROFILE_CNT; i++) {
@@ -490,16 +478,11 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 				acct_gather_profile_timer[i].freq);
 			break;
 		case PROFILE_TASK:
-			/*
-			 * Always set up the task (always first) to be
-			 * done since it is used to control memory
-			 * consumption and such.  It will check
-			 * profile inside it's plugin. Note that if this
-			 * plugin is ACCT_GATHER_PROFILE_NONE we'll still need
-			 * to call job_acct_gather_fini() at the end, in
-			 * acct_gather_profile_fini() to cleanup the cgroup
-			 * tree.
-			 */
+			/* Always set up the task (always first) to be
+			   done since it is used to control memory
+			   consumption and such.  It will check
+			   profile inside it's plugin.
+			*/
 			_set_freq(i, freq, freq_def);
 
 			jobacct_gather_startpoll(
@@ -576,10 +559,7 @@ extern void acct_gather_profile_endpoll(void)
 
 extern int acct_gather_profile_g_child_forked(void)
 {
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(init_run);
 
 	(*(ops.child_forked))();
 	return SLURM_SUCCESS;
@@ -588,10 +568,7 @@ extern int acct_gather_profile_g_child_forked(void)
 extern int acct_gather_profile_g_conf_options(s_p_options_t **full_options,
 					       int *full_options_cnt)
 {
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(init_run);
 
 	(*(ops.conf_options))(full_options, full_options_cnt);
 	return SLURM_SUCCESS;
@@ -599,10 +576,7 @@ extern int acct_gather_profile_g_conf_options(s_p_options_t **full_options,
 
 extern int acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl)
 {
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(init_run);
 
 	(*(ops.conf_set))(tbl);
 	return SLURM_SUCCESS;
@@ -611,20 +585,7 @@ extern int acct_gather_profile_g_conf_set(s_p_hashtbl_t *tbl)
 extern int acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
 				      void *data)
 {
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP) {
-		uint32_t *uint32 = (uint32_t *) data;
-		switch (info_type) {
-		case ACCT_GATHER_PROFILE_DEFAULT:
-		case ACCT_GATHER_PROFILE_RUNNING:
-			*uint32 = ACCT_GATHER_PROFILE_NONE;
-			break;
-		default:
-			break;
-		}
-		return SLURM_SUCCESS;
-	}
+	xassert(init_run);
 
 	(*(ops.get))(info_type, data);
 	return SLURM_SUCCESS;
@@ -632,10 +593,7 @@ extern int acct_gather_profile_g_get(enum acct_gather_profile_info info_type,
 
 extern int acct_gather_profile_g_node_step_start(stepd_step_rec_t* job)
 {
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(init_run);
 
 	return (*(ops.node_step_start))(job);
 }
@@ -644,10 +602,6 @@ extern int acct_gather_profile_g_node_step_end(void)
 {
 	int retval = SLURM_ERROR;
 
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
 
 	retval = (*(ops.node_step_end))();
 	return retval;
@@ -657,10 +611,7 @@ extern int acct_gather_profile_g_task_start(uint32_t taskid)
 {
 	int retval = SLURM_ERROR;
 
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(init_run);
 
 	slurm_mutex_lock(&profile_mutex);
 	retval = (*(ops.task_start))(taskid);
@@ -672,10 +623,7 @@ extern int acct_gather_profile_g_task_end(pid_t taskpid)
 {
 	int retval = SLURM_ERROR;
 
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(init_run);
 
 	slurm_mutex_lock(&profile_mutex);
 	retval = (*(ops.task_end))(taskpid);
@@ -687,10 +635,7 @@ extern int64_t acct_gather_profile_g_create_group(const char *name)
 {
 	int64_t retval = SLURM_ERROR;
 
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(init_run);
 
 	slurm_mutex_lock(&profile_mutex);
 	retval = (*(ops.create_group))(name);
@@ -704,10 +649,7 @@ extern int acct_gather_profile_g_create_dataset(
 {
 	int retval = SLURM_ERROR;
 
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(init_run);
 
 	slurm_mutex_lock(&profile_mutex);
 	retval = (*(ops.create_dataset))(name, parent, dataset);
@@ -720,10 +662,7 @@ extern int acct_gather_profile_g_add_sample_data(int dataset_id, void* data,
 {
 	int retval = SLURM_ERROR;
 
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(init_run);
 
 	slurm_mutex_lock(&profile_mutex);
 	retval = (*(ops.add_sample_data))(dataset_id, data, sample_time);
@@ -733,20 +672,14 @@ extern int acct_gather_profile_g_add_sample_data(int dataset_id, void* data,
 
 extern void acct_gather_profile_g_conf_values(void *data)
 {
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return;
+	xassert(init_run);
 
 	(*(ops.conf_values))(data);
 }
 
 extern bool acct_gather_profile_g_is_active(uint32_t type)
 {
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return false;
+	xassert(init_run);
 
 	return (*(ops.is_active))(type);
 }

@@ -180,10 +180,10 @@ int _measure_api(char* measure_case)
 	int i,j,et;
 	int hl_count = 0;
 	char* nodes;
-	hostlist_t *hl;
+	hostlist_t hl;
 	DEF_TIMERS;
 
-	hostlist_t **sp_hl;
+	hostlist_t* sp_hl;
 	nodes = measure_case;
 	hl = hostlist_create(nodes);
 	START_TIMER;
@@ -210,7 +210,7 @@ void _print_test(char** testcase, int lines)
 	}
 }
 
-void _print_results(hostlist_t **hll, int hl_count)
+void _print_results(hostlist_t* hll, int hl_count)
 {
 	int i;
 	char *list;
@@ -225,13 +225,13 @@ void _print_results(hostlist_t **hll, int hl_count)
 int _run_test(char** testcase, int lines)
 {
 	int i, rc;
-	hostlist_t **hll = NULL;
+	hostlist_t* hll = NULL;
 	int hl_count = 0;
 	int level;
 	char *list;
 	char *nodes;
 	nodes = testcase[0];
-	hostlist_t *hl = hostlist_create(nodes);
+	hostlist_t hl = hostlist_create(nodes);
 	if (route_g_split_hostlist(hl, &hll, &hl_count, 0)) {
 		info("Unable to split forward hostlist");
 		_print_test(testcase,lines);
@@ -293,8 +293,8 @@ int main(int argc, char *argv[])
 		goto ouch;
 
 	slurm_init(NULL);
-	route_g_init();
-	topology_g_init();
+	route_init();
+	slurm_topo_init();
 	opts.stderr_level = LOG_LEVEL_DEBUG;
 	log_init(argv[0], opts, SYSLOG_FACILITY_USER, NULL);
 

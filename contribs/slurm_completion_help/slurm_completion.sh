@@ -1394,6 +1394,7 @@ function __slurm_comp_common() {
 	-x | --exclude) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	--exclusive) __slurm_compreply "${exclusive_types[*]}" ;;
 	--export) __slurm_compreply "${export_types[*]}" ;;
+	--export-file) _filedir ;;
 	--get-user-env) __slurm_compreply "${env_modes[*]}" ;;
 	--gid) __slurm_compreply "$(__slurm_linux_groups) $(__slurm_linux_gids)" ;;
 	--gpu-bind) __slurm_compreply "${gpubind_types[*]}" ;;
@@ -2157,43 +2158,6 @@ function __slurm_comp_sacctmgr_spec_federations() {
 	esac
 }
 
-# completion helper for sacctmgr instance specifications
-# https://slurm.schedmd.com/sacctmgr.html#SECTION_SPECIFICATIONS-FOR-INSTANCES
-# https://slurm.schedmd.com/sacctmgr.html#SECTION_LIST/SHOW-INSTANCE-FORMAT-OPTIONS
-function __slurm_comp_sacctmgr_spec_instances() {
-	local mode="$1"
-	local parameters=()
-	local parameters_where=(
-		"clusters="
-		"end="
-		"extra="
-		"instanceid="
-		"instancetype="
-		"nodes="
-		"start="
-	)
-	local parameters_set=(
-	)
-
-	__slurm_log_debug "$(__func__): mode='$mode'"
-
-	__slurm_comp_mode_select "$mode"
-
-	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
-	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
-	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
-
-	case "${prev}" in
-	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	instance?(s)) __slurm_compreply_list "${event_types[*]}" ;;
-	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
-	*)
-		[[ $split == "true" ]] && return
-		__slurm_compreply_param "${parameters[*]}"
-		;;
-	esac
-}
-
 # completion helper for sacctmgr job specifications
 # https://slurm.schedmd.com/sacctmgr.html#SECTION_SPECIFICATIONS-FOR-JOB
 function __slurm_comp_sacctmgr_spec_jobs() {
@@ -2815,11 +2779,6 @@ function __sacctmgr_list_federation() {
 	__slurm_comp_sacctmgr_spec_federations 1
 }
 
-# completion handler for: sacctmgr list instance [key=val]...
-function __sacctmgr_list_instance() {
-	__slurm_comp_sacctmgr_spec_instances 1
-}
-
 # completion handler for: sacctmgr list qos [key=val]...
 function __sacctmgr_list_qos() {
 	__slurm_comp_sacctmgr_spec_qos 1
@@ -2864,7 +2823,6 @@ function __sacctmgr_list() {
 		"configuration"
 		"event"
 		"federation"
-		"instance"
 		"problem"
 		"qos"
 		"resource"
@@ -3917,8 +3875,6 @@ function __scontrol_update_nodename() {
 		"cpubind="
 		"extra="
 		"gres="
-		"instanceid="
-		"instancetype="
 		"nodeaddr="
 		"nodehostname="
 		"nodename=" # meta
@@ -4090,6 +4046,7 @@ function __scontrol_update_reservationname() {
 		"any_nodes"
 		"daily"
 		"flex"
+		"first_cores"
 		"ignore_jobs"
 		"license_only"
 		"hourly"

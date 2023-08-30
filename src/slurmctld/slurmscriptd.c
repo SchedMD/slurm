@@ -73,7 +73,7 @@
 #define MAX_POLL_WAIT 500 /* in milliseconds */
 #define MAX_SHUTDOWN_DELAY 10
 
-#ifndef POLLRDHUP
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define POLLRDHUP POLLHUP
 #endif
 
@@ -1010,7 +1010,7 @@ static int _msg_accept(eio_obj_t *obj, List objs)
 		req_args = xmalloc(sizeof *req_args);
 		req_args->req = req;
 		req_args->buffer = buffer;
-		slurm_thread_create_detached(_handle_accept, req_args);
+		slurm_thread_create_detached(NULL, _handle_accept, req_args);
 
 		/*
 		 * xmalloc()'d data will be xfree()'d by _handle_accept()
@@ -1493,7 +1493,14 @@ extern int slurmscriptd_init(int argc, char **argv)
 			failed_plugin = "burst_buffer";
 			ack = SLURM_ERROR;
 		}
-
+		/*
+		 * Required by burst buffer plugin - specifically for
+		 * unpacking job_info in _run_bb_script()
+		 */
+		if (select_g_init(0) != SLURM_SUCCESS) {
+			failed_plugin = "select";
+			ack = SLURM_ERROR;
+		}
 		i = write(slurmscriptd_writefd, &ack, sizeof(int));
 		if (i != sizeof(int))
 			fatal("%s: Failed to send initialization code to slurmctld",

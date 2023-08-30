@@ -53,7 +53,6 @@
 #include "slurm/slurm.h"
 
 #include "src/common/read_config.h"
-#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/strigger/strigger.h"
@@ -63,6 +62,7 @@ static int   _get_trigger(void);
 static int   _set_trigger(void);
 static char *_trig_flags(uint16_t flags);
 static int   _trig_offset(uint16_t offset);
+static char *_trig_user(uint32_t user_id);
 
 int main(int argc, char **argv)
 {
@@ -229,7 +229,6 @@ static int _get_trigger(void)
 {
 	trigger_info_msg_t * trig_msg;
 	int line_no = 0, i;
-	char *user;
 
 	if (slurm_get_triggers(&trig_msg)) {
 		slurm_perror("slurm_get_triggers");
@@ -423,17 +422,15 @@ static int _get_trigger(void)
 		}
 		line_no++;
 
-		user = uid_to_string(trig_msg->trigger_array[i].user_id);
 		printf("%7u %-9s %7s %-35s %6d %-8s %-5s %s\n",
 			trig_msg->trigger_array[i].trig_id,
 			trigger_res_type(trig_msg->trigger_array[i].res_type),
 			trig_msg->trigger_array[i].res_id,
 			trigger_type(trig_msg->trigger_array[i].trig_type),
 			_trig_offset(trig_msg->trigger_array[i].offset),
-			user,
+			_trig_user(trig_msg->trigger_array[i].user_id),
 			_trig_flags(trig_msg->trigger_array[i].flags),
 			trig_msg->trigger_array[i].program);
-		xfree(user);
 	}
 
 	slurm_free_trigger_msg(trig_msg);
@@ -453,4 +450,15 @@ static int _trig_offset(uint16_t offset)
 	rc  = offset;
 	rc -= 0x8000;
 	return rc;
+}
+
+static char *_trig_user(uint32_t user_id)
+{
+	uid_t uid = user_id;
+	struct passwd *pw;
+
+	pw = getpwuid(uid);
+	if (pw == NULL)
+		return "unknown";
+	return pw->pw_name;
 }

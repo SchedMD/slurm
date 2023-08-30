@@ -49,8 +49,7 @@
 /* Slurm DBD message types */
 /* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */
 typedef enum {
-	SLURM_DBD_MESSAGES_START = 1400, /* So that we don't overlap with any
-					  * slurm_msg_type_t numbers. */
+	DEFUNCT_DBD_INIT = 1400,/* Connection initialization		*/
 	DBD_FINI,       	/* Connection finalization		*/
 	DBD_ADD_ACCOUNTS,       /* Add new account to the mix           */
 	DBD_ADD_ACCOUNT_COORDS, /* Add new coordinatior to an account   */
@@ -86,7 +85,7 @@ typedef enum {
 	DBD_MODIFY_CLUSTERS,    /* #1430, Modify existing cluster       */
 	DBD_MODIFY_USERS,       /* Modify existing user                 */
 	DBD_NODE_STATE,		/* Record node state transition		*/
-	SLURM_PERSIST_RC,	/* To mirror the DBD_RC this is replacing */
+	DBD_DEFUNCT_RPC_1433,	/* Free for reuse			*/
 	DBD_REGISTER_CTLD,	/* Register a slurmctld's comm port	*/
 	DBD_REMOVE_ACCOUNTS,    /* Remove existing account              */
 	DBD_REMOVE_ACCOUNT_COORDS,/* Remove existing coordinator from
@@ -155,15 +154,8 @@ typedef enum {
 	DBD_REMOVE_FEDERATIONS, /* Removing existing federation 	*/
 	DBD_JOB_HEAVY,         /* Send job script/env  		*/
 	DBD_GOT_JOB_ENV,	/* Loading env hash table*/
-	DBD_GOT_JOB_SCRIPT,	/* #1450, Loading bash script hash table */
-	DBD_ADD_ACCOUNTS_COND,  /* Add new account to the mix with acct_rec and
-				 * add_assoc_cond */
-	DBD_ADD_USERS_COND,     /* Add new user to the mix with user_rec and
-				 * add_assoc_cond */
-	DBD_GET_INSTANCES,	/* Get instance information */
-	DBD_GOT_INSTANCES,	/* Response to DBD_GET_INSTANCES */
-	SLURM_DBD_MESSAGES_END = 2000, /* So that we don't overlap with any
-					* slurm_msg_type_t numbers. */
+	DBD_GOT_JOB_SCRIPT,	/* Loadung bash script hash table*/
+
 	SLURM_PERSIST_INIT = 6500, /* So we don't use the
 				    * REQUEST_PERSIST_INIT also used here.
 				    */
@@ -350,14 +342,9 @@ typedef struct {
 
 #define DBD_NODE_STATE_DOWN  1
 #define DBD_NODE_STATE_UP    2
-#define DBD_NODE_STATE_UPDATE 3
-
 typedef struct dbd_node_state_msg {
 	time_t event_time;	/* time of transition */
-	char *extra;		/* arbitrary sting */
 	char *hostlist;		/* name of hosts */
-	char *instance_id;	/* cloud instance id */
-	char *instance_type;	/* cloud instance type */
 	uint16_t new_state;	/* new state of host, see DBD_NODE_STATE_* */
 	char *reason;		/* explanation for the node's state */
 	uint32_t reason_uid;   	/* User that set the reason, ignore if

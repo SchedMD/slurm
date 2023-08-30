@@ -177,11 +177,15 @@ int main(int argc, char **argv)
 			break;
 		case OPT_LONG_JSON :
 			mime_type = MIME_TYPE_JSON;
+			if (data_init())
+				fatal("data_init() failed");
 			if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
 				fatal("JSON plugin load failure");
 			break;
 		case OPT_LONG_YAML :
 			mime_type = MIME_TYPE_YAML;
+			if (data_init())
+				fatal("data_init() failed");
 			if (serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL))
 				fatal("YAML plugin load failure");
 			break;
@@ -257,7 +261,7 @@ int main(int argc, char **argv)
 	if (local_exit_code)
 		exit_code = local_exit_code;
 	slurmdb_connection_close(&db_conn);
-	acct_storage_g_fini();
+	slurm_acct_storage_fini();
 	FREE_NULL_LIST(g_qos_list);
 	FREE_NULL_LIST(g_res_list);
 	FREE_NULL_LIST(g_tres_list);
@@ -738,9 +742,6 @@ static void _show_it(int argc, char **argv)
 	} else if (xstrncasecmp(argv[0], "Federation",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_federation((argc - 1), &argv[1]);
-	} else if (xstrncasecmp(argv[0], "Instances",
-				MAX(command_len, 1)) == 0) {
-		error_code = sacctmgr_list_instance((argc - 1), &argv[1]);
 	} else if (xstrncasecmp(argv[0], "Problems",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_problem((argc - 1), &argv[1]);

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  switch.h - Generic switch (switch_g) info for slurm
+ *  src/interfaces/switch.h - Generic switch (switch_g) info for slurm
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_SWITCH_H
-#define _INTERFACES_SWITCH_H
+#ifndef _SWITCH_H
+#define _SWITCH_H
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -149,6 +149,15 @@ extern int switch_g_unpack_jobinfo(dynamic_plugin_data_t **jobinfo,
 				   buf_t *buffer,
 				   uint16_t protocol_version);
 
+/* get some field from a switch job credential
+ * IN jobinfo - the switch job credential
+ * IN data_type - the type of data to get from the credential
+ * OUT data - the desired data from the credential
+ * RET         - slurm error code
+ */
+extern int  switch_g_get_jobinfo(dynamic_plugin_data_t *jobinfo,
+	int data_type, void *data);
+
 /*
  * Note that the job step associated with the specified nodelist
  * has completed execution.
@@ -213,6 +222,69 @@ extern int switch_g_job_preinit(stepd_step_rec_t *step);
 extern int switch_g_job_init(stepd_step_rec_t *step);
 
 /*
+ * Determine if a job can be suspended
+ *
+ * IN jobinfo - switch information for a job step
+ * RET SLURM_SUCCESS or error code
+ */
+extern int switch_g_job_suspend_test(dynamic_plugin_data_t *jobinfo);
+
+/*
+ * Build data structure containing information needed to suspend or resume
+ * a job
+ *
+ * IN jobinfo - switch information for a job step
+ * RET data to be sent with job suspend/resume RPC
+ */
+extern void switch_g_job_suspend_info_get(dynamic_plugin_data_t *jobinfo,
+					  void **suspend_info);
+/*
+ * Pack data structure containing information needed to suspend or resume
+ * a job
+ *
+ * IN suspend_info - data to be sent with job suspend/resume RPC
+ * IN/OUT buffer to hold the data
+ * IN protocol_version - version of Slurm we are talking to.
+ */
+extern void switch_g_job_suspend_info_pack(void *suspend_info, buf_t *buffer,
+					   uint16_t protocol_version);
+/*
+ * Unpack data structure containing information needed to suspend or resume
+ * a job
+ *
+ * IN suspend_info - data to be sent with job suspend/resume RPC
+ * IN/OUT buffer that holds the data
+ * IN protocol_version - version of Slurm we are talking to.
+ * RET SLURM_SUCCESS or error code
+ */
+extern int switch_g_job_suspend_info_unpack(void **suspend_info, buf_t *buffer,
+					    uint16_t protocol_version);
+/*
+ * Free data structure containing information needed to suspend or resume
+ * a job
+ *
+ * IN suspend_info - data sent with job suspend/resume RPC
+ */
+extern void switch_g_job_suspend_info_free(void *suspend_info);
+
+/*
+ * Suspend a job's use of switch resources. This may reset MPI timeout values
+ * and/or release switch resources. See also switch_g_job_resume().
+ *
+ * IN max_wait - maximum number of seconds to wait for operation to complete
+ * RET SLURM_SUCCESS or error code
+ */
+extern int switch_g_job_suspend(void *suspend_info, int max_wait);
+
+/*
+ * Resume a job's use of switch resources. See also switch_g_job_suspend().
+ *
+ * IN max_wait - maximum number of seconds to wait for operation to complete
+ * RET SLURM_SUCCESS or error code
+ */
+extern int switch_g_job_resume(void *suspend_info, int max_wait);
+
+/*
  * This function is run from the same process as switch_g_job_init()
  * after all job tasks have exited. It is *not* run as root, because
  * the process in question has already setuid to the job owner.
@@ -263,4 +335,4 @@ extern int switch_g_job_step_pre_resume(stepd_step_rec_t *step);
  */
 extern int switch_g_job_step_post_resume(stepd_step_rec_t *step);
 
-#endif
+#endif /* _SWITCH_H */

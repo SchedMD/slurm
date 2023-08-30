@@ -236,8 +236,6 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 	uint32_t min = ports[0], max = ports[1];
 	uint32_t num = max - min + 1;
 
-	xassert(num > 0);
-
 	srandom(getpid());
 	*port = min + (random() % num);
 
@@ -290,9 +288,7 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 			++(*port);
 	}
 
-	if (*fd >= 0)
-		close(*fd);
-
+	close(*fd);
 	error("%s: all ports in range (%u, %u) exhausted, cannot establish listening port",
 	      __func__, min, max);
 

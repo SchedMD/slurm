@@ -120,7 +120,7 @@ AC_DEFUN([X_AC_PMIX],
               if test "$ac_with_rpath" = "yes"; then
                 PMIX_V2_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
               else
-                PMIX_V2_CPPFLAGS=$PMIX_V2_CPPFLAGS" -DPMIXP_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
+                PMIX_V2_CPPFLAGS=$PMIX_V2_CPPFLAGS" -DPMIXP_V2_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
               fi
               # We don't want to search the other lib after we found it in
               # one place or we might report a false duplicate if lib64 is a
@@ -139,7 +139,7 @@ AC_DEFUN([X_AC_PMIX],
               if test "$ac_with_rpath" = "yes"; then
                 PMIX_V3_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
               else
-                PMIX_V3_CPPFLAGS=$PMIX_V3_CPPFLAGS" -DPMIXP_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
+                PMIX_V3_CPPFLAGS=$PMIX_V3_CPPFLAGS" -DPMIXP_V3_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
               fi
               # We don't want to search the other lib after we found it in
               # one place or we might report a false duplicate if lib64 is a
@@ -158,7 +158,7 @@ AC_DEFUN([X_AC_PMIX],
               if test "$ac_with_rpath" = "yes"; then
                 PMIX_V4_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
               else
-                PMIX_V4_CPPFLAGS=$PMIX_V4_CPPFLAGS" -DPMIXP_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
+                PMIX_V4_CPPFLAGS=$PMIX_V4_CPPFLAGS" -DPMIXP_V4_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
               fi
               # We don't want to search the other lib after we found it in
               # one place or we might report a false duplicate if lib64 is a
@@ -177,7 +177,7 @@ AC_DEFUN([X_AC_PMIX],
               if test "$ac_with_rpath" = "yes"; then
                 PMIX_V5_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
               else
-                PMIX_V5_CPPFLAGS=$PMIX_V5_CPPFLAGS" -DPMIXP_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
+                PMIX_V5_CPPFLAGS=$PMIX_V5_CPPFLAGS" -DPMIXP_V5_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
               fi
               # We don't want to search the other lib after we found it in
               # one place or we might report a false duplicate if lib64 is a

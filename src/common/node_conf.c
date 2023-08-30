@@ -128,11 +128,12 @@ static void _delete_config_record(void)
  */
 static void xhash_walk_helper_cbk (void* item, void* arg)
 {
-	int *i_ptr = arg;
+	static int i = 0; /* sequential walk, so just update a static i */
+	int inx;
 	node_record_t *node_ptr = (node_record_t *) item;
 
-	debug3("node_hash[%d]:%d(%s)", (*i_ptr)++, node_ptr->index,
-	       node_ptr->name);
+	inx = node_ptr -  node_record_table_ptr;
+	debug3("node_hash[%d]:%d(%s)", i++, inx, node_ptr->name);
 }
 /*
  * _dump_hash - print the node_hash_table contents, used for debugging
@@ -142,12 +143,11 @@ static void xhash_walk_helper_cbk (void* item, void* arg)
  */
 static void _dump_hash (void)
 {
-	int i = 0;
 	if (node_hash_table == NULL)
 		return;
-	debug2("node_hash: indexing %u elements",
-	       xhash_count(node_hash_table));
-	xhash_walk(node_hash_table, xhash_walk_helper_cbk, &i);
+	debug2("node_hash: indexing %ld elements",
+	      xhash_count(node_hash_table));
+	xhash_walk(node_hash_table, xhash_walk_helper_cbk, NULL);
 }
 #endif
 
@@ -188,9 +188,9 @@ static void _node_record_hash_identity (void* item, const char** key,
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-hostlist_t *bitmap2hostlist(bitstr_t *bitmap)
+hostlist_t bitmap2hostlist (bitstr_t *bitmap)
 {
-	hostlist_t *hl;
+	hostlist_t hl;
 	node_record_t *node_ptr;
 
 	if (bitmap == NULL)
@@ -216,7 +216,7 @@ hostlist_t *bitmap2hostlist(bitstr_t *bitmap)
  */
 char * bitmap2node_name_sortable (bitstr_t *bitmap, bool sort)
 {
-	hostlist_t *hl;
+	hostlist_t hl;
 	char *buf;
 
 	hl = bitmap2hostlist (bitmap);
@@ -275,7 +275,7 @@ extern void build_all_frontend_info (bool is_slurmd_context)
 		fatal("No FrontendName information available!");
 
 	for (i = 0; i < count; i++) {
-		hostlist_t *hl_name, *hl_addr;
+		hostlist_t hl_name, hl_addr;
 		char *fe_name, *fe_addr;
 
 		fe_line = ptr_array[i];
@@ -331,21 +331,18 @@ extern void build_all_frontend_info (bool is_slurmd_context)
 #endif
 }
 
-static int _check_callback(char *alias, char *hostname,
-			   char *address, char *bcast_address,
-			   uint16_t port, int state_val,
-			   slurm_conf_node_t *node_ptr,
-			   config_record_t *config_ptr)
+static void _check_callback(char *alias, char *hostname,
+			    char *address, char *bcast_address,
+			    uint16_t port, int state_val,
+			    slurm_conf_node_t *node_ptr,
+			    config_record_t *config_ptr)
 {
-	int rc = SLURM_SUCCESS;
 	node_record_t *node_rec;
 
 	if ((node_rec = find_node_record2(alias)))
 		fatal("Duplicated NodeHostName %s in config file", alias);
 
-	if ((rc = create_node_record(config_ptr, alias, &node_rec)))
-		return rc;
-
+	node_rec = create_node_record(config_ptr, alias);
 	if ((state_val != NO_VAL) &&
 	    (state_val != NODE_STATE_UNKNOWN))
 		node_rec->node_state = state_val;
@@ -357,8 +354,6 @@ static int _check_callback(char *alias, char *hostname,
 	node_rec->port      = port;
 	node_rec->features  = xstrdup(node_ptr->feature);
 	node_rec->reason    = xstrdup(node_ptr->reason);
-
-	return rc;
 }
 
 extern config_record_t *config_record_from_conf_node(
@@ -420,7 +415,7 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 	for (i = 0; i < count; i++) {
 		node = ptr_array[i];
 		config_ptr = config_record_from_conf_node(node, tres_cnt);
-		expand_nodeline_info(node, config_ptr, NULL, _check_callback);
+		expand_nodeline_info(node, config_ptr, _check_callback);
 	}
 
 	if (set_bitmap) {
@@ -536,27 +531,26 @@ static void _select_spec_cores(node_record_t *node_ptr)
 /*
  * Expand a nodeline's node names, host names, addrs, ports into separate nodes.
  */
-extern int expand_nodeline_info(slurm_conf_node_t *node_ptr,
-				config_record_t *config_ptr,
-				char **err_msg,
-				int (*_callback) (
-					char *alias, char *hostname,
-					char *address, char *bcast_address,
-					uint16_t port, int state_val,
-					slurm_conf_node_t *node_ptr,
-					config_record_t *config_ptr))
+extern void expand_nodeline_info(slurm_conf_node_t *node_ptr, config_record_t
+				 *config_ptr,
+				 void (*_callback) (
+				       char *alias, char *hostname,
+				       char *address, char *bcast_address,
+				       uint16_t port, int state_val,
+				       slurm_conf_node_t *node_ptr,
+				       config_record_t *config_ptr))
 {
-	hostlist_t *address_list = NULL;
-	hostlist_t *alias_list = NULL;
-	hostlist_t *bcast_list = NULL;
-	hostlist_t *hostname_list = NULL;
-	hostlist_t *port_list = NULL;
+	hostlist_t address_list = NULL;
+	hostlist_t alias_list = NULL;
+	hostlist_t bcast_list = NULL;
+	hostlist_t hostname_list = NULL;
+	hostlist_t port_list = NULL;
 	char *address = NULL;
 	char *alias = NULL;
 	char *bcast_address = NULL;
 	char *hostname = NULL;
 	char *port_str = NULL;
-	int state_val = NODE_STATE_UNKNOWN, rc = SLURM_SUCCESS;
+	int state_val = NODE_STATE_UNKNOWN;
 	int address_count, alias_count, bcast_count, hostname_count, port_count;
 	uint16_t port = slurm_conf.slurmd_port;
 
@@ -665,17 +659,8 @@ extern int expand_nodeline_info(slurm_conf_node_t *node_ptr,
 			port = port_int;
 		}
 
-		if ((rc = (*_callback)(alias, hostname, address, bcast_address,
-				       port, state_val, node_ptr,
-				       config_ptr))) {
-			if (err_msg) {
-				xfree(*err_msg);
-				*err_msg = xstrdup_printf("%s (%s)",
-							  slurm_strerror(rc),
-							  alias);
-			}
-			break;
-		}
+		(*_callback)(alias, hostname, address, bcast_address,
+			     port, state_val, node_ptr, config_ptr);
 
 		free(alias);
 	}
@@ -688,13 +673,16 @@ extern int expand_nodeline_info(slurm_conf_node_t *node_ptr,
 		free(hostname);
 	if (port_str)
 		free(port_str);
-	FREE_NULL_HOSTLIST(address_list);
-	FREE_NULL_HOSTLIST(alias_list);
-	FREE_NULL_HOSTLIST(bcast_list);
-	FREE_NULL_HOSTLIST(hostname_list);
-	FREE_NULL_HOSTLIST(port_list);
-
-	return rc;
+	if (address_list)
+		hostlist_destroy(address_list);
+	if (alias_list)
+		hostlist_destroy(alias_list);
+	if (bcast_list)
+		hostlist_destroy(bcast_list);
+	if (hostname_list)
+		hostlist_destroy(hostname_list);
+	if (port_list)
+		hostlist_destroy(port_list);
 }
 
 /*
@@ -786,8 +774,7 @@ static void _init_node_record(node_record_t *node_ptr,
 	node_ptr->port = slurm_conf.slurmd_port;
 	node_ptr->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 	node_ptr->resume_timeout = NO_VAL16;
-	if (running_in_slurmctld())
-		node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc();
+	node_ptr->select_nodeinfo = select_g_select_nodeinfo_alloc();
 	node_ptr->suspend_time = NO_VAL;
 	node_ptr->suspend_timeout = NO_VAL16;
 
@@ -843,27 +830,25 @@ extern void grow_node_record_table_ptr(void)
  * create_node_record - create a node record and set its values to defaults
  * IN config_ptr - pointer to node's configuration information
  * IN node_name - name of the node
- * OUT node_ptr - node_record_t** with created node on SUCESS, NULL otherwise.
- * RET SUCESS, or error code
+ * RET pointer to the record or NULL if error
  * NOTE: allocates memory at node_record_table_ptr that must be xfreed when
  *	the global node table is no longer required
  */
-extern int create_node_record(config_record_t *config_ptr, char *node_name,
-			      node_record_t **node_ptr)
+extern node_record_t *create_node_record(config_record_t *config_ptr,
+					 char *node_name)
 {
+	node_record_t *node_ptr;
 	xassert(config_ptr);
 	xassert(node_name);
-	xassert(node_ptr);
 
 	if (node_record_count >= node_record_table_size)
 		grow_node_record_table_ptr();
 
-	if (!(*node_ptr = create_node_record_at(node_record_count,
-						node_name, config_ptr)))
-		return ESLURM_NODE_TABLE_FULL;
+	node_ptr = create_node_record_at(node_record_count, node_name,
+					 config_ptr);
 	node_record_count++;
 
-	return SLURM_SUCCESS;
+	return node_ptr;
 }
 
 extern node_record_t *create_node_record_at(int index, char *node_name,
@@ -895,40 +880,33 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 	return node_ptr;
 }
 
-extern int add_node_record(char *alias, config_record_t *config_ptr,
-			   node_record_t **node_ptr)
+extern node_record_t *add_node_record(char *alias, config_record_t *config_ptr)
 {
-	int rc = SLURM_SUCCESS;
+	node_record_t *node_ptr = NULL;
 
-	xassert(node_ptr);
-
-	if ((*node_ptr = find_node_record2(alias))) {
-		rc = ESLURM_NODE_ALREADY_EXISTS;
-		goto end;
+	if ((node_ptr = find_node_record2(alias))) {
+		error("Node '%s' already exists in the node table", alias);
+		return NULL;
 	}
 
 	for (int i = 0; i < node_record_count; i++) {
 		if (node_record_table_ptr[i])
 			continue;
 
-		if (!(*node_ptr =
-			create_node_record_at(i, alias, config_ptr))) {
-			rc = ESLURM_NODE_TABLE_FULL;
-			goto end;
-		}
+		if (!(node_ptr = create_node_record_at(i, alias, config_ptr)))
+			return NULL;
 
 		bit_set(config_ptr->node_bitmap, i);
 
-		gres_init_node_config((*node_ptr)->config_ptr->gres,
-				      &(*node_ptr)->gres_list);
+		gres_init_node_config(node_ptr->config_ptr->gres,
+				      &node_ptr->gres_list);
 
 		break;
 	}
-	if (!(*node_ptr))
-		rc = ESLURM_NODE_TABLE_FULL;
+	if (!node_ptr)
+		error("Unable to add node '%s', node table is full", alias);
 
-end:
-	return rc;
+	return node_ptr;
 }
 
 static int _find_config_ptr(void *x, void *arg)
@@ -1139,13 +1117,7 @@ extern void node_fini2 (void)
 	}
 
 	xfree(node_record_table_ptr);
-	/*
-	 * Don't clear node_record_count because other plugins are relying on
-	 * node_record_count to free arrays on cleanup -- e.g.
-	 * free_core_array().
-	 *
-	 * node_record_count = 0;
-	 */
+	node_record_count = 0;
 }
 
 extern int node_name_get_inx(char *node_name)
@@ -1176,7 +1148,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 	int rc = SLURM_SUCCESS;
 	char *this_node_name;
 	bitstr_t *my_bitmap;
-	hostlist_t *host_list;
+	hostlist_t host_list;
 
 	my_bitmap = (bitstr_t *) bit_alloc (node_record_count);
 	*bitmap = my_bitmap;
@@ -1219,12 +1191,12 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
  * OUT bitmap     - set to bitmap, may not have all bits set on error
  * RET 0 if no error, otherwise EINVAL
  */
-extern int hostlist2bitmap(hostlist_t *hl, bool best_effort, bitstr_t **bitmap)
+extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap)
 {
 	int rc = SLURM_SUCCESS;
 	bitstr_t *my_bitmap;
 	char *name;
-	hostlist_iterator_t *hi;
+	hostlist_iterator_t hi;
 
 	FREE_NULL_BITMAP(*bitmap);
 	my_bitmap = (bitstr_t *) bit_alloc (node_record_count);
@@ -1289,8 +1261,6 @@ extern void purge_node_rec(node_record_t *node_ptr)
 	xfree(node_ptr->features_act);
 	xfree(node_ptr->gres);
 	FREE_NULL_LIST(node_ptr->gres_list);
-	xfree(node_ptr->instance_id);
-	xfree(node_ptr->instance_type);
 	xfree(node_ptr->mcs_label);
 	xfree(node_ptr->name);
 	xfree(node_ptr->node_hostname);
@@ -1303,8 +1273,7 @@ extern void purge_node_rec(node_record_t *node_ptr)
 	xfree(node_ptr->version);
 	acct_gather_energy_destroy(node_ptr->energy);
 	ext_sensors_destroy(node_ptr->ext_sensors);
-	if (running_in_slurmctld())
-		select_g_select_nodeinfo_free(node_ptr->select_nodeinfo);
+	select_g_select_nodeinfo_free(node_ptr->select_nodeinfo);
 	xfree(node_ptr->tres_str);
 	xfree(node_ptr->tres_fmt_str);
 	xfree(node_ptr->tres_cnt);
@@ -1422,6 +1391,26 @@ extern uint32_t cr_get_coremap_offset(uint32_t node_index)
 	return cr_node_cores_offset[node_record_count];
 }
 
+/* Return a bitmap the size of the machine in cores. On a Bluegene
+ * system it will return a bitmap in cnodes. */
+extern bitstr_t *cr_create_cluster_core_bitmap(int core_mult)
+{
+	/* DEF_TIMERS; */
+	/* START_TIMER; */
+	bitstr_t *core_bitmap;
+	static int cnt = 0;
+
+	if (!cnt) {
+		cnt = cr_get_coremap_offset(node_record_count);
+		if (core_mult)
+			cnt *= core_mult;
+	}
+	core_bitmap = bit_alloc(cnt);
+	/* END_TIMER; */
+	/* info("creating of core bitmap of %d took %s", cnt, TIME_STR); */
+	return core_bitmap;
+}
+
 /*
  * Determine maximum number of CPUs on this node usable by a job
  * ntasks_per_core IN - tasks-per-core to be launched by this job
@@ -1448,7 +1437,7 @@ extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, int cpus_per_task,
 
 extern char *find_hostname(uint32_t pos, char *hosts)
 {
-	hostlist_t *hostlist = NULL;
+	hostlist_t hostlist = NULL;
 	char *temp = NULL, *host = NULL;
 
 	if (!hosts || (pos == NO_VAL) || (pos == INFINITE))
@@ -1468,8 +1457,7 @@ extern node_record_t *next_node(int *index)
 {
 	xassert(index);
 
-	if (!node_record_table_ptr ||
-	    (*index >= node_record_count))
+	if (*index >= node_record_count)
 		return NULL;
 
 	while (!node_record_table_ptr[*index]) {
@@ -1489,8 +1477,7 @@ extern node_record_t *next_node_bitmap(bitstr_t *bitmap, int *index)
 {
 	xassert(index);
 
-	if (!node_record_table_ptr ||
-	    (*index >= node_record_count))
+	if (*index >= node_record_count)
 		return NULL;
 
 	xassert(bitmap);

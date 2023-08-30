@@ -42,13 +42,13 @@
 
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/interfaces/openapi.h"
 #include "src/common/plugin.h"
 #include "src/interfaces/auth.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/rest_auth.h"
 
 static pthread_mutex_t init_lock = PTHREAD_MUTEX_INITIALIZER;

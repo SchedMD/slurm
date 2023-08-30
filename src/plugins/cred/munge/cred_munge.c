@@ -122,7 +122,13 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-static munge_ctx_t _munge_ctx_create(void)
+extern void cred_p_destroy_key(void *key)
+{
+	munge_ctx_destroy((munge_ctx_t) key);
+	return;
+}
+
+static void *_munge_ctx_setup(bool creator)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
@@ -139,41 +145,45 @@ static munge_ctx_t _munge_ctx_create(void)
 		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
 		xfree(socket);
 		if (rc != EMUNGE_SUCCESS) {
-			error("Failed to set MUNGE socket: %s",
-			      munge_ctx_strerror(ctx));
+			error("munge_ctx_set failure");
 			munge_ctx_destroy(ctx);
 			return NULL;
 		}
 	}
 
 	auth_ttl = slurm_get_auth_ttl();
-	if (auth_ttl) {
-		rc = munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
-		if (rc != EMUNGE_SUCCESS) {
-			error("Failed to set MUNGE ttl: %s",
+	if (auth_ttl)
+		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
+
+	if (creator) {
+		/*
+		 * Only allow slurmd_user (usually root) to decode job
+		 * credentials created by slurmctld. This provides a slight
+		 * layer of extra security, as non-privileged users cannot
+		 * get at the contents of job credentials.
+		 */
+		err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
+				    slurm_conf.slurmd_user_id);
+
+		if (err != EMUNGE_SUCCESS) {
+			error("Unable to set uid restriction on munge credentials: %s",
 			      munge_ctx_strerror(ctx));
 			munge_ctx_destroy(ctx);
 			return NULL;
 		}
 	}
 
-	/*
-	 * Only allow slurmd_user (usually root) to decode job
-	 * credentials created by slurmctld. This provides a slight
-	 * layer of extra security, as non-privileged users cannot
-	 * get at the contents of job credentials.
-	 */
-	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
-			    slurm_conf.slurmd_user_id);
+	return (void *) ctx;
+}
 
-	if (err != EMUNGE_SUCCESS) {
-		error("Unable to set uid restriction on munge credentials: %s",
-		      munge_ctx_strerror(ctx));
-		munge_ctx_destroy(ctx);
-		return NULL;
-	}
+extern void *cred_p_read_private_key(const char *path)
+{
+	return _munge_ctx_setup(true);
+}
 
-	return ctx;
+extern void *cred_p_read_public_key(const char *path)
+{
+	return _munge_ctx_setup(false);
 }
 
 extern const char *cred_p_str_error(int errnum)
@@ -191,16 +201,17 @@ extern const char *cred_p_str_error(int errnum)
 }
 
 /* NOTE: Caller must xfree the signature returned by sig_pp */
-extern int cred_p_sign(char *buffer, int buf_size,
+extern int cred_p_sign(void *key, char *buffer, int buf_size,
 		       char **sig_pp, uint32_t *sig_size_p)
 {
-	int retry = RETRY_COUNT;
+	int retry = RETRY_COUNT, auth_ttl;
 	char *cred;
 	munge_err_t err;
-	munge_ctx_t ctx = _munge_ctx_create();
+	munge_ctx_t ctx = (munge_ctx_t) key;
 
-	if (!ctx)
-		return 0;
+	auth_ttl = slurm_get_auth_ttl();
+	if (auth_ttl)
+		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
 
 again:
 	err = munge_encode(&cred, ctx, buffer, buf_size);
@@ -213,18 +224,16 @@ again:
 		}
 		if (err == EMUNGE_SOCKET)  /* Also see MUNGE_OPT_TTL above */
 			error("If munged is up, restart with --num-threads=10");
-		munge_ctx_destroy(ctx);
 		return err;
 	}
 
 	*sig_size_p = strlen(cred) + 1;
 	*sig_pp = xstrdup(cred);
 	free(cred);
-	munge_ctx_destroy(ctx);
 	return 0;
 }
 
-extern int cred_p_verify_sign(char *buffer, uint32_t buf_size,
+extern int cred_p_verify_sign(void *key, char *buffer, uint32_t buf_size,
 			      char *signature, uint32_t sig_size)
 {
 	int retry = RETRY_COUNT;
@@ -234,10 +243,7 @@ extern int cred_p_verify_sign(char *buffer, uint32_t buf_size,
 	int buf_out_size;
 	int rc = SLURM_SUCCESS;
 	munge_err_t err;
-	munge_ctx_t ctx = _munge_ctx_create();
-
-	if (!ctx)
-		return SLURM_ERROR;
+	munge_ctx_t ctx = (munge_ctx_t) key;
 
 again:
 	err = munge_decode(signature, ctx, &buf_out, &buf_out_size,
@@ -281,6 +287,5 @@ again:
 end_it:
 	if (buf_out)
 		free(buf_out);
-	munge_ctx_destroy(ctx);
 	return rc;
 }

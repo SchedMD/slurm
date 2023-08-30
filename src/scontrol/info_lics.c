@@ -111,7 +111,7 @@ extern void scontrol_print_licenses(const char *name, int argc, char **argv)
 	 */
 	if (mime_type) {
 		exit_code = DATA_DUMP_CLI(LICENSES, *msg, "licenses", argc, argv,
-					  NULL, mime_type, data_parser);
+					  NULL, mime_type);
 	} else {
 		_print_license_info(name, msg);
 	}

@@ -95,8 +95,8 @@ options that you may want to consider for higher throughput.</p>
 
 <ul>
 <li><b>AccountingStorageType</b>:
-Disabling storing accounting records by not setting this plugin.
-Turning accounting off provides minimal improvement in performance.
+Disabling storing of accounting by using the <i>accounting_storage/none</i>
+plugin. Turning accounting off provides minimal improvement in performance.
 If using the SlurmDBD increased speedup can be achieved by setting the
 CommitDelay option in the <a href=slurmdbd.conf.html>slurmdbd.conf</a></li>
 <li><b>JobAcctGatherType</b>:

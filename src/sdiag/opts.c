@@ -86,8 +86,8 @@ extern void parse_command_line(int argc, char **argv)
 		{"sort-by-time2",no_argument,	0,	'T'},
 		{"usage",	no_argument,	0,	OPT_LONG_USAGE},
 		{"version",     no_argument,	0,	'V'},
-		{"json", optional_argument, 0, OPT_LONG_JSON},
-		{"yaml", optional_argument, 0, OPT_LONG_YAML},
+		{"json", no_argument, 0, OPT_LONG_JSON},
+		{"yaml", no_argument, 0, OPT_LONG_YAML},
 		{NULL,		0,		0,	0}
 	};
 
@@ -143,13 +143,13 @@ extern void parse_command_line(int argc, char **argv)
 				break;
 			case OPT_LONG_JSON:
 				params.mimetype = MIME_TYPE_JSON;
-				params.data_parser = optarg;
+				(void) data_init();
 				(void) serializer_g_init(MIME_TYPE_JSON_PLUGIN,
 							 NULL);
 				break;
 			case OPT_LONG_YAML:
 				params.mimetype = MIME_TYPE_YAML;
-				params.data_parser = optarg;
+				(void) data_init();
 				(void) serializer_g_init(MIME_TYPE_YAML_PLUGIN,
 							 NULL);
 				break;
@@ -185,8 +185,8 @@ Usage: sdiag [OPTIONS]\n\
   -t, --sort-by-time  sort RPCs by total run time\n\
   -T, --sort-by-time2 sort RPCs by average run time\n\
   -V, --version       display current version number\n\
-  --json[=data_parser] Produce JSON output\n\
-  --yaml[=data_parser] Produce YAML output\n\
+  --json              Produce JSON output\n\
+  --yaml              Produce YAML output\n\
 \nHelp options:\n\
   --help          show this help message\n\
   --usage         display brief usage message\n");

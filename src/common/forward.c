@@ -62,14 +62,14 @@ typedef struct {
 	slurm_msg_t *orig_msg;
 	List ret_list;
 	int timeout;
-	hostlist_t *tree_hl;
+	hostlist_t tree_hl;
 	pthread_mutex_t *tree_mutex;
 } fwd_tree_t;
 
-static void _start_msg_tree_internal(hostlist_t *hl, hostlist_t **sp_hl,
+static void _start_msg_tree_internal(hostlist_t hl, hostlist_t* sp_hl,
 				     fwd_tree_t *fwd_tree_in,
 				     int hl_count);
-static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
+static void _forward_msg_internal(hostlist_t hl, hostlist_t* sp_hl,
 				  forward_struct_t *fwd_struct,
 				  header_t *header, int timeout,
 				  int hl_count);
@@ -77,7 +77,8 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
 {
 	if (fwd_tree) {
-		FREE_NULL_HOSTLIST(fwd_tree->tree_hl);
+		if (fwd_tree->tree_hl)
+			hostlist_destroy(fwd_tree->tree_hl);
 
 		/*
 		 * Lock and decrease thread counter, start_msg_tree is waiting
@@ -101,7 +102,7 @@ void *_forward_thread(void *arg)
 	int fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
-	hostlist_t *hl = hostlist_create(fwd_msg->header.forward.nodelist);
+	hostlist_t hl = hostlist_create(fwd_msg->header.forward.nodelist);
 	slurm_addr_t addr;
 	char *buf = NULL;
 	int steps = 0;
@@ -273,7 +274,7 @@ void *_forward_thread(void *arg)
 			ListIterator itr = NULL;
 			char *tmp = NULL;
 			int first_node_found = 0;
-			hostlist_iterator_t *host_itr
+			hostlist_iterator_t host_itr
 				= hostlist_iterator_create(hl);
 			error("We shouldn't be here.  We forwarded to %d "
 			      "but only got %d back",
@@ -476,7 +477,7 @@ void *_fwd_tree_thread(void *arg)
 	return NULL;
 }
 
-static void _start_msg_tree_internal(hostlist_t *hl, hostlist_t **sp_hl,
+static void _start_msg_tree_internal(hostlist_t hl, hostlist_t* sp_hl,
 				     fwd_tree_t *fwd_tree_in,
 				     int hl_count)
 {
@@ -521,11 +522,11 @@ static void _start_msg_tree_internal(hostlist_t *hl, hostlist_t **sp_hl,
 		(*fwd_tree->p_thr_count)++;
 		slurm_mutex_unlock(fwd_tree->tree_mutex);
 
-		slurm_thread_create_detached(_fwd_tree_thread, fwd_tree);
+		slurm_thread_create_detached(NULL, _fwd_tree_thread, fwd_tree);
 	}
 }
 
-static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
+static void _forward_msg_internal(hostlist_t hl, hostlist_t* sp_hl,
 				  forward_struct_t *fwd_struct,
 				  header_t *header, int timeout,
 				  int hl_count)
@@ -567,7 +568,7 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 
 		forward_init(&fwd_msg->header.forward);
 		fwd_msg->header.forward.nodelist = buf;
-		slurm_thread_create_detached(_forward_thread, fwd_msg);
+		slurm_thread_create_detached(NULL, _forward_thread, fwd_msg);
 	}
 }
 
@@ -596,8 +597,8 @@ extern void forward_init(forward_t *forward)
  */
 extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 {
-	hostlist_t *hl = NULL;
-	hostlist_t **sp_hl;
+	hostlist_t hl = NULL;
+	hostlist_t* sp_hl;
 	int hl_count = 0;
 
 	if (!forward_struct->ret_list) {
@@ -634,7 +635,7 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
  *		     (if any) we forwarded the message to. List
  *		     containing type (ret_data_info_t).
  */
-extern List start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout)
+extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout)
 {
 	fwd_tree_t fwd_tree;
 	pthread_mutex_t tree_mutex;
@@ -643,7 +644,7 @@ extern List start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout)
 	List ret_list = NULL;
 	int thr_count = 0;
 	int host_count = 0;
-	hostlist_t **sp_hl;
+	hostlist_t* sp_hl;
 	int hl_count = 0;
 
 	xassert(hl);

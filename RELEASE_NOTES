@@ -1,4 +1,4 @@
-RELEASE NOTES FOR SLURM VERSION 23.11
+RELEASE NOTES FOR SLURM VERSION 23.02
 
 IMPORTANT NOTES:
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
@@ -6,147 +6,261 @@ If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
 NOTE: If using a backup DBD you must start the primary first to do any
 database conversion, the backup will not start until this has happened.
 
-The 23.11 slurmdbd will work with Slurm daemons of version 21.08 and above.
+The 23.02 slurmdbd will work with Slurm daemons of version 21.08 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.
 
-Slurm can be upgraded from version 22.05 or 23.02 to version 23.11 without loss
+Slurm can be upgraded from version 21.08 or 22.05 to version 23.02 without loss
 of jobs or other state information. Upgrading directly from an earlier version
 of Slurm will result in loss of state information.
 
 All SPANK plugins must be recompiled when upgrading from any Slurm version
-prior to 23.11.
+prior to 23.02.
+
+NOTE: PMIx v1.x is no longer supported.
 
 HIGHLIGHTS
 ==========
- -- Remove 'none' plugins for all but auth and cred. scontrol show config
-    will report (null) now.
- -- Removed select/cons_res. Please update your configuration to
-    select/cons_tres.
- -- Change TreeWidth default from 50 to 16.
- -- job_submit/throttle - improve reset of submitted job counts per user in
-    order to better honor SchedulerParameters=jobs_per_user_per_hour=#.
- -- Allow SlurmUser/root to use reservations without specific permissions.
- -- Add route/partition plugin to route communications based on partition node
-    lists.
- -- Added ability for configless to push Prolog and Epilog scripts to slurmds.
- -- Added --external-launcher option to srun to allow different MPI
-    implementations to run their launcher (orte, hydra, etc.) inside a special
-    step with access to all the allocated resources in the node, and without
-    consuming any of them, allowing for other steps to run concurrently now.
- -- Replace SRUN_CPUS_PER_TASK with SLURM_CPUS_PER_TASK and get back to the
-    behavior before Slurm 22.05. Starting in Slurm 22.05, --cpus-per-task
-    implies --exact which is why we needed to make srun not read
-    SLURM_CPUS_PER_TASK. Since now we have the new external launcher step,
-    (srun --external-launcher), srun can read this env variable from within
-    an allocation again, so even if -c1 is set, mpirun will run and won't be
-    bound to a single cpu.
- -- Enable streaming replication for Galera 4 during upgrades.
- -- Remove cloud_reg_addrs and make it default behavior. Slurm will
-    automatically manage NodeHostName and NodeAddr for cloud nodes.
- -- Remove NoAddrCache CommunicationParameter.
- -- Add QOS flag 'Relative'. If set the QOS limits will be treated as
-    percentages of a cluster/partition instead of absolutes.
+ -- slurmctld - Add new RPC rate limiting feature. This is enabled through
+    SlurmctldParameters=rl_enable, otherwise disabled by default.
+ -- Make scontrol reconfigure and sending a SIGHUP to the slurmctld behave the
+    same. If you were using SIGHUP as a 'lighter' scontrol reconfigure to rotate
+    logs please update your scripts to use SIGUSR2 instead.
+ -- Change cloud nodes to show by default. PrivateData=cloud is no longer
+    needed.
+ -- sreport - Count planned (FKA reserved) time for jobs running in IGNORE_JOBS
+    reservations. Previously was lumped into IDLE time.
+ -- job_container/tmpfs - Support running with an arbitrary list of private
+    mount points (/tmp and /dev/shm are the default, but not required).
+ -- job_container/tmpfs - Set more environment variables in InitScript.
+ -- Make all cgroup directories created by Slurm owned by root. This was the
+    behavior in cgroup/v2 but not in cgroup/v1 where by default the step
+    directories ownership were set to the user and group of the job.
+ -- accounting_storage/mysql - change purge/archive to calculate record ages
+    based on end time, rather than start or submission times.
+ -- job_submit/lua - add support for log_user() from slurm_job_modify().
+ -- Run the following scripts in slurmscriptd instead of slurmctld:
+    ResumeProgram, ResumeFailProgram, SuspendProgram, ResvProlog, ResvEpilog,
+    and RebootProgram (only with SlurmctldParameters=reboot_from_controller).
+ -- Only permit changing log levels with 'srun --slurmd-debug' by root
+    or SlurmUser.
+ -- slurmctld will fatal() when reconfiguring the job_submit plugin fails.
+ -- Add PowerDownOnIdle partition option to power down nodes after nodes become
+    idle.
+ -- Add "[jobid.stepid]" prefix from slurmstepd and "slurmscriptd" prefix from
+    slurmcriptd to Syslog logging. Previously was only happening when logging
+    to a file.
+ -- Add purge and archive functionality for job environment and job batch script
+    records.
+ -- Extend support for Include files to all "configless" client commands.
+ -- Make node weight usable for powered down and rebooting nodes.
+ -- Removed 'launch' plugin.
+ -- Add "Extra" field to job to store extra information other than a comment.
+ -- Add usage gathering for AMD (requires ROCM 5.5+) and NVIDIA gpus.
+ -- Add job's allocated nodes, features, oversubscribe, partition, and
+    reservation to SLURM_RESUME_FILE output for power saving.
+ -- Automatically create directories for stdout/stderr output files. Paths may
+    use %j and related substitution characters as well.
+ -- Add --tres-per-task to salloc/sbatch/srun.
+ -- Allow nodefeatures plugin features to work with cloud nodes.
+    e.g. - Powered down nodes have no active changeable features.
+         - Nodes can't be changed to other active features until powered down.
+	 - Active changeable features are reset/cleared on power down.
+ -- Make slurmstepd cgroups constrained by total configured memory from
+    slurm.conf (NodeName=<> RealMemory=#) instead of total physical memory.
+ -- node_features/helpers - add support for the OR and parentheses operators
+    in a --constraint expression.
+ -- slurmctld will fatal() when [Prolog|Epilog]Slurmctld are defined but are not
+    executable.
+ -- Validate node registered active features are a super set of node's
+    currently active changeable features.
+ -- On clusters without any PrologFlags options, batch jobs with failed prologs
+    nolonger generate an output file.
+ -- Add SLURM_JOB_START_TIME and SLURM_JOB_END_TIME environment variables.
+ -- Add SuspendExcStates option to slurm.conf to avoid suspending/powering down
+    specific node states.
+ -- Add support for DCMI power readings in IPMI plugin.
+ -- slurmrestd served /slurm/v0.0.39 and /slurmdb/v0.0.39 endpoints had major
+    changes from prior versions. Almost all schemas have been renamed and
+    modified. Sites using OpenAPI Generator clients are highly suggested to
+    upgrade to to using atleast version 6.x due to limitations with prior
+    versions.
+ -- Allow for --nodelist to contain more nodes than required by --nodes.
+ -- Rename "nodes" to "nodes_resume" in SLURM_RESUME_FILE job output.
+ -- Rename "all_nodes" to "all_nodes_resume" in SLURM_RESUME_FILE output.
+ -- Add jobcomp/kafka plugin.
+ -- Add new PreemptParameters=reclaim_licenses option which will allow higher
+    priority jobs to preempt jobs to free up used licenses. (This is only
+    enabled for with PreemptModes of CANCEL and REQUEUE, as Slurm cannot
+    guarantee suspended jobs will release licenses correctly.)
+ -- hpe/slingshot - add support for the instant-on feature.
+ -- Add ability to update SuspendExc* parameters with scontrol.
+ -- Add ability to restore SuspendExc* parameters on restart with slurmctld -R
+    option.
+ -- Add ability to clear a GRES specification by setting it to "0" via
+    'scontrol update job'.
+ -- Add SLURM_JOB_OVERSUBSCRIBE environment variable for Epilog, Prolog,
+    EpilogSlurmctld, PrologSlurmctld, and mail ouput.
+ -- System node down reasons are appended to existing reasons, separated by ':'.
+ -- New command scrun has been added. scrun acts as an Open Container Initiative
+    (OCI) runtime proxy to run containers seamlessly via Slurm.
+ -- Fixed GpuFreqDef option. When set in slurm.conf, it will be used if
+    --gpu-freq was not explicitly set by the job step.
+ -- srun/sbatch/salloc - In order to support user namespaces, process user and
+    group ids are no longer used unless explicitly requested as an argument and
+    are left as nobody(99) by default. Any cli_filters or SPANK plugins need to
+    ignore any uid or gid that equal SLURM_AUTH_NOBODY (99). User and group ids
+    are now resolved by the active auth plugin. To determine the actual job uid
+    or gid you should use the RESPONSE_RESOURCE_ALLOCATION RPC.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
- -- Removed JobCredentialPrivateKey and JobCredentialPublicCertificate
-    parameters.
- -- Added max_submit_line_size to SchedulerParameters.
- -- cgroup.conf - Removed deprecated parameters AllowedKmemSpace,
-    ConstrainKmemSpace, MaxKmemPercent, and MinKmemSpace.
- -- proctrack/cgroup - Add "SignalChildrenProcesses=<yes|no>" option to
-    cgroup.conf. This allows signals for cancelling, suspending, resuming, etc.
-    to be sent to children processes in a step/job rather than just the parent.
- -- Add PreemptParameters=suspend_grace_time parameter to control amount of
-    time between SIGTSTP and SIGSTOP signals when suspending jobs.
- -- Add SlurmctldParameters=no_quick_restart to avoid a new slurmctld taking
-    over the old slurmctld on accident.
- -- Changed the default SelectType to select/cons_tres (from select/linear).
- -- Remove CgroupAutomount= option from cgroup.conf. Modern kernels mount the
-    cgroup file system automatically. CgroupAutomount could cause a cgroup v2
-    system to be configured in a hybrid v1 and v2 system. The cgroup/v1 plugin
-    will now fail if the cgroup filesystem is not mounted.
- -- Prolog and Epilog do not have to be fully qualified pathnames.
- -- Changed default value of PriorityType from priority/basic to
-    priority/multifactor.
- -- Allow for a shared suffix to be used with the hostlist format. E.g.,
-    "node[0001-0010]-int".
+ -- job_container.conf - Added "Dirs" option to list desired private mount
+    points.
+ -- node_features plugins - invalid users specified for AllowUserBoot will now
+    result in fatal() rather than just an error.
+ -- Deprecate AllowedKmemSpace, ConstrainKmemSpace, MaxKmemPercent, and
+    MinKmemSpace.
+ -- Allow jobs to queue even if the user is not in AllowGroups when
+    EnforcePartLimits=no is set. This ensures consistency for all the Partition
+    access controls, and matches the documented behavior for EnforcePartLimits.
+ -- Add InfluxDBTimeout parameter to acct_gather.conf.
+ -- job_container/tmpfs - add support for expanding %h and %n in BasePath.
+ -- slurm.conf - Removed SlurmctldPlugstack option.
+ -- Add new SlurmctldParameters=validate_nodeaddr_threads=<number> option to
+    allow concurrent hostname resolution at slurmctld startup.
+ -- Add new AccountingStoreFlags=job_extra option to store a job's extra field
+    in the database.
+ -- Add new "defer_batch" option to SchedulerParameters to only defer
+    scheduling for batch jobs.
+ -- Add new DebugFlags option 'JobComp' to replace 'Elasticsearch'.
+ -- Add configurable job requeue limit parameter - MaxBatchRequeue - in
+    slurm.conf to permit changes from the old hard-coded value of 5.
+ -- helpers.conf - Allow specification of node specific features.
+ -- helpers.conf - Allow many features to one helper script.
+ -- job_container/tmpfs - Add "Shared" option to support shared namespaces.
+    This allows autofs to work with the job_container/tmpfs plugin when enabled.
+ -- acct_gather.conf - Added EnergyIPMIPowerSensors=Node=DCMI and
+    Node=DCMI_ENHANCED.
+ -- Add new "getnameinfo_cache_timeout=<number>" option to
+    CommunicationParameters to adjust or disable caching the results of
+    getnameinfo().
+ -- Add new PrologFlags=ForceRequeueOnFail option to automatically requeue
+    batch jobs on Prolog failures regardless of the job --requeue setting.
+ -- Add HealthCheckNodeState=NONDRAINED_IDLE option.
+ -- Add 'explicit' to Flags in gres.conf. This makes it so the gres is not
+    automatically added to a job's allocation when --exclusive is used. Note
+    that this is a per-node flag.
+ -- Moved the "preempt_" options from SchedulerParameters to PreemptParameters,
+    and dropped the prefix from the option names. (The old options will still
+    be parsed for backwards compatibility, but are now undocumented.)
+ -- Add LaunchParameters=ulimit_pam_adopt, which enables setting RLIMIT_RSS in
+    adopted processes.
+ -- Update SwitchParameters=job_vni to enable/disable creating job VNIs for all
+    jobs, or when a user requests them.
+ -- Update SwitchParameters=single_node_vni to enable/disable creating single
+    node vnis for all jobs, or when a user requests them.
+ -- Add ability to preserve SuspendExc* parameters on reconfig with
+    ReconfigFlags=KeepPowerSaveSettings.
+ -- slurmdbd.conf - Add new AllResourcesAbsolute to force all new resources
+    to be created with the Absolute flag.
+ -- topology/tree - Add new TopologyParam=SwitchAsNodeRank option to reorder
+    nodes based on switch layout. This can be useful if the naming convention
+    for the nodes does not natually map to the network topology.
+ -- Removed the default setting for GpuFreqDef. If unset, no attempt to change
+    the GPU frequency will be made if --gpu-freq is not set for the step.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- scontrol show assoc_mgr will display Lineage instead of Lft for
-    associations.
- -- sacctmgr list associations 'lft' column is removed.
- -- sacctmgr list associations 'lineage' has been added.
- -- Fix --cpus-per-gpu for step allocations, which was previously ignored for
-    job steps. --cpus-per-gpu implies --exact.
- -- Fix mutual exclusivity of --cpus-per-gpu and --cpus-per-task: fatal if both
-    options are requested in the commandline or both are requested in the
-    environment. If one option is requested in the command line, it will
-    override the other option in the environment.
- -- slurmrestd - new argument '-s' has been added to allow explicit loading of
-    data_parser plugins or '-s list' to list possible plugins.
- -- All commands supporting '--yaml' and '--json' arguments will now use the
-    data_parser/v0.0.40 plugin for formatting the output by default.
- -- torque/mpiexec - Propagate exit code from launched process.
- -- sbatch - removed --export-file option (used with defunct Moab integration).
- -- Define SPANK options environment variables when --export=[NIL|NONE] is
-    specified.
- -- Reject reservation update if it will result in previously submitted
-    jobs losing access to the reservation.
- -- scontrol/sview - Remove FIRST_CORES flag from reservations.
- -- scontrol/sview - Remove comma separated CoreCnt option from reservations.
- -- scontrol/sview - Remove comma separated NodeCnt option from reservations.
- -- slurmd - add "instance-id", "instance-type", and "extra" options to allow
-    them to be set on startup.
- -- scontrol - add InstanceId and InstanceType to node records.
- -- sacctmgr - add 'show instance' for cloud instance accounting data
- -- salloc/sbatch/srun --mem-per-cpu and select/linear: Fix memory calculation
-    with --threads-per-core or --hint=nomultithread and --mem-per-cpu:
-    Previously, memory = mem-per-cpu * all cpus including unusable threads.
-    Now, memory = mem-per-cpu * only usuable threads. This behavior matches
-    the documentation and select/cons_tres.
+ -- sacctmgr - no longer force updates to the AdminComment, Comment, or
+    SystemComment to lower-case.
+ -- sinfo - Add -F/--future option to sinfo to display future nodes.
+ -- sacct - Rename 'Reserved' field to 'Planned' to match sreport and the
+    nomenclature of the 'Planned' node.
+ -- scontrol - advanced reservation flag MAINT will no longer replace nodes,
+    similar to STATIC_ALLOC
+ -- sbatch - add parsing for #PBS -d and #PBS -w.
+ -- scontrol show assoc_mgr will show username(uid) instead of uid in
+    QoS section.
+ -- Add strigger --draining and -R/--resume options.
+ -- Change --oversubscribe and --exclusive to be mutually exclusive for job
+    submission. Job submission commands will now fatal if both are set.
+    Previously, these options would override each other, with the last one in
+    the job submission command taking effect.
+ -- scontrol - Requested TRES and allocated TRES will now always be printed when
+    showing jobs, instead of one TRES output that was either the requested or
+    allocated.
+ -- srun --ntasks-per-core now applies to job and step allocations. Now, use of
+    --ntasks-per-core=1 implies --cpu-bind=cores and --ntasks-per-core>1 implies
+    --cpu-bind=threads.
+ -- salloc/sbatch/srun - Check and abort if ntasks-per-core > threads-per-core.
+ -- scontrol - Add ResumeAfter=<secs> option to "scontrol update nodename=".
+ -- Add a new "nodes=" argument to scontrol setdebug to allow the debug level
+    on the slurmd processes to be temporarily altered.
+ -- Add a new "nodes=" argument to "scontrol setdebugflags" as well.
+ -- Make it so scrontab prints client-side the job_submit() err_msg (which can
+    be set i.e. by using the log_user() function for the lua plugin).
+ -- scontrol - Reservations will not be allowed to have STATIC_ALLOC or MAINT
+    flags and REPLACE[_DOWN] flags simultaneously.
+ -- scontrol - Reservations will only accept one reoccurring flag when
+    being created or updated.
+ -- scontrol - A reservation cannot be updated to be reoccurring if it is
+    already a floating reservation.
+ -- squeue - removed unused '%s' and 'SelectJobInfo' formats.
+ -- squeue - align print format for exit and derived codes with that of other
+    components (<exit_status>:<signal_number>).
+ -- sacct - Add --array option to expand job arrays and display array tasks on
+    separate lines.
+ -- Partial support for '--json' and '--yaml' formated outputs have been
+    implemented for sacctmgr, sdiag, sinfo, squeue, and scontrol. The resultant
+    data ouput will be filtered by normal command arguments. Formatting
+    arguments will continue to be ignored.
+ -- salloc/sbatch/srun - extended the --nodes syntax to allow for a list of
+    valid node counts to be allocated to the job. This also supports a "step
+    count" value (e.g., --nodes=20-100:20 is equivalent to
+    --nodes=20,40,60,80,100) which can simplify the syntax when the job needs
+    to scale by a certain "chunk" size.
+ -- salloc/sbatch/srun - add user requestible vnis with '--network=job_vni'
+    option.
+ -- salloc/sbatch/srun - add user requestible single node vnis with the
+    '--network=single_node_vni' option.
+ -- sinfo - The '--json' and '--yaml' output format has been changed to include
+    the same information that could provided by regular text output. The prior
+    formatted output can now be queried via 'scontrol show nodes --json' or
+    'scontrol show nodes --yaml'.
  -- salloc/srun - Remove --uid/--gid options.
- -- scrontab - Add @fika and @teatime as valid repetition times.
 
 API CHANGES
 ===========
- -- cli_filter/lua - return nil for unset time options rather than the string
-    "2982616-04:14:00" (which is the internal macro "NO_VAL" represented as
-    time string).
- -- "flags" argument was added to slurm_kill_job_step().
- -- Fixed typo on "initialized" for the description of ESLURM_PLUGIN_NOT_LOADED.
- -- SPANK - added new spank_prepend_task_argv() function.
-
-SLURMRESTD CHANGES
-==================
- -- openapi/dbv0.0.37 and openapi/v0.0.37 plugins have been removed.
- -- openapi/dbv0.0.38 and openapi/v0.0.38 plugins have been tagged as
-    deprecated to warn of their removal in the next release.
- -- New openapi plugins will no longer be versioned. Existing versioned openapi
-    plugins will follow normal deprecation and removal schedule. Data format
-    versioning will now be handled by the data_parser plugins which will now be
-    used by the openapi plugins.
- -- data_parser plugins will now generate all schemas related to object
-    formatting and structure. The openapi.json files in the openapi/slurmctld
-    and openapi/slurmdbd directories should be considered templates only. All
-    openapi specifications should be queried from slurmsrestd directly as they
-    change depending on the loaded plugins and settings.
- -- The version field in the info object of the OpenAPI specfication will now
-    list the Slurm version running and list out the loaded openapi plugins at
-    time of generation using '&' as a delimiter in loading order.
- -- OpenAPI specfication from openapi/slurmctld and openapi/slurmdbd plugins is
-    known to be incompatible with OpenAPI Generator version 5 and below. Sites
-    are advised to port to OpenAPI Generator version 6 or greater for generated
-    clients.
- -- Path parameters fields in OpenAPI specifications will now only give type as
-    strings for openapi/slurmctld and openapi/slurmdbd end points. The 'enum'
-    will now be auto-populated when parameter has list of known valid values.
-    Prior more detailed formatting information was found to conflict with
-    generated OpenAPI clients forcing limitations on the possible values not
-    present in Slurm's parsing capabilities.
- -- openapi/v0.0.40 - add /instance and /instances endpoints.
- -- slurmrestd - OperationIDs may have changed during conversion to v0.0.40
-    from v0.0.39 paths to better match their paths.
+ -- job_container plugins - container_p_stepd_create() function signature
+    replaced uint32_t uid with stepd_step_rec_t* step.
+ -- gres plugins - gres_g_get_devices() function signature replaced pid_t pid
+    with stepd_step_rec_t* step.
+ -- cgroup plugins - task_cgroup_devices_constrain() function signature removed
+    pid_t pid.
+ -- task plugins - replace task_p_pre_set_affinity(), task_p_set_affinity(), and
+    task_p_post_set_affinity() with task_p_pre_launch_priv() like it was back in
+    slurm 20.11.
+ -- Allow for concurrent processing of job_submit_g_submit() and
+    job_submit_g_modify() calls. If your plugin is not capable of concurrent
+    operation you must add additional locking within your plugin.
+ -- Removed return value from slurm_list_append().
+ -- The List and ListIterator types have been removed in favor of list_t and
+    list_itr_t respectively.
+ -- burst buffer plugins - add bb_g_build_het_job_script().
+    bb_g_get_status() - added authenticated UID and GID.
+    bb_g_run_script() - added job_info argument.
+ -- burst_buffer.lua - Pass UID and GID to most hooks. Pass job_info (detailed
+    job information) to many hooks. See etc/burst_buffer.lua.example for a
+    complete list of changes. WARNING: Backwards compatibility is broken for
+    slurm_bb_get_status: UID and GID are passed before the variadic arguments.
+    If UID and GID are not explicitly listed as arguments to
+    slurm_bb_get_status(), then they will be included in the variadic arguments.
+    Backwards compatibility is maintained for all other hooks because the new
+    arguments are passed after the existing arguments.
+ -- node_features plugins - node_features_p_reboot_weight() function removed.
+    node_features_p_job_valid() - added parameter feature_list.
+    node_features_p_job_xlate() - added parameters feature_list and
+    job_node_bitmap.
+ -- New data_parser interface with v0.0.39 plugin.

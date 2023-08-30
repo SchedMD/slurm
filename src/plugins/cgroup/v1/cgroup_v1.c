@@ -855,11 +855,10 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 extern bool cgroup_p_has_pid(pid_t pid)
 {
 	bool rc;
-	int rc2;
 	xcgroup_t cg;
 
-	rc2 = xcgroup_ns_find_by_pid(&g_cg_ns[CG_TRACK], &cg, pid);
-	if (rc2 != SLURM_SUCCESS)
+	rc = xcgroup_ns_find_by_pid(&g_cg_ns[CG_TRACK], &cg, pid);
+	if (rc != SLURM_SUCCESS)
 		return false;
 
 	rc = true;
@@ -1002,6 +1001,14 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
 			    != SLURM_SUCCESS)
 				rc = SLURM_ERROR;
 
+			if (limits->kmem_limit_in_bytes != NO_VAL64)
+				if (common_cgroup_set_uint64_param(
+					    &int_cg[sub][level],
+					    "memory.kmem.limit_in_bytes",
+					    limits->kmem_limit_in_bytes)
+				    != SLURM_SUCCESS)
+					rc = SLURM_ERROR;
+
 			if (limits->memsw_limit_in_bytes != NO_VAL64)
 				if (common_cgroup_set_uint64_param(
 					    &int_cg[sub][level],
@@ -1076,6 +1083,19 @@ extern int cgroup_p_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
  * Code based on linux tools/cgroup/cgroup_event_listener.c with adapted
  * modifications for Slurm logic and needs.
  */
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+extern int cgroup_p_step_start_oom_mgr(void)
+{
+	log_flag(CGROUP, "OOM not available on FreeBSD, NetBSD, or macOS");
+	return SLURM_SUCCESS;
+}
+
+extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *step)
+{
+	log_flag(CGROUP, "OOM not available on FreeBSD, NetBSD, or macOS");
+	return NULL;
+}
+#else
 static int _read_fd(int fd, uint64_t *buf)
 {
 	int rc = SLURM_ERROR;
@@ -1419,6 +1439,7 @@ fail_oom_results:
 
 	return results;
 }
+#endif
 
 /***************************************
  ***** CGROUP TASK FUNCTIONS *****
@@ -1513,7 +1534,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 }
 
 /* cgroup/v1 usec and ssec are provided in USER_HZ. */
-extern long int cgroup_p_get_acct_units(void)
+extern long int cgroup_p_get_acct_units()
 {
 	return jobacct_gather_get_clk_tck();
 }

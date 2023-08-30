@@ -117,7 +117,7 @@ int _do_stat(slurm_step_id_t *step_id, char *nodelist,
 	job_step_stat_t *step_stat = NULL;
 	int ntasks = 0;
 	int tot_tasks = 0;
-	hostlist_t *hl = NULL;
+	hostlist_t hl = NULL;
 	char *ave_usage_tmp = NULL;
 
 	debug("requesting info for %ps", step_id);

@@ -329,8 +329,8 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 		_net_forward(msg_thr, msg);
 		break;
 	default:
-		error("%s: received spurious message type: %s",
-		      __func__, rpc_num2string(msg->msg_type));
+		error("%s: received spurious message type: %u",
+		      __func__, msg->msg_type);
 		break;
 	}
 	return;

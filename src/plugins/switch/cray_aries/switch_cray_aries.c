@@ -43,6 +43,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <linux/limits.h>
 #include <math.h>
 #include <sched.h>
 #include <signal.h>
@@ -698,6 +699,43 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 	return SLURM_SUCCESS;
 }
 
+extern int switch_p_job_suspend_test(switch_jobinfo_t *jobinfo)
+{
+	return SLURM_SUCCESS;
+}
+
+extern void switch_p_job_suspend_info_get(switch_jobinfo_t *jobinfo,
+					  void **suspend_info)
+{
+	return;
+}
+extern void switch_p_job_suspend_info_pack(void *suspend_info, buf_t *buffer,
+					   uint16_t protocol_version)
+{
+	return;
+}
+
+extern int switch_p_job_suspend_info_unpack(void **suspend_info, buf_t *buffer,
+					    uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+extern void switch_p_job_suspend_info_free(void *suspend_info)
+{
+	return;
+}
+
+extern int switch_p_job_suspend(void *suspend_info, int max_wait)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int switch_p_job_resume(void *suspend_info, int max_wait)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 {
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
@@ -808,6 +846,13 @@ extern int switch_p_job_attach(switch_jobinfo_t *jobinfo, char ***env,
 			       uint32_t rank)
 {
 	return SLURM_SUCCESS;
+}
+
+extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job, int key,
+				void *resulting_data)
+{
+	slurm_seterrno(EINVAL);
+	return SLURM_ERROR;
 }
 
 extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,

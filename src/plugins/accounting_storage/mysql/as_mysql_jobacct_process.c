@@ -44,7 +44,7 @@
 #include "as_mysql_jobacct_process.h"
 
 typedef struct {
-	hostlist_t *hl;
+	hostlist_t hl;
 	time_t start;
 	time_t end;
 	bitstr_t *asked_bitmap;
@@ -109,7 +109,6 @@ char *job_req_inx[] = {
 	"t4.env_vars",
 	"t2.acct",
 	"t2.lft",
-	"t2.lineage",
 	"t2.user"
 };
 
@@ -170,7 +169,6 @@ enum {
 	JOB_REQ_ENV,
 	JOB_REQ_ACCOUNT,
 	JOB_REQ_LFT,
-	JOB_REQ_LINEAGE,
 	JOB_REQ_USER_NAME,
 	JOB_REQ_COUNT
 };
@@ -505,21 +503,61 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	if (!is_admin && ((slurm_conf.private_data & PRIVATE_DATA_JOBS) ||
 			  (job_cond->flags & JOBCOND_FLAG_SCRIPT) ||
 			  (job_cond->flags & JOBCOND_FLAG_ENV))) {
-		if (!extra)
-			xstrcat(extra, " where ");
-		else
-			xstrcat(extra, " && ");
-		xstrfmtcat(extra, "((%s.lineage like '%%/0-%s/%%')",
-			   prefix, user->name);
-		if (user->coord_accts && list_count(user->coord_accts)) {
+		query = xstrdup_printf("select lft from \"%s_%s\" "
+				       "where user='%s'",
+				       cluster_name, assoc_table, user->name);
+		if (user->coord_accts) {
 			slurmdb_coord_rec_t *coord = NULL;
 			itr = list_iterator_create(user->coord_accts);
 			while ((coord = list_next(itr))) {
-				xstrfmtcat(extra,
-					   " || (%s.lineage like '%%/%s/%%')",
-					   prefix, coord->name);
+				xstrfmtcat(query, " || acct='%s'",
+					   coord->name);
 			}
 			list_iterator_destroy(itr);
+		}
+		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
+		if (!(result = mysql_db_query_ret(
+			      mysql_conn, query, 0))) {
+			xfree(extra);
+			xfree(query);
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+		xfree(query);
+		set = 0;
+		while ((row = mysql_fetch_row(result))) {
+			if (set) {
+				xstrfmtcat(extra,
+					   " || (%s between %s.lft and %s.rgt)",
+					   row[0], prefix, prefix);
+			} else {
+				set = 1;
+				if (extra)
+					xstrfmtcat(extra,
+						   " && ((%s between %s.lft "
+						   "and %s.rgt)",
+						   row[0], prefix,
+						   prefix);
+				else
+					xstrfmtcat(extra,
+						   " where ((%s between %s.lft "
+						   "and %s.rgt)",
+						   row[0], prefix,
+						   prefix);
+			}
+		}
+
+		mysql_free_result(result);
+
+		if (set)
+			xstrcat(extra, ")");
+		else {
+			xfree(extra);
+			debug("User %s has no associations, and is not admin, "
+			      "so not returning any jobs.", user->name);
+			/* This user has no valid associations, so
+			 * they will not have any jobs. */
+			goto end_it;
 		}
 	}
 
@@ -677,9 +715,6 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 		if (row[JOB_REQ_LFT])
 			job->lft = slurm_atoul(row[JOB_REQ_LFT]);
-
-		if (row[JOB_REQ_LINEAGE])
-			job->lineage = xstrdup(row[JOB_REQ_LINEAGE]);
 
 		if (row[JOB_REQ_ACCOUNT] && row[JOB_REQ_ACCOUNT][0])
 			job->account = xstrdup(row[JOB_REQ_ACCOUNT]);
@@ -1136,8 +1171,8 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	hostlist_t *temp_hl = NULL;
-	hostlist_iterator_t *h_itr = NULL;
+	hostlist_t temp_hl = NULL;
+	hostlist_iterator_t h_itr = NULL;
 	char *query = NULL;
 	int dims = 0;
 

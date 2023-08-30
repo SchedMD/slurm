@@ -27,13 +27,6 @@ with Slurm; if not, write to the Free Software Foundation, Inc.,
 <title>Slurm System Configuration Tool</title>
 <SCRIPT type="text/javascript">
 <!--
-function print_pair(name,value)
-{
-  if (value)
-     return name + "=" + value
-  return "#" + name + "="
-}
-
 function get_field(name,form)
 {
   if (form.value)
@@ -118,7 +111,7 @@ function displayfile()
    "SlurmctldHost=" + document.config.control_machine.value + "<br>" +
    "# <br>" +
    "#MailProg=/bin/mail <br>" +
-   print_pair("MpiDefault" + get_radio_value(document.config.mpi_default)) + "<br>" +
+   "MpiDefault=" + get_radio_value(document.config.mpi_default) + "<br>" +
    "#MpiParams=ports=#-# <br>" +
    "ProctrackType=proctrack/" + get_radio_value(document.config.proctrack_type) + "<br>" +
    "ReturnToService=" + get_radio_value(document.config.return_to_service) + "<br>" +
@@ -130,7 +123,7 @@ function displayfile()
    "SlurmUser=" + document.config.slurm_user.value + "<br>" +
    "#SlurmdUser=root <br>" +
    "StateSaveLocation=" + document.config.state_save_location.value + "<br>" +
-   print_pair("SwitchType" + get_radio_value(document.config.switch_type)) + "<br>" +
+   "SwitchType=switch/" + get_radio_value(document.config.switch_type) + "<br>" +
    "TaskPlugin=" + get_checkbox_value(document.config.task_plugin) + "<br>" +
    "# <br>" +
    "# <br>" +
@@ -147,9 +140,9 @@ function displayfile()
    "# <br>" +
    "# <br>" +
    "# LOGGING AND ACCOUNTING <br>" +
-   print_pair("AccountingStorageType",get_radio_value(document.config.accounting_storage_type)) + "<br>" +
+   "AccountingStorageType=accounting_storage/" + get_radio_value(document.config.accounting_storage_type) + "<br>" +
    "#JobAcctGatherFrequency=30 <br>" +
-   print_pair("JobAcctGatherType" + get_radio_value(document.config.job_acct_gather_type)) + "<br>" +
+   "JobAcctGatherType=jobacct_gather/" + get_radio_value(document.config.job_acct_gather_type) + "<br>" +
    "#SlurmctldDebug=info <br>" +
    get_field("SlurmctldLogFile",document.config.slurmctld_logfile) + "<br>" +
    "#SlurmdDebug=info <br>" +
@@ -299,7 +292,7 @@ Number of logical threads in a single physical core.
 <P>
 <input type="text" name="memory" value=""> <B>RealMemory</B>: Amount
 of real memory. This parameter is required when specifying Memory as a
-consumable resource with the select/cons_tres plug-in. See below
+consumable resource with the select/cons_res plug-in. See below
 under Resource Selection.
 <P>
 
@@ -348,10 +341,8 @@ First-Out (FIFO)<BR>
 <H2>Interconnect</H2>
 Define the node interconnect used.<BR>
 Select one value for <B>SwitchType</B>:<BR>
-<input type="radio" name="switch_type" value="switch/cray_aries"> <B>Cray XC</B>: Cray XC proprietary interconnect<BR>
-<input type="radio" name="switch_type" value="switch/hpe_slingshot"> <B>HPE
-  Slingshot</B>: HPE Slingshot proprietary interconnect<BR>
-<input type="radio" name="switch_type" value="" checked> <B>None</B>: No special
+<input type="radio" name="switch_type" value="cray_aries"> <B>Cray XC</B>: Cray XC proprietary interconnect<BR>
+<input type="radio" name="switch_type" value="none" checked> <B>None</B>: No special
 handling required (InfiniBand, Myrinet, Ethernet, etc.)<BR>
 <P>
 
@@ -359,11 +350,11 @@ handling required (InfiniBand, Myrinet, Ethernet, etc.)<BR>
 Specify the type of MPI to be used by default. Slurm will configure environment
 variables accordingly. Users can over-ride this specification with an srun option.<BR>
 Select one value for <B>MpiDefault</B>:<BR>
-<input type="radio" name="mpi_default" value="mpi/pmi2"> <B>MPI-PMI2</B>
+<input type="radio" name="mpi_default" value="pmi2"> <B>MPI-PMI2</B>
 (For PMI2-supporting MPI implementations)<BR>
-<input type="radio" name="mpi_default" value="mpi/pmix"> <B>MPI-PMIx</B>
+<input type="radio" name="mpi_default" value="pmix"> <B>MPI-PMIx</B>
 (Exascale PMI implementation)<BR>
-<input type="radio" name="mpi_default" value="" checked> <B>None</B>:
+<input type="radio" name="mpi_default" value="none" checked> <B>None</B>:
  This works for most other MPI types.<BR>
 <P>
 
@@ -389,6 +380,8 @@ Select one value for <B>SelectType</B>:<BR>
 <input type="radio" name="select_type" value="cons_tres" checked>
 <b>cons_tres</b>: Allocate individual processors, memory, GPUs, and other
 trackable resources<br />
+<input type="radio" name="select_type" value="cons_res">
+<B>Cons_res</B>: Allocate individual processors and memory<BR>
 <input type="radio" name="select_type" value="cray_aries">
 <B>Cray XC</B>: Cray XC systems running native Slurm without ALPS<BR>
 <input type="radio" name="select_type" value="linear">
@@ -430,19 +423,19 @@ replaced with hostname)
 Slurm accounts for resource use per job.  System specifics can be polled
 determined by system type<BR>
 Select one value for <B>JobAcctGatherType</B>:<BR>
-<input type="radio" name="job_acct_gather_type" value="" checked> <B>None</B>: No
+<input type="radio" name="job_acct_gather_type" value="none" checked> <B>None</B>: No
 job accounting<BR>
-<input type="radio" name="job_acct_gather_type" value="jobacct_gather/cgroup"> <b>cgroup</b>:
+<input type="radio" name="job_acct_gather_type" value="cgroup"> <b>cgroup</b>:
 Specific Linux cgroup information gathered, use with Linux systems only<br>
-<input type="radio" name="job_acct_gather_type" value="jobacct_gather/linux"> <B>Linux</B>: Specific
+<input type="radio" name="job_acct_gather_type" value="linux"> <B>Linux</B>: Specific
 Linux process table information gathered, use with Linux systems only<BR>
 
 <H2>Job Accounting Storage</H2>
 Used with the Job Accounting Gather Slurm can store the accounting information in many different fashions.  Fill in your systems choice here<BR>
 Select one value for <B>AccountingStorageType</B>:<BR>
-<input type="radio" name="accounting_storage_type" value="" checked> <B>None</B>:
+<input type="radio" name="accounting_storage_type" value="none" checked> <B>None</B>:
 No job accounting storage<BR>
-<input type="radio" name="accounting_storage_type" value="accounting_storage/slurmdbd"> <B>SlurmDBD</B>:
+<input type="radio" name="accounting_storage_type" value="slurmdbd"> <B>SlurmDBD</B>:
 Write job accounting to Slurm DBD (database daemon) which can securely
 save the data from many Slurm managed clusters into a common database<BR>
 <P>

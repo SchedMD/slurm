@@ -47,7 +47,23 @@
 typedef void (*work_func_t)(void *arg);
 
 /* Opaque struct */
-typedef struct workq_s workq_t;
+typedef struct {
+	int magic;
+	/* list of workq_worker_t */
+	List workers;
+	/* list of workq_work_t */
+	List work;
+
+	/* track simple stats for logging */
+	int active;
+	int total;
+
+	/* manger is actively shutting down */
+	bool shutdown;
+
+	pthread_mutex_t mutex;
+	pthread_cond_t cond;
+} workq_t;
 
 /*
  * Initialize a new workq struct
@@ -92,11 +108,5 @@ extern int workq_get_active(workq_t *workq);
 			free_workq(_X); \
 		_X = NULL;              \
 	} while (0)
-
-
-/*
- * Get number of threads used by workq
- */
-extern int get_workq_thread_count(const workq_t *workq);
 
 #endif /* SLURMRESTD_WORKQ_H */

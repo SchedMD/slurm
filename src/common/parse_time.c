@@ -64,6 +64,7 @@ strong_alias(time_str2mins, slurm_time_str2mins);
 strong_alias(time_str2secs, slurm_time_str2secs);
 strong_alias(secs2time_str, slurm_secs2time_str);
 strong_alias(mins2time_str, slurm_mins2time_str);
+strong_alias(mon_abbr, slurm_mon_abbr);
 
 typedef struct unit_names {
 	char *name;
@@ -679,14 +680,7 @@ static void _make_time_str_internal(time_t *time, bool utc, char *string,
 			}
 		}
 
-		/*
-		 * The result from strftime() is undefined if the buffer is
-		 * too small. Fill it with "#######..." instead.
-		 */
-		if (!strftime(string, size, display_fmt, &time_tm)) {
-			memset(string, '#', size);
-			string[size - 1] = 0;
-		}
+		slurm_strftime(string, size, display_fmt, &time_tm);
 	}
 }
 
@@ -832,5 +826,50 @@ extern void mins2time_str(uint32_t time, char *string, int size)
 				"%2.2ld:%2.2ld:%2.2ld",
 				hours, minutes, seconds);
 		}
+	}
+}
+
+extern char *mon_abbr(int mon)
+{
+	switch(mon) {
+	case 0:
+		return "Ja";
+		break;
+	case 1:
+		return "Fe";
+		break;
+	case 2:
+		return "Ma";
+		break;
+	case 3:
+		return "Ap";
+		break;
+	case 4:
+		return "Ma";
+		break;
+	case 5:
+		return "Ju";
+		break;
+	case 6:
+		return "Jl";
+		break;
+	case 7:
+		return "Au";
+		break;
+	case 8:
+		return "Se";
+		break;
+	case 9:
+		return "Oc";
+		break;
+	case 10:
+		return "No";
+		break;
+	case 11:
+		return "De";
+		break;
+	default:
+		return "Un";
+		break;
 	}
 }

@@ -97,7 +97,7 @@ extern int forward_msg(forward_struct_t *forward_struct,
  *		     (if any) we forwarded the message to. List
  *		     containing type (ret_data_info_t).
  */
-extern List start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout);
+extern List start_msg_tree(hostlist_t hl, slurm_msg_t *msg, int timeout);
 
 /*
  * mark_as_failed_forward- mark a node as failed and add it to "ret_list"
@@ -110,6 +110,31 @@ extern List start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout);
 extern void mark_as_failed_forward(List *ret_list, char *node_name, int err);
 
 extern void forward_wait(slurm_msg_t *msg);
+
+/*
+ * no_resp_forward - Used to respond for nodes not able to respond since
+ *                   the parent had failed in some way
+ * IN: forward     - forward_t *   -
+ * IN: ret_list    - List *        -
+ * IN: err         - int           - type of error from parent
+ * RET: SLURM_SUCCESS - int
+ */
+/*********************************************************************
+Code taken from common/slurm_protocol_api.c
+//This function should only be used after a message is received.
+
+// a call to slurm_receive_msg will fill in a ret_list
+	ret_list = slurm_receive_msg(fd, resp, timeout);
+}
+
+// if ret_list is null or list_count is 0 means there may have been an error
+// this fuction will check to make sure if there were supposed to be forwards
+// we handle the return code for the messages
+if(!ret_list || list_count(ret_list) == 0) {
+	no_resp_forwards(&req->forward, &ret_list, errno);
+}
+**********************************************************************/
+/* extern int no_resp_forwards(forward_t *forward, List *ret_list, int err); */
 
 /* destroyers */
 extern void destroy_data_info(void *object);

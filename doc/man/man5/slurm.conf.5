@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "August 2023" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "July 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -204,17 +204,18 @@ In an environment containing various GPU types, use of a job_submit plugin
 may be desired in order to force jobs to explicitly specify some GPU type.
 
 \fBNOTE\fR: Setting gres/gpu will also set gres/gpumem and gres/gpuutil.
-gres/gpumem and gres/gpuutil can be set individually when gres/gpu is not set.
 .IP
 
 .TP
 \fBAccountingStorageType\fR
 The accounting storage mechanism type.  Acceptable values at
-present "accounting_storage/slurmdbd".
+present include "accounting_storage/none"
+and "accounting_storage/slurmdbd".
 The "accounting_storage/slurmdbd" value indicates that accounting records
 will be written to the Slurm DBD, which manages an underlying MySQL
-database. See "man slurmdbd" for more information.  When this is not set it
-indicates that account records are not maintained.
+database. See "man slurmdbd" for more information.  The
+default value is "accounting_storage/none" and indicates that account
+records are not maintained.
 .IP
 
 .TP
@@ -279,12 +280,17 @@ consumption data takes place on the node level, hence only in case of exclusive
 job allocation the energy consumption measurements will reflect the job's
 real consumption. In case of node sharing between jobs the reported consumed
 energy per job (through sstat or sacct) will not reflect the real energy
-consumed by the jobs. Default is nothing is collected.
+consumed by the jobs.
 
 Configurable values at present are:
 .IP
 .RS
 .TP 20
+\fBacct_gather_energy/none\fR
+No energy consumption data is collected.
+.IP
+
+.TP
 \fBacct_gather_energy/ipmi\fR
 Energy consumption data is collected from the Baseboard Management Controller
 (BMC) using the Intelligent Platform Management Interface (IPMI).
@@ -325,6 +331,11 @@ Configurable values at present are:
 .IP
 .RS
 .TP 20
+\fBacct_gather_interconnect/none\fR
+No infiniband network data are collected.
+.IP
+
+.TP
 \fBacct_gather_interconnect/ofed\fR
 Infiniband network traffic data are collected from the hardware monitoring
 counters of Infiniband devices through the OFED library.
@@ -358,6 +369,11 @@ Configurable values at present are:
 .IP
 .RS
 .TP 20
+\fBacct_gather_filesystem/none\fR
+No filesystem data are collected.
+.IP
+
+.TP
 \fBacct_gather_filesystem/lustre\fR
 Lustre filesystem traffic data are collected from the counters found in
 /proc/fs/lustre/.
@@ -380,6 +396,11 @@ Configurable values at present are:
 .IP
 .RS
 .TP 20
+\fBacct_gather_profile/none\fR
+No profile data is collected.
+.IP
+
+.TP
 \fBacct_gather_profile/hdf5\fR
 This enables the HDF5 plugin. The directory where the profile files
 are stored and which values are collected are configured in the
@@ -709,6 +730,15 @@ to improve reliability of communications in the event of network failures.
 .IP
 
 .TP
+\fBNoAddrCache\fR
+By default, Slurm will cache a node's network address after successfully
+establishing the node's network address. This option disables the cache and
+Slurm will look up the node's network address each time a connection is made.
+This is useful, for example, in a cloud environment where the node addresses
+come and go out of DNS.
+.IP
+
+.TP
 \fBNoCtldInAddrAny\fR
 Used to directly bind to the address of what the node resolves to running
 the slurmctld instead of binding messages to any address on the node,
@@ -765,6 +795,12 @@ Acceptable values at present include:
 .TP 20
 \fBcore_spec/cray_aries\fR
 used only for Cray systems
+.IP
+
+.TP
+\fBcore_spec/none\fR
+used for all other system types
+.RE
 .IP
 
 .TP
@@ -1079,7 +1115,8 @@ the job didn't specify \-\-cpus\-per\-task and \-\-cpus\-per\-gpu.
 Default real memory size available per usable allocated CPU in megabytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBDefMemPerCPU\fR would generally be used if individual processors
-are allocated to jobs (\fBSelectType=select/cons_tres\fR).
+are allocated to jobs (\fBSelectType=select/cons_res\fR or
+\fBSelectType=select/cons_tres\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerGPU\fR, \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBDefMemPerNode\fR are
@@ -1216,14 +1253,12 @@ AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold.
 
 .TP
 \fBEpilog\fR
-Pathname of a script to execute as user root on every node when a user's job
-completes (e.g. "/usr/local/slurm/epilog"). If it is not an absolute path name
-(i.e. it does not start with a slash), it will be searched for in the same
-directory as the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also
-be used to run more than one epilog script (e.g. "/etc/slurm/epilog.d/*").
-When more than one epilog script is configured, they are executed in reverse
-order. The Epilog script or scripts may be used to purge files, disable user
-login, etc.
+Fully qualified pathname of a script to execute as user root on every
+node when a user's job completes (e.g. "/usr/local/slurm/epilog"). A
+glob pattern (See \fBglob\fR (7)) may also be used to run more than
+one epilog script (e.g. "/etc/slurm/epilog.d/*").  When more than one epilog
+script is configured, they are executed in reverse order. The Epilog script
+or scripts may be used to purge files, disable user login, etc.
 By default there is no epilog.
 See \fBProlog and Epilog Scripts\fR for more information.
 .IP
@@ -1277,6 +1312,11 @@ Configurable values at present are:
 .IP
 .RS
 .TP 20
+\fBext_sensors/none\fR
+No external sensors data is collected.
+.IP
+
+.TP
 \fBext_sensors/rrd\fR
 External sensors data is collected from the RRD database.
 .RE
@@ -1876,6 +1916,11 @@ Used only for Cray systems (CNCU = Compute Node Clean Up)
 .IP
 
 .TP
+\fBjob_container/none\fR
+Used for all other system types
+.IP
+
+.TP
 \fBjob_container/tmpfs\fR
 Used to create a private namespace on the filesystem for jobs, which houses
 temporary file systems (/tmp and /dev/shm) for each job. 'PrologFlags=Contain'
@@ -2303,7 +2348,8 @@ Also see \fBFirstJobId\fR.
 Maximum real memory size available per allocated CPU in megabytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBMaxMemPerCPU\fR would generally be used if individual processors
-are allocated to jobs (\fBSelectType=select/cons_tres\fR).
+are allocated to jobs (\fBSelectType=select/cons_res\fR or
+\fBSelectType=select/cons_tres\fR).
 The default value is 0 (unlimited).
 Also see \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBMaxMemPerNode\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
@@ -2701,10 +2747,6 @@ option to be specified at the cluster level. Also, because the suspended jobs
 will still use memory on the allocated nodes, Slurm needs to be able to track
 memory resources to be able to suspend jobs.
 .br
-When suspending jobs, Slurm sends the SIGTSTP signal, waits the time specified
-by \fBPreemptParameters=suspend_grace_time\fR (default is 2 seconds), then
-sends the SIGSTOP signal. The SIGCONT signal is sent when resuming jobs.
-.br
 If \fBPreemptType=preempt/qos\fR is configured and if the preempted job(s) and
 the preemptor job are on the same partition, then they will share resources with
 the Gang scheduler (time\-slicing). If not (i.e. if the preemptees and preemptor
@@ -2743,8 +2785,8 @@ lower than this value will be marked as preemptable.
 \fBreclaim_licenses\fR
 If set, jobs may be preempted to reclaim licenses. Otherwise jobs requesting
 busy licenses will have to wait even if they have preemption priority.
-The logic to support this option is only available in the select/cons_tres
-plugin.
+The logic to support this option is only available in the select/cons_res and
+select/cons_tres plugins.
 .IP
 
 .TP
@@ -2752,8 +2794,8 @@ plugin.
 Specify how many attempts should be made in reordering preemptable jobs to
 minimize the count of jobs preempted.
 The default value is 1. High values may adversely impact performance.
-The logic to support this option is only available in the select/cons_tres
-plugin.
+The logic to support this option is only available in the select/cons_res and
+select/cons_tres plugins.
 .IP
 
 .TP
@@ -2770,22 +2812,8 @@ If set, then execute extra logic in an attempt to preempt only the lowest
 priority jobs.
 It may be desirable to set this configuration parameter when there are multiple
 priorities of preemptable jobs.
-The logic to support this option is only available in the select/cons_tres
-plugin.
-.IP
-
-.TP
-\fBsuspend_grace_time\fR
-Specifies, in units of seconds, the preemption grace time when using
-\fBPreemptMode=SUSPEND\fR.
-When a job is suspended, the SIGTSTP signal will be sent, and then after waiting
-the specified suspend grace time, the SIGSTOP signal will be sent.
-The default value is 2 seconds.
-.br
-\fBNOTE\fR: This parameter is only used when \fBPreemptMode=SUSPEND\fR is
-configured or when suspending jobs with scontrol suspend.
-For setting the preemption grace time when using other preemption modes,
-see \fBGraceTime\fR.
+The logic to support this option is only available in the select/cons_res and
+select/cons_tres plugins.
 .IP
 
 .TP
@@ -2823,7 +2851,7 @@ Job preemption rules are specified by Quality Of Service (QOS) specifications
 in the Slurm database.
 This option is not compatible with \fBPreemptMode=OFF\fR.
 A configuration of \fBPreemptMode=SUSPEND\fR is only supported by the
-\fBSelectType=select/cons_tres\fR plugin.
+\fBSelectType=select/cons_res\fR and \fBSelectType=select/cons_tres\fR plugins.
 See the \fBsacctmgr\fR man page to configure the options for \fBpreempt/qos\fR.
 .RE
 .IP
@@ -2999,7 +3027,7 @@ The default value is "site_factor/none".
 This specifies the plugin to be used in establishing a job's scheduling
 priority.
 Also see \fBPriorityFlags\fR for configuration options.
-The default value is "priority/multifactor".
+The default value is "priority/basic".
 .IP
 .RS
 .TP
@@ -3251,12 +3279,12 @@ Uses Process Group IDs.
 
 .TP
 \fBProlog\fR
-Pathname of a program for the slurmd to execute whenever it is asked to run a
-job step from a new job allocation. If it is not an absolute path name (i.e. it
-does not start with a slash), it will be searched for in the same directory as
-the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also be used to
-specify more than one program to run (e.g. "/etc/slurm/prolog.d/*"). When more
-than one prolog script is configured, they are executed in reverse order.
+Fully qualified pathname of a program for the slurmd to execute
+whenever it is asked to run a job step from a new job allocation (e.g.
+"/usr/local/slurm/prolog"). A glob pattern (See \fBglob\fR (7)) may
+also be used to specify more than one program to run (e.g.
+"/etc/slurm/prolog.d/*"). When more than one prolog script is configured,
+they are executed in reverse order.
 The slurmd executes the prolog before starting
 the first job step.  The prolog script or scripts may be used to purge files,
 enable user login, etc.  By default there is no prolog. Any configured script
@@ -3716,14 +3744,6 @@ default, use TreeWidth.
 .IP
 
 .TP
-\fBroute/partition\fR
-Use partition nodes lists to route communications from the controller. Once on
-the compute node, communications will be routed using TreeWidth. If a node is
-in multiple partitions, the first partition seen will be used. The controller
-will communicate directly with any nodes that aren't part of a partition.
-.IP
-
-.TP
 \fBroute/topology\fR
 use the switch hierarchy defined in a \fItopology.conf\fR file.
 TopologyPlugin=topology/tree is required.
@@ -3776,10 +3796,10 @@ nodes that are in use.
 This will tend to leave currently idle resources available for backfilling
 longer running jobs, but may result in allocations having less than optimal
 network topology.
-This option is currently only supported by the
-select/cons_tres plugin (or select/cray_aries with SelectTypeParameters set to
-"OTHER_CONS_TRES", which layers the select/cray_aries plugin
-over the select/cons_tres plugin).
+This option is currently only supported by the select/cons_res and
+select/cons_tres plugins (or select/cray_aries with SelectTypeParameters set to
+"OTHER_CONS_RES" or "OTHER_CONS_TRES", which layers the select/cray_aries plugin
+over the select/cons_res or select/cons_tres plugin respectively).
 .IP
 
 .TP
@@ -4281,13 +4301,6 @@ Larger values may adversely impact system performance.
 .IP
 
 .TP
-\fBmax_submit_line_size=#\fR
-Specify the maximum size of a submit line, in bytes.
-The default value is 1 megabtye.
-This option cannot exceed 2 megabytes.
-.IP
-
-.TP
 \fBmax_switch_wait=#\fR
 Maximum number of seconds that a job can delay execution waiting for the
 specified desired switch count. The default value is 300 seconds.
@@ -4318,7 +4331,7 @@ held so that the scheduler can dispatch it to another host.
 
 .TP
 \fBpack_serial_at_end\fR
-If used with the select/cons_tres plugin,
+If used with the select/cons_res or select/cons_tres plugin,
 then put serial jobs at the end of
 the available nodes rather than using a best fit algorithm.
 This may reduce resource fragmentation for some workloads.
@@ -4507,12 +4520,23 @@ Identifies the type of resource selection algorithm to be used.
 A restart of slurmctld and slurmd is required for changes to this parameter to
 take effect. When changed, all job information (running and pending) will be
 lost, since the job state save format used by each plugin is different.
-The only exception to this is when changing from the legacy cons_res to
-cons_tres.
+The only exception to this is when changing from cons_res to cons_tres or from
+cons_tres to cons_res. However, if a job contains cons_tres\-specific features
+and then SelectType is changed to cons_res, the job will be canceled, since
+there is no way for cons_res to satisfy requirements specific to cons_tres.
 
 Acceptable values include
 .IP
 .RS
+.TP
+\fBselect/cons_res\fR
+The resources (cores and memory) within a node are individually allocated as
+consumable resources.
+Note that whole nodes can be allocated to jobs for selected
+partitions by using the \fIOverSubscribe=Exclusive\fR option.
+See the partition \fBOverSubscribe\fR parameter for more information.
+.IP
+
 .TP
 \fBselect/cons_tres\fR
 The resources (cores, memory, GPUs and all other trackable resources) within
@@ -4520,7 +4544,6 @@ a node are individually allocated as consumable resources.
 Note that whole nodes can be allocated to jobs for selected
 partitions by using the \fIOverSubscribe=Exclusive\fR option.
 See the partition \fBOverSubscribe\fR parameter for more information.
-This is the default value.
 .IP
 
 .TP
@@ -4535,12 +4558,13 @@ for allocation of entire nodes assuming a one\-dimensional array of nodes in
 which sequentially ordered nodes are preferable.
 For a heterogeneous cluster (e.g. different CPU counts on the various nodes),
 resource allocations will favor nodes with high CPU counts as needed based upon
-the job's node and CPU specification if no TopologyPlugin is
+the job's node and CPU specification if \fBTopologyPlugin=topology/none\fR is
 configured. Use of other topology plugins with select/linear and heterogeneous
 nodes is not recommended and may result in valid job allocation requests being
 rejected. The linear plugin is not designed to track generic resources on a
 node. In cases where generic resources (such as GPUs) need to be tracked,
-the cons_tres plugin should be used instead.
+the cons_res or cons_tres plugins should be used instead.
+This is the default value.
 .RE
 .IP
 
@@ -4554,8 +4578,8 @@ The only supported options for \fBSelectType=select/linear\fR are
 prevents memory over subscription with job preemption or gang scheduling.
 By default \fBSelectType=select/linear\fR allocates whole nodes to jobs without
 considering their memory consumption.
-By default \fBSelectType=select/cons_tres\fR, and
-\fBSelectType=select/cray_aries\fR use
+By default \fBSelectType=select/cons_res\fR, \fBSelectType=select/cray_aries\fR,
+and \fBSelectType=select/cons_tres\fR, use
 \fBCR_Core_Memory\fR, which allocates Core
 to jobs with considering their memory consumption.
 
@@ -4565,6 +4589,13 @@ The following options are supported for \fBSelectType=select/cray_aries\fR:
 .IP
 .RS
 .TP
+\fBOTHER_CONS_RES\fR
+Layer the select/cons_res plugin under the select/cray_aries plugin, the default is
+to layer on select/linear.  This also allows all the options available for
+\fBSelectType=select/cons_res\fR.
+.IP
+
+.TP
 \fBOTHER_CONS_TRES\fR
 Layer the select/cons_tres plugin under the select/cray_aries plugin, the default is
 to layer on select/linear.  This also allows all the options available for
@@ -4572,8 +4603,8 @@ to layer on select/linear.  This also allows all the options available for
 .IP
 .RE
 
-The following options are supported by the \fBSelectType=select/cons_tres\fR
-plugin:
+The following options are supported by the \fBSelectType=select/cons_res\fR
+and \fBSelectType=select/cons_tres\fR plugins:
 .IP
 .RS
 .TP
@@ -4838,21 +4869,28 @@ DNS, this step can be avoided by configuring this option.
 .IP
 
 .TP
+\fBcloud_reg_addrs\fR
+When a cloud node registers, the node's NodeAddr and NodeHostName will
+automatically be set. They will be reset back to the nodename after powering
+off. Dynamically registered nodes automatically set the node's NodeAddr and
+NodeHostName on the first registration and won't be updated on subsequent
+registrations if it changes. Setting \fBcloud_reg_addrs\fR will update a
+dynamically registered node's NodeAddr and NodeHostName if it changes on
+subsequent registrations.
+.IP
+
+.TP
 \fBenable_configless\fR
 Permit "configless" operation by the slurmd, slurmstepd, and user commands.
-When enabled the slurmd will be permitted to retrieve config files and
-\fBProlog\fR and \fBEpilog\fR scripts from the slurmctld, and on any 'scontrol
-reconfigure' command new configs and scripts will be automatically pushed out
-and applied to nodes that are running in this "configless" mode.
+When enabled the slurmd will be permitted to retrieve config files from the
+slurmctld, and on any 'scontrol reconfigure' command new configs will
+be automatically pushed out and applied to nodes that are running in this
+"configless" mode.
 A restart of slurmctld is required for changes to this parameter to take effect.
 See https://slurm.schedmd.com/configless_slurm.html for more details.
 
 \fBNOTE\fR: Included files with the \fBInclude\fR directive will only be pushed
 if the filename has no path separators and is located adjacent to slurm.conf.
-
-\fBNOTE\fR: \fBProlog\fR and \fBEpilog\fR scripts will only be pushed if the
-filenames have no path separators and are located adjacent to slurm.conf.
-Glob patterns (See \fBglob\fR (7)) are not supported.
 .IP
 
 .TP
@@ -4873,13 +4911,6 @@ It's recommended that \fItask/cgroup\fR with \fIConstrainRamSpace\fR is
 configured. A memory cgroup limit won't be set more than the actual memory on
 the node. If needed, configure \fIAllowedRamSpace\fR in the cgroup.conf to add
 a buffer.
-.IP
-
-.TP
-\fBno_quick_restart\fR
-By default starting a new instance of the slurmctld will kill the old one
-running before taking control. If this option is set this will not happen
-without the \fB-i\fR option.
 .IP
 
 .TP
@@ -5671,10 +5702,11 @@ Addressing contexts. The default is 4 per-CPU, maximum 1022 per-node.
 Identifies the type of switch or interconnect used for application
 communications.
 Acceptable values include
-"switch/cray_aries" for Cray systems, and
-"switch/hpe_slingshot" for HPE Slingshot systems.
-The default value is no special plugin requiring special processing for job
-launch or termination (Ethernet, and InfiniBand).
+"switch/cray_aries" for Cray systems,
+"switch/hpe_slingshot" for HPE Slingshot systems and
+"switch/none" for switches not requiring special processing for job launch
+or termination (Ethernet, and InfiniBand).
+The default value is "switch/none".
 All Slurm daemons, commands and running jobs must be restarted for a
 change in \fBSwitchType\fR to take effect.
 If running jobs exist at the time \fBslurmctld\fR is restarted with a new
@@ -5925,6 +5957,11 @@ best\-fit logic over three\-dimensional topology
 .IP
 
 .TP
+\fBtopology/none\fR
+default for other systems, best\-fit logic over one\-dimensional topology
+.IP
+
+.TP
 \fBtopology/tree\fR
 used for a hierarchical network as described in a \fItopology.conf\fR file
 .RE
@@ -5945,13 +5982,14 @@ historical usage reports.
 On architectures with a front end node running the slurmd daemon, the value
 must always be equal to or greater than the number of front end nodes which
 eliminates the need for message forwarding between the slurmd daemons.
-On other architectures the default value is 16, meaning each slurmd daemon can
-communicate with up to 16 other slurmd daemons. This value balances offloading
-slurmctld (max 16 threads running), time of communication, and node fault
-tolerance (4368 nodes can be contacted with three message hops). The default
-value will work well for most clusters however on bigger systems this value can
-be increased to avoid long timeouts and retransmissions in case of unresponsive
-nodes. The value may not exceed 65533.
+On other architectures the default value is 50, meaning each slurmd daemon can
+communicate with up to 50 other slurmd daemons and over 2500 nodes can be
+contacted with two message hops.
+The default value will work well for most clusters.
+Optimal system performance can typically be achieved if \fBTreeWidth\fR
+is set to the square root of the number of nodes in the cluster for
+systems having no more than 2500 nodes or the cube root for larger
+systems. The value may not exceed 65533.
 .IP
 
 .TP
@@ -6467,7 +6505,7 @@ plus \fBCPUs\fR; do not configure \fBSockets\fR, \fBCoresPerSocket\fR or
 A job can execute a one task per thread from within one job step or
 execute a distinct job step on each of the threads.
 Note also if you are running with more than 1 thread per core and running
-the select/cons_tres plugin then you will want to set
+the select/cons_res or select/cons_tres plugin then you will want to set
 the SelectTypeParameters
 variable to something other than CR_CPU to avoid unexpected results.
 The default value is 1.
@@ -6814,7 +6852,8 @@ the job didn't specify \-\-cpus\-per\-task and \-\-cpus\-per\-gpu.
 Default real memory size available per allocated CPU in megabytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBDefMemPerCPU\fR would generally be used if individual processors
-are allocated to jobs (\fBSelectType=select/cons_tres\fR).
+are allocated to jobs (\fBSelectType=select/cons_res\fR or
+\fBSelectType=select/cons_tres\fR).
 If not set, the \fBDefMemPerCPU\fR value for the entire cluster will be used.
 Also see \fBDefMemPerGPU\fR, \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBDefMemPerNode\fR are mutually
@@ -6891,10 +6930,6 @@ This is followed by the SIGCONT, SIGTERM and SIGKILL signal sequence upon
 reaching its new end time. This second set of signals is sent to both the
 tasks \fBand\fR the containing batch script, if applicable.
 See also the global \fBKillWait\fR configuration parameter.
-.br
-\fBNOTE\fR: This parameter does not apply to \fBPreemptMode=SUSPEND\fR.
-For setting the preemption grace time when using \fBPreemptMode=SUSPEND\fR,
-see \fBPreemptParameters=suspend_grace_time\fR.
 .IP
 
 .TP
@@ -6942,7 +6977,8 @@ Also see \fBMaxCPUsPerNode\fR.
 Maximum real memory size available per allocated CPU in megabytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBMaxMemPerCPU\fR would generally be used if individual processors
-are allocated to jobs (\fBSelectType=select/cons_tres\fR).
+are allocated to jobs (\fBSelectType=select/cons_res\fR or
+\fBSelectType=select/cons_tres\fR).
 If not set, the \fBMaxMemPerCPU\fR value for the entire cluster will be used.
 Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 \fBMaxMemPerCPU\fR and \fBMaxMemPerNode\fR are mutually exclusive.
@@ -7015,9 +7051,9 @@ The default value is "NO".
 For more information see the following web pages:
 .br
 .na
-\fIhttps://slurm.schedmd.com/cons_tres.html\fR
+\fIhttps://slurm.schedmd.com/cons_res.html\fR
 .br
-\fIhttps://slurm.schedmd.com/cons_tres_share.html\fR
+\fIhttps://slurm.schedmd.com/cons_res_share.html\fR
 .br
 \fIhttps://slurm.schedmd.com/gang_scheduling.html\fR
 .br
@@ -7027,8 +7063,8 @@ For more information see the following web pages:
 .RS
 .TP 12
 \fBEXCLUSIVE\fR
-Allocates entire nodes to jobs even with \fBSelectType=select/cons_tres\fR
-configured.
+Allocates entire nodes to jobs even with \fBSelectType=select/cons_res\fR or
+\fBSelectType=select/cons_tres\fR configured.
 Jobs that run in partitions with \fBOverSubscribe=EXCLUSIVE\fR will have
 exclusive access to all allocated nodes.
 These jobs are allocated all CPUs and GRES on the nodes, but they are only
@@ -7698,6 +7734,8 @@ The \fBTopologyPlugin\fR parameter controls which plugin is used to
 collect network topology information.
 The only values presently supported are "topology/3d_torus" (default for
 Cray XT/XE systems, performs best\-fit logic over three\-dimensional topology),
+"topology/none" (default for other systems,
+best\-fit logic over one\-dimensional topology),
 "topology/tree" (determine the network topology based
 upon information contained in a topology.conf file,
 see "man topology.conf" for more information).
@@ -7766,6 +7804,7 @@ SlurmctldPort=7002
 SlurmdPort=7003
 SlurmdSpoolDir=/var/spool/slurmd.spool
 StateSaveLocation=/var/spool/slurm.state
+SwitchType=switch/none
 TmpFS=/tmp
 WaitTime=30
 #

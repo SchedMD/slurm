@@ -126,13 +126,13 @@ def llnl_references(line):
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="https://slurm.schedmd.com/cons_tres.html">https://slurm.schedmd.com/cons_tres.html</A>'
-        htmlStr = '<a href="cons_tres.html">cons_tres</a>'
+        manStr = '<A HREF="https://slurm.schedmd.com/cons_res.html">https://slurm.schedmd.com/cons_res.html</A>'
+        htmlStr = '<a href="cons_res.html">cons_res</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix
-        manStr = '<A HREF="https://slurm.schedmd.com/cons_tres_share.html">https://slurm.schedmd.com/cons_tres_share.html</A>'
-        htmlStr = '<a href="cons_tres_share.html">cons_tres_share</a>'
+        manStr = '<A HREF="https://slurm.schedmd.com/cons_res_share.html">https://slurm.schedmd.com/cons_res_share.html</A>'
+        htmlStr = '<a href="cons_res_share.html">cons_res_share</a>'
         lineFix = line.replace(manStr,htmlStr)
         if lineFix != line:
             return lineFix

@@ -136,9 +136,6 @@ typedef enum {
 #define	QOS_FLAG_OVER_PART_QOS       SLURM_BIT(7)
 #define	QOS_FLAG_NO_DECAY            SLURM_BIT(8)
 #define	QOS_FLAG_USAGE_FACTOR_SAFE   SLURM_BIT(9)
-#define	QOS_FLAG_RELATIVE            SLURM_BIT(10)
-#define	QOS_FLAG_RELATIVE_SET        SLURM_BIT(11)
-#define	QOS_FLAG_PART_QOS            SLURM_BIT(12)
 
 /* Define Server Resource flags */
 #define	SLURMDB_RES_FLAG_BASE        0x0fffffff /* apply to get real flags */
@@ -532,8 +529,7 @@ typedef struct slurmdb_assoc_rec {
 	uint32_t lft;		   /* lft used for grouping sub
 				    * associations and jobs as a left
 				    * most container used with rgt */
-	char *lineage;		   /* Complete path up the hierarchy to the root
-				    * association */
+
 	uint32_t max_jobs;	   /* max number of jobs this
 				    * association can run at one time */
 	uint32_t max_jobs_accrue;  /* max number of jobs this association can
@@ -596,19 +592,6 @@ typedef struct slurmdb_assoc_rec {
 				       * (DON'T PACK)
 				       */
 } slurmdb_assoc_rec_t;
-
-typedef struct {
-	list_t *acct_list;	/* list of char * */
-	slurmdb_assoc_rec_t assoc; /* filled with limits for associations
-				      to be added. */
-	list_t *cluster_list; /* list of char * */
-
-	char *default_acct; /* default account name (DON'T PACK) */
-
-	list_t *partition_list; /* list of char * */
-	list_t *user_list;	/* list of char * */
-	list_t *wckey_list;	/* list of char * */
-} slurmdb_add_assoc_cond_t;
 
 struct slurmdb_assoc_usage {
 	uint32_t accrue_cnt;    /* Count of how many jobs I have accuring prio
@@ -687,6 +670,7 @@ typedef struct {
 	List federation_list; /* list of char */
 	uint32_t flags;
 	List format_list; 	/* list of char * */
+	List plugin_id_select_list; /* list of char * */
 	List rpc_version_list; /* list of char * */
 	time_t usage_end;
 	time_t usage_start;
@@ -726,7 +710,7 @@ struct slurmdb_cluster_rec {
 	pthread_mutex_t lock; /* For convenience only. DOESN"T GET PACKED */
 	char *name;
 	char *nodes;
-	uint32_t plugin_id_select; /* Remove 2 versions after 23.02 */
+	uint32_t plugin_id_select; /* id of the select plugin */
 	slurmdb_assoc_rec_t *root_assoc; /* root assoc for
 						* cluster */
 	uint16_t rpc_version; /* rpc version this cluster is running */
@@ -806,27 +790,6 @@ typedef struct {
 	List      cluster_list;	/* List of slurmdb_cluster_rec_t *'s */
 } slurmdb_federation_rec_t;
 
-typedef struct {
-	List cluster_list; /* list of char * */
-	List extra_list; /* list of char * */
-	List format_list; /* list of char * */
-	List instance_id_list; /* list of char * */
-	List instance_type_list; /* list of char * */
-	char *node_list; /* node list string */
-	time_t time_end; /* time end of instances */
-	time_t time_start; /* time start of instances */
-} slurmdb_instance_cond_t;
-
-typedef struct {
-	char *cluster; /* name of associated cluster */
-	char *extra; /* name of instance_id */
-	char *instance_id; /* name of instance_id */
-	char *instance_type; /* name of instance_id */
-	char *node_name; /* name of node */
-	time_t time_end; /* time end of instance */
-	time_t time_start; /* time start of instance */
-} slurmdb_instance_rec_t;
-
 /* slurmdb_job_cond_t is defined above alphabetical */
 
 typedef struct {
@@ -865,8 +828,6 @@ typedef struct {
 	uint32_t jobid;
 	char	*jobname;
 	uint32_t lft;
-	char *lineage;		   /* Complete path up the hierarchy to the root
-				    * association */
 	char *licenses;
 	char 	*mcs_label;
 	char	*nodes;
@@ -1064,7 +1025,6 @@ typedef struct {
 					 eligible for preemption */
 	uint32_t priority;  /* ranged int needs to be a unint for
 			     * heterogeneous systems */
-	uint64_t *relative_tres_cnt; /* Only here for convenience DON'T PACK */
 	slurmdb_qos_usage_t *usage; /* For internal use only, DON'T PACK */
 	double usage_factor; /* factor to apply to usage in this qos */
 	double usage_thres; /* percent of effective usage of an
@@ -1367,8 +1327,8 @@ typedef struct {
 	char *acct;	/* account name */
 	uint32_t count; /* total count of jobs taken up by this acct */
 	List groups;	/* containing slurmdb_report_job_grouping_t's*/
-	char *lineage;	/* Complete path up the hierarchy to the root
-			 * association */
+	uint32_t lft;
+	uint32_t rgt;
 	List tres_list; /* list of slurmdb_tres_rec_t *'s */
 } slurmdb_report_acct_grouping_t;
 
@@ -1426,18 +1386,6 @@ extern slurmdb_cluster_rec_t *working_cluster_rec;
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int slurmdb_accounts_add(void *db_conn, List acct_list);
-
-/*
- * add accounts to accounting system
- * IN: slurmdb_add_assoc_cond_t *assoc_cond with cluster (optional) and acct
- *     lists filled in along with any limits in the assoc rec.
- * IN: slurmdb_account_rec_t *
- * RET: Return char * to print out of what was added or NULL and errno set on
- *      error.
- */
-extern char *slurmdb_accounts_add_cond(void *db_conn,
-				       slurmdb_add_assoc_cond_t *add_assoc,
-				       slurmdb_account_rec_t *acct);
 
 /*
  * get info from the storage
@@ -1791,16 +1739,6 @@ extern List slurmdb_events_get(void *db_conn,
 
 /*
  * get info from the storage
- *
- * IN:  slurmdb_instance_cond_t *
- * RET: List of slurmdb_instance_rec_t *
- * note List needs to be freed with slurm_list_destroy() when called
- */
-extern List slurmdb_instances_get(void *db_conn,
-				  slurmdb_instance_cond_t *instance_cond);
-
-/*
- * get info from the storage
  * IN:  slurmdb_assoc_cond_t *
  * RET: List of slurmdb_assoc_rec_t *
  * note List needs to be freed with slurm_list_destroy() when called
@@ -1878,7 +1816,6 @@ extern void slurmdb_destroy_assoc_usage(void *object);
 extern void slurmdb_destroy_bf_usage(void *object);
 extern void slurmdb_destroy_bf_usage_members(void *object);
 extern void slurmdb_destroy_qos_usage(void *object);
-extern void slurmdb_free_user_rec_members(slurmdb_user_rec_t *slurmdb_user);
 extern void slurmdb_destroy_user_rec(void *object);
 extern void slurmdb_destroy_account_rec(void *object);
 extern void slurmdb_destroy_coord_rec(void *object);
@@ -1891,7 +1828,6 @@ extern void slurmdb_free_assoc_mgr_state_msg(void *object);
 extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc);
 extern void slurmdb_destroy_assoc_rec(void *object);
 extern void slurmdb_destroy_event_rec(void *object);
-extern void slurmdb_destroy_instance_rec(void *object);
 extern void slurmdb_destroy_job_rec(void *object);
 extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos);
 extern void slurmdb_destroy_qos_rec(void *object);
@@ -1914,7 +1850,6 @@ extern void slurmdb_destroy_federation_cond(void *object);
 extern void slurmdb_destroy_tres_cond(void *object);
 extern void slurmdb_destroy_assoc_cond(void *object);
 extern void slurmdb_destroy_event_cond(void *object);
-extern void slurmdb_destroy_instance_cond(void *object);
 extern void slurmdb_destroy_job_cond(void *object);
 extern void slurmdb_destroy_qos_cond(void *object);
 extern void slurmdb_destroy_reservation_cond(void *object);
@@ -1922,9 +1857,6 @@ extern void slurmdb_destroy_res_cond(void *object);
 extern void slurmdb_destroy_txn_cond(void *object);
 extern void slurmdb_destroy_wckey_cond(void *object);
 extern void slurmdb_destroy_archive_cond(void *object);
-extern void slurmdb_free_add_assoc_cond_members(
-	slurmdb_add_assoc_cond_t *add_assoc);
-extern void slurmdb_destroy_add_assoc_cond(void *object);
 
 extern void slurmdb_destroy_update_object(void *object);
 extern void slurmdb_destroy_used_limits(void *object);
@@ -1950,7 +1882,6 @@ extern void slurmdb_init_cluster_rec(slurmdb_cluster_rec_t *cluster,
 				     bool free_it);
 extern void slurmdb_init_federation_rec(slurmdb_federation_rec_t *federation,
 					bool free_it);
-extern void slurmdb_init_instance_rec(slurmdb_instance_rec_t *instance);
 extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos,
 				 bool free_it,
 				 uint32_t init_val);
@@ -1958,8 +1889,6 @@ extern void slurmdb_init_res_rec(slurmdb_res_rec_t *res,
 				 bool free_it);
 extern void slurmdb_init_wckey_rec(slurmdb_wckey_rec_t *wckey,
 				   bool free_it);
-extern void slurmdb_init_add_assoc_cond(slurmdb_add_assoc_cond_t *add_assoc,
-					bool free_it);
 extern void slurmdb_init_tres_cond(slurmdb_tres_cond_t *tres,
 				   bool free_it);
 extern void slurmdb_init_cluster_cond(slurmdb_cluster_cond_t *cluster,
@@ -1972,7 +1901,8 @@ extern void slurmdb_init_res_cond(slurmdb_res_cond_t *cluster,
 /* The next two functions have pointers to assoc_list so do not
  * destroy assoc_list before using the list returned from this function.
  */
-extern List slurmdb_get_hierarchical_sorted_assoc_list(List assoc_list);
+extern List slurmdb_get_hierarchical_sorted_assoc_list(
+	List assoc_list, bool use_lft);
 extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list);
 
 
@@ -2110,30 +2040,6 @@ extern int slurmdb_usage_roll(void *db_conn,
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int slurmdb_users_add(void *db_conn, List user_list);
-
-/*
- * add users to accounting system
- * IN: slurmdb_add_assoc_cond_t *assoc_cond with cluster (optional) acct
- *     and user lists filled in along with any limits in the assoc rec.
- * IN: slurmdb_user_rec_t *
- * RET: Return char * to print out of what was added or NULL and errno set on
- *      error.
- */
-extern char *slurmdb_users_add_cond(void *db_conn,
-				    slurmdb_add_assoc_cond_t *add_assoc,
-				    slurmdb_user_rec_t *user);
-
-/*
- * add users to accounting system
- * IN:  slurmdb_user_rec_t *user
- * IN:  slurmdb_assoc_cond_t *assoc_cond
- * IN:  slurmdb_assoc_rec_t *assoc
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern List slurmdb_users_add_conn(void *db_conn,
-				   slurmdb_user_rec_t *user,
-				   slurmdb_assoc_cond_t *assoc_cond,
-				   slurmdb_assoc_rec_t *assoc);
 
 /*
  * get info from the storage

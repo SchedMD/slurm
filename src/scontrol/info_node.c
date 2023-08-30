@@ -133,7 +133,7 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 {
 	node_info_msg_t *node_info_ptr = NULL;
 	partition_info_msg_t *part_info_ptr = NULL;
-	hostlist_t *host_list = NULL;
+	hostlist_t host_list = NULL;
 	int error_code;
 	uint16_t show_flags = 0;
 
@@ -173,8 +173,7 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 		if (mime_type)
 			error_code =
 				DATA_DUMP_CLI(NODES, *node_info_ptr, "nodes",
-					      argc, argv, NULL, mime_type,
-					      data_parser);
+					      argc, argv, NULL, mime_type);
 		else
 			scontrol_print_node(NULL, node_info_ptr);
 	} else {
@@ -220,8 +219,7 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 			}
 
 			error_code = DATA_DUMP_CLI(NODE_ARRAY, nodes, "nodes",
-						   argc, argv, NULL, mime_type,
-						   data_parser);
+						   argc, argv, NULL, mime_type);
 
 			xfree(nodes);
 		} else {
@@ -246,7 +244,7 @@ extern void	scontrol_print_topo (char *node_list)
 {
 	static topo_info_response_msg_t *topo_info_msg = NULL;
 	int i, match, match_cnt = 0;
-	hostset_t *hs;
+	hostset_t hs;
 
 	if ((topo_info_msg == NULL) &&
 	    slurm_load_topo(&topo_info_msg)) {
@@ -384,7 +382,7 @@ scontrol_print_front_end_list(char *node_list)
 {
 	front_end_info_msg_t *front_end_info_ptr = NULL;
 	int error_code;
-	hostlist_t *host_list;
+	hostlist_t host_list;
 	char *this_node_name;
 
 	error_code = scontrol_load_front_end(&front_end_info_ptr);

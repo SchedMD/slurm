@@ -60,10 +60,10 @@
 #include "slurm/slurm.h"
 
 #include "src/common/parse_time.h"
+#include "src/interfaces/accounting_storage.h"
+#include "src/common/xstring.h"
 #include "src/common/print_fields.h"
 #include "src/common/slurmdb_defs.h"
-#include "src/common/xstring.h"
-#include "src/interfaces/accounting_storage.h"
 
 #define	MAX_INPUT_FIELDS 128
 
@@ -110,8 +110,6 @@ extern char **tres_names;
 extern uint32_t tres_cnt;
 extern int long_flag;
 extern char *opt_field_list;
-extern char *mimetype; /* --yaml or --json */
-extern char *data_parser; /* data_parser args */
 
 extern int process(shares_response_msg_t *msg, uint16_t options);
 

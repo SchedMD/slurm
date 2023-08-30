@@ -123,45 +123,47 @@ if ($man) {
 }
 
 # Use sole remaining argument as jobIds
-if(!$ARGV[0] && !$config_file) {
+my $script;
+if ($ARGV[0]) {
+	foreach (@ARGV) {
+	        $script .= "$_ ";
+	}
+} elsif(!$config_file) {
         pod2usage(2);
 }
 
 my $new_config;
 
 
-my @command = ("$srun");
+my $command = "$srun";
 
 # write stdout and err to files instead of stdout
-push @command, "-o job.o\%j -e job.e\%j" if $nostdout;
-push @command, "-inone" if $nostdin;
-push @command, "-i0" if !$allstdin; #default only send stdin to first node
-push @command, "-n$nprocs" if $nprocs; # number of tasks
-push @command, "-w$hostname" if $hostname; # Hostlist provided
-push @command, "-t '" . $ENV{"MPIEXEC_TIMEOUT"} . "'" if $ENV{"MPIEXEC_TIMEOUT"};
+$command .= " -o job.o\%j -e job.e\%j" if $nostdout;
+$command .= " -inone" if $nostdin;
+$command .= " -i0" if !$allstdin; #default only send stdin to first node
+$command .= " -n$nprocs" if $nprocs; # number of tasks
+$command .= " -w$hostname" if $hostname; # Hostlist provided
+$command .= " -t '" . $ENV{"MPIEXEC_TIMEOUT"} . "'" if $ENV{"MPIEXEC_TIMEOUT"};
 
 if($verbose) {
-	my $verbose_flag = "-"; # verbose
+	$command .= " -"; # verbose
 	for(my $i=0; $i<$verbose; $i++) {
-		$verbose_flag .= "v";
+		$command .= "v";
 	}
-  push @command, $verbose_flag
 }
 
 if($config_file) {
 	($new_config, my $new_nprocs) = get_new_config();
-	push @command, "-n$new_nprocs" if !$nprocs;
-	push @command, "--multi-prog $new_config";
+	$command .= " -n$new_nprocs" if !$nprocs;
+	$command .= " --multi-prog $new_config";
 } else {
-	push @command, @ARGV;
+	$command .= " $script";
 }
 
-#print "@command\n";
-my $exit_code = system(@command);
+#print "$command\n";
+system($command);
 
 system("rm -f $new_config") if($new_config);
-
-exit($exit_code >> 8);
 
 __END__
 
@@ -173,8 +175,8 @@ B<mpiexec.slurm> - Run an MPI program under Slurm
 
 mpiexec.slurm args executable pgmargs
 
-where args are command line arguments for mpiexec (see below), executable is
-the name of the executable and pgmargs are command line arguments for the
+where args are comannd line arguments for mpiexec (see below), executable is
+the name of the eecutable and pgmargs are command line arguments for the
 executable. For example the following command will run the MPI program a.out on
 4 processes:
 

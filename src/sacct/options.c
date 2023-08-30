@@ -269,7 +269,7 @@ sacct [<OPTION>]                                                            \n \
                    jobs. Adding .step will display the specific job step of \n\
                    that job. (A step id of 'batch' will display the         \n\
                    information about the batch step.)                       \n\
-     --json[=data_parser]                                                   \n\
+     --json:                                                                \n\
                    Produce JSON output                                      \n\
      -k, --timelimit-min:                                                   \n\
                    Only send data about jobs with this timelimit.           \n\
@@ -366,7 +366,7 @@ sacct [<OPTION>]                                                            \n \
      -X, --allocations:                                                     \n\
 	           Only show statistics relevant to the job allocation      \n\
 	           itself, not taking steps into consideration.             \n\
-     --yaml[=data_parser]                                                   \n\
+     --yaml:                                                                \n\
                    Produce YAML output                                      \n\
 	                                                                    \n\
      Note, valid start/end time formats are...                              \n\
@@ -568,7 +568,7 @@ extern int get_data(void)
 extern void parse_command_line(int argc, char **argv)
 {
 	extern int optind;
-	int c, i, option_index = 0;
+	int c, i, optionIndex = 0;
 	char *end = NULL, *start = NULL;
 	slurm_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
@@ -640,8 +640,8 @@ extern void parse_command_line(int argc, char **argv)
                 {"wckeys",         required_argument, 0,    'W'},
                 {"whole-hetjob",   optional_argument, 0,    OPT_LONG_WHETJOB},
                 {"associations",   required_argument, 0,    'x'},
-                {"json", optional_argument, 0, OPT_LONG_JSON},
-                {"yaml", optional_argument, 0, OPT_LONG_YAML},
+                {"json", no_argument, 0, OPT_LONG_JSON},
+                {"yaml", no_argument, 0, OPT_LONG_YAML},
                 {0,                0,		      0,    0}};
 
 	params.opt_uid = getuid();
@@ -662,7 +662,7 @@ extern void parse_command_line(int argc, char **argv)
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
 				"aA:bBcC:DeE:f:F:g:hi:I:j:k:K:lLM:nN:o:pPq:r:s:S:Ttu:UvVW:x:X",
-				long_options, &option_index);
+				long_options, &optionIndex);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -937,12 +937,12 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case OPT_LONG_JSON:
 			params.mimetype = MIME_TYPE_JSON;
-			params.data_parser = optarg;
+			data_init();
 			serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL);
 			break;
 		case OPT_LONG_YAML:
 			params.mimetype = MIME_TYPE_YAML;
-			params.data_parser = optarg;
+			data_init();
 			serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL);
 			break;
 		case OPT_LONG_AUTOCOMP:
@@ -1047,25 +1047,21 @@ extern void parse_command_line(int argc, char **argv)
 	      (job_cond->flags & JOBCOND_FLAG_NO_WHOLE_HETJOB ? "no" : 0));
 
 	if (params.opt_completion) {
-		if (!slurm_conf.job_comp_type) {
+		slurmdb_jobcomp_init();
+
+		if (!xstrcmp(slurm_conf.job_comp_type, "jobcomp/none")) {
 			fprintf(stderr, "Slurm job completion is disabled\n");
 			exit(1);
 		}
-
-		if (slurmdb_jobcomp_init() != SLURM_SUCCESS) {
-			fprintf(stderr,
-				"Slurm unable to initialize jobcomp plugin\n");
+	} else {
+		if (slurm_acct_storage_init() != SLURM_SUCCESS) {
+			fprintf(stderr, "Slurm unable to initialize storage plugin\n");
 			exit(1);
 		}
-	} else {
-		if (!slurm_conf.accounting_storage_type) {
+		if (!xstrcmp(slurm_conf.accounting_storage_type,
+			     "accounting_storage/none")) {
 			fprintf(stderr,
 				"Slurm accounting storage is disabled\n");
-			exit(1);
-		}
-		if (acct_storage_g_init() != SLURM_SUCCESS) {
-			fprintf(stderr,
-				"Slurm unable to initialize storage plugin\n");
 			exit(1);
 		}
 		acct_db_conn = slurmdb_connection_get(NULL);
@@ -1369,7 +1365,7 @@ extern void do_help(void)
 
 /* Return true if the specified job id is local to a cluster
  * (not a federated job) */
-static bool _test_local_job(uint32_t job_id)
+static inline bool _test_local_job(uint32_t job_id)
 {
 	if ((job_id & (~MAX_JOB_ID)) == 0)
 		return true;
@@ -1414,8 +1410,7 @@ extern void do_list(int argc, char **argv)
 
 	if (params.mimetype) {
 		errno = DATA_DUMP_CLI(JOB_LIST, jobs, "jobs", argc, argv,
-				      acct_db_conn, params.mimetype,
-				      params.data_parser);
+				      acct_db_conn, params.mimetype);
 		return;
 	}
 
@@ -1497,7 +1492,7 @@ extern void sacct_fini(void)
 		slurmdb_jobcomp_fini();
 	else {
 		slurmdb_connection_close(&acct_db_conn);
-		acct_storage_g_fini();
+		slurm_acct_storage_fini();
 	}
 	xfree(params.opt_field_list);
 	slurmdb_destroy_job_cond(params.job_cond);

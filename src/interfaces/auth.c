@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  auth.c - implementation-independent authentication API definitions
+ *  slurm_auth.c - implementation-independent authentication API definitions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
@@ -37,9 +37,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <pthread.h>
 
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
@@ -65,7 +66,8 @@ typedef struct {
 					 void *data, int dlen);
 	void		(*destroy)	(void *cred);
 	int		(*verify)	(void *cred, char *auth_info);
-	void		(*get_ids)	(void *cred, uid_t *uid, gid_t *gid);
+	uid_t		(*get_uid)	(void *cred);
+	gid_t		(*get_gid)	(void *cred);
 	char *		(*get_host)	(void *cred);
 	int		(*get_data)	(void *cred, char **data,
 					 uint32_t *len);
@@ -75,10 +77,10 @@ typedef struct {
 	int		(*thread_config) (const char *token, const char *username);
 	void		(*thread_clear) (void);
 	char *		(*token_generate) (const char *username, int lifespan);
-} auth_ops_t;
+} slurm_auth_ops_t;
 /*
  * These strings must be kept in the same order as the fields
- * declared for auth_ops_t.
+ * declared for slurm_auth_ops_t.
  */
 static const char *syms[] = {
 	"plugin_id",
@@ -87,7 +89,8 @@ static const char *syms[] = {
 	"auth_p_create",
 	"auth_p_destroy",
 	"auth_p_verify",
-	"auth_p_get_ids",
+	"auth_p_get_uid",
+	"auth_p_get_gid",
 	"auth_p_get_host",
 	"auth_p_get_data",
 	"auth_p_pack",
@@ -112,7 +115,7 @@ auth_plugin_types_t auth_plugin_types[] = {
  * A global authentication context.  "Global" in the sense that there's
  * only one, with static bindings.  We don't export it.
  */
-static auth_ops_t *ops = NULL;
+static slurm_auth_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static int g_context_num = -1;
 static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
@@ -168,7 +171,7 @@ extern bool auth_is_plugin_type_inited(int plugin_id)
 	return false;
 }
 
-extern int auth_g_init(void)
+extern int slurm_auth_init(char *auth_type)
 {
 	int retval = SLURM_SUCCESS;
 	char *auth_alt_types = NULL, *list = NULL;
@@ -185,6 +188,9 @@ extern int auth_g_init(void)
 		xfree(slurm_conf.authtype);
 		slurm_conf.authtype = xstrdup(
 			auth_get_plugin_name(AUTH_PLUGIN_JWT));
+	} else if (auth_type) {
+		xfree(slurm_conf.authtype);
+		slurm_conf.authtype = xstrdup(auth_type);
 	}
 
 	type = slurm_conf.authtype;
@@ -206,7 +212,7 @@ extern int auth_g_init(void)
 	 * be comma separated, vs. AuthType which can have only one value.
 	 */
 	while (type) {
-		xrecalloc(ops, g_context_num + 1, sizeof(auth_ops_t));
+		xrecalloc(ops, g_context_num + 1, sizeof(slurm_auth_ops_t));
 		xrecalloc(g_context, g_context_num + 1,
 			  sizeof(plugin_context_t));
 
@@ -240,7 +246,7 @@ done:
 }
 
 /* Release all global memory associated with the plugin */
-extern int auth_g_fini(void)
+extern int slurm_auth_fini(void)
 {
 	int i, rc = SLURM_SUCCESS, rc2;
 
@@ -278,9 +284,9 @@ done:
  * The cast through cred_wrapper_t then gives us convenient access
  * to that auth_index value.
  */
-extern int auth_index(void *cred)
+int slurm_auth_index(void *cred)
 {
-	cred_wrapper_t *wrapper = cred;
+	cred_wrapper_t *wrapper = (cred_wrapper_t *) cred;
 
 	if (wrapper)
 		return wrapper->index;
@@ -333,7 +339,7 @@ void *auth_g_create(int index, char *auth_info, uid_t r_uid,
 
 extern void auth_g_destroy(void *cred)
 {
-	cred_wrapper_t *wrap = cred;
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
 	xassert(g_context_num > 0);
 
@@ -343,10 +349,10 @@ extern void auth_g_destroy(void *cred)
 	(*(ops[wrap->index].destroy))(cred);
 }
 
-extern int auth_g_verify(void *cred, char *auth_info)
+int auth_g_verify(void *cred, char *auth_info)
 {
 	int rc = SLURM_ERROR;
-	cred_wrapper_t *wrap = cred;
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
 	xassert(g_context_num > 0);
 
@@ -360,27 +366,26 @@ extern int auth_g_verify(void *cred, char *auth_info)
 	return rc;
 }
 
-extern void auth_g_get_ids(void *cred, uid_t *uid, gid_t *gid)
+uid_t auth_g_get_uid(void *cred)
 {
-	cred_wrapper_t *wrap = cred;
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+	uid_t uid = SLURM_AUTH_NOBODY;
 
 	xassert(g_context_num > 0);
 
-	*uid = SLURM_AUTH_NOBODY;
-	*gid = SLURM_AUTH_NOBODY;
-
 	if (!wrap)
-		return;
+		return SLURM_AUTH_NOBODY;
 
 	slurm_rwlock_rdlock(&context_lock);
-	(*(ops[wrap->index].get_ids))(cred, uid, gid);
+	uid = (*(ops[wrap->index].get_uid))(cred);
 	slurm_rwlock_unlock(&context_lock);
+
+	return uid;
 }
 
-extern uid_t auth_g_get_uid(void *cred)
+gid_t auth_g_get_gid(void *cred)
 {
-	cred_wrapper_t *wrap = cred;
-	uid_t uid = SLURM_AUTH_NOBODY;
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 	gid_t gid = SLURM_AUTH_NOBODY;
 
 	xassert(g_context_num > 0);
@@ -389,15 +394,15 @@ extern uid_t auth_g_get_uid(void *cred)
 		return SLURM_AUTH_NOBODY;
 
 	slurm_rwlock_rdlock(&context_lock);
-	(*(ops[wrap->index].get_ids))(cred, &uid, &gid);
+	gid = (*(ops[wrap->index].get_gid))(cred);
 	slurm_rwlock_unlock(&context_lock);
 
-	return uid;
+	return gid;
 }
 
-extern char *auth_g_get_host(void *cred)
+char *auth_g_get_host(void *cred)
 {
-	cred_wrapper_t *wrap = cred;
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 	char *host = NULL;
 
 	xassert(g_context_num > 0);
@@ -429,9 +434,9 @@ extern int auth_g_get_data(void *cred, char **data, uint32_t *len)
 	return rc;
 }
 
-extern int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version)
+int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version)
 {
-	cred_wrapper_t *wrap = cred;
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
 	xassert(g_context_num > 0);
 
@@ -448,7 +453,7 @@ extern int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version)
 	}
 }
 
-extern void *auth_g_unpack(buf_t *buf, uint16_t protocol_version)
+void *auth_g_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	uint32_t plugin_id = 0;
 	cred_wrapper_t *cred;
@@ -482,7 +487,7 @@ unpack_error:
 	return NULL;
 }
 
-extern int auth_g_thread_config(const char *token, const char *username)
+int auth_g_thread_config(const char *token, const char *username)
 {
 	int rc = SLURM_SUCCESS;
 	xassert(g_context_num > 0);
@@ -494,7 +499,7 @@ extern int auth_g_thread_config(const char *token, const char *username)
 	return rc;
 }
 
-extern void auth_g_thread_clear(void)
+void auth_g_thread_clear(void)
 {
 	xassert(g_context_num > 0);
 
@@ -503,8 +508,8 @@ extern void auth_g_thread_clear(void)
 	slurm_rwlock_unlock(&context_lock);
 }
 
-extern char *auth_g_token_generate(int plugin_id, const char *username,
-				   int lifespan)
+char *auth_g_token_generate(int plugin_id, const char *username,
+			    int lifespan)
 {
 	char *token = NULL;
 	xassert(g_context_num > 0);

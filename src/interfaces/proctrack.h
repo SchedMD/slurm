@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_PROCTRACK_H
-#define _INTERFACES_PROCTRACK_H
+#ifndef __PROC_TRACK_H__
+#define __PROC_TRACK_H__
 
 #include <stdbool.h>
 
@@ -51,14 +51,14 @@ extern bool proctrack_forked;
  *
  * Returns a Slurm errno.
  */
-extern int proctrack_g_init(void);
+extern int slurm_proctrack_init(void);
 
 /*
  * Terminate the process tracking plugin, free memory.
  *
  * Returns a Slurm errno.
  */
-extern int proctrack_g_fini(void);
+extern int slurm_proctrack_fini(void);
 
 /*
  **************************************************************************
@@ -148,4 +148,4 @@ extern int proctrack_g_get_pids(uint64_t cont_id, pid_t **pids, int *npids);
 
 /* Collect accounting information for all processes within a container */
 
-#endif
+#endif /*__PROC_TRACK_H__*/

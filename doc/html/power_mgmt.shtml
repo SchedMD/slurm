@@ -110,6 +110,7 @@ Currently valid options are:
    Used for Cray XC systems with power monitoring and management
    functionality included as part of System Management Workstation (SMW)
    7.0.UP03.</li>
+<li><b>power/none</b> - No power management support.</li>
 </ul></li>
 </ul>
 

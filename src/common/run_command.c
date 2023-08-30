@@ -47,7 +47,7 @@
 #include <unistd.h>
 #include <inttypes.h>		/* for uint16_t, uint32_t definitions */
 
-#ifndef POLLRDHUP
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define POLLRDHUP POLLHUP
 #endif
 
@@ -220,7 +220,6 @@ extern char *run_command(run_command_args_t *args)
 			dup2(pfd[1], STDERR_FILENO);
 			dup2(pfd[1], STDOUT_FILENO);
 			closeall(3);
-			/* coverity[leaked_handle] */
 		} else {
 			closeall(0);
 		}

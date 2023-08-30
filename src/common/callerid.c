@@ -57,7 +57,6 @@
 #include <dirent.h>
 #include <inttypes.h>
 #include <libgen.h>
-#include <limits.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -214,7 +213,7 @@ static int _find_inode_in_fddir(pid_t pid, ino_t inode)
 	DIR *dirp;
 	struct dirent *entryp;
 	char dirpath[1024];
-	char fdpath[PATH_MAX];
+	char fdpath[2048];
 	int rc = SLURM_ERROR;
 	struct stat statbuf;
 
@@ -340,7 +339,7 @@ extern int callerid_get_own_netinfo (callerid_conn_t *conn)
 	DIR *dirp;
 	struct dirent *entryp;
 	char *dirpath = "/proc/self/fd";
-	char fdpath[PATH_MAX];
+	char fdpath[1024];
 	int rc = SLURM_ERROR;
 	struct stat statbuf;
 
@@ -357,7 +356,7 @@ extern int callerid_get_own_netinfo (callerid_conn_t *conn)
 		else if (!xstrncmp(entryp->d_name, ".", 1))
 			continue;
 
-		snprintf(fdpath, PATH_MAX, "%s/%s", dirpath, entryp->d_name);
+		snprintf(fdpath, 1024, "%s/%s", dirpath, entryp->d_name);
 		debug3("callerid_get_own_netinfo: checking %s", fdpath);
 		/* This is a symlink. Follow it to get destination's inode. */
 		if (stat(fdpath, &statbuf) != 0) {

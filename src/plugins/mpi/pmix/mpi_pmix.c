@@ -128,14 +128,18 @@ static void *_libpmix_open(void)
 	void *lib_plug = NULL;
 	char *full_path = NULL;
 
-	/*
-	 * x_ac_pmix.m4 determines if we should use full path or relative path
-	 * Note that this implies no fall-through to relative libraries
-	 */
-#ifdef PMIXP_LIBPATH
-	xstrfmtcat(full_path, "%s/", PMIXP_LIBPATH);
+#ifdef PMIXP_V1_LIBPATH
+	xstrfmtcat(full_path, "%s/", PMIXP_V1_LIBPATH);
+#elif defined PMIXP_V2_LIBPATH
+	xstrfmtcat(full_path, "%s/", PMIXP_V2_LIBPATH);
+#elif defined PMIXP_V3_LIBPATH
+	xstrfmtcat(full_path, "%s/", PMIXP_V3_LIBPATH);
+#elif defined PMIXP_V4_LIBPATH
+	xstrfmtcat(full_path, "%s/", PMIXP_V4_LIBPATH);
+#elif defined PMIXP_V5_LIBPATH
+	xstrfmtcat(full_path, "%s/", PMIXP_V5_LIBPATH);
 #endif
-	xstrfmtcat(full_path, "libpmix.so.2");
+	xstrfmtcat(full_path, "libpmix.so");
 
 	lib_plug = dlopen(full_path, RTLD_LAZY | RTLD_GLOBAL);
 	xfree(full_path);
@@ -231,7 +235,7 @@ extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
 err_ext:
 	/* Abort the whole job if error! */
 	slurm_kill_job_step(step->step_id.job_id,
-			    step->step_id.step_id, SIGKILL, 0);
+			    step->step_id.step_id, SIGKILL);
 	return ret;
 }
 

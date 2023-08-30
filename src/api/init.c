@@ -45,26 +45,36 @@
 extern void slurm_init(const char *conf)
 {
 	slurm_conf_init(conf);
+	slurm_client_init_plugins();
+}
 
-	if (auth_g_init() != SLURM_SUCCESS)
+extern void slurm_fini(void)
+{
+	slurm_client_fini_plugins();
+	slurm_conf_destroy();
+}
+
+extern void slurm_client_init_plugins(void)
+{
+	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");
 
 	if (hash_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize hash plugin");
 
-	if (acct_storage_g_init() != SLURM_SUCCESS)
+	if (slurm_acct_storage_init() != SLURM_SUCCESS)
 		fatal("failed to initialize the accounting storage plugin");
+
+	if (select_g_init(0) != SLURM_SUCCESS)
+		fatal("failed to initialize node selection plugin");
 
 	if (gres_init() != SLURM_SUCCESS)
 		fatal("failed to initialize gres plugin");
 }
 
-extern void slurm_fini(void)
+extern void slurm_client_fini_plugins(void)
 {
 	gres_fini();
-	acct_storage_g_fini();
-	hash_g_fini();
-	auth_g_fini();
-
-	slurm_conf_destroy();
+	select_g_fini();
+	slurm_acct_storage_fini();
 }

@@ -26,7 +26,12 @@ environment as the <b>SLURM_NODE_ALIASES</b> environment variable.
 
 <p>
 The controller automatically grabs the node's <b>NodeAddr</b> and
-<b>NodeHostname</b> for dynamic slurmd registrations.
+<b>NodeHostname</b> for dynamic slurmd registrations. For cloud nodes created
+with scontrol, if the nodename is not resolvable, then either 1) the node's
+<b>NodeAddr</b> and <b>NodeHostname</b> need to be updated with the
+<b>scontrol update</b> command before the node registers or 2) use the 
+<a href="slurm.conf.html#OPT_cloud_reg_addrs">cloud_reg_addrs</a>
+<b>SlurmctldParameter</b>.
 </p>
 
 <h2 id="config">Slurm Configuration
@@ -159,6 +164,6 @@ disabled.
 </p>
 
 
-<p style="text-align:center;">Last modified 8 August 2023</p>
+<p style="text-align:center;">Last modified 10 April 2023</p>
 
 <!--#include virtual="footer.txt"-->

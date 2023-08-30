@@ -46,11 +46,11 @@
 #include <netdb.h>		/* for gethostbyname */
 #include <netinet/in.h>
 #include <pthread.h>
-#include <signal.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -325,7 +325,6 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	if (params->multi_prog)
 		launch.flags	|= LAUNCH_MULTI_PROG;
 	launch.cpus_per_task	= params->cpus_per_task;
-	launch.cpus_per_task_array = params->cpus_per_task_array;
 	launch.tres_per_task	= ctx->step_req->tres_per_task;
 
 	launch.threads_per_core	= params->threads_per_core;
@@ -338,10 +337,9 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		launch.flags	|= LAUNCH_NO_ALLOC;
 	if (ctx->step_req->flags & SSF_OVERCOMMIT)
 		launch.flags |= LAUNCH_OVERCOMMIT;
-	if (ctx->step_req->flags & SSF_EXT_LAUNCHER)
-		launch.flags |= LAUNCH_EXT_LAUNCHER;
 
 	launch.task_dist	= params->task_dist;
+	launch.partition	= params->partition;
 	if (params->pty)
 		launch.flags |= LAUNCH_PTY;
 	launch.acctg_freq	= params->acctg_freq;
@@ -383,8 +381,10 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	 */
 	ctx->launch_state->io->sls = ctx->launch_state;
 
-	client_io_handler_start(ctx->launch_state->io);
-
+	if (client_io_handler_start(ctx->launch_state->io) != SLURM_SUCCESS) {
+		rc = SLURM_ERROR;
+		goto fail1;
+	}
 	launch.num_io_port = ctx->launch_state->io->num_listen;
 	launch.io_port = xcalloc(launch.num_io_port, sizeof(uint16_t));
 	memcpy(launch.io_port, ctx->launch_state->io->listenport,
@@ -535,8 +535,8 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	if (params->multi_prog)
 		launch.flags |= LAUNCH_MULTI_PROG;
 	launch.cpus_per_task	= params->cpus_per_task;
-	launch.cpus_per_task_array = params->cpus_per_task_array;
 	launch.task_dist	= params->task_dist;
+	launch.partition	= params->partition;
 	if (params->pty)
 		launch.flags |= LAUNCH_PTY;
 	launch.acctg_freq	= params->acctg_freq;
@@ -579,8 +579,10 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	 */
 	ctx->launch_state->io->sls = ctx->launch_state;
 
-	client_io_handler_start(ctx->launch_state->io);
-
+	if (client_io_handler_start(ctx->launch_state->io) != SLURM_SUCCESS) {
+		rc = SLURM_ERROR;
+		goto fail1;
+	}
 	launch.num_io_port = ctx->launch_state->io->num_listen;
 	launch.io_port = xcalloc(launch.num_io_port, sizeof(uint16_t));
 	memcpy(launch.io_port, ctx->launch_state->io->listenport,
@@ -622,7 +624,7 @@ static void _step_abort(slurm_step_ctx_t *ctx)
 
 	if (!sls->abort_action_taken) {
 		slurm_kill_job_step(ctx->job_id, ctx->step_resp->job_step_id,
-				    SIGKILL, 0);
+				    SIGKILL);
 		sls->abort_action_taken = true;
 	}
 }
@@ -692,7 +694,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 				slurm_kill_job_step(ctx->job_id,
 						    ctx->step_resp->
 						    job_step_id,
-						    SIGKILL, 0);
+						    SIGKILL);
 				sls->abort_action_taken = true;
 			}
 			if (!time_set) {
@@ -723,7 +725,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 				 */
 				slurm_kill_job_step(ctx->job_id,
 						    ctx->step_resp->job_step_id,
-						    SIGKILL, 0);
+						    SIGKILL);
 				client_io_handler_abort(sls->io);
 				break;
 			} else if (errnum != 0) {
@@ -822,7 +824,7 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	int node_id, j, num_tasks;
 	slurm_msg_t req;
 	signal_tasks_msg_t msg;
-	hostlist_t *hl;
+	hostlist_t hl;
 	char *name = NULL;
 	List ret_list = NULL;
 	ListIterator itr;
@@ -1287,8 +1289,8 @@ static void
 _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 {
 	srun_node_fail_msg_t *nf = fail_msg->data;
-	hostlist_t *fail_nodes, *all_nodes;
-	hostlist_iterator_t *fail_itr;
+	hostlist_t fail_nodes, all_nodes;
+	hostlist_iterator_t fail_itr;
 	int num_node_ids;
 	int *node_ids;
 	int i, j;
@@ -1362,8 +1364,8 @@ static void
 _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 {
 	srun_step_missing_msg_t *step_missing = missing_msg->data;
-	hostlist_t *fail_nodes, *all_nodes;
-	hostlist_iterator_t *fail_itr;
+	hostlist_t fail_nodes, all_nodes;
+	hostlist_iterator_t fail_itr;
 	char *node;
 	int num_node_ids;
 	int i, j;
@@ -1559,8 +1561,8 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, rc);
 		break;
 	default:
-		error("%s: received spurious message type: %s",
-		      __func__, rpc_num2string(msg->msg_type));
+		error("%s: received spurious message type: %u",
+		      __func__, msg->msg_type);
 		break;
 	}
 	return;
@@ -1636,7 +1638,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	debug("Entering _launch_tasks");
 	if (ctx->verbose_level) {
 		char *name = NULL;
-		hostlist_t *hl = hostlist_create(nodelist);
+		hostlist_t hl = hostlist_create(nodelist);
 		int i = 0;
 		while ((name = hostlist_shift(hl))) {
 			_print_launch_msg(launch_msg, name, i++);
@@ -1666,10 +1668,9 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 
 	/*
 	 * Prior to Slurm 23.02 --slurmd-debug was interpreted as offset to
-	 * LOG_LEVEL_ERROR, so we need to adjust the value. This can be removed
-	 * 2 versions after 23.02.
+	 * LOG_LEVEL_ERROR, so we need to adjust the value.
 	 */
-	if (ctx->step_resp->use_protocol_ver < SLURM_23_02_PROTOCOL_VERSION) {
+	if (ctx->step_resp->use_protocol_ver <= SLURM_22_05_PROTOCOL_VERSION) {
 		launch_msg->slurmd_debug-= LOG_LEVEL_ERROR;
 	}
 
@@ -1738,7 +1739,7 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 {
 	int i;
 	char *tmp_str = NULL, *task_list = NULL;
-	hostlist_t *hl = hostlist_create(NULL);
+	hostlist_t hl = hostlist_create(NULL);
 
 	for (i=0; i<msg->tasks_to_launch[nodeid]; i++) {
 		xstrfmtcat(tmp_str, "%u", msg->global_task_ids[nodeid][i]);

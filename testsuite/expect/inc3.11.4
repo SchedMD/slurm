@@ -43,7 +43,7 @@ proc inc3_11_4 {} {
 	#
 	log_info "+++++ STARTING TEST 4 +++++"
 
-	if {[is_super_user]} {
+	if {$user_name == "root"} {
 		return
 	}
 

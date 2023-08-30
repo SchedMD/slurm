@@ -34,97 +34,62 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #define _ISOC99_SOURCE	/* needed for lrint */
 
-#include <ctype.h>
 #include <math.h>
+#include <regex.h>
 
-#include "src/common/data.h"
+#include "slurm/slurm.h"
+
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
+#include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xregex.h"
 #include "src/common/xstring.h"
 
-#define DATA_DEFINE_DICT_PATH_BUFFER_SIZE 1024
+#include "src/common/data.h"
+
+/*
+ * Regex matches based on YAML 1.1 section 5.5.
+ * Honors ~ as YAML 1.1 allows for null fields.
+ */
+static const char *bool_pattern_true = "^([Yy](|[eE][sS])|[tT]([rR][uU][eE]|)|[Oo][nN])$";
+static regex_t bool_pattern_true_re;
+static const char *bool_pattern_false = "^([nN]([Oo]|)|[fF](|[aA][lL][sS][eE])|[oO][fF][fF])$";
+static regex_t bool_pattern_false_re;
+static const char *int_pattern = "^([+-]?[0-9]+)$";
+static regex_t int_pattern_re;
+static const char *float_pattern = "^([+-]?[0-9]*[.][0-9]*(|[eE][+-]?[0-9]+))$";
+static regex_t float_pattern_re;
+
+static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool initialized = false; /* protected by init_mutex */
+
 #define DATA_MAGIC 0x1992189F
 #define DATA_LIST_MAGIC 0x1992F89F
 #define DATA_LIST_NODE_MAGIC 0x1921F89F
 
-typedef struct data_list_s data_list_t;
 typedef struct data_list_node_s data_list_node_t;
-
-typedef enum {
-	TYPE_NONE = 0, /* invalid or unknown type */
-	/* only for bounds checks to avoid any overlap with DATA_TYPE_* */
-	TYPE_START = 0xFF00,
-	TYPE_NULL, /* ECMA-262:4.3.13 NULL type */
-	TYPE_LIST, /* ECMA-262:22.1 Array Object (ordered list) */
-	TYPE_DICT, /* ECMA-262:23.1 Map Object (dictionary) */
-	TYPE_INT_64, /*  64bit signed integer
-				This exists as an convenient storage type.
-				ECMA does not have an integer primitive.
-				ECMA-262:7.1.4 ToInteger() returns approx
-				this value with some rounding. */
-	TYPE_STRING_PTR, /* ECMA-262:4.3.18 String type */
-	TYPE_STRING_INLINE, /* string stored in union directly */
-	TYPE_FLOAT, /* ECMA-262:6.1.6 Number type */
-	TYPE_BOOL, /* ECMA-262:4.3.15 Boolean type */
-	TYPE_MAX /* only for bounds checking */
-} type_t;
-
-static const struct {
-	data_type_t external_type;
-	type_t internal_type;
-} type_map[] = {
-	{ DATA_TYPE_NULL, TYPE_NULL },
-	{ DATA_TYPE_LIST, TYPE_LIST },
-	{ DATA_TYPE_DICT, TYPE_DICT },
-	{ DATA_TYPE_INT_64, TYPE_INT_64 },
-	{ DATA_TYPE_STRING, TYPE_STRING_PTR },
-	{ DATA_TYPE_STRING, TYPE_STRING_INLINE },
-	{ DATA_TYPE_FLOAT, TYPE_FLOAT },
-	{ DATA_TYPE_BOOL, TYPE_BOOL },
-};
-
-typedef struct data_list_node_s {
+struct data_list_node_s {
 	int magic;
 	data_list_node_t *next;
 
 	data_t *data;
 	char *key; /* key for dictionary (only) */
-} data_list_node_t;
+};
 
-/* Single linked list for list_u and dict_u */
-typedef struct data_list_s {
+/* single forward linked list */
+struct data_list_s {
 	int magic;
 	size_t count;
 
 	data_list_node_t *begin;
 	data_list_node_t *end;
-} data_list_t;
-
-/*
- * Data is based on the JSON data type and has the same types.
- * Data forms a tree structure.
- * Please avoid direct access of this struct and only use access functions.
- * The nature of this struct may change at any time, only pass around pointers
- * created from data_new().
- */
-struct data_s {
-	int magic;
-	type_t type;
-
-	union { /* append "_u" to every type to avoid reserved words */
-		data_list_t *list_u;
-		data_list_t *dict_u;
-		int64_t int_u;
-		char string_inline_u[sizeof(void *)];
-		char *string_ptr_u;
-		double float_u;
-		bool bool_u;
-	} data;
 };
 
 typedef struct {
@@ -133,28 +98,77 @@ typedef struct {
 	const char *token;
 } merge_path_strings_t;
 
-typedef struct {
-	const data_t *a;
-	const data_t *b;
-	bool mask;
-} find_dict_match_t;
-
-typedef struct {
-	size_t count;
-	type_t match;
-} convert_args_t;
-
 static void _check_magic(const data_t *data);
 static void _release(data_t *data);
 static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn);
+
+extern void data_fini(void)
+{
+	slurm_mutex_lock(&init_mutex);
+
+	if (initialized) {
+		regfree(&bool_pattern_true_re);
+		regfree(&bool_pattern_false_re);
+		regfree(&int_pattern_re);
+		regfree(&float_pattern_re);
+	}
+
+	slurm_mutex_unlock(&init_mutex);
+}
+
+extern int data_init(void)
+{
+	int rc = SLURM_SUCCESS;
+	int reg_rc; /* regex rc */
+
+	slurm_mutex_lock(&init_mutex);
+
+	if (initialized) {
+		slurm_mutex_unlock(&init_mutex);
+		return SLURM_SUCCESS;
+	}
+	initialized = true;
+
+	if (!rc && (reg_rc = regcomp(&bool_pattern_true_re, bool_pattern_true,
+			      REG_EXTENDED)) != 0) {
+		dump_regex_error(reg_rc, &bool_pattern_true_re,
+				 "compile \"%s\"", bool_pattern_true);
+		rc = ESLURM_DATA_REGEX_COMPILE;
+	}
+
+	if (!rc && (reg_rc = regcomp(&bool_pattern_false_re, bool_pattern_false,
+			      REG_EXTENDED)) != 0) {
+		dump_regex_error(reg_rc, &bool_pattern_false_re,
+				 "compile \"%s\"", bool_pattern_false);
+		rc = ESLURM_DATA_REGEX_COMPILE;
+	}
+
+	if (!rc && (reg_rc = regcomp(&int_pattern_re, int_pattern,
+				     REG_EXTENDED)) != 0) {
+		dump_regex_error(reg_rc, &int_pattern_re,
+				 "compile \"%s\"", int_pattern);
+		rc = ESLURM_DATA_REGEX_COMPILE;
+	}
+
+	if (!rc && (reg_rc = regcomp(&float_pattern_re, float_pattern,
+				     REG_EXTENDED)) != 0) {
+		dump_regex_error(reg_rc, &float_pattern_re,
+				 "compile \"%s\"", float_pattern);
+		rc = ESLURM_DATA_REGEX_COMPILE;
+	}
+
+	slurm_mutex_unlock(&init_mutex);
+
+	return rc;
+}
 
 static data_list_t *_data_list_new(void)
 {
 	data_list_t *dl = xmalloc(sizeof(*dl));
 	dl->magic = DATA_LIST_MAGIC;
 
-	log_flag(DATA, "%s: new data-list(0x%"PRIxPTR")[%zu]",
-		 __func__, (uintptr_t) dl, dl->count);
+	log_flag(DATA, "%s: new data list (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) dl);
 
 	return dl;
 }
@@ -219,9 +233,6 @@ static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn)
 	_check_data_list_node_magic(dn);
 	_check_data_list_node_parent(dl, dn);
 	data_list_node_t *prev;
-
-	log_flag(DATA, "%s: free data-list(0x%"PRIxPTR")[%zu]",
-		 __func__, (uintptr_t) dl, dl->count);
 
 	/* walk list to find new previous */
 	for (prev = dl->begin; prev && prev->next != dn; ) {
@@ -310,19 +321,14 @@ static data_list_node_t *_new_data_list_node(data_t *d, const char *key)
 {
 	data_list_node_t *dn = xmalloc(sizeof(*dn));
 	dn->magic = DATA_LIST_NODE_MAGIC;
-
 	_check_magic(d);
 
 	dn->data = d;
-	if (key) {
+	if (key)
 		dn->key = xstrdup(key);
 
-		log_flag(DATA, "%s: new dictionary entry data-list-node(0x%"PRIxPTR")[%s]=%pD",
-			 __func__, (uintptr_t) dn, dn->key, dn->data);
-	} else {
-		log_flag(DATA, "%s: new list entry data-list-node(0x%"PRIxPTR")=%pD",
-			 __func__, (uintptr_t) dn, dn->data);
-	}
+	log_flag(DATA, "%s: new data list node (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) dn);
 
 	return dn;
 }
@@ -347,13 +353,6 @@ static void _data_list_append(data_list_t *dl, data_t *d, const char *key)
 	}
 
 	dl->count++;
-
-	if (n->key)
-		log_flag(DATA, "%s: append dictionary entry data-list-node(0x%"PRIxPTR")[%s]=%pD",
-			 __func__, (uintptr_t) n, n->key, n->data);
-	else
-		log_flag(DATA, "%s: append list entry data-list-node(0x%"PRIxPTR")=%pD",
-			 __func__, (uintptr_t) n, n->data);
 }
 
 static void _data_list_prepend(data_list_t *dl, data_t *d, const char *key)
@@ -373,18 +372,16 @@ static void _data_list_prepend(data_list_t *dl, data_t *d, const char *key)
 	}
 
 	dl->count++;
-
-	log_flag(DATA, "%s: prepend %pD[%s]->data-list-node(0x%"PRIxPTR")[%s]=%pD",
-		 __func__, d, key, (uintptr_t) n, n->key, n->data);
 }
 
-extern data_t *data_new(void)
+data_t *data_new(void)
 {
 	data_t *data = xmalloc(sizeof(*data));
 	data->magic = DATA_MAGIC;
-	data->type = TYPE_NULL;
+	data->type = DATA_TYPE_NULL;
 
-	log_flag(DATA, "%s: new %pD", __func__, data);
+	log_flag(DATA, "%s: new data (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) data);
 
 	return data;
 }
@@ -394,16 +391,16 @@ static void _check_magic(const data_t *data)
 	if (!data)
 		return;
 
-	xassert(data->type > TYPE_START);
-	xassert(data->type < TYPE_MAX);
+	xassert(data->type > DATA_TYPE_NONE);
+	xassert(data->type < DATA_TYPE_MAX);
 	xassert(data->magic == DATA_MAGIC);
 
-	if (data->type == TYPE_NULL)
+	if (data->type == DATA_TYPE_NULL)
 		/* make sure NULL type has a NULL value */
 		xassert(data->data.list_u == NULL);
-	if (data->type == TYPE_LIST)
+	if (data->type == DATA_TYPE_LIST)
 		_check_data_list_magic(data->data.list_u);
-	if (data->type == TYPE_DICT)
+	if (data->type == DATA_TYPE_DICT)
 		_check_data_list_magic(data->data.dict_u);
 }
 
@@ -412,21 +409,21 @@ static void _release(data_t *data)
 	_check_magic(data);
 
 	switch (data->type) {
-	case TYPE_LIST:
+	case DATA_TYPE_LIST:
 		_release_data_list(data->data.list_u);
 		break;
-	case TYPE_DICT:
+	case DATA_TYPE_DICT:
 		_release_data_list(data->data.dict_u);
 		break;
-	case TYPE_STRING_PTR:
-		xfree(data->data.string_ptr_u);
+	case DATA_TYPE_STRING:
+		xfree(data->data.string_u);
 		break;
 	default:
 		/* other types don't need to be freed */
 		break;
 	}
 
-	data->type = TYPE_NONE;
+	data->type = DATA_TYPE_NONE;
 	/* always zero data in debug mode */
 	xassert(memset(&data->data, 0, sizeof(data->data)));
 }
@@ -436,13 +433,14 @@ extern void data_free(data_t *data)
 	if (!data)
 		return;
 
-	log_flag(DATA, "%s: free %pD", __func__, data);
+	log_flag(DATA, "%s: free data (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) data);
 
 	_check_magic(data);
 	_release(data);
 
 	data->magic = ~DATA_MAGIC;
-	data->type = TYPE_NONE;
+	data->type = DATA_TYPE_NONE;
 	xfree(data);
 }
 
@@ -453,11 +451,7 @@ extern data_type_t data_get_type(const data_t *data)
 
 	_check_magic(data);
 
-	for (int i = 0; i < ARRAY_SIZE(type_map); i++)
-		if (type_map[i].internal_type == data->type)
-			return type_map[i].external_type;
-
-	return DATA_TYPE_NONE;
+	return data->type;
 }
 
 extern data_t *data_set_float(data_t *data, double value)
@@ -466,10 +460,11 @@ extern data_t *data_set_float(data_t *data, double value)
 	if (!data)
 		return NULL;
 
-	data->type = TYPE_FLOAT;
-	data->data.float_u = value;
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to float: %lf",
+	       __func__, (uintptr_t) data, value);
 
-	log_flag(DATA, "%s: set %pD=%e", __func__, data, value);
+	data->type = DATA_TYPE_FLOAT;
+	data->data.float_u = value;
 
 	return data;
 }
@@ -481,10 +476,11 @@ extern data_t *data_set_null(data_t *data)
 		return NULL;
 	_release(data);
 
-	data->type = TYPE_NULL;
-	xassert((memset(&data->data, 0, sizeof(data->data))));
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to null",
+	       __func__, (uintptr_t) data);
 
-	log_flag(DATA, "%s: set %pD=null", __func__, data);
+	data->type = DATA_TYPE_NULL;
+	xassert((memset(&data->data, 0, sizeof(data->data))));
 
 	return data;
 }
@@ -496,11 +492,11 @@ extern data_t *data_set_bool(data_t *data, bool value)
 		return NULL;
 	_release(data);
 
-	data->type = TYPE_BOOL;
-	data->data.bool_u = value;
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to bool: %d",
+	       __func__, (uintptr_t) data, value);
 
-	log_flag(DATA, "%s: set %pD=%s",
-		 __func__, data, (value ? "true" : "false"));
+	data->type = DATA_TYPE_BOOL;
+	data->data.bool_u = value;
 
 	return data;
 }
@@ -512,37 +508,17 @@ extern data_t *data_set_int(data_t *data, int64_t value)
 		return NULL;
 	_release(data);
 
-	data->type = TYPE_INT_64;
-	data->data.int_u = value;
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to int64_t: %"PRId64,
+	       __func__, (uintptr_t) data, value);
 
-	log_flag(DATA, "%s: set %pD=%"PRId64, __func__, data, value);
+	data->type = DATA_TYPE_INT_64;
+	data->data.int_u = value;
 
 	return data;
 }
 
-static void _set_data_string_ptr(data_t *data, const size_t len,
-				  char **value_ptr)
-{
-	data->type = TYPE_STRING_PTR;
-	data->data.string_ptr_u = *value_ptr;
-	*value_ptr = NULL;
-	log_flag_hex(DATA, data->data.string_ptr_u, len, "%s: set string %pD",
-		     __func__, data);
-}
-
-static void _set_data_string_inline(data_t *data, const size_t len,
-				    const char *value)
-{
-	memmove(data->data.string_inline_u, value, len + 1);
-	data->type = TYPE_STRING_INLINE;
-	log_flag_hex(DATA, data->data.string_inline_u, len,
-		     "%s: set inline string %pD", __func__, data);
-}
-
 extern data_t *data_set_string(data_t *data, const char *value)
 {
-	int len;
-
 	_check_magic(data);
 
 	if (!data)
@@ -550,68 +526,59 @@ extern data_t *data_set_string(data_t *data, const char *value)
 	_release(data);
 
 	if (!value) {
-		data->type = TYPE_NULL;
+		log_flag(DATA, "%s: set data (0x%"PRIXPTR") to NULL string",
+		       __func__, (uintptr_t) data);
 
-		log_flag(DATA, "%s: set %pD=null", __func__, data);
+		data->type = DATA_TYPE_NULL;
 		return data;
 	}
 
-	if ((len = strlen(value)) < sizeof(data->data.string_inline_u)) {
-		_set_data_string_inline(data, len, value);
-	} else {
-		char *dval = xstrdup(value);
-		_set_data_string_ptr(data, len, &dval);
-	}
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to string: %s",
+	       __func__, (uintptr_t) data, value);
+
+	data->type = DATA_TYPE_STRING;
+	data->data.string_u = xstrdup(value);
 
 	return data;
 }
 
-extern data_t *_data_set_string_own(data_t *data, char **value_ptr)
+extern data_t *data_set_string_own(data_t *data, char *value)
 {
-	char *value;
-	int len;
 	_check_magic(data);
 
-	if (!data) {
-		xfree(*value_ptr);
+	if (!data)
 		return NULL;
-	}
-
-	_release(data);
-
-	value = *value_ptr;
-	*value_ptr = NULL;
 
 	if (!value) {
-		data->type = TYPE_NULL;
+		log_flag(DATA, "%s: set data (0x%"PRIXPTR") to NULL string",
+		       __func__, (uintptr_t) data);
 
-		log_flag(DATA, "%s: set %pD=null", __func__, data);
+		data->type = DATA_TYPE_NULL;
 		return data;
 	}
 
-#ifndef NDEBUG
-	char *old_value = value;
-
 	/* check that the string was xmalloc()ed and actually has contents */
-	xassert(xsize(value) > 0);
+	xassert(xsize(value));
+
+#ifndef NDEBUG
 	/*
 	 * catch use after free by the caller by using the existing xfree()
 	 * functionality
 	 */
-	value = xstrdup(value);
-	/* releasing original string instead of NULLing original pointer */
-	xfree(old_value);
+	char *nv = xstrdup(value);
+	xfree(value);
+	value = nv;
 #endif
 
-	if ((len = strlen(value)) < sizeof(data->data.string_inline_u)) {
-		_set_data_string_inline(data, len, value);
-		/* we don't need to keep this string alloc */
-		xfree(value);
-	} else {
-		_set_data_string_ptr(data, len, &value);
-	}
+	_release(data);
 
-	xassert(!value);
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to string: %s",
+		 __func__, (uintptr_t) data, value);
+
+	data->type = DATA_TYPE_STRING;
+	/* take ownership of string */
+	data->data.string_u = value;
+
 	return data;
 }
 
@@ -623,10 +590,11 @@ extern data_t *data_set_dict(data_t *data)
 		return NULL;
 	_release(data);
 
-	data->type = TYPE_DICT;
-	data->data.dict_u = _data_list_new();
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to dictionary",
+		 __func__, (uintptr_t) data);
 
-	log_flag(DATA, "%s: set %pD to dictionary", __func__, data);
+	data->type = DATA_TYPE_DICT;
+	data->data.dict_u = _data_list_new();
 
 	return data;
 }
@@ -639,10 +607,11 @@ extern data_t *data_set_list(data_t *data)
 		return NULL;
 	_release(data);
 
-	data->type = TYPE_LIST;
-	data->data.list_u = _data_list_new();
+	log_flag(DATA, "%s: set data (0x%"PRIXPTR") to list",
+		 __func__, (uintptr_t) data);
 
-	log_flag(DATA, "%s: set %pD to list", __func__, data);
+	data->type = DATA_TYPE_LIST;
+	data->data.list_u = _data_list_new();
 
 	return data;
 }
@@ -652,15 +621,15 @@ extern data_t *data_list_append(data_t *data)
 	data_t *ndata = NULL;
 	_check_magic(data);
 
-	xassert(data && (data->type == TYPE_LIST));
-	if (!data || data->type != TYPE_LIST)
+	xassert(data && (data->type == DATA_TYPE_LIST));
+	if (!data || data->type != DATA_TYPE_LIST)
 		return NULL;
 
 	ndata = data_new();
 	_data_list_append(data->data.list_u, ndata, NULL);
 
-	log_flag(DATA, "%s: appended %pD[%zu]=%pD",
-		 __func__, data, data->data.list_u->count, ndata);
+	log_flag(DATA, "%s: list append data (0x%"PRIXPTR") to (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) ndata, (uintptr_t) data);
 
 	return ndata;
 }
@@ -670,14 +639,14 @@ extern data_t *data_list_prepend(data_t *data)
 	data_t *ndata = NULL;
 	_check_magic(data);
 
-	if (!data || data->type != TYPE_LIST)
+	if (!data || data->type != DATA_TYPE_LIST)
 		return NULL;
 
 	ndata = data_new();
 	_data_list_prepend(data->data.list_u, ndata, NULL);
 
-	log_flag(DATA, "%s: prepended %pD[%zu]=%pD",
-		 __func__, data, data->data.list_u->count, ndata);
+	log_flag(DATA, "%s: list prepend data (0x%"PRIXPTR") to (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) ndata, (uintptr_t) data);
 
 	return ndata;
 }
@@ -688,7 +657,7 @@ extern data_t *data_list_dequeue(data_t *data)
 	data_t *ret = NULL;
 	_check_magic(data);
 
-	if (!data || data->type != TYPE_LIST)
+	if (!data || data->type != DATA_TYPE_LIST)
 		return NULL;
 
 	if (!(n = data->data.list_u->begin))
@@ -702,8 +671,8 @@ extern data_t *data_list_dequeue(data_t *data)
 	/* remove node from list */
 	_release_data_list_node(data->data.list_u, n);
 
-	log_flag(DATA, "%s: dequeued %pD[%zu]=%pD",
-		 __func__, data, data->data.list_u->count, ret);
+	log_flag(DATA, "%s: list dequeue data (0x%"PRIXPTR") from (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) ret, (uintptr_t) data);
 
 	return ret;
 }
@@ -711,18 +680,14 @@ extern data_t *data_list_dequeue(data_t *data)
 static data_for_each_cmd_t _data_list_join(const data_t *src, void *arg)
 {
 	data_t *dst = (data_t *) arg;
-	data_t *dst_entry;
 	_check_magic(src);
 	_check_magic(dst);
-	xassert(dst->type == TYPE_LIST);
+	xassert(data_get_type(dst) == DATA_TYPE_LIST);
 
-	log_flag(DATA, "%s: list join data %pD to %pD", __func__, src, dst);
+	log_flag(DATA, "%s: list join data (0x%"PRIXPTR") to (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) src, (uintptr_t) dst);
 
-	dst_entry = data_list_append(dst);
-	data_copy(dst_entry, src);
-
-	log_flag(DATA, "%s: list join %pD to %pD[%zu]=%pD",
-		 __func__, src, dst, dst->data.list_u->count, dst_entry);
+	 data_copy(data_list_append(dst), src);
 
 	 return DATA_FOR_EACH_CONT;
 }
@@ -732,11 +697,7 @@ extern data_t *data_list_join(const data_t **data, bool flatten_lists)
 	data_t *dst = data_set_list(data_new());
 
 	for (size_t i = 0; data[i]; i++) {
-		log_flag(DATA, "%s: %s list join %pD to %pD[%zu]",
-			 __func__, (flatten_lists ? "flattened" : ""),
-			 data[i], dst, dst->data.list_u->count);
-
-		if (flatten_lists && (data[i]->type == TYPE_LIST))
+		if (flatten_lists && (data_get_type(data[i]) == DATA_TYPE_LIST))
 			(void) data_list_for_each_const(data[i],
 							_data_list_join, dst);
 		else /* simple join */
@@ -746,7 +707,7 @@ extern data_t *data_list_join(const data_t **data, bool flatten_lists)
 	return dst;
 }
 
-extern const data_t *data_key_get_const(const data_t *data, const char *key)
+const data_t *data_key_get_const(const data_t *data, const char *key)
 {
 	const data_list_node_t *i;
 
@@ -754,8 +715,8 @@ extern const data_t *data_key_get_const(const data_t *data, const char *key)
 	if (!data)
 		return NULL;
 
-	xassert(data->type == TYPE_DICT);
-	if (!key || data->type != TYPE_DICT)
+	xassert(data->type == DATA_TYPE_DICT);
+	if (!key || data->type != DATA_TYPE_DICT)
 		return NULL;
 
 	/* don't bother searching empty dictionary */
@@ -785,7 +746,7 @@ static bool _match_string(const char *key, data_t *data, void *needle_ptr)
 	return !xstrcmp(key, needle);
 }
 
-extern data_t *data_key_get(data_t *data, const char *key)
+data_t *data_key_get(data_t *data, const char *key)
 {
 	return data_dict_find_first(data, _match_string, (void *) key);
 }
@@ -811,8 +772,8 @@ extern data_t *data_list_find_first(
 	if (!data)
 		return NULL;
 
-	xassert(data->type == TYPE_LIST);
-	if (data->type != TYPE_LIST)
+	xassert(data->type == DATA_TYPE_LIST);
+	if (data->type != DATA_TYPE_LIST)
 		return NULL;
 
 	/* don't bother searching empty list */
@@ -847,8 +808,8 @@ extern data_t *data_dict_find_first(
 	if (!data)
 		return NULL;
 
-	xassert(data->type == TYPE_DICT);
-	if (data->type != TYPE_DICT)
+	xassert(data->type == DATA_TYPE_DICT);
+	if (data->type != DATA_TYPE_DICT)
 		return NULL;
 
 	/* don't bother searching empty dictionary */
@@ -872,7 +833,7 @@ extern data_t *data_dict_find_first(
 		return NULL;
 }
 
-extern data_t *data_key_set(data_t *data, const char *key)
+data_t *data_key_set(data_t *data, const char *key)
 {
 	data_t *d;
 
@@ -881,27 +842,27 @@ extern data_t *data_key_set(data_t *data, const char *key)
 	if (!data)
 		return NULL;
 
-	xassert(data->type == TYPE_DICT);
+	xassert(data->type == DATA_TYPE_DICT);
 	xassert(key && key[0]);
-	if (!key || !key[0] || data->type != TYPE_DICT)
+	if (!key || !key[0] || data->type != DATA_TYPE_DICT)
 		return NULL;
 
 	if ((d = data_key_get(data, key))) {
-		log_flag(DATA, "%s: overwrite existing key in %pD[%s]=%pD",
-			 __func__, data, key, d);
+		log_flag(DATA, "%s: set existing key in data (0x%"PRIXPTR") key: %s data (0x%"PRIXPTR")",
+			 __func__, (uintptr_t) data, key, (uintptr_t) d);
 		return d;
 	}
 
 	d = data_new();
 	_data_list_append(data->data.dict_u, d, key);
 
-	log_flag(DATA, "%s: populate new key in %pD[%s]=%pD",
-		 __func__, data, key, d);
+	log_flag(DATA, "%s: set new key in data (0x%"PRIXPTR") key: %s data (0x%"PRIXPTR")",
+		 __func__, (uintptr_t) data, key, (uintptr_t) d);
 
 	return d;
 }
 
-extern data_t *data_key_set_int(data_t *data, int64_t key)
+data_t *data_key_set_int(data_t *data, int64_t key)
 {
 	char *key_str = xstrdup_printf("%"PRId64, key);
 	data_t *node = data_key_set(data, key_str);
@@ -911,7 +872,7 @@ extern data_t *data_key_set_int(data_t *data, int64_t key)
 	return node;
 }
 
-extern bool data_key_unset(data_t *data, const char *key)
+bool data_key_unset(data_t *data, const char *key)
 {
 	data_list_node_t *i;
 
@@ -919,8 +880,8 @@ extern bool data_key_unset(data_t *data, const char *key)
 	if (!data)
 		return false;
 
-	xassert(data->type == TYPE_DICT);
-	if (!key || data->type != TYPE_DICT)
+	xassert(data->type == DATA_TYPE_DICT);
+	if (!key || data->type != DATA_TYPE_DICT)
 		return NULL;
 
 	_check_data_list_magic(data->data.dict_u);
@@ -935,49 +896,49 @@ extern bool data_key_unset(data_t *data, const char *key)
 	}
 
 	if (!i) {
-		log_flag(DATA, "%s: remove non-existent key in %pD[%s]",
-			 __func__, data, key);
+		log_flag(DATA, "%s: remove non-existent key in data (0x%"PRIXPTR") key: %s",
+			 __func__, (uintptr_t) data, key);
 		return false;
 	}
 
-	log_flag(DATA, "%s: remove existing key in %pD[%s]=data-list-node(0x%"PRIxPTR")[%s]=%pD",
-		 __func__, data, key, (uintptr_t) i, i->key, i->data);
-
 	_release_data_list_node(data->data.dict_u, i);
+
+	log_flag(DATA, "%s: remove existing key in data (0x%"PRIXPTR") key: %s",
+		 __func__, (uintptr_t) data, key);
 
 	return true;
 }
 
-extern double data_get_float(const data_t *data)
+double data_get_float(const data_t *data)
 {
 	_check_magic(data);
 
 	if (!data)
 		return NAN;
 
-	xassert(data->type == TYPE_FLOAT);
+	xassert(data->type == DATA_TYPE_FLOAT);
 	return data->data.float_u;
 }
 
-extern bool data_get_bool(const data_t *data)
+bool data_get_bool(const data_t *data)
 {
 	_check_magic(data);
 
 	if (!data)
 		return false;
 
-	xassert(data->type == TYPE_BOOL);
+	xassert(data->type == DATA_TYPE_BOOL);
 	return data->data.bool_u;
 }
 
-extern int64_t data_get_int(const data_t *data)
+int64_t data_get_int(const data_t *data)
 {
 	_check_magic(data);
 
 	if (!data)
 		return 0;
 
-	xassert(data->type == TYPE_INT_64);
+	xassert(data->type == DATA_TYPE_INT_64);
 	return data->data.int_u;
 }
 
@@ -988,16 +949,8 @@ extern char *data_get_string(data_t *data)
 	if (!data)
 		return NULL;
 
-	xassert((data->type == TYPE_STRING_PTR) ||
-		(data->type == TYPE_STRING_INLINE));
-
-	if (data->type == TYPE_STRING_PTR) {
-		return data->data.string_ptr_u;
-	} else if (data->type == TYPE_STRING_INLINE) {
-		return data->data.string_inline_u;
-	} else {
-		return NULL;
-	}
+	xassert(data->type == DATA_TYPE_STRING);
+	return data->data.string_u;
 }
 
 extern const char *data_get_string_const(const data_t *data)
@@ -1007,28 +960,19 @@ extern const char *data_get_string_const(const data_t *data)
 	if (!data)
 		return NULL;
 
-	xassert((data->type == TYPE_STRING_PTR) ||
-		(data->type == TYPE_STRING_INLINE));
-
-	if (data->type == TYPE_STRING_PTR) {
-		return data->data.string_ptr_u;
-	} else if (data->type == TYPE_STRING_INLINE) {
-		return data->data.string_inline_u;
-	} else {
-		return NULL;
-	}
+	xassert(data->type == DATA_TYPE_STRING);
+	return data->data.string_u;
 }
 
-extern int data_get_string_converted(const data_t *d, char **buffer)
+int data_get_string_converted(const data_t *d, char **buffer)
 {
 	_check_magic(d);
 	char *_buffer = NULL;
-	bool cloned;
 
 	if (!d || !buffer)
 		return ESLURM_DATA_PTR_NULL;
 
-	if ((d->type != TYPE_STRING_PTR) && (d->type != TYPE_STRING_INLINE)) {
+	if (data_get_type(d) != DATA_TYPE_STRING) {
 		/* copy the data and then convert it to a string type */
 		data_t *dclone = data_new();
 		data_copy(dclone, d);
@@ -1036,26 +980,16 @@ extern int data_get_string_converted(const data_t *d, char **buffer)
 		    DATA_TYPE_STRING)
 			_buffer = xstrdup(data_get_string(dclone));
 		FREE_NULL_DATA(dclone);
-		cloned = true;
 	} else {
 		_buffer = xstrdup(data_get_string_const(d));
 		if (!_buffer)
 			_buffer = xstrdup("");
-		cloned = false;
 	}
 
 	if (_buffer) {
 		*buffer = _buffer;
-
-		log_flag_hex(DATA, _buffer, strlen(_buffer),
-			     "%s: string %sat %pD=string@0x%"PRIxPTR"[%zu]",
-			     __func__, (cloned ? "conversion and cloned " : ""),
-			     d, (uintptr_t) _buffer, strlen(_buffer));
-
 		return SLURM_SUCCESS;
 	}
-
-	log_flag(DATA, "%s: %pD string conversion failed", __func__, d);
 
 	return ESLURM_DATA_CONV_FAILED;
 }
@@ -1068,7 +1002,7 @@ extern int data_copy_bool_converted(const data_t *d, bool *buffer)
 	if (!d || !buffer)
 		return ESLURM_DATA_PTR_NULL;
 
-	if (d->type != TYPE_BOOL) {
+	if (data_get_type(d) != DATA_TYPE_BOOL) {
 		data_t *dclone = data_new();
 		data_copy(dclone, d);
 		if (data_convert_type(dclone, DATA_TYPE_BOOL) ==
@@ -1078,8 +1012,6 @@ extern int data_copy_bool_converted(const data_t *d, bool *buffer)
 		}
 		FREE_NULL_DATA(dclone);
 
-		log_flag(DATA, "%s: converted %pD=%s",
-			 __func__, d, (*buffer ? "true" : "false"));
 		return rc;
 	}
 
@@ -1111,7 +1043,7 @@ extern int data_get_int_converted(const data_t *d, int64_t *buffer)
 	if (!d || !buffer)
 		return ESLURM_DATA_PTR_NULL;
 
-	if (d->type != TYPE_INT_64) {
+	if (data_get_type(d) != DATA_TYPE_INT_64) {
 		data_t *dclone = data_new();
 		data_copy(dclone, d);
 		if (data_convert_type(dclone, DATA_TYPE_INT_64) ==
@@ -1124,30 +1056,28 @@ extern int data_get_int_converted(const data_t *d, int64_t *buffer)
 		*buffer = data_get_int(d);
 	}
 
-	log_flag(DATA, "%s: converted %pD=%"PRId64, __func__, d, *buffer);
-
 	return rc;
 }
 
-extern size_t data_get_dict_length(const data_t *data)
+size_t data_get_dict_length(const data_t *data)
 {
 	_check_magic(data);
 
 	if (!data)
 		return 0;
 
-	xassert(data->type == TYPE_DICT);
+	xassert(data->type == DATA_TYPE_DICT);
 	return data->data.dict_u->count;
 }
 
-extern size_t data_get_list_length(const data_t *data)
+size_t data_get_list_length(const data_t *data)
 {
 	_check_magic(data);
 
 	if (!data)
 		return 0;
 
-	xassert(data->type == TYPE_LIST);
+	xassert(data->type == DATA_TYPE_LIST);
 	return data->data.list_u->count;
 }
 
@@ -1159,8 +1089,8 @@ extern data_t *data_get_list_last(data_t *data)
 	if (!data)
 		return NULL;
 
-	xassert(data->type == TYPE_LIST);
-	if (data->type != TYPE_LIST)
+	xassert(data->type == DATA_TYPE_LIST);
+	if (data->type != DATA_TYPE_LIST)
 		return NULL;
 
 	if (!data->data.list_u->count)
@@ -1172,11 +1102,8 @@ extern data_t *data_get_list_last(data_t *data)
 		_check_data_list_node_magic(i);
 		xassert(!i->key);
 
-		if (!i->next) {
-			log_flag(DATA, "%s: %pD[%s]=%pD",
-				 __func__, data, i->key, i->data);
+		if (!i->next)
 			return i->data;
-		}
 
 		i = i->next;
 	}
@@ -1190,29 +1117,18 @@ extern int data_list_split_str(data_t *dst, const char *src, const char *token)
 	char *tok = NULL;
 	char *str = xstrdup(src);
 
-	if (dst->type == TYPE_NULL)
+	if (data_get_type(dst) == DATA_TYPE_NULL)
 		data_set_list(dst);
 
-	xassert(dst->type == TYPE_LIST);
-	if (dst->type != TYPE_LIST)
+	xassert(data_get_type(dst) == DATA_TYPE_LIST);
+	if (data_get_type(dst) != DATA_TYPE_LIST)
 		return SLURM_ERROR;
-
-	if (!str[0])
-		xfree(str);
-
-	if (!str)
-		return SLURM_SUCCESS;
 
 	tok = strtok_r(str, "/", &save_ptr);
 	while (tok) {
-		data_t *e = data_list_append(dst);
 		xstrtrim(tok);
 
-		data_set_string(e, tok);
-
-		log_flag_hex(DATA, tok, strlen(tok),
-			     "%s: split string from 0x%"PRIxPTR" to %pD[%zu]=%pD",
-			     __func__, src, dst, dst->data.list_u->count, e);
+		data_set_string(data_list_append(dst), tok);
 
 		tok = strtok_r(NULL, "/", &save_ptr);
 	}
@@ -1244,7 +1160,7 @@ extern int data_list_join_str(char **dst, const data_t *src, const char *token)
 	};
 
 	xassert(!*dst);
-	xassert(src->type == TYPE_LIST);
+	xassert(data_get_type(src) == DATA_TYPE_LIST);
 
 	if (data_list_for_each_const(src, _foreach_join_str, &args) < 0) {
 		xfree(args.path);
@@ -1252,11 +1168,6 @@ extern int data_list_join_str(char **dst, const data_t *src, const char *token)
 	}
 
 	*dst = args.path;
-
-	log_flag_hex(DATA, *dst, strlen(*dst),
-		     "%s: %pD string joined with token %s",
-		     __func__, src, token);
-
 	return SLURM_SUCCESS;
 }
 
@@ -1267,7 +1178,7 @@ extern int data_list_for_each_const(const data_t *d, DataListForFConst f, void *
 
 	_check_magic(d);
 
-	if (!d || (d->type != TYPE_LIST)) {
+	if (!d || data_get_type(d) != DATA_TYPE_LIST) {
 		error("%s: for each attempted on non-list object (0x%"PRIXPTR")",
 		      __func__, (uintptr_t) d);
 		return -1;
@@ -1316,8 +1227,9 @@ extern int data_list_for_each(data_t *d, DataListForF f, void *arg)
 
 	_check_magic(d);
 
-	if (!d || (d->type != TYPE_LIST)) {
-		error("%s: for each attempted on non-list %pD", __func__, d);
+	if (!d || data_get_type(d) != DATA_TYPE_LIST) {
+		error("%s: for each attempted on non-list object (0x%"PRIXPTR")",
+		      __func__, (uintptr_t) d);
 		return -1;
 	}
 
@@ -1335,17 +1247,10 @@ extern int data_list_for_each(data_t *d, DataListForF f, void *arg)
 
 		switch (cmd) {
 		case DATA_FOR_EACH_CONT:
-			if (i)
-				i = i->next;
 			break;
 		case DATA_FOR_EACH_DELETE:
-		{
-			data_list_node_t *idel = i;
-			i = i->next;
-			_release_data_list_node(d->data.list_u, idel);
-			_check_data_list_magic(d->data.list_u);
+			_release_data_list_node(d->data.list_u, i);
 			break;
-		}
 		case DATA_FOR_EACH_FAIL:
 			count *= -1;
 			/* fall through */
@@ -1355,6 +1260,9 @@ extern int data_list_for_each(data_t *d, DataListForF f, void *arg)
 		default:
 			fatal_abort("%s: invalid cmd", __func__);
 		}
+
+		if (i)
+			i = i->next;
 	}
 
 	return count;
@@ -1365,13 +1273,11 @@ extern int data_dict_for_each_const(const data_t *d, DataDictForFConst f, void *
 	int count = 0;
 	const data_list_node_t *i;
 
-	if (!d)
-		return 0;
-
 	_check_magic(d);
 
-	if (data_get_type(d) != DATA_TYPE_DICT) {
-		error("%s: for each attempted on non-dict %pD", __func__, d);
+	if (!d || data_get_type(d) != DATA_TYPE_DICT) {
+		error("%s: for each attempted on non-dict object (0x%"PRIXPTR")",
+		      __func__, (uintptr_t) d);
 		return -1;
 	}
 
@@ -1417,13 +1323,11 @@ extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg)
 	int count = 0;
 	data_list_node_t *i;
 
-	if (!d)
-		return 0;
-
 	_check_magic(d);
 
-	if (data_get_type(d) != DATA_TYPE_DICT) {
-		error("%s: for each attempted on non-dict %pD", __func__, d);
+	if (!d || data_get_type(d) != DATA_TYPE_DICT) {
+		error("%s: for each attempted on non-dict object (0x%"PRIXPTR")",
+		      __func__, (uintptr_t) d);
 		return -1;
 	}
 
@@ -1440,17 +1344,10 @@ extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg)
 
 		switch (cmd) {
 		case DATA_FOR_EACH_CONT:
-			if (i)
-				i = i->next;
 			break;
 		case DATA_FOR_EACH_DELETE:
-		{
-			data_list_node_t *idel = i;
-			i = i->next;
-			_release_data_list_node(d->data.list_u, idel);
-			_check_data_list_magic(d->data.list_u);
+			_release_data_list_node(d->data.dict_u, i);
 			break;
-		}
 		case DATA_FOR_EACH_FAIL:
 			count *= -1;
 			/* fall through */
@@ -1460,6 +1357,9 @@ extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg)
 		default:
 			fatal_abort("%s: invalid cmd", __func__);
 		}
+
+		if (i)
+			i = i->next;
 	}
 
 	return count;
@@ -1470,23 +1370,22 @@ static int _convert_data_string(data_t *data)
 	_check_magic(data);
 
 	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	case DATA_TYPE_STRING:
 		return SLURM_SUCCESS;
-	case TYPE_BOOL:
+	case DATA_TYPE_BOOL:
 		data_set_string(data, (data->data.bool_u ? "true" : "false"));
 		return SLURM_SUCCESS;
-	case TYPE_NULL:
+	case DATA_TYPE_NULL:
 		data_set_string(data, "");
 		return SLURM_SUCCESS;
-	case TYPE_FLOAT:
+	case DATA_TYPE_FLOAT:
 	{
 		char *str = xstrdup_printf("%lf", data->data.float_u);
 		data_set_string(data, str);
 		xfree(str);
 		return SLURM_SUCCESS;
 	}
-	case TYPE_INT_64:
+	case DATA_TYPE_INT_64:
 	{
 		char *str = xstrdup_printf("%"PRId64, data->data.int_u);
 		data_set_string(data, str);
@@ -1500,28 +1399,41 @@ static int _convert_data_string(data_t *data)
 	return ESLURM_DATA_CONV_FAILED;
 }
 
+
 static int _convert_data_force_bool(data_t *data)
 {
 	_check_magic(data);
 
-	/* attempt to detect the type first */
-	(void) data_convert_type(data, DATA_TYPE_NONE);
-
 	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
-		/* non-empty string but not recognized format */
-		data_set_bool(data, true);
+	case DATA_TYPE_STRING:
+		if (data->data.string_u == NULL ||
+		    data->data.string_u[0] == '\0')
+			data_set_bool(data, false);
+		else if (regex_quick_match(data->data.string_u,
+					   &bool_pattern_true_re))
+			data_set_bool(data, true);
+		else { /* try to auto detect the type and try again */
+			if (data_convert_type(data, DATA_TYPE_NONE)
+			    != DATA_TYPE_NONE)
+				return _convert_data_force_bool(data);
+			else {
+				/*
+				 * not NULL or empty and unknown type,
+				 * so it must be true
+				 */
+				data_set_bool(data, true);
+			}
+		}
 		return SLURM_SUCCESS;
-	case TYPE_BOOL:
+	case DATA_TYPE_BOOL:
 		return SLURM_SUCCESS;
-	case TYPE_NULL:
+	case DATA_TYPE_NULL:
 		data_set_bool(data, false);
 		return SLURM_SUCCESS;
-	case TYPE_FLOAT:
+	case DATA_TYPE_FLOAT:
 		data_set_bool(data, data->data.float_u != 0);
 		return SLURM_SUCCESS;
-	case TYPE_INT_64:
+	case DATA_TYPE_INT_64:
 		data_set_bool(data, data->data.int_u != 0);
 		return SLURM_SUCCESS;
 	default:
@@ -1536,269 +1448,88 @@ static int _convert_data_null(data_t *data)
 	_check_magic(data);
 
 	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
-	{
-		const char *str = data_get_string(data);
-
-		if (!str[0])
-			goto convert;
-
-		if (str[0] == '~')
-			goto convert;
-
-		if (!xstrcasecmp(str, "null"))
-			goto convert;
-
-		goto fail;
-	}
-	case TYPE_NULL:
+	case DATA_TYPE_STRING:
+		if (!data->data.string_u || !data->data.string_u[0]) {
+			log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to null: %s->null",
+				 __func__, (uintptr_t) data,
+				 data->data.string_u);
+			data_set_null(data);
+			return SLURM_SUCCESS;
+		} else {
+			return ESLURM_DATA_CONV_FAILED;
+		}
+	case DATA_TYPE_NULL:
 		return SLURM_SUCCESS;
 	default:
 		return ESLURM_DATA_CONV_FAILED;
 	}
-fail:
+
 	return ESLURM_DATA_CONV_FAILED;
-convert:
-	log_flag_hex(DATA, data_get_string(data), strlen(data_get_string(data)),
-		     "%s: converted %pD->null", __func__, data);
-	data_set_null(data);
-	return SLURM_SUCCESS;
 }
 
 static int _convert_data_bool(data_t *data)
 {
-	const char *str = NULL;
-
 	_check_magic(data);
 
 	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
-	{
-		str = data_get_string(data);
-
-		if (tolower(str[0]) == 'y') {
-			if (!str[1] || ((tolower(str[1]) == 'e') &&
-					(tolower(str[2]) == 's') &&
-					(str[3] == '\0'))) {
-				data_set_bool(data, true);
-				goto converted;
-			}
-			goto fail;
-		} else if (tolower(str[0]) == 't') {
-			if (!str[1] || ((tolower(str[1]) == 'r') &&
-					(tolower(str[2]) == 'u') &&
-					(tolower(str[3]) == 'e') &&
-					(str[4] == '\0'))) {
-				data_set_bool(data, true);
-				goto converted;
-			}
-			goto fail;
-		} else if ((tolower(str[0]) == 'o') &&
-			   (tolower(str[1]) == 'n') &&
-			   (str[2] == '\0')) {
+	case DATA_TYPE_STRING:
+		if (regex_quick_match(data->data.string_u,
+				      &bool_pattern_true_re)) {
+			log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to bool: %s->true",
+				 __func__, (uintptr_t) data,
+				 data->data.string_u);
 			data_set_bool(data, true);
-			goto converted;
-		} else if (tolower(str[0]) == 'n') {
-			if (!str[1] || ((tolower(str[1]) == 'o') &&
-					(str[2] == '\0'))) {
-				data_set_bool(data, false);
-				goto converted;
-			}
-			goto fail;
-		} else if (tolower(str[0]) == 'f') {
-			if (!str[1] || ((tolower(str[1]) == 'a') &&
-					(tolower(str[2]) == 'l') &&
-					(tolower(str[3]) == 's') &&
-					(tolower(str[4]) == 'e') &&
-					(str[5] == '\0'))) {
-				data_set_bool(data, false);
-				goto converted;
-			}
-			goto fail;
-		} else if ((tolower(str[0]) == 'o') &&
-			   (tolower(str[1]) == 'f') &&
-			   (tolower(str[2]) == 'f') &&
-			   (str[3] == '\0')) {
+			return SLURM_SUCCESS;
+		} else if (regex_quick_match(data->data.string_u,
+					     &bool_pattern_false_re)) {
+			log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to bool: %s->false",
+				 __func__, (uintptr_t) data,
+				 data->data.string_u);
 			data_set_bool(data, false);
-			goto converted;
+			return SLURM_SUCCESS;
+		} else {
+			return ESLURM_DATA_CONV_FAILED;
 		}
-
-		goto fail;
-	}
-	case TYPE_BOOL:
+	case DATA_TYPE_BOOL:
 		return SLURM_SUCCESS;
 	default:
-		goto fail;
+		return ESLURM_DATA_CONV_FAILED;
 	}
 
-converted:
-	log_flag_hex(DATA, str, strlen(str),
-		     "%s: converted %pD->%s",
-		 __func__, data, (data_get_bool(data) ? "true" : "false"));
-	return SLURM_SUCCESS;
-
-fail:
-	if (str)
-		log_flag_hex(DATA, str, strlen(str),
-			     "%s: converting %pD to bool failed",
-			     __func__, data);
-	else
-		log_flag(DATA, "%s: converting %pD to bool failed",
-			 __func__, data);
 	return ESLURM_DATA_CONV_FAILED;
 }
 
-static int _convert_data_int(data_t *data, bool force)
+static int _convert_data_int(data_t *data)
 {
 	_check_magic(data);
 
 	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
-	{
-		int64_t x;
-		char end;
-		const char *str = data_get_string(data);
-
-		if (!str[0]) {
-			log_flag_hex(DATA, str, strlen(str),
-				     "%s: convert empty string %pD to integer failed",
-				     __func__, data);
-			return ESLURM_DATA_CONV_FAILED;
-		}
-
-		if ((str[0] == '0') && (tolower(str[1]) == 'x')) {
-			if (sscanf(str, "%"SCNx64"%c", &x, &end) == 1) {
-				log_flag_hex(DATA, str, strlen(str),
-					     "%s: converted hex number %pD->%"PRId64,
-					 __func__, data, x);
+	case DATA_TYPE_STRING:
+		if (regex_quick_match(data->data.string_u, &int_pattern_re)) {
+			int64_t x;
+			if (sscanf(data->data.string_u, "%"SCNd64, &x) == 1) {
+				log_flag(DATA, "%s: converted data (0x%"PRIXPTR") to int: %s->%"PRId64,
+					 __func__, (uintptr_t) data,
+					 data->data.string_u, x);
 				data_set_int(data, x);
 				return SLURM_SUCCESS;
+			} else { /* failed */
+				debug2("%s: sscanf of int failed: %s", __func__,
+				       data->data.string_u);
+				return ESLURM_DATA_CONV_FAILED;
 			}
-
-			log_flag_hex(DATA, str, strlen(str),
-				     "%s: conversion of hex string %pD to integer failed",
-				     __func__, data);
-			return ESLURM_DATA_CONV_FAILED;
-		}
-
-		if (!force) {
-			for (const char *p = str; *p; p++) {
-				if ((*p < '0') || (*p > '9')) {
-					log_flag_hex(DATA, str, strlen(str),
-						     "%s: rejecting non-numeric conversion of %pD to integer failed",
-						     __func__, data);
-					return ESLURM_DATA_CONV_FAILED;
-				}
-			}
-		}
-
-		if (sscanf(str, "%"SCNd64"%c", &x, &end) == 1) {
-			log_flag_hex(DATA, str, strlen(str),
-				     "%s: converted %pD->%"PRId64,
-				     __func__, data, x);
-			data_set_int(data, x);
-			return SLURM_SUCCESS;
 		} else {
-			log_flag_hex(DATA, str, strlen(str),
-				     "%s: conversion of %pD to integer failed",
-				     __func__, data);
 			return ESLURM_DATA_CONV_FAILED;
 		}
-	}
-	case TYPE_FLOAT:
-		if (force) {
-			data_set_int(data, lrint(data_get_float(data)));
-			return SLURM_SUCCESS;
-		}
-		return ESLURM_DATA_CONV_FAILED;
-	case TYPE_INT_64:
+	case DATA_TYPE_FLOAT:
+		data_set_int(data, lrint(data_get_float(data)));
 		return SLURM_SUCCESS;
-	case TYPE_NULL:
-		if (force) {
-			/*
-			 * Conversion from NULL to integer is a loss of
-			 * information as NULL implies value is not set where as
-			 * integer 0 could just mean there is a a value zero as
-			 * opposed to there be no value set. This conversion is
-			 * only done when force is true as such.
-			 */
-			data_set_int(data, 0);
-			return SLURM_SUCCESS;
-		}
+	case DATA_TYPE_INT_64:
+		return SLURM_SUCCESS;
 	default:
 		return ESLURM_DATA_CONV_FAILED;
 	}
-}
 
-static int _convert_data_float_from_string(data_t *data)
-{
-	const char *str = data_get_string(data);
-	int i = 0;
-	bool negative = false;
-
-	xassert(str);
-
-	if (str[i] == '+') {
-		i++;
-	} else if (str[i] == '-') {
-		i++;
-		negative = true;
-	}
-
-	if ((tolower(str[i]) == 'i')) {
-		i++;
-
-		if (!xstrcasecmp(&str[i], "nf") ||
-		    !xstrcasecmp(&str[i], "nfinity")) {
-			if (negative)
-				data_set_float(data, -INFINITY);
-			else
-				data_set_float(data, INFINITY);
-
-			goto converted;
-		}
-
-		goto fail;
-	}
-
-	if ((tolower(str[i]) == 'n')) {
-		i++;
-
-		if (!xstrcasecmp(&str[i], "an")) {
-			if (negative)
-				data_set_float(data, -NAN);
-			else
-				data_set_float(data, NAN);
-
-			goto converted;
-		}
-
-		goto fail;
-	}
-
-	if ((str[i] >= '0') && (str[i] <= '9')) {
-		char end;
-		double x;
-
-		if (sscanf(&str[i], "%lf%c", &x, &end) == 1) {
-			data_set_float(data, x);
-			goto converted;
-		}
-	}
-
-	goto fail;
-
-converted:
-	log_flag(DATA, "%s: converted %pD to float: %s->%lf",
-		 __func__, data, str, data_get_float(data));
-	return SLURM_SUCCESS;
-
-fail:
-	log_flag_hex(DATA, str, strlen(str),
-		     "%s: convert %pD to double float failed", __func__, data);
 	return ESLURM_DATA_CONV_FAILED;
 }
 
@@ -1807,10 +1538,24 @@ static int _convert_data_float(data_t *data)
 	_check_magic(data);
 
 	switch (data->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
-		return _convert_data_float_from_string(data);
-	case TYPE_INT_64:
+	case DATA_TYPE_STRING:
+		if (regex_quick_match(data->data.string_u, &float_pattern_re)) {
+			double x;
+			if (sscanf(data->data.string_u, "%lf", &x) == 1) {
+				log_flag(DATA, "%s: convert data (0x%"PRIXPTR") to float: %s->%lf",
+					 __func__, (uintptr_t) data,
+					 data->data.string_u, x);
+				data_set_float(data, x);
+				return SLURM_SUCCESS;
+			} else { /* failed */
+				error("%s: sscanf of double failed: %s",
+				      __func__, data->data.string_u);
+				return ESLURM_DATA_CONV_FAILED;
+			}
+		} else {
+			return ESLURM_DATA_CONV_FAILED;
+		}
+	case DATA_TYPE_INT_64:
 		if (data_get_int(data) == INFINITE64)
 			data_set_float(data, HUGE_VAL);
 		else if (data_get_int(data) == NO_VAL64)
@@ -1818,7 +1563,7 @@ static int _convert_data_float(data_t *data)
 		else /* attempt normal fp conversion */
 			data_set_float(data, data_get_int(data));
 		return SLURM_SUCCESS;
-	case TYPE_FLOAT:
+	case DATA_TYPE_FLOAT:
 		return SLURM_SUCCESS;
 	default:
 		return ESLURM_DATA_CONV_FAILED;
@@ -1834,6 +1579,15 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 	if (!data)
 		return DATA_TYPE_NONE;
 
+	/*
+	 * This currently only works on primitive types and doesn't
+	 * apply to dictionaries or lists.
+	 */
+	if (data_get_type(data) == DATA_TYPE_DICT)
+		return DATA_TYPE_NONE;
+	if (data_get_type(data) == DATA_TYPE_LIST)
+		return DATA_TYPE_NONE;
+
 	switch (match) {
 	case DATA_TYPE_STRING:
 		return _convert_data_string(data) ? DATA_TYPE_NONE :
@@ -1842,8 +1596,8 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 		return _convert_data_force_bool(data) ? DATA_TYPE_NONE :
 							DATA_TYPE_BOOL;
 	case DATA_TYPE_INT_64:
-		return _convert_data_int(data, true) ? DATA_TYPE_NONE :
-						       DATA_TYPE_INT_64;
+		return _convert_data_int(data) ? DATA_TYPE_NONE :
+						 DATA_TYPE_INT_64;
 	case DATA_TYPE_FLOAT:
 		return _convert_data_float(data) ? DATA_TYPE_NONE :
 						   DATA_TYPE_FLOAT;
@@ -1854,32 +1608,28 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 		if (!_convert_data_null(data))
 			return DATA_TYPE_NULL;
 
-		if (!_convert_data_int(data, false))
+		if (!_convert_data_bool(data))
+			return DATA_TYPE_BOOL;
+
+		if (!_convert_data_int(data))
 			return DATA_TYPE_INT_64;
 
 		if (!_convert_data_float(data))
 			return DATA_TYPE_FLOAT;
 
-		if (!_convert_data_int(data, true))
-			return DATA_TYPE_INT_64;
-
-		if (!_convert_data_bool(data))
-			return DATA_TYPE_BOOL;
-
-		return DATA_TYPE_NONE;
-	case DATA_TYPE_DICT:
-	case DATA_TYPE_LIST:
-		/* data_parser should be used for this conversion instead. */
-		return DATA_TYPE_NONE;
-	case DATA_TYPE_MAX:
+	default:
 		break;
 	}
 
-	xassert(false);
 	return DATA_TYPE_NONE;
 }
 
-static data_for_each_cmd_t _convert_list_entry(data_t *data, void *arg)
+typedef struct {
+	size_t count;
+	data_type_t match;
+} convert_args_t;
+
+data_for_each_cmd_t _convert_list_entry(data_t *data, void *arg)
 {
 	convert_args_t *args = arg;
 
@@ -1888,8 +1638,8 @@ static data_for_each_cmd_t _convert_list_entry(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
-					       void *arg)
+data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
+					void *arg)
 {
 	convert_args_t *args = arg;
 
@@ -1906,11 +1656,11 @@ extern size_t data_convert_tree(data_t *data, const data_type_t match)
 	if (!data)
 		return 0;
 
-	switch (data->type) {
-	case TYPE_DICT:
+	switch (data_get_type(data)) {
+	case DATA_TYPE_DICT:
 		(void)data_dict_for_each(data, _convert_dict_entry, &args);
 		break;
-	case TYPE_LIST:
+	case DATA_TYPE_LIST:
 		(void)data_list_for_each(data, _convert_list_entry, &args);
 		break;
 	default:
@@ -1922,38 +1672,34 @@ extern size_t data_convert_tree(data_t *data, const data_type_t match)
 	return args.count;
 }
 
-static data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
-					    void *arg)
+typedef struct {
+	const data_t *b;
+	bool mask;
+} find_dict_match_t;
+
+data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
+				     void *arg)
 {
-	bool rc;
 	find_dict_match_t *p = arg;
 	const data_t *b = data_key_get_const(p->b, key);
 
-	rc = data_check_match(a, b, p->mask);
-
-	log_flag(DATA, "dictionary compare: %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR") %s %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR")",
-		 key, (uintptr_t) p->a, data_type_to_string(a->type),
-		 (uintptr_t) a, (rc ? "\u2261" : "\u2260"), key,
-		 (uintptr_t) p->b,
-		 (b ? data_type_to_string(b->type) :
-		      data_type_to_string(TYPE_NONE)),
-		 (uintptr_t) b);
-
-	return rc ? DATA_FOR_EACH_CONT : DATA_FOR_EACH_FAIL;
+	if (data_check_match(a, b, p->mask))
+		return DATA_FOR_EACH_CONT;
+	else
+		return DATA_FOR_EACH_FAIL;
 }
 
 static bool _data_match_dict(const data_t *a, const data_t *b, bool mask)
 {
 	find_dict_match_t p = {
 		.mask = mask,
-		.a = a,
 		.b = b,
 	};
 
-	if (!a || (a->type != TYPE_DICT))
+	if (!a || data_get_type(a) != DATA_TYPE_DICT)
 		return false;
 
-	if (!b || (b->type != TYPE_DICT))
+	if (!b || data_get_type(b) != DATA_TYPE_DICT)
 		return false;
 
 	_check_magic(a);
@@ -1972,9 +1718,9 @@ static bool _data_match_lists(const data_t *a, const data_t *b, bool mask)
 	const data_list_node_t *ptr_a;
 	const data_list_node_t *ptr_b;
 
-	if (!a || (a->type != TYPE_LIST))
+	if (!a || data_get_type(a) != DATA_TYPE_LIST)
 		return false;
-	if (!b || (b->type != TYPE_LIST))
+	if (!b || data_get_type(b) != DATA_TYPE_LIST)
 		return false;
 
 	_check_magic(a);
@@ -2006,8 +1752,6 @@ static bool _data_match_lists(const data_t *a, const data_t *b, bool mask)
 
 extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 {
-	bool rc;
-
 	if (a == NULL && b == NULL)
 		return true;
 
@@ -2017,91 +1761,29 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 	_check_magic(a);
 	_check_magic(b);
 
-	if (a->type != b->type) {
-		log_flag(DATA, "type mismatch: %s(0x%"PRIXPTR") != %s(0x%"PRIXPTR")",
-			 data_type_to_string(a->type), (uintptr_t) a,
-			 data_type_to_string(b->type), (uintptr_t) b);
+	if (data_get_type(a) != data_get_type(b))
 		return false;
-	}
 
-	switch (a->type) {
-	case TYPE_NULL:
-		rc = (b->type == TYPE_NULL);
-		log_flag(DATA, "compare: %s(0x%"PRIXPTR") %s %s(0x%"PRIXPTR")",
-			 data_type_to_string(a->type), (uintptr_t) a,
-			 (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b);
-		return rc;
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
-		rc = !xstrcmp(data_get_string_const(a),
-			      data_get_string_const(b));
-		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%s %s %s(0x%"PRIXPTR")=%s",
-			 data_type_to_string(a->type), (uintptr_t) a,
-			 data_get_string_const(a), (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b,
-			 data_get_string_const(b));
-		return rc;
-	case TYPE_BOOL:
-		rc = (data_get_bool(a) == data_get_bool(b));
-		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%s %s %s(0x%"PRIXPTR")=%s",
-			 data_type_to_string(a->type), (uintptr_t) a,
-			 (data_get_bool(a) ? "True" : "False"),
-			 (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b,
-			 (data_get_bool(b) ? "True" : "False"));
-		return rc;
-	case TYPE_INT_64:
-		rc = data_get_int(a) == data_get_int(b);
-		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%"PRId64" %s %s(0x%"PRIXPTR")=%"PRId64,
-			 data_type_to_string(a->type), (uintptr_t) a,
-			 data_get_int(a), (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b,
-			 data_get_int(b));
-		return rc;
-	case TYPE_FLOAT:
-		if (!(rc = (data_get_float(a) == data_get_float(b))) ||
-		    !(rc = fuzzy_equal(data_get_float(a), data_get_float(b)))) {
-			if (isnan(data_get_float(a)) ==
-			    isnan(data_get_float(a)))
-				rc = true;
-			else if (signbit(data_get_float(a)) !=
-				 signbit(data_get_float(b)))
-				rc = false;
-			else if (isinf(data_get_float(a)) !=
-				 isinf(data_get_float(b)))
-				rc = false;
-			else
-				rc = false;
-		}
-
-		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%e %s %s(0x%"PRIXPTR")=%e",
-			 data_type_to_string(a->type), (uintptr_t) a,
-			 data_get_float(a), (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b,
-			 data_get_float(b));
-		return rc;
-	case TYPE_DICT:
-		rc = _data_match_dict(a, b, mask);
-		log_flag(DATA, "compare dictionary: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
-			 data_type_to_string(a->type), (uintptr_t) a,
-			 data_get_dict_length(a), (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b,
-			 data_get_dict_length(b));
-		return rc;
-	case TYPE_LIST:
-		rc = _data_match_lists(a, b, mask);
-		log_flag(DATA, "compare list: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
-			 data_type_to_string(a->type), (uintptr_t) a,
-			 data_get_list_length(a), (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b,
-			 data_get_list_length(b));
-		return rc;
+	switch (data_get_type(a)) {
+	case DATA_TYPE_NULL:
+		return (data_get_type(b) == DATA_TYPE_NULL);
+	case DATA_TYPE_STRING:
+		// TODO: should we have a case insensitive compare?
+		return !xstrcmp(data_get_string_const(a),
+				data_get_string_const(b));
+	case DATA_TYPE_BOOL:
+		return (data_get_bool(a) == data_get_bool(b));
+	case DATA_TYPE_INT_64:
+		return data_get_int(a) == data_get_int(b);
+	case DATA_TYPE_FLOAT:
+		return fuzzy_equal(data_get_float(a), data_get_float(b));
+	case DATA_TYPE_DICT:
+		return _data_match_dict(a, b, mask);
+	case DATA_TYPE_LIST:
+		return _data_match_lists(a, b, mask);
 	default:
 		fatal_abort("%s: unexpected data type", __func__);
 	}
-
-	return rc;
 }
 
 extern data_t *data_resolve_dict_path(data_t *data, const char *path)
@@ -2110,55 +1792,42 @@ extern data_t *data_resolve_dict_path(data_t *data, const char *path)
 	char *save_ptr = NULL;
 	char *token = NULL;
 	char *str;
-	char local[DATA_DEFINE_DICT_PATH_BUFFER_SIZE];
-	size_t len = strlen(path);
 
 	_check_magic(data);
 
 	if (!data)
 		return NULL;
 
-	if (len < sizeof(local))
-		str = memcpy(local, path, (len + 1));
-	else
-		str = xstrdup(path);
+	str = xstrdup(path);
 
 	token = strtok_r(str, "/", &save_ptr);
 	while (token && found) {
-		/* walk forward any whitespace */
-		while (*token && isspace(*token))
-			token++;
+		xstrtrim(token);
 
-		/* zero any ending whitespace */
-		for (int i = strlen(token) - 1; i >= 0; i--) {
-			if (isspace(token[i]))
-				token[i] = '\0';
-			else
-				break;
-		}
-
-		if (!found || (found->type != TYPE_DICT)) {
+		if (data_get_type(found) != DATA_TYPE_DICT)
 			found = NULL;
-			break;
+
+		if (found) {
+			found = data_key_get(found, token);
+			token = strtok_r(NULL, "/", &save_ptr);
 		}
-
-		if (!(found = data_key_get(found, token)))
-			break;
-
-		token = strtok_r(NULL, "/", &save_ptr);
 	}
-
-	if (str != local)
-		xfree(str);
+	xfree(str);
 
 	if (found)
-		log_flag_hex(DATA, path, strlen(path),
-			     "%s: %pD resolved dictionary path to %pD",
-			     __func__, data, found);
+		log_flag(DATA, "%s: data (0x%"PRIXPTR") resolved dictionary path \"%s\" to (0x%"PRIXPTR")",
+			 __func__, (uintptr_t) data, path, (uintptr_t) found);
 	else
-		log_flag_hex(DATA, path, strlen(path),
-			     "%s: %pD failed to resolve dictionary path",
-			     __func__, data);
+		log_flag(DATA, "%s: data (0x%"PRIXPTR") failed to resolve dictionary path \"%s\"",
+			 __func__, (uintptr_t) data, path);
+
+	if ((data_get_type(found) == DATA_TYPE_LIST) &&
+	    (!found->data.list_u->count)) {
+		log_flag(DATA, "%s: Returning NULL for a 0 count list",
+			 __func__);
+		return NULL;
+	}
+
 	return found;
 }
 
@@ -2181,26 +1850,22 @@ extern const data_t *data_resolve_dict_path_const(const data_t *data,
 	while (token && found) {
 		xstrtrim(token);
 
-		if (!found || (found->type != TYPE_DICT)) {
-			found = false;
-			break;
+		if (data_get_type(found) != DATA_TYPE_DICT)
+			found = NULL;
+
+		if (found) {
+			found = data_key_get_const(found, token);
+			token = strtok_r(NULL, "/", &save_ptr);
 		}
-
-		if (!(found = data_key_get_const(found, token)))
-			break;
-
-		token = strtok_r(NULL, "/", &save_ptr);
 	}
 	xfree(str);
 
 	if (found)
-		log_flag_hex(DATA, path, strlen(path),
-			     "%s: data %pD resolved dictionary path to %pD",
-			     __func__, data, found);
+		log_flag(DATA, "%s: data (0x%"PRIXPTR") resolved dictionary path \"%s\" to (0x%"PRIXPTR")",
+			 __func__, (uintptr_t) data, path, (uintptr_t) found);
 	else
-		log_flag_hex(DATA, path, strlen(path),
-			     "%s: data %pD failed to resolve dictionary path",
-			     __func__, data);
+		log_flag(DATA, "%s: data (0x%"PRIXPTR") failed to resolve dictionary path \"%s\"",
+			 __func__, (uintptr_t) data, path);
 
 	return found;
 }
@@ -2223,33 +1888,29 @@ extern data_t *data_define_dict_path(data_t *data, const char *path)
 	while (token && found) {
 		xstrtrim(token);
 
-		if (found->type == TYPE_NULL)
+		if (data_get_type(found) == DATA_TYPE_NULL)
 			data_set_dict(found);
-		else if (found->type != TYPE_DICT) {
+		else if (data_get_type(found) != DATA_TYPE_DICT)
 			found = NULL;
-			break;
+
+		if (found) {
+			found = data_key_set(found, token);
+			token = strtok_r(NULL, "/", &save_ptr);
 		}
-
-		if (!(found = data_key_set(found, token)))
-			break;
-
-		token = strtok_r(NULL, "/", &save_ptr);
 	}
 	xfree(str);
 
 	if (found)
-		log_flag_hex(DATA, path, strlen(path),
-			     "%s: %pD defined dictionary path to %pD",
-			     __func__, data, found);
+		log_flag(DATA, "%s: data (0x%"PRIXPTR") defined dictionary path \"%s\" to (0x%"PRIXPTR")",
+			 __func__, (uintptr_t) data, path, (uintptr_t) found);
 	else
-		log_flag_hex(DATA, path, strlen(path),
-			     "%s: %pD failed to define dictionary path",
-			     __func__, data);
+		log_flag(DATA, "%s: data (0x%"PRIXPTR") failed to define dictionary path \"%s\"",
+			 __func__, (uintptr_t) data, path);
 
 	return found;
 }
 
-extern data_t *data_copy(data_t *dest, const data_t *src)
+data_t *data_copy(data_t *dest, const data_t *src)
 {
 	if (!src)
 		return NULL;
@@ -2260,21 +1921,21 @@ extern data_t *data_copy(data_t *dest, const data_t *src)
 	_check_magic(src);
 	_check_magic(dest);
 
-	log_flag(DATA, "%s: copy data %pD to %pD", __func__, src, dest);
+	log_flag(DATA, "%s: copy data (0x%"PRIXPTR") to (0x%"PRIXPTR")",
+	       __func__, (uintptr_t) src, (uintptr_t) dest);
 
-	switch (src->type) {
-	case TYPE_STRING_INLINE:
-	case TYPE_STRING_PTR:
+	switch (data_get_type(src)) {
+	case DATA_TYPE_STRING:
 		return data_set_string(dest, data_get_string_const(src));
-	case TYPE_BOOL:
+	case DATA_TYPE_BOOL:
 		return data_set_bool(dest, data_get_bool(src));
-	case TYPE_INT_64:
+	case DATA_TYPE_INT_64:
 		return data_set_int(dest, data_get_int(src));
-	case TYPE_FLOAT:
+	case DATA_TYPE_FLOAT:
 		return data_set_float(dest, data_get_float(src));
-	case TYPE_NULL:
+	case DATA_TYPE_NULL:
 		return data_set_null(dest);
-	case TYPE_LIST:
+	case DATA_TYPE_LIST:
 	{
 		data_list_node_t *i = src->data.list_u->begin;
 
@@ -2289,7 +1950,7 @@ extern data_t *data_copy(data_t *dest, const data_t *src)
 
 		return dest;
 	}
-	case TYPE_DICT:
+	case DATA_TYPE_DICT:
 	{
 		data_list_node_t *i = src->data.dict_u->begin;
 
@@ -2309,27 +1970,6 @@ extern data_t *data_copy(data_t *dest, const data_t *src)
 	}
 }
 
-extern data_t *data_move(data_t *dest, data_t *src)
-{
-	if (!src)
-		return NULL;
-
-	if (!dest)
-		dest = data_new();
-
-	_check_magic(src);
-	_check_magic(dest);
-
-	log_flag(DATA, "%s: move data %pD to %pD", __func__, src, dest);
-
-	memmove(&dest->data, &src->data, sizeof(src->data));
-	dest->type = src->type;
-	src->type = TYPE_NULL;
-	xassert((memset(&src->data, 0, sizeof(src->data))));
-
-	return dest;
-}
-
 extern int data_retrieve_dict_path_string(const data_t *data, const char *path,
 					  char **ptr_buffer)
 {
@@ -2342,13 +1982,8 @@ extern int data_retrieve_dict_path_string(const data_t *data, const char *path,
 
 	rc = data_get_string_converted(d, ptr_buffer);
 
-	if (rc)
-		log_flag(DATA, "%s: data %pD failed to resolve string at path:%s",
-			 __func__, data, path);
-	else
-		log_flag_hex(DATA, *ptr_buffer, strlen(*ptr_buffer),
-			 "%s: data %pD resolved string at path:%s",
-			 __func__, data, path);
+	log_flag(DATA, "%s: data (0x%"PRIXPTR") resolved string at path %s to \"%s\"",
+		 __func__, (uintptr_t) data, path, *ptr_buffer);
 
 	return rc;
 }
@@ -2365,9 +2000,9 @@ extern int data_retrieve_dict_path_bool(const data_t *data, const char *path,
 
 	rc = data_copy_bool_converted(d, ptr_buffer);
 
-	log_flag(DATA, "%s: data %pD resolved string at path %s=%s: %s",
-		 __func__, data, path,
-		 (*ptr_buffer ? "true" : "false"), slurm_strerror(rc));
+	log_flag(DATA, "%s: data (0x%"PRIXPTR") resolved string at path %s to %s",
+		 __func__, (uintptr_t) data, path,
+		 (*ptr_buffer ? "true" : "false"));
 
 	return rc;
 }
@@ -2384,8 +2019,8 @@ extern int data_retrieve_dict_path_int(const data_t *data, const char *path,
 
 	rc = data_get_int_converted(d, ptr_buffer);
 
-	log_flag(DATA, "%s: data %pD resolved string at path %s to %"PRId64": %s",
-		 __func__, data, path, *ptr_buffer, slurm_strerror(rc));
+	log_flag(DATA, "%s: data (0x%"PRIXPTR") resolved string at path %s to %"PRId64,
+		 __func__, (uintptr_t) data, path, *ptr_buffer);
 
 	return rc;
 }
@@ -2400,35 +2035,14 @@ extern char *data_type_to_string(data_type_t type)
 		case DATA_TYPE_DICT:
 			return "dictionary";
 		case DATA_TYPE_INT_64:
-			return "64 bit integer";
+			return "int 64bits";
 		case DATA_TYPE_STRING:
 			return "string";
 		case DATA_TYPE_FLOAT:
-			return "floating point number";
+			return "floating point";
 		case DATA_TYPE_BOOL:
 			return "boolean";
-		case DATA_TYPE_NONE:
-		case DATA_TYPE_MAX:
+		default:
 			return "INVALID";
 	}
-
-	for (int i = 0; i < ARRAY_SIZE(type_map); i++) {
-		if (type_map[i].internal_type == (int) type)
-			return data_type_to_string(type_map[i].external_type);
-	}
-
-	return "INVALID";
-}
-
-extern const char *data_get_type_string(const data_t *data)
-{
-	if (!data)
-		return "INVALID";
-
-	for (int i = 0; i < ARRAY_SIZE(type_map); i++)
-		if (type_map[i].internal_type == data->type)
-			return data_type_to_string(type_map[i].external_type);
-
-	xassert(false);
-	return "INVALID";
 }

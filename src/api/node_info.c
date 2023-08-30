@@ -481,18 +481,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	}
 
 	/****** Line (optional) ******/
-	if (node_ptr->instance_id || node_ptr->instance_type) {
-		xstrcat(out, line_end);
-
-		if (node_ptr->instance_id)
-			xstrfmtcat(out, "InstanceId=%s ",
-				   node_ptr->instance_id);
-		if (node_ptr->instance_type)
-			xstrfmtcat(out, "InstanceType=%s",
-				   node_ptr->instance_type);
-	}
-
-	/****** Line (optional) ******/
 	if (node_ptr->resv_name) {
 		xstrcat(out, line_end);
 		xstrfmtcat(out, "ReservationName=%s", node_ptr->resv_name);
@@ -534,9 +522,6 @@ static int _load_cluster_nodes(slurm_msg_t *req_msg,
 {
 	slurm_msg_t resp_msg;
 	int rc;
-
-	if (select_g_init(0) != SLURM_SUCCESS)
-		fatal("failed to initialize node selection plugin");
 
 	slurm_msg_t_init(&resp_msg);
 

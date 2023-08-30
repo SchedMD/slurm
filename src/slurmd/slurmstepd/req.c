@@ -54,7 +54,6 @@
 #include "src/common/eio.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
-#include "src/common/proc_args.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/acct_gather.h"
@@ -66,6 +65,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/core_spec.h"
 #include "src/interfaces/proctrack.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
@@ -407,7 +407,7 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 	param = xmalloc(sizeof(struct request_params));
 	param->fd = fd;
 	param->step = step;
-	slurm_thread_create_detached(_handle_accept, param);
+	slurm_thread_create_detached(NULL, _handle_accept, param);
 
 	debug3("Leaving _msg_socket_accept");
 	return SLURM_SUCCESS;
@@ -661,8 +661,8 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 	safe_read(fd, details, details_len);
 	safe_read(fd, &req_uid, sizeof(uid_t));
 
-	debug("_handle_signal_container for %ps uid=%u signal=%d flag=0x%x",
-	      &step->step_id, req_uid, sig, flag);
+	debug("_handle_signal_container for %ps uid=%u signal=%d",
+	      &step->step_id, req_uid, sig);
 	/* verify uid off uid instead of req_uid as we can trust that one */
 	if ((uid != step->uid) && !_slurm_authorized_user(uid)) {
 		error("signal container req from uid %u for %ps owned by uid %u",
@@ -671,9 +671,6 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 		errnum = EPERM;
 		goto done;
 	}
-
-	if (flag & KILL_NO_SIG_FAIL)
-		step->flags |= LAUNCH_NO_SIG_FAIL;
 
 	/*
 	 * Sanity checks
@@ -833,9 +830,6 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 	}
 	slurm_mutex_unlock(&suspend_mutex);
 
-	if ((sig == SIGTERM) || (sig == SIGKILL))
-		set_job_state(step, SLURMSTEPD_STEP_CANCELLED);
-
 done:
 	xfree(details);
 
@@ -948,8 +942,6 @@ _handle_terminate(int fd, stepd_step_rec_t *step, uid_t uid)
 		verbose("Sent SIGKILL signal to %ps", &step->step_id);
 	}
 	slurm_mutex_unlock(&suspend_mutex);
-
-	set_job_state(step, SLURMSTEPD_STEP_CANCELLED);
 
 done:
 	/* Send the return code and errnum */
@@ -1238,7 +1230,7 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *step, pid_t pid)
 		set_user_limits(step, pid);
 
 	/* spawn a thread that will wait on the pid given */
-	slurm_thread_create_detached(_wait_extern_pid, extern_pid);
+	slurm_thread_create_detached(NULL, _wait_extern_pid, extern_pid);
 
 	return SLURM_SUCCESS;
 }
@@ -1547,10 +1539,12 @@ _handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
-	char *tmp;
-	static uint32_t suspend_grace_time = NO_VAL;
+	uint16_t job_core_spec = NO_VAL16;
 
-	debug("%s for %ps uid:%u", __func__, &step->step_id, uid);
+	safe_read(fd, &job_core_spec, sizeof(uint16_t));
+
+	debug("_handle_suspend for %ps uid:%u core_spec:%u",
+	      &step->step_id, uid, job_core_spec);
 
 	if (!_slurm_authorized_user(uid)) {
 		debug("job step suspend request from uid %u for %ps",
@@ -1580,27 +1574,6 @@ _handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid)
 		if (!step->batch && switch_g_job_step_pre_suspend(step))
 			error("switch_g_job_step_pre_suspend: %m");
 
-		if (suspend_grace_time == NO_VAL) {
-			char *suspend_grace_str = "suspend_grace_time=";
-
-			/* Set default suspend_grace_time */
-			suspend_grace_time = 2;
-
-			/*
-			 * Overwrite default suspend grace time if set in
-			 * slurm_conf
-			 */
-			if ((tmp = xstrcasestr(slurm_conf.preempt_params,
-					       suspend_grace_str))) {
-				if (parse_uint32((tmp +
-						  strlen(suspend_grace_str)),
-						 &suspend_grace_time)) {
-					error("Could not parse '%s' Using default instead.",
-					      tmp);
-				}
-			}
-		}
-
 		/* SIGTSTP is sent first to let MPI daemons stop their tasks,
 		 * then wait 2 seconds, then send SIGSTOP to the spawned
 		 * process's container to stop everything else.
@@ -1614,7 +1587,7 @@ _handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid)
 			verbose("Error suspending %ps (SIGTSTP): %m",
 				&step->step_id);
 		} else
-			sleep(suspend_grace_time);
+			sleep(2);
 
 		if (proctrack_g_signal(step->cont_id, SIGSTOP) < 0) {
 			verbose("Error suspending %ps (SIGSTOP): %m",
@@ -1626,6 +1599,8 @@ _handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid)
 	}
 	if (!step->batch && switch_g_job_step_post_suspend(step))
 		error("switch_g_job_step_post_suspend: %m");
+	if (!step->batch && core_spec_g_suspend(step->cont_id, job_core_spec))
+		error("core_spec_g_suspend: %m");
 
 	slurm_mutex_unlock(&suspend_mutex);
 
@@ -1643,8 +1618,12 @@ _handle_resume(int fd, stepd_step_rec_t *step, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
+	uint16_t job_core_spec = NO_VAL16;
 
-	debug("%s for %ps uid:%u", __func__, &step->step_id, uid);
+	safe_read(fd, &job_core_spec, sizeof(uint16_t));
+
+	debug("_handle_resume for %ps uid:%u core_spec:%u",
+	      &step->step_id, uid, job_core_spec);
 
 	if (!_slurm_authorized_user(uid)) {
 		debug("job step resume request from uid %u for %ps",
@@ -1672,6 +1651,9 @@ _handle_resume(int fd, stepd_step_rec_t *step, uid_t uid)
 	} else {
 		if (!step->batch && switch_g_job_step_pre_resume(step))
 			error("switch_g_job_step_pre_resume: %m");
+		if (!step->batch && core_spec_g_resume(step->cont_id,
+						      job_core_spec))
+			error("core_spec_g_resume: %m");
 		if (proctrack_g_signal(step->cont_id, SIGCONT) < 0) {
 			verbose("Error resuming %ps: %m", &step->step_id);
 		} else {

@@ -239,8 +239,7 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 
 	if (params.mimetype) {
 		int rc = DATA_DUMP_CLI(JOB_INFO_MSG, *new_job_ptr, "jobs", argc,
-				       argv, NULL, params.mimetype,
-				       params.data_parser);
+				       argv, NULL, params.mimetype);
 #ifdef MEMORY_LEAK_DEBUG
 		slurm_free_job_info_msg(new_job_ptr);
 #endif
@@ -323,8 +322,7 @@ static int _print_job_steps(bool clear_old, int argc, char **argv)
 
 	if (params.mimetype) {
 		int rc = DATA_DUMP_CLI(STEP_INFO_MSG, new_step_ptr, "steps",
-				       argc, argv, NULL, params.mimetype,
-				       params.data_parser);
+				       argc, argv, NULL, params.mimetype);
 #ifdef MEMORY_LEAK_DEBUG
 		slurm_free_job_step_info_response_msg(new_step_ptr);
 #endif

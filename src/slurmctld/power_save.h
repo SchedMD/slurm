@@ -44,6 +44,7 @@
 #define _HAVE_POWER_SAVE_H
 
 /* Global Variables */
+extern bool cloud_reg_addrs;
 extern List resume_job_list;
 
 /*

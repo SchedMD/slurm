@@ -52,6 +52,12 @@ switch_record_t *switch_record_table = NULL;
 int switch_record_cnt = 0;
 int switch_levels = 0;               /* number of switch levels     */
 
+/* defined here but is really hypercube plugin related */
+int hypercube_dimensions = 0;
+struct hypercube_switch *hypercube_switch_table = NULL;
+int hypercube_switch_cnt = 0;
+struct hypercube_switch ***hypercube_switches = NULL;
+
 typedef struct slurm_topo_ops {
 	int		(*build_config)		( void );
 	bool		(*node_ranking)		( void );
@@ -64,15 +70,14 @@ typedef struct slurm_topo_ops {
  * Must be synchronized with slurm_topo_ops_t above.
  */
 static const char *syms[] = {
-	"topology_p_build_config",
-	"topology_p_generate_node_ranking",
-	"topology_p_get_node_addr",
+	"topo_build_config",
+	"topo_generate_node_ranking",
+	"topo_get_node_addr",
 };
 
 static slurm_topo_ops_t ops;
 static plugin_context_t	*g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
-static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 
 /*
  * The topology plugin can not be changed via reconfiguration
@@ -80,20 +85,15 @@ static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
  * be restarted and job priority changes may be required to change
  * the topology type.
  */
-extern int topology_g_init(void)
+extern int slurm_topo_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "topo";
 
 	slurm_mutex_lock(&g_context_lock);
 
-	if (plugin_inited)
+	if (g_context)
 		goto done;
-
-	if (!slurm_conf.topology_plugin) {
-		plugin_inited = PLUGIN_NOOP;
-		goto done;
-	}
 
 	g_context = plugin_context_create(plugin_type,
 					  slurm_conf.topology_plugin,
@@ -103,43 +103,36 @@ extern int topology_g_init(void)
 		error("cannot create %s context for %s",
 		      plugin_type, slurm_conf.topology_plugin);
 		retval = SLURM_ERROR;
-		plugin_inited = PLUGIN_NOT_INITED;
 		goto done;
 	}
 
-	plugin_inited = PLUGIN_INITED;
 done:
 	slurm_mutex_unlock(&g_context_lock);
 	return retval;
 }
 
-extern int topology_g_fini(void)
+extern int slurm_topo_fini(void)
 {
-	int rc = SLURM_SUCCESS;
+	int rc;
 
-	if (g_context) {
-		rc = plugin_context_destroy(g_context);
-		g_context = NULL;
-	}
+	if (!g_context)
+		return SLURM_SUCCESS;
 
-	plugin_inited = PLUGIN_NOT_INITED;
-
+	rc = plugin_context_destroy(g_context);
+	g_context = NULL;
 	return rc;
 }
 
-extern int topology_g_build_config(void)
+extern int slurm_topo_build_config(void)
 {
 	int rc;
 	DEF_TIMERS;
 
-	xassert(plugin_inited);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return SLURM_SUCCESS;
+	xassert(g_context);
 
 	START_TIMER;
 	rc = (*(ops.build_config))();
-	END_TIMER3(__func__, 20000);
+	END_TIMER3("slurm_topo_build_config", 20000);
 
 	return rc;
 }
@@ -148,31 +141,18 @@ extern int topology_g_build_config(void)
  * This operation is only supported by those topology plugins for
  * which the node ordering between slurmd and slurmctld is invariant.
  */
-extern bool topology_g_generate_node_ranking(void)
+extern bool slurm_topo_generate_node_ranking(void)
 {
-	xassert(plugin_inited);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return false;
+	xassert(g_context);
 
 	return (*(ops.node_ranking))();
 }
 
-extern int topology_g_get_node_addr(char *node_name, char **addr,
+extern int slurm_topo_get_node_addr(char* node_name,
+				    char **addr,
 				    char **pattern)
 {
-	xassert(plugin_inited);
-
-	if (plugin_inited == PLUGIN_NOOP) {
-#ifndef HAVE_FRONT_END
-		if (find_node_record(node_name) == NULL)
-			return SLURM_ERROR;
-#endif
-
-		*addr = xstrdup(node_name);
-		*pattern = xstrdup("node");
-		return SLURM_SUCCESS;
-	}
+	xassert(g_context);
 
 	return (*(ops.get_node_addr))(node_name,addr,pattern);
 }

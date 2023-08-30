@@ -97,7 +97,7 @@ SelectType=select/cons_tres
 #
 # JOB PRIORITY
 #PriorityFlags=
-#PriorityType=priority/multifactor
+#PriorityType=priority/basic
 #PriorityDecayHalfLife=
 #PriorityCalcPeriod=
 #PriorityFavorSmall=
@@ -124,7 +124,7 @@ AccountingStorageType=accounting_storage/none
 #JobCompPort=
 JobCompType=jobcomp/none
 #JobCompUser=
-#JobContainerType=
+#JobContainerType=job_container/none
 JobAcctGatherFrequency=30
 JobAcctGatherType=jobacct_gather/none
 SlurmctldDebug=info

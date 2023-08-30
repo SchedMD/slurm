@@ -46,7 +46,6 @@
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdbd_defs.h"
 
-#define SLURM_21_08_PROTOCOL_VERSION ((37 << 8) | 0)
 #define SLURM_20_11_PROTOCOL_VERSION ((36 << 8) | 0)
 #define SLURM_20_02_PROTOCOL_VERSION ((35 << 8) | 0)
 #define SLURM_19_05_PROTOCOL_VERSION ((34 << 8) | 0)
@@ -78,9 +77,6 @@
 
 typedef struct {
 	char *cluster_nodes;
-	char *extra;
-	char *instance_id;
-	char *instance_type;
 	char *node_name;
 	char *period_end;
 	char *period_start;
@@ -94,9 +90,6 @@ static void _free_local_event_members(local_event_t *object)
 {
 	if (object) {
 		xfree(object->cluster_nodes);
-		xfree(object->extra);
-		xfree(object->instance_id);
-		xfree(object->instance_type);
 		xfree(object->node_name);
 		xfree(object->period_end);
 		xfree(object->period_start);
@@ -506,9 +499,6 @@ char *event_req_inx[] = {
 	"time_end",
 	"node_name",
 	"cluster_nodes",
-	"extra",
-	"instance_id",
-	"instance_type",
 	"reason",
 	"reason_uid",
 	"state",
@@ -520,9 +510,6 @@ enum {
 	EVENT_REQ_END,
 	EVENT_REQ_NODE,
 	EVENT_REQ_CNODES,
-	EVENT_REQ_EXTRA,
-	EVENT_REQ_INSTANCE_ID,
-	EVENT_REQ_INSTANCE_TYPE,
 	EVENT_REQ_REASON,
 	EVENT_REQ_REASON_UID,
 	EVENT_REQ_STATE,
@@ -922,13 +909,10 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 
 static uint32_t high_buffer_size = (1024 * 1024);
 
-static void _pack_local_event(local_event_t *object, buf_t *buffer)
+static void _pack_local_event(local_event_t *object, uint16_t rpc_version,
+			      buf_t *buffer)
 {
-	/* Always packs as current version */
 	packstr(object->cluster_nodes, buffer);
-	packstr(object->extra, buffer);
-	packstr(object->instance_id, buffer);
-	packstr(object->instance_type, buffer);
 	packstr(object->node_name, buffer);
 	packstr(object->period_end, buffer);
 	packstr(object->period_start, buffer);
@@ -943,40 +927,29 @@ static void _pack_local_event(local_event_t *object, buf_t *buffer)
 static int _unpack_local_event(local_event_t *object, uint16_t rpc_version,
 			       buf_t *buffer)
 {
+	uint32_t tmp32;
 	char *tmp_char;
 
-	if (rpc_version >= SLURM_23_11_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->cluster_nodes, buffer);
-		safe_unpackstr(&object->extra, buffer);
-		safe_unpackstr(&object->instance_id, buffer);
-		safe_unpackstr(&object->instance_type, buffer);
-		safe_unpackstr(&object->node_name, buffer);
-		safe_unpackstr(&object->period_end, buffer);
-		safe_unpackstr(&object->period_start, buffer);
-		safe_unpackstr(&object->reason, buffer);
-		safe_unpackstr(&object->reason_uid, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->tres_str, buffer);
-	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->cluster_nodes, buffer);
-		safe_unpackstr(&object->node_name, buffer);
-		safe_unpackstr(&object->period_end, buffer);
-		safe_unpackstr(&object->period_start, buffer);
-		safe_unpackstr(&object->reason, buffer);
-		safe_unpackstr(&object->reason_uid, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->tres_str, buffer);
+	if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&object->cluster_nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->reason, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->reason_uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_str, &tmp32, buffer);
 	} else {
-		safe_unpackstr(&object->cluster_nodes, buffer);
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&object->cluster_nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		object->tres_str = xstrdup_printf("%d=%s", TRES_CPU, tmp_char);
 		xfree(tmp_char);
-		safe_unpackstr(&object->node_name, buffer);
-		safe_unpackstr(&object->period_end, buffer);
-		safe_unpackstr(&object->period_start, buffer);
-		safe_unpackstr(&object->reason, buffer);
-		safe_unpackstr(&object->reason_uid, buffer);
-		safe_unpackstr(&object->state, buffer);
+		safe_unpackstr_xmalloc(&object->node_name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->reason, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->reason_uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -986,9 +959,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_job(local_job_t *object, buf_t *buffer)
+static void _pack_local_job(local_job_t *object, uint16_t rpc_version,
+			    buf_t *buffer)
 {
-	/* Always packs as current version */
 	packstr(object->account, buffer);
 	packstr(object->admin_comment, buffer);
 	packstr(object->alloc_nodes, buffer);
@@ -1051,6 +1024,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 			     buf_t *buffer)
 {
+	uint32_t tmp32;
 	char *tmp_char = NULL;
 
 	memset(object, 0, sizeof(local_job_t));
@@ -1075,411 +1049,415 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 	 */
 
 	if (rpc_version >= SLURM_23_02_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->account, buffer);
-		safe_unpackstr(&object->admin_comment, buffer);
-		safe_unpackstr(&object->alloc_nodes, buffer);
-		safe_unpackstr(&object->associd, buffer);
-		safe_unpackstr(&object->array_jobid, buffer);
-		safe_unpackstr(&object->array_max_tasks, buffer);
-		safe_unpackstr(&object->array_taskid, buffer);
-		safe_unpackstr(&object->array_task_pending, buffer);
-		safe_unpackstr(&object->array_task_str, buffer);
-		safe_unpackstr(&object->script_hash_inx, buffer);
-		safe_unpackstr(&object->blockid, buffer);
-		safe_unpackstr(&object->constraints, buffer);
-		safe_unpackstr(&object->container, buffer);
-		safe_unpackstr(&object->deleted, buffer);
-		safe_unpackstr(&object->derived_ec, buffer);
-		safe_unpackstr(&object->derived_es, buffer);
-		safe_unpackstr(&object->env_hash_inx, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->extra, buffer);
-		safe_unpackstr(&object->flags, buffer);
-		safe_unpackstr(&object->timelimit, buffer);
-		safe_unpackstr(&object->eligible, buffer);
-		safe_unpackstr(&object->end, buffer);
-		safe_unpackstr(&object->gid, buffer);
-		safe_unpackstr(&object->gres_used, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
-		safe_unpackstr(&object->licenses, buffer);
-		safe_unpackstr(&object->mcs_label, buffer);
-		safe_unpackstr(&object->mod_time, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->het_job_id, buffer);
-		safe_unpackstr(&object->het_job_offset, buffer);
-		safe_unpackstr(&object->partition, buffer);
-		safe_unpackstr(&object->priority, buffer);
-		safe_unpackstr(&object->qos, buffer);
-		safe_unpackstr(&object->req_cpus, buffer);
-		safe_unpackstr(&object->req_mem, buffer);
-		safe_unpackstr(&object->resvid, buffer);
-		safe_unpackstr(&object->start, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->state_reason_prev, buffer);
-		safe_unpackstr(&object->submit, buffer);
-		safe_unpackstr(&object->suspended, buffer);
-		safe_unpackstr(&object->submit_line, buffer);
-		safe_unpackstr(&object->system_comment, buffer);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_req_str, buffer);
-		safe_unpackstr(&object->uid, buffer);
-		safe_unpackstr(&object->wckey, buffer);
-		safe_unpackstr(&object->wckey_id, buffer);
-		safe_unpackstr(&object->work_dir, buffer);
+		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->admin_comment, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_max_tasks,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_task_pending,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_task_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->script_hash_inx,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->constraints, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->container, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->env_hash_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->extra, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gres_used, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->licenses, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->mod_time, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_offset, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_mem, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state_reason_prev,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit_line, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->system_comment, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_req_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->work_dir, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_22_05_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->account, buffer);
-		safe_unpackstr(&object->admin_comment, buffer);
-		safe_unpackstr(&object->alloc_nodes, buffer);
-		safe_unpackstr(&object->associd, buffer);
-		safe_unpackstr(&object->array_jobid, buffer);
-		safe_unpackstr(&object->array_max_tasks, buffer);
-		safe_unpackstr(&object->array_taskid, buffer);
-		safe_unpackstr(&object->array_task_pending, buffer);
-		safe_unpackstr(&object->array_task_str, buffer);
-		safe_unpackstr(&object->script_hash_inx, buffer);
-		safe_unpackstr(&object->blockid, buffer);
-		safe_unpackstr(&object->constraints, buffer);
-		safe_unpackstr(&object->container, buffer);
-		safe_unpackstr(&object->deleted, buffer);
-		safe_unpackstr(&object->derived_ec, buffer);
-		safe_unpackstr(&object->derived_es, buffer);
-		safe_unpackstr(&object->env_hash_inx, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->flags, buffer);
-		safe_unpackstr(&object->timelimit, buffer);
-		safe_unpackstr(&object->eligible, buffer);
-		safe_unpackstr(&object->end, buffer);
-		safe_unpackstr(&object->gid, buffer);
-		safe_unpackstr(&object->gres_used, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
-		safe_unpackstr(&object->mcs_label, buffer);
-		safe_unpackstr(&object->mod_time, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->het_job_id, buffer);
-		safe_unpackstr(&object->het_job_offset, buffer);
-		safe_unpackstr(&object->partition, buffer);
-		safe_unpackstr(&object->priority, buffer);
-		safe_unpackstr(&object->qos, buffer);
-		safe_unpackstr(&object->req_cpus, buffer);
-		safe_unpackstr(&object->req_mem, buffer);
-		safe_unpackstr(&object->resvid, buffer);
-		safe_unpackstr(&object->start, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->state_reason_prev, buffer);
-		safe_unpackstr(&object->submit, buffer);
-		safe_unpackstr(&object->suspended, buffer);
-		safe_unpackstr(&object->submit_line, buffer);
-		safe_unpackstr(&object->system_comment, buffer);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_req_str, buffer);
-		safe_unpackstr(&object->uid, buffer);
-		safe_unpackstr(&object->wckey, buffer);
-		safe_unpackstr(&object->wckey_id, buffer);
-		safe_unpackstr(&object->work_dir, buffer);
+		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->admin_comment, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_max_tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_task_pending, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_task_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->script_hash_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->constraints, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->container, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->env_hash_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gres_used, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->mod_time, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_offset, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_mem, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state_reason_prev, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit_line, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->system_comment, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_req_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->work_dir, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_21_08_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->account, buffer);
-		safe_unpackstr(&object->admin_comment, buffer);
-		safe_unpackstr(&object->alloc_nodes, buffer);
-		safe_unpackstr(&object->associd, buffer);
-		safe_unpackstr(&object->array_jobid, buffer);
-		safe_unpackstr(&object->array_max_tasks, buffer);
-		safe_unpackstr(&object->array_taskid, buffer);
-		safe_unpackstr(&object->array_task_pending, buffer);
-		safe_unpackstr(&object->array_task_str, buffer);
+		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->admin_comment, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_max_tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_task_pending, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_task_str, &tmp32, buffer);
 		/* job->script was removed in 22.05 */
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		xfree(tmp_char);
-		safe_unpackstr(&object->blockid, buffer);
-		safe_unpackstr(&object->constraints, buffer);
-		safe_unpackstr(&object->deleted, buffer);
-		safe_unpackstr(&object->derived_ec, buffer);
-		safe_unpackstr(&object->derived_es, buffer);
+		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->constraints, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
 		/* job->env was removed in 22.05 */
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		xfree(tmp_char);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->flags, buffer);
-		safe_unpackstr(&object->timelimit, buffer);
-		safe_unpackstr(&object->eligible, buffer);
-		safe_unpackstr(&object->end, buffer);
-		safe_unpackstr(&object->gid, buffer);
-		safe_unpackstr(&object->gres_used, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gres_used, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->mcs_label, buffer);
-		safe_unpackstr(&object->mod_time, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->het_job_id, buffer);
-		safe_unpackstr(&object->het_job_offset, buffer);
-		safe_unpackstr(&object->partition, buffer);
-		safe_unpackstr(&object->priority, buffer);
-		safe_unpackstr(&object->qos, buffer);
-		safe_unpackstr(&object->req_cpus, buffer);
-		safe_unpackstr(&object->req_mem, buffer);
-		safe_unpackstr(&object->resvid, buffer);
-		safe_unpackstr(&object->start, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->state_reason_prev, buffer);
-		safe_unpackstr(&object->submit, buffer);
-		safe_unpackstr(&object->suspended, buffer);
-		safe_unpackstr(&object->system_comment, buffer);
+		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->mod_time, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_offset, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_mem, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state_reason_prev, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->system_comment, &tmp32, buffer);
 		/* job->track_steps removed in 22.05 */
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		xfree(tmp_char);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_req_str, buffer);
-		safe_unpackstr(&object->uid, buffer);
-		safe_unpackstr(&object->wckey, buffer);
-		safe_unpackstr(&object->wckey_id, buffer);
-		safe_unpackstr(&object->work_dir, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_req_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->work_dir, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->account, buffer);
-		safe_unpackstr(&object->admin_comment, buffer);
-		safe_unpackstr(&object->alloc_nodes, buffer);
-		safe_unpackstr(&object->associd, buffer);
-		safe_unpackstr(&object->array_jobid, buffer);
-		safe_unpackstr(&object->array_max_tasks, buffer);
-		safe_unpackstr(&object->array_taskid, buffer);
-		safe_unpackstr(&object->array_task_pending, buffer);
-		safe_unpackstr(&object->array_task_str, buffer);
-		safe_unpackstr(&object->blockid, buffer);
-		safe_unpackstr(&object->constraints, buffer);
-		safe_unpackstr(&object->deleted, buffer);
-		safe_unpackstr(&object->derived_ec, buffer);
-		safe_unpackstr(&object->derived_es, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->flags, buffer);
-		safe_unpackstr(&object->timelimit, buffer);
-		safe_unpackstr(&object->eligible, buffer);
-		safe_unpackstr(&object->end, buffer);
-		safe_unpackstr(&object->gid, buffer);
-		safe_unpackstr(&object->gres_used, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->admin_comment, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_max_tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_task_pending, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_task_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->constraints, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gres_used, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->mcs_label, buffer);
-		safe_unpackstr(&object->mod_time, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->het_job_id, buffer);
-		safe_unpackstr(&object->het_job_offset, buffer);
-		safe_unpackstr(&object->partition, buffer);
-		safe_unpackstr(&object->priority, buffer);
-		safe_unpackstr(&object->qos, buffer);
-		safe_unpackstr(&object->req_cpus, buffer);
-		safe_unpackstr(&object->req_mem, buffer);
-		safe_unpackstr(&object->resvid, buffer);
-		safe_unpackstr(&object->start, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->state_reason_prev, buffer);
-		safe_unpackstr(&object->submit, buffer);
-		safe_unpackstr(&object->suspended, buffer);
-		safe_unpackstr(&object->system_comment, buffer);
+		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->mod_time, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_offset, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_mem, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state_reason_prev, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->system_comment, &tmp32, buffer);
 		/* job->track_steps removed in 22.05 */
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		xfree(tmp_char);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_req_str, buffer);
-		safe_unpackstr(&object->uid, buffer);
-		safe_unpackstr(&object->wckey, buffer);
-		safe_unpackstr(&object->wckey_id, buffer);
-		safe_unpackstr(&object->work_dir, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_req_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->work_dir, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_19_05_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->account, buffer);
-		safe_unpackstr(&object->admin_comment, buffer);
-		safe_unpackstr(&object->alloc_nodes, buffer);
-		safe_unpackstr(&object->associd, buffer);
-		safe_unpackstr(&object->array_jobid, buffer);
-		safe_unpackstr(&object->array_max_tasks, buffer);
-		safe_unpackstr(&object->array_taskid, buffer);
-		safe_unpackstr(&object->blockid, buffer);
-		safe_unpackstr(&object->constraints, buffer);
-		safe_unpackstr(&object->derived_ec, buffer);
-		safe_unpackstr(&object->derived_es, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->flags, buffer);
-		safe_unpackstr(&object->timelimit, buffer);
-		safe_unpackstr(&object->eligible, buffer);
-		safe_unpackstr(&object->end, buffer);
-		safe_unpackstr(&object->gid, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->admin_comment, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_max_tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->constraints, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->mcs_label, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->het_job_id, buffer);
-		safe_unpackstr(&object->het_job_offset, buffer);
-		safe_unpackstr(&object->partition, buffer);
-		safe_unpackstr(&object->priority, buffer);
-		safe_unpackstr(&object->qos, buffer);
-		safe_unpackstr(&object->req_cpus, buffer);
-		safe_unpackstr(&object->req_mem, buffer);
-		safe_unpackstr(&object->resvid, buffer);
-		safe_unpackstr(&object->start, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->state_reason_prev, buffer);
-		safe_unpackstr(&object->submit, buffer);
-		safe_unpackstr(&object->suspended, buffer);
-		safe_unpackstr(&object->system_comment, buffer);
+		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_offset, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_mem, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state_reason_prev, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->system_comment, &tmp32, buffer);
 		/* job->track_steps removed in 22.05 */
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		xfree(tmp_char);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_req_str, buffer);
-		safe_unpackstr(&object->uid, buffer);
-		safe_unpackstr(&object->wckey, buffer);
-		safe_unpackstr(&object->wckey_id, buffer);
-		safe_unpackstr(&object->work_dir, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_req_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->work_dir, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_18_08_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->account, buffer);
-		safe_unpackstr(&object->admin_comment, buffer);
-		safe_unpackstr(&object->alloc_nodes, buffer);
-		safe_unpackstr(&object->associd, buffer);
-		safe_unpackstr(&object->array_jobid, buffer);
-		safe_unpackstr(&object->array_max_tasks, buffer);
-		safe_unpackstr(&object->array_taskid, buffer);
-		safe_unpackstr(&object->blockid, buffer);
-		safe_unpackstr(&object->derived_ec, buffer);
-		safe_unpackstr(&object->derived_es, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->timelimit, buffer);
-		safe_unpackstr(&object->eligible, buffer);
-		safe_unpackstr(&object->end, buffer);
-		safe_unpackstr(&object->gid, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->admin_comment, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_max_tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->mcs_label, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->het_job_id, buffer);
-		safe_unpackstr(&object->het_job_offset, buffer);
-		safe_unpackstr(&object->partition, buffer);
-		safe_unpackstr(&object->priority, buffer);
-		safe_unpackstr(&object->qos, buffer);
-		safe_unpackstr(&object->req_cpus, buffer);
-		safe_unpackstr(&object->req_mem, buffer);
-		safe_unpackstr(&object->resvid, buffer);
-		safe_unpackstr(&object->start, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->submit, buffer);
-		safe_unpackstr(&object->suspended, buffer);
-		safe_unpackstr(&object->system_comment, buffer);
+		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_offset, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_mem, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->system_comment, &tmp32, buffer);
 		/* job->track_steps removed in 22.05 */
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		xfree(tmp_char);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_req_str, buffer);
-		safe_unpackstr(&object->uid, buffer);
-		safe_unpackstr(&object->wckey, buffer);
-		safe_unpackstr(&object->wckey_id, buffer);
-		safe_unpackstr(&object->work_dir, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_req_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->work_dir, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_17_11_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->account, buffer);
-		safe_unpackstr(&object->admin_comment, buffer);
-		safe_unpackstr(&object->alloc_nodes, buffer);
-		safe_unpackstr(&object->associd, buffer);
-		safe_unpackstr(&object->array_jobid, buffer);
-		safe_unpackstr(&object->array_max_tasks, buffer);
-		safe_unpackstr(&object->array_taskid, buffer);
-		safe_unpackstr(&object->blockid, buffer);
-		safe_unpackstr(&object->derived_ec, buffer);
-		safe_unpackstr(&object->derived_es, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->timelimit, buffer);
-		safe_unpackstr(&object->eligible, buffer);
-		safe_unpackstr(&object->end, buffer);
-		safe_unpackstr(&object->gid, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->admin_comment, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_max_tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->mcs_label, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->het_job_id, buffer);
-		safe_unpackstr(&object->het_job_offset, buffer);
-		safe_unpackstr(&object->partition, buffer);
-		safe_unpackstr(&object->priority, buffer);
-		safe_unpackstr(&object->qos, buffer);
-		safe_unpackstr(&object->req_cpus, buffer);
-		safe_unpackstr(&object->req_mem, buffer);
-		safe_unpackstr(&object->resvid, buffer);
-		safe_unpackstr(&object->start, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->submit, buffer);
-		safe_unpackstr(&object->suspended, buffer);
+		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->het_job_offset, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_mem, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
 		/* job->track_steps removed in 22.05 */
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		xfree(tmp_char);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_req_str, buffer);
-		safe_unpackstr(&object->uid, buffer);
-		safe_unpackstr(&object->wckey, buffer);
-		safe_unpackstr(&object->wckey_id, buffer);
-		safe_unpackstr(&object->work_dir, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_req_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->work_dir, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_17_02_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->account, buffer);
-		safe_unpackstr(&object->admin_comment, buffer);
-		safe_unpackstr(&object->alloc_nodes, buffer);
-		safe_unpackstr(&object->associd, buffer);
-		safe_unpackstr(&object->array_jobid, buffer);
-		safe_unpackstr(&object->array_max_tasks, buffer);
-		safe_unpackstr(&object->array_taskid, buffer);
-		safe_unpackstr(&object->blockid, buffer);
-		safe_unpackstr(&object->derived_ec, buffer);
-		safe_unpackstr(&object->derived_es, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->timelimit, buffer);
-		safe_unpackstr(&object->eligible, buffer);
-		safe_unpackstr(&object->end, buffer);
-		safe_unpackstr(&object->gid, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->admin_comment, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_max_tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
 		object->het_job_id = xstrdup("0");
 		object->het_job_offset = xstrdup("4294967294");
-		safe_unpackstr(&object->partition, buffer);
-		safe_unpackstr(&object->priority, buffer);
-		safe_unpackstr(&object->qos, buffer);
-		safe_unpackstr(&object->req_cpus, buffer);
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		if (tmp_char) {
 			uint64_t tmp_uint64 = slurm_atoull(tmp_char);
 			if ((tmp_uint64 & 0x80000000) &&
@@ -1501,50 +1479,50 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 				tmp_char = NULL;
 			}
 		}
-		safe_unpackstr(&object->resvid, buffer);
-		safe_unpackstr(&object->start, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->submit, buffer);
-		safe_unpackstr(&object->suspended, buffer);
+		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
 		/* job->track_steps removed in 22.05 */
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		xfree(tmp_char);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_req_str, buffer);
-		safe_unpackstr(&object->uid, buffer);
-		safe_unpackstr(&object->wckey, buffer);
-		safe_unpackstr(&object->wckey_id, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_req_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey_id, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->account, buffer);
-		safe_unpackstr(&object->alloc_nodes, buffer);
-		safe_unpackstr(&object->associd, buffer);
-		safe_unpackstr(&object->array_jobid, buffer);
-		safe_unpackstr(&object->array_max_tasks, buffer);
-		safe_unpackstr(&object->array_taskid, buffer);
-		safe_unpackstr(&object->blockid, buffer);
-		safe_unpackstr(&object->derived_ec, buffer);
-		safe_unpackstr(&object->derived_es, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->timelimit, buffer);
-		safe_unpackstr(&object->eligible, buffer);
-		safe_unpackstr(&object->end, buffer);
-		safe_unpackstr(&object->gid, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_max_tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
 		object->het_job_id = xstrdup("0");
 		object->het_job_offset = xstrdup("4294967294");
-		safe_unpackstr(&object->partition, buffer);
-		safe_unpackstr(&object->priority, buffer);
-		safe_unpackstr(&object->qos, buffer);
-		safe_unpackstr(&object->req_cpus, buffer);
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		if (tmp_char) {
 			uint64_t tmp_uint64 = slurm_atoull(tmp_char);
 			if ((tmp_uint64 & 0x80000000) &&
@@ -1566,51 +1544,51 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 				tmp_char = NULL;
 			}
 		}
-		safe_unpackstr(&object->resvid, buffer);
-		safe_unpackstr(&object->start, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->submit, buffer);
-		safe_unpackstr(&object->suspended, buffer);
+		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
 		/* job->track_steps removed in 22.05 */
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		xfree(tmp_char);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_req_str, buffer);
-		safe_unpackstr(&object->uid, buffer);
-		safe_unpackstr(&object->wckey, buffer);
-		safe_unpackstr(&object->wckey_id, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_req_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey_id, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_14_11_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->account, buffer);
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		object->tres_alloc_str = xstrdup_printf(
 			"%d=%s", TRES_CPU, tmp_char);
 		xfree(tmp_char);
-		safe_unpackstr(&object->alloc_nodes, buffer);
-		safe_unpackstr(&object->associd, buffer);
-		safe_unpackstr(&object->array_jobid, buffer);
-		safe_unpackstr(&object->array_max_tasks, buffer);
-		safe_unpackstr(&object->array_taskid, buffer);
-		safe_unpackstr(&object->blockid, buffer);
-		safe_unpackstr(&object->derived_ec, buffer);
-		safe_unpackstr(&object->derived_es, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->timelimit, buffer);
-		safe_unpackstr(&object->eligible, buffer);
-		safe_unpackstr(&object->end, buffer);
-		safe_unpackstr(&object->gid, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_max_tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->priority, buffer);
-		safe_unpackstr(&object->qos, buffer);
-		safe_unpackstr(&object->req_cpus, buffer);
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		if (tmp_char) {
 			uint64_t tmp_uint64 = slurm_atoull(tmp_char);
 			if ((tmp_uint64 & 0x80000000) &&
@@ -1632,50 +1610,50 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 				tmp_char = NULL;
 			}
 		}
-		safe_unpackstr(&object->resvid, buffer);
+		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
 		object->het_job_id = xstrdup("0");
 		object->het_job_offset = xstrdup("4294967294");
-		safe_unpackstr(&object->partition, buffer);
-		safe_unpackstr(&object->start, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->submit, buffer);
-		safe_unpackstr(&object->suspended, buffer);
+		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
 		/* job->track_steps removed in 22.05 */
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		xfree(tmp_char);
-		safe_unpackstr(&object->uid, buffer);
-		safe_unpackstr(&object->wckey, buffer);
-		safe_unpackstr(&object->wckey_id, buffer);
+		safe_unpackstr_xmalloc(&object->uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey_id, &tmp32, buffer);
 	} else if (rpc_version >= SLURMDBD_2_6_VERSION) {
-		safe_unpackstr(&object->account, buffer);
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		object->tres_alloc_str = xstrdup_printf(
 			"%d=%s", TRES_CPU, tmp_char);
 		xfree(tmp_char);
-		safe_unpackstr(&object->alloc_nodes, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
 		object->array_taskid = xstrdup("4294967294");
-		safe_unpackstr(&object->associd, buffer);
-		safe_unpackstr(&object->blockid, buffer);
-		safe_unpackstr(&object->derived_ec, buffer);
-		safe_unpackstr(&object->derived_es, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->timelimit, buffer);
-		safe_unpackstr(&object->eligible, buffer);
-		safe_unpackstr(&object->end, buffer);
-		safe_unpackstr(&object->gid, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->priority, buffer);
-		safe_unpackstr(&object->qos, buffer);
-		safe_unpackstr(&object->req_cpus, buffer);
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		if (tmp_char) {
 			uint64_t tmp_uint64 = slurm_atoull(tmp_char);
 			if ((tmp_uint64 & 0x80000000) &&
@@ -1697,63 +1675,63 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 				tmp_char = NULL;
 			}
 		}
-		safe_unpackstr(&object->resvid, buffer);
+		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
 		object->het_job_id = xstrdup("0");
 		object->het_job_offset = xstrdup("4294967294");
-		safe_unpackstr(&object->partition, buffer);
-		safe_unpackstr(&object->start, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->submit, buffer);
-		safe_unpackstr(&object->suspended, buffer);
+		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
 		/* job->track_steps removed in 22.05 */
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		xfree(tmp_char);
-		safe_unpackstr(&object->uid, buffer);
-		safe_unpackstr(&object->wckey, buffer);
-		safe_unpackstr(&object->wckey_id, buffer);
+		safe_unpackstr_xmalloc(&object->uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey_id, &tmp32, buffer);
 	} else {
-		safe_unpackstr(&object->account, buffer);
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		object->tres_alloc_str = xstrdup_printf(
 			"%d=%s", TRES_CPU, tmp_char);
 		xfree(tmp_char);
-		safe_unpackstr(&object->alloc_nodes, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
 		object->array_taskid = xstrdup("4294967294");
-		safe_unpackstr(&object->associd, buffer);
-		safe_unpackstr(&object->blockid, buffer);
-		safe_unpackstr(&object->derived_ec, buffer);
-		safe_unpackstr(&object->derived_es, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->timelimit, buffer);
-		safe_unpackstr(&object->eligible, buffer);
-		safe_unpackstr(&object->end, buffer);
-		safe_unpackstr(&object->gid, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->jobid, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->priority, buffer);
-		safe_unpackstr(&object->qos, buffer);
-		safe_unpackstr(&object->req_cpus, buffer);
-		safe_unpackstr(&object->resvid, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
 		object->het_job_id = xstrdup("0");
 		object->het_job_offset = xstrdup("4294967294");
-		safe_unpackstr(&object->partition, buffer);
-		safe_unpackstr(&object->start, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->submit, buffer);
-		safe_unpackstr(&object->suspended, buffer);
+		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
 		/* job->track_steps removed in 22.05 */
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		xfree(tmp_char);
-		safe_unpackstr(&object->uid, buffer);
-		safe_unpackstr(&object->wckey, buffer);
-		safe_unpackstr(&object->wckey_id, buffer);
+		safe_unpackstr_xmalloc(&object->uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey_id, &tmp32, buffer);
 	}
 	return SLURM_SUCCESS;
 
@@ -1762,9 +1740,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_job_env(local_job_env_t *object, buf_t *buffer)
+static void _pack_local_job_env(local_job_env_t *object, uint16_t rpc_version,
+				buf_t *buffer)
 {
-	/* Always packs as current version */
 	packstr(object->hash_inx, buffer);
 	packstr(object->last_used, buffer);
 	packstr(object->env_hash, buffer);
@@ -1790,9 +1768,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_job_script(local_job_script_t *object, buf_t *buffer)
+static void _pack_local_job_script(local_job_script_t *object,
+				   uint16_t rpc_version, buf_t *buffer)
 {
-	/* Always packs as current version */
 	packstr(object->hash_inx, buffer);
 	packstr(object->last_used, buffer);
 	packstr(object->script_hash, buffer);
@@ -1818,9 +1796,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_resv(local_resv_t *object, buf_t *buffer)
+static void _pack_local_resv(local_resv_t *object, uint16_t rpc_version,
+			     buf_t *buffer)
 {
-	/* Always packs as current version */
 	packstr(object->assocs, buffer);
 	packstr(object->comment, buffer);
 	packstr(object->deleted, buffer);
@@ -1840,66 +1818,67 @@ static void _pack_local_resv(local_resv_t *object, buf_t *buffer)
 static int _unpack_local_resv(local_resv_t *object, uint16_t rpc_version,
 			      buf_t *buffer)
 {
+	uint32_t tmp32;
 	char *tmp_char;
 
 	if (rpc_version >= SLURM_23_02_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->assocs, buffer);
-		safe_unpackstr(&object->comment, buffer);
-		safe_unpackstr(&object->deleted, buffer);
-		safe_unpackstr(&object->flags, buffer);
-		safe_unpackstr(&object->id, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodes, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->time_end, buffer);
-		safe_unpackstr(&object->time_start, buffer);
-		safe_unpackstr(&object->tres_str, buffer);
-		safe_unpackstr(&object->unused_wall, buffer);
+		safe_unpackstr_xmalloc(&object->assocs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->comment, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->unused_wall, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->assocs, buffer);
-		safe_unpackstr(&object->deleted, buffer);
-		safe_unpackstr(&object->flags, buffer);
-		safe_unpackstr(&object->id, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodes, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->time_end, buffer);
-		safe_unpackstr(&object->time_start, buffer);
-		safe_unpackstr(&object->tres_str, buffer);
-		safe_unpackstr(&object->unused_wall, buffer);
+		safe_unpackstr_xmalloc(&object->assocs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->unused_wall, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_17_11_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->assocs, buffer);
-		safe_unpackstr(&object->flags, buffer);
-		safe_unpackstr(&object->id, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodes, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->time_end, buffer);
-		safe_unpackstr(&object->time_start, buffer);
-		safe_unpackstr(&object->tres_str, buffer);
-		safe_unpackstr(&object->unused_wall, buffer);
+		safe_unpackstr_xmalloc(&object->assocs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->unused_wall, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->assocs, buffer);
-		safe_unpackstr(&object->flags, buffer);
-		safe_unpackstr(&object->id, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodes, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->time_end, buffer);
-		safe_unpackstr(&object->time_start, buffer);
-		safe_unpackstr(&object->tres_str, buffer);
+		safe_unpackstr_xmalloc(&object->assocs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_str, &tmp32, buffer);
 	} else {
-		safe_unpackstr(&object->assocs, buffer);
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&object->assocs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		object->tres_str = xstrdup_printf("%d=%s", TRES_CPU, tmp_char);
 		xfree(tmp_char);
-		safe_unpackstr(&object->flags, buffer);
-		safe_unpackstr(&object->id, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodes, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->time_end, buffer);
-		safe_unpackstr(&object->time_start, buffer);
+		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -1909,9 +1888,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_step(local_step_t *object, buf_t *buffer)
+static void _pack_local_step(local_step_t *object, uint16_t rpc_version,
+			     buf_t *buffer)
 {
-	/* Always packs as current version */
 	packstr(object->act_cpufreq, buffer);
 	packstr(object->deleted, buffer);
 	packstr(object->exit_code, buffer);
@@ -1963,237 +1942,317 @@ static void _pack_local_step(local_step_t *object, buf_t *buffer)
 static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 			      buf_t *buffer)
 {
+	uint32_t tmp32;
 	char *tmp_char;
 
 	if (rpc_version >= SLURM_22_05_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->act_cpufreq, buffer);
-		safe_unpackstr(&object->deleted, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->consumed_energy, buffer);
-		safe_unpackstr(&object->container, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->nodes, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->period_end, buffer);
-		safe_unpackstr(&object->period_start, buffer);
-		safe_unpackstr(&object->period_suspended, buffer);
-		safe_unpackstr(&object->req_cpufreq_min, buffer);
-		safe_unpackstr(&object->req_cpufreq_max, buffer);
-		safe_unpackstr(&object->req_cpufreq_gov, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->stepid, buffer);
-		safe_unpackstr(&object->step_het_comp, buffer);
-		safe_unpackstr(&object->submit_line, buffer);
-		safe_unpackstr(&object->sys_sec, buffer);
-		safe_unpackstr(&object->sys_usec, buffer);
-		safe_unpackstr(&object->tasks, buffer);
-		safe_unpackstr(&object->task_dist, buffer);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_usage_in_ave, buffer);
-		safe_unpackstr(&object->tres_usage_in_max, buffer);
-		safe_unpackstr(&object->tres_usage_in_max_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_in_max_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_in_min, buffer);
-		safe_unpackstr(&object->tres_usage_in_min_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_in_min_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_in_tot, buffer);
-		safe_unpackstr(&object->tres_usage_out_ave, buffer);
-		safe_unpackstr(&object->tres_usage_out_max, buffer);
-		safe_unpackstr(&object->tres_usage_out_max_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_out_max_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_out_min, buffer);
-		safe_unpackstr(&object->tres_usage_out_min_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_out_min_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_out_tot, buffer);
-		safe_unpackstr(&object->user_sec, buffer);
-		safe_unpackstr(&object->user_usec, buffer);
+		safe_unpackstr_xmalloc(&object->act_cpufreq, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->consumed_energy,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->container, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_suspended,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_min,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_max,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_gov,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->step_het_comp, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit_line, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->task_dist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_ave,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_tot,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_ave,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_tot,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_usec, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_21_08_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->act_cpufreq, buffer);
-		safe_unpackstr(&object->deleted, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->consumed_energy, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->act_cpufreq, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->consumed_energy,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->nodes, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->period_end, buffer);
-		safe_unpackstr(&object->period_start, buffer);
-		safe_unpackstr(&object->period_suspended, buffer);
-		safe_unpackstr(&object->req_cpufreq_min, buffer);
-		safe_unpackstr(&object->req_cpufreq_max, buffer);
-		safe_unpackstr(&object->req_cpufreq_gov, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->stepid, buffer);
-		safe_unpackstr(&object->step_het_comp, buffer);
-		safe_unpackstr(&object->submit_line, buffer);
-		safe_unpackstr(&object->sys_sec, buffer);
-		safe_unpackstr(&object->sys_usec, buffer);
-		safe_unpackstr(&object->tasks, buffer);
-		safe_unpackstr(&object->task_dist, buffer);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_usage_in_ave, buffer);
-		safe_unpackstr(&object->tres_usage_in_max, buffer);
-		safe_unpackstr(&object->tres_usage_in_max_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_in_max_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_in_min, buffer);
-		safe_unpackstr(&object->tres_usage_in_min_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_in_min_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_in_tot, buffer);
-		safe_unpackstr(&object->tres_usage_out_ave, buffer);
-		safe_unpackstr(&object->tres_usage_out_max, buffer);
-		safe_unpackstr(&object->tres_usage_out_max_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_out_max_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_out_min, buffer);
-		safe_unpackstr(&object->tres_usage_out_min_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_out_min_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_out_tot, buffer);
-		safe_unpackstr(&object->user_sec, buffer);
-		safe_unpackstr(&object->user_usec, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_suspended,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_min,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_max,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_gov,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->step_het_comp, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit_line, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->task_dist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_ave,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_tot,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_ave,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_tot,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_usec, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->act_cpufreq, buffer);
-		safe_unpackstr(&object->deleted, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->consumed_energy, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->act_cpufreq, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->consumed_energy,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->nodes, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->period_end, buffer);
-		safe_unpackstr(&object->period_start, buffer);
-		safe_unpackstr(&object->period_suspended, buffer);
-		safe_unpackstr(&object->req_cpufreq_min, buffer);
-		safe_unpackstr(&object->req_cpufreq_max, buffer);
-		safe_unpackstr(&object->req_cpufreq_gov, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->stepid, buffer);
-		safe_unpackstr(&object->step_het_comp, buffer);
-		safe_unpackstr(&object->sys_sec, buffer);
-		safe_unpackstr(&object->sys_usec, buffer);
-		safe_unpackstr(&object->tasks, buffer);
-		safe_unpackstr(&object->task_dist, buffer);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_usage_in_ave, buffer);
-		safe_unpackstr(&object->tres_usage_in_max, buffer);
-		safe_unpackstr(&object->tres_usage_in_max_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_in_max_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_in_min, buffer);
-		safe_unpackstr(&object->tres_usage_in_min_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_in_min_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_in_tot, buffer);
-		safe_unpackstr(&object->tres_usage_out_ave, buffer);
-		safe_unpackstr(&object->tres_usage_out_max, buffer);
-		safe_unpackstr(&object->tres_usage_out_max_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_out_max_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_out_min, buffer);
-		safe_unpackstr(&object->tres_usage_out_min_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_out_min_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_out_tot, buffer);
-		safe_unpackstr(&object->user_sec, buffer);
-		safe_unpackstr(&object->user_usec, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_suspended,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_min,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_max,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_gov,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->step_het_comp, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->task_dist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_ave,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_tot,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_ave,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_nodeid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_taskid,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_tot,
+				       &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_usec, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->act_cpufreq, buffer);
-		safe_unpackstr(&object->deleted, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->consumed_energy, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->act_cpufreq, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->consumed_energy, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->nodes, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->period_end, buffer);
-		safe_unpackstr(&object->period_start, buffer);
-		safe_unpackstr(&object->period_suspended, buffer);
-		safe_unpackstr(&object->req_cpufreq_min, buffer);
-		safe_unpackstr(&object->req_cpufreq_max, buffer);
-		safe_unpackstr(&object->req_cpufreq_gov, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->stepid, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_suspended, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_min, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_max, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_gov, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
 		_convert_old_step_id(&object->stepid);
-		safe_unpackstr(&object->sys_sec, buffer);
-		safe_unpackstr(&object->sys_usec, buffer);
-		safe_unpackstr(&object->tasks, buffer);
-		safe_unpackstr(&object->task_dist, buffer);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_usage_in_ave, buffer);
-		safe_unpackstr(&object->tres_usage_in_max, buffer);
-		safe_unpackstr(&object->tres_usage_in_max_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_in_max_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_in_min, buffer);
-		safe_unpackstr(&object->tres_usage_in_min_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_in_min_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_in_tot, buffer);
-		safe_unpackstr(&object->tres_usage_out_ave, buffer);
-		safe_unpackstr(&object->tres_usage_out_max, buffer);
-		safe_unpackstr(&object->tres_usage_out_max_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_out_max_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_out_min, buffer);
-		safe_unpackstr(&object->tres_usage_out_min_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_out_min_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_out_tot, buffer);
-		safe_unpackstr(&object->user_sec, buffer);
-		safe_unpackstr(&object->user_usec, buffer);
+		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->task_dist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_ave, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_nodeid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_taskid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_nodeid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_taskid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_tot, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_ave, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_nodeid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_taskid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_nodeid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_taskid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_tot, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_usec, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_18_08_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->act_cpufreq, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->consumed_energy, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->act_cpufreq, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->consumed_energy, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->nodes, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->period_end, buffer);
-		safe_unpackstr(&object->period_start, buffer);
-		safe_unpackstr(&object->period_suspended, buffer);
-		safe_unpackstr(&object->req_cpufreq_min, buffer);
-		safe_unpackstr(&object->req_cpufreq_max, buffer);
-		safe_unpackstr(&object->req_cpufreq_gov, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->stepid, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_suspended, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_min, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_max, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_gov, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
 		_convert_old_step_id(&object->stepid);
-		safe_unpackstr(&object->sys_sec, buffer);
-		safe_unpackstr(&object->sys_usec, buffer);
-		safe_unpackstr(&object->tasks, buffer);
-		safe_unpackstr(&object->task_dist, buffer);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->tres_usage_in_ave, buffer);
-		safe_unpackstr(&object->tres_usage_in_max, buffer);
-		safe_unpackstr(&object->tres_usage_in_max_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_in_max_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_in_min, buffer);
-		safe_unpackstr(&object->tres_usage_in_min_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_in_min_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_in_tot, buffer);
-		safe_unpackstr(&object->tres_usage_out_ave, buffer);
-		safe_unpackstr(&object->tres_usage_out_max, buffer);
-		safe_unpackstr(&object->tres_usage_out_max_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_out_max_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_out_min, buffer);
-		safe_unpackstr(&object->tres_usage_out_min_nodeid, buffer);
-		safe_unpackstr(&object->tres_usage_out_min_taskid, buffer);
-		safe_unpackstr(&object->tres_usage_out_tot, buffer);
-		safe_unpackstr(&object->user_sec, buffer);
-		safe_unpackstr(&object->user_usec, buffer);
+		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->task_dist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_ave, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_nodeid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_taskid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_nodeid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_taskid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_tot, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_ave, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_nodeid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_taskid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_nodeid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_taskid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_tot, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_usec, &tmp32, buffer);
 	} else if (rpc_version >= SLURM_15_08_PROTOCOL_VERSION) {
 		char *ave_cpu;
 		char *ave_disk_read;
@@ -2220,38 +2279,38 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		char *min_cpu_node;
 		char *min_cpu_task;
 
-		safe_unpackstr(&object->act_cpufreq, buffer);
-		safe_unpackstr(&ave_cpu, buffer);
-		safe_unpackstr(&ave_disk_read, buffer);
-		safe_unpackstr(&ave_disk_write, buffer);
-		safe_unpackstr(&ave_pages, buffer);
-		safe_unpackstr(&ave_rss, buffer);
-		safe_unpackstr(&ave_vsize, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->consumed_energy, buffer);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->act_cpufreq, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&ave_cpu, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&ave_disk_read, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&ave_disk_write, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&ave_pages, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&ave_rss, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&ave_vsize, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->consumed_energy, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&max_disk_read, buffer);
-		safe_unpackstr(&max_disk_read_node, buffer);
-		safe_unpackstr(&max_disk_read_task, buffer);
-		safe_unpackstr(&max_disk_write, buffer);
-		safe_unpackstr(&max_disk_write_node, buffer);
-		safe_unpackstr(&max_disk_write_task, buffer);
-		safe_unpackstr(&max_pages, buffer);
-		safe_unpackstr(&max_pages_node, buffer);
-		safe_unpackstr(&max_pages_task, buffer);
-		safe_unpackstr(&max_rss, buffer);
-		safe_unpackstr(&max_rss_node, buffer);
-		safe_unpackstr(&max_rss_task, buffer);
-		safe_unpackstr(&max_vsize, buffer);
-		safe_unpackstr(&max_vsize_node, buffer);
-		safe_unpackstr(&max_vsize_task, buffer);
-		safe_unpackstr(&min_cpu, buffer);
-		safe_unpackstr(&min_cpu_node, buffer);
-		safe_unpackstr(&min_cpu_task, buffer);
+		safe_unpackstr_xmalloc(&max_disk_read, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_disk_read_node, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_disk_read_task, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_disk_write, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_disk_write_node, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_disk_write_task, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_pages, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_pages_node, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_pages_task, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_rss, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_rss_node, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_rss_task, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_vsize, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_vsize_node, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_vsize_task, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&min_cpu, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&min_cpu_node, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&min_cpu_task, &tmp32, buffer);
 
 		if (atol(min_cpu) != NO_VAL) {
 			object->tres_usage_in_ave = xstrdup_printf(
@@ -2307,26 +2366,26 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 				TRES_CPU, min_cpu_task);
 		}
 
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->nodes, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->period_end, buffer);
-		safe_unpackstr(&object->period_start, buffer);
-		safe_unpackstr(&object->period_suspended, buffer);
-		safe_unpackstr(&object->req_cpufreq_min, buffer);
-		safe_unpackstr(&object->req_cpufreq_max, buffer);
-		safe_unpackstr(&object->req_cpufreq_gov, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->stepid, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_suspended, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_min, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_max, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_gov, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
 		_convert_old_step_id(&object->stepid);
-		safe_unpackstr(&object->sys_sec, buffer);
-		safe_unpackstr(&object->sys_usec, buffer);
-		safe_unpackstr(&object->tasks, buffer);
-		safe_unpackstr(&object->task_dist, buffer);
-		safe_unpackstr(&object->tres_alloc_str, buffer);
-		safe_unpackstr(&object->user_sec, buffer);
-		safe_unpackstr(&object->user_usec, buffer);
+		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->task_dist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_usec, &tmp32, buffer);
 
 		xfree(ave_cpu);
 		xfree(ave_disk_read);
@@ -2378,42 +2437,42 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 		char *min_cpu_node;
 		char *min_cpu_task;
 
-		safe_unpackstr(&object->act_cpufreq, buffer);
-		safe_unpackstr(&ave_cpu, buffer);
-		safe_unpackstr(&ave_disk_read, buffer);
-		safe_unpackstr(&ave_disk_write, buffer);
-		safe_unpackstr(&ave_pages, buffer);
-		safe_unpackstr(&ave_rss, buffer);
-		safe_unpackstr(&ave_vsize, buffer);
-		safe_unpackstr(&object->exit_code, buffer);
-		safe_unpackstr(&object->consumed_energy, buffer);
-		safe_unpackstr(&tmp_char, buffer);
+		safe_unpackstr_xmalloc(&object->act_cpufreq, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&ave_cpu, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&ave_disk_read, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&ave_disk_write, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&ave_pages, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&ave_rss, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&ave_vsize, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->consumed_energy, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&tmp_char, &tmp32, buffer);
 		object->tres_alloc_str = xstrdup_printf(
 			"%d=%s", TRES_CPU, tmp_char);
 		xfree(tmp_char);
-		safe_unpackstr(&object->job_db_inx, buffer);
-		safe_unpackstr(&object->kill_requid, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		/* kill_requid is NULL instead of -1 starting in 22.05 */
 		if (!xstrcmp(object->kill_requid, "-1"))
 			xfree(object->kill_requid);
-		safe_unpackstr(&max_disk_read, buffer);
-		safe_unpackstr(&max_disk_read_node, buffer);
-		safe_unpackstr(&max_disk_read_task, buffer);
-		safe_unpackstr(&max_disk_write, buffer);
-		safe_unpackstr(&max_disk_write_node, buffer);
-		safe_unpackstr(&max_disk_write_task, buffer);
-		safe_unpackstr(&max_pages, buffer);
-		safe_unpackstr(&max_pages_node, buffer);
-		safe_unpackstr(&max_pages_task, buffer);
-		safe_unpackstr(&max_rss, buffer);
-		safe_unpackstr(&max_rss_node, buffer);
-		safe_unpackstr(&max_rss_task, buffer);
-		safe_unpackstr(&max_vsize, buffer);
-		safe_unpackstr(&max_vsize_node, buffer);
-		safe_unpackstr(&max_vsize_task, buffer);
-		safe_unpackstr(&min_cpu, buffer);
-		safe_unpackstr(&min_cpu_node, buffer);
-		safe_unpackstr(&min_cpu_task, buffer);
+		safe_unpackstr_xmalloc(&max_disk_read, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_disk_read_node, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_disk_read_task, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_disk_write, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_disk_write_node, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_disk_write_task, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_pages, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_pages_node, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_pages_task, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_rss, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_rss_node, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_rss_task, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_vsize, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_vsize_node, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&max_vsize_task, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&min_cpu, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&min_cpu_node, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&min_cpu_task, &tmp32, buffer);
 
 		if (atol(min_cpu) != NO_VAL) {
 			object->tres_usage_in_ave = xstrdup_printf(
@@ -2469,23 +2528,23 @@ static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
 				TRES_CPU, min_cpu_task);
 		}
 
-		safe_unpackstr(&object->name, buffer);
-		safe_unpackstr(&object->nodelist, buffer);
-		safe_unpackstr(&object->nodes, buffer);
-		safe_unpackstr(&object->node_inx, buffer);
-		safe_unpackstr(&object->period_end, buffer);
-		safe_unpackstr(&object->period_start, buffer);
-		safe_unpackstr(&object->period_suspended, buffer);
-		safe_unpackstr(&object->req_cpufreq_max, buffer);
-		safe_unpackstr(&object->state, buffer);
-		safe_unpackstr(&object->stepid, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_suspended, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_max, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
 		_convert_old_step_id(&object->stepid);
-		safe_unpackstr(&object->sys_sec, buffer);
-		safe_unpackstr(&object->sys_usec, buffer);
-		safe_unpackstr(&object->tasks, buffer);
-		safe_unpackstr(&object->task_dist, buffer);
-		safe_unpackstr(&object->user_sec, buffer);
-		safe_unpackstr(&object->user_usec, buffer);
+		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->task_dist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_usec, &tmp32, buffer);
 
 		xfree(ave_cpu);
 		xfree(ave_disk_read);
@@ -2522,9 +2581,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_suspend(local_suspend_t *object, buf_t *buffer)
+static void _pack_local_suspend(local_suspend_t *object, uint16_t rpc_version,
+				buf_t *buffer)
 {
-	/* Always packs as current version */
 	packstr(object->associd, buffer);
 	packstr(object->job_db_inx, buffer);
 	packstr(object->period_end, buffer);
@@ -2536,10 +2595,12 @@ static void _pack_local_suspend(local_suspend_t *object, buf_t *buffer)
 static int _unpack_local_suspend(local_suspend_t *object, uint16_t rpc_version,
 				 buf_t *buffer)
 {
-	safe_unpackstr(&object->associd, buffer);
-	safe_unpackstr(&object->job_db_inx, buffer);
-	safe_unpackstr(&object->period_end, buffer);
-	safe_unpackstr(&object->period_start, buffer);
+	uint32_t tmp32;
+
+	safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+	safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+	safe_unpackstr_xmalloc(&object->period_end, &tmp32, buffer);
+	safe_unpackstr_xmalloc(&object->period_start, &tmp32, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -2548,9 +2609,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_txn(local_txn_t *object, buf_t *buffer)
+static void _pack_local_txn(local_txn_t *object, uint16_t rpc_version,
+			    buf_t *buffer)
 {
-	/* Always packs as current version */
 	packstr(object->id, buffer);
 	packstr(object->timestamp, buffer);
 	packstr(object->action, buffer);
@@ -2565,13 +2626,15 @@ static void _pack_local_txn(local_txn_t *object, buf_t *buffer)
 static int _unpack_local_txn(local_txn_t *object, uint16_t rpc_version,
 			     buf_t *buffer)
 {
-	safe_unpackstr(&object->id, buffer);
-	safe_unpackstr(&object->timestamp, buffer);
-	safe_unpackstr(&object->action, buffer);
-	safe_unpackstr(&object->name, buffer);
-	safe_unpackstr(&object->actor, buffer);
-	safe_unpackstr(&object->info, buffer);
-	safe_unpackstr(&object->cluster, buffer);
+	uint32_t tmp32;
+
+	safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
+	safe_unpackstr_xmalloc(&object->timestamp, &tmp32, buffer);
+	safe_unpackstr_xmalloc(&object->action, &tmp32, buffer);
+	safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+	safe_unpackstr_xmalloc(&object->actor, &tmp32, buffer);
+	safe_unpackstr_xmalloc(&object->info, &tmp32, buffer);
+	safe_unpackstr_xmalloc(&object->cluster, &tmp32, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -2580,9 +2643,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_usage(local_usage_t *object, buf_t *buffer)
+static void _pack_local_usage(local_usage_t *object, uint16_t rpc_version,
+			      buf_t *buffer)
 {
-	/* Always packs as current version */
 	packstr(object->id, buffer);
 	packstr(object->tres_id, buffer);
 	packstr(object->time_start, buffer);
@@ -2597,19 +2660,21 @@ static void _pack_local_usage(local_usage_t *object, buf_t *buffer)
 static int _unpack_local_usage(local_usage_t *object, uint16_t rpc_version,
 			       buf_t *buffer)
 {
+	uint32_t tmp32;
+
 	if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->id, buffer);
-		safe_unpackstr(&object->tres_id, buffer);
-		safe_unpackstr(&object->time_start, buffer);
-		safe_unpackstr(&object->alloc_secs, buffer);
-		safe_unpackstr(&object->creation_time, buffer);
-		safe_unpackstr(&object->mod_time, buffer);
-		safe_unpackstr(&object->deleted, buffer);
+		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->creation_time, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->mod_time, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
 	} else {
-		safe_unpackstr(&object->id, buffer);
-		safe_unpackstr(&object->tres_id, buffer);
-		safe_unpackstr(&object->time_start, buffer);
-		safe_unpackstr(&object->alloc_secs, buffer);
+		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_secs, &tmp32, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -2620,9 +2685,8 @@ unpack_error:
 }
 
 static void _pack_local_cluster_usage(local_cluster_usage_t *object,
-				      buf_t *buffer)
+				      uint16_t rpc_version, buf_t *buffer)
 {
-	/* Always packs as current version */
 	packstr(object->tres_id, buffer);
 	packstr(object->time_start, buffer);
 	packstr(object->tres_cnt, buffer);
@@ -2642,28 +2706,30 @@ static void _pack_local_cluster_usage(local_cluster_usage_t *object,
 static int _unpack_local_cluster_usage(local_cluster_usage_t *object,
 				       uint16_t rpc_version, buf_t *buffer)
 {
+	uint32_t tmp32;
+
 	if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
-		safe_unpackstr(&object->tres_id, buffer);
-		safe_unpackstr(&object->time_start, buffer);
-		safe_unpackstr(&object->tres_cnt, buffer);
-		safe_unpackstr(&object->alloc_secs, buffer);
-		safe_unpackstr(&object->down_secs, buffer);
-		safe_unpackstr(&object->pdown_secs, buffer);
-		safe_unpackstr(&object->idle_secs, buffer);
-		safe_unpackstr(&object->plan_secs, buffer);
-		safe_unpackstr(&object->over_secs, buffer);
-		safe_unpackstr(&object->creation_time, buffer);
-		safe_unpackstr(&object->mod_time, buffer);
-		safe_unpackstr(&object->deleted, buffer);
+		safe_unpackstr_xmalloc(&object->tres_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_cnt, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->down_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->pdown_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->idle_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->plan_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->over_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->creation_time, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->mod_time, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
 	} else {
-		safe_unpackstr(&object->tres_id, buffer);
-		safe_unpackstr(&object->time_start, buffer);
-		safe_unpackstr(&object->tres_cnt, buffer);
-		safe_unpackstr(&object->alloc_secs, buffer);
-		safe_unpackstr(&object->down_secs, buffer);
-		safe_unpackstr(&object->idle_secs, buffer);
-		safe_unpackstr(&object->plan_secs, buffer);
-		safe_unpackstr(&object->over_secs, buffer);
+		safe_unpackstr_xmalloc(&object->tres_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_cnt, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->down_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->idle_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->plan_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->over_secs, &tmp32, buffer);
 	}
 
 	return SLURM_SUCCESS;
@@ -3323,9 +3389,6 @@ static buf_t *_pack_archive_events(MYSQL_RES *result, char *cluster_name,
 		memset(&event, 0, sizeof(local_event_t));
 
 		event.cluster_nodes = row[EVENT_REQ_CNODES];
-		event.extra = row[EVENT_REQ_EXTRA];
-		event.instance_id = row[EVENT_REQ_INSTANCE_ID];
-		event.instance_type = row[EVENT_REQ_INSTANCE_TYPE];
 		event.node_name = row[EVENT_REQ_NODE];
 		event.period_end = row[EVENT_REQ_END];
 		event.period_start = row[EVENT_REQ_START];
@@ -3334,7 +3397,7 @@ static buf_t *_pack_archive_events(MYSQL_RES *result, char *cluster_name,
 		event.state = row[EVENT_REQ_STATE];
 		event.tres_str = row[EVENT_REQ_TRES];
 
-		_pack_local_event(&event, buffer);
+		_pack_local_event(&event, SLURM_PROTOCOL_VERSION, buffer);
 	}
 
 	return buffer;
@@ -3376,9 +3439,6 @@ static char *_load_events(uint16_t rpc_version, buf_t *buffer,
 			     object.period_end,
 			     object.node_name,
 			     object.cluster_nodes,
-			     object.extra,
-			     object.instance_id,
-			     object.instance_type,
 			     object.reason,
 			     object.reason_uid,
 			     object.state,
@@ -3471,7 +3531,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.wckey_id = row[JOB_REQ_WCKEYID];
 		job.work_dir = row[JOB_REQ_WORK_DIR];
 
-		_pack_local_job(&job, buffer);
+		_pack_local_job(&job, SLURM_PROTOCOL_VERSION, buffer);
 	}
 
 	return buffer;
@@ -3748,7 +3808,7 @@ static buf_t *_pack_archive_job_env(MYSQL_RES *result, char *cluster_name,
 		job.env_hash = row[JOB_ENV_ENV_HASH];
 		job.env_vars = row[JOB_ENV_ENV_VARS];
 
-		_pack_local_job_env(&job, buffer);
+		_pack_local_job_env(&job, SLURM_PROTOCOL_VERSION, buffer);
 	}
 
 	return buffer;
@@ -3856,7 +3916,7 @@ static buf_t *_pack_archive_job_script(MYSQL_RES *result, char *cluster_name,
 		job.script_hash = row[JOB_SCRIPT_SCRIPT_HASH];
 		job.batch_script = row[JOB_SCRIPT_BATCH_SCRIPT];
 
-		_pack_local_job_script(&job, buffer);
+		_pack_local_job_script(&job, SLURM_PROTOCOL_VERSION, buffer);
 	}
 
 	return buffer;
@@ -3974,7 +4034,7 @@ static buf_t *_pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
 		resv.unused_wall = row[RESV_REQ_UNUSED];
 		resv.comment = row[RESV_REQ_COMMENT];
 
-		_pack_local_resv(&resv, buffer);
+		_pack_local_resv(&resv, SLURM_PROTOCOL_VERSION, buffer);
 	}
 
 	return buffer;
@@ -4147,7 +4207,7 @@ static buf_t *_pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 		step.user_sec = row[STEP_REQ_USER_SEC];
 		step.user_usec = row[STEP_REQ_USER_USEC];
 
-		_pack_local_step(&step, buffer);
+		_pack_local_step(&step, SLURM_PROTOCOL_VERSION, buffer);
 	}
 
 	return buffer;
@@ -4350,7 +4410,7 @@ static buf_t *_pack_archive_suspends(MYSQL_RES *result, char *cluster_name,
 		suspend.period_start = row[SUSPEND_REQ_START];
 		suspend.period_end = row[SUSPEND_REQ_END];
 
-		_pack_local_suspend(&suspend, buffer);
+		_pack_local_suspend(&suspend, SLURM_PROTOCOL_VERSION, buffer);
 	}
 
 	return buffer;
@@ -4432,7 +4492,7 @@ static buf_t *_pack_archive_txns(MYSQL_RES *result, char *cluster_name,
 		txn.info = row[TXN_REQ_INFO];
 		txn.cluster = row[TXN_REQ_CLUSTER];
 
-		_pack_local_txn(&txn, buffer);
+		_pack_local_txn(&txn, SLURM_PROTOCOL_VERSION, buffer);
 	}
 
 	return buffer;
@@ -4547,7 +4607,7 @@ static buf_t *_pack_archive_usage(MYSQL_RES *result, char *cluster_name,
 		usage.mod_time = row[USAGE_MOD_TIME];
 		usage.deleted = row[USAGE_DELETED];
 
-		_pack_local_usage(&usage, buffer);
+		_pack_local_usage(&usage, SLURM_PROTOCOL_VERSION, buffer);
 	}
 
 	return buffer;
@@ -4679,7 +4739,8 @@ static buf_t *_pack_archive_cluster_usage(MYSQL_RES *result, char *cluster_name,
 		usage.mod_time = row[CLUSTER_MOD_TIME];
 		usage.deleted = row[CLUSTER_DELETED];
 
-		_pack_local_cluster_usage(&usage, buffer);
+		_pack_local_cluster_usage(
+			&usage, SLURM_PROTOCOL_VERSION, buffer);
 	}
 
 	return buffer;
@@ -5413,7 +5474,7 @@ static int _process_archive_data(char **data_in, uint32_t data_size,
 	buf_t *buffer = NULL;
 	time_t buf_time;
 	uint16_t type = 0, ver = 0, period = 0;
-	uint32_t rec_cnt = 0;
+	uint32_t rec_cnt = 0, tmp32 = 0;
 	uint32_t rec_cnt_total = 0, rec_cnt_left = 0, pass_cnt = 0;
 	char *cluster_name = NULL;
 
@@ -5439,7 +5500,7 @@ static int _process_archive_data(char **data_in, uint32_t data_size,
 	}
 	safe_unpack_time(&buf_time, buffer);
 	safe_unpack16(&type, buffer);
-	safe_unpackstr(&cluster_name, buffer);
+	safe_unpackstr_xmalloc(&cluster_name, &tmp32, buffer);
 	safe_unpack32(&rec_cnt, buffer);
 
 	if (!rec_cnt) {

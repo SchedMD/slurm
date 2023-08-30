@@ -1,3 +1,3 @@
 # Makefile for ext sensors plugins
 
-SUBDIRS = rrd
+SUBDIRS = rrd none

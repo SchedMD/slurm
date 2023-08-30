@@ -278,8 +278,8 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 			/* rgt isn't always valid coming from the
 			 * association manager (so don't print it).
 			 */
-			printf("Lineage=%s DefAssoc=%s%s",
-			       assoc_rec->lineage,
+			printf("Lft=%u DefAssoc=%s%s",
+			       assoc_rec->lft,
 			       assoc_rec->is_def ? "Yes" : "No",
 			       new_line_char);
 

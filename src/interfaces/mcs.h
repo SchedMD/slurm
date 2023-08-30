@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mcs.h - Define mcs plugin functions
+ *  slurm_mcs.h - Define mcs plugin functions
  *****************************************************************************
  *  Copyright (C) 2015 CEA/DAM/DIF
  *  Written by Aline Roy <aline.roy@cea.fr>
@@ -34,15 +34,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_MCS_H
-#define _INTERFACES_MCS_H
+#ifndef _SLURM_MCS_H
+#define _SLURM_MCS_H
 
 #include <inttypes.h>
 
 #include "src/slurmctld/slurmctld.h"
 
-extern int mcs_g_init(void);
-extern int mcs_g_fini(void);
+#define MCS_SELECT_NOSELECT		0x00
+#define MCS_SELECT_ONDEMANDSELECT	0x01
+#define MCS_SELECT_SELECT		0x02
+
+extern int slurm_mcs_init(void);
+extern int slurm_mcs_fini(void);
 extern int slurm_mcs_reconfig(void);
 extern char *slurm_mcs_get_params_specific(void);
 extern int slurm_mcs_reset_params(void);
@@ -54,4 +58,4 @@ extern int mcs_g_set_mcs_label(job_record_t *job_ptr, char *label);
 extern int mcs_g_check_mcs_label(uint32_t user_id, char *mcs_label,
 				 bool assoc_locked);
 
-#endif
+#endif /*_SLURM_MCS_H */

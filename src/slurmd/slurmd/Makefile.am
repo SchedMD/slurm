@@ -25,7 +25,6 @@ slurmd_LDFLAGS = $(CMD_LDFLAGS) $(depend_ldflags)
 
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
-	cred_context.c cred_context.h \
 	req.c req.h \
 	get_mach_stat.c get_mach_stat.h
 

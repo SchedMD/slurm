@@ -57,8 +57,6 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_FINI;
 	} else if (!xstrcasecmp(msg_type, "Add Accounts")) {
 		return DBD_ADD_ACCOUNTS;
-	} else if (!xstrcasecmp(msg_type, "Add Accounts Cond")) {
-		return DBD_ADD_ACCOUNTS_COND;
 	} else if (!xstrcasecmp(msg_type, "Add Account Coord")) {
 		return DBD_ADD_ACCOUNT_COORDS;
 	} else if (!xstrcasecmp(msg_type, "Add TRES")) {
@@ -73,8 +71,6 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_ADD_RES;
 	} else if (!xstrcasecmp(msg_type, "Add Users")) {
 		return DBD_ADD_USERS;
-	} else if (!xstrcasecmp(msg_type, "Add Users Cond")) {
-		return DBD_ADD_USERS_COND;
 	} else if (!xstrcasecmp(msg_type, "Cluster TRES")) {
 		return DBD_CLUSTER_TRES;
 	} else if (!xstrcasecmp(msg_type, "Flush Jobs")) {
@@ -95,8 +91,6 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GET_EVENTS;
 	} else if (!xstrcasecmp(msg_type, "Get Federations")) {
 		return DBD_GET_FEDERATIONS;
-	} else if (!xstrcasecmp(msg_type, "Get Instances")) {
-		return DBD_GET_INSTANCES;
 	} else if (!xstrcasecmp(msg_type, "Reconfigure")) {
 		return DBD_RECONFIG;
 	} else if (!xstrcasecmp(msg_type, "Get Problems")) {
@@ -121,8 +115,6 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GOT_EVENTS;
 	} else if (!xstrcasecmp(msg_type, "Got Federations")) {
 		return DBD_GOT_FEDERATIONS;
-	} else if (!xstrcasecmp(msg_type, "Got Instances")) {
-		return DBD_GOT_INSTANCES;
 	} else if (!xstrcasecmp(msg_type, "Got Jobs")) {
 		return DBD_GOT_JOBS;
 	} else if (!xstrcasecmp(msg_type, "Got List")) {
@@ -262,12 +254,6 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Add Accounts";
 		break;
-	case DBD_ADD_ACCOUNTS_COND:
-		if (get_enum) {
-			return "DBD_ADD_ACCOUNTS_COND";
-		} else
-			return "Add Accounts Cond";
-		break;
 	case DBD_ADD_ACCOUNT_COORDS:
 		if (get_enum) {
 			return "DBD_ADD_ACCOUNT_COORDS";
@@ -309,12 +295,6 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_ADD_USERS";
 		} else
 			return "Add Users";
-		break;
-	case DBD_ADD_USERS_COND:
-		if (get_enum) {
-			return "DBD_ADD_USERS_COND";
-		} else
-			return "Add Users Cond";
 		break;
 	case DBD_CLUSTER_TRES:
 		if (get_enum) {
@@ -375,12 +355,6 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_GET_FEDERATIONS";
 		} else
 			return "Get Federations";
-		break;
-	case DBD_GET_INSTANCES:
-		if (get_enum) {
-			return "DBD_GET_INSTANCES";
-		} else
-			return "Get Instances";
 		break;
 	case DBD_RECONFIG:
 		if (get_enum) {
@@ -453,12 +427,6 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 			return "DBD_GOT_FEDERATIONS";
 		} else
 			return "Got Federations";
-		break;
-	case DBD_GOT_INSTANCES:
-		if (get_enum) {
-			return "DBD_GOT_INSTANCES";
-		} else
-			return "Got Instances";
 		break;
 	case DBD_GOT_JOBS:
 		if (get_enum) {
@@ -877,7 +845,6 @@ extern void slurmdbd_free_msg(persist_msg_t *msg)
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_EVENTS:
 	case DBD_GOT_FEDERATIONS:
-	case DBD_GOT_INSTANCES:
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
 	case DBD_GOT_PROBS:
@@ -914,7 +881,6 @@ extern void slurmdbd_free_msg(persist_msg_t *msg)
 	case DBD_GET_CLUSTERS:
 	case DBD_GET_EVENTS:
 	case DBD_GET_FEDERATIONS:
-	case DBD_GET_INSTANCES:
 	case DBD_GET_JOBS_COND:
 	case DBD_GET_PROBS:
 	case DBD_GET_QOS:
@@ -957,8 +923,6 @@ extern void slurmdbd_free_msg(persist_msg_t *msg)
 	case DBD_JOB_SUSPEND:
 		slurmdbd_free_job_suspend_msg(msg->data);
 		break;
-	case DBD_ADD_ACCOUNTS_COND:
-	case DBD_ADD_USERS_COND:
 	case DBD_MODIFY_ACCOUNTS:
 	case DBD_MODIFY_ASSOCS:
 	case DBD_MODIFY_CLUSTERS:
@@ -1086,9 +1050,6 @@ extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 		case DBD_GET_EVENTS:
 			my_destroy = slurmdb_destroy_event_cond;
 			break;
-		case DBD_GET_INSTANCES:
-			my_destroy = slurmdb_destroy_instance_cond;
-			break;
 		default:
 			fatal("Unknown cond type");
 			return;
@@ -1186,14 +1147,6 @@ extern void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
 
 	if (msg) {
 		switch (type) {
-		case DBD_ADD_ACCOUNTS_COND:
-			destroy_cond = slurmdb_destroy_add_assoc_cond;
-			destroy_rec = slurmdb_destroy_account_rec;
-			break;
-		case DBD_ADD_USERS_COND:
-			destroy_cond = slurmdb_destroy_add_assoc_cond;
-			destroy_rec = slurmdb_destroy_user_rec;
-			break;
 		case DBD_MODIFY_ACCOUNTS:
 			destroy_cond = slurmdb_destroy_account_cond;
 			destroy_rec = slurmdb_destroy_account_rec;
@@ -1243,9 +1196,6 @@ extern void slurmdbd_free_node_state_msg(dbd_node_state_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->hostlist);
-		xfree(msg->extra);
-		xfree(msg->instance_id);
-		xfree(msg->instance_type);
 		xfree(msg->reason);
 		xfree(msg->tres_str);
 		xfree(msg);

@@ -1,0 +1,174 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose:  Test of priority multifactor combined with Fairshare=parent. A
+#           failure of this test but a success of test24.3 is indicative
+#           of a problem with SLURMDB_FS_USE_PARENT.
+#
+# Note:    This script generates and then deletes files in the working
+#          directory named test24.3.prog
+############################################################################
+# Modified by Brigham Young University
+#      Ryan Cox <ryan_cox@byu.edu> and Levi Morrison <levi_morrison@byu.edu>
+#
+# Copyright (C) 2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Danny Auble <da@llnl.gov>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_prog   "$test_name.prog"
+set matches     0
+
+set damp [get_config_param "FairShareDampeningFactor"]
+if {$damp != 1} {
+	skip "Unable to run with FairShareDampeningFactor=$damp (must be 1)"
+}
+
+proc cleanup {} {
+	global test_prog
+
+	file delete $test_prog
+}
+
+#
+# Delete left-over programs and rebuild them
+#
+file delete $test_prog
+
+if [compile_against_libslurm -full $test_prog "-ldl -lm -export-dynamic \
+				   ${build_dir}/src/slurmctld/locks.o \
+				   ${build_dir}/src/sshare/process.o"] {
+	fail "Cannot compile test program"
+}
+
+# Usage: test24.3.prog
+spawn ./$test_prog
+expect {
+	"No last decay" {
+		log_debug "This error is expected. No worries"
+		exp_continue
+	}
+	"error: Can't save decay state" {
+		log_debug "This error is expected. No worries"
+		exp_continue
+	}
+
+	"root|||1.000000|210||1.000000|0.500000||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountA||40|0.266667|45|0.214286|0.214286|0.572929||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountB||30|0.200000|20|0.095238|0.184524|0.527550||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountB|User1|1|0.200000|20|0.095238|0.184524|0.527550||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountC||10|0.066667|25|0.119048|0.142857|0.226431||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountC|User2|1|0.033333|25|0.119048|0.130952|0.065672||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountC|User3|1|0.033333|0|0.000000|0.071429|0.226431||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountD||60|0.400000|25|0.119048|0.119048|0.813594||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountE||25|0.166667|25|0.119048|0.119048|0.609507||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountE|User4|1|0.166667|25|0.119048|0.119048|0.609507||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountF||35|0.233333|0|0.000000|0.069444|0.813594||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountF|User5|1|0.233333|0|0.000000|0.069444|0.813594||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountG||0|0.000000|30|0.142857|0.142857|0.000000||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountG|User6|0|0.000000|30|0.142857|0.142857|0.000000||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountH||50|0.333333|110|0.523810|0.523810|0.336475||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountH|UHRA1|parent|0.333333|20|0.095238|0.523810|0.336475||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountH|UHRA2|40|0.078431|20|0.095238|0.196078|0.176777||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountH|UHRA3|50|0.098039|25|0.119048|0.238095|0.185749||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountHTA||parent|0.333333|45|0.214286|0.523810|0.336475||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountHTA|UHTAStd1|parent|0.333333|10|0.047619|0.523810|0.336475||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountHTA|UHTAStd2|30|0.058824|10|0.047619|0.131653|0.211966||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+	"AccountHTA|UHTAStd3|50|0.098039|25|0.119048|0.238095|0.185749||cpu=0|" {
+		incr matches
+		exp_continue
+	}
+
+	timeout {
+		fail "spawn IO not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {$matches != 22} {
+	fail "We didn't get the correct priorities from the plugin ($matches != 22)"
+}

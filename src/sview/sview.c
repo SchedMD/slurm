@@ -60,8 +60,8 @@ bool toggled = false;
 bool force_refresh = false;
 bool apply_hidden_change = true;
 bool apply_partition_check = false;
-list_t *popup_list = NULL;
-list_t *signal_params_list = NULL;
+List popup_list = NULL;
+List signal_params_list = NULL;
 int page_running = -1;
 bool global_entry_changed = 0;
 bool global_send_update_msg = 0;
@@ -83,7 +83,7 @@ GMutex *grid_mutex = NULL;
 GCond *grid_cond = NULL;
 int cluster_dims;
 uint32_t cluster_flags;
-list_t *cluster_list = NULL;
+List cluster_list = NULL;
 switch_record_bitmaps_t *g_switch_nodes_maps = NULL;
 popup_pos_t popup_pos;
 char *federation_name = NULL;
@@ -285,7 +285,8 @@ static void _page_switched(GtkNotebook     *notebook,
 		return;
 	else if (!grid_init && !started_grid_init) {
 		/* start the thread to make the grid only once */
-		if (!sview_thread_new(_grid_init_thr, notebook, &error)) {
+		if (!sview_thread_new(
+			    _grid_init_thr, notebook, false, &error)) {
 			g_printerr ("Failed to create grid init thread: %s\n",
 				    error->message);
 			return;
@@ -318,7 +319,7 @@ static void _page_switched(GtkNotebook     *notebook,
 		page_thr->page_num = i;
 		page_thr->table = table;
 
-		if (!sview_thread_new(_page_thr, page_thr, &error)) {
+		if (!sview_thread_new(_page_thr, page_thr, false, &error)) {
 			g_printerr ("Failed to create page thread: %s\n",
 				    error->message);
 			return;
@@ -1260,12 +1261,12 @@ static GtkWidget *_create_cluster_combo(void)
 	GtkListStore *model = NULL;
 	GtkWidget *combo = NULL;
 	GtkTreeIter iter;
-	list_itr_t *itr;
+	ListIterator itr;
 	slurmdb_cluster_rec_t *cluster_rec;
 	GtkCellRenderer *renderer = NULL;
 	bool got_db = slurm_with_slurmdbd();
 	int count = 0, spot = 0;
-	list_t *fed_list = NULL;
+	List fed_list = NULL;
 
 	if (!got_db)
 		return NULL;

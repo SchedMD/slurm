@@ -44,7 +44,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#ifndef POLLRDHUP
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define POLLRDHUP POLLHUP
 #endif
 

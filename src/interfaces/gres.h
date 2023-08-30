@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_GRES_H
-#define _INTERFACES_GRES_H
+#ifndef _GRES_H
+#define _GRES_H
 
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
@@ -339,7 +339,7 @@ typedef struct gres_step_state {
 	uint16_t flags;			/* GRES_CONF_HAS_FILE, etc. */
 
 	/* Count of required GRES resources plus associated CPUs and memory */
-	uint16_t cpus_per_gres; /* Also in allocated resource details */
+	uint16_t cpus_per_gres;
 	uint64_t gres_per_step;
 	uint64_t gres_per_node;
 	uint64_t gres_per_socket;
@@ -357,10 +357,7 @@ typedef struct gres_step_state {
 	 * gres_cnt_node_alloc is an array the same size as the number of nodes
 	 * in the job because node_cnt is the same as the job.
 	 */
-	uint64_t total_gres;		/* allocated GRES for this step.
-					 * Also used in the requested step list
-					 * as the total requested GRES for
-					 * this step. */
+	uint64_t total_gres;		/* allocated GRES for this step */
 	uint64_t gross_gres;		/* used during the scheduling phase,
 					 * GRES that could be available for this
 					 * step if no other steps active */
@@ -520,7 +517,7 @@ extern int gres_node_config_pack(buf_t *buffer);
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT gres_list - List of Gres records for this node to track usage
  */
-extern void gres_init_node_config(char *orig_config, List *gres_list);
+extern int gres_init_node_config(char *orig_config, List *gres_list);
 
 /*
  * Return how many gres Names are on the system.
@@ -1197,4 +1194,4 @@ extern bool gres_use_busy_dev(gres_state_t *gres_state_node,
  */
 extern void gres_parse_config_dummy(void);
 
-#endif
+#endif /* !_GRES_H */

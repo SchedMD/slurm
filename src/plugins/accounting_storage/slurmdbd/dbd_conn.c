@@ -309,10 +309,9 @@ end_it:
 	return rc;
 }
 
-extern int dbd_conn_send_recv_rc_comment_msg(uint16_t rpc_version,
-					     persist_msg_t *req,
-					     int *resp_code,
-					     char **comment)
+extern int dbd_conn_send_recv_rc_msg(uint16_t rpc_version,
+				     persist_msg_t *req,
+				     int *resp_code)
 {
 	int rc;
 	persist_msg_t resp;
@@ -332,7 +331,6 @@ extern int dbd_conn_send_recv_rc_comment_msg(uint16_t rpc_version,
 	} else {	/* resp.msg_type == PERSIST_RC */
 		persist_rc_msg_t *msg = resp.data;
 		*resp_code = msg->rc;
-
 		if (msg->rc != SLURM_SUCCESS &&
 		    msg->rc != ACCOUNTING_FIRST_REG &&
 		    msg->rc != ACCOUNTING_TRES_CHANGE_DB &&
@@ -361,12 +359,6 @@ extern int dbd_conn_send_recv_rc_comment_msg(uint16_t rpc_version,
 				      msg->ret_info, msg->rc,
 				      comment);
 		}
-
-		if (comment) {
-			*comment = msg->comment;
-			msg->comment = NULL;
-		}
-
 		slurm_persist_free_rc_msg(msg);
 	}
 
@@ -375,14 +367,6 @@ extern int dbd_conn_send_recv_rc_comment_msg(uint16_t rpc_version,
 		 rpc_version, rc);
 
 	return rc;
-}
-
-extern int dbd_conn_send_recv_rc_msg(uint16_t rpc_version,
-				     persist_msg_t *req,
-				     int *resp_code)
-{
-	return dbd_conn_send_recv_rc_comment_msg(
-		rpc_version, req, resp_code, NULL);
 }
 
 extern int dbd_conn_send_recv(uint16_t rpc_version,

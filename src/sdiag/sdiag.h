@@ -43,7 +43,6 @@ struct sdiag_parameters {
 	int sort;
 	List clusters;
 	char *mimetype; /* --yaml or --json */
-	char *data_parser; /* data_parser args */
 };
 
 typedef enum {

@@ -97,6 +97,7 @@ static bool idle_on_node_suspend = false;
 static uint16_t power_save_interval = 10;
 static uint16_t power_save_min_interval = 0;
 
+bool cloud_reg_addrs = false;
 List resume_job_list = NULL;
 
 typedef struct exc_node_partital {
@@ -389,7 +390,7 @@ static void _do_power_work(time_t now)
 
 	iter = list_iterator_create(resume_job_list);
 	while ((job_id_ptr = list_next(iter))) {
-		char *nodes, *node_bitmap;
+		char *nodes;
 		job_record_t *job_ptr;
 		data_t *job_node_data;
 		bitstr_t *need_resume_bitmap, *to_resume_bitmap;
@@ -441,11 +442,8 @@ static void _do_power_work(time_t now)
 			     job_ptr->job_id);
 		data_set_string(data_key_set(job_node_data, "features"),
 				job_ptr->details->features_use);
-		if ((node_bitmap = bitmap2node_name(job_ptr->node_bitmap))) {
-			data_set_string_own(data_key_set(job_node_data,
-							 "nodes_alloc"),
-					    node_bitmap);
-		}
+		data_set_string_own(data_key_set(job_node_data, "nodes_alloc"),
+				    bitmap2node_name(job_ptr->node_bitmap));
 		nodes = bitmap2node_name(to_resume_bitmap);
 		data_set_string_own(data_key_set(job_node_data, "nodes_resume"),
 				    nodes);
@@ -565,7 +563,7 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
 			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 
-			if (IS_NODE_CLOUD(node_ptr)) {
+			if (IS_NODE_CLOUD(node_ptr) && cloud_reg_addrs) {
 				/* Reset hostname and addr to node's name. */
 				set_node_comm_name(node_ptr, NULL,
 						   node_ptr->name);
@@ -580,7 +578,6 @@ static void _do_power_work(time_t now)
 			node_ptr->power_save_req_time = 0;
 
 			reset_node_active_features(node_ptr);
-			reset_node_instance(node_ptr);
 
 			clusteracct_storage_g_node_down(
 				acct_db_conn, node_ptr, now,
@@ -606,7 +603,6 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 
 			reset_node_active_features(node_ptr);
-			reset_node_instance(node_ptr);
 
 			/*
 			 * set_node_down_ptr() will remove the node from the
@@ -874,6 +870,8 @@ static int _init_power_config(void)
 	if (slurm_conf.resume_program)
 		resume_prog = xstrdup(slurm_conf.resume_program);
 
+	cloud_reg_addrs = xstrcasestr(slurm_conf.slurmctld_params,
+				      "cloud_reg_addrs");
 	idle_on_node_suspend = xstrcasestr(slurm_conf.slurmctld_params,
 					   "idle_on_node_suspend");
 	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,

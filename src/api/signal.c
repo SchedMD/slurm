@@ -88,7 +88,14 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 	slurm_msg_t msg;
 	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
+	bool free_name = false;
 	char *name = allocation->batch_host;
+
+	/* This check can be removed 2 versions after 22.05 */
+	if (!name) {
+		name = nodelist_nth_host(allocation->node_list, 0);
+		free_name = true;
+	}
 
 	if (!name) {
 		error("%s: No batch_host in allocation", __func__);
@@ -109,8 +116,12 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 	    == SLURM_ERROR) {
 		error("%s: can't find address for host %s, check slurm.conf",
 		      __func__, name);
+		if (free_name)
+			free(name);
 		return -1;
 	}
+	if (free_name)
+		free(name);
 	if (slurm_send_recv_rc_msg_only_one(&msg, &rc, 0) < 0) {
 		error("%s: %m", __func__);
 		rc = -1;
@@ -118,7 +129,9 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 	return rc;
 }
 
-static int _signal_job_step(const job_step_info_t *step, uint16_t signal)
+static int _signal_job_step(const job_step_info_t *step,
+			    const resource_allocation_response_msg_t *
+			    allocation, uint16_t signal)
 {
 	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
@@ -128,7 +141,7 @@ static int _signal_job_step(const job_step_info_t *step, uint16_t signal)
 	memcpy(&rpc.step_id, &step->step_id, sizeof(rpc.step_id));
 	rpc.signal = signal;
 
-	rc = _local_send_recv_rc_msgs(step->nodes,
+	rc = _local_send_recv_rc_msgs(allocation->node_list,
 				      REQUEST_SIGNAL_TASKS, &rpc);
 	return rc;
 }
@@ -140,8 +153,14 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
 	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
 	int i;
+	bool free_name = false;
 	char *name = allocation->batch_host;
 
+	/* This check can be removed 2 versions after 22.05 */
+	if (!name) {
+		name = nodelist_nth_host(allocation->node_list, 0);
+		free_name = true;
+	}
 	if (!name) {
 		error("%s: No batch_host in allocation", __func__);
 		return -1;
@@ -162,8 +181,12 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
 	    == SLURM_ERROR) {
 		error("%s: " "can't find address for host %s, check slurm.conf",
 		      __func__, name);
+		if (free_name)
+			free(name);
 		return -1;
 	}
+	if (free_name)
+		free(name);
 	i = slurm_send_recv_rc_msg_only_one(&msg, &rc, 0);
 	if (i != 0)
 		rc = i;
@@ -177,7 +200,9 @@ static int _terminate_batch_script_step(const resource_allocation_response_msg_t
  * RET Upon successful termination of the job step, 0 shall be returned.
  * Otherwise, -1 shall be returned and errno set to indicate the error.
  */
-static int _terminate_job_step(const job_step_info_t *step)
+static int _terminate_job_step(const job_step_info_t *step,
+			       const resource_allocation_response_msg_t *
+			       allocation)
 {
 	signal_tasks_msg_t rpc;
 	int rc = SLURM_SUCCESS;
@@ -188,7 +213,7 @@ static int _terminate_job_step(const job_step_info_t *step)
 	memset(&rpc, 0, sizeof(rpc));
 	memcpy(&rpc.step_id, &step->step_id, sizeof(rpc.step_id));
 	rpc.signal = (uint16_t)-1; /* not used by slurmd */
-	rc = _local_send_recv_rc_msgs(step->nodes,
+	rc = _local_send_recv_rc_msgs(allocation->node_list,
 				      REQUEST_TERMINATE_TASKS, &rpc);
 	if ((rc == -1) && (errno == ESLURM_ALREADY_DONE)) {
 		rc = 0;
@@ -246,20 +271,21 @@ fail1:
 extern int
 slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
 {
+	resource_allocation_response_msg_t *alloc_info = NULL;
 	job_step_info_response_msg_t *step_info = NULL;
 	int rc;
 	int i;
 	int save_errno = 0;
+
+	if (slurm_allocation_lookup(job_id, &alloc_info)) {
+		return -1;
+	}
 
 	/*
 	 * The controller won't give us info about the batch script job step,
 	 * so we need to handle that separately.
 	 */
 	if (step_id == SLURM_BATCH_SCRIPT) {
-		resource_allocation_response_msg_t *alloc_info = NULL;
-		if (slurm_allocation_lookup(job_id, &alloc_info))
-			return -1;
-
 		rc = _signal_batch_script_step(alloc_info, signal);
 		slurm_free_resource_allocation_response_msg(alloc_info);
 		errno = rc;
@@ -280,13 +306,14 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
 		if ((step_info->job_steps[i].step_id.job_id == job_id) &&
 		    (step_info->job_steps[i].step_id.step_id == step_id)) {
  			rc = _signal_job_step(&step_info->job_steps[i],
- 					      signal);
+ 					      alloc_info, signal);
  			save_errno = rc;
 			break;
 		}
 	}
 	slurm_free_job_step_info_response_msg(step_info);
 fail:
+	slurm_free_resource_allocation_response_msg(alloc_info);
  	errno = save_errno;
  	return rc ? -1 : 0;
 }
@@ -302,20 +329,21 @@ fail:
 extern int
 slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 {
+	resource_allocation_response_msg_t *alloc_info = NULL;
 	job_step_info_response_msg_t *step_info = NULL;
 	int rc = 0;
 	int i;
 	int save_errno = 0;
+
+	if (slurm_allocation_lookup(job_id, &alloc_info)) {
+		return -1;
+	}
 
 	/*
 	 * The controller won't give us info about the batch script job step,
 	 * so we need to handle that separately.
 	 */
 	if (step_id == SLURM_BATCH_SCRIPT) {
-		resource_allocation_response_msg_t *alloc_info = NULL;
-		if (slurm_allocation_lookup(job_id, &alloc_info))
-			return -1;
-
 		rc = _terminate_batch_script_step(alloc_info);
 		slurm_free_resource_allocation_response_msg(alloc_info);
 		errno = rc;
@@ -335,13 +363,15 @@ slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)
 	for (i = 0; i < step_info->job_step_count; i++) {
 		if ((step_info->job_steps[i].step_id.job_id == job_id) &&
 		    (step_info->job_steps[i].step_id.step_id == step_id)) {
-			rc = _terminate_job_step(&step_info->job_steps[i]);
+			rc = _terminate_job_step(&step_info->job_steps[i],
+						 alloc_info);
 			save_errno = errno;
 			break;
 		}
 	}
 	slurm_free_job_step_info_response_msg(step_info);
 fail:
+	slurm_free_resource_allocation_response_msg(alloc_info);
 	errno = save_errno;
 	return rc ? -1 : 0;
 }

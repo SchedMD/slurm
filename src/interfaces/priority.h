@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  priority.h - Define priority plugin functions
+ *  slurm_priority.h - Define priority plugin functions
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_PRIORITY_H
-#define _INTERFACES_PRIORITY_H
+#ifndef _SLURM_PRIORITY_H
+#define _SLURM_PRIORITY_H
 
 #include <inttypes.h>
 
@@ -73,4 +73,4 @@ extern List priority_g_get_priority_factors_list(
  */
 extern void priority_g_job_end(job_record_t *job_ptr);
 
-#endif
+#endif /*_SLURM_PRIORIY_H */

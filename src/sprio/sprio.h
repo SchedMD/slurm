@@ -69,7 +69,7 @@ struct sprio_parameters {
 
 	int  verbose;
 
-	list_t *clusters;
+	List clusters;
 
 	char* format;
 	char* jobs;
@@ -77,10 +77,10 @@ struct sprio_parameters {
 	char* users;
 	char* sort;
 
-	list_t *format_list;
-	list_t *job_list;
-	list_t *part_list;
-	list_t *user_list;
+	List  format_list;
+	List  job_list;
+	List  part_list;
+	List  user_list;
 };
 
 /********************
@@ -105,8 +105,8 @@ extern int  parse_format( char* format );
  *
  * IN/OUT job_list - list of priority_factors_object_t
  */
-extern void filter_job_list(list_t *job_list);
+extern void filter_job_list(List job_list);
 
-extern void sort_job_list(list_t *job_list);
+extern void sort_job_list(List job_list);
 
 #endif

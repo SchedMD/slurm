@@ -583,8 +583,8 @@ START_TEST(test_data_job)
 	opt.req_switch = 1;
 	data_set_null(arg);
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_SWITCHES, arg,
-						errors) != 0, "switches");
-	ck_assert_msg(opt.req_switch == 1, "switches value");
+						errors) == 0, "switches");
+	ck_assert_msg(opt.req_switch == 0, "switches value");
 	ck_assert_msg(opt.wait4switch == 12345, "wait 4 switches value");
 	opt.wait4switch = 12345;
 	opt.req_switch = 1;
@@ -705,7 +705,7 @@ START_TEST(test_data_job)
 
 	data_set_null(arg);
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_WAIT_ALL_NODES,
-						arg, errors) == 0,
+						arg, errors) != 0,
 		      "wait-all-nodes");
 	data_set_string(arg, "0");
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_WAIT_ALL_NODES,
@@ -785,14 +785,21 @@ int main(void)
 	}
 
 	/* Do not load any plugins, we are only testing slurm_opt */
-	if (slurm_conf_init(slurm_unit_conf_filename) != SLURM_SUCCESS) {
-		error("slurm_conf_init() failed");
+	if (slurm_conf_init_load(slurm_unit_conf_filename, false) !=
+	    SLURM_SUCCESS) {
+		error("slurm_conf_init_load() failed");
 		return EXIT_FAILURE;
 	}
 
 	unlink(slurm_unit_conf_filename);
 	xfree(slurm_unit_conf_filename);
 	close(fd);
+
+	/* data_init() is necessary on this test */
+	if (data_init()) {
+		error("data_init_static() failed");
+		return EXIT_FAILURE;
+	}
 
 	/* Start the actual libcheck code */
 	int number_failed;
@@ -801,6 +808,9 @@ int main(void)
 	srunner_run_all(sr, CK_ENV);
 	number_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);
+
+	/* Cleanup */
+	data_fini();
 
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

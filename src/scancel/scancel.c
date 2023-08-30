@@ -374,7 +374,7 @@ static void _filter_job_records(void)
 				}
 			}
 
-			hostset_t *hs = hostset_create(job_ptr->nodes);
+			hostset_t hs = hostset_create(job_ptr->nodes);
 			if (!hostset_intersects(hs, opt.nodelist)) {
 				job_ptr->job_id = 0;
 				hostset_destroy(hs);
@@ -554,13 +554,15 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 			if (opt.step_id[j] == SLURM_BATCH_SCRIPT) {
 				cancel_info->job_id_str =
 					_build_jobid_str(job_ptr);
-				slurm_thread_create_detached(_cancel_job_id,
+				slurm_thread_create_detached(NULL,
+							     _cancel_job_id,
 							     cancel_info);
 				job_ptr->job_id = 0;
 			} else {
 				cancel_info->job_id = job_ptr->job_id;
 				cancel_info->step_id = opt.step_id[j];
-				slurm_thread_create_detached(_cancel_step_id,
+				slurm_thread_create_detached(NULL,
+							     _cancel_step_id,
 							     cancel_info);
 			}
 
@@ -627,7 +629,7 @@ _cancel_jobs_by_state(uint32_t job_state, int *rc)
 		}
 		slurm_mutex_unlock(&num_active_threads_lock);
 
-		slurm_thread_create_detached(_cancel_job_id, cancel_info);
+		slurm_thread_create_detached(NULL, _cancel_job_id, cancel_info);
 		job_ptr->job_id = 0;
 
 		if (opt.interactive) {
@@ -868,7 +870,7 @@ _cancel_step_id (void *ci)
 		START_TIMER;
 		if ((!sig_set) || opt.ctld)
 			error_code = slurm_kill_job_step(job_id, step_id,
-							 cancel_info->sig, 0);
+							 cancel_info->sig);
 		else if (cancel_info->sig == SIGKILL)
 			error_code = slurm_terminate_job_step(job_id, step_id);
 		else
@@ -969,7 +971,7 @@ static int _signal_job_by_str(void)
 		}
 		slurm_mutex_unlock(&num_active_threads_lock);
 
-		slurm_thread_create_detached(_cancel_job_id, cancel_info);
+		slurm_thread_create_detached(NULL, _cancel_job_id, cancel_info);
 	}
 
 	/* Wait all spawned threads to finish */

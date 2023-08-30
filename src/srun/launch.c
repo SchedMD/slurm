@@ -100,8 +100,7 @@ static int _step_signal(int signal)
 	while ((my_srun_job = (srun_job_t *) list_next(iter))) {
 		info("Terminating %ps", &my_srun_job->step_id);
 		rc2 = slurm_kill_job_step(my_srun_job->step_id.job_id,
-					  my_srun_job->step_id.step_id, signal,
-					  0);
+					  my_srun_job->step_id.step_id, signal);
 		if (rc2)
 			rc = rc2;
 	}
@@ -109,7 +108,7 @@ static int _step_signal(int signal)
 	return rc;
 }
 
-static char *_hostset_to_string(hostset_t *hs)
+static char *_hostset_to_string(hostset_t hs)
 {
 	size_t n = 1024;
 	size_t maxsize = 1024 * 64;
@@ -136,7 +135,7 @@ static char *_task_ids_to_host_list(int ntasks, uint32_t *taskids,
 				    srun_job_t *my_srun_job)
 {
 	int i, task_cnt = 0;
-	hostset_t *hs;
+	hostset_t hs;
 	char *hosts;
 	slurm_step_layout_t *sl;
 
@@ -270,7 +269,7 @@ _handle_openmpi_port_error(const char *tasks, const char *hosts,
 	      hosts, tasks, msg);
 
 	info("Terminating job step %ps", &step_id);
-	slurm_kill_job_step(step_id.job_id, step_id.step_id, SIGKILL, 0);
+	slurm_kill_job_step(step_id.job_id, step_id.step_id, SIGKILL);
 }
 
 static char *_mpir_get_host_name(char *node_name)
@@ -586,8 +585,7 @@ static char **_build_user_env(srun_job_t *job, slurm_opt_t *opt_local)
 	else if (all)
 		env_array_merge(&dest_array, (const char **) job->env);
 	else
-		env_array_merge_slurm_spank(&dest_array,
-					    (const char **) job->env);
+		env_array_merge_slurm(&dest_array, (const char **) job->env);
 
 	return dest_array;
 }
@@ -652,30 +650,6 @@ extern slurm_step_layout_t *launch_common_get_slurm_step_layout(srun_job_t *job)
 		NULL : job->step_ctx->step_resp->step_layout;
 }
 
-static int _parse_gpu_request(char *in_str)
-{
-	char *save_ptr = NULL, *tmp_str, *tok, *sep;
-	int gpus_val = 0;
-
-	tmp_str = xstrdup(in_str);
-
-	tok = strtok_r(tmp_str, ",", &save_ptr);
-	while (tok) {
-		int tmp = 0;
-		sep = xstrchr(tok, ':');
-		if (sep)
-			tmp += atoi(sep + 1);
-		else
-			tmp += atoi(tok);
-		if (tmp > 0)
-			gpus_val += tmp;
-		tok = strtok_r(NULL, ",", &save_ptr);
-	}
-	xfree(tmp_str);
-
-	return gpus_val;
-}
-
 static job_step_create_request_msg_t *_create_job_step_create_request(
 	slurm_opt_t *opt_local, bool use_all_cpus, srun_job_t *job)
 {
@@ -695,12 +669,6 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	if (opt_local->cpus_per_gpu) {
 		xstrfmtcat(step_req->cpus_per_tres, "gres:gpu:%d",
 			   opt_local->cpus_per_gpu);
-		/* Like cpus_per_task, imply --exact */
-		if (srun_opt->whole)
-			info("Ignoring --whole since --cpus-per-gpu used");
-		else if (!srun_opt->exact)
-			verbose("Implicitly setting --exact, because --cpus-per-gpu given.");
-		srun_opt->exact = true;
 	}
 
 	step_req->exc_nodes = xstrdup(opt_local->exclude);
@@ -717,10 +685,6 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	if (srun_opt->interactive) {
 		debug("interactive step launch request");
 		step_req->flags |= SSF_INTERACTIVE;
-	}
-	if (srun_opt->external_launcher) {
-		debug("external launcher step request");
-		step_req->flags |= SSF_EXT_LAUNCHER;
 	}
 
 	if (opt_local->immediate == 1)
@@ -740,10 +704,6 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	    (opt_local->min_nodes < step_req->min_nodes))
 		step_req->min_nodes = opt_local->min_nodes;
 
-	if (opt_local->gres)
-		add_tres = opt_local->gres;
-	else
-		add_tres = getenv("SLURM_STEP_GRES");
 	/*
 	 * If the number of CPUs was specified (cpus_set==true), then we need to
 	 * set exact = true. Otherwise the step will be allocated the wrong
@@ -763,64 +723,27 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 		else if (!srun_opt->exact)
 			verbose("Implicitly setting --exact, because -c/--cpus-per-task given.");
 		srun_opt->exact = true;
-	} else if (opt_local->cpus_per_gpu) {
-		if (opt_local->gpus) {
-			int gpus_per_step;
+	} else if (opt_local->gpus_per_task && opt_local->cpus_per_gpu) {
+		char *save_ptr = NULL, *tmp_str, *tok, *sep;
+		int gpus_per_task = 0;
 
-			gpus_per_step = _parse_gpu_request(opt_local->gpus);
-			step_req->cpu_count = gpus_per_step *
-				opt_local->cpus_per_gpu;
-		} else if (opt_local->gpus_per_node) {
-			int gpus_per_node;
+		tmp_str = xstrdup(opt_local->gpus_per_task);
 
-			gpus_per_node =
-				_parse_gpu_request(opt_local->gpus_per_node);
-			/* Use a minimum value for requested cpus */
-			step_req->cpu_count = opt_local->min_nodes *
-				gpus_per_node * opt_local->cpus_per_gpu;
-		} else if (opt_local->gpus_per_task) {
-			int gpus_per_task;
-
-			gpus_per_task =
-				_parse_gpu_request(opt_local->gpus_per_task);
-			step_req->cpu_count = opt_local->ntasks *
-				gpus_per_task * opt_local->cpus_per_gpu;
-		} else if (add_tres) {
-			int rc = SLURM_SUCCESS;
-			uint64_t gpus_per_node = 0;
-			char *save_ptr = NULL;
-
-			while (slurm_option_get_tres_per_tres(
-				       opt_local->gres, "gpu",
-				       &gpus_per_node, &save_ptr,
-				       &rc));
-			if (rc != SLURM_SUCCESS) {
-				/* Failed to parse, error already logged */
-				slurm_free_job_step_create_request_msg(
-							step_req);
-				return NULL;
-			}
-			/*
-			 * Same math as gpus_per_node
-			 *
-			 * If gpus_per_node == 0, then the step did not request
-			 * gpus, but the step may still inherit gpus from the
-			 * job. This math will set requested cpus to zero in
-			 * case gpus_per_node == 0.
-			 */
-			step_req->cpu_count = opt_local->min_nodes *
-				gpus_per_node * opt_local->cpus_per_gpu;
-		} else if (opt_local->gpus_per_socket) {
-			/*
-			 * gpus_per_socket is not fully supported for steps and
-			 * does not affect the gpus allocated to the step:
-			 * slurmctld may inherit gres from the job.
-			 */
+		tok = strtok_r(tmp_str, ",", &save_ptr);
+		while (tok) {
+			int tmp = 0;
+			sep = xstrchr(tok, ':');
+			if (sep)
+				tmp += atoi(sep + 1);
+			else
+				tmp += atoi(tok);
+			if (tmp > 0)
+				gpus_per_task += tmp;
+			tok = strtok_r(NULL, ",", &save_ptr);
 		}
-		/*
-		 * If none of these are requested, the step may inherit gres
-		 * from the job.
-		 */
+		xfree(tmp_str);
+		step_req->cpu_count = opt_local->ntasks * gpus_per_task *
+				      opt_local->cpus_per_gpu;
 	} else if (opt_local->ntasks_set ||
 		   (opt_local->ntasks_per_tres != NO_VAL) ||
 		   (opt_local->ntasks_per_gpu != NO_VAL)) {
@@ -929,7 +852,6 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 		   step_req->cpu_count);
 	xfmt_tres(&step_req->tres_per_step, "gres:gpu", opt_local->gpus);
 
-	/* add_tres set from opt_local->gres or environment above */
 	if (opt_local->gres)
 		add_tres = opt_local->gres;
 	else
@@ -1419,6 +1341,7 @@ extern int launch_g_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.het_job_tids = job->het_job_tids;
 	launch_params.het_job_tid_offsets = job->het_job_tid_offsets;
 	launch_params.het_job_node_list = job->het_job_node_list;
+	launch_params.partition = job->partition;
 	launch_params.profile = opt_local->profile;
 	launch_params.task_prolog = srun_opt->task_prolog;
 	launch_params.task_epilog = srun_opt->task_epilog;
@@ -1446,8 +1369,6 @@ extern int launch_g_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		launch_params.cpus_per_task	= opt_local->cpus_per_task;
 	else
 		launch_params.cpus_per_task	= 1;
-	launch_params.cpus_per_task_array =
-		job->step_ctx->step_resp->step_layout->cpus_per_task;
 	launch_params.threads_per_core   = opt_local->threads_per_core;
 	launch_params.cpu_freq_min       = opt_local->cpu_freq_min;
 	launch_params.cpu_freq_max       = opt_local->cpu_freq_max;

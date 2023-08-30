@@ -97,7 +97,7 @@ static void _exec_add(data_t *data, const char *arg)
 	data_set_string(data_list_append(data), arg);
 }
 
-extern void exec_srun_container(void)
+extern void exec_srun_container()
 {
 	data_t *args, *container_args;
 	char *jobid;

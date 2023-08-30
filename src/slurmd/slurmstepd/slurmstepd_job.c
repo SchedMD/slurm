@@ -49,20 +49,21 @@
 #include "src/common/eio.h"
 #include "src/common/env.h"
 #include "src/common/fd.h"
+#include "src/interfaces/gres.h"
 #include "src/common/group_cache.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/interfaces/select.h"
+#include "src/interfaces/acct_gather_profile.h"
+#include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/acct_gather_profile.h"
-#include "src/interfaces/gres.h"
-#include "src/interfaces/jobacct_gather.h"
-
 #include "src/slurmd/common/fname.h"
+#include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/multi_prog.h"
@@ -322,6 +323,11 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	 * to the launch_tasks_request_msg_t info if send_gids is disabled.
 	 */
 	if (!step->ngids) {
+		if (slurm_cred_send_gids_enabled()) {
+			error("No gids given in the cred.");
+			stepd_step_rec_destroy(step);
+			return NULL;
+		}
 		step->ngids = (int) msg->ngids;
 		step->gids = copy_gids(msg->ngids, msg->gids);
 	}
@@ -552,6 +558,11 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	 * to the batch_job_launch_msg_t info if send_gids is disabled.
 	 */
 	if (!step->ngids) {
+		if (slurm_cred_send_gids_enabled()) {
+			error("No gids given in the cred.");
+			stepd_step_rec_destroy(step);
+			return NULL;
+		}
 		step->ngids = (int) msg->ngids;
 		step->gids = copy_gids(msg->ngids, msg->gids);
 	}
@@ -570,6 +581,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 				      slurm_conf.job_acct_gather_freq);
 
 	step->open_mode  = msg->open_mode;
+	step->overcommit = (bool) msg->overcommit;
 
 	step->cwd     = xstrdup(msg->work_dir);
 
@@ -595,7 +607,6 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	step->cpu_bind = xstrdup(msg->cpu_bind);
 	step->envtp->mem_bind_type = 0;
 	step->envtp->mem_bind = NULL;
-	step->envtp->overcommit = msg->overcommit;
 	step->envtp->restart_cnt = msg->restart_cnt;
 
 	if (msg->cpus_per_node)

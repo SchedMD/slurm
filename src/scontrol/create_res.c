@@ -226,30 +226,39 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			resv_msg_ptr->max_start_delay = (uint32_t)duration;
 		} else if (xstrncasecmp(tag, "NodeCnt", MAX(taglen,5)) == 0 ||
 			   xstrncasecmp(tag, "NodeCount", MAX(taglen,5)) == 0) {
-			char *leftover = NULL;
-			if (xstrchr(val, ',')) {
+
+			if (parse_resv_nodecnt(resv_msg_ptr, val,
+					       res_free_flags, false,
+					       &err_msg) == SLURM_ERROR) {
+				error("%s", err_msg);
+				xfree(err_msg);
 				exit_code = 1;
-				error("Using a comma separated array for NodeCnt is no longer valid.");
 				return SLURM_ERROR;
 			}
 
-			resv_msg_ptr->node_cnt = str_to_nodes(val, &leftover);
-			if (!xstring_is_whitespace(leftover)) {
-				exit_code = 1;
-				error("\"%s\" is not a valid node count", val);
-				return SLURM_ERROR;
-			}
 		} else if (xstrncasecmp(tag, "CoreCnt",   MAX(taglen,5)) == 0 ||
 			   xstrncasecmp(tag, "CoreCount", MAX(taglen,5)) == 0 ||
 			   xstrncasecmp(tag, "CPUCnt",    MAX(taglen,5)) == 0 ||
 			   xstrncasecmp(tag, "CPUCount",  MAX(taglen,5)) == 0) {
-			if (xstrchr(val, ',')) {
+
+			/* only have this on a cons_res machine */
+			if (state_control_corecnt_supported()
+			    != SLURM_SUCCESS) {
+				error("CoreCnt or CPUCnt is only supported when SelectType includes select/cons_res or SelectTypeParameters includes OTHER_CONS_RES on a Cray.");
 				exit_code = 1;
-				error("Using a comma separated array for CoreCnt is no longer valid.");
 				return SLURM_ERROR;
 			}
 
-			resv_msg_ptr->core_cnt = slurm_atoul(val);
+			if (state_control_parse_resv_corecnt(resv_msg_ptr, val,
+							     res_free_flags,
+							     false, &err_msg)
+			    == SLURM_ERROR) {
+				error("%s", err_msg);
+				xfree(err_msg);
+				exit_code = 1;
+				return SLURM_ERROR;
+			}
+
 		} else if (xstrncasecmp(tag, "Nodes", MAX(taglen, 5)) == 0) {
 			if (plus_minus) {
 				resv_msg_ptr->node_list =
@@ -340,6 +349,7 @@ scontrol_update_res(int argc, char **argv)
 	ret = slurm_update_reservation(&resv_msg);
 	if (ret) {
 		exit_code = 1;
+		slurm_perror("Error updating the reservation");
 		ret = slurm_get_errno();
 	} else {
 		printf("Reservation updated.\n");
@@ -429,10 +439,10 @@ scontrol_create_res(int argc, char **argv)
 	 * If the following parameters are null, but a partition is named, then
 	 * make the reservation for the whole partition.
 	 */
-	if ((!resv_msg.core_cnt || (resv_msg.core_cnt == NO_VAL)) &&
+	if ((resv_msg.core_cnt == 0) &&
 	    (resv_msg.burst_buffer == NULL ||
 	     resv_msg.burst_buffer[0] == '\0') &&
-	    (!resv_msg.node_cnt || (resv_msg.node_cnt == NO_VAL)) &&
+	    (resv_msg.node_cnt  == NULL || resv_msg.node_cnt[0]  == 0)    &&
 	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0') &&
 	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0') &&
 	    (resv_msg.resv_watts == NO_VAL)) {
@@ -462,8 +472,8 @@ scontrol_create_res(int argc, char **argv)
 
 	if (resv_msg.resv_watts != NO_VAL &&
 	    (!(resv_msg.flags & RESERVE_FLAG_ANY_NODES) ||
-	     (resv_msg.core_cnt && (resv_msg.core_cnt != NO_VAL)) ||
-	     (resv_msg.node_cnt && resv_msg.node_cnt != NO_VAL) ||
+	     (resv_msg.core_cnt != 0) ||
+	     (resv_msg.node_cnt  != NULL && resv_msg.node_cnt[0]  != 0) ||
 	     (resv_msg.node_list != NULL && resv_msg.node_list[0] != '\0') ||
 	     (resv_msg.licenses  != NULL && resv_msg.licenses[0]  != '\0'))) {
 		exit_code = 1;
@@ -474,8 +484,8 @@ scontrol_create_res(int argc, char **argv)
 	if (!new_res_name) {
 		exit_code = 1;
 		slurm_perror("Error creating the reservation");
-		if (((errno == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) ||
-		     (errno == ESLURM_NODES_BUSY)) && !resv_msg.node_list)
+		if ((errno == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) ||
+		    (errno == ESLURM_NODES_BUSY))
 			printf("Note, unless nodes are directly requested a reservation must exist in a single partition.\n"
 			       "If no partition is requested the default partition is assumed.\n");
 		ret = slurm_get_errno();

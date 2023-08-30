@@ -100,7 +100,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
-	$(top_srcdir)/auxdir/gtk-2.0.m4 \
 	$(top_srcdir)/auxdir/libtool.m4 \
 	$(top_srcdir)/auxdir/ltoptions.m4 \
 	$(top_srcdir)/auxdir/ltsugar.m4 \
@@ -127,6 +126,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_lz4.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
+	$(top_srcdir)/auxdir/x_ac_netloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_nvml.m4 \
 	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
 	$(top_srcdir)/auxdir/x_ac_oneapi.m4 \
@@ -155,8 +155,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
-am__objects_1 = slurmd.$(OBJEXT) cred_context.$(OBJEXT) req.$(OBJEXT) \
-	get_mach_stat.$(OBJEXT)
+am__objects_1 = slurmd.$(OBJEXT) req.$(OBJEXT) get_mach_stat.$(OBJEXT)
 am_slurmd_OBJECTS = $(am__objects_1)
 slurmd_OBJECTS = $(am_slurmd_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -184,8 +183,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/cred_context.Po \
-	./$(DEPDIR)/get_mach_stat.Po ./$(DEPDIR)/req.Po \
+am__depfiles_remade = ./$(DEPDIR)/get_mach_stat.Po ./$(DEPDIR)/req.Po \
 	./$(DEPDIR)/slurmd.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -342,6 +340,9 @@ MUNGE_LDFLAGS = @MUNGE_LDFLAGS@
 MUNGE_LIBS = @MUNGE_LIBS@
 MYSQL_CFLAGS = @MYSQL_CFLAGS@
 MYSQL_LIBS = @MYSQL_LIBS@
+NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
+NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
+NETLOC_LIBS = @NETLOC_LIBS@
 NM = @NM@
 NMEDIT = @NMEDIT@
 NUMA_LIBS = @NUMA_LIBS@
@@ -509,7 +510,6 @@ slurmd_LDADD = $(depend_libs) $(LIB_SLURM) $(NUMA_LIBS) \
 slurmd_LDFLAGS = $(CMD_LDFLAGS) $(depend_ldflags)
 SLURMD_SOURCES = \
 	slurmd.c slurmd.h \
-	cred_context.c cred_context.h \
 	req.c req.h \
 	get_mach_stat.c get_mach_stat.h
 
@@ -608,7 +608,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cred_context.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get_mach_stat.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/req.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmd.Po@am__quote@ # am--include-marker
@@ -740,8 +739,7 @@ clean-am: clean-generic clean-libtool clean-sbinPROGRAMS \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/cred_context.Po
-	-rm -f ./$(DEPDIR)/get_mach_stat.Po
+		-rm -f ./$(DEPDIR)/get_mach_stat.Po
 	-rm -f ./$(DEPDIR)/req.Po
 	-rm -f ./$(DEPDIR)/slurmd.Po
 	-rm -f Makefile
@@ -789,8 +787,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/cred_context.Po
-	-rm -f ./$(DEPDIR)/get_mach_stat.Po
+		-rm -f ./$(DEPDIR)/get_mach_stat.Po
 	-rm -f ./$(DEPDIR)/req.Po
 	-rm -f ./$(DEPDIR)/slurmd.Po
 	-rm -f Makefile

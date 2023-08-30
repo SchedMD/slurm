@@ -44,15 +44,15 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <poll.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <sys/mman.h>	/* memfd_create */
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-#ifndef POLLRDHUP
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define POLLRDHUP POLLHUP
+#include <signal.h>
 #endif
 
 #include "slurm/slurm.h"
@@ -2146,7 +2146,7 @@ extern int bb_write_nid_file(char *file_name, char *node_list,
 
 	xassert(file_name);
 	if (node_list && node_list[0]) {
-		hostlist_t *hl = hostlist_create(node_list);
+		hostlist_t hl = hostlist_create(node_list);
 		while ((tok = hostlist_shift(hl))) {
 			xstrfmtcat(buf, "%s\n", tok);
 			free(tok);

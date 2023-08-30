@@ -145,43 +145,18 @@ static int _calc_part_tres(void *x, void *arg)
 		assoc_mgr_make_tres_str_from_array(part_ptr->tres_cnt,
 						   TRES_STR_CONVERT_UNITS,
 						   true);
-	if (part_ptr->qos_ptr) {
-		part_ptr->qos_ptr->flags |= QOS_FLAG_PART_QOS;
-		assoc_mgr_set_qos_tres_relative_cnt(part_ptr->qos_ptr,
-						    part_ptr->tres_cnt);
-	}
-
 	return 0;
 }
 
 /*
  * Calculate and populate the number of tres' for all partitions.
  */
-extern void set_partition_tres(bool assoc_mgr_locked)
+extern void set_partition_tres()
 {
-	assoc_mgr_lock_t locks = {
-		.qos = WRITE_LOCK,
-		.tres = READ_LOCK,
-	};
-
 	xassert(verify_lock(PART_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, READ_LOCK));
 
-	if (!assoc_mgr_locked)
-		assoc_mgr_lock(&locks);
-	else {
-		xassert(verify_assoc_lock(QOS_LOCK, WRITE_LOCK));
-		xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
-	}
-
-	assoc_mgr_clear_qos_tres_relative_cnt(true);
-
 	list_for_each(part_list, _calc_part_tres, NULL);
-
-	assoc_mgr_set_unset_qos_tres_relative_cnt(true);
-
-	if (!assoc_mgr_locked)
-		assoc_mgr_unlock(&locks);
 }
 
 /*
@@ -200,7 +175,7 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 	char *this_node_name;
 	bitstr_t *old_bitmap;
 	node_record_t *node_ptr;
-	hostlist_t *host_list, *missing_hostlist = NULL;
+	hostlist_t host_list, missing_hostlist = NULL;
 	int i;
 
 	part_ptr->total_cpus = 0;
@@ -285,7 +260,7 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 		 * Remove missing node from partition nodes so we don't keep
 		 * trying to remove them.
 		 */
-		hostlist_t *hl;
+		hostlist_t hl;
 		char *missing_nodes;
 
 		hl = hostlist_create(part_ptr->orig_nodes);
@@ -1090,15 +1065,6 @@ static int _build_visible_parts_foreach(void *elem, void *x)
 	return SLURM_SUCCESS;
 }
 
-static int _find_part_qos(void *x, void *arg)
-{
-	part_record_t *part_ptr = x;
-
-	if (part_ptr->qos_ptr == arg)
-		return 1;
-	return 0;
-}
-
 extern part_record_t **build_visible_parts(uid_t uid, bool skip)
 {
 	part_record_t **visible_parts_save;
@@ -1268,7 +1234,7 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
 		(void)slurm_pack_list(part_ptr->job_defaults_list,
 				      job_defaults_pack, buffer,
 				      protocol_version);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)
 			part_ptr->flags |= PART_FLAG_DEFAULT;
 		else
@@ -1309,6 +1275,52 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
 		packstr(part_ptr->deny_qos, buffer);
 		packstr(part_ptr->nodes, buffer);
 		packstr(part_ptr->nodesets, buffer);
+		pack_bit_str_hex(part_ptr->node_bitmap, buffer);
+		packstr(part_ptr->billing_weights_str, buffer);
+		packstr(part_ptr->tres_fmt_str, buffer);
+		(void)slurm_pack_list(part_ptr->job_defaults_list,
+				      job_defaults_pack, buffer,
+				      protocol_version);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (default_part_loc == part_ptr)
+			part_ptr->flags |= PART_FLAG_DEFAULT;
+		else
+			part_ptr->flags &= (~PART_FLAG_DEFAULT);
+
+		packstr(part_ptr->name, buffer);
+		pack32(part_ptr->cpu_bind, buffer);
+		pack32(part_ptr->grace_time, buffer);
+		pack32(part_ptr->max_time, buffer);
+		pack32(part_ptr->default_time, buffer);
+		pack32(part_ptr->max_nodes_orig, buffer);
+		pack32(part_ptr->min_nodes_orig, buffer);
+		pack32(part_ptr->total_nodes, buffer);
+		pack32(part_ptr->total_cpus, buffer);
+		pack64(part_ptr->def_mem_per_cpu, buffer);
+		pack32(part_ptr->max_cpus_per_node, buffer);
+		pack64(part_ptr->max_mem_per_cpu, buffer);
+
+		pack16(part_ptr->flags,      buffer);
+		pack16(part_ptr->max_share,  buffer);
+		pack16(part_ptr->over_time_limit, buffer);
+		pack16(part_ptr->preempt_mode, buffer);
+		pack16(part_ptr->priority_job_factor, buffer);
+		pack16(part_ptr->priority_tier, buffer);
+		pack16(part_ptr->state_up, buffer);
+		pack16(part_ptr->cr_type, buffer);
+		pack16(part_ptr->resume_timeout, buffer);
+		pack16(part_ptr->suspend_timeout, buffer);
+		pack32(part_ptr->suspend_time, buffer);
+
+		packstr(part_ptr->allow_accounts, buffer);
+		packstr(part_ptr->allow_groups, buffer);
+		packstr(part_ptr->allow_alloc_nodes, buffer);
+		packstr(part_ptr->allow_qos, buffer);
+		packstr(part_ptr->qos_char, buffer);
+		packstr(part_ptr->alternate, buffer);
+		packstr(part_ptr->deny_accounts, buffer);
+		packstr(part_ptr->deny_qos, buffer);
+		packstr(part_ptr->nodes, buffer);
 		pack_bit_str_hex(part_ptr->node_bitmap, buffer);
 		packstr(part_ptr->billing_weights_str, buffer);
 		packstr(part_ptr->tres_fmt_str, buffer);
@@ -1704,55 +1716,22 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->qos_char && part_desc->qos_char[0] == '\0') {
-		slurmdb_qos_rec_t *qos = part_ptr->qos_ptr;
+		info("%s: removing partition QOS %s from partition %s",
+		     __func__, part_ptr->qos_char, part_ptr->name);
 		xfree(part_ptr->qos_char);
 		part_ptr->qos_ptr = NULL;
-		if (qos) {
-			assoc_mgr_lock_t locks = {
-				.qos = WRITE_LOCK,
-				.tres = READ_LOCK,
-			};
-			assoc_mgr_lock(&locks);
-			info("%s: removing partition QOS '%s' from partition '%s'",
-			     __func__, qos->name, part_ptr->name);
-		        if (!list_find_first(part_list, _find_part_qos, qos))
-				qos->flags &= ~QOS_FLAG_PART_QOS;
-			/*
-			 * Reset relative QOS to the full system cnts
-			 */
-			if ((qos->flags & QOS_FLAG_RELATIVE) &&
-			    !(qos->flags & QOS_FLAG_PART_QOS)) {
-				qos->flags &= ~QOS_FLAG_RELATIVE_SET;
-				assoc_mgr_set_qos_tres_relative_cnt(qos, NULL);
-			}
-			assoc_mgr_unlock(&locks);
-		}
 	} else if (part_desc->qos_char) {
-		assoc_mgr_lock_t locks = {
-			.qos = WRITE_LOCK,
-			.tres = READ_LOCK,
-		};
 		slurmdb_qos_rec_t qos_rec, *backup_qos_ptr = part_ptr->qos_ptr;
-		slurmdb_qos_rec_t *qos = NULL;
-		part_record_t *qos_part_ptr = NULL;
+
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 		qos_rec.name = part_desc->qos_char;
-		assoc_mgr_lock(&locks);
 		if (assoc_mgr_fill_in_qos(
 			    acct_db_conn, &qos_rec, accounting_enforce,
-			    (slurmdb_qos_rec_t **)&qos, true)
+			    (slurmdb_qos_rec_t **)&part_ptr->qos_ptr, 0)
 		    != SLURM_SUCCESS) {
 			error("%s: invalid qos (%s) given",
 			      __func__, qos_rec.name);
 			error_code = ESLURM_INVALID_QOS;
-			part_ptr->qos_ptr = backup_qos_ptr;
-		} else if ((qos->flags & QOS_FLAG_RELATIVE) &&
-			   (qos_part_ptr = list_find_first(
-				   part_list, _find_part_qos, qos))) {
-			error_code = ESLURM_INVALID_RELATIVE_QOS;
-			error("%s: %s Partition %s already uses relative QOS (%s).",
-			      __func__, slurm_strerror(error_code),
-			      qos_part_ptr->name, qos_rec.name);
 			part_ptr->qos_ptr = backup_qos_ptr;
 		} else {
 			info("%s: changing partition QOS from "
@@ -1762,39 +1741,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 
 			xfree(part_ptr->qos_char);
 			part_ptr->qos_char = xstrdup(part_desc->qos_char);
-			part_ptr->qos_ptr = qos;
-			part_ptr->qos_ptr->flags |= QOS_FLAG_PART_QOS;
-			/*
-			 * Set a relative QOS' counts based on the partition.
-			 */
-			if (qos->flags & QOS_FLAG_RELATIVE) {
-				qos->flags &= ~QOS_FLAG_RELATIVE_SET;
-				assoc_mgr_set_qos_tres_relative_cnt(
-					qos, part_ptr->tres_cnt);
-			}
-
-			if (backup_qos_ptr) {
-				if (!list_find_first(part_list, _find_part_qos,
-						     backup_qos_ptr))
-					backup_qos_ptr->flags &=
-						~QOS_FLAG_PART_QOS;
-
-				/*
-				 * Reset relative QOS to the full system cnts
-				 */
-				if ((backup_qos_ptr->flags &
-				     QOS_FLAG_RELATIVE) &&
-				    !(backup_qos_ptr->flags &
-				      QOS_FLAG_PART_QOS)) {
-					backup_qos_ptr->flags &=
-						~QOS_FLAG_RELATIVE_SET;
-					assoc_mgr_set_qos_tres_relative_cnt(
-						backup_qos_ptr, NULL);
-				}
-
-			}
 		}
-		assoc_mgr_unlock(&locks);
 	}
 
 	if (part_desc->allow_alloc_nodes != NULL) {
@@ -1908,10 +1855,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->nodes != NULL) {
-		assoc_mgr_lock_t assoc_tres_read_lock = {
-			.qos = WRITE_LOCK,
-			.tres = READ_LOCK,
-		};
+		assoc_mgr_lock_t assoc_tres_read_lock = { .tres = READ_LOCK };
 		char *backup_node_list = part_ptr->nodes;
 
 		if (part_desc->nodes[0] == '\0')
@@ -1940,8 +1884,6 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		power_save_set_timeouts(NULL);
 
 		assoc_mgr_lock(&assoc_tres_read_lock);
-		if (part_ptr->qos_ptr)
-			part_ptr->qos_ptr->flags &= ~QOS_FLAG_RELATIVE_SET;
 		_calc_part_tres(part_ptr, NULL);
 		assoc_mgr_unlock(&assoc_tres_read_lock);
 	} else if (part_ptr->node_bitmap == NULL) {
@@ -1970,8 +1912,15 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 	static part_record_t *last_fail_part_ptr = NULL;
 	static time_t last_fail_time = 0;
 	time_t now;
-	gid_t primary_gid;
-	char *primary_group = NULL;
+#if defined(_SC_GETPW_R_SIZE_MAX)
+	long ii;
+#endif
+	int res;
+	size_t buflen;
+	struct passwd pwd, *pwd_result;
+	char *buf;
+	char *grp_buffer;
+	struct group grp, *grp_result;
 	char *groups, *saveptr = NULL, *one_group_name;
 	int ret = 0;
 
@@ -1997,37 +1946,80 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 		return 0;
 	}
 
-	/*
-	 * The allow_uids list is built from the allow_groups list.  If
-	 * user/group enumeration has been disabled, it's possible that the
-	 * user's primary group is not returned as a member of a group.
-	 * Enumeration is problematic if the user/group database is large
-	 * (think university-wide central account database or such), as in such
-	 * environments enumeration would load the directory servers a lot, so
-	 * the recommendation is to have it disabled (e.g. enumerate=False in
-	 * sssd.conf). So check explicitly whether the primary group is allowed
-	 * as a final resort.
-	 * This should (hopefully) not happen that often.
-	 */
+	/* The allow_uids list is built from the allow_groups list,
+	 * and if user/group enumeration has been disabled, it's
+	 * possible that the users primary group is not returned as a
+	 * member of a group.  Enumeration is problematic if the
+	 * user/group database is large (think university-wide central
+	 * account database or such), as in such environments
+	 * enumeration would load the directory servers a lot, so the
+	 * recommendation is to have it disabled (e.g. enumerate=False
+	 * in sssd.conf).  So check explicitly whether the primary
+	 * group is allowed as a final resort.  This should
+	 * (hopefully) not happen that often, and anyway the
+	 * getpwuid_r and getgrgid_r calls should be cached by
+	 * sssd/nscd/etc. so should be fast.  */
 
 	/* First figure out the primary GID.  */
-	primary_gid = gid_from_uid(run_uid);
-
-	if (primary_gid == (gid_t) -1) {
-		error("%s: Could not find passwd entry for uid %u",
-		      __func__, run_uid);
-		goto fini;
+	buflen = PW_BUF_SIZE;
+#if defined(_SC_GETPW_R_SIZE_MAX)
+	ii = sysconf(_SC_GETPW_R_SIZE_MAX);
+	if ((ii >= 0) && (ii > buflen))
+		buflen = ii;
+#endif
+	buf = xmalloc(buflen);
+	while (1) {
+		slurm_seterrno(0);
+		res = getpwuid_r(run_uid, &pwd, buf, buflen, &pwd_result);
+		/* We need to check for !pwd_result, since it appears some
+		 * versions of this function do not return an error on
+		 * failure.
+		 */
+		if (res != 0 || !pwd_result) {
+			if (errno == ERANGE) {
+				buflen *= 2;
+				xrealloc(buf, buflen);
+				continue;
+			}
+			error("%s: Could not find passwd entry for uid %u",
+			      __func__, run_uid);
+			xfree(buf);
+			goto fini;
+		}
+		break;
 	}
 
 	/* Then use the primary GID to figure out the name of the
 	 * group with that GID.  */
+#ifdef _SC_GETGR_R_SIZE_MAX
+	ii = sysconf(_SC_GETGR_R_SIZE_MAX);
+	buflen = PW_BUF_SIZE;
+	if ((ii >= 0) && (ii > buflen))
+		buflen = ii;
+#endif
+	grp_buffer = xmalloc(buflen);
+	while (1) {
+		slurm_seterrno(0);
+		res = getgrgid_r(pwd.pw_gid, &grp, grp_buffer, buflen,
+				 &grp_result);
 
-	primary_group = gid_to_string_or_null(primary_gid);
-
-	if (!primary_group) {
-		error("%s: Could not find group with gid %u",
-		      __func__, primary_gid);
-		goto fini;
+		/* We need to check for !grp_result, since it appears some
+		 * versions of this function do not return an error on
+		 * failure.
+		 */
+		if (res != 0 || !grp_result) {
+			if (errno == ERANGE) {
+				buflen *= 2;
+				xrealloc(grp_buffer, buflen);
+				continue;
+			}
+			error("%s: Could not find group with gid %u",
+			      __func__, pwd.pw_gid);
+			xfree(buf);
+			xfree(grp_buffer);
+			goto fini;
+		}
+		break;
 	}
 
 	/* And finally check the name of the primary group against the
@@ -2035,18 +2027,19 @@ extern int validate_group(part_record_t *part_ptr, uid_t run_uid)
 	groups = xstrdup(part_ptr->allow_groups);
 	one_group_name = strtok_r(groups, ",", &saveptr);
 	while (one_group_name) {
-		if (!xstrcmp(one_group_name, primary_group)) {
+		if (xstrcmp (one_group_name, grp.gr_name) == 0) {
 			ret = 1;
 			break;
 		}
 		one_group_name = strtok_r(NULL, ",", &saveptr);
 	}
 	xfree(groups);
-	xfree(primary_group);
+	xfree(buf);
+	xfree(grp_buffer);
 
 	if (ret == 1) {
-		debug("UID %u added to AllowGroup %s of partition %s",
-		      run_uid, primary_group, part_ptr->name);
+		debug("UID %ld added to AllowGroup %s of partition %s",
+		      (long) run_uid, grp.gr_name, part_ptr->name);
 		part_ptr->allow_uids =
 			xrealloc(part_ptr->allow_uids,
 				 (sizeof(uid_t) *
@@ -2078,7 +2071,7 @@ extern int validate_alloc_node(part_record_t *part_ptr, char *alloc_node)
  	if (alloc_node == NULL)
 		return 0;	/* if no allocating node deny */
 
-	hostlist_t *hl = hostlist_create(part_ptr->allow_alloc_nodes);
+ 	hostlist_t hl = hostlist_create(part_ptr->allow_alloc_nodes);
  	status=hostlist_find(hl,alloc_node);
  	hostlist_destroy(hl);
 
@@ -2374,7 +2367,7 @@ extern int part_policy_valid_qos(part_record_t *part_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern void part_list_update_assoc_lists(void)
+extern void part_list_update_assoc_lists()
 {
 	/* Write lock on part */
 	slurmctld_lock_t part_write_lock = {

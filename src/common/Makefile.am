@@ -18,8 +18,6 @@ libcommon_la_SOURCES =				\
 	cbuf.h					\
 	conmgr.c				\
 	conmgr.h				\
-	core_array.c				\
-	core_array.h				\
 	cpu_frequency.c				\
 	cpu_frequency.h				\
 	cron.c					\
@@ -66,8 +64,6 @@ libcommon_la_SOURCES =				\
 	node_conf.h				\
 	oci_config.c				\
 	oci_config.h				\
-	openapi.c				\
-	openapi.h				\
 	optz.c					\
 	optz.h					\
 	pack.c					\

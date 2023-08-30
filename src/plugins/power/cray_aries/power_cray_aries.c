@@ -36,7 +36,7 @@
 
 #include "config.h"
 
-#define _GNU_SOURCE
+#define _GNU_SOURCE	/* For POLLRDHUP */
 #include <ctype.h>
 #include <poll.h>
 #include <stdlib.h>
@@ -397,7 +397,7 @@ static void _get_capabilities(void)
 	json_object *j_obj;
 	json_object_iter iter;
 	node_record_t *node_ptr;
-	hostlist_t *hl = NULL;
+	hostlist_t hl = NULL;
 	DEF_TIMERS;
 
 	script_argv[0] = capmc_path;
@@ -664,7 +664,7 @@ static void _build_full_nid_string(void)
 	slurmctld_lock_t read_node_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	node_record_t *node_ptr;
-	hostset_t *hs = NULL;
+	hostset_t hs = NULL;
 	char *sep, *tmp_str;
 	int i;
 

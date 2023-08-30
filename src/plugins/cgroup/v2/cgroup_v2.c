@@ -1034,7 +1034,7 @@ extern int init(void)
 
 	/*
 	 * Check available controllers in cgroup.controller, record them in our
-	 * bitmap and enable them if EnableControllers option is set.
+	 * bitmap and enable them if CgroupAutomountOption is set.
 	 * We enable them manually just because we support CgroupIgnoreSystemd
 	 * option. Theorically when starting a unit with Delegate=yes, you will
 	 * get all controllers available at your level.
@@ -1073,6 +1073,9 @@ extern int init(void)
 		if (_init_stepd_system_scope(getpid()) != SLURM_SUCCESS)
 			return SLURM_ERROR;
 	}
+
+	/* In cgroup/v2 the entire cgroup tree is owned by root. */
+	slurm_cgroup_conf.root_owned_cgroups = true;
 
 	/*
 	 * If we're slurmd we're all set and able to constrain things, i.e.
@@ -1373,7 +1376,7 @@ extern int cgroup_p_step_get_pids(pid_t **pids, int *npids)
 }
 
 /* Freeze the user processes of this step */
-extern int cgroup_p_step_suspend(void)
+extern int cgroup_p_step_suspend()
 {
 	/* This plugin is unloaded. */
 	if (!int_cg[CG_LEVEL_STEP_USER].path)
@@ -1389,7 +1392,7 @@ extern int cgroup_p_step_suspend(void)
 }
 
 /* Resume the user processes of this step */
-extern int cgroup_p_step_resume(void)
+extern int cgroup_p_step_resume()
 {
 	/* This plugin is unloaded. */
 	if (!int_cg[CG_LEVEL_STEP_USER].path)
@@ -1904,7 +1907,7 @@ fail:
 	return NULL;
 }
 
-extern int cgroup_p_step_start_oom_mgr(void)
+extern int cgroup_p_step_start_oom_mgr()
 {
 	/* Just return, no need to start anything. */
 	return SLURM_SUCCESS;
@@ -2178,7 +2181,7 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
  * Return conversion units used for stats gathered from cpuacct.
  * Dividing the provided data by this number will give seconds.
  */
-extern long int cgroup_p_get_acct_units(void)
+extern long int cgroup_p_get_acct_units()
 {
 	/* usec and ssec from cpuacct.stat are provided in micro-seconds. */
 	return (long int)USEC_IN_SEC;

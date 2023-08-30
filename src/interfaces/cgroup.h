@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_CGROUP_H
-#define _INTERFACES_CGROUP_H
+#ifndef _COMMON_CGROUP_H_
+#define _COMMON_CGROUP_H_
 
 /* Check filesystem type */
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
@@ -138,6 +138,7 @@ typedef struct {
 	/* jobacct memory */
 	uint64_t limit_in_bytes;
 	uint64_t soft_limit_in_bytes;
+	uint64_t kmem_limit_in_bytes;
 	uint64_t memsw_limit_in_bytes;
 	uint64_t swappiness;
 } cgroup_limits_t;
@@ -160,6 +161,7 @@ typedef struct {
 
 /* Slurm cgroup plugins configuration parameters */
 typedef struct {
+	bool cgroup_automount;
 	char *cgroup_mountpoint;
 
 	char *cgroup_prepend;
@@ -172,6 +174,11 @@ typedef struct {
 
 	uint64_t min_ram_space;		/* Lower bound on memory limit (MB) */
 
+	bool constrain_kmem_space;
+	float allowed_kmem_space;
+	float max_kmem_percent;
+	uint64_t min_kmem_space;
+
 	bool constrain_swap_space;
 	float allowed_swap_space;
 	float max_swap_percent;		/* Upper bound on swap as % of RAM  */
@@ -183,8 +190,8 @@ typedef struct {
 	bool ignore_systemd;
 	bool ignore_systemd_on_failure;
 
+	bool root_owned_cgroups;
 	bool enable_controllers;
-	bool signal_children_processes;
 } cgroup_conf_t;
 
 
@@ -209,8 +216,10 @@ extern int cgroup_g_fini(void);
 /*
  * Create the cgroup namespace and the root cgroup objects. This two entities
  * are the basic ones used by any other function and contain information about
- * the cg paths, mount points, name, ownership, and so on. Set also any specific
- * required parameter on the root cgroup depending on the controller.
+ * the cg paths, mount points, name, ownership, and so on. The creation of the
+ * root namespace may involve also automounting the cgroup subsystem. Set also
+ * any specific required parameter on the root cgroup depending on the
+ * controller.
  *
  * In cgroup/v1 a subsystem is a synonym for cgroup controller.
  *
@@ -398,7 +407,7 @@ extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid);
  *
  * RET hertz - USER_HZ of the system.
  */
-extern long int cgroup_g_get_acct_units(void);
+extern long int cgroup_g_get_acct_units();
 
 /*
  * Check if Cgroup has this feature available.

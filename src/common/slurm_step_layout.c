@@ -83,7 +83,7 @@ slurm_step_layout_t *slurm_step_layout_create(
 	step_layout->task_dist = step_layout_req->task_dist;
 	if ((step_layout->task_dist & SLURM_DIST_STATE_BASE)
 	    == SLURM_DIST_ARBITRARY) {
-		hostlist_t *hl = NULL;
+		hostlist_t hl = NULL;
 		char *buf = NULL;
 		/* set the node list for the task layout later if user
 		 * supplied could be different that the job allocation */
@@ -155,11 +155,6 @@ extern slurm_step_layout_t *fake_slurm_step_layout_create(
 	step_layout->node_cnt = node_cnt;
 	step_layout->start_protocol_ver = protocol_version;
 	step_layout->tasks = xcalloc(node_cnt, sizeof(uint16_t));
-	/*
-	 * Alloc cpus_per_task so it can be packed, but the
-	 * data is unused so no need to set it.
-	 */
-	step_layout->cpus_per_task = xcalloc(node_cnt, sizeof(uint16_t));
 	step_layout->tids = xcalloc(node_cnt, sizeof(uint32_t *));
 
 	step_layout->task_cnt = 0;
@@ -225,9 +220,6 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 	layout->tasks = xcalloc(layout->node_cnt, sizeof(uint16_t));
 	memcpy(layout->tasks, step_layout->tasks,
 	       (sizeof(uint16_t) * layout->node_cnt));
-	layout->cpus_per_task = xcalloc(layout->node_cnt, sizeof(uint16_t));
-	memcpy(layout->cpus_per_task, step_layout->cpus_per_task,
-	       (sizeof(uint16_t) * layout->node_cnt));
 
 	layout->tids = xcalloc(layout->node_cnt, sizeof(uint32_t *));
 	for (i = 0; i < layout->node_cnt; i++) {
@@ -242,8 +234,8 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
 				    slurm_step_layout_t *step_layout2)
 {
-	hostlist_t *hl, *hl2;
-	hostlist_iterator_t *host_itr;
+	hostlist_t hl, hl2;
+	hostlist_iterator_t host_itr;
 	int new_pos = 0, node_task_cnt;
 	char *host;
 
@@ -262,13 +254,6 @@ extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
 			hostlist_push_host(hl, host);
 			pos = step_layout1->node_cnt++;
 			xrecalloc(step_layout1->tasks,
-				  step_layout1->node_cnt,
-				  sizeof(uint16_t));
-			/*
-			 * Alloc cpus_per_task so it can be packed, but the
-			 * data is unused so no need to set it.
-			 */
-			xrecalloc(step_layout1->cpus_per_task,
 				  step_layout1->node_cnt,
 				  sizeof(uint16_t));
 			xrecalloc(step_layout1->tids,
@@ -302,28 +287,7 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 {
 	uint32_t i = 0;
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
-		if (step_layout)
-			i = 1;
-
-		pack16(i, buffer);
-		if (!i)
-			return;
-		packstr(step_layout->front_end, buffer);
-		packstr(step_layout->node_list, buffer);
-		pack32(step_layout->node_cnt, buffer);
-		pack16(step_layout->start_protocol_ver, buffer);
-		pack32(step_layout->task_cnt, buffer);
-		pack32(step_layout->task_dist, buffer);
-
-		for (i = 0; i < step_layout->node_cnt; i++) {
-			pack32_array(step_layout->tids[i],
-				     step_layout->tasks[i],
-				     buffer);
-		}
-		pack16_array(step_layout->cpus_per_task, step_layout->node_cnt,
-			     buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (step_layout)
 			i = 1;
 
@@ -352,38 +316,11 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, buf_t *buffer,
 				    uint16_t protocol_version)
 {
 	uint16_t uint16_tmp;
-	uint32_t num_tids, uint32_tmp;
+	uint32_t num_tids;
 	slurm_step_layout_t *step_layout = NULL;
 	int i;
 
-	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
-		safe_unpack16(&uint16_tmp, buffer);
-		if (!uint16_tmp)
-			return SLURM_SUCCESS;
-
-		step_layout = xmalloc(sizeof(slurm_step_layout_t));
-		*layout = step_layout;
-
-		safe_unpackstr(&step_layout->front_end, buffer);
-		safe_unpackstr(&step_layout->node_list, buffer);
-		safe_unpack32(&step_layout->node_cnt, buffer);
-		safe_unpack16(&step_layout->start_protocol_ver, buffer);
-		safe_unpack32(&step_layout->task_cnt, buffer);
-		safe_unpack32(&step_layout->task_dist, buffer);
-
-		safe_xcalloc(step_layout->tasks, step_layout->node_cnt,
-			     sizeof(uint32_t));
-		safe_xcalloc(step_layout->tids, step_layout->node_cnt,
-			     sizeof(uint32_t *));
-		for (i = 0; i < step_layout->node_cnt; i++) {
-			safe_unpack32_array(&(step_layout->tids[i]),
-					    &num_tids,
-					    buffer);
-			step_layout->tasks[i] = num_tids;
-		}
-		safe_unpack16_array(&step_layout->cpus_per_task, &uint32_tmp,
-				    buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&uint16_tmp, buffer);
 		if (!uint16_tmp)
 			return SLURM_SUCCESS;
@@ -429,7 +366,6 @@ extern int slurm_step_layout_destroy(slurm_step_layout_t *step_layout)
 		xfree(step_layout->front_end);
 		xfree(step_layout->node_list);
 		xfree(step_layout->tasks);
-		xfree(step_layout->cpus_per_task);
 		for (i = 0; i < step_layout->node_cnt; i++) {
 			xfree(step_layout->tids[i]);
 		}
@@ -471,7 +407,7 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 {
 	int cpu_cnt = 0, cpu_inx = 0, cpu_task_cnt = 0, cpu_task_inx = 0, i;
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
-	hostlist_t *hl;
+	hostlist_t hl;
 
 	uint16_t cpus[step_layout->node_cnt];
 	uint16_t cpus_per_task[1];
@@ -498,8 +434,6 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 	step_layout->plane_size = step_layout_req->plane_size;
 
 	step_layout->tasks = xcalloc(step_layout->node_cnt, sizeof(uint16_t));
-	step_layout->cpus_per_task = xcalloc(step_layout->node_cnt,
-					     sizeof(uint16_t));
 	step_layout->tids = xcalloc(step_layout->node_cnt, sizeof(uint32_t *));
 	hl = hostlist_create(step_layout->node_list);
 	/* make sure the number of nodes we think we have
@@ -517,7 +451,7 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 		return SLURM_ERROR;
 	}
 
-	/* hostlist_t *hl = hostlist_create(step_layout->node_list); */
+	/* hostlist_t hl = hostlist_create(step_layout->node_list); */
 	for (i=0; i<step_layout->node_cnt; i++) {
 		/* char *name = hostlist_shift(hl); */
 		/* if (!name) { */
@@ -588,11 +522,11 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 				 const char *arbitrary_nodes)
 {
 	int i=0, j, taskid = 0, task_cnt=0;
-	hostlist_iterator_t *itr = NULL, *itr_task = NULL;
+	hostlist_iterator_t itr = NULL, itr_task = NULL;
 	char *host = NULL;
 
-	hostlist_t *job_alloc_hosts = NULL;
-	hostlist_t *step_alloc_hosts = NULL;
+	hostlist_t job_alloc_hosts = NULL;
+	hostlist_t step_alloc_hosts = NULL;
 
 	int step_inx = 0, step_hosts_cnt = 0;
 	node_record_t **step_hosts_ptrs = NULL;
@@ -630,6 +564,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 
 	if (!running_in_daemon()) {
 		/* running in salloc - init node records */
+		slurm_conf_init(NULL);
 		init_node_conf();
 		build_all_nodeline_info(false, 0);
 		rehash_node();

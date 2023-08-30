@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _CONMGR_H
-#define _CONMGR_H
+#ifndef SLURMRESTD_CONMGR_H
+#define SLURMRESTD_CONMGR_H
 
 #include <netdb.h>
 
@@ -326,14 +326,6 @@ extern con_mgr_t *init_con_mgr(int thread_count, int max_connections,
 extern void free_con_mgr(con_mgr_t *mgr);
 
 /*
- * Request kernel provide auth credentials for connection
- * IN con connection to query creds
- * RET SLURM_SUCCESS or error (ESLURM_NOT_SUPPORTED if connection can't query)
- */
-extern int con_mgr_get_fd_auth_creds(con_mgr_fd_t *con, uid_t *cred_uid, gid_t
-				     *cred_gid, pid_t *cred_pid);
-
-/*
  * instruct connection manager to process fd (async)
  * IN mgr connection manager to update
  * IN type connection type for fd
@@ -474,9 +466,4 @@ extern void con_mgr_add_delayed_work(con_mgr_t *mgr, con_mgr_fd_t *con,
 				     long nanoseconds, void *arg,
 				     const char *tag);
 
-/*
- * Get number of threads used by conmgr
- */
-extern int con_mgr_get_thread_count(const con_mgr_t *mgr);
-
-#endif /* _CONMGR_H */
+#endif /* SLURMRESTD_CONMGR_H */

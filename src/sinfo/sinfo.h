@@ -109,9 +109,9 @@ typedef struct {
 	uint32_t reason_uid;
 	char *version;
 
-	hostlist_t *hostnames;
-	hostlist_t *node_addr;
-	hostlist_t *nodes;
+	hostlist_t hostnames;
+	hostlist_t node_addr;
+	hostlist_t nodes;
 
 	/* part_info contains partition, avail, max_time, job_size,
 	 * root, share/oversubscribe, groups, priority */
@@ -190,7 +190,6 @@ struct sinfo_parameters {
 
 	char* format;
 	char *mimetype; /* --yaml or --json */
-	char *data_parser; /* data_parser args */
 	char* nodes;
 	char* partition;
 	char* sort;

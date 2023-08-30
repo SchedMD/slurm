@@ -683,7 +683,7 @@ static void _spawn_job_watch_thread()
 		slurm_mutex_lock(&job_watch_mutex);
 		stop_job_watch_thread = false;
 		job_watch_thread_running = true;
-		slurm_thread_create_detached(_job_watch_thread, NULL);
+		slurm_thread_create_detached(NULL, _job_watch_thread, NULL);
 		slurm_mutex_unlock(&job_watch_mutex);
 	} else {
 		info("a job_watch_thread already exists");
@@ -6127,7 +6127,7 @@ static int _list_find_not_synced_sib(void *x, void *key)
 	return 0;
 }
 
-extern bool fed_mgr_sibs_synced(void)
+extern bool fed_mgr_sibs_synced()
 {
 	slurmdb_cluster_rec_t *sib;
 	int dummy = 1;

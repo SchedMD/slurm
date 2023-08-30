@@ -177,6 +177,11 @@ extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
 	return cluster_flags;
 }
 
+extern uint32_t slurmdb_setup_plugin_id_select(void)
+{
+	return select_get_plugin_id();
+}
+
 extern void
 slurm_setup_remote_working_cluster(resource_allocation_response_msg_t *msg)
 {
@@ -189,6 +194,9 @@ slurm_setup_remote_working_cluster(resource_allocation_response_msg_t *msg)
 
 	working_cluster_rec = (slurmdb_cluster_rec_t *)msg->working_cluster_rec;
 	msg->working_cluster_rec = NULL;
+
+	working_cluster_rec->plugin_id_select =
+		select_get_plugin_id_pos(working_cluster_rec->plugin_id_select);
 
 	slurm_set_addr(&working_cluster_rec->control_addr,
 		       working_cluster_rec->control_port,

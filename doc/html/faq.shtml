@@ -957,8 +957,8 @@ See the slurm.conf and srun man pages for more information.</p>
 jobs per node?</b></a><br>
 There are two mechanisms to control this.
 If you want to allocate individual processors on a node to jobs,
-configure <i>SelectType=select/cons_tres</i>.
-See <a href="cons_tres.html">Consumable Resources in Slurm</a>
+configure <i>SelectType=select/cons_res</i>.
+See <a href="cons_res.html">Consumable Resources in Slurm</a>
 for details about this configuration.
 If you want to allocate whole nodes to jobs, configure
 configure <i>SelectType=select/linear</i>.

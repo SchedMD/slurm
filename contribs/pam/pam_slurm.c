@@ -36,12 +36,12 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <limits.h>
 #include <pwd.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <syslog.h>
@@ -236,7 +236,7 @@ _parse_args(struct _options *opts, int argc, const char **argv)
 static int
 _hostrange_member(char *hostname, char *str)
 {
-	hostlist_t *hl;
+	hostlist_t hl;
 	int found_host;
 
 	if (!*hostname || !*str)
@@ -296,7 +296,7 @@ static int
 _slurm_match_allocation(uid_t uid)
 {
 	int authorized = 0, i;
-	char hostname[HOST_NAME_MAX];
+	char hostname[MAXHOSTNAMELEN];
 	char *nodename = NULL;
 	job_info_msg_t * msg;
 

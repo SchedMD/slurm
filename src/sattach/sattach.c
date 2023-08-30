@@ -139,7 +139,7 @@ int sattach(int argc, char **argv)
 		log_alter(logopt, 0, NULL);
 	}
 
-	if (cred_g_init() != SLURM_SUCCESS) {
+	if (slurm_cred_init() != SLURM_SUCCESS) {
 		error("failed to initialize cred plugin");
 		exit(error_exit);
 	}
@@ -258,7 +258,7 @@ _nodeid_from_layout(slurm_step_layout_t *layout, uint32_t taskid)
 
 static void print_layout_info(slurm_step_layout_t *layout)
 {
-	hostlist_t *nl;
+	hostlist_t nl;
 	int i, j;
 
 	printf("Job step layout:\n");
@@ -597,8 +597,8 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 		/* FIXME - does nothing yet */
 		break;
 	default:
-		error("received spurious message type: %s",
-		      rpc_num2string(msg->msg_type));
+		error("received spurious message type: %d",
+		      msg->msg_type);
 		break;
 	}
 	return;

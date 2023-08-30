@@ -49,6 +49,7 @@
 #include <fcntl.h>
 #include <ftw.h>
 #include <sys/mount.h>
+#include <linux/limits.h>
 #include <semaphore.h>
 
 #include "src/common/slurm_xlator.h"
@@ -82,11 +83,12 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static slurm_jc_conf_t *jc_conf = NULL;
 static int step_ns_fd = -1;
 static bool force_rm = true;
-static bool plugin_disabled = false;
 
 static void _create_paths(uint32_t job_id, char **job_mount, char **ns_holder,
 			  char **src_bind)
 {
+	jc_conf = get_slurm_jc_conf();
+	xassert(jc_conf);
 	xassert(job_mount);
 
 	xstrfmtcat(*job_mount, "%s/%u", jc_conf->basepath, job_id);
@@ -101,11 +103,6 @@ static void _create_paths(uint32_t job_id, char **job_mount, char **ns_holder,
 static int _find_step_in_list(step_loc_t *stepd, uint32_t *job_id)
 {
 	return (stepd->step_id.job_id == *job_id);
-}
-
-static bool _is_plugin_disabled(char *basepath)
-{
-	return ((!basepath) || (!xstrncasecmp(basepath, "none", 4)));
 }
 
 static int _restore_ns(List steps, const char *d_name)
@@ -155,17 +152,20 @@ extern void container_p_reconfig(void)
  */
 extern int init(void)
 {
+#if defined(__APPLE__) || defined(__FreeBSD__)
+	fatal("%s is not available on this system. (mount bind limitation)",
+	      plugin_name);
+#endif
 	if (running_in_slurmd()) {
 		/*
 		 * Only init the config here for the slurmd. It will be sent by
 		 * the slurmd to the slurmstepd at launch time.
 		 */
-		if (!(jc_conf = init_slurm_jc_conf())) {
+		if (!init_slurm_jc_conf()) {
 			error("%s: Configuration not read correctly: Does '%s' not exist?",
 			      plugin_type, tmpfs_conf_file);
 			return SLURM_ERROR;
 		}
-		plugin_disabled = _is_plugin_disabled(jc_conf->basepath);
 		debug("job_container.conf read successfully");
 	}
 
@@ -209,8 +209,8 @@ extern int container_p_restore(char *dir_name, bool recover)
 	return SLURM_SUCCESS;
 #endif
 
-	if (plugin_disabled)
-		return SLURM_SUCCESS;
+	jc_conf = get_slurm_jc_conf();
+	xassert(jc_conf);
 
 	if (jc_conf->auto_basepath) {
 		int fstatus;
@@ -273,6 +273,7 @@ static int _mount_private_dirs(char *path, uid_t uid)
 		      __func__);
 		return -1;
 	}
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	buffer = xstrdup(jc_conf->dirs);
 	token = strtok_r(buffer, ",", &save_ptr);
 	while (token) {
@@ -306,6 +307,7 @@ static int _mount_private_dirs(char *path, uid_t uid)
 		token = strtok_r(NULL, ",", &save_ptr);
 		xfree(mount_path);
 	}
+#endif
 
 private_mounts_exit:
 	xfree(buffer);
@@ -324,6 +326,7 @@ static int _mount_private_shm(void)
 	if (!((loc[8] == ',') || (loc[8] == 0)))
 		return rc;
 
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	/* handle mounting a new /dev/shm */
 	if (!jc_conf->shared) {
 		/*
@@ -341,6 +344,7 @@ static int _mount_private_shm(void)
 		error("%s: /dev/shm mount failed: %m", __func__);
 		return -1;
 	}
+#endif
 	return rc;
 }
 
@@ -434,6 +438,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		goto end_it;
 	}
 
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	/*
 	 * MS_BIND mountflag would make mount() ignore all other mountflags
 	 * except MS_REC. We need MS_PRIVATE mountflag as well to make the
@@ -451,6 +456,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
+#endif
 
 	fd = open(ns_holder, O_CREAT|O_RDWR, S_IRWXU);
 	if (fd == -1) {
@@ -579,6 +585,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 			rc = -1;
 			goto child_exit;
 		}
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		if (!jc_conf->shared) {
 			/* Set root filesystem to private */
 			if (mount(NULL, "/", NULL, MS_PRIVATE|MS_REC, NULL)) {
@@ -603,6 +610,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 				goto child_exit;
 			}
 		}
+#endif
 
 		/*
 		 * Now we have a persistent mount namespace.
@@ -668,6 +676,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		 * Bind mount /proc/pid/ns/mnt to hold namespace active
 		 * without a process attached to it
 		 */
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		rc = mount(proc_path, ns_holder, NULL, MS_BIND, NULL);
 		xfree(proc_path);
 		if (rc) {
@@ -677,6 +686,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 				      __func__);
 			goto exit1;
 		}
+#endif
 		if (sem_post(sem2) < 0) {
 			error("%s: sem_post failed: %m", __func__);
 			goto exit1;
@@ -707,11 +717,8 @@ exit2:
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
-		if (umount2(job_mount, MNT_DETACH))
-			error("%s: umount2 %s failed: %m",
-			      __func__, job_mount);
-		if (rmdir(job_mount))
-			error("rmdir %s failed: %m", job_mount);
+		umount2(job_mount, MNT_DETACH);
+		rmdir(job_mount);
 	}
 
 end_it:
@@ -730,9 +737,6 @@ extern int container_p_create(uint32_t job_id, uid_t uid)
 extern int container_p_join_external(uint32_t job_id)
 {
 	char *job_mount = NULL, *ns_holder = NULL;
-
-	if (plugin_disabled)
-		return SLURM_SUCCESS;
 
 	_create_paths(job_id, &job_mount, &ns_holder, NULL);
 
@@ -762,9 +766,6 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 #ifdef HAVE_NATIVE_CRAY
 	return SLURM_SUCCESS;
 #endif
-
-	if (plugin_disabled)
-		return SLURM_SUCCESS;
 
 	/*
 	 * Jobid 0 means we are not a real job, but a script running instead we
@@ -869,8 +870,7 @@ static int _delete_ns(uint32_t job_id)
 
 	if (umount2(job_mount, MNT_DETACH))
 		debug2("umount2: %s failed: %m", job_mount);
-	if (rmdir(job_mount))
-		error("rmdir %s failed: %m", job_mount);
+	rmdir(job_mount);
 
 	xfree(job_mount);
 	xfree(ns_holder);
@@ -885,17 +885,11 @@ extern int container_p_delete(uint32_t job_id)
 
 extern int container_p_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
 {
-	if (plugin_disabled)
-		return SLURM_SUCCESS;
-
 	return _create_ns(job_id, step);
 }
 
 extern int container_p_stepd_delete(uint32_t job_id)
 {
-	if (plugin_disabled)
-		return SLURM_SUCCESS;
-
 	return _delete_ns(job_id);
 }
 
@@ -929,10 +923,8 @@ extern int container_p_recv_stepd(int fd)
 	buf = init_buf(len);
 	safe_read(fd, buf->head, len);
 
-	if (!(jc_conf = set_slurm_jc_conf(buf)))
+	if(!set_slurm_jc_conf(buf))
 		goto rwfail;
-
-	plugin_disabled = _is_plugin_disabled(jc_conf->basepath);
 
 	return SLURM_SUCCESS;
 rwfail:

@@ -29,7 +29,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
-hostlist_t *hl = NULL;
+hostlist_t hl = NULL;
 int testid = 0;
 
 static void _find_host(const char *hostname)

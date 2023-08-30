@@ -677,11 +677,11 @@ static void _append_node_record(sview_node_info_t *sview_node_info,
 	_update_node_record(sview_node_info, treestore);
 }
 
-static void _update_info_node(list_t *info_list, GtkTreeView *tree_view)
+static void _update_info_node(List info_list, GtkTreeView *tree_view)
 {
 	GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
 	char *name = NULL;
-	list_itr_t *itr = NULL;
+	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info = NULL;
 
 	set_for_update(model, SORTID_UPDATED);
@@ -740,7 +740,7 @@ static void _node_info_list_del(void *object)
 	}
 }
 
-static void _display_info_node(list_t *info_list, popup_info_t *popup_win)
+static void _display_info_node(List info_list,	popup_info_t *popup_win)
 {
 	specific_info_t *spec_info = popup_win->spec_info;
 	char *name = (char *)spec_info->search_info->gchar_data;
@@ -748,7 +748,7 @@ static void _display_info_node(list_t *info_list, popup_info_t *popup_win)
 	node_info_t *node_ptr = NULL;
 	GtkTreeView *treeview = NULL;
 	int update = 0;
-	list_itr_t *itr = NULL;
+	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info = NULL;
 	int i = -1;
 
@@ -855,17 +855,17 @@ extern void refresh_node(GtkAction *action, gpointer user_data)
 }
 
 /* don't destroy the list from this function */
-extern list_t *create_node_info_list(node_info_msg_t *node_info_ptr,
-				     bool by_partition)
+extern List create_node_info_list(node_info_msg_t *node_info_ptr,
+				  bool by_partition)
 {
-	static list_t *info_list = NULL;
+	static List info_list = NULL;
 	static node_info_msg_t *last_node_info_ptr = NULL;
-	list_t *last_list = NULL;
-	list_itr_t *last_list_itr = NULL;
+	List last_list = NULL;
+	ListIterator last_list_itr = NULL;
 	int i = 0;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	node_info_t *node_ptr = NULL;
-	char time_str[256];
+	char user[32], time_str[256];
 
 	if (!by_partition) {
 		if (!node_info_ptr
@@ -921,12 +921,17 @@ extern list_t *create_node_info_list(node_info_msg_t *node_info_ptr,
 
 		if (node_ptr->reason &&
 		    (node_ptr->reason_uid != NO_VAL) && node_ptr->reason_time) {
-			char *user = uid_to_string(node_ptr->reason_uid);
+			struct passwd *pw = NULL;
+
+			if ((pw=getpwuid(node_ptr->reason_uid)))
+				snprintf(user, sizeof(user), "%s", pw->pw_name);
+			else
+				snprintf(user, sizeof(user), "Unk(%u)",
+					 node_ptr->reason_uid);
 			slurm_make_time_str(&node_ptr->reason_time,
 					    time_str, sizeof(time_str));
 			sview_node_info_ptr->reason = xstrdup_printf(
 				"%s [%s@%s]", node_ptr->reason, user, time_str);
-			xfree(user);
 		} else if (node_ptr->reason)
 			sview_node_info_ptr->reason = xstrdup(node_ptr->reason);
 
@@ -995,7 +1000,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_node_info_msg(g_node_info_ptr);
 			changed = 1;
-		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
+		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_node_ptr = g_node_info_ptr;
 			changed = 0;
@@ -1549,10 +1554,10 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
 	static GtkWidget *display_widget = NULL;
-	list_t *info_list = NULL;
+	List info_list = NULL;
 	int i = 0, sort_key;
 	sview_node_info_t *sview_node_info_ptr = NULL;
-	list_itr_t *itr = NULL;
+	ListIterator itr = NULL;
 	GtkTreePath *path = NULL;
 	static bool set_opts = false;
 
@@ -1595,7 +1600,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 		if (display_widget)
 			gtk_widget_destroy(display_widget);
 		sprintf(error_char, "slurm_load_node: %s",
-			slurm_strerror(errno));
+			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		display_widget = g_object_ref(label);
 		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
@@ -1693,13 +1698,13 @@ extern void specific_info_node(popup_info_t *popup_win)
 	char error_char[100];
 	GtkWidget *label = NULL;
 	GtkTreeView *tree_view = NULL;
-	list_t *info_list = NULL;
-	list_t *send_info_list = NULL;
-	list_itr_t *itr = NULL;
+	List info_list = NULL;
+	List send_info_list = NULL;
+	ListIterator itr = NULL;
 	sview_node_info_t *sview_node_info_ptr = NULL;
 	node_info_t *node_ptr = NULL;
-	hostlist_t *hostlist = NULL;
-	hostlist_iterator_t *host_itr = NULL;
+	hostlist_t hostlist = NULL;
+	hostlist_iterator_t host_itr = NULL;
 	int i = -1, sort_key;
 	sview_search_info_t *search_info = spec_info->search_info;
 
@@ -1727,7 +1732,7 @@ extern void specific_info_node(popup_info_t *popup_win)
 		if (spec_info->display_widget)
 			gtk_widget_destroy(spec_info->display_widget);
 		sprintf(error_char, "slurm_load_node: %s",
-			slurm_strerror(errno));
+			slurm_strerror(slurm_get_errno()));
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(popup_win->table,
 					  label,
@@ -1875,7 +1880,7 @@ extern void set_menus_node(void *arg, void *arg2, GtkTreePath *path, int type)
 	GtkTreeView *tree_view = (GtkTreeView *)arg;
 	popup_info_t *popup_win = (popup_info_t *)arg;
 	GtkMenu *menu = (GtkMenu *)arg2;
-	list_t *button_list = arg2;
+	List button_list = (List)arg2;
 
 	switch(type) {
 	case TAB_CLICKED:
@@ -1934,7 +1939,7 @@ extern void popup_all_node(GtkTreeModel *model, GtkTreeIter *iter, int id)
 extern void popup_all_node_name(char *name, int id, char *cluster_name)
 {
 	char title[100] = {0};
-	list_itr_t *itr = NULL;
+	ListIterator itr = NULL;
 	popup_info_t *popup_win = NULL;
 	GError *error = NULL;
 
@@ -1986,7 +1991,8 @@ extern void popup_all_node_name(char *name, int id, char *cluster_name)
 		if (cluster_flags & CLUSTER_FLAG_FED)
 			popup_win->spec_info->search_info->cluster_name =
 				g_strdup(cluster_name);
-		if (!sview_thread_new((gpointer)popup_thr, popup_win, &error)) {
+		if (!sview_thread_new((gpointer)popup_thr, popup_win,
+				      false, &error)) {
 			g_printerr ("Failed to create node popup thread: "
 				    "%s\n",
 				    error->message);
@@ -2029,7 +2035,7 @@ extern void select_admin_nodes(GtkTreeModel *model,
 {
 	if (treeview) {
 		char *old_value = NULL;
-		hostlist_t *hl = NULL;
+		hostlist_t hl = NULL;
 		process_node_t process_node;
 		memset(&process_node, 0, sizeof(process_node_t));
 		if (node_col == NO_VAL)

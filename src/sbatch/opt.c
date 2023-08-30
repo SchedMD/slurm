@@ -48,6 +48,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
+#include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
@@ -671,7 +672,7 @@ static bool _opt_verify(void)
 {
 	bool verified = true;
 	char *dist = NULL;
-	hostlist_t *hl = NULL;
+	hostlist_t hl = NULL;
 	int hl_cnt = 0;
 
 	validate_options_salloc_sbatch_srun(&opt);
@@ -804,7 +805,7 @@ static bool _opt_verify(void)
 	 * if (n/plane_size < N) and ((N-1) * plane_size >= n) -->
 	 * problem Simple check will not catch all the problem/invalid
 	 * cases.
-	 * The limitations of the plane distribution in the cons_tres
+	 * The limitations of the plane distribution in the cons_res
 	 * environment are more extensive and are documented in the
 	 * Slurm reference guide.  */
 	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE &&
@@ -925,7 +926,8 @@ static bool _opt_verify(void)
 	if (opt.threads_per_core != NO_VAL)
 		het_job_env.threads_per_core = opt.threads_per_core;
 
-	FREE_NULL_HOSTLIST(hl);
+	if (hl)
+		hostlist_destroy(hl);
 
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");
@@ -1136,7 +1138,8 @@ static void _usage(void)
 "              [--core-spec=cores] [--thread-spec=threads]\n"
 "              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs] [--spread-job]\n"
-"              [--export[=names]] [--delay-boot=mins] [--use-min-nodes]\n"
+"              [--export[=names]] [--export-file=file|fd] [--delay-boot=mins]\n"
+"              [--use-min-nodes]\n"
 "              [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "              [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "              [--mem-per-gpu=MB] [--tres-per-task=list]\n"
@@ -1167,6 +1170,8 @@ static void _help(void)
 "  -D, --chdir=directory       set working directory for batch script\n"
 "  -e, --error=err             file for batch script's standard error\n"
 "      --export[=names]        specify environment variables to export\n"
+"      --export-file=file|fd   specify environment variables file or file\n"
+"                              descriptor to export\n"
 "      --get-user-env          load environment from local cluster\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
 "      --gres=list             required generic resources\n"

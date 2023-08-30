@@ -64,8 +64,8 @@ typedef struct {
 	uint32_t *task_cnts; /* Number of tasks on each node in this step */
 	int node_id; /* relative position of this node in this step */
 	int node_id_job; /* relative position of this node in Slurm job */
-	hostlist_t *job_hl;
-	hostlist_t *step_hl;
+	hostlist_t job_hl;
+	hostlist_t step_hl;
 	char *hostname;
 	uint32_t node_tasks; /* number of tasks on *this* node */
 	uint32_t *gtids; /* global ids of tasks located on *this* node */
@@ -283,7 +283,7 @@ static inline char *pmixp_info_task_map(void)
 	return _pmixp_job_info.task_map_packed;
 }
 
-static inline hostlist_t *pmixp_info_step_hostlist(void)
+static inline hostlist_t pmixp_info_step_hostlist(void)
 {
 	return _pmixp_job_info.step_hl;
 }

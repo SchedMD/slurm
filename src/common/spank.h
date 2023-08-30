@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _COMMON_SPANK_H
-#define _COMMON_SPANK_H
+#ifndef _PLUGSTACK_H
+#define _PLUGSTACK_H
 
 #include <config.h>
 
@@ -125,7 +125,7 @@ void spank_option_table_destroy (struct option *opt_table);
  *
  *  Returns <0 if any option's callback fails. Zero otherwise.
  */
-extern int spank_process_env_options(void);
+extern int spank_process_env_options();
 
 /*
  *  Process a single spank option which was tagged by `optval' in the
@@ -217,4 +217,4 @@ extern bool spank_option_isset(char *optname);
  */
 extern bool spank_option_get_next_set(char **plugin, char **name,
 				      char **value, void **state);
-#endif /* !_COMMON_SPANK_H */
+#endif /* !_PLUGSTACK_H */

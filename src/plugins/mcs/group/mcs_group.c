@@ -245,24 +245,33 @@ static int _check_and_load_params(void)
  */
 static int _find_mcs_label(gid_t *groups, int ngroups, char **result)
 {
+	int rc = SLURM_SUCCESS;
+	int i = 0;
+	int j = 0;
+	uint32_t tmp_group ;
+	struct group *gr;
+
 	if (ngroups == 0)
 		return SLURM_ERROR;
 
-	for (int i = 0; i < nb_mcs_groups; i++) {
-		for (int j = 0; j < ngroups; j++) {
-			if (array_mcs_parameter[i] == groups[j]) {
-				*result = gid_to_string_or_null(groups[j]);
-				if (!*result) {
-					error("%s: failed to lookup name for gid %u",
-					      __func__, groups[j]);
-					return SLURM_ERROR;
+	for (i = 0; i < nb_mcs_groups; i++) {
+		for (j = 0; j < ngroups; j++) {
+			tmp_group = (uint32_t) groups[j];
+			if (array_mcs_parameter[i] == tmp_group) {
+				if ((gr = getgrgid(groups[j]))) {
+					*result = gr->gr_name;
+				} else {
+					error("%s: getgrgid(%u): %m",
+					      __func__, (uint32_t) groups[j]);
+					rc = SLURM_ERROR;
 				}
-				return SLURM_SUCCESS;
+				return rc;
 			}
 		}
 	}
+	rc = SLURM_ERROR;
 
-	return SLURM_ERROR;
+	return rc;
 }
 
 /*
@@ -342,7 +351,7 @@ extern int mcs_p_set_mcs_label(job_record_t *job_ptr, char *label)
 			return SLURM_ERROR;
 		} else {
 			xfree(job_ptr->mcs_label);
-			job_ptr->mcs_label = result;
+			job_ptr->mcs_label = xstrdup(result);
 			return SLURM_SUCCESS;
 		}
 	} else {

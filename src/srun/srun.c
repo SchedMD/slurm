@@ -59,24 +59,24 @@
 #include <unistd.h>
 
 #include "src/common/fd.h"
+
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/cli_filter.h"
+#include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/spank.h"
+#include "src/interfaces/switch.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-
-#include "src/interfaces/auth.h"
-#include "src/interfaces/cli_filter.h"
-#include "src/interfaces/jobacct_gather.h"
-#include "src/interfaces/switch.h"
 
 #include "src/bcast/file_bcast.h"
 
@@ -179,7 +179,7 @@ int srun(int ac, char **av)
 
 	if (cli_filter_init() != SLURM_SUCCESS)
 		fatal("failed to initialize cli_filter plugin");
-	if (cred_g_init() != SLURM_SUCCESS)
+	if (slurm_cred_init() != SLURM_SUCCESS)
 		fatal("failed to initialize cred plugin");
 	if (switch_init(0) != SLURM_SUCCESS )
 		fatal("failed to initialize switch plugins");
@@ -190,9 +190,9 @@ int srun(int ac, char **av)
 	if (opt_list) {
 		if (!_enable_het_job_steps())
 			fatal("Job steps that span multiple components of a heterogeneous job are not currently supported");
-		create_srun_job((void **) &srun_job_list, &got_alloc);
+		create_srun_job((void **) &srun_job_list, &got_alloc, 0, 1);
 	} else
-		create_srun_job((void **) &job, &got_alloc);
+		create_srun_job((void **) &job, &got_alloc, 0, 1);
 
 	/*
 	 * Detect is process is in non-matching user namespace or UIDs
@@ -243,9 +243,10 @@ int srun(int ac, char **av)
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();
 	mpi_fini();
+	select_g_fini();
 	switch_fini();
 	slurm_reset_all_options(&opt, false);
-	auth_g_fini();
+	slurm_auth_fini();
 	slurm_conf_destroy();
 	log_fini();
 #endif /* MEMORY_LEAK_DEBUG */
@@ -277,7 +278,7 @@ static void *_launch_one_app(void *data)
 		launch_begin = true;
 		slurm_mutex_unlock(&launch_mutex);
 
-		pre_launch_srun_job(job, opt_local);
+		pre_launch_srun_job(job, 0, 1, opt_local);
 
 		slurm_mutex_lock(&launch_mutex);
 		launch_fini = true;
@@ -326,7 +327,7 @@ relaunch:
 static void _reorder_het_job_recs(char **in_node_list, uint16_t **in_task_cnts,
 			       uint32_t ***in_tids, int total_nnodes)
 {
-	hostlist_t *in_hl, *out_hl;
+	hostlist_t in_hl, out_hl;
 	uint16_t *out_task_cnts = NULL;
 	uint32_t **out_tids = NULL;
 	char *hostname;
@@ -414,7 +415,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		first_job = (srun_job_t *) list_peek(srun_job_list);
 		if (!opt_list) {
 			if (first_job)
-				fini_srun(first_job, got_alloc, &global_rc);
+				fini_srun(first_job, got_alloc, &global_rc, 0);
 			fatal("%s: have srun_job_list, but no opt_list",
 			      __func__);
 		}
@@ -498,7 +499,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 				slurm_mutex_unlock(&step_mutex);
 				if (first_job) {
 					fini_srun(first_job, got_alloc,
-						  &global_rc);
+						  &global_rc, 0);
 				}
 				fatal("%s: job allocation count does not match request count (%d != %d)",
 				      __func__, list_count(srun_job_list),
@@ -541,7 +542,8 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			opts->step_mutex  = &step_mutex;
 			srun_opt->het_step_cnt = het_job_step_cnt;
 
-			slurm_thread_create_detached(_launch_one_app, opts);
+			slurm_thread_create_detached(NULL, _launch_one_app,
+						     opts);
 		}
 		xfree(het_job_node_list);
 		xfree(het_job_task_cnts);
@@ -554,7 +556,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		slurm_mutex_unlock(&step_mutex);
 
 		if (first_job)
-			fini_srun(first_job, got_alloc, &global_rc);
+			fini_srun(first_job, got_alloc, &global_rc, 0);
 	} else {
 		int i;
 		mpir_init(job->ntasks);
@@ -596,7 +598,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		opts->opt_local   = &opt;
 		sropt.het_step_cnt = 1;
 		_launch_one_app(opts);
-		fini_srun(job, got_alloc, &global_rc);
+		fini_srun(job, got_alloc, &global_rc, 0);
 	}
 }
 
@@ -732,7 +734,7 @@ static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 		srun_job_t *first_job = list_peek(srun_job_list);
 		if (!opt_list) {
 			if (first_job)
-				fini_srun(first_job, got_alloc, &global_rc);
+				fini_srun(first_job, got_alloc, &global_rc, 0);
 			fatal("%s: have srun_job_list, but no opt_list",
 			      __func__);
 		}
@@ -743,7 +745,7 @@ static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 			if (!job) {
 				if (first_job) {
 					fini_srun(first_job, got_alloc,
-						  &global_rc);
+						  &global_rc, 0);
 				}
 				fatal("%s: job allocation count does not match request count (%d != %d)",
 				      __func__, list_count(srun_job_list),
@@ -934,12 +936,12 @@ static void _pty_restore(void)
 
 static void _setup_env_working_cluster(void)
 {
-	char *working_env, *addr_ptr, *port_ptr, *rpc_ptr;
+	char *working_env, *addr_ptr, *port_ptr, *rpc_ptr, *select_ptr;
 
 	if ((working_env = xstrdup(getenv("SLURM_WORKING_CLUSTER"))) == NULL)
 		return;
 
-	/* Format is cluster_name:address:port:rpc */
+	/* Format is cluster_name:address:port:rpc[:plugin_id_select] */
 	if (!(addr_ptr = strchr(working_env,  ':')) ||
 	    !(port_ptr = strchr(addr_ptr + 1, ':')) ||
 	    !(rpc_ptr  = strchr(port_ptr + 1, ':'))) {
@@ -952,6 +954,9 @@ static void _setup_env_working_cluster(void)
 	*port_ptr++ = '\0';
 	*rpc_ptr++  = '\0';
 
+	if ((select_ptr = strchr(rpc_ptr, ':')))
+		*select_ptr++ = '\0';
+
 	if (xstrcmp(slurm_conf.cluster_name, working_env)) {
 		working_cluster_rec = xmalloc(sizeof(slurmdb_cluster_rec_t));
 		slurmdb_init_cluster_rec(working_cluster_rec, false);
@@ -963,7 +968,11 @@ static void _setup_env_working_cluster(void)
 		slurm_set_addr(&working_cluster_rec->control_addr,
 			       working_cluster_rec->control_port,
 			       working_cluster_rec->control_host);
+
+		if (select_ptr)
+			working_cluster_rec->plugin_id_select =
+				select_get_plugin_id_pos(strtol(select_ptr,
+								NULL, 10));
 	}
 	xfree(working_env);
-	unsetenv("SLURM_WORKING_CLUSTER");
 }

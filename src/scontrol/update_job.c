@@ -110,7 +110,7 @@ fail:	xfree(local_job_str);
 /* Get the next job ID from local variables set up by _is_job_id() */
 static char *_next_job_id(void)
 {
-	static hostlist_t *hl = NULL;
+	static hostlist_t hl = NULL;
 	static char *save_ptr = NULL;
 	static char *next_job_id = NULL;
 	static char *task_id_spec = NULL;
@@ -232,11 +232,11 @@ scontrol_hold(char *op, char *job_str)
 		job_str += 4;
 
 	slurm_init_job_desc_msg (&job_msg);
-	if (!xstrncasecmp(op, "holdu", 5) ||
-	    !xstrncasecmp(op, "uhold", 5)) {
+	if ((xstrncasecmp(op, "holdu", 5) == 0) ||
+	    (xstrncasecmp(op, "uhold", 5) == 0)) {
 		job_msg.priority = 0;
 		job_msg.alloc_sid = ALLOC_SID_USER_HOLD;
-	} else if (!xstrncasecmp(op, "hold", 4)) {
+	} else if (xstrncasecmp(op, "hold", 4) == 0) {
 		job_msg.priority = 0;
 		job_msg.alloc_sid = 0;
 	} else
@@ -378,9 +378,9 @@ scontrol_suspend(char *op, char *job_str)
 	job_array_resp_msg_t *resp = NULL;
 	char *job_id_str;
 
-	if (!xstrncasecmp(job_str, "jobid=", 6))
+	if (xstrncasecmp(job_str, "jobid=", 6) == 0)
 		job_str += 6;
-	if (!xstrncasecmp(job_str, "job=", 4))
+	if (xstrncasecmp(job_str, "job=", 4) == 0)
 		job_str += 4;
 
 	if (_is_job_id(job_str)) {
@@ -442,9 +442,9 @@ scontrol_requeue(uint32_t flags, char *job_str)
 		return;
 	}
 
-	if (!xstrncasecmp(job_str, "jobid=", 6))
+	if (xstrncasecmp(job_str, "jobid=", 6) == 0)
 		job_str += 6;
-	if (!xstrncasecmp(job_str, "job=", 4))
+	if (xstrncasecmp(job_str, "job=", 4) == 0)
 		job_str += 4;
 
 	if (_is_job_id(job_str)) {
@@ -546,9 +546,9 @@ scontrol_top_job(char *job_id_str)
 {
 	int rc;
 
-	if (!xstrncasecmp(job_id_str, "jobid=", 6))
+	if (xstrncasecmp(job_id_str, "jobid=", 6) == 0)
 		job_id_str += 6;
-	if (!xstrncasecmp(job_id_str, "job=", 4))
+	if (xstrncasecmp(job_id_str, "job=", 4) == 0)
 		job_id_str += 4;
 
 	rc = slurm_top_job(job_id_str);
@@ -593,8 +593,9 @@ extern int scontrol_update_job(int argc, char **argv)
 			}
 			val++;
 			vallen = strlen(val);
+		}
 		/* Handle any tags that might not have an equal sign here */
-		} else if (!xstrncasecmp(tag, "Nice", MAX(strlen(tag), 2))) {
+		else if (xstrncasecmp(tag, "Nice", MAX(strlen(tag), 2)) == 0) {
 			job_msg.nice = NICE_OFFSET + 100;
 			update_cnt++;
 			continue;
@@ -615,9 +616,11 @@ extern int scontrol_update_job(int argc, char **argv)
 			return -1;
 		}
 
-		if (!xstrncasecmp(tag, "JobId", MAX(taglen, 3))) {
+		if (xstrncasecmp(tag, "JobId", MAX(taglen, 3)) == 0) {
 			job_msg.job_id_str = val;
-		} else if (!xstrncasecmp(tag, "AdminComment", MAX(taglen, 6))) {
+		}
+		else if (xstrncasecmp(tag, "AdminComment",
+				      MAX(taglen, 6)) == 0) {
 			if (add_info) {
 				if (add_info[0] == '-') {
 					error("Invalid syntax, AdminComment can not be subtracted from.");
@@ -634,7 +637,9 @@ extern int scontrol_update_job(int argc, char **argv)
 			} else
 				job_msg.admin_comment = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "SiteFactor", MAX(taglen, 5))) {
+		}
+		else if (xstrncasecmp(tag, "SiteFactor",
+				      MAX(taglen, 5)) == 0) {
 			long long tmp_prio;
 			tmp_prio = strtoll(val, (char **)NULL, 10);
 			if (llabs(tmp_prio) > (NICE_OFFSET - 3)) {
@@ -645,8 +650,9 @@ extern int scontrol_update_job(int argc, char **argv)
 			}
 			job_msg.site_factor = NICE_OFFSET + tmp_prio;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "ArrayTaskThrottle",
-					 MAX(taglen, 10))) {
+		}
+		else if (xstrncasecmp(tag, "ArrayTaskThrottle",
+				      MAX(taglen, 10)) == 0) {
 			int throttle;
 			throttle = strtoll(val, (char **) NULL, 10);
 			if (throttle < 0) {
@@ -656,17 +662,21 @@ extern int scontrol_update_job(int argc, char **argv)
 			}
 			job_msg.array_inx = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Comment", MAX(taglen, 3))) {
+		}
+		else if (xstrncasecmp(tag, "Comment", MAX(taglen, 3)) == 0) {
 			job_msg.comment = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Clusters", MAX(taglen, 8))) {
+		}
+		else if (xstrncasecmp(tag, "Clusters", MAX(taglen, 8)) == 0) {
 			job_msg.clusters = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "ClusterFeatures",
-					 MAX(taglen, 8))) {
+		}
+		else if (xstrncasecmp(tag, "ClusterFeatures",
+				      MAX(taglen, 8)) == 0) {
 			job_msg.cluster_features = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "DelayBoot", MAX(taglen, 5))) {
+		}
+		else if (xstrncasecmp(tag, "DelayBoot", MAX(taglen, 5)) == 0) {
 			int time_sec = time_str2secs(val);
 			if (time_sec == NO_VAL) {
 				error("Invalid DelayBoot value");
@@ -678,7 +688,8 @@ extern int scontrol_update_job(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "Extra", MAX(taglen, 3))) {
 			job_msg.extra = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "TimeLimit", MAX(taglen, 5))) {
+		}
+		else if (xstrncasecmp(tag, "TimeLimit", MAX(taglen, 5)) == 0) {
 			uint32_t job_current_time, time_limit;
 
 			if (val && ((val[0] == '+') || (val[0] == '-'))) {
@@ -732,7 +743,8 @@ extern int scontrol_update_job(int argc, char **argv)
 			}
 			job_msg.time_limit = time_limit;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "TimeMin", MAX(taglen, 5))) {
+		}
+		else if (xstrncasecmp(tag, "TimeMin", MAX(taglen, 5)) == 0) {
 			int time_min = time_str2mins(val);
 			if ((time_min < 0) && (time_min != INFINITE)) {
 				error("Invalid TimeMin value");
@@ -741,14 +753,16 @@ extern int scontrol_update_job(int argc, char **argv)
 			}
 			job_msg.time_min = time_min;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Priority", MAX(taglen, 2))) {
+		}
+		else if (xstrncasecmp(tag, "Priority", MAX(taglen, 2)) == 0) {
 			if (parse_uint32(val, &job_msg.priority)) {
 				error ("Invalid Priority value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Nice", MAX(taglen, 2))) {
+		}
+		else if (xstrncasecmp(tag, "Nice", MAX(taglen, 2)) == 0) {
 			long long tmp_nice;
 			tmp_nice = strtoll(val, (char **)NULL, 10);
 			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
@@ -759,17 +773,20 @@ extern int scontrol_update_job(int argc, char **argv)
 			}
 			job_msg.nice = NICE_OFFSET + tmp_nice;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "CPUsPerTask", MAX(taglen, 9))) {
+		}
+		else if (!xstrncasecmp(tag, "CPUsPerTask", MAX(taglen, 9))) {
 			if (parse_uint16(val, &job_msg.cpus_per_task)) {
 				error("Invalid CPUsPerTask value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "CpusPerTres", MAX(taglen, 9))) {
+		}
+		else if (!xstrncasecmp(tag, "CpusPerTres", MAX(taglen, 9))) {
 			job_msg.cpus_per_tres = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "NumCPUs", MAX(taglen, 6))) {
+		}
+		else if (xstrncasecmp(tag, "NumCPUs", MAX(taglen, 6)) == 0) {
 			int min_cpus, max_cpus=0;
 			if (!get_resource_arg_range(val, "NumCPUs", &min_cpus,
 						   &max_cpus, false) ||
@@ -783,29 +800,32 @@ extern int scontrol_update_job(int argc, char **argv)
 			if (max_cpus)
 				job_msg.max_cpus = max_cpus;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "NumTasks", MAX(taglen, 8)) ||
-			   !xstrncasecmp(tag, "ReqProcs", MAX(taglen, 8))) {
-			/* ReqProcs was removed in Slurm version 2.1 */
+		}
+		/* ReqProcs was removed in Slurm version 2.1 */
+		else if ((xstrncasecmp(tag, "NumTasks", MAX(taglen, 8)) == 0) ||
+			 (xstrncasecmp(tag, "ReqProcs", MAX(taglen, 8)) == 0)) {
 			if (parse_uint32(val, &job_msg.num_tasks)) {
 				error ("Invalid NumTasks value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Requeue", MAX(taglen, 4))) {
+		}
+		else if (xstrncasecmp(tag, "Requeue", MAX(taglen, 4)) == 0) {
 			if (parse_uint16(val, &job_msg.requeue)) {
 				error ("Invalid Requeue value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "ReqNodes", MAX(taglen, 8)) ||
-			   !xstrncasecmp(tag, "NumNodes", MAX(taglen, 8))) {
-			/* ReqNodes was replaced by NumNodes in Slurm version 2.1 */
+		}
+		/* ReqNodes was replaced by NumNodes in Slurm version 2.1 */
+		else if ((xstrncasecmp(tag, "ReqNodes", MAX(taglen, 8)) == 0) ||
+		         (xstrncasecmp(tag, "NumNodes", MAX(taglen, 8)) == 0)) {
 			int min_nodes, max_nodes, rc;
-			if (!xstrcmp(val, "0")) {
+			if (xstrcmp(val, "0") == 0) {
 				job_msg.min_nodes = 0;
-			} else if (!xstrcasecmp(val, "ALL")) {
+			} else if (xstrcasecmp(val, "ALL") == 0) {
 				job_msg.min_nodes = INFINITE;
 			} else {
 				char *job_size_str = NULL;
@@ -822,51 +842,58 @@ extern int scontrol_update_job(int argc, char **argv)
 			}
 			update_size = true;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "ReqSockets", MAX(taglen, 4))) {
+		}
+		else if (xstrncasecmp(tag, "ReqSockets", MAX(taglen, 4)) == 0) {
 			if (parse_uint16(val, &job_msg.sockets_per_node)) {
 				error ("Invalid ReqSockets value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "ReqCores", MAX(taglen, 4))) {
+		}
+		else if (xstrncasecmp(tag, "ReqCores", MAX(taglen, 4)) == 0) {
 			if (parse_uint16(val, &job_msg.cores_per_socket)) {
 				error ("Invalid ReqCores value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "TasksPerNode", MAX(taglen, 2))) {
+		}
+                else if (xstrncasecmp(tag, "TasksPerNode", MAX(taglen, 2))==0) {
 			if (parse_uint16(val, &job_msg.ntasks_per_node)) {
 				error ("Invalid TasksPerNode value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
                         update_cnt++;
-                } else if (!xstrncasecmp(tag, "ReqThreads", MAX(taglen, 4))) {
+                }
+		else if (xstrncasecmp(tag, "ReqThreads", MAX(taglen, 4)) == 0) {
 			if (parse_uint16(val, &job_msg.threads_per_core)) {
 				error ("Invalid ReqThreads value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "MinCPUsNode", MAX(taglen, 4))) {
+		}
+		else if (xstrncasecmp(tag, "MinCPUsNode", MAX(taglen, 4)) == 0) {
 			if (parse_uint16(val, &job_msg.pn_min_cpus)) {
 				error ("Invalid MinCPUsNode value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "MinMemoryNode",
-					 MAX(taglen, 10))) {
+		}
+		else if (xstrncasecmp(tag, "MinMemoryNode",
+				     MAX(taglen, 10)) == 0) {
 			if (parse_uint64(val, &job_msg.pn_min_memory)) {
 				error ("Invalid MinMemoryNode value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "MinMemoryCPU",
-					 MAX(taglen, 10))) {
+		}
+		else if (xstrncasecmp(tag, "MinMemoryCPU",
+				     MAX(taglen, 10)) == 0) {
 			if (parse_uint64(val, &job_msg.pn_min_memory)) {
 				error ("Invalid MinMemoryCPU value: %s", val);
 				exit_code = 1;
@@ -874,29 +901,35 @@ extern int scontrol_update_job(int argc, char **argv)
 			}
 			job_msg.pn_min_memory |= MEM_PER_CPU;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "MinTmpDiskNode",
-					 MAX(taglen, 5))) {
+		}
+		else if (xstrncasecmp(tag, "MinTmpDiskNode",
+				     MAX(taglen, 5)) == 0) {
 			if (parse_uint32(val, &job_msg.pn_min_tmp_disk)) {
 				error ("Invalid MinTmpDiskNode value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Partition", MAX(taglen, 2))) {
+		}
+		else if (xstrncasecmp(tag, "Partition", MAX(taglen, 2)) == 0) {
 			job_msg.partition = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "QOS", MAX(taglen, 2))) {
+		}
+		else if (xstrncasecmp(tag, "QOS", MAX(taglen, 2)) == 0) {
 			job_msg.qos = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "ReservationName",
-					 MAX(taglen, 3))) {
+		}
+		else if (xstrncasecmp(tag, "ReservationName",
+				     MAX(taglen, 3)) == 0) {
 			job_msg.reservation = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Name", MAX(taglen, 2)) ||
+		}
+		else if (!xstrncasecmp(tag, "Name", MAX(taglen, 2)) ||
 			 !xstrncasecmp(tag, "JobName", MAX(taglen, 4))) {
 			job_msg.name = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "WCKey", MAX(taglen, 1))) {
+		}
+		else if (xstrncasecmp(tag, "WCKey", MAX(taglen, 1)) == 0) {
 			job_msg.wckey = val;
 			update_cnt++;
 		} else if (!xstrncasecmp(tag, "StdErr", MAX(taglen, 6))) {
@@ -905,10 +938,12 @@ extern int scontrol_update_job(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "StdIn", MAX(taglen, 5))) {
 			job_msg.std_in = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "StdOut", MAX(taglen, 6))) {
+		}
+		else if (xstrncasecmp(tag, "StdOut", MAX(taglen, 6)) == 0) {
 			job_msg.std_out = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Switches", MAX(taglen, 5))) {
+		}
+		else if (xstrncasecmp(tag, "Switches", MAX(taglen, 5)) == 0) {
 			char *sep_char;
 			job_msg.req_switch =
 				(uint32_t) strtol(val, &sep_char, 10);
@@ -917,19 +952,21 @@ extern int scontrol_update_job(int argc, char **argv)
 				job_msg.wait4switch = time_str2mins(sep_char+1)
 						      * 60;
 			}
-		} else if (!xstrncasecmp(tag, "wait-for-switch",
-					 MAX(taglen, 5))) {
+		}
+		else if (xstrncasecmp(tag, "wait-for-switch", MAX(taglen, 5))
+			 == 0) {
 			if (parse_uint32(val, &job_msg.wait4switch)) {
 				error ("Invalid wait-for-switch value: %s", val);
 				exit_code = 1;
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "OverSubscribe", MAX(taglen, 2)) ||
-			   !xstrncasecmp(tag, "Shared", MAX(taglen, 2))) {
-			if (!xstrncasecmp(val, "YES", MAX(vallen, 1)))
+		}
+		else if (!xstrncasecmp(tag, "OverSubscribe", MAX(taglen, 2)) ||
+			 !xstrncasecmp(tag, "Shared", MAX(taglen, 2))) {
+			if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				job_msg.shared = 1;
-			else if (!xstrncasecmp(val, "NO", MAX(vallen, 1)))
+			else if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				job_msg.shared = 0;
 			else if (parse_uint16(val, &job_msg.shared)) {
 				error("Invalid OverSubscribe value: %s", val);
@@ -937,10 +974,11 @@ extern int scontrol_update_job(int argc, char **argv)
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Contiguous", MAX(taglen, 3))) {
-			if (!xstrncasecmp(val, "YES", MAX(vallen, 1)))
+		}
+		else if (xstrncasecmp(tag, "Contiguous", MAX(taglen, 3)) == 0) {
+			if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				job_msg.contiguous = 1;
-			else if (!xstrncasecmp(val, "NO", MAX(vallen, 1)))
+			else if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				job_msg.contiguous = 0;
 			else if (parse_uint16(val, &job_msg.contiguous)) {
 				error ("Invalid Contiguous value: %s", val);
@@ -948,7 +986,8 @@ extern int scontrol_update_job(int argc, char **argv)
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "CoreSpec", MAX(taglen, 4))) {
+		}
+		else if (xstrncasecmp(tag, "CoreSpec", MAX(taglen, 4)) == 0) {
 			if (!xstrcmp(val, "-1") || !xstrcmp(val, "*"))
 				job_msg.core_spec = INFINITE16;
 			else if (parse_uint16(val, &job_msg.core_spec)) {
@@ -957,10 +996,12 @@ extern int scontrol_update_job(int argc, char **argv)
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "MemPerTres", MAX(taglen, 5))) {
+		}
+		else if (!xstrncasecmp(tag, "MemPerTres", MAX(taglen, 5))) {
 			job_msg.mem_per_tres = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "ThreadSpec", MAX(taglen, 4))) {
+		}
+		else if (xstrncasecmp(tag, "ThreadSpec", MAX(taglen, 4)) == 0) {
 			if (!xstrcmp(val, "-1") || !xstrcmp(val, "*"))
 				job_msg.core_spec = INFINITE16;
 			else if (parse_uint16(val, &job_msg.core_spec)) {
@@ -970,43 +1011,54 @@ extern int scontrol_update_job(int argc, char **argv)
 			} else
 				job_msg.core_spec |= CORE_SPEC_THREAD;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "TresBind", MAX(taglen, 5))) {
+		}
+		else if (!xstrncasecmp(tag, "TresBind", MAX(taglen, 5))) {
 			job_msg.tres_bind = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "TresFreq", MAX(taglen, 5))) {
+		}
+		else if (!xstrncasecmp(tag, "TresFreq", MAX(taglen, 5))) {
 			job_msg.tres_freq = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "TresPerJob", MAX(taglen, 8))) {
+		}
+		else if (!xstrncasecmp(tag, "TresPerJob", MAX(taglen, 8))) {
 			job_msg.tres_per_job = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "TresPerNode", MAX(taglen, 8))) {
+		}
+		else if (!xstrncasecmp(tag, "TresPerNode", MAX(taglen, 8))) {
 			/* "gres" replaced by "tres_per_node" in v18.08 */
 			if (job_msg.tres_per_node)
 				xstrfmtcat(job_msg.tres_per_node, ",%s", val);
 			else
 				job_msg.tres_per_node = xstrdup(val);
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "TresPerSocket", MAX(taglen, 8))) {
+		}
+		else if (!xstrncasecmp(tag, "TresPerSocket", MAX(taglen, 8))) {
 			job_msg.tres_per_socket = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "TresPerTask", MAX(taglen, 8))) {
+		}
+		else if (!xstrncasecmp(tag, "TresPerTask", MAX(taglen, 8))) {
 			job_msg.tres_per_task = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "ExcNodeList", MAX(taglen, 3))) {
+		}
+		else if (xstrncasecmp(tag, "ExcNodeList", MAX(taglen, 3)) == 0){
 			job_msg.exc_nodes = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "NodeList",    MAX(taglen, 8)) ||
-			   !xstrncasecmp(tag, "ReqNodeList", MAX(taglen, 8))) {
+		}
+		else if (!xstrncasecmp(tag, "NodeList",    MAX(taglen, 8)) ||
+			 !xstrncasecmp(tag, "ReqNodeList", MAX(taglen, 8))) {
 			job_msg.req_nodes = val;
 			update_size = true;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Features", MAX(taglen, 1))) {
+		}
+		else if (xstrncasecmp(tag, "Features", MAX(taglen, 1)) == 0) {
 			job_msg.features = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Prefer", MAX(taglen, 3))) {
+		}
+		else if (xstrncasecmp(tag, "Prefer", MAX(taglen, 3)) == 0) {
 			job_msg.prefer = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Gres", MAX(taglen, 2))) {
+		}
+		else if (xstrncasecmp(tag, "Gres", MAX(taglen, 2)) == 0) {
 			/* "gres" replaced by "tres_per_node" in v18.08 */
 			if (!xstrcasecmp(val, "help") ||
 			    !xstrcasecmp(val, "list")) {
@@ -1022,32 +1074,39 @@ extern int scontrol_update_job(int argc, char **argv)
 				}
 				update_cnt++;
 			}
-		} else if (!xstrncasecmp(tag, "Account", MAX(taglen, 1))) {
+		}
+		else if (xstrncasecmp(tag, "Account", MAX(taglen, 1)) == 0) {
 			job_msg.account = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "BurstBuffer", MAX(taglen, 1))) {
+		}
+		else if (xstrncasecmp(tag, "BurstBuffer", MAX(taglen, 1)) == 0) {
 			job_msg.burst_buffer = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Dependency", MAX(taglen, 1))) {
+		}
+		else if (xstrncasecmp(tag, "Dependency", MAX(taglen, 1)) == 0) {
 			job_msg.dependency = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Licenses", MAX(taglen, 1))) {
+		}
+		else if (xstrncasecmp(tag, "Licenses", MAX(taglen, 1)) == 0) {
 			job_msg.licenses = val;
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "EligibleTime", MAX(taglen, 2)) ||
-			   !xstrncasecmp(tag, "StartTime", MAX(taglen, 2))) {
+		}
+		else if (!xstrncasecmp(tag, "EligibleTime", MAX(taglen, 2)) ||
+			 !xstrncasecmp(tag, "StartTime",    MAX(taglen, 2))) {
 			if ((job_msg.begin_time = parse_time(val, 0))) {
 				if (job_msg.begin_time < time(NULL))
 					job_msg.begin_time = time(NULL);
 				update_cnt++;
 			}
-		} else if (!xstrncasecmp(tag, "EndTime", MAX(taglen, 2))) {
+		}
+		else if (!xstrncasecmp(tag, "EndTime", MAX(taglen, 2))) {
 			job_msg.end_time = parse_time(val, 0);
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "Reboot", MAX(taglen, 3))) {
-			if (!xstrncasecmp(val, "YES", MAX(vallen, 1)))
+		}
+		else if (!xstrncasecmp(tag, "Reboot", MAX(taglen, 3))) {
+			if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0)
 				job_msg.reboot = 1;
-			else if (!xstrncasecmp(val, "NO", MAX(vallen, 1)))
+			else if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				job_msg.reboot = 0;
 			else if (parse_uint16(val, &job_msg.reboot)) {
 				error ("Invalid reboot value: %s", val);
@@ -1055,7 +1114,8 @@ extern int scontrol_update_job(int argc, char **argv)
 				return 0;
 			}
 			update_cnt++;
-		} else if (!xstrncasecmp(tag, "UserID", MAX(taglen, 3))) {
+		}
+		else if (!xstrncasecmp(tag, "UserID", MAX(taglen, 3))) {
 			uid_t user_id = SLURM_AUTH_NOBODY;
 			if (uid_from_string(val, &user_id) < 0) {
 				exit_code = 1;
@@ -1064,7 +1124,8 @@ extern int scontrol_update_job(int argc, char **argv)
 				return 0;
 			}
 			job_uid = (uint32_t) user_id;
-		} else if (!xstrncasecmp(tag, "Deadline", MAX(taglen, 3))) {
+		}
+		else if (!xstrncasecmp(tag, "Deadline", MAX(taglen, 3))) {
 			if ((job_msg.deadline = parse_time(val, 0))) {
 				update_cnt++;
 			}
@@ -1082,7 +1143,8 @@ extern int scontrol_update_job(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "MailUser", MAX(taglen, 5))) {
 			job_msg.mail_user = val;
 			update_cnt++;
-		} else {
+		}
+		else {
 			exit_code = 1;
 			fprintf (stderr, "Update of this parameter is not "
 				 "supported: %s\n", argv[i]);

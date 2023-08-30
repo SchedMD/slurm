@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "August 2023" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "June 2023" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -529,8 +529,8 @@ value of \-1 for each TRES id.
 \fInode\fR, etc...), or any defined generic resource. You can see the list
 of available resources by running \fBsacctmgr show tres\fR.
 
-\fBNOTE\fR: This limit only applies fully when using the
-\fBcons_tres\fR select type plugin.
+\fBNOTE\fR: This limit only applies fully when using \fBcons_res\fR or
+\fBcons_tres\fR select type plugins.
 .IP
 
 .IP \fBMaxWall\fR=<\fImax_wall\fR>
@@ -1113,6 +1113,11 @@ The current Nodes associated with the cluster.
 .IP
 
 .TP
+\fBPluginIDSelect\fR
+The numeric value of the select plugin the cluster is using.
+.IP
+
+.TP
 \fBRPC\fR
 When a slurmctld registers with the database the rpc version the controller
 is running is placed here.
@@ -1382,108 +1387,6 @@ Numeric value of the name of the FedState.
 The index of the cluster in the federation.
 .IP
 
-.SH "SPECIFICATIONS FOR INSTANCES"
-
-.TP
-\fBClusters\fR=<\fIcluster_name\fR>[,<\fIcluster_name\fR>,...]
-Name of the cluster that the instance ran on.  Default is the cluster where the
-command was run.
-.IP
-
-.TP
-\fBEnd\fR=<\fIOPT\fR>
-Period ending of instances. Default is now.
-
-Valid time formats are...
-.br
-HH:MM[:SS] [AM|PM]
-.br
-MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
-.br
-MM/DD[/YY]\-HH:MM[:SS]
-.br
-YYYY\-MM\-DD[THH:MM[:SS]]
-.br
-now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
-.IP
-
-.TP
-\fBExtra\fR=<\fIOPT\fR>
-Arbitrary string associated with node during life of the instance.
-.IP
-
-.TP
-\fBInstanceId\fR=<\fIOPT\fR>
-Cloud instance ID.
-.IP
-
-.TP
-\fBInstanceType\fR=<\fIOPT\fR>
-Cloud instance type.
-.IP
-
-.TP
-\fBNodes\fR=<\fInode_name\fR>[,<\fInode_name\fR>,...]
-The node on which the instance ran.
-.IP
-
-.TP
-\fBStart\fR=<\fIOPT\fR>
-Period start of instances.  Default is 00:00:00 of previous day.
-
-Valid time formats are...
-.br
-HH:MM[:SS] [AM|PM]
-.br
-MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
-.br
-MM/DD[/YY]\-HH:MM[:SS]
-.br
-YYYY\-MM\-DD[THH:MM[:SS]]
-.br
-now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
-.IP
-
-
-.SH "LIST/SHOW INSTANCE FORMAT OPTIONS"
-Show time periods for when cloud nodes were active.
-
-.TP
-\fBCluster\fR
-Name of the cluster that the instance ran on.
-.IP
-
-.TP
-\fBEnd\fR
-Time when instance ended.
-.IP
-
-.TP
-\fBExtra\fR
-Arbitrary string associated with node during life of the instance.
-.IP
-
-.TP
-\fBInstanceId\fR
-Cloud instance ID.
-.IP
-
-.TP
-\fBInstanceType\fR
-Cloud instance type.
-.IP
-
-.TP
-\fBNodeName\fR
-The node on which the instance ran.
-.IP
-
-.TP
-\fBStart\fR
-Time when instance started.
-.IP
-
-
 
 .SH "SPECIFICATIONS FOR JOB"
 
@@ -1650,17 +1553,6 @@ override the requested partition's MinNodes limit.
 \fBPartitionTimeLimit\fR
 If set jobs using this QOS will be able to
 override the requested partition's TimeLimit.
-.IP
-
-.TP
-\fBRelative\fR
-If set the QOS limits will be treated as percentages of a cluster/partition
-instead of absolutes.
-Since the QOS limits will be based on the size of a cluster or partitions some
-limitations are inherit. Namely if this flag is set only one partition can have
-this QOS as it's partition QOS, and if this is used as a partition QOS jobs will
-not be allowed to use it as a normal QOS.
-
 .IP
 
 .TP
@@ -2347,7 +2239,7 @@ Node names where reservation ran.
 
 .TP
 \fBStart\fR=<\fIOPT\fR>
-Period start of reservations.  Default is 00:00:00 of previous day.
+Period start of reservations.  Default is 00:00:00 of current day.
 
 Valid time formats are...
 .br

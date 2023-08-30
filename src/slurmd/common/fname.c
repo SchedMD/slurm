@@ -113,6 +113,56 @@ fini:	xfree(esc);
 	return name;
 }
 
+/* Create an IO filename from job parameters and the filename format
+ * sent from client. Used by slurmd for prolog errors. */
+extern char *fname_create2(batch_job_launch_msg_t *req)
+{
+	stepd_step_rec_t step;
+	char *esc, *name = NULL, *orig = NULL;
+
+	if (req->std_err)
+		orig = xstrdup(req->std_err);
+	else if (req->std_out)
+		orig = xstrdup(req->std_out);
+	else
+		xstrfmtcat(orig, "slurm-%u.out", req->job_id);
+	esc = remove_path_slashes(orig);
+
+	/* If format doesn't specify an absolute pathname, use cwd
+	 */
+	if (orig[0] != '/') {
+		xstrcat(name, req->work_dir);
+		if (esc) {
+			xstrcat(name, esc);
+			goto fini;
+		}
+		if (name[strlen(name)-1] != '/')
+			xstrcatchar(name, '/');
+	}
+
+	if (esc) {
+		/* esc is xmalloc */
+		name = esc;
+		esc = NULL;
+		goto fini;
+	}
+
+	memset(&step, 0, sizeof(stepd_step_rec_t));
+	step.array_job_id	= req->array_job_id;
+	step.array_task_id	= req->array_task_id;
+	step.step_id.job_id = req->job_id;
+//	step.nodeid		= TBD;
+	step.step_id.step_id = SLURM_BATCH_SCRIPT;
+	step.step_id.step_het_comp = NO_VAL;
+	step.uid			= req->uid;
+	step.user_name		= req->user_name;
+	name = _create_batch_fname(name, orig, &step, 0);
+
+fini:	xfree(esc);
+	xfree(orig);
+	return name;
+}
+
 static char *_create_batch_fname(char *name, char *path, stepd_step_rec_t *step,
 				 int taskid)
 {

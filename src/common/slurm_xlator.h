@@ -135,6 +135,8 @@
 #define	hostlist_deranged_string_dims \
 				slurm_hostlist_deranged_string_dims
 #define	hostlist_deranged_string slurm_hostlist_deranged_string
+#define	hostlist_deranged_string_malloc \
+				slurm_hostlist_deranged_string_malloc
 #define	hostlist_deranged_string_xmalloc_dims \
 				slurm_hostlist_deranged_string_xmalloc_dims
 #define	hostlist_deranged_string_xmalloc \
@@ -145,8 +147,10 @@
 #define	hostlist_iterator_destroy slurm_hostlist_iterator_destroy
 #define	hostlist_iterator_reset	slurm_hostlist_iterator_reset
 #define	hostlist_next		slurm_hostlist_next
+#define	hostlist_next_range	slurm_hostlist_next_range
 #define	hostlist_nth		slurm_hostlist_nth
 #define	hostlist_pop            slurm_hostlist_pop
+#define	hostlist_pop_range      slurm_hostlist_pop_range
 #define	hostlist_push		slurm_hostlist_push
 #define	hostlist_push_host_dims	slurm_hostlist_push_host_dims
 #define	hostlist_push_host	slurm_hostlist_push_host
@@ -154,6 +158,8 @@
 #define hostlist_ranged_string_dims \
 				slurm_hostlist_ranged_string_dims
 #define	hostlist_ranged_string	slurm_hostlist_ranged_string
+#define	hostlist_ranged_string_malloc \
+				slurm_hostlist_ranged_string_malloc
 #define	hostlist_ranged_string_xmalloc_dims \
 				slurm_hostlist_ranged_string_xmalloc_dims
 #define	hostlist_ranged_string_xmalloc \
@@ -161,9 +167,11 @@
 #define	hostlist_remove		slurm_hostlist_remove
 #define	hostlist_shift		slurm_hostlist_shift
 #define	hostlist_shift_dims	slurm_hostlist_shift_dims
+#define	hostlist_shift_range	slurm_hostlist_shift_range
 #define	hostlist_sort		slurm_hostlist_sort
 #define	hostlist_cmp_first	slurm_hostlist_cmp_first
 #define	hostlist_uniq		slurm_hostlist_uniq
+#define	hostset_copy		slurm_hostset_copy
 #define	hostset_count		slurm_hostset_count
 #define	hostset_create		slurm_hostset_create
 #define	hostset_delete		slurm_hostset_delete
@@ -175,6 +183,7 @@
 #define hostset_ranged_string_xmalloc \
 				slurm_hostset_ranged_string_xmalloc
 #define	hostset_shift		slurm_hostset_shift
+#define	hostset_shift_range	slurm_hostset_shift_range
 #define	hostset_within		slurm_hostset_within
 #define	hostset_nth		slurm_hostset_nth
 
@@ -312,6 +321,7 @@
 #define time_str2secs           slurm_time_str2secs
 #define secs2time_str           slurm_secs2time_str
 #define mins2time_str           slurm_mins2time_str
+#define mon_abbr                slurm_mon_abbr
 
 /* env.[ch] functions */
 #define	setenvf 		slurm_setenvpf
@@ -334,7 +344,6 @@
 #define destroy_config_key_pair	slurm_destroy_config_key_pair
 #define get_extra_conf_path	slurm_get_extra_conf_path
 #define sort_key_pairs		slurm_sort_key_pairs
-#define conf_get_opt_str	slurm_conf_get_opt_str
 
 /* run_in_daemon.[ch] functions */
 #define run_in_daemon           slurm_run_in_daemon
@@ -448,6 +457,7 @@
 /* plugin.[ch] functions */
 #define plugin_get_syms         slurm_plugin_get_syms
 #define plugin_load_and_link    slurm_plugin_load_and_link
+#define plugin_strerror         slurm_plugin_strerror
 #define plugin_unload           slurm_plugin_unload
 
 /* plugrack.[ch] functions */

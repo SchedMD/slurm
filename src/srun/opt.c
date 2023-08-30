@@ -48,6 +48,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
+#include <sys/param.h>		/* MAXPATHLEN */
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -544,7 +545,7 @@ env_vars_t env_vars[] = {
   { "SLURM_COMPRESS", LONG_OPT_COMPRESS },
   { "SLURM_CONSTRAINT", 'C' },
   { "SLURM_CORE_SPEC", 'S' },
-  { "SLURM_CPUS_PER_TASK", 'c' },
+  { "SRUN_CPUS_PER_TASK", 'c' },
   { "SLURM_CPU_BIND", LONG_OPT_CPU_BIND },
   { "SLURM_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
   { "SLURM_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
@@ -557,7 +558,6 @@ env_vars_t env_vars[] = {
   { "SLURM_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
   { "SLURM_EXPORT_ENV", LONG_OPT_EXPORT },
   { "SRUN_EXPORT_ENV", LONG_OPT_EXPORT }, /* overrides SLURM_EXPORT_ENV */
-  { "SLURM_EXTERNAL_LAUNCHER", LONG_OPT_EXTERNAL_LAUNCHER },
   { "SLURM_GPUS", 'G' },
   { "SLURM_GPU_BIND", LONG_OPT_GPU_BIND },
   { "SLURM_GPU_FREQ", LONG_OPT_GPU_FREQ },
@@ -683,7 +683,7 @@ static bitstr_t *_get_het_group(const int argc, char **argv,
 	int i, opt_char, option_index = 0;
 	char *tmp = NULL;
 	bitstr_t *het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
-	hostlist_t *hl;
+	hostlist_t hl;
 	char *opt_string = NULL;
 	struct option *optz = slurm_option_table_create(&opt, &opt_string);
 
@@ -901,7 +901,7 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 static bool _opt_verify(void)
 {
 	bool verified = true;
-	hostlist_t *hl = NULL;
+	hostlist_t hl = NULL;
 	int hl_cnt = 0;
 	bool mpack_reset_nodes = false;
 
@@ -1089,7 +1089,7 @@ static bool _opt_verify(void)
 	/* set proc and node counts based on the arbitrary list of nodes */
 	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)
 	   && (!opt.nodes_set || !opt.ntasks_set)) {
-		hostlist_t *hl = hostlist_create(opt.nodelist);
+		hostlist_t hl = hostlist_create(opt.nodelist);
 		if (!opt.ntasks_set) {
 			opt.ntasks_set = true;
 			opt.ntasks = hostlist_count(hl);
@@ -1207,11 +1207,15 @@ static bool _opt_verify(void)
 			if (opt.verbose)
 				info("Number of tasks implicitly set to %d",
 				     opt.ntasks);
+		} else if (opt.ntasks_per_node != NO_VAL) {
+			opt.ntasks *= opt.ntasks_per_node;
+			opt.ntasks_set = true;
 		}
 
 		/* massage the numbers */
 		if (opt.nodelist) {
-			FREE_NULL_HOSTLIST(hl);
+			if (hl)	/* possibly built above */
+				hostlist_destroy(hl);
 			hl = hostlist_create(opt.nodelist);
 			if (!hl) {
 				error("memory allocation failure");
@@ -1288,7 +1292,8 @@ static bool _opt_verify(void)
 		opt.ntasks_set = 1;
 	}
 
-	FREE_NULL_HOSTLIST(hl);
+	if (hl)
+		hostlist_destroy(hl);
 
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");

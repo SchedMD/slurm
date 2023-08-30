@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  ext_sensors.h - implementation-independent external sensors plugin
+ *  slurm_ext_sensors.h - implementation-independent external sensors plugin
  *  definitions
  *****************************************************************************
  *  Written by Bull-HN-PHX/Martin Perry,
@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_EXT_SENSORS_H
-#define _INTERFACES_EXT_SENSORS_H
+#ifndef __SLURM_EXT_SENSORS_H__
+#define __SLURM_EXT_SENSORS_H__
 
 #include <inttypes.h>
 #include <sys/resource.h>
@@ -67,5 +67,4 @@ extern int ext_sensors_g_update_component_data(void);
 extern int ext_sensors_g_get_stepstartdata(step_record_t *step_rec);
 extern int ext_sensors_g_get_stependdata(step_record_t *step_rec);
 extern int ext_sensors_g_get_config(void *data);
-
-#endif
+#endif /*__SLURM_EXT_SENSORS_H__*/

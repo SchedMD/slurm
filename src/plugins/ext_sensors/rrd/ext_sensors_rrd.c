@@ -405,7 +405,7 @@ extern uint64_t RRD_consolidate(time_t step_starttime, time_t step_endtime,
 	uint64_t consumed_energy = 0;
 	uint64_t tmp;
 	char *node_name = NULL;
-	hostlist_t *hl;
+	hostlist_t hl;
 	char* path;
 
 	node_name = bitmap2node_name(bitmap_of_nodes);

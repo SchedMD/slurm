@@ -224,7 +224,7 @@ endit:
 int proctrack_p_add(stepd_step_rec_t *step, pid_t pid)
 {
 #ifdef HAVE_NATIVE_CRAY
-	char fname[PATH_MAX];
+	char fname[64];
 	int fd;
 	uint32_t jobid;
 	int count = 0;

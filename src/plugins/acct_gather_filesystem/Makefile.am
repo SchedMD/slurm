@@ -1,3 +1,3 @@
 # Makefile for accounting gather filesystem plugins
 
-SUBDIRS = lustre
+SUBDIRS = lustre none

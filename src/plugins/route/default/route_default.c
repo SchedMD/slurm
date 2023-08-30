@@ -105,17 +105,18 @@ extern int fini(void)
  * route_p_split_hostlist  - logic to split an input hostlist into
  *                           a set of hostlists to forward to.
  *
- * IN: hl        - hostlist_t *   - list of every node to send message to
- *                                  will be empty on return;
- * OUT: sp_hl    - hostlist_t *** - the array of hostlist that will be malloced
- * OUT: count    - int *          - the count of created hostlist
+ * IN: hl        - hostlist_t   - list of every node to send message to
+ *                                will be empty on return;
+ * OUT: sp_hl    - hostlist_t** - the array of hostlist that will be malloced
+ * OUT: count    - int*         - the count of created hostlist
  * RET: SLURM_SUCCESS - int
  *
  * Note: created hostlist will have to be freed independently using
  *       hostlist_destroy by the caller.
  * Note: the hostlist_t array will have to be xfree.
  */
-extern int route_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
+extern int route_p_split_hostlist(hostlist_t hl,
+				  hostlist_t** sp_hl,
 				  int* count, uint16_t tree_width)
 {
 	return route_split_hostlist_treewidth(hl, sp_hl, count, tree_width);

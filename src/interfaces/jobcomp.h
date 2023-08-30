@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  jobcomp.h - implementation-independent job completion logging
+ *  slurm_jobcomp.h - implementation-independent job completion logging
  *  API definitions
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_JOBCOMP_H
-#define _INTERFACES_JOBCOMP_H
+#ifndef __SLURM_JOBCOMP_H__
+#define __SLURM_JOBCOMP_H__
 
 #include <inttypes.h>
 #include <sys/types.h>
@@ -105,4 +105,4 @@ extern List jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond);
 /* set the location based on JobCompLoc */
 extern int jobcomp_g_set_location(void);
 
-#endif
+#endif /*__SLURM_JOBCOMP_H__*/

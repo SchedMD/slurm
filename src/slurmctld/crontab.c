@@ -64,8 +64,8 @@ typedef struct {
 
 static int _handle_job(void *x, void *y)
 {
-	job_desc_msg_t *job = x;
-	foreach_cron_job_args_t *args = y;
+	job_desc_msg_t *job = (job_desc_msg_t *) x;
+	foreach_cron_job_args_t *args = (foreach_cron_job_args_t *) y;
 	job_record_t *job_ptr = NULL;
 	char *err_msg = NULL;
 
@@ -166,8 +166,8 @@ static int _purge_job(void *x, void *ignored)
  */
 static int _clear_requeue_cron(void *x, void *y)
 {
-	job_record_t *job_ptr = x;
-	uid_t *uid = y;
+	job_record_t *job_ptr = (job_record_t *) x;
+	uid_t *uid = (uid_t *) y;
 
 	if ((job_ptr->user_id == *uid) &&
 	    (job_ptr->bit_flags & CRON_JOB)) {
@@ -189,8 +189,8 @@ static int _clear_requeue_cron(void *x, void *y)
 
 static int _set_requeue_cron(void *x, void *y)
 {
-	job_record_t *job_ptr = x;
-	bool *set = y;
+	job_record_t *job_ptr = (job_record_t *) x;
+	bool *set = (bool *) y;
 
 	if (*set)
 		job_ptr->bit_flags |= CRON_JOB;
@@ -202,8 +202,9 @@ static int _set_requeue_cron(void *x, void *y)
 
 static int _copy_jobids(void *x, void *y)
 {
-	job_record_t *job_ptr = x;
-	crontab_update_response_msg_t *response = y;
+	job_record_t *job_ptr = (job_record_t *) x;
+	crontab_update_response_msg_t *response =
+		(crontab_update_response_msg_t *) y;
 
 	response->jobids[response->jobids_count++] = job_ptr->job_id;
 

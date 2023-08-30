@@ -121,8 +121,6 @@ struct node_record {
 	List gres_list;			/* list of gres state info managed by
 					 * plugins */
 	uint32_t index;			/* Index into node_record_table_ptr */
-	char *instance_id;		/* cloud instance id */
-	char *instance_type;		/* cloud instance type */
 	time_t last_busy;		/* time node was last busy (no jobs) */
 	time_t last_response;		/* last response from the node */
 	uint32_t magic;			/* magic cookie for data integrity */
@@ -233,7 +231,7 @@ char * bitmap2node_name (bitstr_t *bitmap);
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-hostlist_t *bitmap2hostlist(bitstr_t *bitmap);
+hostlist_t bitmap2hostlist (bitstr_t *bitmap);
 
 /*
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
@@ -259,15 +257,14 @@ extern int build_node_spec_bitmap(node_record_t *node_ptr);
 /*
  * Expand a nodeline's node names, host names, addrs, ports into separate nodes.
  */
-extern int expand_nodeline_info(slurm_conf_node_t *node_ptr,
-				config_record_t *config_ptr,
-				char **err_msg,
-				int (*_callback) (
-					char *alias, char *hostname,
-					char *address, char *bcast_addr,
-					uint16_t port, int state_val,
-					slurm_conf_node_t *node_ptr,
-					config_record_t *config_ptr));
+extern void expand_nodeline_info(slurm_conf_node_t *node_ptr,
+				 config_record_t *config_ptr,
+				 void (*_callback) (
+				       char *alias, char *hostname,
+				       char *address, char *bcast_addr,
+				       uint16_t port, int state_val,
+				       slurm_conf_node_t *node_ptr,
+				       config_record_t *config_ptr));
 
 /*
  * create_config_record - create a config_record entry and set is values to
@@ -293,19 +290,18 @@ extern config_record_t *config_record_from_conf_node(
 /*
  * Grow the node_record_table_ptr.
  */
-extern void grow_node_record_table_ptr(void);
+extern void grow_node_record_table_ptr();
 
 /*
  * create_node_record - create a node record and set its values to defaults
  * IN config_ptr - pointer to node's configuration information
  * IN node_name - name of the node
- * OUT node_ptr - node_record_t** with created node on SUCESS, NULL otherwise.
- * RET SUCESS, or error code
+ * RET pointer to the record or NULL if error
  * NOTE: grows node_record_table_ptr if needed and appends a new node_record_t *
  *       to node_record_table_ptr and increases node_record_count.
  */
-extern int create_node_record(config_record_t *config_ptr, char *node_name,
-			      node_record_t **node_ptr);
+extern node_record_t *create_node_record(config_record_t *config_ptr,
+					 char *node_name);
 
 /*
  * Create a new node_record_t * at the specified index.
@@ -327,11 +323,9 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
  *
  * IN alias - name of node.
  * IN config_ptr - config_record_t* to initialize node with.
- * OUT node_ptr - node_record_t** with added node on SUCESS, NULL otherwise.
- * RET SUCESS, or error code
+ * RET node_record_t* on SUCESS, NULL otherwise.
  */
-extern int add_node_record(char *alias, config_record_t *config_ptr,
-			   node_record_t **node_ptr);
+extern node_record_t *add_node_record(char *alias, config_record_t *config_ptr);
 
 /*
  * Add existing record to node_record_table_ptr
@@ -381,7 +375,7 @@ extern node_record_t *find_node_record_no_alias(char *name);
  * OUT bitmap     - set to bitmap, may not have all bits set on error
  * RET 0 if no error, otherwise EINVAL
  */
-extern int hostlist2bitmap(hostlist_t *hl, bool best_effort, bitstr_t **bitmap);
+extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap);
 
 /*
  * init_node_conf - initialize the node configuration tables and values.
@@ -429,6 +423,10 @@ extern void cr_fini_global_core_data(void);
 
 /*return the coremap index to the first core of the given node */
 extern uint32_t cr_get_coremap_offset(uint32_t node_index);
+
+/* Return a bitmap the size of the machine in cores. On a Bluegene
+ * system it will return a bitmap in cnodes. */
+extern bitstr_t *cr_create_cluster_core_bitmap(int core_mult);
 
 /*
  * Determine maximum number of CPUs on this node usable by a job

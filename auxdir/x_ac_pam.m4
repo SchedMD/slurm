@@ -41,11 +41,7 @@ AC_DEFUN([X_AC_PAM], [
     if test "x$ac_have_pam" = "xyes" -a "x$ac_have_pam_misc" = "xyes"; then
       AC_DEFINE(HAVE_PAM,, [define if you have the PAM library])
     else
-      if test -z "$enable_pam"; then
-        AC_MSG_WARN([unable to locate PAM libraries])
-      else
-        AC_MSG_ERROR([unable to locate PAM libraries])
-      fi
+      AC_MSG_WARN([unable to locate PAM libraries])
     fi
   else
     AC_MSG_RESULT([no])

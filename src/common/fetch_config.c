@@ -316,18 +316,17 @@ static void _init_minimal_conf_server_config(List controllers)
 		fatal("%s: could not write temporary config", __func__);
 	xfree(conf);
 
-	slurm_init(filename);
+	slurm_conf_init(filename);
 
 	close(fd);
 	xfree(filename);
 }
 
 static int _write_conf(const char *dir, const char *name, const char *content,
-		      bool exists, bool execute)
+		      bool exists)
 {
 	char *file = NULL, *file_final = NULL;
 	int fd = -1;
-	mode_t mode = execute ? 0755 : 0644;
 
 	xstrfmtcat(file, "%s/%s.new", dir, name);
 	xstrfmtcat(file_final, "%s/%s", dir, name);
@@ -338,7 +337,7 @@ static int _write_conf(const char *dir, const char *name, const char *content,
 	}
 
 
-	if ((fd = open(file, O_CREAT|O_WRONLY|O_TRUNC|O_CLOEXEC, mode)) < 0) {
+	if ((fd = open(file, O_CREAT|O_WRONLY|O_TRUNC|O_CLOEXEC, 0644)) < 0) {
 		error("%s: could not open config file `%s`", __func__, file);
 		goto rwfail;
 	}
@@ -378,7 +377,7 @@ extern int write_one_config(void *x, void *arg)
 	config_file_t *config = (config_file_t *) x;
 	char *dir = (char *) arg;
 	if (_write_conf(dir, config->file_name, config->file_content,
-		        config->exists, config->execute))
+		        config->exists))
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
@@ -405,8 +404,7 @@ extern int write_configs_to_conf_cache(config_response_msg_t *msg,
 	return SLURM_SUCCESS;
 }
 
-static void _load_conf2list(config_response_msg_t *msg, char *file_name,
-			    bool is_script)
+static void _load_conf2list(config_response_msg_t *msg, char *file_name)
 {
 	config_file_t *conf_file = NULL;
 	buf_t *config;
@@ -428,7 +426,6 @@ static void _load_conf2list(config_response_msg_t *msg, char *file_name,
 
 	conf_file = xmalloc(sizeof(*conf_file));
 	conf_file->exists = config_exists;
-	conf_file->execute = is_script;
 	if (config)
 		conf_file->file_content = xstrndup(config->head, config->size);
 	conf_file->file_name = xstrdup(file_name);
@@ -454,7 +451,7 @@ static int _foreach_include_file(void *x, void *arg)
 	char *file_name = x;
 	config_response_msg_t *msg = arg;
 
-	_load_conf2list(msg, file_name, false);
+	_load_conf2list(msg, file_name);
 
 	return SLURM_SUCCESS;
 }
@@ -482,8 +479,7 @@ extern int find_map_conf_file(void *x, void *key)
 	return 0;
 }
 
-extern void load_config_response_list(config_response_msg_t *msg,
-				      char *files[], bool to_slurmd)
+extern void load_config_response_list(config_response_msg_t *msg, char *files[])
 {
 	conf_includes_map_t *map = NULL;
 
@@ -492,7 +488,7 @@ extern void load_config_response_list(config_response_msg_t *msg,
 		msg->config_files = list_create(destroy_config_file);
 
 	for (int i = 0; files[i]; i++) {
-		_load_conf2list(msg, files[i], false);
+		_load_conf2list(msg, files[i]);
 
 		if (conf_includes_list) {
 			map = list_find_first_ro(conf_includes_list,
@@ -502,19 +498,6 @@ extern void load_config_response_list(config_response_msg_t *msg,
 				list_for_each_ro(map->include_list,
 						 _foreach_include_file, msg);
 		}
-	}
-
-	/*
-	 * Load Prolog and Epilog scripts.
-	 * Only load if a non-absolute path is provided, this is our
-	 * indication that the file should be sent out, and matches
-	 * configuration semantics for the Include lines.
-	 */
-	if (to_slurmd) {
-		if (slurm_conf.prolog && (slurm_conf.prolog[0] != '/'))
-			_load_conf2list(msg, slurm_conf.prolog, true);
-		if (slurm_conf.epilog && (slurm_conf.epilog[0] != '/'))
-			_load_conf2list(msg, slurm_conf.epilog, true);
 	}
 }
 

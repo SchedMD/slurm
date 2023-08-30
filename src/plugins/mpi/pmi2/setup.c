@@ -205,7 +205,7 @@ _setup_stepd_job_info(const stepd_step_rec_t *step, char ***env)
 static int
 _setup_stepd_tree_info(char ***env)
 {
-	hostlist_t *hl;
+	hostlist_t hl;
 	char *srun_host;
 	uint16_t port;
 	char *p;
@@ -820,7 +820,8 @@ pmi2_setup_srun(const mpi_step_info_t *mpi_step, char ***env)
 		if (rc == SLURM_SUCCESS)
 			rc = _setup_srun_environ(mpi_step, env);
 		if ((rc == SLURM_SUCCESS) && job_info.spawn_seq) {
-			slurm_thread_create_detached(_task_launch_detection,
+			slurm_thread_create_detached(NULL,
+						     _task_launch_detection,
 						     NULL);
 		}
 		slurm_mutex_lock(&setup_mutex);

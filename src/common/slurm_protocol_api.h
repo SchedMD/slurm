@@ -136,6 +136,20 @@ char *slurm_get_preempt_type(void);
  */
 char *slurm_get_acct_gather_interconnect_type(void);
 
+/* slurm_get_acct_filesystem_profile_type
+ * get FilesystemAccountingType from slurm_conf object
+ * RET char *   - acct_gather_filesystem_type, MUST be xfreed by caller
+ */
+char *slurm_get_acct_gather_filesystem_type(void);
+
+
+/* slurm_get_acct_gather_node_freq
+ * returns the accounting poll frequency for requesting info from a
+ * node from the slurm_conf object
+ * RET int    - accounting node frequency
+ */
+extern uint16_t slurm_get_acct_gather_node_freq(void);
+
 /* slurm_get_ext_sensors_type
  * get ExtSensorsType from slurm_conf object
  * RET char *   - ext_sensors type, MUST be xfreed by caller
@@ -627,14 +641,5 @@ extern int slurm_hex_to_char(int v);
  * RET value as an int, -1 on error.
  */
 extern int slurm_char_to_hex(int c);
-
-/*
- * Query assoc share info from slurmctld
- * IN shares_req - which accounts and users to query
- * IN/OUT shares_resp - populated result
- * RET: SLURM_SUCCESS or error
- */
-extern int slurm_associations_get_shares(shares_request_msg_t *shares_req,
-					 shares_response_msg_t **shares_resp);
 
 #endif

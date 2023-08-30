@@ -36,17 +36,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <math.h>
-
 #include "src/interfaces/priority.h"
 #include "src/sshare/sshare.h"
+#include <math.h>
 
 int long_flag;		/* exceeds 80 character limit with more info */
 char **tres_names = NULL;
 uint32_t tres_cnt = 0;
 char *opt_field_list = NULL;
-char *mimetype;
-char *data_parser;
 
 print_field_t fields[] = {
 	{-20, "Account", print_fields_str, PRINT_ACCOUNT},
@@ -85,17 +82,17 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 	uint32_t flags = slurm_conf.priority_flags;
 	int rc = SLURM_SUCCESS, i;
 	assoc_shares_object_t *share = NULL;
-	list_itr_t *itr = NULL, *itr2 = NULL;
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
 	char *object = NULL;
 	char *print_acct = NULL;
-	list_t *tree_list = NULL;
+	List tree_list = NULL;
 	char *tmp_char = NULL;
-	uint64_t *tres_raw;
 
 	int field_count = 0;
 
-	list_t *format_list;
-	list_t *print_fields_list; /* types are of print_field_t */
+	List format_list;
+	List print_fields_list; /* types are of print_field_t */
 
 	if (!resp)
 		return SLURM_ERROR;
@@ -204,15 +201,14 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 	if (!resp->assoc_shares_list || !list_count(resp->assoc_shares_list))
 		return SLURM_SUCCESS;
 
-	tres_raw = xcalloc(tres_cnt, sizeof(uint64_t));
 	tree_list = list_create(slurmdb_destroy_print_tree);
 	itr = list_iterator_create(resp->assoc_shares_list);
-
 	while ((share = list_next(itr))) {
 		int curr_inx = 1;
 		char *tmp_char = NULL;
 		char *local_acct = NULL;
 		print_field_t *field = NULL;
+		uint64_t tres_raw[tres_cnt];
 		double tmp_double;
 
 		if ((options & PRINT_USERS_ONLY) && share->user == 0)
@@ -365,6 +361,5 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(print_fields_list);
-	xfree(tres_raw);
 	return rc;
 }

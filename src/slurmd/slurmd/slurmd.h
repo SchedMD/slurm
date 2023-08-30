@@ -48,6 +48,11 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/interfaces/cred.h"
 
+#ifndef __USE_XOPEN_EXTENDED
+extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
+extern pid_t getpgid(pid_t pid);
+#endif
+
 extern int devnull;
 extern bool get_reg_resp;
 
@@ -75,8 +80,8 @@ typedef struct {
  */
 typedef struct slurmd_config {
 	char         *prog;		/* Program basename		   */
-	char         **argv;            /* argument vector                 */
-	int          argc;              /* argument count                  */
+	char         ***argv;           /* pointer to argument vector      */
+	int          *argc;             /* pointer to argument count       */
 	buf_t        *buf;              /* packed version of this lite config */
 	char         *hostname;	 	/* local hostname		   */
 	char         *conf_server;	/* slurmctld to fetch config from  */
@@ -114,16 +119,14 @@ typedef struct slurmd_config {
 	char         *node_name;	/* node name                       */
 	char         *node_topo_addr;   /* node's topology address         */
 	char         *node_topo_pattern;/* node's topology address pattern */
-	char         *extra;		/* arbiratry string		   */
 	char         *conffile;		/* config filename                 */
-	char         *instance_id;	/* cloud instance id		   */
-	char         *instance_type;	/* cloud instance type		   */
 	char         *logfile;		/* slurmd logfile, if any          */
 	char         *pidfile;		/* slurmd pidfile, if any          */
 	char         *tmp_fs;		/* TmpFS                           */
 	uint32_t     syslog_debug;	/* send output to both logfile and
 					 * syslog */
 	char         *spooldir;		/* SlurmdSpoolDir		   */
+	char         *pubkey;		/* location of job cred public key */
 	char         *stepd_loc;	/* slurmstepd path                 */
 	uint16_t      port;		/* local slurmd port               */
 	int           lfd;		/* slurmd listen file descriptor   */
@@ -138,13 +141,15 @@ typedef struct slurmd_config {
 	bool	      cleanstart;	/* clean start requested (-c)      */
 	bool	      mlock_pages;	/* mlock() slurmd  */
 
+	slurm_cred_ctx_t vctx;          /* slurm_cred_t verifier context   */
+
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        acct_freq_task;
 
-	list_t *starting_steps;		/* steps that are starting but cannot
+	List		starting_steps; /* steps that are starting but cannot
 					   receive RPCs yet */
 	pthread_cond_t	starting_steps_cond;
-	list_t *prolog_running_jobs;
+	List		prolog_running_jobs;
 	pthread_cond_t	prolog_running_cond;
 	bool		print_gres;	/* Print gres info (-G) and exit */
 
@@ -165,6 +170,13 @@ extern bool tres_packed;
  * IN status - same values slurm error codes (for node shutdown)
  */
 int send_registration_msg(uint32_t status);
+
+/*
+ * save_cred_state - save the current credential list to a file
+ * IN list - list of credentials
+ * RET int - zero or error code
+ */
+int save_cred_state(slurm_cred_ctx_t vctx);
 
 /* Run the health check program if configured */
 int run_script_health_check(void);

@@ -507,7 +507,7 @@ _xlate_job_step_ids(char **rest)
 		opt.job_id[buf_offset] = job_id;
 
 		if ((next_str[0] == '_') && (next_str[1] == '[')) {
-			hostlist_t *hl;
+			hostlist_t hl;
 			char save_char, *next_elem;
 			char *end_char = strchr(next_str + 2, ']');
 			if (!end_char || (end_char[1] != '\0')) {

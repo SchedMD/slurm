@@ -39,7 +39,7 @@
 
 #include "api.h"
 #include "src/interfaces/data_parser.h"
-#include "src/slurmrestd/openapi.h"
+#include "src/interfaces/openapi.h"
 
 typedef data_parser_type_t type_t;
 typedef struct parser_s parser_t;
@@ -154,7 +154,7 @@ typedef struct parser_s {
 /*
  * Called at startup to run any setup of parsers and testing
  */
-extern void parsers_init(void);
+extern void parsers_init();
 
 #ifndef NDEBUG
 extern void check_parser_funcname(const parser_t *const parser,

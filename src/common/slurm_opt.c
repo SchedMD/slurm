@@ -38,8 +38,7 @@
 
 #include <ctype.h>
 #include <getopt.h>
-#include <limits.h>
-#include <signal.h>
+#include <sys/param.h>
 
 #ifdef WITH_SELINUX
 #include <selinux/selinux.h>
@@ -375,8 +374,6 @@ __attribute__((nonnull));					\
 static char *arg_get_##field(slurm_opt_t *opt)			\
 {								\
 	char time_str[32];					\
-	if (opt->field == NO_VAL)				\
-		return NULL;					\
 	mins2time_str(opt->field, time_str, sizeof(time_str));	\
 	return xstrdup(time_str);				\
 }								\
@@ -905,12 +902,12 @@ static int arg_set_data_chdir(slurm_opt_t *opt, const data_t *arg,
 COMMON_STRING_OPTION_GET(chdir);
 static void arg_reset_chdir(slurm_opt_t *opt)
 {
-	char buf[PATH_MAX];
+	char buf[MAXPATHLEN + 1];
 	xfree(opt->chdir);
 	if (opt->salloc_opt || opt->scron_opt)
 		return;
 
-	if (!(getcwd(buf, PATH_MAX))) {
+	if (!(getcwd(buf, MAXPATHLEN))) {
 		error("getcwd failed: %m");
 		exit(-1);
 	}
@@ -1388,8 +1385,6 @@ static char *arg_get_delay_boot(slurm_opt_t *opt)
 {
 	char time_str[32];
 
-	if (opt->delay_boot == NO_VAL)
-		return NULL;
 	secs2time_str(opt->delay_boot, time_str, sizeof(time_str));
 
 	return xstrdup(time_str);
@@ -1748,14 +1743,15 @@ static slurm_cli_opt_t slurm_opt_export = {
 	.reset_func = arg_reset_export,
 };
 
-COMMON_SRUN_BOOL_OPTION(external_launcher);
-static slurm_cli_opt_t slurm_opt_external_launcher = {
-	.name = "external-launcher",
-	.has_arg = no_argument,
-	.val = LONG_OPT_EXTERNAL_LAUNCHER,
-	.set_func_srun = arg_set_external_launcher,
-	.get_func = arg_get_external_launcher,
-	.reset_func = arg_reset_external_launcher,
+COMMON_SBATCH_STRING_OPTION(export_file);
+static slurm_cli_opt_t slurm_opt_export_file = {
+	.name = "export-file",
+	.has_arg = required_argument,
+	.val = LONG_OPT_EXPORT_FILE,
+	.set_func_sbatch = arg_set_export_file,
+	.set_func_data = arg_set_data_export_file,
+	.get_func = arg_get_export_file,
+	.reset_func = arg_reset_export_file,
 };
 
 COMMON_STRING_OPTION(extra);
@@ -2847,21 +2843,7 @@ static slurm_cli_opt_t slurm_opt_mincpus = {
 	.reset_each_pass = true,
 };
 
-static int arg_set_mpi_type(slurm_opt_t *opt, const char *arg)
-{
-	if (!opt->srun_opt)
-		return SLURM_ERROR;
-
-	xfree(opt->srun_opt->mpi_type);
-	/* skip 'none' */
-	if (xstrcasecmp(arg, "none"))
-		opt->srun_opt->mpi_type = xstrdup(arg);
-
-	return SLURM_SUCCESS;
-}
-
-COMMON_SRUN_STRING_OPTION_GET(mpi_type);
-COMMON_SRUN_STRING_OPTION_RESET(mpi_type);
+COMMON_SRUN_STRING_OPTION(mpi_type);
 static slurm_cli_opt_t slurm_opt_mpi = {
 	.name = "mpi",
 	.has_arg = required_argument,
@@ -4301,8 +4283,6 @@ static int arg_set_data_switch_wait(slurm_opt_t *opt, const data_t *arg,
 static char *arg_get_switch_wait(slurm_opt_t *opt)
 {
 	char time_str[32];
-	if (opt->wait4switch == NO_VAL)
-		return NULL;
 	secs2time_str(opt->wait4switch, time_str, sizeof(time_str));
 	return xstrdup_printf("%s", time_str);
 }
@@ -5234,7 +5214,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_exclude,
 	&slurm_opt_exclusive,
 	&slurm_opt_export,
-	&slurm_opt_external_launcher,
+	&slurm_opt_export_file,
 	&slurm_opt_extra,
 	&slurm_opt_extra_node_info,
 	&slurm_opt_get_user_env,
@@ -6067,36 +6047,24 @@ static void _validate_share_options(slurm_opt_t *opt)
 	}
 }
 
-extern bool slurm_option_get_tres_per_tres(
-	char *in_val, char *tres_name, uint64_t *cnt, char **save_ptr, int *rc)
-{
-	char *name = NULL, *type = NULL;
-	uint64_t value = 0;
-
-	xassert(save_ptr);
-	*rc = slurm_get_next_tres("gres:", in_val, &name, &type,
-				  &value, save_ptr);
-	xfree(type);
-
-	if (*rc != SLURM_SUCCESS) {
-		*save_ptr = NULL;
-		xfree(name);
-		return false;
-	}
-
-	if (!xstrcasecmp(name, tres_name))
-		*cnt += value;
-	xfree(name);
-
-	if (!*save_ptr)
-		return false;
-	else
-		return true;
-}
-
 static void _validate_tres_per_task(slurm_opt_t *opt)
 {
 	char *cpu_per_task_ptr = NULL;
+	static uint32_t select_plugin_type = NO_VAL;
+
+	if ((select_plugin_type == NO_VAL) &&
+	    (select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
+					   &select_plugin_type) !=
+	     SLURM_SUCCESS)) {
+		select_plugin_type = NO_VAL;	/* error */
+	}
+
+	if ((select_plugin_type != SELECT_TYPE_CONS_TRES)) {
+		if (opt->tres_per_task)
+			fatal("--tres-per-task option unsupported by configured SelectType plugin");
+		else
+			return;
+	}
 
 	if (xstrcasestr(opt->tres_per_task, "=mem:") ||
 	    xstrcasestr(opt->tres_per_task, ",mem:")) {
@@ -6164,48 +6132,6 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 	/* } */
 }
 
-static void _validate_cpus_per_tres(slurm_opt_t *opt)
-{
-	/* --cpus-per-task and --cpus-per-gres are mutually exclusive */
-	if ((slurm_option_set_by_cli(opt, 'c') &&
-	     slurm_option_set_by_cli(opt, LONG_OPT_CPUS_PER_GPU)) ||
-	    (slurm_option_set_by_env(opt, 'c') &&
-	     slurm_option_set_by_env(opt, LONG_OPT_CPUS_PER_GPU))) {
-		fatal("--cpus-per-task and --cpus-per-gpu are mutually exclusive");
-	}
-
-	/*
-	 * If either is specified on the command line, it should override
-	 * anything set by the environment.
-	 */
-	if (slurm_option_set_by_cli(opt, 'c') &&
-	    slurm_option_set_by_env(opt, LONG_OPT_CPUS_PER_GPU)) {
-		if (opt->verbose) {
-			char *env_str = NULL;
-
-			if (opt->salloc_opt)
-				env_str = "SALLOC_CPUS_PER_GPU";
-			else if (opt->sbatch_opt)
-				env_str = "SBATCH_CPUS_PER_GPU";
-			else /* opt->srun_opt */
-				env_str = "SLURM_CPUS_PER_GPU";
-			info("Ignoring %s since --cpus-per-task given as command line option",
-			     env_str);
-		}
-		slurm_option_reset(opt, "cpus-per-gpu");
-	} else if (slurm_option_set_by_cli(opt, LONG_OPT_CPUS_PER_GPU) &&
-		   slurm_option_set_by_env(opt, 'c')) {
-		if (opt->verbose) {
-			char *env_str = "SRUN_CPUS_PER_TASK";
-			/* salloc, sbatch don't read env for cpus-per-task */
-
-			info("Ignoring %s since --cpus-per-gpu given as command line option",
-			     env_str);
-		}
-		slurm_option_reset(opt, "cpus-per-task");
-	}
-}
-
 /* Validate shared options between srun, salloc, and sbatch */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 {
@@ -6215,7 +6141,6 @@ extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 	_validate_memory_options(opt);
 	_validate_share_options(opt);
 	_validate_tres_per_task(opt);
-	_validate_cpus_per_tres(opt);
 }
 
 extern char *slurm_option_get_argv_str(const int argc, char **argv)
@@ -6405,7 +6330,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	 * simplify the job allocation nodelist, not laying out tasks until step
 	 */
 	if (opt_local->nodelist) {
-		hostlist_t *hl = hostlist_create(opt_local->nodelist);
+		hostlist_t hl = hostlist_create(opt_local->nodelist);
 		xfree(opt_local->nodelist);
 		opt_local->nodelist = hostlist_ranged_string_xmalloc(hl);
 		hostlist_uniq(hl);

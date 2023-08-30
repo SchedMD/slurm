@@ -125,16 +125,6 @@ static int _unpack_cgroup_conf(buf_t *buffer);
 static void _read_slurm_cgroup_conf(void);
 
 /* Local functions */
-static int _defunct_option(void **dest, slurm_parser_enum_t type,
-			  const char *key, const char *value,
-			  const char *line, char **leftover)
-{
-	if (running_in_daemon())
-		error("The option \"%s\" is defunct, please remove it from cgroup.conf.",
-		      key);
-	return 0;
-}
-
 static void _cgroup_conf_fini()
 {
 	slurm_rwlock_wrlock(&cg_conf_lock);
@@ -159,8 +149,10 @@ static void _init_slurm_cgroup_conf(void)
 {
 	_clear_slurm_cgroup_conf();
 
+	slurm_cgroup_conf.allowed_kmem_space = -1;
 	slurm_cgroup_conf.allowed_ram_space = 100;
 	slurm_cgroup_conf.allowed_swap_space = 0;
+	slurm_cgroup_conf.cgroup_automount = false;
 	slurm_cgroup_conf.cgroup_mountpoint = xstrdup(DEFAULT_CGROUP_BASEDIR);
 	slurm_cgroup_conf.cgroup_plugin = xstrdup(DEFAULT_CGROUP_PLUGIN);
 #ifndef MULTIPLE_SLURMD
@@ -170,16 +162,19 @@ static void _init_slurm_cgroup_conf(void)
 #endif
 	slurm_cgroup_conf.constrain_cores = false;
 	slurm_cgroup_conf.constrain_devices = false;
+	slurm_cgroup_conf.constrain_kmem_space = false;
 	slurm_cgroup_conf.constrain_ram_space = false;
 	slurm_cgroup_conf.constrain_swap_space = false;
 	slurm_cgroup_conf.enable_controllers = false;
 	slurm_cgroup_conf.ignore_systemd = false;
 	slurm_cgroup_conf.ignore_systemd_on_failure = false;
+	slurm_cgroup_conf.max_kmem_percent = 100;
 	slurm_cgroup_conf.max_ram_percent = 100;
 	slurm_cgroup_conf.max_swap_percent = 100;
 	slurm_cgroup_conf.memory_swappiness = NO_VAL64;
+	slurm_cgroup_conf.min_kmem_space = XCGROUP_DEFAULT_MIN_RAM;
 	slurm_cgroup_conf.min_ram_space = XCGROUP_DEFAULT_MIN_RAM;
-	slurm_cgroup_conf.signal_children_processes = false;
+	slurm_cgroup_conf.root_owned_cgroups = true;
 }
 
 static void _pack_cgroup_conf(buf_t *buffer)
@@ -194,6 +189,7 @@ static void _pack_cgroup_conf(buf_t *buffer)
 		return;
 	}
 	packbool(1, buffer);
+	packbool(slurm_cgroup_conf.cgroup_automount, buffer);
 	packstr(slurm_cgroup_conf.cgroup_mountpoint, buffer);
 
 	packstr(slurm_cgroup_conf.cgroup_prepend, buffer);
@@ -206,6 +202,11 @@ static void _pack_cgroup_conf(buf_t *buffer)
 
 	pack64(slurm_cgroup_conf.min_ram_space, buffer);
 
+	packbool(slurm_cgroup_conf.constrain_kmem_space, buffer);
+	packfloat(slurm_cgroup_conf.allowed_kmem_space, buffer);
+	packfloat(slurm_cgroup_conf.max_kmem_percent, buffer);
+	pack64(slurm_cgroup_conf.min_kmem_space, buffer);
+
 	packbool(slurm_cgroup_conf.constrain_swap_space, buffer);
 	packfloat(slurm_cgroup_conf.allowed_swap_space, buffer);
 	packfloat(slurm_cgroup_conf.max_swap_percent, buffer);
@@ -217,8 +218,8 @@ static void _pack_cgroup_conf(buf_t *buffer)
 	packbool(slurm_cgroup_conf.ignore_systemd, buffer);
 	packbool(slurm_cgroup_conf.ignore_systemd_on_failure, buffer);
 
+	packbool(slurm_cgroup_conf.root_owned_cgroups, buffer);
 	packbool(slurm_cgroup_conf.enable_controllers, buffer);
-	packbool(slurm_cgroup_conf.signal_children_processes, buffer);
 }
 
 static int _unpack_cgroup_conf(buf_t *buffer)
@@ -235,6 +236,7 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 		return SLURM_SUCCESS;
 	}
 
+	safe_unpackbool(&slurm_cgroup_conf.cgroup_automount, buffer);
 	safe_unpackstr_xmalloc(&slurm_cgroup_conf.cgroup_mountpoint,
 			       &uint32_tmp, buffer);
 
@@ -249,6 +251,11 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 
 	safe_unpack64(&slurm_cgroup_conf.min_ram_space, buffer);
 
+	safe_unpackbool(&slurm_cgroup_conf.constrain_kmem_space, buffer);
+	safe_unpackfloat(&slurm_cgroup_conf.allowed_kmem_space, buffer);
+	safe_unpackfloat(&slurm_cgroup_conf.max_kmem_percent, buffer);
+	safe_unpack64(&slurm_cgroup_conf.min_kmem_space, buffer);
+
 	safe_unpackbool(&slurm_cgroup_conf.constrain_swap_space, buffer);
 	safe_unpackfloat(&slurm_cgroup_conf.allowed_swap_space, buffer);
 	safe_unpackfloat(&slurm_cgroup_conf.max_swap_percent, buffer);
@@ -261,9 +268,8 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 	safe_unpackbool(&slurm_cgroup_conf.ignore_systemd, buffer);
 	safe_unpackbool(&slurm_cgroup_conf.ignore_systemd_on_failure, buffer);
 
+	safe_unpackbool(&slurm_cgroup_conf.root_owned_cgroups, buffer);
 	safe_unpackbool(&slurm_cgroup_conf.enable_controllers, buffer);
-	safe_unpackbool(&slurm_cgroup_conf.signal_children_processes, buffer);
-
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -279,7 +285,7 @@ unpack_error:
 static void _read_slurm_cgroup_conf(void)
 {
 	s_p_options_t options[] = {
-		{"CgroupAutomount", S_P_BOOLEAN, _defunct_option},
+		{"CgroupAutomount", S_P_BOOLEAN},
 		{"CgroupMountpoint", S_P_STRING},
 		{"CgroupReleaseAgentDir", S_P_STRING},
 		{"ConstrainCores", S_P_BOOLEAN},
@@ -288,6 +294,10 @@ static void _read_slurm_cgroup_conf(void)
 		{"MaxRAMPercent", S_P_FLOAT},
 		{"MinRAMSpace", S_P_UINT64},
 		{"ConstrainSwapSpace", S_P_BOOLEAN},
+		{"ConstrainKmemSpace", S_P_BOOLEAN},
+		{"AllowedKmemSpace", S_P_FLOAT},
+		{"MaxKmemPercent", S_P_FLOAT},
+		{"MinKmemSpace", S_P_UINT64},
 		{"AllowedSwapSpace", S_P_FLOAT},
 		{"MaxSwapPercent", S_P_FLOAT},
 		{"MemoryLimitEnforcement", S_P_BOOLEAN},
@@ -298,13 +308,14 @@ static void _read_slurm_cgroup_conf(void)
 		{"CgroupPlugin", S_P_STRING},
 		{"IgnoreSystemd", S_P_BOOLEAN},
 		{"IgnoreSystemdOnFailure", S_P_BOOLEAN},
+		{"RootOwnedCgroups", S_P_BOOLEAN},
 		{"EnableControllers", S_P_BOOLEAN},
-		{"SignalChildrenProcesses", S_P_BOOLEAN},
 		{NULL} };
 	s_p_hashtbl_t *tbl = NULL;
 	char *conf_path = NULL, *tmp_str;
 	struct stat buf;
 	size_t sz;
+	bool kmem_deprecate_msg = false;
 
 	/* Get the cgroup.conf path and validate the file */
 	conf_path = get_extra_conf_path("cgroup.conf");
@@ -323,6 +334,9 @@ static void _read_slurm_cgroup_conf(void)
 		}
 
 		/* cgroup initialization parameters */
+		(void) s_p_get_boolean(&slurm_cgroup_conf.cgroup_automount,
+				       "CgroupAutomount", tbl);
+
 		if (s_p_get_string(&tmp_str, "CgroupMountpoint", tbl)) {
 			/* Remove the trailing / if any. */
 			sz = strlen(tmp_str);
@@ -353,6 +367,36 @@ static void _read_slurm_cgroup_conf(void)
 
 		(void) s_p_get_boolean(&slurm_cgroup_conf.constrain_swap_space,
 				       "ConstrainSwapSpace", tbl);
+
+		/*
+		 * Disable constrain_kmem_space by default because of a known
+		 * bug in Linux kernel version 3, early versions of kernel
+		 * version 4, and RedHat/CentOS 6 and 7, which leaks slab
+		 * caches, eventually causing the machine to be unable to create
+		 * new cgroups.
+		 *
+		 * kmem.limit_in_bytes is deprecated in the linux kernel
+		 * and is not used in cgroup v2, so we are deprecating
+		 * ConstrainKmemSpace and related parameters.
+		 */
+		if (s_p_get_boolean(&slurm_cgroup_conf.constrain_kmem_space,
+				    "ConstrainKmemSpace", tbl))
+			kmem_deprecate_msg = true;
+
+		if (s_p_get_float(&slurm_cgroup_conf.allowed_kmem_space,
+				  "AllowedKmemSpace", tbl))
+			kmem_deprecate_msg = true;
+
+		if (s_p_get_float(&slurm_cgroup_conf.max_kmem_percent,
+				  "MaxKmemPercent", tbl))
+			kmem_deprecate_msg = true;
+
+		if (s_p_get_uint64(&slurm_cgroup_conf.min_kmem_space,
+				   "MinKmemSpace", tbl))
+			kmem_deprecate_msg = true;
+
+		if (kmem_deprecate_msg && running_in_daemon())
+			error("AllowedKmemSpace, ConstrainKmemSpace, MaxKmemPercent, and MinKmemSpace are deprecated, and will be removed in a future release");
 
 		(void) s_p_get_float(&slurm_cgroup_conf.allowed_swap_space,
 				     "AllowedSwapSpace", tbl);
@@ -398,11 +442,11 @@ static void _read_slurm_cgroup_conf(void)
 			    "IgnoreSystemdOnFailure", tbl)))
 			slurm_cgroup_conf.ignore_systemd_on_failure = false;
 
+		(void) s_p_get_boolean(&slurm_cgroup_conf.root_owned_cgroups,
+				       "RootOwnedCgroups", tbl);
+
 		(void) s_p_get_boolean(&slurm_cgroup_conf.enable_controllers,
 				       "EnableControllers", tbl);
-		(void) s_p_get_boolean(
-			&slurm_cgroup_conf.signal_children_processes,
-			"SignalChildrenProcesses", tbl);
 
 		s_p_hashtbl_destroy(tbl);
 	}
@@ -415,7 +459,6 @@ static void _read_slurm_cgroup_conf(void)
 /* Autodetect logic inspired from systemd source code */
 extern char *autodetect_cgroup_version(void)
 {
-#ifdef WITH_CGROUP
 	struct statfs fs;
 	int cgroup_ver = -1;
 
@@ -465,8 +508,6 @@ extern char *autodetect_cgroup_version(void)
 		error("unsupported cgroup version %d", cgroup_ver);
 		break;
 	}
-#endif
-
 	return NULL;
 }
 
@@ -535,6 +576,7 @@ extern void cgroup_init_limits(cgroup_limits_t *limits)
 	limits->device.minor = NO_VAL;
 	limits->limit_in_bytes = NO_VAL64;
 	limits->soft_limit_in_bytes = NO_VAL64;
+	limits->kmem_limit_in_bytes = NO_VAL64;
 	limits->memsw_limit_in_bytes = NO_VAL64;
 	limits->swappiness = NO_VAL64;
 }
@@ -556,6 +598,12 @@ extern List cgroup_get_conf_list(void)
 
 	/* Fill list with cgroup config key pairs */
 	cgroup_conf_l = list_create(destroy_config_key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("CgroupAutomount");
+	key_pair->value = xstrdup_printf("%s", cg_conf->cgroup_automount ?
+					 "yes" : "no");
+	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CgroupMountpoint");
@@ -594,6 +642,30 @@ extern List cgroup_get_conf_list(void)
 	key_pair->name = xstrdup("ConstrainSwapSpace");
 	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_swap_space ?
 					 "yes" : "no");
+	list_append(cgroup_conf_l, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("ConstrainKmemSpace");
+	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_kmem_space ?
+					 "yes" : "no");
+	list_append(cgroup_conf_l, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AllowedKmemSpace");
+	if (cg_conf->allowed_kmem_space >= 0)
+		key_pair->value = xstrdup_printf("%.0f Bytes",
+						 cg_conf->allowed_kmem_space);
+	list_append(cgroup_conf_l, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MaxKmemPercent");
+	key_pair->value = xstrdup_printf("%.1f%%", cg_conf->max_kmem_percent);
+	list_append(cgroup_conf_l, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("MinKmemSpace");
+	key_pair->value = xstrdup_printf("%"PRIu64" MB",
+					 cg_conf->min_kmem_space);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
@@ -880,7 +952,7 @@ extern int cgroup_g_constrain_apply(cgroup_ctl_type_t sub, cgroup_level_t level,
 	return (*(ops.constrain_apply))(sub, level, task_id);
 }
 
-extern int cgroup_g_step_start_oom_mgr(void)
+extern int cgroup_g_step_start_oom_mgr()
 {
 	xassert(g_context);
 
@@ -909,7 +981,7 @@ extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid)
 	return (*(ops.task_get_acct_data))(taskid);
 }
 
-extern long int cgroup_g_get_acct_units(void)
+extern long int cgroup_g_get_acct_units()
 {
 	xassert(g_context);
 

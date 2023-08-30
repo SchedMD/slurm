@@ -228,6 +228,12 @@ static int _check_hash(buf_t *buffer, header_t *header, slurm_msg_t *msg,
 			else if ((cred_hash[1] == type[0]) &&
 				 (cred_hash[2] == type[1]))
 				msg->hash_index = HASH_PLUGIN_NONE;
+			/* 2 versions after 22.05 this else if can be removed */
+			else if ((msg->protocol_version <=
+				  SLURM_MIN_PROTOCOL_VERSION) &&
+				 (cred_hash[1] == type[1]) &&
+				 (cred_hash[2] == type[0]))
+				msg->hash_index = HASH_PLUGIN_NONE;
 			else
 				rc = SLURM_ERROR;
 		} else {
@@ -264,7 +270,15 @@ static int _compute_hash(buf_t *buffer, slurm_msg_t *msg, slurm_hash_t *hash)
 	if (slurm_get_plugin_hash_enable(msg->auth_index)) {
 		uint16_t msg_type = htons(msg->msg_type);
 
-		if (msg->hash_index != HASH_PLUGIN_DEFAULT)
+		/* 2 versions after 22.05 this if can be removed */
+		if (msg->protocol_version <= SLURM_MIN_PROTOCOL_VERSION) {
+			/*
+			 * Unfortunately 21.08.8 and 20.11.9 did not normalize
+			 * this to network order, and require host-byte order.
+			 */
+			msg_type = msg->msg_type;
+			hash->type = HASH_PLUGIN_NONE;
+		} else if (msg->hash_index != HASH_PLUGIN_DEFAULT)
 			hash->type = msg->hash_index;
 
 		if (hash->type == HASH_PLUGIN_NONE) {
@@ -475,18 +489,25 @@ bool slurm_with_slurmdbd(void)
  */
 extern char *slurm_auth_opts_to_socket(char *opts)
 {
-	char *socket = NULL;
+	char *socket = NULL, *sep, *tmp;
 
 	if (!opts)
 		return NULL;
 
-	socket = conf_get_opt_str(opts, "socket=");
-	/*
-	 * If socket not specified AND = is not present, assume its the old
-	 * format and opts is the socket
-	 */
-	if (!socket && !strchr(opts, '='))
+	tmp = strstr(opts, "socket=");
+	if (tmp) {
+		/* New format */
+		socket = xstrdup(tmp + 7);
+		sep = strchr(socket, ',');
+		if (sep)
+			sep[0] = '\0';
+	} else if (strchr(opts, '=')) {
+		/* New format, but socket not specified */
+		;
+	} else {
+		/* Old format */
 		socket = xstrdup(opts);
+	}
 
 	return socket;
 }
@@ -574,6 +595,40 @@ char *slurm_get_acct_gather_interconnect_type(void)
 		slurm_conf_unlock();
 	}
 	return acct_gather_interconnect_type;
+}
+
+/* slurm_get_filesystem_accounting_type
+ * get FilesystemAccountingType from slurm_conf object
+ * RET char *   - filesystem_accounting type, MUST be xfreed by caller
+ */
+char *slurm_get_acct_gather_filesystem_type(void)
+{
+	char *acct_gather_filesystem_type = NULL;
+	slurm_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		acct_gather_filesystem_type =
+			xstrdup(conf->acct_gather_filesystem_type);
+		slurm_conf_unlock();
+	}
+	return acct_gather_filesystem_type;
+}
+
+
+extern uint16_t slurm_get_acct_gather_node_freq(void)
+{
+	uint16_t freq = 0;
+	slurm_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		freq = conf->acct_gather_node_freq;
+		slurm_conf_unlock();
+	}
+	return freq;
 }
 
 /* slurm_get_ext_sensors_type
@@ -1009,7 +1064,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	msg->auth_index = auth_index(auth_cred);
+	msg->auth_index = slurm_auth_index(auth_cred);
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = auth_g_verify(auth_cred, _global_auth_key());
 	} else {
@@ -1029,8 +1084,8 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		goto total_return;
 	}
 
-	auth_g_get_ids(auth_cred, &msg->auth_uid, &msg->auth_gid);
-	msg->auth_ids_set = true;
+	msg->auth_uid = auth_g_get_uid(auth_cred);
+	msg->auth_uid_set = true;
 
 skip_auth:
 	/*
@@ -1300,7 +1355,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	msg.auth_index = auth_index(auth_cred);
+	msg.auth_index = slurm_auth_index(auth_cred);
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = auth_g_verify(auth_cred, _global_auth_key());
 	} else {
@@ -1320,8 +1375,8 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		goto total_return;
 	}
 
-	auth_g_get_ids(auth_cred, &msg.auth_uid, &msg.auth_gid);
-	msg.auth_ids_set = true;
+	msg.auth_uid = auth_g_get_uid(auth_cred);
+	msg.auth_uid_set = true;
 
 skip_auth:
 
@@ -1729,7 +1784,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	msg->auth_index = auth_index(auth_cred);
+	msg->auth_index = slurm_auth_index(auth_cred);
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = auth_g_verify(auth_cred, _global_auth_key());
 	} else {
@@ -1749,8 +1804,8 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		goto total_return;
 	}
 
-	auth_g_get_ids(auth_cred, &msg->auth_uid, &msg->auth_gid);
-	msg->auth_ids_set = true;
+	msg->auth_uid = auth_g_get_uid(auth_cred);
+	msg->auth_uid_set = true;
 
 	/*
 	 * Unpack message body
@@ -1954,8 +2009,8 @@ extern int slurm_send_node_msg(int fd, slurm_msg_t *msg)
 			if (slurm_conf.debug_flags & DEBUG_FLAG_NET)
 				peer = fd_resolve_peer(fd);
 
-			log_flag(NET, "%s: [%s] persistent connection has disappeared for msg_type=%s",
-				__func__, peer, rpc_num2string(msg->msg_type));
+			log_flag(NET, "%s: [%s] persistent connection has disappeared for msg_type=%u",
+				__func__, peer, msg->msg_type);
 		} else if (rc < 0) {
 			peer = fd_resolve_peer(fd);
 			error("%s: [%s] slurm_persist_send_msg(msg_type=%s) failed: %m",
@@ -1977,8 +2032,8 @@ extern int slurm_send_node_msg(int fd, slurm_msg_t *msg)
 	if (rc >= 0) {
 		/* sent successfully */
 	} else if (errno == ENOTCONN) {
-		log_flag(NET, "%s: peer has disappeared for msg_type=%s",
-			 __func__, rpc_num2string(msg->msg_type));
+		log_flag(NET, "%s: peer has disappeared for msg_type=%u",
+			 __func__, msg->msg_type);
 	} else if (errno == EBADF) {
 		/* failure of sendto() and peer lookup will never work */
 		error("%s: slurm_bufs_sendto(fd=%d) with msg_type=%s failed: %m",
@@ -2146,7 +2201,7 @@ extern void response_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
 	 * but we're stuck doing that on older protocol versions for
 	 * backwards-compatibility.
 	 */
-	if (!msg->auth_ids_set)
+	if (!msg->auth_uid_set)
 		slurm_msg_set_r_uid(resp_msg, SLURM_AUTH_NOBODY);
 	else if ((msg->auth_uid != slurm_conf.slurm_user_id) &&
 		 (msg->auth_uid != slurm_conf.slurmd_user_id))
@@ -2697,19 +2752,19 @@ void slurm_send_msg_maybe(slurm_msg_t *req)
 List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout)
 {
 	List ret_list = NULL;
-	hostlist_t *hl = NULL;
+	hostlist_t hl = NULL;
 
 	if (!running_in_daemon()) {
 		/*
 		 * Load route and topo plugins here to make it so the api can do
 		 * it easily
 		 */
-		if (route_g_init() != SLURM_SUCCESS) {
+		if (route_init() != SLURM_SUCCESS) {
 			error("failed to initialize route plugins");
 			return NULL;
 		}
 
-		if (topology_g_init() != SLURM_SUCCESS) {
+		if (slurm_topo_init() != SLURM_SUCCESS) {
 			error("failed to initialize route plugins");
 			return NULL;
 		}
@@ -2886,12 +2941,11 @@ extern int *set_span(int total,  uint16_t tree_width)
 	if (tree_width == 0)
 		tree_width = slurm_conf.tree_width;
 
+	span = xcalloc(tree_width, sizeof(int));
 	//info("span count = %d", tree_width);
 	if (total <= tree_width) {
 		return span;
 	}
-
-	span = xcalloc(tree_width, sizeof(int));
 
 	while (left > 0) {
 		for (i = 0; i < tree_width; i++) {
@@ -2957,7 +3011,7 @@ extern void slurm_msg_set_r_uid(slurm_msg_t *msg, uid_t r_uid)
 
 extern char *nodelist_nth_host(const char *nodelist, int inx)
 {
-	hostlist_t *hl = hostlist_create(nodelist);
+	hostlist_t hl = hostlist_create(nodelist);
 	char *name = hostlist_nth(hl, inx);
 	hostlist_destroy(hl);
 	return name;
@@ -2965,7 +3019,7 @@ extern char *nodelist_nth_host(const char *nodelist, int inx)
 
 extern int nodelist_find(const char *nodelist, const char *name)
 {
-	hostlist_t *hl = hostlist_create(nodelist);
+	hostlist_t hl = hostlist_create(nodelist);
 	int id = hostlist_find(hl, name);
 	hostlist_destroy(hl);
 	return id;
@@ -3126,7 +3180,7 @@ extern int slurm_forward_data(
 	ret_data_info_t *ret_data_info = NULL;
 	slurm_msg_t msg;
 	forward_data_msg_t req;
-	hostlist_t *hl = NULL;
+	hostlist_t hl = NULL;
 	bool redo_nodelist = false;
 	slurm_msg_t_init(&msg);
 
@@ -3236,40 +3290,4 @@ extern int slurm_char_to_hex(int c)
 		return cl + (10 - 'a');
 	else
 		return -1;
-}
-
-extern int slurm_associations_get_shares(shares_request_msg_t *shares_req,
-					 shares_response_msg_t **shares_resp)
-{
-	int rc;
-	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
-
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
-
-	req_msg.msg_type = REQUEST_SHARE_INFO;
-	req_msg.data = shares_req;
-
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg,
-					   working_cluster_rec) < 0)
-		return SLURM_ERROR;
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_SHARE_INFO:
-		*shares_resp = (shares_response_msg_t *) resp_msg.data;
-		break;
-	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
-		slurm_free_return_code_msg(resp_msg.data);
-		if (rc)
-			slurm_seterrno_ret(rc);
-		*shares_resp = NULL;
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
-
-	return SLURM_SUCCESS;
 }

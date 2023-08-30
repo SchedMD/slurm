@@ -139,7 +139,7 @@ typedef struct thd {
 					 * upon termination */
 	slurm_addr_t *addr;		/* specific addr to send to
 					 * will not do nodelist if set */
-	hostlist_t *nodelist;		/* list of nodes to send to */
+	hostlist_t nodelist;		/* list of nodes to send to */
 	char *nodename;			/* node to send to */
 	List ret_list;
 } thd_t;
@@ -349,9 +349,9 @@ void *agent(void *args)
 		 */
 		task_specific_ptr = _make_task_data(agent_info_ptr, i);
 
-		slurm_thread_create(&thread_ptr[i].thread,
-				    _thread_per_group_rpc,
-				    task_specific_ptr);
+		slurm_thread_create_detached(&thread_ptr[i].thread,
+					     _thread_per_group_rpc,
+					     task_specific_ptr);
 		agent_info_ptr->threads_active++;
 		slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 	}
@@ -360,16 +360,14 @@ void *agent(void *args)
 	pthread_join(thread_wdog, NULL);
 	delay = (int) difftime(time(NULL), begin_time);
 	if (delay > (slurm_conf.msg_timeout * 2)) {
-		info("agent msg_type=%s ran for %d seconds",
-		     rpc_num2string(agent_arg_ptr->msg_type),  delay);
+		info("agent msg_type=%u ran for %d seconds",
+			agent_arg_ptr->msg_type,  delay);
 	}
 	slurm_mutex_lock(&agent_info_ptr->thread_mutex);
 	while (agent_info_ptr->threads_active != 0) {
 		slurm_cond_wait(&agent_info_ptr->thread_cond,
 				&agent_info_ptr->thread_mutex);
 	}
-	for (i = 0; i < agent_info_ptr->thread_count; i++)
-		pthread_join(thread_ptr[i].thread, NULL);
 	slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 
 	log_flag(AGENT, "%s: end agent thread_count:%d threads_active:%d retry:%c get_reply:%c msg_type:%s protocol_version:%hu",
@@ -1379,8 +1377,8 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 			count, j);
 		agent_arg_ptr->node_count = j;
 	}
-	debug2("Queue RPC msg_type=%s, nodes=%d for retry",
-	       rpc_num2string(agent_arg_ptr->msg_type), j);
+	debug2("Queue RPC msg_type=%u, nodes=%d for retry",
+	       agent_arg_ptr->msg_type, j);
 
 	/* add the requeust to a list */
 	queued_req_ptr = xmalloc(sizeof(queued_request_t));
@@ -1461,7 +1459,7 @@ extern void agent_init(void)
 		return;
 	}
 
-	slurm_thread_create_detached(_agent_init, NULL);
+	slurm_thread_create_detached(NULL, _agent_init, NULL);
 	pending_thread_running = true;
 	slurm_mutex_unlock(&pending_mutex);
 }
@@ -1587,9 +1585,8 @@ static void _agent_defer(void)
 				 REQUEST_SIGNAL_TASKS)
 				rc = _signal_defer(queued_req_ptr);
 			else
-				fatal("%s: Invalid message type (%s)",
-				      __func__,
-				      rpc_num2string(agent_arg_ptr->msg_type));
+				fatal("%s: Invalid message type (%u)",
+				      __func__, agent_arg_ptr->msg_type);
 
 			if (rc == -1) {   /* abort request */
 				_purge_agent_args(
@@ -1708,7 +1705,7 @@ next:
 		if (agent_arg_ptr) {
 			debug2("Spawning RPC agent for msg_type %s",
 			       rpc_num2string(agent_arg_ptr->msg_type));
-			slurm_thread_create_detached(agent, agent_arg_ptr);
+			slurm_thread_create_detached(NULL, agent, agent_arg_ptr);
 			agent_started++;
 		} else
 			error("agent_retry found record with no agent_args");
@@ -1729,7 +1726,7 @@ next:
 
 			mail_thread_cnt++;
 			agent_thread_cnt++;
-			slurm_thread_create_detached(_mail_proc, mi);
+			slurm_thread_create_detached(NULL, _mail_proc, mi);
 		}
 		slurm_mutex_unlock(&mail_mutex);
 		slurm_mutex_unlock(&agent_cnt_mutex);
@@ -1756,7 +1753,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 
 	if (agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) {
 		/* execute now */
-		slurm_thread_create_detached(agent, agent_arg_ptr);
+		slurm_thread_create_detached(NULL, agent, agent_arg_ptr);
 		/* give agent a chance to start */
 		usleep(10000);
 		return;
