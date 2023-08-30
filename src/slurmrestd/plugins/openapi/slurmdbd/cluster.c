@@ -85,8 +85,8 @@ static void _update_clusters(ctxt_t *ctxt)
 	openapi_resp_single_t resp = {0};
 	openapi_resp_single_t *resp_ptr = &resp;
 
-	if (!DATA_PARSE(ctxt->parser, OPENAPI_CLUSTERS_RESP, resp,
-			ctxt->parameters, ctxt->parent_path)) {
+	if (!DATA_PARSE(ctxt->parser, OPENAPI_CLUSTERS_RESP, resp, ctxt->query,
+			ctxt->parent_path)) {
 		list_t *cluster_list = resp.response;
 		update_clusters(ctxt, true, cluster_list);
 		FREE_NULL_LIST(cluster_list);
