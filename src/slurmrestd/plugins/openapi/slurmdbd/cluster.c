@@ -129,7 +129,9 @@ static int _op_handler_clusters(ctxt_t *ctxt)
 {
 	slurmdb_cluster_cond_t *cluster_cond = NULL;
 
-	if (DATA_PARSE(ctxt->parser, CLUSTER_CONDITION_PTR, cluster_cond,
+	if (((ctxt->method == HTTP_REQUEST_GET) ||
+	     (ctxt->method == HTTP_REQUEST_DELETE)) &&
+	    DATA_PARSE(ctxt->parser, CLUSTER_CONDITION_PTR, cluster_cond,
 		       ctxt->query, ctxt->parent_path))
 		goto cleanup;
 
