@@ -8306,7 +8306,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 #undef add_openapi_response_single
 
 /* add parser for a pointer */
-#define addpp(typev, typet, typep, allow_null)                                 \
+#define addpp(typev, typet, typep, allow_null, newf, freef)                    \
 	{                                                                      \
 		.magic = MAGIC_PARSER,                                         \
 		.model = PARSER_MODEL_PTR,                                     \
@@ -8318,9 +8318,11 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 		.ptr_offset = NO_VAL,                                          \
 		.pointer_type = DATA_PARSER_##typep,                           \
 		.allow_null_pointer = allow_null,                              \
+		.new = newf,                                                   \
+		.free = freef,                                                 \
 	}
 /* add parser array for struct */
-#define addpa(typev, typet, newf, freef)                                       \
+#define addpa(typev, typet)                                       \
 	{                                                                      \
 		.magic = MAGIC_PARSER,                                         \
 		.model = PARSER_MODEL_ARRAY,                                   \
@@ -8328,8 +8330,6 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
 		.obj_type_string = XSTRINGIFY(typet),                          \
 		.size = sizeof(typet),                                         \
-		.new = newf,                                                   \
-		.free = freef,                                                 \
 		.needs = NEED_NONE,                                            \
 		.fields = PARSER_ARRAY(typev),                                 \
 		.field_count = ARRAY_SIZE(PARSER_ARRAY(typev)),                \
@@ -8337,12 +8337,12 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_CONFIG_RESP)[] = {
 	}
 /* add parser array (for struct) and pointer for parser array */
 #define addpap(typev, typet, newf, freef)                                      \
-	addpa(typev, typet, newf, freef),                                      \
-	addpp(typev ## _PTR, typet *, typev, false)
+	addpa(typev, typet),                                      \
+	addpp(typev ## _PTR, typet *, typev, false, newf, freef)
 /* add parser array (for struct) and nullable pointer for parser array */
 #define addpanp(typev, typet, newf, freef)                                     \
-	addpa(typev, typet, newf, freef),                                      \
-	addpp(typev ## _PTR, typet *, typev, true)
+	addpa(typev, typet),                                                   \
+	addpp(typev ## _PTR, typet *, typev, true, newf, freef)
 /* add parser for NULL terminated array of (sequential) objects */
 #define addnt(typev, typea)                                                    \
 	{                                                                      \
@@ -8667,15 +8667,15 @@ static const parser_t parsers[] = {
 	addntp(RESERVATION_INFO_ARRAY, RESERVATION_INFO),
 
 	/* Pointer model parsers */
-	addpp(ROLLUP_STATS_PTR, slurmdb_rollup_stats_t *, ROLLUP_STATS, false),
-	addpp(JOB_ARRAY_RESPONSE_MSG_PTR, job_array_resp_msg_t *, JOB_ARRAY_RESPONSE_MSG, false),
-	addpp(NODES_PTR, node_info_msg_t *, NODES, false),
-	addpp(LICENSES_PTR, license_info_msg_t *, LICENSES, false),
-	addpp(JOB_INFO_MSG_PTR, job_info_msg_t *, JOB_INFO_MSG, false),
-	addpp(PARTITION_INFO_MSG_PTR, partition_info_msg_t *, PARTITION_INFO_MSG, false),
-	addpp(RESERVATION_INFO_MSG_PTR, reserve_info_msg_t *, RESERVATION_INFO_MSG, false),
-	addpp(SELECTED_STEP_PTR, slurm_selected_step_t *, SELECTED_STEP, false),
-	addpp(SLURM_STEP_ID_STRING_PTR, slurm_step_id_t *, SLURM_STEP_ID_STRING, false),
+	addpp(ROLLUP_STATS_PTR, slurmdb_rollup_stats_t *, ROLLUP_STATS, false, NULL, NULL),
+	addpp(JOB_ARRAY_RESPONSE_MSG_PTR, job_array_resp_msg_t *, JOB_ARRAY_RESPONSE_MSG, false, NULL, NULL),
+	addpp(NODES_PTR, node_info_msg_t *, NODES, false, NULL, NULL),
+	addpp(LICENSES_PTR, license_info_msg_t *, LICENSES, false, NULL, NULL),
+	addpp(JOB_INFO_MSG_PTR, job_info_msg_t *, JOB_INFO_MSG, false, NULL, NULL),
+	addpp(PARTITION_INFO_MSG_PTR, partition_info_msg_t *, PARTITION_INFO_MSG, false, NULL, NULL),
+	addpp(RESERVATION_INFO_MSG_PTR, reserve_info_msg_t *, RESERVATION_INFO_MSG, false, NULL, NULL),
+	addpp(SELECTED_STEP_PTR, slurm_selected_step_t *, SELECTED_STEP, false, NULL, NULL),
+	addpp(SLURM_STEP_ID_STRING_PTR, slurm_step_id_t *, SLURM_STEP_ID_STRING, false, NULL, NULL),
 
 	/* Array of parsers */
 	addpap(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
