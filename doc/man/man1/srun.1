@@ -50,32 +50,6 @@ directory.
 .LP
 
 .TP
-\fB\-\-accel\-bind\fR=<\fIoptions\fR>
-Control how tasks are bound to generic resources of type gpu and nic.
-Multiple options may be specified. Supported options include:
-.IP
-.RS
-.TP
-\fBg\fR
-Bind each task to GPUs which are closest to the allocated CPUs.
-.IP
-
-.TP
-\fBn\fR
-Bind each task to NICs which are closest to the allocated CPUs.
-.IP
-
-.TP
-\fBv\fR
-Verbose mode. Log how tasks are bound to GPU and NIC devices.
-.IP
-
-.TP
-This option applies to job allocations.
-.RE
-.IP
-
-.TP
 \fB\-A\fR, \fB\-\-account\fR=<\fIaccount\fR>
 Charge resources used by this job to specified account.
 The \fIaccount\fR is an arbitrary string. The account name may
@@ -1330,80 +1304,8 @@ of tasks as one task per thread.
 
 .TP
 \fB\-\-gpu\-bind\fR=[verbose,]<\fItype\fR>
-Bind tasks to specific GPUs.
-By default every spawned task can access every GPU allocated to the step.
-If "verbose," is specified before <\fItype\fR>, then print out GPU binding
-debug information to the stderr of the tasks. GPU binding is ignored if there is
-only one task.
-
-Supported \fItype\fR options:
-.IP
-.RS
-.TP 10
-\fBclosest\fR
-Bind each task to the GPU(s) which are closest.
-In a NUMA environment, each task may be bound to more than one GPU (i.e.
-all GPUs in that NUMA environment).
-.IP
-
-.TP
-\fBmap_gpu:<list>\fR
-Bind by setting GPU masks on tasks (or ranks) as specified where <list> is
-<gpu_id_for_task_0>,<gpu_id_for_task_1>,... GPU IDs are interpreted as decimal
-values. If the number of tasks (or ranks) exceeds the number of elements in this
-list, elements in the list will be reused as needed starting from the beginning
-of the list. To simplify support for large task counts, the lists may follow a
-map with an asterisk and repetition count. For example "map_gpu:0*4,1*4".
-If the task/cgroup plugin is used and ConstrainDevices is set in cgroup.conf,
-then the GPU IDs are zero\-based indexes relative to the GPUs allocated to the
-job (e.g. the first GPU is 0, even if the global ID is 3). Otherwise, the GPU
-IDs are global IDs, and all GPUs on each node in the job should be allocated for
-predictable binding results.
-.IP
-
-.TP
-\fBmask_gpu:<list>\fR
-Bind by setting GPU masks on tasks (or ranks) as specified where <list> is
-<gpu_mask_for_task_0>,<gpu_mask_for_task_1>,... The mapping is specified for
-a node and identical mapping is applied to the tasks on every node (i.e. the
-lowest task ID on each node is mapped to the first mask specified in the list,
-etc.). GPU masks are always interpreted as hexadecimal values but can be
-preceded with an optional '0x'. To simplify support for large task counts, the
-lists may follow a map with an asterisk and repetition count.
-For example "mask_gpu:0x0f*4,0xf0*4".
-If the task/cgroup plugin is used and ConstrainDevices is set in cgroup.conf,
-then the GPU IDs are zero\-based indexes relative to the GPUs allocated to the
-job (e.g. the first GPU is 0, even if the global ID is 3). Otherwise, the GPU
-IDs are global IDs, and all GPUs on each node in the job should be allocated for
-predictable binding results.
-.IP
-
-.TP
-\fBnone\fR
-Do not bind tasks to GPUs (turns off binding if \-\-gpus\-per\-task is
-requested).
-.IP
-
-.TP
-\fBper_task:<gpus_per_task>\fR
-Each task will be bound to the number of gpus specified in
-\fI<gpus_per_task>\fR. Tasks are preferentially assigned gpus with affinity to
-cores in their allocation like in \fI\-\-gpu\-bind=closest\fR, though they will
-take any gpus if they are unavailable. If no affinity exists, the first task
-will be assigned the first x number of gpus on the node etc.
-.IP
-
-.TP
-\fBsingle:<tasks_per_gpu>\fR
-Like \fI\-\-gpu\-bind=closest\fR, except that each task can only be bound to a
-single GPU, even when it can be bound to multiple GPUs that are equally close.
-The GPU to bind to is determined by \fI<tasks_per_gpu>\fR, where the
-first \fI<tasks_per_gpu>\fR tasks are bound to the first GPU available, the
-second \fI<tasks_per_gpu>\fR tasks are bound to the second GPU available, etc.
-This is basically a block distribution of tasks onto available GPUs, where the
-available GPUs are determined by the socket affinity of the task and the socket
-affinity of the GPUs as specified in gres.conf's \fICores\fR parameter.
-.RE
+Equivalent to \-\-tres\-bind=gres/gpu:[verbose,]<\fItype\fR>
+See \fB\-\-tres\-bind\fR for all options and documentation.
 .IP
 
 .TP
@@ -1496,8 +1398,9 @@ requested in a comma separated list, for example:
 \fB\-\-gpus\-per\-socket\fR and \fB\-\-gpus\-per\-node\fR options.
 This option requires an explicit task count, e.g. \-n, \-\-ntasks or "\-\-gpus=X
 \-\-gpus\-per\-task=Y" rather than an ambiguous range of nodes with \-N, \-\-nodes.
-This option will implicitly set \-\-gpu\-bind=per_task:<gpus_per_task>, but that
-can be overridden with an explicit \-\-gpu\-bind specification.
+This option will implicitly set \-\-tres\-bind=gres/gpu:per_task:<gpus_per_task>,
+but that can be overridden with an explicit \-\-tres\-bind=gres/gpu
+specification.
 .IP
 
 .TP
@@ -2383,8 +2286,9 @@ determined to satisfy \fB\-\-ntasks\-per\-gpu\fR, or 2) specify the GPUs wanted
 and the total task count will be automatically determined.
 The number of CPUs needed will be automatically increased if necessary to allow
 for any calculated task count.
-This option will implicitly set \fB\-\-gpu\-bind=single:<ntasks>\fR, but that
-can be overridden with an explicit \fB\-\-gpu\-bind\fR specification.
+This option will implicitly set \fB\-\-tres\-bind=gres/gpu:single:<ntasks>\fR,
+but that can be overridden with an explicit \fB\-\-tres\-bind=gres/gpu\fR
+specification.
 This option is not compatible with a node range
 (i.e. \-N<\fIminnodes\fR\-\fImaxnodes\fR>).
 This option is not compatible with \fB\-\-gpus\-per\-task\fR,
@@ -2984,6 +2888,91 @@ the fanout.
 .IP
 
 .TP
+\fB\-\-tres\-bind\fR=<\fItres\fR>:[verbose,]<\fItype\fR>[+<\fItres\fR>:
+[verbose,]<\fItype\fR>...]
+Specifiy a list of tres with their task binding options. Currently gres are the
+only supported tres for this options. Specify gres as "gres/<gres_name>"
+(e.g. gres/gpu)
+
+Example: \-\-tres\-bind=gres/gpu:verbose,map:0,1,2,3+gres/nic:closest
+
+By default, most tres are not bound to individual tasks
+
+Supported binding \fItype\fR options for \fBgres\fR:
+.IP
+.RS
+.TP 10
+\fBclosest\fR
+Bind each task to the gres(s) which are closest.
+In a NUMA environment, each task may be bound to more than one gres (i.e.
+all gres in that NUMA environment).
+.IP
+
+.TP
+\fBmap:<list>\fR
+Bind by setting gres masks on tasks (or ranks) as specified where <list> is
+<gres_id_for_task_0>,<gres_id_for_task_1>,... gres IDs are interpreted as decimal
+values. If the number of tasks (or ranks) exceeds the number of elements in this
+list, elements in the list will be reused as needed starting from the beginning
+of the list. To simplify support for large task counts, the lists may follow a
+map with an asterisk and repetition count. For example "map:0*4,1*4".
+If the task/cgroup plugin is used and ConstrainDevices is set in cgroup.conf,
+then the gres IDs are zero\-based indexes relative to the gress allocated to the
+job (e.g. the first gres is 0, even if the global ID is 3). Otherwise, the gres
+IDs are global IDs, and all gres on each node in the job should be allocated for
+predictable binding results.
+.IP
+
+.TP
+\fBmask:<list>\fR
+Bind by setting gres masks on tasks (or ranks) as specified where <list> is
+<gres_mask_for_task_0>,<gres_mask_for_task_1>,... The mapping is specified for
+a node and identical mapping is applied to the tasks on every node (i.e. the
+lowest task ID on each node is mapped to the first mask specified in the list,
+etc.). gres masks are always interpreted as hexadecimal values but can be
+preceded with an optional '0x'. To simplify support for large task counts, the
+lists may follow a map with an asterisk and repetition count.
+For example "mask:0x0f*4,0xf0*4".
+If the task/cgroup plugin is used and ConstrainDevices is set in cgroup.conf,
+then the gres IDs are zero\-based indexes relative to the gres allocated to the
+job (e.g. the first gres is 0, even if the global ID is 3). Otherwise, the gres
+IDs are global IDs, and all gres on each node in the job should be allocated for
+predictable binding results.
+.IP
+
+.TP
+\fBnone\fR
+Do not bind tasks to this gres (turns off implicit binding from
+\-\-tres\-per\-task and \-\-gpus\-per\-task).
+.IP
+
+.TP
+\fBper_task:<gres_per_task>\fR
+Each task will be bound to the number of gres specified in
+\fI<gres_per_task>\fR. Tasks are preferentially assigned gres with affinity to
+cores in their allocation like in \fIclosest\fR, though they will
+take any gres if they are unavailable. If no affinity exists, the first task
+will be assigned the first x number of gres on the node etc.
+Shared gres will prefer to bind one sharing device per task if possible.
+.IP
+
+.TP
+\fBsingle:<tasks_per_gres>\fR
+Like \fIclosest\fR, except that each task can only be bound to a
+single gres, even when it can be bound to multiple gres that are equally close.
+The gres to bind to is determined by \fI<tasks_per_gres>\fR, where the
+first \fI<tasks_per_gres>\fR tasks are bound to the first gres available, the
+second \fI<tasks_per_gres>\fR tasks are bound to the second gres available, etc.
+This is basically a block distribution of tasks onto available gres, where the
+available gres are determined by the socket affinity of the task and the socket
+affinity of the gres as specified in gres.conf's \fICores\fR parameter.
+.IP
+
+\fBNOTE\fR: Shared gres binding is currently limited to per_task or none
+.RE
+.IP
+
+.TP
 \fB\-\-tres\-per\-task\fR=<\fIlist\fR>
 Specifies a comma\-delimited list of trackable resources required for the job on
 each task to be spawned in the job's resource allocation.
@@ -3017,6 +3006,10 @@ Examples:
 The specified resources will be allocated to the job on each node.
 The available trackable resources are configurable by the system
 administrator.
+.br
+\fBNOTE\fR: This option with gres/gpu or gres/shard will implicitly set
+\-\-tres\-bind=per_task:(gpu or shard)<tres_per_task>, Thic can be overridden with
+an explicit \-\-tres\-bind specification.
 .br
 \fBNOTE\fR: Invalid TRES for \-\-tres\-per\-task include
 bb,billing,energy,fs,mem,node,pages,vmem.
