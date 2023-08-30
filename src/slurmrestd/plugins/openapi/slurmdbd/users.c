@@ -85,7 +85,7 @@ static int _foreach_update_user(void *x, void *arg)
 
 	if (user->old_name && !user->old_name[0]) {
 		/*
-		 * Ignore empty string since they client is not asking to change
+		 * Ignore empty string since the client is not asking to change
 		 * user from nothing.
 		 */
 		xfree(user->old_name);
