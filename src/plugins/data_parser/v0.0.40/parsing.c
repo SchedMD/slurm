@@ -300,7 +300,7 @@ static data_for_each_cmd_t _foreach_parse_list(data_t *src, void *arg)
 	foreach_list_t *args = arg;
 	const parser_t *const parser = args->parser;
 	const parser_t *const lparser = find_parser_by_type(parser->list_type);
-	void *obj = alloc_parser_obj(lparser);
+	void *obj = NULL;
 	data_t *ppath = data_copy(NULL, args->parent_path);
 	data_t *ppath_last = data_get_list_last(ppath);
 
@@ -309,7 +309,6 @@ static data_for_each_cmd_t _foreach_parse_list(data_t *src, void *arg)
 	check_parser(lparser);
 	xassert(!args->dlist); /* only for dumping */
 	xassert((args->index > 0) || (args->index == -1));
-	xassert((lparser->size == NO_VAL) || (xsize(obj) == lparser->size));
 
 	if (args->index < 0)
 		args->index = 0;
@@ -319,11 +318,7 @@ static data_for_each_cmd_t _foreach_parse_list(data_t *src, void *arg)
 			    data_get_string(ppath_last),
 			    args->index);
 
-	if ((rc = parse(obj, NO_VAL, lparser, src, args->args, ppath))) {
-		log_flag(DATA, "%s object at 0x%"PRIxPTR" freed due to parser error: %s",
-			 lparser->obj_type_string, (uintptr_t) obj,
-			 slurm_strerror(rc));
-		free_parser_obj(lparser, obj);
+	if ((rc = parse(&obj, NO_VAL, lparser, src, args->args, ppath))) {
 		FREE_NULL_DATA(ppath);
 		return DATA_FOR_EACH_FAIL;
 	}
