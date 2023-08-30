@@ -1119,6 +1119,7 @@ no_user_table:
 		FREE_NULL_LIST(tmp_list);
 	}
 end_it:
+	errno = rc;
 	return ret_list;
 }
 
