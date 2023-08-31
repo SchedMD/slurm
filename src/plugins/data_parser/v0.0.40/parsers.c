@@ -1619,7 +1619,9 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 	uid_t *uid_ptr = obj;
 	uid_t uid;
 
-	switch (data_convert_type(src, DATA_TYPE_NONE)) {
+	(void) data_convert_type(src, DATA_TYPE_NONE);
+
+	switch (data_get_type(src)) {
 	case DATA_TYPE_INT_64:
 	{
 		uid = data_get_int(src);
