@@ -177,6 +177,8 @@ documents those changes that are of interest to users and administrators.
     for non-numeric steps.
  -- slurmrestd - Tagged "result" field from 'POST /slurm/v0.0.40/job/submit'
     as deprecated.
+ -- slurmrestd - Warning will be added for rejected job submissions with
+    submissions to 'POST /slurm/v0.0.40/job/submit'.
 
 * Changes in Slurm 23.02.5
 ==========================

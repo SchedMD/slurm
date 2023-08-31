@@ -256,6 +256,11 @@ static void _job_post_submit(ctxt_t *ctxt, job_desc_msg_t *job, char *script)
 		       __func__, ctxt->id, resp->job_id, resp->step_id,
 		       resp->error_code, resp->job_submit_user_msg);
 
+		if (resp->error_code)
+			resp_warn(ctxt, "slurm_submit_batch_job()",
+				   "Job submission resulted in non-zero return code: %s",
+				   slurm_strerror(resp->error_code));
+
 		DATA_DUMP(ctxt->parser, OPENAPI_JOB_SUBMIT_RESPONSE, oas_resp,
 			  ctxt->resp);
 	}
@@ -299,6 +304,11 @@ static void _job_post_het_submit(ctxt_t *ctxt, list_t *jobs, char *script)
 		debug3("%s:[%s] HetJob submitted -> job_id:%d step_id:%d rc:%d message:%s",
 		       __func__, ctxt->id, resp->job_id, resp->step_id,
 		       resp->error_code, resp->job_submit_user_msg);
+
+		if (resp->error_code)
+			resp_warn(ctxt, "slurm_submit_batch_het_job()",
+				   "HetJob submission resulted in non-zero return code: %s",
+				   slurm_strerror(resp->error_code));
 
 		DATA_DUMP(ctxt->parser, OPENAPI_JOB_SUBMIT_RESPONSE, oas_resp,
 			  ctxt->resp);
