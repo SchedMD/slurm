@@ -157,9 +157,7 @@ static int _op_handler_qos(ctxt_t *ctxt, slurmdb_qos_cond_t *qos_cond)
 	list_t *qos_list = NULL;
 
 	if (ctxt->method == HTTP_REQUEST_GET) {
-		if (db_query_list(ctxt, &qos_list, slurmdb_qos_get, qos_cond))
-			goto cleanup;
-
+		db_query_list(ctxt, &qos_list, slurmdb_qos_get, qos_cond);
 		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_SLURMDBD_QOS_RESP, qos_list,
 					 ctxt);
 	} else if (ctxt->method == HTTP_REQUEST_DELETE) {

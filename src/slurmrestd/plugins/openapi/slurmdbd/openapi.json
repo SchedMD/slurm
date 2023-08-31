@@ -328,12 +328,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP"
                 }
               }
             }
@@ -376,12 +376,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                  "$ref": "DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP"
                 }
               }
             }
