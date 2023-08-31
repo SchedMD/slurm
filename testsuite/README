@@ -790,11 +790,6 @@ test40.5   Increase size of job with allocated MPS
 test40.6   Decrease size of job with allocated MPS
 test40.8   Simple CUDA MPS test
 
-test41.#   Testing of slurmrestd
-=============================================================
-test41.1   Test slurmrestd plugins
-test41.2   Test slurmrestd OpenAPI generation and functionality
-
 
 A summary of each python test is shown below.
 ############################################################################
