@@ -58,6 +58,17 @@ static void _dump_users(ctxt_t *ctxt, slurmdb_user_cond_t *user_cond)
 	FREE_NULL_LIST(user_list);
 }
 
+static int _foreach_wckey_set_def(void *x, void *key)
+{
+	slurmdb_wckey_rec_t *wckey = x;
+
+	xassert(wckey->name && wckey->name[0]);
+
+	wckey->is_def = (wckey == key);
+
+	return SLURM_SUCCESS;
+}
+
 static int _match_wckey_name(void *x, void *key)
 {
 	slurmdb_wckey_rec_t *wckey = x;
@@ -161,10 +172,15 @@ static int _foreach_update_user(void *x, void *arg)
 		 */
 		slurmdb_wckey_rec_t *key = NULL;
 
-		if (user->wckey_list)
+		if (user->wckey_list) {
 			key = list_find_first(user->wckey_list,
 					      _match_wckey_name,
 					      user->default_wckey);
+
+			/* Avoid any conflicting defaults */
+			list_for_each(user->wckey_list, _foreach_wckey_set_def,
+				      key);
+		}
 
 		if (!key) {
 			if (!user->wckey_list)
@@ -176,6 +192,7 @@ static int _foreach_update_user(void *x, void *arg)
 			key->name = xstrdup(user->default_wckey);
 			key->user = xstrdup(user->name);
 			key->cluster = xstrdup(slurm_conf.cluster_name);
+			key->is_def = true;
 
 			list_append(user->wckey_list, key);
 		}
