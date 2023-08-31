@@ -171,7 +171,7 @@ static void _add_field(data_t *obj, data_t *required,
 		return;
 
 	if (pchild->required)
-		data_set_string(data_list_append(required), pchild->field_name);
+		data_set_string(data_list_append(required), pchild->key);
 
 	dchild = _resolve_parser_key(pchild, obj);
 
