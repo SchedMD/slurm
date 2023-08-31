@@ -178,6 +178,9 @@ static char *_flag_parent_path(char **path_ptr,
 	if (*path_ptr)
 		return *path_ptr;
 
+	if (is_fast_mode(args->args))
+		return NULL;
+
 	ppath = clone_source_path_index(args->parent_path, args->index);
 	set_source_path(path_ptr, args->args, ppath);
 	FREE_NULL_DATA(ppath);
@@ -240,13 +243,12 @@ static int _parse_flag(void *dst, const parser_t *const parser, data_t *src,
 {
 	int rc = SLURM_SUCCESS;
 	char *path = NULL;
-	data_t *ppath = data_copy(NULL, parent_path);
 	foreach_flag_parser_args_t fargs = {
 		.magic = MAGIC_FOREACH_LIST_FLAG,
 		.args = args,
 		.parser = parser,
 		.dst = dst,
-		.parent_path = ppath,
+		.parent_path = parent_path,
 	};
 
 	xassert(args->magic == MAGIC_ARGS);
@@ -289,7 +291,6 @@ static int _parse_flag(void *dst, const parser_t *const parser, data_t *src,
 	}
 
 cleanup:
-	FREE_NULL_DATA(ppath);
 	xfree(path);
 	return rc;
 }
@@ -301,8 +302,7 @@ static data_for_each_cmd_t _foreach_parse_list(data_t *src, void *arg)
 	const parser_t *const parser = args->parser;
 	const parser_t *const lparser = find_parser_by_type(parser->list_type);
 	void *obj = NULL;
-	data_t *ppath = data_copy(NULL, args->parent_path);
-	data_t *ppath_last = data_get_list_last(ppath);
+	data_t *ppath = NULL;
 
 	xassert(args->magic == MAGIC_FOREACH_LIST);
 	check_parser(parser);
@@ -313,10 +313,16 @@ static data_for_each_cmd_t _foreach_parse_list(data_t *src, void *arg)
 	if (args->index < 0)
 		args->index = 0;
 
-	/* Use jq style array zero based array notation */
-	data_set_string_fmt(ppath_last, "%s[%zu]",
-			    data_get_string(ppath_last),
-			    args->index);
+	if (!is_fast_mode(args->args)) {
+		data_t *ppath_last;
+
+		ppath = data_copy(NULL, args->parent_path);
+		ppath_last = data_get_list_last(ppath);
+
+		/* Use jq style array zero based array notation */
+		data_set_string_fmt(ppath_last, "%s[%zu]",
+				    data_get_string(ppath_last), args->index);
+	}
 
 	if ((rc = parse(&obj, NO_VAL, lparser, src, args->args, ppath))) {
 		FREE_NULL_DATA(ppath);
@@ -433,8 +439,7 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 	int rc;
 	foreach_nt_array_t *args = arg;
 	void *obj = NULL;
-	data_t *ppath = data_copy(NULL, args->parent_path);
-	data_t *ppath_last = data_get_list_last(ppath);
+	data_t *ppath = NULL;
 
 	xassert(args->magic == MAGIC_FOREACH_NT_ARRAY);
 	xassert((args->index > 0) || (args->index == -1));
@@ -442,10 +447,16 @@ static data_for_each_cmd_t _foreach_array_entry(data_t *src, void *arg)
 	if (args->index < 0)
 		args->index = 0;
 
-	/* Use jq style array zero based array notation */
-	data_set_string_fmt(ppath_last, "%s[%d]",
-			    data_get_string(ppath_last),
-			    args->index);
+	if (!is_fast_mode(args->args)) {
+		data_t *ppath_last;
+
+		ppath = data_copy(NULL, args->parent_path);
+		ppath_last = data_get_list_last(ppath);
+
+		/* Use jq style array zero based array notation */
+		data_set_string_fmt(ppath_last, "%s[%d]",
+				    data_get_string(ppath_last), args->index);
+	}
 
 	if (args->parser->model == PARSER_MODEL_NT_PTR_ARRAY)
 		obj = alloc_parser_obj(args->parser);
@@ -537,7 +548,7 @@ static void _parser_linked_flag(args_t *args, const parser_t *const array,
 				const flag_bit_t *bit, uint64_t *set)
 {
 	char *path = NULL;
-	data_t *ppath = data_copy(NULL, parent_path);
+	data_t *ppath = NULL;
 	bool matched;
 
 	src = data_resolve_dict_path(src, bit->name);
@@ -595,6 +606,7 @@ static data_for_each_cmd_t _foreach_parse_marray(const char *key, data_t *data,
 	xassert(aargs->magic == MAGIC_FOREACH_PARSE_MARRAY);
 	xassert(cargs.magic == MAGIC_FOREACH_PARSE_MARRAY);
 	xassert(array->model == PARSER_MODEL_ARRAY);
+	xassert(!is_fast_mode(args));
 
 	cargs.parent_path = data_copy(NULL, aargs->parent_path);
 	openapi_append_rel_path(cargs.parent_path, key);
@@ -730,12 +742,15 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 		goto cleanup;
 	}
 
-	ppath = data_copy(NULL, parent_path);
+	if (!is_fast_mode(args))
+		ppath = data_copy(NULL, parent_path);
 
 	/* only look for child via key if there was one defined */
 	if (parser->key) {
 		src = data_resolve_dict_path(src, parser->key);
-		openapi_append_rel_path(ppath, parser->key);
+
+		if (!is_fast_mode(args))
+			openapi_append_rel_path(ppath, parser->key);
 	}
 
 	if (!src) {
@@ -784,7 +799,7 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 
 	xassert(parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD);
 
-	if (!(args->flags & FLAG_FAST) && parser->deprecated &&
+	if (!is_fast_mode(args) && parser->deprecated &&
 	    (parser->deprecated <= SLURM_MIN_PROTOCOL_VERSION) &&
 	    !_is_duplicate_linked_parser_value(args, array, parser, src_obj,
 					       src, parent_path)) {
@@ -955,7 +970,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 						    &parser->fields[i], src,
 						    dst, parent_path);
 
-			if (!(args->flags & FLAG_FAST)) {
+			if (!is_fast_mode(args)) {
 				parse_marray_args_t aargs = {
 					.magic = MAGIC_FOREACH_PARSE_MARRAY,
 					.args = args,

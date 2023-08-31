@@ -73,7 +73,7 @@ extern int on_error(parse_op_t op, data_parser_type_t type, args_t *args,
 	 * This makes it sooo much easier for a client to figure out what they
 	 * are incorrectly submitting to Slurm.
 	 */
-	xassert((op != PARSING) ||
+	xassert((op != PARSING) || is_fast_mode(args) ||
 		(source && (source[0] == OPENAPI_PATH_REL[0]) &&
 		 (source[1] == OPENAPI_PATH_SEP[0])));
 
@@ -145,7 +145,7 @@ extern void on_warn(parse_op_t op, data_parser_type_t type, args_t *args,
 	 * This makes it sooo much easier for a client to figure out what they
 	 * are incorrectly submitting to Slurm.
 	 */
-	xassert((op != PARSING) ||
+	xassert((op != PARSING) || is_fast_mode(args) ||
 		(source && (source[0] == OPENAPI_PATH_REL[0]) &&
 		 (source[1] == OPENAPI_PATH_SEP[0])));
 

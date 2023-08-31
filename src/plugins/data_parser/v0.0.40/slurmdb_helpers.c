@@ -104,7 +104,7 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(src));
-	xassert(data_get_type(parent_path));
+	xassert(is_fast_mode(args) || data_get_type(parent_path));
 	xassert(!*qos_ptr);
 
 	/* find qos by name from global list */
