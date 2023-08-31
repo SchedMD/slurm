@@ -101,6 +101,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmdbd - Avoid potential NULL pointer dereference in the mysql plugin.
  -- Revert a change in 23.02 where SLURM_NTASKS was no longer set in the job's
     environment when --ntasks-per-node was requested.
+ -- slurmdbd - Avoid printing error when cluster registers.
 
 * Changes in Slurm 23.02.4
 ==========================
