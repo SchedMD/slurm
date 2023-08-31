@@ -351,7 +351,7 @@ static int _op_handler_association(ctxt_t *ctxt)
 	slurmdb_assoc_cond_t *assoc_cond = NULL;
 
 	if (DATA_PARSE(ctxt->parser, ASSOC_CONDITION_PTR, assoc_cond,
-		       ctxt->parameters, ctxt->parent_path))
+		       ctxt->query, ctxt->parent_path))
 		goto cleanup;
 
 	if (ctxt->method == HTTP_REQUEST_GET)
