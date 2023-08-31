@@ -172,25 +172,11 @@ if {[check_resource_limits $sr1 [array get resource1_chck]] == 1} {
 # use scontrol to verify the modified cluster license
 #
 set matches 0
-eval spawn $scontrol show license $sr1@$resource1(Server)
-expect {
-	-re "LicenseName=$sr1@$resource1(Server)" {
-		incr matches
-		exp_continue
-	}
-	-re "Total=$ect1a Used=0 Free=$ect1a Reserved=0 Remote=yes" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 2} {
-	fail "License output is incorrect ($matches != 2. Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes)"
+wait_for -subtest {$matches == 2} {
+	set output [run_command_output -fail "$scontrol show license $sr1@$resource1(Server)"]
+	set matches 0
+	incr matches [regexp "LicenseName=$sr1@$resource1(Server)" $output]
+	incr matches [regexp "Total=$ect1a Used=0 Free=$ect1a Reserved=0 Remote=yes" $output]
 }
 
 #
@@ -203,22 +189,11 @@ if [remove_res $sr1] {
 #
 # use scontrol to verify cluster license was removed
 #
-set matches 0
-spawn $scontrol show license
-expect {
-	-re "LicenseName=$sr1@$resource1(Server)" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 0} {
-	fail "scontrol failed to remove license ($sr1@$resource1(Server))"
+set matches 1
+wait_for -subtest {$matches == 0} {
+	set output [run_command_output -fail "$scontrol show license $sr1@$resource1(Server)"]
+	set matches 0
+	incr matches [regexp "LicenseName=$sr1@$resource1(Server)" $output]
 }
 
 #
