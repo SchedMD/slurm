@@ -3499,8 +3499,9 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer,
 		error("CONN:%d Security violation, %s",
 		      slurmdbd_conn->conn->fd,
 		      slurmdbd_msg_type_2_str(msg->msg_type, 1));
-	else if (slurmdbd_conn->conn->rem_port
-		 && !slurmdbd_conf->commit_delay) {
+	else if (slurmdbd_conn->conn->rem_port &&
+		 (!slurmdbd_conf->commit_delay ||
+		  (msg->msg_type == DBD_REGISTER_CTLD))) {
 		/* If we are dealing with the slurmctld do the
 		   commit (SUCCESS or NOT) afterwards since we
 		   do transactions for performance reasons.
