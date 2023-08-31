@@ -204,10 +204,13 @@ static void _job_post_update(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	} else if (resp) {
 		job_post_response_t r = {
 			.results = resp,
-			.job_id = resp->job_array_id[0],
-			.step_id = NULL, /* not provided by RPC */
-			.job_submit_user_msg = NULL, /* not provided by RPC */
 		};
+
+		if (resp->job_array_count > 0) {
+			r.job_id = resp->job_array_id[0];
+			r.step_id = NULL; /* not provided by RPC */
+			r.job_submit_user_msg = resp->err_msg[0];
+		}
 
 		for (int i = 0; i < resp->job_array_count; i++) {
 			if (resp->error_code[i]) {
