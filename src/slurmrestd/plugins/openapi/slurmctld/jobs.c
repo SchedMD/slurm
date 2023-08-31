@@ -270,13 +270,13 @@ static void _job_post_het_submit(ctxt_t *ctxt, list_t *jobs, char *script)
 
 	if (!jobs || !list_count(jobs)) {
 		resp_error(ctxt, errno, __func__,
-			   "Refusing HET job submission without any components");
+			   "Refusing HetJob submission without any components");
 		goto cleanup;
 	}
 
 	if (list_count(jobs) > MAX_HET_JOB_COMPONENTS) {
 		resp_error(ctxt, errno, __func__,
-			   "Refusing HET job submission too many components: %d > %u",
+			   "Refusing HetJob submission too many components: %d > %u",
 			   list_count(jobs), MAX_HET_JOB_COMPONENTS);
 		goto cleanup;
 	}
