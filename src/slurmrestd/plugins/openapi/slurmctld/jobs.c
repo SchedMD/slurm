@@ -167,16 +167,35 @@ static void _handle_job_delete(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	}
 }
 
-static void _job_post_update(ctxt_t *ctxt, job_desc_msg_t *job, char *script,
-			     slurm_selected_step_t *job_id)
+static void _job_post_update(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 {
 	job_array_resp_msg_t *resp = NULL;
+	job_desc_msg_t *job = NULL;
+
+	if (DATA_PARSE(ctxt->parser, JOB_DESC_MSG_PTR, job, ctxt->query,
+		       ctxt->parent_path)) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			"Rejecting request. Failure parsing job update request.");
+		goto cleanup;
+	}
 
 	if (job_id->step_id.job_id != NO_VAL)
 		job->job_id = job_id->step_id.job_id;
 
 	if (job_id->het_job_offset != NO_VAL)
 		job->het_job_offset = job_id->het_job_offset;
+
+	if (job_id->array_task_id != NO_VAL) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			"Rejecting request. Submit job update against Array Job's JobID instead of array task id.");
+		goto cleanup;
+	}
+
+	if ((job_id->step_id.step_id != NO_VAL) ||
+	    (job_id->step_id.step_het_comp != NO_VAL)) {
+		resp_warn(ctxt, __func__,
+			  "Job step information ignored. Job update requests apply to whole job and can not be targeted to specific steps.");
+	}
 
 	if (slurm_update_job2(job, &resp)) {
 		resp_error(ctxt, errno, "slurm_update_job2()",
@@ -194,6 +213,7 @@ static void _job_post_update(ctxt_t *ctxt, job_desc_msg_t *job, char *script,
 	}
 
 cleanup:
+	slurm_free_job_desc_msg(job);
 	slurm_free_job_array_resp(resp);
 }
 
@@ -302,7 +322,7 @@ cleanup:
 	slurm_free_submit_response_response_msg(resp);
 }
 
-static void _job_post(ctxt_t *ctxt, slurm_selected_step_t *job_id)
+static void _job_post(ctxt_t *ctxt)
 {
 	job_submit_request_t req = {0};
 
@@ -328,8 +348,7 @@ static void _job_post(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 		       ctxt->parent_path))
 		return;
 
-	if ((!job_id || job_id->step_id.job_id == NO_VAL) &&
-	    (!req.script || !req.script[0])) {
+	if (!req.script || !req.script[0]) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Populated \"script\" field is required for job submission");
 		return;
@@ -341,22 +360,17 @@ static void _job_post(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	}
 	if (!req.job && !req.jobs) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Specifing either \"job\" or \"jobs\" fields are required to job %s",
-			   (!job_id || (job_id->step_id.job_id == NO_VAL) ?
-			    " update" : "submission"));
+			   "Specifing either \"job\" or \"jobs\" fields are required to submit job");
 		return;
 	}
-	if (job_id && req.jobs) {
+	if (req.jobs) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Specify only \"job\" field for updating an existing job");
 		return;
 	}
 
 	if (req.job) {
-		if (job_id)
-			_job_post_update(ctxt, req.job, req.script, job_id);
-		else
-			_job_post_submit(ctxt, req.job, req.script);
+		_job_post_submit(ctxt, req.job, req.script);
 	} else {
 		_job_post_het_submit(ctxt, req.jobs, req.script);
 	}
@@ -393,7 +407,7 @@ static int _op_handler_job(openapi_ctxt_t *ctxt)
 	} else if (ctxt->method == HTTP_REQUEST_DELETE) {
 		_handle_job_delete(ctxt, job_id);
 	} else if (ctxt->method == HTTP_REQUEST_POST) {
-		_job_post(ctxt, job_id);
+		_job_post_update(ctxt, job_id);
 	} else {
 		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 				  "Unsupported HTTP method requested: %s",
@@ -406,7 +420,7 @@ static int _op_handler_job(openapi_ctxt_t *ctxt)
 static int _op_handler_submit_job(openapi_ctxt_t *ctxt)
 {
 	if (ctxt->method == HTTP_REQUEST_POST) {
-		_job_post(ctxt, NULL);
+		_job_post(ctxt);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
