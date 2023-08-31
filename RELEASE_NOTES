@@ -163,3 +163,6 @@ SLURMRESTD CHANGES
     with wckeys, query 'GET /slurmdb/v0.0.40/user?with_wckeys'. To query
     both assocations, wckeys, and coordinators with user, query
     'GET /slurmdb/v0.0.40/user?with_coords&with_assocs&with_wckeys'.
+ -- slurmrestd - 'POST /slurm/v0.0.40/job/submit' will return "step_id" as
+    OpenAPI string instead of OpenAPI integer type to provide descriptive step
+    names (batch, extern, interactive, TBD) for non-numeric steps.

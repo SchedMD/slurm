@@ -169,6 +169,12 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Enforce user's default wckey on supplied list of user wckeys in
     'POST /slurmdb/v0.0.40/user' queries to avoid conflicting or changed default
     wckey from being ignored.
+ -- slurmrestd - Enforce user's default wckey on supplied list of user wckeys in
+    'POST /slurmdb/v0.0.40/user' queries to avoid conflicting or changed default
+    wckey from being ignored.
+ -- slurmrestd - 'POST /slurm/v0.0.40/job/submit' will return "step_id" as
+    string to provide descriptive step names (batch, extern, interactive, TBD)
+    for non-numeric steps.
 
 * Changes in Slurm 23.02.5
 ==========================

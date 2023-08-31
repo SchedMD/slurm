@@ -8277,7 +8277,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
 	add_openapi_response_warnings(job_submit_response_t),
 	add_parse(JOB_SUBMIT_RESPONSE_MSG_PTR, result, "result", "Job submission result"),
 	add_parse(UINT32, job_id, "job_id", "first submited JobId - backwards compatibility - use result instead"),
-	add_parse(UINT32, step_id, "step_id", "first submited StepID - backwards compatibility - use result instead"),
+	add_parse(STEP_ID, step_id, "step_id", "first submited StepID - backwards compatibility - use result instead"),
 	add_parse(STRING, job_submit_user_msg, "job_submit_user_msg", "job submision user message - backwards compatibility - use result instead"),
 };
 #undef add_parse
