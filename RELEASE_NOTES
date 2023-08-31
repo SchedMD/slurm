@@ -171,3 +171,8 @@ SLURMRESTD CHANGES
     v0.0.39 to unify response formats but prior fields were kept to avoid
     breaking existing clients. The additional benefit was found to be
     insufficent for the change.
+ -- slurmrestd - Tagged "job_id", "step_id", and "job_submit_user_msg" fields
+    from 'POST /slurm/v0.0.40/job/{job_id}' response as deprecated due their
+    only being valid for the first entry in the "result" field array. The
+    "result" field should be used instead to get the detailed result of the
+    update request.

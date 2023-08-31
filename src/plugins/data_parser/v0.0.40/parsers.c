@@ -8258,16 +8258,19 @@ add_openapi_response_single(OPENAPI_SHARES_RESP, SHARES_RESP_MSG_PTR, "shares", 
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_post_response_t, mtype, false, field, 0, path, desc)
+#define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(job_post_response_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
 	add_openapi_response_meta(job_post_response_t),
 	add_openapi_response_errors(job_post_response_t),
 	add_openapi_response_warnings(job_post_response_t),
 	add_parse(JOB_ARRAY_RESPONSE_MSG_PTR, results, "results", "Job update results"),
-	add_parse(STRING, job_id, "job_id", "first updated JobId - backwards compatibility - use results instead"),
-	add_parse(STRING, step_id, "step_id", "first updated StepID - backwards compatibility - use results instead"),
-	add_parse(STRING, job_submit_user_msg, "job_submit_user_msg", "job submision user message - backwards compatibility - use results instead"),
+	add_parse_deprec(STRING, job_id, 0, "job_id", "First updated JobId - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
+	add_parse_deprec(STRING, step_id, 0, "step_id", "First updated StepID - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
+	add_parse_deprec(STRING, job_submit_user_msg, 0, "job_submit_user_msg", "First updated Job submision user message - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
 };
 #undef add_parse
+#undef add_parse_deprec
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_submit_response_t, mtype, false, field, 0, path, desc)
