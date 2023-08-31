@@ -8228,7 +8228,7 @@ static const parser_t PARSER_ARRAY(OPENAPI_RESP)[] = {                          
 		add_openapi_response_meta(openapi_resp_single_t),                         \
 		add_openapi_response_errors(openapi_resp_single_t),                       \
 		add_openapi_response_warnings(openapi_resp_single_t),                     \
-		add_parser(openapi_resp_single_t, mtype, false, response, 0, path, desc), \
+		add_parser(openapi_resp_single_t, mtype, true, response, 0, path, desc),  \
 	}
 
 add_openapi_response_single(OPENAPI_DIAG_RESP, STATS_MSG_PTR, "statistics", "statistics");
