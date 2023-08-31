@@ -363,32 +363,15 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 
 	if (data_get_type(src) == DATA_TYPE_STRING) {
 		/* Assume List is just a single entry */
-		if (_foreach_parse_list(src, &list_args) != DATA_FOR_EACH_CONT) {
-			rc = on_error(PARSING, parser->type, args,
-				      ESLURM_DATA_FLAGS_INVALID,
-				      set_source_path(&path, parent_path), __func__,
-				      "Parsing single List entry \"%s\" failed",
-				      data_get_string(src));
-			goto cleanup;
-		}
+		(void) _foreach_parse_list(src, &list_args);
 	} else if (data_get_type(src) != DATA_TYPE_LIST) {
 		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_FLAGS_INVALID_TYPE,
 			      set_source_path(&path, parent_path), __func__,
 			      "Expected List but found a %s",
 			      data_get_type_string(src));
-		goto cleanup;
-	}
-
-	if (data_list_for_each(src, _foreach_parse_list, &list_args) < 0) {
-		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_REST_FAIL_PARSING,
-			      set_source_path(&path, parent_path), __func__,
-			      "Parsing list %s of %s failed",
-			      parser->type_string,
-			      find_parser_by_type(parser->list_type)
-				      ->type_string);
-		goto cleanup;
+	} else {
+		(void) data_list_for_each(src, _foreach_parse_list, &list_args);
 	}
 
 	if (!rc) {
@@ -396,7 +379,6 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 		list_args.list = NULL;
 	}
 
-cleanup:
 	log_flag(DATA, "%s: END: list parsing %s{%s(0x%"PRIxPTR")} to List 0x%"PRIxPTR" via parser %s(0x%"PRIxPTR") rc[%d]:%s",
 		__func__, path, data_get_type_string(src),
 		(uintptr_t) src, (uintptr_t) dst, parser->type_string,
