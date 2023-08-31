@@ -230,6 +230,17 @@ typedef struct {
 	char **tres_names;
 } foreach_dump_ASSOC_SHARES_OBJ_LIST_t;
 
+typedef struct {
+	/*
+	 * job_array_resp_msg_t is multiple arrays of values for each entry
+	 * instead of an array of structs for each entry which doesn't work with
+	 * parser arrays cleanly.
+	 */
+	slurm_selected_step_t step;
+	int rc;
+	char *msg;
+} JOB_ARRAY_RESPONSE_MSG_entry_t;
+
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
 				     data_t *parent_path);
@@ -4337,42 +4348,31 @@ static int DUMP_FUNC(JOB_ARRAY_RESPONSE_MSG)(const parser_t *const parser,
 					     void *obj, data_t *dst,
 					     args_t *args)
 {
+	int rc;
 	job_array_resp_msg_t *msg = obj;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
-
-	data_set_list(dst);
+	JOB_ARRAY_RESPONSE_MSG_entry_t *array =
+		xcalloc((msg->job_array_count + 1), sizeof(*array));
 
 	for (int i = 0; i < msg->job_array_count; i++) {
-		data_t *j = data_set_dict(data_list_append(dst));
-		data_set_string(data_key_set(j, "job_id"),
-				msg->job_array_id[i]);
-		data_set_int(data_key_set(j, "error_code"), msg->error_code[i]);
-		data_set_string(data_key_set(j, "error"),
-				slurm_strerror(msg->error_code[i]));
-		data_set_string(data_key_set(j, "why"), msg->err_msg[i]);
+		JOB_ARRAY_RESPONSE_MSG_entry_t *entry = &array[i];
+
+		entry->rc = msg->error_code[i];
+		entry->msg = msg->err_msg[i];
+
+		if ((rc = unfmt_job_id_string(msg->job_array_id[i],
+					      &entry->step))) {
+			on_warn(DUMPING, parser->type, args,
+				"unfmt_job_id_string()", __func__,
+				"Unable to parse JobId=%s: %s",
+				msg->job_array_id[i], slurm_strerror(rc));
+		} else if (!entry->rc) {
+			entry->rc = rc;
+		}
 	}
 
-	return SLURM_SUCCESS;
-}
-
-void SPEC_FUNC(JOB_ARRAY_RESPONSE_MSG)(const parser_t *const parser,
-				       args_t *args, data_t *spec, data_t *dst)
-{
-	data_t *items = set_openapi_props(dst, OPENAPI_FORMAT_ARRAY,
-					  "Result per ArrayJob");
-	data_t *props = set_openapi_props(items, OPENAPI_FORMAT_OBJECT,
-					  "ArrayJob");
-
-	set_openapi_props(data_key_set(props, "job_id"), OPENAPI_FORMAT_INT32,
-			  "JobId");
-	set_openapi_props(data_key_set(props, "error_code"),
-			  OPENAPI_FORMAT_INT32, "numeric error code");
-	set_openapi_props(data_key_set(props, "error"), OPENAPI_FORMAT_STRING,
-			  "error code description");
-	set_openapi_props(data_key_set(props, "why"), OPENAPI_FORMAT_STRING,
-			  "error message");
+	rc = DUMP(JOB_ARRAY_RESPONSE_ARRAY, array, dst, args);
+	xfree(array);
+	return rc;
 }
 
 PARSE_DISABLED(ERROR)
@@ -8205,6 +8205,20 @@ static const parser_t PARSER_ARRAY(OPENAPI_SLURMDBD_QOS_QUERY)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(JOB_ARRAY_RESPONSE_MSG_entry_t, mtype, false, field, 0, path, desc)
+#define add_parse_overload(mtype, field, overloads, path, desc) \
+	add_parser(JOB_ARRAY_RESPONSE_MSG_entry_t, mtype, false, field, overloads, path, desc)
+static const parser_t PARSER_ARRAY(JOB_ARRAY_RESPONSE_MSG_ENTRY)[] = {
+	add_parse(UINT32, step.step_id.job_id, "job_id", "JobId for updated Job"),
+	add_parse(SELECTED_STEP, step, "step_id", "StepId for updated Job"),
+	add_parse_overload(ERROR, rc, 1, "error", "Verbose update status or error"),
+	add_parse_overload(INT32, rc, 1, "error_code", "Verbose update status or error"),
+	add_parse(STRING, msg, "why", "Update response message"),
+};
+#undef add_parse
+#undef add_parse_overload
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8591,7 +8605,7 @@ static const parser_t parsers[] = {
 	addpsa(STRING_ARRAY, STRING, char **, NEED_NONE, NULL),
 	addps(SIGNAL, uint16_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(BITSTR, bitstr_t, NEED_NONE, STRING, NULL, NULL, NULL),
-	addpss(JOB_ARRAY_RESPONSE_MSG, job_array_resp_msg_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
+	addpsp(JOB_ARRAY_RESPONSE_MSG, JOB_ARRAY_RESPONSE_ARRAY, job_array_resp_msg_t, NEED_NONE, "Job update results"),
 	addpss(ROLLUP_STATS, slurmdb_rollup_stats_t, NEED_NONE, ARRAY, NULL, NULL, NULL),
 	addpsp(JOB_EXCLUSIVE, JOB_EXCLUSIVE_FLAGS, uint16_t, NEED_NONE, NULL),
 	addpsp(TIMESTAMP, UINT64, time_t, NEED_NONE, NULL),
@@ -8671,6 +8685,7 @@ static const parser_t parsers[] = {
 	addntp(PARTITION_INFO_ARRAY, PARTITION_INFO),
 	addntp(STEP_INFO_ARRAY, STEP_INFO),
 	addntp(RESERVATION_INFO_ARRAY, RESERVATION_INFO),
+	addntp(JOB_ARRAY_RESPONSE_ARRAY, JOB_ARRAY_RESPONSE_MSG_ENTRY),
 
 	/* Pointer model parsers */
 	addpp(ROLLUP_STATS_PTR, slurmdb_rollup_stats_t *, ROLLUP_STATS, false, NULL, NULL),
@@ -8758,6 +8773,7 @@ static const parser_t parsers[] = {
 	addpap(SHARES_FLOAT128_TRES, SHARES_FLOAT128_TRES_t, NULL, NULL),
 	addpap(OPENAPI_SLURMDBD_QOS_PARAM, openapi_qos_param_t, NULL, NULL),
 	addpap(OPENAPI_SLURMDBD_QOS_QUERY, openapi_qos_query_t, NULL, NULL),
+	addpap(JOB_ARRAY_RESPONSE_MSG_ENTRY, JOB_ARRAY_RESPONSE_MSG_entry_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
