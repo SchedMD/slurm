@@ -8247,7 +8247,7 @@ add_openapi_response_single(OPENAPI_CLUSTERS_REMOVED_RESP, STRING_LIST, "deleted
 add_openapi_response_single(OPENAPI_INSTANCES_RESP, INSTANCE_LIST, "instances", "instances");
 add_openapi_response_single(OPENAPI_SLURMDBD_STATS_RESP, STATS_REC_PTR, "statistics", "statistics");
 add_openapi_response_single(OPENAPI_SLURMDBD_JOBS_RESP, JOB_LIST, "jobs", "jobs");
-add_openapi_response_single(OPENAPI_SLURMDBD_QOS_RESP, QOS_LIST, "QOS", "QOS");
+add_openapi_response_single(OPENAPI_SLURMDBD_QOS_RESP, QOS_LIST, "qos", "List of QOS");
 add_openapi_response_single(OPENAPI_SLURMDBD_QOS_REMOVED_RESP, STRING_LIST, "removed_qos", "removed QOS");
 add_openapi_response_single(OPENAPI_TRES_RESP, TRES_LIST, "TRES", "TRES");
 add_openapi_response_single(OPENAPI_USERS_RESP, USER_LIST, "users", "users");
