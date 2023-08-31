@@ -1219,10 +1219,14 @@ static int _dump_list(const parser_t *const parser, void *src, data_t *dst,
 static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 			 args_t *args)
 {
-	const parser_t *const pt = find_parser_by_type(parser->pointer_type);
+	const parser_t *pt = find_parser_by_type(parser->pointer_type);
 	void **ptr = src;
 
 	if (!*ptr) {
+		/* Fully resolve pointer on NULL to use correct model */
+		while (pt->pointer_type)
+			pt = find_parser_by_type(pt->pointer_type);
+
 		if (parser->allow_null_pointer) {
 			xassert(data_get_type(dst) == DATA_TYPE_NULL);
 		} else if ((pt->model == PARSER_MODEL_ARRAY) ||
