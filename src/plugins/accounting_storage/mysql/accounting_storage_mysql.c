@@ -2821,7 +2821,8 @@ static int _send_ctld_update(void *x, void *arg)
 	slurmdbd_conn_t *db_conn = x;
 	List update_list = arg;
 
-	if (db_conn->conn->flags & PERSIST_FLAG_EXT_DBD)
+	if ((db_conn->conn->flags & PERSIST_FLAG_EXT_DBD) ||
+	    (db_conn->conn->flags & PERSIST_FLAG_DONT_UPDATE_CLUSTER))
 		return 0;
 
 	/* This check can be removed 2 versions after 23.02 */
