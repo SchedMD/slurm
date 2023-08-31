@@ -292,12 +292,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_POST_RESPONSE"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "DATA_PARSER_OPENAPI_RESP"
+                  "$ref": "DATA_PARSER_OPENAPI_JOB_POST_RESPONSE"
                 }
               }
             }

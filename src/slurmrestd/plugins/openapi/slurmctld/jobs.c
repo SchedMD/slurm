@@ -171,6 +171,7 @@ static void _job_post_update(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 {
 	job_array_resp_msg_t *resp = NULL;
 	job_desc_msg_t *job = NULL;
+	job_post_response_t oas_resp = {0};
 
 	if (DATA_PARSE(ctxt->parser, JOB_DESC_MSG_PTR, job, ctxt->query,
 		       ctxt->parent_path)) {
@@ -202,14 +203,12 @@ static void _job_post_update(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 			   "Job update requested failed");
 		goto cleanup;
 	} else if (resp) {
-		job_post_response_t r = {
-			.results = resp,
-		};
+		oas_resp.results = resp;
 
 		if (resp->job_array_count > 0) {
-			r.job_id = resp->job_array_id[0];
-			r.step_id = NULL; /* not provided by RPC */
-			r.job_submit_user_msg = resp->err_msg[0];
+			oas_resp.job_id = resp->job_array_id[0];
+			oas_resp.step_id = NULL; /* not provided by RPC */
+			oas_resp.job_submit_user_msg = resp->err_msg[0];
 		}
 
 		for (int i = 0; i < resp->job_array_count; i++) {
@@ -220,12 +219,12 @@ static void _job_post_update(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 					   slurm_strerror(resp->error_code[i]));
 			}
 		}
-
-		DATA_DUMP(ctxt->parser, OPENAPI_JOB_POST_RESPONSE, r,
-			  ctxt->resp);
 	}
 
 cleanup:
+	DATA_DUMP(ctxt->parser, OPENAPI_JOB_POST_RESPONSE, oas_resp,
+		  ctxt->resp);
+
 	slurm_free_job_desc_msg(job);
 	slurm_free_job_array_resp(resp);
 }
