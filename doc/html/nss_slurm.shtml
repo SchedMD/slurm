@@ -180,6 +180,12 @@ on the slurmctld machine but /bin/bash on the slurmd node. An interactive
 salloc may fail to launch since it will try to spawn the default shell,
 which according to the slurmctld is /sbin/nologin.</p>
 
-<p style="text-align:center;">Last modified 24 Aug 2023</p>
+<p>When using proctrack/pgid, nss_slurm will rely on the pgid of the process
+to determine if it can respond to that request. The login shell spawned with
+<span class="commandline">srun --pty</span> must be run in its own session,
+and therefore its own pgid, so nss_slurm will not respond to requests in an
+interactive session.</p>
+
+<p style="text-align:center;">Last modified 30 Aug 2023</p>
 
 <!--#include virtual="footer.txt"-->
