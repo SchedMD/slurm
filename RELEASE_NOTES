@@ -166,3 +166,8 @@ SLURMRESTD CHANGES
  -- slurmrestd - 'POST /slurm/v0.0.40/job/submit' will return "step_id" as
     OpenAPI string instead of OpenAPI integer type to provide descriptive step
     names (batch, extern, interactive, TBD) for non-numeric steps.
+ -- slurmrestd - Tagged "result" field from 'POST /slurm/v0.0.40/job/submit'
+    as deprecated which may be removed in a future release. Field was added in
+    v0.0.39 to unify response formats but prior fields were kept to avoid
+    breaking existing clients. The additional benefit was found to be
+    insufficent for the change.

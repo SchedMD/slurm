@@ -8271,16 +8271,19 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(job_submit_response_t, mtype, false, field, 0, path, desc)
+#define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
+	add_parser_deprec(job_submit_response_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
 	add_openapi_response_meta(job_submit_response_t),
 	add_openapi_response_errors(job_submit_response_t),
 	add_openapi_response_warnings(job_submit_response_t),
-	add_parse(JOB_SUBMIT_RESPONSE_MSG_PTR, result, "result", "Job submission result"),
-	add_parse(UINT32, job_id, "job_id", "first submited JobId - backwards compatibility - use result instead"),
-	add_parse(STEP_ID, step_id, "step_id", "first submited StepID - backwards compatibility - use result instead"),
-	add_parse(STRING, job_submit_user_msg, "job_submit_user_msg", "job submision user message - backwards compatibility - use result instead"),
+	add_parse_deprec(JOB_SUBMIT_RESPONSE_MSG, resp, 0, "result", "Job submission", SLURM_23_11_PROTOCOL_VERSION),
+	add_parse(UINT32, resp.job_id, "job_id", "submited JobId"),
+	add_parse(STEP_ID, resp.step_id, "step_id", "submited StepID"),
+	add_parse(STRING, resp.job_submit_user_msg, "job_submit_user_msg", "job submision user message"),
 };
 #undef add_parse
+#undef add_parse_deprec
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_resp_slurmdbd_config_t, mtype, false, field, 0, path, desc)

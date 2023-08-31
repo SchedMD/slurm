@@ -244,30 +244,23 @@ static void _job_post_submit(ctxt_t *ctxt, job_desc_msg_t *job, char *script)
 		job->script = xstrdup(script);
 	}
 
-	if (slurm_submit_batch_job(job, &resp)) {
+	if (slurm_submit_batch_job(job, &resp) || !resp) {
 		resp_error(ctxt, errno, "slurm_submit_batch_job()",
 			   "Batch job submission failed");
-		goto cleanup;
-	}
-
-	debug3("%s:[%s] job submitted -> job_id:%d step_id:%d rc:%d message:%s",
-	       __func__, ctxt->id, resp->job_id, resp->step_id,
-	       resp->error_code, resp->job_submit_user_msg);
-
-	if (resp) {
-		job_submit_response_t r = {
-			.result = resp,
-			.job_id = resp->job_id,
-			.step_id = resp->step_id,
-			.job_submit_user_msg = resp->job_submit_user_msg,
+	} else {
+		job_submit_response_t oas_resp = {
+			.resp = *resp,
 		};
-		DATA_DUMP(ctxt->parser, OPENAPI_JOB_SUBMIT_RESPONSE, r,
+
+		debug3("%s:[%s] job submitted -> job_id:%d step_id:%d rc:%d message:%s",
+		       __func__, ctxt->id, resp->job_id, resp->step_id,
+		       resp->error_code, resp->job_submit_user_msg);
+
+		DATA_DUMP(ctxt->parser, OPENAPI_JOB_SUBMIT_RESPONSE, oas_resp,
 			  ctxt->resp);
 	}
 
 	_job_submit_rc(ctxt, resp, "slurm_submit_batch_job()");
-
-cleanup:
 	slurm_free_submit_response_response_msg(resp);
 }
 
@@ -295,24 +288,19 @@ static void _job_post_het_submit(ctxt_t *ctxt, list_t *jobs, char *script)
 			j->script = xstrdup(script);
 	}
 
-	if (slurm_submit_batch_het_job(jobs, &resp)) {
+	if (slurm_submit_batch_het_job(jobs, &resp) || !resp) {
 		resp_error(ctxt, errno, "slurm_submit_batch_het_job()",
-			   "HET job submission failed");
-		goto cleanup;
-	}
-
-	debug3("%s:[%s] HET job submitted -> job_id:%d step_id:%d rc:%d message:%s",
-	       __func__, ctxt->id, resp->job_id, resp->step_id,
-	       resp->error_code, resp->job_submit_user_msg);
-
-	if (resp) {
-		job_submit_response_t r = {
-			.result = resp,
-			.job_id = resp->job_id,
-			.step_id = resp->step_id,
-			.job_submit_user_msg = resp->job_submit_user_msg,
+			   "HetJob submission failed");
+	} else {
+		job_submit_response_t oas_resp = {
+			.resp = *resp,
 		};
-		DATA_DUMP(ctxt->parser, OPENAPI_JOB_SUBMIT_RESPONSE, r,
+
+		debug3("%s:[%s] HetJob submitted -> job_id:%d step_id:%d rc:%d message:%s",
+		       __func__, ctxt->id, resp->job_id, resp->step_id,
+		       resp->error_code, resp->job_submit_user_msg);
+
+		DATA_DUMP(ctxt->parser, OPENAPI_JOB_SUBMIT_RESPONSE, oas_resp,
 			  ctxt->resp);
 	}
 

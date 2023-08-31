@@ -57,10 +57,7 @@ typedef struct {
 	OPENAPI_RESP_STRUCT_META_FIELD;
 	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
 	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
-	submit_response_msg_t *result;
-	uint32_t job_id;
-	uint32_t step_id;
-	char *job_submit_user_msg;
+	submit_response_msg_t resp;
 } job_submit_response_t;
 
 typedef struct {
