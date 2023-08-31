@@ -3422,6 +3422,11 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer,
 		break;
 	case DBD_REGISTER_CTLD:
 		rc = _register_ctld(slurmdbd_conn, msg, out_buffer, uid);
+		/*
+		 * We don't want/need to send updates to this cluster that just
+		 * registered since it's rpc manager might not be up yet.
+		 */
+		slurmdbd_conn->conn->flags |= PERSIST_FLAG_DONT_UPDATE_CLUSTER;
 		break;
 	case DBD_REMOVE_ACCOUNTS:
 		rc = _remove_accounts(slurmdbd_conn, msg, out_buffer, uid);
@@ -3503,6 +3508,12 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer,
 		*/
 		acct_storage_g_commit(slurmdbd_conn->db_conn, 1);
 	}
+	/*
+	 * Clear DONT_UPDATE flag now so that it's tied to this transaction
+	 * only. Can't clear in p_commit() because if CommitDelay is set, we may
+	 * not send needed updates later.
+	 */
+	slurmdbd_conn->conn->flags &= ~PERSIST_FLAG_DONT_UPDATE_CLUSTER;
 
 	END_TIMER;
 
