@@ -48,19 +48,15 @@ static void _dump_assoc_cond(ctxt_t *ctxt, slurmdb_assoc_cond_t *cond,
 {
 	List assoc_list = NULL;
 
-	if (db_query_list(ctxt, &assoc_list, slurmdb_associations_get, cond))
-		goto cleanup;
-
-	if (only_one && (list_count(assoc_list) > 1)) {
+	if (!db_query_list(ctxt, &assoc_list, slurmdb_associations_get, cond) &&
+	    (only_one && (list_count(assoc_list) > 1))) {
 		resp_error(ctxt, ESLURM_DATA_AMBIGUOUS_QUERY, __func__,
 			   "Ambiguous request: More than 1 association would have been dumped.");
-		goto cleanup;
+		list_flush(assoc_list);
 	}
 
-	if (assoc_list)
-		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_ASSOCS_RESP, assoc_list, ctxt);
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_ASSOCS_RESP, assoc_list, ctxt);
 
-cleanup:
 	FREE_NULL_LIST(assoc_list);
 }
 
