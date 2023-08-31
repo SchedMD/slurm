@@ -228,7 +228,7 @@ typedef struct {
 	uint64_t tot_shares;
 	uint32_t tres_cnt;
 	char **tres_names;
-} _foreach_dump_ASSOC_SHARES_OBJ_LIST_t;
+} foreach_dump_ASSOC_SHARES_OBJ_LIST_t;
 
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
@@ -5779,7 +5779,7 @@ PARSE_DISABLED(ASSOC_SHARES_OBJ_LIST)
 static int _foreach_dump_ASSOC_SHARES_OBJ_LIST(void *x, void *arg)
 {
 	assoc_shares_object_t *obj = x;
-	_foreach_dump_ASSOC_SHARES_OBJ_LIST_t *args = arg;
+	foreach_dump_ASSOC_SHARES_OBJ_LIST_t *args = arg;
 	data_t *e = data_list_append(args->dst);
 	assoc_shares_object_wrap_t wrap = {
 		.obj = *obj,
@@ -5800,7 +5800,7 @@ static int DUMP_FUNC(ASSOC_SHARES_OBJ_LIST)(const parser_t *const parser,
 					    args_t *args)
 {
 	shares_response_msg_t *resp = obj;
-	_foreach_dump_ASSOC_SHARES_OBJ_LIST_t fargs = {
+	foreach_dump_ASSOC_SHARES_OBJ_LIST_t fargs = {
 		.magic = MAGIC_FOREACH_DUMP_ASSOC_SHARES,
 		.rc = SLURM_SUCCESS,
 		.args = args,
