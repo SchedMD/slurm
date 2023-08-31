@@ -1027,12 +1027,6 @@ cleanup:
 		 parser->type_string, (uintptr_t) parser, rc,
 		 slurm_strerror(rc));
 
-	if (rc && !parser->list_type) {
-		rc = on_error(PARSING, parser->type, args, rc,
-			      set_source_path(&path, parent_path), __func__,
-			      "Parser %s failed", parser->type_string);
-	}
-
 	xfree(path);
 
 	return rc;
