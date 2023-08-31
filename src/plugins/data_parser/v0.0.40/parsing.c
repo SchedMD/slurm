@@ -1222,7 +1222,7 @@ static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 	const parser_t *pt = find_parser_by_type(parser->pointer_type);
 	void **ptr = src;
 
-	if (!*ptr) {
+	if (!*ptr && !(args->flags & FLAG_COMPLEX_VALUES)) {
 		/* Fully resolve pointer on NULL to use correct model */
 		while (pt->pointer_type)
 			pt = find_parser_by_type(pt->pointer_type);
