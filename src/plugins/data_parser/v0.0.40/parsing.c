@@ -361,7 +361,17 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 
 	xassert(list_count(list_args.list) >= 0);
 
-	if (data_get_type(src) != DATA_TYPE_LIST) {
+	if (data_get_type(src) == DATA_TYPE_STRING) {
+		/* Assume List is just a single entry */
+		if (_foreach_parse_list(src, &list_args) != DATA_FOR_EACH_CONT) {
+			rc = on_error(PARSING, parser->type, args,
+				      ESLURM_DATA_FLAGS_INVALID,
+				      set_source_path(&path, parent_path), __func__,
+				      "Parsing single List entry \"%s\" failed",
+				      data_get_string(src));
+			goto cleanup;
+		}
+	} else if (data_get_type(src) != DATA_TYPE_LIST) {
 		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_FLAGS_INVALID_TYPE,
 			      set_source_path(&path, parent_path), __func__,
