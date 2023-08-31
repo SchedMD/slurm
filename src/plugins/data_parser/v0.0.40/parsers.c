@@ -87,13 +87,13 @@
 #define MAGIC_LIST_PER_TRES_TYPE_NCT 0xb1d8acd2
 #define MAGIC_FOREACH_DUMP_ASSOC_SHARES 0xaccc222b
 
-#define PARSER_ARRAY(type) _parser_array_##type
-#define PARSER_FLAG_ARRAY(type) _parser_flag_array_##type
-#define PARSE_FUNC(type) _parse_##type
-#define DUMP_FUNC(type) _dump_##type
-#define SPEC_FUNC(type) _openapi_spec_##type
-#define NEW_FUNC(type) _openapi_new_##type
-#define FREE_FUNC(type) _openapi_free_##type
+#define PARSER_ARRAY(type) _v40_parser_array_##type
+#define PARSER_FLAG_ARRAY(type) _v40_parser_flag_array_##type
+#define PARSE_FUNC(type) _v40_parse_##type
+#define DUMP_FUNC(type) _v40_dump_##type
+#define SPEC_FUNC(type) _v40_openapi_spec_##type
+#define NEW_FUNC(type) _v40_openapi_new_##type
+#define FREE_FUNC(type) _v40_openapi_free_##type
 #define PARSE_DISABLED(type)                                                 \
 	static int PARSE_FUNC(type)(const parser_t *const parser, void *src, \
 				    data_t *dst, args_t *args,               \
