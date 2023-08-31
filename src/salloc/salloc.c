@@ -497,6 +497,12 @@ int main(int argc, char **argv)
 		while ((desc = list_next(iter_req))) {
 			alloc = list_next(iter_resp);
 
+			/*
+			 * Set JOB_NTASKS_SET to make SLURM_NTASKS get set when
+			 * --ntasks-per-node is requested.
+			 */
+			if (desc->ntasks_per_node != NO_VAL16)
+				desc->bitflags |= JOB_NTASKS_SET;
 			if (alloc && desc &&
 			    (desc->bitflags & JOB_NTASKS_SET)) {
 				if (desc->ntasks_per_node != NO_VAL16)
@@ -519,6 +525,12 @@ int main(int argc, char **argv)
 		list_iterator_destroy(iter_resp);
 		list_iterator_destroy(iter_req);
 	} else {
+		/*
+		 * Set JOB_NTASKS_SET to make SLURM_NTASKS get set when
+		 * --ntasks-per-node is requested.
+		 */
+		if (desc->ntasks_per_node != NO_VAL16)
+			desc->bitflags |= JOB_NTASKS_SET;
 		if (alloc && desc && (desc->bitflags & JOB_NTASKS_SET)) {
 			if (desc->ntasks_per_node != NO_VAL16)
 				desc->num_tasks =
