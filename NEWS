@@ -182,6 +182,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Tagged "job_id", "step_id", and "job_submit_user_msg" fields
     from 'POST /slurm/v0.0.40/job/{job_id}' response as deprecated due their
     only being valid for the first entry in the "result" field array.
+ -- slurmrestd - Warning will be added for rejected job updates with
+    queries to 'POST /slurm/v0.0.40/job/{job_id}'.
 
 * Changes in Slurm 23.02.5
 ==========================

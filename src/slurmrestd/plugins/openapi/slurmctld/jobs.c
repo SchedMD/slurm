@@ -208,6 +208,16 @@ static void _job_post_update(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 			.step_id = NULL, /* not provided by RPC */
 			.job_submit_user_msg = NULL, /* not provided by RPC */
 		};
+
+		for (int i = 0; i < resp->job_array_count; i++) {
+			if (resp->error_code[i]) {
+				resp_warn(ctxt, "slurm_update_job2()",
+					   "Job update resulted in non-zero return-code[%d]: %s",
+					   resp->error_code[i],
+					   slurm_strerror(resp->error_code[i]));
+			}
+		}
+
 		DATA_DUMP(ctxt->parser, OPENAPI_JOB_POST_RESPONSE, r,
 			  ctxt->resp);
 	}
