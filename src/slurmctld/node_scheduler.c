@@ -3056,9 +3056,24 @@ extern void launch_prolog(job_record_t *job_ptr)
 	prolog_msg_ptr->work_dir = xstrdup(job_ptr->details->work_dir);
 	prolog_msg_ptr->x11 = job_ptr->details->x11;
 	if (prolog_msg_ptr->x11) {
+		char *x11_alloc_host = NULL;
 		prolog_msg_ptr->x11_magic_cookie =
 				xstrdup(job_ptr->details->x11_magic_cookie);
-		prolog_msg_ptr->x11_alloc_host = xstrdup(job_ptr->resp_host);
+		/*
+		 * If resp_host is localhost, send slurmctld's hostname instead.
+		 * This gives the compute node a better chance of getting the
+		 * connection set up - otherwise it'd try to connect back to
+		 * itself by mistake.
+		 */
+		if (!xstrncmp(job_ptr->resp_host, "127.", 4) ||
+		    !xstrcmp(job_ptr->resp_host, "::1")) {
+			char hostname[HOST_NAME_MAX];
+			if (!gethostname(hostname, sizeof(hostname)))
+				x11_alloc_host = xstrdup(hostname);
+		}
+		if (!x11_alloc_host)
+			x11_alloc_host = xstrdup(job_ptr->resp_host);
+		prolog_msg_ptr->x11_alloc_host = x11_alloc_host;
 		prolog_msg_ptr->x11_alloc_port = job_ptr->other_port;
 		prolog_msg_ptr->x11_target = xstrdup(job_ptr->details->x11_target);
 		prolog_msg_ptr->x11_target_port = job_ptr->details->x11_target_port;
