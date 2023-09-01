@@ -6361,7 +6361,7 @@ static const parser_t parsers[] = {
 	addps(BOOL16_NO_VAL, uint16_t, NEED_NONE, BOOL, NULL),
 	addps(QOS_NAME, char *, NEED_QOS, STRING, NULL),
 	addps(QOS_ID, uint32_t, NEED_QOS, STRING, NULL),
-	addpsa(QOS_STRING_ID_LIST, STRING, List, NEED_NONE, "List of QOS names"),
+	addpsa(QOS_STRING_ID_LIST, STRING, List, NEED_QOS, "List of QOS names"),
 	addpss(JOB_EXIT_CODE, int32_t, NEED_NONE, OBJECT, NULL),
 	addps(RPC_ID, slurmdbd_msg_type_t, NEED_NONE, STRING, NULL),
 	addps(SELECT_PLUGIN_ID, int, NEED_NONE, STRING, NULL),

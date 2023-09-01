@@ -109,6 +109,8 @@ documents those changes that are of interest to users and administrators.
     MUNGE sends a localhost address in the encode host field. This is caused
     when the node hostname is mapped to 127.0.0.1 (or similar) in /etc/hosts.
  -- openapi/[db]v0.0.39 - fix memory leak on parsing error.
+ -- data_parser/v0.0.39 - fix updating qos for associations.
+ -- openapi/dbv0.0.39 - fix updating values for associations with null users.
 
 * Changes in Slurm 23.02.4
 ==========================

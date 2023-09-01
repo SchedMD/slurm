@@ -335,8 +335,10 @@ static slurmdb_assoc_rec_t *_diff_assoc(slurmdb_assoc_rec_t *assoc,
 	assoc->max_wall_pj = dst->max_wall_pj;
 	assoc->min_prio_thresh = dst->min_prio_thresh;
 
-	if (dst->parent_acct)
+	if (dst->parent_acct && xstrcmp(assoc->parent_acct, dst->parent_acct))
 		SWAP(assoc->parent_acct, dst->parent_acct);
+	else
+		xfree(assoc->parent_acct);
 
 	/* skip parent_id */
 
