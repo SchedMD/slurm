@@ -838,7 +838,7 @@ static void _parse_check_openapi(const parser_t *const parser, data_t *src,
 	found_type = openapi_type_format_to_type_string(found);
 	found_format = openapi_type_format_to_format_string(found);
 
-	if (!(args->flags & FLAG_COMPLEX_VALUES)) {
+	if (!is_complex_mode(args)) {
 		/*
 		 * Warn as this is user provided data and the parser may accept
 		 * the format anyway. Steer the user towards the formats given
@@ -1208,7 +1208,7 @@ static int _dump_pointer(const parser_t *const parser, void *src, data_t *dst,
 	const parser_t *pt = find_parser_by_type(parser->pointer_type);
 	void **ptr = src;
 
-	if (!*ptr && !(args->flags & FLAG_COMPLEX_VALUES)) {
+	if (!*ptr && !is_complex_mode(args)) {
 		/* Fully resolve pointer on NULL to use correct model */
 		while (pt->pointer_type)
 			pt = find_parser_by_type(pt->pointer_type);
@@ -1375,7 +1375,7 @@ static void _check_dump(const parser_t *const parser, data_t *dst, args_t *args)
 	if (parser->obj_openapi == OPENAPI_FORMAT_INVALID)
 		return;
 
-	if (!(args->flags & FLAG_COMPLEX_VALUES)) {
+	if (!is_complex_mode(args)) {
 		xassert(data_get_type(dst) ==
 			openapi_type_format_to_data_type(parser->obj_openapi));
 	}

@@ -673,7 +673,7 @@ static int DUMP_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 	xassert(args->magic == MAGIC_ARGS);
 
 	if (!(*qos_id) || (*qos_id) == INFINITE) {
-		if (!(args->flags & FLAG_COMPLEX_VALUES))
+		if (!is_complex_mode(args))
 			(void) data_set_string(dst, "");
 		else
 			xassert(data_get_type(dst) == DATA_TYPE_NULL);
@@ -689,7 +689,7 @@ static int DUMP_FUNC(QOS_ID)(const parser_t *const parser, void *obj,
 		(void) data_set_string(dst, qos->name);
 	else if (qos->id)
 		data_set_string_fmt(dst, "%u", qos->id);
-	else if (!(args->flags & FLAG_COMPLEX_VALUES))
+	else if (!is_complex_mode(args))
 		(void) data_set_string(dst, "");
 
 	return SLURM_SUCCESS;
@@ -941,7 +941,7 @@ static int DUMP_FUNC(ASSOC_ID)(const parser_t *const parser, void *obj,
 			return DUMP(ASSOC_SHORT_PTR, match, dst, args);
 	}
 
-	if (args->flags & FLAG_COMPLEX_VALUES) {
+	if (is_complex_mode(args)) {
 		xassert(data_get_type(dst) == DATA_TYPE_NULL);
 		return SLURM_SUCCESS;
 	}
@@ -1836,7 +1836,7 @@ static int DUMP_FUNC(STRING)(const parser_t *const parser, void *obj,
 
 	if (*src)
 		data_set_string(data, *src);
-	else if (args->flags & FLAG_COMPLEX_VALUES)
+	else if (is_complex_mode(args))
 		data_set_null(data);
 	else
 		data_set_string(data, "");
@@ -2024,7 +2024,7 @@ static int DUMP_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->magic == MAGIC_ARGS);
 
-	if (args->flags & FLAG_COMPLEX_VALUES) {
+	if (is_complex_mode(args)) {
 		if (isinf(*src))
 			data_set_string(dst, "Infinity");
 		else if (isnan(*src))
@@ -2061,7 +2061,7 @@ static void SPEC_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser,
 {
 	data_t *props, *dset, *dinf, *dnum;
 
-	if (args->flags & FLAG_COMPLEX_VALUES) {
+	if (is_complex_mode(args)) {
 		set_openapi_props(dst, OPENAPI_FORMAT_NUMBER,
 				  "64 bit floating point number");
 		return;
@@ -2242,7 +2242,7 @@ static int DUMP_FUNC(UINT16_NO_VAL)(const parser_t *const parser, void *obj,
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->magic == MAGIC_ARGS);
 
-	if (args->flags & FLAG_COMPLEX_VALUES) {
+	if (is_complex_mode(args)) {
 		if (*src == INFINITE16)
 			data_set_string(dst, "Infinity");
 		else if (*src == NO_VAL16)
@@ -2384,7 +2384,7 @@ static int DUMP_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 	uint64_t *src = obj;
 	data_t *set, *inf, *num;
 
-	if (args->flags & FLAG_COMPLEX_VALUES) {
+	if (is_complex_mode(args)) {
 		if (*src == INFINITE64)
 			data_set_string(dst, "Infinity");
 		else if (*src == NO_VAL64)
@@ -2424,7 +2424,7 @@ static void SPEC_FUNC(UINT64_NO_VAL)(const parser_t *const parser, args_t *args,
 {
 	data_t *props, *dset, *dinf, *dnum;
 
-	if (args->flags & FLAG_COMPLEX_VALUES) {
+	if (is_complex_mode(args)) {
 		set_openapi_props(dst, OPENAPI_FORMAT_INT64, "Integer number");
 		return;
 	}
@@ -2558,7 +2558,7 @@ static int DUMP_FUNC(UINT32_NO_VAL)(const parser_t *const parser, void *obj,
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	xassert(args->magic == MAGIC_ARGS);
 
-	if (args->flags & FLAG_COMPLEX_VALUES) {
+	if (is_complex_mode(args)) {
 		if (*src == INFINITE)
 			data_set_string(dst, "Infinity");
 		else if (*src == NO_VAL)
@@ -2776,7 +2776,7 @@ static int DUMP_FUNC(BOOL16_NO_VAL)(const parser_t *const parser, void *obj,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-	if (args->flags & FLAG_COMPLEX_VALUES) {
+	if (is_complex_mode(args)) {
 		if (*b == NO_VAL16)
 			data_set_null(dst);
 		else
@@ -4691,7 +4691,7 @@ static int DUMP_FUNC(SIGNAL)(const parser_t *const parser, void *obj,
 	char *str;
 
 	if (*sig == NO_VAL16) {
-		if (args->flags & FLAG_COMPLEX_VALUES)
+		if (is_complex_mode(args))
 			data_set_null(dst);
 		else
 			data_set_string(dst, "");
