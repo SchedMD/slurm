@@ -179,7 +179,7 @@ static char *_flag_parent_path(char **path_ptr,
 		return *path_ptr;
 
 	ppath = clone_source_path_index(args->parent_path, args->index);
-	set_source_path(path_ptr, ppath);
+	set_source_path(path_ptr, args->args, ppath);
 	FREE_NULL_DATA(ppath);
 
 	return *path_ptr;
@@ -259,7 +259,8 @@ static int _parse_flag(void *dst, const parser_t *const parser, data_t *src,
 		if (_foreach_flag_parser(src, &fargs) != DATA_FOR_EACH_CONT) {
 			rc = on_error(PARSING, parser->type, args,
 				      ESLURM_DATA_FLAGS_INVALID,
-				      set_source_path(&path, ppath), __func__,
+				      set_source_path(&path, args, parent_path),
+				      __func__,
 				      "Parsing single flag \"%s\" failed",
 				      data_get_string(src));
 
@@ -268,8 +269,8 @@ static int _parse_flag(void *dst, const parser_t *const parser, data_t *src,
 	} else if (data_get_type(src) != DATA_TYPE_LIST) {
 		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_FLAGS_INVALID_TYPE,
-			      set_source_path(&path, ppath), __func__,
-			      "Expected a List but found a %s",
+			      set_source_path(&path, args, parent_path),
+			      __func__, "Expected a List but found a %s",
 			      data_get_type_string(src));
 
 		goto cleanup;
@@ -281,10 +282,9 @@ static int _parse_flag(void *dst, const parser_t *const parser, data_t *src,
 	 */
 	} else if (data_list_for_each(src, _foreach_flag_parser, &fargs) < 0) {
 		rc = on_error(PARSING, parser->type, args,
-			      ESLURM_DATA_FLAGS_INVALID, set_source_path(&path,
-									 ppath),
-			      __func__,
-			      "Parsing flags failed");
+			      ESLURM_DATA_FLAGS_INVALID,
+			      set_source_path(&path, args, parent_path),
+			      __func__, "Parsing flags failed");
 		goto cleanup;
 	}
 
@@ -351,7 +351,7 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 	check_parser(parser);
 
 	log_flag(DATA, "%s: BEGIN: list parsing %s{%s(0x%"PRIxPTR")} to List 0x%"PRIxPTR" via parser %s(0x%"PRIxPTR")",
-		__func__, set_source_path(&path, parent_path),
+		__func__, set_source_path(&path, args, parent_path),
 		data_get_type_string(src), (uintptr_t) src,
 		(uintptr_t) dst, parser->type_string, (uintptr_t) parser
 	);
@@ -367,8 +367,8 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 	} else if (data_get_type(src) != DATA_TYPE_LIST) {
 		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_FLAGS_INVALID_TYPE,
-			      set_source_path(&path, parent_path), __func__,
-			      "Expected List but found a %s",
+			      set_source_path(&path, args, parent_path),
+			      __func__, "Expected List but found a %s",
 			      data_get_type_string(src));
 	} else {
 		(void) data_list_for_each(src, _foreach_parse_list, &list_args);
@@ -491,8 +491,8 @@ static int _parse_nt_array(const parser_t *const parser, void *dst, data_t *src,
 	if (data_get_type(src) != DATA_TYPE_LIST) {
 		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_FLAGS_INVALID_TYPE,
-			      set_source_path(&path, parent_path), __func__,
-			      "Expected List but found a %s",
+			      set_source_path(&path, args, parent_path),
+			      __func__, "Expected List but found a %s",
 			      data_get_type_string(src));
 		goto cleanup;
 	}
@@ -541,8 +541,12 @@ static void _parser_linked_flag(args_t *args, const parser_t *const array,
 	bool matched;
 
 	src = data_resolve_dict_path(src, bit->name);
-	openapi_append_rel_path(ppath, bit->name);
-	set_source_path(&path, ppath);
+
+	if (!is_fast_mode(args)) {
+		ppath = data_copy(NULL, parent_path);
+		openapi_append_rel_path(ppath, bit->name);
+		set_source_path(&path, args, ppath);
+	}
 
 	if (!src) {
 		matched = false;
@@ -656,7 +660,7 @@ static data_for_each_cmd_t _foreach_parse_marray(const char *key, data_t *data,
 	}
 
 	on_warn(PARSING, array->type, args,
-		set_source_path(&path, cargs.parent_path),
+		set_source_path(&path, args, cargs.parent_path),
 		__func__, "Ignoring unknown field \"%s\" of type %s in %s", key,
 		data_get_type_string(data), array->type_string);
 
@@ -738,8 +742,9 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 		if (parser->required) {
 			if ((rc = on_error(PARSING, parser->type, args,
 					   ESLURM_DATA_PATH_NOT_FOUND,
-					   set_source_path(&path, ppath),
-					   __func__, "Missing required field '%s' in dictionary",
+					   set_source_path(&path, args, ppath),
+					   __func__,
+					   "Missing required field '%s' in dictionary",
 					   parser->key)))
 				goto cleanup;
 		} else {
@@ -784,7 +789,7 @@ static int _parser_linked(args_t *args, const parser_t *const array,
 	    !_is_duplicate_linked_parser_value(args, array, parser, src_obj,
 					       src, parent_path)) {
 		on_warn(PARSING, parser->type, args,
-			set_source_path(&path, ppath), __func__,
+			set_source_path(&path, args, ppath), __func__,
 			"Field \"%s\" is deprecated", parser->key);
 	}
 
@@ -848,7 +853,7 @@ static void _parse_check_openapi(const parser_t *const parser, data_t *src,
 	 * in the OpenAPI specification as set in the parser.
 	 */
 	on_warn(PARSING, parser->type, args,
-		set_source_path(&path, parent_path), __func__,
+		set_source_path(&path, args, parent_path), __func__,
 		"Expected OpenAPI type=%s%s%s (Slurm type=%s) but got OpenAPI type=%s%s%s (Slurm type=%s)",
 		oas_type, (oas_format ? " format=" : ""),
 		(oas_format ? oas_format : ""),
@@ -883,7 +888,8 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		if (parser->required) {
 			if ((rc = on_error(PARSING, parser->type, args,
 					   ESLURM_DATA_PATH_NOT_FOUND,
-					   set_source_path(&path, parent_path),
+					   set_source_path(&path, args,
+							   parent_path),
 					   __func__,
 					   "Missing required field '%s' in dictionary",
 					   parser->key)))
@@ -891,7 +897,8 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		} else {
 			/* field is missing but not required */
 			log_flag(DATA, "%s: skip parsing missing %s to %zd byte object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ")",
-				__func__, set_source_path(&path, parent_path),
+				__func__, set_source_path(&path, args,
+							  parent_path),
 				(dst_bytes == NO_VAL ? -1 : dst_bytes),
 				parser->obj_type_string, (uintptr_t) dst,
 				(parser->ptr_offset == NO_VAL ?
@@ -907,7 +914,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 	}
 
 	log_flag(DATA, "%s: BEGIN: parsing %s{%s(0x%" PRIxPTR ")} to %zd byte object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ")",
-		 __func__, set_source_path(&path, parent_path),
+		 __func__, set_source_path(&path, args, parent_path),
 		 data_get_type_string(src),
 		 (uintptr_t) src, (dst_bytes == NO_VAL ? -1 : dst_bytes),
 		 parser->obj_type_string, (uintptr_t) dst,
@@ -937,7 +944,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		if (data_get_type(src) != DATA_TYPE_DICT) {
 			rc = on_error(PARSING, parser->type, args,
 				      ESLURM_DATA_EXPECTED_DICT,
-				      set_source_path(&path, parent_path),
+				      set_source_path(&path, args, parent_path),
 				      __func__,
 				      "Rejecting %s when dictionary expected",
 				      data_get_type_string(src));
@@ -998,7 +1005,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 
 cleanup:
 	log_flag(DATA, "%s: END: parsing %s{%s(0x%" PRIxPTR ")} to %zd byte object %s(0x%" PRIxPTR "+%zd)%s%s via parser %s(0x%" PRIxPTR ") rc[%d]:%s",
-		 __func__, set_source_path(&path, parent_path),
+		 __func__, set_source_path(&path, args, parent_path),
 		 data_get_type_string(src), (uintptr_t) src,
 		 (dst_bytes == NO_VAL ? -1 : dst_bytes),
 		 parser->obj_type_string, (uintptr_t) dst, (parser->ptr_offset

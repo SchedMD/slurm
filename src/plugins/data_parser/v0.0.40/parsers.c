@@ -123,7 +123,7 @@ static int _parse_error_funcname(const parser_t *const parser, args_t *args,
 	str = vxstrfmt(fmt, ap);
 	va_end(ap);
 
-	(void) set_source_path(&path, parent_path);
+	(void) set_source_path(&path, args, parent_path);
 
 	on_error(PARSING, parser->type, args, error, path, caller, "%s", str);
 

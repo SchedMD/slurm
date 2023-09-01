@@ -112,7 +112,8 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 		rc = ESLURM_REST_EMPTY_RESULT;
 		if (!ignore_failure)
 			on_error(op, parser->type, args, rc,
-				 set_source_path(&path, parent_path), caller,
+				 set_source_path(&path, args, parent_path),
+				 caller,
 				 "Unable to resolve QOS when there are no QOS");
 		goto done;
 	}
@@ -132,8 +133,8 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 				parent_path))) {
 			if (!ignore_failure)
 				on_error(op, parser->type, args, rc,
-					 set_source_path(&path, parent_path),
-					 caller,
+					 set_source_path(&path, args,
+							 parent_path), caller,
 					 "Parsing dictionary into QOS failed");
 			slurmdb_destroy_qos_rec(pqos);
 			goto done;
@@ -148,7 +149,7 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 				if (!ignore_failure)
 					on_error(op, parser->type, args, rc,
 						 __func__,
-						 set_source_path(&path,
+						 set_source_path(&path, args,
 								 parent_path),
 						 "Unable to find QOS by given ID#%d",
 						 pqos->id);
@@ -161,7 +162,7 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 				rc = ESLURM_REST_EMPTY_RESULT;
 				if (!ignore_failure)
 					on_error(op, parser->type, args, rc,
-						 set_source_path(&path,
+						 set_source_path(&path, args,
 								 parent_path),
 						 __func__,
 						 "Unable to find QOS by given name: %s",
@@ -172,8 +173,8 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 			if (!ignore_failure)
 				on_error(op, parser->type, args,
 					 ESLURM_REST_FAIL_PARSING,
-					 set_source_path(&path, parent_path),
-					 caller,
+					 set_source_path(&path, args,
+							 parent_path), caller,
 					 "Unable to find QOS without ID# or name provided");
 		}
 
@@ -192,8 +193,9 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 			rc = ESLURM_INVALID_QOS;
 			if (!ignore_failure)
 				on_error(op, parser->type, args, rc,
-					 set_source_path(&path, parent_path),
-					 caller, "QOS id#%"PRIu64" too large",
+					 set_source_path(&path, args,
+							 parent_path), caller,
+					 "QOS id#%"PRIu64" too large",
 					 qos_id_full);
 			goto done;
 		}
@@ -214,7 +216,8 @@ extern int resolve_qos(parse_op_t op, const parser_t *const parser,
 		rc = ESLURM_REST_FAIL_PARSING;
 		if (ignore_failure)
 			on_error(op, parser->type, args, rc,
-				 set_source_path(&path, parent_path), caller,
+				 set_source_path(&path, args, parent_path),
+				 caller,
 				 "QOS resolution failed with unexpected QOS name/id formated as data type:%s",
 				 data_get_type_string(src));
 		goto done;

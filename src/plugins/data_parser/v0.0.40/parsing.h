@@ -47,7 +47,7 @@
  * path to provide client a useful error/warning message about issues. OpenAPI
  * specifies how path strings are to be constructed.
  */
-#define set_source_path(path_ptr, parent_path) \
+#define set_source_path(path_ptr, args, parent_path) \
 	openapi_fmt_rel_path_str(path_ptr, parent_path)
 #define clone_source_path_index(parent_path, index) \
 	openapi_fork_rel_path_list(parent_path, index)

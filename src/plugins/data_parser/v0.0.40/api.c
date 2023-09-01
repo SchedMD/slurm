@@ -118,7 +118,8 @@ extern int data_parser_p_parse(args_t *args, data_parser_type_t type, void *dst,
 		int rc;
 		char *path = NULL;
 		rc = on_error(PARSING, type, args, ESLURM_DATA_INVALID_PARSER,
-			      set_source_path(&path, parent_path), __func__,
+			      set_source_path(&path, args, parent_path),
+			      __func__,
 			      "Invalid or unsupported parsing requested. Input may not be fully parsed.");
 		xfree(path);
 		return rc;
