@@ -163,7 +163,7 @@ Service (QOS) specifications in the Slurm database. In the case of
 <I>PreemptMode=SUSPEND</I>, a preempting job needs to be submitted to a
 partition with a higher PriorityTier or to the same partition.
 This option is not compatible with <I>PreemptMode=OFF</I>.
-configuration of <I>PreemptMode=SUSPEND</I> is only supported by the
+A configuration of <I>PreemptMode=SUSPEND</I> is only supported by the
 <I>SelectType=select/cons_res</I> and <I>SelectType=select/cons_tres</I>
 plugins.
 See the <a href="sacctmgr.html">sacctmgr man page</a> to configure the options
