@@ -132,12 +132,13 @@ void ping_end (void)
 void ping_nodes (void)
 {
 	static bool restart_flag = true;	/* system just restarted */
-	static int offset = 0;	/* mutex via node table write lock on entry */
+	static int reg_offset = 0;	/* mutex via node table write lock on entry */
 	static int max_reg_threads = 0;	/* max node registration threads
 					 * this can include DOWN nodes, so
 					 * limit the number to avoid huge
 					 * communication delays */
 	int i;
+	int node_offset = 0;
 	time_t now = time(NULL), still_live_time, node_dead_time;
 	static time_t last_ping_time = (time_t) 0;
 	static time_t last_ping_timeout = (time_t) 0;
@@ -186,11 +187,12 @@ void ping_nodes (void)
 
 	if (max_reg_threads == 0) {
 		max_reg_threads = MAX(slurm_conf.tree_width, 1);
+		max_reg_threads = MIN(max_reg_threads, 50);
 	}
-	offset += max_reg_threads;
-	if ((offset > node_record_count) &&
-	    (offset >= (max_reg_threads * MAX_REG_FREQUENCY)))
-		offset = 0;
+	reg_offset += max_reg_threads;
+	if ((reg_offset > active_node_record_count) &&
+	    (reg_offset >= (max_reg_threads * MAX_REG_FREQUENCY)))
+		reg_offset = 0;
 
 #ifdef HAVE_FRONT_END
 	for (i = 0, front_end_ptr = front_end_nodes;
@@ -230,7 +232,7 @@ void ping_nodes (void)
 		 * once in a while). We limit these requests since they
 		 * can generate a flood of incoming RPCs. */
 		if (IS_NODE_UNKNOWN(front_end_ptr) || restart_flag ||
-		    ((i >= offset) && (i < (offset + max_reg_threads)))) {
+		    ((i >= reg_offset) && (i < (reg_offset + max_reg_threads)))) {
 			if (reg_agent_args->protocol_version >
 			    front_end_ptr->protocol_version)
 				reg_agent_args->protocol_version =
@@ -263,6 +265,7 @@ void ping_nodes (void)
 	}
 #else
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
+		node_offset++;
 		if (IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||
@@ -301,8 +304,8 @@ void ping_nodes (void)
 		 * once in a while). We limit these requests since they
 		 * can generate a flood of incoming RPCs. */
 		if (IS_NODE_UNKNOWN(node_ptr) || (node_ptr->boot_time == 0) ||
-		    ((node_ptr->index >= offset) &&
-		     (node_ptr->index < (offset + max_reg_threads)))) {
+		    ((node_offset >= reg_offset) &&
+		     (node_offset < (reg_offset + max_reg_threads)))) {
 			if (reg_agent_args->protocol_version >
 			    node_ptr->protocol_version)
 				reg_agent_args->protocol_version =
