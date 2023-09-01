@@ -138,7 +138,6 @@ void ping_nodes (void)
 					 * limit the number to avoid huge
 					 * communication delays */
 	int i;
-	int node_offset = 0;
 	time_t now = time(NULL), still_live_time, node_dead_time;
 	static time_t last_ping_time = (time_t) 0;
 	static time_t last_ping_timeout = (time_t) 0;
@@ -152,6 +151,7 @@ void ping_nodes (void)
 	node_record_t *node_ptr = NULL;
 	time_t old_cpu_load_time = now - slurm_conf.slurmd_timeout;
 	time_t old_free_mem_time = now - slurm_conf.slurmd_timeout;
+	int node_offset = 0;
 #endif
 
 	ping_agent_args = xmalloc (sizeof (agent_arg_t));
