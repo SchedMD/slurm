@@ -2821,6 +2821,10 @@ This is not compatible with \fBPreemptMode=OFF\fR.
 \fBpreempt/qos\fR
 Job preemption rules are specified by Quality Of Service (QOS) specifications
 in the Slurm database.
+In the case of \fBPreemptMode=SUSPEND\fR, a preempting job has to be submitted
+to a partition with a higher PriorityTier or to the same partition. Submission
+to the same partition is also supported, which results in the preemptor QoS to
+gang schedule the preemptee QoS.
 This option is not compatible with \fBPreemptMode=OFF\fR.
 A configuration of \fBPreemptMode=SUSPEND\fR is only supported by the
 \fBSelectType=select/cons_tres\fR plugin.
@@ -7050,8 +7054,9 @@ Recommended only for systems using \fBPreemptMode=suspend,gang\fR.
 \fBNOTE\fR: \fBOverSubscribe=FORCE:1\fR is a special case that is not exactly
 equivalent to \fBOverSubscribe=NO\fR. \fBOverSubscribe=FORCE:1\fR disables
 the regular oversubscription of resources in the same partition but it will
-still allow oversubscription due to preemption. Setting \fBOverSubscribe=NO\fR
-will prevent oversubscription from happening due to preemption as well.
+still allow oversubscription due to preemption or on overlapping partitions
+with the same PriorityTier. Setting \fBOverSubscribe=NO\fR
+will prevent oversubscription from happening in all cases.
 
 \fBNOTE\fR: If using \fBPreemptType=preempt/qos\fR you can specify a value for
 \fBFORCE\fR that is greater than 1. For example, \fBOverSubscribe=FORCE:2\fR
