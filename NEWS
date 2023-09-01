@@ -208,6 +208,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix --cpu-freq parsing with incorrect frequencies.
  -- PMIx support is nolonger built by default.  Passing --with-pmix option is
     now required to build with PMIx.
+ -- Use memory.current in cgroup/v2 instead of manually calculating RSS. This
+    makes accounting consistent with OOM Killer.
 
 * Changes in Slurm 23.02.6
 ==========================
