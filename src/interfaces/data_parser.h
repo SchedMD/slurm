@@ -248,6 +248,9 @@ typedef enum {
 	DATA_PARSER_WCKEY_LIST, /* List of slurmdb_wckey_rec_t* */
 	DATA_PARSER_WCKEY_FLAGS, /* slurmdb_wckey_rec_t->flags & SLURMDB_WCKEY_FLAG_* */
 	DATA_PARSER_WCKEY_TAG, /* uint32_t - * prefix denotes default */
+	DATA_PARSER_WCKEY_TAG_STRUCT, /* WCKEY_TAG_STRUCT_t */
+	DATA_PARSER_WCKEY_TAG_STRUCT_PTR, /* WCKEY_TAG_STRUCT_t* */
+	DATA_PARSER_WCKEY_TAG_FLAGS, /* WCKEY_TAG_FLAGS_t */
 	DATA_PARSER_OPENAPI_WCKEY_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_WCKEY_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_OPENAPI_WCKEY_REMOVED_RESP, /* openapi_resp_single_t */

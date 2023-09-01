@@ -271,6 +271,15 @@ typedef struct {
 	char *msg;
 } JOB_ARRAY_RESPONSE_MSG_entry_t;
 
+typedef enum {
+	WCKEY_TAG_FLAGS_ASSIGNED_DEFAULT = SLURM_BIT(0),
+} WCKEY_TAG_FLAGS_t;
+
+typedef struct {
+	const char *wckey;
+	WCKEY_TAG_FLAGS_t flags;
+} WCKEY_TAG_STRUCT_t;
+
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
 				     data_t *parent_path);
@@ -1580,43 +1589,21 @@ static int DUMP_FUNC(WCKEY_TAG)(const parser_t *const parser, void *obj,
 				data_t *dst, args_t *args)
 {
 	char **src = obj;
-	data_t *flags, *key;
-
-	xassert(args->magic == MAGIC_ARGS);
-	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+	WCKEY_TAG_STRUCT_t tag = {0};
 
 	if (!*src) {
-		data_set_null(dst);
-		return SLURM_SUCCESS;
+		if (is_complex_mode(args)) {
+			xassert(data_get_type(dst) == DATA_TYPE_NULL);
+			return SLURM_SUCCESS;
+		}
+	} else if (*src[0] == '*') {
+		tag.flags |= WCKEY_TAG_FLAGS_ASSIGNED_DEFAULT;
+		tag.wckey = (*src + 1);
+	} else {
+		tag.wckey = *src;
 	}
 
-	key = data_key_set(data_set_dict(dst), "wckey");
-	flags = data_set_list(data_key_set(dst, "flags"));
-
-	if (*src[0] == '*') {
-		data_set_string(data_list_append(flags), "ASSIGNED_DEFAULT");
-		data_set_string(key, (*src + 1));
-	} else
-		data_set_string(key, *src);
-
-	return SLURM_SUCCESS;
-}
-
-static void SPEC_FUNC(WCKEY_TAG)(const parser_t *const parser, args_t *args,
-				 data_t *spec, data_t *dst)
-{
-	data_t *flags, *fenum;
-	data_t *props =
-		set_openapi_props(dst, OPENAPI_FORMAT_OBJECT, "wckey details");
-
-	set_openapi_props(data_key_set(props, "wckey"), OPENAPI_FORMAT_STRING,
-			  "wckey");
-	flags = set_openapi_props(data_key_set(props, "flags"),
-				  OPENAPI_FORMAT_ARRAY, "active flags");
-	set_openapi_props(flags, OPENAPI_FORMAT_STRING, "flag");
-
-	fenum = data_set_list(data_key_set(flags, "enum"));
-	data_set_string(data_list_append(fenum), "ASSIGNED_DEFAULT");
+	return DUMP(WCKEY_TAG_STRUCT, tag, dst, args);
 }
 
 static int DUMP_FUNC(USER_ID)(const parser_t *const parser, void *obj,
@@ -8179,6 +8166,18 @@ static const parser_t PARSER_ARRAY(JOB_ARRAY_RESPONSE_MSG_ENTRY)[] = {
 #undef add_parse
 #undef add_parse_overload
 
+static const flag_bit_t PARSER_FLAG_ARRAY(WCKEY_TAG_FLAGS)[] = {
+	add_flag_bit(WCKEY_TAG_FLAGS_ASSIGNED_DEFAULT, "ASSIGNED_DEFAULT"),
+};
+
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(WCKEY_TAG_STRUCT_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(WCKEY_TAG_STRUCT)[] = {
+	add_parse_req(STRING, wckey, "wckey", "WCKey name"),
+	add_parse_req(WCKEY_TAG_FLAGS, flags, "flags", "Active flags"),
+};
+#undef add_parse_req
+
 #define add_openapi_response_meta(rtype) \
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype) \
@@ -8540,7 +8539,7 @@ static const parser_t parsers[] = {
 	addps(SELECT_PLUGIN_ID, int, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(TASK_DISTRIBUTION, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(STEP_ID, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
-	addpss(WCKEY_TAG, char *, NEED_NONE, OBJECT, NULL, NULL, NULL),
+	addpsp(WCKEY_TAG, WCKEY_TAG_STRUCT, char *, NEED_NONE, "WCKey ID with tagging"),
 	addps(GROUP_ID, gid_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(JOB_REASON, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(USER_ID, uid_t, NEED_NONE, STRING, NULL, NULL, NULL),
@@ -8734,6 +8733,7 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_SLURMDBD_QOS_PARAM, openapi_qos_param_t, NULL, NULL),
 	addpap(OPENAPI_SLURMDBD_QOS_QUERY, openapi_qos_query_t, NULL, NULL),
 	addpap(JOB_ARRAY_RESPONSE_MSG_ENTRY, JOB_ARRAY_RESPONSE_MSG_entry_t, NULL, NULL),
+	addpap(WCKEY_TAG_STRUCT, WCKEY_TAG_STRUCT_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -8799,6 +8799,7 @@ static const parser_t parsers[] = {
 	addfa(PROCESS_EXIT_CODE_STATUS, uint32_t),
 	addfa(STEP_NAMES, uint32_t),
 	addfa(ASSOC_SHARES_OBJ_WRAP_TYPE, uint16_t),
+	addfa(WCKEY_TAG_FLAGS, WCKEY_TAG_FLAGS_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
