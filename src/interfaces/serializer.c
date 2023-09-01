@@ -178,13 +178,15 @@ extern int serialize_g_string_to_data(data_t **dest, const char *src,
 	return rc;
 }
 
-extern const char *resolve_mime_type(const char *mime_type)
+extern const char *resolve_mime_type(const char *mime_type,
+				     const char **plugin_ptr)
 {
 	plugin_mime_type_t *pmt = _find_serializer(mime_type);
 
 	if (!pmt)
 		return NULL;
 
+	*plugin_ptr = plugins->types[pmt->index];
 	return pmt->mime_type;
 }
 

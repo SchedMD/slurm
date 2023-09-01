@@ -454,7 +454,7 @@ static List _parse_http_accept(const char *accept)
 }
 
 static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
-			 const char **write_mime)
+			 const char **write_mime, const char **plugin_ptr)
 {
 	*read_mime = args->content_type;
 
@@ -479,7 +479,8 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 			       __func__, args->context->con->name, ptr->type,
 			       ptr->q);
 
-			if ((*write_mime = resolve_mime_type(ptr->type))) {
+			if ((*write_mime = resolve_mime_type(ptr->type,
+							     plugin_ptr))) {
 				debug4("%s: [%s] found accepts %s=%s with q=%f",
 				       __func__, args->context->con->name,
 				       ptr->type, *write_mime, ptr->q);
@@ -652,8 +653,7 @@ extern int operations_router(on_http_request_args_t *args)
 	path_t *path = NULL;
 	openapi_handler_t callback = NULL;
 	int callback_tag;
-	const char *read_mime = NULL;
-	const char *write_mime = NULL;
+	const char *read_mime = NULL, *write_mime = NULL, *plugin = NULL;
 	data_parser_t *parser = NULL;
 
 	info("%s: [%s] %s %s",
@@ -695,7 +695,7 @@ extern int operations_router(on_http_request_args_t *args)
 	       callback_tag, args->path,
 	       (parser ? data_parser_get_plugin(parser) : ""));
 
-	if ((rc = _resolve_mime(args, &read_mime, &write_mime)))
+	if ((rc = _resolve_mime(args, &read_mime, &write_mime, &plugin)))
 		goto cleanup;
 
 	if ((rc = _get_query(args, &query, read_mime)))
