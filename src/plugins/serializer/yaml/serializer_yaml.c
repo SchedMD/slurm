@@ -857,7 +857,8 @@ static int _yaml_write_handler(void *data, unsigned char *buffer, size_t size)
 	return 1;
 }
 
-static int _dump_yaml(const data_t *data, yaml_emitter_t *emitter, buf_t *buf)
+static int _dump_yaml(const data_t *data, yaml_emitter_t *emitter, buf_t *buf,
+		      serializer_flags_t flags)
 {
 	yaml_event_t event;
 
@@ -869,6 +870,12 @@ static int _dump_yaml(const data_t *data, yaml_emitter_t *emitter, buf_t *buf)
 
 	if (!yaml_emitter_initialize(emitter))
 		_yaml_emitter_error;
+
+	if (flags == SER_FLAGS_COMPACT) {
+		yaml_emitter_set_indent(emitter, 0);
+		yaml_emitter_set_width(emitter, -1);
+		yaml_emitter_set_break(emitter, YAML_ANY_BREAK);
+	}
 
 	yaml_emitter_set_output(emitter, _yaml_write_handler, buf);
 
@@ -915,7 +922,7 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 	yaml_emitter_t emitter;
 	buf_t *buf = init_buf(0);
 
-	if (_dump_yaml(src, &emitter, buf)) {
+	if (_dump_yaml(src, &emitter, buf, flags)) {
 		error("%s: dump yaml failed", __func__);
 
 		FREE_NULL_BUFFER(buf);
