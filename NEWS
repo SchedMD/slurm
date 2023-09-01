@@ -186,6 +186,9 @@ documents those changes that are of interest to users and administrators.
     queries to 'POST /slurm/v0.0.40/job/{job_id}'.
  -- slurmrestd - Add SLURMRESTD_JSON and SLURMRESTD_YAML input environment
     variables.
+ -- slurmrestd - Correct issue where field and $ref description fields were not
+    getting populated for OpenAPI specification generation for queries to
+    'GET /openapi/v3' for v0.0.40 endpoints.
 
 * Changes in Slurm 23.02.5
 ==========================
