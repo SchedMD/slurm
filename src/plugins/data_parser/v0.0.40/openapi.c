@@ -200,6 +200,7 @@ static void _add_param_flag_enum(data_t *param, const parser_t *parser)
  * Populate OpenAPI specification field using parser
  * IN obj - data_t ptr to specific field in OpenAPI schema
  * IN parser - populate field with info from parser
+ * IN description - description from parent pointer parser or NULL
  *
  * If parser is an ARRAY or OBJECT, the openapi_spec() function will be called
  * from the parser to populate the child fields.
@@ -207,7 +208,7 @@ static void _add_param_flag_enum(data_t *param, const parser_t *parser)
  * RET ptr to "items" for ARRAY or "properties" for OBJECT or NULL
  */
 static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
-				  spec_args_t *sargs)
+				  spec_args_t *sargs, const char *desc)
 {
 	data_t *props;
 	openapi_type_format_t format;
@@ -256,7 +257,10 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	xassert(format > OPENAPI_FORMAT_INVALID);
 	xassert(format < OPENAPI_FORMAT_MAX);
 
-	if ((props = set_openapi_props(obj, format, parser->obj_desc))) {
+	if (parser->obj_desc)
+		desc = parser->obj_desc;
+
+	if ((props = set_openapi_props(obj, format, desc))) {
 		if (parser->array_type) {
 			_set_ref(props, parser,
 				 find_parser_by_type(parser->array_type),
@@ -321,7 +325,7 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 	}
 
 	if (sargs->disable_refs || !_should_be_ref(parser)) {
-		_set_openapi_parse(obj, parser, sargs);
+		_set_openapi_parse(obj, parser, sargs, desc);
 		return;
 	}
 
@@ -417,7 +421,7 @@ static void _add_parser(const parser_t *parser, spec_args_t *sargs)
 	xfree(key);
 
 	data_set_dict(obj);
-	_set_openapi_parse(obj, parser, sargs);
+	_set_openapi_parse(obj, parser, sargs, NULL);
 }
 
 static data_for_each_cmd_t _convert_list_entry(data_t *data, void *arg)
@@ -780,5 +784,5 @@ extern void set_openapi_schema(data_t *dst, const parser_t *parser,
 
 	get_parsers(&sargs.parsers, &sargs.parser_count);
 
-	(void) _set_openapi_parse(dst, parser, &sargs);
+	(void) _set_openapi_parse(dst, parser, &sargs, NULL);
 }
