@@ -160,6 +160,22 @@ variable takes precedence over the setting in the slurm.conf.
 .IP
 
 .TP
+\fBSLURMRESTD_JSON\fR
+Control JSON serialization:
+.IP
+.RS
+.TP
+\fBcompact\fR
+Output JSON as compact as possible.
+.IP
+
+.TP
+\fBpretty\fR
+Output JSON in pretty format to make it more readable.
+.IP
+.RE
+
+.TP
 \fBSLURM_JWT\fR
 This variable must be set to use JWT token authentication.
 .IP
@@ -226,6 +242,22 @@ Disables unsharing the SYSV namespace.
 \fBdisable_user_check\fR
 Disables check that slurmrestd is not running as root or SlurmUser, or with the
 root or SlurmUser's primary group.
+.RE
+.IP
+
+.TP
+\fBSLURMRESTD_YAML\fR
+Control YAML serialization:
+.IP
+.RS
+.TP
+\fBcompact\fR
+Output YAML as compact as possible.
+.IP
+
+.TP
+\fBpretty\fR
+Output YAML in pretty format to make it more readable.
 .RE
 .IP
 

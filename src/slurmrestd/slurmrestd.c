@@ -209,6 +209,44 @@ static void _parse_env(void)
 		}
 		xfree(toklist);
 	}
+
+	if ((buffer = getenv("SLURMRESTD_JSON"))) {
+		char *token = NULL, *save_ptr = NULL;
+		char *toklist = xstrdup(buffer);
+
+		token = strtok_r(toklist, ",", &save_ptr);
+		while (token) {
+			if (!xstrcasecmp(token, "compact")) {
+				json_flags = SER_FLAGS_COMPACT;
+			} else if (!xstrcasecmp(token, "pretty")) {
+				json_flags = SER_FLAGS_PRETTY;
+			} else {
+				fatal("Unexpected value in SLURMRESTD_JSON=%s",
+				      token);
+			}
+			token = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(toklist);
+	}
+
+	if ((buffer = getenv("SLURMRESTD_YAML"))) {
+		char *token = NULL, *save_ptr = NULL;
+		char *toklist = xstrdup(buffer);
+
+		token = strtok_r(toklist, ",", &save_ptr);
+		while (token) {
+			if (!xstrcasecmp(token, "compact")) {
+				yaml_flags = SER_FLAGS_COMPACT;
+			} else if (!xstrcasecmp(token, "pretty")) {
+				yaml_flags = SER_FLAGS_PRETTY;
+			} else {
+				fatal("Unexpected value in SLURMRESTD_YAML=%s",
+				      token);
+			}
+			token = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(toklist);
+	}
 }
 
 static void _examine_stdin(void)

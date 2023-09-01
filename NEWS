@@ -184,6 +184,8 @@ documents those changes that are of interest to users and administrators.
     only being valid for the first entry in the "result" field array.
  -- slurmrestd - Warning will be added for rejected job updates with
     queries to 'POST /slurm/v0.0.40/job/{job_id}'.
+ -- slurmrestd - Add SLURMRESTD_JSON and SLURMRESTD_YAML input environment
+    variables.
 
 * Changes in Slurm 23.02.5
 ==========================

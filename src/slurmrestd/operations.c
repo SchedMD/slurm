@@ -53,6 +53,8 @@
 static pthread_rwlock_t paths_lock = PTHREAD_RWLOCK_INITIALIZER;
 static List paths = NULL;
 static data_parser_t **parsers; /* symlink to parser array */
+serializer_flags_t yaml_flags = SER_FLAGS_PRETTY;
+serializer_flags_t json_flags = SER_FLAGS_PRETTY;
 
 #define MAGIC 0xDFFEAAAE
 #define MAGIC_HEADER_ACCEPT 0xDF9EAABE
@@ -540,7 +542,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 			 data_t *query, openapi_handler_t callback,
 			 openapi_ctxt_handler_t ctxt_callback, int callback_tag,
 			 const char *write_mime, data_parser_t *parser,
-			 const openapi_resp_meta_t *meta)
+			 const openapi_resp_meta_t *meta, const char *plugin)
 {
 	int rc;
 	data_t *resp = data_new();
@@ -576,8 +578,16 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	FREE_NULL_REST_AUTH(args->context->auth);
 
 	if (data_get_type(resp) != DATA_TYPE_NULL) {
-		int rc2 = serialize_g_data_to_string(
-			&body, NULL, resp, write_mime, SER_FLAGS_PRETTY);
+		int rc2;
+		serializer_flags_t sflags = SER_FLAGS_PRETTY;
+
+		if (!xstrcmp(plugin, MIME_TYPE_JSON_PLUGIN))
+			sflags = json_flags;
+		else if (!xstrcmp(plugin, MIME_TYPE_YAML_PLUGIN))
+			sflags = yaml_flags;
+
+		rc2 = serialize_g_data_to_string(&body, NULL, resp, write_mime,
+						 sflags);
 
 		if (!rc)
 			rc = rc2;
@@ -702,7 +712,8 @@ extern int operations_router(on_http_request_args_t *args)
 		goto cleanup;
 
 	rc = _call_handler(args, params, query, callback, path->ctxt_callback,
-			   callback_tag, write_mime, parser, path->meta);
+			   callback_tag, write_mime, parser, path->meta,
+			   plugin);
 
 cleanup:
 	FREE_NULL_DATA(query);
