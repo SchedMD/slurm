@@ -67,7 +67,8 @@ typedef struct {
 
 static void _add_parser(const parser_t *parser, spec_args_t *sargs);
 static void _replace_refs(data_t *data, spec_args_t *sargs);
-extern void _set_ref(data_t *obj, const parser_t *parser, spec_args_t *sargs);
+extern void _set_ref(data_t *obj, const parser_t *parent,
+		     const parser_t *parser, spec_args_t *sargs);
 static data_t *_resolve_parser_key(const parser_t *parser, data_t *dst);
 
 static char *_get_parser_key(const parser_t *parser)
@@ -180,7 +181,7 @@ static void _add_field(data_t *obj, data_t *required,
 		data_t *p = data_key_get(dchild, "properties");
 		_add_eflags(p, pchild, sargs);
 	} else {
-		_set_ref(dchild, pchild, sargs);
+		_set_ref(dchild, NULL, pchild, sargs);
 	}
 }
 
@@ -217,14 +218,15 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 
 	if (parser->model ==
 	    PARSER_MODEL_ARRAY_LINKED_EXPLODED_FLAG_ARRAY_FIELD) {
-		_set_ref(obj, find_parser_by_type(parser->type), sargs);
+		_set_ref(obj, parser, find_parser_by_type(parser->type), sargs);
 		return NULL;
 	} else if (parser->model == PARSER_MODEL_ARRAY_LINKED_FIELD) {
 		/* find all parsers that should be references */
-		_set_ref(obj, find_parser_by_type(parser->type), sargs);
+		_set_ref(obj, parser, find_parser_by_type(parser->type), sargs);
 		return NULL;
 	} else if (parser->pointer_type) {
-		_set_ref(obj, find_parser_by_type(parser->pointer_type), sargs);
+		_set_ref(obj, parser, find_parser_by_type(parser->pointer_type),
+			 sargs);
 		return NULL;
 	}
 
@@ -255,11 +257,12 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 
 	if ((props = set_openapi_props(obj, format, parser->obj_desc))) {
 		if (parser->array_type) {
-			_set_ref(props, find_parser_by_type(parser->array_type),
+			_set_ref(props, parser,
+				 find_parser_by_type(parser->array_type),
 				 sargs);
 		} else if (parser->list_type) {
-			_set_ref(props, find_parser_by_type(parser->list_type),
-				 sargs);
+			_set_ref(props, parser,
+				 find_parser_by_type(parser->list_type), sargs);
 		} else if (parser->flag_bit_array) {
 			_add_param_flag_enum(props, parser);
 		} else if (parser->fields) {
@@ -292,26 +295,41 @@ extern void set_openapi_parse_ref(data_t *obj, const parser_t *parser,
 
 	sargs.schemas = data_resolve_dict_path(spec, OPENAPI_SCHEMAS_PATH);
 
-	_set_ref(obj, parser, &sargs);
+	_set_ref(obj, NULL, parser, &sargs);
 }
 
-extern void _set_ref(data_t *obj, const parser_t *parser, spec_args_t *sargs)
+extern void _set_ref(data_t *obj, const parser_t *parent,
+		     const parser_t *parser, spec_args_t *sargs)
 {
 	char *str;
+	const char *desc = NULL;
+
+	if (parser->obj_desc)
+		desc = parser->obj_desc;
+	else if (parent && parent->obj_desc)
+		desc = parent->obj_desc;
 
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
-	while (parser->pointer_type)
+	while (parser->pointer_type) {
+		if (parser->obj_desc)
+			desc = parser->obj_desc;
+
 		parser = find_parser_by_type(parser->pointer_type);
+	}
 
 	if (sargs->disable_refs || !_should_be_ref(parser)) {
 		_set_openapi_parse(obj, parser, sargs);
 		return;
 	}
 
+	data_set_dict(obj);
 	str = _get_parser_path(parser);
-	data_set_string_own(data_key_set(data_set_dict(obj), "$ref"), str);
+	data_set_string_own(data_key_set(obj, "$ref"), str);
+
+	if (desc)
+		data_set_string(data_key_set(obj, "description"), desc);
 
 	_add_parser(parser, sargs);
 }
