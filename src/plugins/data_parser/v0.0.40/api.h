@@ -47,6 +47,7 @@
 
 #define MAGIC_ARGS 0x2ea1bebb
 #define is_fast_mode(args) (args->flags & FLAG_FAST)
+#define is_complex_mode(args) (args->flags & FLAG_COMPLEX_VALUES)
 
 typedef enum {
 	FLAG_NONE = 0,
