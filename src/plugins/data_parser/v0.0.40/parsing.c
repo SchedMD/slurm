@@ -819,6 +819,7 @@ static void _parse_check_openapi(const parser_t *const parser, data_t *src,
 {
 	char *path = NULL;
 	const char *oas_type, *oas_format, *found_type, *found_format;
+	data_type_t oas_data_type;
 	openapi_type_format_t found;
 
 	if (data_get_type(src) == DATA_TYPE_NULL)
@@ -837,24 +838,23 @@ static void _parse_check_openapi(const parser_t *const parser, data_t *src,
 	found = openapi_data_type_to_type_format(data_get_type(src));
 	found_type = openapi_type_format_to_type_string(found);
 	found_format = openapi_type_format_to_format_string(found);
+	oas_data_type = openapi_type_format_to_data_type(parser->obj_openapi);
 
-	if (!is_complex_mode(args)) {
-		/*
-		 * Warn as this is user provided data and the parser may accept
-		 * the format anyway. Steer the user towards the formats given
-		 * in the OpenAPI specification as set in the parser.
-		 */
-		on_warn(PARSING, parser->type, args,
-			set_source_path(&path, parent_path), __func__,
-			"Expected OpenAPI type=%s%s%s (Slurm type=%s) but got OpenAPI type=%s%s%s (Slurm type=%s)",
-			oas_type, (oas_format ? " format=" : ""),
-			(oas_format ? oas_format : ""),
-			data_type_to_string(openapi_type_format_to_data_type(
-				parser->obj_openapi)),
-			found_type, (found_format ? " format=" : ""),
-			(found_format ? found_format : ""),
-			data_get_type_string(src));
-	}
+	xassert(!is_complex_mode(args));
+
+	/*
+	 * Warn as this is user provided data and the parser may accept
+	 * the format anyway. Steer the user towards the formats given
+	 * in the OpenAPI specification as set in the parser.
+	 */
+	on_warn(PARSING, parser->type, args,
+		set_source_path(&path, parent_path), __func__,
+		"Expected OpenAPI type=%s%s%s (Slurm type=%s) but got OpenAPI type=%s%s%s (Slurm type=%s)",
+		oas_type, (oas_format ? " format=" : ""),
+		(oas_format ? oas_format : ""),
+		data_type_to_string(oas_data_type), found_type,
+		(found_format ? " format=" : ""),
+		(found_format ? found_format : ""), data_get_type_string(src));
 
 	xfree(path);
 }
@@ -979,7 +979,7 @@ extern int parse(void *dst, ssize_t dst_bytes, const parser_t *const parser,
 		xassert(parser->parse != _parse_list);
 		verify_parser_not_sliced(parser);
 
-		if (!(args->flags & FLAG_FAST))
+		if (!is_fast_mode(args) && !is_complex_mode(args))
 			_parse_check_openapi(parser, src, args, parent_path);
 
 		rc = parser->parse(parser, dst, src, args, parent_path);
