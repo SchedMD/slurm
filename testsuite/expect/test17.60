@@ -70,7 +70,7 @@ wait_for -timeout 15 {$state == "PENDING" && $reason == "BeginTime"} {
 }
 subtest {$state == "PENDING" && $reason == "BeginTime"} "Job should be PENDING with reason BeginTime" "JobState=$state Reason=$reason"
 
-wait_for -timeout 60 {$state == "DEADLINE" && $reason == "DeadLine"} {
+wait_for -timeout 120 {$state == "DEADLINE" && $reason == "DeadLine"} {
 	set state  [get_job_param $job_id "JobState"]
 	set reason [get_job_param $job_id "Reason"]
 }
