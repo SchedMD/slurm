@@ -164,6 +164,7 @@ static void _add_eflags(data_t *props, const parser_t *parser,
 }
 
 static void _add_field(data_t *obj, data_t *required,
+		       const parser_t *const parent,
 		       const parser_t *const pchild, spec_args_t *sargs)
 {
 	data_t *dchild;
@@ -181,7 +182,7 @@ static void _add_field(data_t *obj, data_t *required,
 		data_t *p = data_key_get(dchild, "properties");
 		_add_eflags(p, pchild, sargs);
 	} else {
-		_set_ref(dchild, NULL, pchild, sargs);
+		_set_ref(dchild, parent, pchild, sargs);
 	}
 }
 
@@ -270,8 +271,8 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 				data_set_list(data_key_set(obj, "required"));
 
 			for (int i = 0; i < parser->field_count; i++)
-				_add_field(obj, required, &parser->fields[i],
-					   sargs);
+				_add_field(obj, required, parser,
+					   &parser->fields[i], sargs);
 		} else if (!is_complex_mode(sargs->args)) {
 			fatal("%s: parser %s need to provide openapi specification, array type or pointer type",
 			      __func__, parser->type_string);
