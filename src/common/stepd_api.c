@@ -204,10 +204,10 @@ _step_connect(const char *directory, const char *nodename,
 static char *
 _guess_nodename(void)
 {
-	char host[256];
+	char host[HOST_NAME_MAX];
 	char *nodename = NULL;
 
-	if (gethostname_short(host, 256) != 0)
+	if (gethostname_short(host, sizeof(host)) != 0)
 		return NULL;
 
 	nodename = slurm_conf_get_nodename(host);
