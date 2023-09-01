@@ -1371,8 +1371,8 @@ static int DUMP_FUNC(ROLLUP_STATS)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-void SPEC_FUNC(ROLLUP_STATS)(const parser_t *const parser, args_t *args,
-			     data_t *spec, data_t *dst)
+static void SPEC_FUNC(ROLLUP_STATS)(const parser_t *const parser, args_t *args,
+				    data_t *spec, data_t *dst)
 {
 	data_t *items, *rec, *type, *types;
 
@@ -1602,8 +1602,8 @@ static int DUMP_FUNC(WCKEY_TAG)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-void SPEC_FUNC(WCKEY_TAG)(const parser_t *const parser, args_t *args,
-			  data_t *spec, data_t *dst)
+static void SPEC_FUNC(WCKEY_TAG)(const parser_t *const parser, args_t *args,
+				 data_t *spec, data_t *dst)
 {
 	data_t *flags, *fenum;
 	data_t *props =
@@ -3012,8 +3012,9 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_TYPE)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
-void SPEC_FUNC(STATS_MSG_RPCS_BY_TYPE)(const parser_t *const parser,
-				       args_t *args, data_t *spec, data_t *dst)
+static void SPEC_FUNC(STATS_MSG_RPCS_BY_TYPE)(const parser_t *const parser,
+					      args_t *args, data_t *spec,
+					      data_t *dst)
 {
 	data_t *items = set_openapi_props(dst, OPENAPI_FORMAT_ARRAY,
 					  "RPCs by message type");
@@ -3083,8 +3084,9 @@ static int DUMP_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
-void SPEC_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
-				       args_t *args, data_t *spec, data_t *dst)
+static void SPEC_FUNC(STATS_MSG_RPCS_BY_USER)(const parser_t *const parser,
+					      args_t *args, data_t *spec,
+					      data_t *dst)
 {
 	data_t *items =
 		set_openapi_props(dst, OPENAPI_FORMAT_ARRAY, "RPCs by user");
@@ -3974,8 +3976,8 @@ static int DUMP_FUNC(JOB_RES_NODES)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-void SPEC_FUNC(JOB_RES_NODES)(const parser_t *const parser, args_t *args,
-			      data_t *spec, data_t *dst)
+static void SPEC_FUNC(JOB_RES_NODES)(const parser_t *const parser, args_t *args,
+				     data_t *spec, data_t *dst)
 {
 	//FIXME: output of JOB_RES_NODES is not OpenAPI compliant
 	set_openapi_props(dst, OPENAPI_FORMAT_ARRAY, "job node resources");
