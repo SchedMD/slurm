@@ -290,6 +290,10 @@ documents those changes that are of interest to users and administrators.
  -- slurmdbd - Avoid potential NULL pointer dereference in the mysql plugin.
  -- Revert a change in 23.02 where SLURM_NTASKS was no longer set in the job's
     environment when --ntasks-per-node was requested.
+ -- Limit periodic node registrations to 50 instead of the full TreeWidth.
+    Since unresolvable cloud/dynamic nodes must disable fanout by setting
+    TreeWidth to a large number, this would cause all nodes to register at
+    once.
 
 * Changes in Slurm 23.02.4
 ==========================
