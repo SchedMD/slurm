@@ -2156,7 +2156,7 @@ static int arg_set_gres(slurm_opt_t *opt, const char *arg)
 
 	xfree(opt->gres);
 	/*
-	 * Do not prepend "gres:" to none; none is handled specially by
+	 * Do not prepend "gres/" to none; none is handled specially by
 	 * slurmctld to mean "do not copy the job's GRES to the step" -
 	 * see _copy_job_tres_to_step()
 	 */
@@ -2181,7 +2181,7 @@ static int arg_set_data_gres(slurm_opt_t *opt, const data_t *arg,
 	} else {
 		xfree(opt->gres);
 		/*
-		 * Do not prepend "gres:" to none; none is handled specially by
+		 * Do not prepend "gres/" to none; none is handled specially by
 		 * slurmctld to mean "do not copy the job's GRES to the step" -
 		 * see _copy_job_tres_to_step()
 		 */
@@ -6111,7 +6111,7 @@ extern bool slurm_option_get_tres_per_tres(
 	uint64_t value = 0;
 
 	xassert(save_ptr);
-	*rc = slurm_get_next_tres("gres:", in_val, &name, &type,
+	*rc = slurm_get_next_tres("gres/", in_val, &name, &type,
 				  &value, save_ptr);
 	xfree(type);
 
@@ -6135,38 +6135,41 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 {
 	char *cpu_per_task_ptr = NULL;
 
-	if (xstrcasestr(opt->tres_per_task, "=mem:") ||
-	    xstrcasestr(opt->tres_per_task, ",mem:")) {
+	if (xstrcasestr(opt->tres_per_task, "=mem") ||
+	    xstrcasestr(opt->tres_per_task, ",mem")) {
 		fatal("Invalid TRES for --tres-per-task: mem");
-	} else if (xstrcasestr(opt->tres_per_task, "=energy:") ||
-		   xstrcasestr(opt->tres_per_task, ",energy:")) {
+	} else if (xstrcasestr(opt->tres_per_task, "=energy") ||
+		   xstrcasestr(opt->tres_per_task, ",energy")) {
 		fatal("Invalid TRES for --tres-per-task: energy");
-	} else if (xstrcasestr(opt->tres_per_task, "=node:") ||
-		   xstrcasestr(opt->tres_per_task, ",node:")) {
+	} else if (xstrcasestr(opt->tres_per_task, "=node") ||
+		   xstrcasestr(opt->tres_per_task, ",node")) {
 		fatal("Invalid TRES for --tres-per-task: node");
-	} else if (xstrcasestr(opt->tres_per_task, "=billing:") ||
-		   xstrcasestr(opt->tres_per_task, ",billing:")) {
+	} else if (xstrcasestr(opt->tres_per_task, "=billing") ||
+		   xstrcasestr(opt->tres_per_task, ",billing")) {
 		fatal("Invalid TRES for --tres-per-task: billing");
-	} else if (xstrcasestr(opt->tres_per_task, "=fs:") ||
-		   xstrcasestr(opt->tres_per_task, ",fs:")) {
+	} else if (xstrcasestr(opt->tres_per_task, "=fs") ||
+		   xstrcasestr(opt->tres_per_task, ",fs")) {
 		fatal("Invalid TRES for --tres-per-task: fs");
-	} else if (xstrcasestr(opt->tres_per_task, "=vmem:") ||
-		   xstrcasestr(opt->tres_per_task, ",vmem:")) {
+	} else if (xstrcasestr(opt->tres_per_task, "=vmem") ||
+		   xstrcasestr(opt->tres_per_task, ",vmem")) {
 		fatal("Invalid TRES for --tres-per-task: vmem");
-	} else if (xstrcasestr(opt->tres_per_task, "=pages:") ||
-		   xstrcasestr(opt->tres_per_task, ",pages:")) {
+	} else if (xstrcasestr(opt->tres_per_task, "=pages") ||
+		   xstrcasestr(opt->tres_per_task, ",pages")) {
 		fatal("Invalid TRES for --tres-per-task: pages");
-	} else if (xstrcasestr(opt->tres_per_task, "=bb:") ||
-		   xstrcasestr(opt->tres_per_task, ",bb:")) {
+	} else if (xstrcasestr(opt->tres_per_task, "=bb") ||
+		   xstrcasestr(opt->tres_per_task, ",bb")) {
 		fatal("Invalid TRES for --tres-per-task: bb");
 	}
+
+	xstrsubstituteall(opt->tres_per_task, "license:", "license/");
+	xstrsubstituteall(opt->tres_per_task, "gres:", "gres/");
 
 	/*
 	 * FIXME: "gpu:" is not a perfect test. --tres-per-task=gpu is
 	 * also permitted and would not trigger this check.
 	 */
 	if (xstrcasestr(opt->tres_per_task, "gpu:") && opt->gpus_per_task)
-		fatal("You can not have --tres-per-task=gres:gpu: and --gpus-per-task please use one or the other");
+		fatal("You can not have --tres-per-task=gres/gpu: and --gpus-per-task please use one or the other");
 
 	/* See if cpus-per-task was set with tres-per-task */
 	cpu_per_task_ptr = xstrcasestr(opt->tres_per_task, "cpu:");
@@ -6318,7 +6321,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	job_desc->cpu_freq_gov = opt_local->cpu_freq_gov;
 
 	if (opt_local->cpus_per_gpu)
-		xstrfmtcat(job_desc->cpus_per_tres, "gres:gpu:%d",
+		xstrfmtcat(job_desc->cpus_per_tres, "gres/gpu:%d",
 			   opt_local->cpus_per_gpu);
 
 	/* crontab_entry not filled in here */
@@ -6368,7 +6371,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	job_desc->mem_bind_type = opt_local->mem_bind_type;
 
 	if (opt_local->mem_per_gpu != NO_VAL64)
-		xstrfmtcat(job_desc->mem_per_tres, "gres:gpu:%"PRIu64,
+		xstrfmtcat(job_desc->mem_per_tres, "gres/gpu:%"PRIu64,
 			   opt_local->mem_per_gpu);
 
 	if (set_defaults || slurm_option_isset(opt_local, "name"))
@@ -6489,8 +6492,8 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	job_desc->tres_bind = xstrdup(opt_local->tres_bind);
 	job_desc->tres_freq = xstrdup(opt_local->tres_freq);
-	xfmt_tres(&job_desc->tres_per_job, "gres:gpu", opt_local->gpus);
-	xfmt_tres(&job_desc->tres_per_node, "gres:gpu",
+	xfmt_tres(&job_desc->tres_per_job, "gres/gpu", opt_local->gpus);
+	xfmt_tres(&job_desc->tres_per_node, "gres/gpu",
 		  opt_local->gpus_per_node);
 	/* --gres=none for jobs means no GRES, so don't send it to slurmctld */
 	if (opt_local->gres && xstrcasecmp(opt_local->gres, "NONE")) {
@@ -6500,14 +6503,14 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 		else
 			job_desc->tres_per_node = xstrdup(opt_local->gres);
 	}
-	xfmt_tres(&job_desc->tres_per_socket, "gres:gpu",
+	xfmt_tres(&job_desc->tres_per_socket, "gres/gpu",
 		  opt_local->gpus_per_socket);
 
 	job_desc->tres_per_task = xstrdup(opt_local->tres_per_task);
 
 	if (opt_local->gpus_per_task &&
-	    !xstrcasestr(job_desc->tres_per_task, "gres:gpu"))
-		xfmt_tres(&job_desc->tres_per_task, "gres:gpu",
+	    !xstrcasestr(job_desc->tres_per_task, "gres/gpu"))
+		xfmt_tres(&job_desc->tres_per_task, "gres/gpu",
 			  opt_local->gpus_per_task);
 
 	job_desc->user_id = opt_local->uid;

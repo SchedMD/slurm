@@ -50,7 +50,7 @@ if [compile_against_libslurm -full $test_prog] {
 
 log_info "====test7.17.1===="
 set cpu_match 0
-spawn ./$test_prog "gres:gpu:2" "$cfgdir" "/test7.17.1" 8
+spawn ./$test_prog "gres/gpu:2" "$cfgdir" "/test7.17.1" 8
 expect {
 	-re "failure" {
 		fail "Failure running test program test7.17.1"
@@ -67,7 +67,7 @@ subtest {$cpu_match == 1} "Verify correct number of cores" "$cpu_match"
 
 log_info "====test7.17.2===="
 set cpu_match 0
-spawn ./$test_prog "gres:gpu:2" "$cfgdir" "/test7.17.2" 16
+spawn ./$test_prog "gres/gpu:2" "$cfgdir" "/test7.17.2" 16
 expect {
 	-re "failure" {
 		fail "Failure running program test7.17.2"
@@ -84,7 +84,7 @@ subtest {$cpu_match == 1} "Verify correct number of cpus" "$cpu_match"
 
 log_info "====test7.17.3===="
 set cpu_match 0
-spawn ./$test_prog "gres:gpu:2" "$cfgdir" "/test7.17.3" 16
+spawn ./$test_prog "gres/gpu:2" "$cfgdir" "/test7.17.3" 16
 expect {
 	-re "failure" {
 		fail "Failure running test program test7.17.3"
@@ -101,7 +101,7 @@ subtest {$cpu_match == 1} "Number of cpus should be 16" "$cpu_match"
 
 log_info "====test7.17.4===="
 set cpu_match 0
-spawn ./$test_prog "gres:gpu:2" "$cfgdir" "/test7.17.4" 16
+spawn ./$test_prog "gres/gpu:2" "$cfgdir" "/test7.17.4" 16
 expect {
 	-re "failure" {
 		fail "Failure running test program test7.17.4"
@@ -123,7 +123,7 @@ subtest {$cpu_match == 1} "Number of cpus should be ALL" "$cpu_match"
 # Run a job with invalid job allocation
 log_info "====test7.17.5===="
 set fail_match 0
-spawn ./$test_prog "gres:craynetworks:100" "$cfgdir" "/test7.17.5" 16
+spawn ./$test_prog "gres/craynetworks:100" "$cfgdir" "/test7.17.5" 16
 expect {
 	-re "failure" {
 		log_debug "This error is expected"
@@ -139,7 +139,7 @@ subtest {$fail_match == 1} "A job run with invalid job allocation (craynetworks:
 # Run with no gres.conf file
 log_info "====test7.17.6===="
 set fail_match 0
-spawn ./$test_prog "gres:gpu:2" "$cfgdir" "/test7.17.6" 0
+spawn ./$test_prog "gres/gpu:2" "$cfgdir" "/test7.17.6" 0
 expect {
 	-re "failure" {
 		log_debug "This error is expected"
@@ -155,7 +155,7 @@ subtest {$fail_match == 1} "A job run with no gres.conf file should fail" "$fail
 # Test with invalid job allocation
 log_info "====test7.17.7===="
 set fail_match 0
-spawn ./$test_prog "gres:gpu:2" "$cfgdir" "/test7.17.7" 8
+spawn ./$test_prog "gres/gpu:2" "$cfgdir" "/test7.17.7" 8
 expect {
 	-re "fatal" {
 		log_debug "This error is expected"

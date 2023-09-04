@@ -5521,7 +5521,7 @@ static int _get_next_gres(char *in_val, char **type_ptr, int *context_inx_ptr,
 	xassert(cnt);
 	xassert(save_ptr);
 
-	rc = slurm_get_next_tres("gres:", in_val, &name, &type,
+	rc = slurm_get_next_tres("gres", in_val, &name, &type,
 				 &value, save_ptr);
 	if (name) {
 		for (i = 0; i < gres_context_cnt; i++) {
@@ -5979,7 +5979,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 		 */
 		uint32_t gpus = *num_tasks / *ntasks_per_tres;
 		char *save_ptr = NULL, *gres = NULL, *in_val;
-		xstrfmtcat(gres, "gres:gpu:%u", gpus);
+		xstrfmtcat(gres, "gres/gpu:%u", gpus);
 		in_val = gres;
 		while ((gres_state_job = _get_next_job_gres(in_val, &cnt,
 							    *gres_list,
@@ -8037,7 +8037,7 @@ static int _handle_ntasks_per_tres_step(List new_step_list,
 		uint32_t gpus = *num_tasks / ntasks_per_tres;
 		/* For now, do type-less GPUs */
 		char *save_ptr = NULL, *gres = NULL, *in_val;
-		xstrfmtcat(gres, "gres:gpu:%u", gpus);
+		xstrfmtcat(gres, "gres/gpu:%u", gpus);
 		in_val = gres;
 		if (*num_tasks != ntasks_per_tres * gpus) {
 			log_flag(GRES, "%s: -n/--ntasks %u is not a multiple of --ntasks-per-gpu=%u",
@@ -10104,9 +10104,9 @@ extern char *gres_prepend_tres_type(const char *gres_str)
 	char *output = NULL;
 
 	if (gres_str) {
-		output = xstrdup_printf("gres:%s", gres_str);
-		xstrsubstituteall(output, ",", ",gres:");
-		xstrsubstituteall(output, "gres:gres:", "gres:");
+		output = xstrdup_printf("gres/%s", gres_str);
+		xstrsubstituteall(output, ",", ",gres/");
+		xstrsubstituteall(output, "gres/gres/", "gres/");
 	}
 	return output;
 }

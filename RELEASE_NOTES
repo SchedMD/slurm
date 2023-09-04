@@ -134,6 +134,8 @@ COMMAND CHANGES (see man pages for details)
  -- sdiag - Added statistics on why the main and backfill schedulers have
     stopped evaluation on each scheduling cycle.
  -- Rename sbcast --fanout to --treewidth.
+ -- salloc/sbatch/srun - When requesting --tres-per-task alter incorrect
+    request for TRES, it should be TRESType/TRESName not TRESType:TRESName.
 
 API CHANGES
 ===========

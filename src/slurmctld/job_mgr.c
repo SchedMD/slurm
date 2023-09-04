@@ -7296,7 +7296,7 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 {
 	char *lic_req = NULL, *lic_req_pos = NULL;
 	char *sep = "";
-	char *tres_type = "license:";
+	char *tres_type = "license";
 	uint32_t num_tasks = job_desc->num_tasks;
 	char *tres_per_task = job_desc->tres_per_task;
 
@@ -9144,8 +9144,8 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 
 /*
  * Validate TRES specification of the form:
- * "name=tres_type:name:[#|type:#]"
- * For example: "cpu:2,gres:gpu:kepler:2,gres:craynetwork:1"
+ * "name=tres_type/name|count[:#|type:#]"
+ * For example: "cpu:2,gres/gpu:kepler:2,gres/craynetwork:1"
  */
 extern bool valid_tres_cnt(char *tres)
 {
@@ -9187,7 +9187,7 @@ extern bool valid_tres_cnt(char *tres)
 		}
 
 		/* Now check to see what the first part is */
-		if (!(sep = strchr(tok, ':'))) {
+		if (!(sep = strchr(tok, '/'))) {
 			rc = false;
 			break;
 		}
@@ -13015,7 +13015,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (job_desc->licenses && !job_desc->licenses[0])
 		job_desc->bitflags |= RESET_LIC_JOB;
 	if (job_desc->tres_per_task &&
-	    !xstrcasestr(job_desc->tres_per_task, "license:"))
+	    !xstrcasestr(job_desc->tres_per_task, "license/"))
 		job_desc->bitflags |= RESET_LIC_TASK;
 
 	_set_tot_license_req(job_desc, job_ptr);

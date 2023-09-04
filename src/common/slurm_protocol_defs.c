@@ -6905,7 +6905,12 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 		*name_ptr = NULL;
 		goto fini;
 	} else {
-		sep += tres_type_len; /* strlen "gres:" */
+		sep += tres_type_len; /* strlen "gres" */
+		*save_ptr = sep;
+	}
+
+	if (sep[0] == '/') {
+		sep++;
 		*save_ptr = sep;
 	}
 

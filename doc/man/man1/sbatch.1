@@ -2388,7 +2388,7 @@ Different units can be specified using the suffix [K|M|G|T].
 \fB\-\-tres\-per\-task\fR=<\fIlist\fR>
 Specifies a comma\-delimited list of trackable resources required for the job on
 each task to be spawned in the job's resource allocation.
-The format for each entry in the list is "trestype:[tresname:]count".
+The format for each entry in the list is "trestype/[tresname:]count".
 The \fItrestype\fR is the type of trackable resource requested (e.g. cpu, gres,
 license, etc).
 The \fItresname\fR is the name of the trackable resource, as can be seen with
@@ -2411,9 +2411,9 @@ The count can have a suffix of
 Examples:
 .nf
 \-\-tres\-per\-task=cpu:4
-\-\-tres\-per\-task=cpu:8,license:ansys:1
-\-\-tres\-per\-task=gres:gpu:1
-\-\-tres\-per\-task=gres:gpu:a100:2
+\-\-tres\-per\-task=cpu:8,license/ansys:1
+\-\-tres\-per\-task=gres/gpu:1
+\-\-tres\-per\-task=gres/gpu:a100:2
 .fi
 The specified resources will be allocated to the job on each node.
 The available trackable resources are configurable by the system
