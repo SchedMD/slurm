@@ -1968,7 +1968,8 @@ extern int slurm_get_rep_count_inx(
 
 /*
  * Reentrant TRES specification parse logic
- * tres_type IN - type of tres we are looking for
+ * tres_type IN/OUT - type of tres we are looking for, If *tres_type is NULL we
+ *                    will fill it in
  * in_val IN - initial input string
  * name OUT -  must be xfreed by caller
  * type OUT -  must be xfreed by caller
@@ -1977,7 +1978,7 @@ extern int slurm_get_rep_count_inx(
  * RET rc - error code
  */
 extern int slurm_get_next_tres(
-	char *tres_type, char *in_val, char **name_ptr, char **type_ptr,
+	char **tres_type, char *in_val, char **name_ptr, char **type_ptr,
 	uint64_t *cnt, char **save_ptr);
 
 /*

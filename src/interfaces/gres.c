@@ -5514,14 +5514,14 @@ static int _test_gres_cnt(gres_state_t *gres_state_job,
 static int _get_next_gres(char *in_val, char **type_ptr, int *context_inx_ptr,
 			  uint64_t *cnt, char **save_ptr)
 {
-	char *name = NULL, *type = NULL;
+	char *name = NULL, *type = NULL, *tres_type = "gres";
 	int i, rc = SLURM_SUCCESS;
 	uint64_t value = 0;
 
 	xassert(cnt);
 	xassert(save_ptr);
 
-	rc = slurm_get_next_tres("gres", in_val, &name, &type,
+	rc = slurm_get_next_tres(&tres_type, in_val, &name, &type,
 				 &value, save_ptr);
 	if (name) {
 		for (i = 0; i < gres_context_cnt; i++) {

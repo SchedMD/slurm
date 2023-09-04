@@ -6872,11 +6872,11 @@ extern int slurm_get_rep_count_inx(
 }
 
 extern int slurm_get_next_tres(
-	char *tres_type, char *in_val, char **name_ptr, char **type_ptr,
+	char **tres_type, char *in_val, char **name_ptr, char **type_ptr,
 	uint64_t *cnt, char **save_ptr)
 {
 	char *comma, *sep, *sep2, *name = NULL, *type = NULL;
-	int rc = SLURM_SUCCESS, tres_type_len;
+	int rc = SLURM_SUCCESS, tres_type_len = 0;
 	unsigned long long int value = 0;
 
 	xassert(tres_type);
@@ -6891,28 +6891,63 @@ extern int slurm_get_next_tres(
 		*save_ptr = in_val;
 	}
 
-	tres_type_len = strlen(tres_type);
+	if (*tres_type)
+		tres_type_len = strlen(*tres_type);
 
 next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 		*save_ptr = NULL;
 		goto fini;
 	}
 
-	if (!(sep = xstrstr(*save_ptr, tres_type))) {
-		debug2("%s is not a %s", *save_ptr, tres_type);
-		xfree(name);
+	if (*tres_type) {
+		if (!(sep = xstrstr(*save_ptr, *tres_type))) {
+			debug2("%s is not a %s", *save_ptr, *tres_type);
+			xfree(name);
+			*save_ptr = NULL;
+			*name_ptr = NULL;
+			goto fini;
+		} else {
+			sep += tres_type_len; /* strlen "gres" */
+			*save_ptr = sep;
+		}
+	} else {
+		char extra = '\0';
+		comma = strchr(*save_ptr, ',');
+
+		/*
+		 * This is original memory so anything we change here needs to
+		 * be put back to the way it was before we starting messing with
+		 * it.
+		 */
+		if (comma)
+			comma[0] = '\0';
+
+		if ((sep = strchr(*save_ptr, '/')) ||
+		    (sep = strchr(*save_ptr, ':')) ||
+		    (sep = strchr(*save_ptr, '='))) {
+			extra = sep[0];
+			sep[0] = '\0';
+		}
+
+		*tres_type = xstrdup(*save_ptr);
+
+		if (comma)
+			comma[0] = ',';
+		if (sep) {
+			sep[0] = extra;
+			*save_ptr = sep;
+		} else
+			*save_ptr += strlen(*tres_type);
+	}
+
+	if (!*tres_type) {
 		*save_ptr = NULL;
 		*name_ptr = NULL;
 		goto fini;
-	} else {
-		sep += tres_type_len; /* strlen "gres" */
-		*save_ptr = sep;
 	}
 
-	if (sep[0] == '/') {
-		sep++;
-		*save_ptr = sep;
-	}
+	if (*save_ptr[0] == '/')
+		(*save_ptr)++;
 
 	name = xstrdup(*save_ptr);
 	comma = strchr(name, ',');
@@ -6952,7 +6987,7 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 		type = xstrdup(sep);
 		if (!_is_valid_number(sep2, &value)) {
 			debug("%s: Invalid count value TRES %s%s:%s:%s", __func__,
-			      tres_type, name, type, sep2);
+			      *tres_type, name, type, sep2);
 			rc = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -6976,9 +7011,9 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 	}
 
 	/* Only 'gres' tres have 'types' */
-	if (type && xstrcasecmp(tres_type, "gres")) {
+	if (type && xstrcasecmp(*tres_type, "gres")) {
 		error("TRES '%s' can't have a type (%s:%s)",
-		      tres_type, name, type);
+		      *tres_type, name, type);
 		rc = ESLURM_INVALID_TRES;
 		xfree(type);
 		goto fini;
@@ -7003,6 +7038,8 @@ fini:	if (rc != SLURM_SUCCESS) {
 	} else {
 		*cnt = value;
 		*type_ptr = type;
+		if (name && name[0] == '\0')
+			xfree(name);
 		*name_ptr = name;
 	}
 
@@ -7021,7 +7058,7 @@ extern char *slurm_get_tres_sub_string(
 	if (!tres_type)
 		free_tres_type = true;
 
-	while ((slurm_get_next_tres(tres_type,
+	while ((slurm_get_next_tres(&tres_type,
 				    full_tres_str,
 				    &name, &type,
 				    &cnt, &save_ptr) == SLURM_SUCCESS) &&

@@ -6107,11 +6107,11 @@ static void _validate_share_options(slurm_opt_t *opt)
 extern bool slurm_option_get_tres_per_tres(
 	char *in_val, char *tres_name, uint64_t *cnt, char **save_ptr, int *rc)
 {
-	char *name = NULL, *type = NULL;
+	char *name = NULL, *type = NULL, *tres_type = "gres";
 	uint64_t value = 0;
 
 	xassert(save_ptr);
-	*rc = slurm_get_next_tres("gres/", in_val, &name, &type,
+	*rc = slurm_get_next_tres(&tres_type, in_val, &name, &type,
 				  &value, save_ptr);
 	xfree(type);
 
