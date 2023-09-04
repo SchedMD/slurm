@@ -3365,11 +3365,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int
-_unpack_job_info_msg(job_info_msg_t ** msg, buf_t *buffer,
-		     uint16_t protocol_version)
+static int _unpack_job_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_info_t *job = NULL;
+	job_info_msg_t **msg = (job_info_msg_t **) &smsg->data;
+	uint16_t protocol_version = smsg->protocol_version;
 
 	xassert(msg);
 	*msg = xmalloc(sizeof(job_info_msg_t));
@@ -12247,9 +12247,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_container_id_response_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_INFO:
-		rc = _unpack_job_info_msg((job_info_msg_t **) & (msg->data),
-					  buffer,
-					  msg->protocol_version);
+		rc = _unpack_job_info_msg(msg, buffer);
 		break;
 	case RESPONSE_BATCH_SCRIPT:
 		rc = _unpack_job_script_msg((char **) &(msg->data),
