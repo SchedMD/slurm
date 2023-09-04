@@ -3369,13 +3369,12 @@ static int _unpack_job_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_info_t *job = NULL;
 	job_info_msg_t **msg = (job_info_msg_t **) &smsg->data;
-	uint16_t protocol_version = smsg->protocol_version;
 
 	xassert(msg);
 	*msg = xmalloc(sizeof(job_info_msg_t));
 
 	/* load buffer's header (data structure version and time) */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&((*msg)->record_count), buffer);
 		safe_unpack_time(&((*msg)->last_update), buffer);
 		safe_unpack_time(&((*msg)->last_backfill), buffer);
@@ -3390,7 +3389,7 @@ static int _unpack_job_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 	for (int i = 0; i < (*msg)->record_count; i++) {
 		job_info_t *job_ptr = &job[i];
 		if (_unpack_job_info_members(job_ptr, buffer,
-					     protocol_version))
+					     smsg->protocol_version))
 			goto unpack_error;
 		if ((job_ptr->bitflags & BACKFILL_SCHED) &&
 		    (*msg)->last_backfill &&
