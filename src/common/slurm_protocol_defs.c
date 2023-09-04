@@ -6929,12 +6929,12 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 		goto next;
 	}
 
-	sep = strchr(name, ':');
-	if (sep) {
+	if ((sep = strchr(name, ':')) ||
+	    (sep = strchr(name, '='))) {
 		sep[0] = '\0';
 		sep++;
-		sep2 = strchr(sep, ':');
-		if (sep2) {
+		if ((sep2 = strchr(name, ':')) ||
+		    (sep2 = strchr(name, '='))) {
 			sep2[0] = '\0';
 			sep2++;
 		}

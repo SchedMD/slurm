@@ -9136,7 +9136,8 @@ extern bool valid_tres_cnt(char *tres)
 		int pos;
 
 		/* First check to see if the last part is a count or not */
-		if ((value = strrchr(tok, ':'))) {
+		if ((value = strrchr(tok, ':')) ||
+		    (value = strrchr(tok, '='))) {
 			if (!value[1]) {
 				rc = false;
 				break;
