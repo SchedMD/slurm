@@ -5910,7 +5910,8 @@ static void _validate_threads_per_core_option(slurm_opt_t *opt)
 					      &opt->srun_opt->cpu_bind,
 					      &opt->srun_opt->cpu_bind_type);
 	} else if (opt->srun_opt &&
-		   !xstrcmp(opt->srun_opt->cpu_bind, "verbose")) {
+		  (!xstrcasecmp(opt->srun_opt->cpu_bind, "verbose") ||
+		   !xstrcasecmp(opt->srun_opt->cpu_bind, "v"))) {
 		if (opt->verbose)
 			info("Setting --cpu-bind=threads,verbose as a default of --threads-per-core use");
 		if (opt->srun_opt)
