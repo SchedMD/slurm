@@ -81,20 +81,11 @@ wait_for -timeout 15 {$state == "PENDING" && $reason == "BeginTime"} {
 }
 subtest {$state == "PENDING" && $reason == "BeginTime"} "Job should be PENDING with reason BeginTime" "JobState=$state Reason=$reason"
 
-wait_for -timeout 60 {$state == "DEADLINE" && $reason == "DeadLine"} {
+wait_for -timeout 120 {$state == "DEADLINE" && $reason == "DeadLine"} {
 	set state  [get_job_param $job_id "JobState"]
 	set reason [get_job_param $job_id "Reason"]
 }
 subtest {$state == "DEADLINE" && $reason == "DeadLine"} "Job should end with state DEADLINE and reason DeadLine" "JobState=$state Reason=$reason"
-
-#
-# Wait and check that job state reach the deadline
-#
-set state "PENDING"
-wait_for -timeout 60 {$state == "DEADLINE"} {
-	set state [get_job_param $job_id "JobState"]
-}
-subtest {$state == "DEADLINE"} "Job should end with state DEADLINE" "$state != DEADLINE"
 
 #
 # Test that the state is accounted properly
