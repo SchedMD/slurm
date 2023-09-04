@@ -3368,41 +3368,39 @@ unpack_error:
 static int _unpack_job_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_info_t *job = NULL;
-	job_info_msg_t **msg = (job_info_msg_t **) &smsg->data;
+	job_info_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg);
-	*msg = xmalloc(sizeof(job_info_msg_t));
+	smsg->data = msg;
 
 	/* load buffer's header (data structure version and time) */
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&((*msg)->record_count), buffer);
-		safe_unpack_time(&((*msg)->last_update), buffer);
-		safe_unpack_time(&((*msg)->last_backfill), buffer);
+		safe_unpack32(&msg->record_count, buffer);
+		safe_unpack_time(&msg->last_update, buffer);
+		safe_unpack_time(&msg->last_backfill, buffer);
 	}
 
-	if ((*msg)->record_count) {
-		safe_xcalloc((*msg)->job_array, (*msg)->record_count,
+	if (msg->record_count) {
+		safe_xcalloc(msg->job_array, msg->record_count,
 			     sizeof(job_info_t));
-		job = (*msg)->job_array;
+		job = msg->job_array;
 	}
 	/* load individual job info */
-	for (int i = 0; i < (*msg)->record_count; i++) {
+	for (int i = 0; i < msg->record_count; i++) {
 		job_info_t *job_ptr = &job[i];
 		if (_unpack_job_info_members(job_ptr, buffer,
 					     smsg->protocol_version))
 			goto unpack_error;
 		if ((job_ptr->bitflags & BACKFILL_SCHED) &&
-		    (*msg)->last_backfill &&
-		    IS_JOB_PENDING(job_ptr) &&
-		    ((*msg)->last_backfill <= job_ptr->last_sched_eval))
+		    msg->last_backfill && IS_JOB_PENDING(job_ptr) &&
+		    (msg->last_backfill <= job_ptr->last_sched_eval))
 			job_ptr->bitflags |= BACKFILL_LAST;
 	}
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_job_info_msg(*msg);
-	*msg = NULL;
+	slurm_free_job_info_msg(msg);
+	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
