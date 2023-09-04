@@ -300,6 +300,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/[db]v0.0.39 - fix memory leak on parsing error.
  -- data_parser/v0.0.39 - fix updating qos for associations.
  -- openapi/dbv0.0.39 - fix updating values for associations with null users.
+ -- Fix minor memory leak with --tres-per-task and licenses.
 
 * Changes in Slurm 23.02.4
 ==========================
