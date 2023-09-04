@@ -7413,7 +7413,7 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 		if (!lic_req)
 			lic_req = xstrdup("");
 	} else if (tres_per_task) {
-		char *name, *type, *save_ptr = NULL;
+		char *name = NULL, *type = NULL, *save_ptr = NULL;
 		uint64_t cnt = 0;
 
 		while ((slurm_get_next_tres(tres_type,
@@ -7437,6 +7437,7 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 				cnt *= num_tasks;
 			xstrfmtcatat(lic_req, &lic_req_pos, "%s%s:%"PRIu64,
 				     sep, name, cnt);
+			xfree(name);
 		}
 	}
 
