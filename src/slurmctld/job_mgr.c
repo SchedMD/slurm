@@ -7295,8 +7295,6 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 				 job_record_t *job_ptr)
 {
 	char *lic_req = NULL, *lic_req_pos = NULL;
-	char *sep = "";
-	char *tres_type = "license";
 	uint32_t num_tasks = job_desc->num_tasks;
 	char *tres_per_task = job_desc->tres_per_task;
 
@@ -7325,32 +7323,8 @@ static void _set_tot_license_req(job_desc_msg_t *job_desc,
 		if (!lic_req)
 			lic_req = xstrdup("");
 	} else if (tres_per_task) {
-		char *name = NULL, *type = NULL, *save_ptr = NULL;
-		uint64_t cnt = 0;
-
-		while ((slurm_get_next_tres(tres_type,
-					    tres_per_task,
-					    &name, &type,
-					    &cnt, &save_ptr) != SLURM_ERROR) &&
-		       save_ptr) {
-			if (type) {
-				error("licenses don't have types (%s:%s), throwing away",
-				      name, type);
-				xfree(type);
-			}
-			if (!name) {
-				error("license doesn't have a name! %s",
-				      tres_per_task);
-				break;
-			}
-			if (lic_req)
-				sep = ",";
-			if (num_tasks != NO_VAL)
-				cnt *= num_tasks;
-			xstrfmtcatat(lic_req, &lic_req_pos, "%s%s:%"PRIu64,
-				     sep, name, cnt);
-			xfree(name);
-		}
+		lic_req = slurm_get_tres_sub_string(
+			tres_per_task, "license", num_tasks, false, false);
 	}
 
 	xfree(job_desc->licenses_tot);

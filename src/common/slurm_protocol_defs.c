@@ -7009,6 +7009,55 @@ fini:	if (rc != SLURM_SUCCESS) {
 	return rc;
 }
 
+extern char *slurm_get_tres_sub_string(
+	char *full_tres_str, char *tres_type, uint32_t num_tasks,
+	bool include_tres_type, bool include_type)
+{
+	char *sub_tres = NULL, *sub_tres_pos = NULL;
+	char *name, *type, *save_ptr = NULL;
+	uint64_t cnt = 0;
+	bool free_tres_type = false;
+
+	if (!tres_type)
+		free_tres_type = true;
+
+	while ((slurm_get_next_tres(tres_type,
+				    full_tres_str,
+				    &name, &type,
+				    &cnt, &save_ptr) != SLURM_ERROR) &&
+	       save_ptr) {
+		if (!name) {
+			error("%s doesn't have a name! %s",
+			      tres_type, full_tres_str);
+			xfree(type);
+			if (free_tres_type)
+				xfree(tres_type);
+			break;
+		}
+
+		if (num_tasks != NO_VAL)
+			cnt *= num_tasks;
+
+		if (sub_tres)
+			xstrcatat(sub_tres, &sub_tres_pos, ",");
+		if (include_tres_type)
+			xstrfmtcatat(sub_tres, &sub_tres_pos, "%s/", tres_type);
+		xstrfmtcatat(sub_tres, &sub_tres_pos, "%s", name);
+		if (include_type && type)
+			xstrfmtcatat(sub_tres, &sub_tres_pos, ":%s", type);
+		xstrfmtcatat(sub_tres, &sub_tres_pos, "=%"PRIu64, cnt);
+		if (free_tres_type)
+			xfree(tres_type);
+		xfree(name);
+		xfree(type);
+	}
+
+	if (free_tres_type)
+		xfree(tres_type);
+
+	return sub_tres;
+}
+
 extern uint32_t slurm_select_cr_type(void)
 {
 	static bool cr_set = false;

@@ -1981,6 +1981,20 @@ extern int slurm_get_next_tres(
 	uint64_t *cnt, char **save_ptr);
 
 /*
+ * Return a sub-string from full_tres_str for a specific TRES.
+ * full_tres_str IN - complete list of TRES.
+ * tres_type IN - type of tres we are looking for (NULL) for all
+ * num_tasks IN - number of tasks to multiply tres by (tres-per-task)
+ * include_tres_type IN - include the tres_type in the sub-string
+ * include_type IN - if a TRES has a name and type (GRES) include it in the
+ *                   sub-string.
+ * RET char * of tres_type we are looking for (xfreed by caller).
+ */
+extern char *slurm_get_tres_sub_string(
+	char *full_tres_str, char *tres_type, uint32_t num_tasks,
+	bool include_tres_type, bool include_type);
+
+/*
  * Return cached select cons res type.
  *
  * Returns SELECT_TYPE_CONS_TRES, SELECT_TYPE_CONS_RES or 0 (linear).
