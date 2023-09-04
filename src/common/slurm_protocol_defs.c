@@ -7024,7 +7024,7 @@ extern char *slurm_get_tres_sub_string(
 	while ((slurm_get_next_tres(tres_type,
 				    full_tres_str,
 				    &name, &type,
-				    &cnt, &save_ptr) != SLURM_ERROR) &&
+				    &cnt, &save_ptr) == SLURM_SUCCESS) &&
 	       save_ptr) {
 		if (!name) {
 			error("%s doesn't have a name! %s",
