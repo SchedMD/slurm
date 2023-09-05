@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "June 2023" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "October 2023" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -1653,6 +1653,15 @@ those nodes before the job completes.
 \fBFUTURE\fR
 Indicates the node is not fully configured, but is expected to be available
 at some point in the future.
+.IP
+
+.TP
+\fBIDLE\fR
+Will clear \fBDOWN\fR, \fBDRAIN\fR and \fBFAIL\fR states.
+Will set the state to \fBIDLE\fR and \fBNoResp\fR. slurmctld will then
+attempt to contact slurmd to request that the node register itself.
+Once registered, the node state will then remove the \fBNoResp\fR flag and
+will resume normal operations.
 .IP
 
 .TP

@@ -3889,6 +3889,7 @@ function __scontrol_update_nodename() {
 		"drain"
 		"fail"
 		"future"
+		"idle"
 		"noresp"
 		"power_down"
 		"power_down_asap"
