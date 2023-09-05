@@ -177,15 +177,19 @@ static char *_convert_to_id(char *name, bool gid)
  * value IN - numeric value
  * RET true if "tok" is a valid number
  */
-static bool _is_valid_number(char *tok, unsigned long long int *value)
+static bool _is_valid_number(char *tok, uint64_t *value)
 {
-	unsigned long long int tmp_val;
+	uint64_t tmp_val = 1;
 	uint64_t mult;
 	char *end_ptr = NULL;
 
-	tmp_val = strtoull(tok, &end_ptr, 10);
-	if (tmp_val == ULLONG_MAX)
+	if (isdigit(tok[0])) {
+		tmp_val = strtoull(tok, &end_ptr, 10);
+		if (tmp_val == ULLONG_MAX)
+			return false;
+	} else
 		return false;
+
 	if ((mult = suffix_mult(end_ptr)) == NO_VAL64)
 		return false;
 	tmp_val *= mult;
@@ -6875,9 +6879,10 @@ extern int slurm_get_next_tres(
 	char **tres_type, char *in_val, char **name_ptr, char **type_ptr,
 	uint64_t *cnt, char **save_ptr)
 {
-	char *comma, *sep, *sep2, *name = NULL, *type = NULL;
+	char *comma, *sep, *name = NULL, *type = NULL;
 	int rc = SLURM_SUCCESS, tres_type_len = 0;
-	unsigned long long int value = 0;
+	uint64_t value = 0;
+	bool is_gres = false;
 
 	xassert(tres_type);
 	xassert(cnt);
@@ -6960,58 +6965,61 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 
 	if (name[0] == '\0') {
 		/* Nothing but a comma */
+		if (!tres_type_len)
+			xfree(*tres_type);
 		xfree(name);
 		goto next;
 	}
 
-	if ((sep = strchr(name, ':')) ||
-	    (sep = strchr(name, '='))) {
+	is_gres = !xstrcasecmp(*tres_type, "gres");
+
+	/* First check to see if the last part is a count or not */
+	if ((sep = strrchr(name, '=')) ||
+	    (sep = strrchr(name, ':'))) {
+		bool equals = (sep[0] == '=') ? true : false, valid_num;
 		sep[0] = '\0';
 		sep++;
-		if ((sep2 = strchr(name, ':')) ||
-		    (sep2 = strchr(name, '='))) {
-			sep2[0] = '\0';
-			sep2++;
-		}
-	} else {
-		sep2 = NULL;
-	}
-
-	if (sep2) {		/* Two colons */
-		/* We have both type and count */
-		if ((sep[0] == '\0') || (sep2[0] == '\0')) {
-			/* Bad format (e.g. "gpu:tesla:" or "gpu::1") */
-			rc = ESLURM_INVALID_GRES;
-			goto fini;
-		}
-		type = xstrdup(sep);
-		if (!_is_valid_number(sep2, &value)) {
-			debug("%s: Invalid count value TRES %s%s:%s:%s", __func__,
-			      *tres_type, name, type, sep2);
-			rc = ESLURM_INVALID_TRES;
-			goto fini;
-		}
-	} else if (sep) {	/* One colon */
 		if (sep[0] == '\0') {
 			/* Bad format (e.g. "gpu:") */
 			rc = ESLURM_INVALID_TRES;
 			goto fini;
-		} else if (_is_valid_number(sep, &value)) {
-			/* We have count, but no type */
-			type = NULL;
-		} else {
+		}
+
+		valid_num = _is_valid_number(sep, &value);
+
+		if (!valid_num) {
+			if (equals) {
+				rc = ESLURM_INVALID_TRES;
+				goto fini;
+			}
 			/* We have type with implicit count of 1 */
 			type = xstrdup(sep);
 			value = 1;
 		}
-	} else {		/* No colon */
-		/* We have no type and implicit count of 1 */
-		type = NULL;
+	} else if (_is_valid_number(name, &value)) {
+		xfree(name); /* we got a valid number, we don't have a name */
+		goto fini;
+	} else
 		value = 1;
+
+	if ((sep = strchr(name, ':'))) {
+		sep[0] = '\0';
+		sep++;
+
+		/*
+		 * If we already have a type we know it was 'supposed' to be a
+		 * count.
+		 */
+		if (type) {
+			xfree(type);
+			rc = ESLURM_INVALID_TRES;
+			goto fini;
+		}
+		type = xstrdup(sep);
 	}
 
 	/* Only 'gres' tres have 'types' */
-	if (type && xstrcasecmp(*tres_type, "gres")) {
+	if (type && !is_gres) {
 		error("TRES '%s' can't have a type (%s:%s)",
 		      *tres_type, name, type);
 		rc = ESLURM_INVALID_TRES;
@@ -7031,6 +7039,8 @@ fini:	if (rc != SLURM_SUCCESS) {
 			info("%s: Invalid TRES job specification %s", __func__,
 			     in_val);
 		}
+		if (!tres_type_len)
+			xfree(*tres_type);
 		xfree(type);
 		xfree(name);
 		*type_ptr = NULL;
