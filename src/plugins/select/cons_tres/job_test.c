@@ -2664,10 +2664,10 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 
 			bit_and(bblock_bitmap, block_node_bitmap[block_inx]);
 			bit_and(bblock_bitmap, best_nodes_bitmap);
+			bit_and_not(bblock_bitmap, node_map);
 
 			for (j = 0; next_node_bitmap(bblock_bitmap, &j); j++) {
-				if (bit_test(node_map, j) ||
-				    !avail_cpu_per_node[j])
+				if (!avail_cpu_per_node[j])
 					continue;
 				avail_cpus = avail_cpu_per_node[j];
 				_cpus_to_use(&avail_cpus, rem_max_cpus,
@@ -2743,6 +2743,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 			break;
 
 		best_bblock_bitmap = bblock_node_bitmap[best_bblock_inx];
+		bit_and_not(best_bblock_bitmap, node_map);
 		bblock_required[best_bblock_inx] = true;
 		/*
 		 * NOTE: Ideally we would add nodes in order of resource
@@ -2751,7 +2752,7 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 		 */
 		for (i = 0; next_node_bitmap(best_bblock_bitmap, &i) &&
 			     (max_nodes > 0); i++) {
-			if (bit_test(node_map, i) || !avail_cpu_per_node[i])
+			if (!avail_cpu_per_node[i])
 				continue;
 			avail_cpus = avail_cpu_per_node[i];
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
