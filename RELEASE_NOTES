@@ -113,6 +113,8 @@ HIGHLIGHTS
     ignore any uid or gid that equal SLURM_AUTH_NOBODY (99). User and group ids
     are now resolved by the active auth plugin. To determine the actual job uid
     or gid you should use the RESPONSE_RESOURCE_ALLOCATION RPC.
+ -- job_submit plugins - num_tasks in the job description is no longer set for
+    salloc/sbatch requests --ntasks-per-node.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
