@@ -9123,95 +9123,47 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
  */
 extern bool valid_tres_cnt(char *tres)
 {
-	char *end_ptr = NULL, *value = NULL, *save_ptr = NULL, *sep, *tok, *tmp;
-	bool rc = true;
-	uint64_t count = 1;
+	char *tres_type = NULL, *name = NULL, *type = NULL, *save_ptr = NULL;
+	int rc = true, pos = -1;
+	uint64_t cnt = 0;
 
-	if (!tres || (tres[0] == '\0'))
-		return true;
-
-	tmp = xstrdup(tres);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		int pos;
-
-		/* First check to see if the last part is a count or not */
-		if ((value = strrchr(tok, ':')) ||
-		    (value = strrchr(tok, '='))) {
-			if (!value[1]) {
-				rc = false;
-				break;
-			}
-			if (isdigit(value[1])) {
-				count = strtoull(value + 1, &end_ptr, 10);
-
-				if (count == ULLONG_MAX) {
-					rc = false;
-					break;
-				}
-
-				/*
-				 * Now check that any count suffic is valid.
-				 */
-				if (suffix_mult(end_ptr) == NO_VAL64) {
-					rc = false;
-					break;
-				}
-			} else /* This isn't a value so set it to NULL */
-				value = NULL;
+	while (((rc = slurm_get_next_tres(&tres_type,
+					  tres,
+					  &name, &type,
+					  &cnt, &save_ptr)) == SLURM_SUCCESS) &&
+	       save_ptr) {
+		/*
+		 * This is here to handle the old craynetwork:0
+		 * Any gres that is formatted correctly and has a count
+		 * of 0 is valid to be thrown away but allow job to
+		 * allocate.
+		 */
+		xfree(type);
+		if (cnt == 0) {
+			xfree(tres_type);
+			xfree(name);
+			continue;
 		}
-
-		/* Now check to see what the first part is */
-		if (!(sep = strchr(tok, '/'))) {
-			rc = false;
-			break;
-		}
-
-		/* This means there was a sep */
-		if (value != sep) {
-			sep[0] = '\0';
-			sep++;
-		} else
-			sep = NULL;
-
-		/* Now we zero out value since we checked against sep */
-		if (value) {
-			value[0] = '\0';
-			/*
-			 * This is here to handle the old craynetwork:0
-			 * Any gres that is formatted correctly and has a count
-			 * of 0 is valid to be thrown away but allow job to
-			 * allocate.
-			 */
-			if (count == 0)
-				goto next;
-		}
-
 		/* gres doesn't have to be a TRES to be valid */
-		if (sep && !xstrcmp(tok, "gres")) {
-			/* We only want the first part of a gres for this */
-			if ((tok = strchr(sep, ':')))
-				tok[0] = '\0';
-			pos = valid_gres_name(sep) ? 1 : -1;
+		if (!xstrcmp(tres_type, "gres")) {
+			pos = valid_gres_name(name) ? 1 : -1;
 		} else {
 			slurmdb_tres_rec_t tres_rec = {
-				.type = tok,
-				.name = sep,
+				.type = tres_type,
+				.name = name,
 			};
-
 			pos = assoc_mgr_find_tres_pos(&tres_rec, false);
 		}
+		xfree(tres_type);
+		xfree(name);
 
 		if (pos == -1) {
-			rc = false;
+			rc = SLURM_ERROR;
 			break;
 		}
-	next:
-		tok = strtok_r(NULL, ",", &save_ptr);
 	}
-	xfree(tmp);
 
-	return rc;
+	return (rc == SLURM_SUCCESS) ? true : false;
 }
 
 /*
