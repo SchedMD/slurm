@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "August 2023" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "September 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -5428,20 +5428,24 @@ Configure SrunPortRange to use a range of ports above those used by RSIP,
 ideally 1000 or more ports, for example "SrunPortRange=60001\-63000".
 
 \fBNote\fR: \fBSrunPortRange\fR must be large enough to cover the expected
-number of srun ports created on a given submission node. A single srun opens
-3 listening ports plus 2 more for every 48 hosts. Example:
+number of srun ports created. A single srun opens 4 listening ports plus 2
+more for every 48 hosts beyond the first 48. Example:
 .IP
 .RS
-.TP 18
-\fBsrun \-N 48\fR will use 5 listening ports.
+.TP
+\fBsrun \-N 1\fR will use 4 listening ports.
 .IP
 
 .TP
-\fBsrun \-N 50\fR will use 7 listening ports.
+\fBsrun \-N 48\fR will use 4 listening ports.
 .IP
 
 .TP
-\fBsrun \-N 200\fR will use 13 listening ports.
+\fBsrun \-N 50\fR will use 6 listening ports.
+.IP
+
+.TP
+\fBsrun \-N 200\fR will use 12 listening ports.
 .RE
 .IP
 
