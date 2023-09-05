@@ -2130,7 +2130,9 @@ static int _pick_step_cores(step_record_t *step_ptr,
 				job_resrcs_ptr->core_bitmap);
 		}
 	}
-	cores_per_task = core_cnt / task_cnt;
+	cores_per_task = core_cnt + task_cnt - 1; /* Round up */
+	cores_per_task /= task_cnt;
+
 	/* select idle cores that fit all gres binding first */
 	if (_handle_core_select(step_ptr, job_resrcs_ptr,
 				all_gres_core_bitmap, job_node_inx,
