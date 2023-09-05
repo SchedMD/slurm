@@ -2447,7 +2447,10 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 		    (nw = list_find_first(node_weight_list, _topo_node_find,
 					  block_node_bitmap[i]))) {
 			if ((block_inx == -1) ||
-			    (nw->weight <= block_lowest_weight)) {
+			    (nw->weight < block_lowest_weight) ||
+			    ((nw->weight == block_lowest_weight) &&
+			     (block_node_cnt[i] <=
+			      block_node_cnt[block_inx]))) {
 				block_inx = i;
 				block_lowest_weight = nw->weight;
 			}
