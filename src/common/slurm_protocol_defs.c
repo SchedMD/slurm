@@ -6974,6 +6974,16 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 		type = NULL;
 		value = 1;
 	}
+
+	/* Only 'gres' tres have 'types' */
+	if (type && xstrcasecmp(tres_type, "gres")) {
+		error("TRES '%s' can't have a type (%s:%s)",
+		      tres_type, name, type);
+		rc = ESLURM_INVALID_TRES;
+		xfree(type);
+		goto fini;
+	}
+
 	if (value == 0) {
 		xfree(name);
 		xfree(type);
