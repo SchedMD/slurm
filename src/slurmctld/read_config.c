@@ -2533,8 +2533,18 @@ static int _restore_node_state(int recover,
 	if (slurm_conf.suspend_program && slurm_conf.resume_program)
 		power_save_mode = true;
 
-	for (i = 0; (node_ptr = next_node(&i)); i++)
+	for (i = 0; (node_ptr = next_node(&i)); i++) {
+		if (IS_NODE_DYNAMIC_NORM(node_ptr)) {
+			/*
+			 * Dynamic norm nodes are moved from old_node_table_ptr
+			 * to the new node_record_table_ptr prior to this with
+			 * _preserve_dynamic_nodes(), so no need to check if
+			 * they've been added with a reconfig.
+			 */
+			continue;
+		}
 		node_ptr->not_responding = true;
+	}
 
 	for (i = 0; i < old_node_record_count; i++) {
 		bool cloud_flag = false, drain_flag = false, down_flag = false;
@@ -2687,7 +2697,8 @@ static int _restore_node_state(int recover,
 	}
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		if (!node_ptr->not_responding)
+		if (!node_ptr->not_responding ||
+		    IS_NODE_DYNAMIC_NORM(node_ptr))
 			continue;
 		node_ptr->not_responding = false;
 		if (hs)
