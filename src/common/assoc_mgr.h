@@ -519,6 +519,18 @@ extern int assoc_mgr_find_tres_pos2(slurmdb_tres_rec_t *tres_rec, bool locked);
 extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec(
 	slurmdb_tres_rec_t *tres_rec);
 
+/* fills in allocates and sets tres_cnt based off tres_list
+ * OUT tres_cnt - array to be filled in g_tres_cnt in length
+ * IN tres_list - list of slurmdb_tres_rec_t's
+ * IN locked - if the assoc_mgr tres read lock is locked or not.
+ * IN relative - if the counts should be relative (percentage) or absolute
+ * IN relative_tres_cnt - if relative is set the total count of tres possibl.
+ * RET if positions changed in array from string 1 if nothing changed 0
+ */
+extern int assoc_mgr_set_tres_cnt_array_from_list(
+	uint64_t **tres_cnt, list_t *tres_list, bool locked,
+	bool relative, uint64_t *relative_tres_cnt);
+
 /* fills in allocates and sets tres_cnt based off tres_str
  * OUT tres_cnt - array to be filled in g_tres_cnt in length
  * IN tres_str - simple format of tres used with id and count set
