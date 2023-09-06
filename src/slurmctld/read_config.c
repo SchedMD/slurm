@@ -1726,15 +1726,15 @@ int read_slurm_conf(int recover, bool reconfig)
 	if (reconfig) {		/* Preserve state from memory */
 		if (old_node_table_ptr) {
 			info("restoring original state of nodes");
+			_preserve_dynamic_nodes(old_node_table_ptr,
+						old_node_record_count,
+						old_config_list);
+
 			_set_features(old_node_table_ptr, old_node_record_count,
 				      recover);
 			rc = _restore_node_state(recover, old_node_table_ptr,
 						 old_node_record_count);
 			error_code = MAX(error_code, rc);  /* not fatal */
-
-			_preserve_dynamic_nodes(old_node_table_ptr,
-						old_node_record_count,
-						old_config_list);
 		}
 	} else if (recover == 0) {	/* Build everything from slurm.conf */
 		_set_features(node_record_table_ptr, node_record_count,
