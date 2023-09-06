@@ -1098,6 +1098,27 @@ static data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
+static data_for_each_cmd_t _foreach_strip_dots(data_t *data, void *arg)
+{
+	char *src = xstrdup(data_get_string(data));
+	char *dst = src;
+
+	xassert(src && src[0]);
+
+	for (char *i = src; *i; i++) {
+		if (*i == '.')
+			continue;
+
+		*dst = *i;
+		dst++;
+	}
+
+	*dst = '\0';
+	xassert(src && src[0]);
+	data_set_string_own(data, src);
+	return DATA_FOR_EACH_CONT;
+}
+
 static data_for_each_cmd_t _foreach_strip_params(data_t *data, void *arg)
 {
 	char *item = data_get_string(data);
@@ -1158,6 +1179,8 @@ static data_for_each_cmd_t _differentiate_path_operationId(const char *key,
 		return DATA_FOR_EACH_CONT;
 
 	if (args->merge_args->flags & OAS_FLAG_MANGLE_OPID) {
+		data_t *server_path;
+
 		if (!(op = data_key_get(data, "operationId"))) {
 			debug2("%s: [%s %s] unexpected missing operationId",
 			       __func__, key, args->path);
@@ -1173,9 +1196,12 @@ static data_for_each_cmd_t _differentiate_path_operationId(const char *key,
 			return DATA_FOR_EACH_FAIL;
 		}
 
-		merge[0] = args->server_path;
-		merge[1] =
-			parse_url_path(data_get_string_const(op), false, true);
+		server_path = data_copy(NULL, args->server_path);
+		(void) data_list_for_each(server_path, _foreach_strip_dots,
+					  NULL);
+
+		merge[0] = server_path;
+		merge[1] = data_copy(NULL, op);
 	} else if (args->merge_args->flags & OAS_FLAG_SET_OPID) {
 		data_t *last = NULL;
 		data_t *path = parse_url_path(args->path, false, true);
