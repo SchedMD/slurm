@@ -14,6 +14,7 @@ import pytest
 import re
 import shutil
 import stat
+import socket
 import subprocess
 import sys
 import time
@@ -29,6 +30,26 @@ default_polling_timeout = 15
 default_sql_cmd_timeout = 120
 
 PERIODIC_TIMEOUT = 30
+
+
+def get_open_port():
+    """Finds an open port
+
+    Warning: Race conditions abound so be ready to retry calling function;
+
+    Example:
+        >>> while not some_test(port):
+        >>>     port = get_open_port()
+
+    Shamelessly based on:
+    https://stackoverflow.com/questions/2838244/get-open-tcp-port-in-python
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("", 0))
+    s.listen(1)
+    port = s.getsockname()[1]
+    s.close()
+    return port
 
 
 def node_range_to_list(node_expression):
