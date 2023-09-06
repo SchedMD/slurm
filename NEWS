@@ -195,6 +195,9 @@ documents those changes that are of interest to users and administrators.
     of each other and the default logging level (info). -v now applies on top
     of the default log level, and SLURMRESTD_DEBUG sets the log level if -v is
     not given.
+ -- slurmrestd - Allow SLURMRESTD_DEBUG=quiet or 0, which was previously denied.
+    Also deny negative values for SLURMRESTD_DEBUG, which previously set the
+    debug level to debug5.
 
 * Changes in Slurm 23.02.5
 ==========================

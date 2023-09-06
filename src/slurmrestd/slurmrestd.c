@@ -152,7 +152,7 @@ static void _parse_env(void)
 	if ((buffer = getenv("SLURMRESTD_DEBUG")) != NULL) {
 		debug_level = log_string2num(buffer);
 
-		if (debug_level <= 0)
+		if ((debug_level < 0) || (debug_level == NO_VAL16))
 			fatal("Invalid env SLURMRESTD_DEBUG: %s", buffer);
 	}
 
