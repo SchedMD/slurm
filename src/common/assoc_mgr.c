@@ -58,6 +58,13 @@ typedef struct {
 	list_t *ret_list;
 } find_coord_t;
 
+typedef struct {
+	bool locked;
+	bool relative;
+	uint64_t *relative_tres_cnt;
+	uint64_t **tres_cnt;
+} foreach_tres_pos_t;
+
 slurmdb_assoc_rec_t *assoc_mgr_root_assoc = NULL;
 uint32_t g_qos_max_priority = 0;
 uint32_t g_assoc_max_priority = 0;
@@ -5606,6 +5613,41 @@ static void _set_usage_tres_raw(long double *tres_cnt, char *tres_str)
 	return;
 }
 
+static int _foreach_tres_pos_set_cnt(void *x, void *key)
+{
+	slurmdb_tres_rec_t *tres_rec = x;
+	foreach_tres_pos_t *foreach_tres_pos = key;
+	int pos = assoc_mgr_find_tres_pos(tres_rec, foreach_tres_pos->locked);
+
+	if (pos == -1) {
+		debug2("%s: no tres of id %u found in the array",
+		       __func__, tres_rec->id);
+		return 0;
+	}
+	/*
+	 * If Relative make the number absolute based on
+	 * the relative_tres_cnt[pos]
+	 */
+	if (foreach_tres_pos->relative && foreach_tres_pos->relative_tres_cnt &&
+	    (tres_rec->count != INFINITE64)) {
+		/* Sanity check for max possible. */
+		if (tres_rec->count > 100)
+			tres_rec->count = 100;
+
+		tres_rec->count *= foreach_tres_pos->relative_tres_cnt[pos];
+
+		/* This will truncate/round down */
+		tres_rec->count /= 100;
+	}
+	/* set the index to the count */
+	(*foreach_tres_pos->tres_cnt)[pos] = tres_rec->count;
+	/* info("%d pos %d has count of %"PRIu64, */
+	/*      tres_rec->id, */
+	/*      pos, tres_rec->count); */
+
+	return 0;
+}
+
 extern void assoc_mgr_remove_assoc_usage(slurmdb_assoc_rec_t *assoc)
 {
 	char *child;
@@ -6726,48 +6768,24 @@ extern int assoc_mgr_set_tres_cnt_array_from_list(
 	uint64_t **tres_cnt, list_t *tres_list, bool locked,
 	bool relative, uint64_t *relative_tres_cnt)
 {
-	int diff_cnt = 0;
-	slurmdb_tres_rec_t *tres_rec;
-	ListIterator itr;
+	foreach_tres_pos_t foreach_tres_pos = {
+		.locked = locked,
+		.relative = relative,
+		.relative_tres_cnt = relative_tres_cnt,
+		.tres_cnt = tres_cnt,
+	};
 
 	if (!tres_list)
-		return diff_cnt;
+		return 0;
 
-	itr = list_iterator_create(tres_list);
-	while ((tres_rec = list_next(itr))) {
-		int pos = assoc_mgr_find_tres_pos(tres_rec, locked);
-		if (pos == -1) {
-			debug2("%s: no tres of id %u found in the array",
-			       __func__, tres_rec->id);
-			continue;
-		}
-		/*
-		 * If Relative make the number absolute based on
-		 * the relative_tres_cnt[pos]
-		 */
-		if (relative && relative_tres_cnt &&
-		    (tres_rec->count != INFINITE64)) {
-			/* Sanity check for max possible. */
-			if (tres_rec->count > 100)
-				tres_rec->count = 100;
-
-			tres_rec->count *= relative_tres_cnt[pos];
-
-			/* This will truncate/round down */
-			tres_rec->count /= 100;
-		}
-		/* set the index to the count */
-		(*tres_cnt)[pos] = tres_rec->count;
-		/* info("%d pos %d has count of %"PRIu64, */
-		/*      tres_rec->id, */
-		/*      pos, tres_rec->count); */
-	}
-	list_iterator_destroy(itr);
+	(void) list_for_each(tres_list,
+			     _foreach_tres_pos_set_cnt,
+			     &foreach_tres_pos);
 
 	if (g_tres_count != list_count(tres_list))
-		diff_cnt = 1;
+		return 1;
 
-	return diff_cnt;
+	return 0;
 }
 
 extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
