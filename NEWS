@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
     for all dynamic nodes during reconfigure.
  -- Avoid segfault if loading serializer plugin fails.
  -- slurmrestd - Correct OpenAPI format for 'GET /slurm/v0.0.39/licenses'.
+ -- slurmrestd - Correct OpenAPI format for 'GET /slurm/v0.0.39/job/{job_id}'.
 
 * Changes in Slurm 23.02.5
 ==========================
