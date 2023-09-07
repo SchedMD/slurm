@@ -28,65 +28,22 @@
 
 # Test GrpCpus
 proc inc21_30_2 { wait_reason } {
-	global srun salloc acct bin_sleep jobmatch job_id1 job_id2 number
+	global srun acct bin_sleep
 	global grcpu_num test_node
 
 	set job_id1 0
 	set job_id2 0
 
-	log_info "Starting GrpCPUs limit test"
+	log_info "Starting $wait_reason limit test"
 
 	# Raise an error to abort the catch block
 	set exception_code [catch {
 
-		set jobmatch 0
-		spawn $salloc --account=$acct -w$test_node -t1 -n$grcpu_num $srun $bin_sleep 5
-		expect {
-			-re "Granted job allocation ($number)" {
-				set job_id1 $expect_out(1,string)
-				log_debug "Job $job_id1 has been submitted"
-				incr jobmatch
-			}
-			-re "Pending job allocation ($number)" {
-				set job_id1 $expect_out(1,string)
-				error "Job should be running, but is not. If you have CR_CORE_* and have ThreadsPerCore > 1 this could happen"
-			}
-			-re "error" {
-				error "Job allocation should not have failed"
-			}
-			timeout {
-				error "salloc is not reponding"
-			}
-			eof {
-				wait
-			}
-		}
+		set job_id1 [submit_job -fail "--account=$acct -w$test_node -t1 -n$grcpu_num -o none --wrap '$srun $bin_sleep 300'"]
+		subtest {![wait_for_job $job_id1 "RUNNING"]} "Job should run $wait_reason" "If you have CR_CORE_* and have ThreadsPerCore > 1 this could happen"
 
-		spawn $salloc --account=$acct -w$test_node -t1 -n[expr $grcpu_num + 1] $srun $bin_sleep 5
-		expect {
-			-re "Granted job allocation ($number)" {
-				set job_id2 $expect_out(1,string)
-				error "Job should be pending, but is not"
-			}
-			-re "Pending job allocation ($number)" {
-				set job_id2 $expect_out(1,string)
-				log_debug "Job $job_id2 is waiting for resources. This is expected"
-				incr jobmatch
-			}
-			timeout {
-				error "salloc is not reponding If you have CR_CORE_* and have ThreadsPerCore > 1 this could happen."
-			}
-			eof {
-				wait
-			}
-		}
-		if {$jobmatch != 2} {
-			error "jobs were not submitted"
-		}
-
-		# Checks the state of the job
-		subtest [check_job_state $job_id2 PENDING] "Job should be in the PENDING state"
-		subtest [check_reason $job_id2 $wait_reason] "Job should have wait reason $wait_reason"
+		set job_id2 [submit_job -fail "--account=$acct -w$test_node -t1 -n[expr $grcpu_num + 1] -o none --wrap '$srun $bin_sleep 5'"]
+		subtest {![wait_job_reason $job_id2 "PENDING" $wait_reason]} "Job should have pending reason $wait_reason"
 
 	} message] ; # Store the error message in $message
 

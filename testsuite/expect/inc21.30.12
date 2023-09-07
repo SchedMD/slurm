@@ -27,7 +27,7 @@
 ############################################################################
 
 proc inc21_30_12 { } {
-	global salloc srun acct bin_sleep grpwall_num number qostest
+	global srun acct bin_sleep grpwall_num qostest
 
 	log_info "Starting Grpwall test"
 	set job_id_list     [list]
@@ -56,11 +56,8 @@ proc inc21_30_12 { } {
 		}
 
 		log_debug "Submitting the final job and check that it is set Pending with Reason QOSGrpWallLimit"
-		set job_id [submit_job -fail "--account=$acct --qos=$qostest -N1 -t$job_time --wrap '$bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
-		lappend job_id_list $job_id
-
-		# Subtest of the limit
-		subtest {! [wait_job_reason $job_id PENDING QOSGrpWallLimit]} "Job should achieve PENDING state with reason QOSGrpWallLimit"
+		lappend job_id_list [submit_job -fail "--account=$acct --qos=$qostest -N1 -t$job_time --wrap '$bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
+		subtest {! [wait_job_reason [lindex $job_id_list end] "PENDING" "QOSGrpWallLimit"]} "Job should achieve PENDING state with reason QOSGrpWallLimit"
 
 		# Reset the QoS usage
 		if [reset_qos_usage "" $qostest] {

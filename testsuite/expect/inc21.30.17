@@ -27,37 +27,14 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
-# Checks the timelimit of the job
-proc check_timelimit { job } {
-
-	global scontrol job_id maxwall_num
-
-	set timelimit_match 0
-	spawn $scontrol show job $job
-	expect {
-		-re "TimeLimit=00:0$maxwall_num:00" {
-			incr timelimit_match
-		}
-		timeout {
-			error "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	subtest {$timelimit_match == 1} "Job should have as TimeLimit the QOS MaxWall"
-}
-
 proc inc21_30_17 { } {
-	global salloc srun acct bin_sleep number maxwall_num skips
+	global srun acct bin_sleep maxwall_num
 
 	# If the partition has DefaultTime set it will mess up this test.
 	# Since there is currently no way to use scontrol to change default
 	# time to "none" just skip this subtest.
 	if { [get_partition_default_time_limit ""] != -1 } {
-		log_warn "SKIP: Default partition has a default time limit set, cannot run inc21.30.17"
-		incr skips
+		subskip "This test needs the default partition without a DefaultTime"
 		return
 	}
 
@@ -67,27 +44,9 @@ proc inc21_30_17 { } {
 	# Raise an error to abort the catch block
 	set exception_code [catch {
 
-		spawn $salloc --account=$acct -N1 $srun $bin_sleep 10
-		expect {
-			-re "Granted job allocation ($number)" {
-				set job_id $expect_out(1,string)
-				log_debug "Job $job_id has been submitted"
-				check_timelimit $job_id
-			}
-			-re "Pending job allocation ($number)" {
-				set job_id $expect_out(1,string)
-				error "job $job_id should not be waiting for resources"
-			}
-			-re "error" {
-				error "Job allocation should not have failed"
-			}
-			timeout {
-				error "salloc is not responding"
-			}
-			eof {
-				wait
-			}
-		}
+		set job_id [submit_job -fail "--account=$acct -N1 -o /dev/null --wrap '$srun $bin_sleep 120'"]
+		subtest {![wait_for_job $job_id "RUNNING"]} "Job should run Qos/Parent MaxWall"
+		subtest {[get_job_param $job_id "TimeLimit"] == "00:0$maxwall_num:00"} "Job should have TimeLimit=00:0$maxwall_num:00"
 
 	} message] ; # Store the error message in $message
 

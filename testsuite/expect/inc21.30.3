@@ -28,94 +28,33 @@
 
 # Test GrpJob limits
 proc inc21_30_3 { wait_reason } {
-
-	global salloc scontrol srun acct re_word_str bin_sleep jobmatch number grjobs_num
+	global srun acct bin_sleep grjobs_num
 
 	log_info "Starting $wait_reason test"
-	array set job_id {}
+	set job_ids [list]
 	set check_num $grjobs_num
 
 	# Raise an error to abort the catch block
 	set exception_code [catch {
 
-		set jobmatch 0
-			for {set inx 0} {$inx <= $check_num} {incr inx} {
-				set test_reason 0
-					spawn $salloc --account=$acct -n1 -t1 $srun $bin_sleep 60
-					expect {
-						-re "Granted job allocation ($number)" {
-							set job_id($inx) $expect_out(1,string)
-								if {$inx < $check_num} {
-									log_debug "Job $inx $job_id($inx) was submitted"
-										incr jobmatch
-								} else {
-									error "Job $inx ($job_id($inx)) wasn't suppose to work but it did, limit was $check_num"
-								}
-						}
-						-re "job ($number) queued and waiting for resources" {
-							set job_id($inx) $expect_out(1,string)
-								if {$inx >= $check_num} {
-									log_debug "Job $inx $job_id($inx) is waiting for resources. This is expected"
-										incr jobmatch
-								} else {
-									set test_reason 1
-								}
-						}
-						-re "error" {
-							error "Job allocation should not have failed"
-						}
-						timeout {
-							error "salloc is not responding"
-						}
-						eof {
-							wait
-						}
-					}
-
-#		Job is waiting, check if the reason is the limit we are testing for
-				if {$test_reason != 0 && $job_id($inx) != 0} {
-					spawn $scontrol show job $job_id($inx)
-						expect {
-							-re "Reason=($re_word_str)" {
-								if {$expect_out(1,string) ne $wait_reason} {
-									error "Job $inx ($job_id($inx)) was suppose to work but it didn't, limit was $check_num"
-								} else {
-									incr jobmatch
-								}
-								exp_continue
-							}
-							timeout {
-								error "scontrol is not responding"
-							}
-							eof {
-								wait
-							}
-						}
-				}
-			}
-
-		set target_jobs [expr $check_num + 1]
-		if {$jobmatch != $target_jobs} {
-			error "Not all jobs were not submitted ($jobmatch != $target_jobs)"
+		for {set inx 0} {$inx < $check_num} {incr inx} {
+			lappend job_ids [submit_job -fail "--account=$acct -n1 -t1 -o none --wrap '$srun $bin_sleep 300'"]
 		}
 
-		# Checks the job state
-		if [info exists job_id($check_num)] {
-			subtest [check_job_state $job_id($check_num) PENDING] "Job should be in the PENDING state"
-		} else {
-			error "Didn't attempt to start enough jobs"
+		foreach job_id $job_ids {
+			subtest {![wait_for_job $job_id "RUNNING"]} "Job should run $wait_reason"
 		}
+
+		#AGIL:
+		run_command "squeue"
+
+		lappend job_ids [submit_job -fail "--account=$acct -n1 -t1 -o none --wrap '$srun $bin_sleep 300'"]
+		subtest {![wait_job_reason [lindex $job_ids end] "PENDING" $wait_reason]} "Job should have pending reason $wait_reason"
 
 	} message] ; # Store the error message in $message
 
-
 	# Perform local cleanup
-	for {set inx 0} {$inx <= $check_num} {incr inx} {
-		if [info exists job_id($inx)] {
-			# Cancels the jobs
-			cancel_job $job_id($inx)
-		}
-	}
+	cancel_job $job_ids
 
 	# Convert any errors into failures (after cleaning up)
 	if {$exception_code == 1} { ; # errors only

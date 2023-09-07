@@ -27,62 +27,30 @@
 ############################################################################
 
 proc inc21_30_10 { wait_reason } {
-	global salloc srun acct bin_sleep grpcpurunmin_num number
+	global srun acct bin_sleep grpcpurunmin_num
 
-	log_info "Starting GrpCpuRunMins test"
+	log_info "Starting $wait_reason test"
 	set job_id1 0
 	set job_id2 0
 
 	# Raise an error to abort the catch block
 	set exception_code [catch {
 
+		# There may be some GrpCPUmins data left from previous jobs, so use less than the limit
 		set target_time [expr $grpcpurunmin_num / 4]
 		set time_limit [expr $target_time - 3]
 		if {$time_limit < 1} {
-			log_warn "Invalid time limit"
+			subskip "Time limit needs to be higher ($grpcpurunmin_num)"
 			return
 		}
 
-		# There may be some GrpCPUmins data left from previous jobs, so use less than the limit
-		spawn $salloc --account=$acct -n4 --time=$time_limit $srun $bin_sleep 10
-		expect {
-			-re "Granted job allocation ($number)" {
-				set job_id1 $expect_out(1,string)
-				log_debug "Job $job_id1 has been submitted"
-			}
-			-re "Pending job allocation ($number)" {
-				set job_id1 $expect_out(1,string)
-				error "Job should be running, but is not"
-			}
-			-re "error" {
-				error "Job allocation should not have failed"
-			}
-			timeout {
-				error "salloc not responding"
-			}
-			eof {
-				wait
-			}
-		}
+		set job_id1 [submit_job -fail "--account=$acct -n4 --time=$time_limit -o /dev/null --wrap '$srun $bin_sleep 1'"]
+		subtest {![wait_for_job $job_id1 "DONE"]} "Job should run $wait_reason"
+		cancel_job $job_id1
 
-		spawn $salloc --account=$acct -n4 -t[expr $target_time + 1] $srun $bin_sleep 10
-		expect {
-			-re "Pending job allocation ($number)" {
-				set job_id2 $expect_out(1,string)
-				log_debug "Job $job_id2 is waiting for resources. This is expected"
-			}
-			-re "Granted job allocation ($number)" {
-				error "Job should be pending, but is not"
-			}
-			timeout {
-				error "salloc not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		subtest [check_reason $job_id2 $wait_reason] "Job should have wait reason $wait_reason"
+		set job_id2 [submit_job -fail "--account=$acct -n4 -t[expr $target_time + 1] -o /dev/null --wrap '$srun $bin_sleep 10'"]
+		subtest {![wait_job_reason $job_id2 "PENDING" $wait_reason]} "Job should have pending reason $wait_reason"
+		cancel_job $job_id2
 
 	} message] ; # Store the error message in $message
 

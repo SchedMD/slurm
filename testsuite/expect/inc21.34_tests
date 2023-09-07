@@ -131,7 +131,7 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_6 "QOSMaxNodePerJobLimit|PartitionConfig"
+	inc21_30_6 [list "QOSMaxNodePerJobLimit" "PartitionConfig"]
 	set mod_job_qos(MaxNodes) "-1"
 	set mod_part_qos(MaxNodes) "-1"
 
@@ -262,7 +262,7 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_16 "QOSMaxNodePerUserLimit|PartitionConfig"
+	inc21_30_16 [list "QOSMaxNodePerUserLimit" "PartitionConfig"]
 	set mod_job_qos(MaxNodesPerUser) "-1"
 	set mod_part_qos(MaxNodesPerUser) "-1"
 
@@ -454,7 +454,7 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_6 "QOSMaxNodePerJobLimit|PartitionConfig"
+	inc21_30_6 [list "QOSMaxNodePerJobLimit" "PartitionConfig"]
 	set mod_job_qos(MaxNodes) "-1"
 	set mod_part_qos(MaxNodes) "-1"
 
@@ -586,7 +586,7 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_16 "QOSMaxNodePerUserLimit|PartitionConfig"
+	inc21_30_16 [list "QOSMaxNodePerUserLimit" "PartitionConfig"]
 	set mod_job_qos(MaxNodesPerUser) "-1"
 	set mod_part_qos(MaxNodesPerUser) "-1"
 

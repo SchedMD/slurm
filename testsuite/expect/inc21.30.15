@@ -27,9 +27,9 @@
 ############################################################################
 
 proc inc21_30_15 { wait_reason } {
-	global salloc srun bin_sleep number maxcpuspu_num acct
+	global srun bin_sleep maxcpuspu_num acct
 
-	log_info "Starting MaxCPUsPerUser test"
+	log_info "Starting $wait_reason test"
 
 	set job_id1 0
 	set job_id2 0
@@ -37,54 +37,11 @@ proc inc21_30_15 { wait_reason } {
 	# Raise an error to abort the catch block
 	set exception_code [catch {
 
-		spawn $salloc --account=$acct -t1 -n$maxcpuspu_num $srun $bin_sleep 20
-		expect {
-			-re "Granted job allocation ($number)" {
-				set job_id1 $expect_out(1,string)
-				log_debug "Job $job_id1 has been submitted"
-			}
-			-re "job ($number) queued and waiting for resources" {
-				set job_id1 $expect_out(1,string)
-				error "Job ($job_id1) should not be waiting for resources, but is"
-			}
-			-re "error" {
-				error "Job allocation should not have failed"
-			}
-			timeout {
-				error "salloc is not responding"
-			}
-			eof {
-				wait
-			}
-		}
+		set job_id1 [submit_job -fail "--account=$acct -t1 -n$maxcpuspu_num -o /dev/null --wrap '$srun $bin_sleep 120'"]
+		subtest {![wait_for_job $job_id1 "RUNNING"]} "Job should run $wait_reason"
 
-		if { $job_id1 == 0 } {
-			error "Job was not submitted"
-		}
-
-		spawn $salloc --account=$acct -t1 -n$maxcpuspu_num $srun $bin_sleep 20
-		expect {
-			-re "job ($number) queued and waiting for resources" {
-				set job_id2 $expect_out(1,string)
-				log_debug "Job $job_id2 is waiting for resource. This is expected do not worry"
-			}
-			-re "Granted job allocation ($number)" {
-				set job_id2 $expect_out(1,string)
-				error "Job ($job_id2) should be pending for resources, but is not"
-			}
-			timeout {
-				error "salloc is not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if { $job_id2 == 0 } {
-			error "Job was not submitted"
-		}
-
-		subtest [check_reason $job_id2 $wait_reason] "Job should have wait reason $wait_reason"
+		set job_id2 [submit_job -fail "--account=$acct -t1 -n$maxcpuspu_num -o /dev/null --wrap '$srun $bin_sleep 10'"]
+		subtest {![wait_job_reason $job_id2 "PENDING" $wait_reason]} "Job should have pending reason $wait_reason"
 
 	} message] ; # Store the error message in $message
 
