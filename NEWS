@@ -199,6 +199,9 @@ documents those changes that are of interest to users and administrators.
     Also deny negative values for SLURMRESTD_DEBUG, which previously set the
     debug level to debug5.
 
+* Changes in Slurm 23.02.6
+==========================
+
 * Changes in Slurm 23.02.5
 ==========================
  -- Add the JobId to debug() messages indicating when cpus_per_task/mem_per_cpu
