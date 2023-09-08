@@ -128,6 +128,9 @@ expect {
 	}
 }
 
+# Wait for assocs being available
+wait_for_command -pollinterval 0.1 -fail "$scontrol show assoc_mgr accounts=$test_acct users=$user_name | $bin_grep -i 'Account=$test_acct UserName=$user_name'"
+
 #
 # Submit two slurm jobs to capture job info
 #
