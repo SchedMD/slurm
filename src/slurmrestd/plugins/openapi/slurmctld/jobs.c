@@ -373,11 +373,6 @@ static void _job_post(ctxt_t *ctxt)
 			   "Specifing either \"job\" or \"jobs\" fields are required to submit job");
 		return;
 	}
-	if (req.jobs) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Specify only \"job\" field for updating an existing job");
-		return;
-	}
 
 	if (req.job) {
 		_job_post_submit(ctxt, req.job, req.script);
