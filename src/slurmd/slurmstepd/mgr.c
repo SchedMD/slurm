@@ -2907,7 +2907,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
 
 #ifdef WITH_SELINUX
 		if (setexeccon(step->selinux_context)) {
-			error("Failed to set SELinux context to %s: %m",
+			error("Failed to set SELinux context to '%s': %m",
 			      step->selinux_context);
 			_exit(127);
 		}

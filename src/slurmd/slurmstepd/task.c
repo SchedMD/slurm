@@ -448,7 +448,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 
 #ifdef WITH_SELINUX
 	if (setexeccon(step->selinux_context)) {
-		error("Failed to set SELinux context to %s: %m",
+		error("Failed to set SELinux context to '%s': %m",
 		      step->selinux_context);
 		_exit(1);
 	}
