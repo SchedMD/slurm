@@ -4721,6 +4721,8 @@ function _squeue() {
 		"boot_fail"
 		"cancelled"
 		"completed"
+		"completing"
+		"configuring"
 		"deadline"
 		"failed"
 		"node_fail"
@@ -4729,8 +4731,15 @@ function _squeue() {
 		"preempted"
 		"running"
 		"requeued"
+		"requeue_fed"
+		"requeue_hold"
 		"resizing"
 		"revoked"
+		"resv_del_hold"
+		"signaling"
+		"special_exit"
+		"stage_out"
+		"stopped"
 		"suspended"
 		"timeout"
 	)
@@ -4748,7 +4757,7 @@ function _squeue() {
 	-q | --qos?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	-R | --reservation?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;
 	-S | --sort) __slurm_compreply_list "${fields[*]//%/}" ;;
-	-t | --state?(s)) __slurm_compreply_list "${states[*]}" ;;
+	-t | --state?(s)) __slurm_compreply_list "${states[*]}" "ALL" ;; # TODO: want --helpstates
 	-u | --user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	esac
 
