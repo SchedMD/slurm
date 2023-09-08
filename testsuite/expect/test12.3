@@ -39,6 +39,7 @@ set job_name_1  "JOB1"
 set job_name_2  "JOB2"
 set test_acct	"${test_name}-account.1"
 set step_id     0
+set user_name   [get_my_user_name]
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test can't be run on a front end system"
@@ -65,110 +66,29 @@ if {[llength $nodes] != 3} {
 lassign $nodes node1 node2 node3
 
 proc cleanup {} {
-	global sacctmgr test_acct
+	global sacctmgr test_acct user_name
 
+	run_command "$sacctmgr -i delete user $user_name account=$test_acct"
 	run_command "$sacctmgr -i delete account $test_acct"
 }
 
 #
-# Identify the user and his current default account
+# Add a test account
 #
-set acct_name ""
-set user_name [get_my_user_name]
-spawn $sacctmgr show user $user_name
-expect {
-	-re "$user_name *($re_word_str)" {
-		set acct_name $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr add not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$sacctmgr -i add account $test_acct"
+run_command -fail "$sacctmgr -i create user name=$user_name account=$test_acct"
+
+# Wait for assocs being available
+wait_for_command -pollinterval 0.1 -fail "$scontrol show assoc_mgr accounts=$test_acct users=$user_name | $bin_grep -i 'Account=$test_acct UserName=$user_name'"
 
 #
-# Use sacctmgr to add a test account
+# Submit two jobs with different nodes and names
 #
-set aamatches 0
-spawn $sacctmgr -i add account $test_acct
-expect {
-	-re "Adding Account" {
-		incr aamatches
-		exp_continue
-	}
-	-re "Nothing new added" {
-		log_warn "Vestigial account $test_acct found"
-		incr aamatches
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr add not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$aamatches != 1} {
-	fail "sacctmgr had a problem adding account ($aamatches != 1)"
-}
+set job_id_1 [submit_job -fail "-N2 -w$node1,$node2 -t1 -A $test_acct -J $job_name_1 -o none --wrap '$bin_id'"]
+set job_id_2 [submit_job -fail "-N2 -w$node2,$node3 -t1 -A $test_acct -J $job_name_2 -o none --wrap '$bin_id'"]
 
-#
-# Add self to this new account
-#
-spawn $sacctmgr -i create user name=$user_name account=$test_acct
-expect {
-	 timeout {
-		fail "sacctmgr add not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# Submit two slurm jobs to capture job info
-#
-set job_1_node_inx 0
-set timeout $max_job_delay
-spawn $srun -N2 -w$node1,$node2 -t1 -A $test_acct -J $job_name_1 -v $bin_id
-expect {
-	-re "launching StepId=($number)\\.$re_word_str on host ($re_word_str)," {
-		set job_id_1 $expect_out(1,string)
-		incr job_1_node_inx
-		exp_continue
-	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-subtest {$job_1_node_inx == 2} "Verify host count for job 1" "srun host count bad ($job_1_node_inx != 2)"
-
-#
-# Second job includes one node from the first job and another different node
-#
-set job_2_node_inx 0
-spawn $srun -N2 -w$node2,$node3 -t1 -A $test_acct -J $job_name_2 -v $bin_id
-expect {
-
-	-re "launching StepId=($number)\\.$re_word_str on host ($re_word_str)," {
-		set job_id_2 $expect_out(1,string)
-		incr job_2_node_inx
-		exp_continue
-	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-subtest {$job_2_node_inx == 2} "Verify host count for job 2" "srun host count bad ($job_2_node_inx != 2)"
+wait_for_job -fail $job_id_1 "DONE"
+wait_for_job -fail $job_id_2 "DONE"
 
 #
 # Wait for accounting data to be propagated to slurmdbd
@@ -178,20 +98,11 @@ subtest {$job_2_node_inx == 2} "Verify host count for job 2" "srun host count ba
 #       work properly because they need that to search for active node indexes
 #       along with the events table.
 #
-if [wait_for_command_match "$sacct -A ${test_name}-account.1 --name=$job_name_1 -X -n -P -j $job_id_1 -S now-60 -o jobid,jobname" "$job_id_1.$job_name_1"] {
-	fail "Accounting data for job 1 ($job_id_1) not propagated to slurmdbd"
-}
-if [wait_for_command_match "$sacct -A ${test_name}-account.1 --name=$job_name_2 -X -n -P -j $job_id_2 -S now-60 -o jobid,jobname" "$job_id_2.$job_name_2"] {
-	fail "Accounting data for job 2 ($job_id_2) not propagated to slurmdbd"
-}
+wait_for_command_match -fail "$sacct -A ${test_name}-account.1 --name=$job_name_1 -X -n -P -j $job_id_1 -S now-60 -o jobid,jobname" "$job_id_1.$job_name_1"
+wait_for_command_match -fail "$sacct -A ${test_name}-account.1 --name=$job_name_2 -X -n -P -j $job_id_2 -S now-60 -o jobid,jobname" "$job_id_2.$job_name_2"
 
-# Only run these sub-tests if we haven't failed already
-if {[get_subtest_fail_count] == 0} {
-	#
-	# Execute sub-tests based upon these jobs
-	#
-	inc12_3_1 $job_id_1 $job_id_2 $job_name_1 $job_name_2 $test_acct
-
-	inc12_3_2 $job_id_1 $job_id_2 $job_name_1 $job_name_2 $test_acct \
-		$node1 $node2 $node3
-}
+#
+# Execute sub-tests based upon these jobs
+#
+inc12_3_1 $job_id_1 $job_id_2 $job_name_1 $job_name_2 $test_acct
+inc12_3_2 $job_id_1 $job_id_2 $job_name_1 $job_name_2 $test_acct $node1 $node2 $node3
