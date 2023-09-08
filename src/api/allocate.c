@@ -326,8 +326,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 
 	/* Spawn one pthread per cluster to collect job information */
 	resp_msg_list = list_create(NULL);
-	load_thread = xmalloc(sizeof(pthread_t) *
-			      list_count(fed->cluster_list));
+	load_thread = xcalloc(list_count(fed->cluster_list), sizeof(pthread_t));
 	iter = list_iterator_create(fed->cluster_list);
 	while ((cluster = (slurmdb_cluster_rec_t *)list_next(iter))) {
 		if ((cluster->control_host == NULL) ||
