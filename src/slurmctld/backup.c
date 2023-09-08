@@ -204,9 +204,12 @@ void run_backup(void)
 				use_time = last_heartbeat;
 			}
 
-			if ((time(NULL) - use_time) >
-			    slurm_conf.slurmctld_timeout)
-				break;
+			if (((time(NULL) - use_time) >
+			    slurm_conf.slurmctld_timeout)) {
+				if (last_heartbeat)
+					break;
+				error("Not taking control. Heartbeat file could not be read and the primary slurmctld is unresponsive. Something is wrong with your StateSaveLocation.");
+			}
 		}
 	}
 
