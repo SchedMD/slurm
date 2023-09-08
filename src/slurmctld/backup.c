@@ -154,6 +154,13 @@ void run_backup(void)
 
 	slurm_thread_create_detached(_trigger_slurmctld_event, NULL);
 
+	/* wait for the heartbeat file to exist before starting */
+	while (!get_last_heartbeat(NULL) &&
+	       (slurmctld_config.shutdown_time == 0)) {
+		warning("Waiting for heartbeat file to exist...");
+		sleep(1);
+	}
+
 	for (i = 0; ((i < 5) && (slurmctld_config.shutdown_time == 0)); i++) {
 		sleep(1);       /* Give the primary slurmctld set-up time */
 	}
