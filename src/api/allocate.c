@@ -184,8 +184,6 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	/* make a copy of the user's job description struct so that we
 	 * can make changes before contacting the controller */
 	req = (job_desc_msg_t *)xmalloc(sizeof(job_desc_msg_t));
-	if (req == NULL)
-		return NULL;
 	memcpy(req, user_req, sizeof(job_desc_msg_t));
 
 	/*
