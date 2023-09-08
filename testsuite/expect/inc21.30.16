@@ -27,7 +27,7 @@
 ############################################################################
 
 proc inc21_30_16 { wait_reason } {
-	global salloc srun acct number bin_sleep maxnodespu_num
+	global srun acct bin_sleep maxnodespu_num
 
 	log_info "Starting $wait_reason test"
 
@@ -36,52 +36,13 @@ proc inc21_30_16 { wait_reason } {
 	# Raise an error to abort the catch block
 	set exception_code [catch {
 
-		spawn $salloc --account=$acct -N$maxnodespu_num -t1 --exclusive $srun $bin_sleep 2
-		expect {
-			-re "Granted job allocation ($number)" {
-				set job_id $expect_out(1,string)
-				log_debug "Job $job_id was submitted"
-			}
-			-re "error" {
-				error "Job allocation should not have failed"
-			}
-			timeout {
-				error "salloc is not responding"
-			}
-			eof {
-				wait
-			}
-		}
+		set job_id [submit_job -fail "--account=$acct -N$maxnodespu_num -t1 --exclusive -o /dev/null --wrap '$srun $bin_sleep 10'"]
+		subtest {![wait_for_job $job_id "RUNNING"]} "Job should run $wait_reason"
+		cancel_job $job_id
 
-		if { $job_id == 0 } {
-			error "Job was not submitted"
-		} else {
-			# Cancel job
-			cancel_job $job_id
-		}
-
-		spawn $salloc --account=$acct -N[expr $maxnodespu_num + 1] -t1 --exclusive $srun $bin_sleep 2
-		expect {
-			-re "Pending job allocation ($number)" {
-				set job_id $expect_out(1,string)
-				log_debug "This error is expected. Do not worry"
-			}
-			-re "Granted job allocation" {
-				error "salloc should not have granted an allocation"
-			}
-			timeout {
-				error "salloc is not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		if { $job_id == 0 } {
-			error "Job was not submitted"
-		}
-
-		subtest [check_reason $job_id $wait_reason] "Job should have wait reason $wait_reason"
+		set job_id [submit_job -fail "--account=$acct -N[expr $maxnodespu_num + 1] -t1 --exclusive -o /dev/null --wrap '$srun $bin_sleep 5'"]
+		subtest {![wait_job_reason $job_id "PENDING" $wait_reason]} "Job should have pending reason $wait_reason"
+		cancel_job $job_id
 
 	} message] ; # Store the error message in $message
 

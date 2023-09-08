@@ -29,62 +29,29 @@
 # Test MaxCpus limits
 proc inc21_30_5 { wait_reason } {
 
-	global salloc acct number srun bin_sleep maxcpu_num
+	global acct srun bin_sleep maxcpu_num
 	global test_node
 
-	log_info "Starting MaxCPUs limit test"
+	log_info "Starting $wait_reason limit test"
 	set job_id1 0
+	set job_id2 0
 
 	# Raise an error to abort the catch block
 	set exception_code [catch {
 
-		spawn $salloc --account=$acct -t1 -w$test_node -n$maxcpu_num $srun $bin_sleep 2
-		expect {
-			-re "Granted job allocation ($number)" {
-				set job_id1 $expect_out(1,string)
-				log_debug "Job $job_id1 has been submitted"
-			}
-			-re "Pending job allocation ($number)" {
-				set job_id1 $expect_out(1,string)
-				error "This should have run but did not"
-			}
-			-re "error" {
-				error "Job allocation should not have failed"
-			}
-			timeout {
-				error "salloc not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		# Cancels remaining jobs
+		set job_id1 [submit_job -fail "--account=$acct -t1 -w$test_node -n$maxcpu_num -o /dev/null --wrap '$srun $bin_sleep 1'"]
+		subtest {![wait_for_job $job_id1 "DONE"]} "Job should run $wait_reason"
 		cancel_job $job_id1
 
-		spawn $salloc --account=$acct -t1 -w$test_node -n[expr $maxcpu_num + 1] $srun $bin_sleep 2
-		expect {
-			-re "Pending job allocation ($number)" {
-				set job_id1 $expect_out(1,string)
-				log_debug "Job $job_id1 is waiting for resources. This is expected"
-			}
-			-re "Granted job allocation ($number)" {
-				error "This should have pended but did not"
-			}
-			timeout {
-				error "salloc not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		subtest [check_reason $job_id1 $wait_reason] "Job should have wait reason $wait_reason"
+		set job_id2 [submit_job -fail "--account=$acct -t1 -w$test_node -n[expr $maxcpu_num + 1] -o /dev/null --wrap '$srun $bin_sleep 1'"]
+		subtest {![wait_job_reason $job_id2 "PENDING" $wait_reason]} "Job should have pending reason $wait_reason"
+		cancel_job $job_id2
 
 	} message] ; # Store the error message in $message
 
 	# Cancels remaining jobs
 	cancel_job $job_id1
+	cancel_job $job_id2
 
 	# Convert any errors into failures (after cleaning up)
 	if {$exception_code == 1} { ; # errors only

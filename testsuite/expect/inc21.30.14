@@ -27,57 +27,20 @@
 ############################################################################
 
 proc inc21_30_14 { wait_reason } {
-	global salloc srun acct bin_sleep number maxwall_num
+	global srun acct bin_sleep maxwall_num
 
-	log_info "Starting MaxWall test"
+	log_info "Starting $wait_reason test"
 	set job_id 0
 
 	# Raise an error to abort the catch block
 	set exception_code [catch {
 
-		spawn $salloc --account=$acct -N1 -t$maxwall_num $srun $bin_sleep 10
-		expect {
-			-re "Pending job allocation ($number)" {
-				set job_id $expect_out(1,string)
-				exp_continue
-			}
-			-re "Granted job allocation ($number)" {
-				set job_id $expect_out(1,string)
-				log_debug "Job $job_id has been submitted"
-			}
-			-re "error" {
-				error "Job allocation should not have failed"
-			}
-			timeout {
-				error "salloc is not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		# Cancel job
+		set job_id [submit_job -fail "--account=$acct -N1 -t$maxwall_num -o /dev/null --wrap '$srun $bin_sleep 10'"]
+		subtest {![wait_for_job $job_id "RUNNING"]} "Job should run $wait_reason"
 		cancel_job $job_id
 
-		spawn $salloc --account=$acct -N1 -t[expr $maxwall_num + 1] $srun $bin_sleep 10
-		expect {
-			-re "Pending job allocation ($number)" {
-				set job_id $expect_out(1,string)
-				log_debug "Job $job_id is waiting for resources. This is expected"
-			}
-			-re "Granted job allocation ($number)" {
-				set job_id $expect_out(1,string)
-				error "Job ($job_id) should be pending for resources, but is not"
-			}
-			timeout {
-				error "salloc is not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		subtest [check_reason $job_id $wait_reason] "Job should have wait reason $wait_reason"
+		set job_id [submit_job -fail "--account=$acct -N1 -t[expr $maxwall_num + 1] -o /dev/null --wrap '$srun $bin_sleep 10'"]
+		subtest {![wait_job_reason $job_id "PENDING" $wait_reason]} "Job should have pending reason $wait_reason"
 
 	} message] ; # Store the error message in $message
 

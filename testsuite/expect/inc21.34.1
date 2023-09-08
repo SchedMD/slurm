@@ -34,7 +34,7 @@ proc inc21_34_1 { qostest wait_reason } {
 	log_info "Starting $wait_reason test"
 
 	if {![param_contains [get_config_param "AccountingStorageEnforce"] "safe"]} {
-		log_warn "This test can't be run without AccountingStorageEnforce having \"safe\" in it"
+		subskip "This test needs AccountingStorageEnforce=safe"
 		return
 	}
 
@@ -52,56 +52,22 @@ proc inc21_34_1 { qostest wait_reason } {
 			error "Unable to reset QOS usage"
 		}
 
-		spawn $salloc --account=$acct -w$test_node -n$nthreads -t$timelimit $srun $bin_sleep 1
-		expect {
-			-re "Granted job allocation ($number)" {
-				set job_id1 $expect_out(1,string)
-				log_debug "Job $job_id1 has been submitted"
-			}
-			-re "Pending job allocation ($number)" {
-				set job_id1 $expect_out(1,string)
-				error "This job should not be pending"
-			}
-			-re "error" {
-				error "Job allocation should not have failed"
-			}
-			timeout {
-				error "salloc not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
+		set job_id1 [submit_job -fail "--account=$acct -w$test_node -n$nthreads -t$timelimit -o none --wrap '$srun $bin_sleep 1'"]
+		subtest {![wait_for_job $job_id1 "DONE"]} "Job should run $wait_reason"
 		cancel_job $job_id1
 
 		if [reset_qos_usage "" $qostest] {
 			error "Unable to reset QOS usage"
 		}
 
-		spawn $salloc --account=$acct -w$test_node -n$nthreads -t[expr $timelimit + 1] $srun $bin_sleep 1
-		expect {
-			-re "Pending job allocation ($number)" {
-				set job_id2 $expect_out(1,string)
-				log_debug "Job $job_id2 is waiting for resources. This is expected"
-			}
-			-re "Granted job allocation ($number)" {
-				set job_id2 $expect_out(1,string)
-				error "Job should be pending but is not"
-			}
-			timeout {
-				error "salloc not responding"
-			}
-			eof {
-				wait
-			}
-		}
-
-		subtest [check_reason $job_id2 $wait_reason] "Job should have wait reason $wait_reason"
+		set job_id2 [submit_job -fail "--account=$acct -w$test_node -n$nthreads -t[expr $timelimit + 1] -o none --wrap '$srun $bin_sleep 11'"]
+		subtest {![wait_job_reason $job_id2 "PENDING" $wait_reason]} "Job should have wait reason $wait_reason"
+		cancel_job $job_id2
 
 	} message] ; # Store the error message in $message
 
 	# Perform local cleanup
+	cancel_job $job_id1
 	cancel_job $job_id2
 
 	# Convert any errors into failures (after cleaning up)

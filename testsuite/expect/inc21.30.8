@@ -28,105 +28,59 @@
 
 # Test MaxJobsSubmits limit
 proc inc21_30_8 {} {
-	global sbatch salloc srun acct bin_rm bin_sleep jobmatch
-	global number maxjobsub_num
+	global sbatch srun acct bin_sleep maxjobsub_num
 
 	log_info "Starting MaxJobsSubmits limit test"
 	set check_num $maxjobsub_num
-	set file_in "in21.30.8_script"
 	set tmp_job_id 0
-	array set job_id {}
-
-	make_bash_script $file_in "sleep 5"
+	set job_ids [list]
 
 	# Raise an error to abort the catch block
 	set exception_code [catch {
 
-		set jobmatch 0
-		for {set inx 0} {$inx <= $check_num} {incr inx} {
-			spawn $salloc --account=$acct -t1 -n1 $srun $bin_sleep 100
-			expect {
-				-re "Granted job allocation ($number)" {
-					set job_id($inx) $expect_out(1,string)
-					if {$inx < $check_num} {
-						log_debug "Job $inx $job_id($inx) was submitted"
-						incr jobmatch
-					} else {
-						error "Job $inx ($job_id($inx)) wasn't suppose to work but it did, limit was $check_num"
-					}
-				}
-				-re "error" {
-					if {$inx >= $check_num} {
-						log_debug "Job $inx didn't get submitted. This is expected"
-						incr jobmatch
-					} else {
-						error "Job $inx was suppose to work but it didn't, limit was $check_num?"
-					}
-				}
-				timeout {
-					error "salloc is not responding"
-				}
-				eof {
-					wait
-				}
-			}
+		for {set inx 0} {$inx < $check_num} {incr inx} {
+			lappend job_ids [submit_job -fail "--account=$acct -t1 -n1 -o/dev/null --wrap '$srun $bin_sleep 300'"]
 		}
 
-		set target_jobs [expr $check_num + 1]
-		subtest {$jobmatch == $target_jobs} "All $target_jobs jobs should have been submitted" "Only $jobmatch jobs were submitted"
-
-		for {set inx 0} {$inx <= $check_num} {incr inx} {
-			if [info exists job_id($inx)] {
-				# Cancels the jobs
-				cancel_job $job_id($inx)
-			}
+		foreach job_id $job_ids {
+			subtest {![wait_for_job $job_id "RUNNING"]} "Job should run MaxJobsSubmits"
 		}
+
+		set output [run_command_output -xfail -subtest "$sbatch --account=$acct -t1 -n1 -o/dev/null --wrap '$bin_sleep 300'"]
+		subtest {![regexp {Submitted \S+ job (\d+)} $output - tmp_job_id]} "Job should NOT be submitted"
+		subtest {[regexp "Job violates accounting/QOS policy" $output]} "Job violates policy message should be printed"
+
+		lappend job_ids $tmp_job_id
+		cancel_job $job_ids
 
 		# Test limit with job array
+		set tmp_job_id 0
+		set job_ids [list]
+
 		set upper_lim [expr $check_num - 1]
-		spawn $sbatch --account=$acct -t1 -a0-$upper_lim -o/dev/null $file_in
-		expect {
-			-re "Submitted batch job ($number)" {
-				set tmp_job_id $expect_out(1,string)
-				exp_continue
-			}
-			timeout {
-				error "sbatch is not responding"
-			}
-			eof {
-				wait
-			}
-		}
-		subtest {$tmp_job_id != 0} "All job array elements should have been submitted"
+		lappend job_ids [submit_job "--account=$acct -t1 -a0-$upper_lim -o/dev/null --wrap '$bin_sleep 120'"]
+		subtest {[lindex $job_ids end]} "Job array should be submitted"
 
 		# Add one more job, and check for error message
-		set match 0
-		spawn $sbatch --account=$acct -t1 -a0-$upper_lim -o/dev/null $file_in
-		expect {
-			-re "Job violates accounting/QOS policy" {
-				set match 1
-				exp_continue
-			}
-			timeout {
-				error "sbatch is not responding"
-			}
-			eof {
-				wait
-			}
-		}
-		subtest {$match != 0} "Additional job should not have been submitted"
+		set output [run_command_output -xfail -subtest "$sbatch --account=$acct -n1 -t1 -o/dev/null --wrap '$bin_sleep 1'"]
+		subtest {![regexp {Submitted \S+ job (\d+)} $output - tmp_job_id]} "Job should NOT be submitted"
+		subtest {[regexp "Job violates accounting/QOS policy" $output]} "Job violates policy message should be printed"
+
+		lappend job_ids $tmp_job_id
+		cancel_job $job_ids
+
+		# Test array too big
+		set tmp_job_id 0
+		set output [run_command_output -xfail -subtest "$sbatch --account=$acct -t1 -a0-$check_num -o/dev/null --wrap '$bin_sleep 1'"]
+		subtest {![regexp {Submitted \S+ job (\d+)} $output - tmp_job_id]} "Job array should NOT be submitted"
+		subtest {[regexp "Job violates accounting/QOS policy" $output]} "Job violates policy message should be printed"
+		cancel_job $tmp_job_id
 
 	} message] ; # Store the error message in $message
 
 	# Perform local cleanup
-	for {set inx 0} {$inx <= $check_num} {incr inx} {
-		if [info exists job_id($inx)] {
-			# cancels the jobs
-			cancel_job $job_id($inx)
-		}
-	}
-	exec $bin_rm -f $file_in
-	cancel_job $tmp_job_id
+	lappend job_ids $tmp_job_id
+	cancel_job $job_ids
 
 	# Convert any errors into failures (after cleaning up)
 	if {$exception_code == 1} { ; # errors only

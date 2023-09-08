@@ -80,7 +80,6 @@ if {[check_config_select "linear"] || [default_part_exclusive]} {
 	skip "This test is incompatible with exclusive node allocations"
 }
 
-set skips       0
 set test_node   ""
 # Total cpus in test node
 set totcpus     0
@@ -245,7 +244,7 @@ if {$num_nodes == 0} {
 
 
 proc cleanup {} {
-	global sacctmgr qostest acct test_id skips
+	global sacctmgr qostest acct test_id
 	global scontrol save_billing_weights partition
 
 	# delete qos
@@ -368,7 +367,7 @@ set mod_qos_vals(MaxCpus) "-1"
 set mod_qos_vals(MaxNodes) $maxnode_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
-inc21_30_6 "QOSMaxNodePerJobLimit|PartitionConfig"
+inc21_30_6 [list "QOSMaxNodePerJobLimit" "PartitionConfig"]
 set mod_qos_vals(MaxNodes) "-1"
 
 #
@@ -482,7 +481,7 @@ set mod_qos_vals(MaxCpusPerUser) "-1"
 set mod_qos_vals(MaxNodesPerUser) $maxnodespu_num
 mod_qos $qostest [array get mod_qos_vals]
 sleep $time_spacing
-inc21_30_16 "QOSMaxNodePerUserLimit|PartitionConfig"
+inc21_30_16 [list "QOSMaxNodePerUserLimit" "PartitionConfig"]
 set mod_qos_vals(MaxNodesPerUser) "-1"
 
 #
@@ -598,7 +597,3 @@ if { $one_task_pc } {
 }
 inc21_30_15 "QOSMaxBillingPerUser"
 set mod_qos_vals(MaxTRESPerUser=billing) "-1"
-
-if {$skips != 0} {
-	skip "Test was partially skipped (skips = $skips)"
-}
