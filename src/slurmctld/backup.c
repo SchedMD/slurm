@@ -443,9 +443,13 @@ static int _background_process_msg(slurm_msg_t *msg)
 		} else if (super_user &&
 			   (msg->msg_type == REQUEST_TAKEOVER)) {
 			info("Performing background RPC: REQUEST_TAKEOVER");
-			(void) _shutdown_primary_controller(SHUTDOWN_WAIT);
-			takeover = true;
-			error_code = SLURM_SUCCESS;
+			if (get_last_heartbeat(NULL)) {
+				_shutdown_primary_controller(SHUTDOWN_WAIT);
+				takeover = true;
+				error_code = SLURM_SUCCESS;
+			} else {
+				error_code = ESLURM_TAKEOVER_NO_HEARTBEAT;
+			}
 		} else if (super_user &&
 			   (msg->msg_type == REQUEST_CONTROL)) {
 			debug3("Ignoring RPC: REQUEST_CONTROL");
