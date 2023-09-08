@@ -198,6 +198,10 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Allow SLURMRESTD_DEBUG=quiet or 0, which was previously denied.
     Also deny negative values for SLURMRESTD_DEBUG, which previously set the
     debug level to debug5.
+ -- The backup slurmctld now checks that the heartbeat file exists in
+    StateSaveLocation before starting and attempting to assert control.
+    This avoids issues with misconfiguration, or the shared filesystem being
+    unavailable, that could previously have lead to all jobs being cancelled.
 
 * Changes in Slurm 23.02.6
 ==========================
