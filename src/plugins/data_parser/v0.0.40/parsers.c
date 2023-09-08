@@ -3684,29 +3684,19 @@ static int PARSE_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	if (data_get_type(src) == DATA_TYPE_INT_64) {
-		if ((rc = PARSE(UINT64_NO_VAL, cpu_mem, src, parent_path,
-				args))) {
-			/* error already logged */
-			return rc;
+	if (data_get_type(src) == DATA_TYPE_STRING) {
+		/* special handling for converting from string for units */
+		if ((cpu_mem = str_to_mbytes(data_get_string(src))) ==
+		    NO_VAL64) {
+			return parse_error(parser, args, parent_path,
+					   ESLURM_DATA_CONV_FAILED,
+					   "Invalid formatted memory size: %s",
+					   data_get_string(src));
 		}
-	} else {
-		char *str = NULL;
-
-		if ((rc = data_get_string_converted(src, &str))) {
-			return parse_error(parser, args, parent_path, rc,
-					   "string expected but got %s",
-					   data_get_type_string(src));
-		}
-
-		if ((cpu_mem = str_to_mbytes(str)) == NO_VAL64) {
-			parse_error(parser, args, parent_path, rc,
-				    "Invalid formatted memory size: %s", str);
-			xfree(str);
-			return rc;
-		}
-
-		xfree(str);
+	} else if ((rc = PARSE(UINT64_NO_VAL, cpu_mem, src, parent_path,
+			       args))) {
+		/* error already logged */
+		return rc;
 	}
 
 	if (cpu_mem == NO_VAL64) {
