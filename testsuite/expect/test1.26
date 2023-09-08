@@ -37,12 +37,7 @@ if {![is_super_user]} {
 }
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
-    skip "This test is incompatible with front-end systems"
-}
-
-set switch [get_config_param "SwitchType"]
-if {$switch ne "switch/none"} {
-        skip "This test is incompatible with $switch"
+	skip "This test is incompatible with front-end systems"
 }
 
 #
