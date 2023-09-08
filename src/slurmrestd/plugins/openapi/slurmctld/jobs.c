@@ -232,9 +232,9 @@ cleanup:
 static void _job_submit_rc(ctxt_t *ctxt, submit_response_msg_t *resp,
 			   const char *src)
 {
-	int rc = resp->error_code;
+	int rc;
 
-	if (!rc)
+	if (!resp || !(rc = resp->error_code))
 		return;
 
 	if (rc == ESLURM_JOB_HELD) {
