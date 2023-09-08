@@ -293,7 +293,7 @@ static void *_load_willrun_thread(void *args)
 	list_append(load_args->resp_msg_list, resp);
 	xfree(args);
 
-	return (void *) NULL;
+	return NULL;
 }
 
 static int _fed_job_will_run(job_desc_msg_t *req,

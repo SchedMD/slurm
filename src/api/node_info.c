@@ -604,7 +604,7 @@ static void *_load_node_thread(void *args)
 	}
 	xfree(args);
 
-	return (void *) NULL;
+	return NULL;
 }
 
 static int _load_fed_nodes(slurm_msg_t *req_msg,

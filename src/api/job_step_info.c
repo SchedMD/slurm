@@ -358,7 +358,7 @@ static void *_load_step_thread(void *args)
 	}
 	xfree(args);
 
-	return (void *) NULL;
+	return NULL;
 }
 
 static int

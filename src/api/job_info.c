@@ -1202,7 +1202,7 @@ static void *_load_job_thread(void *args)
 	}
 	xfree(args);
 
-	return (void *) NULL;
+	return NULL;
 }
 
 
@@ -2086,7 +2086,7 @@ static void *_load_job_prio_thread(void *args)
 	}
 	xfree(args);
 
-	return (void *) NULL;
+	return NULL;
 }
 
 static int _load_fed_job_prio(slurm_msg_t *req_msg,

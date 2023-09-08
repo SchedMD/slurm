@@ -454,7 +454,7 @@ static void *_load_job_prio_thread(void *args)
 	if (error_code) {
 		slurm_perror("slurm_load_partitions");
 		xfree(args);
-		return (void *) NULL;
+		return NULL;
 	}
 	list_append(load_args->part_info_msg_list, new_part_ptr);
 
@@ -468,7 +468,7 @@ static void *_load_job_prio_thread(void *args)
 	if (error_code) {
 		slurm_perror("slurm_load_node");
 		xfree(args);
-		return (void *) NULL;
+		return NULL;
 	}
 	list_append(load_args->node_info_msg_list, new_node_ptr);
 
@@ -508,7 +508,7 @@ static void *_load_job_prio_thread(void *args)
 	}
 
 	xfree(args);
-	return (void *) NULL;
+	return NULL;
 }
 
 /*

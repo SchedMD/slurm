@@ -3706,7 +3706,7 @@ static void *_wait_primary_prog(void *arg)
 	}
 	xfree(wait_arg->prog_type);
 	xfree(wait_arg);
-	return (void *) NULL;
+	return NULL;
 }
 
 static void _run_primary_prog(bool primary_on)

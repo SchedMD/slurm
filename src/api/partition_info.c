@@ -507,7 +507,7 @@ static void *_load_part_thread(void *args)
 	}
 	xfree(args);
 
-	return (void *) NULL;
+	return NULL;
 }
 
 static int _load_fed_parts(slurm_msg_t *req_msg,

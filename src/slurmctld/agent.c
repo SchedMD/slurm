@@ -677,7 +677,7 @@ static void *_wdog(void *args)
 			 __func__, thd_comp.max_delay);
 
 	slurm_mutex_unlock(&agent_ptr->thread_mutex);
-	return (void *) NULL;
+	return NULL;
 }
 
 static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
@@ -1243,7 +1243,7 @@ cleanup:
 	(*threads_active_ptr)--;
 	slurm_cond_signal(thread_cond_ptr);
 	slurm_mutex_unlock(thread_mutex_ptr);
-	return (void *) NULL;
+	return NULL;
 }
 
 /*
@@ -1964,7 +1964,7 @@ static void *_mail_proc(void *arg)
 	slurm_mutex_unlock(&mail_mutex);
 	slurm_mutex_unlock(&agent_cnt_mutex);
 
-	return (void *) NULL;
+	return NULL;
 }
 
 static char *_mail_type_str(uint16_t mail_type)
