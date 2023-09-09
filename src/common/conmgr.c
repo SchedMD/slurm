@@ -1912,7 +1912,8 @@ watch:
 
 	if (work) {
 		/* wait until something happens */
-		slurm_cond_wait(&mgr->cond, &mgr->mutex);
+		if (!mgr->shutdown)
+			slurm_cond_wait(&mgr->cond, &mgr->mutex);
 		goto watch;
 	}
 
