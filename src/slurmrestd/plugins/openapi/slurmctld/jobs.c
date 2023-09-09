@@ -129,10 +129,9 @@ static void _handle_job_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 			   id);
 
 		xfree(id);
-	} else {
-		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOB_INFO_RESP, job_info_ptr,
-					 ctxt);
 	}
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOB_INFO_RESP, job_info_ptr, ctxt);
 
 	slurm_free_job_info_msg(job_info_ptr);
 }
