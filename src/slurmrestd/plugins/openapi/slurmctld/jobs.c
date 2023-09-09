@@ -85,10 +85,9 @@ static int _op_handler_jobs(openapi_ctxt_t *ctxt)
 	} else if (rc) {
 		resp_error(ctxt, rc, "slurm_load_jobs()",
 			   "Unable to query jobs");
-	} else {
-		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOB_INFO_RESP, job_info_ptr,
-					 ctxt);
 	}
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOB_INFO_RESP, job_info_ptr, ctxt);
 
 	slurm_free_job_info_msg(job_info_ptr);
 	return rc;
