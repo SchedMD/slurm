@@ -84,8 +84,7 @@ extern int data_parser_p_dump(args_t *args, data_parser_type_t type, void *src,
 	xassert(type > DATA_PARSER_TYPE_INVALID);
 	xassert(type < DATA_PARSER_TYPE_MAX);
 	xassert(args->magic == MAGIC_ARGS);
-	xassert(src);
-	xassert(src_bytes > 0);
+	xassert(!src || (src_bytes > 0));
 	xassert(dst && (data_get_type(dst) == DATA_TYPE_NULL));
 
 	if (!parser) {

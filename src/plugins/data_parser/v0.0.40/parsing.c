@@ -1418,7 +1418,7 @@ extern int dump(void *src, ssize_t src_bytes, const parser_t *const parser,
 	xassert(dst && (data_get_type(dst) != DATA_TYPE_NONE));
 	xassert(args->magic == MAGIC_ARGS);
 	xassert((src_bytes == NO_VAL) || (src_bytes > 0));
-	xassert(src);
+
 	/*
 	 * Make sure the source object is the same size since there is no
 	 * way to dump value of __typeof__ as a value in C.
