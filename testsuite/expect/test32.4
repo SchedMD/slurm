@@ -31,7 +31,7 @@ set hostname      ""
 set file_in       "$test_dir/input"
 set file_out      "$test_dir/output"
 set sgather_tmp   "/tmp/$test_name"
-set sgather_out   "{test_name}_sgather.out"
+set sgather_out   "$test_dir/sgather.out"
 
 if {[file executable $sgather] == 0} {
 	skip "$sgather does not exist"
