@@ -86,7 +86,7 @@ if {$job_id == 0} {
 }
 
 wait_for_job -fail $job_id "DONE"
-wai_for_file -fail $file_out
+wait_for_file -fail $file_out
 
 set number_1 -1
 set number_2 -1
