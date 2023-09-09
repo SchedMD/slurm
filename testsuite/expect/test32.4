@@ -73,6 +73,7 @@ set job_id [submit_job -fail "-N $nnodes -o $file_out -t1 $file_in"]
 wait_for_job -fail $job_id "DONE"
 wait_for_file -fail $file_out
 
+# Verify file transmission
 set output [run_command_output -fail "$bin_cat $file_out"]
 subtest {[regexp "SLURM_NNODES=$nnodes" $output]} "Job should use $nnodes nodes"
 subtest {[regexp -all "$sgather\' -> \'$sgather_tmp" $output] == $nnodes} "Initial srun should copy the file to gather in all $nnodes nodes"
@@ -84,3 +85,13 @@ foreach node $nodes {
 	subtest {[regexp "removed \'${sgather_out}.${node}" $output]} "Job srun should remove sent file from $node"
 }
 
+# Verify fanout
+if {![param_contains [get_config_param "AccountingStorageType"] "*slurmdbd"]} {
+	subskip "This subtest can't be run without a usable AccountStorageType"
+} else {
+	# Wait for job being completed in the DB
+	wait_for_command_match -fail "$sacct -nXP -j $job_id --format State" "COMPLETED"
+
+	set output [run_command_output -fail "$sacct -nP -j $job_id --format=JobName"]
+	subtest {[regexp -all "sgather" $output] == 1} "sgather should be called only once when number of nodes ($nnodes) is equal or lower than default fanout (8)"
+}
