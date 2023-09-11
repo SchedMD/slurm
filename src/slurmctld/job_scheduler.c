@@ -729,17 +729,17 @@ extern void set_job_elig_time(void)
 /* Test of part_ptr can still run jobs or if its nodes have
  * already been reserved by higher priority jobs (those in
  * the failed_parts array) */
-static bool _failed_partition(part_record_t *part_ptr,
-			      part_record_t **failed_parts,
-			      int failed_part_cnt)
+static int _failed_partition(part_record_t *part_ptr,
+			     part_record_t **failed_parts,
+			     int failed_part_cnt)
 {
 	int i;
 
 	for (i = 0; i < failed_part_cnt; i++) {
 		if (failed_parts[i] == part_ptr)
-			return true;
+			return i;
 	}
-	return false;
+	return -1;
 }
 
 static void _do_diag_stats(long delta_t)
@@ -1603,8 +1603,9 @@ next_task:
 					     job_ptr->resv_name);
 				continue;
 			}
-		} else if (_failed_partition(job_ptr->part_ptr, failed_parts,
-					     failed_part_cnt)) {
+		} else if ((i = _failed_partition(job_ptr->part_ptr,
+						  failed_parts,
+						  failed_part_cnt)) >= 0) {
 			if ((job_ptr->state_reason == WAIT_NO_REASON) ||
 			    (job_ptr->state_reason == WAIT_RESOURCES)) {
 				sched_debug("%pJ unable to schedule in Partition=%s (per _failed_partition()). State=PENDING. Previous-Reason=%s. Previous-Desc=%s. New-Reason=Priority. Priority=%u.",
