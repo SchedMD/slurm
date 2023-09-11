@@ -138,8 +138,6 @@ libcommon_la_SOURCES =				\
 	slurmdbd_pack.h				\
 	spank.c					\
 	spank.h					\
-	state_control.c				\
-	state_control.h				\
 	stepd_api.c				\
 	stepd_api.h				\
 	strlcpy.c				\

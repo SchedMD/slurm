@@ -37,7 +37,6 @@
 \*****************************************************************************/
 
 #include "src/common/proc_args.h"
-#include "src/common/state_control.h"
 #include "src/scontrol/scontrol.h"
 #include "src/slurmctld/reservation.h"
 
@@ -271,16 +270,7 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			resv_msg_ptr->partition = val;
 
 		} else if (xstrncasecmp(tag, "TRES", MAX(taglen, 1)) == 0) {
-			if (state_control_parse_resv_tres(val, resv_msg_ptr,
-							  res_free_flags,
-							  &err_msg)
-			    == SLURM_ERROR) {
-				error("%s", err_msg);
-				xfree(err_msg);
-				exit_code = 1;
-				return SLURM_ERROR;
-			}
-
+			resv_msg_ptr->tres_str = val;
 		} else if (xstrncasecmp(tag, "Watts", MAX(taglen, 1)) == 0) {
 			resv_msg_ptr->resv_watts =
 				slurm_watts_str_to_int(val, &err_msg);
@@ -435,10 +425,11 @@ scontrol_create_res(int argc, char **argv)
 	    (!resv_msg.node_cnt || (resv_msg.node_cnt == NO_VAL)) &&
 	    (resv_msg.node_list == NULL || resv_msg.node_list[0] == '\0') &&
 	    (resv_msg.licenses  == NULL || resv_msg.licenses[0]  == '\0') &&
+	    (resv_msg.tres_str  == NULL || resv_msg.tres_str[0]  == '\0') &&
 	    (resv_msg.resv_watts == NO_VAL)) {
 		if (resv_msg.partition == NULL) {
 			exit_code = 1;
-			error("CoreCnt, Nodes, NodeCnt, BurstBuffer, Licenses or Watts must be specified.  No reservation created.");
+			error("CoreCnt, Nodes, NodeCnt, TRES or Watts must be specified.  No reservation created.");
 			goto SCONTROL_CREATE_RES_CLEANUP;
 		}
 		if (resv_msg.flags == NO_VAL64)

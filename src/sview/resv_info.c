@@ -31,7 +31,6 @@
 #include "src/sview/sview.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
-#include "src/common/state_control.h"
 #include "src/common/xstring.h"
 
 #define _DEBUG 0
@@ -345,16 +344,8 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		type = "users";
 		break;
 	case SORTID_TRES:
+		resv_msg->tres_str = xstrdup(new_text);
 		type = "TRES";
-		if (state_control_parse_resv_tres((char *)new_text, resv_msg,
-						  &res_free_flags, &err_msg)
-		    == SLURM_ERROR) {
-			if (global_edit_error_msg)
-				g_free(global_edit_error_msg);
-			global_edit_error_msg = g_strdup(err_msg);
-			xfree(err_msg);
-			goto return_error;
-		}
 		break;
 	case SORTID_WATTS:
 		resv_msg->resv_watts = slurm_watts_str_to_int(

@@ -2777,6 +2777,43 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	bool account_not = false, user_not = false;
 
 	_create_resv_lists(false);
+
+	if (resv_desc_ptr->tres_str) {
+		/*
+		 * There are a few different ways to request a tres string, this
+		 * will format it correctly for the rest of Slurm.
+		 */
+		char *tmp_str = slurm_get_tres_sub_string(
+			resv_desc_ptr->tres_str, NULL, NO_VAL, true, true);
+		char *tres_sub_str;
+
+		if (!tmp_str)
+			return ESLURM_INVALID_TRES;
+		xfree(resv_desc_ptr->tres_str);
+		resv_desc_ptr->tres_str = tmp_str;
+		tmp_str = NULL;
+
+		tres_sub_str = slurm_get_tres_sub_string(
+			resv_desc_ptr->tres_str, "license", NO_VAL,
+			false, false);
+		if (tres_sub_str) {
+			if (resv_desc_ptr->licenses)
+				return SLURM_ERROR;
+			resv_desc_ptr->licenses = tres_sub_str;
+			tres_sub_str = NULL;
+		}
+
+		tres_sub_str = slurm_get_tres_sub_string(
+			resv_desc_ptr->tres_str, "bb", NO_VAL,
+			false, false);
+		if (tres_sub_str) {
+			if (resv_desc_ptr->burst_buffer)
+				return SLURM_ERROR;
+			resv_desc_ptr->burst_buffer = tres_sub_str;
+			tres_sub_str = NULL;
+		}
+	}
+
 	_dump_resv_req(resv_desc_ptr, "create_resv");
 
 	if (resv_desc_ptr->flags == NO_VAL64)
