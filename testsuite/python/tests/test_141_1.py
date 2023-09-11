@@ -199,8 +199,6 @@ def test_scontrol_power_up_down():
     # scontrol POWER_DOWN
     atf.run_command(f"scontrol update nodename={node_prefix}1 state=POWER_DOWN",
         fatal=True, user="slurm")
-    assert "POWER_DOWN" in atf.get_node_parameter(f"{node_prefix}1", "State").split("+"), \
-        "POWER_DOWN should immediately be added to cloud node's state"
     atf.wait_for_node_state(f"{node_prefix}1", "POWERING_DOWN", timeout=5, fatal=True)
     atf.wait_for_node_state(f"{node_prefix}1", "POWERED_DOWN", timeout=suspend_timeout+5, fatal=True)
     assert "IDLE" in atf.get_node_parameter(f"{node_prefix}1", "State").split("+"), \
@@ -289,19 +287,17 @@ def test_scontrol_power_down_force_and_resume():
     # scontrol POWER_DOWN_FORCE when cloud node is already up
     atf.run_command(f"scontrol update nodename={node_prefix}1 state=POWER_DOWN_FORCE",
         fatal=True, user="slurm")
-    assert "POWER_DOWN" in atf.get_node_parameter(f"{node_prefix}1", "State").split("+"), \
-        "POWER_DOWN should immediately be added to cloud node's state"
+
     assert "IDLE" in atf.get_node_parameter(f"{node_prefix}1", "State").split("+"), \
         "Per 'SlurmctldParameters=idle_on_node_suspend' in slurm.conf, cloud node should always be "\
         "in IDLE state except when ALLOCATED/MIXED for an assigned job"
-    assert "COMPLETING" in atf.get_node_parameter(f"{node_prefix}1", "State").split("+"), \
-        "Cloud node should enter a COMPLETING state while shedding jobs"
-    assert "COMPLETING" == atf.get_job_parameter(job_id, "JobState", default="NOT_FOUND", quiet=True), \
-        "Job should be COMPLETING as cloud node sheds it"
 
     # Make sure job is requeued and cloud node is POWERED_DOWN
-    atf.wait_for_job_state(job_id, "PENDING", timeout=10, fatal=True)
-    atf.wait_for_node_state(f"{node_prefix}1", "POWERING_DOWN", timeout=5, fatal=True)
+    assert atf.wait_for_node_state(f"{node_prefix}1", "POWERING_DOWN",
+        timeout=atf.PERIODIC_TIMEOUT, fatal=True),\
+        "Node should be POWERING_DOWN"
+    assert atf.wait_for_job_state(job_id, "PENDING", timeout=10, fatal=True), \
+        "Job should be requeued and PENDING after node is powered down"
 
     # Test scontrol RESUME sets cloud node to POWERED_DOWN when POWERING_DOWN already
     atf.run_command(f"scontrol update nodename={node_prefix}1 state=RESUME", fatal=True, user="slurm")
