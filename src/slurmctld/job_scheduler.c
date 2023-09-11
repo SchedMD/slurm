@@ -135,6 +135,11 @@ static int sched_min_interval = 2;
 static int bb_array_stage_cnt = 10;
 extern diag_stats_t slurmctld_diag_stats;
 
+typedef struct {
+	part_record_t *part_ptr;
+	bool cleared;
+} _failed_part_t;
+
 static int _find_singleton_job (void *x, void *key)
 {
 	job_record_t *qjob_ptr = (job_record_t *) x;
@@ -730,13 +735,13 @@ extern void set_job_elig_time(void)
  * already been reserved by higher priority jobs (those in
  * the failed_parts array) */
 static int _failed_partition(part_record_t *part_ptr,
-			     part_record_t **failed_parts,
+			     _failed_part_t *failed_parts,
 			     int failed_part_cnt)
 {
 	int i;
 
 	for (i = 0; i < failed_part_cnt; i++) {
-		if (failed_parts[i] == part_ptr)
+		if (failed_parts[i].part_ptr == part_ptr)
 			return i;
 	}
 	return -1;
@@ -1012,7 +1017,8 @@ static int _schedule(bool full_queue)
 	uint32_t job_depth = 0, array_task_id;
 	job_queue_rec_t *job_queue_rec;
 	job_record_t *job_ptr = NULL;
-	part_record_t *part_ptr, **failed_parts = NULL, *skip_part_ptr = NULL;
+	part_record_t *part_ptr, *skip_part_ptr = NULL;
+	_failed_part_t *failed_parts = NULL;
 	slurmctld_resv_t **failed_resv = NULL;
 	bitstr_t *save_avail_node_bitmap;
 	part_record_t **sched_part_ptr = NULL;
@@ -1314,7 +1320,7 @@ static int _schedule(bool full_queue)
 	}
 
 	part_cnt = list_count(part_list);
-	failed_parts = xcalloc(part_cnt, sizeof(part_record_t *));
+	failed_parts = xcalloc(part_cnt, sizeof(*failed_parts));
 	failed_resv = xcalloc(MAX_FAILED_RESV, sizeof(slurmctld_resv_t *));
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 	bit_or(avail_node_bitmap, rs_node_bitmap);
@@ -1332,10 +1338,8 @@ static int _schedule(bool full_queue)
 				if (bit_overlap_any(eff_cg_bitmap,
 						    part_ptr->node_bitmap) &&
 				    (part_ptr->state_up & PARTITION_SCHED)) {
-					failed_parts[failed_part_cnt++] =
+					failed_parts[failed_part_cnt++].part_ptr =
 						part_ptr;
-					bit_and_not(avail_node_bitmap,
-						    part_ptr->node_bitmap);
 					if (slurm_conf.slurmctld_debug >=
 					    LOG_LEVEL_DEBUG) {
 						if (cg_part_str)
@@ -1606,6 +1610,13 @@ next_task:
 		} else if ((i = _failed_partition(job_ptr->part_ptr,
 						  failed_parts,
 						  failed_part_cnt)) >= 0) {
+
+			if (!failed_parts[i].cleared) {
+				bit_and_not(avail_node_bitmap,
+					    part_ptr->node_bitmap);
+				failed_parts[i].cleared = true;
+			}
+
 			if ((job_ptr->state_reason == WAIT_NO_REASON) ||
 			    (job_ptr->state_reason == WAIT_RESOURCES)) {
 				sched_debug("%pJ unable to schedule in Partition=%s (per _failed_partition()). State=PENDING. Previous-Reason=%s. Previous-Desc=%s. New-Reason=Priority. Priority=%u.",
@@ -1957,7 +1968,8 @@ skip_start:
 fail_this_part:	if (fail_by_part) {
 			/* Search for duplicates */
 			for (i = 0; i < failed_part_cnt; i++) {
-				if (failed_parts[i] == job_ptr->part_ptr) {
+				if (failed_parts[i].part_ptr ==
+				    job_ptr->part_ptr) {
 					fail_by_part = false;
 					break;
 				}
@@ -1968,7 +1980,9 @@ fail_this_part:	if (fail_by_part) {
 			 * Do not schedule more jobs in this partition or on
 			 * nodes in this partition
 			 */
-			failed_parts[failed_part_cnt++] = job_ptr->part_ptr;
+			failed_parts[failed_part_cnt].cleared = true;
+			failed_parts[failed_part_cnt++].part_ptr =
+				job_ptr->part_ptr;
 			bit_and_not(avail_node_bitmap,
 				    job_ptr->part_ptr->node_bitmap);
 		}
