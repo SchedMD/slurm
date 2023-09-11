@@ -28,6 +28,7 @@ default_command_timeout = 60
 default_polling_timeout = 15
 default_sql_cmd_timeout = 120
 
+PERIODIC_TIMEOUT = 30
 
 def node_range_to_list(node_expression):
     """Converts a node range expression into a list of node names.
