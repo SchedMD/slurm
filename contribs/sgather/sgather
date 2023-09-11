@@ -96,7 +96,7 @@ if [ -z "$_SGATHER_SPAWNED" ]; then
   # parse command line options
   #
   opt_error=0
-  opts=$(getopt -n "$0" --options "CfF:hkprt:vV" --long "compress,force,fanout:,help,keep,preserve,recursive,timeout,usage,verbose,version" -- "$@") || opt_error=$?
+  opts=$(getopt -n "$0" --options "CfF:hkprt:vV" --long "compress,force,fanout:,help,keep,preserve,recursive,timeout:,usage,verbose,version" -- "$@") || opt_error=$?
   eval set -- "$opts"
   while [ $opt_error -eq 0 -a $# -gt 0 ]; do
     case "$1" in
