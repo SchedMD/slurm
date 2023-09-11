@@ -27,14 +27,16 @@
 source ./globals
 
 set job_id        0
-set hostname      ""
 set file_in       "$test_dir/input"
 set file_out      "$test_dir/output"
 set sgather_tmp   "/tmp/$test_name"
-set sgather_out   "${test_name}_sgather.out"
+set sgather_out   "$test_dir/sgather.out"
+set nnodes        2
+set chksum        0
+set chkcnt        0
 
 if {[file executable $sgather] == 0} {
-	skip "$sgather does not exist"
+	skip "This test needs $sgather installed"
 }
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
@@ -46,6 +48,10 @@ if {[get_config_param "MULTIPLE_SLURMD"] eq "Yes"} {
 if {[get_config_param "SlurmdUser"] ne "root(0)"} {
 	skip "This test is incompatible with SlurmdUser != root"
 }
+set nodes [get_nodes_by_request "-N $nnodes -t1"]
+if {[llength $nodes] != $nnodes} {
+	skip "This test requires $nnodes nodes in the default partition"
+}
 
 proc cleanup {} {
 	global job_id
@@ -53,67 +59,28 @@ proc cleanup {} {
 	cancel_job $job_id
 }
 
-# Set env PATH to slurm dir
-set env(PATH) $slurm_dir/bin:$env(PATH)
-
 make_bash_script $file_in "
 env | grep SLURM_NNODES
-$bin_rm -f ${sgather_out}\*
-$srun $bin_cp -f $sgather $sgather_tmp
-$sgather -k $sgather_tmp $sgather_out
-sum $sgather ${sgather_out}\*
-$bin_rm -f ${sgather_out}\*
-$srun ls -l $sgather_tmp
-$srun $bin_rm -f $sgather_tmp
+$srun $bin_cp -fv $sgather $sgather_tmp
+$sgather --keep $sgather_tmp $sgather_out
+$bin_sum $sgather ${sgather_out}*
+$bin_rm -fv ${sgather_out}*
+$srun $bin_rm -fv $sgather_tmp
 exit 0
 "
 
-spawn $sbatch -N1-4 -o $file_out -t1 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch is not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Batch job was not submitted"
-}
-
+set job_id [submit_job -fail "-N $nnodes -o $file_out -t1 $file_in"]
 wait_for_job -fail $job_id "DONE"
 wait_for_file -fail $file_out
 
-set number_1 -1
-set number_2 -1
-set file_cnt  0
-set node_cnt 99
-spawn $bin_cat $file_out
-expect {
-	-re "SLURM_NNODES=($number)" {
-		set node_cnt $expect_out(1,string)
-		exp_continue
-	}
-	-re "\n($number) *($number) " {
-		if {$number_1 == $expect_out(1,string) && $number_2 == $expect_out(2,string)} {
-			incr file_cnt
-		} else {
-			set number_1 $expect_out(1,string)
-			set number_2 $expect_out(2,string)
-		}
-		exp_continue
-	}
-	-re "No such file or directory" {
-		fail "Failed to keep gathered files from all allocated nodes"
-	}
-	eof {
-		wait
-	}
-}
-if {$file_cnt != $node_cnt} {
-	fail "Failed to gather files from all allocated nodes ($file_cnt != $node_cnt)"
+# Verify file transmission
+set output [run_command_output -fail "$bin_cat $file_out"]
+subtest {[regexp "SLURM_NNODES=$nnodes" $output]} "Job should use $nnodes nodes"
+subtest {[regexp -all "$sgather\' -> \'$sgather_tmp" $output] == $nnodes} "Initial srun should copy the file to gather in all $nnodes nodes"
+subtest {[regexp "($number) *($number) $sgather" $output - chksum chkcnt]} "Job should should print the checksum and block count of the file to be gathered"
+subtest {[regexp -all "$chksum *$chkcnt ${sgather_out}" $output] == $nnodes} "sgather should send the exact same file (from each node)"
+subtest {[regexp -all "removed \'${sgather_tmp}" $output] == $nnodes} "sgather should NOT remove the source file, but the final srun rm command"
+foreach node $nodes {
+	subtest {[regexp "$chksum *$chkcnt ${sgather_out}.${node}" $output]} "sgather should send the file from $node"
+	subtest {[regexp "removed \'${sgather_out}.${node}" $output]} "Job srun should remove sent file from $node"
 }
