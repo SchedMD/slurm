@@ -78,6 +78,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 /*
  * Determine how many tasks can be started on a given node and which
  *	sockets/cores are required
+ * IN job_ptr - job's pointer
  * IN mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
  * IN sock_gres_list - list of sock_gres_t entries built by gres_job_test2()
  * IN sockets - Count of sockets on the node
@@ -96,7 +97,8 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
  * IN node_name - name of the node
  * IN cr_type
  */
-extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
+extern void gres_select_filter_sock_core(job_record_t *job_ptr,
+					 gres_mc_data_t *mc_ptr,
 					 List sock_gres_list,
 					 uint16_t sockets,
 					 uint16_t cores_per_socket,

@@ -425,6 +425,7 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	 */
 	if (job_ptr->gres_list_req) {
 		gres_select_filter_sock_core(
+			job_ptr,
 			mc_ptr,
 			avail_res_array[node_inx]->sock_gres_list,
 			avail_res_array[node_inx]->sock_cnt,

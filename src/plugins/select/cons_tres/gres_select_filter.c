@@ -358,6 +358,7 @@ static void _estimate_cpus_per_gres(uint32_t ntasks_per_job,
 /*
  * Determine how many tasks can be started on a given node and which
  *	sockets/cores are required
+ * IN job_ptr - job's pointer
  * IN mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
  * IN sock_gres_list - list of sock_gres_t entries built by
  *	gres_sched_create_sock_gres_list()
@@ -376,7 +377,8 @@ static void _estimate_cpus_per_gres(uint32_t ntasks_per_job,
  * IN avail_core - cores available on this node, UPDATED
  * IN node_name - name of the node
  */
-extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
+extern void gres_select_filter_sock_core(job_record_t *job_ptr,
+					 gres_mc_data_t *mc_ptr,
 					 List sock_gres_list,
 					 uint16_t sockets,
 					 uint16_t cores_per_socket,
