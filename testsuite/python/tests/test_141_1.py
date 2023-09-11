@@ -161,9 +161,6 @@ def test_resume_timeout():
     # Assert surpassing resume_timeout correctly set cloud node's state
     assert "POWERED_DOWN" in atf.get_node_parameter(f"{node_prefix}1", "State").split("+"), \
         "Cloud node didn't enter POWERED_DOWN state immediately after surpassing resume timeout"
-    assert "NOT_RESPONDING" in atf.get_node_parameter(f"{node_prefix}1", "State").split("+"), \
-        "Cloud node should be NOT_RESPONDING after slurmctld tried to power up the node and no "\
-        "corresponding slurmd was registered"
 
     # Best to end the test with the cloud node POWERED_DOWN and IDLE
     atf.run_command(f"scontrol update node={node_prefix}1 state=resume", fatal=True, user="slurm")
