@@ -2294,6 +2294,7 @@ function __slurm_comp_sacctmgr_spec_qos() {
 		"partitionmaxnodes"
 		"partitionminnodes"
 		"partitiontimelimit"
+		"relative"
 		"requiresreservation"
 		"usagefactorsafe"
 	)
