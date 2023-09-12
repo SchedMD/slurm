@@ -857,6 +857,39 @@ function __slurm_gres() {
 	__slurm_func_wrapper "$cmd"
 }
 
+# Slurm helper function to get instance extra list
+#
+# RET: space delimited list
+function __slurm_instances_extra() {
+	__slurm_comp_slurm_value || return
+	__slurm_dbd_status || return
+
+	local cmd="sacctmgr -Pn list instances format=extra"
+	__slurm_func_wrapper "$cmd"
+}
+
+# Slurm helper function to get instance id list
+#
+# RET: space delimited list
+function __slurm_instances_id() {
+	__slurm_comp_slurm_value || return
+	__slurm_dbd_status || return
+
+	local cmd="sacctmgr -Pn list instances format=instanceid"
+	__slurm_func_wrapper "$cmd"
+}
+
+# Slurm helper function to get instance type list
+#
+# RET: space delimited list
+function __slurm_instances_type() {
+	__slurm_comp_slurm_value || return
+	__slurm_dbd_status || return
+
+	local cmd="sacctmgr -Pn list instances format=instancetype"
+	__slurm_func_wrapper "$cmd"
+}
+
 # Slurm helper function to get recent jobs list
 #
 # RET: space delimited list
@@ -2185,7 +2218,9 @@ function __slurm_comp_sacctmgr_spec_instances() {
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	instance?(s)) __slurm_compreply_list "${event_types[*]}" ;;
+	extra) __slurm_compreply_list "$(__slurm_instances_extra)" ;;
+	instanceid) __slurm_compreply_list "$(__slurm_instances_id)" ;;
+	instancetype) __slurm_compreply_list "$(__slurm_instances_type)" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
 		[[ $split == "true" ]] && return
