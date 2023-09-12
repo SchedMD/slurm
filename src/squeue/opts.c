@@ -2171,8 +2171,6 @@ Usage: squeue [OPTIONS]\n\
   -A, --account=account(s)        comma separated list of accounts\n\
 				  to view, default is all accounts\n\
   -a, --all                       display jobs in hidden partitions\n\
-      --array-unique              display one unique pending job array\n\
-                                  element per line\n\
       --federation                Report federated information if a member\n\
                                   of one\n\
   -h, --noheader                  no headers on output\n\
