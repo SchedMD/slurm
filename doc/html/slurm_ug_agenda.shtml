@@ -63,11 +63,11 @@
 
 <tr><td nowrap>9:00 - 9:05</td><td>Auble &ndash; SchedMD</td><td>Welcome</td></tr>
 
-<tr><td nowrap>9:05 - 10:00</td><td>TBA &ndash; BYU</td><td>Keynote</td></tr>
+<tr><td nowrap>9:05 - 10:00</td><td>David Jarvis &ndash; BYU</td><td>Keynote &mdash; Improving quinoa through the development of genetic and genomic resources</td></tr>
 
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:30</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 
-<tr><td nowrap>10:30 - 11:00</td><td>Jacobsen and Samuel&ndash; NERSC</td><td>Never use Slurm HA again: Solve all your problems with Kubernetes</td></tr>
+<tr><td nowrap>10:30 - 11:00</td><td>Jacobsen and Samuel &ndash; NERSC</td><td>Never use Slurm HA again: Solve all your problems with Kubernetes</td></tr>
 
 <tr><td nowrap>11:00 - 11:30</td><td>Younts &ndash; Guardant</td><td>Guardant Health Site Report</td></tr>
 
@@ -77,13 +77,13 @@
 
 <tr><td nowrap>13:00 - 13:30</td><td>Pratt and Feldman &ndash; CoreWeave</td><td>Providing the Power of Slurm on CoreWeave's Serverless Kubernetes Architecture</td></tr>
 
-<tr><td nowrap>13:30 - 14:00</td><td> &ndash; LLSC</td><td></td></tr>
+<tr><td nowrap>13:30 - 14:00</td><td>Byun &ndash; LLSC</td><td>Optimizing Diverse Workloads and Resource Usage with Slurm</td></tr>
 
 <tr><td nowrap>14:00 - 14:30</td><td>Rini &ndash; SchedMD</td><td>State of the Slurm REST API</td></tr>
 
 <tr><td nowrap bgcolor="#F0F1C9">14:30 - 15:00</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 
-<tr><td nowrap>15:00 - 15:30</td><td>TBA &ndash; Google/Recursion</td><td></td></tr>
+<tr><td nowrap>15:00 - 15:30</td><td>Eyrich (Google) and Fryer (Recursion)</td><td>Build a flexible and powerful High Performance Computing foundation with Google Cloud</td></tr>
 
 <tr><td nowrap>15:30 - 16:00</td><td>Fazio &ndash; Dow</td><td>Demand Driven Cluster Elasticity</td></tr>
 
@@ -266,6 +266,6 @@
 
 <!-- -------------------------------------------------------------------------- -->
 
-<p style="text-align:center;">Last modified 21 August 2023</p>
+<p style="text-align:center;">Last modified 12 September 2023</p>
 
 <!--#include virtual="footer.txt"-->
