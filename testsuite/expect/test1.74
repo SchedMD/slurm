@@ -32,7 +32,7 @@ source ./globals_accounting
 set node_cnt    0
 set cluster     [get_config_param "ClusterName"]
 set node_name   ""
-set user        ""
+set user        [get_my_user_name]
 set acct        "${test_name}_acct"
 set acct_c1     "${test_name}_acct_c_1"
 set acct_c2     "${test_name}_acct_c_2"
@@ -54,8 +54,6 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator"
 }
-
-set user [get_my_user_name]
 
 proc cleanup { } {
 	global acct acct_c1 acct_c2 qos
@@ -176,8 +174,13 @@ srun_test $node_cnt $acct
 set mod_qos_vals(MaxNodes) [expr $node_cnt - 1]
 mod_qos $qos [array get mod_qos_vals]
 set mod_qos_vals(MaxNodes) -1
-# some times the message takes a little time for some reason
-sleep 1
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "MaxTRESPJ=node=[expr $node_cnt - 1]" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct user=$user qos=$qos"]
+}
+
 srun_test [expr $node_cnt-1] $acct
 
 # now make sure the maxnodes of the QOS overrides the association
@@ -185,6 +188,13 @@ set mod_acct_assoc_vals(maxnodes) 1
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
 	fail "Account was not modified"
 }
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "MaxTRESPJ=node=1" $output] && [regexp "MaxTRESPJ=node=[expr $node_cnt - 1]" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct user=$user qos=$qos"]
+}
+
 srun_test [expr $node_cnt-1] $acct
 
 # Reset acct maxnodes
@@ -196,7 +206,12 @@ if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [ar
 # Now run test using GrpNode limits of qos
 set mod_qos_vals(GrpNodes) [expr $node_cnt - 1]
 mod_qos $qos [array get mod_qos_vals]
-sleep 1
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "GrpTRES=.*node=[expr $node_cnt - 1]" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct user=$user qos=$qos"]
+}
 
 srun_test [expr $node_cnt-1] $acct
 
@@ -205,6 +220,13 @@ set mod_acct_assoc_vals(grpnodes) 1
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
 	fail "Account was not modified"
 }
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "GrpTRES=.*node=[expr $node_cnt - 1]" $output] && [regexp "GrpTRES=.*node=1" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct user=$user qos=$qos"]
+}
+
 srun_test [expr $node_cnt-1] $acct
 
 # Now make sure maxnodes is the max of the association and grpnodes of the
@@ -215,6 +237,13 @@ set mod_acct_assoc_vals(maxnodes) 1
 if {[mod_acct $acct [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]] != 0} {
 	fail "Account was not modified"
 }
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "GrpTRES=.*node=N" $output] && [regexp "MaxTRESPJ=node=1" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct user=$user qos=$qos"]
+}
+
 srun_test 1 $acct
 set mod_acct_assoc_vals(maxnodes) -1
 
@@ -233,6 +262,12 @@ if {[mod_qos $qos [array get mod_qos_vals]]} {
 # reset
 if {[mod_acct $acct  [array get mod_acct_desc_vals] [array get mod_acct_vals] [array get mod_acct_assoc_vals]]} {
 	fail "Account was not modified"
+}
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "GrpTRES=.*node=N" $output] && ![regexp "MaxTRESPJ=node" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct user=$user qos=$qos"]
 }
 
 # Run srun test on parent and child accounts
@@ -254,6 +289,16 @@ mod_acct $acct_c1 [array get mod_acct_desc] [array get mod_acct_vals] [array get
 set mod_acct_assoc_vals(MaxNode) -1
 set mod_acct_assoc_vals(GrpNode) [expr $node_cnt - 2]
 mod_acct $acct_c2 [array get mod_acct_desc] [array get mod_acct_vals] [array get mod_acct_assoc_vals]
+
+# Wait until slurmcltd is updated
+set output ""
+wait_for -fail {[regexp "GrpTRES=.*node=[expr $node_cnt - 1]" $output] && ![regexp "MaxTRESPJ=node" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct_c1 user=$user qos=$qos"]
+}
+set output ""
+wait_for -fail {[regexp "GrpTRES=.*node=[expr $node_cnt - 2]" $output] && ![regexp "MaxTRESPJ=node" $output]} {
+	set output [run_command_output -fail "$scontrol show assoc_mgr account=$acct_c2 user=$user qos=$qos"]
+}
 
 # Run srun test on parent and child accounts
 srun_test $node_cnt $acct
