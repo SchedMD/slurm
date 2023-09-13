@@ -1500,10 +1500,10 @@ cpu_freq_govlist_to_string(char* buf, uint16_t bufsz, uint32_t govs)
 /*
  * Verify slurm.conf CpuFreqDef option
  *
- * Input:  - arg  - frequency value to check
+ * Input:  - arg  - governor/frequency value to check:
  * 		    valid governor, low, medium, highm1, high,
  * 		    or numeric frequency
- *	   - freq - pointer to corresponging enum or numberic value
+ *	   - freq - pointer to corresponding enum or numeric value
  * Returns - -1 on error, else 0
  */
 extern int
