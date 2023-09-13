@@ -661,7 +661,7 @@ static void *_wdog(void *args)
 
 	if (srun_agent) {
 		_notify_slurmctld_jobs(agent_ptr);
-	} else {
+	} else if (agent_ptr->msg_type != REQUEST_SHUTDOWN) {
 		_notify_slurmctld_nodes(agent_ptr,
 					thd_comp.no_resp_cnt,
 					thd_comp.retry_cnt);
@@ -1755,10 +1755,9 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 	}
 
 	if (agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) {
-		/* execute now */
-		slurm_thread_create_detached(agent, agent_arg_ptr);
-		/* give agent a chance to start */
-		usleep(10000);
+		pthread_t agent_thread = 0;
+		slurm_thread_create(&agent_thread, agent, agent_arg_ptr);
+		pthread_join(agent_thread, NULL);
 		return;
 	}
 
