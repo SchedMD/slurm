@@ -306,7 +306,8 @@ static void _parse_accel_bind_type(uint16_t accel_bind_type,
 static int _get_usable_gres(int context_inx, int proc_id,
 			    char *tres_bind_str, bitstr_t **usable_gres_ptr,
 			    bitstr_t *gres_bit_alloc,  bool get_devices,
-			    stepd_step_rec_t *step, uint64_t *gres_per_bit);
+			    stepd_step_rec_t *step, uint64_t *gres_per_bit,
+			    gres_internal_flags_t *flags);
 
 extern uint32_t gres_build_id(char *name)
 {
@@ -8109,8 +8110,8 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 		}
 
 		if (_get_usable_gres(j, local_proc_id, tres_bind_str,
-				     &usable_gres, gres_bit_alloc,
-				     true, step, gres_per_bit) == SLURM_ERROR)
+				     &usable_gres, gres_bit_alloc, true, step,
+				     gres_per_bit, NULL) == SLURM_ERROR)
 			continue;
 
 		dev_itr = list_iterator_create(gres_devices);
@@ -9582,7 +9583,8 @@ static void _parse_accel_bind_type(uint16_t accel_bind_type, char *tres_bind_str
 static int _get_usable_gres(int context_inx, int proc_id,
 			    char *tres_bind_str, bitstr_t **usable_gres_ptr,
 			    bitstr_t *gres_bit_alloc,  bool get_devices,
-			    stepd_step_rec_t *step, uint64_t *gres_per_bit)
+			    stepd_step_rec_t *step, uint64_t *gres_per_bit,
+			    gres_internal_flags_t *flags)
 {
 	char *tres_name = NULL, *sep;
 	bitstr_t *usable_gres = NULL;
@@ -9601,6 +9603,12 @@ static int _get_usable_gres(int context_inx, int proc_id,
 	}
 	sep += strlen(tres_name);
 	xfree(tres_name);
+
+	if (!xstrncasecmp(sep, "verbose,", 8)){
+		sep += 8;
+		if (flags)
+			*flags |= GRES_INTERNAL_FLAG_VERBOSE;
+	}
 
 	if (!gres_id_shared(gres_context[context_inx].config_flags)) {
 		if (!xstrncasecmp(sep, "map_gpu:", 8)) { // Old Syntax
@@ -9743,16 +9751,14 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 	bitstr_t *gres_bit_alloc = NULL;
 	uint64_t *gres_per_bit = NULL;
 	bool sharing_gres_allocated = false;
-	gres_internal_flags_t flags;
 
 	if (step->accel_bind_type)
 		_parse_accel_bind_type(step->accel_bind_type, step->tres_bind);
-	if (xstrstr(step->tres_bind, "verbose,"))
-		flags = GRES_INTERNAL_FLAG_VERBOSE;
 
 	xassert(gres_context_cnt >= 0);
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
+		gres_internal_flags_t flags = GRES_INTERNAL_FLAG_NONE;
 		slurm_gres_context_t *gres_ctx = &gres_context[i];
 		if (!gres_ctx->ops.task_set_env)
 			continue;	/* No plugin to call */
@@ -9778,7 +9784,7 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 		}
 		if (_get_usable_gres(i, local_proc_id, step->tres_bind,
 				     &usable_gres, gres_bit_alloc, false, step,
-				     gres_per_bit) == SLURM_ERROR) {
+				     gres_per_bit, &flags) == SLURM_ERROR) {
 			FREE_NULL_BITMAP(gres_bit_alloc);
 			continue;
 		}
