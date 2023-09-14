@@ -943,12 +943,11 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 /*
  * _build_all_partitionline_info - get a array of slurm_conf_partition_t
  *	structures from the slurm.conf reader, build table, and set values
- * RET 0 if no error, error code otherwise
  * Note: Operates on common variables
  * global: part_list - global partition list pointer
  *	default_part - default parameters for a partition
  */
-static int _build_all_partitionline_info(void)
+static void _build_all_partitionline_info(void)
 {
 	slurm_conf_partition_t **ptr_array;
 	int count;
@@ -958,8 +957,6 @@ static int _build_all_partitionline_info(void)
 
 	for (i = 0; i < count; i++)
 		_build_single_partitionline_info(ptr_array[i]);
-
-	return SLURM_SUCCESS;
 }
 
 static int _set_max_part_prio(void *x, void *arg)
