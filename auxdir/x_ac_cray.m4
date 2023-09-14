@@ -214,7 +214,11 @@ AC_DEFUN([X_AC_CRAY],
       ])
 
     if test -z "$x_ac_cv_datawarp_dir"; then
-      AC_MSG_WARN([unable to locate DataWarp installation])
+      if [test -z $with_datawarp]; then
+        AC_MSG_WARN([unable to locate DataWarp installation])
+      else
+        AC_MSG_ERROR([unable to locate DataWarp installation])
+      fi
     else
       DATAWARP_CPPFLAGS="-I$x_ac_cv_datawarp_dir/include"
       if test "$ac_with_rpath" = "yes"; then

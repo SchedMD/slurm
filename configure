@@ -26300,8 +26300,12 @@ fi
 printf "%s\n" "$x_ac_cv_datawarp_dir" >&6; }
 
     if test -z "$x_ac_cv_datawarp_dir"; then
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate DataWarp installation" >&5
+      if test -z $with_datawarp; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate DataWarp installation" >&5
 printf "%s\n" "$as_me: WARNING: unable to locate DataWarp installation" >&2;}
+      else
+        as_fn_error $? "unable to locate DataWarp installation" "$LINENO" 5
+      fi
     else
       DATAWARP_CPPFLAGS="-I$x_ac_cv_datawarp_dir/include"
       if test "$ac_with_rpath" = "yes"; then
