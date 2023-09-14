@@ -26271,47 +26271,52 @@ then :
 fi
 
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for datawarp installation" >&5
+  if test "x$with_datawarp" = xno; then
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for DataWarp disabled" >&5
+printf "%s\n" "$as_me: support for DataWarp disabled" >&6;}
+  else
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for datawarp installation" >&5
 printf %s "checking for datawarp installation... " >&6; }
 if test ${x_ac_cv_datawarp_dir+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
 
-      for d in $_x_ac_datawarp_dirs; do
-        test -d "$d" || continue
-        test -d "$d/include" || continue
-        test -f "$d/include/dws_thin.h" || continue
-	for bit in $_x_ac_datawarp_libs; do
-          test -d "$d/$bit" || continue
-          test -f "$d/$bit/libdws_thin.so" || continue
-          x_ac_cv_datawarp_dir=$d
-          break
+        for d in $_x_ac_datawarp_dirs; do
+          test -d "$d" || continue
+          test -d "$d/include" || continue
+          test -f "$d/include/dws_thin.h" || continue
+          for bit in $_x_ac_datawarp_libs; do
+            test -d "$d/$bit" || continue
+            test -f "$d/$bit/libdws_thin.so" || continue
+            x_ac_cv_datawarp_dir=$d
+            break
+          done
+          test -n "$x_ac_cv_datawarp_dir" && break
         done
-        test -n "$x_ac_cv_datawarp_dir" && break
-      done
 
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_datawarp_dir" >&5
 printf "%s\n" "$x_ac_cv_datawarp_dir" >&6; }
 
-  if test -z "$x_ac_cv_datawarp_dir"; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate DataWarp installation" >&5
+    if test -z "$x_ac_cv_datawarp_dir"; then
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate DataWarp installation" >&5
 printf "%s\n" "$as_me: WARNING: unable to locate DataWarp installation" >&2;}
-  else
-    DATAWARP_CPPFLAGS="-I$x_ac_cv_datawarp_dir/include"
-    if test "$ac_with_rpath" = "yes"; then
-      DATAWARP_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_datawarp_dir/$bit -L$x_ac_cv_datawarp_dir/$bit -ldws_thin"
     else
-      DATAWARP_LDFLAGS="-L$x_ac_cv_datawarp_dir/$bit -ldws_thin"
-    fi
+      DATAWARP_CPPFLAGS="-I$x_ac_cv_datawarp_dir/include"
+      if test "$ac_with_rpath" = "yes"; then
+        DATAWARP_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_datawarp_dir/$bit -L$x_ac_cv_datawarp_dir/$bit -ldws_thin"
+      else
+        DATAWARP_LDFLAGS="-L$x_ac_cv_datawarp_dir/$bit -ldws_thin"
+      fi
 
 printf "%s\n" "#define HAVE_DATAWARP 1" >>confdefs.h
 
+    fi
+
+
+
   fi
-
-
-
 
   case ${host_os} in
   darwin* | freebsd* | netbsd* )
