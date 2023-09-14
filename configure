@@ -7153,11 +7153,11 @@ if test x$ac_prog_cxx_stdcxx = xno
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CXX option to enable C++11 features" >&5
 printf %s "checking for $CXX option to enable C++11 features... " >&6; }
-if test ${ac_cv_prog_cxx_11+y}
+if test ${ac_cv_prog_cxx_cxx11+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ac_cv_prog_cxx_11=no
+  ac_cv_prog_cxx_cxx11=no
 ac_save_CXX=$CXX
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -7199,11 +7199,11 @@ if test x$ac_prog_cxx_stdcxx = xno
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CXX option to enable C++98 features" >&5
 printf %s "checking for $CXX option to enable C++98 features... " >&6; }
-if test ${ac_cv_prog_cxx_98+y}
+if test ${ac_cv_prog_cxx_cxx98+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ac_cv_prog_cxx_98=no
+  ac_cv_prog_cxx_cxx98=no
 ac_save_CXX=$CXX
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -24468,21 +24468,21 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        libselinux_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libselinux" 2>&1`
+                libselinux_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libselinux" 2>&1`
         else
-	        libselinux_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libselinux" 2>&1`
+                libselinux_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libselinux" 2>&1`
         fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$libselinux_PKG_ERRORS" >&5
+        # Put the nasty error message in config.log where it belongs
+        echo "$libselinux_PKG_ERRORS" >&5
 
-	as_fn_error $? "cannot locate libselinux" "$LINENO" 5
+        as_fn_error $? "cannot locate libselinux" "$LINENO" 5
 elif test $pkg_failed = untried; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-	as_fn_error $? "cannot locate libselinux" "$LINENO" 5
+        as_fn_error $? "cannot locate libselinux" "$LINENO" 5
 else
-	libselinux_CFLAGS=$pkg_cv_libselinux_CFLAGS
-	libselinux_LIBS=$pkg_cv_libselinux_LIBS
+        libselinux_CFLAGS=$pkg_cv_libselinux_CFLAGS
+        libselinux_LIBS=$pkg_cv_libselinux_LIBS
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 
@@ -24658,24 +24658,24 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        dbus_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "dbus-1" 2>&1`
+                dbus_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "dbus-1" 2>&1`
         else
-	        dbus_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "dbus-1" 2>&1`
+                dbus_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "dbus-1" 2>&1`
         fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$dbus_PKG_ERRORS" >&5
+        # Put the nasty error message in config.log where it belongs
+        echo "$dbus_PKG_ERRORS" >&5
 
-	x_ac_have_dbus="no"
+        x_ac_have_dbus="no"
 elif test $pkg_failed = untried; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-	x_ac_have_dbus="no"
+        x_ac_have_dbus="no"
 else
-	dbus_CFLAGS=$pkg_cv_dbus_CFLAGS
-	dbus_LIBS=$pkg_cv_dbus_LIBS
+        dbus_CFLAGS=$pkg_cv_dbus_CFLAGS
+        dbus_LIBS=$pkg_cv_dbus_LIBS
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-	x_ac_have_dbus="yes"
+        x_ac_have_dbus="yes"
 fi
         if test "x$x_ac_have_dbus" = "xyes"; then
   WITH_DBUS_TRUE=
@@ -24747,24 +24747,24 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        CHECK_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "check >= 0.9.8" 2>&1`
+                CHECK_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "check >= 0.9.8" 2>&1`
         else
-	        CHECK_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "check >= 0.9.8" 2>&1`
+                CHECK_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "check >= 0.9.8" 2>&1`
         fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$CHECK_PKG_ERRORS" >&5
+        # Put the nasty error message in config.log where it belongs
+        echo "$CHECK_PKG_ERRORS" >&5
 
-	ac_have_check="no"
+        ac_have_check="no"
 elif test $pkg_failed = untried; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-	ac_have_check="no"
+        ac_have_check="no"
 else
-	CHECK_CFLAGS=$pkg_cv_CHECK_CFLAGS
-	CHECK_LIBS=$pkg_cv_CHECK_LIBS
+        CHECK_CFLAGS=$pkg_cv_CHECK_CFLAGS
+        CHECK_LIBS=$pkg_cv_CHECK_LIBS
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-	ac_have_check="yes"
+        ac_have_check="yes"
 fi
  if test "x$ac_have_check" = "xyes"; then
   HAVE_CHECK_TRUE=
@@ -25013,24 +25013,24 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        GLIB_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$pkg_config_args" 2>&1`
+                GLIB_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$pkg_config_args" 2>&1`
         else
-	        GLIB_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "$pkg_config_args" 2>&1`
+                GLIB_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "$pkg_config_args" 2>&1`
         fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$GLIB_PKG_ERRORS" >&5
+        # Put the nasty error message in config.log where it belongs
+        echo "$GLIB_PKG_ERRORS" >&5
 
-	:
+        :
 elif test $pkg_failed = untried; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-	:
+        :
 else
-	GLIB_CFLAGS=$pkg_cv_GLIB_CFLAGS
-	GLIB_LIBS=$pkg_cv_GLIB_LIBS
+        GLIB_CFLAGS=$pkg_cv_GLIB_CFLAGS
+        GLIB_LIBS=$pkg_cv_GLIB_LIBS
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-	:
+        :
 fi
 
 
@@ -26042,24 +26042,24 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        HPE_SLINGSHOT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libcxi" 2>&1`
+                HPE_SLINGSHOT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libcxi" 2>&1`
         else
-	        HPE_SLINGSHOT_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libcxi" 2>&1`
+                HPE_SLINGSHOT_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libcxi" 2>&1`
         fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$HPE_SLINGSHOT_PKG_ERRORS" >&5
+        # Put the nasty error message in config.log where it belongs
+        echo "$HPE_SLINGSHOT_PKG_ERRORS" >&5
 
-	x_ac_have_libcxi="no"
+        x_ac_have_libcxi="no"
 elif test $pkg_failed = untried; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-	x_ac_have_libcxi="no"
+        x_ac_have_libcxi="no"
 else
-	HPE_SLINGSHOT_CFLAGS=$pkg_cv_HPE_SLINGSHOT_CFLAGS
-	HPE_SLINGSHOT_LIBS=$pkg_cv_HPE_SLINGSHOT_LIBS
+        HPE_SLINGSHOT_CFLAGS=$pkg_cv_HPE_SLINGSHOT_CFLAGS
+        HPE_SLINGSHOT_LIBS=$pkg_cv_HPE_SLINGSHOT_LIBS
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-	x_ac_have_libcxi="yes"
+        x_ac_have_libcxi="yes"
 fi
    if test x$x_ac_have_libcxi = xyes; then
   WITH_SWITCH_HPE_SLINGSHOT_TRUE=
@@ -26804,24 +26804,24 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        lua_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "${x_ac_lua_pkg_name}" 2>&1`
+                lua_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "${x_ac_lua_pkg_name}" 2>&1`
         else
-	        lua_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "${x_ac_lua_pkg_name}" 2>&1`
+                lua_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "${x_ac_lua_pkg_name}" 2>&1`
         fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$lua_PKG_ERRORS" >&5
+        # Put the nasty error message in config.log where it belongs
+        echo "$lua_PKG_ERRORS" >&5
 
-	x_ac_have_lua="no"
+        x_ac_have_lua="no"
 elif test $pkg_failed = untried; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-	x_ac_have_lua="no"
+        x_ac_have_lua="no"
 else
-	lua_CFLAGS=$pkg_cv_lua_CFLAGS
-	lua_LIBS=$pkg_cv_lua_LIBS
+        lua_CFLAGS=$pkg_cv_lua_CFLAGS
+        lua_LIBS=$pkg_cv_lua_LIBS
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-	x_ac_have_lua="yes"
+        x_ac_have_lua="yes"
 fi
 
 	if test "x$x_ac_have_lua" = "xyes"; then
