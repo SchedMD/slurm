@@ -89,7 +89,8 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid, char **error_msg)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with the job submission
-parameters supplied by the salloc, sbatch or srun command. Only explicitly
+parameters supplied by the user regardless of the command used (e.g.
+salloc, sbatch, slurmrestd). Only explicitly
 defined values will be represented. For values not defined at submit time
 <span class="commandline">slurm.NO_VAL/16/64</span> or
 <span class="commandline">nil</span> will be set. It can be used to log and/or
@@ -115,7 +116,8 @@ propagated to the caller, no matter the return code.<br>
 int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr, uint32_t modify_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with job modification parameters
-supplied by the scontrol or sview command. It can be used to log and/or
+supplied by the user regardless of the command used (e.g. scontrol, sview,
+slurmrestd). It can be used to log and/or
 modify the job parameters supplied by the user as desired. Note that this
 function has access to the slurmctld's global data structures, for example to
 examine the available partitions, reservations, etc.
@@ -166,7 +168,8 @@ int slurm_job_submit(job_desc_msg_t *job_desc, List part_list, uint32_t
 submit_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with the job submission
-parameters supplied by the salloc, sbatch or srun command. Only explicitly
+parameters supplied by the user regardless of the command used (e.g.
+salloc, sbatch, slurmrestd). Only explicitly
 defined values will be represented. For values not defined at submit time
 <span class="commandline">slurm.NO_VAL/16/64</span> or
 <span class="commandline">nil</span> will be set. It can be used to log and/or
@@ -211,7 +214,8 @@ int slurm_job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 List part_list, int modify_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with job modification parameters
-supplied by the scontrol or sview command. It can be used to log and/or
+supplied by the user regardless of the command used (e.g. scontrol, sview,
+slurmrestd). It can be used to log and/or
 modify the job parameters supplied by the user as desired. Note that this
 function has access to the slurmctld's global data structures, for example to
 examine the available partitions, reservations, etc.
@@ -321,6 +325,6 @@ cp job_submit_mine.so file \
    /usr/local/lib/slurm/job_submit_mine.so
 </pre>
 
-<p style="text-align:center;">Last modified 18 October 2022</p>
+<p style="text-align:center;">Last modified 13 September 2023</p>
 
 <!--#include virtual="footer.txt"-->
