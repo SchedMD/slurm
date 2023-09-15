@@ -8,6 +8,11 @@
 <li><a href="#acronym">What does "Slurm" stand for?</a></li>
 </ul>
 
+<h2>For Researchers</h2>
+<ul>
+<li><a href="#cite">How should I cite work involving Slurm?</a></li>
+</ul>
+
 <h2>For Users</h2>
 <ul>
 <li><a href="#comp">Why is my job/node in a COMPLETING state?</a></li>
@@ -234,6 +239,17 @@ capitalization was changed to Slurm, and the acronym was dropped &mdash; the
 developers preferred to think of Slurm as "sophisticated" rather than "Simple"
 by this point. And, as Slurm continued to expand it's scheduling capabilities,
 the "Resource Management" label was also viewed as outdated.</p>
+
+<h2>For Researchers</h2>
+<p><a id="cite"><b>How should I cite work involving Slurm?</b></a><br>
+<p>We recommend citing the peer-reviewed paper from JSSPP 2023:
+<a href="https://doi.org/10.1007/978-3-031-43943-8_1">
+Architecture of the Slurm Workload Manager.</a></p>
+<pre>Jette, M.A., Wickberg, T. (2023). Architecture of the Slurm Workload Manager.
+In: Klusáček, D., Corbalán, J., Rodrigo, G.P. (eds) Job Scheduling Strategies
+for Parallel Processing. JSSPP 2023. Lecture Notes in Computer Science,
+vol 14283. Springer, Cham. https://doi.org/10.1007/978-3-031-43943-8_1
+</pre>
 
 <h2>For Users</h2>
 <p><a id="comp"><b>Why is my job/node in a COMPLETING state?</b></a><br>
