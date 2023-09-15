@@ -5228,63 +5228,6 @@ extern void gres_job_list_delete(void *list_element)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
-static int _clear_cpus_per_gres(void *x, void *arg)
-{
-	gres_state_t *gres_state_job = (gres_state_t *) x;
-	gres_job_state_t *gres_js;
-	gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-	gres_js->cpus_per_gres = 0;
-	return 0;
-}
-static int _clear_gres_per_job(void *x, void *arg)
-{
-	gres_state_t *gres_state_job = (gres_state_t *) x;
-	gres_job_state_t *gres_js;
-	gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-	gres_js->gres_per_job = 0;
-	return 0;
-}
-static int _clear_gres_per_node(void *x, void *arg)
-{
-	gres_state_t *gres_state_job = (gres_state_t *) x;
-	gres_job_state_t *gres_js;
-	gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-	gres_js->gres_per_node = 0;
-	return 0;
-}
-static int _clear_gres_per_socket(void *x, void *arg)
-{
-	gres_state_t *gres_state_job = (gres_state_t *) x;
-	gres_job_state_t *gres_js;
-	gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-	gres_js->gres_per_socket = 0;
-	return 0;
-}
-static int _clear_gres_per_task(void *x, void *arg)
-{
-	gres_state_t *gres_state_job = (gres_state_t *) x;
-	gres_job_state_t *gres_js;
-	gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-	gres_js->gres_per_task = 0;
-	return 0;
-}
-static int _clear_mem_per_gres(void *x, void *arg)
-{
-	gres_state_t *gres_state_job = (gres_state_t *) x;
-	gres_job_state_t *gres_js;
-	gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-	gres_js->mem_per_gres = 0;
-	return 0;
-}
-static int _clear_total_gres(void *x, void *arg)
-{
-	gres_state_t *gres_state_job = (gres_state_t *) x;
-	gres_job_state_t *gres_js;
-	gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-	gres_js->total_gres = 0;
-	return 0;
-}
-
 /*
  * Ensure consistency of gres_per_* options
  * Modify task and node count as needed for consistentcy with GRES options
@@ -5833,9 +5776,7 @@ static int _merge_generic_data(
 
 /*
  * Given a job's requested GRES configuration, validate it and build a GRES list
- * Note: This function can be used for a new request with gres_list==NULL or
- *	 used to update an existing job, in which case gres_list is a copy
- *	 of the job's original value (so we can clear fields as needed)
+ * Note: This function must be used for a new request with *gres_list==NULL.
  * IN *tres* - job requested gres input string
  * IN/OUT num_tasks - requested task count, may be reset to provide
  *		      consistent gres_per_node/task values
@@ -5882,6 +5823,9 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	uint64_t cnt = 0;
 	ListIterator iter;
 
+	xassert(gres_list);
+	xassert(*gres_list == NULL);
+
 	if (tres_per_task && running_in_slurmctld() &&
 	    (slurm_select_cr_type() != SELECT_TYPE_CONS_TRES))
 		return ESLURM_UNSUPPORTED_GRES;
@@ -5906,40 +5850,10 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	xassert(gres_context_cnt >= 0);
 
 	/*
-	 * Clear fields as requested by job update (i.e. input value is "")
-	 */
-	if (*gres_list)
-		(void) list_for_each(*gres_list, _clear_total_gres, NULL);
-	if (*gres_list && cpus_per_tres && (cpus_per_tres[0] == '\0')) {
-		(void) list_for_each(*gres_list, _clear_cpus_per_gres, NULL);
-		cpus_per_tres = NULL;
-	}
-	if (*gres_list && tres_per_job && (tres_per_job[0] == '\0')) {
-		(void) list_for_each(*gres_list, _clear_gres_per_job, NULL);
-		tres_per_job = NULL;
-	}
-	if (*gres_list && tres_per_node && (tres_per_node[0] == '\0')) {
-		(void) list_for_each(*gres_list, _clear_gres_per_node, NULL);
-		tres_per_node = NULL;
-	}
-	if (*gres_list && tres_per_socket && (tres_per_socket[0] == '\0')) {
-		(void) list_for_each(*gres_list, _clear_gres_per_socket, NULL);
-		tres_per_socket = NULL;
-	}
-	if (*gres_list && tres_per_task && (tres_per_task[0] == '\0')) {
-		(void) list_for_each(*gres_list, _clear_gres_per_task, NULL);
-		tres_per_task = NULL;
-	}
-	if (*gres_list && mem_per_tres && (mem_per_tres[0] == '\0')) {
-		(void) list_for_each(*gres_list, _clear_mem_per_gres, NULL);
-		mem_per_tres = NULL;
-	}
-
-	/*
 	 * Set new values as requested
 	 */
-	if (*gres_list == NULL)
-		*gres_list = list_create(gres_job_list_delete);
+	*gres_list = list_create(gres_job_list_delete);
+
 	slurm_mutex_lock(&gres_context_lock);
 	if (cpus_per_tres) {
 		char *in_val = cpus_per_tres, *save_ptr = NULL;
