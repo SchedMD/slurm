@@ -319,8 +319,8 @@ not</b> be granted to use this functionality.</p>
 <ol>
 <li><a href="slurm.conf.html">slurm.conf</a> must be configured to use Munge
 authentication.<pre>AuthType=auth/munge</pre></li>
-<li><a href="scrun.html">scrun.lua</a> must be configured for site storage
-configuration.</li>
+<li><a href="scrun.html#SECTION_Example-<B>scrun.lua</B>-scripts">scrun.lua</a>
+must be configured for site storage configuration.</li>
 </ol>
 <h3>Limitations</h3>
 <ol>
