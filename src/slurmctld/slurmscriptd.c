@@ -376,6 +376,18 @@ cleanup:
 	return rc;
 }
 
+static void *_async_send_to_slurmscriptd(void *x)
+{
+	slurmscriptd_msg_t *send_args = x;
+
+	_send_to_slurmscriptd(send_args->msg_type, send_args->msg_data, false,
+			      NULL, NULL);
+	slurmscriptd_free_msg(send_args);
+	xfree(send_args);
+
+	return NULL;
+}
+
 /*
  * This should only be called by slurmscriptd.
  */
@@ -1243,31 +1255,34 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 				      char *script, char **env)
 {
-	run_script_msg_t run_script_msg;
+	run_script_msg_t *run_script_msg = xmalloc(sizeof(*run_script_msg));
+	slurmscriptd_msg_t *send_args = xmalloc(sizeof(*send_args));
 
-	memset(&run_script_msg, 0, sizeof(run_script_msg));
+	run_script_msg->argc = 1;
+	run_script_msg->argv = xcalloc(2, sizeof(char *)); /* NULL terminated */
+	run_script_msg->argv[0] = xstrdup(script);
 
-	run_script_msg.argc = 1;
-	run_script_msg.argv = xcalloc(2, sizeof(char *)); /* NULL terminated */
-	run_script_msg.argv[0] = script;
-
-	run_script_msg.env = env;
-	run_script_msg.job_id = job_id;
+	run_script_msg->env = env_array_copy((const char **) env);
+	run_script_msg->job_id = job_id;
 	if (is_epilog) {
-		run_script_msg.script_name = "EpilogSlurmctld";
-		run_script_msg.script_type = SLURMSCRIPTD_EPILOG;
+		run_script_msg->script_name = xstrdup("EpilogSlurmctld");
+		run_script_msg->script_type = SLURMSCRIPTD_EPILOG;
 	} else {
-		run_script_msg.script_name = "PrologSlurmctld";
-		run_script_msg.script_type = SLURMSCRIPTD_PROLOG;
+		run_script_msg->script_name = xstrdup("PrologSlurmctld");
+		run_script_msg->script_type = SLURMSCRIPTD_PROLOG;
 	}
-	run_script_msg.script_path = script;
-	run_script_msg.timeout = (uint32_t) slurm_conf.prolog_epilog_timeout;
+	run_script_msg->script_path = xstrdup(script);
+	run_script_msg->timeout = (uint32_t) slurm_conf.prolog_epilog_timeout;
 
-	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT, &run_script_msg,
-			      false, NULL, NULL);
-
-	/* Don't free argv[0], since we did not xstrdup that. */
-	xfree(run_script_msg.argv);
+	/*
+	 * Because this thread is holding the job write lock, do the write in
+	 * a different detached thread so we do not lock up the slurmctld
+	 * process if the write is blocked for some reason.
+	 */
+	send_args->msg_data = run_script_msg;
+	send_args->msg_type = SLURMSCRIPTD_REQUEST_RUN_SCRIPT;
+	slurm_thread_create_detached(NULL, _async_send_to_slurmscriptd,
+				     send_args);
 }
 
 extern int slurmscriptd_run_reboot(char *script_path, uint32_t argc,
