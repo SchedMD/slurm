@@ -207,6 +207,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix CpusPerTres= not upgreadable with scontrol update
  -- Fix unintentional gres removal when validating the gres job state.
+ -- Fix --without-hpe-slingshot configure option.
 
 * Changes in Slurm 23.02.5
 ==========================

@@ -66,7 +66,6 @@ AC_DEFUN([X_AC_HPE_SLINGSHOT],
 
     done
 
-    AM_CONDITIONAL(WITH_SWITCH_HPE_SLINGSHOT, test x$ac_hpe_ss = xyes)
     if test -z "$ac_hpe_ss"; then
       if test -z "$with_hpe_slingshot"; then
         AC_MSG_WARN([HPE Slingshot: unable to locate libcxi/libcxi.h])
@@ -75,4 +74,5 @@ AC_DEFUN([X_AC_HPE_SLINGSHOT],
       fi
     fi
   fi
+  AM_CONDITIONAL(WITH_SWITCH_HPE_SLINGSHOT, test "x$ac_hpe_ss"="xyes")
 ])

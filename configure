@@ -26408,14 +26408,6 @@ printf "%s\n" "#define HPE_SLINGSHOT_LIB \"$_x_ac_hpe_ss_dir/lib64/libcxi.so\"" 
 
     done
 
-     if test x$ac_hpe_ss = xyes; then
-  WITH_SWITCH_HPE_SLINGSHOT_TRUE=
-  WITH_SWITCH_HPE_SLINGSHOT_FALSE='#'
-else
-  WITH_SWITCH_HPE_SLINGSHOT_TRUE='#'
-  WITH_SWITCH_HPE_SLINGSHOT_FALSE=
-fi
-
     if test -z "$ac_hpe_ss"; then
       if test -z "$with_hpe_slingshot"; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: HPE Slingshot: unable to locate libcxi/libcxi.h" >&5
@@ -26425,6 +26417,14 @@ printf "%s\n" "$as_me: WARNING: HPE Slingshot: unable to locate libcxi/libcxi.h"
       fi
     fi
   fi
+   if test "x$ac_hpe_ss"="xyes"; then
+  WITH_SWITCH_HPE_SLINGSHOT_TRUE=
+  WITH_SWITCH_HPE_SLINGSHOT_FALSE='#'
+else
+  WITH_SWITCH_HPE_SLINGSHOT_TRUE='#'
+  WITH_SWITCH_HPE_SLINGSHOT_FALSE=
+fi
+
 
 
 
