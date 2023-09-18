@@ -1735,7 +1735,7 @@ clean:
  * freq_str is a buffer to hold the composite string for all input values.
  * freq_len is length of freq_str
  * gov is a governor value
- * min is a minumum value
+ * min is a minimum value
  * max is a maximum value
  * freq is a (current) frequency value.
  *
