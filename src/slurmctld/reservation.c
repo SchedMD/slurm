@@ -5457,7 +5457,8 @@ static void _validate_core_resrcs(resv_desc_msg_t *resv_desc_ptr,
 	if (!core_bitmap ||
 	    !job_ptr->job_resrcs ||
 	    !job_ptr->job_resrcs->core_bitmap ||
-	    bit_equal(job_ptr->job_resrcs->core_bitmap, core_bitmap) ||
+	    (bit_set_count(job_ptr->job_resrcs->core_bitmap) ==
+	     bit_set_count(core_bitmap)) ||
 	    !bit_set_count(node_bitmap))
 		return;
 
