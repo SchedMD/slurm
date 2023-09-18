@@ -94,12 +94,12 @@ label: never, always or on demand (using --exclusive=mcs option)</li>
 <li><b>privatedata</b> accordingly with PrivateData specific option:<br>
 <ul>
 <li>
-if MCS' privatedata and PrivateData's privatedata=jobs, jobs information is
-filtered based on their MCS labels<br>
+If configured with <i>privatedata</i> and <i>PrivateData=jobs</i>, job
+information is filtered based on their MCS labels.<br>
 </li>
 <li>
-if MCS' privatedata and PrivateData's privatedata=nodes, nodes information is
-filtered based on their MCS labels<br>
+If configured with <i>privatedata</i> and <i>PrivateData=nodes</i>, node
+information is filtered based on their MCS labels.<br>
 </li>
 </ul>
 <li><b>mcs_plugin_parameters</b> Only mcs/group is currently supporting this

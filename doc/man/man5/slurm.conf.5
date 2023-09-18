@@ -2959,8 +2959,8 @@ decrease in value.
 .TP
 \fBMAX_TRES\fR
 If set, the weighted TRES value (e.g. TRESBillingWeights) is calculated as the
-MAX of individual TRES' on a node (e.g. cpus, mem, gres) plus the sum of all
-global TRES' (e.g. licenses).
+MAX of individual TRESs on a node (e.g. cpus, mem, gres) plus the sum of all
+global TRESs (e.g. licenses).
 .IP
 
 .TP
@@ -7463,15 +7463,15 @@ TRESBillingWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0", the billable TRES will be:
 (1*1.0) + (8*0.25) + (0*2.0) = 3.0.
 
 If PriorityFlags=MAX_TRES is configured, the billable TRES is calculated as the
-MAX of individual TRES' on a node (e.g. cpus, mem, gres) plus the sum of all
-global TRES' (e.g. licenses). Using the same example above the billable TRES
+MAX of individual TRESs on a node (e.g. cpus, mem, gres) plus the sum of all
+global TRESs (e.g. licenses). Using the same example above the billable TRES
 will be MAX(1*1.0, 8*0.25) + (0*2.0) = 2.0.
 
 If TRESBillingWeights is not defined then the job is billed against the total
 number of allocated CPUs.
 
 \fBNOTE\fR: TRESBillingWeights doesn't affect job priority directly as it is
-currently not used for the size of the job. If you want TRES' to play a role in
+currently not used for the size of the job. If you want TRESs to play a role in
 the job's priority then refer to the PriorityWeightTRES option.
 .RE
 .IP

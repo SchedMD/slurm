@@ -217,7 +217,7 @@ partition factor.</P>
 <P> Each QOS can be assigned an integer priority.  The larger the
 number, the greater the job priority will be for jobs that request
 this QOS.  This priority value is then normalized to the highest
-priority of all the QOS's to become the QOS factor.</P>
+priority of all the QOSs to become the QOS factor.</P>
 
 <h2 id="site">Site Factor<a class="slurm_link" href="#site"></a></h2>
 
@@ -279,8 +279,8 @@ Job3: (16*1.0) + (60*0.25) = (16+ 15) = 31
 
 <P>
 Another method of calculating the billable TRES is by taking the MAX of the
-individual TRES' on a node (e.g. cpus, mem, gres) plus the SUM of the global
-TRES' (e.g. licenses). For example the above job's billable TRES would
+individual TRESs on a node (e.g. cpus, mem, gres) plus the SUM of the global
+TRESs (e.g. licenses). For example the above job's billable TRES would
 be calculated as:
 <pre>
           CPUs      Mem GB
@@ -404,8 +404,8 @@ PriorityType=priority/multifactor.
 <li>INCR_ONLY: If set, priority values will only increase in value. Job
 	priority will never decrease in value.</li>
 <li>MAX_TRES: If set, the weighted TRES value (e.g. TRESBillingWeights) is
-	calculated as the MAX of individual TRES' on a node (e.g. cpus, mem,
-	gres) plus the sum of all global TRES' (e.g. licenses).</li>
+	calculated as the MAX of individual TRESs on a node (e.g. cpus, mem,
+	gres) plus the sum of all global TRESs (e.g. licenses).</li>
 <li>NO_NORMAL_ALL: If set, all NO_NORMAL_* flags are set.</li>
 <li>NO_NORMAL_ASSOC: If set, the association factor is not normalized against
 	the highest association priority.</li>

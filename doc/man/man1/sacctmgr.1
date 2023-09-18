@@ -561,11 +561,11 @@ To clear a previously set value use the modify command with a new value of \-1.
 .TP
 \fBQosLevel\fR<\fIoperator\fR><\fIcomma_separated_list_of_qos_names\fR>
 Specify the default Quality of Service's that jobs are able to run at
-for this association.  To get a list of valid QOS's use 'sacctmgr list qos'.
+for this association.  To get a list of valid QOSs use 'sacctmgr list qos'.
 This value will override its parents value and push down to its
 children as the new default.  Setting a QosLevel to '' (two single
 quotes with nothing between them) restores its default setting.  You
-can also use the operator += and \-= to add or remove certain QOS's
+can also use the operator += and \-= to add or remove certain QOSs
 from a QOS list.
 
 Valid <operator> values include:
@@ -900,12 +900,12 @@ Maximum wall clock time each job is able to use.
 
 .TP
 \fBQos\fR
-Valid QOS' for this association.
+Valid QOSs for this association.
 .IP
 
 .TP
 \fBQosRaw\fR
-QOS' ID.
+Numeric IDs of valid QOSs for this association.
 .IP
 
 .TP
@@ -1854,7 +1854,7 @@ Name of the QOS. Needed for creation.
 
 .TP
 \fBPreempt\fR
-Other QOS' this QOS can preempt. To clear a previously set
+Other QOSs this QOS can preempt. To clear a previously set
 value, use the modify command with a new value of '' (two single quotes with
 nothing between them).
 
@@ -2207,7 +2207,7 @@ Name of the QOS.
 
 .TP
 \fBPreempt\fR
-Other QOS' this QOS can preempt.
+Other QOSs this QOS can preempt.
 .IP
 
 .TP

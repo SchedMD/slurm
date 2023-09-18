@@ -125,8 +125,8 @@ with:
 <pre>(1*1.0) + (8*0.25) + (0*2.0) = 3.0</pre>
 
 <p>If <i>PriorityFlags=MAX_TRES</i> is configured, the billable TRES is
-  calculated as the MAX of individual TRES' on a node (e.g. cpus, mem,
-  gres) plus the sum of all global TRES' (e.g. licenses). Using the
+  calculated as the MAX of individual TRESs on a node (e.g. cpus, mem,
+  gres) plus the sum of all global TRESs (e.g. licenses). Using the
   same example above, the billable TRES will be:
 </p>
 <pre>MAX(1*1.0, 8*0.25) + (0*2.0) = 2.0</pre>
@@ -137,7 +137,7 @@ number of allocated CPUs.
 
 <p><b>NOTE</b>: TRESBillingWeights is only used when calculating fairshare and
 doesn't affect job priority directly as it is currently not used for the size of
-the job. If you want TRES' to play a role in the job's priority then refer to
+the job. If you want TRESs to play a role in the job's priority then refer to
 the PriorityWeightTRES option.
 </p>
 

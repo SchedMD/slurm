@@ -299,7 +299,7 @@ sacctmgr</a> man page.</p>
 
 <dt id="assoc_qos"><b>QOS</b>
 <a class="slurm_link" href="#assoc_qos"></a></dt>
-<dd>comma separated list of QOS's an association is
+<dd>comma separated list of QOSs an association is
   able to run.
 </dd>
 </dl>
