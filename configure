@@ -26417,7 +26417,7 @@ printf "%s\n" "$as_me: WARNING: HPE Slingshot: unable to locate libcxi/libcxi.h"
       fi
     fi
   fi
-   if test "x$ac_hpe_ss"="xyes"; then
+   if test "x$ac_hpe_ss" = "xyes"; then
   WITH_SWITCH_HPE_SLINGSHOT_TRUE=
   WITH_SWITCH_HPE_SLINGSHOT_FALSE='#'
 else
