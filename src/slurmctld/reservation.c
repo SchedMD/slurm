@@ -1773,6 +1773,7 @@ static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 {
 	int i, j, node_inx;
 	int c, core_offset_local, core_offset_global, core_end, core_set;
+	node_record_t *node_ptr;
 
 	if (!resv_ptr->core_resrcs || resv_ptr->core_bitmap ||
 	    !resv_ptr->core_resrcs->core_bitmap ||
@@ -1801,7 +1802,9 @@ static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 
 	node_conf_create_cluster_core_bitmap(&resv_ptr->core_bitmap);
 	for (i = 0, node_inx = -1;
-	     next_node_bitmap(resv_ptr->core_resrcs->node_bitmap, &i); i++) {
+	     (node_ptr = next_node_bitmap(resv_ptr->core_resrcs->node_bitmap,
+					  &i));
+	     i++) {
 		node_inx++;
 		core_offset_global = cr_get_coremap_offset(i);
 		core_end = cr_get_coremap_offset(i + 1);
@@ -1815,7 +1818,7 @@ static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 			if (!bit_test(resv_ptr->core_resrcs->core_bitmap, j))
 				continue;
 			bit_set(resv_ptr->core_bitmap, c);
-			core_set++;
+			core_set += node_ptr->threads;
 		}
 		if (core_set < resv_ptr->core_resrcs->cpus[node_inx]) {
 			error("Unable to restore reservation %s on node_inx %d of nodes %s. Probably node configuration changed",
@@ -5445,6 +5448,7 @@ static void _validate_core_resrcs(resv_desc_msg_t *resv_desc_ptr,
 				  bitstr_t *core_bitmap)
 {
 	job_record_t *job_ptr = resv_desc_ptr->job_ptr;
+	node_record_t *node_ptr;
 	int node_inx, rc;
 	int core_offset_local, core_offset_global, core_end;
 
@@ -5479,7 +5483,7 @@ static void _validate_core_resrcs(resv_desc_msg_t *resv_desc_ptr,
 
 	core_offset_local = -1;
 	node_inx = -1;
-	for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
+	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		node_inx++;
 		core_offset_global = cr_get_coremap_offset(i);
 		core_end = cr_get_coremap_offset(i + 1);
@@ -5490,7 +5494,9 @@ static void _validate_core_resrcs(resv_desc_msg_t *resv_desc_ptr,
 			if (job_ptr->job_resrcs->core_bitmap)
 				bit_set(job_ptr->job_resrcs->core_bitmap,
 					core_offset_local);
-			job_ptr->job_resrcs->cpus[node_inx]++;
+			job_ptr->job_resrcs->cpus[node_inx] +=
+				node_ptr->threads;
+			job_ptr->job_resrcs->ncpus += node_ptr->threads;
 		}
 	}
 }
