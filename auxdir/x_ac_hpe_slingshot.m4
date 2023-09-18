@@ -74,5 +74,5 @@ AC_DEFUN([X_AC_HPE_SLINGSHOT],
       fi
     fi
   fi
-  AM_CONDITIONAL(WITH_SWITCH_HPE_SLINGSHOT, test "x$ac_hpe_ss"="xyes")
+  AM_CONDITIONAL(WITH_SWITCH_HPE_SLINGSHOT, test "x$ac_hpe_ss" = "xyes")
 ])
