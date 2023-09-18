@@ -2989,7 +2989,7 @@ extern uint64_t gres_ctld_step_test(gres_ctld_step_test_args_t *args)
 				    &foreach_gres_cnt);
 
 		if (foreach_gres_cnt.gres_cnt == INFINITE64) {
-			log_flag(GRES, "%s: Job lacks GRES (%s:%s) required by the step",
+			log_flag(STEPS, "%s: Job lacks GRES (%s:%s) required by the step",
 				 __func__, gres_state_step->gres_name,
 				 gres_ss->type_name);
 			cpu_cnt = 0;
