@@ -285,6 +285,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix how the topology of typed gres gets updated.
  -- Changes to the Type option in gres.conf now can be applied with scontrol
     reconfig.
+ -- Allow for jobs that request a newly configured gres type to be queued
+    even when the needed slurmds have not yet registered.
 
 * Changes in Slurm 23.02.7
 ==========================

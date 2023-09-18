@@ -929,7 +929,8 @@ extern List gres_sched_create_sock_gres_list(
 			local_s_p_n = NO_VAL;	/* No need to optimize socket */
 		if (core_bitmap && (bit_ffs(core_bitmap) == -1)) {
 			sock_gres = NULL;	/* No cores available */
-		} else if (gres_ns->topo_cnt) {
+		} else if (gres_ns->topo_cnt &&
+			   gres_ns->gres_cnt_found != NO_VAL64) {
 			sock_gres = _build_sock_gres_by_topo(
 				gres_state_job, gres_state_node, resv_exc_ptr,
 				use_total_gres,
