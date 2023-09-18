@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacct printing ReqMem field when memory doesn't exist in requested TRES.
  -- Fix how heterogenous steps in an allocation with CR_PACK_NODE or -mpack are
     created.
+ -- Fix slurmctld crash from race condition within job_submit_throttle plugin.
 
 * Changes in Slurm 23.02.5
 ==========================

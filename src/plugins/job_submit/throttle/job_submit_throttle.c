@@ -91,6 +91,8 @@ static time_t last_reset = (time_t) 0;
 static thru_put_t *thru_put_array = NULL;
 static int thru_put_size = 0;
 
+static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static void _get_config(void)
 {
 	char *opt;
@@ -144,7 +146,9 @@ extern int init(void)
 
 extern int fini(void)
 {
+	slurm_mutex_lock(&throttle_mutex);
 	xfree(thru_put_array);
+	slurm_mutex_unlock(&throttle_mutex);
 	return SLURM_SUCCESS;
 }
 
@@ -157,6 +161,8 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 		_get_config();
 	if (jobs_per_user_per_hour == 0)
 		return SLURM_SUCCESS;
+
+	slurm_mutex_lock(&throttle_mutex);
 	_reset_counters();
 
 	for (i = 0; i < thru_put_size; i++) {
@@ -164,10 +170,12 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 			continue;
 		if (thru_put_array[i].job_count < jobs_per_user_per_hour) {
 			thru_put_array[i].job_count++;
+			slurm_mutex_unlock(&throttle_mutex);
 			return SLURM_SUCCESS;
 		}
 		if (err_msg)
 			*err_msg = xstrdup("Reached jobs per hour limit");
+		slurm_mutex_unlock(&throttle_mutex);
 		return ESLURM_ACCOUNTING_POLICY;
 	}
 	thru_put_size++;
@@ -175,6 +183,7 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 				  (sizeof(thru_put_t) * thru_put_size));
 	thru_put_array[thru_put_size - 1].uid = job_desc->user_id;
 	thru_put_array[thru_put_size - 1].job_count = 1;
+	slurm_mutex_unlock(&throttle_mutex);
 	return SLURM_SUCCESS;
 }
 
