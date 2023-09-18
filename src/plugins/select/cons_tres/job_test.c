@@ -2728,6 +2728,9 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 
 			if (best_bblock_inx == -1 ||
 			    (fit && !best_fit) ||
+			    (!fit && !best_fit &&
+			     (nodes_on_bblock[i] >
+			      nodes_on_bblock[best_bblock_inx])) ||
 			    (fit && (nodes_on_bblock[i] <=
 				     nodes_on_bblock[best_bblock_inx]))) {
 				best_bblock_inx = i;
