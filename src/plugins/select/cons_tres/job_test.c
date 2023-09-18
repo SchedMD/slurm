@@ -2280,10 +2280,10 @@ static int _eval_nodes_block(job_record_t *job_ptr,
 		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
 	min_rem_nodes = min_nodes;
-	if ((gres_per_job = gres_sched_init(job_ptr->gres_list_req)))
-		rem_nodes = MIN(min_nodes, req_nodes);
-	else
-		rem_nodes = MAX(min_nodes, req_nodes);
+
+	/* Always use min_nodes */
+	gres_per_job = gres_sched_init(job_ptr->gres_list_req);
+	rem_nodes = MIN(min_nodes, req_nodes);
 
 	rem_max_cpus = _get_rem_max_cpus(details_ptr, rem_nodes);
 
