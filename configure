@@ -25116,18 +25116,15 @@ else
 fi
 
 
-#
-#  Tests for GTK+
-#
 
-# use the correct libs if running on 64bit
-if test -d "/usr/lib64/pkgconfig"; then
+  # use the correct libs if running on 64bit
+  if test -d "/usr/lib64/pkgconfig"; then
     PKG_CONFIG_PATH="/usr/lib64/pkgconfig/:$PKG_CONFIG_PATH"
-fi
+  fi
 
-if test -d "/opt/gnome/lib64/pkgconfig"; then
+  if test -d "/opt/gnome/lib64/pkgconfig"; then
     PKG_CONFIG_PATH="/opt/gnome/lib64/pkgconfig/:$PKG_CONFIG_PATH"
-fi
+  fi
 
 
 
@@ -25656,13 +25653,13 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
   rm -f conf.glibtest
 
 
-if test ${glib_config_minor_version=0} -ge 32 ; then
+  if test ${glib_config_minor_version=0} -ge 32 ; then
 
 printf "%s\n" "#define GLIB_NEW_THREADS 1" >>confdefs.h
 
-fi
+  fi
 
-# Check whether --enable-gtktest was given.
+  # Check whether --enable-gtktest was given.
 if test ${enable_gtktest+y}
 then :
   enableval=$enable_gtktest;
@@ -26003,30 +26000,30 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 
   rm -f conf.gtktest
 
-if test ${gtk_config_minor_version=0} -ge 10 ; then
+  if test ${gtk_config_minor_version=0} -ge 10 ; then
 
 printf "%s\n" "#define GTK2_USE_RADIO_SET 1" >>confdefs.h
 
-fi
+  fi
 
-if test ${gtk_config_minor_version=0} -ge 12 ; then
+  if test ${gtk_config_minor_version=0} -ge 12 ; then
 
 printf "%s\n" "#define GTK2_USE_TOOLTIP 1" >>confdefs.h
 
-fi
+  fi
 
-if test ${gtk_config_minor_version=0} -ge 14 ; then
+  if test ${gtk_config_minor_version=0} -ge 14 ; then
 
 printf "%s\n" "#define GTK2_USE_GET_FOCUS 1" >>confdefs.h
 
-fi
+  fi
 
-if test "x$ac_glib_test" != "xyes" -o "x$ac_gtk_test" != "xyes"; then
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: cannot build sview without gtk library" >&5
+  if test "x$ac_glib_test" != "xyes" -o "x$ac_gtk_test" != "xyes"; then
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: cannot build sview without gtk library" >&5
 printf "%s\n" "$as_me: WARNING: cannot build sview without gtk library" >&2;};
-fi
+  fi
 
- if test "x$ac_glib_test" = "xyes" && test "x$ac_gtk_test" = "xyes"; then
+   if test "x$ac_glib_test" = "xyes" && test "x$ac_gtk_test" = "xyes"; then
   BUILD_SVIEW_TRUE=
   BUILD_SVIEW_FALSE='#'
 else

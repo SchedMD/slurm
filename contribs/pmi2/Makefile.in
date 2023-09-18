@@ -140,6 +140,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_rsmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_selinux.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
+	$(top_srcdir)/auxdir/x_ac_sview.m4 \
 	$(top_srcdir)/auxdir/x_ac_systemd.m4 \
 	$(top_srcdir)/auxdir/x_ac_ucx.m4 \
 	$(top_srcdir)/auxdir/x_ac_uid_gid_size.m4 \
