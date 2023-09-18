@@ -23918,6 +23918,9 @@ fi
   if test "x$with_pmix" = xno; then
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for pmix disabled" >&5
 printf "%s\n" "$as_me: support for pmix disabled" >&6;}
+  elif test "x$with_pmix" = x; then
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for pmix is disabled by default" >&5
+printf "%s\n" "$as_me: WARNING: support for pmix is disabled by default" >&2;}
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for pmix installation" >&5
 printf %s "checking for pmix installation... " >&6; }

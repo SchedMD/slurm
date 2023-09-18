@@ -206,6 +206,8 @@ documents those changes that are of interest to users and administrators.
     to a notice.
  -- Fix --cpu-freq with userspace governor and frequency ranges behavior.
  -- Fix --cpu-freq parsing with incorrect frequencies.
+ -- PMIx support is nolonger built by default.  Passing --with-pmix option is
+    now required to build with PMIx.
 
 * Changes in Slurm 23.02.6
 ==========================

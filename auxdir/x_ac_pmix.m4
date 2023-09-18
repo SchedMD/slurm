@@ -30,6 +30,8 @@ AC_DEFUN([X_AC_PMIX],
 
   if [test "x$with_pmix" = xno]; then
     AC_MSG_NOTICE([support for pmix disabled])
+  elif [test "x$with_pmix" = x]; then
+    AC_MSG_WARN([support for pmix is disabled by default])
   else
     AC_CACHE_CHECK(
       [for pmix installation],

@@ -53,6 +53,8 @@ HIGHLIGHTS
  -- Userspace governor will now *not* accept a frequency range of min and max,
     and will simply statically set the required frequency. If the frequency is
     out of range, the closest value to the cpu limits will be chosen.
+ -- PMIx support is nolonger built by default.  Passing --with-pmix option is
+    now required to build with PMIx.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
