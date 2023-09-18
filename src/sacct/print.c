@@ -1636,6 +1636,9 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
+			if (tmp_uint64 == INFINITE64)
+				tmp_uint64 = 0;
+
 			if (tmp_uint64 != NO_VAL64) {
 				convert_num_unit((double)tmp_uint64,
 						 outbuf, sizeof(outbuf),
