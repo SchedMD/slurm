@@ -25,7 +25,7 @@ AC_DEFUN([X_AC_HTTP_PARSER], [
 		       [_x_ac_http_parser_dirs="$with_http_parser"])])
 
 	if [test "x$with_http_parser" = xno]; then
-		AC_MSG_WARN([support for HTTP parser disabled])
+		AC_MSG_NOTICE([support for HTTP parser disabled])
 	else
 		AC_CACHE_CHECK(
 		  [for http-parser installation],

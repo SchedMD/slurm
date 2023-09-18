@@ -22,7 +22,7 @@ AC_DEFUN([X_AC_ONEAPI],
            [_x_ac_oneapi_dirs="$with_oneapi"])])
 
   if [test "x$with_oneapi" = xno]; then
-     AC_MSG_WARN([support for oneapi disabled])
+     AC_MSG_NOTICE([support for oneapi disabled])
   else
     AC_MSG_CHECKING([whether oneAPI in installed in this system])
     # Check for oneAPI header and library in the default location

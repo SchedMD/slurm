@@ -21,7 +21,7 @@ AC_DEFUN([X_AC_HWLOC],
            [_x_ac_hwloc_dirs="$with_hwloc"])])
 
   if [test "x$with_hwloc" = xno]; then
-     AC_MSG_WARN([support for hwloc disabled])
+     AC_MSG_NOTICE([support for hwloc disabled])
   else
     AC_CACHE_CHECK(
       [for hwloc installation],

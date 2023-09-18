@@ -38,7 +38,7 @@ AC_DEFUN([X_AC_BPF], [
            [_x_ac_bpf_dirs="$with_bpf"])])
 
   if [test "x$with_bpf" = xno]; then
-    AC_MSG_WARN([support for bpf disabled])
+    AC_MSG_NOTICE([support for bpf disabled])
   else
     AC_CACHE_CHECK(
       [for bpf installation],

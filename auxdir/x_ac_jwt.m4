@@ -25,7 +25,7 @@ AC_DEFUN([X_AC_JWT], [
            [_x_ac_jwt_dirs="$with_jwt"])])
 
   if [test "x$with_jwt" = xno]; then
-    AC_MSG_WARN([support for jwt disabled])
+    AC_MSG_NOTICE([support for jwt disabled])
   else
       x_ac_jwt_found="no";
       AS_IF([test -z "$with_jwt" || test "x$with_jwt" = "xyes"],

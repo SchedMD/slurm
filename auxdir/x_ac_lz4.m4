@@ -26,7 +26,7 @@ AC_ARG_WITH([lz4],
 # Locate lz4, if installed
 #
 if [test "x$with_lz4" = xno]; then
-  AC_MSG_WARN([support for lz4 disabled])
+  AC_MSG_NOTICE([support for lz4 disabled])
 else
   # check the user supplied or any other more or less 'standard' place:
   #   Most UNIX systems      : /usr/local and /usr

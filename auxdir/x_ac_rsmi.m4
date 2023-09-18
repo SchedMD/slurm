@@ -25,7 +25,7 @@ AC_DEFUN([X_AC_RSMI],
            [_x_ac_rsmi_dirs="$with_rsmi"])])
 
   if [test "x$with_rsmi" = xno]; then
-     AC_MSG_WARN([support for rsmi disabled])
+     AC_MSG_NOTICE([support for rsmi disabled])
   else
     AC_MSG_CHECKING([whether RSMI/ROCm in installed in this system])
     # Check for RSMI header and library in the default location

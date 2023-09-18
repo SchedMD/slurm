@@ -27,7 +27,7 @@ AC_DEFUN([X_AC_HPE_SLINGSHOT],
            [_x_ac_hpe_ss_dirs="$with_hpe_slingshot"])])
 
   if [test "x$with_hpe_slingshot" = xno]; then
-     AC_MSG_WARN([support for HPE Slingshot disabled])
+     AC_MSG_NOTICE([support for HPE Slingshot disabled])
   else
     AC_MSG_CHECKING([whether HPE Slingshot is installed in this system])
     # Check for HPE Slingshot header and library in the default location

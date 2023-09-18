@@ -21,7 +21,7 @@ AC_DEFUN([X_AC_OFED], [
 	   [_x_ac_ofed_dirs="$with_ofed"])])
 
   if [test "x$with_ofed" = xno]; then
-     AC_MSG_WARN([support for ofed disabled])
+     AC_MSG_NOTICE([support for ofed disabled])
   else
     AC_CACHE_CHECK(
       [for ofed installation],

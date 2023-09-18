@@ -202,6 +202,8 @@ documents those changes that are of interest to users and administrators.
     StateSaveLocation before starting and attempting to assert control.
     This avoids issues with misconfiguration, or the shared filesystem being
     unavailable, that could previously have lead to all jobs being cancelled.
+ -- The warning printed when using configure --without-PACKAGE has been changed
+    to a notice.
 
 * Changes in Slurm 23.02.6
 ==========================

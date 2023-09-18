@@ -20719,8 +20719,8 @@ fi
 
 
   if test "x$with_json" = xno; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for json disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for json disabled" >&2;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for json disabled" >&5
+printf "%s\n" "$as_me: support for json disabled" >&6;}
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for json installation" >&5
 printf %s "checking for json installation... " >&6; }
@@ -20824,8 +20824,8 @@ fi
 
 
   if test "x$with_jwt" = xno; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for jwt disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for jwt disabled" >&2;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for jwt disabled" >&5
+printf "%s\n" "$as_me: support for jwt disabled" >&6;}
   else
       x_ac_jwt_found="no";
       if test -z "$with_jwt" || test "x$with_jwt" = "xyes"
@@ -21030,8 +21030,8 @@ fi
 
 
 	if test "x$with_http_parser" = xno; then
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for HTTP parser disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for HTTP parser disabled" >&2;}
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for HTTP parser disabled" >&5
+printf "%s\n" "$as_me: support for HTTP parser disabled" >&6;}
 	else
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for http-parser installation" >&5
 printf %s "checking for http-parser installation... " >&6; }
@@ -21123,8 +21123,8 @@ fi
 
 
 	if test "x$with_yaml" = xno; then
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for libyaml disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for libyaml disabled" >&2;}
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for libyaml disabled" >&5
+printf "%s\n" "$as_me: support for libyaml disabled" >&6;}
 	else
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libyaml installation" >&5
 printf %s "checking for libyaml installation... " >&6; }
@@ -22634,8 +22634,8 @@ fi
 
 
   if test "x$with_ofed" = xno; then
-     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for ofed disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for ofed disabled" >&2;}
+     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for ofed disabled" >&5
+printf "%s\n" "$as_me: support for ofed disabled" >&6;}
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ofed installation" >&5
 printf %s "checking for ofed installation... " >&6; }
@@ -23193,8 +23193,8 @@ fi
 # Locate lz4, if installed
 #
 if test "x$with_lz4" = xno; then
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for lz4 disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for lz4 disabled" >&2;}
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for lz4 disabled" >&5
+printf "%s\n" "$as_me: support for lz4 disabled" >&6;}
 else
   # check the user supplied or any other more or less 'standard' place:
   #   Most UNIX systems      : /usr/local and /usr
@@ -23330,8 +23330,8 @@ fi
 
 
   if test "x$with_hwloc" = xno; then
-     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for hwloc disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for hwloc disabled" >&2;}
+     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for hwloc disabled" >&5
+printf "%s\n" "$as_me: support for hwloc disabled" >&6;}
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for hwloc installation" >&5
 printf %s "checking for hwloc installation... " >&6; }
@@ -23509,8 +23509,8 @@ fi
 
 
   if test "x$with_nvml" = xno; then
-     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for nvml disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for nvml disabled" >&2;}
+     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for nvml disabled" >&5
+printf "%s\n" "$as_me: support for nvml disabled" >&6;}
   else
 
     # Check if libnvml is already in the system paths
@@ -23608,8 +23608,8 @@ fi
 
 
   if test "x$with_rsmi" = xno; then
-     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for rsmi disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for rsmi disabled" >&2;}
+     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for rsmi disabled" >&5
+printf "%s\n" "$as_me: support for rsmi disabled" >&6;}
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether RSMI/ROCm in installed in this system" >&5
 printf %s "checking whether RSMI/ROCm in installed in this system... " >&6; }
@@ -23782,8 +23782,8 @@ fi
 
 
   if test "x$with_oneapi" = xno; then
-     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for oneapi disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for oneapi disabled" >&2;}
+     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for oneapi disabled" >&5
+printf "%s\n" "$as_me: support for oneapi disabled" >&6;}
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether oneAPI in installed in this system" >&5
 printf %s "checking whether oneAPI in installed in this system... " >&6; }
@@ -23914,8 +23914,8 @@ fi
 
 
   if test "x$with_pmix" = xno; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for pmix disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for pmix disabled" >&2;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for pmix disabled" >&5
+printf "%s\n" "$as_me: support for pmix disabled" >&6;}
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for pmix installation" >&5
 printf %s "checking for pmix installation... " >&6; }
@@ -24239,8 +24239,8 @@ fi
 
 
   if test "x$with_freeipmi" = xno; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for freeipmi disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for freeipmi disabled" >&2;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for freeipmi disabled" >&5
+printf "%s\n" "$as_me: support for freeipmi disabled" >&6;}
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for freeipmi installation" >&5
 printf %s "checking for freeipmi installation... " >&6; }
@@ -24346,8 +24346,8 @@ fi
 
 
   if test "x$with_rrdtool" = xno; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for rrdtool disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for rrdtool disabled" >&2;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for rrdtool disabled" >&5
+printf "%s\n" "$as_me: support for rrdtool disabled" >&6;}
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for rrdtool installation" >&5
 printf %s "checking for rrdtool installation... " >&6; }
@@ -24705,8 +24705,8 @@ fi
 
 
   if test "x$with_rdkafka" = xno; then
-     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for rdkafka disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for rdkafka disabled" >&2;}
+     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for rdkafka disabled" >&5
+printf "%s\n" "$as_me: support for rdkafka disabled" >&6;}
   else
     # Check for librdkafka header and library in the default location
     # or in the location specified during configure
@@ -24870,8 +24870,8 @@ fi
 
 
   if test "x$with_bpf" = xno; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for bpf disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for bpf disabled" >&2;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for bpf disabled" >&5
+printf "%s\n" "$as_me: support for bpf disabled" >&6;}
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for bpf installation" >&5
 printf %s "checking for bpf installation... " >&6; }
@@ -26349,8 +26349,8 @@ fi
 
 
   if test "x$with_hpe_slingshot" = xno; then
-     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for HPE Slingshot disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for HPE Slingshot disabled" >&2;}
+     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for HPE Slingshot disabled" >&5
+printf "%s\n" "$as_me: support for HPE Slingshot disabled" >&6;}
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether HPE Slingshot is installed in this system" >&5
 printf %s "checking whether HPE Slingshot is installed in this system... " >&6; }
@@ -27350,8 +27350,8 @@ fi
 
 
   if test "x$with_munge" = xno; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: support for munge disabled" >&5
-printf "%s\n" "$as_me: WARNING: support for munge disabled" >&2;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for munge disabled" >&5
+printf "%s\n" "$as_me: support for munge disabled" >&6;}
   else
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for munge installation" >&5
 printf %s "checking for munge installation... " >&6; }
@@ -27900,8 +27900,13 @@ _ACEOF
   if test x$_libcurl_with = xno || test x$libcurl_cv_lib_curl_usable != xyes ; then
      # This is the IF-NO path
      :
-     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate/link against libcurl-devel installation" >&5
+     if  test "x$_libcurl_with" == "xno" ; then
+       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for libcurl is disabled" >&5
+printf "%s\n" "$as_me: support for libcurl is disabled" >&6;}
+     else
+       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate/link against libcurl-devel installation" >&5
 printf "%s\n" "$as_me: WARNING: unable to locate/link against libcurl-devel installation" >&2;}
+     fi
   else
      # This is the IF-YES path
      :

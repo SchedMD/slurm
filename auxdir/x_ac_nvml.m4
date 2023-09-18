@@ -48,7 +48,7 @@ AC_DEFUN([X_AC_NVML],
            [_x_ac_nvml_dirs="$with_nvml"])])
 
   if [test "x$with_nvml" = xno]; then
-     AC_MSG_WARN([support for nvml disabled])
+     AC_MSG_NOTICE([support for nvml disabled])
   else
 
     # Check if libnvml is already in the system paths

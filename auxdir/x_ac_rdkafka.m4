@@ -22,7 +22,7 @@ AC_DEFUN([X_AC_RDKAFKA],
            [_x_ac_rdkafka_dirs="$with_rdkafka"])])
 
   if [test "x$with_rdkafka" = xno]; then
-     AC_MSG_WARN([support for rdkafka disabled])
+     AC_MSG_NOTICE([support for rdkafka disabled])
   else
     # Check for librdkafka header and library in the default location
     # or in the location specified during configure

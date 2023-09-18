@@ -48,6 +48,8 @@ HIGHLIGHTS
  -- Remove NoAddrCache CommunicationParameter.
  -- Add QOS flag 'Relative'. If set the QOS limits will be treated as
     percentages of a cluster/partition instead of absolutes.
+ -- The warning printed when using configure --without-PACKAGE has been changed
+    to a notice.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

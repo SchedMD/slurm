@@ -24,7 +24,7 @@ AC_DEFUN([X_AC_YAML], [
            [_x_ac_yaml_dirs="$with_yaml"])])
 
 	if [test "x$with_yaml" = xno]; then
-		AC_MSG_WARN([support for libyaml disabled])
+		AC_MSG_NOTICE([support for libyaml disabled])
 	else
 		AC_CACHE_CHECK(
 		  [for libyaml installation],

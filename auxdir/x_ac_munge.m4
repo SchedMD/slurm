@@ -26,7 +26,7 @@ AC_DEFUN([X_AC_MUNGE], [
            [_x_ac_munge_dirs="$with_munge"])])
 
   if [test "x$with_munge" = xno]; then
-    AC_MSG_WARN([support for munge disabled])
+    AC_MSG_NOTICE([support for munge disabled])
   else
     AC_CACHE_CHECK(
       [for munge installation],

@@ -22,7 +22,7 @@ AC_DEFUN([X_AC_FREEIPMI],
            [_x_ac_freeipmi_dirs="$with_freeipmi"])])
 
   if [test "x$with_freeipmi" = xno]; then
-    AC_MSG_WARN([support for freeipmi disabled])
+    AC_MSG_NOTICE([support for freeipmi disabled])
   else
     AC_CACHE_CHECK(
       [for freeipmi installation],

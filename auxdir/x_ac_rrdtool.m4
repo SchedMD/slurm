@@ -21,7 +21,7 @@ AC_DEFUN([X_AC_RRDTOOL],
            [_x_ac_rrdtool_dirs="$with_rrdtool"])])
 
   if [test "x$with_rrdtool" = xno]; then
-    AC_MSG_WARN([support for rrdtool disabled])
+    AC_MSG_NOTICE([support for rrdtool disabled])
   else
     AC_CACHE_CHECK(
       [for rrdtool installation],

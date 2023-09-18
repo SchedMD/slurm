@@ -29,7 +29,7 @@ AC_DEFUN([X_AC_PMIX],
            [_x_ac_pmix_dirs="`echo $with_pmix | sed "s/:/ /g"`"])])
 
   if [test "x$with_pmix" = xno]; then
-    AC_MSG_WARN([support for pmix disabled])
+    AC_MSG_NOTICE([support for pmix disabled])
   else
     AC_CACHE_CHECK(
       [for pmix installation],

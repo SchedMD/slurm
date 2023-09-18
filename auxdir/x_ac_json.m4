@@ -25,7 +25,7 @@ AC_DEFUN([X_AC_JSON], [
 	   [_x_ac_json_dirs="$with_json"])])
 
   if [test "x$with_json" = xno]; then
-    AC_MSG_WARN([support for json disabled])
+    AC_MSG_NOTICE([support for json disabled])
   else
     AC_CACHE_CHECK(
       [for json installation],
