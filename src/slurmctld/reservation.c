@@ -2553,31 +2553,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	} else if (resv_ptr->core_bitmap) {
 		resv_ptr->core_cnt =
 			bit_set_count(resv_ptr->core_bitmap);
-
-		if (resv_ptr->node_bitmap) {
-			for (int i = 0;
-			     (node_ptr = next_node_bitmap(resv_ptr->node_bitmap,
-							  &i));
-			     i++) {
-				int offset, core;
-				uint32_t cores, threads;
-
-				cores = node_ptr->tot_cores;
-				threads = node_ptr->threads;
-
-				offset = cr_get_coremap_offset(i);
-
-				for (core = 0; core < cores; core++) {
-					if (!bit_test(resv_ptr->core_bitmap,
-						     core + offset))
-						continue;
-					cpu_cnt += threads;
-				}
-				/* info("cpu_cnt is now %"PRIu64" after %s", */
-				/*      cpu_cnt, node_ptr->name); */
-			}
-		} else
-			  cpu_cnt = resv_ptr->core_cnt;
+		cpu_cnt = resv_ptr->core_resrcs->ncpus;
 	}
 
 	xfree(resv_ptr->tres_str);
