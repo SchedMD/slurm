@@ -1044,6 +1044,7 @@ enable_x11
 enable_selinux
 with_rdkafka
 with_bpf
+enable_sview
 enable_glibtest
 enable_gtktest
 enable_cray_network
@@ -1751,6 +1752,7 @@ Optional Features:
                           environment without .login
   --disable-x11           disable internal X11 support
   --enable-selinux        enable internal SELinux support
+  --disable-sview         disable sview support
   --disable-glibtest      do not try to compile and run a test GLIB program
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --enable-cray-network   Run Slurm on a non-Cray system with a Cray network
@@ -25117,14 +25119,35 @@ fi
 
 
 
-  # use the correct libs if running on 64bit
-  if test -d "/usr/lib64/pkgconfig"; then
-    PKG_CONFIG_PATH="/usr/lib64/pkgconfig/:$PKG_CONFIG_PATH"
-  fi
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to compile sview" >&5
+printf "%s\n" "$as_me: checking whether to compile sview" >&6;}
+  # Check whether --enable-sview was given.
+if test ${enable_sview+y}
+then :
+  enableval=$enable_sview;  case "$enableval" in
+        yes) x_ac_sview=yes ;;
+         no) x_ac_sview=no ;;
+          *) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
+printf "%s\n" "doh!" >&6; }
+             as_fn_error $? "bad value \"$enableval\" for --enable-sview" "$LINENO" 5
+      esac
 
-  if test -d "/opt/gnome/lib64/pkgconfig"; then
-    PKG_CONFIG_PATH="/opt/gnome/lib64/pkgconfig/:$PKG_CONFIG_PATH"
-  fi
+
+fi
+
+
+  if test "x$x_ac_sview" == "xno"; then
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: sview is disabled" >&5
+printf "%s\n" "$as_me: sview is disabled" >&6;}
+  else
+    # use the correct libs if running on 64bit
+    if test -d "/usr/lib64/pkgconfig"; then
+      PKG_CONFIG_PATH="/usr/lib64/pkgconfig/:$PKG_CONFIG_PATH"
+    fi
+
+    if test -d "/opt/gnome/lib64/pkgconfig"; then
+      PKG_CONFIG_PATH="/opt/gnome/lib64/pkgconfig/:$PKG_CONFIG_PATH"
+    fi
 
 
 
@@ -25653,13 +25676,13 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
   rm -f conf.glibtest
 
 
-  if test ${glib_config_minor_version=0} -ge 32 ; then
+    if test ${glib_config_minor_version=0} -ge 32 ; then
 
 printf "%s\n" "#define GLIB_NEW_THREADS 1" >>confdefs.h
 
-  fi
+   fi
 
-  # Check whether --enable-gtktest was given.
+    # Check whether --enable-gtktest was given.
 if test ${enable_gtktest+y}
 then :
   enableval=$enable_gtktest;
@@ -26000,27 +26023,32 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 
   rm -f conf.gtktest
 
-  if test ${gtk_config_minor_version=0} -ge 10 ; then
+    if test ${gtk_config_minor_version=0} -ge 10 ; then
 
 printf "%s\n" "#define GTK2_USE_RADIO_SET 1" >>confdefs.h
 
-  fi
+    fi
 
-  if test ${gtk_config_minor_version=0} -ge 12 ; then
+    if test ${gtk_config_minor_version=0} -ge 12 ; then
 
 printf "%s\n" "#define GTK2_USE_TOOLTIP 1" >>confdefs.h
 
-  fi
+    fi
 
-  if test ${gtk_config_minor_version=0} -ge 14 ; then
+    if test ${gtk_config_minor_version=0} -ge 14 ; then
 
 printf "%s\n" "#define GTK2_USE_GET_FOCUS 1" >>confdefs.h
 
-  fi
+    fi
 
-  if test "x$ac_glib_test" != "xyes" -o "x$ac_gtk_test" != "xyes"; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: cannot build sview without gtk library" >&5
-printf "%s\n" "$as_me: WARNING: cannot build sview without gtk library" >&2;};
+    if test "x$ac_glib_test" != "xyes" -o "x$ac_gtk_test" != "xyes"; then
+      if test -z "$x_ac_sview"; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: cannot build sview without gtk library" >&5
+printf "%s\n" "$as_me: WARNING: cannot build sview without gtk library" >&2;}
+      else
+        as_fn_error $? "cannot build sview without gtk library" "$LINENO" 5
+      fi
+    fi
   fi
 
    if test "x$ac_glib_test" = "xyes" && test "x$ac_gtk_test" = "xyes"; then
