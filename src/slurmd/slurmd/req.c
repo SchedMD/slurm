@@ -2488,7 +2488,6 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	}
 
 	cred_arg = slurm_cred_get_args(req->cred);
-	xfree(req->user_name); /* Never sent by slurmctld */
 	/* If available, use the cred to fill in username. */
 	if (cred_arg->pw_name)
 		user_name = xstrdup(cred_arg->pw_name);

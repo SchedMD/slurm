@@ -8936,7 +8936,6 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
-		packstr(msg->user_name, buffer);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
 		packstr(msg->partition, buffer);
@@ -8998,7 +8997,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
-		packstr(msg->user_name, buffer);
+		packnull(buffer); /* was user_name */
 		pack32_array(msg->gids, msg->ngids, buffer);
 
 		packstr(msg->partition, buffer);
@@ -9060,7 +9059,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
-		packstr(msg->user_name, buffer);
+		packnull(buffer); /* was user_name */
 		pack32_array(msg->gids, msg->ngids, buffer);
 
 		packstr(msg->partition, buffer);
@@ -9141,7 +9140,6 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
-		safe_unpackstr(&launch_msg_ptr->user_name, buffer);
 		safe_unpack32_array(&launch_msg_ptr->gids,
 				    &launch_msg_ptr->ngids, buffer);
 
@@ -9208,11 +9206,13 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&launch_msg_ptr->tres_bind, buffer);
 		safe_unpackstr(&launch_msg_ptr->tres_freq, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		char *tmp_char;
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
-		safe_unpackstr(&launch_msg_ptr->user_name, buffer);
+		safe_unpackstr(&tmp_char, buffer); /* was user_name */
+		xfree(tmp_char);
 		safe_unpack32_array(&launch_msg_ptr->gids,
 				    &launch_msg_ptr->ngids, buffer);
 
@@ -9279,12 +9279,14 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&launch_msg_ptr->tres_bind, buffer);
 		safe_unpackstr(&launch_msg_ptr->tres_freq, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *tmp_char;
 		dynamic_plugin_data_t *select_jobinfo;
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
-		safe_unpackstr(&launch_msg_ptr->user_name, buffer);
+		safe_unpackstr(&tmp_char, buffer); /* was user_name */
+		xfree(tmp_char);
 		safe_unpack32_array(&launch_msg_ptr->gids,
 				    &launch_msg_ptr->ngids, buffer);
 
