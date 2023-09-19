@@ -208,6 +208,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix CpusPerTres= not upgreadable with scontrol update
  -- Fix unintentional gres removal when validating the gres job state.
  -- Fix --without-hpe-slingshot configure option.
+ -- Fix cgroup v2 memory calculations when transparent huge pages are used.
 
 * Changes in Slurm 23.02.5
 ==========================
