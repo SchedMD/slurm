@@ -8208,7 +8208,7 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
 			      buffer);
 		slurm_cred_pack(msg->cred, buffer, smsg->protocol_version);
-		packstr(msg->user_name, buffer);
+		packstr(msg->user_name_deprecated, buffer);
 	}
 }
 
@@ -8275,7 +8275,7 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 						    smsg->protocol_version)))
 			goto unpack_error;
 
-		safe_unpackstr(&msg->user_name, buffer);
+		safe_unpackstr(&msg->user_name_deprecated, buffer);
 	}
 
 	return SLURM_SUCCESS;

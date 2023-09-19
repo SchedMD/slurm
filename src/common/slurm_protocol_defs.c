@@ -1411,7 +1411,7 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 		FREE_NULL_LIST(msg->job_gres_prep);
 		xfree(msg->nodes);
 		xfree(msg->work_dir);
-		xfree(msg->user_name);
+		xfree(msg->user_name_deprecated);
 
 		xfree(msg->x11_alloc_host);
 		xfree(msg->x11_magic_cookie);
