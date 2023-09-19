@@ -1982,8 +1982,7 @@ static int _connect_as_other(char *sock_name, uid_t uid, gid_t gid, int *fd)
 
 /* load the user's environment on this machine if requested
  * SLURM_GET_USER_ENV environment variable is set */
-static int
-_get_user_env(batch_job_launch_msg_t *req)
+static int _get_user_env(batch_job_launch_msg_t *req, char *user_name)
 {
 	char **new_env;
 	int i;
@@ -2003,10 +2002,10 @@ _get_user_env(batch_job_launch_msg_t *req)
 	if (i >= req->envc)
 		return 0;		/* don't need to load env */
 
-	verbose("%s: get env for user %s here", __func__, req->user_name);
+	verbose("%s: get env for user %s here", __func__, user_name);
 
 	/* Permit up to 120 second delay before using cache file */
-	new_env = env_array_user_default(req->user_name, 120, 0, no_env_cache);
+	new_env = env_array_user_default(user_name, 120, 0, no_env_cache);
 	if (! new_env) {
 		error("%s: Unable to get user's local environment%s",
 		      __func__, no_env_cache ?
@@ -2603,7 +2602,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		_wait_for_job_running_prolog(req->job_id);
 	}
 
-	if (_get_user_env(req) < 0) {
+	if (_get_user_env(req, req->user_name) < 0) {
 		bool requeue = _requeue_setup_env_fail();
 		if (requeue) {
 			rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
