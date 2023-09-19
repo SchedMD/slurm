@@ -1168,8 +1168,6 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		goto fail;
 	}
 
-	xfree(req->user_name);
-
 	xfree(req->gids);
 	if (arg->ngids) {
 		req->ngids = arg->ngids;

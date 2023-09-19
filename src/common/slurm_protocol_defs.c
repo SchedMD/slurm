@@ -1806,7 +1806,6 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 		xfree(msg->env);
 	}
 	xfree(msg->acctg_freq);
-	xfree(msg->user_name);
 	xfree(msg->alias_list);
 	xfree(msg->container);
 	xfree(msg->cwd);

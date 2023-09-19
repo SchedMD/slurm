@@ -7146,7 +7146,6 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
-		packstr(msg->user_name, buffer);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
 		pack32(msg->het_job_node_offset, buffer);
@@ -7249,7 +7248,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
-		packstr(msg->user_name, buffer);
+		packnull(buffer);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
 		pack32(msg->het_job_node_offset, buffer);
@@ -7350,7 +7349,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
-		packstr(msg->user_name, buffer);
+		packnull(buffer);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
 		pack32(msg->het_job_node_offset, buffer);
@@ -7471,7 +7470,6 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 
 		safe_unpack32(&msg->uid, buffer);
 		safe_unpack32(&msg->gid, buffer);
-		safe_unpackstr(&msg->user_name, buffer);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
 
 		safe_unpack32(&msg->het_job_node_offset, buffer);
@@ -7607,13 +7605,15 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr(&msg->x11_target, buffer);
 		safe_unpack16(&msg->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
+		char *tmp_char;
 		if (unpack_step_id_members(&msg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		safe_unpack32(&msg->uid, buffer);
 		safe_unpack32(&msg->gid, buffer);
-		safe_unpackstr(&msg->user_name, buffer);
+		safe_unpackstr(&tmp_char, buffer); /* was user_name */
+		xfree(tmp_char);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
 
 		safe_unpack32(&msg->het_job_node_offset, buffer);
@@ -7749,13 +7749,15 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr(&msg->x11_target, buffer);
 		safe_unpack16(&msg->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *tmp_char;
 		if (unpack_step_id_members(&msg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		safe_unpack32(&msg->uid, buffer);
 		safe_unpack32(&msg->gid, buffer);
-		safe_unpackstr(&msg->user_name, buffer);
+		safe_unpackstr(&tmp_char, buffer); /* was user_name */
+		xfree(tmp_char);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
 
 		safe_unpack32(&msg->het_job_node_offset, buffer);

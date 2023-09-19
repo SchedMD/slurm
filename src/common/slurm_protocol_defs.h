@@ -902,7 +902,6 @@ typedef struct launch_tasks_request_msg {
 	uint16_t  ntasks_per_socket;/* number of tasks to invoke on
 				     * each socket */
 	uint32_t  uid;
-	char     *user_name;
 	uint32_t  gid;
 	uint32_t  ngids;
 	uint32_t *gids;
