@@ -697,6 +697,8 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 
 	if (!parser) {
 		rc = ESLURM_DATA_INVALID_PARSER;
+		error("%s output not supported by %s",
+		      mime_type, SLURM_DATA_PARSER_VERSION);
 		goto cleanup;
 	}
 
