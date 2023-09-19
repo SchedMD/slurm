@@ -1641,7 +1641,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.work_dir = req->cwd;
 		job_env.uid = req->uid;
 		job_env.gid = req->gid;
-		job_env.user_name = req->user_name;
 		rc =  _run_prolog(&job_env, req->cred, true);
 		_free_job_env(&job_env);
 		if (rc) {
@@ -2380,7 +2379,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.work_dir = req->work_dir;
 		job_env.uid = req->uid;
 		job_env.gid = req->gid;
-		job_env.user_name = req->user_name;
 
 #ifdef HAVE_NATIVE_CRAY
 		if (req->het_job_id && (req->het_job_id != NO_VAL))
@@ -2571,7 +2569,6 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		job_env.work_dir = req->work_dir;
 		job_env.uid = req->uid;
 		job_env.gid = req->gid;
-		job_env.user_name = req->user_name;
 		/*
 	 	 * Run job prolog on this node
 	 	 */

@@ -66,7 +66,6 @@ typedef struct {
 	uint32_t spank_job_env_size;
 	uid_t uid;
 	gid_t gid;
-	char *user_name;
 	char *work_dir;
 } job_env_t;
 
