@@ -215,6 +215,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix unintentional gres removal when validating the gres job state.
  -- Fix --without-hpe-slingshot configure option.
  -- Fix cgroup v2 memory calculations when transparent huge pages are used.
+ -- Fix parsing of sgather --timeout option.
 
 * Changes in Slurm 23.02.5
 ==========================
