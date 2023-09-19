@@ -212,6 +212,7 @@ documents those changes that are of interest to users and administrators.
     makes accounting consistent with OOM Killer.
  -- Update slurmstepd processes with current SlurmctldHost settings, allowing
     for controller changes without draining all compute jobs.
+ -- Add format_stderr to LogTimeFormat of slurm.conf and slurmdbd.conf.
 
 * Changes in Slurm 23.02.6
 ==========================

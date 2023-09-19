@@ -1014,7 +1014,7 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 					xiso8601timecat(substitute, true);
 					break;
 				}
-				switch (log->fmt) {
+				switch (log->fmt & (~LOG_FMT_FORMAT_STDERR)) {
 				case LOG_FMT_ISO8601_MS:
 					/* "%M" => "yyyy-mm-ddThh:mm:ss.fff"  */
 					xiso8601timecat(substitute, true);
@@ -1317,6 +1317,10 @@ static void _log_msg(log_level_t level, bool sched, bool spank, bool warn,
 			_set_idbuf(tmp, sizeof(tmp));
 			_log_printf(log, log->buf, stderr, "%s: %s%s%s",
 			            tmp, pfx, buf, eol);
+		} else if ((log->fmt & LOG_FMT_FORMAT_STDERR)) {
+			xlogfmtcat(&msgbuf, "[%M] %s%s%s", pfx, buf, eol);
+			_log_printf(log, log->buf, stderr, msgbuf);
+			xfree(msgbuf);
 		} else {
 			_log_printf(log, log->buf, stderr, "%s: %s%s%s",
 			            log->argv0, pfx, buf, eol);

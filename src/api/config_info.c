@@ -519,6 +519,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	char tmp_str[256];
 	uint32_t cluster_flags = slurmdb_setup_cluster_flags();
 	int i;
+	bool format_stderr = false;
 
 	if ( slurm_ctl_conf_ptr == NULL )
 		return NULL;
@@ -1004,6 +1005,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("LogTimeFormat");
+	if (slurm_ctl_conf_ptr->log_fmt & LOG_FMT_FORMAT_STDERR) {
+		format_stderr = true;
+		slurm_ctl_conf_ptr->log_fmt &= (~LOG_FMT_FORMAT_STDERR);
+	}
+
 	if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_ISO8601_MS)
 		key_pair->value = xstrdup("iso8601_ms");
 	else if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_ISO8601)
@@ -1020,6 +1026,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 		key_pair->value = xstrdup("short");
 	else if (slurm_ctl_conf_ptr->log_fmt == LOG_FMT_THREAD_ID)
 		key_pair->value = xstrdup("thread_id");
+
+	if (format_stderr) {
+		xstrcat(key_pair->value, ",format_stderr");
+		slurm_ctl_conf_ptr->log_fmt |= LOG_FMT_FORMAT_STDERR;
+	}
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

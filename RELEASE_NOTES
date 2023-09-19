@@ -82,6 +82,7 @@ CONFIGURATION FILE CHANGES (see appropriate man page for details)
     priority/multifactor.
  -- Allow for a shared suffix to be used with the hostlist format. E.g.,
     "node[0001-0010]-int".
+ -- Add format_stderr to LogTimeFormat of slurm.conf and slurmdbd.conf.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

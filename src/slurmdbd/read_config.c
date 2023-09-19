@@ -364,6 +364,12 @@ extern int read_slurmdbd_conf(void)
 				slurm_conf.log_fmt = LOG_FMT_SHORT;
 			else if (xstrcasestr(temp_str, "thread_id"))
 				slurm_conf.log_fmt = LOG_FMT_THREAD_ID;
+
+			if (xstrcasestr(temp_str, "format_stderr")) {
+				if (!slurm_conf.log_fmt)
+					slurm_conf.log_fmt = LOG_FMT_ISO8601_MS;
+				slurm_conf.log_fmt |= LOG_FMT_FORMAT_STDERR;
+			}
 			xfree(temp_str);
 		} else
 			slurm_conf.log_fmt = LOG_FMT_ISO8601_MS;
