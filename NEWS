@@ -218,6 +218,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix --without-hpe-slingshot configure option.
  -- Fix cgroup v2 memory calculations when transparent huge pages are used.
  -- Fix parsing of sgather --timeout option.
+ -- Fix regression from 22.05.0 that caused srun --cpu-bind "=verbose" and "=v"
+    options give different CPU bind masks.
 
 * Changes in Slurm 23.02.5
 ==========================
