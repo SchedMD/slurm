@@ -3790,6 +3790,11 @@ Same as \fB\-t, \-\-time\fR
 .IP
 
 .TP
+\fBSLURM_TRES_PER_TASK\fR
+Same as \fB\-\-tres\-per\-task\fR
+.IP
+
+.TP
 \fBSLURM_UMASK\fR
 If defined, Slurm will use the defined \fIumask\fR to set permissions when
 creating the output/error files for the job.
@@ -4195,6 +4200,11 @@ This is set only if the system has the topology/tree plugin configured.
 The value will be set component types listed in \fBSLURM_TOPOLOGY_ADDR\fR.
 Each component will be identified as either "switch" or "node".
 A period is used to separate each hardware component type.
+.IP
+
+.TP
+\fBSLURM_TRES_PER_TASK\fR
+Set to the value of \fB\-\-tres\-per\-task\fR.
 .IP
 
 .TP
