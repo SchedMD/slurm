@@ -244,12 +244,9 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *step)
 {
 	slurm_cred_arg_t *cred_arg = slurm_cred_get_args(cred);
 
-	/*
-	 * This may have been filed in already from batch_job_launch_msg_t
-	 * or launch_tasks_request_msg_t.
-	 */
+	step->user_name = xstrdup(cred_arg->pw_name);
 	if (!step->user_name)
-		step->user_name = xstrdup(cred_arg->pw_name);
+		step->user_name = uid_to_string_or_null(step->uid);
 
 	step->pw_gecos = xstrdup(cred_arg->pw_gecos);
 	step->pw_dir = xstrdup(cred_arg->pw_dir);
@@ -315,8 +312,12 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 
 	step->uid	= (uid_t) msg->uid;
 	step->gid	= (gid_t) msg->gid;
-	step->user_name	= xstrdup(msg->user_name);
 	_slurm_cred_to_step_rec(msg->cred, step);
+	if (!step->user_name) {
+		error("Failed to look up username for uid=%u, cannot continue with launch",
+		      msg->uid);
+		return NULL;
+	}
 	/*
 	 * Favor the group info in the launch cred if available - fall back
 	 * to the launch_tasks_request_msg_t info if send_gids is disabled.
@@ -545,8 +546,12 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	step->uid	= (uid_t) msg->uid;
 	step->gid	= (gid_t) msg->gid;
-	step->user_name	= xstrdup(msg->user_name);
 	_slurm_cred_to_step_rec(msg->cred, step);
+	if (!step->user_name) {
+		error("Failed to look up username for uid=%u, cannot continue with launch",
+		      msg->uid);
+		return NULL;
+	}
 	/*
 	 * Favor the group info in the launch cred if available - fall back
 	 * to the batch_job_launch_msg_t info if send_gids is disabled.
