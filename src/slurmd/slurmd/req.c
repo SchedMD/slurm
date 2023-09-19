@@ -2028,7 +2028,7 @@ static int _get_user_env(batch_job_launch_msg_t *req, char *user_name)
 static void
 _set_batch_job_limits(slurm_msg_t *msg)
 {
-	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
+	batch_job_launch_msg_t *req = msg->data;
 	slurm_cred_arg_t *arg = slurm_cred_get_args(req->cred);
 
 	req->job_core_spec = arg->job_core_spec; /* Prevent user reset */
@@ -2109,7 +2109,7 @@ static int _notify_slurmctld_prolog_fini(
 /* Convert memory limits from per-CPU to per-node */
 static int _convert_job_mem(slurm_msg_t *msg)
 {
-	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
+	prolog_launch_msg_t *req = msg->data;
 	slurm_cred_arg_t *arg = slurm_cred_get_args(req->cred);
 
 	if (req->nnodes > arg->job_nhosts) {
@@ -2129,7 +2129,7 @@ static int _convert_job_mem(slurm_msg_t *msg)
 
 static int _make_prolog_mem_container(slurm_msg_t *msg)
 {
-	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
+	prolog_launch_msg_t *req = msg->data;
 	job_mem_limits_t *job_limits_ptr;
 	step_loc_t step_info;
 	int rc = SLURM_SUCCESS;
@@ -2172,7 +2172,7 @@ static int _make_prolog_mem_container(slurm_msg_t *msg)
 
 static int _spawn_prolog_stepd(slurm_msg_t *msg)
 {
-	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
+	prolog_launch_msg_t *req = msg->data;
 	launch_tasks_request_msg_t *launch_req;
 	slurm_addr_t self;
 	slurm_addr_t *cli = &msg->orig_addr;
@@ -2317,7 +2317,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 static void _rpc_prolog(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS, alt_rc = SLURM_ERROR, node_id = 0;
-	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
+	prolog_launch_msg_t *req = msg->data;
 	job_env_t job_env;
 	bool     first_job_run;
 	uint32_t jobid;
@@ -2454,7 +2454,7 @@ notify_result:
 static void _rpc_batch_job(slurm_msg_t *msg)
 {
 	slurm_cred_arg_t *cred_arg;
-	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
+	batch_job_launch_msg_t *req = msg->data;
 	char *user_name = NULL;
 	bool     first_job_run;
 	int      rc = SLURM_SUCCESS, node_id = 0;
@@ -2868,8 +2868,7 @@ static void _rpc_reconfig_with_config(slurm_msg_t *msg)
 		      msg->auth_uid);
 	else {
 		if (conf->conf_cache) {
-			config_response_msg_t *configs =
-				(config_response_msg_t *) msg->data;
+			config_response_msg_t *configs = msg->data;
 			/*
 			 * Running in "configless" mode as indicated by the
 			 * cache directory's existence. Update those so
@@ -2920,7 +2919,7 @@ _rpc_reboot(slurm_msg_t *msg)
 					      (sp - reboot_program));
 			else
 				sp = xstrdup(reboot_program);
-			reboot_msg = (reboot_msg_t *) msg->data;
+			reboot_msg = msg->data;
 			if (reboot_msg && reboot_msg->features) {
 				/*
 				 * Run reboot_program with only arguments given
@@ -3487,7 +3486,7 @@ static void
 _rpc_signal_tasks(slurm_msg_t *msg)
 {
 	int               rc = SLURM_SUCCESS;
-	signal_tasks_msg_t *req = (signal_tasks_msg_t *) msg->data;
+	signal_tasks_msg_t *req = msg->data;
 	uid_t job_uid;
 
 	job_uid = _get_job_uid(req->step_id.job_id);
@@ -3530,7 +3529,7 @@ done:
 static void
 _rpc_terminate_tasks(slurm_msg_t *msg)
 {
-	signal_tasks_msg_t *req = (signal_tasks_msg_t *) msg->data;
+	signal_tasks_msg_t *req = msg->data;
 	int               rc = SLURM_SUCCESS;
 	int               fd;
 	uint16_t protocol_version;
@@ -3573,7 +3572,7 @@ done:
 
 static void _rpc_step_complete(slurm_msg_t *msg)
 {
-	step_complete_msg_t *req = (step_complete_msg_t *)msg->data;
+	step_complete_msg_t *req = msg->data;
 	int               rc = SLURM_SUCCESS;
 	int               fd;
 	uint16_t protocol_version;
@@ -3686,7 +3685,7 @@ static void _rpc_daemon_status(slurm_msg_t *msg)
 
 static void _rpc_stat_jobacct(slurm_msg_t *msg)
 {
-	slurm_step_id_t *req = (slurm_step_id_t *)msg->data;
+	slurm_step_id_t *req = msg->data;
 	slurm_msg_t        resp_msg;
 	job_step_stat_t *resp = NULL;
 	int fd;
@@ -3789,7 +3788,7 @@ _callerid_find_job(callerid_conn_t conn, uint32_t *job_id)
 
 static void _rpc_network_callerid(slurm_msg_t *msg)
 {
-	network_callerid_msg_t *req = (network_callerid_msg_t *)msg->data;
+	network_callerid_msg_t *req = msg->data;
 	slurm_msg_t resp_msg;
 	network_callerid_resp_t *resp = NULL;
 
@@ -3848,7 +3847,7 @@ static void _rpc_network_callerid(slurm_msg_t *msg)
 
 static void _rpc_list_pids(slurm_msg_t *msg)
 {
-	slurm_step_id_t *req = (slurm_step_id_t *)msg->data;
+	slurm_step_id_t *req = msg->data;
 	slurm_msg_t        resp_msg;
 	job_step_pids_t *resp = NULL;
 	int fd;
@@ -3988,7 +3987,7 @@ _rpc_timelimit(slurm_msg_t *msg)
 
 static void  _rpc_pid2jid(slurm_msg_t *msg)
 {
-	job_id_request_msg_t *req = (job_id_request_msg_t *) msg->data;
+	job_id_request_msg_t *req = msg->data;
 	slurm_msg_t           resp_msg;
 	job_id_response_msg_t resp;
 	bool         found = false;
@@ -6123,7 +6122,7 @@ static int _wait_for_request_launch_prolog(uint32_t job_id,
 static void
 _rpc_forward_data(slurm_msg_t *msg)
 {
-	forward_data_msg_t *req = (forward_data_msg_t *)msg->data;
+	forward_data_msg_t *req = msg->data;
 	uint32_t req_uid = msg->auth_uid;
 	char *tmp_addr = req->address;
 	int fd = -1, rc = 0;

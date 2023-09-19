@@ -651,7 +651,7 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 
 	switch (resp_msg->msg_type) {
 	case RESPONSE_NODE_REGISTRATION:
-		resp = (slurm_node_reg_resp_msg_t *) resp_msg->data;
+		resp = resp_msg->data;
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg->data)->return_code;
