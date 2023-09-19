@@ -386,7 +386,10 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 	serialize_g_data_to_string(&out, NULL, resp, mime_type,
 				   SER_FLAGS_PRETTY);
 
-	printf("%s\n", out);
+	if (out && out[0])
+		printf("%s\n", out);
+	else
+		debug("No output generated");
 
 cleanup:
 #ifdef MEMORY_LEAK_DEBUG
