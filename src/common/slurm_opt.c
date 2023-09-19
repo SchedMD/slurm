@@ -6235,11 +6235,7 @@ static void _validate_cpus_per_tres(slurm_opt_t *opt)
 	} else if (slurm_option_set_by_cli(opt, LONG_OPT_CPUS_PER_GPU) &&
 		   slurm_option_set_by_env(opt, 'c')) {
 		if (opt->verbose) {
-			char *env_str = "SRUN_CPUS_PER_TASK";
-			/* salloc, sbatch don't read env for cpus-per-task */
-
-			info("Ignoring %s since --cpus-per-gpu given as command line option",
-			     env_str);
+			info("Ignoring cpus_per_task from the environment since --cpus-per-gpu was given as a command line option");
 		}
 		slurm_option_reset(opt, "cpus-per-task");
 	}
