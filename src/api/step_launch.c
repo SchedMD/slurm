@@ -1203,7 +1203,7 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 static void
 _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 {
-	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
+	task_exit_msg_t *msg = exit_msg->data;
 	void (*task_finish)(task_exit_msg_t *);
 	int i;
 
@@ -1241,8 +1241,7 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 static void
 _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 {
-	srun_job_complete_msg_t *step_msg =
-		(srun_job_complete_msg_t *) complete_msg->data;
+	srun_job_complete_msg_t *step_msg = complete_msg->data;
 
 	if (step_msg->step_id == NO_VAL) {
 		verbose("Complete job %u received",
@@ -1264,8 +1263,7 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 static void
 _timeout_handler(struct step_launch_state *sls, slurm_msg_t *timeout_msg)
 {
-	srun_timeout_msg_t *step_msg =
-		(srun_timeout_msg_t *) timeout_msg->data;
+	srun_timeout_msg_t *step_msg = timeout_msg->data;
 
 	if (sls->callback.step_timeout)
 		(sls->callback.step_timeout)(step_msg);

@@ -14692,7 +14692,7 @@ fini:
  */
 extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 {
-	job_desc_msg_t *job_desc = (job_desc_msg_t *) msg->data;
+	job_desc_msg_t *job_desc = msg->data;
 	job_record_t *job_ptr;
 	char *hostname = auth_g_get_host(msg->auth_cred);
 	char *err_msg = NULL;
@@ -14735,7 +14735,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
  */
 extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 {
-	job_desc_msg_t *job_desc = (job_desc_msg_t *) msg->data;
+	job_desc_msg_t *job_desc = msg->data;
 	job_record_t *job_ptr, *new_job_ptr, *het_job;
 	char *hostname = auth_g_get_host(msg->auth_cred);
 	ListIterator iter;

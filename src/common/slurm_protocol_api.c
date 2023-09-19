@@ -2463,7 +2463,7 @@ tryagain:
 	}
 
 	if (!rc && (response_msg->msg_type == RESPONSE_SLURM_REROUTE_MSG)) {
-		reroute_msg_t *rr_msg = (reroute_msg_t *)response_msg->data;
+		reroute_msg_t *rr_msg = response_msg->data;
 
 		/*
 		 * Don't expect mutliple hops but in the case it does

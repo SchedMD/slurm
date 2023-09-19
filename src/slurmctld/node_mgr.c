@@ -2961,8 +2961,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
-	slurm_node_registration_status_msg_t *reg_msg =
-		(slurm_node_registration_status_msg_t *)slurm_msg->data;
+	slurm_node_registration_status_msg_t *reg_msg = slurm_msg->data;
 
 	node_ptr = find_node_record(reg_msg->node_name);
 	if (node_ptr == NULL)

@@ -526,7 +526,7 @@ _launch_handler(message_thread_state_t *mts, slurm_msg_t *resp)
 static void
 _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 {
-	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
+	task_exit_msg_t *msg = exit_msg->data;
 	int i;
 	int rc;
 

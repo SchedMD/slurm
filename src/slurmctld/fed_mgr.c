@@ -1620,7 +1620,7 @@ static void _handle_removed_clusters(slurmdb_federation_rec_t *db_fed,
  * successful operation */
 bitstr_t *_parse_resp_ctld_mult(slurm_msg_t *resp_msg)
 {
-	ctld_list_msg_t *ctld_resp_msg;
+	ctld_list_msg_t *ctld_resp_msg = resp_msg->data;
 	ListIterator iter = NULL;
 	bitstr_t *success_bits;
 	slurm_msg_t sub_msg;
@@ -1630,7 +1630,6 @@ bitstr_t *_parse_resp_ctld_mult(slurm_msg_t *resp_msg)
 
 	xassert(resp_msg->msg_type == RESPONSE_CTLD_MULT_MSG);
 
-	ctld_resp_msg = (ctld_list_msg_t *) resp_msg->data;
 	if (!ctld_resp_msg->my_list) {
 		error("%s: RESPONSE_CTLD_MULT_MSG has no list component",
 		      __func__);
@@ -5900,7 +5899,7 @@ static int _q_sib_job_cancel(slurm_msg_t *msg, uint32_t uid)
 	int rc = SLURM_SUCCESS;
 	uint32_t req_uid;
 	sib_msg_t *sib_msg = msg->data;
-	job_step_kill_msg_t *kill_msg = (job_step_kill_msg_t *)sib_msg->data;
+	job_step_kill_msg_t *kill_msg = sib_msg->data;
 	fed_job_update_info_t *job_update_info =
 		xmalloc(sizeof(fed_job_update_info_t));
 
@@ -5963,7 +5962,7 @@ static int _q_sib_job_requeue(slurm_msg_t *msg, uint32_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	sib_msg_t *sib_msg     = msg->data;
-	requeue_msg_t *req_ptr = (requeue_msg_t *)sib_msg->data;
+	requeue_msg_t *req_ptr = sib_msg->data;
 	fed_job_update_info_t *job_update_info =
 		xmalloc(sizeof(fed_job_update_info_t));
 
@@ -5995,7 +5994,7 @@ static int _q_sib_job_sync(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
 	sib_msg_t *sib_msg = msg->data;
-	job_info_msg_t *job_info_msg = (job_info_msg_t *)sib_msg->data;
+	job_info_msg_t *job_info_msg = sib_msg->data;
 	fed_job_update_info_t *job_update_info =
 		xmalloc(sizeof(fed_job_update_info_t));
 
