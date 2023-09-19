@@ -417,7 +417,6 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 	char *result = NULL;
 	int fd;
 	int rc = 0;
-	bool user_name_set = 0;
 	sem_t *sem1 = NULL;
 	sem_t *sem2 = NULL;
 	pid_t cpid;
@@ -485,15 +484,9 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		env_array_overwrite_fmt(&run_command_args.env,
 					"SLURM_JOB_UID", "%u",
 					step->uid);
-		if (!step->user_name) {
-			step->user_name = uid_to_string(step->uid);
-			user_name_set = true;
-		}
 		env_array_overwrite_fmt(&run_command_args.env,
 					"SLURM_JOB_USER", "%s",
 					step->user_name);
-		if (user_name_set)
-			xfree(step->user_name);
 		if (step->cwd)
 			env_array_overwrite_fmt(&run_command_args.env,
 						"SLURM_JOB_WORK_DIR", "%s",
