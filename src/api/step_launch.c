@@ -408,7 +408,6 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	xfree(launch.io_port);
 
 fail1:
-	xfree(launch.user_name);
 	xfree(launch.complete_nodelist);
 	xfree(launch.cwd);
 	env_array_free(env);
@@ -605,7 +604,6 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 
 fail1:
 	/* clean up */
-	xfree(launch.user_name);
 	xfree(launch.resp_port);
 	xfree(launch.io_port);
 
