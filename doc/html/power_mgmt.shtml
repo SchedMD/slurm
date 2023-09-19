@@ -143,10 +143,18 @@ be requested at job submit time using the "--cpu-freq" option  with the salloc,
 sbatch or srun command. The frequency requested may be "low", "medium",
 "highm1" (second highest available frequency), "high" or a specific frequency
 (expressed as a KHz value). The governor specification may be "conservative",
-"ondemand", "performance" or "powersave". These values are user requests
-subject to system constraints. Some examples follow.</p>
+"ondemand", "performance", "powersave" or "userspace". These values are user
+requests subject to system constraints. If there's no CpuFreqDef defined in
+slurm.conf then the default will be to use the current governor set in the
+system. Note that setting a range while using "userspace" is not accepted.
+Userspace governor accepts only a fixed frequency. If only a fixed frequency and
+not a range is specified, then the governor will be automatically set to
+userspace. Some examples follow.</p>
 <pre>
-$ sbatch --cpu-freq=2400000-3000000 ...
+$ sbatch --cpu-freq=2400000 ... (will set userspace as a governor regardless of CpuFreqDef)
+$ sbatch --cpu-freq=2400000:userspace ...
+$ sbatch --cpu-freq=2400000-3000000 ... (CpuFreqDef must be set in slurm.conf)
+$ sbatch --cpu-freq=2400000-3000000:ondemand ...
 $ salloc --cpu-freq=powersave ...
 $ srun --cpu-freq=highm1 ...
 </pre>
@@ -237,6 +245,6 @@ to be distributed over 9 nodes or 184 watts per node.</p>
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 7 Mar 2018</p>
+<p style="text-align:center;">Last modified 13 Sep 2023</p>
 
 <!--#include virtual="footer.txt"-->

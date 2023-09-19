@@ -769,10 +769,9 @@ used only for Cray systems
 
 .TP
 \fBCpuFreqDef\fR
-Default CPU frequency value or frequency governor to use when running a
-job step if it has not been explicitly set with the \-\-cpu\-freq option.
-Acceptable values at present include a numeric value (frequency in kilohertz)
-or one of the following governors:
+Default CPU governor to use when running a job step if it has not been
+explicitly set with the \-\-cpu\-freq option. Acceptable values at present
+include one of the following governors:
 .IP
 .RS
 .TP 14
@@ -793,15 +792,16 @@ attempts to use the Performance CPU governor
 .TP
 \fBPowerSave\fR
 attempts to use the PowerSave CPU governor
+.TP
+Default: Use system default. No attempt to set the governor is made if
+\-\-cpu\-freq option has not been specified.
 .RE
-There is no default value. If unset, no attempt to set the governor is
-made if the \-\-cpu\-freq option has not been set.
 .IP
 
 .TP
 \fBCpuFreqGovernors\fR
 List of CPU frequency governors allowed to be set with the salloc, sbatch, or
-srun option  \-\-cpu\-freq.
+srun option \-\-cpu\-freq.
 Acceptable values at present include:
 .IP
 .RS
@@ -833,8 +833,9 @@ attempts to use the SchedUtil CPU governor
 .TP
 \fBUserSpace\fR
 attempts to use the UserSpace CPU governor (a default value)
+.TP
+Default: OnDemand, Performance and UserSpace.
 .RE
-The default is OnDemand, Performance and UserSpace.
 .IP
 
 .TP

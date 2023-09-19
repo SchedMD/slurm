@@ -1035,16 +1035,9 @@ _cpu_freq_setup_data(stepd_step_rec_t *step, int cpx)
 {
 	uint32_t freq;
 
-	if (   (step->cpu_freq_min == NO_VAL || step->cpu_freq_min==0)
-	    && (step->cpu_freq_max == NO_VAL || step->cpu_freq_max==0)
-	    && (step->cpu_freq_gov == NO_VAL || step->cpu_freq_gov==0)) {
-		/* If no --cpu-freq, use default governor from conf file.  */
-		slurm_conf_t *conf = slurm_conf_lock();
-		step->cpu_freq_gov = conf->cpu_freq_def;
-		slurm_conf_unlock();
-		if (step->cpu_freq_gov == NO_VAL)
-			return;
-	}
+	/* If no --cpu-freq, use default governor from conf file. */
+	if (step->cpu_freq_gov == NO_VAL)
+		step->cpu_freq_gov = slurm_conf.cpu_freq_def;
 
 	/* Get current state */
 	if (_cpu_freq_current_state(cpx) == SLURM_ERROR)
@@ -1066,9 +1059,9 @@ _cpu_freq_setup_data(stepd_step_rec_t *step, int cpx)
 		/* Power capping */
 		freq = _cpu_freq_freqspec_num(step->cpu_freq_max, cpx);
 		cpufreq[cpx].new_frequency = freq;
-		freq = _cpu_freq_freqspec_num(step->cpu_freq_min, cpx);
 		cpufreq[cpx].new_min_freq = freq;
-		goto newfreq;
+		cpufreq[cpx].new_max_freq = freq;
+		return;
 	}
 	if (step->cpu_freq_min != NO_VAL && step->cpu_freq_max != NO_VAL) {
 		freq = _cpu_freq_freqspec_num(step->cpu_freq_min, cpx);
@@ -1148,11 +1141,13 @@ _cpu_freq_check_freq(const char* arg)
 	} else if (xstrncasecmp(arg, "med", 3) == 0) {
 		return CPU_FREQ_MEDIUM;
 	}
-	if ( (frequency = strtoul(arg, &end, 10) )) {
-		return frequency;
+	frequency = strtoul(arg, &end, 10);
+	if ((*end != '\0') ||
+	    ((frequency == 0) && (errno == EINVAL))) {
+		error("unrecognized --cpu-freq argument \"%s\"", arg);
+		return 0;
 	}
-	error("unrecognized --cpu-freq argument \"%s\"", arg);
-	return 0;
+	return frequency;
 }
 
 /*
@@ -1505,10 +1500,10 @@ cpu_freq_govlist_to_string(char* buf, uint16_t bufsz, uint32_t govs)
 /*
  * Verify slurm.conf CpuFreqDef option
  *
- * Input:  - arg  - frequency value to check
+ * Input:  - arg  - governor/frequency value to check:
  * 		    valid governor, low, medium, highm1, high,
  * 		    or numeric frequency
- *	   - freq - pointer to corresponging enum or numberic value
+ *	   - freq - pointer to corresponding enum or numeric value
  * Returns - -1 on error, else 0
  */
 extern int
@@ -1569,7 +1564,7 @@ cpu_freq_verify_govlist(const char *arg, uint32_t *govs)
  * Verify cpu_freq command line option
  *
  * --cpu-freq=arg
- *   where arg is p1{-p2{:p3}}
+ *   where arg is p1[-p2][:p3]
  *
  * - p1 can be  [#### | low | medium | high | highm1]
  * 	which will set the current frequency, and set the governor to
@@ -1577,13 +1572,14 @@ cpu_freq_verify_govlist(const char *arg, uint32_t *govs)
  * - p1 can be [Conservative | OnDemand | Performance | PowerSave | UserSpace]
  *      which will set the governor to the corresponding value.
  * - When p2 is present, p1 will be the minimum frequency and p2 will be
- *   the maximum. The governor will not be changed.
+ *   the maximum. The governor cannot be UserSpace, so CpuFreqDef must be set in
+ *   slurm.conf if there's no p3.
  * - p2 can be  [#### | medium | high | highm1] p2 must be greater than p1.
  * - If the current frequency is < min, it will be set to min.
  *   Likewise, if the current frequency is > max, it will be set to max.
  * - p3 can be [Conservative | OnDemand | Performance | PowerSave | UserSpace]
  *   which will set the governor to the corresponding value.
- *   When p3 is UserSpace, the current frequency is set to p2.
+ *   When p3 is UserSpace, p2 must be empty.
  *   p2 will have been set by PowerCapping.
  *
  * returns -1 on error, 0 otherwise
@@ -1644,6 +1640,18 @@ cpu_freq_verify_cmdline(const char *arg,
 		*cpu_freq_max = frequency;
 	}
 	if (p2) {
+		if (!p3 && (slurm_conf.cpu_freq_def == NO_VAL)) {
+			/*
+			 * If the user specified a range without a governor,
+			 * (even if userspace is not set), we won't accept the
+			 * request. We don't know how the cpus are set and we
+			 * won't decide which one to set for the user. Note that
+			 * a range is valid for multiple governors.
+			 */
+			error("You must explicitly choose a governor when defining a range. Please specify only one value for the desired frequency (p1) or choose a specific governor (p3).");
+			rc = -1;
+			goto clean;
+		}
 		frequency = _cpu_freq_check_freq(p2);
 		if (frequency == 0) {
 			rc = -1;
@@ -1658,21 +1666,42 @@ cpu_freq_verify_cmdline(const char *arg,
 			goto clean;
 		}
 	}
-
 	if (p3) {
-		if (!p2) {
-			error("gov on cpu-frec (%s) illegal without max", p3);
-			rc = -1;
-			goto clean;
-		}
 		frequency = _cpu_freq_check_gov(p3, 0);
 		if (frequency == 0) {
 			error("illegal governor: %s on --cpu-freq", p3);
 			rc = -1;
 			goto clean;
 		}
+		if (!p2) {
+			if (frequency != CPU_FREQ_USERSPACE) {
+				error("gov on cpu-frec (%s) illegal without max",
+				      p3);
+				rc = -1;
+				goto clean;
+			}
+		} else {
+			if (frequency == CPU_FREQ_USERSPACE) {
+				error("%s governor does not support a range. Please specify only one value for the desired frequency (p1) or choose a different governor.",
+				      p3);
+				rc = -1;
+				goto clean;
+			}
+		}
 		*cpu_freq_gov = frequency;
+	} else if (p2 && (*cpu_freq_gov == NO_VAL) &&
+		   (slurm_conf.cpu_freq_def != NO_VAL)) {
+		/*
+		 * No governor specified and a range is specified.
+		 * Use slurm.conf CpuFreqDef if defined. Note that this cannot
+		 * be UserSpace.
+		 */
+		*cpu_freq_gov = slurm_conf.cpu_freq_def;
 	}
+
+	/* Also force this in case we specify just one frequency. */
+	if ((*cpu_freq_gov == NO_VAL) && !p2 && !p3)
+		*cpu_freq_gov = CPU_FREQ_USERSPACE;
 
 clean:
 	if (*cpu_freq_gov != NO_VAL) {
@@ -1706,7 +1735,7 @@ clean:
  * freq_str is a buffer to hold the composite string for all input values.
  * freq_len is length of freq_str
  * gov is a governor value
- * min is a minumum value
+ * min is a minimum value
  * max is a maximum value
  * freq is a (current) frequency value.
  *

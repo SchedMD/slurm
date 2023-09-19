@@ -644,7 +644,7 @@ This option applies to job and step allocations.
 .IP
 
 .TP
-\fB\-\-cpu\-freq\fR=<\fIp1\fR>[\-\fIp2\fR[:\fIp3\fR]]
+\fB\-\-cpu\-freq\fR=<\fIp1\fR>[\-\fIp2\fR][:\fIp3\fR]
 
 Request that the job step initiated by this srun command be run at some
 requested frequency if possible, on the CPUs selected for the step on
@@ -658,22 +658,29 @@ scaling_governor to UserSpace. See below for definition of the values.
 will set the scaling_governor to the corresponding value. The governor has to be
 in the list set by the slurm.conf option CpuFreqGovernors.
 
-When \fBp2\fR is present, p1 will be the minimum scaling frequency and
-p2 will be the maximum scaling frequency.
+When \fBp2\fR is present, \fBp1\fR will be the minimum scaling frequency and
+\fBp2\fR will be the maximum scaling frequency. In that case the governor
+\fBp3\fR or CpuFreqDef cannot be UserSpace since it doesn't support a range.
 
-\fBp2\fR can be  [#### | medium | high | highm1] p2 must be greater than p1.
+\fBp2\fR can be  [#### | medium | high | highm1]. p2 must be greater than p1 and
+is incompatible with UserSpace governor.
 
 \fBp3\fR can be [Conservative | OnDemand | Performance | PowerSave | SchedUtil |
 UserSpace]
 which will set the governor to the corresponding value.
 
-If \fBp3\fR is UserSpace, the frequency scaling_speed will be set by a power
-or energy aware scheduling strategy to a value between p1 and p2 that lets the
-job run within the site's power goal. The job may be delayed if p1 is higher
-than a frequency that allows the job to run within the goal.
+If \fBp3\fR is UserSpace, the frequency scaling_speed, scaling_max_freq and
+scaling_min_freq will be statically set to the value defined by \fBp1\fR.
 
-If the current frequency is < min, it will be set to min. Likewise,
-if the current frequency is > max, it will be set to max.
+Any requested frequency below the minimum available frequency will be rounded
+to the minimum available frequency. In the same way, any requested frequency
+above the maximum available frequency will be rounded to the maximum available
+frequency.
+
+The \fBCpuFreqDef\fR parameter in slurm.conf will be used to set the governor
+in absence of \fBp3\fR. If there's no \fBCpuFreqDef\fR, the default governor
+will be to use the system current governor set in each cpu. Specifying a
+range without \fBCpuFreqDef\fR or a specific governor is therefore not allowed.
 
 Acceptable values at present include:
 .IP
