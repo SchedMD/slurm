@@ -2455,6 +2455,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 {
 	slurm_cred_arg_t *cred_arg;
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
+	char *user_name = NULL;
 	bool     first_job_run;
 	int      rc = SLURM_SUCCESS, node_id = 0;
 	bool	 replied = false, revoked;
@@ -2490,9 +2491,9 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	xfree(req->user_name); /* Never sent by slurmctld */
 	/* If available, use the cred to fill in username. */
 	if (cred_arg->pw_name)
-		req->user_name = xstrdup(cred_arg->pw_name);
+		user_name = xstrdup(cred_arg->pw_name);
 	else
-		req->user_name = uid_to_string(req->uid);
+		user_name = uid_to_string(req->uid);
 
 	xfree(req->gids); /* Never sent by slurmctld */
 	/* If available, use the cred to fill in groups */
@@ -2500,8 +2501,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		req->ngids = cred_arg->ngids;
 		req->gids = copy_gids(cred_arg->ngids, cred_arg->gids);
 	} else
-		req->ngids = group_cache_lookup(req->uid, req->gid,
-						req->user_name, &req->gids);
+		req->ngids = group_cache_lookup(req->uid, req->gid, user_name,
+						&req->gids);
 	slurm_cred_unlock_args(req->cred);
 
 	task_g_slurmd_batch_request(req);	/* determine task affinity */
@@ -2602,7 +2603,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		_wait_for_job_running_prolog(req->job_id);
 	}
 
-	if (_get_user_env(req, req->user_name) < 0) {
+	if (_get_user_env(req, user_name) < 0) {
 		bool requeue = _requeue_setup_env_fail();
 		if (requeue) {
 			rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
@@ -2687,6 +2688,7 @@ done:
 	    || (rc == ESLURMD_SETUP_ENVIRONMENT_ERROR)) {
 		send_registration_msg(rc);
 	}
+	xfree(user_name);
 }
 
 /*
