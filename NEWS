@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
     options give different CPU bind masks.
  -- Fix "_find_node_record: lookup failure for node" error message appearing
     for all dynamic nodes during reconfigure.
+ -- Avoid segfault if loading serializer plugin fails.
 
 * Changes in Slurm 23.02.5
 ==========================

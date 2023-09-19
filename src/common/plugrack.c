@@ -590,11 +590,11 @@ extern int load_plugins(plugins_t **plugins_ptr, const char *major_type,
 		}
 	}
 
-	if (!plugins->count || rc)
-		goto cleanup;
-
 	xrecalloc(plugins->functions, plugins->count,
 		  sizeof(*plugins->functions));
+
+	if (!plugins->count || rc)
+		goto cleanup;
 
 	for (size_t i = 0; (i < plugins->count); i++) {
 		if (plugins->functions[i]) {
