@@ -2210,7 +2210,6 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->tasks_to_launch	= xcalloc(req->nnodes,
 						  sizeof(uint16_t));
 	launch_req->uid			= req->uid;
-	launch_req->user_name		= req->user_name;
 
 	/*
 	 * determine which node this is in the allocation and if
@@ -2331,8 +2330,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		return;
 	}
 
-	if (!req->user_name)
-		req->user_name = uid_to_string(req->uid);
 	/*
 	 * Send message back to the slurmctld so it knows we got the rpc.  A
 	 * prolog could easily run way longer than a MessageTimeout or we would

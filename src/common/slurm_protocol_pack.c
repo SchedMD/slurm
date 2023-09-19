@@ -8184,7 +8184,6 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
 			      buffer);
 		slurm_cred_pack(msg->cred, buffer, smsg->protocol_version);
-		packstr(msg->user_name, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		gres_prep_pack(msg->job_gres_prep, buffer,
 			       smsg->protocol_version);
@@ -8244,8 +8243,6 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		if (!(msg->cred = slurm_cred_unpack(buffer,
 						    smsg->protocol_version)))
 			goto unpack_error;
-
-		safe_unpackstr(&msg->user_name, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		char *tmp_char;
 		if (gres_prep_unpack(&msg->job_gres_prep, buffer,
