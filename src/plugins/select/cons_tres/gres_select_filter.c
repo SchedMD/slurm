@@ -934,7 +934,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 {
 	int core_offset;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int i, rc, s;
+	int i, rc;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
 	int *used_sock = NULL, alloc_gres_cnt = 0;
@@ -978,7 +978,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 
 	xassert(job_res->core_bitmap);
 	used_sock = xcalloc(sock_cnt, sizeof(int));
-	for (s = 0; s < sock_cnt; s++) {
+	for (int s = 0; s < sock_cnt; s++) {
 		for (int c = 0; c < cores_per_socket_cnt; c++) {
 			i = (s * cores_per_socket_cnt) + c;
 			if (bit_test(job_res->core_bitmap, (core_offset + i))) {
@@ -995,8 +995,8 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	 * Second: Use available GRES with sufficient resources.
 	 * Third: Use any available GRES.
 	 */
-	for (s = -1;	/* Socket == - 1 if GRES avail from any socket */
-	     (s < sock_cnt) && (alloc_gres_cnt == 0); s++) {
+	/* Socket == - 1 if GRES avail from any socket */
+	for (int s = -1; (s < sock_cnt) && (alloc_gres_cnt == 0); s++) {
 		if ((s >= 0) && !used_sock[s])
 			continue;
 
