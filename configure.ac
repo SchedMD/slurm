@@ -413,6 +413,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/auth/jwt/Makefile
 		 src/plugins/auth/munge/Makefile
 		 src/plugins/auth/none/Makefile
+		 src/plugins/auth/slurm/Makefile
 		 src/plugins/burst_buffer/Makefile
 		 src/plugins/burst_buffer/common/Makefile
 		 src/plugins/burst_buffer/datawarp/Makefile

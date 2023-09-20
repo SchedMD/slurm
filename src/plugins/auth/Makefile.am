@@ -3,5 +3,5 @@
 SUBDIRS = munge none
 
 if WITH_JWT
-SUBDIRS += jwt
+SUBDIRS += jwt slurm
 endif
