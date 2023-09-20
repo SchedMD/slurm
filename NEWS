@@ -220,6 +220,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix parsing of sgather --timeout option.
  -- Fix regression from 22.05.0 that caused srun --cpu-bind "=verbose" and "=v"
     options give different CPU bind masks.
+ -- Fix "_find_node_record: lookup failure for node" error message appearing
+    for all dynamic nodes during reconfigure.
 
 * Changes in Slurm 23.02.5
 ==========================
