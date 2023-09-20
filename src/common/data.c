@@ -147,6 +147,7 @@ typedef struct {
 static void _check_magic(const data_t *data);
 static void _release(data_t *data);
 static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn);
+static size_t _convert_tree(data_t *data, const type_t match);
 
 static data_list_t *_data_list_new(void)
 {
@@ -1883,7 +1884,7 @@ static data_for_each_cmd_t _convert_list_entry(data_t *data, void *arg)
 {
 	convert_args_t *args = arg;
 
-	args->count += data_convert_tree(data, args->match);
+	args->count += _convert_tree(data, args->match);
 
 	return DATA_FOR_EACH_CONT;
 }
@@ -1893,14 +1894,16 @@ static data_for_each_cmd_t _convert_dict_entry(const char *key, data_t *data,
 {
 	convert_args_t *args = arg;
 
-	args->count += data_convert_tree(data, args->match);
+	args->count += _convert_tree(data, args->match);
 
 	return DATA_FOR_EACH_CONT;
 }
 
-extern size_t data_convert_tree(data_t *data, const data_type_t match)
+static size_t _convert_tree(data_t *data, const type_t match)
 {
-	convert_args_t args = { .match = match };
+	convert_args_t args = {
+		.match = match,
+	};
 	_check_magic(data);
 
 	if (!data)
@@ -1914,12 +1917,17 @@ extern size_t data_convert_tree(data_t *data, const data_type_t match)
 		(void)data_list_for_each(data, _convert_list_entry, &args);
 		break;
 	default:
-		if (match == data_convert_type(data, match))
+		if (match == (int) data_convert_type(data, (int) match))
 			args.count++;
 		break;
 	}
 
 	return args.count;
+}
+
+extern size_t data_convert_tree(data_t *data, const data_type_t match)
+{
+	return _convert_tree(data, (int) match);
 }
 
 static data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
