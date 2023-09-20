@@ -1042,7 +1042,7 @@ static node_record_t *_find_node_record(char *name, bool test_alias,
 		return node_ptr;
 	}
 
-	if ((node_record_count == 1) &&
+	if ((node_record_count == 1) && node_record_table_ptr[0] &&
 	    (xstrcmp(node_record_table_ptr[0]->name, "localhost") == 0))
 		return (node_record_table_ptr[0]);
 
