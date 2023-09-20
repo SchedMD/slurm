@@ -43,6 +43,7 @@
 #include "gres_select_filter.h"
 
 static uint16_t *avail_cores_per_sock = NULL;
+static int64_t *nonalloc_gres = NULL;
 
 static bool *_build_avail_cores_by_sock(bitstr_t *core_bitmap,
 					uint16_t sockets,
@@ -917,6 +918,11 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		*min_cores_this_node = 0;
 }
 
+static int _sort_topo_by_avail_cnt(const void *x, const void *y)
+{
+	return (nonalloc_gres[*(int *)y] - nonalloc_gres[*(int *)x]);
+}
+
 /*
  * Select one specific GRES topo entry (set GRES bitmap) for this job on this
  *	node based upon per-node resource specification
@@ -937,6 +943,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	int i, rc;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
+	int *topo_index = NULL;
 	int *used_sock = NULL, alloc_gres_cnt = 0;
 	uint64_t gres_per_node = 0;
 	bool use_busy_dev = gres_use_busy_dev(sock_gres->gres_state_node, 0);
@@ -995,12 +1002,42 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	 * Second: Use available GRES with sufficient resources.
 	 * Third: Use any available GRES.
 	 */
+
+	if (slurm_conf.select_type_param & CR_LL_SHARD) {
+		topo_index = xcalloc(gres_ns->topo_cnt, sizeof(int));
+		nonalloc_gres = xcalloc(gres_ns->topo_cnt, sizeof(int64_t));
+		for (int t = 0; t < gres_ns->topo_cnt; t++) {
+			topo_index[t] = t;
+
+			if (!gres_ns->topo_gres_cnt_avail[t])
+				continue;
+
+			/*
+			 * This is to prefer the "least loaded" device, defined
+			 * as the ratio of free to total counts. For instance
+			 * if we have 4/5 idle on GRES A and 7/10 idle on GRES
+			 * B, we want A. (0.7 < 0.8)
+			 * Use fixed-point math here to avoid floating-point -
+			 * the gres_cnt_avail for the node is the smallest value
+			 * that'll make the result distinguishable.
+			 */
+			nonalloc_gres[t] = gres_ns->topo_gres_cnt_avail[t];
+			nonalloc_gres[t] -= gres_ns->topo_gres_cnt_alloc[t];
+			nonalloc_gres[t] *= gres_ns->gres_cnt_avail;
+			nonalloc_gres[t] /= gres_ns->topo_gres_cnt_avail[t];
+		}
+		qsort(topo_index, gres_ns->topo_cnt, sizeof(int),
+		      _sort_topo_by_avail_cnt);
+		xfree(nonalloc_gres);
+	}
+
 	/* Socket == - 1 if GRES avail from any socket */
 	for (int s = -1; (s < sock_cnt) && (alloc_gres_cnt == 0); s++) {
 		if ((s >= 0) && !used_sock[s])
 			continue;
 
-		for (int t = 0; t < gres_ns->topo_cnt; t++) {
+		for (int j = 0; j < gres_ns->topo_cnt; j++) {
+			int t = topo_index ? topo_index[j] : j;
 			if (use_busy_dev &&
 			    (gres_ns->topo_gres_cnt_alloc[t] == 0))
 				continue;
@@ -1028,7 +1065,8 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	}
 
 	/* Select available GRES with sufficient resources */
-	for (int t = 0; (t < gres_ns->topo_cnt) && (alloc_gres_cnt == 0); t++) {
+	for (int j = 0; (j < gres_ns->topo_cnt) && (alloc_gres_cnt == 0); j++) {
+		int t = topo_index ? topo_index[j] : j;
 		if (use_busy_dev &&
 		    (gres_ns->topo_gres_cnt_alloc[t] == 0))
 			continue;
@@ -1045,7 +1083,8 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	}
 
 	/* Select available GRES with any resources */
-	for (int t = 0; (t < gres_ns->topo_cnt) && (alloc_gres_cnt == 0); t++) {
+	for (int j = 0; (j < gres_ns->topo_cnt) && (alloc_gres_cnt == 0); j++) {
+		int t = topo_index ? topo_index[j] : j;
 		if (gres_ns->topo_gres_cnt_alloc    &&
 		    gres_ns->topo_gres_cnt_avail    &&
 		    gres_ns->topo_gres_cnt_avail[t])
@@ -1055,6 +1094,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 		alloc_gres_cnt += gres_per_node;
 	}
 
+	xfree(topo_index);
 	xfree(used_sock);
 }
 

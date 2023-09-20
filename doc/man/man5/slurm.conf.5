@@ -4680,6 +4680,15 @@ CR_Pack_Nodes only applies when the "block" task distribution method is used.
 .IP
 
 .TP
+\fBCR_LL_SHARD\fR
+When allocating resources for a shared GRES (gres/mps, gres/shard), prefer
+least loaded device (in terms of already allocated fraction). This way jobs are
+spread across GRES devices on the node, instead of the default behavior where
+the first available device is used.
+This option is only supported by select/cons_tres plugin.
+.IP
+
+.TP
 \fBCR_Socket\fR
 Sockets are consumable resources.
 On nodes with multiple cores, each core or thread is counted as a CPU
