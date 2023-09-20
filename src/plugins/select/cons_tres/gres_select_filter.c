@@ -934,7 +934,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 {
 	int core_offset;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int c, i, rc, s, t;
+	int i, rc, s, t;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
 	int *used_sock = NULL, alloc_gres_cnt = 0;
@@ -979,7 +979,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	xassert(job_res->core_bitmap);
 	used_sock = xcalloc(sock_cnt, sizeof(int));
 	for (s = 0; s < sock_cnt; s++) {
-		for (c = 0; c < cores_per_socket_cnt; c++) {
+		for (int c = 0; c < cores_per_socket_cnt; c++) {
 			i = (s * cores_per_socket_cnt) + c;
 			if (bit_test(job_res->core_bitmap, (core_offset + i))) {
 				used_sock[s]++;
