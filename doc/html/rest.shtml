@@ -20,8 +20,8 @@
 <p>slurmrestd requires additional libraries for compilation:</p>
 <ul>
 	<li><a href="download.html#httpparser">HTTP Parser</a> (>= v2.6.0)</li>
-	<li><a href="download.html#yaml">LibYAML</a> (optional)</li>
-	<li><a href="download.html#json">JSON-C</a></li>
+	<li><a href="download.html#yaml">LibYAML</a> (optional, >= v0.2.5)</li>
+	<li><a href="download.html#json">JSON-C</a> (>= v1.12.0)</li>
 	<li><a href="download.html#jwt">JWT Authentication</a> (optional)</li>
 </ul>
 
