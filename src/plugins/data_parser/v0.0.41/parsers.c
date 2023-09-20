@@ -3986,6 +3986,42 @@ static int DUMP_FUNC(STEP_INFO_MSG)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+static int PARSE_FUNC(HOLD)(const parser_t *const parser, void *obj,
+			    data_t *src, args_t *args, data_t *parent_path)
+{
+	uint32_t *priority = obj;
+
+	xassert(args->magic == MAGIC_ARGS);
+
+	if (data_get_type(src) == DATA_TYPE_NULL) {
+		/* ignore null as implied false */
+		return SLURM_SUCCESS;
+	}
+
+	if (data_convert_type(src, DATA_TYPE_BOOL) != DATA_TYPE_BOOL)
+		return ESLURM_DATA_CONV_FAILED;
+
+	if (data_get_bool(src))
+		*priority = 0;
+	else
+		*priority = INFINITE;
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(HOLD)(const parser_t *const parser, void *obj, data_t *dst,
+			   args_t *args)
+{
+	uint32_t *priority = obj;
+
+	if (*priority == 0)
+		data_set_bool(dst, true);
+	else
+		data_set_bool(dst, false);
+
+	return SLURM_SUCCESS;
+}
+
 static data_for_each_cmd_t _foreach_hostlist_parse(data_t *data, void *arg)
 {
 	foreach_hostlist_parse_t *args = arg;
@@ -6197,7 +6233,8 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(STRING, mcs_label, "mcs/label", NULL),
 	add_parse(STRING, nodes, "nodes", NULL),
 	add_parse(STRING, partition, "partition", NULL),
-	add_parse(UINT32_NO_VAL, priority, "priority", NULL),
+	add_parse_overload(HOLD, priority, 1, "hold", "Hold (true) or release (false) job"),
+	add_parse_overload(UINT32_NO_VAL, priority, 1, "priority", "Request specific job priority"),
 	add_parse(QOS_ID, qosid, "qos", NULL),
 	add_parse(UINT32, req_cpus, "required/CPUs", NULL),
 	add_parse_overload(MEM_PER_CPUS, req_mem, 1, "required/memory_per_cpu", NULL),
@@ -7035,7 +7072,8 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(TIMESTAMP_NO_VAL, preempt_time, "preempt_time", NULL),
 	add_parse(TIMESTAMP_NO_VAL, preemptable_time, "preemptable_time", NULL),
 	add_parse(TIMESTAMP_NO_VAL, pre_sus_time, "pre_sus_time", NULL),
-	add_parse(UINT32_NO_VAL, priority, "priority", NULL),
+	add_parse_overload(HOLD, priority, 1, "hold", "Hold (true) or release (false) job"),
+	add_parse_overload(UINT32_NO_VAL, priority, 1, "priority", "Request specific job priority"),
 	add_parse(ACCT_GATHER_PROFILE, profile, "profile", NULL),
 	add_parse(QOS_NAME, qos, "qos", NULL),
 	add_parse(BOOL, reboot, "reboot", NULL),
@@ -7629,7 +7667,8 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(UINT16, plane_size, "distribution_plane_size", NULL),
 	add_flags(POWER_FLAGS, power_flags, "power_flags", NULL),
 	add_parse(STRING, prefer, "prefer", NULL),
-	add_parse(UINT32_NO_VAL, priority, "priority", NULL),
+	add_parse_overload(HOLD, priority, 1, "hold", "Hold (true) or release (false) job"),
+	add_parse_overload(UINT32_NO_VAL, priority, 1, "priority", "Request specific job priority"),
 	add_parse(ACCT_GATHER_PROFILE, profile, "profile", NULL),
 	add_parse(STRING, qos, "qos", NULL),
 	add_parse(BOOL16, reboot, "reboot", NULL),
@@ -8975,6 +9014,7 @@ static const parser_t parsers[] = {
 	addps(BITSTR, bitstr_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsp(JOB_ARRAY_RESPONSE_MSG, JOB_ARRAY_RESPONSE_ARRAY, job_array_resp_msg_t, NEED_NONE, "Job update results"),
 	addpsp(JOB_EXCLUSIVE, JOB_EXCLUSIVE_FLAGS, uint16_t, NEED_NONE, NULL),
+	addps(HOLD, uint32_t, NEED_NONE, BOOL, NULL, NULL, "Job held"),
 	addpsp(TIMESTAMP, UINT64, time_t, NEED_NONE, NULL),
 	addpsp(TIMESTAMP_NO_VAL, UINT64_NO_VAL, time_t, NEED_NONE, NULL),
 	addps(SELECTED_STEP, slurm_selected_step_t, NEED_NONE, STRING, NULL, NULL, NULL),
