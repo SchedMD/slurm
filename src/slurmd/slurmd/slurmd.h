@@ -173,7 +173,7 @@ void slurmd_shutdown(int signum);
 
 /* Handler for debug level update */
 extern void update_slurmd_logging(log_level_t log_lvl);
-extern void update_stepd_logging(void);
+extern void update_stepd_logging(bool reconfig);
 
 /*
  * Build a slurmd configuration buffer _once_ for sending to slurmstepd

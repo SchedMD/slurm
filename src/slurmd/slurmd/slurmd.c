@@ -488,6 +488,7 @@ _msg_engine(void)
 			DEF_TIMERS;
 			START_TIMER;
 			update_slurmd_logging(LOG_LEVEL_END);
+			update_stepd_logging(false);
 			END_TIMER3("_update_log request - slurmd doesn't accept new connections during this time.",
 				   5000000);
 		}
@@ -1055,6 +1056,7 @@ _read_config(void)
 			      xstrdup_printf("%s/conf-cache", conf->spooldir));
 
 	update_slurmd_logging(LOG_LEVEL_END);
+	update_stepd_logging(true);
 	_update_nice();
 
 	conf->actual_cpus = 0;
@@ -1256,7 +1258,7 @@ static int _reconfig_stepd(void *x, void *unused)
 	return 0;
 }
 
-extern void update_stepd_logging(void)
+extern void update_stepd_logging(bool reconfig)
 {
 	list_t *steps;
 
@@ -2428,11 +2430,6 @@ extern void update_slurmd_logging(log_level_t log_lvl)
 		log_set_argv0(buf);
 	}
 #endif
-
-	/*
-	 * Send reconfig to each stepd so they will rotate as well.
-	 */
-	update_stepd_logging();
 }
 
 /* Reset slurmd nice value */

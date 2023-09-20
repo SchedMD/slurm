@@ -2849,6 +2849,7 @@ static void _rpc_set_slurmd_debug(slurm_msg_t *msg)
 		rc = ESLURM_USER_ID_MISSING;
 	} else {
 		update_slurmd_logging(request_msg->debug_level);
+		update_stepd_logging(false);
 		build_conf_buf();
 	}
 
