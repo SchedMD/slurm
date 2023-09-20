@@ -282,9 +282,9 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			}
 
 		} else if (xstrncasecmp(tag, "Watts", MAX(taglen, 1)) == 0) {
-			if (state_control_parse_resv_watts(val, resv_msg_ptr,
-							   &err_msg)
-			    == SLURM_ERROR) {
+			resv_msg_ptr->resv_watts =
+				slurm_watts_str_to_int(val, &err_msg);
+			if (err_msg) {
 				error("%s", err_msg);
 				xfree(err_msg);
 				exit_code = 1;

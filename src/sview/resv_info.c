@@ -357,8 +357,10 @@ static const char *_set_resv_msg(resv_desc_msg_t *resv_msg,
 		}
 		break;
 	case SORTID_WATTS:
-		if (state_control_parse_resv_watts((char *) new_text, resv_msg,
-						   &err_msg) == SLURM_ERROR) {
+		resv_msg->resv_watts = slurm_watts_str_to_int(
+			(char *) new_text, &err_msg);
+
+		if (err_msg) {
 			if (global_edit_error_msg)
 				g_free(global_edit_error_msg);
 			global_edit_error_msg = g_strdup(err_msg);
@@ -609,7 +611,7 @@ static void _layout_resv_record(GtkTreeView *treeview,
 						 SORTID_USERS),
 				   resv_ptr->users);
 
-	temp_char = state_control_watts_to_str(resv_ptr->resv_watts);
+	temp_char = slurm_watts_to_str(resv_ptr->resv_watts);
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_resv,
 						 SORTID_WATTS),
@@ -646,7 +648,7 @@ static void _update_resv_record(sview_resv_info_t *sview_resv_info_ptr,
 	slurm_make_time_str((time_t *)&resv_ptr->start_time, tmp_start,
 			    sizeof(tmp_start));
 
-	tmp_watts = state_control_watts_to_str(resv_ptr->resv_watts);
+	tmp_watts = slurm_watts_to_str(resv_ptr->resv_watts);
 
 	if (resv_ptr->max_start_delay)
 		secs2time_str(resv_ptr->max_start_delay,
