@@ -2241,7 +2241,10 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 
 			if (gres_id_shared(
 				    sock_gres->gres_state_job->config_flags)) {
-				/* gres/mps: select specific topo bit for job */
+				/*
+				 * gres/mps or gres/shard:
+				 * select specific topo bit for job
+				 */
 				_pick_specific_topo(job_res, i, node_inx,
 						    sock_gres, job_id,
 						    tres_mc_ptr);
