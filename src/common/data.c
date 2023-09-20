@@ -148,6 +148,7 @@ static void _check_magic(const data_t *data);
 static void _release(data_t *data);
 static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn);
 static size_t _convert_tree(data_t *data, const type_t match);
+static char *_type_to_string(type_t type);
 
 static data_list_t *_data_list_new(void)
 {
@@ -1940,11 +1941,9 @@ static data_for_each_cmd_t _find_dict_match(const char *key, const data_t *a,
 	rc = data_check_match(a, b, p->mask);
 
 	log_flag(DATA, "dictionary compare: %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR") %s %s(0x%"PRIXPTR")=%s(0x%"PRIXPTR")",
-		 key, (uintptr_t) p->a, data_type_to_string(a->type),
-		 (uintptr_t) a, (rc ? "\u2261" : "\u2260"), key,
-		 (uintptr_t) p->b,
-		 (b ? data_type_to_string(b->type) :
-		      data_type_to_string(TYPE_NONE)),
+		 key, (uintptr_t) p->a, _type_to_string(a->type), (uintptr_t) a,
+		 (rc ? "\u2261" : "\u2260"), key, (uintptr_t) p->b,
+		 (b ? _type_to_string(b->type) : _type_to_string(TYPE_NONE)),
 		 (uintptr_t) b);
 
 	return rc ? DATA_FOR_EACH_CONT : DATA_FOR_EACH_FAIL;
@@ -2027,8 +2026,8 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 
 	if (a->type != b->type) {
 		log_flag(DATA, "type mismatch: %s(0x%"PRIXPTR") != %s(0x%"PRIXPTR")",
-			 data_type_to_string(a->type), (uintptr_t) a,
-			 data_type_to_string(b->type), (uintptr_t) b);
+			 _type_to_string(a->type), (uintptr_t) a,
+			 _type_to_string(b->type), (uintptr_t) b);
 		return false;
 	}
 
@@ -2036,35 +2035,35 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 	case TYPE_NULL:
 		rc = (b->type == TYPE_NULL);
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR") %s %s(0x%"PRIXPTR")",
-			 data_type_to_string(a->type), (uintptr_t) a,
+			 _type_to_string(a->type), (uintptr_t) a,
 			 (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b);
+			 _type_to_string(b->type), (uintptr_t) b);
 		return rc;
 	case TYPE_STRING_INLINE:
 	case TYPE_STRING_PTR:
 		rc = !xstrcmp(data_get_string_const(a),
 			      data_get_string_const(b));
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%s %s %s(0x%"PRIXPTR")=%s",
-			 data_type_to_string(a->type), (uintptr_t) a,
+			 _type_to_string(a->type), (uintptr_t) a,
 			 data_get_string_const(a), (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b,
+			 _type_to_string(b->type), (uintptr_t) b,
 			 data_get_string_const(b));
 		return rc;
 	case TYPE_BOOL:
 		rc = (data_get_bool(a) == data_get_bool(b));
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%s %s %s(0x%"PRIXPTR")=%s",
-			 data_type_to_string(a->type), (uintptr_t) a,
+			 _type_to_string(a->type), (uintptr_t) a,
 			 (data_get_bool(a) ? "True" : "False"),
 			 (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b,
+			 _type_to_string(b->type), (uintptr_t) b,
 			 (data_get_bool(b) ? "True" : "False"));
 		return rc;
 	case TYPE_INT_64:
 		rc = data_get_int(a) == data_get_int(b);
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%"PRId64" %s %s(0x%"PRIXPTR")=%"PRId64,
-			 data_type_to_string(a->type), (uintptr_t) a,
+			 _type_to_string(a->type), (uintptr_t) a,
 			 data_get_int(a), (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b,
+			 _type_to_string(b->type), (uintptr_t) b,
 			 data_get_int(b));
 		return rc;
 	case TYPE_FLOAT:
@@ -2084,25 +2083,25 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 		}
 
 		log_flag(DATA, "compare: %s(0x%"PRIXPTR")=%e %s %s(0x%"PRIXPTR")=%e",
-			 data_type_to_string(a->type), (uintptr_t) a,
+			 _type_to_string(a->type), (uintptr_t) a,
 			 data_get_float(a), (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b,
+			 _type_to_string(b->type), (uintptr_t) b,
 			 data_get_float(b));
 		return rc;
 	case TYPE_DICT:
 		rc = _data_match_dict(a, b, mask);
 		log_flag(DATA, "compare dictionary: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
-			 data_type_to_string(a->type), (uintptr_t) a,
+			 _type_to_string(a->type), (uintptr_t) a,
 			 data_get_dict_length(a), (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b,
+			 _type_to_string(b->type), (uintptr_t) b,
 			 data_get_dict_length(b));
 		return rc;
 	case TYPE_LIST:
 		rc = _data_match_lists(a, b, mask);
 		log_flag(DATA, "compare list: %s(0x%"PRIXPTR")[%zd] %s %s(0x%"PRIXPTR")[%zd]",
-			 data_type_to_string(a->type), (uintptr_t) a,
+			 _type_to_string(a->type), (uintptr_t) a,
 			 data_get_list_length(a), (rc ? "=" : "!="),
-			 data_type_to_string(b->type), (uintptr_t) b,
+			 _type_to_string(b->type), (uintptr_t) b,
 			 data_get_list_length(b));
 		return rc;
 	default:
@@ -2396,6 +2395,11 @@ extern int data_retrieve_dict_path_int(const data_t *data, const char *path,
 		 __func__, data, path, *ptr_buffer, slurm_strerror(rc));
 
 	return rc;
+}
+
+static char *_type_to_string(type_t type)
+{
+	return data_type_to_string((int) type);
 }
 
 extern char *data_type_to_string(data_type_t type)
