@@ -235,9 +235,9 @@ extern int setup_x11_forward(stepd_step_rec_t *step)
 	debug("X11Parameters: %s", slurm_conf.x11_params);
 
 	if (xstrcasestr(slurm_conf.x11_params, "home_xauthority")) {
-		char *home = NULL;
-		if (!(home = uid_to_dir(step->uid))) {
-			error("could not find HOME in environment");
+		char *home = xstrdup(step->pw_dir);
+		if (!home && !(home = uid_to_dir(step->uid))) {
+			error("Could not look up user home directory");
 			goto shutdown;
 		}
 		step->x11_xauthority = xstrdup_printf("%s/.Xauthority", home);
