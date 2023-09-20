@@ -415,9 +415,9 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 
 static void *_handle_accept(void *arg)
 {
-	/*struct request_params *param = (struct request_params *)arg;*/
-	int fd = ((struct request_params *)arg)->fd;
-	stepd_step_rec_t *step = ((struct request_params *)arg)->step;
+	struct request_params *param = arg;
+	int fd = param->fd;
+	stepd_step_rec_t *step = param->step;
 	int req;
 	int client_protocol_ver;
 	buf_t *buffer = NULL;
