@@ -275,13 +275,14 @@ extern int stepd_resume(int fd, uint16_t protocol_version,
 			suspend_int_msg_t *susp_req, int phase);
 
 /*
- * Reconfigure the job step (Primarily to allow the stepd to refresh
- * it's log file pointer.
+ * Reconfigure the job step.
+ * Allows the stepd to refresh it's log file pointer.
+ * If reconf is not NULL, update the controller addresses.
  *
  * Returns SLURM_SUCCESS if successful.  On error returns SLURM_ERROR
  * and sets errno.
  */
-int stepd_reconfig(int fd, uint16_t protocol_version);
+extern int stepd_reconfig(int fd, uint16_t protocol_version, buf_t *reconf);
 
 /*
  *

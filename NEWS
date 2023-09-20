@@ -210,6 +210,8 @@ documents those changes that are of interest to users and administrators.
     now required to build with PMIx.
  -- Use memory.current in cgroup/v2 instead of manually calculating RSS. This
     makes accounting consistent with OOM Killer.
+ -- Update slurmstepd processes with current SlurmctldHost settings, allowing
+    for controller changes without draining all compute jobs.
 
 * Changes in Slurm 23.02.6
 ==========================

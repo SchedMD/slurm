@@ -70,6 +70,7 @@
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
 
+#include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/mgr.h"
@@ -1977,6 +1978,8 @@ static int
 _handle_reconfig(int fd, stepd_step_rec_t *step, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
+	int len;
+	buf_t *buffer = NULL;
 	int errnum = 0;
 
 	if (!_slurm_authorized_user(uid)) {
@@ -1985,6 +1988,18 @@ _handle_reconfig(int fd, stepd_step_rec_t *step, uid_t uid)
 		rc = -1;
 		errnum = EPERM;
 		goto done;
+	}
+
+	/*
+	 * Pull in any needed configuration changes.
+	 * len = 0 indicates we're just going for a log rotate.
+	 */
+	safe_read(fd, &len, sizeof(int));
+	if (len) {
+		buffer = init_buf(len);
+		safe_read(fd, buffer->head, len);
+		unpack_stepd_reconf(buffer);
+		FREE_NULL_BUFFER(buffer);
 	}
 
 	/*
@@ -2001,6 +2016,7 @@ done:
 	safe_write(fd, &errnum, sizeof(int));
 	return SLURM_SUCCESS;
 rwfail:
+	FREE_NULL_BUFFER(buffer);
 	return SLURM_ERROR;
 }
 

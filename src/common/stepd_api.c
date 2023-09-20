@@ -1062,14 +1062,24 @@ rwfail:
 	return -1;
 }
 
-int
-stepd_reconfig(int fd, uint16_t protocol_version)
+extern int stepd_reconfig(int fd, uint16_t protocol_version, buf_t *reconf)
 {
 	int req = REQUEST_STEP_RECONFIGURE;
 	int rc;
 	int errnum = 0;
 
 	safe_write(fd, &req, sizeof(int));
+
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		int len = 0;
+		if (reconf) {
+			len = get_buf_offset(reconf);
+			safe_write(fd, &len, sizeof(int));
+			safe_write(fd, get_buf_data(reconf), len);
+		} else {
+			safe_write(fd, &len, sizeof(int));
+		}
+	}
 
 	/* Receive the return code and errno */
 	safe_read(fd, &rc, sizeof(int));

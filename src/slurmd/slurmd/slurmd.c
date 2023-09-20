@@ -1242,18 +1242,24 @@ extern void build_conf_buf(void)
 	slurm_mutex_unlock(&conf->config_mutex);
 }
 
-static int _reconfig_stepd(void *x, void *unused)
+static int _reconfig_stepd(void *x, void *y)
 {
 	step_loc_t *stepd = x;
+	bool reconfig = *(bool *) y;
+	buf_t *reconf = NULL;
 	int fd = stepd_connect(stepd->directory, stepd->nodename,
 			       &stepd->step_id, &stepd->protocol_version);
 	if (fd == -1)
 		return 0;
 
-	if (stepd_reconfig(fd, stepd->protocol_version) != SLURM_SUCCESS)
+	if (reconfig) {
+		reconf = init_buf(1024);
+		pack_stepd_reconf(reconf, stepd->protocol_version);
+	}
+	if (stepd_reconfig(fd, stepd->protocol_version, reconf) != SLURM_SUCCESS)
 		debug("Reconfig %ps failed: %m", &stepd->step_id);
-
 	close(fd);
+	FREE_NULL_BUFFER(reconf);
 
 	return 0;
 }
@@ -1263,7 +1269,7 @@ extern void update_stepd_logging(bool reconfig)
 	list_t *steps;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
-	list_for_each(steps, _reconfig_stepd, NULL);
+	list_for_each(steps, _reconfig_stepd, &reconfig);
 	FREE_NULL_LIST(steps);
 }
 

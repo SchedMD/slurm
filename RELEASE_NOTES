@@ -55,6 +55,8 @@ HIGHLIGHTS
     out of range, the closest value to the cpu limits will be chosen.
  -- PMIx support is nolonger built by default.  Passing --with-pmix option is
     now required to build with PMIx.
+ -- Update slurmstepd processes with current SlurmctldHost settings, allowing
+    for controller changes without draining all compute jobs.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
