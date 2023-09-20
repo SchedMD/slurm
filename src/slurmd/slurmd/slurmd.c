@@ -1240,6 +1240,30 @@ extern void build_conf_buf(void)
 	slurm_mutex_unlock(&conf->config_mutex);
 }
 
+extern void update_stepd_logging(void)
+{
+	list_t *steps;
+	list_itr_t *i;
+	step_loc_t *stepd;
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while ((stepd = list_next(i))) {
+		int fd;
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   &stepd->step_id, &stepd->protocol_version);
+		if (fd == -1)
+			continue;
+
+		if (stepd_reconfig(fd, stepd->protocol_version)
+		    != SLURM_SUCCESS)
+			debug("Reconfig %ps failed: %m", &stepd->step_id);
+		close(fd);
+	}
+	list_iterator_destroy(i);
+	FREE_NULL_LIST(steps);
+}
+
 static void
 _reconfigure(void)
 {
@@ -2355,9 +2379,6 @@ _kill_old_slurmd(void)
 /* Reset slurmd logging based upon configuration parameters */
 extern void update_slurmd_logging(log_level_t log_lvl)
 {
-	list_t *steps;
-	list_itr_t *i;
-	step_loc_t *stepd;
 	log_options_t *o = &conf->log_opts;
 	slurm_conf_t *cf;
 
@@ -2410,24 +2431,7 @@ extern void update_slurmd_logging(log_level_t log_lvl)
 	/*
 	 * Send reconfig to each stepd so they will rotate as well.
 	 */
-
-	steps = stepd_available(conf->spooldir, conf->node_name);
-	i = list_iterator_create(steps);
-	while ((stepd = list_next(i))) {
-		int fd;
-		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   &stepd->step_id,
-				   &stepd->protocol_version);
-		if (fd == -1)
-			continue;
-
-		if (stepd_reconfig(fd, stepd->protocol_version)
-		    != SLURM_SUCCESS)
-			debug("Reconfig %ps failed: %m", &stepd->step_id);
-		close(fd);
-	}
-	list_iterator_destroy(i);
-	FREE_NULL_LIST(steps);
+	update_stepd_logging();
 }
 
 /* Reset slurmd nice value */
