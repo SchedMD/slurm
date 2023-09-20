@@ -1062,13 +1062,6 @@ rwfail:
 	return -1;
 }
 
-/*
- * Reconfigure the job step (Primarily to allow the stepd to refresh
- * it's log file pointer.
- *
- * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
- * and sets errno.
- */
 int
 stepd_reconfig(int fd, uint16_t protocol_version)
 {
