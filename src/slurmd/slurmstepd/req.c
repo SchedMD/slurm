@@ -50,23 +50,26 @@
 #include <unistd.h>
 
 #include "src/common/cpu_frequency.h"
-#include "src/common/fd.h"
 #include "src/common/eio.h"
+#include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
-#include "src/interfaces/auth.h"
-#include "src/interfaces/jobacct_gather.h"
-#include "src/interfaces/acct_gather.h"
 #include "src/common/stepd_api.h"
 #include "src/common/strlcpy.h"
-#include "src/interfaces/switch.h"
 #include "src/common/timers.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/acct_gather.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/job_container.h"
+#include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/proctrack.h"
+#include "src/interfaces/switch.h"
+#include "src/interfaces/task.h"
+
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/mgr.h"
@@ -76,9 +79,6 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 #include "src/slurmd/slurmstepd/ulimits.h"
-
-#include "src/interfaces/task.h"
-#include "src/interfaces/job_container.h"
 
 static void *_handle_accept(void *arg);
 static int _handle_request(int fd, stepd_step_rec_t *step,
