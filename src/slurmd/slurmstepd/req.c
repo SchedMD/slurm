@@ -370,7 +370,7 @@ _msg_socket_readable(eio_obj_t *obj)
 static int
 _msg_socket_accept(eio_obj_t *obj, List objs)
 {
-	stepd_step_rec_t *step = (stepd_step_rec_t *)obj->arg;
+	stepd_step_rec_t *step = obj->arg;
 	int fd;
 	struct sockaddr_un addr;
 	int len = sizeof(addr);
@@ -1004,7 +1004,7 @@ _handle_attach(int fd, stepd_step_rec_t *step, uid_t uid)
 		goto done;
 	}
 
-	list_prepend(step->sruns, (void *) srun);
+	list_prepend(step->sruns, srun);
 	rc = io_client_connect(srun, step);
 	srun = NULL;
 	debug("  back from io_client_connect, rc = %d", rc);
@@ -1126,7 +1126,7 @@ static void _block_on_pid(pid_t pid)
  */
 static void *_wait_extern_pid(void *args)
 {
-	extern_pid_t *extern_pid = (extern_pid_t *)args;
+	extern_pid_t *extern_pid = args;
 
 	stepd_step_rec_t *step = extern_pid->step;
 	pid_t pid = extern_pid->pid;
