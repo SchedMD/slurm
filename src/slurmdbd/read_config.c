@@ -347,10 +347,10 @@ extern int read_slurmdbd_conf(void)
 			xfree(temp_str);
 		}
 
+		/* Default log time format */
+		slurm_conf.log_fmt = LOG_FMT_ISO8601_MS;
 		if (s_p_get_string(&temp_str, "LogTimeFormat", tbl)) {
-			if (xstrcasestr(temp_str, "iso8601_ms"))
-				slurm_conf.log_fmt = LOG_FMT_ISO8601_MS;
-			else if (xstrcasestr(temp_str, "iso8601"))
+			if (xstrcasestr(temp_str, "iso8601"))
 				slurm_conf.log_fmt = LOG_FMT_ISO8601;
 			else if (xstrcasestr(temp_str, "rfc5424_ms"))
 				slurm_conf.log_fmt = LOG_FMT_RFC5424_MS;
@@ -364,15 +364,10 @@ extern int read_slurmdbd_conf(void)
 				slurm_conf.log_fmt = LOG_FMT_SHORT;
 			else if (xstrcasestr(temp_str, "thread_id"))
 				slurm_conf.log_fmt = LOG_FMT_THREAD_ID;
-
-			if (xstrcasestr(temp_str, "format_stderr")) {
-				if (!slurm_conf.log_fmt)
-					slurm_conf.log_fmt = LOG_FMT_ISO8601_MS;
+			if (xstrcasestr(temp_str, "format_stderr"))
 				slurm_conf.log_fmt |= LOG_FMT_FORMAT_STDERR;
-			}
 			xfree(temp_str);
-		} else
-			slurm_conf.log_fmt = LOG_FMT_ISO8601_MS;
+		}
 
 		if (s_p_get_string(&temp_str, "MaxQueryTimeRange", tbl)) {
 			slurmdbd_conf->max_time_range = time_str2secs(temp_str);

@@ -4386,14 +4386,14 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	(void) s_p_get_string(&conf->licenses, "Licenses", hashtbl);
 
+	/* Default log format */
+	conf->log_fmt = LOG_FMT_ISO8601_MS;
 	if (s_p_get_string(&temp_str, "LogTimeFormat", hashtbl)) {
 		/*
 		 * If adding to this please update src/api/config_log.c to do
 		 * the reverse translation.
 		 */
-		if (xstrcasestr(temp_str, "iso8601_ms"))
-			conf->log_fmt = LOG_FMT_ISO8601_MS;
-		else if (xstrcasestr(temp_str, "iso8601"))
+		if (xstrcasestr(temp_str, "iso8601"))
 			conf->log_fmt = LOG_FMT_ISO8601;
 		else if (xstrcasestr(temp_str, "rfc5424_ms"))
 			conf->log_fmt = LOG_FMT_RFC5424_MS;
@@ -4407,15 +4407,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->log_fmt = LOG_FMT_SHORT;
 		else if (xstrcasestr(temp_str, "thread_id"))
 			conf->log_fmt = LOG_FMT_THREAD_ID;
-
-		if (xstrcasestr(temp_str, "format_stderr")) {
-			if (!conf->log_fmt)
-				conf->log_fmt = LOG_FMT_ISO8601_MS;
+		if (xstrcasestr(temp_str, "format_stderr"))
 			conf->log_fmt |= LOG_FMT_FORMAT_STDERR;
-		}
 		xfree(temp_str);
-	} else
-		conf->log_fmt = LOG_FMT_ISO8601_MS;
+	}
 
 	(void) s_p_get_string(&conf->mail_domain, "MailDomain", hashtbl);
 
