@@ -106,6 +106,7 @@ auth_plugin_types_t auth_plugin_types[] = {
 	{ AUTH_PLUGIN_NONE, "auth/none" },
 	{ AUTH_PLUGIN_MUNGE, "auth/munge" },
 	{ AUTH_PLUGIN_JWT, "auth/jwt" },
+	{ AUTH_PLUGIN_SLURM, "auth/slurm" },
 };
 
 /*

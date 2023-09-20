@@ -633,6 +633,7 @@ enum auth_plugin_type {
 	AUTH_PLUGIN_NONE	= 100,
 	AUTH_PLUGIN_MUNGE	= 101,
 	AUTH_PLUGIN_JWT		= 102,
+	AUTH_PLUGIN_SLURM	= 103,
 };
 
 /*
