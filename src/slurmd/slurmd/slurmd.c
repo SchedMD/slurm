@@ -1240,27 +1240,28 @@ extern void build_conf_buf(void)
 	slurm_mutex_unlock(&conf->config_mutex);
 }
 
+static int _reconfig_stepd(void *x, void *unused)
+{
+	step_loc_t *stepd = x;
+	int fd = stepd_connect(stepd->directory, stepd->nodename,
+			       &stepd->step_id, &stepd->protocol_version);
+	if (fd == -1)
+		return 0;
+
+	if (stepd_reconfig(fd, stepd->protocol_version) != SLURM_SUCCESS)
+		debug("Reconfig %ps failed: %m", &stepd->step_id);
+
+	close(fd);
+
+	return 0;
+}
+
 extern void update_stepd_logging(void)
 {
 	list_t *steps;
-	list_itr_t *i;
-	step_loc_t *stepd;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
-	i = list_iterator_create(steps);
-	while ((stepd = list_next(i))) {
-		int fd;
-		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   &stepd->step_id, &stepd->protocol_version);
-		if (fd == -1)
-			continue;
-
-		if (stepd_reconfig(fd, stepd->protocol_version)
-		    != SLURM_SUCCESS)
-			debug("Reconfig %ps failed: %m", &stepd->step_id);
-		close(fd);
-	}
-	list_iterator_destroy(i);
+	list_for_each(steps, _reconfig_stepd, NULL);
 	FREE_NULL_LIST(steps);
 }
 
