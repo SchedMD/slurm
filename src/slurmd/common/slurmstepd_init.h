@@ -81,4 +81,11 @@ extern void pack_slurm_conf_lite(buf_t *buffer);
  */
 extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer);
 
+/*
+ * Used to pass configuration updates to slurmstepd on a slurmd reconfigure.
+ * The unpack will update slurm_conf directly.
+ */
+extern void pack_stepd_reconf(buf_t *buffer, uint16_t protocol_version);
+extern void unpack_stepd_reconf(buf_t *buffer);
+
 #endif /* _SLURMD_STEP_INIT_H */

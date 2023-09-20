@@ -590,3 +590,46 @@ unpack_error:
 
 	return SLURM_ERROR;
 }
+
+extern void pack_stepd_reconf(buf_t *buffer, uint16_t protocol_version)
+{
+	/*
+	 * Unlike the initialization functions above, this does need to be
+	 * able to communicate with an older slurmstepd if the slurmd process
+	 * has been upgraded.
+	 */
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
+		packstr_array(slurm_conf.control_addr, slurm_conf.control_cnt,
+			      buffer);
+		packstr(slurm_conf.slurmctld_addr, buffer);
+		pack32(slurm_conf.slurmctld_port, buffer);
+		pack16(slurm_conf.slurmctld_port_count, buffer);
+	}
+}
+
+/*
+ * This does not need to be versioned - slurmd will always pack in our
+ * native protocol version. Directly unpack into slurm_conf - the buffer
+ * was already read in successfully off the socket and we trust slurmd
+ * to have structured this correctly.
+ */
+extern void unpack_stepd_reconf(buf_t *buffer)
+{
+	safe_unpackstr_array(&slurm_conf.control_addr,
+			     &slurm_conf.control_cnt, buffer);
+	safe_unpackstr(&slurm_conf.slurmctld_addr, buffer);
+	safe_unpack32(&slurm_conf.slurmctld_port, buffer);
+	safe_unpack16(&slurm_conf.slurmctld_port_count, buffer);
+
+	for (int i = 0; i < slurm_conf.control_cnt; i++)
+		debug("%s: control_addr[%d]=%s",
+		      __func__, i, slurm_conf.control_addr[i]);
+	debug("%s: slurmctld_port=%d, slurmctld_port_count=%d, slurmctld_addr=%s",
+	      __func__, slurm_conf.slurmctld_port,
+	      slurm_conf.slurmctld_port_count, slurm_conf.slurmctld_addr);
+
+	return;
+
+unpack_error:
+	error("%s: unpack_error: %m", __func__);
+}
