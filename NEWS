@@ -68,6 +68,8 @@ documents those changes that are of interest to users and administrators.
     mpirun/mpiexec to fail with an unexpected argument error.
  -- Fix bug where scontrol hold would change node count for jobs with
     implicitly defined node counts.
+ -- data_parser/v0.0.40 - Fix regression of support for "hold" in
+    job description.
 
 * Changes in Slurm 23.11.1
 ==========================
