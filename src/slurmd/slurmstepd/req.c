@@ -779,8 +779,7 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 	}
 
 	if (sig == SIG_DEBUG_WAKE) {
-		int i;
-		for (i = 0; i < step->node_tasks; i++)
+		for (int i = 0; i < step->node_tasks; i++)
 			pdebug_wake_process(step, step->task[i]->pid);
 		slurm_mutex_unlock(&suspend_mutex);
 		goto done;
@@ -1838,7 +1837,6 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *step, uid_t uid)
 	bool update_data = true;
 	jobacctinfo_t *jobacct = NULL;
 	jobacctinfo_t *temp_jobacct = NULL;
-	int i = 0;
 	int num_tasks = 0;
 	uint64_t msg_timeout_us;
 	DEF_TIMERS;
@@ -1874,7 +1872,7 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *step, uid_t uid)
 		num_tasks = 1;
 		proctrack_g_get_pids(step->cont_id, &pids, &npids);
 
-		for (i = 0; i < npids; i++) {
+		for (int i = 0; i < npids; i++) {
 			temp_jobacct = jobacct_gather_stat_task(pids[i],
 								update_data);
 			update_data = false;
@@ -1888,7 +1886,7 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *step, uid_t uid)
 
 		xfree(pids);
 	} else {
-		for (i = 0; i < step->node_tasks; i++) {
+		for (int i = 0; i < step->node_tasks; i++) {
 			temp_jobacct =
 				jobacct_gather_stat_task(step->task[i]->pid,
 							 update_data);
@@ -1931,13 +1929,12 @@ rwfail:
 static int
 _handle_task_info(int fd, stepd_step_rec_t *step)
 {
-	int i;
 	stepd_step_task_info_t *task;
 
 	debug("_handle_task_info for %ps", &step->step_id);
 
 	safe_write(fd, &step->node_tasks, sizeof(uint32_t));
-	for (i = 0; i < step->node_tasks; i++) {
+	for (int i = 0; i < step->node_tasks; i++) {
 		task = step->task[i];
 		safe_write(fd, &task->id, sizeof(int));
 		safe_write(fd, &task->gtid, sizeof(uint32_t));
@@ -1955,7 +1952,6 @@ rwfail:
 static int
 _handle_list_pids(int fd, stepd_step_rec_t *step)
 {
-	int i;
 	pid_t *pids = NULL;
 	int npids = 0;
 	uint32_t pid;
@@ -1963,7 +1959,7 @@ _handle_list_pids(int fd, stepd_step_rec_t *step)
 	debug("_handle_list_pids for %ps", &step->step_id);
 	proctrack_g_get_pids(step->cont_id, &pids, &npids);
 	safe_write(fd, &npids, sizeof(uint32_t));
-	for (i = 0; i < npids; i++) {
+	for (int i = 0; i < npids; i++) {
 		pid = (uint32_t)pids[i];
 		safe_write(fd, &pid, sizeof(uint32_t));
 	}
@@ -2010,9 +2006,7 @@ rwfail:
 
 extern void wait_for_resumed(uint16_t msg_type)
 {
-	int i;
-
-	for (i = 0; ; i++) {
+	for (int i = 0; ; i++) {
 		if (i)
 			sleep(1);
 		if (!suspended)
