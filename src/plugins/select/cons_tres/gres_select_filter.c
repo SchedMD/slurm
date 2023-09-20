@@ -934,7 +934,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 {
 	int core_offset;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int i, rc, s, t;
+	int i, rc, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
 	int *used_sock = NULL, alloc_gres_cnt = 0;
@@ -1000,7 +1000,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 		if ((s >= 0) && !used_sock[s])
 			continue;
 
-		for (t = 0; t < gres_ns->topo_cnt; t++) {
+		for (int t = 0; t < gres_ns->topo_cnt; t++) {
 			if (use_busy_dev &&
 			    (gres_ns->topo_gres_cnt_alloc[t] == 0))
 				continue;
@@ -1028,7 +1028,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	}
 
 	/* Select available GRES with sufficient resources */
-	for (t = 0; (t < gres_ns->topo_cnt) && (alloc_gres_cnt == 0); t++) {
+	for (int t = 0; (t < gres_ns->topo_cnt) && (alloc_gres_cnt == 0); t++) {
 		if (use_busy_dev &&
 		    (gres_ns->topo_gres_cnt_alloc[t] == 0))
 			continue;
@@ -1045,7 +1045,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	}
 
 	/* Select available GRES with any resources */
-	for (t = 0; (t < gres_ns->topo_cnt) && (alloc_gres_cnt == 0); t++) {
+	for (int t = 0; (t < gres_ns->topo_cnt) && (alloc_gres_cnt == 0); t++) {
 		if (gres_ns->topo_gres_cnt_alloc    &&
 		    gres_ns->topo_gres_cnt_avail    &&
 		    gres_ns->topo_gres_cnt_avail[t])
