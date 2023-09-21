@@ -5233,7 +5233,7 @@ extern char *bb_p_xlate_bb_2_tres_str(char *burst_buffer)
 			uint64_t mb_xlate = 1024 * 1024;
 			size = bb_get_size_num(tok,
 					       bb_state.bb_config.granularity);
-			total += (size + mb_xlate - 1) / mb_xlate;
+			total += ROUNDUP(size, mb_xlate);
 		}
 
 		tok = strtok_r(NULL, ",", &save_ptr);

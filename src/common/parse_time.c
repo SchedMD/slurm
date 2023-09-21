@@ -779,7 +779,7 @@ extern int time_str2mins(const char *string)
 {
 	int i = time_str2secs(string);
 	if ((i != INFINITE) &&  (i != NO_VAL))
-		i = (i + 59) / 60;	/* round up */
+		i = ROUNDUP(i, 60);	/* round up */
 	return i;
 }
 

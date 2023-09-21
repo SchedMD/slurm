@@ -425,7 +425,7 @@ uint64_t str_to_mbytes(const char *arg)
 		;
 	else if (((endptr[0] == 'k') || (endptr[0] == 'K')) &&
 		 _end_on_byte(endptr))
-		result = (result + 1023) / 1024;	/* round up */
+		result = ROUNDUP(result, 1024);	/* round up */
 	else if (((endptr[0] == 'm') || (endptr[0] == 'M')) &&
 	         _end_on_byte(endptr))
 		;

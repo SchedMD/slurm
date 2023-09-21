@@ -1556,8 +1556,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				goto cleanup;
 			}
 			if (req_tpc < node_record_table_ptr[first_inx]->tpc) {
-				cpu_count += req_tpc - 1;
-				cpu_count /= req_tpc;
+				cpu_count = ROUNDUP(cpu_count, req_tpc);
 				cpu_count *=
 					node_record_table_ptr[first_inx]->tpc;
 			} else if (req_tpc >
@@ -2096,20 +2095,16 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	    (task_cnt <= tasks_per_node || (step_ptr->flags & SSF_OVERCOMMIT)))
 	{
 		use_all_cores = true;
-		core_cnt = job_resrcs_ptr->cpus[job_node_inx];
-		core_cnt += (cpus_per_core - 1);
-		core_cnt /= cpus_per_core;
+		core_cnt = ROUNDUP(job_resrcs_ptr->cpus[job_node_inx],
+				   cpus_per_core);
 	} else {
 		use_all_cores = false;
 
 		if (gres_cpus_alloc) {
-			core_cnt = gres_cpus_alloc;
-			core_cnt += (cpus_per_core - 1);
-			core_cnt /= cpus_per_core;
+			core_cnt = ROUNDUP(gres_cpus_alloc, cpus_per_core);
 		} else if (step_ptr->cpus_per_task > 0) {
 			core_cnt *= step_ptr->cpus_per_task;
-			core_cnt += (cpus_per_core - 1);
-			core_cnt /= cpus_per_core;
+			core_cnt = ROUNDUP(core_cnt, cpus_per_core);
 		}
 
 		log_flag(STEPS, "%s: step %pS requires %u cores on node %d with cpus_per_core=%u, available cpus from job: %u",
@@ -2154,8 +2149,7 @@ static int _pick_step_cores(step_record_t *step_ptr,
 				job_resrcs_ptr->core_bitmap);
 		}
 	}
-	cores_per_task = core_cnt + task_cnt - 1; /* Round up */
-	cores_per_task /= task_cnt;
+	cores_per_task = ROUNDUP(core_cnt, task_cnt); /* Round up */
 
 	/* select idle cores that fit all gres binding first */
 	if (_handle_core_select(step_ptr, job_resrcs_ptr,
@@ -2261,8 +2255,7 @@ static void _modify_cpus_alloc_for_tpc(uint16_t cr_type, uint16_t req_tpc,
 
 	if ((cr_type & (CR_CORE | CR_SOCKET | CR_LINEAR)) &&
 	    (req_tpc != NO_VAL16) && (req_tpc < vpus)) {
-		*cpus_alloc += req_tpc - 1;
-		*cpus_alloc /= req_tpc;
+		*cpus_alloc = ROUNDUP(*cpus_alloc, req_tpc);
 		*cpus_alloc *= vpus;
 	}
 }
@@ -2501,8 +2494,7 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 					cpu_array_value[cpu_array_inx];
 			else if ((req_tpc != NO_VAL16) &&
 				 (req_tpc < vpus)) {
-				cpus_alloc_mem += vpus - 1;
-				cpus_alloc_mem /= vpus;
+				cpus_alloc_mem = ROUNDUP(cpus_alloc_mem, vpus);
 				cpus_alloc_mem *= req_tpc;
 			}
 		} else {

@@ -7099,8 +7099,7 @@ extern time_t find_resv_end(time_t start_time, int resolution)
 
 	/* Round-up returned time to given resolution */
 	if (resolution > 0) {
-		end_time += resolution - 1;
-		end_time /= resolution;
+		end_time = ROUNDUP(end_time, resolution);
 		end_time *= resolution;
 	}
 

@@ -728,8 +728,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 
 		while (*max_tasks_this_node >= *min_tasks_this_node) {
 			/* round up by full threads per core */
-			req_cores += threads_per_core - 1;
-			req_cores /= threads_per_core;
+			req_cores = ROUNDUP(req_cores, threads_per_core);
 			if (req_cores <= avail_cores_tot) {
 				if (removed_tasks)
 					log_flag(SELECT_TYPE, "Node %s: settings required_cores=%d by max_tasks_this_node=%u(reduced=%d) cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",

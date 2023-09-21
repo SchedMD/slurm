@@ -4006,9 +4006,8 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 
 	/* Select the best nodes for this job */
 	if (details_ptr->ntasks_per_node && details_ptr->num_tasks) {
-		i  = details_ptr->num_tasks;
-		i += (details_ptr->ntasks_per_node - 1);
-		i /= details_ptr->ntasks_per_node;
+		i = ROUNDUP(details_ptr->num_tasks,
+			    details_ptr->ntasks_per_node);
 		min_nodes = MAX(min_nodes, i);
 	}
 	rc = _choose_nodes(job_ptr, node_bitmap, avail_core, min_nodes,

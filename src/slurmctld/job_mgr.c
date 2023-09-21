@@ -9035,8 +9035,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 		sys_mem_limit &= (~MEM_PER_CPU);
 		if (job_mem_limit <= sys_mem_limit)
 			return true;
-		mem_ratio = (job_mem_limit + sys_mem_limit - 1);
-		mem_ratio /= sys_mem_limit;
+		mem_ratio = ROUNDUP(job_mem_limit, sys_mem_limit);
 		debug("JobId=%u: increasing cpus_per_task and decreasing mem_per_cpu by factor of %"PRIu64" based upon mem_per_cpu limits",
 		      job_desc_msg->job_id, mem_ratio);
 		if (job_desc_msg->cpus_per_task == NO_VAL16)
@@ -11314,13 +11313,10 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				/* min_nodes based upon task count and ntasks
 				 * per core */
 				uint32_t min_cores, min_nodes;
-				min_cores = detail_ptr->num_tasks +
-					detail_ptr->mc_ptr->ntasks_per_core - 1;
-				min_cores /=
-					detail_ptr->mc_ptr->ntasks_per_core;
-
-				min_nodes = min_cores + max_core_cnt - 1;
-				min_nodes /= max_core_cnt;
+				min_cores = ROUNDUP(detail_ptr->num_tasks,
+						    detail_ptr->mc_ptr->
+						    ntasks_per_core);
+				min_nodes = ROUNDUP(min_cores, max_core_cnt);
 				min_nodes = MAX(min_nodes,
 						detail_ptr->min_nodes);
 				pack32(min_nodes, buffer);
@@ -11329,9 +11325,9 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				/* min_nodes based upon task count only */
 				uint32_t min_nodes;
 				uint32_t max_nodes;
-				min_nodes = detail_ptr->num_tasks +
-					max_cpu_cnt - 1;
-				min_nodes /= max_cpu_cnt;
+
+				min_nodes = ROUNDUP(detail_ptr->num_tasks,
+						    max_cpu_cnt);
 				min_nodes = MAX(min_nodes,
 						detail_ptr->min_nodes);
 				max_nodes = MAX(min_nodes,
@@ -11478,24 +11474,21 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				/* min_nodes based upon task count and ntasks
 				 * per core */
 				uint32_t min_cores, min_nodes;
-				min_cores = detail_ptr->num_tasks +
-					detail_ptr->mc_ptr->ntasks_per_core - 1;
-				min_cores /=
-					detail_ptr->mc_ptr->ntasks_per_core;
-
-				min_nodes = min_cores + max_core_cnt - 1;
-				min_nodes /= max_core_cnt;
+				min_cores = ROUNDUP(detail_ptr->num_tasks,
+						    detail_ptr->mc_ptr->
+						    ntasks_per_core);
+				min_nodes = ROUNDUP(min_cores, max_core_cnt);
 				min_nodes = MAX(min_nodes,
 						detail_ptr->min_nodes);
 				pack32(min_nodes, buffer);
 				pack32(detail_ptr->max_nodes, buffer);
 			} else {
 				/* min_nodes based upon task count only */
-				uint32_t min_nodes;
+				uint32_t min_nodes =
+					ROUNDUP(detail_ptr->num_tasks,
+						max_cpu_cnt);
 				uint32_t max_nodes;
-				min_nodes = detail_ptr->num_tasks +
-					max_cpu_cnt - 1;
-				min_nodes /= max_cpu_cnt;
+
 				min_nodes = MAX(min_nodes,
 						detail_ptr->min_nodes);
 				max_nodes = MAX(min_nodes,
