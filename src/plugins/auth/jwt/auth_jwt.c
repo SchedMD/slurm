@@ -136,10 +136,9 @@ static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 	if (!(kid = data_get_string(data_key_get(d, "kid"))))
 		fatal("%s: failed to load kid field", __func__);
 
-	alg = data_get_string(data_key_get(d, "alg"));
-
-	/* Ignore non-RS256 keys in the JWKS */
-	if (xstrcasecmp(alg, "RS256"))
+	/* Ignore non-RS256 keys in the JWKS if algorthim is provided */
+	if ((alg = data_get_string(data_key_get(d, "alg"))) &&
+	    xstrcasecmp(alg, "RS256"))
 		return DATA_FOR_EACH_CONT;
 
 	if (!(e = data_get_string(data_key_get(d, "e"))))
