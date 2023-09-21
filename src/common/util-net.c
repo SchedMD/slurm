@@ -252,7 +252,14 @@ extern char *make_full_path(const char *rpath)
 	return cwd2;
 }
 
-struct addrinfo *get_addr_info(const char *hostname, uint16_t port)
+extern struct addrinfo *get_addr_info_port(const char *hostname, uint16_t port)
+{
+	char serv[6];
+	snprintf(serv, sizeof(serv), "%hu", port);
+	return get_addr_info(hostname, serv);
+}
+
+extern struct addrinfo *get_addr_info(const char *hostname, const char *serv)
 {
 	slurm_addr_t addr;
 	struct addrinfo *result = NULL;
@@ -260,7 +267,6 @@ struct addrinfo *get_addr_info(const char *hostname, uint16_t port)
 	int err;
 	bool v4_enabled = slurm_conf.conf_flags & CTL_CONF_IPV4_ENABLED;
 	bool v6_enabled = slurm_conf.conf_flags & CTL_CONF_IPV6_ENABLED;
-	char serv[6];
 
 	memset(&hints, 0, sizeof(hints));
 
@@ -302,8 +308,6 @@ struct addrinfo *get_addr_info(const char *hostname, uint16_t port)
 		hints.ai_addrlen = sizeof(addr2);
 	}
 	hints.ai_socktype = SOCK_STREAM;
-
-	snprintf(serv, sizeof(serv), "%u", port);
 
 	err = getaddrinfo(hostname, serv, &hints, &result);
 	if (err == EAI_SYSTEM) {
