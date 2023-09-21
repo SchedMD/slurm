@@ -91,6 +91,11 @@ AuthAltParameters=jwks=/var/spool/slurm/statesave/jwks.json
 be disabled when JWKS support is enabled. It can be re-enabled by explicitly
 configuring the <b>jwt_key=</b> option alongside <b>jwks=</b>.
 </p>
+<p>Note: Slurm ignores the <b>x5c</b> and <b>x5t</b> fields and does not
+attempt to verify the certificate chain if presented in the JWKS file. JWTs are
+only verified against RSA 256 bit keys provided via <b>e</b> and
+<b>n</b> fields.
+</p>
 
 <h2 id="compatibility">Compatibility
 <a class="slurm_link" href="#compatibility"></a>
