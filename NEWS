@@ -226,6 +226,11 @@ documents those changes that are of interest to users and administrators.
  -- Fix "_find_node_record: lookup failure for node" error message appearing
     for all dynamic nodes during reconfigure.
  -- Avoid segfault if loading serializer plugin fails.
+ -- slurmrestd - Correct OpenAPI format for 'GET /slurm/v0.0.39/licenses'.
+ -- slurmrestd - Correct OpenAPI format for 'GET /slurm/v0.0.39/job/{job_id}'.
+ -- slurmrestd - Change format to multiple fields in 'GET
+    /slurmdb/v0.0.39/assocations' and 'GET /slurmdb/v0.0.39/qos' to handle
+    infinite and unset states.
 
 * Changes in Slurm 23.02.5
 ==========================
