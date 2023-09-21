@@ -231,6 +231,9 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Change format to multiple fields in 'GET
     /slurmdb/v0.0.39/assocations' and 'GET /slurmdb/v0.0.39/qos' to handle
     infinite and unset states.
+ -- When a node fails in a job with --no-kill, preserve the extern step on the
+    remaining nodes to avoid breaking features that rely on the extern step
+    such as pam_slurm_adopt, x11, and job_container/tmpfs.
 
 * Changes in Slurm 23.02.5
 ==========================
