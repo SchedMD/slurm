@@ -6135,28 +6135,28 @@ static void _validate_tres_per_task(slurm_opt_t *opt)
 {
 	char *cpu_per_task_ptr = NULL;
 
-	if (xstrcasestr(opt->tres_per_task, "=mem") ||
+	if (!xstrncasecmp(opt->tres_per_task, "mem", 3) ||
 	    xstrcasestr(opt->tres_per_task, ",mem")) {
 		fatal("Invalid TRES for --tres-per-task: mem");
-	} else if (xstrcasestr(opt->tres_per_task, "=energy") ||
+	} else if (!xstrncasecmp(opt->tres_per_task, "energy", 6) ||
 		   xstrcasestr(opt->tres_per_task, ",energy")) {
 		fatal("Invalid TRES for --tres-per-task: energy");
-	} else if (xstrcasestr(opt->tres_per_task, "=node") ||
+	} else if (!xstrncasecmp(opt->tres_per_task, "node", 4) ||
 		   xstrcasestr(opt->tres_per_task, ",node")) {
 		fatal("Invalid TRES for --tres-per-task: node");
-	} else if (xstrcasestr(opt->tres_per_task, "=billing") ||
+	} else if (!xstrncasecmp(opt->tres_per_task, "billing", 7) ||
 		   xstrcasestr(opt->tres_per_task, ",billing")) {
 		fatal("Invalid TRES for --tres-per-task: billing");
-	} else if (xstrcasestr(opt->tres_per_task, "=fs") ||
+	} else if (!xstrncasecmp(opt->tres_per_task, "fs", 2) ||
 		   xstrcasestr(opt->tres_per_task, ",fs")) {
 		fatal("Invalid TRES for --tres-per-task: fs");
-	} else if (xstrcasestr(opt->tres_per_task, "=vmem") ||
+	} else if (!xstrncasecmp(opt->tres_per_task, "vmem", 4) ||
 		   xstrcasestr(opt->tres_per_task, ",vmem")) {
 		fatal("Invalid TRES for --tres-per-task: vmem");
-	} else if (xstrcasestr(opt->tres_per_task, "=pages") ||
+	} else if (!xstrncasecmp(opt->tres_per_task, "pages", 5) ||
 		   xstrcasestr(opt->tres_per_task, ",pages")) {
 		fatal("Invalid TRES for --tres-per-task: pages");
-	} else if (xstrcasestr(opt->tres_per_task, "=bb") ||
+	} else if (!xstrncasecmp(opt->tres_per_task, "bb", 2) ||
 		   xstrcasestr(opt->tres_per_task, ",bb")) {
 		fatal("Invalid TRES for --tres-per-task: bb");
 	}
