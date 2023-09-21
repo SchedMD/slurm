@@ -311,12 +311,12 @@ extern struct addrinfo *get_addr_info(const char *hostname, const char *serv)
 
 	err = getaddrinfo(hostname, serv, &hints, &result);
 	if (err == EAI_SYSTEM) {
-		error("%s: getaddrinfo() failed: %s: %m", __func__,
-		      gai_strerror(err));
+		error("%s: getaddrinfo(%s:%s) failed: %s: %m",
+		      __func__, hostname, serv, gai_strerror(err));
 		return NULL;
 	} else if (err != 0) {
-		error("%s: getaddrinfo() failed: %s", __func__,
-		      gai_strerror(err));
+		error("%s: getaddrinfo(%s:%s) failed: %s",
+		      __func__, hostname, serv, gai_strerror(err));
 		return NULL;
 	}
 
