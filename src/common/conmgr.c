@@ -66,6 +66,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/strlcpy.h"
 #include "src/common/timers.h"
+#include "src/common/util-net.h"
 #include "src/common/workq.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -2261,11 +2262,7 @@ static int _create_socket(void *x, void *arg)
 	const char *hostport = (const char *)x;
 	const char *unixsock = xstrstr(hostport, UNIX_PREFIX);
 	socket_listen_init_t *init = arg;
-	int rc;
-	struct addrinfo hints = { .ai_family = AF_UNSPEC,
-				  .ai_socktype = SOCK_STREAM,
-				  .ai_protocol = 0,
-				  .ai_flags = AI_PASSIVE | AI_ADDRCONFIG };
+	int rc = SLURM_SUCCESS;
 	struct addrinfo *addrlist = NULL;
 	parsed_host_port_t *parsed_hp;
 	con_mgr_callbacks_t callbacks;
@@ -2313,16 +2310,9 @@ static int _create_socket(void *x, void *arg)
 			fatal("%s: Unable to parse %s", __func__, hostport);
 
 		/* resolve out the host and port if provided */
-		rc = getaddrinfo(parsed_hp->host, parsed_hp->port, &hints,
-				 &addrlist);
-		if (rc) {
-			if (rc == EAI_SYSTEM) /* error held in errno */
-				fatal("%s: Unable to parse %s due to system issue: %m",
-				      __func__, hostport);
-			else
-				fatal("%s: Unable to parse %s: %s",
-				      __func__, hostport, gai_strerror(rc));
-		}
+		if (!(addrlist = get_addr_info(parsed_hp->host,
+					       parsed_hp->port)))
+			fatal("Unable to listen on %s", hostport);
 	}
 
 	/*
