@@ -126,25 +126,14 @@ static __thread char *thread_username = NULL;
 
 static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 {
-	char *alg, *kid, *n, *e, *key, *x5c, *kty;
+	char *alg, *kid, *n, *e, *key;
 
 	if (!(kid = data_get_string(data_key_get(d, "kid"))))
 		fatal("%s: failed to load kid field", __func__);
 
-	alg = data_get_string(data_key_get(d, "alg"));
-	kty = data_get_string(data_key_get(d, "kty"));
-	x5c = data_get_string(data_key_get(d, "x5c"));
-
-	if (kty && x5c && !xstrcasecmp(kty, "RSA") && x5c[0]) {
-		debug3("x5c for kid %s is %s", kid, x5c);
-
-		data_set_int(data_key_set(d, "slurm-pem-len"), strlen(x5c));
-		data_set_string_own(data_key_set(d, "slurm-pem"), x5c);
-		return DATA_FOR_EACH_CONT;
-	}
-
-	/* Ignore non-RS256 keys in the JWKS */
-	if (xstrcasecmp(alg, "RS256"))
+	/* Ignore non-RS256 keys in the JWKS if algorthim is provided */
+	if ((alg = data_get_string(data_key_get(d, "alg"))) &&
+	    xstrcasecmp(alg, "RS256"))
 		return DATA_FOR_EACH_CONT;
 
 	if (!(e = data_get_string(data_key_get(d, "e"))))
