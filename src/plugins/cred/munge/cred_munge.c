@@ -224,8 +224,7 @@ again:
 	return 0;
 }
 
-extern int cred_p_verify_sign(char *buffer, uint32_t buf_size,
-			      char *signature, uint32_t sig_size)
+extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
 {
 	int retry = RETRY_COUNT;
 	uid_t uid;

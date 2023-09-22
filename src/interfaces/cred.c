@@ -72,7 +72,7 @@ typedef struct {
 	int   (*cred_sign)		(char *buffer, int buf_size,
 					 char **sig_pp, uint32_t *sig_size_p);
 	int   (*cred_verify_sign)	(char *buffer, uint32_t buf_size,
-					 char *signature, uint32_t sig_size);
+					 char *signature);
 	const char *(*cred_str_error)	(int);
 } slurm_cred_ops_t;
 
@@ -1172,8 +1172,7 @@ static void _cred_verify_signature(slurm_cred_t *cred)
 	void *start = get_buf_data(cred->buffer);
 	uint32_t len = get_buf_offset(cred->buffer);
 
-	rc = (*(ops.cred_verify_sign))(start, len, cred->signature,
-				       strlen(cred->signature));
+	rc = (*(ops.cred_verify_sign))(start, len, cred->signature);
 
 	if (rc) {
 		error("Credential signature check: %s",
@@ -1581,8 +1580,7 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 		 * created by SlurmUser or root */
 		rc = (*(ops.cred_verify_sign))(get_buf_data(buffer),
 					       get_buf_offset(buffer),
-					       sbcast_cred->signature,
-					       sbcast_cred->siglen);
+					       sbcast_cred->signature);
 		FREE_NULL_BUFFER(buffer);
 
 		if (rc) {
@@ -1622,8 +1620,7 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 					  protocol_version);
 			rc = (*(ops.cred_verify_sign))(get_buf_data(buffer),
 						       get_buf_offset(buffer),
-						       sbcast_cred->signature,
-						       sbcast_cred->siglen);
+						       sbcast_cred->signature);
 			FREE_NULL_BUFFER(buffer);
 			if (rc)
 				err_str = (char *)(*(ops.cred_str_error))(rc);

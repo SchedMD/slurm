@@ -111,8 +111,7 @@ extern int cred_p_sign(char *buffer, int buf_size, char **sig_pp,
 	return SLURM_SUCCESS;
 }
 
-extern int cred_p_verify_sign(char *buffer, uint32_t buf_size,
-			      char *signature, uint32_t sig_size)
+extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
 {
 	char *correct_signature = "fake signature";
 	if (xstrcmp(signature, correct_signature))
