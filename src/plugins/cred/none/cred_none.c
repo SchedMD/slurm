@@ -102,11 +102,9 @@ extern const char *cred_p_str_error(int errnum)
 }
 
 /* NOTE: Caller must xfree the signature returned by sig_pp */
-extern int cred_p_sign(char *buffer, int buf_size, char **sig_pp,
-		       uint32_t *sig_size_p)
+extern int cred_p_sign(char *buffer, int buf_size, char **signature)
 {
-	*sig_pp = xstrdup("fake signature");
-	*sig_size_p = strlen(*sig_pp);
+	*signature = xstrdup("fake signature");
 
 	return SLURM_SUCCESS;
 }

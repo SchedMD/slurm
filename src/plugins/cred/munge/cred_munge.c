@@ -191,8 +191,7 @@ extern const char *cred_p_str_error(int errnum)
 }
 
 /* NOTE: Caller must xfree the signature returned by sig_pp */
-extern int cred_p_sign(char *buffer, int buf_size,
-		       char **sig_pp, uint32_t *sig_size_p)
+extern int cred_p_sign(char *buffer, int buf_size, char **signature)
 {
 	int retry = RETRY_COUNT;
 	char *cred;
@@ -217,8 +216,7 @@ again:
 		return err;
 	}
 
-	*sig_size_p = strlen(cred) + 1;
-	*sig_pp = xstrdup(cred);
+	*signature = xstrdup(cred);
 	free(cred);
 	munge_ctx_destroy(ctx);
 	return 0;
