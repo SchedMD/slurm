@@ -402,8 +402,7 @@ static int _job_fits_in_active_row(job_record_t *job_ptr,
 	job_gr_type = _get_part_gr_type(job_ptr->part_ptr);
 	if ((job_gr_type == GS_CPU2) || (job_gr_type == GS_CORE) ||
 	    (job_gr_type == GS_SOCKET)) {
-		return job_fits_into_cores(job_res, p_ptr->active_resmap,
-					   gs_bits_per_node);
+		return job_fits_into_cores(job_res, p_ptr->active_resmap);
 	}
 
 	/* job_gr_type == GS_NODE || job_gr_type == GS_CPU */
