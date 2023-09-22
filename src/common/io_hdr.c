@@ -39,6 +39,7 @@
 #include "src/common/fd.h"
 #include "src/common/io_hdr.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/xstring.h"
 
 /* If this changes, io_hdr_pack|unpack must change. */
 int g_io_hdr_size = sizeof(uint32_t) + 3*sizeof(uint16_t);
@@ -144,8 +145,7 @@ extern int io_init_msg_validate(io_init_msg_t *msg, const char *sig,
 		return SLURM_ERROR;
 	}
 
-	if (msg->io_key_len != sig_len ||
-	    memcmp((void *) sig, (void *) msg->io_key, msg->io_key_len)) {
+	if (xstrcmp(msg->io_key, sig)) {
 		error("Invalid IO init header signature");
 		return SLURM_ERROR;
 	}
