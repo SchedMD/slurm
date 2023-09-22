@@ -24,6 +24,10 @@ documents those changes that are of interest to users and administrators.
  -- auth/jwt - Ignore 'x5c' field in JWKS files.
  -- auth/jwt - Treat 'alg' field as optional in JWKS files.
  -- Allow job_desc.selinux_context to be read from the job_submit.lua script.
+ -- Skip check in slurmstepd that causes a large number of errors in the munge
+    log: "Unauthorized credential for client UID=0 GID=0".  This error will
+    still appear on slurmd/slurmctld/slurmdbd start up and is not a cause for
+    concern.
 
 * Changes in Slurm 23.02.5
 ==========================

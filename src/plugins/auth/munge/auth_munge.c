@@ -141,7 +141,7 @@ int init(void)
 	 * This must not be enabled. Protect against it by ensuring we cannot
 	 * decode a credential restricted to a different uid.
 	 */
-	if (running_in_daemon()) {
+	if (!running_in_slurmstepd() && running_in_daemon()) {
 		auth_credential_t *cred = NULL;
 		char *socket = slurm_auth_opts_to_socket(slurm_conf.authinfo);
 		uid_t uid = getuid() + 1;
