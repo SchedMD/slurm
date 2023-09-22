@@ -1523,22 +1523,27 @@ extern void delete_sbcast_cred(sbcast_cred_t *sbcast_cred)
 	xfree(sbcast_cred);
 }
 
-static void _sbcast_cache_add(sbcast_cred_t *sbcast_cred)
+static uint32_t _sbcast_cache_hash(char *signature)
 {
-	int i;
-	uint32_t sig_num = 0;
-	struct sbcast_cache *new_cache_rec;
+	uint32_t hash = 0;
+	int len = strlen(signature);
 
 	/* Using two bytes at a time gives us a larger number
 	 * and reduces the possibility of a duplicate value */
-	for (i = 0; i < sbcast_cred->siglen; i += 2) {
-		sig_num += (sbcast_cred->signature[i] << 8) +
-			   sbcast_cred->signature[i+1];
+	for (int i = 0; i < len; i += 2) {
+		hash += (signature[i] << 8) + signature[i + 1];
 	}
+
+	return hash;
+}
+
+static void _sbcast_cache_add(sbcast_cred_t *sbcast_cred)
+{
+	struct sbcast_cache *new_cache_rec;
 
 	new_cache_rec = xmalloc(sizeof(struct sbcast_cache));
 	new_cache_rec->expire = sbcast_cred->expiration;
-	new_cache_rec->value  = sig_num;
+	new_cache_rec->value = _sbcast_cache_hash(sbcast_cred->signature);
 	list_append(sbcast_cache_list, new_cache_rec);
 }
 
@@ -1555,8 +1560,7 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 {
 	sbcast_cred_arg_t *arg;
 	struct sbcast_cache *next_cache_rec;
-	uint32_t sig_num = 0;
-	int i, rc;
+	int rc;
 	time_t now = time(NULL);
 	buf_t *buffer;
 
@@ -1586,10 +1590,7 @@ extern sbcast_cred_arg_t *extract_sbcast_cred(sbcast_cred_t *sbcast_cred,
 		char *err_str = NULL;
 		bool cache_match_found = false;
 		list_itr_t *sbcast_iter;
-		for (i = 0; i < sbcast_cred->siglen; i += 2) {
-			sig_num += (sbcast_cred->signature[i] << 8) +
-				   sbcast_cred->signature[i+1];
-		}
+		uint32_t sig_num = _sbcast_cache_hash(sbcast_cred->signature);
 
 		sbcast_iter = list_iterator_create(sbcast_cache_list);
 		while ((next_cache_rec = list_next(sbcast_iter))) {
