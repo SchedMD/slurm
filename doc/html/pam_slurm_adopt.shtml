@@ -92,7 +92,7 @@ Epilog:
 #Only disable linger if this is the last job running for this user.
 O_P=0
 for pid in $(scontrol listpids | awk -v jid=$SLURM_JOB_ID 'NR!=1 { if ($2 != jid && $1 != "-1"){print $1} }'); do
-        ps --noheader -o euser p $pid | grep -q $SLURM_JOB_USER || O_P=1
+        ps --noheader -o euser p $pid | grep -q $SLURM_JOB_USER && O_P=1
 done
 if [ $O_P -eq 0 ]; then
         loginctl disable-linger $SLURM_JOB_USER
@@ -506,6 +506,6 @@ break process adoption with pam_slurm_adopt.</p>
 <p>When using SELinux support in Slurm, the session started via pam_slurm_adopt
 won't necessarily be in the same context as the job it is associated with.</p>
 
-<p style="text-align:center;">Last modified 05 May 2023</p>
+<p style="text-align:center;">Last modified 22 September 2023</p>
 
 <!--#include virtual="footer.txt"-->
