@@ -41,8 +41,7 @@ Usage: squeue [OPTIONS]
       --name=job_name(s)          comma separated list of job names to view
   -v, --verbose                   verbosity level
   -V, --version                   output version information and exit
-  -w, --nodelist=hostlist         list of nodes to view, default is
-                                  all nodes
+  -w, --nodelist=hostlist         list of nodes to view, default is all nodes
       --yaml[=data_parser]        Produce YAML output
 
 Help options:
