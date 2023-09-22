@@ -72,11 +72,11 @@
 #define OPT_LONG_AUTOCOMP     0x112
 
 /* FUNCTIONS */
-static List  _build_job_list( char* str );
-static List  _build_str_list( char* str );
-static List  _build_state_list( char* str );
-static List  _build_step_list( char* str );
-static List  _build_user_list( char* str );
+static list_t *_build_job_list(char *str);
+static list_t *_build_str_list(char *str);
+static list_t *_build_state_list(char *str);
+static list_t *_build_step_list(char *str);
+static list_t *_build_user_list(char *str);
 static char *_get_prefix(char *token);
 static void  _help( void );
 static int   _parse_state( char* str, uint32_t* states );
@@ -87,9 +87,9 @@ static void _parse_long_token( char *token, char *sep, int *field_size,
 static void  _print_options( void );
 static void  _usage( void );
 static void _filter_nodes(void);
-static List _load_clusters_nodes(void);
+static list_t *_load_clusters_nodes(void);
 static void _node_info_list_del(void *data);
-static char *_map_node_name(List clusters_node_info, char *name);
+static char *_map_node_name(list_t *clusters_node_info, char *name);
 
 decl_static_data(help_txt);
 decl_static_data(usage_txt);
@@ -473,7 +473,7 @@ parse_command_line( int argc, char* *argv )
 		params.job_id = job_step_ptr->step_id.job_id;
 	}
 	if (params.user_list && (list_count(params.user_list) == 1)) {
-		ListIterator iterator;
+		list_itr_t *iterator;
 		uint32_t *uid_ptr;
 		iterator = list_iterator_create(params.user_list);
 		while ((uid_ptr = list_next(iterator))) {
@@ -1835,7 +1835,7 @@ _parse_long_token( char *token, char *sep, int *field_size, bool *right_justify,
 static void
 _print_options(void)
 {
-	ListIterator iterator;
+	list_itr_t *iterator;
 	int i;
 	char *license, *name, *part;
 	uint32_t *user;
@@ -1976,10 +1976,9 @@ endit:
  * IN str - comma separated list of job_ids
  * RET List of job_ids (uint32_t)
  */
-static List
-_build_job_list( char* str )
+static list_t *_build_job_list(char *str)
 {
-	List my_list;
+	list_t *my_list;
 	char *end_ptr = NULL, *job = NULL, *tmp_char = NULL;
 	char *my_job_list = NULL;
 	int job_id, array_id;
@@ -2017,10 +2016,9 @@ _build_job_list( char* str )
  * IN str - comma separated list of strings
  * RET List of strings
  */
-static List
-_build_str_list(char* str)
+static list_t *_build_str_list(char *str)
 {
-	List my_list;
+	list_t *my_list;
 	char *elem, *tok = NULL, *tmp_char = NULL, *my_str = NULL;
 
 	if (str == NULL)
@@ -2042,10 +2040,9 @@ _build_str_list(char* str)
  * IN str - comma separated list of job states
  * RET List of enum job_states values
  */
-static List
-_build_state_list( char* str )
+static list_t *_build_state_list(char *str)
 {
-	List my_list;
+	list_t *my_list;
 	char *state = NULL, *tmp_char = NULL, *my_state_list = NULL;
 	uint32_t *state_id = NULL;
 
@@ -2077,10 +2074,9 @@ _build_state_list( char* str )
  * IN str - comma separated list of job_id[array_id].step_id values
  * RET List of job/step_ids (structure of uint32_t's)
  */
-static List
-_build_step_list( char* str )
+static list_t *_build_step_list(char *str)
 {
-	List my_list;
+	list_t *my_list;
 	char *end_ptr = NULL, *step = NULL, *tmp_char = NULL, *tmps_char = NULL;
 	char *job_name = NULL, *step_name = NULL, *my_step_list = NULL;
 	int job_id, array_id, step_id;
@@ -2128,10 +2124,9 @@ _build_step_list( char* str )
  * IN str - comma separated list of user names
  * RET List of UIDs (uint32_t)
  */
-static List
-_build_user_list( char* str )
+static list_t *_build_user_list(char *str)
 {
-	List my_list;
+	list_t *my_list;
 	char *user = NULL;
 	char *tmp_char = NULL, *my_user_list = NULL;
 
@@ -2180,7 +2175,7 @@ static void _filter_nodes(void)
 {
 	char *name = NULL, *nodename = NULL;
 	hostset_t *nodenames = hostset_create(NULL);
-	List clusters_nodes = NULL;
+	list_t *clusters_nodes = NULL;
 
 	/* Retrieve node_info from controllers */
 	if (!(clusters_nodes = _load_clusters_nodes()))
@@ -2221,10 +2216,10 @@ static void _node_info_list_del(void *data)
  *
  * NOTE: caller must free the returned list if not NULL.
  */
-static List _load_clusters_nodes(void)
+static list_t *_load_clusters_nodes(void)
 {
-	List node_info_list = NULL;
-	ListIterator iter = NULL;
+	list_t *node_info_list = NULL;
+	list_itr_t *iter = NULL;
 	node_info_msg_t *node_info = NULL;
 
 	node_info_list = list_create(_node_info_list_del);
@@ -2260,11 +2255,11 @@ static List _load_clusters_nodes(void)
  *
  * NOTE: caller must xfree() the returned name.
  */
-static char *_map_node_name(List clusters_node_info, char *name)
+static char *_map_node_name(list_t *clusters_node_info, char *name)
 {
 	char *nodename = NULL;
 	node_info_msg_t *node_info;
-	ListIterator node_info_itr;
+	list_itr_t *node_info_itr;
 
 	if (!name)
 		return NULL;
