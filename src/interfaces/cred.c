@@ -468,7 +468,11 @@ extern int slurm_cred_get_signature(slurm_cred_t *cred,
 	slurm_rwlock_rdlock(&cred->mutex);
 
 	*datap   = (char *) cred->signature;
-	*datalen = cred->siglen;
+	/*
+	 * For backwards-compatibility reasons, the terminating NUL
+	 * is considered to be part of the signature length.
+	 */
+	*datalen = cred->signature ? strlen(cred->signature) + 1 : 0;
 
 	slurm_rwlock_unlock(&cred->mutex);
 
@@ -702,7 +706,7 @@ extern void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
 	xassert(cred->buffer);
 	xassert(cred->buf_version == protocol_version);
 	packbuf(cred->buffer, buffer);
-	packmem(cred->signature, cred->siglen, buffer);
+	packstr(cred->signature, buffer);
 
 	slurm_rwlock_unlock(&cred->mutex);
 }
@@ -717,7 +721,6 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 	 */
 	slurm_cred_arg_t *cred = NULL;
 	char *bit_fmt_str = NULL;
-	char       **sigp;
 	uint32_t tot_core_cnt;
 	uint32_t cred_start, cred_len;
 
@@ -848,11 +851,9 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 
 		safe_unpackstr(&cred->selinux_context, buffer);
 
-		/* "sigp" must be last */
 		cred_len = get_buf_offset(buffer) - cred_start;
-		sigp = (char **) &credential->signature;
-		safe_unpackmem_xmalloc(sigp, &len, buffer);
-		credential->siglen = len;
+		/* signature must come after the end of the signed portion */
+		safe_unpackstr(&credential->signature, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
@@ -973,11 +974,9 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 
 		safe_unpackstr(&cred->selinux_context, buffer);
 
-		/* "sigp" must be last */
 		cred_len = get_buf_offset(buffer) - cred_start;
-		sigp = (char **) &credential->signature;
-		safe_unpackmem_xmalloc(sigp, &len, buffer);
-		credential->siglen = len;
+		/* signature must come after the end of the signed portion */
+		safe_unpackstr(&credential->signature, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
@@ -1091,12 +1090,9 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 		}
 
 		safe_unpackstr(&cred->selinux_context, buffer);
-
-		/* "sigp" must be last */
 		cred_len = get_buf_offset(buffer) - cred_start;
-		sigp = (char **) &credential->signature;
-		safe_unpackmem_xmalloc(sigp, &len, buffer);
-		credential->siglen = len;
+		/* signature must come after the end of the signed portion */
+		safe_unpackstr(&credential->signature, buffer);
 	} else {
 		error("slurm_cred_unpack: protocol_version"
 		      " %hu not supported", protocol_version);
@@ -1122,7 +1118,7 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 	 * cross-check that the signature matches up later.
 	 * (Only done in slurmd.)
 	 */
-	if (credential->siglen && running_in_slurmd())
+	if (credential->signature && running_in_slurmd())
 		_cred_verify_signature(credential);
 
 	return credential;
@@ -1156,11 +1152,11 @@ static slurm_cred_t *_slurm_cred_alloc(bool alloc_arg)
 static int _cred_sign(slurm_cred_t *cred)
 {
 	int rc;
+	uint32_t tmp;
 
 	rc = (*(ops.cred_sign))(get_buf_data(cred->buffer),
 				get_buf_offset(cred->buffer),
-				&cred->signature,
-				&cred->siglen);
+				&cred->signature, &tmp);
 
 	if (rc) {
 		error("Credential sign: %s",
@@ -1176,10 +1172,8 @@ static void _cred_verify_signature(slurm_cred_t *cred)
 	void *start = get_buf_data(cred->buffer);
 	uint32_t len = get_buf_offset(cred->buffer);
 
-	debug("Checking credential with %u bytes of sig data", cred->siglen);
-
 	rc = (*(ops.cred_verify_sign))(start, len, cred->signature,
-				       cred->siglen);
+				       strlen(cred->signature));
 
 	if (rc) {
 		error("Credential signature check: %s",

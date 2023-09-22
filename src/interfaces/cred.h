@@ -145,7 +145,6 @@ typedef struct {
 
 	time_t ctime;		/* time of credential creation */
 	char *signature;	/* credential signature */
-	uint32_t siglen;	/* signature length in bytes */
 	bool verified;		/* credential has been verified successfully */
 } slurm_cred_t;
 
