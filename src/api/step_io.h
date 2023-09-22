@@ -50,7 +50,6 @@ typedef struct {
 					 * NO_VAL */
 
 	char *io_key;
-	uint32_t io_key_len;
 
 	/* internal variables */
 	bool io_running;		/* I/O thread running */

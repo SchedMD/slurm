@@ -58,7 +58,6 @@
 typedef struct {
 	uint16_t      version;
 	char          *io_key;
-	uint32_t      io_key_len;
 	uint32_t      nodeid;
 	uint32_t      stdout_objs;
 	uint32_t      stderr_objs;

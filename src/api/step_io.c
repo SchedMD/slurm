@@ -1098,7 +1098,6 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 		return NULL;
 	}
 	cio->io_key = xmalloc(siglen);
-	cio->io_key_len = siglen;
 	memcpy(cio->io_key, sig, siglen);
 	/* no need to free "sig", it is just a pointer into the credential */
 
