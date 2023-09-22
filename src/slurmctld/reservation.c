@@ -300,14 +300,6 @@ static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt)
 	}
 }
 
-static void _create_cluster_core_bitmap(bitstr_t **core_bitmap)
-{
-	if (*core_bitmap)
-		return;
-
-	*core_bitmap = bit_alloc(cr_get_coremap_offset(node_record_count));
-}
-
 static List _list_dup(List license_list)
 {
 	ListIterator iter;
@@ -1800,7 +1792,7 @@ static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 		return SLURM_ERROR;
 	}
 
-	_create_cluster_core_bitmap(&resv_ptr->core_bitmap);
+	node_conf_create_cluster_core_bitmap(&resv_ptr->core_bitmap);
 	for (i = 0, node_inx = -1;
 	     next_node_bitmap(resv_ptr->core_resrcs->node_bitmap, &i); i++) {
 		node_inx++;
@@ -5184,7 +5176,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 
 	/* create core bitmap if cores are requested */
 	if (resv_desc_ptr->core_cnt != NO_VAL) {
-		_create_cluster_core_bitmap(&core_bitmaps[SELECT_ALL_RSVD]);
+		node_conf_create_cluster_core_bitmap(&core_bitmaps[SELECT_ALL_RSVD]);
 
 		for (int i = 0; i < SELECT_ALL_RSVD; i++)
 			core_bitmaps[i] =
@@ -5789,7 +5781,7 @@ static void _check_job_compatibility(job_record_t *job_ptr,
 	}
 
 	full_node_bitmap = bit_copy(job_res->node_bitmap);
-	_create_cluster_core_bitmap(core_bitmap);
+	node_conf_create_cluster_core_bitmap(core_bitmap);
 
 	i_node = 0;
 	res_inx = 0;

@@ -506,4 +506,12 @@ extern void node_conf_set_all_active_bits(bitstr_t *b);
  * NOTE: Like strtok_r() characters in s may be modified.
  */
 extern char *node_conf_nodestr_tokenize(char *s, char **save_ptr);
+
+/*
+ * Make a bitmap the size of the full cluster.
+ * IN/OUT core_bitmap - If *core_bitmap noop, otherwise create a bitstr_t the
+ *                      size of the cluster.
+ */
+extern void node_conf_create_cluster_core_bitmap(bitstr_t **core_bitmap);
+
 #endif /* !_HAVE_NODE_CONF_H */
