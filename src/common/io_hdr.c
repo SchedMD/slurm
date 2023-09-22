@@ -132,8 +132,7 @@ fail:
 	return n;
 }
 
-extern int io_init_msg_validate(io_init_msg_t *msg, const char *sig,
-				uint32_t sig_len)
+extern int io_init_msg_validate(io_init_msg_t *msg, const char *sig)
 {
 	debug2("Entering io_init_msg_validate");
 
