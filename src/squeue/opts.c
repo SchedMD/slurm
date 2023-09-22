@@ -51,6 +51,7 @@
 #include "src/common/read_config.h"
 #include "src/common/xstring.h"
 #include "src/common/proc_args.h"
+#include "src/common/ref.h"
 #include "src/common/uid.h"
 #include "src/interfaces/serializer.h"
 
@@ -89,6 +90,9 @@ static void _filter_nodes(void);
 static List _load_clusters_nodes(void);
 static void _node_info_list_del(void *data);
 static char *_map_node_name(List clusters_node_info, char *name);
+
+decl_static_data(help_txt);
+decl_static_data(usage_txt);
 
 /*
  * parse_command_line
@@ -2153,70 +2157,20 @@ _build_user_list( char* str )
 	return my_list;
 }
 
-static void _usage(void)
-{
-	printf("\
-Usage: squeue [-A account] [--clusters names] [-i seconds] [--job jobid]\n\
-              [-n name] [-o format] [-p partitions] [--qos qos]\n\
-              [--reservation reservation] [--sort fields] [--start]\n\
-              [--step step_id] [-t states] [-u user_name] [--usage]\n\
-              [-L licenses] [-w nodes] [--federation] [--local] [--sibling]\n\
-              [--json=data_parser] [--yaml=data_parser]\n\
-	      [-ahjlrsv]\n");
-}
-
 static void _help(void)
 {
-	printf("\
-Usage: squeue [OPTIONS]\n\
-  -A, --account=account(s)        comma separated list of accounts\n\
-				  to view, default is all accounts\n\
-  -a, --all                       display jobs in hidden partitions\n\
-      --federation                Report federated information if a member\n\
-                                  of one\n\
-  -h, --noheader                  no headers on output\n\
-      --hide                      do not display jobs in hidden partitions\n\
-  -i, --iterate=seconds           specify an interation period\n\
-  -j, --job=job(s)                comma separated list of jobs IDs\n\
-                                  to view, default is all\n\
-      --json[=data_parser]        Produce JSON output\n\
-      --local                     Report information only about jobs on the\n\
-                                  local cluster. Overrides --federation.\n\
-  -l, --long                      long report\n\
-  -L, --licenses=(license names)  comma separated list of license names to view\n\
-  -M, --clusters=cluster_name     cluster to issue commands to.  Default is\n\
-                                  current cluster.  cluster with no name will\n\
-                                  reset to default. Implies --local.\n\
-  -n, --name=job_name(s)          comma separated list of job names to view\n\
-      --noconvert                 don't convert units from their original type\n\
-                                  (e.g. 2048M won't be converted to 2G).\n\
-  -o, --format=format             format specification\n\
-  -O, --Format=format             format specification\n\
-  -p, --partition=partition(s)    comma separated list of partitions\n\
-				  to view, default is all partitions\n\
-  -q, --qos=qos(s)                comma separated list of qos's\n\
-				  to view, default is all qos's\n\
-  -R, --reservation=name          reservation to view, default is all\n\
-  -r, --array                     display one job array element per line\n\
-      --sibling                   Report information about all sibling jobs\n\
-                                  on a federated cluster. Implies --federation.\n\
-  -s, --step=step(s)              comma separated list of job steps\n\
-				  to view, default is all\n\
-  -S, --sort=fields               comma separated list of fields to sort on\n\
-      --start                     print expected start times of pending jobs\n\
-  -t, --states=states             comma separated list of states to view,\n\
-				  default is pending and running,\n\
-				  '--states=all' reports all states\n\
-  -u, --user=user_name(s)         comma separated list of users to view\n\
-      --name=job_name(s)          comma separated list of job names to view\n\
-  -v, --verbose                   verbosity level\n\
-  -V, --version                   output version information and exit\n\
-  -w, --nodelist=hostlist         list of nodes to view, default is \n\
-				  all nodes\n\
-      --yaml[=data_parser]        Produce YAML output\n\
-\nHelp options:\n\
-  --help                          show this help message\n\
-  --usage                         display a brief summary of squeue options\n");
+	char *txt;
+	static_ref_to_cstring(txt, help_txt);
+	printf("%s", txt);
+	xfree(txt);
+}
+
+static void _usage(void)
+{
+	char *txt;
+	static_ref_to_cstring(txt, usage_txt);
+	printf("%s", txt);
+	xfree(txt);
 }
 
 /*

@@ -1,0 +1,50 @@
+Usage: squeue [OPTIONS]
+  -A, --account=account(s)        comma separated list of accounts
+				  to view, default is all accounts
+  -a, --all                       display jobs in hidden partitions
+      --federation                Report federated information if a member
+                                  of one
+  -h, --noheader                  no headers on output
+      --hide                      do not display jobs in hidden partitions
+  -i, --iterate=seconds           specify an interation period
+  -j, --job=job(s)                comma separated list of jobs IDs
+                                  to view, default is all
+      --json[=data_parser]        Produce JSON output
+      --local                     Report information only about jobs on the
+                                  local cluster. Overrides --federation.
+  -l, --long                      long report
+  -L, --licenses=(license names)  comma separated list of license names to view
+  -M, --clusters=cluster_name     cluster to issue commands to.  Default is
+                                  current cluster.  cluster with no name will
+                                  reset to default. Implies --local.
+  -n, --name=job_name(s)          comma separated list of job names to view
+      --noconvert                 don't convert units from their original type
+                                  (e.g. 2048M won't be converted to 2G).
+  -o, --format=format             format specification
+  -O, --Format=format             format specification
+  -p, --partition=partition(s)    comma separated list of partitions
+				  to view, default is all partitions
+  -q, --qos=qos(s)                comma separated list of qos's
+				  to view, default is all qos's
+  -R, --reservation=name          reservation to view, default is all
+  -r, --array                     display one job array element per line
+      --sibling                   Report information about all sibling jobs
+                                  on a federated cluster. Implies --federation.
+  -s, --step=step(s)              comma separated list of job steps
+				  to view, default is all
+  -S, --sort=fields               comma separated list of fields to sort on
+      --start                     print expected start times of pending jobs
+  -t, --states=states             comma separated list of states to view,
+				  default is pending and running,
+				  '--states=all' reports all states
+  -u, --user=user_name(s)         comma separated list of users to view
+      --name=job_name(s)          comma separated list of job names to view
+  -v, --verbose                   verbosity level
+  -V, --version                   output version information and exit
+  -w, --nodelist=hostlist         list of nodes to view, default is
+				  all nodes
+      --yaml[=data_parser]        Produce YAML output
+
+Help options:
+  --help                          show this help message
+  --usage                         display a brief summary of squeue options
