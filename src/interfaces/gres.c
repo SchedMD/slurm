@@ -3160,6 +3160,18 @@ static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_ns,
 		gres_ns->type_cnt -= num_type_rem;
 	}
 
+	for (int i = 0; i < gres_ns->topo_cnt; i++) {
+		if (_find_gres_type(gres_ns, gres_ns->topo_type_id[i]) < 0) {
+			if (reason_down && (*reason_down == NULL)) {
+				xstrfmtcat(*reason_down,
+					   "%s type (%s) reported but not configured",
+					   gres_name,
+					   gres_ns->topo_type_name[i]);
+			}
+			return SLURM_ERROR;
+		}
+	}
+
 	return SLURM_SUCCESS;
 }
 
