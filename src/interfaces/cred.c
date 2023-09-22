@@ -1496,7 +1496,6 @@ extern sbcast_cred_t *create_sbcast_cred(sbcast_cred_arg_t *arg,
 	_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
 	rc = (*(ops.cred_sign))(get_buf_data(buffer), get_buf_offset(buffer),
 				&sbcast_cred->signature);
-	sbcast_cred->siglen = strlen(sbcast_cred->signature) + 1;
 	FREE_NULL_BUFFER(buffer);
 
 	if (rc) {
@@ -1655,10 +1654,9 @@ extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 			     uint16_t protocol_version)
 {
 	xassert(sbcast_cred);
-	xassert(sbcast_cred->siglen > 0);
 
 	_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
-	packmem(sbcast_cred->signature, sbcast_cred->siglen, buffer);
+	packstr(sbcast_cred->signature, buffer);
 }
 
 /* Unpack an sbcast credential into a buffer including the digital signature */
@@ -1680,10 +1678,9 @@ extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer,
 				    buffer);
 		safe_unpackstr(&sbcast_cred->nodes, buffer);
 
-		/* "sigp" must be last */
-		safe_unpackmem_xmalloc(&sbcast_cred->signature,
-				       &sbcast_cred->siglen, buffer);
-		if (!sbcast_cred->siglen)
+		/* "signature" must be last */
+		safe_unpackstr(&sbcast_cred->signature, buffer);
+		if (!sbcast_cred->signature)
 			goto unpack_error;
 	} else
 		goto unpack_error;

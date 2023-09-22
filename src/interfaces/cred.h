@@ -163,7 +163,6 @@ typedef struct sbcast_cred {
 	uint32_t *gids;		/* extended group ids for user		*/
 	char *nodes;		/* nodes for which credential is valid	*/
 	char *signature;	/* credential signature			*/
-	uint32_t siglen;	/* signature length in bytes		*/
 } sbcast_cred_t;
 
 /* Used by slurm_cred_get() */
