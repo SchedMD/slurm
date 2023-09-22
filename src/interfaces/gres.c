@@ -6322,6 +6322,67 @@ static bool _validate_node_gres_cnt(uint32_t job_id, List job_gres_list,
 	return rc;
 }
 
+static bool _validate_node_gres_type(uint32_t job_id, List job_gres_list,
+				     int node_inx, List node_gres_list,
+				     char *node_name)
+{
+	ListIterator job_gres_iter;
+	gres_state_t *gres_state_job;
+	gres_job_state_t *gres_js;
+	gres_node_state_t *gres_ns;
+	gres_state_t *gres_state_node;
+	uint32_t plugin_id;
+	bool rc = true;
+
+	if (!job_gres_list)
+		return true;
+
+	xassert(gres_context_cnt >= 0);
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
+		gres_js = gres_state_job->gres_data;
+		if (!gres_js || !gres_js->gres_bit_alloc)
+			continue;
+		if ((node_inx >= gres_js->node_cnt) ||
+		    !gres_js->gres_bit_alloc[node_inx])
+			continue;
+		if (gres_js->type_id == NO_VAL)
+			continue;
+
+		if (!node_gres_list)
+			return false;
+
+		if (gres_id_shared(gres_state_job->config_flags))
+			plugin_id = gpu_plugin_id;
+		else
+			plugin_id = gres_state_job->plugin_id;
+
+		if ((gres_state_node = list_find_first(node_gres_list,
+						       gres_find_id,
+						       &plugin_id))) {
+			bool found_type = false;
+			gres_ns = gres_state_node->gres_data;
+			for (int i = 0; i < gres_ns->type_cnt; i++) {
+				if (gres_ns->type_id[i] == gres_js->type_id) {
+					found_type = true;
+					break;
+				}
+			}
+			if (!found_type) {
+				error("%s: Killing job %u: gres/%s type %s not found on node %s",
+				      __func__, job_id, gres_state_job->gres_name,
+				      gres_js->type_name, node_name);
+				      rc = false;
+				break;
+			}
+		}
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	return rc;
+}
+
 /*
  * Determine if a job's specified GRES are currently valid. This is designed to
  * manage jobs allocated GRES which are either no longer supported or a GRES
@@ -6349,6 +6410,12 @@ extern int gres_job_revalidate2(uint32_t job_id, List job_gres_list,
 		if (!_validate_node_gres_cnt(job_id, job_gres_list, node_inx,
 					     node_ptr->gres_list,
 					     node_ptr->name)) {
+			rc = ESLURM_INVALID_GRES;
+			break;
+		}
+		if (!_validate_node_gres_type(job_id, job_gres_list, node_inx,
+					      node_ptr->gres_list,
+					      node_ptr->name)) {
 			rc = ESLURM_INVALID_GRES;
 			break;
 		}
