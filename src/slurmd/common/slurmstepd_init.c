@@ -615,9 +615,12 @@ extern void pack_stepd_reconf(buf_t *buffer, uint16_t protocol_version)
  */
 extern void unpack_stepd_reconf(buf_t *buffer)
 {
+	xfree(slurm_conf.control_addr);
 	safe_unpackstr_array(&slurm_conf.control_addr,
 			     &slurm_conf.control_cnt, buffer);
+	xfree(slurm_conf.slurmctld_addr);
 	safe_unpackstr(&slurm_conf.slurmctld_addr, buffer);
+
 	safe_unpack32(&slurm_conf.slurmctld_port, buffer);
 	safe_unpack16(&slurm_conf.slurmctld_port_count, buffer);
 
