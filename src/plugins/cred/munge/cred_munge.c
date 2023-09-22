@@ -222,7 +222,13 @@ again:
 	return 0;
 }
 
-extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
+/*
+ * WARNING: the buf_t returned from this is slightly non-standard.
+ * The head points to malloc()'d memory, not xmalloc()'d, and needs
+ * to be managed directly. This is done so the buffer can be used
+ * alongside the unpack functions without an additional memcpy step.
+ */
+static int _decode(char *signature, buf_t **buffer)
 {
 	int retry = RETRY_COUNT;
 	uid_t uid;
@@ -270,14 +276,33 @@ again:
 		error("%s: Unexpected uid (%u) != Slurm uid (%u)",
 		      plugin_type, uid, slurm_conf.slurm_user_id);
 		rc = ESIG_BAD_USERID;
-	} else if (buf_size != buf_out_size)
-		rc = ESIG_BUF_SIZE_MISMATCH;
-	else if (memcmp(buffer, buf_out, buf_size))
-		rc = ESIG_BUF_DATA_MISMATCH;
+		goto end_it;
+	}
+
+	*buffer = create_buf(buf_out, buf_out_size);
+	return SLURM_SUCCESS;
 
 end_it:
 	if (buf_out)
 		free(buf_out);
 	munge_ctx_destroy(ctx);
+	return rc;
+}
+
+extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
+{
+	int rc = SLURM_SUCCESS;
+	buf_t *payload = NULL;
+
+	rc = _decode(signature, &payload);
+
+	if (buf_size != payload->size)
+		rc = ESIG_BUF_SIZE_MISMATCH;
+	else if (memcmp(buffer, payload->head, payload->size))
+		rc = ESIG_BUF_DATA_MISMATCH;
+
+	/* warning: do not use free_buf() on this! */
+	xfree(payload);
+
 	return rc;
 }
