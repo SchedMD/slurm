@@ -115,7 +115,7 @@ extern int cred_p_verify_sign(char *buffer, uint32_t buf_size,
 			      char *signature, uint32_t sig_size)
 {
 	char *correct_signature = "fake signature";
-	if (xstrncmp(signature, correct_signature, sig_size))
+	if (xstrcmp(signature, correct_signature))
 		return ESIG_INVALID;
 	return SLURM_SUCCESS;
 }
