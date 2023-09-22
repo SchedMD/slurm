@@ -656,6 +656,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 	} else if (!xstrcmp(name, "shared") ||
 		   !xstrcmp(name, "oversubscribe")) {
 		lua_pushnumber(L, job_desc->shared);
+	} else if (!xstrcmp(name, "selinux_context")) {
+		lua_pushstring(L, job_desc->selinux_context);
 	} else if (!xstrcmp(name, "site_factor")) {
 		if (job_desc->site_factor == NO_VAL)
 			lua_pushnumber(L, job_desc->site_factor);

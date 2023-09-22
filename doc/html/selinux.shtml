@@ -115,7 +115,7 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
     -- Force a specific context if one wasn't requested
     job_desc.selinux_context = unconfined_u:unconfined_r:slurm_t:s0
   end
-  <b>job_desc.admin_comment = "SELinuxContext=" + job_desc.selinux_context</b>
+  <b>job_desc.admin_comment = "SELinuxContext=" .. job_desc.selinux_context</b>
   return slurm.SUCCESS
 end
 </pre>
@@ -132,6 +132,6 @@ to get this working. Note that that when using this feature and
 pam_slurm_adopt at the same time that the ssh session may not land in the same
 context as the job.</p>
 
-<p style="text-align:center;">Last modified 9 August 2021</p>
+<p style="text-align:center;">Last modified 22 September 2023</p>
 
 <!--#include virtual="footer.txt"-->

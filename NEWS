@@ -238,6 +238,7 @@ documents those changes that are of interest to users and administrators.
     such as pam_slurm_adopt, x11, and job_container/tmpfs.
  -- auth/jwt - Ignore 'x5c' field in JWKS files.
  -- auth/jwt - Treat 'alg' field as optional in JWKS files.
+ -- Allow job_desc.selinux_context to be read from the job_submit.lua script.
 
 * Changes in Slurm 23.02.5
 ==========================
