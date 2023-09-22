@@ -4560,7 +4560,8 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	 * Get the signature of the job credential.  slurmstepd will need
 	 * this to prove its identity when it connects back to srun.
 	 */
-	slurm_cred_get_signature(req->cred, (char **)(&job_cred_sig), &len);
+	job_cred_sig = slurm_cred_get_signature(req->cred);
+	len = strlen(job_cred_sig) + 1;
 	if (len < SLURM_IO_KEY_SIZE) {
 		error("Incorrect slurm cred signature length");
 		goto done2;
@@ -4583,6 +4584,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	}
 
 done2:
+	xfree(job_cred_sig);
 	close(fd);
 done:
 	debug2("update step addrs rc = %d", rc);

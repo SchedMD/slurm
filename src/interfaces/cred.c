@@ -458,25 +458,17 @@ extern void slurm_cred_destroy(slurm_cred_t *cred)
 	xfree(cred);
 }
 
-extern int slurm_cred_get_signature(slurm_cred_t *cred,
-				    char **datap, uint32_t *datalen)
+extern char *slurm_cred_get_signature(slurm_cred_t *cred)
 {
-	xassert(cred    != NULL);
-	xassert(datap   != NULL);
-	xassert(datalen != NULL);
+	char *sig = NULL;
+
+	xassert(cred);
 
 	slurm_rwlock_rdlock(&cred->mutex);
-
-	*datap   = (char *) cred->signature;
-	/*
-	 * For backwards-compatibility reasons, the terminating NUL
-	 * is considered to be part of the signature length.
-	 */
-	*datalen = cred->signature ? strlen(cred->signature) + 1 : 0;
-
+	sig = xstrdup(cred->signature);
 	slurm_rwlock_unlock(&cred->mutex);
 
-	return SLURM_SUCCESS;
+	return sig;
 }
 
 extern void slurm_cred_get_mem(slurm_cred_t *credential, char *node_name,

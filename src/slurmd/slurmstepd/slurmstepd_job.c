@@ -726,8 +726,6 @@ extern srun_info_t *srun_info_create(slurm_cred_t *cred,
 				     slurm_addr_t *ioaddr, uid_t uid,
 				     uint16_t protocol_version)
 {
-	char             *data = NULL;
-	uint32_t          len  = 0;
 	srun_info_t *srun = xmalloc(sizeof(srun_info_t));
 
 	if (!protocol_version || (protocol_version == NO_VAL16))
@@ -741,9 +739,7 @@ extern srun_info_t *srun_info_create(slurm_cred_t *cred,
 	 */
 	if (!cred) return srun;
 
-	slurm_cred_get_signature(cred, &data, &len);
-
-	srun->key = xstrdup(data);
+	srun->key = slurm_cred_get_signature(cred);
 
 	if (ioaddr != NULL)
 		srun->ioaddr    = *ioaddr;

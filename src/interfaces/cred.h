@@ -278,8 +278,7 @@ extern slurm_cred_t *slurm_cred_unpack(buf_t *buffer,
  * Get a pointer to the slurm credential signature
  * (used by slurm IO connections to verify connecting agent)
  */
-extern int slurm_cred_get_signature(slurm_cred_t *cred, char **datap,
-				    uint32_t *len);
+extern char *slurm_cred_get_signature(slurm_cred_t *cred);
 
 /*
  * Retrieve the set of cores that were allocated to the job and step then

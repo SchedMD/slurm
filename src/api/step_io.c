@@ -1077,8 +1077,6 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 				      uint32_t het_job_task_offset)
 {
 	int i;
-	uint32_t siglen;
-	char *sig;
 	uint16_t *ports;
 	client_io_t *cio = xmalloc(sizeof(*cio));
 
@@ -1093,13 +1091,7 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 	else
 		cio->taskid_width = 0;
 
-	if (slurm_cred_get_signature(cred, &sig, &siglen) < 0) {
-		error("%s: invalid credential", __func__);
-		return NULL;
-	}
-	cio->io_key = xmalloc(siglen);
-	memcpy(cio->io_key, sig, siglen);
-	/* no need to free "sig", it is just a pointer into the credential */
+	cio->io_key = slurm_cred_get_signature(cred);
 
 	cio->eio = eio_handle_create(slurm_conf.eio_timeout);
 
