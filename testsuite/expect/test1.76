@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose:  Test of route/topology plugin
+# Purpose:  Test of --cpu-freq options
 ############################################################################
 #  Copyright (C) 2014 Bull S. A. S.
 #		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
@@ -182,7 +182,7 @@ proc test_freq {opt expmin expcur expmax expgov} {
 		set real_error 1
 		if {$opt eq "High"} {
 			if {$tcur > $expcur} {
-				log_warn "--cpu-freq=$opt -- test cur $tcur higher than ($expcur).  This is expected on overclocked systems"
+				log_warn "--cpu-freq=$opt -- test cur $tcur higher than ($expcur).  This is expected as scaling_cur_freq is a kernel estimation."
 				set real_error 0
 			}
 		}
@@ -357,14 +357,12 @@ incr nerr [test_case High 0 $xhigh $xhigh userspace]
 incr nerr [test_case HighM1 0 $xhighm1 0 userspace]
 incr nerr [test_case Medium 0 $xmed 0 userspace]
 incr nerr [test_case $xmed 0 $xmed 0 userspace]
-if {$nfreq > 3} {
-	set mxx [expr $nfreq - 2]
+if {$nfreq > 2} {
+	set mxx [expr $nfreq - 1]
 	set minfrq [lindex $avail_freq 1]
 	set maxfrq [lindex $avail_freq $mxx]
-	set opt "$minfrq-$maxfrq"
-	incr nerr [test_case $opt $minfrq 0 $maxfrq 0]
-	set opt "$opt:userspace"
-	incr nerr [test_case $opt $minfrq 0 0 userspace]
+	set opt "$minfrq-$maxfrq:ondemand"
+	incr nerr [test_case $opt $minfrq 0 $maxfrq ondemand]
 }
 
 if {$nerr != 0} {

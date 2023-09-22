@@ -14,7 +14,9 @@ if test -f "/sys/devices/system/cpu/cpu$1/cpufreq/scaling_governor"
 		exit 0
 fi
 
-sleep 15
+# Calm down the processor with a sleep to reduce the probability of
+# scaling_cur_freq showing incorrect values.
+sleep 3
 smin=$(cat /sys/devices/system/cpu/cpu$1/cpufreq/scaling_min_freq)
 scur=$(cat /sys/devices/system/cpu/cpu$1/cpufreq/scaling_cur_freq)
 smax=$(cat /sys/devices/system/cpu/cpu$1/cpufreq/scaling_max_freq)
