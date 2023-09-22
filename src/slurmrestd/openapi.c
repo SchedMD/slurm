@@ -106,7 +106,6 @@ typedef struct {
 } match_path_string_t;
 
 typedef struct {
-	bool matched;
 	const data_t *dpath;
 	path_t *path;
 	data_t *params;
@@ -754,7 +753,6 @@ static data_for_each_cmd_t _match_path(const data_t *data, void *y)
 {
 	match_path_from_data_t *args = y;
 	entry_t *entry = args->entry;
-	args->matched = false;
 
 	if (!entry->type)
 		return DATA_FOR_EACH_FAIL;
@@ -781,7 +779,6 @@ static data_for_each_cmd_t _match_path(const data_t *data, void *y)
 			    __func__);
 
 	args->entry++;
-	args->matched = true;
 	return DATA_FOR_EACH_CONT;
 }
 
@@ -818,6 +815,7 @@ static int _match_path_from_data(void *x, void *key)
 	match_path_from_data_t *args = key;
 	path_t *path = x;
 	entry_method_t *method;
+	bool matched = false;
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
 		serialize_g_data_to_string(&dst_path, NULL, args->dpath,
@@ -841,13 +839,25 @@ static int _match_path_from_data(void *x, void *key)
 		}
 
 		args->entry = method->entries;
-		data_list_for_each_const(args->dpath, _match_path, args);
+		if (data_list_for_each_const(args->dpath, _match_path,
+					     args) < 0) {
+			debug5("%s: match failed %s",
+			       __func__, args->entry->entry);
+			continue;
+		}
 
-		if (args->matched)
+		/*
+		 * The list is NULL terminated, so if entry->type is not NULL
+		 * we didn't match the whole list, but we already don't have
+		 * anything to compare in request.
+		 */
+		if (!args->entry->type) {
+			matched = true;
 			break;
+		}
 	}
 
-	if (args->matched)
+	if (matched)
 		debug5("%s: match successful for %s(%d, %s) to %s(0x%"PRIXPTR")",
 		       __func__, src_path, args->path->tag,
 		       get_http_method_string(args->method), dst_path,
@@ -861,7 +871,7 @@ static int _match_path_from_data(void *x, void *key)
 	xfree(src_path);
 	xfree(dst_path);
 
-	if (args->matched) {
+	if (matched) {
 		args->tag = path->tag;
 		return 1;
 	} else {
