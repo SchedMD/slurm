@@ -966,20 +966,20 @@ _handle_attach(int fd, stepd_step_rec_t *step, uid_t uid)
 	srun_info_t *srun;
 	int rc = SLURM_SUCCESS;
 	uint32_t *gtids = NULL, *pids = NULL;
+	uint32_t key_len;
 	int len, i;
 
 	debug("_handle_attach for %ps", &step->step_id);
 
 	srun       = xmalloc(sizeof(srun_info_t));
-	srun->key = xmalloc(sizeof(srun_key_t));
 
 	debug("sizeof(srun_info_t) = %d, sizeof(slurm_addr_t) = %d",
 	      (int) sizeof(srun_info_t), (int) sizeof(slurm_addr_t));
 	safe_read(fd, &srun->ioaddr, sizeof(slurm_addr_t));
 	safe_read(fd, &srun->resp_addr, sizeof(slurm_addr_t));
-	safe_read(fd, &srun->key->len, sizeof(uint32_t));
-	srun->key->data = xmalloc(srun->key->len);
-	safe_read(fd, srun->key->data, srun->key->len);
+	safe_read(fd, &key_len, sizeof(uint32_t));
+	srun->key = xmalloc(key_len);
+	safe_read(fd, srun->key, key_len);
 	safe_read(fd, &srun->uid, sizeof(uid_t));
 	safe_read(fd, &srun->protocol_version, sizeof(uint16_t));
 
@@ -1051,7 +1051,7 @@ done:
 		}
 	}
 	if (srun) {
-		srun_key_destroy(srun->key);
+		xfree(srun->key);
 		xfree(srun);
 	}
 	return SLURM_SUCCESS;

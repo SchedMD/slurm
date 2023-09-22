@@ -64,12 +64,7 @@ typedef cpuset_t cpu_set_t;
 #define STEP_CONTAINER_MAGIC 0xa0b9b2ba
 
 typedef struct {
-	char *data;
-	uint32_t len;
-} srun_key_t;
-
-typedef struct {
-	srun_key_t *key;	   /* srun key for IO verification         */
+	char *key;                 /* srun key for IO verification         */
 	slurm_addr_t resp_addr;	   /* response addr for task exit msg      */
 	slurm_addr_t ioaddr;       /* Address to connect on for normal I/O.
 				      Spawn IO uses messages to the normal
@@ -290,8 +285,6 @@ srun_info_t * srun_info_create(slurm_cred_t *cred, slurm_addr_t *respaddr,
 			       uint16_t protocol_version);
 
 void  srun_info_destroy(srun_info_t *srun);
-
-void srun_key_destroy(srun_key_t *key);
 
 stepd_step_task_info_t * task_info_create(int taskid, int gtaskid,
 					  char *ifname, char *ofname,

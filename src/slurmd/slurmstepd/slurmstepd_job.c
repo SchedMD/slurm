@@ -729,9 +729,7 @@ extern srun_info_t *srun_info_create(slurm_cred_t *cred,
 	char             *data = NULL;
 	uint32_t          len  = 0;
 	srun_info_t *srun = xmalloc(sizeof(srun_info_t));
-	srun_key_t       *key  = xmalloc(sizeof(srun_key_t));
 
-	srun->key    = key;
 	if (!protocol_version || (protocol_version == NO_VAL16))
 		protocol_version = SLURM_PROTOCOL_VERSION;
 	srun->protocol_version = protocol_version;
@@ -745,11 +743,7 @@ extern srun_info_t *srun_info_create(slurm_cred_t *cred,
 
 	slurm_cred_get_signature(cred, &data, &len);
 
-	if (data != NULL) {
-		key->len = len;
-		key->data = xmalloc(len);
-		memcpy((void *) key->data, data, len);
-	}
+	srun->key = xstrdup(data);
 
 	if (ioaddr != NULL)
 		srun->ioaddr    = *ioaddr;
@@ -761,14 +755,8 @@ extern srun_info_t *srun_info_create(slurm_cred_t *cred,
 extern void
 srun_info_destroy(srun_info_t *srun)
 {
-	srun_key_destroy(srun->key);
+	xfree(srun->key);
 	xfree(srun);
-}
-
-extern void srun_key_destroy(srun_key_t *key)
-{
-	xfree(key->data);
-	xfree(key);
 }
 
 static stepd_step_task_info_t *_task_info_create(int taskid, int gtaskid,

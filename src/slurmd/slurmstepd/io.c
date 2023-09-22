@@ -1660,8 +1660,7 @@ _send_io_init_msg(int sock, srun_info_t *srun, stepd_step_rec_t *step, bool init
 {
 	io_init_msg_t msg;
 
-	msg.io_key = xmalloc(srun->key->len);
-	memcpy(msg.io_key, srun->key->data, srun->key->len);
+	msg.io_key = xstrdup(srun->key);
 	msg.nodeid = step->nodeid;
 	msg.version = srun->protocol_version;
 
