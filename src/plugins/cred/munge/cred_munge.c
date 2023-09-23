@@ -228,7 +228,7 @@ again:
  * to be managed directly. This is done so the buffer can be used
  * alongside the unpack functions without an additional memcpy step.
  */
-static int _decode(char *signature, buf_t **buffer)
+static int _decode(char *signature, bool replay_okay, buf_t **buffer)
 {
 	int retry = RETRY_COUNT;
 	uid_t uid;
@@ -256,20 +256,17 @@ again:
 		if (err == EMUNGE_SOCKET)
 			error("If munged is up, restart with --num-threads=10");
 
-#ifdef MULTIPLE_SLURMD
 		if (err != EMUNGE_CRED_REPLAYED) {
 			rc = err;
 			goto end_it;
-		} else {
-			debug2("We had a replayed credential, but this is expected in multiple slurmd mode.");
 		}
-#else
-		if (err == EMUNGE_CRED_REPLAYED)
+
+		if (!replay_okay) {
 			rc = ESIG_CRED_REPLAYED;
-		else
-			rc = err;
-		goto end_it;
-#endif
+			goto end_it;
+		}
+
+		debug2("We had a replayed credential, but this is expected.");
 	}
 
 	if ((uid != slurm_conf.slurm_user_id) && (uid != 0)) {
@@ -292,9 +289,14 @@ end_it:
 extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
 {
 	int rc = SLURM_SUCCESS;
+	bool replay_okay = false;
 	buf_t *payload = NULL;
 
-	rc = _decode(signature, &payload);
+#ifdef MULTIPLE_SLURMD
+	replay_okay = true;
+#endif
+
+	rc = _decode(signature, replay_okay, &payload);
 
 	if (buf_size != payload->size)
 		rc = ESIG_BUF_SIZE_MISMATCH;
