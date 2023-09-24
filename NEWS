@@ -51,6 +51,9 @@ documents those changes that are of interest to users and administrators.
     select plugin to DebugFlags=SelectType. These info logs could spam the
     slurmctld log file under certain circumstances.
  -- prep/script - Fix [Srun|Task]<Prolog|Epilog> missing SLURM_JOB_NODELIST.
+ -- gres - Rebuild GRES core bitmap for nodes at startup. This fixes error:
+    "Core bitmaps size mismatch on node [HOSTNAME]", which causes jobs to enter
+    state "Requested node configuration is not available".
 
 * Changes in Slurm 23.02.5
 ==========================
