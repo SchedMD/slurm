@@ -140,6 +140,11 @@ typedef struct constraint_slot {
 	uint64_t flags;
 } constraint_slot_t;
 
+typedef struct {
+	bitstr_t *core_bitmap;
+	bitstr_t *node_bitmap;
+} resv_select_t;
+
 /*
  * the associated functions are the following
  */
@@ -179,24 +184,22 @@ static List _list_dup(List license_list);
 static buf_t *_open_resv_state_file(char **state_file);
 static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 		       bool internal, uint16_t protocol_version);
-static void _pick_nodes(bitstr_t *avail_nodes,
-			resv_desc_msg_t *resv_desc_ptr,
-			bitstr_t **core_bitmap,
-			bitstr_t **selected_node_bitmap);
-static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
-			       bitstr_t **core_bitmaps,
-			       resv_desc_msg_t *resv_desc_ptr,
-			       bitstr_t **ret_node_bitmap,
-			       bitstr_t **ret_core_bitmap,
+static void _pick_nodes(resv_desc_msg_t *resv_desc_ptr,
+			resv_select_t *resv_select,
+			resv_select_t *resv_select_ret);
+static int _pick_nodes_ordered(resv_desc_msg_t *resv_desc_ptr,
+			       resv_select_t *resv_select,
+			       int resv_select_cnt,
+			       resv_select_t *resv_select_ret,
 			       const char **bitmap_tags);
-static bitstr_t *_pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
-						 resv_desc_msg_t *resv_desc_ptr,
-						 bitstr_t **core_bitmap,
-						 int total_node_cnt,
-						 List feature_list);
-static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
-				resv_desc_msg_t *resv_desc_ptr,
-				uint32_t node_cnt, bitstr_t **core_bitmap);
+static void _pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
+					    resv_desc_msg_t *resv_desc_ptr,
+					    resv_select_t *resv_select_ret,
+					    int total_node_cnt,
+					    List feature_list);
+static bitstr_t *_pick_node_cnt(resv_desc_msg_t *resv_desc_ptr,
+				resv_select_t *resv_select,
+				uint32_t node_cnt);
 static int  _post_resv_create(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_delete(slurmctld_resv_t *resv_ptr);
 static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
@@ -211,8 +214,8 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 			       slurmctld_resv_t *resv_ptr);
 static void _run_script(char *script, slurmctld_resv_t *resv_ptr, char *name);
 static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
-			  part_record_t **part_ptr, bitstr_t **resv_bitmap,
-			  bitstr_t **core_bitmap);
+			  part_record_t **part_ptr,
+			  resv_select_t *resv_select_ret);
 static int  _set_assoc_list(slurmctld_resv_t *resv_ptr);
 static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			  slurmctld_resv_t *old_resv_ptr);
@@ -233,9 +236,17 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr);
 static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
 				  List user_assoc_list, uid_t uid);
 
+static void _free_resv_select_members(resv_select_t *resv_select)
+{
+	if (!resv_select)
+		return;
+
+	FREE_NULL_BITMAP(resv_select->core_bitmap);
+	FREE_NULL_BITMAP(resv_select->node_bitmap);
+}
+
 static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
-			      bitstr_t *avail_node_bitmap,
-			      bitstr_t **core_bitmap)
+			      resv_select_t *resv_select)
 {
 	job_record_t *job_ptr;
 	resv_exc_t resv_exc = { 0 };
@@ -245,13 +256,13 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 	xassert(resv_desc_ptr);
 	xassert(resv_desc_ptr->job_ptr);
 
-	resv_exc.core_bitmap = core_bitmap ? *core_bitmap : NULL;
+	resv_exc.core_bitmap = resv_select->core_bitmap;
 	resv_exc.exc_cores = core_bitmap_to_array(resv_exc.core_bitmap);
 
 	job_ptr = resv_desc_ptr->job_ptr;
 
 	rc = select_g_job_test(
-		job_ptr, avail_node_bitmap, job_ptr->details->min_nodes,
+		job_ptr, resv_select->node_bitmap, job_ptr->details->min_nodes,
 		job_ptr->details->max_nodes,
 		job_ptr->details->min_nodes,
 		SELECT_MODE_WILL_RUN, NULL, NULL,
@@ -263,20 +274,21 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 		return NULL;
 	}
 
-	if ((resv_desc_ptr->core_cnt != NO_VAL) && core_bitmap) {
-		if (*core_bitmap)
-			bit_clear_all(*core_bitmap);
+	if ((resv_desc_ptr->core_cnt != NO_VAL)) {
+		if (resv_select->core_bitmap)
+			bit_clear_all(resv_select->core_bitmap);
 
 		/*
 		 * ncpus will usually only have a core count here, total_cpus is
 		 * always correct.
 		 */
 		job_ptr->job_resrcs->ncpus = job_ptr->total_cpus;
-		add_job_to_cores(job_ptr->job_resrcs, core_bitmap);
+		add_job_to_cores(job_ptr->job_resrcs,
+				 &resv_select->core_bitmap);
 	} else
 		free_job_resources(&job_ptr->job_resrcs);
 
-	return bit_copy(avail_node_bitmap);
+	return bit_copy(resv_select->node_bitmap);
 }
 
 static void _set_boot_time(slurmctld_resv_t *resv_ptr)
@@ -2766,8 +2778,6 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	int i, rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 	part_record_t *part_ptr = NULL;
-	bitstr_t *node_bitmap = NULL;
-	bitstr_t *core_bitmap = NULL;
 	slurmctld_resv_t *resv_ptr = NULL;
 	int account_cnt = 0, user_cnt = 0;
 	char **account_list = NULL;
@@ -2775,6 +2785,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	List license_list = (List) NULL;
 	uint32_t total_node_cnt = 0;
 	bool account_not = false, user_not = false;
+	resv_select_t resv_select = { 0 };
 
 	_create_resv_lists(false);
 
@@ -3001,38 +3012,40 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		if (xstrcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			if (resv_desc_ptr->partition && part_ptr &&
 			    (resv_desc_ptr->flags & RESERVE_FLAG_PART_NODES)) {
-				node_bitmap = bit_copy(part_ptr->node_bitmap);
+				resv_select.node_bitmap =
+					bit_copy(part_ptr->node_bitmap);
 			} else {
 				resv_desc_ptr->flags &=
 					(~RESERVE_FLAG_PART_NODES);
 				resv_desc_ptr->flags |= RESERVE_FLAG_ALL_NODES;
-				node_bitmap = node_conf_get_active_bitmap();
+				resv_select.node_bitmap =
+					node_conf_get_active_bitmap();
 			}
 			xfree(resv_desc_ptr->node_list);
 			resv_desc_ptr->node_list =
-				bitmap2node_name(node_bitmap);
+				bitmap2node_name(resv_select.node_bitmap);
 		} else {
 			resv_desc_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
 			if (node_name2bitmap(resv_desc_ptr->node_list,
-					    false, &node_bitmap)) {
+					    false, &resv_select.node_bitmap)) {
 				rc = ESLURM_INVALID_NODE_NAME;
 				goto bad_parse;
 			}
 			xfree(resv_desc_ptr->node_list);
-			resv_desc_ptr->node_list = bitmap2node_name(node_bitmap);
+			resv_desc_ptr->node_list = bitmap2node_name(resv_select.node_bitmap);
 		}
-		if (bit_set_count(node_bitmap) == 0) {
+		if (bit_set_count(resv_select.node_bitmap) == 0) {
 			info("Reservation node list is empty");
 			rc = ESLURM_INVALID_NODE_NAME;
 			goto bad_parse;
 		}
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP) &&
-		    _resv_overlap(resv_desc_ptr, node_bitmap, NULL)) {
+		    _resv_overlap(resv_desc_ptr, resv_select.node_bitmap, NULL)) {
 			info("Reservation request overlaps another");
 			rc = ESLURM_RESERVATION_OVERLAP;
 			goto bad_parse;
 		}
-		total_node_cnt = bit_set_count(node_bitmap);
+		total_node_cnt = bit_set_count(resv_select.node_bitmap);
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) &&
 		    (resv_desc_ptr->core_cnt == NO_VAL)) {
 			uint64_t flags = resv_desc_ptr->flags;
@@ -3046,7 +3059,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			flags &= ~RESERVE_FLAG_TIME_FLOAT;
 
 			if (_job_overlap(resv_desc_ptr->start_time, flags,
-					 node_bitmap, NULL)) {
+					 resv_select.node_bitmap, NULL)) {
 				info("Reservation request overlaps jobs");
 				rc = ESLURM_NODES_BUSY;
 				goto bad_parse;
@@ -3066,7 +3079,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 				job_mgr_copy_resv_desc_to_job_record(
 					resv_desc_ptr);
 			rc = _select_nodes(resv_desc_ptr, &part_ptr,
-					   &node_bitmap, &core_bitmap);
+					   &resv_select);
 			if (rc != SLURM_SUCCESS)
 				goto bad_parse;
 		}
@@ -3082,7 +3095,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 				job_mgr_copy_resv_desc_to_job_record(
 					resv_desc_ptr);
 			rc = _select_nodes(resv_desc_ptr, &part_ptr,
-					   &node_bitmap, &core_bitmap);
+					   &resv_select);
 		}
 		if (rc != SLURM_SUCCESS) {
 			goto bad_parse;
@@ -3090,10 +3103,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 
 		/* Get count of allocated nodes, on BlueGene systems, this
 		 * might be more than requested */
-		total_node_cnt = bit_set_count(node_bitmap);
+		total_node_cnt = bit_set_count(resv_select.node_bitmap);
 	}
 
-	if ((resv_desc_ptr->core_cnt != NO_VAL) && !core_bitmap) {
+	if ((resv_desc_ptr->core_cnt != NO_VAL) && !resv_select.core_bitmap) {
 		info("Attempt to reserve cores not possible with current "
 		     "configuration");
 		rc = ESLURM_INVALID_CPU_COUNT;
@@ -3107,7 +3120,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	 * options.
 	 */
 	if ((resv_desc_ptr->flags & RESERVE_FLAG_ANY_NODES) &&
-	    !total_node_cnt && !core_bitmap && !resv_desc_ptr->burst_buffer &&
+	    !total_node_cnt && !resv_select.core_bitmap && !resv_desc_ptr->burst_buffer &&
 	    (!license_list || list_is_empty(license_list)) &&
 	    (!resv_desc_ptr->resv_watts ||
 	     resv_desc_ptr->resv_watts == NO_VAL)) {
@@ -3191,10 +3204,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	resv_ptr->node_cnt	= total_node_cnt;
 	resv_ptr->node_list	= resv_desc_ptr->node_list;
 	resv_desc_ptr->node_list = NULL;	/* Nothing left to free */
-	resv_ptr->node_bitmap	= node_bitmap;	/* May be unset */
-	node_bitmap = NULL;
-	resv_ptr->core_bitmap	= core_bitmap;	/* May be unset */
-	core_bitmap = NULL;
+	resv_ptr->node_bitmap	= resv_select.node_bitmap; /* May be unset */
+	resv_select.node_bitmap = NULL;
+	resv_ptr->core_bitmap	= resv_select.core_bitmap; /* May be unset */
+	resv_select.core_bitmap = NULL;
 	resv_ptr->partition	= resv_desc_ptr->partition;
 	resv_desc_ptr->partition = NULL;	/* Nothing left to free */
 	resv_ptr->part_ptr	= part_ptr;
@@ -3243,9 +3256,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	for (i = 0; i < account_cnt; i++)
 		xfree(account_list[i]);
 	xfree(account_list);
-	FREE_NULL_BITMAP(core_bitmap);
 	FREE_NULL_LIST(license_list);
-	FREE_NULL_BITMAP(node_bitmap);
+	_free_resv_select_members(&resv_select);
 	xfree(user_list);
 	return rc;
 }
@@ -4451,10 +4463,11 @@ static void _validate_all_reservations(void)
 static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 {
 	bitstr_t *preserve_bitmap = NULL;
-	bitstr_t *core_bitmap = NULL, *new_bitmap = NULL, *tmp_bitmap = NULL;
+	bitstr_t *tmp_bitmap = NULL;
 	resv_desc_msg_t resv_desc;
 	int i, add_nodes, new_nodes, preserve_nodes, busy_nodes_needed;
 	bool log_it = true;
+	resv_select_t resv_select = { 0 };
 
 	/* Identify nodes which can be preserved in this reservation */
 	preserve_bitmap = bit_copy(resv_ptr->node_bitmap);
@@ -4500,21 +4513,23 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 		resv_desc.job_ptr =
 			job_mgr_copy_resv_desc_to_job_record(&resv_desc);
 		/* exclude already reserved nodes from new resv request */
-		new_bitmap = bit_copy(resv_ptr->part_ptr->node_bitmap);
-		bit_and_not(new_bitmap, resv_ptr->node_bitmap);
+		resv_select.node_bitmap =
+			bit_copy(resv_ptr->part_ptr->node_bitmap);
+		bit_and_not(resv_select.node_bitmap, resv_ptr->node_bitmap);
 
-		i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &new_bitmap,
-				  &core_bitmap);
+		i = _select_nodes(&resv_desc, &resv_ptr->part_ptr,
+				  &resv_select);
 		xfree(resv_desc.node_list);
 		xfree(resv_desc.partition);
 		if (i == SLURM_SUCCESS) {
 			job_record_t *job_ptr = resv_desc.job_ptr;
 
-			new_nodes = bit_set_count(new_bitmap);
+			new_nodes = bit_set_count(resv_select.node_bitmap);
 			busy_nodes_needed = resv_ptr->node_cnt - new_nodes
 					    - preserve_nodes;
 			if (busy_nodes_needed > 0) {
-				bit_and_not(resv_ptr->node_bitmap, preserve_bitmap);
+				bit_and_not(resv_ptr->node_bitmap,
+					    preserve_bitmap);
 				tmp_bitmap = bit_pick_cnt(resv_ptr->node_bitmap,
 							  busy_nodes_needed);
 				bit_and(resv_ptr->node_bitmap, tmp_bitmap);
@@ -4523,10 +4538,11 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 			} else {
 				bit_and(resv_ptr->node_bitmap, preserve_bitmap);
 			}
-			bit_or(resv_ptr->node_bitmap, new_bitmap);
-			FREE_NULL_BITMAP(new_bitmap);
+			bit_or(resv_ptr->node_bitmap, resv_select.node_bitmap);
+			FREE_NULL_BITMAP(resv_select.node_bitmap);
 			FREE_NULL_BITMAP(resv_ptr->core_bitmap);
-			resv_ptr->core_bitmap = core_bitmap;	/* is NULL */
+			resv_ptr->core_bitmap = resv_select.core_bitmap;
+			resv_select.core_bitmap = NULL;
 			free_job_resources(&resv_ptr->core_resrcs);
 			resv_ptr->core_resrcs = job_ptr->job_resrcs;
 			job_ptr->job_resrcs = NULL;
@@ -4572,7 +4588,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 				__func__, resv_ptr->name);
 			log_it = false;
 		}
-		FREE_NULL_BITMAP(new_bitmap);
+		_free_resv_select_members(&resv_select);
 	}
 	FREE_NULL_BITMAP(preserve_bitmap);
 	last_resv_update = time(NULL);
@@ -4585,10 +4601,9 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
  */
 static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 {
-	bitstr_t *tmp_bitmap = NULL;
-	bitstr_t *core_bitmap = NULL;
 	int i;
 	resv_desc_msg_t resv_desc;
+	resv_select_t resv_select = { 0 };
 
 	if ((resv_ptr->node_bitmap == NULL) ||
 	    (!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) &&
@@ -4626,20 +4641,21 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc.job_ptr = job_mgr_copy_resv_desc_to_job_record(&resv_desc);
 	/* Exclude self reserved nodes only if reservation contains any nodes */
 	if (resv_ptr->node_bitmap) {
-		tmp_bitmap = bit_copy(avail_node_bitmap);
-		bit_and(tmp_bitmap, resv_ptr->part_ptr->node_bitmap);
-		bit_and_not(tmp_bitmap, resv_ptr->node_bitmap);
+		resv_select.node_bitmap = bit_copy(avail_node_bitmap);
+		bit_and(resv_select.node_bitmap, resv_ptr->part_ptr->node_bitmap);
+		bit_and_not(resv_select.node_bitmap, resv_ptr->node_bitmap);
 	}
-	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap,
-			  &core_bitmap);
+
+	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &resv_select);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
 	if (i == SLURM_SUCCESS) {
 		job_record_t *job_ptr = resv_desc.job_ptr;
 		bit_and(resv_ptr->node_bitmap, avail_node_bitmap);
-		bit_or(resv_ptr->node_bitmap, tmp_bitmap);
+		bit_or(resv_ptr->node_bitmap, resv_select.node_bitmap);
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
-		resv_ptr->core_bitmap = core_bitmap;
+		resv_ptr->core_bitmap = resv_select.core_bitmap;
+		resv_select.core_bitmap = NULL;
 		free_job_resources(&resv_ptr->core_resrcs);
 		resv_ptr->core_resrcs = job_ptr->job_resrcs;
 		job_ptr->job_resrcs = NULL;
@@ -4657,7 +4673,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 		      "can't reallocate now", resv_ptr->name);
 	}
 	job_mgr_list_delete_job(resv_desc.job_ptr);
-	FREE_NULL_BITMAP(tmp_bitmap);
+	_free_resv_select_members(&resv_select);
 }
 
 /*
@@ -4943,10 +4959,10 @@ extern int validate_job_resv(job_record_t *job_ptr)
 
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 {
-	bitstr_t *tmp1_bitmap = NULL, *tmp2_bitmap = NULL;
-	bitstr_t *core_bitmap = NULL;
+	bitstr_t *tmp2_bitmap = NULL;
 	int delta_node_cnt, i;
 	resv_desc_msg_t resv_desc;
+	resv_select_t resv_select = { 0 };
 
 	delta_node_cnt = resv_ptr->node_cnt - node_cnt;
 	if (delta_node_cnt == 0)	/* Already correct node count */
@@ -4955,14 +4971,14 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	if (delta_node_cnt > 0) {	/* Must decrease node count */
 		if (bit_overlap_any(resv_ptr->node_bitmap, idle_node_bitmap)) {
 			/* Start by eliminating idle nodes from reservation */
-			tmp1_bitmap = bit_copy(resv_ptr->node_bitmap);
-			bit_and(tmp1_bitmap, idle_node_bitmap);
-			i = bit_set_count(tmp1_bitmap);
+			resv_select.node_bitmap = bit_copy(resv_ptr->node_bitmap);
+			bit_and(resv_select.node_bitmap, idle_node_bitmap);
+			i = bit_set_count(resv_select.node_bitmap);
 			if (i > delta_node_cnt) {
-				tmp2_bitmap = bit_pick_cnt(tmp1_bitmap,
+				tmp2_bitmap = bit_pick_cnt(resv_select.node_bitmap,
 							   delta_node_cnt);
 				bit_and_not(resv_ptr->node_bitmap, tmp2_bitmap);
-				FREE_NULL_BITMAP(tmp1_bitmap);
+				FREE_NULL_BITMAP(resv_select.node_bitmap);
 				FREE_NULL_BITMAP(tmp2_bitmap);
 				delta_node_cnt = 0;	/* ALL DONE */
 			} else if (i) {
@@ -4973,14 +4989,14 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 				delta_node_cnt = resv_ptr->node_cnt -
 						 node_cnt;
 			}
-			FREE_NULL_BITMAP(tmp1_bitmap);
+			FREE_NULL_BITMAP(resv_select.node_bitmap);
 		}
 		if (delta_node_cnt > 0) {
 			/* Now eliminate allocated nodes from reservation */
-			tmp1_bitmap = bit_pick_cnt(resv_ptr->node_bitmap,
-						   node_cnt);
+			resv_select.node_bitmap =
+				bit_pick_cnt(resv_ptr->node_bitmap, node_cnt);
 			FREE_NULL_BITMAP(resv_ptr->node_bitmap);
-			resv_ptr->node_bitmap = tmp1_bitmap;
+			resv_ptr->node_bitmap = resv_select.node_bitmap;
 		}
 		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
@@ -5008,12 +5024,12 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 
 	/* Exclude self reserved nodes only if reservation contains any nodes */
 	if (resv_ptr->node_bitmap) {
-		tmp1_bitmap = bit_copy(resv_ptr->part_ptr->node_bitmap);
-		bit_and_not(tmp1_bitmap, resv_ptr->node_bitmap);
+		resv_select.node_bitmap =
+			bit_copy(resv_ptr->part_ptr->node_bitmap);
+		bit_and_not(resv_select.node_bitmap, resv_ptr->node_bitmap);
 	}
 
-	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp1_bitmap,
-			  &core_bitmap);
+	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &resv_select);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
 	if (i == SLURM_SUCCESS) {
@@ -5025,12 +5041,14 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 		 * node_bitmap.
 		 */
 		if (resv_ptr->node_bitmap)
-			bit_or(resv_ptr->node_bitmap, tmp1_bitmap);
+			bit_or(resv_ptr->node_bitmap, resv_select.node_bitmap);
 		else
-			resv_ptr->node_bitmap = bit_copy(tmp1_bitmap);
-		FREE_NULL_BITMAP(tmp1_bitmap);
+			resv_ptr->node_bitmap = bit_copy(
+				resv_select.node_bitmap);
+		FREE_NULL_BITMAP(resv_select.node_bitmap);
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
-		resv_ptr->core_bitmap = core_bitmap;
+		resv_ptr->core_bitmap = resv_select.core_bitmap;
+		resv_select.core_bitmap = NULL;
 		free_job_resources(&resv_ptr->core_resrcs);
 		resv_ptr->core_resrcs = job_ptr->job_resrcs;
 		job_ptr->job_resrcs = NULL;
@@ -5068,8 +5086,8 @@ static int _have_mor_feature(void *x, void *key)
  * reservations.
  */
 static void _filter_resv(resv_desc_msg_t *resv_desc_ptr,
-			 slurmctld_resv_t *resv_ptr, bitstr_t *node_bitmap,
-			 bitstr_t **core_bitmap, bool filter_overlap)
+			 slurmctld_resv_t *resv_ptr,
+			 resv_select_t *resv_select, bool filter_overlap)
 {
 	if (!filter_overlap &&
 	    ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
@@ -5101,7 +5119,7 @@ static void _filter_resv(resv_desc_msg_t *resv_desc_ptr,
 		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *nodes[2] = {
 				bitmap2node_name(resv_ptr->node_bitmap),
-				bitmap2node_name(node_bitmap)
+				bitmap2node_name(resv_select->node_bitmap)
 			};
 
 			log_flag(RESERVATION,
@@ -5112,13 +5130,13 @@ static void _filter_resv(resv_desc_msg_t *resv_desc_ptr,
 			xfree(nodes[0]);
 			xfree(nodes[1]);
 		}
-		bit_and_not(node_bitmap, resv_ptr->node_bitmap);
+		bit_and_not(resv_select->node_bitmap, resv_ptr->node_bitmap);
 	}
-	if (*core_bitmap && resv_ptr->core_bitmap) {
+	if (resv_select->core_bitmap && resv_ptr->core_bitmap) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *cores[2] = {
 				bit_fmt_full(resv_ptr->core_bitmap),
-				bit_fmt_full(*core_bitmap)
+				bit_fmt_full(resv_select->core_bitmap)
 			};
 
 			log_flag(RESERVATION,
@@ -5129,8 +5147,10 @@ static void _filter_resv(resv_desc_msg_t *resv_desc_ptr,
 			xfree(cores[0]);
 			xfree(cores[1]);
 		}
-		bit_or(*core_bitmap, resv_ptr->core_bitmap);
+		bit_or(resv_select->core_bitmap, resv_ptr->core_bitmap);
 	}
+
+
 }
 
 /*
@@ -5143,12 +5163,11 @@ static void _filter_resv(resv_desc_msg_t *resv_desc_ptr,
  * core_bitmap OUT - cores allocated to reservation
  */
 static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
-			 part_record_t **part_ptr, bitstr_t **resv_bitmap,
-			 bitstr_t **core_bitmap)
+			 part_record_t **part_ptr,
+			 resv_select_t *resv_select_ret)
 {
 	slurmctld_resv_t *resv_ptr;
-	bitstr_t *node_bitmaps[MAX_BITMAPS] = {0};
-	bitstr_t *core_bitmaps[MAX_BITMAPS] = {0};
+	resv_select_t resv_select[MAX_BITMAPS] = { 0 };
 	int max_bitmap = SELECT_ALL_RSVD;
 	time_t now = time(NULL);
 	int rc = SLURM_SUCCESS;
@@ -5176,34 +5195,40 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	job_ptr->partition = xstrdup(resv_desc_ptr->partition);
 	job_ptr->part_ptr = *part_ptr;
 
-	if (*resv_bitmap) {
-		node_bitmaps[SELECT_ALL_RSVD] = *resv_bitmap;
-		*resv_bitmap = NULL;
+	if (resv_select_ret->node_bitmap) {
+		resv_select[SELECT_ALL_RSVD].node_bitmap =
+			resv_select_ret->node_bitmap;
+		resv_select_ret->node_bitmap = NULL;
 	} else {
 		/* Start with all nodes in the partition */
-		node_bitmaps[SELECT_ALL_RSVD] =
+		resv_select[SELECT_ALL_RSVD].node_bitmap =
 			bit_copy((*part_ptr)->node_bitmap);
 	}
 
 	/* clone online from ALL and then filter down nodes */
-	node_bitmaps[SELECT_ONL_RSVD] = bit_copy(node_bitmaps[SELECT_ALL_RSVD]);
-	bit_and(node_bitmaps[SELECT_ONL_RSVD], up_node_bitmap);
+	resv_select[SELECT_ONL_RSVD].node_bitmap =
+		bit_copy(resv_select[SELECT_ALL_RSVD].node_bitmap);
+	bit_and(resv_select[SELECT_ONL_RSVD].node_bitmap, up_node_bitmap);
 
 	/* clone available from ONL and then filter unavailable nodes */
-	node_bitmaps[SELECT_AVL_RSVD] = bit_copy(node_bitmaps[SELECT_ONL_RSVD]);
-	bit_and(node_bitmaps[SELECT_AVL_RSVD], avail_node_bitmap);
+	resv_select[SELECT_AVL_RSVD].node_bitmap =
+		bit_copy(resv_select[SELECT_ONL_RSVD].node_bitmap);
+	bit_and(resv_select[SELECT_AVL_RSVD].node_bitmap, avail_node_bitmap);
 
 	/* populate other node bitmaps from available (AVL) */
-	node_bitmaps[SELECT_NOT_RSVD] = bit_copy(node_bitmaps[SELECT_AVL_RSVD]);
-	node_bitmaps[SELECT_OVR_RSVD] = bit_copy(node_bitmaps[SELECT_AVL_RSVD]);
+	resv_select[SELECT_NOT_RSVD].node_bitmap =
+		bit_copy(resv_select[SELECT_AVL_RSVD].node_bitmap);
+	resv_select[SELECT_OVR_RSVD].node_bitmap =
+		bit_copy(resv_select[SELECT_AVL_RSVD].node_bitmap);
 
 	/* create core bitmap if cores are requested */
 	if (resv_desc_ptr->core_cnt != NO_VAL) {
-		node_conf_create_cluster_core_bitmap(&core_bitmaps[SELECT_ALL_RSVD]);
+		node_conf_create_cluster_core_bitmap(
+			&resv_select[SELECT_ALL_RSVD].core_bitmap);
 
 		for (int i = 0; i < SELECT_ALL_RSVD; i++)
-			core_bitmaps[i] =
-				bit_copy(core_bitmaps[SELECT_ALL_RSVD]);
+			resv_select[i].core_bitmap = bit_copy(
+				resv_select[SELECT_ALL_RSVD].core_bitmap);
 	}
 
 	/*
@@ -5218,12 +5243,10 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			(void)_advance_resv_time(resv_ptr);
 
 		_filter_resv(resv_desc_ptr, resv_ptr,
-			     node_bitmaps[SELECT_NOT_RSVD],
-			     &core_bitmaps[SELECT_NOT_RSVD], true);
+			     &resv_select[SELECT_NOT_RSVD], true);
 
 		_filter_resv(resv_desc_ptr, resv_ptr,
-			     node_bitmaps[SELECT_OVR_RSVD],
-			     &core_bitmaps[SELECT_OVR_RSVD], true);
+			     &resv_select[SELECT_OVR_RSVD], true);
 	}
 	list_iterator_destroy(itr);
 
@@ -5233,12 +5256,9 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		 * Remove reserve red and down nodes unless
 		 * MAINT or OVERLAP
 		 */
-		FREE_NULL_BITMAP(node_bitmaps[SELECT_AVL_RSVD]);
-		FREE_NULL_BITMAP(core_bitmaps[SELECT_AVL_RSVD]);
-		FREE_NULL_BITMAP(node_bitmaps[SELECT_ONL_RSVD]);
-		FREE_NULL_BITMAP(core_bitmaps[SELECT_ONL_RSVD]);
-		FREE_NULL_BITMAP(node_bitmaps[SELECT_ALL_RSVD]);
-		FREE_NULL_BITMAP(core_bitmaps[SELECT_ALL_RSVD]);
+		_free_resv_select_members(&resv_select[SELECT_AVL_RSVD]);
+		_free_resv_select_members(&resv_select[SELECT_ONL_RSVD]);
+		_free_resv_select_members(&resv_select[SELECT_ALL_RSVD]);
 		max_bitmap = SELECT_OVR_RSVD;
 	}
 
@@ -5247,10 +5267,8 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		/*
 		 * Overlap can not select from online/all
 		 */
-		FREE_NULL_BITMAP(node_bitmaps[SELECT_ONL_RSVD]);
-		FREE_NULL_BITMAP(core_bitmaps[SELECT_ONL_RSVD]);
-		FREE_NULL_BITMAP(node_bitmaps[SELECT_ALL_RSVD]);
-		FREE_NULL_BITMAP(core_bitmaps[SELECT_ALL_RSVD]);
+		_free_resv_select_members(&resv_select[SELECT_ONL_RSVD]);
+		_free_resv_select_members(&resv_select[SELECT_ALL_RSVD]);
 		max_bitmap = SELECT_AVL_RSVD;
 	}
 
@@ -5278,15 +5296,18 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		} else if (list_find_first(job_ptr->details->feature_list,
 					   _feature_has_node_cnt, &dummy)) {
 			/* take the core_bitmap */
-			FREE_NULL_BITMAP(*core_bitmap);
-			*core_bitmap = core_bitmaps[max_bitmap];
-			core_bitmaps[max_bitmap] = NULL;
+			FREE_NULL_BITMAP(resv_select_ret->core_bitmap);
+			resv_select_ret->core_bitmap =
+				resv_select[max_bitmap].core_bitmap;
+			resv_select[max_bitmap].core_bitmap = NULL;
 
 			/* Accumulate resources by feature type/count */
 			have_xand = true;
-			*resv_bitmap = _pick_nodes_by_feature_node_cnt(
-				node_bitmaps[max_bitmap], resv_desc_ptr,
-				core_bitmap, total_node_cnt,
+			_pick_nodes_by_feature_node_cnt(
+				resv_select[max_bitmap].node_bitmap,
+				resv_desc_ptr,
+				resv_select_ret,
+				total_node_cnt,
 				job_ptr->details->feature_list);
 		} else {
 			/*
@@ -5295,14 +5316,16 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			 * If that fails, use nodes with the feature available.
 			 */
 			bitstr_t *tmp_bitmap;
-			tmp_bitmap = bit_copy(node_bitmaps[max_bitmap]);
+			tmp_bitmap = bit_copy(resv_select[max_bitmap].
+					      node_bitmap);
 			rc = valid_feature_counts(job_ptr, true, tmp_bitmap,
 						  &dummy);
 			if ((rc == SLURM_SUCCESS) &&
 			    (bit_set_count(tmp_bitmap) < total_node_cnt)) {
 				/* reset tmp_bitmap and try with available */
 				bit_clear_all(tmp_bitmap);
-				bit_or(tmp_bitmap, node_bitmaps[max_bitmap]);
+				bit_or(tmp_bitmap,
+				       resv_select[max_bitmap].node_bitmap);
 				rc = valid_feature_counts(job_ptr, false,
 							  tmp_bitmap, &dummy);
 			}
@@ -5312,44 +5335,43 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 
 			/* filter nodes that won't work from all bitmaps */
-			for (size_t i = 0; (i < MAX_BITMAPS) && node_bitmaps[i];
+			for (size_t i = 0; (i < MAX_BITMAPS) &&
+				     resv_select[i].node_bitmap;
 			     i++)
-				bit_and(node_bitmaps[i], tmp_bitmap);
+				bit_and(resv_select[i].node_bitmap, tmp_bitmap);
 			FREE_NULL_BITMAP(tmp_bitmap);
 		}
 	}
 
 	if (!have_xand && (rc == SLURM_SUCCESS)) {
-		rc = _pick_nodes_ordered(node_bitmaps, core_bitmaps,
-					 resv_desc_ptr, resv_bitmap,
-					 core_bitmap, select_node_bitmap_tags);
+		rc = _pick_nodes_ordered(resv_desc_ptr,
+					 resv_select, MAX_BITMAPS,
+					 resv_select_ret,
+					 select_node_bitmap_tags);
 	}
 
-	/* release all the node bitmaps */
-	for (size_t i = 0; (i < MAX_BITMAPS) && node_bitmaps[i]; i++)
-		FREE_NULL_BITMAP(node_bitmaps[i]);
-
-	/* release all the core bitmaps */
-	for (size_t i = 0; (i < MAX_BITMAPS) && core_bitmaps[i]; i++)
-		FREE_NULL_BITMAP(core_bitmaps[i]);
+	/* release all the resv_select */
+	for (size_t i = 0; (i < MAX_BITMAPS); i++)
+		_free_resv_select_members(&resv_select[i]);
 
 	/* No idle nodes found */
-	if ((*resv_bitmap == NULL) && (rc == SLURM_SUCCESS))
+	if ((resv_select_ret->node_bitmap == NULL) && (rc == SLURM_SUCCESS))
 		rc = ESLURM_NODES_BUSY;
 
 	if (!resv_desc_ptr->node_list)
-		resv_desc_ptr->node_list = bitmap2node_name(*resv_bitmap);
+		resv_desc_ptr->node_list =
+			bitmap2node_name(resv_select_ret->node_bitmap);
 
 	return rc;
 }
 
-static bitstr_t *_pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
-						 resv_desc_msg_t *resv_desc_ptr,
-						 bitstr_t **core_bitmap,
-						 int total_node_cnt,
-						 List feature_list)
+static void _pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
+					    resv_desc_msg_t *resv_desc_ptr,
+					    resv_select_t *resv_select_ret,
+					    int total_node_cnt,
+					    List feature_list)
 {
-	bitstr_t *ret_bitmap = NULL, *tmp_bitmap = NULL, *tmp_avail_bitmap;
+	bitstr_t *tmp_bitmap = NULL;
 	bitstr_t *feature_bitmap;
 	uint32_t save_core_cnt;
 	uint32_t save_node_cnt;
@@ -5360,6 +5382,7 @@ static bitstr_t *_pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
 	bool test_active = true;
 	job_record_t *job_ptr = resv_desc_ptr->job_ptr;
 	job_details_t *detail_ptr = job_ptr->details;
+	resv_select_t resv_select = { 0 };
 
 	save_min_cpus = detail_ptr->min_cpus;
 	save_min_nodes = detail_ptr->min_nodes;
@@ -5402,17 +5425,16 @@ TRY_AVAIL:
 			detail_ptr->min_nodes =
 			resv_desc_ptr->node_cnt =
 			feat_ptr->count ? feat_ptr->count : 1;
-
-		tmp_avail_bitmap = bit_copy(avail_bitmap);
-		bit_and(tmp_avail_bitmap, feature_bitmap);
-		_pick_nodes(tmp_avail_bitmap, resv_desc_ptr,
-			    core_bitmap, &ret_bitmap);
-		FREE_NULL_BITMAP(tmp_avail_bitmap);
-		if (!ret_bitmap)
+		resv_select.node_bitmap = bit_copy(avail_bitmap);
+		bit_and(resv_select.node_bitmap, feature_bitmap);
+		resv_select.core_bitmap = resv_select_ret->core_bitmap;
+		_pick_nodes(resv_desc_ptr, &resv_select, resv_select_ret);
+		FREE_NULL_BITMAP(resv_select.node_bitmap);
+		if (!resv_select_ret->node_bitmap)
 			break;
 	}
 	list_iterator_destroy(feat_iter);
-	if (!ret_bitmap && test_active) {
+	if (!resv_select_ret->node_bitmap && test_active) {
 		/* Test failed for active features, test available features */
 		test_active = false;
 		goto TRY_AVAIL;
@@ -5422,18 +5444,20 @@ TRY_AVAIL:
 	 * We have picked all the featured nodes, if we requested more nodes we
 	 * will now pick those non-featured nodes.
 	 */
-	if (ret_bitmap && (bit_set_count(ret_bitmap) < total_node_cnt)) {
+	if (resv_select_ret->node_bitmap &&
+	    (bit_set_count(resv_select_ret->node_bitmap) < total_node_cnt)) {
 		detail_ptr->orig_min_cpus =
 			detail_ptr->num_tasks =
 			detail_ptr->min_cpus =
 			detail_ptr->max_nodes =
 			detail_ptr->min_nodes =
 			resv_desc_ptr->node_cnt =
-			total_node_cnt - bit_set_count(ret_bitmap);
-		tmp_avail_bitmap = bit_copy(avail_bitmap);
-		_pick_nodes(tmp_avail_bitmap, resv_desc_ptr,
-			    core_bitmap, &ret_bitmap);
-		FREE_NULL_BITMAP(tmp_avail_bitmap);
+			total_node_cnt -
+			bit_set_count(resv_select_ret->node_bitmap);
+		resv_select.node_bitmap = bit_copy(avail_bitmap);
+		resv_select.core_bitmap = resv_select_ret->core_bitmap;
+		_pick_nodes(resv_desc_ptr, &resv_select, resv_select_ret);
+		FREE_NULL_BITMAP(resv_select.node_bitmap);
 	}
 
 	detail_ptr->orig_min_cpus =
@@ -5445,8 +5469,6 @@ TRY_AVAIL:
 
 	resv_desc_ptr->core_cnt = save_core_cnt;
 	resv_desc_ptr->node_cnt = save_node_cnt;
-
-	return ret_bitmap;
 }
 
 /*
@@ -5516,49 +5538,50 @@ static void _validate_core_resrcs(resv_desc_msg_t *resv_desc_ptr,
 
 /*
  * Pick nodes based on ordered list of bitmaps
- * IN avail_bitmaps - bitmap array of size MAX_BITMAPS.
- * 	last pointer must be NULL.
- * 	Ordered list of nodes that could be used for the reservation.
- * 	Will attempt to use nodes from low ordered bitmaps first.
- * IN/OUT core_bitmaps - NULL, or bitmap array of size MAX_BITMAPS.
- * 	last pointer must be NULL.
- * 	Ordered list of cores that could be used for the reservation.
- * 	Will attempt to use cores from low ordered bitmaps first.
- * 	Cores must match nodes in same node avail_bitmap.
- * 	Cores will be updated as chosen.
  * IN/OUT resv_desc_ptr - Reservation requesting nodes.
  * 	node_list will be updated every run.
- * IN/OUT ret_node_bitmap - on success, set to new bitmap of nodes.
- * 	caller must xfree.
- * OUT ret_core_bitmap - on success, set to new bitmap of core
- * 	caller must xfree.
+ * IN/OUT resv_select - array of size MAX_BITMAPS, last pointer must be NULL.
+ *        IN            .node_bitmap - Ordered list of nodes that could be used
+ *                                     for the reservation. Will attempt to use
+ *                                     nodes from low ordered bitmaps first.
+ *        IN/OUT        .core_bitmap - Ordered list of cores that could be used
+ *                                     for the reservation. Will attempt to use
+ *                                     cores from low ordered bitmaps
+ *                                     first. Cores must match nodes in same
+ *                                     node avail_bitmap. Cores will be updated
+ *                                     as chosen.
+ * OUT resv_select_ret - on success set new bitmaps of allocation.
  * IN bitmap_tags - NULL, or array of cstrings giving a tag for each array index
  * 	in the bitmaps
  * RET SLURM_SUCCESS or error
  */
-static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
-			       bitstr_t **core_bitmaps,
-			       resv_desc_msg_t *resv_desc_ptr,
-			       bitstr_t **ret_node_bitmap,
-			       bitstr_t **ret_core_bitmap,
+static int _pick_nodes_ordered(resv_desc_msg_t *resv_desc_ptr,
+			       resv_select_t *resv_select,
+			       int resv_select_cnt,
+			       resv_select_t *resv_select_ret,
 			       const char **bitmap_tags)
 {
-	bitstr_t *selected_bitmap = bit_alloc(bit_size(avail_bitmaps[0]));
+	bitstr_t *selected_bitmap =
+		bit_alloc(bit_size(resv_select[0].node_bitmap));
 	bitstr_t *selected_core_bitmap = NULL;
 	size_t remain_nodes = (resv_desc_ptr->node_cnt == NO_VAL) ?
 		0 : resv_desc_ptr->node_cnt;
 	size_t remain_cores = (resv_desc_ptr->core_cnt == NO_VAL) ?
 		0 : resv_desc_ptr->core_cnt;
 
-	if (core_bitmaps && core_bitmaps[0])
-		selected_core_bitmap = bit_alloc(bit_size(core_bitmaps[0]));
+	if (resv_select[0].core_bitmap)
+		selected_core_bitmap =
+			bit_alloc(bit_size(resv_select[0].core_bitmap));
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 		char *cores = NULL, *nodes = NULL, *pos = NULL;
 		size_t max_bitmap = 0;
 
-		for (size_t b = 0; (b < MAX_BITMAPS) && avail_bitmaps[b]; b++) {
-			char *tmp = bitmap2node_name(avail_bitmaps[b]);
+		for (size_t b = 0; (b < resv_select_cnt) &&
+			     resv_select[b].node_bitmap;
+		     b++) {
+			char *tmp = bitmap2node_name(
+				resv_select[b].node_bitmap);
 			xstrfmtcatat(nodes, &pos, "%s%s[%zu]=%s",
 				     (b == 0 ? "" : ","),
 				     (bitmap_tags ? bitmap_tags[b] : ""),
@@ -5570,8 +5593,9 @@ static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
 		}
 		pos = NULL;
 
-		for (size_t b = 0; (b < MAX_BITMAPS) && core_bitmaps[b]; b++) {
-			char *tmp = bit_fmt_full(core_bitmaps[b]);
+		for (size_t b = 0; (b < resv_select_cnt) &&
+			     resv_select[b].core_bitmap; b++) {
+			char *tmp = bit_fmt_full(resv_select[b].core_bitmap);
 			xstrfmtcatat(cores, &pos, "%s%s[%zu]=%s",
 				     (b == 0 ? "" : ","),
 				     (bitmap_tags ? bitmap_tags[b] : ""),
@@ -5597,16 +5621,17 @@ static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
 	xfree(resv_desc_ptr->node_list);
 
 	for (size_t b = 0; (remain_nodes || remain_cores) &&
-		     (b < MAX_BITMAPS) && avail_bitmaps[b]; b++) {
+		     (b < resv_select_cnt) && resv_select[b].node_bitmap; b++) {
 		bitstr_t *tmp_bitmap;
 		size_t nodes_picked, cores_picked = 0;
 
 		/* Avoid picking already picked nodes */
-		bit_and_not(avail_bitmaps[b], selected_bitmap);
-		if (core_bitmaps && selected_core_bitmap)
-			bit_and_not(core_bitmaps[b], selected_core_bitmap);
+		bit_and_not(resv_select[b].node_bitmap, selected_bitmap);
+		if (selected_core_bitmap)
+			bit_and_not(resv_select[b].core_bitmap,
+				    selected_core_bitmap);
 
-		if (!bit_set_count(avail_bitmaps[b])) {
+		if (!bit_set_count(resv_select[b].node_bitmap)) {
 			log_flag(RESERVATION, "%s: reservation %s skipping empty bitmap:%s[%zu]",
 				 __func__, resv_desc_ptr->name,
 				 (bitmap_tags ? bitmap_tags[b] : ""),
@@ -5615,8 +5640,7 @@ static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
 		}
 
 		tmp_bitmap = _pick_node_cnt(
-			avail_bitmaps[b], resv_desc_ptr, remain_nodes,
-			(core_bitmaps ? &core_bitmaps[b] : NULL));
+			resv_desc_ptr, &resv_select[b], remain_nodes);
 		if (tmp_bitmap == NULL) {	/* allocation failure */
 			log_flag(RESERVATION, "%s: reservation %s of 0/%zu nodes with bitmap:%s[%zu]",
 				 __func__, resv_desc_ptr->name,
@@ -5631,15 +5655,15 @@ static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
 
 		/* grab counts of picked resources */
 		nodes_picked = bit_set_count(tmp_bitmap);
-		if (core_bitmaps[b])
-			cores_picked = bit_set_count(core_bitmaps[b]);
+		if (resv_select[b].core_bitmap)
+			cores_picked = bit_set_count(resv_select[b].core_bitmap);
 
 		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *nodes = bitmap2node_name(tmp_bitmap);
 			char *cores = NULL;
 
-			if (core_bitmaps[b])
-				cores = bit_fmt_full(core_bitmaps[b]);
+			if (resv_select[b].core_bitmap)
+				cores = bit_fmt_full(resv_select[b].core_bitmap);
 
 			log_flag(RESERVATION, "%s: reservation %s picked from bitmap:%s[%zu] nodes[%zu/%zu]:%s cores[%zu]:%s",
 				 __func__, resv_desc_ptr->name,
@@ -5656,7 +5680,7 @@ static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
 		else
 			remain_nodes = 0;
 
-		if (core_bitmaps[b]) {
+		if (resv_select[b].core_bitmap) {
 			if (cores_picked <= remain_cores)
 				remain_cores -= cores_picked;
 			else
@@ -5667,14 +5691,15 @@ static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
 				 * select plugin made a core bitmap, use
 				 * it for selected cores instead
 				 */
-				selected_core_bitmap = core_bitmaps[b];
-				core_bitmaps[b] = NULL;
+				selected_core_bitmap =
+					resv_select[b].core_bitmap;
+				resv_select[b].core_bitmap = NULL;
 			} else
 				bit_or(selected_core_bitmap,
-				       core_bitmaps[b]);
+				       resv_select[b].core_bitmap);
 		}
 		bit_or(selected_bitmap, tmp_bitmap);
-		bit_and_not(avail_bitmaps[b], tmp_bitmap);
+		bit_and_not(resv_select[b].node_bitmap, tmp_bitmap);
 		FREE_NULL_BITMAP(tmp_bitmap);
 
 		if (!remain_nodes) {
@@ -5728,14 +5753,14 @@ static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
 			xfree(cores);
 		}
 
-		if (*ret_node_bitmap) {
-			bit_or(*ret_node_bitmap, selected_bitmap);
+		if (resv_select_ret->node_bitmap) {
+			bit_or(resv_select_ret->node_bitmap, selected_bitmap);
 			FREE_NULL_BITMAP(selected_bitmap);
 		} else {
-			*ret_node_bitmap = selected_bitmap;
+			resv_select_ret->node_bitmap = selected_bitmap;
 		}
 
-		*ret_core_bitmap = selected_core_bitmap;
+		resv_select_ret->core_bitmap = selected_core_bitmap;
 		return SLURM_SUCCESS;
 	}
 }
@@ -5743,16 +5768,15 @@ static int _pick_nodes_ordered(bitstr_t **avail_bitmaps,
 /*
  * Select nodes using given a single node bitmap and/or core_bitmap
  */
-static void _pick_nodes(bitstr_t *avail_bitmap,
-			resv_desc_msg_t *resv_desc_ptr,
-			bitstr_t **core_bitmap,
-			bitstr_t **ret_node_bitmap)
+static void _pick_nodes(resv_desc_msg_t *resv_desc_ptr,
+			resv_select_t *resv_select,
+			resv_select_t *resv_select_ret)
 {
-	bitstr_t *avail_bitmaps[MAX_BITMAPS] = { avail_bitmap };
-	bitstr_t *avail_core_bitmaps[MAX_BITMAPS] = { *core_bitmap };
+	xassert(resv_select);
 
-	if (*ret_node_bitmap)
-		bit_and_not(avail_bitmap, *ret_node_bitmap);
+	if (resv_select_ret->node_bitmap)
+		bit_and_not(resv_select->node_bitmap,
+			    resv_select_ret->node_bitmap);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 		char *nodes = NULL;
@@ -5760,13 +5784,13 @@ static void _pick_nodes(bitstr_t *avail_bitmap,
 		char *cores = NULL;
 		int core_cnt = 0;
 
-		if (avail_bitmap) {
-			nodes = bitmap2node_name(avail_bitmap);
-			node_cnt = bit_set_count(avail_bitmap);
+		if (resv_select->node_bitmap) {
+			nodes = bitmap2node_name(resv_select->node_bitmap);
+			node_cnt = bit_set_count(resv_select->node_bitmap);
 		}
-		if (*core_bitmap) {
-			cores = bit_fmt_full(*core_bitmap);
-			core_cnt = bit_set_count(*core_bitmap);
+		if (resv_select->core_bitmap) {
+			cores = bit_fmt_full(resv_select->core_bitmap);
+			core_cnt = bit_set_count(resv_select->core_bitmap);
 		}
 		log_flag(RESERVATION, "%s: reservation %s picking nodes[%u]:%s cores[%u]:%s",
 			 __func__, resv_desc_ptr->name, node_cnt, nodes,
@@ -5775,17 +5799,17 @@ static void _pick_nodes(bitstr_t *avail_bitmap,
 		xfree(cores);
 	}
 
-	if (_pick_nodes_ordered(avail_bitmaps, avail_core_bitmaps,
-				resv_desc_ptr, ret_node_bitmap, core_bitmap,
+	if (_pick_nodes_ordered(resv_desc_ptr,
+				resv_select, 1,
+				resv_select_ret,
 				(select_node_bitmap_tags + SELECT_ALL_RSVD))) {
 		/* If picking nodes failed clear ret_node_bitmap */
-		FREE_NULL_BITMAP(*ret_node_bitmap);
+		_free_resv_select_members(resv_select_ret);
 	}
 }
 
 static void _check_job_compatibility(job_record_t *job_ptr,
-				     bitstr_t *avail_bitmap,
-				     bitstr_t **core_bitmap)
+				     resv_select_t *resv_select)
 {
 	uint32_t total_nodes;
 	bitstr_t *full_node_bitmap;
@@ -5808,7 +5832,7 @@ static void _check_job_compatibility(job_record_t *job_ptr,
 	}
 
 	full_node_bitmap = bit_copy(job_res->node_bitmap);
-	node_conf_create_cluster_core_bitmap(core_bitmap);
+	node_conf_create_cluster_core_bitmap(&resv_select->core_bitmap);
 
 	i_node = 0;
 	res_inx = 0;
@@ -5843,7 +5867,7 @@ static void _check_job_compatibility(job_record_t *job_ptr,
 				if (bit_test(job_ptr->job_resrcs->core_bitmap,
 					     i_core + start)) {
 					allocated++;
-					bit_set(*core_bitmap,
+					bit_set(resv_select->core_bitmap,
 						global_core_start + i_core);
 				}
 			}
@@ -5855,7 +5879,8 @@ static void _check_job_compatibility(job_record_t *job_ptr,
 				/* We can exclude this node */
 				log_flag(RESERVATION, "%s: %pJ excluding node %d",
 					 __func__, job_ptr, node_bitmap_inx);
-				bit_clear(avail_bitmap, node_bitmap_inx);
+				bit_clear(resv_select->node_bitmap,
+					  node_bitmap_inx);
 			}
 			start += cores_in_a_node;
 			bit_clear(full_node_bitmap, node_bitmap_inx);
@@ -5864,24 +5889,26 @@ static void _check_job_compatibility(job_record_t *job_ptr,
 	FREE_NULL_BITMAP(full_node_bitmap);
 }
 
-static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
-				resv_desc_msg_t *resv_desc_ptr,
-				uint32_t node_cnt, bitstr_t **core_bitmap)
+static bitstr_t *_pick_node_cnt(resv_desc_msg_t *resv_desc_ptr,
+				resv_select_t *resv_select,
+				uint32_t node_cnt)
 {
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
 	bitstr_t *orig_bitmap = NULL, *save_bitmap = NULL;
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap = NULL;
 	int total_node_cnt;
-	bitstr_t *orig_avail_bitmap = NULL, *orig_core_bitmap = NULL;
+	resv_select_t orig_resv_select = { 0 };
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
-		orig_avail_bitmap = bit_copy(avail_bitmap);
-		if (*core_bitmap)
-			orig_core_bitmap = bit_copy(*core_bitmap);
+		orig_resv_select.node_bitmap =
+			bit_copy(resv_select->node_bitmap);
+		if (resv_select->core_bitmap)
+			orig_resv_select.core_bitmap =
+				bit_copy(resv_select->core_bitmap);
 	}
 
-	total_node_cnt = bit_set_count(avail_bitmap);
+	total_node_cnt = bit_set_count(resv_select->node_bitmap);
 	if (total_node_cnt < node_cnt) {
 		verbose("%s: reservation %s requests %d of %d nodes. Reducing requested node count.",
 			__func__, resv_desc_ptr->name, node_cnt,
@@ -5893,19 +5920,18 @@ static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 		   (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS)) {
 		log_flag(RESERVATION, "%s: reservation %s requests all %d nodes",
 			__func__, resv_desc_ptr->name, total_node_cnt);
-		ret_bitmap = _resv_select(resv_desc_ptr,
-					  avail_bitmap, core_bitmap);
+		ret_bitmap = _resv_select(resv_desc_ptr, resv_select);
 		goto fini;
 	} else if ((node_cnt == 0) &&
 		   (resv_desc_ptr->core_cnt == NO_VAL) &&
 		   (resv_desc_ptr->flags & RESERVE_FLAG_ANY_NODES)) {
 		log_flag(RESERVATION, "%s: reservation %s requests any of all %d nodes",
 			__func__, resv_desc_ptr->name, total_node_cnt);
-		ret_bitmap = bit_alloc(bit_size(avail_bitmap));
+		ret_bitmap = bit_alloc(bit_size(resv_select->node_bitmap));
 		goto fini;
 	}
 
-	orig_bitmap = bit_copy(avail_bitmap);
+	orig_bitmap = bit_copy(resv_select->node_bitmap);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
@@ -5914,7 +5940,7 @@ static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 			continue;
 
 		if (resv_desc_ptr->core_cnt == NO_VAL) {
-			bit_and_not(avail_bitmap, job_ptr->node_bitmap);
+			bit_and_not(resv_select->node_bitmap, job_ptr->node_bitmap);
 		} else if (!(resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS)) {
 			/*
 			 * _check_job_compatibility will remove nodes and cores
@@ -5922,24 +5948,23 @@ static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 			 * being used by jobs. Don't do this if the IGNORE_JOBS
 			 * flag is set.
 			 */
-			_check_job_compatibility(job_ptr, avail_bitmap,
-						 core_bitmap);
+			_check_job_compatibility(job_ptr, resv_select);
 		}
 	}
 	list_iterator_destroy(job_iterator);
 
-	total_node_cnt = bit_set_count(avail_bitmap);
+	total_node_cnt = bit_set_count(resv_select->node_bitmap);
 	if (total_node_cnt >= node_cnt) {
 		/*
-		 * NOTE: _resv_select() does NOT preserve avail_bitmap,
+		 * NOTE: _resv_select() does NOT preserve
+		 * resv_select->node_bitmap,
 		 * so we do that here and other calls to that function.
 		 */
-		save_bitmap = bit_copy(avail_bitmap);
-		ret_bitmap = _resv_select(resv_desc_ptr,
-					  avail_bitmap, core_bitmap);
+		save_bitmap = bit_copy(resv_select->node_bitmap);
+		ret_bitmap = _resv_select(resv_desc_ptr, resv_select);
 		if (ret_bitmap)
 			goto fini;
-		bit_or(avail_bitmap, save_bitmap);
+		bit_or(resv_select->node_bitmap, save_bitmap);
 		FREE_NULL_BITMAP(save_bitmap);
 	}
 
@@ -5958,15 +5983,17 @@ static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 			tmp_bitmap = bit_copy(orig_bitmap);
 			bit_and(tmp_bitmap, job_ptr->node_bitmap);
 			if (bit_set_count(tmp_bitmap) > 0)
-				bit_or(avail_bitmap, tmp_bitmap);
-			total_node_cnt = bit_set_count(avail_bitmap);
+				bit_or(resv_select->node_bitmap, tmp_bitmap);
+			total_node_cnt = bit_set_count(
+				resv_select->node_bitmap);
 			if (total_node_cnt >= node_cnt) {
-				save_bitmap = bit_copy(avail_bitmap);
+				save_bitmap = bit_copy(
+					resv_select->node_bitmap);
 				ret_bitmap = _resv_select(
-					resv_desc_ptr,
-					avail_bitmap, core_bitmap);
+					resv_desc_ptr, resv_select);
 				if (!ret_bitmap) {
-					bit_or(avail_bitmap, save_bitmap);
+					bit_or(resv_select->node_bitmap,
+					       save_bitmap);
 					FREE_NULL_BITMAP(save_bitmap);
 				}
 			}
@@ -5983,14 +6010,14 @@ fini:	FREE_NULL_BITMAP(orig_bitmap);
 	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 		char *nodes[2] = {
 			(ret_bitmap ? bitmap2node_name(ret_bitmap) : NULL),
-			bitmap2node_name(orig_avail_bitmap),
+			bitmap2node_name(orig_resv_select.node_bitmap),
 		};
 		char *cores[2] = {0};
 
-		if (*core_bitmap)
-			cores[0] = bit_fmt_full(*core_bitmap);
-		if (orig_core_bitmap)
-			cores[1] = bit_fmt_full(orig_core_bitmap);
+		if (resv_select->core_bitmap)
+			cores[0] = bit_fmt_full(resv_select->core_bitmap);
+		if (orig_resv_select.core_bitmap)
+			cores[1] = bit_fmt_full(orig_resv_select.core_bitmap);
 
 		log_flag(RESERVATION, "%s: reservation %s picked nodes:%s cores:%s from possible_nodes:%s used_cores:%s",
 			 __func__, resv_desc_ptr->name,
@@ -6003,8 +6030,7 @@ fini:	FREE_NULL_BITMAP(orig_bitmap);
 		xfree(nodes[1]);
 		xfree(cores[0]);
 		xfree(cores[1]);
-		FREE_NULL_BITMAP(orig_avail_bitmap);
-		FREE_NULL_BITMAP(orig_core_bitmap);
+		_free_resv_select_members(&orig_resv_select);
 	}
 
 	return ret_bitmap;
