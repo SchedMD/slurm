@@ -3714,7 +3714,7 @@ static int PARSE_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
 		*mem = MEM_PER_CPU | cpu_mem;
 	}
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 static int DUMP_FUNC(JOB_MEM_PER_CPU)(const parser_t *const parser, void *obj,
@@ -3775,7 +3775,7 @@ static int PARSE_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
 		*mem = node_mem;
 	}
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 static int DUMP_FUNC(JOB_MEM_PER_NODE)(const parser_t *const parser, void *obj,
