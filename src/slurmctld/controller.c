@@ -1031,8 +1031,7 @@ static void _send_future_cloud_to_db()
 
 	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		if (!IS_NODE_FUTURE(node_ptr) &&
-		    !(IS_NODE_CLOUD(node_ptr) &&
-		      IS_NODE_POWERED_DOWN(node_ptr)))
+		    !IS_NODE_POWERED_DOWN(node_ptr))
 			continue;
 
 		/*
@@ -1058,7 +1057,6 @@ static void _send_future_cloud_to_db()
 				    xstrdup_printf("%u", NODE_STATE_FUTURE));
 			list_append(event_cond.state_list,
 				    xstrdup_printf("%"PRIu64,
-						   NODE_STATE_CLOUD |
 						   NODE_STATE_POWERED_DOWN));
 
 			event_list = acct_storage_g_get_events(acct_db_conn,

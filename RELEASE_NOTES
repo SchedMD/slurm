@@ -57,6 +57,8 @@ HIGHLIGHTS
     now required to build with PMIx.
  -- Update slurmstepd processes with current SlurmctldHost settings, allowing
     for controller changes without draining all compute jobs.
+ -- sreport - cluster Utilization PlannedDown field now includes the time that
+    all nodes were in the POWERED_DOWN state instead of just cloud nodes.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

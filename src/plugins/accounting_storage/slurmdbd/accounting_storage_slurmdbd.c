@@ -2800,7 +2800,7 @@ extern int clusteracct_storage_p_node_up(void *db_conn, node_record_t *node_ptr,
 	dbd_node_state_msg_t req;
 
 	if (IS_NODE_FUTURE(node_ptr) ||
-	    (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWERED_DOWN(node_ptr)))
+	    IS_NODE_POWERED_DOWN(node_ptr))
 		return SLURM_SUCCESS;
 
 	memset(&req, 0, sizeof(dbd_node_state_msg_t));
@@ -2827,7 +2827,7 @@ extern int clusteracct_storage_p_node_update(void *db_conn,
 	dbd_node_state_msg_t req;
 
 	if (IS_NODE_FUTURE(node_ptr) ||
-	    (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWERED_DOWN(node_ptr)))
+	    IS_NODE_POWERED_DOWN(node_ptr))
 		return SLURM_SUCCESS;
 
 	memset(&req, 0, sizeof(dbd_node_state_msg_t));

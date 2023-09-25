@@ -215,6 +215,8 @@ documents those changes that are of interest to users and administrators.
  -- Add format_stderr to LogTimeFormat of slurm.conf and slurmdbd.conf.
  -- slurmrestd - add `GET /slurm/v0.0.40/reconfigure` endpoint to allow
     equivalent requests of `scontrol reconfigure`.
+ -- sreport - cluster Utilization PlannedDown field now includes the time that
+    all nodes were in the POWERED_DOWN state instead of just cloud nodes.
 
 * Changes in Slurm 23.02.6
 ==========================
