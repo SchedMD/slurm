@@ -4,6 +4,72 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<h2>Presentations from Slurm User Group Meeting, September 2023</h2>
+<ul>
+
+<!-- Tuesday -->
+
+<li>Keynote: <a href="SLUG23/quinoa.pdf">Improving quinoa through the development of genetic and genomic resources</a>,
+David Jarvis, Brigham Young University</li>
+
+<li><a href="SLUG23/NERSC-SLUG23.pdf">Never use Slurm HA again: Solve all your problems with Kubernetes</a>,
+Chris Samuel and Doug Jacobsen, NERSC</li>
+
+<!--<li><a href="SLUG23/">Guardant Health Site Report</a>,
+Younts, Guardant</li>-->
+
+<li><a href="SLUG23/containers-slug23.pdf">Containers in Slurm</a>,
+Scott Hilton, SchedMD</li>
+
+<li><a href="SLUG23/CoreWeave-SLUG23.pdf">The Best of Both Worlds: Slurm on Kubernetes</a>,
+Navarre Pratt and Jacob Feldman, CoreWeave</li>
+
+<li><a href="SLUG23/LLSC-SLUG23.pdf">Optimizing Diverse Workloads and Resource Usage with Slurm</a>,
+Chansup Byun et al, LLSC</li>
+
+<li><a href="SLUG23/REST-API-SLUG23.pdf">Slurm's REST API</a>,
+Nathan Rini, SchedMD</li>
+
+<li><a href="SLUG23/GCP-Recursion-SLUG23.pdf">Build a flexible and powerful High Performance Computing foundation with Google Cloud</a>,
+Volker Eyrich (Google) and Joshua Fryer (Recursion)</li>
+
+<li><a href="SLUG23/Dow-SLUG23.pdf">Demand Driven Cluster Elasticity</a>,
+Mike Fazio, Dow</li>
+
+<li><a href="SLUG23/Field-Notes-7.pdf">Field Notes 7 &ndash; How to make the most of Slurm and avoid common issues</a>,
+Jason Booth, SchedMD</li>
+
+<!-- Wednesday -->
+
+<li><a href="SLUG23/SDSC-SLUG23.pdf">Accelerating Genomics Research Machine Learning with Slurm</a>,
+Willy Markuske, San Diego Supercomputing Center (SDSC)</li>
+
+<li><a href="SLUG23/DTU-SLUG23.pdf">Saving Power with Slurm</a>,
+Ole Nielsen, Technical University of Denmark (DTU)</li>
+
+<li><a href="SLUG23/flux_in_slurm.pdf">Running Flux in Slurm</a>,
+Ryan Day, LLNL</li>
+
+<li><a href="SLUG23/CINECA-SLUG23.pdf">Site Report: CINECA experience with Slurm</a>,
+Alessandro Marani, CINECA</li>
+
+<li><a href="SLUG23/step-management-slug23.pdf">Step Management Enhancements</a>,
+Brian Christiansen, SchedMD</li>
+
+<li><a href="SLUG23/LANL-Batsim-SLUG23.pdf">System and Job Scheduling Simulation For Enhancing Production HPC</a>,
+Vivian Hafener, LANL</li>
+
+<li><a href="SLUG23/GT-SLUG23.pdf">Site Update: Georgia Institute of Technology</a>,
+Marian Zvada and Aaron Jezghani, Georgia Tech</li>
+
+<li><a href="SLUG23/AWS-SLUG23.pdf">Building Blocks in the Cloud: Scaling LEGO Engineering with AWS High-Performance Computing</a>,
+Brian Skjerven and Matt Vaughn, AWS</li>
+
+<li><a href="SLUG23/roadmap-slug23.pdf">Slurm 23.02, 23.11, and Beyond (Roadmap)</a>,
+Tim Wickberg, SchedMD</li>
+
+</ul>
+
 <h2>Presentations from Dell HPC Community, September 2023</h2>
 <ul>
 <li><a href="MISC23/DellHPC_20230906.pdf">Slurm and/or/vs Kubernetes</a>,
@@ -1184,6 +1250,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 6 September 2023</p>
+<p style="text-align:center;">Last modified 24 September 2023</p>
 
 <!--#include virtual="footer.txt"-->
