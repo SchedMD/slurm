@@ -9509,11 +9509,21 @@ extern void gres_g_task_set_env(stepd_step_rec_t *step, int local_proc_id)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
+static void _step_state_log_node(gres_step_state_t *gres_ss, int i)
+{
+	char tmp_str[128];
+	if (gres_ss->gres_bit_alloc[i]) {
+		bit_fmt(tmp_str, sizeof(tmp_str), gres_ss->gres_bit_alloc[i]);
+		info("  gres_bit_alloc[%d]:%s of %d", i, tmp_str,
+		     (int)bit_size(gres_ss->gres_bit_alloc[i]));
+	} else
+		info("  gres_bit_alloc[%d]:NULL", i);
+}
+
 static void _step_state_log(gres_step_state_t *gres_ss,
 			    slurm_step_id_t *step_id,
 			    char *gres_name)
 {
-	char tmp_str[128];
 	int i;
 
 	xassert(gres_ss);
@@ -9541,16 +9551,8 @@ static void _step_state_log(gres_step_state_t *gres_ss,
 		info("  gres_bit_alloc:NULL");
 	else {
 		for (i = 0; i < gres_ss->node_cnt; i++) {
-			if (!bit_test(gres_ss->node_in_use, i))
-				continue;
-			if (gres_ss->gres_bit_alloc[i]) {
-				bit_fmt(tmp_str, sizeof(tmp_str),
-					gres_ss->gres_bit_alloc[i]);
-				info("  gres_bit_alloc[%d]:%s of %d", i,
-				     tmp_str,
-				     (int)bit_size(gres_ss->gres_bit_alloc[i]));
-			} else
-				info("  gres_bit_alloc[%d]:NULL", i);
+			if (bit_test(gres_ss->node_in_use, i))
+				_step_state_log_node(gres_ss, i);
 		}
 	}
 }
