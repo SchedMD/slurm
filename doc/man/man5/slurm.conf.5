@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "September 2023" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "October 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -6018,6 +6018,9 @@ SIGKILL) and execute \fBUnkillableStepProgram\fR.
 The default timeout value is 60 seconds.
 If exceeded, the compute node will be drained to prevent future jobs from being
 scheduled on the node.
+
+\fBNOTE\fR: Ensure that UnkillableStepTimeout is at least 5 times larger than
+MessageTimeout, otherwise it can lead to unexpected draining of nodes.
 .IP
 
 .TP
