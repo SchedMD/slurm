@@ -1263,9 +1263,15 @@ static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_minor,
 			      nvmlErrorString(nvml_rc));
 			return SLURM_ERROR;
 		}
+		xstrfmtcat(nvml_mig->profile_name, "_");
+
+		if (attributes.computeInstanceSliceCount !=
+		    attributes.gpuInstanceSliceCount)
+			xstrfmtcat(nvml_mig->profile_name, "%uc.",
+				   attributes.computeInstanceSliceCount);
 
 		/* Divide MB by 1024 (2^10) to get GB, and then round */
-		xstrfmtcat(nvml_mig->profile_name, "_%ug.%lugb",
+		xstrfmtcat(nvml_mig->profile_name, "%ug.%lugb",
 			   attributes.gpuInstanceSliceCount,
 			   (unsigned long)((attributes.memorySizeMB + 1023) /
 					   1024));
