@@ -1267,9 +1267,8 @@ static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_minor,
 		/* Divide MB by 1024 (2^10) to get GB, and then round */
 		xstrfmtcat(nvml_mig->profile_name, "_%ug.%lugb",
 			   attributes.gpuInstanceSliceCount,
-			   (unsigned long)roundl(
-				   (long double)attributes.memorySizeMB /
-				   (long double)1024));
+			   (unsigned long)((attributes.memorySizeMB + 1023) /
+					   1024));
 	}
 
 	if (_nvml_use_mig_uuid())
