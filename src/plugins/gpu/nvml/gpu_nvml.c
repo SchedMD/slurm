@@ -1226,10 +1226,10 @@ static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_minor,
 		       nvml_mig_t *nvml_mig)
 {
 	nvmlDevice_t mig;
-	nvmlDeviceAttributes_t attributes;
-	nvmlReturn_t nvml_rc;
 	/* Use the V2 size so it can fit extra MIG info */
 	char mig_uuid[NVML_DEVICE_UUID_V2_BUFFER_SIZE] = {0};
+	char device_name[NVML_DEVICE_NAME_BUFFER_SIZE] = {0};
+	char *str;
 	unsigned int gi_id;
 	unsigned int ci_id;
 	unsigned int gi_minor;
@@ -1249,18 +1249,33 @@ static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_minor,
 					&ci_minor) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	nvml_rc = nvmlDeviceGetAttributes(mig, &attributes);
-	if (nvml_rc != NVML_SUCCESS) {
-		error("Failed to get MIG attributes: %s",
-		      nvmlErrorString(nvml_rc));
-		return SLURM_ERROR;
-	}
+	_nvml_get_device_name(&mig, device_name,
+			      NVML_DEVICE_NAME_BUFFER_SIZE);
+	if (device_name[0] && (str = strstr(device_name, "mig_"))) {
+		/* Adding 3 to skip "mig" but keep "_" */
+		xstrfmtcat(nvml_mig->profile_name, "%s", str + 3);
+	} else { /* Backup: generate name from attributes */
+		nvmlDeviceAttributes_t attributes;
+		nvmlReturn_t nvml_rc;
+		nvml_rc = nvmlDeviceGetAttributes(mig, &attributes);
+		if (nvml_rc != NVML_SUCCESS) {
+			error("Failed to get MIG attributes: %s",
+			      nvmlErrorString(nvml_rc));
+			return SLURM_ERROR;
+		}
+		xstrfmtcat(nvml_mig->profile_name, "_");
 
-	/* Divide MB by 1024 (2^10) to get GB, and then round */
-	xstrfmtcat(nvml_mig->profile_name, "_%ug.%lugb",
-		   attributes.gpuInstanceSliceCount,
-		   (unsigned long)roundl((long double)attributes.memorySizeMB /
-					 (long double)1024));
+		if (attributes.computeInstanceSliceCount !=
+		    attributes.gpuInstanceSliceCount)
+			xstrfmtcat(nvml_mig->profile_name, "%uc.",
+				   attributes.computeInstanceSliceCount);
+
+		/* Divide MB by 1024 (2^10) to get GB, and then round */
+		xstrfmtcat(nvml_mig->profile_name, "%ug.%lugb",
+			   attributes.gpuInstanceSliceCount,
+			   (unsigned long)((attributes.memorySizeMB + 1023) /
+					   1024));
+	}
 
 	if (_nvml_use_mig_uuid())
 		xstrfmtcat(nvml_mig->unique_id, "%s", mig_uuid);

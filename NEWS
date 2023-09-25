@@ -244,6 +244,7 @@ documents those changes that are of interest to users and administrators.
     still appear on slurmd/slurmctld/slurmdbd start up and is not a cause for
     concern.
  -- slurmctd - Allow startup with zero partitions.
+ -- Fix some mig profile names in slurm not matching nvidia mig profiles.
 
 * Changes in Slurm 23.02.5
 ==========================
