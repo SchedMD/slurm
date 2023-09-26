@@ -1919,6 +1919,14 @@ static int _watch(void)
 	bool work; /* is there any work to do? */
 
 	slurm_mutex_lock(&mgr.mutex);
+
+	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
+		if (sigaction(catch_signals[i].signal, &catch_signals[i].new,
+			      &catch_signals[i].prior))
+			fatal("%s: unable to catch %s: %m",
+			      __func__, strsignal(catch_signals[i].signal));
+	}
+
 watch:
 	if (mgr.shutdown)
 		_close_all_connections(true);
@@ -2035,11 +2043,19 @@ watch:
 		goto watch;
 	}
 
-	_signal_change(true);
-	slurm_mutex_unlock(&mgr.mutex);
-
-	mgr.shutdown = true;
 	log_flag(NET, "%s: cleaning up", __func__);
+
+	_signal_change(true);
+	mgr.shutdown = true;
+
+	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
+		if (sigaction(catch_signals[i].signal, &catch_signals[i].prior,
+			      NULL))
+			fatal("%s: unable to restore %s: %m",
+			      __func__, strsignal(catch_signals[i].signal));
+	}
+
+	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(NET, "%s: begin waiting for all workers", __func__);
 	/* _watch() is never in the workq so it can wait */
@@ -2065,12 +2081,8 @@ extern int con_mgr_run(void)
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
-		if (sigaction(catch_signals[i].signal, &catch_signals[i].new,
-			      &catch_signals[i].prior))
-			fatal("%s: unable to catch %s: %m",
-			      __func__, strsignal(catch_signals[i].signal));
-	}
+	xassert(!mgr.shutdown);
+	xassert(!mgr.error);
 
 	if (mgr.deferred_funcs) {
 		list_t *deferred_funcs = NULL;
@@ -2087,16 +2099,6 @@ extern int con_mgr_run(void)
 	slurm_mutex_unlock(&mgr.mutex);
 
 	rc = _watch();
-
-	slurm_mutex_lock(&mgr.mutex);
-	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
-		if (sigaction(catch_signals[i].signal, &catch_signals[i].prior,
-			      NULL))
-			fatal("%s: unable to restore %s: %m",
-			      __func__, strsignal(catch_signals[i].signal));
-	}
-
-	slurm_mutex_unlock(&mgr.mutex);
 
 	return rc;
 }
