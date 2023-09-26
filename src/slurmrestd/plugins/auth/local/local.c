@@ -135,7 +135,7 @@ static int _auth_socket(on_http_request_args_t *args,
 			const char *header_user_name)
 {
 	int rc;
-	char *name = args->context->con->name;
+	const char *name = con_mgr_fd_get_name(args->context->con);
 	uid_t cred_uid;
 	gid_t cred_gid;
 	pid_t cred_pid;
@@ -249,7 +249,7 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 
 	const int input_fd = args->context->con->input_fd;
 	const int output_fd = args->context->con->output_fd;
-	const char *name = args->context->con->name;
+	const char *name = con_mgr_fd_get_name(args->context->con);
 
 	xassert(!ctxt->user_name);
 
