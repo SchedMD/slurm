@@ -2920,3 +2920,27 @@ extern const char *con_mgr_fd_get_name(const con_mgr_fd_t *con)
 	xassert(con->name && con->name[0]);
 	return con->name;
 }
+
+extern void con_mgr_fd_get_in_buffer(const con_mgr_fd_t *con,
+				     const void **data_ptr, size_t *bytes_ptr)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->work_active);
+
+	if (data_ptr)
+		*data_ptr = get_buf_data(con->in) + get_buf_offset(con->in);
+	*bytes_ptr = size_buf(con->in);
+}
+
+extern void con_mgr_fd_mark_consumed_in_buffer(const con_mgr_fd_t *con,
+					       size_t bytes)
+{
+	size_t offset;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->work_active);
+
+	offset = get_buf_offset(con->in) + bytes;
+	xassert(offset <= size_buf(con->in));
+	set_buf_offset(con->in, offset);
+}

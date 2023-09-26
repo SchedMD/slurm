@@ -408,4 +408,20 @@ extern int con_mgr_get_error(void);
  */
 extern const char *con_mgr_fd_get_name(const con_mgr_fd_t *con);
 
+/*
+ * Get pointer to data held by input buffer
+ * IN con - connection to query data
+ * IN data_ptr - pointer to set with pointer to buffer data or NULL
+ * IN len_ptr - number of bytes in buffer
+ */
+extern void con_mgr_fd_get_in_buffer(const con_mgr_fd_t *con,
+				     const void **data_ptr, size_t *bytes_ptr);
+
+/*
+ * Mark bytes in input buffer as have been consumed
+ * WARNING: will xassert() if bytes > size of buffer
+ */
+extern void con_mgr_fd_mark_consumed_in_buffer(const con_mgr_fd_t *con,
+					       size_t bytes);
+
 #endif /* _CONMGR_H */
