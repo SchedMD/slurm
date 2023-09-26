@@ -81,6 +81,11 @@ typedef struct {
 	float q; /* quality factor (priority) */
 } http_header_accept_t;
 
+static const char *_name(const on_http_request_args_t *args)
+{
+	return con_mgr_fd_get_name(args->context->con);
+}
+
 static void _check_path_magic(const path_t *path)
 {
 	xassert(path->magic == MAGIC);
@@ -467,7 +472,7 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 		*read_mime = MIME_TYPE_URL_ENCODED;
 
 		debug4("%s: [%s] did not provide a known content type header. Assuming URL encoded.",
-		      __func__, args->context->con->name);
+		       __func__, _name(args));
 	}
 
 	if (args->accept) {
@@ -478,26 +483,25 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 			xassert(ptr->magic == MAGIC_HEADER_ACCEPT);
 
 			debug4("%s: [%s] accepts %s with q=%f",
-			       __func__, args->context->con->name, ptr->type,
-			       ptr->q);
+			       __func__, _name(args), ptr->type, ptr->q);
 
 			if ((*write_mime = resolve_mime_type(ptr->type,
 							     plugin_ptr))) {
 				debug4("%s: [%s] found accepts %s=%s with q=%f",
-				       __func__, args->context->con->name,
-				       ptr->type, *write_mime, ptr->q);
+				       __func__, _name(args), ptr->type,
+				       *write_mime, ptr->q);
 				break;
 			} else {
 				debug4("%s: [%s] rejecting accepts %s with q=%f",
-				       __func__, args->context->con->name,
-				       ptr->type, ptr->q);
+				       __func__, _name(args), ptr->type,
+				       ptr->q);
 			}
 		}
 		list_iterator_destroy(itr);
 		FREE_NULL_LIST(accept);
 	} else {
 		debug3("%s: [%s] Accept header not specified. Defaulting to JSON.",
-		       __func__, args->context->con->name);
+		       __func__, _name(args));
 		*write_mime = MIME_TYPE_JSON;
 	}
 
@@ -524,16 +528,14 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 		 * requests.
 		 */
 		debug("%s: [%s] Overriding content type from %s to %s for %s",
-		      __func__, args->context->con->name,
-		      *read_mime,
-		      MIME_TYPE_URL_ENCODED,
+		      __func__, _name(args), *read_mime, MIME_TYPE_URL_ENCODED,
 		      get_http_method_string(args->method));
 
 		*read_mime = MIME_TYPE_URL_ENCODED;
 	}
 
 	debug3("%s: [%s] mime read: %s write: %s",
-	       __func__, args->context->con->name, *read_mime, *write_mime);
+	       __func__, _name(args), *read_mime, *write_mime);
 
 	return SLURM_SUCCESS;
 }
@@ -552,23 +554,21 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	if (callback) {
 		xassert(!ctxt_callback);
 		debug3("%s: [%s] BEGIN: calling handler: 0x%"PRIXPTR"[%d] for path: %s",
-		       __func__, args->context->con->name, (uintptr_t) callback,
+		       __func__, _name(args), (uintptr_t) callback,
 		       callback_tag, args->path);
 
-		rc = callback(args->context->con->name, args->method, params,
-			      query, callback_tag, resp, args->context->auth,
-			      parser);
+		rc = callback(_name(args), args->method, params, query,
+			      callback_tag, resp, args->context->auth, parser);
 	} else {
 		xassert(ctxt_callback);
 		debug3("%s: [%s] BEGIN: calling ctxt handler: 0x%"PRIXPTR"[%d] for path: %s",
-		       __func__, args->context->con->name,
-		       (uintptr_t) ctxt_callback, callback_tag, args->path);
+		       __func__, _name(args), (uintptr_t) ctxt_callback,
+		       callback_tag, args->path);
 
-		rc = wrap_openapi_ctxt_callback(args->context->con->name,
-						args->method, params, query,
-						callback_tag, resp,
-						args->context->auth, parser,
-						ctxt_callback, meta);
+		rc = wrap_openapi_ctxt_callback(_name(args), args->method,
+						params, query, callback_tag,
+						resp, args->context->auth,
+						parser, ctxt_callback, meta);
 	}
 
 	/*
@@ -644,8 +644,8 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	}
 
 	debug3("%s: [%s] END: calling handler: (0x%"PRIXPTR") callback_tag %d for path: %s rc[%d]=%s status[%d]=%s",
-	       __func__, args->context->con->name, (uintptr_t) callback,
-	       callback_tag, args->path, rc, slurm_strerror(rc), e,
+	       __func__, _name(args), (uintptr_t) callback, callback_tag,
+	       args->path, rc, slurm_strerror(rc), e,
 	       get_http_status_code_string(e));
 
 	xfree(body);
@@ -667,13 +667,12 @@ extern int operations_router(on_http_request_args_t *args)
 	data_parser_t *parser = NULL;
 
 	info("%s: [%s] %s %s",
-	     __func__, args->context->con->name,
-	     get_http_method_string(args->method), args->path);
+	     __func__, _name(args), get_http_method_string(args->method),
+	     args->path);
 
 	if ((rc = rest_authenticate_http_request(args))) {
 		error("%s: [%s] authentication failed: %s",
-		      __func__, args->context->con->name,
-		      slurm_strerror(rc));
+		      __func__, _name(args), slurm_strerror(rc));
 		_operations_router_reject(args, "Authentication failure",
 					  HTTP_STATUS_CODE_ERROR_UNAUTHORIZED,
 					  NULL);
@@ -701,9 +700,8 @@ extern int operations_router(on_http_request_args_t *args)
 	slurm_rwlock_unlock(&paths_lock);
 
 	debug5("%s: [%s] found callback handler: (0x%"PRIXPTR") callback_tag=%d path=%s parser=%s",
-	       __func__, args->context->con->name, (uintptr_t) callback,
-	       callback_tag, args->path,
-	       (parser ? data_parser_get_plugin(parser) : ""));
+	       __func__, _name(args), (uintptr_t) callback, callback_tag,
+	       args->path, (parser ? data_parser_get_plugin(parser) : ""));
 
 	if ((rc = _resolve_mime(args, &read_mime, &write_mime, &plugin)))
 		goto cleanup;
