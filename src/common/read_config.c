@@ -4483,7 +4483,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		   error("MaxMemPerCPU ignored, since it's mutually exclusive with MaxMemPerNode");
 	}
 
-	s_p_get_uint32(&conf->max_node_cnt, "MaxNodeCount", hashtbl);
+	if (!s_p_get_uint32(&conf->max_node_cnt, "MaxNodeCount", hashtbl))
+		conf->max_node_cnt = NO_VAL;
 
 	if (!s_p_get_uint32(&conf->max_step_cnt, "MaxStepCount", hashtbl))
 		conf->max_step_cnt = DEFAULT_MAX_STEP_COUNT;
@@ -5070,9 +5071,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
 		conf->select_type = xstrdup(DEFAULT_SELECT_TYPE);
 
-	if (conf->max_node_cnt &&
+	if ((conf->max_node_cnt != NO_VAL) &&
 	    !xstrstr(conf->select_type, "cons_tres")) {
-		conf->max_node_cnt = 0;
+		conf->max_node_cnt = NO_VAL;
 		error("MaxNodeCount only compatible with cons_tres");
 		return SLURM_ERROR;
 	}
