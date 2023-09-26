@@ -399,8 +399,28 @@ extern void init_con_mgr(int thread_count, int max_connections,
 {
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (mgr.workq)
-		fatal("%s called more than once", __func__);
+	if (mgr.workq) {
+		/* already initialized */
+		mgr.max_connections = MAX(max_connections, mgr.max_connections);
+
+		/* Catch if callbacks are different while ignoring NULLS */
+		xassert(!callbacks.parse || !mgr.callbacks.parse);
+		xassert(!callbacks.free_parse || !mgr.callbacks.free_parse);
+
+		if (callbacks.parse)
+			mgr.callbacks.parse = callbacks.parse;
+		if (callbacks.free_parse)
+			mgr.callbacks.free_parse = callbacks.free_parse;
+
+		/*
+		 * Catch startup order issue that could cause thread count to be
+		 * too low
+		 */
+		xassert(get_workq_thread_count(mgr.workq) >= thread_count);
+
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
 
 	mgr.max_connections = max_connections;
 	mgr.connections = list_create(NULL);

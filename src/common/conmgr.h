@@ -171,8 +171,7 @@ typedef enum {
 } con_mgr_con_type_t;
 
 /*
- * create and init connection manager
- * only call once!
+ * Initialise global connection manager
  * IN thread_count - number of threads to create
  * IN max_connections - max number of connections
  * IN callbacks - struct containing function pointers
