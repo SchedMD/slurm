@@ -92,27 +92,26 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 					  rest_auth_context_t *ctxt)
 {
 	plugin_data_t *data;
-	const char *key, *user_name, *bearer;
+	const char *key, *user_name, *bearer, *name;
 
 	key = find_http_header(args->headers, HTTP_HEADER_USER_TOKEN);
 	bearer = find_http_header(args->headers, HTTP_HEADER_AUTH);
 	user_name = find_http_header(args->headers, HTTP_HEADER_USER_NAME);
+	name = con_mgr_fd_get_name(args->context->con);
 
 	if (!key && !user_name && !bearer) {
 		debug3("%s: [%s] skipping token authentication",
-		       __func__, args->context->con->name);
+		       __func__, name);
 		return ESLURM_AUTH_SKIP;
 	}
 
 	if (!key && !bearer) {
 		error("%s: [%s] missing header user token: %s",
-		      __func__, args->context->con->name,
-		      HTTP_HEADER_USER_TOKEN);
+		      __func__, name, HTTP_HEADER_USER_TOKEN);
 		return ESLURM_AUTH_CRED_INVALID;
 	} else if (key && bearer) {
 		error("%s: [%s] mutually exclusive headers %s and %s found. Rejecting ambiguous authentication request.",
-		      __func__, args->context->con->name,
-		      HTTP_HEADER_USER_TOKEN, HTTP_HEADER_AUTH);
+		      __func__, name, HTTP_HEADER_USER_TOKEN, HTTP_HEADER_AUTH);
 		return ESLURM_AUTH_CRED_INVALID;
 	}
 
@@ -133,21 +132,20 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 					      strlen(HTTP_HEADER_AUTH_BEARER));
 		} else {
 			error("%s: [%s] unexpected format for %s header: %s",
-			      __func__, args->context->con->name,
-			      HTTP_HEADER_AUTH, bearer);
+			      __func__, name, HTTP_HEADER_AUTH, bearer);
 			return ESLURM_AUTH_CRED_INVALID;
 		}
 	}
 
 	if (user_name)
 		info("[%s] attempting user_name %s token authentication pass through",
-		     args->context->con->name, user_name);
+		     name, user_name);
 	else if (key)
 		info("[%s] attempting token authentication pass through",
-		     args->context->con->name);
+		     name);
 	else
 		info("[%s] attempting bearer token authentication pass through",
-		     args->context->con->name);
+		     name);
 
 	return SLURM_SUCCESS;
 }
