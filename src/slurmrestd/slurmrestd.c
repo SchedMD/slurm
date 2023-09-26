@@ -634,7 +634,7 @@ int main(int argc, char **argv)
 			      __func__, slurm_strerror(rc));
 
 		/* fail on first error if this is piped process */
-		conmgr->exit_on_error = true;
+		con_mgr_set_exit_on_error(conmgr, true);
 	} else if (run_mode.listen) {
 		mode_t mask = umask(0);
 
@@ -655,8 +655,8 @@ int main(int argc, char **argv)
 	 * Inet mode expects connection errors to propagate upwards as
 	 * connection errors so they can be logged appropriately.
 	 */
-	if (conmgr->exit_on_error)
-		parse_rc = conmgr->error;
+	if (con_mgr_get_exit_on_error(conmgr))
+		parse_rc = con_mgr_get_error(conmgr);
 
 	unbind_operation_handler(_op_handler_openapi);
 
