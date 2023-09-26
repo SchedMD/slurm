@@ -28,7 +28,7 @@ documents those changes that are of interest to users and administrators.
     log: "Unauthorized credential for client UID=0 GID=0".  This error will
     still appear on slurmd/slurmctld/slurmdbd start up and is not a cause for
     concern.
- -- slurmctd - Allow startup with zero partitions.
+ -- slurmctld - Allow startup with zero partitions.
  -- Fix some mig profile names in slurm not matching nvidia mig profiles.
 
 * Changes in Slurm 23.02.5
