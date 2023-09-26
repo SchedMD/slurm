@@ -163,7 +163,7 @@ static void _on_pty_reply_sent(con_mgr_fd_t *con, con_mgr_work_type_t type,
 	debug("%s: [%s] sending fd:%u", __func__, con_mgr_fd_get_name(con), fd);
 
 	/* this is a blocking operation */
-	send_fd_over_pipe(con->output_fd, fd);
+	send_fd_over_pipe(con_mgr_fd_get_output_fd(con), fd);
 }
 
 static int _send_pty(con_mgr_fd_t *con, slurm_msg_t *req_msg)
@@ -550,11 +550,13 @@ static int _on_event_data(con_mgr_fd_t *con, void *arg)
 	pid_t srun_pid;
 	/* we are acting like this is atomic - it is only for logging */
 	static uint32_t reaped = 0;
+	size_t bytes;
 
 	xassert(arg == &state);
 
 	/* clear out the data */
-	set_buf_offset(con->in, 0);
+	con_mgr_fd_get_in_buffer(con, NULL, &bytes);
+	con_mgr_fd_mark_consumed_in_buffer(con, bytes);
 
 	write_lock_state();
 	srun_pid = state.srun_pid;
@@ -646,7 +648,7 @@ static void *_on_cs_connection(con_mgr_fd_t *con, void *arg)
 	/* hand over pty to console_socket */
 	/* WARNING: blocking call */
 	errno = 0;
-	send_fd_over_pipe(con->output_fd, tty);
+	send_fd_over_pipe(con_mgr_fd_get_output_fd(con), tty);
 	debug2("%s: [%s] sent fd:%d rc:%m",
 	       __func__, con_mgr_fd_get_name(con), tty);
 
