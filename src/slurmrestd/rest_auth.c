@@ -169,7 +169,7 @@ extern int rest_authenticate_http_request(on_http_request_args_t *args)
 
 	if (context) {
 		fatal("%s: authentication context already set for connection: %s",
-		      __func__, args->context->con->name);
+		      __func__, con_mgr_fd_get_name(args->context->con));
 	}
 
 	args->context->auth = context = rest_auth_g_new();
