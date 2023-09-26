@@ -195,6 +195,7 @@ struct {
 	int event_fd[2];
 	/* Signal PIPE to catch POSIX signals */
 	int signal_fd[2];
+
 	/* track when there is a pending signal to read */
 	bool signaled;
 	/* Caller requests finish on error */
@@ -224,13 +225,6 @@ struct {
 	.signal_fd = { -1, -1 },
 	.error = SLURM_SUCCESS,
 };
-
-/*
- * there can only be 1 SIGNAL handler, so we are using a mutex to protect
- * the signal_fd for changes.
- */
-pthread_mutex_t signal_mutex = PTHREAD_MUTEX_INITIALIZER;
-int signal_fd[2] = { -1, -1 };
 
 typedef void (*on_poll_event_t)(int fd, con_mgr_fd_t *con, short revents);
 
@@ -385,7 +379,7 @@ static void _connection_fd_delete(void *x)
 static void _signal_handler(int signo)
 {
 try_again:
-	if (write(signal_fd[1], &signo, sizeof(signo)) != sizeof(signo)) {
+	if (write(mgr.signal_fd[1], &signo, sizeof(signo)) != sizeof(signo)) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
 			goto try_again;
 
@@ -2071,9 +2065,6 @@ extern int con_mgr_run(void)
 	int rc = SLURM_SUCCESS;
 
 	slurm_mutex_lock(&mgr.mutex);
-	slurm_mutex_lock(&signal_mutex);
-	signal_fd[0] = mgr.signal_fd[0];
-	signal_fd[1] = mgr.signal_fd[1];
 
 	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
 		if (sigaction(catch_signals[i].signal, &catch_signals[i].new,
@@ -2081,7 +2072,6 @@ extern int con_mgr_run(void)
 			fatal("%s: unable to catch %s: %m",
 			      __func__, strsignal(catch_signals[i].signal));
 	}
-	slurm_mutex_unlock(&signal_mutex);
 
 	if (mgr.deferred_funcs) {
 		list_t *deferred_funcs = NULL;
@@ -2100,7 +2090,6 @@ extern int con_mgr_run(void)
 	rc = _watch();
 
 	slurm_mutex_lock(&mgr.mutex);
-	slurm_mutex_lock(&signal_mutex);
 	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
 		if (sigaction(catch_signals[i].signal, &catch_signals[i].prior,
 			      NULL))
@@ -2108,9 +2097,6 @@ extern int con_mgr_run(void)
 			      __func__, strsignal(catch_signals[i].signal));
 	}
 
-	signal_fd[0] = -1;
-	signal_fd[1] = -1;
-	slurm_mutex_unlock(&signal_mutex);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return rc;
