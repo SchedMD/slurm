@@ -18,16 +18,16 @@ def get_and_down_nodes():
     nodes = atf.run_job_nodes("-N3 true", fatal=True)
 
     logging.info(f"Setting ALL nodes Down:")
-    atf.run_command("scontrol update nodename=ALL state=down reason=test_resv_overlap", fatal=True)
+    atf.run_command("scontrol update nodename=ALL state=down reason=test_resv_overlap", user=atf.properties['slurm-user'], fatal=True)
     atf.repeat_until(lambda : atf.run_command_output("sinfo --states=idle,mixed --Format=NodeList -h"), lambda not_down: not_down == "", fatal=True)
 
     yield nodes
 
-    atf.run_command("scontrol delete reservationname=resv1", quiet=True)
-    atf.run_command("scontrol delete reservationname=resv2", quiet=True)
-    atf.run_command("scontrol delete reservationname=resv3", quiet=True)
+    atf.run_command("scontrol delete reservationname=resv1", user=atf.properties['slurm-user'], quiet=True)
+    atf.run_command("scontrol delete reservationname=resv2", user=atf.properties['slurm-user'], quiet=True)
+    atf.run_command("scontrol delete reservationname=resv3", user=atf.properties['slurm-user'], quiet=True)
 
-    atf.run_command("scontrol update nodename=ALL state=resume", quiet=True)
+    atf.run_command("scontrol update nodename=ALL state=resume", user=atf.properties['slurm-user'], quiet=True)
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
 def test_overlap_weeks(request, get_and_down_nodes, reocurring_flag):
@@ -36,19 +36,19 @@ def test_overlap_weeks(request, get_and_down_nodes, reocurring_flag):
     nodes = get_and_down_nodes
 
     logging.info(f"Resuming only node {nodes[0]}:")
-    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", fatal=True)
+    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", user=atf.properties['slurm-user'], fatal=True)
     atf.repeat_until(lambda : atf.get_node_parameter(nodes[0], "State"), lambda state: state == "IDLE", fatal=True)
 
     logging.info(f"Creating resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime=NOW+3weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}")
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime=NOW+3weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}", user=atf.properties['slurm-user'])
     assert rc['exit_code'] == 0, f"resv1 should be created"
 
     logging.info(f"Ensuring that resv2 can be created before resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1week nodecnt=1 duration=00:15:00 user={atf.properties['test-user']}")
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1week nodecnt=1 duration=00:15:00 user={atf.properties['test-user']}", user=atf.properties['slurm-user'])
     assert rc['exit_code'] == 0, f"resv2 should be created before resv1 because {nodes[0]} should is not yet reserved by resv1"
 
     logging.info(f"Ensuring that resv3 cannot be created after resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv3 StartTime=NOW+5weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']}", xfail=True)
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv3 StartTime=NOW+5weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']}", user=atf.properties['slurm-user'], xfail=True)
     assert rc['exit_code'] != 0, f"resv3 should NOT be created after resv1 because {nodes[0]} should be used only by resv1"
 
     logging.info(f"Double-checking that that there is only 2 reservations with the expected node:")
@@ -63,19 +63,19 @@ def test_overlap_weeks_reverse(request, get_and_down_nodes, reocurring_flag):
     nodes = get_and_down_nodes
 
     logging.info(f"Resuming only node {nodes[0]}:")
-    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", fatal=True)
+    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", user=atf.properties['slurm-user'], fatal=True)
     atf.repeat_until(lambda : atf.get_node_parameter(nodes[0], "State"), lambda state: state == "IDLE", fatal=True)
 
     logging.info(f"Creating resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime=NOW+3weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']}")
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime=NOW+3weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']}", user=atf.properties['slurm-user'])
     assert rc['exit_code'] == 0, f"resv1 should be created"
 
     logging.info(f"Ensuring that resv2 cannot be created before resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1week nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}", xfail=True)
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1week nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}", user=atf.properties['slurm-user'], xfail=True)
     assert rc['exit_code'] != 0, f"resv2 should NOT be created before resv1 because {nodes[0]} should be reserved by resv1"
 
     logging.info(f"Ensuring that resv3 can be created after resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv3 StartTime=NOW+5weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}")
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv3 StartTime=NOW+5weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}", user=atf.properties['slurm-user'])
     assert rc['exit_code'] == 0, f"resv3 should be created after resv1 because {nodes[0]} should is not anymore reserved by resv1"
 
     logging.info(f"Double-checking that that there is only 2 reservations with the expected node:")
@@ -90,7 +90,7 @@ def test_overlap_reocurring(request, get_and_down_nodes, reocurring_flag):
     nodes = get_and_down_nodes
 
     logging.info(f"Resuming only node {nodes[0]}:")
-    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", fatal=True)
+    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", user=atf.properties['slurm-user'], fatal=True)
     atf.repeat_until(lambda : atf.get_node_parameter(nodes[0], "State"), lambda state: state == "IDLE", fatal=True)
 
     if reocurring_flag == "HOURLY":
@@ -107,15 +107,15 @@ def test_overlap_reocurring(request, get_and_down_nodes, reocurring_flag):
         resv3_start = "3weeks"
 
     logging.info(f"Creating resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime=NOW+{resv1_start} nodecnt=1 duration=00:10:00 user={atf.properties['test-user']} flags={reocurring_flag}")
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime=NOW+{resv1_start} nodecnt=1 duration=00:10:00 user={atf.properties['test-user']} flags={reocurring_flag}", user=atf.properties['slurm-user'])
     assert rc['exit_code'] == 0, f"resv1 should be created"
 
     logging.info(f"Ensuring that resv2 cannot be created before resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+{resv2_start} nodecnt=1 duration=00:10:00 user={atf.properties['test-user']} flags={reocurring_flag}", xfail=True)
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+{resv2_start} nodecnt=1 duration=00:10:00 user={atf.properties['test-user']} flags={reocurring_flag}", user=atf.properties['slurm-user'], xfail=True)
     assert rc['exit_code'] != 0, f"resv2 should NOT be created before resv1 because {nodes[0]} should be used only by resv1"
 
     logging.info(f"Ensuring that resv3 cannot be created after resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv3 StartTime=NOW+{resv3_start} nodecnt=1 duration=00:10:00 user={atf.properties['test-user']} flags={reocurring_flag}", xfail=True)
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv3 StartTime=NOW+{resv3_start} nodecnt=1 duration=00:10:00 user={atf.properties['test-user']} flags={reocurring_flag}", user=atf.properties['slurm-user'], xfail=True)
     assert rc['exit_code'] != 0, f"resv3 should NOT be created after resv1 because {nodes[0]} should be used only by resv1"
 
     logging.info(f"Double-checking that that there is only 1 reservation with the expected node:")
@@ -129,19 +129,19 @@ def test_overlap_reocurring_week(request, get_and_down_nodes, reocurring_flag):
     nodes = get_and_down_nodes
 
     logging.info(f"Resuming only node {nodes[0]}:")
-    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", fatal=True)
+    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", user=atf.properties['slurm-user'], fatal=True)
     atf.repeat_until(lambda : atf.get_node_parameter(nodes[0], "State"), lambda state: state == "IDLE", fatal=True)
 
     logging.info(f"Creating resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime=NOW+3weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}")
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime=NOW+3weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}", user=atf.properties['slurm-user'])
     assert rc['exit_code'] == 0, f"resv1 should be created"
 
     logging.info(f"Ensuring that resv2 cannot be created before resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}", xfail=True)
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}", user=atf.properties['slurm-user'], xfail=True)
     assert rc['exit_code'] != 0, f"resv2 should NOT be created before resv1 because {nodes[0]} should be used only by resv1"
 
     logging.info(f"Ensuring that resv3 cannot be created after resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv3 StartTime=NOW+5weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}", xfail=True)
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv3 StartTime=NOW+5weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}", user=atf.properties['slurm-user'], xfail=True)
     assert rc['exit_code'] != 0, f"resv3 should NOT be created after resv1 because {nodes[0]} should be used only by resv1"
 
     logging.info(f"Double-checking that that there is only 1 reservation with the expected node:")
@@ -155,15 +155,15 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
     nodes = get_and_down_nodes
 
     logging.info(f"Resuming only node {nodes[0]}:")
-    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", fatal=True)
+    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", user=atf.properties['slurm-user'], fatal=True)
     atf.repeat_until(lambda : atf.get_node_parameter(nodes[0], "State"), lambda state: state == "IDLE", fatal=True)
 
     logging.info(f"Creating resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime=NOW+1minutes nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag},REPLACE_DOWN,PURGE_COMP=1")
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime=NOW+1minutes nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag},REPLACE_DOWN,PURGE_COMP=1", user=atf.properties['slurm-user'])
     assert rc['exit_code'] == 0, f"resv1 should be created"
 
     logging.info(f"Ensuring that resv2 cannot be created yet:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1minutes nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag},REPLACE_DOWN,PURGE_COMP=3", xfail=True)
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1minutes nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag},REPLACE_DOWN,PURGE_COMP=3", user=atf.properties['slurm-user'], xfail=True)
     assert rc['exit_code'] != 0, f"resv2 should NOT be created because {nodes[0]} should be used only by resv1"
 
     logging.info(f"Double-checking that that there is only 1 reservation with the expected node:")
@@ -171,11 +171,11 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
     assert atf.get_reservation_parameter('resv1', 'Nodes') == nodes[0], f"resv1 should use node {nodes[0]}"
 
     logging.info(f"Resuming node {nodes[1]}:")
-    atf.run_command(f"scontrol update nodename={nodes[1]} state=resume", fatal=True)
+    atf.run_command(f"scontrol update nodename={nodes[1]} state=resume", user=atf.properties['slurm-user'], fatal=True)
     atf.repeat_until(lambda : atf.get_node_parameter(nodes[1], "State"), lambda state: state == "IDLE", fatal=True)
 
     logging.info(f"Creating resv2:")
-    rc2 = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1minutes nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag},REPLACE_DOWN,PURGE_COMP=3")
+    rc2 = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1minutes nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag},REPLACE_DOWN,PURGE_COMP=3", user=atf.properties['slurm-user'])
     assert rc2['exit_code'] == 0, f"resv2 should be created"
 
     logging.info(f"Double-checking that there are only 2 reservation and they are using different nodes:")
@@ -188,7 +188,7 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
     atf.repeat_until(lambda : atf.get_reservation_parameter("resv2", "State"), lambda state: state == "ACTIVE", fatal=True, timeout=90, poll_interval=5)
 
     logging.info(f"Setting node {nodes[1]} down, so resv2 won't have any valid node and will try to look for a new one:")
-    atf.run_command(f"scontrol update nodename={nodes[1]} state=down reason=test_resv_overlap", fatal=True)
+    atf.run_command(f"scontrol update nodename={nodes[1]} state=down reason=test_resv_overlap", user=atf.properties['slurm-user'], fatal=True)
     atf.repeat_until(lambda : atf.get_node_parameter(nodes[1], "State"), lambda state: "DOWN" in state, fatal=True)
 
     logging.info(f"Waiting until resv1 is INACTIVE (should be purged 1 minute)...")
@@ -198,7 +198,7 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
     assert not atf.repeat_until(lambda : atf.get_reservation_parameter("resv2", "Nodes"), lambda rnodes: rnodes != nodes[1], timeout=60)
 
     logging.info(f"Resuming node {nodes[2]}:")
-    atf.run_command(f"scontrol update nodename={nodes[2]} state=resume", fatal=True)
+    atf.run_command(f"scontrol update nodename={nodes[2]} state=resume", user=atf.properties['slurm-user'], fatal=True)
     atf.repeat_until(lambda : atf.get_node_parameter(nodes[2], "State"), lambda state: state == "IDLE", fatal=True)
 
     logging.info(f"Checking that resv2 picks the new available node, and that not overlaping reservations happen:")
@@ -219,19 +219,19 @@ def test_overlap_weekdays(request, get_and_down_nodes, reocurring_flag, week_fla
     nodes = get_and_down_nodes
 
     logging.info(f"Resuming only node {nodes[0]}:")
-    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", fatal=True)
+    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", user=atf.properties['slurm-user'], fatal=True)
     atf.repeat_until(lambda : atf.get_node_parameter(nodes[0], "State"), lambda state: state == "IDLE", fatal=True)
 
     logging.info(f"Creating resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime=NOW+3weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}")
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime=NOW+3weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag}", user=atf.properties['slurm-user'])
     assert rc['exit_code'] == 0, f"resv1 should be created"
 
     logging.info(f"Ensuring that resv2 cannot be created before resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={week_flag}", xfail=True)
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={week_flag}", user=atf.properties['slurm-user'], xfail=True)
     assert rc['exit_code'] != 0, f"resv2 should NOT be created before resv1 because {nodes[0]} should be used only by resv1"
 
     logging.info(f"Ensuring that resv3 cannot be created after resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv3 StartTime=NOW+5weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={week_flag}", xfail=True)
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv3 StartTime=NOW+5weeks nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={week_flag}", user=atf.properties['slurm-user'], xfail=True)
     assert rc['exit_code'] != 0, f"resv3 should NOT be created after resv1 because {nodes[0]} should be used only by resv1"
 
     logging.info(f"Double-checking that that there is only 1 reservation with the expected node:")
@@ -269,15 +269,15 @@ def test_no_overlap_weekday_weekend(request, get_and_down_nodes, resv1_flag, res
     logging.info(f"resv3_start = {resv3_start}")
 
     logging.info(f"Resuming only node {nodes[0]}:")
-    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", fatal=True)
+    atf.run_command(f"scontrol update nodename={nodes[0]} state=resume", user=atf.properties['slurm-user'], fatal=True)
     atf.repeat_until(lambda : atf.get_node_parameter(nodes[0], "State"), lambda state: state == "IDLE", fatal=True)
 
     logging.info(f"Creating resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime={resv1_start}T17:00 nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={resv1_flag}")
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv1 StartTime={resv1_start}T17:00 nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={resv1_flag}", user=atf.properties['slurm-user'])
     assert rc['exit_code'] == 0, f"resv1 should be created"
 
     logging.info(f"Ensuring that resv2 can be created before resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime={resv2_start}T17:00 nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={resv2_flag}")
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv2 StartTime={resv2_start}T17:00 nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={resv2_flag}", user=atf.properties['slurm-user'])
     assert rc['exit_code'] == 0, f"resv2 should be created before resv1 because WEEKDAYS and WEEKENDS won't overlap"
 
     logging.info(f"Double-checking that that there are 2 reservation with the expected node:")
@@ -286,11 +286,11 @@ def test_no_overlap_weekday_weekend(request, get_and_down_nodes, resv1_flag, res
     assert atf.get_reservation_parameter('resv2', 'Nodes') == nodes[0], f"resv2 should use node {nodes[0]}"
 
     logging.info(f"Deleting resv2:")
-    rc = atf.run_command(f"scontrol delete ReservationName=resv2")
+    rc = atf.run_command(f"scontrol delete ReservationName=resv2", user=atf.properties['slurm-user'])
     assert rc['exit_code'] == 0, f"resv1 should be created"
 
     logging.info(f"Ensuring that resv3 can be created after resv1:")
-    rc = atf.run_command(f"scontrol create reservation ReservationName=resv3 StartTime={resv3_start}T17:00 nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={resv2_flag}")
+    rc = atf.run_command(f"scontrol create reservation ReservationName=resv3 StartTime={resv3_start}T17:00 nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={resv2_flag}", user=atf.properties['slurm-user'])
     assert rc['exit_code'] == 0, f"resv3 should be created after resv1 because WEEKDAYS and WEEKENDS won't overlap"
 
     logging.info(f"Double-checking that that there are 2 reservation with the expected node:")
