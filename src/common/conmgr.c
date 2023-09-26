@@ -2913,3 +2913,10 @@ extern int con_mgr_get_error(void)
 
 	return rc;
 }
+
+extern const char *con_mgr_fd_get_name(const con_mgr_fd_t *con)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->name && con->name[0]);
+	return con->name;
+}

@@ -403,4 +403,9 @@ extern bool con_mgr_get_exit_on_error(void);
  */
 extern int con_mgr_get_error(void);
 
+/*
+ * Get assigned connection name - stays same for life of connection
+ */
+extern const char *con_mgr_fd_get_name(const con_mgr_fd_t *con);
+
 #endif /* _CONMGR_H */
