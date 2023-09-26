@@ -298,7 +298,6 @@ typedef struct {
 	work_t *shortest;
 } foreach_delayed_work_t;
 
-
 typedef struct {
 	con_mgr_events_t events;
 	void *arg;
