@@ -1917,7 +1917,7 @@ cleanup:
 }
 
 /*
- * Poll all sockets non-listen connections
+ * Poll all connections and handle any events
  * IN blocking - non-zero if blocking
  */
 static void _watch(void *blocking)
