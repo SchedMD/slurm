@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with slurmd where srun fails to be warned when a node prolog
     script runs beyond MsgTimeout set in slurm.conf.
  -- gres/shard - Fix plugin functions to have matching parameter orders.
+ -- gpu/nvml - Fix issue that resulted in the wrong MIG devices being
+    constrained to a job
 
 * Changes in Slurm 23.02.6
 ==========================
