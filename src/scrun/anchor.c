@@ -1640,7 +1640,7 @@ extern int spawn_anchor(void)
 	xassert(!state.needs_lock);
 	xassert(!state.locked);
 	state.needs_lock = true;
-	rc = con_mgr_run();
+	rc = con_mgr_run(true);
 	xassert(!state.locked);
 	xassert(state.needs_lock);
 	state.needs_lock = false;

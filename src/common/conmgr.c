@@ -174,6 +174,11 @@ struct {
 	 */
 	list_t *complete;
 	/*
+	 * True if _watch() is running
+	 * Changes protected by watch_mutex
+	 */
+	bool watching;
+	/*
 	 * True if there is a thread for listen queued or running
 	 */
 	bool listen_active;
@@ -217,6 +222,10 @@ struct {
 	pthread_mutex_t mutex;
 	/* called after events or changes to wake up _watch */
 	pthread_cond_t cond;
+
+	/* use mutex to wait for watch to finish */
+	pthread_mutex_t watch_mutex;
+	pthread_cond_t watch_cond;
 } mgr = {
 	.mutex = PTHREAD_MUTEX_INITIALIZER,
 	.cond = PTHREAD_COND_INITIALIZER,
@@ -1909,8 +1918,9 @@ cleanup:
 
 /*
  * Poll all sockets non-listen connections
+ * IN blocking - non-zero if blocking
  */
-static int _watch(void)
+static void _watch(void *blocking)
 {
 	poll_args_t *listen_args = NULL;
 	poll_args_t *poll_args = NULL;
@@ -1919,6 +1929,26 @@ static int _watch(void)
 	bool work; /* is there any work to do? */
 
 	slurm_mutex_lock(&mgr.mutex);
+
+	if (mgr.shutdown) {
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
+	if (mgr.watching) {
+		if (blocking) {
+			slurm_mutex_lock(&mgr.watch_mutex);
+			slurm_mutex_unlock(&mgr.mutex);
+			slurm_cond_wait(&mgr.watch_cond, &mgr.watch_mutex);
+			slurm_mutex_unlock(&mgr.watch_mutex);
+		} else {
+			slurm_mutex_unlock(&mgr.mutex);
+		}
+
+		return;
+	}
+
+	mgr.watching = true;
 
 	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
 		if (sigaction(catch_signals[i].signal, &catch_signals[i].new,
@@ -2046,7 +2076,6 @@ watch:
 	log_flag(NET, "%s: cleaning up", __func__);
 
 	_signal_change(true);
-	mgr.shutdown = true;
 
 	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
 		if (sigaction(catch_signals[i].signal, &catch_signals[i].prior,
@@ -2057,6 +2086,15 @@ watch:
 
 	xassert(!mgr.poll_active);
 	xassert(!mgr.listen_active);
+
+	xassert(mgr.watching);
+	mgr.watching = false;
+
+	/* wake all waiting threads */
+	slurm_mutex_lock(&mgr.watch_mutex);
+	slurm_cond_broadcast(&mgr.watch_cond);
+	slurm_mutex_unlock(&mgr.watch_mutex);
+
 	slurm_mutex_unlock(&mgr.mutex);
 
 	if (poll_args) {
@@ -2068,11 +2106,9 @@ watch:
 		xfree(listen_args->fds);
 		xfree(listen_args);
 	}
-
-	return SLURM_SUCCESS;
 }
 
-extern int con_mgr_run(void)
+extern int con_mgr_run(bool blocking)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -2095,11 +2131,19 @@ extern int con_mgr_run(void)
 	}
 	slurm_mutex_unlock(&mgr.mutex);
 
-	rc = _watch();
+	if (blocking) {
+		_watch((void *) 1);
+	} else {
+		slurm_mutex_lock(&mgr.mutex);
+		if (!mgr.watching)
+			workq_add_work(mgr.workq, _watch, NULL,
+				       "conmgr::_watch()");
+		slurm_mutex_unlock(&mgr.mutex);
+	}
 
-	log_flag(NET, "%s: begin waiting for all workers", __func__);
-	quiesce_workq(mgr.workq);
-	log_flag(NET, "%s: end waiting for all workers", __func__);
+	slurm_mutex_lock(&mgr.mutex);
+	rc = mgr.error;
+	slurm_mutex_unlock(&mgr.mutex);
 
 	return rc;
 }

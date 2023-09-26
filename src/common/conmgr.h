@@ -277,9 +277,10 @@ extern int con_mgr_create_sockets(con_mgr_con_type_t type, list_t *hostports,
 
 /*
  * Run connection manager main loop for until all processing is done
+ * IN blocking - Run in blocking mode or in background as new thread
  * RET SLURM_SUCCESS or error
  */
-extern int con_mgr_run(void);
+extern int con_mgr_run(bool blocking);
 
 /*
  * Notify conmgr to shutdown

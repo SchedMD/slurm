@@ -646,7 +646,7 @@ int main(int argc, char **argv)
 		debug("%s: server listen mode activated", __func__);
 	}
 
-	rc = con_mgr_run();
+	rc = con_mgr_run(true);
 
 	/*
 	 * Capture if there were issues during parsing in inet mode.
