@@ -81,6 +81,73 @@
 #define BUFFER_START_SIZE 4096
 
 /*
+ * Opaque struct - do not access directly
+ */
+struct con_mgr_s {
+	int magic;
+	/* Max number of connections at any one time allowed */
+	int max_connections;
+	/*
+	 * list of all connections to process
+	 * type: con_mgr_fd_t
+	 */
+	list_t *connections;
+	/*
+	 * list of connections that only listen
+	 * type: con_mgr_fd_t
+	 */
+	list_t *listen;
+	/*
+	 * list of complete connections pending cleanup
+	 * type: con_mgr_fd_t
+	 */
+	list_t *complete;
+	/*
+	 * True if there is a thread for listen queued or running
+	 */
+	bool listen_active;
+	/*
+	 * True if there is a thread for poll queued or running
+	 */
+	bool poll_active;
+	/*
+	 * Is trying to shutdown?
+	 */
+	bool shutdown;
+	/* thread pool */
+	workq_t *workq;
+	/* will inspect connections (not listeners */
+	bool inspecting;
+	/* if an event signal has already been sent */
+	int event_signaled;
+	/* Event PIPE used to break out of poll */
+	int event_fd[2];
+	/* Signal PIPE to catch POSIX signals */
+	int signal_fd[2];
+	/* track when there is a pending signal to read */
+	bool signaled;
+	/* Caller requests finish on error */
+	bool exit_on_error;
+	/* First observed error */
+	int error;
+	/* list of work_t */
+	list_t *delayed_work;
+	/* last time clock was queried */
+	struct timespec last_time;
+	/* monotonic timer */
+	timer_t timer;
+	/* list of deferred_func_t */
+	list_t *deferred_funcs;
+
+	/* functions to handle host/port parsing */
+	con_mgr_callbacks_t callbacks;
+
+	pthread_mutex_t mutex;
+	/* called after events or changes to wake up _watch */
+	pthread_cond_t cond;
+};
+
+/*
  * there can only be 1 SIGNAL handler, so we are using a mutex to protect
  * the signal_fd for changes.
  */
