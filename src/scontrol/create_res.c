@@ -270,6 +270,18 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			resv_msg_ptr->partition = val;
 
 		} else if (xstrncasecmp(tag, "TRES", MAX(taglen, 1)) == 0) {
+			if (resv_msg_ptr->tres_str) {
+				exit_code = 1;
+				error("Parameter %s specified more than once",
+				      argv[i]);
+				return SLURM_ERROR;
+			} else if (plus_minus) {
+				exit_code = 1;
+				error("Parameter %s specified a plus or minus.  This is not allowed.",
+				      argv[i]);
+				return SLURM_ERROR;
+			}
+
 			resv_msg_ptr->tres_str = val;
 		} else if (xstrncasecmp(tag, "Watts", MAX(taglen, 1)) == 0) {
 			resv_msg_ptr->resv_watts =

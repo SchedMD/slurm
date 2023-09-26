@@ -98,6 +98,8 @@ typedef cpuset_t cpu_set_t;
 #define MAX_GRES_BITMAP 1024
 
 strong_alias(gres_find_id, slurm_gres_find_id);
+strong_alias(gres_find_job_by_key_exact_type,
+	     slurm_gres_find_job_by_key_exact_type);
 strong_alias(gres_find_sock_by_job_state, slurm_gres_find_sock_by_job_state);
 strong_alias(gres_get_node_used, slurm_gres_get_node_used);
 strong_alias(gres_get_system_cnt, slurm_gres_get_system_cnt);

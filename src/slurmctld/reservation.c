@@ -73,10 +73,12 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/burst_buffer.h"
+#include "src/interfaces/gres.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/select.h"
 
 #include "src/slurmctld/groups.h"
+#include "src/slurmctld/gres_ctld.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -142,6 +144,7 @@ typedef struct constraint_slot {
 
 typedef struct {
 	bitstr_t *core_bitmap;
+	list_t *gres_list_exc;
 	bitstr_t *node_bitmap;
 } resv_select_t;
 
@@ -242,7 +245,83 @@ static void _free_resv_select_members(resv_select_t *resv_select)
 		return;
 
 	FREE_NULL_BITMAP(resv_select->core_bitmap);
+	FREE_NULL_LIST(resv_select->gres_list_exc);
 	FREE_NULL_BITMAP(resv_select->node_bitmap);
+}
+
+static int _switch_select_alloc_gres(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+
+	/*
+	 * Until a job is allocated ->node_cnt isn't set ->total_node_cnt is
+	 * used.
+	 */
+	gres_js->node_cnt = gres_js->total_node_cnt;
+	gres_js->total_node_cnt = 0;
+
+	if (gres_js->gres_bit_alloc) {
+		/* This should never happen */
+		for (int i = 0; i < gres_js->node_cnt; i++) {
+			FREE_NULL_BITMAP(gres_js->gres_bit_alloc[i]);
+		}
+		xfree(gres_js->gres_bit_alloc);
+	}
+	gres_js->gres_bit_alloc = gres_js->gres_bit_select;
+	gres_js->gres_bit_select = NULL;
+	gres_js->gres_cnt_node_alloc = gres_js->gres_cnt_node_select;
+	gres_js->gres_cnt_node_select = NULL;
+	return 0;
+}
+
+static int _parse_tres_str(resv_desc_msg_t *resv_desc_ptr)
+{
+	char *tmp_str, *tres_sub_str;
+
+	if (!resv_desc_ptr->tres_str)
+		return SLURM_SUCCESS;
+
+	/*
+	 * Here we need to verify all the TRES (including GRES) are real TRES.
+	 */
+	if (!valid_tres_cnt(resv_desc_ptr->tres_str, true))
+		return ESLURM_INVALID_TRES;
+
+	/*
+	 * There are a few different ways to request a tres string, this
+	 * will format it correctly for the rest of Slurm.
+	 */
+	tmp_str = slurm_get_tres_sub_string(
+		resv_desc_ptr->tres_str, NULL, NO_VAL, true, true);
+
+	if (!tmp_str)
+		return ESLURM_INVALID_TRES;
+	xfree(resv_desc_ptr->tres_str);
+	resv_desc_ptr->tres_str = tmp_str;
+	tmp_str = NULL;
+
+	tres_sub_str = slurm_get_tres_sub_string(
+		resv_desc_ptr->tres_str, "license", NO_VAL,
+		false, false);
+	if (tres_sub_str) {
+		if (resv_desc_ptr->licenses)
+			return SLURM_ERROR;
+		resv_desc_ptr->licenses = tres_sub_str;
+		tres_sub_str = NULL;
+	}
+
+	tres_sub_str = slurm_get_tres_sub_string(
+		resv_desc_ptr->tres_str, "bb", NO_VAL,
+		false, false);
+	if (tres_sub_str) {
+		if (resv_desc_ptr->burst_buffer)
+			return SLURM_ERROR;
+		resv_desc_ptr->burst_buffer = tres_sub_str;
+		tres_sub_str = NULL;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
@@ -258,6 +337,7 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 
 	resv_exc.core_bitmap = resv_select->core_bitmap;
 	resv_exc.exc_cores = core_bitmap_to_array(resv_exc.core_bitmap);
+	resv_exc.gres_list_exc = resv_select->gres_list_exc;
 
 	job_ptr = resv_desc_ptr->job_ptr;
 
@@ -274,7 +354,8 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 		return NULL;
 	}
 
-	if ((resv_desc_ptr->core_cnt != NO_VAL)) {
+	if ((resv_desc_ptr->flags & RESERVE_FLAG_GRES_REQ) ||
+	    (resv_desc_ptr->core_cnt != NO_VAL)) {
 		if (resv_select->core_bitmap)
 			bit_clear_all(resv_select->core_bitmap);
 
@@ -285,6 +366,11 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 		job_ptr->job_resrcs->ncpus = job_ptr->total_cpus;
 		add_job_to_cores(job_ptr->job_resrcs,
 				 &resv_select->core_bitmap);
+		if (job_ptr->gres_list_req) {
+			(void) list_for_each(job_ptr->gres_list_req,
+					     _switch_select_alloc_gres,
+					     NULL);
+		}
 	} else
 		free_job_resources(&job_ptr->job_resrcs);
 
@@ -549,6 +635,7 @@ static void _del_resv_rec(void *x)
 		FREE_NULL_BITMAP(resv_ptr->core_bitmap);
 		free_job_resources(&resv_ptr->core_resrcs);
 		xfree(resv_ptr->features);
+		FREE_NULL_LIST(resv_ptr->gres_list_alloc);
 		xfree(resv_ptr->groups);
 		FREE_NULL_LIST(resv_ptr->license_list);
 		xfree(resv_ptr->licenses);
@@ -1921,6 +2008,10 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 			pack_time(resv_ptr->idle_start_time, buffer);
 			packstr(resv_ptr->tres_str,	buffer);
 			pack32(resv_ptr->ctld_flags,	buffer);
+			(void) gres_job_state_pack(resv_ptr->gres_list_alloc,
+						   buffer, 0,
+						   false,
+						   protocol_version);
 		} else {
 			pack_bit_str_hex(resv_ptr->node_bitmap, buffer);
 			if (!resv_ptr->core_bitmap ||
@@ -2130,6 +2221,11 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 		safe_unpack_time(&resv_ptr->idle_start_time, buffer);
 		safe_unpackstr(&resv_ptr->tres_str, buffer);
 		safe_unpack32(&resv_ptr->ctld_flags, buffer);
+		if (gres_job_state_unpack(&resv_ptr->gres_list_alloc, buffer,
+					  0, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		gres_job_state_log(resv_ptr->gres_list_alloc, 0);
 		if (!resv_ptr->purge_comp_time)
 			resv_ptr->purge_comp_time = 300;
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
@@ -2569,6 +2665,22 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 	}
 
 	xfree(resv_ptr->tres_str);
+	if (resv_ptr->gres_list_alloc) { /* First, doesn't add comma */
+		assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+		uint64_t *tres_alloc_cnt;
+
+		assoc_mgr_lock(&locks);
+		tres_alloc_cnt = xcalloc(slurmctld_tres_cnt, sizeof(uint64_t));
+		gres_ctld_set_job_tres_cnt(resv_ptr->gres_list_alloc,
+					   resv_ptr->node_cnt,
+					   tres_alloc_cnt,
+					   true);
+		resv_ptr->tres_str = assoc_mgr_make_tres_str_from_array(
+			tres_alloc_cnt, TRES_STR_FLAG_SIMPLE, true);
+		xfree(tres_alloc_cnt);
+		assoc_mgr_unlock(&locks);
+	}
+
 	if (cpu_cnt)
 		xstrfmtcat(resv_ptr->tres_str, "%s%u=%"PRIu64,
 			   resv_ptr->tres_str ? "," : "",
@@ -2789,41 +2901,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 
 	_create_resv_lists(false);
 
-	if (resv_desc_ptr->tres_str) {
-		/*
-		 * There are a few different ways to request a tres string, this
-		 * will format it correctly for the rest of Slurm.
-		 */
-		char *tmp_str = slurm_get_tres_sub_string(
-			resv_desc_ptr->tres_str, NULL, NO_VAL, true, true);
-		char *tres_sub_str;
-
-		if (!tmp_str)
-			return ESLURM_INVALID_TRES;
-		xfree(resv_desc_ptr->tres_str);
-		resv_desc_ptr->tres_str = tmp_str;
-		tmp_str = NULL;
-
-		tres_sub_str = slurm_get_tres_sub_string(
-			resv_desc_ptr->tres_str, "license", NO_VAL,
-			false, false);
-		if (tres_sub_str) {
-			if (resv_desc_ptr->licenses)
-				return SLURM_ERROR;
-			resv_desc_ptr->licenses = tres_sub_str;
-			tres_sub_str = NULL;
-		}
-
-		tres_sub_str = slurm_get_tres_sub_string(
-			resv_desc_ptr->tres_str, "bb", NO_VAL,
-			false, false);
-		if (tres_sub_str) {
-			if (resv_desc_ptr->burst_buffer)
-				return SLURM_ERROR;
-			resv_desc_ptr->burst_buffer = tres_sub_str;
-			tres_sub_str = NULL;
-		}
-	}
+	if ((rc = _parse_tres_str(resv_desc_ptr)) != SLURM_SUCCESS)
+		return rc;
 
 	_dump_resv_req(resv_desc_ptr, "create_resv");
 
@@ -2849,6 +2928,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 					RESERVE_FLAG_NO_HOLD_JOBS |
 					RESERVE_FLAG_MAGNETIC;
 	}
+
+	if (xstrcasestr(resv_desc_ptr->tres_str, "gres"))
+		resv_desc_ptr->flags |= RESERVE_FLAG_GRES_REQ;
 
 	/* Validate the request */
 	if ((resv_desc_ptr->core_cnt != NO_VAL) && !slurm_select_cr_type()) {
@@ -3066,15 +3148,20 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			}
 		}
 		/* We do allow to request cores with nodelist */
-		if (resv_desc_ptr->core_cnt != NO_VAL) {
+		if ((resv_desc_ptr->flags & RESERVE_FLAG_GRES_REQ) ||
+		    (resv_desc_ptr->core_cnt != NO_VAL)) {
 			if (!resv_desc_ptr->core_cnt) {
 				info("Core count for reservation nodelist is not consistent!");
 				rc = ESLURM_INVALID_CORE_CNT;
 				goto bad_parse;
 			}
-			log_flag(RESERVATION, "%s: Requesting %d cores for node_list",
-				 __func__,
-				 resv_desc_ptr->core_cnt);
+			if (resv_desc_ptr->flags & RESERVE_FLAG_GRES_REQ)
+				log_flag(RESERVATION, "%s: Requesting TRES/GRES '%s' for node_list",
+					 __func__, resv_desc_ptr->tres_str);
+			else
+				log_flag(RESERVATION, "%s: Requesting %d cores for node_list",
+					 __func__,
+					 resv_desc_ptr->core_cnt);
 			resv_desc_ptr->job_ptr =
 				job_mgr_copy_resv_desc_to_job_record(
 					resv_desc_ptr);
@@ -3087,7 +3174,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		resv_desc_ptr->flags &= (~RESERVE_FLAG_PART_NODES);
 
 		if ((resv_desc_ptr->node_cnt == NO_VAL) &&
-		    (resv_desc_ptr->core_cnt == NO_VAL)) {
+		    (resv_desc_ptr->core_cnt == NO_VAL) &&
+		    !(resv_desc_ptr->flags & RESERVE_FLAG_GRES_REQ)) {
 			info("Reservation request lacks node specification");
 			rc = ESLURM_INVALID_NODE_NAME;
 		} else {
@@ -3123,8 +3211,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	    !total_node_cnt && !resv_select.core_bitmap && !resv_desc_ptr->burst_buffer &&
 	    (!license_list || list_is_empty(license_list)) &&
 	    (!resv_desc_ptr->resv_watts ||
-	     resv_desc_ptr->resv_watts == NO_VAL)) {
-		info("%s: reservations without nodes and with ANY_NODES flag are expected to be one of Licenses, BurstBuffer and/or Watts", __func__);
+	     resv_desc_ptr->resv_watts == NO_VAL) &&
+	    !resv_desc_ptr->tres_str) {
+		info("%s: reservations without nodes and with ANY_NODES flag are expected to be one of Licenses, BurstBuffer, TRES and/or Watts", __func__);
 		rc = ESLURM_RESERVATION_INVALID;
 		goto bad_parse;
 	}
@@ -3174,6 +3263,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		job_record_t *job_ptr = resv_desc_ptr->job_ptr;
 		resv_ptr->core_resrcs = job_ptr->job_resrcs;
 		job_ptr->job_resrcs = NULL; /* Nothing left to free */
+		resv_ptr->gres_list_alloc = job_ptr->gres_list_req;
+		gres_job_state_log(resv_ptr->gres_list_alloc, 0);
+		job_ptr->gres_list_req = NULL; /* Nothing left to free */
 		job_mgr_list_delete_job(resv_desc_ptr->job_ptr);
 		resv_desc_ptr->job_ptr = NULL; /* Nothing left to free */
 	}
@@ -3224,7 +3316,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	resv_ptr->user_list	= user_list;
 	user_list = NULL;
 
-	if (resv_desc_ptr->core_cnt == NO_VAL) {
+	if (!(resv_desc_ptr->flags & RESERVE_FLAG_GRES_REQ) &&
+	    (resv_desc_ptr->core_cnt == NO_VAL)) {
 		log_flag(RESERVATION, "%s: reservation %s using full nodes",
 			 __func__, resv_ptr->name);
 		resv_ptr->ctld_flags |= RESV_CTLD_FULL_NODE;
@@ -3311,6 +3404,9 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	bool skip_it = false;
 	bool append_magnetic_resv = false, remove_magnetic_resv = false;
 	job_record_t *job_ptr;
+
+	if ((rc = _parse_tres_str(resv_desc_ptr)) != SLURM_SUCCESS)
+		return rc;
 
 	_create_resv_lists(false);
 	_dump_resv_req(resv_desc_ptr, "update_resv");
@@ -4505,6 +4601,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 		resv_desc.features    = resv_ptr->features;
 		resv_desc.flags       = resv_ptr->flags;
 		resv_desc.name        = resv_ptr->name;
+		resv_desc.tres_str = resv_ptr->tres_str;
 		if (!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
 			resv_desc.core_cnt = resv_ptr->core_cnt;
 		}
@@ -4549,6 +4646,11 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 			xfree(resv_ptr->node_list);
 			resv_ptr->node_list = bitmap2node_name(resv_ptr->
 							       node_bitmap);
+			FREE_NULL_LIST(resv_ptr->gres_list_alloc);
+			resv_ptr->gres_list_alloc = job_ptr->gres_list_req;
+			gres_job_state_log(resv_ptr->gres_list_alloc, 0);
+			job_ptr->gres_list_req = NULL;
+
 			job_mgr_list_delete_job(resv_desc.job_ptr);
 			resv_desc.job_ptr = NULL;
 
@@ -4637,6 +4739,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 		resv_desc.core_cnt = resv_ptr->core_cnt;
 	}
 	resv_desc.node_cnt = resv_ptr->node_cnt - i;
+	resv_desc.tres_str = resv_ptr->tres_str;
 
 	resv_desc.job_ptr = job_mgr_copy_resv_desc_to_job_record(&resv_desc);
 	/* Exclude self reserved nodes only if reservation contains any nodes */
@@ -4661,6 +4764,10 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 		job_ptr->job_resrcs = NULL;
 		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
+		FREE_NULL_LIST(resv_ptr->gres_list_alloc);
+		resv_ptr->gres_list_alloc = job_ptr->gres_list_req;
+		gres_job_state_log(resv_ptr->gres_list_alloc, 0);
+		job_ptr->gres_list_req = NULL;
 		job_mgr_list_delete_job(resv_desc.job_ptr);
 		resv_desc.job_ptr = NULL;
 		info("modified reservation %s due to unusable nodes, "
@@ -5020,6 +5127,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	resv_desc.flags      = resv_ptr->flags;
 	resv_desc.node_cnt   = 0 - delta_node_cnt;
 	resv_desc.name       = resv_ptr->name;
+	resv_desc.tres_str = resv_ptr->tres_str;
 	resv_desc.job_ptr = job_mgr_copy_resv_desc_to_job_record(&resv_desc);
 
 	/* Exclude self reserved nodes only if reservation contains any nodes */
@@ -5055,6 +5163,10 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
 		resv_ptr->node_cnt = node_cnt;
+		FREE_NULL_LIST(resv_ptr->gres_list_alloc);
+		resv_ptr->gres_list_alloc = job_ptr->gres_list_req;
+		gres_job_state_log(resv_ptr->gres_list_alloc, 0);
+		job_ptr->gres_list_req = NULL;
 		job_mgr_list_delete_job(resv_desc.job_ptr);
 		resv_desc.job_ptr = NULL;
 	}
@@ -5079,6 +5191,59 @@ static int _have_mor_feature(void *x, void *key)
 	if (feat_ptr->op_code == FEATURE_OP_MOR)
 		return 1;
 	return 0;
+}
+
+static int _combine_gres_list_exc(void *object, void *arg)
+{
+	gres_state_t *gres_state_job_in = object;
+	list_t *gres_list_exc = arg;
+	gres_job_state_t *gres_js_in = gres_state_job_in->gres_data;
+	gres_key_t job_search_key = {
+		.config_flags = gres_state_job_in->config_flags,
+		.plugin_id = gres_state_job_in->plugin_id,
+		.type_id = gres_js_in->type_id,
+	};
+	gres_state_t *gres_state_job =
+		list_find_first(gres_list_exc,
+				gres_find_job_by_key_exact_type,
+				&job_search_key);
+
+	if (!gres_state_job) {
+		gres_state_job = gres_create_state(
+			gres_state_job_in,
+			GRES_STATE_SRC_STATE_PTR,
+			GRES_STATE_TYPE_JOB,
+			gres_job_state_dup(gres_js_in));
+
+		list_append(gres_list_exc, gres_state_job);
+	} else {
+		gres_job_state_t *gres_js = gres_state_job->gres_data;
+		gres_js->total_gres += gres_js_in->total_gres;
+
+		for (int i = 0; i < gres_js_in->node_cnt; i++) {
+			if (!gres_js_in->gres_bit_alloc[i])
+				continue;
+			bit_or(gres_js->gres_bit_alloc[i],
+			       gres_js_in->gres_bit_alloc[i]);
+		}
+	}
+	/* We only care about gres_js->gres_bit_alloc */
+	return 1;
+}
+
+static void _addto_gres_list_exc(list_t **total_list, list_t *sub_list)
+{
+	if (!sub_list)
+		return;
+
+	if (!*total_list) {
+		*total_list = gres_job_state_list_dup(sub_list);
+	} else {
+		/* Here we have to combine the lists */
+		(void) list_for_each(sub_list,
+				     _combine_gres_list_exc,
+				     *total_list);
+	}
 }
 
 /*
@@ -5110,6 +5275,7 @@ static void _filter_resv(resv_desc_msg_t *resv_desc_ptr,
 		return;
 	}
 	if (!resv_ptr->core_bitmap &&
+	    !(resv_ptr->flags & RESERVE_FLAG_GRES_REQ) &&
 	    !(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
 		error("%s: Reservation %s has no core_bitmap and full_nodes is not set",
 		      __func__, resv_ptr->name);
@@ -5150,7 +5316,8 @@ static void _filter_resv(resv_desc_msg_t *resv_desc_ptr,
 		bit_or(resv_select->core_bitmap, resv_ptr->core_bitmap);
 	}
 
-
+	_addto_gres_list_exc(&resv_select->gres_list_exc,
+			     resv_ptr->gres_list_alloc);
 }
 
 /*
@@ -5619,6 +5786,9 @@ static int _pick_nodes_ordered(resv_desc_msg_t *resv_desc_ptr,
 
 	/* Free node_list here, it could be filled in by the select plugin. */
 	xfree(resv_desc_ptr->node_list);
+	if (resv_desc_ptr->flags & RESERVE_FLAG_GRES_REQ) {
+		remain_cores = 1;
+	}
 
 	for (size_t b = 0; (remain_nodes || remain_cores) &&
 		     (b < resv_select_cnt) && resv_select[b].node_bitmap; b++) {
@@ -6929,6 +7099,12 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			bit_not(resv_exc_ptr->core_bitmap);
 			resv_exc_ptr->exc_cores =
 				core_bitmap_to_array(resv_exc_ptr->core_bitmap);
+			resv_exc_ptr->gres_list_inc =
+				gres_job_state_list_dup(
+					resv_ptr->gres_list_alloc);
+			resv_exc_ptr->gres_list_exc = NULL;
+			resv_exc_ptr->gres_js_exc = NULL;
+			resv_exc_ptr->gres_js_inc = NULL;
 		}
 
 		return SLURM_SUCCESS;
@@ -7029,6 +7205,9 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 					       resv_ptr->core_bitmap);
 				}
 			}
+
+			_addto_gres_list_exc(&resv_exc_ptr->gres_list_exc,
+					     resv_ptr->gres_list_alloc);
 
 			if(!job_ptr->part_ptr ||
 			    bit_overlap_any(job_ptr->part_ptr->node_bitmap,

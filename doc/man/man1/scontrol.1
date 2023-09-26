@@ -2772,7 +2772,7 @@ or user='' and fill in the opposite with the appropriate setting.
 .TP
 \fBTRES\fR=<\fItres_spec\fR>
 Comma\-separated list of TRES required for the reservation. Current supported
-TRES types with reservations are: CPU, Node, License and BB. CPU and Node
+TRES types with reservations are: CPU, GRES, Node, License and BB. CPU and Node
 follow the same format as CoreCnt and NodeCnt parameters respectively.
 License names can be followed by an equal '=' and a count:
 
@@ -2788,6 +2788,8 @@ TRES=cpu=5,bb/cray=4,license/iop1=1,license/iop2=3
 
 TRES=node=5k,license/iop1=2
 
+TRES=gres/gpu:a100=2
+
 As specified in CoreCnt, if a nodelist is specified, cpu can be an array
 of core numbers by node:
 nodes=compute[1\-3] TRES=cpu=2,2,1,bb/cray=4,license/iop1=2
@@ -2801,6 +2803,9 @@ Note that a reservation that contains nodes or cores is associated with
 one partition, and can't span resources over multiple partitions.
 The only exception from this is when
 the reservation is created with explicitly requested nodes.
+
+Note that if GRES is requested those GRES must be TRES listed in
+AccountingStorageTRES to be valid.
 .IP
 
 .SH "PERFORMANCE"

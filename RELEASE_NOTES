@@ -62,6 +62,7 @@ HIGHLIGHTS
  -- Remove SLURM_NODE_ALIASES env variable. Client code now uses slurm_addr_t's
     passed from controller.
  -- Enable fanout for dynamic and unaddresable cloud nodes.
+ -- Make it so reservations can reserve GRES.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================

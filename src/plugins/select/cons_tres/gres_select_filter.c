@@ -515,11 +515,21 @@ extern void gres_select_filter_sock_core(job_record_t *job_ptr,
 		} else if (gres_js->def_cpus_per_gres) {
 			cpus_per_gres = gres_js->def_cpus_per_gres;
 			has_cpus_per_gres = true;
-		} else if (first_pass)
+		} else if (first_pass) {
 			_estimate_cpus_per_gres(mc_ptr->ntasks_per_job,
 						gres_js->gres_per_job,
 						mc_ptr->cpus_per_task,
 						&cpus_per_gres);
+			/*
+			 * Reservations (job_id == 0) are core based, so if we
+			 * are dealing with GRES here we need to convert the
+			 * DefCPUPerGPU to be cores instead of cpus.
+			 */
+			if (!job_ptr->job_id) {
+				cpus_per_gres =
+					ROUNDUP(cpus_per_gres, cpus_per_core);
+			}
+		}
 
 		/* Filter out unusable GRES by socket */
 		cnt_avail_total = sock_gres->cnt_any_sock;

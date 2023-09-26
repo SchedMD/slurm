@@ -499,6 +499,8 @@ typedef struct {
 				 * running on it */
 	char *features;		/* required node features		*/
 	uint64_t flags;		/* see RESERVE_FLAG_* in slurm.h	*/
+	List gres_list_alloc;	/* Allocated generic resource allocation
+				 * detail */
 	char *groups;		/* names of linux groups permitted to use */
 	uint32_t job_pend_cnt;	/* number of pending jobs		*/
 	uint32_t job_run_cnt;	/* number of running jobs		*/
@@ -535,6 +537,10 @@ typedef struct {
 
 typedef struct {
 	bitstr_t *core_bitmap;
+	void *gres_js_exc;
+	void *gres_js_inc;
+	list_t *gres_list_exc;
+	list_t *gres_list_inc;
 	bitstr_t **exc_cores;
 } resv_exc_t;
 

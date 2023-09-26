@@ -19439,7 +19439,7 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 					&detail_ptr->req_node_bitmap);
 	}
 
-	if (resv_desc_ptr->core_cnt != NO_VAL) {
+	if (resv_desc_ptr->tres_str || resv_desc_ptr->core_cnt != NO_VAL) {
 		detail_ptr->mc_ptr = xmalloc(sizeof(*detail_ptr->mc_ptr));
 		detail_ptr->mc_ptr->cores_per_socket = NO_VAL16;
 		detail_ptr->mc_ptr->ntasks_per_core = 1;
@@ -19459,6 +19459,7 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 	detail_ptr->cpus_per_task = 1;
 	detail_ptr->orig_min_cpus = detail_ptr->min_cpus;
 	detail_ptr->orig_max_cpus = detail_ptr->max_cpus = NO_VAL;
+	detail_ptr->orig_pn_min_cpus = detail_ptr->pn_min_cpus = 1;
 	detail_ptr->features = xstrdup(resv_desc_ptr->features);
 
 	if (build_feature_list(job_ptr, false, true)) {
@@ -19469,5 +19470,44 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 	detail_ptr->task_dist = SLURM_DIST_BLOCK;
 	job_ptr->best_switch = true;
 
+	if (resv_desc_ptr->tres_str) {
+		detail_ptr->ntasks_per_node = NO_VAL16;
+		detail_ptr->mc_ptr->ntasks_per_socket = NO_VAL16;
+		detail_ptr->mc_ptr->sockets_per_node = NO_VAL16;
+		detail_ptr->orig_cpus_per_task = NO_VAL16;
+		detail_ptr->ntasks_per_tres = NO_VAL16;
+
+		job_ptr->tres_req_str = xstrdup(resv_desc_ptr->tres_str);
+
+		(void)gres_job_state_validate(
+			NULL,
+			NULL,
+			job_ptr->tres_req_str,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			&detail_ptr->num_tasks,
+			&detail_ptr->min_nodes,
+			&detail_ptr->max_nodes,
+			&detail_ptr->ntasks_per_node,
+			&detail_ptr->mc_ptr->ntasks_per_socket,
+			&detail_ptr->mc_ptr->sockets_per_node,
+			&detail_ptr->orig_cpus_per_task,
+			&detail_ptr->ntasks_per_tres,
+			&job_ptr->gres_list_req);
+
+		if (detail_ptr->num_tasks == NO_VAL)
+			detail_ptr->num_tasks = 0;
+		if (detail_ptr->min_cpus == NO_VAL)
+			detail_ptr->min_cpus = 1;
+		if (detail_ptr->ntasks_per_node == NO_VAL16)
+			detail_ptr->ntasks_per_node = 0;
+		if (detail_ptr->mc_ptr->ntasks_per_socket == NO_VAL16)
+			detail_ptr->mc_ptr->ntasks_per_socket = INFINITE16;
+		if (job_ptr->gres_list_req)
+			job_ptr->bit_flags |= GRES_ENFORCE_BIND;
+		gres_job_state_log(job_ptr->gres_list_req, job_ptr->job_id);
+	}
 	return job_ptr;
 }
