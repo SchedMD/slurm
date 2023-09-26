@@ -479,4 +479,15 @@ extern void con_mgr_add_delayed_work(con_mgr_t *mgr, con_mgr_fd_t *con,
  */
 extern int con_mgr_get_thread_count(const con_mgr_t *mgr);
 
+/*
+ * Control if conmgr will exit on any error
+ */
+extern void con_mgr_set_exit_on_error(con_mgr_t *mgr, bool exit_on_error);
+extern bool con_mgr_get_exit_on_error(con_mgr_t *mgr);
+
+/*
+ * Get last error code from conmgr
+ */
+extern int con_mgr_get_error(con_mgr_t *mgr);
+
 #endif /* _CONMGR_H */

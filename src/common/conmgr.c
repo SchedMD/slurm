@@ -2882,3 +2882,32 @@ extern int con_mgr_get_thread_count(const con_mgr_t *mgr)
 {
 	return get_workq_thread_count(mgr->workq);
 }
+
+extern void con_mgr_set_exit_on_error(con_mgr_t *mgr, bool exit_on_error)
+{
+	slurm_mutex_lock(&mgr->mutex);
+	mgr->exit_on_error = exit_on_error;
+	slurm_mutex_unlock(&mgr->mutex);
+}
+
+extern bool con_mgr_get_exit_on_error(con_mgr_t *mgr)
+{
+	bool exit_on_error;
+
+	slurm_mutex_lock(&mgr->mutex);
+	exit_on_error = mgr->exit_on_error;
+	slurm_mutex_unlock(&mgr->mutex);
+
+	return exit_on_error;
+}
+
+extern int con_mgr_get_error(con_mgr_t *mgr)
+{
+	int rc;
+
+	slurm_mutex_lock(&mgr->mutex);
+	rc = mgr->error;
+	slurm_mutex_unlock(&mgr->mutex);
+
+	return rc;
+}
