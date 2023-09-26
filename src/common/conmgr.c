@@ -2958,3 +2958,18 @@ extern int con_mgr_fd_get_output_fd(con_mgr_fd_t *con)
 	xassert(con->work_active);
 	return con->output_fd;
 }
+
+extern con_mgr_fd_status_t con_mgr_fd_get_status(con_mgr_fd_t *con)
+{
+	con_mgr_fd_status_t status = {
+		.is_socket = con->is_socket,
+		.unix_socket = con->unix_socket,
+		.is_listen = con->is_listen,
+		.read_eof = con->read_eof,
+		.is_connected = con->is_connected,
+	};
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->work_active);
+	return status;
+}

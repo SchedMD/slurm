@@ -440,4 +440,19 @@ extern int con_mgr_fd_get_input_fd(con_mgr_fd_t *con);
  */
 extern int con_mgr_fd_get_output_fd(con_mgr_fd_t *con);
 
+typedef struct {
+	/* this is a socket fd */
+	bool is_socket;
+	/* path to unix socket if it is one */
+	char *unix_socket;
+	/* this is a listen only socket */
+	bool is_listen;
+	/* has this connection received read EOF */
+	bool read_eof;
+	/* has this connection called on_connection */
+	bool is_connected;
+} con_mgr_fd_status_t;
+
+extern con_mgr_fd_status_t con_mgr_fd_get_status(con_mgr_fd_t *con);
+
 #endif /* _CONMGR_H */
