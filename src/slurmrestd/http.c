@@ -757,11 +757,11 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 		.on_chunk_complete = _on_chunk_complete
 	};
 	int rc = SLURM_SUCCESS;
-	buf_t *buffer = con->in;
 	request_t *request = context->request;
 	http_parser *parser = context->parser;
+	size_t bytes_parsed, bytes_incoming;
+	const void *data;
 
-	xassert(size_buf(buffer));
 	xassert(context->magic == MAGIC);
 
 	if (!request) {
@@ -785,16 +785,16 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 	log_flag(NET, "%s: [%s] Accepted HTTP connection",
 		 __func__, con_mgr_fd_get_name(con));
 
-	size_t bytes_parsed = http_parser_execute(parser, &settings,
-						  get_buf_data(buffer),
-						  size_buf(buffer));
+	con_mgr_fd_get_in_buffer(con, &data, &bytes_incoming);
+	bytes_parsed = http_parser_execute(parser, &settings, data,
+					   bytes_incoming);
 
-	log_flag(NET, "%s: [%s] parsed %zu/%u bytes",
+	log_flag(NET, "%s: [%s] parsed %zu/%zu bytes",
 		 __func__, con_mgr_fd_get_name(con), bytes_parsed,
-		 size_buf(buffer));
+		 bytes_incoming);
 
 	if (bytes_parsed > 0)
-		set_buf_offset(buffer, bytes_parsed);
+		con_mgr_fd_mark_consumed_in_buffer(con, bytes_parsed);
 	else if (parser->http_errno) {
 		error("%s: [%s] unexpected HTTP error %s: %s",
 		      __func__, con_mgr_fd_get_name(con),
