@@ -115,7 +115,8 @@ static int _queue_start_request(con_mgr_fd_t *con, slurm_msg_t *req_msg)
 	args->con = con;
 	args->req_msg = req_msg;
 
-	debug("%s: [%s] queued start request", __func__, con->name);
+	debug("%s: [%s] queued start request",
+	      __func__, con_mgr_fd_get_name(con));
 
 	write_lock_state();
 	if (!state.start_requests)
@@ -136,7 +137,8 @@ static int _queue_delete_request(con_mgr_fd_t *con, slurm_msg_t *req_msg)
 	args->con = con;
 	args->req_msg = req_msg;
 
-	debug("%s: [%s] queued delete request", __func__, con->name);
+	debug("%s: [%s] queued delete request",
+	      __func__, con_mgr_fd_get_name(con));
 
 	write_lock_state();
 	if (!state.delete_requests)
@@ -158,7 +160,7 @@ static void _on_pty_reply_sent(con_mgr_fd_t *con, con_mgr_work_type_t type,
 	fd = state.pts;
 	unlock_state();
 
-	debug("%s: [%s] sending fd:%u", __func__, con->name, fd);
+	debug("%s: [%s] sending fd:%u", __func__, con_mgr_fd_get_name(con), fd);
 
 	/* this is a blocking operation */
 	send_fd_over_pipe(con->output_fd, fd);
@@ -181,7 +183,7 @@ static int _send_pty(con_mgr_fd_t *con, slurm_msg_t *req_msg)
 	rc = con_mgr_queue_write_msg(con, msg);
 	slurm_free_msg(msg);
 
-	debug("%s: [%s] requested pty", __func__, con->name);
+	debug("%s: [%s] requested pty", __func__, con_mgr_fd_get_name(con));
 
 	con_mgr_add_work(con, _on_pty_reply_sent,
 			 CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE, NULL,
@@ -287,7 +289,8 @@ static int _send_delete_confirmation(void *x, void *arg)
 
 	xassert(req->magic == BLOCKING_REQ_MAGIC);
 
-	debug("%s: [%s] sending delete confirmation", __func__, req->con->name);
+	debug("%s: [%s] sending delete confirmation",
+	      __func__, con_mgr_fd_get_name(req->con));
 
 	/*
 	 * either the container is already dead or kill will handle it.
@@ -634,7 +637,8 @@ static void *_on_cs_connection(con_mgr_fd_t *con, void *arg)
 	}
 	unlock_state();
 
-	debug2("%s: [%s] sending fd:%d", __func__, con->name, tty);
+	debug2("%s: [%s] sending fd:%d",
+	       __func__, con_mgr_fd_get_name(con), tty);
 
 	xassert(tty != -1);
 	xassert(isatty(tty));
@@ -643,7 +647,8 @@ static void *_on_cs_connection(con_mgr_fd_t *con, void *arg)
 	/* WARNING: blocking call */
 	errno = 0;
 	send_fd_over_pipe(con->output_fd, tty);
-	debug2("%s: [%s] sent fd:%d rc:%m", __func__, con->name, tty);
+	debug2("%s: [%s] sent fd:%d rc:%m",
+	       __func__, con_mgr_fd_get_name(con), tty);
 
 	/* only sending the fd */
 	con_mgr_queue_close_fd(con);
@@ -729,7 +734,7 @@ static void *_on_event_connection(con_mgr_fd_t *con, void *arg)
 	if (status > CONTAINER_ST_CREATING) {
 		/* already failed - skip ahead to the exiting */
 		debug("%s: [%s] starting cleanup with status %s",
-		       __func__, con->name,
+		       __func__, con_mgr_fd_get_name(con),
 		       slurm_container_status_to_str(status));
 		stop_anchor(ESLURM_JOB_NOT_PENDING);
 		return NULL;
@@ -831,7 +836,8 @@ static int _finish_start_request(void *x, void *arg)
 	xassert(!arg);
 	xassert(req->magic == BLOCKING_REQ_MAGIC);
 
-	debug("%s: [%s] sending start response", __func__, req->con->name);
+	debug("%s: [%s] sending start response",
+	      __func__, con_mgr_fd_get_name(req->con));
 
 	rc = _send_start_response(req->con, req->req_msg, SLURM_SUCCESS);
 
@@ -910,18 +916,18 @@ static int _start(con_mgr_fd_t *con, slurm_msg_t *req_msg)
 	case CONTAINER_ST_UNKNOWN:
 	case CONTAINER_ST_MAX:
 		fatal("%s: [%s] start request while in status:%s should never happen",
-		      __func__, con->name,
+		      __func__, con_mgr_fd_get_name(con),
 		      slurm_container_status_to_str(status));
 	case CONTAINER_ST_CREATING:
 		debug("%s: [%s] start request while in status:%s. Deferring start request until CREATED state.",
-		      __func__, con->name,
+		      __func__, con_mgr_fd_get_name(con),
 		      slurm_container_status_to_str(status));
 
 		return _queue_start_request(con, req_msg);
 	case CONTAINER_ST_CREATED:
 	{
 		debug("%s: [%s] queuing up start request in status:%s",
-		      __func__, con->name,
+		      __func__, con_mgr_fd_get_name(con),
 		      slurm_container_status_to_str(status));
 
 		/* at created and we just changed state to STARTING */
@@ -930,7 +936,7 @@ static int _start(con_mgr_fd_t *con, slurm_msg_t *req_msg)
 	case CONTAINER_ST_STARTING:
 	case CONTAINER_ST_RUNNING:
 		debug("%s: [%s] ignoring duplicate start request while %s",
-		      __func__, con->name,
+		      __func__, con_mgr_fd_get_name(con),
 		      slurm_container_status_to_str(status));
 
 		return _send_start_response(con, req_msg, SLURM_SUCCESS);
@@ -938,7 +944,7 @@ static int _start(con_mgr_fd_t *con, slurm_msg_t *req_msg)
 	case CONTAINER_ST_STOPPED:
 		/* already ran? */
 		debug("%s: [%s] start request while in status:%s rejected",
-		      __func__, con->name,
+		      __func__, con_mgr_fd_get_name(con),
 		      slurm_container_status_to_str(status));
 
 		/* TODO: maybe this should always be SUCCESS too? */
@@ -962,10 +968,11 @@ static int _kill_job(con_mgr_fd_t *con, int signal)
 		rc = slurm_kill_job(jobid, signal, KILL_FULL_JOB);
 
 		debug("%s: [%s] slurm_kill_job(JobID=%d, Signal[%d]=%s, 0) = %s",
-		      __func__, (con ? con->name : "self"), jobid, signal,
-		      strsignal(signal), slurm_strerror(rc));
+		      __func__, (con ? con_mgr_fd_get_name(con) : "self"),
+		      jobid, signal, strsignal(signal), slurm_strerror(rc));
 	} else {
-		debug("%s: [%s] job already dead", __func__, con->name);
+		debug("%s: [%s] job already dead",
+		      __func__, con_mgr_fd_get_name(con));
 	}
 
 	return rc;
@@ -981,7 +988,7 @@ static int _kill(con_mgr_fd_t *con, slurm_msg_t *req_msg)
 	xassert(req_msg->msg_type == REQUEST_CONTAINER_KILL);
 
 	debug("%s: [%s] requested signal %s",
-	      __func__, con->name, strsignal(sig_msg->signal));
+	      __func__, con_mgr_fd_get_name(con), strsignal(sig_msg->signal));
 
 	rc = _kill_job(con, sig_msg->signal);
 
@@ -1006,8 +1013,8 @@ static int _delete(con_mgr_fd_t *con, slurm_msg_t *req_msg)
 	container_delete_msg_t *delete_msg = req_msg->data;
 
 	debug("%s: [%s]%s delete requested: %s",
-	      __func__, con->name, (delete_msg->force ? " force" : ""),
-	      slurm_strerror(rc));
+	      __func__, con_mgr_fd_get_name(con),
+	      (delete_msg->force ? " force" : ""), slurm_strerror(rc));
 
 	rc = _queue_delete_request(con, req_msg);
 
@@ -1280,7 +1287,7 @@ static void *_on_connection(con_mgr_fd_t *con, void *arg)
 	check_state();
 	xassert(!arg);
 
-	debug4("%s: [%s] new connection", __func__, con->name);
+	debug4("%s: [%s] new connection", __func__, con_mgr_fd_get_name(con));
 
 	return &state;
 }
@@ -1318,7 +1325,8 @@ static int _send_state(con_mgr_fd_t *con, slurm_msg_t *req_msg)
 	state_msg->annotations = list_shallow_copy(state.annotations);
 
 	debug("%s: [%s] sent state with status=%s",
-	      __func__, con->name, slurm_container_status_to_str(state.status));
+	      __func__, con_mgr_fd_get_name(con),
+	      slurm_container_status_to_str(state.status));
 
 	rc = con_mgr_queue_write_msg(con, msg);
 
@@ -1350,12 +1358,13 @@ static int _on_connection_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	 */
 	if (!msg->auth_ids_set) {
 		error("%s: [%s] rejecting %s RPC with missing user auth",
-		      __func__, con->name, rpc_num2string(msg->msg_type));
+		      __func__, con_mgr_fd_get_name(con),
+		      rpc_num2string(msg->msg_type));
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	} else if (msg->auth_uid != user_id) {
 		error("%s: [%s] rejecting %s RPC with user:%u != owner:%u",
-		      __func__, con->name, rpc_num2string(msg->msg_type),
-		      msg->auth_uid, user_id);
+		      __func__, con_mgr_fd_get_name(con),
+		      rpc_num2string(msg->msg_type), msg->auth_uid, user_id);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 
@@ -1383,7 +1392,7 @@ static int _on_connection_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	default:
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 		error("%s: [%s] unexpected message %u",
-		      __func__, con->name, msg->msg_type);
+		      __func__, con_mgr_fd_get_name(con), msg->msg_type);
 		slurm_free_msg(msg);
 	}
 
@@ -1449,7 +1458,7 @@ static void *_on_startup_con(con_mgr_fd_t *con, void *arg)
 
 	xassert(!arg);
 
-	debug4("%s: [%s] new connection", __func__, con->name);
+	debug4("%s: [%s] new connection", __func__, con_mgr_fd_get_name(con));
 
 	write_lock_state();
 	xassert(!state.startup_con);
@@ -1478,7 +1487,7 @@ static void _on_startup_con_fin(void *arg)
 
 	write_lock_state();
 	debug4("%s: [%s] create command parent notified of start",
-	       __func__, state.startup_con->name);
+	       __func__, con_mgr_fd_get_name(state.startup_con));
 	xassert(state.startup_con);
 	state.startup_con = NULL;
 	unlock_state();

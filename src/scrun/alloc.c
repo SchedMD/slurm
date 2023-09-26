@@ -245,7 +245,8 @@ static int _stage_in()
 
 static void *_on_connection(con_mgr_fd_t *con, void *arg)
 {
-	debug("%s:[%s] new srun connection", __func__, con->name);
+	debug("%s:[%s] new srun connection",
+	      __func__, con_mgr_fd_get_name(con));
 
 	/* must return !NULL or connection will be closed */
 	return con;
@@ -272,7 +273,8 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		rc = con_mgr_queue_write_msg(con, &resp_msg);
 		/* nothing to xfree() */
 
-		debug("%s:[%s] srun RPC PING has been PONGED", __func__, con->name);
+		debug("%s:[%s] srun RPC PING has been PONGED",
+		      __func__, con_mgr_fd_get_name(con));
 		break;
 	}
 	case SRUN_JOB_COMPLETE:
@@ -280,7 +282,8 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		xassert(sizeof(srun_job_complete_msg_t) ==
 			sizeof(slurm_step_id_t));
 		slurm_step_id_t *step = msg->data;
-		debug("%s:[%s] %pS complete srun RPC", __func__, con->name, step);
+		debug("%s:[%s] %pS complete srun RPC",
+		      __func__, con_mgr_fd_get_name(con), step);
 		stop_anchor(SLURM_SUCCESS);
 		break;
 	}
@@ -288,7 +291,8 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	{
 		srun_timeout_msg_t *to = msg->data;
 		debug("%s:[%s] srun RPC %pS timeout at %ld RPC",
-		      __func__, con->name, &to->step_id, to->timeout);
+		      __func__, con_mgr_fd_get_name(con), &to->step_id,
+		      to->timeout);
 		stop_anchor(ESLURM_JOB_TIMEOUT_KILLED);
 		break;
 	}
@@ -297,7 +301,7 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		srun_user_msg_t *um = msg->data;
 
 		debug("%s:[%s] JobId=%u srun user message RPC",
-		      __func__, con->name, um->job_id);
+		      __func__, con_mgr_fd_get_name(con), um->job_id);
 
 		print_multi_line_string(um->msg, -1, LOG_LEVEL_INFO);
 		break;
@@ -306,7 +310,8 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	{
 		srun_node_fail_msg_t *nf = msg->data;
 		debug("%s:[%s] srun RPC %pS nodes failed: %s",
-		      __func__, con->name, &nf->step_id, nf->nodelist);
+		      __func__, con_mgr_fd_get_name(con), &nf->step_id,
+		      nf->nodelist);
 		stop_anchor(ESLURM_JOB_NODE_FAIL_KILLED);
 		break;
 	}
@@ -315,7 +320,7 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		suspend_msg_t *sus_msg = msg->data;
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 		error("%s:[%s] rejecting srun suspend RPC for %s",
-		      __func__, con->name, sus_msg->job_id_str);
+		      __func__, con_mgr_fd_get_name(con), sus_msg->job_id_str);
 		break;
 	}
 	case SRUN_NET_FORWARD:
@@ -323,13 +328,14 @@ static int _on_msg(con_mgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		net_forward_msg_t *net = msg->data;
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 		error("%s:[%s] rejecting srun net forward RPC for %s",
-		      __func__, con->name, net->target);
+		      __func__, con_mgr_fd_get_name(con), net->target);
 		break;
 	}
 	default:
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 		error("%s:[%s] received spurious srun message type: %s",
-		      __func__, con->name, rpc_num2string(msg->msg_type));
+		      __func__, con_mgr_fd_get_name(con),
+		      rpc_num2string(msg->msg_type));
 	}
 
 	return rc;
@@ -342,7 +348,7 @@ static void _on_finish(void *arg)
 	if (get_log_level() > LOG_LEVEL_DEBUG) {
 		read_lock_state();
 		debug("%s: [%s] closed srun connection state=%s",
-		      __func__, con->name,
+		      __func__, con_mgr_fd_get_name(con),
 		      slurm_container_status_to_str(state.status));
 		unlock_state();
 	}
