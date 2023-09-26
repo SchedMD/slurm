@@ -109,7 +109,7 @@ out of the node.
 </p>
 
 <ul>
-<li>runc using create/start:
+<li>oci.conf example for runc using create/start:
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -120,7 +120,7 @@ RunTimeKill="runc --rootless=true --root=/run/user/%U/ kill -a %n.%u.%j.%s.%t"
 RunTimeDelete="runc --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
 </pre></li>
 
-<li>runc using run (suggested):
+<li>oci.conf example for runc using run (suggested):
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -130,7 +130,7 @@ RunTimeDelete="runc --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j
 RunTimeRun="runc --rootless=true --root=/run/user/%U/ run %n.%u.%j.%s.%t -b %b"
 </pre></li>
 
-<li>crun using create/start:
+<li>oci.conf example for crun using create/start:
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -141,7 +141,7 @@ RunTimeCreate="crun --rootless=true --root=/run/user/%U/ create --bundle %b %n.%
 RunTimeStart="crun --rootless=true --root=/run/user/%U/ start %n.%u.%j.%s.%t"
 </pre></li>
 
-<li>crun using run (suggested):
+<li>oci.conf example for crun using run (suggested):
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -151,7 +151,7 @@ RunTimeDelete="crun --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j
 RunTimeRun="crun --rootless=true --root=/run/user/%U/ run --bundle %b %n.%u.%j.%s.%t"
 </pre></li>
 
-<li>nvidia-container-runtime using create/start:
+<li>oci.conf example for nvidia-container-runtime using create/start:
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -162,7 +162,7 @@ RunTimeKill="nvidia-container-runtime --rootless=true --root=/run/user/%U/ kill 
 RunTimeDelete="nvidia-container-runtime --rootless=true --root=/run/user/%U/ delete --force %n.%u.%j.%s.%t"
 </pre></li>
 
-<li>nvidia-container-runtime using run (suggested):
+<li>oci.conf example for nvidia-container-runtime using run (suggested):
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -172,7 +172,7 @@ RunTimeDelete="nvidia-container-runtime --rootless=true --root=/run/user/%U/ del
 RunTimeRun="nvidia-container-runtime --rootless=true --root=/run/user/%U/ run %n.%u.%j.%s.%t -b %b"
 </pre></li>
 
-<li>hpcng singularity v3.8.0:
+<li>oci.conf example for hpcng singularity v3.8.0:
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
@@ -187,7 +187,8 @@ which is a security risk since the user is able to modify these calls.
 This example is only provided for testing purposes.
 </li>
 
-<li><a href="https://github.com/hpc/charliecloud">Charliecloud</a> (v0.30)
+<li>oci.conf example for
+<a href="https://github.com/hpc/charliecloud">Charliecloud</a> (v0.30)
 <pre>
 IgnoreFileConfigJson=true
 CreateEnvFile=newline
@@ -199,9 +200,8 @@ RunTimeDelete="kill -s SIGKILL %p"
 </pre>
 </li>
 
-<li><a href="https://github.com/NVIDIA/enroot">Enroot</a> (3.3.0)
-<br>
-oci.conf:
+<li>oci.conf example for
+<a href="https://github.com/NVIDIA/enroot">Enroot</a> (3.3.0)
 <pre>
 IgnoreFileConfigJson=true
 CreateEnvFile=newline
@@ -812,6 +812,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 19 September 2023</p>
+<p style="text-align:center;">Last modified 29 September 2023</p>
 
 <!--#include virtual="footer.txt"-->
