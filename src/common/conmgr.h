@@ -424,4 +424,20 @@ extern void con_mgr_fd_get_in_buffer(const con_mgr_fd_t *con,
 extern void con_mgr_fd_mark_consumed_in_buffer(const con_mgr_fd_t *con,
 					       size_t bytes);
 
+/*
+ * Get input file descriptor
+ * WARNING: fd is only valid until return from callback and may close due to
+ * other calls against connection
+ * RET -1 if closed or valid number
+ */
+extern int con_mgr_fd_get_input_fd(con_mgr_fd_t *con);
+
+/*
+ * Get output file descriptor
+ * WARNING: fd is only valid until return from callback and may close due to
+ * other calls against connection
+ * RET -1 if closed or valid number
+ */
+extern int con_mgr_fd_get_output_fd(con_mgr_fd_t *con);
+
 #endif /* _CONMGR_H */

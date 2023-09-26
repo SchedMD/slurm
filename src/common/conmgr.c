@@ -2944,3 +2944,17 @@ extern void con_mgr_fd_mark_consumed_in_buffer(const con_mgr_fd_t *con,
 	xassert(offset <= size_buf(con->in));
 	set_buf_offset(con->in, offset);
 }
+
+extern int con_mgr_fd_get_input_fd(con_mgr_fd_t *con)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->work_active);
+	return con->input_fd;
+}
+
+extern int con_mgr_fd_get_output_fd(con_mgr_fd_t *con)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->work_active);
+	return con->output_fd;
+}
