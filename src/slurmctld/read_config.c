@@ -1643,6 +1643,15 @@ int read_slurm_conf(int recover, bool reconfig)
 		/* Lock node_record_table_ptr from growing */
 		slurm_conf.max_node_cnt = node_record_count;
 	}
+	if (slurm_conf.max_node_cnt == 0) {
+		/*
+		 * Set to 1 so bitmaps will be created but don't allow any nodes
+		 * to be created.
+		 */
+		node_record_count = 1;
+		grow_node_record_table_ptr();
+	}
+
 	if (reconfig &&
 	    old_max_node_cnt &&
 	    (old_max_node_cnt != slurm_conf.max_node_cnt)) {
