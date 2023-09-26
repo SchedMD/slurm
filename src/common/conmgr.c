@@ -80,6 +80,79 @@
 #define BUFFER_START_SIZE 4096
 
 /*
+ * Connection tracking structure
+ */
+struct con_mgr_fd_s {
+	int magic;
+	con_mgr_con_type_t type;
+	/* input and output may be a different fd to inet mode */
+	int input_fd;
+	int output_fd;
+	/* arg handed to on_connection */
+	void *new_arg;
+	/* arg returned from on_connection */
+	void *arg;
+	/* name of connection for logging */
+	char *name;
+	/* call backs on events */
+	con_mgr_events_t events;
+	/* buffer holding incoming already read data */
+	buf_t *in;
+	/* has on_data already tried to parse data */
+	bool on_data_tried;
+	/* list of buf_t to write (in order) */
+	list_t *deferred_out;
+	/* buffer holding out going to be written data */
+	buf_t *out;
+	/* this is a socket fd */
+	bool is_socket;
+	/* path to unix socket if it is one */
+	char *unix_socket;
+	/* this is a listen only socket */
+	bool is_listen;
+	/* connection is waiting for on_finish() to complete */
+	bool wait_on_finish;
+	/* poll has indicated write is possible */
+	bool can_write;
+	/* poll has indicated read is possible */
+	bool can_read;
+	/* has this connection received read EOF */
+	bool read_eof;
+	/* has this connection called on_connection */
+	bool is_connected;
+	/* incoming msg length - CON_TYPE_RPC only */
+	uint32_t msglen;
+	/*
+	 * has pending work:
+	 * there must only be 1 thread at a time working on this connection
+	 * directly.
+	 *
+	 * While this is true, the following must not be changed except by the
+	 * callback thread:
+	 * 	in
+	 * 	out
+	 * 	name (will never change for life of connection)
+	 * 	mgr (will not be moved)
+	 * 	con (will not be moved)
+	 * 	arg
+	 *	on_data_tried
+	 *	msglen
+	 *
+	 */
+	bool work_active;
+	/*
+	 * list of non-IO work pending
+	 * type: wrap_work_arg_t
+	 */
+	list_t *work;
+	/*
+	 * list of non-IO work pending out buffer being full sent
+	 * type: wrap_work_arg_t
+	 */
+	list_t *write_complete_work;
+};
+
+/*
  * Global instance of conmgr
  */
 struct {
