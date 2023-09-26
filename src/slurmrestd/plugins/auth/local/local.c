@@ -246,9 +246,10 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 	struct stat status = { 0 };
 	const char *header_user_name = find_http_header(args->headers,
 							HTTP_HEADER_USER_NAME);
-
-	const int input_fd = args->context->con->input_fd;
-	const int output_fd = args->context->con->output_fd;
+	const con_mgr_fd_status_t cstatus =
+		con_mgr_fd_get_status(args->context->con);
+	const int input_fd = con_mgr_fd_get_input_fd(args->context->con);
+	const int output_fd = con_mgr_fd_get_output_fd(args->context->con);
 	const char *name = con_mgr_fd_get_name(args->context->con);
 
 	xassert(!ctxt->user_name);
@@ -260,15 +261,14 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 		return ESLURM_AUTH_SKIP;
 	}
 
-	if (args->context->con->is_socket && !args->context->con->unix_socket) {
+	if (cstatus.is_socket && !cstatus.unix_socket) {
 		/*
 		 * SO_PEERCRED only works on unix sockets
 		 */
 		debug("%s: [%s] socket authentication only supported on UNIX sockets",
 		      __func__, name);
 		return ESLURM_AUTH_SKIP;
-	} else if (args->context->con->is_socket &&
-		   args->context->con->unix_socket) {
+	} else if (cstatus.is_socket && cstatus.unix_socket) {
 		return _auth_socket(args, ctxt, header_user_name);
 	} else if (fstat(input_fd, &status)) {
 		error("%s: [%s] unable to stat fd %d: %m",
