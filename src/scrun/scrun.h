@@ -179,14 +179,12 @@ extern int get_anchor_state(void);
  * Request allocation for job
  * IN arg - ptr to conmgr
  */
-extern void get_allocation(con_mgr_t *mgr, con_mgr_fd_t *con,
-			   con_mgr_work_type_t type,
+extern void get_allocation(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			   con_mgr_work_status_t status, const char *tag,
 			   void *arg);
 
 /* callback after allocation success */
-extern void on_allocation(con_mgr_t *mgr, con_mgr_fd_t *con,
-			  con_mgr_work_type_t type,
+extern void on_allocation(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			  con_mgr_work_status_t status, const char *tag,
 			  void *arg);
 

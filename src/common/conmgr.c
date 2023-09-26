@@ -73,7 +73,6 @@
 #include "src/common/xstring.h"
 
 #define MAGIC_CON_MGR_FD 0xD23444EF
-#define MAGIC_CON_MGR 0xD232444A
 #define MAGIC_WORK 0xD231444A
 #define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
 #define MAGIC_DEFERRED_FUNC 0xA230403A
@@ -81,10 +80,9 @@
 #define BUFFER_START_SIZE 4096
 
 /*
- * Opaque struct - do not access directly
+ * Global instance of conmgr
  */
-struct con_mgr_s {
-	int magic;
+struct {
 	/* Max number of connections at any one time allowed */
 	int max_connections;
 	/*
@@ -145,6 +143,13 @@ struct con_mgr_s {
 	pthread_mutex_t mutex;
 	/* called after events or changes to wake up _watch */
 	pthread_cond_t cond;
+} mgr = {
+	.mutex = PTHREAD_MUTEX_INITIALIZER,
+	.cond = PTHREAD_COND_INITIALIZER,
+	.max_connections = -1,
+	.event_fd = { -1, -1 },
+	.signal_fd = { -1, -1 },
+	.error = SLURM_SUCCESS,
 };
 
 /*
@@ -154,12 +159,10 @@ struct con_mgr_s {
 pthread_mutex_t signal_mutex = PTHREAD_MUTEX_INITIALIZER;
 int signal_fd[2] = { -1, -1 };
 
-typedef void (*on_poll_event_t)(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
-				short revents);
+typedef void (*on_poll_event_t)(int fd, con_mgr_fd_t *con, short revents);
 
 typedef struct {
 	int magic;
-	con_mgr_t *mgr;
 	con_mgr_fd_t *con;
 	con_mgr_work_func_t func;
 	void *arg;
@@ -205,7 +208,6 @@ struct {
 
 /* simple struct to keep track of fds */
 typedef struct {
-	con_mgr_t *mgr;
 	struct pollfd *fds;
 	int nfds;
 } poll_args_t;
@@ -226,47 +228,39 @@ static struct {
 
 typedef struct {
 	int magic; /* MAGIC_FOREACH_DELAYED_WORK */
-	con_mgr_t *mgr;
 	work_t *shortest;
 } foreach_delayed_work_t;
 
 
 typedef struct {
 	con_mgr_events_t events;
-	con_mgr_t *mgr;
 	void *arg;
 	con_mgr_con_type_t type;
 } socket_listen_init_t;
 
 static int _close_con_for_each(void *x, void *arg);
-static void _listen_accept(con_mgr_t *mgr, con_mgr_fd_t *con,
-			   con_mgr_work_type_t type,
+static void _listen_accept(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			   con_mgr_work_status_t status, const char *tag,
 			   void *arg);
-static void _wrap_on_connection(con_mgr_t *mgr, con_mgr_fd_t *con,
-				con_mgr_work_type_t type,
+static void _wrap_on_connection(con_mgr_fd_t *con, con_mgr_work_type_t type,
 				con_mgr_work_status_t status, const char *tag,
 				void *arg);
-static void _add_work(bool locked, con_mgr_t *mgr, con_mgr_fd_t *con,
-		      con_mgr_work_func_t func, con_mgr_work_type_t type,
-		      void *arg, const char *tag);
-static void _wrap_on_data(con_mgr_t *mgr, con_mgr_fd_t *con,
-			  con_mgr_work_type_t type,
+static void _add_work(bool locked, con_mgr_fd_t *con, con_mgr_work_func_t func,
+		      con_mgr_work_type_t type, void *arg, const char *tag);
+static void _wrap_on_data(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			  con_mgr_work_status_t status, const char *tag,
 			  void *arg);
-static void _on_finish_wrapper(con_mgr_t *mgr, con_mgr_fd_t *con,
-			       con_mgr_work_type_t type,
+static void _on_finish_wrapper(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			       con_mgr_work_status_t status, const char *tag,
 			       void *arg);
-static void _deferred_write_fd(con_mgr_t *mgr, con_mgr_fd_t *con,
-			  con_mgr_work_type_t type,
-			  con_mgr_work_status_t status, const char *tag,
-			  void *arg);
-static void _cancel_delayed_work(bool locked, con_mgr_t *mgr);
+static void _deferred_write_fd(con_mgr_fd_t *con, con_mgr_work_type_t type,
+			       con_mgr_work_status_t status, const char *tag,
+			       void *arg);
+static void _cancel_delayed_work(bool locked);
 static void _handle_timer(void *x);
 static void _handle_work(bool locked, work_t *work);
-static void _queue_func(bool locked, con_mgr_t *mgr, work_func_t func,
-			void *arg, const char *tag);
+static void _queue_func(bool locked, work_func_t func, void *arg,
+			const char *tag);
 
 /*
  * Find by matching fd to connection
@@ -327,69 +321,67 @@ try_again:
 	}
 }
 
-extern con_mgr_t *init_con_mgr(int thread_count, int max_connections,
-			       con_mgr_callbacks_t callbacks)
+extern void init_con_mgr(int thread_count, int max_connections,
+			 con_mgr_callbacks_t callbacks)
 {
-	con_mgr_t *mgr = xmalloc(sizeof(*mgr));
+	slurm_mutex_lock(&mgr.mutex);
 
-	mgr->magic = MAGIC_CON_MGR;
-	mgr->max_connections = max_connections;
-	mgr->connections = list_create(NULL);
-	mgr->listen = list_create(NULL);
-	mgr->complete = list_create(NULL);
-	mgr->callbacks = callbacks;
+	if (mgr.workq)
+		fatal("%s called more than once", __func__);
 
-	slurm_mutex_init(&mgr->mutex);
-	slurm_cond_init(&mgr->cond, NULL);
+	mgr.max_connections = max_connections;
+	mgr.connections = list_create(NULL);
+	mgr.listen = list_create(NULL);
+	mgr.complete = list_create(NULL);
+	mgr.callbacks = callbacks;
+	mgr.workq = new_workq(thread_count);
+	mgr.deferred_funcs = list_create(NULL);
 
-	mgr->workq = new_workq(thread_count);
-	mgr->deferred_funcs = list_create(NULL);
-
-	if (pipe(mgr->event_fd))
+	if (pipe(mgr.event_fd))
 		fatal("%s: unable to open unnamed pipe: %m", __func__);
 
-	fd_set_nonblocking(mgr->event_fd[0]);
-	fd_set_blocking(mgr->event_fd[1]);
+	fd_set_nonblocking(mgr.event_fd[0]);
+	fd_set_blocking(mgr.event_fd[1]);
 
-	if (pipe(mgr->signal_fd))
+	if (pipe(mgr.signal_fd))
 		fatal("%s: unable to open unnamed pipe: %m", __func__);
 
 	/* block for writes only */
-	fd_set_nonblocking(mgr->signal_fd[0]);
-	fd_set_blocking(mgr->signal_fd[1]);
+	fd_set_nonblocking(mgr.signal_fd[0]);
+	fd_set_blocking(mgr.signal_fd[1]);
 
-	return mgr;
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 /*
  * Notify connection manager that there has been a change event
  */
-static void _signal_change(con_mgr_t *mgr, bool locked)
+static void _signal_change(bool locked)
 {
 	DEF_TIMERS;
 	char buf[] = "1";
 	int rc;
 
 	if (!locked)
-		slurm_mutex_lock(&mgr->mutex);
+		slurm_mutex_lock(&mgr.mutex);
 
-	if (mgr->event_signaled) {
-		mgr->event_signaled++;
+	if (mgr.event_signaled) {
+		mgr.event_signaled++;
 		log_flag(NET, "%s: sent %d times",
-			 __func__, mgr->event_signaled);
+			 __func__, mgr.event_signaled);
 		goto done;
 	} else {
 		log_flag(NET, "%s: sending", __func__);
-		mgr->event_signaled = 1;
+		mgr.event_signaled = 1;
 	}
 
 	if (!locked)
-		slurm_mutex_unlock(&mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 
 try_again:
 	START_TIMER;
 	/* send 1 byte of trash */
-	rc = write(mgr->event_fd[1], buf, 1);
+	rc = write(mgr.event_fd[1], buf, 1);
 	END_TIMER2("write to event_fd");
 	if (rc != 1) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
@@ -403,76 +395,70 @@ try_again:
 	log_flag(NET, "%s: sent in %s", __func__, TIME_STR);
 
 	if (!locked)
-		slurm_mutex_lock(&mgr->mutex);
+		slurm_mutex_lock(&mgr.mutex);
 
 done:
 	/* wake up _watch() */
-	slurm_cond_broadcast(&mgr->cond);
+	slurm_cond_broadcast(&mgr.cond);
 
 	if (!locked)
-		slurm_mutex_unlock(&mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 }
 
-static void _close_all_connections(bool locked, con_mgr_t *mgr)
+static void _close_all_connections(bool locked)
 {
 	if (!locked)
-		slurm_mutex_lock(&mgr->mutex);
+		slurm_mutex_lock(&mgr.mutex);
 
 	/* close all connections */
-	list_for_each(mgr->connections, _close_con_for_each, NULL);
-	list_for_each(mgr->listen, _close_con_for_each, NULL);
+	list_for_each(mgr.connections, _close_con_for_each, NULL);
+	list_for_each(mgr.listen, _close_con_for_each, NULL);
 
 	if (!locked)
-		slurm_mutex_unlock(&mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern void free_con_mgr(con_mgr_t *mgr)
+extern void free_con_mgr(void)
 {
-	if (!mgr)
-		return;
-
 	log_flag(NET, "%s: connection manager shutting down", __func__);
 
 	/* processing may still be running at this point in a thread */
-	_close_all_connections(false, mgr);
+	_close_all_connections(false);
 
 	/* tell all timers about being canceled */
-	_cancel_delayed_work(false, mgr);
+	_cancel_delayed_work(false);
 
 	/*
 	 * make sure WORKQ is done before making any changes encase there are
 	 * any outstanding threads running
 	 */
-	FREE_NULL_WORKQ(mgr->workq);
+	FREE_NULL_WORKQ(mgr.workq);
 
 	/* deferred_funcs should have been cleared by con_mgr_run() */
-	FREE_NULL_LIST(mgr->deferred_funcs);
+	FREE_NULL_LIST(mgr.deferred_funcs);
 
 	/*
 	 * At this point, there should be no threads running.
 	 * It should be safe to shutdown the mgr.
 	 */
-	FREE_NULL_LIST(mgr->connections);
-	FREE_NULL_LIST(mgr->listen);
-	FREE_NULL_LIST(mgr->complete);
+	FREE_NULL_LIST(mgr.connections);
+	FREE_NULL_LIST(mgr.listen);
+	FREE_NULL_LIST(mgr.complete);
 
-	if (mgr->delayed_work) {
-		FREE_NULL_LIST(mgr->delayed_work);
-		if (timer_delete(mgr->timer))
+	if (mgr.delayed_work) {
+		FREE_NULL_LIST(mgr.delayed_work);
+		if (timer_delete(mgr.timer))
 			fatal("%s: timer_delete() failed: %m", __func__);
 	}
 
-	slurm_mutex_destroy(&mgr->mutex);
-	slurm_cond_destroy(&mgr->cond);
+	slurm_mutex_destroy(&mgr.mutex);
+	slurm_cond_destroy(&mgr.cond);
 
-	if (close(mgr->event_fd[0]) || close(mgr->event_fd[1]))
+	if (close(mgr.event_fd[0]) || close(mgr.event_fd[1]))
 		error("%s: unable to close event_fd: %m", __func__);
 
-	if (close(mgr->signal_fd[0]) || close(mgr->signal_fd[1]))
+	if (close(mgr.signal_fd[0]) || close(mgr.signal_fd[1]))
 		error("%s: unable to close signal_fd: %m", __func__);
-
-	mgr->magic = ~MAGIC_CON_MGR;
-	xfree(mgr);
 }
 
 /*
@@ -482,7 +468,7 @@ extern void free_con_mgr(con_mgr_t *mgr)
 static void _close_con(bool locked, con_mgr_fd_t *con)
 {
 	if (!locked)
-		slurm_mutex_lock(&con->mgr->mutex);
+		slurm_mutex_lock(&mgr.mutex);
 
 	if (con->read_eof) {
 		log_flag(NET, "%s: [%s] ignoring duplicate close request",
@@ -520,22 +506,23 @@ static void _close_con(bool locked, con_mgr_fd_t *con)
 	/* forget the now invalid FD */
 	con->input_fd = -1;
 
-	_signal_change(con->mgr, true);
+	_signal_change(true);
 cleanup:
 	if (!locked)
-		slurm_mutex_unlock(&con->mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 }
 
-static con_mgr_fd_t *_add_connection(
-	con_mgr_t *mgr, con_mgr_con_type_t type, con_mgr_fd_t *source,
-	int input_fd, int output_fd, const con_mgr_events_t events,
-	const slurm_addr_t *addr, socklen_t addrlen, bool is_listen,
-	const char *unix_socket_path, void *arg)
+static con_mgr_fd_t *_add_connection(con_mgr_con_type_t type,
+				     con_mgr_fd_t *source, int input_fd,
+				     int output_fd,
+				     const con_mgr_events_t events,
+				     const slurm_addr_t *addr,
+				     socklen_t addrlen, bool is_listen,
+				     const char *unix_socket_path, void *arg)
 {
 	struct stat fbuf = { 0 };
 	con_mgr_fd_t *con = NULL;
 
-	xassert(mgr->magic == MAGIC_CON_MGR);
 	xassert((type == CON_TYPE_RAW && events.on_data && !events.on_msg) ||
 		(type == CON_TYPE_RPC && !events.on_data && events.on_msg));
 
@@ -563,7 +550,6 @@ static con_mgr_fd_t *_add_connection(
 		/* save socket type to avoid calling fstat() again */
 		.is_socket = (addr && S_ISSOCK(fbuf.st_mode)),
 		.is_listen = is_listen,
-		.mgr = mgr,
 		.work = list_create(NULL),
 		.write_complete_work = list_create(NULL),
 		.new_arg = arg,
@@ -649,24 +635,23 @@ static con_mgr_fd_t *_add_connection(
 	log_flag(NET, "%s: [%s] new connection input_fd=%u output_fd=%u",
 		 __func__, con->name, input_fd, output_fd);
 
-	slurm_mutex_lock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
 	if (is_listen)
-		list_append(mgr->listen, con);
+		list_append(mgr.listen, con);
 	else
-		list_append(mgr->connections, con);
-	slurm_mutex_unlock(&mgr->mutex);
+		list_append(mgr.connections, con);
+	slurm_mutex_unlock(&mgr.mutex);
 
 	return con;
 }
 
-static void _wrap_con_work(work_t *work, con_mgr_fd_t *con, con_mgr_t *mgr)
+static void _wrap_con_work(work_t *work, con_mgr_fd_t *con)
 {
-	work->func(work->mgr, work->con, work->type, work->status, work->tag,
-		   work->arg);
+	work->func(work->con, work->type, work->status, work->tag, work->arg);
 
-	slurm_mutex_lock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
 	con->work_active = false;
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 /*
@@ -676,7 +661,6 @@ static void _wrap_work(void *x)
 {
 	work_t *work = x;
 	con_mgr_fd_t *con = work->con;
-	con_mgr_t *mgr = work->mgr;
 
 	log_flag(NET, "%s: %s%s%sBEGIN work=0x%"PRIxPTR" %s@0x%"PRIxPTR" type=%s status=%s arg=0x%"PRIxPTR,
 		 __func__, (con ? "[" : ""), (con ? con->name : ""),
@@ -689,13 +673,13 @@ static void _wrap_work(void *x)
 	case CONMGR_WORK_TYPE_FIFO:
 	case CONMGR_WORK_TYPE_TIME_DELAY_FIFO:
 		xassert(!con);
-		work->func(work->mgr, NULL, work->type, work->status, work->tag,
+		work->func(NULL, work->type, work->status, work->tag,
 			   work->arg);
 		break;
 	case CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE:
 	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
 	case CONMGR_WORK_TYPE_CONNECTION_DELAY_FIFO:
-		_wrap_con_work(work, con, mgr);
+		_wrap_con_work(work, con);
 		break;
 	default:
 		fatal_abort("%s: invalid work type 0x%x", __func__, work->type);
@@ -708,22 +692,21 @@ static void _wrap_work(void *x)
 		 con_mgr_work_status_string(work->status),
 		 (uintptr_t) work->arg);
 
-	_signal_change(mgr, false);
+	_signal_change(false);
 
 	work->magic = ~MAGIC_WORK;
 	xfree(work);
 }
 
-static void _handle_read(con_mgr_t *mgr, con_mgr_fd_t *con,
-			 con_mgr_work_type_t type, con_mgr_work_status_t status,
-			 const char *tag, void *arg)
+static void _handle_read(con_mgr_fd_t *con, con_mgr_work_type_t type,
+			 con_mgr_work_status_t status, const char *tag,
+			 void *arg)
 {
 	ssize_t read_c;
 	int readable;
 
 	con->can_read = false;
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->mgr->magic == MAGIC_CON_MGR);
 
 	if (con->input_fd < 0) {
 		log_flag(NET, "%s: [%s] called on closed connection",
@@ -779,10 +762,10 @@ static void _handle_read(con_mgr_t *mgr, con_mgr_fd_t *con,
 		log_flag(NET, "%s: [%s] read %zd bytes and EOF with %u bytes to process already in buffer",
 			 __func__, con->name, read_c, get_buf_offset(con->in));
 
-		slurm_mutex_lock(&con->mgr->mutex);
+		slurm_mutex_lock(&mgr.mutex);
 		/* lock to tell mgr that we are done */
 		con->read_eof = true;
-		slurm_mutex_unlock(&con->mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 	} else {
 		log_flag(NET, "%s: [%s] read %zd bytes with %u bytes to process already in buffer",
 			 __func__, con->name, read_c, get_buf_offset(con->in));
@@ -794,15 +777,13 @@ static void _handle_read(con_mgr_t *mgr, con_mgr_fd_t *con,
 	}
 }
 
-static void _handle_write(con_mgr_t *mgr, con_mgr_fd_t *con,
-			  con_mgr_work_type_t type,
+static void _handle_write(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			  con_mgr_work_status_t status, const char *tag,
 			  void *arg)
 {
 	ssize_t wrote;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->mgr->magic == MAGIC_CON_MGR);
 
 	if (get_buf_offset(con->out) == 0) {
 		log_flag(NET, "%s: [%s] skipping attempt to write 0 bytes",
@@ -955,8 +936,7 @@ static int _on_rpc_connection_data(con_mgr_fd_t *con, void *arg)
 	return rc;
 }
 
-static void _wrap_on_data(con_mgr_t *mgr, con_mgr_fd_t *con,
-			  con_mgr_work_type_t type,
+static void _wrap_on_data(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			  con_mgr_work_status_t status, const char *tag,
 			  void *arg)
 {
@@ -965,7 +945,6 @@ static void _wrap_on_data(con_mgr_t *mgr, con_mgr_fd_t *con,
 	int rc;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(mgr->magic == MAGIC_CON_MGR);
 
 	/* override buffer offset to allow reading */
 	set_buf_offset(con->in, 0);
@@ -991,13 +970,13 @@ static void _wrap_on_data(con_mgr_t *mgr, con_mgr_fd_t *con,
 		error("%s: [%s] on_data returned rc: %s",
 		      __func__, con->name, slurm_strerror(rc));
 
-		slurm_mutex_lock(&mgr->mutex);
-		if (mgr->exit_on_error)
-			mgr->shutdown = true;
+		slurm_mutex_lock(&mgr.mutex);
+		if (mgr.exit_on_error)
+			mgr.shutdown = true;
 
-		if (!mgr->error)
-			mgr->error = rc;
-		slurm_mutex_unlock(&mgr->mutex);
+		if (!mgr.error)
+			mgr.error = rc;
+		slurm_mutex_unlock(&mgr.mutex);
 
 		/*
 		 * processing data failed so drop any
@@ -1038,8 +1017,7 @@ static void _wrap_on_data(con_mgr_t *mgr, con_mgr_fd_t *con,
 	con->in->size = size;
 }
 
-static void _wrap_on_connection(con_mgr_t *mgr, con_mgr_fd_t *con,
-				con_mgr_work_type_t type,
+static void _wrap_on_connection(con_mgr_fd_t *con, con_mgr_work_type_t type,
 				con_mgr_work_status_t status, const char *tag,
 				void *arg)
 {
@@ -1057,14 +1035,14 @@ static void _wrap_on_connection(con_mgr_t *mgr, con_mgr_fd_t *con,
 		      __func__, con->name);
 		_close_con(false, con);
 	} else {
-		slurm_mutex_lock(&mgr->mutex);
+		slurm_mutex_lock(&mgr.mutex);
 		con->arg = arg;
 		con->is_connected = true;
-		slurm_mutex_unlock(&mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 	}
 }
 
-extern int _con_mgr_process_fd_internal(con_mgr_t *mgr, con_mgr_con_type_t type,
+extern int _con_mgr_process_fd_internal(con_mgr_con_type_t type,
 					con_mgr_fd_t *source, int input_fd,
 					int output_fd,
 					const con_mgr_events_t events,
@@ -1072,90 +1050,82 @@ extern int _con_mgr_process_fd_internal(con_mgr_t *mgr, con_mgr_con_type_t type,
 					socklen_t addrlen, void *arg)
 {
 	con_mgr_fd_t *con;
-	xassert(mgr->magic == MAGIC_CON_MGR);
 
-	con = _add_connection(mgr, type, source, input_fd, output_fd, events,
-			      addr, addrlen, false, NULL, arg);
+	con = _add_connection(type, source, input_fd, output_fd, events, addr,
+			      addrlen, false, NULL, arg);
 
 	if (!con)
 		return SLURM_ERROR;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	_add_work(false, mgr, con, _wrap_on_connection,
+	_add_work(false, con, _wrap_on_connection,
 		  CONMGR_WORK_TYPE_CONNECTION_FIFO, con, "_wrap_on_connection");
 
 	return SLURM_SUCCESS;
 }
 
-extern int con_mgr_process_fd(con_mgr_t *mgr, con_mgr_con_type_t type,
-			      int input_fd, int output_fd,
-			      const con_mgr_events_t events,
+extern int con_mgr_process_fd(con_mgr_con_type_t type, int input_fd,
+			      int output_fd, const con_mgr_events_t events,
 			      const slurm_addr_t *addr, socklen_t addrlen,
 			      void *arg)
 {
 	con_mgr_fd_t *con;
-	xassert(mgr->magic == MAGIC_CON_MGR);
 
-	con = _add_connection(mgr, type, NULL, input_fd, output_fd, events,
-			      addr, addrlen, false, NULL, arg);
+	con = _add_connection(type, NULL, input_fd, output_fd, events, addr,
+			      addrlen, false, NULL, arg);
 
 	if (!con)
 		return SLURM_ERROR;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	_add_work(false, mgr, con, _wrap_on_connection,
+	_add_work(false, con, _wrap_on_connection,
 		  CONMGR_WORK_TYPE_CONNECTION_FIFO, con, "_wrap_on_connection");
 
 	return SLURM_SUCCESS;
 }
 
-extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
-				     con_mgr_con_type_t type,
+extern int con_mgr_process_fd_listen(int fd, con_mgr_con_type_t type,
 				     const con_mgr_events_t events,
 				     const slurm_addr_t *addr,
 				     socklen_t addrlen, void *arg)
 {
 	con_mgr_fd_t *con;
-	xassert(mgr->magic == MAGIC_CON_MGR);
 
-	con = _add_connection(mgr, type, NULL, fd, fd, events, addr, addrlen,
-			      true, NULL, arg);
+	con = _add_connection(type, NULL, fd, fd, events, addr, addrlen, true,
+			      NULL, arg);
 	if (!con)
 		return SLURM_ERROR;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	_signal_change(mgr, false);
+	_signal_change(false);
 
 	return SLURM_SUCCESS;
 }
 
-extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr,
-					  con_mgr_con_type_t type, int fd,
+extern int con_mgr_process_fd_unix_listen(con_mgr_con_type_t type, int fd,
 					  const con_mgr_events_t events,
 					  const slurm_addr_t *addr,
 					  socklen_t addrlen, const char *path,
 					  void *arg)
 {
 	con_mgr_fd_t *con;
-	xassert(mgr->magic == MAGIC_CON_MGR);
 
-	con = _add_connection(mgr, type, NULL, fd, fd, events, addr, addrlen,
-			      true, path, arg);
+	con = _add_connection(type, NULL, fd, fd, events, addr, addrlen, true,
+			      path, arg);
 	if (!con)
 		return SLURM_ERROR;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	_signal_change(mgr, false);
+	_signal_change(false);
 
 	return SLURM_SUCCESS;
 }
 
-static void _handle_poll_event_error(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
-				     short revents)
+static void _handle_poll_event_error(int fd, con_mgr_fd_t *con, short revents)
 {
 	int err = SLURM_ERROR;
 	int rc;
@@ -1198,14 +1168,13 @@ static void _handle_poll_event_error(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
  * Event on a processing socket.
  * mgr must be locked.
  */
-static void _handle_poll_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
-			       short revents)
+static void _handle_poll_event(int fd, con_mgr_fd_t *con, short revents)
 {
 	con->can_read = false;
 	con->can_write = false;
 
 	if ((revents & POLLNVAL) || (revents & POLLERR)) {
-		_handle_poll_event_error(mgr, fd, con, revents);
+		_handle_poll_event_error(fd, con, revents);
 		return;
 	}
 
@@ -1219,18 +1188,17 @@ static void _handle_poll_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 		 (con->can_write ? "T" : "F"));
 }
 
-static void _on_finish_wrapper(con_mgr_t *mgr, con_mgr_fd_t *con,
-			       con_mgr_work_type_t type,
+static void _on_finish_wrapper(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			       con_mgr_work_status_t status, const char *tag,
 			       void *arg)
 {
 	con->events.on_finish(arg);
 
-	slurm_mutex_lock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
 	con->wait_on_finish = false;
 	/* on_finish must free arg */
 	con->arg = NULL;
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 /*
@@ -1242,11 +1210,9 @@ static void _on_finish_wrapper(con_mgr_t *mgr, con_mgr_fd_t *con,
 static int _handle_connection(void *x, void *arg)
 {
 	con_mgr_fd_t *con = x;
-	con_mgr_t *mgr = con->mgr;
 	int count;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(mgr->magic == MAGIC_CON_MGR);
 
 	/* connection may have a running thread, do nothing */
 	if (con->work_active) {
@@ -1288,7 +1254,7 @@ static int _handle_connection(void *x, void *arg)
 		if (con->can_write) {
 			log_flag(NET, "%s: [%s] need to write %u bytes",
 				 __func__, con->name, count);
-			_add_work(true, mgr, con, _handle_write,
+			_add_work(true, con, _handle_write,
 				  CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
 				  "_handle_write");
 		} else {
@@ -1312,7 +1278,7 @@ static int _handle_connection(void *x, void *arg)
 		log_flag(NET, "%s: [%s] queuing read", __func__, con->name);
 		/* reset if data has already been tried if about to read data */
 		con->on_data_tried = false;
-		_add_work(true, mgr, con, _handle_read,
+		_add_work(true, con, _handle_read,
 			  CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
 			  "_handle_read");
 		return 0;
@@ -1323,7 +1289,7 @@ static int _handle_connection(void *x, void *arg)
 		log_flag(NET, "%s: [%s] need to process %u bytes",
 			 __func__, con->name, get_buf_offset(con->in));
 
-		_add_work(true, mgr, con, _wrap_on_data,
+		_add_work(true, con, _wrap_on_data,
 			  CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
 			  "_wrap_on_data");
 		return 0;
@@ -1375,7 +1341,7 @@ static int _handle_connection(void *x, void *arg)
 		con->wait_on_finish = true;
 
 		/* notify caller of closing */
-		_add_work(true, mgr, con, _on_finish_wrapper,
+		_add_work(true, con, _on_finish_wrapper,
 			  CONMGR_WORK_TYPE_CONNECTION_FIFO, con->arg,
 			  "on_finish");
 
@@ -1418,7 +1384,7 @@ static int _handle_connection(void *x, void *arg)
 
 /*
  * Close all connections (for_each)
- * NOTE: must hold mgr->mutex
+ * NOTE: must hold mgr.mutex
  */
 static int _close_con_for_each(void *x, void *arg)
 {
@@ -1432,25 +1398,21 @@ static int _close_con_for_each(void *x, void *arg)
  */
 static void _inspect_connections(void *x)
 {
-	con_mgr_t *mgr = x;
-	xassert(mgr->magic == MAGIC_CON_MGR);
+	slurm_mutex_lock(&mgr.mutex);
 
-	slurm_mutex_lock(&mgr->mutex);
-
-	if (list_transfer_match(mgr->connections, mgr->complete,
+	if (list_transfer_match(mgr.connections, mgr.complete,
 				_handle_connection, NULL))
-		slurm_cond_broadcast(&mgr->cond);
-	mgr->inspecting = false;
+		slurm_cond_broadcast(&mgr.cond);
+	mgr.inspecting = false;
 
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 /*
  * Event on a listen only socket
  * mgr must be locked.
  */
-static void _handle_listen_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
-				 short revents)
+static void _handle_listen_event(int fd, con_mgr_fd_t *con, short revents)
 {
 	if (revents & POLLHUP) {
 		/* how can a listening socket hang up? */
@@ -1471,7 +1433,7 @@ static void _handle_listen_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 	} else if (revents & POLLIN) {
 		log_flag(NET, "%s: [%s] listen has incoming connection",
 			 __func__, con->name);
-		_add_work(true, mgr, con, _listen_accept,
+		_add_work(true, con, _listen_accept,
 			  CONMGR_WORK_TYPE_CONNECTION_FIFO, con,
 			  "_listen_accept");
 		return;
@@ -1482,8 +1444,8 @@ static void _handle_listen_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 	_close_con(true, con);
 }
 
-static void _handle_event_pipe(con_mgr_t *mgr, const struct pollfd *fds_ptr,
-			       const char *tag, const char *name)
+static void _handle_event_pipe(const struct pollfd *fds_ptr, const char *tag,
+			       const char *name)
 {
 	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
 		char *flags = poll_revents_to_str(fds_ptr->revents);
@@ -1497,7 +1459,7 @@ static void _handle_event_pipe(con_mgr_t *mgr, const struct pollfd *fds_ptr,
 	}
 }
 
-static int _read_signal(con_mgr_t *mgr)
+static int _read_signal(void)
 {
 	int sig;
 
@@ -1505,9 +1467,9 @@ static int _read_signal(con_mgr_t *mgr)
 	int readable;
 
 	/* request kernel tell us the size of the incoming buffer */
-	if (ioctl(mgr->signal_fd[0], FIONREAD, &readable))
+	if (ioctl(mgr.signal_fd[0], FIONREAD, &readable))
 		log_flag(NET, "%s: [fd:%d] unable to call FIONREAD: %m",
-			 __func__, mgr->signal_fd[0]);
+			 __func__, mgr.signal_fd[0]);
 
 	if (!readable) {
 		/* Didn't fail but buffer is empty so no more signals */
@@ -1518,7 +1480,7 @@ static int _read_signal(con_mgr_t *mgr)
 	}
 #endif /* FIONREAD */
 
-	safe_read(mgr->signal_fd[0], &sig, sizeof(sig));
+	safe_read(mgr.signal_fd[0], &sig, sizeof(sig));
 
 	return sig;
 rwfail:
@@ -1526,16 +1488,16 @@ rwfail:
 		return -1;
 
 	fatal("%s: unable to read(signal_fd[0]=%d): %m",
-	      __func__, mgr->signal_fd[0]);
+	      __func__, mgr.signal_fd[0]);
 }
 
-static void _handle_signals(con_mgr_t *mgr)
+static void _handle_signals(void)
 {
 	bool caught_sigalrm = false;
 	bool caught_sigint = false;
 	int sig, count = 0;
 
-	while ((sig = _read_signal(mgr)) > 0) {
+	while ((sig = _read_signal()) > 0) {
 		count++;
 		if (sig == SIGINT) {
 			caught_sigint = true;
@@ -1548,22 +1510,22 @@ static void _handle_signals(con_mgr_t *mgr)
 	}
 
 	log_flag(NET, "%s: caught %d signals", __func__, count);
-	mgr->signaled = false;
+	mgr.signaled = false;
 
 	if (caught_sigint) {
-		if (!mgr->shutdown)
+		if (!mgr.shutdown)
 			info("%s: caught SIGINT. Shutting down.",
 			     __func__);
-		mgr->shutdown = true;
+		mgr.shutdown = true;
 	}
 
 	if (caught_sigalrm) {
 		log_flag(NET, "%s: caught SIGALRM", __func__);
-		_queue_func(true, mgr, _handle_timer, mgr, "_handle_timer");
+		_queue_func(true, _handle_timer, NULL, "_handle_timer");
 	}
 
 	if (caught_sigint || caught_sigalrm)
-		_signal_change(mgr, true);
+		_signal_change(true);
 }
 
 /*
@@ -1571,8 +1533,8 @@ static void _handle_signals(con_mgr_t *mgr)
  *
  * NOTE: mgr mutex must not be locked but will be locked upon return
  */
-static void _poll(con_mgr_t *mgr, poll_args_t *args, list_t *fds,
-		  on_poll_event_t on_poll, const char *tag)
+static void _poll(poll_args_t *args, list_t *fds, on_poll_event_t on_poll,
+		  const char *tag)
 {
 	int rc = SLURM_SUCCESS;
 	struct pollfd *fds_ptr = NULL;
@@ -1584,9 +1546,9 @@ again:
 	if (rc == -1) {
 		bool exit_on_error;
 
-		slurm_mutex_lock(&mgr->mutex);
-		exit_on_error = mgr->exit_on_error;
-		slurm_mutex_unlock(&mgr->mutex);
+		slurm_mutex_lock(&mgr.mutex);
+		exit_on_error = mgr.exit_on_error;
+		slurm_mutex_unlock(&mgr.mutex);
 
 		if ((errno == EINTR) && !exit_on_error) {
 			log_flag(NET, "%s: [%s] poll interrupted. Trying again.",
@@ -1603,10 +1565,10 @@ again:
 		return;
 	}
 
-	slurm_mutex_lock(&mgr->mutex);
-	signal_fd = mgr->signal_fd[0];
-	event_fd = mgr->event_fd[0];
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
+	signal_fd = mgr.signal_fd[0];
+	event_fd = mgr.event_fd[0];
+	slurm_mutex_unlock(&mgr.mutex);
 
 	fds_ptr = args->fds;
 	for (int i = 0; i < args->nfds; i++, fds_ptr++) {
@@ -1615,10 +1577,10 @@ again:
 			continue;
 
 		if (fds_ptr->fd == signal_fd) {
-			mgr->signaled = true;
-			_handle_event_pipe(mgr, fds_ptr, tag, "CAUGHT_SIGNAL");
+			mgr.signaled = true;
+			_handle_event_pipe(fds_ptr, tag, "CAUGHT_SIGNAL");
 		} else if (fds_ptr->fd == event_fd)
-			_handle_event_pipe(mgr, fds_ptr, tag, "CHANGE_EVENT");
+			_handle_event_pipe(fds_ptr, tag, "CHANGE_EVENT");
 		else if ((con = list_find_first(fds, _find_by_fd,
 						&fds_ptr->fd))) {
 			if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
@@ -1628,14 +1590,14 @@ again:
 					 __func__, tag, con->name, flags);
 				xfree(flags);
 			}
-			slurm_mutex_lock(&mgr->mutex);
-			on_poll(mgr, fds_ptr->fd, con, fds_ptr->revents);
+			slurm_mutex_lock(&mgr.mutex);
+			on_poll(fds_ptr->fd, con, fds_ptr->revents);
 			/*
 			 * signal that something might have happened and to
 			 * restart listening
 			 * */
-			_signal_change(mgr, true);
-			slurm_mutex_unlock(&mgr->mutex);
+			_signal_change(true);
+			slurm_mutex_unlock(&mgr.mutex);
 		} else
 			/* FD probably got closed between poll start and now */
 			log_flag(NET, "%s: [%s] unable to find connection for fd=%u",
@@ -1650,23 +1612,20 @@ again:
 static void _poll_connections(void *x)
 {
 	poll_args_t *args = x;
-	con_mgr_t *mgr = args->mgr;
 	struct pollfd *fds_ptr = NULL;
 	con_mgr_fd_t *con;
 	int count;
 	list_itr_t *itr;
 
-	xassert(mgr->magic == MAGIC_CON_MGR);
-
-	slurm_mutex_lock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
 
 	/* grab counts once */
-	if (!(count = list_count(mgr->connections))) {
+	if (!(count = list_count(mgr.connections))) {
 		log_flag(NET, "%s: no connections to poll()", __func__);
 		goto done;
 	}
 
-	if (mgr->signaled) {
+	if (mgr.signaled) {
 		log_flag(NET, "%s: skipping poll() due to signal", __func__);
 		goto done;
 	}
@@ -1679,13 +1638,13 @@ static void _poll_connections(void *x)
 	fds_ptr = args->fds;
 
 	/* Add signal fd */
-	fds_ptr->fd = mgr->signal_fd[0];
+	fds_ptr->fd = mgr.signal_fd[0];
 	fds_ptr->events = POLLIN;
 	fds_ptr++;
 	args->nfds++;
 
 	/* Add event fd */
-	fds_ptr->fd = mgr->event_fd[0];
+	fds_ptr->fd = mgr.event_fd[0];
 	fds_ptr->events = POLLIN;
 	fds_ptr++;
 	args->nfds++;
@@ -1693,7 +1652,7 @@ static void _poll_connections(void *x)
 	/*
 	 * populate sockets with !work_active
 	 */
-	itr = list_iterator_create(mgr->connections);
+	itr = list_iterator_create(mgr.connections);
 	while ((con = list_next(itr))) {
 		if (con->work_active)
 			continue;
@@ -1743,19 +1702,19 @@ static void _poll_connections(void *x)
 		goto done;
 	}
 
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(NET, "%s: polling %u file descriptors for %u connections",
 		 __func__, args->nfds, count);
 
-	_poll(mgr, args, mgr->connections, _handle_poll_event, __func__);
+	_poll(args, mgr.connections, _handle_poll_event, __func__);
 
-	slurm_mutex_lock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
 done:
-	mgr->poll_active = false;
+	mgr.poll_active = false;
 	/* notify _watch it can run but don't send signal to event PIPE*/
-	slurm_cond_broadcast(&mgr->cond);
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_cond_broadcast(&mgr.cond);
+	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(NET, "%s: poll done", __func__);
 }
@@ -1766,31 +1725,28 @@ done:
 static void _listen(void *x)
 {
 	poll_args_t *args = x;
-	con_mgr_t *mgr = args->mgr;
 	struct pollfd *fds_ptr = NULL;
 	con_mgr_fd_t *con;
 	int count;
 	list_itr_t *itr;
 
-	xassert(mgr->magic == MAGIC_CON_MGR);
-
-	slurm_mutex_lock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
 
 	/* if shutdown has been requested: then don't listen() anymore */
-	if (mgr->shutdown) {
+	if (mgr.shutdown) {
 		log_flag(NET, "%s: caught shutdown. closing %u listeners",
-			 __func__, list_count(mgr->listen));
+			 __func__, list_count(mgr.listen));
 		goto cleanup;
 	}
 
-	if (mgr->signaled) {
+	if (mgr.signaled) {
 		log_flag(NET, "%s: skipping poll() to pending signal",
 			 __func__);
 		goto cleanup;
 	}
 
 	/* grab counts once */
-	count = list_count(mgr->listen);
+	count = list_count(mgr.listen);
 
 	log_flag(NET, "%s: listeners=%u", __func__, count);
 
@@ -1805,19 +1761,19 @@ static void _listen(void *x)
 	args->nfds = 0;
 
 	/* Add signal fd */
-	fds_ptr->fd = mgr->signal_fd[0];
+	fds_ptr->fd = mgr.signal_fd[0];
 	fds_ptr->events = POLLIN;
 	fds_ptr++;
 	args->nfds++;
 
 	/* Add event fd */
-	fds_ptr->fd = mgr->event_fd[0];
+	fds_ptr->fd = mgr.event_fd[0];
 	fds_ptr->events = POLLIN;
 	fds_ptr++;
 	args->nfds++;
 
 	/* populate listening sockets */
-	itr = list_iterator_create(mgr->listen);
+	itr = list_iterator_create(mgr.listen);
 	while ((con = list_next(itr))) {
 		/* already accept queued or listener already closed */
 		if (con->work_active || con->read_eof)
@@ -1839,25 +1795,25 @@ static void _listen(void *x)
 		goto cleanup;
 	}
 
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(NET, "%s: polling %u/%u file descriptors",
 		 __func__, args->nfds, (count + 2));
 
-	/* _poll() will lock mgr->mutex */
-	_poll(mgr, args, mgr->listen, _handle_listen_event, __func__);
+	/* _poll() will lock mgr.mutex */
+	_poll(args, mgr.listen, _handle_listen_event, __func__);
 
-	slurm_mutex_lock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
 cleanup:
-	mgr->listen_active = false;
-	_signal_change(mgr, true);
-	slurm_mutex_unlock(&mgr->mutex);
+	mgr.listen_active = false;
+	_signal_change(true);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 /*
  * Poll all sockets non-listen connections
  */
-static int _watch(con_mgr_t *mgr)
+static int _watch(void)
 {
 	poll_args_t *listen_args = NULL;
 	poll_args_t *poll_args = NULL;
@@ -1865,25 +1821,24 @@ static int _watch(con_mgr_t *mgr)
 	char buf[100]; /* buffer for event_read */
 	bool work; /* is there any work to do? */
 
-	xassert(mgr->magic == MAGIC_CON_MGR);
-	slurm_mutex_lock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
 watch:
-	if (mgr->shutdown)
-		_close_all_connections(true, mgr);
+	if (mgr.shutdown)
+		_close_all_connections(true);
 
 	/* grab counts once */
-	count = list_count(mgr->connections);
+	count = list_count(mgr.connections);
 
 	log_flag(NET, "%s: starting connections=%u listen=%u",
-		 __func__, count, list_count(mgr->listen));
+		 __func__, count, list_count(mgr.listen));
 
-	if (!mgr->poll_active && !mgr->listen_active) {
+	if (!mgr.poll_active && !mgr.listen_active) {
 		/* only clear signal and event pipes once both polls are done */
-		event_read = read(mgr->event_fd[0], buf, sizeof(buf));
+		event_read = read(mgr.event_fd[0], buf, sizeof(buf));
 		if (event_read > 0) {
 			log_flag(NET, "%s: detected %u events from event fd",
 				 __func__, event_read);
-			mgr->event_signaled = 0;
+			mgr.event_signaled = 0;
 		} else if (event_read == 0)
 			log_flag(NET, "%s: nothing to read from event fd", __func__);
 		else if (errno == EAGAIN || errno == EWOULDBLOCK ||
@@ -1893,23 +1848,23 @@ watch:
 		else
 			fatal("%s: unable to read from event fd: %m", __func__);
 
-		if (mgr->signaled) {
-			_handle_signals(mgr);
+		if (mgr.signaled) {
+			_handle_signals();
 			goto watch;
 		}
 	}
 
 	work = false;
 
-	if (!list_is_empty(mgr->complete)) {
-		if (mgr->listen_active || mgr->poll_active) {
+	if (!list_is_empty(mgr.complete)) {
+		if (mgr.listen_active || mgr.poll_active) {
 			/*
 			 * Must wait for all poll() calls to complete or
 			 * there may be a use after free of a connection.
 			 *
 			 * Send signal to break out of any active poll()s.
 			 */
-			_signal_change(mgr, true);
+			_signal_change(true);
 		} else {
 			con_mgr_fd_t *con;
 
@@ -1919,32 +1874,31 @@ watch:
 			 * conmgr that references the connection.
 			 */
 
-			while ((con = list_pop(mgr->complete)))
-				_queue_func(true, mgr, _connection_fd_delete,
-					    con, "_connection_fd_delete");
+			while ((con = list_pop(mgr.complete)))
+				_queue_func(true, _connection_fd_delete, con,
+					    "_connection_fd_delete");
 		}
 	}
 
 	/* start listen thread if needed */
-	if (!list_is_empty(mgr->listen)) {
+	if (!list_is_empty(mgr.listen)) {
 		if (!listen_args) {
 			listen_args = xmalloc(sizeof(*listen_args));
-			listen_args->mgr = mgr;
 		}
 
 		/* run any queued work */
-		list_transfer_match(mgr->listen, mgr->complete,
+		list_transfer_match(mgr.listen, mgr.complete,
 				    _handle_connection, NULL);
 
-		if (!mgr->listen_active) {
+		if (!mgr.listen_active) {
 			/* only try to listen if number connections is below limit */
-			if (count >= mgr->max_connections)
+			if (count >= mgr.max_connections)
 				log_flag(NET, "%s: deferring accepting new connections until count is below max: %u/%u",
-					 __func__, count, mgr->max_connections);
+					 __func__, count, mgr.max_connections);
 			else { /* request a listen thread to run */
 				log_flag(NET, "%s: queuing up listen", __func__);
-				mgr->listen_active = true;
-				_queue_func(true, mgr, _listen, listen_args,
+				mgr.listen_active = true;
+				_queue_func(true, _listen, listen_args,
 					    "_listen");
 			}
 		} else
@@ -1957,20 +1911,19 @@ watch:
 	if (count) {
 		if (!poll_args) {
 			poll_args = xmalloc(sizeof(*poll_args));
-			poll_args->mgr = mgr;
 		}
 
-		if (!mgr->inspecting) {
-			mgr->inspecting = true;
-			_queue_func(true, mgr, _inspect_connections, mgr,
+		if (!mgr.inspecting) {
+			mgr.inspecting = true;
+			_queue_func(true, _inspect_connections, NULL,
 				    "_inspect_connections");
 		}
 
-		if (!mgr->poll_active) {
+		if (!mgr.poll_active) {
 			/* request a listen thread to run */
 			log_flag(NET, "%s: queuing up poll", __func__);
-			mgr->poll_active = true;
-			_queue_func(true, mgr, _poll_connections, poll_args,
+			mgr.poll_active = true;
+			_queue_func(true, _poll_connections, poll_args,
 				    "_poll_connections");
 		} else
 			log_flag(NET, "%s: poll active already", __func__);
@@ -1980,20 +1933,20 @@ watch:
 
 	if (work) {
 		/* wait until something happens */
-		if (!mgr->shutdown)
-			slurm_cond_wait(&mgr->cond, &mgr->mutex);
+		if (!mgr.shutdown)
+			slurm_cond_wait(&mgr.cond, &mgr.mutex);
 		goto watch;
 	}
 
-	_signal_change(mgr, true);
-	slurm_mutex_unlock(&mgr->mutex);
+	_signal_change(true);
+	slurm_mutex_unlock(&mgr.mutex);
 
-	mgr->shutdown = true;
+	mgr.shutdown = true;
 	log_flag(NET, "%s: cleaning up", __func__);
 
 	log_flag(NET, "%s: begin waiting for all workers", __func__);
 	/* _watch() is never in the workq so it can wait */
-	quiesce_workq(mgr->workq);
+	quiesce_workq(mgr.workq);
 	log_flag(NET, "%s: end waiting for all workers", __func__);
 
 	if (poll_args) {
@@ -2009,17 +1962,14 @@ watch:
 	return SLURM_SUCCESS;
 }
 
-extern int con_mgr_run(con_mgr_t *mgr)
+extern int con_mgr_run(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	xassert(mgr->magic == MAGIC_CON_MGR);
-
-	slurm_mutex_lock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
 	slurm_mutex_lock(&signal_mutex);
-	//TODO: allow for multiple conmgrs to run at once
-	signal_fd[0] = mgr->signal_fd[0];
-	signal_fd[1] = mgr->signal_fd[1];
+	signal_fd[0] = mgr.signal_fd[0];
+	signal_fd[1] = mgr.signal_fd[1];
 
 	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
 		if (sigaction(catch_signals[i].signal, &catch_signals[i].new,
@@ -2029,23 +1979,23 @@ extern int con_mgr_run(con_mgr_t *mgr)
 	}
 	slurm_mutex_unlock(&signal_mutex);
 
-	if (mgr->deferred_funcs) {
+	if (mgr.deferred_funcs) {
 		list_t *deferred_funcs = NULL;
 		deferred_func_t *df;
 
-		SWAP(deferred_funcs, mgr->deferred_funcs);
+		SWAP(deferred_funcs, mgr.deferred_funcs);
 		while ((df = list_pop(deferred_funcs))) {
-			_queue_func(true, mgr, df->func, df->arg, df->tag);
+			_queue_func(true, df->func, df->arg, df->tag);
 			df->magic = ~MAGIC_DEFERRED_FUNC;
 			xfree(df);
 		}
 		FREE_NULL_LIST(deferred_funcs);
 	}
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_mutex_unlock(&mgr.mutex);
 
-	rc = _watch(mgr);
+	rc = _watch();
 
-	slurm_mutex_lock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
 	slurm_mutex_lock(&signal_mutex);
 	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
 		if (sigaction(catch_signals[i].signal, &catch_signals[i].prior,
@@ -2057,7 +2007,7 @@ extern int con_mgr_run(con_mgr_t *mgr)
 	signal_fd[0] = -1;
 	signal_fd[1] = -1;
 	slurm_mutex_unlock(&signal_mutex);
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_mutex_unlock(&mgr.mutex);
 
 	return rc;
 }
@@ -2065,8 +2015,7 @@ extern int con_mgr_run(con_mgr_t *mgr)
 /*
  * listen socket is ready to accept
  */
-static void _listen_accept(con_mgr_t *mgr, con_mgr_fd_t *con,
-			   con_mgr_work_type_t type,
+static void _listen_accept(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			   con_mgr_work_status_t status, const char *tag,
 			   void *arg)
 {
@@ -2121,7 +2070,7 @@ static void _listen_accept(con_mgr_t *mgr, con_mgr_fd_t *con,
 		      __func__, addrlen);
 
 	/* hand over FD for normal processing */
-	if ((rc = _con_mgr_process_fd_internal(mgr, con->type, con, fd, fd,
+	if ((rc = _con_mgr_process_fd_internal(con->type, con, fd, fd,
 					       con->events, &addr, addrlen,
 					       con->new_arg))) {
 		log_flag(NET, "%s: [fd:%d] _con_mgr_process_fd_internal rejected: %s",
@@ -2130,8 +2079,7 @@ static void _listen_accept(con_mgr_t *mgr, con_mgr_fd_t *con,
 	}
 }
 
-static void _deferred_write_fd(con_mgr_t *mgr, con_mgr_fd_t *con,
-			       con_mgr_work_type_t type,
+static void _deferred_write_fd(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			       con_mgr_work_status_t status, const char *tag,
 			       void *arg)
 {
@@ -2221,11 +2169,11 @@ extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 
 		list_append(con->deferred_out, buf);
 
-		_add_work(false, con->mgr, con, _deferred_write_fd,
+		_add_work(false, con, _deferred_write_fd,
 			  CONMGR_WORK_TYPE_CONNECTION_FIFO, NULL, __func__);
 	}
 
-	_signal_change(con->mgr, false);
+	_signal_change(false);
 	return SLURM_SUCCESS;
 }
 
@@ -2288,18 +2236,17 @@ cleanup:
 	return rc;
 }
 
-static void _deferred_close_fd(con_mgr_t *mgr, con_mgr_fd_t *con,
-			       con_mgr_work_type_t type,
-			       con_mgr_work_status_t status,
-			       const char *tag, void *arg)
+static void _deferred_close_fd(con_mgr_fd_t *con, con_mgr_work_type_t type,
+			       con_mgr_work_status_t status, const char *tag,
+			       void *arg)
 {
-	slurm_mutex_lock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
 	if (con->work_active) {
-		slurm_mutex_unlock(&mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 		con_mgr_queue_close_fd(con);
 	} else {
 		_close_con(true, con);
-		slurm_mutex_unlock(&mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 	}
 }
 
@@ -2307,7 +2254,7 @@ extern void con_mgr_queue_close_fd(con_mgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	slurm_mutex_lock(&con->mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
 	if (!con->work_active) {
 		/*
 		 * Defer request to close connection until connection is no
@@ -2315,12 +2262,12 @@ extern void con_mgr_queue_close_fd(con_mgr_fd_t *con)
 		 * several variables guarenteed to not change while work is
 		 * active.
 		 */
-		_add_work(true, con->mgr, con, _deferred_close_fd,
+		_add_work(true, con, _deferred_close_fd,
 			  CONMGR_WORK_TYPE_CONNECTION_FIFO, NULL, __func__);
 	} else {
 		_close_con(true, con);
 	}
-	slurm_mutex_unlock(&con->mgr->mutex);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 static int _create_socket(void *x, void *arg)
@@ -2334,9 +2281,9 @@ static int _create_socket(void *x, void *arg)
 	parsed_host_port_t *parsed_hp;
 	con_mgr_callbacks_t callbacks;
 
-	slurm_mutex_lock(&init->mgr->mutex);
-	callbacks = init->mgr->callbacks;
-	slurm_mutex_unlock(&init->mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
+	callbacks = mgr.callbacks;
+	slurm_mutex_unlock(&mgr.mutex);
 
 	/* check for name local sockets */
 	if (unixsock) {
@@ -2367,10 +2314,9 @@ static int _create_socket(void *x, void *arg)
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, hostport);
 
-		return con_mgr_process_fd_unix_listen(
-			init->mgr, init->type, fd, init->events,
-			(const slurm_addr_t *)&addr, sizeof(addr), unixsock,
-			init->arg);
+		return con_mgr_process_fd_unix_listen(init->type, fd,
+			init->events, (const slurm_addr_t *) &addr,
+			sizeof(addr), unixsock, init->arg);
 	} else {
 		/* split up host and port */
 		if (!(parsed_hp = callbacks.parse(hostport)))
@@ -2419,8 +2365,7 @@ static int _create_socket(void *x, void *arg)
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, addrinfo_to_string(addr));
 
-		rc = con_mgr_process_fd_listen(
-			init->mgr, fd, init->type, init->events,
+		rc = con_mgr_process_fd_listen(fd, init->type, init->events,
 			(const slurm_addr_t *)addr->ai_addr, addr->ai_addrlen,
 			init->arg);
 	}
@@ -2431,14 +2376,12 @@ static int _create_socket(void *x, void *arg)
 	return rc;
 }
 
-extern int con_mgr_create_sockets(con_mgr_t *mgr, con_mgr_con_type_t type,
-				  list_t *hostports, con_mgr_events_t events,
-				  void *arg)
+extern int con_mgr_create_sockets(con_mgr_con_type_t type, list_t *hostports,
+				  con_mgr_events_t events, void *arg)
 {
 	int rc;
 	socket_listen_init_t *init = xmalloc(sizeof(*init));
 	init->events = events;
-	init->mgr = mgr;
 	init->arg = arg;
 	init->type = type;
 
@@ -2452,60 +2395,56 @@ extern int con_mgr_create_sockets(con_mgr_t *mgr, con_mgr_con_type_t type,
 	return rc;
 }
 
-extern void con_mgr_request_shutdown(con_mgr_t *mgr)
+extern void con_mgr_request_shutdown(void)
 {
-	xassert(mgr->magic == MAGIC_CON_MGR);
-
 	log_flag(NET, "%s: shutdown requested", __func__);
 
-	slurm_mutex_lock(&mgr->mutex);
-	mgr->shutdown = true;
-	_signal_change(mgr, true);
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
+	mgr.shutdown = true;
+	_signal_change(true);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
-static void _cancel_delayed_work(bool locked, con_mgr_t *mgr)
+static void _cancel_delayed_work(bool locked)
 {
-	xassert(mgr->magic == MAGIC_CON_MGR);
-
 	if (!locked)
-		slurm_mutex_lock(&mgr->mutex);
+		slurm_mutex_lock(&mgr.mutex);
 
-	if (mgr->delayed_work && !list_is_empty(mgr->delayed_work)) {
+	if (mgr.delayed_work && !list_is_empty(mgr.delayed_work)) {
 		work_t *work;
 
 		log_flag(NET, "%s: cancelling %d delayed work",
-			 __func__, list_count(mgr->delayed_work));
+			 __func__, list_count(mgr.delayed_work));
 
 		/* run everything immediately but with cancelled status */
-		while ((work = list_pop(mgr->delayed_work))) {
+		while ((work = list_pop(mgr.delayed_work))) {
 			work->status = CONMGR_WORK_STATUS_CANCELLED;
 			_handle_work(true, work);
 		}
 	}
 
 	if (!locked)
-		slurm_mutex_unlock(&mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 }
 
-static void _update_last_time(bool locked, con_mgr_t *mgr)
+static void _update_last_time(bool locked)
 {
 	int rc;
 
 	if (!locked)
-		slurm_mutex_lock(&mgr->mutex);
+		slurm_mutex_lock(&mgr.mutex);
 
-	if (!mgr->delayed_work) {
+	if (!mgr.delayed_work) {
 		struct sigevent sevp = {
 			.sigev_notify = SIGEV_SIGNAL,
 			.sigev_signo = SIGALRM,
-			.sigev_value.sival_ptr = &mgr->timer,
+			.sigev_value.sival_ptr = &mgr.timer,
 		};
 
-		mgr->delayed_work = list_create(xfree_ptr);
+		mgr.delayed_work = list_create(xfree_ptr);
 
 again:
-		if ((rc = timer_create(CLOCK_MONOTONIC, &sevp, &mgr->timer))) {
+		if ((rc = timer_create(CLOCK_MONOTONIC, &sevp, &mgr.timer))) {
 			if ((rc == -1) && errno)
 				rc = errno;
 
@@ -2517,7 +2456,7 @@ again:
 		}
 	}
 
-	if ((rc = clock_gettime(CLOCK_MONOTONIC, &mgr->last_time))) {
+	if ((rc = clock_gettime(CLOCK_MONOTONIC, &mgr.last_time))) {
 		if (rc == -1)
 			rc = errno;
 
@@ -2526,14 +2465,13 @@ again:
 	}
 
 	if (!locked)
-		slurm_mutex_unlock(&mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 }
 
 static int _foreach_delayed_work(void *x, void *arg)
 {
 	work_t *work = x;
 	foreach_delayed_work_t *args = arg;
-	con_mgr_t *mgr = args->mgr;
 
 	xassert(args->magic == MAGIC_FOREACH_DELAYED_WORK);
 	xassert(work->magic == MAGIC_WORK);
@@ -2541,9 +2479,10 @@ static int _foreach_delayed_work(void *x, void *arg)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
 		int64_t remain_sec, remain_nsec;
 
-		remain_sec = work->begin.seconds - mgr->last_time.tv_sec;
+		remain_sec = work->begin.seconds - mgr.last_time.tv_sec;
 		if (remain_sec == 0) {
-			remain_nsec = work->begin.nanoseconds - mgr->last_time.tv_nsec;
+			remain_nsec =
+				work->begin.nanoseconds - mgr.last_time.tv_nsec;
 		} else if (remain_sec < 0) {
 			remain_nsec = NO_VAL64;
 		} else {
@@ -2571,25 +2510,24 @@ static int _foreach_delayed_work(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _update_timer(bool locked, con_mgr_t *mgr)
+static void _update_timer(bool locked)
 {
 	int rc;
 	struct itimerspec spec = {{0}};
 
 	foreach_delayed_work_t args = {
 		.magic = MAGIC_FOREACH_DELAYED_WORK,
-		.mgr = mgr,
 	};
 
 	if (!locked)
-		slurm_mutex_lock(&mgr->mutex);
+		slurm_mutex_lock(&mgr.mutex);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
 		/* get updated clock for logging but not needed otherwise */
-		_update_last_time(true, mgr);
+		_update_last_time(true);
 	}
 
-	list_for_each(mgr->delayed_work, _foreach_delayed_work, &args);
+	list_for_each(mgr.delayed_work, _foreach_delayed_work, &args);
 
 	if (args.shortest) {
 		work_t *work = args.shortest;
@@ -2600,10 +2538,10 @@ static void _update_timer(bool locked, con_mgr_t *mgr)
 		if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
 			int64_t remain_sec, remain_nsec;
 
-			remain_sec = work->begin.seconds - mgr->last_time.tv_sec;
+			remain_sec = work->begin.seconds - mgr.last_time.tv_sec;
 			if (remain_sec == 0) {
 				remain_nsec = work->begin.nanoseconds -
-					mgr->last_time.tv_nsec;
+					      mgr.last_time.tv_nsec;
 			} else if (remain_sec < 0) {
 				remain_nsec = NO_VAL64;
 			} else {
@@ -2619,13 +2557,13 @@ static void _update_timer(bool locked, con_mgr_t *mgr)
 		log_flag(NET, "%s: disabling conmgr timer", __func__);
 	}
 
-	if ((rc = timer_settime(mgr->timer, TIMER_ABSTIME, &spec, NULL))) {
+	if ((rc = timer_settime(mgr.timer, TIMER_ABSTIME, &spec, NULL))) {
 		if ((rc == -1) && errno)
 			rc = errno;
 	}
 
 	if (!locked)
-		slurm_mutex_unlock(&mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 }
 
 /* check begin times to see if the work delay has elapsed */
@@ -2633,15 +2571,13 @@ static int _match_work_elapsed(void *x, void *key)
 {
 	bool trigger;
 	work_t *work = x;
-	con_mgr_t *mgr = key;
 	int64_t remain_sec, remain_nsec;
 
 	xassert(work->magic == MAGIC_WORK);
-	xassert(mgr->magic == MAGIC_CON_MGR);
 
-	remain_sec = work->begin.seconds - mgr->last_time.tv_sec;
+	remain_sec = work->begin.seconds - mgr.last_time.tv_sec;
 	if (remain_sec == 0) {
-		remain_nsec = work->begin.nanoseconds - mgr->last_time.tv_nsec;
+		remain_nsec = work->begin.nanoseconds - mgr.last_time.tv_nsec;
 		trigger = (remain_nsec <= 0);
 	} else if (remain_sec < 0) {
 		trigger = true;
@@ -2662,18 +2598,17 @@ static int _match_work_elapsed(void *x, void *key)
 static void _handle_timer(void *x)
 {
 	int count, total;
-	con_mgr_t *mgr = x;
 	work_t *work;
 	list_t *elapsed = list_create(xfree_ptr);
 
-	slurm_mutex_lock(&mgr->mutex);
-	_update_last_time(true, mgr);
+	slurm_mutex_lock(&mgr.mutex);
+	_update_last_time(true);
 
-	total = list_count(mgr->delayed_work);
-	count = list_transfer_match(mgr->delayed_work, elapsed,
-				    _match_work_elapsed, mgr);
+	total = list_count(mgr.delayed_work);
+	count = list_transfer_match(mgr.delayed_work, elapsed,
+				    _match_work_elapsed, NULL);
 
-	_update_timer(true, mgr);
+	_update_timer(true);
 
 	while ((work = list_pop(elapsed))) {
 		work->status = CONMGR_WORK_STATUS_RUN;
@@ -2681,8 +2616,8 @@ static void _handle_timer(void *x)
 	}
 
 	if (count > 0)
-		_signal_change(mgr, true);
-	slurm_mutex_unlock(&mgr->mutex);
+		_signal_change(true);
+	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(NET, "%s: checked all timers and triggered %d/%d delayed work",
 		 __func__, count, total);
@@ -2690,27 +2625,27 @@ static void _handle_timer(void *x)
 	FREE_NULL_LIST(elapsed);
 }
 
-/* Single point to queue internal function callback via mgr->workq. */
-static void _queue_func(bool locked, con_mgr_t *mgr, work_func_t func,
-			void *arg, const char *tag)
+/* Single point to queue internal function callback via mgr.workq. */
+static void _queue_func(bool locked, work_func_t func, void *arg,
+			const char *tag)
 {
 	if (!locked)
-		slurm_mutex_lock(&mgr->mutex);
+		slurm_mutex_lock(&mgr.mutex);
 
-	if (mgr->shutdown) {
+	if (mgr.shutdown) {
 		/*
 		 * Mgr is shutdown so workq will reject new work. Need to unlock
 		 * the mutex and run the work directly. To avoid function and
 		 * arg getting lost during shutdown.
 		 */
-		slurm_mutex_unlock(&mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 		log_flag(NET, "%s: running function 0x%"PRIxPTR"(0x%"PRIxPTR") directly after shutdown",
 			 __func__, (uintptr_t) func, (uintptr_t) arg);
 		func(arg);
-		slurm_mutex_lock(&mgr->mutex);
-	} else if (!mgr->deferred_funcs) {
+		slurm_mutex_lock(&mgr.mutex);
+	} else if (!mgr.deferred_funcs) {
 		/* this should never fail here */
-		workq_add_work(mgr->workq, func, arg, tag);
+		workq_add_work(mgr.workq, func, arg, tag);
 	} else {
 		/*
 		 * Defer all funcs until con_mgr_run() as adding new connections
@@ -2725,23 +2660,22 @@ static void _queue_func(bool locked, con_mgr_t *mgr, work_func_t func,
 			.arg = arg,
 			.tag = tag,
 		};
-		list_append(mgr->deferred_funcs, df);
+		list_append(mgr.deferred_funcs, df);
 	}
 
 	if (!locked)
-		slurm_mutex_unlock(&mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 }
 
 /* mgr must be locked */
 static void _handle_work_run(work_t *work)
 {
-	_queue_func(true, work->mgr, _wrap_work, work, work->tag);
+	_queue_func(true, _wrap_work, work, work->tag);
 }
 
 /* mgr must be locked */
 static void _handle_work_pending(work_t *work)
 {
-	con_mgr_t *mgr = work->mgr;
 	con_mgr_fd_t *con = work->con;
 
 	switch (work->type) {
@@ -2752,10 +2686,10 @@ static void _handle_work_pending(work_t *work)
 		/* fall through */
 	case CONMGR_WORK_TYPE_TIME_DELAY_FIFO:
 	{
-		_update_last_time(true, work->mgr);
-		work->begin.seconds += mgr->last_time.tv_sec;
-		list_append(mgr->delayed_work, work);
-		_update_timer(true, mgr);
+		_update_last_time(true);
+		work->begin.seconds += mgr.last_time.tv_sec;
+		list_append(mgr.delayed_work, work);
+		_update_timer(true);
 		break;
 	}
 	case CONMGR_WORK_TYPE_CONNECTION_FIFO:
@@ -2789,7 +2723,6 @@ static void _handle_work_pending(work_t *work)
 
 static void _handle_work(bool locked, work_t *work)
 {
-	con_mgr_t *mgr = work->mgr;
 	con_mgr_fd_t *con = work->con;
 
 	if (con)
@@ -2806,7 +2739,7 @@ static void _handle_work(bool locked, work_t *work)
 			work->tag, (uintptr_t) work->func);
 
 	if (!locked)
-		slurm_mutex_lock(&mgr->mutex);
+		slurm_mutex_lock(&mgr.mutex);
 
 	switch (work->status) {
 	case CONMGR_WORK_STATUS_PENDING:
@@ -2827,20 +2760,18 @@ static void _handle_work(bool locked, work_t *work)
 			    __func__, work->status);
 	}
 
-	_signal_change(mgr, true);
+	_signal_change(true);
 
 	if (!locked)
-		slurm_mutex_unlock(&mgr->mutex);
+		slurm_mutex_unlock(&mgr.mutex);
 }
 
-static void _add_work(bool locked, con_mgr_t *mgr, con_mgr_fd_t *con,
-		      con_mgr_work_func_t func, con_mgr_work_type_t type,
-		      void *arg, const char *tag)
+static void _add_work(bool locked, con_mgr_fd_t *con, con_mgr_work_func_t func,
+		      con_mgr_work_type_t type, void *arg, const char *tag)
 {
 	work_t *work = xmalloc(sizeof(*work));
 	*work = (work_t) {
 		.magic = MAGIC_WORK,
-		.mgr = mgr,
 		.con = con,
 		.func = func,
 		.arg = arg,
@@ -2852,14 +2783,14 @@ static void _add_work(bool locked, con_mgr_t *mgr, con_mgr_fd_t *con,
 	_handle_work(locked, work);
 }
 
-extern void con_mgr_add_work(con_mgr_t *mgr, con_mgr_fd_t *con,
-			     con_mgr_work_func_t func, con_mgr_work_type_t type,
-			     void *arg, const char *tag)
+extern void con_mgr_add_work(con_mgr_fd_t *con, con_mgr_work_func_t func,
+			     con_mgr_work_type_t type, void *arg,
+			     const char *tag)
 {
-	_add_work(false, mgr, con, func, type, arg, tag);
+	_add_work(false, con, func, type, arg, tag);
 }
 
-extern void con_mgr_add_delayed_work(con_mgr_t *mgr, con_mgr_fd_t *con,
+extern void con_mgr_add_delayed_work(con_mgr_fd_t *con,
 				     con_mgr_work_func_t func, time_t seconds,
 				     long nanoseconds, void *arg,
 				     const char *tag)
@@ -2877,7 +2808,6 @@ extern void con_mgr_add_delayed_work(con_mgr_t *mgr, con_mgr_fd_t *con,
 	work = xmalloc(sizeof(*work));
 	*work = (work_t){
 		.magic = MAGIC_WORK,
-		.mgr = mgr,
 		.con = con,
 		.func = func,
 		.arg = arg,
@@ -2913,7 +2843,6 @@ extern int con_mgr_get_fd_auth_creds(con_mgr_fd_t *con,
 		return EINVAL;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con->mgr->magic == MAGIC_CON_MGR);
 
 	if (((fd = con->input_fd) == -1) && ((fd = con->output_fd) == -1))
 		return SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR;
@@ -2945,42 +2874,42 @@ extern int con_mgr_get_fd_auth_creds(con_mgr_fd_t *con,
 	return rc;
 }
 
-extern int con_mgr_get_thread_count(con_mgr_t *mgr)
+extern int con_mgr_get_thread_count(void)
 {
 	int count;
 
-	slurm_mutex_lock(&mgr->mutex);
-	count = get_workq_thread_count(mgr->workq);
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
+	count = get_workq_thread_count(mgr.workq);
+	slurm_mutex_unlock(&mgr.mutex);
 
 	return count;
 }
 
-extern void con_mgr_set_exit_on_error(con_mgr_t *mgr, bool exit_on_error)
+extern void con_mgr_set_exit_on_error(bool exit_on_error)
 {
-	slurm_mutex_lock(&mgr->mutex);
-	mgr->exit_on_error = exit_on_error;
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
+	mgr.exit_on_error = exit_on_error;
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern bool con_mgr_get_exit_on_error(con_mgr_t *mgr)
+extern bool con_mgr_get_exit_on_error(void)
 {
 	bool exit_on_error;
 
-	slurm_mutex_lock(&mgr->mutex);
-	exit_on_error = mgr->exit_on_error;
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
+	exit_on_error = mgr.exit_on_error;
+	slurm_mutex_unlock(&mgr.mutex);
 
 	return exit_on_error;
 }
 
-extern int con_mgr_get_error(con_mgr_t *mgr)
+extern int con_mgr_get_error(void)
 {
 	int rc;
 
-	slurm_mutex_lock(&mgr->mutex);
-	rc = mgr->error;
-	slurm_mutex_unlock(&mgr->mutex);
+	slurm_mutex_lock(&mgr.mutex);
+	rc = mgr.error;
+	slurm_mutex_unlock(&mgr.mutex);
 
 	return rc;
 }

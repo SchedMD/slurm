@@ -76,8 +76,6 @@
 #define CONMGR_THREADS 4
 #define MAX_OPEN_CONNECTIONS 124
 
-static con_mgr_t *conmgr = NULL;
-
 /*
  * Special file descriptor for SIGCHILD handler
  * Warning: must not change while SIGCHILD handler is active.
@@ -150,8 +148,7 @@ static int _queue_delete_request(con_mgr_fd_t *con, slurm_msg_t *req_msg)
 	return SLURM_SUCCESS;
 }
 
-static void _on_pty_reply_sent(con_mgr_t *conmgr, con_mgr_fd_t *con,
-			       con_mgr_work_type_t type,
+static void _on_pty_reply_sent(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			       con_mgr_work_status_t status, const char *tag,
 			       void *arg)
 {
@@ -186,7 +183,7 @@ static int _send_pty(con_mgr_fd_t *con, slurm_msg_t *req_msg)
 
 	debug("%s: [%s] requested pty", __func__, con->name);
 
-	con_mgr_add_work(conmgr, con, _on_pty_reply_sent,
+	con_mgr_add_work(con, _on_pty_reply_sent,
 			 CONMGR_WORK_TYPE_CONNECTION_WRITE_COMPLETE, NULL,
 			 __func__);
 
@@ -252,9 +249,8 @@ rwfail:
 	return;	/* explicit return avoids a compiler error */
 }
 
-static void _tear_down(con_mgr_t *mgr, con_mgr_fd_t *con,
-		       con_mgr_work_type_t type, con_mgr_work_status_t status,
-		       const char *tag, void *arg)
+static void _tear_down(con_mgr_fd_t *con, con_mgr_work_type_t type,
+		       con_mgr_work_status_t status, const char *tag, void *arg)
 {
 	bool need_kill = false, need_stop = false;
 	int rc = SLURM_SUCCESS;
@@ -314,8 +310,7 @@ static int _send_delete_confirmation(void *x, void *arg)
 }
 
 /* stopping job is async: this is the final say if the job has stopped */
-static void _check_if_stopped(con_mgr_t *mgr, con_mgr_fd_t *con,
-			      con_mgr_work_type_t type,
+static void _check_if_stopped(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			      con_mgr_work_status_t status, const char *tag,
 			      void *arg)
 {
@@ -404,12 +399,12 @@ static void _check_if_stopped(con_mgr_t *mgr, con_mgr_fd_t *con,
 #endif /* MEMORY_LEAK_DEBUG */
 
 	debug2("%s: Goodbye, cruel velvet drapes!", __func__);
-	con_mgr_request_shutdown(conmgr);
+	con_mgr_request_shutdown();
 }
 
-static void _finish_job(con_mgr_t *mgr, con_mgr_fd_t *con,
-			con_mgr_work_type_t type, con_mgr_work_status_t status,
-			const char *tag, void *arg)
+static void _finish_job(con_mgr_fd_t *con, con_mgr_work_type_t type,
+			con_mgr_work_status_t status, const char *tag,
+			void *arg)
 {
 	int jobid, rc;
 	bool existing_allocation;
@@ -453,13 +448,12 @@ done:
 	state.job_completed = true;
 	unlock_state();
 
-	con_mgr_add_work(conmgr, NULL, _check_if_stopped,
-			 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
+	con_mgr_add_work(NULL, _check_if_stopped, CONMGR_WORK_TYPE_FIFO, NULL,
+			 __func__);
 }
 
-static void _stage_out(con_mgr_t *mgr, con_mgr_fd_t *con,
-		       con_mgr_work_type_t type, con_mgr_work_status_t status,
-		       const char *tag, void *arg)
+static void _stage_out(con_mgr_fd_t *con, con_mgr_work_type_t type,
+		       con_mgr_work_status_t status, const char *tag, void *arg)
 {
 	int rc;
 	bool staged_in;
@@ -493,8 +487,8 @@ static void _stage_out(con_mgr_t *mgr, con_mgr_fd_t *con,
 	state.staged_out = true;
 	unlock_state();
 
-	con_mgr_add_work(conmgr, NULL, _finish_job,
-			 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
+	con_mgr_add_work(NULL, _finish_job, CONMGR_WORK_TYPE_FIFO, NULL,
+			 __func__);
 }
 
 /* cleanup anchor and shutdown */
@@ -541,8 +535,8 @@ extern void stop_anchor(int status)
 	}
 	unlock_state();
 
-	con_mgr_add_work(conmgr, NULL, _stage_out,
-			 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
+	con_mgr_add_work(NULL, _stage_out, CONMGR_WORK_TYPE_FIFO, NULL,
+			 __func__);
 
 	debug2("%s: end", __func__);
 }
@@ -707,7 +701,7 @@ static void _queue_send_console_socket(void)
 		fatal("%s: [%s] Unable to connect() to console socket: %m",
 		      __func__, addr.sun_path);
 
-	if ((rc = con_mgr_process_fd(conmgr, CON_TYPE_RAW, fd, fd, events,
+	if ((rc = con_mgr_process_fd(CON_TYPE_RAW, fd, fd, events,
 				     (slurm_addr_t *) &addr, sizeof(addr),
 				     NULL)))
 		fatal("%s: [%s] unable to initialize console socket: %s",
@@ -790,8 +784,8 @@ static void _create_child_event_socket(void)
 	/* save the file descriptor for the signal handler */
 	sigchld_fd = event_fd[1];
 
-	if (con_mgr_process_fd(conmgr, CON_TYPE_RAW, event_fd[0], event_fd[1],
-			       events, NULL, 0, NULL))
+	if (con_mgr_process_fd(CON_TYPE_RAW, event_fd[0], event_fd[1], events,
+			       NULL, 0, NULL))
 		fatal("conmgr rejected event pipe");
 
 	if (sigaction(SIGCHLD, &act, NULL))
@@ -1017,7 +1011,7 @@ static int _delete(con_mgr_fd_t *con, slurm_msg_t *req_msg)
 
 	rc = _queue_delete_request(con, req_msg);
 
-	con_mgr_add_work(conmgr, NULL, _tear_down, CONMGR_WORK_TYPE_FIFO, NULL,
+	con_mgr_add_work(NULL, _tear_down, CONMGR_WORK_TYPE_FIFO, NULL,
 			 __func__);
 
 	return rc;
@@ -1207,8 +1201,7 @@ rwfail:
 	      __func__, state.pid_file, slurm_strerror(rc));
 }
 
-extern void on_allocation(con_mgr_t *mgr, con_mgr_fd_t *con,
-			  con_mgr_work_type_t type,
+extern void on_allocation(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			  con_mgr_work_status_t status, const char *tag,
 			  void *arg)
 {
@@ -1472,8 +1465,8 @@ static void *_on_startup_con(con_mgr_fd_t *con, void *arg)
 	unlock_state();
 
 	if (queue) {
-		con_mgr_add_work(conmgr, NULL, on_allocation,
-				 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
+		con_mgr_add_work(NULL, on_allocation, CONMGR_WORK_TYPE_FIFO,
+				 NULL, __func__);
 	}
 
 	return &state;
@@ -1603,16 +1596,14 @@ extern int spawn_anchor(void)
 	else if (state.requested_terminal)
 		_open_pty();
 
-	if (!(conmgr = init_con_mgr(CONMGR_THREADS, MAX_OPEN_CONNECTIONS,
-				    callbacks)))
-		fatal("%s: unable to initialize RPC manager", __func__);
+	init_con_mgr(CONMGR_THREADS, MAX_OPEN_CONNECTIONS, callbacks);
 
 	/* scrun anchor process */
 
 	/* TODO: only 1 unix socket for now */
 	list_append(socket_listen,
 		    xstrdup_printf("unix:%s", state.anchor_socket));
-	if ((rc = con_mgr_create_sockets(conmgr, CON_TYPE_RPC, socket_listen,
+	if ((rc = con_mgr_create_sockets(CON_TYPE_RPC, socket_listen,
 					 conmgr_events, NULL)))
 		fatal("%s: unable to initialize listeners: %s",
 		      __func__, slurm_strerror(rc));
@@ -1620,14 +1611,13 @@ extern int spawn_anchor(void)
 
 	_create_child_event_socket();
 
-	if ((rc = con_mgr_process_fd(conmgr, CON_TYPE_RAW, pipe_fd[1],
-				     pipe_fd[1], conmgr_startup_events, NULL, 0,
-				     NULL)))
+	if ((rc = con_mgr_process_fd(CON_TYPE_RAW, pipe_fd[1], pipe_fd[1],
+				     conmgr_startup_events, NULL, 0, NULL)))
 		fatal("%s: unable to initialize RPC listener: %s",
 		      __func__, slurm_strerror(rc));
 
-	con_mgr_add_work(conmgr, NULL, get_allocation, CONMGR_WORK_TYPE_FIFO,
-			 NULL, __func__);
+	con_mgr_add_work(NULL, get_allocation, CONMGR_WORK_TYPE_FIFO, NULL,
+			 __func__);
 
 	if ((spank_rc = spank_init_post_opt())) {
 		fatal("%s: plugin stack post-option processing failed: %s",
@@ -1639,7 +1629,7 @@ extern int spawn_anchor(void)
 	xassert(!state.needs_lock);
 	xassert(!state.locked);
 	state.needs_lock = true;
-	rc = con_mgr_run(conmgr);
+	rc = con_mgr_run();
 	xassert(!state.locked);
 	xassert(state.needs_lock);
 	state.needs_lock = false;
@@ -1649,8 +1639,7 @@ done:
 	debug("%s: anchor exiting: %s", __func__, slurm_strerror(rc));
 
 	FREE_NULL_LIST(socket_listen);
-	free_con_mgr(conmgr);
-	conmgr = NULL;
+	free_con_mgr();
 
 	debug("%s: exit[%d]: %s", __func__, rc, slurm_strerror(rc));
 

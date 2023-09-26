@@ -54,7 +54,6 @@
  */
 
 typedef struct con_mgr_fd_s con_mgr_fd_t;
-typedef struct con_mgr_s con_mgr_t;
 
 /*
  * Struct of call backs to call on events
@@ -147,15 +146,13 @@ extern const char *con_mgr_work_type_string(con_mgr_work_type_t type);
 
 /*
  * Prototype for all conmgr callbacks
- * IN mgr - ptr to owning conmgr
  * IN con - ptr to relavent connection (or NULL)
  * IN type - work type
  * IN status - work status
  * IN tag - logging tag for work
  * IN arg - arbitrary pointer
  */
-typedef void (*con_mgr_work_func_t)(con_mgr_t *mgr, con_mgr_fd_t *con,
-				    con_mgr_work_type_t type,
+typedef void (*con_mgr_work_func_t)(con_mgr_fd_t *con, con_mgr_work_type_t type,
 				    con_mgr_work_status_t status,
 				    const char *tag, void *arg);
 
@@ -224,7 +221,6 @@ struct con_mgr_fd_s {
 	 * 	in
 	 * 	out
 	 * 	name (will never change for life of connection)
-	 * 	mgr (will not be moved)
 	 * 	con (will not be moved)
 	 * 	arg
 	 *	on_data_tried
@@ -242,21 +238,18 @@ struct con_mgr_fd_s {
 	 * type: wrap_work_arg_t
 	 */
 	list_t *write_complete_work;
-	/* owning connection manager */
-	con_mgr_t *mgr;
 };
 
 /*
- * create and init a connection manager
+ * create and init connection manager
  * only call once!
  * IN thread_count - number of threads to create
  * IN max_connections - max number of connections
  * IN callbacks - struct containing function pointers
- * RET SLURM_SUCCESS or error
  */
-extern con_mgr_t *init_con_mgr(int thread_count, int max_connections,
-			       con_mgr_callbacks_t callbacks);
-extern void free_con_mgr(con_mgr_t *mgr);
+extern void init_con_mgr(int thread_count, int max_connections,
+			 con_mgr_callbacks_t callbacks);
+extern void free_con_mgr(void);
 
 /*
  * Request kernel provide auth credentials for connection
@@ -268,44 +261,38 @@ extern int con_mgr_get_fd_auth_creds(con_mgr_fd_t *con, uid_t *cred_uid, gid_t
 
 /*
  * instruct connection manager to process fd (async)
- * IN mgr connection manager to update
  * IN type connection type for fd
- * IN input_fd file descriptor to have mgr take ownership and read from
- * IN output_fd file descriptor to have mgr take ownership and write to
+ * IN input_fd file descriptor to have conmgr take ownership and read from
+ * IN output_fd file descriptor to have conmgr take ownership and write to
  * IN events call backs on events of fd
  * IN addr socket address (if known or NULL) (will always xfree())
  * IN addrlen sizeof addr or 0 if addr is NULL
  * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
-extern int con_mgr_process_fd(con_mgr_t *mgr, con_mgr_con_type_t type,
-			      int input_fd, int output_fd,
-			      const con_mgr_events_t events,
+extern int con_mgr_process_fd(con_mgr_con_type_t type, int input_fd,
+			      int output_fd, const con_mgr_events_t events,
 			      const slurm_addr_t *addr, socklen_t addrlen,
 			      void *arg);
 
 /*
  * instruct connection manager to listen to fd (async)
- * IN mgr connection manager to update
  * IN type connection type for fd
- * IN fd file descriptor to have mgr take ownership of
+ * IN fd file descriptor to have conmgr take ownership of
  * IN events call backs on events of fd
  * IN addr socket listen address (will not xfree())
  * IN addrlen sizeof addr or 0 if addr is NULL
  * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
-extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
-				     con_mgr_con_type_t type,
+extern int con_mgr_process_fd_listen(int fd, con_mgr_con_type_t type,
 				     const con_mgr_events_t events,
 				     const slurm_addr_t *addr,
 				     socklen_t addrlen, void *arg);
-
 /*
  * instruct connection manager to listen to unix socket fd (async)
- * IN mgr connection manager to update
  * IN type connection type for fd
- * IN fd file descriptor to have mgr take ownership of
+ * IN fd file descriptor to have conmgr take ownership of
  * IN events call backs on events of fd
  * IN addr socket listen address (will not xfree())
  * IN addrlen sizeof addr or 0 if addr is NULL
@@ -313,8 +300,7 @@ extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
  * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
-extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr,
-					  con_mgr_con_type_t type, int fd,
+extern int con_mgr_process_fd_unix_listen(con_mgr_con_type_t type, int fd,
 					  const con_mgr_events_t events,
 					  const slurm_addr_t *addr,
 					  socklen_t addrlen, const char *path,
@@ -349,7 +335,6 @@ extern void con_mgr_queue_close_fd(con_mgr_fd_t *con);
 
 /*
  * create sockets based on requested SOCKET_LISTEN
- * IN  mgr assigned connection manager
  * to accepted connections.
  * IN type connection type for fd
  * IN  hostports list_t* of cstrings to listen on.
@@ -358,27 +343,23 @@ extern void con_mgr_queue_close_fd(con_mgr_fd_t *con);
  * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
-extern int con_mgr_create_sockets(con_mgr_t *mgr, con_mgr_con_type_t type,
-				  list_t *hostports, con_mgr_events_t events,
-				  void *arg);
+extern int con_mgr_create_sockets(con_mgr_con_type_t type, list_t *hostports,
+				  con_mgr_events_t events, void *arg);
 
 /*
  * Run connection manager main loop for until all processing is done
- * IN mgr assigned connection mgr to run
  * RET SLURM_SUCCESS or error
  */
-extern int con_mgr_run(con_mgr_t *mgr);
+extern int con_mgr_run(void);
 
 /*
  * Notify conmgr to shutdown
- * IN mgr connection manager ptr
  */
-extern void con_mgr_request_shutdown(con_mgr_t *mgr);
+extern void con_mgr_request_shutdown(void);
 
 /*
  * Add work for connection manager
  * NOTE: only call from within an con_mgr_events_t callback
- * IN mgr - manager to assign work
  * IN con - connection to assign work or NULL for non-connection related work
  * IN func - function pointer to run work
  * IN type - type of work
@@ -387,13 +368,12 @@ extern void con_mgr_request_shutdown(con_mgr_t *mgr);
  * NOTE: never add a thread that will never return or con_mgr_run() will never
  * return either.
  */
-extern void con_mgr_add_work(con_mgr_t *mgr, con_mgr_fd_t *con,
-			     con_mgr_work_func_t func, con_mgr_work_type_t type,
-			     void *arg, const char *tag);
+extern void con_mgr_add_work(con_mgr_fd_t *con, con_mgr_work_func_t func,
+			     con_mgr_work_type_t type, void *arg,
+			     const char *tag);
 
 /*
  * Add time delayed work for connection manager
- * IN mgr - manager to assign work
  * IN con - connection to assign work or NULL for non-connection related work
  * IN func - function pointer to run work
  * IN type - type of work
@@ -402,7 +382,7 @@ extern void con_mgr_add_work(con_mgr_t *mgr, con_mgr_fd_t *con,
  * NOTE: never add a thread that will never return or con_mgr_run() will never
  * return either.
  */
-extern void con_mgr_add_delayed_work(con_mgr_t *mgr, con_mgr_fd_t *con,
+extern void con_mgr_add_delayed_work(con_mgr_fd_t *con,
 				     con_mgr_work_func_t func, time_t seconds,
 				     long nanoseconds, void *arg,
 				     const char *tag);
@@ -410,17 +390,17 @@ extern void con_mgr_add_delayed_work(con_mgr_t *mgr, con_mgr_fd_t *con,
 /*
  * Get number of threads used by conmgr
  */
-extern int con_mgr_get_thread_count(con_mgr_t *mgr);
+extern int con_mgr_get_thread_count(void);
 
 /*
  * Control if conmgr will exit on any error
  */
-extern void con_mgr_set_exit_on_error(con_mgr_t *mgr, bool exit_on_error);
-extern bool con_mgr_get_exit_on_error(con_mgr_t *mgr);
+extern void con_mgr_set_exit_on_error(bool exit_on_error);
+extern bool con_mgr_get_exit_on_error(void);
 
 /*
  * Get last error code from conmgr
  */
-extern int con_mgr_get_error(con_mgr_t *mgr);
+extern int con_mgr_get_error(void);
 
 #endif /* _CONMGR_H */

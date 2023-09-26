@@ -491,7 +491,6 @@ int main(int argc, char **argv)
 	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
 	struct sigaction sigpipe_handler = { .sa_handler = _sigpipe_handler };
 	socket_listen = list_create(xfree_ptr);
-	con_mgr_t *conmgr = NULL;
 	con_mgr_events_t conmgr_events = {
 		.on_data = parse_http,
 		.on_connection = _setup_http_context,
@@ -528,9 +527,8 @@ int main(int argc, char **argv)
 	if (serializer_g_init(NULL, NULL))
 		fatal("Unable to initialize serializers");
 
-	if (!(conmgr = init_con_mgr((run_mode.listen ? thread_count : 1),
-				    max_connections, callbacks)))
-		fatal("Unable to initialize connection manager");
+	init_con_mgr((run_mode.listen ? thread_count : 1), max_connections,
+		     callbacks);
 
 	auth_rack = plugrack_create("rest_auth");
 	plugrack_read_dir(auth_rack, slurm_conf.plugindir);
@@ -627,18 +625,18 @@ int main(int argc, char **argv)
 		debug("Interactive mode activated (TTY detected on STDIN)");
 
 	if (!run_mode.listen) {
-		if ((rc = con_mgr_process_fd(conmgr, CON_TYPE_RAW, STDIN_FILENO,
+		if ((rc = con_mgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
 					     STDOUT_FILENO, conmgr_events, NULL,
 					     0, operations_router)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
 
 		/* fail on first error if this is piped process */
-		con_mgr_set_exit_on_error(conmgr, true);
+		con_mgr_set_exit_on_error(true);
 	} else if (run_mode.listen) {
 		mode_t mask = umask(0);
 
-		if (con_mgr_create_sockets(conmgr, CON_TYPE_RAW, socket_listen,
+		if (con_mgr_create_sockets(CON_TYPE_RAW, socket_listen,
 					   conmgr_events, operations_router))
 			fatal("Unable to create sockets");
 
@@ -648,15 +646,15 @@ int main(int argc, char **argv)
 		debug("%s: server listen mode activated", __func__);
 	}
 
-	rc = con_mgr_run(conmgr);
+	rc = con_mgr_run();
 
 	/*
 	 * Capture if there were issues during parsing in inet mode.
 	 * Inet mode expects connection errors to propagate upwards as
 	 * connection errors so they can be logged appropriately.
 	 */
-	if (con_mgr_get_exit_on_error(conmgr))
-		parse_rc = con_mgr_get_error(conmgr);
+	if (con_mgr_get_exit_on_error())
+		parse_rc = con_mgr_get_error();
 
 	unbind_operation_handler(_op_handler_openapi);
 
@@ -664,7 +662,7 @@ int main(int argc, char **argv)
 	destroy_rest_auth();
 	destroy_operations();
 	destroy_openapi();
-	free_con_mgr(conmgr);
+	free_con_mgr();
 	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
 	serializer_g_fini();
 	for (size_t i = 0; i < auth_plugin_count; i++) {

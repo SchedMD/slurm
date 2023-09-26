@@ -352,7 +352,7 @@ static void _on_finish(void *arg)
  * Listen on srun port to make sure that slurmctld doesn't mark job as dead
  * RET port listening on
  */
-static uint32_t _setup_listener(con_mgr_t *conmgr)
+static uint32_t _setup_listener(void)
 {
 	static const con_mgr_events_t events = {
 		.on_connection = _on_connection,
@@ -379,8 +379,8 @@ static uint32_t _setup_listener(con_mgr_t *conmgr)
 	xassert(port > 0);
 	debug("%s: listening for srun RPCs on port=%hu", __func__, port);
 
-	if ((rc = con_mgr_process_fd(conmgr, CON_TYPE_RPC, fd, fd, events, NULL,
-				     0, NULL)))
+	if ((rc = con_mgr_process_fd(CON_TYPE_RPC, fd, fd, events, NULL, 0,
+				     NULL)))
 		fatal("%s: conmgr refuesed fd=%d: %s",
 		      __func__, fd, slurm_strerror(rc));
 
@@ -393,8 +393,7 @@ static void _pending_callback(uint32_t job_id)
 }
 
 /* check allocation has all nodes ready */
-extern void check_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
-			     con_mgr_work_type_t type,
+extern void check_allocation(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			     con_mgr_work_status_t status, const char *tag,
 			     void *arg)
 {
@@ -446,8 +445,8 @@ extern void check_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 			      __func__, state.jobid, delay);
 			unlock_state();
 		}
-		con_mgr_add_delayed_work(conmgr, NULL, check_allocation, delay,
-					 0, NULL, "check_allocation");
+		con_mgr_add_delayed_work(NULL, check_allocation, delay, 0, NULL,
+					 "check_allocation");
 	} else if ((rc == READY_JOB_FATAL) || !(rc & READY_JOB_STATE)) {
 		/* job failed! */
 		if (get_log_level() >= LOG_LEVEL_DEBUG) {
@@ -470,13 +469,13 @@ extern void check_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 			stop_anchor(rc);
 		} else {
 			/* we have a job now. see if creating is done */
-			con_mgr_add_work(conmgr, NULL, on_allocation,
+			con_mgr_add_work(NULL, on_allocation,
 					 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
 		}
 	}
 }
 
-static void _alloc_job(con_mgr_t *conmgr)
+static void _alloc_job(void)
 {
 	int rc;
 	resource_allocation_response_msg_t *alloc = NULL;
@@ -524,7 +523,7 @@ static void _alloc_job(con_mgr_t *conmgr)
 	desc->user_id = SLURM_AUTH_NOBODY;
 	desc->group_id = SLURM_AUTH_NOBODY;
 	desc->name = xstrdup("scrun");
-	desc->other_port = _setup_listener(conmgr);
+	desc->other_port = _setup_listener();
 
 	debug("%s: requesting allocation with %u tasks and %u hosts",
 	      __func__, (desc->num_tasks == NO_VAL ? 1 : desc->num_tasks),
@@ -586,8 +585,7 @@ static void _alloc_job(con_mgr_t *conmgr)
 	slurm_free_resource_allocation_response_msg(alloc);
 }
 
-extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
-			   con_mgr_work_type_t type,
+extern void get_allocation(con_mgr_fd_t *con, con_mgr_work_type_t type,
 			   con_mgr_work_status_t status, const char *tag,
 			   void *arg)
 {
@@ -619,7 +617,7 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 
 		debug("Running under existing JobId=%u", job_id);
 	} else {
-		_alloc_job(conmgr);
+		_alloc_job();
 
 		read_lock_state();
 		job_id = state.jobid;
@@ -673,10 +671,10 @@ extern void get_allocation(con_mgr_t *conmgr, con_mgr_fd_t *con,
 		if ((rc = _stage_in()))
 			stop_anchor(rc);
 		else
-			con_mgr_add_work(conmgr, NULL, on_allocation,
+			con_mgr_add_work(NULL, on_allocation,
 					 CONMGR_WORK_TYPE_FIFO, NULL, __func__);
 	} else {
-		con_mgr_add_delayed_work(conmgr, NULL, check_allocation, 0, 1,
-					 NULL, "check_allocation");
+		con_mgr_add_delayed_work(NULL, check_allocation, 0, 1, NULL,
+					 "check_allocation");
 	}
 }
