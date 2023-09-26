@@ -2055,12 +2055,9 @@ watch:
 			      __func__, strsignal(catch_signals[i].signal));
 	}
 
+	xassert(!mgr.poll_active);
+	xassert(!mgr.listen_active);
 	slurm_mutex_unlock(&mgr.mutex);
-
-	log_flag(NET, "%s: begin waiting for all workers", __func__);
-	/* _watch() is never in the workq so it can wait */
-	quiesce_workq(mgr.workq);
-	log_flag(NET, "%s: end waiting for all workers", __func__);
 
 	if (poll_args) {
 		xfree(poll_args->fds);
@@ -2099,6 +2096,10 @@ extern int con_mgr_run(void)
 	slurm_mutex_unlock(&mgr.mutex);
 
 	rc = _watch();
+
+	log_flag(NET, "%s: begin waiting for all workers", __func__);
+	quiesce_workq(mgr.workq);
+	log_flag(NET, "%s: end waiting for all workers", __func__);
 
 	return rc;
 }
