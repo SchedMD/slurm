@@ -2878,9 +2878,15 @@ extern int con_mgr_get_fd_auth_creds(con_mgr_fd_t *con,
 	return rc;
 }
 
-extern int con_mgr_get_thread_count(const con_mgr_t *mgr)
+extern int con_mgr_get_thread_count(con_mgr_t *mgr)
 {
-	return get_workq_thread_count(mgr->workq);
+	int count;
+
+	slurm_mutex_lock(&mgr->mutex);
+	count = get_workq_thread_count(mgr->workq);
+	slurm_mutex_unlock(&mgr->mutex);
+
+	return count;
 }
 
 extern void con_mgr_set_exit_on_error(con_mgr_t *mgr, bool exit_on_error)
