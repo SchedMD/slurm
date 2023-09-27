@@ -38,6 +38,7 @@
 #define _INTERFACES_DATA_PARSER_H
 
 #include "src/common/data.h"
+#include "src/common/openapi.h"
 
 /*
  * Enumeration of all parsers that data_parser plugins will handle.
@@ -675,6 +676,13 @@ extern int data_parser_g_dump(data_parser_t *parser, data_parser_type_t type,
 
 #define DATA_DUMP(parser, type, src, dst) \
 	data_parser_g_dump(parser, DATA_PARSER_##type, &src, sizeof(src), dst)
+
+/*
+ * Generate meta instance for a CLI command
+ */
+extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
+						 const char *mime_type,
+						 const char *data_parser);
 
 /*
  * Dump object of given type to STDOUT

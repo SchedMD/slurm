@@ -37,8 +37,10 @@
 #include "config.h"
 
 #include "src/common/data.h"
+#include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/openapi.h"
 #include "src/common/read_config.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
@@ -620,6 +622,47 @@ static void _dump_cli_stdout_on_warn(void *arg, data_parser_type_t type,
 		data_set_string(data_key_set(w, "source"), source);
 
 	data_set_string_fmt(data_key_set(w, "data_type"), "0x%x", type);
+}
+
+extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
+						 const char *mime_type,
+						 const char *data_parser)
+{
+	openapi_resp_meta_t *meta = xmalloc_nz(sizeof(*meta));
+	int tty;
+	char *parser = NULL;
+
+	if (isatty(STDIN_FILENO))
+		tty = STDIN_FILENO;
+	else if (isatty(STDOUT_FILENO))
+		tty = STDOUT_FILENO;
+	else if (isatty(STDERR_FILENO))
+		tty = STDERR_FILENO;
+	else
+		tty = -1;
+
+	if (data_parser)
+		parser = xstrdup(data_parser);
+
+	*meta = (openapi_resp_meta_t) {
+		.plugin = {
+			.data_parser = parser,
+		},
+		.client = {
+			.source = ((tty != -1) ? fd_resolve_path(tty) :
+				   NULL),
+		},
+		.slurm = {
+			.version = {
+				.major = xstrdup(SLURM_MAJOR),
+				.micro = xstrdup(SLURM_MICRO),
+				.minor = xstrdup(SLURM_MINOR),
+			},
+			.release = xstrdup(SLURM_VERSION_STRING),
+		}
+	};
+
+	return meta;
 }
 
 static void _populate_cli_response_meta(data_t *meta, int argc, char **argv,
