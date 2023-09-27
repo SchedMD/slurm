@@ -247,6 +247,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix some mig profile names in slurm not matching nvidia mig profiles.
  -- Prevent slurmscriptd processing delays from blocking other threads in
     slurmctld while trying to launch {Prolog|Epilog}Slurmctld.
+ -- Fix sacct printing ReqMem field when memory doesn't exist in requested TRES.
 
 * Changes in Slurm 23.02.5
 ==========================
