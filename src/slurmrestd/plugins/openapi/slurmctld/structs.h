@@ -143,4 +143,13 @@ typedef struct {
 	time_t last_update;
 } openapi_resp_reserve_info_msg_t;
 
+/* mirrors license_info_msg_t */
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	license_info_msg_t *licenses;
+	time_t last_update;
+} openapi_resp_license_info_msg_t;
+
 #endif

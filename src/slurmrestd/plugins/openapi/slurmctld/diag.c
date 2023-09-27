@@ -43,6 +43,7 @@
 #include "src/slurmrestd/operations.h"
 
 #include "api.h"
+#include "structs.h"
 
 static int _op_handler_diag(openapi_ctxt_t *ctxt)
 {
@@ -95,6 +96,7 @@ static int _op_handler_licenses(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 	license_info_msg_t *msg = NULL;
+	openapi_resp_license_info_msg_t resp = {0};
 
 	if (ctxt->method != HTTP_REQUEST_GET)
 		resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY), __func__,
@@ -103,8 +105,13 @@ static int _op_handler_licenses(openapi_ctxt_t *ctxt)
 	else if ((rc = slurm_load_licenses(0, &msg, 0)))
 		resp_error(ctxt, rc, __func__,
 			   "slurm_load_licenses() was unable to load licenses");
-	else
-		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_LICENSES_RESP, msg, ctxt);
+
+	if (msg) {
+		resp.licenses = msg;
+		resp.last_update = msg->last_update;
+	}
+
+	DATA_DUMP(ctxt->parser, OPENAPI_LICENSES_RESP, resp, ctxt->resp);
 
 	slurm_free_license_info_msg(msg);
 	return rc;
