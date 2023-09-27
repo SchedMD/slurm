@@ -354,8 +354,8 @@ typedef enum {
 	DATA_PARSER_PARTITION_INFO_MSG_PTR, /* partition_info_msg_t* */
 	DATA_PARSER_PARTITION_INFO_ARRAY, /* partition_info_t** */
 	DATA_PARSER_PARTITION_STATES, /* uint16_t & PARTITION_* */
-	DATA_PARSER_OPENAPI_PARTITION_RESP, /* openapi_resp_single_t */
-	DATA_PARSER_OPENAPI_PARTITION_RESP_PTR, /* openapi_resp_single_t* */
+	DATA_PARSER_OPENAPI_PARTITION_RESP, /* openapi_resp_partitions_info_msg_t */
+	DATA_PARSER_OPENAPI_PARTITION_RESP_PTR, /* openapi_resp_partitions_info_msg_t* */
 	DATA_PARSER_OPENAPI_PARTITION_PARAM, /* openapi_partition_param_t */
 	DATA_PARSER_OPENAPI_PARTITION_PARAM_PTR, /* openapi_partition_param_t* */
 	DATA_PARSER_OPENAPI_PARTITIONS_QUERY, /* openapi_partitions_query_t */

@@ -225,6 +225,8 @@ documents those changes that are of interest to users and administrators.
     `GET /slurm/v0.0.40/job` and `GET /slurm/v0.0.40/jobs` queries.
  -- slurmrestd - Add last_update fields to response to
     `GET /slurm/v0.0.40/node` and `GET /slurm/v0.0.40/nodes` queries.
+ -- slurmrestd - Add last_update fields to response to
+    `GET /slurm/v0.0.40/partition` and `GET /slurm/v0.0.40/partitions` queries.
 
 * Changes in Slurm 23.02.6
 ==========================

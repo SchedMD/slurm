@@ -125,4 +125,13 @@ typedef struct {
 	time_t last_update;
 } openapi_resp_node_info_msg_t;
 
+/* mirrors partition_info_msg_t */
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	partition_info_msg_t *partitions;
+	time_t last_update;
+} openapi_resp_partitions_info_msg_t;
+
 #endif

@@ -48,6 +48,7 @@ extern int _op_handler_partitions(openapi_ctxt_t *ctxt)
 	int rc = SLURM_SUCCESS;
 	partition_info_msg_t *part_info_ptr = NULL;
 	openapi_partitions_query_t query = {0};
+	openapi_resp_partitions_info_msg_t resp = {0};
 
 	if (ctxt->method != HTTP_REQUEST_GET) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
@@ -72,7 +73,12 @@ extern int _op_handler_partitions(openapi_ctxt_t *ctxt)
 		goto done;
 	}
 
-	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_PARTITION_RESP, part_info_ptr, ctxt);
+	if (part_info_ptr) {
+		resp.last_update = part_info_ptr->last_update;
+		resp.partitions = part_info_ptr;
+	}
+
+	DATA_DUMP(ctxt->parser, OPENAPI_PARTITION_RESP, resp, ctxt->resp);
 
 done:
 	slurm_free_partition_info_msg(part_info_ptr);
@@ -141,9 +147,13 @@ extern int _op_handler_partition(openapi_ctxt_t *ctxt)
 				.record_count = 1,
 				.partition_array = part,
 			};
+			openapi_resp_partitions_info_msg_t resp = {
+				.partitions = &p,
+				.last_update = part_info_ptr->last_update,
+			};
 
-			DUMP_OPENAPI_RESP_SINGLE(OPENAPI_PARTITION_RESP, &p,
-						 ctxt);
+			DATA_DUMP(ctxt->parser, OPENAPI_PARTITION_RESP, resp,
+				  ctxt->resp);
 		}
 	}
 
