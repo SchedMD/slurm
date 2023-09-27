@@ -267,7 +267,6 @@ static void	_get_gres_cnt(gres_node_state_t *gres_ns, char *orig_config,
 			      int gres_name_colon_len);
 static uint64_t _get_job_gres_list_cnt(List gres_list, char *gres_name,
 				       char *gres_type);
-static void	_job_state_delete(gres_job_state_t *gres_js);
 static void *	_job_state_dup2(gres_job_state_t *gres_js, int node_index);
 static void	_job_state_log(gres_state_t *gres_js, uint32_t job_id);
 static int	_load_plugin(slurm_gres_context_t *gres_ctx);
@@ -5180,7 +5179,7 @@ extern uint64_t gres_node_config_cnt(List gres_list, char *name)
 	return count;
 }
 
-static void _job_state_delete(gres_job_state_t *gres_js)
+extern void gres_job_state_delete(gres_job_state_t *gres_js)
 {
 	int i;
 
@@ -5224,7 +5223,7 @@ extern void gres_job_list_delete(void *list_element)
 
 	gres_state_job = (gres_state_t *) list_element;
 	slurm_mutex_lock(&gres_context_lock);
-	_job_state_delete(gres_state_job->gres_data);
+	gres_job_state_delete(gres_state_job->gres_data);
 	gres_state_job->gres_data = NULL;
 	_gres_state_delete_members(gres_state_job);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -6686,7 +6685,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 			 */
 			error("%s: no plugin configured to unpack data type %u from job %u. This is likely due to a difference in the GresTypes configured in slurm.conf on different cluster nodes.",
 			      __func__, plugin_id, job_id);
-			_job_state_delete(gres_js);
+			gres_job_state_delete(gres_js);
 			continue;
 		}
 
@@ -6702,7 +6701,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 unpack_error:
 	error("%s: unpack error from job %u", __func__, job_id);
 	if (gres_js)
-		_job_state_delete(gres_js);
+		gres_job_state_delete(gres_js);
 	if (locked)
 		slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
