@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix how heterogenous steps in an allocation with CR_PACK_NODE or -mpack are
     created.
  -- Fix slurmctld crash from race condition within job_submit_throttle plugin.
+ -- Fix --with-systemdsystemunitdir when requesting a default location.
 
 * Changes in Slurm 23.02.5
 ==========================

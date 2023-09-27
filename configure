@@ -27429,10 +27429,12 @@ else $as_nop
 fi
 
 
+	unitdir="$with_systemdsystemunitdir"
+
 	if test "x$with_systemdsystemunitdir" = "xyes"
 then :
-  def_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)
-	      if test "x$def_systemdsystemunitdir" = "x"
+  unitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)
+	       if test "x$unitdir" = "x"
 then :
   as_fn_error $? "systemd support requested but pkg-config unable to query systemd package" "$LINENO" 5
 fi
@@ -27440,7 +27442,7 @@ fi
 
 	if test "x$with_systemdsystemunitdir" != "xno"
 then :
-  systemdsystemunitdir=$with_systemdsystemunitdir
+  systemdsystemunitdir=$unitdir
 
 fi
 
