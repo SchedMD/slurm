@@ -685,32 +685,82 @@ extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
 						 const char *mime_type,
 						 const char *data_parser);
 
+#define DATA_PARSER_DUMP_CLI_CTXT_MAGIC 0x1BA211B3
+typedef struct {
+	int magic; /* DATA_PARSER_DUMP_CLI_CTXT_MAGIC */
+	int rc;
+	list_t *errors;
+	list_t *warnings;
+	const char *data_parser;
+} data_parser_dump_cli_ctxt_t;
+
 /*
  * Dump object of given type to STDOUT
- * Uses the current release version of the data_parser plugin.
  * This function is only intended for the simple dump of the data and then
  * exiting of the CLI command.
  * IN type - data parser type for *obj
  * IN obj_bytes - sizeof(*obj)
- * IN key - dictionary key of entry to place object
- * IN argc - argc arg of main()
- * IN argv - argv arg of main()
  * IN acct_db_conn - slurmdb connection or NULL
  * IN mime_type - dump object as given mime type
  * IN data_parser - data_parser parameters
+ * IN meta - ptr to meta instance
  * RET SLURM_SUCCESS or error
  */
 extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
-				       int obj_bytes, const char *key, int argc,
-				       char **argv, void *acct_db_conn,
+				       int obj_bytes, void *acct_db_conn,
 				       const char *mime_type,
-				       const char *data_parser);
+				       const char *data_parser,
+				       data_parser_dump_cli_ctxt_t *ctxt,
+				       openapi_resp_meta_t *meta);
 
-#define DATA_DUMP_CLI(type, src, key, argc, argv, db_conn, mime_type,      \
-		      data_parser)                                         \
-	data_parser_dump_cli_stdout(DATA_PARSER_##type, &src, sizeof(src), \
-				    key, argc, argv, db_conn, mime_type,   \
-				    data_parser)
+/*
+ * Dump object to stdout
+ */
+#define DATA_DUMP_CLI(type, src, argc, argv, db_conn, mime_type,              \
+		      data_parser_str, rc)                                    \
+	do {                                                                  \
+		data_parser_dump_cli_ctxt_t dump_ctxt = {                     \
+			.magic = DATA_PARSER_DUMP_CLI_CTXT_MAGIC,             \
+			.data_parser = data_parser_str,                       \
+		};                                                            \
+		__typeof__(src) *src_ptr = &src;                              \
+		if (!src.OPENAPI_RESP_STRUCT_META_FIELD_NAME)                 \
+			src.OPENAPI_RESP_STRUCT_META_FIELD_NAME =             \
+				data_parser_cli_meta(argc, argv, mime_type,   \
+						     data_parser_str);        \
+		if (!src.OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME)               \
+			src.OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME =           \
+				dump_ctxt.errors =                            \
+					list_create(free_openapi_resp_error); \
+		else                                                          \
+			dump_ctxt.errors =                                    \
+				src.OPENAPI_RESP_STRUCT_ERRORS_FIELD_NAME;    \
+		if (!src.OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME)             \
+			src.OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME =         \
+				dump_ctxt.warnings = list_create(             \
+					free_openapi_resp_warning);           \
+		else                                                          \
+			dump_ctxt.warnings =                                  \
+				src.OPENAPI_RESP_STRUCT_WARNINGS_FIELD_NAME;  \
+		rc = data_parser_dump_cli_stdout(                             \
+			DATA_PARSER_##type, src_ptr, sizeof(*src_ptr),        \
+			db_conn, mime_type, data_parser_str, &dump_ctxt,      \
+			src.OPENAPI_RESP_STRUCT_META_FIELD_NAME);             \
+		FREE_OPENAPI_RESP_COMMON_CONTENTS(src_ptr);                   \
+	} while (false)
+
+/*
+ * Dump object as single field to in common openapi response dictionary
+ */
+#define DATA_DUMP_CLI_SINGLE(type, src, argc, argv, db_conn, mime_type, \
+			     data_parser, rc)                           \
+	do {                                                            \
+		openapi_resp_single_t openapi_resp = {                  \
+			.response = src,                                \
+		};                                                      \
+		DATA_DUMP_CLI(type, openapi_resp, argc, argv, db_conn,  \
+			      mime_type, data_parser, rc);              \
+	} while (false)
 
 /*
  * Populate OpenAPI schema for each parser

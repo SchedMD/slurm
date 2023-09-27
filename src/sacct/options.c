@@ -1413,9 +1413,9 @@ extern void do_list(int argc, char **argv)
 	slurmdb_job_cond_t *job_cond = params.job_cond;
 
 	if (params.mimetype) {
-		errno = DATA_DUMP_CLI(JOB_LIST, jobs, "jobs", argc, argv,
-				      acct_db_conn, params.mimetype,
-				      params.data_parser);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_SLURMDBD_JOBS_RESP, jobs, argc,
+				     argv, acct_db_conn, params.mimetype,
+				     params.data_parser, errno);
 		return;
 	}
 

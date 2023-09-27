@@ -259,9 +259,9 @@ static int _get_info(bool clear_old, slurmdb_federation_rec_t *fed,
 
 	sort_sinfo_list(sinfo_list);
 	if (params.mimetype)
-		rc = DATA_DUMP_CLI(SINFO_DATA_LIST, sinfo_list, "sinfo", argc,
-				   argv, NULL, params.mimetype,
-				   params.data_parser);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_SINFO_RESP, sinfo_list, argc, argv,
+				     NULL, params.mimetype, params.data_parser,
+				     rc);
 	else
 		rc = print_sinfo_list(sinfo_list);
 

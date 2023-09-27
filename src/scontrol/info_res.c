@@ -89,10 +89,18 @@ extern void scontrol_print_res(char *reservation_name, int argc, char **argv)
 	error_code = scontrol_load_reservations(&res_info_ptr);
 	if (error_code) {
 		if (mime_type) {
-			DATA_DUMP_CLI(RESERVATION_INFO_MSG, res_info_ptr,
-				      "reservations", argc, argv, NULL,
-				      mime_type, data_parser);
-			exit_code = SLURM_ERROR;
+			int rc;
+			openapi_resp_reserve_info_msg_t resp = {
+				.reservations = res_info_ptr,
+				.last_update = res_info_ptr->last_update,
+			};
+
+			DATA_DUMP_CLI(OPENAPI_RESERVATION_RESP, resp, argc,
+				      argv, NULL, mime_type, data_parser, rc);
+
+			if (rc)
+				exit_code = 1;
+
 			slurm_free_reservation_info_msg(res_info_ptr);
 			return;
 		}
@@ -124,9 +132,29 @@ extern void scontrol_print_res(char *reservation_name, int argc, char **argv)
 	}
 
 	if (mime_type) {
-		if (DATA_DUMP_CLI(RESERVATION_INFO_ARRAY, resvs, "reservations",
-				  argc, argv, NULL, mime_type, data_parser))
-			exit_code = SLURM_ERROR;
+		int rc;
+		reserve_info_msg_t msg = {
+			.last_update = res_info_ptr->last_update,
+			.record_count = print_cnt,
+			.reservation_array = NULL,
+		};
+		openapi_resp_reserve_info_msg_t resp = {
+			.reservations = &msg,
+			.last_update = res_info_ptr->last_update,
+		};
+
+		msg.reservation_array =
+			xcalloc(print_cnt, sizeof(*msg.reservation_array));
+		for (int i = 0; i < print_cnt; i++)
+			msg.reservation_array[i] = *resvs[i];
+
+		DATA_DUMP_CLI(OPENAPI_RESERVATION_RESP, resp, argc, argv, NULL,
+			      mime_type, data_parser, rc);
+
+		if (rc)
+			exit_code = 1;
+
+		xfree(msg.reservation_array);
 	} else {
 		for (int i = 0; resvs[i]; i++)
 			slurm_print_reservation_info(stdout, resvs[i],

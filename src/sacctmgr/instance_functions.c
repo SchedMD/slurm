@@ -201,8 +201,9 @@ extern int sacctmgr_list_instance(int argc, char **argv)
 	slurmdb_destroy_instance_cond(instance_cond);
 
 	if (mime_type) {
-		rc = DATA_DUMP_CLI(INSTANCE_LIST, instance_list, "instances",
-				   argc, argv, db_conn, mime_type, data_parser);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_INSTANCES_RESP, instance_list,
+				     argc, argv, db_conn, mime_type,
+				     data_parser, rc);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(instance_list);
 		return rc;

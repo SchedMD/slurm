@@ -280,8 +280,8 @@ static int _single_cluster(int argc, char **argv, shares_request_msg_t *req_msg)
 	}
 
 	if (mimetype) {
-		rc = DATA_DUMP_CLI(SHARES_RESP_MSG_PTR, resp_msg, "shares",
-				   argc, argv, NULL, mimetype, data_parser);
+		DATA_DUMP_CLI_SINGLE(OPENAPI_SHARES_RESP, resp_msg, argc, argv,
+				     NULL, mimetype, data_parser, rc);
 	} else {
 		process(resp_msg, options);
 	}

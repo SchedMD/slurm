@@ -159,8 +159,9 @@ int sacctmgr_list_tres(int argc, char **argv)
 	slurmdb_destroy_tres_cond(tres_cond);
 
 	if (mime_type) {
-		int rc = DATA_DUMP_CLI(TRES_LIST, tres_list, "tres", argc, argv,
-				       db_conn, mime_type, data_parser);
+		int rc;
+		DATA_DUMP_CLI_SINGLE(OPENAPI_TRES_RESP, tres_list, argc, argv,
+				     db_conn, mime_type, data_parser, rc);
 		FREE_NULL_LIST(format_list);
 		FREE_NULL_LIST(tres_list);
 		return rc;

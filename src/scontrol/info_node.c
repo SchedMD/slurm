@@ -170,13 +170,21 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 	slurm_populate_node_partitions(node_info_ptr, part_info_ptr);
 
 	if (node_list == NULL) {
-		if (mime_type)
-			error_code =
-				DATA_DUMP_CLI(NODES, *node_info_ptr, "nodes",
-					      argc, argv, NULL, mime_type,
-					      data_parser);
-		else
+		if (mime_type) {
+			int rc;
+			openapi_resp_node_info_msg_t resp = {
+				.nodes = node_info_ptr,
+				.last_update = node_info_ptr->last_update,
+			};
+
+			DATA_DUMP_CLI(OPENAPI_NODES_RESP, resp, argc, argv,
+				      NULL, mime_type, data_parser, rc);
+
+			if (rc)
+				exit_code = 1;
+		} else {
 			scontrol_print_node(NULL, node_info_ptr);
+		}
 	} else {
 		if (!(host_list = hostlist_create(node_list))) {
 			exit_code = 1;
@@ -195,35 +203,49 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 		}
 
 		if (mime_type) {
+			int rc, count = 0;
 			char *node_name;
-			int i = 0, host_count = hostlist_count(host_list);
-			node_info_t **nodes =
-				xcalloc(host_count + 1, sizeof(*nodes));
+			node_info_msg_t msg = {
+				.last_update = node_info_ptr->last_update,
+			};
+			openapi_resp_node_info_msg_t resp = {
+				.nodes = &msg,
+				.last_update = node_info_ptr->last_update,
+			};
+
+			msg.node_array = xcalloc(node_info_ptr->record_count,
+						 sizeof(*msg.node_array));
 
 			while ((node_name = hostlist_shift(host_list))) {
-				for (int j = 0;
-				     (i < host_count) &&
-				     (j < node_info_ptr->record_count);
-				     j++) {
+				for (int i = 0; i < node_info_ptr->record_count;
+				     i++) {
 					node_info_t *n =
-						&node_info_ptr->node_array[j];
+						&node_info_ptr->node_array[i];
 
 					if (!n->name ||
 					    xstrcmp(node_name, n->name))
 						continue;
 
-					nodes[i] = n;
-					i++;
+					msg.node_array[count] = *n;
+					count++;
+					break;
 				}
+
+				if (count >= node_info_ptr->record_count)
+					break;
 
 				free(node_name);
 			}
 
-			error_code = DATA_DUMP_CLI(NODE_ARRAY, nodes, "nodes",
-						   argc, argv, NULL, mime_type,
-						   data_parser);
+			msg.record_count = count;
 
-			xfree(nodes);
+			DATA_DUMP_CLI(OPENAPI_NODES_RESP, resp, argc, argv,
+				      NULL, mime_type, data_parser, rc);
+
+			if (rc)
+				exit_code = 1;
+
+			xfree(msg.node_array);
 		} else {
 			char *node_name;
 

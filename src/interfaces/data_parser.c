@@ -573,57 +573,6 @@ extern int data_parser_g_assign(data_parser_t *parser,
 	return rc;
 }
 
-static bool _dump_cli_stdout_on_error(void *arg, data_parser_type_t type,
-				      int error_code, const char *source,
-				      const char *why, ...)
-{
-	va_list ap;
-	data_t *errors = arg;
-	data_t *e = data_set_dict(data_list_append(errors));
-
-	if (why) {
-		char *str;
-		va_start(ap, why);
-		str = vxstrfmt(why, ap);
-		va_end(ap);
-		data_set_string_own(data_key_set(e, "description"), str);
-	}
-
-	if (error_code) {
-		data_set_int(data_key_set(e, "error_number"), error_code);
-		data_set_string(data_key_set(e, "error"),
-				slurm_strerror(error_code));
-	}
-
-	if (source)
-		data_set_string(data_key_set(e, "source"), source);
-
-	data_set_string_fmt(data_key_set(e, "data_type"), "0x%x", type);
-
-	return false;
-}
-
-static void _dump_cli_stdout_on_warn(void *arg, data_parser_type_t type,
-				     const char *source, const char *why, ...)
-{
-	va_list ap;
-	data_t *warns = arg;
-	data_t *w = data_set_dict(data_list_append(warns));
-
-	if (why) {
-		char *str;
-		va_start(ap, why);
-		str = vxstrfmt(why, ap);
-		va_end(ap);
-		data_set_string_own(data_key_set(w, "description"), str);
-	}
-
-	if (source)
-		data_set_string(data_key_set(w, "source"), source);
-
-	data_set_string_fmt(data_key_set(w, "data_type"), "0x%x", type);
-}
-
 extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
 						 const char *mime_type,
 						 const char *data_parser)
@@ -675,52 +624,98 @@ extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
 	return meta;
 }
 
-static void _populate_cli_response_meta(data_t *meta, int argc, char **argv,
-					data_parser_t *parser)
-{
-	data_t *cmd, *slurm, *slurmv, *plugin;
-
-	plugin = data_set_dict(data_key_set(meta, "plugins"));
-	cmd = data_set_list(data_key_set(meta, "command"));
-	slurm = data_set_dict(data_key_set(meta, "Slurm"));
-	slurmv = data_set_dict(data_key_set(slurm, "version"));
-
-	data_set_string(data_key_set(plugin, "data_parser"),
-			data_parser_get_plugin(parser));
-	data_set_string(data_key_set(plugin, "accounting_storage"),
-			slurm_conf.accounting_storage_type);
-
-	data_set_string(data_key_set(slurm, "release"), SLURM_VERSION_STRING);
-	(void) data_convert_type(data_set_string(data_key_set(slurmv, "major"),
-						 SLURM_MAJOR),
-				 DATA_TYPE_INT_64);
-	(void) data_convert_type(data_set_string(data_key_set(slurmv, "micro"),
-						 SLURM_MICRO),
-				 DATA_TYPE_INT_64);
-	(void) data_convert_type(data_set_string(data_key_set(slurmv, "minor"),
-						 SLURM_MINOR),
-				 DATA_TYPE_INT_64);
-
-	for (int i = 0; i < argc; i++)
-		data_set_string(data_list_append(cmd), argv[i]);
-}
-
 static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 				   const plugin_handle_t id, void *arg)
 {
 	info("%s", full_type);
 }
 
+static bool _on_error(void *arg, data_parser_type_t type, int error_code,
+		      const char *source, const char *why, ...)
+{
+	va_list ap;
+	char *str;
+	data_parser_dump_cli_ctxt_t *ctxt = arg;
+	openapi_resp_error_t *e;
+
+	xassert(ctxt->magic == DATA_PARSER_DUMP_CLI_CTXT_MAGIC);
+	xassert(ctxt->errors);
+	if (!ctxt->errors)
+		return false;
+
+	va_start(ap, why);
+	str = vxstrfmt(why, ap);
+	va_end(ap);
+
+	e = xmalloc(sizeof(*e));
+
+	if (str) {
+		error("%s: parser=%s rc[%d]=%s -> %s",
+		      (source ? source : __func__), ctxt->data_parser,
+		      error_code, slurm_strerror(error_code), str);
+
+		e->description = str;
+	}
+
+	if (error_code) {
+		e->num = error_code;
+
+		if (!ctxt->rc)
+			ctxt->rc = error_code;
+	}
+
+	if (source)
+		e->source = xstrdup(source);
+
+	list_append(ctxt->errors, e);
+
+	return false;
+}
+
+static void _on_warn(void *arg, data_parser_type_t type, const char *source,
+		     const char *why, ...)
+{
+	va_list ap;
+	char *str;
+	data_parser_dump_cli_ctxt_t *ctxt = arg;
+	openapi_resp_warning_t *w;
+
+	xassert(ctxt->magic == DATA_PARSER_DUMP_CLI_CTXT_MAGIC);
+	xassert(ctxt->warnings);
+
+	if (!ctxt->warnings)
+		return;
+
+	w = xmalloc(sizeof(*w));
+
+	va_start(ap, why);
+	str = vxstrfmt(why, ap);
+	va_end(ap);
+
+	if (why) {
+		debug("%s: parser=%s WARNING: %s",
+		      (source ? source : __func__), ctxt->data_parser, str);
+
+		w->description = str;
+	}
+
+	if (source)
+		w->source = xstrdup(source);
+
+	list_append(ctxt->warnings, w);
+}
+
 extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
-				       int obj_bytes, const char *key, int argc,
-				       char **argv, void *acct_db_conn,
+				       int obj_bytes, void *acct_db_conn,
 				       const char *mime_type,
-				       const char *data_parser)
+				       const char *data_parser,
+				       data_parser_dump_cli_ctxt_t *ctxt,
+				       openapi_resp_meta_t *meta)
 {
 	int rc = SLURM_SUCCESS;
-	data_t *resp, *meta, *dout;
-	char *out = NULL;
+	data_t *dresp = data_new();
 	data_parser_t *parser;
+	char *out = NULL;
 
 	if (!xstrcasecmp(data_parser, "list")) {
 		info("Possible data_parser plugins:");
@@ -731,36 +726,31 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 		return SLURM_SUCCESS;
 	}
 
-	resp = data_set_dict(data_new());
-	meta = data_set_dict(data_key_set(resp, "meta"));
-	dout = data_key_set(resp, key);
-
-	parser = data_parser_g_new(
-		_dump_cli_stdout_on_error,
-		_dump_cli_stdout_on_error,
-		_dump_cli_stdout_on_error,
-		data_set_list(data_key_set(resp, "errors")),
-		_dump_cli_stdout_on_warn,
-		_dump_cli_stdout_on_warn,
-		_dump_cli_stdout_on_warn,
-		data_set_list(data_key_set(resp, "warnings")),
-		(data_parser ? data_parser : SLURM_DATA_PARSER_VERSION),
-		NULL,
-		false);
-
-	if (!parser) {
+	if (!(parser = data_parser_g_new(_on_error, _on_error, _on_error, ctxt,
+					 _on_warn, _on_warn, _on_warn, ctxt,
+					 (data_parser ?
+						  data_parser :
+						  SLURM_DATA_PARSER_VERSION),
+					 NULL, false))) {
 		rc = ESLURM_DATA_INVALID_PARSER;
 		error("%s output not supported by %s",
 		      mime_type, SLURM_DATA_PARSER_VERSION);
 		goto cleanup;
 	}
 
-	_populate_cli_response_meta(meta, argc, argv, parser);
+	if (acct_db_conn)
+		data_parser_g_assign(parser, DATA_PARSER_ATTR_DBCONN_PTR,
+				     acct_db_conn);
 
-	data_parser_g_assign(parser, DATA_PARSER_ATTR_DBCONN_PTR, acct_db_conn);
-	data_parser_g_dump(parser, type, obj, obj_bytes, dout);
-	serialize_g_data_to_string(&out, NULL, resp, mime_type,
-				   SER_FLAGS_PRETTY);
+	if (!meta->plugin.data_parser)
+		meta->plugin.data_parser =
+			xstrdup(data_parser_get_plugin(parser));
+
+	if (!data_parser_g_dump(parser, type, obj, obj_bytes, dresp) &&
+	    (data_get_type(dresp) != DATA_TYPE_NULL)) {
+		serialize_g_data_to_string(&out, NULL, dresp, mime_type,
+					   SER_FLAGS_PRETTY);
+	}
 
 	if (out && out[0])
 		printf("%s\n", out);
@@ -769,6 +759,7 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 
 cleanup:
 	xfree(out);
+	FREE_NULL_DATA(dresp);
 	FREE_NULL_DATA_PARSER(parser);
 
 	return rc;

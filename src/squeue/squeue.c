@@ -238,9 +238,15 @@ static int _print_job(bool clear_old, bool log_cluster_name, int argc,
 	old_job_ptr = new_job_ptr;
 
 	if (params.mimetype) {
-		int rc = DATA_DUMP_CLI(JOB_INFO_MSG, *new_job_ptr, "jobs", argc,
-				       argv, NULL, params.mimetype,
-				       params.data_parser);
+		int rc;
+		openapi_resp_job_info_msg_t resp = {
+			.jobs = new_job_ptr,
+			.last_backfill = new_job_ptr->last_backfill,
+			.last_update = new_job_ptr->last_update,
+		};
+
+		DATA_DUMP_CLI(OPENAPI_JOB_INFO_RESP, resp, argc, argv, NULL,
+			      params.mimetype, params.data_parser, rc);
 #ifdef MEMORY_LEAK_DEBUG
 		slurm_free_job_info_msg(new_job_ptr);
 #endif
@@ -322,9 +328,15 @@ static int _print_job_steps(bool clear_old, int argc, char **argv)
 	old_step_ptr = new_step_ptr;
 
 	if (params.mimetype) {
-		int rc = DATA_DUMP_CLI(STEP_INFO_MSG_PTR, new_step_ptr, "steps",
-				       argc, argv, NULL, params.mimetype,
-				       params.data_parser);
+		int rc;
+		openapi_resp_job_step_info_msg_t resp = {
+			.steps = new_step_ptr,
+			.last_update = new_step_ptr->last_update,
+		};
+
+		DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, argc, argv, NULL,
+			      params.mimetype, params.data_parser, rc);
+
 #ifdef MEMORY_LEAK_DEBUG
 		slurm_free_job_step_info_response_msg(new_step_ptr);
 #endif
