@@ -54,6 +54,7 @@ static int _op_handler_jobs(openapi_ctxt_t *ctxt)
 {
 	openapi_job_info_query_t query = {0};
 	job_info_msg_t *job_info_ptr = NULL;
+	openapi_resp_job_info_msg_t resp = {0};
 	int rc;
 
 	if (ctxt->method != HTTP_REQUEST_GET) {
@@ -85,9 +86,13 @@ static int _op_handler_jobs(openapi_ctxt_t *ctxt)
 	} else if (rc) {
 		resp_error(ctxt, rc, "slurm_load_jobs()",
 			   "Unable to query jobs");
+	} else if (job_info_ptr) {
+		resp.last_backfill = job_info_ptr->last_backfill;
+		resp.last_update = job_info_ptr->last_update;
+		resp.jobs = job_info_ptr;
 	}
 
-	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOB_INFO_RESP, job_info_ptr, ctxt);
+	DATA_DUMP(ctxt->parser, OPENAPI_JOB_INFO_RESP, resp, ctxt->resp);
 
 	slurm_free_job_info_msg(job_info_ptr);
 	return rc;
@@ -99,6 +104,7 @@ static void _handle_job_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	int rc = SLURM_SUCCESS;
 	job_info_msg_t *job_info_ptr = NULL;
 	uint32_t id;
+	openapi_resp_job_info_msg_t resp = {0};
 
 	if (DATA_PARSE(ctxt->parser, OPENAPI_JOB_INFO_QUERY, query, ctxt->query,
 		       ctxt->parent_path)) {
@@ -131,7 +137,13 @@ static void _handle_job_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 		xfree(id);
 	}
 
-	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOB_INFO_RESP, job_info_ptr, ctxt);
+	if (job_info_ptr) {
+		resp.last_backfill = job_info_ptr->last_backfill;
+		resp.last_update = job_info_ptr->last_update;
+		resp.jobs = job_info_ptr;
+	}
+
+	DATA_DUMP(ctxt->parser, OPENAPI_JOB_INFO_RESP, resp, ctxt->resp);
 
 	slurm_free_job_info_msg(job_info_ptr);
 }

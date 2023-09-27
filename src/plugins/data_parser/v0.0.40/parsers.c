@@ -8186,7 +8186,6 @@ static const parser_t PARSER_ARRAY(OPENAPI_RESP)[] = {                          
 add_openapi_response_single(OPENAPI_DIAG_RESP, STATS_MSG_PTR, "statistics", "statistics");
 add_openapi_response_single(OPENAPI_PING_ARRAY_RESP, CONTROLLER_PING_ARRAY, "pings", "pings");
 add_openapi_response_single(OPENAPI_LICENSES_RESP, LICENSES_PTR, "licenses", "licenses");
-add_openapi_response_single(OPENAPI_JOB_INFO_RESP, JOB_INFO_MSG_PTR, "jobs", "jobs");
 add_openapi_response_single(OPENAPI_NODES_RESP, NODES_PTR, "nodes", "nodes");
 add_openapi_response_single(OPENAPI_PARTITION_RESP, PARTITION_INFO_MSG_PTR, "partitions", "partitions");
 add_openapi_response_single(OPENAPI_RESERVATION_RESP, RESERVATION_INFO_MSG_PTR, "reservations", "reservations");
@@ -8239,6 +8238,18 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
 };
 #undef add_parse
 #undef add_parse_deprec
+
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(openapi_resp_job_info_msg_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_JOB_INFO_RESP)[] = {
+	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
+	add_parse_req(JOB_INFO_MSG_PTR, jobs, "jobs", "list of jobs"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_backfill, "last_backfill", "time of last backfill scheduler run (UNIX timestamp)"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last job change (UNIX timestamp)"),
+};
+#undef add_parse_req
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_resp_slurmdbd_config_t, mtype, false, field, 0, path, desc)
@@ -8719,7 +8730,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_DIAG_RESP),
 	addoar(OPENAPI_PING_ARRAY_RESP),
 	addoar(OPENAPI_LICENSES_RESP),
-	addoar(OPENAPI_JOB_INFO_RESP),
+	addpap(OPENAPI_JOB_INFO_RESP, openapi_resp_job_info_msg_t, NULL, NULL),
 	addpap(OPENAPI_JOB_POST_RESPONSE, openapi_job_post_response_t, NULL, NULL),
 	addpap(OPENAPI_JOB_SUBMIT_RESPONSE, openapi_job_submit_response_t, NULL, NULL),
 	addoar(OPENAPI_NODES_RESP),

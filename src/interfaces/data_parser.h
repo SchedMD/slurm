@@ -312,8 +312,8 @@ typedef enum {
 	DATA_PARSER_LICENSE_PTR, /* slurm_license_info_t* */
 	DATA_PARSER_JOB_INFO_MSG, /* job_info_msg_t */
 	DATA_PARSER_JOB_INFO_MSG_PTR, /* job_info_msg_t* */
-	DATA_PARSER_OPENAPI_JOB_INFO_RESP, /* openapi_resp_single_t */
-	DATA_PARSER_OPENAPI_JOB_INFO_RESP_PTR, /* openapi_resp_single_t* */
+	DATA_PARSER_OPENAPI_JOB_INFO_RESP, /* openapi_resp_job_info_msg_t */
+	DATA_PARSER_OPENAPI_JOB_INFO_RESP_PTR, /* openapi_resp_job_info_msg_t* */
 	DATA_PARSER_OPENAPI_JOB_INFO_PARAM, /* openapi_job_info_param_t */
 	DATA_PARSER_OPENAPI_JOB_INFO_PARAM_PTR, /* openapi_job_info_param_t* */
 	DATA_PARSER_OPENAPI_JOB_INFO_DELETE_QUERY, /* openapi_job_info_delete_query_t */

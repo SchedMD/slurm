@@ -221,6 +221,8 @@ documents those changes that are of interest to users and administrators.
     Nodes-=<node-list> to add/delete nodes from the existing partition node
     list. Nodes=+host1,-host2 is also allowed.
  -- sacctmgr - add --yaml and --json arg support to specify data_parser plugin.
+ -- slurmrestd - Add last_update and last_backfill fields to response to
+    `GET /slurm/v0.0.40/job` and `GET /slurm/v0.0.40/jobs` queries.
 
 * Changes in Slurm 23.02.6
 ==========================
