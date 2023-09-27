@@ -35,6 +35,7 @@
 #endif
 
 #include <ctype.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <limits.h>
 #include <pwd.h>
@@ -46,11 +47,10 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include <unistd.h>
-#include <dlfcn.h>
 
 #include "slurm/slurm.h"
-#include "src/common/xmalloc.h"
 #include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
 
 /*  Define the externally visible functions in this file.
  */
