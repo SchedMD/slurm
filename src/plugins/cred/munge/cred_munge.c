@@ -276,6 +276,7 @@ again:
 		goto end_it;
 	}
 
+	munge_ctx_destroy(ctx);
 	*buffer = create_buf(buf_out, buf_out_size);
 	return SLURM_SUCCESS;
 
@@ -304,7 +305,10 @@ extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
 		rc = ESIG_BUF_DATA_MISMATCH;
 
 	/* warning: do not use free_buf() on this! */
-	xfree(payload);
+	if (payload) {
+		free(get_buf_data(payload));
+		xfree(payload);
+	}
 
 	return rc;
 }
