@@ -263,6 +263,8 @@ typedef enum {
 	DATA_PARSER_SINFO_DATA, /* sinfo_data_t */
 	DATA_PARSER_SINFO_DATA_PTR, /* sinfo_data_t* */
 	DATA_PARSER_SINFO_DATA_LIST, /* list of sinfo_data_t* */
+	DATA_PARSER_OPENAPI_SINFO_RESP, /* list of sinfo_data_t */
+	DATA_PARSER_OPENAPI_SINFO_RESP_PTR, /* list of sinfo_data_t* */
 	DATA_PARSER_OPENAPI_DIAG_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_DIAG_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_STATS_MSG, /* stats_info_response_msg_t */

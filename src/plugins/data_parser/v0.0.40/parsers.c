@@ -8200,6 +8200,7 @@ add_openapi_response_single(OPENAPI_USERS_REMOVED_RESP, STRING_LIST, "removed_us
 add_openapi_response_single(OPENAPI_WCKEY_RESP, WCKEY_LIST, "wckeys", "wckeys");
 add_openapi_response_single(OPENAPI_WCKEY_REMOVED_RESP, STRING_LIST, "deleted_wckeys", "deleted wckeys");
 add_openapi_response_single(OPENAPI_SHARES_RESP, SHARES_RESP_MSG_PTR, "shares", "fairshare info");
+add_openapi_response_single(OPENAPI_SINFO_RESP, SINFO_DATA_LIST, "sinfo", "node and partition info");
 
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -8793,6 +8794,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_WCKEY_RESP),
 	addoar(OPENAPI_WCKEY_REMOVED_RESP),
 	addoar(OPENAPI_SHARES_RESP),
+	addoar(OPENAPI_SINFO_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),
