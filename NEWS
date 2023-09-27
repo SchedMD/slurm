@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
     jobs with non-zero exit codes.
  -- Fix incorrect setting of memory.swap.max in cgroup/v2.
  -- Fix jobacctgather/cgroup collection of disk/io, gpumem, gpuutil TRES values.
+ -- Fix -d singleton for heterogeneous jobs.
 
 * Changes in Slurm 23.02.5
 ==========================

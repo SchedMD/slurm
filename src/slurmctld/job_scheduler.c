@@ -153,10 +153,13 @@ static int _find_singleton_job (void *x, void *key)
 	/*
 	 * already running/suspended job or previously
 	 * submitted pending job
+	 * and not a het job, or not part of the same het job
 	 */
-	if (IS_JOB_RUNNING(qjob_ptr) || IS_JOB_SUSPENDED(qjob_ptr) ||
-	    (IS_JOB_PENDING(qjob_ptr) &&
-	     (qjob_ptr->job_id < job_ptr->job_id))) {
+	if ((IS_JOB_RUNNING(qjob_ptr) || IS_JOB_SUSPENDED(qjob_ptr) ||
+	     (IS_JOB_PENDING(qjob_ptr) &&
+	      (qjob_ptr->job_id < job_ptr->job_id))) &&
+	    (!job_ptr->het_job_id ||
+	     (job_ptr->het_job_id != qjob_ptr->het_job_id))) {
 		return 1;
 	}
 
