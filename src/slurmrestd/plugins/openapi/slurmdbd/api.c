@@ -87,6 +87,10 @@ const openapi_resp_meta_t plugin_meta = {
 		.type = (char *) plugin_type,
 		.name = (char *) plugin_name,
 	},
+	.client = {
+		.uid = SLURM_AUTH_NOBODY,
+		.gid = SLURM_AUTH_NOBODY,
+	},
 	.slurm = {
 		.version = {
 			.major = SLURM_MAJOR,

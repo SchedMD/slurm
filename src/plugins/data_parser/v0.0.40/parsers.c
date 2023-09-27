@@ -7580,10 +7580,14 @@ static const parser_t PARSER_ARRAY(UPDATE_NODE_MSG)[] = {
 #define add_parse(mtype, field, path, desc) \
 	add_parser(openapi_resp_meta_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(OPENAPI_META)[] = {
-	add_parse(STRING, plugin.type, "plugin/type", "Slurm plugin type"),
-	add_parse(STRING, plugin.name, "plugin/name", "Slurm plugin name"),
+	add_parse(STRING, plugin.type, "plugin/type", "Slurm plugin type (if applicable)"),
+	add_parse(STRING, plugin.name, "plugin/name", "Slurm plugin name (if applicable)"),
 	add_parse(STRING, plugin.data_parser, "plugin/data_parser", "Slurm data_parser plugin"),
+	add_parse(STRING, plugin.accounting_storage, "plugin/accounting_storage", "Slurm accounting plugin"),
 	add_parse(STRING, client.source, "client/source", "Client source description"),
+	add_parse(USER_ID, client.uid, "client/user", "Client user (if known)"),
+	add_parse(GROUP_ID, client.gid, "client/group", "Client group (if known)"),
+	add_parse(STRING_ARRAY, command, "command", "CLI command (if applicable)"),
 	add_parse(STRING, slurm.version.major, "slurm/version/major", "Slurm release major version"),
 	add_parse(STRING, slurm.version.micro, "slurm/version/micro", "Slurm release micro version"),
 	add_parse(STRING, slurm.version.minor, "slurm/version/minor", "Slurm release minor version"),

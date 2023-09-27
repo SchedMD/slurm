@@ -145,9 +145,13 @@ typedef struct {
 		char *type;
 		char *name;
 		char *data_parser;
+		char *accounting_storage;
 	} plugin;
+	char **command; /* only array ptr is xfree()d - not the strings */
 	struct {
 		char *source;
+		uid_t uid;
+		gid_t gid;
 	} client;
 	struct {
 		struct {

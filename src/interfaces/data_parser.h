@@ -431,6 +431,7 @@ typedef enum {
 	DATA_PARSER_HOLD, /* uint32_t (priority) --hold */
 	DATA_PARSER_OPENAPI_META, /* openapi_resp_meta_t */
 	DATA_PARSER_OPENAPI_META_PTR, /* openapi_resp_meta_t* */
+	DATA_PARSER_OPENAPI_META_COMMAND, /* openapi_resp_meta_t->command */
 	DATA_PARSER_OPENAPI_ERROR, /* openapi_resp_error_t */
 	DATA_PARSER_OPENAPI_ERROR_PTR, /* openapi_resp_error_t* */
 	DATA_PARSER_OPENAPI_ERRORS, /* list_t of openapi_resp_error_t* */

@@ -631,6 +631,11 @@ extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
 	openapi_resp_meta_t *meta = xmalloc_nz(sizeof(*meta));
 	int tty;
 	char *parser = NULL;
+	char **argvnt;
+
+	/* need a new array with a NULL terminator */
+	argvnt = xcalloc(argc, sizeof(*argv));
+	memcpy(argvnt, argv, (sizeof(*argv) * (argc - 1)));
 
 	if (isatty(STDIN_FILENO))
 		tty = STDIN_FILENO;
@@ -647,10 +652,15 @@ extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
 	*meta = (openapi_resp_meta_t) {
 		.plugin = {
 			.data_parser = parser,
+			.accounting_storage =
+				slurm_conf.accounting_storage_type,
 		},
+		.command = argvnt,
 		.client = {
 			.source = ((tty != -1) ? fd_resolve_path(tty) :
 				   NULL),
+			.uid = getuid(),
+			.gid = getgid(),
 		},
 		.slurm = {
 			.version = {

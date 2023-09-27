@@ -1615,6 +1615,8 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 	openapi_resp_meta_t query_meta = *plugin_meta;
 
 	query_meta.plugin.data_parser = (char *) data_parser_get_plugin(parser);
+	query_meta.plugin.accounting_storage =
+		(char *) slurm_conf.accounting_storage_type;
 	query_meta.client.source = (char *) context_id;
 
 	ctxt.parent_path = data_set_list(data_new());

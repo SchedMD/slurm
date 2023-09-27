@@ -228,6 +228,7 @@ extern void free_openapi_resp_meta(void *obj)
 	if (!obj)
 		return;
 
+	xfree(x->command);
 	xfree(x->plugin.type);
 	xfree(x->plugin.name);
 	xfree(x->plugin.data_parser);
