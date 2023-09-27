@@ -8186,7 +8186,6 @@ static const parser_t PARSER_ARRAY(OPENAPI_RESP)[] = {                          
 add_openapi_response_single(OPENAPI_DIAG_RESP, STATS_MSG_PTR, "statistics", "statistics");
 add_openapi_response_single(OPENAPI_PING_ARRAY_RESP, CONTROLLER_PING_ARRAY, "pings", "pings");
 add_openapi_response_single(OPENAPI_LICENSES_RESP, LICENSES_PTR, "licenses", "licenses");
-add_openapi_response_single(OPENAPI_RESERVATION_RESP, RESERVATION_INFO_MSG_PTR, "reservations", "reservations");
 add_openapi_response_single(OPENAPI_ACCOUNTS_RESP, ACCOUNT_LIST, "accounts", "accounts");
 add_openapi_response_single(OPENAPI_ACCOUNTS_REMOVED_RESP, STRING_LIST, "removed_accounts", "removed_accounts");
 add_openapi_response_single(OPENAPI_ASSOCS_RESP, ASSOC_LIST, "associations", "associations");
@@ -8285,6 +8284,17 @@ static const parser_t PARSER_ARRAY(OPENAPI_PARTITION_RESP)[] = {
 	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
 	add_parse_req(PARTITION_INFO_MSG_PTR, partitions, "partitions", "list of partitions"),
 	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last partition change (UNIX timestamp)"),
+};
+#undef add_parse_req
+
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(openapi_resp_reserve_info_msg_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_RESERVATION_RESP)[] = {
+	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
+	add_parse_req(RESERVATION_INFO_MSG_PTR, reservations, "reservations", "list of reservations"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last reservation change (UNIX timestamp)"),
 };
 #undef add_parse_req
 
@@ -8755,7 +8765,7 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_JOB_SUBMIT_RESPONSE, openapi_job_submit_response_t, NULL, NULL),
 	addpap(OPENAPI_NODES_RESP, openapi_resp_node_info_msg_t, NULL, NULL),
 	addpap(OPENAPI_PARTITION_RESP, openapi_resp_partitions_info_msg_t, NULL, NULL),
-	addoar(OPENAPI_RESERVATION_RESP),
+	addpap(OPENAPI_RESERVATION_RESP, openapi_resp_reserve_info_msg_t, NULL, NULL),
 	addoar(OPENAPI_ACCOUNTS_RESP),
 	addoar(OPENAPI_ACCOUNTS_REMOVED_RESP),
 	addoar(OPENAPI_ASSOCS_RESP),

@@ -373,8 +373,8 @@ typedef enum {
 	DATA_PARSER_RESERVATION_CORE_SPEC_PTR, /* resv_core_spec_t* */
 	DATA_PARSER_RESERVATION_INFO_CORE_SPEC, /* reserve_info_t->core_spec+core_spec_cnt */
 	DATA_PARSER_RESERVATION_INFO_ARRAY, /* reserve_info_t** */
-	DATA_PARSER_OPENAPI_RESERVATION_RESP, /* openapi_resp_single_t */
-	DATA_PARSER_OPENAPI_RESERVATION_RESP_PTR, /* openapi_resp_single_t* */
+	DATA_PARSER_OPENAPI_RESERVATION_RESP, /* openapi_resp_reserve_info_msg_t */
+	DATA_PARSER_OPENAPI_RESERVATION_RESP_PTR, /* openapi_resp_reserve_info_msg_t* */
 	DATA_PARSER_OPENAPI_RESERVATION_PARAM, /* openapi_reservation_param_t */
 	DATA_PARSER_OPENAPI_RESERVATION_PARAM_PTR, /* openapi_reservation_param_t* */
 	DATA_PARSER_OPENAPI_RESERVATION_QUERY, /* openapi_reservation_query_t */

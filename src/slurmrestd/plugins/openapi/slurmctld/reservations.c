@@ -50,6 +50,7 @@ extern int _op_handler_reservations(openapi_ctxt_t *ctxt)
 	int rc = SLURM_SUCCESS;
 	reserve_info_msg_t *res_info_ptr = NULL;
 	openapi_reservation_query_t query = {0};
+	openapi_resp_reserve_info_msg_t resp = {0};
 
 	if (ctxt->method != HTTP_REQUEST_GET) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
@@ -76,7 +77,12 @@ extern int _op_handler_reservations(openapi_ctxt_t *ctxt)
 		goto done;
 	}
 
-	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_RESERVATION_RESP, res_info_ptr, ctxt);
+	if (res_info_ptr) {
+		resp.last_update = res_info_ptr->last_update;
+		resp.reservations = res_info_ptr;
+	}
+
+	DATA_DUMP(ctxt->parser, OPENAPI_RESERVATION_RESP, resp, ctxt->resp);
 
 done:
 	slurm_free_reservation_info_msg(res_info_ptr);
@@ -141,7 +147,13 @@ extern int _op_handler_reservation(openapi_ctxt_t *ctxt)
 			.record_count = 1,
 			.reservation_array = res,
 		};
-		DUMP_OPENAPI_RESP_SINGLE(OPENAPI_RESERVATION_RESP, &r, ctxt);
+		openapi_resp_reserve_info_msg_t resp = {
+			.reservations = &r,
+			.last_update = res_info_ptr->last_update,
+		};
+
+		DATA_DUMP(ctxt->parser, OPENAPI_RESERVATION_RESP, resp,
+			  ctxt->resp);
 	}
 
 done:
