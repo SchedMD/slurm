@@ -289,8 +289,8 @@ typedef enum {
 	DATA_PARSER_NODE_ARRAY, /* node_info_t** (NULL terminated) */
 	DATA_PARSER_NODES, /* node_info_msg_t */
 	DATA_PARSER_NODES_PTR, /* node_info_msg_t* */
-	DATA_PARSER_OPENAPI_NODES_RESP, /* openapi_resp_single_t */
-	DATA_PARSER_OPENAPI_NODES_RESP_PTR, /* openapi_resp_single_t* */
+	DATA_PARSER_OPENAPI_NODES_RESP, /* openapi_resp_node_info_msg_t */
+	DATA_PARSER_OPENAPI_NODES_RESP_PTR, /* openapi_resp_node_info_msg_t* */
 	DATA_PARSER_OPENAPI_NODE_PARAM, /* openapi_node_param_t */
 	DATA_PARSER_OPENAPI_NODE_PARAM_PTR, /* openapi_node_param_t* */
 	DATA_PARSER_OPENAPI_NODES_QUERY, /* openapi_nodes_query_t */

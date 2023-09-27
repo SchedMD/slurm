@@ -116,4 +116,13 @@ typedef struct {
 	time_t update_time;
 } openapi_reservation_query_t;
 
+/* mirrors node_info_msg_t */
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	node_info_msg_t *nodes;
+	time_t last_update;
+} openapi_resp_node_info_msg_t;
+
 #endif

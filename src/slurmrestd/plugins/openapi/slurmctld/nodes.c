@@ -81,6 +81,7 @@ static void _dump_nodes(ctxt_t *ctxt, char *name)
 {
 	openapi_nodes_query_t query = {0};
 	node_info_msg_t *node_info_ptr = NULL;
+	openapi_resp_node_info_msg_t resp = {0};
 
 	if (DATA_PARSE(ctxt->parser, OPENAPI_NODES_QUERY, query, ctxt->query,
 		       ctxt->parent_path)) {
@@ -123,9 +124,12 @@ static void _dump_nodes(ctxt_t *ctxt, char *name)
 
 		slurm_populate_node_partitions(node_info_ptr, part_info_ptr);
 		slurm_free_partition_info_msg(part_info_ptr);
+
+		resp.last_update = node_info_ptr->last_update;
+		resp.nodes = node_info_ptr;
 	}
 
-	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_NODES_RESP, node_info_ptr, ctxt);
+	DATA_DUMP(ctxt->parser, OPENAPI_NODES_RESP, resp, ctxt->resp);
 
 done:
 	slurm_free_node_info_msg(node_info_ptr);
