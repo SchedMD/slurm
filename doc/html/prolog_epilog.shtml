@@ -512,9 +512,7 @@ SrunEpilog and TaskEpilog.</li>
 Nodes assigned to job. A Slurm hostlist expression.
 <span class="commandline">scontrol show hostnames</span>
 can be used to convert this to a
-list of individual host names.
-Available in PrologSlurmctld SrunProlog, TaskProlog, EpilogSlurmctld,
-SrunEpilog and TaskEpilog.</li>
+list of individual host names.</li>
 
 <li><b>SLURM_NTASKS</b>
 Number of tasks requested by the job.

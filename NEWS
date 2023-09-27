@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
  -- Downgrade info logs about a job meeting a "maximum node limit" in the
     select plugin to DebugFlags=SelectType. These info logs could spam the
     slurmctld log file under certain circumstances.
+ -- prep/script - Fix [Srun|Task]<Prolog|Epilog> missing SLURM_JOB_NODELIST.
 
 * Changes in Slurm 23.02.5
 ==========================

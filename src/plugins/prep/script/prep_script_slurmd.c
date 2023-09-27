@@ -275,8 +275,10 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		setenvf(&env, "SLURM_NODE_ALIASES", "%s",
 			job_env->node_aliases);
 
-	if (job_env->node_list)
+	if (job_env->node_list) {
 		setenvf(&env, "SLURM_NODELIST", "%s", job_env->node_list);
+		setenvf(&env, "SLURM_JOB_NODELIST", "%s", job_env->node_list);
+	}
 
 	/*
 	 * Overridden by the credential version if available.
