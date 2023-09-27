@@ -4026,6 +4026,8 @@ function __scontrol_update_partitionname() {
 		"maxtime="
 		"minnodes="
 		"nodes="
+		"nodes\+="
+		"nodes\-="
 		"overtimelimit="
 		"oversubscribe="
 		"partitionname=" # meta
@@ -4083,7 +4085,7 @@ function __scontrol_update_partitionname() {
 	hidden) __slurm_compreply "$(__slurm_boolean)" ;;
 	jobdefault?(s)) __slurm_compreply "${job_defaults[*]}" ;;
 	lln) __slurm_compreply "$(__slurm_boolean)" ;;
-	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	node?(s)?(+|-)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	oversubscribe) __slurm_compreply "${oversubscribe_types[*]}" ;;
 	partitionname) __slurm_compreply "$(__slurm_partitions)" ;;
 	powerdownonidle) __slurm_compreply "$(__slurm_boolean)" ;;
