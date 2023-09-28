@@ -58,7 +58,7 @@ typedef struct {
 	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
 	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
 	submit_response_msg_t resp;
-} job_submit_response_t;
+} openapi_job_submit_response_t;
 
 typedef struct {
 	char *script;

@@ -258,7 +258,7 @@ static void _job_post_submit(ctxt_t *ctxt, job_desc_msg_t *job, char *script)
 		resp_error(ctxt, errno, "slurm_submit_batch_job()",
 			   "Batch job submission failed");
 	} else {
-		job_submit_response_t oas_resp = {
+		openapi_job_submit_response_t oas_resp = {
 			.resp = *resp,
 		};
 
@@ -307,7 +307,7 @@ static void _job_post_het_submit(ctxt_t *ctxt, list_t *jobs, char *script)
 		resp_error(ctxt, errno, "slurm_submit_batch_het_job()",
 			   "HetJob submission failed");
 	} else {
-		job_submit_response_t oas_resp = {
+		openapi_job_submit_response_t oas_resp = {
 			.resp = *resp,
 		};
 
