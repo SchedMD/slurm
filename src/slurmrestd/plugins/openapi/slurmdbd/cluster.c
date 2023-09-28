@@ -42,7 +42,6 @@
 
 #include "src/slurmrestd/operations.h"
 #include "api.h"
-#include "structs.h"
 
 static void _dump_clusters(ctxt_t *ctxt, slurmdb_cluster_cond_t *cluster_cond)
 {

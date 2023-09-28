@@ -46,7 +46,6 @@
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 #include "api.h"
-#include "structs.h"
 
 /*
  * Modify request for QOS will ignore an empty List. This allows slurmdbd to

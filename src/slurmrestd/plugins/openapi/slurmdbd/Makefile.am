@@ -41,7 +41,7 @@ noinst_LTLIBRARIES = libopenapi_ref.la
 openapi_slurmdbd_la_SOURCES = \
 	accounts.c associations.c api.h api.c cluster.c \
 	config.c diag.c instances.c jobs.c qos.c \
-	structs.h tres.c users.c wckeys.c
+	tres.c users.c wckeys.c
 
 openapi_slurmdbd_la_LDFLAGS = $(PLUGIN_FLAGS)
 openapi_slurmdbd_la_LIBADD = openapi_ref.lo

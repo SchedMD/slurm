@@ -46,7 +46,6 @@
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 #include "api.h"
-#include "structs.h"
 
 static void _dump_users(ctxt_t *ctxt, slurmdb_user_cond_t *user_cond)
 {

@@ -42,7 +42,6 @@
 
 #include "src/slurmrestd/operations.h"
 #include "api.h"
-#include "structs.h"
 
 static void _dump(ctxt_t *ctxt, openapi_resp_slurmdbd_config_t *resp)
 {

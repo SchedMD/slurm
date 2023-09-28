@@ -43,7 +43,6 @@
 
 #include "api.h"
 #include "src/slurmrestd/operations.h"
-#include "structs.h"
 
 static void _dump_jobs(ctxt_t *ctxt, slurmdb_job_cond_t *job_cond)
 {

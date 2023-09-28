@@ -71,7 +71,6 @@
 
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
 #include "src/slurmrestd/plugins/openapi/slurmctld/structs.h"
-#include "src/slurmrestd/plugins/openapi/slurmdbd/structs.h"
 
 #define CPU_FREQ_FLAGS_BUF_SIZE 64
 

@@ -42,7 +42,6 @@
 
 #include "src/slurmrestd/operations.h"
 #include "api.h"
-#include "structs.h"
 
 static void _dump_wckeys(ctxt_t *ctxt, slurmdb_wckey_cond_t *wckey_cond)
 {

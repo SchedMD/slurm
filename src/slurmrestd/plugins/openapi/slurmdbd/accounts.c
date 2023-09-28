@@ -56,7 +56,6 @@
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 #include "api.h"
-#include "structs.h"
 
 #define MAGIC_FOREACH_COORD 0xabfbf9fa
 
