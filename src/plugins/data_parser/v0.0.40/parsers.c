@@ -4020,22 +4020,22 @@ static int DUMP_FUNC(STEP_INFO_MSG)(const parser_t *const parser, void *obj,
 				    data_t *dst, args_t *args)
 {
 	int rc = SLURM_SUCCESS;
-	job_step_info_response_msg_t **msg = obj;
+	job_step_info_response_msg_t *msg = obj;
 
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
 	data_set_list(dst);
 
-	if (!*msg || !(*msg)->job_step_count) {
+	if (!msg || !msg->job_step_count) {
 		on_warn(DUMPING, parser->type, args, NULL, __func__,
 			"Zero steps to dump");
 		return SLURM_SUCCESS;
 	}
 
-	for (size_t i = 0; !rc && (i < (*msg)->job_step_count); ++i)
-		rc = DUMP(STEP_INFO, (*msg)->job_steps[i],
-			  data_list_append(dst), args);
+	for (size_t i = 0; !rc && (i < msg->job_step_count); ++i)
+		rc = DUMP(STEP_INFO, msg->job_steps[i], data_list_append(dst),
+			  args);
 
 	return rc;
 }
@@ -8637,7 +8637,7 @@ static const parser_t parsers[] = {
 	addpca(NODES, NODE, node_info_msg_t, NEED_NONE, NULL),
 	addpca(JOB_INFO_GRES_DETAIL, STRING, slurm_job_info_t, NEED_NONE, NULL),
 	addpcs(JOB_RES_NODES, job_resources_t, NEED_NONE, ARRAY, NULL),
-	addpca(STEP_INFO_MSG, STEP_INFO, job_step_info_response_msg_t *, NEED_TRES, NULL),
+	addpca(STEP_INFO_MSG, STEP_INFO, job_step_info_response_msg_t, NEED_TRES, NULL),
 	addpca(PARTITION_INFO_MSG, PARTITION_INFO, partition_info_msg_t, NEED_TRES, NULL),
 	addpca(RESERVATION_INFO_MSG, RESERVATION_INFO, reserve_info_msg_t, NEED_NONE, NULL),
 	addpca(RESERVATION_INFO_CORE_SPEC, RESERVATION_CORE_SPEC, reserve_info_t, NEED_NONE, NULL),
@@ -8684,6 +8684,7 @@ static const parser_t parsers[] = {
 	addpp(RESERVATION_INFO_MSG_PTR, reserve_info_msg_t *, RESERVATION_INFO_MSG, false, NULL, NULL),
 	addpp(SELECTED_STEP_PTR, slurm_selected_step_t *, SELECTED_STEP, false, NULL, NULL),
 	addpp(SLURM_STEP_ID_STRING_PTR, slurm_step_id_t *, SLURM_STEP_ID_STRING, false, NULL, NULL),
+	addpp(STEP_INFO_MSG_PTR, job_step_info_response_msg_t *, STEP_INFO_MSG, false, NULL, NULL),
 
 	/* Array of parsers */
 	addpap(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),

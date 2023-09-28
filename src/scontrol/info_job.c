@@ -473,8 +473,9 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 
 	if (error_code || !job_step_info_ptr) {
 		if (mime_type) {
-			DATA_DUMP_CLI(STEP_INFO_MSG, job_step_info_ptr, "steps",
-				      argc, argv, NULL, mime_type, data_parser);
+			DATA_DUMP_CLI(STEP_INFO_MSG_PTR, job_step_info_ptr,
+				      "steps", argc, argv, NULL, mime_type,
+				      data_parser);
 			exit_code = SLURM_ERROR;
 			slurm_free_job_step_info_response_msg(
 				job_step_info_ptr);

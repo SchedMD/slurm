@@ -322,7 +322,7 @@ static int _print_job_steps(bool clear_old, int argc, char **argv)
 	old_step_ptr = new_step_ptr;
 
 	if (params.mimetype) {
-		int rc = DATA_DUMP_CLI(STEP_INFO_MSG, new_step_ptr, "steps",
+		int rc = DATA_DUMP_CLI(STEP_INFO_MSG_PTR, new_step_ptr, "steps",
 				       argc, argv, NULL, params.mimetype,
 				       params.data_parser);
 #ifdef MEMORY_LEAK_DEBUG
