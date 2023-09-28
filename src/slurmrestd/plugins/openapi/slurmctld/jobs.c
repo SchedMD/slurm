@@ -169,7 +169,7 @@ static void _job_post_update(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 {
 	job_array_resp_msg_t *resp = NULL;
 	job_desc_msg_t *job = NULL;
-	job_post_response_t oas_resp = {0};
+	openapi_job_post_response_t oas_resp = {0};
 
 	if (DATA_PARSE(ctxt->parser, JOB_DESC_MSG_PTR, job, ctxt->query,
 		       ctxt->parent_path)) {

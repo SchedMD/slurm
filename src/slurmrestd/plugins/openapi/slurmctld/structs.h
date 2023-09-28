@@ -51,7 +51,7 @@ typedef struct {
 	char *job_id;
 	char *step_id;
 	char *job_submit_user_msg;
-} job_post_response_t;
+} openapi_job_post_response_t;
 
 typedef struct {
 	OPENAPI_RESP_STRUCT_META_FIELD;

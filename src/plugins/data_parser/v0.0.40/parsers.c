@@ -8209,13 +8209,13 @@ add_openapi_response_single(OPENAPI_WCKEY_REMOVED_RESP, STRING_LIST, "deleted_wc
 add_openapi_response_single(OPENAPI_SHARES_RESP, SHARES_RESP_MSG_PTR, "shares", "fairshare info");
 
 #define add_parse(mtype, field, path, desc) \
-	add_parser(job_post_response_t, mtype, false, field, 0, path, desc)
+	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
 #define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
-	add_parser_deprec(job_post_response_t, mtype, false, field, overloads, path, desc, deprec)
+	add_parser_deprec(openapi_job_post_response_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
-	add_openapi_response_meta(job_post_response_t),
-	add_openapi_response_errors(job_post_response_t),
-	add_openapi_response_warnings(job_post_response_t),
+	add_openapi_response_meta(openapi_job_post_response_t),
+	add_openapi_response_errors(openapi_job_post_response_t),
+	add_openapi_response_warnings(openapi_job_post_response_t),
 	add_parse(JOB_ARRAY_RESPONSE_MSG_PTR, results, "results", "Job update results"),
 	add_parse_deprec(STRING, job_id, 0, "job_id", "First updated JobId - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
 	add_parse_deprec(STRING, step_id, 0, "step_id", "First updated StepID - Use results instead", SLURM_23_11_PROTOCOL_VERSION),
@@ -8720,7 +8720,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_PING_ARRAY_RESP),
 	addoar(OPENAPI_LICENSES_RESP),
 	addoar(OPENAPI_JOB_INFO_RESP),
-	addpap(OPENAPI_JOB_POST_RESPONSE, job_post_response_t, NULL, NULL),
+	addpap(OPENAPI_JOB_POST_RESPONSE, openapi_job_post_response_t, NULL, NULL),
 	addpap(OPENAPI_JOB_SUBMIT_RESPONSE, job_submit_response_t, NULL, NULL),
 	addoar(OPENAPI_NODES_RESP),
 	addoar(OPENAPI_PARTITION_RESP),
