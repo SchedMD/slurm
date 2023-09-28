@@ -50,7 +50,6 @@
 #include "src/slurmrestd/operations.h"
 
 #include "api.h"
-#include "structs.h"
 
 static void _dump_shares(openapi_ctxt_t *ctxt)
 {

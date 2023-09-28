@@ -41,7 +41,6 @@
 #include "src/slurmrestd/operations.h"
 
 #include "api.h"
-#include "structs.h"
 
 extern int _op_handler_partitions(openapi_ctxt_t *ctxt)
 {

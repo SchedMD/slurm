@@ -45,7 +45,6 @@
 #include "src/slurmrestd/operations.h"
 
 #include "api.h"
-#include "structs.h"
 
 static void _update_node(ctxt_t *ctxt, char *name)
 {

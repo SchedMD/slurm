@@ -48,7 +48,6 @@
 #include "src/slurmrestd/operations.h"
 
 #include "api.h"
-#include "structs.h"
 
 static int _op_handler_jobs(openapi_ctxt_t *ctxt)
 {
