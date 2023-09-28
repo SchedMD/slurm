@@ -248,6 +248,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent slurmscriptd processing delays from blocking other threads in
     slurmctld while trying to launch {Prolog|Epilog}Slurmctld.
  -- Fix sacct printing ReqMem field when memory doesn't exist in requested TRES.
+ -- Fix how heterogenous steps in an allocation with CR_PACK_NODE or -mpack are
+    created.
 
 * Changes in Slurm 23.02.5
 ==========================
