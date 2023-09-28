@@ -499,7 +499,7 @@ extern int sacctmgr_list_cluster(int argc, char **argv)
 
 	if (mime_type) {
 		rc = DATA_DUMP_CLI(CLUSTER_REC_LIST, cluster_list, "clusters",
-				   argc, argv, db_conn, mime_type, NULL);
+				   argc, argv, db_conn, mime_type, data_parser);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(cluster_list);
 		return rc;

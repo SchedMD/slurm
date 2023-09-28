@@ -798,7 +798,7 @@ extern int sacctmgr_list_assoc(int argc, char **argv)
 
 	if (mime_type) {
 		rc = DATA_DUMP_CLI(ASSOC_LIST, assoc_list, "associations", argc,
-				   argv, db_conn, mime_type, NULL);
+				   argv, db_conn, mime_type, data_parser);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(assoc_list);
 		return rc;

@@ -409,7 +409,7 @@ extern int sacctmgr_list_account(int argc, char **argv)
 
 	if (mime_type) {
 		rc = DATA_DUMP_CLI(ACCOUNT_LIST, acct_list, "accounts", argc,
-				   argv, db_conn, mime_type, NULL);
+				   argv, db_conn, mime_type, data_parser);
 		FREE_NULL_LIST(print_fields_list);
 		FREE_NULL_LIST(acct_list);
 		return rc;

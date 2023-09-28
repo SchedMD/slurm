@@ -69,6 +69,7 @@ List g_qos_list = NULL;
 List g_res_list = NULL;
 List g_tres_list = NULL;
 const char *mime_type = NULL; /* mimetype if we are using data_parser */
+const char *data_parser = NULL; /* data_parser args */
 
 /* by default, normalize all usernames to lower case */
 bool user_case_norm = true;
@@ -110,8 +111,8 @@ int main(int argc, char **argv)
 		{"associations", 0, 0, 's'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
-		{"json", 0, 0, OPT_LONG_JSON},
-		{"yaml", 0, 0, OPT_LONG_YAML},
+		{"json", optional_argument, 0, OPT_LONG_JSON},
+		{"yaml", optional_argument, 0, OPT_LONG_YAML},
 		{NULL,       0, 0, 0}
 	};
 
@@ -177,13 +178,13 @@ int main(int argc, char **argv)
 			break;
 		case OPT_LONG_JSON :
 			mime_type = MIME_TYPE_JSON;
-			if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
-				fatal("JSON plugin load failure");
+			data_parser = optarg;
+			serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL);
 			break;
 		case OPT_LONG_YAML :
 			mime_type = MIME_TYPE_YAML;
-			if (serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL))
-				fatal("YAML plugin load failure");
+			data_parser = optarg;
+			serializer_g_init(MIME_TYPE_YAML_PLUGIN, NULL);
 			break;
 		default:
 			exit_code = 1;

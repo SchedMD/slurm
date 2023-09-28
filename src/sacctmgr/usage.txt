@@ -2,13 +2,13 @@ sacctmgr [<OPTION>] [<COMMAND>]
     Valid <OPTION> values are:
      -h or --help: equivalent to "help" command
      -i or --immediate: commit changes immediately
-     --json: Produce JSON output (where supported)
+     --json[=data_parser]: Produce JSON output (where supported)
      -n or --noheader: no header will be added to the beginning of output
      -o or --oneliner: equivalent to "oneliner" command
      -p or --parsable: output will be '|' delimited with a '|' at the end
      -P or --parsable2: output will be '|' delimited without a '|' at the end
      -Q or --quiet: equivalent to "quiet" command
-     --yaml: Produce YAML output (where supported)
+     --yaml[=data_parser]: Produce YAML output (where supported)
      -r or --readonly: equivalent to "readonly" command
      -s or --associations: equivalent to "associations" command
      -v or --verbose: equivalent to "verbose" command

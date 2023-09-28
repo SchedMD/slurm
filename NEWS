@@ -220,6 +220,7 @@ documents those changes that are of interest to users and administrators.
  -- scontrol update partition now allows Nodes+=<node-list> and
     Nodes-=<node-list> to add/delete nodes from the existing partition node
     list. Nodes=+host1,-host2 is also allowed.
+ -- sacctmgr - add --yaml and --json arg support to specify data_parser plugin.
 
 * Changes in Slurm 23.02.6
 ==========================
