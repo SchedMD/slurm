@@ -161,6 +161,8 @@ typedef enum {
 	DATA_PARSER_JOB_STATE, /* uint32_t <-> JOB_* & JOB_STATE_FLAGS */
 	DATA_PARSER_JOB_STATE_ID_STRING, /* char* <-> JOB_* & JOB_STATE_FLAGS - as stringified integer */
 	DATA_PARSER_JOB_STATE_ID_STRING_LIST, /* list_t of char* */
+	DATA_PARSER_OPENAPI_STEP_INFO_MSG, /* openapi_resp_job_step_info_msg_t */
+	DATA_PARSER_OPENAPI_STEP_INFO_MSG_PTR, /* openapi_resp_job_step_info_msg_t* */
 	DATA_PARSER_STEP_INFO_MSG, /* job_step_info_response_msg_t */
 	DATA_PARSER_STEP_INFO_MSG_PTR, /* job_step_info_response_msg_t* */
 	DATA_PARSER_STEP_INFO, /* job_step_info_t */

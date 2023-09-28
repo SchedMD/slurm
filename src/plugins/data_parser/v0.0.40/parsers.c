@@ -8307,6 +8307,17 @@ static const parser_t PARSER_ARRAY(OPENAPI_LICENSES_RESP)[] = {
 };
 #undef add_parse_req
 
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(openapi_resp_job_step_info_msg_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_STEP_INFO_MSG)[] = {
+	add_openapi_response_meta(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_errors(openapi_resp_slurmdbd_config_t),
+	add_openapi_response_warnings(openapi_resp_slurmdbd_config_t),
+	add_parse_req(STEP_INFO_MSG_PTR, steps, "steps", "list of steps"),
+	add_parse_req(TIMESTAMP_NO_VAL, last_update, "last_update", "time of last licenses change (UNIX timestamp)"),
+};
+#undef add_parse_req
+
 #undef add_parser
 #undef add_parser_skip
 #undef add_complex_parser
@@ -8795,6 +8806,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_WCKEY_REMOVED_RESP),
 	addoar(OPENAPI_SHARES_RESP),
 	addoar(OPENAPI_SINFO_RESP),
+	addpap(OPENAPI_STEP_INFO_MSG, openapi_resp_job_step_info_msg_t, NULL, NULL),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, uint16_t),

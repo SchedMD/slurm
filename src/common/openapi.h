@@ -281,6 +281,15 @@ typedef struct {
 	list_t *jobs; /* list of job_desc_msg_t* */
 } openapi_job_submit_request_t;
 
+/* mirrors job_step_info_response_msg_t */
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	job_step_info_response_msg_t *steps;
+	time_t last_update;
+} openapi_resp_job_step_info_msg_t;
+
 /* mirrors job_info_msg_t */
 typedef struct {
 	OPENAPI_RESP_STRUCT_META_FIELD;
