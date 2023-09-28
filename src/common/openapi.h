@@ -203,4 +203,59 @@ do {								\
 	}							\
 } while(false)
 
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	list_t *clusters;
+	list_t *instances;
+	list_t *tres;
+	list_t *accounts;
+	list_t *users;
+	list_t *qos;
+	list_t *wckeys;
+	list_t *associations;
+} openapi_resp_slurmdbd_config_t;
+
+typedef struct {
+	slurm_selected_step_t *id;
+} openapi_job_param_t;
+
+typedef struct {
+	char *name;
+} openapi_user_param_t;
+
+typedef struct {
+	bool with_deleted;
+	bool with_assocs;
+	bool with_coords;
+	bool with_wckeys;
+} openapi_user_query_t;
+
+typedef struct {
+	char *wckey;
+} openapi_wckey_param_t;
+
+typedef struct {
+	char *name;
+} openapi_account_param_t;
+
+typedef struct {
+	bool with_assocs;
+	bool with_coords;
+	bool with_deleted;
+} openapi_account_query_t;
+
+typedef struct {
+	char *name;
+} openapi_cluster_param_t;
+
+typedef struct {
+	char *name;
+} openapi_qos_param_t;
+
+typedef struct {
+	bool with_deleted;
+} openapi_qos_query_t;
+
 #endif /* SLURM_OPENAPI_H */
