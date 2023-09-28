@@ -332,7 +332,7 @@ cleanup:
 
 static void _job_post(ctxt_t *ctxt)
 {
-	job_submit_request_t req = {0};
+	openapi_job_submit_request_t req = {0};
 
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_NET_RAW) && ctxt->query) {
 		char *buffer = NULL;

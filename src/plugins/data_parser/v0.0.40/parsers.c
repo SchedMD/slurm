@@ -7629,7 +7629,7 @@ static const parser_t PARSER_ARRAY(INSTANCE_CONDITION)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc) \
-	add_parser(job_submit_request_t, mtype, false, field, 0, path, desc)
+	add_parser(openapi_job_submit_request_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(JOB_SUBMIT_REQ)[] = {
 	add_parse(STRING, script, "script", "batch job script"),
 	add_parse(JOB_DESC_MSG_LIST, jobs, "jobs", "HetJob description"),
@@ -8678,7 +8678,7 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_ERROR, openapi_resp_error_t, NULL, free_openapi_resp_error),
 	addpap(OPENAPI_WARNING, openapi_resp_warning_t, NULL, free_openapi_resp_warning),
 	addpap(INSTANCE_CONDITION, slurmdb_instance_cond_t, NULL, slurmdb_destroy_instance_cond),
-	addpap(JOB_SUBMIT_REQ, job_submit_request_t, NULL, NULL),
+	addpap(JOB_SUBMIT_REQ, openapi_job_submit_request_t, NULL, NULL),
 	addpap(JOB_CONDITION, slurmdb_job_cond_t, NULL, slurmdb_destroy_job_cond),
 	addpap(QOS_CONDITION, slurmdb_qos_cond_t, NULL, slurmdb_destroy_qos_cond),
 	addpap(ASSOC_CONDITION, slurmdb_assoc_cond_t, NULL, slurmdb_destroy_assoc_cond),
