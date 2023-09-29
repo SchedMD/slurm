@@ -16,7 +16,7 @@ the job in three ways:</p>
 <li> <a href=#examples>Examples</a>
 </ul>
 
-<p>The QOS's are defined in the Slurm database using the <i>sacctmgr</i>
+<p>The QOSs are defined in the Slurm database using the <i>sacctmgr</i>
 utility.</p>
 
 <P> Jobs request a QOS using the "--qos=" option to the
@@ -63,7 +63,7 @@ used to determine if a job is eligible for preemption is the QOS associated
 with the job and not a <a href="#partition">Partition QOS</a>.</p>
 
 <P> The QOS can be assigned (using <i>sacctmgr</i>) a list of other
-QOS's that it can preempt.  When there is a queued job with a QOS that
+QOSs that it can preempt.  When there is a queued job with a QOS that
 is allowed to preempt a running job of another QOS, the Slurm
 scheduler will preempt the running job.</P>
 
@@ -220,7 +220,7 @@ shares on the system.
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
-<P> To summarize the above, the QOS's and their associated limits are
+<P> To summarize the above, the QOSs and their associated limits are
 defined in the Slurm database using the <i>sacctmgr</i> utility.  The
 QOS will only influence job scheduling priority when the multi-factor
 priority plugin is loaded and a non-zero "PriorityWeightQOS" has been
@@ -305,7 +305,7 @@ canis_major                          normal
 canis_major     crock                zebra
 </pre>
 
-<p>Users can belong to multiple QOS's</p>
+<p>Users can belong to multiple QOSs</p>
 
 <pre>
 $ sacctmgr modify user crock set qos+=alligator

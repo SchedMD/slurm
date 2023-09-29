@@ -17425,7 +17425,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
 
     <h3 class="field-label">Responses</h3>
     <h4 class="field-label">200</h4>
-    List of QOS'
+    List of QOSs
         <a href="#dbv0.0.39_qos_info">dbv0.0.39_qos_info</a>
     <h4 class="field-label">default</h4>
     QOS not found
