@@ -5927,7 +5927,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(OPEN_MODE)[] = {
 
 static const flag_bit_t PARSER_FLAG_ARRAY(WARN_FLAGS)[] = {
 	add_flag_bit(KILL_JOB_BATCH, "BATCH_JOB"),
-	add_flag_bit(KILL_JOB_ARRAY, "ARRAY_JOB"),
+	add_flag_bit(KILL_ARRAY_TASK, "ARRAY_TASK"),
 	add_flag_bit(KILL_STEPS_ONLY, "FULL_STEPS_ONLY"),
 	add_flag_bit(KILL_FULL_JOB, "FULL_JOB"),
 	add_flag_bit(KILL_FED_REQUEUE, "FEDERATION_REQUEUE"),
