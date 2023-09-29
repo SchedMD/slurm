@@ -3473,13 +3473,13 @@ static uint32_t _socks_per_node(job_record_t *job_ptr)
  *       which bits to de-select from the core_map to match the cpu_count.
  */
 static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
-					bitstr_t **core_map,
-					const uint32_t node_i,
-					uint32_t s_p_n,
-					node_use_record_t *node_usage,
-					uint16_t cr_type,
-					bool test_only, bool will_run,
-					bitstr_t **part_core_map)
+					 bitstr_t **core_map,
+					 const uint32_t node_i,
+					 uint32_t s_p_n,
+					 node_use_record_t *node_usage,
+					 uint16_t cr_type,
+					 bool test_only, bool will_run,
+					 bitstr_t **part_core_map)
 {
 	uint16_t cpus = 0;
 	uint64_t avail_mem = NO_VAL64, req_mem;
