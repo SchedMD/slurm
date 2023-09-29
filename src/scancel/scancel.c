@@ -751,8 +751,6 @@ _cancel_job_id (void *ci)
 	}
 	if (opt.hurry)
 		flags |= KILL_HURRY;
-	if (cancel_info->array_flag)
-		flags |= KILL_JOB_ARRAY;
 
 	if (!cancel_info->job_id_str) {
 		if (cancel_info->array_job_id &&
