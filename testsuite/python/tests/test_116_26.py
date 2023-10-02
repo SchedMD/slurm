@@ -33,10 +33,6 @@ def no_kill_job():
     # Return the node to the idle state
     atf.run_command(f'scontrol update nodename={first_node} state=resume', user=slurm_user)
 
-    # Wait a bit to avoid race condition
-    # TODO: Remove once Bug 17511 is fixed
-    atf.wait_for_node_state(first_node, "IDLE", timeout=5)
-
 def test_no_kill(no_kill_job):
     """Verify job with --no-kill option is not killed on node failure"""
 
