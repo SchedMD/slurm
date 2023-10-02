@@ -1003,7 +1003,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	 * Third: Use any available GRES.
 	 */
 
-	if (slurm_conf.select_type_param & CR_LL_SHARD) {
+	if (slurm_conf.select_type_param & LL_SHARED_GRES) {
 		topo_index = xcalloc(gres_ns->topo_cnt, sizeof(int));
 		nonalloc_gres = xcalloc(gres_ns->topo_cnt, sizeof(int64_t));
 		for (int t = 0; t < gres_ns->topo_cnt; t++) {

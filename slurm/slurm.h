@@ -1019,7 +1019,7 @@ enum node_states {
  * across available nodes */
 #define CR_PACK_NODES  0x0200
 
-#define CR_LL_SHARD 0x0400 /* Prefer least-loaded device for shared GRES */
+#define LL_SHARED_GRES 0x0400 /* Prefer least-loaded device for shared GRES */
 #define CR_OTHER_CONS_TRES   0x0800 /* if layering select plugins use
 				     * cons_tres instead of linear (default)
 				     */

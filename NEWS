@@ -429,7 +429,7 @@ documents those changes that are of interest to users and administrators.
     -u, -p, etc.) from the specified clusters will be canceled, rather than all
     jobs in the federation. Specific jobids will still be routed to the origin
     cluster for cancellation.
- -- Add SelectTypeParameters=CR_LL_SHARD.
+ -- Add SelectTypeParameters=LL_SHARED_GRES.
 
 * Changes in Slurm 23.02.3
 ==========================
