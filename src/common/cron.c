@@ -263,6 +263,37 @@ static int _next_day_of_week(cron_entry_t *entry, struct tm *tm)
 	return 0;
 }
 
+/* Return number of days in a given tm->tm_mon */
+static int _days_in_month(struct tm *tm)
+{
+	/* Default to maximum days in month (highest likelihood) */
+	int days_in_month = 31;
+
+	/* tm_mon should be 0-11 */
+	xassert(tm->tm_mon >= 0);
+	xassert(tm->tm_mon <= 11);
+
+	switch (tm->tm_mon) {
+	case 1:
+		/* (ab)use mktime() to figure out leap years for februrary */
+		struct tm test = { 0 };
+		test.tm_year = tm->tm_year;
+		test.tm_mon = 1;
+		test.tm_mday = 29;
+		slurm_mktime(&test);
+		days_in_month = (test.tm_mon == 1) ? 29 : 28;
+		break;
+	case 3:
+	case 5:
+	case 8:
+	case 10:
+		days_in_month = 30;
+		break;
+	}
+
+	return days_in_month;
+}
+
 /*
  * Determine how many days there are between now and the next day of the month
  * this job could run on.
@@ -272,61 +303,22 @@ static int _next_day_of_week(cron_entry_t *entry, struct tm *tm)
 static int _next_day_of_month(cron_entry_t *entry, struct tm *tm)
 {
 	int days_to_advance = 0;
+	int days_in_month;
 
 	/* tm_mday should be 1-31 */
 	xassert(tm->tm_mday >= 1);
 	xassert(tm->tm_mday <= 31);
 
-	/* every month has 28 days, do checks for each day here */
-	for (int i = tm->tm_mday; i < 29; i++) {
+	days_in_month = _days_in_month(tm);
+
+	/*
+	 * Advance days within tm month till cron entry day found (and return
+	 * count) or reach days in tm month.
+	 */
+	for (int i = tm->tm_mday; i <= days_in_month; i++) {
 		if (bit_test(entry->day_of_month, i))
 			return days_to_advance;
 		days_to_advance++;
-	}
-
-	/* february == 1 */
-	if (tm->tm_mon != 1) {
-		/* essentially continue the loop for not february */
-		if (tm->tm_mday > 29)
-			/* no-op */;
-		else if (bit_test(entry->day_of_month, 29))
-			return days_to_advance;
-		else
-			days_to_advance++;
-
-		/*
-		 * for 30 and 31 days, this could push us to the 1st of the next
-		 * month
-		 */
-		if (tm->tm_mday > 30)
-			/* no-op */;
-		else if (bit_test(entry->day_of_month, 30))
-			return days_to_advance;
-		else
-			days_to_advance++;
-
-		/* these months have 31 days, tm_mday can't be higher than 31 */
-		if ((tm->tm_mon == 0) || (tm->tm_mon == 2) ||
-		    (tm->tm_mon == 4) || (tm->tm_mon == 6) ||
-		    (tm->tm_mon == 7) || (tm->tm_mon == 9) ||
-		    (tm->tm_mon == 11)) {
-			if (bit_test(entry->day_of_month, 31))
-				return days_to_advance;
-			days_to_advance++;
-		}
-	} else {
-		/* (ab)use mktime() to figure out leap years for februrary */
-		struct tm test = { 0 };
-		test.tm_year = tm->tm_year;
-		test.tm_mon = 1;
-		test.tm_mday = 29;
-		slurm_mktime(&test);
-		if (test.tm_mon == 1) {
-			/* leap year! */
-			if (bit_test(entry->day_of_month, 29))
-				return days_to_advance;
-			days_to_advance++;
-		}
 	}
 
 	/*
