@@ -960,6 +960,37 @@ static int _sort_topo_by_avail_cnt(const void *x, const void *y)
 	return (nonalloc_gres[*(int *)y] - nonalloc_gres[*(int *)x]);
 }
 
+static int *_get_sorted_topo_by_least_loaded(gres_node_state_t *gres_ns)
+{
+	int *topo_index = xcalloc(gres_ns->topo_cnt, sizeof(int));
+	nonalloc_gres = xcalloc(gres_ns->topo_cnt, sizeof(int64_t));
+	for (int t = 0; t < gres_ns->topo_cnt; t++) {
+		topo_index[t] = t;
+
+		if (!gres_ns->topo_gres_cnt_avail[t])
+			continue;
+
+		/*
+		 * This is to prefer the "least loaded" device, defined
+		 * as the ratio of free to total counts. For instance
+		 * if we have 4/5 idle on GRES A and 7/10 idle on GRES
+		 * B, we want A. (0.7 < 0.8)
+		 * Use fixed-point math here to avoid floating-point -
+		 * the gres_cnt_avail for the node is the smallest value
+		 * that'll make the result distinguishable.
+		 */
+		nonalloc_gres[t] = gres_ns->topo_gres_cnt_avail[t];
+		nonalloc_gres[t] -= gres_ns->topo_gres_cnt_alloc[t];
+		nonalloc_gres[t] *= gres_ns->gres_cnt_avail;
+		nonalloc_gres[t] /= gres_ns->topo_gres_cnt_avail[t];
+	}
+	qsort(topo_index, gres_ns->topo_cnt, sizeof(int),
+		_sort_topo_by_avail_cnt);
+	xfree(nonalloc_gres);
+
+	return topo_index;
+}
+
 /*
  * Select one specific GRES topo entry (set GRES bitmap) for this job on this
  *	node based upon per-node resource specification
@@ -1041,31 +1072,8 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	 */
 
 	if (slurm_conf.select_type_param & LL_SHARED_GRES) {
-		topo_index = xcalloc(gres_ns->topo_cnt, sizeof(int));
-		nonalloc_gres = xcalloc(gres_ns->topo_cnt, sizeof(int64_t));
-		for (int t = 0; t < gres_ns->topo_cnt; t++) {
-			topo_index[t] = t;
-
-			if (!gres_ns->topo_gres_cnt_avail[t])
-				continue;
-
-			/*
-			 * This is to prefer the "least loaded" device, defined
-			 * as the ratio of free to total counts. For instance
-			 * if we have 4/5 idle on GRES A and 7/10 idle on GRES
-			 * B, we want A. (0.7 < 0.8)
-			 * Use fixed-point math here to avoid floating-point -
-			 * the gres_cnt_avail for the node is the smallest value
-			 * that'll make the result distinguishable.
-			 */
-			nonalloc_gres[t] = gres_ns->topo_gres_cnt_avail[t];
-			nonalloc_gres[t] -= gres_ns->topo_gres_cnt_alloc[t];
-			nonalloc_gres[t] *= gres_ns->gres_cnt_avail;
-			nonalloc_gres[t] /= gres_ns->topo_gres_cnt_avail[t];
-		}
-		qsort(topo_index, gres_ns->topo_cnt, sizeof(int),
-		      _sort_topo_by_avail_cnt);
-		xfree(nonalloc_gres);
+		topo_index = _get_sorted_topo_by_least_loaded(
+			sock_gres->gres_state_node->gres_data);
 	}
 
 	/* Socket == - 1 if GRES avail from any socket */
