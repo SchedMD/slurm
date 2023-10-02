@@ -1913,24 +1913,50 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 			.tres = READ_LOCK,
 		};
 		char *backup_node_list = part_ptr->nodes;
+		int rc;
 
 		if (part_desc->nodes[0] == '\0')
 			part_ptr->nodes = NULL;	/* avoid empty string */
-		else {
-			int i;
+		else if ((part_desc->nodes[0] != '+') &&
+			 (part_desc->nodes[0] != '-'))
 			part_ptr->nodes = xstrdup(part_desc->nodes);
-			for (i = 0; part_ptr->nodes[i]; i++) {
-				if (isspace(part_ptr->nodes[i]))
-					part_ptr->nodes[i] = ',';
+		else {
+			char *p, *tmp, *tok, *save_ptr = NULL;
+			hostset_t *hs = hostset_create(part_ptr->nodes);
+
+			p = tmp = xstrdup(part_desc->nodes);
+			errno = 0;
+			while ((tok = node_conf_nodestr_tokenize(p,
+								 &save_ptr))) {
+				bool plus_minus = false;
+				if (tok[0] == '+') {
+					hostset_insert(hs, tok + 1);
+					plus_minus = true;
+				} else if (tok[0] == '-') {
+					hostset_delete(hs, tok + 1);
+					plus_minus = true;
+				}
+				/* errno set in hostset functions */
+				if (!plus_minus || errno) {
+					error("%s: invalid node name %s",
+					      __func__, tok);
+					xfree(tmp);
+					hostset_destroy(hs);
+					return ESLURM_INVALID_NODE_NAME;
+				}
+				p = NULL;
 			}
+			xfree(tmp);
+			part_ptr->nodes = hostset_ranged_string_xmalloc(hs);
+			hostset_destroy(hs);
 		}
 		xfree(part_ptr->orig_nodes);
 		part_ptr->orig_nodes = xstrdup(part_ptr->nodes);
 
-		error_code = build_part_bitmap(part_ptr);
-		if (error_code) {
+		if ((rc = build_part_bitmap(part_ptr))) {
 			xfree(part_ptr->nodes);
 			part_ptr->nodes = backup_node_list;
+			error_code = rc;
 		} else {
 			info("%s: setting nodes to %s for partition %s",
 			     __func__, part_ptr->nodes, part_desc->name);

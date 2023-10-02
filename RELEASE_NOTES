@@ -123,6 +123,9 @@ COMMAND CHANGES (see man pages for details)
     the documentation and select/cons_tres.
  -- salloc/srun - Remove --uid/--gid options.
  -- scrontab - Add @fika and @teatime as valid repetition times.
+ -- scontrol update partition now allows Nodes+=<node-list> and
+    Nodes-=<node-list> to add/delete nodes from the existing partition node
+    list. Nodes=+host1,-host2 is also allowed.
 
 API CHANGES
 ===========

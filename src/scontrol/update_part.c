@@ -65,10 +65,15 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 	}
 
 	for (i = 0; i < argc; i++) {
+		char plus_minus = '\0';
 		tag = argv[i];
 		val = strchr(argv[i], '=');
 		if (val) {
 			taglen = val - argv[i];
+			if ((val[-1] == '+') || (val[-1] == '-')) {
+				plus_minus = val[-1];
+				taglen--;
+			}
 			val++;
 			vallen = strlen(val);
 		} else {
@@ -363,7 +368,12 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "Nodes", MAX(taglen, 1))) {
-			part_msg_ptr->nodes = val;
+			if (plus_minus)
+				part_msg_ptr->nodes =
+					scontrol_process_plus_minus(plus_minus,
+								    val, true);
+			else
+				part_msg_ptr->nodes = val;
 			(*update_cnt_ptr)++;
 		}
 		else if (!xstrncasecmp(tag, "AllowGroups", MAX(taglen, 6))) {
