@@ -11120,15 +11120,16 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 			} else {
 				/* min_nodes based upon task count only */
 				uint32_t min_nodes;
+				uint32_t max_nodes;
 				min_nodes = detail_ptr->num_tasks +
 					max_cpu_cnt - 1;
 				min_nodes /= max_cpu_cnt;
 				min_nodes = MAX(min_nodes,
 						detail_ptr->min_nodes);
-				min_nodes = MIN(min_nodes,
+				max_nodes = MAX(min_nodes,
 						detail_ptr->max_nodes);
 				pack32(min_nodes, buffer);
-				pack32(detail_ptr->max_nodes, buffer);
+				pack32(max_nodes, buffer);
 			}
 			pack_bit_str_hex(detail_ptr->job_size_bitmap, buffer);
 
@@ -11283,13 +11284,16 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 			} else {
 				/* min_nodes based upon task count only */
 				uint32_t min_nodes;
+				uint32_t max_nodes;
 				min_nodes = detail_ptr->num_tasks +
 					max_cpu_cnt - 1;
 				min_nodes /= max_cpu_cnt;
 				min_nodes = MAX(min_nodes,
 						detail_ptr->min_nodes);
+				max_nodes = MAX(min_nodes,
+						detail_ptr->max_nodes);
 				pack32(min_nodes, buffer);
-				pack32(detail_ptr->max_nodes, buffer);
+				pack32(max_nodes, buffer);
 			}
 
 			pack16(detail_ptr->requeue,   buffer);
