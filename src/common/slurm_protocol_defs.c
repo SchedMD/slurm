@@ -1680,6 +1680,8 @@ extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
 		xfree(msg->groups);
 	if (res_free_flags & RESV_FREE_STR_NODES)
 		xfree(msg->node_list);
+	if (res_free_flags & RESV_FREE_STR_TRES)
+		xfree(msg->tres_str);
 }
 
 extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg)
