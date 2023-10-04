@@ -6380,6 +6380,8 @@ static void _validate_cpus_per_tres(slurm_opt_t *opt)
 			info("Ignoring cpus_per_task from the environment since --cpus-per-gpu was given as a command line option");
 		}
 		slurm_option_reset(opt, "cpus-per-task");
+		/* Also clear cpu:# from tres-per-task */
+		_update_tres_per_task_cpu(opt);
 	}
 }
 
