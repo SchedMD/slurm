@@ -692,7 +692,7 @@ static void _on_warn(void *arg, data_parser_type_t type, const char *source,
 	str = vxstrfmt(why, ap);
 	va_end(ap);
 
-	if (why) {
+	if (str) {
 		debug("%s: parser=%s WARNING: %s",
 		      (source ? source : __func__), ctxt->data_parser, str);
 
