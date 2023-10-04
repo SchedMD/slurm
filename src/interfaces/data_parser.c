@@ -713,7 +713,7 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 				       openapi_resp_meta_t *meta)
 {
 	int rc = SLURM_SUCCESS;
-	data_t *dresp = data_new();
+	data_t *dresp = NULL;
 	data_parser_t *parser;
 	char *out = NULL;
 
@@ -745,6 +745,8 @@ extern int data_parser_dump_cli_stdout(data_parser_type_t type, void *obj,
 	if (!meta->plugin.data_parser)
 		meta->plugin.data_parser =
 			xstrdup(data_parser_get_plugin(parser));
+
+	dresp = data_new();
 
 	if (!data_parser_g_dump(parser, type, obj, obj_bytes, dresp) &&
 	    (data_get_type(dresp) != DATA_TYPE_NULL)) {
