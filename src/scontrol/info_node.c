@@ -223,16 +223,21 @@ extern void scontrol_print_node_list(char *node_list, int argc, char **argv)
 						&node_info_ptr->node_array[i];
 
 					if (!n->name ||
-					    xstrcmp(node_name, n->name))
+					    xstrcmp(node_name, n->name)) {
+						free(node_name);
 						continue;
+					}
 
 					msg.node_array[count] = *n;
 					count++;
+					free(node_name);
 					break;
 				}
 
-				if (count >= node_info_ptr->record_count)
+				if (count >= node_info_ptr->record_count) {
+					free(node_name);
 					break;
+				}
 
 				free(node_name);
 			}
