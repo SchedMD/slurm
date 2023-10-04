@@ -320,9 +320,12 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 	if (mime_type) {
 		openapi_resp_job_info_msg_t resp = {
 			.jobs = job_buffer_ptr,
-			.last_backfill = job_buffer_ptr->last_backfill,
-			.last_update = job_buffer_ptr->last_update,
 		};
+
+		if (job_buffer_ptr) {
+			resp.last_update = job_buffer_ptr->last_update;
+			resp.last_backfill = job_buffer_ptr->last_backfill;
+		}
 
 		DATA_DUMP_CLI(OPENAPI_JOB_INFO_RESP, resp, argc, argv, NULL,
 			      mime_type, data_parser, error_code);
@@ -483,8 +486,11 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 		if (mime_type) {
 			openapi_resp_job_step_info_msg_t resp = {
 				.steps = job_step_info_ptr,
-				.last_update = job_step_info_ptr->last_update,
 			};
+
+			if (job_step_info_ptr)
+				resp.last_update =
+					job_step_info_ptr->last_update;
 
 			DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, argc, argv,
 				      NULL, mime_type, data_parser, error_code);
@@ -540,8 +546,10 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 	if (mime_type) {
 		openapi_resp_job_step_info_msg_t resp = {
 			.steps = job_step_info_ptr,
-			.last_update = job_step_info_ptr->last_update,
 		};
+
+		if (job_step_info_ptr)
+			resp.last_update = job_step_info_ptr->last_update;
 
 		DATA_DUMP_CLI(OPENAPI_STEP_INFO_MSG, resp, argc, argv, NULL,
 			      mime_type, data_parser, error_code);
