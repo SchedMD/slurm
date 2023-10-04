@@ -171,7 +171,7 @@ static struct hostent *_host_internal(int mode, const char *nodename)
 }
 
 static int _internal_gethost(int af, const char *name, char *buf,
-			     size_t buflen, struct hostent *result)
+			     size_t buflen, struct hostent *result, int *errnop)
 {
 	int len_name, len_aliases = 0, cnt_aliases = 0, len_addr;
 	struct hostent *rpc_result = NULL;
@@ -198,7 +198,8 @@ static int _internal_gethost(int af, const char *name, char *buf,
 	if ((len_name + len_aliases + ((cnt_aliases + 1) * sizeof(char*)) +
 	     len_addr + (2 * sizeof(char *)) + cnt_aliases + 1) > buflen) {
 		xfree_struct_hostent(rpc_result);
-		return ERANGE;
+		*errnop = ERANGE;
+		return NSS_STATUS_TRYAGAIN;
 	}
 
 	strncpy(buf, rpc_result->h_name, len_name + 1);
@@ -234,7 +235,7 @@ enum nss_status _nss_slurm_gethostbyname_r(const char *name,
 					   size_t buflen, int *errnop,
 					   int *herrnop)
 {
-	return _internal_gethost(AF_UNSPEC, name, buf, buflen, result);
+	return _internal_gethost(AF_UNSPEC, name, buf, buflen, result, errnop);
 }
 
 enum nss_status _nss_slurm_gethostbyname2_r(const char *name, int af,
@@ -242,7 +243,7 @@ enum nss_status _nss_slurm_gethostbyname2_r(const char *name, int af,
 					    char *buf, size_t buflen,
 					    int *errnop, int *herrnop)
 {
-	return _internal_gethost(af, name, buf, buflen, result);
+	return _internal_gethost(af, name, buf, buflen, result, errnop);
 }
 
 static struct passwd *_pw_internal(int mode, uid_t uid, const char *name)
@@ -284,7 +285,8 @@ static struct passwd *_pw_internal(int mode, uid_t uid, const char *name)
 }
 
 static int _internal_getpw(int mode, uid_t uid, const char *name,
-			   struct passwd *pwd, char *buf, size_t buflen)
+			   struct passwd *pwd, char *buf, size_t buflen,
+			   int *errnop)
 {
 	int len_name, len_passwd, len_gecos, len_dir, len_shell;
 	struct passwd *rpc_result = NULL;
@@ -302,7 +304,8 @@ static int _internal_getpw(int mode, uid_t uid, const char *name,
 	if ((len_name + len_passwd + len_gecos + len_dir + len_shell + 5)
 	    > buflen) {
 		xfree_struct_passwd(rpc_result);
-		return ERANGE;
+		*errnop = ERANGE;
+		return NSS_STATUS_TRYAGAIN;
 	}
 
 	strncpy(buf, rpc_result->pw_name, len_name + 1);
@@ -335,15 +338,14 @@ enum nss_status _nss_slurm_getpwnam_r(const char *name, struct passwd *pwd,
 				      char *buf, size_t buflen, int *errnop)
 {
 	return _internal_getpw(GETPW_MATCH_USER_AND_PID, NO_VAL, name, pwd,
-			       buf, buflen);
-
+			       buf, buflen, errnop);
 }
 
 enum nss_status _nss_slurm_getpwuid_r(uid_t uid, struct passwd *pwd,
 				      char *buf, size_t buflen, int *errnop)
 {
 	return _internal_getpw(GETPW_MATCH_USER_AND_PID, uid, NULL, pwd,
-			       buf, buflen);
+			       buf, buflen, errnop);
 }
 
 static int entry_fetched = 1;
@@ -365,7 +367,8 @@ enum nss_status _nss_slurm_getpwent_r(struct passwd *pwd, char *buf,
 		return NSS_STATUS_NOTFOUND;
 	entry_fetched = 1;
 
-	return _internal_getpw(GETPW_MATCH_PID, NO_VAL, NULL, pwd, buf, buflen);
+	return _internal_getpw(GETPW_MATCH_PID, NO_VAL, NULL, pwd, buf, buflen,
+			       errnop);
 }
 
 enum nss_status _nss_slurm_endpwent(void)
@@ -416,7 +419,8 @@ static int next_gr_entry = 0;
 static struct group **gr_rpc_results = NULL;
 
 static int _internal_getgr(int mode, gid_t gid, const char *name,
-			   struct group *grp, char *buf, size_t buflen)
+			   struct group *grp, char *buf, size_t buflen,
+			   int *errnop)
 {
 	int len_name, len_passwd, len_mem = 0;
 	int i = 0;
@@ -454,7 +458,8 @@ static int _internal_getgr(int mode, gid_t gid, const char *name,
 	if ((len_name + len_passwd + len_mem + 3)
 	    > buflen) {
 		xfree_struct_group_array(gr_rpc_results);
-		return ERANGE;
+		*errnop = ERANGE;
+		return NSS_STATUS_TRYAGAIN;
 	}
 
 	strncpy(buf, gr_rpc_results[i]->gr_name, len_name + 1);
@@ -512,7 +517,7 @@ enum nss_status _nss_slurm_getgrnam_r(const char *name, struct group *pwd,
 				      char *buf, size_t buflen, int *errnop)
 {
 	return _internal_getgr(GETGR_MATCH_GROUP_AND_PID, NO_VAL, name, pwd,
-			       buf, buflen);
+			       buf, buflen, errnop);
 
 }
 
@@ -520,7 +525,7 @@ enum nss_status _nss_slurm_getgrgid_r(gid_t gid, struct group *pwd,
 				      char *buf, size_t buflen, int *errnop)
 {
 	return _internal_getgr(GETGR_MATCH_GROUP_AND_PID, gid, NULL, pwd,
-			       buf, buflen);
+			       buf, buflen, errnop);
 }
 
 enum nss_status _nss_slurm_setgrent(void)
@@ -535,7 +540,8 @@ enum nss_status _nss_slurm_setgrent(void)
 enum nss_status _nss_slurm_getgrent_r(struct group *grp, char *buf,
 				      size_t buflen, int *errnop)
 {
-	return _internal_getgr(GETGR_MATCH_PID, NO_VAL, NULL, grp, buf, buflen);
+	return _internal_getgr(GETGR_MATCH_PID, NO_VAL, NULL, grp, buf, buflen,
+			       errnop);
 }
 
 enum nss_status _nss_slurm_endgrent(void)
