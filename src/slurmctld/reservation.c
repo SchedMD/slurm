@@ -2926,7 +2926,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 					RESERVE_FLAG_REPLACE     |
 					RESERVE_FLAG_REPLACE_DOWN |
 					RESERVE_FLAG_NO_HOLD_JOBS |
-					RESERVE_FLAG_MAGNETIC;
+					RESERVE_FLAG_MAGNETIC |
+					RESERVE_TRES_PER_NODE;
 	}
 
 	if (xstrcasestr(resv_desc_ptr->tres_str, "gres"))

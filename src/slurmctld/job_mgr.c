@@ -19479,11 +19479,16 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 
 		job_ptr->tres_req_str = xstrdup(resv_desc_ptr->tres_str);
 
+		if (resv_desc_ptr->flags & RESERVE_TRES_PER_NODE)
+			job_ptr->tres_per_node = xstrdup(job_ptr->tres_req_str);
+		else
+			job_ptr->tres_per_job = xstrdup(job_ptr->tres_req_str);
+
 		(void)gres_job_state_validate(
 			NULL,
 			NULL,
-			job_ptr->tres_req_str,
-			NULL,
+			job_ptr->tres_per_job,
+			job_ptr->tres_per_node,
 			NULL,
 			NULL,
 			NULL,

@@ -2808,6 +2808,17 @@ Note that if GRES is requested those GRES must be TRES listed in
 AccountingStorageTRES to be valid.
 .IP
 
+.TP
+\fBTRESPerNode\fR=<\fItres_spec\fR>
+Comma\-separated list of TRES required per node for the reservation. See
+\fBTRES\fR above for supported types.
+
+TRESPerNode=gres/gpu:a100=2
+
+Above will allocate 2 gpu:a100 per node as specified in nodecnt.
+
+.IP
+
 .SH "PERFORMANCE"
 .PP
 Executing \fBscontrol\fR sends a remote procedure call to \fBslurmctld\fR. If

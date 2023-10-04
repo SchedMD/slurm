@@ -283,6 +283,25 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			}
 
 			resv_msg_ptr->tres_str = val;
+		} else if (xstrncasecmp(tag, "TRESPerNode",
+					MAX(taglen, 5)) == 0) {
+			if (resv_msg_ptr->tres_str) {
+				exit_code = 1;
+				error("Parameter %s specified more than once",
+				      argv[i]);
+				return SLURM_ERROR;
+			} else if (plus_minus) {
+				exit_code = 1;
+				error("Parameter %s specified a plus or minus.  This is not allowed.",
+				      argv[i]);
+				return SLURM_ERROR;
+			}
+			resv_msg_ptr->tres_str = val;
+			if (resv_msg_ptr->flags == NO_VAL64)
+				resv_msg_ptr->flags = RESERVE_TRES_PER_NODE;
+			else
+				resv_msg_ptr->flags |= RESERVE_TRES_PER_NODE;
+			*res_free_flags |= RESV_FREE_STR_TRES;
 		} else if (xstrncasecmp(tag, "Watts", MAX(taglen, 1)) == 0) {
 			resv_msg_ptr->resv_watts =
 				slurm_watts_str_to_int(val, &err_msg);
