@@ -3378,6 +3378,8 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 {
 	int        rc = SLURM_SUCCESS;
 	static bool first_msg = true;
+	static uint32_t req_cnt = 0;
+	static pthread_mutex_t req_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	if (!_slurm_authorized_user(msg->auth_uid)) {
 		error("Security violation, acct_gather_update RPC from uid %u",
@@ -3389,6 +3391,20 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 	}
 	first_msg = false;
+
+	/*
+	 * Avoid tying up too many slurmd threads if the IPMI (or similar)
+	 * interface is locked up. The request would likely eventually fail
+	 * anyways, so dying early isn't much worse here.
+	 */
+	slurm_mutex_lock(&req_cnt_mutex);
+	if (req_cnt < 10) {
+		req_cnt++;
+	} else {
+		error("%s: Too many pending requests", __func__);
+		rc = SLURM_ERROR;
+	}
+	slurm_mutex_unlock(&req_cnt_mutex);
 
 	if (rc != SLURM_SUCCESS) {
 		if (slurm_send_rc_msg(msg, rc) < 0)
@@ -3417,7 +3433,7 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 
 		if (!sensor_cnt) {
 			error("Can't get energy data. No power sensors are available. Try later.");
-			return;
+			goto fini;
 		}
 
 		/* If we polled later than delta seconds then force a
@@ -3442,6 +3458,11 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 
 		acct_gather_energy_destroy(acct_msg.energy);
 	}
+
+fini:
+	slurm_mutex_lock(&req_cnt_mutex);
+	req_cnt--;
+	slurm_mutex_unlock(&req_cnt_mutex);
 }
 
 static int _signal_jobstep(slurm_step_id_t *step_id, uint16_t signal,
