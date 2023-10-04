@@ -36,7 +36,11 @@ be located in the default configuration directory (typically the subdirectory
 "etc" of the installation directory). Slurmctld will fatal on startup if the
 configured lua script is invalid. Slurm will try to load the script for each
 job submission. If the script is broken or removed while slurmctld is running,
-Slurm will fallback to the previous working version of the script.</li>
+Slurm will fallback to the previous working version of the script.
+<b>Warning</b>: slurmctld runs this script while holding internal locks, and
+only a single copy of this script can run at a time. This blocks most
+concurrency in slurmctld. Therefore, this script should run to completion as
+quickly as possible.</li>
 <li><b>partition</b> &mdash; Sets a job's default partition based upon job
 submission parameters and available partitions.</li>
 <li><b>pbs</b> &mdash; Translate PBS job submission options to Slurm equivalent
@@ -325,6 +329,6 @@ cp job_submit_mine.so file \
    /usr/local/lib/slurm/job_submit_mine.so
 </pre>
 
-<p style="text-align:center;">Last modified 13 September 2023</p>
+<p style="text-align:center;">Last modified 04 October 2023</p>
 
 <!--#include virtual="footer.txt"-->

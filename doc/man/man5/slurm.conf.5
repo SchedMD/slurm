@@ -1947,6 +1947,10 @@ distribution, in the directory contribs/lua. Slurmctld will fatal on startup if
 the configured lua script is invalid. Slurm will try to load the script for each
 job submission. If the script is broken or removed while slurmctld is running,
 Slurm will fallback to the previous working version of the script.
+\fBWarning\fR: slurmctld runs this script while holding internal locks, and
+only a single copy of this script can run at a time. This blocks most
+concurrency in slurmctld. Therefore, this script should run to completion as
+quickly as possible.
 .IP
 
 .TP
