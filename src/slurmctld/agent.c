@@ -199,6 +199,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 		int no_resp_cnt, int retry_cnt);
 static void _purge_agent_args(agent_arg_t *agent_arg_ptr);
 static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count);
+static void _queue_update_node(char *node_name);
 static int  _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 			   int *count, int *spot);
 static void _sig_handler(int dummy);
@@ -220,6 +221,9 @@ static List defer_list = NULL;		/* agent_arg_t list for requests
 static List mail_list = NULL;		/* pending e-mail requests */
 static List retry_list = NULL;		/* agent_arg_t list for retry */
 
+static list_t *update_node_list = NULL;	/* node list for update */
+static pthread_mutex_t update_nodes_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t update_nodes_cond = PTHREAD_COND_INITIALIZER;
 
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
@@ -741,6 +745,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 		{ .conf = READ_LOCK, .node = WRITE_LOCK };
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 	int i;
+	bool locked = false;
 
 	/* Notify slurmctld of non-responding nodes */
 	if (no_resp_cnt) {
@@ -766,9 +771,8 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 		_queue_agent_retry(agent_ptr, retry_cnt);
 
 	/* Update last_response on responding nodes */
-	lock_slurmctld(node_write_lock);
 	for (i = 0; i < agent_ptr->thread_count; i++) {
-		char *down_msg, *node_names;
+		char *down_msg, **node_names;
 		slurm_msg_type_t resp_type = RESPONSE_SLURM_RC;
 
 		if (!thread_ptr[i].ret_list) {
@@ -783,45 +787,67 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 			state = ret_data_info->err;
 		switch_on_state:
 			if (is_ret_list) {
-				node_names = ret_data_info->node_name;
+				node_names = &ret_data_info->node_name;
 				resp_type = ret_data_info->type;
 			} else
-				node_names = thread_ptr[i].nodename;
+				node_names = &thread_ptr[i].nodename;
 
 			switch (state) {
 			case DSH_NO_RESP:
-				node_not_resp(node_names,
+				if (!locked) {
+					locked = true;
+					lock_slurmctld(node_write_lock);
+				}
+				node_not_resp(*node_names,
 					      thread_ptr[i].start_time,
 					      resp_type);
 				break;
 			case DSH_FAILED:
+				if (!locked) {
+					locked = true;
+					lock_slurmctld(node_write_lock);
+				}
 #ifdef HAVE_FRONT_END
 				down_msg = "";
 #else
-				drain_nodes(node_names, "Prolog/Epilog failure",
+				drain_nodes(*node_names, "Prolog/Epilog failure",
 				            slurm_conf.slurm_user_id);
 				down_msg = ", set to state DRAIN";
 #endif
 				error("Prolog/Epilog failure on nodes %s%s",
-				      node_names, down_msg);
+				      *node_names, down_msg);
 				break;
 			case DSH_DUP_JOBID:
+				if (!locked) {
+					locked = true;
+					lock_slurmctld(node_write_lock);
+				}
 #ifdef HAVE_FRONT_END
 				down_msg = "";
 #else
-				drain_nodes(node_names, "Duplicate jobid",
+				drain_nodes(*node_names, "Duplicate jobid",
 				            slurm_conf.slurm_user_id);
 				down_msg = ", set to state DRAIN";
 #endif
 				error("Duplicate jobid on nodes %s%s",
-				      node_names, down_msg);
+				      *node_names, down_msg);
 				break;
 			case DSH_DONE:
-				node_did_resp(node_names);
+				/*
+				 * Process now if we've already obtained the
+				 * lock. Otherwise delegate to the dedicated
+				 * processing thread.
+				 */
+				if (locked) {
+					node_did_resp(*node_names);
+				} else {
+					_queue_update_node(*node_names);
+					*node_names = NULL;
+				}
 				break;
 			default:
 				error("unknown state returned for %s",
-				      node_names);
+				      *node_names);
 				break;
 			}
 			if (!is_ret_list)
@@ -830,7 +856,9 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 		list_iterator_destroy(itr);
 finished:	;
 	}
-	unlock_slurmctld(node_write_lock);
+	if (locked)
+		unlock_slurmctld(node_write_lock);
+
 	if (run_scheduler) {
 		run_scheduler = false;
 		/* below functions all have their own locking */
@@ -1452,6 +1480,49 @@ static void *_agent_init(void *arg)
 	return NULL;
 }
 
+static int _foreach_node_did_resp(void *x, void *arg)
+{
+	node_did_resp((char *) x);
+	return 0;
+}
+
+/* Start a thread to manage queued agent requests */
+static void *_agent_nodes_update(void *arg)
+{
+	struct timespec ts = {0, 0};
+	slurmctld_lock_t node_write_lock =
+		{ .conf = READ_LOCK, .node = WRITE_LOCK };
+
+	slurm_mutex_lock(&update_nodes_mutex);
+	while (true) {
+		ts.tv_sec = time(NULL) + 2;
+		slurm_cond_timedwait(&update_nodes_cond, &update_nodes_mutex,
+				     &ts);
+
+		if (slurmctld_config.shutdown_time) {
+			slurm_mutex_unlock(&update_nodes_mutex);
+			break;
+		}
+
+		if (!list_count(update_node_list))
+			continue;
+		lock_slurmctld(node_write_lock);
+		list_delete_all(update_node_list, _foreach_node_did_resp, NULL);
+		unlock_slurmctld(node_write_lock);
+	}
+
+	return NULL;
+}
+
+static void _queue_update_node(char *node_name)
+{
+	slurm_mutex_lock(&update_nodes_mutex);
+	if (!update_node_list)
+		update_node_list = list_create(xfree_ptr);
+	list_append(update_node_list, node_name);
+	slurm_mutex_unlock(&update_nodes_mutex);
+}
+
 extern void agent_init(void)
 {
 	slurm_mutex_lock(&pending_mutex);
@@ -1462,6 +1533,7 @@ extern void agent_init(void)
 	}
 
 	slurm_thread_create_detached(_agent_init, NULL);
+	slurm_thread_create_detached(_agent_nodes_update, NULL);
 	pending_thread_running = true;
 	slurm_mutex_unlock(&pending_mutex);
 }
@@ -1806,6 +1878,9 @@ extern void agent_purge(void)
 		FREE_NULL_LIST(mail_list);
 		slurm_mutex_unlock(&mail_mutex);
 	}
+	slurm_mutex_lock(&update_nodes_mutex);
+	FREE_NULL_LIST(update_node_list);
+	slurm_mutex_unlock(&update_nodes_mutex);
 
 	xfree(rpc_stat_counts);
 	xfree(rpc_stat_types);
