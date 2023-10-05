@@ -286,6 +286,7 @@ documents those changes that are of interest to users and administrators.
     "Core bitmaps size mismatch on node [HOSTNAME]", which causes jobs to enter
     state "Requested node configuration is not available".
  -- slurmctd - Allow startup with zero nodes.
+ -- slurm.spec - Add `--with yaml` arugment to require YAML support.
 
 * Changes in Slurm 23.02.5
 ==========================

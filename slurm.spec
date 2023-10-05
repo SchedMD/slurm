@@ -24,6 +24,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --with cray_network	%_with_cray_network 1	build for a non-Cray system with a Cray network
 # --with cray_shasta	%_with_cray_shasta 1	build for a Cray Shasta system
 # --with slurmrestd	%_with_slurmrestd 1	build slurmrestd
+# --with yaml		%_with_yaml 1		build with yaml serializer
 # --with slurmsmwd      %_with_slurmsmwd 1      build slurmsmwd
 # --without debug	%_without_debug 1	don't compile with debugging symbols
 # --with hdf5		%_with_hdf5 path	require hdf5 support
@@ -58,6 +59,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 %bcond_with pmix
 %bcond_with nvml
 %bcond_with jwt
+%bcond_with yaml
 
 # Use debug by default on all systems
 %bcond_without debug
@@ -154,6 +156,11 @@ BuildRequires: ucx-devel
 %if %{with jwt}
 BuildRequires: libjwt-devel >= 1.10.0
 Requires: libjwt >= 1.10.0
+%endif
+
+%if %{with yaml}
+BuildRequires: libyaml >= 0.2.5
+BuildRequires: libyaml-devel >= 0.2.5
 %endif
 
 #  Allow override of sysconfdir via _slurm_sysconfdir.
@@ -363,6 +370,7 @@ notifies slurm about failed nodes.
 	%{?_without_x11:--disable-x11} \
 	%{?_with_ucx} \
 	%{?_with_jwt} \
+	%{?_with_yaml} \
 	%{?_with_nvml} \
 	%{?_with_cflags}
 
