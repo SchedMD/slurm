@@ -149,9 +149,9 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 		user_buckets[position].tokens = bucket_size - 1;
 		debug3("%s: new entry for uid %u", __func__, msg->auth_uid);
 	} else {
-		time_t now = time(NULL) / refill_period;
-		time_t delta = now - user_buckets[position].last_update;
-		user_buckets[position].last_update = now;
+		time_t now_periods = time(NULL) / refill_period;
+		time_t delta = now_periods - user_buckets[position].last_update;
+		user_buckets[position].last_update = now_periods;
 
 		/* add tokens */
 		if (delta) {
