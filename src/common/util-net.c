@@ -278,6 +278,10 @@ extern struct addrinfo *get_addr_info(const char *hostname, const char *serv)
 	else
 		hints.ai_family = AF_UNSPEC;
 
+	/* handle all hosts in IPv6 directly */
+	if (v6_enabled && !xstrcmp(hostname, "::"))
+		hostname = NULL;
+
 	/*
 	 * Avoid using AI_PASSIVE as glibc and kernel can get out of sync
 	 * for the size of struct nlmsghdr causing glibc to segfault.
