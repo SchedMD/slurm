@@ -417,6 +417,8 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 			lua_pushnumber(L, job_ptr->details->max_nodes);
 		else
 			lua_pushnumber(L, 0);
+	} else if (!xstrcmp(name, "mcs_label")) {
+		lua_pushstring(L, job_ptr->mcs_label);
 	} else if (!xstrcmp(name, "mem_per_tres")) {
 		lua_pushstring(L, job_ptr->mem_per_tres);
 	} else if (!xstrcmp(name, "min_cpus")) {
