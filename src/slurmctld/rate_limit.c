@@ -47,6 +47,7 @@
  */
 typedef struct {
 	time_t last_update;
+	time_t last_logged;
 	uint32_t tokens;
 	uid_t uid;
 } user_bucket_t;
@@ -59,6 +60,7 @@ static pthread_mutex_t rate_limit_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* 30 tokens max, bucket refills 2 tokens per 1 second */
 static int bucket_size = 30;
+static int log_freq = 0;
 static int refill_rate = 2;
 static int refill_period = 1;
 
@@ -76,11 +78,15 @@ extern void rate_limit_init(void)
 				   "rl_bucket_size=")))
 		bucket_size = atoi(tmp_ptr + 15);
 	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
+				   "rl_log_freq=")))
+		log_freq = atoi(tmp_ptr + 12);
+	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
 				   "rl_refill_rate=")))
 		refill_rate = atoi(tmp_ptr + 15);
 	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
 				   "rl_refill_period=")))
 		refill_period = atoi(tmp_ptr + 17);
+
 
 	rate_limit_enabled = true;
 	user_buckets = xcalloc(table_size, sizeof(user_bucket_t));
@@ -103,6 +109,7 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 {
 	bool exceeded = false;
 	int start_position = 0, position = 0;
+	time_t now;
 
 	if (!rate_limit_enabled)
 		return false;
@@ -116,6 +123,7 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 		return false;
 
 	slurm_mutex_lock(&rate_limit_mutex);
+	now = time(NULL);
 
 	/*
 	 * Scan for position. Note that uid 0 indicates an unused slot,
@@ -144,12 +152,12 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 		error("RPC Rate Limiting: ran out of user table space. User will not be limited.");
 	} else if (!user_buckets[position].uid) {
 		user_buckets[position].uid = msg->auth_uid;
-		user_buckets[position].last_update = time(NULL) / refill_period;
+		user_buckets[position].last_update = now / refill_period;
 		user_buckets[position].last_update /= refill_period;
 		user_buckets[position].tokens = bucket_size - 1;
 		debug3("%s: new entry for uid %u", __func__, msg->auth_uid);
 	} else {
-		time_t now_periods = time(NULL) / refill_period;
+		time_t now_periods = now / refill_period;
 		time_t delta = now_periods - user_buckets[position].last_update;
 		user_buckets[position].last_update = now_periods;
 
@@ -171,6 +179,13 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 		       (exceeded ? " rate limit exceeded" : ""));
 	}
 	slurm_mutex_unlock(&rate_limit_mutex);
+
+	if (exceeded && (log_freq != -1) &&
+	    ((user_buckets[position].last_logged + log_freq) <= now)) {
+		info("RPC rate limit exceeded by uid %u with %s, telling to back off",
+		      msg->auth_uid, rpc_num2string(msg->msg_type));
+		user_buckets[position].last_logged = now;
+	}
 
 	return exceeded;
 }
