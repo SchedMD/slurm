@@ -678,7 +678,8 @@ release number as the Slurmctld daemons.
 In other words, when changing the version to a higher release number (e.g
 from 21.08.x to 22.05.x) <b>always upgrade the SlurmDBD daemon first</b>.
 Database table changes may be required for the upgrade, for example
-adding new fields to existing tables.
+adding new fields to existing tables. This must complete <b>before</b>
+upgrading slurmctld.
 If the database contains a large number of entries, <b>the SlurmDBD daemon
 may require tens of minutes to update the database and be unresponsive
 during this time interval</b>.</p>
