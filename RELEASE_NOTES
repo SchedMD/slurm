@@ -232,6 +232,8 @@ COMMAND CHANGES (see man pages for details)
     formatted output can now be queried via 'scontrol show nodes --json' or
     'scontrol show nodes --yaml'.
  -- salloc/srun - Remove --uid/--gid options.
+ -- salloc/sbatch/srun - Modify the '--constraint' option to require square
+    brackets around requests with multiple features that include node counts.
 
 API CHANGES
 ===========
