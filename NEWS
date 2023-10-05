@@ -266,6 +266,11 @@ documents those changes that are of interest to users and administrators.
     created.
  -- Fix slurmctld crash from race condition within job_submit_throttle plugin.
  -- Fix --with-systemdsystemunitdir when requesting a default location.
+ -- Fix not being able to cancel an array task by the jobid (i.e. not
+    <jobid>_<taskid>) through scancel, job launch failure or prolog failure.
+ -- Fix cancelling the whole array job when the array task is the meta job and
+    it fails job or prolog launch and is not requeable. Cancel only the
+    specific task instead.
 
 * Changes in Slurm 23.02.5
 ==========================
