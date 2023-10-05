@@ -2749,7 +2749,11 @@ no_job:
 /* Wrapper for slurm_kill_job2() */
 static uint32_t _kill_job(uint32_t job_id)
 {
-	return slurm_kill_job(job_id, SIGKILL, 0);
+	/*
+	 * If we have a meta array job, kill only it and not the whole array
+	 * job.
+	 */
+	return slurm_kill_job(job_id, SIGKILL, KILL_ARRAY_TASK);
 }
 
 static int

@@ -3589,7 +3589,7 @@ typedef struct job_step_kill_msg {
  * NOTE:  See _signal_batch_job() controller and _rpc_signal_tasks() in slurmd.
  */
 #define KILL_JOB_BATCH   SLURM_BIT(0) /* signal batch shell only */
-#define KILL_JOB_ARRAY   SLURM_BIT(1) /* kill all elements of a job array */
+#define KILL_ARRAY_TASK  SLURM_BIT(1) /* kill single task of a job array */
 #define KILL_STEPS_ONLY  SLURM_BIT(2) /* Do not signal batch script */
 #define KILL_FULL_JOB    SLURM_BIT(3) /* Signal all steps, including batch
 				       * script */
