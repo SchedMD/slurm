@@ -9690,6 +9690,10 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 		debug("%s: job failed to specify group", __func__);
 		return ESLURM_GROUP_ID_MISSING;
 	}
+	if (!job_desc_msg->work_dir || !job_desc_msg->work_dir[0]) {
+		debug("%s: job working directory has to be set", __func__);
+		return ESLURM_MISSING_WORK_DIR;
+	}
 	if (job_desc_msg->contiguous == NO_VAL16)
 		job_desc_msg->contiguous = 0;
 

@@ -255,6 +255,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "PrologSlurmctld is still running"			},
 	{ ERRTAB_ENTRY(ESLURM_NO_STEPS),
 	  "Job steps can not be run on this cluster"		},
+	{ ERRTAB_ENTRY(ESLURM_MISSING_WORK_DIR),
+	  "Job cannot be submitted without the current working directory specified." },
 	{ ERRTAB_ENTRY(ESLURM_QOS_PREEMPTION_LOOP),
 	  "QOS Preemption loop detected"                	},
 	{ ERRTAB_ENTRY(ESLURM_NODE_NOT_AVAIL),
