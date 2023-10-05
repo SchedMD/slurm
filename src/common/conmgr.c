@@ -2310,8 +2310,8 @@ static int _create_socket(void *x, void *arg)
 			fatal("%s: Unable to parse %s", __func__, hostport);
 
 		/* resolve out the host and port if provided */
-		if (!(addrlist = get_addr_info(parsed_hp->host,
-					       parsed_hp->port)))
+		if (!(addrlist = xgetaddrinfo(parsed_hp->host,
+					      parsed_hp->port)))
 			fatal("Unable to listen on %s", hostport);
 	}
 

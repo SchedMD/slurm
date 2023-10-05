@@ -252,14 +252,14 @@ extern char *make_full_path(const char *rpath)
 	return cwd2;
 }
 
-extern struct addrinfo *get_addr_info_port(const char *hostname, uint16_t port)
+extern struct addrinfo *xgetaddrinfo_port(const char *hostname, uint16_t port)
 {
 	char serv[6];
 	snprintf(serv, sizeof(serv), "%hu", port);
-	return get_addr_info(hostname, serv);
+	return xgetaddrinfo(hostname, serv);
 }
 
-extern struct addrinfo *get_addr_info(const char *hostname, const char *serv)
+extern struct addrinfo *xgetaddrinfo(const char *hostname, const char *serv)
 {
 	slurm_addr_t addr;
 	struct addrinfo *result = NULL;

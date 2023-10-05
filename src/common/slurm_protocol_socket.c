@@ -732,10 +732,10 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 		__func__, port, host);
 
 	/*
-	 * get_addr_info uses hints from our config to determine what address
+	 * xgetaddrinfo uses hints from our config to determine what address
 	 * families to return
 	 */
-	ai_start = get_addr_info_port(host, port);
+	ai_start = xgetaddrinfo_port(host, port);
 
 	if (!ai_start) {
 		error("%s: Unable to resolve \"%s\"", __func__, host);
