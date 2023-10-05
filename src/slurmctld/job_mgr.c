@@ -16356,16 +16356,15 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 			    (base_state >= JOB_FAILED) &&
 			    ((base_state != JOB_PREEMPTED) || !requeue))
 				mail_job_info(job_ptr, MAIL_JOB_FAIL);
+			else if ((job_ptr->mail_type & MAIL_JOB_END) &&
+				 (base_state >= JOB_COMPLETE))
+				mail_job_info(job_ptr, MAIL_JOB_END);
 
 			if (requeue &&
 			    (job_ptr->mail_type & MAIL_JOB_REQUEUE))
 				mail_job_info(job_ptr,
 					      MAIL_JOB_REQUEUE);
 
-			if ((job_ptr->mail_type & MAIL_JOB_END) &&
-			    ((base_state == JOB_COMPLETE) ||
-			     (base_state == JOB_CANCELLED)))
-				mail_job_info(job_ptr, MAIL_JOB_END);
 		}
 	}
 
