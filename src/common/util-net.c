@@ -255,7 +255,7 @@ extern char *make_full_path(const char *rpath)
 struct addrinfo *get_addr_info(const char *hostname, uint16_t port)
 {
 	slurm_addr_t addr;
-	struct addrinfo* result = NULL;
+	struct addrinfo *result = NULL;
 	struct addrinfo hints;
 	int err;
 	bool v4_enabled = slurm_conf.conf_flags & CTL_CONF_IPV4_ENABLED;
