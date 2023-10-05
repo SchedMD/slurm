@@ -676,7 +676,8 @@ release number as the Slurmctld daemons.
 In other words, when changing the version to a higher release number (e.g
 from 21.08.x to 22.05.x) <b>always upgrade the SlurmDBD daemon first</b>.
 Database table changes may be required for the upgrade, for example
-adding new fields to existing tables.
+adding new fields to existing tables. This must complete <b>before</b>
+upgrading slurmctld.
 If the database contains a large number of entries, <b>the SlurmDBD daemon
 may require tens of minutes to update the database and be unresponsive
 during this time interval</b>.</p>
@@ -708,7 +709,7 @@ pre-10.2.1 version or from any version of MySQL, please contact SchedMD
 for assistance.</p>
 
 <p>The slurmctld daemon must also be upgraded before or at the same time as
-the slurmd daemons on the compute nodes.
+the client commands and slurmd daemons on the compute nodes.
 Generally, upgrading Slurm on all of the login and compute nodes is recommended,
 although rolling upgrades are also possible (i.e. upgrading the head node(s)
 first then upgrading the compute and login nodes later at various times).
@@ -857,6 +858,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 20 June 2023</p>
+<p style="text-align:center;">Last modified 05 October 2023</p>
 
 <!--#include virtual="footer.txt"-->
