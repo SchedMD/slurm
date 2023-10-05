@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix cancelling the whole array job when the array task is the meta job and
     it fails job or prolog launch and is not requeable. Cancel only the
     specific task instead.
+ -- Fix regression in 21.08.2 where MailProg did not run for mail-type=end for
+    jobs with non-zero exit codes.
 
 * Changes in Slurm 23.02.5
 ==========================
