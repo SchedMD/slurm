@@ -1099,6 +1099,8 @@ extern int sacctmgr_update_qos_usage(slurmdb_qos_cond_t *qos_cond,
 				slurmdb_destroy_update_object(update_obj);
 				goto end_it;
 			}
+			if (!rec->usage)
+				rec->usage = xmalloc(sizeof(*rec->usage));
 			list_append(update_obj->objects, rec);
 		}
 		list_iterator_reset(itr2);
