@@ -20,6 +20,8 @@ documents those changes that are of interest to users and administrators.
  -- sview - avoid crash when job has a node list string > 49 characters.
  -- Prevent slurmctld crash during reconfigure when packing job start messages.
  -- Preserve reason uid on reconfig.
+ -- Update node reason with updated INVAL state reason if different from last
+    registration.
 
 * Changes in Slurm 23.02.6
 ==========================

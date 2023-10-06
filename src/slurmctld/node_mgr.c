@@ -3215,6 +3215,13 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			&& ! IS_NODE_FAIL(node_ptr)) {
 			drain_nodes(reg_msg->node_name, reason_down,
 			            slurm_conf.slurm_user_id);
+		} else if (xstrcmp(node_ptr->reason, reason_down)) {
+			if (was_invalid_reg) {
+				error("Setting node %s state to INVAL with reason:%s",
+				       reg_msg->node_name, reason_down);
+			}
+			xfree(node_ptr->reason);
+			set_node_reason(node_ptr, reason_down, now);
 		}
 		last_node_update = time (NULL);
 	} else if (reg_msg->status == ESLURMD_PROLOG_FAILED
