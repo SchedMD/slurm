@@ -38,6 +38,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -124,6 +125,25 @@ static __thread char *thread_username = NULL;
  *		requestor for a given username and duration.
  */
 
+static void _check_key_permissions(const char *path, int bad_perms)
+{
+	struct stat buf;
+
+	xassert(path);
+
+	if (stat(path, &buf))
+		fatal("%s: cannot stat '%s': %m", plugin_type, path);
+
+	if ((buf.st_uid != 0) && (buf.st_uid != slurm_conf.slurm_user_id))
+		warning("%s: '%s' owned by uid=%u, instead of SlurmUser(%u) or root",
+			plugin_type, path, buf.st_uid,
+			slurm_conf.slurm_user_id);
+
+	if (buf.st_mode & bad_perms)
+		fatal("%s: key file is insecure: '%s' mode=0%o",
+		      plugin_type, path, buf.st_mode & 0777);
+}
+
 static data_for_each_cmd_t _build_jwks_keys(data_t *d, void *arg)
 {
 	char *alg, *kid, *n, *e, *key;
@@ -157,6 +177,8 @@ static void _init_jwks(void)
 
 	if (!(key_file = conf_get_opt_str(slurm_conf.authalt_params, "jwks=")))
 		return;
+
+	_check_key_permissions(key_file, S_IWOTH);
 
 	if (serializer_g_init(MIME_TYPE_JSON_PLUGIN, NULL))
 		fatal("%s: serializer_g_init() failed", __func__);
@@ -201,6 +223,8 @@ static void _init_hs256(void)
 		/* Must be in slurmdbd */
 		fatal("No jwt_key set. Please set the jwt_key=/path/to/key/file option in AuthAltParameters in slurmdbd.conf.");
 	}
+
+	_check_key_permissions(key_file, S_IRWXO);
 
 	debug("%s: Loading key: %s", __func__, key_file);
 
