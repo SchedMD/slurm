@@ -1135,8 +1135,8 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 				goto fini;
 			}
 			if (max_nodes <= 0) {
-				info("%pJ requires nodes exceed maximum node limit",
-				     job_ptr);
+				log_flag(SELECT_TYPE, "%pJ requires nodes exceed maximum node limit",
+					 job_ptr);
 				goto fini;
 			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
@@ -1312,8 +1312,8 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 				goto fini;
 			}
 			if (max_nodes <= 0) {
-				info("%pJ requires nodes exceed maximum node limit",
-				     job_ptr);
+				log_flag(SELECT_TYPE, "%pJ requires nodes exceed maximum node limit",
+					 job_ptr);
 				goto fini;
 			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
@@ -1726,8 +1726,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		}
 		if (max_nodes <= 0) {
 			rc = SLURM_ERROR;
-			info("%pJ requires nodes exceed maximum node limit",
-			     job_ptr);
+			log_flag(SELECT_TYPE, "%pJ requires nodes exceed maximum node limit",
+				 job_ptr);
 			goto fini;
 		}
 	} else {
@@ -1930,8 +1930,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		bit_or(node_map, req2_nodes_bitmap);
 		if (max_nodes <= 0) {
 			rc = SLURM_ERROR;
-			info("%pJ reached maximum node limit",
-			     job_ptr);
+			log_flag(SELECT_TYPE, "%pJ reached maximum node limit",
+				 job_ptr);
 			goto fini;
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
@@ -2073,8 +2073,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				}
 				if (max_nodes <= 0) {
 					rc = SLURM_ERROR;
-					info("%pJ reached maximum node limit",
-					     job_ptr);
+					log_flag(SELECT_TYPE, "%pJ reached maximum node limit",
+						 job_ptr);
 					goto fini;
 				}
 			}
@@ -2125,8 +2125,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				}
 				if (max_nodes <= 0) {
 					rc = SLURM_ERROR;
-					info("%pJ reached maximum node limit",
-					     job_ptr);
+					log_flag(SELECT_TYPE, "%pJ reached maximum node limit",
+						 job_ptr);
 					goto fini;
 				}
 				break;	/* Move to next switch */
@@ -2442,8 +2442,8 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		}
 		if (max_nodes <= 0) {
 			rc = SLURM_ERROR;
-			info("%pJ requires nodes exceed maximum node limit",
-			     job_ptr);
+			log_flag(SELECT_TYPE, "%pJ requires nodes exceed maximum node limit",
+				 job_ptr);
 			goto fini;
 		}
 	}
@@ -2600,8 +2600,8 @@ try_again:
 		}
 		if (max_nodes <= 0) {
 			rc = SLURM_ERROR;
-			info("%pJ reached maximum node limit",
-			     job_ptr);
+			log_flag(SELECT_TYPE, "%pJ reached maximum node limit",
+				 job_ptr);
 			goto fini;
 		}
 	}
@@ -2888,8 +2888,8 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 				goto fini;
 			}
 			if (max_nodes <= 0) {
-				info("%pJ requires nodes exceed maximum node limit",
-				     job_ptr);
+				log_flag(SELECT_TYPE, "%pJ requires nodes exceed maximum node limit",
+					 job_ptr);
 				goto fini;
 			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
@@ -3099,8 +3099,8 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 				goto fini;
 			}
 			if (max_nodes <= 0) {
-				info("%pJ requires nodes exceed maximum node limit",
-				     job_ptr);
+				log_flag(SELECT_TYPE, "%pJ requires nodes exceed maximum node limit",
+					 job_ptr);
 				goto fini;
 			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,

@@ -279,6 +279,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect setting of memory.swap.max in cgroup/v2.
  -- Fix jobacctgather/cgroup collection of disk/io, gpumem, gpuutil TRES values.
  -- Fix -d singleton for heterogeneous jobs.
+ -- Downgrade info logs about a job meeting a "maximum node limit" in the
+    select plugin to DebugFlags=SelectType. These info logs could spam the
+    slurmctld log file under certain circumstances.
 
 * Changes in Slurm 23.02.5
 ==========================
