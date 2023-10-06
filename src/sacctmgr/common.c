@@ -1086,7 +1086,7 @@ extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond)
 
 		update_list = list_create(slurmdb_destroy_update_object);
 		update_obj = xmalloc(sizeof(slurmdb_update_object_t));
-		update_obj->type = SLURMDB_REMOVE_QOS_USAGE;
+		update_obj->type = SLURMDB_UPDATE_QOS_USAGE;
 		update_obj->objects = list_create(NULL);
 
 		while ((qos_name = list_next(itr2))) {

@@ -3872,7 +3872,7 @@ extern int assoc_mgr_update_object(void *x, void *arg)
 	case SLURMDB_ADD_QOS:
 	case SLURMDB_MODIFY_QOS:
 	case SLURMDB_REMOVE_QOS:
-	case SLURMDB_REMOVE_QOS_USAGE:
+	case SLURMDB_UPDATE_QOS_USAGE:
 		rc = assoc_mgr_update_qos(object, locked);
 		break;
 	case SLURMDB_ADD_WCKEY:
@@ -5142,7 +5142,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 			list_iterator_destroy(assoc_itr);
 
 			break;
-		case SLURMDB_REMOVE_QOS_USAGE:
+		case SLURMDB_UPDATE_QOS_USAGE:
 			if (!rec) {
 				//rc = SLURM_ERROR;
 				break;
