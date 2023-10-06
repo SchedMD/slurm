@@ -277,6 +277,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 21.08.2 where MailProg did not run for mail-type=end for
     jobs with non-zero exit codes.
  -- Fix incorrect setting of memory.swap.max in cgroup/v2.
+ -- Fix jobacctgather/cgroup collection of disk/io, gpumem, gpuutil TRES values.
 
 * Changes in Slurm 23.02.5
 ==========================
