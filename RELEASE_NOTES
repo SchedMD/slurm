@@ -126,6 +126,8 @@ COMMAND CHANGES (see man pages for details)
  -- scontrol update partition now allows Nodes+=<node-list> and
     Nodes-=<node-list> to add/delete nodes from the existing partition node
     list. Nodes=+host1,-host2 is also allowed.
+ -- salloc/sbatch/srun - Modify the '--constraint' option to require square
+    brackets around requests with multiple features that include node counts.
 
 API CHANGES
 ===========

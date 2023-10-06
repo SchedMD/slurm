@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "August 2023" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "October 2023" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -303,9 +303,12 @@ For example, \fB\-\-constraint="intel"\fR
 \fBNode Count\fR
 A request can specify the number of nodes needed with some feature
 by appending an asterisk and count after the feature name.
-For example, \fB\-\-nodes=16 \-\-constraint="graphics*4 ..."\fR
+For example, \fB\-\-nodes=16 \-\-constraint="graphics*4"\fR
 indicates that the job requires 16 nodes and that at least four of those
 nodes must have the feature "graphics."
+If requesting more than one feature and using node counts, the request
+must have square brackets surrounding it.
+
 \fBNOTE\fR: This option is not supported by the helpers NodeFeatures plugin.
 Heterogeneous jobs can be used instead.
 .IP
@@ -372,8 +375,8 @@ Brackets can be used to indicate that you are looking for a set of nodes with
 the different requirements contained within the brackets. For example,
 \fB\-\-constraint="[(rack1|rack2)*1&(rack3)*2]"\fR will get you one node with
 either the "rack1" or "rack2" features and two nodes with the "rack3" feature.
-The same request without the brackets will try to find a single node that
-meets those requirements.
+If requesting more than one feature and using node counts, the request
+must have square brackets surrounding it.
 
 \fBNOTE\fR: Brackets are only reserved for \fBMultiple Counts\fR and
 \fBMatching OR\fR syntax.
