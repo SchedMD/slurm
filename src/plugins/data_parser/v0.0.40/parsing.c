@@ -201,6 +201,8 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 	xassert(args->args->magic == MAGIC_ARGS);
 	xassert(parser->magic == MAGIC_PARSER);
 
+	path = _flag_parent_path(&path, args);
+
 	for (int8_t i = 0; (i < parser->flag_bit_array_count); i++) {
 		const flag_bit_t *bit = &parser->flag_bit_array[i];
 		bool matched = !xstrcasecmp(data_get_string(src), bit->name);
@@ -208,27 +210,24 @@ static data_for_each_cmd_t _foreach_flag_parser(data_t *src, void *arg)
 		if (matched)
 			matched_any = true;
 
-		if (bit->type == FLAG_BIT_TYPE_BIT)
-			_set_flag_bit(parser, dst, bit, matched,
-				      _flag_parent_path(&path, args), src);
-		else if (bit->type == FLAG_BIT_TYPE_EQUAL) {
+		if (bit->type == FLAG_BIT_TYPE_BIT) {
+			_set_flag_bit(parser, dst, bit, matched, path, src);
+		} else if (bit->type == FLAG_BIT_TYPE_EQUAL) {
 			if (matched || ((~set & bit->mask) == bit->mask))
 				_set_flag_bit_equal(parser, dst, bit, matched,
-						    _flag_parent_path(&path,
-								      args),
-						    src);
+						    path, src);
 			set |= bit->mask;
 		}
 		else
 			fatal_abort("%s: invalid bit_flag_t", __func__);
 
-		args->index++;
 	}
+
+	args->index++;
 
 	if (!matched_any) {
 		on_error(PARSING, parser->type, args->args,
-			 ESLURM_DATA_FLAGS_INVALID,
-			 _flag_parent_path(&path, args), __func__,
+			 ESLURM_DATA_FLAGS_INVALID, path, __func__,
 			 "Unknown flag \"%s\"", data_get_string(src));
 		xfree(path);
 		return DATA_FOR_EACH_FAIL;
