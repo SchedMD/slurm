@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "March 2023" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "October 2023" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -182,16 +182,20 @@ be comma separated.
 .RS
 .TP
 \fBjwks=\fR
-Absolute path to JWKS file. Only RS256 keys are supported, although other
-key types may be listed in the file. If set, no HS256 key will be loaded by
-default (and token generation is disabled), although the jwt_key setting may
-be used to explicitly re\-enable HS256 key use (and token generation).
+Absolute path to JWKS file. Key should be owned by SlurmUser or root, must be
+readable by SlurmUser, with suggested permissions of 0400. It must not be
+writable by 'other'.
+Only RS256 keys are supported, although other key types may be listed in the
+file. If set, no HS256 key will be loaded by default (and token generation is
+disabled), although the jwt_key setting may be used to explicitly re\-enable
+HS256 key use (and token generation).
 .IP
 
 .TP
 \fBjwt_key=\fR
-Absolute path to JWT key file. Key must be HS256, and should only be accessible
-by SlurmUser.
+Absolute path to JWT key file. Key must be HS256. Key should be owned by
+SlurmUser or root, must be readable by SlurmUser, with suggested permissions of
+0400. It must not be accessible by 'other'.
 .RE
 .IP
 

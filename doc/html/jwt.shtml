@@ -37,6 +37,8 @@ The key does not have to be in the StateSaveLocation, but that is a convenient
 location if you have multiple controllers since it is shared between them.
 The key should not be placed in a directory where non-admin users might be
 able to access it.
+The key file should be owned by <b>SlurmUser</b> or <b>root</b>, with
+recommended permissions of 0400. The file must not be accessible by 'other'.
 </li>
 <li>Add JWT as an alternative authentication in slurm.conf and slurmdbd.conf:
 <pre>
@@ -90,6 +92,9 @@ AuthAltParameters=jwks=/var/spool/slurm/statesave/jwks.json
 </pre>
 </p>
 
+<p>The jwks file should be owned by <b>SlurmUser</b> or <b>root</b>, must be
+readable by <b>SlurmUser</b>, with recommended permissions of 0400.
+The file must not be writable by 'other'.</p>
 <p>Note that, by default, the built-in ability to generate HS256 tokens will
 be disabled when JWKS support is enabled. It can be re-enabled by explicitly
 configuring the <b>jwt_key=</b> option alongside <b>jwks=</b>.
@@ -196,6 +201,6 @@ b = a.decode(sys.argv[1], signing_key, algorithms=["HS256"])
 print(b)
 </pre>
 
-<p style="text-align:center;">Last modified 21 September 2023</p>
+<p style="text-align:center;">Last modified 6 October 2023</p>
 
 <!--#include virtual="footer.txt"-->

@@ -434,17 +434,21 @@ Set max lifespan (in seconds) for any token generated for user accounts.
 
 .TP
 \fBjwks=\fR
-Absolute path to JWKS file. Only RS256 keys are supported, although other
-key types may be listed in the file. If set, no HS256 key will be loaded by
-default (and token generation is disabled), although the jwt_key setting may
-be used to explicitly re\-enable HS256 key use (and token generation).
+Absolute path to JWKS file. Key should be owned by SlurmUser or root, must be
+readable by SlurmUser, with suggested permissions of 0400. It must not be
+writable by 'other'.
+Only RS256 keys are supported, although other key types may be listed in the
+file. If set, no HS256 key will be loaded by default (and token generation is
+disabled), although the jwt_key setting may be used to explicitly re\-enable
+HS256 key use (and token generation).
 .IP
 
 .TP
 \fBjwt_key=\fR
-Absolute path to JWT key file. Key must be HS256, and should only be accessible
-by SlurmUser. If not set, the default key file is jwt_hs256.key in
-\fIStateSaveLocation\fR.
+Absolute path to JWT key file. Key must be HS256. Key should be owned by
+SlurmUser or root, must be readable by SlurmUser, with suggested permissions of
+0400. It must not be accessible by 'other'.
+If not set, the default key file is jwt_hs256.key in \fIStateSaveLocation\fR.
 .RE
 .IP
 
