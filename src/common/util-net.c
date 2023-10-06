@@ -261,7 +261,6 @@ extern struct addrinfo *xgetaddrinfo_port(const char *hostname, uint16_t port)
 
 extern struct addrinfo *xgetaddrinfo(const char *hostname, const char *serv)
 {
-	slurm_addr_t addr;
 	struct addrinfo *result = NULL;
 	struct addrinfo hints;
 	int err;
@@ -278,35 +277,9 @@ extern struct addrinfo *xgetaddrinfo(const char *hostname, const char *serv)
 	else
 		hints.ai_family = AF_UNSPEC;
 
-	/*
-	 * Avoid using AI_PASSIVE as glibc and kernel can get out of sync
-	 * for the size of struct nlmsghdr causing glibc to segfault.
-	 */
-	hints.ai_flags = AI_ADDRCONFIG | AI_NUMERICSERV;
-	if (hostname) {
+	hints.ai_flags = AI_ADDRCONFIG | AI_NUMERICSERV | AI_PASSIVE;
+	if (hostname)
 		hints.ai_flags |= AI_CANONNAME;
-	} else if (v6_enabled) {
-		struct sockaddr_in6 addr2 = {
-			.sin6_family = AF_UNSPEC,
-			.sin6_addr = IN6ADDR_ANY_INIT,
-		};
-
-		if (!v4_enabled)
-			addr2.sin6_family = AF_INET6;
-
-		memcpy(&addr, &addr2, sizeof(addr2));
-		hints.ai_addr = (struct sockaddr *) &addr;
-		hints.ai_addrlen = sizeof(addr2);
-	} else if (v4_enabled) {
-		struct sockaddr_in addr2 = {
-			.sin_family = AF_INET,
-			.sin_addr.s_addr = INADDR_ANY,
-		};
-
-		memcpy(&addr, &addr2, sizeof(addr2));
-		hints.ai_addr = (struct sockaddr *) &addr;
-		hints.ai_addrlen = sizeof(addr2);
-	}
 	hints.ai_socktype = SOCK_STREAM;
 
 	err = getaddrinfo(hostname, serv, &hints, &result);
