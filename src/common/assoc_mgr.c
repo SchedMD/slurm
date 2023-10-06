@@ -5147,7 +5147,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 				//rc = SLURM_ERROR;
 				break;
 			}
-			assoc_mgr_remove_qos_usage(rec);
+			assoc_mgr_update_qos_usage(rec, 0.0);
 			break;
 		default:
 			break;
@@ -5662,7 +5662,8 @@ extern void assoc_mgr_remove_assoc_usage(slurmdb_assoc_rec_t *assoc)
 	_reset_children_usages(sav_assoc->usage->children_list);
 }
 
-extern void assoc_mgr_remove_qos_usage(slurmdb_qos_rec_t *qos)
+extern void assoc_mgr_update_qos_usage(slurmdb_qos_rec_t *qos,
+				       long double new_usage)
 {
 	int i;
 

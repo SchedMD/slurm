@@ -449,7 +449,8 @@ extern void assoc_mgr_remove_assoc_usage(slurmdb_assoc_rec_t *assoc);
  * IN:  slurmdb_qos_rec_t *qos
  * RET: SLURM_SUCCESS on success or else SLURM_ERROR
  */
-extern void assoc_mgr_remove_qos_usage(slurmdb_qos_rec_t *qos);
+extern void assoc_mgr_update_qos_usage(slurmdb_qos_rec_t *qos,
+				       long double new_usage);
 
 /*
  * Dump the state information of the association mgr just in case the
