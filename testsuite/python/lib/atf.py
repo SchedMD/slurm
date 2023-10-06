@@ -844,10 +844,10 @@ def get_config_parameter(name, default=None, **get_config_kwargs):
     config_dict = get_config(**get_config_kwargs)
 
     # Convert keys to lower case so we can do a case-insensitive search
-    lower_dict = dict((key.lower(), value) for key, value in config_dict.items())
+    lower_dict = dict((key.casefold(), value) for key, value in config_dict.items())
 
-    if name.lower() in lower_dict:
-        return lower_dict[name.lower()]
+    if name.casefold() in lower_dict:
+        return lower_dict[name.casefold()]
     else:
         return default
 
@@ -876,10 +876,10 @@ def config_parameter_includes(name, value, **get_config_kwargs):
     config_dict = get_config(**get_config_kwargs)
 
     # Convert keys to lower case so we can do a case-insensitive search
-    lower_dict = dict((key.lower(), value) for key, value in config_dict.items())
+    lower_dict = dict((key.casefold(), value) for key, value in config_dict.items())
 
-    if name.lower() in lower_dict and value.lower() in map(
-        str.lower, lower_dict[name.lower()].split(",")
+    if name.casefold() in lower_dict and value.lower() in map(
+        str.lower, lower_dict[name.casefold()].split(",")
     ):
         return True
     else:
