@@ -677,12 +677,18 @@ static int _set_rec(int *start, int argc, char **argv,
 				set = 1;
 		} else if (!xstrncasecmp(argv[i], "RawUsage",
 					 MAX(command_len, 7))) {
-			uint32_t usage;
+			double usage;
 			qos->usage = xmalloc(sizeof(slurmdb_qos_usage_t));
-			if (get_uint(argv[i]+end, &usage,
-				     "RawUsage") == SLURM_SUCCESS) {
+			if ((get_double(argv[i] + end, &usage,
+					"RawUsage") == SLURM_SUCCESS) &&
+			    (usage != (double) INFINITE)) {
 				qos->usage->usage_raw = usage;
 				set = 1;
+			} else {
+				exit_code = 1;
+				fprintf(stderr,
+					" Bad RawUsage value: %s\n",
+					argv[i] + end);
 			}
 		} else if (!xstrncasecmp(argv[i], "UsageFactor",
 					 MAX(command_len, 6))) {
@@ -1343,14 +1349,8 @@ extern int sacctmgr_modify_qos(int argc, char **argv)
 		}
 	}
 
-	// Special case:  reset raw usage only
 	if (qos->usage) {
-		rc = SLURM_ERROR;
-		if (qos->usage->usage_raw == 0.0)
-			rc = sacctmgr_update_qos_usage(qos_cond, 0.0);
-		else
-			error("Raw usage can only be set to 0 (zero)");
-
+		rc = sacctmgr_update_qos_usage(qos_cond, qos->usage->usage_raw);
 		slurmdb_destroy_qos_cond(qos_cond);
 		slurmdb_destroy_qos_rec(qos);
 		return rc;

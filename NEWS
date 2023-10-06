@@ -230,6 +230,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Add last_update fields to response to
     `GET /slurm/v0.0.40/licenses` query.
  -- auth/jwt - fatal when jwt or jwks key files are writable by other.
+ -- sacctmgr can now modify QOS's RawUsage to zero or a positive value.
 
 * Changes in Slurm 23.02.6
 ==========================

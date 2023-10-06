@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "September 2023" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "October 2023" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -2091,10 +2091,9 @@ What priority will be added to a job's priority when using this QOS.
 
 .TP
 \fBRawUsage\fR=<\fIvalue\fR>
-This allows an administrator to reset the raw usage accrued to a
-QOS.  The only value currently supported is 0 (zero).  This is a
-settable specification only \- it cannot be used as a filter to list
-accounts.
+This allows an administrator to set the raw usage accrued to a QOS. Specifying
+a value of 0 (zero) will reset the raw usage. This is a settable specification
+only \- it cannot be used as a filter to list accounts.
 .IP
 
 .TP

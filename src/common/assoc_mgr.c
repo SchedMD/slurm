@@ -5143,11 +5143,13 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 
 			break;
 		case SLURMDB_UPDATE_QOS_USAGE:
+			long double raw_usage =
+				object->usage ? object->usage->usage_raw : 0.0;
 			if (!rec) {
 				//rc = SLURM_ERROR;
 				break;
 			}
-			assoc_mgr_update_qos_usage(rec, 0.0);
+			assoc_mgr_update_qos_usage(rec, raw_usage);
 			break;
 		default:
 			break;
@@ -5670,7 +5672,13 @@ extern void assoc_mgr_update_qos_usage(slurmdb_qos_rec_t *qos,
 	xassert(qos);
 	xassert(qos->usage);
 
-	info("Resetting usage for QOS %s", qos->name);
+	if (new_usage) {
+		info("Setting RawUsage for QOS %s from %Lf to %Lf",
+		     qos->name, qos->usage->usage_raw, new_usage);
+		qos->usage->usage_raw = new_usage;
+		return;
+	} else
+		info("Resetting usage for QOS %s", qos->name);
 
 	qos->usage->usage_raw = 0;
 	qos->usage->grp_used_wall = 0;

@@ -1062,7 +1062,7 @@ extern int sacctmgr_update_qos_usage(slurmdb_qos_cond_t *qos_cond,
 		list_append(cluster_list, xstrdup(slurm_conf.cluster_name));
 	}
 
-	if (!commit_check("Would you like to reset usage?")) {
+	if (!commit_check("Would you like to update usage?")) {
 		printf(" Changes Discarded\n");
 		return rc;
 	}
@@ -1101,6 +1101,7 @@ extern int sacctmgr_update_qos_usage(slurmdb_qos_cond_t *qos_cond,
 			}
 			if (!rec->usage)
 				rec->usage = xmalloc(sizeof(*rec->usage));
+			rec->usage->usage_raw = new_raw_usage;
 			list_append(update_obj->objects, rec);
 		}
 		list_iterator_reset(itr2);
