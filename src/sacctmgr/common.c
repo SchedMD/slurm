@@ -1035,7 +1035,8 @@ end_it:
 	return rc;
 }
 
-extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond)
+extern int sacctmgr_update_qos_usage(slurmdb_qos_cond_t *qos_cond,
+				     long double new_raw_usage)
 {
 	List update_list = NULL;
 	List cluster_list;

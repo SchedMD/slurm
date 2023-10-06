@@ -1347,7 +1347,7 @@ extern int sacctmgr_modify_qos(int argc, char **argv)
 	if (qos->usage) {
 		rc = SLURM_ERROR;
 		if (qos->usage->usage_raw == 0.0)
-			rc = sacctmgr_remove_qos_usage(qos_cond);
+			rc = sacctmgr_update_qos_usage(qos_cond, 0.0);
 		else
 			error("Raw usage can only be set to 0 (zero)");
 

@@ -314,7 +314,8 @@ extern void sacctmgr_print_cluster(slurmdb_cluster_rec_t *cluster);
 extern void sacctmgr_print_federation(slurmdb_federation_rec_t *fed);
 extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos);
 extern int sacctmgr_remove_assoc_usage(slurmdb_assoc_cond_t *assoc_cond);
-extern int sacctmgr_remove_qos_usage(slurmdb_qos_cond_t *qos_cond);
+extern int sacctmgr_update_qos_usage(slurmdb_qos_cond_t *qos_cond,
+				     long double new_raw_usage);
 extern int sort_coord_list(void *, void *);
 extern List sacctmgr_process_format_list(List format_list);
 extern int sacctmgr_validate_cluster_list(List cluster_list);
