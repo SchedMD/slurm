@@ -828,8 +828,11 @@ static void _init_node_record(node_record_t *node_ptr,
 
 extern void grow_node_record_table_ptr(void)
 {
-	node_record_table_size = MAX(node_record_count + 100,
-				     slurm_conf.max_node_cnt);
+	node_record_table_size = node_record_count + 100;
+	if (slurm_conf.max_node_cnt != NO_VAL)
+		node_record_table_size = MAX(node_record_count,
+					     slurm_conf.max_node_cnt);
+
 	xrealloc(node_record_table_ptr,
 		 node_record_table_size * sizeof(node_record_t *));
 	/*
@@ -875,7 +878,8 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 	xassert(index <= node_record_count);
 	xassert(!node_record_table_ptr[index]);
 
-	if (slurm_conf.max_node_cnt && (index >= slurm_conf.max_node_cnt)) {
+	if ((slurm_conf.max_node_cnt != NO_VAL) &&
+	    (index >= slurm_conf.max_node_cnt)) {
 		error("Attempting to create node record past MaxNodeCount:%d",
 		      slurm_conf.max_node_cnt);
 		return NULL;
@@ -1060,7 +1064,7 @@ static node_record_t *_find_node_record(char *name, bool test_alias,
 		return node_ptr;
 	}
 
-	if ((node_record_count == 1) &&
+	if ((node_record_count == 1) && node_record_table_ptr[0] &&
 	    (xstrcmp(node_record_table_ptr[0]->name, "localhost") == 0))
 		return (node_record_table_ptr[0]);
 
