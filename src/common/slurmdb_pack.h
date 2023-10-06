@@ -116,6 +116,11 @@ extern void slurmdb_pack_qos_usage(void *in, uint16_t protocol_version,
 				   buf_t *buffer);
 extern int slurmdb_unpack_qos_usage(void **object, uint16_t protocol_version,
 				    buf_t *buffer);
+extern void slurmdb_pack_qos_usage_update(void *in, uint16_t protocol_version,
+					  buf_t *buffer);
+extern int slurmdb_unpack_qos_usage_update(void **object,
+					   uint16_t protocol_version,
+					   buf_t *buffer);
 extern void slurmdb_pack_qos_rec_with_usage(void *in, uint16_t protocol_version,
 					    buf_t *buffer);
 extern int slurmdb_unpack_qos_rec_with_usage(void **object,

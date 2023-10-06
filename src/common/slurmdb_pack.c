@@ -2324,6 +2324,19 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void slurmdb_pack_qos_usage_update(void *in, uint16_t protocol_version,
+					  buf_t *buffer)
+{
+	slurmdb_pack_qos_rec(in, protocol_version, buffer);
+}
+
+extern int slurmdb_unpack_qos_usage_update(void **object,
+					   uint16_t protocol_version,
+					   buf_t *buffer)
+{
+	return slurmdb_unpack_qos_rec(object, protocol_version, buffer);
+}
+
 extern void slurmdb_pack_qos_rec_with_usage(void *in, uint16_t protocol_version,
 					    buf_t *buffer)
 {
@@ -6151,8 +6164,10 @@ extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
 	case SLURMDB_ADD_QOS:
 	case SLURMDB_MODIFY_QOS:
 	case SLURMDB_REMOVE_QOS:
-	case SLURMDB_UPDATE_QOS_USAGE:
 		my_function = slurmdb_pack_qos_rec;
+		break;
+	case SLURMDB_UPDATE_QOS_USAGE:
+		my_function = slurmdb_pack_qos_usage_update;
 		break;
 	case SLURMDB_ADD_WCKEY:
 	case SLURMDB_MODIFY_WCKEY:
@@ -6234,8 +6249,11 @@ extern int slurmdb_unpack_update_object(slurmdb_update_object_t **object,
 	case SLURMDB_ADD_QOS:
 	case SLURMDB_MODIFY_QOS:
 	case SLURMDB_REMOVE_QOS:
-	case SLURMDB_UPDATE_QOS_USAGE:
 		my_function = slurmdb_unpack_qos_rec;
+		my_destroy = slurmdb_destroy_qos_rec;
+		break;
+	case SLURMDB_UPDATE_QOS_USAGE:
+		my_function = slurmdb_unpack_qos_usage_update;
 		my_destroy = slurmdb_destroy_qos_rec;
 		break;
 	case SLURMDB_ADD_WCKEY:
