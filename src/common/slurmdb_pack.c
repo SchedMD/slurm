@@ -2327,14 +2327,22 @@ unpack_error:
 extern void slurmdb_pack_qos_usage_update(void *in, uint16_t protocol_version,
 					  buf_t *buffer)
 {
-	slurmdb_pack_qos_rec(in, protocol_version, buffer);
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION)
+		slurmdb_pack_qos_rec_with_usage(in, protocol_version, buffer);
+	else
+		slurmdb_pack_qos_rec(in, protocol_version, buffer);
 }
 
 extern int slurmdb_unpack_qos_usage_update(void **object,
 					   uint16_t protocol_version,
 					   buf_t *buffer)
 {
-	return slurmdb_unpack_qos_rec(object, protocol_version, buffer);
+	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION)
+		return slurmdb_unpack_qos_rec_with_usage(object,
+							 protocol_version,
+							 buffer);
+	else
+		return slurmdb_unpack_qos_rec(object, protocol_version, buffer);
 }
 
 extern void slurmdb_pack_qos_rec_with_usage(void *in, uint16_t protocol_version,
