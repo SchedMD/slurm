@@ -1613,7 +1613,8 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 		    common_cgroup_set_uint64_param(
 			    &int_cg[level],
 			    "memory.swap.max",
-			    limits->memsw_limit_in_bytes) != SLURM_SUCCESS) {
+			    (limits->memsw_limit_in_bytes -
+			     limits->limit_in_bytes)) != SLURM_SUCCESS) {
 			rc = SLURM_ERROR;
 		}
 		break;
