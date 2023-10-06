@@ -1138,9 +1138,16 @@ def require_config_parameter(
         >>> require_config_parameter("PartitionName", {"primary": {"Nodes": "ALL"}, "dynamic1": {"Nodes": "ns1"}, "dynamic2": {"Nodes": "ns2"}, "dynamic3": {"Nodes": "ns1,ns2"}})
     """
 
+    if isinstance(parameter_name, dict):
+        parameter_name = dict((k.casefold(), v.casefold()) for k, v in
+                parameter_name.iteritems())
+    else:
+        parameter_name = parameter_name.casefold()
+
     observed_value = get_config_parameter(
         parameter_name, live=False, source=source, quiet=True
     )
+
     condition_satisfied = False
     if condition is None:
         condition = lambda observed, desired: observed == desired
