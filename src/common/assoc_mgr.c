@@ -5143,6 +5143,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 
 			break;
 		case SLURMDB_UPDATE_QOS_USAGE:
+		{
 			long double raw_usage =
 				object->usage ? object->usage->usage_raw : 0.0;
 			if (!rec) {
@@ -5151,6 +5152,7 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 			}
 			assoc_mgr_update_qos_usage(rec, raw_usage);
 			break;
+		}
 		default:
 			break;
 		}
