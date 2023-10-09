@@ -248,21 +248,6 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	memcpy(&launch.step_id, &ctx->step_req->step_id,
 	       sizeof(launch.step_id));
 
-	if (ctx->step_resp->cred) {
-		slurm_cred_arg_t *args;
-
-		if ((args = slurm_cred_get_args(ctx->step_resp->cred))) {
-			launch.launch_uid = args->uid;
-			launch.launch_gid = args->gid;
-		} else {
-			/* fake cred */
-			launch.launch_uid = getuid();
-			launch.launch_gid = getgid();
-		}
-
-		slurm_cred_unlock_args(ctx->step_resp->cred);
-	}
-
 	launch.argc = params->argc;
 	launch.argv = params->argv;
 	launch.spank_job_env = params->spank_job_env;
@@ -456,21 +441,6 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	/* Start tasks on compute nodes */
 	memcpy(&launch.step_id, &ctx->step_req->step_id,
 	       sizeof(launch.step_id));
-
-	if (ctx->step_resp->cred) {
-		slurm_cred_arg_t *args;
-
-		if ((args = slurm_cred_get_args(ctx->step_resp->cred))) {
-			launch.launch_uid = args->uid;
-			launch.launch_gid = args->gid;
-		} else {
-			/* fake cred */
-			launch.launch_uid = getuid();
-			launch.launch_gid = getgid();
-		}
-
-		slurm_cred_unlock_args(ctx->step_resp->cred);
-	}
 
 	launch.argc = params->argc;
 	launch.argv = params->argv;
@@ -1747,9 +1717,6 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 	info("launching %ps on host %s, %u tasks: %s",
 	     &msg->step_id, hostname, msg->tasks_to_launch[nodeid], task_list);
 	xfree(task_list);
-
-	debug3("uid:%u gid:%u cwd:%s %d",
-	       msg->launch_uid, msg->launch_gid, msg->cwd, nodeid);
 }
 
 /*
