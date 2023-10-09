@@ -2180,8 +2180,6 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->ifname		= "/dev/null";
 	launch_req->step_id.job_id      = req->job_id;
 	launch_req->job_mem_lim		= req->job_mem_limit;
-	launch_req->launch_gid = req->gid;
-	launch_req->launch_uid = req->uid;
 	launch_req->step_id.step_id	= SLURM_EXTERN_CONT;
 	launch_req->step_id.step_het_comp = NO_VAL;
 	launch_req->nnodes		= req->nnodes;
