@@ -1523,12 +1523,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		xfree(req->mem_bind);
 	}
 
-	if (msg->auth_uid != req->launch_uid) {
-		error("%s: launch task request from uid %u != %u",
-		      __func__, msg->auth_uid, req->launch_uid);
-		errnum = ESLURM_USER_ID_MISSING;	/* or invalid user */
-		goto done;
-	}
 	if (node_id < 0) {
 		info("%s: Invalid node list (%s not in %s)", __func__,
 		     conf->node_name, req->complete_nodelist);
