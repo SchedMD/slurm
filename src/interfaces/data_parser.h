@@ -247,6 +247,8 @@ typedef enum {
 	DATA_PARSER_USER_ID, /* User from numeric UID */
 	DATA_PARSER_USER_ID_STRING, /* char * - user id string */
 	DATA_PARSER_USER_ID_STRING_LIST, /* list_t of string user id */
+	DATA_PARSER_USER_SHORT, /* slurmdb_user_rec_t subset */
+	DATA_PARSER_USER_SHORT_PTR, /* slurmdb_user_rec_t* */
 	DATA_PARSER_USER, /* slurmdb_user_rec_t */
 	DATA_PARSER_USER_PTR, /* slurmdb_user_rec_t* */
 	DATA_PARSER_USER_LIST, /* List of slurmdb_user_rec_t*  */

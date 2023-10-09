@@ -6158,6 +6158,30 @@ static const flag_bit_t PARSER_FLAG_ARRAY(USER_FLAGS)[] = {
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(slurmdb_user_rec_t, mtype, true, field, 0, path, desc)
 /* should mirror the structure of slurmdb_user_rec_t */
+static const parser_t PARSER_ARRAY(USER_SHORT)[] = {
+	add_parse(ADMIN_LVL, admin_level, "adminlevel", "Admin level of user.  Valid levels are None, Operator, and Admin."),
+	add_skip(assoc_list),
+	add_skip(bf_usage),
+	add_parse(STRING, default_acct, "defaultaccount", "Identify the default bank account name to be used for a job if none is specified at submission time."),
+	add_parse(STRING, default_wckey, "defaultwckey", "Identify the default Workload Characterization Key."),
+	add_skip(flags),
+	add_skip(name),
+	add_skip(old_name),
+	/* uid should always be 0 */
+	add_skip(uid),
+	add_skip(wckey_list),
+};
+#undef add_parse
+#undef add_parse_req
+#undef add_skip
+
+#define add_skip(field) \
+	add_parser_skip(slurmdb_user_rec_t, field)
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_user_rec_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(slurmdb_user_rec_t, mtype, true, field, 0, path, desc)
+/* should mirror the structure of slurmdb_user_rec_t */
 static const parser_t PARSER_ARRAY(USER)[] = {
 	add_parse(ADMIN_LVL, admin_level, "administrator_level", NULL),
 	add_parse(ASSOC_SHORT_LIST, assoc_list, "associations", NULL),
@@ -8841,6 +8865,7 @@ static const parser_t parsers[] = {
 	addpap(ASSOC_REC_SET, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
 	addpap(INSTANCE, slurmdb_instance_rec_t, NEW_FUNC(INSTANCE), slurmdb_destroy_instance_rec),
 	addpap(USER, slurmdb_user_rec_t, NEW_FUNC(USER), slurmdb_destroy_user_rec),
+	addpap(USER_SHORT, slurmdb_user_rec_t, NULL, slurmdb_destroy_user_rec),
 	addpap(JOB, slurmdb_job_rec_t, (parser_new_func_t) slurmdb_create_job_rec, slurmdb_destroy_job_rec),
 	addpap(STEP, slurmdb_step_rec_t, (parser_new_func_t) slurmdb_create_step_rec, slurmdb_destroy_step_rec),
 	addpap(ACCOUNT, slurmdb_account_rec_t, NEW_FUNC(ACCOUNT), slurmdb_destroy_account_rec),
