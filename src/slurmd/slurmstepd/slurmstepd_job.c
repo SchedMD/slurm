@@ -546,8 +546,6 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	step->batch   = true;
 	step->node_name  = xstrdup(conf->node_name);
 
-	step->uid	= (uid_t) msg->uid;
-	step->gid	= (gid_t) msg->gid;
 	_slurm_cred_to_step_rec(msg->cred, step);
 	if (!step->user_name) {
 		error("Failed to look up username for uid=%u, cannot continue with launch",
