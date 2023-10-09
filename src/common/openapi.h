@@ -389,4 +389,12 @@ typedef struct {
 	slurmdb_account_rec_t *acct;
 } openapi_resp_accounts_add_cond_t;
 
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	slurmdb_add_assoc_cond_t *add_assoc;
+	slurmdb_user_rec_t *user;
+} openapi_resp_users_add_cond_t;
+
 #endif /* SLURM_OPENAPI_H */

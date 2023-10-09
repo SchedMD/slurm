@@ -8502,6 +8502,17 @@ static const parser_t PARSER_ARRAY(OPENAPI_ACCOUNTS_ADD_COND_RESP)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc) \
+	add_parser(openapi_resp_users_add_cond_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_USERS_ADD_COND_RESP)[] = {
+	add_openapi_response_meta(openapi_resp_users_add_cond_t),
+	add_openapi_response_errors(openapi_resp_users_add_cond_t),
+	add_openapi_response_warnings(openapi_resp_users_add_cond_t),
+	add_parse(USERS_ADD_COND_PTR, add_assoc, "association_condition", "Filters to select associations for users"),
+	add_parse(USER_SHORT_PTR, user, "user", "Admin level of user, DefaultAccount, DefaultWCKey"),
+};
+#undef add_parse
+
 #undef add_parser
 #undef add_parser_skip
 #undef add_complex_parser
@@ -8966,6 +8977,7 @@ static const parser_t parsers[] = {
 	addpap(JOB_ARRAY_RESPONSE_MSG_ENTRY, JOB_ARRAY_RESPONSE_MSG_entry_t, NULL, NULL),
 	addpap(WCKEY_TAG_STRUCT, WCKEY_TAG_STRUCT_t, NULL, NULL),
 	addpap(OPENAPI_ACCOUNTS_ADD_COND_RESP, openapi_resp_accounts_add_cond_t, NULL, NULL),
+	addpap(OPENAPI_USERS_ADD_COND_RESP, openapi_resp_users_add_cond_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
