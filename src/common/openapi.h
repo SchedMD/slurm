@@ -37,6 +37,7 @@
 #ifndef SLURM_OPENAPI_H
 #define SLURM_OPENAPI_H
 
+#include "slurm/slurmdb.h"
 #include "src/common/data.h"
 #include "src/common/macros.h"
 
@@ -379,5 +380,13 @@ typedef struct {
 	license_info_msg_t *licenses;
 	time_t last_update;
 } openapi_resp_license_info_msg_t;
+
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	slurmdb_add_assoc_cond_t *add_assoc;
+	slurmdb_account_rec_t *acct;
+} openapi_resp_accounts_add_cond_t;
 
 #endif /* SLURM_OPENAPI_H */
