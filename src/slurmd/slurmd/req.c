@@ -1445,10 +1445,11 @@ static int _find_libdir_record(void *x, void *arg)
 	return 1;
 }
 
-static void _handle_libdir_fixup(launch_tasks_request_msg_t *req)
+static void _handle_libdir_fixup(launch_tasks_request_msg_t *req,
+				 uid_t auth_uid)
 {
 	libdir_rec_t libdir_args = {
-		.uid = req->launch_uid,
+		.uid = auth_uid,
 		.job_id = req->step_id.job_id,
 		.step_id = req->step_id.step_id,
 	};
@@ -1556,7 +1557,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	 * Handle --send-libs support in srun by injecting the library cache
 	 * directory in LD_LIBRARY_PATH.
 	 */
-	_handle_libdir_fixup(req);
+	_handle_libdir_fixup(req, msg->auth_uid);
 
 	/* this could be set previously and needs to be overwritten by
 	 * this call for messages to work correctly for the new call */
