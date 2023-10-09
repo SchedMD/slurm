@@ -1175,13 +1175,12 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	} else {
 		char *user_name = xstrdup(arg->pw_name);
 		if (!user_name)
-			user_name = uid_to_string(req->launch_uid);
+			user_name = uid_to_string(arg->uid);
 		/*
 		 * The gids were not sent in the cred, or dealing with an older
 		 * RPC format, so retrieve from cache instead.
 		 */
-		req->ngids = group_cache_lookup(req->launch_uid,
-						req->launch_gid, user_name,
+		req->ngids = group_cache_lookup(arg->uid, arg->gid, user_name,
 						&req->gids);
 		xfree(user_name);
 	}
