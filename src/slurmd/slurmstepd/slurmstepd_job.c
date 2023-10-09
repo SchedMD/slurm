@@ -549,7 +549,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	_slurm_cred_to_step_rec(msg->cred, step);
 	if (!step->user_name) {
 		error("Failed to look up username for uid=%u, cannot continue with launch",
-		      msg->uid);
+		      step->uid);
 		return NULL;
 	}
 	/*
