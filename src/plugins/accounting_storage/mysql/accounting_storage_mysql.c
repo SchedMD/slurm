@@ -1056,8 +1056,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 
 	if (mysql_db_create_table(mysql_conn, clus_res_table,
 				  clus_res_table_fields,
-				  ", primary key (res_id, cluster(42)), "
-				  "unique index udex (res_id, cluster(42)))")
+				  ", primary key (res_id, cluster(42)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
