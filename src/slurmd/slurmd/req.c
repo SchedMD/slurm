@@ -2421,6 +2421,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	int      rc = SLURM_SUCCESS, node_id = 0;
 	bool	 replied = false, revoked;
 	slurm_addr_t *cli = &msg->orig_addr;
+	uid_t batch_uid = SLURM_AUTH_NOBODY;
+	gid_t batch_gid = SLURM_AUTH_NOBODY;
 
 	if (!_slurm_authorized_user(msg->auth_uid)) {
 		error("Security violation, batch launch RPC from uid %u",
@@ -2449,11 +2451,13 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	}
 
 	cred_arg = slurm_cred_get_args(req->cred);
+	batch_uid = cred_arg->uid;
+	batch_gid = cred_arg->gid;
 	/* If available, use the cred to fill in username. */
 	if (cred_arg->pw_name)
 		user_name = xstrdup(cred_arg->pw_name);
 	else
-		user_name = uid_to_string(req->batch_uid);
+		user_name = uid_to_string(batch_uid);
 
 	xfree(req->gids); /* Never sent by slurmctld */
 	/* If available, use the cred to fill in groups */
@@ -2461,7 +2465,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		req->ngids = cred_arg->ngids;
 		req->gids = copy_gids(cred_arg->ngids, cred_arg->gids);
 	} else
-		req->ngids = group_cache_lookup(req->batch_uid, req->batch_gid,
+		req->ngids = group_cache_lookup(batch_uid, batch_gid,
 						user_name, &req->gids);
 	slurm_cred_unlock_args(req->cred);
 
@@ -2527,8 +2531,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.work_dir = req->work_dir;
-		job_env.uid = req->batch_uid;
-		job_env.gid = req->batch_gid;
+		job_env.uid = batch_uid;
+		job_env.gid = batch_gid;
 		/*
 	 	 * Run job prolog on this node
 	 	 */
@@ -2542,7 +2546,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		jobid = req->job_id;
 #endif
 
-		if ((rc = container_g_create(jobid, req->batch_uid)))
+		if ((rc = container_g_create(jobid, batch_uid)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
 			rc = _run_prolog(&job_env, req->cred, true);
@@ -2583,7 +2587,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		goto done;
 	}
 
-	info("Launching batch job %u for UID %u", req->job_id, req->batch_uid);
+	info("Launching batch job %u for UID %u", req->job_id, batch_uid);
 
 	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
 	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL,
