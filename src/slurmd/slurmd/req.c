@@ -1082,8 +1082,7 @@ static int _get_ncpus(slurm_cred_arg_t *cred, int host_index,
 static int _check_job_credential(launch_tasks_request_msg_t *req,
 				 uid_t auth_uid, gid_t auth_gid,
 				 int node_id, hostlist_t **step_hset,
-				 uint16_t protocol_version,
-				 bool super_user)
+				 uint16_t protocol_version)
 {
 	slurm_cred_arg_t *arg;
 	hostlist_t *s_hset = NULL;
@@ -1104,7 +1103,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		req->cpus_per_task = req->cpus_per_task_array[node_id];
 
 	if (req->flags & LAUNCH_NO_ALLOC) {
-		if (super_user) {
+		if (_slurm_authorized_user(auth_uid)) {
 			/* If we didn't allocate then the cred isn't valid, just
 			 * skip checking. Only cool for root or SlurmUser */
 			debug("%s: FYI, user %u is an authorized user running outside of an allocation",
@@ -1577,8 +1576,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 #endif
 	if (_check_job_credential(req, msg->auth_uid, msg->auth_gid, node_id,
-				  &step_hset, msg->protocol_version,
-				  super_user) < 0) {
+				  &step_hset, msg->protocol_version) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %u@%s: %m",
 		      msg->auth_uid, host);
