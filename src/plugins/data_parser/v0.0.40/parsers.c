@@ -6009,6 +6009,73 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ASSOC_FLAGS)[] = {
 #define add_parse_req(mtype, field, path, desc) \
 	add_parser(slurmdb_assoc_rec_t, mtype, true, field, 0, path, desc)
 /* should mirror the structure of slurmdb_assoc_rec_t */
+static const parser_t PARSER_ARRAY(ASSOC_REC_SET)[] = {
+	add_skip(accounting_list),
+	add_skip(acct),
+	add_skip(assoc_next),
+	add_skip(assoc_next_id),
+	add_skip(bf_usage),
+	add_skip(cluster),
+	add_parse(STRING, comment, "comment", "Comment for the association"),
+	add_parse(QOS_ID, def_qos_id, "defaultqos", "Which QOS id is this association default"),
+	add_skip(flags),
+	add_parse(UINT32_NO_VAL, grp_jobs, "grpjobs", "Max number of jobs the underlying group of associations can run at one time"),
+	add_parse(UINT32_NO_VAL, grp_jobs_accrue, "grpjobsaccrue", "Max number of jobs the underlying group of associations can have accruing priority at one time"),
+	add_parse(UINT32_NO_VAL, grp_submit_jobs, "grpsubmitjobs", "Max number of jobs the underlying group of associations can submit at one time"),
+	add_parse(TRES_STR, grp_tres, "grptres", NULL),
+	add_skip(grp_tres_ctld),
+	add_parse(TRES_STR, grp_tres_mins, "grptresmins", "Max number of cpu minutes the underlying group of associations can run for"),
+	add_skip(grp_tres_mins_ctld),
+	add_parse(TRES_STR, grp_tres_run_mins, "grptresrunmins", "Max number of cpu minutes the underlying group of associations can having running at one time"),
+	add_skip(grp_tres_run_mins_ctld),
+	add_parse(UINT32_NO_VAL, grp_wall, "grpwall", "Total time in minutes the underlying group of associations can run for"),
+	add_skip(id),
+	add_skip(is_def),
+	add_skip(leaf_usage),
+	add_skip(lft),
+	add_skip(lineage),
+	add_parse(UINT32_NO_VAL, max_jobs, "maxjobs", "Max number of jobs this association can run at one time"),
+	add_parse(UINT32_NO_VAL, max_jobs_accrue, "maxjobsaccrue", "Max number of jobs this association can have accruing priority time"),
+	add_parse(UINT32_NO_VAL, max_submit_jobs, "maxsubmitjobs", "Max number of jobs that can be submitted by association"),
+	add_parse(TRES_STR, max_tres_mins_pj, "maxtresminsperjob", "Max number of cpu minutes this association can have per job"),
+	add_skip(max_tres_mins_ctld),
+	add_parse(TRES_STR, max_tres_run_mins, "maxtresrunmins", "Max number of cpu minutes this association can having running at one time"),
+	add_skip(max_tres_run_mins_ctld),
+	add_parse(TRES_STR, max_tres_pj, "maxtresperjob", "Max number of cpus this association can allocate per job"),
+	add_skip(max_tres_ctld),
+	add_parse(TRES_STR, max_tres_pn, "maxtrespernode", "Max number of TRES this association can allocate per node"),
+	add_skip(max_tres_pn_ctld),
+	add_parse(UINT32_NO_VAL, max_wall_pj, "maxwalldurationperjob", "Longest time this association can run a job"),
+	add_parse(UINT32_NO_VAL, min_prio_thresh, "minpriothresh", "Don't reserve resources for pending jobs unless they have a priority equal to or higher than this"),
+	add_parse(STRING, parent_acct, "parent", "Name of parent account"),
+	add_skip(parent_id),
+	add_skip(partition),
+	add_parse(UINT32_NO_VAL, priority, "priority", "Association priority"),
+	add_parse(QOS_STRING_ID_LIST, qos_list, "qoslevel", "Default QoS' that jobs are able to run at for this association"),
+	add_skip(rgt),
+	add_parse(UINT32, shares_raw, "fairshare", "Number of shares allocated to this association"),
+	/* slurmdbd should never set uid - it should always be zero */
+	add_skip(uid),
+	/*
+	 * Used by SLURMDB_REMOVE_ASSOC_USAGE when modifying/updating
+	 * account/user association. And this parser is intended for additions
+	 * only.
+	 */
+	add_skip(usage),
+	add_skip(user),
+	add_skip(user_rec),
+};
+#undef add_parse
+#undef add_parse_req
+#undef add_skip
+
+#define add_skip(field) \
+	add_parser_skip(slurmdb_assoc_rec_t, field)
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_assoc_rec_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(slurmdb_assoc_rec_t, mtype, true, field, 0, path, desc)
+/* should mirror the structure of slurmdb_assoc_rec_t */
 static const parser_t PARSER_ARRAY(ASSOC)[] = {
 	add_parse(ACCOUNTING_LIST, accounting_list, "accounting", "Usage accounting"),
 	add_parse(STRING, acct, "account", NULL),
@@ -8727,6 +8794,7 @@ static const parser_t parsers[] = {
 	/* Array of parsers */
 	addpap(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
 	addpap(ASSOC, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
+	addpap(ASSOC_REC_SET, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
 	addpap(INSTANCE, slurmdb_instance_rec_t, NEW_FUNC(INSTANCE), slurmdb_destroy_instance_rec),
 	addpap(USER, slurmdb_user_rec_t, NEW_FUNC(USER), slurmdb_destroy_user_rec),
 	addpap(JOB, slurmdb_job_rec_t, (parser_new_func_t) slurmdb_create_job_rec, slurmdb_destroy_job_rec),

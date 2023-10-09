@@ -109,6 +109,8 @@ typedef enum {
 	DATA_PARSER_ASSOC_FLAGS, /* slurmdb_assoc_rec_t->flags & ASSOC_FLAG_* */
 	DATA_PARSER_ASSOC_USAGE, /* slurmdb_assoc_usage_t */
 	DATA_PARSER_ASSOC_USAGE_PTR, /* slurmdb_assoc_usage_t* */
+	DATA_PARSER_ASSOC_REC_SET, /* slurmdb_assoc_rec_t */
+	DATA_PARSER_ASSOC_REC_SET_PTR, /* slurmdb_assoc_rec_t* */
 	DATA_PARSER_OPENAPI_ASSOCS_REMOVED_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_ASSOCS_REMOVED_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_ASSOC_CONDITION, /* slurmdb_assoc_cond_t */
