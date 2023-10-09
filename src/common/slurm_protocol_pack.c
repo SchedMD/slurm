@@ -8929,8 +8929,6 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
-		pack32(msg->batch_uid, buffer);
-		pack32(msg->batch_gid, buffer);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
 		packstr(msg->partition, buffer);
@@ -9133,8 +9131,6 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
-		safe_unpack32(&launch_msg_ptr->batch_uid, buffer);
-		safe_unpack32(&launch_msg_ptr->batch_gid, buffer);
 		safe_unpack32_array(&launch_msg_ptr->gids,
 				    &launch_msg_ptr->ngids, buffer);
 
