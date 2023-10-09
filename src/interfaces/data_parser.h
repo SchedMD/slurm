@@ -259,6 +259,8 @@ typedef enum {
 	DATA_PARSER_USERS_ADD_COND_PTR, /* slurmdb_add_assoc_cond_t* */
 	DATA_PARSER_OPENAPI_USERS_ADD_COND_RESP, /* openapi_resp_users_add_cond_t */
 	DATA_PARSER_OPENAPI_USERS_ADD_COND_RESP_PTR, /* openapi_resp_users_add_cond_t* */
+	DATA_PARSER_OPENAPI_USERS_ADD_COND_RESP_STR, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_USERS_ADD_COND_RESP_STR_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_OPENAPI_USERS_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_USERS_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_OPENAPI_USERS_REMOVED_RESP, /* openapi_resp_single_t */
