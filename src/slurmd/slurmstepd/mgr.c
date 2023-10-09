@@ -2499,6 +2499,8 @@ _send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
 	launch_tasks_response_msg_t resp;
 	int nodeid;
 	char *name = NULL;
+	slurm_cred_arg_t *cred;
+	uid_t launch_uid = SLURM_AUTH_NOBODY;
 
 	/*
 	 * The extern step can get here if something goes wrong starting the
@@ -2519,6 +2521,12 @@ _send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
 	nodeid = 0;
 	name = xstrdup(msg->complete_nodelist);
 #endif
+
+	/* Need to fetch the step uid to restrict the response appropriately */
+	cred = slurm_cred_get_args(msg->cred);
+	launch_uid = cred->uid;
+	slurm_cred_unlock_args(msg->cred);
+
 	debug ("sending launch failure message: %s", slurm_strerror (rc));
 
 	slurm_msg_t_init(&resp_msg);
@@ -2528,7 +2536,7 @@ _send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
 	resp_msg.protocol_version = protocol_version;
-	slurm_msg_set_r_uid(&resp_msg, msg->launch_uid);
+	slurm_msg_set_r_uid(&resp_msg, launch_uid);
 
 	memcpy(&resp.step_id, &msg->step_id, sizeof(resp.step_id));
 
