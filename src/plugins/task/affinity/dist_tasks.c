@@ -994,7 +994,11 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 		req_threads_per_core = 1;
 
 	size = bit_set_count(avail_map);
-	if (req_threads_per_core) {
+	/*
+	 * If configured threads > hw threads, then we are oversubscribing
+	 * threads, so don't check the number of bits set.
+	 */
+	if (req_threads_per_core && (conf->threads <= hw_threads)) {
 		if (size < (req->cpus_per_task * (conf->threads /
 						  req_threads_per_core))) {
 			error("only %d bits in avail_map, threads_per_core requires %d!",
@@ -1204,7 +1208,11 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 		req_threads_per_core = 1;
 
 	size = bit_set_count(avail_map);
-	if (req_threads_per_core) {
+	/*
+	 * If configured threads > hw threads, then we are oversubscribing
+	 * threads, so don't check the number of bits set.
+	 */
+	if (req_threads_per_core && (conf->threads <= hw_threads)) {
 		if (size < (req->cpus_per_task * (conf->threads /
 						  req_threads_per_core))) {
 			error("only %d bits in avail_map, threads_per_core requires %d!",
