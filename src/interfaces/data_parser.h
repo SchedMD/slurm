@@ -255,6 +255,8 @@ typedef enum {
 	DATA_PARSER_USER_FLAGS, /* slurmdb_user_rec_t->parser_user_flags & SLURMDB_USER_FLAG_* */
 	DATA_PARSER_USER_CONDITION, /* slurmdb_user_cond_t */
 	DATA_PARSER_USER_CONDITION_PTR, /* slurmdb_user_cond_t* */
+	DATA_PARSER_USERS_ADD_COND, /* slurmdb_add_assoc_cond_t subset */
+	DATA_PARSER_USERS_ADD_COND_PTR, /* slurmdb_add_assoc_cond_t* */
 	DATA_PARSER_OPENAPI_USERS_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_USERS_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_OPENAPI_USERS_REMOVED_RESP, /* openapi_resp_single_t */
