@@ -8988,8 +8988,8 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
-		pack32(msg->batch_uid, buffer);
-		pack32(msg->batch_gid, buffer);
+		pack32(msg->batch_uid_deprecated, buffer);
+		pack32(msg->batch_gid_deprecated, buffer);
 		packnull(buffer); /* was user_name */
 		pack32_array(msg->gids, msg->ngids, buffer);
 
@@ -9050,8 +9050,8 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
-		pack32(msg->batch_uid, buffer);
-		pack32(msg->batch_gid, buffer);
+		pack32(msg->batch_uid_deprecated, buffer);
+		pack32(msg->batch_gid_deprecated, buffer);
 		packnull(buffer); /* was user_name */
 		pack32_array(msg->gids, msg->ngids, buffer);
 
