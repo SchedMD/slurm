@@ -1541,12 +1541,10 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	if (req->het_job_id && (req->het_job_id != NO_VAL)) {
 		info("launch task %u+%u.%u (%ps) request from UID:%u GID:%u HOST:%s PORT:%hu",
 		     req->het_job_id, req->het_job_offset, req->step_id.step_id,
-		     &req->step_id, req->launch_uid, req->launch_gid,
-		     host, port);
+		     &req->step_id, msg->auth_uid, msg->auth_gid, host, port);
 	} else {
 		info("launch task %ps request from UID:%u GID:%u HOST:%s PORT:%hu",
-		     &req->step_id, req->launch_uid, req->launch_gid,
-		     host, port);
+		     &req->step_id, msg->auth_uid, msg->auth_gid, host, port);
 	}
 
 	/*
@@ -1614,7 +1612,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #else
 		jobid = req->step_id.job_id;
 #endif
-		if (container_g_create(jobid, req->launch_uid))
+		if (container_g_create(jobid, msg->auth_uid))
 			error("container_g_create(%u): %m", req->step_id.job_id);
 
 		memset(&job_env, 0, sizeof(job_env));
@@ -1633,8 +1631,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.work_dir = req->cwd;
-		job_env.uid = req->launch_uid;
-		job_env.gid = req->launch_gid;
+		job_env.uid = msg->auth_uid;
+		job_env.gid = msg->auth_gid;
 		rc =  _run_prolog(&job_env, req->cred, true);
 		_free_job_env(&job_env);
 		if (rc) {
