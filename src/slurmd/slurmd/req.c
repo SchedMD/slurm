@@ -1496,7 +1496,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	uint16_t port;
 	char     host[HOST_NAME_MAX];
 	launch_tasks_request_msg_t *req = msg->data;
-	bool     super_user = false;
 	bool     mem_sort = false;
 #ifndef HAVE_FRONT_END
 	bool     first_job_run;
@@ -1516,8 +1515,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #endif
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr_t));
 
-	super_user = _slurm_authorized_user(msg->auth_uid);
-
 	if ((req->step_id.step_id == SLURM_INTERACTIVE_STEP) ||
 	    (req->flags & LAUNCH_EXT_LAUNCHER)) {
 		req->cpu_bind_type = CPU_BIND_NONE;
@@ -1526,7 +1523,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		xfree(req->mem_bind);
 	}
 
-	if ((super_user == false) && (msg->auth_uid != req->launch_uid)) {
+	if (msg->auth_uid != req->launch_uid) {
 		error("%s: launch task request from uid %u != %u",
 		      __func__, msg->auth_uid, req->launch_uid);
 		errnum = ESLURM_USER_ID_MISSING;	/* or invalid user */
