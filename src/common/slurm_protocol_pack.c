@@ -7144,8 +7144,6 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
-		pack32(msg->launch_uid, buffer);
-		pack32(msg->launch_gid, buffer);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
 		pack32(msg->het_job_node_offset, buffer);
@@ -7246,8 +7244,8 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack16(msg->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
-		pack32(msg->launch_uid, buffer);
-		pack32(msg->launch_gid, buffer);
+		pack32(getuid(), buffer);
+		pack32(getgid(), buffer);
 		packnull(buffer);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
@@ -7347,8 +7345,8 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack16(msg->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
-		pack32(msg->launch_uid, buffer);
-		pack32(msg->launch_gid, buffer);
+		pack32(getuid(), buffer);
+		pack32(getgid(), buffer);
 		packnull(buffer);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
@@ -7468,8 +7466,6 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpack32(&msg->launch_uid, buffer);
-		safe_unpack32(&msg->launch_gid, buffer);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
 
 		safe_unpack32(&msg->het_job_node_offset, buffer);
@@ -7610,8 +7606,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpack32(&msg->launch_uid, buffer);
-		safe_unpack32(&msg->launch_gid, buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was launch_uid */
+		safe_unpack32(&uint32_tmp, buffer); /* was launch_gid */
 		safe_unpackstr(&tmp_char, buffer); /* was user_name */
 		xfree(tmp_char);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
@@ -7754,8 +7750,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpack32(&msg->launch_uid, buffer);
-		safe_unpack32(&msg->launch_gid, buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was launch_uid */
+		safe_unpack32(&uint32_tmp, buffer); /* was launch_gid */
 		safe_unpackstr(&tmp_char, buffer); /* was user_name */
 		xfree(tmp_char);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
