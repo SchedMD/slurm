@@ -88,6 +88,8 @@ typedef enum {
 	DATA_PARSER_ACCOUNT_LIST, /* list of slurmdb_account_rec_t* */
 	DATA_PARSER_ACCOUNT, /* slurmdb_account_rec_t */
 	DATA_PARSER_ACCOUNT_PTR, /* slurmdb_account_rec_t* */
+	DATA_PARSER_ACCOUNT_SHORT, /* slurmdb_account_rec_t subset */
+	DATA_PARSER_ACCOUNT_SHORT_PTR, /* slurmdb_account_rec_t* */
 	DATA_PARSER_ACCOUNT_FLAGS, /* slurmdb_account_rec_t->flags & SLURMDB_ACCT_FLAG_* */
 	DATA_PARSER_ACCOUNTING_LIST, /* list of slurmdb_accounting_rec_t* */
 	DATA_PARSER_ACCOUNTING, /* slurmdb_accounting_rec_t */

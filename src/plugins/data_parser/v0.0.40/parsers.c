@@ -6231,6 +6231,28 @@ static const parser_t PARSER_ARRAY(ACCOUNT)[] = {
 #undef add_parse
 #undef add_parse_req
 
+#define add_skip(field) \
+	add_parser_skip(slurmdb_account_rec_t, field)
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_account_rec_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(slurmdb_account_rec_t, mtype, true, field, 0, path, desc)
+/*
+ * Should mirror the structure of slurmdb_account_rec_t.
+ * Only parse same fields as in sacctmgr_add_account().
+ */
+static const parser_t PARSER_ARRAY(ACCOUNT_SHORT)[] = {
+	add_skip(assoc_list),
+	add_skip(coordinators),
+	add_parse(STRING, description, "description", "An arbitrary string describing an account"),
+	add_skip(name),
+	add_parse(STRING, organization, "organization", "Organization to which the account belongs"),
+	add_skip(flags),
+};
+#undef add_parse
+#undef add_parse_req
+#undef add_skip
+
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_accounting_rec_t, mtype, false, field, 0, path, desc)
 /* should mirror the structure of slurmdb_accounting_rec_t */
@@ -8710,6 +8732,7 @@ static const parser_t parsers[] = {
 	addpap(JOB, slurmdb_job_rec_t, (parser_new_func_t) slurmdb_create_job_rec, slurmdb_destroy_job_rec),
 	addpap(STEP, slurmdb_step_rec_t, (parser_new_func_t) slurmdb_create_step_rec, slurmdb_destroy_step_rec),
 	addpap(ACCOUNT, slurmdb_account_rec_t, NEW_FUNC(ACCOUNT), slurmdb_destroy_account_rec),
+	addpap(ACCOUNT_SHORT, slurmdb_account_rec_t, NULL, slurmdb_destroy_account_rec),
 	addpap(ACCOUNTING, slurmdb_accounting_rec_t, NULL, slurmdb_destroy_accounting_rec),
 	addpap(COORD, slurmdb_coord_rec_t, NULL, slurmdb_destroy_coord_rec),
 	addpap(WCKEY, slurmdb_wckey_rec_t, NEW_FUNC(WCKEY), slurmdb_destroy_wckey_rec),
