@@ -1477,6 +1477,62 @@
         }
       }
     },
+    "/slurmdb/{data_parser}/accounts_association/": {
+      "post": {
+        "tags": [
+          "slurmdb"
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_ADD_COND_RESP_STR"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_ADD_COND_RESP_STR"
+                }
+              }
+            },
+            "description": "Add list of accounts with conditional association"
+          },
+          "default": {
+            "description": "Unable to add accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_ADD_COND_RESP_STR"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_ADD_COND_RESP_STR"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Add accounts with conditional association",
+        "requestBody": {
+          "description": "Create accounts with conditional association",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_ADD_COND_RESP"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "DATA_PARSER_OPENAPI_ACCOUNTS_ADD_COND_RESP"
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    },
     "/slurmdb/{data_parser}/accounts/": {
       "get": {
         "tags": [
