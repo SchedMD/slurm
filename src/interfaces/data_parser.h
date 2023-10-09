@@ -77,6 +77,8 @@ typedef enum {
 	DATA_PARSER_CSV_STRING_LIST, /* list_t of char* - comma delimited list stored as a list_t* */
 	DATA_PARSER_OPENAPI_ACCOUNTS_ADD_COND_RESP, /* openapi_resp_accounts_add_cond_t */
 	DATA_PARSER_OPENAPI_ACCOUNTS_ADD_COND_RESP_PTR, /* openapi_resp_accounts_add_cond_t* */
+	DATA_PARSER_OPENAPI_ACCOUNTS_ADD_COND_RESP_STR, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_ACCOUNTS_ADD_COND_RESP_STR_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_OPENAPI_ACCOUNTS_REMOVED_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_ACCOUNTS_REMOVED_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_OPENAPI_ACCOUNTS_RESP, /* openapi_resp_single_t */

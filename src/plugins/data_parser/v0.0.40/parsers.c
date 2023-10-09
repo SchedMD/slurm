@@ -8310,6 +8310,7 @@ add_openapi_response_single(OPENAPI_DIAG_RESP, STATS_MSG_PTR, "statistics", "sta
 add_openapi_response_single(OPENAPI_PING_ARRAY_RESP, CONTROLLER_PING_ARRAY, "pings", "pings");
 add_openapi_response_single(OPENAPI_ACCOUNTS_RESP, ACCOUNT_LIST, "accounts", "accounts");
 add_openapi_response_single(OPENAPI_ACCOUNTS_REMOVED_RESP, STRING_LIST, "removed_accounts", "removed_accounts");
+add_openapi_response_single(OPENAPI_ACCOUNTS_ADD_COND_RESP_STR, STRING, "added_accounts", "added_accounts");
 add_openapi_response_single(OPENAPI_ASSOCS_RESP, ASSOC_LIST, "associations", "associations");
 add_openapi_response_single(OPENAPI_ASSOCS_REMOVED_RESP, STRING_LIST, "removed_associations", "removed_associations");
 add_openapi_response_single(OPENAPI_CLUSTERS_RESP, CLUSTER_REC_LIST, "clusters", "clusters");
@@ -8927,6 +8928,7 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_NODES_RESP, openapi_resp_node_info_msg_t, NULL, NULL),
 	addpap(OPENAPI_PARTITION_RESP, openapi_resp_partitions_info_msg_t, NULL, NULL),
 	addpap(OPENAPI_RESERVATION_RESP, openapi_resp_reserve_info_msg_t, NULL, NULL),
+	addoar(OPENAPI_ACCOUNTS_ADD_COND_RESP_STR),
 	addoar(OPENAPI_ACCOUNTS_RESP),
 	addoar(OPENAPI_ACCOUNTS_REMOVED_RESP),
 	addoar(OPENAPI_ASSOCS_RESP),
