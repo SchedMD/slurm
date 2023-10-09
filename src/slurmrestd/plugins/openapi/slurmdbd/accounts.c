@@ -260,6 +260,27 @@ extern int update_accounts(ctxt_t *ctxt, bool commit, list_t *acct_list)
 	return ctxt->rc;
 }
 
+static void _add_accounts_association(ctxt_t *ctxt,
+				      slurmdb_add_assoc_cond_t *add_assoc,
+				      slurmdb_account_rec_t *acct)
+{
+	int rc = SLURM_SUCCESS;
+	char *ret_str = NULL;
+
+	errno = 0;
+	ret_str = slurmdb_accounts_add_cond(ctxt->db_conn, add_assoc, acct);
+
+	if ((rc = errno))
+		resp_error(ctxt, rc, __func__,
+			   "slurmdb_accounts_add_cond() failed");
+	else
+		db_query_commit(ctxt);
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_ACCOUNTS_ADD_COND_RESP_STR, ret_str,
+				 ctxt);
+	xfree(ret_str);
+}
+
 static void _update_accts(ctxt_t *ctxt)
 {
 	openapi_resp_single_t resp = {0};
@@ -270,6 +291,22 @@ static void _update_accts(ctxt_t *ctxt)
 		list_t *acct_list = resp.response;
 		update_accounts(ctxt, true, acct_list);
 		FREE_NULL_LIST(acct_list);
+	}
+
+	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
+}
+
+static void _parse_add_accounts_assoc(ctxt_t *ctxt)
+{
+	openapi_resp_accounts_add_cond_t resp = {0};
+	openapi_resp_accounts_add_cond_t *resp_ptr = &resp;
+
+	if (!DATA_PARSE(ctxt->parser, OPENAPI_ACCOUNTS_ADD_COND_RESP, resp,
+			ctxt->query, ctxt->parent_path)) {
+		_add_accounts_association(ctxt, resp_ptr->add_assoc,
+					  resp_ptr->acct);
+		slurmdb_destroy_add_assoc_cond(resp_ptr->add_assoc);
+		slurmdb_destroy_account_rec(resp_ptr->acct);
 	}
 
 	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
@@ -370,8 +407,22 @@ static int _op_handler_accounts(ctxt_t *ctxt)
 	return SLURM_SUCCESS;
 }
 
+static int _op_handler_accounts_association(ctxt_t *ctxt)
+{
+	if (ctxt->method == HTTP_REQUEST_POST)
+		_parse_add_accounts_assoc(ctxt);
+	else
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+
+	return SLURM_SUCCESS;
+}
+
 extern void init_op_accounts(void)
 {
+	bind_handler("/slurmdb/{data_parser}/accounts_association/",
+		     _op_handler_accounts_association, 0);
 	bind_handler("/slurmdb/{data_parser}/accounts/", _op_handler_accounts,
 		     0);
 	bind_handler("/slurmdb/{data_parser}/account/{account_name}/",
@@ -381,5 +432,6 @@ extern void init_op_accounts(void)
 extern void destroy_op_accounts(void)
 {
 	unbind_operation_ctxt_handler(_op_handler_accounts);
+	unbind_operation_ctxt_handler(_op_handler_accounts_association);
 	unbind_operation_ctxt_handler(_op_handler_account);
 }
