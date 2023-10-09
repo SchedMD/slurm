@@ -925,6 +925,62 @@
         }
       }
     },
+    "/slurmdb/{data_parser}/users_association/": {
+      "post": {
+        "tags": [
+          "slurmdb"
+        ],
+        "summary": "Add users with conditional association",
+        "requestBody": {
+          "description": "Create users with conditional association",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "DATA_PARSER_OPENAPI_USERS_ADD_COND_RESP"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "DATA_PARSER_OPENAPI_USERS_ADD_COND_RESP"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_USERS_ADD_COND_RESP_STR"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_USERS_ADD_COND_RESP_STR"
+                }
+              }
+            },
+            "description": "Add list of users with conditional association"
+          },
+          "default": {
+            "description": "Unable to add accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_USERS_ADD_COND_RESP_STR"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "DATA_PARSER_OPENAPI_USERS_ADD_COND_RESP_STR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/slurmdb/{data_parser}/users/": {
       "post": {
         "tags": [
