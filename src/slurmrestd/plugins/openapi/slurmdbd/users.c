@@ -236,6 +236,74 @@ extern int update_users(ctxt_t *ctxt, bool commit, list_t *user_list)
 	return ctxt->rc;
 }
 
+static void _add_users_association(ctxt_t *ctxt,
+				   slurmdb_add_assoc_cond_t *add_assoc,
+				   slurmdb_user_rec_t *user)
+{
+	int rc = SLURM_SUCCESS;
+	char *ret_str = NULL;
+
+	/* Mimick sacctmgr/user_functions.c _set_add_cond() */
+	if (user->default_acct) {
+		if (!add_assoc->acct_list)
+			add_assoc->acct_list = list_create(xfree_ptr);
+
+		if (list_is_empty(add_assoc->acct_list))
+			slurm_addto_char_list(add_assoc->acct_list,
+					      user->default_acct);
+	}
+
+	/* Mimick sacctmgr/user_functions.c _set_add_cond() */
+	if (user->default_wckey) {
+		if (!add_assoc->wckey_list)
+			add_assoc->wckey_list = list_create(xfree_ptr);
+
+		if (list_is_empty(add_assoc->wckey_list))
+			slurm_addto_char_list(add_assoc->wckey_list,
+					      user->default_wckey);
+	}
+
+	/*
+	 * Mimick sacctmgr/user_functions.c sacctmgr_add_user().
+	 *
+	 * The add_assoc.user_list is a requirement by itself, already handled
+	 * by the add_parse_req() in the USERS_ADD_COND parser array.
+	 *
+	 * But add_assoc.[acct|wckey]_list are required at least one or the
+	 * other. Since there's no way to do it at present via data_parser
+	 * functionality, checking the requirement here, mimicking sacctmgr.
+	 *
+	 * These checks should arguably happen inside the API call.
+	 */
+	if (!list_count(add_assoc->acct_list) &&
+	    !list_count(add_assoc->wckey_list)) {
+		rc = ESLURM_DATA_AMBIGUOUS_QUERY;
+		resp_error(ctxt, rc, __func__,
+			   "Need name of account(s) or wckey(s) to add");
+		goto cleanup;
+	}
+
+	/*
+	 * sacctmgr performs a uid_to_string() check on the requested user list
+	 * and emits a warning letting user decide to proceed if any fails,
+	 * but there's no such commit check mechanism for rest POST.
+	 */
+
+	errno = 0;
+	ret_str = slurmdb_users_add_cond(ctxt->db_conn, add_assoc, user);
+
+	if ((rc = errno))
+		resp_error(ctxt, rc, __func__,
+			   "slurmdb_users_add_cond() failed");
+	else
+		db_query_commit(ctxt);
+
+cleanup:
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_USERS_ADD_COND_RESP_STR, ret_str,
+				 ctxt);
+	xfree(ret_str);
+}
+
 static void _update_users(ctxt_t *ctxt)
 {
 	openapi_resp_single_t resp = {0};
@@ -271,6 +339,22 @@ static void _delete_user(ctxt_t *ctxt, char *user_name)
 
 	FREE_NULL_LIST(user_list);
 	FREE_NULL_LIST(assoc_cond.user_list);
+}
+
+static void _parse_add_users_assoc(ctxt_t *ctxt)
+{
+	openapi_resp_users_add_cond_t resp = {0};
+	openapi_resp_users_add_cond_t *resp_ptr = &resp;
+
+	if (!DATA_PARSE(ctxt->parser, OPENAPI_USERS_ADD_COND_RESP, resp,
+			ctxt->query, ctxt->parent_path)) {
+		_add_users_association(ctxt, resp_ptr->add_assoc,
+				       resp_ptr->user);
+		slurmdb_destroy_add_assoc_cond(resp_ptr->add_assoc);
+		slurmdb_destroy_user_rec(resp_ptr->user);
+	}
+
+	FREE_OPENAPI_RESP_COMMON_CONTENTS(resp_ptr);
 }
 
 /* based on sacctmgr_list_user() */
@@ -341,14 +425,29 @@ cleanup:
 	return SLURM_SUCCESS;
 }
 
+static int _op_handler_users_association(ctxt_t *ctxt)
+{
+	if (ctxt->method == HTTP_REQUEST_POST)
+		_parse_add_users_assoc(ctxt);
+	else
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+
+	return SLURM_SUCCESS;
+}
+
 extern void init_op_users(void)
 {
+	bind_handler("/slurmdb/{data_parser}/users_association/",
+		     _op_handler_users_association, 0);
 	bind_handler("/slurmdb/{data_parser}/users/", _op_handler_users, 0);
 	bind_handler("/slurmdb/{data_parser}/user/{name}", _op_handler_user, 0);
 }
 
 extern void destroy_op_users(void)
 {
+	unbind_operation_ctxt_handler(_op_handler_users_association);
 	unbind_operation_ctxt_handler(_op_handler_users);
 	unbind_operation_ctxt_handler(_op_handler_user);
 }
