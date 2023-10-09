@@ -1726,8 +1726,10 @@ static int DUMP_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 
 	if ((g = gid_to_string_or_null(*gid)))
 		data_set_string_own(dst, g);
-	else
+	else if (is_complex_mode(args))
 		data_set_null(dst);
+	else
+		data_set_string(dst, "");
 
 	return SLURM_SUCCESS;
 }
