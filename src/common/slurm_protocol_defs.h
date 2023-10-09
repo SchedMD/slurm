@@ -901,8 +901,6 @@ typedef struct launch_tasks_request_msg {
 	uint16_t  ntasks_per_tres; /* number of tasks that can access each gpu */
 	uint16_t  ntasks_per_socket;/* number of tasks to invoke on
 				     * each socket */
-	uint32_t launch_uid;
-	uint32_t launch_gid;
 	uint32_t  ngids;
 	uint32_t *gids;
 	uint64_t  job_mem_lim;	/* MB of memory reserved by job per node OR
