@@ -310,12 +310,12 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	step->ntasks	= msg->ntasks;
 	memcpy(&step->step_id, &msg->step_id, sizeof(step->step_id));
 
-	step->uid	= (uid_t) msg->uid;
-	step->gid	= (gid_t) msg->gid;
+	step->uid = msg->launch_uid;
+	step->gid = msg->launch_gid;
 	_slurm_cred_to_step_rec(msg->cred, step);
 	if (!step->user_name) {
 		error("Failed to look up username for uid=%u, cannot continue with launch",
-		      msg->uid);
+		      msg->launch_uid);
 		return NULL;
 	}
 	/*

@@ -1142,13 +1142,13 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		goto fail;
 	}
 
-	if (req->uid == SLURM_AUTH_NOBODY) {
+	if (req->launch_uid == SLURM_AUTH_NOBODY) {
 		debug3("%s: setting job %u credential to uid %u",
 		      __func__, arg->step_id.job_id, arg->uid);
-		req->uid = arg->uid;
-	} else if (arg->uid != req->uid) {
+		req->launch_uid = arg->uid;
+	} else if (arg->uid != req->launch_uid) {
 		error("job %u credential created for uid %u, expected %u",
-		      arg->step_id.job_id, arg->uid, req->uid);
+		      arg->step_id.job_id, arg->uid, req->launch_uid);
 		goto fail;
 	}
 
@@ -1158,13 +1158,13 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		goto fail;
 	}
 
-	if (req->gid == SLURM_AUTH_NOBODY) {
+	if (req->launch_gid == SLURM_AUTH_NOBODY) {
 		debug3("%s: setting job %u credential to group %u",
 		      __func__, arg->step_id.job_id, arg->gid);
-		req->gid = arg->gid;
-	} else if (arg->gid != req->gid) {
+		req->launch_gid = arg->gid;
+	} else if (arg->gid != req->launch_gid) {
 		error("job %u credential created for gid %u, expected %u",
-		      arg->step_id.job_id, arg->gid, req->gid);
+		      arg->step_id.job_id, arg->gid, req->launch_gid);
 		goto fail;
 	}
 
@@ -1175,12 +1175,13 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	} else {
 		char *user_name = xstrdup(arg->pw_name);
 		if (!user_name)
-			user_name = uid_to_string(req->uid);
+			user_name = uid_to_string(req->launch_uid);
 		/*
 		 * The gids were not sent in the cred, or dealing with an older
 		 * RPC format, so retrieve from cache instead.
 		 */
-		req->ngids = group_cache_lookup(req->uid, req->gid, user_name,
+		req->ngids = group_cache_lookup(req->launch_uid,
+						req->launch_gid, user_name,
 						&req->gids);
 		xfree(user_name);
 	}
@@ -1448,7 +1449,7 @@ static int _find_libdir_record(void *x, void *arg)
 static void _handle_libdir_fixup(launch_tasks_request_msg_t *req)
 {
 	libdir_rec_t libdir_args = {
-		.uid = req->uid,
+		.uid = req->launch_uid,
 		.job_id = req->step_id.job_id,
 		.step_id = req->step_id.step_id,
 	};
@@ -1526,9 +1527,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		xfree(req->mem_bind);
 	}
 
-	if ((super_user == false) && (msg->auth_uid != req->uid)) {
+	if ((super_user == false) && (msg->auth_uid != req->launch_uid)) {
 		error("%s: launch task request from uid %u != %u",
-		      __func__, msg->auth_uid, req->uid);
+		      __func__, msg->auth_uid, req->launch_uid);
 		errnum = ESLURM_USER_ID_MISSING;	/* or invalid user */
 		goto done;
 	}
@@ -1544,11 +1545,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	if (req->het_job_id && (req->het_job_id != NO_VAL)) {
 		info("launch task %u+%u.%u (%ps) request from UID:%u GID:%u HOST:%s PORT:%hu",
 		     req->het_job_id, req->het_job_offset, req->step_id.step_id,
-		     &req->step_id, req->uid, req->gid,
+		     &req->step_id, req->launch_uid, req->launch_gid,
 		     host, port);
 	} else {
 		info("launch task %ps request from UID:%u GID:%u HOST:%s PORT:%hu",
-		     &req->step_id, req->uid, req->gid,
+		     &req->step_id, req->launch_uid, req->launch_gid,
 		     host, port);
 	}
 
@@ -1618,7 +1619,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #else
 		jobid = req->step_id.job_id;
 #endif
-		if (container_g_create(jobid, req->uid))
+		if (container_g_create(jobid, req->launch_uid))
 			error("container_g_create(%u): %m", req->step_id.job_id);
 
 		memset(&job_env, 0, sizeof(job_env));
@@ -1637,8 +1638,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.work_dir = req->cwd;
-		job_env.uid = req->uid;
-		job_env.gid = req->gid;
+		job_env.uid = req->launch_uid;
+		job_env.gid = req->launch_gid;
 		rc =  _run_prolog(&job_env, req->cred, true);
 		_free_job_env(&job_env);
 		if (rc) {
@@ -2187,12 +2188,13 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->cred		= req->cred;
 	launch_req->cwd			= req->work_dir;
 	launch_req->efname		= "/dev/null";
-	launch_req->gid			= req->gid;
 	launch_req->global_task_ids	= xcalloc(req->nnodes,
 						  sizeof(uint32_t *));
 	launch_req->ifname		= "/dev/null";
 	launch_req->step_id.job_id      = req->job_id;
 	launch_req->job_mem_lim		= req->job_mem_limit;
+	launch_req->launch_gid = req->gid;
+	launch_req->launch_uid = req->uid;
 	launch_req->step_id.step_id	= SLURM_EXTERN_CONT;
 	launch_req->step_id.step_het_comp = NO_VAL;
 	launch_req->nnodes		= req->nnodes;
@@ -2207,7 +2209,6 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->step_mem_lim	= req->job_mem_limit;
 	launch_req->tasks_to_launch	= xcalloc(req->nnodes,
 						  sizeof(uint16_t));
-	launch_req->uid			= req->uid;
 
 	/*
 	 * determine which node this is in the allocation and if

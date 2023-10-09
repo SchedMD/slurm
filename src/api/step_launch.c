@@ -252,12 +252,12 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		slurm_cred_arg_t *args;
 
 		if ((args = slurm_cred_get_args(ctx->step_resp->cred))) {
-			launch.uid = args->uid;
-			launch.gid = args->gid;
+			launch.launch_uid = args->uid;
+			launch.launch_gid = args->gid;
 		} else {
 			/* fake cred */
-			launch.uid = getuid();
-			launch.gid = getgid();
+			launch.launch_uid = getuid();
+			launch.launch_gid = getgid();
 		}
 
 		slurm_cred_unlock_args(ctx->step_resp->cred);
@@ -461,12 +461,12 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 		slurm_cred_arg_t *args;
 
 		if ((args = slurm_cred_get_args(ctx->step_resp->cred))) {
-			launch.uid = args->uid;
-			launch.gid = args->gid;
+			launch.launch_uid = args->uid;
+			launch.launch_gid = args->gid;
 		} else {
 			/* fake cred */
-			launch.uid = getuid();
-			launch.gid = getgid();
+			launch.launch_uid = getuid();
+			launch.launch_gid = getgid();
 		}
 
 		slurm_cred_unlock_args(ctx->step_resp->cred);
@@ -1748,7 +1748,8 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 	     &msg->step_id, hostname, msg->tasks_to_launch[nodeid], task_list);
 	xfree(task_list);
 
-	debug3("uid:%u gid:%u cwd:%s %d", msg->uid, msg->gid, msg->cwd, nodeid);
+	debug3("uid:%u gid:%u cwd:%s %d",
+	       msg->launch_uid, msg->launch_gid, msg->cwd, nodeid);
 }
 
 /*
