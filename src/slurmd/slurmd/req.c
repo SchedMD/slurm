@@ -1141,29 +1141,9 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		goto fail;
 	}
 
-	if (req->launch_uid == SLURM_AUTH_NOBODY) {
-		debug3("%s: setting job %u credential to uid %u",
-		      __func__, arg->step_id.job_id, arg->uid);
-		req->launch_uid = arg->uid;
-	} else if (arg->uid != req->launch_uid) {
-		error("job %u credential created for uid %u, expected %u",
-		      arg->step_id.job_id, arg->uid, req->launch_uid);
-		goto fail;
-	}
-
 	if (arg->gid == SLURM_AUTH_NOBODY) {
 		error("%s: rejecting job %u credential for invalid group nobody",
 		      __func__, arg->step_id.job_id);
-		goto fail;
-	}
-
-	if (req->launch_gid == SLURM_AUTH_NOBODY) {
-		debug3("%s: setting job %u credential to group %u",
-		      __func__, arg->step_id.job_id, arg->gid);
-		req->launch_gid = arg->gid;
-	} else if (arg->gid != req->launch_gid) {
-		error("job %u credential created for gid %u, expected %u",
-		      arg->step_id.job_id, arg->gid, req->launch_gid);
 		goto fail;
 	}
 
