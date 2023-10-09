@@ -317,6 +317,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	if (!step->user_name) {
 		error("Failed to look up username for uid=%u, cannot continue with launch",
 		      step->uid);
+		stepd_step_rec_destroy(step);
 		return NULL;
 	}
 	/*
