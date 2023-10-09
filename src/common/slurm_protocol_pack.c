@@ -8929,8 +8929,8 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
-		pack32(msg->uid, buffer);
-		pack32(msg->gid, buffer);
+		pack32(msg->batch_uid, buffer);
+		pack32(msg->batch_gid, buffer);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
 		packstr(msg->partition, buffer);
@@ -8990,8 +8990,8 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
-		pack32(msg->uid, buffer);
-		pack32(msg->gid, buffer);
+		pack32(msg->batch_uid, buffer);
+		pack32(msg->batch_gid, buffer);
 		packnull(buffer); /* was user_name */
 		pack32_array(msg->gids, msg->ngids, buffer);
 
@@ -9052,8 +9052,8 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
-		pack32(msg->uid, buffer);
-		pack32(msg->gid, buffer);
+		pack32(msg->batch_uid, buffer);
+		pack32(msg->batch_gid, buffer);
 		packnull(buffer); /* was user_name */
 		pack32_array(msg->gids, msg->ngids, buffer);
 
@@ -9133,8 +9133,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
-		safe_unpack32(&launch_msg_ptr->uid, buffer);
-		safe_unpack32(&launch_msg_ptr->gid, buffer);
+		safe_unpack32(&launch_msg_ptr->batch_uid, buffer);
+		safe_unpack32(&launch_msg_ptr->batch_gid, buffer);
 		safe_unpack32_array(&launch_msg_ptr->gids,
 				    &launch_msg_ptr->ngids, buffer);
 
@@ -9204,8 +9204,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		char *tmp_char;
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
-		safe_unpack32(&launch_msg_ptr->uid, buffer);
-		safe_unpack32(&launch_msg_ptr->gid, buffer);
+		safe_unpack32(&launch_msg_ptr->batch_uid, buffer);
+		safe_unpack32(&launch_msg_ptr->batch_gid, buffer);
 		safe_unpackstr(&tmp_char, buffer); /* was user_name */
 		xfree(tmp_char);
 		safe_unpack32_array(&launch_msg_ptr->gids,
@@ -9278,8 +9278,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		dynamic_plugin_data_t *select_jobinfo;
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
-		safe_unpack32(&launch_msg_ptr->uid, buffer);
-		safe_unpack32(&launch_msg_ptr->gid, buffer);
+		safe_unpack32(&launch_msg_ptr->batch_uid, buffer);
+		safe_unpack32(&launch_msg_ptr->batch_gid, buffer);
 		safe_unpackstr(&tmp_char, buffer); /* was user_name */
 		xfree(tmp_char);
 		safe_unpack32_array(&launch_msg_ptr->gids,
