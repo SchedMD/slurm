@@ -4602,10 +4602,10 @@ static int DUMP_FUNC(STRING_ARRAY)(const parser_t *const parser, void *obj,
 	xassert(args->magic == MAGIC_ARGS);
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
+	data_set_list(dst);
+
 	if (!(array = *array_ptr))
 		return SLURM_SUCCESS;
-
-	data_set_list(dst);
 
 	for (int i = 0; array[i]; i++)
 		data_set_string(data_list_append(dst), array[i]);
