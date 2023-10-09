@@ -5391,6 +5391,15 @@ static void *NEW_FUNC(ACCOUNT)(void)
 	return acct;
 }
 
+static void *NEW_FUNC(ACCOUNTS_ADD_COND)(void)
+{
+	slurmdb_add_assoc_cond_t *add_assoc_cond =
+		xmalloc(sizeof(*add_assoc_cond));
+	slurmdb_init_add_assoc_cond(add_assoc_cond, false);
+
+	return add_assoc_cond;
+}
+
 static void *NEW_FUNC(WCKEY)(void)
 {
 	slurmdb_wckey_rec_t *wckey = xmalloc(sizeof(*wckey));
@@ -7822,6 +7831,29 @@ static const parser_t PARSER_ARRAY(QOS_CONDITION)[] = {
 };
 #undef add_parse
 
+#define add_skip(field) \
+	add_parser_skip(slurmdb_add_assoc_cond_t, field)
+#define add_parse_req(mtype, field, path, desc) \
+	add_parser(slurmdb_add_assoc_cond_t, mtype, true, field, 0, path, desc)
+#define add_parse(mtype, field, path, desc) \
+	add_parser(slurmdb_add_assoc_cond_t, mtype, false, field, 0, path, desc)
+/*
+ * Should mirror the structure of slurmdb_add_assoc_cond_t,
+ * intended for use with slurmdb_accounts_add_cond().
+ */
+static const parser_t PARSER_ARRAY(ACCOUNTS_ADD_COND)[] = {
+	add_parse_req(CSV_STRING_LIST, acct_list, "accounts", "CSV accounts list"),
+	add_parse(ASSOC_REC_SET, assoc, "association", "Association limits and options"),
+	add_parse(CSV_STRING_LIST, cluster_list, "clusters", "CSV clusters list"),
+	add_skip(default_acct),
+	add_skip(partition_list),
+	add_skip(user_list),
+	add_skip(wckey_list),
+};
+#undef add_parse
+#undef add_parse_req
+#undef add_skip
+
 #define add_parse(mtype, field, path, desc) \
 	add_parser(slurmdb_assoc_cond_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(ASSOC_CONDITION)[] = {
@@ -8802,6 +8834,7 @@ static const parser_t parsers[] = {
 	addpap(ACCOUNT, slurmdb_account_rec_t, NEW_FUNC(ACCOUNT), slurmdb_destroy_account_rec),
 	addpap(ACCOUNT_SHORT, slurmdb_account_rec_t, NULL, slurmdb_destroy_account_rec),
 	addpap(ACCOUNTING, slurmdb_accounting_rec_t, NULL, slurmdb_destroy_accounting_rec),
+	addpap(ACCOUNTS_ADD_COND, slurmdb_add_assoc_cond_t, NEW_FUNC(ACCOUNTS_ADD_COND), slurmdb_destroy_add_assoc_cond),
 	addpap(COORD, slurmdb_coord_rec_t, NULL, slurmdb_destroy_coord_rec),
 	addpap(WCKEY, slurmdb_wckey_rec_t, NEW_FUNC(WCKEY), slurmdb_destroy_wckey_rec),
 	addpap(TRES, slurmdb_tres_rec_t, NULL, slurmdb_destroy_tres_rec),
