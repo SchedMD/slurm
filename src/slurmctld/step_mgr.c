@@ -4310,6 +4310,7 @@ extern int pack_ctld_job_step_info_response_msg(
 }
 
 typedef struct {
+	list_t *dealloc_steps;
 	node_record_t *node_ptr;
 	bool node_fail;
 } kill_step_on_node_args_t;
@@ -4367,6 +4368,12 @@ static int _kill_step_on_node(void *x, void *arg)
 					  SIGKILL, REQUEST_TERMINATE_TASKS);
 	}
 
+	if (!rem) {
+		if (!args->dealloc_steps)
+			args->dealloc_steps = list_create(NULL);
+		list_append(args->dealloc_steps, step_ptr);
+	}
+
 	return 0;
 }
 
@@ -4382,6 +4389,7 @@ extern void kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 			      bool node_fail)
 {
 	kill_step_on_node_args_t args = {
+		.dealloc_steps = NULL,
 		.node_ptr = node_ptr,
 		.node_fail = node_fail,
 	};
@@ -4390,6 +4398,18 @@ extern void kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 		return;
 
 	list_for_each(job_ptr->step_list, _kill_step_on_node, &args);
+
+	if (args.dealloc_steps) {
+		/*
+		 * Because _finish_step_comp() may free the step_ptr, call
+		 * list_delete_all() to delete the list-node when the step_ptr
+		 * is free'd. It doesn't actually matter because we are
+		 * deleting the list immediately afterward, but it is good
+		 * practice to not leave invalid pointer references.
+		 */
+		list_delete_all(args.dealloc_steps, _finish_step_comp, NULL);
+		FREE_NULL_LIST(args.dealloc_steps);
+	}
 }
 
 /*
@@ -4436,7 +4456,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 	step_ptr = find_step_record(job_ptr, &req->step_id);
 
 	if (step_ptr == NULL) {
-		info("step_partial_comp: %pJ StepID=%u invalid",
+		info("step_partial_comp: %pJ StepID=%u invalid; this step may have already completed",
 		     job_ptr, req->step_id.step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
