@@ -231,6 +231,8 @@ documents those changes that are of interest to users and administrators.
     `GET /slurm/v0.0.40/licenses` query.
  -- auth/jwt - fatal when jwt or jwks key files are writable by other.
  -- sacctmgr can now modify QOS's RawUsage to zero or a positive value.
+ -- sdiag - Added statistics on why the main and backfill schedulers have
+    stopped evaluation on each scheduling cycle.
 
 * Changes in Slurm 23.02.6
 ==========================
