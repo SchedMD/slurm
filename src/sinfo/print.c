@@ -1097,7 +1097,8 @@ int _print_state_complete(sinfo_data_t * sinfo_data, int width,
 		uint32_t my_state;
 
 		my_state = sinfo_data->node_state;
-		state = xstrtolower(node_state_string_complete(my_state));
+		state = node_state_string_complete(my_state);
+		xstrtolower(state);
 		_print_str(state, width, right_justify, true);
 		xfree(state);
 	} else if (sinfo_data)

@@ -80,7 +80,8 @@ static char *_get_parser_key(const parser_t *parser)
 	xassert(!xstrncmp(parser->type_string, TYPE_PREFIX,
 			  strlen(TYPE_PREFIX)));
 
-	stype = xstrtolower(xstrdup(parser->type_string + strlen(TYPE_PREFIX)));
+	stype = xstrdup(parser->type_string + strlen(TYPE_PREFIX));
+	xstrtolower(stype);
 	xstrfmtcat(key, "%s%s", KEY_PREFIX, stype);
 	xfree(stype);
 

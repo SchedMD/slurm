@@ -663,7 +663,7 @@ bool xstring_is_whitespace(const char *str)
 /*
  * If str make everything lowercase.  Should not be called on static char *'s
  */
-char *xstrtolower(char *str)
+extern void xstrtolower(char *str)
 {
 	if (str) {
 		int j = 0;
@@ -672,7 +672,6 @@ char *xstrtolower(char *str)
 			j++;
 		}
 	}
-	return str;
 }
 
 /* safe strchr */
