@@ -3885,6 +3885,11 @@ display_it:
 		 * treestore we don't really care about the return value */
 		create_treestore(tree_view, display_data_job,
 				 SORTID_CNT, SORTID_TIME_SUBMIT, SORTID_COLOR);
+
+		set_column_width_fixed(tree_view, SORTID_NODELIST, 100);
+		set_column_width_fixed(tree_view, SORTID_NODELIST_EXC, 100);
+		set_column_width_fixed(tree_view, SORTID_NODELIST_REQ, 100);
+		set_column_width_fixed(tree_view, SORTID_NODELIST_SCHED, 100);
 	}
 
 	view = INFO_VIEW;

@@ -624,6 +624,9 @@ extern void select_admin_common(GtkTreeModel *model, GtkTreeIter *iter,
 						     GtkTreePath *path,
 						     GtkTreeIter *iter,
 						     gpointer userdata));
+extern void set_column_width_fixed(GtkTreeView *tree_view,
+				   int sortid,
+				   int width);
 
 // defaults.c
 extern int load_defaults(void);
