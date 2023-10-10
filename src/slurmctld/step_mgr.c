@@ -407,6 +407,28 @@ static int _step_not_cleaning(void *x, void *arg)
 }
 
 /*
+ * _finish_step_comp - Finish deallocating and delete a non-pending step.
+ */
+static int _finish_step_comp(void *x, void *args)
+{
+	int remaining;
+	step_record_t *step_ptr = x;
+	job_record_t *job_ptr = step_ptr->job_ptr;
+
+	if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
+		return 0;
+
+	remaining = list_count(job_ptr->step_list);
+	_internal_step_complete(step_ptr, remaining);
+	delete_step_record(job_ptr, step_ptr);
+	_wake_pending_steps(job_ptr);
+
+	last_job_update = time(NULL);
+
+	return 1;
+}
+
+/*
  * delete_step_records - Delete step record for specified job_ptr.
  * This function is called when a step fails to run to completion. For example,
  * when the job is killed due to reaching its time limit or allocated nodes
@@ -4716,18 +4738,7 @@ no_aggregate:
 
 	/* The step has finished, finish it completely */
 	if (!*rem && finish) {
-		int remaining;
-		job_record_t *job_ptr = step_ptr->job_ptr;
-
-		if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
-			return SLURM_SUCCESS;
-
-		remaining = list_count(job_ptr->step_list);
-		_internal_step_complete(step_ptr, remaining);
-		delete_step_record(job_ptr, step_ptr);
-		_wake_pending_steps(job_ptr);
-
-		last_job_update = time(NULL);
+		(void) _finish_step_comp(step_ptr, NULL);
 	}
 
 	return SLURM_SUCCESS;
