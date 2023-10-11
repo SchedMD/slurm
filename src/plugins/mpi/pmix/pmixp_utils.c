@@ -536,6 +536,8 @@ int pmixp_rmdir_recursively(char *path)
 
 int pmixp_mkdir(char *path)
 {
+	char *base = NULL, *newdir = NULL, *slash;
+	int dirfd;
 	mode_t rights = (S_IRUSR | S_IWUSR | S_IXUSR);
 
 	/* NOTE: we need user who owns the job to access PMIx usock
@@ -550,15 +552,48 @@ int pmixp_mkdir(char *path)
 	 * 3. Set 0700 access mode
 	 */
 
-	if (0 != mkdir(path, rights) ) {
-		PMIXP_ERROR_STD("Cannot create directory \"%s\"",
-				path);
+	base = xstrdup(path);
+	/* split into base and new directory name */
+	while ((slash = strrchr(base, '/'))) {
+		/* fix a path with one or more trailing slashes */
+		if (slash[1] == '\0')
+			slash[0] = '\0';
+		else
+			break;
+	}
+
+	if (!slash) {
+		PMIXP_ERROR_STD("Invalid directory \"%s\"", path);
+		xfree(base);
+		return EINVAL;
+	}
+
+	slash[0] = '\0';
+	newdir = slash + 1;
+
+	if ((dirfd = open(base, O_DIRECTORY | O_NOFOLLOW)) < 0) {
+		PMIXP_ERROR_STD("Could not open parent directory \"%s\"", base);
+		xfree(base);
 		return errno;
 	}
 
-	if (chown(path, (uid_t) pmixp_info_jobuid(), (gid_t) -1) < 0) {
-		error("%s: chown(%s): %m", __func__, path);
+	if (mkdirat(dirfd, newdir, rights) < 0) {
+		PMIXP_ERROR_STD("Cannot create directory \"%s\"",
+				path);
+		close(dirfd);
+		xfree(base);
 		return errno;
 	}
+
+	if (fchownat(dirfd, newdir, (uid_t) pmixp_info_jobuid(), (gid_t) -1,
+		     AT_SYMLINK_NOFOLLOW) < 0) {
+		error("%s: fchownath(%s): %m", __func__, path);
+		close(dirfd);
+		xfree(base);
+		return errno;
+	}
+
+	close(dirfd);
+	xfree(base);
 	return 0;
 }
