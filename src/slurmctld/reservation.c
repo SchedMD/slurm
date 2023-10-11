@@ -5151,6 +5151,12 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 
 	xassert(resv_desc_ptr->job_ptr);
 	job_ptr = resv_desc_ptr->job_ptr;
+
+	if (job_ptr->details->min_nodes > job_ptr->details->min_cpus) {
+		info("Core count for reservation is less than node count!");
+		return ESLURM_INVALID_CORE_CNT;
+	}
+
 	xfree(job_ptr->partition);
 	job_ptr->partition = xstrdup(resv_desc_ptr->partition);
 	job_ptr->part_ptr = *part_ptr;
