@@ -511,12 +511,6 @@ extern int pmixp_libpmix_init(void)
 	/* TODO: must be deleted in future once info-key approach harden */
 	setenv(PMIXP_PMIXLIB_TMPDIR, _pmixp_info_client_tmpdir_lib(), 1);
 
-	/*
-	if( pmixp_fixrights(pmixp_info_tmpdir_lib(),
-		(uid_t) pmixp_info_jobuid(), rights) ){
-	}
-	*/
-
 	return 0;
 }
 

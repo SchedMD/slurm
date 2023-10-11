@@ -62,7 +62,6 @@ int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
 		   uint32_t len, unsigned int start_delay,
 		   unsigned int retry_cnt, int silent);
 int pmixp_rmdir_recursively(char *path);
-int pmixp_fixrights(char *path, uid_t uid, mode_t mode);
 int pmixp_mkdir(char *path, mode_t rights);
 
 /* lightweight pmix list of pointers */
