@@ -518,14 +518,14 @@ extern int pmixp_libpmix_finalize(void)
 
 	rc = pmixp_lib_finalize();
 
-	rc1 = pmixp_rmdir_recursively(pmixp_info_tmpdir_lib());
+	rc1 = rmdir_recursive(pmixp_info_tmpdir_lib(), true);
 	if (0 != rc1) {
 		PMIXP_ERROR_STD("Failed to remove %s\n",
 				pmixp_info_tmpdir_lib());
 		/* Not considering this as fatal error */
 	}
 
-	rc1 = pmixp_rmdir_recursively(pmixp_info_tmpdir_cli());
+	rc1 = rmdir_recursive(pmixp_info_tmpdir_cli(), true);
 	if (0 != rc1) {
 		PMIXP_ERROR_STD("Failed to remove %s\n",
 				pmixp_info_tmpdir_cli());
