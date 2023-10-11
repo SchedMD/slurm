@@ -156,30 +156,66 @@ static uint32_t _determine_profile(void)
 
 static void _create_directories(void)
 {
-	char *user_dir = NULL;
+	char *parent_dir = NULL, *user_dir = NULL, *hdf5_dir_rel = NULL;
+	char *slash = NULL;
+	int parent_dirfd, user_parent_dirfd;
 
 	xassert(g_job);
 	xassert(hdf5_conf.dir);
 
-	xstrfmtcat(user_dir, "%s/%s", hdf5_conf.dir, g_job->user_name);
+	parent_dir = xstrdup(hdf5_conf.dir);
+	/* split into base and new directory name */
+	while ((slash = strrchr(parent_dir, '/'))) {
+		/* fix a path with one or more trailing slashes */
+		if (slash[1] == '\0')
+			slash[0] = '\0';
+		else
+			break;
+	}
+
+	if (!slash)
+		fatal("Invalid ProfileHDF5Dir=\"%s\"", hdf5_conf.dir);
+
+	slash[0] = '\0';
+	hdf5_dir_rel = slash + 1;
+
+	parent_dirfd = open(parent_dir, O_DIRECTORY | O_NOFOLLOW);
 
 	/*
-	 * To avoid race conditions (TOCTOU) with stat() calls, always
-	 * attempt to create the ProfileHDF5Dir and the user directory within.
+	 * Use *at family of syscalls to prevent TOCTOU abuse by working
+	 * on file descriptors instead of path names.
 	 */
-	if (((mkdir(hdf5_conf.dir, 0755)) < 0) && (errno != EEXIST))
-		fatal("mkdir(%s): %m", hdf5_conf.dir);
-	if (chmod(hdf5_conf.dir, 0755) < 0)
-		fatal("chmod(%s): %m", hdf5_conf.dir);
+	if ((mkdirat(parent_dirfd, hdf5_dir_rel, 0755)) < 0) {
+		/* Never chmod on EEXIST */
+		if (errno != EEXIST)
+			fatal("mkdirat(%s): %m", hdf5_conf.dir);
+	} else if (fchmodat(parent_dirfd, hdf5_dir_rel, 0755,
+			    AT_SYMLINK_NOFOLLOW) < 0)
+		fatal("fchmodat(%s): %m", hdf5_conf.dir);
 
-	if (((mkdir(user_dir, 0700)) < 0) && (errno != EEXIST))
-		fatal("mkdir(%s): %m", user_dir);
-	if (chmod(user_dir, 0700) < 0)
-		fatal("chmod(%s): %m", user_dir);
-	if (chown(user_dir, g_job->uid, g_job->gid) < 0)
-		fatal("chown(%s): %m", user_dir);
+	xstrfmtcat(user_dir, "%s/%s", hdf5_conf.dir, g_job->user_name);
+	user_parent_dirfd = openat(parent_dirfd, hdf5_dir_rel,
+				   O_DIRECTORY | O_NOFOLLOW);
+	close(parent_dirfd);
 
+	if ((mkdirat(user_parent_dirfd, g_job->user_name, 0700)) < 0) {
+		/* Never chmod on EEXIST */
+		if (errno != EEXIST)
+			fatal("mkdirat(%s): %m", user_dir);
+	} else {
+		/* fchmodat(2) man says AT_SYMLINK_NOFOLLOW not implemented. */
+		if (fchmodat(user_parent_dirfd, g_job->user_name, 0700, 0) < 0)
+			fatal("fchmodat(%s): %m", user_dir);
+
+		if (fchownat(user_parent_dirfd, g_job->user_name, g_job->uid,
+			     g_job->gid, AT_SYMLINK_NOFOLLOW) < 0)
+			fatal("fchmodat(%s): %m", user_dir);
+	}
+
+	close(user_parent_dirfd);
 	xfree(user_dir);
+	xfree(parent_dir);
+	/* Do not xfree() hdf5_dir_rel (interior pointer to freed data). */
 }
 
 /*
