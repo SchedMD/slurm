@@ -238,6 +238,9 @@ documents those changes that are of interest to users and administrators.
  -- Add new rl_log_freq option to SlurmctldParameters to allow sites to limit
     the number of 'RPC limit exceeded...' messages that are logged.
 
+* Changes in Slurm 23.02.7
+==========================
+
 * Changes in Slurm 23.02.6
 ==========================
  -- Fix CpusPerTres= not upgreadable with scontrol update
