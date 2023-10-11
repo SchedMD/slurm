@@ -234,6 +234,9 @@ documents those changes that are of interest to users and administrators.
  -- sdiag - Added statistics on why the main and backfill schedulers have
     stopped evaluation on each scheduling cycle.
  -- openapi/v0.0.40 - add /{accounts,users}_association endpoints.
+ -- slurm.spec - Add `--with yaml` argument to require YAML support.
+ -- Add new rl_log_freq option to SlurmctldParameters to allow sites to limit
+    the number of 'RPC limit exceeded...' messages that are logged.
 
 * Changes in Slurm 23.02.6
 ==========================
@@ -289,9 +292,6 @@ documents those changes that are of interest to users and administrators.
     "Core bitmaps size mismatch on node [HOSTNAME]", which causes jobs to enter
     state "Requested node configuration is not available".
  -- slurmctd - Allow startup with zero nodes.
- -- slurm.spec - Add `--with yaml` arugment to require YAML support.
- -- Add new rl_log_freq option to SlurmctldParameters to allow sites to limit
-    the number of 'RPC limit exceeded...' messages that are logged.
 
 * Changes in Slurm 23.02.5
 ==========================
