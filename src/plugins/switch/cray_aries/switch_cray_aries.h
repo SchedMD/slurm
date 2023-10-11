@@ -45,6 +45,7 @@
 #include <stdint.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
