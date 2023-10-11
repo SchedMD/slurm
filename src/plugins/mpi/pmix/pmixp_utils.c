@@ -534,8 +534,11 @@ int pmixp_rmdir_recursively(char *path)
 	return rc;
 }
 
-int pmixp_mkdir(char *path, mode_t rights)
+int pmixp_mkdir(char *path)
 {
+	mode_t rights = (S_IRUSR | S_IWUSR | S_IXUSR) |
+			(S_IRGRP | S_IWGRP | S_IXGRP);
+
 	/* NOTE: we need user who owns the job to access PMIx usock
 	 * file. According to 'man 7 unix':
 	 * "... In the Linux implementation, sockets which are visible in the
