@@ -290,9 +290,9 @@ static int _mount_private_dirs(char *path, uid_t uid)
 			      __func__, mount_path);
 			goto private_mounts_exit;
 		}
-		rc = chown(mount_path, uid, -1);
+		rc = lchown(mount_path, uid, -1);
 		if (rc) {
-			error("%s: chown failed for %s: %m",
+			error("%s: lchown failed for %s: %m",
 			      __func__, mount_path);
 			goto private_mounts_exit;
 		}
