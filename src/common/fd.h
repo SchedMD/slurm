@@ -172,4 +172,13 @@ extern int receive_fd_over_pipe(int socket);
  */
 extern int mkdirpath(const char *pathname, mode_t mode, bool is_dir);
 
+/*
+ * Recursively remove a directory and all contents.
+ * Takes care not to follow any symlinks outside the target directory.
+ *
+ * Returns the number of files/directories it failed to remove,
+ * or 0 on success.
+ */
+extern int rmdir_recursive(const char *path, bool remove_top);
+
 #endif /* !_FD_H */

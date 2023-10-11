@@ -44,6 +44,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
+#include <grp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -101,6 +102,14 @@ const char plugin_name[] = "AcctGatherProfile hdf5 plugin";
 const char plugin_type[] = "acct_gather_profile/hdf5";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+struct priv_state {
+	uid_t	saved_uid;
+	gid_t	saved_gid;
+	gid_t * gid_list;
+	int	ngids;
+	char	saved_cwd [4096];
+};
+
 typedef struct {
 	char *dir;
 	uint32_t def;
@@ -133,6 +142,88 @@ static table_t *tables = NULL;
 static size_t   tables_max_len = 0;
 static size_t   tables_cur_len = 0;
 
+/* If get_list is false make sure ps->gid_list is initialized before
+ * hand to prevent xfree.
+ */
+static int
+_drop_privileges(stepd_step_rec_t *job, bool do_setuid,
+		 struct priv_state *ps, bool get_list)
+{
+	ps->saved_uid = getuid();
+	ps->saved_gid = getgid();
+
+	if (!getcwd (ps->saved_cwd, sizeof (ps->saved_cwd))) {
+		error ("Unable to get current working directory: %m");
+		strlcpy(ps->saved_cwd, "/tmp", sizeof(ps->saved_cwd));
+	}
+
+	ps->ngids = getgroups(0, NULL);
+	if (ps->ngids == -1) {
+		error("%s: getgroups(): %m", __func__);
+		return -1;
+	}
+	if (get_list) {
+		ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
+
+		if (getgroups(ps->ngids, ps->gid_list) == -1) {
+			error("%s: couldn't get %d groups: %m",
+			      __func__, ps->ngids);
+			xfree(ps->gid_list);
+			return -1;
+		}
+	}
+
+	/*
+	 * No need to drop privileges if we're not running as root
+	 */
+	if (getuid() != (uid_t) 0)
+		return SLURM_SUCCESS;
+
+	if (setegid(job->gid) < 0) {
+		error("setegid: %m");
+		return -1;
+	}
+
+	if (setgroups(job->ngids, job->gids) < 0) {
+		error("setgroups: %m");
+		return -1;
+	}
+
+	if (do_setuid && seteuid(job->uid) < 0) {
+		error("seteuid: %m");
+		return -1;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int
+_reclaim_privileges(struct priv_state *ps)
+{
+	int rc = SLURM_SUCCESS;
+
+	/*
+	 * No need to reclaim privileges if our uid == job->uid
+	 */
+	if (geteuid() == ps->saved_uid)
+		goto done;
+	else if (seteuid(ps->saved_uid) < 0) {
+		error("seteuid: %m");
+		rc = -1;
+	} else if (setegid(ps->saved_gid) < 0) {
+		error("setegid: %m");
+		rc = -1;
+	} else if (setgroups(ps->ngids, ps->gid_list) < 0) {
+		error("setgroups: %m");
+		rc = -1;
+	}
+
+done:
+	xfree(ps->gid_list);
+
+	return rc;
+}
+
 static void _reset_slurm_profile_conf(void)
 {
 	xfree(hdf5_conf.dir);
@@ -156,30 +247,66 @@ static uint32_t _determine_profile(void)
 
 static void _create_directories(void)
 {
-	char *user_dir = NULL;
+	char *parent_dir = NULL, *user_dir = NULL, *hdf5_dir_rel = NULL;
+	char *slash = NULL;
+	int parent_dirfd, user_parent_dirfd;
 
 	xassert(g_job);
 	xassert(hdf5_conf.dir);
 
-	xstrfmtcat(user_dir, "%s/%s", hdf5_conf.dir, g_job->user_name);
+	parent_dir = xstrdup(hdf5_conf.dir);
+	/* split into base and new directory name */
+	while ((slash = strrchr(parent_dir, '/'))) {
+		/* fix a path with one or more trailing slashes */
+		if (slash[1] == '\0')
+			slash[0] = '\0';
+		else
+			break;
+	}
+
+	if (!slash)
+		fatal("Invalid ProfileHDF5Dir=\"%s\"", hdf5_conf.dir);
+
+	slash[0] = '\0';
+	hdf5_dir_rel = slash + 1;
+
+	parent_dirfd = open(parent_dir, O_DIRECTORY | O_NOFOLLOW);
 
 	/*
-	 * To avoid race conditions (TOCTOU) with stat() calls, always
-	 * attempt to create the ProfileHDF5Dir and the user directory within.
+	 * Use *at family of syscalls to prevent TOCTOU abuse by working
+	 * on file descriptors instead of path names.
 	 */
-	if (((mkdir(hdf5_conf.dir, 0755)) < 0) && (errno != EEXIST))
-		fatal("mkdir(%s): %m", hdf5_conf.dir);
-	if (chmod(hdf5_conf.dir, 0755) < 0)
-		fatal("chmod(%s): %m", hdf5_conf.dir);
+	if ((mkdirat(parent_dirfd, hdf5_dir_rel, 0755)) < 0) {
+		/* Never chmod on EEXIST */
+		if (errno != EEXIST)
+			fatal("mkdirat(%s): %m", hdf5_conf.dir);
+	} else if (fchmodat(parent_dirfd, hdf5_dir_rel, 0755,
+			    AT_SYMLINK_NOFOLLOW) < 0)
+		fatal("fchmodat(%s): %m", hdf5_conf.dir);
 
-	if (((mkdir(user_dir, 0700)) < 0) && (errno != EEXIST))
-		fatal("mkdir(%s): %m", user_dir);
-	if (chmod(user_dir, 0700) < 0)
-		fatal("chmod(%s): %m", user_dir);
-	if (chown(user_dir, g_job->uid, g_job->gid) < 0)
-		fatal("chown(%s): %m", user_dir);
+	xstrfmtcat(user_dir, "%s/%s", hdf5_conf.dir, g_job->user_name);
+	user_parent_dirfd = openat(parent_dirfd, hdf5_dir_rel,
+				   O_DIRECTORY | O_NOFOLLOW);
+	close(parent_dirfd);
 
+	if ((mkdirat(user_parent_dirfd, g_job->user_name, 0700)) < 0) {
+		/* Never chmod on EEXIST */
+		if (errno != EEXIST)
+			fatal("mkdirat(%s): %m", user_dir);
+	} else {
+		/* fchmodat(2) man says AT_SYMLINK_NOFOLLOW not implemented. */
+		if (fchmodat(user_parent_dirfd, g_job->user_name, 0700, 0) < 0)
+			fatal("fchmodat(%s): %m", user_dir);
+
+		if (fchownat(user_parent_dirfd, g_job->user_name, g_job->uid,
+			     g_job->gid, AT_SYMLINK_NOFOLLOW) < 0)
+			fatal("fchmodat(%s): %m", user_dir);
+	}
+
+	close(user_parent_dirfd);
 	xfree(user_dir);
+	xfree(parent_dir);
+	/* Do not xfree() hdf5_dir_rel (interior pointer to freed data). */
 }
 
 /*
@@ -268,7 +395,7 @@ extern void acct_gather_profile_p_get(enum acct_gather_profile_info info_type,
 extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 {
 	int rc = SLURM_SUCCESS;
-
+	struct priv_state sprivs = { 0 };
 	char *profile_file_name;
 
 	xassert(running_in_slurmstepd());
@@ -311,16 +438,24 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 		 acct_gather_profile_to_string(g_profile_running),
 		 profile_file_name);
 
+	if (_drop_privileges(g_job, true, &sprivs, false) < 0) {
+		error("%s: Unable to drop privileges", __func__);
+		xfree(profile_file_name);
+		return SLURM_ERROR;
+	}
+
 	/*
 	 * Create a new file using the default properties
 	 */
 	file_id = H5Fcreate(profile_file_name, H5F_ACC_TRUNC, H5P_DEFAULT,
 			    H5P_DEFAULT);
-	if (chown(profile_file_name, (uid_t)g_job->uid,
-		  (gid_t)g_job->gid) < 0)
-		error("chown(%s): %m", profile_file_name);
-	if (chmod(profile_file_name, 0600) < 0)
-		error("chmod(%s): %m", profile_file_name);
+
+	if (_reclaim_privileges(&sprivs) < 0) {
+		error("%s: Unable to reclaim privileges", __func__);
+		xfree(profile_file_name);
+		return SLURM_ERROR;
+	}
+
 	xfree(profile_file_name);
 
 	if (file_id < 1) {

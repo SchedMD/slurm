@@ -487,16 +487,14 @@ static void _set_localinfo(List lresp)
 extern int pmixp_libpmix_init(void)
 {
 	int rc;
-	mode_t rights = (S_IRUSR | S_IWUSR | S_IXUSR) |
-			(S_IRGRP | S_IWGRP | S_IXGRP);
 
-	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_lib(), rights))) {
+	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_lib()))) {
 		PMIXP_ERROR_STD("Cannot create server lib tmpdir: \"%s\"",
 				pmixp_info_tmpdir_lib());
 		return errno;
 	}
 
-	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_cli(), rights))) {
+	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_cli()))) {
 		PMIXP_ERROR_STD("Cannot create client cli tmpdir: \"%s\"",
 				pmixp_info_tmpdir_cli());
 		return errno;
@@ -511,12 +509,6 @@ extern int pmixp_libpmix_init(void)
 	/* TODO: must be deleted in future once info-key approach harden */
 	setenv(PMIXP_PMIXLIB_TMPDIR, _pmixp_info_client_tmpdir_lib(), 1);
 
-	/*
-	if( pmixp_fixrights(pmixp_info_tmpdir_lib(),
-		(uid_t) pmixp_info_jobuid(), rights) ){
-	}
-	*/
-
 	return 0;
 }
 
@@ -526,14 +518,14 @@ extern int pmixp_libpmix_finalize(void)
 
 	rc = pmixp_lib_finalize();
 
-	rc1 = pmixp_rmdir_recursively(pmixp_info_tmpdir_lib());
+	rc1 = rmdir_recursive(pmixp_info_tmpdir_lib(), true);
 	if (0 != rc1) {
 		PMIXP_ERROR_STD("Failed to remove %s\n",
 				pmixp_info_tmpdir_lib());
 		/* Not considering this as fatal error */
 	}
 
-	rc1 = pmixp_rmdir_recursively(pmixp_info_tmpdir_cli());
+	rc1 = rmdir_recursive(pmixp_info_tmpdir_cli(), true);
 	if (0 != rc1) {
 		PMIXP_ERROR_STD("Failed to remove %s\n",
 				pmixp_info_tmpdir_cli());

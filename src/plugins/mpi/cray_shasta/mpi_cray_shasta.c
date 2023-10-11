@@ -51,6 +51,7 @@
 #include "src/common/slurm_xlator.h"
 
 #include "src/common/env.h"
+#include "src/common/fd.h"
 #include "src/common/parse_config.h"
 #include "src/common/read_config.h"
 #include "src/interfaces/mpi.h"
@@ -187,63 +188,6 @@ static void _set_pmi_port(char ***env)
 	env_array_overwrite_fmt(env, "PMI_CONTROL_PORT", "%lu", pmi_port);
 }
 
-/*
- * Determine whether the given path is a directory
- */
-static int _is_dir(char *path)
-{
-	struct stat stat_buf;
-
-	if (stat(path, &stat_buf)) {
-		error("%s: Cannot stat %s: %m", plugin_type, path);
-		return 1;
-	} else if (!S_ISDIR(stat_buf.st_mode)) {
-		return 0;
-	}
-	return 1;
-}
-
-/*
- * Recursively remove a directory
- */
-static int _rmdir_recursive(char *path)
-{
-	char nested_path[PATH_MAX];
-	DIR *dp;
-	struct dirent *ent;
-
-	if (!(dp = opendir(path))) {
-		error("%s: Can't open directory %s: %m", plugin_type, path);
-		return SLURM_ERROR;
-	}
-
-	while ((ent = readdir(dp))) {
-		if (!xstrcmp(ent->d_name, ".") ||
-		    !xstrcmp(ent->d_name, "..")) {
-			/* skip special dir's */
-			continue;
-		}
-		snprintf(nested_path, sizeof(nested_path), "%s/%s", path,
-			 ent->d_name);
-		if (_is_dir(nested_path)) {
-			_rmdir_recursive(nested_path);
-		} else {
-			debug("%s: Removed file %s", plugin_type, nested_path);
-			unlink(nested_path);
-		}
-	}
-	closedir(dp);
-
-	if (rmdir(path) == -1) {
-		error("%s: Can't remove directory %s: %m",
-		      plugin_type, path);
-		return SLURM_ERROR;
-	}
-
-	debug("%s: Removed directory %s", plugin_type, path);
-	return SLURM_SUCCESS;
-}
-
 extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
 {
 	/* do the node_name substitution once */
@@ -344,7 +288,7 @@ extern int fini(void)
 {
 	// Remove application spool directory
 	if (appdir)
-		_rmdir_recursive(appdir);
+		rmdir_recursive(appdir, true);
 
 	// Free allocated storage
 	xfree(appdir);
