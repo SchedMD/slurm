@@ -456,11 +456,6 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 		return SLURM_ERROR;
 	}
 
-	if (chown(profile_file_name, (uid_t)g_job->uid,
-		  (gid_t)g_job->gid) < 0)
-		error("chown(%s): %m", profile_file_name);
-	if (chmod(profile_file_name, 0600) < 0)
-		error("chmod(%s): %m", profile_file_name);
 	xfree(profile_file_name);
 
 	if (file_id < 1) {
