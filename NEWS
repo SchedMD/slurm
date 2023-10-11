@@ -3,6 +3,9 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 22.05.10
 ===========================
+ -- Fix filesystem handling race conditions that could lead to an attacker
+    taking control of an arbitrary file, or removing entire directories'
+    contents. CVE-2023-41914.
 
 * Changes in Slurm 22.05.9
 ==========================
