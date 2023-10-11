@@ -497,6 +497,8 @@ static void _set_node_mixed_op(node_info_t *node_ptr)
 {
 	uint16_t alloc_cpus = 0;
 	uint16_t idle_cpus = 0;
+	char *alloc_tres = NULL;
+	bool make_mixed = false;
 
 	xassert(node_ptr);
 
@@ -505,10 +507,20 @@ static void _set_node_mixed_op(node_info_t *node_ptr)
 				     NODE_STATE_ALLOCATED, &alloc_cpus);
 	idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
 
-	if (idle_cpus && (idle_cpus < node_ptr->cpus_efctv)) {
+	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+				     SELECT_NODEDATA_TRES_ALLOC_FMT_STR,
+				     NODE_STATE_ALLOCATED, &alloc_tres);
+
+	if (idle_cpus && (idle_cpus < node_ptr->cpus_efctv))
+		make_mixed = true;
+	if (alloc_tres && (idle_cpus == node_ptr->cpus_efctv))
+		make_mixed = true;
+	if (make_mixed) {
 		node_ptr->node_state &= NODE_STATE_FLAGS;
 		node_ptr->node_state |= NODE_STATE_MIXED;
 	}
+
+	xfree(alloc_tres);
 }
 
 static void _set_node_mixed(node_info_msg_t *resp)
