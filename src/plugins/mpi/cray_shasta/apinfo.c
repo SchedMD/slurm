@@ -468,7 +468,7 @@ static int _open_apinfo(const stepd_step_rec_t *step)
 	apinfo = xstrdup_printf("%s/apinfo", appdir);
 
 	// Create file
-	fd = creat(apinfo, 0600);
+	fd = open(apinfo, (O_CREAT | O_WRONLY | O_TRUNC | O_EXCL), 0600);
 	if (fd == -1) {
 		error("%s: Couldn't open apinfo file %s: %m",
 		      plugin_type, apinfo);
