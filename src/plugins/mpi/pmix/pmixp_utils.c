@@ -536,8 +536,7 @@ int pmixp_rmdir_recursively(char *path)
 
 int pmixp_mkdir(char *path)
 {
-	mode_t rights = (S_IRUSR | S_IWUSR | S_IXUSR) |
-			(S_IRGRP | S_IWGRP | S_IXGRP);
+	mode_t rights = (S_IRUSR | S_IWUSR | S_IXUSR);
 
 	/* NOTE: we need user who owns the job to access PMIx usock
 	 * file. According to 'man 7 unix':
@@ -548,7 +547,7 @@ int pmixp_mkdir(char *path)
 	 * access to the unix socket we do the following:
 	 * 1. Owner ID is set to the job owner.
 	 * 2. Group ID corresponds to slurmstepd.
-	 * 3. Set 0770 access mode
+	 * 3. Set 0700 access mode
 	 */
 
 	if (0 != mkdir(path, rights) ) {
