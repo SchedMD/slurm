@@ -475,16 +475,14 @@ static void _set_localinfo(List lresp)
 extern int pmixp_libpmix_init(void)
 {
 	int rc;
-	mode_t rights = (S_IRUSR | S_IWUSR | S_IXUSR) |
-			(S_IRGRP | S_IWGRP | S_IXGRP);
 
-	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_lib(), rights))) {
+	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_lib()))) {
 		PMIXP_ERROR_STD("Cannot create server lib tmpdir: \"%s\"",
 				pmixp_info_tmpdir_lib());
 		return errno;
 	}
 
-	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_cli(), rights))) {
+	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_cli()))) {
 		PMIXP_ERROR_STD("Cannot create client cli tmpdir: \"%s\"",
 				pmixp_info_tmpdir_cli());
 		return errno;
