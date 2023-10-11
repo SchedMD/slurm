@@ -783,7 +783,7 @@
       "allocated_cores" : 4
     },
     "billable_tres" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
@@ -1054,7 +1054,7 @@
       "allocated_cores" : 4
     },
     "billable_tres" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
@@ -1132,7 +1132,7 @@
         <a href="#v0.0.39_jobs_response">v0.0.39_jobs_response</a>
     <h4 class="field-label">default</h4>
     job matching JobId not found
-        <a href="#"></a>
+        <a href="#status">status</a>
   </div> <!-- method -->
   <hr>
   <div class="method"><a name="slurmV0039GetJobs">
@@ -1412,7 +1412,7 @@
       "allocated_cores" : 4
     },
     "billable_tres" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
@@ -1683,7 +1683,7 @@
       "allocated_cores" : 4
     },
     "billable_tres" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
@@ -3419,7 +3419,7 @@
         <a href="#v0.0.39_licenses_info">v0.0.39_licenses_info</a>
     <h4 class="field-label">default</h4>
     unable to request licenses
-        <a href="#"></a>
+        <a href="#status">status</a>
   </div> <!-- method -->
   <hr>
   <div class="method"><a name="slurmV0039SubmitJob">
@@ -4967,16 +4967,40 @@
     <pre class="example"><code>{
   "associations" : [ {
     "cluster" : "cluster",
-    "shares_raw" : 7,
+    "shares_raw" : 0,
     "max" : {
       "jobs" : {
-        "total" : 2,
-        "active" : 5,
-        "accruing" : 5,
+        "total" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
+        "active" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
+        "accruing" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
         "per" : {
-          "submitted" : 1,
-          "count" : 0,
-          "accruing" : 6,
+          "submitted" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "count" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "accruing" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
           "wall_clock" : {
             "number" : 9,
             "set" : false,
@@ -5082,18 +5106,18 @@
       }
     },
     "usage" : {
-      "fairshare_factor" : 2.027123023002322,
-      "normalized_shares" : 1.2315135367772556,
-      "effective_normalized_usage" : 1.0246457001441578,
-      "job_count" : 1,
-      "group_used_wallclock" : 3.616076749251911,
-      "normalized_priority" : 7.386281948385884,
-      "normalized_usage" : 1.4894159098541704,
-      "accrue_job_count" : 9,
-      "fairshare_shares" : 4,
-      "fairshare_level" : 4.965218492984954,
-      "raw_usage" : 6.84685269835264,
-      "active_jobs" : 7
+      "fairshare_factor" : 5.962133916683182,
+      "normalized_shares" : 7.061401241503109,
+      "effective_normalized_usage" : 9.301444243932576,
+      "job_count" : 7,
+      "group_used_wallclock" : 1.4658129805029452,
+      "normalized_priority" : 2.3021358869347655,
+      "normalized_usage" : 3.616076749251911,
+      "accrue_job_count" : 6,
+      "fairshare_shares" : 5,
+      "fairshare_level" : 1.2315135367772556,
+      "raw_usage" : 2.027123023002322,
+      "active_jobs" : 4
     },
     "flags" : [ "DELETED", "DELETED" ],
     "is_default" : true,
@@ -5119,16 +5143,40 @@
     "account" : "account"
   }, {
     "cluster" : "cluster",
-    "shares_raw" : 7,
+    "shares_raw" : 0,
     "max" : {
       "jobs" : {
-        "total" : 2,
-        "active" : 5,
-        "accruing" : 5,
+        "total" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
+        "active" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
+        "accruing" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
         "per" : {
-          "submitted" : 1,
-          "count" : 0,
-          "accruing" : 6,
+          "submitted" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "count" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "accruing" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
           "wall_clock" : {
             "number" : 9,
             "set" : false,
@@ -5234,18 +5282,18 @@
       }
     },
     "usage" : {
-      "fairshare_factor" : 2.027123023002322,
-      "normalized_shares" : 1.2315135367772556,
-      "effective_normalized_usage" : 1.0246457001441578,
-      "job_count" : 1,
-      "group_used_wallclock" : 3.616076749251911,
-      "normalized_priority" : 7.386281948385884,
-      "normalized_usage" : 1.4894159098541704,
-      "accrue_job_count" : 9,
-      "fairshare_shares" : 4,
-      "fairshare_level" : 4.965218492984954,
-      "raw_usage" : 6.84685269835264,
-      "active_jobs" : 7
+      "fairshare_factor" : 5.962133916683182,
+      "normalized_shares" : 7.061401241503109,
+      "effective_normalized_usage" : 9.301444243932576,
+      "job_count" : 7,
+      "group_used_wallclock" : 1.4658129805029452,
+      "normalized_priority" : 2.3021358869347655,
+      "normalized_usage" : 3.616076749251911,
+      "accrue_job_count" : 6,
+      "fairshare_shares" : 5,
+      "fairshare_level" : 1.2315135367772556,
+      "raw_usage" : 2.027123023002322,
+      "active_jobs" : 4
     },
     "flags" : [ "DELETED", "DELETED" ],
     "is_default" : true,
@@ -5364,16 +5412,40 @@
     <pre class="example"><code>{
   "associations" : [ {
     "cluster" : "cluster",
-    "shares_raw" : 7,
+    "shares_raw" : 0,
     "max" : {
       "jobs" : {
-        "total" : 2,
-        "active" : 5,
-        "accruing" : 5,
+        "total" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
+        "active" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
+        "accruing" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
         "per" : {
-          "submitted" : 1,
-          "count" : 0,
-          "accruing" : 6,
+          "submitted" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "count" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "accruing" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
           "wall_clock" : {
             "number" : 9,
             "set" : false,
@@ -5479,18 +5551,18 @@
       }
     },
     "usage" : {
-      "fairshare_factor" : 2.027123023002322,
-      "normalized_shares" : 1.2315135367772556,
-      "effective_normalized_usage" : 1.0246457001441578,
-      "job_count" : 1,
-      "group_used_wallclock" : 3.616076749251911,
-      "normalized_priority" : 7.386281948385884,
-      "normalized_usage" : 1.4894159098541704,
-      "accrue_job_count" : 9,
-      "fairshare_shares" : 4,
-      "fairshare_level" : 4.965218492984954,
-      "raw_usage" : 6.84685269835264,
-      "active_jobs" : 7
+      "fairshare_factor" : 5.962133916683182,
+      "normalized_shares" : 7.061401241503109,
+      "effective_normalized_usage" : 9.301444243932576,
+      "job_count" : 7,
+      "group_used_wallclock" : 1.4658129805029452,
+      "normalized_priority" : 2.3021358869347655,
+      "normalized_usage" : 3.616076749251911,
+      "accrue_job_count" : 6,
+      "fairshare_shares" : 5,
+      "fairshare_level" : 1.2315135367772556,
+      "raw_usage" : 2.027123023002322,
+      "active_jobs" : 4
     },
     "flags" : [ "DELETED", "DELETED" ],
     "is_default" : true,
@@ -5516,16 +5588,40 @@
     "account" : "account"
   }, {
     "cluster" : "cluster",
-    "shares_raw" : 7,
+    "shares_raw" : 0,
     "max" : {
       "jobs" : {
-        "total" : 2,
-        "active" : 5,
-        "accruing" : 5,
+        "total" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
+        "active" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
+        "accruing" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
         "per" : {
-          "submitted" : 1,
-          "count" : 0,
-          "accruing" : 6,
+          "submitted" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "count" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "accruing" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
           "wall_clock" : {
             "number" : 9,
             "set" : false,
@@ -5631,18 +5727,18 @@
       }
     },
     "usage" : {
-      "fairshare_factor" : 2.027123023002322,
-      "normalized_shares" : 1.2315135367772556,
-      "effective_normalized_usage" : 1.0246457001441578,
-      "job_count" : 1,
-      "group_used_wallclock" : 3.616076749251911,
-      "normalized_priority" : 7.386281948385884,
-      "normalized_usage" : 1.4894159098541704,
-      "accrue_job_count" : 9,
-      "fairshare_shares" : 4,
-      "fairshare_level" : 4.965218492984954,
-      "raw_usage" : 6.84685269835264,
-      "active_jobs" : 7
+      "fairshare_factor" : 5.962133916683182,
+      "normalized_shares" : 7.061401241503109,
+      "effective_normalized_usage" : 9.301444243932576,
+      "job_count" : 7,
+      "group_used_wallclock" : 1.4658129805029452,
+      "normalized_priority" : 2.3021358869347655,
+      "normalized_usage" : 3.616076749251911,
+      "accrue_job_count" : 6,
+      "fairshare_shares" : 5,
+      "fairshare_level" : 1.2315135367772556,
+      "raw_usage" : 2.027123023002322,
+      "active_jobs" : 4
     },
     "flags" : [ "DELETED", "DELETED" ],
     "is_default" : true,
@@ -5797,13 +5893,13 @@
       }
     },
     "controller" : {
-      "port" : 3,
+      "port" : 9,
       "host" : "host"
     },
     "nodes" : "nodes",
     "flags" : [ "REGISTERING", "REGISTERING" ],
     "name" : "name",
-    "rpc_version" : 3,
+    "rpc_version" : 9,
     "tres" : [ {
       "name" : "name",
       "count" : 7,
@@ -5826,13 +5922,13 @@
       }
     },
     "controller" : {
-      "port" : 3,
+      "port" : 9,
       "host" : "host"
     },
     "nodes" : "nodes",
     "flags" : [ "REGISTERING", "REGISTERING" ],
     "name" : "name",
-    "rpc_version" : 3,
+    "rpc_version" : 9,
     "tres" : [ {
       "name" : "name",
       "count" : 7,
@@ -5936,13 +6032,13 @@
       }
     },
     "controller" : {
-      "port" : 3,
+      "port" : 9,
       "host" : "host"
     },
     "nodes" : "nodes",
     "flags" : [ "REGISTERING", "REGISTERING" ],
     "name" : "name",
-    "rpc_version" : 3,
+    "rpc_version" : 9,
     "tres" : [ {
       "name" : "name",
       "count" : 7,
@@ -5965,13 +6061,13 @@
       }
     },
     "controller" : {
-      "port" : 3,
+      "port" : 9,
       "host" : "host"
     },
     "nodes" : "nodes",
     "flags" : [ "REGISTERING", "REGISTERING" ],
     "name" : "name",
-    "rpc_version" : 3,
+    "rpc_version" : 9,
     "tres" : [ {
       "name" : "name",
       "count" : 7,
@@ -6033,16 +6129,40 @@
     <pre class="example"><code>{
   "associations" : [ {
     "cluster" : "cluster",
-    "shares_raw" : 7,
+    "shares_raw" : 0,
     "max" : {
       "jobs" : {
-        "total" : 2,
-        "active" : 5,
-        "accruing" : 5,
+        "total" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
+        "active" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
+        "accruing" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
         "per" : {
-          "submitted" : 1,
-          "count" : 0,
-          "accruing" : 6,
+          "submitted" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "count" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "accruing" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
           "wall_clock" : {
             "number" : 9,
             "set" : false,
@@ -6148,18 +6268,18 @@
       }
     },
     "usage" : {
-      "fairshare_factor" : 2.027123023002322,
-      "normalized_shares" : 1.2315135367772556,
-      "effective_normalized_usage" : 1.0246457001441578,
-      "job_count" : 1,
-      "group_used_wallclock" : 3.616076749251911,
-      "normalized_priority" : 7.386281948385884,
-      "normalized_usage" : 1.4894159098541704,
-      "accrue_job_count" : 9,
-      "fairshare_shares" : 4,
-      "fairshare_level" : 4.965218492984954,
-      "raw_usage" : 6.84685269835264,
-      "active_jobs" : 7
+      "fairshare_factor" : 5.962133916683182,
+      "normalized_shares" : 7.061401241503109,
+      "effective_normalized_usage" : 9.301444243932576,
+      "job_count" : 7,
+      "group_used_wallclock" : 1.4658129805029452,
+      "normalized_priority" : 2.3021358869347655,
+      "normalized_usage" : 3.616076749251911,
+      "accrue_job_count" : 6,
+      "fairshare_shares" : 5,
+      "fairshare_level" : 1.2315135367772556,
+      "raw_usage" : 2.027123023002322,
+      "active_jobs" : 4
     },
     "flags" : [ "DELETED", "DELETED" ],
     "is_default" : true,
@@ -6185,16 +6305,40 @@
     "account" : "account"
   }, {
     "cluster" : "cluster",
-    "shares_raw" : 7,
+    "shares_raw" : 0,
     "max" : {
       "jobs" : {
-        "total" : 2,
-        "active" : 5,
-        "accruing" : 5,
+        "total" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
+        "active" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
+        "accruing" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
         "per" : {
-          "submitted" : 1,
-          "count" : 0,
-          "accruing" : 6,
+          "submitted" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "count" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "accruing" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
           "wall_clock" : {
             "number" : 9,
             "set" : false,
@@ -6300,18 +6444,18 @@
       }
     },
     "usage" : {
-      "fairshare_factor" : 2.027123023002322,
-      "normalized_shares" : 1.2315135367772556,
-      "effective_normalized_usage" : 1.0246457001441578,
-      "job_count" : 1,
-      "group_used_wallclock" : 3.616076749251911,
-      "normalized_priority" : 7.386281948385884,
-      "normalized_usage" : 1.4894159098541704,
-      "accrue_job_count" : 9,
-      "fairshare_shares" : 4,
-      "fairshare_level" : 4.965218492984954,
-      "raw_usage" : 6.84685269835264,
-      "active_jobs" : 7
+      "fairshare_factor" : 5.962133916683182,
+      "normalized_shares" : 7.061401241503109,
+      "effective_normalized_usage" : 9.301444243932576,
+      "job_count" : 7,
+      "group_used_wallclock" : 1.4658129805029452,
+      "normalized_priority" : 2.3021358869347655,
+      "normalized_usage" : 3.616076749251911,
+      "accrue_job_count" : 6,
+      "fairshare_shares" : 5,
+      "fairshare_level" : 1.2315135367772556,
+      "raw_usage" : 2.027123023002322,
+      "active_jobs" : 4
     },
     "flags" : [ "DELETED", "DELETED" ],
     "is_default" : true,
@@ -6340,17 +6484,17 @@
     "flags" : [ "NOT_SET", "NOT_SET" ],
     "name" : "name",
     "usage_threshold" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
     "description" : "description",
     "usage_factor" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
-    "id" : 8,
+    "id" : 1,
     "priority" : {
       "number" : 9,
       "set" : false,
@@ -6358,7 +6502,11 @@
     },
     "limits" : {
       "min" : {
-        "priority_threshold" : 5,
+        "priority_threshold" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
         "tres" : {
           "per" : {
             "job" : [ {
@@ -6378,20 +6526,44 @@
       "max" : {
         "jobs" : {
           "per" : {
-            "user" : 6,
-            "account" : 2
+            "user" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "account" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           },
           "active_jobs" : {
             "per" : {
-              "user" : 6,
-              "account" : 2
+              "user" : {
+                "number" : 9,
+                "set" : false,
+                "infinite" : true
+              },
+              "account" : {
+                "number" : 9,
+                "set" : false,
+                "infinite" : true
+              }
             }
           }
         },
         "accruing" : {
           "per" : {
-            "user" : 6,
-            "account" : 2
+            "user" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "account" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           }
         },
         "tres" : {
@@ -6503,17 +6675,37 @@
         },
         "wall_clock" : {
           "per" : {
-            "qos" : 6,
-            "job" : 1
+            "qos" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "job" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           }
         },
         "active_jobs" : {
-          "count" : 3,
-          "accruing" : 6
+          "count" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "accruing" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          }
         }
       },
-      "factor" : 6.878052220127876,
-      "grace_time" : 9
+      "factor" : 4.965218492984954,
+      "grace_time" : {
+        "number" : 9,
+        "set" : false,
+        "infinite" : true
+      }
     },
     "preempt" : {
       "mode" : [ "DISABLED", "DISABLED" ],
@@ -6528,17 +6720,17 @@
     "flags" : [ "NOT_SET", "NOT_SET" ],
     "name" : "name",
     "usage_threshold" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
     "description" : "description",
     "usage_factor" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
-    "id" : 8,
+    "id" : 1,
     "priority" : {
       "number" : 9,
       "set" : false,
@@ -6546,7 +6738,11 @@
     },
     "limits" : {
       "min" : {
-        "priority_threshold" : 5,
+        "priority_threshold" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
         "tres" : {
           "per" : {
             "job" : [ {
@@ -6566,20 +6762,44 @@
       "max" : {
         "jobs" : {
           "per" : {
-            "user" : 6,
-            "account" : 2
+            "user" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "account" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           },
           "active_jobs" : {
             "per" : {
-              "user" : 6,
-              "account" : 2
+              "user" : {
+                "number" : 9,
+                "set" : false,
+                "infinite" : true
+              },
+              "account" : {
+                "number" : 9,
+                "set" : false,
+                "infinite" : true
+              }
             }
           }
         },
         "accruing" : {
           "per" : {
-            "user" : 6,
-            "account" : 2
+            "user" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "account" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           }
         },
         "tres" : {
@@ -6691,17 +6911,37 @@
         },
         "wall_clock" : {
           "per" : {
-            "qos" : 6,
-            "job" : 1
+            "qos" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "job" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           }
         },
         "active_jobs" : {
-          "count" : 3,
-          "accruing" : 6
+          "count" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "accruing" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          }
         }
       },
-      "factor" : 6.878052220127876,
-      "grace_time" : 9
+      "factor" : 4.965218492984954,
+      "grace_time" : {
+        "number" : 9,
+        "set" : false,
+        "infinite" : true
+      }
     },
     "preempt" : {
       "mode" : [ "DISABLED", "DISABLED" ],
@@ -6718,8 +6958,8 @@
     "name" : "name",
     "flags" : [ "DELETED", "DELETED" ],
     "accounting" : [ {
-      "start" : 9,
-      "id" : 9,
+      "start" : 6,
+      "id" : 1,
       "TRES" : {
         "name" : "name",
         "count" : 7,
@@ -6727,11 +6967,11 @@
         "type" : "type"
       },
       "allocated" : {
-        "seconds" : 5
+        "seconds" : 1
       }
     }, {
-      "start" : 9,
-      "id" : 9,
+      "start" : 6,
+      "id" : 1,
       "TRES" : {
         "name" : "name",
         "count" : 7,
@@ -6739,18 +6979,18 @@
         "type" : "type"
       },
       "allocated" : {
-        "seconds" : 5
+        "seconds" : 1
       }
     } ],
-    "id" : 6,
+    "id" : 7,
     "user" : "user"
   }, {
     "cluster" : "cluster",
     "name" : "name",
     "flags" : [ "DELETED", "DELETED" ],
     "accounting" : [ {
-      "start" : 9,
-      "id" : 9,
+      "start" : 6,
+      "id" : 1,
       "TRES" : {
         "name" : "name",
         "count" : 7,
@@ -6758,11 +6998,11 @@
         "type" : "type"
       },
       "allocated" : {
-        "seconds" : 5
+        "seconds" : 1
       }
     }, {
-      "start" : 9,
-      "id" : 9,
+      "start" : 6,
+      "id" : 1,
       "TRES" : {
         "name" : "name",
         "count" : 7,
@@ -6770,10 +7010,10 @@
         "type" : "type"
       },
       "allocated" : {
-        "seconds" : 5
+        "seconds" : 1
       }
     } ],
-    "id" : 6,
+    "id" : 7,
     "user" : "user"
   } ],
   "meta" : {
@@ -6891,8 +7131,8 @@
       "name" : "name",
       "flags" : [ "DELETED", "DELETED" ],
       "accounting" : [ {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -6900,11 +7140,11 @@
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       }, {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -6912,18 +7152,18 @@
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       } ],
-      "id" : 6,
+      "id" : 7,
       "user" : "user"
     }, {
       "cluster" : "cluster",
       "name" : "name",
       "flags" : [ "DELETED", "DELETED" ],
       "accounting" : [ {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -6931,11 +7171,11 @@
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       }, {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -6943,10 +7183,10 @@
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       } ],
-      "id" : 6,
+      "id" : 7,
       "user" : "user"
     } ],
     "coordinators" : [ {
@@ -6981,8 +7221,8 @@
       "name" : "name",
       "flags" : [ "DELETED", "DELETED" ],
       "accounting" : [ {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -6990,11 +7230,11 @@
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       }, {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -7002,18 +7242,18 @@
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       } ],
-      "id" : 6,
+      "id" : 7,
       "user" : "user"
     }, {
       "cluster" : "cluster",
       "name" : "name",
       "flags" : [ "DELETED", "DELETED" ],
       "accounting" : [ {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -7021,11 +7261,11 @@
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       }, {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -7033,10 +7273,10 @@
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       } ],
-      "id" : 6,
+      "id" : 7,
       "user" : "user"
     } ],
     "coordinators" : [ {
@@ -7059,13 +7299,13 @@
       }
     },
     "controller" : {
-      "port" : 3,
+      "port" : 9,
       "host" : "host"
     },
     "nodes" : "nodes",
     "flags" : [ "REGISTERING", "REGISTERING" ],
     "name" : "name",
-    "rpc_version" : 3,
+    "rpc_version" : 9,
     "tres" : [ {
       "name" : "name",
       "count" : 7,
@@ -7088,13 +7328,13 @@
       }
     },
     "controller" : {
-      "port" : 3,
+      "port" : 9,
       "host" : "host"
     },
     "nodes" : "nodes",
     "flags" : [ "REGISTERING", "REGISTERING" ],
     "name" : "name",
-    "rpc_version" : 3,
+    "rpc_version" : 9,
     "tres" : [ {
       "name" : "name",
       "count" : 7,
@@ -9487,17 +9727,17 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "flags" : [ "NOT_SET", "NOT_SET" ],
     "name" : "name",
     "usage_threshold" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
     "description" : "description",
     "usage_factor" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
-    "id" : 8,
+    "id" : 1,
     "priority" : {
       "number" : 9,
       "set" : false,
@@ -9505,7 +9745,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     },
     "limits" : {
       "min" : {
-        "priority_threshold" : 5,
+        "priority_threshold" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
         "tres" : {
           "per" : {
             "job" : [ {
@@ -9525,20 +9769,44 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
       "max" : {
         "jobs" : {
           "per" : {
-            "user" : 6,
-            "account" : 2
+            "user" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "account" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           },
           "active_jobs" : {
             "per" : {
-              "user" : 6,
-              "account" : 2
+              "user" : {
+                "number" : 9,
+                "set" : false,
+                "infinite" : true
+              },
+              "account" : {
+                "number" : 9,
+                "set" : false,
+                "infinite" : true
+              }
             }
           }
         },
         "accruing" : {
           "per" : {
-            "user" : 6,
-            "account" : 2
+            "user" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "account" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           }
         },
         "tres" : {
@@ -9650,17 +9918,37 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
         },
         "wall_clock" : {
           "per" : {
-            "qos" : 6,
-            "job" : 1
+            "qos" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "job" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           }
         },
         "active_jobs" : {
-          "count" : 3,
-          "accruing" : 6
+          "count" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "accruing" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          }
         }
       },
-      "factor" : 6.878052220127876,
-      "grace_time" : 9
+      "factor" : 4.965218492984954,
+      "grace_time" : {
+        "number" : 9,
+        "set" : false,
+        "infinite" : true
+      }
     },
     "preempt" : {
       "mode" : [ "DISABLED", "DISABLED" ],
@@ -9675,17 +9963,17 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "flags" : [ "NOT_SET", "NOT_SET" ],
     "name" : "name",
     "usage_threshold" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
     "description" : "description",
     "usage_factor" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
-    "id" : 8,
+    "id" : 1,
     "priority" : {
       "number" : 9,
       "set" : false,
@@ -9693,7 +9981,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     },
     "limits" : {
       "min" : {
-        "priority_threshold" : 5,
+        "priority_threshold" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
         "tres" : {
           "per" : {
             "job" : [ {
@@ -9713,20 +10005,44 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
       "max" : {
         "jobs" : {
           "per" : {
-            "user" : 6,
-            "account" : 2
+            "user" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "account" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           },
           "active_jobs" : {
             "per" : {
-              "user" : 6,
-              "account" : 2
+              "user" : {
+                "number" : 9,
+                "set" : false,
+                "infinite" : true
+              },
+              "account" : {
+                "number" : 9,
+                "set" : false,
+                "infinite" : true
+              }
             }
           }
         },
         "accruing" : {
           "per" : {
-            "user" : 6,
-            "account" : 2
+            "user" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "account" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           }
         },
         "tres" : {
@@ -9838,17 +10154,37 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
         },
         "wall_clock" : {
           "per" : {
-            "qos" : 6,
-            "job" : 1
+            "qos" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "job" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           }
         },
         "active_jobs" : {
-          "count" : 3,
-          "accruing" : 6
+          "count" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "accruing" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          }
         }
       },
-      "factor" : 6.878052220127876,
-      "grace_time" : 9
+      "factor" : 4.965218492984954,
+      "grace_time" : {
+        "number" : 9,
+        "set" : false,
+        "infinite" : true
+      }
     },
     "preempt" : {
       "mode" : [ "DISABLED", "DISABLED" ],
@@ -9909,7 +10245,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
 
     <h3 class="field-label">Responses</h3>
     <h4 class="field-label">200</h4>
-    List of QOSs
+    List of QOS'
         <a href="#dbv0.0.39_qos_info">dbv0.0.39_qos_info</a>
     <h4 class="field-label">default</h4>
     QOS not found
@@ -9956,17 +10292,17 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "flags" : [ "NOT_SET", "NOT_SET" ],
     "name" : "name",
     "usage_threshold" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
     "description" : "description",
     "usage_factor" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
-    "id" : 8,
+    "id" : 1,
     "priority" : {
       "number" : 9,
       "set" : false,
@@ -9974,7 +10310,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     },
     "limits" : {
       "min" : {
-        "priority_threshold" : 5,
+        "priority_threshold" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
         "tres" : {
           "per" : {
             "job" : [ {
@@ -9994,20 +10334,44 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
       "max" : {
         "jobs" : {
           "per" : {
-            "user" : 6,
-            "account" : 2
+            "user" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "account" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           },
           "active_jobs" : {
             "per" : {
-              "user" : 6,
-              "account" : 2
+              "user" : {
+                "number" : 9,
+                "set" : false,
+                "infinite" : true
+              },
+              "account" : {
+                "number" : 9,
+                "set" : false,
+                "infinite" : true
+              }
             }
           }
         },
         "accruing" : {
           "per" : {
-            "user" : 6,
-            "account" : 2
+            "user" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "account" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           }
         },
         "tres" : {
@@ -10119,17 +10483,37 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
         },
         "wall_clock" : {
           "per" : {
-            "qos" : 6,
-            "job" : 1
+            "qos" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "job" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           }
         },
         "active_jobs" : {
-          "count" : 3,
-          "accruing" : 6
+          "count" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "accruing" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          }
         }
       },
-      "factor" : 6.878052220127876,
-      "grace_time" : 9
+      "factor" : 4.965218492984954,
+      "grace_time" : {
+        "number" : 9,
+        "set" : false,
+        "infinite" : true
+      }
     },
     "preempt" : {
       "mode" : [ "DISABLED", "DISABLED" ],
@@ -10144,17 +10528,17 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "flags" : [ "NOT_SET", "NOT_SET" ],
     "name" : "name",
     "usage_threshold" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
     "description" : "description",
     "usage_factor" : {
-      "number" : 6.704019297950036,
+      "number" : 5.025004791520295,
       "set" : false,
       "infinite" : true
     },
-    "id" : 8,
+    "id" : 1,
     "priority" : {
       "number" : 9,
       "set" : false,
@@ -10162,7 +10546,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     },
     "limits" : {
       "min" : {
-        "priority_threshold" : 5,
+        "priority_threshold" : {
+          "number" : 9,
+          "set" : false,
+          "infinite" : true
+        },
         "tres" : {
           "per" : {
             "job" : [ {
@@ -10182,20 +10570,44 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
       "max" : {
         "jobs" : {
           "per" : {
-            "user" : 6,
-            "account" : 2
+            "user" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "account" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           },
           "active_jobs" : {
             "per" : {
-              "user" : 6,
-              "account" : 2
+              "user" : {
+                "number" : 9,
+                "set" : false,
+                "infinite" : true
+              },
+              "account" : {
+                "number" : 9,
+                "set" : false,
+                "infinite" : true
+              }
             }
           }
         },
         "accruing" : {
           "per" : {
-            "user" : 6,
-            "account" : 2
+            "user" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "account" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           }
         },
         "tres" : {
@@ -10307,17 +10719,37 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
         },
         "wall_clock" : {
           "per" : {
-            "qos" : 6,
-            "job" : 1
+            "qos" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            },
+            "job" : {
+              "number" : 9,
+              "set" : false,
+              "infinite" : true
+            }
           }
         },
         "active_jobs" : {
-          "count" : 3,
-          "accruing" : 6
+          "count" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          },
+          "accruing" : {
+            "number" : 9,
+            "set" : false,
+            "infinite" : true
+          }
         }
       },
-      "factor" : 6.878052220127876,
-      "grace_time" : 9
+      "factor" : 4.965218492984954,
+      "grace_time" : {
+        "number" : 9,
+        "set" : false,
+        "infinite" : true
+      }
     },
     "preempt" : {
       "mode" : [ "DISABLED", "DISABLED" ],
@@ -10569,8 +11001,8 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
       "name" : "name",
       "flags" : [ "DELETED", "DELETED" ],
       "accounting" : [ {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10578,11 +11010,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       }, {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10590,18 +11022,18 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       } ],
-      "id" : 6,
+      "id" : 7,
       "user" : "user"
     }, {
       "cluster" : "cluster",
       "name" : "name",
       "flags" : [ "DELETED", "DELETED" ],
       "accounting" : [ {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10609,11 +11041,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       }, {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10621,10 +11053,10 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       } ],
-      "id" : 6,
+      "id" : 7,
       "user" : "user"
     } ],
     "coordinators" : [ {
@@ -10659,8 +11091,8 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
       "name" : "name",
       "flags" : [ "DELETED", "DELETED" ],
       "accounting" : [ {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10668,11 +11100,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       }, {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10680,18 +11112,18 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       } ],
-      "id" : 6,
+      "id" : 7,
       "user" : "user"
     }, {
       "cluster" : "cluster",
       "name" : "name",
       "flags" : [ "DELETED", "DELETED" ],
       "accounting" : [ {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10699,11 +11131,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       }, {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10711,10 +11143,10 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       } ],
-      "id" : 6,
+      "id" : 7,
       "user" : "user"
     } ],
     "coordinators" : [ {
@@ -10836,8 +11268,8 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
       "name" : "name",
       "flags" : [ "DELETED", "DELETED" ],
       "accounting" : [ {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10845,11 +11277,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       }, {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10857,18 +11289,18 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       } ],
-      "id" : 6,
+      "id" : 7,
       "user" : "user"
     }, {
       "cluster" : "cluster",
       "name" : "name",
       "flags" : [ "DELETED", "DELETED" ],
       "accounting" : [ {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10876,11 +11308,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       }, {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10888,10 +11320,10 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       } ],
-      "id" : 6,
+      "id" : 7,
       "user" : "user"
     } ],
     "coordinators" : [ {
@@ -10926,8 +11358,8 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
       "name" : "name",
       "flags" : [ "DELETED", "DELETED" ],
       "accounting" : [ {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10935,11 +11367,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       }, {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10947,18 +11379,18 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       } ],
-      "id" : 6,
+      "id" : 7,
       "user" : "user"
     }, {
       "cluster" : "cluster",
       "name" : "name",
       "flags" : [ "DELETED", "DELETED" ],
       "accounting" : [ {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10966,11 +11398,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       }, {
-        "start" : 9,
-        "id" : 9,
+        "start" : 6,
+        "id" : 1,
         "TRES" : {
           "name" : "name",
           "count" : 7,
@@ -10978,10 +11410,10 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
           "type" : "type"
         },
         "allocated" : {
-          "seconds" : 5
+          "seconds" : 1
         }
       } ],
-      "id" : 6,
+      "id" : 7,
       "user" : "user"
     } ],
     "coordinators" : [ {
@@ -11051,8 +11483,8 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "name" : "name",
     "flags" : [ "DELETED", "DELETED" ],
     "accounting" : [ {
-      "start" : 9,
-      "id" : 9,
+      "start" : 6,
+      "id" : 1,
       "TRES" : {
         "name" : "name",
         "count" : 7,
@@ -11060,11 +11492,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
         "type" : "type"
       },
       "allocated" : {
-        "seconds" : 5
+        "seconds" : 1
       }
     }, {
-      "start" : 9,
-      "id" : 9,
+      "start" : 6,
+      "id" : 1,
       "TRES" : {
         "name" : "name",
         "count" : 7,
@@ -11072,18 +11504,18 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
         "type" : "type"
       },
       "allocated" : {
-        "seconds" : 5
+        "seconds" : 1
       }
     } ],
-    "id" : 6,
+    "id" : 7,
     "user" : "user"
   }, {
     "cluster" : "cluster",
     "name" : "name",
     "flags" : [ "DELETED", "DELETED" ],
     "accounting" : [ {
-      "start" : 9,
-      "id" : 9,
+      "start" : 6,
+      "id" : 1,
       "TRES" : {
         "name" : "name",
         "count" : 7,
@@ -11091,11 +11523,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
         "type" : "type"
       },
       "allocated" : {
-        "seconds" : 5
+        "seconds" : 1
       }
     }, {
-      "start" : 9,
-      "id" : 9,
+      "start" : 6,
+      "id" : 1,
       "TRES" : {
         "name" : "name",
         "count" : 7,
@@ -11103,10 +11535,10 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
         "type" : "type"
       },
       "allocated" : {
-        "seconds" : 5
+        "seconds" : 1
       }
     } ],
-    "id" : 6,
+    "id" : 7,
     "user" : "user"
   } ],
   "meta" : {
@@ -11185,8 +11617,8 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     "name" : "name",
     "flags" : [ "DELETED", "DELETED" ],
     "accounting" : [ {
-      "start" : 9,
-      "id" : 9,
+      "start" : 6,
+      "id" : 1,
       "TRES" : {
         "name" : "name",
         "count" : 7,
@@ -11194,11 +11626,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
         "type" : "type"
       },
       "allocated" : {
-        "seconds" : 5
+        "seconds" : 1
       }
     }, {
-      "start" : 9,
-      "id" : 9,
+      "start" : 6,
+      "id" : 1,
       "TRES" : {
         "name" : "name",
         "count" : 7,
@@ -11206,18 +11638,18 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
         "type" : "type"
       },
       "allocated" : {
-        "seconds" : 5
+        "seconds" : 1
       }
     } ],
-    "id" : 6,
+    "id" : 7,
     "user" : "user"
   }, {
     "cluster" : "cluster",
     "name" : "name",
     "flags" : [ "DELETED", "DELETED" ],
     "accounting" : [ {
-      "start" : 9,
-      "id" : 9,
+      "start" : 6,
+      "id" : 1,
       "TRES" : {
         "name" : "name",
         "count" : 7,
@@ -11225,11 +11657,11 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
         "type" : "type"
       },
       "allocated" : {
-        "seconds" : 5
+        "seconds" : 1
       }
     }, {
-      "start" : 9,
-      "id" : 9,
+      "start" : 6,
+      "id" : 1,
       "TRES" : {
         "name" : "name",
         "count" : 7,
@@ -11237,10 +11669,10 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
         "type" : "type"
       },
       "allocated" : {
-        "seconds" : 5
+        "seconds" : 1
       }
     } ],
-    "id" : 6,
+    "id" : 7,
     "user" : "user"
   } ],
   "meta" : {
@@ -13261,18 +13693,18 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     <div class="model-description"></div>
     <div class="field-items">
       <div class="param">per (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_39_assoc_max_jobs_per">v0_0_39_assoc_max_jobs_per</a></span>  </div>
-<div class="param">active (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
-<div class="param">accruing (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
-<div class="param">total (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+<div class="param">active (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
+<div class="param">accruing (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
+<div class="param">total (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
     <h3><a name="v0_0_39_assoc_max_jobs_per"><code>v0_0_39_assoc_max_jobs_per</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">count (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
-<div class="param">accruing (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
-<div class="param">submitted (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+      <div class="param">count (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
+<div class="param">accruing (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
+<div class="param">submitted (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
 <div class="param">wall_clock (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
     </div>  <!-- field-items -->
   </div>
@@ -13599,7 +14031,7 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     <h3><a name="v0_0_39_qos_limits"><code>v0_0_39_qos_limits</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">grace_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+      <div class="param">grace_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
 <div class="param">max (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_39_qos_limits_max">v0_0_39_qos_limits_max</a></span>  </div>
 <div class="param">factor (optional)</div><div class="param-desc"><span class="param-type"><a href="#double">Double</a></span>  format: double</div>
 <div class="param">min (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_39_qos_limits_min">v0_0_39_qos_limits_min</a></span>  </div>
@@ -13620,8 +14052,8 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     <h3><a name="v0_0_39_qos_limits_max_active_jobs"><code>v0_0_39_qos_limits_max_active_jobs</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">accruing (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
-<div class="param">count (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+      <div class="param">accruing (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
+<div class="param">count (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -13643,8 +14075,8 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     <h3><a name="v0_0_39_qos_limits_max_jobs_active_jobs_per"><code>v0_0_39_qos_limits_max_jobs_active_jobs_per</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">account (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
-<div class="param">user (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+      <div class="param">account (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
+<div class="param">user (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -13694,15 +14126,15 @@ YYYY-MM-DD[THH:MM[:SS]] default: null </div><div class="param">account (optional
     <h3><a name="v0_0_39_qos_limits_max_wall_clock_per"><code>v0_0_39_qos_limits_max_wall_clock_per</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">qos (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
-<div class="param">job (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+      <div class="param">qos (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
+<div class="param">job (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
     </div>  <!-- field-items -->
   </div>
   <div class="model">
     <h3><a name="v0_0_39_qos_limits_min"><code>v0_0_39_qos_limits_min</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">priority_threshold (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span>  format: int32</div>
+      <div class="param">priority_threshold (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.39_uint32_no_val">v0.0.39_uint32_no_val</a></span>  </div>
 <div class="param">tres (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_39_qos_limits_min_tres">v0_0_39_qos_limits_min_tres</a></span>  </div>
     </div>  <!-- field-items -->
   </div>
