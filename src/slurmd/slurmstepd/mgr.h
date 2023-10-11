@@ -85,4 +85,16 @@ int job_manager(stepd_step_rec_t *job);
 extern void init_initgroups(int);
 
 
+struct priv_state {
+	uid_t saved_uid;
+	gid_t saved_gid;
+	gid_t *gid_list;
+	int ngids;
+	char saved_cwd[4096];
+};
+
+extern int drop_privileges(stepd_step_rec_t *step, bool do_setuid,
+			   struct priv_state *state, bool get_list);
+extern int reclaim_privileges(struct priv_state *state);
+
 #endif
