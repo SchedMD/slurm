@@ -107,13 +107,13 @@
 #include "src/interfaces/task.h"
 
 #include "src/slurmd/common/fname.h"
+#include "src/slurmd/common/privileges.h"
 #include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/slurmd_cgroup.h"
 #include "src/slurmd/common/xcpuinfo.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
-#include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/pam_ses.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
 #include "src/slurmd/slurmstepd/req.h"
@@ -2630,89 +2630,6 @@ _send_complete_batch_script_msg(stepd_step_rec_t *step, int err, int status)
 
 	return SLURM_SUCCESS;
 }
-
-/* If get_list is false make sure ps->gid_list is initialized before
- * hand to prevent xfree.
- */
-extern int drop_privileges(stepd_step_rec_t *step, bool do_setuid,
-			   struct priv_state *ps, bool get_list)
-{
-	auth_setuid_lock();
-	ps->saved_uid = getuid();
-	ps->saved_gid = getgid();
-
-	if (!getcwd (ps->saved_cwd, sizeof (ps->saved_cwd))) {
-		error ("Unable to get current working directory: %m");
-		strlcpy(ps->saved_cwd, "/tmp", sizeof(ps->saved_cwd));
-	}
-
-	ps->ngids = getgroups(0, NULL);
-	if (ps->ngids == -1) {
-		error("%s: getgroups(): %m", __func__);
-		return -1;
-	}
-	if (get_list) {
-		ps->gid_list = xcalloc(ps->ngids, sizeof(gid_t));
-
-		if (getgroups(ps->ngids, ps->gid_list) == -1) {
-			error("%s: couldn't get %d groups: %m",
-			      __func__, ps->ngids);
-			xfree(ps->gid_list);
-			return -1;
-		}
-	}
-
-	/*
-	 * No need to drop privileges if we're not running as root
-	 */
-	if (getuid() != (uid_t) 0)
-		return SLURM_SUCCESS;
-
-	if (setegid(step->gid) < 0) {
-		error("setegid: %m");
-		return -1;
-	}
-
-	if (setgroups(step->ngids, step->gids) < 0) {
-		error("setgroups: %m");
-		return -1;
-	}
-
-	if (do_setuid && seteuid(step->uid) < 0) {
-		error("seteuid: %m");
-		return -1;
-	}
-
-	return SLURM_SUCCESS;
-}
-
-extern int reclaim_privileges(struct priv_state *ps)
-{
-	int rc = SLURM_SUCCESS;
-
-	/*
-	 * No need to reclaim privileges if our uid == step->uid
-	 */
-	if (geteuid() == ps->saved_uid)
-		goto done;
-	else if (seteuid(ps->saved_uid) < 0) {
-		error("seteuid: %m");
-		rc = -1;
-	} else if (setegid(ps->saved_gid) < 0) {
-		error("setegid: %m");
-		rc = -1;
-	} else if (setgroups(ps->ngids, ps->gid_list) < 0) {
-		error("setgroups: %m");
-		rc = -1;
-	}
-
-done:
-	auth_setuid_unlock();
-	xfree(ps->gid_list);
-
-	return rc;
-}
-
 
 static int
 _slurmd_job_log_init(stepd_step_rec_t *step)

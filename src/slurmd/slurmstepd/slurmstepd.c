@@ -76,6 +76,7 @@
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
 
+#include "src/slurmd/common/privileges.h"
 #include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/slurmd/slurmd.h"
