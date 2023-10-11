@@ -68,7 +68,7 @@ int create_apid_dir(uint64_t apid, uid_t uid, gid_t gid)
 		return SLURM_ERROR;
 	}
 
-	rc = chown(apid_dir, uid, gid);
+	rc = lchown(apid_dir, uid, gid);
 	if (rc) {
 		CRAY_ERR("chown %s, %d, %d failed: %m",
 			 apid_dir, (int)uid, (int)gid);

@@ -65,7 +65,7 @@ int write_iaa_file(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job,
 		}
 
 		// chown the file to the job user
-		rc = chown(fname, job->uid, job->gid);
+		rc = lchown(fname, job->uid, job->gid);
 		if (rc == -1) {
 			CRAY_ERR("chown(%s, %d, %d) failed: %m",
 				 fname, (int)job->uid, (int)job->gid);
