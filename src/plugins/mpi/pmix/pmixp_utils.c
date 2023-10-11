@@ -556,14 +556,6 @@ int pmixp_mkdir(char *path)
 		return errno;
 	}
 
-	/* There might be umask that will drop essential rights.
-	 * Fix it explicitly.
-	 * TODO: is there more elegant solution? */
-	if (chmod(path, rights) < 0) {
-		error("%s: chown(%s): %m", __func__, path);
-		return errno;
-	}
-
 	if (chown(path, (uid_t) pmixp_info_jobuid(), (gid_t) -1) < 0) {
 		error("%s: chown(%s): %m", __func__, path);
 		return errno;
