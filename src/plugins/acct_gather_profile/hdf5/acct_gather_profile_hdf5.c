@@ -64,6 +64,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/proctrack.h"
+#include "src/slurmd/common/privileges.h"
 #include "hdf5_api.h"
 
 #define HDF5_CHUNK_SIZE 10
@@ -102,14 +103,6 @@ const char plugin_name[] = "AcctGatherProfile hdf5 plugin";
 const char plugin_type[] = "acct_gather_profile/hdf5";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-struct priv_state {
-	uid_t	saved_uid;
-	gid_t	saved_gid;
-	gid_t * gid_list;
-	int	ngids;
-	char	saved_cwd [4096];
-};
-
 typedef struct {
 	char *dir;
 	uint32_t def;
@@ -141,88 +134,6 @@ static size_t groups_len = 0;
 static table_t *tables = NULL;
 static size_t   tables_max_len = 0;
 static size_t   tables_cur_len = 0;
-
-/* If get_list is false make sure ps->gid_list is initialized before
- * hand to prevent xfree.
- */
-static int
-_drop_privileges(stepd_step_rec_t *job, bool do_setuid,
-		 struct priv_state *ps, bool get_list)
-{
-	ps->saved_uid = getuid();
-	ps->saved_gid = getgid();
-
-	if (!getcwd (ps->saved_cwd, sizeof (ps->saved_cwd))) {
-		error ("Unable to get current working directory: %m");
-		strlcpy(ps->saved_cwd, "/tmp", sizeof(ps->saved_cwd));
-	}
-
-	ps->ngids = getgroups(0, NULL);
-	if (ps->ngids == -1) {
-		error("%s: getgroups(): %m", __func__);
-		return -1;
-	}
-	if (get_list) {
-		ps->gid_list = (gid_t *) xmalloc(ps->ngids * sizeof(gid_t));
-
-		if (getgroups(ps->ngids, ps->gid_list) == -1) {
-			error("%s: couldn't get %d groups: %m",
-			      __func__, ps->ngids);
-			xfree(ps->gid_list);
-			return -1;
-		}
-	}
-
-	/*
-	 * No need to drop privileges if we're not running as root
-	 */
-	if (getuid() != (uid_t) 0)
-		return SLURM_SUCCESS;
-
-	if (setegid(job->gid) < 0) {
-		error("setegid: %m");
-		return -1;
-	}
-
-	if (setgroups(job->ngids, job->gids) < 0) {
-		error("setgroups: %m");
-		return -1;
-	}
-
-	if (do_setuid && seteuid(job->uid) < 0) {
-		error("seteuid: %m");
-		return -1;
-	}
-
-	return SLURM_SUCCESS;
-}
-
-static int
-_reclaim_privileges(struct priv_state *ps)
-{
-	int rc = SLURM_SUCCESS;
-
-	/*
-	 * No need to reclaim privileges if our uid == job->uid
-	 */
-	if (geteuid() == ps->saved_uid)
-		goto done;
-	else if (seteuid(ps->saved_uid) < 0) {
-		error("seteuid: %m");
-		rc = -1;
-	} else if (setegid(ps->saved_gid) < 0) {
-		error("setegid: %m");
-		rc = -1;
-	} else if (setgroups(ps->ngids, ps->gid_list) < 0) {
-		error("setgroups: %m");
-		rc = -1;
-	}
-
-done:
-	xfree(ps->gid_list);
-
-	return rc;
-}
 
 static void _reset_slurm_profile_conf(void)
 {
@@ -438,7 +349,7 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 		 acct_gather_profile_to_string(g_profile_running),
 		 profile_file_name);
 
-	if (_drop_privileges(g_job, true, &sprivs, false) < 0) {
+	if (drop_privileges(g_job, true, &sprivs, false) < 0) {
 		error("%s: Unable to drop privileges", __func__);
 		xfree(profile_file_name);
 		return SLURM_ERROR;
@@ -450,7 +361,7 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 	file_id = H5Fcreate(profile_file_name, H5F_ACC_TRUNC, H5P_DEFAULT,
 			    H5P_DEFAULT);
 
-	if (_reclaim_privileges(&sprivs) < 0) {
+	if (reclaim_privileges(&sprivs) < 0) {
 		error("%s: Unable to reclaim privileges", __func__);
 		xfree(profile_file_name);
 		return SLURM_ERROR;
