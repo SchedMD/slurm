@@ -196,3 +196,4 @@ SLURMRESTD CHANGES
     only being valid for the first entry in the "result" field array. The
     "result" field should be used instead to get the detailed result of the
     update request.
+ -- openapi/v0.0.40 - add /{accounts,users}_association endpoints.
