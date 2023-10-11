@@ -127,14 +127,6 @@
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
 
-struct priv_state {
-	uid_t	saved_uid;
-	gid_t	saved_gid;
-	gid_t *	gid_list;
-	int	ngids;
-	char	saved_cwd [4096];
-};
-
 step_complete_t step_complete = {
 	PTHREAD_COND_INITIALIZER,
 	PTHREAD_MUTEX_INITIALIZER,
@@ -171,9 +163,6 @@ static int  _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized);
 static int  _become_user(stepd_step_rec_t *step, struct priv_state *ps);
 static void  _set_prio_process (stepd_step_rec_t *step);
 static int  _setup_normal_io(stepd_step_rec_t *step);
-static int  _drop_privileges(stepd_step_rec_t *step, bool do_setuid,
-			     struct priv_state *state, bool get_list);
-static int  _reclaim_privileges(struct priv_state *state);
 static void _send_launch_resp(stepd_step_rec_t *step, int rc);
 static int  _slurmd_job_log_init(stepd_step_rec_t *step);
 static void _wait_for_io(stepd_step_rec_t *step);
@@ -466,7 +455,7 @@ _setup_normal_io(stepd_step_rec_t *step)
 	 * descriptors (which may be connected to files), then
 	 * reclaim privileges.
 	 */
-	if (_drop_privileges(step, true, &sprivs, true) < 0)
+	if (drop_privileges(step, true, &sprivs, true) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
 	if (io_init_tasks_stdio(step) != SLURM_SUCCESS) {
@@ -580,7 +569,7 @@ _setup_normal_io(stepd_step_rec_t *step)
 	}
 
 claim:
-	if (_reclaim_privileges(&sprivs) < 0) {
+	if (reclaim_privileges(&sprivs) < 0) {
 		error("sete{u/g}id(%lu/%lu): %m",
 		      (u_long) sprivs.saved_uid, (u_long) sprivs.saved_gid);
 	}
@@ -935,7 +924,7 @@ static void _shutdown_x11_forward(stepd_step_rec_t *step)
 {
 	struct priv_state sprivs = { 0 };
 
-	if (_drop_privileges(step, true, &sprivs, false) < 0) {
+	if (drop_privileges(step, true, &sprivs, false) < 0) {
 		error("%s: Unable to drop privileges", __func__);
 		return;
 	}
@@ -943,7 +932,7 @@ static void _shutdown_x11_forward(stepd_step_rec_t *step)
 	if (shutdown_x11_forward(step) != SLURM_SUCCESS)
 		error("%s: x11 forward shutdown failed", __func__);
 
-	if (_reclaim_privileges(&sprivs) < 0)
+	if (reclaim_privileges(&sprivs) < 0)
 		error("%s: Unable to reclaim privileges", __func__);
 }
 
@@ -1004,7 +993,7 @@ static int _set_xauthority(stepd_step_rec_t *step)
 {
 	struct priv_state sprivs = { 0 };
 
-	if (_drop_privileges(step, true, &sprivs, false) < 0) {
+	if (drop_privileges(step, true, &sprivs, false) < 0) {
 		error("%s: Unable to drop privileges before xauth", __func__);
 		return SLURM_ERROR;
 	}
@@ -1015,7 +1004,7 @@ static int _set_xauthority(stepd_step_rec_t *step)
 		return SLURM_ERROR;
 	}
 
-	if (_reclaim_privileges(&sprivs) < 0) {
+	if (reclaim_privileges(&sprivs) < 0) {
 		error("%s: Unable to reclaim privileges after xauth", __func__);
 		return SLURM_ERROR;
 	}
@@ -1066,7 +1055,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 	if (step->x11) {
 		struct priv_state sprivs = { 0 };
 
-		if (_drop_privileges(step, true, &sprivs, false) < 0) {
+		if (drop_privileges(step, true, &sprivs, false) < 0) {
 			error ("Unable to drop privileges");
 			return SLURM_ERROR;
 		}
@@ -1075,7 +1064,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 			error("x11 port forwarding setup failed");
 			_exit(127);
 		}
-		if (_reclaim_privileges(&sprivs) < 0) {
+		if (reclaim_privileges(&sprivs) < 0) {
 			error ("Unable to reclaim privileges");
 			return SLURM_ERROR;
 		}
@@ -1545,7 +1534,7 @@ static int _pre_task_child_privileged(
 	int setwd = 0; /* set working dir */
 	int rc = 0;
 
-	if (_reclaim_privileges(sp) < 0)
+	if (reclaim_privileges(sp) < 0)
 		return SLURM_ERROR;
 
 	set_oom_adj(0); /* the tasks may be killed by OOM */
@@ -1572,9 +1561,9 @@ static int _pre_task_child_privileged(
 		return error("spank_task_init_privileged failed");
 
 	/* sp->gid_list should already be initialized */
-	rc = _drop_privileges(step, true, sp, false);
+	rc = drop_privileges(step, true, sp, false);
 	if (rc) {
-		error ("_drop_privileges: %m");
+		error ("drop_privileges: %m");
 		return rc;
 	}
 
@@ -1812,7 +1801,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	 * Temporarily drop effective privileges, except for the euid.
 	 * We need to wait until after pam_setup() to drop euid.
 	 */
-	if (_drop_privileges (step, false, &sprivs, true) < 0)
+	if (drop_privileges (step, false, &sprivs, true) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
 	if (pam_setup(step->user_name, conf->hostname)
@@ -1824,7 +1813,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	/*
 	 * Reclaim privileges to do the io setup
 	 */
-	_reclaim_privileges(&sprivs);
+	reclaim_privileges(&sprivs);
 	if (rc)
 		goto fail1; /* pam_setup error */
 
@@ -1879,8 +1868,8 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	/*
 	 * Temporarily drop effective privileges
 	 */
-	if (_drop_privileges (step, true, &sprivs, true) < 0) {
-		error ("_drop_privileges: %m");
+	if (drop_privileges (step, true, &sprivs, true) < 0) {
+		error ("drop_privileges: %m");
 		rc = SLURM_ERROR;
 		goto fail2;
 	}
@@ -1937,7 +1926,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 			 * Reclaim privileges for the child and call any plugin
 			 * hooks that may require elevated privs
 			 * sprivs.gid_list is already set from the
-			 * _drop_privileges call above, no not reinitialize.
+			 * drop_privileges call above, no not reinitialize.
 			 * NOTE: Only put things in here that are self contained
 			 * and belong in the child.
 			 */
@@ -2002,7 +1991,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	/*
 	 * Reclaim privileges
 	 */
-	if (_reclaim_privileges(&sprivs) < 0) {
+	if (reclaim_privileges(&sprivs) < 0) {
 		error ("Unable to reclaim privileges");
 		/* Don't bother erroring out here */
 	}
@@ -2102,7 +2091,7 @@ fail4:
 		error ("Unable to return to working directory");
 	}
 fail3:
-	_reclaim_privileges (&sprivs);
+	reclaim_privileges (&sprivs);
 fail2:
 	FREE_NULL_LIST(exec_wait_list);
 	io_close_task_fds(step);
@@ -2653,9 +2642,8 @@ _send_complete_batch_script_msg(stepd_step_rec_t *step, int err, int status)
 /* If get_list is false make sure ps->gid_list is initialized before
  * hand to prevent xfree.
  */
-static int
-_drop_privileges(stepd_step_rec_t *step, bool do_setuid,
-		 struct priv_state *ps, bool get_list)
+extern int drop_privileges(stepd_step_rec_t *step, bool do_setuid,
+			   struct priv_state *ps, bool get_list)
 {
 	auth_setuid_lock();
 	ps->saved_uid = getuid();
@@ -2706,8 +2694,7 @@ _drop_privileges(stepd_step_rec_t *step, bool do_setuid,
 	return SLURM_SUCCESS;
 }
 
-static int
-_reclaim_privileges(struct priv_state *ps)
+extern int reclaim_privileges(struct priv_state *ps)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -2935,8 +2922,8 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
 #endif
 
 		sprivs.gid_list = NULL;	/* initialize to prevent xfree */
-		if (_drop_privileges(step, true, &sprivs, false) < 0) {
-			error("run_script_as_user _drop_privileges: %m");
+		if (drop_privileges(step, true, &sprivs, false) < 0) {
+			error("run_script_as_user drop_privileges: %m");
 			/* child process, should not return */
 			exit(127);
 		}
