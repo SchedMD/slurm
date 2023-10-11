@@ -3183,6 +3183,16 @@ extern void con_mgr_fd_get_in_buffer(const con_mgr_fd_t *con,
 	*bytes_ptr = size_buf(con->in);
 }
 
+extern buf_t *con_mgr_fd_shadow_in_buffer(const con_mgr_fd_t *con)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->type == CON_TYPE_RAW);
+	xassert(con->work_active);
+
+	return create_shadow_buf((get_buf_data(con->in) + con->in->processed),
+				 (size_buf(con->in) - con->in->processed));
+}
+
 extern void con_mgr_fd_mark_consumed_in_buffer(const con_mgr_fd_t *con,
 					       size_t bytes)
 {
@@ -3194,6 +3204,84 @@ extern void con_mgr_fd_mark_consumed_in_buffer(const con_mgr_fd_t *con,
 	offset = get_buf_offset(con->in) + bytes;
 	xassert(offset <= size_buf(con->in));
 	set_buf_offset(con->in, offset);
+}
+
+extern int con_mgr_fd_xfer_in_buffer(const con_mgr_fd_t *con,
+				     buf_t **buffer_ptr)
+{
+	buf_t *buf;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->type == CON_TYPE_RAW);
+	xassert(con->work_active);
+
+	xassert(buffer_ptr);
+	if (!buffer_ptr)
+		return EINVAL;
+
+	if (*buffer_ptr) {
+		bool will_fit;
+
+		buf = *buffer_ptr;
+		xassert(buf->magic == BUF_MAGIC);
+
+		will_fit = remaining_buf(buf) >= get_buf_offset(con->in);
+
+		if (buf->mmaped) {
+			/* can't grow a mmaped buffer */
+			if (!will_fit)
+				return ENOMEM;
+		} else if (!get_buf_offset(buf)) {
+			SWAP(buf->head, con->in->head);
+			SWAP(buf->processed, con->in->processed);
+			SWAP(buf->size, con->in->size);
+			return SLURM_SUCCESS;
+		} else if (!will_fit) {
+			grow_buf(buf, get_buf_offset(con->in));
+		}
+
+		memcpy(get_buf_data(buf) + get_buf_offset(buf),
+		       get_buf_data(con->in), get_buf_offset(con->in));
+		set_buf_offset(con->in,
+			       (get_buf_offset(buf) + get_buf_offset(con->in)));
+		set_buf_offset(con->in, 0);
+		return SLURM_SUCCESS;
+	} else {
+		if (!(buf = create_buf(get_buf_data(con->in),
+				       size_buf(con->in))))
+			return EINVAL;
+
+		*buffer_ptr = buf;
+
+		con->in->head = xmalloc_nz(BUFFER_START_SIZE);
+		set_buf_offset(con->in, 0);
+		con->in->size = BUFFER_START_SIZE;
+
+		return SLURM_SUCCESS;
+	}
+}
+
+extern int con_mgr_fd_xfer_out_buffer(con_mgr_fd_t *con, buf_t *output)
+{
+	int rc;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con->type == CON_TYPE_RAW);
+	xassert(!output || (output->magic == BUF_MAGIC));
+
+	if (!output || !size_buf(output) || !get_buf_offset(output))
+		return SLURM_SUCCESS;
+
+	xassert(size_buf(output) <= xsize(get_buf_data(output)));
+	xassert(get_buf_offset(output) <= size_buf(output));
+
+	rc = con_mgr_queue_write_fd(con, get_buf_data(output),
+				    get_buf_offset(output));
+
+	if (!rc)
+		set_buf_offset(output, 0);
+
+	return rc;
 }
 
 extern int con_mgr_fd_get_input_fd(con_mgr_fd_t *con)

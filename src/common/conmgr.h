@@ -362,11 +362,49 @@ extern void con_mgr_fd_get_in_buffer(const con_mgr_fd_t *con,
 				     const void **data_ptr, size_t *bytes_ptr);
 
 /*
+ * Get shadow buffer to data held by input buffer
+ * IN con - connection to query data
+ * RET new shadow buffer
+ * 	shadow buffer must FREE_NULL_BUFFER()ed before end of callback function
+ * 	completes. Shadow buffer's data pointer will be invalid once the
+ * 	callbackup function completes.
+ * 	con_mgr_fd_mark_consumed_in_buffer() must be called if any register
+ * 	if any data is processed from buffer.
+ */
+extern buf_t *con_mgr_fd_shadow_in_buffer(const con_mgr_fd_t *con);
+
+/*
  * Mark bytes in input buffer as have been consumed
  * WARNING: will xassert() if bytes > size of buffer
  */
 extern void con_mgr_fd_mark_consumed_in_buffer(const con_mgr_fd_t *con,
 					       size_t bytes);
+
+/*
+ * Transfer incoming data into a buf_t
+ * IN con - connection to query data
+ * IN buffer_ptr - pointer to buf_t to add/set with incoming data
+ * 	if *buffer_ptr is NULL, then a new buf_t will be created and caller must
+ * 	call FREE_NULL_BUFFER()
+ * 	if buffer->size is too small, then buffer will be grown to sufficent
+ * 	size.
+ * 	buffer->processed will not be changed
+ * 	if buffer->head is NULL, it will be set with a new xmalloc() buffer.
+ * RET SLURM_SUCCESS or error
+ */
+extern int con_mgr_fd_xfer_in_buffer(const con_mgr_fd_t *con,
+				     buf_t **buffer_ptr);
+
+/*
+ * Transfer outgoing data to connection from buf_t
+ * NOTE: type=CON_TYPE_RAW only
+ * IN con - connection manager connection struct
+ * IN output - pointer to buffer to write to connection
+ * 	output->{head,size} pointer may be changed
+ * 	output->processed will be set to 0 on success
+ * RET SLURM_SUCCESS or error
+ */
+extern int con_mgr_fd_xfer_out_buffer(con_mgr_fd_t *con, buf_t *output);
 
 /*
  * Get input file descriptor
