@@ -67,6 +67,7 @@ strong_alias(fd_set_nonblocking,slurm_fd_set_nonblocking);
 strong_alias(fd_get_socket_error, slurm_fd_get_socket_error);
 strong_alias(send_fd_over_pipe, slurm_send_fd_over_pipe);
 strong_alias(receive_fd_over_pipe, slurm_receive_fd_over_pipe);
+strong_alias(rmdir_recursive, slurm_rmdir_recursive);
 
 static int fd_get_lock(int fd, int cmd, int type);
 static pid_t fd_test_lock(int fd, int type);
@@ -453,4 +454,93 @@ extern int receive_fd_over_pipe(int socket)
 	memmove(&fd, CMSG_DATA(cmsg), sizeof(fd));
 
 	return fd;
+}
+
+static int _rmdir_recursive(int dirfd)
+{
+	int rc = 0;
+	DIR *dp;
+	struct dirent *ent;
+
+	if (!(dp = fdopendir(dirfd))) {
+		error("%s: can't open directory: %m", __func__);
+		return 1;
+	}
+
+	while ((ent = readdir(dp))) {
+		int childfd = -1;
+
+		/* skip special directories */
+		if (!strcmp(ent->d_name, ".") ||
+		    !strcmp(ent->d_name, "..")) {
+			continue;
+		}
+
+		/* try to remove entry, first as a file, then as a directory */
+		if (unlinkat(dirfd, ent->d_name, 0) != -1) {
+			debug("%s: removed file `%s`", __func__, ent->d_name);
+			continue;
+		} else if (unlinkat(dirfd, ent->d_name, AT_REMOVEDIR) != -1) {
+			debug("%s: removed empty directory `%s`",
+			      __func__, ent->d_name);
+			continue;
+		}
+
+		/* removal didn't work. assume it's a non-empty directory */
+		if ((childfd = openat(dirfd, ent->d_name,
+				      (O_DIRECTORY | O_NOFOLLOW))) < 0) {
+			debug("%s: openat() failed for `%s`: %m",
+			      __func__, ent->d_name);
+			rc++;
+			continue;
+		}
+
+		debug("%s: descending into directory `%s`",
+		      __func__, ent->d_name);
+		rc += _rmdir_recursive(childfd);
+		(void) close(childfd);
+
+		if (unlinkat(dirfd, ent->d_name, AT_REMOVEDIR) != -1) {
+			debug("%s: removed now-empty directory `%s`",
+			      __func__, ent->d_name);
+		} else {
+			debug("%s: unlinkat() failed for `%s`: %m",
+			      __func__, ent->d_name);
+			rc++;
+		}
+	}
+	closedir(dp);
+
+	return rc;
+}
+
+extern int rmdir_recursive(const char *path, bool remove_top)
+{
+	int rc = 0;
+	int dirfd;
+
+	if ((dirfd = open(path, O_DIRECTORY | O_NOFOLLOW)) < 0) {
+		error("%s: could not open %s", __func__, path);
+		return 1;
+	}
+
+	rc = _rmdir_recursive(dirfd);
+	close(dirfd);
+
+	if (remove_top) {
+		if (rmdir(path) < 0) {
+			debug("%s: rmdir() failed for `%s`: %m",
+			      __func__, path);
+			rc++;
+		} else {
+			debug("%s: removed now-empty top directory `%s`",
+			      __func__, path);
+		}
+	}
+
+	if (rc)
+		error("%s: could not completely remove `%s`, %d files left",
+		      __func__, path, rc);
+
+	return rc;
 }

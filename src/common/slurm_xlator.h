@@ -123,6 +123,7 @@
 #define fd_get_socket_error	slurm_fd_get_socket_error
 #define send_fd_over_pipe	slurm_send_fd_over_pipe
 #define receive_fd_over_pipe	slurm_receive_fd_over_pipe
+#define rmdir_recursive		slurm_rmdir_recursive
 
 /* hostlist.[ch] functions */
 #define	hostlist_create_dims	slurm_hostlist_create_dims

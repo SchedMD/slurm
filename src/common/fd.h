@@ -156,4 +156,13 @@ extern char *poll_revents_to_str(const short revents);
 extern void send_fd_over_pipe(int socket, int fd);
 extern int receive_fd_over_pipe(int socket);
 
+/*
+ * Recursively remove a directory and all contents.
+ * Takes care not to follow any symlinks outside the target directory.
+ *
+ * Returns the number of files/directories it failed to remove,
+ * or 0 on success.
+ */
+extern int rmdir_recursive(const char *path, bool remove_top);
+
 #endif /* !_FD_H */
