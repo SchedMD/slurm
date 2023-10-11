@@ -509,6 +509,7 @@ static int _rmdir_recursive(int dirfd)
 
 	if (!(dp = fdopendir(dirfd))) {
 		error("%s: can't open directory: %m", __func__);
+		(void) close(dirfd);
 		return 1;
 	}
 
@@ -543,7 +544,6 @@ static int _rmdir_recursive(int dirfd)
 		debug("%s: descending into directory `%s`",
 		      __func__, ent->d_name);
 		rc += _rmdir_recursive(childfd);
-		(void) close(childfd);
 
 		if (unlinkat(dirfd, ent->d_name, AT_REMOVEDIR) != -1) {
 			debug("%s: removed now-empty directory `%s`",
@@ -570,7 +570,6 @@ extern int rmdir_recursive(const char *path, bool remove_top)
 	}
 
 	rc = _rmdir_recursive(dirfd);
-	close(dirfd);
 
 	if (remove_top) {
 		if (rmdir(path) < 0) {
