@@ -527,6 +527,10 @@
 #define cgroup_conf_init		slurm_cgroup_conf_init
 #define cgroup_conf_destroy		slurm_cgroup_conf_destroy
 #define autodetect_cgroup_version       slurm_autodetect_cgroup_version
+
+/* topology.[ch] functions */
+#define topology_g_build_config slurm_topology_g_build_config
+
 #endif /* USE_ALIAS */
 
 #endif /*__SLURM_XLATOR_H__*/

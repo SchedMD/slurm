@@ -47,6 +47,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+strong_alias(topology_g_build_config, slurm_topology_g_build_config);
+
 /* defined here but is really tree plugin related */
 switch_record_t *switch_record_table = NULL;
 int switch_record_cnt = 0;
