@@ -747,7 +747,18 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 	}
 
 	if (job->container) {
-		int rc = setup_container(job);
+	        struct priv_state sprivs;
+		int rc;
+
+		if (drop_privileges(job, false, &sprivs, true) < 0) {
+			error("%s: drop_priviledges failed", __func__);
+			return NULL;
+		}
+		rc = setup_container(job);
+		if (reclaim_privileges(&sprivs) < 0) {
+			error("%s: reclaim_priviledges failed", __func__);
+			return NULL;
+		}
 
 		if (rc == ESLURM_CONTAINER_NOT_CONFIGURED) {
 			debug2("%s: container %s requested but containers are not configured on this node",
