@@ -1670,7 +1670,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		 cluster_name, suspend_table);
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  suspend_table_fields,
-				  ", primary key (job_db_inx, time_start))")
+				  ", primary key (job_db_inx, time_start), "
+				  "key archive_purge (time_end))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
