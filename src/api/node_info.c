@@ -75,9 +75,6 @@ typedef struct load_node_resp_struct {
 	node_info_msg_t *new_msg;
 } load_node_resp_struct_t;
 
-/* Function declarations */
-static void _set_node_mixed_op(node_info_t *node_ptr);
-
 /*
  * slurm_print_node_info_msg - output information about all Slurm nodes
  *	based upon message as loaded using slurm_load_node
@@ -186,8 +183,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	uint64_t alloc_memory;
 	char *node_alloc_tres = NULL;
 	char *line_end = (one_liner) ? " " : "\n   ";
-
-	_set_node_mixed_op(node_ptr);
 
 	/****** Line 1 ******/
 	xstrfmtcat(out, "NodeName=%s ", node_ptr->name);

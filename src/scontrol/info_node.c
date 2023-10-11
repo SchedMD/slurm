@@ -86,6 +86,8 @@ scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr, uint16_t show_flags)
 	static int last_show_flags = 0xffff;
 	node_info_msg_t *node_info_ptr = NULL;
 
+	show_flags |= SHOW_MIXED;
+
 	if (old_node_info_ptr) {
 		if (last_show_flags != show_flags)
 			old_node_info_ptr->last_update = (time_t) 0;

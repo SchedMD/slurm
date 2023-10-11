@@ -336,9 +336,7 @@ static List _query_server(bool clear_old)
 	static partition_info_msg_t *old_part_ptr = NULL, *new_part_ptr;
 	static node_info_msg_t *old_node_ptr = NULL, *new_node_ptr;
 	int error_code;
-	uint16_t show_flags = 0;
-	int cc;
-	node_info_t *node_ptr;
+	uint16_t show_flags = SHOW_MIXED;
 	List sinfo_list = NULL;
 
 	if (params.all_flag)
@@ -401,28 +399,6 @@ static List _query_server(bool clear_old)
 	}
 	old_node_ptr = new_node_ptr;
 
-	/* Set the node state as NODE_STATE_MIXED. */
-	for (cc = 0; cc < new_node_ptr->record_count; cc++) {
-		node_ptr = &(new_node_ptr->node_array[cc]);
-		if (IS_NODE_DRAIN(node_ptr)) {
-			/* don't worry about mixed since the
-			 * whole node is being drained. */
-		} else {
-			uint16_t alloc_cpus = 0, idle_cpus;
-
-			select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-						     SELECT_NODEDATA_SUBCNT,
-						     NODE_STATE_ALLOCATED,
-						     &alloc_cpus);
-			idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
-
-			if (idle_cpus && (idle_cpus != node_ptr->cpus_efctv)) {
-				node_ptr->node_state &= NODE_STATE_FLAGS;
-				node_ptr->node_state |= NODE_STATE_MIXED;
-			}
-		}
-	}
-
 	sinfo_list = list_create(_sinfo_list_delete);
 	_build_sinfo_data(sinfo_list, new_part_ptr, new_node_ptr);
 
@@ -432,14 +408,12 @@ static List _query_server(bool clear_old)
 static void *_load_job_prio_thread(void *args)
 {
 	load_info_struct_t *load_args = (load_info_struct_t *) args;
-	uint16_t show_flags = 0;
+	uint16_t show_flags = SHOW_MIXED;
 	char *node_name = NULL;
 	slurmdb_cluster_rec_t *cluster = load_args->cluster;
 	int error_code;
 	partition_info_msg_t *new_part_ptr;
 	node_info_msg_t *new_node_ptr;
-	int cc;
-	node_info_t *node_ptr;
 	List sinfo_list = NULL;
 
 	if (params.node_name_single)
@@ -471,28 +445,6 @@ static void *_load_job_prio_thread(void *args)
 		return NULL;
 	}
 	list_append(load_args->node_info_msg_list, new_node_ptr);
-
-	/* Set the node state as NODE_STATE_MIXED. */
-	for (cc = 0; cc < new_node_ptr->record_count; cc++) {
-		node_ptr = &(new_node_ptr->node_array[cc]);
-		if (IS_NODE_DRAIN(node_ptr)) {
-			/* don't worry about mixed since the
-			 * whole node is being drained. */
-		} else {
-			uint16_t alloc_cpus = 0, idle_cpus;
-
-			select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
-						     SELECT_NODEDATA_SUBCNT,
-						     NODE_STATE_ALLOCATED,
-						     &alloc_cpus);
-			idle_cpus = node_ptr->cpus_efctv - alloc_cpus;
-
-			if (idle_cpus && (idle_cpus != node_ptr->cpus_efctv)) {
-				node_ptr->node_state &= NODE_STATE_FLAGS;
-				node_ptr->node_state |= NODE_STATE_MIXED;
-			}
-		}
-	}
 
 	sinfo_list = list_create(_sinfo_list_delete);
 	_build_sinfo_data(sinfo_list, new_part_ptr, new_node_ptr);
