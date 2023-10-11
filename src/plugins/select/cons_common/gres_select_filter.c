@@ -500,7 +500,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * in first_pass, but in 2nd pass we should start
 		 * from the value set by gres_select_filter_remove_unusable
 		 */
-		if (first_pass)
+		if (first_pass && !sock_gres->total_cnt_before_filter)
 			sock_gres->total_cnt_before_filter =
 				sock_gres->total_cnt;
 		else
