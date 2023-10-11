@@ -39,7 +39,6 @@
 \*****************************************************************************/
 
 #define _GNU_SOURCE
-#define _XOPEN_SOURCE 500 /* For ftw.h */
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -47,7 +46,6 @@
 #include <sys/mman.h>
 #include <sched.h>
 #include <fcntl.h>
-#include <ftw.h>
 #include <sys/mount.h>
 #include <linux/limits.h>
 #include <semaphore.h>
@@ -55,6 +53,7 @@
 #include "src/common/slurm_xlator.h"
 
 #include "src/common/env.h"
+#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
 #include "src/common/run_command.h"
@@ -79,7 +78,6 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 static slurm_jc_conf_t *jc_conf = NULL;
 static int step_ns_fd = -1;
-static bool force_rm = true;
 List legacy_jobs;
 
 typedef struct {
@@ -382,35 +380,6 @@ static int _mount_private_shm(void)
 	return rc;
 }
 
-static int _rm_data(const char *path, const struct stat *st_buf,
-		    int type, struct FTW *ftwbuf)
-{
-	int rc = SLURM_SUCCESS;
-
-	if (remove(path) < 0) {
-		log_level_t log_lvl;
-		if (force_rm) {
-			rc = SLURM_ERROR;
-			log_lvl = LOG_LEVEL_ERROR;
-		} else
-			log_lvl = LOG_LEVEL_DEBUG2;
-
-		if (type == FTW_NS)
-			log_var(log_lvl,
-					"%s: Unreachable file of FTW_NS type: %s",
-					__func__, path);
-		else if (type == FTW_DNR)
-			log_var(log_lvl,
-					"%s: Unreadable directory: %s",
-					__func__, path);
-
-		log_var(log_lvl,
-				"%s: could not remove path: %s: %s",
-				__func__, path, strerror(errno));
-	}
-
-	return rc;
-}
 
 static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 {
@@ -681,11 +650,11 @@ exit1:
 
 exit2:
 	if (rc) {
+		int failures;
 		/* cleanup the job mount */
-		force_rm = true;
-		if (nftw(job_mount, _rm_data, 64, FTW_DEPTH|FTW_PHYS) < 0) {
-			error("%s: Directory traversal failed: %s: %s",
-			      __func__, job_mount, strerror(errno));
+		if ((failures = rmdir_recursive(job_mount, false))) {
+			error("%s: failed to remove %d files from %s",
+			      __func__, failures, job_mount);
 			return SLURM_ERROR;
 		}
 		umount2(job_mount, MNT_DETACH);
@@ -774,7 +743,7 @@ static int _delete_ns(uint32_t job_id, bool is_slurmd)
 {
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
-	int rc = 0;
+	int rc = 0, failures = 0;
 
 #ifdef HAVE_NATIVE_CRAY
 	return SLURM_SUCCESS;
@@ -827,23 +796,9 @@ static int _delete_ns(uint32_t job_id, bool is_slurmd)
 		}
 	}
 
-	/*
-	 * Traverses the job directory, and delete all files.
-	 * Doesn't -
-	 *	traverse filesystem boundaries,
-	 *	follow symbolic links
-	 * Does -
-	 *	a post order traversal and delete directory after processing
-	 *      contents
-	 * NOTE: Can happen EBUSY here so we need to ignore this.
-	 */
-	force_rm = false;
-	if (nftw(job_mount, _rm_data, 64, FTW_DEPTH|FTW_PHYS) < 0) {
-		error("%s: Directory traversal failed: %s: %s",
-		      __func__, job_mount, strerror(errno));
-		return SLURM_ERROR;
-	}
-
+	if ((failures = rmdir_recursive(job_mount, false)))
+		error("%s: failed to remove %d files from %s",
+		      __func__, failures, job_mount);
 	if (umount2(job_mount, MNT_DETACH))
 		debug2("umount2: %s failed: %s", job_mount, strerror(errno));
 	rmdir(job_mount);
