@@ -3647,6 +3647,15 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 		return;
 	}
 
+	/*
+	 * The cpt_compact* fields don't go to the client because they are not
+	 * handled in slurm_step_layout_merge(). Free them so the client does
+	 * not get bad data.
+	 */
+	xfree(step_layout->cpt_compact_array);
+	xfree(step_layout->cpt_compact_reps);
+	step_layout->cpt_compact_cnt = 0;
+
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host)
 		step_layout->front_end = xstrdup(job_ptr->batch_host);

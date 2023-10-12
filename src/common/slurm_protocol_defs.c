@@ -1816,6 +1816,8 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->alias_list);
 	xfree(msg->container);
 	xfree(msg->cwd);
+	xfree(msg->cpt_compact_array);
+	xfree(msg->cpt_compact_reps);
 	xfree(msg->cpu_bind);
 	xfree(msg->mem_bind);
 	if (msg->argv) {

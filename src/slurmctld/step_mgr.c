@@ -2276,6 +2276,7 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 	uint16_t req_tpc = NO_VAL16;
 	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 	uint16_t orig_cpus_per_task = step_ptr->cpus_per_task;
+	uint16_t *cpus_per_task_array = NULL;
 	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
 
 	xassert(job_resrcs_ptr);
@@ -2327,6 +2328,8 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		all_job_mem = true;
 
 	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
+	cpus_per_task_array = xcalloc(step_layout->node_cnt,
+				      sizeof(*cpus_per_task_array));
 	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
 	for (int i = 0;
 	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
@@ -2470,11 +2473,11 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 			}
 		}
 		step_ptr->cpus_per_task = cpus_per_task;
-		step_layout->cpus_per_task[step_node_inx] = cpus_per_task;
+		cpus_per_task_array[step_node_inx] = cpus_per_task;
 		log_flag(STEPS, "%s: %pS node %d (%s) gres_cpus_alloc=%d tasks=%u cpus_per_task=%u",
 			 __func__, step_ptr, job_node_inx, node_ptr->name,
 			 gres_cpus_alloc, task_cnt,
-			 step_layout->cpus_per_task[step_node_inx]);
+			 cpus_per_task_array[step_node_inx]);
 
 		if (step_ptr->flags & SSF_WHOLE) {
 			cpus_alloc_mem = cpus_alloc =
@@ -2642,6 +2645,12 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		if (step_node_inx == (step_layout->node_cnt - 1))
 			break;
 	}
+	slurm_array16_to_value_reps(cpus_per_task_array, step_layout->node_cnt,
+				    &step_layout->cpt_compact_array,
+				    &step_layout->cpt_compact_reps,
+				    &step_layout->cpt_compact_cnt);
+	xfree(cpus_per_task_array);
+
 	gres_step_state_log(step_ptr->gres_list_req, job_ptr->job_id,
 			    step_ptr->step_id.step_id);
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&
@@ -2793,16 +2802,22 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		else {
 			slurm_step_layout_t *step_layout =
 				step_ptr->step_layout;
-			uint16_t *cpt_array = step_layout->cpus_per_task;
 			uint16_t *tasks = step_layout->tasks;
 			uint16_t cpus_per_task;
 			uint16_t vpus = node_ptr->tpc;
 
 			if (step_ptr->start_protocol_ver >=
 			    SLURM_23_11_PROTOCOL_VERSION) {
-				xassert (cpt_array);
+				int inx;
 
-				cpus_per_task = cpt_array[step_node_inx];
+				xassert(step_layout->cpt_compact_array);
+
+				inx = slurm_get_rep_count_inx(
+					step_layout->cpt_compact_reps,
+					step_layout->cpt_compact_cnt,
+					step_node_inx);
+				cpus_per_task =
+					step_layout->cpt_compact_array[inx];
 			} else
 				cpus_per_task = step_ptr->cpus_per_task;
 

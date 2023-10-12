@@ -64,75 +64,6 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 				 const char *arbitrary_nodes);
 
-static void _build_cpt_from_compact_array(slurm_step_layout_t *step_layout)
-{
-	uint32_t node_cnt;
-	uint16_t *cpus_per_task;
-
-	xassert(step_layout);
-
-	node_cnt = step_layout->node_cnt;
-	if (!node_cnt)
-		return;
-
-	cpus_per_task = xcalloc(node_cnt, sizeof(*cpus_per_task));
-	for (int i = 0; i < step_layout->cpt_compact_cnt; i++) {
-		for (int j = 0; j < step_layout->cpt_compact_reps[i]; j++) {
-			cpus_per_task[i + j] =
-				step_layout->cpt_compact_array[i];
-		}
-	}
-
-	step_layout->cpus_per_task = cpus_per_task;
-}
-
-static void _build_compact_cpt_array(slurm_step_layout_t *step_layout)
-{
-	uint16_t last_value = NO_VAL16, curr_value;
-	uint16_t *cpt_array;
-	uint32_t cpt_count = 0, node_cnt;
-	uint32_t *cpt_reps;
-
-	xassert(step_layout);
-
-	if (!step_layout->cpus_per_task)
-		return;
-
-	/* cpus_per_task should only exist after node_cnt is set */
-	xassert(step_layout->node_cnt);
-
-	/*
-	 * Do not rebuild the compact arrays if they already exist.
-	 * step_layout->cpus_per_task should not change after it is set.
-	 */
-	if (step_layout->cpt_compact_array && step_layout->cpt_compact_reps)
-		return;
-
-	xassert(!step_layout->cpt_compact_array);
-	xassert(!step_layout->cpt_compact_reps);
-
-	node_cnt = step_layout->node_cnt;
-
-	cpt_array = xcalloc(node_cnt, sizeof(*cpt_array));
-	cpt_reps = xcalloc(node_cnt, sizeof(*cpt_reps));
-
-	for (int i = 0; i < node_cnt; i++) {
-		curr_value = step_layout->cpus_per_task[i];
-		/* curr_value should not equal last_value the first time */
-		if (curr_value != last_value) {
-			last_value = curr_value;
-			cpt_array[cpt_count] = last_value;
-			cpt_reps[cpt_count] = 1;
-			cpt_count++;
-		} else {
-			cpt_reps[cpt_count - 1]++;
-		}
-	}
-	step_layout->cpt_compact_array = cpt_array;
-	step_layout->cpt_compact_reps = cpt_reps;
-	step_layout->cpt_compact_cnt = cpt_count;
-}
-
 /*
  * slurm_step_layout_create - determine how many tasks of a job will be
  *                    run on each node. Distribution is influenced
@@ -224,11 +155,6 @@ extern slurm_step_layout_t *fake_slurm_step_layout_create(
 	step_layout->node_cnt = node_cnt;
 	step_layout->start_protocol_ver = protocol_version;
 	step_layout->tasks = xcalloc(node_cnt, sizeof(uint16_t));
-	/*
-	 * Alloc cpus_per_task so it can be packed, but the
-	 * data is unused so no need to set it.
-	 */
-	step_layout->cpus_per_task = xcalloc(node_cnt, sizeof(uint16_t));
 	step_layout->tids = xcalloc(node_cnt, sizeof(uint32_t *));
 
 	step_layout->task_cnt = 0;
@@ -299,9 +225,23 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 	layout->tasks = xcalloc(layout->node_cnt, sizeof(uint16_t));
 	memcpy(layout->tasks, step_layout->tasks,
 	       (sizeof(uint16_t) * layout->node_cnt));
-	layout->cpus_per_task = xcalloc(layout->node_cnt, sizeof(uint16_t));
-	memcpy(layout->cpus_per_task, step_layout->cpus_per_task,
-	       (sizeof(uint16_t) * layout->node_cnt));
+	if (step_layout->cpt_compact_cnt) {
+		uint32_t cnt = step_layout->cpt_compact_cnt;
+
+		layout->cpt_compact_cnt = cnt;
+		layout->cpt_compact_array =
+			xcalloc(cnt, sizeof(*layout->cpt_compact_array));
+		memcpy(layout->cpt_compact_array,
+		       step_layout->cpt_compact_array,
+		       (sizeof(*layout->cpt_compact_array) * cnt));
+
+		layout->cpt_compact_reps =
+			xcalloc(cnt, sizeof(*layout->cpt_compact_reps));
+		memcpy(layout->cpt_compact_reps,
+		       step_layout->cpt_compact_reps,
+		       (sizeof(*layout->cpt_compact_reps) * cnt));
+
+	}
 
 	layout->tids = xcalloc(layout->node_cnt, sizeof(uint32_t *));
 	for (i = 0; i < layout->node_cnt; i++) {
@@ -324,6 +264,12 @@ extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
 	xassert(step_layout1);
 	xassert(step_layout2);
 
+	/*
+	 * cpt_compact* fields are currently not used by the clients who issue
+	 * the RPC that calls this function. So, we currently do not merge
+	 * the cpt_compact* fields.
+	 */
+
 	hl = hostlist_create(step_layout1->node_list);
 	hl2 = hostlist_create(step_layout2->node_list);
 
@@ -336,13 +282,6 @@ extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
 			hostlist_push_host(hl, host);
 			pos = step_layout1->node_cnt++;
 			xrecalloc(step_layout1->tasks,
-				  step_layout1->node_cnt,
-				  sizeof(uint16_t));
-			/*
-			 * Alloc cpus_per_task so it can be packed, but the
-			 * data is unused so no need to set it.
-			 */
-			xrecalloc(step_layout1->cpus_per_task,
 				  step_layout1->node_cnt,
 				  sizeof(uint16_t));
 			xrecalloc(step_layout1->tids,
@@ -398,14 +337,11 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 				     step_layout->tasks[i],
 				     buffer);
 		}
-		/* Pack a compact version of cpus_per_task */
-		_build_compact_cpt_array(step_layout);
-		if (step_layout->cpt_compact_cnt) {
-			pack16_array(step_layout->cpt_compact_array,
-				     step_layout->cpt_compact_cnt, buffer);
-			pack32_array(step_layout->cpt_compact_reps,
-				     step_layout->cpt_compact_cnt, buffer);
-		}
+
+		pack16_array(step_layout->cpt_compact_array,
+			     step_layout->cpt_compact_cnt, buffer);
+		pack32_array(step_layout->cpt_compact_reps,
+			     step_layout->cpt_compact_cnt, buffer);
 
 		if (step_layout->alias_addrs) {
 			char *tmp_str =
@@ -480,7 +416,6 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, buf_t *buffer,
 		safe_unpack32_array(&step_layout->cpt_compact_reps,
 				    &uint32_tmp, buffer);
 		xassert(uint32_tmp == step_layout->cpt_compact_cnt);
-		_build_cpt_from_compact_array(step_layout);
 
 		safe_unpackstr(&tmp_str, buffer);
 		if (tmp_str) {
@@ -541,7 +476,6 @@ extern int slurm_step_layout_destroy(slurm_step_layout_t *step_layout)
 		xfree(step_layout->tasks);
 		xfree(step_layout->cpt_compact_array);
 		xfree(step_layout->cpt_compact_reps);
-		xfree(step_layout->cpus_per_task);
 		for (i = 0; i < step_layout->node_cnt; i++) {
 			xfree(step_layout->tids[i]);
 		}
@@ -610,8 +544,6 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 	step_layout->plane_size = step_layout_req->plane_size;
 
 	step_layout->tasks = xcalloc(step_layout->node_cnt, sizeof(uint16_t));
-	step_layout->cpus_per_task = xcalloc(step_layout->node_cnt,
-					     sizeof(uint16_t));
 	step_layout->tids = xcalloc(step_layout->node_cnt, sizeof(uint32_t *));
 	hl = hostlist_create(step_layout->node_list);
 	/* make sure the number of nodes we think we have

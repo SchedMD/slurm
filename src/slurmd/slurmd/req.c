@@ -1080,8 +1080,12 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	 * of cpus_per_task. Do it here so the task plugin and slurmstepd have
 	 * the correct value for cpus_per_task.
 	 */
-	if (req->cpus_per_task_array && req->cpus_per_task_array[node_id])
-		req->cpus_per_task = req->cpus_per_task_array[node_id];
+	if (req->cpt_compact_cnt) {
+		int inx = slurm_get_rep_count_inx(req->cpt_compact_reps,
+						  req->cpt_compact_cnt,
+						  node_id);
+		req->cpus_per_task = req->cpt_compact_array[inx];
+	}
 
 	if (req->flags & LAUNCH_NO_ALLOC) {
 		if (_slurm_authorized_user(auth_uid)) {
@@ -2104,8 +2108,6 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->alias_list		= req->alias_list;
 	launch_req->complete_nodelist	= req->nodes;
 	launch_req->cpus_per_task	= 1;
-	launch_req->cpus_per_task_array = xcalloc(req->nnodes,
-						  sizeof(uint16_t));
 	launch_req->cred_version = msg->protocol_version;
 	launch_req->cred		= req->cred;
 	launch_req->cwd			= req->work_dir;
@@ -2180,7 +2182,6 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		uint32_t *tmp32 = xmalloc(sizeof(uint32_t));
 		*tmp32 = i;
 		launch_req->global_task_ids[i] = tmp32;
-		launch_req->cpus_per_task_array[i] = 1;
 		launch_req->tasks_to_launch[i] = 1;
 	}
 

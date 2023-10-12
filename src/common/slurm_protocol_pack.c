@@ -7435,11 +7435,10 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 
 		pack32(msg->nnodes, buffer);
 		pack16(msg->cpus_per_task, buffer);
-		if (msg->cpus_per_task_array)
-			pack16_array(msg->cpus_per_task_array, msg->nnodes,
-				     buffer);
-		else
-			pack16_array(NULL, 0, buffer);
+		pack16_array(msg->cpt_compact_array,
+			     msg->cpt_compact_cnt, buffer);
+		pack32_array(msg->cpt_compact_reps,
+			     msg->cpt_compact_cnt, buffer);
 		packstr(msg->tres_per_task, buffer);
 		pack16(msg->threads_per_core, buffer);
 		pack32(msg->task_dist, buffer);
@@ -7771,8 +7770,11 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		if (msg->nnodes >= NO_VAL)
 			goto unpack_error;
 		safe_unpack16(&msg->cpus_per_task, buffer);
-		safe_unpack16_array(&msg->cpus_per_task_array,
+		safe_unpack16_array(&msg->cpt_compact_array,
+				    &msg->cpt_compact_cnt, buffer);
+		safe_unpack32_array(&msg->cpt_compact_reps,
 				    &uint32_tmp, buffer);
+		xassert(uint32_tmp == msg->cpt_compact_cnt);
 		safe_unpackstr(&msg->tres_per_task, buffer);
 		safe_unpack16(&msg->threads_per_core, buffer);
 		safe_unpack32(&msg->task_dist, buffer);

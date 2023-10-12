@@ -1953,20 +1953,12 @@ typedef struct {
 } slurm_step_layout_req_t;
 
 typedef struct slurm_step_layout {
-	/*
-	 * cpus_per_task - Array of the length "node_cnt", the same length as
-	 * tasks. Each element of the array is the number of cpus per task
-	 * assigned to the corresponding node.
-	 * cpt_compact_* are used in packing/unpacking cpus_per_task.
-	 * They are an abbreviated version of cpus_per_task, similar to
-	 * the cpu arrays in job_resources_t.
-	 * Populate these from cpus_per_task when packing.
-	 * Populate cpus_per_task from these when unpacking.
-	 */
-	uint16_t *cpt_compact_array;
-	uint32_t cpt_compact_cnt;
-	uint32_t *cpt_compact_reps;
-	uint16_t *cpus_per_task;
+	uint16_t *cpt_compact_array; /* Compressed per-node cpus_per_task.
+				      * Index with slurm_get_rep_count_inx() */
+	uint32_t cpt_compact_cnt; /* number of elements in cpt_compact arrays */
+	uint32_t *cpt_compact_reps; /* number of consecutive nodes on which a
+				     * value in cpt_compact_array is
+				     * duplicated */
 	char *front_end;	/* If a front-end architecture, the name of
 				 * of the node running all tasks,
 				 * NULL otherwise */
@@ -2131,7 +2123,12 @@ typedef struct {
 	uint16_t max_cores;
 	uint16_t max_threads;
 	uint16_t cpus_per_task;
-	uint16_t *cpus_per_task_array; /* Per node array of cpus per task */
+	uint16_t *cpt_compact_array; /* Compressed per-node cpus_per_task.
+				      * Index with slurm_get_rep_count_inx() */
+	uint32_t cpt_compact_cnt; /* number of elements in cpt_compact arrays */
+	uint32_t *cpt_compact_reps; /* number of consecutive nodes on which a
+				     * value in cpt_compact_array is
+				     * duplicated */
 	uint16_t threads_per_core;
 	uint32_t task_dist;
 	uint16_t tree_width;
