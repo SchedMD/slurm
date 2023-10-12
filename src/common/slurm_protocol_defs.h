@@ -1947,8 +1947,9 @@ extern void xlate_array_task_str(char **array_task_str,
 				 bitstr_t **array_bitmap);
 
 /*
- * slurm_array64_to_value_reps - Compress array into an array that represents
- *                               the number of repeated values compressed.
+ * slurm_array<size>_to_value_reps - Compress array into an array that
+ *				     represents the number of repeated values
+ *				     compressed.
  *
  * IN array - Array of values.
  * IN array_cnt - Count of elements in 'array'.
@@ -1958,6 +1959,10 @@ extern void xlate_array_task_str(char **array_task_str,
  */
 extern void slurm_array64_to_value_reps(uint64_t *array, uint32_t array_cnt,
 					uint64_t **values,
+					uint32_t **values_reps,
+					uint32_t *values_cnt);
+extern void slurm_array16_to_value_reps(uint16_t *array, uint32_t array_cnt,
+					uint16_t **values,
 					uint32_t **values_reps,
 					uint32_t *values_cnt);
 

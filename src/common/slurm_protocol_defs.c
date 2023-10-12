@@ -6865,6 +6865,15 @@ extern void slurm_array64_to_value_reps(uint64_t *array, uint32_t array_cnt,
 					   values_reps, values_cnt);
 }
 
+extern void slurm_array16_to_value_reps(uint16_t *array, uint32_t array_cnt,
+					uint16_t **values,
+					uint32_t **values_reps,
+					uint32_t *values_cnt)
+{
+	_slurm_integer_array_to_value_reps(uint16_t, array, array_cnt, values,
+					   values_reps, values_cnt);
+}
+
 extern int slurm_get_rep_count_inx(
 	uint32_t *rep_count, uint32_t rep_count_size, int inx)
 {
