@@ -280,7 +280,7 @@ function __slurm_compreply_param() {
 		p="${param%%?(\\)=*}"
 		__slurm_log_trace "$(__func__): for loop: param='$param' p*='$p'"
 		[[ ${words[*]} =~ ${p}= ]] && continue
-		[[ ${words[*]} =~ [[:space:]]+${p}[[:space:]]+ ]] && continue
+		[[ ${words[*]} =~ [[:space:]]+${p}[[:space:]]+ ]] && [[ $cword == "${#words[@]}" ]] && continue
 		compreply+=("$param")
 	done
 
