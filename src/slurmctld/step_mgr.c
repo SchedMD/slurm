@@ -2333,8 +2333,6 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
 	xassert(rem_nodes == step_layout->node_cnt);
 
-	cpus_per_task_array = xcalloc(step_layout->node_cnt,
-				      sizeof(*cpus_per_task_array));
 	cpus_alloc_pn = xcalloc(step_layout->node_cnt, sizeof(*cpus_alloc_pn));
 	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
 	for (int i = 0;
@@ -2479,11 +2477,23 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 			}
 		}
 		step_ptr->cpus_per_task = cpus_per_task;
-		cpus_per_task_array[step_node_inx] = cpus_per_task;
+		/*
+		 * Only populate cpus_per_task_array if needed: if cpus_per_tres
+		 * was requested, then cpus_per_task may not be the same on all
+		 * nodes. Otherwise, cpus_per_task is the same on all nodes,
+		 * and this per-node array isn't needed.
+		 */
+		if (gres_cpus_alloc) {
+			if (!cpus_per_task_array)
+				cpus_per_task_array =
+					xcalloc(step_layout->node_cnt,
+						sizeof(*cpus_per_task_array));
+			cpus_per_task_array[step_node_inx] = cpus_per_task;
+		}
 		log_flag(STEPS, "%s: %pS node %d (%s) gres_cpus_alloc=%d tasks=%u cpus_per_task=%u",
 			 __func__, step_ptr, job_node_inx, node_ptr->name,
 			 gres_cpus_alloc, task_cnt,
-			 cpus_per_task_array[step_node_inx]);
+			 cpus_per_task);
 
 		if (step_ptr->flags & SSF_WHOLE) {
 			cpus_alloc_mem = cpus_alloc =
