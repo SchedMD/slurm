@@ -270,7 +270,9 @@ static void _create_directories(void)
 	slash[0] = '\0';
 	hdf5_dir_rel = slash + 1;
 
-	parent_dirfd = open(parent_dir, O_DIRECTORY | O_NOFOLLOW);
+	if ((parent_dirfd = open(parent_dir, O_DIRECTORY | O_NOFOLLOW)) < 0)
+		fatal("Could not open ProfileHDF5Dir parent directory '%s': %m",
+		      parent_dir);
 
 	/*
 	 * Use *at family of syscalls to prevent TOCTOU abuse by working
