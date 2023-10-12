@@ -472,6 +472,8 @@ extern void free_step_record(void *x)
 	slurm_step_layout_destroy(step_ptr->step_layout);
 	jobacctinfo_destroy(step_ptr->jobacct);
 	FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
+	xfree(step_ptr->cpu_alloc_reps);
+	xfree(step_ptr->cpu_alloc_values);
 	FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 	FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 	xfree(step_ptr->resv_port_array);
@@ -4960,6 +4962,10 @@ extern int dump_job_step_state(void *x, void *arg)
 
 	pack32(step_ptr->flags, buffer);
 
+	pack32_array(step_ptr->cpu_alloc_reps,
+		     step_ptr->cpu_alloc_array_cnt, buffer);
+	pack16_array(step_ptr->cpu_alloc_values,
+		     step_ptr->cpu_alloc_array_cnt, buffer);
 	pack32(step_ptr->cpu_count, buffer);
 	pack64(step_ptr->pn_min_memory, buffer);
 	pack32(step_ptr->exit_code, buffer);
@@ -5043,6 +5049,9 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 	uint16_t cpus_per_task, resv_port_cnt, state;
 	uint32_t cpu_count, exit_code, srun_pid = 0, flags = 0;
+	uint32_t cpu_alloc_array_cnt;
+	uint32_t *cpu_alloc_reps = NULL;
+	uint16_t *cpu_alloc_values = NULL;
 	uint32_t time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;
 	uint32_t tmp32;
 	uint64_t pn_min_memory;
@@ -5080,6 +5089,10 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 
 		safe_unpack32(&flags, buffer);
 
+		safe_unpack32_array(&cpu_alloc_reps,
+				    &cpu_alloc_array_cnt, buffer);
+		safe_unpack16_array(&cpu_alloc_values, &tmp32, buffer);
+		xassert(tmp32 == cpu_alloc_array_cnt);
 		safe_unpack32(&cpu_count, buffer);
 		safe_unpack64(&pn_min_memory, buffer);
 		safe_unpack32(&exit_code, buffer);
@@ -5319,6 +5332,13 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 
 	step_ptr->container = container;
 	step_ptr->container_id = container_id;
+	step_ptr->cpu_alloc_array_cnt = cpu_alloc_array_cnt;
+	xfree(step_ptr->cpu_alloc_reps);
+	step_ptr->cpu_alloc_reps = cpu_alloc_reps;
+	cpu_alloc_reps = NULL;
+	xfree(step_ptr->cpu_alloc_values);
+	step_ptr->cpu_alloc_values = cpu_alloc_values;
+	cpu_alloc_values = NULL;
 	step_ptr->cpu_count    = cpu_count;
 	step_ptr->cpus_per_task= cpus_per_task;
 	step_ptr->cyclic_alloc = cyclic_alloc;
@@ -5425,6 +5445,8 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(cpu_alloc_reps);
+	xfree(cpu_alloc_values);
 	xfree(host);
 	xfree(resv_ports);
 	xfree(name);

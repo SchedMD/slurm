@@ -1025,6 +1025,11 @@ typedef struct {
 	bitstr_t *core_bitmap_job;	/* bitmap of cores allocated to this
 					 * step relative to job's nodes,
 					 * see src/common/job_resources.h */
+	uint32_t cpu_alloc_array_cnt;	/* Elements in cpu_alloc* arrays */
+	uint32_t *cpu_alloc_reps;	/* Number of consecutive nodes for which
+					 * a value in cpu_alloc_values is
+					 * duplicated */
+	uint16_t *cpu_alloc_values;	/* Compressed per-node allocated cpus */
 	uint32_t cpu_count;		/* count of step's CPUs */
 	uint32_t cpu_freq_min; 		/* Minimum cpu frequency  */
 	uint32_t cpu_freq_max; 		/* Maximum cpu frequency  */
