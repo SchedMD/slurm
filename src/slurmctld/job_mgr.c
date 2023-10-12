@@ -7525,15 +7525,15 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		     &gres_list)))
 		goto cleanup_fail;
 
-	if (!valid_tres_cnt(job_desc->cpus_per_tres)	||
-	    !valid_tres_cnt(job_desc->mem_per_tres)	||
+	if (!valid_tres_cnt(job_desc->cpus_per_tres, 0) ||
+	    !valid_tres_cnt(job_desc->mem_per_tres, 0) ||
 	    tres_bind_verify_cmdline(job_desc->tres_bind) ||
 	    tres_freq_verify_cmdline(job_desc->tres_freq) ||
-	    !valid_tres_cnt(job_desc->mem_per_tres)	||
-	    !valid_tres_cnt(job_desc->tres_per_job)	||
-	    !valid_tres_cnt(job_desc->tres_per_node)	||
-	    !valid_tres_cnt(job_desc->tres_per_socket)	||
-	    !valid_tres_cnt(job_desc->tres_per_task)) {
+	    !valid_tres_cnt(job_desc->mem_per_tres, 0) ||
+	    !valid_tres_cnt(job_desc->tres_per_job, 0) ||
+	    !valid_tres_cnt(job_desc->tres_per_node, 0) ||
+	    !valid_tres_cnt(job_desc->tres_per_socket, 0) ||
+	    !valid_tres_cnt(job_desc->tres_per_task, 0)) {
 		error_code = ESLURM_INVALID_TRES;
 		goto cleanup_fail;
 	}
@@ -9121,7 +9121,7 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
  * "name=tres_type/name|count[:#|type:#]"
  * For example: "cpu:2,gres/gpu:kepler:2,gres/craynetwork:1"
  */
-extern bool valid_tres_cnt(char *tres)
+extern bool valid_tres_cnt(char *tres, bool gres_tres_enforce)
 {
 	char *tres_type = NULL, *name = NULL, *type = NULL, *save_ptr = NULL;
 	int rc = true, pos = -1;
@@ -9138,6 +9138,9 @@ extern bool valid_tres_cnt(char *tres)
 		 * of 0 is valid to be thrown away but allow job to
 		 * allocate.
 		 */
+		if (gres_tres_enforce && type) {
+			xstrfmtcat(name, ":%s", type);
+		}
 		xfree(type);
 		if (cnt == 0) {
 			xfree(tres_type);
@@ -9145,7 +9148,7 @@ extern bool valid_tres_cnt(char *tres)
 			continue;
 		}
 		/* gres doesn't have to be a TRES to be valid */
-		if (!xstrcmp(tres_type, "gres")) {
+		if (!gres_tres_enforce && !xstrcmp(tres_type, "gres")) {
 			pos = valid_gres_name(name) ? 1 : -1;
 		} else {
 			slurmdb_tres_rec_t tres_rec = {
@@ -14592,7 +14595,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->cpus_per_tres) {
-		if (!valid_tres_cnt(job_desc->cpus_per_tres)) {
+		if (!valid_tres_cnt(job_desc->cpus_per_tres, 0)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -14609,7 +14612,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->mem_per_tres) {
-		if (!valid_tres_cnt(job_desc->mem_per_tres)) {
+		if (!valid_tres_cnt(job_desc->mem_per_tres, 0)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -14658,7 +14661,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->tres_per_job) {
-		if (!valid_tres_cnt(job_desc->tres_per_job)) {
+		if (!valid_tres_cnt(job_desc->tres_per_job, 0)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -14674,7 +14677,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		}
 	}
 	if (job_desc->tres_per_node) {
-		if (!valid_tres_cnt(job_desc->tres_per_node)) {
+		if (!valid_tres_cnt(job_desc->tres_per_node, 0)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -14691,7 +14694,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->tres_per_socket) {
-		if (!valid_tres_cnt(job_desc->tres_per_socket)) {
+		if (!valid_tres_cnt(job_desc->tres_per_socket, 0)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}
@@ -14708,7 +14711,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	}
 
 	if (job_desc->tres_per_task) {
-		if (!valid_tres_cnt(job_desc->tres_per_task)) {
+		if (!valid_tres_cnt(job_desc->tres_per_task, 0)) {
 			error_code = ESLURM_INVALID_TRES;
 			goto fini;
 		}

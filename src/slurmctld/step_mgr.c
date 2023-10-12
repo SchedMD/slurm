@@ -3321,15 +3321,15 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	    (task_dist != SLURM_DIST_ARBITRARY))
 		return ESLURM_BAD_DIST;
 
-	if (!valid_tres_cnt(step_specs->cpus_per_tres)	||
-	    !valid_tres_cnt(step_specs->mem_per_tres)	||
+	if (!valid_tres_cnt(step_specs->cpus_per_tres, 0) ||
+	    !valid_tres_cnt(step_specs->mem_per_tres, 0) ||
 	    tres_bind_verify_cmdline(step_specs->tres_bind) ||
 	    tres_freq_verify_cmdline(step_specs->tres_freq) ||
-	    !valid_tres_cnt(step_specs->tres_per_step)	||
-	    (!valid_tres_cnt(step_specs->tres_per_node)	&&
+	    !valid_tres_cnt(step_specs->tres_per_step, 0) ||
+	    (!valid_tres_cnt(step_specs->tres_per_node, 0) &&
 	     xstrcasecmp(step_specs->tres_per_node, "NONE")) ||
-	    !valid_tres_cnt(step_specs->tres_per_socket)||
-	    !valid_tres_cnt(step_specs->tres_per_task))
+	    !valid_tres_cnt(step_specs->tres_per_socket, 0) ||
+	    !valid_tres_cnt(step_specs->tres_per_task, 0))
 		return ESLURM_INVALID_TRES;
 
 	if ((ret_code = _test_step_desc_fields(step_specs)) != SLURM_SUCCESS)
