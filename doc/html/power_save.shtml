@@ -207,19 +207,7 @@ if possible.</li>
 <li>Repeat indefinitely.</li>
 </ol></p>
 
-<p>The slurmctld daemon will periodically (every 10 minutes) log how many
-nodes are in power save mode using messages of this sort:
-<pre>
-[May 02 15:31:25] Power save mode 0 nodes
-...
-[May 02 15:41:26] Power save mode 10 nodes
-...
-[May 02 15:51:28] Power save mode 22 nodes
-</pre>
-
-<p>Using these logs you can easily see the effect of Slurm's power saving
-support.
-You can also configure Slurm with programs that perform no action as
+<p>You can also configure Slurm with programs that perform no action as
 <b>SuspendProgram</b> and <b>ResumeProgram</b> to assess the potential
 impact of power saving mode before enabling it.</p>
 
@@ -284,6 +272,6 @@ and perform the following actions:
 <li>Boot the appropriate image for each node</li>
 </ol>
 
-<p style="text-align:center;">Last modified 03 May 2023</p>
+<p style="text-align:center;">Last modified 12 October 2023</p>
 
 <!--#include virtual="footer.txt"-->
