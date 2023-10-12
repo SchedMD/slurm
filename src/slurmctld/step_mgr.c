@@ -2279,6 +2279,7 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 	uint16_t orig_cpus_per_task = step_ptr->cpus_per_task;
 	uint16_t *cpus_per_task_array = NULL;
+	uint16_t *cpus_alloc_pn = NULL;
 	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
 
 	xassert(job_resrcs_ptr);
@@ -2330,8 +2331,11 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		all_job_mem = true;
 
 	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
+	xassert(rem_nodes == step_layout->node_cnt);
+
 	cpus_per_task_array = xcalloc(step_layout->node_cnt,
 				      sizeof(*cpus_per_task_array));
+	cpus_alloc_pn = xcalloc(step_layout->node_cnt, sizeof(*cpus_alloc_pn));
 	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
 	for (int i = 0;
 	     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap, &i));
@@ -2535,6 +2539,7 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 			 */
 		}
 		step_ptr->cpu_count += cpus_alloc;
+		cpus_alloc_pn[step_node_inx] = cpus_alloc;
 
 		/*
 		 * Don't count this step against the allocation if
@@ -2652,6 +2657,12 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 				    &step_layout->cpt_compact_reps,
 				    &step_layout->cpt_compact_cnt);
 	xfree(cpus_per_task_array);
+
+	slurm_array16_to_value_reps(cpus_alloc_pn, step_layout->node_cnt,
+				    &step_ptr->cpu_alloc_values,
+				    &step_ptr->cpu_alloc_reps,
+				    &step_ptr->cpu_alloc_array_cnt);
+	xfree(cpus_alloc_pn);
 
 	gres_step_state_log(step_ptr->gres_list_req, job_ptr->job_id,
 			    step_ptr->step_id.step_id);
@@ -2799,9 +2810,22 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		if (!step_ptr->step_layout->tasks[step_node_inx])
 			continue;
 
-		if (step_ptr->flags & SSF_WHOLE)
+		if (step_ptr->start_protocol_ver >=
+		    SLURM_23_11_PROTOCOL_VERSION) {
+			int inx;
+
+			xassert(step_ptr->cpu_alloc_array_cnt);
+			xassert(step_ptr->cpu_alloc_reps);
+			xassert(step_ptr->cpu_alloc_values);
+
+			inx = slurm_get_rep_count_inx(
+				step_ptr->cpu_alloc_reps,
+				step_ptr->cpu_alloc_array_cnt,
+				step_node_inx);
+			cpus_alloc = step_ptr->cpu_alloc_values[inx];
+		} else if (step_ptr->flags & SSF_WHOLE) {
 			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
-		else {
+		} else {
 			slurm_step_layout_t *step_layout =
 				step_ptr->step_layout;
 			uint16_t *tasks = step_layout->tasks;
