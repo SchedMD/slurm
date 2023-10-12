@@ -1986,7 +1986,6 @@ function __slurm_comp_sacctmgr_spec_accounts() {
 	name?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	organization?(s)) __slurm_compreply "$(__slurm_organizations)" ;;
 	parent?(s)) __slurm_compreply "$(__slurm_accounts)" ;;
-	rawusage) __slurm_compreply "0" ;;
 	*)
 		[[ $split == "true" ]] && return
 		__slurm_compreply_param "${parameters[*]}"
