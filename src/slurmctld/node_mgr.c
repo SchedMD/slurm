@@ -2043,8 +2043,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 				bit_clear (idle_node_bitmap, node_ptr->index);
 			} else if ((state_val == NODE_STATE_DRAIN) ||
 				   (state_val == NODE_STATE_FAIL)) {
-				if ((IS_NODE_ALLOCATED(node_ptr) ||
-				     IS_NODE_MIXED(node_ptr)) &&
+				if (IS_NODE_ALLOCATED(node_ptr) &&
 				    (IS_NODE_POWERED_DOWN(node_ptr) ||
 				     IS_NODE_POWERING_UP(node_ptr))) {
 					info("%s: DRAIN/FAIL request for node %s which is allocated and being powered up. Requeuing jobs",
