@@ -122,6 +122,8 @@ static char *_get_gpu_type(void)
 #else
 		info("Configured with oneAPI, but oneAPI isn't enabled during the build.");
 #endif
+	} else if (autodetect_flags & GRES_AUTODETECT_GPU_NRT) {
+		return "gpu/nrt";
 	}
 
 	return "gpu/generic";
