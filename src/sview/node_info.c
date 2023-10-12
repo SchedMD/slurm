@@ -1768,32 +1768,14 @@ display_it:
 		case SEARCH_NODE_STATE:
 			if (search_info->int_data == NO_VAL)
 				continue;
-			else if (search_info->int_data
-				 != node_ptr->node_state) {
-				if (IS_NODE_MIXED(node_ptr)) {
-					uint16_t alloc_cnt = 0;
-					uint16_t idle_cnt =
-						node_ptr->cpus_efctv;
-					select_g_select_nodeinfo_get(
-						node_ptr->select_nodeinfo,
-						SELECT_NODEDATA_SUBCNT,
-						NODE_STATE_ALLOCATED,
-						&alloc_cnt);
-					idle_cnt -= alloc_cnt;
-					if ((search_info->int_data
-					     & NODE_STATE_BASE)
-					    == NODE_STATE_ALLOCATED) {
-						if (alloc_cnt)
-							break;
-					} else if ((search_info->int_data
-						    & NODE_STATE_BASE)
-						   == NODE_STATE_IDLE) {
-						if (idle_cnt)
-							break;
-					}
-				}
+			if ((node_ptr->node_state & NODE_STATE_BASE) ==
+			    (search_info->int_data & NODE_STATE_BASE))
+				found = 1;
+			if ((node_ptr->node_state & NODE_STATE_FLAGS) &
+			    (search_info->int_data & NODE_STATE_FLAGS))
+				found = 1;
+			if (!found)
 				continue;
-			}
 			break;
 		case SEARCH_NODE_NAME:
 		default:
