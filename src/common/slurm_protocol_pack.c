@@ -1363,14 +1363,9 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 		pack32(msg->job_id, buffer);
 		pack32(msg->node_cnt, buffer);
 
-		/* pack node_addr after node_cnt -- need it for unpacking */
-		if (msg->node_addr && msg->node_cnt > 0) {
-			pack8(1, buffer); /* non-null node_addr */
-			slurm_pack_addr_array(msg->node_addr, msg->node_cnt,
-					      buffer);
-		} else {
-			pack8(0, buffer);
-		}
+		/* Remove node_addr 2 versions after 23.11 */
+		pack8(0, buffer);
+
 		packstr(msg->node_list, buffer);
 		pack16(msg->ntasks_per_board, buffer);
 		pack16(msg->ntasks_per_core, buffer);
