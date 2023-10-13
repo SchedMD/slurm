@@ -676,6 +676,8 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
+		if (IS_NODE_DYNAMIC_NORM(node_ptr) || IS_NODE_CLOUD(node_ptr))
+			agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 
@@ -5373,6 +5375,9 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 			hostlist_push_host(agent_args->hostlist,
 					   node_ptr->name);
 			agent_args->node_count++;
+			if (IS_NODE_DYNAMIC_NORM(node_ptr) ||
+			    IS_NODE_CLOUD(node_ptr))
+				agent_args->msg_flags |= SLURM_PACK_ADDRS;
 		}
 	} else {
 		/* Could happen on node failure */

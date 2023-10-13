@@ -302,6 +302,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	node_record_t *node_ptr;
 	hostlist_t *hostlist = NULL;
 	uint16_t use_protocol_version = 0;
+	uint16_t msg_flags = 0;
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #endif
@@ -406,6 +407,8 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		if (hostlist)
 			hostlist_push_host(hostlist, node_ptr->name);
 		node_count++;
+		if (IS_NODE_DYNAMIC_NORM(node_ptr) || IS_NODE_CLOUD(node_ptr))
+			msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 	if (job_ptr->details->prolog_running) {
@@ -466,6 +469,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	agent_args->protocol_version = use_protocol_version;
 	agent_args->hostlist = hostlist;
 	agent_args->node_count = node_count;
+	agent_args->msg_flags = msg_flags;
 
 	last_node_update = time(NULL);
 	kill_job = create_kill_job_msg(job_ptr, use_protocol_version);
@@ -2977,6 +2981,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 {
 	prolog_launch_msg_t *prolog_msg_ptr;
 	uint16_t protocol_version = job_ptr->start_protocol_ver;
+	uint16_t msg_flags = 0;
 	agent_arg_t *agent_arg_ptr;
 	job_resources_t *job_resrcs_ptr;
 	slurm_cred_arg_t cred_arg;
@@ -3002,6 +3007,8 @@ extern void launch_prolog(job_record_t *job_ptr)
 	     i++) {
 		if (protocol_version > node_ptr->protocol_version)
 			protocol_version = node_ptr->protocol_version;
+		if (IS_NODE_DYNAMIC_NORM(node_ptr) || IS_NODE_CLOUD(node_ptr))
+			msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 
@@ -3112,6 +3119,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 #endif
 	agent_arg_ptr->msg_type = REQUEST_LAUNCH_PROLOG;
 	agent_arg_ptr->msg_args = (void *) prolog_msg_ptr;
+	agent_arg_ptr->msg_flags = msg_flags;
 
 	/* At least on a Cray we have to treat this as a real step, so
 	 * this is where to do it.
@@ -4441,6 +4449,9 @@ extern void re_kill_job(job_record_t *job_ptr)
 						   node_ptr->name);
 				agent_args->node_count++;
 			}
+			if (IS_NODE_DYNAMIC_NORM(node_ptr) ||
+			    IS_NODE_CLOUD(node_ptr))
+				agent_args->msg_flags |= SLURM_PACK_ADDRS;
 		}
 	}
 #endif

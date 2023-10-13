@@ -15069,6 +15069,8 @@ static void _send_job_kill(job_record_t *job_ptr)
 				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
+		if (IS_NODE_DYNAMIC_NORM(node_ptr) || IS_NODE_CLOUD(node_ptr))
+			agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 	if (agent_args->node_count == 0) {
@@ -16570,6 +16572,8 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
+		if (IS_NODE_DYNAMIC_NORM(node_ptr) || IS_NODE_CLOUD(node_ptr))
+			agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 
@@ -16626,6 +16630,8 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op)
 				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
+		if (IS_NODE_DYNAMIC_NORM(node_ptr) || IS_NODE_CLOUD(node_ptr))
+			agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 
