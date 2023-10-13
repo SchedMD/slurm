@@ -1534,7 +1534,7 @@ function __slurm_linux_gids() {
 function _sacct() {
 	local cur prev words cword split
 	__slurm_compinit "$1" || return
-	__slurm_log_info "$(__func__): prev='$prev' cur='$cur' split='$split'"
+	__slurm_log_info "$(__func__): prev='$prev' cur='$cur'"
 
 	local sched_flags=(
 		"schedsubmit"
