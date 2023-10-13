@@ -685,6 +685,41 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 	return SLURM_SUCCESS;
 }
 
+static void _get_alias_addrs(hostlist_t *hl, slurm_msg_t *msg, int *cnt)
+{
+	hostlist_iterator_t *hi;
+	char *node_name;
+	int addr_index = 0;
+	forward_t *forward = &(msg->forward);
+
+	if (!(msg->flags & SLURM_PACK_ADDRS))
+		return;
+	slurm_free_node_alias_addrs_members(&forward->alias_addrs);
+
+	forward->alias_addrs.node_addrs = xcalloc(*cnt, sizeof(slurm_addr_t));
+
+	hi = hostlist_iterator_create(hl);
+	while ((node_name = hostlist_next(hi))) {
+		slurm_addr_t *addr =
+			&forward->alias_addrs.node_addrs[addr_index];
+		if (!slurm_conf_get_addr(node_name, addr, msg->flags)) {
+			++addr_index;
+		} else {
+			hostlist_remove(hi);
+			forward->cnt--;
+			(*cnt)--;
+		}
+		free(node_name);
+	}
+	hostlist_iterator_destroy(hi);
+
+	forward->alias_addrs.node_list = hostlist_ranged_string_xmalloc(hl);
+	forward->alias_addrs.node_cnt = *cnt;
+
+	forward->alias_addrs.net_cred =
+		create_net_cred(&forward->alias_addrs, msg->protocol_version);
+}
+
 /*
  * Get dynamic addrs if forwarding to a unknown/unresolvable nodes.
  */
@@ -760,6 +795,7 @@ extern List start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout)
 	hostlist_uniq(hl);
 	host_count = hostlist_count(hl);
 
+	_get_alias_addrs(hl, msg, &host_count);
 	_get_dynamic_addrs(hl, msg);
 
 	if (route_g_split_hostlist(hl, &sp_hl, &hl_count,
