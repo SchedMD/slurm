@@ -1015,10 +1015,7 @@ _read_config(void)
 	node_ptr = find_node_record(conf->node_name);
 	xassert(node_ptr);
 
-	if (conf->dynamic_type == DYN_NODE_NORM)
-		conf->port = cf->slurmd_port;
-	else
-		conf->port = node_ptr->port;
+	conf->port = node_ptr->port;
 	slurm_conf.slurmd_port = conf->port;
 
 	conf->conf_boards = node_ptr->boards;
@@ -1929,7 +1926,6 @@ static void _validate_dynamic_conf(void)
 {
 	char *invalid_opts[] = {
 		"NodeName=",
-		"Port=", /* Must use SlurmdPort, alias_list doesn't pass port */
 		NULL
 	};
 

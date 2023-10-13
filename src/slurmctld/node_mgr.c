@@ -5142,6 +5142,9 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 		return SLURM_ERROR;
 	}
 
+	if (conf_node->port_str)
+		node_ptr->port = strtol(conf_node->port_str, NULL, 10);
+
 	/* Get IP of slurmd */
 	if (msg->conn_fd >= 0 &&
 	    !slurm_get_peer_addr(msg->conn_fd, &addr)) {
@@ -5150,8 +5153,13 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 				 INET6_ADDRSTRLEN);
 	}
 
-	set_node_comm_name(node_ptr, comm_name, reg_msg->hostname);
+	xfree(node_ptr->comm_name);
+	node_ptr->comm_name =
+		xstrdup(comm_name ? comm_name : reg_msg->hostname);
 	xfree(comm_name);
+	xfree(node_ptr->node_hostname);
+	node_ptr->node_hostname = xstrdup(reg_msg->hostname);
+	slurm_conf_add_node(node_ptr);
 
 	node_ptr->features = xstrdup(node_ptr->config_ptr->feature);
 	update_feature_list(avail_feature_list, node_ptr->features,
