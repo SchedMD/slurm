@@ -1483,7 +1483,7 @@ static void *_agent_init(void *arg)
 static int _foreach_node_did_resp(void *x, void *arg)
 {
 	node_did_resp((char *) x);
-	return 0;
+	return 1;
 }
 
 /* Start a thread to manage queued agent requests */
