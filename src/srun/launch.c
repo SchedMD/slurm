@@ -50,6 +50,7 @@
 
 #include "src/common/env.h"
 #include "src/common/fd.h"
+#include "src/common/forward.h"
 #include "src/common/net.h"
 #include "src/common/xstring.h"
 #include "src/common/plugin.h"
@@ -1332,7 +1333,7 @@ extern int launch_g_create_job_step(srun_job_t *job, bool use_all_cpus,
 		slurm_free_job_step_create_request_msg(step_req);
 		return SLURM_ERROR;
 	}
-
+	fwd_set_alias_addrs(step_layout->alias_addrs);
 	if (job->ntasks != step_layout->task_cnt)
 		job->ntasks = step_layout->task_cnt;
 
