@@ -474,7 +474,6 @@ _send_slurmstepd_init(int fd, int type, void *req, slurm_addr_t *cli,
 	int rank;
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
-	slurm_addr_t parent_addr = {0};
 
 	slurm_msg_t_init(&msg);
 
@@ -533,14 +532,7 @@ _send_slurmstepd_init(int fd, int type, void *req, slurm_addr_t *cli,
 		 * parent_rank = -1, all nodes talk to the slurmctld
 		 */
 		if (rank > 0 && parent_rank != -1) {
-			int rc;
-			/* Find the slurm_addr_t of this node's parent slurmd
-			 * in the step host list */
 			parent_alias = hostlist_nth(step_hset, parent_rank);
-			rc = slurm_conf_get_addr(parent_alias, &parent_addr, 0);
-			if (rc != SLURM_SUCCESS)
-				error("%s: failed getting address for parent NodeName %s (parent rank %d)",
-				      __func__, parent_alias, parent_rank);
 		}
 #else
 		/* In FRONT_END mode, one slurmd pretends to be all
@@ -560,8 +552,6 @@ _send_slurmstepd_init(int fd, int type, void *req, slurm_addr_t *cli,
 	       rank, conf->node_name,
 	       parent_rank, parent_alias ? parent_alias : "NONE",
 	       children, depth, max_depth);
-	if (parent_alias)
-		free(parent_alias);
 
 	/* send reverse-tree info to the slurmstepd */
 	safe_write(fd, &rank, sizeof(int));
@@ -569,8 +559,16 @@ _send_slurmstepd_init(int fd, int type, void *req, slurm_addr_t *cli,
 	safe_write(fd, &children, sizeof(int));
 	safe_write(fd, &depth, sizeof(int));
 	safe_write(fd, &max_depth, sizeof(int));
-	safe_write(fd, &parent_addr, sizeof(slurm_addr_t));
-
+	if (parent_alias) {
+		len = strlen(parent_alias);
+		safe_write(fd, &len, sizeof(int));
+		safe_write(fd, parent_alias, len);
+		free(parent_alias);
+		parent_alias = NULL;
+	} else {
+		len = 0;
+		safe_write(fd, &len, sizeof(int));
+	}
 	/* send cli address over to slurmstepd */
 	buffer = init_buf(0);
 	slurm_pack_addr(cli, buffer);

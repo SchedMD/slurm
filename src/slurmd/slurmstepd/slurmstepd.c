@@ -584,14 +584,19 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	safe_read(sock, &step_complete.children, sizeof(int));
 	safe_read(sock, &step_complete.depth, sizeof(int));
 	safe_read(sock, &step_complete.max_depth, sizeof(int));
-	safe_read(sock, &step_complete.parent_addr, sizeof(slurm_addr_t));
+	safe_read(sock, &len, sizeof(int));
+	if (len) {
+		step_complete.parent_name = xmalloc(len + 1);
+		safe_read(sock, step_complete.parent_name, len);
+	}
+
 	if (step_complete.children)
 		step_complete.bits = bit_alloc(step_complete.children);
 	step_complete.jobacct = jobacctinfo_create(NULL);
 	slurm_mutex_unlock(&step_complete.lock);
 
-	debug3("slurmstepd rank %d, parent = %pA",
-	       step_complete.rank, &step_complete.parent_addr);
+	debug3("slurmstepd rank %d, parent = %s",
+	       step_complete.rank, step_complete.parent_name);
 
 	/* receive cli from slurmd */
 	safe_read(sock, &len, sizeof(int));

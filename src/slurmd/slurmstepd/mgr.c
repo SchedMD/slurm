@@ -132,7 +132,7 @@ step_complete_t step_complete = {
 	-1,
 	-1,
 	-1,
-	{},
+	(char *)NULL,
 	-1,
 	-1,
 	true,
@@ -743,7 +743,6 @@ _one_step_complete_msg(stepd_step_rec_t *step, int first, int last)
 	slurm_msg_set_r_uid(&req, slurm_conf.slurmd_user_id);
 	req.msg_type = REQUEST_STEP_COMPLETE;
 	req.data = &msg;
-	req.address = step_complete.parent_addr;
 
 	/* Do NOT change this check to "step_complete.rank != 0", because
 	 * there are odd situations where SlurmUser or root could
@@ -751,14 +750,23 @@ _one_step_complete_msg(stepd_step_rec_t *step, int first, int last)
 	 * can be built with out the hostlist from the credential.
 	 */
 	if (step_complete.parent_rank != -1) {
-		debug3("Rank %d sending complete to rank %d, range %d to %d",
+		debug3("Rank %d sending complete to rank %d(%s), range %d to %d",
 		       step_complete.rank, step_complete.parent_rank,
-		       first, last);
+		       step_complete.parent_name, first, last);
 		/* On error, pause then try sending to parent again.
 		 * The parent slurmstepd may just not have started yet, because
 		 * of the way that the launch message forwarding works.
 		 */
-		for (i = 0; i < REVERSE_TREE_PARENT_RETRY; i++) {
+		if (slurm_conf_get_addr(step_complete.parent_name, &req.address,
+					0)) {
+			i = REVERSE_TREE_PARENT_RETRY;
+			error("%s: failed getting address for parent NodeName %s (parent rank %d)",
+			      __func__, step_complete.parent_name,
+			      step_complete.parent_rank);
+		} else
+			i = 0;
+
+		for (; i < REVERSE_TREE_PARENT_RETRY; i++) {
 			if (i)
 				sleep(1);
 			retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 0);

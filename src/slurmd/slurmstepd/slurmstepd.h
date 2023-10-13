@@ -53,7 +53,7 @@ typedef struct {
 	int rank;
 	int depth;
 	int parent_rank;
-	slurm_addr_t parent_addr;
+	char *parent_name;
 	int children;
 	int max_depth;
 	bool wait_children;
