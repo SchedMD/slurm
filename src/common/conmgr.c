@@ -396,6 +396,26 @@ try_again:
 	}
 }
 
+static void _init_signal_handler(void)
+{
+	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
+		if (sigaction(catch_signals[i].signal, &catch_signals[i].new,
+			      &catch_signals[i].prior))
+			fatal("%s: unable to catch %s: %m",
+			      __func__, strsignal(catch_signals[i].signal));
+	}
+}
+
+static void _fini_signal_handler(void)
+{
+	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
+		if (sigaction(catch_signals[i].signal, &catch_signals[i].prior,
+			      NULL))
+			fatal("%s: unable to restore %s: %m",
+			      __func__, strsignal(catch_signals[i].signal));
+	}
+}
+
 extern void init_con_mgr(int thread_count, int max_connections,
 			 con_mgr_callbacks_t callbacks)
 {
@@ -1955,12 +1975,7 @@ static void _watch(void *blocking)
 
 	mgr.watching = true;
 
-	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
-		if (sigaction(catch_signals[i].signal, &catch_signals[i].new,
-			      &catch_signals[i].prior))
-			fatal("%s: unable to catch %s: %m",
-			      __func__, strsignal(catch_signals[i].signal));
-	}
+	_init_signal_handler();
 
 watch:
 	if (mgr.shutdown)
@@ -2082,12 +2097,7 @@ watch:
 
 	_signal_change(true);
 
-	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
-		if (sigaction(catch_signals[i].signal, &catch_signals[i].prior,
-			      NULL))
-			fatal("%s: unable to restore %s: %m",
-			      __func__, strsignal(catch_signals[i].signal));
-	}
+	_fini_signal_handler();
 
 	xassert(!mgr.poll_active);
 	xassert(!mgr.listen_active);
