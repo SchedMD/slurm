@@ -179,6 +179,9 @@ make_bash_script $file_in "$srun $bin_echo IT_RAN"
 set matches 0
 set array_job_id [submit_job -fail "--array=1-2 -W -N1 -t1 -o $file_out $file_in"]
 
+wait_for_job $array_job_id "DONE"
+wait_for_file -fail $file_out
+
 # Check echo worked
 spawn $bin_cat $file_out
 expect {
