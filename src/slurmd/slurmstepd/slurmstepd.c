@@ -823,7 +823,10 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 	/*
 	 * Reset address for cloud nodes
 	 */
-	if (step->alias_list && set_nodes_alias(step->alias_list)) {
+	if (step->node_addrs &&
+	    !add_remote_nodes_to_conf_tbls(step->node_list, step->node_addrs)) {
+		/* Successfully added nodes */
+	} else if (step->alias_list && set_nodes_alias(step->alias_list)) {
 		error("%s: set_nodes_alias failed: %s", __func__,
 		      step->alias_list);
 		stepd_step_rec_destroy(step);

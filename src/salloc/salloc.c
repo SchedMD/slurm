@@ -1108,18 +1108,8 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		}
 	}
 	if (is_ready) {
-		resource_allocation_response_msg_t *resp;
-		char *tmp_str;
 		if (i > 1)
      			info("Nodes %s are ready for job", alloc->node_list);
-		if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD") &&
-		    (slurm_allocation_lookup(alloc->job_id, &resp)
-		     == SLURM_SUCCESS)) {
-			tmp_str = alloc->alias_list;
-			alloc->alias_list = resp->alias_list;
-			resp->alias_list = tmp_str;
-			slurm_free_resource_allocation_response_msg(resp);
-		}
 	} else if (!allocation_interrupted) {
 		if (job_killed || allocation_revoked) {
 			error("Job allocation %u has been revoked",

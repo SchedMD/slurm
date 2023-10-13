@@ -909,10 +909,18 @@ static int _foreach_set_node_alias(void *x, void *arg)
 	if (job &&
 	    job->step_ctx &&
 	    job->step_ctx->step_resp &&
-	    job->step_ctx->step_resp->cred &&
-	    (alias_list = slurm_cred_get(job->step_ctx->step_resp->cred,
+	    job->step_ctx->step_resp->cred) {
+		slurm_addr_t *node_addrs;
+		if ((node_addrs =
+		     slurm_cred_get(job->step_ctx->step_resp->cred,
+				    CRED_DATA_JOB_NODE_ADDRS)))
+			add_remote_nodes_to_conf_tbls(job->nodelist,
+						      node_addrs);
+		else if ((alias_list =
+			  slurm_cred_get(job->step_ctx->step_resp->cred,
 					 CRED_DATA_JOB_ALIAS_LIST)))
-		set_nodes_alias(alias_list);
+			set_nodes_alias(alias_list);
+	}
 
 	return SLURM_SUCCESS;
 }

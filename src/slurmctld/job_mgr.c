@@ -18764,26 +18764,11 @@ extern void set_remote_working_response(
 			resp->working_cluster_rec = response_cluster_rec;
 		}
 
-		/*
-		 * Don't send node_addr array until the nodes are ready (e.g.
-		 * the alias_list will be TBD until all nodes are powered up)
-		 * The alias_list will not be set if not allocated nodes needing
-		 * to be powered up.
-		 */
-		if (!job_ptr->alias_list ||
-		    xstrcmp(job_ptr->alias_list, "TBD")) {
-			node_record_t *node_ptr;
-
+		if (job_ptr->node_addrs) {
 			resp->node_addr = xcalloc(job_ptr->node_cnt,
 						  sizeof(slurm_addr_t));
-			for (int i = 0, addr_index = 0;
-			     (node_ptr = next_node_bitmap(job_ptr->node_bitmap,
-							  &i));
-			     i++) {
-				slurm_conf_get_addr(
-					node_ptr->name,
-					&resp->node_addr[addr_index++], 0);
-			}
+			memcpy(resp->node_addr, job_ptr->node_addrs,
+			       job_ptr->node_cnt * sizeof(slurm_addr_t));
 		}
 	}
 }
