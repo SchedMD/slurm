@@ -1012,8 +1012,11 @@ _read_config(void)
 			conf->hostname);
 
 #ifndef HAVE_FRONT_END
-	node_ptr = find_node_record(conf->node_name);
-	xassert(node_ptr);
+	if (!(node_ptr = find_node_record(conf->node_name))) {
+		error("Unable to find node record for %s",
+		      conf->node_name);
+		exit(1);
+	}
 
 	conf->port = node_ptr->port;
 	slurm_conf.slurmd_port = conf->port;
