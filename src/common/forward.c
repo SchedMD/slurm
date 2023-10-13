@@ -343,6 +343,25 @@ cleanup:
 	return (NULL);
 }
 
+static int _fwd_tree_get_addr(fwd_tree_t *fwd_tree, char *name,
+			      slurm_addr_t *address)
+{
+	if (slurm_conf_get_addr(name, address, fwd_tree->orig_msg->flags) ==
+	    SLURM_ERROR) {
+		error("%s: can't find address for host %s, check slurm.conf",
+		      __func__, name);
+		slurm_mutex_lock(fwd_tree->tree_mutex);
+		mark_as_failed_forward(&fwd_tree->ret_list, name,
+				       SLURM_UNKNOWN_FORWARD_ADDR);
+		slurm_cond_signal(fwd_tree->notify);
+		slurm_mutex_unlock(fwd_tree->tree_mutex);
+
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 void *_fwd_tree_thread(void *arg)
 {
 	fwd_tree_t *fwd_tree = (fwd_tree_t *)arg;
@@ -362,15 +381,7 @@ void *_fwd_tree_thread(void *arg)
 
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(fwd_tree->tree_hl))) {
-		if (slurm_conf_get_addr(name, &send_msg.address, send_msg.flags)
-		    == SLURM_ERROR) {
-			error("fwd_tree_thread: can't find address for host "
-			      "%s, check slurm.conf", name);
-			slurm_mutex_lock(fwd_tree->tree_mutex);
-			mark_as_failed_forward(&fwd_tree->ret_list, name,
-					       SLURM_UNKNOWN_FORWARD_ADDR);
- 			slurm_cond_signal(fwd_tree->notify);
-			slurm_mutex_unlock(fwd_tree->tree_mutex);
+		if (_fwd_tree_get_addr(fwd_tree, name, &send_msg.address)) {
 			free(name);
 
 			continue;
