@@ -11779,9 +11779,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_node_alias_addrs(slurm_node_alias_addrs_t *msg,
-				   buf_t *buffer,
-				   uint16_t protocol_version)
+extern void slurm_pack_node_alias_addrs(slurm_node_alias_addrs_t *msg,
+					buf_t *buffer,
+					uint16_t protocol_version)
 {
 	xassert(msg);
 
@@ -11792,9 +11792,9 @@ static void _pack_node_alias_addrs(slurm_node_alias_addrs_t *msg,
 	}
 }
 
-static int _unpack_node_alias_addrs(slurm_node_alias_addrs_t **msg_ptr,
-				    buf_t *buffer,
-				    uint16_t protocol_version)
+extern int slurm_unpack_node_alias_addrs(slurm_node_alias_addrs_t **msg_ptr,
+					 buf_t *buffer,
+					 uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
 	slurm_node_alias_addrs_t *msg;
@@ -12429,8 +12429,8 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		break;
 	case REQUEST_NODE_ALIAS_ADDRS:
 	case RESPONSE_NODE_ALIAS_ADDRS:
-		_pack_node_alias_addrs(msg->data, buffer,
-				       msg->protocol_version);
+		slurm_pack_node_alias_addrs(msg->data, buffer,
+					    msg->protocol_version);
 		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
@@ -13130,7 +13130,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case REQUEST_NODE_ALIAS_ADDRS:
 	case RESPONSE_NODE_ALIAS_ADDRS:
-		rc = _unpack_node_alias_addrs(
+		rc = slurm_unpack_node_alias_addrs(
 			(slurm_node_alias_addrs_t **)&(msg->data), buffer,
 			msg->protocol_version);
 		break;
