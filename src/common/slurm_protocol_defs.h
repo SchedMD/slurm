@@ -1550,6 +1550,8 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode);
 extern int slurm_addto_step_list(List step_list, char *names);
 extern int slurm_char_list_copy(List dst, List src);
 extern char *slurm_char_list_to_xstr(List char_list);
+extern void slurm_copy_node_alias_addrs_members(slurm_node_alias_addrs_t *dest,
+						slurm_node_alias_addrs_t *src);
 extern int slurm_find_char_exact_in_list(void *x, void *key);
 extern int slurm_find_char_in_list(void *x, void *key);
 extern int slurm_find_ptr_in_list(void *x, void *key);

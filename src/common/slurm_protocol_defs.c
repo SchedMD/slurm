@@ -5395,6 +5395,30 @@ extern void slurm_free_suspend_exc_update_msg(suspend_exc_update_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_copy_node_alias_addrs_members(slurm_node_alias_addrs_t *dest,
+						slurm_node_alias_addrs_t *src)
+{
+	xassert(dest);
+	xassert(src);
+
+	dest->expiration = src->expiration;
+	dest->node_cnt = src->node_cnt;
+
+	if (dest->net_cred)
+		dest->net_cred[0] = '\0';
+	if (src->net_cred)
+		xstrcat(dest->net_cred, src->net_cred);
+
+	xrecalloc(dest->node_addrs, src->node_cnt, sizeof(slurm_addr_t));
+	memcpy(dest->node_addrs, src->node_addrs,
+	       (sizeof(slurm_addr_t) * src->node_cnt));
+
+	if (dest->node_list)
+		dest->node_list[0] = '\0';
+	if (src->node_list)
+		xstrcat(dest->node_list, src->node_list);
+}
+
 extern void slurm_free_node_alias_addrs_members(slurm_node_alias_addrs_t *msg)
 {
 	if (!msg)
