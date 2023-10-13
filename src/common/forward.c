@@ -56,6 +56,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+static slurm_node_alias_addrs_t *last_alias_addrs = NULL;
+static pthread_mutex_t alias_addrs_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 typedef struct {
 	pthread_cond_t *notify;
 	int            *p_thr_count;
@@ -727,6 +730,8 @@ static void _get_dynamic_addrs(hostlist_t *hl, slurm_msg_t *msg)
 {
 	char *name;
 	hostlist_iterator_t *itr;
+	bool try_last = false;
+	hostlist_t *hl_last = NULL;
 
 	xassert(hl);
 	xassert(msg);
@@ -738,6 +743,12 @@ static void _get_dynamic_addrs(hostlist_t *hl, slurm_msg_t *msg)
 		return;
 
 	itr = hostlist_iterator_create(hl);
+	slurm_mutex_lock(&alias_addrs_mutex);
+	if (last_alias_addrs &&
+	    (last_alias_addrs->expiration - time(NULL)) > 10) {
+		try_last = true;
+		hl_last = hostlist_create(last_alias_addrs->node_list);
+	}
 
 	while ((name = hostlist_next(itr))) {
 		slurm_node_alias_addrs_t *alias_addrs;
@@ -749,20 +760,30 @@ static void _get_dynamic_addrs(hostlist_t *hl, slurm_msg_t *msg)
 			continue;
 		}
 
+		if (try_last && (hostlist_find(hl_last, name) >= 0)) {
+			msg->flags |= SLURM_PACK_ADDRS;
+			free(name);
+			continue;
+		}
+		try_last = false;
 		nodelist = hostlist_ranged_string_xmalloc(hl);
 		if (!slurm_get_node_alias_addrs(nodelist, &alias_addrs)) {
-			msg->forward.alias_addrs = *alias_addrs;
-			alias_addrs->net_cred = NULL;
-			alias_addrs->node_addrs = NULL;
-			alias_addrs->node_list = NULL;
 			msg->flags |= SLURM_PACK_ADDRS;
 		}
-		slurm_free_node_alias_addrs(alias_addrs);
+		slurm_free_node_alias_addrs(last_alias_addrs);
+		last_alias_addrs = alias_addrs;
 		free(name);
 		xfree(nodelist);
 		break;
 	}
 	hostlist_iterator_destroy(itr);
+	hostlist_destroy(hl_last);
+
+	if (last_alias_addrs && (msg->flags && SLURM_PACK_ADDRS)) {
+		slurm_copy_node_alias_addrs_members(&(msg->forward.alias_addrs),
+						    last_alias_addrs);
+	}
+	slurm_mutex_unlock(&alias_addrs_mutex);
 }
 
 /*
