@@ -638,6 +638,51 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 }
 
 /*
+ * Get dynamic addrs if forwarding to a unknown/unresolvable nodes.
+ */
+static void _get_dynamic_addrs(hostlist_t *hl, slurm_msg_t *msg)
+{
+	char *name;
+	hostlist_iterator_t *itr;
+
+	xassert(hl);
+	xassert(msg);
+
+	if (running_in_daemon())
+		return;
+
+	if (msg->flags & SLURM_PACK_ADDRS)
+		return;
+
+	itr = hostlist_iterator_create(hl);
+
+	while ((name = hostlist_next(itr))) {
+		slurm_addr_t addr;
+		slurm_node_alias_addrs_t *alias_addrs;
+		char *nodelist;
+
+		if (!slurm_conf_get_addr(name, &addr, 0)) {
+			free(name);
+			continue;
+		}
+
+		nodelist = hostlist_ranged_string_xmalloc(hl);
+		if (!slurm_get_node_alias_addrs(nodelist, &alias_addrs)) {
+			msg->forward.alias_addrs = *alias_addrs;
+			alias_addrs->net_cred = NULL;
+			alias_addrs->node_addrs = NULL;
+			alias_addrs->node_list = NULL;
+			msg->flags |= SLURM_PACK_ADDRS;
+		}
+		slurm_free_node_alias_addrs(alias_addrs);
+		free(name);
+		xfree(nodelist);
+		break;
+	}
+	hostlist_iterator_destroy(itr);
+}
+
+/*
  * start_msg_tree  - logic to begin the forward tree and
  *                   accumulate the return codes from processes getting the
  *                   forwarded message
@@ -666,6 +711,8 @@ extern List start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout)
 
 	hostlist_uniq(hl);
 	host_count = hostlist_count(hl);
+
+	_get_dynamic_addrs(hl, msg);
 
 	if (route_g_split_hostlist(hl, &sp_hl, &hl_count,
 				   msg->forward.tree_width)) {
