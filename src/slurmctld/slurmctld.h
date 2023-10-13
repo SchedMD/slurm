@@ -248,6 +248,7 @@ extern void *acct_db_conn;
 extern uint16_t accounting_enforce;
 extern int   backup_inx;		/* BackupController# index */
 extern int   batch_sched_delay;
+extern bool cloud_dns;
 extern uint32_t   cluster_cpus;
 extern bool disable_remote_singleton;
 extern int max_depend_depth;

@@ -171,17 +171,6 @@ extern void allocate_nodes(job_record_t *job_ptr)
 	node_record_t *node_ptr;
 	bool has_cloud = false, has_cloud_power_save = false;
 	bool has_dynamic_norm = false;
-	static bool cloud_dns = false;
-	static time_t sched_update = 0;
-
-	if (sched_update != slurm_conf.last_update) {
-		if (xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns"))
-			cloud_dns = true;
-		else
-			cloud_dns = false;
-
-		sched_update = slurm_conf.last_update;
-	}
 
 	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
 	     i++) {
@@ -229,17 +218,6 @@ extern void allocate_nodes(job_record_t *job_ptr)
 extern void set_job_alias_list(job_record_t *job_ptr)
 {
 	node_record_t *node_ptr;
-	static bool cloud_dns = false;
-	static time_t sched_update = 0;
-
-	if (sched_update != slurm_conf.last_update) {
-		if (xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns"))
-			cloud_dns = true;
-		else
-			cloud_dns = false;
-
-		sched_update = slurm_conf.last_update;
-	}
 
 	xfree(job_ptr->alias_list);
 

@@ -2043,6 +2043,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	_set_response_cluster_rec();
 
 	consolidate_config_list(true, true);
+	cloud_dns = xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns");
 
 	slurm_conf.last_update = time(NULL);
 end_it:
