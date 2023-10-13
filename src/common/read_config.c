@@ -138,6 +138,7 @@ typedef struct names_ll_s {
 	slurm_addr_t bcast_addr;
 	bool addr_initialized;
 	bool bcast_addr_initialized;
+	bool is_dynamic;
 	struct names_ll_s *next_alias;
 	struct names_ll_s *next_hostname;
 } names_ll_t;
