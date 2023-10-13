@@ -515,6 +515,7 @@ typedef struct slurm_protocol_header {
 } header_t;
 
 typedef struct forward_struct {
+	slurm_node_alias_addrs_t *alias_addrs;
 	char *buf;
 	int buf_len;
 	uint16_t fwd_cnt;

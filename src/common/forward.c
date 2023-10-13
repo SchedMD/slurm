@@ -787,6 +787,7 @@ void destroy_forward_struct(forward_struct_t *forward_struct)
 		xfree(forward_struct->buf);
 		slurm_mutex_destroy(&forward_struct->forward_mutex);
 		slurm_cond_destroy(&forward_struct->notify);
+		slurm_free_node_alias_addrs(forward_struct->alias_addrs);
 		xfree(forward_struct);
 	}
 }
