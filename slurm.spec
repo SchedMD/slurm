@@ -159,7 +159,7 @@ Requires: libjwt >= 1.10.0
 %endif
 
 %if %{with yaml}
-BuildRequires: libyaml >= 0.2.5
+Requires: libyaml >= 0.2.5
 BuildRequires: libyaml-devel >= 0.2.5
 %endif
 
