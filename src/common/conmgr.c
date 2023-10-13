@@ -2157,6 +2157,15 @@ watch:
 	}
 
 	if (work) {
+		if (mgr.shutdown && (mgr.poll_active || mgr.listen_active)) {
+			/*
+			 * poll() hasn't returned yet so signal it to stop again
+			 * and wait for the thread to return
+			 */
+			_signal_change(true);
+			slurm_cond_wait(&mgr.cond, &mgr.mutex);
+		}
+
 		/* wait until something happens */
 		if (!mgr.shutdown)
 			slurm_cond_wait(&mgr.cond, &mgr.mutex);
