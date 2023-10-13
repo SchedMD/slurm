@@ -1435,21 +1435,6 @@ static void _handle_libdir_fixup(launch_tasks_request_msg_t *req,
 	xfree(new);
 }
 
-static int _set_node_alias(launch_tasks_request_msg_t *req)
-{
-	char *alias_list = NULL;
-
-	if (req->cred &&
-	    (alias_list = slurm_cred_get(req->cred,
-					 CRED_DATA_JOB_ALIAS_LIST)) &&
-	    set_nodes_alias(alias_list)) {
-		error("Failed to process alias_list: '%s'", alias_list);
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
-}
-
 static void
 _rpc_launch_tasks(slurm_msg_t *msg)
 {
@@ -1532,12 +1517,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #ifndef HAVE_FRONT_END
 		slurm_mutex_unlock(&prolog_mutex);
 #endif
-		goto done;
-	}
-
-	if (_set_node_alias(req)) {
-		errnum = ESLURM_INVALID_NODE_NAME;
-		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
 	}
 
