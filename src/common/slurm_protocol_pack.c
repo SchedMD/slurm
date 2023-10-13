@@ -12067,7 +12067,7 @@ static void _pack_node_alias_addrs_resp_msg(const slurm_msg_t *smsg,
 
 static int _unpack_node_alias_addrs_resp_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	slurm_node_alias_addrs_t *msg;
+	slurm_node_alias_addrs_t *msg = NULL;
 
 	if (smsg->protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		char *tmp_str = NULL;
