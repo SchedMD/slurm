@@ -124,7 +124,7 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-static munge_ctx_t _munge_ctx_create(void)
+static munge_ctx_t _munge_ctx_create(bool uid_restriction)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
@@ -165,14 +165,16 @@ static munge_ctx_t _munge_ctx_create(void)
 	 * layer of extra security, as non-privileged users cannot
 	 * get at the contents of job credentials.
 	 */
-	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
-			    slurm_conf.slurmd_user_id);
+	if (uid_restriction) {
+		err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
+				    slurm_conf.slurmd_user_id);
 
-	if (err != EMUNGE_SUCCESS) {
-		error("Unable to set uid restriction on munge credentials: %s",
-		      munge_ctx_strerror(ctx));
-		munge_ctx_destroy(ctx);
-		return NULL;
+		if (err != EMUNGE_SUCCESS) {
+			error("Unable to set uid restriction on munge credentials: %s",
+			      munge_ctx_strerror(ctx));
+			munge_ctx_destroy(ctx);
+			return NULL;
+		}
 	}
 
 	return ctx;
@@ -198,7 +200,7 @@ extern int cred_p_sign(char *buffer, int buf_size, char **signature)
 	int retry = RETRY_COUNT;
 	char *cred;
 	munge_err_t err;
-	munge_ctx_t ctx = _munge_ctx_create();
+	munge_ctx_t ctx = _munge_ctx_create(true);
 
 	if (!ctx)
 		return 0;
@@ -239,7 +241,7 @@ static int _decode(char *signature, bool replay_okay, buf_t **buffer)
 	int buf_out_size;
 	int rc = SLURM_SUCCESS;
 	munge_err_t err;
-	munge_ctx_t ctx = _munge_ctx_create();
+	munge_ctx_t ctx = _munge_ctx_create(false);
 
 	if (!ctx)
 		return SLURM_ERROR;
