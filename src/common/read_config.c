@@ -2323,8 +2323,23 @@ static int _check_callback(char *alias, char *hostname, char *address,
 			   slurm_conf_node_t *node_ptr,
 			   config_record_t *config_ptr)
 {
+	bool dynamic_addr = false;
+	static bool cloud_dns = false;
+	static time_t last_update = 0;
+
+        if (last_update != slurm_conf.last_update) {
+                if (xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns"))
+                        cloud_dns = true;
+                else
+                        cloud_dns = false;
+                last_update = slurm_conf.last_update;
+        }
+
+	if (!cloud_dns && (state_val & NODE_STATE_CLOUD))
+		dynamic_addr = true;
+
 	_push_to_hashtbls(alias, hostname, address, bcast_address, port,
-			  false, NULL, false, false);
+			  false, NULL, false, dynamic_addr);
 	return SLURM_SUCCESS;
 }
 
