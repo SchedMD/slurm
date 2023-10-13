@@ -196,7 +196,8 @@ extern const char *cred_p_str_error(int errnum)
 		return munge_strerror ((munge_err_t) errnum);
 }
 
-static int _encode(char **signature, bool uid_restriction, buf_t *buffer)
+static int _encode(char **signature, bool uid_restriction, buf_t *buffer,
+		   int ttl)
 {
 	int retry = RETRY_COUNT;
 	char *cred;
@@ -236,7 +237,7 @@ extern int cred_p_sign(char *buffer, int buf_size, char **signature)
 
 	buf = create_buf(buffer, buf_size);
 	buf->processed = buf_size;
-	rc = _encode(signature, true, buf);
+	rc = _encode(signature, true, buf, 0);
 	xfer_buf_data(buf);
 
 	return rc;
@@ -341,7 +342,7 @@ extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)
 
 	slurm_pack_node_alias_addrs(addrs, buffer, protocol_version);
 
-	if ((rc = _encode(&signature, false, buffer))) {
+	if ((rc = _encode(&signature, false, buffer, 0))) {
 		error("%s: _encode failure: %s",
 		      __func__, slurm_strerror(rc));
 		free_buf(buffer);
