@@ -240,6 +240,8 @@ documents those changes that are of interest to users and administrators.
  -- Rename sbcast --fanout to --treewidth.
  -- Remove SLURM_NODE_ALIASES env variable.
  -- Enable fanout for dynamic and unaddresable cloud nodes.
+ -- Fix how steps are dealloced in an allocation if the last step of an srun
+    never completes due to a node failure.
 
 * Changes in Slurm 23.02.7
 ==========================
