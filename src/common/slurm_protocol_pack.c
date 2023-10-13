@@ -5753,6 +5753,7 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, buf_t *buffer, uint16_t protocol_version)
 		pack32(sib_msg_ptr->req_uid, buffer);
 		pack16(sib_msg_ptr->sib_msg_type, buffer);
 		packstr(sib_msg_ptr->submit_host, buffer);
+		pack16(sib_msg_ptr->submit_proto_ver, buffer);
 		pack32(sib_msg_ptr->user_id, buffer);
 
 		/* add already packed data_buffer to buffer */
@@ -5871,6 +5872,7 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, buf_t *buffer,
 		safe_unpack32(&sib_msg_ptr->req_uid, buffer);
 		safe_unpack16(&sib_msg_ptr->sib_msg_type, buffer);
 		safe_unpackstr(&sib_msg_ptr->submit_host, buffer);
+		safe_unpack16(&sib_msg_ptr->submit_proto_ver, buffer);
 		safe_unpack32(&sib_msg_ptr->user_id, buffer);
 
 		safe_unpack16(&tmp_uint16, buffer);

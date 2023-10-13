@@ -1665,6 +1665,7 @@ bitstr_t *_parse_resp_ctld_mult(slurm_msg_t *resp_msg)
 }
 
 static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
+				     uint16_t start_protocol_version,
 				     bool interactive_job)
 {
 	int error_code = SLURM_SUCCESS;
@@ -1696,11 +1697,18 @@ static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
 		goto send_msg;
 	}
 
+	/*
+	 * Prior to 23.11, the remote cluster didn't pass the job's submission
+	 * protocol version and just uses the remote cluster's rpc version.
+	 */
+	if (!start_protocol_version)
+		start_protocol_version = sibling->rpc_version;
+
 	/* Create new job allocation */
 	job_desc->het_job_offset = NO_VAL;
 	error_code = job_allocate(job_desc, job_desc->immediate, false, NULL,
 				  interactive_job, uid, false, &job_ptr,
-				  &err_msg, sibling->rpc_version);
+				  &err_msg, start_protocol_version);
 	if (!job_ptr ||
 	    (error_code && job_ptr->job_state == JOB_FAILED))
 		reject_job = true;
@@ -1990,6 +1998,7 @@ static void _handle_fed_job_submission(fed_job_update_info_t *job_update_info)
 
 	_fed_mgr_job_allocate_sib(job_update_info->submit_cluster,
 				  job_update_info->submit_desc,
+				  job_update_info->submit_proto_ver,
 				  interactive_job);
 	unlock_slurmctld(job_write_lock);
 }
@@ -3734,7 +3743,8 @@ extern int fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_desc,
  * 	sibling bitmap.
  */
 static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
-				bool alloc_only, uint64_t dest_sibs)
+				bool alloc_only, uint64_t dest_sibs,
+				uint16_t start_protocol_version)
 {
 	int ret_rc = SLURM_SUCCESS;
 	ListIterator sib_itr;
@@ -3757,6 +3767,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	sib_msg.resp_host    = job_desc->resp_host;
 	sib_msg.submit_host  = job_desc->alloc_node;
 	sib_msg.user_id = job_desc->user_id;
+	sib_msg.submit_proto_ver = start_protocol_version;
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_SIB_MSG;
@@ -3856,7 +3867,8 @@ static int _prepare_submit_siblings(job_record_t *job_ptr, uint64_t dest_sibs)
 	msg.msg_type         = REQUEST_RESOURCE_ALLOCATION;
 	msg.data             = job_desc;
 
-	if (_submit_sibling_jobs(job_desc, &msg, false, dest_sibs))
+	if (_submit_sibling_jobs(job_desc, &msg, false, dest_sibs,
+				 job_ptr->start_protocol_ver))
 		error("Failed to submit fed job to siblings");
 
 	/* mark this cluster as an active sibling */
@@ -4349,7 +4361,8 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	if (!job_held && _submit_sibling_jobs(
 				job_desc, msg, alloc_only,
-				job_ptr->fed_details->siblings_viable))
+				job_ptr->fed_details->siblings_viable,
+				job_ptr->start_protocol_ver))
 		info("failed to submit sibling job to one or more siblings");
 	/* Send remote dependencies to siblings */
 	if ((job_ptr->bit_flags & JOB_DEPENDENT) &&
@@ -5832,7 +5845,7 @@ static int _q_sib_job_submission(slurm_msg_t *msg, bool interactive_job)
 	job_update_info->job_id           = job_desc->job_id;
 	job_update_info->submit_cluster   = xstrdup(msg->conn->cluster_name);
 	job_update_info->submit_desc      = job_desc;
-	job_update_info->submit_proto_ver = msg->protocol_version;
+	job_update_info->submit_proto_ver = sib_msg->submit_proto_ver;
 
 	if (interactive_job)
 		job_update_info->type     = FED_JOB_SUBMIT_INT;
