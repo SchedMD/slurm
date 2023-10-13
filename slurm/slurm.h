@@ -1521,6 +1521,14 @@ typedef struct power_mgmt_data {
 				 * of the day */
 } power_mgmt_data_t;
 
+typedef struct {
+	time_t expiration;
+	char *net_cred;
+	slurm_addr_t *node_addrs;
+	uint32_t node_cnt;
+	char *node_list;
+} slurm_node_alias_addrs_t;
+
 #define CORE_SPEC_THREAD 0x8000	/* If set, this is a thread count not core count */
 
 /*
@@ -1959,6 +1967,7 @@ typedef struct slurm_step_layout {
 	char *front_end;	/* If a front-end architecture, the name of
 				 * of the node running all tasks,
 				 * NULL otherwise */
+	slurm_node_alias_addrs_t *alias_addrs;
 	uint32_t node_cnt;	/* node count */
 	char *node_list;        /* list of nodes in step */
 	uint16_t plane_size;	/* plane size when task_dist =
@@ -3113,14 +3122,6 @@ typedef struct slurm_update_node_msg {
 				 * after this amount of seconds */
 	uint32_t weight;	/* new weight for node */
 } update_node_msg_t;
-
-typedef struct {
-	time_t expiration;
-	char *net_cred;
-	slurm_addr_t *node_addrs;
-	uint32_t node_cnt;
-	char *node_list;
-} slurm_node_alias_addrs_t;
 
 typedef struct slurm_update_front_end_msg {
 	char *name;		/* comma separated list of front end nodes */

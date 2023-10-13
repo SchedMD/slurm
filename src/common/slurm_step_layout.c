@@ -507,6 +507,7 @@ extern int slurm_step_layout_destroy(slurm_step_layout_t *step_layout)
 {
 	int i=0;
 	if (step_layout) {
+		slurm_free_node_alias_addrs(step_layout->alias_addrs);
 		xfree(step_layout->front_end);
 		xfree(step_layout->node_list);
 		xfree(step_layout->tasks);
