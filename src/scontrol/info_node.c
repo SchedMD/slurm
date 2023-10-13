@@ -39,6 +39,44 @@
 
 #include "scontrol.h"
 #include "src/interfaces/data_parser.h"
+#include <arpa/inet.h>
+
+extern void scontrol_getaddrs(char *node_list)
+{
+	slurm_node_alias_addrs_t *alias_addrs = NULL;
+	if (!slurm_get_node_alias_addrs(node_list, &alias_addrs)) {
+		char *hostname = NULL;
+		hostlist_t *host_list = NULL;
+		int i = 0;
+
+		if (!(host_list = hostlist_create(alias_addrs->node_list))) {
+			error("hostlist_create error for %s: %m",
+			      node_list);
+			return;
+		}
+
+		while ((hostname = hostlist_shift(host_list))) {
+			char addrbuf[INET6_ADDRSTRLEN] = {0};
+			uint16_t port = 0;
+			slurm_addr_t *addr = &alias_addrs->node_addrs[i++];
+
+			slurm_get_ip_str(addr, (char *)addrbuf,
+					 INET6_ADDRSTRLEN);
+			port = slurm_get_port(addr);
+
+			if (addr->ss_family == AF_INET6)
+				printf("%s: [%s]:%d\n",
+				       hostname, addrbuf, port);
+			else
+				printf("%s: %s:%d\n", hostname, addrbuf, port);
+			free(hostname);
+		}
+
+		hostlist_destroy(host_list);
+	}
+
+	slurm_free_node_alias_addrs(alias_addrs);
+}
 
 /* Load current node table information into *node_buffer_pptr */
 extern int

@@ -178,7 +178,7 @@ static int _file_bcast(struct bcast_parameters *params,
 	slurm_msg_set_r_uid(&msg, SLURM_AUTH_UID_ANY);
 	msg.data = bcast_msg;
 	msg.flags = USE_BCAST_NETWORK;
-	msg.forward.tree_width = params->fanout;
+	msg.forward.tree_width = params->tree_width;
 	msg.msg_type = REQUEST_FILE_BCAST;
 
 	ret_list = slurm_send_recv_msgs(sbcast_cred->node_list, &msg,
@@ -343,10 +343,10 @@ static int _bcast_file(struct bcast_parameters *params)
 		bcast_msg.mtime     = f_stat.st_mtime;
 	}
 
-	if (!params->fanout)
-		params->fanout = DEFAULT_THREADS;
-	else
-		params->fanout = MIN(MAX_THREADS, params->fanout);
+	if (!params->tree_width)
+		params->tree_width = DEFAULT_THREADS;
+	else if (params->tree_width != 0xfffd)
+		params->tree_width = MIN(MAX_THREADS, params->tree_width);
 
 	while (more) {
 		START_TIMER;

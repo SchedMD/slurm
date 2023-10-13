@@ -15,18 +15,10 @@ Slurm.
 For regular, non-dynamically created nodes, Slurm knows how to communicate with
 nodes by reading in the slurm.conf. This is why it is important for a
 non-dynamic setup that the slurm.conf is synchronized across the cluster. For
-dynamically created nodes, other than the slurmctld, the rest of the Slurm
-components (e.g. srun, daemons) don't know about the dynamically created nodes.
-In order for srun and the slurmds to know how to communicate with the other
-nodes in a job allocation, slurmctld passes each node's address information
-(NodeName, NodeAddr, NodeHostname) -- known as the alias list -- to the srun
-and the srun forwards the list to the slurmds. This list is seen in the job's
-environment as the <b>SLURM_NODE_ALIASES</b> environment variable.
-</p>
-
-<p>
-The controller automatically grabs the node's <b>NodeAddr</b> and
-<b>NodeHostname</b> for dynamic slurmd registrations.
+dynamically created nodes, The controller automatically grabs the node's
+<b>NodeAddr</b> and <b>NodeHostname</b> for dynamic slurmd registrations. The
+controller then passes the node addresses to the clients so that they
+communicate, and even fanout, to other nodes.
 </p>
 
 <h2 id="config">Slurm Configuration
@@ -43,19 +35,7 @@ more details.
 
 <dt><b>SelectType=select/cons_tres</b>
 <dd>Dynamic nodes are only supported with cons_tres.
-
-<dt><b>TreeWidth=65533</b>
-<dd>
-Fanning out of controller pings and application launches through slurmds are
-not supported with dynamic nodes. TreeWidth must be disabled (i.e. set to
-65533) for dynamic environments. However, the reverse fanout of step
-completions through slurmds does happen due to the job's alias list.
 </dl>
-</p>
-
-<p>
-<b>NOTE</b>: The <b>cloud_dns</b> <b>SlurmctldParameter</b> must not be set as
-this disables the alias list.
 </p>
 
 <h3 id="config">Partition Assignment
@@ -159,6 +139,6 @@ disabled.
 </p>
 
 
-<p style="text-align:center;">Last modified 8 August 2023</p>
+<p style="text-align:center;">Last modified 15 August 2023</p>
 
 <!--#include virtual="footer.txt"-->

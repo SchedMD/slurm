@@ -138,6 +138,7 @@ typedef struct names_ll_s {
 	slurm_addr_t bcast_addr;
 	bool addr_initialized;
 	bool bcast_addr_initialized;
+	bool is_dynamic;
 	struct names_ll_s *next_alias;
 	struct names_ll_s *next_hostname;
 } names_ll_t;
@@ -197,7 +198,7 @@ static uint16_t *_parse_srun_ports(const char *);
 static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 			      char *bcast_address, uint16_t port,
 			      bool front_end, slurm_addr_t *addr,
-			      bool initialized);
+			      bool initialized, bool dynamic);
 
 static s_p_options_t slurm_conf_stepd_options[] = {
 	{.key = "NodeName",
@@ -2198,7 +2199,7 @@ static int _get_hash_idx(const char *name)
 static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 			      char *bcast_address, uint16_t port,
 			      bool front_end, slurm_addr_t *addr,
-			      bool initialized)
+			      bool initialized, bool dynamic)
 {
 	int hostname_idx, alias_idx;
 	names_ll_t *p, *new;
@@ -2242,6 +2243,7 @@ static void _push_to_hashtbls(char *alias, char *hostname, char *address,
 	new->bcast_address = xstrdup(bcast_address);
 	new->port	= port;
 	new->addr_initialized = initialized;
+	new->is_dynamic = dynamic;
 
 	if (addr)
 		memcpy(&new->addr, addr, sizeof(slurm_addr_t));
@@ -2303,7 +2305,8 @@ static int _register_front_ends(slurm_conf_frontend_t *front_end_ptr)
 	while ((hostname = hostlist_shift(hostname_list))) {
 		address = hostlist_shift(address_list);
 		_push_to_hashtbls(hostname, hostname, address, NULL,
-				  front_end_ptr->port, true, NULL, false);
+				  front_end_ptr->port, true, NULL, false,
+				  false);
 		free(hostname);
 		free(address);
 	}
@@ -2320,8 +2323,25 @@ static int _check_callback(char *alias, char *hostname, char *address,
 			   slurm_conf_node_t *node_ptr,
 			   config_record_t *config_ptr)
 {
+	bool dynamic_addr = false;
+	static bool cloud_dns = false;
+	static time_t last_update = 0;
+
+        if (last_update != slurm_conf.last_update) {
+                if (xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns"))
+                        cloud_dns = true;
+                else
+                        cloud_dns = false;
+                last_update = slurm_conf.last_update;
+        }
+
+	if (!cloud_dns &&
+	    ((state_val & NODE_STATE_CLOUD) ||
+	     (state_val & NODE_STATE_FUTURE)))
+		dynamic_addr = true;
+
 	_push_to_hashtbls(alias, hostname, address, bcast_address, port,
-			  false, NULL, false);
+			  false, NULL, false, dynamic_addr);
 	return SLURM_SUCCESS;
 }
 
@@ -2724,7 +2744,7 @@ extern void slurm_reset_alias(char *node_name, char *node_addr,
 	}
 	if (!p) {
 		_push_to_hashtbls(node_name, node_hostname, node_addr,
-				  NULL, 0, false, NULL, false);
+				  NULL, 0, false, NULL, false, false);
 	}
 	slurm_conf_unlock();
 
@@ -2790,6 +2810,34 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
 	return SLURM_SUCCESS;
 }
 
+extern int slurm_conf_check_addr(const char *node_name, bool *dynamic)
+{
+	int idx;
+	names_ll_t *p;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+
+	idx = _get_hash_idx(node_name);
+	p = node_to_host_hashtbl[idx];
+	while (p && xstrcmp(p->alias, node_name))
+		p = p->next_alias;
+
+	if (!p) {
+		slurm_conf_unlock();
+		return SLURM_ERROR;
+	}
+
+	if (dynamic) {
+		if (p->is_dynamic)
+			*dynamic = true;
+		else
+			*dynamic = false;
+	}
+
+	slurm_conf_unlock();
+	return SLURM_SUCCESS;
+}
 /*
  * gethostname_short - equivalent to gethostname, but return only the first
  * component of the fully qualified name
@@ -3344,48 +3392,6 @@ static int _establish_config_source(char **config_file, int *memfd)
 	debug2("%s: using config_file=%s (fetched)", __func__, *config_file);
 
 	return SLURM_SUCCESS;
-}
-
-/*
- * slurm_reset_alias() for each node in alias_list
- *
- * IN alias_list - string with sets of node name, communication address in []
- * 	and hostname. Each element in the set if colon separated and
- * 	each set is comma separated.
- * 	eg.: ec0:[1.2.3.4]:foo,ec1:[1.2.3.5]:bar
- * RET return SLURM_SUCCESS on success, SLURM_ERROR otherwise.
- */
-extern int set_nodes_alias(const char *alias_list)
-{
-	int rc = SLURM_SUCCESS;
-	char *aliases, *save_ptr = NULL;
-	char *addr, *hostname, *slurm_name;
-
-	aliases = xstrdup(alias_list);
-	slurm_name = strtok_r(aliases, ":", &save_ptr);
-	while (slurm_name) {
-		/* Checking for [] around address */
-		if (save_ptr[0] == '[') {
-			save_ptr++;
-			addr = strtok_r(NULL, "]", &save_ptr);
-			save_ptr++;
-		} else
-			addr = strtok_r(NULL, ":", &save_ptr);
-		if (!addr) {
-			rc = SLURM_ERROR;
-			break;
-		}
-		hostname = strtok_r(NULL, ",", &save_ptr);
-		if (!hostname) {
-			rc = SLURM_ERROR;
-			break;
-		}
-		slurm_reset_alias(slurm_name, addr, hostname);
-		slurm_name = strtok_r(NULL, ":", &save_ptr);
-	}
-	xfree(aliases);
-
-	return rc;
 }
 
 extern int read_conf_send_stepd(int fd)
@@ -5479,7 +5485,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	} else if (xstrcasestr(conf->topology_plugin, "none"))
 		xfree(conf->topology_plugin);
 
-	if (s_p_get_uint16(&conf->tree_width, "TreeWidth", hashtbl)) {
+	if (((conf->tree_width = (getenv("SLURM_TREE_WIDTH") ?
+				  atoi(getenv("SLURM_TREE_WIDTH")) : 0)) > 0) ||
+	    (s_p_get_uint16(&conf->tree_width, "TreeWidth", hashtbl))) {
 		if (conf->tree_width == 0) {
 			error("TreeWidth=0 is invalid");
 			conf->tree_width = DEFAULT_TREE_WIDTH;
@@ -6410,7 +6418,7 @@ extern int add_remote_nodes_to_conf_tbls(char *node_list,
 	while ((hostname = hostlist_shift(host_list))) {
 		_internal_conf_remove_node(hostname);
 		_push_to_hashtbls(hostname, hostname, NULL, NULL, 0,
-				  false, &node_addrs[i++], true);
+				  false, &node_addrs[i++], true, true);
 		free(hostname);
 	}
 	slurm_conf_unlock();
@@ -6446,7 +6454,7 @@ extern void slurm_conf_add_node(node_record_t *node_ptr)
 
 	_push_to_hashtbls(node_ptr->name, node_ptr->node_hostname,
 			  node_ptr->comm_name, node_ptr->bcast_address,
-			  node_ptr->port, false, NULL, false);
+			  node_ptr->port, false, NULL, false, false);
 	slurm_conf_unlock();
 }
 

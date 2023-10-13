@@ -237,6 +237,9 @@ documents those changes that are of interest to users and administrators.
  -- slurm.spec - Add `--with yaml` argument to require YAML support.
  -- Add new rl_log_freq option to SlurmctldParameters to allow sites to limit
     the number of 'RPC limit exceeded...' messages that are logged.
+ -- Rename sbcast --fanout to --treewidth.
+ -- Remove SLURM_NODE_ALIASES env variable.
+ -- Enable fanout for dynamic and unaddresable cloud nodes.
 
 * Changes in Slurm 23.02.7
 ==========================

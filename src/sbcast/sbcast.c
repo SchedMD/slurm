@@ -70,14 +70,10 @@ struct bcast_parameters params;	/* program parameters */
 int main(int argc, char **argv)
 {
 	int rc;
-	char *alias_list;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	log_init("sbcast", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	slurm_init(NULL);
-
-	if ((alias_list = getenv("SLURM_NODE_ALIASES")))
-		set_nodes_alias(alias_list);
 
 	parse_command_line(argc, argv);
 	if (params.verbose) {

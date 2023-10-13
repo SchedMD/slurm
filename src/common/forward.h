@@ -111,6 +111,8 @@ extern void mark_as_failed_forward(List *ret_list, char *node_name, int err);
 
 extern void forward_wait(slurm_msg_t *msg);
 
+extern void fwd_set_alias_addrs(slurm_node_alias_addrs_t *node_alias);
+
 /* destroyers */
 extern void destroy_data_info(void *object);
 extern void destroy_forward(forward_t *forward);

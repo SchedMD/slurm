@@ -263,3 +263,11 @@ foreach preempt_mode $preempt_mode_list {
 		wait_for_account_done $acct_1,$acct_2
 	}
 }
+
+set max_test 3
+set test 0
+while {($test < $max_test) &&
+	![wait_for_node -timeout 1 planned 1]} {
+	incr test
+	$bin_sleep 10
+}

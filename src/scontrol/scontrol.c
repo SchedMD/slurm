@@ -1080,6 +1080,15 @@ static int _process_command (int argc, char **argv)
 				 tag);
 		}
 		exit_flag = 1;
+	} else if (!xstrncasecmp(tag, "getaddrs", MAX(tag_len, 8))) {
+		if (argc == 2)
+			scontrol_getaddrs(argv[1]);
+		else {
+			exit_code = 1;
+			fprintf(stderr,
+				"one argument required for keyword:%s\n",
+				tag);
+		}
 	} else if (!xstrncasecmp(tag, "gethost", MAX(tag_len, 7))) {
 		if (argc == 3)
 			scontrol_gethost(argv[1], argv[2]);

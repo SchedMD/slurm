@@ -312,6 +312,7 @@ static void _dump_node_state(node_record_t *dump_node_ptr, buf_t *buffer)
 	pack_time(dump_node_ptr->boot_req_time, buffer);
 	pack_time(dump_node_ptr->power_save_req_time, buffer);
 	pack_time(dump_node_ptr->last_response, buffer);
+	pack16  (dump_node_ptr->port, buffer);
 	pack16  (dump_node_ptr->protocol_version, buffer);
 	packstr (dump_node_ptr->mcs_label, buffer);
 	(void) gres_node_state_pack(dump_node_ptr->gres_list, buffer,
@@ -368,11 +369,11 @@ extern int load_all_node_state ( bool state_only )
 	time_t power_save_req_time = 0, resume_after = 0;
 
 	/*
-	 * cpu_spec_list and core_spec_cnt are only restored for dynamic nodes,
-	 * otherwise always trust slurm.conf
+	 * cpu_spec_list, core_spec_cnt, port are only restored for dynamic
+	 * nodes, otherwise always trust slurm.conf
 	 */
 	char *cpu_spec_list;
-	uint16_t core_spec_cnt = 0;
+	uint16_t core_spec_cnt = 0, port = 0;
 
 	List gres_list = NULL;
 	node_record_t *node_ptr;
@@ -457,6 +458,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack_time(&boot_req_time, buffer);
 			safe_unpack_time(&power_save_req_time, buffer);
 			safe_unpack_time(&last_response, buffer);
+			safe_unpack16(&port, buffer);
 			safe_unpack16(&obj_protocol_version, buffer);
 			safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
 			if (gres_node_state_unpack(&gres_list, buffer,
@@ -589,6 +591,15 @@ extern int load_all_node_state ( bool state_only )
 				error_code = SLURM_SUCCESS;
 				list_delete_ptr(config_list, config_ptr);
 			} else {
+				if (port) {
+					node_ptr->port = port;
+					/*
+					 * Get node in conf hash tables with
+					 * port. set_node_comm_name() doesn't
+					 * add the node with the port.
+					 */
+					slurm_conf_add_node(node_ptr);
+				}
 				/*
 				 * add_node_record() populates gres_list but we
 				 * want to use the gres_list from state.
@@ -3465,7 +3476,9 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		     bit_test(avail_node_bitmap, node_ptr->index));
 
 	if (!error_code &&
-	    (IS_NODE_CLOUD(node_ptr) || IS_NODE_DYNAMIC_NORM(node_ptr))) {
+	    (IS_NODE_CLOUD(node_ptr) ||
+	     IS_NODE_DYNAMIC_FUTURE(node_ptr) ||
+	     IS_NODE_DYNAMIC_NORM(node_ptr))) {
 		slurm_addr_t addr;
 		char *comm_name = NULL;
 
@@ -5142,6 +5155,9 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 		return SLURM_ERROR;
 	}
 
+	if (conf_node->port_str)
+		node_ptr->port = strtol(conf_node->port_str, NULL, 10);
+
 	/* Get IP of slurmd */
 	if (msg->conn_fd >= 0 &&
 	    !slurm_get_peer_addr(msg->conn_fd, &addr)) {
@@ -5150,8 +5166,13 @@ extern int create_dynamic_reg_node(slurm_msg_t *msg)
 				 INET6_ADDRSTRLEN);
 	}
 
-	set_node_comm_name(node_ptr, comm_name, reg_msg->hostname);
+	xfree(node_ptr->comm_name);
+	node_ptr->comm_name =
+		xstrdup(comm_name ? comm_name : reg_msg->hostname);
 	xfree(comm_name);
+	xfree(node_ptr->node_hostname);
+	node_ptr->node_hostname = xstrdup(reg_msg->hostname);
+	slurm_conf_add_node(node_ptr);
 
 	node_ptr->features = xstrdup(node_ptr->config_ptr->feature);
 	update_feature_list(avail_feature_list, node_ptr->features,

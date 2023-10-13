@@ -1012,13 +1012,13 @@ _read_config(void)
 			conf->hostname);
 
 #ifndef HAVE_FRONT_END
-	node_ptr = find_node_record(conf->node_name);
-	xassert(node_ptr);
+	if (!(node_ptr = find_node_record(conf->node_name))) {
+		error("Unable to find node record for %s",
+		      conf->node_name);
+		exit(1);
+	}
 
-	if (conf->dynamic_type == DYN_NODE_NORM)
-		conf->port = cf->slurmd_port;
-	else
-		conf->port = node_ptr->port;
+	conf->port = node_ptr->port;
 	slurm_conf.slurmd_port = conf->port;
 
 	conf->conf_boards = node_ptr->boards;
@@ -1929,7 +1929,6 @@ static void _validate_dynamic_conf(void)
 {
 	char *invalid_opts[] = {
 		"NodeName=",
-		"Port=", /* Must use SlurmdPort, alias_list doesn't pass port */
 		NULL
 	};
 
@@ -2097,6 +2096,15 @@ _slurmd_init(void)
 	 */
 	cgroup_conf_init();
 
+	/*
+	 * auth and hash plugins must be initialized before the first dynamic
+	 * future registration is send.
+	 */
+	if (auth_g_init() != SLURM_SUCCESS)
+		return SLURM_ERROR;
+	if (hash_g_init() != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
 	_dynamic_init();
 
 	/*
@@ -2181,10 +2189,6 @@ _slurmd_init(void)
 	if (slurmd_task_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (spank_slurmd_init() < 0)
-		return SLURM_ERROR;
-	if (auth_g_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
-	if (hash_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (cred_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;

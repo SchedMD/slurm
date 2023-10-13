@@ -163,25 +163,32 @@ if {$match == 0} {
 # Run "scontrol reconfig" to restore proper features on the node
 reconfigure -fail
 
-# Now run a job with that constraint and make sure it fails
-set match 0
-spawn $srun -t1 -C $feature -N1 $file_in
-expect {
-	-re "Invalid feature" {
-		log_debug "This error was expected, no worries"
-		set match 1
-		exp_continue
+set node_state [get_node_param $node_name "State"]
+if {[string first "DYNAMIC" $node_state] >= 0} {
+	# Dynamic nodes preserve features on restart.
+	set_node_feature $node_name $orig_avail_node_feat $orig_active_node_feat
+} else {
+
+	# Now run a job with that constraint and make sure it fails
+	set match 0
+	spawn $srun -t1 -C $feature -N1 $file_in
+	expect {
+		-re "Invalid feature" {
+			log_debug "This error was expected, no worries"
+			set match 1
+			exp_continue
+		}
+		-re "Unable to contact" {
+			fail "Slurm appears to be down"
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
 	}
-	-re "Unable to contact" {
-		fail "Slurm appears to be down"
+	if {$match != 1} {
+		fail "Ran job with what should be invalid constraint"
 	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$match != 1} {
-	fail "Ran job with what should be invalid constraint"
 }

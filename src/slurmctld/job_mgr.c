@@ -4454,8 +4454,9 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 
 	job_ptr_pend->account = xstrdup(job_ptr->account);
 	job_ptr_pend->admin_comment = xstrdup(job_ptr->admin_comment);
-	job_ptr_pend->alias_list = xstrdup(job_ptr->alias_list);
+	job_ptr_pend->alias_list = NULL;
 	job_ptr_pend->alloc_node = xstrdup(job_ptr->alloc_node);
+	job_ptr_pend->node_addrs = NULL;
 
 	job_ptr_pend->array_recs = job_ptr->array_recs;
 	job_ptr->array_recs = NULL;
@@ -9937,6 +9938,7 @@ extern void job_mgr_list_delete_job(void *job_entry)
 	xfree(job_ptr->mem_per_tres);
 	xfree(job_ptr->name);
 	xfree(job_ptr->network);
+	xfree(job_ptr->node_addrs);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
@@ -15069,6 +15071,8 @@ static void _send_job_kill(job_record_t *job_ptr)
 				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 	if (agent_args->node_count == 0) {
@@ -16087,6 +16091,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	xfree(job_ptr->batch_host);
 	free_job_resources(&job_ptr->job_resrcs);
 	xfree(job_ptr->nodes);
+	xfree(job_ptr->node_addrs);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->failed_node);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
@@ -16570,6 +16575,8 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 
@@ -16626,6 +16633,8 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op)
 				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 
@@ -18755,26 +18764,19 @@ extern void set_remote_working_response(
 			resp->working_cluster_rec = response_cluster_rec;
 		}
 
-		/*
-		 * Don't send node_addr array until the nodes are ready (e.g.
-		 * the alias_list will be TBD until all nodes are powered up)
-		 * The alias_list will not be set if not allocated nodes needing
-		 * to be powered up.
-		 */
-		if (!job_ptr->alias_list ||
-		    xstrcmp(job_ptr->alias_list, "TBD")) {
-			node_record_t *node_ptr;
-
+		if (!job_ptr->node_addrs) {
+			/*
+			 * The job may be owned by the local cluster but a
+			 * remote srun might be trying to launch a job in the
+			 * allocation.
+			 */
+			set_job_node_addrs(job_ptr, req_cluster);
+		}
+		if (job_ptr->node_addrs) {
 			resp->node_addr = xcalloc(job_ptr->node_cnt,
 						  sizeof(slurm_addr_t));
-			for (int i = 0, addr_index = 0;
-			     (node_ptr = next_node_bitmap(job_ptr->node_bitmap,
-							  &i));
-			     i++) {
-				slurm_conf_get_addr(
-					node_ptr->name,
-					&resp->node_addr[addr_index++], 0);
-			}
+			memcpy(resp->node_addr, job_ptr->node_addrs,
+			       job_ptr->node_cnt * sizeof(slurm_addr_t));
 		}
 	}
 }

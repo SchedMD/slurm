@@ -285,6 +285,11 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 		return NULL;
 
 	layout = xmalloc(sizeof(slurm_step_layout_t));
+	if (step_layout->alias_addrs) {
+		layout->alias_addrs = xmalloc(sizeof(slurm_node_alias_addrs_t));
+		slurm_copy_node_alias_addrs_members(layout->alias_addrs,
+						    step_layout->alias_addrs);
+	}
 	layout->node_list = xstrdup(step_layout->node_list);
 	layout->node_cnt = step_layout->node_cnt;
 	layout->start_protocol_ver = step_layout->start_protocol_ver;
@@ -361,9 +366,12 @@ extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
 	}
 	hostlist_iterator_destroy(host_itr);
 
+	/* Don't need to merge alias_addrs it is per-job */
 	step_layout1->task_cnt += step_layout2->task_cnt;
+	xfree(step_layout1->node_list);
 	step_layout1->node_list = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
+	hostlist_destroy(hl2);
 }
 
 extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
@@ -398,6 +406,16 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 			pack32_array(step_layout->cpt_compact_reps,
 				     step_layout->cpt_compact_cnt, buffer);
 		}
+
+		if (step_layout->alias_addrs) {
+			char *tmp_str =
+				create_net_cred(step_layout->alias_addrs,
+						protocol_version);
+			packstr(tmp_str, buffer);
+			xfree(tmp_str);
+		} else {
+			packnull(buffer);
+		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (step_layout)
 			i = 1;
@@ -430,6 +448,7 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, buf_t *buffer,
 	uint32_t num_tids, uint32_tmp;
 	slurm_step_layout_t *step_layout = NULL;
 	int i;
+	char *tmp_str = NULL;
 
 	if (protocol_version >= SLURM_23_11_PROTOCOL_VERSION) {
 		safe_unpack16(&uint16_tmp, buffer);
@@ -462,6 +481,17 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, buf_t *buffer,
 				    &uint32_tmp, buffer);
 		xassert(uint32_tmp == step_layout->cpt_compact_cnt);
 		_build_cpt_from_compact_array(step_layout);
+
+		safe_unpackstr(&tmp_str, buffer);
+		if (tmp_str) {
+			step_layout->alias_addrs =
+				extract_net_cred(tmp_str, protocol_version);
+			if (!step_layout->alias_addrs) {
+				xfree(tmp_str);
+				goto unpack_error;
+			}
+			step_layout->alias_addrs->net_cred = tmp_str;
+		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&uint16_tmp, buffer);
 		if (!uint16_tmp)
@@ -505,6 +535,7 @@ extern int slurm_step_layout_destroy(slurm_step_layout_t *step_layout)
 {
 	int i=0;
 	if (step_layout) {
+		slurm_free_node_alias_addrs(step_layout->alias_addrs);
 		xfree(step_layout->front_end);
 		xfree(step_layout->node_list);
 		xfree(step_layout->tasks);

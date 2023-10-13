@@ -2098,6 +2098,41 @@ static slurm_cli_opt_t slurm_opt_gpus_per_task = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_tree_width(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	if (!xstrcasecmp(arg, "off")) {
+		opt->srun_opt->tree_width = 0xfffd;
+	} else if (parse_uint16((char *)arg, &opt->srun_opt->tree_width)) {
+		error ("Invalid --treewidth value: %s", arg);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_tree_width(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup_printf("%u", opt->srun_opt->tree_width);
+}
+static void arg_reset_tree_width(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->tree_width = 0;
+}
+static slurm_cli_opt_t slurm_opt_tree_width = {
+	.name = "treewidth",
+	.has_arg = required_argument,
+	.val = LONG_OPT_TREE_WIDTH,
+	.set_func_srun = arg_set_tree_width,
+	.get_func = arg_get_tree_width,
+	.reset_func = arg_reset_tree_width,
+};
+
 COMMON_STRING_OPTION(tres_per_task);
 static slurm_cli_opt_t slurm_opt_tres_per_task = {
 	.name = "tres-per-task",
@@ -5331,6 +5366,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_time_limit,
 	&slurm_opt_time_min,
 	&slurm_opt_tmp,
+	&slurm_opt_tree_width,
 	&slurm_opt_tres_per_task,
 	&slurm_opt_uid,
 	&slurm_opt_unbuffered,

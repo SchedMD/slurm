@@ -2909,7 +2909,7 @@ thread per allocated node up to a maximum of 60 concurrent
 threads. Specifying this option limits the number of
 concurrent threads to \fInthreads\fR (less than or equal to 60).
 This should only be used to set a low thread count for testing on
-very small memory computers. This option applies to job allocations.
+very small memory computers.
 .IP
 
 .TP
@@ -2966,6 +2966,13 @@ Specify a minimum amount of temporary disk space per node.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
 This option applies to job allocations.
+.IP
+
+.TP
+\fB\-\-treewidth\fR=<\fIsize\fR>
+Specify the width of the fanout. Default is the \fITreeWidth\fR specified in
+the \fBslurm.conf\fR. The value may not exceed 65533. A value of "off" disables
+the fanout.
 .IP
 
 .TP
@@ -4041,16 +4048,6 @@ Sort free cache pages (run zonesort on Intel KNL nodes).
 .TP
 \fBSLURM_MEM_BIND_VERBOSE\fR
 \fB\-\-mem\-bind\fR verbosity (quiet,verbose).
-.IP
-
-.TP
-\fBSLURM_NODE_ALIASES\fR
-Sets of node name, communication address and hostname for nodes allocated to
-the job from the cloud. Each element in the set if colon separated and each
-set is comma separated. For example:
-.na
-SLURM_NODE_ALIASES\:=\:ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
-.ad
 .IP
 
 .TP

@@ -313,6 +313,8 @@ void ping_nodes (void)
 			hostlist_push_host(reg_agent_args->hostlist,
 					   node_ptr->name);
 			reg_agent_args->node_count++;
+			if (PACK_FANOUT_ADDRS(node_ptr))
+				reg_agent_args->msg_flags |= SLURM_PACK_ADDRS;
 			continue;
 		}
 
@@ -333,6 +335,8 @@ void ping_nodes (void)
 				node_ptr->protocol_version;
 		hostlist_push_host(ping_agent_args->hostlist, node_ptr->name);
 		ping_agent_args->node_count++;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			ping_agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 
@@ -495,6 +499,8 @@ extern void run_health_check(void)
 				node_ptr->protocol_version;
 		hostlist_push_host(check_agent_args->hostlist, node_ptr->name);
 		check_agent_args->node_count++;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			check_agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
 	if (base_node_loc >= node_record_count)
 		base_node_loc = 0;
@@ -558,6 +564,8 @@ extern void update_nodes_acct_gather_data(void)
 				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 

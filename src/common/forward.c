@@ -56,6 +56,9 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+static slurm_node_alias_addrs_t *last_alias_addrs = NULL;
+static pthread_mutex_t alias_addrs_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 typedef struct {
 	pthread_cond_t *notify;
 	int            *p_thr_count;
@@ -92,6 +95,19 @@ void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
 	}
 }
 
+static int _forward_get_addr(forward_struct_t *fwd_struct, char *name,
+			     slurm_addr_t *address)
+{
+	hostlist_t *hl = hostlist_create(fwd_struct->alias_addrs->node_list);
+	int n = hostlist_find(hl, name);
+	hostlist_destroy(hl);
+	if (n < 0)
+		return SLURM_ERROR;
+	*address = fwd_struct->alias_addrs->node_addrs[n];
+
+	return SLURM_SUCCESS;
+}
+
 void *_forward_thread(void *arg)
 {
 	forward_msg_t *fwd_msg = (forward_msg_t *)arg;
@@ -109,10 +125,11 @@ void *_forward_thread(void *arg)
 
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(hl))) {
-		if (slurm_conf_get_addr(name, &addr, fwd_msg->header.flags)
-		    == SLURM_ERROR) {
-			error("forward_thread: can't find address for host "
-			      "%s, check slurm.conf", name);
+		if ((!(fwd_msg->header.flags & SLURM_PACK_ADDRS) ||
+		     _forward_get_addr(fwd_struct, name, &addr)) &&
+		    slurm_conf_get_addr(name, &addr, fwd_msg->header.flags)) {
+			error("%s: can't find address for host %s, check slurm.conf",
+			      __func__, name);
 			slurm_mutex_lock(&fwd_struct->forward_mutex);
 			mark_as_failed_forward(&fwd_struct->ret_list, name,
 					       SLURM_UNKNOWN_FORWARD_ADDR);
@@ -150,6 +167,12 @@ void *_forward_thread(void *arg)
 		xfree(fwd_msg->header.forward.nodelist);
 		fwd_msg->header.forward.nodelist = buf;
 		fwd_msg->header.forward.cnt = hostlist_count(hl);
+
+		if (fwd_msg->header.flags & SLURM_PACK_ADDRS) {
+			fwd_msg->header.forward.alias_addrs =
+				*(fwd_struct->alias_addrs);
+		}
+
 #if 0
 		info("sending %d forwards (%s) to %s",
 		     fwd_msg->header.forward.cnt,
@@ -263,8 +286,8 @@ void *_forward_thread(void *arg)
 				continue;
 			}
 			goto cleanup;
-		} else if ((fwd_msg->header.forward.cnt+1)
-			  != list_count(ret_list)) {
+		} else if ((fwd_msg->header.forward.cnt + 1) !=
+			   list_count(ret_list)) {
 			/* this should never be called since the above
 			   should catch the failed forwards and pipe
 			   them back down, but this is here so we
@@ -277,7 +300,7 @@ void *_forward_thread(void *arg)
 				= hostlist_iterator_create(hl);
 			error("We shouldn't be here.  We forwarded to %d "
 			      "but only got %d back",
-			      (fwd_msg->header.forward.cnt+1),
+			      (fwd_msg->header.forward.cnt + 1),
 			      list_count(ret_list));
 			while ((tmp = hostlist_next(host_itr))) {
 				int node_found = 0;
@@ -334,6 +357,9 @@ cleanup:
 	if ((fd >= 0) && close(fd) < 0)
 		error ("close(%d): %m", fd);
 	hostlist_destroy(hl);
+	fwd_msg->header.forward.alias_addrs.net_cred = NULL;
+	fwd_msg->header.forward.alias_addrs.node_addrs = NULL;
+	fwd_msg->header.forward.alias_addrs.node_list = NULL;
 	destroy_forward(&fwd_msg->header.forward);
 	FREE_NULL_BUFFER(buffer);
 	slurm_cond_signal(&fwd_struct->notify);
@@ -341,6 +367,36 @@ cleanup:
 	xfree(fwd_msg);
 
 	return (NULL);
+}
+
+static int _fwd_tree_get_addr(fwd_tree_t *fwd_tree, char *name,
+			      slurm_addr_t *address)
+{
+	if ((fwd_tree->orig_msg->flags & SLURM_PACK_ADDRS) &&
+	    fwd_tree->orig_msg->forward.alias_addrs.node_addrs) {
+		hostlist_t *hl =
+			hostlist_create(fwd_tree->orig_msg->forward.alias_addrs.node_list);
+		int n = hostlist_find(hl, name);
+		hostlist_destroy(hl);
+		if (n < 0)
+			return SLURM_ERROR;
+		*address =
+			fwd_tree->orig_msg->forward.alias_addrs.node_addrs[n];
+	} else if (slurm_conf_get_addr(name, address,
+				       fwd_tree->orig_msg->flags) ==
+		   SLURM_ERROR) {
+		error("%s: can't find address for host %s, check slurm.conf",
+		      __func__, name);
+		slurm_mutex_lock(fwd_tree->tree_mutex);
+		mark_as_failed_forward(&fwd_tree->ret_list, name,
+				       SLURM_UNKNOWN_FORWARD_ADDR);
+		slurm_cond_signal(fwd_tree->notify);
+		slurm_mutex_unlock(fwd_tree->tree_mutex);
+
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 void *_fwd_tree_thread(void *arg)
@@ -362,15 +418,7 @@ void *_fwd_tree_thread(void *arg)
 
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(fwd_tree->tree_hl))) {
-		if (slurm_conf_get_addr(name, &send_msg.address, send_msg.flags)
-		    == SLURM_ERROR) {
-			error("fwd_tree_thread: can't find address for host "
-			      "%s, check slurm.conf", name);
-			slurm_mutex_lock(fwd_tree->tree_mutex);
-			mark_as_failed_forward(&fwd_tree->ret_list, name,
-					       SLURM_UNKNOWN_FORWARD_ADDR);
- 			slurm_cond_signal(fwd_tree->notify);
-			slurm_mutex_unlock(fwd_tree->tree_mutex);
+		if (_fwd_tree_get_addr(fwd_tree, name, &send_msg.address)) {
 			free(name);
 
 			continue;
@@ -381,6 +429,10 @@ void *_fwd_tree_thread(void *arg)
 			buf = hostlist_ranged_string_xmalloc(
 					fwd_tree->tree_hl);
 			send_msg.forward.nodelist = buf;
+			if (send_msg.flags & SLURM_PACK_ADDRS) {
+				send_msg.forward.alias_addrs =
+					fwd_tree->orig_msg->forward.alias_addrs;
+			}
 		} else
 			send_msg.forward.nodelist = NULL;
 
@@ -567,6 +619,7 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 
 		forward_init(&fwd_msg->header.forward);
 		fwd_msg->header.forward.nodelist = buf;
+		fwd_msg->header.forward.tree_width = header->forward.tree_width;
 		slurm_thread_create_detached(_forward_thread, fwd_msg);
 	}
 }
@@ -605,6 +658,19 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 		return SLURM_ERROR;
 	}
 	hl = hostlist_create(header->forward.nodelist);
+	if (header->flags & SLURM_PACK_ADDRS) {
+		forward_struct->alias_addrs = extract_net_cred(
+			header->forward.alias_addrs.net_cred, header->version);
+		if (!forward_struct->alias_addrs) {
+			error("unable to extract net_cred");
+			hostlist_destroy(hl);
+			return SLURM_ERROR;
+		}
+		forward_struct->alias_addrs->net_cred =
+			header->forward.alias_addrs.net_cred;
+		header->forward.alias_addrs.net_cred = NULL;
+	}
+
 	hostlist_uniq(hl);
 
 	if (route_g_split_hostlist(
@@ -620,6 +686,104 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 	xfree(sp_hl);
 	hostlist_destroy(hl);
 	return SLURM_SUCCESS;
+}
+
+static void _get_alias_addrs(hostlist_t *hl, slurm_msg_t *msg, int *cnt)
+{
+	hostlist_iterator_t *hi;
+	char *node_name;
+	int addr_index = 0;
+	forward_t *forward = &(msg->forward);
+
+	if (!(msg->flags & SLURM_PACK_ADDRS))
+		return;
+	slurm_free_node_alias_addrs_members(&forward->alias_addrs);
+
+	forward->alias_addrs.node_addrs = xcalloc(*cnt, sizeof(slurm_addr_t));
+
+	hi = hostlist_iterator_create(hl);
+	while ((node_name = hostlist_next(hi))) {
+		slurm_addr_t *addr =
+			&forward->alias_addrs.node_addrs[addr_index];
+		if (!slurm_conf_get_addr(node_name, addr, msg->flags)) {
+			++addr_index;
+		} else {
+			hostlist_remove(hi);
+			forward->cnt--;
+			(*cnt)--;
+		}
+		free(node_name);
+	}
+	hostlist_iterator_destroy(hi);
+
+	forward->alias_addrs.node_list = hostlist_ranged_string_xmalloc(hl);
+	forward->alias_addrs.node_cnt = *cnt;
+
+	forward->alias_addrs.net_cred =
+		create_net_cred(&forward->alias_addrs, msg->protocol_version);
+}
+
+/*
+ * Get dynamic addrs if forwarding to a unknown/unresolvable nodes.
+ */
+static void _get_dynamic_addrs(hostlist_t *hl, slurm_msg_t *msg)
+{
+	char *name;
+	hostlist_iterator_t *itr;
+	bool try_last = false;
+	hostlist_t *hl_last = NULL;
+
+	xassert(hl);
+	xassert(msg);
+
+	if (running_in_daemon())
+		return;
+
+	if (msg->flags & SLURM_PACK_ADDRS)
+		return;
+
+	itr = hostlist_iterator_create(hl);
+	slurm_mutex_lock(&alias_addrs_mutex);
+	if (last_alias_addrs &&
+	    (last_alias_addrs->expiration - time(NULL)) > 10) {
+		try_last = true;
+		hl_last = hostlist_create(last_alias_addrs->node_list);
+	}
+
+	while ((name = hostlist_next(itr))) {
+		slurm_node_alias_addrs_t *alias_addrs;
+		char *nodelist;
+		bool dynamic;
+
+		if (!slurm_conf_check_addr(name, &dynamic) && !dynamic) {
+			free(name);
+			continue;
+		}
+
+		if (try_last && (hostlist_find(hl_last, name) >= 0)) {
+			msg->flags |= SLURM_PACK_ADDRS;
+			free(name);
+			continue;
+		}
+		try_last = false;
+		nodelist = hostlist_ranged_string_xmalloc(hl);
+		if (!slurm_get_node_alias_addrs(nodelist, &alias_addrs)) {
+			msg->flags |= SLURM_PACK_ADDRS;
+		}
+		slurm_free_node_alias_addrs(last_alias_addrs);
+		last_alias_addrs = alias_addrs;
+		free(name);
+		xfree(nodelist);
+		break;
+	}
+	hostlist_iterator_destroy(itr);
+	hostlist_destroy(hl_last);
+
+	if (last_alias_addrs && (msg->flags && SLURM_PACK_ADDRS)) {
+		slurm_copy_node_alias_addrs_members(&(msg->forward.alias_addrs),
+						    last_alias_addrs);
+	}
+	slurm_mutex_unlock(&alias_addrs_mutex);
 }
 
 /*
@@ -651,6 +815,9 @@ extern List start_msg_tree(hostlist_t *hl, slurm_msg_t *msg, int timeout)
 
 	hostlist_uniq(hl);
 	host_count = hostlist_count(hl);
+
+	_get_alias_addrs(hl, msg, &host_count);
+	_get_dynamic_addrs(hl, msg);
 
 	if (route_g_split_hostlist(hl, &sp_hl, &hl_count,
 				   msg->forward.tree_width)) {
@@ -748,6 +915,20 @@ extern void forward_wait(slurm_msg_t * msg)
 	return;
 }
 
+extern void fwd_set_alias_addrs(slurm_node_alias_addrs_t *alias_addrs)
+{
+	if (!alias_addrs)
+		return;
+
+	slurm_mutex_lock(&alias_addrs_mutex);
+
+	if (!last_alias_addrs)
+		last_alias_addrs = xmalloc(sizeof(*last_alias_addrs));
+	slurm_copy_node_alias_addrs_members(last_alias_addrs, alias_addrs);
+
+	slurm_mutex_unlock(&alias_addrs_mutex);
+}
+
 void destroy_data_info(void *object)
 {
 	ret_data_info_t *ret_data_info = (ret_data_info_t *)object;
@@ -762,6 +943,7 @@ void destroy_data_info(void *object)
 void destroy_forward(forward_t *forward)
 {
 	if (forward->init == FORWARD_INIT) {
+		slurm_free_node_alias_addrs_members(&forward->alias_addrs);
 		xfree(forward->nodelist);
 		forward->init = 0;
 	} else {
@@ -775,6 +957,7 @@ void destroy_forward_struct(forward_struct_t *forward_struct)
 		xfree(forward_struct->buf);
 		slurm_mutex_destroy(&forward_struct->forward_mutex);
 		slurm_cond_destroy(&forward_struct->notify);
+		slurm_free_node_alias_addrs(forward_struct->alias_addrs);
 		xfree(forward_struct);
 	}
 }

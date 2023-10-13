@@ -248,6 +248,7 @@ extern void *acct_db_conn;
 extern uint16_t accounting_enforce;
 extern int   backup_inx;		/* BackupController# index */
 extern int   batch_sched_delay;
+extern bool cloud_dns;
 extern uint32_t   cluster_cpus;
 extern bool disable_remote_singleton;
 extern int max_depend_depth;
@@ -286,6 +287,11 @@ typedef struct node_features {
 extern List active_feature_list;/* list of currently active node features */
 extern List avail_feature_list;	/* list of available node features */
 extern List conf_includes_list; /* list of conf_includes_map_t */
+
+#define PACK_FANOUT_ADDRS(_X) \
+	(IS_NODE_DYNAMIC_FUTURE(_X) || \
+	 IS_NODE_DYNAMIC_NORM(_X) || \
+	 (!cloud_dns && IS_NODE_CLOUD(_X)))
 
 /*****************************************************************************\
  *  NODE states and bitmaps
@@ -823,6 +829,7 @@ struct job_record {
 	char *network;			/* network/switch requirement spec */
 	uint32_t next_step_id;		/* next step id to be used */
 	char *nodes;			/* list of nodes allocated to job */
+	slurm_addr_t *node_addrs;	/* allocated node addrs */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	bitstr_t *node_bitmap_cg;	/* bitmap of nodes completing job */
 	bitstr_t *node_bitmap_pr;	/* bitmap of nodes with running prolog */
@@ -2355,6 +2362,15 @@ extern void server_thread_decr(void);
 
 /* Increment slurmctld thread count (as applies to thread limit) */
 extern void server_thread_incr(void);
+
+/*
+ * Set a job's node_addrs
+ *
+ * IN job_ptr - job to set node_addrs on
+ * IN origin_cluster - cluster creating/requesting addrs.
+ */
+extern void set_job_node_addrs(job_record_t *job_ptr,
+			       const char *origin_cluster);
 
 /* Set a job's alias_list string */
 extern void set_job_alias_list(job_record_t *job_ptr);

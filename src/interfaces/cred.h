@@ -111,6 +111,7 @@ typedef struct {
 	uint32_t *job_mem_alloc_rep_count;
 	uint32_t job_mem_alloc_size;	/* Size of memory arrays above */
 	uint32_t job_nhosts;		/* count of nodes allocated to JOB */
+	slurm_addr_t *job_node_addrs;	/* allocated node addrs */
 	uint32_t job_ntasks;
 	uint16_t job_oversubscribe;	/* shared/oversubscribe status */
 	list_t *job_gres_list;		/* Generic resources allocated to JOB */
@@ -169,6 +170,7 @@ typedef struct sbcast_cred {
 typedef enum {
 	CRED_DATA_JOB_GRES_LIST = 1,
 	CRED_DATA_JOB_ALIAS_LIST,
+	CRED_DATA_JOB_NODE_ADDRS,
 	CRED_DATA_STEP_GRES_LIST,
 } cred_data_enum_t;
 
@@ -333,5 +335,8 @@ extern void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, uint16_t protocol_version);
 extern void print_sbcast_cred(sbcast_cred_t *sbcast_cred);
 extern void sbcast_cred_arg_free(sbcast_cred_arg_t *arg);
+
+extern char *create_net_cred(void *addrs, uint16_t protocol_version);
+extern void *extract_net_cred(char *net_cred, uint16_t protocol_version);
 
 #endif

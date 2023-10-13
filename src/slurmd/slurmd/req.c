@@ -464,8 +464,7 @@ rwfail:
 }
 
 static int
-_send_slurmstepd_init(int fd, int type, void *req,
-		      slurm_addr_t *cli, slurm_addr_t *self,
+_send_slurmstepd_init(int fd, int type, void *req, slurm_addr_t *cli,
 		      hostlist_t *step_hset, uint16_t protocol_version)
 {
 	int len = 0;
@@ -475,7 +474,6 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	int rank;
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
-	slurm_addr_t parent_addr = {0};
 
 	slurm_msg_t_init(&msg);
 
@@ -534,14 +532,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		 * parent_rank = -1, all nodes talk to the slurmctld
 		 */
 		if (rank > 0 && parent_rank != -1) {
-			int rc;
-			/* Find the slurm_addr_t of this node's parent slurmd
-			 * in the step host list */
 			parent_alias = hostlist_nth(step_hset, parent_rank);
-			rc = slurm_conf_get_addr(parent_alias, &parent_addr, 0);
-			if (rc != SLURM_SUCCESS)
-				error("%s: failed getting address for parent NodeName %s (parent rank %d)",
-				      __func__, parent_alias, parent_rank);
 		}
 #else
 		/* In FRONT_END mode, one slurmd pretends to be all
@@ -561,8 +552,6 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	       rank, conf->node_name,
 	       parent_rank, parent_alias ? parent_alias : "NONE",
 	       children, depth, max_depth);
-	if (parent_alias)
-		free(parent_alias);
 
 	/* send reverse-tree info to the slurmstepd */
 	safe_write(fd, &rank, sizeof(int));
@@ -570,8 +559,16 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	safe_write(fd, &children, sizeof(int));
 	safe_write(fd, &depth, sizeof(int));
 	safe_write(fd, &max_depth, sizeof(int));
-	safe_write(fd, &parent_addr, sizeof(slurm_addr_t));
-
+	if (parent_alias) {
+		len = strlen(parent_alias);
+		safe_write(fd, &len, sizeof(int));
+		safe_write(fd, parent_alias, len);
+		free(parent_alias);
+		parent_alias = NULL;
+	} else {
+		len = 0;
+		safe_write(fd, &len, sizeof(int));
+	}
 	/* send cli address over to slurmstepd */
 	buffer = init_buf(0);
 	slurm_pack_addr(cli, buffer);
@@ -579,20 +576,6 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
 	FREE_NULL_BUFFER(buffer);
-
-	/* send self address over to slurmstepd */
-	if (self) {
-		buffer = init_buf(0);
-		slurm_pack_addr(self, buffer);
-		len = get_buf_offset(buffer);
-		safe_write(fd, &len, sizeof(int));
-		safe_write(fd, get_buf_data(buffer), len);
-		FREE_NULL_BUFFER(buffer);
-
-	} else {
-		len = 0;
-		safe_write(fd, &len, sizeof(int));
-	}
 
 	/* send cpu_frequency info to slurmstepd */
 	cpu_freq_send_info(fd);
@@ -687,9 +670,8 @@ fail:
  * will be init, not slurmd.
  */
 static int
-_forkexec_slurmstepd(uint16_t type, void *req,
-		     slurm_addr_t *cli, slurm_addr_t *self,
-		     hostlist_t *step_hset, uint16_t protocol_version)
+_forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
+		      hostlist_t *step_hset, uint16_t protocol_version)
 {
 	pid_t pid;
 	int to_stepd[2] = {-1, -1};
@@ -730,8 +712,7 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 			error("Unable to close write to_slurmd in parent: %m");
 
 		if ((rc = _send_slurmstepd_init(to_stepd[1], type,
-						req, cli, self,
-						step_hset,
+						req, cli, step_hset,
 						protocol_version)) != 0) {
 			error("Unable to init slurmstepd");
 			goto done;
@@ -1454,21 +1435,6 @@ static void _handle_libdir_fixup(launch_tasks_request_msg_t *req,
 	xfree(new);
 }
 
-static int _set_node_alias(launch_tasks_request_msg_t *req)
-{
-	char *alias_list = NULL;
-
-	if (req->cred &&
-	    (alias_list = slurm_cred_get(req->cred,
-					 CRED_DATA_JOB_ALIAS_LIST)) &&
-	    set_nodes_alias(alias_list)) {
-		error("Failed to process alias_list: '%s'", alias_list);
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
-}
-
 static void
 _rpc_launch_tasks(slurm_msg_t *msg)
 {
@@ -1482,7 +1448,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #endif
 	char *errmsg = NULL;
 
-	slurm_addr_t self;
 	slurm_addr_t *cli = &msg->orig_addr;
 	hostlist_t *step_hset = NULL;
 	job_mem_limits_t *job_limits_ptr;
@@ -1552,12 +1517,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #ifndef HAVE_FRONT_END
 		slurm_mutex_unlock(&prolog_mutex);
 #endif
-		goto done;
-	}
-
-	if (_set_node_alias(req)) {
-		errnum = ESLURM_INVALID_NODE_NAME;
-		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
 	}
 
@@ -1683,14 +1642,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		slurm_mutex_unlock(&job_limits_mutex);
 	}
 
-	if (slurm_get_stream_addr(msg->conn_fd, &self)) {
-		error("%s: slurm_get_stream_addr(): %m", __func__);
-		errnum = errno;
-		goto done;
-	}
-
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
-	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, &self,
+	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli,
 				      step_hset, msg->protocol_version);
 	debug3("%s: return from _forkexec_slurmstepd", __func__);
 
@@ -2140,7 +2093,6 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 {
 	prolog_launch_msg_t *req = msg->data;
 	launch_tasks_request_msg_t *launch_req;
-	slurm_addr_t self;
 	slurm_addr_t *cli = &msg->orig_addr;
 	int rc = SLURM_SUCCESS;
 	int i;
@@ -2235,10 +2187,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	 * for partition booting). Test if the credential has since
 	 * been revoked and exit as needed.
 	 */
-	if (slurm_get_stream_addr(msg->conn_fd, &self)) {
-		error("%s: slurm_get_stream_addr(): %m", __func__);
-		rc = SLURM_ERROR;
-	} else if (cred_revoked(req->cred)) {
+	if (cred_revoked(req->cred)) {
 		info("Job %u already killed, do not launch extern step",
 		     req->job_id);
 		/*
@@ -2253,7 +2202,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 
 		debug3("%s: call to _forkexec_slurmstepd", __func__);
 		rc = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)launch_req,
-					  cli, &self, step_hset,
+					  cli, step_hset,
 					  msg->protocol_version);
 		debug3("%s: return from _forkexec_slurmstepd %d",
 		       __func__, rc);
@@ -2590,7 +2539,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	info("Launching batch job %u for UID %u", req->job_id, batch_uid);
 
 	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
-	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, NULL,
+	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli,
 				  NULL, SLURM_PROTOCOL_VERSION);
 	debug3("_rpc_batch_job: return from _forkexec_slurmstepd: %d", rc);
 

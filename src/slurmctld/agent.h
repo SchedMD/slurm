@@ -62,6 +62,7 @@ typedef struct agent_arg {
 	uint16_t        protocol_version; /* protocol version to use */
 	slurm_msg_type_t msg_type;	/* RPC to be issued */
 	void		*msg_args;	/* RPC data to be transmitted */
+	uint16_t msg_flags;		/* Flags to be added to msg */
 } agent_arg_t;
 
 /* Start a thread to manage queued agent requests */

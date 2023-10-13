@@ -48,8 +48,10 @@
 
 #include "slurm/slurm_errno.h"
 
+#include "src/common/slurm_xlator.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -122,12 +124,12 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-static munge_ctx_t _munge_ctx_create(void)
+static munge_ctx_t _munge_ctx_create(bool uid_restriction, int auth_ttl)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
 	char *socket;
-	int auth_ttl, rc;
+	int rc;
 
 	if ((ctx = munge_ctx_create()) == NULL) {
 		error("%s: munge_ctx_create failed", __func__);
@@ -146,7 +148,9 @@ static munge_ctx_t _munge_ctx_create(void)
 		}
 	}
 
-	auth_ttl = slurm_get_auth_ttl();
+	if (!auth_ttl)
+		auth_ttl = slurm_get_auth_ttl();
+
 	if (auth_ttl) {
 		rc = munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
 		if (rc != EMUNGE_SUCCESS) {
@@ -163,14 +167,16 @@ static munge_ctx_t _munge_ctx_create(void)
 	 * layer of extra security, as non-privileged users cannot
 	 * get at the contents of job credentials.
 	 */
-	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
-			    slurm_conf.slurmd_user_id);
+	if (uid_restriction) {
+		err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
+				    slurm_conf.slurmd_user_id);
 
-	if (err != EMUNGE_SUCCESS) {
-		error("Unable to set uid restriction on munge credentials: %s",
-		      munge_ctx_strerror(ctx));
-		munge_ctx_destroy(ctx);
-		return NULL;
+		if (err != EMUNGE_SUCCESS) {
+			error("Unable to set uid restriction on munge credentials: %s",
+			      munge_ctx_strerror(ctx));
+			munge_ctx_destroy(ctx);
+			return NULL;
+		}
 	}
 
 	return ctx;
@@ -190,19 +196,20 @@ extern const char *cred_p_str_error(int errnum)
 		return munge_strerror ((munge_err_t) errnum);
 }
 
-/* NOTE: Caller must xfree the signature returned by sig_pp */
-extern int cred_p_sign(char *buffer, int buf_size, char **signature)
+static int _encode(char **signature, bool uid_restriction, buf_t *buffer,
+		   int ttl)
 {
 	int retry = RETRY_COUNT;
 	char *cred;
 	munge_err_t err;
-	munge_ctx_t ctx = _munge_ctx_create();
+	munge_ctx_t ctx = _munge_ctx_create(uid_restriction, 0);
 
 	if (!ctx)
 		return 0;
 
 again:
-	err = munge_encode(&cred, ctx, buffer, buf_size);
+	err = munge_encode(&cred, ctx, get_buf_data(buffer),
+			   get_buf_offset(buffer));
 	if (err != EMUNGE_SUCCESS) {
 		if ((err == EMUNGE_SOCKET) && retry--) {
 			debug("Munge encode failed: %s (retrying ...)",
@@ -222,13 +229,28 @@ again:
 	return 0;
 }
 
+/* NOTE: Caller must xfree the signature returned by sig_pp */
+extern int cred_p_sign(char *buffer, int buf_size, char **signature)
+{
+	int rc = SLURM_SUCCESS;
+	buf_t *buf = NULL;
+
+	buf = create_buf(buffer, buf_size);
+	buf->processed = buf_size;
+	rc = _encode(signature, true, buf, 0);
+	xfer_buf_data(buf);
+
+	return rc;
+}
+
 /*
  * WARNING: the buf_t returned from this is slightly non-standard.
  * The head points to malloc()'d memory, not xmalloc()'d, and needs
  * to be managed directly. This is done so the buffer can be used
  * alongside the unpack functions without an additional memcpy step.
  */
-static int _decode(char *signature, bool replay_okay, buf_t **buffer)
+static int _decode(char *signature, bool replay_okay, buf_t **buffer,
+		   time_t *expiration)
 {
 	int retry = RETRY_COUNT;
 	uid_t uid;
@@ -237,7 +259,7 @@ static int _decode(char *signature, bool replay_okay, buf_t **buffer)
 	int buf_out_size;
 	int rc = SLURM_SUCCESS;
 	munge_err_t err;
-	munge_ctx_t ctx = _munge_ctx_create();
+	munge_ctx_t ctx = _munge_ctx_create(false, 0);
 
 	if (!ctx)
 		return SLURM_ERROR;
@@ -276,6 +298,14 @@ again:
 		goto end_it;
 	}
 
+	if (expiration) {
+		int ttl;
+		time_t t;
+		munge_ctx_get(ctx, MUNGE_OPT_TTL, &ttl);
+		munge_ctx_get(ctx, MUNGE_OPT_ENCODE_TIME, &t);
+		*expiration = t + ttl;
+	}
+
 	munge_ctx_destroy(ctx);
 	*buffer = create_buf(buf_out, buf_out_size);
 	return SLURM_SUCCESS;
@@ -297,7 +327,7 @@ extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
 	replay_okay = true;
 #endif
 
-	rc = _decode(signature, replay_okay, &payload);
+	rc = _decode(signature, replay_okay, &payload, NULL);
 
 	if (buf_size != payload->size)
 		rc = ESIG_BUF_SIZE_MISMATCH;
@@ -311,4 +341,52 @@ extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
 	}
 
 	return rc;
+}
+
+extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)
+{
+	int rc;
+	char *signature;
+	buf_t *buffer = init_buf(BUF_SIZE);
+
+	slurm_pack_node_alias_addrs(addrs, buffer, protocol_version);
+
+	if ((rc = _encode(&signature, false, buffer, 0))) {
+		error("%s: _encode failure: %s",
+		      __func__, slurm_strerror(rc));
+		free_buf(buffer);
+		return NULL;
+	}
+
+	free_buf(buffer);
+	return signature;
+}
+
+extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
+{
+	int rc;
+	time_t expiration;
+	slurm_node_alias_addrs_t *addrs = NULL;
+	buf_t *buffer = NULL;
+
+	/* warning: do not use free_buf() on the returned buffer */
+	if ((rc = _decode(net_cred, true, &buffer, &expiration))) {
+		error("%s: failed decode", __func__);
+		return NULL;
+	}
+
+	if (slurm_unpack_node_alias_addrs(&addrs, buffer, protocol_version)) {
+		error("%s: failed unpack", __func__);
+		if (buffer) {
+			free(get_buf_data(buffer));
+			xfree(buffer);
+		}
+		return NULL;
+	}
+	addrs->expiration = expiration;
+	if (buffer) {
+		free(get_buf_data(buffer));
+		xfree(buffer);
+	}
+	return addrs;
 }

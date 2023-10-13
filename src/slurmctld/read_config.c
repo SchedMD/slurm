@@ -1580,7 +1580,8 @@ int read_slurm_conf(int recover, bool reconfig)
 		old_max_node_cnt = slurm_conf.max_node_cnt;
 
 		for (i = 0; i < node_record_count; i++) {
-			if (!(node_ptr = old_node_table_ptr[i]))
+			if (!(node_ptr = old_node_table_ptr[i]) ||
+			    IS_NODE_DYNAMIC_NORM(node_ptr))
 				continue;
 			/*
 			 * Store the original configured CPU count somewhere
@@ -2043,6 +2044,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	_set_response_cluster_rec();
 
 	consolidate_config_list(true, true);
+	cloud_dns = xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns");
 
 	slurm_conf.last_update = time(NULL);
 end_it:
@@ -3379,6 +3381,8 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 	    (job_ptr->front_end_ptr != NULL))
 		job_ptr->front_end_ptr->job_cnt_run++;
 
+	set_job_alias_list(job_ptr);
+
 	return cnt;
 }
 
@@ -3391,6 +3395,9 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 	     i++) {
 		node_ptr->sus_job_cnt++;
 	}
+
+	set_job_alias_list(job_ptr);
+
 	return;
 }
 

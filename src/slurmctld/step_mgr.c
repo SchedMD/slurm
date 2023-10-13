@@ -676,6 +676,8 @@ void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			agent_args->msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 
@@ -4000,6 +4002,19 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 		step_layout->start_protocol_ver = step_ptr->start_protocol_ver;
 	}
 
+	if (job_ptr->node_addrs) {
+		step_layout->alias_addrs =
+			xmalloc(sizeof(slurm_node_alias_addrs_t));
+		step_layout->alias_addrs->node_cnt = job_ptr->node_cnt;
+		step_layout->alias_addrs->node_addrs =
+			xcalloc(job_ptr->node_cnt,
+				sizeof(slurm_addr_t));
+		memcpy(step_layout->alias_addrs->node_addrs,
+		       job_ptr->node_addrs,
+		       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
+		step_layout->alias_addrs->node_list = xstrdup(job_ptr->nodes);
+	}
+
 	return step_layout;
 }
 
@@ -5373,6 +5388,8 @@ static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 			hostlist_push_host(agent_args->hostlist,
 					   node_ptr->name);
 			agent_args->node_count++;
+			if (PACK_FANOUT_ADDRS(node_ptr))
+				agent_args->msg_flags |= SLURM_PACK_ADDRS;
 		}
 	} else {
 		/* Could happen on node failure */

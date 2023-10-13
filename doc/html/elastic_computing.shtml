@@ -161,12 +161,6 @@ for a resume request to be issued as needed for new work. The default value is
 <dd>Time permitted for TCP connections to be established. This value may need
 to be increased from the default (2 seconds) to account for latency between
 your local site and machines in the cloud.
-<dt><b>TreeWidth</b>
-<dd>Since the slurmd daemons are not aware of the network addresses of other
-nodes in the cloud, the slurmd daemons on each node should be sent messages
-directly and not forward those messages between each other. To do so,
-configure TreeWidth to a number at least as large as the maximum node count.
-The value may not exceed 65533.
 </dl>
 </p>
 
@@ -225,7 +219,6 @@ SuspendProgram=/usr/sbin/slurm_suspend
 ResumeProgram=/usr/sbin/slurm_suspend
 SuspendTime=600
 SuspendExcNodes=tux[0-127]
-TreeWidth=128
 
 NodeName=DEFAULT    Sockets=1 CoresPerSocket=4 ThreadsPerCore=2
 NodeName=tux[0-127] Weight=1 Feature=local State=UNKNOWN
@@ -273,18 +266,6 @@ are preserved when the slurmctld daemon is restarted unless the "-c"
 
 <p>The <i>SuspendProgram</i> only needs to relinquish the node back to the
 cloud.</p>
-
-<p>An environment variable SLURM_NODE_ALIASES contains sets of node name,
-communication address and hostname.
-The variable is set by salloc, sbatch, and srun.
-It is then used by srun to determine the destination for job launch
-communication messages.
-This environment variable is only set for nodes allocated from the cloud.
-If a job is allocated some resources from the local cluster and others from
-the cloud, only those nodes from the cloud will appear in SLURM_NODE_ALIASES.
-Each set of names and addresses is comma separated and
-the elements within the set are separated by colons. For example:<br>
-SLURM_NODE_ALIASES=ec0:123.45.67.8:foo,ec2:123.45.67.9:bar</p>
 
 <h2 id="cloud">Cloud Node Lifecycle
 <a class="slurm_link" href="#cloud"></a>
@@ -655,6 +636,6 @@ $ curl -k -s \
 </pre>
 </p>
 
-<p style="text-align:center;">Last modified 8 August 2023</p>
+<p style="text-align:center;">Last modified 15 August 2023</p>
 
 <!--#include virtual="footer.txt"-->

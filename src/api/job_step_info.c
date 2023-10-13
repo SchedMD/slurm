@@ -44,6 +44,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/cpu_frequency.h"
+#include "src/common/forward.h"
 #include "src/common/parse_time.h"
 #include "src/interfaces/select.h"
 #include "src/common/slurm_protocol_api.h"
@@ -621,6 +622,7 @@ extern int slurm_job_step_stat(slurm_step_id_t *step_id,
 		node_list = step_layout->node_list;
 		use_protocol_ver = MIN(SLURM_PROTOCOL_VERSION,
 				       step_layout->start_protocol_ver);
+		fwd_set_alias_addrs(step_layout->alias_addrs);
 	}
 
  	if (!*resp) {
@@ -730,6 +732,7 @@ extern int slurm_job_step_get_pids(slurm_step_id_t *step_id,
 			return rc;
 		}
 		node_list = step_layout->node_list;
+		fwd_set_alias_addrs(step_layout->alias_addrs);
 	}
 
 	if (!*resp) {

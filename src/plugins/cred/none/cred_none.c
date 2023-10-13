@@ -116,3 +116,13 @@ extern int cred_p_verify_sign(char *buffer, uint32_t buf_size, char *signature)
 		return ESIG_INVALID;
 	return SLURM_SUCCESS;
 }
+
+extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)
+{
+	return NULL;
+}
+
+extern void *cred_p_extract_net_cred(char *net_cred, uint16_t protocol_version)
+{
+	return NULL;
+}

@@ -171,17 +171,6 @@ extern void allocate_nodes(job_record_t *job_ptr)
 	node_record_t *node_ptr;
 	bool has_cloud = false, has_cloud_power_save = false;
 	bool has_dynamic_norm = false;
-	static bool cloud_dns = false;
-	static time_t sched_update = 0;
-
-	if (sched_update != slurm_conf.last_update) {
-		if (xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns"))
-			cloud_dns = true;
-		else
-			cloud_dns = false;
-
-		sched_update = slurm_conf.last_update;
-	}
 
 	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
 	     i++) {
@@ -220,43 +209,61 @@ extern void allocate_nodes(job_record_t *job_ptr)
 			job_ptr->wait_all_nodes = 1;
 		} else
 			set_job_alias_list(job_ptr);
+	} else {
+		/* set addrs if the job is coming from a different cluster */
+		set_job_node_addrs(job_ptr, job_ptr->origin_cluster);
 	}
 
 	return;
+}
+
+/*
+ * Set addrs if:
+ * 1. There is an alias_list (cloud/dynamic nodes) and it isn't TBD (nodes are
+ *    powering up).
+ * 2. No alias_list but job/request is from a different cluster.
+ */
+extern void set_job_node_addrs(job_record_t *job_ptr,
+			       const char *origin_cluster)
+{
+	if (!job_ptr->node_addrs &&
+	    job_ptr->node_bitmap &&
+	    bit_set_count(job_ptr->node_bitmap) &&
+	    ((!job_ptr->alias_list && /* remote job */
+	      origin_cluster &&
+	      xstrcmp(origin_cluster, slurm_conf.cluster_name)) ||
+	     (job_ptr->alias_list && xstrcmp(job_ptr->alias_list, "TBD")))) {
+		node_record_t *node_ptr;
+
+		job_ptr->node_addrs =
+			xcalloc(bit_set_count(job_ptr->node_bitmap),
+				sizeof(slurm_addr_t));
+		for (int i = 0, addr_index = 0;
+		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap,
+						  &i));
+		     i++) {
+			slurm_conf_get_addr(node_ptr->name,
+					    &job_ptr->node_addrs[addr_index++],
+					    0);
+		}
+	}
 }
 
 /* Set a job's alias_list string */
 extern void set_job_alias_list(job_record_t *job_ptr)
 {
 	node_record_t *node_ptr;
-	static bool cloud_dns = false;
-	static time_t sched_update = 0;
-
-	if (sched_update != slurm_conf.last_update) {
-		if (xstrcasestr(slurm_conf.slurmctld_params, "cloud_dns"))
-			cloud_dns = true;
-		else
-			cloud_dns = false;
-
-		sched_update = slurm_conf.last_update;
-	}
 
 	xfree(job_ptr->alias_list);
 
-	if (cloud_dns)
+	if (cloud_dns && bit_super_set(job_ptr->node_bitmap, cloud_node_bitmap))
 		return;
 
 	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
 	     i++) {
 		if (IS_NODE_DYNAMIC_FUTURE(node_ptr) ||
 		    IS_NODE_DYNAMIC_NORM(node_ptr) ||
-		    IS_NODE_CLOUD(node_ptr)) {
-			if (IS_NODE_POWERED_DOWN(node_ptr) ||
-			    IS_NODE_POWERING_UP(node_ptr)) {
-				xfree(job_ptr->alias_list);
-				job_ptr->alias_list = xstrdup("TBD");
-				break;
-			}
+		    (!cloud_dns && IS_NODE_CLOUD(node_ptr))) {
 			if (job_ptr->alias_list)
 				xstrcat(job_ptr->alias_list, ",");
 
@@ -265,6 +272,8 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 				   node_ptr->node_hostname);
 		}
 	}
+
+	set_job_node_addrs(job_ptr, job_ptr->origin_cluster);
 }
 
 extern void set_job_features_use(job_details_t *details_ptr)
@@ -302,6 +311,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	node_record_t *node_ptr;
 	hostlist_t *hostlist = NULL;
 	uint16_t use_protocol_version = 0;
+	uint16_t msg_flags = 0;
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #endif
@@ -406,6 +416,8 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		if (hostlist)
 			hostlist_push_host(hostlist, node_ptr->name);
 		node_count++;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 	if (job_ptr->details->prolog_running) {
@@ -466,6 +478,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	agent_args->protocol_version = use_protocol_version;
 	agent_args->hostlist = hostlist;
 	agent_args->node_count = node_count;
+	agent_args->msg_flags = msg_flags;
 
 	last_node_update = time(NULL);
 	kill_job = create_kill_job_msg(job_ptr, use_protocol_version);
@@ -2962,6 +2975,13 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 		cred_arg->job_nhosts = resrcs->nhosts;
 		cred_arg->sock_core_rep_count = resrcs->sock_core_rep_count;
 		cred_arg->sockets_per_node = resrcs->sockets_per_node;
+
+		if (job_ptr->node_addrs) {
+			cred_arg->job_node_addrs =
+				xcalloc(resrcs->nhosts, sizeof(slurm_addr_t));
+			memcpy(cred_arg->job_node_addrs, job_ptr->node_addrs,
+			       resrcs->nhosts * sizeof(slurm_addr_t));
+		}
 	}
 
 	if (job_ptr->part_ptr)
@@ -2977,6 +2997,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 {
 	prolog_launch_msg_t *prolog_msg_ptr;
 	uint16_t protocol_version = job_ptr->start_protocol_ver;
+	uint16_t msg_flags = 0;
 	agent_arg_t *agent_arg_ptr;
 	job_resources_t *job_resrcs_ptr;
 	slurm_cred_arg_t cred_arg;
@@ -3002,6 +3023,8 @@ extern void launch_prolog(job_record_t *job_ptr)
 	     i++) {
 		if (protocol_version > node_ptr->protocol_version)
 			protocol_version = node_ptr->protocol_version;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
 
@@ -3112,6 +3135,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 #endif
 	agent_arg_ptr->msg_type = REQUEST_LAUNCH_PROLOG;
 	agent_arg_ptr->msg_args = (void *) prolog_msg_ptr;
+	agent_arg_ptr->msg_flags = msg_flags;
 
 	/* At least on a Cray we have to treat this as a real step, so
 	 * this is where to do it.
@@ -4441,6 +4465,8 @@ extern void re_kill_job(job_record_t *job_ptr)
 						   node_ptr->name);
 				agent_args->node_count++;
 			}
+			if (PACK_FANOUT_ADDRS(node_ptr))
+				agent_args->msg_flags |= SLURM_PACK_ADDRS;
 		}
 	}
 #endif

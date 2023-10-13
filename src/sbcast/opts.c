@@ -60,6 +60,7 @@
 #define OPT_LONG_USAGE     0x102
 #define OPT_LONG_SEND_LIBS 0x103
 #define OPT_LONG_AUTOCOMP  0x104
+#define OPT_LONG_TREE_WIDTH 0x105
 
 
 /* getopt_long options, integers but not characters */
@@ -83,6 +84,7 @@ extern void parse_command_line(int argc, char **argv)
 		{"compress",  optional_argument, 0, 'C'},
 		{"exclude",   required_argument, 0, OPT_LONG_EXCLUDE},
 		{"fanout",    required_argument, 0, 'F'},
+		{"treewidth",    required_argument, 0, OPT_LONG_TREE_WIDTH},
 		{"force",     no_argument,       0, 'f'},
 		{"jobid",     required_argument, 0, 'j'},
 		{"send-libs", optional_argument, 0, OPT_LONG_SEND_LIBS},
@@ -115,8 +117,13 @@ extern void parse_command_line(int argc, char **argv)
 		xfree(params.exclude);
 		params.exclude = xstrdup(env_val);
 	}
-	if ( ( env_val = getenv("SBCAST_FANOUT") ) )
-		params.fanout = atoi(env_val);
+	if ((env_val = getenv("SBCAST_TREE_WIDTH")) ||
+	    (env_val = getenv("SBCAST_FANOUT"))) {
+		if (!xstrcasecmp(env_val, "off"))
+			params.tree_width = 0xfffd;
+		else
+			params.tree_width = atoi(env_val);
+	}
 	if (getenv("SBCAST_FORCE"))
 		params.flags |= BCAST_FLAG_FORCE;
 
@@ -163,8 +170,12 @@ extern void parse_command_line(int argc, char **argv)
 		case (int)'f':
 			params.flags |= BCAST_FLAG_FORCE;
 			break;
+		case OPT_LONG_TREE_WIDTH:
 		case (int)'F':
-			params.fanout = atoi(optarg);
+			if (!xstrcasecmp(optarg, "off"))
+				params.tree_width = 0xfffd;
+			else
+				params.tree_width = atoi(optarg);
 			break;
 		case (int)'j':
 			params.selected_step = slurm_parse_step_str(optarg);
@@ -291,7 +302,7 @@ static void _print_options( void )
 	info("exclude    = %s", params.exclude);
 	info("force      = %s",
 	     (params.flags & BCAST_FLAG_FORCE) ? "true" : "false");
-	info("fanout     = %d", params.fanout);
+	info("treewidth     = %d", params.tree_width);
 	info("preserve   = %s",
 	     (params.flags & BCAST_FLAG_PRESERVE) ? "true" : "false");
 	info("send_libs  = %s",
@@ -316,7 +327,7 @@ Usage: sbcast [OPTIONS] SOURCE DEST\n\
   -C, --compress[=lib]  compress the file being transmitted\n\
   --exclude=<path_list> shared object paths to be excluded\n\
   -f, --force           replace destination file as required\n\
-  -F, --fanout=num      specify message fanout\n\
+  --treewidth=num       specify message treewidth\n\
   -j, --jobid=#[+#][.#] specify job ID with optional hetjob offset and/or step ID\n\
   -p, --preserve        preserve modes and times of source file\n\
   --send-libs[=yes|no]  autodetect and broadcast executable's shared objects\n\

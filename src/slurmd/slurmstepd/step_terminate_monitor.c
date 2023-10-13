@@ -176,7 +176,7 @@ static void *_monitor(void *arg)
 		}
 
 		/* stepd_cleanup always returns rc as a pass-through */
-		(void) stepd_cleanup(NULL, step, NULL, NULL, rc, 0);
+		(void) stepd_cleanup(NULL, step, NULL, rc, false);
 	} else if (rc != 0) {
 		error("Error waiting on condition in _monitor: %m");
 	}

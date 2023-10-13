@@ -87,13 +87,12 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
-			     slurm_addr_t **_self, slurm_msg_t **_msg);
+			    slurm_msg_t **_msg);
 
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock);
 static void _got_ack_from_slurmd(int);
-static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_addr_t *self,
-				     slurm_msg_t *msg);
+static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg);
 #ifdef MEMORY_LEAK_DEBUG
 static void _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc);
 #endif
@@ -120,7 +119,6 @@ main (int argc, char **argv)
 {
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 	slurm_addr_t *cli;
-	slurm_addr_t *self;
 	slurm_msg_t *msg;
 	stepd_step_rec_t *step;
 	int rc = 0;
@@ -138,11 +136,11 @@ main (int argc, char **argv)
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
 	/* Receive job parameters from the slurmd */
-	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg);
+	_init_from_slurmd(STDIN_FILENO, argv, &cli, &msg);
 
 	/* Create the stepd_step_rec_t, mostly from info in a
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
-	if (!(step = _step_setup(cli, self, msg))) {
+	if (!(step = _step_setup(cli, msg))) {
 		_send_fail_to_slurmd(STDOUT_FILENO);
 		rc = SLURM_ERROR;
 		goto ending;
@@ -182,14 +180,13 @@ main (int argc, char **argv)
 	 * and blocks until the step is complete */
 	rc = job_manager(step);
 
-	return stepd_cleanup(msg, step, cli, self, rc, 0);
+	return stepd_cleanup(msg, step, cli, rc, false);
 ending:
-	return stepd_cleanup(msg, step, cli, self, rc, 1);
+	return stepd_cleanup(msg, step, cli, rc, true);
 }
 
 extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
-			 slurm_addr_t *cli, slurm_addr_t *self,
-			 int rc, bool only_mem)
+			 slurm_addr_t *cli, int rc, bool only_mem)
 {
 	slurm_mutex_lock(&cleanup_mutex);
 
@@ -251,7 +248,6 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	cgroup_conf_destroy();
 
 	xfree(cli);
-	xfree(self);
 	xfree(conf->block_map);
 	xfree(conf->block_map_inv);
 	xfree(conf->hostname);
@@ -549,8 +545,8 @@ static void _set_job_log_prefix(slurm_step_id_t *step_id)
  *  sent by _send_slurmstepd_init() in src/slurmd/slurmd/req.c.
  */
 static int
-_init_from_slurmd(int sock, char **argv,
-		  slurm_addr_t **_cli, slurm_addr_t **_self, slurm_msg_t **_msg)
+_init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
+		  slurm_msg_t **_msg)
 {
 	char *incoming_buffer = NULL;
 	buf_t *buffer;
@@ -558,7 +554,6 @@ _init_from_slurmd(int sock, char **argv,
 	int len;
 	uint16_t proto;
 	slurm_addr_t *cli = NULL;
-	slurm_addr_t *self = NULL;
 	slurm_msg_t *msg = NULL;
 	slurm_step_id_t step_id = {
 		.job_id = 0,
@@ -589,14 +584,19 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, &step_complete.children, sizeof(int));
 	safe_read(sock, &step_complete.depth, sizeof(int));
 	safe_read(sock, &step_complete.max_depth, sizeof(int));
-	safe_read(sock, &step_complete.parent_addr, sizeof(slurm_addr_t));
+	safe_read(sock, &len, sizeof(int));
+	if (len) {
+		step_complete.parent_name = xmalloc(len + 1);
+		safe_read(sock, step_complete.parent_name, len);
+	}
+
 	if (step_complete.children)
 		step_complete.bits = bit_alloc(step_complete.children);
 	step_complete.jobacct = jobacctinfo_create(NULL);
 	slurm_mutex_unlock(&step_complete.lock);
 
-	debug3("slurmstepd rank %d, parent = %pA",
-	       step_complete.rank, &step_complete.parent_addr);
+	debug3("slurmstepd rank %d, parent = %s",
+	       step_complete.rank, step_complete.parent_name);
 
 	/* receive cli from slurmd */
 	safe_read(sock, &len, sizeof(int));
@@ -607,22 +607,6 @@ _init_from_slurmd(int sock, char **argv,
 	if (slurm_unpack_addr_no_alloc(cli, buffer) == SLURM_ERROR)
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
 	FREE_NULL_BUFFER(buffer);
-
-	/* receive self from slurmd */
-	safe_read(sock, &len, sizeof(int));
-	if (len > 0) {
-		/* receive packed self from main slurmd */
-		incoming_buffer = xmalloc(len);
-		safe_read(sock, incoming_buffer, len);
-		buffer = create_buf(incoming_buffer,len);
-		self = xmalloc(sizeof(slurm_addr_t));
-		if (slurm_unpack_addr_no_alloc(self, buffer)
-		    == SLURM_ERROR) {
-			fatal("slurmstepd: problem with unpack of "
-			      "slurmd_conf");
-		}
-		FREE_NULL_BUFFER(buffer);
-	}
 
 	/* Grab the slurmd's spooldir. Has %n expanded. */
 	cpu_freq_init(conf);
@@ -749,7 +733,6 @@ _init_from_slurmd(int sock, char **argv,
 	msg->protocol_version = proto;
 
 	*_cli = cli;
-	*_self = self;
 	*_msg = msg;
 
 	return 1;
@@ -759,8 +742,7 @@ rwfail:
 	exit(1);
 }
 
-static stepd_step_rec_t *
-_step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
+static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 {
 	stepd_step_rec_t *step = NULL;
 
@@ -771,7 +753,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		debug2("setup for a launch_task");
-		step = mgr_launch_tasks_setup(msg->data, cli, self,
+		step = mgr_launch_tasks_setup(msg->data, cli,
 					      msg->protocol_version);
 		break;
 	default:
@@ -838,11 +820,11 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 			    conf->node_topo_addr);
 	env_array_overwrite(&step->env,"SLURM_TOPOLOGY_ADDR_PATTERN",
 			    conf->node_topo_pattern);
-	/*
-	 * Reset address for cloud nodes
-	 */
-	if (step->alias_list && set_nodes_alias(step->alias_list)) {
-		error("%s: set_nodes_alias failed: %s", __func__,
+
+	/* Reset addrs for dyanmic/cloud nodes to hash tables*/
+	if (step->node_addrs &&
+	    add_remote_nodes_to_conf_tbls(step->node_list, step->node_addrs)) {
+		error("%s: failed to add node addrs: %s", __func__,
 		      step->alias_list);
 		stepd_step_rec_destroy(step);
 		return NULL;

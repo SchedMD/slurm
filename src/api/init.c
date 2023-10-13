@@ -38,6 +38,7 @@
 
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/cred.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/select.h"
@@ -57,10 +58,14 @@ extern void slurm_init(const char *conf)
 
 	if (gres_init() != SLURM_SUCCESS)
 		fatal("failed to initialize gres plugin");
+
+	if (cred_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize cred plugin");
 }
 
 extern void slurm_fini(void)
 {
+	cred_g_fini();
 	gres_fini();
 	acct_storage_g_fini();
 	hash_g_fini();

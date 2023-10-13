@@ -45,12 +45,6 @@ it. See also \fB\-\-send\-libs\fR.
 .IP
 
 .TP
-\fB\-F\fR, \fB\-\-fanout\fR=<\fInumber\fR>
-Specify the fanout of messages used for file transfer.
-Maximum value is currently eight.
-.IP
-
-.TP
 \fB\-f\fR, \fB\-\-force\fR
 If the destination file (and the destination library directory when using
 \fB\-\-send\-libs\fR) already exists, replace it.
@@ -98,6 +92,12 @@ The default value is \fIMessageTimeout\fR as reported by
 "scontrol show config".
 Setting a higher value may be necessitated by relatively slow
 I/O performance on the compute node disks.
+.IP
+
+.TP
+\fB\-F\fR, \fB\-\-treewidth\fR=<\fInumber\fR>
+Specify the treewidth of messages used for file transfer.
+Maximum value is currently 64. A value of "off" disables the fanout.
 .IP
 
 .TP

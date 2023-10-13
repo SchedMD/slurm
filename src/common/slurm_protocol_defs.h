@@ -331,6 +331,8 @@ typedef enum {
 	DEFUNCT_RPC_3013,
 	REQUEST_DELETE_NODE,
 	REQUEST_CREATE_NODE,
+	REQUEST_NODE_ALIAS_ADDRS,
+	RESPONSE_NODE_ALIAS_ADDRS,
 
 	REQUEST_RESOURCE_ALLOCATION = 4001,
 	RESPONSE_RESOURCE_ALLOCATION,
@@ -491,6 +493,7 @@ typedef enum {
  * core api configuration struct
 \*****************************************************************************/
 typedef struct forward {
+	slurm_node_alias_addrs_t alias_addrs;
 	uint16_t   cnt;		/* number of nodes to forward to */
 	uint16_t   init;	/* tell me it has been set (FORWARD_INIT) */
 	char      *nodelist;	/* ranged string of who to forward the
@@ -513,6 +516,7 @@ typedef struct slurm_protocol_header {
 } header_t;
 
 typedef struct forward_struct {
+	slurm_node_alias_addrs_t *alias_addrs;
 	char *buf;
 	int buf_len;
 	uint16_t fwd_cnt;
@@ -1381,6 +1385,7 @@ typedef struct {
 				   user and not the SlurmUser. */
 	uint16_t sib_msg_type; /* fed_job_update_type */
 	char    *submit_host;   /* node job was submitted from */
+	uint16_t submit_proto_ver; /* protocol version of submission client */
 	uint32_t user_id;       /* uid of submitted job */
 } sib_msg_t;
 
@@ -1548,6 +1553,8 @@ extern int slurm_addto_mode_char_list(List char_list, char *names, int mode);
 extern int slurm_addto_step_list(List step_list, char *names);
 extern int slurm_char_list_copy(List dst, List src);
 extern char *slurm_char_list_to_xstr(List char_list);
+extern void slurm_copy_node_alias_addrs_members(slurm_node_alias_addrs_t *dest,
+						slurm_node_alias_addrs_t *src);
 extern int slurm_find_char_exact_in_list(void *x, void *key);
 extern int slurm_find_char_in_list(void *x, void *key);
 extern int slurm_find_ptr_in_list(void *x, void *key);
@@ -1766,6 +1773,8 @@ extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg)
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 extern void slurm_free_network_callerid_msg(network_callerid_msg_t *mesg);
 extern void slurm_free_network_callerid_resp(network_callerid_resp_t *resp);
+extern void slurm_free_node_alias_addrs_members(slurm_node_alias_addrs_t *msg);
+extern void slurm_free_node_alias_addrs(slurm_node_alias_addrs_t *msg);
 extern void slurm_free_set_fs_dampening_factor_msg(
 	set_fs_dampening_factor_msg_t *msg);
 extern void slurm_free_control_status_msg(control_status_msg_t *msg);

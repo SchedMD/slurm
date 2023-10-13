@@ -139,4 +139,11 @@ extern void slurm_pack_selected_step(void *in, uint16_t protocol_version,
 extern int slurm_unpack_selected_step(slurm_selected_step_t **step,
 				      uint16_t protocol_version, buf_t *buffer);
 
+extern void slurm_pack_node_alias_addrs(slurm_node_alias_addrs_t *msg,
+					buf_t *buffer,
+					uint16_t protocol_version);
+extern int slurm_unpack_node_alias_addrs(slurm_node_alias_addrs_t **msg_ptr,
+					 buf_t *buffer,
+					 uint16_t protocol_version);
+
 #endif

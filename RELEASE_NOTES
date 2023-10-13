@@ -59,6 +59,9 @@ HIGHLIGHTS
     for controller changes without draining all compute jobs.
  -- sreport - cluster Utilization PlannedDown field now includes the time that
     all nodes were in the POWERED_DOWN state instead of just cloud nodes.
+ -- Remove SLURM_NODE_ALIASES env variable. Client code now uses slurm_addr_t's
+    passed from controller.
+ -- Enable fanout for dynamic and unaddresable cloud nodes.
 
 CONFIGURATION FILE CHANGES (see appropriate man page for details)
 =====================================================================
@@ -130,6 +133,7 @@ COMMAND CHANGES (see man pages for details)
     brackets around requests with multiple features that include node counts.
  -- sdiag - Added statistics on why the main and backfill schedulers have
     stopped evaluation on each scheduling cycle.
+ -- Rename sbcast --fanout to --treewidth.
 
 API CHANGES
 ===========

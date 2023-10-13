@@ -177,6 +177,7 @@ uint16_t accounting_enforce = 0;
 void *	acct_db_conn = NULL;
 int	backup_inx;
 int	batch_sched_delay = 3;
+bool cloud_dns = false;
 uint32_t cluster_cpus = 0;
 time_t	control_time = 0;
 bool disable_remote_singleton = false;

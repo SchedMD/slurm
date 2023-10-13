@@ -94,7 +94,7 @@ extern char **environ;
  **********************************************************************/
 static int _launch_tasks(slurm_step_ctx_t *ctx,
 			 launch_tasks_request_msg_t *launch_msg,
-			 uint32_t timeout, char *nodelist);
+			 uint32_t timeout, uint16_t tree_width, char *nodelist);
 static char *_lookup_cwd(void);
 static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 			      char *hostname, int nodeid);
@@ -386,7 +386,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	memcpy(launch.resp_port, ctx->launch_state->resp_port,
 	       (sizeof(uint16_t) * launch.num_resp_port));
 	rc = _launch_tasks(ctx, &launch, params->msg_timeout,
-			   launch.complete_nodelist);
+			   params->tree_width, launch.complete_nodelist);
 
 	/* clean up */
 	xfree(launch.resp_port);
@@ -570,7 +570,8 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 		       (sizeof(uint16_t) * launch.num_resp_port));
 	}
 
-	rc = _launch_tasks(ctx, &launch, params->msg_timeout, node_list);
+	rc = _launch_tasks(ctx, &launch, params->msg_timeout,
+			   params->max_threads, node_list);
 
 fail1:
 	/* clean up */
@@ -1587,7 +1588,7 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 
 static int _launch_tasks(slurm_step_ctx_t *ctx,
 			 launch_tasks_request_msg_t *launch_msg,
-			 uint32_t timeout, char *nodelist)
+			 uint32_t timeout, uint16_t tree_width, char *nodelist)
 {
 #ifdef HAVE_FRONT_END
 	slurm_cred_arg_t *cred_args;
@@ -1624,6 +1625,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	slurm_msg_set_r_uid(&msg, SLURM_AUTH_UID_ANY);
 	msg.msg_type = REQUEST_LAUNCH_TASKS;
 	msg.data = launch_msg;
+	msg.forward.tree_width = tree_width;
 
 	if (ctx->step_resp->use_protocol_ver)
 		msg.protocol_version = ctx->step_resp->use_protocol_ver;
