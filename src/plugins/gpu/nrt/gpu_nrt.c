@@ -36,7 +36,11 @@
 
 #define _GNU_SOURCE
 
+#include <dirent.h>
+
 #include "../common/gpu_common.h"
+
+#define NEURON_SYSFS_PREFIX "/sys/devices/virtual/neuron_device/"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -67,6 +71,26 @@ const char plugin_name[] = "GPU NRT plugin";
 const char plugin_type[] = "gpu/nrt";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+static int _count_devices(unsigned int *dev_count)
+{
+	struct dirent *de;
+	unsigned int dev_num;
+
+	DIR *dr = opendir(NEURON_SYSFS_PREFIX);
+
+	*dev_count = 0;
+
+	if (!dr)
+		return SLURM_ERROR;
+
+	while ((de = readdir(dr))) {
+		if ((sscanf(de->d_name, "neuron%u\n", &dev_num) == 1)) {
+			(*dev_count)++;
+		}
+	}
+	closedir(dr);
+	return SLURM_SUCCESS;
+}
 
 extern int init(void)
 {
@@ -84,6 +108,9 @@ extern int fini(void)
 
 extern void gpu_p_get_device_count(unsigned int *device_count)
 {
+	if (_count_devices(device_count) != SLURM_SUCCESS)
+		error("Failed to get device count from neuron sysfs interface");
+
 	return;
 }
 
