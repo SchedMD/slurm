@@ -228,6 +228,7 @@ buf_t *init_buf(uint32_t size)
 	my_buf->processed = 0;
 	my_buf->head = xmalloc(size);
 	my_buf->mmaped = false;
+	my_buf->shadow = false;
 	return my_buf;
 }
 
