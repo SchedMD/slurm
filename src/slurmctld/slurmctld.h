@@ -289,7 +289,9 @@ extern List avail_feature_list;	/* list of available node features */
 extern List conf_includes_list; /* list of conf_includes_map_t */
 
 #define PACK_FANOUT_ADDRS(_X) \
-	(IS_NODE_DYNAMIC_NORM(_X) || (!cloud_dns && IS_NODE_CLOUD(_X)))
+	(IS_NODE_DYNAMIC_FUTURE(_X) || \
+	 IS_NODE_DYNAMIC_NORM(_X) || \
+	 (!cloud_dns && IS_NODE_CLOUD(_X)))
 
 /*****************************************************************************\
  *  NODE states and bitmaps
