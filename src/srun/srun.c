@@ -129,7 +129,6 @@ static void  _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc);
 static void *_launch_one_app(void *data);
 static void  _pty_restore(void);
 static void  _set_exit_code(void);
-static void  _set_node_alias(srun_job_t *job, List srun_job_list);
 static void  _setup_env_working_cluster(void);
 static void  _setup_job_env(srun_job_t *job, List srun_job_list,
 			    bool got_alloc);
@@ -205,7 +204,6 @@ int srun(int ac, char **av)
 		debug3("%s: %ps GID %u and srun process GID %u mismatch",
 		       __func__, &job->step_id, job->gid, getgid());
 
-	_set_node_alias(job, srun_job_list);
 	_setup_job_env(job, srun_job_list, got_alloc);
 
 	/*
@@ -897,40 +895,6 @@ static void _set_exit_code(void)
 		else
 			immediate_exit = i;
 	}
-}
-
-static int _foreach_set_node_alias(void *x, void *arg)
-{
-	srun_job_t *job = x;
-	char *alias_list = NULL;
-
-	xassert(job);
-
-	if (job &&
-	    job->step_ctx &&
-	    job->step_ctx->step_resp &&
-	    job->step_ctx->step_resp->cred) {
-		slurm_addr_t *node_addrs;
-		if ((node_addrs =
-		     slurm_cred_get(job->step_ctx->step_resp->cred,
-				    CRED_DATA_JOB_NODE_ADDRS)))
-			add_remote_nodes_to_conf_tbls(job->nodelist,
-						      node_addrs);
-		else if ((alias_list =
-			  slurm_cred_get(job->step_ctx->step_resp->cred,
-					 CRED_DATA_JOB_ALIAS_LIST)))
-			set_nodes_alias(alias_list);
-	}
-
-	return SLURM_SUCCESS;
-}
-
-static void _set_node_alias(srun_job_t *job, List srun_job_list)
-{
-	if (srun_job_list)
-		list_for_each(srun_job_list, _foreach_set_node_alias, NULL);
-	else if (job)
-		_foreach_set_node_alias(job, NULL);
 }
 
 static void _pty_restore(void)
