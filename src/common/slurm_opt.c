@@ -6639,7 +6639,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
  */
 extern void suggest_completion(struct option *opts, const char *query)
 {
-	char *suggest = NULL, *flag = NULL, *suffix = NULL;
+	char *suggest = NULL, *flag = NULL;
 	bool query_short = false, query_long = false;
 	int i = 0;
 	char ifs = '\n';
@@ -6668,15 +6668,17 @@ extern void suggest_completion(struct option *opts, const char *query)
 
 		/* Handle long flags */
 		if (opts[i].name && query_long) {
+			flag = xstrdup_printf("--%s", opts[i].name);
+			if (!xstrstr(flag, query)) {
+				xfree(flag);
+				continue;
+			}
 			if (opts[i].has_arg)
-				suffix = "=";
-			else
-				suffix = "";
-
-			flag = xstrdup_printf("--%s%s", opts[i].name, suffix);
-			if (xstrstr(flag, query))
+				xstrfmtcat(suggest, "%s=%c", flag, ifs);
+			if (opts[i].has_arg == optional_argument)
+				xstrfmtcat(suggest, "%s %c", flag, ifs);
+			if (opts[i].has_arg == no_argument)
 				xstrfmtcat(suggest, "%s%c", flag, ifs);
-
 			xfree(flag);
 		}
 	}
