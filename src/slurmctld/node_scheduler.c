@@ -385,7 +385,8 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		if (hostlist)
 			hostlist_push_host(hostlist, node_ptr->name);
 		node_count++;
-		if (IS_NODE_DYNAMIC_NORM(node_ptr) || IS_NODE_CLOUD(node_ptr))
+		if (IS_NODE_DYNAMIC_NORM(node_ptr) ||
+		    (!cloud_dns && IS_NODE_CLOUD(node_ptr)))
 			msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
@@ -2985,7 +2986,8 @@ extern void launch_prolog(job_record_t *job_ptr)
 	     i++) {
 		if (protocol_version > node_ptr->protocol_version)
 			protocol_version = node_ptr->protocol_version;
-		if (IS_NODE_DYNAMIC_NORM(node_ptr) || IS_NODE_CLOUD(node_ptr))
+		if (IS_NODE_DYNAMIC_NORM(node_ptr) ||
+		    (!cloud_dns && IS_NODE_CLOUD(node_ptr)))
 			msg_flags |= SLURM_PACK_ADDRS;
 	}
 #endif
@@ -4428,7 +4430,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 				agent_args->node_count++;
 			}
 			if (IS_NODE_DYNAMIC_NORM(node_ptr) ||
-			    IS_NODE_CLOUD(node_ptr))
+			    (!cloud_dns && IS_NODE_CLOUD(node_ptr)))
 				agent_args->msg_flags |= SLURM_PACK_ADDRS;
 		}
 	}
