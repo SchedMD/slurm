@@ -74,6 +74,8 @@
 
 #define MAGIC_CON_MGR_FD 0xD23444EF
 #define MAGIC_WORK 0xD231444A
+#define MAGIC_SIGNAL_WORK 0xA201444A
+#define MAGIC_SIGNAL_HANDLER 0xC20A444A
 #define MAGIC_FOREACH_DELAYED_WORK 0xB233443A
 #define MAGIC_DEFERRED_FUNC 0xA230403A
 /* Default buffer to 1 page */
@@ -152,6 +154,21 @@ struct con_mgr_fd_s {
 	list_t *write_complete_work;
 };
 
+typedef struct {
+	int magic; /* MAGIC_SIGNAL_HANDLER */
+	struct sigaction prior;
+	struct sigaction new;
+	int signal;
+} signal_handler_t;
+
+typedef struct {
+	int magic; /* MAGIC_SIGNAL_WORK */
+	int signal;
+	con_mgr_work_func_t func;
+	void *arg;
+	const char *tag;
+} signal_work_t;
+
 /*
  * Global instance of conmgr
  */
@@ -215,6 +232,13 @@ struct {
 	timer_t timer;
 	/* list of deferred_func_t */
 	list_t *deferred_funcs;
+
+	/* list of all registered signal handlers */
+	signal_handler_t *signal_handlers;
+	int signal_handler_count;
+	/* list of all registered signal work */
+	signal_work_t *signal_work;
+	int signal_work_count;
 
 	/* functions to handle host/port parsing */
 	con_mgr_callbacks_t callbacks;
@@ -288,20 +312,6 @@ typedef struct {
 	int nfds;
 } poll_args_t;
 
-static void _signal_handler(int signo);
-
-/* array of all signals to be caught */
-static struct {
-	struct sigaction prior;
-	struct sigaction new;
-	int signal;
-} catch_signals[] = {
-	/* Catch SIGINT as a safe way to shutdown */
-	{ {}, { .sa_handler = _signal_handler }, SIGINT },
-	/* Catch SIGALRM for timers */
-	{ {}, { .sa_handler = _signal_handler }, SIGALRM },
-};
-
 typedef struct {
 	int magic; /* MAGIC_FOREACH_DELAYED_WORK */
 	work_t *shortest;
@@ -336,6 +346,14 @@ static void _handle_timer(void *x);
 static void _handle_work(bool locked, work_t *work);
 static void _queue_func(bool locked, work_func_t func, void *arg,
 			const char *tag);
+static void _add_signal_work(int signal, con_mgr_work_func_t func, void *arg,
+			     const char *tag);
+static void _on_signal_alarm(con_mgr_fd_t *con, con_mgr_work_type_t type,
+			     con_mgr_work_status_t status, const char *tag,
+			     void *arg);
+static void _on_signal_interrupt(con_mgr_fd_t *con, con_mgr_work_type_t type,
+				 con_mgr_work_status_t status, const char *tag,
+				 void *arg);
 
 /*
  * Find by matching fd to connection
@@ -396,24 +414,58 @@ try_again:
 	}
 }
 
+static void _register_signal_handler(int signal)
+{
+	signal_handler_t *handler;
+
+	for (int i = 0; i < mgr.signal_handler_count; i++) {
+		xassert(mgr.signal_handlers[i].magic == MAGIC_SIGNAL_HANDLER);
+
+		if (mgr.signal_handlers[i].signal == signal)
+			return;
+	}
+
+	xrecalloc(mgr.signal_handlers, (mgr.signal_handler_count + 1),
+		  sizeof(*mgr.signal_handlers));
+
+	handler = &mgr.signal_handlers[mgr.signal_handler_count];
+	handler->magic = MAGIC_SIGNAL_HANDLER;
+	handler->signal = signal;
+	handler->new.sa_handler = _signal_handler;
+
+	if (sigaction(signal, &handler->new, &handler->prior))
+		fatal("%s: unable to catch %s: %m",
+		      __func__, strsignal(signal));
+
+	mgr.signal_handler_count++;
+}
+
 static void _init_signal_handler(void)
 {
-	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
-		if (sigaction(catch_signals[i].signal, &catch_signals[i].new,
-			      &catch_signals[i].prior))
-			fatal("%s: unable to catch %s: %m",
-			      __func__, strsignal(catch_signals[i].signal));
+	if (mgr.signal_handlers)
+		return;
+
+	for (int i = 0; i < mgr.signal_work_count; i++) {
+		signal_work_t *work = &mgr.signal_work[i];
+		xassert(work->magic == MAGIC_SIGNAL_WORK);
+
+		_register_signal_handler(work->signal);
 	}
 }
 
 static void _fini_signal_handler(void)
 {
-	for (int i = 0; i < ARRAY_SIZE(catch_signals); i++) {
-		if (sigaction(catch_signals[i].signal, &catch_signals[i].prior,
-			      NULL))
+	for (int i = 0; i < mgr.signal_handler_count; i++) {
+		signal_handler_t *handler = &mgr.signal_handlers[i];
+		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
+
+		if (sigaction(handler->signal, &handler->prior, NULL))
 			fatal("%s: unable to restore %s: %m",
-			      __func__, strsignal(catch_signals[i].signal));
+			      __func__, strsignal(handler->signal));
 	}
+
+	xfree(mgr.signal_handlers);
+	mgr.signal_handler_count = 0;
 }
 
 extern void init_con_mgr(int thread_count, int max_connections,
@@ -464,6 +516,10 @@ extern void init_con_mgr(int thread_count, int max_connections,
 	/* block for writes only */
 	fd_set_nonblocking(mgr.signal_fd[0]);
 	fd_set_blocking(mgr.signal_fd[1]);
+
+	_add_signal_work(SIGALRM, _on_signal_alarm, NULL, "_on_signal_alarm()");
+	_add_signal_work(SIGINT, _on_signal_interrupt, NULL,
+			 "_on_signal_interrupt()");
 
 	slurm_mutex_unlock(&mgr.mutex);
 }
@@ -1622,41 +1678,55 @@ rwfail:
 	      __func__, mgr.signal_fd[0]);
 }
 
+static void _on_signal(int signal)
+{
+	bool matched = false;
+
+	for (int i = 0; i < mgr.signal_work_count; i++) {
+		signal_work_t *work = &mgr.signal_work[i];
+		xassert(work->magic == MAGIC_SIGNAL_WORK);
+
+		if (work->signal != signal)
+			continue;
+
+		matched = true;
+		_add_work(true, NULL, work->func, CONMGR_WORK_TYPE_FIFO,
+			  work->arg, work->tag);
+	}
+
+	if (!matched)
+		warning("%s: caught and ignoring signal %s",
+			__func__, strsignal(signal));
+}
+
 static void _handle_signals(void)
 {
-	bool caught_sigalrm = false;
-	bool caught_sigint = false;
 	int sig, count = 0;
 
 	while ((sig = _read_signal()) > 0) {
 		count++;
-		if (sig == SIGINT) {
-			caught_sigint = true;
-		} else if (sig == SIGALRM) {
-			caught_sigalrm = true;
-		} else {
-			info("%s: caught and ignoring signal %s",
-			     __func__, strsignal(sig));
-		}
+		_on_signal(sig);
 	}
 
 	log_flag(NET, "%s: caught %d signals", __func__, count);
 	mgr.signaled = false;
+}
 
-	if (caught_sigint) {
-		if (!mgr.shutdown)
-			info("%s: caught SIGINT. Shutting down.",
-			     __func__);
-		mgr.shutdown = true;
-	}
+static void _on_signal_alarm(con_mgr_fd_t *con, con_mgr_work_type_t type,
+			     con_mgr_work_status_t status, const char *tag,
+			     void *arg)
+{
+	log_flag(NET, "%s: caught SIGALRM", __func__);
+	_queue_func(false, _handle_timer, NULL, "_handle_timer");
+	_signal_change(false);
+}
 
-	if (caught_sigalrm) {
-		log_flag(NET, "%s: caught SIGALRM", __func__);
-		_queue_func(true, _handle_timer, NULL, "_handle_timer");
-	}
-
-	if (caught_sigint || caught_sigalrm)
-		_signal_change(true);
+static void _on_signal_interrupt(con_mgr_fd_t *con, con_mgr_work_type_t type,
+				 con_mgr_work_status_t status, const char *tag,
+				 void *arg)
+{
+	info("%s: caught SIGINT. Shutting down.", __func__);
+	con_mgr_request_shutdown();
 }
 
 /*
@@ -2978,6 +3048,40 @@ extern void con_mgr_add_delayed_work(con_mgr_fd_t *con,
 		 (uintptr_t) work->func);
 
 	_handle_work(false, work);
+}
+
+static void _add_signal_work(int signal, con_mgr_work_func_t func, void *arg,
+			     const char *tag)
+{
+	xrecalloc(mgr.signal_work, (mgr.signal_work_count + 1),
+		  sizeof(*mgr.signal_work));
+
+	mgr.signal_work[mgr.signal_work_count] = (signal_work_t){
+		.magic = MAGIC_SIGNAL_WORK,
+		.signal = signal,
+		.func = func,
+		.arg = arg,
+		.tag = tag,
+	};
+
+	mgr.signal_work_count++;
+}
+
+extern void con_mgr_add_signal_work(int signal, con_mgr_work_func_t func,
+				    void *arg, const char *tag)
+{
+	slurm_mutex_lock(&mgr.mutex);
+
+	if (mgr.shutdown) {
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
+	if (mgr.watching)
+		fatal_abort("signal work must be added before conmgr is run");
+
+	_add_signal_work(signal, func, arg, tag);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern int con_mgr_get_fd_auth_creds(con_mgr_fd_t *con,

@@ -288,6 +288,20 @@ extern int con_mgr_run(bool blocking);
 extern void con_mgr_request_shutdown(void);
 
 /*
+ * Add work to call on signal received
+ * IN signal - Signal number to watch
+ * IN func - function pointer to run work
+ * 	Will be run after signal is received and not in signal handler itself.
+ * IN type - type of work
+ * IN arg - arg to hand to function pointer
+ * IN tag - tag used in logging this function
+ * NOTE: never add a thread that will never return or con_mgr_run() will never
+ * return either.
+ */
+extern void con_mgr_add_signal_work(int signal, con_mgr_work_func_t func,
+				    void *arg, const char *tag);
+
+/*
  * Add work for connection manager
  * NOTE: only call from within an con_mgr_events_t callback
  * IN con - connection to assign work or NULL for non-connection related work
