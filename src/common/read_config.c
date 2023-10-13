@@ -5479,7 +5479,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	} else if (xstrcasestr(conf->topology_plugin, "none"))
 		xfree(conf->topology_plugin);
 
-	if (s_p_get_uint16(&conf->tree_width, "TreeWidth", hashtbl)) {
+	if (((conf->tree_width = (getenv("SLURM_TREE_WIDTH") ?
+				  atoi(getenv("SLURM_TREE_WIDTH")) : 0)) > 0) ||
+	    (s_p_get_uint16(&conf->tree_width, "TreeWidth", hashtbl))) {
 		if (conf->tree_width == 0) {
 			error("TreeWidth=0 is invalid");
 			conf->tree_width = DEFAULT_TREE_WIDTH;
