@@ -339,9 +339,8 @@ extern char *cred_p_create_net_cred(void *addrs, uint16_t protocol_version)
 
 	slurm_pack_node_alias_addrs(addrs, buffer, protocol_version);
 
-	if ((rc = cred_p_sign(get_buf_data(buffer), get_buf_offset(buffer),
-			      &signature))) {
-		error("%s: cred_p_sign failure: %s",
+	if ((rc = _encode(&signature, false, buffer))) {
+		error("%s: _encode failure: %s",
 		      __func__, slurm_strerror(rc));
 		free_buf(buffer);
 		return NULL;
