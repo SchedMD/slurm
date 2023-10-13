@@ -2103,7 +2103,9 @@ static int arg_set_tree_width(slurm_opt_t *opt, const char *arg)
 	if (!opt->srun_opt)
 		return SLURM_ERROR;
 
-	if (parse_uint16((char *)arg, &opt->srun_opt->tree_width)) {
+	if (!xstrcasecmp(arg, "off")) {
+		opt->srun_opt->tree_width = 0xfffd;
+	} else if (parse_uint16((char *)arg, &opt->srun_opt->tree_width)) {
 		error ("Invalid --treewidth value: %s", arg);
 		return SLURM_ERROR;
 	}
