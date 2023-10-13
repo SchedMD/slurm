@@ -180,6 +180,7 @@ enum {
 	LONG_OPT_THREADSPERCORE,
 	LONG_OPT_TIME_MIN,
 	LONG_OPT_TMP,
+	LONG_OPT_TREE_WIDTH,
 	LONG_OPT_TRES_PER_JOB,
 	LONG_OPT_TRES_PER_TASK,
 	LONG_OPT_UID,
@@ -278,6 +279,7 @@ typedef struct {
 	char *task_prolog;		/* --task-prolog		*/
 	bool test_exec;			/* test_exec set		*/
 	bool test_only;			/* --test-only			*/
+	uint16_t tree_width;		/* --treewidth			*/
 	bool unbuffered;		/* --unbuffered			*/
 	bool whole;			/* --whole			*/
 } srun_opt_t;

@@ -2969,6 +2969,12 @@ This option applies to job allocations.
 .IP
 
 .TP
+\fB\-\-treewidth\fR=<\fIsize\fR>
+Specify the width of the fanout. Default is the \fITreeWidth\fR specified in
+the \fBslurm.conf\fR. The value may not exceed 65533.
+.IP
+
+.TP
 \fB\-\-tres\-per\-task\fR=<\fIlist\fR>
 Specifies a comma\-delimited list of trackable resources required for the job on
 each task to be spawned in the job's resource allocation.
