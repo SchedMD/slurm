@@ -6478,13 +6478,6 @@ by \fBslurmd\fR \-C. The node's NodeAddr and NodeHostname will automatically be
 retrieved from the \fBslurmd\fR and will be cleared when set back to the FUTURE
 state. Dynamic FUTURE nodes retain non\-FUTURE state on restart. Use scontrol to
 put node back into FUTURE state.
-
-If the mapping of the NodeName to the \fBslurmd\fR HostName is not updated in
-DNS, Dynamic Future nodes won't know how to communicate with each other \-\-
-because NodeAddr and NodeHostName are not defined in the slurm.conf \-\- and the
-fanout communications need to be disabled by setting TreeWidth to a high number
-(e.g. 65533). If the DNS mapping is made, then the \fBcloud_dns\fR
-\fBSlurmctldParameter\fR can be used.
 .RE
 .IP
 

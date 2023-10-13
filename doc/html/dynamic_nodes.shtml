@@ -43,13 +43,6 @@ more details.
 
 <dt><b>SelectType=select/cons_tres</b>
 <dd>Dynamic nodes are only supported with cons_tres.
-
-<dt><b>TreeWidth=65533</b>
-<dd>
-Fanning out of controller pings and application launches through slurmds are
-not supported with dynamic nodes. TreeWidth must be disabled (i.e. set to
-65533) for dynamic environments. However, the reverse fanout of step
-completions through slurmds does happen due to the job's alias list.
 </dl>
 </p>
 
