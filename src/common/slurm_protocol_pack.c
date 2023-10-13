@@ -11792,6 +11792,11 @@ extern void slurm_pack_node_alias_addrs(slurm_node_alias_addrs_t *msg,
 	}
 }
 
+static void _pack_node_alias_addrs(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	slurm_pack_node_alias_addrs(smsg->data, buffer, smsg->protocol_version);
+}
+
 extern int slurm_unpack_node_alias_addrs(slurm_node_alias_addrs_t **msg_ptr,
 					 buf_t *buffer,
 					 uint16_t protocol_version)
@@ -12464,8 +12469,7 @@ pack_msg(slurm_msg_t const *msg, buf_t *buffer)
 		_pack_container_exec_msg(msg, buffer);
 		break;
 	case REQUEST_NODE_ALIAS_ADDRS:
-		slurm_pack_node_alias_addrs(msg->data, buffer,
-					    msg->protocol_version);
+		_pack_node_alias_addrs(msg, buffer);
 		break;
 	case RESPONSE_NODE_ALIAS_ADDRS:
 		_pack_node_alias_addrs_resp_msg(msg, buffer);
