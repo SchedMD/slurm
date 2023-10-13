@@ -194,19 +194,19 @@ extern const char *cred_p_str_error(int errnum)
 		return munge_strerror ((munge_err_t) errnum);
 }
 
-/* NOTE: Caller must xfree the signature returned by sig_pp */
-extern int cred_p_sign(char *buffer, int buf_size, char **signature)
+static int _encode(char **signature, bool uid_restriction, buf_t *buffer)
 {
 	int retry = RETRY_COUNT;
 	char *cred;
 	munge_err_t err;
-	munge_ctx_t ctx = _munge_ctx_create(true);
+	munge_ctx_t ctx = _munge_ctx_create(uid_restriction);
 
 	if (!ctx)
 		return 0;
 
 again:
-	err = munge_encode(&cred, ctx, buffer, buf_size);
+	err = munge_encode(&cred, ctx, get_buf_data(buffer),
+			   get_buf_offset(buffer));
 	if (err != EMUNGE_SUCCESS) {
 		if ((err == EMUNGE_SOCKET) && retry--) {
 			debug("Munge encode failed: %s (retrying ...)",
@@ -224,6 +224,20 @@ again:
 	free(cred);
 	munge_ctx_destroy(ctx);
 	return 0;
+}
+
+/* NOTE: Caller must xfree the signature returned by sig_pp */
+extern int cred_p_sign(char *buffer, int buf_size, char **signature)
+{
+	int rc = SLURM_SUCCESS;
+	buf_t *buf = NULL;
+
+	buf = create_buf(buffer, buf_size);
+	buf->processed = buf_size;
+	rc = _encode(signature, true, buf);
+	xfer_buf_data(buf);
+
+	return rc;
 }
 
 /*
