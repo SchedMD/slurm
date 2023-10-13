@@ -38,6 +38,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --with pmix		%_with_pmix path	require pmix support
 # --with nvml		%_with_nvml path	require nvml support
 # --with jwt		%_with_jwt 1		require jwt support
+# --with freeipmi	%_with_freeipmi 1	require freeipmi support
 #
 
 #  Options that are off by default (enable with --with <opt>)
@@ -60,6 +61,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 %bcond_with nvml
 %bcond_with jwt
 %bcond_with yaml
+%bcond_with freeipmi
 
 # Use debug by default on all systems
 %bcond_without debug
@@ -161,6 +163,11 @@ Requires: libjwt >= 1.10.0
 %if %{with yaml}
 Requires: libyaml >= 0.2.5
 BuildRequires: libyaml-devel >= 0.2.5
+%endif
+
+%if %{with freeipmi}
+Requires: freeipmi
+BuildRequires: freeipmi-devel
 %endif
 
 #  Allow override of sysconfdir via _slurm_sysconfdir.
@@ -372,6 +379,7 @@ notifies slurm about failed nodes.
 	%{?_with_jwt} \
 	%{?_with_yaml} \
 	%{?_with_nvml} \
+	%{?_with_freeipmi} \
 	%{?_with_cflags}
 
 make %{?_smp_mflags}
