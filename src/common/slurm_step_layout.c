@@ -362,8 +362,10 @@ extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
 	hostlist_iterator_destroy(host_itr);
 
 	step_layout1->task_cnt += step_layout2->task_cnt;
+	xfree(step_layout1->node_list);
 	step_layout1->node_list = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
+	hostlist_destroy(hl2);
 }
 
 extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
