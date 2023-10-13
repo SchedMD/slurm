@@ -2363,6 +2363,15 @@ extern void server_thread_decr(void);
 /* Increment slurmctld thread count (as applies to thread limit) */
 extern void server_thread_incr(void);
 
+/*
+ * Set a job's node_addrs
+ *
+ * IN job_ptr - job to set node_addrs on
+ * IN origin_cluster - cluster creating/requesting addrs.
+ */
+extern void set_job_node_addrs(job_record_t *job_ptr,
+			       const char *origin_cluster);
+
 /* Set a job's alias_list string */
 extern void set_job_alias_list(job_record_t *job_ptr);
 

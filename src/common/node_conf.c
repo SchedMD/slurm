@@ -969,9 +969,8 @@ extern void insert_node_record(node_record_t *node_ptr)
 		active_node_record_count++;
 
 		/* re-add node to conf node hash tables */
-		slurm_reset_alias(node_ptr->name,
-				  node_ptr->comm_name,
-				  node_ptr->node_hostname);
+		slurm_conf_add_node(node_ptr);
+
 		return;
 	}
 

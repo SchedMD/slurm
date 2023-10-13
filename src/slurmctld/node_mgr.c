@@ -312,6 +312,7 @@ static void _dump_node_state(node_record_t *dump_node_ptr, buf_t *buffer)
 	pack_time(dump_node_ptr->boot_req_time, buffer);
 	pack_time(dump_node_ptr->power_save_req_time, buffer);
 	pack_time(dump_node_ptr->last_response, buffer);
+	pack16  (dump_node_ptr->port, buffer);
 	pack16  (dump_node_ptr->protocol_version, buffer);
 	packstr (dump_node_ptr->mcs_label, buffer);
 	(void) gres_node_state_pack(dump_node_ptr->gres_list, buffer,
@@ -368,11 +369,11 @@ extern int load_all_node_state ( bool state_only )
 	time_t power_save_req_time = 0, resume_after = 0;
 
 	/*
-	 * cpu_spec_list and core_spec_cnt are only restored for dynamic nodes,
-	 * otherwise always trust slurm.conf
+	 * cpu_spec_list, core_spec_cnt, port are only restored for dynamic
+	 * nodes, otherwise always trust slurm.conf
 	 */
 	char *cpu_spec_list;
-	uint16_t core_spec_cnt = 0;
+	uint16_t core_spec_cnt = 0, port = 0;
 
 	List gres_list = NULL;
 	node_record_t *node_ptr;
@@ -457,6 +458,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack_time(&boot_req_time, buffer);
 			safe_unpack_time(&power_save_req_time, buffer);
 			safe_unpack_time(&last_response, buffer);
+			safe_unpack16(&port, buffer);
 			safe_unpack16(&obj_protocol_version, buffer);
 			safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
 			if (gres_node_state_unpack(&gres_list, buffer,
@@ -589,6 +591,15 @@ extern int load_all_node_state ( bool state_only )
 				error_code = SLURM_SUCCESS;
 				list_delete_ptr(config_list, config_ptr);
 			} else {
+				if (port) {
+					node_ptr->port = port;
+					/*
+					 * Get node in conf hash tables with
+					 * port. set_node_comm_name() doesn't
+					 * add the node with the port.
+					 */
+					slurm_conf_add_node(node_ptr);
+				}
 				/*
 				 * add_node_record() populates gres_list but we
 				 * want to use the gres_list from state.

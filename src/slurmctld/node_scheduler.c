@@ -209,23 +209,30 @@ extern void allocate_nodes(job_record_t *job_ptr)
 			job_ptr->wait_all_nodes = 1;
 		} else
 			set_job_alias_list(job_ptr);
+	} else {
+		/* set addrs if the job is coming from a different cluster */
+		set_job_node_addrs(job_ptr, job_ptr->origin_cluster);
 	}
 
 	return;
 }
 
-static void _set_job_node_addrs(job_record_t *job_ptr)
+/*
+ * Set addrs if:
+ * 1. There is an alias_list (cloud/dynamic nodes) and it isn't TBD (nodes are
+ *    powering up).
+ * 2. No alias_list but job/request is from a different cluster.
+ */
+extern void set_job_node_addrs(job_record_t *job_ptr,
+			       const char *origin_cluster)
 {
-	/*
-	 * Don't send node_addr array until the nodes are ready (e.g.
-	 * the alias_list will be TBD until all nodes are powered up)
-	 * The alias_list will not be set if not allocated nodes needing
-	 * to be powered up.
-	 */
 	if (!job_ptr->node_addrs &&
 	    job_ptr->node_bitmap &&
 	    bit_set_count(job_ptr->node_bitmap) &&
-	    (!job_ptr->alias_list || xstrcmp(job_ptr->alias_list, "TBD"))) {
+	    ((!job_ptr->alias_list && /* remote job */
+	      origin_cluster &&
+	      xstrcmp(origin_cluster, slurm_conf.cluster_name)) ||
+	     (job_ptr->alias_list && xstrcmp(job_ptr->alias_list, "TBD")))) {
 		node_record_t *node_ptr;
 
 		job_ptr->node_addrs =
@@ -272,8 +279,7 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 		}
 	}
 
-	if (job_ptr->alias_list)
-		_set_job_node_addrs(job_ptr);
+	set_job_node_addrs(job_ptr, job_ptr->origin_cluster);
 }
 
 extern void set_job_features_use(job_details_t *details_ptr)

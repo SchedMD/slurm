@@ -18764,6 +18764,14 @@ extern void set_remote_working_response(
 			resp->working_cluster_rec = response_cluster_rec;
 		}
 
+		if (!job_ptr->node_addrs) {
+			/*
+			 * The job may be owned by the local cluster but a
+			 * remote srun might be trying to launch a job in the
+			 * allocation.
+			 */
+			set_job_node_addrs(job_ptr, req_cluster);
+		}
 		if (job_ptr->node_addrs) {
 			resp->node_addr = xcalloc(job_ptr->node_cnt,
 						  sizeof(slurm_addr_t));

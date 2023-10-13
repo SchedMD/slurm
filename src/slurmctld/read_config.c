@@ -1580,7 +1580,8 @@ int read_slurm_conf(int recover, bool reconfig)
 		old_max_node_cnt = slurm_conf.max_node_cnt;
 
 		for (i = 0; i < node_record_count; i++) {
-			if (!(node_ptr = old_node_table_ptr[i]))
+			if (!(node_ptr = old_node_table_ptr[i]) ||
+			    IS_NODE_DYNAMIC_NORM(node_ptr))
 				continue;
 			/*
 			 * Store the original configured CPU count somewhere
