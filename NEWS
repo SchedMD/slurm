@@ -240,6 +240,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 23.02.7
 ==========================
+ -- libslurm_nss - Avoid causing glibc to assert due to an unexpected return
+    from slurm_nss due to an error during lookup.
 
 * Changes in Slurm 23.02.6
 ==========================
