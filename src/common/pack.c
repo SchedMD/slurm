@@ -69,6 +69,7 @@
  */
 strong_alias(create_buf,	slurm_create_buf);
 strong_alias(create_mmap_buf,	slurm_create_mmap_buf);
+strong_alias(create_shadow_buf,	slurm_create_shadow_buf);
 strong_alias(free_buf,		slurm_free_buf);
 strong_alias(grow_buf,		slurm_grow_buf);
 strong_alias(init_buf,		slurm_init_buf);
@@ -125,6 +126,7 @@ buf_t *create_buf(char *data, uint32_t size)
 	my_buf->processed = 0;
 	my_buf->head = data;
 	my_buf->mmaped = false;
+	my_buf->shadow = false;
 
 	return my_buf;
 }
@@ -170,6 +172,15 @@ buf_t *create_mmap_buf(const char *file)
 	return my_buf;
 }
 
+extern buf_t *create_shadow_buf(char *data, uint32_t size)
+{
+	buf_t *my_buf = create_buf(data, size);
+
+	if (my_buf)
+		my_buf->shadow = true;
+
+	return my_buf;
+}
 
 /* free_buf - release memory associated with a given buffer */
 void free_buf(buf_t *my_buf)
@@ -179,7 +190,7 @@ void free_buf(buf_t *my_buf)
 	xassert(my_buf->magic == BUF_MAGIC);
 	if (my_buf->mmaped)
 		munmap(my_buf->head, my_buf->size);
-	else
+	else if (!my_buf->shadow)
 		xfree(my_buf->head);
 
 	xfree(my_buf);
@@ -190,6 +201,8 @@ void grow_buf(buf_t *buffer, uint32_t size)
 {
 	if (buffer->mmaped)
 		fatal_abort("attempt to grow mmap()'d buffer not supported");
+	if (buffer->shadow)
+		fatal_abort("attempt to grow shadow buffer not supported");
 	if ((buffer->size + size) > MAX_BUF_SIZE) {
 		error("%s: Buffer size limit exceeded (%u > %u)",
 		      __func__, (buffer->size + size), MAX_BUF_SIZE);
@@ -231,6 +244,8 @@ void *xfer_buf_data(buf_t *my_buf)
 
 	if (my_buf->mmaped)
 		fatal_abort("attempt to xfer mmap()'d buffer not supported");
+	if (my_buf->shadow)
+		fatal_abort("attempt to xfer shadow buffer not supported");
 
 	data_ptr = (void *) my_buf->head;
 	xfree(my_buf);

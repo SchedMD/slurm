@@ -71,6 +71,7 @@ typedef struct {
 	uint32_t size;
 	uint32_t processed;
 	bool mmaped;
+	bool shadow;
 } buf_t;
 
 #define get_buf_data(__buf)		(__buf->head)
@@ -87,6 +88,7 @@ typedef struct {
 
 extern buf_t *create_buf(char *data, uint32_t size);
 extern buf_t *create_mmap_buf(const char *file);
+extern buf_t *create_shadow_buf(char *data, uint32_t size);
 extern void free_buf(buf_t *my_buf);
 extern buf_t *init_buf(uint32_t size);
 extern void grow_buf(buf_t *my_buf, uint32_t size);
