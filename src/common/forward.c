@@ -779,7 +779,7 @@ static void _get_dynamic_addrs(hostlist_t *hl, slurm_msg_t *msg)
 	hostlist_iterator_destroy(itr);
 	hostlist_destroy(hl_last);
 
-	if (last_alias_addrs && (msg->flags && SLURM_PACK_ADDRS)) {
+	if (last_alias_addrs && (msg->flags & SLURM_PACK_ADDRS)) {
 		slurm_copy_node_alias_addrs_members(&(msg->forward.alias_addrs),
 						    last_alias_addrs);
 	}
