@@ -1457,6 +1457,7 @@ static int _handle_gethost(int fd, stepd_step_rec_t *step, pid_t remote_pid)
 	unsigned char address[sizeof(struct in6_addr)];
 	char *address_str = NULL;
 	int af;
+	slurm_addr_t addr;
 
 	safe_read(fd, &mode, sizeof(int));
 	safe_read(fd, &len, sizeof(int));
@@ -1469,7 +1470,25 @@ static int _handle_gethost(int fd, stepd_step_rec_t *step, pid_t remote_pid)
 
 	if (!(mode & GETHOST_NOT_MATCH_PID) && !pid_match)
 		debug("%s: no pid_match", __func__);
-	else if (nodename && (address_str = slurm_conf_get_address(nodename))) {
+	else if (nodename && (!slurm_conf_get_addr(nodename, &addr, 0))) {
+		char *tmp_str;
+
+		found = 1;
+
+		if (addr.ss_family == AF_INET)
+			af = AF_INET;
+		else if (addr.ss_family == AF_INET6)
+			af = AF_INET6;
+
+		nodename_r = xstrdup(nodename);
+		hostname = xstrdup(nodename);
+
+		slurm_get_ip_str(&addr, (char *)address, INET6_ADDRSTRLEN);
+		tmp_str = xstrdup((char *)address);
+		inet_pton(af, tmp_str, &address);
+		xfree(tmp_str);
+	} else if (nodename &&
+		   (address_str = slurm_conf_get_address(nodename))) {
 		if ((mode & GETHOST_IPV6) &&
 		    (inet_pton(AF_INET6, address_str, &address) == 1)) {
 			found = 1;
