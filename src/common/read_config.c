@@ -2793,6 +2793,34 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
 	return SLURM_SUCCESS;
 }
 
+extern int slurm_conf_check_addr(const char *node_name, bool *dynamic)
+{
+	int idx;
+	names_ll_t *p;
+
+	slurm_conf_lock();
+	_init_slurmd_nodehash();
+
+	idx = _get_hash_idx(node_name);
+	p = node_to_host_hashtbl[idx];
+	while (p && xstrcmp(p->alias, node_name))
+		p = p->next_alias;
+
+	if (!p) {
+		slurm_conf_unlock();
+		return SLURM_ERROR;
+	}
+
+	if (dynamic) {
+		if (p->is_dynamic)
+			*dynamic = true;
+		else
+			*dynamic = false;
+	}
+
+	slurm_conf_unlock();
+	return SLURM_SUCCESS;
+}
 /*
  * gethostname_short - equivalent to gethostname, but return only the first
  * component of the fully qualified name

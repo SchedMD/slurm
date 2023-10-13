@@ -426,6 +426,7 @@ extern slurm_conf_t *slurm_conf_lock(void);
 extern void slurm_conf_unlock(void);
 
 
+extern int slurm_conf_check_addr(const char *node_name, bool *dynamic);
 /*
  * Set "ptr_array" with the pointer to an array of pointers to
  * slurm_conf_frontend_t structures.
